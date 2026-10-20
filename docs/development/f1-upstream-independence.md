@@ -103,3 +103,7 @@ Source fidelity policy: the vendored upstream Rust files are kept byte-identical
 first-party Rust format checks explicitly exclude `craft-docpath` (its upstream
 rustfmt layout differs from CFA4's formatter). Vendor source checksum checks
 still run, and dedicated offline Cargo tests and Clippy check behavior.
+
+The `cargo-fmt` version used by Rust 1.95 does not support `--exclude`.
+Use `cargo xtask fmt-check`, which invokes rustfmt for every first-party CFA4
+package explicitly, excluding the pristine vendored third-party sources.

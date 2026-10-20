@@ -455,9 +455,21 @@ fn fixtures(only: &[String]) -> Result<(), String> {
     if failed.is_empty() { Ok(()) } else { Err(format!("fixture generation failed in {}", failed.join(", "))) }
 }
 
+/// Format all CFA4-owned crates, excluding immutable third-party vendor snapshots.
+fn fmt_check() -> Result<(), String> {
+    let md = metadata()?;
+    let mut cmd = Command::new(env!("CARGO"));
+    cmd.args(["fmt", "--check"]);
+    for (name, _) in workspace_crates(&md) {
+        cmd.args(["--package", &name]);
+    }
+    cmd.args(["--package", "xtask"]);
+    run(&mut cmd)
+}
+
 fn ci() -> Result<(), String> {
     let cargo = env!("CARGO");
-    run(Command::new(cargo).args(["fmt", "--all", "--exclude", "craft-docpath", "--check"]))?;
+    fmt_check()?;
     run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--release", "--", "-D", "warnings"]))?;
     run(Command::new(cargo).args(["test", "--workspace", "--release"]))?;
     layers()?;
@@ -491,6 +503,7 @@ fn main() -> ExitCode {
         "wasm" => wasm(),
         "assets" => assets(),
         "fixtures" => fixtures(&std::env::args().skip(2).collect::<Vec<_>>()),
+        "fmt-check" => fmt_check(),
         "ci" => ci(),
         "bench" => bench(),
         "bench-playback" => bench_playback(),
