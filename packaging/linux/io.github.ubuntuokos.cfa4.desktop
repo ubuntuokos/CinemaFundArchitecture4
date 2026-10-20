@@ -1,14 +1,14 @@
 [Desktop Entry]
 Type=Application
-Name=FilmCraft
+Name=CFA4 (development)
 GenericName=Video Editor
-Comment=Edit video, color and sound
-Exec=filmcraft %F
-TryExec=filmcraft
-Icon=ai.storyteller.filmcraft
+Comment=Linux video editor under development
+Exec=cfa4 %F
+TryExec=cfa4
+Icon=io.github.ubuntuokos.cfa4
 Terminal=false
 StartupNotify=true
-StartupWMClass=ai.storyteller.filmcraft
+StartupWMClass=filmcraft
 Categories=AudioVideo;Video;AudioVideoEditing;
 MimeType=application/x-filmcraft;video/mp4;video/x-m4v;video/quicktime;video/x-matroska;video/webm;video/vnd.avi;video/x-msvideo;application/mxf;video/mp2t;video/mpeg;video/3gpp;
 Keywords=video;editor;film;timeline;color;grading;nle;
