@@ -1,0 +1,65 @@
+name: CFA4 Linux / Rust / Python / Qt6
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-linux:
+    name: Rust workspace (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Native Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
+      - name: Rust toolchain from rust-toolchain.toml
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: Linux quality gates (no WASM target)
+        env:
+          FILMCRAFT_REQUIRE_ORACLES: "1"
+        run: cargo xtask ci
+
+  python-qt6-linux:
+    name: Python and Qt 6 (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install Python development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,qt]"
+      - name: Python static checks and tests
+        run: |
+          python -m compileall -q python
+          python -m ruff check python
+          python -m pytest -q python/tests
+      - name: Qt 6 offscreen widget smoke
+        run: python -m cfa4_devtools.qt_app --smoke

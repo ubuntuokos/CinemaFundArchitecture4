@@ -16,7 +16,8 @@
 //!   lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
 //!   placement reported separately (`parity.rs`, docs/gaps.md G7).
 //! - `ico <out.ico> <in.png>…`: pack PNGs into a Windows `.ico` (used by `packaging/icons.sh`).
-//! - `ci`: fmt check, clippy -D warnings, tests, layers, assets, wasm.
+//! - `ci`: Linux: fmt check, clippy -D warnings, tests, layers, assets.
+//!   WASM is no longer a release/CI gate; the legacy `wasm` command stays opt-in.
 
 mod ico;
 mod parity;
@@ -459,8 +460,7 @@ fn ci() -> Result<(), String> {
     run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--release", "--", "-D", "warnings"]))?;
     run(Command::new(cargo).args(["test", "--workspace", "--release"]))?;
     layers()?;
-    assets()?;
-    wasm()
+    assets()
 }
 
 /// The headless playback benchmark (`crates/ui-egui/examples/bench_playback.rs`); extra

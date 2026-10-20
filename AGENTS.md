@@ -1,3 +1,25 @@
+# CFA4 — developer rules (Linux-only Rust / Cargo / Python / Qt 6)
+
+This CFA4-specific section takes priority over inherited FilmCraft platform and frontend
+instructions below. Existing engine safety, clean-room codec implementation, open-asset
+attribution and original copyright/licence requirements remain in force.
+
+- Supported build and release target: **Linux only**. Do not add Windows, macOS, FreeBSD or
+  WebAssembly release workflows. Historical source may remain until a tested refactor removes it.
+- Keep the existing Rust media engine. Python is permitted for development tooling and a
+  separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
+  packages under applicable LGPLv3/commercial terms, even though inherited rules below otherwise
+  restrict Rust-core dependencies to permissive licenses. This is NOT permission to copy GPL/LGPL
+  implementation code into Rust crates or to embed Qt/PySide binaries without review.
+  GPL-only Qt modules and distribution require separate license decisions.
+- A release is blocked until inherited ArtCraft marks, icons, package metadata and public
+  branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
+- The Qt shell is a development prototype, NOT a completed migration from egui.
+- Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
+
+---
+
 # FilmCraft — rules for agents and contributors
 
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this

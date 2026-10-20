@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Developer validation; never claim success when prerequisites or tests are missing.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+if [[ "$(uname -s)" != "Linux" ]]; then
+  echo "CFA4 supports Linux only." >&2
+  exit 2
+fi
+
+if [[ ! -x .venv/bin/python ]]; then
+  echo "Missing .venv. Run: python3 -m venv .venv && .venv/bin/python -m pip install -e '.[dev,qt]'" >&2
+  exit 2
+fi
+
+.venv/bin/python -m cfa4_devtools.health --strict
+.venv/bin/python -m compileall -q python
+.venv/bin/python -m pytest -q python/tests
+.venv/bin/python -m ruff check python
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m cfa4_devtools.qt_app --smoke
+FILMCRAFT_REQUIRE_ORACLES=1 cargo xtask ci
+
+echo "CFA4: Linux developer checks passed."
