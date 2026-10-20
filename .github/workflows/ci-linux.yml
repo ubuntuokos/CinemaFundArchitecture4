@@ -61,6 +61,44 @@ jobs:
           target/release/filmcraft-cli --version
           target/release/filmcraft-cli --demo inspect project
 
+  rust-architecture-assets:
+    name: Rust architecture and asset gates (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Rust formatting
+        run: cargo fmt --check
+      - name: Architecture dependency layering
+        run: cargo xtask layers
+      - name: Asset attribution and licensing
+        run: cargo xtask assets
+
+  rust-release-tests:
+    name: Rust workspace tests with FFmpeg oracles (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Native Linux dependencies and test oracles
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
+      - name: Assert FFmpeg/ffprobe oracles are installed
+        run: |
+          ffmpeg -version
+          ffprobe -version
+      - name: Run Rust release workspace tests
+        env:
+          FILMCRAFT_REQUIRE_ORACLES: "1"
+        run: cargo test --workspace --release --locked
+
   python-qt6-linux:
     name: Python and Qt 6 (Ubuntu)
     runs-on: ubuntu-24.04
