@@ -3,10 +3,10 @@
 //! The Linux shell (Wayland *and* X11) resolves the window to a `.desktop` file by app id (set in
 //! `main.rs` via `eframe`'s `with_app_id`) and takes the taskbar / window-list icon from its
 //! `Icon=` entry in the hicolor theme. Packaging installs both
-//! (`packaging/linux/ai.storyteller.filmcraft.desktop` and the hicolor PNGs) — but a source-tree
+//! (`packaging/linux/io.github.ubuntuokos.cfa4.desktop` and the hicolor PNGs) — but a source-tree
 //! run has neither, so KDE/GNOME fall back to the generic Wayland icon. The fix is to ensure a
 //! user-level entry for those runs: when no entry for the app id exists in any XDG data dir,
-//! install one (plus the hicolor icon PNGs, read from this checkout's `assets/app-icon`, so
+//! install one (plus the CFA4 scalable icon, read from this checkout's `assets/app-icon`, so
 //! nothing is embedded in the binary) into `$XDG_DATA_HOME`/`~/.local/share`. An existing
 //! packaged entry is never overridden; the user-owned dev copy is rewritten when it points at
 //! another binary (a dev build moves between checkouts). The shell picks the icon up at the *next* app start;
@@ -72,36 +72,33 @@ fn ensure() -> Result<(), DevIconError> {
         }
         break; // a dev entry from another checkout: fall through and rewrite it
     }
-    for size in ICON_SIZES {
-        let rel = std::path::Path::new("hicolor").join(format!("{size}x{size}")).join("apps").join(format!("{}.png", crate::APP_ID));
-        let dest = user_dir.join("icons").join(&rel);
-        if !dest.is_file()
-            && let Some(parent) = dest.parent()
-        {
-            // The checkout this binary was built from; a missing icon only costs the icon.
+    // Use our own CFA4 scalable icon in developer desktop entries.
+    let rel = std::path::Path::new("hicolor")
+        .join("scalable")
+        .join("apps")
+        .join(format!("{}.svg", crate::APP_ID));
+    let dest = user_dir.join("icons").join(&rel);
+    if !dest.is_file() {
+        if let Some(parent) = dest.parent() {
             let src = std::path::Path::new(ICON_DIR).join(&rel);
-            if !src.is_file() {
-                log::warn!("dev desktop entry: icon {} not found; skipping it", src.display());
-                continue;
+            if src.is_file() {
+                std::fs::create_dir_all(parent).map_err(DevIconError::Io)?;
+                std::fs::copy(&src, &dest).map_err(DevIconError::Io)?;
+            } else {
+                log::warn!("dev desktop entry: CFA4 icon {} not found", src.display());
             }
-            std::fs::create_dir_all(parent).map_err(DevIconError::Io)?;
-            std::fs::copy(&src, &dest).map_err(DevIconError::Io)?;
         }
     }
     let applications = user_dir.join("applications");
     std::fs::create_dir_all(&applications).map_err(DevIconError::Io)?;
-    let body = desktop_file_content(crate::APP_ID, "FilmCraft", exe);
+    let body = desktop_file_content(crate::APP_ID, "CFA4 (development)", exe);
     std::fs::write(applications.join(&file_name), body).map_err(DevIconError::Io)?;
     Ok(())
 }
 
-/// The hicolor icon sizes installed for the taskbar (a subset large enough for panel and topbar;
-/// the shell picks the nearest size, so 256 and 512 cover both).
-const ICON_SIZES: [u16; 2] = [256, 512];
-
 /// The app icons in the source tree this binary was built from (a path, not embedded bytes:
 /// the entry is a dev-checkout convenience and release binaries must not carry the PNGs).
-const ICON_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/app-icon");
+const ICON_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/cfa4");
 
 /// The user data dir we install into: `$XDG_DATA_HOME`, else `$HOME/.local/share` (XDG base
 /// directory spec). Untrusted environment: an empty or relative `XDG_DATA_HOME` means the
@@ -199,7 +196,7 @@ fn unescape_string_value(value: &str) -> String {
     out
 }
 
-/// The `.desktop` body: same fields as `packaging/linux/ai.storyteller.filmcraft.desktop`, with
+/// The `.desktop` body: same fields as `packaging/linux/io.github.ubuntuokos.cfa4.desktop`, with
 /// `Exec` pointing at this exact binary (a dev build isn't on `$PATH`, so `TryExec` is left out)
 /// and the icon by theme name.
 fn desktop_file_content(app_id: &str, name: &str, exe: &str) -> String {
@@ -208,13 +205,14 @@ fn desktop_file_content(app_id: &str, name: &str, exe: &str) -> String {
     out.push_str("Type=Application\n");
     out.push_str(&format!("Name={name}\n"));
     out.push_str("GenericName=Video Editor\n");
-    out.push_str("Comment=Edit video, color and sound\n");
+    out.push_str("Comment=Linux video editor under development\n");
     out.push_str(&format!("Exec=\"{}\" %F\n", escape_exec_argument(exe)));
     out.push_str(&format!("Icon={app_id}\n"));
     out.push_str("Terminal=false\n");
     out.push_str("StartupNotify=true\n");
     out.push_str(&format!("StartupWMClass={app_id}\n"));
     out.push_str("Categories=AudioVideo;Video;AudioVideoEditing;\n");
+    out.push_str("MimeType=application/x-filmcraft;video/mp4;video/x-m4v;video/quicktime;video/x-matroska;video/webm;video/vnd.avi;video/x-msvideo;application/mxf;video/mp2t;video/mpeg;video/3gpp;\n");
     out.push_str("Keywords=video;editor;film;timeline;color;grading;nle;\n");
     out
 }
@@ -262,15 +260,14 @@ mod tests {
     /// The icons the entry installs exist in the checkout.
     #[test]
     fn icon_sources_exist_in_the_checkout() {
-        for size in ICON_SIZES {
-            let p = std::path::Path::new(ICON_DIR).join(format!("hicolor/{size}x{size}/apps/ai.storyteller.filmcraft.png"));
-            assert!(p.is_file(), "{}", p.display());
-        }
+        let p = std::path::Path::new(ICON_DIR)
+            .join(format!("hicolor/scalable/apps/{}.svg", crate::APP_ID));
+        assert!(p.is_file(), "{}", p.display());
     }
 
     #[test]
     fn desktop_file_matches_the_packaged_fields() {
-        let packaged = include_str!("../../../packaging/linux/ai.storyteller.filmcraft.desktop");
+        let packaged = include_str!("../../../packaging/linux/io.github.ubuntuokos.cfa4.desktop");
         let expected = packaged
             .lines()
             .filter(|l| !l.starts_with("TryExec="))
@@ -278,7 +275,7 @@ mod tests {
             .collect::<Vec<_>>()
             .join("\n")
             + "\n";
-        let body = desktop_file_content("ai.storyteller.filmcraft", "FilmCraft", "/target/debug/filmcraft");
+        let body = desktop_file_content("io.github.ubuntuokos.cfa4", "CFA4 (development)", "/target/debug/filmcraft");
         assert_eq!(body, expected);
     }
 
@@ -298,7 +295,7 @@ mod tests {
     #[test]
     fn exec_round_trips_through_both_layers() {
         for exe in ["/home/dev/Projects/filmcraft/target/debug/filmcraft", "/opt/film craft/filmcraft", "/a$b\"c`d\\e"] {
-            let body = desktop_file_content("ai.storyteller.filmcraft", "FilmCraft", exe);
+            let body = desktop_file_content("io.github.ubuntuokos.cfa4", "CFA4 (development)", exe);
             assert_eq!(exec_line(&body).as_deref(), Some(exe));
             assert!(desktop_file_exec_is_ours(&body, exe));
         }
@@ -308,7 +305,7 @@ mod tests {
     /// prefix, and a packaged `Exec=filmcraft` are all someone else's entry.
     #[test]
     fn desktop_file_exec_is_ours_matches_only_our_binary() {
-        let body = desktop_file_content("ai.storyteller.filmcraft", "FilmCraft", "/a/filmcraft");
+        let body = desktop_file_content("io.github.ubuntuokos.cfa4", "CFA4 (development)", "/a/filmcraft");
         assert!(!desktop_file_exec_is_ours(&body, "/a/filmcraft-old"));
         assert!(!desktop_file_exec_is_ours(&body, "/b/filmcraft"));
         assert!(!desktop_file_exec_is_ours("Exec=filmcraft %F\n", "/a/filmcraft"));
