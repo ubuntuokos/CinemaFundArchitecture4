@@ -76,3 +76,12 @@ not a forced dependency of the default Rust build.
 The default source remains developable even while packaging is blocked. F1
 is **partially implemented** and must not be marked complete before these
 remaining conditions have direct test or license evidence.
+
+## F1-01 audit és reprodukálhatóság
+
+A közvetlen Git-források változatlan pinjeit, két upstream revíziójuk licenc- és
+NOTICE-bizonyítékát, valamint az offline/migrációs kockázatokat a
+[docs/audit/f1-01-dependencies.md](../audit/f1-01-dependencies.md) rögzíti.
+Az átmeneti, hálózat nélküli Git-source drift-kapu a
+`python -m cfa4_devtools.dependency_audit` parancs; F1-02-ben a tényleges
+vendorizációval együtt kell átalakítani, hogy ne őrizze meg a régi Git-forrásokat.
