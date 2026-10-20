@@ -59,8 +59,7 @@ fn app_icon() -> egui::IconData {
         for x in 0..WIDTH {
             let inside_panel = (9..55).contains(&x) && (13..51).contains(&y);
             let inside_screen = (15..49).contains(&x) && (19..45).contains(&y);
-            let play_arrow = (24..44).contains(&x)
-                && (x as i32 - 24) >= (y as i32 - 32).abs() * 2;
+            let play_arrow = (24..44).contains(&x) && (x as i32 - 24) >= (y as i32 - 32).abs() * 2;
             let rgb: [u8; 3] = if play_arrow {
                 [105, 219, 207]
             } else if inside_screen || !inside_panel {
