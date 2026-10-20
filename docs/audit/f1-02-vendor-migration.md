@@ -71,3 +71,13 @@ az önálló Cargo build/teszt és a Clippy vizsgálja.
    nélkül.
 
 Ez a dokumentum a forrásmigrációt rögzíti, nem tekintendő kiadási engedélynek.
+
+### Követett Clippy kivétel (csak a craft-ui harmadik féltől származó crate-re)
+
+A CFA4 Rust 1.95 toolchain `cargo clippy --workspace --all-targets --release -- -D warnings`
+futtatása az upstream `craft-ui/src/docking/surface.rs` eredeti forrásában
+`clippy::collapsible_match` figyelmeztetést talált (CI: 39489385744).
+A forrás immutabilitásának megőrzésére **csak a vendorizált crate helyi
+Cargo.toml fájljába** került `collapsible_match = "allow"` lint-engedmény.
+Ez nem lazítja a CFA4 saját crate-jeinek szigorú Clippy kapuját, és a
+SHA-jegyzék eredeti upstream forrást továbbra is változatlanul igazol.

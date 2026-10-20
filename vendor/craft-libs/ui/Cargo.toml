@@ -13,6 +13,9 @@ unsafe_code = "forbid"
 [lints.clippy]
 dbg_macro = "warn"
 todo = "warn"
+# Upstream pinned code (unaltered) triggers clippy::collapsible_match on Rust 1.95.
+# Scope this exception only to the external crate to preserve Git blob provenance.
+collapsible_match = "allow"
 
 [dependencies]
 egui = { version = "0.36", default-features = false }
