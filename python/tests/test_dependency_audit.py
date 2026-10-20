@@ -29,8 +29,9 @@ def test_repository_git_source_inventory() -> None:
 def test_moving_git_ref_is_rejected() -> None:
     manifest, lock = snapshot()
     manifest = copy.deepcopy(manifest)
+    manifest["workspace"]["dependencies"]["craft-ui"]["git"] = UPSTREAM
     manifest["workspace"]["dependencies"]["craft-ui"]["rev"] = "main"
-    assert any("craft-ui revision" in error for error in validate_snapshot(manifest, lock))
+    assert any("unapproved Git source" in error for error in validate_snapshot(manifest, lock))
 
 
 def test_unknown_workspace_git_source_is_rejected() -> None:
@@ -46,7 +47,7 @@ def test_lockfile_pin_must_match_manifest() -> None:
     for package in lock["package"]:
         if package["name"] == "craft-ui":
             package["source"] = "git+" + UPSTREAM + "?rev=main#deadbeef"
-    assert any("craft-ui source/revision" in error for error in validate_snapshot(manifest, lock))
+    assert any("vendored craft-ui must have no remote source" in error for error in validate_snapshot(manifest, lock))
 
 
 def test_missing_locked_package_is_rejected() -> None:
@@ -71,7 +72,12 @@ def test_finds_nested_target_specific_git_sources() -> None:
 
 
 def test_pins_are_full_commit_shas() -> None:
-    assert all(len(rev) == 40 and all(c in "0123456789abcdef" for c in rev) for rev in APPROVED_GIT.values())
+    import json
+
+    for name in ("docpath", "ui"):
+        path = ROOT / "vendor" / "craft-libs" / name / "SOURCE_MANIFEST.json"
+        rev = json.loads(path.read_text(encoding="utf-8"))["source_commit"]
+        assert len(rev) == 40 and all(c in "0123456789abcdef" for c in rev)
 
 def test_docpath_is_local_without_locked_git_source() -> None:
     manifest, lock = snapshot()
@@ -91,3 +97,15 @@ def test_changed_vendor_source_is_detected(tmp_path) -> None:
 
 def test_vendored_source_integrity() -> None:
     assert verify_vendored_files(ROOT) == []
+
+
+def test_ui_is_local_without_locked_git_source() -> None:
+    manifest, lock = snapshot()
+    assert manifest["workspace"]["dependencies"]["craft-ui"]["path"] == "vendor/craft-libs/ui"
+    assert all("source" not in package for package in lock["package"] if package["name"] == "craft-ui")
+
+
+def test_no_direct_cargo_git_source_remains() -> None:
+    manifest, lock = snapshot()
+    assert list(git_locations(manifest)) == []
+    assert not any(str(pkg.get("source", "")).startswith("git+") for pkg in lock["package"])

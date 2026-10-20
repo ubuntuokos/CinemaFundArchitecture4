@@ -78,6 +78,24 @@ jobs:
           cargo test --offline --manifest-path "$tmpdir/Cargo.toml"
           cargo clippy --offline --manifest-path "$tmpdir/Cargo.toml" --all-targets -- -D warnings
 
+  vendored-ui:
+    name: Vendored craft-ui unit and integration tests (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Native UI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
+      - name: Test vendored UI library (no external craft-libs Git)
+        run: cargo test --manifest-path vendor/craft-libs/ui/Cargo.toml --lib --tests
+
   rust-architecture-assets:
     name: Rust architecture and asset gates (Ubuntu)
     runs-on: ubuntu-24.04

@@ -1,0 +1,29 @@
+[package]
+name = "craft-ui"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/storytold/craft-libs"
+rust-version = "1.95"
+description = "Reusable egui controls and icon catalogs for Craft frontends"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+
+[dependencies]
+egui = { version = "0.36", default-features = false }
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+serde = ["dep:serde"]
+
+[dev-dependencies]
+egui = { version = "0.36", features = ["default_fonts"] }
+serde_json = "1"
+egui_extras = { version = "0.36", default-features = false, features = ["svg"] }
+egui_kittest = { version = "0.36", features = ["wgpu"] }
+image = { version = "0.25", default-features = false, features = ["png"] }

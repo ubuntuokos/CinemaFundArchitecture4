@@ -107,3 +107,14 @@ still run, and dedicated offline Cargo tests and Clippy check behavior.
 The `cargo-fmt` version used by Rust 1.95 does not support `--exclude`.
 Use `cargo xtask fmt-check`, which invokes rustfmt for every first-party CFA4
 package explicitly, excluding the pristine vendored third-party sources.
+
+## F1-02/2: craft-ui local source (separate migration)
+
+The pinned `craft-ui` Git dependency (`5c874d51eeb3de70e735c8ce87a59a7dedd47675`)
+has also been replaced by the local path `vendor/craft-libs/ui`.
+Both original upstream source trees, tests, licenses, and NOTICE files remain
+stored in this repository; their original blob SHA values are verified by the
+offline Python source-integrity gate. No direct `git+` Cargo source is left
+in the root workspace lockfile. A standalone UI test job validates the vendor
+crate separately from the main workspace. Neither registry-dependency
+download nor GPL/LGPL/Qt/trademark compliance is solved by this change.

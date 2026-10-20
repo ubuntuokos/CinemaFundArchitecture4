@@ -15,8 +15,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM = "https://github.com/storytold/craft-libs"
-APPROVED_GIT = {"craft-ui": "5c874d51eeb3de70e735c8ce87a59a7dedd47675"}
-VENDORED = {"craft-docpath": "vendor/craft-libs/docpath"}
+APPROVED_GIT: dict[str, str] = {}
+VENDORED = {
+    "craft-docpath": "vendor/craft-libs/docpath",
+    "craft-ui": "vendor/craft-libs/ui",
+}
 
 
 def git_locations(data: Any, parents: tuple[str, ...] = ()) -> Iterator[tuple[tuple[str, ...], str]]:
@@ -129,7 +132,7 @@ def audit_repository(root: Path) -> list[str]:
     lock = tomllib.loads((root / "Cargo.lock").read_text(encoding="utf-8"))
     errors = validate_snapshot(manifest, lock)
     errors.extend(verify_vendored_files(root))
-    for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml"):
+    for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml", "vendor/craft-libs/*/Cargo.toml"):
         for path in sorted(root.glob(pattern)):
             data = tomllib.loads(path.read_text(encoding="utf-8"))
             for location, _ in git_locations(data):
@@ -144,7 +147,7 @@ def main() -> int:
         for error in errors:
             print(f"F1-02 dependency audit: {error}", file=sys.stderr)
         return 1
-    print("F1-02 dependency audit passed: local sources validated, remaining Git pins unchanged.")
+    print("F1-02 dependency audit passed: both vendored source trees validated; no Cargo Git sources remain.")
     print("This does not certify registry licenses, Qt/PySide6 or redistribution rights.")
     return 0
 
