@@ -48,7 +48,7 @@ bizonyítja, hogy az eredeti ArtCraft védjegyek felhasználhatók.
 - a munkaterület Cargo-függőséggrafjának és lockfile-jának ellenőrzése.
 
 **F1-02/2 / UI**:
-- `cargo test --manifest-path vendor/craft-libs/ui/Cargo.toml --lib --tests`
+- `bash scripts/dev/test-vendored-ui.sh` (a detached scratch Cargo workspace with original upstream test-only dependencies)
 - a teljes CFA4 Linux CLI-, workspace- és FFmpeg-oracle ellenőrzés.
 
 A `craft-ui` saját tesztjei továbbra is használhatnak crates.io registry

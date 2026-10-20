@@ -6,7 +6,6 @@ import copy
 import tomllib
 
 from cfa4_devtools.dependency_audit import (
-    APPROVED_GIT,
     ROOT,
     UPSTREAM,
     audit_repository,

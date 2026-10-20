@@ -94,7 +94,7 @@ jobs:
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
       - name: Test vendored UI library (no external craft-libs Git)
-        run: cargo test --manifest-path vendor/craft-libs/ui/Cargo.toml --lib --tests
+        run: bash scripts/dev/test-vendored-ui.sh
 
   rust-architecture-assets:
     name: Rust architecture and asset gates (Ubuntu)
