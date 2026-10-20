@@ -75,15 +75,15 @@ fn ensure() -> Result<(), DevIconError> {
     // Use our own CFA4 scalable icon in developer desktop entries.
     let rel = std::path::Path::new("hicolor").join("scalable").join("apps").join(format!("{}.svg", crate::APP_ID));
     let dest = user_dir.join("icons").join(&rel);
-    if !dest.is_file() {
-        if let Some(parent) = dest.parent() {
-            let src = std::path::Path::new(ICON_DIR).join(&rel);
-            if src.is_file() {
-                std::fs::create_dir_all(parent).map_err(DevIconError::Io)?;
-                std::fs::copy(&src, &dest).map_err(DevIconError::Io)?;
-            } else {
-                log::warn!("dev desktop entry: CFA4 icon {} not found", src.display());
-            }
+    if !dest.is_file()
+        && let Some(parent) = dest.parent()
+    {
+        let src = std::path::Path::new(ICON_DIR).join(&rel);
+        if src.is_file() {
+            std::fs::create_dir_all(parent).map_err(DevIconError::Io)?;
+            std::fs::copy(&src, &dest).map_err(DevIconError::Io)?;
+        } else {
+            log::warn!("dev desktop entry: CFA4 icon {} not found", src.display());
         }
     }
     let applications = user_dir.join("applications");
