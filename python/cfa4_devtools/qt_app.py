@@ -6,10 +6,10 @@ The Rust filmcraft-cli is only queried for its version, without a shell or remot
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 
 def locate_engine(explicit: str | None = None) -> Path | None:
