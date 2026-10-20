@@ -99,3 +99,22 @@ A javítás **nem** módosítja az upstream Rust- és tesztforrásokat, és nem 
 2. `ad8ea64d6758dadd14ae991eadd30918dbadf8c4`: a `scripts/dev/test-vendored-ui.sh` többé nem duplikálja a `[workspace]` táblát; az eredeti tesztfüggőségeket az izolált scratch-másolatban továbbra is betölti.
 
 **Friss validáció:** https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39491167243 — az új fejlesztési ágbeli commit után elindult. Amíg a Rust Clippy, release workspace és FFmpeg-oracle, valamint az új UI-teszt véglegesen nem sikeres, az F1-02 CI gate **nyitott**, a PR-ek **draft** állapotban maradnak és nem egyesíthetők.
+
+### Második CI-felfedezés és korrigált javítás (ugyanezen nap)
+
+A `[workspace]` deklarációval végzett **első kísérlet hibásnak bizonyult**: a
+`39491364136` Actions-futtatás Rustfmt előtti Cargo-metaadat feldolgozása a
+`multiple workspace roots found in the same workspace` hibával megállt.
+A `9fc2ac6` és `ad8ea64` commitok ilyen konfigurációja ezért nem érvényes
+megoldás; mindkét fájl tartalmát az eredeti, működő állapotra állítottuk vissza.
+
+**Javított megoldás:** a `xtask/src/main.rs` saját `ci` parancsa és a GitHub
+release-workspace workflow azonos, explicit `--workspace --exclude craft-ui`
+Cargo-kiválasztást alkalmaz. Ez **kizárólag a külső craft-ui crate saját
+teszt-targetjeit** veszi ki a *fő* munkaterület Clippy / release teszt futásából;
+a CFA4 saját csomagjainak Clippy `-D warnings` és teszt ellenőrzése megmarad,
+és az alkalmazások továbbra is függnek a helyi `craft-ui` könyvtártól.
+Az upstream UI unit/integrációs/vizuális teszteket a
+`scripts/dev/test-vendored-ui.sh` változatlanul a saját `vendored-ui`
+CI-jobban futtatja. A források SHA-azonossága és a root `Cargo.lock`
+megőrződik. **A teljes CI csak sikeres újrafuttatással zárható le.**

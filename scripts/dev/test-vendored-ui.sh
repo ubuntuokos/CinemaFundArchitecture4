@@ -8,8 +8,9 @@ source_dir="$ROOT/vendor/craft-libs/ui"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 cp -a "$source_dir/." "$tmpdir/"
-# The vendored manifest already defines its own isolated [workspace].
 cat >> "$tmpdir/Cargo.toml" <<'TOML'
+
+[workspace]
 
 [dev-dependencies]
 egui = { version = "0.36", features = ["default_fonts"] }

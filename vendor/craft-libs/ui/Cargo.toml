@@ -24,8 +24,3 @@ serde = { version = "1", features = ["derive"], optional = true }
 [features]
 serde = ["dep:serde"]
 
-# Keep the upstream test targets out of CFA4's root `--workspace` gates.
-# The original Rust sources remain byte-identical; the isolated vendor CI
-# exercises these tests with their upstream-only dev dependencies.
-[workspace]
-resolver = "3"

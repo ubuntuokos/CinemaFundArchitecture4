@@ -132,7 +132,8 @@ jobs:
       - name: Run Rust release workspace tests
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
-        run: cargo test --workspace --release --locked
+        # Upstream craft-ui tests (including visual regression) run in dedicated vendored-ui job.
+        run: cargo test --workspace --exclude craft-ui --release --locked
 
   python-qt6-linux:
     name: Python and Qt 6 (Ubuntu)
