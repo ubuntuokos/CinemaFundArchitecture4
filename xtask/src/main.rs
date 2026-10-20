@@ -133,7 +133,8 @@ fn workspace_crates(md: &Value) -> Vec<(String, Vec<String>)> {
         .as_array()
         .into_iter()
         .flatten()
-        .filter(|p| p["name"] != "xtask")
+        // External vendor crates have their own provenance checks; they are not CFA4 architecture layers.
+        .filter(|p| p["name"] != "xtask" && p["name"] != "craft-docpath" && p["name"] != "craft-ui")
         .map(|p| {
             let deps = p["dependencies"]
                 .as_array()
