@@ -85,3 +85,16 @@ NOTICE-bizonyítékát, valamint az offline/migrációs kockázatokat a
 Az átmeneti, hálózat nélküli Git-source drift-kapu a
 `python -m cfa4_devtools.dependency_audit` parancs; F1-02-ben a tényleges
 vendorizációval együtt kell átalakítani, hogy ne őrizze meg a régi Git-forrásokat.
+
+## F1-02/1: craft-docpath local source (audit branch)
+
+The exact source of `craft-docpath` at `82a24b006eefa036b43c09a67fb9a3fbd17ffe63`
+is copied to `vendor/craft-libs/docpath`. `Cargo.toml` is adapted to a standalone
+path-based crate; its original Git blob ID is recorded in `SOURCE_MANIFEST.json`.
+The Rust source, tests, MIT/Apache license texts and upstream NOTICE are preserved,
+and the Python provenance checker verifies their original upstream Git blob IDs.
+A separate Linux CI job executes crate tests and Clippy with `--offline`.
+The application workspace references this path, not the external Git URL.
+
+This removes the **direct Git-fetch dependency** for docpath, not the crates.io
+dependency for the rest of the application. No public release is permitted.

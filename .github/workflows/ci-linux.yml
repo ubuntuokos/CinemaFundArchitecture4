@@ -61,6 +61,18 @@ jobs:
           target/release/filmcraft-cli --version
           target/release/filmcraft-cli --demo inspect project
 
+  vendored-docpath:
+    name: Vendored craft-docpath offline tests (Ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify isolated vendor crate without network sources
+        run: |
+          cargo test --offline --manifest-path vendor/craft-libs/docpath/Cargo.toml
+          cargo clippy --offline --manifest-path vendor/craft-libs/docpath/Cargo.toml --all-targets -- -D warnings
+
   rust-architecture-assets:
     name: Rust architecture and asset gates (Ubuntu)
     runs-on: ubuntu-24.04

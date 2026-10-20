@@ -12,6 +12,7 @@ from cfa4_devtools.dependency_audit import (
     audit_repository,
     git_locations,
     validate_snapshot,
+    verify_vendored_files,
 )
 
 
@@ -43,9 +44,9 @@ def test_lockfile_pin_must_match_manifest() -> None:
     manifest, lock = snapshot()
     lock = copy.deepcopy(lock)
     for package in lock["package"]:
-        if package["name"] == "craft-docpath":
+        if package["name"] == "craft-ui":
             package["source"] = "git+" + UPSTREAM + "?rev=main#deadbeef"
-    assert any("craft-docpath source/revision" in error for error in validate_snapshot(manifest, lock))
+    assert any("craft-ui source/revision" in error for error in validate_snapshot(manifest, lock))
 
 
 def test_missing_locked_package_is_rejected() -> None:
@@ -71,3 +72,22 @@ def test_finds_nested_target_specific_git_sources() -> None:
 
 def test_pins_are_full_commit_shas() -> None:
     assert all(len(rev) == 40 and all(c in "0123456789abcdef" for c in rev) for rev in APPROVED_GIT.values())
+
+def test_docpath_is_local_without_locked_git_source() -> None:
+    manifest, lock = snapshot()
+    assert manifest["workspace"]["dependencies"]["craft-docpath"]["path"] == "vendor/craft-libs/docpath"
+    assert all("source" not in package for package in lock["package"] if package["name"] == "craft-docpath")
+
+
+def test_changed_vendor_source_is_detected(tmp_path) -> None:
+    from shutil import copytree
+
+    vendor = tmp_path / "vendor" / "craft-libs" / "docpath"
+    copytree(ROOT / "vendor" / "craft-libs" / "docpath", vendor)
+    source = vendor / "src" / "lib.rs"
+    source.write_bytes(source.read_bytes() + b"\n// unauthorized mutation\n")
+    assert any("changed vendor source" in error for error in verify_vendored_files(tmp_path))
+
+
+def test_vendored_source_integrity() -> None:
+    assert verify_vendored_files(ROOT) == []

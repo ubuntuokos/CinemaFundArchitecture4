@@ -1,11 +1,12 @@
-"""Offline audit of Cargo Git dependency pins for the CFA4 F1-01 migration.
+"""Offline provenance checks for approved Cargo Git sources and vendored snapshots.
 
-This validates provenance references, NOT all dependency licenses or code safety.
-The two approved Git references are temporary until fully vendored or replaced.
+The audit is not a complete SBOM, copyright review or distribution license.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 import tomllib
 from collections.abc import Iterator
@@ -14,14 +15,12 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM = "https://github.com/storytold/craft-libs"
-APPROVED_GIT = {
-    "craft-ui": "5c874d51eeb3de70e735c8ce87a59a7dedd47675",
-    "craft-docpath": "82a24b006eefa036b43c09a67fb9a3fbd17ffe63",
-}
+APPROVED_GIT = {"craft-ui": "5c874d51eeb3de70e735c8ce87a59a7dedd47675"}
+VENDORED = {"craft-docpath": "vendor/craft-libs/docpath"}
 
 
 def git_locations(data: Any, parents: tuple[str, ...] = ()) -> Iterator[tuple[tuple[str, ...], str]]:
-    """Find every TOML table containing a git dependency, including target-specific ones."""
+    """Locate all TOML Git dependencies, including target-specific dependencies."""
     if isinstance(data, dict):
         if isinstance(data.get("git"), str):
             yield parents, data["git"]
@@ -34,11 +33,8 @@ def git_locations(data: Any, parents: tuple[str, ...] = ()) -> Iterator[tuple[tu
 
 
 def validate_snapshot(manifest: dict[str, Any], lock: dict[str, Any]) -> list[str]:
-    """Compare the approved immutable source revisions to Cargo.toml and Cargo.lock."""
     errors: list[str] = []
     dependencies = manifest.get("workspace", {}).get("dependencies", {})
-    approved_names = set(APPROVED_GIT)
-
     for name, expected_rev in APPROVED_GIT.items():
         dependency = dependencies.get(name)
         if not isinstance(dependency, dict):
@@ -51,39 +47,88 @@ def validate_snapshot(manifest: dict[str, Any], lock: dict[str, Any]) -> list[st
         if any(key in dependency for key in ("branch", "tag")):
             errors.append(f"Cargo.toml: {name} must not depend on a moving branch or tag")
 
-    approved_locations = {("workspace", "dependencies", name) for name in approved_names}
+    for name, path in VENDORED.items():
+        dependency = dependencies.get(name)
+        if not isinstance(dependency, dict) or dependency.get("path") != path:
+            errors.append(f"Cargo.toml: {name} must reference the approved local vendor path")
+        elif any(key in dependency for key in ("git", "rev", "branch", "tag")):
+            errors.append(f"Cargo.toml: {name} must not have a Git source or revision")
+
+    approved_locations = {("workspace", "dependencies", name) for name in APPROVED_GIT}
     for location, url in git_locations(manifest):
         if location not in approved_locations or url != UPSTREAM:
             errors.append(f"Cargo.toml: unapproved Git source at {'.'.join(location)}")
 
+    names = set(APPROVED_GIT) | set(VENDORED)
     seen: set[str] = set()
     for package in lock.get("package", []):
-        source = str(package.get("source", ""))
-        if not source.startswith("git+"):
-            continue
         name = str(package.get("name", ""))
-        if name not in approved_names:
-            errors.append(f"Cargo.lock: unapproved Git package {name}")
-            continue
-        if name in seen:
-            errors.append(f"Cargo.lock: duplicated Git package {name}")
-        seen.add(name)
-        rev = APPROVED_GIT[name]
-        expected_source = f"git+{UPSTREAM}?rev={rev}#{rev}"
-        if source != expected_source:
-            errors.append(f"Cargo.lock: {name} source/revision does not match approved pin")
+        source = str(package.get("source", ""))
+        if name in names:
+            if name in seen:
+                errors.append(f"Cargo.lock: duplicated package {name}")
+            seen.add(name)
+        if name in VENDORED and source:
+            errors.append(f"Cargo.lock: vendored {name} must have no remote source")
+        elif source.startswith("git+"):
+            if name not in APPROVED_GIT:
+                errors.append(f"Cargo.lock: unapproved Git package {name}")
+                continue
+            rev = APPROVED_GIT[name]
+            if source != f"git+{UPSTREAM}?rev={rev}#{rev}":
+                errors.append(f"Cargo.lock: {name} source/revision does not match approved pin")
 
-    for missing in sorted(approved_names - seen):
-        errors.append(f"Cargo.lock: missing approved Git package {missing}")
+    for missing in sorted(names - seen):
+        errors.append(f"Cargo.lock: missing approved package {missing}")
+    return errors
+
+
+def git_blob_hash(data: bytes) -> str:
+    """Reproduce Git SHA-1 object IDs for immutable upstream source snapshots."""
+    return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
+
+
+def verify_vendored_files(root: Path) -> list[str]:
+    errors: list[str] = []
+    for package, rel in VENDORED.items():
+        directory = root / rel
+        try:
+            ledger = json.loads((directory / "SOURCE_MANIFEST.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"{package}: missing or invalid SOURCE_MANIFEST.json: {exc}")
+            continue
+        if ledger.get("source_repository") != UPSTREAM:
+            errors.append(f"{package}: upstream source URL does not match")
+        sha = ledger.get("source_commit", "")
+        if not isinstance(sha, str) or len(sha) != 40 or not all(c in "0123456789abcdef" for c in sha):
+            errors.append(f"{package}: source commit must be a full Git SHA")
+        files = ledger.get("files")
+        if not isinstance(files, dict) or not files:
+            errors.append(f"{package}: source provenance file list missing")
+            continue
+        for path, expected in files.items():
+            if not isinstance(path, str) or not isinstance(expected, str):
+                errors.append(f"{package}: invalid provenance path/hash entry")
+                continue
+            candidate = (directory / path).resolve()
+            if not candidate.is_relative_to(directory.resolve()):
+                errors.append(f"{package}: unsafe provenance path {path}")
+                continue
+            try:
+                actual = git_blob_hash(candidate.read_bytes())
+            except OSError as exc:
+                errors.append(f"{package}: missing source {path}: {exc}")
+                continue
+            if actual != expected:
+                errors.append(f"{package}: changed vendor source {path}: Git blob hash differs")
     return errors
 
 
 def audit_repository(root: Path) -> list[str]:
-    """Check the lockfile plus all top-level Rust workspace member manifests."""
     manifest = tomllib.loads((root / "Cargo.toml").read_text(encoding="utf-8"))
     lock = tomllib.loads((root / "Cargo.lock").read_text(encoding="utf-8"))
     errors = validate_snapshot(manifest, lock)
-
+    errors.extend(verify_vendored_files(root))
     for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml"):
         for path in sorted(root.glob(pattern)):
             data = tomllib.loads(path.read_text(encoding="utf-8"))
@@ -97,10 +142,10 @@ def main() -> int:
     errors = audit_repository(ROOT)
     if errors:
         for error in errors:
-            print(f"F1-01 dependency audit: {error}", file=sys.stderr)
+            print(f"F1-02 dependency audit: {error}", file=sys.stderr)
         return 1
-    print("F1-01 Git dependency audit passed: 2 approved immutable pins match manifests and Cargo.lock.")
-    print("This does not certify transitive crate licenses, PySide6 or redistribution rights.")
+    print("F1-02 dependency audit passed: local sources validated, remaining Git pins unchanged.")
+    print("This does not certify registry licenses, Qt/PySide6 or redistribution rights.")
     return 0
 
 
