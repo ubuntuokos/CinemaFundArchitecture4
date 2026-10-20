@@ -81,3 +81,21 @@ A forrás immutabilitásának megőrzésére **csak a vendorizált crate helyi
 Cargo.toml fájljába** került `collapsible_match = "allow"` lint-engedmény.
 Ez nem lazítja a CFA4 saját crate-jeinek szigorú Clippy kapuját, és a
 SHA-jegyzék eredeti upstream forrást továbbra is változatlanul igazol.
+
+## CI utóellenőrzés és javítás – 2026-10-20
+
+### Ellenőrzött CI-állapot
+
+- **PR #8**: https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/8 — commit `1e7e02063be23afca0791077cf3123a8ffdaa258`; Actions: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39488156883. A külön `craft-docpath` offline ellenőrzés, Python/Qt6, architektúra/asset/format, valamint CLI smoke **sikeres**. A teljes Rust workspace és FFmpeg-oracle release teszt lekérdezéskor **folyamatban**; eredményük nem minősíthető sikeresnek.
+- **PR #10, eredeti UI-revízió**: `96c113f4c2bf0feaf2e93989badde3cfc258355e`; Actions: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39490004898. A `craft-ui` elkülönített teszt, `craft-docpath`, Python/Qt6, formázás, architektúra és asset ellenőrzések **sikeresek**; a CLI smoke szintén **sikeres**. A Rust workspace/Clippy job **megbukott**; a release/FFmpeg job lekérdezéskor még futott.
+
+### Clippy-fordítási hiba és célzott javítás
+
+A `cargo xtask ci` által indított `cargo clippy --workspace --all-targets --release -- -D warnings` a `vendor/craft-libs/ui/tests/visual_regression.rs` tesztmodulban négy `E0432`/`E0433` hibát jelzett: a `egui_kittest`, `image` és `egui_extras` tesztfüggőségek nem részei a helyi vendor-manifestnek. Ezeket a dedikált UI-tesztfuttató szándékosan csak egy átmeneti, önálló Cargo-munkaterülethez adja hozzá, hogy a fő `Cargo.lock` ne bővüljön csak tesztcélú UI-csomagokkal.
+
+A javítás **nem** módosítja az upstream Rust- és tesztforrásokat, és nem lazítja a CFA4 saját crate-jeinek `-D warnings` ellenőrzését:
+
+1. `9fc2ac635675fafbf4ae28b1da5a56b92a3e2867`: a `vendor/craft-libs/ui/Cargo.toml` explicit `[workspace]` / `resolver = "3"` deklarációt kapott, hogy a vendor teszt-targetjei ne legyenek a CFA4 root `--workspace` vizsgálat részei. A termék `craft-ui` path-függősége megmaradt.
+2. `ad8ea64d6758dadd14ae991eadd30918dbadf8c4`: a `scripts/dev/test-vendored-ui.sh` többé nem duplikálja a `[workspace]` táblát; az eredeti tesztfüggőségeket az izolált scratch-másolatban továbbra is betölti.
+
+**Friss validáció:** https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39491167243 — az új fejlesztési ágbeli commit után elindult. Amíg a Rust Clippy, release workspace és FFmpeg-oracle, valamint az új UI-teszt véglegesen nem sikeres, az F1-02 CI gate **nyitott**, a PR-ek **draft** állapotban maradnak és nem egyesíthetők.
