@@ -53,7 +53,7 @@ def test_missing_locked_package_is_rejected() -> None:
     manifest, lock = snapshot()
     lock = copy.deepcopy(lock)
     lock["package"] = [package for package in lock["package"] if package["name"] != "craft-ui"]
-    assert any("missing approved Git package craft-ui" in error for error in validate_snapshot(manifest, lock))
+    assert any("missing approved package craft-ui" in error for error in validate_snapshot(manifest, lock))
 
 
 def test_unexpected_transitive_git_package_is_rejected() -> None:
