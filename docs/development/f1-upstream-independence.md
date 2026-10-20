@@ -98,3 +98,8 @@ The application workspace references this path, not the external Git URL.
 
 This removes the **direct Git-fetch dependency** for docpath, not the crates.io
 dependency for the rest of the application. No public release is permitted.
+
+Source fidelity policy: the vendored upstream Rust files are kept byte-identical;
+first-party Rust format checks explicitly exclude `craft-docpath` (its upstream
+rustfmt layout differs from CFA4's formatter). Vendor source checksum checks
+still run, and dedicated offline Cargo tests and Clippy check behavior.

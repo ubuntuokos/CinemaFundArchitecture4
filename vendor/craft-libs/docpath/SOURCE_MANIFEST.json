@@ -2,15 +2,8 @@
   "source_repository": "https://github.com/storytold/craft-libs",
   "source_commit": "82a24b006eefa036b43c09a67fb9a3fbd17ffe63",
   "original_crate_manifest_blob_sha1": "dd94824d6c49873d4cb411946b478081289ea21b",
-  "note": "Source originates from the pinned upstream commit. src/lib.rs differs only by rustfmt 1.95 reformatting; original_files retains original Git blob hashes, files contains current local Git blob hashes. Cargo.toml is adapted for a local path dependency.",
+  "note": "The original Rust source, tests, NOTICE and licenses are copied byte-for-byte from the pinned upstream commit; the local Cargo.toml is adapted (original manifest Git blob ID recorded). The project excludes vendor code from first-party rustfmt checks to preserve this provenance.",
   "files": {
-    "src/lib.rs": "51b0abe2c54fe47f157544c58e46ed59183aac9a",
-    "tests/docpath.rs": "40f2098bc2ec929054742e9c3605dc8ea3932f51",
-    "LICENSE-MIT": "e1450bdf57b9c0577e8b947db77ec77f4fea9d38",
-    "LICENSE-APACHE": "f433b1a53f5b830a205fd2df78e2b34974656c7b",
-    "NOTICE": "9467671f33ad83f459201bf6eee19b3a71aa8f2c"
-  },
-  "original_files": {
     "src/lib.rs": "1c5c41a71a7a8da994aed070c3bef721ae0fb844",
     "tests/docpath.rs": "40f2098bc2ec929054742e9c3605dc8ea3932f51",
     "LICENSE-MIT": "e1450bdf57b9c0577e8b947db77ec77f4fea9d38",
