@@ -73,10 +73,7 @@ fn ensure() -> Result<(), DevIconError> {
         break; // a dev entry from another checkout: fall through and rewrite it
     }
     // Use our own CFA4 scalable icon in developer desktop entries.
-    let rel = std::path::Path::new("hicolor")
-        .join("scalable")
-        .join("apps")
-        .join(format!("{}.svg", crate::APP_ID));
+    let rel = std::path::Path::new("hicolor").join("scalable").join("apps").join(format!("{}.svg", crate::APP_ID));
     let dest = user_dir.join("icons").join(&rel);
     if !dest.is_file() {
         if let Some(parent) = dest.parent() {
@@ -260,8 +257,7 @@ mod tests {
     /// The icons the entry installs exist in the checkout.
     #[test]
     fn icon_sources_exist_in_the_checkout() {
-        let p = std::path::Path::new(ICON_DIR)
-            .join(format!("hicolor/scalable/apps/{}.svg", crate::APP_ID));
+        let p = std::path::Path::new(ICON_DIR).join(format!("hicolor/scalable/apps/{}.svg", crate::APP_ID));
         assert!(p.is_file(), "{}", p.display());
     }
 
