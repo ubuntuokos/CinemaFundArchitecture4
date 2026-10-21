@@ -24,7 +24,8 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("    if: github.event_name == 'workflow_dispatch'") == 7
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 7
+assert "types: [opened, synchronize, reopened, labeled]" in workflow
 assert workflow.count("    needs: platform-scope") == 7
 assert workflow.count("    runs-on: ubuntu-26.04") == 8
 assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow

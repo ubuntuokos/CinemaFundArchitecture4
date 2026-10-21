@@ -30,7 +30,7 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 | Python tooling | Isolated venv, lint/tests, environment diagnostics |
 | Qt 6 | Experimental PySide6 Widgets shell and offscreen CI smoke |
 | Desktop editing GUI | Inherited egui implementation still in source; Qt port not complete |
-| CI | Linux AMD64: automatic static checks; manually triggered full Rust/Python/Qt6/FFmpeg validation |
+| CI | Linux AMD64: automatic static checks; full Rust/Python/Qt6/FFmpeg validation only on manual dispatch or PR label |
 | Releases | Paused until trademark/packaging verification and a successful Linux build |
 
 The Rust CLI is `filmcraft-cli`. In the first Qt iteration it is queried only for

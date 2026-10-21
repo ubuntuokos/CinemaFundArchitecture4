@@ -10,8 +10,9 @@ attribution and original copyright/licence requirements remain in force.
   Historical source and cross-platform Cargo.lock entries can remain until
   an audited refactor; do not manually delete transitive lockfile dependencies.
 - CI: automatic PR/push checks must stay quick and non-compiling. Full Rust,
-  Python, Qt6, vendored-library and FFmpeg tests require an explicit manual
-  GitHub Actions workflow_dispatch run, and verified success before merge.
+  Python, Qt6, vendored-library and FFmpeg tests require an explicit GitHub
+  Actions workflow_dispatch or PR `cfa4-full-validation` label event (remove
+  then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
 - **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6

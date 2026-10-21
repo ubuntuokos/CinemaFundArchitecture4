@@ -66,9 +66,12 @@ missing Linux/Rust/Cargo/Python/Qt/FFmpeg prerequisites. The GUI shell queries
 The CI workflow `.github/workflows/ci-linux.yml` runs only the inexpensive
 `platform-scope` shell/configuration gate on pull requests and main pushes.
 To avoid repeated unnecessary builds, all Rust, FFmpeg, vendored crate, CLI,
-Python and Qt6 jobs run **only** through a manually initiated GitHub Actions
-`workflow_dispatch` execution. Before a merge or release, explicitly run the
-entire workflow and confirm all mandatory jobs pass; a green static gate alone
+Python and Qt6 jobs run **only** on explicit GitHub Actions `workflow_dispatch`
+or when the `cfa4-full-validation` label is **added** to a pull request.
+Until this workflow exists on the default branch, use the PR label; for a later
+rerun, remove the label and add it again. Ordinary pushes to labeled PRs do not
+trigger expensive jobs. Before a merge or release, explicitly run the entire
+workflow and confirm all mandatory jobs pass; a green static gate alone
 does not qualify as full CI validation. An unrun, skipped, or failing job is
 **not** proof that the full CI passed.
 

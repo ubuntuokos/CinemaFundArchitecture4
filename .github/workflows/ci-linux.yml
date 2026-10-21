@@ -2,6 +2,7 @@ name: CFA4 Linux AMD64 (manual full validation)
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -14,8 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 # PRs and main pushes run only the fast, non-compiling platform/static gate.
-# Expensive Rust/Qt/FFmpeg jobs run ONLY on explicit workflow_dispatch.
-# Full manual validation is required before merging/releasing.
+# Expensive Rust/Qt/FFmpeg jobs run ONLY on workflow_dispatch or an explicit
+# PR `cfa4-full-validation` label event (not on ordinary commits).
+# Full validation must pass before merging or releasing.
 jobs:
   platform-scope:
     name: Linux AMD64 policy and static checks (no builds)
@@ -28,7 +30,7 @@ jobs:
         run: bash scripts/ci/check-linux-amd64.sh
 
   rust-linux:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Rust workspace (Ubuntu)
     runs-on: ubuntu-26.04
@@ -55,7 +57,7 @@ jobs:
         run: cargo xtask ci
 
   rust-cli-smoke:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Rust CLI build and runtime smoke (Ubuntu)
     runs-on: ubuntu-26.04
@@ -79,7 +81,7 @@ jobs:
           target/release/filmcraft-cli --demo inspect project
 
   vendored-docpath:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Vendored craft-docpath offline tests (Ubuntu)
     runs-on: ubuntu-26.04
@@ -98,7 +100,7 @@ jobs:
           cargo clippy --offline --manifest-path "$tmpdir/Cargo.toml" --all-targets -- -D warnings
 
   vendored-ui:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Vendored craft-ui unit and integration tests (Ubuntu)
     runs-on: ubuntu-26.04
@@ -118,7 +120,7 @@ jobs:
         run: bash scripts/dev/test-vendored-ui.sh
 
   rust-architecture-assets:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Rust architecture and asset gates (Ubuntu)
     runs-on: ubuntu-26.04
@@ -134,7 +136,7 @@ jobs:
         run: cargo xtask assets
 
   rust-release-tests:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Rust workspace tests with FFmpeg oracles (Ubuntu)
     runs-on: ubuntu-26.04
@@ -184,7 +186,7 @@ jobs:
         run: cargo test --workspace --exclude craft-ui --release --locked --timings
 
   python-qt6-linux:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
     name: Python and Qt 6 (Ubuntu)
     runs-on: ubuntu-26.04
