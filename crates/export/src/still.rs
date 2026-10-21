@@ -143,6 +143,22 @@ mod tests {
             assert_eq!(b[3], 32768);
         }
     }
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    #[test]
+    fn heic_heif_single_frame_exports_round_trip() {
+        let source = Image::filled(64, 64, [0.25, 0.4, 0.6, 1.0]);
+        for format in [StillFormat::Heic, StillFormat::Heif] {
+            assert_eq!(StillFormat::parse(format.extension()).unwrap(), format);
+            for depth in [8, 16] {
+                let encoded = encode(&source, format, depth).expect("local heif-enc and x265 plugin required");
+                assert!(filmcraft_media::still::heif::sniff(&encoded));
+                let decoded = filmcraft_media::still::heif::decode("export.heic", &encoded)
+                    .expect("libheif HEIC output must decode");
+                assert_eq!((decoded.width, decoded.height), (64, 64));
+            }
+        }
+    }
+
     #[test]
     fn jpeg_and_bmp_are_eight_bit_and_invalid_buffers_are_errors() {
         let image = Image::filled(2, 2, [0.2, 0.3, 0.4, 1.0]);
