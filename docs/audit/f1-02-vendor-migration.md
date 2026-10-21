@@ -118,3 +118,16 @@ Az upstream UI unit/integrációs/vizuális teszteket a
 `scripts/dev/test-vendored-ui.sh` változatlanul a saját `vendored-ui`
 CI-jobban futtatja. A források SHA-azonossága és a root `Cargo.lock`
 megőrződik. **A teljes CI csak sikeres újrafuttatással zárható le.**
+
+## CI-FINAL – a 120 perces release fordítás miatti leállások (2026-10-21)
+
+A [PR #8 / run 39488156883](https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39488156883) és a [PR #10 / run 39491958991](https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39491958991) négy Rust workspace/release jobja végül **cancelled** lett a ~120 perces limitnél. A végleges naplók mind a négy esetben `The operation was canceled.` üzenettel végződnek. A PR #10 Clippy `--release` ellenőrzése már kb. 2 perc alatt befejeződött, majd a job a **második, teljes release-teszt fordítását** indította el; a külön FFmpeg-oracle job ezzel párhuzamosan ugyanezt fordította. A tesztekhez nem jutottak el; bizonyított új Rust/FFmpeg funkcionális teszthiba nem szerepel a naplókban.
+
+**Kijavított CI-szerkezet:**
+
+- A `cargo xtask ci` megtartja a format/Clippy/layers/assets kapukat, de elhagyja a másodszor, párhuzamosan indított teljes release-tesztet.
+- A külön `rust-release-tests` job továbbra is lefuttatja a **teljes workspace release tesztkészletét, FFmpeg és ffprobe oracle mellett**; `craft-ui` upstream-only integrációs/visual tesztjeit változatlanul az elkülönített `vendored-ui` job futtatja.
+- A teszt-harnesszek **CI-only** Cargo release környezeti felülírásai: `CARGO_PROFILE_RELEASE_LTO=false` és `CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16`, a memóriaterhelés korlátozására `CARGO_BUILD_JOBS=2`. Ez megőrzi a release-optimalizálási szintet és a tesztkészletet, de a teszt-harness linkelés **nem byte-azonos** a tényleges disztribúciós release profiléval. A normál `cargo build --release -p filmcraft-cli` CLI-smoke megtartja a projekt eredeti teljes release-beállításait (`lto=thin`, `codegen-units=1`).
+- `--timings`: a Cargo összeállításról készült mérés segíti a következő esetleges regresszió azonosítását.
+
+**Audit gate:** a fentiek teljes, új, sikeres GitHub Actions futtatásig **nincsenek igazolva**, nincs merge vagy F1-02 lezárás. A két PR draft marad; az upstream források, licencek/NOTICE, `Cargo.lock` és a `main` változatlanok.

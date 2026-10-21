@@ -129,11 +129,16 @@ jobs:
         run: |
           ffmpeg -version
           ffprobe -version
-      - name: Run Rust release workspace tests
+      - name: Run optimized Rust workspace release tests with FFmpeg oracles
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
-        # Upstream craft-ui tests (including visual regression) run in dedicated vendored-ui job.
-        run: cargo test --workspace --exclude craft-ui --release --locked
+          # Preserve full release opt-level and test coverage without expensive
+          # link-time optimization of test harnesses; CLI smoke checks true release.
+          CARGO_PROFILE_RELEASE_LTO: "false"
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+          CARGO_BUILD_JOBS: "2"
+        # Upstream craft-ui unit/visual tests run in the dedicated vendored-ui job.
+        run: cargo test --workspace --exclude craft-ui --release --locked --timings
 
   python-qt6-linux:
     name: Python and Qt 6 (Ubuntu)

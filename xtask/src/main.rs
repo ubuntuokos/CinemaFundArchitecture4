@@ -473,7 +473,7 @@ fn ci() -> Result<(), String> {
     // craft-ui retains upstream visual tests, run with isolated test-only dependencies in vendored-ui CI.
     // It remains a dependency of the main workspace; exclude only its test targets.
     run(Command::new(cargo).args(["clippy", "--workspace", "--exclude", "craft-ui", "--all-targets", "--release", "--", "-D", "warnings"]))?;
-    run(Command::new(cargo).args(["test", "--workspace", "--exclude", "craft-ui", "--release"]))?;
+    // Full optimized release tests (including FFmpeg oracles) run in the dedicated CI job.
     layers()?;
     assets()
 }
