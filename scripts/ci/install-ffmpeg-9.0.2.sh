@@ -64,9 +64,9 @@ check_codecs "$encoders" V "video encoder" "${video_encoders[@]}"
 check_codecs "$encoders" A "audio encoder" "${audio_encoders[@]}"
 check_codecs "$decoders" V "video decoder" "${video_decoders[@]}"
 check_codecs "$decoders" A "audio decoder" "${audio_decoders[@]}"
-if (("${#missing[@]}" > 0)); then
+if (( ${#missing[@]} > 0 )); then
   echo "::error::Pinned FFmpeg ${version} is missing ${#missing[@]} required oracle codecs:" >&2
-  printf '::error::  %s\\n' "${missing[@]}" >&2
+  printf '::error::  %s\n' "${missing[@]}" >&2
   exit 1
 fi
 echo "Verified pinned FFmpeg ${version}: ${#video_encoders[@]} video encoders, ${#audio_encoders[@]} audio encoders, ${#video_decoders[@]} video decoders and ${#audio_decoders[@]} audio decoders."
