@@ -9,7 +9,7 @@ version=9.0.2
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
 sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v4}"
+prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v5}"
 if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
@@ -21,7 +21,7 @@ if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   (
     cd "${tmp}/src"
     ./configure --prefix="$prefix" --disable-doc --disable-debug --disable-ffplay \
-      --disable-autodetect --disable-shared --enable-static --enable-gpl \
+      --disable-autodetect --disable-shared --enable-static --enable-gpl --enable-zlib \
       --enable-libdav1d --enable-libsvtav1 --enable-libaom \
       --enable-libx264 --enable-libx265 --enable-libvpx --enable-libmp3lame --enable-libopus
     make -j2
@@ -45,7 +45,7 @@ done
 # only after a long Rust release-test run.
 video_encoders=(libx264 libx265 libvpx libvpx-vp9 libsvtav1 libaom-av1 mpeg2video mjpeg prores_ks dnxhd rawvideo png)
 audio_encoders=(libmp3lame libopus aac ac3 eac3 mp2 flac vorbis pcm_s16le pcm_s24le pcm_dvd)
-video_decoders=(apv libdav1d h264 hevc vp8 vp9 mpeg2video prores dnxhd)
+video_decoders=(apv libdav1d h264 hevc vp8 vp9 mpeg2video prores dnxhd png)
 audio_decoders=(aac ac3 eac3 mp3 mp2 opus vorbis flac)
 encoders="$("${prefix}/bin/ffmpeg" -hide_banner -encoders)"
 decoders="$("${prefix}/bin/ffmpeg" -hide_banner -decoders)"
