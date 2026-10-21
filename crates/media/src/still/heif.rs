@@ -35,11 +35,8 @@ pub fn sniff(bytes: &[u8]) -> bool {
     if size < 16 || size > bytes.len() {
         return false;
     }
-    let heif_brand = |brand: &[u8]| {
-        [b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1"].iter().any(|b| brand == b.as_slice())
-    };
-    bytes.get(8..12).is_some_and(heif_brand)
-        || bytes.get(16..size).is_some_and(|tail| tail.chunks_exact(4).any(heif_brand))
+    let heif_brand = |brand: &[u8]| [b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1"].iter().any(|b| brand == b.as_slice());
+    bytes.get(8..12).is_some_and(heif_brand) || bytes.get(16..size).is_some_and(|tail| tail.chunks_exact(4).any(heif_brand))
 }
 
 struct Workdir {
@@ -77,9 +74,7 @@ impl Drop for Workdir {
 fn tool_output(program: &str, result: std::io::Result<Output>) -> Result<()> {
     let output = result.map_err(|e| {
         if e.kind() == ErrorKind::NotFound {
-            MediaError::Unsupported(format!(
-                "{program} is missing; install libheif-examples and the libheif HEVC codec plugins on Ubuntu 26.04"
-            ))
+            MediaError::Unsupported(format!("{program} is missing; install libheif-examples and the libheif HEVC codec plugins on Ubuntu 26.04"))
         } else {
             MediaError::Io(format!("{program}: {e}"))
         }
@@ -105,9 +100,7 @@ fn first_decoded_png(dir: &Workdir) -> Result<PathBuf> {
     for e in fs::read_dir(&dir.path).map_err(|e| MediaError::Io(format!("HEIF image outputs: {e}")))? {
         let e = e.map_err(|e| MediaError::Io(format!("HEIF image outputs: {e}")))?;
         let path = e.path();
-        if path.extension().and_then(|s| s.to_str()) == Some("png")
-            && path.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s.starts_with("decoded"))
-        {
+        if path.extension().and_then(|s| s.to_str()) == Some("png") && path.file_stem().and_then(|s| s.to_str()).is_some_and(|s| s.starts_with("decoded")) {
             files.push(path);
         }
     }
@@ -134,7 +127,9 @@ pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
     reader.limits(image::Limits::default());
     let decoded = reader.decode().map_err(|e| MediaError::Decode(format!("{name}: decoded HEIF PNG: {e}")))?;
     let (width, height) = (decoded.width(), decoded.height());
-    let size = u64::from(width).checked_mul(u64::from(height)).and_then(|n| n.checked_mul(4))
+    let size = u64::from(width)
+        .checked_mul(u64::from(height))
+        .and_then(|n| n.checked_mul(4))
         .ok_or_else(|| MediaError::Unsupported("HEIF dimensions overflow".into()))?;
     if size == 0 || size > MAX_RGBA_BYTES {
         return Err(MediaError::Unsupported("HEIF decoded picture exceeds the 512 MiB safety limit".into()));
@@ -154,10 +149,7 @@ pub fn encode_png(png: &[u8]) -> Result<Vec<u8>> {
     let input = dir.file("frame.png");
     let output = dir.file("frame.heic");
     fs::write(&input, png).map_err(|e| MediaError::Io(format!("HEIC source image: {e}")))?;
-    tool_output(
-        "heif-enc",
-        Command::new("heif-enc").arg("-q").arg("90").arg("-o").arg(&output).arg(&input).output(),
-    )?;
+    tool_output("heif-enc", Command::new("heif-enc").arg("-q").arg("90").arg("-o").arg(&output).arg(&input).output())?;
     let heif = read_bounded(&output)?;
     if !sniff(&heif) {
         return Err(MediaError::Decode("heif-enc produced an unrecognized HEIF container".into()));
