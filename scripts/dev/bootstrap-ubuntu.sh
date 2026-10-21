@@ -28,13 +28,13 @@ packages=(
   libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev
   libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev
   libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
-  ffmpeg
+  ffmpeg libheif-examples libheif-plugin-libde265 libheif-plugin-x265
 )
 
 case "${1:---check}" in
   --check)
     missing=0
-    for cmd in rustc cargo rustup python3 pkg-config cmake ninja ffmpeg ffprobe; do
+    for cmd in rustc cargo rustup python3 pkg-config cmake ninja ffmpeg ffprobe heif-dec heif-enc; do
       if command -v "$cmd" >/dev/null 2>&1; then
         printf 'OK      %s: %s\n' "$cmd" "$(command -v "$cmd")"
       else
