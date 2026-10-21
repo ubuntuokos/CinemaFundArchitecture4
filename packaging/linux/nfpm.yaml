@@ -42,6 +42,11 @@ overrides:
       - libxi6
       - libxrandr2
       - mesa-vulkan-drivers
+      # Local HEIF/HEIC import/export via system libheif tools (not bundled).
+      # GPL/LGPL redistribution remains a separate release audit gate.
+      - libheif-examples
+      - libheif-plugin-libde265
+      - libheif-plugin-x265
       - xdg-desktop-portal
   rpm:
     depends:
