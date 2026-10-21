@@ -9,7 +9,7 @@ version=9.0.2
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
 sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1}"
+prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v2}"
 if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
@@ -21,7 +21,7 @@ if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   (
     cd "${tmp}/src"
     ./configure --prefix="$prefix" --disable-doc --disable-debug --disable-ffplay \
-      --disable-autodetect --disable-shared --enable-static
+      --disable-autodetect --disable-shared --enable-static --enable-libdav1d
     make -j2
     make install
   )
@@ -42,7 +42,11 @@ if ! "${prefix}/bin/ffmpeg" -hide_banner -decoders |
   echo "::error::Pinned FFmpeg 9.0.2 has no APV decoder" >&2
   exit 1
 fi
-echo "Verified pinned FFmpeg 9.0.2 with APV:"
+if ! "${prefix}/bin/ffmpeg" -hide_banner -decoders | grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+libdav1d([[:space:]]|$)'; then
+  echo "::error::Pinned FFmpeg 9.0.2 has no libdav1d decoder" >&2
+  exit 1
+fi
+echo "Verified pinned FFmpeg 9.0.2 with APV and libdav1d:"
 "${prefix}/bin/ffmpeg" -version | awk 'NR==1 {print}'
 "${prefix}/bin/ffprobe" -version | awk 'NR==1 {print}'
 "${prefix}/bin/ffmpeg" -buildconf
