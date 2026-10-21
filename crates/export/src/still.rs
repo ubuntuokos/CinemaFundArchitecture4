@@ -152,8 +152,7 @@ mod tests {
             for depth in [8, 16] {
                 let encoded = encode(&source, format, depth).expect("local heif-enc and x265 plugin required");
                 assert!(filmcraft_media::still::heif::sniff(&encoded));
-                let decoded = filmcraft_media::still::heif::decode("export.heic", &encoded)
-                    .expect("libheif HEIC output must decode");
+                let decoded = filmcraft_media::still::heif::decode("export.heic", &encoded).expect("libheif HEIC output must decode");
                 assert_eq!((decoded.width, decoded.height), (64, 64));
             }
         }
