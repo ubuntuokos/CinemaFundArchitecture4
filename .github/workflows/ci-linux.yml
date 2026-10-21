@@ -28,7 +28,14 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Cache FFmpeg 9.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show
@@ -53,7 +60,14 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Cache FFmpeg 9.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Build the Linux Rust command-line engine
         run: cargo build --locked --release -p filmcraft-cli
       - name: Execute compiled engine smoke
@@ -77,24 +91,6 @@ jobs:
           printf '\n[workspace]\n' >> "$tmpdir/Cargo.toml"
           cargo test --offline --manifest-path "$tmpdir/Cargo.toml"
           cargo clippy --offline --manifest-path "$tmpdir/Cargo.toml" --all-targets -- -D warnings
-
-  vendored-ui:
-    name: Vendored craft-ui unit and integration tests (Ubuntu)
-    runs-on: ubuntu-26.04
-    timeout-minutes: 120
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Native UI test dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential pkg-config clang cmake ninja-build \
-            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
-            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
-      - name: Test vendored UI library (no external craft-libs Git)
-        run: bash scripts/dev/test-vendored-ui.sh
 
   rust-architecture-assets:
     name: Rust architecture and asset gates (Ubuntu)
@@ -124,16 +120,24 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
-      - name: Assert Ubuntu 26.04 and APV-capable FFmpeg 8+ oracles
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Cache FFmpeg 9.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
+      - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 APV oracles
         run: |
           . /etc/os-release
           test "$ID" = "ubuntu" && test "$VERSION_ID" = "26.04"
           ffmpeg -version
           ffprobe -version
-          ffmpeg_major="$(ffmpeg -version | head -n 1 | awk '{split($3, a, "."); print a[1]}')"
-          if ! [[ "$ffmpeg_major" =~ ^[0-9]+$ ]] || (( ffmpeg_major < 8 )); then
-            echo "::error::APV oracles require FFmpeg 8.0+; Ubuntu 26.04 is the supported CI OS."
+          ffmpeg_actual="$(ffmpeg -version | awk 'NR==1 {print $3}')"
+          ffprobe_actual="$(ffprobe -version | awk 'NR==1 {print $3}')"
+          if [[ "$ffmpeg_actual" != "9.0.2" || "$ffprobe_actual" != "9.0.2" ]]; then
+            echo "::error::CFA4 CI requires ffmpeg and ffprobe 9.0.2 (got $ffmpeg_actual / $ffprobe_actual)."
             exit 1
           fi
           if ! ffmpeg -hide_banner -decoders | grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+apv([[:space:]]|$)'; then
@@ -143,13 +147,12 @@ jobs:
       - name: Run optimized Rust workspace release tests with FFmpeg oracles
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
-          # Preserve full release opt-level and test coverage without expensive
-          # link-time optimization of test harnesses; CLI smoke checks true release.
+          # Keep release opt-level and all tests, but disable costly link-time optimization
+          # for test harnesses; the CLI smoke still checks the unmodified release profile.
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
           CARGO_BUILD_JOBS: "2"
-        # Upstream craft-ui unit/visual tests run in the dedicated vendored-ui job.
-        run: cargo test --workspace --exclude craft-ui --release --locked --timings
+        run: cargo test --workspace --release --locked --timings
 
   python-qt6-linux:
     name: Python and Qt 6 (Ubuntu)

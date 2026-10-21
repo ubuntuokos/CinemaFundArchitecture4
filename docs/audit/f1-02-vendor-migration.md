@@ -167,3 +167,23 @@ Ubuntu 26.04 rendszerverziójának visszaállítása.
 **Bizonyítási feltétel:** a két PR módosított commitjára indult új CI-futtatás
 mindegyik kötelező jobjának sikere. Az F1-02, a PR-ek és a release gate addig
 **nyitott / draft**, és a `main` ág változatlan.
+
+
+## R0 FFmpeg 9.0.2 – matching the Kubuntu reference host
+
+The supported reference machine is Kubuntu 26.04.1 with **FFmpeg 9.0.2**.
+The Ubuntu 26.04 apt package supplied FFmpeg 8.0.1, so the Linux Rust CI
+now builds **official FFmpeg 9.0.2** from the source archive
+https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz with an independently checked
+SHA256 of `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`.
+The custom executables are isolated from system FFmpeg libraries, cached using
+a commit-pinned GitHub action, and supplied to three jobs (Rust CI, CLI smoke
+and strict release tests). Both `ffmpeg` and `ffprobe` must report precisely
+9.0.2 and the APV decoder must be present; failures are fail-fast.
+
+**Evidence boundary:** the FFmpeg upstream *version* is aligned, but
+different compile-time codec flags and binary hashes may remain until the
+local `ffmpeg -buildconf` is compared with CI. FFmpeg 9 compatibility must
+also be validated against the full CLI/codec/export tests. The separate
+9 GPU-effect failures on GitHub-hosted runners are not presumed fixed by
+this change. Do not merge or mark these checks PASS before an actual new CI run.
