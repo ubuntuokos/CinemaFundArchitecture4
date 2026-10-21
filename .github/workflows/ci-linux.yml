@@ -151,11 +151,11 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils libdav1d-dev
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils libdav1d-dev libsvtav1-dev libaom-dev
       - name: Cache FFmpeg 9.0.2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v2
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v3
           key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v2
       - name: Install verified FFmpeg 9.0.2
         run: bash scripts/ci/install-ffmpeg-9.0.2.sh
@@ -179,6 +179,14 @@ jobs:
             echo "::error::The installed FFmpeg has no libdav1d AV1 decoder."
             exit 1
           fi
+      - name: Assert AV1 oracle encoders
+        run: |
+          for encoder in libsvtav1 libaom-av1; do
+            if ! ffmpeg -hide_banner -encoders | grep -Eq "^[[:space:]]*V[^[:space:]]*[[:space:]]+${encoder}([[:space:]]|$)"; then
+              echo "::error::Missing AV1 oracle encoder: ${encoder}"
+              exit 1
+            fi
+          done
       - name: Run optimized Rust workspace release tests with FFmpeg oracles
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
