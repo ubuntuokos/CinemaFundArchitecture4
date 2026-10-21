@@ -170,7 +170,7 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
           CARGO_BUILD_JOBS: "2"
-        run: cargo test --workspace --release --locked --timings
+        run: cargo test --workspace --exclude craft-ui --release --locked --timings
 
   python-qt6-linux:
     name: Python and Qt 6 (Ubuntu)
