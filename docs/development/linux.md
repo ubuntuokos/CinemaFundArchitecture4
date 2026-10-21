@@ -78,6 +78,56 @@ does not qualify as full CI validation. An unrun, skipped, or failing job is
 The older `cargo xtask wasm` code remains in source for historical compatibility,
 but WASM is **not** a supported CFA4 target or quality gate.
 
+## HEIF / HEIC still images (local libheif, Ubuntu 26.04 AMD64)
+
+CFA4 recognizes `.heic`, `.heif` and `.hif` image files. Its Rust
+`filmcraft-media` still loader checks HEIF file brands **before** the MP4/MOV
+openers, including random-access media browser imports. The local
+`heif-dec` executable decodes the image to a temporary PNG and CFA4
+imports its first picture as an 8-bit RGBA still. In `filmcraft-export`,
+the `still::StillFormat::{Heic, Heif}` **single-frame export** option uses
+`heif-enc` to turn a generated 8-/16-bit PNG into HEVC-based HEIC bytes.
+A 16-bit source is passed to libheif for HEVC 10-bit encoding; this does
+not yet provide end-to-end HDR metadata preservation.
+
+The adapter calls a locally installed subprocess; it introduces **no
+new Cargo dependency**, no linked GPL/LGPL media codec library and **no
+cloud service**. Image conversion uses a private, automatically removed
+temporary directory with file-size guards. A missing `heif-dec` or
+`heif-enc` returns a descriptive error rather than silently skipping
+the feature.
+
+Install the Ubuntu 26.04 packages (or run the development bootstrap
+with `--install`):
+
+~~~bash
+sudo apt-get install --no-install-recommends \
+  libheif-examples libheif-plugin-libde265 libheif-plugin-x265
+heif-dec --version
+heif-enc --version
+~~~
+
+The `.deb` package **recommends** these Ubuntu packages rather than
+bundling their binaries. Other Linux AMD64 distributions must install
+their equivalent libheif CLI and HEVC plugins separately.
+
+Run the targeted Rust oracles on a machine with the plugins installed:
+
+~~~bash
+cargo test --locked -p filmcraft-media --test heif_oracle
+cargo test --locked -p filmcraft-export --lib heic_heif_single_frame_exports_round_trip
+~~~
+
+**Scope and outstanding work:** first-picture import and single-frame
+export only; multiple primary/auxiliary pictures, burst sequences,
+full ICC/EXIF metadata transfer, HDR colour metadata and native
+10-/12-bit display-frame retention are **not yet implemented**. Existing
+media import currently normalizes these pictures to 8-bit sRGB.
+`libheif`, `libde265` and `x265` runtime/plugin licensing, patents
+and package redistribution require an independent release review.
+Installing system packages or passing the HEIF CI oracles does **not**
+constitute distribution approval.
+
 ## AppImage local test tooling (Linux AMD64 only)
 
 The Linux packaging script intentionally never downloads `appimagetool`.
