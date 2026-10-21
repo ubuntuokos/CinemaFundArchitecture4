@@ -78,6 +78,25 @@ does not qualify as full CI validation. An unrun, skipped, or failing job is
 The older `cargo xtask wasm` code remains in source for historical compatibility,
 but WASM is **not** a supported CFA4 target or quality gate.
 
+## AppImage local test tooling (Linux AMD64 only)
+
+The Linux packaging script intentionally never downloads `appimagetool`.
+For an **explicit local packaging test**, install a previously reviewed and
+version-pinned x86_64 appimagetool binary, verify its expected SHA-256 from an
+independent trusted release source, then pass the approved digest to the
+packaging command. Replace the placeholders below with locally verified values:
+
+~~~bash
+export APPIMAGETOOL=/absolute/path/to/reviewed/appimagetool
+export CFA4_APPIMAGETOOL_SHA256=<approved_64_hex_sha256>
+CFA4_ALLOW_LOCAL_PACKAGING=1 bash packaging/linux/package.sh --formats appimage
+~~~
+
+Without the tool/digest, use `--formats 'deb rpm tar'` for a local test,
+subject to their own prerequisites. Never treat a hash copied from the same
+untrusted download as provenance verification. Packaging remains developer-only
+and **not approved for publication**.
+
 ## Python / Qt license and origin requirements
 
 Existing FilmCraft Rust code is MIT OR Apache-2.0 and retains attribution.

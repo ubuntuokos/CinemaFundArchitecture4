@@ -35,7 +35,7 @@ vannak, nem az egyes `crates/*` mappákban; ezt a forrásösszehasonlítás figy
 | ID | Állapot | Teendő |
 |---|---|---|
 | B01 | **NEM IGAZOLT** | A legújabb commiton **nem** futott teljes Rust/Qt6/FFmpeg build és regressziós teszt. A korábbi automatikus zöld CI csak a statikus kaput igazolja. Egyszeri célzott teljes CI az *utolsó* audit/javító commiton szükséges az integráció előtt. |
-| B02 | **NYITOTT KOCKÁZAT** | A `packaging/linux/package.sh` szükség esetén továbbra is egy változó `continuous` AppImage-eszközt tölt le SHA256 ellenőrzés nélkül. Kiadási felhasználás előtt rögzített eszköz és hitelesítés szükséges. |
+| B02 | **JAVÍTVA A FORRÁSBAN; CI ELLENŐRZÉS FÜGGŐBEN** | A `packaging/linux/package.sh` automatikus `continuous` AppImage-letöltését megszüntettük. Csak meglévő, futtatható helyi `APPIMAGETOOL` és kötelező, előzetesen megbízható forrásból rögzített `CFA4_APPIMAGETOOL_SHA256` mellett engedélyezett AppImage-csomagolás. A hash megadása önmagában nem hitelesíti a forrást; az eszköz eredete külön auditálandó. |
 | B03 | **NEM IGAZOLT** | A crates.io tranzitív függőségek, PySide6/Qt, FFmpeg, Flatpak/AppImage és egyéb csomagolóeszközök teljes SBOM-ja, licenc- és terjesztési vizsgálata. |
 | B04 | **NEM IGAZOLT** | Teljes offline build; a két saját forrásra vett Git-függőség önmagában nem függetleníti az egész crates.io/Python ökoszisztémától a projektet. |
 | B05 | **NYITOTT KOCKÁZAT** | Örökölt nem-Linux/AMD64 forrás és csomagolófájlok továbbra is megtalálhatók, de az aktív CI/csomagolás nem célozza őket. Későbbi, külön tesztelt takarításban kezelendők. A `Cargo.lock` Android-rekordjai *nem* önálló Android-buildcélok. |
@@ -56,6 +56,16 @@ Ez a Git-függőségek tiltását, a `Cargo.lock` helyi eredetét, a két
 automatikusan ellenőrzi minden PR/push statikus kapujában. A **meglévő**
 `dependency_audit.py` hajtja végre; nem igényel Cargo-buildet vagy hálózatot.
 A Python egységtesztek és a teljes CI továbbra is csak kifejezett indításra futnak.
+
+### Kiegészítő B02 javítás – AppImage eszközellátás
+
+A változó, ellenőrizetlen AppImage-eszközletöltést kivezettük.
+A csomagoló nem tölthet le futtatható eszközt: csak meglévő helyi
+`APPIMAGETOOL` binárist fogad el, érvényes, előzetesen ellenőrzött
+`CFA4_APPIMAGETOOL_SHA256` értékkel. Eltérés vagy hiány esetén
+hibával leáll, mielőtt az eszközt elindítaná. A statikus CI-kapu
+védi e követelmények fennmaradását. A csomagolás továbbra is csak
+helyi tesztcélra engedélyezett, nem kiadási jóváhagyás.
 
 ## D. Auditdöntés és integrációs sorrend
 

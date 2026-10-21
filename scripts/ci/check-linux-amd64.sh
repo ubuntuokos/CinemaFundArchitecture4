@@ -38,6 +38,12 @@ for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.s
 
 assert 'arch: amd64' in (root / "packaging/linux/nfpm.yaml").read_text()
 assert 'CARGO_BUILD_TARGET' in (root / "packaging/linux/package.sh").read_text()
+package_script = (root / "packaging/linux/package.sh").read_text()
+assert 'CFA4_APPIMAGETOOL_SHA256' in package_script
+assert 'sha256sum -- "$TOOL"' in package_script
+assert 'appimagetool SHA-256 mismatch' in package_script
+assert 'releases/download/continuous/appimagetool' not in package_script
+assert 'curl -fsSL -o "$TOOL"' not in package_script
 
 for filename in ("python/cfa4_devtools/health.py", "python/tests/test_devtools.py",
                  "packaging/linux/test_install.py"):

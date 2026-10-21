@@ -4,7 +4,8 @@
 # Distribution remains blocked by the attribution/branding gate below.
 # Binary compatibility with older Linux distributions must be tested explicitly.
 # Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb rpm tar"].
-# Prerequisites: cargo; nfpm for deb/rpm; appimagetool for AppImage; optional zsyncmake.
+# Prerequisites: cargo; nfpm for deb/rpm; for AppImage: reviewed local appimagetool
+# plus CFA4_APPIMAGETOOL_SHA256; optional zsyncmake. Never auto-download tools.
 set -euo pipefail
 # CFA4 LICENSE/IDENTITY GATE: packaging is developer-only until embedded FilmCraft
 # icons, runtime brand and all third-party attribution have been audited.
@@ -104,16 +105,26 @@ if has appimage; then
   cp "$ROOT/assets/cfa4/hicolor/scalable/apps/$APP_ID.svg" "$APPDIR/$APP_ID.svg"
   ln -s "$APP_ID.svg" "$APPDIR/.DirIcon"
 
+  # Never download or execute a moving upstream binary automatically.
+  # Install a reviewed, version-pinned appimagetool beforehand and supply its
+  # independently verified SHA-256 via CFA4_APPIMAGETOOL_SHA256.
   TOOL="${APPIMAGETOOL:-$(command -v appimagetool || true)}"
-  if [ -z "$TOOL" ]; then
-    TOOL="$CARGO_TARGET_DIR/appimagetool-$ARCH.AppImage"
-    if [ ! -x "$TOOL" ]; then
-      curl -fsSL -o "$TOOL" "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$ARCH.AppImage"
-      chmod +x "$TOOL"
-    fi
+  if [[ -z "$TOOL" || ! -f "$TOOL" || ! -x "$TOOL" ]]; then
+    echo "error: a trusted local appimagetool executable is required (set APPIMAGETOOL)." >&2
+    exit 2
   fi
-  # Absolute, because appimagetool runs in $DIST below (CARGO_TARGET_DIR or APPIMAGETOOL may be
-  # relative, e.g. target/agent-<name>).
+  EXPECTED_SHA="${CFA4_APPIMAGETOOL_SHA256:-}"
+  if [[ ! "$EXPECTED_SHA" =~ ^[[:xdigit:]]{64}$ ]]; then
+    echo "error: set CFA4_APPIMAGETOOL_SHA256 to the approved 64-hex SHA-256 of APPIMAGETOOL." >&2
+    exit 2
+  fi
+  command -v sha256sum >/dev/null || { echo "error: sha256sum is required" >&2; exit 2; }
+  ACTUAL_SHA="$(sha256sum -- "$TOOL" | awk '{print $1}')"
+  if [[ "$ACTUAL_SHA" != "${EXPECTED_SHA,,}" ]]; then
+    echo "error: appimagetool SHA-256 mismatch; refusing to execute unverified binary." >&2
+    exit 2
+  fi
+  # Absolute, because appimagetool runs in $DIST below (APPIMAGETOOL may be relative).
   OUT="$(cd "$DIST" && pwd)/$BASENAME.AppImage"
   APPDIR="$(cd "$APPDIR" && pwd)"
   TOOL="$(cd "$(dirname "$TOOL")" && pwd)/$(basename "$TOOL")"
