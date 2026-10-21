@@ -45,7 +45,8 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils \
+            libheif-examples libheif-plugin-libde265 libheif-plugin-x265
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show
@@ -55,6 +56,10 @@ jobs:
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
         run: cargo xtask ci
+      - name: HEIF/HEIC native import and export oracles
+        run: |
+          cargo test --locked -p filmcraft-media --test heif_oracle
+          cargo test --locked -p filmcraft-export --lib heic_heif_single_frame_exports_round_trip
 
   rust-cli-smoke:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
@@ -152,6 +157,7 @@ jobs:
           oracle_dev_packages=(
             libdav1d-dev libsvtav1enc-dev libaom-dev
             libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev zlib1g-dev
+            libheif-examples libheif-plugin-libde265 libheif-plugin-x265
           )
           missing_packages=()
           for pkg in "${oracle_dev_packages[@]}"; do
