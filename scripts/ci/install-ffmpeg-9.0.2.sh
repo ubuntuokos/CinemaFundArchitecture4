@@ -9,7 +9,7 @@ version=9.0.2
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"
 sha256=8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
-prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v3}"
+prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v4}"
 if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
@@ -21,7 +21,9 @@ if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   (
     cd "${tmp}/src"
     ./configure --prefix="$prefix" --disable-doc --disable-debug --disable-ffplay \
-      --disable-autodetect --disable-shared --enable-static --enable-libdav1d --enable-libsvtav1 --enable-libaom
+      --disable-autodetect --disable-shared --enable-static --enable-gpl \
+      --enable-libdav1d --enable-libsvtav1 --enable-libaom \
+      --enable-libx264 --enable-libx265 --enable-libvpx --enable-libmp3lame --enable-libopus
     make -j2
     make install
   )
@@ -37,22 +39,37 @@ for exe in ffmpeg ffprobe; do
     exit 1
   fi
 done
-if ! "${prefix}/bin/ffmpeg" -hide_banner -decoders |
-  grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+apv([[:space:]]|$)'; then
-  echo "::error::Pinned FFmpeg 9.0.2 has no APV decoder" >&2
+# Keep this comprehensive matrix in sync with the external FFmpeg calls in
+# apps/filmcraft-cli/tests and crates/*/tests (including their common fixture helpers).
+# Check every dependency in one pass, rather than discovering missing codecs
+# only after a long Rust release-test run.
+video_encoders=(libx264 libx265 libvpx libvpx-vp9 libsvtav1 libaom-av1 mpeg2video mjpeg prores_ks dnxhd rawvideo png)
+audio_encoders=(libmp3lame libopus aac ac3 eac3 mp2 flac vorbis pcm_s16le pcm_s24le pcm_dvd)
+video_decoders=(apv libdav1d h264 hevc vp8 vp9 mpeg2video prores dnxhd)
+audio_decoders=(aac ac3 eac3 mp3 mp2 opus vorbis flac)
+encoders="$("${prefix}/bin/ffmpeg" -hide_banner -encoders)"
+decoders="$("${prefix}/bin/ffmpeg" -hide_banner -decoders)"
+missing=()
+check_codecs() {
+  local listing="$1" kind="$2" label="$3"
+  shift 3
+  local codec
+  for codec in "$@"; do
+    if ! awk -v kind="$kind" -v codec="$codec" '$1 ~ ("^" kind) && $2 == codec { found=1 } END { exit !found }' <<< "$listing"; then
+      missing+=("$label: $codec")
+    fi
+  done
+}
+check_codecs "$encoders" V "video encoder" "${video_encoders[@]}"
+check_codecs "$encoders" A "audio encoder" "${audio_encoders[@]}"
+check_codecs "$decoders" V "video decoder" "${video_decoders[@]}"
+check_codecs "$decoders" A "audio decoder" "${audio_decoders[@]}"
+if (("${#missing[@]}" > 0)); then
+  echo "::error::Pinned FFmpeg ${version} is missing ${#missing[@]} required oracle codecs:" >&2
+  printf '::error::  %s\\n' "${missing[@]}" >&2
   exit 1
 fi
-if ! "${prefix}/bin/ffmpeg" -hide_banner -decoders | grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+libdav1d([[:space:]]|$)'; then
-  echo "::error::Pinned FFmpeg 9.0.2 has no libdav1d decoder" >&2
-  exit 1
-fi
-for encoder in libsvtav1 libaom-av1; do
-  if ! "${prefix}/bin/ffmpeg" -hide_banner -encoders | grep -Eq "^[[:space:]]*V[^[:space:]]*[[:space:]]+${encoder}([[:space:]]|$)"; then
-    echo "::error::Pinned FFmpeg 9.0.2 has no ${encoder} encoder" >&2
-    exit 1
-  fi
-done
-echo "Verified pinned FFmpeg 9.0.2 with APV, libdav1d, libsvtav1 and libaom-av1:"
+echo "Verified pinned FFmpeg ${version}: ${#video_encoders[@]} video encoders, ${#audio_encoders[@]} audio encoders, ${#video_decoders[@]} video decoders and ${#audio_decoders[@]} audio decoders."
 "${prefix}/bin/ffmpeg" -version | awk 'NR==1 {print}'
 "${prefix}/bin/ffprobe" -version | awk 'NR==1 {print}'
 "${prefix}/bin/ffmpeg" -buildconf
