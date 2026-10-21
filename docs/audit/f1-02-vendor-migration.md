@@ -1,5 +1,11 @@
 # CFA4 F1-02 – Az örökölt Rust Git-függőségek saját forrásba migrálása
 
+> **Aktuális forrás- és konfigurációs audit (2026-10-21):**
+> [F1-02-SOURCE-CONFIG-GATE-2026-10-21.md](F1-02-SOURCE-CONFIG-GATE-2026-10-21.md).
+> A lentebbi időrendi CI-beszámolók történeti állapotokat írnak le; az aktuális
+> Linux AMD64 CI csak explicit teljes indításra fordít, és FFmpeg 9.0.2-t
+> csak a release-oracle job telepít. A statikus audit PASS; a teljes CI HOLD.
+
 Kapcsolódó ügy: https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/9
 
 Az eredeti CFA4 forrásában két `git+https://github.com/storytold/craft-libs`

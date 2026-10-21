@@ -46,3 +46,6 @@ tomllib.loads((root / "pyproject.toml").read_text())
 tomllib.loads((root / "rust-toolchain.toml").read_text())
 print("PASS: Linux x86_64/AMD64 policy and lightweight configuration checks")
 PY
+# All stdlib, offline and non-compiling: validates Cargo Git sources, lockfile
+# vendor paths, source manifests and individual Git-blob provenance hashes.
+PYTHONPATH=python python3 -m cfa4_devtools.dependency_audit
