@@ -35,3 +35,27 @@ Referencia main SHA: `cdf43fd366e378da266cb6d3c94549a45244be1f`. A main változa
 
 ## Bizonyítás és korlát
 Minden új kapuhoz OS, runner image, commit SHA, parancs, workflow/job ID és egyértelmű PASS/FAIL/BLOCKED/NOT_RUN státusz szükséges. Korábbi teszteredmény csak történeti hivatkozás. A két PR draft; nincs automatikus merge, main-módosítás vagy kiadási engedély. Az új audit az F0-01 környezeti leltárral kezdődik.
+
+## R0-F0-01 — Kubuntu tesztgép, felhasználói környezetleltár (2026-10-21)
+
+**Forrás:** a felhasználó által ebben a beszélgetésben közölt helyi shell-kimenet. **Bizonyítéktípus:** felhasználó által megadott mérési adat, nem közvetlenül a GitHub Actions által lefuttatott teszt. A tényleges multimédia és Qt/Rust integrációra vonatkozó kapuk ettől még nyitottak.
+
+| Paraméter | Rögzített eredmény | Mérési státusz |
+| --- | --- | --- |
+| OS | Ubuntu 26.04.1 LTS, Resolute | OBSERVED |
+| Kernel | 7.0.0-39-generic | OBSERVED |
+| Asztali munkamenet | Wayland, KDE Plasma 6.6.6 | OBSERVED |
+| Qt6 fejlesztői pkg-config | Qt6Core 6.10.2 és Qt6Widgets 6.10.2 | OBSERVED |
+| Rust | rustc 1.95.0, Cargo 1.95.0 | OBSERVED |
+| FFmpeg | 9.0.2 | OBSERVED; APV dekóder még külön vizsgálandó |
+| Vulkan instance | 1.4.341 | OBSERVED |
+| NVIDIA fizikai GPU | RTX A1000, Vulkan API 1.4.351, driver 615.71.09 | ENUMERATED; valódi GPU-render még nem tesztelt |
+| Szoftveres Vulkan GPU | llvmpipe (Mesa 26.2.5, kisak-mesa PPA, LLVM 21.1.8) | ENUMERATED; CPU fallback még nincs tesztelve |
+| Kubuntu/Qt indítási figyelmeztetés | QThreadStorage entry destroyed... a `plasmashell --version` végén | WARNING, önmagában nem bizonyít GUI hibát |
+| Vulkan ICD figyelmeztetés | `libvulkan_dzn.so` `vkCreateInstance` -9: kihagyott driver; továbbá két DisplayProperties figyelmeztetés | WARNING, az NVIDIA GPU ennek ellenére látható; futó Vulkan render még nem bizonyított |
+
+**R0 döntés:** a tesztgép OS/Wayland/Plasma/QtCore/QtWidgets/Rust/Cargo/FFmpeg/GPU **részleges referencia-leltára rendelkezésre áll**. A gép nem tekinthető teljesen validáltnak.
+
+**Nyitott célzott tesztek:** `python3 --version`; `ffprobe -version`; `ffmpeg -hide_banner -decoders | grep -i apv`; Qt6Qml/Qt6Quick/Qt6Multimedia `pkg-config`; `nvidia-smi`; tényleges GPU-s Vulkan swapchain/present, Wayland + Qt6 GUI smoke, Rust–Qt6 híd, képkocka-előnézet, médiaimport/edit/export és CPU fallback. A szoftveres Vulkan ICD jelenléte nem igazolja az alkalmazás fallback-útját. A Qt `QThreadStorage` figyelmeztetését először nem blokkoló megfigyelésként kezeljük.
+
+**Platformeltérés:** a Kubuntu tesztgép FFmpeg 9.0.2-t használ, míg az Ubuntu 26.04-es GitHub CI rendszerén külön fel kell jegyezni a pontos FFmpeg-verziót. A CI 8+ előellenőrzés sikere nem igazolja az FFmpeg 9-es lokális codec-viselkedést. Az eltérő Mesa/PPA és NVIDIA környezetet reprodukálhatósági kockázatként kell kezelni.
