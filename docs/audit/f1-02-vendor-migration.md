@@ -131,3 +131,39 @@ A [PR #8 / run 39488156883](https://github.com/ubuntuokos/CinemaFundArchitecture
 - `--timings`: a Cargo összeállításról készült mérés segíti a következő esetleges regresszió azonosítását.
 
 **Audit gate:** a fentiek teljes, új, sikeres GitHub Actions futtatásig **nincsenek igazolva**, nincs merge vagy F1-02 lezárás. A két PR draft marad; az upstream források, licencek/NOTICE, `Cargo.lock` és a `main` változatlanok.
+
+
+## Ubuntu 26.04 LTS támogatási korrekció – 2026-10-21
+
+**Kötelező célplatform:** Ubuntu **26.04 LTS (Resolute)**. A korábbi
+`.github/workflows/ci-linux.yml` fájlban szereplő `ubuntu-24.04` futtató
+örökölt CI-konfiguráció volt, nem a CFA4 támogatott platformja.
+
+Az F1-02 újrafuttatásainak **valós, végleges hibája**:
+
+- PR #8: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39542032618
+- PR #10: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39542084318
+- Mindkettőben a Rust workspace/Clippy, a CLI, a Python/Qt6 és a vendor-kapuk
+  sikeresek; a release workspace `filmcraft-apv --test oracle` három
+  összehasonlító tesztje sikertelen.
+- A naplóban az ok egyértelmű: `ffmpeg version 6.1.1-3ubuntu5 cannot read apv
+  (needs 8.0+), and FILMCRAFT_REQUIRE_ORACLES=1 forbids skipping oracle tests`.
+  Ezt nem a kodek hibája és nem bizonyított regresszió okozza, hanem az Ubuntu
+  24.04 FFmpeg 6.1.1 csomagja.
+
+**Javítás:** az összes Linux CI-job `runs-on: ubuntu-26.04` értéket kapott,
+beleértve a Python/Qt6, UI-vendor, CLI és provenance jobokat. A 26.04-es Ubuntu
+hivatalos `ffmpeg` csomagja 8.0.1-es verziójú. A release oracle kapu külön
+ellenőrzi a *valódi* Ubuntu 26.04 futtatókörnyezetet, az FFmpeg 8+ főverziót,
+a `ffprobe` jelenlétét és az `apv` dekódert. A
+`FILMCRAFT_REQUIRE_ORACLES=1` beállítás változatlan; a három tesztet nem
+hagyjuk ki. A külön, eredeti release-profillal épülő CLI és a gyorsított
+release-teszt-harness stratégia is változatlan.
+
+A Python/Qt6 job explicit Python `3.13` verzióját ez a célzott OS-korrekció
+nem módosítja; ez külön futtatókörnyezet-kompatibilitási döntés, nem az
+Ubuntu 26.04 rendszerverziójának visszaállítása.
+
+**Bizonyítási feltétel:** a két PR módosított commitjára indult új CI-futtatás
+mindegyik kötelező jobjának sikere. Az F1-02, a PR-ek és a release gate addig
+**nyitott / draft**, és a `main` ág változatlan.

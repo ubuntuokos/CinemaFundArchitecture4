@@ -16,7 +16,7 @@ concurrency:
 jobs:
   rust-linux:
     name: Rust workspace (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - name: Checkout
@@ -41,7 +41,7 @@ jobs:
 
   rust-cli-smoke:
     name: Rust CLI build and runtime smoke (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 90
     steps:
       - name: Checkout
@@ -63,7 +63,7 @@ jobs:
 
   vendored-docpath:
     name: Vendored craft-docpath offline tests (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -80,7 +80,7 @@ jobs:
 
   vendored-ui:
     name: Vendored craft-ui unit and integration tests (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - name: Checkout
@@ -98,7 +98,7 @@ jobs:
 
   rust-architecture-assets:
     name: Rust architecture and asset gates (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -112,7 +112,7 @@ jobs:
 
   rust-release-tests:
     name: Rust workspace tests with FFmpeg oracles (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - name: Checkout
@@ -125,10 +125,21 @@ jobs:
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
-      - name: Assert FFmpeg/ffprobe oracles are installed
+      - name: Assert Ubuntu 26.04 and APV-capable FFmpeg 8+ oracles
         run: |
+          . /etc/os-release
+          test "$ID" = "ubuntu" && test "$VERSION_ID" = "26.04"
           ffmpeg -version
           ffprobe -version
+          ffmpeg_major="$(ffmpeg -version | head -n 1 | awk '{split($3, a, "."); print a[1]}')"
+          if ! [[ "$ffmpeg_major" =~ ^[0-9]+$ ]] || (( ffmpeg_major < 8 )); then
+            echo "::error::APV oracles require FFmpeg 8.0+; Ubuntu 26.04 is the supported CI OS."
+            exit 1
+          fi
+          if ! ffmpeg -hide_banner -decoders | grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+apv([[:space:]]|$)'; then
+            echo "::error::The installed FFmpeg has no APV video decoder."
+            exit 1
+          fi
       - name: Run optimized Rust workspace release tests with FFmpeg oracles
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
@@ -142,7 +153,7 @@ jobs:
 
   python-qt6-linux:
     name: Python and Qt 6 (Ubuntu)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       QT_QPA_PLATFORM: offscreen
