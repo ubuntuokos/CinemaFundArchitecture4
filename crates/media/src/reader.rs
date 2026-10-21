@@ -237,8 +237,7 @@ pub fn open_reader_within(name: &str, reader: SharedReader, reader_openers: &[Re
         if reader.len() > max_whole || reader.len() > 256 * 1024 * 1024 {
             return Err(MediaError::Unsupported(format!("{name}: HEIF image exceeds the import size limit")));
         }
-        let bytes = read_range(&*reader, 0, usize::try_from(reader.len()).unwrap_or(usize::MAX))
-            .map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
+        let bytes = read_range(&*reader, 0, usize::try_from(reader.len()).unwrap_or(usize::MAX)).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
         return crate::open_bytes(name, bytes.into(), extra);
     }
     for o in reader_openers {
