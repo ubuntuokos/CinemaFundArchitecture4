@@ -28,7 +28,14 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Cache FFmpeg 9.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show
@@ -53,7 +60,14 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Cache FFmpeg 9.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Build the Linux Rust command-line engine
         run: cargo build --locked --release -p filmcraft-cli
       - name: Execute compiled engine smoke
@@ -106,16 +120,24 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev ffmpeg
-      - name: Assert Ubuntu 26.04 and APV-capable FFmpeg 8+ oracles
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Cache FFmpeg 9.0.2
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
+      - name: Install verified FFmpeg 9.0.2
+        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
+      - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 APV oracles
         run: |
           . /etc/os-release
           test "$ID" = "ubuntu" && test "$VERSION_ID" = "26.04"
           ffmpeg -version
           ffprobe -version
-          ffmpeg_major="$(ffmpeg -version | head -n 1 | awk '{split($3, a, "."); print a[1]}')"
-          if ! [[ "$ffmpeg_major" =~ ^[0-9]+$ ]] || (( ffmpeg_major < 8 )); then
-            echo "::error::APV oracles require FFmpeg 8.0+; Ubuntu 26.04 is the supported CI OS."
+          ffmpeg_actual="$(ffmpeg -version | awk 'NR==1 {print $3}')"
+          ffprobe_actual="$(ffprobe -version | awk 'NR==1 {print $3}')"
+          if [[ "$ffmpeg_actual" != "9.0.2" || "$ffprobe_actual" != "9.0.2" ]]; then
+            echo "::error::CFA4 CI requires ffmpeg and ffprobe 9.0.2 (got $ffmpeg_actual / $ffprobe_actual)."
             exit 1
           fi
           if ! ffmpeg -hide_banner -decoders | grep -Eq '^[[:space:]]*V[^[:space:]]*[[:space:]]+apv([[:space:]]|$)'; then
