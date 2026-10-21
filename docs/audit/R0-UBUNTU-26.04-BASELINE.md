@@ -59,3 +59,17 @@ Minden új kapuhoz OS, runner image, commit SHA, parancs, workflow/job ID és eg
 **Nyitott célzott tesztek:** `python3 --version`; `ffprobe -version`; `ffmpeg -hide_banner -decoders | grep -i apv`; Qt6Qml/Qt6Quick/Qt6Multimedia `pkg-config`; `nvidia-smi`; tényleges GPU-s Vulkan swapchain/present, Wayland + Qt6 GUI smoke, Rust–Qt6 híd, képkocka-előnézet, médiaimport/edit/export és CPU fallback. A szoftveres Vulkan ICD jelenléte nem igazolja az alkalmazás fallback-útját. A Qt `QThreadStorage` figyelmeztetését először nem blokkoló megfigyelésként kezeljük.
 
 **Platformeltérés:** a Kubuntu tesztgép FFmpeg 9.0.2-t használ, míg az Ubuntu 26.04-es GitHub CI rendszerén külön fel kell jegyezni a pontos FFmpeg-verziót. A CI 8+ előellenőrzés sikere nem igazolja az FFmpeg 9-es lokális codec-viselkedést. Az eltérő Mesa/PPA és NVIDIA környezetet reprodukálhatósági kockázatként kell kezelni.
+
+## R0-F0-02 – Helyi Rust/WGPU tesztazonosság (2026-10-21)
+
+A felhasználó által mért `git rev-parse HEAD` SHA: **`cdf43fd366e378da266cb6d3c94549a45244be1f`**; megegyezik a GitHub `main` HEAD-jével. A `git status --short` eredménye nem ismert. A helyi Rust/WGPU/FFmpeg tesztek tehát a *main commitról* származnak, nem a külön vendorizált PR #8/#10 headekről.
+
+| Helyi Ubuntu/Kubuntu 26.04.1 teszt | Mért eredmény |
+| --- | --- |
+| `cargo test --release --locked -p filmcraft-gpu --lib` | **41/41 PASS** |
+| `cargo test --release --locked -p filmcraft-gpu --lib fx_tests` | **12/12 PASS**, 29 szűrve, 3,96 s |
+| `FILMCRAFT_REQUIRE_ORACLES=1 cargo test --release --locked -p filmcraft-apv --test oracle` | **3/3 PASS**, FFmpeg 9.0.2 |
+| `cargo tree -p filmcraft-gpu` | `wgpu 30.0.1`, `naga 30.0.1`, `ash 0.38.0+1.3.281` |
+| Vulkan diagnosztikai réteg | `VK_LAYER_KHRONOS_validation` nem látszik a keresésben; opcionális |
+
+**GitHub Ubuntu 26.04 CI:** PR #8 és PR #10 tesztjei a különböző grafikus adapterkörnyezetben továbbra is **9 GPU-effekthibával** zártak, bár az APV oracle 3/3 PASS FFmpeg 8.0.1 alatt. A konkrét adapter-/Rgba32Float-képességeltérés még nem bizonyított. Következő lépés: CI adapter- és textúraformátum-leltár, valódi GPU-paritás kontra CPU-fallback tesztkapuk külön validálása; PR-ek nem merge-ölhetők audit PASS jelzés nélkül.
