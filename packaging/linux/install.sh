@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Install the extracted Linux tarball. No sudo is needed for the default prefix.
 set -euo pipefail
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 installation supports Linux x86_64 (AMD64) only." >&2
+  exit 2
+fi
 
 usage() {
   echo 'Usage: ./install.sh [--prefix /absolute/path]'

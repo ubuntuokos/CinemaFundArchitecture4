@@ -33,12 +33,11 @@ if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   echo "CFA4 packages only Linux x86_64 (AMD64)." >&2
   exit 2
 fi
-if [[ -n "${CROSS_ARCH:-}" || -n "${CROSS_TARGET:-}" || -n "${CROSS_COMPILE:-}" || -n "${EMULATOR:-}" ]]; then
-  echo "Cross-compilation is not supported by the CFA4 Linux AMD64 packaging path." >&2
+if [[ -n "${CROSS_ARCH:-}" || -n "${CROSS_TARGET:-}" || -n "${CROSS_COMPILE:-}" || -n "${EMULATOR:-}" || -n "${CARGO_BUILD_TARGET:-}" ]]; then
+  echo "Cross-compilation and CARGO_BUILD_TARGET overrides are not supported by CFA4 packaging." >&2
   exit 2
 fi
 ARCH=x86_64
-DEB_ARCH=amd64
 export FILMCRAFT_MAINTAINER="${FILMCRAFT_MAINTAINER:-CFA4 contributors}"
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 
@@ -88,8 +87,7 @@ fi
 if has deb || has rpm; then
   command -v nfpm >/dev/null || { echo "error: nfpm not found (https://nfpm.goreleaser.com/install/)" >&2; exit 1; }
   export VERSION
-  export NFPM_ARCH="$DEB_ARCH"
-  # nfpm expands env vars in fields like `version` and `arch`, but not in `contents[].src`.
+  # nfpm.yaml pins arch=amd64; only VERSION is read from the environment.
   sed "s|\${STAGE}|$STAGE|g" "$HERE/nfpm.yaml" >"$WORK/nfpm.yaml"
   for fmt in deb rpm; do
     if has "$fmt"; then (cd "$ROOT" && nfpm package -f "$WORK/nfpm.yaml" -p "$fmt" -t "$DIST/$BASENAME.$fmt"); fi

@@ -30,10 +30,14 @@ assert workflow.count("    needs: platform-scope") == 7
 assert workflow.count("    runs-on: ubuntu-26.04") == 8
 assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow
 
-for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.sh"):
+for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.sh",
+                 "packaging/linux/install.sh"):
     src = (root / filename).read_text()
     assert '$(uname -m)' in src and "x86_64" in src, filename
     assert not any(arch in src for arch in ("aarch64", "arm64", "riscv64", "android")), filename
+
+assert 'arch: amd64' in (root / "packaging/linux/nfpm.yaml").read_text()
+assert 'CARGO_BUILD_TARGET' in (root / "packaging/linux/package.sh").read_text()
 
 for filename in ("python/cfa4_devtools/health.py", "python/tests/test_devtools.py",
                  "packaging/linux/test_install.py"):
