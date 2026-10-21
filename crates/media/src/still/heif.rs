@@ -36,7 +36,7 @@ pub fn sniff(bytes: &[u8]) -> bool {
         return false;
     }
     let heif_brand = |brand: &[u8]| {
-        matches!(brand, b"heic" | b"heix" | b"hevc" | b"hevx" | b"heim" | b"heis" | b"mif1" | b"msf1")
+        [b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1"].iter().any(|b| brand == *b)
     };
     bytes.get(8..12).is_some_and(heif_brand)
         || bytes.get(16..size).is_some_and(|tail| tail.chunks_exact(4).any(heif_brand))
