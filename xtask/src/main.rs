@@ -471,7 +471,7 @@ fn ci() -> Result<(), String> {
     let cargo = env!("CARGO");
     fmt_check()?;
     run(Command::new(cargo).args(["clippy", "--workspace", "--all-targets", "--release", "--", "-D", "warnings"]))?;
-    run(Command::new(cargo).args(["test", "--workspace", "--release"]))?;
+    // Release workspace tests, including FFmpeg oracles, run once in the dedicated CI job.
     layers()?;
     assets()
 }
