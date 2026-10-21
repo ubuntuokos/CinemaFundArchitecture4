@@ -16,24 +16,14 @@ fn make_png() -> Vec<u8> {
         }
     }
     let mut png = Vec::new();
-    image::ImageEncoder::write_image(
-        image::codecs::png::PngEncoder::new(&mut png),
-        &rgba,
-        w,
-        h,
-        image::ExtendedColorType::Rgba8,
-    )
-    .unwrap();
+    image::ImageEncoder::write_image(image::codecs::png::PngEncoder::new(&mut png), &rgba, w, h, image::ExtendedColorType::Rgba8).unwrap();
     png
 }
 
 #[test]
 fn heif_and_heic_import_round_trip_through_local_libheif() {
     // The HEIF handler must run before generic ISO-BMFF video openers.
-    fn rejecting_mp4_opener(
-        _name: &str,
-        _bytes: Arc<[u8]>,
-    ) -> Option<filmcraft_media::Result<filmcraft_media::SharedSource>> {
+    fn rejecting_mp4_opener(_name: &str, _bytes: Arc<[u8]>) -> Option<filmcraft_media::Result<filmcraft_media::SharedSource>> {
         Some(Err(filmcraft_media::MediaError::Unsupported("wrong MP4 opener".into())))
     }
     let heif_bytes = heif::encode_png(&make_png()).expect("libheif HEVC encoder must be installed in CI");
