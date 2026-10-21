@@ -1,11 +1,17 @@
-# CFA4 — developer rules (Linux-only Rust / Cargo / Python / Qt 6)
+# CFA4 — developer rules (Linux x86_64/AMD64 only; Rust / Cargo / Python / Qt 6)
 
 This CFA4-specific section takes priority over inherited FilmCraft platform and frontend
 instructions below. Existing engine safety, clean-room codec implementation, open-asset
 attribution and original copyright/licence requirements remain in force.
 
-- Supported build and release target: **Linux only**. Do not add Windows, macOS, FreeBSD or
-  WebAssembly release workflows. Historical source may remain until a tested refactor removes it.
+- Sole supported build and release target: **Linux x86_64 / AMD64**
+  (`x86_64-unknown-linux-gnu`). Do not add Android, AArch64/ARM64, RISC-V,
+  Windows, macOS, FreeBSD or WebAssembly build/release workflows.
+  Historical source and cross-platform Cargo.lock entries can remain until
+  an audited refactor; do not manually delete transitive lockfile dependencies.
+- CI: automatic PR/push checks must stay quick and non-compiling. Full Rust,
+  Python, Qt6, vendored-library and FFmpeg tests require an explicit manual
+  GitHub Actions workflow_dispatch run, and verified success before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
 - **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6

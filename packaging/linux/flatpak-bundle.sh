@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Repackage a FilmCraft Linux tarball as a single-file Flatpak bundle:
 #
-#   $DIST/cfa4-<version>-linux-<arch>.flatpak
+#   $DIST/cfa4-<version>-linux-x86_64.flatpak
 #
 # Usage: packaging/linux/flatpak-bundle.sh [--no-test] [TARBALL]
 #
-# TARBALL defaults to $DIST/cfa4-<version>-linux-<arch>.tar.gz from package.sh. The bundle
-# is built for the host architecture (x86_64 or aarch64), which must match the tarball's.
+# TARBALL defaults to $DIST/cfa4-<version>-linux-x86_64.tar.gz from package.sh.
+# Only Linux x86_64 (AMD64) hosts are supported.
 # Needs flatpak, flatpak-builder and the SVG pixbuf loader (librsvg2-common) for the host's
 # `appstreamcli compose`; the freedesktop runtime and SDK named in the manifest are
 # installed per-user from Flathub. Unless --no-test, the bundle is then installed per-user and
@@ -34,12 +34,11 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-ARCH="$(uname -m)"
-case "$ARCH" in
-  x86_64) ;;
-  aarch64 | arm64) ARCH=aarch64 ;;
-  *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
-esac
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 Flatpak bundles support Linux x86_64 (AMD64) only." >&2
+  exit 2
+fi
+ARCH=x86_64
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 TARBALL="${TARBALL:-$DIST/$BASENAME.tar.gz}"
 [ -f "$TARBALL" ] || { echo "error: $TARBALL not found (run packaging/linux/package.sh --formats tar first)" >&2; exit 1; }

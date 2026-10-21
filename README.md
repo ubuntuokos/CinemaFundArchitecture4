@@ -1,11 +1,11 @@
 # CFA4 — CinemaFoundArchetecture4
 
-CFA4 is a Linux-targeted, further-developed derivative of the open-source **FilmCraft**
+CFA4 is a Linux x86_64 (AMD64)-targeted, further-developed derivative of the open-source **FilmCraft**
 video editor. The inherited Rust multimedia engine remains in place; CFA4 development
 combines **Rust / Cargo**, **Python**, and **Qt 6**.
 
 > **Development status:** repository preparation and gradual Linux migration.
-> Windows and macOS development, builds and releases are **out of scope**.
+> Only Linux x86_64/AMD64 is supported for builds and releases. Android, ARM64, RISC-V, Windows, macOS and FreeBSD are **out of scope**.
 > This repository is **not yet a completed Qt 6 video editor**.
 
 ## Getting started on Linux
@@ -30,7 +30,7 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 | Python tooling | Isolated venv, lint/tests, environment diagnostics |
 | Qt 6 | Experimental PySide6 Widgets shell and offscreen CI smoke |
 | Desktop editing GUI | Inherited egui implementation still in source; Qt port not complete |
-| CI | Linux-only Rust/Python/Qt6 workflow |
+| CI | Linux AMD64: automatic static checks; manually triggered full Rust/Python/Qt6/FFmpeg validation |
 | Releases | Paused until trademark/packaging verification and a successful Linux build |
 
 The Rust CLI is `filmcraft-cli`. In the first Qt iteration it is queried only for

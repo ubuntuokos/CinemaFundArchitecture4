@@ -3,8 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-if [[ "$(uname -s)" != "Linux" ]]; then
-  echo "CFA4 supports Linux only." >&2
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 supports Linux x86_64 (AMD64) only." >&2
   exit 2
 fi
 

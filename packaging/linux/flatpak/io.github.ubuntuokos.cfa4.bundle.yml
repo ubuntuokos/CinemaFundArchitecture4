@@ -1,17 +1,15 @@
-# Flatpak manifest for the single-file bundle attached to every GitHub release
-# (cfa4-<version>-linux-<arch>.flatpak). Build it with packaging/linux/flatpak-bundle.sh.
+# CFA4 Linux x86_64 (AMD64) single-file Flatpak bundle manifest.
+# (cfa4-<version>-linux-x86_64.flatpak). Build via packaging/linux/flatpak-bundle.sh.
 #
-# It repackages the release's own Linux tarball (cfa4-<version>-linux-<arch>.tar.gz,
-# built on Ubuntu 22.04 by package.sh) instead of compiling Rust inside flatpak-builder: no
-# network and no vendored crate sources during the build, a few seconds instead of 20+ minutes,
-# and byte-for-byte the same binaries as the AppImage/deb/rpm. The script unpacks the tarball
-# into `stage/` next to a copy of this file. The binaries need glibc >= 2.35 and load X11,
+# It repackages the Linux x86_64 tarball from package.sh instead of compiling Rust
+# inside flatpak-builder; runtime/glibc compatibility must be validated for each release.
+# The script unpacks the tarball into `stage/` beside this file. The binaries load X11,
 # Wayland, xkbcommon, ALSA and Vulkan at runtime; the freedesktop runtime has all of them (its
 # ALSA routes through PulseAudio/PipeWire), and the GPU driver comes from its
 # org.freedesktop.Platform.GL extension.
 #
 # io.github.ubuntuokos.cfa4.yml (same directory) is the from-source manifest for Flathub. Keep
-# runtime-version and finish-args identical in both (packaging-lint checks this).
+# runtime-version and finish-args identical in both (static policy check).
 id: io.github.ubuntuokos.cfa4
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
@@ -45,6 +43,7 @@ modules:
   - name: cfa4
     buildsystem: simple
     build-commands:
+      - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64
       - install -Dm755 bin/cfa4 /app/bin/cfa4
       - install -Dm755 bin/cfa4-cli /app/bin/cfa4-cli
       - install -Dm644 share/applications/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop

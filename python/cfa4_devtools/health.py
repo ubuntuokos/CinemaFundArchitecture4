@@ -32,6 +32,7 @@ def report() -> dict[str, Any]:
     system_qt = version_of(["pkg-config", "--modversion", "Qt6Core"])
     return {
         "platform": platform.system(),
+        "architecture": platform.machine(),
         "python": platform.python_version(),
         "python_ok": python_ok,
         "rustc": version_of(["rustc", "--version"]),
@@ -49,6 +50,8 @@ def missing_requirements(data: dict[str, Any]) -> list[str]:
     missing = []
     if data["platform"] != "Linux":
         missing.append("Linux")
+    if data.get("architecture") != "x86_64":
+        missing.append("x86_64 (AMD64)")
     if not data["python_ok"]:
         missing.append("Python >= 3.12")
     if data["rustc"] is None:

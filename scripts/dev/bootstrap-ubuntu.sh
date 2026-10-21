@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Linux-only CFA4 developer prerequisite bootstrap (Ubuntu/Debian).
+# CFA4 developer prerequisites for Linux x86_64/AMD64 (Ubuntu/Debian).
 # Default: read-only checks. --install: install system development packages.
 set -euo pipefail
 
-if [[ "$(uname -s)" != "Linux" ]]; then
-  echo "CFA4 development is supported on Linux only." >&2
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 development requires Linux x86_64 (AMD64)." >&2
   exit 2
 fi
 

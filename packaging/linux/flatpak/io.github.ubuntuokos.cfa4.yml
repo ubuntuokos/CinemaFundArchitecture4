@@ -1,4 +1,4 @@
-# CFA4 Linux development Flatpak manifest; not approved for release.
+# CFA4 Linux x86_64 (AMD64) development Flatpak manifest; not approved for release.
 #
 # Flatpak builds run offline, so the crate sources must be vendored first. From the repo root:
 #
@@ -54,6 +54,7 @@ modules:
         CARGO_HOME: /run/build/filmcraft/cargo
         CARGO_NET_OFFLINE: 'true'
     build-commands:
+      - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64
       - cargo --offline build --release --locked -p filmcraft -p filmcraft-cli
       - install -Dm755 target/release/filmcraft /app/bin/cfa4
       # The headless CLI and its stdio MCP server, as in the release bundle (#346).

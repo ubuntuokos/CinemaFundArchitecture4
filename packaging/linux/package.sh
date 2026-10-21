@@ -1,22 +1,10 @@
 #!/usr/bin/env bash
-# Build and package FilmCraft for Linux (<arch> is x86_64 or aarch64, or riscv64 when cross-compiling):
-#
-#   $DIST/cfa4-<version>-linux-<arch>.AppImage  any distro with glibc >= the build host's
-#   $DIST/cfa4-<version>-linux-<arch>.AppImage.zsync  delta updates (needs zsyncmake)
-#   $DIST/cfa4-<version>-linux-<arch>.deb       Debian, Ubuntu, Mint, Pop!_OS, ...
-#   $DIST/cfa4-<version>-linux-<arch>.rpm       Fedora, openSUSE, RHEL, ...
-#   $DIST/cfa4-<version>-linux-<arch>.tar.gz    plain FHS-style tree (bin/, share/)
-#
-# Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb rpm tar"]
-#
-# Needs: cargo; nfpm for deb/rpm (https://nfpm.goreleaser.com); appimagetool for the AppImage
-# (downloaded into $CARGO_TARGET_DIR if missing). Build on an old distro (CI: Ubuntu 22.04,
-# glibc 2.35) so the binaries run on newer ones. Optional: desktop-file-validate, appstreamcli,
-# zsyncmake (the zsync package) for the AppImage's .zsync.
-#
-# Cross-compiling (CI's riscv64 job, tar only): set CROSS_ARCH (riscv64), CROSS_TARGET (the Rust
-# target), CROSS_COMPILE (binutils prefix, for strip) and optionally EMULATOR (qemu-riscv64) to
-# smoke-test the CLI.
+# CFA4 local Linux x86_64 (AMD64) packaging only.
+# Outputs: AppImage, AppImage.zsync, deb, rpm, and tar.gz (cfa4-<version>-linux-x86_64).
+# Distribution remains blocked by the attribution/branding gate below.
+# Binary compatibility with older Linux distributions must be tested explicitly.
+# Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb rpm tar"].
+# Prerequisites: cargo; nfpm for deb/rpm; appimagetool for AppImage; optional zsyncmake.
 set -euo pipefail
 # CFA4 LICENSE/IDENTITY GATE: packaging is developer-only until embedded FilmCraft
 # icons, runtime brand and all third-party attribution have been audited.
@@ -41,26 +29,25 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-ARCH="${CROSS_ARCH:-$(uname -m)}"
-case "$ARCH" in
-  riscv64) DEB_ARCH=riscv64 ;;
-  x86_64) DEB_ARCH=amd64 ;;
-  aarch64 | arm64) ARCH=aarch64; DEB_ARCH=arm64 ;;
-  *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
-esac
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 packages only Linux x86_64 (AMD64)." >&2
+  exit 2
+fi
+if [[ -n "${CROSS_ARCH:-}" || -n "${CROSS_TARGET:-}" || -n "${CROSS_COMPILE:-}" || -n "${EMULATOR:-}" ]]; then
+  echo "Cross-compilation is not supported by the CFA4 Linux AMD64 packaging path." >&2
+  exit 2
+fi
+ARCH=x86_64
+DEB_ARCH=amd64
 export FILMCRAFT_MAINTAINER="${FILMCRAFT_MAINTAINER:-CFA4 contributors}"
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 
 echo "==> FilmCraft $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
-  if [ -n "${CROSS_TARGET:-}" ]; then
-    (cd "$ROOT" && cargo build --release --locked -p filmcraft -p filmcraft-cli --target "$CROSS_TARGET")
-  else
-    (cd "$ROOT" && cargo build --release --locked -p filmcraft -p filmcraft-cli)
-  fi
+  (cd "$ROOT" && cargo build --release --locked -p filmcraft -p filmcraft-cli)
 fi
-BIN="$CARGO_TARGET_DIR/${CROSS_TARGET:+$CROSS_TARGET/}release"
+BIN="$CARGO_TARGET_DIR/release"
 WORK="$CARGO_TARGET_DIR/linux-package"
 STAGE="$WORK/root"
 rm -rf "$WORK"
@@ -68,7 +55,7 @@ rm -rf "$WORK"
 # ---- stage an FHS tree (shared by every format) -------------------------------------------------
 install -Dm755 "$BIN/filmcraft" "$STAGE/usr/bin/cfa4"
 install -Dm755 "$BIN/filmcraft-cli" "$STAGE/usr/bin/cfa4-cli"
-"${CROSS_COMPILE:-}strip" "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
+strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"
 mkdir -p "$STAGE/usr/share/metainfo"
@@ -152,10 +139,6 @@ if has appimage; then
   fi
 fi
 
-if [ -z "${CROSS_TARGET:-}" ]; then
-  "$STAGE/usr/bin/cfa4-cli" --version
-elif [ -n "${EMULATOR:-}" ]; then
-  "$EMULATOR" "$STAGE/usr/bin/cfa4-cli" --version
-fi
+"$STAGE/usr/bin/cfa4-cli" --version
 echo "==> done"
 ls -lh "$DIST"

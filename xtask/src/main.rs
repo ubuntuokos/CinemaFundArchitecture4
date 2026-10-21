@@ -468,6 +468,9 @@ fn fmt_check() -> Result<(), String> {
 }
 
 fn ci() -> Result<(), String> {
+    if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+        return Err("CFA4 CI supports Linux x86_64 (AMD64) only".to_owned());
+    }
     let cargo = env!("CARGO");
     fmt_check()?;
     // craft-ui retains upstream visual tests, run with isolated test-only dependencies in vendored-ui CI.

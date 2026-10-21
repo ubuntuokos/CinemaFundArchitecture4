@@ -1,4 +1,4 @@
-name: CFA4 Linux / Rust / Python / Qt6
+name: CFA4 Linux AMD64 (manual full validation)
 
 on:
   pull_request:
@@ -13,8 +13,23 @@ concurrency:
   group: cfa4-ci-${{ github.ref }}
   cancel-in-progress: true
 
+# PRs and main pushes run only the fast, non-compiling platform/static gate.
+# Expensive Rust/Qt/FFmpeg jobs run ONLY on explicit workflow_dispatch.
+# Full manual validation is required before merging/releasing.
 jobs:
+  platform-scope:
+    name: Linux AMD64 policy and static checks (no builds)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Enforce platform and check shell/static configuration
+        run: bash scripts/ci/check-linux-amd64.sh
+
   rust-linux:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Rust workspace (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 120
@@ -29,13 +44,6 @@ jobs:
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
-      - name: Cache FFmpeg 9.0.2
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
-      - name: Install verified FFmpeg 9.0.2
-        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show
@@ -47,6 +55,8 @@ jobs:
         run: cargo xtask ci
 
   rust-cli-smoke:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Rust CLI build and runtime smoke (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 90
@@ -61,13 +71,6 @@ jobs:
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
-      - name: Cache FFmpeg 9.0.2
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v1
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v1
-      - name: Install verified FFmpeg 9.0.2
-        run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Build the Linux Rust command-line engine
         run: cargo build --locked --release -p filmcraft-cli
       - name: Execute compiled engine smoke
@@ -76,6 +79,8 @@ jobs:
           target/release/filmcraft-cli --demo inspect project
 
   vendored-docpath:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Vendored craft-docpath offline tests (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -93,6 +98,8 @@ jobs:
           cargo clippy --offline --manifest-path "$tmpdir/Cargo.toml" --all-targets -- -D warnings
 
   vendored-ui:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Vendored craft-ui unit and integration tests (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 120
@@ -111,6 +118,8 @@ jobs:
         run: bash scripts/dev/test-vendored-ui.sh
 
   rust-architecture-assets:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Rust architecture and asset gates (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 20
@@ -125,6 +134,8 @@ jobs:
         run: cargo xtask assets
 
   rust-release-tests:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Rust workspace tests with FFmpeg oracles (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 120
@@ -173,6 +184,8 @@ jobs:
         run: cargo test --workspace --exclude craft-ui --release --locked --timings
 
   python-qt6-linux:
+    if: github.event_name == 'workflow_dispatch'
+    needs: platform-scope
     name: Python and Qt 6 (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 30

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Pinned FFmpeg 9.0.2 CLI test oracles, isolated from Ubuntu FFmpeg shared libraries.
 set -euo pipefail
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 FFmpeg CI oracle is supported on Linux x86_64 (AMD64) only." >&2
+  exit 2
+fi
 version=9.0.2
 archive="ffmpeg-${version}.tar.xz"
 source_url="https://ffmpeg.org/releases/${archive}"

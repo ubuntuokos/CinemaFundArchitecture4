@@ -1,7 +1,9 @@
 # CFA4 — Linux development environment
 
-**Supported target platform:** Linux (Ubuntu/Debian development bootstrap; other distributions may install equivalent packages manually).
-**Unsupported:** Windows, macOS, FreeBSD and browser/WASM as release targets. Their historical source files may remain until a separate refactor.
+**Sole build and release target:** Linux x86_64 (AMD64; Rust native target `x86_64-unknown-linux-gnu`).
+Ubuntu/Debian x86_64 development bootstrap; other Linux x86_64 distributions may provide equivalent packages.
+**Unsupported targets:** Android, ARM/AArch64, RISC-V, Windows, macOS, FreeBSD and browser/WASM.
+Historical sources and target-specific transitive entries in Cargo.lock may remain until separately audited; they are not build or release targets.
 
 ## Responsibility boundaries
 
@@ -53,17 +55,22 @@ cargo build --locked -p filmcraft
 cargo xtask ci
 QT_QPA_PLATFORM=offscreen .venv/bin/cfa4-qt --smoke
 .venv/bin/cfa4-qt
-bash scripts/dev/verify-linux.sh
+bash scripts/ci/check-linux-amd64.sh  # fast, no Rust compilation
+bash scripts/dev/verify-linux.sh    # full local checks, explicit opt-in
 ~~~
 
 `cfa4-doctor` is read-only and reports the actual installed versions. `--strict` fails on
 missing Linux/Rust/Cargo/Python/Qt/FFmpeg prerequisites. The GUI shell queries
 `filmcraft-cli --version` when the executable exists; it does not yet edit videos.
 
-The CI workflow `.github/workflows/ci-linux.yml` has two independent jobs:
-Rust (Cargo tests/lints/layering/assets + mandatory oracle tools) and Python/Qt6
-(compile, ruff, pytest and offscreen widget smoke). The Rust test suite is large and
-may expose existing upstream failures. **An unrun or failing job is not a passed job.**
+The CI workflow `.github/workflows/ci-linux.yml` runs only the inexpensive
+`platform-scope` shell/configuration gate on pull requests and main pushes.
+To avoid repeated unnecessary builds, all Rust, FFmpeg, vendored crate, CLI,
+Python and Qt6 jobs run **only** through a manually initiated GitHub Actions
+`workflow_dispatch` execution. Before a merge or release, explicitly run the
+entire workflow and confirm all mandatory jobs pass; a green static gate alone
+does not qualify as full CI validation. An unrun, skipped, or failing job is
+**not** proof that the full CI passed.
 
 The older `cargo xtask wasm` code remains in source for historical compatibility,
 but WASM is **not** a supported CFA4 target or quality gate.

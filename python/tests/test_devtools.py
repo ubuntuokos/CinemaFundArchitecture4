@@ -9,6 +9,7 @@ from cfa4_devtools.qt_app import engine_version, locate_engine
 def test_missing_requirements_are_explicit() -> None:
     data = {
         "platform": "Linux",
+        "architecture": "x86_64",
         "python_ok": True,
         "rustc": "rustc 1.95",
         "cargo": "cargo 1.95",
@@ -21,6 +22,8 @@ def test_missing_requirements_are_explicit() -> None:
     data["cargo"] = None
     data["qt6_system"] = None
     assert missing_requirements(data) == ["cargo", "Qt 6 (pkg-config Qt6Core or PySide6)"]
+    data["architecture"] = "aarch64"
+    assert "x86_64 (AMD64)" in missing_requirements(data)
 
 
 def test_explicit_engine_path_is_checked(tmp_path: Path) -> None:
