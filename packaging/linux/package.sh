@@ -42,7 +42,7 @@ ARCH=x86_64
 export FILMCRAFT_MAINTAINER="${FILMCRAFT_MAINTAINER:-CFA4 contributors}"
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 
-echo "==> FilmCraft $VERSION for Linux $ARCH ($FORMATS)"
+echo "==> CFA4 $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
   (cd "$ROOT" && cargo build --release --locked -p filmcraft -p filmcraft-cli)
@@ -97,7 +97,7 @@ fi
 
 # ---- AppImage -----------------------------------------------------------------------------------
 if has appimage; then
-  APPDIR="$WORK/FilmCraft.AppDir"
+  APPDIR="$WORK/CFA4.AppDir"
   cp -R "$STAGE" "$APPDIR"
   mv "$APPDIR/usr/share/doc" "$WORK/doc-unused"
   ln -s usr/bin/cfa4 "$APPDIR/AppRun"
