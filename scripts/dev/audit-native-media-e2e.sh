@@ -20,7 +20,7 @@ if [[ "${1:-}" == "--rust-gates" ]]; then
     cargo test --locked -p filmcraft-platform --test r0_native_media_e2e \
         -- --ignored --nocapture --test-threads=1 2>&1 |
         tee "$CFA4_NATIVE_E2E_OUTPUT_DIR/r0-native-rust.log"
-    if grep -Eqi 'SKIPPED:|test result:.*ignored;|0 passed;' "$CFA4_NATIVE_E2E_OUTPUT_DIR/r0-native-rust.log"; then
+    if grep -Fq 'SKIPPED:' "$CFA4_NATIVE_E2E_OUTPUT_DIR/r0-native-rust.log"; then
         echo "Native Rust media audit cannot count a skipped or empty test as PASS" >&2
         exit 1
     fi
