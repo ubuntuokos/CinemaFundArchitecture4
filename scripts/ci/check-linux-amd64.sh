@@ -13,6 +13,7 @@ for script in \
   scripts/dev/bootstrap-ubuntu.sh \
   scripts/dev/verify-linux.sh \
   scripts/dev/audit-gpu-hardware.sh \
+  scripts/dev/audit-ffmpeg-hwaccel.sh \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh; do
@@ -36,6 +37,13 @@ assert workflow.count("    runs-on: ubuntu-26.04") == 8
 assert "audit-gpu-hardware.sh" not in workflow, "physical GPU gate must not run on hosted CI"
 assert "CFA4_REQUIRE_GPU_FX" in (root / "crates/gpu/src/fx_tests.rs").read_text()
 assert "CFA4_GPU_HARDWARE_ADAPTER:" in (root / "crates/gpu/src/blend_tests.rs").read_text()
+ffmpeg_hw = (root / "scripts/dev/audit-ffmpeg-hwaccel.sh").read_text()
+for marker in ("CFA4_FFMPEG_BIN", "CFA4_FFPROBE_BIN", "nvenc_", "nvdec_", "av1_nvdec",
+               "av1_software_sample", "scale_vulkan", "libplacebo", "avgblur_opencl",
+               "UNSUPPORTED_HARDWARE", "CFA4_VULKAN_DEVICE", "-buildconf", "-hwaccel_output_format"):
+    assert marker in ffmpeg_hw, f"FFmpeg hardware audit missing {marker}"
+assert "cargo build" not in ffmpeg_hw and "apt-get" not in ffmpeg_hw
+assert "audit-ffmpeg-hwaccel.sh" not in workflow, "do not run physical NVENC on hosted CI"
 assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow
 
 for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.sh",
