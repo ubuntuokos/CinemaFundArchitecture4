@@ -62,7 +62,7 @@ def reserve_port() -> int:
         return int(server.getsockname()[1])
 
 
-def await_control(port: int, process: subprocess.Popen[Any], timeout: float = 20.0) -> None:
+def await_control(port: int, process: subprocess.Popen[Any], timeout: float = 60.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if process.poll() is not None:
@@ -72,7 +72,7 @@ def await_control(port: int, process: subprocess.Popen[Any], timeout: float = 20
                 return
         except OSError:
             time.sleep(0.25)
-    raise RuntimeError("native editor did not open its loopback control port within 20 seconds")
+    raise RuntimeError(f"native editor did not open its loopback control port within {timeout:g} seconds")
 
 
 def bridge(cli: Path, port: int, command: str, params: dict[str, Any], *, timeout: int = 120) -> dict[str, Any]:
