@@ -76,7 +76,9 @@ pub fn register() -> Availability {
         // offered, instead of the former Windows-only Format::Hevc gate.
         filmcraft_export::register_format_probe(filmcraft_export::Format::Hevc, nvenc::hevc_available);
         filmcraft_export::register_hdr_probe(filmcraft_export::Format::Hevc, nvenc::hevc_hdr_available);
+        log::info!("startup stage: scheduling NVENC HEVC probe");
         nvenc::warm_hevc_probe();
+        log::info!("startup stage: NVENC HEVC probe scheduled");
     }
     #[cfg(target_os = "macos")]
     {
@@ -113,7 +115,10 @@ pub fn register() -> Availability {
     #[cfg(target_os = "linux")]
     {
         static ONCE: std::sync::Once = std::sync::Once::new();
-        let mut available = match vaapi::va::probe() {
+        log::info!("startup stage: probing VA-API display");
+        let va_probe = vaapi::va::probe();
+        log::info!("startup stage: VA-API display probe returned");
+        let mut available = match va_probe {
             Ok(driver) => {
                 ONCE.call_once(|| log::info!("hardware decoding through VA-API: {driver}"));
                 filmcraft_codecs::register_video_decoder(vaapi_factory);
@@ -128,7 +133,11 @@ pub fn register() -> Availability {
         // NVIDIA's proprietary driver has no VA-API of its own: NVDEC goes in front, and what it
         // declines still reaches VA-API (a second GPU) and then the software decoders
         #[cfg(target_pointer_width = "64")]
-        match nvdec::cuvid::probe() {
+        {
+            log::info!("startup stage: probing NVDEC CUDA device");
+            let nvdec_probe = nvdec::cuvid::probe();
+            log::info!("startup stage: NVDEC CUDA device probe returned");
+            match nvdec_probe {
             Ok(driver) => {
                 static NVDEC: std::sync::Once = std::sync::Once::new();
                 NVDEC.call_once(|| log::info!("hardware decoding through NVDEC: {driver}"));
@@ -137,6 +146,7 @@ pub fn register() -> Availability {
                 available = Availability::Available("NVDEC");
             }
             Err(why) => log::info!("no NVDEC hardware decoding: {why}"),
+            }
         }
         available
     }
