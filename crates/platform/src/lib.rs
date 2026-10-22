@@ -138,14 +138,14 @@ pub fn register() -> Availability {
             let nvdec_probe = nvdec::cuvid::probe();
             log::info!("startup stage: NVDEC CUDA device probe returned");
             match nvdec_probe {
-            Ok(driver) => {
-                static NVDEC: std::sync::Once = std::sync::Once::new();
-                NVDEC.call_once(|| log::info!("hardware decoding through NVDEC: {driver}"));
-                filmcraft_codecs::register_video_decoder(nvdec_factory);
-                filmcraft_codecs::hw::set_hw_backend("NVDEC");
-                available = Availability::Available("NVDEC");
-            }
-            Err(why) => log::info!("no NVDEC hardware decoding: {why}"),
+                Ok(driver) => {
+                    static NVDEC: std::sync::Once = std::sync::Once::new();
+                    NVDEC.call_once(|| log::info!("hardware decoding through NVDEC: {driver}"));
+                    filmcraft_codecs::register_video_decoder(nvdec_factory);
+                    filmcraft_codecs::hw::set_hw_backend("NVDEC");
+                    available = Availability::Available("NVDEC");
+                }
+                Err(why) => log::info!("no NVDEC hardware decoding: {why}"),
             }
         }
         available
