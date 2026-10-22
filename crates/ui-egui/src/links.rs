@@ -6,10 +6,7 @@ pub const GITHUB: &str = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 pub const ISSUES: &str = "https://github.com/ubuntuokos/CinemaFundArchitecture4/issues";
 
 /// (command id, label, url) for every project link, in menu order.
-pub const ALL: [(&str, &str, &str); 2] = [
-    ("help.github", "CFA4 on GitHub", GITHUB),
-    ("help.reportIssue", "Report a CFA4 issue…", ISSUES),
-];
+pub const ALL: [(&str, &str, &str); 2] = [("help.github", "CFA4 on GitHub", GITHUB), ("help.reportIssue", "Report a CFA4 issue…", ISSUES)];
 
 /// A link the web browser couldn't open (`ui.failedLink`): the address and the reason.
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
