@@ -14,6 +14,7 @@ for script in \
   scripts/dev/verify-linux.sh \
   scripts/dev/audit-gpu-hardware.sh \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
+  scripts/dev/recheck-libplacebo.sh \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh; do
@@ -52,6 +53,17 @@ assert "testsrc2=size=${SOURCE_W}x${SOURCE_H}" in ffmpeg_hw
 assert ffmpeg_hw.count('"$SOURCE_W" "$SOURCE_H"') >= 4
 assert "libplacebo=w=${DOWNSCALE_W}:h=${DOWNSCALE_H}:format=yuv420p" in ffmpeg_hw
 assert ffmpeg_hw.count("check_framehash") >= 4
+# libplacebo owns its Vulkan context; avoid importing the incompatible
+# FFmpeg Vulkan queue flags into older libplacebo API versions.
+libplacebo_branch = ffmpeg_hw.split("    if has_filter libplacebo; then", 1)[1].split("\n    else\n        record libplacebo REQUIRED NOT_BUILT", 1)[0]
+assert "-filter_hw_device vk" not in libplacebo_branch.split("if run_step libplacebo REQUIRED", 1)[1]
+assert "Device Name: $GPU_NAME" in libplacebo_branch
+recheck_lp = (root / "scripts/dev/recheck-libplacebo.sh").read_text()
+for marker in ("-vf \"libplacebo=w=320:h=180:format=yuv420p\"", "source.mkv",
+               "Device Name: $GPU_NAME", "libplacebo.framehash", '"$actual" == 8'):
+    assert marker in recheck_lp, f"libplacebo recheck script missing {marker}"
+assert "-filter_hw_device" not in recheck_lp.split("if ! \"$FFMPEG\"", 1)[1]
+assert "cargo build" not in recheck_lp and "apt-get" not in recheck_lp
 assert "hwdownload,format=nv12" in ffmpeg_hw
 assert "cargo build" not in ffmpeg_hw and "apt-get" not in ffmpeg_hw
 assert "audit-ffmpeg-hwaccel.sh" not in workflow, "do not run physical NVENC on hosted CI"
