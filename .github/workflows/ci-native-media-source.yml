@@ -36,6 +36,8 @@ jobs:
           PYTHONPATH=python python3 -m unittest discover -s python/tests -p test_native_media_e2e.py -v
       - name: Check Rust platform source formatting
         run: cargo fmt --check --package filmcraft-platform
+      - name: Test Linux NVDEC probe avoids blocking VA-API after NVDEC success
+        run: cargo test --locked -p filmcraft-platform --lib successful_nvdec_probe_skips_blocking_vaapi_probe
       - name: Install minimal Linux native linker headers
         run: |
           sudo apt-get update
