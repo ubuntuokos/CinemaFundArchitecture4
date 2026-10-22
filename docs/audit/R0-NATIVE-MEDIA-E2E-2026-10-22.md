@@ -61,9 +61,9 @@ A `target/audit/native-media/<UTC-stamp>/results.json` és `native-editor.log` m
 |---|---|
 | Korábbi GPU/WGPU shader parity #12 | PASS / CLOSED |
 | Korábbi FFmpeg CLI HW gyorsítás #14 | PASS / CLOSED (24 pass + külön libplacebo 8-frame PASS) |
-| CFA4 Linux HEVC encoder gate kivezetése | SOURCE IMPLEMENTED; fordítás és fizikai CFA4 export teszt még függőben |
-| Két CFA4 natív Rust hardver oracle | TEST CODE ADDED / NATIVE NOT_RUN |
-| Valós Rust/egui GUI, Wayland, media import/GUI backend/export | AUTOMATION ADDED / PHYSICAL NOT_RUN |
+| CFA4 Linux HEVC encoder gate kivezetése | SOURCE IMPLEMENTED; fizikai Rust/egui app HEVC NVENC export + FFprobe + CFA4 visszaimport PASS a 2026-10-22-i RTX A1000 futásban |
+| Két külön CFA4 natív Rust hardver oracle (`--rust-gates`) | TEST CODE ADDED / NATIVE NOT_RUN – a Python/egui audit nem futtatja ezeket |
+| Valós Rust/egui GUI, Wayland, médiaimport, H.264/HEVC NVENC export és projekt roundtrip | PASS_NATIVE_ENGINE_PARTIAL_R0 – fizikai teszt 2026-10-22, lásd a 4.1. szakaszt |
 | Kísérleti Qt6 shell létrehozása | NATIVE NOT_RUN; **nem a kész editor** |
 | Valódi Qt6 NLE import/render/export | **NOT_IMPLEMENTED** (portolás külön fejlesztési scope) |
 | CFA4 AV1 *natív* CUDA NVDEC | **NOT_IMPLEMENTED**; FFmpeg CLI AV1 NVDEC megléte nem elegendő |
@@ -71,6 +71,16 @@ A `target/audit/native-media/<UTC-stamp>/results.json` és `native-editor.log` m
 | HEVC + FFmpeg + Qt6 + libheif kiadási licenc/SBOM | OPEN / RELEASE HOLD |
 
 A natív script kimenete akkor sem zárja le önmagában a teljes #16-ot, ha a kontrollált frontendben minden scripted step sikeres: a **kézi GUI-interakció, valós médiahang, AV1 native CUDA, Qt6 NLE hiány és teljes SBOM/licencek** önálló kapuk.
+
+## 4.1. Fizikai RTX A1000 futás – 2026-10-22 19:48 UTC
+
+A célgépen rögzített `results.json` eredménye **`PASS_NATIVE_ENGINE_PARTIAL_R0`**, commit `cb70744c7983e400fe70e870ca1e0c7404e56e4c`. Környezet: Ubuntu 26.04.1 LTS, Linux x86_64, Wayland, Rust 1.95.0, Python 3.14.4, PySide6 6.10.3 / Qt 6.10.2, FFmpeg/FFprobe 9.0.2, NVIDIA RTX A1000 / 615.71.09.
+
+Igazolt lépések: a valódi Rust/egui Wayland ablak válaszolt a loopback vezérlőn; a natív CFA4 H.264, HEVC és AV1 mintát hibamentesen importálta; H.264→H.264 és HEVC→HEVC export egyaránt 8 darab 640×360 frame-et adott, FFprobe szerint helyes kodekkel, majd a CFA4 saját importere mindkét exportot újra beolvasta. A projekt mentése és újranyitása sikerült, 0 hiányzó médiával. A `perf.stats` hardveres számlálói (NVDEC frame, NVENC frame, NVENC session) értéke (0, 0, 0)-ról (53, 16, 2)-re nőtt.
+
+Bizonyítékfájlok a célgépen: `target/audit/native-media/20261022T194835Z/results.json`, `native-editor.log`, `runtime-linkage.json`, `ffmpeg-buildconf.txt`, valamint a két MP4 export és `native-roundtrip.fcproj`. A `target/` futási bizonyítékok nincsenek ebben a commitban feltöltve; a futásazonosító és a JSON eredmény itt kerül rögzítésre.
+
+Ez **részleges alkalmazásszintű PASS**, nem a teljes #16 lezárása: a három bemeneti kodek importja igazolt, de AV1 sequence/dekód/render/export nem; natív CFA4 AV1 NVDEC nincs; a Qt6 shell nem teljes szerkesztő; a kézi GUI/valós hang-szinkron, ICC/HDR/HEIF multi-image és teljes runtime-linkage egyeztetés nyitott. A két külön ignored Rust-oracle státusza továbbra is NOT_RUN.
 
 ## 5. Következő tényleges függőség
 
