@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=CFA4 (development)
+Name=CFA4
 GenericName=Video Editor
 Comment=Linux video editor under development
 Exec=cfa4 %F
