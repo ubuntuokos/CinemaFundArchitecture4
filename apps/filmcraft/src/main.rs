@@ -176,7 +176,7 @@ fn main() -> eframe::Result {
         let msg = format!("CFA4 could not start its window: {e}\n\nUpdating the graphics driver usually fixes this.");
         log::error!("{msg}");
         filmcraft_ui_egui::crash::record(&msg);
-        let _ = rfd::MessageDialog::new().set_title("FilmCraft").set_description(&msg).set_level(rfd::MessageLevel::Error).show();
+        let _ = rfd::MessageDialog::new().set_title("CFA4").set_description(&msg).set_level(rfd::MessageLevel::Error).show();
     }
     started
 }
@@ -328,7 +328,7 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
             app.hooks.run_dialog = Some(Box::new(run_dialog_off_thread));
         }
         app.hooks.open_path = Some(Box::new(open_path));
-        // Help menu, About and Discord links (#642): eframe is built without its `links`
+        // Help menu and About links (#642): eframe is built without its `links`
         // feature, so `ctx.open_url` does nothing on the desktop. Detached, so a launcher
         // that waits for the browser never freezes the UI.
         app.hooks.open_url = Some(Box::new(|url: &str| open::that_detached(url).map_err(|e| e.to_string())));
@@ -350,7 +350,7 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         }));
         app.hooks.pick_open_project = Some(Box::new(|| {
             rfd::FileDialog::new()
-                .add_filter(filmcraft_ui_egui::i18n::t("FilmCraft Project"), &file_filters::extensions(&["fcproj"]))
+                .add_filter(filmcraft_ui_egui::"CFA4 Project (.fcproj)", &file_filters::extensions(&["fcproj"]))
                 .pick_file()
                 .map(|p| p.to_string_lossy().to_string())
         }));
