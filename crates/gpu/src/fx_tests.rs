@@ -31,6 +31,12 @@ const FLIPS: f64 = 0.01;
 fn effects_compositor(device: &wgpu::Device, queue: &wgpu::Queue) -> Option<GpuCompositor> {
     let compositor = GpuCompositor::new(device, queue);
     if compositor.fx.is_none() {
+        // Hosted CI may use the CPU fallback. The dedicated hardware audit
+        // must fail, not produce a false-positive pass, when GPU FX is absent.
+        assert!(
+            std::env::var("CFA4_REQUIRE_GPU_FX").as_deref() != Ok("1"),
+            "CFA4 hardware GPU gate: Rgba32Float compute effect stage unavailable on the selected physical GPU"
+        );
         eprintln!("SKIPPED: this adapter cannot create the GPU Rgba32Float effect stage; CPU fallback is tested separately");
         return None;
     }
