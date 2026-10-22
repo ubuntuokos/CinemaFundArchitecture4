@@ -132,7 +132,9 @@ fn main() -> eframe::Result {
     filmcraft_ui_egui::crash::install(log_dir);
     // OS hardware video decoders (VideoToolbox on macOS) in front of our own; Settings ▸ Playback ▸
     // Hardware decoding switches them off. Unsupported streams and failures use our decoders.
+    log::info!("startup stage: registering hardware decoders");
     register_hardware_decoders();
+    log::info!("startup stage: hardware decoders registered");
     // Which graphics backends and adapter the window starts with: `--graphics`, else the saved
     // mode, which moves on after starts that died before their window painted (a driver crash),
     // see graphics.rs.
@@ -141,13 +143,16 @@ fn main() -> eframe::Result {
     // The GPU export renderer creates its own wgpu instance with every backend; after a start
     // fell back, that would load the driver that failed. Exports then composite on the CPU.
     if graphics.mode() == graphics::Mode::Default {
+        log::info!("startup stage: registering GPU frame renderer");
         register_gpu_frame_renderer();
+        log::info!("startup stage: GPU frame renderer registered");
     }
     let started = loop {
         let mut options = native_options(launch.control_port.is_some());
         // Before eframe creates the wgpu instance (e.g. no OpenGL on Windows, see graphics.rs).
         graphics::apply(&mut options, graphics.mode(), backend_override);
         let app_created = Arc::new(AtomicBool::new(false));
+        log::info!("startup stage: entering egui native event loop");
         let result = eframe::run_native("CFA4 (development)", options, app_creator(launch.clone(), graphics.clone(), Arc::clone(&app_created)));
         let app_created = app_created.load(Ordering::Relaxed);
         match &result {
@@ -202,6 +207,7 @@ fn native_options(agent: bool) -> eframe::NativeOptions {
 fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<AtomicBool>) -> eframe::AppCreator<'static> {
     let Launch { control_port, control_input_only, files, demo, startup_flag, recover, data_dir, graphics: _ } = launch;
     Box::new(move |cc| {
+        log::info!("startup stage: egui app creator entered");
         created.store(true, Ordering::Relaxed);
         // A fallback graphics mode says so in the window, with a button back to the default.
         let notice = graphics.degraded().then(|| {
@@ -226,7 +232,9 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
             }
         }
         // voice-over recording reads the microphone through cpal
+        log::info!("startup stage: creating audio input backend");
         session.voiceover.input = Some(Box::new(audio_in::CpalIn::new(&session.prefs.audio_hardware.device_class)));
+        log::info!("startup stage: audio input backend created");
         let (project, media) = args::project_and_media(&files);
         if let Some(p) = project {
             if let Err(e) = session.execute("file.open", json!({"path": p})) {
@@ -272,7 +280,9 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         }
         // Keep device selection available even when the default device is unavailable.
         // Settings ▸ Audio Hardware is applied on the first frame (`apply_prefs`).
+        log::info!("startup stage: creating audio output backend");
         app.audio = Some(Box::new(audio::CpalOut::new()));
+        log::info!("startup stage: audio output backend created");
         app.hooks.pick_files = Some(Box::new(|exts: &[&str]| {
             rfd::FileDialog::new()
                 .add_filter(filmcraft_ui_egui::i18n::t("Media"), &file_filters::extensions(exts))
@@ -352,7 +362,9 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
             app.ui.show_menu_bar = false;
         }
         if let Some(port) = control_port {
+            log::info!("startup stage: starting control server on 127.0.0.1:{port}");
             let rx = control_server::start(port, cc.egui_ctx.clone());
+            log::info!("startup stage: control server start returned");
             app = if control_input_only { app.with_control_input_only(rx) } else { app.with_control(rx) };
         }
         Ok(Box::new(app))
