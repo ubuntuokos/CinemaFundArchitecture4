@@ -73,10 +73,7 @@ enum LinuxDecoderProbe {
 }
 
 #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
-fn probe_linux_decoder(
-    nvdec_probe: impl FnOnce() -> Result<String, String>,
-    vaapi_probe: impl FnOnce() -> Result<String, String>,
-) -> LinuxDecoderProbe {
+fn probe_linux_decoder(nvdec_probe: impl FnOnce() -> Result<String, String>, vaapi_probe: impl FnOnce() -> Result<String, String>) -> LinuxDecoderProbe {
     let nvdec_error = match nvdec_probe() {
         Ok(driver) => return LinuxDecoderProbe::Nvdec(driver),
         Err(error) => error,
