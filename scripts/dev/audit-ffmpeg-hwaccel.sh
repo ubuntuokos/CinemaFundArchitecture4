@@ -118,30 +118,56 @@ run_probe source_probe "$INPUT" mpeg4 128 72 || true
 run_step cpu_source_decode REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
     -hwaccel none -i "$INPUT" -an -f null - || true
 
+# NVENC encode and NVDEC decode are independent capabilities. Always
+# generate a reference file with a SOFTWARE encoder to exercise NVDEC even if
+# the hardware encoder cannot initialize. Never relabel NVENC FAIL as PASS.
 for codec in h264 hevc; do
     encoder="${codec}_nvenc"
     if ! has_encoder "$encoder"; then
         record "nvenc_$codec" REQUIRED NOT_BUILT "FFmpeg has no $encoder encoder"
-        record "nvdec_$codec" REQUIRED BLOCKED "requires NVENC sample"
+    else
+        file="$OUT/$codec.mp4"
+        if run_step "nvenc_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+            -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p -c:v "$encoder" -preset p4 "$file"; then
+            run_probe "probe_$codec" "$file" "$codec" 128 72 || true
+        fi
+    fi
+
+    # These tiny software references remove the NVENC-to-NVDEC test
+    # dependency; encoded outputs are probed before CUDA decode.
+    if [[ "$codec" == h264 ]]; then
+        sw_encoder=libx264
+    else
+        sw_encoder=libx265
+    fi
+    if ! has_encoder "$sw_encoder"; then
+        record "reference_$codec" REQUIRED NOT_BUILT "FFmpeg has no $sw_encoder encoder"
+        record "nvdec_$codec" REQUIRED BLOCKED "software reference encoder unavailable"
+        record "cpu_decode_$codec" REQUIRED BLOCKED "software reference encoder unavailable"
         continue
     fi
-    file="$OUT/$codec.mp4"
-    if run_step "nvenc_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-        -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p -c:v "$encoder" -preset p4 "$file"; then
-        run_probe "probe_$codec" "$file" "$codec" 128 72 || true
-        if has_hwaccel cuda; then
-            # CUDA output frames force HW decode rather than an implicit CPU fallback.
-            run_step "nvdec_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-                -hwaccel cuda -hwaccel_output_format cuda -i "$file" -an -f null - || true
-        else
-            record "nvdec_$codec" REQUIRED NOT_BUILT "CUDA hwaccel not built"
-        fi
-        run_step "cpu_decode_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-            -hwaccel none -i "$file" -an -f null - || true
-    else
-        record "nvdec_$codec" REQUIRED BLOCKED "NVENC input was not produced"
-        record "cpu_decode_$codec" REQUIRED BLOCKED "NVENC input was not produced"
+    ref_file="$OUT/${codec}-reference.mkv"
+    if ! run_step "reference_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+        -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p \
+        -c:v "$sw_encoder" -preset ultrafast -crf 28 "$ref_file"; then
+        record "nvdec_$codec" REQUIRED BLOCKED "software reference failed to encode"
+        record "cpu_decode_$codec" REQUIRED BLOCKED "software reference failed to encode"
+        continue
     fi
+    if ! run_probe "probe_reference_$codec" "$ref_file" "$codec" 128 72; then
+        record "nvdec_$codec" REQUIRED BLOCKED "reference stream failed ffprobe validation"
+        record "cpu_decode_$codec" REQUIRED BLOCKED "reference stream failed ffprobe validation"
+        continue
+    fi
+    if has_hwaccel cuda; then
+        # CUDA output frames force HW decode rather than an implicit CPU fallback.
+        run_step "nvdec_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+            -hwaccel cuda -hwaccel_output_format cuda -i "$ref_file" -an -f null - || true
+    else
+        record "nvdec_$codec" REQUIRED NOT_BUILT "CUDA hwaccel not built"
+    fi
+    run_step "cpu_decode_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+        -hwaccel none -i "$ref_file" -an -f null - || true
 done
 
 # Ampere RTX A1000 has AV1 NVDEC but not AV1 NVENC. Encoder listing alone
