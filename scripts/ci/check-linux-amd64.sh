@@ -13,10 +13,14 @@ for script in \
   scripts/dev/bootstrap-ubuntu.sh \
   scripts/dev/verify-linux.sh \
   scripts/dev/audit-gpu-hardware.sh \
+  scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh; do
   bash -n "$script"
 done
+# Strict GPU hardware log parser regression (only shell + temporary logs,
+# no cargo, no GPU and no expensive full Rust/Qt/FFmpeg tests).
+bash scripts/ci/test-gpu-hardware-log.sh
 python3 - <<'PY'
 from pathlib import Path
 import ast
