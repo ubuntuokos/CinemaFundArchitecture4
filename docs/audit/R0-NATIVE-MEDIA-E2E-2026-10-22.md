@@ -62,7 +62,7 @@ A `target/audit/native-media/<UTC-stamp>/results.json` és `native-editor.log` m
 | Korábbi GPU/WGPU shader parity #12 | PASS / CLOSED |
 | Korábbi FFmpeg CLI HW gyorsítás #14 | PASS / CLOSED (24 pass + külön libplacebo 8-frame PASS) |
 | CFA4 Linux HEVC encoder gate kivezetése | SOURCE IMPLEMENTED; fizikai Rust/egui app HEVC NVENC export + FFprobe + CFA4 visszaimport PASS a 2026-10-22-i RTX A1000 futásban |
-| Két külön CFA4 natív Rust hardver oracle (`--rust-gates`) | TEST CODE ADDED / NATIVE NOT_RUN – a Python/egui audit nem futtatja ezeket |
+| Két külön CFA4 natív Rust hardver oracle (`r0_native_media_e2e`) | PHYSICAL PASS – RTX A1000: 2 passed, 0 failed, 0 ignored; 9.45 s |
 | Valós Rust/egui GUI, Wayland, médiaimport, H.264/HEVC NVENC export és projekt roundtrip | PASS_NATIVE_ENGINE_PARTIAL_R0 – fizikai teszt 2026-10-22, lásd a 4.1. szakaszt |
 | Kísérleti Qt6 shell létrehozása | NATIVE NOT_RUN; **nem a kész editor** |
 | Valódi Qt6 NLE import/render/export | **NOT_IMPLEMENTED** (portolás külön fejlesztési scope) |
@@ -80,7 +80,9 @@ Igazolt lépések: a valódi Rust/egui Wayland ablak válaszolt a loopback vezé
 
 Bizonyítékfájlok a célgépen: `target/audit/native-media/20261022T194835Z/results.json`, `native-editor.log`, `runtime-linkage.json`, `ffmpeg-buildconf.txt`, valamint a két MP4 export és `native-roundtrip.fcproj`. A `target/` futási bizonyítékok nincsenek ebben a commitban feltöltve; a futásazonosító és a JSON eredmény itt kerül rögzítésre.
 
-Ez **részleges alkalmazásszintű PASS**, nem a teljes #16 lezárása: a három bemeneti kodek importja igazolt, de AV1 sequence/dekód/render/export nem; natív CFA4 AV1 NVDEC nincs; a Qt6 shell nem teljes szerkesztő; a kézi GUI/valós hang-szinkron, ICC/HDR/HEIF multi-image és teljes runtime-linkage egyeztetés nyitott. A két külön ignored Rust-oracle státusza továbbra is NOT_RUN.
+Ez **részleges alkalmazásszintű PASS**, nem a teljes #16 lezárása: a három bemeneti kodek importja igazolt, de AV1 sequence/dekód/render/export nem; natív CFA4 AV1 NVDEC nincs; a Qt6 shell nem teljes szerkesztő; a kézi GUI/valós hang-szinkron, ICC/HDR/HEIF multi-image és teljes runtime-linkage egyeztetés nyitott.
+
+A két külön fizikai Rust-oracle ugyanazon célgépen sikeresen lefutott: `physical_nvdec_h264_hevc_reimport_matches_cfa4_software` és `physical_nvenc_h264_and_hevc_export_roundtrip`. Eredmény: **2 passed; 0 failed; 0 ignored; 9.45 s**. A célgépen rögzített napló útvonala a dátumgenerált mappában van: `target/audit/native-media/rust-oracles/<UTC-stamp>/r0-native-rust.log`. A tesztek H.264/HEVC NVDEC frame-paritást, valamint H.264/HEVC NVENC exportot, CFA4 visszaimportot és FFprobe ellenőrzést végeztek.
 
 ## 5. Következő tényleges függőség
 
