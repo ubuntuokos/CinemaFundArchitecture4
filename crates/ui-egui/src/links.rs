@@ -31,7 +31,7 @@ pub fn menu_hint(command: &str) -> Option<String> {
         match command {
             "help.revealLogFiles" => tl!("Saves this session's log and shows it in your file manager."),
             "help.systemCompatibilityReport" => tl!("Shows a report on this computer."),
-            "app.about" => "Shows the version, CFA4 project links and credits in the About window.".to_string(),
+            "app.about" => "Shows the version, CFA4 project links and credits in the About window.",
             _ => return None,
         }
         .to_string(),
