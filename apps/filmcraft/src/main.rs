@@ -471,7 +471,7 @@ fn run_dialog_off_thread(dialog: filmcraft_ui_egui::native_dialogs::FileDialog) 
     use filmcraft_ui_egui::native_dialogs::FileDialog;
     let t = |s: &str| filmcraft_ui_egui::i18n::t(s).to_string();
     let media = t("Media");
-    let project = "CFA4 Project (.fcproj)";
+    let project = "CFA4 Project (.fcproj)".to_string();
     let project_exts = project_patterns();
     let dialog = prepare_dialog(dialog);
     let (tx, rx) = std::sync::mpsc::channel();
