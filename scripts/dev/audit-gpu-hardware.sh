@@ -9,6 +9,30 @@ cd "$ROOT"
 
 die() { echo "CFA4 HARDWARE GPU AUDIT FAILED: $*" >&2; exit 1; }
 
+# Validate an existing cargo test --nocapture transcript, without compiling
+# again. The `0 failed` text in a SUCCESS summary MUST NOT be treated as a
+# failure. Match actual FAILED results or explicit hardware-stage skips only.
+check_fx_log() {
+    local log="$1"
+    [[ -r "$log" ]] || die "unreadable GPU FX test log: $log"
+    grep -Fq 'CFA4_GPU_HARDWARE_ADAPTER:' "$log" || die "no physical GPU adapter recorded in $log"
+    grep -Fq 'test result: ok. 12 passed; 0 failed; 0 ignored;' "$log" || die "expected 12 passing FX tests in $log"
+    if grep -Eqi 'SKIPPED:|no GPU adapter; skipping|(^|[[:space:]])test result:[[:space:]]*FAILED([[:space:];.]|$)|^test fx_tests::[^[:space:]]+[[:space:]]+\.\.\.[[:space:]]+FAILED([[:space:]]|$)' "$log"; then
+        die "skipped or failed GPU effect tests found in $log"
+    fi
+}
+
+# The existing hardware trace can be rechecked after updating this script.
+# This does not independently verify the recorded commit/host metadata.
+if [[ "${1:-}" == "--verify-log" ]]; then
+    [[ "$#" -eq 2 ]] || die "usage: $0 --verify-log PATH"
+    check_fx_log "$2"
+    echo "PASS: existing 12/12 physical GPU FX log has no skipped or failed tests"
+    echo "Note: verify the companion hardware metadata and commit SHA separately."
+    exit 0
+fi
+[[ "$#" -eq 0 ]] || die "usage: $0 [--verify-log PATH]"
+
 [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || die "Linux x86_64 (AMD64) is required"
 [[ -f /etc/os-release ]] || die "cannot identify Ubuntu OS"
 # shellcheck source=/dev/null
@@ -55,13 +79,8 @@ if ! CFA4_REQUIRE_GPU_FX=1 WGPU_BACKEND=vulkan \
     die "a strict GPU parity or fallback test failed; inspect $LOG"
 fi
 
-# The exact test count is deliberately pinned: disappearing tests, hidden
-# skips, or missing physical adapter evidence must not turn into a green audit.
-grep -Fq 'CFA4_GPU_HARDWARE_ADAPTER:' "$LOG" || die "no physical adapter recorded in $LOG"
-grep -Fq 'test result: ok. 12 passed; 0 failed; 0 ignored;' "$LOG" || die "expected 12 passing FX tests; inspect $LOG"
-if grep -Eqi 'SKIPPED:|no GPU adapter; skipping|test result:.*failed' "$LOG"; then
-    die "skipped or failed GPU effects found in $LOG"
-fi
+# No accepted failure or silent skip in the Rust test transcript.
+check_fx_log "$LOG"
 
 echo "PASS: 12 GPU FX parity/fallback tests on a physical Vulkan NVIDIA/AMD adapter"
 echo "Attach the metadata and test log to CFA4 GPU audit issue #12."
