@@ -19,9 +19,8 @@ use filmcraft_render::SourceMap;
 use filmcraft_time::{FrameRate, Tick, TimeRange};
 
 fn samples_dir() -> PathBuf {
-    let dir = std::env::var_os("CFA4_MEDIA_FIXTURE_DIR")
-        .map(PathBuf::from)
-        .expect("CFA4_MEDIA_FIXTURE_DIR must point to the measured FFmpeg #14 evidence folder");
+    let dir =
+        std::env::var_os("CFA4_MEDIA_FIXTURE_DIR").map(PathBuf::from).expect("CFA4_MEDIA_FIXTURE_DIR must point to the measured FFmpeg #14 evidence folder");
     assert!(dir.is_dir(), "missing source evidence folder {}", dir.display());
     dir
 }
@@ -30,9 +29,7 @@ fn first_eight_frames(path: &Path) -> Vec<Arc<filmcraft_frame::VideoFrame>> {
     let bytes: Arc<[u8]> = std::fs::read(path).expect("read encoded export").into();
     let source = filmcraft_codecs::open_bytes(&path.to_string_lossy(), bytes).expect("CFA4 imports its own MP4 export");
     let rate = source.info().frame_rate();
-    (0..8)
-        .map(|i| source.video_frame(FrameRequest::full(rate.tick_of(i))).expect("CFA4 decodes exported frame"))
-        .collect()
+    (0..8).map(|i| source.video_frame(FrameRequest::full(rate.tick_of(i))).expect("CFA4 decodes exported frame")).collect()
 }
 
 #[test]
@@ -97,9 +94,8 @@ fn physical_nvenc_h264_and_hevc_export_roundtrip() {
     filmcraft_platform::register();
     assert!(filmcraft_export::available(Format::Hevc), "CFA4 Linux HEVC NVENC format is not available");
     let (project, seq, sources) = project_8_frames();
-    let outdir = std::env::var_os("CFA4_NATIVE_E2E_OUTPUT_DIR")
-        .map(PathBuf::from)
-        .expect("CFA4_NATIVE_E2E_OUTPUT_DIR must identify an audit evidence directory");
+    let outdir =
+        std::env::var_os("CFA4_NATIVE_E2E_OUTPUT_DIR").map(PathBuf::from).expect("CFA4_NATIVE_E2E_OUTPUT_DIR must identify an audit evidence directory");
     std::fs::create_dir_all(&outdir).expect("create audit output directory");
     for (codec, format) in [("h264", Format::H264), ("hevc", Format::Hevc)] {
         let path = outdir.join(format!("cfa4-native-{codec}.mp4"));
@@ -112,8 +108,7 @@ fn physical_nvenc_h264_and_hevc_export_roundtrip() {
             ..Default::default()
         };
         let before = hw_encode_stats();
-        let report = export(&project, seq, &settings, &sources, &Progress::default())
-            .unwrap_or_else(|e| panic!("{codec}: real CFA4 export failed: {e}"));
+        let report = export(&project, seq, &settings, &sources, &Progress::default()).unwrap_or_else(|e| panic!("{codec}: real CFA4 export failed: {e}"));
         let after = hw_encode_stats();
         assert_eq!(report.frames, 8, "{codec}: exported frame count");
         assert!(after.sessions > before.sessions, "{codec}: NVENC session did not start");
@@ -121,9 +116,18 @@ fn physical_nvenc_h264_and_hevc_export_roundtrip() {
         assert_eq!(first_eight_frames(&path).len(), 8, "{codec}: CFA4 cannot reimport its export");
         let ffprobe = std::env::var_os("CFA4_FFPROBE_BIN").unwrap_or_else(|| "ffprobe".into());
         let output = std::process::Command::new(ffprobe)
-            .args(["-v", "error", "-count_frames", "-select_streams", "v:0",
-                "-show_entries", "stream=codec_name,width,height,nb_read_frames",
-                "-of", "default=nw=1", &path.to_string_lossy()])
+            .args([
+                "-v",
+                "error",
+                "-count_frames",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=codec_name,width,height,nb_read_frames",
+                "-of",
+                "default=nw=1",
+                &path.to_string_lossy(),
+            ])
             .output()
             .expect("ffprobe is required on the local audit machine");
         assert!(output.status.success(), "{codec}: ffprobe: {}", String::from_utf8_lossy(&output.stderr));
