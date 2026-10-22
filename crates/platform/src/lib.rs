@@ -68,8 +68,16 @@ pub enum Availability {
 /// harmless). Streams they do not take, and every stream while hardware decoding is Off, keep
 /// using FilmCraft's own decoders.
 pub fn register() -> Availability {
-    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
-    filmcraft_export::register_encoder(nvenc::export::factory);
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    {
+        filmcraft_export::register_encoder(nvenc::export::factory);
+        // Linux uses the same CUDA NVENC HEVC implementation as H.264. A
+        // successful hardware probe is required before the HEVC format is
+        // offered, instead of the former Windows-only Format::Hevc gate.
+        filmcraft_export::register_format_probe(filmcraft_export::Format::Hevc, nvenc::hevc_available);
+        filmcraft_export::register_hdr_probe(filmcraft_export::Format::Hevc, nvenc::hevc_hdr_available);
+        nvenc::warm_hevc_probe();
+    }
     #[cfg(target_os = "macos")]
     {
         filmcraft_codecs::register_video_decoder(videotoolbox_factory);
