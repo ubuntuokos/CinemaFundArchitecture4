@@ -12,6 +12,7 @@ for script in \
   packaging/linux/install.sh \
   scripts/dev/bootstrap-ubuntu.sh \
   scripts/dev/verify-linux.sh \
+  scripts/dev/audit-gpu-hardware.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh; do
   bash -n "$script"
@@ -28,6 +29,9 @@ assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 7
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
 assert workflow.count("    needs: platform-scope") == 7
 assert workflow.count("    runs-on: ubuntu-26.04") == 8
+assert "audit-gpu-hardware.sh" not in workflow, "physical GPU gate must not run on hosted CI"
+assert "CFA4_REQUIRE_GPU_FX" in (root / "crates/gpu/src/fx_tests.rs").read_text()
+assert "CFA4_GPU_HARDWARE_ADAPTER:" in (root / "crates/gpu/src/blend_tests.rs").read_text()
 assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow
 
 for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.sh",
