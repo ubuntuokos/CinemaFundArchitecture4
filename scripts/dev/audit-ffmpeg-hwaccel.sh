@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # CFA4 R0 FFmpeg 9.0.2 hardware-media audit; Ubuntu 26.04 Linux AMD64.
 # Run locally on a physical NVIDIA GPU, not on a hosted CI software runner.
-# No installs, downloads or Rust builds. Uses 8-frame synthetic clips only.
+# No installs, downloads or Rust builds. Uses eight standard-size frames only.
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -109,14 +109,22 @@ check_video() {
 run_probe() {
     run_step "$1" REQUIRED check_video "$2" "$3" "$4" "$5"
 }
+# 128x72 was rejected by the physical RTX A1000 NVENC and AV1 NVDEC:
+# NVENC: "Frame Dimension less than the minimum supported value".
+# AV1 NVDEC: minimum height 128, so 72 cannot initialize.
+# Keep this tiny but comfortably supported 16:9 SD/HD sample consistent.
+SOURCE_W=640
+SOURCE_H=360
+DOWNSCALE_W=320
+DOWNSCALE_H=180
 FFCOMMON=(-nostdin -hide_banner -loglevel verbose -y)
 INPUT="$OUT/source.mkv"
 if ! run_step synthetic_source REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-    -f lavfi -i "testsrc2=size=128x72:rate=8" -frames:v 8 -an \
+    -f lavfi -i "testsrc2=size=${SOURCE_W}x${SOURCE_H}:rate=8" -frames:v 8 -an \
     -c:v mpeg4 -q:v 4 "$INPUT"; then
     die "cannot generate the synthetic video; inspect $OUT"
 fi
-run_probe source_probe "$INPUT" mpeg4 128 72 || true
+run_probe source_probe "$INPUT" mpeg4 "$SOURCE_W" "$SOURCE_H" || true
 run_step cpu_source_decode REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
     -hwaccel none -i "$INPUT" -an -f null - || true
 
@@ -131,7 +139,7 @@ for codec in h264 hevc; do
         file="$OUT/$codec.mp4"
         if run_step "nvenc_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
             -i "$INPUT" -an -frames:v 8 -pix_fmt yuv420p -c:v "$encoder" -preset p4 "$file"; then
-            run_probe "probe_$codec" "$file" "$codec" 128 72 || true
+            run_probe "probe_$codec" "$file" "$codec" "$SOURCE_W" "$SOURCE_H" || true
         fi
     fi
 
@@ -156,7 +164,7 @@ for codec in h264 hevc; do
         record "cpu_decode_$codec" REQUIRED BLOCKED "software reference failed to encode"
         continue
     fi
-    if ! run_probe "probe_reference_$codec" "$ref_file" "$codec" 128 72; then
+    if ! run_probe "probe_reference_$codec" "$ref_file" "$codec" "$SOURCE_W" "$SOURCE_H"; then
         record "nvdec_$codec" REQUIRED BLOCKED "reference stream failed ffprobe validation"
         record "cpu_decode_$codec" REQUIRED BLOCKED "reference stream failed ffprobe validation"
         continue
@@ -197,7 +205,7 @@ if (( ${#av1_cmd[@]} == 0 )); then
     record av1_software_sample REQUIRED NOT_BUILT "no libsvtav1/libaom-av1 encoder"
     record av1_nvdec REQUIRED BLOCKED "no AV1 sample"
 elif run_step av1_software_sample REQUIRED "${av1_cmd[@]}"; then
-    run_probe av1_software_probe "$AV1_INPUT" av1 128 72 || true
+    run_probe av1_software_probe "$AV1_INPUT" av1 "$SOURCE_W" "$SOURCE_H" || true
     if has_hwaccel cuda; then
         run_step av1_nvdec REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
             -hwaccel cuda -hwaccel_output_format cuda -i "$AV1_INPUT" -an -f null - || true
@@ -218,19 +226,33 @@ if has_hwaccel vulkan; then
         run_step scale_vulkan REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
             -init_hw_device "vulkan=vk:$VULKAN_DEVICE" -filter_hw_device vk \
             -i "$INPUT" -an -frames:v 8 \
-            -vf "format=nv12,hwupload,scale_vulkan=w=64:h=36,hwdownload,format=nv12" \
+            -vf "format=nv12,hwupload,scale_vulkan=w=${DOWNSCALE_W}:h=${DOWNSCALE_H},hwdownload,format=nv12" \
             -f null - || true
     else
         record scale_vulkan REQUIRED NOT_BUILT "scale_vulkan filter not built"
     fi
     if has_filter libplacebo; then
-        run_step libplacebo REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+        # FFmpeg 9 libplacebo imports software frames into its Vulkan renderer
+        # itself. Unlike scale_vulkan, explicit hwupload/hwdownload is not
+        # needed; forcing that path broke filtergraph negotiation in the
+        # initial 128x72 oracle (while NVIDIA Vulkan initialization worked).
+        # Debug logs preserve actual filter-initialization errors for review.
+        # Framehash proves 8 real output frames (not a 0-frame false green).
+        if run_step libplacebo REQUIRED "$FFMPEG" \
+            -nostdin -hide_banner -loglevel debug -y \
             -init_hw_device "vulkan=vk:$VULKAN_DEVICE" -filter_hw_device vk \
             -i "$INPUT" -an -frames:v 8 \
-            -vf "format=nv12,hwupload,libplacebo=w=64:h=36,hwdownload,format=nv12" \
-            -f null - || true
+            -vf "libplacebo=w=${DOWNSCALE_W}:h=${DOWNSCALE_H}:format=yuv420p" \
+            -f framehash "$OUT/libplacebo.framehash"; then
+            run_step libplacebo_framecheck REQUIRED \
+                awk '!/^#/ && NF { count++ } END { if (count != 8) { print "Expected 8 libplacebo output frames, got " count > "/dev/stderr"; exit 1 } }' \
+                "$OUT/libplacebo.framehash" || true
+        else
+            record libplacebo_framecheck REQUIRED BLOCKED "libplacebo framehash not produced"
+        fi
     else
         record libplacebo REQUIRED NOT_BUILT "libplacebo filter not built"
+        record libplacebo_framecheck REQUIRED BLOCKED "libplacebo filter not built"
     fi
 else
     record scale_vulkan REQUIRED NOT_BUILT "Vulkan hwaccel not built"
@@ -249,6 +271,7 @@ fi
 {
     printf 'CFA4 R0 FFmpeg hardware audit (Ubuntu 26.04 / AMD64)\n'
     printf 'FFmpeg: %s\nGPU: %s\nGit SHA: %s\n' "$version" "$GPU_NAME" "$(git rev-parse HEAD)"
+    printf 'Synthetic video: %sx%s, 8 frames @ 8 fps\n' "$SOURCE_W" "$SOURCE_H"
     printf 'FAIL cases: %d\nNOT_BUILT required cases: %d\nBLOCKED required cases: %d\n' "$failures" "$not_built" "$blocked"
     printf 'AV1_NVENC=UNSUPPORTED_HARDWARE is expected for RTX A1000.\n'
     printf 'Read results.tsv, logs/*.log and buildconf before closing issue #14.\n'
