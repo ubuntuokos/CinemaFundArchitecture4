@@ -276,7 +276,22 @@ def main(argv: list[str] | None = None) -> int:
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     proc.wait(timeout=5)
-    except (OSError, RuntimeError, subprocess.TimeoutExpired, ValueError, KeyError) as exc:
+    except subprocess.TimeoutExpired as exc:
+        def captured(value: str | bytes | None) -> str:
+            if value is None:
+                return ""
+            if isinstance(value, bytes):
+                return value.decode("utf-8", errors="replace")
+            return value
+
+        checkpoint("error", {
+            "message": str(exc),
+            "stdout": captured(exc.stdout)[-4000:],
+            "stderr": captured(exc.stderr)[-4000:],
+        })
+        print(f"CFA4 native media E2E FAIL: {exc}", file=sys.stderr)
+        return 1
+    except (OSError, RuntimeError, ValueError, KeyError) as exc:
         checkpoint("error", str(exc))
         print(f"CFA4 native media E2E FAIL: {exc}", file=sys.stderr)
         return 1
