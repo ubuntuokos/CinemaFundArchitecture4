@@ -11,7 +11,7 @@
 | Teljes videószerkesztő | `apps/filmcraft` az `eframe`/WGPU/`filmcraft-ui-egui` szerkesztőt indítja; `filmcraft-cli --bridge` localhost JSON RPC-vel vezérelheti az élő appot | Valós Wayland E2E szükséges |
 | Python/Qt6 | `python/cfa4_devtools/qt_app.py` saját fejlécében **„Experimental Linux Qt 6 shell. NOT the complete video editor.”**; csak a CLI-verzió kijelzését tudja | **QT6 NLE NOT_IMPLEMENTED**; a Qt6-smoke nem teljes GUI-elfogadás |
 | H.264 CFA4 NVENC | `crates/platform` regisztrálja a Linux NVENC H.264 export-factoryt, `hardwareEncoding=auto` választással | Hardveres **alkalmazásszintű** exportot igazolni kell |
-| HEVC CFA4 NVENC | A korábbi `crates/platform/src/nvenc/export.rs` kifejezetten **Windows-only** gyári kaput tartalmazott, Linuxon nem működött a CFA4 HEVC export, **akkor sem**, ha az FFmpeg CLI `hevc_nvenc` használható | A PR #17 Linuxra is engedélyezi a meglévő NVENC HEVC-kódolót és regisztrálja a runtime feature-probe-okat; Rust/hosted CI és fizikai teszt szükséges |
+| HEVC CFA4 NVENC | A korábbi `crates/platform/src/nvenc/export.rs` kifejezetten **Windows-only** gyári kaput tartalmazott; a PR #17 ezt Linuxra is engedélyezi és runtime feature-probe-ot regisztrál | RTX A1000 fizikai app E2E és külön Rust NVENC-oracle: **PASS**; targeted Linux source CI: **PASS** |
 | Linux CFA4 NVDEC | `crates/platform/src/nvdec/mod.rs` H.264 8-bit és HEVC 8/10-bit 4:2:0 natív CUDA dekódolót valósít meg. Az AV1 NVDEC **nincs implementálva ebben a Rust backendben** | H.264/HEVC CFA4 hardware-vs-software paritás mérendő; AV1 hw = **NOT_IMPLEMENTED**, FFmpeg CLI AV1 NVDEC PASS ettől független |
 | Vulkan/OpenCL/libplacebo | A [#14](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/14) CLI hardveres tesztek igazoltak, de nem a Rust szerkesztő saját GPU compute/pipeline API-útvonalai | CFA4 appszintű integráció csak tényleges hívási helyek alapján vizsgálható |
 | HEIF/HEIC | Első-kép import és egyképes export #10 natív libheif roundtrip tesztekkel; GUI kezelés és HDR/színprofil/multi-image **nem** igazolt | Külön nyitott GUI/colour subgate |
@@ -64,7 +64,7 @@ A `target/audit/native-media/<UTC-stamp>/results.json` és `native-editor.log` m
 | CFA4 Linux HEVC encoder gate kivezetése | SOURCE IMPLEMENTED; fizikai Rust/egui app HEVC NVENC export + FFprobe + CFA4 visszaimport PASS a 2026-10-22-i RTX A1000 futásban |
 | Két külön CFA4 natív Rust hardver oracle (`r0_native_media_e2e`) | PHYSICAL PASS – RTX A1000: 2 passed, 0 failed, 0 ignored; 9.45 s |
 | Valós Rust/egui GUI, Wayland, médiaimport, H.264/HEVC NVENC export és projekt roundtrip | PASS_NATIVE_ENGINE_PARTIAL_R0 – fizikai teszt 2026-10-22, lásd a 4.1. szakaszt |
-| Kísérleti Qt6 shell létrehozása | NATIVE NOT_RUN; **nem a kész editor** |
+| Kísérleti Qt6 shell létrehozása | PySide6 6.10.3 / Qt 6.10.2 smoke valódi Wayland sessionben: **PASS**; ez továbbra sem a kész editor |
 | Valódi Qt6 NLE import/render/export | **NOT_IMPLEMENTED** (portolás külön fejlesztési scope) |
 | CFA4 AV1 *natív* CUDA NVDEC | **NOT_IMPLEMENTED**; FFmpeg CLI AV1 NVDEC megléte nem elegendő |
 | ICC/HDR/HEIF multi-image, médiahang-szinkron, valódi UI-scrub | OPEN; a szintetikus 8-frame próba ezeket nem igazolja |
