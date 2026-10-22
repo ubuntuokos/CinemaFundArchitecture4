@@ -109,6 +109,18 @@ check_video() {
 run_probe() {
     run_step "$1" REQUIRED check_video "$2" "$3" "$4" "$5"
 }
+# A nominal zero-exit FFmpeg invocation is insufficient if it emitted
+# zero video frames. Framehash lines (excluding '#' metadata) prove actual
+# decoded or filtered frames reached the system-memory output.
+check_framehash() {
+    local file="$1" observed
+    [[ -s "$file" ]] || { echo "Missing or empty framehash: $file" >&2; return 1; }
+    observed="$(awk '!/^#/ && NF { count++ } END { print count+0 }' "$file")" || return 1
+    [[ "$observed" -eq 8 ]] || {
+        echo "Expected 8 output frames, found $observed in $file" >&2
+        return 1
+    }
+}
 # 128x72 was rejected by the physical RTX A1000 NVENC and AV1 NVDEC:
 # NVENC: "Frame Dimension less than the minimum supported value".
 # AV1 NVDEC: minimum height 128, so 72 cannot initialize.
@@ -170,11 +182,19 @@ for codec in h264 hevc; do
         continue
     fi
     if has_hwaccel cuda; then
-        # CUDA output frames force HW decode rather than an implicit CPU fallback.
-        run_step "nvdec_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-            -hwaccel cuda -hwaccel_output_format cuda -i "$ref_file" -an -f null - || true
+        # GPU surfaces are downloaded explicitly: both the real CUDA path
+        # and the 8 output frame count must pass to claim an NVDEC PASS.
+        if run_step "nvdec_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+            -hwaccel cuda -hwaccel_output_format cuda -i "$ref_file" -an \
+            -vf "hwdownload,format=nv12" -f framehash "$OUT/nvdec_${codec}.framehash"; then
+            run_step "nvdec_${codec}_framecheck" REQUIRED \
+                check_framehash "$OUT/nvdec_${codec}.framehash" || true
+        else
+            record "nvdec_${codec}_framecheck" REQUIRED BLOCKED "CUDA reference decode failed"
+        fi
     else
         record "nvdec_$codec" REQUIRED NOT_BUILT "CUDA hwaccel not built"
+        record "nvdec_${codec}_framecheck" REQUIRED BLOCKED "CUDA hwaccel not built"
     fi
     run_step "cpu_decode_$codec" REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
         -hwaccel none -i "$ref_file" -an -f null - || true
@@ -207,10 +227,17 @@ if (( ${#av1_cmd[@]} == 0 )); then
 elif run_step av1_software_sample REQUIRED "${av1_cmd[@]}"; then
     run_probe av1_software_probe "$AV1_INPUT" av1 "$SOURCE_W" "$SOURCE_H" || true
     if has_hwaccel cuda; then
-        run_step av1_nvdec REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
-            -hwaccel cuda -hwaccel_output_format cuda -i "$AV1_INPUT" -an -f null - || true
+        if run_step av1_nvdec REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
+            -hwaccel cuda -hwaccel_output_format cuda -i "$AV1_INPUT" -an \
+            -vf "hwdownload,format=nv12" -f framehash "$OUT/av1-nvdec.framehash"; then
+            run_step av1_nvdec_framecheck REQUIRED \
+                check_framehash "$OUT/av1-nvdec.framehash" || true
+        else
+            record av1_nvdec_framecheck REQUIRED BLOCKED "AV1 CUDA decode failed"
+        fi
     else
         record av1_nvdec REQUIRED NOT_BUILT "CUDA hwaccel not built"
+        record av1_nvdec_framecheck REQUIRED BLOCKED "CUDA hwaccel not built"
     fi
     run_step av1_cpu_decode REQUIRED "$FFMPEG" "${FFCOMMON[@]}" \
         -hwaccel none -i "$AV1_INPUT" -an -f null - || true
@@ -245,8 +272,7 @@ if has_hwaccel vulkan; then
             -vf "libplacebo=w=${DOWNSCALE_W}:h=${DOWNSCALE_H}:format=yuv420p" \
             -f framehash "$OUT/libplacebo.framehash"; then
             run_step libplacebo_framecheck REQUIRED \
-                awk '!/^#/ && NF { count++ } END { if (count != 8) { print "Expected 8 libplacebo output frames, got " count > "/dev/stderr"; exit 1 } }' \
-                "$OUT/libplacebo.framehash" || true
+                check_framehash "$OUT/libplacebo.framehash" || true
         else
             record libplacebo_framecheck REQUIRED BLOCKED "libplacebo framehash not produced"
         fi
