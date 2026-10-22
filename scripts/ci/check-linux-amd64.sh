@@ -42,6 +42,17 @@ for marker in ("CFA4_FFMPEG_BIN", "CFA4_FFPROBE_BIN", "nvenc_", "nvdec_", "av1_n
                "av1_software_sample", "scale_vulkan", "libplacebo", "avgblur_opencl",
                "UNSUPPORTED_HARDWARE", "CFA4_VULKAN_DEVICE", "-buildconf", "-hwaccel_output_format"):
     assert marker in ffmpeg_hw, f"FFmpeg hardware audit missing {marker}"
+# Do not regress to 128x72: Ampere NVENC rejects that tiny frame, and its
+# AV1 NVDEC reports min_height=128. Validate executable fixture dimensions.
+import re
+source_w = int(re.search(r"^SOURCE_W=(\\d+)$", ffmpeg_hw, re.M).group(1))
+source_h = int(re.search(r"^SOURCE_H=(\\d+)$", ffmpeg_hw, re.M).group(1))
+assert source_w >= 320 and source_h >= 240 and source_w % 2 == 0 and source_h % 2 == 0
+assert "testsrc2=size=${SOURCE_W}x${SOURCE_H}" in ffmpeg_hw
+assert ffmpeg_hw.count('"$SOURCE_W" "$SOURCE_H"') >= 4
+assert "libplacebo=w=${DOWNSCALE_W}:h=${DOWNSCALE_H}:format=yuv420p" in ffmpeg_hw
+assert ffmpeg_hw.count("check_framehash") >= 4
+assert "hwdownload,format=nv12" in ffmpeg_hw
 assert "cargo build" not in ffmpeg_hw and "apt-get" not in ffmpeg_hw
 assert "audit-ffmpeg-hwaccel.sh" not in workflow, "do not run physical NVENC on hosted CI"
 assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow
