@@ -244,6 +244,7 @@ jobs:
           python -m compileall -q python
           python -m ruff check python
           python -m pytest -q python/tests
+          python -m unittest discover -s packaging/linux -p 'test_*.py' -v
           python -m cfa4_devtools.dependency_audit
       - name: Qt 6 offscreen widget smoke
         run: python -m cfa4_devtools.qt_app --smoke
