@@ -3,10 +3,7 @@
 use std::process::Command;
 
 fn run_cli(args: &[&str]) -> String {
-    let output = Command::new(env!("CARGO_BIN_EXE_filmcraft-cli"))
-        .args(args)
-        .output()
-        .expect("run CFA4 CLI");
+    let output = Command::new(env!("CARGO_BIN_EXE_filmcraft-cli")).args(args).output().expect("run CFA4 CLI");
     assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
