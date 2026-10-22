@@ -194,6 +194,7 @@ pub fn register() -> Availability {
         available
     }
 
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     {
         Availability::Unavailable("no hardware video decoder for this system yet")
     }
