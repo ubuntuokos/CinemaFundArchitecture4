@@ -45,8 +45,8 @@ for marker in ("CFA4_FFMPEG_BIN", "CFA4_FFPROBE_BIN", "nvenc_", "nvdec_", "av1_n
 # Do not regress to 128x72: Ampere NVENC rejects that tiny frame, and its
 # AV1 NVDEC reports min_height=128. Validate executable fixture dimensions.
 import re
-source_w = int(re.search(r"^SOURCE_W=(\\d+)$", ffmpeg_hw, re.M).group(1))
-source_h = int(re.search(r"^SOURCE_H=(\\d+)$", ffmpeg_hw, re.M).group(1))
+source_w = int(re.search(r"^SOURCE_W=(\d+)$", ffmpeg_hw, re.M).group(1))
+source_h = int(re.search(r"^SOURCE_H=(\d+)$", ffmpeg_hw, re.M).group(1))
 assert source_w >= 320 and source_h >= 240 and source_w % 2 == 0 and source_h % 2 == 0
 assert "testsrc2=size=${SOURCE_W}x${SOURCE_H}" in ffmpeg_hw
 assert ffmpeg_hw.count('"$SOURCE_W" "$SOURCE_H"') >= 4
