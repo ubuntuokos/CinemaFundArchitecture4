@@ -259,22 +259,24 @@ if has_hwaccel vulkan; then
         record scale_vulkan REQUIRED NOT_BUILT "scale_vulkan filter not built"
     fi
     if has_filter libplacebo; then
-        # FFmpeg 9 libplacebo imports software frames into its Vulkan renderer
-        # itself. Unlike scale_vulkan, explicit hwupload/hwdownload is not
-        # needed; forcing that path broke filtergraph negotiation in the
-        # initial 128x72 oracle (while NVIDIA Vulkan initialization worked).
-        # Debug logs preserve actual filter-initialization errors for review.
-        # Framehash proves 8 real output frames (not a 0-frame false green).
+        # FFmpeg's libplacebo filter can create its OWN Vulkan device for
+        # software-input frames. Do not pass -filter_hw_device vk here:
+        # FFmpeg 9's libplacebo device-import path can reject Vulkan queue
+        # flags on libplacebo v7.360 (PL_API_VER < 365) with bare EINVAL.
+        # This independent path must prove it picked the physical NVIDIA GPU,
+        # not a software Vulkan device. scale_vulkan still uses explicit vk.
         if run_step libplacebo REQUIRED "$FFMPEG" \
             -nostdin -hide_banner -loglevel debug -y \
-            -init_hw_device "vulkan=vk:$VULKAN_DEVICE" -filter_hw_device vk \
             -i "$INPUT" -an -frames:v 8 \
             -vf "libplacebo=w=${DOWNSCALE_W}:h=${DOWNSCALE_H}:format=yuv420p" \
             -f framehash "$OUT/libplacebo.framehash"; then
             run_step libplacebo_framecheck REQUIRED \
                 check_framehash "$OUT/libplacebo.framehash" || true
+            run_step libplacebo_adapter REQUIRED \
+                grep -Fq "Device Name: $GPU_NAME" "$OUT/logs/libplacebo.log" || true
         else
             record libplacebo_framecheck REQUIRED BLOCKED "libplacebo framehash not produced"
+            record libplacebo_adapter REQUIRED BLOCKED "libplacebo filter did not start"
         fi
     else
         record libplacebo REQUIRED NOT_BUILT "libplacebo filter not built"
