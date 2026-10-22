@@ -15,6 +15,7 @@ for script in \
   scripts/dev/audit-gpu-hardware.sh \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
   scripts/dev/recheck-libplacebo.sh \
+  scripts/dev/audit-native-media-e2e.sh \
   scripts/ci/read-ffmpeg-audit-sha256.sh \
   scripts/ci/test-ffmpeg-audit-sha256.sh \
   scripts/ci/test-gpu-hardware-log.sh \
@@ -26,6 +27,8 @@ done
 # no cargo, no GPU and no expensive full Rust/Qt/FFmpeg tests).
 bash scripts/ci/test-gpu-hardware-log.sh
 bash scripts/ci/test-ffmpeg-audit-sha256.sh
+python3 -m py_compile python/cfa4_devtools/native_media_e2e.py python/tests/test_native_media_e2e.py
+PYTHONPATH=python python3 -m unittest discover -s python/tests -p 'test_native_media_e2e.py' -v
 python3 - <<'PY'
 from pathlib import Path
 import ast
@@ -72,6 +75,20 @@ assert "sed -n 's/^FFmpeg SHA256" not in recheck_lp
 assert "hwdownload,format=nv12" in ffmpeg_hw
 assert "cargo build" not in ffmpeg_hw and "apt-get" not in ffmpeg_hw
 assert "audit-ffmpeg-hwaccel.sh" not in workflow, "do not run physical NVENC on hosted CI"
+native = (root / "python/cfa4_devtools/native_media_e2e.py").read_text()
+nvenc = (root / "crates/platform/src/nvenc/export.rs").read_text()
+platform = (root / "crates/platform/src/lib.rs").read_text()
+qt = (root / "python/cfa4_devtools/qt_app.py").read_text()
+assert "Experimental Linux Qt 6 shell" in qt and "NOT the complete video editor" in qt
+assert "Rust/egui native editor (not Qt6)" in native
+for marker in ("CFA4_NATIVE_E2E_OUTPUT_DIR", "CFA4_MEDIA_FIXTURE_DIR",
+               "physical_nvdec_h264_hevc_reimport_matches_cfa4_software",
+               "physical_nvenc_h264_and_hevc_export_roundtrip"):
+    files = (root / "scripts/dev/audit-native-media-e2e.sh").read_text() + (root / "crates/platform/tests/r0_native_media_e2e.rs").read_text()
+    assert marker in files, f"missing native E2E feature {marker}"
+assert "return hevc_factory(w, h, rate, s);" in nvenc
+assert "register_format_probe(filmcraft_export::Format::Hevc, nvenc::hevc_available)" in platform
+assert "audit-native-media-e2e.sh" not in workflow, "physical Wayland app must not run on hosted CI"
 assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow
 
 for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.sh",
