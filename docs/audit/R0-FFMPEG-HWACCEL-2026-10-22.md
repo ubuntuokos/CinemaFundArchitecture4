@@ -146,3 +146,46 @@ A `summary` önmagában nem igazolja, hogy a **CFA4 alkalmazás** a GPU-végpont
 **A #14 lezárásához** valódi RTX A1000-on meg kell vizsgálni a `results.tsv` és `SUMMARY.txt` tartalmát, továbbá a GPU-futásokat igazoló naplórészleteket. A `libplacebo`, Vulkan vagy OpenCL hibáját **nem** szabad CPU fallbackkel sikeres GPU-tesztnek minősíteni. Az AV1 NVENC A1000-on ismert hardveres korlát, nem implementációs hiba.
 
 Hiba esetén kizárólag a ténylegesen hibás ágat javítsuk; **nem** indokolt a teljes 8 jobos Rust release CI futtatása, amíg csak a helyi FFmpeg CLI-audit módosul.
+
+
+## 2026-10-22 – a libplacebo célzott tesztjének SHA-256 előellenőrző hibája
+
+A felhasználó a `f57ce4d958a7c1babb61c725ed08b48ee894ca6b`
+committal futtatta a `scripts/dev/recheck-libplacebo.sh` szkriptet az
+eredeti `20261022T153037Z` adatmappára, és a teszt **még az FFmpeg
+elindítása előtt** ezzel állt meg:
+
+```text
+CFA4 LIBPLACEBO RECHECK FAILED: FFmpeg executable SHA256 differs from the original audit ( vs 502cff20212a8b2d03f12980637a9070998572efc05bb8999280d47d55f10a8e)
+```
+
+**Bizonyított gyökérok:** az eredeti hash olvasására használt
+`sed` BRE-kifejezésben a csoportosító zárójelek és az ismétlésszám
+kétszer voltak escape-elve. A feldolgozás ezért üres értéket adott,
+miközben az új `sha256sum` helyes értéket mutatott. A kimenet nem
+igazol FFmpeg-bináris eltérést és nem libplacebo-/GPU-renderelési hiba.
+
+A [`82e453bf`](https://github.com/ubuntuokos/CinemaFundArchitecture4/commit/82e453bf786727323001eddd174e83f6899fea66)
+javítócommit óta a `scripts/ci/read-ffmpeg-audit-sha256.sh` külön,
+egyszerű mezőolvasóként kezeli az eredeti `FFmpeg SHA256: <hash> <path>`
+sort. Pontosan egy bejegyzést és **64 hexadecimális karaktert** követel;
+a `recheck-libplacebo.sh` a valódi bináris hash-t továbbra is
+összehasonlítja vele. A `scripts/ci/test-ffmpeg-audit-sha256.sh`
+regresszióteszt valós formájú metaadaton PASS, hiányzó/rövid/duplikált
+hash-bejegyzéseket és nem létező bemenetet elutasít.
+
+**Statikus CI bizonyíték:**
+[GitHub Actions #39808033548](https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39808033548)
+PASS, benne a regresszióteszt külön
+`PASS: valid FFmpeg SHA256 metadata parsed; malformed, missing and duplicate hashes rejected.`
+kimenettel.
+
+A `libplacebo` **fizikai GPU-s** ellenőrzése még függőben van. A
+helyi meglévő 8 képkockás mintából, fordítás nélkül:
+
+```bash
+cd ~/GIT/CinemaFundArchitecture4
+git pull --ff-only
+bash scripts/dev/recheck-libplacebo.sh target/audit/ffmpeg/20261022T153037Z
+```
+
