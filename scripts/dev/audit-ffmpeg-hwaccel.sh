@@ -58,12 +58,14 @@ GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)"
 
 failures=0
 not_built=0
+blocked=0
 record() {
     local case_name="$1" requirement="$2" status="$3" note="$4"
     printf '%s\t%s\t%s\t%s\n' "$case_name" "$requirement" "$status" "$note" >> "$OUT/results.tsv"
     printf '%-26s %-22s %s\n' "$case_name" "$status" "$note"
     if [[ "$status" == FAIL ]]; then failures=$((failures + 1)); fi
     if [[ "$status" == NOT_BUILT && "$requirement" == REQUIRED ]]; then not_built=$((not_built + 1)); fi
+    if [[ "$status" == BLOCKED && "$requirement" == REQUIRED ]]; then blocked=$((blocked + 1)); fi
 }
 run_step() {
     local case_name="$1" requirement="$2"
@@ -247,7 +249,7 @@ fi
 {
     printf 'CFA4 R0 FFmpeg hardware audit (Ubuntu 26.04 / AMD64)\n'
     printf 'FFmpeg: %s\nGPU: %s\nGit SHA: %s\n' "$version" "$GPU_NAME" "$(git rev-parse HEAD)"
-    printf 'FAIL cases: %d\nNOT_BUILT required cases: %d\n' "$failures" "$not_built"
+    printf 'FAIL cases: %d\nNOT_BUILT required cases: %d\nBLOCKED required cases: %d\n' "$failures" "$not_built" "$blocked"
     printf 'AV1_NVENC=UNSUPPORTED_HARDWARE is expected for RTX A1000.\n'
     printf 'Read results.tsv, logs/*.log and buildconf before closing issue #14.\n'
 } > "$OUT/SUMMARY.txt"
@@ -256,8 +258,8 @@ if (( failures > 0 )); then
     echo "FAIL: advertised functions failed; inspect $OUT/results.tsv" >&2
     exit 1
 fi
-if (( not_built > 0 )); then
-    echo "INCOMPLETE: required FFmpeg build capabilities missing; inspect $OUT/results.tsv" >&2
+if (( not_built > 0 || blocked > 0 )); then
+    echo "INCOMPLETE: required capabilities missing or checks blocked; inspect $OUT/results.tsv" >&2
     exit 2
 fi
 echo "PASS: required FFmpeg hardware-media checks passed; unsupported AV1 NVENC reported separately."
