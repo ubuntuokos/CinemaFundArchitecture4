@@ -20,7 +20,11 @@ pub(crate) fn device() -> Option<(wgpu::Device, wgpu::Queue)> {
     } else {
         wgpu::Instance::default()
     };
-    let options = wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() };
+    let options = if strict {
+        wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() }
+    } else {
+        wgpu::RequestAdapterOptions::default()
+    };
     let adapter = match pollster::block_on(instance.request_adapter(&options)) {
         Ok(a) => a,
         Err(e) if strict => panic!("CFA4 hardware GPU gate: no usable Vulkan adapter: {e}"),
