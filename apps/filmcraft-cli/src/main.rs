@@ -255,12 +255,21 @@ fn absolute(path: &str) -> String {
     std::path::absolute(path).ok().and_then(|p| p.into_os_string().into_string().ok()).unwrap_or_else(|| path.to_string())
 }
 
+fn cli_trace(stage: &str) {
+    if std::env::var_os("FILMCRAFT_CLI_TRACE").is_some() {
+        diag(format_args!("filmcraft-cli: trace: {stage}"));
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    cli_trace("entered async main");
     cli().await;
+    cli_trace("cli future returned");
     if STDOUT_ERROR.load(Ordering::Relaxed) {
         std::process::exit(1);
     }
+    cli_trace("main is returning");
 }
 
 async fn cli() {
@@ -338,11 +347,20 @@ async fn cli() {
             let id = a.pos(1).unwrap_or_else(|| usage("exec <id> [key=value ...]"));
             let params = a.params_from(2).unwrap_or_else(|e| usage(e));
             let mut b = Backend::open(&a);
+            cli_trace("exec command submitted");
             match b.exec(id, params).await {
-                Ok(v) => print(&a, &v),
+                Ok(v) => {
+                    cli_trace("exec command returned successfully");
+                    print(&a, &v);
+                    cli_trace("exec result printed");
+                }
                 Err(e) => fail(format!("{id}: {e}")),
             }
+            cli_trace("finishing backend");
             b.finish(&a).await;
+            cli_trace("backend finish returned; dropping backend");
+            drop(b);
+            cli_trace("backend dropped");
         }
         "run" => {
             let script = a.pos(1).unwrap_or_else(|| usage("run <script.jsonl | ->"));
