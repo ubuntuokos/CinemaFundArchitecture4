@@ -30,9 +30,10 @@ FFPROBE="${CFA4_FFPROBE_BIN:-$(dirname -- "$FFMPEG")/ffprobe}"
 # Pin the exact original binary, not merely its version number, so the
 # isolated retest can be compared directly with the successful media oracles.
 [[ -r "$OLD/metadata.txt" ]] || die "original FFmpeg metadata.txt missing"
-old_hash="$(sed -n 's/^FFmpeg SHA256: \\([0-9a-f]\\{64\\}\\).*/\\1/p' "$OLD/metadata.txt" | head -n 1)"
+old_hash="$(bash scripts/ci/read-ffmpeg-audit-sha256.sh "$OLD/metadata.txt")" ||
+    die "cannot parse the original FFmpeg SHA256 metadata"
 new_hash="$(sha256sum -- "$FFMPEG" | awk '{ print $1 }')"
-[[ -n "$old_hash" && "$new_hash" == "$old_hash" ]] ||
+[[ "$new_hash" == "$old_hash" ]] ||
     die "FFmpeg executable SHA256 differs from the original audit ($old_hash vs $new_hash)"
 
 # Reuse exactly the already verified, eight-frame 640x360 MPEG4 source.
