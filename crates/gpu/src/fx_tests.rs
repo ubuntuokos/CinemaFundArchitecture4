@@ -23,6 +23,20 @@ use filmcraft_time::Tick;
 const EXACT: f32 = 1e-4;
 const FLIPS: f64 = 0.01;
 
+/// Tests that exercise the GPU-only compute stage require a device that can
+/// actually create it. Software Vulkan/GL adapters on headless CI can render
+/// ordinary layers yet reject Rgba32Float render/storage attachments. The
+/// compositor deliberately uses the CPU effects fallback on those devices.
+/// Never weaken the parity assertions on a device where the GPU stage exists.
+fn effects_compositor(device: &wgpu::Device, queue: &wgpu::Queue) -> Option<GpuCompositor> {
+    let compositor = GpuCompositor::new(device, queue);
+    if compositor.fx.is_none() {
+        eprintln!("SKIPPED: this adapter cannot create the GPU Rgba32Float effect stage; CPU fallback is tested separately");
+        return None;
+    }
+    Some(compositor)
+}
+
 fn cx(t: Tick, px_scale: f32) -> FxCtx<'static> {
     FxCtx { t, px_scale, seconds: 0.0, timecode: "", clip_name: "", project: None, env: None, frame_rate: 24.0, working: filmcraft_color::WorkingSpace::Rec709 }
 }
@@ -313,7 +327,9 @@ fn gpu_effects_match_cpu_exactly() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let (w, h) = (67u32, 41u32);
     let px = picture(w, h);
     let frame = VideoFrame::rgba_f32(w, h, px.clone());
@@ -341,7 +357,9 @@ fn gpu_extract_zero_softness_has_no_fractional_edge() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let (w, h) = (67, 41);
     let px = picture(w, h);
     let frame = VideoFrame::rgba_f32(w, h, px.clone());
@@ -370,7 +388,9 @@ fn gpu_effect_chains_match_cpu() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let (w, h) = (96u32, 54u32);
     let px = picture(w, h);
     let frame = VideoFrame::rgba_f32(w, h, px.clone());
@@ -418,7 +438,9 @@ fn keyframed_effects_follow_time() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let (w, h) = (48u32, 32u32);
     let px = picture(w, h);
     let frame = VideoFrame::rgba_f32(w, h, px.clone());
@@ -498,7 +520,9 @@ fn hostile_parameters_are_bounded() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let frame = VideoFrame::rgba_f32(w as u32, h as u32, picture(w as u32, h as u32));
     let ops = vec![
         FxOp::eval(&effect("gaussian_blur", &[("blurriness", fl(1e30))]), &cx(Tick::ZERO, 1.0), w, h).expect("op"),
@@ -651,7 +675,9 @@ fn plain_layers_skip_the_effect_stage() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let plan = FramePlan::Layers { width: 64, height: 36, layers: vec![PlanLayer::new(yuv_frame(64, 36), Affine::IDENTITY, 1.0, Blend::Normal)] };
     c.composite(&plan);
     assert!(c.fx.as_ref().is_some_and(fx::FxStage::is_idle));
@@ -718,7 +744,9 @@ fn effect_source_identity_preserves_odd_sized_half_float_texels() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     for (w, h) in [(67u32, 41u32), (96, 54), (64, 32)] {
         let px = picture(w, h);
         let frame = VideoFrame::rgba_f32(w, h, px.clone());
@@ -738,7 +766,9 @@ fn alpha_invert_does_not_amplify_invented_opacity_at_odd_source_pixels() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     let (w, h) = (67, 41);
     let px = picture(w, h);
     let frame = VideoFrame::rgba_f32(w, h, px.clone());
@@ -767,7 +797,9 @@ fn effect_source_integer_decimation_preserves_cpu_box_oracle() {
         eprintln!("no GPU adapter; skipping");
         return;
     };
-    let mut c = GpuCompositor::new(&dev, &q);
+    let Some(mut c) = effects_compositor(&dev, &q) else {
+        return;
+    };
     for (w, h) in [(67u32, 41u32), (96, 54)] {
         let frame = VideoFrame::rgba_f32(w, h, picture(w, h));
         for n in [2, 4, 8] {
