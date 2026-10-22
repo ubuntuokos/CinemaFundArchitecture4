@@ -103,6 +103,9 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
         raise RuntimeError("WAYLAND_DISPLAY missing: headless Qt/GUI smoke is not a real Wayland test")
     if sys.version_info[:2] != (3, 14):
         raise RuntimeError(f"R0 Python must be 3.14, observed {sys.version.split()[0]}")
+    rustc = run(["rustc", "--version"], timeout=10)
+    if rustc.returncode or not rustc.stdout.split() or not rustc.stdout.split()[1].startswith("1.95."):
+        raise RuntimeError(f"R0 Rust toolchain must be 1.95.x, observed {rustc.stdout.strip() or rustc.stderr.strip()}")
     for name, path in (("filmcraft-cli", cli), ("filmcraft editor", editor)):
         if not path.is_file() or not os.access(path, os.X_OK):
             raise RuntimeError(f"{name} binary missing: {path}; build only these two binaries once if needed")
@@ -150,6 +153,7 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
     versions = {
         "gitSha": sha.stdout.strip(),
         "python": sys.version.split()[0],
+        "rustc": rustc.stdout.strip(),
         "session": "wayland",
         "nvidia": nv.stdout.strip(),
         "ffmpeg": ff.stdout.splitlines()[0],
