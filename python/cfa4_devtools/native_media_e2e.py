@@ -199,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint(f"input_{codec}", check_ffprobe("ffprobe", sources / name, codec))
         # Own project/data directory: never touch the user's actual CFA4 profile.
         port = reserve_port()
-        editor_env = dict(os.environ, WGPU_BACKEND="vulkan")
+        editor_env = dict(os.environ, WGPU_BACKEND="vulkan", FILMCRAFT_CONTROL_TRACE="1")
         with (out / "native-editor.log").open("w", encoding="utf-8") as log:
             proc = subprocess.Popen(
                 [str(editor), "--empty", "--no-recover", "--control", str(port), "--data-dir", str(out / "data")],
@@ -207,8 +207,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             try:
                 await_control(port, proc)
-                checkpoint("native_window_control", "PASS: native Rust/egui Wayland editor control opened")
-                before = hardware_stats(bridge(cli, port, "perf.stats", {}))
+                checkpoint("native_control_port", "PASS: loopback listener open; UI responsiveness not yet verified")
+                checkpoint("ui_control_readiness", {"status": "RUNNING", "method": "perf.stats"})
+                before_payload = bridge(cli, port, "perf.stats", {})
+                before = hardware_stats(before_payload)
+                checkpoint("ui_control_readiness", {"status": "PASS", "method": "perf.stats"})
+                checkpoint("native_window_control", "PASS: native Rust/egui Wayland editor answered a control request")
                 items = []
                 for source_name, source_codec in (("h264.mp4", "h264"), ("hevc.mp4", "hevc"), ("av1-software.mkv", "av1")):
                     source = sources / source_name
