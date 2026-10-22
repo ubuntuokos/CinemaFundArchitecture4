@@ -1647,6 +1647,7 @@ impl FilmcraftApp {
 
     fn drain_control(&mut self, ctx: &egui::Context) {
         let Some(rx) = self.control_rx.take() else { return };
+        let trace = std::env::var_os("FILMCRAFT_CONTROL_TRACE").is_some();
         let now = ctx.input(|i| i.time);
         let mut reqs: Vec<(ControlRequest, f64)> = std::mem::take(&mut self.deferred);
         while let Ok(req) = rx.try_recv() {
@@ -1659,8 +1660,14 @@ impl FilmcraftApp {
         }
         for (req, deadline) in reqs {
             let reply = req.reply.clone();
+            if trace {
+                log::info!("control trace: UI handling {}", req.method);
+            }
             match control::handle(self, ctx, &req) {
                 control::Outcome::Done(v) => {
+                    if trace {
+                        log::info!("control trace: UI handled {}", req.method);
+                    }
                     let _ = reply.send(v);
                 }
                 control::Outcome::Retry(msg) => {
