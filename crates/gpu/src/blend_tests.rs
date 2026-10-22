@@ -10,10 +10,39 @@ use super::*;
 use filmcraft_geom::{Affine, Vec2};
 use filmcraft_render::plan::execute_cpu;
 
+/// Strict mode is used by the physical GPU acceptance gate, never by generic
+/// hosted CI. Ordinary tests may skip a missing adapter; strict tests must
+/// fail on a software adapter or a missing Vulkan-capable NVIDIA/AMD GPU.
 pub(crate) fn device() -> Option<(wgpu::Device, wgpu::Queue)> {
-    let instance = wgpu::Instance::default();
-    let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).ok()?;
-    pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()
+    let strict = std::env::var("CFA4_REQUIRE_GPU_FX").as_deref() == Ok("1");
+    let instance = if strict {
+        wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN, ..wgpu::InstanceDescriptor::new_without_display_handle() })
+    } else {
+        wgpu::Instance::default()
+    };
+    let options = wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() };
+    let adapter = match pollster::block_on(instance.request_adapter(&options)) {
+        Ok(a) => a,
+        Err(e) if strict => panic!("CFA4 hardware GPU gate: no usable Vulkan adapter: {e}"),
+        Err(_) => return None,
+    };
+    if strict {
+        let info = adapter.get_info();
+        eprintln!(
+            "CFA4_GPU_HARDWARE_ADAPTER: name={} backend={:?} device_type={:?} vendor=0x{:04x} driver={} driver_info={}",
+            info.name, info.backend, info.device_type, info.vendor, info.driver, info.driver_info
+        );
+        assert_eq!(info.backend, wgpu::Backend::Vulkan, "CFA4 hardware GPU gate requires Vulkan");
+        assert!(
+            matches!(info.device_type, wgpu::DeviceType::DiscreteGpu | wgpu::DeviceType::IntegratedGpu) && matches!(info.vendor, 0x10de | 0x1002),
+            "CFA4 hardware GPU gate requires a physical NVIDIA/AMD GPU, not a CPU/software Vulkan adapter: {info:?}"
+        );
+    }
+    match pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())) {
+        Ok(pair) => Some(pair),
+        Err(e) if strict => panic!("CFA4 hardware GPU gate: cannot create GPU device: {e}"),
+        Err(_) => None,
+    }
 }
 
 pub(crate) fn yuv_frame(w: u32, h: u32) -> Arc<VideoFrame> {
