@@ -15,6 +15,8 @@ for script in \
   scripts/dev/audit-gpu-hardware.sh \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
   scripts/dev/recheck-libplacebo.sh \
+  scripts/ci/read-ffmpeg-audit-sha256.sh \
+  scripts/ci/test-ffmpeg-audit-sha256.sh \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh; do
@@ -23,6 +25,7 @@ done
 # Strict GPU hardware log parser regression (only shell + temporary logs,
 # no cargo, no GPU and no expensive full Rust/Qt/FFmpeg tests).
 bash scripts/ci/test-gpu-hardware-log.sh
+bash scripts/ci/test-ffmpeg-audit-sha256.sh
 python3 - <<'PY'
 from pathlib import Path
 import ast
@@ -64,6 +67,8 @@ for marker in ("-vf \"libplacebo=w=320:h=180:format=yuv420p\"", "source.mkv",
     assert marker in recheck_lp, f"libplacebo recheck script missing {marker}"
 assert "-filter_hw_device" not in recheck_lp.split("if ! \"$FFMPEG\"", 1)[1]
 assert "cargo build" not in recheck_lp and "apt-get" not in recheck_lp
+assert "bash scripts/ci/read-ffmpeg-audit-sha256.sh" in recheck_lp
+assert "sed -n 's/^FFmpeg SHA256" not in recheck_lp
 assert "hwdownload,format=nv12" in ffmpeg_hw
 assert "cargo build" not in ffmpeg_hw and "apt-get" not in ffmpeg_hw
 assert "audit-ffmpeg-hwaccel.sh" not in workflow, "do not run physical NVENC on hosted CI"
