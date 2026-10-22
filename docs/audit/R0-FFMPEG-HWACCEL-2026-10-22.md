@@ -40,7 +40,8 @@ A parancs **nem** telepít csomagot, nem indít GitHub Actions feladatot, nem fu
 | `synthetic_source` + `source_probe` | PASS | MPEG-4 szintetikus forrás, ffprobe kodek/felbontás/képkockaszám |
 | `nvenc_h264`, `probe_h264` | PASS | Valódi NVENC H.264 kódolás és dekódolható kimenet |
 | `nvenc_hevc`, `probe_hevc` | PASS | Valódi NVENC HEVC kódolás és ffprobe |
-| `nvdec_h264`, `nvdec_hevc` | PASS | CUDA hardveres dekódolás, GPU-felületként tartott output |
+| `reference_h264`, `reference_hevc`, `probe_reference_*` | PASS | H.264/HEVC **szoftveresen kódolt független referencia-minták**; NVDEC-t NVENC-hibától függetlenül tesztelik |
+| `nvdec_h264`, `nvdec_hevc` | PASS | CUDA hardveres dekódolás **a szoftveresen előállított referencia-videókon**, GPU-felületként tartott output |
 | `cpu_decode_h264`, `cpu_decode_hevc` | PASS | Kényszerített szoftveres fallback |
 | `av1_software_sample`, `av1_software_probe` | PASS | Kis AV1 bemenet libsvtav1/libaom-av1 software encoderrel |
 | `av1_nvdec`, `av1_cpu_decode` | PASS | AV1 NVIDIA hardveres + szoftveres dekódolás |
@@ -49,7 +50,30 @@ A parancs **nem** telepít csomagot, nem indít GitHub Actions feladatot, nem fu
 | `avgblur_opencl` | PASS | OpenCL NVIDIA GPU, nem CPU OpenCL-provider |
 | `av1_nvenc` | UNSUPPORTED_HARDWARE | RTX A1000 / Ampere: nincs AV1 encode |
  
-A CLI-képesség hiánya `NOT_BUILT`, egy ténylegesen futtatott hibás parancs `FAIL`; ezek nem jelenhetnek meg automatikusan `PASS`-ként. A `BLOCKED` azt jelenti, hogy a prerequisite teszt nem állította elő a bemenetet; a forráskihagyás okát külön kell kezelni.
+A CLI-képesség hiánya `NOT_BUILT`, egy ténylegesen futtatott hibás parancs `FAIL`; ezek nem jelenhetnek meg automatikusan `PASS`-ként. A `BLOCKED` azt jelenti, hogy a prerequisite teszt nem állította elő a bemenetet; a forráskihagyás okát külön kell kezelni. **Bármely kötelező BLOCKED állapot INCOMPLETE auditot okoz**, nem sikeres kaput.
+
+**2026-10-22 – első RTX A1000 mérés és következő diagnosztika:**
+A `72cde2dc7af4941a2312f9c820a1c6c4d25bae30` commiton
+`20261022T151225Z` azonosítóval **4 FAIL** keletkezett: `nvenc_h264`,
+`nvenc_hevc`, `av1_nvdec`, `libplacebo`; `scale_vulkan` és
+`avgblur_opencl` PASS. A `nvdec_h264`/`nvdec_hevc` előzőleg csak
+az NVENC hibák miatt **BLOCKED** volt; ez NEM hardveres dekóderhiba.
+Az elkülönített szoftveres H264/HEVC referencia-minták ezt a vakfoltot
+szüntetik meg. A négy hibás teszt **stderr naplója még nem érkezett meg**;
+amíg az `logs/*.log` tartalom nem ismert, nem állítunk konkrét driver,
+CUDA, libplacebo vagy NVENC gyökérokot.
+
+```bash
+cd ~/GIT/CinemaFundArchitecture4
+d=target/audit/ffmpeg/20261022T151225Z
+for test in nvenc_h264 nvenc_hevc av1_nvdec libplacebo; do
+    printf '\n===== %s =====\n' "$test"
+    tail -n 65 "$d/logs/$test.log"
+done
+# A teljes FFmpeg build és OS bizonyítékait a kapcsolódó
+# metadata.txt és ffmpeg-buildconf.txt fájlok tartalmazzák.
+```
+
 
 ### Az eredményfájlok
 
