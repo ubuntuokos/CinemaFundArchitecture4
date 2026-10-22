@@ -189,3 +189,49 @@ git pull --ff-only
 bash scripts/dev/recheck-libplacebo.sh target/audit/ffmpeg/20261022T153037Z
 ```
 
+
+## Végleges helyi FFmpeg CLI hardveraudit – 2026-10-22, PASS
+
+**Értelmezési határ:** ez a fejezet a korábbi `libplacebo NOT_RUN/FAIL`
+megjegyzéseket *időrendben felülírja*, az eredeti sikertelen mérési
+naplók törlése nélkül. A CLI-oracle teljesült; a **CFA4 alkalmazásszintű
+Qt6/FFmpeg import/render/export végpontok külön, nyitott
+[R0 #16](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/16)
+munkacsomagban** kerülnek ellenőrzésre. A teljes kiadás továbbra is
+`HOLD`.
+
+### Két fizikai RTX A1000 mérés – egy összetett elfogadási bizonyíték
+
+| Bizonyíték | Eredmény |
+|---|---|
+| Alapfuttatás – `20261022T153037Z` | Git `0f81b74f203ba3329059009c2efc507a70531a61`, 640×360, 8 frame @ 8 fps, FFmpeg 9.0.2, NVIDIA RTX A1000 |
+| Alapfuttatás orákulumai | **24 PASS** – H.264+HEVC NVENC encode/probe, H.264+HEVC NVDEC CUDA/8-frame check, AV1 NVDEC/8-frame check, SW/CPU decode fallback, `scale_vulkan`, NVIDIA `avgblur_opencl` |
+| Alapfuttatás kezdeti hiánya | `libplacebo` **FAIL**, `libplacebo_framecheck` **BLOCKED** – Vulkan-context import `EINVAL` |
+| Külön `libplacebo` újraellenőrzés – `libplacebo-recheck-20261022T155032Z-YlOybkR5` | A `3c7a797bfe11edde6bade0d2a2a410d63a89f905` script-committal, **PASS**; `PASS: libplacebo processed 8 frames using the NVIDIA GPU (NVIDIA RTX A1000)` |
+| FFmpeg bináris azonossága | Az önálló szkript **kötelező SHA-256 egyezés** után lépett tovább; az eredeti mintán `502cff20212a8b2d03f12980637a9070998572efc05bb8999280d47d55f10a8e` |
+| Fizikai GPU / sikerfeltétel | NVIDIA RTX A1000 név bizonyítva a `libplacebo` naplóból, **8 kimeneti képkocka** a `framehash`-ből; nincs CPU/llvmpipe elfogadás |
+| RTX A1000 AV1 NVENC | `UNSUPPORTED_HARDWARE` – dokumentált, elvárt Ampere-korlát; AV1 NVDEC ettől függetlenül PASS |
+
+Az eredeti `libplacebo` hiba **reprodukálhatóan megkerülhető** azzal,
+hogy a szűrő saját Vulkan-eszközt hoz létre. Az FFmpeg 9.0
+`vf_libplacebo.c` `PL_API_VER < 365` importálási ága továbbra is
+**lehetséges** kompatibilitási gyökérok; a bemásolt napló nem méri
+közvetlenül a `queue_flags` mezőt, ezért konkrét upstream library-bugnak
+nem minősítjük.
+
+**Fontos:** a „24 PASS + külön `libplacebo` PASS” **nem 25 siker
+ugyanabban a futtatásban**. Két, egymással FFmpeg SHA256, NVIDIA GPU
+és eredeti `source.mkv` alapján összekapcsolt fizikai mérésről van szó.
+Az audit fájljai a helyi `target/audit/ffmpeg/` könyvtárban vannak;
+a GitHubba **csak a parancskimenet és az auditrekord került**,
+a bináris videó-/framehash-fájlok nem.
+
+**CLI hardverkapu döntése: `PASS`**. A [#14](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/14)
+munkacsomag kizárólag a FFmpeg CLI-gépességorákulumok lezárását
+tanúsítja. A valódi CFA4 Rust/Qt6 futtatási útvonalak és a CPU/GPU
+eredményparitás elfogadása [#16](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/16)
+feladat. A GPL/libplacebo/NVENC/HEVC terjesztési licenc/SBOM audit
+[F1-01 #6](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/6)
+és a [központi R0 #11](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/11)
+alatt **nyitott**. A [PR #15](https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/15)
+továbbra is **draft**, merge és kiadási engedély nélkül.
