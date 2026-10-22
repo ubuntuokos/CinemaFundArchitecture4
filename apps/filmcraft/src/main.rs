@@ -1,6 +1,6 @@
 //! FilmCraft desktop app.
 //!
-//! Usage: `filmcraft [--control <port>] [--demo|--empty] [--recover|--no-recover] [--data-dir <dir>]
+//! Usage: `cfa4 [--control <port>] [--demo|--empty] [--recover|--no-recover] [--data-dir <dir>]
 //! [project.fcproj | media files…]`; `--help` prints the options, `--version` the version. An
 //! unknown option is an error (exit code 2), not a file to open.
 //!
@@ -471,7 +471,7 @@ fn run_dialog_off_thread(dialog: filmcraft_ui_egui::native_dialogs::FileDialog) 
     use filmcraft_ui_egui::native_dialogs::FileDialog;
     let t = |s: &str| filmcraft_ui_egui::i18n::t(s).to_string();
     let media = t("Media");
-    let project = t("FilmCraft Project");
+    let project = "CFA4 Project (.fcproj)";
     let project_exts = project_patterns();
     let dialog = prepare_dialog(dialog);
     let (tx, rx) = std::sync::mpsc::channel();
