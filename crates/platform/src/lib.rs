@@ -284,3 +284,26 @@ pub fn nvdec_factory(entry: &filmcraft_isobmff::SampleEntry) -> Option<filmcraft
         }
     }
 }
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_probe_tests {
+    use std::cell::Cell;
+
+    use super::{LinuxDecoderProbe, probe_linux_decoder};
+
+    #[test]
+    fn successful_nvdec_probe_skips_blocking_vaapi_probe() {
+        let vaapi_called = Cell::new(false);
+
+        let selected = probe_linux_decoder(
+            || Ok("NVDEC test device".to_string()),
+            || {
+                vaapi_called.set(true);
+                Ok("VA-API test device".to_string())
+            },
+        );
+
+        assert_eq!(selected, LinuxDecoderProbe::Nvdec("NVDEC test device".to_string()));
+        assert!(!vaapi_called.get(), "VA-API probe must not run after NVDEC succeeds");
+    }
+}
