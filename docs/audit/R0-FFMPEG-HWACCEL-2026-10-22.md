@@ -33,6 +33,58 @@ bash scripts/dev/audit-ffmpeg-hwaccel.sh
 
 A parancs **nem** telepít csomagot, nem indít GitHub Actions feladatot, nem futtatja a teljes Rust workspace-et, és nem tölti fel automatikusan a hardveradatokat. A szintetikus videó mindössze **8 képkocka 640×360 méretben, 8 fps**. Az első 128×72-es minta kisebb volt az RTX A1000 NVENC encoderének, illetve AV1 NVDEC dekóderének támogatott minimumánál; a felbontás javítása tesztadat-korrekció, nem GPU-driver-/codec-fix.
 
+## Második fizikai NVIDIA-mérés és izolált libplacebo-utánellenőrzés
+
+A felhasználó a `0f81b74f203ba3329059009c2efc507a70531a61`
+commiton, `20261022T153037Z` azonosítóval **24 PASS**, **1 FAIL**
+(`libplacebo`), **1 BLOCKED** (`libplacebo_framecheck`) és az RTX A1000
+miatt elvárt `AV1_NVENC=UNSUPPORTED_HARDWARE` eredményt mért. Minden
+NVENC/NVDEC (H.264, HEVC, AV1), CPU-fallback, `scale_vulkan` és
+`avgblur_opencl` ellenőrzés sikeres. A `libplacebo` naplóban az NVIDIA
+Vulkan eszköz inicializálása sikeres volt, de közvetlenül az
+`Initialized libplacebo v7.360.0 (API v360)` üzenet után a filtergraph
+`Invalid argument` hibával megállt, mielőtt akár egy képkocka kimenetre
+jutott volna.
+
+Az FFmpeg 9.0 forráskódjának `vf_libplacebo.c` Vulkan-importútvonala,
+konkrétan a `copy_pl_queue()` megvizsgálása olyan **lehetséges**
+kompatibilitási okot mutatott, amelynél `PL_API_VER < 365` és nem nulla
+`AVVulkanDeviceContext.queue_flags` esetén a függvény **külön logolás
+nélkül `EINVAL`-t ad vissza**.
+Forrás: https://www.ffmpeg.org/doxygen/9.0/vf__libplacebo_8c_source.html
+(`copy_pl_queue` függvény, 653–666. sor). A felhasználó libplacebo
+API-ja v360; az adott rendszer tényleges `queue_flags` értéke viszont
+nem volt kimérve, tehát ezt egyelőre **hipotézisnek** kell kezelni.
+
+A [PR #15](https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/15)
+a `libplacebo` tesztből **elhagyta az FFmpeg külső Vulkan-eszközének
+`-filter_hw_device vk` importját**, hogy a libplacebo saját Vulkan
+eszközt hozhasson létre. A GPU bizonyítási követelmény **szigorúbb**:
+a libplacebo naplónak `Device Name: NVIDIA RTX A1000` tartalommal kell
+igazolnia, hogy nem `llvmpipe` szoftveres Vulkan-eszközt használt;
+és az eredménynek pontosan **8 valódi kimeneti képkockát** kell
+tartalmaznia.
+
+A korábbi sikeres NVENC/NVDEC- és egyéb teszteket **nem szükséges
+ismételten lefuttatni csak a libplacebo diagnosztikájához**. A PR #15
+mellé hozzáadott önálló, helyi `scripts/dev/recheck-libplacebo.sh`
+a már meglévő `source.mkv` videót használja, és új bizonyítékot hoz
+létre az eredeti auditmappa módosítása nélkül.
+
+```bash
+cd ~/GIT/CinemaFundArchitecture4
+git pull --ff-only
+bash scripts/dev/recheck-libplacebo.sh \
+  target/audit/ffmpeg/20261022T153037Z
+```
+
+A külön ellenőrzés `libplacebo-recheck-<id>` könyvtárba menti
+a `metadata.txt`, `libplacebo.log` és `libplacebo.framehash`
+fájlokat. **A fizikailag lefutott teszt eredménye az aktuális
+javításra még nincs meg**, így a #14 RELEASE/HARDWARE kapu nyitott.
+A jó eredmény sem helyettesíti a CFA4 alkalmazás végponttól végpontig
+tesztjét és a jogi/SBOM/Qt6 kiadási ellenőrzéseket.
+
 ## Tesztmátrix és valódi elfogadási bizonyíték
 
 | Munkafázis | Kötelező eredmény | Megjegyzés |
