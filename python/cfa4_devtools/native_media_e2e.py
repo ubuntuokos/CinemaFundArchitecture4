@@ -120,10 +120,30 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
         raise RuntimeError("ffprobe 9.0.2 is required")
     import_path = Path(__file__).resolve().parents[2]
     qt_env = dict(os.environ, PYTHONPATH=str(import_path / "python"), QT_QPA_PLATFORM="wayland")
+    qt_versions = run(
+        [sys.executable, "-c", "import PySide6; from PySide6.QtCore import qVersion; print(PySide6.__version__); print(qVersion())"],
+        timeout=12,
+    )
+    if qt_versions.returncode:
+        raise RuntimeError(f"PySide6/Qt6 Python binding unavailable: {qt_versions.stderr[-1500:]}")
+    versions_qt = qt_versions.stdout.strip().splitlines()
+    if len(versions_qt) != 2 or any(tuple(int(x) for x in v.split(".")[:2]) < (6, 10) for v in versions_qt):
+        raise RuntimeError(f"R0 requires PySide6 and Qt >=6.10: {versions_qt}")
     qt = run([sys.executable, "-m", "cfa4_devtools.qt_app", "--smoke", "--engine", str(cli)], timeout=35, env=qt_env)
     if qt.returncode:
         raise RuntimeError(f"experimental Qt6 shell did not launch on Wayland: {qt.stderr[-1500:]}")
     out.mkdir(parents=True, exist_ok=True)
+    # Keep reproducible build/runtime metadata without assuming the FFmpeg CLI
+    # and CFA4 Rust binaries are linked to identical libav* libraries.
+    configuration = run(["ffmpeg", "-buildconf"], timeout=12)
+    if configuration.returncode:
+        raise RuntimeError(f"FFmpeg buildconf retrieval failed: {configuration.stderr}")
+    (out / "ffmpeg-buildconf.txt").write_text(configuration.stdout, encoding="utf-8")
+    linkage = {}
+    for name, binary in (("editor", editor), ("cli", cli)):
+        linked = run(["ldd", str(binary)], timeout=12)
+        linkage[name] = {"exit": linked.returncode, "stdout": linked.stdout, "stderr": linked.stderr}
+    (out / "runtime-linkage.json").write_text(json.dumps(linkage, indent=2), encoding="utf-8")
     sha = run(["git", "rev-parse", "HEAD"], timeout=8)
     if sha.returncode:
         raise RuntimeError("cannot identify the exact CFA4 Git commit")
@@ -135,6 +155,8 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
         "ffmpeg": ff.stdout.splitlines()[0],
         "ffprobe": probe.stdout.splitlines()[0],
         "qtShell": "PASS: experimental shell only – not a complete Qt6 NLE",
+        "qt": {"pyside6": versions_qt[0], "qt": versions_qt[1]},
+        "libavRuntimeLinkage": "RECORDED_NOT_YET_RECONCILED: inspect runtime-linkage.json vs ffmpeg-buildconf.txt",
         "appFrontend": "Rust/egui native editor (not Qt6)",
     }
     return versions
