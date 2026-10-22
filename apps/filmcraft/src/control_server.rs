@@ -83,10 +83,7 @@ fn serve(stream: TcpStream, tx: &Sender<ControlRequest>, ctx: &egui::Context) {
         ctx.request_repaint();
         let result = rrx.recv_timeout(Duration::from_secs(60));
         if trace {
-            eprintln!(
-                "filmcraft: control trace: {} {method}",
-                if result.is_ok() { "reply ready for" } else { "timed out waiting for" }
-            );
+            eprintln!("filmcraft: control trace: {} {method}", if result.is_ok() { "reply ready for" } else { "timed out waiting for" });
         }
         Some(result.unwrap_or_else(|_| json!({"ok": false, "error": "timeout"})))
     });
