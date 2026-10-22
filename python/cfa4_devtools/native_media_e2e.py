@@ -209,13 +209,22 @@ def main(argv: list[str] | None = None) -> int:
                 await_control(port, proc)
                 checkpoint("native_window_control", "PASS: native Rust/egui Wayland editor control opened")
                 before = hardware_stats(bridge(cli, port, "perf.stats", {}))
-                imported = bridge(cli, port, "file.import", {"paths": [str(sources / n) for n in ("h264.mp4", "hevc.mp4", "av1-software.mkv")]})
+                items = []
+                for source_name, source_codec in (("h264.mp4", "h264"), ("hevc.mp4", "hevc"), ("av1-software.mkv", "av1")):
+                    source = sources / source_name
+                    # Persist the active path before the bridge call, so a stalled
+                    # import is identifiable in results.json after the timeout.
+                    checkpoint(f"import_{source_codec}", {"status": "RUNNING", "path": str(source)})
+                    imported_one = bridge(cli, port, "file.import", {"paths": [str(source)]})
+                    checkpoint(f"import_{source_codec}", imported_one)
+                    if imported_one.get("errors"):
+                        raise RuntimeError(f"{source_codec}: native CFA4 importer returned errors: {imported_one['errors']}")
+                    imported_items = imported_one.get("items")
+                    if not isinstance(imported_items, list) or len(imported_items) != 1 or not isinstance(imported_items[0], int):
+                        raise RuntimeError(f"{source_codec}: expected one imported media item: {imported_one}")
+                    items.extend(imported_items)
+                imported = {"items": items, "errors": []}
                 checkpoint("import", imported)
-                if imported.get("errors"):
-                    raise RuntimeError(f"native CFA4 importer returned errors: {imported['errors']}")
-                items = imported.get("items")
-                if not isinstance(items, list) or len(items) != 3 or not all(isinstance(x, int) for x in items):
-                    raise RuntimeError(f"expected 3 imported media items: {imported}")
                 for source_codec, item, output_codec in (
                     ("h264", items[0], "h264"),
                     ("hevc", items[1], "hevc"),
