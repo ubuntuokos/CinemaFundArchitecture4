@@ -16,7 +16,7 @@ import socket
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +33,7 @@ def parse_command_json(proc: subprocess.CompletedProcess[str], what: str) -> dic
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"{what}: non-JSON output: {proc.stdout[-1200:]}") from exc
     if not isinstance(value, dict):
-        raise RuntimeError(f"{what}: expected JSON object, got {type(value).__name__}")
+        raise TypeError(f"{what}: expected JSON object, got {type(value).__name__}")
     return value
 
 
@@ -178,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     sources = (root / args.sources).resolve()
     cli = (root / args.cli).resolve()
     editor = (root / args.editor).resolve()
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out = (root / (args.output or Path("target/audit/native-media") / stamp)).resolve()
     out.mkdir(parents=True, exist_ok=True)
     evidence: dict[str, Any] = {
@@ -237,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
                     seq = bridge(cli, port, "file.newSequenceFromClip", {"items": [item]})
                     checkpoint(f"sequence_{source_codec}", seq)
                     if not isinstance(seq.get("sequence"), int):
-                        raise RuntimeError(f"{source_codec}: native sequence not created")
+                        raise TypeError(f"{source_codec}: native sequence not created")
                     path = out / f"cfa4-editor-{source_codec}-to-{output_codec}.mp4"
                     result = bridge(
                         cli, port, "file.exportMedia",
