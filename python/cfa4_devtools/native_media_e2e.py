@@ -79,6 +79,7 @@ def bridge(cli: Path, port: int, command: str, params: dict[str, Any], *, timeou
     proc = run(
         [str(cli), "--bridge", f"127.0.0.1:{port}", "exec", command, json.dumps(params, separators=(",", ":"))],
         timeout=timeout,
+        env=dict(os.environ, FILMCRAFT_CLI_TRACE="1"),
     )
     return parse_command_json(proc, f"native editor command {command}")
 
