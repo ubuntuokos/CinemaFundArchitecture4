@@ -43,7 +43,7 @@ class NativeMediaE2ESourceTests(unittest.TestCase):
 
     def test_non_object_json_is_rejected(self) -> None:
         completed = subprocess.CompletedProcess(args=[], returncode=0, stdout="[]", stderr="")
-        with self.assertRaisesRegex(RuntimeError, "expected JSON object"):
+        with self.assertRaisesRegex(TypeError, "expected JSON object"):
             audit.parse_command_json(completed, "import")
 
 
