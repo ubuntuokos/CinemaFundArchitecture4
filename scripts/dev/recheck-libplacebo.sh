@@ -27,6 +27,14 @@ FFPROBE="${CFA4_FFPROBE_BIN:-$(dirname -- "$FFMPEG")/ffprobe}"
 [[ "$("$FFPROBE" -version | awk 'NR == 1 { print $3 }')" == 9.0.2 ]] ||
     die "FFprobe 9.0.2 required"
 
+# Pin the exact original binary, not merely its version number, so the
+# isolated retest can be compared directly with the successful media oracles.
+[[ -r "$OLD/metadata.txt" ]] || die "original FFmpeg metadata.txt missing"
+old_hash="$(sed -n 's/^FFmpeg SHA256: \\([0-9a-f]\\{64\\}\\).*/\\1/p' "$OLD/metadata.txt" | head -n 1)"
+new_hash="$(sha256sum -- "$FFMPEG" | awk '{ print $1 }')"
+[[ -n "$old_hash" && "$new_hash" == "$old_hash" ]] ||
+    die "FFmpeg executable SHA256 differs from the original audit ($old_hash vs $new_hash)"
+
 # Reuse exactly the already verified, eight-frame 640x360 MPEG4 source.
 video_info="$("$FFPROBE" -v error -select_streams v:0 \
     -show_entries stream=codec_name,width,height -of csv=p=0 "$OLD/source.mkv")" ||
