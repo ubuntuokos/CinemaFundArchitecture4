@@ -301,7 +301,7 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         }));
         app.hooks.pick_save = Some(Box::new(|name: &str| {
             rfd::FileDialog::new()
-                .add_filter(filmcraft_ui_egui::i18n::t("CFA4 Project (.fcproj)"), &file_filters::extensions(&["fcproj"]))
+                .add_filter("CFA4 Project (.fcproj)", &file_filters::extensions(&["fcproj"]))
                 .set_file_name(name)
                 .save_file()
                 .map(|p| p.to_string_lossy().to_string())
@@ -350,7 +350,7 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         }));
         app.hooks.pick_open_project = Some(Box::new(|| {
             rfd::FileDialog::new()
-                .add_filter(filmcraft_ui_egui::"CFA4 Project (.fcproj)", &file_filters::extensions(&["fcproj"]))
+                .add_filter("CFA4 Project (.fcproj)", &file_filters::extensions(&["fcproj"]))
                 .pick_file()
                 .map(|p| p.to_string_lossy().to_string())
         }));
