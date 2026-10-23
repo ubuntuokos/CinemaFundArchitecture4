@@ -7,7 +7,7 @@ if [[ "${CFA4_ALLOW_LOCAL_PACKAGING:-0}" != "1" ]]; then
   echo "CFA4 release HOLD: explicit CFA4_ALLOW_LOCAL_PACKAGING=1 is required for local tests." >&2
   exit 3
 fi
-for tool in cargo nfpm flatpak flatpak-builder sha256sum; do
+for tool in cargo nfpm flatpak flatpak-builder sha256sum python3 dpkg-deb; do
   command -v "$tool" >/dev/null 2>&1 || {
     echo "error: reviewed tool '$tool' is not installed; no automatic installation." >&2
     exit 2
@@ -31,5 +31,6 @@ for artifact in "${artifacts[@]}"; do
   [[ -s "$artifact" ]] || { echo "error: missing or empty CFA4 package $artifact" >&2; exit 1; }
 done
 (cd "$DIST" && sha256sum "${artifacts[@]##*/}" > SHA256SUMS)
-echo "Four CFA4 local validation packages and SHA256SUMS created in $DIST"
+python3 "$ROOT/scripts/release/verify_cfa4_packages.py" --dist "$DIST" --version "$VERSION"
+echo "Four CFA4 locally verified packages and SHA256SUMS created in $DIST"
 echo "RELEASE HOLD: no redistribution or public GitHub release is authorized."

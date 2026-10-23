@@ -36,6 +36,8 @@ jobs:
           grep -Fq 'REPO="ubuntuokos/CinemaFundArchitecture4"' packaging/linux/package.sh
       - name: Local tarball installer regression tests (disposable test binaries)
         run: python3 -m unittest discover -s packaging/linux -p 'test_*.py' -v
+      - name: Four-format artifact structural regression tests (synthetic files)
+        run: python3 -m unittest discover -s scripts/release -p 'test_*.py' -v
 
   four-formats:
     # This job never runs automatically, never uploads a public GitHub Release,
