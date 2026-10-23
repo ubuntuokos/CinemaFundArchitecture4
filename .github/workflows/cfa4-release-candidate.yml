@@ -34,6 +34,8 @@ jobs:
           bash -n packaging/linux/install.sh
           test "$(grep -c 'gh-releases-zsync|' packaging/linux/package.sh)" -eq 1
           grep -Fq 'REPO="ubuntuokos/CinemaFundArchitecture4"' packaging/linux/package.sh
+      - name: XDG identity and desktop metadata audit (no graphical session)
+        run: python3 -m unittest discover -s scripts/ci -p 'test_cfa4_xdg.py' -v
       - name: Local tarball installer regression tests (disposable test binaries)
         run: python3 -m unittest discover -s packaging/linux -p 'test_*.py' -v
       - name: Four-format and isolated runtime regression tests (synthetic files)
