@@ -2,7 +2,7 @@
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
-exclude = ["vendor/craft-libs/*"]
+exclude = ["vendor/craft-libs/docpath", "vendor/craft-libs/ui"]
 
 [workspace.package]
 version = "0.10.0"
