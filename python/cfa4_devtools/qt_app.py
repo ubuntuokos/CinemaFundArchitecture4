@@ -17,9 +17,12 @@ def locate_engine(explicit: str | None = None) -> Path | None:
     if explicit:
         candidate = Path(explicit).expanduser()
         return candidate if candidate.is_file() else None
-    executable = shutil.which("filmcraft-cli")
-    if executable:
-        return Path(executable)
+    # Prefer the installed CFA4 command; the inherited executable name
+    # remains a temporary compatibility fallback during the Qt6 migration.
+    for name in ("cfa4-cli", "filmcraft-cli"):
+        executable = shutil.which(name)
+        if executable:
+            return Path(executable)
     root = Path(__file__).resolve().parents[2]
     for relative in ("target/release/filmcraft-cli", "target/debug/filmcraft-cli"):
         candidate = root / relative
