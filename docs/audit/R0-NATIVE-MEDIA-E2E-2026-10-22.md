@@ -67,10 +67,10 @@ A `target/audit/native-media/<UTC-stamp>/results.json` és `native-editor.log` m
 | Kísérleti Qt6 shell létrehozása | PySide6 6.10.3 / Qt 6.10.2 smoke valódi Wayland sessionben: **PASS**; ez továbbra sem a kész editor |
 | Valódi Qt6 NLE import/render/export | **NOT_IMPLEMENTED** (portolás külön fejlesztési scope) |
 | CFA4 AV1 *natív* CUDA NVDEC | **NOT_IMPLEMENTED**; FFmpeg CLI AV1 NVDEC megléte nem elegendő |
-| ICC/HDR/HEIF multi-image, médiahang-szinkron, valódi UI-scrub | OPEN; a szintetikus 8-frame próba ezeket nem igazolja |
+| ICC/HDR/HEIF multi-image és színkezelés; A/V szinkron pontossága | OPEN; a 2026-10-23-i csomagpróba egy valódi klipen igazolta a látható képet, hallható hangot, alapvető lejátszást/szünetet/súrolást, exportot és visszaimportot, de nem mért szinkronpontosságot és nem fedte le a HEIF/HDR ágakat |
 | HEVC + FFmpeg + Qt6 + libheif kiadási licenc/SBOM | OPEN / RELEASE HOLD |
 
-A natív script kimenete akkor sem zárja le önmagában a teljes #16-ot, ha a kontrollált frontendben minden scripted step sikeres: a **kézi GUI-interakció, valós médiahang, AV1 native CUDA, Qt6 NLE hiány és teljes SBOM/licencek** önálló kapuk.
+A natív script kimenete és a kézi csomagpróba sem zárja le önmagában a teljes #16-ot: az AV1 natív CUDA, a teljes Qt6 NLE, a HEIF/HDR/ICC és pontos A/V-szinkron, valamint az SBOM/licenc és teljes terjesztési függőségleltár továbbra is önálló kapu. A kézi GUI-próba eredménye felhasználói visszajelzés; a folyamatnapló csak az indítást rögzítette, a részletes kodek- és export-metaadatokat nem.
 
 ## 4.1. Fizikai RTX A1000 futás – 2026-10-22 19:48 UTC
 
@@ -89,3 +89,12 @@ A két külön fizikai Rust-oracle ugyanazon célgépen sikeresen lefutott: `phy
 ## 5. Következő tényleges függőség
 
 A távoli GitHub Actions **nem fér hozzá** a felhasználó Wayland grafikus munkamenetéhez és NVIDIA GPU-eszközéhez. A pull request CI legfeljebb az új források Rust-fordíthatóságát, Python stdlib regressziós tesztjeit és policy-kompatibilitását igazolja. A #16 hardveres és grafikus runtime PASS csak a fenti **helyi eredmények** alapján jelenthető ki, nem statikus CI alapján.
+
+
+## 4.2. Telepített tar-csomag kézi GUI-médiapróba – 2026-10-23
+
+A felhasználó a frissen épített `cfa4-0.10.0-linux-x86_64.tar.gz` csomagot egy ideiglenes, majd egy tartós, felhasználói prefixbe telepítette (`~/.local/opt/cfa4-0.10.0`). A telepítő lefutott; a `cfa4-cli --version` eredménye `CFA4 CLI 0.10.0` volt. A csomagolt `cfa4` és `cfa4-cli` binárisokra futtatott `ldd` nem mutatott feloldatlan közvetlen függőséget. Ez a megfigyelés nem fedi le a dinamikusan betöltött komponenseket és az összes terjesztési formátumot.
+
+A telepített GUI naplója szerint az alkalmazás elérte az egui eseményciklust, az NVDEC eszközpróba `Available("NVDEC")` eredménnyel zárult, a GPU-renderelő regisztrálódott, és létrejött a hangbemeneti/kimeneti backend. A folyamat 0 kilépési kóddal tért vissza. A felhasználó a tesztinteraktív kérdéseire igennel válaszolt: a valódi klip képe megjelent, hangja hallható volt, a lejátszás/szüneteltetés/súrolás működött, és a rövid export visszaimportja sikerült.
+
+**Bizonyíték jellege és korlátai:** ez kézi, felhasználó által visszajelzett csomag-GUI smoke PASS, nem automatikus alkalmazás-orákulum. A bemásolt folyamatnapló indítási adatokat tartalmaz, de nem rögzítette a médiaútvonal részletes kodek-/hardverhasználatát, az export FFprobe-metaadatait vagy A/V-szinkron mérését. A napló szűrése azért maradt ki, mert a gépen a `rg` parancs nincs telepítve. Csak a tar formátumot vizsgáltuk; .deb/.rpm/AppImage, teljes runtime-függőségleltár és futásidejű codec-path naplózás továbbra is OPEN.
