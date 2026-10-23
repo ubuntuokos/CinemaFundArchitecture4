@@ -1,8 +1,8 @@
 asset:        filmcraft.ico
-title:        FilmCraft app icon, Windows .ico (16-256 px)
-author:       Brandon Thomas (FilmCraft owner), for the FilmCraft project
-source:       original work (drawn by the owner in ArtCraft, then vectorised)
+title:        CFA4 official logo Windows icon bundle
+author:       István (CFA4 project owner), adaptation by OpenAI
+source:       Owner-supplied CFA3 emblem, adapted into the approved CFA4 official logo on 2026-10-23
 license:      MIT OR Apache-2.0
 license-file: assets/app-icon/LICENSE.txt
-added:        2026-10-02 by Claude (agent) for Brandon Thomas
-notes:        PNG renders of filmcraft.svg (resvg) packed by cargo xtask ico in packaging/icons.sh. Embedded in filmcraft.exe by apps/filmcraft/build.rs.
+added:        2026-10-23 by István
+notes:        Rendered from the approved CFA4 logo master artwork without recolouring or redesign.

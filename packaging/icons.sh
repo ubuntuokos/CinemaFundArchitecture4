@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Regenerate every derived app icon from assets/app-icon/filmcraft.svg (the canonical artwork; a
-# 512-unit full-bleed tile with rx=112). filmcraft-small.svg is a lighter trace of the same drawing
-# and is copied, not generated.
+# Regenerate every derived app icon from assets/app-icon/filmcraft.svg, which embeds the approved
+# CFA4 official logo. filmcraft-small.svg embeds a smaller raster copy and is copied for scalable Linux.
 #
 # Needs: resvg (brew install resvg / cargo install resvg). On macOS, iconutil also writes the
 # .icns. The outputs are committed, so builds and packaging never need these tools.
