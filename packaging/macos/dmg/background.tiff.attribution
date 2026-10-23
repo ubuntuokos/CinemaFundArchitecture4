@@ -1,8 +1,8 @@
 asset:        background.tiff
-title:        FilmCraft macOS DMG window background (rendered)
-author:       @XusBadia
-source:       rendered from background.svg by generate.py
+title:        CFA4-branded macOS DMG window background render
+author:       @XusBadia; CFA4 branding update by István, adaptation by OpenAI
+source:       Rendered from packaging/macos/dmg/background.svg with the approved CFA4 logo master
 license:      MIT OR Apache-2.0
 license-file: LICENSE-MIT, LICENSE-APACHE
-added:        2026-10-08 by @XusBadia
-notes:        1x + 2x HiDPI TIFF for the macOS DMG window; includes the app icon (see its row) and LittleCMS's built-in sRGB profile ("No copyright, use freely"). Regenerate with packaging/macos/dmg/generate.py.
+added:        2026-10-23 by István
+notes:        1x and 2x 16-colour HiDPI TIFF render; preserves the original layout and sRGB profile.
