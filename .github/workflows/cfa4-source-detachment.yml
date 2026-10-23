@@ -6,7 +6,7 @@ on:
       - Cargo.lock
       - vendor/craft-libs/**
       - python/cfa4_devtools/dependency_audit.py
-      - python/tests/test_dependency_audit.py
+      - python/tests/test_dependency_audit_stdlib.py
       - .github/workflows/cfa4-source-detachment.yml
   push:
     branches: [main]
@@ -15,7 +15,7 @@ on:
       - Cargo.lock
       - vendor/craft-libs/**
       - python/cfa4_devtools/dependency_audit.py
-      - python/tests/test_dependency_audit.py
+      - python/tests/test_dependency_audit_stdlib.py
       - .github/workflows/cfa4-source-detachment.yml
 permissions:
   contents: read
@@ -32,4 +32,4 @@ jobs:
           PYTHONPATH: python
         run: |
           python3 -m cfa4_devtools.dependency_audit
-          python3 -m unittest discover -s python/tests -p 'test_dependency_audit.py' -v
+          python3 -m unittest discover -s python/tests -p 'test_dependency_audit_stdlib.py' -v
