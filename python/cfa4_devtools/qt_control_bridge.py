@@ -12,7 +12,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-
 # Start read-only; mutating project operations require a separately reviewed
 # Qt lifecycle transaction and confirmed error/timeout/undo semantics.
 READ_ONLY_OPERATIONS = frozenset({"perf.stats", "sequence.inspect"})
