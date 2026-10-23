@@ -9,8 +9,9 @@ publisher, version override or AppImage update endpoint.
 **RELEASE: HOLD**. The new workflow never publishes a GitHub Release. The
 `four-formats` workflow job is opt-in and requires a separately provisioned
 trusted Ubuntu 26.04 AMD64 self-hosted runner with reviewed packaging tools.
-The runner, artifact upload and end-to-end package installation have **not
-been validated by this source change**.
+The runner and end-to-end package installation have **not been validated
+by this source change**. Packages must remain on the user's controlled host;
+the workflow does not upload unapproved binaries or create public releases.
 
 - Version is read from CFA4 `Cargo.toml` exactly once and may not be
   overridden by `FILMCRAFT_VERSION`.

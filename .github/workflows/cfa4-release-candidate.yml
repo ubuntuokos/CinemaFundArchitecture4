@@ -54,15 +54,8 @@ jobs:
           APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
           CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
         run: bash scripts/release/build-cfa4-four-formats.sh
-      - name: Preserve private CI build evidence (not a release)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: cfa4-four-format-validation
-          path: |
-            dist/release/*.deb
-            dist/release/*.AppImage
-            dist/release/*.flatpak
-            dist/release/*.tar.gz
-            dist/release/SHA256SUMS
-          if-no-files-found: error
-          retention-days: 7
+      - name: Record local-only SHA256 evidence (never upload unapproved binaries)
+        run: |
+          test -s dist/release/SHA256SUMS
+          cat dist/release/SHA256SUMS
+          echo 'RELEASE HOLD: package files remain on the trusted runner only.'
