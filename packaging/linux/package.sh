@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# CFA4 local Linux x86_64 (AMD64) packaging only.
-# Outputs: AppImage, AppImage.zsync, deb, rpm, and tar.gz (cfa4-<version>-linux-x86_64).
+# CFA4 local Ubuntu 26.04 x86_64 (AMD64) packaging only.
+# Outputs: AppImage (+ optional .zsync), .deb and .tar.gz; Flatpak uses flatpak-bundle.sh.
 # Distribution remains blocked by the attribution/branding gate below.
-# Binary compatibility with older Linux distributions must be tested explicitly.
-# Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb rpm tar"].
-# Prerequisites: cargo; nfpm for deb/rpm; for AppImage: reviewed local appimagetool
+# Other distributions and architectures are not CFA4 release targets.
+# Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb tar"].
+# Prerequisites: cargo; nfpm for deb; for AppImage: reviewed local appimagetool
 # plus CFA4_APPIMAGETOOL_SHA256; optional zsyncmake. Never auto-download tools.
 set -euo pipefail
 # CFA4 LICENSE/IDENTITY GATE: packaging is developer-only until embedded FilmCraft
@@ -20,7 +20,7 @@ HERE="$ROOT/packaging/linux"
 APP_ID=io.github.ubuntuokos.cfa4
 
 SKIP_BUILD=0
-FORMATS="appimage deb rpm tar"
+FORMATS="appimage deb tar"
 while [ $# -gt 0 ]; do
   case "$1" in
     --skip-build) SKIP_BUILD=1; shift ;;
@@ -30,10 +30,23 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
-  echo "CFA4 packages only Linux x86_64 (AMD64)." >&2
+read -r -a requested_formats <<< "$FORMATS"
+if (( ${#requested_formats[@]} == 0 )); then
+  echo "error: --formats requires one or more of: appimage deb tar" >&2
   exit 2
 fi
+for format in "${requested_formats[@]}"; do
+  case "$format" in
+    appimage|deb|tar) ;;
+    *) echo "error: unsupported CFA4 package format: $format (supported: appimage deb tar; Flatpak uses flatpak-bundle.sh)" >&2; exit 2 ;;
+  esac
+done
+
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+  echo "CFA4 packages only Ubuntu 26.04 Linux x86_64 (AMD64)." >&2
+  exit 2
+fi
+. "$ROOT/scripts/ci/require-ubuntu-2604.sh"
 if [[ -n "${CROSS_ARCH:-}" || -n "${CROSS_TARGET:-}" || -n "${CROSS_COMPILE:-}" || -n "${EMULATOR:-}" || -n "${CARGO_BUILD_TARGET:-}" ]]; then
   echo "Cross-compilation and CARGO_BUILD_TARGET overrides are not supported by CFA4 packaging." >&2
   exit 2
@@ -84,15 +97,13 @@ if has tar; then
   echo "wrote $DIST/$BASENAME.tar.gz"
 fi
 
-# ---- .deb / .rpm --------------------------------------------------------------------------------
-if has deb || has rpm; then
+# ---- .deb ----------------------------------------------------------------------------------------
+if has deb; then
   command -v nfpm >/dev/null || { echo "error: nfpm not found (https://nfpm.goreleaser.com/install/)" >&2; exit 1; }
   export VERSION
   # nfpm.yaml pins arch=amd64; only VERSION is read from the environment.
   sed "s|\${STAGE}|$STAGE|g" "$HERE/nfpm.yaml" >"$WORK/nfpm.yaml"
-  for fmt in deb rpm; do
-    if has "$fmt"; then (cd "$ROOT" && nfpm package -f "$WORK/nfpm.yaml" -p "$fmt" -t "$DIST/$BASENAME.$fmt"); fi
-  done
+  (cd "$ROOT" && nfpm package -f "$WORK/nfpm.yaml" -p deb -t "$DIST/$BASENAME.deb")
 fi
 
 # ---- AppImage -----------------------------------------------------------------------------------

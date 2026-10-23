@@ -2,7 +2,19 @@
 # Install the extracted Linux tarball. No sudo is needed for the default prefix.
 set -euo pipefail
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
-  echo "CFA4 installation supports Linux x86_64 (AMD64) only." >&2
+  echo "CFA4 installation supports Ubuntu 26.04 Linux x86_64 (AMD64) only." >&2
+  exit 2
+fi
+# Included in the standalone tarball: must not depend on repository scripts.
+if [[ ! -r /etc/os-release ]]; then
+  echo "CFA4 cannot verify the Ubuntu 26.04 target platform." >&2
+  exit 2
+fi
+. /etc/os-release
+if [[ "${VERSION_ID:-}" != "26.04" ]] || {
+  [[ "${ID:-}" != "ubuntu" ]] && [[ " ${ID_LIKE:-} " != *" ubuntu "* ]]
+}; then
+  echo "Unsupported CFA4 installation host: ${PRETTY_NAME:-unknown}. Requires Ubuntu 26.04 x86_64." >&2
   exit 2
 fi
 

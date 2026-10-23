@@ -1,16 +1,16 @@
 # CFA4 — CinemaFoundArchetecture4
 
-CFA4 is a Linux x86_64 (AMD64)-targeted, further-developed derivative of the open-source **FilmCraft**
+CFA4 is an Ubuntu 26.04 x86_64 (AMD64)-targeted, further-developed derivative of the open-source **FilmCraft**
 video editor. The inherited Rust multimedia engine remains in place; CFA4 development
 combines **Rust / Cargo**, **Python**, and **Qt 6**.
 
 > **Development status:** repository preparation and gradual Linux migration.
-> Only Linux x86_64/AMD64 is supported for builds and releases. Android, ARM64, RISC-V, Windows, macOS and FreeBSD are **out of scope**.
+> Only Ubuntu 26.04 and its desktop flavours on Linux x86_64/AMD64 are supported for builds and releases. Android, ARM64, RISC-V, Windows, macOS and FreeBSD are **out of scope**.
 > This repository is **not yet a completed Qt 6 video editor**.
 
-## Getting started on Linux
+## Getting started on Ubuntu 26.04 AMD64
 
-1. Read [the Linux developer guide](docs/development/linux.md).
+1. Read [the Ubuntu 26.04 developer guide](docs/development/linux.md).
 2. Run `bash scripts/dev/bootstrap-ubuntu.sh --check` (non-modifying checks).
 3. Explicitly install prerequisites with `bash scripts/dev/bootstrap-ubuntu.sh --install` on Ubuntu/Debian.
 4. Install Rust with rustup (1.95.0 is selected by `rust-toolchain.toml`).

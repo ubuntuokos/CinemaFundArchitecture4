@@ -1,7 +1,7 @@
 # CFA4 — Linux development environment
 
-**Sole build and release target:** Linux x86_64 (AMD64; Rust native target `x86_64-unknown-linux-gnu`).
-Ubuntu/Debian x86_64 development bootstrap; other Linux x86_64 distributions may provide equivalent packages.
+**Sole build and release target:** Ubuntu 26.04 and its Ubuntu-based desktop flavours, Linux x86_64 (AMD64; Rust target `x86_64-unknown-linux-gnu`).
+Kubuntu, Ubuntu Studio and other Ubuntu 26.04 flavours share the host/version gate; other Linux distributions are not CFA4 release targets.
 **Unsupported targets:** Android, ARM/AArch64, RISC-V, Windows, macOS, FreeBSD and browser/WASM.
 Historical sources and target-specific transitive entries in Cargo.lock may remain until separately audited; they are not build or release targets.
 
@@ -14,7 +14,7 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 - **FFmpeg / ffprobe:** test oracle tools, not linked runtime dependencies of the existing Rust codec implementation.
 - **Python-to-Rust integration:** `filmcraft-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
 
-## Bootstrap (Ubuntu / Debian)
+## Bootstrap (Ubuntu 26.04 AMD64)
 
 For package inspection, without installing anything:
 
@@ -108,8 +108,8 @@ heif-enc --version
 ~~~
 
 The `.deb` package **recommends** these Ubuntu packages rather than
-bundling their binaries. Other Linux AMD64 distributions must install
-their equivalent libheif CLI and HEVC plugins separately.
+bundling their binaries. Other distributions are not CFA4 release targets; Ubuntu 26.04 HEIF runtime dependencies
+remain subject to the release audit.
 
 Run the targeted Rust oracles on a machine with the plugins installed:
 
@@ -128,7 +128,7 @@ and package redistribution require an independent release review.
 Installing system packages or passing the HEIF CI oracles does **not**
 constitute distribution approval.
 
-## AppImage local test tooling (Linux AMD64 only)
+## AppImage local test tooling (Ubuntu 26.04 AMD64 only)
 
 The Linux packaging script intentionally never downloads `appimagetool`.
 For an **explicit local packaging test**, install a previously reviewed and
@@ -142,7 +142,7 @@ export CFA4_APPIMAGETOOL_SHA256=<approved_64_hex_sha256>
 CFA4_ALLOW_LOCAL_PACKAGING=1 bash packaging/linux/package.sh --formats appimage
 ~~~
 
-Without the tool/digest, use `--formats 'deb rpm tar'` for a local test,
+Without the tool/digest, use `--formats 'deb tar'` for a local test,
 subject to their own prerequisites. Never treat a hash copied from the same
 untrusted download as provenance verification. Packaging remains developer-only
 and **not approved for publication**.

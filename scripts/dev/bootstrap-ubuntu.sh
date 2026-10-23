@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CFA4 developer prerequisites for Linux x86_64/AMD64 (Ubuntu/Debian).
+# CFA4 developer prerequisites for Ubuntu 26.04 and its flavours, x86_64/AMD64.
 # Default: read-only checks. --install: install system development packages.
 set -euo pipefail
 
@@ -8,17 +8,8 @@ if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   exit 2
 fi
 
-if [[ -r /etc/os-release ]]; then
-  . /etc/os-release
-else
-  echo "Cannot identify Linux distribution." >&2
-  exit 2
-fi
-
-case " $ID ${ID_LIKE:-} " in
-  *ubuntu*|*debian*) ;;
-  *) echo "This package installer supports Ubuntu/Debian only. See docs/development/linux.md." >&2; exit 2 ;;
-esac
+# Reject non-Ubuntu and non-26.04 hosts before checking or installing prerequisites.
+. "$(dirname "${BASH_SOURCE[0]}")/../ci/require-ubuntu-2604.sh"
 
 packages=(
   git curl ca-certificates build-essential pkg-config cmake ninja-build clang libclang-dev
@@ -55,7 +46,7 @@ case "${1:---check}" in
     exit "$missing"
     ;;
   --install)
-    echo "Installing Ubuntu/Debian build prerequisites through apt."
+    echo "Installing Ubuntu 26.04 build prerequisites through apt (explicit opt-in)."
     if [[ "$EUID" -eq 0 ]]; then
       apt-get update
       DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${packages[@]}"

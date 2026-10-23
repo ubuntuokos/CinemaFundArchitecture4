@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Repackage a FilmCraft Linux tarball as a single-file Flatpak bundle:
+# Repackage a CFA4 Ubuntu 26.04 Linux tarball as a single-file Flatpak bundle:
 #
 #   $DIST/cfa4-<version>-linux-x86_64.flatpak
 #
 # Usage: packaging/linux/flatpak-bundle.sh [--no-test] [TARBALL]
 #
 # TARBALL defaults to $DIST/cfa4-<version>-linux-x86_64.tar.gz from package.sh.
-# Only Linux x86_64 (AMD64) hosts are supported.
+# Only Ubuntu 26.04 x86_64 (AMD64) build hosts are supported.
 # Needs flatpak, flatpak-builder and the SVG pixbuf loader (librsvg2-common) for the host's
 # `appstreamcli compose`; the freedesktop runtime and SDK named in the manifest are
 # installed per-user from Flathub. Unless --no-test, the bundle is then installed per-user and
-# `filmcraft-cli --version` is run inside the sandbox as a smoke test.
+# `cfa4-cli --version` is run inside the sandbox as a smoke test.
 # Manifest: packaging/linux/flatpak/io.github.ubuntuokos.cfa4.bundle.yml.
 set -euo pipefail
 if [[ "${CFA4_ALLOW_LOCAL_PACKAGING:-0}" != "1" ]]; then
@@ -35,9 +35,10 @@ while [ $# -gt 0 ]; do
 done
 
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
-  echo "CFA4 Flatpak bundles support Linux x86_64 (AMD64) only." >&2
+  echo "CFA4 Flatpak bundles support Ubuntu 26.04 Linux x86_64 (AMD64) only." >&2
   exit 2
 fi
+. "$ROOT/scripts/ci/require-ubuntu-2604.sh"
 ARCH=x86_64
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 TARBALL="${TARBALL:-$DIST/$BASENAME.tar.gz}"
@@ -46,7 +47,7 @@ for tool in flatpak flatpak-builder; do
   command -v "$tool" >/dev/null || { echo "error: $tool not found (apt install flatpak flatpak-builder librsvg2-common)" >&2; exit 1; }
 done
 
-echo "==> FilmCraft $VERSION Flatpak bundle for $ARCH from $(basename "$TARBALL")"
+echo "==> CFA4 $VERSION Flatpak bundle for $ARCH from $(basename "$TARBALL")"
 
 WORK="$CARGO_TARGET_DIR/flatpak-bundle"
 rm -rf "$WORK"

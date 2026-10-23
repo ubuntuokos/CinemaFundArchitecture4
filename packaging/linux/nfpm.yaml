@@ -1,4 +1,4 @@
-# .deb and .rpm packages (nfpm: https://nfpm.goreleaser.com). Run by package.sh, which stages
+# .deb packaging on Ubuntu 26.04 AMD64 (nfpm: https://nfpm.goreleaser.com). package.sh stages
 # the file tree, substitutes its path for ${STAGE} (nfpm doesn't expand env vars in `src`) and
 # exports VERSION. The architecture is fixed to amd64 (Linux x86_64).
 #
@@ -7,7 +7,7 @@ name: cfa4
 arch: amd64
 platform: linux
 version: ${VERSION}
-# semver: 0.2.0-rc.1 becomes 0.2.0~rc.1 in deb/rpm, so pre-releases sort before the release.
+# semver: 0.2.0-rc.1 becomes 0.2.0~rc.1 in deb, so pre-releases sort before the release.
 version_schema: semver
 release: 1
 section: video
@@ -48,23 +48,6 @@ overrides:
       - libheif-plugin-libde265
       - libheif-plugin-x265
       - xdg-desktop-portal
-  rpm:
-    depends:
-      # the same floor as the deb: built on glibc 2.35, so RHEL 9 (2.34) must refuse the install
-      # instead of installing binaries that can't start (#93)
-      - glibc >= 2.35
-      - libxkbcommon
-      - (vulkan-loader or libglvnd-egl)
-      - alsa-lib
-    recommends:
-      - libwayland-client
-      - libX11
-      - libXcursor
-      - libXi
-      - libXrandr
-      - mesa-vulkan-drivers
-      - xdg-desktop-portal
-
 contents:
   - src: ${STAGE}/usr/bin/cfa4
     dst: /usr/bin/cfa4

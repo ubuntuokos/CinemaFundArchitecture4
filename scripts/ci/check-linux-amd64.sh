@@ -2,12 +2,15 @@
 # Fast, non-compiling CFA4 Linux AMD64 policy gate.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+# Hosted CI must match the Ubuntu 26.04 AMD64 build and release target.
+bash scripts/ci/require-ubuntu-2604.sh
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   echo "CFA4 only supports Linux x86_64 (AMD64)." >&2
   exit 2
 fi
 for script in \
   packaging/linux/package.sh \
+  scripts/ci/require-ubuntu-2604.sh \
   packaging/linux/flatpak-bundle.sh \
   packaging/linux/install.sh \
   scripts/dev/bootstrap-ubuntu.sh \
@@ -98,7 +101,14 @@ for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.s
     assert not any(arch in src for arch in ("aarch64", "arm64", "riscv64", "android")), filename
 
 assert 'arch: amd64' in (root / "packaging/linux/nfpm.yaml").read_text()
+assert 'rpm:' not in (root / "packaging/linux/nfpm.yaml").read_text()
 assert 'CARGO_BUILD_TARGET' in (root / "packaging/linux/package.sh").read_text()
+assert 'FORMATS="appimage deb tar"' in (root / "packaging/linux/package.sh").read_text()
+assert 'unsupported CFA4 package format' in (root / "packaging/linux/package.sh").read_text()
+for path in ('packaging/linux/package.sh', 'packaging/linux/flatpak-bundle.sh',
+             'scripts/dev/bootstrap-ubuntu.sh', 'scripts/dev/verify-linux.sh'):
+    assert 'require-ubuntu-2604.sh' in (root / path).read_text(), path
+assert 'VERSION_ID:-}' in (root / 'packaging/linux/install.sh').read_text()
 package_script = (root / "packaging/linux/package.sh").read_text()
 assert 'CFA4_APPIMAGETOOL_SHA256' in package_script
 assert 'sha256sum -- "$TOOL"' in package_script
