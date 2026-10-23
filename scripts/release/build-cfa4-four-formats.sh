@@ -7,7 +7,7 @@ if [[ "${CFA4_ALLOW_LOCAL_PACKAGING:-0}" != "1" ]]; then
   echo "CFA4 release HOLD: explicit CFA4_ALLOW_LOCAL_PACKAGING=1 is required for local tests." >&2
   exit 3
 fi
-for tool in cargo nfpm flatpak flatpak-builder sha256sum python3 dpkg-deb; do
+for tool in cargo nfpm flatpak flatpak-builder ostree ldd sha256sum python3 dpkg-deb; do
   command -v "$tool" >/dev/null 2>&1 || {
     echo "error: reviewed tool '$tool' is not installed; no automatic installation." >&2
     exit 2
