@@ -1,0 +1,42 @@
+[submodule "third_party/khronos/Vulkan-Headers"]
+	path = third_party/khronos/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "third_party/khronos/Vulkan-Loader"]
+	path = third_party/khronos/Vulkan-Loader
+	url = https://github.com/KhronosGroup/Vulkan-Loader.git
+[submodule "third_party/khronos/Vulkan-Tools"]
+	path = third_party/khronos/Vulkan-Tools
+	url = https://github.com/KhronosGroup/Vulkan-Tools.git
+[submodule "third_party/khronos/Vulkan-ValidationLayers"]
+	path = third_party/khronos/Vulkan-ValidationLayers
+	url = https://github.com/KhronosGroup/Vulkan-ValidationLayers.git
+[submodule "third_party/khronos/Vulkan-Video-Samples"]
+	path = third_party/khronos/Vulkan-Video-Samples
+	url = https://github.com/KhronosGroup/Vulkan-Video-Samples.git
+[submodule "third_party/khronos/Vulkan-Utility-Libraries"]
+	path = third_party/khronos/Vulkan-Utility-Libraries
+	url = https://github.com/KhronosGroup/Vulkan-Utility-Libraries.git
+[submodule "third_party/khronos/SPIRV-Headers"]
+	path = third_party/khronos/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "third_party/khronos/SPIRV-Tools"]
+	path = third_party/khronos/SPIRV-Tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git
+[submodule "third_party/khronos/glslang"]
+	path = third_party/khronos/glslang
+	url = https://github.com/KhronosGroup/glslang.git
+[submodule "third_party/khronos/OpenCL-SDK"]
+	path = third_party/khronos/OpenCL-SDK
+	url = https://github.com/KhronosGroup/OpenCL-SDK.git
+[submodule "third_party/khronos/OpenCL-Headers"]
+	path = third_party/khronos/OpenCL-Headers
+	url = https://github.com/KhronosGroup/OpenCL-Headers.git
+[submodule "third_party/khronos/OpenCL-ICD-Loader"]
+	path = third_party/khronos/OpenCL-ICD-Loader
+	url = https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+[submodule "third_party/khronos/KTX-Software"]
+	path = third_party/khronos/KTX-Software
+	url = https://github.com/KhronosGroup/KTX-Software.git
+[submodule "third_party/khronos/glTF"]
+	path = third_party/khronos/glTF
+	url = https://github.com/KhronosGroup/glTF.git
