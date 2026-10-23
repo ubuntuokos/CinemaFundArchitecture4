@@ -33,8 +33,8 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
     let mut open = true;
     match d {
         Dialog::About => {
-            egui::Window::new(tl!("About FilmCraft"))
-                .id(egui::Id::new("About FilmCraft"))
+            egui::Window::new(tl!("About CFA4"))
+                .id(egui::Id::new("About CFA4"))
                 .open(&mut open)
                 .collapsible(false)
                 .resizable(false)
@@ -453,7 +453,7 @@ fn about_tab(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
     use crate::links;
     let t = app.tokens;
     ui.set_width(380.0);
-    ui.heading("FilmCraft");
+    ui.heading("CFA4");
     ui.label(tlf!("Version {version}", version = env!("CARGO_PKG_VERSION")));
     ui.label(tl!("A clean-room, pure-Rust non-linear video editor."));
     ui.label(egui::RichText::new(tl!("CFA4 is a modified version of FilmCraft by the ArtCraft team.")).small().color(t.text_dim));

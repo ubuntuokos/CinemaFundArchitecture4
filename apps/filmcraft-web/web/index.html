@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>FilmCraft</title>
+  <title>CFA4</title>
   <link rel="icon" href="favicon.png" type="image/png">
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1c1f; }
@@ -29,10 +29,10 @@
 </head>
 <body>
   <canvas id="filmcraft_canvas"></canvas>
-  <div id="loading"><img src="favicon.png" alt=""><div id="status">Loading FilmCraft…</div></div>
+  <div id="loading"><img src="favicon.png" alt=""><div id="status">Loading CFA4…</div></div>
   <div id="fatal" role="alertdialog" aria-labelledby="fatal-title">
     <div class="box">
-      <h1 id="fatal-title">FilmCraft stopped working</h1>
+      <h1 id="fatal-title">CFA4 stopped working</h1>
       <div>Unsaved changes are kept in the browser every few seconds and come back when you reload.</div>
       <pre id="fatal-msg"></pre>
       <button id="fatal-reload" type="button">Reload</button>
@@ -86,7 +86,7 @@
         location.replace(location.pathname + "?" + params.toString().replace(/=(&|$)/g, "$1") + location.hash);
       } else {
         const s = document.getElementById("status");
-        if (s) { s.className = "err"; s.textContent = "FilmCraft failed to start:\n" + text; }
+        if (s) { s.className = "err"; s.textContent = "CFA4 failed to start:\n" + text; }
       }
       throw e;
     }

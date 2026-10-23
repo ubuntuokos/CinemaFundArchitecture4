@@ -4,7 +4,7 @@
 # using Ukrainian video-editing vocabulary. No proprietary localization resources were used.
 # Core menu coverage; other interface strings fall back to English.
 
-	About FilmCraft	Про FilmCraft
+	About CFA4	Про CFA4
 	Add Audio Submix Track	Додати доріжку підміксу аудіо
 	Add Caption at Playhead	Додати субтитр у позиції курсора відтворення
 	Add Chapter Marker…	Додати маркер розділу…
@@ -125,7 +125,7 @@
 	File	Файл
 	File…	Файл…
 	Fill frame	Заповнити кадр
-	FilmCraft Help…	Довідка FilmCraft…
+	CFA4 Help…	Довідка CFA4…
 	CFA4 on GitHub	CFA4 на GitHub
 	Find Next	Знайти далі
 	Find…	Знайти…
@@ -296,7 +296,7 @@
 	Select Previous Graphic	Вибрати попередній графічний елемент
 	Select Previous Layer	Вибрати попередній шар
 	Selection Follows Playhead	Виділення слідує за курсором відтворення
-	Selection as FilmCraft Project…	Виділення як проєкт FilmCraft…
+	Selection as CFA4 Project…	Виділення як проєкт CFA4…
 	Selection…	Виділення…
 	Send Backward	Перемістити назад
 	Send to Back	На задній план

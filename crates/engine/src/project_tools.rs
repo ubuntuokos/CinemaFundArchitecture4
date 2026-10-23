@@ -124,7 +124,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         }),
         spec(
             "file.exportSelectionProject",
-            "Selection as FilmCraft Project…",
+            "Selection as CFA4 Project…",
             &["File", "Export"],
             None,
             r#"{"path":str,"items":[id]?}"#,

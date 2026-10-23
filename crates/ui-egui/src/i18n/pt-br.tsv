@@ -18,7 +18,7 @@
 # dissolve = dissolução, scopes = escopos, highlights = realces, offline = offline, legacy = legado,
 # preferences (also the native macOS Settings menu) = Preferências, settings = configurações.
 
-	About FilmCraft	Sobre o FilmCraft
+	About CFA4	Sobre o CFA4
 	Add Audio Submix Track	Adicionar faixa de submixagem de áudio
 	Add Caption at Playhead	Adicionar legenda no cursor de reprodução
 	Add Chapter Marker…	Adicionar marcador de capítulo…
@@ -136,7 +136,7 @@
 	File	Arquivo
 	File…	Arquivo…
 	Fill frame	Preencher quadro
-	FilmCraft Help…	Ajuda do FilmCraft…
+	CFA4 Help…	Ajuda do CFA4…
 	CFA4 on GitHub	CFA4 no GitHub
 	Find Next	Localizar próximo
 	Find…	Localizar…
@@ -309,7 +309,7 @@
 	Select Previous Graphic	Selecionar gráfico anterior
 	Select Previous Layer	Selecionar camada anterior
 	Selection Follows Playhead	A seleção segue o cursor de reprodução
-	Selection as FilmCraft Project…	Seleção como projeto do FilmCraft…
+	Selection as CFA4 Project…	Seleção como projeto do CFA4…
 	Selection…	Seleção…
 	Send Backward	Enviar para trás
 	Send to Back	Enviar para o fundo
@@ -438,8 +438,8 @@
 	No background jobs.	Nenhuma tarefa em segundo plano.
 	Recover Unsaved Changes	Recuperar alterações não salvas
 	Untitled	Sem título
-	FilmCraft was closed while “{name}” had unsaved changes.	O FilmCraft foi fechado enquanto “{name}” tinha alterações não salvas.
-	FilmCraft quit unexpectedly while “{name}” had unsaved changes.	O FilmCraft fechou inesperadamente enquanto “{name}” tinha alterações não salvas.
+	CFA4 was closed while “{name}” had unsaved changes.	O CFA4 foi fechado enquanto “{name}” tinha alterações não salvas.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	O CFA4 fechou inesperadamente enquanto “{name}” tinha alterações não salvas.
 	Recover unsaved changes from {when}?	Recuperar as alterações não salvas de {when}?
 	The project had not been saved yet.	O projeto ainda não tinha sido salvo.
 	{n} sessions have unsaved changes:	{n} sessões têm alterações não salvas:
@@ -963,7 +963,7 @@
 	Font family	Família de fontes
 	Label Colors	Cores dos rótulos
 	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	Quadros decodificados mantidos para os monitores e miniaturas: {used} de {budget}.
-	FilmCraft keeps the rest of the RAM free for other applications.	O FilmCraft deixa o restante da RAM livre para outros aplicativos.
+	CFA4 keeps the rest of the RAM free for other applications.	O CFA4 deixa o restante da RAM livre para outros aplicativos.
 	not available in this session	indisponível nesta sessão
 	Currently: {loc} — {files} file(s), {size}	Atualmente: {loc} — {files} arquivo(s), {size}
 	 ({ch} output channels)	 ({ch} canais de saída)
@@ -1074,7 +1074,7 @@
 	Video Frame	Quadro de vídeo
 	Pin To	Fixar em
 	Pinned Edges	Bordas fixadas
-	FilmCraft Graphics Template	Modelo de gráficos do FilmCraft
+	CFA4 Graphics Template	Modelo de gráficos do CFA4
 	{n} Font	{n} Fonte
 	{n} Size	{n} Tamanho
 	{n} Color	{n} Cor
@@ -1084,7 +1084,7 @@
 	Export As Motion Graphics Template	Exportar como modelo de gráficos de movimento
 	Category:	Categoria:
 	Editable properties:	Propriedades editáveis:
-	Saved as a FilmCraft graphics template (.fcgt) in your templates folder.	Salvo como modelo de gráficos do FilmCraft (.fcgt) na sua pasta de modelos.
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	Salvo como modelo de gráficos do CFA4 (.fcgt) na sua pasta de modelos.
 	Exported graphics template to {path}	Modelo de gráficos exportado para {path}
 	Replace Fonts in Projects	Substituir fontes em projetos
 	Fonts used in the project:	Fontes usadas no projeto:
@@ -1455,7 +1455,7 @@
 	Center of Sphere	Centro da esfera
 	Cents	Cents
 	Change to Color	Alterar para cor
-	Changes are copied in the background a moment after each edit. If FilmCraft quits unexpectedly, they are offered the next time it starts.	As alterações são copiadas em segundo plano logo após cada edição. Se o FilmCraft fechar inesperadamente, elas serão oferecidas na próxima vez que ele for iniciado.
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	As alterações são copiadas em segundo plano logo após cada edição. Se o CFA4 fechar inesperadamente, elas serão oferecidas na próxima vez que ele for iniciado.
 	Channel	Canal
 	Channel Blur	Desfoque de canal
 	Channel Mix	Mixagem de canais
@@ -1828,7 +1828,7 @@
 	Hard Limiter	Limitador rígido
 	Hard Mix	Mistura sólida
 	Hardware decoding	Decodificação por hardware
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and FilmCraft's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Decodificação por hardware: Automático usa o decodificador de vídeo do sistema (VideoToolbox no macOS, Media Foundation no Windows, VA-API ou NVDEC para H.264 e HEVC no Linux) para os fluxos que ele suporta, e o decodificador próprio do FilmCraft para todo o resto ou se o hardware falhar. A mídia que já está aberta mantém seu decodificador até ser reaberta.
+	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Decodificação por hardware: Automático usa o decodificador de vídeo do sistema (VideoToolbox no macOS, Media Foundation no Windows, VA-API ou NVDEC para H.264 e HEVC no Linux) para os fluxos que ele suporta, e o decodificador próprio do CFA4 para todo o resto ou se o hardware falhar. A mídia que já está aberta mantém seu decodificador até ser reaberta.
 	Head Size	Tamanho da cabeça
 	Heart	Coração
 	Height	Altura
@@ -2103,7 +2103,7 @@
 	Night	Noite
 	No Motion	Sem movimento
 	No Scroll	Sem rolagem
-	No plugins are installed. Changes will take effect the next time you start FilmCraft.	Nenhum plug-in instalado. As alterações terão efeito na próxima vez que o FilmCraft for iniciado.
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Nenhum plug-in instalado. As alterações terão efeito na próxima vez que o CFA4 for iniciado.
 	Noise	Ruído
 	Noise & Grain	Ruído e granulação
 	Noise (Legacy)	Ruído (legado)
@@ -2534,7 +2534,7 @@
 	Template Properties	Propriedades do modelo
 	Text Animator	Animador de texto
 	Text Color	Cor do texto
-	The media cache holds render previews of unsaved projects and other files FilmCraft can recreate. Deleting them is always safe; FilmCraft rebuilds them as needed.	O cache de mídia guarda pré-visualizações renderizadas de projetos não salvos e outros arquivos que o FilmCraft pode recriar. Excluí-los é sempre seguro; o FilmCraft os recria quando necessário.
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	O cache de mídia guarda pré-visualizações renderizadas de projetos não salvos e outros arquivos que o CFA4 pode recriar. Excluí-los é sempre seguro; o CFA4 os recria quando necessário.
 	Thickness	Espessura
 	Tile Gradient	Gradiente em mosaico
 	Tilt	Inclinação
@@ -2744,7 +2744,7 @@
 	System Compatibility Report	Relatório de compatibilidade do sistema
 	no GPU adapter: the CPU compositor is used	nenhum adaptador de GPU: o compositor da CPU é usado
 	Avid Log Exchange	Avid Log Exchange
-	FilmCraft Project	Projeto do FilmCraft
+	CFA4 Project	Projeto do CFA4
 	{name} Selection.fcproj	{name} Seleção.fcproj
 	{name} (Simplified)	{name} (simplificada)
 	Find in:	Localizar em:
@@ -2884,7 +2884,7 @@
 	Start Queue	Iniciar fila
 	Stop	Parar
 	Clear Finished	Limpar concluídas
-	Not supported by FilmCraft's encoders yet	Ainda não suportado pelos codificadores do FilmCraft
+	Not supported by CFA4's encoders yet	Ainda não suportado pelos codificadores do CFA4
 	Sequence name	Nome da sequência
 	Folder	Pasta
 	Preset	Predefinição
@@ -2974,7 +2974,7 @@
 	Drag a clip to slide it between its neighbours.	Arraste um clipe para deslizá-lo entre seus vizinhos.
 	Drag to scroll the timeline.	Arraste para rolar a linha do tempo.
 	Click to zoom in; Opt-click to zoom out.	Clique para ampliar; Opt+clique para reduzir.
-	FilmCraft hit an error	O FilmCraft encontrou um erro
+	CFA4 hit an error	O CFA4 encontrou um erro
 	Details: {path}	Detalhes: {path}
 	Opened {url}	{url} aberto
 	(empty)	(vazio)
@@ -3228,7 +3228,7 @@
 	QuickTime, ProRes 4444 (4:4:4) with alpha channel, 24-bit 48 kHz PCM	QuickTime, ProRes 4444 (4:4:4) com canal alfa, PCM de 24 bits e 48 kHz
 	QuickTime, ProRes 4444 XQ (4:4:4), 24-bit 48 kHz PCM	QuickTime, ProRes 4444 XQ (4:4:4), PCM de 24 bits e 48 kHz
 	QuickTime, ProRes 422, 24-bit 48 kHz PCM	QuickTime, ProRes 422, PCM de 24 bits e 48 kHz
-	Quit FilmCraft	Sair do FilmCraft
+	Quit CFA4	Sair do CFA4
 	Rate Stretch Tool	Ferramenta Alongamento de taxa
 	Razor Tool	Ferramenta Lâmina
 	Rectangle Tool	Ferramenta Retângulo
@@ -3528,8 +3528,8 @@
 	Composite in Linear Color	Compor em cor linear
 	Auto Tone Map Media (HDR and log into SDR)	Mapeamento de tons automático da mídia (HDR e log para SDR)
 	Configure…	Configurar…
-	Not supported in FilmCraft yet	Ainda não suportado no FilmCraft
-	FilmCraft always composites in linear light	O FilmCraft sempre compõe em luz linear
+	Not supported in CFA4 yet	Ainda não suportado no CFA4
+	CFA4 always composites in linear light	O CFA4 sempre compõe em luz linear
 	Loop marked range	Loop do intervalo marcado
 	Play Source	Reproduzir origem
 	Source Play/Stop	Reproduzir/parar origem

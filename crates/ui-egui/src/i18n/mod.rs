@@ -1123,7 +1123,7 @@ mod tests {
             assert!(Language::De.has(en), "untranslated German menu: {en}");
         }
         assert_eq!(Language::De.tr("Settings"), "Voreinstellungen");
-        assert_eq!(Language::De.tr("Quit FilmCraft"), "FilmCraft beenden");
+        assert_eq!(Language::De.tr("Quit CFA4"), "CFA4 beenden");
         // beyond the menus: panels, effects and their parameters, settings, status messages
         for (en, de) in [
             ("Gaussian Blur", "Gaußscher Weichzeichner"),

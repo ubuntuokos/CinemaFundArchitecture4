@@ -78,7 +78,7 @@ fn file_edit_clip_menu_order_and_shortcuts_match_premiere() {
         ("file.close", "Close", Some("Cmd+W")),
         ("file.importFromMediaBrowser", "Import from Media Browser", Some("Cmd+Alt+I")),
         ("file.mediaProperties", "Selection…", Some("Cmd+Shift+H")),
-        ("file.exportSelectionProject", "Selection as FilmCraft Project…", None),
+        ("file.exportSelectionProject", "Selection as CFA4 Project…", None),
         ("file.exportAle", "Avid Log Exchange…", None),
         ("edit.find", "Find…", Some("Cmd+F")),
         ("edit.editOriginal", "Edit Original", Some("Cmd+E")),
