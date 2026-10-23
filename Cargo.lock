@@ -1870,6 +1870,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "filmcraft-credits"
+version = "0.10.0"
+dependencies = [
+ "filmcraft-geom",
+ "filmcraft-project",
+ "filmcraft-time",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "filmcraft-dng"
 version = "0.10.0"
 dependencies = [
@@ -1910,6 +1921,7 @@ dependencies = [
  "filmcraft-captions",
  "filmcraft-codecs",
  "filmcraft-color",
+ "filmcraft-credits",
  "filmcraft-dng",
  "filmcraft-edit",
  "filmcraft-export",

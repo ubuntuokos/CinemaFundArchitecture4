@@ -1,0 +1,17 @@
+[package]
+name = "filmcraft-credits"
+description = "CFA4 credits sequences: credits spreadsheet (CSV/TSV) reader, page and content styles, layout into graphic clips (cards and rolls)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+filmcraft-time = { workspace = true }
+filmcraft-geom = { workspace = true }
+filmcraft-project = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

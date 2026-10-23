@@ -36,6 +36,7 @@ filmcraft-mxf = { workspace = true }
 filmcraft-format = { workspace = true }
 filmcraft-interchange = { workspace = true }
 filmcraft-captions = { workspace = true }
+filmcraft-credits = { workspace = true }
 filmcraft-speech = { workspace = true }
 filmcraft-tts = { workspace = true }
 serde = { workspace = true }
