@@ -4,7 +4,7 @@
 # using Russian video-editing vocabulary (Premiere-style). No proprietary localization resources were used.
 # Core menu coverage; other interface strings fall back to English.
 
-	About FilmCraft	О FilmCraft
+	About CFA4	О CFA4
 	Add Audio Submix Track	Добавить дорожку подмикширования звука
 	Add Caption at Playhead	Добавить субтитр в позиции курсора воспроизведения
 	Add Chapter Marker…	Добавить маркер главы…
@@ -127,7 +127,7 @@
 	File…	Файл…
 	Fill frame	Заполнить кадр
 	FilmCraft Help…	Справка FilmCraft…
-	FilmCraft on GitHub	FilmCraft на GitHub
+	CFA4 on GitHub	CFA4 на GitHub
 	FilmCraft on getartcraft.com	FilmCraft на getartcraft.com
 	Find Next	Найти далее
 	Find…	Найти…
@@ -264,6 +264,7 @@
 	Replace Fonts in Projects…	Заменить шрифты в проектах…
 	Replace With Clip	Заменить клипом
 	Report an Issue…	Сообщить о проблеме…
+	Report a CFA4 issue…	Сообщить о проблеме CFA4…
 	Reset All Parameters	Сбросить все параметры
 	Reset Duration	Сбросить длительность
 	Reset to Saved Layout	Сбросить к сохраненному макету

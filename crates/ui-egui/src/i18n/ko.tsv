@@ -73,7 +73,7 @@
 	AAF Export Settings	AAF 내보내기 설정
 	AAF…	AAF…
 	About	정보
-	About FilmCraft	FilmCraft 정보
+	About CFA4	CFA4 정보
 	Accent Color	강조 색상
 	Accessible color contrast	접근성 색상 대비
 	Animate zoom, scrolling and menus	확대/축소, 스크롤 및 메뉴 애니메이션
@@ -1164,7 +1164,7 @@
 	FilmCraft hit an error	FilmCraft 오류 발생
 	FilmCraft keeps the rest of the RAM free for other applications.	FilmCraft는 나머지 RAM을 다른 앱용으로 비워 둡니다.
 	FilmCraft on getartcraft.com	getartcraft.com의 FilmCraft
-	FilmCraft on GitHub	GitHub의 FilmCraft
+	CFA4 on GitHub	GitHub의 CFA4
 	FilmCraft Project	FilmCraft 프로젝트
 	FilmCraft quit unexpectedly while “{name}” had unsaved changes.	“{name}”의 변경 사항을 저장하지 않은 채 FilmCraft가 비정상 종료되었습니다.
 	FilmCraft was closed while “{name}” had unsaved changes.	“{name}”의 변경 사항을 저장하지 않은 채 FilmCraft가 닫혔습니다.
@@ -2537,6 +2537,7 @@
 	Replicate	복제
 	Report an issue	문제 신고
 	Report an Issue…	문제 신고…
+	Report a CFA4 issue…	CFA4 문제 신고…
 	Reset	재설정
 	Reset All Parameters	모든 매개변수 재설정
 	Reset Duration	지속 시간 재설정

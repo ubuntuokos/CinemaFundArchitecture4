@@ -14,7 +14,7 @@
 # way. Product and technology names (FilmCraft, ArtCraft, Lumetri, ProRes, LUFS…) keep their
 # spelling. "video" is written without an accent, as in the rest of this catalog.
 
-	About FilmCraft	Acerca de FilmCraft
+	About CFA4	Acerca de CFA4
 	Add Audio Submix Track	Añadir pista de submezcla de audio
 	Add Caption at Playhead	Añadir subtítulo en el cabezal
 	Add Chapter Marker…	Añadir marcador de capítulo…
@@ -134,7 +134,7 @@
 	File…	Archivo…
 	Fill frame	Rellenar fotograma
 	FilmCraft Help…	Ayuda de FilmCraft…
-	FilmCraft on GitHub	FilmCraft en GitHub
+	CFA4 on GitHub	CFA4 en GitHub
 	FilmCraft on getartcraft.com	FilmCraft en getartcraft.com
 	Find Next	Buscar siguiente
 	Find…	Buscar…
@@ -274,6 +274,7 @@
 	Replace Fonts in Projects…	Reemplazar fuentes en proyectos…
 	Replace With Clip	Reemplazar con clip
 	Report an Issue…	Informar de un problema…
+	Report a CFA4 issue…	Informar de un problema de CFA4…
 	Reset All Parameters	Restablecer todos los parámetros
 	Reset Duration	Restablecer duración
 	Reset to Saved Layout	Restablecer al diseño guardado

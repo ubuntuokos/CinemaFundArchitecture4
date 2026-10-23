@@ -4,7 +4,7 @@
 # using Ukrainian video-editing vocabulary. No proprietary localization resources were used.
 # Core menu coverage; other interface strings fall back to English.
 
-	About FilmCraft	Про FilmCraft
+	About CFA4	Про CFA4
 	Add Audio Submix Track	Додати доріжку підміксу аудіо
 	Add Caption at Playhead	Додати субтитр у позиції курсора відтворення
 	Add Chapter Marker…	Додати маркер розділу…
@@ -127,7 +127,7 @@
 	File…	Файл…
 	Fill frame	Заповнити кадр
 	FilmCraft Help…	Довідка FilmCraft…
-	FilmCraft on GitHub	FilmCraft на GitHub
+	CFA4 on GitHub	CFA4 на GitHub
 	FilmCraft on getartcraft.com	FilmCraft на getartcraft.com
 	Find Next	Знайти далі
 	Find…	Знайти…
@@ -265,6 +265,7 @@
 	Replace Fonts in Projects…	Замінити шрифти в проєктах…
 	Replace With Clip	Замінити кліпом
 	Report an Issue…	Повідомити про проблему…
+	Report a CFA4 issue…	Повідомити про проблему CFA4…
 	Reset All Parameters	Скинути всі параметри
 	Reset Duration	Скинути тривалість
 	Reset to Saved Layout	Відновити збережене компонування
