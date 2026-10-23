@@ -123,7 +123,9 @@ def verify_tarball(path: Path, version: str) -> None:
 
 
 def verify_deb(path: Path, version: str) -> None:
-    if path.open("rb").read(8) != b"!<arch>\n":
+    with path.open("rb") as source:
+        magic = source.read(8)
+    if magic != b"!<arch>\n":
         raise AuditError("invalid .deb ar magic")
     def dpkg(*args: str) -> str:
         try:
