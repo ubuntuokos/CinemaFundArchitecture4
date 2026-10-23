@@ -94,6 +94,16 @@ def test_changed_vendor_source_is_detected(tmp_path) -> None:
     assert any("changed vendor source" in error for error in verify_vendored_files(tmp_path))
 
 
+def test_unmanifested_vendor_file_is_detected(tmp_path) -> None:
+    from shutil import copytree
+
+    vendor = tmp_path / "vendor" / "craft-libs" / "docpath"
+    copytree(ROOT / "vendor" / "craft-libs" / "docpath", vendor)
+    (vendor / "src" / "untracked.rs").write_text("// not in SOURCE_MANIFEST.json\n", encoding="utf-8")
+    errors = verify_vendored_files(tmp_path)
+    assert any("unmanifested source file src/untracked.rs" in error for error in errors)
+
+
 def test_vendored_source_integrity() -> None:
     assert verify_vendored_files(ROOT) == []
 
