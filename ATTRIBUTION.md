@@ -1,5 +1,3 @@
-# Attribution
-
 Every non-code asset in FilmCraft, with its author, source and licence. Each file listed here also has
 a `<file>.attribution` sidecar with full details. The rules are in [AGENTS.md](AGENTS.md) §1: no Adobe
 iconography, images or other Adobe assets; open licences only; every asset attributed.
@@ -34,8 +32,8 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `docs/images/filmcraft-timeline.png` | FilmCraft contributors | Original work: FilmCraft UI crop; thumbnails from Night of the Living Dead (1968) and Carnival of Souls (1962), CC0 Chopin waveform | MIT OR Apache-2.0; film frames public domain |
 | `assets/app-icon/cfa4-official-logo.png` | István (CFA4 project owner), adaptation by OpenAI | Owner-supplied CFA3 emblem, adapted into the approved CFA4 official logo on 2026-10-23 | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
 | `assets/app-icon/filmcraft.svg` | István (CFA4 project owner), adaptation by OpenAI | Owner-supplied CFA3 emblem, adapted into the approved CFA4 official logo on 2026-10-23 | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
-| `packaging/macos/dmg/background.svg` | @XusBadia | Original work: FilmCraft macOS DMG window background, derived from the FilmCraft app icon (`assets/app-icon/filmcraft.svg`); rendered to `background.tiff` by `packaging/macos/dmg/generate.py` | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
-| `packaging/macos/dmg/background.tiff` | @XusBadia | Rendered from `packaging/macos/dmg/background.svg` by `packaging/macos/dmg/generate.py` | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
+| `packaging/macos/dmg/background.svg` | @XusBadia; CFA4 branding update by István | Original macOS DMG artwork, updated to display `assets/app-icon/cfa4-official-logo.png` on a white panel | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
+| `packaging/macos/dmg/background.tiff` | @XusBadia; CFA4 branding update by István | Rendered from the updated `packaging/macos/dmg/background.svg` with the official CFA4 logo | MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`) |
 | `assets/app-icon/filmcraft-small.svg` | István (CFA4 project owner), adaptation by OpenAI | Owner-supplied CFA3 emblem, adapted into the approved CFA4 official logo on 2026-10-23 | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
 | `assets/app-icon/filmcraft-1024.png` | István (CFA4 project owner), adaptation by OpenAI | Owner-supplied CFA3 emblem, adapted into the approved CFA4 official logo on 2026-10-23 | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |
 | `assets/app-icon/filmcraft-macos-512.png` | István (CFA4 project owner), adaptation by OpenAI | Owner-supplied CFA3 emblem, adapted into the approved CFA4 official logo on 2026-10-23 | MIT OR Apache-2.0 (`assets/app-icon/LICENSE.txt`) |

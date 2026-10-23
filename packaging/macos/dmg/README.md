@@ -1,13 +1,13 @@
 # macOS DMG window
 
-What Finder shows when the DMG opens: a 660 × 400 pt background with the app icon and the
+What Finder shows when the DMG opens: a 660 × 400 pt background with the official CFA4 logo and the
 `Applications` link side by side. `package.sh` copies these files into the image; nothing here is
 generated at build time, so the DMG still builds with `hdiutil makehybrid` (no mounted device, no
 Finder scripting on CI, nothing extra installed in the signing job).
 
 | File | What |
 |---|---|
-| `background.svg` | Source of the background: the app icon (`assets/app-icon/filmcraft.svg`, linked, not copied) cropped as a cover on the FilmCraft colour field (`#8b5cf6`), Ink and Paper. Its text (Inter, JetBrains Mono) is outlined, so rendering it needs no fonts. No paper grain: noise doesn't compress, and this keeps `background.tiff` small. |
+| `background.svg` | Source of the background: the approved CFA4 logo master (`assets/app-icon/cfa4-official-logo.png`) centered on a white panel. The remaining FilmCraft installer layout and outlined text stay unchanged. No paper grain: noise doesn't compress, and this keeps `background.tiff` small. |
 | `background.tiff` | The background at 1x (660 × 400 px, 72 dpi) and 2x (1320 × 800 px, 144 dpi) in one HiDPI TIFF (16-colour palette, Deflate, sRGB). Goes to `.background/background.tiff`. |
 | `dmg-layout.DS_Store` | Finder's view settings for the volume: window size, icon size 128, FilmCraft.app at (326, 205), `Applications` at (574, 205), and the background. Goes to `.DS_Store` in the image; named so it isn't mistaken for (or ignored like) a Finder-generated `.DS_Store`. |
 | `generate.py` | Writes `background.tiff` and `dmg-layout.DS_Store` from the SVG and the layout above. |
@@ -37,8 +37,4 @@ python3 packaging/macos/dmg/generate.py   # needs resvg on PATH
 
 Both outputs are byte-for-byte reproducible and carry nothing from the machine that ran it: the
 SVG renders without any fonts, and `dmg-layout.DS_Store` is written from scratch, its background
-alias holding only the volume name and `/.background/background.tiff`. If you add text to the SVG,
-outline it (`usvg` from resvg converts text to paths). The window is 660 × 432 with Finder's 32 pt
-title bar; the content area is 660 × 400.
-
-This follows VectorCraft's `packaging/macos/dmg/` (storytold/vectorcraft#493).
+alias holding only the volume name and relative path.
