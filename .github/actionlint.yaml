@@ -1,0 +1,4 @@
+paths:
+  .github/workflows/cfa4-source-detachment.yml:
+    ignore:
+      - 'label "ubuntu-26\.04" is unknown\..*'
