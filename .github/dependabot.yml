@@ -28,3 +28,15 @@ updates:
           - "*"
     commit-message:
       prefix: "ci(deps)"
+
+  # Python developer tooling (pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      python-devtools:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(python)"

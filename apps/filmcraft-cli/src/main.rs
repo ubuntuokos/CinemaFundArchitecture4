@@ -1,10 +1,10 @@
 //! FilmCraft headless CLI: every engine command is one shell call away, for scripts and AI agents.
 //!
-//! Run `filmcraft-cli help` for the full reference (also in docs/agents.md).
+//! Run `cfa4-cli help` for the full reference (also in docs/agents.md).
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
-/// `println!` that doesn't panic when stdout is closed (`filmcraft-cli commands | head`) with
+/// `println!` that doesn't panic when stdout is closed (`cfa4-cli commands | head`) with
 /// "failed printing to stdout: Broken pipe (os error 32)". Once stdout has failed, later output is
 /// dropped and the work goes on: see `stdout_failed`.
 macro_rules! outln {
@@ -56,15 +56,15 @@ fn stdout_failed(e: std::io::Error) {
     if STDOUT_GONE.swap(true, Ordering::Relaxed) || e.kind() == std::io::ErrorKind::BrokenPipe {
         return;
     }
-    diag(format_args!("filmcraft-cli: can't write to stdout: {e}"));
+    diag(format_args!("cfa4-cli: can't write to stdout: {e}"));
     STDOUT_ERROR.store(true, Ordering::Relaxed);
 }
 
 const HELP: &str = "\
-filmcraft-cli: drive FilmCraft from the shell (headless engine, or the live app with --bridge)
+cfa4-cli: drive CFA4 from the shell (headless engine, or the live app with --bridge)
 
 USAGE
-  filmcraft-cli [OPTIONS] <SUBCOMMAND> [ARGS]
+  cfa4-cli [OPTIONS] <SUBCOMMAND> [ARGS]
 
 SUBCOMMANDS
   exec <id> [key=value ...]     run one command; prints its result as JSON
@@ -104,8 +104,8 @@ OPTIONS
   --demo                        open the built-in demo project (headless)
   --save                        save the project back to --project when done
   --save-as <p.fcproj>          save the project to this path when done
-  --bridge <127.0.0.1:PORT>     send commands to the running app (`filmcraft --control PORT`)
-  --data-dir <dir>              FilmCraft data directory for user export presets (headless;
+  --bridge <127.0.0.1:PORT>     send commands to the running app (`cfa4 --control PORT`)
+  --data-dir <dir>              CFA4 data directory for user export presets (headless;
                                 default: the app's data directory)
   --keep-going                  `run`: report failing lines and continue
   --compact                     one-line JSON output
@@ -131,12 +131,12 @@ fn diag(msg: std::fmt::Arguments) {
 }
 
 fn usage(msg: impl std::fmt::Display) -> ! {
-    diag(format_args!("filmcraft-cli: {msg}\nRun `filmcraft-cli help` for usage."));
+    diag(format_args!("cfa4-cli: {msg}\nRun `cfa4-cli help` for usage."));
     std::process::exit(2)
 }
 
 fn fail(msg: impl std::fmt::Display) -> ! {
-    diag(format_args!("filmcraft-cli: {msg}"));
+    diag(format_args!("cfa4-cli: {msg}"));
     std::process::exit(1)
 }
 
@@ -255,18 +255,27 @@ fn absolute(path: &str) -> String {
     std::path::absolute(path).ok().and_then(|p| p.into_os_string().into_string().ok()).unwrap_or_else(|| path.to_string())
 }
 
+fn cli_trace(stage: &str) {
+    if std::env::var_os("FILMCRAFT_CLI_TRACE").is_some() {
+        diag(format_args!("cfa4-cli: trace: {stage}"));
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    cli_trace("entered async main");
     cli().await;
+    cli_trace("cli future returned");
     if STDOUT_ERROR.load(Ordering::Relaxed) {
         std::process::exit(1);
     }
+    cli_trace("main is returning");
 }
 
 async fn cli() {
     // `std::env::args` panics on an argument that is not Unicode (a Linux file name in Latin-1)
     let a = Args::parse(std::env::args_os().skip(1).map(|a| a.to_string_lossy().into_owned()));
-    // `--help` anywhere (`filmcraft-cli --help`, `filmcraft-cli export --help`) prints the reference:
+    // `--help` anywhere (`cfa4-cli --help`, `cfa4-cli export --help`) prints the reference:
     // the parser takes it as a flag option, so it never reaches the subcommand match.
     if a.flag("--help") {
         out!("{HELP}");
@@ -274,7 +283,7 @@ async fn cli() {
     }
     // `--version` anywhere and `-V` as the subcommand, also after global options (`--demo --version`, #710).
     if a.wants_version() {
-        outln!("filmcraft-cli {}", env!("CARGO_PKG_VERSION"));
+        outln!("CFA4 CLI {}", env!("CARGO_PKG_VERSION"));
         return;
     }
     register_hardware_decoders();
@@ -282,7 +291,7 @@ async fn cli() {
     let Some(cmd) = a.pos(0) else { usage("missing subcommand") };
     match cmd {
         "help" | "-h" => out!("{HELP}"),
-        "version" => outln!("filmcraft-cli {}", env!("CARGO_PKG_VERSION")),
+        "version" => outln!("CFA4 CLI {}", env!("CARGO_PKG_VERSION")),
         "probe" => {
             let path = a.pos(1).unwrap_or_else(|| usage("probe <media> [--image-sequence]"));
             match probe::probe(path, a.flag("--image-sequence")) {
@@ -314,7 +323,7 @@ async fn cli() {
                 let id = a.pos(1).unwrap_or_else(|| usage("describe <id>"));
                 match list.iter().find(|c| c["id"] == id) {
                     Some(c) => print(&a, c),
-                    None => fail(format!("unknown command `{id}` (try `filmcraft-cli commands {id}`)")),
+                    None => fail(format!("unknown command `{id}` (try `cfa4-cli commands {id}`)")),
                 }
                 return;
             }
@@ -338,11 +347,20 @@ async fn cli() {
             let id = a.pos(1).unwrap_or_else(|| usage("exec <id> [key=value ...]"));
             let params = a.params_from(2).unwrap_or_else(|e| usage(e));
             let mut b = Backend::open(&a);
+            cli_trace("exec command submitted");
             match b.exec(id, params).await {
-                Ok(v) => print(&a, &v),
+                Ok(v) => {
+                    cli_trace("exec command returned successfully");
+                    print(&a, &v);
+                    cli_trace("exec result printed");
+                }
                 Err(e) => fail(format!("{id}: {e}")),
             }
+            cli_trace("finishing backend");
             b.finish(&a).await;
+            cli_trace("backend finish returned; dropping backend");
+            drop(b);
+            cli_trace("backend dropped");
         }
         "run" => {
             let script = a.pos(1).unwrap_or_else(|| usage("run <script.jsonl | ->"));
@@ -531,7 +549,7 @@ fn offline_media(result: &Value) -> Vec<Value> {
 /// One stderr line per offline item that rendered as placeholder frames (#1054).
 fn offline_warning(offline: &[Value]) -> String {
     let s = |o: &Value, k: &str| o.get(k).and_then(Value::as_str).unwrap_or("").to_string();
-    let mut msg = format!("filmcraft-cli: warning: {} offline media item(s) rendered as placeholder frames:", offline.len());
+    let mut msg = format!("cfa4-cli: warning: {} offline media item(s) rendered as placeholder frames:", offline.len());
     for o in offline {
         let id = o.get("item").and_then(Value::as_u64).map(|i| i.to_string()).unwrap_or_default();
         msg.push_str(&format!("\n  item {id} {} ({}): {}", s(o, "name"), s(o, "status"), s(o, "path")));
@@ -675,7 +693,7 @@ mod format_tests {
         assert_eq!(super::absolute(""), "");
         #[cfg(unix)]
         {
-            let dir = std::env::temp_dir().join(format!("filmcraft-cli-abs-{}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("cfa4-cli-abs-{}", std::process::id()));
             std::fs::create_dir_all(&dir).unwrap();
             std::fs::write(dir.join("real.mov"), b"x").unwrap();
             let link = dir.join("link.mov");

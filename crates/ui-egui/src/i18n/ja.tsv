@@ -16,7 +16,7 @@
 #     (not 効果), ぼかし, 音量, ビデオ, 再生ヘッド, イン点/アウト点.
 #   - "Horizontal"/"Vertical" are 水平/垂直 (guides, blur, axes); vertical text is "Vertical Text".
 
-	About FilmCraft	FilmCraft について
+	About CFA4	CFA4 について
 	Add Audio Submix Track	オーディオサブミックストラックを追加
 	Add Caption at Playhead	再生ヘッドの位置にキャプションを追加
 	Add Chapter Marker…	チャプターマーカーを追加…
@@ -136,7 +136,7 @@
 	File…	ファイル…
 	Fill frame	フレームを埋める
 	FilmCraft Help…	FilmCraft ヘルプ…
-	FilmCraft on GitHub	GitHub の FilmCraft
+	CFA4 on GitHub	GitHub の CFA4
 	FilmCraft on getartcraft.com	getartcraft.com の FilmCraft
 	Find Next	次を検索
 	Find…	検索…
@@ -275,6 +275,7 @@
 	Replace Fonts in Projects…	プロジェクト内のフォントを置換…
 	Replace With Clip	クリップで置換
 	Report an Issue…	問題を報告…
+	Report a CFA4 issue…	CFA4 の問題を報告…
 	Reset All Parameters	すべてのパラメーターをリセット
 	Reset Duration	長さをリセット
 	Reset to Saved Layout	保存したレイアウトにリセット

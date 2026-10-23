@@ -14,7 +14,7 @@
 # ProRes, LUFS, H.264…) keep their spelling, as do key-cap names (Shift, Alt, Ctrl, Cmd, Opt, Esc).
 # Commands are imperatives addressed with "tu"; decimals use a comma (29,97 fps).
 
-	About FilmCraft	Informazioni su FilmCraft
+	About CFA4	Informazioni su CFA4
 	Add Audio Submix Track	Aggiungi traccia submix audio
 	Add Caption at Playhead	Aggiungi sottotitolo all'indicatore di riproduzione
 	Add Chapter Marker…	Aggiungi marcatore di capitolo…
@@ -134,7 +134,7 @@
 	File…	File…
 	Fill frame	Riempi il fotogramma
 	FilmCraft Help…	Guida di FilmCraft…
-	FilmCraft on GitHub	FilmCraft su GitHub
+	CFA4 on GitHub	CFA4 su GitHub
 	FilmCraft on getartcraft.com	FilmCraft su getartcraft.com
 	Find Next	Trova successivo
 	Find…	Trova…
@@ -271,6 +271,7 @@
 	Replace Fonts in Projects…	Sostituisci font nei progetti…
 	Replace With Clip	Sostituisci con clip
 	Report an Issue…	Segnala un problema…
+	Report a CFA4 issue…	Segnala un problema di CFA4…
 	Reset All Parameters	Reimposta tutti i parametri
 	Reset Duration	Reimposta durata
 	Reset to Saved Layout	Ripristina layout salvato

@@ -1,0 +1,40 @@
+name: CFA4 F7 native media timing source gate
+
+on:
+  pull_request:
+    paths:
+      - 'python/cfa4_devtools/media_timestamp_audit.py'
+      - 'python/tests/test_media_timestamp_audit.py'
+      - 'docs/audit/f7-media-capability-status.json'
+      - '.github/workflows/cfa4-f7-media-timing.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  f7-timing-source:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout CFA4 source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run metadata audit regressions without hardware or FFmpeg
+        env:
+          PYTHONPATH: python
+        run: |
+          python3 -m py_compile python/cfa4_devtools/media_timestamp_audit.py python/tests/test_media_timestamp_audit.py
+          python3 -m unittest discover -s python/tests -p test_media_timestamp_audit.py -v
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('docs/audit/f7-media-capability-status.json').read_text())
+          assert data['project'] == 'CFA4' and data['guard'] == 'RELEASE_HOLD'
+          c = data['capabilities']
+          assert c['native_av1_nvdec']['status'] == 'NOT_IMPLEMENTED'
+          assert c['heif_icc_hdr_multi_picture']['status'] == 'NOT_IMPLEMENTED'
+          assert c['av_sync_precision']['status'] == 'NOT_MEASURED'
+          assert c['qt6_full_nle']['status'] == 'NOT_IMPLEMENTED'
+          assert 'audio": False' in Path('python/cfa4_devtools/native_media_e2e.py').read_text()
+          print('PASS: F7 capability truth; hardware/Qt6/perceptual A/V not claimed')
+          PY

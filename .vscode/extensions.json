@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "rust-lang.rust-analyzer",
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "ms-vscode.cmake-tools"
+  ]
+}

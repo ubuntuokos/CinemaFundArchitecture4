@@ -4,7 +4,7 @@
 # using Russian video-editing vocabulary (Premiere-style). No proprietary localization resources were used.
 # Core menu coverage; other interface strings fall back to English.
 
-	About FilmCraft	О FilmCraft
+	About CFA4	О CFA4
 	Add Audio Submix Track	Добавить дорожку подмикширования звука
 	Add Caption at Playhead	Добавить субтитр в позиции курсора воспроизведения
 	Add Chapter Marker…	Добавить маркер главы…
@@ -30,7 +30,6 @@
 	Apply Default Transitions to Selection	Применить переходы по умолчанию к выделению
 	Apply Video Transition	Применить видеопереход
 	Arrange	Упорядочить
-	ArtCraft Website	Веб-сайт ArtCraft
 	Assembly	Сборка
 	Attach Proxies…	Прикрепить прокси…
 	Audio	Аудио
@@ -126,9 +125,7 @@
 	File	Файл
 	File…	Файл…
 	Fill frame	Заполнить кадр
-	FilmCraft Help…	Справка FilmCraft…
-	FilmCraft on GitHub	FilmCraft на GitHub
-	FilmCraft on getartcraft.com	FilmCraft на getartcraft.com
+	CFA4 on GitHub	CFA4 на GitHub
 	Find Next	Найти далее
 	Find…	Найти…
 	Fit	По размеру
@@ -172,7 +169,6 @@
 	Insert Frame Hold Segment	Вставить сегмент стоп-кадра
 	Install Motion Graphics Template…	Установить шаблон анимированной графики…
 	Interpret Footage…	Интерпретировать материал…
-	Join the ArtCraft Discord…	Присоединиться к ArtCraft Discord…
 	Keyboard Shortcuts…	Сочетания клавиш…
 	Label	Метка
 	Labels…	Метки…
@@ -263,7 +259,7 @@
 	Render Selection	Рендеринг выделения
 	Replace Fonts in Projects…	Заменить шрифты в проектах…
 	Replace With Clip	Заменить клипом
-	Report an Issue…	Сообщить о проблеме…
+	Report a CFA4 issue…	Сообщить о проблеме CFA4…
 	Reset All Parameters	Сбросить все параметры
 	Reset Duration	Сбросить длительность
 	Reset to Saved Layout	Сбросить к сохраненному макету

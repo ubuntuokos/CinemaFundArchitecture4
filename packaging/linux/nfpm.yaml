@@ -1,27 +1,27 @@
-# .deb and .rpm packages (nfpm: https://nfpm.goreleaser.com). Run by package.sh, which stages
+# .deb packaging on Ubuntu 26.04 AMD64 (nfpm: https://nfpm.goreleaser.com). package.sh stages
 # the file tree, substitutes its path for ${STAGE} (nfpm doesn't expand env vars in `src`) and
-# exports VERSION and NFPM_ARCH.
+# exports VERSION. The architecture is fixed to amd64 (Linux x86_64).
 #
 #   nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
-name: filmcraft
-arch: ${NFPM_ARCH}
+name: cfa4
+arch: amd64
 platform: linux
 version: ${VERSION}
-# semver: 0.2.0-rc.1 becomes 0.2.0~rc.1 in deb/rpm, so pre-releases sort before the release.
+# semver: 0.2.0-rc.1 becomes 0.2.0~rc.1 in deb, so pre-releases sort before the release.
 version_schema: semver
 release: 1
 section: video
 priority: optional
-maintainer: ${FILMCRAFT_MAINTAINER}
-vendor: Learning Machines LLC
-homepage: https://getartcraft.com/apps/filmcraft
+maintainer: ${CFA4_MAINTAINER}
+vendor: CFA4 contributors
+homepage: https://github.com/ubuntuokos/CinemaFundArchitecture4
 license: MIT OR Apache-2.0
 description: |-
   Open-source, native video editor: edit video, color and sound.
   Timeline editing with source and program monitors, color grading and scopes,
   effects and keyframes, titles and captions, audio mixing with loudness meters,
   and export; GPU compositing (wgpu).
-  Includes filmcraft-cli, a headless command runner, MCP server and exporter.
+  Includes cfa4-cli, a headless command runner, MCP server and exporter.
 
 # The binaries link only glibc and libgcc_s directly. Windowing (X11/Wayland, xkbcommon) and the
 # GPU (Vulkan, EGL/GL) are loaded at runtime, so they are dependencies/recommendations here
@@ -42,30 +42,18 @@ overrides:
       - libxi6
       - libxrandr2
       - mesa-vulkan-drivers
+      # Local HEIF/HEIC import/export via system libheif tools (not bundled).
+      # GPL/LGPL redistribution remains a separate release audit gate.
+      - libheif-examples
+      - libheif-plugin-libde265
+      - libheif-plugin-x265
       - xdg-desktop-portal
-  rpm:
-    depends:
-      # the same floor as the deb: built on glibc 2.35, so RHEL 9 (2.34) must refuse the install
-      # instead of installing binaries that can't start (#93)
-      - glibc >= 2.35
-      - libxkbcommon
-      - (vulkan-loader or libglvnd-egl)
-      - alsa-lib
-    recommends:
-      - libwayland-client
-      - libX11
-      - libXcursor
-      - libXi
-      - libXrandr
-      - mesa-vulkan-drivers
-      - xdg-desktop-portal
-
 contents:
-  - src: ${STAGE}/usr/bin/filmcraft
-    dst: /usr/bin/filmcraft
+  - src: ${STAGE}/usr/bin/cfa4
+    dst: /usr/bin/cfa4
     file_info: { mode: 0755 }
-  - src: ${STAGE}/usr/bin/filmcraft-cli
-    dst: /usr/bin/filmcraft-cli
+  - src: ${STAGE}/usr/bin/cfa4-cli
+    dst: /usr/bin/cfa4-cli
     file_info: { mode: 0755 }
   - src: ${STAGE}/usr/share/
     dst: /usr/share/

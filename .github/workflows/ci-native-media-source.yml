@@ -1,0 +1,50 @@
+name: CFA4 native media source gate (Linux AMD64)
+
+on:
+  pull_request:
+    paths:
+      - "crates/platform/src/lib.rs"
+      - "crates/platform/src/nvenc/export.rs"
+      - "crates/platform/tests/r0_native_media_e2e.rs"
+      - "python/cfa4_devtools/native_media_e2e.py"
+      - "python/tests/test_native_media_e2e.py"
+      - "scripts/dev/audit-native-media-e2e.sh"
+      - ".github/workflows/ci-native-media-source.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-native-media-source-${{ github.ref }}
+  cancel-in-progress: true
+
+# This checks source correctness ONLY. Hosted runners have neither the
+# user's real Wayland desktop nor the physical RTX A1000 acceptance device.
+jobs:
+  native-media-source:
+    name: Targeted platform Rust and stdlib Python oracles (Ubuntu AMD64)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate shell and Python bridge tests without GUI
+        run: |
+          bash -n scripts/dev/audit-native-media-e2e.sh
+          python3 -m py_compile python/cfa4_devtools/native_media_e2e.py python/tests/test_native_media_e2e.py
+          PYTHONPATH=python python3 -m unittest discover -s python/tests -p test_native_media_e2e.py -v
+      - name: Check Rust platform source formatting
+        run: cargo fmt --check --package filmcraft-platform
+      - name: Install minimal Linux native linker headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
+      - name: Test Linux NVDEC probe avoids blocking VA-API after NVDEC success
+        run: cargo test --locked -p filmcraft-platform --lib successful_nvdec_probe_skips_blocking_vaapi_probe
+      - name: Compile exactly two ignored hardware E2E oracles, do not run them
+        run: cargo test --locked -p filmcraft-platform --test r0_native_media_e2e --no-run

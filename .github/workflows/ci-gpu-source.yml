@@ -1,0 +1,42 @@
+name: CFA4 GPU source audit (targeted Linux AMD64)
+
+on:
+  pull_request:
+    paths:
+      - "crates/gpu/src/blend_tests.rs"
+      - "crates/gpu/src/fx_tests.rs"
+      - "scripts/dev/audit-gpu-hardware.sh"
+      - ".github/workflows/ci-gpu-source.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-gpu-source-${{ github.ref }}
+  cancel-in-progress: true
+
+# Source compilation/parity only. This is NOT a physical GPU acceptance gate:
+# hosted runners may legitimately exercise the CPU fallback instead.
+jobs:
+  gpu-source:
+    name: Rust GPU tests and formatting (Ubuntu AMD64)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check Rust GPU formatting (no compilation)
+        run: cargo fmt --check --package filmcraft-gpu
+      - name: Install native Linux test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
+      - name: Compile and run only GPU FX / CPU fallback tests
+        env:
+          CFA4_REQUIRE_GPU_FX: "0"
+        run: cargo test --locked -p filmcraft-gpu --lib fx_tests -- --nocapture
