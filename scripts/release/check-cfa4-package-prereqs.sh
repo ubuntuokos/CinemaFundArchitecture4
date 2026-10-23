@@ -35,11 +35,17 @@ check_command() {
   fi
 }
 
-for tool in cargo rustc install strip sed tar python3 sha256sum dpkg-deb ldd; do
+for tool in tar python3 sha256sum; do
   check_command "$tool"
 done
+if has tar || has deb || has appimage; then
+  for tool in cargo rustc install strip sed; do
+    check_command "$tool"
+  done
+fi
 if has deb; then
   check_command nfpm
+  check_command dpkg-deb
 fi
 if has flatpak; then
   check_command flatpak
