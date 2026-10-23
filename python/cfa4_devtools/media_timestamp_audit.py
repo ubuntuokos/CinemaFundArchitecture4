@@ -6,11 +6,11 @@ content, or Qt6 NLE behavior. It never runs a GUI or modifies media.
 from __future__ import annotations
 
 import argparse
-from decimal import Decimal, InvalidOperation
 import json
-from pathlib import Path
 import subprocess
 import sys
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from typing import Any
 
 MAX_PROBE_SECONDS = 30
@@ -123,9 +123,11 @@ def ffprobe_payload(path: Path, ffprobe: str, seconds_window: int) -> dict[str, 
     command = [
         ffprobe, "-v", "error", "-show_streams", "-show_packets",
         "-show_entries",
-        "stream=index,codec_type,codec_name,time_base,start_time,duration,"
-        "sample_rate,channels,color_primaries,color_transfer,color_space:"
-        "packet=stream_index,pts_time,dts_time,duration_time",
+        (
+            "stream=index,codec_type,codec_name,time_base,start_time,duration,"
+            "sample_rate,channels,color_primaries,color_transfer,color_space:"
+            "packet=stream_index,pts_time,dts_time,duration_time"
+        ),
         "-read_intervals", f"0%+{seconds_window}",
         "-of", "json", str(path),
     ]

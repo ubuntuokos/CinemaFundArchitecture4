@@ -1,10 +1,12 @@
 """CFA4 F7 container metadata timing, synthetic-only regression fixtures."""
 from __future__ import annotations
+
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
 from cfa4_devtools import media_timestamp_audit as audit
 
 

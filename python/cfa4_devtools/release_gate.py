@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
 """CFA4 release verdict guard. A green CI is NOT release authorization."""
 from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT = ROOT / "docs/audit/f9-release-readiness.json"

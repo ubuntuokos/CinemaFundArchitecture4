@@ -1,12 +1,12 @@
 """F8 local bridge contract; no Qt process, Rust compilation or network."""
 import json
-from pathlib import Path
 import subprocess
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from cfa4_devtools.qt_control_bridge import LocalBridgeError, bridge_read
 from cfa4_devtools.qt_app import locate_engine
+from cfa4_devtools.qt_control_bridge import LocalBridgeError, bridge_read
 
 
 class LocalQtBridgeContract(unittest.TestCase):
@@ -48,25 +48,36 @@ class LocalQtBridgeContract(unittest.TestCase):
             bridge_read(self.cli, 8132, "perf.stats", {"not-json": object()})
 
     def test_failure_is_not_a_successful_response(self):
-        with patch("cfa4_devtools.qt_control_bridge.subprocess.run", return_value=
-                   subprocess.CompletedProcess([], 7, b"{}", b"bad")):
-            with self.assertRaisesRegex(LocalBridgeError, "exit 7"):
-                bridge_read(self.cli, 8132, "perf.stats")
+        with (
+            patch(
+                "cfa4_devtools.qt_control_bridge.subprocess.run",
+                return_value=subprocess.CompletedProcess([], 7, b"{}", b"bad"),
+            ),
+            self.assertRaisesRegex(LocalBridgeError, "exit 7"),
+        ):
+            bridge_read(self.cli, 8132, "perf.stats")
 
     def test_invalid_return_shape_and_reported_error_fail(self):
         for body in (b"[]", b"{", b'{"error":"denied"}'):
-            with self.subTest(body=body), patch(
-                "cfa4_devtools.qt_control_bridge.subprocess.run",
-                return_value=subprocess.CompletedProcess([], 0, body, b""),
+            with (
+                self.subTest(body=body),
+                patch(
+                    "cfa4_devtools.qt_control_bridge.subprocess.run",
+                    return_value=subprocess.CompletedProcess([], 0, body, b""),
+                ),
+                self.assertRaises(LocalBridgeError),
             ):
-                with self.assertRaises(LocalBridgeError):
-                    bridge_read(self.cli, 8132, "sequence.inspect")
+                bridge_read(self.cli, 8132, "sequence.inspect")
 
     def test_timeout_is_reported_not_suppressed(self):
-        with patch("cfa4_devtools.qt_control_bridge.subprocess.run",
-                   side_effect=subprocess.TimeoutExpired("cfa4-cli", 3)):
-            with self.assertRaisesRegex(LocalBridgeError, "timed out"):
-                bridge_read(self.cli, 8132, "perf.stats", timeout=3)
+        with (
+            patch(
+                "cfa4_devtools.qt_control_bridge.subprocess.run",
+                side_effect=subprocess.TimeoutExpired("cfa4-cli", 3),
+            ),
+            self.assertRaisesRegex(LocalBridgeError, "timed out"),
+        ):
+            bridge_read(self.cli, 8132, "perf.stats", timeout=3)
 
     def test_local_engine_locator_prefers_cfa4_executable(self):
         def where(name):
