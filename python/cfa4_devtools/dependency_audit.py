@@ -109,6 +109,15 @@ def verify_vendored_files(root: Path) -> list[str]:
         if not isinstance(files, dict) or not files:
             errors.append(f"{package}: source provenance file list missing")
             continue
+        expected_paths = {path for path in files if isinstance(path, str)}
+        actual_paths = {
+            path.relative_to(directory).as_posix()
+            for path in directory.rglob("*")
+            if path.is_file()
+            and path.relative_to(directory).as_posix() not in {"Cargo.toml", "SOURCE_MANIFEST.json"}
+        }
+        for untracked in sorted(actual_paths - expected_paths):
+            errors.append(f"{package}: unmanifested source file {untracked}")
         for path, expected in files.items():
             if not isinstance(path, str) or not isinstance(expected, str):
                 errors.append(f"{package}: invalid provenance path/hash entry")

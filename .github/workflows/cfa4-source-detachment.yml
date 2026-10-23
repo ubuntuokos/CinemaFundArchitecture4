@@ -1,0 +1,35 @@
+name: CFA4 source detachment
+on:
+  pull_request:
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - vendor/craft-libs/**
+      - python/cfa4_devtools/dependency_audit.py
+      - python/tests/test_dependency_audit_stdlib.py
+      - .github/workflows/cfa4-source-detachment.yml
+  push:
+    branches: [main]
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - vendor/craft-libs/**
+      - python/cfa4_devtools/dependency_audit.py
+      - python/tests/test_dependency_audit_stdlib.py
+      - .github/workflows/cfa4-source-detachment.yml
+permissions:
+  contents: read
+jobs:
+  provenance:
+    name: Cargo source provenance (no build or package install)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify Cargo sources and vendored provenance
+        env:
+          PYTHONPATH: python
+        run: |
+          python3 -m cfa4_devtools.dependency_audit
+          python3 -m unittest discover -s python/tests -p 'test_dependency_audit_stdlib.py' -v
