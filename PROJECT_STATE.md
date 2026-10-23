@@ -6,9 +6,9 @@ Ami itt áll, azt lefuttatva ellenőriztük; ami nincs ellenőrizve, azt külön
 ## Mi ez a projekt
 - Rust nyelvű videóvágó, a FilmCraft 0.10.0 (`cdf43fd`, ArtCraft csapat) módosított változata.
   Az eredet és a változtatások leírása a `README.md` "Origin" fejezetében van. Licenc: MIT OR Apache-2.0.
-- A `main` ága a 2026-10-23-i "forrás leválasztással" (source detachment) áll. Ez az ág négy commitot tesz rá.
+- A `main` ága a 2026-10-23-i "forrás leválasztással" (source detachment) áll. Ez az ág öt commitot tesz rá.
 
-## Mi változott ezen az ágon (a main-hez képest, 4 commit)
+## Mi változott ezen az ágon (a main-hez képest, 5 commit)
 1. **Munkaterület-javítás (`Cargo.toml`).** A `vendor/craft-libs/*` kizárása nem működött (a `exclude` nem
    kezeli a `*`-ot), ezért a vendorolt `craft-ui` és `craft-docpath` munkaterület-tagként viselkedett, és a
    `cargo test --workspace` / `cargo clippy --workspace --all-targets` elbukott a tesztjeiken. Most név szerint
@@ -24,8 +24,9 @@ Ami itt áll, azt lefuttatva ellenőriztük; ami nincs ellenőrizve, azt külön
 5. **App-azonosító: `io.github.ubuntuokos.cfa4`** (régi: `ai.storyteller.filmcraft`): Linux-csomagolás,
    ikonfájlok és sidecar-ok, `ATTRIBUTION.md` sorai, `omastore.toml`, macOS `Info.plist.in`, FreeBSD és
    Flatpak fájlok. A Linux metaadat fejlesztője: `CFA4 maintainers`.
-6. **README** újraírva. A "Goal of CFA4" mondat általános: csak annyit mond, hogy a cél részben más, mint a
-   FilmCraft célja; a konkrét célok később kerülnek be (a repóban és a korábbi beszélgetésekben nincs leírva).
+6. **README** újraírva. A "Goal of CFA4" mondat a te megfogalmazásod alapján készült: hibrid videó-előállító, szerkesztő és
+   publikáló alkalmazás, amely a klasszikus digitális eszközöket és a mai MI-alkalmazásokat ötvözi. Ez cél, nem
+   meglévő funkciólista: az MI-funkciók még nincsenek megvalósítva.
 
 ## Ellenőrzés eredménye (Linux, rustc 1.97.0)
 | Parancs | Eredmény |
