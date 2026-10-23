@@ -267,7 +267,15 @@ mod tests {
         let expected = packaged
             .lines()
             .filter(|l| !l.starts_with("TryExec="))
-            .map(|l| if l.starts_with("Exec=") { "Exec=\"/target/debug/filmcraft\" %F" } else { l })
+            .map(|l| {
+                if l.starts_with("Name=") {
+                    "Name=CFA4 (development)"
+                } else if l.starts_with("Exec=") {
+                    "Exec=\"/target/debug/filmcraft\" %F"
+                } else {
+                    l
+                }
+            })
             .collect::<Vec<_>>()
             .join("\n")
             + "\n";
