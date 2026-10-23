@@ -253,7 +253,7 @@ mod tests {
     use super::*;
 
     /// The entry mirrors the packaged one, derived from the real file so the two cannot drift:
-    /// minus `TryExec` (a dev build isn't on `$PATH`), plus the quoted dev `Exec` path.
+    /// minus `TryExec` (a dev build isn't on `$PATH`), with the dev `Name` and quoted dev `Exec` path.
     /// The icons the entry installs exist in the checkout.
     #[test]
     fn icon_sources_exist_in_the_checkout() {
