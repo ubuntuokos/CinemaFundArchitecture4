@@ -7,17 +7,8 @@ if [[ "${CFA4_ALLOW_LOCAL_PACKAGING:-0}" != "1" ]]; then
   echo "CFA4 release HOLD: explicit CFA4_ALLOW_LOCAL_PACKAGING=1 is required for local tests." >&2
   exit 3
 fi
-for tool in cargo nfpm flatpak flatpak-builder ostree ldd sha256sum python3 dpkg-deb; do
-  command -v "$tool" >/dev/null 2>&1 || {
-    echo "error: reviewed tool '$tool' is not installed; no automatic installation." >&2
-    exit 2
-  }
-done
-# appimagetool must be supplied and pinned to an independently reviewed digest.
-if [[ ! "${CFA4_APPIMAGETOOL_SHA256:-}" =~ ^[[:xdigit:]]{64}$ ]]; then
-  echo "error: CFA4_APPIMAGETOOL_SHA256 is required for the reviewed appimagetool." >&2
-  exit 2
-fi
+# Verify every reviewed local prerequisite BEFORE creating any package.
+bash "$ROOT/scripts/release/check-cfa4-package-prereqs.sh" --formats "deb appimage flatpak tar"
 "$ROOT/packaging/linux/package.sh" --formats "deb appimage tar"
 BASENAME="cfa4-$VERSION-linux-x86_64"
 "$ROOT/packaging/linux/flatpak-bundle.sh" --no-test "$DIST/$BASENAME.tar.gz"

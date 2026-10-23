@@ -29,6 +29,7 @@ jobs:
         run: |
           bash scripts/ci/require-ubuntu-2604.sh
           bash -n scripts/release/build-cfa4-four-formats.sh
+          bash -n scripts/release/check-cfa4-package-prereqs.sh
           bash -n packaging/linux/package.sh
           bash -n packaging/linux/flatpak-bundle.sh
           bash -n packaging/linux/install.sh
@@ -52,6 +53,11 @@ jobs:
     steps:
       - name: Checkout CFA4 repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify offline packaging prerequisites before any build
+        env:
+          APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
+          CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+        run: bash scripts/release/check-cfa4-package-prereqs.sh
       - name: Build four private test packages and SHA256SUMS
         env:
           CFA4_ALLOW_LOCAL_PACKAGING: '1'
