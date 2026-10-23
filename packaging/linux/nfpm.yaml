@@ -12,7 +12,7 @@ version_schema: semver
 release: 1
 section: video
 priority: optional
-maintainer: ${FILMCRAFT_MAINTAINER}
+maintainer: ${CFA4_MAINTAINER}
 vendor: CFA4 contributors
 homepage: https://github.com/ubuntuokos/CinemaFundArchitecture4
 license: MIT OR Apache-2.0

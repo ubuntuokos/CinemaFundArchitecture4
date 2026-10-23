@@ -33,7 +33,7 @@ finish-args:
   - --device=dri
   # A project refers to its media by absolute path (docs/project-files.md), and the document
   # portal only exposes the file it was handed, not the media beside it: a project opened from
-  # ~/Videos found none of its clips (#107). So, as other video editors do, FilmCraft reads and
+  # ~/Videos found none of its clips (#107). So, as other video editors do, CFA4 reads and
   # writes the home directory (media, projects, exports, autosave next to the project) and the
   # usual mount points of external drives, where footage often lives. Open/Save dialogs still go
   # through the file-chooser portal; nothing outside these locations is granted.
@@ -51,7 +51,7 @@ modules:
     buildsystem: simple
     build-options:
       env:
-        CARGO_HOME: /run/build/filmcraft/cargo
+        CARGO_HOME: /run/build/cfa4/cargo
         CARGO_NET_OFFLINE: 'true'
     build-commands:
       - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64

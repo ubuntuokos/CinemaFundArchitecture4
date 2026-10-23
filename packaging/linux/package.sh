@@ -52,7 +52,7 @@ if [[ -n "${CROSS_ARCH:-}" || -n "${CROSS_TARGET:-}" || -n "${CROSS_COMPILE:-}" 
   exit 2
 fi
 ARCH=x86_64
-export FILMCRAFT_MAINTAINER="${FILMCRAFT_MAINTAINER:-CFA4 contributors}"
+export CFA4_MAINTAINER="${CFA4_MAINTAINER:-CFA4 contributors}"
 BASENAME="cfa4-$VERSION-linux-$ARCH"
 
 echo "==> CFA4 $VERSION for Linux $ARCH ($FORMATS)"
@@ -72,7 +72,7 @@ strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"
 mkdir -p "$STAGE/usr/share/metainfo"
-sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$FILMCRAFT_BUILD_DATE/g" \
+sed -e "s/@VERSION@/$VERSION/g" -e "s/@DATE@/$CFA4_BUILD_DATE/g" \
   "$HERE/$APP_ID.metainfo.xml.in" >"$STAGE/usr/share/metainfo/$APP_ID.metainfo.xml"
 mkdir -p "$STAGE/usr/share/icons"
 cp -R "$ROOT/assets/cfa4/hicolor" "$STAGE/usr/share/icons/"
@@ -143,9 +143,13 @@ if has appimage; then
   rm -f "$OUT.zsync"
   # Update information: AppImageUpdate, AppImageLauncher and the like read it from the file and
   # fetch only the blocks that changed in a newer release, through the .zsync published next to
-  # each AppImage on GitHub Releases. `latest` is the newest published release that is not a
-  # pre-release. A fork's builds point at its own releases through GITHUB_REPOSITORY.
-  REPO="${GITHUB_REPOSITORY:-ubuntuokos/CinemaFundArchitecture4}"
+  # each AppImage on CFA4 GitHub Releases. `latest` is the newest published release that is not a
+  # pre-release. An inherited or fork update endpoint must never be silently substituted.
+  REPO="ubuntuokos/CinemaFundArchitecture4"
+  if [[ -n "${GITHUB_REPOSITORY:-}" && "$GITHUB_REPOSITORY" != "$REPO" ]]; then
+    echo "error: refusing an AppImage update feed outside the CFA4 release repository" >&2
+    exit 2
+  fi
   UPDATE_INFO="gh-releases-zsync|${REPO%%/*}|${REPO#*/}|latest|cfa4-*-linux-$ARCH.AppImage.zsync"
   # Extract-and-run: works without FUSE (containers, CI). The output embeds the static runtime,
   # so users don't need libfuse2 either. With zsyncmake on the host (CI installs the zsync

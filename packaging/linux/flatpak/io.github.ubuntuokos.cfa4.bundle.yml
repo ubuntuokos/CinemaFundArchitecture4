@@ -8,7 +8,7 @@
 # ALSA routes through PulseAudio/PipeWire), and the GPU driver comes from its
 # org.freedesktop.Platform.GL extension.
 #
-# io.github.ubuntuokos.cfa4.yml (same directory) is the from-source manifest for Flathub. Keep
+# io.github.ubuntuokos.cfa4.yml (same directory) is a separate from-source manifest. Keep
 # runtime-version and finish-args identical in both (static policy check).
 id: io.github.ubuntuokos.cfa4
 runtime: org.freedesktop.Platform
@@ -47,7 +47,7 @@ modules:
       - install -Dm755 bin/cfa4 /app/bin/cfa4
       - install -Dm755 bin/cfa4-cli /app/bin/cfa4-cli
       - install -Dm644 share/applications/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
-      # The same MIME file the deb/rpm install: it defines the .fcproj project type (the
+      # The same MIME file the .deb installs: it defines the .fcproj project type (the
       # runtime's shared-mime-info already knows the video and audio formats).
       - install -Dm644 share/mime/packages/io.github.ubuntuokos.cfa4.xml /app/share/mime/packages/io.github.ubuntuokos.cfa4.xml
       # Already has the release's version and date substituted by package.sh.
