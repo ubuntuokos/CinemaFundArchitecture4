@@ -24,9 +24,9 @@
 
     <Icon Id="FilmcraftIcon.ico" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="FilmcraftIcon.ico" />
-    <Property Id="ARPURLINFOABOUT" Value="https://getartcraft.com/apps/filmcraft" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://getartcraft.com/apps/filmcraft" />
-    <Property Id="ARPHELPLINK" Value="https://discord.gg/artcraft" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/ubuntuokos/CinemaFundArchitecture4" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/ubuntuokos/CinemaFundArchitecture4/releases" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/ubuntuokos/CinemaFundArchitecture4/issues" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="INSTALLFOLDER" Name="FilmCraft" />

@@ -62,7 +62,6 @@
 	59.94 fps Drop-Frame	59.94 fps 드롭 프레임
 	59.94 fps Non Drop-Frame	59.94 fps 논드롭 프레임
 	A boxed label with a round pointer; move the label and the pointer follows.	둥근 포인터가 있는 상자 레이블. 레이블을 옮기면 포인터가 따라갑니다.
-	A clean-room, pure-Rust non-linear video editor. Part of the ArtCraft family.	클린룸 방식의 순수 Rust 비선형 비디오 편집기. ArtCraft 제품군의 일부입니다.
 	A cut sequence with transitions, effects and music	전환, 효과, 음악이 포함된 편집 시퀀스
 	A file dialog is already open	파일 대화상자가 이미 열려 있습니다
 	A news-style line that crawls in from the right and leaves at the left.	오른쪽에서 흘러 들어와 왼쪽으로 사라지는 뉴스형 자막.
@@ -232,7 +231,6 @@
 	APV 422-12	APV 422-12
 	Are you sure you want to discard your changes to '{file}'?	'{file}'의 변경 사항을 버릴까요?
 	Arrange	배치
-	ArtCraft Website	ArtCraft 웹사이트
 	ASC CDL	ASC CDL
 	Aspect	종횡비
 	Assembly	어셈블리
@@ -1163,8 +1161,7 @@
 	FilmCraft Help…	FilmCraft 도움말…
 	FilmCraft hit an error	FilmCraft 오류 발생
 	FilmCraft keeps the rest of the RAM free for other applications.	FilmCraft는 나머지 RAM을 다른 앱용으로 비워 둡니다.
-	FilmCraft on getartcraft.com	getartcraft.com의 FilmCraft
-	FilmCraft on GitHub	GitHub의 FilmCraft
+	CFA4 on GitHub	GitHub의 CFA4
 	FilmCraft Project	FilmCraft 프로젝트
 	FilmCraft quit unexpectedly while “{name}” had unsaved changes.	“{name}”의 변경 사항을 저장하지 않은 채 FilmCraft가 비정상 종료되었습니다.
 	FilmCraft was closed while “{name}” had unsaved changes.	“{name}”의 변경 사항을 저장하지 않은 채 FilmCraft가 닫혔습니다.
@@ -1574,11 +1571,7 @@
 	Italian	이탈리아어
 	Japanese	일본어
 	JetBrains Mono	JetBrains Mono
-	Join the ArtCraft Discord	ArtCraft Discord 참여
-	Join the ArtCraft Discord (discord.gg/artcraft)	ArtCraft Discord 참여(discord.gg/artcraft)
-	Join the ArtCraft Discord…	ArtCraft Discord 참여…
 	Join Through Edits	통과 편집 결합
-	Join us on Discord	Discord 참여하기
 	JPEG	JPEG
 	JPEG Sequence	JPEG 시퀀스
 	just now	방금
@@ -2937,6 +2930,8 @@
 	Source	소스
 	Source channels the selected audio clips play:	선택한 오디오 클립이 재생할 소스 채널:
 	Source code on GitHub	GitHub 소스 코드
+	A clean-room, pure-Rust non-linear video editor.	클린룸 방식의 순수 Rust 비선형 비디오 편집기.
+	CFA4 is a modified version of FilmCraft by the ArtCraft team.	CFA4는 ArtCraft 팀이 만든 FilmCraft의 수정 버전입니다.
 	Source In/Out	소스 시작/끝
 	Source Play/Stop	소스 재생/정지
 	Source Point	소스 지점

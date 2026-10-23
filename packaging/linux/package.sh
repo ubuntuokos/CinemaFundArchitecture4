@@ -41,7 +41,7 @@ case "$ARCH" in
   aarch64 | arm64) ARCH=aarch64; DEB_ARCH=arm64 ;;
   *) echo "unsupported architecture $ARCH" >&2; exit 2 ;;
 esac
-export FILMCRAFT_MAINTAINER="${FILMCRAFT_MAINTAINER:-FilmCraft maintainers <filmcraft@storyteller.ai>}"
+export FILMCRAFT_MAINTAINER="${FILMCRAFT_MAINTAINER:-CFA4 maintainers <ubuntuokos@users.noreply.github.com>}"
 BASENAME="filmcraft-$VERSION-linux-$ARCH"
 
 echo "==> FilmCraft $VERSION for Linux $ARCH ($FORMATS)"
@@ -131,7 +131,7 @@ if has appimage; then
   # fetch only the blocks that changed in a newer release, through the .zsync published next to
   # each AppImage on GitHub Releases. `latest` is the newest published release that is not a
   # pre-release. A fork's builds point at its own releases through GITHUB_REPOSITORY.
-  REPO="${GITHUB_REPOSITORY:-storytold/filmcraft}"
+  REPO="${GITHUB_REPOSITORY:-ubuntuokos/CinemaFundArchitecture4}"
   UPDATE_INFO="gh-releases-zsync|${REPO%%/*}|${REPO#*/}|latest|filmcraft-*-linux-$ARCH.AppImage.zsync"
   # Extract-and-run: works without FUSE (containers, CI). The output embeds the static runtime,
   # so users don't need libfuse2 either. With zsyncmake on the host (CI installs the zsync

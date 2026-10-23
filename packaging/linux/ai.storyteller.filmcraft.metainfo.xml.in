@@ -18,10 +18,9 @@
   <launchable type="desktop-id">ai.storyteller.filmcraft.desktop</launchable>
   <icon type="stock">ai.storyteller.filmcraft</icon>
   <!-- Only url types known to appstream 0.15 (Ubuntu 22.04, where CI validates): no vcs-browser. -->
-  <url type="homepage">https://getartcraft.com/apps/filmcraft</url>
-  <url type="bugtracker">https://github.com/storytold/filmcraft/issues</url>
-  <url type="help">https://github.com/storytold/filmcraft</url>
-  <url type="contact">https://discord.gg/artcraft</url>
+  <url type="homepage">https://github.com/ubuntuokos/CinemaFundArchitecture4</url>
+  <url type="bugtracker">https://github.com/ubuntuokos/CinemaFundArchitecture4/issues</url>
+  <url type="help">https://github.com/ubuntuokos/CinemaFundArchitecture4/tree/main/docs</url>
   <categories>
     <category>AudioVideo</category>
     <category>Video</category>
@@ -37,7 +36,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>Color workspace: a documentary cut with Lumetri Color, scopes, captions and loudness meters</caption>
-      <image>https://raw.githubusercontent.com/storytold/filmcraft/main/docs/images/filmcraft-hero.png</image>
+      <image>https://raw.githubusercontent.com/ubuntuokos/CinemaFundArchitecture4/main/docs/images/filmcraft-hero.png</image>
     </screenshot>
   </screenshots>
   <branding>

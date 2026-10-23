@@ -46,7 +46,6 @@
 	Apply Default Transitions to Selection	Standardübergänge auf Auswahl anwenden
 	Apply Video Transition	Videoübergang anwenden
 	Arrange	Anordnen
-	ArtCraft Website	ArtCraft-Website
 	Assembly	Montage
 	Attach Proxies…	Proxys anhängen…
 	Audio	Audio
@@ -151,8 +150,7 @@
 	File…	Datei…
 	Fill frame	Bild füllen
 	FilmCraft Help…	FilmCraft-Hilfe…
-	FilmCraft on GitHub	FilmCraft auf GitHub
-	FilmCraft on getartcraft.com	FilmCraft auf getartcraft.com
+	CFA4 on GitHub	CFA4 auf GitHub
 	Final Cut Pro XML…	Final Cut Pro XML…
 	Find Next	Weitersuchen
 	Find…	Suchen…
@@ -201,7 +199,6 @@
 	Install Motion Graphics Template…	Motion-Graphics-Vorlage installieren…
 	Interpret Footage…	Material interpretieren…
 	Iris	Iris
-	Join the ArtCraft Discord…	Dem ArtCraft-Discord beitreten…
 	Keyboard Shortcuts…	Tastenkürzel…
 	Label	Farbmarkierung
 	Labels…	Farbmarkierungen…
@@ -411,7 +408,6 @@
 	Master volume: use the Audio Track Mixer	Gesamtlautstärke: über das Audiospur-Mischpult
 	Search	Suchen
 	Quick Export	Schnellexport
-	Join the ArtCraft Discord (discord.gg/artcraft)	Dem ArtCraft-Discord beitreten (discord.gg/artcraft)
 	Cancel	Abbrechen
 	OK	OK
 	Interpret Footage	Material interpretieren
@@ -454,9 +450,9 @@
 	Delete Caption Track	Untertitelspur löschen
 	Delete Empty Caption Tracks	Leere Untertitelspuren löschen
 	Version {version}	Version {version}
-	A clean-room, pure-Rust non-linear video editor. Part of the ArtCraft family.	Ein nichtlinearer Videoeditor in reinem Rust, im Clean-Room-Verfahren entwickelt. Teil der ArtCraft-Familie.
-	Join the ArtCraft Discord	Dem ArtCraft-Discord beitreten
 	Source code on GitHub	Quellcode auf GitHub
+	A clean-room, pure-Rust non-linear video editor.	Ein nichtlinearer Videoeditor in reinem Rust, im Clean-Room-Verfahren entwickelt.
+	CFA4 is a modified version of FilmCraft by the ArtCraft team.	CFA4 ist eine modifizierte Version von FilmCraft vom ArtCraft-Team.
 	Report an issue	Problem melden
 	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT OR Apache-2.0. Schriften: Inter, Noto Serif und JetBrains Mono (SIL OFL 1.1).
 	just now	gerade eben
@@ -496,7 +492,6 @@
 	Bars and Tone	Farbbalken und Ton
 	SMPTE HD bars with 1 kHz reference tone	SMPTE-HD-Farbbalken mit 1-kHz-Referenzton
 	Community	Community
-	Join us on Discord	Komm zu uns auf Discord
 	OMF Export Settings	OMF-Exporteinstellungen
 	AAF Export Settings	AAF-Exporteinstellungen
 	OMF Title:	OMF-Titel:

@@ -13,8 +13,8 @@ release: 1
 section: video
 priority: optional
 maintainer: ${FILMCRAFT_MAINTAINER}
-vendor: Learning Machines LLC
-homepage: https://getartcraft.com/apps/filmcraft
+vendor: CFA4
+homepage: https://github.com/ubuntuokos/CinemaFundArchitecture4
 license: MIT OR Apache-2.0
 description: |-
   Open-source, native video editor: edit video, color and sound.

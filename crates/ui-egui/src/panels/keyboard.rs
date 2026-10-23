@@ -133,7 +133,7 @@ pub const COMMANDS: &[UiCommand] = &[
 ];
 
 /// FilmCraft's documentation (Help ▸ FilmCraft Help…, F1).
-pub const HELP_URL: &str = "https://github.com/storytold/filmcraft/tree/main/docs";
+pub const HELP_URL: &str = "https://github.com/ubuntuokos/CinemaFundArchitecture4/tree/main/docs";
 
 const HEIGHT_STEP: f32 = 12.0;
 const MIN_TRACK_H: f32 = 24.0;
