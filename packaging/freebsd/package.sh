@@ -16,7 +16,7 @@ set -euo pipefail
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 LINUX="$ROOT/packaging/linux"
-APP_ID=ai.storyteller.filmcraft
+APP_ID=io.github.ubuntuokos.cfa4
 
 SKIP_BUILD=0
 DRY_RUN=0

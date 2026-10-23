@@ -1,6 +1,6 @@
 kind = "app"
 categories = ["AudioVideo", "Video", "AudioVideoEditing"]
-icon = "assets/app-icon/hicolor/256x256/apps/ai.storyteller.filmcraft.png"
+icon = "assets/app-icon/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png"
 
 [linux.x86_64]
 asset = "filmcraft-{version}-linux-x86_64.tar.gz"

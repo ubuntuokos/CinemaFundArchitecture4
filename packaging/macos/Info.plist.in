@@ -13,7 +13,7 @@
   <key>CFBundleExecutable</key>
   <string>FilmCraft</string>
   <key>CFBundleIdentifier</key>
-  <string>ai.storyteller.filmcraft</string>
+  <string>io.github.ubuntuokos.cfa4</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>
@@ -62,7 +62,7 @@
       <string>Owner</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>ai.storyteller.filmcraft.project</string>
+        <string>io.github.ubuntuokos.cfa4.project</string>
       </array>
     </dict>
   </array>
@@ -72,7 +72,7 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>ai.storyteller.filmcraft.project</string>
+      <string>io.github.ubuntuokos.cfa4.project</string>
       <key>UTTypeDescription</key>
       <string>FilmCraft Project</string>
       <key>UTTypeConformsTo</key>

@@ -11,7 +11,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIR="$ROOT/assets/app-icon"
 SVG="$DIR/filmcraft.svg"
-APP_ID="ai.storyteller.filmcraft"
+APP_ID="io.github.ubuntuokos.cfa4"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

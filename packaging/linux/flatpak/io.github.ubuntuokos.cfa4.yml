@@ -4,16 +4,16 @@
 #
 #   curl -fsSLO https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py
 #   python3 flatpak-cargo-generator.py Cargo.lock -o packaging/linux/flatpak/cargo-sources.json
-#   flatpak-builder --user --install --force-clean build-flatpak packaging/linux/flatpak/ai.storyteller.filmcraft.yml
-#   flatpak run ai.storyteller.filmcraft
+#   flatpak-builder --user --install --force-clean build-flatpak packaging/linux/flatpak/io.github.ubuntuokos.cfa4.yml
+#   flatpak run io.github.ubuntuokos.cfa4
 #
 # The command-line tool and its MCP server run in the same sandbox, without opening a window:
 #
-#   flatpak run --command=filmcraft-cli ai.storyteller.filmcraft --version
-#   flatpak run --command=filmcraft-cli ai.storyteller.filmcraft mcp
+#   flatpak run --command=filmcraft-cli io.github.ubuntuokos.cfa4 --version
+#   flatpak run --command=filmcraft-cli io.github.ubuntuokos.cfa4 mcp
 #
 # For Flathub, replace the `dir` source with a `git` source pinned to a release tag and commit.
-id: ai.storyteller.filmcraft
+id: io.github.ubuntuokos.cfa4
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
@@ -42,7 +42,7 @@ finish-args:
   - --filesystem=/run/media
   - --filesystem=/mnt
   # Deliberately not granted: network (the optional --control server listens on 127.0.0.1 in
-  # the sandbox; `flatpak override --user --share=network ai.storyteller.filmcraft` exposes it
+  # the sandbox; `flatpak override --user --share=network io.github.ubuntuokos.cfa4` exposes it
   # to host agents) and host-wide filesystem access.
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
@@ -58,14 +58,14 @@ modules:
       - install -Dm755 target/release/filmcraft /app/bin/filmcraft
       # The headless CLI and its stdio MCP server, as in the release bundle (#346).
       - install -Dm755 target/release/filmcraft-cli /app/bin/filmcraft-cli
-      - install -Dm644 packaging/linux/ai.storyteller.filmcraft.desktop /app/share/applications/ai.storyteller.filmcraft.desktop
-      - install -Dm644 packaging/linux/ai.storyteller.filmcraft.mime.xml /app/share/mime/packages/ai.storyteller.filmcraft.xml
+      - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
+      - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.mime.xml /app/share/mime/packages/io.github.ubuntuokos.cfa4.xml
       - mkdir -p /app/share/icons && cp -R assets/app-icon/hicolor /app/share/icons/
       - >-
         version=$(awk '/^\[/{p=($0=="[workspace.package]");next} p&&$1=="version"{gsub(/[" ]/,"",$3);print $3;exit}' Cargo.toml);
         install -d /app/share/metainfo;
         sed -e "s/@VERSION@/$version/" -e "s/@DATE@/$(date -u +%Y-%m-%d)/"
-        packaging/linux/ai.storyteller.filmcraft.metainfo.xml.in > /app/share/metainfo/ai.storyteller.filmcraft.metainfo.xml
+        packaging/linux/io.github.ubuntuokos.cfa4.metainfo.xml.in > /app/share/metainfo/io.github.ubuntuokos.cfa4.metainfo.xml
     sources:
       - type: dir
         path: ../../..

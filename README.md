@@ -26,7 +26,13 @@ What CFA4 changed so far (everything else is unchanged FilmCraft code):
   remote any more; `python3 -m cfa4_devtools.dependency_audit` (with `PYTHONPATH=python`) checks this.
 - **Brand marks removed.** The ArtCraft name and logos are trademarks and may not stay in a modified version, so
   they and the Discord/website links are gone. The project links in the app point at this repository.
-- Crate, binary and file-format names (`filmcraft-*`, `.fcproj`) are unchanged for compatibility.
+- **Renamed to CFA4** wherever the app shows its name: window and dialog titles, menus, the About window,
+  messages, the translations, the web page and the Linux package metadata. The app id is
+  `io.github.ubuntuokos.cfa4`. The app icon is still FilmCraft's (MIT OR Apache-2.0, see
+  [ATTRIBUTION.md](ATTRIBUTION.md)).
+- Crate, binary and file-format names (`filmcraft-*`, `.fcproj`) are unchanged for compatibility, as are the
+  names written into exported files (OMF/XMP/MXF tags, project generator, codec names). The macOS, Windows and
+  FreeBSD package names still say FilmCraft.
 
 ## What it can do (inherited from FilmCraft 0.10.0)
 
