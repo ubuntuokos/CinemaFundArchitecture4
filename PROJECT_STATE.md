@@ -24,7 +24,8 @@ Ami itt áll, azt lefuttatva ellenőriztük; ami nincs ellenőrizve, azt külön
 5. **App-azonosító: `io.github.ubuntuokos.cfa4`** (régi: `ai.storyteller.filmcraft`): Linux-csomagolás,
    ikonfájlok és sidecar-ok, `ATTRIBUTION.md` sorai, `omastore.toml`, macOS `Info.plist.in`, FreeBSD és
    Flatpak fájlok. A Linux metaadat fejlesztője: `CFA4 maintainers`.
-6. **README** újraírva. Egy mondat (a CFA4 célja) üresen maradt, azt neked kell megírnod.
+6. **README** újraírva. A "Goal of CFA4" mondat általános: csak annyit mond, hogy a cél részben más, mint a
+   FilmCraft célja; a konkrét célok később kerülnek be (a repóban és a korábbi beszélgetésekben nincs leírva).
 
 ## Ellenőrzés eredménye (Linux, rustc 1.97.0)
 | Parancs | Eredmény |

@@ -4,7 +4,8 @@ A non-linear video editor written in pure Rust, native on macOS, Windows and Lin
 via WebAssembly. CFA4 is a modified version of [FilmCraft](https://github.com/storytold/filmcraft) by the
 ArtCraft team (see [Origin](#origin)).
 
-> **Goal of CFA4:** _to be written by the maintainer: what CFA4 is for and how it differs from FilmCraft._
+> **Goal of CFA4:** CFA4 pursues goals that partly differ from FilmCraft's, which is why it is separated from
+> FilmCraft's sources and branding (see [Origin](#origin)). The specific goals will be added here as they are decided.
 
 ![FilmCraft 0.10.0, the editor CFA4 is based on: Color workspace on an Apollo 11 documentary cut](docs/images/filmcraft-hero.png)
 
