@@ -1,5 +1,7 @@
 # FilmCraft — rules for agents and contributors
 
+> **CFA4: read [`VISION.md`](VISION.md) first.** It defines the project goal (Qt6 GUI on every graphical Ubuntu flavour, combined media tools, local AI) and the priority order. If a plan, PR or audit contradicts it, report the conflict to the owner instead of resolving it silently.
+
 These rules apply to every human and AI contributor. `CLAUDE.md` holds the working instructions; this
 file holds the rules that must never be broken. When the two disagree, this file wins.
 

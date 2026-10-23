@@ -1,0 +1,120 @@
+# CFA4 – Cél és irány
+
+> **Ez a CFA4 legfelső szintű célja.** Minden ember és MI-ügynök (ChatGPT, Claude, Copilot stb.)
+> ezt olvassa el először, mielőtt bármilyen munkát választ vagy módosít.
+> Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
+> és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
+
+**Utolsó módosítás:** 2026-10-23 · **Tulajdonos:** ubuntuokos
+
+## 1. Mi a CFA4?
+
+A CFA4 (CinemaFundArchitecture4) egy **egyetlen, egységes, Qt6-os asztali alkalmazás Ubuntura**,
+amely több önálló média-program képességeit egyesíti: videóvágás, konvertálás, publikálás,
+feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és grafika,
+**helyben futó MI-funkciókkal** kiegészítve.
+
+Kiindulópontja a FilmCraft 0.10.0 (MIT OR Apache-2.0) nemlineáris videóvágó, amelynek Rust
+médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejlődik.
+
+## 2. Alapelvek (nem változnak külön döntés nélkül)
+
+1. **Qt6-felület az első prioritás.** A célfelület Qt6 (Qt6 Widgets + PySide6). A meglévő Rust
+   motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
+   Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
+   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
+2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
+   Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
+3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
+4. **Bizonyíték, nem állítás.** Egy funkció csak akkor „kész”, ha teszt vagy valódi gépes mérés
+   igazolja. A már igazolt hardveres és kézi teszteket nem kell ok nélkül megismételni.
+5. **Minden terv a `main` ágon él.** Terv, cél és döntés nem maradhat csak mellékágon vagy
+   piszkozat PR-ban, mert ott elveszik.
+
+## 3. Célplatform: minden grafikus Ubuntu-változat
+
+A Qt6 alkalmazásnak Waylanden **és** X11-en is működnie kell, mert a 26.04 változatai közül
+a GNOME-os és a Budgie csak Waylandet használ, több másik pedig még X11-et is kínál.
+
+| Változat (26.04 LTS) | Asztali környezet | Megjegyzés |
+|---|---|---|
+| Ubuntu | GNOME 50 | csak Wayland |
+| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** (a referenciagép Kubuntu 26.04.1) |
+| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos |
+| Xubuntu | Xfce | |
+| Lubuntu | LXQt | Qt-alapú, könnyű |
+| Ubuntu Budgie | Budgie | csak Wayland |
+| Ubuntu Cinnamon | Cinnamon | |
+| Edubuntu | GNOME | |
+| Ubuntu Kylin | UKUI | |
+
+Az Ubuntu MATE-nek nincs 26.04-es kiadása, az Ubuntu Unity 26.04 nem LTS. Ezeket akkor
+vesszük fel, ha LTS-kiadásuk lesz.
+
+Minden változaton ellenőrizendő: telepítés és eltávolítás, menübejegyzés és ikon,
+fájltársítás, megnyitás/mentés párbeszédablak, hang, GPU-gyorsítás és CPU-s tartalék.
+Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
+
+## 4. Egyesítendő programok és képességeik
+
+A CFA4 ezeknek a programoknak a **képességeit** veszi át, nem a kódjukat, nevüket vagy védjegyeiket.
+
+| Program | Fő terület | Átveendő képességek |
+|---|---|---|
+| **Adobe Premiere Pro** | videóvágás | Teljes NLE-paritás (meglévő cél, ~56% kész): idővonal, vágóeszközök, multicam, effektek, Lumetri-szín, Essential Sound/Graphics, export |
+| **DaVinci Resolve** | vágás, szín, VFX, hang | Csomópont-alapú színkorrekció; Fusion-szerű csomópontos kompozitálás és 2D/3D VFX; Fairlight-szerű hangutómunka; gyors „Cut” vágófelület; kiadási (Deliver) oldal |
+| **Kdenlive** | videóvágás, Linux | Linuxos munkamenet és megszokások, proxy-szerkesztés, kulcskockák, render-profilok, beszédből felirat |
+| **OpenShot** | egyszerű vágás | Kezdőbarát, egyszerű mód; animált (3D) címek; könnyű kulcskocka-animáció |
+| **HandBrake** | konvertálás | Kötegelt átkódolás sorral, előbeállítások, hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés |
+| **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
+| **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
+| **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
+
+További, eddig hiányzó területek:
+
+- **Publikálás:** kész videó előkészítése és feltöltése videómegosztókra, platformonkénti előbeállításokkal.
+- **Szinkronizálás:** átirat → fordítás → helyi gépi hang vagy saját felvétel → időzítés az eredeti szájmozgáshoz és vágáshoz.
+- **3D animáció:** 3D-s jelenetek, címek és animáció (a pontos mélység külön döntés).
+
+## 5. MI-funkciók (alapvetően helyi)
+
+Meglévő alapok: helyi Whisper-átirat és szövegalapú vágás, Kokoro-82M helyi felolvasás.
+
+Tervezett irányok:
+
+- beszédből felirat, felirat fordítása, automatikus időzítés;
+- szinkron: fordított szöveg helyi gépi hangon, időzítéssel;
+- hang: zaj- és zene-leválasztás, beszédtisztítás;
+- kép: objektum- és személymaszkolás, követés, jelenetfelismerés, automatikus színillesztés;
+- vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
+- konvertálás és publikálás: platformonkénti beállítás-javaslat.
+
+Szabály: a modellek a felhasználó gépén futnak (CPU, vagy NVIDIA GPU, ha van). Minden modellnél
+rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
+
+## 6. Prioritási sorrend
+
+1. **Qt6-felület** az F8 ADR 2–7. lépése szerint: háttérszálak → médiaböngésző és projekt → idővonal
+   → előnézet, hang és GPU → export → csomagolás.
+2. **Futás minden grafikus Ubuntu-változaton** (3. pont): Wayland és X11 teszt.
+3. A meglévő vágóképességek átemelése a Qt6-felületre, Premiere-paritás folytatása.
+4. Új területek fokozatosan: konvertálás → feliratozás → hangszerkesztés → szinkron → publikálás
+   → 2D animáció → 3D/VFX.
+5. MI-funkciók mindegyik területhez, helyben.
+
+## 7. Kapcsolódó dokumentumok
+
+Ezek jelenleg a mellékágakon vannak (pl. `audit/f9-evidence-release-hold`), a `main`-be kell hozni őket:
+
+- `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md` – Qt6 ↔ Rust architektúra
+- `docs/audit/F9-RELEASE-DECISION-2026-10-23.md` és `f9-release-readiness.json` – kiadási kapuk összesítése
+- `docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md` – mi működik ténylegesen a médiakezelésben
+- `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)
+- F1, F3, F5, F6 és HEIF auditok
+
+## 8. Nyitott döntések
+
+- A 3D animáció és VFX mélysége (egyszerű 3D címek vagy teljes 3D jelenetszerkesztés).
+- Mely videómegosztókra lehessen publikálni.
+- Mennyi MI-modell kerüljön a csomagba, és melyik legyen külön letölthető (a felhasználó jóváhagyásával).
+- Az „alapvetően helyi” MI mellett megengedett-e kivételesen, kifejezett felhasználói engedéllyel felhős szolgáltatás.

@@ -10,6 +10,8 @@
 
 <h1 align="center">FilmCraft</h1>
 
+> **CFA4 (CinemaFundArchitecture4):** ez a tároló a FilmCraft-ból indult, önálló projekt. A célját, irányát és prioritásait a [VISION.md](VISION.md) írja le – minden munka előtt azt kell elolvasni.
+
 <p align="center">
   <b>Video editing, color and sound; an open-source, professional non-linear video editor, built in pure Rust.</b>
 </p>
