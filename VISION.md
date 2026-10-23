@@ -104,13 +104,16 @@ rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a f
 
 ## 7. Kapcsolódó dokumentumok
 
-Ezek jelenleg a mellékágakon vannak (pl. `audit/f9-evidence-release-hold`), a `main`-be kell hozni őket:
+Minden terv, döntés és audit tartalomjegyzéke: [`docs/audit/README.md`](docs/audit/README.md).
+A legfontosabbak:
 
-- `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md` – Qt6 ↔ Rust architektúra
-- `docs/audit/F9-RELEASE-DECISION-2026-10-23.md` és `f9-release-readiness.json` – kiadási kapuk összesítése
-- `docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md` – mi működik ténylegesen a médiakezelésben
+- [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) – Qt6 ↔ Rust architektúra
+- [`docs/audit/F9-RELEASE-DECISION-2026-10-23.md`](docs/audit/F9-RELEASE-DECISION-2026-10-23.md) és `f9-release-readiness.json` – kiadási kapuk összesítése
+- [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)
-- F1, F3, F5, F6 és HEIF auditok
+
+A dokumentumok már a `main`-ben vannak, de a hozzájuk tartozó kód és szkriptek még a piszkozat
+PR-okban (#17, #20, #23–#30) és a mellékágakon.
 
 ## 8. Nyitott döntések
 

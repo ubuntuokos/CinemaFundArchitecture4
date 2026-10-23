@@ -1,0 +1,36 @@
+{
+  "project": "CFA4",
+  "audit_date": "2026-10-23",
+  "target": "Ubuntu 26.04 AMD64",
+  "guard": "RELEASE_HOLD",
+  "capabilities": {
+    "native_h264_hevc_nvdec": {
+      "status": "PASS_PHYSICAL_2026_10_22",
+      "evidence": "docs/audit/R0-NATIVE-MEDIA-E2E-2026-10-22.md"
+    },
+    "native_h264_hevc_nvenc": {
+      "status": "PASS_PHYSICAL_2026_10_22",
+      "evidence": "docs/audit/R0-NATIVE-MEDIA-E2E-2026-10-22.md"
+    },
+    "native_av1_nvdec": {
+      "status": "NOT_IMPLEMENTED",
+      "evidence": "crates/platform/src/nvdec/mod.rs"
+    },
+    "heif_first_image_import": {
+      "status": "SOURCE_IMPLEMENTED_ORACLE_PASS",
+      "evidence": "crates/media/src/still/heif.rs"
+    },
+    "heif_icc_hdr_multi_picture": {
+      "status": "NOT_IMPLEMENTED",
+      "evidence": "docs/audit/HEIF-HEIC-LINUX-2026-10-22.md"
+    },
+    "av_sync_precision": {
+      "status": "NOT_MEASURED",
+      "evidence": "python/cfa4_devtools/native_media_e2e.py"
+    },
+    "qt6_full_nle": {
+      "status": "NOT_IMPLEMENTED",
+      "evidence": "python/cfa4_devtools/qt_app.py"
+    }
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "schema": "cfa4-release-readiness-v1",
+  "as_of": "2026-10-23",
+  "repository": "ubuntuokos/CinemaFundArchitecture4",
+  "target": "Ubuntu 26.04 AMD64",
+  "artifact_formats": [
+    "deb",
+    "AppImage",
+    "flatpak",
+    "tar.gz"
+  ],
+  "parent_repository_policy": "READ_ONLY_FILMCRAFT",
+  "verdict": "HOLD",
+  "release_publication_authorized": false,
+  "gates": [
+    {
+      "id": "integration_ci",
+      "status": "PASS",
+      "reason": "2026-10-23 #23 8/8 full Rust/FFmpeg/Qt6 CI",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39963340491"
+    },
+    {
+      "id": "ubuntu_2604_amd64_policy",
+      "status": "PASS",
+      "reason": "F2 Ubuntu 26.04 AMD64 source gate",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39967631893"
+    },
+    {
+      "id": "cfa4_release_ownership_source",
+      "status": "PASS",
+      "reason": "F3 independent CFA4 release source checks",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39968833901"
+    },
+    {
+      "id": "four_artifact_structure_source",
+      "status": "PASS",
+      "reason": "F4 synthetic and tar installer tests; not real packages",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39970768868"
+    },
+    {
+      "id": "xdg_metadata_source",
+      "status": "PASS",
+      "reason": "F6 XDG/AppStream source tests; not installed desktop",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39972851980"
+    },
+    {
+      "id": "native_media_prior_physical_h264_hevc",
+      "status": "PASS",
+      "reason": "Accepted physical NVDEC/NVENC evidence on RTX A1000; limited to H264/HEVC",
+      "evidence": "docs/audit/R0-NATIVE-MEDIA-E2E-2026-10-22.md"
+    },
+    {
+      "id": "qt6_architecture_source",
+      "status": "PASS",
+      "reason": "F8 local bridge and approved Qt6 future architecture, 8/8 tests",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39975032470"
+    },
+    {
+      "id": "real_four_format_build",
+      "status": "OPEN",
+      "reason": "No four genuine .deb AppImage Flatpak tar.gz build with same commit and verified SHA256SUMS",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/26"
+    },
+    {
+      "id": "clean_vm_install_uninstall",
+      "status": "OPEN",
+      "reason": "No clean Ubuntu 26.04 amd64 installs and removals for all four formats",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/27"
+    },
+    {
+      "id": "desktop_kde_gnome_cinnamon_runtime",
+      "status": "OPEN",
+      "reason": "Source tests only; no installed KDE/GNOME/Cinnamon format-by-format runtime",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/28"
+    },
+    {
+      "id": "runtime_abi_dependencies",
+      "status": "OPEN",
+      "reason": "Only prior tarball direct ELF ldd; dlopen, sandbox, codecs and four formats not verified",
+      "evidence": "docs/audit/F5-STAGED-RUNTIME-2026-10-23.md"
+    },
+    {
+      "id": "native_av1_nvdec_heif_icc_hdr",
+      "status": "OPEN",
+      "reason": "Native AV1 NVDEC and HEIF ICC/HDR/multiple pictures absent; independent subgate",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/29"
+    },
+    {
+      "id": "av_content_sync_precision",
+      "status": "OPEN",
+      "reason": "Timestamp source regression passes, real output measurement/content synchronization unverified",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39974409658"
+    },
+    {
+      "id": "full_qt6_nle_parity",
+      "status": "OPEN",
+      "reason": "Current Qt6 is development shell; full NLE not implemented or physically validated",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/30"
+    },
+    {
+      "id": "licensing_brand_attribution_sbom",
+      "status": "OPEN",
+      "reason": "Qt6 LGPL, HEVC/libheif, fonts, logos and all third party obligations require approval",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/6"
+    },
+    {
+      "id": "protected_main_integration",
+      "status": "OPEN",
+      "reason": "PR #17/#20 and stacked PR #23-#30 are still drafts; no merged, post-merge main release validation",
+      "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/23"
+    }
+  ]
+}
