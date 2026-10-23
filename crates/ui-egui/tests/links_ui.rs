@@ -1,5 +1,5 @@
-//! Headless UI test of the community links: Help menu commands, the header Discord button, the
-//! About dialog and the Home (Import) screen.
+//! Headless UI test of the CFA4 links: Help menu commands, the About dialog and the Home (Import)
+//! screen.
 //!
 //! Set `FILMCRAFT_UI_SNAPSHOT_DIR=<dir>` to also render the window offscreen with wgpu and write
 //! `links-*.png` there; without it no GPU is needed.
@@ -90,14 +90,11 @@ fn community_links_everywhere() {
     for (id, label, _) in links::ALL {
         assert!(text.contains(id) && text.contains(label), "Help menu lists {id}");
     }
-    // Header: the Discord button is always there.
-    assert_eq!(d.ids("header.discord"), vec!["header.discord".to_string()]);
-    d.snapshot("header");
-    // About dialog: Discord first, then website, app page, GitHub, issues.
+    // About dialog: CFA4 GitHub and issue tracker.
     d.ok("engine.execute", json!({"command": "app.about", "params": {}}));
     d.frames(3);
     let about = d.ids("about.");
-    for id in ["about.discord", "about.website", "about.appPage", "about.github", "about.reportIssue"] {
+    for id in ["about.github", "about.reportIssue"] {
         assert!(about.iter().any(|a| a == id), "{id} in {about:?}");
     }
     d.snapshot("about");
@@ -108,7 +105,7 @@ fn community_links_everywhere() {
     d.ok("engine.execute", json!({"command": "mode.import", "params": {}}));
     d.frames(3);
     let home = d.ids("import.link.");
-    for id in ["import.link.discord", "import.link.website", "import.link.appPage", "import.link.github"] {
+    for id in ["import.link.github", "import.link.reportIssue"] {
         assert!(home.iter().any(|a| a == id), "{id} in {home:?}");
     }
     d.snapshot("home");
