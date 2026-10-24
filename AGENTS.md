@@ -15,11 +15,21 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **Project licence: GPL-3.0-or-later** (owner decision, 2026-10; `LICENSE`, `NOTICE`). Inherited
+  FilmCraft code keeps its MIT OR Apache-2.0 notices (`LICENSE-MIT`, `LICENSE-APACHE`); never remove
+  them. New dependencies must be GPL-3.0-compatible.
 - **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
-  packages under applicable LGPLv3/commercial terms, even though inherited rules below otherwise
-  restrict Rust-core dependencies to permissive licenses. This is NOT permission to copy GPL/LGPL
+  packages under applicable LGPLv3/commercial terms. This is NOT permission to copy GPL/LGPL
   implementation code into Rust crates or to embed Qt/PySide binaries without review.
   GPL-only Qt modules and distribution require separate license decisions.
+- **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
+  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
+  linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
+  copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
+  is always the fallback; this is the one exception to the inherited "pure Rust in the product" rule.
+- **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
+  (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
+  available) or the CPU fallback.
 - A release is blocked until inherited ArtCraft marks, icons, package metadata and public
   branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
 - The Qt shell is a development prototype, NOT a completed migration from egui.

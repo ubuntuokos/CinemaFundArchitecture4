@@ -1,3 +1,11 @@
+CFA4 (CinemaFundArchitecture4)
+Copyright (c) 2026 the CFA4 contributors.
+CFA4 as a whole is licensed under the GNU General Public License, version 3 or (at your option)
+any later version (GPL-3.0-or-later). See LICENSE.
+
+CFA4 is derived from FilmCraft. The FilmCraft code it contains remains available under its
+original terms, reproduced below; those notices must be retained.
+
 FilmCraft
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option

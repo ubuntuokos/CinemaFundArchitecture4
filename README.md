@@ -41,8 +41,13 @@ its version; real editor operations require a future explicitly tested adapter.
 ## Upstream provenance and licensing
 
 This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
-by the ArtCraft Team and contributors. Retain the upstream MIT and Apache-2.0
-license files, original notices and third-party attribution.
+by the ArtCraft Team and contributors. **CFA4 as a whole is licensed under
+GPL-3.0-or-later** ([LICENSE](LICENSE), [NOTICE](NOTICE)). The inherited FilmCraft code keeps its
+original MIT OR Apache-2.0 terms: retain the upstream `LICENSE-MIT` and `LICENSE-APACHE` files,
+original notices and third-party attribution.
+
+GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later), see
+[ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
 
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
