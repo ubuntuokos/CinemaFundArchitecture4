@@ -270,7 +270,7 @@ In short:
 - No Adobe iconography, images, fonts, LUTs, presets or other Adobe assets, in any form, including
   traced or "inspired-by" copies.
 - Open licences only (MIT, Apache-2.0, BSD, ISC, zlib, OFL, CC0, CC BY, CC BY-SA, or your own
-  work under MIT OR Apache-2.0). No NC or ND licences. If the licence is unclear, leave the asset out.
+  work under the project licence, GPL-3.0-or-later). No NC or ND licences. If the licence is unclear, leave the asset out.
 - Screenshots show only FilmCraft (or other open projects) with media we generated or that is
   openly licensed.
 
@@ -294,7 +294,7 @@ added:        2026-09-30 by Claude (agent) for Brandon Thomas
 notes:        Unmodified font file, embedded in the UI via include_bytes! (crates/ui-egui/src/theme.rs).
 ```
 
-For your own work, use `source: original work` and the project licence (`MIT OR Apache-2.0`).
+For your own work, use `source: original work` and the project licence (`GPL-3.0-or-later`).
 
 Then add a row to [ATTRIBUTION.md](../ATTRIBUTION.md) with the path in backticks. `cargo xtask
 assets` checks every tracked file with a media extension (images, fonts, LUTs, audio, video, PDF,

@@ -15,7 +15,7 @@ priority: optional
 maintainer: ${CFA4_MAINTAINER}
 vendor: CFA4 contributors
 homepage: https://github.com/ubuntuokos/CinemaFundArchitecture4
-license: MIT OR Apache-2.0
+license: GPL-3.0-or-later
 description: |-
   Open-source, native video editor: edit video, color and sound.
   Timeline editing with source and program monitors, color grading and scopes,
