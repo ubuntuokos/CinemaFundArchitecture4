@@ -1,3 +1,32 @@
+# CFA4 — developer rules (Linux x86_64/AMD64 only; Rust / Cargo / Python / Qt 6)
+
+This CFA4-specific section takes priority over inherited FilmCraft platform and frontend
+instructions below. Existing engine safety, clean-room codec implementation, open-asset
+attribution and original copyright/licence requirements remain in force.
+
+- Sole supported build and release target: **Linux x86_64 / AMD64**
+  (`x86_64-unknown-linux-gnu`). Do not add Android, AArch64/ARM64, RISC-V,
+  Windows, macOS, FreeBSD or WebAssembly build/release workflows.
+  Historical source and cross-platform Cargo.lock entries can remain until
+  an audited refactor; do not manually delete transitive lockfile dependencies.
+- CI: automatic PR/push checks must stay quick and non-compiling. Full Rust,
+  Python, Qt6, vendored-library and FFmpeg tests require an explicit GitHub
+  Actions workflow_dispatch or PR `cfa4-full-validation` label event (remove
+  then re-add the label for a repeat). Verify all jobs before merge.
+- Keep the existing Rust media engine. Python is permitted for development tooling and a
+  separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
+  packages under applicable LGPLv3/commercial terms, even though inherited rules below otherwise
+  restrict Rust-core dependencies to permissive licenses. This is NOT permission to copy GPL/LGPL
+  implementation code into Rust crates or to embed Qt/PySide binaries without review.
+  GPL-only Qt modules and distribution require separate license decisions.
+- A release is blocked until inherited ArtCraft marks, icons, package metadata and public
+  branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
+- The Qt shell is a development prototype, NOT a completed migration from egui.
+- Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
+
+---
+
 # FilmCraft — rules for agents and contributors
 
 > **CFA4: read [`VISION.md`](VISION.md) first.** It defines the project goal (Qt6 GUI on every graphical Ubuntu flavour, combined media tools, local AI) and the priority order. If a plan, PR or audit contradicts it, report the conflict to the owner instead of resolving it silently.

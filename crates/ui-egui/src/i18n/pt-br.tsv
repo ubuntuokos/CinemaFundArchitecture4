@@ -18,7 +18,7 @@
 # dissolve = dissolução, scopes = escopos, highlights = realces, offline = offline, legacy = legado,
 # preferences (also the native macOS Settings menu) = Preferências, settings = configurações.
 
-	About FilmCraft	Sobre o FilmCraft
+	About CFA4	Sobre o CFA4
 	Add Audio Submix Track	Adicionar faixa de submixagem de áudio
 	Add Caption at Playhead	Adicionar legenda no cursor de reprodução
 	Add Chapter Marker…	Adicionar marcador de capítulo…
@@ -138,7 +138,7 @@
 	File…	Arquivo…
 	Fill frame	Preencher quadro
 	FilmCraft Help…	Ajuda do FilmCraft…
-	FilmCraft on GitHub	FilmCraft no GitHub
+	CFA4 on GitHub	CFA4 no GitHub
 	FilmCraft on getartcraft.com	FilmCraft no getartcraft.com
 	Find Next	Localizar próximo
 	Find…	Localizar…
@@ -278,6 +278,7 @@
 	Replace Fonts in Projects…	Substituir fontes em projetos…
 	Replace With Clip	Substituir por clipe
 	Report an Issue…	Relatar um problema…
+	Report a CFA4 issue…	Relatar um problema do CFA4…
 	Reset All Parameters	Redefinir todos os parâmetros
 	Reset Duration	Redefinir duração
 	Reset to Saved Layout	Redefinir para o layout salvo

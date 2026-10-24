@@ -6,3 +6,11 @@ plan/
 .DS_Store
 .claude/worktrees/
 __pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.py[cod]
+*.egg-info/
+.coverage
+coverage.xml

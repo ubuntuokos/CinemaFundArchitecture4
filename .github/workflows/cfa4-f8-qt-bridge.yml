@@ -1,0 +1,40 @@
+name: CFA4 F8 Qt6/Rust local bridge architecture gate
+
+on:
+  pull_request:
+    paths:
+      - 'python/cfa4_devtools/qt_control_bridge.py'
+      - 'python/cfa4_devtools/qt_app.py'
+      - 'python/tests/test_qt_control_bridge.py'
+      - '.github/workflows/cfa4-f8-qt-bridge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  f8-local-source:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout CFA4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check local bridge and Qt6 shell boundaries
+        env:
+          PYTHONPATH: python
+        run: |
+          python3 -m py_compile python/cfa4_devtools/qt_control_bridge.py python/cfa4_devtools/qt_app.py
+          python3 -m unittest discover -s python/tests -p test_qt_control_bridge.py -v
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('python/cfa4_devtools/qt_app.py').read_text()
+          adr = Path('docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md').read_text()
+          bridge = Path('python/cfa4_devtools/qt_control_bridge.py').read_text()
+          assert 'Experimental Linux Qt 6 shell' in p
+          assert 'NOT the complete video editor' in p
+          assert 'Qt6 Widgets + PySide6' in adr
+          assert 'FULL_QT6_NLE_NOT_IMPLEMENTED' in adr
+          assert '127.0.0.1:' in bridge
+          assert 'READ_ONLY_OPERATIONS' in bridge
+          print('PASS: Qt6 is future frontend, egui remains current editor, Rust retained')
+          PY

@@ -211,8 +211,10 @@ fn config(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -
 /// The Export encoder factory (see the module documentation).
 pub fn factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     if format == Format::Hevc {
-        // H.265 through NVENC is Windows-only for now; on Linux this backend takes H.264 only
-        return if cfg!(target_os = "windows") { hevc_factory(w, h, rate, s) } else { None };
+        // The same CUDA-backed NVENC implementation supports Linux x86_64
+        // as well as the Windows D3D11 backend. Whether this GPU can actually
+        // encode HEVC is decided by the registered hardware format probe.
+        return hevc_factory(w, h, rate, s);
     }
     factory_with(format, w, h, rate, s, |cfg| open(cfg, &Signal::default()))
 }

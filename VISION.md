@@ -112,8 +112,7 @@ A legfontosabbak:
 - [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)
 
-A dokumentumok már a `main`-ben vannak, de a hozzájuk tartozó kód és szkriptek még a piszkozat
-PR-okban (#17, #20, #23–#30) és a mellékágakon.
+A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-24).
 
 ## 8. Nyitott döntések
 

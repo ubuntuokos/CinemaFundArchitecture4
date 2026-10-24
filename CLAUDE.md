@@ -1,6 +1,12 @@
 # FilmCraft — instructions for agents
 
-FilmCraft is a clean-room, open-source, pure-Rust non-linear video editor targeting Adobe Premiere Pro parity (and beyond). Native on macOS, Windows, Linux; web via WASM. Sibling of `../photocraft` (Photoshop), `../pdfcraft` (Acrobat) and `../vectorcraft` (Illustrator; formerly DrawCraft), with the same conventions.
+**CFA4 migration notice (overrides inherited platform/frontend instructions):** CFA4 is a
+Linux-only derivative of FilmCraft. Rust/Cargo remain the media engine; Python and
+PySide6/Qt 6 are supported development components. Windows/macOS/FreeBSD/WASM release
+targets are excluded. See `docs/development/linux.md` and the CFA4-specific top
+section of `AGENTS.md`. The following FilmCraft instructions are inherited historical
+engineering context; references to pure-Rust-only frontends, upstream release processes
+or macOS/Windows targets do not override this CFA4 direction.
 
 ## Start every session here
 `plan/` is maintainer-local (gitignored, not in the repo). Each step names the public equivalent to use if you don't have it.
