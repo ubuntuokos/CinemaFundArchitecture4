@@ -1,7 +1,7 @@
 # ADR 0003 – ASWF-projektek és a konvertálás forrásai GPL-3.0-or-later alatt
 
-**Dátum:** 2026-10-24 · **Állapot:** VÉGLEGES TERV, JÓVÁHAGYÁSRA VÁR (tulajdonos: `ubuntuokos`).
-A jóváhagyás módja: a tulajdonos a 10. pont listáját elfogadja, és összevonja ezt a PR-t.
+**Dátum:** 2026-10-24 · **Állapot:** JÓVÁHAGYVA (a tulajdonos, `ubuntuokos`, 2026-10-24-én
+jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed.
 
 **Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
 GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
