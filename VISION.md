@@ -29,9 +29,10 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
    Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
-   A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
-   VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
-   tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.
+   Médiaháttér-sorrend: az **FFmpeg 9** az elsődleges (konténerek, kodekek, szűrők, hardveres
+   gyorsítás), a **GStreamer** a másodlagos (amit az FFmpeg 9 nem tud, pl. felvétel, Qt6-előnézet),
+   a saját Rust-kodekek mindig tartalékok. Részletek: `docs/adr/ADR-0004-ffmpeg9-primary-backend.md`
+   és `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
@@ -78,7 +79,7 @@ A CFA4 ezeknek a programoknak a **képességeit** veszi át, nem a kódjukat, ne
 | **DaVinci Resolve** | vágás, szín, VFX, hang | Csomópont-alapú színkorrekció; Fusion-szerű csomópontos kompozitálás és 2D/3D VFX; Fairlight-szerű hangutómunka; gyors „Cut” vágófelület; kiadási (Deliver) oldal |
 | **Kdenlive** | videóvágás, Linux | Linuxos munkamenet és megszokások, proxy-szerkesztés, kulcskockák, render-profilok, beszédből felirat |
 | **OpenShot** | egyszerű vágás | Kezdőbarát, egyszerű mód; animált (3D) címek; könnyű kulcskocka-animáció |
-| **Shutter Encoder**, **Videomass** (a GPL-2.0-only HandBrake helyett) | konvertálás | Kötegelt átkódolás sorral, előbeállítások, gyártófüggetlen hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés, loudness-mérés és hangnormalizálás, újrakódolás nélküli vágás. Motor: a saját motor és a GStreamer ([ADR 0003](docs/adr/ADR-0003-aswf-and-conversion-sources.md)) |
+| **Shutter Encoder**, **Videomass** (a GPL-2.0-only HandBrake helyett) | konvertálás | Kötegelt átkódolás sorral, előbeállítások, gyártófüggetlen hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés, loudness-mérés és hangnormalizálás, újrakódolás nélküli vágás. Motor: az FFmpeg 9 (elsődleges), a GStreamer (másodlagos) és a saját motor (tartalék) ([ADR 0004](docs/adr/ADR-0004-ffmpeg9-primary-backend.md), [ADR 0003](docs/adr/ADR-0003-aswf-and-conversion-sources.md)) |
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
@@ -122,7 +123,8 @@ Minden terv, döntés és audit tartalomjegyzéke: [`docs/audit/README.md`](docs
 A legfontosabbak:
 
 - [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) – Qt6 ↔ Rust architektúra
-- [`docs/adr/ADR-0002-gstreamer-backend.md`](docs/adr/ADR-0002-gstreamer-backend.md) – GStreamer mint kiegészítő háttérmotor
+- [`docs/adr/ADR-0004-ffmpeg9-primary-backend.md`](docs/adr/ADR-0004-ffmpeg9-primary-backend.md) – FFmpeg 9 mint elsődleges médiaháttér
+- [`docs/adr/ADR-0002-gstreamer-backend.md`](docs/adr/ADR-0002-gstreamer-backend.md) – GStreamer mint másodlagos médiaháttér
 - [`docs/audit/F9-RELEASE-DECISION-2026-10-23.md`](docs/audit/F9-RELEASE-DECISION-2026-10-23.md) és `f9-release-readiness.json` – kiadási kapuk összesítése
 - [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)

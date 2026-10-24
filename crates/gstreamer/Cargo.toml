@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-gstreamer"
-description = "Optional GStreamer backend for CFA4 (layer L5): probes the system's GStreamer installation and reads media information through it, as a supplement to the Rust media engine"
+description = "Optional GStreamer backend for CFA4 (layer L5): probes the system's GStreamer installation and reads media information through it, as the secondary media backend after FFmpeg 9 (ADR 0004)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

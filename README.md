@@ -52,8 +52,10 @@ This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
 by the ArtCraft Team and contributors (MIT OR Apache-2.0). Retain the upstream MIT and
 Apache-2.0 license files, original notices ([NOTICE](NOTICE)) and third-party attribution.
 
-GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
-and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+Media backends: **FFmpeg 9** is the primary media backend (GPL-3 build, see
+[ADR 0004](docs/adr/ADR-0004-ffmpeg9-primary-backend.md)), **GStreamer** the secondary one (optional,
+dynamically linked, LGPL-2.1-or-later, development and experimental builds, see
+[ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)), and the built-in Rust codecs are the fallback.
 
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).

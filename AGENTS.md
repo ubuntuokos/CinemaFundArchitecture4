@@ -28,11 +28,17 @@ attribution and original copyright/licence requirements remain in force.
     proprietary plug-ins loaded into the CFA4 process (docs/licensing.md §4).
   - Inherited FilmCraft code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
-- **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
+- **Media backend order** ([ADR 0004](docs/adr/ADR-0004-ffmpeg9-primary-backend.md)): **FFmpeg 9** is the
+  primary media backend (planned optional crate `cfa4-ffmpeg`; GPL-3 build only: `--enable-gpl
+  --enable-version3`, never `--enable-nonfree`; dynamically linked, no copied FFmpeg source),
+  **GStreamer** the secondary, and our own Rust codecs/containers the always-available fallback.
+  The Rust engine still owns project, timeline, render and export control (ADR F8).
+- **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is the optional secondary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
   linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
-  copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
-  is always the fallback; this is the one exception to the inherited "pure Rust in the product" rule.
+  copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. Our own Rust codecs are always the
+  fallback; GStreamer and FFmpeg 9 (ADR 0004) are the exceptions to the inherited "pure Rust in the
+  product" rule.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
@@ -162,8 +168,10 @@ reproduce an image (for example, point lists traced from someone else's icon).
   and AV1 bitstream specs, SMPTE documents, published container specs) by default. Porting an existing
   implementation is allowed only when its licence is permitted by docs/licensing.md §3 and the port is
   recorded in the reused-code register. Record the spec edition used in the crate README.
-- ffmpeg/ffprobe may be used only as external test oracles and fixture generators. They are never
-  linked, bundled or shipped.
+- FFmpeg 9 is the primary media backend in the product only through the `cfa4-ffmpeg` crate and
+  the rules of [ADR 0004](docs/adr/ADR-0004-ffmpeg9-primary-backend.md) (GPL-3 build, no `nonfree`).
+  The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture generator;
+  never copy FFmpeg source into the repository.
 - Dependencies must use GPL-3.0-compatible licences, as listed in `deny.toml`
   (`cargo deny check licenses`). GPL-2.0-only and AGPL dependencies are not allowed.
 

@@ -11,7 +11,7 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 - **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13; newer Linux distributions can use a supported version.
 - **Qt 6 / PySide6:** new Linux-native GUI development path. The initial `cfa4-qt` application is a deliberately minimal **development shell**, not a port of the full video editor.
 - **Existing egui desktop app:** retained during migration to avoid breaking the Rust media engine. Do not mistake it for the finished Qt interface.
-- **FFmpeg / ffprobe:** test oracle tools, not linked runtime dependencies of the existing Rust codec implementation.
+- **FFmpeg 9:** the primary media backend (planned `cfa4-ffmpeg` crate, GPL-3 build, [ADR 0004](../adr/ADR-0004-ffmpeg9-primary-backend.md)); GStreamer is the secondary backend and the Rust codecs the fallback. The pinned FFmpeg/ffprobe 9.0.2 CLI (`scripts/ci/install-ffmpeg-9.0.2.sh`) remains a separate test oracle.
 - **Python-to-Rust integration:** `filmcraft-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
 
 ## Bootstrap (Ubuntu 26.04 AMD64)
