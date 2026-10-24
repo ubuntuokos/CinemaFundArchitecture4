@@ -1,0 +1,32 @@
+name: CFA4 F9 release hold consistency gate
+
+on:
+  pull_request:
+    paths:
+      - 'python/cfa4_devtools/release_gate.py'
+      - 'python/tests/test_release_gate.py'
+      - 'docs/audit/f9-release-readiness.json'
+      - '.github/workflows/cfa4-f9-release-hold.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  held:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Audit all mandatory release gates without publishing
+        env:
+          PYTHONPATH: python
+        run: |
+          python3 -m unittest discover -s python/tests -p test_release_gate.py -v
+          python3 -m cfa4_devtools.release_gate
+          if python3 -m cfa4_devtools.release_gate --require-ready; then
+            echo "::error::Release unexpectedly appears ready while mandatory gates are still open"
+            exit 1
+          fi
+          echo "PASS: release correctly remains HOLD; no public publication"

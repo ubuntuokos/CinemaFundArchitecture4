@@ -1,11 +1,11 @@
-//! The desktop app's command line (`filmcraft --help`).
+//! The desktop app's command line (`cfa4 --help`).
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 /// `filmcraft --help`.
 pub const USAGE: &str = "\
-Usage: filmcraft [options] [project.fcproj | media files...]
+Usage: cfa4 [options] [project.fcproj | media files...]
 
 Options:
   --control <port>   start the localhost JSON-lines control server

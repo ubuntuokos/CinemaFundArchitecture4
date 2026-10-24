@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CFA4: check Linux prerequisites",
+      "type": "shell",
+      "command": "bash scripts/dev/bootstrap-ubuntu.sh --check",
+      "problemMatcher": []
+    },
+    {
+      "label": "CFA4: Rust CI",
+      "type": "shell",
+      "command": "cargo xtask ci",
+      "group": "test",
+      "problemMatcher": [
+        "$rustc"
+      ]
+    },
+    {
+      "label": "CFA4: Python test",
+      "type": "shell",
+      "command": ".venv/bin/python -m pytest -q python/tests",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "CFA4: Qt6 offscreen smoke",
+      "type": "shell",
+      "command": "QT_QPA_PLATFORM=offscreen .venv/bin/python -m cfa4_devtools.qt_app --smoke",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "CFA4: full Linux verification",
+      "type": "shell",
+      "command": "bash scripts/dev/verify-linux.sh",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

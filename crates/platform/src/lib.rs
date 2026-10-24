@@ -64,12 +64,42 @@ pub enum Availability {
     Unavailable(&'static str),
 }
 
+#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+#[derive(Debug, PartialEq, Eq)]
+enum LinuxDecoderProbe {
+    Nvdec(String),
+    Vaapi { driver: String, nvdec_error: String },
+    Unavailable { nvdec_error: String, vaapi_error: String },
+}
+
+#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+fn probe_linux_decoder(nvdec_probe: impl FnOnce() -> Result<String, String>, vaapi_probe: impl FnOnce() -> Result<String, String>) -> LinuxDecoderProbe {
+    let nvdec_error = match nvdec_probe() {
+        Ok(driver) => return LinuxDecoderProbe::Nvdec(driver),
+        Err(error) => error,
+    };
+    match vaapi_probe() {
+        Ok(driver) => LinuxDecoderProbe::Vaapi { driver, nvdec_error },
+        Err(vaapi_error) => LinuxDecoderProbe::Unavailable { nvdec_error, vaapi_error },
+    }
+}
+
 /// Register the platform's hardware video decoders (call once at startup; repeated calls are
 /// harmless). Streams they do not take, and every stream while hardware decoding is Off, keep
 /// using FilmCraft's own decoders.
 pub fn register() -> Availability {
-    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
-    filmcraft_export::register_encoder(nvenc::export::factory);
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    {
+        filmcraft_export::register_encoder(nvenc::export::factory);
+        // Linux uses the same CUDA NVENC HEVC implementation as H.264. A
+        // successful hardware probe is required before the HEVC format is
+        // offered, instead of the former Windows-only Format::Hevc gate.
+        filmcraft_export::register_format_probe(filmcraft_export::Format::Hevc, nvenc::hevc_available);
+        filmcraft_export::register_hdr_probe(filmcraft_export::Format::Hevc, nvenc::hevc_hdr_available);
+        log::info!("startup stage: scheduling NVENC HEVC probe");
+        nvenc::warm_hevc_probe();
+        log::info!("startup stage: NVENC HEVC probe scheduled");
+    }
     #[cfg(target_os = "macos")]
     {
         filmcraft_codecs::register_video_decoder(videotoolbox_factory);
@@ -104,34 +134,63 @@ pub fn register() -> Availability {
     }
     #[cfg(target_os = "linux")]
     {
-        static ONCE: std::sync::Once = std::sync::Once::new();
-        let mut available = match vaapi::va::probe() {
-            Ok(driver) => {
-                ONCE.call_once(|| log::info!("hardware decoding through VA-API: {driver}"));
-                filmcraft_codecs::register_video_decoder(vaapi_factory);
-                filmcraft_codecs::hw::set_hw_backend("VA-API");
-                Availability::Available("VA-API")
-            }
-            Err(why) => {
-                log::info!("no VA-API hardware decoding: {why}");
-                Availability::Unavailable("no VA-API driver (libva and a DRM render node) and no NVIDIA driver (NVDEC)")
-            }
-        };
-        // NVIDIA's proprietary driver has no VA-API of its own: NVDEC goes in front, and what it
-        // declines still reaches VA-API (a second GPU) and then the software decoders
+        static VAAPI: std::sync::Once = std::sync::Once::new();
+        static NVDEC: std::sync::Once = std::sync::Once::new();
+        let mut available = Availability::Unavailable("no VA-API driver (libva and a DRM render node) and no NVIDIA driver (NVDEC)");
         #[cfg(target_pointer_width = "64")]
-        match nvdec::cuvid::probe() {
-            Ok(driver) => {
-                static NVDEC: std::sync::Once = std::sync::Once::new();
-                NVDEC.call_once(|| log::info!("hardware decoding through NVDEC: {driver}"));
-                filmcraft_codecs::register_video_decoder(nvdec_factory);
-                filmcraft_codecs::hw::set_hw_backend("NVDEC");
-                available = Availability::Available("NVDEC");
+        {
+            // Probe NVIDIA first. Some NVIDIA DRM nodes expose a libva implementation whose
+            // vaInitialize call can block indefinitely; a working NVDEC path makes that fallback
+            // unnecessary, since unsupported streams still use FilmCraft's software decoders.
+            match probe_linux_decoder(
+                || {
+                    log::info!("startup stage: probing NVDEC CUDA device");
+                    let result = nvdec::cuvid::probe();
+                    log::info!("startup stage: NVDEC CUDA device probe returned");
+                    result
+                },
+                || {
+                    log::info!("startup stage: probing VA-API display");
+                    let result = (*vaapi::va::probe()).clone();
+                    log::info!("startup stage: VA-API display probe returned");
+                    result
+                },
+            ) {
+                LinuxDecoderProbe::Nvdec(driver) => {
+                    NVDEC.call_once(|| log::info!("hardware decoding through NVDEC: {driver}"));
+                    filmcraft_codecs::register_video_decoder(nvdec_factory);
+                    filmcraft_codecs::hw::set_hw_backend("NVDEC");
+                    available = Availability::Available("NVDEC");
+                }
+                LinuxDecoderProbe::Vaapi { driver, nvdec_error } => {
+                    log::info!("no NVDEC hardware decoding: {nvdec_error}");
+                    VAAPI.call_once(|| log::info!("hardware decoding through VA-API: {driver}"));
+                    filmcraft_codecs::register_video_decoder(vaapi_factory);
+                    filmcraft_codecs::hw::set_hw_backend("VA-API");
+                    available = Availability::Available("VA-API");
+                }
+                LinuxDecoderProbe::Unavailable { nvdec_error, vaapi_error } => {
+                    log::info!("no NVDEC hardware decoding: {nvdec_error}");
+                    log::info!("no VA-API hardware decoding: {vaapi_error}");
+                }
             }
-            Err(why) => log::info!("no NVDEC hardware decoding: {why}"),
+        }
+        #[cfg(not(target_pointer_width = "64"))]
+        {
+            log::info!("startup stage: probing VA-API display");
+            match vaapi::va::probe() {
+                Ok(driver) => {
+                    VAAPI.call_once(|| log::info!("hardware decoding through VA-API: {driver}"));
+                    filmcraft_codecs::register_video_decoder(vaapi_factory);
+                    filmcraft_codecs::hw::set_hw_backend("VA-API");
+                    available = Availability::Available("VA-API");
+                }
+                Err(why) => log::info!("no VA-API hardware decoding: {why}"),
+            }
         }
         available
     }
+
     #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     {
         Availability::Unavailable("no hardware video decoder for this system yet")
@@ -264,5 +323,28 @@ pub fn nvdec_factory(entry: &filmcraft_isobmff::SampleEntry) -> Option<filmcraft
             }
             None
         }
+    }
+}
+
+#[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
+mod linux_probe_tests {
+    use std::cell::Cell;
+
+    use super::{LinuxDecoderProbe, probe_linux_decoder};
+
+    #[test]
+    fn successful_nvdec_probe_skips_blocking_vaapi_probe() {
+        let vaapi_called = Cell::new(false);
+
+        let selected = probe_linux_decoder(
+            || Ok("NVDEC test device".to_string()),
+            || {
+                vaapi_called.set(true);
+                Ok("VA-API test device".to_string())
+            },
+        );
+
+        assert_eq!(selected, LinuxDecoderProbe::Nvdec("NVDEC test device".to_string()));
+        assert!(!vaapi_called.get(), "VA-API probe must not run after NVDEC succeeds");
     }
 }

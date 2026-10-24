@@ -9,7 +9,7 @@
 # 净室实现：每条译文均由英文含义直接译出，使用通用的中文视频剪辑术语（剪辑、时间轴、序列、
 #   轨道、关键帧……）。未参考或复制任何专有本地化资源、字符串表或产品界面。产品与技术名称
 #   （FilmCraft、ArtCraft、Lumetri、ProRes、LUFS……）保留原文拼写。
-	About FilmCraft	关于 FilmCraft
+	About CFA4	关于 CFA4
 	Add Audio Submix Track	添加音频子混音轨道
 	Add Caption at Playhead	在播放头处添加字幕
 	Add Chapter Marker…	添加章节标记…
@@ -129,7 +129,7 @@
 	File…	文件…
 	Fill frame	填满帧
 	FilmCraft Help…	FilmCraft 帮助…
-	FilmCraft on GitHub	GitHub 上的 FilmCraft
+	CFA4 on GitHub	GitHub 上的 CFA4
 	FilmCraft on getartcraft.com	getartcraft.com 上的 FilmCraft
 	Find Next	查找下一个
 	Find…	查找…
@@ -269,6 +269,7 @@
 	Replace Fonts in Projects…	替换项目中的字体…
 	Replace With Clip	替换为剪辑
 	Report an Issue…	报告问题…
+	Report a CFA4 issue…	报告 CFA4 问题…
 	Reset All Parameters	重置所有参数
 	Reset Duration	重置持续时间
 	Reset to Saved Layout	重置为已保存的布局

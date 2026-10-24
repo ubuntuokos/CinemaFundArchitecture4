@@ -21,7 +21,7 @@
 # thumbnail = gambar mini, voice-over = sulih suara, default = bawaan, preferences (also the native
 # macOS Settings menu) = Preferensi, settings = pengaturan.
 
-	About FilmCraft	Tentang FilmCraft
+	About CFA4	Tentang CFA4
 	Add Audio Submix Track	Tambah Trek Submix Audio
 	Add Caption at Playhead	Tambah Takarir di Kepala Putar
 	Add Chapter Marker…	Tambah Penanda Bab…
@@ -141,7 +141,7 @@
 	File…	Berkas…
 	Fill frame	Isi bingkai
 	FilmCraft Help…	Bantuan FilmCraft…
-	FilmCraft on GitHub	FilmCraft di GitHub
+	CFA4 on GitHub	CFA4 di GitHub
 	FilmCraft on getartcraft.com	FilmCraft di getartcraft.com
 	Find Next	Cari Berikutnya
 	Find…	Cari…
@@ -281,6 +281,7 @@
 	Replace Fonts in Projects…	Ganti Font di Proyek…
 	Replace With Clip	Ganti dengan Klip
 	Report an Issue…	Laporkan Masalah…
+	Report a CFA4 issue…	Laporkan masalah CFA4…
 	Reset All Parameters	Atur Ulang Semua Parameter
 	Reset Duration	Atur Ulang Durasi
 	Reset to Saved Layout	Kembalikan ke Tata Letak Tersimpan

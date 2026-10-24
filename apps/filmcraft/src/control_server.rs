@@ -71,10 +71,21 @@ impl Drop for Slot {
 fn serve(stream: TcpStream, tx: &Sender<ControlRequest>, ctx: &egui::Context) {
     let Ok(read) = stream.try_clone() else { return };
     serve_lines(read, stream, |method, params| {
-        let (req, rrx) = ControlRequest::new(method, params);
+        let trace = std::env::var_os("FILMCRAFT_CONTROL_TRACE").is_some();
+        if trace {
+            eprintln!("filmcraft: control trace: received {method}");
+        }
+        let (req, rrx) = ControlRequest::new(method.clone(), params);
         tx.send(req).ok()?;
+        if trace {
+            eprintln!("filmcraft: control trace: queued {method}");
+        }
         ctx.request_repaint();
-        Some(rrx.recv_timeout(Duration::from_secs(60)).unwrap_or_else(|_| json!({"ok": false, "error": "timeout"})))
+        let result = rrx.recv_timeout(Duration::from_secs(60));
+        if trace {
+            eprintln!("filmcraft: control trace: {} {method}", if result.is_ok() { "reply ready for" } else { "timed out waiting for" });
+        }
+        Some(result.unwrap_or_else(|_| json!({"ok": false, "error": "timeout"})))
     });
 }
 

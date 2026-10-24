@@ -16,7 +16,7 @@
 # décalage, overwrite = écraser, scopes = oscilloscopes, preferences (also the native macOS
 # Settings menu) = Préférences, settings = paramètres.
 
-	About FilmCraft	À propos de FilmCraft
+	About CFA4	À propos de CFA4
 	Add Audio Submix Track	Ajouter une piste de sous-mixage audio
 	Add Caption at Playhead	Ajouter un sous-titre à la tête de lecture
 	Add Chapter Marker…	Ajouter un marqueur de chapitre…
@@ -136,7 +136,7 @@
 	File…	Fichier…
 	Fill frame	Remplir l'image
 	FilmCraft Help…	Aide de FilmCraft…
-	FilmCraft on GitHub	FilmCraft sur GitHub
+	CFA4 on GitHub	CFA4 sur GitHub
 	FilmCraft on getartcraft.com	FilmCraft sur getartcraft.com
 	Find Next	Rechercher le suivant
 	Find…	Rechercher…
@@ -276,6 +276,7 @@
 	Replace Fonts in Projects…	Remplacer les polices dans les projets…
 	Replace With Clip	Remplacer par le clip
 	Report an Issue…	Signaler un problème…
+	Report a CFA4 issue…	Signaler un problème CFA4…
 	Reset All Parameters	Réinitialiser tous les paramètres
 	Reset Duration	Réinitialiser la durée
 	Reset to Saved Layout	Réinitialiser la disposition enregistrée

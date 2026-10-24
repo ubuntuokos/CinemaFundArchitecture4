@@ -29,7 +29,7 @@ fn help_and_usage_errors() {
 
 #[test]
 fn version_after_global_options() {
-    let want = format!("filmcraft-cli {}\n", env!("CARGO_PKG_VERSION"));
+    let want = format!("CFA4 CLI {}\n", env!("CARGO_PKG_VERSION"));
     for args in [&["--version"][..], &["-V"], &["version"], &["--demo", "--version"], &["--compact", "-V"], &["--demo", "version"]] {
         let o = cli(args);
         assert!(o.status.success(), "{args:?}: {}", String::from_utf8_lossy(&o.stderr));
@@ -310,7 +310,7 @@ fn render_rejects_bad_numbers() {
         let o = cli(&["--demo", "render", "--seconds", secs, "--scale", scale, "--out", &still]);
         let err = String::from_utf8_lossy(&o.stderr);
         assert_eq!(o.status.code(), Some(2), "{opt} {bad}: {err}");
-        assert!(err.contains("filmcraft-cli:") && err.contains(opt), "{opt} {bad}: {err}");
+        assert!(err.contains("cfa4-cli:") && err.contains(opt), "{opt} {bad}: {err}");
         assert!(!std::path::Path::new(&still).exists(), "{opt} {bad} wrote a file");
     }
     let _ = std::fs::remove_dir_all(&dir);
