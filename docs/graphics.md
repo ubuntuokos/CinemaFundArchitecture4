@@ -242,6 +242,12 @@ Automation ids: `essentialGraphics.tab.browse|edit`, `gfxTemplates.search`, `gfx
 `exportTemplate.*`, `replaceFonts.*`; `ui.set {"gfxTemplates": {...}, "gfxEdit": {...}}` sets the
 panel state and the Type-tool selection.
 
+## Credits from a spreadsheet
+
+Graphics and Titles ▸ Import Credits Spreadsheet… (`graphics.credits.import`) turns a CSV credits
+sheet into graphic clips, one per page: scroll pages use the Roll above, card pages fade with
+opacity keyframes. See [credits.md](credits.md).
+
 ## Captions, source graphics and fonts
 
 | Command | Menu | Params |
