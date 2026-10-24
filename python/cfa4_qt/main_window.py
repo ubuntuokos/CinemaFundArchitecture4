@@ -14,7 +14,8 @@ from . import __version__
 from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
-from .i18n import LANGUAGES, TR, tr
+from .i18n import LANGUAGES, N_, TR, tr
+from .panels.export import ExportDialog
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
@@ -54,6 +55,7 @@ class MainWindow(QMainWindow):
         self.state: dict[str, Any] = {}
         self.revision = -1
         self.source_state: dict[str, Any] | None = None
+        self.export_dialog: ExportDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -192,11 +194,14 @@ class MainWindow(QMainWindow):
         self.play_action.setObjectName("qt.playback.toggle")
         self.play_action.triggered.connect(lambda: self.focused_monitor().toggle_playback())
         self.tool_actions = []
-        for tool, label in (("selection", "Selection Tool"), ("razor", "Razor Tool")):
+        for tool, label in (("selection", N_("Selection Tool")), ("razor", N_("Razor Tool"))):
             a = QAction(tr(label), self)
             a.setObjectName(f"qt.tool.{tool}")
             a.triggered.connect(lambda _c=False, t=tool: self.timeline.set_tool(t))
             self.tool_actions.append(a)
+        self.export_action = QAction(tr("Export Media…"), self)
+        self.export_action.setObjectName("qt.export")
+        self.export_action.triggered.connect(self.open_export)
         self.fit_action = QAction(tr("Zoom to Sequence"), self)
         self.fit_action.triggered.connect(self.timeline.canvas.zoom_to_fit)
         self.reset_layout = QAction(tr("Reset Panel Layout"), self)
@@ -215,6 +220,7 @@ class MainWindow(QMainWindow):
         """Playback and tool keys, unless an engine command already claims them."""
         for action, keys in (
             (self.play_action, ["Space"]),
+            (self.export_action, ["Ctrl+M"]),
             (self.tool_actions[0], ["V"]),
             (self.tool_actions[1], ["C"]),
         ):
@@ -418,6 +424,9 @@ class MainWindow(QMainWindow):
         if cmd.id == "app.quit":
             self.close()
             return
+        if cmd.id in ("file.exportMedia", "export.queue.add"):
+            self.open_export()
+            return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]
             start, end = self.source_monitor.range()
@@ -497,6 +506,19 @@ class MainWindow(QMainWindow):
     def _playback_moved(self, ticks: int) -> None:
         self.timeline.canvas.playhead = ticks
         self.timeline.canvas.update()
+
+    # ----- export -----
+    def open_export(self) -> None:
+        if self.export_dialog is None:
+            self.export_dialog = ExportDialog(self.engine, self)
+            self.export_dialog.finished_export.connect(self._export_finished)
+        path = (self.project or {}).get("path")
+        self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
+
+    def _export_finished(self, path: str, ok: bool) -> None:
+        text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)
+        self.events.log(text, error=not ok)
+        self.statusBar().showMessage(text, 10_000)
 
     # ----- misc -----
     def _about(self) -> None:

@@ -344,8 +344,8 @@ def _qt_literals() -> set[str]:
     found: set[str] = set()
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         src = path.read_text(encoding="utf-8")
-        found.update(m.group(1) for m in re.finditer(r'\b(?:tr|fmt)\(\s*"((?:[^"\\]|\\.)*)"', src))
-        found.update(m.group(1) for m in re.finditer(r"\b(?:tr|fmt)\(\s*'((?:[^'\\]|\\.)*)'", src))
+        found.update(m.group(1) for m in re.finditer(r'\b(?:tr|fmt|N_)\(\s*"((?:[^"\\]|\\.)*)"', src))
+        found.update(m.group(1) for m in re.finditer(r"\b(?:tr|fmt|N_)\(\s*'((?:[^'\\]|\\.)*)'", src))
     return found
 
 
@@ -353,7 +353,7 @@ def test_hungarian_catalog_covers_the_qt_gui():
     """The owner works in Hungarian: every Qt GUI string and panel title has a translation."""
     hu = Translator("hu")
     titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
-    missing = sorted(s for s in _qt_literals() | titles if hu.tr(s) == s and s != "CFA4")
+    missing = sorted(s for s in _qt_literals() | titles if not hu.has(s))
     assert not missing, missing
 
 
@@ -480,5 +480,88 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
         wait_until(app, lambda: False, 300)
         found = bars(win)
         assert len(found) == len(set(found)) == 3, found
+        win._quit_confirmed = True
+        win.close()
+
+
+# ----- export window -----
+def test_export_helpers(tmp_path: Path, monkeypatch):
+    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name, with_extension
+
+    assert with_extension("/a/b.mp4", "mov") == "/a/b.mov"
+    assert with_extension("/a/b", "mp4") == "/a/b.mp4"
+    assert with_extension("/a/b.mp4", "") == "/a/b.mp4"
+    assert safe_file_name("Main/Edit\\x") == "Main_Edit_x"
+    assert safe_file_name(" .. ") == "export"
+    assert format_eta(75) == "1:15" and format_eta(3725) == "1:02:05" and format_eta("x") == ""
+    project = tmp_path / "p" / "film.fcproj"
+    project.parent.mkdir()
+    assert default_output_dir(str(project)) == project.parent
+    monkeypatch.setenv("XDG_VIDEOS_DIR", str(tmp_path))
+    assert default_output_dir(None) == tmp_path
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
+    """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        # File ▸ Export ▸ Media… opens the export window instead of a parameter form
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and dlg.isVisible()
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        # untouched, the preset decides codec, bitrate mode, sound and hardware encoding
+        untouched = dlg.params()
+        for key in ("bitrateMode", "audioCodec", "audio", "hardwareEncoding", "burnCaptions"):
+            assert key not in untouched, untouched
+        assert untouched["sequence"] == win.sequence["id"]
+        dlg.hardware.setChecked(True)
+        assert dlg.params()["hardwareEncoding"] == "auto"
+        dlg.hardware.setChecked(False)
+        assert dlg.params()["hardwareEncoding"] == "off"
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(160)
+        dlg.height_spin.setValue(90)
+        out = tmp_path / "out" / "cut.mp4"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "160×90" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True)
+        assert out.is_file() and out.stat().st_size > 0
+        if shutil.which("ffprobe"):
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "json", str(out)],
+                capture_output=True, check=True, timeout=60,
+            )
+            streams = json.loads(probe.stdout)["streams"]
+            kinds = {s["codec_type"] for s in streams}
+            assert kinds == {"video", "audio"}, streams
+            video = next(s for s in streams if s["codec_type"] == "video")
+            assert (video["width"], video["height"]) == (160, 90)
+        # the export goes back into the project
+        before = len(_items(win.project))
+        win.execute("file.import", {"paths": [str(out)]})
+        assert wait_until(app, lambda: len(_items(win.project)) == before + 1, 30_000)
+        assert any(i.get("name") == "cut.mp4" for i in _items(win.project))
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
         win._quit_confirmed = True
         win.close()

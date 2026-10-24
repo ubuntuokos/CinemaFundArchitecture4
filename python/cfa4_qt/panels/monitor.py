@@ -18,7 +18,7 @@ from PySide6.QtGui import QColor, QImage, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
 from ..engine import EngineClient
-from ..i18n import tr
+from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
 
 try:  # QtMultimedia is optional: without it playback is silent
@@ -168,11 +168,11 @@ class Monitor(QWidget):
         transport = (
             ("markIn", "{", "Mark In", lambda: self.command.emit("markers.markIn", {"target": self.target})),
             ("markOut", "}", "Mark Out", lambda: self.command.emit("markers.markOut", {"target": self.target})),
-            ("start", "⏮", "Go to Start", lambda: self.seek(self.range()[0])),
-            ("stepBack", "◀|", "Step Back 1 Frame", lambda: self.step(-1)),
-            ("toggle", "▶", "Play/Stop", self.toggle_playback),
-            ("stepForward", "|▶", "Step Forward 1 Frame", lambda: self.step(1)),
-            ("end", "⏭", "Go to End", lambda: self.seek(self.range()[1] - self.frame())),
+            ("start", "⏮", N_("Go to Start"), lambda: self.seek(self.range()[0])),
+            ("stepBack", "◀|", N_("Step Back 1 Frame"), lambda: self.step(-1)),
+            ("toggle", "▶", N_("Play/Stop"), self.toggle_playback),
+            ("stepForward", "|▶", N_("Step Forward 1 Frame"), lambda: self.step(1)),
+            ("end", "⏭", N_("Go to End"), lambda: self.seek(self.range()[1] - self.frame())),
             *self.extra_buttons(),
         )
         for name, text, tip, slot in transport:
@@ -505,8 +505,8 @@ class SourceMonitor(Monitor):
 
     def extra_buttons(self) -> tuple[tuple[str, str, str, Any], ...]:
         return (
-            ("insert", "⤵", "Insert", lambda: self.command.emit("source.insert", {})),
-            ("overwrite", "⇣", "Overwrite", lambda: self.command.emit("source.overwrite", {})),
+            ("insert", "⤵", N_("Insert"), lambda: self.command.emit("source.insert", {})),
+            ("overwrite", "⇣", N_("Overwrite"), lambda: self.command.emit("source.overwrite", {})),
         )
 
     def set_source(self, state: dict[str, Any] | None, revision: int) -> None:

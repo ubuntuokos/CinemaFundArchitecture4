@@ -7,6 +7,7 @@
 # copied; add entries the same way. Product and format names (CFA4, FilmCraft, AAF, EDL…) keep
 # their spelling.
 
+	AAC	AAC
 	AAF…	AAF…
 	About CFA4	A CFA4 névjegye
 	Add Audio Submix Track	Hang-alkeverő sáv hozzáadása
@@ -21,6 +22,7 @@
 	Add Range Marker	Tartományjelölő hozzáadása
 	Add Range Marker to In and Out	Tartományjelölő a kezdő- és végpont közé
 	Add Tracks…	Sávok hozzáadása…
+	Add to Queue	Hozzáadás a sorhoz
 	Adjust	Beállítás
 	Adjustment Layer	Korrekciós réteg
 	Adjustment Layer…	Korrekciós réteg…
@@ -43,11 +45,14 @@
 	Audio Options	Hangbeállítások
 	Audio Out	Hang végpont
 	Audio Transitions	Hangátmenetek
+	Audio codec	Hangkodek
 	Automate to Sequence…	Automatikus szekvenciába rendezés…
+	Automatic	Automatikus
 	Avid Log Exchange…	Avid Log Exchange…
 	Bars and Tone…	Színsávok és hangjel…
 	Bin	Tároló
 	Bin From Selection	Tároló a kijelölésből
+	Bitrate mode	Bitrátamód
 	Black Video…	Fekete videó…
 	Blue	Kék
 	Blur & Sharpen	Elmosás és élesítés
@@ -56,16 +61,23 @@
 	Bring Forward	Előrébb hozás
 	Bring to Front	Előtérbe
 	Brown	Barna
+	Browse…	Tallózás…
+	Burn in captions	Feliratok beégetése
+	CBR	CBR
 	CFA4	CFA4
 	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
 	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
+	Cancel Selected	Kijelöltek megszakítása
+	Cancelled	Megszakítva
 	Captions	Feliratok
 	Captions…	Feliratok…
 	Caribbean	Karibi
 	Center Horizontally	Vízszintesen középre
 	Center Vertically	Függőlegesen középre
 	Cerulean	Égszínkék
+	Choose an output file.	Válasszon kimeneti fájlt.
 	Clear	Törlés
+	Clear Finished	Befejezettek törlése
 	Clear In	Kezdőpont törlése
 	Clear In and Out	Kezdő- és végpont törlése
 	Clear Markers	Jelölők törlése
@@ -81,12 +93,14 @@
 	Color Management…	Színkezelés…
 	Color Matte…	Színes háttér…
 	Consolidate Duplicates	Ismétlődések összevonása
+	Constant quality (CRF)	Állandó minőség (CRF)
 	Copy	Másolás
 	Copy Paste Includes Sequence Markers	Másolás-beillesztés a szekvenciajelölőkkel
 	Create Captions from Transcript…	Feliratok készítése az átiratból…
 	Create Multi-Camera Source Sequence…	Többkamerás forrásszekvencia létrehozása…
 	Create Proxies…	Proxyk létrehozása…
 	Crossfade	Áttűnés
+	Custom	Egyéni
 	Cut	Kivágás
 	Delay and Echo	Késleltetés és visszhang
 	Delete Render Files	Renderfájlok törlése
@@ -105,6 +119,7 @@
 	Distribute Space Horizontally	Vízszintes térköz elosztása
 	Distribute Space Vertically	Függőleges térköz elosztása
 	Distribute Vertically	Függőleges elosztás
+	Done	Kész
 	Double-click a clip in the Project panel to open it here.	Kattintson duplán egy klipre a Projekt panelen, hogy itt megnyíljon.
 	Duplicate	Kettőzés
 	Duration	Időtartam
@@ -118,15 +133,25 @@
 	Enable	Engedélyezés
 	Enable Remix	Remix bekapcsolása
 	Enabled	Engedélyezve
+	Encoding	Kódolás
 	End	Vége
 	Engine stopped	A motor leállt
+	Entire Sequence	Teljes szekvencia
 	Events	Események
 	Export	Exportálás
 	Export As Motion Graphics Template…	Exportálás mozgógrafikai sablonként…
 	Export Markers as CSV…	Jelölők exportálása CSV-be…
+	Export Media	Média exportálása
+	Export Media…	Média exportálása…
+	Export Queue	Exportálási sor
+	Export audio	Hang exportálása
+	Export failed: {path}	Az exportálás nem sikerült: {path}
+	Export finished: {path}	Az exportálás elkészült: {path}
 	Extract	Kivonás
 	Extract Audio	Hang kinyerése
 	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Sikertelen
 	Field Options…	Félkép-beállítások…
 	File	Fájl
 	File…	Fájl…
@@ -139,13 +164,16 @@
 	Fit to frame	Igazítás a képkockába
 	Flatten	Lapítás
 	Forest	Erdőzöld
+	Format	Formátum
 	Frame Blending	Kockamosás
 	Frame Hold Options…	Kimerevítés beállításai…
 	Frame Sampling	Kockamintavétel
+	Frame size	Képméret
 	From Bin	Tárolóból
 	From Source Monitor	A forrásmonitorról
 	From Source Monitor, Match Frame	A forrásmonitorról, egyező kockával
 	From file…	Fájlból…
+	From the preset	Az előbeállításból
 	Gain	Erősítés
 	General…	Általános…
 	Generate	Előállítás
@@ -208,6 +236,7 @@
 	Mark Split	Osztott jelölés
 	Markers	Jelölők
 	Match Frame	Egyező kocka
+	Match sequence	Mint a szekvencia
 	Media offline	A média offline
 	Media…	Média…
 	Merge Clips…	Klipek egyesítése…
@@ -239,7 +268,10 @@
 	Open Project…	Projekt megnyitása…
 	OpenTimelineIO…	OpenTimelineIO…
 	Optical Flow	Optikai áramlás
+	Output	Kimenet
+	Output file	Kimeneti fájl
 	Overwrite	Felülírás
+	PCM (uncompressed)	PCM (tömörítetlen)
 	Panels	Panelek
 	Paste	Beillesztés
 	Paste Attributes…	Jellemzők beillesztése…
@@ -247,24 +279,30 @@
 	Perspective	Perspektíva
 	Play/Stop	Lejátszás/Leállítás
 	Polygon	Sokszög
+	Preset	Előbeállítás
 	Previous in Sequence	Előző a szekvenciában
 	Previous in Track	Előző a sávon
 	Program	Program
+	Progress	Haladás
 	Project	Projekt
 	Project Manager…	Projektkezelő…
 	Project Settings	Projektbeállítások
 	Project…	Projekt…
 	Proxy	Proxy
 	Purple	Lila
+	Range	Tartomány
 	Razor Tool	Penge eszköz
+	Ready	Várakozik
 	Reconnect Full Resolution Media…	Teljes felbontású média újracsatolása…
 	Recover	Visszaállítás
 	Recover Unsaved Changes	Nem mentett változások visszaállítása
 	Recover Unsaved Changes…	Nem mentett változások visszaállítása…
 	Rectangle	Téglalap
 	Redo	Újra
+	Remaining	Hátralévő idő
 	Remix	Remix
 	Remix Properties…	Remix tulajdonságai…
+	Remove	Eltávolítás
 	Remove Attributes…	Jellemzők eltávolítása…
 	Remove Effect	Effekt eltávolítása
 	Remove Filler Words	Töltelékszavak eltávolítása
@@ -282,6 +320,7 @@
 	Reset Panel Layout	Panelelrendezés visszaállítása
 	Restoration	Helyreállítás
 	Restore Captions from Source Clip	Feliratok visszaállítása a forrásklipből
+	Retry	Újra
 	Reverb	Zengetés
 	Reverse Match Frame	Fordított egyező kocka
 	Revert	Visszaállítás
@@ -320,6 +359,7 @@
 	Send to Back	Háttérbe
 	Sequence	Szekvencia
 	Sequence From Clip	Szekvencia klipből
+	Sequence In/Out	Szekvencia kezdő-/végpontja
 	Sequence Settings…	Szekvencia beállításai…
 	Sequence…	Szekvencia…
 	Show Active Caption Tracks Only	Csak az aktív feliratsávok mutatása
@@ -338,16 +378,20 @@
 	Speed	Sebesség
 	Speed/Duration…	Sebesség/időtartam…
 	Start	Kezdet
+	Start Queue	Sor indítása
 	Starting engine…	A motor indul…
+	Status	Állapot
 	Step Back 1 Frame	Egy kockát vissza
 	Step Forward 1 Frame	Egy kockát előre
 	Stereo Imagery	Sztereó kép
 	Still Image	Állókép
+	Stop Queue	Sor leállítása
 	Stylize	Stilizálás
 	Subclip	Alklip
 	Synchronize…	Szinkronizálás…
 	Synthetic	Szintetikus
 	Tan	Homok
+	Target bitrate	Célbitráta
 	Teal	Kékeszöld
 	Text	Szöveg
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p filmcraft-cli	A CFA4 motorja (cfa4-cli) nem található. Fordítsa le ezzel: cargo build --release -p filmcraft-cli
@@ -375,7 +419,10 @@
 	Update Metadata…	Metaadatok frissítése…
 	Upgrade Caption to Graphic	Felirat átalakítása grafikává
 	Upgrade to Source Graphic	Átalakítás forrásgrafikává
+	Use hardware encoding when available	Hardveres kódolás, ha elérhető
 	Utility	Segédeszközök
+	VBR, 1 pass	VBR, 1 menet
+	VBR, 2 pass	VBR, 2 menet
 	Vertical Text	Függőleges szöveg
 	Video	Videó
 	Video Effects	Videóeffektek
@@ -386,8 +433,12 @@
 	View	Nézet
 	Violet	Ibolya
 	Wipe	Söprés
+	Work Area	Munkaterület
 	Yellow	Sárga
 	Yes	Igen
 	Zoom to Sequence	Nagyítás a teljes szekvenciára
+	frames	képkocka
+	not available	nem érhető el
 	off	ki
 	optional	elhagyható
+	…	…

@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..i18n import tr
+from ..i18n import N_, tr
 from ..timecode import format_timecode, frame_ticks
 
 
@@ -141,14 +141,14 @@ class InspectorPanel(QWidget):
         clip = clips[0]
         self._clip = clip
         rows = [
-            ("Name", str(clip.get("name") or "")),
-            ("Start", format_timecode(int(clip.get("start") or 0), ft)),
-            ("End", format_timecode(int(clip.get("end") or 0), ft)),
-            ("Duration", format_timecode(int(clip.get("duration") or 0), ft)),
-            ("Source In", format_timecode(int(clip.get("sourceIn") or 0), ft)),
-            ("Speed", f"{float(clip.get('speed') or 1.0) * 100:.1f}%" + (" ⟲" if clip.get("reverse") else "")),
-            ("Gain", f"{float(clip.get('gainDb') or 0.0):+.1f} dB"),
-            ("Enabled", tr("Yes") if clip.get("enabled", True) else tr("No")),
+            (N_("Name"), str(clip.get("name") or "")),
+            (N_("Start"), format_timecode(int(clip.get("start") or 0), ft)),
+            (N_("End"), format_timecode(int(clip.get("end") or 0), ft)),
+            (N_("Duration"), format_timecode(int(clip.get("duration") or 0), ft)),
+            (N_("Source In"), format_timecode(int(clip.get("sourceIn") or 0), ft)),
+            (N_("Speed"), f"{float(clip.get('speed') or 1.0) * 100:.1f}%" + (" ⟲" if clip.get("reverse") else "")),
+            (N_("Gain"), f"{float(clip.get('gainDb') or 0.0):+.1f} dB"),
+            (N_("Enabled"), tr("Yes") if clip.get("enabled", True) else tr("No")),
         ]
         for label, value in rows:
             v = QLabel(value)

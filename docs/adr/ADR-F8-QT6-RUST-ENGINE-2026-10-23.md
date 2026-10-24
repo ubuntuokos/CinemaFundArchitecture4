@@ -94,7 +94,10 @@ here.
    frames and audio; A/V sync and hardware not yet measured).
 6. **Export + reimport:** H264/HEVC with real audio, FFprobe metadata,
    progress/cancel, integrated Qt6 GUI and CFA4 project round-trip.
-   OPEN; earlier egui success does NOT transfer to Qt6.
+   IN PROGRESS (2026-10-24: Qt Export window → engine queue → H.264 + AAC
+   checked with ffprobe → re-imported, automated with the real engine; HEVC
+   and the physical-GPU encoders on the reference machine not yet recorded).
+   Earlier egui success does NOT transfer to Qt6.
 7. **Packaging:** correctly package tested Qt6 runtime, licenses,
    XDG desktop and all four Ubuntu 26.04 AMD64 formats. OPEN.
 

@@ -99,6 +99,10 @@ class Translator:
     def tr(self, text: str) -> str:
         return self._plain.get(text, text)
 
+    def has(self, text: str) -> bool:
+        """Does the catalog translate ``text``? (Also true for entries equal to the source.)"""
+        return text in self._plain
+
     def tr_ctx(self, context: str, text: str) -> str:
         return self._contextual.get((context, text)) or self.tr(text)
 
@@ -135,6 +139,12 @@ def system_language() -> str:
 
 
 TR = Translator("en")
+
+
+def N_(text: str) -> str:
+    """Marks a literal for translation where it is translated later (``tr(label)``); returns it
+    unchanged. The catalog-coverage test collects ``N_("…")`` literals as well as ``tr("…")``."""
+    return text
 
 
 def tr(text: str) -> str:
