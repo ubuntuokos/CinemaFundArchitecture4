@@ -30,7 +30,6 @@ macro_rules! tlf {
 }
 
 pub mod automation;
-pub mod brand;
 pub mod calc;
 mod cjk;
 pub mod control;
@@ -271,7 +270,7 @@ pub(crate) const EXPORT_SAVE_DIALOGS: [(&str, &str, &str); 7] = [
     ("file.exportFcpxml", "FCPXML", "fcpxml"),
     ("file.exportOtio", "OpenTimelineIO", "otio"),
     ("file.exportAle", "Avid Log Exchange", "ale"),
-    ("file.exportSelectionProject", "FilmCraft Project", "fcproj"),
+    ("file.exportSelectionProject", "CFA4 Project (.fcproj)", "fcproj"),
 ];
 
 pub struct FilmcraftApp {
@@ -1647,6 +1646,7 @@ impl FilmcraftApp {
 
     fn drain_control(&mut self, ctx: &egui::Context) {
         let Some(rx) = self.control_rx.take() else { return };
+        let trace = std::env::var_os("FILMCRAFT_CONTROL_TRACE").is_some();
         let now = ctx.input(|i| i.time);
         let mut reqs: Vec<(ControlRequest, f64)> = std::mem::take(&mut self.deferred);
         while let Ok(req) = rx.try_recv() {
@@ -1659,8 +1659,14 @@ impl FilmcraftApp {
         }
         for (req, deadline) in reqs {
             let reply = req.reply.clone();
+            if trace {
+                log::info!("control trace: UI handling {}", req.method);
+            }
             match control::handle(self, ctx, &req) {
                 control::Outcome::Done(v) => {
+                    if trace {
+                        log::info!("control trace: UI handled {}", req.method);
+                    }
                     let _ = reply.send(v);
                 }
                 control::Outcome::Retry(msg) => {
@@ -2000,7 +2006,7 @@ impl FilmcraftApp {
     fn error_window(&mut self, ctx: &egui::Context) {
         let Some(msg) = self.ui_error.clone() else { return };
         let mut close = false;
-        egui::Window::new(tl!("FilmCraft hit an error"))
+        egui::Window::new("CFA4 encountered an error")
             .id(egui::Id::new("FilmCraft hit an error"))
             .collapsible(false)
             .resizable(false)

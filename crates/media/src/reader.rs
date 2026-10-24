@@ -230,6 +230,16 @@ pub fn open_reader(name: &str, reader: SharedReader, reader_openers: &[ReaderOpe
 /// memory to show its duration, or to find out it isn't supported, thrashes the disk.
 pub fn open_reader_within(name: &str, reader: SharedReader, reader_openers: &[ReaderOpener], extra: &[Opener], max_whole: u64) -> Result<SharedSource> {
     let head = read_range(&*reader, 0, HEAD_LEN).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
+    // A HEIF still has an ISO-BMFF header and could otherwise be consumed by
+    // the MP4 reader opener. Import it through the bounded still-image path.
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    if crate::still::heif::sniff(&head) {
+        if reader.len() > max_whole || reader.len() > 256 * 1024 * 1024 {
+            return Err(MediaError::Unsupported(format!("{name}: HEIF image exceeds the import size limit")));
+        }
+        let bytes = read_range(&*reader, 0, usize::try_from(reader.len()).unwrap_or(usize::MAX)).map_err(|e| MediaError::Io(format!("{name}: {e}")))?;
+        return crate::open_bytes(name, bytes.into(), extra);
+    }
     for o in reader_openers {
         if let Some(r) = o(name, &head, &reader) {
             return r;

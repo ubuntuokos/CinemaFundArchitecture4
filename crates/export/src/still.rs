@@ -8,16 +8,20 @@ pub enum StillFormat {
     Tiff,
     Bmp,
     Jpeg,
+    Heic,
+    Heif,
 }
 impl StillFormat {
-    pub const ALL: [Self; 4] = [Self::Png, Self::Jpeg, Self::Tiff, Self::Bmp];
+    pub const ALL: [Self; 6] = [Self::Png, Self::Jpeg, Self::Tiff, Self::Bmp, Self::Heic, Self::Heif];
     pub fn parse(name: &str) -> Result<Self> {
         match name.to_ascii_lowercase().as_str() {
             "png" => Ok(Self::Png),
             "tif" | "tiff" => Ok(Self::Tiff),
             "bmp" => Ok(Self::Bmp),
             "jpg" | "jpeg" => Ok(Self::Jpeg),
-            _ => Err(ExportError::Unsupported("still format must be png, jpeg, tiff or bmp".into())),
+            "heic" => Ok(Self::Heic),
+            "heif" | "hif" => Ok(Self::Heif),
+            _ => Err(ExportError::Unsupported("still format must be png, jpeg, tiff, bmp, heic or heif".into())),
         }
     }
     pub fn label(self) -> &'static str {
@@ -26,6 +30,8 @@ impl StillFormat {
             Self::Tiff => "TIFF",
             Self::Bmp => "BMP",
             Self::Jpeg => "JPEG",
+            Self::Heic => "HEIC",
+            Self::Heif => "HEIF",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -34,17 +40,19 @@ impl StillFormat {
             Self::Tiff => "tiff",
             Self::Bmp => "bmp",
             Self::Jpeg => "jpg",
+            Self::Heic => "heic",
+            Self::Heif => "heif",
         }
     }
     pub fn supports_16(self) -> bool {
-        matches!(self, Self::Png | Self::Tiff)
+        matches!(self, Self::Png | Self::Tiff | Self::Heic | Self::Heif)
     }
 }
 
 /// Quantize the original float image directly, never pad an 8-bit image to 16 bits.
 pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> {
     if !matches!(depth, 8 | 16) || (depth == 16 && !format.supports_16()) {
-        return Err(ExportError::Unsupported("16-bit stills require PNG or TIFF; JPEG and BMP support 8 bits per channel".into()));
+        return Err(ExportError::Unsupported("16-bit stills require PNG, TIFF, HEIC or HEIF; JPEG and BMP support 8 bits per channel".into()));
     }
     let bad = || ExportError::Encode("invalid still image dimensions or pixel buffer".into());
     let w = u32::try_from(image.w).map_err(|_| bad())?;
@@ -55,6 +63,17 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
         return Err(bad());
     }
     let err = |e: image::ImageError| ExportError::Encode(e.to_string());
+    // HEIC/HEIF Export Frame uses the local libheif HEVC encoder through
+    // an intermediate PNG. This does not add a video/sequence preset.
+    if matches!(format, StillFormat::Heic | StillFormat::Heif) {
+        #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+        {
+            let png = encode(image, StillFormat::Png, depth)?;
+            return filmcraft_media::still::heif::encode_png(&png).map_err(|e| ExportError::Encode(e.to_string()));
+        }
+        #[cfg(not(all(target_os = "linux", target_arch = "x86_64")))]
+        return Err(ExportError::Unsupported("HEIC/HEIF export is supported on Linux AMD64 only".into()));
+    }
     if depth == 8 {
         let rgba = image.to_rgba8();
         if format == StillFormat::Jpeg {
@@ -124,6 +143,21 @@ mod tests {
             assert_eq!(b[3], 32768);
         }
     }
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    #[test]
+    fn heic_heif_single_frame_exports_round_trip() {
+        let source = Image::filled(64, 64, [0.25, 0.4, 0.6, 1.0]);
+        for format in [StillFormat::Heic, StillFormat::Heif] {
+            assert_eq!(StillFormat::parse(format.extension()).unwrap(), format);
+            for depth in [8, 16] {
+                let encoded = encode(&source, format, depth).expect("local heif-enc and x265 plugin required");
+                assert!(filmcraft_media::still::heif::sniff(&encoded));
+                let decoded = filmcraft_media::still::heif::decode("export.heic", &encoded).expect("libheif HEIC output must decode");
+                assert_eq!((decoded.width, decoded.height), (64, 64));
+            }
+        }
+    }
+
     #[test]
     fn jpeg_and_bmp_are_eight_bit_and_invalid_buffers_are_errors() {
         let image = Image::filled(2, 2, [0.2, 0.3, 0.4, 1.0]);

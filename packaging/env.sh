@@ -3,10 +3,10 @@
 #
 # Exports:
 #   ROOT                    workspace root
-#   VERSION                 [workspace.package] version from Cargo.toml (override: FILMCRAFT_VERSION)
+#   VERSION                 [workspace.package] version from CFA4 Cargo.toml (no upstream override)
 #   DIST                    output directory for release artifacts (default: $ROOT/dist/release)
-#   FILMCRAFT_BUILD_SHA    git commit baked into the binaries (see crates/engine/src/build_info.rs)
-#   FILMCRAFT_BUILD_DATE   UTC build date, YYYY-MM-DD
+#   FILMCRAFT_BUILD_SHA    CFA4 git commit used by inherited binary build-info internals
+#   CFA4_BUILD_DATE         UTC release metadata date, YYYY-MM-DD (mirrored to inherited build-info variable)
 #   CARGO_TARGET_DIR        cargo's target dir (default: $ROOT/target)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,7 +21,11 @@ workspace_version() {
   ' "$ROOT/Cargo.toml"
 }
 
-VERSION="${FILMCRAFT_VERSION:-$(workspace_version)}"
+VERSION="$(workspace_version)"
+if [[ -n "${CFA4_VERSION:-}" && "$CFA4_VERSION" != "$VERSION" ]]; then
+  echo "error: CFA4_VERSION must match [workspace.package] version: $VERSION" >&2
+  exit 2
+fi
 if [ -z "$VERSION" ]; then
   echo "error: could not read [workspace.package] version from $ROOT/Cargo.toml" >&2
   exit 1
@@ -32,11 +36,17 @@ DIST="${DIST:-$ROOT/dist/release}"
 mkdir -p "$DIST"
 export DIST
 
-if [ -z "${FILMCRAFT_BUILD_SHA:-}" ]; then
-  FILMCRAFT_BUILD_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
-fi
+# Historical binary internals retain FILMCRAFT_BUILD_* names; their values are
+# always produced by this CFA4 repository (never read from parent release env).
+FILMCRAFT_BUILD_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
 export FILMCRAFT_BUILD_SHA
-export FILMCRAFT_BUILD_DATE="${FILMCRAFT_BUILD_DATE:-$(date -u +%Y-%m-%d)}"
+CFA4_BUILD_DATE="${CFA4_BUILD_DATE:-$(date -u +%Y-%m-%d)}"
+if [[ ! "$CFA4_BUILD_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+  echo "error: CFA4_BUILD_DATE must be YYYY-MM-DD" >&2
+  exit 2
+fi
+export CFA4_BUILD_DATE
+export FILMCRAFT_BUILD_DATE="$CFA4_BUILD_DATE"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/target}"
 
 # Emit a GitHub Actions warning (plain stderr outside Actions).

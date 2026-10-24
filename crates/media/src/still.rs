@@ -1,4 +1,4 @@
-//! Still images (PNG, JPEG, GIF, WebP, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, DNG camera raw) as media
+//! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, DNG camera raw) as media
 //! sources. Animated PNG and GIF files open as movies instead ([`crate::animated`]); here they would
 //! show their first frame.
 
@@ -12,6 +12,8 @@ use crate::{FrameRequest, MediaError, MediaInfo, MediaKind, MediaSource, Result,
 pub mod dng;
 pub mod exr;
 pub mod hdr;
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+pub mod heif;
 mod ycbcr_tiff;
 
 /// Default still duration (Premiere's preference default is 5 seconds).
@@ -19,6 +21,10 @@ pub const DEFAULT_STILL_DURATION: Tick = Tick(5 * TICKS_PER_SECOND);
 
 /// Whether `b` (the contents of the file `name`) is a still image we decode.
 pub fn sniff(name: &str, b: &[u8]) -> bool {
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    if heif::sniff(b) {
+        return true;
+    }
     crate::dpx::sniff(b)
         || hdr::sniff(b)
         || crate::tga::sniff(name, b)
@@ -43,6 +49,10 @@ pub struct Raster {
 /// Decode a still image file (`name` picks Targa, which has no magic number; the content picks
 /// every other format).
 pub fn decode_raster(name: &str, bytes: &[u8]) -> Result<Raster> {
+    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+    if heif::sniff(bytes) {
+        return heif::decode(name, bytes);
+    }
     if crate::dpx::sniff(bytes) {
         return crate::dpx::decode(name, bytes);
     }

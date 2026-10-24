@@ -1,0 +1,76 @@
+name: CFA4 release candidate verification (no publication)
+
+on:
+  pull_request:
+    paths:
+      - 'packaging/**'
+      - 'scripts/release/**'
+      - '.github/workflows/cfa4-release-candidate.yml'
+  workflow_dispatch:
+    inputs:
+      build_four_packages:
+        description: 'Explicitly build private validation packages on pre-provisioned Ubuntu 26.04 AMD64 runner'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  source-policy:
+    name: CFA4 Ubuntu target, identity and local installer tests
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout CFA4 repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Policy and format script syntax
+        run: |
+          bash scripts/ci/require-ubuntu-2604.sh
+          bash -n scripts/release/build-cfa4-four-formats.sh
+          bash -n scripts/release/check-cfa4-package-prereqs.sh
+          bash -n packaging/linux/package.sh
+          bash -n packaging/linux/flatpak-bundle.sh
+          bash -n packaging/linux/install.sh
+          test "$(grep -c 'gh-releases-zsync|' packaging/linux/package.sh)" -eq 1
+          grep -Fq 'REPO="ubuntuokos/CinemaFundArchitecture4"' packaging/linux/package.sh
+      - name: XDG identity and desktop metadata audit (no graphical session)
+        run: python3 -m unittest discover -s scripts/ci -p 'test_cfa4_xdg.py' -v
+      - name: Local tarball installer regression tests (disposable test binaries)
+        run: python3 -m unittest discover -s packaging/linux -p 'test_*.py' -v
+      - name: Four-format and isolated runtime regression tests (synthetic files)
+        run: python3 -m unittest discover -s scripts/release -p 'test_*.py' -v
+
+  four-formats:
+    # This job never runs automatically, never uploads a public GitHub Release,
+    # and never provisions tools or system packages. Configure a trusted local
+    # runner with all reviewed packaging prerequisites and APPIMAGETOOL path/hash.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_four_packages && github.repository == 'ubuntuokos/CinemaFundArchitecture4' }}
+    needs: source-policy
+    runs-on: [self-hosted, Linux, X64, cfa4-ubuntu-26-04]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout CFA4 repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify offline packaging prerequisites before any build
+        env:
+          APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
+          CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+        run: bash scripts/release/check-cfa4-package-prereqs.sh
+      - name: Build four private test packages and SHA256SUMS
+        env:
+          CFA4_ALLOW_LOCAL_PACKAGING: '1'
+          APPIMAGETOOL: ${{ vars.CFA4_APPIMAGETOOL }}
+          CFA4_APPIMAGETOOL_SHA256: ${{ vars.CFA4_APPIMAGETOOL_SHA256 }}
+        run: bash scripts/release/build-cfa4-four-formats.sh
+      - name: Stage package payloads and audit local runtime (no host-wide installation)
+        run: |
+          python3 scripts/release/f5_staged_runtime.py \
+            --dist dist/release \
+            --report target/audit/f5-package-runtime.json
+      - name: Record local-only SHA256 evidence (never upload unapproved binaries)
+        run: |
+          test -s dist/release/SHA256SUMS
+          cat dist/release/SHA256SUMS
+          echo 'RELEASE HOLD: package files remain on the trusted runner only.'
