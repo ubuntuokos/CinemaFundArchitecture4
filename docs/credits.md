@@ -20,7 +20,7 @@ leading `@` is allowed, and Hungarian names work too.
 | Content Style | Stílus | Style of this and the following blocks |
 | Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels |
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
-| Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f` |
+| Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
 
 A new head, an empty row, a new style or a new page starts a new block. `{{Blank}}` is an empty
@@ -92,5 +92,4 @@ broken JSON are errors.
 ## Not yet
 
 Online sheets (download as `.xlsx`), inline letter styles, videos in the credits, parallel and
-hooked spines, leaders, head-width harmonisation, and stretching gaps to hit a scroll runtime (a
-runtime currently changes the speed).
+hooked spines, leaders, head-width harmonisation.
