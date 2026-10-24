@@ -105,6 +105,7 @@
 	Distribute Space Horizontally	Vízszintes térköz elosztása
 	Distribute Space Vertically	Függőleges térköz elosztása
 	Distribute Vertically	Függőleges elosztás
+	Double-click a clip in the Project panel to open it here.	Kattintson duplán egy klipre a Projekt panelen, hogy itt megnyíljon.
 	Duplicate	Kettőzés
 	Duration	Időtartam
 	EDL…	EDL…
@@ -150,6 +151,7 @@
 	Generate	Előállítás
 	Generate Audio Waveform	Hullámforma előállítása
 	Get Media File Properties for	Médiafájl tulajdonságai ehhez
+	Go to End	Ugrás a végére
 	Go to Gap	Ugrás réshez
 	Go to In	Ugrás a kezdőponthoz
 	Go to Next Caption Segment	Ugrás a következő feliratszakaszhoz
@@ -158,6 +160,7 @@
 	Go to Previous Caption Segment	Ugrás az előző feliratszakaszhoz
 	Go to Previous Marker	Ugrás az előző jelölőhöz
 	Go to Split	Ugrás osztott jelöléshez
+	Go to Start	Ugrás az elejére
 	Graphic	Grafika
 	Graphics and Titles	Grafika és címek
 	Green	Zöld
@@ -328,6 +331,7 @@
 	Smart Tools	Okos eszközök
 	Snap in Timeline	Illesztés az idővonalon
 	Some panel labels change language after a restart.	Néhány panelfelirat csak újraindítás után vált nyelvet.
+	Source	Forrás
 	Source In	Forrás kezdőpontja
 	Source Settings…	Forrásbeállítások…
 	Special	Különleges
@@ -335,6 +339,8 @@
 	Speed/Duration…	Sebesség/időtartam…
 	Start	Kezdet
 	Starting engine…	A motor indul…
+	Step Back 1 Frame	Egy kockát vissza
+	Step Forward 1 Frame	Egy kockát előre
 	Stereo Imagery	Sztereó kép
 	Still Image	Állókép
 	Stylize	Stilizálás

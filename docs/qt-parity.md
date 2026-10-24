@@ -36,7 +36,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 
 | # | Point | egui | Qt 6 | Evidence / missing |
 |---|---|---|---|---|
-| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user |
+| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md) |
 | 2.2 | Named workspaces (save, switch, reset) | ✅ | 🟡 | only "Reset Panel Layout" |
 | 2.3 | Themes (light/dark, favourites) | ✅ | 🟡 | follows the desktop's Qt/KDE theme; no in-app theme switch |
 | 2.4 | Panel docking commands (`window.floatPanel`, `window.dockPanel`, …) | ✅ | ❌ | |
@@ -52,11 +52,11 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 3.5 | Effects | 🟡 | browse, search, apply effect / default-transition; favourites, badges, presets missing |
 | 3.6 | Markers | ❌ | markers drawn on the ruler only |
 | 3.7 | History | 🟡 | list shown; click-to-step missing |
-| 3.8 | Source monitor | ❌ | engine opens the source; no Qt source monitor yet |
+| 3.8 | Source monitor | 🟡 | picture and sound of the opened clip from the engine (`target: "source"`), time bar with In/Out, step/start/end, Mark In/Out, Insert/Overwrite; keys with a `target` follow the focused monitor (`test_real_engine_source_monitor`); drag to the timeline, zoom, safe margins, J/K/L, audio-only waveform view, recent-clips menu missing |
 | 3.9 | Effect Controls (keyframes, masks, transform handles) | ❌ | Inspector shows effects read-only and can remove one |
 | 3.10 | Audio Clip Mixer | ❌ | |
 | 3.11 | Metadata | ❌ | |
-| 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |
+| 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode, time bar with In/Out, Mark In/Out; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |
 | 3.13 | Timeline | 🟡 | tracks, clips, ruler, markers, in/out, playhead, select, move (snap, insert, copy), trim (regular/ripple), razor, drop from Project, zoom/scroll; track header buttons, waveforms, thumbnails, keyframe lanes, transitions drawing, captions track, roll/slip/slide tools, sequence tabs missing |
 | 3.14 | Tools | 🟡 | Selection and Razor only |
 | 3.15 | Audio Meters | ❌ | |

@@ -103,6 +103,17 @@ def app():
     yield instance
 
 
+@pytest.fixture(autouse=True)
+def no_modal_dialogs(monkeypatch):
+    """A modal dialog in a test would wait for a click forever: fail fast and name it instead."""
+
+    def refuse(self, *_args, **_kwargs):
+        raise AssertionError(f"modal dialog opened: {type(self).__name__} {self.objectName()!r} {self.windowTitle()!r}")
+
+    monkeypatch.setattr(QtWidgets.QDialog, "exec", refuse)
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", refuse)
+
+
 @pytest.fixture
 def fake_engine(tmp_path: Path) -> Path:
     path = tmp_path / "fake-cfa4-cli"
@@ -341,7 +352,7 @@ def _qt_literals() -> set[str]:
 def test_hungarian_catalog_covers_the_qt_gui():
     """The owner works in Hungarian: every Qt GUI string and panel title has a translation."""
     hu = Translator("hu")
-    titles = {"Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
+    titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
     missing = sorted(s for s in _qt_literals() | titles if hu.tr(s) == s and s != "CFA4")
     assert not missing, missing
 
@@ -380,5 +391,94 @@ def test_engine_that_dies_does_not_block_the_gui(app, tmp_path: Path):
         assert win.engine_stopped_box.isVisible()
         assert "3" in win.engine_stopped_box.text()
     finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def _items(project: dict) -> list[dict]:
+    out: list[dict] = []
+
+    def walk(b: dict) -> None:
+        for c in b.get("children") or []:
+            if "item" in c:
+                out.append(c)
+            else:
+                walk(c)
+
+    walk((project or {}).get("root") or {})
+    return out
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+def test_real_engine_source_monitor(app, tmp_path: Path):
+    from cfa4_qt.commands import Command
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        movie = next(i for i in _items(win.project) if i.get("type") == "Movie")
+        src = win.source_monitor
+        assert not src.has_content()
+        win.execute("source.open", {"item": movie["item"]})
+        assert wait_until(app, lambda: src.has_content() and src.view.image is not None, 60_000)
+        assert win.active_monitor == "source"
+        assert win.docks["Source"].isVisible()
+        ft = src.frame()
+        # Step Forward with the Source monitor focused moves the source playhead, not the program's
+        program_before = win.monitor.playhead
+        win.run_command(win.registry.commands["playhead.stepForward"])
+        win.run_command(win.registry.commands["playhead.stepForward"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("playhead") == 2 * ft, 10_000), win.source_state
+        assert win.monitor.playhead == program_before
+        # Mark In / Mark Out go to the source clip
+        win.run_command(win.registry.commands["markers.markIn"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("markIn") == 2 * ft, 10_000), win.source_state
+        src.seek(10 * ft)
+        win.run_command(win.registry.commands["markers.markOut"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("markOut") == 10 * ft, 10_000), win.source_state
+        assert src.scrub.mark_in == 2 * ft and src.scrub.mark_out == 10 * ft
+        # the program's own In point stayed untouched
+        assert (win.sequence or {}).get("in") is None
+        # Overwrite puts the marked range into the sequence
+        count = lambda: sum(len(t.get("items") or []) for t in (win.sequence or {}).get("video") or [])
+        before = count()
+        src.buttons["overwrite"].click()
+        assert wait_until(app, lambda: count() > before or bool(win.events.text.toPlainText().strip()), 20_000)
+        assert count() > before, win.events.text.toPlainText()
+        assert isinstance(win.registry.commands.get("source.overwrite"), Command)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path):
+    """Regression: tabifying docks before show() left a stale, visible copy of a tab bar drawn
+    over the panels. Every visible tab bar must belong to exactly one tab group."""
+    from cfa4_qt.main_window import MainWindow
+
+    def bars(win) -> list[tuple[str, ...]]:
+        return [
+            tuple(tb.tabText(i) for i in range(tb.count())) for tb in win.findChildren(QtWidgets.QTabBar) if tb.isVisible()
+        ]
+
+    for _ in range(2):  # first start (default layout), then with the saved layout
+        settings = QtCore.QSettings(str(tmp_path / "layout.ini"), QtCore.QSettings.Format.IniFormat)
+        win = MainWindow(EngineClient(fake_engine), settings)
+        win.resize(1440, 900)
+        win.show()
+        assert wait_until(app, lambda w=win: len(bars(w)) >= 3, 5_000)
+        wait_until(app, lambda: False, 300)
+        found = bars(win)
+        assert len(found) == len(set(found)) == 3, found
+        win.reset_layout.trigger()
+        wait_until(app, lambda: False, 300)
+        found = bars(win)
+        assert len(found) == len(set(found)) == 3, found
         win._quit_confirmed = True
         win.close()

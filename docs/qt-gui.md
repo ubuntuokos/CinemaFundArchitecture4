@@ -83,6 +83,28 @@ line longer than 4 MiB is skipped with an error reply.
 frame fits `maxWidth × maxHeight` (16–8192) and is never upscaled. `audio.render` mixes at most
 1 920 000 sample frames per call. Times are engine ticks (254 016 000 000 per second).
 
+## Known Qt issues
+
+Checked 2026-10-24 with PySide6 6.10.2, 6.10.3, 6.11.2 and 6.12.0 (offscreen and minimal
+platforms), each with a minimal reproduction that contains no CFA4 code:
+
+- **Tabifying docks in two dock areas before `show()`** leaves an orphaned copy of a tab bar
+  drawn over the panels (6.10.3, 6.11.2, 6.12.0).
+- **`restoreState()` on a window that is on screen** makes new tab bars and leaves the old ones
+  visible at the same place, one more set per call (6.10.3, 6.11.2, 6.12.0). A stale bar on top
+  of the live one swallows the clicks on the tabs.
+- **Tabifying docks after `show()`** can crash in `tabifyDockWidget` (6.10.2: segmentation fault
+  in 8 of 12 runs).
+- **Restoring a tabbed state into a window whose docks are not tabbed yet** is clean on every
+  version above, before or after `show()`.
+
+So the main window never tabifies its own docks. The default layout is arranged in a hidden
+stand-in window with empty docks of the same names (`MainWindow._default_layout_state`), and the
+real window only restores states: the saved layout, or that default. View ▸ Reset Panel Layout
+restores the default on the live window and hides every tab bar that existed before the restore
+when a new bar shows the same tabs. `test_layout_has_no_orphaned_tab_bars` checks first start,
+start with a saved layout and reset; it passes on all four versions, so `PySide6>=6.10,<7` stays.
+
 ## Code map
 
 | File | Role |
