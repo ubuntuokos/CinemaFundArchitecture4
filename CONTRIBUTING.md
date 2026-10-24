@@ -1,4 +1,4 @@
-# Contributing to FilmCraft
+# Contributing to CFA4
 
 Thanks for helping. Before you start:
 

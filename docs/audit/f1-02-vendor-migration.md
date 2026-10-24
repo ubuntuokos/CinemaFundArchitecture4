@@ -8,14 +8,14 @@
 
 Kapcsolódó ügy: https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/9
 
-Az eredeti CFA4 forrásában két `git+https://github.com/storytold/craft-libs`
+Az eredeti CFA4 forrásában két `upstream library Git`
 függőség volt. Az F1-02 szándékosan **két elkülönített PR-re és CI-validációra**
 osztja a migrációt.
 
 | Lépés | Crate | Korábbi revízió | Saját CFA4-forrás | Git-fetch |
 | --- | --- | --- | --- | --- |
-| F1-02/1 | `craft-docpath` | `82a24b006eefa036b43c09a67fb9a3fbd17ffe63` | `vendor/craft-libs/docpath` | megszüntetve |
-| F1-02/2 | `craft-ui` | `5c874d51eeb3de70e735c8ce87a59a7dedd47675` | `vendor/craft-libs/ui` | megszüntetve |
+| F1-02/1 | `cfa4-docpath` | `82a24b006eefa036b43c09a67fb9a3fbd17ffe63` | `vendor/cfa4-libs/docpath` | megszüntetve |
+| F1-02/2 | `cfa4-ui` | `5c874d51eeb3de70e735c8ce87a59a7dedd47675` | `vendor/cfa4-libs/ui` | megszüntetve |
 
 ## Források és származási bizonyíték
 
@@ -34,17 +34,17 @@ Git-blob SHA-1 azonosítókat, és a root `Cargo.toml`/`Cargo.lock`
 helyi path-függőségeinek egyezését is vizsgálja.
 
 Pontos upstream hivatkozások:
-- https://github.com/storytold/craft-libs/tree/82a24b006eefa036b43c09a67fb9a3fbd17ffe63/crates/docpath
-- https://github.com/storytold/craft-libs/blob/82a24b006eefa036b43c09a67fb9a3fbd17ffe63/NOTICE
-- https://github.com/storytold/craft-libs/tree/5c874d51eeb3de70e735c8ce87a59a7dedd47675/crates/ui
-- https://github.com/storytold/craft-libs/blob/5c874d51eeb3de70e735c8ce87a59a7dedd47675/NOTICE
-- https://github.com/storytold/craft-libs/blob/5c874d51eeb3de70e735c8ce87a59a7dedd47675/LICENSE-MIT
-- https://github.com/storytold/craft-libs/blob/5c874d51eeb3de70e735c8ce87a59a7dedd47675/LICENSE-APACHE
+- upstream library `crates/docpath` @ `82a24b006eef`
+- upstream library `NOTICE` @ `82a24b006eef`
+- upstream library `crates/ui` @ `5c874d51eeb3`
+- upstream library `NOTICE` @ `5c874d51eeb3`
+- upstream library `LICENSE-MIT` @ `5c874d51eeb3`
+- upstream library `LICENSE-APACHE` @ `5c874d51eeb3`
 
-A régi `craft-ui` NOTICE több más ArtCraft projektből adaptált UI/ikon
+A régi `cfa4-ui` NOTICE több más upstream projektből adaptált UI/ikon
 elemeket is dokumentál. Ezeknek az eredet- és jogfenntartó szövegeit az
 új helyi forrás is megőrzi; a két licencfájl és a NOTICE **nem**
-bizonyítja, hogy az eredeti ArtCraft védjegyek felhasználhatók.
+bizonyítja, hogy az eredeti upstream védjegyek felhasználhatók.
 
 ## Külön technikai validáció
 
@@ -57,7 +57,7 @@ bizonyítja, hogy az eredeti ArtCraft védjegyek felhasználhatók.
 - `bash scripts/dev/test-vendored-ui.sh` (a detached scratch Cargo workspace with original upstream test-only dependencies)
 - a teljes CFA4 Linux CLI-, workspace- és FFmpeg-oracle ellenőrzés.
 
-A `craft-ui` saját tesztjei továbbra is használhatnak crates.io registry
+A `cfa4-ui` saját tesztjei továbbra is használhatnak crates.io registry
 függőségeket. Ez **nem** tekinthető a teljes build offline bizonyításának.
 
 A harmadik féltől változatlanul átvett Rust forrásokat szándékosan nem
@@ -71,17 +71,17 @@ az önálló Cargo build/teszt és a Clippy vizsgálja.
    igényelhet; a két Git-függőség kiváltása **nem** egyenlő teljes offline builddel.
 2. A licencek változatlanul érvényesek, és az összes transitív crate,
    PySide6/Qt, FFmpeg, AppImage eszköz külön SBOM- és terjesztési auditot igényel.
-3. A runtime FilmCraft/ArtCraft márkaelemek és a kiadási csomagolási tiltás
-   továbbra is felülvizsgálatra szorulnak.
+3. Az upstream márkaelemeket 2026-10-24-én eltávolítottuk; a kiadási csomagolási
+   tiltás továbbra is felülvizsgálatra szorul.
 4. A két PR **piszkozat**, nem egyesíthető sikeres CI-tesztek és ellenőrzés
    nélkül.
 
 Ez a dokumentum a forrásmigrációt rögzíti, nem tekintendő kiadási engedélynek.
 
-### Követett Clippy kivétel (csak a craft-ui harmadik féltől származó crate-re)
+### Követett Clippy kivétel (csak a cfa4-ui harmadik féltől származó crate-re)
 
 A CFA4 Rust 1.95 toolchain `cargo clippy --workspace --all-targets --release -- -D warnings`
-futtatása az upstream `craft-ui/src/docking/surface.rs` eredeti forrásában
+futtatása az upstream `cfa4-ui/src/docking/surface.rs` eredeti forrásában
 `clippy::collapsible_match` figyelmeztetést talált (CI: 39489385744).
 A forrás immutabilitásának megőrzésére **csak a vendorizált crate helyi
 Cargo.toml fájljába** került `collapsible_match = "allow"` lint-engedmény.
@@ -92,16 +92,16 @@ SHA-jegyzék eredeti upstream forrást továbbra is változatlanul igazol.
 
 ### Ellenőrzött CI-állapot
 
-- **PR #8**: https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/8 — commit `1e7e02063be23afca0791077cf3123a8ffdaa258`; Actions: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39488156883. A külön `craft-docpath` offline ellenőrzés, Python/Qt6, architektúra/asset/format, valamint CLI smoke **sikeres**. A teljes Rust workspace és FFmpeg-oracle release teszt lekérdezéskor **folyamatban**; eredményük nem minősíthető sikeresnek.
-- **PR #10, eredeti UI-revízió**: `96c113f4c2bf0feaf2e93989badde3cfc258355e`; Actions: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39490004898. A `craft-ui` elkülönített teszt, `craft-docpath`, Python/Qt6, formázás, architektúra és asset ellenőrzések **sikeresek**; a CLI smoke szintén **sikeres**. A Rust workspace/Clippy job **megbukott**; a release/FFmpeg job lekérdezéskor még futott.
+- **PR #8**: https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/8 — commit `1e7e02063be23afca0791077cf3123a8ffdaa258`; Actions: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39488156883. A külön `cfa4-docpath` offline ellenőrzés, Python/Qt6, architektúra/asset/format, valamint CLI smoke **sikeres**. A teljes Rust workspace és FFmpeg-oracle release teszt lekérdezéskor **folyamatban**; eredményük nem minősíthető sikeresnek.
+- **PR #10, eredeti UI-revízió**: `96c113f4c2bf0feaf2e93989badde3cfc258355e`; Actions: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39490004898. A `cfa4-ui` elkülönített teszt, `cfa4-docpath`, Python/Qt6, formázás, architektúra és asset ellenőrzések **sikeresek**; a CLI smoke szintén **sikeres**. A Rust workspace/Clippy job **megbukott**; a release/FFmpeg job lekérdezéskor még futott.
 
 ### Clippy-fordítási hiba és célzott javítás
 
-A `cargo xtask ci` által indított `cargo clippy --workspace --all-targets --release -- -D warnings` a `vendor/craft-libs/ui/tests/visual_regression.rs` tesztmodulban négy `E0432`/`E0433` hibát jelzett: a `egui_kittest`, `image` és `egui_extras` tesztfüggőségek nem részei a helyi vendor-manifestnek. Ezeket a dedikált UI-tesztfuttató szándékosan csak egy átmeneti, önálló Cargo-munkaterülethez adja hozzá, hogy a fő `Cargo.lock` ne bővüljön csak tesztcélú UI-csomagokkal.
+A `cargo xtask ci` által indított `cargo clippy --workspace --all-targets --release -- -D warnings` a `vendor/cfa4-libs/ui/tests/visual_regression.rs` tesztmodulban négy `E0432`/`E0433` hibát jelzett: a `egui_kittest`, `image` és `egui_extras` tesztfüggőségek nem részei a helyi vendor-manifestnek. Ezeket a dedikált UI-tesztfuttató szándékosan csak egy átmeneti, önálló Cargo-munkaterülethez adja hozzá, hogy a fő `Cargo.lock` ne bővüljön csak tesztcélú UI-csomagokkal.
 
 A javítás **nem** módosítja az upstream Rust- és tesztforrásokat, és nem lazítja a CFA4 saját crate-jeinek `-D warnings` ellenőrzését:
 
-1. `9fc2ac635675fafbf4ae28b1da5a56b92a3e2867`: a `vendor/craft-libs/ui/Cargo.toml` explicit `[workspace]` / `resolver = "3"` deklarációt kapott, hogy a vendor teszt-targetjei ne legyenek a CFA4 root `--workspace` vizsgálat részei. A termék `craft-ui` path-függősége megmaradt.
+1. `9fc2ac635675fafbf4ae28b1da5a56b92a3e2867`: a `vendor/cfa4-libs/ui/Cargo.toml` explicit `[workspace]` / `resolver = "3"` deklarációt kapott, hogy a vendor teszt-targetjei ne legyenek a CFA4 root `--workspace` vizsgálat részei. A termék `cfa4-ui` path-függősége megmaradt.
 2. `ad8ea64d6758dadd14ae991eadd30918dbadf8c4`: a `scripts/dev/test-vendored-ui.sh` többé nem duplikálja a `[workspace]` táblát; az eredeti tesztfüggőségeket az izolált scratch-másolatban továbbra is betölti.
 
 **Friss validáció:** https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39491167243 — az új fejlesztési ágbeli commit után elindult. Amíg a Rust Clippy, release workspace és FFmpeg-oracle, valamint az új UI-teszt véglegesen nem sikeres, az F1-02 CI gate **nyitott**, a PR-ek **draft** állapotban maradnak és nem egyesíthetők.
@@ -115,11 +115,11 @@ A `9fc2ac6` és `ad8ea64` commitok ilyen konfigurációja ezért nem érvényes
 megoldás; mindkét fájl tartalmát az eredeti, működő állapotra állítottuk vissza.
 
 **Javított megoldás:** a `xtask/src/main.rs` saját `ci` parancsa és a GitHub
-release-workspace workflow azonos, explicit `--workspace --exclude craft-ui`
-Cargo-kiválasztást alkalmaz. Ez **kizárólag a külső craft-ui crate saját
+release-workspace workflow azonos, explicit `--workspace --exclude cfa4-ui`
+Cargo-kiválasztást alkalmaz. Ez **kizárólag a külső cfa4-ui crate saját
 teszt-targetjeit** veszi ki a *fő* munkaterület Clippy / release teszt futásából;
 a CFA4 saját csomagjainak Clippy `-D warnings` és teszt ellenőrzése megmarad,
-és az alkalmazások továbbra is függnek a helyi `craft-ui` könyvtártól.
+és az alkalmazások továbbra is függnek a helyi `cfa4-ui` könyvtártól.
 Az upstream UI unit/integrációs/vizuális teszteket a
 `scripts/dev/test-vendored-ui.sh` változatlanul a saját `vendored-ui`
 CI-jobban futtatja. A források SHA-azonossága és a root `Cargo.lock`
@@ -132,8 +132,8 @@ A [PR #8 / run 39488156883](https://github.com/ubuntuokos/CinemaFundArchitecture
 **Kijavított CI-szerkezet:**
 
 - A `cargo xtask ci` megtartja a format/Clippy/layers/assets kapukat, de elhagyja a másodszor, párhuzamosan indított teljes release-tesztet.
-- A külön `rust-release-tests` job továbbra is lefuttatja a **teljes workspace release tesztkészletét, FFmpeg és ffprobe oracle mellett**; `craft-ui` upstream-only integrációs/visual tesztjeit változatlanul az elkülönített `vendored-ui` job futtatja.
-- A teszt-harnesszek **CI-only** Cargo release környezeti felülírásai: `CARGO_PROFILE_RELEASE_LTO=false` és `CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16`, a memóriaterhelés korlátozására `CARGO_BUILD_JOBS=2`. Ez megőrzi a release-optimalizálási szintet és a tesztkészletet, de a teszt-harness linkelés **nem byte-azonos** a tényleges disztribúciós release profiléval. A normál `cargo build --release -p filmcraft-cli` CLI-smoke megtartja a projekt eredeti teljes release-beállításait (`lto=thin`, `codegen-units=1`).
+- A külön `rust-release-tests` job továbbra is lefuttatja a **teljes workspace release tesztkészletét, FFmpeg és ffprobe oracle mellett**; `cfa4-ui` upstream-only integrációs/visual tesztjeit változatlanul az elkülönített `vendored-ui` job futtatja.
+- A teszt-harnesszek **CI-only** Cargo release környezeti felülírásai: `CARGO_PROFILE_RELEASE_LTO=false` és `CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16`, a memóriaterhelés korlátozására `CARGO_BUILD_JOBS=2`. Ez megőrzi a release-optimalizálási szintet és a tesztkészletet, de a teszt-harness linkelés **nem byte-azonos** a tényleges disztribúciós release profiléval. A normál `cargo build --release -p cfa4-cli` CLI-smoke megtartja a projekt eredeti teljes release-beállításait (`lto=thin`, `codegen-units=1`).
 - `--timings`: a Cargo összeállításról készült mérés segíti a következő esetleges regresszió azonosítását.
 
 **Audit gate:** a fentiek teljes, új, sikeres GitHub Actions futtatásig **nincsenek igazolva**, nincs merge vagy F1-02 lezárás. A két PR draft marad; az upstream források, licencek/NOTICE, `Cargo.lock` és a `main` változatlanok.
@@ -150,10 +150,10 @@ Az F1-02 újrafuttatásainak **valós, végleges hibája**:
 - PR #8: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39542032618
 - PR #10: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39542084318
 - Mindkettőben a Rust workspace/Clippy, a CLI, a Python/Qt6 és a vendor-kapuk
-  sikeresek; a release workspace `filmcraft-apv --test oracle` három
+  sikeresek; a release workspace `cfa4-apv --test oracle` három
   összehasonlító tesztje sikertelen.
 - A naplóban az ok egyértelmű: `ffmpeg version 6.1.1-3ubuntu5 cannot read apv
-  (needs 8.0+), and FILMCRAFT_REQUIRE_ORACLES=1 forbids skipping oracle tests`.
+  (needs 8.0+), and CFA4_REQUIRE_ORACLES=1 forbids skipping oracle tests`.
   Ezt nem a kodek hibája és nem bizonyított regresszió okozza, hanem az Ubuntu
   24.04 FFmpeg 6.1.1 csomagja.
 
@@ -162,7 +162,7 @@ beleértve a Python/Qt6, UI-vendor, CLI és provenance jobokat. A 26.04-es Ubunt
 hivatalos `ffmpeg` csomagja 8.0.1-es verziójú. A release oracle kapu külön
 ellenőrzi a *valódi* Ubuntu 26.04 futtatókörnyezetet, az FFmpeg 8+ főverziót,
 a `ffprobe` jelenlétét és az `apv` dekódert. A
-`FILMCRAFT_REQUIRE_ORACLES=1` beállítás változatlan; a három tesztet nem
+`CFA4_REQUIRE_ORACLES=1` beállítás változatlan; a három tesztet nem
 hagyjuk ki. A külön, eredeti release-profillal épülő CLI és a gyorsított
 release-teszt-harness stratégia is változatlan.
 

@@ -1,5 +1,5 @@
 [package]
-name = "filmcraft-flac"
+name = "cfa4-flac"
 description = "Clean-room FLAC encoder (RFC 9639)"
 version.workspace = true
 edition.workspace = true
@@ -10,8 +10,8 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-filmcraft-bitstream = { workspace = true }
+cfa4-bitstream = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-filmcraft-testkit = { workspace = true }
+cfa4-testkit = { workspace = true }

@@ -91,9 +91,9 @@ for marker in ("CFA4_NATIVE_E2E_OUTPUT_DIR", "CFA4_MEDIA_FIXTURE_DIR",
     files = (root / "scripts/dev/audit-native-media-e2e.sh").read_text() + (root / "crates/platform/tests/r0_native_media_e2e.rs").read_text()
     assert marker in files, f"missing native E2E feature {marker}"
 assert "return hevc_factory(w, h, rate, s);" in nvenc
-assert "register_format_probe(filmcraft_export::Format::Hevc, nvenc::hevc_available)" in platform
+assert "register_format_probe(cfa4_export::Format::Hevc, nvenc::hevc_available)" in platform
 assert "audit-native-media-e2e.sh" not in workflow, "physical Wayland app must not run on hosted CI"
-assert "cargo test --workspace --exclude craft-ui --release --locked --timings" in workflow
+assert "cargo test --workspace --exclude cfa4-ui --release --locked --timings" in workflow
 
 for filename in ("packaging/linux/package.sh", "packaging/linux/flatpak-bundle.sh",
                  "packaging/linux/install.sh"):

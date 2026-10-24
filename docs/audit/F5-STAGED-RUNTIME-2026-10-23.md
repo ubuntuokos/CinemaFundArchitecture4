@@ -1,7 +1,7 @@
 # CFA4 F5 — Isolated install staging and runtime audit
 
 **Scope:** Ubuntu 26.04 and official flavours, x86_64/amd64; CFA4 only.
-The FilmCraft parent and the published release infrastructure are unchanged.
+The upstream parent and the published release infrastructure are unchanged.
 
 ## Prerequisites and invocation
 

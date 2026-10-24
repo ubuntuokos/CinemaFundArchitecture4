@@ -1,5 +1,5 @@
 [package]
-name = "filmcraft-time"
+name = "cfa4-time"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

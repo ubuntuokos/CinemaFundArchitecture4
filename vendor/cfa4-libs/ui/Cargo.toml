@@ -1,0 +1,25 @@
+[package]
+name = "cfa4-ui"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
+rust-version = "1.95"
+description = "Reusable egui controls and icon catalogs for the CFA4 frontend"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+# Upstream pinned code (unaltered) triggers clippy::collapsible_match on Rust 1.95.
+# Scope this exception only to the external crate to preserve Git blob provenance.
+collapsible_match = "allow"
+
+[dependencies]
+egui = { version = "0.36", default-features = false }
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+serde = ["dep:serde"]
