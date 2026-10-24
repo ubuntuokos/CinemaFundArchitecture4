@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The GStreamer media source and the engine fallback (ADR 0002 step 2), against the machine's
 //! real GStreamer. Fixtures are encoded by GStreamer itself (Theora / Vorbis in Ogg, formats the
 //! engine's own openers cannot fully read) into Cargo's temporary directory; a machine without

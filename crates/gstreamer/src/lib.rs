@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Optional GStreamer backend for CFA4 (layer L5).
 //!
 //! CFA4's own Rust media engine stays the primary path. GStreamer supplements it where the system's

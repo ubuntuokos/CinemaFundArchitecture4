@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Path-based fallback openers: another media backend (GStreamer, ADR 0002) that takes over when
 //! the built-in openers cannot open a file, or open it without the video it carries.
 //!

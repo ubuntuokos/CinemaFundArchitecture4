@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Tests against the machine's real GStreamer installation (feature `gstreamer`).
 //!
 //! A machine without GStreamer, or without the plugins a test needs, skips that test with a

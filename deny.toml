@@ -11,6 +11,8 @@ all-features = true
 
 [licenses]
 confidence-threshold = 0.9
+# The list is the policy (AGENTS.md §2), not only what the lockfile uses today.
+unused-allowed-license = "allow"
 allow = [
     # CFA4 itself
     "GPL-3.0-or-later",
@@ -23,7 +25,6 @@ allow = [
     "MPL-2.0",
     # permissive
     "MIT",
-    "MIT-0",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
@@ -35,7 +36,12 @@ allow = [
     "CC0-1.0",
     "BSL-1.0",
     "Unicode-3.0",
-    "Unicode-DFS-2016",
-    "CDLA-Permissive-2.0",
+    # font data only (bundled fonts are separate works, shipped with their licence texts)
     "OFL-1.1",
 ]
+
+# egui's built-in fonts (Ubuntu-Light among them) are font data under the Ubuntu Font Licence, not
+# code linked into CFA4; allowed for that crate only.
+[[licenses.exceptions]]
+crate = "epaint_default_fonts"
+allow = ["Ubuntu-font-1.0"]

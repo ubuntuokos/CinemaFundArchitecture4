@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Prints what the GStreamer backend finds on this machine, and optionally discovers files.
 //!
 //! ```sh

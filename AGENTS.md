@@ -17,7 +17,9 @@ attribution and original copyright/licence requirements remain in force.
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
 - **Project licence: GPL-3.0-or-later** (owner decision, 2026-10; `LICENSE`, `NOTICE`). Inherited
   FilmCraft code keeps its MIT OR Apache-2.0 notices (`LICENSE-MIT`, `LICENSE-APACHE`); never remove
-  them. New dependencies must be GPL-3.0-compatible (§2). Decisions and their reasons:
+  them. Files CFA4 creates start with `// SPDX-License-Identifier: GPL-3.0-or-later` (or the comment
+  syntax of the file type); inherited FilmCraft files get no new header, their terms are in `NOTICE`.
+  New dependencies must be GPL-3.0-compatible (§2). Decisions and their reasons:
   [ADR 0003](docs/adr/ADR-0003-gpl3-licence.md).
 - **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
   packages under applicable LGPLv3/commercial terms. This is NOT permission to embed Qt/PySide

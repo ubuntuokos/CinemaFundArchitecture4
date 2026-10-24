@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! An engine media source decoded by GStreamer (ADR 0002, step 2).
 //!
 //! One `playbin` pipeline decodes video into an RGBA `appsink`; another, created on the first

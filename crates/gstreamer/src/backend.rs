@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The GStreamer-backed implementation (feature `gstreamer`). Safe code only: everything goes
 //! through the gstreamer-rs bindings.
 

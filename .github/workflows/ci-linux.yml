@@ -164,7 +164,7 @@ jobs:
         run: cargo xtask assets
       - name: Dependency licences are GPL-3.0-compatible (ADR 0003, deny.toml)
         run: |
-          cargo install --locked cargo-deny@0.19
+          cargo install --locked cargo-deny@0.20
           cargo deny --locked check licenses
 
   rust-release-tests:
