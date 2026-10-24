@@ -77,7 +77,7 @@ class FrameView(QWidget):
 class ScrubBar(QWidget):
     """The monitor's time bar: range, In/Out shading, playhead. Click or drag to seek."""
 
-    seek = Signal(int)
+    seek = Signal(object)  # ticks; object, not a 32-bit int
 
     def __init__(self, name: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -141,7 +141,8 @@ class Monitor(QWidget):
 
     target = "program"
     command = Signal(str, dict)
-    playhead_moved = Signal(int)  # local playhead during playback
+    # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
+    playhead_moved = Signal(object)  # local playhead during playback, ticks
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)

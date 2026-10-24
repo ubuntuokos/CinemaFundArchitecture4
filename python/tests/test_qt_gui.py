@@ -599,3 +599,28 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
             win.export_dialog.hide()
         win._quit_confirmed = True
         win.close()
+
+
+def test_tick_signals_carry_64_bit_times(app):
+    """Regression: Signal(int) is a 32-bit C int in PySide6, so a playhead past 8.5 ms (ticks are
+    254 016 000 000 per second) wrapped to a wrong, often negative time while scrubbing the
+    timeline and in playback."""
+    import re
+
+    from cfa4_qt.panels.monitor import ProgramMonitor
+    from cfa4_qt.panels.timeline import TimelinePanel
+
+    late = 3600 * TICKS_PER_SECOND + 17  # one hour in
+    timeline = TimelinePanel()
+    got: list[int] = []
+    timeline.canvas.seek.connect(got.append)
+    timeline.canvas.seek.emit(late)
+    monitor = ProgramMonitor(EngineClient(Path(sys.executable)))
+    monitor.playhead_moved.connect(got.append)
+    monitor.scrub.seek.connect(got.append)
+    monitor.playhead_moved.emit(late)
+    monitor.scrub.seek.emit(late)
+    assert got == [late, late, late]
+    # and no tick-carrying Signal(int) comes back anywhere in the GUI
+    for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
+        assert not re.search(r"Signal\([^)]*\bint\b", path.read_text(encoding="utf-8")), path
