@@ -217,7 +217,12 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
           CARGO_BUILD_JOBS: "2"
-        run: cargo test --workspace --exclude cfa4-ui --release --locked --timings
+        run: |
+          set -o pipefail
+          cargo test --workspace --exclude cfa4-ui --release --locked --timings --no-fail-fast 2>&1 | tee /tmp/t.log || rc=$?
+          grep -E '^test .* FAILED|panicked at|^thread .* panicked|expected|assert|Error:' /tmp/t.log | head -60 | sed 's/^/::error::/' || true
+          grep -A6 -E 'panicked at' /tmp/t.log | head -120 | sed 's/^/::warning::/' || true
+          exit ${rc:-0}
 
   python-qt6-linux:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
