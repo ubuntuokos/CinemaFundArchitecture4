@@ -439,3 +439,36 @@ def test_tick_signals_carry_64_bit_times(app):
     # and no tick-carrying Signal(int) comes back anywhere in the GUI
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         assert not re.search(r"Signal\([^)]*\bint\b", path.read_text(encoding="utf-8")), path
+
+
+
+def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):
+    """File ▸ Quit exists (Ctrl+Q, asks to save like the close button), and the GUI uses the CFA4
+    logo, not an inherited FilmCraft/ArtCraft one."""
+    from cfa4_qt import branding
+    from cfa4_qt.main_window import MainWindow
+
+    assert branding.LOGO_SVG.is_file() and "cfa4" in branding.LOGO_SVG.name
+    assert not branding.app_icon().isNull()
+    for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
+        text = path.read_text(encoding="utf-8").lower()
+        assert "ai.storyteller" not in text and "app-icon" not in text, path
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: "file.save" in win.registry.actions)
+        file_menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.File")
+        last = [a for a in file_menu.actions() if not a.isSeparator()][-1]
+        assert last is win.quit_action and last.text() == "Quit"
+        assert win.quit_action.shortcuts() and win.quit_action.shortcuts()[0].toString() == "Ctrl+Q"
+        win._quit_confirmed = True
+        win.quit_action.trigger()
+        assert wait_until(app, lambda: not win.isVisible(), 5_000)
+    finally:
+        if win.isVisible():
+            win._quit_confirmed = True
+            win.close()
