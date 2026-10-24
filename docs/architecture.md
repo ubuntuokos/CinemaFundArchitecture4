@@ -27,7 +27,7 @@ Design principles:
  L4  engine
  L3  render · gpu · export · golden (test-only)
  L2  edit · codecs · interchange · captions · credits · speech · tts · tts-text
- L1  frame · media · project · audio-dsp · text
+ L1  frame · media · project · audio-dsp · text · route (cfa4-route)
  L0  foundation: time · geom · color · bitstream · testkit (dev-dependency only)
      codecs/containers: isobmff · matroska · mxf · cfb · mpegts · ogg · h264 · h264enc · hevc · vp9 · av1 · mpeg2v · prores · dnx · apv · dng · aac · ac3 · mpa · opus
 ```
@@ -65,6 +65,7 @@ and `filmcraft-cli`.
 | `project` | L1 | document model, effect definitions, keyframes |
 | `audio-dsp` | L1 | loudness metering (BS.1770 / R128), audio effects, channel layouts (BS.775 up/downmix, 5.1 panner), music remix analysis; no dependencies |
 | `text` | L1 | text engine: font database (bundled OFL fonts + system fonts), shaping (harfrust), bidi, line breaking, paragraph layout, glyph/path rasteriser, strokes ([crates/text/README.md](../crates/text/README.md)) |
+| `route` | L1 | `cfa4-route`: compute router: per-task choice of backend and device (GPU, NPU, CPU) from the routing table (`routing.toml`), the `/sys` device probe and the user's preferences, with reasons and fallback order; no `unsafe`, no workspace dependencies ([ADR 0004](adr/ADR-0004-compute-routing.md), [README](../crates/route/README.md)) |
 | `edit` | L2 | pure edit algebra (insert, overwrite, razor, ripple, roll, slip, slide, rate stretch…; text-based editing: `edit::transcript`) |
 | `credits` | L2 | credits sequences from a spreadsheet: CSV/TSV reader, page / content / letter styles, layout into graphic clips (rolls and cards) ([README](../crates/credits/README.md), [credits.md](credits.md)) |
 | `speech` | L2 | speech-to-text: `Transcriber` trait, Whisper model catalogue + verified downloader (feature `download`), pure-Rust Whisper inference on candle with word timestamps (feature `whisper`), speaker labelling ([transcripts.md](transcripts.md)) |
