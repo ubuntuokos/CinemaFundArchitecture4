@@ -3,12 +3,9 @@
 A projekt célja és prioritásai: [`VISION.md`](../../VISION.md). Ha az alábbiak bármelyike
 ellentmond neki, a `VISION.md` az irányadó.
 
-> **Fontos:** ezek a dokumentumok 2026-10-23-án kerültek át a mellékágakról a `main`-be, hogy a
-> tervek ne vesszenek el. A hozzájuk tartozó **kód és szkriptek** (pl. `scripts/dev/*`,
-> `scripts/ci/*`, `scripts/release/*`, `python/cfa4_devtools/qt_app.py`,
-> `qt_control_bridge.py`, `native_media_e2e.py`) **még nincsenek a `main`-ben**: a piszkozat
-> PR-okban (#17, #20, #23–#30) és az `audit/*`, `chore/*`, `design/*`, `fix/*` ágakon vannak.
-> A legteljesebb állapot az `audit/f9-evidence-release-hold` ágon található.
+> **Fontos:** a dokumentumok és a hozzájuk tartozó kód (szkriptek, Qt6-héj, Qt6-híd, csomagolás,
+> tesztek) 2026-10-24 óta a `main`-ben vannak: a #3 … #33 PR-lánc a #35-tel került be
+> (merge commit `6889664`). A régi PR-ok lezárva, az águk megmaradt.
 > A dokumentumokban szereplő PASS/HOLD/OPEN állapotok a megírásuk napjára vonatkoznak.
 
 ## Áttekintés és döntések
