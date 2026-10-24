@@ -59,7 +59,18 @@ jobs:
       - name: Linux quality gates (no WASM target)
         env:
           FILMCRAFT_REQUIRE_ORACLES: "1"
-        run: cargo xtask ci
+        run: |
+          set +e
+          cargo xtask ci > ci.log 2>&1
+          status=$?
+          cat ci.log
+          if [ $status -ne 0 ]; then
+            msg=$(grep -E -A14 "^(error|warning|Diff in|thread)" ci.log | head -c 6000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            echo "::error title=xtask ci::$msg"
+            msg=$(tail -c 3000 ci.log | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')
+            echo "::error title=xtask ci tail::$msg"
+          fi
+          exit $status
       - name: HEIF/HEIC native import and export oracles
         run: |
           cargo test --locked -p filmcraft-media --test heif_oracle
@@ -217,7 +228,16 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
           CARGO_BUILD_JOBS: "2"
-        run: cargo test --workspace --exclude craft-ui --release --locked --timings
+        run: |
+          set +e
+          cargo test --workspace --exclude craft-ui --release --locked --timings > t.log 2>&1
+          status=$?
+          cat t.log
+          if [ $status -ne 0 ]; then
+            msg=$(grep -E -B2 -A10 "panicked at|FAILED|^error" t.log | head -c 8000 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')
+            echo "::error title=workspace tests::$msg"
+          fi
+          exit $status
 
   python-qt6-linux:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
