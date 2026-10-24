@@ -3,9 +3,9 @@
 Thanks for helping. Before you start:
 
 1. Read **[AGENTS.md](AGENTS.md)**. Its rules are absolute. In particular: no Adobe assets of any
-   kind, every asset openly licensed with an attribution sidecar, no copied GPL/LGPL implementation
-   code in the Rust crates (system libraries such as GStreamer may be linked under
-   [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)), and ffmpeg only as an external test oracle.
+   kind, every asset openly licensed with an attribution sidecar, codecs and containers written
+   clean-room from specifications, reused GPL-3.0-compatible code elsewhere only with its notices kept and
+   an entry in `THIRD_PARTY_CODE.md`, and ffmpeg only as an external test oracle.
 2. **Never crash.** A crash loses someone's work, so this rule outranks feature work: no `unwrap()`,
    `expect()`, `panic!`, `unreachable!`, `todo!`, `unimplemented!` or `unsafe` in production code;
    return `Result` and treat every input as hostile. See [AGENTS.md](AGENTS.md) §0.

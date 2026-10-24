@@ -17,10 +17,11 @@ attribution and original copyright/licence requirements remain in force.
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
 - **Project licence: GPL-3.0-or-later** (owner decision, 2026-10; `LICENSE`, `NOTICE`). Inherited
   FilmCraft code keeps its MIT OR Apache-2.0 notices (`LICENSE-MIT`, `LICENSE-APACHE`); never remove
-  them. New dependencies must be GPL-3.0-compatible.
+  them. New dependencies must be GPL-3.0-compatible (§2). Decisions and their reasons:
+  [ADR 0003](docs/adr/ADR-0003-gpl3-licence.md).
 - **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
-  packages under applicable LGPLv3/commercial terms. This is NOT permission to copy GPL/LGPL
-  implementation code into Rust crates or to embed Qt/PySide binaries without review.
+  packages under applicable LGPLv3/commercial terms. This is NOT permission to embed Qt/PySide
+  binaries without review; reuse of GPL/LGPL source code follows §2.
   GPL-only Qt modules and distribution require separate license decisions.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
@@ -104,7 +105,9 @@ reproduce an image (for example, point lists traced from someone else's icon).
      without reference to Adobe's artwork.
 2. **Every asset must be open**: open-source licensed (MIT, Apache-2.0, BSD, ISC, zlib, SIL OFL…),
    public domain / CC0, or Creative Commons (CC BY or CC BY-SA; no NC/ND licences), **or** created by a
-   contributor who owns it and licenses it to the project under the project licence (MIT OR Apache-2.0).
+   contributor who owns it and licenses it to the project under the project licence (GPL-3.0-or-later).
+   Built-in graphic templates and generated golden/test images stay MIT OR Apache-2.0 (owner decision,
+   2026-10-24; compatible with GPL-3.0).
    If the licence is unknown or unclear, the asset does not go in.
 3. **Every asset needs an attribution sidecar.** Next to each asset file `X`, add `X.attribution` with:
    ```text
@@ -141,12 +144,28 @@ reproduce an image (for example, point lists traced from someone else's icon).
    bundled and system fonts). Never add craft-fonts to a `Cargo.toml`. Code using `CRAFT_FONTS` must work
    when it is empty. Standard: [`craftrules/standards/fonts.md`](https://github.com/storytold/craftrules/blob/main/standards/fonts.md).
 
-## 2. Clean-room code
+## 2. Clean-room codecs, code reuse elsewhere
 
 - Never read, disassemble or copy anything inside Adobe application bundles; file names and listings only.
   Observe behaviour by using the app; never capture its Home screen, recent projects, account info or
   file browsers.
-- Never copy GPL/LGPL/AGPL code (FFmpeg, x264, x265, MLT, Kdenlive, Shotcut, Olive, LAME…).
+- **Codecs and containers stay clean-room** (owner decision, 2026-10-24): the L0 codec and container
+  crates ([docs/architecture.md](docs/architecture.md) §1) and any other code that parses or produces a
+  compressed bitstream or container format. There, never copy or port third-party code of any licence
+  (FFmpeg, x264, x265, LAME, libvpx, dav1d…).
+- **Everywhere else, GPL-3.0-compatible code may be reused** (owner decision, 2026-10-24): editing,
+  timeline, audio editing and effects, subtitles, drawing and animation, user interface, tooling. For
+  example from Kdenlive, MLT, Shotcut, Audacity, Subtitle Edit or Krita, after checking the licence of the
+  exact files taken. Rules for reused code:
+  1. The licence must be GPL-3.0-compatible: GPL-3.0(-or-later), GPL-2.0-or-later, LGPL-2.1-or-later,
+     LGPL-3.0, MPL-2.0, or permissive (MIT, BSD, Apache-2.0, ISC, Zlib…). **Not allowed:** GPL-2.0-only,
+     AGPL, licences with non-commercial or other extra restrictions, unclear or missing licences.
+  2. Keep the original copyright and licence notices in every file that contains reused code, and add a
+     line naming the source project, its URL and the version or commit.
+  3. Record every reuse in [`THIRD_PARTY_CODE.md`](THIRD_PARTY_CODE.md) (project, files, licence, commit,
+     where it went in CFA4).
+  4. The never-crash, layering and testing rules apply to reused code exactly as to our own: translate it
+     into safe Rust; no `unsafe`, no `unwrap`, tests for what it does.
 - Implement codecs and formats from public specifications (ITU-T/ISO/IEC standards, IETF RFCs, the VP9
   and AV1 bitstream specs, SMPTE documents, published container specs). Do not read the source of
   reference or third-party decoders/encoders while implementing a format, even permissively licensed
@@ -154,8 +173,9 @@ reproduce an image (for example, point lists traced from someone else's icon).
   spec edition used in the crate README.
 - ffmpeg/ffprobe may be used only as external test oracles and fixture generators. They are never
   linked, bundled or shipped.
-- Dependencies must use permissive licences: MIT/Apache-2.0/BSD/ISC/Zlib/Unicode/CC0/BSL-1.0, or
-  MPL-2.0 used unmodified.
+- Dependencies must be GPL-3.0-compatible: MIT/Apache-2.0/BSD/ISC/Zlib/Unicode/CC0/BSL-1.0, MPL-2.0,
+  LGPL-2.1-or-later/LGPL-3.0, GPL-2.0-or-later or GPL-3.0(-or-later). Not allowed: GPL-2.0-only, AGPL,
+  proprietary or unclear licences. `deny.toml` (`cargo deny check licenses`) enforces the list.
 
 ## 3. Engineering rules
 

@@ -14,6 +14,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 |---|---|
 | [F9 kiadási döntés](F9-RELEASE-DECISION-2026-10-23.md) + [`f9-release-readiness.json`](f9-release-readiness.json) | **Összesítő:** minden kapu állapota (PASS/OPEN), PR-onként. Kiadás: HOLD |
 | [ADR F8 – Qt6 / Rust motor](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) | A Qt6-felület architektúrája és 7 lépéses átállási terve |
+| [ADR 0003 – GPL-3 licenc](../adr/ADR-0003-gpl3-licence.md) | GPL-3.0-or-later; kodekek tisztaszobásak, máshol GPL-3-kompatibilis kód átvehető; sablonok MIT/Apache; üzleti modell |
 | [ADR 0002 – GStreamer](../adr/ADR-0002-gstreamer-backend.md) | GStreamer mint kiegészítő háttérmotor (a saját Rust motor marad az alap), 6 lépéses terv |
 
 ## Fázisok

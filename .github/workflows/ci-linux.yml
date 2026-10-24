@@ -152,7 +152,7 @@ jobs:
     needs: platform-scope
     name: Rust architecture and asset gates (Ubuntu)
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -162,6 +162,10 @@ jobs:
         run: cargo xtask layers
       - name: Asset attribution and licensing
         run: cargo xtask assets
+      - name: Dependency licences are GPL-3.0-compatible (ADR 0003, deny.toml)
+        run: |
+          cargo install --locked cargo-deny@0.19
+          cargo deny --locked check licenses
 
   rust-release-tests:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')

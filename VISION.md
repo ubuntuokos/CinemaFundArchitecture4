@@ -18,10 +18,12 @@ Kiindulópontja a FilmCraft 0.10.0 (MIT OR Apache-2.0) nemlineáris videóvágó
 médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejlődik.
 
 **Licenc:** a CFA4 egésze **GPL-3.0-or-later** (`LICENSE`, `NOTICE`). Így a lehető legkevesebbet
-kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
-módon kell megvalósítani. Az örökölt FilmCraft-kód eredeti MIT/Apache-megjegyzései megmaradnak.
+kell újraírni: a kodekeken és konténereken kívül GPL-3-kompatibilis kód és könyvtár felhasználható
+(a kodekek tisztaszobásak maradnak). Ami nem használható fel, azt más módon kell megvalósítani. Az
+örökölt FilmCraft-kód eredeti MIT/Apache-megjegyzései megmaradnak.
 **Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
-hosszabb támogatási idő fizetős.
+hosszabb támogatási idő fizetős. A fizetős kiegészítők is GPL-licencűek, a kiadott binárisok mellé
+a forráskód is elérhető. Részletek: `docs/adr/ADR-0003-gpl3-licence.md`.
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 
@@ -123,6 +125,7 @@ A legfontosabbak:
 
 - [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) – Qt6 ↔ Rust architektúra
 - [`docs/adr/ADR-0002-gstreamer-backend.md`](docs/adr/ADR-0002-gstreamer-backend.md) – GStreamer mint kiegészítő háttérmotor
+- [`docs/adr/ADR-0003-gpl3-licence.md`](docs/adr/ADR-0003-gpl3-licence.md) – GPL-3 licenc, kódátvétel, üzleti modell
 - [`docs/audit/F9-RELEASE-DECISION-2026-10-23.md`](docs/audit/F9-RELEASE-DECISION-2026-10-23.md) és `f9-release-readiness.json` – kiadási kapuk összesítése
 - [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)

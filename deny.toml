@@ -1,0 +1,41 @@
+# cargo-deny configuration: licence policy of CFA4 (GPL-3.0-or-later).
+# Every dependency must be GPL-3.0-compatible (AGENTS.md §2, docs/adr/ADR-0003-gpl3-licence.md).
+#
+#   cargo deny check licenses
+#
+# Not allowed (never add them here): GPL-2.0-only, AGPL-*, SSPL, BUSL, CC-BY-NC*, proprietary.
+
+[graph]
+targets = [{ triple = "x86_64-unknown-linux-gnu" }]
+all-features = true
+
+[licenses]
+confidence-threshold = 0.9
+allow = [
+    # CFA4 itself
+    "GPL-3.0-or-later",
+    "GPL-3.0-only",
+    # copyleft, GPL-3.0-compatible
+    "GPL-2.0-or-later",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+    "MPL-2.0",
+    # permissive
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "Unlicense",
+    "CC0-1.0",
+    "BSL-1.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CDLA-Permissive-2.0",
+    "OFL-1.1",
+]

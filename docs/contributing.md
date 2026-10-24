@@ -229,8 +229,8 @@ stream is cut into blocks (there are tests for this).
 ### A codec or container crate
 
 1. **Spec first.** Work only from the public specification (ITU-T, ISO/IEC, IETF RFCs, SMPTE,
-   published container specs). Never copy GPL/LGPL code, and follow AGENTS.md §2 on reading other
-   implementations. Name the spec edition in the crate README.
+   published container specs). Codecs and containers stay clean-room: never copy or port
+   third-party codec code of any licence, and follow AGENTS.md §2 on reading other implementations. Name the spec edition in the crate README.
 2. Create `crates/<name>` as an L0 crate that depends only on `filmcraft-bitstream` (plus
    `thiserror` and optional `rayon` behind a `threads` feature). Add `[lints] workspace = true`, add
    it to `[workspace.dependencies]`, and add it to `LAYERS` in `xtask/src/main.rs`. It must build
