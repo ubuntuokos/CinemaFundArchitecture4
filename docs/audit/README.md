@@ -14,6 +14,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 |---|---|
 | [F9 kiadási döntés](F9-RELEASE-DECISION-2026-10-23.md) + [`f9-release-readiness.json`](f9-release-readiness.json) | **Összesítő:** minden kapu állapota (PASS/OPEN), PR-onként. Kiadás: HOLD |
 | [ADR F8 – Qt6 / Rust motor](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) | A Qt6-felület architektúrája és 7 lépéses átállási terve |
+| [OpenTimelineIO integrációs terv](../plans/OTIO-INTEGRATION-2026-10-24.md) | Jóváhagyva: a meglévő Rust OTIO-kód fejlesztése 6 fázisban, a hivatalos `opentimelineio` csomag tesztorákulumként |
 
 ## Fázisok
 
