@@ -69,7 +69,7 @@ class Drag:
 
 class TimelineCanvas(QWidget):
     command = Signal(str, dict)  # engine command id, params
-    seek = Signal(int)  # ticks, while scrubbing (local preview)
+    seek = Signal(object)  # ticks, while scrubbing (local preview); object, not a 32-bit int
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)

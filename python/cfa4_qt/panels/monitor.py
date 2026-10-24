@@ -60,7 +60,8 @@ class FrameView(QWidget):
 
 class ProgramMonitor(QWidget):
     command = Signal(str, dict)
-    playhead_moved = Signal(int)  # local playhead during playback
+    # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
+    playhead_moved = Signal(object)  # local playhead during playback, ticks
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
