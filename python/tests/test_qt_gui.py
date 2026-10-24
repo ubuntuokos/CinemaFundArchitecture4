@@ -29,6 +29,9 @@ FAKE_ENGINE = textwrap.dedent(
     #!PYTHON
     """Speaks the `cfa4-cli serve` protocol with a tiny in-memory sequence."""
     import json, sys
+    if sys.argv[1:2] == ["help"]:
+        print("USAGE\n  serve [--autosave]            headless engine server")
+        sys.exit(0)
     TPS = 254_016_000_000
     state = {"revision": 1, "selection": [], "playhead": 0, "log": []}
     def seq():
@@ -138,6 +141,37 @@ def test_frame_reader_reads_json_and_binary_tails():
 def test_frame_reader_rejects_bad_framing(data: bytes):
     with pytest.raises(EngineError):
         FrameReader(io.BytesIO(data)).read()
+
+
+def _script(path: Path, body: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"#!{sys.executable}\n" + body, encoding="utf-8")
+    path.chmod(path.stat().st_mode | stat.S_IXUSR)
+    return path
+
+
+def test_locate_engine_skips_engines_without_serve(tmp_path: Path, monkeypatch, fake_engine: Path):
+    """Regression: an older filmcraft-cli on PATH (no `serve`) was picked and exited with 2."""
+    from cfa4_qt import engine as engine_mod
+
+    old = _script(tmp_path / "bin" / "filmcraft-cli", "import sys\nprint('USAGE\\n  exec <id>')\n")
+    monkeypatch.delenv("CFA4_ENGINE", raising=False)
+    monkeypatch.setenv("PATH", str(old.parent))
+    rejected: list[str] = []
+    # explicit old engine: refused with the reason
+    assert locate_engine(old, rejected) is None
+    assert "serve" in rejected[0] and str(old) in rejected[0]
+    # the checkout's build beats PATH; an old one on PATH alone is refused
+    root = tmp_path / "checkout"
+    (root / "python" / "cfa4_qt").mkdir(parents=True)
+    monkeypatch.setattr(engine_mod, "__file__", str(root / "python" / "cfa4_qt" / "engine.py"))
+    assert locate_engine() is None
+    build = root / "target" / "release" / "filmcraft-cli"
+    build.parent.mkdir(parents=True)
+    build.write_bytes(fake_engine.read_bytes())
+    build.chmod(0o755)
+    assert engine_mod.engine_candidates()[0] == build
+    assert locate_engine() == build
 
 
 def test_locate_engine_honours_explicit_and_env(tmp_path: Path, monkeypatch, fake_engine: Path):

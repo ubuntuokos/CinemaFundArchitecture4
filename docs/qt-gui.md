@@ -25,8 +25,11 @@ python3 -m venv .venv
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
 
-The engine is found as `--engine PATH`, `$CFA4_ENGINE`, `cfa4-cli` / `filmcraft-cli` on `PATH`,
-then `target/release` and `target/debug` of the checkout. `--smoke [--screenshot out.png]`
+The engine is `--engine PATH` or `$CFA4_ENGINE` when given; otherwise the build of this checkout
+(`target/release` or `target/debug`, the newer first), then `cfa4-cli` / `filmcraft-cli` on
+`PATH`. A candidate without the `serve` subcommand (an engine built from a branch without the
+Qt GUI, or an older installed CLI) is skipped, and if none is usable the GUI lists every path
+it checked and why. `--smoke [--screenshot out.png]`
 starts, waits for the engine, and quits (CI). `--no-autosave` turns off the auto-save and
 crash-recovery journal, `--data-dir` moves it.
 

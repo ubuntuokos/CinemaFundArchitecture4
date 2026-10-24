@@ -32,24 +32,53 @@ class EngineError(RuntimeError):
     """The engine is unavailable or refused a request."""
 
 
-def locate_engine(explicit: str | os.PathLike[str] | None = None) -> Path | None:
-    """Find the local CFA4 CLI without installing or downloading anything."""
-    if explicit:
-        candidate = Path(explicit).expanduser()
-        return candidate if candidate.is_file() and os.access(candidate, os.X_OK) else None
-    env = os.environ.get("CFA4_ENGINE")
-    if env:
-        return locate_engine(env)
-    # installed CFA4 command first; the inherited binary name while the rename is in progress
-    for name in ("cfa4-cli", "filmcraft-cli"):
-        found = shutil.which(name)
-        if found:
-            return Path(found)
+def engine_serves(executable: Path) -> bool:
+    """Does this CLI have the `serve` subcommand the GUI needs? (`help` starts no engine.)"""
+    try:
+        out = subprocess.run(
+            [str(executable), "help"], stdin=subprocess.DEVNULL, capture_output=True, timeout=15, check=False
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return b"\n  serve" in out.stdout
+
+
+def engine_candidates(explicit: str | os.PathLike[str] | None = None) -> list[Path]:
+    """Where the engine may be, best first; nothing is installed or downloaded.
+
+    An explicit path or ``$CFA4_ENGINE`` is the only candidate. Otherwise the build of the
+    checkout this GUI runs from comes first (newest first: release and debug), so an older CLI
+    installed on ``PATH`` cannot shadow the engine built next to this GUI; then ``cfa4-cli`` and
+    the inherited ``filmcraft-cli`` on ``PATH``.
+    """
+    chosen = explicit or os.environ.get("CFA4_ENGINE")
+    if chosen:
+        return [Path(chosen).expanduser()]
     root = Path(__file__).resolve().parents[2]
-    for relative in ("target/release/filmcraft-cli", "target/debug/filmcraft-cli"):
-        candidate = root / relative
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return candidate
+    builds = [root / r for r in ("target/release/filmcraft-cli", "target/debug/filmcraft-cli")]
+    builds = [b for b in builds if b.is_file()]
+    builds.sort(key=lambda b: b.stat().st_mtime, reverse=True)
+    on_path = [Path(f) for f in (shutil.which(n) for n in ("cfa4-cli", "filmcraft-cli")) if f]
+    out: list[Path] = []
+    for c in [*builds, *on_path]:
+        if c not in out:
+            out.append(c)
+    return out
+
+
+def locate_engine(explicit: str | os.PathLike[str] | None = None, rejected: list[str] | None = None) -> Path | None:
+    """The first candidate that is an executable CFA4 CLI with `serve`. Each skipped candidate
+    is added to ``rejected`` with the reason, for the message the user sees."""
+    for candidate in engine_candidates(explicit):
+        if not candidate.is_file() or not os.access(candidate, os.X_OK):
+            if rejected is not None:
+                rejected.append(f"{candidate}: not found or not executable")
+            continue
+        if not engine_serves(candidate):
+            if rejected is not None:
+                rejected.append(f"{candidate}: too old (no `serve` subcommand)")
+            continue
+        return candidate
     return None
 
 
