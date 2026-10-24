@@ -4,14 +4,17 @@
 jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed.
 
 **Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
-GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
+GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), beolvasztva).
+**Módosította:** [ADR 0004](ADR-0004-ffmpeg9-primary-backend.md) (2026-10-24): az FFmpeg 9 az
+elsődleges, a GStreamer a másodlagos médiaháttér; a 3. pont, a 6. pont mérnöki szabályai és a
+10. pont 4. alpontja ennek megfelelően módosult.
 Ez az ADR a licencszabályokat nem ismétli meg, csak alkalmazza őket: az Academy Software
 Foundation (ASWF) projektjeire, a HandBrake helyére a konvertálásban, a zárt bővítményekre, a
 hardveres kódolásra és a GPL-3 után beépíthető könyvtárakra. Az 1–6. pont a döntéseket és a
 jelölteket rögzíti, a 7–10. pont a végrehajtási tervet és a jóváhagyandó pontokat.
 
-**Már rögzített tulajdonosi döntések (2026-10):** GPL-3.0-or-later licenc; a GStreamer kiegészítő
-háttérmotor, a saját Rust-motor az elsődleges és a tartalék; a HandBrake kikerül; zárt bővítmény
+**Már rögzített tulajdonosi döntések (2026-10):** GPL-3.0-or-later licenc; médiaháttér-sorrend:
+FFmpeg 9 (elsődleges) → GStreamer (másodlagos) → saját Rust-kodekek (tartalék), ADR 0004; a HandBrake kikerül; zárt bővítmény
 nem töltődik be, a nélkülözhetetlen zárt bővítmények képességét saját kód valósítja meg (4. pont);
 hardveres kódolás gyártónként, NVIDIA-függőség nélkül (5. pont).
 
@@ -74,10 +77,11 @@ A VISION.md táblázatában a HandBrake helyét két GPL-3.0 licencű program ve
   profilkezelővel. A logikája a Python/Qt6 rétegbe átemelhető, a wxPython-felületet Qt6-ban újra
   kell írni.
 
-A konvertálás **motorja** a saját Rust-motor, kiegészítve a GStreamerrel (ADR 0002): ez adja a
-gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n). Az FFmpeg csak akkor kerül a
-termékbe, ha a saját motor és a GStreamer együtt sem elég; akkor saját ADR kell hozzá, csak
-GPL-3-as builddel (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
+A konvertálás **motorja** az elsődleges **FFmpeg 9** ([ADR 0004](ADR-0004-ffmpeg9-primary-backend.md)),
+másodlagosan a **GStreamer** (ADR 0002), tartalékként a saját Rust-kodekek. Az FFmpeg 9 és a
+GStreamer adja a gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n, Vulkan Video,
+NVENC). Az FFmpeg 9 csak GPL-3-as builddel használható (`--enable-gpl --enable-version3`, soha
+`--enable-nonfree`).
 
 Az Avidemux csak a licencének tisztázása után jöhet szóba: a tárolójának licencfájlja GPL v2-t ír,
 más források GPL-2.0-or-later-t.
@@ -113,14 +117,14 @@ igényelnek. Ezért minden gyártónak saját útja van, közös felület mögö
 
 | GPU | Hardveres kódolás útja | Megjegyzés |
 |---|---|---|
-| NVIDIA | NVENC (`crates/platform`, ma is megvan) | a meghajtó zárt könyvtárát futáskor tölti be; opcionális |
-| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés) | nyílt meghajtó; az AMD AMF nem kell, mert zárt futtatókörnyezetet igényel |
+| NVIDIA | NVENC: FFmpeg 9 `*_nvenc` (elsődleges, ADR 0004), a `crates/platform` natív útja ma is megvan | a meghajtó zárt könyvtárát futáskor tölti be; opcionális |
+| AMD | VA-API (Mesa `radeonsi`): FFmpeg 9 `*_vaapi` (elsődleges, ADR 0004), GStreamer `va*enc` (másodlagos, ADR 0002 3. lépés) | nyílt meghajtó; az AMD AMF nem kell, mert zárt futtatókörnyezetet igényel |
 | Intel | VA-API (`iHD` meghajtó), ugyanígy | a oneVPL/Quick Sync csak akkor, ha a VA-API mérhetően kevés |
-| bármely Vulkan-képes GPU | Vulkan Video (GStreamer `vulkan*enc`, ahol a meghajtó tudja) | gyártófüggetlen jövőbeli út |
+| bármely Vulkan-képes GPU | Vulkan Video: FFmpeg 9 `*_vulkan`, másodlagosan GStreamer `vulkan*enc`, ahol a meghajtó tudja | gyártófüggetlen jövőbeli út |
 | nincs GPU vagy hiba | a saját szoftveres kódolók (pl. `crates/h264enc`) | mindig elérhető tartalék |
 
 - Mind ugyanazon kódolófelület (`filmcraft_export::VideoEncoder`) mögött van, a választást a futásidejű felmérés
-  (a GStreamer `probe()`-ja és a #39 gyorsítási terve) és mérés dönti el, nem fordítási idő.
+  (az FFmpeg 9 és a GStreamer `probe()`-ja, valamint a #39 gyorsítási terve) és mérés dönti el, nem fordítási idő.
 - Egy funkció sem lehet csak NVIDIA-n elérhető (AGENTS.md, ADR 0002): ha egy képesség NVENC-cel
   megvan, a VA-API-s és a szoftveres útnak is meg kell lennie.
 - Az NPU-k a helyi MI-hez valók (VISION.md 5. pont), a videókódoláshoz nem.
@@ -152,9 +156,9 @@ Ami a licenctől függetlenül marad:
 
 - **Szabadalmak.** A H.264, a HEVC és az AAC szabadalmi kérdése független a szerzői jogi
   licenctől; az x264 és az x265 terjesztése előtt külön meg kell vizsgálni.
-- **Mérnöki szabályok.** Az AGENTS.md `unsafe`- és „pure Rust”-szabálya, valamint az, hogy az
-  ffmpeg nem linkelhető, továbbra is érvényes; minden beépítéshez az ADR-nek kell kivételt
-  kérnie, az ADR 0001 feltételeivel.
+- **Mérnöki szabályok.** Az AGENTS.md `unsafe`- és „pure Rust”-szabálya továbbra is érvényes; minden
+  beépítéshez az ADR-nek kell kivételt kérnie, az ADR 0001 feltételeivel. Az FFmpeg 9 kivételét az
+  [ADR 0004](ADR-0004-ffmpeg9-primary-backend.md) adja.
 
 ## 7. Végrehajtási terv
 
@@ -219,7 +223,8 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
    köthető be (az első ilyen az ADR 0004, az A2-ben). Az AGENTS.md szövege az ADR 0004-gyel
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
-4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet; addig külső tesztorákulum marad.
+4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** az [ADR 0004](ADR-0004-ffmpeg9-primary-backend.md)
+   az FFmpeg 9-et elsődleges médiahátterré teszi; a CI-orákulum külön marad.
 5. Az x264 és az x265 kiadása előtt szabadalmi, az NVENC kiadása előtt licencjogi vizsgálat kell.
 6. Az A1 (tesztorákulumok) az összevonás után azonnal indulhat.
 

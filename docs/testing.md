@@ -42,8 +42,9 @@ Commit `*.proptest-regressions` files so failing cases are re-run.
 
 ## 2. ffmpeg oracle tests
 
-ffmpeg and ffprobe are **external processes** used to generate fixtures and to check results. They
-are never linked or shipped ([AGENTS.md](../AGENTS.md) §2).
+In tests, ffmpeg and ffprobe are **external processes** used to generate fixtures and to check
+results. This test oracle is separate from the product's FFmpeg 9 media backend
+([ADR 0004](adr/ADR-0004-ffmpeg9-primary-backend.md)); oracle tests never go through `cfa4-ffmpeg`.
 
 - The tools are found by `filmcraft-testkit` (a dev-dependency-only crate, `crates/testkit`), in
   this order: `FILMCRAFT_FFMPEG` / `FILMCRAFT_FFPROBE` (explicit paths; a wrong path is an error),

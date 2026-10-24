@@ -1,8 +1,9 @@
 # cfa4-gstreamer
 
-Optional GStreamer backend for CFA4 (layer L5). The Rust media engine stays the primary path;
-GStreamer supplements it where the system's media stack can do what the engine does not do yet.
-Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
+Optional GStreamer backend for CFA4 (layer L5): the **secondary** media backend. Order:
+FFmpeg 9 (primary, [ADR 0004](../../docs/adr/ADR-0004-ffmpeg9-primary-backend.md)) → GStreamer →
+the built-in Rust codecs (fallback). Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
+Today (before ADR 0004 step 2) the built-in openers still run before GStreamer, as described below.
 
 ## What it does today (steps 1 and 2)
 

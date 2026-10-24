@@ -1,7 +1,9 @@
-# ADR 0002 – GStreamer mint kiegészítő háttérmotor
+# ADR 0002 – GStreamer mint másodlagos háttérmotor
 
 **Dátum:** 2026-10-24 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` jóváhagyta) ·
-**Érintett crate:** `crates/gstreamer` (`cfa4-gstreamer`, L5 réteg)
+**Érintett crate:** `crates/gstreamer` (`cfa4-gstreamer`, L5 réteg) ·
+**Módosította:** [ADR 0004](ADR-0004-ffmpeg9-primary-backend.md) (2026-10-24): az elsődleges
+médiaháttér az FFmpeg 9, a GStreamer a másodlagos, a saját Rust-kodekek a tartalék
 
 ## Háttér
 
@@ -22,11 +24,14 @@ Qt6/QML videókimenete is.
 
 ## Döntés
 
-A GStreamer **kiegészítő háttérmotor** lesz. Nem váltja ki a saját motort.
+A GStreamer a **másodlagos médiaháttér** ([ADR 0004](ADR-0004-ffmpeg9-primary-backend.md)).
+Alapsorrend: **FFmpeg 9** (elsődleges) → **GStreamer** (másodlagos) → **saját Rust-kodekek** (tartalék);
+a feladatonkénti kivételeket az ADR 0004 útválasztási táblája rögzíti (pl. felvételnél a GStreamer az első).
+A Rust-motor marad a projekt, az idővonal, a render és az export vezérlője (ADR F8).
 
-1. **A saját Rust motor az elsődleges.** A GStreamer ott lép be, ahol a motor nem tud valamit,
-   vagy ahol mérés igazolja, hogy jobb (például hardveres kódolás AMD/Intel GPU-n).
-2. **A saját motor mindig tartalék.** Ha a GStreamer, egy bővítménye vagy a hardveres gyorsítás
+1. **Az FFmpeg 9 az elsődleges.** A GStreamer ott lép be, ahol az FFmpeg 9 nem tud valamit,
+   vagy ahol mérés igazolja, hogy jobb (például PipeWire-felvétel, Qt6-előnézet).
+2. **A saját Rust-kodekek mindig tartalékok.** Ha a GStreamer, egy bővítménye vagy a hardveres gyorsítás
    hiányzik vagy hibázik, a program a saját motorral fut tovább, ugyanúgy, ahogy az ADR 0001
    hibrid dekódere.
 3. **Opcionális.** A `cfa4-gstreamer` crate `gstreamer` Cargo-funkciója alapból ki van kapcsolva.
@@ -48,7 +53,11 @@ A GStreamer **kiegészítő háttérmotor** lesz. Nem váltja ki a saját motort
 
 ## A tartalék szabálya (2. lépés)
 
-A beépített megnyitók mindig elsők. A GStreamer csak akkor veszi át a fájlt, ha
+> **Átmeneti állapot.** Az alábbi a #40-ben megvalósított, mai sorrend. Az ADR 0004 2. lépése
+> után a sorrend: FFmpeg 9 → GStreamer → beépített megnyitók. A szabály lényege marad: egy addig
+> működő fájl a regisztráció miatt soha nem romolhat el.
+
+Ma a beépített megnyitók az elsők. A GStreamer csak akkor veszi át a fájlt, ha
 
 - a beépített megnyitók nem támogatottnak vagy dekódolhatatlannak jelzik (`Unsupported`, `Decode`;
   I/O-hiba és offline média változatlanul továbbmegy), vagy
@@ -88,7 +97,7 @@ tartalékként megmarad.
 
 - Új rendszerfüggőség a fejlesztéshez, ha a funkció be van kapcsolva:
   `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`.
-- Két médiaútvonalat kell karbantartani. Ezt a fenti szabály kezeli: a saját motor az alap, a
-  GStreamer az erősítés és a tartalék.
+- Három médiaútvonalat kell karbantartani (FFmpeg 9, GStreamer, saját kodekek). A sorrendet és a
+  tartalékláncot az [ADR 0004](ADR-0004-ffmpeg9-primary-backend.md) rögzíti.
 - A futásidőben elérhető képességek gépenként eltérnek (telepített bővítmények, GPU-meghajtó).
   Ezért a `probe()` eredménye alapján kell dönteni, nem fordítási időben.
