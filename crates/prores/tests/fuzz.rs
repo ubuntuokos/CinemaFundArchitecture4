@@ -1,7 +1,7 @@
 //! Robustness: mutated and random inputs must never panic (errors are fine).
 
 mod common;
-use filmcraft_prores::*;
+use cfa4_prores::*;
 
 struct Rng(u64);
 impl Rng {

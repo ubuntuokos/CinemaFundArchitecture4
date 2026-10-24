@@ -414,52 +414,52 @@ pub fn font_families() -> Vec<FontFamily> {
     vec![FontFamily::Proportional, FontFamily::Monospace, FontFamily::Name("semibold".into()), FontFamily::Name("medium".into())]
 }
 
-/// Install the Latin UI fonts, Chinese fallback (craft-fonts or an installed face), Japanese
-/// craft-fonts, Arabic and Hebrew fallbacks (craft-fonts or installed faces, [`crate::rtl`]) and
+/// Install the Latin UI fonts, Chinese fallback (extra-fonts or an installed face), Japanese
+/// extra-fonts, Arabic and Hebrew fallbacks (extra-fonts or installed faces, [`crate::rtl`]) and
 /// egui visuals. Document names keep their glyphs in every interface language.
 pub fn install(ctx: &egui::Context, t: &Tokens) {
     let mut fonts = FontDefinitions::default();
-    fonts.font_data.insert("inter".into(), Arc::new(FontData::from_static(filmcraft_text::fonts::INTER_REGULAR)));
-    fonts.font_data.insert("inter-medium".into(), Arc::new(FontData::from_static(filmcraft_text::fonts::INTER_MEDIUM)));
-    fonts.font_data.insert("inter-semibold".into(), Arc::new(FontData::from_static(filmcraft_text::fonts::INTER_SEMIBOLD)));
-    fonts.font_data.insert("jbmono".into(), Arc::new(FontData::from_static(filmcraft_text::fonts::JETBRAINS_MONO_REGULAR)));
+    fonts.font_data.insert("inter".into(), Arc::new(FontData::from_static(cfa4_text::fonts::INTER_REGULAR)));
+    fonts.font_data.insert("inter-medium".into(), Arc::new(FontData::from_static(cfa4_text::fonts::INTER_MEDIUM)));
+    fonts.font_data.insert("inter-semibold".into(), Arc::new(FontData::from_static(cfa4_text::fonts::INTER_SEMIBOLD)));
+    fonts.font_data.insert("jbmono".into(), Arc::new(FontData::from_static(cfa4_text::fonts::JETBRAINS_MONO_REGULAR)));
     fonts.families.entry(FontFamily::Proportional).or_default().insert(0, "inter".into());
     fonts.families.entry(FontFamily::Monospace).or_default().insert(0, "jbmono".into());
     fonts.families.insert(FontFamily::Name("semibold".into()), vec!["inter-semibold".into(), "inter".into()]);
     fonts.families.insert(FontFamily::Name("medium".into()), vec!["inter-medium".into(), "inter".into()]);
     // Japanese before Chinese: the two share code points, and Japanese text must keep Japanese
     // glyph forms; Chinese faces still cover the hanzi Japanese fonts lack
-    add_craft_fonts(&mut fonts);
+    add_extra_fonts(&mut fonts);
     crate::cjk::install(&mut fonts);
     crate::rtl::install(&mut fonts);
     ctx.set_fonts(fonts);
     apply_visuals(ctx, t);
 }
 
-/// Name of the egui font for a craft-fonts entry.
-fn craft_font_name(f: &filmcraft_text::fonts::CraftFont) -> String {
-    format!("craft:{} {}", f.family, f.style)
+/// Name of the egui font for an extra-fonts entry.
+fn extra_font_name(f: &cfa4_text::fonts::ExtraFont) -> String {
+    format!("extra:{} {}", f.family, f.style)
 }
 
-/// Append the Japanese craft-fonts (empty unless built with `CRAFT_FONTS_DIR`) as the last fallbacks
+/// Append the Japanese extra-fonts (empty unless built with `CFA4_FONTS_DIR`) as the last fallbacks
 /// of every font family, after the app's own fonts: BIZ UDPGothic first (bold before regular in
 /// the "semibold" and "medium" families), then the other Japanese faces.
-fn add_craft_fonts(fonts: &mut FontDefinitions) {
-    let jpan: Vec<_> = filmcraft_text::fonts::craft_japanese().collect();
+fn add_extra_fonts(fonts: &mut FontDefinitions) {
+    let jpan: Vec<_> = cfa4_text::fonts::extra_japanese().collect();
     for f in &jpan {
-        fonts.font_data.insert(craft_font_name(f), Arc::new(FontData::from_static(f.bytes)));
+        fonts.font_data.insert(extra_font_name(f), Arc::new(FontData::from_static(f.bytes)));
     }
     for (family, stack) in fonts.families.iter_mut() {
         let heavy = matches!(family, FontFamily::Name(n) if matches!(n.as_ref(), "semibold" | "medium"));
         let mut order = jpan.clone();
         order.sort_by_key(|f| (!f.family.contains("Gothic"), (f.style == "Bold") != heavy));
-        stack.extend(order.iter().map(|f| craft_font_name(f)));
+        stack.extend(order.iter().map(|f| extra_font_name(f)));
     }
 }
 
 pub fn apply_visuals(ctx: &egui::Context, t: &Tokens) {
     let light = t.kind == ThemeKind::Light;
-    // FilmCraft decides between light and dark itself (Settings ▸ Appearance ▸ Appearance Mode), so
+    // CFA4 decides between light and dark itself (Settings ▸ Appearance ▸ Appearance Mode), so
     // egui must not switch to its other built-in style when the system appearance changes.
     ctx.set_theme(if light { egui::Theme::Light } else { egui::Theme::Dark });
     let mut v = if light { Visuals::light() } else { Visuals::dark() };
@@ -583,7 +583,7 @@ mod tests {
 
     #[test]
     fn the_default_highlight_leaves_the_theme_blues_as_designed() {
-        let default = filmcraft_engine::settings::parse_hex(filmcraft_engine::settings::DEFAULT_HIGHLIGHT);
+        let default = cfa4_engine::settings::parse_hex(cfa4_engine::settings::DEFAULT_HIGHLIGHT);
         for k in [ThemeKind::Dark, ThemeKind::Medium, ThemeKind::Light] {
             assert_eq!(highlight_blues(&Tokens::for_kind(k).with_appearance(default, false)), highlight_blues(&Tokens::for_kind(k)), "{k:?}");
         }
@@ -607,12 +607,12 @@ mod tests {
     #[test]
     fn chinese_names_render_in_every_theme_and_font_family() {
         const CHINESE: &str = "中文旁白音乐声轨测试简体汉语繁體漢語车";
-        filmcraft_text::fonts::scan_system();
-        let available = filmcraft_text::fonts::all_faces()
+        cfa4_text::fonts::scan_system();
+        let available = cfa4_text::fonts::all_faces()
             .iter()
-            .any(|f| matches!(f.info.origin, "system" | filmcraft_text::fonts::CRAFT_ORIGIN) && CHINESE.chars().all(|c| f.has_char(c)));
+            .any(|f| matches!(f.info.origin, "system" | cfa4_text::fonts::EXTRA_FONTS_ORIGIN) && CHINESE.chars().all(|c| f.has_char(c)));
         if !available {
-            eprintln!("SKIPPED: no craft-fonts or installed Chinese font");
+            eprintln!("SKIPPED: no extra-fonts or installed Chinese font");
             return;
         }
         let ctx = egui::Context::default();
@@ -637,12 +637,12 @@ mod tests {
         ctx.run_ui(egui::RawInput::default(), |_| {}).textures_delta.clear();
     }
 
-    /// Typed, pasted or IME-composed Hangul draws real glyphs, not the missing-glyph box (artcraft#2093).
+    /// Typed, pasted or IME-composed Hangul draws real glyphs, not the missing-glyph box (upstream #2093).
     #[test]
     fn korean_text_renders_with_an_installed_korean_font() {
         const KOREAN: &str = "한국어 입력 테스트";
-        filmcraft_text::fonts::scan_system();
-        let available = filmcraft_text::fonts::all_faces().iter().any(|f| f.info.origin == "system" && KOREAN.chars().all(|c| f.has_char(c)));
+        cfa4_text::fonts::scan_system();
+        let available = cfa4_text::fonts::all_faces().iter().any(|f| f.info.origin == "system" && KOREAN.chars().all(|c| f.has_char(c)));
         if !available {
             eprintln!("SKIPPED: no installed Korean font");
             return;
@@ -664,24 +664,24 @@ mod tests {
         ctx.run_ui(egui::RawInput::default(), |_| {}).textures_delta.clear();
     }
 
-    /// Built with craft-fonts: every font family ends with the Japanese faces (BIZ UDPGothic
+    /// Built with extra-fonts: every font family ends with the Japanese faces (BIZ UDPGothic
     /// first), and Japanese text gets real glyphs, not the replacement box.
     #[test]
-    fn japanese_renders_with_craft_fonts() {
-        if filmcraft_text::fonts::craft_japanese().next().is_none() {
-            eprintln!("SKIPPED: built without craft-fonts (set CRAFT_FONTS_DIR to run)");
+    fn japanese_renders_with_extra_fonts() {
+        if cfa4_text::fonts::extra_japanese().next().is_none() {
+            eprintln!("SKIPPED: built without extra-fonts (set CFA4_FONTS_DIR to run)");
             return;
         }
         let ctx = installed();
         ctx.fonts_mut(|fonts| {
             let defs = fonts.definitions().clone();
             for (family, stack) in &defs.families {
-                // installed right-to-left faces (Hebrew is not in craft-fonts) come after the craft run
+                // installed right-to-left faces (Hebrew is not in extra-fonts) come after the extra run
                 let stack: Vec<&String> = stack.iter().filter(|n| !crate::rtl::is_system_face(n)).collect();
-                let first = stack.iter().position(|n| n.starts_with("craft:")).unwrap_or(stack.len());
-                assert!(first > 0 && stack[first..].iter().all(|n| n.starts_with("craft:")), "{family:?}: {stack:?}");
-                let first_japanese = stack.iter().find(|n| n.starts_with("craft:BIZ") || n.starts_with("craft:Shippori"));
-                assert!(first_japanese.is_some_and(|n| n.starts_with("craft:BIZ UDPGothic")), "{family:?}: {stack:?}");
+                let first = stack.iter().position(|n| n.starts_with("extra:")).unwrap_or(stack.len());
+                assert!(first > 0 && stack[first..].iter().all(|n| n.starts_with("extra:")), "{family:?}: {stack:?}");
+                let first_japanese = stack.iter().find(|n| n.starts_with("extra:BIZ") || n.starts_with("extra:Shippori"));
+                assert!(first_japanese.is_some_and(|n| n.starts_with("extra:BIZ UDPGothic")), "{family:?}: {stack:?}");
             }
             for family in [FontFamily::Proportional, FontFamily::Monospace] {
                 let font = FontId::new(13.0, family);
@@ -697,19 +697,19 @@ mod tests {
         assert!(galley.size().x > 13.0 * 4.0, "{:?}", galley.size());
     }
 
-    /// Latin text keeps its UI faces, with or without craft-fonts and system Chinese fonts.
+    /// Latin text keeps its UI faces, with or without extra-fonts and system Chinese fonts.
     #[test]
-    fn works_without_craft_fonts() {
+    fn works_without_extra_fonts() {
         let ctx = installed();
-        let n = filmcraft_text::fonts::craft_japanese().count() + crate::cjk::craft_fonts().count() + crate::rtl::craft_fonts().count();
+        let n = cfa4_text::fonts::extra_japanese().count() + crate::cjk::extra_fonts().count() + crate::rtl::extra_fonts().count();
         ctx.fonts_mut(|fonts| {
             let defs = fonts.definitions().clone();
-            assert_eq!(defs.font_data.keys().filter(|k| k.starts_with("craft:")).count(), n);
+            assert_eq!(defs.font_data.keys().filter(|k| k.starts_with("extra:")).count(), n);
             assert_eq!(defs.families[&FontFamily::Proportional].first().map(String::as_str), Some("inter"));
             assert_eq!(defs.families[&FontFamily::Monospace].first().map(String::as_str), Some("jbmono"));
             assert!(fonts.has_glyph(&FontId::new(13.0, FontFamily::Proportional), 'A'));
             if n == 0 {
-                assert!(defs.families.values().flatten().all(|name| !name.starts_with("craft:")));
+                assert!(defs.families.values().flatten().all(|name| !name.starts_with("extra:")));
             }
         });
     }

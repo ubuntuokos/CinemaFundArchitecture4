@@ -14,8 +14,10 @@ amely több önálló média-program képességeit egyesíti: videóvágás, kon
 feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és grafika,
 **helyben futó MI-funkciókkal** kiegészítve.
 
-Kiindulópontja a FilmCraft 0.10.0 (MIT OR Apache-2.0) nemlineáris videóvágó, amelynek Rust
-médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejlődik.
+Kiindulópontja egy nyílt forráskódú (MIT OR Apache-2.0) nemlineáris videóvágó 0.10.0-s
+változata, amelynek Rust médiamotorja megmarad (az eredet és a szerzői jogi sorok: `NOTICE`).
+Az upstream csak olvasható ős; a CFA4 önállóan fejlődik, és nem használja az upstream nevét,
+logóit vagy ikonjait.
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 

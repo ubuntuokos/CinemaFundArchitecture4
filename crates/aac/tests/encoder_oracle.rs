@@ -2,8 +2,8 @@
 
 mod common;
 
+use cfa4_aac::{BitrateMode, EncoderConfig, WindowShape};
 use common::*;
-use filmcraft_aac::{BitrateMode, EncoderConfig, WindowShape};
 
 struct Case {
     name: &'static str,

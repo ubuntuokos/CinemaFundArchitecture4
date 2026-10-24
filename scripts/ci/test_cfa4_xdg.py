@@ -44,12 +44,12 @@ class XDGDesktopMetadataTests(unittest.TestCase):
 
     def test_mime_project_compatibility_and_icon(self) -> None:
         types = set(filter(None, desktop_metadata()["MimeType"].split(";")))
-        self.assertIn("application/x-filmcraft", types)
+        self.assertIn("application/x-cfa4", types)
         tree = ET.parse(PACKAGE / f"{APP}.mime.xml")
         self.assertEqual(tree.getroot().tag, MIME_NS + "mime-info")
         project = tree.find(MIME_NS + "mime-type")
         self.assertIsNotNone(project)
-        self.assertEqual(project.get("type"), "application/x-filmcraft")
+        self.assertEqual(project.get("type"), "application/x-cfa4")
         self.assertEqual(project.find(MIME_NS + "icon").get("name"), APP)
         self.assertEqual(project.find(MIME_NS + "glob").get("pattern"), "*.fcproj")
 
@@ -67,7 +67,7 @@ class XDGDesktopMetadataTests(unittest.TestCase):
         self.assertEqual(xml.find("launchable").text, f"{APP}.desktop")
         self.assertEqual(xml.find("icon").text, APP)
         self.assertEqual(xml.findtext("./provides/binary"), "cfa4")
-        self.assertEqual(xml.findtext("./provides/mediatype"), "application/x-filmcraft")
+        self.assertEqual(xml.findtext("./provides/mediatype"), "application/x-cfa4")
         desc = xml.find("./description/p")
         self.assertIsNotNone(desc)
         paragraph = " ".join("".join(desc.itertext()).split())

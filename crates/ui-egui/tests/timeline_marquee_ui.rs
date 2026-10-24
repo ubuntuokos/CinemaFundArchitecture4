@@ -3,15 +3,15 @@
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_project::ClipId;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_project::ClipId;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
     modifiers: egui::Modifiers,
 }
@@ -21,7 +21,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = Cfa4App::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx, modifiers: egui::Modifiers::NONE };
         d.frames(4);
