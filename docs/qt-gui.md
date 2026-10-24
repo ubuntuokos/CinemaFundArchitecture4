@@ -7,13 +7,23 @@ Point-by-point parity with egui (the condition for deleting egui): [`qt-parity.m
 
 ## Running it
 
+Until the Qt GUI is merged into `main`, it lives on the `cfa4/qt6-gui` branch: switch to it
+first, or the engine you build has no `serve` command and there is no `cfa4-qt`.
+
+Ubuntu 26.04 does not let `pip` install into the system Python (PEP 668,
+"externally-managed-environment"), so PySide6 goes into a virtual environment in the checkout:
+
 ```sh
-cargo build --release -p filmcraft-cli          # the engine
-python -m pip install -e '.[qt]'               # PySide6
-cfa4-qt                                         # or: python -m cfa4_qt
-cfa4-qt project.fcproj                          # open a project
-cfa4-qt --demo --lang hu                        # demo project, Hungarian UI
+git switch cfa4/qt6-gui                         # not needed once it is merged into main
+cargo build --release -p filmcraft-cli          # the engine (must include `serve`)
+sudo apt install python3-venv                   # once, if `python3 -m venv` is missing
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
+.venv/bin/cfa4-qt --demo --lang hu              # demo project, Hungarian UI
+.venv/bin/cfa4-qt project.fcproj                # open a project
 ```
+
+`source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
 
 The engine is found as `--engine PATH`, `$CFA4_ENGINE`, `cfa4-cli` / `filmcraft-cli` on `PATH`,
 then `target/release` and `target/debug` of the checkout. `--smoke [--screenshot out.png]`

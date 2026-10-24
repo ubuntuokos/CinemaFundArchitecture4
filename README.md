@@ -20,7 +20,7 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 6. Install developer tools: `.venv/bin/python -m pip install -e '.[dev,qt]'`.
 7. Check environment: `.venv/bin/cfa4-doctor --strict`.
 8. Build the Rust engine: `cargo build --release --locked -p filmcraft-cli`.
-9. Run the Qt 6 GUI: `.venv/bin/cfa4-qt` (demo: `cfa4-qt --demo --lang hu`; see [docs/qt-gui.md](docs/qt-gui.md)).
+9. Run the Qt 6 GUI: `.venv/bin/cfa4-qt` (demo: `.venv/bin/cfa4-qt --demo --lang hu`; see [docs/qt-gui.md](docs/qt-gui.md)).
 10. Verify checks: `bash scripts/dev/verify-linux.sh`.
 
 ## Architecture and transition
