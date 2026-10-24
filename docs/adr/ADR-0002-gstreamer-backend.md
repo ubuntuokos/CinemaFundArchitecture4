@@ -64,6 +64,27 @@ Pontos (accurate) kereséssel ugrik, egymást követő kérésnél csak a követ
 így lejátszáskor nem keres minden képkockánál. A nem használt adattípusokhoz `fakesink` kerül,
 mert a `playbin` automatikus kimenetei (hangkártya, kijelző) kijelző nélküli gépen összeomolhatnak.
 
+## GStreamer-verzió és frissítés (döntés, 2026-10-24)
+
+A GStreamer fejlesztői Linuxra nem adnak saját csomagtárolót, az Ubuntu LTS pedig a kiadás után
+jellemzően csak hibajavítást hoz, új főverziót nem. A 26.04 GStreamere (1.28.2) a referenciagépen
+mindent tud, ami a 2–5. lépéshez kell (Vulkan Video dekódolás, `qml6glsink`, PipeWire, V4L2).
+
+- **Most:** a rendszer GStreamerét használjuk. A kód csak azt használja, ami az aktuális LTS
+  GStreamerében megvan; ami újabb, azt futáskori felmérés (`probe()`) kapcsolja be, hiánya esetén
+  a saját Rust-motor dolgozik.
+- **Ha egy funkcióhoz újabb GStreamer kell** (legvalószínűbb a Vulkan Video kódolás): saját,
+  **elkülönített** futtatókörnyezet-csomag készül (`cfa4-gstreamer-runtime`, például
+  `/opt/cfa4/gstreamer` alá), amelyet csak a CFA4 használ, és a CFA4 saját csomagtárolójából
+  (F3 kiadási lánc) terjesztünk. A CFA4 induláskor ezt keresi, hiánya esetén a rendszer
+  GStreamerére, majd a saját motorra esik vissza. Ugyanezt a fordítást az AppImage is beépítheti;
+  a Flatpak a futtatókörnyezete saját, évente frissülő GStreamerét használja.
+  - Csak a szükséges bővítmények kerülnek bele; az `ugly` és a `libav` kimarad (fent, 7. pont).
+  - LGPL: a bináris mellé a forrás is elérhető.
+- **Nem készül** olyan tároló, amely a rendszer GStreamerét cseréli le (az a GNOME-ot, a
+  lejátszókat, a böngészőket és a PipeWire-t is érintené), és harmadik féltől származó ilyen PPA-t
+  sem ajánlunk.
+
 ## Viszony az ADR 0001-hez
 
 A natív VA-API és NVDEC dekóder a `crates/platform`-ban marad. A GStreamer nem helyettesíti őket,
@@ -79,7 +100,7 @@ NVIDIA GPU-n). Ha ugyanarra a feladatra mindkettő képes, mérés dönti el az 
 | 3 | Hardveres kódolás exporthoz AMD/Intel GPU-n (`vah264enc`, `vah265enc`, `vaav1enc`) a `VideoEncoder` mögött | tervezett |
 | 4 | Qt6-előnézet `qml6glsink`-kel, az ADR F8 5. lépéséhez igazítva | tervezett |
 | 5 | Felvétel: PipeWire (képernyő, hang) és V4L2 (kamera, rögzítőkártya) | tervezett |
-| 6 | Csomagolás: `.deb` függőségek, AppImage-be csomagolás, Flatpak-futtatókörnyezet. **Döntés (2026-10-24): a kiadott csomag GStreamer nélkül fordul**; a `gstreamer` funkció fejlesztői és kísérleti buildekre marad | tervezett |
+| 6 | Csomagolás: `.deb` függőségek, AppImage-be csomagolás, Flatpak-futtatókörnyezet. **Döntés (2026-10-24): a kiadott csomag GStreamer nélkül fordul**; a `gstreamer` funkció fejlesztői és kísérleti buildekre marad. A GStreamer-verzió kérdése: lásd lent, „GStreamer-verzió és frissítés” | tervezett |
 
 Minden lépés külön PR, tesztekkel, és csak akkor kerül be az alkalmazásba, ha a saját motor
 tartalékként megmarad.
