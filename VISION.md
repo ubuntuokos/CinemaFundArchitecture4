@@ -22,7 +22,10 @@ médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejl
 1. **Qt6-felület az első prioritás.** A célfelület Qt6 (Qt6 Widgets + PySide6). A meglévő Rust
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
-   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
+   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat **pontról pontra**
+   nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
+   befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
+   (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
