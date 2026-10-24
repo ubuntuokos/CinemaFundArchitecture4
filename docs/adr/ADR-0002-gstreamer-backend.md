@@ -25,7 +25,8 @@ Qt6/QML videókimenete is.
 ## Döntés
 
 A GStreamer a **másodlagos médiaháttér** ([ADR 0004](ADR-0004-ffmpeg9-primary-backend.md)).
-Sorrend: **FFmpeg 9** (elsődleges) → **GStreamer** (másodlagos) → **saját Rust-kodekek** (tartalék).
+Alapsorrend: **FFmpeg 9** (elsődleges) → **GStreamer** (másodlagos) → **saját Rust-kodekek** (tartalék);
+a feladatonkénti kivételeket az ADR 0004 útválasztási táblája rögzíti (pl. felvételnél a GStreamer az első).
 A Rust-motor marad a projekt, az idővonal, a render és az export vezérlője (ADR F8).
 
 1. **Az FFmpeg 9 az elsődleges.** A GStreamer ott lép be, ahol az FFmpeg 9 nem tud valamit,

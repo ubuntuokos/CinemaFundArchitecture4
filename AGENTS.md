@@ -32,6 +32,10 @@ attribution and original copyright/licence requirements remain in force.
   primary media backend (planned optional crate `cfa4-ffmpeg`; GPL-3 build only: `--enable-gpl
   --enable-version3`, never `--enable-nonfree`; dynamically linked, no copied FFmpeg source),
   **GStreamer** the secondary, and our own Rust codecs/containers the always-available fallback.
+  This is the default order; ADR 0004's per-task routing table sets exceptions (timeline playback of
+  formats our engine handles bit-exactly starts with our engine). New capabilities call only the
+  engine's `MediaSource` / `VideoEncoder` / filter interfaces through the router, never a backend
+  directly; a row's order changes only with tests and on-machine measurement.
   The Rust engine still owns project, timeline, render and export control (ADR F8).
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is the optional secondary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically

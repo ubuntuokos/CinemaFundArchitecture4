@@ -31,7 +31,8 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
    Médiaháttér-sorrend: az **FFmpeg 9** az elsődleges (konténerek, kodekek, szűrők, hardveres
    gyorsítás), a **GStreamer** a másodlagos (amit az FFmpeg 9 nem tud, pl. felvétel, Qt6-előnézet),
-   a saját Rust-kodekek mindig tartalékok. Részletek: `docs/adr/ADR-0004-ffmpeg9-primary-backend.md`
+   a saját Rust-kodekek mindig tartalékok. Ez az alapsorrend; feladatonként egy útválasztási tábla
+   rögzíti a kivételeket (pl. az igazolt formátumok idővonal-lejátszása a saját motorral kezd). Részletek: `docs/adr/ADR-0004-ffmpeg9-primary-backend.md`
    és `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
