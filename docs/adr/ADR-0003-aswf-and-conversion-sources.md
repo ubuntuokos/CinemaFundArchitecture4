@@ -93,11 +93,27 @@ nélkülözhetetlen, a CFA4 **saját kóddal valósítja meg**.
 - Külön folyamatként futó, dokumentált felületen kommunikáló fizetős CFA4-többletfunkciók
   (`docs/licensing.md` §4) ettől függetlenül lehetségesek.
 
-## 5. Nyitott kérdés a tulajdonosnak
+## 5. Döntés: hardveres kódolás gyártónként
 
-1. **NVENC.** Futáskor zárt NVIDIA-binárist igényel. Ez nem bővítmény, hanem hardveres
-   meghajtó-felület. Javaslat: opcionális, futáskor betöltött modul maradjon, mindig
-   gyártófüggetlen párral (ADR 0002, AGENTS.md); a GPL-3 alatti helyzetét jogilag át kell nézetni.
+**A tulajdonos döntése (2026-10-24):** az NVENC az NVIDIA-út; AMD, Intel és más GPU-k mást
+igényelnek. Ezért minden gyártónak saját útja van, közös felület mögött:
+
+| GPU | Hardveres kódolás útja | Megjegyzés |
+|---|---|---|
+| NVIDIA | NVENC (`crates/platform`, ma is megvan) | a meghajtó zárt könyvtárát futáskor tölti be; opcionális |
+| AMD | VA-API (Mesa `radeonsi`), GStreamer `va*enc` elemekkel (ADR 0002 3. lépés) | nyílt meghajtó; az AMD AMF nem kell, mert zárt futtatókörnyezetet igényel |
+| Intel | VA-API (`iHD` meghajtó), ugyanígy | a oneVPL/Quick Sync csak akkor, ha a VA-API mérhetően kevés |
+| bármely Vulkan-képes GPU | Vulkan Video (GStreamer `vulkan*enc`, ahol a meghajtó tudja) | gyártófüggetlen jövőbeli út |
+| nincs GPU vagy hiba | a saját szoftveres kódolók (pl. `crates/h264enc`) | mindig elérhető tartalék |
+
+- Mind ugyanazon kódolófelület (`filmcraft_export::VideoEncoder`) mögött van, a választást a futásidejű felmérés
+  (a GStreamer `probe()`-ja és a #39 gyorsítási terve) és mérés dönti el, nem fordítási idő.
+- Egy funkció sem lehet csak NVIDIA-n elérhető (AGENTS.md, ADR 0002): ha egy képesség NVENC-cel
+  megvan, a VA-API-s és a szoftveres útnak is meg kell lennie.
+- Az NPU-k a helyi MI-hez valók (VISION.md 5. pont), a videókódoláshoz nem.
+- Az NVENC GPL-3 alatti helyzetét (zárt meghajtó-könyvtár futáskori betöltése) a kiadás előtt
+  jogilag át kell nézetni; ha gond van vele, az NVIDIA-gépek a szoftveres kódolót használják
+  (a nyílt meghajtós VA-API NVIDIA-n csak dekódolni tud).
 
 ## 6. Következmények
 
