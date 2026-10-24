@@ -488,5 +488,5 @@ fn about_tab(app: &mut FilmcraftApp, ui: &mut egui::Ui) {
     ui.add_space(6.0);
     link(ui, "reportIssue", Icon::Code, "Report a CFA4 issue", links::ISSUES, false);
     ui.add_space(10.0);
-    ui.label(egui::RichText::new(tl!("MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).")).small().color(t.text_dim));
+    ui.label(egui::RichText::new(tl!("GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).")).small().color(t.text_dim));
 }
