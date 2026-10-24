@@ -53,7 +53,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 3.6 | Markers | ❌ | markers drawn on the ruler only |
 | 3.7 | History | 🟡 | list shown; click-to-step missing |
 | 3.8 | Source monitor | 🟡 | picture and sound of the opened clip from the engine (`target: "source"`), time bar with In/Out, step/start/end, Mark In/Out, Insert/Overwrite; keys with a `target` follow the focused monitor (`test_real_engine_source_monitor`); drag to the timeline, zoom, safe margins, J/K/L, audio-only waveform view, recent-clips menu missing |
-| 3.9 | Effect Controls (keyframes, masks, transform handles) | ❌ | Inspector shows effects read-only and can remove one |
+| 3.9 | Effect Controls (keyframes, masks, transform handles) | 🟡 | panel next to Source: every effect of the selected clip with on/off, reset, remove; number, angle, point, checkbox, choice, colour and text parameters editable (a drag is one undo step); stopwatch, keyframe add/remove/previous/next, keyframe strip with click-to-go and interpolation menu; values at the playhead from the engine (`effects.inspect`; `test_real_engine_effect_controls`, engine `effects_inspect_tests`); curves/wheels/masks, value graphs, Bézier handles, keyframe dragging and copy/paste, on-monitor transform handles missing |
 | 3.10 | Audio Clip Mixer | ❌ | |
 | 3.11 | Metadata | ❌ | |
 | 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode, time bar with In/Out, Mark In/Out; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |

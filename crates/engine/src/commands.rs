@@ -3013,6 +3013,7 @@ fn build() -> Vec<CommandSpec> {
             run: select_effect,
             journal: false,
         },
+        query!("effects.inspect", "Inspect Clip Effects", r#"{"clip":id? (default: the first selected clip)}"#, |s, p| inspect_effects(s, p)),
         cmd!(
             "effects.setParam",
             "Set Effect Parameter",
@@ -3889,6 +3890,131 @@ fn list_effects(p: &Value) -> Value {
         })
         .collect();
     Value::Array(out)
+}
+
+/// A parameter value as the JSON `effects.setParam` takes back: numbers, `[x, y]` points (an
+/// automatic coordinate is `null`), `[r, g, b, a]` colours, booleans, choice indexes, text, curves.
+fn param_value_json(v: &ParamValue) -> Value {
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    match v {
+        ParamValue::Float(x) => num(*x),
+        ParamValue::Vec2(p) => json!([num(p.x), num(p.y)]),
+        ParamValue::Color(c) => json!(c),
+        ParamValue::Bool(b) => json!(b),
+        ParamValue::Choice(i) => json!(i),
+        ParamValue::Text(t) => json!(t),
+        ParamValue::Curve(c) => json!(c),
+        ParamValue::Path(_) => serde_json::to_value(v).unwrap_or_default(),
+    }
+}
+
+/// The interpolation name `effects.setInterpolation` takes.
+fn interpolation_id(i: filmcraft_project::Interpolation) -> &'static str {
+    use filmcraft_project::Interpolation as I;
+    match i {
+        I::Linear => "linear",
+        I::Hold => "hold",
+        I::Bezier => "bezier",
+        I::AutoBezier => "autoBezier",
+        I::ContinuousBezier => "continuousBezier",
+        I::EaseIn => "easeIn",
+        I::EaseOut => "easeOut",
+    }
+}
+
+/// Timeline time at which `it` shows media time `m` (the inverse of `moving_source_time_at`),
+/// for drawing keyframes; `None` for a frame hold or a zero speed.
+pub(crate) fn timeline_time_of(it: &filmcraft_project::TrackItem, m: Tick) -> Option<Tick> {
+    let speed = it.speed.abs();
+    if it.frame_hold.is_some() || !speed.is_finite() || speed <= 0.0 {
+        return None;
+    }
+    let rel = if it.reverse {
+        let last = it.source_in.0 as f64 + (it.duration.0 as f64 * speed).round() - 1.0;
+        (last - m.0 as f64) / speed
+    } else {
+        m.0.saturating_sub(it.source_in.0) as f64 / speed
+    };
+    let t = it.start.0 as f64 + rel.round();
+    (t.is_finite() && t.abs() < i64::MAX as f64).then_some(Tick(t as i64))
+}
+
+/// `effects.inspect`: a clip's effects with their parameter definitions, static values, the value
+/// at the playhead and the keyframes, in the shapes `effects.setParam` / `effects.setKeyframe` take.
+fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let c = match clip_p(p, "clip") {
+        Some(c) => c,
+        None => *s.state.selection.first().ok_or_else(|| bad("effects.inspect", "no clip selected"))?,
+    };
+    let (_, it) = q.find_item(c).ok_or_else(|| bad("effects.inspect", "no such clip in the active sequence"))?;
+    let ph = s.playhead();
+    let inside = ph >= it.start && ph < it.end();
+    let at = it.effect_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
+    let effects: Vec<Value> = it
+        .effects
+        .iter()
+        .enumerate()
+        .map(|(index, e)| {
+            let def = e.def();
+            let params: Vec<Value> = def
+                .map(|d| {
+                    d.params
+                        .iter()
+                        .map(|pd| {
+                            let mut j = param_info(pd);
+                            let fallback;
+                            let prm = match e.params.get(pd.id) {
+                                Some(prm) => prm,
+                                None => {
+                                    fallback = filmcraft_project::Param::new(pd.default.clone());
+                                    &fallback
+                                }
+                            };
+                            j["value"] = param_value_json(&prm.value);
+                            j["valueAtPlayhead"] = param_value_json(&prm.value_at(at));
+                            j["animated"] = json!(prm.is_animated());
+                            j["keyframes"] = Value::Array(
+                                prm.keyframes
+                                    .iter()
+                                    .map(|k| {
+                                        json!({
+                                            "mediaTime": k.time.0,
+                                            "time": timeline_time_of(it, k.time).map(|t| t.0),
+                                            "value": param_value_json(&k.value),
+                                            "interpolation": interpolation_id(k.interp),
+                                        })
+                                    })
+                                    .collect(),
+                            );
+                            j
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            json!({
+                "index": index,
+                "effect": e.effect,
+                "name": def.map(|d| d.name).unwrap_or(e.effect.as_str()),
+                "enabled": e.enabled,
+                "masks": e.masks.len(),
+                "params": params,
+            })
+        })
+        .collect();
+    Ok(json!({
+        "clip": c.0,
+        "name": it.name,
+        "start": it.start.0,
+        "end": it.end().0,
+        "sourceIn": it.source_in.0,
+        "speed": it.speed,
+        "reverse": it.reverse,
+        "playhead": ph.0,
+        "playheadInside": inside,
+        "mediaTimeAtPlayhead": at.0,
+        "effects": effects,
+    }))
 }
 
 fn param_info(p: &filmcraft_project::ParamDef) -> Value {

@@ -118,6 +118,7 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 | File | Role |
 |---|---|
 | `apps/filmcraft-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
+| `python/cfa4_qt/panels/effect_controls.py` | Effect Controls: parameters, stopwatch, keyframes (`effects.inspect` + `effects.*` commands) |
 | `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
