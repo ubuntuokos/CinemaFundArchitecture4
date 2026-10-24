@@ -45,7 +45,7 @@ Három módon kerülhet be egy ASWF-projekt, ebben a sorrendben:
 | OpenColorIO + OpenColorIO-Config-ACES | BSD-3 | orákulum a `crates/color`-hoz (ΔE-mérés), majd az **első beépítés** (`crates/ocio`, külön ADR) | orákulum most; beépítés az ADR F8 5. lépésénél (előnézet, GPU) |
 | OpenImageIO | Apache-2.0 | beépítés a hiányzó formátumokra (PSD, HEIF, JPEG 2000, kamera-RAW, `docs/gaps.md` G10); a saját függőségei (pl. LibRaw, libheif) egyenként ellenőrizendők | a Qt6-idővonal után |
 | OpenEXR + Imath | BSD-3 | beépítés a hiányzó PIZ/DWA/B44, többrészes és mély EXR-re | az OpenImageIO-val együtt |
-| OpenFX | BSD-3 | plugin-host (G11), lásd a 4. pontot | a Qt6-idővonal után |
+| OpenFX | BSD-3 | plugin-host (G11), csak GPL-3-kompatibilis effektekhez (4. pont) | a Qt6-idővonal után |
 | xSTUDIO | Apache-2.0 | lejátszó/átnéző részek modulonként (Qt/C++) | igény szerint |
 | OpenRV | Apache-2.0, egyes komponensei eltérnek (`Notice.txt`) | csak komponensenkénti licencellenőrzés után | igény szerint |
 | MaterialX, OpenShadingLanguage, OpenVDB, openqmc | BSD-3 / Apache-2.0 | 3D/VFX-szakasz | később |
@@ -74,18 +74,32 @@ GPL-3-as builddel (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
 Az Avidemux csak a licencének tisztázása után jöhet szóba: a tárolójának licencfájlja GPL v2-t ír,
 más források GPL-2.0-or-later-t.
 
-## 4. Nyitott kérdések a tulajdonosnak
+## 4. Döntés: zárt bővítmények
 
-1. **Zárt OFX-effektek.** A `docs/licensing.md` §4 (#37) szerint zárt bővítmény nem töltődhet be
-   a CFA4 folyamatába. Ennek a következménye: az OpenFX-host csak GPL-3-mal kompatibilis
-   effekteket tölthet be, a kereskedelmi OFX-csomagokat (pl. a Resolve-hoz árultakat) nem.
-   Ha ezeket is engedni kell, a GPL-3 7. pontja szerinti plugin-kivételt az első külső GPL-kód
-   beemelése **előtt** kell felvenni, mert utána már nem lehet. Kérdés: maradjon a #37 szabálya?
-2. **NVENC.** Futáskor zárt NVIDIA-binárist igényel. Javaslat: opcionális, futáskor betöltött modul
-   maradjon, mindig gyártófüggetlen párral (ADR 0002, AGENTS.md); a GPL-3 alatti helyzetét jogilag
-   át kell nézetni.
+**A tulajdonos döntése (2026-10-24):** a CFA4 nem tölt be zárt bővítményt, és nem kap GPL-3
+plugin-kivételt. Ehelyett minden olyan zárt bővítmény képességét, amely hasznos és
+nélkülözhetetlen, a CFA4 **saját kóddal valósítja meg**.
 
-## 5. Következmények
+- Ez megerősíti a `docs/licensing.md` §4 (#37) szabályát: zárt bővítmény nem töltődhet be a CFA4
+  folyamatába. Az OpenFX-host (G11) így csak GPL-3-mal kompatibilis effekteket tölt be.
+- A megvalósítás a meglévő szabályok szerint történik: a zárt bővítmény kódját, ikonjait,
+  előbeállításait, LUT-jait és egyéb eszközeit nem vesszük át; a viselkedést nyilvános
+  dokumentációból és megfigyelésből építjük újra, ahol lehet, GPL-3-mal kompatibilis nyílt kódra
+  támaszkodva.
+- Melyik bővítmény „hasznos és nélkülözhetetlen”: erről a tulajdonos dönt. A jelöltek listája a
+  `docs/gaps.md`-be kerül (G11 plugin-hosting, G12 MI, G18 effektmélység), bővítményenként a
+  pótolandó képességgel, a nyílt alapként használható projektekkel és a mérési móddal
+  (VISION.md 2. pont: bizonyíték, nem állítás).
+- Külön folyamatként futó, dokumentált felületen kommunikáló fizetős CFA4-többletfunkciók
+  (`docs/licensing.md` §4) ettől függetlenül lehetségesek.
+
+## 5. Nyitott kérdés a tulajdonosnak
+
+1. **NVENC.** Futáskor zárt NVIDIA-binárist igényel. Ez nem bővítmény, hanem hardveres
+   meghajtó-felület. Javaslat: opcionális, futáskor betöltött modul maradjon, mindig
+   gyártófüggetlen párral (ADR 0002, AGENTS.md); a GPL-3 alatti helyzetét jogilag át kell nézetni.
+
+## 6. Következmények
 
 - A tesztorákulumok a `python/cfa4_devtools` alá vagy a Rust-tesztekbe kerülnek, és ahogy az
   ffmpeg-orákulumok, hiányzó eszköz esetén kihagyódnak; a teljes CI-ben csak kézi indításra
