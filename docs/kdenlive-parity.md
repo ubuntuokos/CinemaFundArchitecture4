@@ -150,7 +150,7 @@ szinte egyik sem érhető el. A Qt6-paritás külön követendő.
 | Alfa export | ✅ | ProRes 4444, PNG-sorozat |
 | Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. Elsődlegesen FFmpeg 9 `*_vaapi` ([ADR 0004](adr/ADR-0004-ffmpeg9-primary-backend.md), #53), másodlagosan GStreamer `va*enc` (ADR 0002 3. lépés), gyártófüggetlen terv (#39) |
 | Szoftveres HEVC, jobb H.264, MP3 export | ❌ | x265, x264, LAME: ADR 0003 A5, előtte szabadalmi vizsgálat |
-| Széles formátumlefedettség | 🟡 | Médiaháttér-sorrend: FFmpeg 9 elsődleges (ADR 0004, #53, tervezett `cfa4-ffmpeg`), GStreamer másodlagos (`crates/gstreamer`, #40), saját Rust-kodekek tartalék. A kiadott csomagok GStreamer nélkül épülnek; az FFmpeg 9 szállítása nyitott döntés |
+| Széles formátumlefedettség | 🟡 | Médiaháttér-alapsorrend: FFmpeg 9 elsődleges (ADR 0004, #53, tervezett `cfa4-ffmpeg`), GStreamer másodlagos (`crates/gstreamer`, #40), saját Rust-kodekek tartalék; feladatonkénti útválasztási táblával (az igazolt formátumok idővonal-lejátszása a saját motorral kezd). A kiadott csomagok GStreamer nélkül épülnek; az FFmpeg 9 szállítása nyitott döntés |
 
 ## 8. Platform és felület
 
@@ -212,4 +212,4 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 |---|---|---|
 | 2026-10-24 | major | Első változat (MIT/Apache-feltételezéssel) |
 | 2026-10-24 | major | 2. változat: GPL-3.0-or-later (Kdenlive-kód átvehető), Qt6/PySide6-felület, GStreamer, gyártófüggetlen gyorsítás, Linux AMD64-only, márkaeltávolítás; rangsor az ADR F8 és ADR 0003 lépéseihez kötve |
-| 2026-10-24 | minor | Médiaháttér-sorrend az ADR 0004 szerint (#53): FFmpeg 9 elsődleges, GStreamer másodlagos |
+| 2026-10-24 | minor | Médiaháttér-sorrend az ADR 0004 szerint (#53): FFmpeg 9 elsődleges, GStreamer másodlagos, feladatonkénti útválasztással |
