@@ -131,7 +131,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use crate::{AudioStreamInfo, FrameRequest, MediaInfo, MediaKind, MediaSource, OfflineSource, VideoStreamInfo};
+    use crate::{AudioStreamInfo, FrameRequest, MediaInfo, MediaKind, OfflineSource, VideoStreamInfo};
 
     // The registry is process-wide, so every test here registers the same fallback and only
     // checks behaviour that holds once it is registered.
