@@ -14,8 +14,9 @@
   Ezeknek a képességét saját kóddal vagy külső programként hívva kell megvalósítani.
 - **Fizetős rész:** a CFA4 alapprogram ingyenes és szabadon terjeszthető. Fizetős lehet a
   hosszabb támogatás (LTS-ágak, frissítések), a kész csomagok és a szolgáltatások, a nem kód
-  jellegű tartalmak, valamint a **külön folyamatként** futó extra modulok. A CFA4 folyamatába
-  betöltődő zárt bővítmény nem megengedett.
+  jellegű tartalmak, valamint a **GPL-3.0-or-later licencű fizetős kiegészítők** (a tulajdonos
+  döntése, 2026-10-24): eladhatók, de a vevő a forrással együtt továbbadhatja őket. Zárt (nem GPL)
+  kódmodul – sem a CFA4 folyamatába betöltődő, sem külön folyamatként futó – nem készül.
 
 *Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kereskedelmi kiadás előtt érdemes
 jogásszal átnézetni.*
@@ -93,20 +94,19 @@ GPL. Revenue comes from things that are compatible with that:
    Ubuntu releases, direct help. The code of any released LTS build is still GPL and its source is
    provided to its recipients.
 2. **Convenience:** signed, ready-made packages (deb, Snap, Flatpak) with automatic updates.
-3. **Separate-process extras:** proprietary modules may exist only as **independent programs**
-   that run in their own process and talk to CFA4 through a documented, generic interface (the
-   control channel, a local network/IPC protocol, command line, files). Rules:
-   - they do not link to CFA4 crates or Python modules and are not loaded into the CFA4 process;
-   - they contain no CFA4 or other GPL code;
-   - CFA4 works fully without them (no artificially crippled core);
-   - the interface is documented and usable by free alternatives too.
+3. **Paid extras are GPL too** (owner decision, 2026-10-24): extra features sold on top of the
+   free core are licensed `GPL-3.0-or-later`, like the core. They may be loaded into the CFA4
+   process or run separately; buyers receive the source and may redistribute it. Rules:
+   - every distributed binary comes with its corresponding source (GPL-3.0 §6): a source archive or
+     a link to the exact source version, built into the release chain before the release hold is
+     lifted;
+   - CFA4 works fully without them (no artificially crippled core).
 4. **Content and services:** templates, effect presets, AI models, sample media, cloud or hosted
    processing. Non-code content can carry its own (also paid) licence.
 
-**Not allowed:** proprietary plug-ins loaded into the CFA4 process (dynamic libraries, Rust
-crates, Python modules). Such a plug-in forms a combined work with the GPL core and would have to
-be GPL as well. Paid extras that are GPL themselves are possible, but buyers may redistribute
-them.
+**Not part of the model:** proprietary (non-GPL) code extras of any kind, whether loaded into the
+CFA4 process (dynamic libraries, Rust crates, Python modules) or shipped as separate programs.
+Third-party proprietary plug-ins are not loaded either (ADR 0003 §4).
 
 ## 5. Reused code register
 

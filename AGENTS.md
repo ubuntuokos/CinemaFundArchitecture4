@@ -24,8 +24,8 @@ attribution and original copyright/licence requirements remain in force.
   - NEVER reuse GPL-2.0-only (e.g. HandBrake), AGPL, unlicensed or proprietary code (Adobe,
     DaVinci Resolve). Reimplement the capability or call the program as an external process.
   - Dependencies must pass `cargo deny check licenses` (`deny.toml`).
-  - Paid extras run only as separate processes over a documented interface; never add
-    proprietary plug-ins loaded into the CFA4 process (docs/licensing.md §4).
+  - Paid extras are GPL-3.0-or-later like the core (owner decision 2026-10-24); no proprietary
+    (non-GPL) code extras, in-process or separate, and no proprietary plug-ins (docs/licensing.md §4).
   - Inherited FilmCraft code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
 - A release is blocked until inherited ArtCraft marks, icons, package metadata and public
