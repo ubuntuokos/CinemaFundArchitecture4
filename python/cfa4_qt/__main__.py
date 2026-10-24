@@ -51,11 +51,17 @@ def main(argv: list[str] | None = None) -> int:
     language = args.lang or str(settings.value("language") or "") or i18n.system_language()
     i18n.TR.set_language(language)
 
-    engine_path = locate_engine(args.engine)
+    rejected: list[str] = []
+    engine_path = locate_engine(args.engine, rejected)
     if engine_path is None:
         message = i18n.tr(
             "The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p filmcraft-cli"
         )
+        if rejected:
+            message += "\n\n" + i18n.tr("Checked:") + "\n" + "\n".join(rejected)
+            message += "\n\n" + i18n.tr(
+                "An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH."
+            )
         if args.smoke:
             print(message, file=sys.stderr)
             return 1

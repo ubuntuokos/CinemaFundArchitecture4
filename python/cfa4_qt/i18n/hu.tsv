@@ -31,6 +31,7 @@
 	Align to Video Frame as Group	Igazítás a videókockához csoportként
 	All files	Minden fájl
 	Amplitude and Compression	Amplitúdó és tömörítés
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	A `serve` nélküli motor olyan ágról készült, amelyen nincs Qt-GUI: váltson a Qt-GUI ágára és fordítsa újra, vagy adja meg: --engine ÚTVONAL.
 	Animation	Animáció
 	Apply Audio Transition	Hangátmenet alkalmazása
 	Apply Default Transitions to Selection	Alapértelmezett átmenetek a kijelölésre
@@ -75,6 +76,7 @@
 	Center Horizontally	Vízszintesen középre
 	Center Vertically	Függőlegesen középre
 	Cerulean	Égszínkék
+	Checked:	Megvizsgálva:
 	Choose an output file.	Válasszon kimeneti fájlt.
 	Clear	Törlés
 	Clear Finished	Befejezettek törlése
