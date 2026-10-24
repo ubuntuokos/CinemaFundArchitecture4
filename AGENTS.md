@@ -30,7 +30,13 @@ attribution and original copyright/licence requirements remain in force.
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
 - A release is blocked until inherited ArtCraft marks, icons, package metadata and public
   branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
-- The Qt shell is a development prototype, NOT a completed migration from egui.
+- **Qt 6 GUI** (`python/cfa4_qt/`, docs: [docs/qt-gui.md](docs/qt-gui.md)) is where all new UI
+  work goes. It drives the Rust engine through `cfa4-cli serve`; it must not duplicate project
+  data or edit logic (every edit is an engine command).
+- **egui is frozen** (owner decision 2026-10-24): bug and security fixes only, no new features.
+  egui is deleted only when the Qt 6 GUI does point by point everything egui does
+  ([docs/qt-parity.md](docs/qt-parity.md) all ✅ with evidence) and the owner approves it.
+  When you add or change something in egui (a fix), update the matching parity row.
 - Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
 
 ---

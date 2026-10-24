@@ -32,6 +32,7 @@ macro_rules! out {
 
 mod args;
 mod probe;
+mod serve;
 
 use args::{Args, parse_value};
 use filmcraft_automation::BridgeClient;
@@ -96,6 +97,9 @@ SUBCOMMANDS
                                 --image-sequence <media> is the first numbered still of a sequence
   bench-decode <media> [--frames N]
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
+  serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
+                                stdin/stdout with binary frames (docs/qt-gui.md); --autosave
+                                starts auto-save and the crash-recovery journal in the data dir
   help                          this text
   --version                     print the version
 
@@ -495,6 +499,23 @@ async fn cli() {
             let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
             check_offline(&a, &offline, &format!("render: {out}"));
             diag(format_args!("rendered {}x{} in {:.1} ms → {out}", img.w, img.h, dt.as_secs_f64() * 1000.0));
+        }
+        "serve" => {
+            if let Some(opt) = a.unknown_opt(&["--project", "--demo", "--data-dir", "--autosave"]) {
+                usage(format!("unknown serve option `{opt}`"));
+            }
+            let Backend::Local(mut s) = Backend::open(&a) else { usage("serve is headless; it cannot use --bridge") };
+            if a.flag("--autosave") {
+                match a.opt("--data-dir").map(std::path::PathBuf::from).or_else(filmcraft_engine::autosave::default_data_dir) {
+                    Some(dir) => {
+                        if let Err(e) = s.start_autosave(filmcraft_engine::autosave::AutosaveConfig::new(dir)) {
+                            diag(format_args!("cfa4-cli serve: auto-save and crash recovery unavailable: {e}"));
+                        }
+                    }
+                    None => diag(format_args!("cfa4-cli serve: no data directory; auto-save is off")),
+                }
+            }
+            serve::run(*s);
         }
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
