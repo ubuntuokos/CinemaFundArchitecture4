@@ -413,7 +413,7 @@
 	Version {version}	Versione {version}
 	Source code on GitHub	Codice sorgente su GitHub
 	Report an issue	Segnala un problema
-	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT OR Apache-2.0. Font: Inter, Noto Serif e JetBrains Mono (SIL OFL 1.1).
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Font: Inter, Noto Serif e JetBrains Mono (SIL OFL 1.1).
 	just now	proprio ora
 	{n} s ago	{n} s fa
 	{n} min ago	{n} min fa
@@ -3603,3 +3603,4 @@
 	Open a sequence to search its graphics	Apri una sequenza per cercare nelle sue grafiche
 	No text graphics in this sequence. Add text with the Type tool.	Nessuna grafica con testo in questa sequenza. Aggiungi testo con lo strumento Testo.
 	No matching text.	Nessun testo corrispondente.
+	Import Credits Spreadsheet…	Importa foglio di calcolo dei titoli di coda…

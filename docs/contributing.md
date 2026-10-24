@@ -40,7 +40,7 @@ cargo xtask web --serve 8765                          # the web app on http://12
 |---|---|
 | `CFA4_CONTROL_PORT` | Same as `--control <port>` |
 | `CFA4_CPU_COMPOSITE=1` | Disables the GPU compositor |
-| `CFA4_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icon from `assets/cfa4`) so the taskbar shows the CFA4 icon. Nothing is written without it; packaged runs never write one |
+| `CFA4_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icons from `assets/app-icon`) so the taskbar shows the CFA4 icon. Nothing is written without it; packaged runs never write one |
 | `CFA4_DATA_DIR` | Same as `--data-dir <dir>`: auto-save, crash recovery, settings and logs |
 | `RUST_LOG` | Log levels for standard error and the log file (see [Logs](#logs)) |
 
@@ -270,7 +270,7 @@ In short:
 - No Adobe iconography, images, fonts, LUTs, presets or other Adobe assets, in any form, including
   traced or "inspired-by" copies.
 - Open licences only (MIT, Apache-2.0, BSD, ISC, zlib, OFL, CC0, CC BY, CC BY-SA, or your own
-  work under MIT OR Apache-2.0). No NC or ND licences. If the licence is unclear, leave the asset out.
+  work under the project licence, GPL-3.0-or-later). No NC or ND licences. If the licence is unclear, leave the asset out.
 - Screenshots show only CFA4 (or other open projects) with media we generated or that is
   openly licensed.
 
@@ -278,7 +278,7 @@ In short:
   Don't commit new font files to this repo (the Latin UI fonts already in `assets/fonts/` stay): add
   the font to extra-fonts (file, licence, manifest line, `ATTRIBUTION.md` row) and use it through
   `cfa4_text::fonts::CFA4_FONTS`. See [Building with extra-fonts](#building-with-extra-fonts)
-  and the project rules in AGENTS.md.
+  and AGENTS.md.
 
 For each asset file `X`, commit a sidecar `X.attribution`. This is the real one for
 `assets/fonts/Inter-Regular.ttf`:
@@ -294,7 +294,7 @@ added:        2026-09-30 by Claude (agent) for Brandon Thomas
 notes:        Unmodified font file, embedded in the UI via include_bytes! (crates/ui-egui/src/theme.rs).
 ```
 
-For your own work, use `source: original work` and the project licence (`MIT OR Apache-2.0`).
+For your own work, use `source: original work` and the project licence (`GPL-3.0-or-later`).
 
 Then add a row to [ATTRIBUTION.md](../ATTRIBUTION.md) with the path in backticks. `cargo xtask
 assets` checks every tracked file with a media extension (images, fonts, LUTs, audio, video, PDF,

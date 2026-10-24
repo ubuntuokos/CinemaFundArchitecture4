@@ -1387,6 +1387,27 @@ impl Cfa4App {
                     app.session.execute("graphics.newFromFile", json!({"path": path})).map_err(|e| e.to_string())
                 })
             }
+            // Graphics and Titles ▸ Import Credits Spreadsheet…: one graphic clip per page
+            "graphics.credits.import" => {
+                let styling = params.get("styling").cloned();
+                self.pick(FileDialog::open_files(&["csv", "tsv", "txt", "xlsx", "ods"]), move |app, paths| {
+                    let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                    let mut p = json!({"path": path});
+                    if let Some(st) = styling {
+                        p["styling"] = st;
+                    }
+                    let r = app.session.execute("graphics.credits.import", p).map_err(|e| e.to_string());
+                    match &r {
+                        Ok(v) => {
+                            if let Some(w) = v.get("warnings").and_then(Value::as_array).filter(|w| !w.is_empty()) {
+                                app.ui.status = w.iter().filter_map(|x| x.get("message").and_then(Value::as_str)).collect::<Vec<_>>().join("; ");
+                            }
+                        }
+                        Err(e) => app.ui.status = e.clone(),
+                    }
+                    r
+                })
+            }
             "captions.import" => self.pick(FileDialog::open_files(&["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "xml"]), |app, paths| {
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
                 app.session.execute("captions.import", json!({"path": path})).map_err(|e| e.to_string())

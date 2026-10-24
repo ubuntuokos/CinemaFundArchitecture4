@@ -1,6 +1,6 @@
 # Where CFA4 falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (new file: ROADMAP's "Where we are lacking" re-measured against Premiere Pro 26.5.2 and the open issue list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-24 · **Change:** minor (CFA4 candidates after GPL-3.0-or-later, ADR 0003) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -197,6 +197,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
   since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
+- **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
+  LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
+  through OpenImageIO; OpenEXR for PIZ / B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 120–200 h (camera RAW alone 60–100 h, and some SDKs have licences we cannot use:
   clean-room from public specs only where specs exist). Docs: [codec-parity.md](codec-parity.md),
   [file-format-parity.md](file-format-parity.md).
@@ -209,6 +212,12 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   (#325).
 - **Impact:** many professional editors depend on third-party effects and audio plug-ins.
 - **Needs:** an owner decision (FFI under the `unsafe` rule, AGENTS.md §0.3). **200–400 h.**
+- **CFA4 decision (2026-10-24, ADR 0003 §4):** no closed plug-ins are loaded and there is no GPL
+  plug-in exception; the capabilities of useful, indispensable closed plug-ins are implemented in
+  our own code. Hosts load only GPL-3-compatible plug-ins.
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): an OpenFX host loading Natron's
+  openfx-misc (GPL-2.0-or-later: keying, colour, transform and tracking, retime, deinterlace,
+  denoise, sharpen); an LV2 host on lilv (ISC); frei0r (GPL-2.0-or-later). Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 
 ## G12. AI features
 
@@ -228,6 +237,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x265 for software HEVC encode
+  (licence: GPL-2.0-or-later, to be confirmed), x264 for a higher-quality software H.264 encoder,
+  LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
 
 ## G14. Localization: 3 of the 12 key languages missing (Hindi, Arabic, Vietnamese)
@@ -298,6 +310,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   #813), from an on-monitor corner-roundness handle with a live preview (one undo step per drag;
   #844); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
+  colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
+  frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h.
 
 ## G19. Speech to text off in release builds
@@ -319,3 +334,4 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
 | 2026-10-12 | minor | G10: MP1 (`A_MPEG/L1`) in Matroska imports (#1402) |
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
+| 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |

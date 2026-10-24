@@ -418,7 +418,7 @@
 	Version {version}	Version {version}
 	Source code on GitHub	Code source sur GitHub
 	Report an issue	Signaler un problème
-	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT OR Apache-2.0. Polices : Inter, Noto Serif et JetBrains Mono (SIL OFL 1.1).
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Polices : Inter, Noto Serif et JetBrains Mono (SIL OFL 1.1).
 	just now	à l'instant
 	{n} s ago	il y a {n} s
 	{n} min ago	il y a {n} min
@@ -3579,3 +3579,4 @@
 	Open a sequence to search its graphics	Ouvrez une séquence pour rechercher dans ses graphiques
 	No text graphics in this sequence. Add text with the Type tool.	Aucun graphique avec du texte dans cette séquence. Ajoutez du texte avec l'outil Texte.
 	No matching text.	Aucun texte ne correspond.
+	Import Credits Spreadsheet…	Importer une feuille de calcul de générique…

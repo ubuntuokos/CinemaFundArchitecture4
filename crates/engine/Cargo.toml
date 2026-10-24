@@ -36,6 +36,7 @@ cfa4-mxf = { workspace = true }
 cfa4-format = { workspace = true }
 cfa4-interchange = { workspace = true }
 cfa4-captions = { workspace = true }
+cfa4-credits = { workspace = true }
 cfa4-speech = { workspace = true }
 cfa4-tts = { workspace = true }
 serde = { workspace = true }

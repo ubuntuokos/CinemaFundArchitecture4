@@ -953,6 +953,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-credits"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "roxmltree",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-dng"
 version = "0.10.0"
 dependencies = [
@@ -996,6 +1009,7 @@ dependencies = [
  "cfa4-captions",
  "cfa4-codecs",
  "cfa4-color",
+ "cfa4-credits",
  "cfa4-dng",
  "cfa4-docpath",
  "cfa4-edit",

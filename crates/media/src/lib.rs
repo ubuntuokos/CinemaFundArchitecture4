@@ -33,6 +33,8 @@ use serde::{Deserialize, Serialize};
 pub use cache::FrameCache;
 pub use generators::{DemoScene, Generator};
 pub use reader::{ByteReader, ReaderOpener, SharedReader};
+/// RFC 1950 / 1951 decompression (written for OpenEXR; also used for ZIP-packaged spreadsheets).
+pub use still::exr::inflate;
 
 #[derive(Debug, thiserror::Error)]
 pub enum MediaError {

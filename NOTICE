@@ -1,7 +1,18 @@
 CFA4 (CinemaFundArchitecture4)
-Copyright (c) 2026 the CFA4 contributors.
-Licensed under the MIT License or the Apache License, Version 2.0, at your option
-(LICENSE-MIT, LICENSE-APACHE).
+Copyright (C) 2026 the CFA4 contributors.
+
+This program is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version. See LICENSE.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+The licensing policy (what may be reused, how paid extras are kept separate) is in
+docs/licensing.md.
+
+Upstream
 
 CFA4 is based on the following upstream work, whose notice is retained as required by its licence:
 
@@ -9,6 +20,10 @@ FilmCraft
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option
 (LICENSE-MIT, LICENSE-APACHE).
+
+Code and assets inherited from the upstream work remain available under those original terms; their
+copyright notices and licence texts are kept in this repository and in every package. CFA4 as a
+whole, including all changes made after the relicensing, is distributed under GPL-3.0-or-later.
 
 CFA4 is not made, sponsored or endorsed by the upstream authors, and it uses none of their
 trademarks or logos.
@@ -24,3 +39,7 @@ JetBrains Mono font (assets/fonts/JetBrainsMono-Regular.ttf) — OFL-1.1. See as
 Builds made with an extra font directory (CFA4_FONTS_DIR) also embed the fonts listed in that
 directory's ATTRIBUTION.md (for Japanese: BIZ UDPGothic, Shippori Mincho, BIZ UDMincho) — OFL-1.1.
 Their licence texts ship with the packages as OFL-<family>.txt.
+
+Code reused from GPL-3.0-compatible projects (for example Kdenlive, OpenShot, Audacity, Krita,
+Subtitle Edit) is listed with its origin, copyright holders and licence in docs/licensing.md
+("Reused code register") and keeps its original copyright headers.

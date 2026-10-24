@@ -413,7 +413,7 @@
 	Version {version}	バージョン {version}
 	Source code on GitHub	GitHub のソースコード
 	Report an issue	問題を報告
-	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT OR Apache-2.0。フォント: Inter、Noto Serif、JetBrains Mono (SIL OFL 1.1)。
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later。フォント: Inter、Noto Serif、JetBrains Mono (SIL OFL 1.1)。
 	just now	たった今
 	{n} s ago	{n} 秒前
 	{n} min ago	{n} 分前
@@ -3611,3 +3611,4 @@
 	Open a sequence to search its graphics	シーケンスを開くとグラフィックスを検索できます
 	No text graphics in this sequence. Add text with the Type tool.	このシーケンスにはテキストのグラフィックスがありません。文字ツールでテキストを追加してください。
 	No matching text.	一致するテキストはありません。
+	Import Credits Spreadsheet…	クレジットのスプレッドシートを読み込み…

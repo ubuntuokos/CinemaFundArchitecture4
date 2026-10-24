@@ -1,7 +1,7 @@
 # CFA4 — CinemaFoundArchetecture4
 
 CFA4 is an Ubuntu 26.04 x86_64 (AMD64)-targeted, further-developed derivative of an open-source
-video editor (see [Upstream provenance](#upstream-provenance-and-licensing)). The inherited Rust multimedia engine remains in place; CFA4 development
+video editor (see [Upstream provenance](#upstream-provenance)). The inherited Rust multimedia engine remains in place; CFA4 development
 combines **Rust / Cargo**, **Python**, and **Qt 6**.
 
 > **Goal and priorities:** read [VISION.md](VISION.md) first (in Hungarian). It defines what CFA4 is for: a Qt6 application on every graphical Ubuntu flavour that combines video editing, converting, publishing, subtitling, dubbing, audio editing and 2D/3D animation, with mostly local AI.
@@ -38,18 +38,26 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 The Rust CLI is `cfa4-cli`. In the first Qt iteration it is queried only for
 its version; real editor operations require a future explicitly tested adapter.
 
-## Upstream provenance and licensing
+## Licence
+
+CFA4 is free software under the **GNU General Public License, version 3 or later**
+(`GPL-3.0-or-later`, see [LICENSE](LICENSE)). The core application is free to use, change and
+redistribute. Paid offerings (extended support, ready-made packages, separate-process extras,
+content and services) are described in [docs/licensing.md](docs/licensing.md), which is also the
+policy for reusing code from other projects.
+
+## Upstream provenance
 
 CFA4 is based on FilmCraft by the ArtCraft team (MIT OR Apache-2.0). That plain-text
-statement and the upstream copyright notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE`
-and `ATTRIBUTION.md` are retained because the licences require them. CFA4 is not made,
-sponsored or endorsed by the upstream authors.
+statement and the upstream copyright notices in `LICENSE-MIT`, `LICENSE-APACHE`, [NOTICE](NOTICE),
+`vendor/*/NOTICE` and `ATTRIBUTION.md` are retained because the licences require them. CFA4 is
+not made, sponsored or endorsed by the upstream authors.
 
 All upstream names, logos, icons and screenshots have been removed from the product, its
 crates, packaging and documentation; `python/tests/test_independence.py` keeps them out.
 
-PySide6/Qt6 is an **optional** developer dependency and has its own LGPLv3/commercial
-licensing obligations. The Qt shell does not bundle Qt for distribution.
+PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
+with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
 
 ## Project documentation
 

@@ -7,7 +7,7 @@ exclude = ["vendor/cfa4-libs/*"]
 [workspace.package]
 version = "0.10.0"
 edition = "2024"
-license = "MIT OR Apache-2.0"
+license = "GPL-3.0-or-later"
 rust-version = "1.95"
 repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 
@@ -49,6 +49,7 @@ cfa4-edit = { path = "crates/edit" }
 cfa4-interchange = { path = "crates/interchange" }
 cfa4-text = { path = "crates/text" }
 cfa4-captions = { path = "crates/captions" }
+cfa4-credits = { path = "crates/credits" }
 cfa4-speech = { path = "crates/speech" }
 cfa4-tts = { path = "crates/tts" }
 cfa4-tts-text = { path = "crates/tts-text" }

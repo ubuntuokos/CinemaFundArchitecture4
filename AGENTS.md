@@ -15,11 +15,19 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
-- **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
-  packages under applicable LGPLv3/commercial terms, even though inherited rules below otherwise
-  restrict Rust-core dependencies to permissive licenses. This is NOT permission to copy GPL/LGPL
-  implementation code into Rust crates or to embed Qt/PySide binaries without review.
-  GPL-only Qt modules and distribution require separate license decisions.
+- **Licence: GPL-3.0-or-later** (`LICENSE`; policy in [docs/licensing.md](docs/licensing.md)).
+  This overrides every inherited "MIT OR Apache-2.0 only" / "no GPL/LGPL" rule below.
+  - Code MAY be reused from GPL-3.0-compatible projects (GPL-2.0-or-later, GPL-3.0, LGPL,
+    MIT/BSD/Apache-2.0/MPL-2.0…), e.g. Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit:
+    check every file header, keep the original copyright/licence headers and add a row to the
+    reused-code register (docs/licensing.md §5) in the same commit.
+  - NEVER reuse GPL-2.0-only (e.g. HandBrake), AGPL, unlicensed or proprietary code (Adobe,
+    DaVinci Resolve). Reimplement the capability or call the program as an external process.
+  - Dependencies must pass `cargo deny check licenses` (`deny.toml`).
+  - Paid extras run only as separate processes over a documented interface; never add
+    proprietary plug-ins loaded into the CFA4 process (docs/licensing.md §4).
+  - Inherited upstream code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
+  - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
 - Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
@@ -40,8 +48,7 @@ file holds the rules that must never be broken. When the two disagree, this file
 People trust CFA4 with hours of work. A malformed file, a bad command or MCP parameter, a corrupt
 preset or project, an odd keystroke or a full disk must give an error the user (or agent) can act on,
 never a crash and never lost work. **This rule outranks feature work:** don't ship a feature by adding a
-panic path, and fix a crash before building on top of it. The cross-app standard is
-the project rules in AGENTS.md.
+panic path, and fix a crash before building on top of it. 
 
 1. **Fail with `Result<T, E>`.** Return the crate's error type and propagate with `?`; add context
    (`map_err`, an error variant) instead of discarding it. In the UI, report the error (status bar, error
@@ -95,7 +102,8 @@ reproduce an image (for example, point lists traced from someone else's icon).
      without reference to Adobe's artwork.
 2. **Every asset must be open**: open-source licensed (MIT, Apache-2.0, BSD, ISC, zlib, SIL OFL…),
    public domain / CC0, or Creative Commons (CC BY or CC BY-SA; no NC/ND licences), **or** created by a
-   contributor who owns it and licenses it to the project under the project licence (MIT OR Apache-2.0).
+   contributor who owns it and licenses it to the project under the project licence (GPL-3.0-or-later;
+   inherited upstream assets keep MIT OR Apache-2.0).
    If the licence is unknown or unclear, the asset does not go in.
 3. **Every asset needs an attribution sidecar.** Next to each asset file `X`, add `X.attribution` with:
    ```text
@@ -126,23 +134,26 @@ reproduce an image (for example, point lists traced from someone else's icon).
    `CFA4_FONTS_DIR=<absolute path of an extra-fonts checkout>` (`crates/text/build.rs` embeds the fonts in its
    `fonts/manifest.txt` as `cfa4_text::fonts::CFA4_FONTS`; unset, it is empty and the app uses its
    bundled and system fonts). Never add extra-fonts to a `Cargo.toml`. Code using `CFA4_FONTS` must work
-   when it is empty. Standard: the project rules in AGENTS.md.
+   when it is empty.
 
 ## 2. Clean-room code
 
 - Never read, disassemble or copy anything inside Adobe application bundles; file names and listings only.
   Observe behaviour by using the app; never capture its Home screen, recent projects, account info or
   file browsers.
-- Never copy GPL/LGPL/AGPL code (FFmpeg, x264, x265, MLT, Kdenlive, Shotcut, Olive, LAME…).
+- Code reuse follows [docs/licensing.md](docs/licensing.md) §3 (CFA4 is GPL-3.0-or-later): GPL-3.0-
+  compatible code (Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit, MLT, Shotcut, LAME…) may be
+  reused with intact headers and a register entry; never GPL-2.0-only (HandBrake…), AGPL or
+  proprietary code. FFmpeg (LGPL-2.1-or-later, optional GPL-2.0-or-later parts) and x264/x265
+  (GPL-2.0-or-later) still need a per-file header check before anything is reused.
 - Implement codecs and formats from public specifications (ITU-T/ISO/IEC standards, IETF RFCs, the VP9
-  and AV1 bitstream specs, SMPTE documents, published container specs). Do not read the source of
-  reference or third-party decoders/encoders while implementing a format, even permissively licensed
-  ones (libvpx, libopus, libaom, dav1d, openh264…); spec text and conformance vectors only. Record the
-  spec edition used in the crate README.
+  and AV1 bitstream specs, SMPTE documents, published container specs) by default. Porting an existing
+  implementation is allowed only when its licence is permitted by docs/licensing.md §3 and the port is
+  recorded in the reused-code register. Record the spec edition used in the crate README.
 - ffmpeg/ffprobe may be used only as external test oracles and fixture generators. They are never
   linked, bundled or shipped.
-- Dependencies must use permissive licences: MIT/Apache-2.0/BSD/ISC/Zlib/Unicode/CC0/BSL-1.0, or
-  MPL-2.0 used unmodified.
+- Dependencies must use GPL-3.0-compatible licences, as listed in `deny.toml`
+  (`cargo deny check licenses`). GPL-2.0-only and AGPL dependencies are not allowed.
 
 ## 3. Engineering rules
 
