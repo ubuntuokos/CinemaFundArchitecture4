@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..i18n import tr
+from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND
 from .timeline import ITEM_MIME
 
@@ -72,9 +72,9 @@ class ProjectPanel(QWidget):
         self.tree.setColumnWidth(0, 200)
         buttons = QHBoxLayout()
         for cid, text in (
-            ("file.import", "Import…"),
-            ("file.newBin", "New Bin"),
-            ("file.newSequence", "New Sequence…"),
+            ("file.import", N_("Import…")),
+            ("file.newBin", N_("New Bin")),
+            ("file.newSequence", N_("New Sequence…")),
         ):
             b = QToolButton(self)
             b.setObjectName(f"project.button.{cid}")

@@ -22,6 +22,7 @@ filmcraft-engine = { workspace = true }
 filmcraft-export = { workspace = true }
 filmcraft-project = { workspace = true }
 filmcraft-render = { workspace = true }
+filmcraft-audio-dsp = { workspace = true }
 filmcraft-time = { workspace = true }
 filmcraft-gpu = { workspace = true }
 filmcraft-media = { workspace = true }
