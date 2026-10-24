@@ -52,6 +52,9 @@ This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
 by the ArtCraft Team and contributors (MIT OR Apache-2.0). Retain the upstream MIT and
 Apache-2.0 license files, original notices ([NOTICE](NOTICE)) and third-party attribution.
 
+GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
+and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
 They must be removed or replaced before independently distributing modified CFA4 builds.

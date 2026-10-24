@@ -1335,13 +1335,8 @@ impl FilmcraftApp {
     pub fn file_dialog(&mut self, id: &str, params: &Value) -> Result<Value, String> {
         match id {
             "file.import" => {
-                let exts: Vec<&str> = filmcraft_media::VIDEO_EXTENSIONS
-                    .iter()
-                    .chain(filmcraft_media::AUDIO_EXTENSIONS)
-                    .chain(filmcraft_media::STILL_EXTENSIONS)
-                    .chain(&["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf"])
-                    .copied()
-                    .collect();
+                let exts: Vec<&str> =
+                    filmcraft_media::importable_extensions().into_iter().chain(["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf"]).collect();
                 let bin = params.get("bin").cloned();
                 self.pick(FileDialog::open_files(&exts), move |app, paths| {
                     if paths.is_empty() {
@@ -1381,7 +1376,7 @@ impl FilmcraftApp {
                 app.session.execute("file.open", json!({"path": path})).map_err(|e| e.to_string())
             }),
             "graphics.newFromFile" => {
-                let exts: Vec<&str> = filmcraft_media::STILL_EXTENSIONS.iter().chain(filmcraft_media::VIDEO_EXTENSIONS).copied().collect();
+                let exts: Vec<&str> = filmcraft_media::STILL_EXTENSIONS.iter().copied().chain(filmcraft_media::video_extensions()).collect();
                 self.pick(FileDialog::open_files(&exts), |app, paths| {
                     let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
                     app.session.execute("graphics.newFromFile", json!({"path": path})).map_err(|e| e.to_string())

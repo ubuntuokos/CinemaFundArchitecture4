@@ -63,6 +63,7 @@ filmcraft-ui-egui = { path = "crates/ui-egui" }
 filmcraft-automation = { path = "crates/automation" }
 filmcraft-platform = { path = "crates/platform" }
 filmcraft-testkit = { path = "crates/testkit" }
+cfa4-gstreamer = { path = "crates/gstreamer" }
 
 # foundation
 thiserror = "2"
