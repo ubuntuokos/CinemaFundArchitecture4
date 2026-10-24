@@ -15,13 +15,19 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
-- **Project licence: GPL-3.0-or-later** (owner decision, 2026-10; `LICENSE`, `NOTICE`). Inherited
-  FilmCraft code keeps its MIT OR Apache-2.0 notices (`LICENSE-MIT`, `LICENSE-APACHE`); never remove
-  them. New dependencies must be GPL-3.0-compatible.
-- **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
-  packages under applicable LGPLv3/commercial terms. This is NOT permission to copy GPL/LGPL
-  implementation code into Rust crates or to embed Qt/PySide binaries without review.
-  GPL-only Qt modules and distribution require separate license decisions.
+- **Licence: GPL-3.0-or-later** (`LICENSE`; policy in [docs/licensing.md](docs/licensing.md)).
+  This overrides every inherited "MIT OR Apache-2.0 only" / "no GPL/LGPL" rule below.
+  - Code MAY be reused from GPL-3.0-compatible projects (GPL-2.0-or-later, GPL-3.0, LGPL,
+    MIT/BSD/Apache-2.0/MPL-2.0…), e.g. Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit:
+    check every file header, keep the original copyright/licence headers and add a row to the
+    reused-code register (docs/licensing.md §5) in the same commit.
+  - NEVER reuse GPL-2.0-only (e.g. HandBrake), AGPL, unlicensed or proprietary code (Adobe,
+    DaVinci Resolve). Reimplement the capability or call the program as an external process.
+  - Dependencies must pass `cargo deny check licenses` (`deny.toml`).
+  - Paid extras run only as separate processes over a documented interface; never add
+    proprietary plug-ins loaded into the CFA4 process (docs/licensing.md §4).
+  - Inherited FilmCraft code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
+  - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
   linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
@@ -104,7 +110,8 @@ reproduce an image (for example, point lists traced from someone else's icon).
      without reference to Adobe's artwork.
 2. **Every asset must be open**: open-source licensed (MIT, Apache-2.0, BSD, ISC, zlib, SIL OFL…),
    public domain / CC0, or Creative Commons (CC BY or CC BY-SA; no NC/ND licences), **or** created by a
-   contributor who owns it and licenses it to the project under the project licence (MIT OR Apache-2.0).
+   contributor who owns it and licenses it to the project under the project licence (GPL-3.0-or-later;
+   inherited FilmCraft assets keep MIT OR Apache-2.0).
    If the licence is unknown or unclear, the asset does not go in.
 3. **Every asset needs an attribution sidecar.** Next to each asset file `X`, add `X.attribution` with:
    ```text
@@ -146,16 +153,19 @@ reproduce an image (for example, point lists traced from someone else's icon).
 - Never read, disassemble or copy anything inside Adobe application bundles; file names and listings only.
   Observe behaviour by using the app; never capture its Home screen, recent projects, account info or
   file browsers.
-- Never copy GPL/LGPL/AGPL code (FFmpeg, x264, x265, MLT, Kdenlive, Shotcut, Olive, LAME…).
+- Code reuse follows [docs/licensing.md](docs/licensing.md) §3 (CFA4 is GPL-3.0-or-later): GPL-3.0-
+  compatible code (Kdenlive, OpenShot, Audacity, Krita, Subtitle Edit, MLT, Shotcut, LAME…) may be
+  reused with intact headers and a register entry; never GPL-2.0-only (HandBrake…), AGPL or
+  proprietary code. FFmpeg (LGPL-2.1-or-later, optional GPL-2.0-or-later parts) and x264/x265
+  (GPL-2.0-or-later) still need a per-file header check before anything is reused.
 - Implement codecs and formats from public specifications (ITU-T/ISO/IEC standards, IETF RFCs, the VP9
-  and AV1 bitstream specs, SMPTE documents, published container specs). Do not read the source of
-  reference or third-party decoders/encoders while implementing a format, even permissively licensed
-  ones (libvpx, libopus, libaom, dav1d, openh264…); spec text and conformance vectors only. Record the
-  spec edition used in the crate README.
+  and AV1 bitstream specs, SMPTE documents, published container specs) by default. Porting an existing
+  implementation is allowed only when its licence is permitted by docs/licensing.md §3 and the port is
+  recorded in the reused-code register. Record the spec edition used in the crate README.
 - ffmpeg/ffprobe may be used only as external test oracles and fixture generators. They are never
   linked, bundled or shipped.
-- Dependencies must use permissive licences: MIT/Apache-2.0/BSD/ISC/Zlib/Unicode/CC0/BSL-1.0, or
-  MPL-2.0 used unmodified.
+- Dependencies must use GPL-3.0-compatible licences, as listed in `deny.toml`
+  (`cargo deny check licenses`). GPL-2.0-only and AGPL dependencies are not allowed.
 
 ## 3. Engineering rules
 

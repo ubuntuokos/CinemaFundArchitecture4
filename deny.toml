@@ -1,0 +1,62 @@
+# cargo-deny configuration: licence policy for CFA4 (GPL-3.0-or-later).
+# Run: cargo deny check licenses
+# Policy and reasons: docs/licensing.md §6.
+
+[graph]
+targets = ["x86_64-unknown-linux-gnu"]
+all-features = true
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+# The list is policy, not inventory: allowed licences need not be in use today.
+unused-allowed-license = "allow"
+# Every licence below is compatible with distributing CFA4 under GPL-3.0-or-later.
+# NOT allowed on purpose: GPL-2.0-only (incompatible with GPL-3.0), AGPL-3.0, non-free licences.
+allow = [
+    "0BSD",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-1-Clause",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Unlicense",
+    "Zlib",
+    "GPL-2.0-or-later",
+    "GPL-3.0",
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0",
+    "LGPL-3.0-only",
+    "LGPL-3.0-or-later",
+]
+
+# Licences that cover bundled data rather than code.
+exceptions = [
+    # Default UI fonts embedded by egui.
+    { allow = ["OFL-1.1", "Ubuntu-font-1.0"], crate = "epaint_default_fonts" },
+]
+
+[licenses.private]
+# Workspace crates are checked through the workspace licence field, not as dependencies.
+ignore = true
+
+[bans]
+multiple-versions = "allow"
+
+[advisories]
+# Licence policy only; security advisories are handled by Dependabot.
+ignore = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

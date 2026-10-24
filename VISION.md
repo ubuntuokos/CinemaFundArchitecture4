@@ -21,7 +21,7 @@ médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejl
 kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
 módon kell megvalósítani. Az örökölt FilmCraft-kód eredeti MIT/Apache-megjegyzései megmaradnak.
 **Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
-hosszabb támogatási idő fizetős.
+hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](docs/licensing.md).
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 
@@ -78,7 +78,7 @@ A CFA4 ezeknek a programoknak a **képességeit** veszi át, nem a kódjukat, ne
 | **DaVinci Resolve** | vágás, szín, VFX, hang | Csomópont-alapú színkorrekció; Fusion-szerű csomópontos kompozitálás és 2D/3D VFX; Fairlight-szerű hangutómunka; gyors „Cut” vágófelület; kiadási (Deliver) oldal |
 | **Kdenlive** | videóvágás, Linux | Linuxos munkamenet és megszokások, proxy-szerkesztés, kulcskockák, render-profilok, beszédből felirat |
 | **OpenShot** | egyszerű vágás | Kezdőbarát, egyszerű mód; animált (3D) címek; könnyű kulcskocka-animáció |
-| **HandBrake** | konvertálás | Kötegelt átkódolás sorral, előbeállítások, hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés |
+| **Shutter Encoder**, **Videomass** (a GPL-2.0-only HandBrake helyett) | konvertálás | Kötegelt átkódolás sorral, előbeállítások, gyártófüggetlen hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés, loudness-mérés és hangnormalizálás, újrakódolás nélküli vágás. Motor: a saját motor és a GStreamer ([ADR 0003](docs/adr/ADR-0003-aswf-and-conversion-sources.md)) |
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
@@ -126,6 +126,7 @@ A legfontosabbak:
 - [`docs/audit/F9-RELEASE-DECISION-2026-10-23.md`](docs/audit/F9-RELEASE-DECISION-2026-10-23.md) és `f9-release-readiness.json` – kiadási kapuk összesítése
 - [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)
+- [`docs/adr/ADR-0003-aswf-and-conversion-sources.md`](docs/adr/ADR-0003-aswf-and-conversion-sources.md) – ASWF-projektek (OpenColorIO, OpenImageIO, OpenFX …) és a konvertálás forrásai
 
 A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-24).
 

@@ -1898,7 +1898,7 @@
 	Mirror Alternate	교대 미러
 	Missing	없음
 	Missing font replacement	누락된 글꼴 대체
-	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT 또는 Apache-2.0. 글꼴: Inter, Noto Serif, JetBrains Mono(SIL OFL 1.1).
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. 글꼴: Inter, Noto Serif, JetBrains Mono(SIL OFL 1.1).
 	Miter join	마이터 연결
 	Miter limit	마이터 한계
 	Mix	믹스
@@ -3604,3 +3604,4 @@
 	Open a sequence to search its graphics	그래픽을 검색하려면 시퀀스를 여세요
 	No text graphics in this sequence. Add text with the Type tool.	이 시퀀스에는 텍스트 그래픽이 없습니다. 문자 도구로 텍스트를 추가하세요.
 	No matching text.	일치하는 텍스트가 없습니다.
+	Import Credits Spreadsheet…	크레딧 스프레드시트 가져오기…

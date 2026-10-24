@@ -422,7 +422,7 @@
 	Join the ArtCraft Discord	Únete al Discord de ArtCraft
 	Source code on GitHub	Código fuente en GitHub
 	Report an issue	Informar de un problema
-	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT OR Apache-2.0. Fuentes: Inter, Noto Serif y JetBrains Mono (SIL OFL 1.1).
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Fuentes: Inter, Noto Serif y JetBrains Mono (SIL OFL 1.1).
 	just now	ahora mismo
 	{n} s ago	hace {n} s
 	{n} min ago	hace {n} min
@@ -3618,3 +3618,4 @@
 	Open a sequence to search its graphics	Abre una secuencia para buscar en sus gráficos
 	No text graphics in this sequence. Add text with the Type tool.	Esta secuencia no tiene gráficos con texto. Añade texto con la herramienta Texto.
 	No matching text.	Ningún texto coincide.
+	Import Credits Spreadsheet…	Importar hoja de cálculo de créditos…

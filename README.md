@@ -38,24 +38,30 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 The Rust CLI is `filmcraft-cli`. In the first Qt iteration it is queried only for
 its version; real editor operations require a future explicitly tested adapter.
 
-## Upstream provenance and licensing
+## Licence
+
+CFA4 is free software under the **GNU General Public License, version 3 or later**
+(`GPL-3.0-or-later`, see [LICENSE](LICENSE)). The core application is free to use, change and
+redistribute. Paid offerings (extended support, ready-made packages, separate-process extras,
+content and services) are described in [docs/licensing.md](docs/licensing.md), which is also the
+policy for reusing code from other projects.
+
+## Upstream provenance
 
 This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
-by the ArtCraft Team and contributors. **CFA4 as a whole is licensed under
-GPL-3.0-or-later** ([LICENSE](LICENSE), [NOTICE](NOTICE)). The inherited FilmCraft code keeps its
-original MIT OR Apache-2.0 terms: retain the upstream `LICENSE-MIT` and `LICENSE-APACHE` files,
-original notices and third-party attribution.
+by the ArtCraft Team and contributors (MIT OR Apache-2.0). Retain the upstream MIT and
+Apache-2.0 license files, original notices ([NOTICE](NOTICE)) and third-party attribution.
 
-GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later), see
-[ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
+and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
 
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
 They must be removed or replaced before independently distributing modified CFA4 builds.
 Existing inherited screenshots and application assets are pending this audit.
 
-PySide6/Qt6 is an **optional** developer dependency and has its own LGPLv3/commercial
-licensing obligations. The Qt shell does not bundle Qt for distribution.
+PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
+with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
 
 ## Project documentation
 

@@ -459,7 +459,7 @@
 	Join the ArtCraft Discord	Dem ArtCraft-Discord beitreten
 	Source code on GitHub	Quellcode auf GitHub
 	Report an issue	Problem melden
-	MIT OR Apache-2.0. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	MIT OR Apache-2.0. Schriften: Inter, Noto Serif und JetBrains Mono (SIL OFL 1.1).
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Schriften: Inter, Noto Serif und JetBrains Mono (SIL OFL 1.1).
 	just now	gerade eben
 	{n} s ago	vor {n} s
 	{n} min ago	vor {n} Min.
@@ -3614,3 +3614,4 @@
 	Shows the version, community links and credits in a FilmCraft window.	Zeigt Version, Community-Links und Credits in einem FilmCraft-Fenster.
 	Couldn't open your web browser	Dein Webbrowser konnte nicht geöffnet werden
 	Open this address in your browser yourself:	Öffne diese Adresse selbst in deinem Browser:
+	Import Credits Spreadsheet…	Abspann-Tabelle importieren…
