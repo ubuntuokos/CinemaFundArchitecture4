@@ -126,8 +126,55 @@ pub struct Block {
     pub body: Vec<String>,
     /// Tails with the index of the body cell they stand beside (row by row).
     pub tails: Vec<(usize, String)>,
+    /// Pictures shown in place of a body (a body cell holding only `{{Pic …}}` tags).
+    pub pictures: Vec<Picture>,
     /// 1-based row of the block's first cell.
     pub row: usize,
+}
+
+/// A picture tag: `{{Pic file}}` or `{{Pic file 120}}` (height in pixels of a 1080-high frame;
+/// also `120px`). `Kép` and `Logo` work as the tag name too.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Picture {
+    /// As written: a file name relative to the spreadsheet's folder, or an absolute path.
+    pub file: String,
+    pub height: Option<f64>,
+}
+
+const PIC_TAGS: [&str; 4] = ["pic", "picture", "kép", "logo"];
+
+/// Take the picture tags out of a cell: the rest of the cell and the pictures, in order.
+pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
+    let mut out = String::with_capacity(cell.len());
+    let mut pics = Vec::new();
+    let mut rest = cell;
+    while let Some(i) = rest.find("{{") {
+        let after = rest.get(i + 2..).unwrap_or("");
+        let Some(j) = after.find("}}") else { break };
+        let tag = after.get(..j).unwrap_or("").trim();
+        let (word, arg) = tag.split_once(char::is_whitespace).unwrap_or((tag, ""));
+        let lower = word.to_lowercase();
+        if PIC_TAGS.contains(&lower.as_str()) && !arg.trim().is_empty() && pics.len() < 64 {
+            let arg = arg.trim();
+            let (file, height) = match arg.rsplit_once(char::is_whitespace) {
+                Some((f, h)) => {
+                    let n = h.trim().to_lowercase();
+                    match n.strip_suffix("px").unwrap_or(&n).replace(',', ".").parse::<f64>() {
+                        Ok(v) if v.is_finite() && v > 0.0 && v <= 10_000.0 => (f.trim(), Some(v)),
+                        _ => (arg, None),
+                    }
+                }
+                None => (arg, None),
+            };
+            out.push_str(rest.get(..i).unwrap_or(""));
+            pics.push(Picture { file: file.to_string(), height });
+        } else {
+            out.push_str(rest.get(..i + 2 + j + 2).unwrap_or(""));
+        }
+        rest = after.get(j + 2..).unwrap_or("");
+    }
+    out.push_str(rest);
+    (out, pics)
 }
 
 /// A page of blocks.
@@ -152,7 +199,7 @@ pub const MAX_PAGES: usize = 1_000;
 pub const MAX_BLOCKS: usize = 50_000;
 
 /// Replace inline markup: `{{Blank}}` becomes an empty line; other `{{…}}` tags (letter styles,
-/// pictures, videos) are removed. Returns the text and whether anything was removed.
+/// videos, and pictures not standing alone in a body cell) are removed. Returns the text and whether anything was removed.
 pub fn clean_markup(cell: &str) -> (String, bool) {
     let mut out = String::with_capacity(cell.len());
     let mut rest = cell;
@@ -217,19 +264,30 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
 
     for (i, r) in rows.iter().enumerate().skip(header + 1) {
         let rowno = i + 1;
+        let raw_body = cols.iter().position(|k| *k == Some(Column::Body)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
+        // a body cell of only picture tags is a picture block
+        let (pic_rest, pics) = take_pictures(raw_body);
+        let pics = if pic_rest.trim().is_empty() { pics } else { Vec::new() };
+        let pic_only = !pics.is_empty();
         let mut cell = |c: Column| -> String {
+            if c == Column::Body && pic_only {
+                return String::new();
+            }
             let raw = cols.iter().position(|k| *k == Some(c)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
             let (t, dropped) = clean_markup(raw);
             if dropped && !warned_markup {
                 warned_markup = true;
-                warn(&mut out, rowno, "letter styles, pictures and videos in `{{…}}` are not supported yet; the tags were removed".into());
+                warn(
+                    &mut out,
+                    rowno,
+                    "letter styles and videos in `{{…}}` are not supported yet, and a picture needs a body cell of its own; the tags were removed".into(),
+                );
             }
             t
         };
         let (head, body, tail) = (cell(Column::Head), cell(Column::Body), cell(Column::Tail));
         let (gap, cstyle, spine_s) = (cell(Column::Gap), cell(Column::Style), cell(Column::Spine));
         let (pstyle, runtime, pgap) = (cell(Column::Page), cell(Column::Runtime), cell(Column::PageGap));
-        let raw_body = cols.iter().position(|k| *k == Some(Column::Body)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
         let body_blank = raw_body.trim().eq_ignore_ascii_case("{{blank}}");
 
         // a new page
@@ -280,9 +338,10 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         }
 
         let has_head = !head.trim().is_empty();
-        let has_body = !body.trim().is_empty() || body_blank;
+        let has_pics = !pics.is_empty();
+        let has_body = (!body.trim().is_empty() || body_blank) && !has_pics;
         let has_tail = !tail.trim().is_empty();
-        if !has_head && !has_body && !has_tail {
+        if !has_head && !has_body && !has_tail && !has_pics {
             // an empty row (or one with only settings): ends the block; empty rows add a unit
             let settings_only = !(gap.trim().is_empty() && cstyle.trim().is_empty() && spine_s.trim().is_empty() && pstyle.trim().is_empty())
                 || !(runtime.trim().is_empty() && pgap.trim().is_empty());
@@ -293,7 +352,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
             continue;
         }
         let body_text = if body_blank { String::new() } else { body.trim_end_matches(['\r', '\n']).to_string() };
-        if has_head || !open || page.blocks.is_empty() {
+        if has_head || has_pics || !open || page.blocks.is_empty() {
             nblocks = nblocks.saturating_add(1);
             if nblocks > MAX_BLOCKS {
                 return Err(CreditsError::TooLarge(format!("more than {MAX_BLOCKS} blocks")));
@@ -306,10 +365,12 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 head: has_head.then(|| head.trim().to_string()),
                 body: if has_body { vec![body_text] } else { vec![] },
                 tails: vec![],
+                pictures: pics,
                 row: rowno,
             });
             pending_units = 0.0;
-            open = true;
+            // a picture block takes no further body cells
+            open = !has_pics;
         } else if has_body && let Some(b) = page.blocks.last_mut() {
             b.body.push(body_text);
         }

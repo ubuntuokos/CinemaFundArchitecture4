@@ -1,8 +1,8 @@
 # Credits sequences (stáblista)
 
-CFA4 builds film credits from a spreadsheet: write the credits in LibreOffice Calc (or any
-spreadsheet), save as CSV, and **Graphics and Titles ▸ Import Credits Spreadsheet…** places one
-graphic clip per page from the playhead. Each page is an ordinary graphic: edit it in Essential
+CFA4 builds film credits from a spreadsheet: write the credits in LibreOffice Calc, Excel or
+any spreadsheet, save it (`.ods`, `.xlsx` or CSV), and **Graphics and Titles ▸ Import Credits
+Spreadsheet…** places one graphic clip per page from the playhead. Each page is an ordinary graphic: edit it in Essential
 Graphics, trim it, export it. Design decision: [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md).
 Code: [`crates/credits`](../crates/credits/README.md), `crates/engine/src/credits.rs`.
 
@@ -24,7 +24,23 @@ leading `@` is allowed, and Hungarian names work too.
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
 
 A new head, an empty row, a new style or a new page starts a new block. `{{Blank}}` is an empty
-line inside a block. Line breaks inside a cell are kept. Example:
+line inside a block. Line breaks inside a cell are kept.
+
+**Files.** `.ods` (LibreOffice), `.xlsx` (Excel, LibreOffice, Google Sheets download) and CSV /
+TSV (comma, semicolon or tab). A workbook's first sheet is used unless `sheet` names another (by
+name or number). Stored values are read, not display formats: write durations as text (`12s`,
+`00:00:12:00`). Apple Numbers: export as `.xlsx` or CSV.
+
+**Pictures and logos.** A body cell holding only picture tags shows pictures instead of text:
+`{{Pic logo.png}}`, with an optional height in pixels of a 1080-high frame
+(`{{Pic logo.png 120}}`, default 150); `{{Kép …}}` and `{{Logo …}}` work too. Several tags in one
+cell stand side by side. Names are relative to the spreadsheet's folder (or `pictureDir`), or
+absolute. Each picture becomes its own clip above the page: on a scroll page it moves exactly
+with the roll, on a card it fades with the card; the page keeps a transparent placeholder layer
+(“Picture 1: logo.png”) so its height and roll include the picture. A missing picture is a
+warning and is left out.
+
+Example:
 [`crates/credits/examples/credits.csv`](../crates/credits/examples/credits.csv).
 
 ## Styles
@@ -65,8 +81,8 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 
 | Command | Menu | Params |
 |---|---|---|
-| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv) or `csv` (text), `styling`, `time`, `track` → `{clips, end, warnings}`; one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, warnings}` |
+| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` → `{clips: [{clip, start, duration, pictures}], end, sheet, warnings}`; one undo step |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings}` |
 | `graphics.credits.styles` | (query) | `styling` → style names, column names and a starter styling |
 
 Problems in the sheet (unknown styles, bad numbers, unsupported `{{…}}` tags) are warnings with
@@ -75,6 +91,6 @@ broken JSON are errors.
 
 ## Not yet
 
-Office files (`.xlsx`, `.ods`) and online sheets (save as CSV), inline letter styles, pictures
-and videos, parallel and hooked spines, leaders, head-width harmonisation, and stretching gaps
-to hit a scroll runtime (a runtime currently changes the speed).
+Online sheets (download as `.xlsx`), inline letter styles, videos in the credits, parallel and
+hooked spines, leaders, head-width harmonisation, and stretching gaps to hit a scroll runtime (a
+runtime currently changes the speed).

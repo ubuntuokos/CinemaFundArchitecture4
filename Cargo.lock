@@ -1874,8 +1874,10 @@ name = "filmcraft-credits"
 version = "0.10.0"
 dependencies = [
  "filmcraft-geom",
+ "filmcraft-media",
  "filmcraft-project",
  "filmcraft-time",
+ "roxmltree",
  "serde",
  "serde_json",
 ]

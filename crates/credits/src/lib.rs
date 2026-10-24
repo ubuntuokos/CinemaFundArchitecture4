@@ -5,6 +5,7 @@
 //! user-level descriptions only. No third-party code was read or copied.
 //!
 //! - [`table`]: a forgiving CSV / TSV / semicolon reader with hard limits.
+//! - [`office`] on [`zip`]: `.xlsx` and `.ods` spreadsheets from their published specifications.
 //! - [`sheet`]: the spreadsheet's meaning (head / body / tail blocks, gaps, content and page
 //!   styles, spine offsets, page runtimes and gaps) → [`Credits`].
 //! - [`style`]: [`Styling`] (page, content and letter styles, JSON) with built-in styles.
@@ -17,12 +18,14 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 pub mod layout;
+pub mod office;
 pub mod sheet;
 pub mod style;
 pub mod table;
+pub mod zip;
 
-pub use layout::{Frame, Laid, Measure, PageOut, layout};
-pub use sheet::{Block, Credits, Gap, Page, TimeSpec, Warning, read_sheet};
+pub use layout::{Frame, Laid, Measure, PageOut, PicturePlace, layout};
+pub use sheet::{Block, Credits, Gap, Page, Picture, TimeSpec, Warning, read_sheet};
 pub use style::{Align, Behaviour, BodyLayout, ContentStyle, LetterStyle, Orientation, PageStyle, Styling};
 
 /// Why credits could not be read or laid out.
@@ -38,6 +41,8 @@ pub enum CreditsError {
     Styling(String),
     /// Layout failed.
     Layout(String),
+    /// The file is not a spreadsheet CFA4 can read, or it is damaged.
+    Format(String),
 }
 
 impl std::fmt::Display for CreditsError {
@@ -48,17 +53,39 @@ impl std::fmt::Display for CreditsError {
             CreditsError::Empty => f.write_str("the spreadsheet holds no credits"),
             CreditsError::Styling(m) => write!(f, "credits styling: {m}"),
             CreditsError::Layout(m) => write!(f, "credits layout: {m}"),
+            CreditsError::Format(m) => f.write_str(m),
         }
     }
 }
 
 impl std::error::Error for CreditsError {}
 
-/// Read a credits spreadsheet (CSV / TSV bytes) with `styling`'s default styles.
+/// The rows of a spreadsheet file: CSV / TSV text, or an `.xlsx` / `.ods` package (detected
+/// from the bytes). `sheet` picks a worksheet of a package by name or 1-based number (default:
+/// the first). Returns the rows, the package's sheet names and the chosen one (empty for text).
+pub fn read_rows(bytes: &[u8], sheet: Option<&str>) -> Result<office::Sheet, CreditsError> {
+    let limits = table::Limits::default();
+    if zip::is_zip(bytes) {
+        return office::read_office(bytes, sheet, limits);
+    }
+    Ok(office::Sheet { rows: table::read_table(bytes, limits)?, ..Default::default() })
+}
+
+/// Read a credits spreadsheet (CSV / TSV / `.xlsx` / `.ods` bytes) with `styling`'s default styles.
 pub fn read(bytes: &[u8], styling: &Styling) -> Result<Credits, CreditsError> {
-    let rows = table::read_table(bytes, table::Limits::default())?;
-    read_sheet(&rows, &styling.default_page_style, &styling.default_content_style)
+    read_with(bytes, styling, None).map(|(c, _)| c)
+}
+
+/// [`read`] a chosen worksheet; also returns the sheet information.
+pub fn read_with(bytes: &[u8], styling: &Styling, sheet: Option<&str>) -> Result<(Credits, office::Sheet), CreditsError> {
+    let mut s = read_rows(bytes, sheet)?;
+    let rows = std::mem::take(&mut s.rows);
+    let c = read_sheet(&rows, &styling.default_page_style, &styling.default_content_style)?;
+    Ok((c, s))
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod office_tests;

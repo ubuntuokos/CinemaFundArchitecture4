@@ -1,7 +1,7 @@
 # CFA4 ADR F10 – Credits sequences from a spreadsheet (Cinecred-like capability)
 
 **Date:** 2026-10-23  
-**Status:** ACCEPTED; ENGINE + egui MENU IMPLEMENTED; Qt6 PANEL PENDING (F8 bridge)  
+**Status:** ACCEPTED; ENGINE + egui MENU IMPLEMENTED (CSV, xlsx, ods, pictures); Qt6 PANEL PENDING (F8 bridge)  
 **Owner request:** “a Cinecred feliratozó beépítése a CFA4-be” (owner: ubuntuokos)
 
 ## Context
@@ -44,15 +44,20 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | Spine position as a horizontal pixel offset | done |
 | Scaling to any frame size (designed at 1080 p) | done |
 | English and Hungarian column names | done |
-| `.xlsx` / `.ods` / online sheets | not yet: save as CSV (clear error) |
-| Inline letter styles, pictures and videos (`{{…}}`) | not yet: tags are removed with a warning |
+| `.xlsx` (ECMA-376) and `.ods` (OASIS ODF) from their specifications, sheet choice; own ZIP reader on CFA4's RFC 1951 inflater | done (2026-10-24) |
+| Online sheets, Apple Numbers | not yet: download / export as `.xlsx` (clear error) |
+| Pictures and logos (`{{Pic file [height]}}`): own clips that follow the roll exactly / fade with the card, placeholder layer in the page | done (2026-10-24) |
+| Inline letter styles and videos (`{{…}}`) | not yet: tags are removed with a warning |
 | Parallel / hooked spines, head/tail leaders, width harmonisation | not yet |
 | Scroll runtime by stretching gaps (instead of changing speed) | not yet: a runtime changes the speed |
 | Qt6 panel | pending: the F8 Qt bridge allowlists read-only commands; `graphics.credits.preview` can be allowlisted first, `…import` once mutating commands are allowed |
 
 ## Consequences
 
-- No GPL code, no JVM, no new third-party dependency (only workspace `serde`, `serde_json`).
+- No GPL code, no JVM, no new third-party dependency (only workspace `serde`, `serde_json`,
+  `roxmltree`; the inflater is CFA4's own, now exported as `filmcraft_media::inflate`).
 - Never-crash: input limits (16 MiB, 100 000 rows, 256 columns, 20 000 chars per cell, 1 000
-  pages, 50 000 blocks, 5 000 layers per page), no panicking calls, mutation-fuzz test.
+  pages, 50 000 blocks, 5 000 layers per page; ZIP: 10 000 entries, 64 MiB per entry, no ZIP64 or
+  encryption; XML: 8 million nodes, no DTD), no panicking calls, mutation-fuzz tests for sheets,
+  stylings and ZIP packages.
 - A whole import is one undo step.

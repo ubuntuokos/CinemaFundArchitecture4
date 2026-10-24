@@ -52,6 +52,13 @@ impl Measure for Fake {
         };
         Some([x0, -size * 0.9, x0 + w, -size * 0.9 + lines * lh])
     }
+    fn picture_size(&self, file: &str) -> Option<(f64, f64)> {
+        match file {
+            "logo.png" | "Alap logó.png" => Some((400.0, 200.0)),
+            "wide.png" => Some((10_000.0, 100.0)),
+            _ => None,
+        }
+    }
 }
 
 const FRAME: Frame = Frame { width: 1920, height: 1080, rate: FrameRate::FPS_25 };
@@ -269,4 +276,49 @@ fn tails_stand_beside_their_body_lines() {
     assert!((pos(head).1 - pos(body).1).abs() < 1e-9);
     assert!((pos(tails[0]).1 - pos(body).1).abs() < 1e-9);
     assert!((pos(tails[1]).1 - pos(body).1 - 96.0).abs() < 1e-9);
+}
+
+#[test]
+fn picture_tags_parse() {
+    let (rest, p) = sheet::take_pictures("{{Pic logo.png}} {{Kép Alap logó.png 120px}}{{Bold}}x");
+    assert_eq!(rest, " {{Bold}}x");
+    assert_eq!(p, vec![Picture { file: "logo.png".into(), height: None }, Picture { file: "Alap logó.png".into(), height: Some(120.0) }]);
+    assert_eq!(sheet::take_pictures("{{Pic}} {{Pic a b}}").1, vec![Picture { file: "a b".into(), height: None }]);
+}
+
+#[test]
+fn pictures_get_placeholders_and_placements() {
+    let laid = lay(
+        "Head,Body,Style\nSupported by,{{Pic logo.png}} {{Logo Alap logó.png 75}},Centered\n,Names,\n,{{Pic missing.png}},\n,{{Pic wide.png}},\n",
+        &Styling::default(),
+    );
+    let p = &laid.pages[0];
+    assert_eq!(laid.warnings.len(), 1, "{:?}", laid.warnings);
+    assert_eq!(p.pictures.len(), 3);
+    let (a, b) = (&p.pictures[0], &p.pictures[1]);
+    assert_eq!(a.size, (300.0, 150.0));
+    assert_eq!(b.size, (150.0, 75.0));
+    // one row, centred on the spine, vertically centred on each other
+    let left = a.center.0 - a.size.0 / 2.0;
+    let right = b.center.0 + b.size.0 / 2.0;
+    assert!(((left + right) / 2.0 - 960.0).abs() < 1e-9);
+    assert!((a.center.1 - b.center.1).abs() < 1e-9);
+    // never wider than the frame
+    assert!(p.pictures[2].size.0 <= 1920.0 * 0.95 + 1e-9);
+    // placeholders are transparent shape layers counted in the page height
+    let shapes = p.layers.iter().filter(|e| e.effect == "graphic_shape").count();
+    assert_eq!(shapes, 3);
+    assert!(p.content_height > 150.0 + 48.0);
+    // the names block follows the picture row, picture blocks take no more body cells
+    assert!(p.layers.iter().any(|e| txt(e) == "Names"));
+}
+
+#[test]
+fn card_pictures_report_the_fades() {
+    let laid = lay("Body,Page Style\n{{Pic logo.png}},Card\n", &Styling::default());
+    let p = &laid.pages[0];
+    assert_eq!(p.fade_in, Tick(FRAME.rate.frame_duration().0 * 12));
+    assert_eq!(p.fade_out, p.fade_in);
+    // the picture sits in the middle of the frame
+    assert!((p.pictures[0].center.1 - 540.0).abs() < 1e-9);
 }

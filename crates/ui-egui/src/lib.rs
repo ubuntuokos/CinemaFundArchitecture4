@@ -1391,7 +1391,7 @@ impl FilmcraftApp {
             // Graphics and Titles ▸ Import Credits Spreadsheet…: one graphic clip per page
             "graphics.credits.import" => {
                 let styling = params.get("styling").cloned();
-                self.pick(FileDialog::open_files(&["csv", "tsv", "txt"]), move |app, paths| {
+                self.pick(FileDialog::open_files(&["csv", "tsv", "txt", "xlsx", "ods"]), move |app, paths| {
                     let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
                     let mut p = json!({"path": path});
                     if let Some(st) = styling {

@@ -7,7 +7,7 @@
 //! engine), so this crate stays free of fonts and rendering.
 
 use filmcraft_geom::Vec2;
-use filmcraft_project::graphic::new_text_layer;
+use filmcraft_project::graphic::{new_shape_layer, new_text_layer};
 use filmcraft_project::graphic_design::{GraphicMeta, Roll, RollMode};
 use filmcraft_project::gtemplate::ensure_uids;
 use filmcraft_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
@@ -23,7 +23,26 @@ pub trait Measure {
     /// (point text: the origin is the alignment point on the first baseline; paragraph text: the
     /// top-left corner of its box). `None` if it cannot be measured.
     fn bounds(&self, layer: &EffectInstance) -> Option<[f64; 4]>;
+
+    /// Pixel size of a picture named in the sheet (`{{Pic file}}`), or `None` if it cannot be
+    /// found or read.
+    fn picture_size(&self, _file: &str) -> Option<(f64, f64)> {
+        None
+    }
 }
+
+/// A picture to show with a page, in graphic-canvas pixels where the page was laid out (before
+/// any roll): the engine places it as its own clip that moves with the page.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PicturePlace {
+    pub file: String,
+    pub center: (f64, f64),
+    pub size: (f64, f64),
+    pub row: usize,
+}
+
+/// Default picture height (1080-high pixels).
+pub const DEFAULT_PICTURE_HEIGHT: f64 = 150.0;
 
 /// The frame the credits are laid out for.
 #[derive(Clone, Copy, Debug)]
@@ -45,6 +64,11 @@ pub struct PageOut {
     pub gap_after: Tick,
     /// Height of the content (frame pixels).
     pub content_height: f64,
+    /// Pictures that go with this page.
+    pub pictures: Vec<PicturePlace>,
+    /// Card fades actually used (zero for scroll pages).
+    pub fade_in: Tick,
+    pub fade_out: Tick,
 }
 
 /// Laid-out credits.
@@ -65,6 +89,8 @@ struct Piece {
     x: f64,
     /// Top of the line box in content pixels.
     top: f64,
+    /// A picture's placeholder: the file and its size on screen.
+    pic: Option<Box<(String, f64, f64, usize)>>,
 }
 
 impl Piece {
@@ -82,6 +108,9 @@ fn set(e: &mut EffectInstance, id: &str, v: ParamValue) {
 
 struct Ctx<'a> {
     s: f64,
+    /// Frame width.
+    w: f64,
+    missing_pics: Vec<String>,
     measure: &'a dyn Measure,
     warnings: Vec<Warning>,
     bad_colors: Vec<String>,
@@ -169,7 +198,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
             if n == 1 {
                 let (e, bb) = ctx.text(b.row, "Body", &b.body.join("\n"), &cs.body, align, None)?;
-                out.push(Piece { layer: e, b: bb, x, top });
+                out.push(Piece { layer: e, b: bb, x, top, pic: None });
                 return Ok(out);
             }
             // pad every cell of a row to the row's line count so the columns stay in step
@@ -200,7 +229,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             let total = colw * n as f64 + gap * (n as f64 - 1.0);
             let mut left = left_of(x, total, align);
             for (e, bb) in measured {
-                out.push(Piece { layer: e, b: bb, x: origin_in_box(left, colw, align), top });
+                out.push(Piece { layer: e, b: bb, x: origin_in_box(left, colw, align), top, pic: None });
                 left += colw + gap;
             }
         }
@@ -208,7 +237,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             let wrap = finite_or(cs.wrap_width, 1200.0).clamp(10.0, 100_000.0) * s;
             let text = b.body.iter().map(|c| c.replace('\n', " ")).collect::<Vec<_>>().join(&cs.flow_separator);
             let (e, bb) = ctx.text(b.row, "Body", &text, &cs.body, align, Some(wrap))?;
-            out.push(Piece { layer: e, b: bb, x: left_of(x, wrap, align), top });
+            out.push(Piece { layer: e, b: bb, x: left_of(x, wrap, align), top, pic: None });
         }
         BodyLayout::Paragraphs => {
             let wrap = finite_or(cs.wrap_width, 1200.0).clamp(10.0, 100_000.0) * s;
@@ -217,7 +246,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             for (k, cell) in b.body.iter().enumerate() {
                 let (e, bb) = ctx.text(b.row, &format!("Paragraph {}", k + 1), cell, &cs.body, align, Some(wrap))?;
                 let h = bb[3] - bb[1];
-                out.push(Piece { layer: e, b: bb, x: left_of(x, wrap, align), top: y });
+                out.push(Piece { layer: e, b: bb, x: left_of(x, wrap, align), top: y, pic: None });
                 y += h + gap;
             }
         }
@@ -227,6 +256,46 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
 
 fn bottom(pieces: &[Piece]) -> Option<f64> {
     pieces.iter().map(|p| p.top + p.height()).reduce(f64::max)
+}
+
+/// A row of pictures with its top at `top`: placeholder pieces (transparent rectangles, so the
+/// page's size and roll include them). `anchor_x` and `align` place the row like text.
+fn lay_pictures(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, anchor_x: f64, align: Align, top: f64) -> Vec<Piece> {
+    let s = ctx.s;
+    let mut sized = Vec::new();
+    for p in &b.pictures {
+        let Some((pw, ph)) = ctx.measure.picture_size(&p.file).filter(|(w, h)| w.is_finite() && h.is_finite() && *w > 0.0 && *h > 0.0) else {
+            if !ctx.missing_pics.contains(&p.file) {
+                ctx.missing_pics.push(p.file.clone());
+                ctx.warn(b.row, format!("picture `{}` was not found or cannot be read; it is left out", p.file));
+            }
+            continue;
+        };
+        let mut h = finite_or(p.height.unwrap_or(DEFAULT_PICTURE_HEIGHT), DEFAULT_PICTURE_HEIGHT).clamp(1.0, 10_000.0) * s;
+        let mut w = h * pw / ph;
+        // never wider than the frame
+        let max_w = ctx.w * 0.95;
+        if w > max_w {
+            h *= max_w / w;
+            w = max_w;
+        }
+        sized.push((p.file.clone(), w, h));
+    }
+    let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
+    let total: f64 = sized.iter().map(|(_, w, _)| *w).sum::<f64>() + gap * (sized.len().saturating_sub(1)) as f64;
+    let row_h = sized.iter().map(|(_, _, h)| *h).fold(0.0f64, f64::max);
+    let mut left = left_of(anchor_x, total, align);
+    let mut out = Vec::new();
+    for (k, (file, w, h)) in sized.into_iter().enumerate() {
+        let cx = left + w / 2.0;
+        let mut e = new_shape_layer(0, Vec2::new(0.0, 0.0), Vec2::new(w, h), vec![]);
+        set(&mut e, "name", ParamValue::Text(format!("Picture {}: {file}", k + 1)));
+        set(&mut e, "fill", ParamValue::Bool(false));
+        let top_k = top + (row_h - h) / 2.0;
+        out.push(Piece { layer: e, b: [-w / 2.0, -h / 2.0, w / 2.0, h / 2.0], x: cx, top: top_k, pic: Some(Box::new((file, w, h, b.row))) });
+        left += w + gap;
+    }
+    out
 }
 
 /// Lay out one block with its top at `top`. Returns its pieces and height.
@@ -240,11 +309,11 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
             let mut y = top;
             if let Some(h) = &b.head {
                 let (e, bb) = ctx.text(b.row, "Head", h, &cs.head, cs.align, None)?;
-                let p = Piece { layer: e, b: bb, x: spine_x, top: y };
+                let p = Piece { layer: e, b: bb, x: spine_x, top: y, pic: None };
                 y += p.height() + head_gap;
                 pieces.push(p);
             }
-            let body = lay_body(ctx, b, cs, cs.align, spine_x, y)?;
+            let body = if b.pictures.is_empty() { lay_body(ctx, b, cs, cs.align, spine_x, y)? } else { lay_pictures(ctx, b, cs, spine_x, cs.align, y) };
             if let Some(bt) = bottom(&body) {
                 y = bt;
             }
@@ -252,20 +321,24 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
             if !b.tails.is_empty() {
                 let text = b.tails.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n");
                 let (e, bb) = ctx.text(b.row, "Tail", &text, &cs.tail, cs.align, None)?;
-                pieces.push(Piece { layer: e, b: bb, x: spine_x, top: y + tail_gap });
+                pieces.push(Piece { layer: e, b: bb, x: spine_x, top: y + tail_gap, pic: None });
             }
         }
         Orientation::Horizontal => {
-            let body = lay_body(ctx, b, cs, Align::Left, spine_x + head_gap / 2.0, top)?;
-            // head and tails stand on the body's baselines
-            let first_baseline = body.first().map(|p| p.top - p.b[1]);
+            let body = if b.pictures.is_empty() {
+                lay_body(ctx, b, cs, Align::Left, spine_x + head_gap / 2.0, top)?
+            } else {
+                lay_pictures(ctx, b, cs, spine_x + head_gap / 2.0, Align::Left, top)
+            };
+            // head and tails stand on the body's baselines (beside pictures: on their middle)
+            let first_baseline = if b.pictures.is_empty() { body.first().map(|p| p.top - p.b[1]) } else { bottom(&body).map(|bt| (top + bt) / 2.0) };
             let at_baseline = |bb: [f64; 4], baseline: Option<f64>| baseline.map(|bl| bl + bb[1]).unwrap_or(top);
             if let Some(h) = &b.head {
                 let (e, bb) = ctx.text(b.row, "Head", h, &cs.head, Align::Right, None)?;
-                pieces.push(Piece { layer: e, b: bb, x: spine_x - head_gap / 2.0, top: at_baseline(bb, first_baseline) });
+                pieces.push(Piece { layer: e, b: bb, x: spine_x - head_gap / 2.0, top: at_baseline(bb, first_baseline), pic: None });
             }
             let right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
-            let single_column = cs.layout == BodyLayout::Grid && body.len() == 1;
+            let single_column = cs.layout == BodyLayout::Grid && body.len() == 1 && b.pictures.is_empty();
             pieces.extend(body);
             if !b.tails.is_empty() {
                 let x = right + tail_gap;
@@ -278,12 +351,12 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
                         let line: usize = b.body.iter().take(*at).map(|c| c.split('\n').count()).sum();
                         let bl = first_baseline.map(|b0| b0 + advance * line as f64);
                         let (e, bb) = ctx.text(b.row, &format!("Tail {}", k + 1), t, &cs.tail, Align::Left, None)?;
-                        pieces.push(Piece { layer: e, b: bb, x, top: at_baseline(bb, bl) });
+                        pieces.push(Piece { layer: e, b: bb, x, top: at_baseline(bb, bl), pic: None });
                     }
                 } else {
                     let text = b.tails.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n");
                     let (e, bb) = ctx.text(b.row, "Tail", &text, &cs.tail, Align::Left, None)?;
-                    pieces.push(Piece { layer: e, b: bb, x, top: at_baseline(bb, first_baseline) });
+                    pieces.push(Piece { layer: e, b: bb, x, top: at_baseline(bb, first_baseline), pic: None });
                 }
             }
         }
@@ -408,18 +481,28 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
         }
     };
     let duration = rate.snap_nearest(duration).max(fd);
+    let (fade_in, fade_out) = if ps.behaviour == Behaviour::Card {
+        let (mut fin, mut fout) = (frames(rate, i64::from(ps.fade_in_frames)), frames(rate, i64::from(ps.fade_out_frames)));
+        let both = fin.0.saturating_add(fout.0);
+        if both > duration.0 && both > 0 {
+            fin = Tick((fin.0 as i128 * duration.0 as i128 / both as i128) as i64);
+            fout = Tick(duration.0 - fin.0);
+        }
+        (fin, fout)
+    } else {
+        (Tick::ZERO, Tick::ZERO)
+    };
     let mut layers = Vec::with_capacity(pieces.len());
+    let mut pictures = Vec::new();
     for p in pieces {
         let mut e = p.layer;
-        set(&mut e, "position", ParamValue::Vec2(Vec2::new(p.x, p.top + dy - p.b[1])));
-        if ps.behaviour == Behaviour::Card {
-            let (mut fin, mut fout) = (frames(rate, i64::from(ps.fade_in_frames)), frames(rate, i64::from(ps.fade_out_frames)));
-            let both = fin.0.saturating_add(fout.0);
-            if both > duration.0 && both > 0 {
-                fin = Tick((fin.0 as i128 * duration.0 as i128 / both as i128) as i64);
-                fout = Tick(duration.0 - fin.0);
-            }
-            opacity_fade(&mut e, duration, fin, fout);
+        let y = p.top + dy - p.b[1];
+        set(&mut e, "position", ParamValue::Vec2(Vec2::new(p.x, y)));
+        if let Some(pic) = p.pic {
+            let (file, w, h, row) = *pic;
+            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row });
+        } else if ps.behaviour == Behaviour::Card {
+            opacity_fade(&mut e, duration, fade_in, fade_out);
         }
         layers.push(e);
     }
@@ -427,7 +510,7 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     let name = page.blocks.iter().find_map(|b| b.head.clone().or_else(|| b.body.first().cloned())).unwrap_or_default();
     let name = name.lines().next().unwrap_or("").chars().take(40).collect::<String>();
     let name = if name.trim().is_empty() { format!("Credits {}", index + 1) } else { format!("Credits {}: {}", index + 1, name.trim()) };
-    Ok(PageOut { name, behaviour: ps.behaviour, layers, meta, duration, gap_after, content_height: content_h })
+    Ok(PageOut { name, behaviour: ps.behaviour, layers, meta, duration, gap_after, content_height: content_h, pictures, fade_in, fade_out })
 }
 
 /// Lay out `credits` for `frame` with `styling`.
@@ -438,7 +521,14 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
     if frame.rate.frame_duration().0 <= 0 {
         return Err(CreditsError::Layout("bad frame rate".into()));
     }
-    let mut ctx = Ctx { s: f64::from(frame.height) / 1080.0, measure, warnings: credits.warnings.clone(), bad_colors: vec![] };
+    let mut ctx = Ctx {
+        s: f64::from(frame.height) / 1080.0,
+        w: f64::from(frame.width),
+        missing_pics: vec![],
+        measure,
+        warnings: credits.warnings.clone(),
+        bad_colors: vec![],
+    };
     let mut pages = Vec::with_capacity(credits.pages.len());
     for (i, p) in credits.pages.iter().enumerate() {
         pages.push(lay_page(&mut ctx, styling, p, frame, i)?);

@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use crate::Session;
 use crate::media_test_util::tmp_dir;
 use filmcraft_project::graphic::LayerContent;
-use filmcraft_project::{ClipId, RollMode, TrackItem};
+use filmcraft_project::{ClipId, ParamValue, RollMode, TrackItem};
 use filmcraft_render::graphic_clip::item_layer_specs;
 use filmcraft_time::Tick;
 
@@ -97,7 +97,7 @@ fn reads_files_and_styling_and_reports_errors() {
     for bad in [
         json!({}),
         json!({"path": dir.join("missing.csv")}),
-        json!({"path": "credits.xlsx"}),
+        json!({"path": "credits.numbers"}),
         json!({"csv": "no header here"}),
         json!({"csv": "Body\nA\n", "styling": "{broken"}),
         json!({"csv": "Body\nA\n", "styling": 7}),
@@ -114,4 +114,50 @@ fn styles_lists_builtins_and_a_starter() {
     assert!(names.contains(&"Gutter") && names.contains(&"Grid"));
     let starter: filmcraft_credits::Styling = serde_json::from_value(v["starter"].clone()).unwrap();
     assert!(starter.content_styles.len() >= 5);
+}
+
+#[test]
+fn pictures_become_clips_that_roll_with_the_page() {
+    let mut s = demo("credits-pictures");
+    let dir = tmp_dir("credits-pictures");
+    image::RgbaImage::from_pixel(400, 200, image::Rgba([200, 30, 30, 255])).save(dir.join("logo.png")).unwrap();
+    let csv = "Head,Body,Page Style\nSupported by,{{Pic logo.png 100}},Scroll\n,Names,\n,{{Pic nope.png}},\nTHE END,{{Logo logo.png}},Card\n";
+    let v = s.execute("graphics.credits.import", json!({"csv": csv, "pictureDir": dir})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 1, "{v}");
+    let roll_page = ClipId(v["clips"][0]["clip"].as_u64().unwrap());
+    let pic = ClipId(v["clips"][0]["pictures"][0].as_u64().unwrap());
+    let card_pic = ClipId(v["clips"][1]["pictures"][0].as_u64().unwrap());
+
+    // the picture sits on a track above its page and lasts as long
+    let q = s.active_sequence().unwrap();
+    let track_of = |c: ClipId| q.video_tracks.iter().position(|t| t.items.iter().any(|i| i.id == c)).unwrap();
+    assert!(track_of(pic) > track_of(roll_page));
+    let (page, p) = (item(&s, roll_page), item(&s, pic));
+    assert_eq!(p.start, page.start);
+    assert_eq!(p.duration, page.duration);
+
+    // 100 px high: a 400×200 picture is scaled to 50 %
+    let motion = p.effects.iter().find(|e| e.effect == "motion").unwrap();
+    assert_eq!(motion.params["scale"].value, ParamValue::Float(50.0));
+
+    // at any time the picture's centre is where the page's placeholder layer has rolled to
+    let canvas = (q.settings.width, q.settings.height);
+    for k in [0i64, 1, 5, 9, 10] {
+        let u = Tick(page.duration.0 * k / 10);
+        let specs = item_layer_specs(&page, page.source_in + u, canvas);
+        let holder = specs.iter().find(|(_, sp)| matches!(sp.content, LayerContent::Shape(_))).unwrap();
+        let ParamValue::Vec2(at) = motion.params["position"].value_at(u) else { panic!() };
+        let want = holder.1.transform.position;
+        assert!((at.x - want.x).abs() < 1e-6 && (at.y - want.y).abs() < 1e-6, "t={k}/10: {at:?} vs {want:?}");
+    }
+
+    // the card's picture fades with the card
+    let c = item(&s, card_pic);
+    let op = c.effects.iter().find(|e| e.effect == "opacity").unwrap();
+    assert_eq!(op.params["opacity"].keyframes.len(), 4);
+    assert!(!c.effects.iter().find(|e| e.effect == "motion").unwrap().params["position"].is_animated());
+
+    // one undo removes pages and pictures
+    s.execute("edit.undo", json!({})).unwrap();
+    assert!(s.active_sequence().unwrap().find_item(pic).is_none());
 }
