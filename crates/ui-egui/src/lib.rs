@@ -1335,10 +1335,8 @@ impl FilmcraftApp {
     pub fn file_dialog(&mut self, id: &str, params: &Value) -> Result<Value, String> {
         match id {
             "file.import" => {
-                let exts: Vec<&str> = filmcraft_media::importable_extensions()
-                    .into_iter()
-                    .chain(["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf"])
-                    .collect();
+                let exts: Vec<&str> =
+                    filmcraft_media::importable_extensions().into_iter().chain(["srt", "vtt", "scc", "edl", "xml", "fcpxml", "otio", "aaf", "omf"]).collect();
                 let bin = params.get("bin").cloned();
                 self.pick(FileDialog::open_files(&exts), move |app, paths| {
                     if paths.is_empty() {

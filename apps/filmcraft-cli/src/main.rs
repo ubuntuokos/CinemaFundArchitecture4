@@ -252,7 +252,6 @@ fn register_gstreamer() {
     }
 }
 
-
 fn register_hardware_decoders() -> filmcraft_platform::Availability {
     filmcraft_platform::register()
 }

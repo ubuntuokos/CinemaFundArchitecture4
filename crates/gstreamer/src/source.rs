@@ -84,7 +84,8 @@ impl GstSource {
         if video.is_none() && audio_streams.is_empty() {
             return Err(Error::Discover { message: "no video or audio stream".into(), missing_plugins: Vec::new() });
         }
-        let duration = found.duration.filter(|d| *d > Tick::ZERO).ok_or_else(|| Error::Discover { message: "unknown duration".into(), missing_plugins: Vec::new() })?;
+        let duration =
+            found.duration.filter(|d| *d > Tick::ZERO).ok_or_else(|| Error::Discover { message: "unknown duration".into(), missing_plugins: Vec::new() })?;
         let info = EngineInfo {
             name,
             kind: if video.is_some() { MediaKind::Movie } else { MediaKind::AudioOnly },
@@ -173,7 +174,10 @@ fn playbin(uri: &str, flags: &str, sink_property: &str, sink: &gst_app::AppSink)
     // Every other sink is a `fakesink`, so only our appsink is ever used.
     for other in ["video-sink", "audio-sink", "text-sink"] {
         if other != sink_property {
-            let fake = gst::ElementFactory::make("fakesink").property("sync", false).build().map_err(|e| MediaError::Unsupported(format!("GStreamer fakesink: {e}")))?;
+            let fake = gst::ElementFactory::make("fakesink")
+                .property("sync", false)
+                .build()
+                .map_err(|e| MediaError::Unsupported(format!("GStreamer fakesink: {e}")))?;
             pipeline.set_property(other, &fake);
         }
     }
@@ -295,7 +299,8 @@ fn convert_video(sample: &gst::Sample, frame_ns: u64, par: (u32, u32)) -> filmcr
     let vinfo = gst_video::VideoInfo::from_caps(caps).map_err(|e| bad(&e.to_string()))?;
     let (w, h) = (vinfo.width(), vinfo.height());
     let row = usize::try_from(w).ok().and_then(|w| w.checked_mul(4)).ok_or_else(|| bad("width"))?;
-    let total = usize::try_from(h).ok().and_then(|h| h.checked_mul(row)).filter(|n| *n > 0 && *n <= MAX_FRAME_BYTES).ok_or_else(|| bad("picture size out of range"))?;
+    let total =
+        usize::try_from(h).ok().and_then(|h| h.checked_mul(row)).filter(|n| *n > 0 && *n <= MAX_FRAME_BYTES).ok_or_else(|| bad("picture size out of range"))?;
     let stride = vinfo.stride().first().and_then(|s| usize::try_from(*s).ok()).ok_or_else(|| bad("stride"))?;
     let offset = vinfo.offset().first().copied().ok_or_else(|| bad("plane offset"))?;
     let buffer = sample.buffer().ok_or_else(|| bad("sample without buffer"))?;
@@ -330,7 +335,8 @@ impl AudioDecoder {
     fn new(uri: &str, stream: usize, rate: u32, channels: u32) -> Result<Self, MediaError> {
         let rate_i = i32::try_from(rate).map_err(|_| MediaError::Decode(format!("sample rate {rate}")))?;
         let ch_i = i32::try_from(channels.clamp(1, MAX_CHANNELS)).unwrap_or(2);
-        let caps = gst::Caps::builder("audio/x-raw").field("format", "F32LE").field("layout", "interleaved").field("rate", rate_i).field("channels", ch_i).build();
+        let caps =
+            gst::Caps::builder("audio/x-raw").field("format", "F32LE").field("layout", "interleaved").field("rate", rate_i).field("channels", ch_i).build();
         let sink = gst_app::AppSink::builder().caps(&caps).sync(false).max_buffers(4).drop(false).build();
         let pipeline = playbin(uri, "audio", "audio-sink", &sink)?;
         pipeline.set_property("current-audio", i32::try_from(stream).unwrap_or(0));

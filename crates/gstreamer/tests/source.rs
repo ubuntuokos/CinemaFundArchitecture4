@@ -146,7 +146,10 @@ fn vorbis_audio_decodes_sequentially_and_after_seeks() {
 
 #[test]
 fn audio_only_files_open_without_video() {
-    let Some(path) = fixture("tone.oga", "audiotestsrc num-buffers=50 samplesperbuffer=960 ! audio/x-raw,rate=48000,channels=1 ! audioconvert ! vorbisenc ! oggmux ! filesink location=OUT") else {
+    let Some(path) = fixture(
+        "tone.oga",
+        "audiotestsrc num-buffers=50 samplesperbuffer=960 ! audio/x-raw,rate=48000,channels=1 ! audioconvert ! vorbisenc ! oggmux ! filesink location=OUT",
+    ) else {
         return;
     };
     let src = cfa4_gstreamer::open(&path).unwrap();

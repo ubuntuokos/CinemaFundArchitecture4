@@ -176,11 +176,7 @@ pub fn passes(filter: &str, kind: &str, name: &str) -> bool {
 
 /// Every extension the browser lists (for the file-type menu).
 pub fn extensions() -> Vec<&'static str> {
-    filmcraft_media::importable_extensions()
-        .into_iter()
-        .chain(PROJECT_EXTENSIONS.iter().copied())
-        .chain(CAPTION_EXTENSIONS.iter().copied())
-        .collect()
+    filmcraft_media::importable_extensions().into_iter().chain(PROJECT_EXTENSIONS.iter().copied()).chain(CAPTION_EXTENSIONS.iter().copied()).collect()
 }
 
 fn windows_style(p: &str) -> bool {

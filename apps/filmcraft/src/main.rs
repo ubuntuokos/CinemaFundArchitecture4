@@ -444,7 +444,6 @@ fn register_gstreamer() {
     }
 }
 
-
 /// Put the OS hardware video decoders in front of our own. Registered in a statement of its own:
 /// a log macro does not evaluate its arguments while no logger takes its level, which left the
 /// hardware decoders out of every run.
