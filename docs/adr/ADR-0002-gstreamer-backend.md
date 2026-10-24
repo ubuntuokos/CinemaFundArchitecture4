@@ -46,6 +46,24 @@ A GStreamer **kiegészítő háttérmotor** lesz. Nem váltja ki a saját motort
 8. **Bizonyíték, nem állítás** (VISION.md 2.5). Hogy egy formátumot vagy feladatot a saját motor
    vagy a GStreamer kezel, azt teszt és valódi gépes mérés dönti el, nem feltételezés.
 
+## A tartalék szabálya (2. lépés)
+
+A beépített megnyitók mindig elsők. A GStreamer csak akkor veszi át a fájlt, ha
+
+- a beépített megnyitók nem támogatottnak vagy dekódolhatatlannak jelzik (`Unsupported`, `Decode`;
+  I/O-hiba és offline média változatlanul továbbmegy), vagy
+- egy videó-kiterjesztésű fájlt videó nélkül nyitnak meg (például az Ogg Theora + Vorbis fájlt
+  csak hangként), és a GStreamer talál benne videót.
+
+Ha a GStreamer is elutasítja, a beépített eredmény marad, így a regisztráció soha nem ront el
+egy addig működő fájlt. Az alkalmazások csak a `gstreamer` Cargo-funkcióval fordítva
+regisztrálják (`cfa4_gstreamer::register()`), és csak ha a rendszeren van GStreamer.
+
+A GStreamer-forrás RGBA 8 bites képet és a kért mintavételezésű 32 bites lebegőpontos hangot ad.
+Pontos (accurate) kereséssel ugrik, egymást követő kérésnél csak a következő puffert veszi,
+így lejátszáskor nem keres minden képkockánál. A nem használt adattípusokhoz `fakesink` kerül,
+mert a `playbin` automatikus kimenetei (hangkártya, kijelző) kijelző nélküli gépen összeomolhatnak.
+
 ## Viszony az ADR 0001-hez
 
 A natív VA-API és NVDEC dekóder a `crates/platform`-ban marad. A GStreamer nem helyettesíti őket,
@@ -56,8 +74,8 @@ NVIDIA GPU-n). Ha ugyanarra a feladatra mindkettő képes, mérés dönti el az 
 
 | Lépés | Tartalom | Állapot |
 |---|---|---|
-| 1 | `cfa4-gstreamer` crate: `probe()` (verzió, elemek, licencek) és `discover()` (konténer, időtartam, sávok), tesztekkel | **ez a PR** |
-| 2 | Importálás: a motor által meg nem nyitható fájlok GStreamer-forrásként (`MediaSource`), a `discover()` alapján | tervezett |
+| 1 | `cfa4-gstreamer` crate: `probe()` (verzió, elemek, licencek) és `discover()` (konténer, időtartam, sávok), tesztekkel | kész (#40) |
+| 2 | Importálás: a motor által meg nem nyitható (vagy videó nélkül megnyitott) fájlok GStreamer-forrásként (`MediaSource`); `filmcraft_media::fallback` regisztráció, új kiterjesztések (`.ogv`, `.flv`, `.wmv`, `.wma` …) | kész (#40) |
 | 3 | Hardveres kódolás exporthoz AMD/Intel GPU-n (`vah264enc`, `vah265enc`, `vaav1enc`) a `VideoEncoder` mögött | tervezett |
 | 4 | Qt6-előnézet `qml6glsink`-kel, az ADR F8 5. lépéséhez igazítva | tervezett |
 | 5 | Felvétel: PipeWire (képernyő, hang) és V4L2 (kamera, rögzítőkártya) | tervezett |

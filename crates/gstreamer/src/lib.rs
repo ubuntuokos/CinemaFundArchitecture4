@@ -29,6 +29,8 @@ use filmcraft_time::{FrameRate, Tick};
 
 #[cfg(feature = "gstreamer")]
 mod backend;
+#[cfg(feature = "gstreamer")]
+mod source;
 
 /// Errors of the GStreamer backend. Every failure is reported, never a panic.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -141,6 +143,8 @@ pub enum StreamKind {
         /// Bits per pixel as GStreamer reports it (0 when unknown).
         depth: u32,
         is_image: bool,
+        /// Pixel aspect ratio, `None` when unknown or invalid.
+        par: Option<(u32, u32)>,
     },
     Audio {
         channels: u32,
@@ -229,6 +233,58 @@ pub fn discover(path: &Path, timeout: Duration) -> Result<MediaInfo, Error> {
         let _ = (path, timeout);
         Err(not_compiled_in())
     }
+}
+
+/// Video file extensions the GStreamer fallback makes importable, beyond the engine's own.
+pub const EXTRA_VIDEO_EXTENSIONS: &[&str] = &["ogv", "flv", "f4v", "wmv", "asf", "dv", "divx", "rm", "rmvb", "3g2", "mpe"];
+/// Audio file extensions the GStreamer fallback makes importable, beyond the engine's own.
+pub const EXTRA_AUDIO_EXTENSIONS: &[&str] = &["oga", "wma", "ape", "wv", "amr", "au", "caf", "spx", "mka"];
+
+/// Opens the movie or audio file at `path` as an engine media source decoded by GStreamer.
+///
+/// Video frames come out as RGBA 8-bit, audio as 32-bit float at the rate the engine asks for.
+/// Still images are declined (the engine's still decoders handle those).
+pub fn open(path: &Path) -> Result<filmcraft_media::SharedSource, Error> {
+    #[cfg(feature = "gstreamer")]
+    {
+        let path = checked_path(path)?;
+        guarded(move || source::GstSource::open(&path).map(|s| std::sync::Arc::new(s) as filmcraft_media::SharedSource))
+    }
+    #[cfg(not(feature = "gstreamer"))]
+    {
+        let _ = path;
+        Err(not_compiled_in())
+    }
+}
+
+/// Makes GStreamer the engine's fallback backend (`filmcraft_media::fallback`): files the built-in
+/// openers cannot open, or open without their video, are opened through [`open`], and the
+/// [`EXTRA_VIDEO_EXTENSIONS`] / [`EXTRA_AUDIO_EXTENSIONS`] become importable.
+///
+/// Returns the [`probe`] result. Registers nothing (and returns the error) when GStreamer is not
+/// available or lacks the `playbin` element that decoding needs. Safe to call more than once.
+pub fn register() -> Result<Status, Error> {
+    let status = probe()?;
+    #[cfg(feature = "gstreamer")]
+    {
+        backend::require_element("playbin")?;
+        filmcraft_media::register_fallback(filmcraft_media::Fallback {
+            name: "GStreamer",
+            video_extensions: EXTRA_VIDEO_EXTENSIONS,
+            audio_extensions: EXTRA_AUDIO_EXTENSIONS,
+            open: fallback_open,
+        });
+        log::info!("GStreamer {} registered as the fallback media backend", status.version);
+    }
+    Ok(status)
+}
+
+#[cfg(feature = "gstreamer")]
+fn fallback_open(path: &Path) -> filmcraft_media::Result<filmcraft_media::SharedSource> {
+    open(path).map_err(|e| match e {
+        Error::InvalidInput(m) => filmcraft_media::MediaError::Io(m),
+        other => filmcraft_media::MediaError::Unsupported(other.to_string()),
+    })
 }
 
 #[cfg(not(feature = "gstreamer"))]

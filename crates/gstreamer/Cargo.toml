@@ -14,9 +14,12 @@ workspace = true
 # (Ubuntu: libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev). Without it every entry point
 # reports `Error::Unavailable` and the Rust engine works exactly as before.
 default = []
-gstreamer = ["dep:gstreamer", "dep:gstreamer-pbutils"]
+gstreamer = ["dep:gstreamer", "dep:gstreamer-pbutils", "dep:gstreamer-app", "dep:gstreamer-video"]
 
 [dependencies]
+filmcraft-color = { workspace = true }
+filmcraft-frame = { workspace = true }
+filmcraft-media = { workspace = true }
 filmcraft-time = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
@@ -24,3 +27,8 @@ thiserror = { workspace = true }
 # and are dynamically linked from the system (docs/adr/ADR-0002-gstreamer-backend.md).
 gstreamer = { version = "0.25", optional = true }
 gstreamer-pbutils = { version = "0.25", optional = true }
+gstreamer-app = { version = "0.25", optional = true }
+gstreamer-video = { version = "0.25", optional = true }
+
+[dev-dependencies]
+filmcraft-codecs = { workspace = true }

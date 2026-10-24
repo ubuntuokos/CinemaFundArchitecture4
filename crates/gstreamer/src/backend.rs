@@ -13,7 +13,7 @@ use gstreamer_pbutils::prelude::*;
 use crate::{CATALOGUE, ElementStatus, Error, MediaInfo, Status, StreamInfo, StreamKind, frame_rate, ticks_from_nanos};
 
 /// Initialises GStreamer once per process; later calls return the first outcome.
-fn init() -> Result<(), Error> {
+pub(crate) fn init() -> Result<(), Error> {
     static INIT: OnceLock<Result<(), String>> = OnceLock::new();
     INIT.get_or_init(|| gst::init().map_err(|e| e.to_string())).clone().map_err(|e| Error::Unavailable(format!("initialisation failed: {e}")))
 }
@@ -70,6 +70,13 @@ pub(crate) fn discover(path: &Path, timeout: Duration) -> Result<MediaInfo, Erro
                 height: v.height(),
                 frame_rate: if v.is_image() { None } else { frame_rate(rate.numer(), rate.denom()) },
                 depth: v.depth(),
+                par: {
+                    let par = v.par();
+                    match (u32::try_from(par.numer()), u32::try_from(par.denom())) {
+                        (Ok(n), Ok(d)) if n > 0 && d > 0 => Some((n, d)),
+                        _ => None,
+                    }
+                },
                 is_image: v.is_image(),
             },
             codec: v.caps().map(|c| codec_description(&c)),
@@ -101,4 +108,10 @@ fn codec_description(caps: &gst::Caps) -> String {
         return described;
     }
     caps.structure(0).map(|s| s.name().to_string()).unwrap_or_default()
+}
+
+/// `Ok` when GStreamer is initialised and the element factory `name` is installed.
+pub(crate) fn require_element(name: &str) -> Result<(), Error> {
+    init()?;
+    if gst::ElementFactory::find(name).is_some() { Ok(()) } else { Err(Error::Unavailable(format!("the GStreamer element `{name}` is not installed"))) }
 }

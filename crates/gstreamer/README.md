@@ -4,7 +4,7 @@ Optional GStreamer backend for CFA4 (layer L5). The Rust media engine stays the 
 GStreamer supplements it where the system's media stack can do what the engine does not do yet.
 Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
 
-## What it does today (step 1)
+## What it does today (steps 1 and 2)
 
 - `probe()`: GStreamer version and whether each element of `CATALOGUE` is installed, with the
   plugin, package and licence the plugin declares. The catalogue covers the planned areas:
@@ -12,13 +12,18 @@ Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
   (`qml6glsink`), capture (PipeWire, V4L2) and general pipeline elements.
 - `discover(path, timeout)`: container, duration (exact `Tick`s), seekability and the video,
   audio and subtitle streams of a file, through GStreamer's `Discoverer`.
-
-Nothing in the engine uses it yet; wiring it in is the next step (see the ADR).
+- `open(path)`: an engine `MediaSource` decoded by GStreamer (RGBA 8-bit video, 32-bit float
+  audio at the requested rate, accurate seeks, sequential reads without seeking).
+- `register()`: makes GStreamer the engine's fallback backend (`filmcraft_media::fallback`). The
+  built-in openers stay first; GStreamer takes files they reject as unsupported, or open without
+  the video they carry (Ogg Theora + Vorbis opened as audio only), and adds `.ogv`, `.flv`, `.wmv`,
+  `.wma` and similar extensions to import. The apps call it at startup when built with their
+  `gstreamer` feature (`cargo run -p filmcraft --features gstreamer`).
 
 ## Building
 
 The `gstreamer` feature is **off by default**, so the workspace builds and tests without
-GStreamer. Without the feature, `probe()` and `discover()` return `Error::Unavailable`.
+GStreamer. Without the feature, every entry point returns `Error::Unavailable`.
 
 ```sh
 sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-tools
