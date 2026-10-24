@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
 > **Utolsó átnézés:** 2026-10-24 · **Változás:** major (2. változat: GPL-3.0-or-later, Qt6/PySide6,
-> GStreamer, márkaeltávolítás) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> FFmpeg 9 + GStreamer médiaháttér, márkaeltávolítás) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -148,9 +148,9 @@ szinte egyik sem érhető el. A Qt6-paritás külön követendő.
 | Render-sablonok, render-sor, zóna-render, előnézet-render | ✅ | `export.presets.*`, `export.queue.*`, `sequence.renderInToOut` |
 | Szüneteltetés és folytatás | 🟡 | Megszakítás van; szüneteltetés ❓ |
 | Alfa export | ✅ | ProRes 4444, PNG-sorozat |
-| Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. GStreamer `va*enc` (ADR 0002 3. lépés; a háttérmotor alapja a #40-nel bekerült), gyártófüggetlen terv (#39) |
+| Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. Elsődlegesen FFmpeg 9 `*_vaapi` ([ADR 0004](adr/ADR-0004-ffmpeg9-primary-backend.md), #53), másodlagosan GStreamer `va*enc` (ADR 0002 3. lépés), gyártófüggetlen terv (#39) |
 | Szoftveres HEVC, jobb H.264, MP3 export | ❌ | x265, x264, LAME: ADR 0003 A5, előtte szabadalmi vizsgálat |
-| Széles formátumlefedettség | 🟡 | GStreamer kiegészítő háttérmotor (`crates/gstreamer`, #40, opcionális funkció); a kiadott csomagok GStreamer nélkül épülnek |
+| Széles formátumlefedettség | 🟡 | Médiaháttér-sorrend: FFmpeg 9 elsődleges (ADR 0004, #53, tervezett `cfa4-ffmpeg`), GStreamer másodlagos (`crates/gstreamer`, #40), saját Rust-kodekek tartalék. A kiadott csomagok GStreamer nélkül épülnek; az FFmpeg 9 szállítása nyitott döntés |
 
 ## 8. Platform és felület
 
@@ -212,3 +212,4 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 |---|---|---|
 | 2026-10-24 | major | Első változat (MIT/Apache-feltételezéssel) |
 | 2026-10-24 | major | 2. változat: GPL-3.0-or-later (Kdenlive-kód átvehető), Qt6/PySide6-felület, GStreamer, gyártófüggetlen gyorsítás, Linux AMD64-only, márkaeltávolítás; rangsor az ADR F8 és ADR 0003 lépéseihez kötve |
+| 2026-10-24 | minor | Médiaháttér-sorrend az ADR 0004 szerint (#53): FFmpeg 9 elsődleges, GStreamer másodlagos |
