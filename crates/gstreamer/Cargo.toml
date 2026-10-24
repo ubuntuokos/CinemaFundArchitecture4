@@ -32,3 +32,4 @@ gstreamer-video = { version = "0.25", optional = true }
 
 [dev-dependencies]
 filmcraft-codecs = { workspace = true }
+filmcraft-engine = { workspace = true }

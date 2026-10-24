@@ -200,3 +200,26 @@ fn registered_fallback_fills_the_engine_gaps_and_leaves_the_rest_alone() {
         assert!(!s.info().video.as_ref().unwrap().codec.contains("GStreamer"), "{}", s.info().video.as_ref().unwrap().codec);
     }
 }
+
+/// The engine's own entry points (media pool import, Media Browser properties and thumbnails)
+/// all reach the fallback: thumbnails are frames of the source `probe_file` / `open_file` return.
+#[test]
+fn engine_import_browser_and_thumbnails_use_the_fallback() {
+    let Some(path) = theora() else { return };
+    cfa4_gstreamer::register().unwrap();
+    let p = path.to_string_lossy().to_string();
+    let pool = filmcraft_engine::media_pool::MediaPool::default();
+    let services = filmcraft_engine::FsServices;
+
+    // Import (MediaPool::open_file) and Media Browser probing (MediaPool::probe_file).
+    let imported = pool.open_file(&p, &services).unwrap();
+    let probed = pool.probe_file(&p, &services).unwrap();
+    for src in [&imported, &probed] {
+        assert_eq!(src.info().kind, MediaKind::Movie);
+        // A thumbnail is a decoded frame at a reduced scale.
+        let thumb = src.video_frame(FrameRequest { time: ticks(1, 2), scale: 0.25 }).unwrap();
+        assert!(thumb.width > 0 && thumb.height > 0);
+    }
+    assert_eq!(filmcraft_engine::media_browser::kind_of("clip.ogv"), Some("video"));
+    assert!(filmcraft_engine::media_browser::extensions().contains(&"ogv"));
+}
