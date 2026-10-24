@@ -15,17 +15,19 @@ from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
+from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
 
-LAYOUT_VERSION = 2  # 2: Source monitor dock
+LAYOUT_VERSION = 3  # 2: Source monitor dock; 3: Effect Controls
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
     ("Source", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Effect Controls", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Inspector", Qt.DockWidgetArea.RightDockWidgetArea),
@@ -67,6 +69,8 @@ class MainWindow(QMainWindow):
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
         self.inspector = InspectorPanel(self)
+        self.effect_controls = EffectControlsPanel(self)
+        self.effect_controls.attach(engine)
         self.history = HistoryPanel(self)
         self.events = EventsPanel(self)
 
@@ -79,6 +83,7 @@ class MainWindow(QMainWindow):
         self.docks: dict[str, QDockWidget] = {}
         widgets = {
             "Source": self.source_monitor,
+            "Effect Controls": self.effect_controls,
             "Project": self.project_panel,
             "Effects": self.effects,
             "Inspector": self.inspector,
@@ -96,8 +101,17 @@ class MainWindow(QMainWindow):
         self.status_engine.setObjectName("status.engine")
         self.statusBar().addPermanentWidget(self.status_engine)
 
-        for panel in (self.monitor, self.source_monitor, self.timeline.canvas, self.project_panel, self.effects, self.inspector):
+        for panel in (
+            self.monitor,
+            self.source_monitor,
+            self.timeline.canvas,
+            self.project_panel,
+            self.effects,
+            self.inspector,
+            self.effect_controls,
+        ):
             panel.command.connect(self.execute)
+        self.effect_controls.seek.connect(self._seek_program)
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.focusChanged.connect(self._focus_changed)
@@ -131,10 +145,11 @@ class MainWindow(QMainWindow):
         """Source over Project/Effects on the left, Program in the middle, Inspector/History on
         the right, Timeline/Events at the bottom."""
         win.splitDockWidget(d["Source"], d["Project"], Qt.Orientation.Vertical)
+        win.tabifyDockWidget(d["Source"], d["Effect Controls"])
         win.tabifyDockWidget(d["Project"], d["Effects"])
         win.tabifyDockWidget(d["Inspector"], d["History"])
         win.tabifyDockWidget(d["Timeline"], d["Events"])
-        for name in ("Project", "Inspector", "Timeline"):
+        for name in ("Source", "Project", "Inspector", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
         win.resizeDocks([d["Source"], d["Inspector"]], [460, 280], Qt.Orientation.Horizontal)
@@ -260,7 +275,7 @@ class MainWindow(QMainWindow):
     def _on_started(self, hello: dict[str, Any]) -> None:
         self.status_engine.setText(str(hello.get("engine") or "engine"))
         self.engine.call("engine.commands", on_reply=self._on_commands)
-        self.engine.execute("effects.list", {}, on_reply=lambda r, _b: self.effects.set_effects(r))
+        self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.refresh()
         recovery = hello.get("recovery")
         if isinstance(recovery, list) and recovery and isinstance(recovery[0], dict):
@@ -294,6 +309,13 @@ class MainWindow(QMainWindow):
             self.execute("file.recover", {"id": cid})
         elif box.clickedButton() is discard:
             self.execute("file.discardRecovery", {"id": cid})
+
+    def _on_effects_list(self, result: Any, _b: bytes | None) -> None:
+        self.effects.set_effects(result)
+        if isinstance(result, list):
+            self.inspector.effect_names = {
+                str(e["id"]): str(e.get("name") or e["id"]) for e in result if isinstance(e, dict) and e.get("id")
+            }
 
     def _on_commands(self, result: Any, _binary: bytes | None) -> None:
         self.registry.load(result)
@@ -379,6 +401,7 @@ class MainWindow(QMainWindow):
         self.timeline.set_sequence(self.sequence)
         self.monitor.set_sequence(self.sequence, self.revision)
         self.inspector.set_sequence(self.sequence)
+        self.effect_controls.refresh((self.sequence or {}).get("selection"))
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
         self.source_state = result if isinstance(result, dict) else None
@@ -502,6 +525,11 @@ class MainWindow(QMainWindow):
     # ----- playhead -----
     def _scrub(self, ticks: int) -> None:
         self.monitor.set_playhead(ticks)
+
+    def _seek_program(self, ticks: int) -> None:
+        """A panel (Effect Controls' keyframe navigation) moves the Program playhead."""
+        self.monitor.set_playhead(ticks)
+        self.execute("playhead.set", {"time": int(ticks)})
 
     def _playback_moved(self, ticks: int) -> None:
         self.timeline.canvas.playhead = ticks

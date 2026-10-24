@@ -491,6 +491,10 @@ def test_real_engine_source_monitor(app, tmp_path: Path):
         win.close()
 
 
+# Source/Effect Controls, Project/Effects, Inspector/History, Timeline/Events
+TAB_GROUPS = 4
+
+
 def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path):
     """Regression: tabifying docks before show() left a stale, visible copy of a tab bar drawn
     over the panels. Every visible tab bar must belong to exactly one tab group."""
@@ -506,14 +510,14 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
         win = MainWindow(EngineClient(fake_engine), settings)
         win.resize(1440, 900)
         win.show()
-        assert wait_until(app, lambda w=win: len(bars(w)) >= 3, 5_000)
+        assert wait_until(app, lambda w=win: len(bars(w)) >= TAB_GROUPS, 5_000)
         wait_until(app, lambda: False, 300)
         found = bars(win)
-        assert len(found) == len(set(found)) == 3, found
+        assert len(found) == len(set(found)) == TAB_GROUPS, found
         win.reset_layout.trigger()
         wait_until(app, lambda: False, 300)
         found = bars(win)
-        assert len(found) == len(set(found)) == 3, found
+        assert len(found) == len(set(found)) == TAB_GROUPS, found
         win._quit_confirmed = True
         win.close()
 
@@ -624,3 +628,86 @@ def test_tick_signals_carry_64_bit_times(app):
     # and no tick-carrying Signal(int) comes back anywhere in the GUI
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         assert not re.search(r"Signal\([^)]*\bint\b", path.read_text(encoding="utf-8")), path
+
+
+# ----- Effect Controls -----
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+def test_real_engine_effect_controls(app, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1440, 900)
+    win.show()
+    engine.start()
+    ec = win.effect_controls
+
+    def param(effect: str, pid: str) -> dict:
+        for e in (ec.clip or {}).get("effects") or []:
+            if e.get("effect") == effect:
+                return next(p for p in e["params"] if p["id"] == pid)
+        raise AssertionError(f"{effect}.{pid} not shown")
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["video"][0]["items"][1]
+        assert ec.clip is None and "Timeline" in ec.title.text()
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        assert wait_until(app, lambda: ec.clip_id == clip["clip"] and (0, "scale") in ec.rows, 30_000)
+        motion = next(e["index"] for e in ec.clip["effects"] if e["effect"] == "motion")
+        scale = ec.rows[(motion, "scale")]
+        assert scale.kind == "float" and not scale.animated
+
+        # a drag of one value (several changes in a row) is one undo step
+        steps = len(history())
+        for v in (110.0, 120.0, 135.0):
+            scale.spins[0].setValue(v)
+            app.processEvents()
+        assert wait_until(app, lambda: param("motion", "scale")["value"] == 135.0, 10_000), param("motion", "scale")
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()
+
+        # animate: the stopwatch puts a keyframe at the playhead; a change elsewhere adds another
+        win._seek_program(clip["start"])
+        assert wait_until(app, lambda: ec.clip and ec.clip.get("playhead") == clip["start"], 10_000)
+        scale.stopwatch.click()
+        assert wait_until(app, lambda: param("motion", "scale")["animated"], 10_000)
+        # the engine puts the playhead on a frame boundary: use the time it reports
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        assert wait_until(app, lambda: ec.clip.get("playhead") != clip["start"], 10_000)
+        later = ec.clip["playhead"]
+        assert clip["start"] < later < clip["end"]
+        scale.spins[0].setValue(60.0)
+        assert wait_until(app, lambda: len(param("motion", "scale")["keyframes"]) == 2, 10_000), param("motion", "scale")
+        assert scale.strip.isVisible() and scale.next_key.isVisible()
+        times = sorted(k["time"] for k in param("motion", "scale")["keyframes"])
+        # keyframe navigation moves the Program playhead to the keyframes
+        scale.prev_key.click()
+        assert wait_until(app, lambda: ec.clip.get("playhead") == times[0], 10_000), (ec.clip.get("playhead"), times)
+        scale.next_key.click()
+        assert wait_until(app, lambda: ec.clip.get("playhead") == times[1], 10_000)
+        # the keyframe button removes the keyframe under the playhead
+        scale.add_key.click()
+        assert wait_until(app, lambda: len(param("motion", "scale")["keyframes"]) == 1, 10_000)
+
+        # a choice parameter and the effect's on/off switch
+        opacity = next(e["index"] for e in ec.clip["effects"] if e["effect"] == "opacity")
+        blend = ec.rows[(opacity, "blend")]
+        blend.editor.setCurrentIndex(3)
+        assert wait_until(app, lambda: param("opacity", "blend")["value"] == 3, 10_000)
+        check = ec.effect_boxes[opacity].findChild(QtWidgets.QCheckBox, f"effectControls.{opacity}.enabled")
+        was = check.isChecked()
+        check.click()
+        assert wait_until(
+            app, lambda: next(e for e in ec.clip["effects"] if e["index"] == opacity)["enabled"] != was, 10_000
+        )
+
+        # deselecting clears the panel
+        win.execute("edit.deselectAll", {})
+        assert wait_until(app, lambda: ec.clip is None and not ec.rows, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()

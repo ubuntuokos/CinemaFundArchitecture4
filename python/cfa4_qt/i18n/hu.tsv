@@ -23,6 +23,7 @@
 	Add Range Marker to In and Out	Tartományjelölő a kezdő- és végpont közé
 	Add Tracks…	Sávok hozzáadása…
 	Add to Queue	Hozzáadás a sorhoz
+	Add/Remove Keyframe	Kulcskocka hozzáadása/eltávolítása
 	Adjust	Beállítás
 	Adjustment Layer	Korrekciós réteg
 	Adjustment Layer…	Korrekciós réteg…
@@ -32,7 +33,9 @@
 	All files	Minden fájl
 	Amplitude and Compression	Amplitúdó és tömörítés
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	A `serve` nélküli motor olyan ágról készült, amelyen nincs Qt-GUI: váltson a Qt-GUI ágára és fordítsa újra, vagy adja meg: --engine ÚTVONAL.
+	Anchor Point	Horgonypont
 	Animation	Animáció
+	Anti-flicker Filter	Villódzásgátló szűrő
 	Apply Audio Transition	Hangátmenet alkalmazása
 	Apply Default Transitions to Selection	Alapértelmezett átmenetek a kijelölésre
 	Apply Video Transition	Videóátmenet alkalmazása
@@ -47,14 +50,18 @@
 	Audio Out	Hang végpont
 	Audio Transitions	Hangátmenetek
 	Audio codec	Hangkodek
+	Auto Bezier	Automatikus Bézier
 	Automate to Sequence…	Automatikus szekvenciába rendezés…
 	Automatic	Automatikus
 	Avid Log Exchange…	Avid Log Exchange…
+	Balance	Egyensúly
 	Bars and Tone…	Színsávok és hangjel…
+	Bezier	Bézier
 	Bin	Tároló
 	Bin From Selection	Tároló a kijelölésből
 	Bitrate mode	Bitrátamód
 	Black Video…	Fekete videó…
+	Blend Mode	Keverési mód
 	Blue	Kék
 	Blur & Sharpen	Elmosás és élesítés
 	Bottom	Alsó szélhez
@@ -64,6 +71,7 @@
 	Brown	Barna
 	Browse…	Tallózás…
 	Burn in captions	Feliratok beégetése
+	Bypass	Megkerülés
 	CBR	CBR
 	CFA4	CFA4
 	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
@@ -76,6 +84,7 @@
 	Center Horizontally	Vízszintesen középre
 	Center Vertically	Függőlegesen középre
 	Cerulean	Égszínkék
+	Channel Volume	Csatornahangerő
 	Checked:	Megvizsgálva:
 	Choose an output file.	Válasszon kimeneti fájlt.
 	Clear	Törlés
@@ -91,11 +100,15 @@
 	Close All Projects	Minden projekt bezárása
 	Close Gap	Rés bezárása
 	Close Project	Projekt bezárása
+	Color	Szín
+	Color Burn	Színégetés
 	Color Correction	Színkorrekció
+	Color Dodge	Színfakítás
 	Color Management…	Színkezelés…
 	Color Matte…	Színes háttér…
 	Consolidate Duplicates	Ismétlődések összevonása
 	Constant quality (CRF)	Állandó minőség (CRF)
+	Continuous Bezier	Folytonos Bézier
 	Copy	Másolás
 	Copy Paste Includes Sequence Markers	Másolás-beillesztés a szekvenciajelölőkkel
 	Create Captions from Transcript…	Feliratok készítése az átiratból…
@@ -104,7 +117,10 @@
 	Crossfade	Áttűnés
 	Custom	Egyéni
 	Cut	Kivágás
+	Darken	Sötétítés
+	Darker Color	Sötétebb szín
 	Delay and Echo	Késleltetés és visszhang
+	Delete Keyframe	Kulcskocka törlése
 	Delete Render Files	Renderfájlok törlése
 	Delete Render Files In to Out	Renderfájlok törlése kezdőponttól végpontig
 	Delete Tracks…	Sávok törlése…
@@ -113,6 +129,7 @@
 	Demo Project	Bemutató projekt
 	Deselect All	Kijelölés megszüntetése
 	Detach Proxies	Proxyk leválasztása
+	Difference	Különbség
 	Discard	Elvetés
 	Dissolve	Áttűnés
 	Distort	Torzítás
@@ -121,15 +138,20 @@
 	Distribute Space Horizontally	Vízszintes térköz elosztása
 	Distribute Space Vertically	Függőleges térköz elosztása
 	Distribute Vertically	Függőleges elosztás
+	Divide	Osztás
 	Done	Kész
 	Double-click a clip in the Project panel to open it here.	Kattintson duplán egy klipre a Projekt panelen, hogy itt megnyíljon.
 	Duplicate	Kettőzés
 	Duration	Időtartam
 	EDL…	EDL…
+	Ease In	Lassuló beérkezés
+	Ease Out	Lassú indulás
 	Edit	Szerkesztés
 	Edit Offline…	Offline szerkesztése…
 	Edit Original	Eredeti szerkesztése
 	Edit Subclip…	Alklip szerkesztése…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	A Lumetri- és maszkeszközökben szerkeszthető (a Qt-felületen még nem)
+	Effect Controls	Effektvezérlők
 	Effects	Effektek
 	Ellipse	Ellipszis
 	Enable	Engedélyezés
@@ -140,6 +162,7 @@
 	Engine stopped	A motor leállt
 	Entire Sequence	Teljes szekvencia
 	Events	Események
+	Exclusion	Kizárás
 	Export	Exportálás
 	Export As Motion Graphics Template…	Exportálás mozgógrafikai sablonként…
 	Export Markers as CSV…	Jelölők exportálása CSV-be…
@@ -185,9 +208,11 @@
 	Go to Gap	Ugrás réshez
 	Go to In	Ugrás a kezdőponthoz
 	Go to Next Caption Segment	Ugrás a következő feliratszakaszhoz
+	Go to Next Keyframe	Ugrás a következő kulcskockához
 	Go to Next Marker	Ugrás a következő jelölőhöz
 	Go to Out	Ugrás a végponthoz
 	Go to Previous Caption Segment	Ugrás az előző feliratszakaszhoz
+	Go to Previous Keyframe	Ugrás az előző kulcskockához
 	Go to Previous Marker	Ugrás az előző jelölőhöz
 	Go to Split	Ugrás osztott jelöléshez
 	Go to Start	Ugrás az elejére
@@ -196,9 +221,13 @@
 	Green	Zöld
 	Group	Csoportosítás
 	Grunge & Distort	Koszolás és torzítás
+	Hard Light	Kemény fény
+	Hard Mix	Kemény keverés
 	Help	Súgó
 	Hide All Caption Tracks	Minden feliratsáv elrejtése
 	History	Előzmények
+	Hold	Tartás
+	Hue	Színárnyalat
 	Image Control	Képvezérlés
 	Image Sequence	Képsorozat
 	Immersive Video	Immerzív videó
@@ -218,14 +247,22 @@
 	Label	Címke
 	Language	Nyelv
 	Lavender	Levendula
-	Left	Bal szélhez
+	Left	Bal
 	Legacy	Örökölt
+	Level	Szint
 	Lift	Kiemelés
+	Lighten	Világosítás
+	Lighter Color	Világosabb szín
 	Lights & Blurs	Fények és elmosások
 	Lights & Glows	Fények és ragyogás
+	Linear	Lineáris
+	Linear Burn	Lineáris égetés
+	Linear Dodge (Add)	Lineáris fakítás (összeadás)
+	Linear Light	Lineáris fény
 	Link	Összekapcsolás
 	Link Media…	Média összekapcsolása…
 	Linked Selection	Összekapcsolt kijelölés
+	Luminosity	Fényerő
 	Magenta	Bíbor
 	Make Offline…	Offline állapotba tétel…
 	Make Subclip…	Alklip készítése…
@@ -245,9 +282,11 @@
 	Merged Clip	Egyesített klip
 	Modify	Módosítás
 	Modulation	Moduláció
+	Motion	Mozgás
 	Motion Graphics Template…	Mozgógrafikai sablon…
 	Movie	Film
 	Multi-Camera	Többkamerás
+	Multiply	Szorzás
 	Name	Név
 	Nest…	Beágyazás…
 	New	Új
@@ -261,26 +300,32 @@
 	No sequence open. Double-click a sequence in the Project panel.	Nincs megnyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
 	Noise & Grain	Zaj és szemcse
 	Noise Reduction	Zajcsökkentés
+	Normal	Normál
 	Normalize Mix Track…	Keveréksáv normalizálása…
 	Not Now	Most nem
 	OMF…	OMF…
 	Obsolete	Elavult
 	Offline File…	Offline fájl…
+	Opacity	Átlátszatlanság
 	Open Project	Projekt megnyitása
 	Open Project…	Projekt megnyitása…
 	OpenTimelineIO…	OpenTimelineIO…
 	Optical Flow	Optikai áramlás
 	Output	Kimenet
 	Output file	Kimeneti fájl
+	Overlay	Átfedés
 	Overwrite	Felülírás
 	PCM (uncompressed)	PCM (tömörítetlen)
 	Panels	Panelek
+	Panner	Panoráma
 	Paste	Beillesztés
 	Paste Attributes…	Jellemzők beillesztése…
 	Paste Insert	Beillesztés beszúrással
 	Perspective	Perspektíva
+	Pin Light	Tűfény
 	Play/Stop	Lejátszás/Leállítás
 	Polygon	Sokszög
+	Position	Pozíció
 	Preset	Előbeállítás
 	Previous in Sequence	Előző a szekvenciában
 	Previous in Track	Előző a sávon
@@ -319,7 +364,9 @@
 	Replace With Clip	Csere klipre
 	Reset All Parameters	Minden paraméter visszaállítása
 	Reset Duration	Időtartam visszaállítása
+	Reset Effect	Effekt visszaállítása
 	Reset Panel Layout	Panelelrendezés visszaállítása
+	Reset Parameter	Paraméter visszaállítása
 	Restoration	Helyreállítás
 	Restore Captions from Source Clip	Feliratok visszaállítása a forrásklipből
 	Retry	Újra
@@ -327,20 +374,25 @@
 	Reverse Match Frame	Fordított egyező kocka
 	Revert	Visszaállítás
 	Revert Remix	Remix visszavonása
-	Right	Jobb szélhez
+	Right	Jobb
 	Ripple Delete	Hullámtörlés
 	Ripple Delete Head Frame	Első kocka hullámtörlése
 	Ripple Sequence Markers	Szekvenciajelölők hullámszerű eltolása
 	Rose	Rózsa
+	Rotation	Elforgatás
+	Saturation	Telítettség
 	Save	Mentés
 	Save All	Összes mentése
 	Save As…	Mentés másként…
 	Save a Copy…	Másolat mentése…
 	Save as Template…	Mentés sablonként…
 	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
+	Scale	Méretezés
+	Scale Width	Szélesség méretezése
 	Scale to Frame Size	Méretezés a képkockához
 	Scene Edit Detection…	Jelenetváltás-felismerés…
 	Scratch Disks…	Munkalemezek…
+	Screen	Szita
 	Search	Keresés
 	Search Bin	Keresőtároló
 	Select	Kijelölés
@@ -372,6 +424,7 @@
 	Slide	Csúsztatás
 	Smart Tools	Okos eszközök
 	Snap in Timeline	Illesztés az idővonalon
+	Soft Light	Lágy fény
 	Some panel labels change language after a restart.	Néhány panelfelirat csak újraindítás után vált nyelvet.
 	Source	Forrás
 	Source In	Forrás kezdőpontja
@@ -390,6 +443,7 @@
 	Stop Queue	Sor leállítása
 	Stylize	Stilizálás
 	Subclip	Alklip
+	Subtract	Kivonás
 	Synchronize…	Szinkronizálás…
 	Synthetic	Szintetikus
 	Tan	Homok
@@ -401,10 +455,13 @@
 	The engine stopped	A motor leállt
 	Time	Idő
 	Time Interpolation	Időinterpoláció
+	Time Remapping	Időleképezés
 	Time and Pitch	Idő és hangmagasság
 	Timecode…	Időkód…
 	Timeline	Idővonal
+	Toggle Animation	Animálás be/ki
 	Toggle Proxies	Proxyk be/ki
+	Toggle the effect on or off	Az effekt be- vagy kikapcsolása
 	Top	Felső szélhez
 	Transcribe Sequence…	Szekvencia átiratának készítése…
 	Transcribe…	Átirat készítése…
@@ -416,6 +473,7 @@
 	Type	Típus
 	Undo	Visszavonás
 	Ungroup	Csoport bontása
+	Uniform Scale	Egyenletes méretezés
 	Universal Counting Leader…	Visszaszámláló előtét…
 	Untitled	Névtelen
 	Update Metadata…	Metaadatok frissítése…
@@ -434,11 +492,14 @@
 	Video Transitions	Videóátmenetek
 	View	Nézet
 	Violet	Ibolya
+	Vivid Light	Élénk fény
+	Volume	Hangerő
 	Wipe	Söprés
 	Work Area	Munkaterület
 	Yellow	Sárga
 	Yes	Igen
 	Zoom to Sequence	Nagyítás a teljes szekvenciára
+	automatic	automatikus
 	frames	képkocka
 	not available	nem érhető el
 	off	ki
