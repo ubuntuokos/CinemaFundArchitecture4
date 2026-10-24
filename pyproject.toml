@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "CFA4 Linux development diagnostics and experimental Qt 6 frontend"
 readme = "docs/development/linux.md"
 requires-python = ">=3.12"
-license = { text = "GPL-3.0-or-later" }
+license = { text = "MIT OR Apache-2.0" }
 dependencies = []
 
 [project.optional-dependencies]

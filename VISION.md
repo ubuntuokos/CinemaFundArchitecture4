@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-24 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-10-23 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -16,10 +16,6 @@ feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és 
 
 Kiindulópontja a FilmCraft 0.10.0 (MIT OR Apache-2.0) nemlineáris videóvágó, amelynek Rust
 médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejlődik.
-
-A CFA4 licence **GPL-3.0-or-later** (`LICENSE`). Az örökölt kód eredeti MIT/Apache-2.0
-megjegyzései megmaradnak. A kész CFA4 ingyenes és szabadon terjeszthető; csak a többletfunkciók
-és a hosszabb támogatási idő fizetős. Részletek: `docs/adr/ADR-F10-GPL3-LICENSING-2026-10-24.md`.
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 
@@ -34,10 +30,6 @@ megjegyzései megmaradnak. A kész CFA4 ingyenes és szabadon terjeszthető; csa
    igazolja. A már igazolt hardveres és kézi teszteket nem kell ok nélkül megismételni.
 5. **Minden terv a `main` ágon él.** Terv, cél és döntés nem maradhat csak mellékágon vagy
    piszkozat PR-ban, mert ott elveszik.
-6. **Minél kevesebb újraírás.** GPL-3.0-or-later-rel kompatibilis meglévő nyílt kód beépíthető;
-   amit így nem lehet átvenni, azt a CFA4 más módon valósítja meg.
-7. **Gyártófüggetlen gyorsítás.** A CFA4 nem függhet az NVIDIA-tól: más gyártók GPU-i és NPU-i
-   ugyanúgy használhatók legyenek (Vulkan/wgpu, VA-API, NPU-k), CPU-s tartalékkal.
 
 ## 3. Célplatform: minden grafikus Ubuntu-változat
 
@@ -73,7 +65,7 @@ A CFA4 ezeknek a programoknak a **képességeit** veszi át, nem a kódjukat, ne
 | **DaVinci Resolve** | vágás, szín, VFX, hang | Csomópont-alapú színkorrekció; Fusion-szerű csomópontos kompozitálás és 2D/3D VFX; Fairlight-szerű hangutómunka; gyors „Cut” vágófelület; kiadási (Deliver) oldal |
 | **Kdenlive** | videóvágás, Linux | Linuxos munkamenet és megszokások, proxy-szerkesztés, kulcskockák, render-profilok, beszédből felirat |
 | **OpenShot** | egyszerű vágás | Kezdőbarát, egyszerű mód; animált (3D) címek; könnyű kulcskocka-animáció |
-| **Shutter Encoder**, **Videomass** (a HandBrake helyett, GPL-2-only licence miatt) | konvertálás | Kötegelt átkódolás sorral, előbeállítások, gyártófüggetlen hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés, loudness-mérés és normalizálás, újrakódolás nélküli vágás. Motor: az FFmpeg GPL-3-as buildje, `nonfree` nélkül |
+| **Shutter Encoder**, **Videomass** (a GPL-2.0-only HandBrake helyett) | konvertálás | Kötegelt átkódolás sorral, előbeállítások, gyártófüggetlen hardveres kódolók, szűrők (deinterlace, zajcsökkentés), felirat- és hangsáv-kezelés, loudness-mérés és hangnormalizálás, újrakódolás nélküli vágás. Motor: a saját motor és a GStreamer ([ADR 0003](docs/adr/ADR-0003-aswf-and-conversion-sources.md)) |
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
@@ -97,7 +89,7 @@ Tervezett irányok:
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
 
-Szabály: a modellek a felhasználó gépén futnak (CPU, vagy bármely gyártó GPU-ja vagy NPU-ja, ha van). Minden modellnél
+Szabály: a modellek a felhasználó gépén futnak (CPU, vagy NVIDIA GPU, ha van). Minden modellnél
 rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
 
 ## 6. Prioritási sorrend
@@ -119,6 +111,7 @@ A legfontosabbak:
 - [`docs/audit/F9-RELEASE-DECISION-2026-10-23.md`](docs/audit/F9-RELEASE-DECISION-2026-10-23.md) és `f9-release-readiness.json` – kiadási kapuk összesítése
 - [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)
+- [`docs/adr/ADR-0003-aswf-and-conversion-sources.md`](docs/adr/ADR-0003-aswf-and-conversion-sources.md) – ASWF-projektek (OpenColorIO, OpenImageIO, OpenFX …) és a konvertálás forrásai
 
 A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-24).
 
@@ -128,5 +121,3 @@ A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-2
 - Mely videómegosztókra lehessen publikálni.
 - Mennyi MI-modell kerüljön a csomagba, és melyik legyen külön letölthető (a felhasználó jóváhagyásával).
 - Az „alapvetően helyi” MI mellett megengedett-e kivételesen, kifejezett felhasználói engedéllyel felhős szolgáltatás.
-- Licenc (docs/adr/ADR-F10-GPL3-LICENSING-2026-10-24.md, 7. pont): OpenFX-plugin-kivétel a GPL-3 7. pontja szerint; CLA vagy DCO a külső
-  közreműködőktől; az NVENC kezelése GPL-3 alatt. Mindhármat az első külső GPL-kód beemelése előtt kell eldönteni.
