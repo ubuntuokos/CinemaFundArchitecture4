@@ -183,7 +183,64 @@ pub fn frame_scale(seq_w: u32, seq_h: u32, p: &Value) -> Result<f32, String> {
     Ok(scale as f32)
 }
 
+/// Is this a request for the Source monitor (`target: "source"`) rather than the Program?
+fn wants_source(p: &Value) -> Result<bool, String> {
+    match p.get("target") {
+        None => Ok(false),
+        Some(Value::String(t)) if t == "program" => Ok(false),
+        Some(Value::String(t)) if t == "source" => Ok(true),
+        Some(_) => Err("`target` must be \"program\" or \"source\"".into()),
+    }
+}
+
+/// The source item a Source request names (`item`), else the one open in the Source monitor.
+fn source_item(s: &Session, p: &Value) -> Result<filmcraft_project::ItemId, String> {
+    let id = match p.get("item") {
+        Some(v) => filmcraft_project::ItemId(v.as_u64().ok_or("`item` must be an item id")?),
+        None => s.state.source_item.ok_or("no clip is open in the Source monitor")?,
+    };
+    if s.project.item(id).is_none() {
+        return Err(format!("no such item {}", id.0));
+    }
+    Ok(id)
+}
+
+/// The media item behind a source item (a subclip's parent), for its size and its sound.
+fn media_of(s: &Session, mut id: filmcraft_project::ItemId) -> filmcraft_project::ItemId {
+    // bounded: subclips of subclips are not expected, a cycle must not hang the server
+    for _ in 0..8 {
+        match s.project.item(id).map(|i| &i.kind) {
+            Some(filmcraft_project::ItemKind::Subclip { parent, .. }) => id = *parent,
+            _ => break,
+        }
+    }
+    id
+}
+
+/// Native picture size of a source item (media, subclip or sequence).
+fn item_size(s: &Session, id: filmcraft_project::ItemId) -> (u32, u32) {
+    let id = media_of(s, id);
+    let Some(item) = s.project.item(id) else { return (1920, 1080) };
+    if let Some(q) = item.as_sequence() {
+        return (q.settings.width, q.settings.height);
+    }
+    item.as_media().and_then(|m| m.info.video.as_ref()).map(|v| (v.width, v.height)).unwrap_or((1920, 1080))
+}
+
 fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
+    if wants_source(p)? {
+        let item = source_item(s, p)?;
+        let (w, h) = item_size(s, item);
+        let scale = frame_scale(w, h, p)?;
+        let t = match p.get("time").or(p.get("seconds")).or(p.get("frame")) {
+            Some(_) => time_param(s, p)?,
+            None => s.state.source_playhead,
+        };
+        let provider = s.media.provider(s.project.clone(), s.services.clone());
+        let img = filmcraft_render::render_item(&s.project, item, t, scale, &provider).ok_or("the source picture is unavailable (offline media?)")?;
+        let bytes = img.over_black_rgba8();
+        return Ok((json!({"w": img.w, "h": img.h, "format": "rgba8", "time": t.0, "item": item.0, "target": "source"}), bytes));
+    }
     let seq = s.active_sequence().ok_or("no active sequence")?;
     let (w, h) = (seq.settings.width, seq.settings.height);
     let scale = frame_scale(w, h, p)?;
@@ -191,33 +248,71 @@ fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
     let bytes = img.over_black_rgba8();
     let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
-    Ok((json!({"w": img.w, "h": img.h, "format": "rgba8", "time": t.0, "offline": offline}), bytes))
+    Ok((json!({"w": img.w, "h": img.h, "format": "rgba8", "time": t.0, "offline": offline, "target": "program"}), bytes))
+}
+
+fn audio_frames(p: &Value) -> Result<usize, String> {
+    p.get("frames")
+        .and_then(Value::as_u64)
+        .and_then(|n| usize::try_from(n).ok())
+        .filter(|n| (1..=MAX_AUDIO_FRAMES).contains(n))
+        .ok_or_else(|| format!("`frames` must be an integer in 1..={MAX_AUDIO_FRAMES}"))
+}
+
+/// Interleaved little-endian f32 samples of `channels`, `frames` long (missing samples are silence).
+fn interleave(channels: &[Vec<f32>], frames: usize) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(frames.saturating_mul(channels.len()).saturating_mul(4));
+    for i in 0..frames {
+        for ch in channels {
+            let v = ch.get(i).copied().unwrap_or(0.0);
+            bytes.extend_from_slice(&v.to_le_bytes());
+        }
+    }
+    bytes
 }
 
 fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
+    let frames = audio_frames(p)?;
+    if wants_source(p)? {
+        let item = source_item(s, p)?;
+        let media = media_of(s, item);
+        let sr = p
+            .get("sampleRate")
+            .map(|v| v.as_u64().and_then(|x| u32::try_from(x).ok()).filter(|x| (8_000..=192_000).contains(x)).ok_or("`sampleRate` must be 8000..=192000"))
+            .transpose()?
+            .unwrap_or(48_000);
+        let start = match p.get("start") {
+            Some(v) => v.as_i64().ok_or("`start` must be a sample index")?,
+            None => match p.get("time").or(p.get("seconds")).or(p.get("frame")) {
+                Some(_) => time_param(s, p)?.to_units_floor(i64::from(sr)),
+                None => s.state.source_playhead.to_units_floor(i64::from(sr)),
+            },
+        };
+        let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
+        let channels: Vec<Vec<f32>> = if has_audio && start >= 0 {
+            let provider = s.media.provider(s.project.clone(), s.services.clone());
+            let source = filmcraft_render::SourceProvider::source(&provider, media).ok_or("source audio is unavailable (offline media?)")?;
+            let sound = source.audio(start, frames, sr).map_err(|e| format!("source audio decoding failed: {e}"))?;
+            let sound =
+                filmcraft_render::audio::to_layout(sound, filmcraft_audio_dsp::channels::Layout::Stereo, filmcraft_audio_dsp::channels::Mixdown::default());
+            sound.channels
+        } else {
+            vec![vec![0.0; frames]; 2]
+        };
+        let bytes = interleave(&channels, frames);
+        return Ok((json!({"sampleRate": sr, "channels": channels.len(), "frames": frames, "start": start, "format": "f32le", "target": "source"}), bytes));
+    }
     let seq = s.active_sequence().ok_or("no active sequence")?;
     let sr = seq.settings.sample_rate.max(1);
     let start = match p.get("start") {
         Some(v) => v.as_i64().ok_or("`start` must be a sample index")?,
         None => time_param(s, p)?.to_units_floor(i64::from(sr)),
     };
-    let frames = p
-        .get("frames")
-        .and_then(Value::as_u64)
-        .and_then(|n| usize::try_from(n).ok())
-        .filter(|n| (1..=MAX_AUDIO_FRAMES).contains(n))
-        .ok_or_else(|| format!("`frames` must be an integer in 1..={MAX_AUDIO_FRAMES}"))?;
     let provider = s.media.provider(s.project.clone(), s.services.clone());
     let buf = filmcraft_render::audio::mix_sequence(&s.project, seq, start, frames, &provider);
     let channels = buf.channels.len();
-    let mut bytes = Vec::with_capacity(frames.saturating_mul(channels).saturating_mul(4));
-    for i in 0..frames {
-        for ch in &buf.channels {
-            let v = ch.get(i).copied().unwrap_or(0.0);
-            bytes.extend_from_slice(&v.to_le_bytes());
-        }
-    }
-    Ok((json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le"}), bytes))
+    let bytes = interleave(&buf.channels, frames);
+    Ok((json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"}), bytes))
 }
 
 /// Handles one request. `Ok(None)` asks the loop to end the session.
@@ -396,6 +491,40 @@ mod tests {
         let unknown = handle(&mut s, json!(8), "nope", json!({})).expect("reply");
         assert_eq!(unknown.json["ok"], json!(false));
         assert!(handle(&mut s, json!(9), "app.quit", json!({})).is_none());
+    }
+
+    #[test]
+    fn renders_the_source_monitor_picture_and_sound() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        // nothing open in the Source monitor yet: a clear error, not a panic
+        let none = handle(&mut s, json!(1), "frame.render", json!({"target": "source"})).expect("reply");
+        assert_eq!(none.json["ok"], json!(false));
+        let bad = handle(&mut s, json!(2), "frame.render", json!({"target": "elsewhere"})).expect("reply");
+        assert_eq!(bad.json["ok"], json!(false));
+        let ghost = handle(&mut s, json!(3), "frame.render", json!({"target": "source", "item": 999_999})).expect("reply");
+        assert_eq!(ghost.json["ok"], json!(false));
+        let movie = s
+            .project
+            .items
+            .values()
+            .find(|i| i.as_media().is_some_and(|m| m.info.video.is_some() && !m.info.audio_streams.is_empty()))
+            .map(|i| i.id)
+            .expect("a demo movie with sound");
+        s.execute("source.open", json!({"item": movie.0})).expect("open source");
+        let frame = handle(&mut s, json!(4), "frame.render", json!({"target": "source", "maxWidth": 80, "seconds": 1.0})).expect("reply");
+        assert_eq!(frame.json["ok"], json!(true), "{}", frame.json);
+        assert_eq!(frame.json["result"]["item"], json!(movie.0));
+        let (w, h) = (frame.json["result"]["w"].as_u64().unwrap_or(0), frame.json["result"]["h"].as_u64().unwrap_or(0));
+        // media decode by whole-number decimation: at least the asked size, well below full size
+        assert!((80..160).contains(&w) && h > 0, "{w}x{h}");
+        assert_eq!(frame.binary.as_ref().map(Vec::len), Some((w * h * 4) as usize));
+        let audio = handle(&mut s, json!(5), "audio.render", json!({"target": "source", "start": 0, "frames": 4800})).expect("reply");
+        assert_eq!(audio.json["ok"], json!(true), "{}", audio.json);
+        assert_eq!(audio.json["result"]["channels"], json!(2));
+        assert_eq!(audio.binary.as_ref().map(Vec::len), Some(4800 * 2 * 4));
+        let rate = handle(&mut s, json!(6), "audio.render", json!({"target": "source", "frames": 10, "sampleRate": 5})).expect("reply");
+        assert_eq!(rate.json["ok"], json!(false));
     }
 
     #[test]

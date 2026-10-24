@@ -1805,6 +1805,7 @@ version = "0.10.0"
 name = "filmcraft-cli"
 version = "0.10.0"
 dependencies = [
+ "filmcraft-audio-dsp",
  "filmcraft-automation",
  "filmcraft-codecs",
  "filmcraft-engine",
