@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 from .commands import Command, parse_value
 from .i18n import tr
 
-PROJECT_FILTER = "CFA4 / FilmCraft project (*.fcproj);;All files (*)"
+PROJECT_FILTER = "CFA4 project (*.fcproj);;All files (*)"
 
 
 class ParamDialog(QDialog):

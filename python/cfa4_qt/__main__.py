@@ -23,7 +23,6 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("CFA4 targets Linux (Ubuntu) only")
     try:
         from PySide6.QtCore import QSettings, QTimer
-        from PySide6.QtGui import QIcon
         from PySide6.QtWidgets import QApplication, QMessageBox
     except ImportError as exc:
         parser.error(f"Qt 6 / PySide6 missing: {exc}; install: python -m pip install -e '.[qt]'")
@@ -36,17 +35,11 @@ def main(argv: list[str] | None = None) -> int:
     app.setApplicationName("CFA4")
     app.setOrganizationName("CFA4")
     app.setDesktopFileName("cfa4")
-    icon = (
-        Path(__file__).resolve().parents[2]
-        / "assets"
-        / "app-icon"
-        / "hicolor"
-        / "256x256"
-        / "apps"
-        / "ai.storyteller.filmcraft.png"
-    )
-    if icon.is_file():
-        app.setWindowIcon(QIcon(str(icon)))
+    from .branding import app_icon
+
+    icon = app_icon()
+    if not icon.isNull():
+        app.setWindowIcon(icon)
     settings = QSettings("CFA4", "CFA4-Qt")
     language = args.lang or str(settings.value("language") or "") or i18n.system_language()
     i18n.TR.set_language(language)

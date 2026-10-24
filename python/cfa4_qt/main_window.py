@@ -11,6 +11,7 @@ from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
 from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMessageBox, QTabBar, QWidget
 
 from . import __version__
+from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
@@ -221,6 +222,10 @@ class MainWindow(QMainWindow):
         self.fit_action.triggered.connect(self.timeline.canvas.zoom_to_fit)
         self.reset_layout = QAction(tr("Reset Panel Layout"), self)
         self.reset_layout.triggered.connect(self.reset_panel_layout)
+        self.quit_action = QAction(tr("Quit"), self)
+        self.quit_action.setObjectName("qt.quit")
+        self.quit_action.setMenuRole(QAction.MenuRole.QuitRole)
+        self.quit_action.triggered.connect(self.close)  # asks to save unsaved changes first
         self.about_action = QAction(tr("About CFA4"), self)
         self.about_action.triggered.connect(self._about)
         self.lang_actions = QActionGroup(self)
@@ -236,6 +241,7 @@ class MainWindow(QMainWindow):
         for action, keys in (
             (self.play_action, ["Space"]),
             (self.export_action, ["Ctrl+M"]),
+            (self.quit_action, ["Ctrl+Q"]),
             (self.tool_actions[0], ["V"]),
             (self.tool_actions[1], ["C"]),
         ):
@@ -246,7 +252,11 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         view_actions: list[QAction] = [self.fit_action, self.reset_layout]
         bound = self.registry.build_menus(
-            self.menuBar(), self, {"Sequence": [self.play_action, *self.tool_actions], "Help": [self.about_action]}
+            self.menuBar(), self, {
+                "File": [self.quit_action],
+                "Sequence": [self.play_action, *self.tool_actions],
+                "Help": [self.about_action],
+            }
         )
         window_menu = self.menuBar().addMenu(tr("Panels"))
         window_menu.setObjectName("menu.Panels")
@@ -550,12 +560,15 @@ class MainWindow(QMainWindow):
 
     # ----- misc -----
     def _about(self) -> None:
-        QMessageBox.about(
-            self,
-            tr("About CFA4"),
+        box = QMessageBox(self)
+        box.setObjectName("dialog.about")
+        box.setWindowTitle(tr("About CFA4"))
+        box.setIconPixmap(logo_pixmap(96))
+        box.setText(
             f"<b>CFA4</b> — CinemaFundArchitecture4<br>Qt 6 GUI {__version__}<br>{self.engine.hello.get('engine', '')}<br><br>"
-            "GPL-3.0-or-later<br>Rust engine · Qt 6 / PySide6 · Ubuntu",
+            "GPL-3.0-or-later<br>Rust engine · Qt 6 / PySide6 · Ubuntu"
         )
+        box.open()
 
     def closeEvent(self, e: QCloseEvent) -> None:
         if self.engine.running and self.state.get("dirty") and not self._quit_confirmed:
