@@ -343,8 +343,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         let has_tail = !tail.trim().is_empty();
         if !has_head && !has_body && !has_tail && !has_pics {
             // an empty row (or one with only settings): ends the block; empty rows add a unit
-            let settings_only = !(gap.trim().is_empty() && cstyle.trim().is_empty() && spine_s.trim().is_empty() && pstyle.trim().is_empty())
-                || !(runtime.trim().is_empty() && pgap.trim().is_empty());
+            let settings_only = [&gap, &cstyle, &spine_s, &pstyle, &runtime, &pgap].iter().any(|v| !v.trim().is_empty());
             if !settings_only {
                 pending_units += 1.0;
             }
