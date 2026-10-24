@@ -469,9 +469,7 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
         for (kind, ti, it) in placed {
             nq.tracks_mut(kind)[ti].items.push(it);
         }
-        for (kind, ti, t) in transitions {
-            nq.tracks_mut(kind)[ti].transitions.push(t);
-        }
+        add_transitions(nq, &transitions);
         for tr in nq.all_tracks_mut() {
             tr.sort();
             edit::remove_orphan_transitions(tr);
@@ -485,6 +483,21 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
     })?;
     s.events.push(crate::Event::OpenSource(id));
     Ok(json!({"sequence": id.0, "name": name}))
+}
+
+/// Puts `transitions` on their tracks of `nq`.
+///
+/// The list is read by reference and each transition cloned. Consuming it by value (`for (kind,
+/// ti, t) in transitions` or `pop()`) yielded nothing at opt-level ≥ 1 with rustc 1.95–1.97: the
+/// `Option<(TrackKind, usize, Transition)>` the loop reads came back `None` with three elements
+/// left, so subsequences and sequences edited in as clips lost their transitions
+/// (`nest_editing_tests`). Keep this form until the compiler issue is fixed.
+fn add_transitions(nq: &mut filmcraft_project::Sequence, transitions: &[(TrackKind, usize, filmcraft_project::Transition)]) {
+    for (kind, ti, t) in transitions {
+        if let Some(track) = nq.tracks_mut(*kind).get_mut(*ti) {
+            track.transitions.push(t.clone());
+        }
+    }
 }
 
 // ---------- a sequence edited in as its clips ----------
@@ -591,9 +604,10 @@ pub(crate) fn place_sequence_clips(
         let min = seq.settings.frame_rate.frame_duration();
         let mut ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: min };
         let new = if insert { edit::insert(seq, placements, &mut ctx)? } else { edit::overwrite(seq, placements, &mut ctx)? };
-        for (kind, lane, t) in transitions {
-            if let Some(tr) = dest.get(&(audio(kind), lane)).and_then(|id| seq.track_mut(*id)) {
-                tr.transitions.push(t);
+        // by reference, for the compiler issue described at `add_transitions`
+        for (kind, lane, t) in &transitions {
+            if let Some(tr) = dest.get(&(audio(*kind), *lane)).and_then(|id| seq.track_mut(*id)) {
+                tr.transitions.push(t.clone());
             }
         }
         for tr in seq.all_tracks_mut() {
