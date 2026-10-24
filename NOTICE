@@ -1,7 +1,13 @@
+CFA4 (CinemaFundArchitecture4)
+Copyright (c) 2026 the CFA4 contributors.
+Licensed under the GNU General Public License, version 3 or (at your option) any later version
+(LICENSE).
+
+CFA4 is derived from FilmCraft:
 FilmCraft
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option
-(LICENSE-MIT, LICENSE-APACHE).
+(LICENSE-MIT, LICENSE-APACHE). Files from FilmCraft keep these notices.
 
 The ArtCraft name, wordmark and logos in docs/brand/ are trademarks of the ArtCraft Team. They are
 not open source and are not covered by the license above; their terms are in

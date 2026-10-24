@@ -41,8 +41,12 @@ its version; real editor operations require a future explicitly tested adapter.
 ## Upstream provenance and licensing
 
 This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
-by the ArtCraft Team and contributors. Retain the upstream MIT and Apache-2.0
-license files, original notices and third-party attribution.
+by the ArtCraft Team and contributors.
+
+CFA4 is licensed under **GPL-3.0-or-later** ([LICENSE](LICENSE)). Inherited FilmCraft code keeps its
+upstream MIT and Apache-2.0 license files and notices ([LICENSE-MIT](LICENSE-MIT),
+[LICENSE-APACHE](LICENSE-APACHE), [NOTICE](NOTICE)), and third-party attribution is retained.
+See [ADR F10](docs/adr/ADR-F10-GPL3-LICENSING-2026-10-24.md).
 
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
@@ -50,7 +54,7 @@ They must be removed or replaced before independently distributing modified CFA4
 Existing inherited screenshots and application assets are pending this audit.
 
 PySide6/Qt6 is an **optional** developer dependency and has its own LGPLv3/commercial
-licensing obligations. The Qt shell does not bundle Qt for distribution.
+licensing obligations, compatible with GPL-3.0-or-later. The Qt shell does not bundle Qt for distribution.
 
 ## Project documentation
 

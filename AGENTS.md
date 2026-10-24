@@ -15,13 +15,19 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
-- **Explicit license boundary:** the optional Python Qt6 frontend may use the official PySide6/Qt6
-  packages under applicable LGPLv3/commercial terms, even though inherited rules below otherwise
-  restrict Rust-core dependencies to permissive licenses. This is NOT permission to copy GPL/LGPL
-  implementation code into Rust crates or to embed Qt/PySide binaries without review.
-  GPL-only Qt modules and distribution require separate license decisions.
+- **License: GPL-3.0-or-later** (`LICENSE`; [ADR F10](docs/adr/ADR-F10-GPL3-LICENSING-2026-10-24.md)). Code under a
+  GPL-3.0-or-later-compatible licence (MIT, BSD, ISC, Zlib, Apache-2.0, MPL-2.0, LGPL-2.1+/3,
+  GPL-2.0-or-later, GPL-3.0) may be reused instead of rewritten, with its licence and notices kept
+  and an `ATTRIBUTION.md` entry. **GPL-2.0-only** (e.g. HandBrake), AGPL without a separate
+  decision, NC/ND, proprietary or "nonfree" code is not allowed. Check licences per file: one
+  repository can mix licences. Inherited FilmCraft files keep their MIT/Apache-2.0 headers.
+  PySide6/Qt6 (LGPLv3) and GPL Qt modules are allowed; bundling them in packages still needs review.
+  The CFA4 rules in this section replace the inherited licence rules in §1.2 and §2 below.
 - A release is blocked until inherited ArtCraft marks, icons, package metadata and public
   branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
+- Hardware acceleration must not depend on one vendor: every NVIDIA-only path (NVDEC, NVENC) needs
+  a non-NVIDIA path (VA-API, Vulkan) and a CPU fallback. NVENC stays an optional, runtime-loaded
+  module (ADR F10 §7).
 - The Qt shell is a development prototype, NOT a completed migration from egui.
 - Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
 
@@ -56,6 +62,8 @@ panic path, and fix a crash before building on top of it. The cross-app standard
    uses `unsafe_code = "deny"` with `#[allow(unsafe_code)]` only on its FFI modules, a
    `// SAFETY:` comment on every `unsafe` block, a safe `Result`-returning public API, and the
    pure-Rust decoder as the tested fallback ([ADR 0001](docs/adr/0001-platform-ffi.md)).
+   **CFA4:** further FFI crates for C/C++ libraries (e.g. OpenColorIO, OpenImageIO, FFmpeg) are
+   allowed only with their own ADR, under exactly these rules ([ADR F10](docs/adr/ADR-F10-GPL3-LICENSING-2026-10-24.md)).
 4. **Every input-derived number is hostile.** Media files, project and interchange files, presets, fonts,
    CLI / MCP / control-channel parameters and UI state are untrusted. Index and slice with `get()` (or
    validate bounds once, up front, for a hot loop); slice strings only at char boundaries; use
@@ -94,7 +102,8 @@ reproduce an image (for example, point lists traced from someone else's icon).
      without reference to Adobe's artwork.
 2. **Every asset must be open**: open-source licensed (MIT, Apache-2.0, BSD, ISC, zlib, SIL OFL…),
    public domain / CC0, or Creative Commons (CC BY or CC BY-SA; no NC/ND licences), **or** created by a
-   contributor who owns it and licenses it to the project under the project licence (MIT OR Apache-2.0).
+   contributor who owns it and licenses it to the project under the project licence (GPL-3.0-or-later,
+   or a compatible permissive licence).
    If the licence is unknown or unclear, the asset does not go in.
 3. **Every asset needs an attribution sidecar.** Next to each asset file `X`, add `X.attribution` with:
    ```text
@@ -136,16 +145,17 @@ reproduce an image (for example, point lists traced from someone else's icon).
 - Never read, disassemble or copy anything inside Adobe application bundles; file names and listings only.
   Observe behaviour by using the app; never capture its Home screen, recent projects, account info or
   file browsers.
-- Never copy GPL/LGPL/AGPL code (FFmpeg, x264, x265, MLT, Kdenlive, Shotcut, Olive, LAME…).
-- Implement codecs and formats from public specifications (ITU-T/ISO/IEC standards, IETF RFCs, the VP9
+- **CFA4:** reusing GPL-3.0-or-later-compatible code (FFmpeg, MLT, Kdenlive, Shotcut, Olive, ASWF
+  libraries…) is allowed under the licence rules of the CFA4 section above. GPL-2.0-only code is not.
+- When CFA4 writes its own codec or format, implement it from public specifications (ITU-T/ISO/IEC standards, IETF RFCs, the VP9
   and AV1 bitstream specs, SMPTE documents, published container specs). Do not read the source of
   reference or third-party decoders/encoders while implementing a format, even permissively licensed
   ones (libvpx, libopus, libaom, dav1d, openh264…); spec text and conformance vectors only. Record the
   spec edition used in the crate README.
-- ffmpeg/ffprobe may be used only as external test oracles and fixture generators. They are never
-  linked, bundled or shipped.
-- Dependencies must use permissive licences: MIT/Apache-2.0/BSD/ISC/Zlib/Unicode/CC0/BSL-1.0, or
-  MPL-2.0 used unmodified.
+- ffmpeg/ffprobe are test oracles and fixture generators. **CFA4:** an FFmpeg GPL-3 build
+  (`--enable-gpl --enable-version3`, never `--enable-nonfree`) may become an engine component only
+  after its own ADR.
+- Dependencies must use a GPL-3.0-or-later-compatible licence (see the CFA4 section above).
 
 ## 3. Engineering rules
 
