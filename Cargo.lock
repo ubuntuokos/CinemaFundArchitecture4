@@ -1727,6 +1727,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "filmcraft-accel"
+version = "0.10.0"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "filmcraft-apv"
 version = "0.10.0"
 dependencies = [
