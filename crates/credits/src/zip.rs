@@ -111,7 +111,7 @@ impl<'a> Zip<'a> {
         match e.method {
             0 => Ok(raw.to_vec()),
             8 => {
-                let out = filmcraft_media::inflate::inflate(raw, e.size).map_err(|m| bad(m))?;
+                let out = filmcraft_media::inflate::inflate(raw, e.size).map_err(bad)?;
                 if out.len() != e.size {
                     return Err(bad("entry size does not match"));
                 }
