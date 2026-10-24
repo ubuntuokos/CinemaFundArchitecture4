@@ -1,11 +1,19 @@
 # ADR 0003 – ASWF-projektek és a konvertálás forrásai GPL-3.0-or-later alatt
 
-**Dátum:** 2026-10-24 · **Állapot:** JAVASLAT (a tulajdonos, `ubuntuokos` jóváhagyására vár)
+**Dátum:** 2026-10-24 · **Állapot:** VÉGLEGES TERV, JÓVÁHAGYÁSRA VÁR (tulajdonos: `ubuntuokos`).
+A jóváhagyás módja: a tulajdonos a 10. pont listáját elfogadja, és összevonja ezt a PR-t.
 
-**Előfeltételek:** a licencváltás (#37, `docs/licensing.md`) és a GStreamer-háttérmotor
-(#40, [ADR 0002](ADR-0002-gstreamer-backend.md)). Ez az ADR a licencszabályokat nem ismétli meg,
-csak alkalmazza őket két területre: az Academy Software Foundation (ASWF) projektjeire és a
-HandBrake helyére a konvertálásban.
+**Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
+GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
+Ez az ADR a licencszabályokat nem ismétli meg, csak alkalmazza őket: az Academy Software
+Foundation (ASWF) projektjeire, a HandBrake helyére a konvertálásban, a zárt bővítményekre, a
+hardveres kódolásra és a GPL-3 után beépíthető könyvtárakra. Az 1–6. pont a döntéseket és a
+jelölteket rögzíti, a 7–10. pont a végrehajtási tervet és a jóváhagyandó pontokat.
+
+**Már rögzített tulajdonosi döntések (2026-10):** GPL-3.0-or-later licenc; a GStreamer kiegészítő
+háttérmotor, a saját Rust-motor az elsődleges és a tartalék; a HandBrake kikerül; zárt bővítmény
+nem töltődik be, a nélkülözhetetlen zárt bővítmények képességét saját kód valósítja meg (4. pont);
+hardveres kódolás gyártónként, NVIDIA-függőség nélkül (5. pont).
 
 ## 1. Háttér
 
@@ -40,16 +48,16 @@ Három módon kerülhet be egy ASWF-projekt, ebben a sorrendben:
 
 | Projekt | Licenc | Mód | Mikor |
 |---|---|---|---|
-| OpenTimelineIO | Apache-2.0 | orákulum az `otio.rs`-hez (oda-vissza teszt) | most |
-| OpenAPV | BSD-3 | orákulum a `crates/apv`-hez (bitpontos összevetés) | most |
-| OpenColorIO + OpenColorIO-Config-ACES | BSD-3 | orákulum a `crates/color`-hoz (ΔE-mérés), majd az **első beépítés** (`crates/ocio`, külön ADR) | orákulum most; beépítés az ADR F8 5. lépésénél (előnézet, GPU) |
-| OpenImageIO | Apache-2.0 | beépítés a hiányzó formátumokra (PSD, HEIF, JPEG 2000, kamera-RAW, `docs/gaps.md` G10); a saját függőségei (pl. LibRaw, libheif) egyenként ellenőrizendők | a Qt6-idővonal után |
-| OpenEXR + Imath | BSD-3 | beépítés a hiányzó PIZ/DWA/B44, többrészes és mély EXR-re | az OpenImageIO-val együtt |
-| OpenFX | BSD-3 | plugin-host (G11), csak GPL-3-kompatibilis effektekhez (4. pont); első betöltendő csomag a Natron openfx-misc (6. pont) | a Qt6-idővonal után |
-| xSTUDIO | Apache-2.0 | lejátszó/átnéző részek modulonként (Qt/C++) | igény szerint |
-| OpenRV | Apache-2.0, egyes komponensei eltérnek (`Notice.txt`) | csak komponensenkénti licencellenőrzés után | igény szerint |
-| MaterialX, OpenShadingLanguage, OpenVDB, openqmc | BSD-3 / Apache-2.0 | 3D/VFX-szakasz | később |
-| dna | Apache-2.0 | csak ha helyben fut (VISION.md 2.3) | később |
+| OpenTimelineIO | Apache-2.0 | orákulum az `otio.rs`-hez (oda-vissza teszt) | A1 |
+| OpenAPV | BSD-3 | orákulum a `crates/apv`-hez (bitpontos összevetés) | A1 |
+| OpenColorIO + OpenColorIO-Config-ACES | BSD-3 | orákulum a `crates/color`-hoz (ΔE-mérés), majd az **első beépítés** (`crates/ocio`, külön ADR) | A1 (orákulum), A2 (beépítés, az ADR F8 5. lépésénél) |
+| OpenImageIO | Apache-2.0 | beépítés a hiányzó formátumokra (PSD, HEIF, JPEG 2000, kamera-RAW, `docs/gaps.md` G10); a saját függőségei (pl. LibRaw, libheif) egyenként ellenőrizendők | A3 (az ADR F8 3. lépése után) |
+| OpenEXR + Imath | BSD-3 | beépítés a hiányzó PIZ/DWA/B44, többrészes és mély EXR-re | A3, az OpenImageIO-val együtt |
+| OpenFX | BSD-3 | plugin-host (G11), csak GPL-3-kompatibilis effektekhez (4. pont); első betöltendő csomag a Natron openfx-misc (6. pont); külön folyamatban (9. pont) | A4 (az ADR F8 4. lépése után) |
+| xSTUDIO | Apache-2.0 | lejátszó/átnéző részek modulonként (Qt/C++) | A7 |
+| OpenRV | Apache-2.0, egyes komponensei eltérnek (`Notice.txt`) | csak komponensenkénti licencellenőrzés után | A7 |
+| MaterialX, OpenShadingLanguage, OpenVDB, openqmc | BSD-3 / Apache-2.0 | 3D/VFX-szakasz | A7 |
+| dna | Apache-2.0 | csak ha helyben fut (VISION.md 2.3) | A7 |
 | OpenCue, rez, aswf-docker | Apache-2.0 | nem szükséges: stúdió-infrastruktúra, nem egygépes alkalmazás | – |
 
 Minden beépítésnél az Apache-2.0 `NOTICE`-szövegét és a licencfájlokat a csomagban szállítani kell
@@ -148,13 +156,81 @@ Ami a licenctől függetlenül marad:
   ffmpeg nem linkelhető, továbbra is érvényes; minden beépítéshez az ADR-nek kell kivételt
   kérnie, az ADR 0001 feltételeivel.
 
-## 7. Következmények
+## 7. Végrehajtási terv
+
+Minden szakasz külön PR (beépítésnél előtte külön ADR), a saját motor mindig tartalék, és a
+VISION.md 6. pontjának sorrendjéhez igazodik: a Qt6-felület az első, ezért a beépítések az
+ADR F8 megfelelő lépéséhez kötődnek. A becslések durva, ügynökórában megadott értékek a
+`docs/gaps.md` kalibrációja szerint; a hardveres és jogi lépések emberi munkát is igényelnek.
+
+| Szakasz | Tartalom | Feltétel / időzítés | Becslés |
+|---|---|---|---|
+| **A0** | A #40 (ADR 0002) és ez a PR összevonva; az ADR 0003 bekerül a `docs/audit/README.md` tartalomjegyzékébe | most | 1–2 óra |
+| **A1** | Tesztorákulumok: OpenTimelineIO oda-vissza teszt az `otio.rs`-hez; OpenAPV bitpontos összevetés a `crates/apv`-vel; OpenColorIO + ACES-config ΔE-mérés a `crates/color`-hoz. A termékbe nem kerülnek, hiányzó eszköznél kihagyódnak | most indítható, a Qt6-munkát nem akasztja | 10–20 óra |
+| **A2** | **ADR 0004: FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
+| **A3** | OpenImageIO + OpenEXR + LibRaw + libheif: PSD, HEIF/HEIC, JPEG 2000, kamera-RAW, a hiányzó EXR-tömörítések, többrészes és mély EXR (G10) | az ADR F8 3. lépése (médiaböngésző) után | 60–120 óra |
+| **A4** | OpenFX-host **külön folyamatban** (lásd 9. pont), első csomag a Natron openfx-misc (G11, G18) | az ADR F8 4. lépése (idővonal) után | 120–250 óra |
+| **A5** | Szoftveres kódolók: x265 (HEVC), x264 (H.264), LAME (MP3) (G13); előtte szabadalmi vizsgálat | az ADR F8 6. lépésénél (export) | 30–60 óra + jogi vizsgálat |
+| **A6** | Hang: Rubber Band (időnyújtás, hangmagasság), LV2-host lilv-vel, szintén külön folyamatban | a hangszerkesztési szakaszban (VISION.md 6.4) | 60–120 óra |
+| **A7** | Később: xSTUDIO- és OpenRV-részek, MaterialX, OpenShadingLanguage, OpenVDB, openqmc, dna, frei0r | a 3D/VFX- és az átnézési szakaszban | külön tervezendő |
+
+A hardveres kódolás gyártónkénti útja (5. pont) nem itt, hanem az ADR 0002 3. lépésében és a
+#39 gyorsítási tervében valósul meg; ez a terv csak a szoftveres kódolókat adja hozzá.
+
+## 8. Elfogadási feltételek (bizonyíték, nem állítás)
+
+| Szakasz | Akkor kész, ha |
+|---|---|
+| A1 | OTIO: legalább 10 saját tesztidővonal exportja és visszaolvasása után a sávok, klipek, be- és kipontok, sebességek és jelölők egyeznek. OpenAPV: a hivatalos tesztfolyamok minden kockája bitre egyezik. OCIO: az ACES-transzformok egy rácsra mért legnagyobb eltérése ΔE2000 ≤ 1,0, vagy az eltérés dokumentált hibaként a `docs/gaps.md`-be kerül |
+| A2 | Az OCIO-s előnézet és export a CPU-s OCIO-referenciától ΔE2000 ≤ 1,0-ra tér el; OCIO nélkül a program a `crates/color`-ral fut tovább; az ADR 0001 minden feltétele teljesül (`// SAFETY:`, `Result` API, opcionális funkció) |
+| A3 | Minden új formátum fájljai megnyílnak, és a kép egyezik az `oiiotool` referenciájával; sérült fájlra hibaüzenet jön, nem összeomlás (mutációs fuzz-teszttel) |
+| A4 | Az openfx-misc effektjei betöltődnek és renderelnek; az eredmény a Natron referenciájától PSNR ≥ 50 dB; egy összeomló bővítmény nem viszi magával a programot |
+| A5 | A kimenetet az ffprobe és a saját dekóder is helyesnek látja; bitráta–PSNR görbe dokumentálva; a szabadalmi vizsgálat eredménye rögzítve |
+| A6 | Az időnyújtás és a hangmagasság-váltás hallható hibák nélkül, mérve; egy összeomló LV2-bővítmény nem viszi magával a programot |
+
+Minden szakasz teljesíti a meglévő kapukat is (`cargo xtask ci`, `cargo deny check licenses`), és
+minden átvett kód bekerül a `docs/licensing.md` §5 nyilvántartásába.
+
+## 9. Kockázatok és kezelésük
+
+- **Összeomlás idegen kódban.** Az OFX- és LV2-bővítmények C/C++ kódja a programon belül futva
+  egy hibával az egész alkalmazást leállíthatja, amit Rust `catch_unwind` nem fog el. Ez ütközne
+  az AGENTS.md 0. pontjával („Never crash”). Ezért a bővítmény-hostok **külön folyamatban**
+  futnak, a meglévő helyi JSON-hídhoz hasonló felületen; a bővítmény összeomlása után a
+  folyamat újraindul, a projekt nem sérül.
+- **`unsafe` kód növekedése.** Minden FFI-crate szűk, ellenőrzött határfelület mögött van
+  (ADR 0001 minta), mutációs fuzz-tesztekkel.
+- **Rendszerfüggőségek.** Az új könyvtárak opcionális Cargo-funkció mögött vannak; nélkülük a
+  munkaterület fordul és tesztelhető, a csomagolás (`.deb`, AppImage, Flatpak, `tar.gz`) külön
+  ellenőrzést kap.
+- **Licenc fájlonként.** Nagy projektekben vegyes licencek vannak; GPL-2.0-only fájl nem kerülhet
+  be. A `cargo deny` és a §5 nyilvántartás ezt őrzi.
+- **Szabadalmak.** H.264, HEVC, AAC: az A5 előtt jogi vizsgálat; addig az x264 és az x265 nem
+  kerül kiadásba.
+- **NVENC jogi helyzete** (5. pont): kiadás előtt vizsgálandó; ha gond van, NVIDIA-n a szoftveres
+  kódoló fut.
+
+## 10. Jóváhagyandó pontok
+
+A PR összevonásával a tulajdonos ezeket hagyja jóvá:
+
+1. Az 1–6. pont döntései és jelöltjei, a 7. pont szakaszai és sorrendje.
+2. Az FFI-kivétel elve: további C/C++ könyvtár csak saját ADR-rel, az ADR 0001 feltételeivel
+   köthető be (az első ilyen az ADR 0004, az A2-ben). Az AGENTS.md szövege az ADR 0004-gyel
+   változik, nem ezzel a PR-ral.
+3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
+4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet; addig külső tesztorákulum marad.
+5. Az x264 és az x265 kiadása előtt szabadalmi, az NVENC kiadása előtt licencjogi vizsgálat kell.
+6. Az A1 (tesztorákulumok) az összevonás után azonnal indulhat.
+
+## 11. Következmények
 
 - A tesztorákulumok a `python/cfa4_devtools` alá vagy a Rust-tesztekbe kerülnek, és ahogy az
   ffmpeg-orákulumok, hiányzó eszköz esetén kihagyódnak; a teljes CI-ben csak kézi indításra
   futnak.
 - Minden beépítés külön PR és külön ADR, a saját motor tartalékként marad.
-- Ez az ADR kódot nem változtat. A VISION.md konvertálási sorát és kapcsolódó-dokumentum
+- Ez az ADR kódot nem változtat; a megvalósítás a 7. pont szakaszaiban, külön PR-okban történik.
+  A VISION.md konvertálási sorát és kapcsolódó-dokumentum
   listáját, valamint a `docs/gaps.md` G10, G11, G13 és G18 pontjait egészíti ki a 6. pont
   jelöltjeivel.
 
