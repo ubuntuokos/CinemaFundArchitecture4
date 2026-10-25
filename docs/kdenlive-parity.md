@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
 > **Utolsó átnézés:** 2026-10-25 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
-> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -36,7 +36,7 @@ a CFA4 viszont Rust-motor + PySide6-felület. A haszna ezért részenként elté
 | `.kdenlive` / MLT XML olvasó logika | **nagy** (K1) | A logika és a mezőleképezés átírható Rustra (`crates/interchange`). Az MLT maga LGPL-2.1-or-later |
 | Algoritmusok (pl. hullámforma, audio-szinkron korrelációval, jelenetfelismerés) | közepes | Átírás Rustra, forrásmegjelöléssel |
 | Feliratkezelés, Speech Editor logikája | közepes | Python- vagy Rust-átírás |
-| Titler sablonok, render-profilok, luma-fájlok | közepes | Tartalom, nem kód: fájlonként ellenőrizendő licenc |
+| Titler sablonok, render-profilok, luma-fájlok | közepes | Tartalom, nem kód. A `REUSE.toml` szerint CC0-1.0: `data/effects`, `data/transitions`, `data/generators` XML, átmenet-előnézetek, `data/lumas/PAL` és `HD`, `data/luts`, `data/layouts` (K20, K21); minden másnál fájlonként ellenőrizendő |
 | Idővonal-felület (QML) | kicsi | A CFA4 Qt Widgetset használ, nem QML-t |
 
 ## Jelmagyarázat
@@ -223,7 +223,8 @@ mérés nélkül.
 | **K18** | Online források és letöltéskezelő: Hugging Face-modellek, Freesound, Pixabay, egyéb linkek | P2 | 25–45 | K4 és K6 előtt | `src/onlineresources`, `data/resourceproviders` |
 | **K19** | További easing-típusok (elastic, bounce, back, expo …) | P3 | 8–15 | – | `kdenlive_ease_generator` |
 
-A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra.
+A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra. A 11.1 pont K20–K25 teendőivel
+együtt (kb. 66–107 óra) a teljes terv kb. 470–810 óra.
 
 ### Részletek
 
@@ -257,6 +258,52 @@ A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra.
   és a licenc; csak jóváhagyással indul (VISION.md 5.); hash-ellenőrzés, folytatható letöltés,
   bejegyzés a K17-be. Hálózat nélkül minden más működik.
 - **K19.** Penner-függvények új `Interpolation` változatként vagy Bezier-kulcskockákká sütve.
+
+### 11.1 Átvétel az FA3 elődtervből (FA3-VIDEO-EDITOR-001, 2026-10-25)
+
+A CFA4 elődjének videoszerkesztő-terve saját szerkesztőmagot, Kdenlive-kompatibilitási réteget és
+Kdenlive-alkalmazást mint teszt-orákulumot írt elő; ez egyezik a CFA4 irányával. **Nem vesszük át**
+belőle: az MLT- és FFmpeg-alapmotort (12. pont, ADR 0005), a `.kdenlive`-exportot, a C++
+`EditorialService` réteget (a CFA4 parancsrendszere ezt adja, `Tick`-idővel), a QSV- és AMF-kódolót
+(ADR 0003 §5), és a régi PyQt-, BeautifulSoup- és XSLT-felületeket.
+
+| # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
+|---|---|---|---|---|---|
+| **K20** | Kdenlive effekt-, átmenet- és generátorkatalógus: leképezési tábla Kdenlive-azonosító → CFA4-effekt a K1 importhoz | P1 | 15–25 | K1 | `data/effects`, `transitions`, `generators` (CC0) |
+| **K21** | CC0 lumák (átmenetmaszkok), LUT-ok és átmenet-előnézetek eszközként | P2 | 6–10 | – | `data/lumas`, `data/luts`, `data/transitions/previews` (CC0) |
+| **K22** | Hiányzó média újrakapcsolása, forrásfájl-csere; hash a médiahivatkozásban; az eredeti `.kdenlive` megőrzése import után | P1 | 10–15 | K1 | `kdenlive-tools` (BSD-2-Clause) |
+| **K23** | Projekt-ellenőrző: hiányzó források, proxyk, effektek, integritás, teljesítmény | P2 | 12–20 | – | `kdenlive-project-analyzer` (GPL-3.0) információs modellje |
+| **K24** | Diavetítés-automatizálás: Ken Burns kezdő- és végkeret, képsorrend, ütemhez igazított időtartam | P3 | 15–25 | licencellenőrzés | `kdenlive_slideshow_editor` (MIT az FA3-terv szerint, nem ellenőrzött) |
+| **K25** | Upstream-kompatibilitási CI: friss Kdenlive mintaprojektek → CFA4 import → render → összevetés a `melt` kimenetével | P1 (a K1 része) | 8–12 | K1 | FA3-terv 18. pont |
+
+- **K20.** Az XML-ek MLT- és frei0r-szűrőket írnak le (például `audiobalance.xml` → MLT `panner`),
+  ezért leírásként használjuk őket: paraméternevek, tartományok, alapértékek, UI-szövegek. Minden
+  effekt saját Rust-implementációval fut; ami nem feleltethető meg, a K1 kompatibilitási
+  jelentésében „nem támogatott” sorba kerül. Kész, ha a K1 mintaprojektjeinek effektjei mind
+  szerepelnek a táblában.
+- **K21.** Minden átvett fájlhoz `.attribution` kísérőfájl és `ATTRIBUTION.md`-bejegyzés
+  (forrás, upstream commit, eredeti útvonal, SPDX, helyi módosítás); a `cargo xtask assets` ellenőrzi.
+- **K22.** A régi Python CLI nem kerül át, csak a működés: forráslista, útvonal-leképezés,
+  forráscsere. Kész, ha egy áthelyezett médiakönyvtárú `.kdenlive` projekt egy lépésben újrakapcsolható.
+- **K23.** A megnyitott projekt modelljéből dolgozik, XML-elemzés nélkül; a régi GUI és XSLT nem kell.
+  Eredménye a vezérlőcsatornán is lekérdezhető.
+- **K24.** Csak a licenc ellenőrzése után; az algoritmusok kellenek (geometria, Ken Burns, ütem),
+  a PyQt-felület nem.
+- **K25.** A Kdenlive alkalmazás és a `melt` csak a CI-ben fut, teszt-orákulumként.
+
+Tervezési elvek a meglévő pontokhoz:
+
+- **K11:** a *szállítási profil* (felbontás, fps, kodek, minőség, színtér, konténer) külön van az
+  *enkóder-szolgáltatótól* (szoftver, VA-API, NVENC); a `cfa4-route` választ alá, így egy preset
+  nem kötődik GPU-gyártóhoz.
+- **K14:** RenderRequest → tervező → szakaszoló → erőforrás-elosztó → workerek → minőségellenőrzés →
+  összefűzés → nyugta; a helyi és a hálózati render ugyanaz a kód. A `kdenlive-network-render`
+  megoldásait (nyers socket, SSHFS, interaktív `input()`, alfolyamatnak átadott SSH-parancs, amely
+  a saját README-je szerint kódinjekcióra ad lehetőséget) nem vesszük át.
+- **K15:** általános „render utáni művelet” felület (ellenőrzés, metaadat, borító, felirat-mux,
+  bélyegkép, hangosság, ellenőrzőösszeg, archiválás, közzététel).
+- **AI-funkciók (K2, K4, K6):** ugyanazokat a parancsokat hívják, mint az ember, előnézettel,
+  visszavonhatóan, naplózva. Előbb stabil kézi szerkesztés, csak utána AI.
 
 ## 12. Tulajdonosi döntések (2026-10-25)
 
@@ -295,3 +342,4 @@ A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra.
 | 2026-10-24 | major | 2. változat: GPL-3.0-or-later (Kdenlive-kód átvehető), Qt6/PySide6-felület, GStreamer, gyártófüggetlen gyorsítás, Linux AMD64-only, márkaeltávolítás; rangsor az ADR F8 és ADR 0003 lépéseihez kötve |
 | 2026-10-25 | minor | Médiahátterek az ADR 0005 (#62) szerint: saját motor az alap, FFmpeg ≥ 9.0.2 és Ubuntu GStreamer kiegészítő, automatikus útválasztóval (a visszavont #53 helyett) |
 | 2026-10-25 | major | 3. változat: a tíz kiegészítő Kdenlive-repó elemzése, K10–K19, K1 kötelező (OTIO-teszt, kompatibilitási jelentés, `melt`-orákulum, export nélkül), tulajdonosi döntések (12. pont) |
+| 2026-10-25 | minor | 11.1: K20–K25 és tervezési elvek az FA3 elődtervből (FA3-VIDEO-EDITOR-001); a Kdenlive `REUSE.toml` CC0-részei rögzítve |
