@@ -67,7 +67,7 @@ FAKE_ENGINE = textwrap.dedent(
         elif m == "engine.commands":
             send({"id": rid, "ok": True, "result": commands})
         elif m == "session.state":
-            send({"id": rid, "ok": True, "result": {"dirty": False, "revision": state["revision"]}})
+            send({"id": rid, "ok": True, "result": {"dirty": state.get("dirty", False), "revision": state["revision"]}})
         elif m == "frame.render":
             send({"id": rid, "ok": True, "result": {"w": 4, "h": 2, "format": "rgba8", "offline": []}}, bytes(32))
         elif m == "audio.render":
@@ -90,6 +90,12 @@ FAKE_ENGINE = textwrap.dedent(
                 state["revision"] += 1
                 send({"id": rid, "ok": True, "result": None})
                 send({"event": "projectChanged", "revision": state["revision"]})
+            elif c == "test.makeDirty":
+                state["dirty"] = True
+                send({"id": rid, "ok": True, "result": None})
+            elif c in ("file.save", "file.openDemoProject"):
+                state["dirty"] = False
+                send({"id": rid, "ok": True, "result": None})
             elif c == "playhead.set":
                 state["playhead"] = int(cp.get("time") or 0)
                 send({"id": rid, "ok": True, "result": None})
@@ -335,6 +341,132 @@ def test_engine_stop_fails_pending_requests(app, fake_engine: Path):
     errors = []
     engine.call("hello", on_error=errors.append)
     assert errors and "not running" in errors[0]
+
+
+def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path, tmp_path: Path, monkeypatch):
+    """Regression: File ▸ Open / New / Demo Project replaced a dirty project without asking.
+    The engine's dirty flag is asked for after the edit still in flight, not the last refresh."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    sent: list[str] = []
+    execute = engine.execute
+
+    def recording(command, params=None, on_reply=None, on_error=None):
+        sent.append(command)
+        return execute(command, params, on_reply=on_reply, on_error=on_error)
+
+    monkeypatch.setattr(engine, "execute", recording)
+    answers: list[QtWidgets.QMessageBox.StandardButton] = []
+    asked: list[str] = []
+
+    def answer(box):
+        asked.append(box.text())
+        return answers.pop(0)
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+    demo = Command("file.openDemoProject", "Demo Project", ["File", "New"], "", "{}", True)
+    try:
+        assert wait_until(app, lambda: bool(engine.hello))
+        # clean: no question, the command runs
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert not asked
+        # dirty (the refresh has not seen it yet): Cancel keeps the project
+        sent.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.run_command(demo)
+        assert wait_until(app, lambda: bool(asked))
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 50)
+        assert "file.openDemoProject" not in sent
+        assert "continuing" in asked[0]
+        # Save: saves, then replaces
+        answers.append(QtWidgets.QMessageBox.StandardButton.Save)
+        win.project = {"name": "Demo", "path": str(tmp_path / "a.fcproj")}
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert sent.index("file.save") < sent.index("file.openDemoProject")
+        # Don't Save: replaces without saving
+        sent.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert "file.save" not in sent
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_recovery_prompt_reads_the_engines_camel_case_keys():
+    """Regression: the prompt read snake_case keys, so every candidate was 'Untitled' from 1970."""
+    from cfa4_qt.main_window import recovery_text
+
+    text = recovery_text({"id": "s1", "savedUnix": 1_790_000_000, "projectName": "Interjú", "cleanExit": True})
+    assert "Interjú" in text and "1970" not in text and "was closed" in text
+    crashed = recovery_text({"savedUnix": 1_790_000_000, "projectName": "B", "cleanExit": False})
+    assert "quit unexpectedly" in crashed
+    assert "unknown time" in recovery_text({"savedUnix": "junk"})
+    assert "unknown time" in recovery_text({"savedUnix": 10**30})
+
+
+def test_panel_only_shortcuts_are_not_bound_window_wide(app):
+    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping."""
+    win = QtWidgets.QMainWindow()
+    reg = CommandRegistry(lambda c: None)
+    reg.load(
+        [
+            {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": "Cmd+Z", "shortcuts": ["Cmd+Z", "Left"],
+             "panelShortcuts": [{"keys": "Left", "panel": "History"}], "params": "{}", "enabled": True},
+            {"id": "playhead.stepBack", "label": "Step Back", "menu": [], "shortcut": "Left", "shortcuts": ["Left"],
+             "params": "{}", "enabled": True},
+        ]
+    )
+    assert reg.commands["edit.undo"].shortcuts == ["Cmd+Z"]
+    reg.build_menus(win.menuBar(), win)
+    left = QtGui.QKeySequence("Left")
+    assert left in reg.actions["playhead.stepBack"].shortcuts()
+    assert left not in reg.actions["edit.undo"].shortcuts()
+
+
+def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
+    """Regressions: Export silently truncated an existing output; an output folder that could not
+    be created raised out of the slot and nothing was shown."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.sent.append((command, dict(params or {})))
+            return 0
+
+    engine = Engine()
+    dlg = ExportDialog(engine)  # type: ignore[arg-type]
+    out = tmp_path / "out.mp4"
+    out.write_bytes(b"previous export")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers = [QtWidgets.QMessageBox.StandardButton.Cancel, QtWidgets.QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    dlg._enqueue(True)
+    assert engine.sent == [] and out.read_bytes() == b"previous export"
+    dlg._enqueue(True)
+    assert [c for c, _ in engine.sent] == ["export.queue.add"]
+    dlg._enqueue(False)  # already confirmed for this path: no second question
+    assert len(engine.sent) == 2 and not answers
+    # a regular file where the folder should be: an error in the dialog, nothing queued
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(blocker / "sub" / "out.mp4")})
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2
+    assert "output folder" in dlg.summary.text()
+    dlg.close()
 
 
 # ----- the real engine, when built -----
@@ -830,3 +962,47 @@ def test_app_identifies_as_cfa4_to_the_desktop():
     src = (ROOT / "python" / "cfa4_qt" / "__main__.py").read_text(encoding="utf-8")
     assert 'setDesktopFileName("io.github.ubuntuokos.cfa4")' in src
     assert (ROOT / "packaging" / "linux" / "io.github.ubuntuokos.cfa4.desktop").is_file()
+
+
+# ----- desktop entry for checkout runs -----
+def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, monkeypatch):
+    """Regression: run from a checkout, KDE's panel showed "python3" (no .desktop for the app
+    id). `cfa4-qt --install-desktop-entry` writes one; packaged entries and runs are untouched."""
+    import io
+
+    from cfa4_qt import desktop_entry as de
+    from cfa4_qt.__main__ import main
+
+    home = tmp_path / "data"
+    system = tmp_path / "system"
+    monkeypatch.setenv("XDG_DATA_HOME", str(home))
+    monkeypatch.setenv("XDG_DATA_DIRS", str(system))
+    for var in ("APPIMAGE", "FLATPAK_ID", *de.ENV_FLAGS):
+        monkeypatch.delenv(var, raising=False)
+    entry = home / "applications" / "io.github.ubuntuokos.cfa4.desktop"
+    assert not de.requested_by_env()
+    assert main(["--install-desktop-entry"]) == 0
+    text = entry.read_text(encoding="utf-8")
+    assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
+    exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
+    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
+    assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
+    assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
+    # idempotent
+    out = io.StringIO()
+    assert de.install(out) and "up to date" in out.getvalue()
+    # an installed package's entry wins: nothing is rewritten
+    entry.unlink()
+    (system / "applications").mkdir(parents=True)
+    (system / "applications" / "io.github.ubuntuokos.cfa4.desktop").write_text("[Desktop Entry]\n", encoding="utf-8")
+    assert de.install(io.StringIO()) and not entry.exists()
+    # AppImage / Flatpak runs never write
+    (system / "applications" / "io.github.ubuntuokos.cfa4.desktop").unlink()
+    monkeypatch.setenv("FLATPAK_ID", "io.github.ubuntuokos.cfa4")
+    assert not de.install(io.StringIO()) and not entry.exists()
+    monkeypatch.delenv("FLATPAK_ID")
+    # paths a desktop entry cannot carry are refused, not written broken
+    with pytest.raises(ValueError):
+        de.exec_line(["/tmp/a%b/cfa4-qt"])
+    monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
+    assert de.requested_by_env()

@@ -25,6 +25,15 @@ python3 -m venv .venv
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
 
+**Taskbar name and logo.** KDE and GNOME take a window's name and icon from the installed
+`.desktop` file of its app id (`io.github.ubuntuokos.cfa4`). Packages install it; a checkout
+run has none, so the panel shows "python3". Install a user-level entry once (it is never done
+without asking, and an installed package's entry is never overridden):
+
+```sh
+.venv/bin/cfa4-qt --install-desktop-entry      # then start CFA4 again
+```
+
 The engine is `--engine PATH` or `$CFA4_ENGINE` when given; otherwise the build of this checkout
 (`target/release` or `target/debug`, the newer first), then `cfa4-cli` / `filmcraft-cli` on
 `PATH`. A candidate without the `serve` subcommand (an engine built from a branch without the

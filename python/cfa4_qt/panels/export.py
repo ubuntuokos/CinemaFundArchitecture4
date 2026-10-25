@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QSpinBox,
@@ -90,6 +91,7 @@ class ExportDialog(QDialog):
         self.setWindowTitle(tr("Export Media"))
         self.setModal(False)
         self.engine = engine
+        self._replace_confirmed = ""  # an existing output the user already chose to replace
         self.sequence: dict[str, Any] | None = None
         self.project_path: str | None = None
         self.presets: list[dict[str, Any]] = []
@@ -378,6 +380,8 @@ class ExportDialog(QDialog):
         pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
         path, _ = QFileDialog.getSaveFileName(self, tr("Output file"), self.path.text(), pattern)
         if path:
+            # the native dialog has asked about replacing an existing file
+            self._replace_confirmed = path
             self.path.setText(with_extension(path, ext) if ext and not path.endswith("." + ext) else path)
 
     def _changed(self) -> None:
@@ -469,10 +473,34 @@ class ExportDialog(QDialog):
         if not params.get("path"):
             self._summary_error(tr("Choose an output file."))
             return
-        Path(params["path"]).expanduser().parent.mkdir(parents=True, exist_ok=True)
+        out = Path(params["path"]).expanduser()
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            exists = out.exists()
+        except OSError as e:
+            self._summary_error(tr("Cannot create the output folder: {error}").replace("{error}", str(e)))
+            return
+        if exists and str(out) != str(Path(self._replace_confirmed).expanduser()) and not self._confirm_replace(out):
+            return
         params["start"] = start
         self.engine.execute("export.queue.add", params, on_reply=lambda r, b: self._on_queue(r, b), on_error=self._summary_error)
         self._poll.start()
+
+    def _confirm_replace(self, out: Path) -> bool:
+        """The export truncates its output when it starts: ask before replacing a file."""
+        box = QMessageBox(
+            QMessageBox.Icon.Warning,
+            tr("Export Media"),
+            tr("'{name}' already exists. Replace it?").replace("{name}", out.name),
+            parent=self,
+        )
+        box.setObjectName("dialog.export.replace")
+        box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if box.exec() != QMessageBox.StandardButton.Yes:
+            return False
+        self._replace_confirmed = str(out)
+        return True
 
     def _queue_command(self, command: str, params: dict[str, Any]) -> None:
         self.engine.execute(command, params, on_reply=lambda _r, _b: self.refresh_queue(), on_error=self._error)
