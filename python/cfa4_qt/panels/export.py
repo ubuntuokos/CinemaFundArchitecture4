@@ -10,6 +10,7 @@ engine's answers; it never computes export settings itself.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +58,22 @@ def default_output_dir(project_path: str | None) -> Path:
             return parent
     videos = Path(os.environ.get("XDG_VIDEOS_DIR") or Path.home() / "Videos").expanduser()
     return videos if videos.is_dir() else Path.home()
+
+
+# export formats the engine writes as numbered files (`image_sequence_path` in crates/export)
+IMAGE_SEQUENCES = frozenset({"png", "tiff", "bmp", "jpg", "tga", "dpx", "exr"})
+
+
+def existing_outputs(out: Path, fmt: str) -> list[Path]:
+    """The files an export to ``out`` would replace: ``out`` itself, or for an image sequence
+    the numbered frames ``stem000.ext``, ``stem001.ext``… already there."""
+    if fmt not in IMAGE_SEQUENCES:
+        return [out] if out.exists() else []
+    frame = re.compile(re.escape(out.stem) + r"\d{3,}" + re.escape(out.suffix or ".png"))
+    try:
+        return sorted(p for p in out.parent.iterdir() if frame.fullmatch(p.name))
+    except OSError:
+        return []
 
 
 def with_extension(path: str, ext: str) -> str:
@@ -486,24 +503,25 @@ class ExportDialog(QDialog):
         settings = resolved.get("settings") if isinstance(resolved, dict) else None
         target = settings.get("path") if isinstance(settings, dict) else None
         out = Path(target if isinstance(target, str) and target else params["path"]).expanduser()
+        fmt = str(settings.get("format") or "") if isinstance(settings, dict) else ""
         try:
             out.parent.mkdir(parents=True, exist_ok=True)
-            exists = out.exists()
+            existing = existing_outputs(out, fmt)
         except OSError as e:
             self._summary_error(tr("Cannot create the output folder: {error}").replace("{error}", str(e)))
             return
-        if exists and str(out) != str(Path(self._replace_confirmed).expanduser()) and not self._confirm_replace(out):
+        if existing and str(out) != str(Path(self._replace_confirmed).expanduser()) and not self._confirm_replace(out, existing[0]):
             return
         params["start"] = start
         self.engine.execute("export.queue.add", params, on_reply=lambda r, b: self._on_queue(r, b), on_error=self._summary_error)
         self._poll.start()
 
-    def _confirm_replace(self, out: Path) -> bool:
+    def _confirm_replace(self, out: Path, existing: Path | None = None) -> bool:
         """The export truncates its output when it starts: ask before replacing a file."""
         box = QMessageBox(
             QMessageBox.Icon.Warning,
             tr("Export Media"),
-            tr("'{name}' already exists. Replace it?").replace("{name}", out.name),
+            tr("'{name}' already exists. Replace it?").replace("{name}", (existing or out).name),
             parent=self,
         )
         box.setObjectName("dialog.export.replace")
