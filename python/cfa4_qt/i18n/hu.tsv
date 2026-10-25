@@ -7,6 +7,7 @@
 # copied; add entries the same way. Product and format names (CFA4, AAF, EDL…) keep
 # their spelling.
 
+	'{name}' already exists. Replace it?	A(z) „{name}” már létezik. Lecseréli?
 	AAF…	AAF…
 	About CFA4	A CFA4 névjegye
 	Add Audio Submix Track	Hang-alkeverő sáv hozzáadása

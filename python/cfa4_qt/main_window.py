@@ -345,7 +345,7 @@ class MainWindow(QMainWindow):
 
     def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
-        if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.")):
+        if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
             self.close()

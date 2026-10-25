@@ -410,6 +410,25 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.close()
 
 
+def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
+    """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
+    ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""
+    from cfa4_qt.dialogs import path_params
+
+    (tmp_path / "cut.fcproj").write_text("{}", encoding="utf-8")
+    cmd = Command("file.saveAs", "Save As…", ["File"], "", '{"path":"string"}', True)
+    parent = QtWidgets.QWidget()
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "cut"), ""))
+    answers = [QtWidgets.QMessageBox.StandardButton.Cancel, QtWidgets.QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    assert path_params(cmd, parent, None) == {"__cancel__": True}
+    assert path_params(cmd, parent, None) == {"path": str(tmp_path / "cut.fcproj")}
+    # a new name is not asked about
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "new"), ""))
+    assert path_params(cmd, parent, None) == {"path": str(tmp_path / "new.fcproj")}
+    assert not answers
+
+
 def test_recovery_prompt_reads_the_engines_camel_case_keys():
     """Regression: the prompt read snake_case keys, so every candidate was 'Untitled' from 1970."""
     from cfa4_qt.main_window import recovery_text
@@ -738,7 +757,7 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     text = entry.read_text(encoding="utf-8")
     assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
     exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
-    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
+    assert exec_line.endswith(" %f") and "%" not in exec_line[:-3]
     assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
     assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
     # idempotent
