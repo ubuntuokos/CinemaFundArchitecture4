@@ -15,12 +15,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--data-dir", help="CFA4 data directory (auto-save, recovery, presets)")
     parser.add_argument("--no-autosave", action="store_true", help="no auto-save or crash-recovery journal")
     parser.add_argument("--lang", help="UI language (en, hu, de, ...); default: the system locale")
+    parser.add_argument(
+        "--install-desktop-entry",
+        action="store_true",
+        help="install a desktop entry and the CFA4 icons for this checkout into ~/.local/share "
+        "(so the taskbar shows CFA4 and its logo), then exit",
+    )
     parser.add_argument("--smoke", action="store_true", help="start, wait for the engine, then quit (CI check)")
     parser.add_argument("--screenshot", help="with --smoke: save a PNG of the window before quitting")
     args = parser.parse_args(argv)
 
     if not sys.platform.startswith("linux"):
         parser.error("CFA4 targets Linux (Ubuntu) only")
+    if args.install_desktop_entry:
+        from .desktop_entry import install
+
+        return 0 if install() else 1
     try:
         from PySide6.QtCore import QSettings, QTimer
         from PySide6.QtWidgets import QApplication, QMessageBox
@@ -28,8 +38,12 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"Qt 6 / PySide6 missing: {exc}; install: python -m pip install -e '.[qt]'")
 
     from . import i18n
+    from .desktop_entry import install, requested_by_env
     from .engine import EngineClient, EngineError, locate_engine
     from .main_window import MainWindow
+
+    if requested_by_env():  # opt-in, as the egui launcher's FILMCRAFT_DEV_DESKTOP_ENTRY=1
+        install(sys.stderr)
 
     app = QApplication(sys.argv[:1])
     app.setApplicationName("CFA4")
