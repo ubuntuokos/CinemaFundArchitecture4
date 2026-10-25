@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtCore import QByteArray, QSettings
+from PySide6.QtCore import QByteArray, QObject, QSettings
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import QDockWidget, QInputDialog, QMainWindow, QMenu, QWidget
 
@@ -117,7 +117,9 @@ def panel_action(window: QMainWindow, entry: PanelEntry, dock: QDockWidget | Non
     if dock is not None:
         action.setCheckable(True)
         action.setChecked(dock.isVisible())
-        dock.visibilityChanged.connect(lambda _v, a=action, d=dock: a.setChecked(not d.isHidden()))
+        sync = dock.visibilityChanged.connect(lambda _v, a=action, d=dock: a.setChecked(not d.isHidden()))
+        # the dock outlives the menu: a rebuild deletes this action, so its callback goes with it
+        action.destroyed.connect(lambda *_a, c=sync: QObject.disconnect(c))
 
         def toggle(_checked: bool = False, d: QDockWidget = dock) -> None:
             if d.isHidden():

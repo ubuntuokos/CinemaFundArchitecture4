@@ -1338,6 +1338,20 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         win.set_language("en")
         keys = [s.toString() for a in win.actions() for s in a.shortcuts()]
         assert keys.count(QtGui.QKeySequence("Shift+1").toString()) == 1, keys
+        # regression: the docks kept callbacks into the deleted actions, so showing a panel after
+        # a rebuild raised "Internal C++ object already deleted"
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        errors: list[BaseException] = []
+        hook, sys.excepthook = sys.excepthook, lambda _t, e, _tb: errors.append(e)
+        try:
+            win.docks["Project"].hide()
+            win.docks["Project"].show()
+            wait_until(app, lambda: False, 100)
+        finally:
+            sys.excepthook = hook
+        assert not errors, errors
+        live = next(a for a in win.findChildren(QtGui.QAction, "window.panel.Project"))
+        assert live.isChecked()
     finally:
         win._quit_confirmed = True
         win.close()
