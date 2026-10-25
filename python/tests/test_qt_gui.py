@@ -390,6 +390,14 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.run_command(demo)
         assert wait_until(app, lambda: "file.openDemoProject" in sent)
         assert sent.index("file.save") < sent.index("file.openDemoProject")
+        # an Export window left open names the old project's sequence: it is put away
+        class Dialog:
+            hidden = False
+
+            def hide(self):
+                Dialog.hidden = True
+
+        win.export_dialog = Dialog()  # type: ignore[assignment]
         # Don't Save: replaces without saving
         sent.clear()
         engine.execute("test.makeDirty", {})
@@ -397,6 +405,8 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.run_command(demo)
         assert wait_until(app, lambda: "file.openDemoProject" in sent)
         assert "file.save" not in sent
+        assert Dialog.hidden
+        win.export_dialog = None
     finally:
         win._quit_confirmed = True
         win.close()
