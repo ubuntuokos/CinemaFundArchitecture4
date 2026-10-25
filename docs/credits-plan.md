@@ -1,6 +1,6 @@
 # CFA4 stáblista és feliratkészítő – módosított terv (javaslat)
 
-**Állapot:** JAVASLAT – a tulajdonos (`ubuntuokos`) jóváhagyására vár; 1. döntés meghozva (2026-10-25)  
+**Állapot:** JAVASLAT – a tulajdonos (`ubuntuokos`) jóváhagyására vár; 1–2. döntés meghozva (2026-10-25)  
 **Dátum:** 2026-10-24  
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
@@ -158,6 +158,23 @@ Hátravan:
 - a C1–C6 új képességeinek felülete (újratöltés eltérés-listával, ellenőrzések, zenéhez
   igazítás, hátterek, sablonok) ebben az ablakban, illetve dokkolható panelben.
 
+### C10 – Élő grafika (tervezet)
+
+A tulajdonos döntése (2026-10-25): **az élő adás kell, de egyelőre tervezet** (`VISION.md` 4. és
+8. pont, #60). Az eredeti terv §17–19-éből ez a fázis vázlata; ütemezése és mélysége külön döntés.
+
+- **Élő grafikai futtató:** ugyanaz a stáblista- és grafikamag (`crates/credits`, grafikus
+  klipek), élő kimenetre renderelve; nincs külön grafikai motor.
+- **Vezérlés:** előre felkészített elemek (cue-k) betöltése, előnézet (PREVIEW), indítás (TAKE),
+  léptetés (NEXT / PREVIOUS), megállítás (HOLD / CONTINUE), adatfrissítés (UPDATE), levétel
+  (OUT); mind motorparancs, így Qt6-ból, CLI-ből és gépi vezérléssel is elérhető.
+- **OBS-kapcsolat:** külső adáskezelőként, első lépésben Browser Source-on át (helyi kiszolgáló,
+  csak a gépen elérhető), vezérlés obs-websocketen. Az OBS nem irányítja a CFA4-et.
+- **Hang:** három mód: beágyazott hang használata, külön hangforrásként kiadva, figyelmen kívül
+  hagyva.
+- **Műsorterv (rundown)** csak akkor, ha a tulajdonos a mélységről így dönt (`VISION.md` 8. pont).
+- **Együttélés:** saját port és beállításmappa, OBS-szel egyszerre futtatva tesztelve (C9).
+
 ### C9 – Csomagolás és együttélés (K)
 
 Az eredeti terv §23–24-e, a CFA4 csomagolására szabva.
@@ -177,6 +194,7 @@ C1 kapcsolt stáblista ─┬─> C2 ellenőrzések ─> C3 zene
 C4 háttér / átmenet ───> C5 gazdagabb elrendezés
 Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület (első része kész, a többi fázisonként)
 C9 együttélés: C7 után, illetve minden kiadás előtt
+C10 élő grafika: tervezet; ütemezése külön döntés (VISION 8. pont)
 ```
 
 Javasolt sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7**. Minden fázis a motorral együtt a Qt6-os
@@ -204,15 +222,15 @@ gépen (Kubuntu referenciagép) végigvitt munkamenet igazolja: táblázat → s
 | §3 Story/Screenplay híd | halasztva | a CFA4-ben nincs forgatókönyv-alkalmazás; a táblázat tölti be ezt a szerepet |
 | §11 saját hangrendszer | kihagyva | a CFA4 idővonala és keverője ezt már tudja |
 | §14 önálló alkalmazás | halasztva | munkaterület a CFA4-en belül (C8); lásd 8. pont |
-| §17–19 OBS, élő adás, Show/Rundown | halasztva | a `VISION.md` nem tartalmaz élő adást |
+| §17–19 OBS, élő adás, Show/Rundown | **tervezet: C10** | a tulajdonos döntése (2026-10-25): kell, de egyelőre tervezet; a műsorterv mélysége nyitott |
 | §21, §25, §32 HRB, Model Router, Canonical Gate, Evidence Registry, visszamenőleges audit | kihagyva | FA3-intézmények; a CFA4-ben a tesztek, ADR-ek és a kiadási kapuk (F9) felelnek meg nekik |
 | §2 teljes `.fa3credits` séma (személyek, cégek, jogi adatok, revíziók) | szűkítve | C1 kapcsolt forrás; a teljes produkciós adatmodell csak Story-híddal lenne értelmes |
 
 ## 8. Döntések a tulajdonosnak
 
 1. ~~Kell-e önálló stáblista-alkalmazás?~~ **Eldöntve (2026-10-25): csak Qt6**, a CFA4-en belül.
-2. **Kerüljön-e be az élő adás (OBS, élő grafika)** a CFA4 céljai közé? Ez a `VISION.md`
-   módosítását jelentené.
+2. ~~Kerüljön-e be az élő adás?~~ **Eldöntve (2026-10-25): igen, egyelőre tervezetként** (C10,
+   `VISION.md` #60).
 3. **Külön `.cfa4credits` fájl** kell-e (például más gépre vinni), vagy elég, ha a stáblista a
    projektfájlban él?
 4. **Elfogadod-e a C1 → C7 sorrendet**, vagy előrébb hozzunk valamit (például a Cinecred-importot
