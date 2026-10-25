@@ -193,6 +193,8 @@ class CommandRegistry:
         self.actions: dict[str, QAction] = {}
         # one action per panel-scoped key, picking the command by the focused panel
         self._dispatchers: list[QAction] = []
+        # every Qt key string build_menus gave a command, panel-scoped ones included
+        self.claimed_keys: set[str] = set()
 
     def load(self, raw: Any) -> None:
         self.commands.clear()
@@ -316,6 +318,7 @@ class CommandRegistry:
             dispatcher.triggered.connect(self._dispatcher_for(dict(panels), fallback.get(q)))
             parent.addAction(dispatcher)
             self._dispatchers.append(dispatcher)
+        self.claimed_keys = {QKeySequence(q).toString() for q in used | scoped.keys()}
         return bound
 
     def _dispatcher_for(self, panels: dict[str, str], fallback: str | None) -> Callable[..., None]:
