@@ -87,7 +87,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `engine.execute` | `{command, params}` | the command's result (any engine command id) |
 | `engine.commands` | – | the registry (`command.list`: id, label, menu, shortcut(s), params, enabled) |
 | `frame.render` | `{target?: "program" \| "source", item?, time \| seconds \| frame, scale?, maxWidth?, maxHeight?}` | `{w, h, format: "rgba8", time, target, offline \| item}` + `w·h·4` bytes (sRGB over black) |
-| `audio.render` | `{target?, item?, start (samples) \| time \| seconds, frames, sampleRate? (source only)}` | `{sampleRate, channels, frames, start, format: "f32le", target}` + interleaved samples |
+| `audio.render` | `{target?, item?, start (samples) \| time \| seconds, frames, sampleRate? (source only), meter?}` | `{sampleRate, channels, frames, start, format: "f32le", target, meter?}` + interleaved samples; with `meter: true`, `meter` is `{block, peaks, loudness, reset}`: per `block` samples (1/100 s) the sample peak of each channel (linear) and `[M, S, I LUFS, TP dBTP]` so far (`null` below −70); loudness keeps integrating over consecutive requests of the same target and starts over (`reset: true`) on a jump. The Audio Meters panel shows these |
 | `media.peaks` | `{item, start, end (media ticks), buckets ≤ 20000}` | `{item, buckets, start, end, hasAudio}` + `buckets` (min, max) pairs, f32le, channels mixed to mono (≤ 600 s per call) |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |

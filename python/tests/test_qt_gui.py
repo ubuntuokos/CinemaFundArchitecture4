@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -1684,3 +1684,76 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_audio_meter_layout_never_overlaps(app):
+    """egui's meter layout rules, at any size: what doesn't fit is left out, nothing overlaps."""
+    from cfa4_qt.panels.meters import _anchored, _overlaps, _size, parts, readout_font, readout_rows
+
+    def at(w: float, h: float) -> QtCore.QRectF:
+        return QtCore.QRectF(100, 50, w, h)
+
+    roomy = parts(at(116, 400), ("L", "R"))
+    assert [db for db, _ in roomy.scale] == [-3 * k for k in range(20)]
+    assert roomy.unit is not None and len(roomy.names) == 2 and roomy.readout and roomy.readout[1]
+    assert not parts(at(116, 80), ("L", "R")).names
+    assert parts(at(40, 400), ("L", "R")).readout is None
+    for names in (("L", "R"), ("L", "R", "C", "LFE", "Ls", "Rs")):
+        for w in range(20, 401, 9):
+            for h in range(10, 801, 23):
+                rect = at(w, h)
+                p = parts(rect, names)
+                texts = [r for _, r in p.scale] + ([p.unit] if p.unit else []) + list(p.names)
+                if p.readout:
+                    r, units = p.readout
+                    for _label, left, right in readout_rows(r, units):
+                        lab = _anchored(_size(_label, readout_font()), left, "left")
+                        val = _anchored(_size("-88.8 dBTP" if units else "-88.8", readout_font(True)), right, "right")
+                        assert not _overlaps(lab, val) and r.contains(lab) and r.contains(val), (w, h)
+                    texts.append(r)
+                for i, a in enumerate(texts):
+                    assert rect.contains(a), (w, h, a)
+                    assert not _overlaps(a, p.area), (w, h, a)
+                    for b in texts[i + 1 :]:
+                        assert not _overlaps(a, b), (w, h, a, b)
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_audio_meters_show_what_plays(app, tmp_path: Path, monkeypatch):
+    """The Audio Meters sit right of the Timeline and show the engine's levels and loudness of
+    the sound being played (even without an audio device), then fall after Stop."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+    from cfa4_qt.panels.meters import FLOOR
+
+    # no audio device here (QtMultimedia's device query crashes in headless containers)
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", False)
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1800, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and win.monitor.has_content(), 20_000)
+        meters, timeline = win.docks["Audio Meters"], win.docks["Timeline"]
+        assert wait_until(app, lambda: meters.isVisible() and meters.width() < 200, 5_000)
+        assert meters.geometry().left() >= timeline.geometry().right()
+        assert abs(meters.geometry().top() - timeline.geometry().top()) < 40
+        assert win.meters.levels == [FLOOR, FLOOR]
+        win.monitor.seek(10 * TICKS_PER_SECOND)
+        win.monitor.play()
+        assert wait_until(app, lambda: max(win.meters.levels) > -60.0, 10_000), win.meters.levels
+        assert wait_until(app, lambda: isinstance(win.meters.loudness[2], float), 15_000), win.meters.loudness
+        assert all(lv <= 12.0 for lv in win.meters.levels)
+        assert "LUFS" in win.meters.accessibleDescription()
+        grab = win.meters.grab().toImage()
+        assert grab.width() > 0
+        win.monitor.stop()
+        top = max(win.meters.levels)
+        assert wait_until(app, lambda: max(win.meters.levels) < top - 10.0, 5_000), (top, win.meters.levels)
+        assert isinstance(win.meters.loudness[2], float), "the integrated loudness stays after Stop"
+    finally:
+        win.close()
+        engine.stop()

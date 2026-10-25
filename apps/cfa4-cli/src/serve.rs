@@ -299,7 +299,11 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             vec![vec![0.0; frames]; 2]
         };
         let bytes = interleave(&channels, frames);
-        return Ok((json!({"sampleRate": sr, "channels": channels.len(), "frames": frames, "start": start, "format": "f32le", "target": "source"}), bytes));
+        let mut meta = json!({"sampleRate": sr, "channels": channels.len(), "frames": frames, "start": start, "format": "f32le", "target": "source"});
+        if wants_meter(p) {
+            meta["meter"] = meter("source", sr, start, &channels, frames);
+        }
+        return Ok((meta, bytes));
     }
     let seq = s.active_sequence().ok_or("no active sequence")?;
     let sr = seq.settings.sample_rate.max(1);
@@ -311,7 +315,66 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let buf = cfa4_render::audio::mix_sequence(&s.project, seq, start, frames, &provider);
     let channels = buf.channels.len();
     let bytes = interleave(&buf.channels, frames);
-    Ok((json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"}), bytes))
+    let mut meta = json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"});
+    if wants_meter(p) {
+        meta["meter"] = meter("program", buf.sample_rate, start, &buf.channels, frames);
+    }
+    Ok((meta, bytes))
+}
+
+fn wants_meter(p: &Value) -> bool {
+    p.get("meter").and_then(Value::as_bool).unwrap_or(false)
+}
+
+/// Meter blocks per second in an `audio.render` reply (`meter: true`).
+const METER_BLOCKS_PER_SECOND: u32 = 100;
+
+/// The loudness meter of what the client is playing: (target, sample rate, channels, the sample
+/// the next block must start at, the meter). One server serves one GUI from one thread.
+type Loudness = (&'static str, u32, usize, i64, cfa4_audio_dsp::LoudnessMeter);
+
+thread_local! {
+    static LOUDNESS: std::cell::RefCell<Option<Loudness>> = const { std::cell::RefCell::new(None) };
+}
+
+/// What the Audio Meters show for a block of played audio: every 1/100 s, the sample peak of
+/// each channel (linear) and the BS.1770 / EBU R128 loudness so far (momentary, short-term,
+/// integrated LUFS and true peak dBTP; `null` below the meter's floor). Loudness keeps
+/// integrating while the client asks for consecutive blocks of the same target, and starts over
+/// on a jump (a seek, or another play).
+fn meter(target: &'static str, sr: u32, start: i64, channels: &[Vec<f32>], frames: usize) -> Value {
+    let block = (sr / METER_BLOCKS_PER_SECOND).max(1) as usize;
+    let nch = channels.len().max(1);
+    let finite = |v: f64| if v.is_finite() && v > -70.0 { json!((v * 10.0).round() / 10.0) } else { Value::Null };
+    LOUDNESS.with(|cell| {
+        let mut cell = cell.borrow_mut();
+        let fresh = !matches!(&*cell, Some((t, r, c, next, _)) if *t == target && *r == sr && *c == nch && *next == start);
+        if fresh {
+            *cell = Some((target, sr, nch, start, cfa4_audio_dsp::LoudnessMeter::new(f64::from(sr), nch)));
+        }
+        let Some((_, _, _, next, lm)) = cell.as_mut() else { return Value::Null };
+        let mut peaks = Vec::new();
+        let mut loudness = Vec::new();
+        let mut at = 0;
+        while at < frames {
+            let n = block.min(frames - at);
+            let slices: Vec<&[f32]> = channels.iter().map(|c| c.get(at..(at + n).min(c.len())).unwrap_or(&[])).collect();
+            peaks.push(slices.iter().map(|c| json!(c.iter().fold(0.0_f32, |m, x| m.max(x.abs())))).collect::<Vec<_>>());
+            let padded: Vec<Vec<f32>> = slices
+                .iter()
+                .map(|c| {
+                    let mut v = c.to_vec();
+                    v.resize(n, 0.0);
+                    v
+                })
+                .collect();
+            lm.process(&padded.iter().map(Vec::as_slice).collect::<Vec<_>>());
+            loudness.push(json!([finite(lm.momentary()), finite(lm.short_term()), finite(lm.integrated()), finite(lm.true_peak_dbtp())]));
+            at += n;
+        }
+        *next = start + frames as i64;
+        json!({"block": block, "peaks": peaks, "loudness": loudness, "reset": fresh})
+    })
 }
 
 /// Most buckets one `media.peaks` returns.
@@ -554,6 +617,40 @@ mod tests {
         let unknown = handle(&mut s, json!(8), "nope", json!({})).expect("reply");
         assert_eq!(unknown.json["ok"], json!(false));
         assert!(handle(&mut s, json!(9), "app.quit", json!({})).is_none());
+    }
+
+    #[test]
+    fn audio_render_meters_what_it_plays() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let sr = s.active_sequence().map(|q| q.settings.sample_rate).expect("demo sequence");
+        let chunk = (sr / 2) as usize;
+        let ask = |s: &mut Session, id: i64, start: i64| {
+            let r = handle(s, json!(id), "audio.render", json!({"start": start, "frames": chunk, "meter": true})).expect("reply");
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            r.json["result"]["meter"].clone()
+        };
+        let start = i64::from(sr) * 10;
+        let first = ask(&mut s, 1, start);
+        assert_eq!(first["reset"], json!(true));
+        assert_eq!(first["block"], json!(sr / 100));
+        let peaks = first["peaks"].as_array().expect("peaks");
+        assert_eq!(peaks.len(), 50, "one block per 1/100 s");
+        let channels = peaks[0].as_array().map_or(0, Vec::len);
+        assert!(channels >= 2);
+        assert!(peaks.iter().flat_map(|b| b.as_array().into_iter().flatten()).all(|v| v.as_f64().is_some_and(|x| (0.0..=4.0).contains(&x))));
+        assert!(peaks.iter().flat_map(|b| b.as_array().into_iter().flatten()).any(|v| v.as_f64().unwrap_or(0.0) > 0.001), "the demo plays sound at 10 s");
+        // the next consecutive block keeps integrating; momentary loudness is there after 400 ms
+        let second = ask(&mut s, 2, start + chunk as i64);
+        assert_eq!(second["reset"], json!(false));
+        let last = second["loudness"].as_array().and_then(|l| l.last()).cloned().expect("loudness");
+        assert!(last[0].as_f64().is_some_and(|m| (-70.0..=0.0).contains(&m)), "momentary {last}");
+        assert!(last[2].as_f64().is_some(), "integrated {last}");
+        // a jump starts over
+        assert_eq!(ask(&mut s, 3, 0)["reset"], json!(true));
+        // without `meter`, no meter
+        let plain = handle(&mut s, json!(4), "audio.render", json!({"start": 0, "frames": 480})).expect("reply");
+        assert!(plain.json["result"].get("meter").is_none());
     }
 
     #[test]

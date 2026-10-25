@@ -7,10 +7,15 @@ protocol). Frames come from the engine (``frame.render``, RGBA8 at the monitor's
 from ``audio.render`` (interleaved float32) into a QAudioSink. Requests are coalesced: at most one
 frame and one audio request are in flight, and a newer wanted time replaces an older one, so a
 slow render drops frames instead of building a queue.
+
+Every ``audio.render`` asks for the engine's meter of the block too (``meter: true``: sample
+peaks every 1/100 s and the loudness so far); the Audio Meters panel shows the block being heard.
+Without an audio device the sound is still fetched at the playing pace, for the meters alone.
 """
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Any
 
 from PySide6.QtCore import QElapsedTimer, QRectF, Qt, QTimer, Signal
@@ -30,6 +35,7 @@ except ImportError:  # pragma: no cover - depends on the PySide6 build
 
 AUDIO_CHUNK_SECONDS = 0.1
 AUDIO_LEAD_SECONDS = 0.35
+METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 
 
@@ -208,6 +214,8 @@ class Monitor(QWidget):
         self._audio_rate = 48000
         self._audio_channels = 2
         self._audio_pending = b""
+        # (first sample, samples per block, [peaks per block], [loudness per block]) as played
+        self.meter_blocks: deque[tuple[int, int, list[Any], list[Any]]] = deque()
 
     # ----- what each monitor shows (overridden) -----
     def extra_buttons(self) -> tuple[tuple[str, str, str, Any], ...]:
@@ -388,26 +396,42 @@ class Monitor(QWidget):
         self._feed_audio()
 
     # ----- audio -----
+    def play_sample(self) -> int:
+        """The sample being heard now (by the playback clock), at ``audio_rate``."""
+        if not self.playing:
+            return self.playhead * self._audio_rate // TICKS_PER_SECOND
+        t = self._play_from + self._clock.nsecsElapsed() * TICKS_PER_SECOND // 1_000_000_000
+        return t * self._audio_rate // TICKS_PER_SECOND
+
+    @property
+    def audio_rate(self) -> int:
+        return self._audio_rate
+
     def _start_audio(self) -> None:
-        if not HAVE_AUDIO or not self.has_content():
+        if not self.has_content():
             return
         rate = self.sample_rate()
+        self._audio_rate = rate
+        self._audio_channels = 2
+        self._audio_next = self.playhead * rate // TICKS_PER_SECOND
+        self._audio_pending = b""
+        self._audio_busy = False
+        self.meter_blocks.clear()
+        if HAVE_AUDIO:
+            self._open_sink(rate)
+        self._feed_audio()
+
+    def _open_sink(self, rate: int) -> None:
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
         fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
         device = QMediaDevices.defaultAudioOutput()
         if device.isNull() or not device.isFormatSupported(fmt):
-            return
-        self._audio_rate = rate
-        self._audio_channels = 2
+            return  # silent: the meters still play
         self._sink = QAudioSink(device, fmt, self)
         self._sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
         self._sink_io = self._sink.start()
-        self._audio_next = self.playhead * rate // TICKS_PER_SECOND
-        self._audio_pending = b""
-        self._audio_busy = False
-        self._feed_audio()
 
     def _stop_audio(self) -> None:
         if self._sink is not None:
@@ -418,15 +442,18 @@ class Monitor(QWidget):
         self._audio_pending = b""
 
     def _feed_audio(self) -> None:
-        if self._sink is None or self._sink_io is None:
+        if not self.playing or not self.engine.running:
             return
-        if self._audio_pending:
-            n = self._sink_io.write(self._audio_pending)
-            self._audio_pending = self._audio_pending[max(0, n) :]
-        frame_bytes = 4 * self._audio_channels
-        queued = (self._sink.bufferSize() - self._sink.bytesFree()) // frame_bytes + len(
-            self._audio_pending
-        ) // frame_bytes
+        if self._sink is not None and self._sink_io is not None:
+            if self._audio_pending:
+                n = self._sink_io.write(self._audio_pending)
+                self._audio_pending = self._audio_pending[max(0, n) :]
+            frame_bytes = 4 * self._audio_channels
+            queued = (self._sink.bufferSize() - self._sink.bytesFree()) // frame_bytes + len(
+                self._audio_pending
+            ) // frame_bytes
+        else:  # no device: keep just ahead of the clock, for the meters
+            queued = self._audio_next - self.play_sample()
         if self._audio_busy or queued > self._audio_rate * AUDIO_LEAD_SECONDS:
             return
         frames = int(self._audio_rate * AUDIO_CHUNK_SECONDS)
@@ -435,14 +462,24 @@ class Monitor(QWidget):
         self._audio_next += frames
         self.engine.call(
             "audio.render",
-            self.audio_params(start, frames),
+            {**self.audio_params(start, frames), "meter": True},
             on_reply=self._on_audio,
             on_error=lambda _m: setattr(self, "_audio_busy", False),
         )
 
     def _on_audio(self, result: Any, data: bytes | None) -> None:
         self._audio_busy = False
-        if self._sink_io is None or not data or not isinstance(result, dict):
+        if not isinstance(result, dict):
+            return
+        meter = result.get("meter")
+        if self.playing and isinstance(meter, dict) and isinstance(result.get("start"), int):
+            self.meter_blocks.append(
+                (int(result["start"]), max(1, int(meter.get("block") or 1)), list(meter.get("peaks") or []), list(meter.get("loudness") or []))
+            )
+            while len(self.meter_blocks) > max(4, int(METER_KEEP_SECONDS / AUDIO_CHUNK_SECONDS)):
+                self.meter_blocks.popleft()
+        if self._sink_io is None or not data:
+            self._feed_audio()
             return
         if int(result.get("channels") or 0) != self._audio_channels:
             return

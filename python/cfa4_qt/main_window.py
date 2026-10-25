@@ -19,6 +19,7 @@ from .engine import EngineClient
 from .i18n import LANGUAGES, TR, tr
 from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
+from .panels.meters import AudioMetersPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
@@ -26,7 +27,7 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 6  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel
+LAYOUT_VERSION = 7  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -39,8 +40,10 @@ DOCK_PLAN = (
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
+    ("Audio Meters", Qt.DockWidgetArea.BottomDockWidgetArea),
 )
 TOOLS_W = 46  # the Tools strip, as egui's
+METERS_W = 116  # the Audio Meters right of the Timeline, as egui's
 
 # engine playhead commands that act on the Source monitor's playhead when it has the focus
 SOURCE_STEPS = {
@@ -100,6 +103,8 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
+        self.meters = AudioMetersPanel(self)
+        self.meters.watch(self.monitor, self.source_monitor)
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
         self.inspector = InspectorPanel(self)
@@ -125,6 +130,7 @@ class MainWindow(QMainWindow):
             "History": self.history,
             "Timeline": self.timeline,
             "Events": self.events,
+            "Audio Meters": self.meters,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -188,11 +194,12 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["Project"], d["Effects"])
         win.tabifyDockWidget(d["Properties"], d["History"])
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
+        win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
         win.tabifyDockWidget(d["Timeline"], d["Events"])
         for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
-        win.resizeDocks([d["Tools"]], [TOOLS_W], Qt.Orientation.Horizontal)
+        win.resizeDocks([d["Tools"], d["Audio Meters"]], [TOOLS_W, METERS_W], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Properties"]], [460, 280], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Project"]], [320, 300], Qt.Orientation.Vertical)
 
@@ -237,7 +244,7 @@ class MainWindow(QMainWindow):
             Qt.Orientation.Horizontal,
         )
         self.resizeDocks([self.docks["Source"], self.docks["Project"]], [int(h * 0.30), int(h * 0.28)], Qt.Orientation.Vertical)
-        self.resizeDocks([self.docks["Tools"]], [TOOLS_W], Qt.Orientation.Horizontal)
+        self.resizeDocks([self.docks["Tools"], self.docks["Audio Meters"]], [TOOLS_W, METERS_W], Qt.Orientation.Horizontal)
 
     def showEvent(self, e) -> None:
         super().showEvent(e)
