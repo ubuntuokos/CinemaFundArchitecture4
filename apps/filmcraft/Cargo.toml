@@ -12,6 +12,9 @@ workspace = true
 
 [features]
 default = []
+# Optional GStreamer fallback media backend (ADR 0002; needs libgstreamer1.0-dev and
+# libgstreamer-plugins-base1.0-dev to build). Without it the app behaves exactly as before.
+gstreamer = ["cfa4-gstreamer/gstreamer"]
 # Speech-to-text (Text panel ▸ Transcribe) with Whisper on the CPU, and model downloads.
 whisper = ["filmcraft-engine/whisper", "filmcraft-engine/speech-download"]
 # Natural Text to Speech voices (Kokoro-82M on the CPU, downloaded on first use).
@@ -26,6 +29,7 @@ filmcraft-time = { workspace = true }
 filmcraft-gpu = { workspace = true }
 filmcraft-ui-egui = { workspace = true }
 filmcraft-platform = { workspace = true }
+cfa4-gstreamer = { workspace = true }
 egui = { workspace = true }
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit", "wayland", "x11"] }
 serde_json = { workspace = true }

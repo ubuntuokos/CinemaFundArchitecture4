@@ -81,7 +81,7 @@ pub fn route(app: &mut FilmcraftApp, id: &str, params: &Value) -> Option<Result<
         "media.attachProxies" | "media.reconnectFullRes" => {
             let item = app.session.state.project_selection.first().copied();
             let Some(item) = item else { return Some(Err("select a clip in the Project panel".into())) };
-            let exts: Vec<&str> = filmcraft_media::VIDEO_EXTENSIONS.to_vec();
+            let exts: Vec<&str> = filmcraft_media::video_extensions();
             let hint = RelinkHint { command: id.to_string(), params: json!({"item": item.0}) };
             let id = id.to_string();
             Some(app.pick(FileDialog::Relink { exts: exts.iter().map(|e| e.to_string()).collect(), hint }, move |app, paths| {
@@ -333,8 +333,7 @@ fn link_media(app: &mut FilmcraftApp, ctx: &egui::Context) {
             }
         }
         Some("locate") => {
-            let exts: Vec<&str> =
-                filmcraft_media::VIDEO_EXTENSIONS.iter().chain(filmcraft_media::AUDIO_EXTENSIONS).chain(filmcraft_media::STILL_EXTENSIONS).copied().collect();
+            let exts: Vec<&str> = filmcraft_media::importable_extensions();
             let mut params = match_params(&d);
             params["item"] = json!(item);
             let hint = RelinkHint { command: "media.relink".into(), params };

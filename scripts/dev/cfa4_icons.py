@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Regenerate the CFA4 app icons from the owner's logo (assets/cfa4/logo/cfa4-logo.png).
+"""Regenerate the CFA4 app icons from the owner's logo (assets/cfa4/cfa4-official-logo.png).
 
 The icon is the logo's emblem (the A with the film strip) on a transparent background; the
 wordmark is left out because it is unreadable at icon sizes. Writes:
 
-  assets/cfa4/logo/cfa4-emblem.png                          the emblem, transparent, full size
+  assets/cfa4/cfa4-emblem.png                          the emblem, transparent, full size
   assets/cfa4/hicolor/<n>x<n>/apps/io.github.ubuntuokos.cfa4.png   16 … 512 px
   assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg  the 512 px emblem in an SVG
       (the logo is raster artwork; the SVG keeps the scalable path packaging and the egui
@@ -54,9 +54,9 @@ def emblem(logo: Image.Image) -> Image.Image:
 
 
 def main() -> int:
-    logo = Image.open(CFA4 / "logo" / "cfa4-logo.png")
+    logo = Image.open(CFA4 / "cfa4-official-logo.png")
     art = emblem(logo)
-    art.save(CFA4 / "logo" / "cfa4-emblem.png", optimize=True)
+    art.save(CFA4 / "cfa4-emblem.png", optimize=True)
     for n in SIZES:
         out = CFA4 / "hicolor" / f"{n}x{n}" / "apps" / f"{APP_ID}.png"
         out.parent.mkdir(parents=True, exist_ok=True)

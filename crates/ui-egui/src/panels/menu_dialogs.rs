@@ -229,8 +229,7 @@ pub fn route(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, params: &Val
             }));
         }
         "file.mediaPropertiesFile" if params.get("path").is_none() => {
-            let exts: Vec<&str> =
-                filmcraft_media::VIDEO_EXTENSIONS.iter().chain(filmcraft_media::AUDIO_EXTENSIONS).chain(filmcraft_media::STILL_EXTENSIONS).copied().collect();
+            let exts: Vec<&str> = filmcraft_media::importable_extensions();
             let id = id.to_string();
             return Some(app.pick(FileDialog::open_file(tl!("Media"), &exts), move |app, paths| {
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };

@@ -53,7 +53,7 @@ The ArtCraft name, wordmark and logos (`docs/brand/`) are trademarks, not covere
 licences, and must be replaced before distribution (see `AGENTS.md`).
 
 **The CFA4 logo is not under the GPL.** The CFA4 logo, its emblem, the app icons and the CFA4
-wordmark (`assets/cfa4/logo`, `assets/cfa4/hicolor`) are the owner's own design and stay his
+wordmark (`assets/cfa4/cfa4-official-logo.png`, `assets/cfa4/cfa4-emblem.png`, `assets/cfa4/hicolor`) are the owner's own design and stay his
 (owner decision 2026-10-25). They are used under [`assets/cfa4/LICENSE-brand.txt`](../assets/cfa4/LICENSE-brand.txt):
 unmodified, only to identify CFA4 and its official builds; whoever distributes a modified version
 must replace them. The CFA4 code stays GPL-3.0-or-later, so anyone may fork the program, but not
