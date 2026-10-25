@@ -104,13 +104,16 @@ CELL = 20
 
 @dataclass
 class Drag:
-    kind: str  # "move" | "trim" | "scrub"
+    kind: str  # "move" | "trim" | "scrub" | "roll" | "stretch" | "slip" | "slide" | "hand"
     clip: dict[str, Any] | None
     origin: QPoint
     origin_time: int
     edge: str = ""
     delta: int = 0
     row_delta: int = 0
+    mode: str = "regular"  # trim: regular | ripple
+    partner: dict[str, Any] | None = None  # roll: the clip on the other side of the cut
+    scroll: tuple[int, int] = (0, 0)  # hand: scroll position at the press
 
 
 class TimelineCanvas(QWidget):
@@ -236,6 +239,27 @@ class TimelineCanvas(QWidget):
                 return row, clip, ""
         return row, None, ""
 
+    def neighbour(self, row: Row, clip: dict[str, Any], edge: str) -> dict[str, Any] | None:
+        """The clip touching ``clip`` at ``edge`` on the same track (a roll needs both sides)."""
+        for c in row.track.get("items") or []:
+            if edge == "out" and int(c.get("start") or 0) == int(clip.get("end") or 0):
+                return c
+            if edge == "in" and int(c.get("end") or 0) == int(clip.get("start") or 0):
+                return c
+        return None
+
+    def track_select(self, row: Row, t: int, forward: bool, single_track: bool) -> list[Any]:
+        """Track Select Forward/Backward: every clip ending after (starting before) ``t``, on
+        all tracks or (Shift) only the clicked one, as the egui editor does."""
+        ids = []
+        for r in self.rows:
+            if single_track and r is not row:
+                continue
+            for c in r.track.get("items") or []:
+                if (int(c.get("end") or 0) > t) if forward else (int(c.get("start") or 0) < t):
+                    ids.append(c.get("clip"))
+        return ids
+
     def snap(self, ticks: int, exclude: set[Any]) -> int:
         """Snap to the playhead and clip edges within SNAP_PX."""
         best, best_px = ticks, SNAP_PX + 1.0
@@ -326,7 +350,7 @@ class TimelineCanvas(QWidget):
             t, row = self._drop_preview
             x = self.x_of(t)
             p.fillRect(QRectF(x, row.top, 3, row.height), QColor("#ffd54a"))
-        if self._drag and self._drag.kind == "trim" and self._drag.clip is not None:
+        if self._drag and self._drag.kind in ("trim", "roll", "stretch") and self._drag.clip is not None:
             x = self.x_of(self._drag.origin_time + self._drag.delta)
             p.setPen(QPen(QColor("#ffd54a"), 2))
             p.drawLine(int(x), RULER_H, int(x), self.height())
@@ -524,12 +548,45 @@ class TimelineCanvas(QWidget):
             self._drag = Drag("scrub", None, pos, self.playhead)
             self._scrub_to(pos.x())
             return
-        _row, clip, edge = self.hit(pos)
+        mods = e.modifiers()
+        if self.tool == "hand":
+            self._drag = Drag("hand", None, pos, 0, scroll=(self.scroll_ticks, self.scroll_y))
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            return
+        if self.tool == "zoom":
+            self.zoom(1 / 1.5 if mods & Qt.KeyboardModifier.AltModifier else 1.5, pos.x())
+            return
+        row, clip, edge = self.hit(pos)
+        if self.tool in ("trackSelectForward", "trackSelectBackward") and row is not None:
+            t = self.time_at(pos.x())
+            ids = self.track_select(row, t, self.tool == "trackSelectForward", bool(mods & Qt.KeyboardModifier.ShiftModifier))
+            self.command.emit("timeline.select", {"clips": ids})
+            if self.sequence is not None:
+                self.sequence["selection"] = ids
+            if clip is not None and ids:  # as in Premiere, a drag moves what was just selected
+                self._drag = Drag("move", clip, pos, int(clip.get("start") or 0))
+            return
         if clip is None:
             if pos.x() >= HEADER_W:
                 self.command.emit("edit.deselectAll", {})
             return
         cid = clip.get("clip")
+        if self.tool in ("slip", "slide"):
+            self.command.emit("timeline.select", {"clips": [cid]})
+            self._drag = Drag(self.tool, clip, pos, int(clip.get("start") or 0))
+            return
+        if self.tool in ("ripple", "rolling", "rateStretch"):
+            if not edge:  # these tools work on edges; a click on the body selects
+                self.command.emit("timeline.select", {"clips": [cid]})
+                return
+            origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            if self.tool == "rateStretch":
+                self._drag = Drag("stretch", clip, pos, origin, edge=edge)
+            elif self.tool == "rolling" and row is not None and self.neighbour(row, clip, edge) is not None:
+                self._drag = Drag("roll", clip, pos, origin, edge=edge, partner=self.neighbour(row, clip, edge))
+            else:  # ripple, or a roll at a cut with nothing on the other side: a trim
+                self._drag = Drag("trim", clip, pos, origin, edge=edge, mode="ripple" if self.tool == "ripple" else "regular")
+            return
         if self.tool == "razor":
             t = self.time_at(pos.x())
             if not e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
@@ -562,15 +619,33 @@ class TimelineCanvas(QWidget):
             return
         if d is None:
             _row, clip, edge = self.hit(pos)
-            if self.tool == "razor" and clip is not None:
+            if self.tool == "hand":
+                self.setCursor(Qt.CursorShape.OpenHandCursor)
+            elif self.tool == "zoom":
+                self.setCursor(Qt.CursorShape.CrossCursor)
+            elif self.tool == "razor" and clip is not None:
                 self.setCursor(Qt.CursorShape.IBeamCursor)
-            elif edge:
+            elif self.tool in ("slip", "slide") and clip is not None:
                 self.setCursor(Qt.CursorShape.SizeHorCursor)
+            elif edge and self.tool in ("selection", "ripple", "rolling", "rateStretch"):
+                self.setCursor(Qt.CursorShape.SplitHCursor if self.tool == "rolling" else Qt.CursorShape.SizeHorCursor)
             else:
                 self.unsetCursor()
             return
         if d.kind == "scrub":
             self._scrub_to(pos.x())
+            return
+        if d.kind == "hand":
+            dx, dy = pos.x() - d.origin.x(), pos.y() - d.origin.y()
+            self.scroll_ticks = max(0, int(d.scroll[0] - dx * TICKS_PER_SECOND / self.pps))
+            self.set_scroll_y(d.scroll[1] - dy)
+            self.update()
+            return
+        if d.kind in ("slip", "slide"):
+            ft = self.frame_ticks()
+            raw = round((pos.x() - d.origin.x()) * TICKS_PER_SECOND / self.pps / ft) * ft
+            d.delta = -raw if d.kind == "slip" else raw  # slip moves the media, not the clip
+            self.update()
             return
         raw = int((pos.x() - d.origin.x()) * TICKS_PER_SECOND / self.pps)
         target = d.origin_time + raw
@@ -603,11 +678,24 @@ class TimelineCanvas(QWidget):
         if d.clip is None or (d.delta == 0 and d.row_delta == 0):
             self.update()
             return
+        if d.kind == "hand":
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+            return
         if d.kind == "trim":
-            mode = "ripple" if e.modifiers() & Qt.KeyboardModifier.ControlModifier else "regular"
+            mode = "ripple" if d.mode == "ripple" or e.modifiers() & Qt.KeyboardModifier.ControlModifier else "regular"
             self.command.emit(
                 "timeline.trim", {"clip": d.clip.get("clip"), "edge": d.edge, "mode": mode, "delta": d.delta}
             )
+            return
+        if d.kind == "roll" and d.partner is not None:
+            left, right = (d.clip, d.partner) if d.edge == "out" else (d.partner, d.clip)
+            self.command.emit("timeline.roll", {"left": left.get("clip"), "right": right.get("clip"), "delta": d.delta})
+            return
+        if d.kind == "stretch":
+            self.command.emit("timeline.rateStretch", {"clip": d.clip.get("clip"), "edge": d.edge, "delta": d.delta})
+            return
+        if d.kind in ("slip", "slide"):
+            self.command.emit(f"timeline.{d.kind}", {"clip": d.clip.get("clip"), "delta": d.delta})
             return
         moves = []
         by_clip = {c.get("clip"): (row, c) for row in self.rows for c in row.track.get("items") or []}
@@ -705,16 +793,6 @@ class TimelinePanel(QWidget):
         self.title = QLabel(tr("Timeline"))
         bar.addWidget(self.title)
         bar.addStretch(1)
-        self.tool_buttons: dict[str, QToolButton] = {}
-        for tool, label, key in (("selection", N_("Selection Tool"), "V"), ("razor", N_("Razor Tool"), "C")):
-            b = QToolButton(self)
-            b.setObjectName(f"tools.{tool}")
-            b.setText(f"{tr(label)} ({key})")
-            b.setCheckable(True)
-            b.setChecked(tool == "selection")
-            b.clicked.connect(lambda _c=False, t=tool: self.set_tool(t))
-            bar.addWidget(b)
-            self.tool_buttons[tool] = b
         for text, slot, name in (
             ("−", lambda: self.canvas.zoom(0.8), "zoomOut"),
             ("+", lambda: self.canvas.zoom(1.25), "zoomIn"),
@@ -744,9 +822,9 @@ class TimelinePanel(QWidget):
         layout.addWidget(self.hscroll)
 
     def set_tool(self, tool: str) -> None:
+        """The Tools panel picked ``tool`` (it decides what a drag on the timeline does)."""
         self.canvas.tool = tool
-        for t, b in self.tool_buttons.items():
-            b.setChecked(t == tool)
+        self.canvas.unsetCursor()
 
     def set_sequence(self, seq: dict[str, Any] | None) -> None:
         self.canvas.set_sequence(seq)

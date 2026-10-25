@@ -16,16 +16,17 @@ from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
-from .i18n import LANGUAGES, N_, TR, tr
+from .i18n import LANGUAGES, TR, tr
 from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
+from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 5  # 2: Source monitor dock; 3: Effect Controls; 4: Inspector renamed Properties (egui); 5: proportional default sizes
+LAYOUT_VERSION = 6  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -35,9 +36,11 @@ DOCK_PLAN = (
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
 )
+TOOLS_W = 46  # the Tools strip, as egui's
 
 # engine playhead commands that act on the Source monitor's playhead when it has the focus
 SOURCE_STEPS = {
@@ -95,6 +98,8 @@ class MainWindow(QMainWindow):
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
+        self.tools = ToolsPanel(self)
+        self.tools.tool_selected.connect(self.timeline.set_tool)
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
         self.inspector = InspectorPanel(self)
@@ -113,6 +118,7 @@ class MainWindow(QMainWindow):
         widgets = {
             "Source": self.source_monitor,
             "Effect Controls": self.effect_controls,
+            "Tools": self.tools,
             "Project": self.project_panel,
             "Effects": self.effects,
             "Properties": self.inspector,
@@ -181,10 +187,12 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["Source"], d["Effect Controls"])
         win.tabifyDockWidget(d["Project"], d["Effects"])
         win.tabifyDockWidget(d["Properties"], d["History"])
+        win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.tabifyDockWidget(d["Timeline"], d["Events"])
         for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
+        win.resizeDocks([d["Tools"]], [TOOLS_W], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Properties"]], [460, 280], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Project"]], [320, 300], Qt.Orientation.Vertical)
 
@@ -229,6 +237,7 @@ class MainWindow(QMainWindow):
             Qt.Orientation.Horizontal,
         )
         self.resizeDocks([self.docks["Source"], self.docks["Project"]], [int(h * 0.30), int(h * 0.28)], Qt.Orientation.Vertical)
+        self.resizeDocks([self.docks["Tools"]], [TOOLS_W], Qt.Orientation.Horizontal)
 
     def showEvent(self, e) -> None:
         super().showEvent(e)
@@ -270,12 +279,6 @@ class MainWindow(QMainWindow):
         self.play_action = QAction(tr("Play/Stop"), self)
         self.play_action.setObjectName("qt.playback.toggle")
         self.play_action.triggered.connect(lambda: self.focused_monitor().toggle_playback())
-        self.tool_actions = []
-        for tool, label in (("selection", N_("Selection Tool")), ("razor", N_("Razor Tool"))):
-            a = QAction(tr(label), self)
-            a.setObjectName(f"qt.tool.{tool}")
-            a.triggered.connect(lambda _c=False, t=tool: self.timeline.set_tool(t))
-            self.tool_actions.append(a)
         self.export_action = QAction(tr("Export Media…"), self)
         self.export_action.setObjectName("qt.export")
         self.export_action.triggered.connect(self.open_export)
@@ -303,8 +306,6 @@ class MainWindow(QMainWindow):
             (self.play_action, ["Space"]),
             (self.export_action, ["Ctrl+M"]),
             (self.quit_action, ["Ctrl+Q"]),
-            (self.tool_actions[0], ["V"]),
-            (self.tool_actions[1], ["C"]),
         ):
             free = [QKeySequence(k) for k in keys if k not in bound_keys]
             action.setShortcuts(free)
@@ -314,7 +315,7 @@ class MainWindow(QMainWindow):
         bound = self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
-                "Sequence": [self.play_action, *self.tool_actions],
+                "Sequence": [self.play_action],
                 "View": [self.fit_action],
                 "Help": [self.about_action],
             }
@@ -346,6 +347,7 @@ class MainWindow(QMainWindow):
         )
         keys = {s.toString() for cid in bound for s in self.registry.actions[cid].shortcuts()}
         self._bind_local_shortcuts(keys)
+        bind_free(self, self.tools.shortcut_pairs(), keys)  # V, A, B, N, R, C, Y, U, H, Z ... as egui
         self._window_actions = bind_free(self, window_shortcuts, keys) + [
             a for a in window_menu.actions() if a not in {p[0] for p in window_shortcuts}
         ]

@@ -1254,7 +1254,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -1427,3 +1427,136 @@ def test_engine_ending_after_the_client_is_gone_raises_nothing(app, fake_engine:
         assert errors == [], errors
     finally:
         threading.excepthook = previous
+
+
+# ----- Tools panel and the tools on the timeline (egui parity) -----
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.tools import GROUPS, TOOLS
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1800, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    T = TICKS_PER_SECOND
+    Qt = QtCore.Qt
+
+    def v1() -> list[dict]:
+        return list((win.sequence or {})["video"][0]["items"])
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint, mods=Qt.KeyboardModifier.NoModifier) -> None:
+        QtTest.QTest.mousePress(canvas, Qt.MouseButton.LeftButton, mods, a)
+        for i in range(1, 6):
+            QtTest.QTest.mouseMove(canvas, a + (b - a) * i / 5)
+        QtTest.QTest.mouseRelease(canvas, Qt.MouseButton.LeftButton, mods, b)
+
+    def edge(clip: dict, which: str) -> QtCore.QPoint:
+        row = next(r for r in canvas.rows if r.short == "V1")
+        r = canvas.clip_rect(row, clip)
+        x = r.left() + 2 if which == "in" else r.right() - 2
+        return QtCore.QPoint(int(x), int(r.center().y()))
+
+    def body(clip: dict) -> QtCore.QPoint:
+        row = next(r for r in canvas.rows if r.short == "V1")
+        return canvas.clip_rect(row, clip).center().toPoint()
+
+    def px(seconds: float) -> int:
+        return round(seconds * canvas.pps)
+
+    def undo() -> None:
+        before = (win.sequence or {}).get("video")
+        win.execute("edit.undo", {})
+        wait_until(app, lambda: (win.sequence or {}).get("video") != before, 10_000)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(420)
+        canvas.pps = 60.0
+        canvas.scroll_ticks = 0
+        wait_until(app, lambda: False, 300)
+        # the panel: egui's 8 groups; unsupported tools listed disabled
+        assert len(win.tools.buttons) == len(GROUPS) == 8
+        assert not win.tools.actions["pen"].isEnabled() and win.tools.actions["slip"].isEnabled()
+        assert "Tools" in win.docks and not win.docks["Tools"].isHidden()
+        # egui's keys pick the tools
+        for key, tool in (("B", "ripple"), ("N", "rolling"), ("R", "rateStretch"), ("Y", "slip"), ("U", "slide"), ("A", "trackSelectForward"), ("H", "hand"), ("Z", "zoom"), ("C", "razor"), ("V", "selection")):
+            QtTest.QTest.keyClick(win, QtGui.QKeySequence(key)[0].key())
+            assert wait_until(app, lambda t=tool: canvas.tool == t and win.tools.current == t, 2_000), (key, canvas.tool)
+
+        # the later V1 clips: nothing sync-locked sits after them (the engine refuses an edit
+        # that would break sync, and the GUI shows that refusal in Events)
+        # the music on A2 spans the whole sequence: a ripple would break sync with it, so turn
+        # the other tracks' sync lock off with their header switch, as a user would
+        for short in ("V2", "V3", "A2", "A3"):
+            row = next(r for r in canvas.rows if r.short == short)
+            cell = next(x for x in canvas.header_cells(row) if x.key == "syncLock")
+            if cell.on:
+                QtTest.QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cell.rect.center())
+        kinds = {"V": "video", "A": "audio"}
+        assert wait_until(
+            app,
+            lambda: all(not win.sequence[kinds[x[0]]][int(x[1]) - 1].get("syncLock") for x in ("V2", "V3", "A2", "A3")),
+            10_000,
+        )
+        clips = v1()
+        a, b, c = clips[3], clips[4], clips[5]
+        ia, ib, ic = 3, 4, 5
+        # Ripple Edit: shortening B's end pulls C (and everything after) earlier
+        win.tools.select("ripple")
+        drag(edge(b, "out"), edge(b, "out") - QtCore.QPoint(px(1.0), 0))
+        assert wait_until(app, lambda: v1()[ic]["start"] < c["start"], 10_000), win.events.text.toPlainText()[-300:]
+        assert v1()[ib]["end"] == v1()[ic]["start"], "no gap after a ripple"
+        undo()
+        # Rolling Edit: the A|B cut moves; both change, the sequence keeps its length
+        win.tools.select("rolling")
+        duration = win.sequence["duration"]
+        drag(edge(a, "out"), edge(a, "out") + QtCore.QPoint(px(0.5), 0))
+        assert wait_until(app, lambda: v1()[ia]["end"] > a["end"], 10_000), win.events.text.toPlainText()[-300:]
+        assert v1()[ib]["start"] == v1()[ia]["end"] and win.sequence["duration"] == duration
+        undo()
+        # Rate Stretch: dragging the last clip's end out makes it longer and slower
+        win.tools.select("rateStretch")
+        drag(edge(c, "out"), edge(c, "out") + QtCore.QPoint(px(1.0), 0))
+        assert wait_until(app, lambda: v1()[ic]["duration"] > c["duration"], 10_000), win.events.text.toPlainText()[-300:]
+        assert v1()[ic]["speed"] < 1.0
+        undo()
+        # Slip: the clip stays, its media moves
+        win.tools.select("slip")
+        drag(body(b), body(b) + QtCore.QPoint(px(0.5), 0))
+        assert wait_until(app, lambda: v1()[ib]["sourceIn"] != b["sourceIn"], 10_000), win.events.text.toPlainText()[-300:]
+        assert (v1()[ib]["start"], v1()[ib]["duration"]) == (b["start"], b["duration"])
+        undo()
+        # Slide: the clip moves between its neighbours, which give and take
+        win.tools.select("slide")
+        drag(body(b), body(b) + QtCore.QPoint(px(0.5), 0))
+        assert wait_until(app, lambda: v1()[ib]["start"] > b["start"], 10_000), win.events.text.toPlainText()[-300:]
+        assert v1()[ia]["end"] == v1()[ib]["start"] and v1()[ib]["duration"] == b["duration"]
+        undo()
+        # Track Select Forward: everything ending after the click, on every track
+        win.tools.select("trackSelectForward")
+        QtTest.QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, body(c))
+        t = canvas.time_at(body(c).x())
+        expect = {cl["clip"] for k in ("video", "audio") for tr in win.sequence[k] for cl in tr["items"] if cl["end"] > t}
+        assert wait_until(app, lambda: set(win.sequence.get("selection") or []) == expect, 10_000)
+        # Hand scrolls, Zoom zooms (Alt: out)
+        win.tools.select("hand")
+        canvas.scroll_ticks = 5 * T
+        drag(QtCore.QPoint(800, 200), QtCore.QPoint(600, 200))
+        assert canvas.scroll_ticks > 5 * T
+        win.tools.select("zoom")
+        pps = canvas.pps
+        QtTest.QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(700, 200))
+        assert canvas.pps > pps
+        QtTest.QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.AltModifier, QtCore.QPoint(700, 200))
+        assert abs(canvas.pps - pps) < 1e-6
+        # unsupported tools cannot be picked
+        win.tools.select("pen")
+        assert win.tools.current == "zoom" and canvas.tool == "zoom"
+        assert all(TOOLS[t].available for g in GROUPS for t in (x.id for x in g) if win.tools.actions[t].isEnabled())
+    finally:
+        win._quit_confirmed = True
+        win.close()
