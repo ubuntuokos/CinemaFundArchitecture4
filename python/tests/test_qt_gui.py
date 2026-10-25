@@ -494,7 +494,8 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     from cfa4_qt.panels.export import ExportDialog
 
     class Engine:
-        """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``."""
+        """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``; ``.png``
+        is an image sequence."""
 
         def __init__(self):
             self.sent = []
@@ -503,7 +504,8 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
             if command == "export.resolve":
                 path = str((params or {}).get("path"))
                 if on_reply is not None:
-                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4"}}, None)
+                    fmt = "png" if path.endswith(".png") else "h264"
+                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4", "format": fmt}}, None)
                 return 0
             self.sent.append((command, dict(params or {})))
             return 0
@@ -524,7 +526,7 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     # typed without its extension: the file the engine will write is the one asked about
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(tmp_path / "out")})
-    dlg._replace_confirmed = ""
+    dlg._replace_confirmed = set()
     dlg._enqueue(True)
     assert len(engine.sent) == 2 and not answers
     # an image sequence writes numbered frames: an earlier export's frames are asked about
@@ -537,12 +539,24 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
     assert existing_outputs(seq_dir / "cut.png", "h264") == []
     assert existing_outputs(seq_dir / "other.png", "png") == []
+    # Browse returning cut.png confirms that file only, not the earlier frames
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
+    dlg._browse()
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2 and not answers
+    answers.append(QtWidgets.QMessageBox.StandardButton.Yes)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 3 and not answers
+    dlg._enqueue(True)  # the frames are confirmed now
+    assert len(engine.sent) == 4
     # a regular file where the folder should be: an error in the dialog, nothing queued
     blocker = tmp_path / "file"
     blocker.write_text("x")
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(blocker / "sub" / "out.mp4")})
     dlg._enqueue(True)
-    assert len(engine.sent) == 2
+    assert len(engine.sent) == 4
     assert "output folder" in dlg.summary.text()
     dlg.close()
 
