@@ -31,9 +31,11 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
    Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
-   A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
-   VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
-   tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.
+   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább 9.0.2)
+   és az Ubuntu tárolóiból telepített **GStreamer** (hardveres kódolás nem NVIDIA GPU-n, VP9/AV1
+   hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok), később további motorok is. Hogy
+   melyik feladatot melyik végzi, azt egy **automatikus útválasztó** dönti el; a saját motor mindig
+   tartalék. Részletek: `docs/adr/ADR-0005-media-backends.md`, `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
