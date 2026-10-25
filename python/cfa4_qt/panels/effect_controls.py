@@ -396,7 +396,7 @@ class EffectControlsPanel(QWidget):
         # clip and, when animated, the time it was made at, whatever the panel shows by the flush
         self._pending: dict[tuple[int, int, str, int | None], Any] = {}
         self._send_timer = QTimer(self, singleShot=True, interval=SEND_DELAY_MS)
-        self._send_timer.timeout.connect(self._flush)
+        self._send_timer.timeout.connect(self.flush)
         self._last_send = QElapsedTimer()
         self._busy = False
         self._again = False
@@ -445,7 +445,7 @@ class EffectControlsPanel(QWidget):
             self.refresh(selection.get("selection") if isinstance(selection, dict) else None)
 
     def _show(self, clip: dict[str, Any] | None) -> None:
-        self._flush()  # edits made on the clip shown so far go to that clip, at their own time
+        self.flush()  # edits made on the clip shown so far go to that clip, at their own time
         self.clip = clip
         self.clip_id = int(clip["clip"]) if clip and isinstance(clip.get("clip"), int) else None
         if clip is None:
@@ -529,7 +529,7 @@ class EffectControlsPanel(QWidget):
             return
         self._pending[(self.clip_id, row.effect, row.id, self._edit_time() if row.animated else None)] = value
         if immediate:
-            self._flush()
+            self.flush()
         else:
             self._send_timer.start()
 
@@ -549,10 +549,11 @@ class EffectControlsPanel(QWidget):
     def send(self, command: str, params: dict[str, Any]) -> None:
         """Any other edit from the panel: the coalesced values go first, so they don't land on a
         reset, removed or reordered effect."""
-        self._flush()
+        self.flush()
         self.command.emit(command, params)
 
-    def _flush(self) -> None:
+    def flush(self) -> None:
+        """Send the coalesced values now (also before a save or an unsaved-changes check)."""
         self._send_timer.stop()
         if not self._pending:
             return

@@ -412,6 +412,51 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.close()
 
 
+def test_deferred_effect_edits_reach_the_engine_before_save_or_close(app, fake_engine: Path, tmp_path: Path, monkeypatch):
+    """Regression: a value in Effect Controls' 120 ms send delay was not sent before Save or the
+    unsaved-changes check, so closing right after an edit lost it."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    sent: list[str] = []
+    execute, call = engine.execute, engine.call
+
+    def recording(command, params=None, on_reply=None, on_error=None):
+        sent.append(command)
+        return execute(command, params, on_reply=on_reply, on_error=on_error)
+
+    def recording_call(method, params=None, on_reply=None, on_error=None):
+        if method != "engine.execute":  # execute() goes through call()
+            sent.append(method)
+        return call(method, params, on_reply=on_reply, on_error=on_error)
+
+    monkeypatch.setattr(engine, "execute", recording)
+    monkeypatch.setattr(engine, "call", recording_call)
+    scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": False,
+             "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+    clip = {"clip": 100, "name": "A", "start": 0, "end": 9000, "playhead": 0,
+            "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]}
+    try:
+        assert wait_until(app, lambda: bool(engine.hello) and "file.save" in win.registry.commands)
+        ec = win.effect_controls
+        ec._show(clip)
+        ec.set_param(ec.rows[(0, "scale")], 150.0)
+        sent.clear()
+        win.confirm_unsaved(lambda: None)
+        assert sent[:2] == ["effects.setParam", "session.state"]
+        ec.set_param(ec.rows[(0, "scale")], 160.0)
+        sent.clear()
+        win.project = {"name": "Demo", "path": str(tmp_path / "a.fcproj")}
+        win.run_command(win.registry.commands["file.save"])
+        assert sent[:2] == ["effects.setParam", "file.save"]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_recovery_prompt_reads_the_engines_camel_case_keys():
     """Regression: the prompt read snake_case keys, so every candidate was 'Untitled' from 1970."""
     from cfa4_qt.main_window import recovery_text

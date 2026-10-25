@@ -468,6 +468,8 @@ class MainWindow(QMainWindow):
 
     def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
+        # an Effect Controls value still in its send delay goes first (Save must write it)
+        self.effect_controls.flush()
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
@@ -648,6 +650,8 @@ class MainWindow(QMainWindow):
         def unanswered(_message: str = "") -> None:
             decide(dict(self.state), None)
 
+        # an edit still in Effect Controls' send delay reaches the engine before it is asked
+        self.effect_controls.flush()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)
         QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
 
