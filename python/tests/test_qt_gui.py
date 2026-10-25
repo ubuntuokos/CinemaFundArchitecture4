@@ -646,6 +646,14 @@ def test_effect_controls_toggle_keyframes_at_the_playing_frame(app):
     panel.rows[(0, "scale")]._toggle_animation()
     assert host.monitor.playing is False  # type: ignore[attr-defined]
     assert sent[-1] == ("effects.toggleAnimation", {"clip": 3, "effect": 0, "param": "scale"})
+    # so do the parameter and effect Reset buttons, which key the default at the engine playhead
+    for name in ("effectControls.0.scale.reset", "effectControls.0.reset"):
+        host.monitor.playing = True  # type: ignore[attr-defined]
+        button = panel.findChild(QtWidgets.QToolButton, name)
+        assert button is not None, name
+        button.click()
+        assert host.monitor.playing is False  # type: ignore[attr-defined]
+    assert sent[-1] == ("effects.reset", {"clip": 3, "index": 0})
     host.close()
 
 
