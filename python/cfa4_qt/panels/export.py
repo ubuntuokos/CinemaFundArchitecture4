@@ -76,6 +76,15 @@ def existing_outputs(out: Path, fmt: str) -> list[Path]:
         return []
 
 
+def sidecar_output(target: str, kind: Any) -> Path | None:
+    """The caption sidecar an export to ``target`` writes (``captionSidecar``), named as the
+    engine names it: the output path up to its last dot, then ``.srt`` / ``.vtt``."""
+    if not isinstance(kind, str) or kind.lower() in ("", "none"):
+        return None
+    ext = "vtt" if kind.lower() in ("vtt", "webvtt") else kind.lower()
+    return Path(f"{target.rsplit('.', 1)[0] if '.' in target else target}.{ext}").expanduser()
+
+
 def with_extension(path: str, ext: str) -> str:
     """``path`` with its extension replaced by ``ext`` (kept when ``ext`` is empty)."""
     if not ext or not path:
@@ -510,6 +519,11 @@ class ExportDialog(QDialog):
         try:
             out.parent.mkdir(parents=True, exist_ok=True)
             existing = existing_outputs(out, fmt)
+            # the engine writes the caption sidecar before the encode starts
+            sidecar = sidecar_output(str(target if isinstance(target, str) and target else params["path"]),
+                                     settings.get("captionSidecar") if isinstance(settings, dict) else None)
+            if sidecar is not None and sidecar.exists() and sidecar not in existing:
+                existing.append(sidecar)
         except OSError as e:
             self._summary_error(tr("Cannot create the output folder: {error}").replace("{error}", str(e)))
             return
