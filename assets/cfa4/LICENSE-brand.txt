@@ -4,7 +4,7 @@ Owner: ubuntuokos (Horváth István), the author and owner of the CFA4 project.
 
 The CFA4 name as a product name, the CFA4 logo, its emblem (the "A" with the film strip), the
 "CFA4" wordmark and the line "CINEMA FUND ARCHITECTURA 4" (together: the "CFA4 Marks"), in every
-file under assets/cfa4/logo and assets/cfa4/hicolor, in every size and format, are the original
+image under assets/cfa4 (the official logo assets/cfa4/cfa4-official-logo.png, its emblem) and assets/cfa4/hicolor, in every size and format, are the original
 design and property of the owner. They are NOT open source. They are not covered by CFA4's
 GPL-3.0-or-later licence, by LICENSE-MIT, LICENSE-APACHE or NOTICE, or by any other licence in
 this repository, and nothing in those files grants any right to them.

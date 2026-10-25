@@ -34,7 +34,9 @@ def main(argv: list[str] | None = None) -> int:
     app = QApplication(sys.argv[:1])
     app.setApplicationName("CFA4")
     app.setOrganizationName("CFA4")
-    app.setDesktopFileName("cfa4")
+    # the freedesktop app id: Wayland and the taskbar match the window to the .desktop file
+    # (packaging/linux/io.github.ubuntuokos.cfa4.desktop), so the panel shows CFA4 and its logo
+    app.setDesktopFileName("io.github.ubuntuokos.cfa4")
     from .branding import app_icon
 
     icon = app_icon()

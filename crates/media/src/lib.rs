@@ -14,6 +14,7 @@ pub mod cache;
 pub mod cancel;
 pub mod digits;
 pub mod dpx;
+pub mod fallback;
 pub mod generators;
 pub mod pending;
 pub mod reader;
@@ -180,9 +181,13 @@ pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
 ];
 
+pub use fallback::{Fallback, audio_extensions, importable_extensions, open_with_fallback, register_fallback, video_extensions};
+
+/// Whether `path` has an extension we import: the built-in lists plus those of registered
+/// [`fallback`] backends.
 pub fn is_importable(path: &Path) -> bool {
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
-    STILL_EXTENSIONS.contains(&ext.as_str()) || AUDIO_EXTENSIONS.contains(&ext.as_str()) || VIDEO_EXTENSIONS.contains(&ext.as_str())
+    importable_extensions().contains(&ext.as_str())
 }
 
 /// A pluggable opener (containers/codecs register themselves here from higher-level crates).
@@ -226,7 +231,7 @@ pub fn open_bytes(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -> Result<Shar
 pub fn open_path(path: &Path, extra: &[Opener]) -> Result<SharedSource> {
     let bytes = std::fs::read(path).map_err(|e| MediaError::Io(format!("{}: {e}", path.display())))?;
     let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-    open_bytes(&name, bytes.into(), extra)
+    open_with_fallback(path, open_bytes(&name, bytes.into(), extra))
 }
 
 /// A source that renders nothing (used for offline media): the "Media Offline" slate.

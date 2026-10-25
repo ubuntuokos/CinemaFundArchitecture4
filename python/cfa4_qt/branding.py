@@ -1,6 +1,6 @@
 """CFA4's own identity in the Qt GUI: the CFA4 logo, never an inherited FilmCraft/ArtCraft mark.
 
-The logo is the project owner's artwork in ``assets/cfa4/logo`` (see the ``.attribution``
+The logo is the project owner's official logo ``assets/cfa4/cfa4-official-logo.png`` (see the ``.attribution``
 sidecars); the app icons in ``assets/cfa4/hicolor`` are its emblem, made by
 ``scripts/dev/cfa4_icons.py``.
 """
@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "assets" / "cfa4"
 # the freedesktop icon name an installed package provides (the same files, installed by packaging)
 ICON_NAME = "io.github.ubuntuokos.cfa4"
-LOGO = ASSETS / "logo" / "cfa4-logo.png"
+LOGO = ASSETS / "cfa4-official-logo.png"
 ICON_SIZES = (16, 22, 24, 32, 48, 64, 128, 256, 512)
 
 
