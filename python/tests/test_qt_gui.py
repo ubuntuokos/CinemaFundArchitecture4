@@ -17,6 +17,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 QtCore = pytest.importorskip("PySide6.QtCore")
 QtWidgets = pytest.importorskip("PySide6.QtWidgets")
 QtGui = pytest.importorskip("PySide6.QtGui")
+QtTest = pytest.importorskip("PySide6.QtTest")
 
 from cfa4_qt.commands import Command, CommandRegistry, parse_params, parse_value, qt_shortcut
 from cfa4_qt.engine import EngineClient, EngineError, FrameReader, locate_engine
@@ -1316,3 +1317,87 @@ def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+# ----- timeline: track headers, thumbnails, waveforms (egui parity) -----
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_timeline_track_headers_thumbnails_and_waveforms(app, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+
+    def track(short: str) -> dict:
+        kind = "video" if short[0] == "V" else "audio"
+        return (win.sequence or {}).get(kind)[int(short[1:]) - 1]
+
+    def press(short: str, key: str) -> None:
+        row = next(r for r in canvas.rows if r.short == short)
+        cell = next(c for c in canvas.header_cells(row) if c.key == key)
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.LeftButton, pos=cell.rect.center())
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and (win.sequence or {}).get("targeting"), 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        shorts = [r.short for r in canvas.rows]
+        assert shorts == ["V3", "V2", "V1", "A1", "A2", "A3"], shorts
+        # V1 / A1 are patched and every track is targeted, as egui's defaults
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        cells = {c.key: c for c in canvas.header_cells(v1)}
+        assert cells["patch"].on and cells["target"].on and cells["enabled"].on and not cells["locked"].on
+        # the switches change the engine's tracks (one command each, undoable)
+        press("V2", "locked")
+        assert wait_until(app, lambda: track("V2").get("locked") is True, 10_000)
+        press("A2", "muted")
+        assert wait_until(app, lambda: track("A2").get("muted") is True, 10_000)
+        press("A1", "solo")
+        assert wait_until(app, lambda: track("A1").get("solo") is True, 10_000)
+        press("V3", "enabled")
+        assert wait_until(app, lambda: track("V3").get("enabled") is False, 10_000)
+        # targeting and source patch
+        press("V2", "target")
+        assert wait_until(app, lambda: track("V2")["id"] not in win.sequence["targeting"]["targeted"], 10_000)
+        press("V2", "patch")
+        assert wait_until(app, lambda: win.sequence["targeting"]["videoDest"] == track("V2")["id"], 10_000)
+        # clips get thumbnails (video) and waveforms (audio) from the engine
+        assert wait_until(app, lambda: any(v is not None for v in canvas.media.thumbs.values()), 30_000)
+        assert wait_until(app, lambda: any(v for v in canvas.media.peaks.values()), 30_000)
+        peaks = next(v for v in canvas.media.peaks.values() if v)
+        assert all(lo <= hi for lo, hi in peaks) and any(hi - lo > 0.001 for lo, hi in peaks)
+        # hovering a switch explains it
+        row = next(r for r in canvas.rows if r.short == "A1")
+        cell = next(c for c in canvas.header_cells(row) if c.key == "muted")
+        QtTest.QTest.mouseMove(canvas, cell.rect.center())
+        assert wait_until(app, lambda: canvas.toolTip() == "Mute Track", 2_000), canvas.toolTip()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_default_layout_follows_the_window_size(app, fake_engine: Path, tmp_path: Path):
+    """Regression: the default layout had fixed pixel sizes, so on the owner's large screen the
+    timeline got 13-24 % of the window (egui gives it the lower part of the screen)."""
+    from cfa4_qt.main_window import MainWindow
+
+    for size in ((1366, 768), (2000, 1125), (3840, 2160)):
+        settings = QtCore.QSettings(str(tmp_path / f"{size[0]}.ini"), QtCore.QSettings.Format.IniFormat)
+        win = MainWindow(EngineClient(fake_engine), settings)
+        win.resize(*size)
+        win.show()
+        try:
+            wait_until(app, lambda: False, 400)
+            share = win.docks["Timeline"].height() / win.height()
+            assert 0.33 <= share <= 0.48, (size, share)
+            left = win.docks["Source"].width() / win.width()
+            assert 0.24 <= left <= 0.36, (size, left)
+            # the Program monitor keeps a usable size
+            assert win.monitor.width() >= 0.35 * win.width() and win.monitor.height() >= 0.3 * win.height()
+        finally:
+            win._quit_confirmed = True
+            win.close()

@@ -36,7 +36,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 
 | # | Point | egui | Qt 6 | Evidence / missing |
 |---|---|---|---|---|
-| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md) |
+| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; the default layout sizes follow the window (timeline ~40 %, `test_default_layout_follows_the_window_size`); Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md) |
 | 2.2 | Named workspaces (save, switch, reset) | ✅ | 🟡 | Window ▸ Workspaces: Editing (default, Alt+Shift+1), own named workspaces (Save as New, Save Changes, switch), Reset to Saved Layout (Alt+Shift+0) (`test_workspaces_save_switch_and_reset`); Assembly/Color/Effects/Audio/Captions and Graphics presets, All Panels and Edit Workspaces… need panels the Qt GUI lacks (listed disabled) |
 | 2.3 | Themes (light/dark, favourites) | ✅ | 🟡 | follows the desktop's Qt/KDE theme; no in-app theme switch |
 | 2.4 | Panel docking commands (`window.floatPanel`, `window.dockPanel`, …) | ✅ | ❌ | |
@@ -61,7 +61,7 @@ The Qt Inspector is named Properties, as in egui (3.22).
 | 3.10 | Audio Clip Mixer | ❌ | |
 | 3.11 | Metadata | ❌ | |
 | 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode, time bar with In/Out, Mark In/Out; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |
-| 3.13 | Timeline | 🟡 | tracks, clips, ruler, markers, in/out, playhead, select, move (snap, insert, copy), trim (regular/ripple), razor, drop from Project, zoom, horizontal and vertical scrolling (`test_every_track_is_reachable_in_a_short_timeline`), whole-timecode ruler; track header buttons, waveforms, thumbnails, keyframe lanes, transitions drawing, captions track, roll/slip/slide tools, sequence tabs missing |
+| 3.13 | Timeline | 🟡 | tracks, clips, ruler (whole timecode), markers, in/out, playhead, select, move (snap, insert, copy), trim (regular/ripple), razor, drop from Project, zoom, horizontal and vertical scrolling; track headers with source patch, targeting, lock, sync lock, output (video), mute and solo (audio) through `timeline.setTargeting` / `timeline.setTrack`; locked tracks hatched, muted/hidden tracks dimmed; thumbnail at the head of video clips, waveform across audio clips (`media.peaks`) (`test_timeline_track_headers_thumbnails_and_waveforms`); keyframe lanes, transitions drawing, captions track, roll/slip/slide tools, track height dragging, head-and-tail / continuous thumbnails, sequence tabs, work area bar, Mix row missing |
 | 3.14 | Tools | 🟡 | Selection and Razor only |
 | 3.15 | Audio Meters | ❌ | |
 | 3.16 | Audio Track Mixer | ❌ | |

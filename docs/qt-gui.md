@@ -88,6 +88,7 @@ line longer than 4 MiB is skipped with an error reply.
 | `engine.commands` | – | the registry (`command.list`: id, label, menu, shortcut(s), params, enabled) |
 | `frame.render` | `{target?: "program" \| "source", item?, time \| seconds \| frame, scale?, maxWidth?, maxHeight?}` | `{w, h, format: "rgba8", time, target, offline \| item}` + `w·h·4` bytes (sRGB over black) |
 | `audio.render` | `{target?, item?, start (samples) \| time \| seconds, frames, sampleRate? (source only)}` | `{sampleRate, channels, frames, start, format: "f32le", target}` + interleaved samples |
+| `media.peaks` | `{item, start, end (media ticks), buckets ≤ 20000}` | `{item, buckets, start, end, hasAudio}` + `buckets` (min, max) pairs, f32le, channels mixed to mono (≤ 600 s per call) |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 

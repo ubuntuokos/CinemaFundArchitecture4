@@ -314,6 +314,66 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     Ok((json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"}), bytes))
 }
 
+/// Most buckets one `media.peaks` returns.
+const MAX_PEAK_BUCKETS: usize = 20_000;
+/// Longest media span one `media.peaks` reads (10 minutes at 48 kHz), so a request stays short.
+const MAX_PEAK_FRAMES: i64 = 48_000 * 600;
+
+/// `media.peaks {item, start, end, buckets}`: the waveform of a media item's sound between two
+/// media times (ticks), as `buckets` (min, max) pairs of the channels mixed to mono, f32le. The
+/// timeline draws its audio clips from these.
+fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
+    let item = source_item(s, p)?;
+    let media = media_of(s, item);
+    let tick = |k: &str| p.get(k).and_then(Value::as_i64).ok_or_else(|| format!("`{k}` must be a tick count"));
+    let (t0, t1) = (tick("start")?, tick("end")?);
+    if t1 <= t0 {
+        return Err("`end` must be after `start`".into());
+    }
+    let buckets = p
+        .get("buckets")
+        .and_then(Value::as_u64)
+        .and_then(|n| usize::try_from(n).ok())
+        .filter(|n| (1..=MAX_PEAK_BUCKETS).contains(n))
+        .ok_or_else(|| format!("`buckets` must be an integer in 1..={MAX_PEAK_BUCKETS}"))?;
+    let sr: u32 = 48_000;
+    let f0 = cfa4_time::Tick(t0).to_units_floor(i64::from(sr)).max(0);
+    let f1 = cfa4_time::Tick(t1).to_units_floor(i64::from(sr)).max(f0 + 1);
+    if f1 - f0 > MAX_PEAK_FRAMES {
+        return Err(format!("span too long: at most {} s per request", MAX_PEAK_FRAMES / i64::from(sr)));
+    }
+    let total = usize::try_from(f1 - f0).map_err(|_| "span too long")?;
+    let mut out = vec![0f32; buckets * 2];
+    let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
+    if has_audio {
+        let provider = s.media.provider(s.project.clone(), s.services.clone());
+        let source = cfa4_render::SourceProvider::source(&provider, media).ok_or("media is unavailable (offline?)")?;
+        // decode in chunks; each sample lands in bucket floor(i * buckets / total)
+        let chunk = 48_000usize;
+        let mut done = 0usize;
+        while done < total {
+            let n = chunk.min(total - done);
+            let start = f0 + i64::try_from(done).map_err(|_| "span too long")?;
+            let sound = source.audio(start, n, sr).map_err(|e| format!("audio decoding failed: {e}"))?;
+            let chans = sound.channels.len().max(1) as f32;
+            for i in 0..n {
+                let v: f32 = sound.channels.iter().map(|c| c.get(i).copied().unwrap_or(0.0)).sum::<f32>() / chans;
+                let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
+                if let Some(pair) = out.get_mut(b * 2..b * 2 + 2) {
+                    pair[0] = pair[0].min(v);
+                    pair[1] = pair[1].max(v);
+                }
+            }
+            done += n;
+        }
+    }
+    let mut bytes = Vec::with_capacity(out.len() * 4);
+    for v in out {
+        bytes.extend_from_slice(&v.to_le_bytes());
+    }
+    Ok((json!({"item": media.0, "buckets": buckets, "start": t0, "end": t1, "hasAudio": has_audio, "format": "f32le min,max"}), bytes))
+}
+
 /// Handles one request. `Ok(None)` asks the loop to end the session.
 pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option<Reply> {
     let reply = match method {
@@ -343,6 +403,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Err(e) => Reply::err(id, e),
         },
         "frame.render" => match render_frame(s, &params) {
+            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
+        "media.peaks" => match media_peaks(s, &params) {
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
@@ -524,6 +588,42 @@ mod tests {
         assert_eq!(audio.binary.as_ref().map(Vec::len), Some(4800 * 2 * 4));
         let rate = handle(&mut s, json!(6), "audio.render", json!({"target": "source", "frames": 10, "sampleRate": 5})).expect("reply");
         assert_eq!(rate.json["ok"], json!(false));
+    }
+
+    #[test]
+    fn media_peaks_give_the_waveform_of_a_media_item() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let music = s
+            .project
+            .items
+            .values()
+            .find(|i| i.as_media().is_some_and(|m| m.info.video.is_none() && !m.info.audio_streams.is_empty()))
+            .map(|i| i.id)
+            .expect("demo music");
+        let tps = cfa4_time::TICKS_PER_SECOND;
+        let r = handle(&mut s, json!(1), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 100})).expect("reply");
+        assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+        let bytes = r.binary.expect("peaks");
+        assert_eq!(bytes.len(), 100 * 2 * 4);
+        let vals: Vec<f32> = bytes.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
+        assert!(vals.iter().all(|v| v.is_finite() && (-1.5..=1.5).contains(v)));
+        assert!(vals.chunks_exact(2).all(|p| p[0] <= p[1]), "min <= max in every bucket");
+        assert!(vals.chunks_exact(2).any(|p| p[1] - p[0] > 0.001), "the demo score is not silent");
+        for bad in [
+            json!({"item": music.0, "start": 10, "end": 5, "buckets": 10}),
+            json!({"item": music.0, "start": 0, "end": tps, "buckets": 0}),
+            json!({"item": music.0, "start": 0, "end": 3600 * tps, "buckets": 10}),
+            json!({"item": 987_654, "start": 0, "end": tps, "buckets": 10}),
+        ] {
+            let r = handle(&mut s, json!(2), "media.peaks", bad.clone()).expect("reply");
+            assert_eq!(r.json["ok"], json!(false), "{bad}");
+        }
+        // the active sequence reports its targeting for the track headers
+        let q = handle(&mut s, json!(3), "engine.execute", json!({"command": "sequence.inspect"})).expect("reply");
+        let t = &q.json["result"]["targeting"];
+        assert!(t["targeted"].as_array().is_some_and(|a| !a.is_empty()), "{t}");
+        assert!(t["videoDest"].is_u64() && t["audioDest"].is_u64(), "{t}");
     }
 
     #[test]

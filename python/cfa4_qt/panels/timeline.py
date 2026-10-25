@@ -10,18 +10,30 @@ from dataclasses import dataclass
 from typing import Any
 
 from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPainter, QPaintEvent, QPen, QWheelEvent
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QFontMetrics,
+    QMouseEvent,
+    QPainter,
+    QPaintEvent,
+    QPen,
+    QWheelEvent,
+)
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBoxLayout, QWidget
 
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from .timeline_media import TimelineMedia
 
 ITEM_MIME = "application/x-cfa4-item"
 
-HEADER_W = 132
+HEADER_W = 200
 RULER_H = 26
-VIDEO_H = 46
-AUDIO_H = 40
+VIDEO_H = 56
+AUDIO_H = 52
+LABEL_H = 14  # the clip name strip above a thumbnail or waveform
 EDGE_PX = 6
 SNAP_PX = 8
 
@@ -70,6 +82,24 @@ class Row:
     top: int
     height: int
     track: dict[str, Any]
+    short: str = ""  # V1, A2 ... (the header's targeting label)
+
+
+@dataclass
+class HeaderCell:
+    key: str  # patch | target | locked | syncLock | enabled | muted | solo
+    rect: QRect
+    text: str
+    on: bool
+    tip: str
+
+
+# track header switches: (key, label, tooltip) per kind, left to right after patch and target
+HEADER_SWITCHES = {
+    "video": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("enabled", "", N_("Toggle Track Output"))),
+    "audio": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("muted", "M", N_("Mute Track")), ("solo", "S", N_("Solo Track"))),
+}
+CELL = 20
 
 
 @dataclass
@@ -96,6 +126,8 @@ class TimelineCanvas(QWidget):
         self.setMinimumHeight(140)
         self.sequence: dict[str, Any] | None = None
         self.rows: list[Row] = []
+        self.media = TimelineMedia(self)
+        self.media.updated.connect(self.update)
         self.pps = 40.0  # pixels per second
         self.scroll_ticks = 0
         self.scroll_y = 0  # pixels the track rows are scrolled up under the ruler
@@ -122,12 +154,14 @@ class TimelineCanvas(QWidget):
         if not self.sequence:
             return
         y = RULER_H - self.scroll_y
-        for t in reversed(self.sequence.get("video") or []):  # highest video track on top
-            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, VIDEO_H, t))
+        videos = list(self.sequence.get("video") or [])
+        for i in reversed(range(len(videos))):  # highest video track on top
+            t = videos[i]
+            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, VIDEO_H, t, f"V{i + 1}"))
             y += VIDEO_H
         y += 4
-        for t in self.sequence.get("audio") or []:
-            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", y, AUDIO_H, t))
+        for i, t in enumerate(self.sequence.get("audio") or []):
+            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", y, AUDIO_H, t, f"A{i + 1}"))
             y += AUDIO_H
 
     def content_height(self) -> int:
@@ -254,6 +288,9 @@ class TimelineCanvas(QWidget):
             p.fillRect(band, pal.alternateBase() if row.kind == "video" else pal.base())
             p.setPen(QPen(pal.mid().color()))
             p.drawLine(HEADER_W, row.top + row.height - 1, self.width(), row.top + row.height - 1)
+            if row.track.get("locked"):
+                p.fillRect(band, QBrush(QColor(128, 128, 128, 90), Qt.BrushStyle.BDiagPattern))
+            dim = row.kind == "video" and not row.track.get("enabled", True) or row.kind == "audio" and row.track.get("muted")
             for clip in row.track.get("items") or []:
                 r = self.clip_rect(row, clip)
                 if r.right() < HEADER_W or r.left() > self.width():
@@ -263,7 +300,7 @@ class TimelineCanvas(QWidget):
                         str(clip.get("label") or "").lower(), "#5b7fb8" if row.kind == "video" else "#4f9a6a"
                     )
                 )
-                if not clip.get("enabled", True):
+                if not clip.get("enabled", True) or dim:
                     base = base.darker(180)
                 p.fillRect(r, base)
                 if self._drag and self._drag.kind == "move" and clip.get("clip") in selected:
@@ -276,6 +313,7 @@ class TimelineCanvas(QWidget):
                     QColor("#ffd54a") if clip.get("clip") in selected else base.darker(160),
                     2 if clip.get("clip") in selected else 1,
                 )
+                self._paint_clip_media(p, row, clip, r, base)
                 p.setPen(pen)
                 p.drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5))
                 text = str(clip.get("name") or "")
@@ -347,30 +385,141 @@ class TimelineCanvas(QWidget):
             format_timecode(self.playhead, self.frame_ticks()),
         )
 
+    def header_cells(self, row: Row) -> list[HeaderCell]:
+        """The switches of one track header, left to right: source patch, targeting, then lock,
+        sync lock and output (video) or mute and solo (audio)."""
+        t = (self.sequence or {}).get("targeting") or {}
+        dest = t.get("videoDest") if row.kind == "video" else t.get("audioDest")
+        y = row.top + (row.height - CELL) // 2
+        cells = [
+            HeaderCell("patch", QRect(4, y, CELL + 4, CELL), row.short if dest == row.track_id else "", dest == row.track_id, tr("Source patch")),
+            HeaderCell("target", QRect(30, y, CELL + 4, CELL), row.short, row.track_id in (t.get("targeted") or []), tr("Toggle track targeting")),
+        ]
+        x = 58
+        for key, text, tip in HEADER_SWITCHES[row.kind]:
+            value = row.track.get(key)
+            on = bool(value) if key != "enabled" else value is not False
+            cells.append(HeaderCell(key, QRect(x, y, CELL, CELL), text, on, tr(tip)))
+            x += CELL + 2
+        return cells
+
     def _paint_headers(self, p: QPainter) -> None:
         pal = self.palette()
         p.fillRect(QRect(0, 0, HEADER_W, self.height()), pal.window())
-        p.setPen(pal.windowText().color())
+        accent = QColor("#3d6fd6")
         for row in self.rows:
             r = QRect(0, row.top, HEADER_W - 1, row.height)
             p.fillRect(r.adjusted(2, 1, -2, -1), pal.button())
-            flags = []
-            if row.track.get("locked"):
-                flags.append("🔒")
-            if row.kind == "audio" and row.track.get("muted"):
-                flags.append("M")
-            if row.kind == "audio" and row.track.get("solo"):
-                flags.append("S")
-            if not row.track.get("enabled", True):
-                flags.append("⊘")
+            cells = self.header_cells(row)
+            for c in cells:
+                if c.key in ("patch", "target"):
+                    if c.on:
+                        p.fillRect(c.rect, accent)
+                        p.setPen(QColor("#ffffff"))
+                    else:
+                        p.setPen(QPen(pal.mid().color()))
+                        p.drawRect(c.rect.adjusted(0, 0, -1, -1))
+                        p.setPen(pal.buttonText().color())
+                else:
+                    warn = c.key in ("locked", "muted", "solo") and c.on or c.key == "enabled" and not c.on
+                    if warn:
+                        p.fillRect(c.rect, QColor("#c8892b") if c.key != "solo" else QColor("#c8b32b"))
+                    p.setPen(QColor("#ffffff") if warn else (pal.buttonText().color() if c.on else pal.mid().color()))
+                if c.key == "locked":
+                    self._draw_lock(p, c.rect)
+                elif c.key == "enabled":
+                    self._draw_eye(p, c.rect, c.on)
+                else:
+                    p.drawText(c.rect, Qt.AlignmentFlag.AlignCenter, c.text)
+            name_x = cells[-1].rect.right() + 6
             p.setPen(pal.buttonText().color())
-            p.drawText(r.adjusted(8, 0, -4, 0), Qt.AlignmentFlag.AlignVCenter, f"{row.name}  {' '.join(flags)}")
+            p.drawText(
+                QRect(name_x, row.top, HEADER_W - name_x - 4, row.height),
+                Qt.AlignmentFlag.AlignVCenter,
+                QFontMetrics(p.font()).elidedText(row.name, Qt.TextElideMode.ElideRight, HEADER_W - name_x - 4),
+            )
+
+    @staticmethod
+    def _draw_lock(p: QPainter, r: QRect) -> None:
+        """A padlock in the current pen colour (no emoji: those keep their own colours)."""
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = r.center()
+        body = QRectF(c.x() - 5, c.y() - 1, 10, 7)
+        p.drawRect(body)
+        p.drawArc(QRectF(c.x() - 3.5, c.y() - 7, 7, 9), 0, 180 * 16)
+        p.restore()
+
+    @staticmethod
+    def _draw_eye(p: QPainter, r: QRect, on: bool) -> None:
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = r.center()
+        p.drawEllipse(QRectF(c.x() - 7, c.y() - 4, 14, 8))
+        p.drawEllipse(QRectF(c.x() - 2, c.y() - 2, 4, 4))
+        if not on:
+            p.drawLine(c.x() - 7, c.y() + 5, c.x() + 7, c.y() - 5)
+        p.restore()
+
+    def header_hit(self, pos: QPoint) -> tuple[Row | None, HeaderCell | None]:
+        row = self.row_at(pos.y()) if pos.x() < HEADER_W else None
+        if row is None:
+            return None, None
+        return row, next((c for c in self.header_cells(row) if c.rect.contains(pos)), None)
+
+    def _press_header(self, row: Row, cell: HeaderCell) -> None:
+        if cell.key == "patch":
+            self.command.emit("timeline.setTargeting", {"track": row.track_id, "sourcePatch": not cell.on})
+        elif cell.key == "target":
+            self.command.emit("timeline.setTargeting", {"track": row.track_id, "targeted": not cell.on})
+        else:
+            self.command.emit("timeline.setTrack", {"track": row.track_id, cell.key: not cell.on})
+
+    def _paint_clip_media(self, p: QPainter, row: Row, clip: dict[str, Any], r: QRectF, base: QColor) -> None:
+        """A thumbnail at the head of a video clip, the waveform across an audio clip."""
+        body = QRectF(r.left() + 1, r.top() + LABEL_H, r.width() - 2, r.height() - LABEL_H - 1)
+        if body.width() < 6 or body.height() < 8:
+            return
+        item = clip.get("item")
+        if row.kind == "video":
+            img = self.media.thumbnail(item, int(clip.get("sourceIn") or 0), int(body.height()))
+            if img is not None and not img.isNull():
+                w = min(body.width(), body.height() * img.width() / max(1, img.height()))
+                target = QRectF(body.left(), body.top(), w, body.height())
+                p.save()
+                p.setClipRect(body.intersected(QRectF(HEADER_W, 0, self.width(), self.height())))
+                p.drawImage(target, img)
+                p.restore()
+            return
+        start, end = int(clip.get("sourceIn") or 0), int(clip.get("sourceOut") or 0)
+        peaks = self.media.waveform(item, min(start, end), max(start, end))
+        if not peaks:
+            return
+        x0 = max(int(body.left()), HEADER_W)
+        x1 = min(int(body.right()), self.width())
+        if x1 <= x0:
+            return
+        mid = body.center().y()
+        half = body.height() / 2 - 1
+        n = len(peaks)
+        reverse = bool(clip.get("reverse")) or end < start
+        p.setPen(QPen(base.lighter(170), 1))
+        for x in range(x0, x1):
+            f = (x - body.left()) / max(1.0, body.width())
+            i = min(n - 1, max(0, int((1.0 - f if reverse else f) * n)))
+            lo, hi = peaks[i]
+            p.drawLine(x, int(mid - max(0.0, min(1.0, hi)) * half), x, int(mid - max(-1.0, min(0.0, lo)) * half))
 
     # ----- mouse -----
     def mousePressEvent(self, e: QMouseEvent) -> None:
         if not self.sequence or e.button() != Qt.MouseButton.LeftButton:
             return
         pos = e.position().toPoint()
+        if pos.x() < HEADER_W and pos.y() >= RULER_H:
+            row, cell = self.header_hit(pos)
+            if row is not None and cell is not None:
+                self._press_header(row, cell)
+            return
         if pos.y() < RULER_H and pos.x() >= HEADER_W:
             self._drag = Drag("scrub", None, pos, self.playhead)
             self._scrub_to(pos.x())
@@ -406,6 +555,11 @@ class TimelineCanvas(QWidget):
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         pos = e.position().toPoint()
         d = self._drag
+        if d is None and pos.x() < HEADER_W:
+            _row, cell = self.header_hit(pos)
+            self.setToolTip(cell.tip if cell is not None else "")
+            self.unsetCursor()
+            return
         if d is None:
             _row, clip, edge = self.hit(pos)
             if self.tool == "razor" and clip is not None:

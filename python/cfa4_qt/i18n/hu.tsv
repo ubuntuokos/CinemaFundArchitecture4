@@ -305,6 +305,7 @@
 	Movie	Film
 	Multi-Camera	Többkamerás
 	Multiply	Szorzás
+	Mute Track	Sáv némítása
 	Name	Név
 	Nest…	Beágyazás…
 	New	Új
@@ -454,10 +455,12 @@
 	Smart Tools	Okos eszközök
 	Snap in Timeline	Illesztés az idővonalon
 	Soft Light	Lágy fény
+	Solo Track	Sáv szólóban
 	Some panel labels change language after a restart.	Néhány panelfelirat csak újraindítás után vált nyelvet.
 	Source	Forrás
 	Source In	Forrás kezdőpontja
 	Source Settings…	Forrásbeállítások…
+	Source patch	Forrás-hozzárendelés
 	Special	Különleges
 	Speed	Sebesség
 	Speed/Duration…	Sebesség/időtartam…
@@ -492,7 +495,11 @@
 	Timeline	Idővonal
 	Toggle Animation	Animálás be/ki
 	Toggle Proxies	Proxyk be/ki
+	Toggle Sync Lock	Szinkronzár be/ki
+	Toggle Track Lock	Sávzár be/ki
+	Toggle Track Output	Sávkimenet be/ki
 	Toggle the effect on or off	Az effekt be- vagy kikapcsolása
+	Toggle track targeting	Sávcélzás be/ki
 	Tools	Eszközök
 	Top	Felső szélhez
 	Transcribe Sequence…	Szekvencia átiratának készítése…

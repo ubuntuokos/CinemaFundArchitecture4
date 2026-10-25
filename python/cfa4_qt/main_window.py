@@ -25,7 +25,7 @@ from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 4  # 2: Source monitor dock; 3: Effect Controls; 4: Inspector renamed Properties (egui)
+LAYOUT_VERSION = 5  # 2: Source monitor dock; 3: Effect Controls; 4: Inspector renamed Properties (egui); 5: proportional default sizes
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -94,6 +94,7 @@ class MainWindow(QMainWindow):
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
+        self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
         self.inspector = InspectorPanel(self)
@@ -165,8 +166,11 @@ class MainWindow(QMainWindow):
         if isinstance(geometry, QByteArray):
             self.restoreGeometry(geometry)
         state = self.settings.value("windowState")
+        # the default layout's sizes follow the window (fitted when it is first shown)
+        self._fit_pending = False
         if not (isinstance(state, QByteArray) and self.restoreState(state, LAYOUT_VERSION)):
             self.restoreState(self._default_state, LAYOUT_VERSION)
+            self._fit_pending = True
         self._update_title()
 
     @staticmethod
@@ -208,9 +212,35 @@ class MainWindow(QMainWindow):
         """Window ▸ Workspaces ▸ Reset to Saved Layout: the current workspace's saved layout."""
         self.restore_layout(self.workspaces.saved_state(self.workspaces.current))
 
+    # share of the window the default layout gives the timeline (height), the left column with
+    # the Source monitor and the right column with Properties (width), as the egui editor does
+    TIMELINE_SHARE = 0.42
+    LEFT_SHARE = 0.30
+    RIGHT_SHARE = 0.16
+
+    def fit_default_sizes(self) -> None:
+        """Size the default layout's docks in proportion to the window: fixed pixel sizes left
+        the timeline at 13 % of a 4K window."""
+        w, h = max(1, self.width()), max(1, self.height())
+        self.resizeDocks([self.docks["Timeline"]], [int(h * self.TIMELINE_SHARE)], Qt.Orientation.Vertical)
+        self.resizeDocks(
+            [self.docks["Source"], self.docks["Properties"]],
+            [int(w * self.LEFT_SHARE), int(w * self.RIGHT_SHARE)],
+            Qt.Orientation.Horizontal,
+        )
+        self.resizeDocks([self.docks["Source"], self.docks["Project"]], [int(h * 0.30), int(h * 0.28)], Qt.Orientation.Vertical)
+
+    def showEvent(self, e) -> None:
+        super().showEvent(e)
+        if self._fit_pending:
+            self._fit_pending = False
+            QTimer.singleShot(0, self, self.fit_default_sizes)
+
     def restore_layout(self, state: QByteArray) -> None:
         before = set(self.findChildren(QTabBar))
         self.restoreState(state, LAYOUT_VERSION)
+        if state is self._default_state or state == self._default_state:
+            QTimer.singleShot(0, self, self.fit_default_sizes)
         self._retire_tab_bars(before)
         QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
 
@@ -443,7 +473,12 @@ class MainWindow(QMainWindow):
         self._update_title()
 
     def _on_project(self, result: Any, _b: bytes | None) -> None:
+        old = self.project or {}
         self.project = result if isinstance(result, dict) else None
+        new = self.project or {}
+        if (old.get("path"), old.get("name")) != (new.get("path"), new.get("name")):
+            # another project: its item ids mean other media, so cached pictures are wrong
+            self.timeline.canvas.media.clear()
         self.project_panel.set_project(self.project)
         self._update_title()
 

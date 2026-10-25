@@ -4436,6 +4436,13 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         "selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>(),
         "transitionSelection": s.state.transition_selection.iter().map(|t| t.0).collect::<Vec<_>>(),
         "gapSelection": s.state.gap_selection.map(|g| json!({"track": g.track.0, "start": g.range.start.0, "end": g.range.end().0})),
+        // the active sequence's track targeting and source patching (the track header switches)
+        "targeting": if s.state.active_sequence == Some(id) {
+            let t = s.targeting();
+            json!({"targeted": t.targeted.iter().map(|x| x.0).collect::<Vec<_>>(), "videoDest": t.video_dest.map(|x| x.0), "audioDest": t.audio_dest.map(|x| x.0)})
+        } else {
+            Value::Null
+        },
     })
 }
 
