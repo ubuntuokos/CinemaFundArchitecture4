@@ -579,6 +579,8 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
         """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``; ``.png``
         is an image sequence."""
 
+        running = False  # the queue poll timer outlives this test: it must not raise later
+
         def __init__(self):
             self.sent = []
 
