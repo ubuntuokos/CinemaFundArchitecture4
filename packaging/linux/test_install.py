@@ -110,9 +110,9 @@ class InstallTests(unittest.TestCase):
         target = self.root / "target"
         binaries = target / "release"
         binaries.mkdir(parents=True)
-        for name in ("filmcraft", "filmcraft-cli"):
+        for name in ("cfa4", "cfa4-cli"):
             binary = binaries / name
-            binary.write_text("#!/bin/sh\necho 'FilmCraft fixture'\n")
+            binary.write_text("#!/bin/sh\necho 'CFA4 fixture'\n")
             binary.chmod(0o755)
         dist = self.root / "dist"
         result = subprocess.run(

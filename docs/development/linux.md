@@ -7,12 +7,12 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 
 ## Responsibility boundaries
 
-- **Rust 1.95 / Cargo:** existing FilmCraft media engine, codec implementations, project model, rendering, export and `filmcraft-cli`.
+- **Rust 1.95 / Cargo:** existing inherited media engine, codec implementations, project model, rendering, export and `cfa4-cli`.
 - **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13; newer Linux distributions can use a supported version.
 - **Qt 6 / PySide6:** new Linux-native GUI development path. The initial `cfa4-qt` application is a deliberately minimal **development shell**, not a port of the full video editor.
 - **Existing egui desktop app:** retained during migration to avoid breaking the Rust media engine. Do not mistake it for the finished Qt interface.
 - **FFmpeg / ffprobe:** test oracle tools, not linked runtime dependencies of the existing Rust codec implementation.
-- **Python-to-Rust integration:** `filmcraft-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
+- **Python-to-Rust integration:** `cfa4-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
 
 ## Bootstrap (Ubuntu 26.04 AMD64)
 
@@ -37,7 +37,8 @@ Create the Python environment in the repository root (do not install into the sy
 ~~~bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e '.[dev,qt]'
+.venv/bin/python -m pip install --require-hashes -r requirements/linux-amd64.txt
+.venv/bin/python -m pip install --no-deps -e .
 ~~~
 
 The Qt system headers/tools (Qt Widgets, Qt Multimedia, Qt Designer, CMake) are installed by apt.
@@ -50,8 +51,8 @@ libraries with the distro's Qt binaries in a single process.
 .venv/bin/cfa4-doctor --json
 .venv/bin/cfa4-doctor --strict
 cargo metadata --format-version 1 --no-deps
-cargo build --locked -p filmcraft-cli
-cargo build --locked -p filmcraft
+cargo build --locked -p cfa4-cli
+cargo build --locked -p cfa4
 cargo xtask ci
 QT_QPA_PLATFORM=offscreen .venv/bin/cfa4-qt --smoke
 .venv/bin/cfa4-qt
@@ -61,7 +62,7 @@ bash scripts/dev/verify-linux.sh    # full local checks, explicit opt-in
 
 `cfa4-doctor` is read-only and reports the actual installed versions. `--strict` fails on
 missing Linux/Rust/Cargo/Python/Qt/FFmpeg prerequisites. The GUI shell queries
-`filmcraft-cli --version` when the executable exists; it does not yet edit videos.
+`cfa4-cli --version` when the executable exists; it does not yet edit videos.
 
 The CI workflow `.github/workflows/ci-linux.yml` runs only the inexpensive
 `platform-scope` shell/configuration gate on pull requests and main pushes.
@@ -81,10 +82,10 @@ but WASM is **not** a supported CFA4 target or quality gate.
 ## HEIF / HEIC still images (local libheif, Ubuntu 26.04 AMD64)
 
 CFA4 recognizes `.heic`, `.heif` and `.hif` image files. Its Rust
-`filmcraft-media` still loader checks HEIF file brands **before** the MP4/MOV
+`cfa4-media` still loader checks HEIF file brands **before** the MP4/MOV
 openers, including random-access media browser imports. The local
 `heif-dec` executable decodes the image to a temporary PNG and CFA4
-imports its first picture as an 8-bit RGBA still. In `filmcraft-export`,
+imports its first picture as an 8-bit RGBA still. In `cfa4-export`,
 the `still::StillFormat::{Heic, Heif}` **single-frame export** option uses
 `heif-enc` to turn a generated 8-/16-bit PNG into HEVC-based HEIC bytes.
 A 16-bit source is passed to libheif for HEVC 10-bit encoding; this does
@@ -114,8 +115,8 @@ remain subject to the release audit.
 Run the targeted Rust oracles on a machine with the plugins installed:
 
 ~~~bash
-cargo test --locked -p filmcraft-media --test heif_oracle
-cargo test --locked -p filmcraft-export --lib heic_heif_single_frame_exports_round_trip
+cargo test --locked -p cfa4-media --test heif_oracle
+cargo test --locked -p cfa4-export --lib heic_heif_single_frame_exports_round_trip
 ~~~
 
 **Scope and outstanding work:** first-picture import and single-frame
@@ -149,18 +150,35 @@ and **not approved for publication**.
 
 ## Python / Qt license and origin requirements
 
-Existing FilmCraft Rust code is MIT OR Apache-2.0 and retains attribution.
+Existing inherited Rust code is MIT OR Apache-2.0 and retains attribution (`NOTICE`).
 PySide6 / parts of Qt6 have LGPLv3 (or commercial) terms, with modules possibly GPL-only.
 Keep PySide6 dynamically loaded in an isolated Python environment and do not bundle
 the Qt runtime, redistribute LGPL components or introduce GPL-only Qt modules
 without an explicit distribution/license compliance review.
 Read https://www.qt.io/development/open-source-lgpl-obligations .
 
-**Trademark blocker:** ArtCraft marks present in inherited screenshots, brand assets,
-application icons and packages are not open licensed. Independently distributing the modified
-CFA4 product requires removing/replacing them, consistent with `docs/brand/LICENSE-brand.txt`.
-The Linux bootstrap and CI do not represent release approval; publication remains blocked
-until branding, application IDs and license attribution have been audited.
+**Branding:** the inherited upstream brand marks, screenshots, application icons and names have
+been removed; the product, crates, application ID and packages are CFA4-only. The Linux bootstrap
+and CI do not represent release approval; publication remains blocked until packaging and license
+attribution have been audited.
+
+## Measured runtime dependencies (#22, F9 `runtime_abi_dependencies`)
+
+The supported runtime minimums (glibc, libgcc, ALSA, and the libraries loaded at run time such as
+Wayland, X11, Vulkan, EGL, VA-API and NVIDIA) are taken from the built binaries, not estimated.
+On the Ubuntu 26.04 AMD64 reference machine:
+
+```sh
+bash scripts/dev/audit-runtime-deps.sh --build   # or without --build if target/release is current
+```
+
+It writes `target/audit/runtime-deps/<UTC>/runtime-deps.json` and `runtime-deps.md`: the ELF
+`NEEDED` libraries and their owning Debian packages (`dpkg-query`), the highest required symbol
+version per namespace (`objdump -T`), and the `dlopen` library names that `ldd` cannot see. It
+installs nothing. A report from any other host is marked as not valid F9 evidence.
+
+Latest measurement (2026-10-25, Ubuntu 26.04.1, `d0cf06e`): glibc ≥ 2.43, libgcc_s, ALSA;
+see `docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md`.
 
 ## Remaining tasks (intentionally not claimed as implemented)
 

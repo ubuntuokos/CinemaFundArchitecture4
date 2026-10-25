@@ -1,0 +1,42 @@
+{
+  "source_repository": "https://github.com/storytold/craft-libs",
+  "source_commit": "5c874d51eeb3de70e735c8ce87a59a7dedd47675",
+  "original_crate_manifest_blob_sha1": "0b8edc2f001ba66f526030bbd16705b8a177fa90",
+  "note": "Original Rust source, README, tests, license texts and NOTICE are copied byte-identically. Local Cargo.toml is adapted for a Cargo path dependency and standalone lint configuration. Third-party code is excluded from first-party rustfmt checks. CFA4 then renamed the upstream brand identifiers in the files listed under cfa4_modified_files; their hashes are those of the CFA4 copies. NOTICE and license texts remain byte-identical.",
+  "files": {
+    "README.md": "366b6b298f348bae0500b30439db6143944078d4",
+    "src/buttons/mod.rs": "f7e373a317a07d1f0d7fd44d97933b12512515c8",
+    "src/buttons/tests.rs": "616c677b54ae3936de6c3b8b5947deed30a2aa86",
+    "src/docking/mod.rs": "a7bf3f98b81b2946f6990d4e17dea78a0d739eba",
+    "src/docking/model.rs": "babb3e2fd8e59ae06cd87550280d43cbe9c28fd8",
+    "src/docking/surface.rs": "b0e5badd228903e658bf23bfd7b4b748f55aab4a",
+    "src/docking/targets.rs": "515b9c651a80f9418e66996cdc9927b79de2dc75",
+    "src/docking/tests.rs": "54d37df6cb2ba20a8b2925de4e61ed5b7d3c9acc",
+    "src/icons/mod.rs": "8d72453e53707c458407180ddd2e01e8a156c27d",
+    "src/icons/tests.rs": "c1e2ceb8492755e52378462087874b4d2f0db530",
+    "src/layout/geometry.rs": "51fae4a3b2a1e7cab3ee3ae04947d1e623aedf97",
+    "src/layout/mod.rs": "335dd072c80d001f7b7727c518f5066d7bb3fa66",
+    "src/layout/resize.rs": "e8a2a820afaa28940f8ba0d3b63b3010e8e6b6dc",
+    "src/layout/tests.rs": "379146528907f23e756f3c5a44f87b382460db4b",
+    "src/layout/toolbar.rs": "d03019e48f8f1c07702d83b04d051f0ba1b1d51e",
+    "src/lib.rs": "160c5d8a1535fc4b327191b923be92f3aa6749de",
+    "src/tabs/mod.rs": "e82dcca1ac48f2d1c19ac5bf4fc21c22fd454e18",
+    "src/tabs/tests.rs": "6fb37e3149be2bf7ee4c69cd8d457c621fdfb27c",
+    "src/theme/mod.rs": "26f9e9d311d812855b920a23f284899e4d9c3350",
+    "tests/docking_workflows.rs": "e61dd8d1065b2547fb6353c928ed7471408378ed",
+    "tests/visual/fixtures.rs": "bfbdc55062a0e70d2ccdc5303056dd33911d278b",
+    "tests/visual_regression.rs": "d0eb4f7429f44ee5cbb647c294bfdf5dd0736a4c",
+    "LICENSE-MIT": "e1450bdf57b9c0577e8b947db77ec77f4fea9d38",
+    "LICENSE-APACHE": "f433b1a53f5b830a205fd2df78e2b34974656c7b",
+    "NOTICE": "76fd45683df8c9e66f2ba619a2e4ebc88be56676"
+  },
+  "cfa4_modified_files": {
+    "README.md": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "src/buttons/mod.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "src/icons/mod.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "src/lib.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "tests/docking_workflows.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "tests/visual/fixtures.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "tests/visual_regression.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history"
+  }
+}

@@ -10,7 +10,7 @@
 //!   styles, spine offsets, page runtimes and gaps) → [`Credits`].
 //! - [`style`]: [`Styling`] (page, content and letter styles, JSON) with built-in styles.
 //! - [`layout`]: [`Credits`] → one graphic clip per page ([`layout::PageOut`]): text layers, Roll
-//!   for scroll pages, opacity fades for cards, exact [`filmcraft_time::Tick`] durations.
+//!   for scroll pages, opacity fades for cards, exact [`cfa4_time::Tick`] durations.
 //!
 //! The crate does no file I/O and draws nothing; the engine (`graphics.credits.*` commands)
 //! reads files, measures text with the real text engine and places the clips.

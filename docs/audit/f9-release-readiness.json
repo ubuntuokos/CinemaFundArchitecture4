@@ -9,7 +9,7 @@
     "flatpak",
     "tar.gz"
   ],
-  "parent_repository_policy": "READ_ONLY_FILMCRAFT",
+  "parent_repository_policy": "READ_ONLY_UPSTREAM",
   "verdict": "HOLD",
   "release_publication_authorized": false,
   "gates": [
@@ -76,8 +76,8 @@
     {
       "id": "runtime_abi_dependencies",
       "status": "OPEN",
-      "reason": "Only prior tarball direct ELF ldd; dlopen, sandbox, codecs and four formats not verified",
-      "evidence": "docs/audit/F5-STAGED-RUNTIME-2026-10-23.md"
+      "reason": "2026-10-25 release binaries measured on Ubuntu 26.04.1 (NEEDED, GLIBC 2.43, dlopen list); four installed formats, Flatpak sandbox, codecs and Qt6 runtime not verified",
+      "evidence": "docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md"
     },
     {
       "id": "native_av1_nvdec_heif_icc_hdr",

@@ -10,13 +10,13 @@ mod common;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use filmcraft_codecs::hw::{hw_stats, set_hardware_decoding};
-use filmcraft_export::{ExportSettings, Format, HardwareEncoding, Progress, export, hw_encode_stats};
-use filmcraft_media::generators::GeneratorSource;
-use filmcraft_media::{DemoScene, FrameRequest, Generator, MediaSource};
-use filmcraft_project::{ItemKind, Label, MediaClip, MediaRef, Project, SequenceSettings, TrackKind};
-use filmcraft_render::SourceMap;
-use filmcraft_time::{FrameRate, Tick, TimeRange};
+use cfa4_codecs::hw::{hw_stats, set_hardware_decoding};
+use cfa4_export::{ExportSettings, Format, HardwareEncoding, Progress, export, hw_encode_stats};
+use cfa4_media::generators::GeneratorSource;
+use cfa4_media::{DemoScene, FrameRequest, Generator, MediaSource};
+use cfa4_project::{ItemKind, Label, MediaClip, MediaRef, Project, SequenceSettings, TrackKind};
+use cfa4_render::SourceMap;
+use cfa4_time::{FrameRate, Tick, TimeRange};
 
 fn samples_dir() -> PathBuf {
     let dir =
@@ -25,9 +25,9 @@ fn samples_dir() -> PathBuf {
     dir
 }
 
-fn first_eight_frames(path: &Path) -> Vec<Arc<filmcraft_frame::VideoFrame>> {
+fn first_eight_frames(path: &Path) -> Vec<Arc<cfa4_frame::VideoFrame>> {
     let bytes: Arc<[u8]> = std::fs::read(path).expect("read encoded export").into();
-    let source = filmcraft_codecs::open_bytes(&path.to_string_lossy(), bytes).expect("CFA4 imports its own MP4 export");
+    let source = cfa4_codecs::open_bytes(&path.to_string_lossy(), bytes).expect("CFA4 imports its own MP4 export");
     let rate = source.info().frame_rate();
     (0..8).map(|i| source.video_frame(FrameRequest::full(rate.tick_of(i))).expect("CFA4 decodes exported frame")).collect()
 }
@@ -35,7 +35,7 @@ fn first_eight_frames(path: &Path) -> Vec<Arc<filmcraft_frame::VideoFrame>> {
 #[test]
 #[ignore = "requires physical NVIDIA GPU and CFA4_MEDIA_FIXTURE_DIR from FFmpeg #14"]
 fn physical_nvdec_h264_hevc_reimport_matches_cfa4_software() {
-    filmcraft_platform::register();
+    cfa4_platform::register();
     set_hardware_decoding(true);
     let dir = samples_dir();
     for name in ["h264.mp4", "hevc.mp4"] {
@@ -43,7 +43,7 @@ fn physical_nvdec_h264_hevc_reimport_matches_cfa4_software() {
         assert!(path.is_file(), "missing {} – rerun FFmpeg #14 only if evidence is gone", path.display());
         let s = common::read_stream(&path);
         let before = hw_stats();
-        let mut hw = filmcraft_platform::nvdec_factory(&s.entry)
+        let mut hw = cfa4_platform::nvdec_factory(&s.entry)
             .unwrap_or_else(|| panic!("{name}: native CFA4 NVDEC was declined"))
             .unwrap_or_else(|e| panic!("{name}: cannot open native CFA4 NVDEC: {e}"));
         let decoded_hw = common::decode_all(hw.as_mut(), &s.samples);
@@ -51,14 +51,14 @@ fn physical_nvdec_h264_hevc_reimport_matches_cfa4_software() {
         assert!(after.sessions > before.sessions, "{name}: hardware decoder session did not start");
         assert!(after.frames > before.frames, "{name}: no actual NVDEC frames were produced");
         assert_eq!(decoded_hw.len(), 8, "{name}: expected all eight reference frames");
-        let mut software = filmcraft_codecs::software_video_decoder(&s.entry).expect("software reference decoder");
+        let mut software = cfa4_codecs::software_video_decoder(&s.entry).expect("software reference decoder");
         let decoded_sw = common::decode_all(software.as_mut(), &s.samples);
         common::assert_same(name, &decoded_hw, &decoded_sw);
     }
     set_hardware_decoding(true);
 }
 
-fn project_8_frames() -> (Arc<Project>, filmcraft_project::ItemId, SourceMap) {
+fn project_8_frames() -> (Arc<Project>, cfa4_project::ItemId, SourceMap) {
     let (w, h) = (640, 360);
     let rate = FrameRate::FPS_24;
     let g = GeneratorSource::new(Generator::Demo(DemoScene::OceanSunset), w, h, rate, rate.tick_of(8));
@@ -91,8 +91,8 @@ fn project_8_frames() -> (Arc<Project>, filmcraft_project::ItemId, SourceMap) {
 #[test]
 #[ignore = "requires physical NVIDIA GPU; never accepts software fallback as hardware PASS"]
 fn physical_nvenc_h264_and_hevc_export_roundtrip() {
-    filmcraft_platform::register();
-    assert!(filmcraft_export::available(Format::Hevc), "CFA4 Linux HEVC NVENC format is not available");
+    cfa4_platform::register();
+    assert!(cfa4_export::available(Format::Hevc), "CFA4 Linux HEVC NVENC format is not available");
     let (project, seq, sources) = project_8_frames();
     let outdir =
         std::env::var_os("CFA4_NATIVE_E2E_OUTPUT_DIR").map(PathBuf::from).expect("CFA4_NATIVE_E2E_OUTPUT_DIR must identify an audit evidence directory");

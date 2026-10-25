@@ -9,9 +9,9 @@
 use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use filmcraft_frame::{AudioBuffer, VideoFrame};
-use filmcraft_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo as EngineInfo, MediaKind, MediaSource, VideoStreamInfo};
-use filmcraft_time::{FrameRate, Tick};
+use cfa4_frame::{AudioBuffer, VideoFrame};
+use cfa4_media::{AudioStreamInfo, FrameRequest, MediaError, MediaInfo as EngineInfo, MediaKind, MediaSource, VideoStreamInfo};
+use cfa4_time::{FrameRate, Tick};
 use gstreamer as gst;
 use gstreamer::prelude::*;
 use gstreamer_app as gst_app;
@@ -64,13 +64,13 @@ impl GstSource {
                         par: par.unwrap_or((1, 1)),
                         codec: format!("{} (GStreamer)", s.codec.as_deref().unwrap_or("video")),
                         pixel_format: "RGBA 8-bit (GStreamer)".into(),
-                        color: filmcraft_color::ColorInfo::SRGB_FULL,
+                        color: cfa4_color::ColorInfo::SRGB_FULL,
                         has_alpha: false,
                         bitrate: None,
                         hdr: None,
                     });
                 }
-                StreamKind::Audio { channels, sample_rate, .. } if audio_streams.len() < filmcraft_media::MAX_AUDIO_STREAMS => {
+                StreamKind::Audio { channels, sample_rate, .. } if audio_streams.len() < cfa4_media::MAX_AUDIO_STREAMS => {
                     audio_streams.push(AudioStreamInfo {
                         sample_rate: if *sample_rate == 0 { 48_000 } else { *sample_rate },
                         channels: if (1..=MAX_CHANNELS).contains(channels) { *channels } else { 2 },
@@ -105,7 +105,7 @@ impl MediaSource for GstSource {
         &self.info
     }
 
-    fn video_frame(&self, req: FrameRequest) -> filmcraft_media::Result<Arc<VideoFrame>> {
+    fn video_frame(&self, req: FrameRequest) -> cfa4_media::Result<Arc<VideoFrame>> {
         let v = self.info.video.as_ref().ok_or(MediaError::NoStream("video"))?;
         let frame_ns = frame_duration_ns(v.frame_rate);
         // Past the end, the last picture: aim inside the last frame instead of beyond the stream.
@@ -124,11 +124,11 @@ impl MediaSource for GstSource {
         result
     }
 
-    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> filmcraft_media::Result<AudioBuffer> {
+    fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         self.audio_stream(0, start, frames, sample_rate)
     }
 
-    fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> filmcraft_media::Result<AudioBuffer> {
+    fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         let a = self.info.audio_streams.get(stream).ok_or(MediaError::NoStream("audio"))?;
         if sample_rate == 0 {
             return Err(MediaError::Decode("sample rate 0".into()));
@@ -249,7 +249,7 @@ impl VideoDecoder {
         Ok(Self { pipeline, sink, last: None })
     }
 
-    fn frame_at(&mut self, target: u64, frame_ns: u64, par: (u32, u32)) -> filmcraft_media::Result<Arc<VideoFrame>> {
+    fn frame_at(&mut self, target: u64, frame_ns: u64, par: (u32, u32)) -> cfa4_media::Result<Arc<VideoFrame>> {
         if let Some(l) = &self.last {
             if l.start <= target && target < l.end {
                 return Ok(l.frame.clone());
@@ -293,7 +293,7 @@ impl Drop for VideoDecoder {
     }
 }
 
-fn convert_video(sample: &gst::Sample, frame_ns: u64, par: (u32, u32)) -> filmcraft_media::Result<Decoded> {
+fn convert_video(sample: &gst::Sample, frame_ns: u64, par: (u32, u32)) -> cfa4_media::Result<Decoded> {
     let bad = |m: &str| MediaError::Decode(format!("GStreamer video: {m}"));
     let caps = sample.caps().ok_or_else(|| bad("sample without caps"))?;
     let vinfo = gst_video::VideoInfo::from_caps(caps).map_err(|e| bad(&e.to_string()))?;
@@ -348,7 +348,7 @@ impl AudioDecoder {
         i64::try_from(self.carry.len() / self.channels.max(1)).unwrap_or(i64::MAX)
     }
 
-    fn read(&mut self, start: i64, frames: usize) -> filmcraft_media::Result<AudioBuffer> {
+    fn read(&mut self, start: i64, frames: usize) -> cfa4_media::Result<AudioBuffer> {
         let start = start.max(0);
         let want_end = start.saturating_add(i64::try_from(frames).unwrap_or(i64::MAX));
         // Continue the current position when the request starts inside (or right after) what is
@@ -387,7 +387,7 @@ impl AudioDecoder {
         Ok(out)
     }
 
-    fn append(&mut self, sample: &gst::Sample, want_start: i64) -> filmcraft_media::Result<()> {
+    fn append(&mut self, sample: &gst::Sample, want_start: i64) -> cfa4_media::Result<()> {
         let buffer = sample.buffer().ok_or_else(|| MediaError::Decode("GStreamer audio: sample without buffer".into()))?;
         let map = buffer.map_readable().map_err(|e| MediaError::Decode(format!("GStreamer audio: {e}")))?;
         let mut samples: Vec<f32> = map.as_slice().chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();

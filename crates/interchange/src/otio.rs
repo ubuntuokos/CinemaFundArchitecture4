@@ -8,17 +8,17 @@
 //! Times are written as frames at the sequence rate (`rate` is the exact rate as a float, e.g.
 //! 23.976023976023978) and read back exactly by snapping the rate to its rational form. Fields
 //! OTIO has no schema for (effects and their keyframes, labels, links, groups, clip gain, track
-//! state, sequence settings, media info, generators) round-trip through `metadata.filmcraft`.
+//! state, sequence settings, media info, generators) round-trip through `metadata.cfa4`.
 //! Nested sequences are `Stack` items inside tracks.
 
 use std::collections::HashMap;
 
-use filmcraft_media::{Generator, MediaInfo};
-use filmcraft_project::{
+use cfa4_media::{Generator, MediaInfo};
+use cfa4_project::{
     ClipId, EffectInstance, ItemId, ItemKind, Label, Marker, MarkerId, MarkerKind, MediaRef, ParamValue, Project, Sequence, SequenceSettings, Track, TrackItem,
     TrackKind, Transition, TransitionAlign, TransitionId,
 };
-use filmcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use serde_json::{Value, json};
 
 use crate::common::{
@@ -72,7 +72,7 @@ fn schema_name(v: &Value) -> &str {
 }
 
 fn fc(v: &Value) -> Option<&Value> {
-    v.get("metadata").and_then(|m| m.get("filmcraft"))
+    v.get("metadata").and_then(|m| m.get("cfa4"))
 }
 
 fn name_of(v: &Value) -> String {
@@ -130,7 +130,7 @@ pub(crate) fn export(p: &Project, seq_id: ItemId, opts: &ExportOptions, report: 
         "OTIO_SCHEMA": "Timeline.1",
         "name": name,
         "global_start_time": rt(rate.tick_of(seq.start_timecode), rate),
-        "metadata": {"filmcraft": x.seq_meta(seq_id)},
+        "metadata": {"cfa4": x.seq_meta(seq_id)},
         "tracks": stack,
     });
     serde_json::to_string_pretty(&tl).map_err(|e| Error::Other(e.to_string()))
@@ -171,7 +171,7 @@ impl Exp<'_, '_> {
             "effects": [],
             "markers": markers,
             "enabled": true,
-            "metadata": if range.is_some() { json!({"filmcraft": self.seq_meta(id)}) } else { json!({}) },
+            "metadata": if range.is_some() { json!({"cfa4": self.seq_meta(id)}) } else { json!({}) },
         })
     }
 
@@ -201,7 +201,7 @@ impl Exp<'_, '_> {
             "effects": [],
             "markers": [],
             "enabled": t.enabled,
-            "metadata": {"filmcraft": {
+            "metadata": {"cfa4": {
                 "locked": t.locked, "sync_lock": t.sync_lock, "muted": t.muted, "solo": t.solo,
                 "channels": t.channels, "volume_db": t.volume_db, "pan": t.pan, "effects": t.effects,
             }},
@@ -216,7 +216,7 @@ impl Exp<'_, '_> {
             "transition_type": if dissolve { "SMPTE_Dissolve" } else { "Custom_Transition" },
             "in_offset": rt(cut - x.start, rate),
             "out_offset": rt(x.end() - cut, rate),
-            "metadata": {"filmcraft": {"effect": x.effect, "align": x.align, "reverse": x.reverse}},
+            "metadata": {"cfa4": {"effect": x.effect, "align": x.align, "reverse": x.reverse}},
         })
     }
 
@@ -226,15 +226,15 @@ impl Exp<'_, '_> {
             return json!({"OTIO_SCHEMA": "MissingReference.1", "name": name, "available_range": null, "metadata": {}});
         };
         let avail = tr(m.info.start_timecode.map(|f| m.frame_rate().tick_of(f)).unwrap_or(Tick::ZERO), m.info.duration, rate);
-        let meta = json!({"filmcraft": {"item": item.0, "label": self.p.item(item).map(|i| i.label), "info": m.info, "offline": m.offline}});
+        let meta = json!({"cfa4": {"item": item.0, "label": self.p.item(item).map(|i| i.label), "info": m.info, "offline": m.offline}});
         match &m.media {
             MediaRef::Generator(g) => json!({
                 "OTIO_SCHEMA": "GeneratorReference.1",
                 "name": name,
-                "generator_kind": match g { Generator::ColorMatte { .. } => "SolidColor", Generator::BlackVideo => "black", Generator::BarsAndTone => "SMPTEBars", _ => "FilmCraftGenerator" },
+                "generator_kind": match g { Generator::ColorMatte { .. } => "SolidColor", Generator::BlackVideo => "black", Generator::BarsAndTone => "SMPTEBars", _ => "CFA4Generator" },
                 "parameters": match g { Generator::ColorMatte { color } => json!({"color": color}), _ => json!({}) },
                 "available_range": avail,
-                "metadata": {"filmcraft": {"item": item.0, "generator": g, "info": m.info}},
+                "metadata": {"cfa4": {"item": item.0, "generator": g, "info": m.info}},
             }),
             MediaRef::File { path } => {
                 let url = match &self.opts.relative_to {
@@ -250,14 +250,13 @@ impl Exp<'_, '_> {
         let base = base_item(self.p, it.item);
         let mut effects = Vec::new();
         if let Some(h) = it.frame_hold {
-            effects.push(
-                json!({"OTIO_SCHEMA": "FreezeFrame.1", "name": "", "effect_name": "FreezeFrame", "time_scalar": 0.0, "metadata": {"filmcraft": {"hold": h}}}),
-            );
+            effects
+                .push(json!({"OTIO_SCHEMA": "FreezeFrame.1", "name": "", "effect_name": "FreezeFrame", "time_scalar": 0.0, "metadata": {"cfa4": {"hold": h}}}));
         } else if it.speed != 1.0 || it.reverse {
             let s = if it.reverse { -it.speed } else { it.speed };
             effects.push(json!({"OTIO_SCHEMA": "LinearTimeWarp.1", "name": "", "effect_name": "LinearTimeWarp", "time_scalar": s, "metadata": {}}));
         }
-        let meta = json!({"filmcraft": {
+        let meta = json!({"cfa4": {
             "label": it.label, "link": it.link, "group": it.group, "effects": it.effects,
             "gain_db": it.gain_db, "scale_to_frame": it.scale_to_frame, "source_in_ticks": it.source_in.0,
             "duration_ticks": it.duration.0,
@@ -274,9 +273,9 @@ impl Exp<'_, '_> {
             self.stack.pop();
             s["effects"] = json!(effects);
             s["enabled"] = json!(it.enabled);
-            s["metadata"]["filmcraft"]["clip"] = meta["filmcraft"].clone();
+            s["metadata"]["cfa4"]["clip"] = meta["cfa4"].clone();
             // Nested sequence markers stay on the Stack; clip instance markers live on the clip metadata.
-            s["metadata"]["filmcraft"]["clip"]["markers"] = json!(markers);
+            s["metadata"]["cfa4"]["clip"]["markers"] = json!(markers);
             return s;
         }
         let _ = generator_of(self.p, base);
@@ -313,7 +312,7 @@ fn marker_json(m: &Marker, rate: FrameRate) -> Value {
         "comment": m.comment,
         "color": color_name(m.color),
         "marked_range": tr(m.start, m.duration, rate),
-        "metadata": {"filmcraft": {"kind": m.kind, "label": m.color, "start_ticks": m.start.0, "duration_ticks": m.duration.0}},
+        "metadata": {"cfa4": {"kind": m.kind, "label": m.color, "start_ticks": m.start.0, "duration_ticks": m.duration.0}},
     })
 }
 
@@ -542,7 +541,15 @@ impl Imp<'_, '_> {
                 None => {
                     let n = name_of(c);
                     let ty = c.get("transition_type").and_then(Value::as_str).unwrap_or("SMPTE_Dissolve");
-                    transition_effect(if n.is_empty() { ty } else { &n }, kind == TrackKind::Audio, self.report)
+                    let audio = kind == TrackKind::Audio;
+                    // A name we know wins; otherwise the standard `transition_type` (Kdenlive names every
+                    // transition just "Transition").
+                    let mut probe = Report::default();
+                    let named = (!n.is_empty()).then(|| transition_effect(&n, audio, &mut probe));
+                    match named {
+                        Some(e) if probe.entries.is_empty() => e,
+                        _ => transition_effect(ty, audio, self.report),
+                    }
                 }
             };
             let align = meta.and_then(|m| m.get("align")).and_then(|a| serde_json::from_value(a.clone()).ok()).unwrap_or(if inn == Tick::ZERO {
@@ -666,7 +673,7 @@ impl Imp<'_, '_> {
         let name = name_of(c);
         let mut ti = self.b.clip(item, kind, if name.is_empty() { "Nested Sequence" } else { &name }, pos, dur, src_in);
         let clip_meta = meta.and_then(|m| m.get("clip")).cloned();
-        // Stack markers belong to the nested sequence; instance markers are on filmcraft.clip.
+        // Stack markers belong to the nested sequence; instance markers are on cfa4.clip.
         if let Some(ref cm) = clip_meta {
             ti.markers = self.markers(cm);
         }
@@ -688,9 +695,11 @@ impl Imp<'_, '_> {
             start_tc: None,
             kind: None,
         };
+        let url = r.get("target_url").and_then(Value::as_str).or_else(|| r.get("target_url_base").and_then(Value::as_str)).unwrap_or("");
         let id = match schema_name(r) {
-            "ExternalReference" | "ImageSequenceReference" => {
-                let url = r.get("target_url").and_then(Value::as_str).or_else(|| r.get("target_url_base").and_then(Value::as_str)).unwrap_or("");
+            // Kdenlive writes an empty `target_url` for media it could not find: that is missing media,
+            // not the project folder.
+            "ExternalReference" | "ImageSequenceReference" if !url.trim().is_empty() => {
                 let path = resolve_path(url, self.opts.base_dir.as_deref());
                 let display = if name.is_empty() { file_name(&path).to_string() } else { name.clone() };
                 let key = format!("file:{path}");
@@ -704,6 +713,19 @@ impl Imp<'_, '_> {
             "GeneratorReference" => {
                 let g: Generator = meta.and_then(|m| m.get("generator")).and_then(|g| serde_json::from_value(g.clone()).ok()).unwrap_or_else(|| {
                     match r.get("generator_kind").and_then(Value::as_str).unwrap_or("").to_ascii_lowercase().as_str() {
+                        "kdenlive:solidcolor" => {
+                            let c = r
+                                .get("parameters")
+                                .and_then(|p| p.get("kdenlive"))
+                                .and_then(|p| p.get("color"))
+                                .and_then(Value::as_str)
+                                .and_then(mlt_color)
+                                .unwrap_or_else(|| {
+                                    self.report.warn("Kdenlive solid colour without a readable colour; imported as black");
+                                    [0.0, 0.0, 0.0, 1.0]
+                                });
+                            Generator::ColorMatte { color: c }
+                        }
                         "solidcolor" | "solid_color" => {
                             let c = r
                                 .get("parameters")
@@ -729,8 +751,11 @@ impl Imp<'_, '_> {
                 id
             }
             _ => {
-                if schema_name(r) != "MissingReference" && !r.is_null() {
-                    self.report.warn(format!("OTIO media reference {} is not supported; imported offline", schema(r)));
+                match schema_name(r) {
+                    "MissingReference" => {}
+                    "ExternalReference" | "ImageSequenceReference" => self.report.warn("OTIO media reference without a path; imported offline"),
+                    _ if r.is_null() => {}
+                    _ => self.report.warn(format!("OTIO media reference {} is not supported; imported offline", schema(r))),
                 }
                 let key = format!("missing:{name}");
                 let existed = self.b.find_media(&key);
@@ -803,9 +828,37 @@ impl Imp<'_, '_> {
     }
 }
 
+/// An MLT / Kdenlive colour (`0xRRGGBBAA`, `#RRGGBB` or `#AARRGGBB`) as RGBA in 0..=1.
+fn mlt_color(s: &str) -> Option<[f32; 4]> {
+    let s = s.trim();
+    let hex = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).map(|h| (h, false)).or_else(|| s.strip_prefix('#').map(|h| (h, true)))?;
+    let (h, hash) = hex;
+    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let byte = |i: usize| h.get(i..i + 2).and_then(|b| u8::from_str_radix(b, 16).ok()).map(|v| f32::from(v) / 255.0);
+    match (h.len(), hash) {
+        (8, false) => Some([byte(0)?, byte(2)?, byte(4)?, byte(6)?]),
+        (8, true) => Some([byte(2)?, byte(4)?, byte(6)?, byte(0)?]),
+        (6, _) => Some([byte(0)?, byte(2)?, byte(4)?, 1.0]),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mlt_colors() {
+        assert_eq!(mlt_color("0xff0000ff"), Some([1.0, 0.0, 0.0, 1.0]));
+        assert_eq!(mlt_color(" 0x0000FF80 "), Some([0.0, 0.0, 1.0, 128.0 / 255.0]));
+        assert_eq!(mlt_color("#80ffff00"), Some([1.0, 1.0, 0.0, 128.0 / 255.0]));
+        assert_eq!(mlt_color("#00ff00"), Some([0.0, 1.0, 0.0, 1.0]));
+        for bad in ["", "0x", "red", "0xff00", "0xgg0000ff", "#ééé", "0xff0000ff00", "0x+f0000ff"] {
+            assert_eq!(mlt_color(bad), None, "{bad:?}");
+        }
+    }
 
     #[test]
     fn rational_time() {

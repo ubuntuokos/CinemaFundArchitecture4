@@ -2,14 +2,14 @@
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
 }
 
@@ -18,7 +18,7 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = Cfa4App::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_step_dt(1.0 / 60.0).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);
@@ -53,7 +53,7 @@ impl Driver {
         self.frames(2);
     }
 
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut Cfa4App {
         self.harness.state_mut()
     }
 
@@ -78,7 +78,7 @@ fn ctrl_plus_does_what_ctrl_equals_does_and_the_interface_zoom_can_be_reset() {
     let mut d = Driver::demo();
     let clip = d.app().session.active_sequence().unwrap().video_tracks[0].items[0].id.0;
     d.click(&format!("timeline.clip.{clip}"));
-    assert_eq!(d.app().ui.focused, filmcraft_ui_egui::dock::PanelKind::Timeline);
+    assert_eq!(d.app().ui.focused, cfa4_ui_egui::dock::PanelKind::Timeline);
     let zoom = d.harness.ctx.zoom_factor();
     let height = d.app().ui.timeline.video_track_h;
     d.press(egui::Key::Plus, egui::Modifiers::COMMAND);

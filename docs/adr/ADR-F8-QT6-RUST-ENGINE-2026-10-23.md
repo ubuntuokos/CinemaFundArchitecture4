@@ -13,7 +13,7 @@ codec, NVDEC/NVENC and export engine is **retained**. The inherited
 Rust/egui NLE remains the working application until a Qt6 port has
 demonstrated real feature parity; it is not called a complete Qt6 editor.
 
-The FilmCraft parent remains read-only. A new upstream feature or fix can
+The upstream parent remains read-only. A new upstream feature or fix can
 enter CFA4 only after independent review and tests. No cloud AI or
 runtime network dependency is introduced.
 
@@ -37,8 +37,8 @@ outbound connection. The current Qt6 development shell is intentionally
 thread, project isolation and error handling have been tested.
 
 The CLI search prefers the installed \`cfa4-cli\` binary, then the
-inherited \`filmcraft-cli\` while transition binaries still carry that
-internal name. No FilmCraft release server is consulted.
+inherited \`cfa4-cli\` while transition binaries still carry that
+internal name. No CFA4 release server is consulted.
 
 ## Rejected alternatives
 

@@ -18,7 +18,7 @@
 //! Anything not understood becomes a [`Warning`] with its row number; reading never fails on
 //! content, only on limits ([`crate::table::Limits`]).
 
-use filmcraft_time::{FrameRate, Tick, parse_timecode};
+use cfa4_time::{FrameRate, Tick, parse_timecode};
 
 use crate::CreditsError;
 
@@ -104,7 +104,7 @@ impl TimeSpec {
             TimeSpec::Timecode(s) => parse_timecode(s, rate, false, 0).ok()?,
         };
         let t = fd.checked_mul(frames)?;
-        (t.unsigned_abs() as f64 / filmcraft_time::TICKS_PER_SECOND as f64 <= MAX_SECONDS).then_some(Tick(t))
+        (t.unsigned_abs() as f64 / cfa4_time::TICKS_PER_SECOND as f64 <= MAX_SECONDS).then_some(Tick(t))
     }
 }
 

@@ -58,12 +58,12 @@ jobs:
           cargo deny check licenses sources
       - name: Linux quality gates (no WASM target)
         env:
-          FILMCRAFT_REQUIRE_ORACLES: "1"
+          CFA4_REQUIRE_ORACLES: "1"
         run: cargo xtask ci
       - name: HEIF/HEIC native import and export oracles
         run: |
-          cargo test --locked -p filmcraft-media --test heif_oracle
-          cargo test --locked -p filmcraft-export --lib heic_heif_single_frame_exports_round_trip
+          cargo test --locked -p cfa4-media --test heif_oracle
+          cargo test --locked -p cfa4-export --lib heic_heif_single_frame_exports_round_trip
 
   rust-cli-smoke:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
@@ -83,11 +83,11 @@ jobs:
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils
       - name: Build the Linux Rust command-line engine
-        run: cargo build --locked --release -p filmcraft-cli
+        run: cargo build --locked --release -p cfa4-cli
       - name: Execute compiled engine smoke
         run: |
-          target/release/filmcraft-cli --version
-          target/release/filmcraft-cli --demo inspect project
+          target/release/cfa4-cli --version
+          target/release/cfa4-cli --demo inspect project
 
   gstreamer-backend:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
@@ -115,7 +115,7 @@ jobs:
   vendored-docpath:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
-    name: Vendored craft-docpath offline tests (Ubuntu)
+    name: Vendored cfa4-docpath offline tests (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
@@ -126,7 +126,7 @@ jobs:
           # Test a detached copy so a nested [workspace] does not conflict with CFA4.
           tmpdir="$(mktemp -d)"
           trap 'rm -rf "$tmpdir"' EXIT
-          cp -a vendor/craft-libs/docpath/. "$tmpdir/"
+          cp -a vendor/cfa4-libs/docpath/. "$tmpdir/"
           printf '\n[workspace]\n' >> "$tmpdir/Cargo.toml"
           cargo test --offline --manifest-path "$tmpdir/Cargo.toml"
           cargo clippy --offline --manifest-path "$tmpdir/Cargo.toml" --all-targets -- -D warnings
@@ -134,7 +134,7 @@ jobs:
   vendored-ui:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope
-    name: Vendored craft-ui unit and integration tests (Ubuntu)
+    name: Vendored cfa4-ui unit and integration tests (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
@@ -148,7 +148,7 @@ jobs:
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
-      - name: Test vendored UI library (no external craft-libs Git)
+      - name: Test vendored UI library (no external cfa4-libs Git)
         run: bash scripts/dev/test-vendored-ui.sh
 
   rust-architecture-assets:
@@ -234,13 +234,13 @@ jobs:
           fi
       - name: Run optimized Rust workspace release tests with FFmpeg oracles
         env:
-          FILMCRAFT_REQUIRE_ORACLES: "1"
+          CFA4_REQUIRE_ORACLES: "1"
           # Keep release opt-level and all tests, but disable costly link-time optimization
           # for test harnesses; the CLI smoke still checks the unmodified release profile.
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
           CARGO_BUILD_JOBS: "2"
-        run: cargo test --workspace --exclude craft-ui --release --locked --timings
+        run: cargo test --workspace --exclude cfa4-ui --release --locked --timings
 
   python-qt6-linux:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
@@ -259,13 +259,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0
       - name: Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.13"
       - name: Install Python development dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,qt]"
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
       - name: Python static checks and tests
         run: |
           python -m compileall -q python

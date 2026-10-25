@@ -1,11 +1,11 @@
 kind = "app"
 categories = ["AudioVideo", "Video", "AudioVideoEditing"]
-icon = "assets/app-icon/hicolor/256x256/apps/ai.storyteller.filmcraft.png"
+icon = "assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg"
 
 [linux.x86_64]
-asset = "filmcraft-{version}-linux-x86_64.tar.gz"
-exec = "filmcraft-{version}-linux-x86_64/bin/filmcraft"
+asset = "cfa4-{version}-linux-x86_64.tar.gz"
+exec = "cfa4-{version}-linux-x86_64/bin/cfa4"
 
 [linux.aarch64]
-asset = "filmcraft-{version}-linux-aarch64.tar.gz"
-exec = "filmcraft-{version}-linux-aarch64/bin/filmcraft"
+asset = "cfa4-{version}-linux-aarch64.tar.gz"
+exec = "cfa4-{version}-linux-aarch64/bin/cfa4"
