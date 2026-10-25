@@ -17,10 +17,10 @@ default = []
 gstreamer = ["dep:gstreamer", "dep:gstreamer-pbutils", "dep:gstreamer-app", "dep:gstreamer-video"]
 
 [dependencies]
-filmcraft-color = { workspace = true }
-filmcraft-frame = { workspace = true }
-filmcraft-media = { workspace = true }
-filmcraft-time = { workspace = true }
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-time = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
 # gstreamer-rs: MIT OR Apache-2.0 bindings; the GStreamer libraries themselves are LGPL-2.1-or-later
@@ -31,5 +31,5 @@ gstreamer-app = { version = "0.25", optional = true }
 gstreamer-video = { version = "0.25", optional = true }
 
 [dev-dependencies]
-filmcraft-codecs = { workspace = true }
-filmcraft-engine = { workspace = true }
+cfa4-codecs = { workspace = true }
+cfa4-engine = { workspace = true }

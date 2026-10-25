@@ -1,6 +1,6 @@
 # CFA4 — developer rules (Linux x86_64/AMD64 only; Rust / Cargo / Python / Qt 6)
 
-This CFA4-specific section takes priority over inherited FilmCraft platform and frontend
+This CFA4-specific section takes priority over inherited upstream platform and frontend
 instructions below. Existing engine safety, clean-room codec implementation, open-asset
 attribution and original copyright/licence requirements remain in force.
 
@@ -26,8 +26,11 @@ attribution and original copyright/licence requirements remain in force.
   - Dependencies must pass `cargo deny check licenses` (`deny.toml`).
   - Paid extras run only as separate processes over a documented interface; never add
     proprietary plug-ins loaded into the CFA4 process (docs/licensing.md §4).
-  - Inherited FilmCraft code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
+  - Inherited upstream code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
+- Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced
+  (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
+  notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **Media backend order** ([ADR 0004](docs/adr/ADR-0004-ffmpeg9-primary-backend.md)): **FFmpeg 9** is the
   primary media backend (planned optional crate `cfa4-ffmpeg`; GPL-3 build only: `--enable-gpl
   --enable-version3`, never `--enable-nonfree`; dynamically linked, no copied FFmpeg source),
@@ -46,14 +49,12 @@ attribution and original copyright/licence requirements remain in force.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
-- A release is blocked until inherited ArtCraft marks, icons, package metadata and public
-  branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
 - The Qt shell is a development prototype, NOT a completed migration from egui.
 - Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
 
 ---
 
-# FilmCraft — rules for agents and contributors
+# CFA4 — rules for agents and contributors
 
 > **CFA4: read [`VISION.md`](VISION.md) first.** It defines the project goal (Qt6 GUI on every graphical Ubuntu flavour, combined media tools, local AI) and the priority order. If a plan, PR or audit contradicts it, report the conflict to the owner instead of resolving it silently.
 
@@ -62,11 +63,10 @@ file holds the rules that must never be broken. When the two disagree, this file
 
 ## 0. Never crash
 
-People trust FilmCraft with hours of work. A malformed file, a bad command or MCP parameter, a corrupt
+People trust CFA4 with hours of work. A malformed file, a bad command or MCP parameter, a corrupt
 preset or project, an odd keystroke or a full disk must give an error the user (or agent) can act on,
 never a crash and never lost work. **This rule outranks feature work:** don't ship a feature by adding a
-panic path, and fix a crash before building on top of it. The cross-app standard is
-[`craftrules/standards/never-crash.md`](https://github.com/storytold/craftrules/blob/main/standards/never-crash.md).
+panic path, and fix a crash before building on top of it. 
 
 1. **Fail with `Result<T, E>`.** Return the crate's error type and propagate with `?`; add context
    (`map_err`, an error variant) instead of discarding it. In the UI, report the error (status bar, error
@@ -121,7 +121,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
 2. **Every asset must be open**: open-source licensed (MIT, Apache-2.0, BSD, ISC, zlib, SIL OFL…),
    public domain / CC0, or Creative Commons (CC BY or CC BY-SA; no NC/ND licences), **or** created by a
    contributor who owns it and licenses it to the project under the project licence (GPL-3.0-or-later;
-   inherited FilmCraft assets keep MIT OR Apache-2.0).
+   inherited upstream assets keep MIT OR Apache-2.0).
    If the licence is unknown or unclear, the asset does not go in.
 3. **Every asset needs an attribution sidecar.** Next to each asset file `X`, add `X.attribution` with:
    ```text
@@ -136,7 +136,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
    ```
    Also add one line for the asset to [`ATTRIBUTION.md`](ATTRIBUTION.md). `cargo xtask assets` (part of
    `cargo xtask ci`) fails if any asset lacks a sidecar or index entry.
-4. **Screenshots** in the repo may show only FilmCraft (or other open projects), with media we generated
+4. **Screenshots** in the repo may show only CFA4 (or other open projects), with media we generated
    or media that is itself openly licensed. Never commit screenshots of Adobe products.
 5. **Local reference material stays local.** Premiere reference screenshots and notes live only in
    `plan/premiere/` (gitignored). They must never be committed, bundled, embedded, traced or shipped.
@@ -144,19 +144,15 @@ reproduce an image (for example, point lists traced from someone else's icon).
    `crates/media`, procedural looks in `crates/render`) are original work under the project licence
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
-8. **The one exception: first-party ArtCraft brand marks.** The ArtCraft name and logos in `docs/brand/`
-   are trademarks of the ArtCraft Team, not open source, usable only unmodified and only in the context of
-   FilmCraft under `docs/brand/LICENSE-brand.txt`; forks and modified versions must remove them. They still
-   need a sidecar and an `ATTRIBUTION.md` row (licence `LicenseRef-ArtCraft-Trademark`). No other
-   non-open asset is allowed, and this exception never covers third-party marks (Adobe, Discord, GitHub
-   and other logos stay out; draw a generic icon instead).
-9. **Fonts live in [storytold/craft-fonts](https://github.com/storytold/craft-fonts), never in this
+8. **No trademark exceptions.** No non-open asset is allowed, and third-party marks (Adobe, Discord,
+   GitHub and other logos) stay out; draw a generic icon instead.
+9. **Fonts live in an external font directory, never in this
    repo.** Don't commit new font files (the small Latin UI fonts already in `assets/fonts/` stay). A
-   font FilmCraft needs is added to craft-fonts, which the app reads through the optional build input
-   `CRAFT_FONTS_DIR=<absolute path of a craft-fonts checkout>` (`crates/text/build.rs` embeds the fonts in its
-   `fonts/manifest.txt` as `filmcraft_text::fonts::CRAFT_FONTS`; unset, it is empty and the app uses its
-   bundled and system fonts). Never add craft-fonts to a `Cargo.toml`. Code using `CRAFT_FONTS` must work
-   when it is empty. Standard: [`craftrules/standards/fonts.md`](https://github.com/storytold/craftrules/blob/main/standards/fonts.md).
+   font CFA4 needs is added to extra-fonts, which the app reads through the optional build input
+   `CFA4_FONTS_DIR=<absolute path of an extra-fonts checkout>` (`crates/text/build.rs` embeds the fonts in its
+   `fonts/manifest.txt` as `cfa4_text::fonts::CFA4_FONTS`; unset, it is empty and the app uses its
+   bundled and system fonts). Never add extra-fonts to a `Cargo.toml`. Code using `CFA4_FONTS` must work
+   when it is empty.
 
 ## 2. Clean-room code
 
@@ -191,21 +187,19 @@ See `CLAUDE.md`: pure Rust, dependency layering (`cargo xtask layers`), exact `T
 a command, everything is agent-drivable, and the quality gates (`cargo xtask ci`) before every commit.
 
 
-Shared real-file test corpora (Photoshop-authored PSDs, etc.) live in
-[`storytold/photocraft-corpus`](https://github.com/storytold/photocraft-corpus), explained in
-[craftrules `standards/test-corpora.md`](https://github.com/storytold/craftrules/blob/main/standards/test-corpora.md).
-Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified,
-as PhotoCraft does with `cargo xtask corpus`.
+Shared real-file test corpora (Photoshop-authored PSDs, etc.) live outside this repository.
+Never commit large binary fixtures to this repo; fetch them pinned by commit and sha256-verified
+(for example with a `cargo xtask corpus` command).
 
 ## See also
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/contributing.md](docs/contributing.md): setup, gates, commits, how to add things
 - [docs/architecture.md](docs/architecture.md): layers, data model, commands, pipeline
 - [docs/testing.md](docs/testing.md): oracle tests, criteria, benchmarks
-- [docs/agents.md](docs/agents.md): driving FilmCraft over MCP / the control channel, and the agent work loop
+- [docs/agents.md](docs/agents.md): driving CFA4 over MCP / the control channel, and the agent work loop
 - [docs/control-protocol.md](docs/control-protocol.md): control-channel method reference
 - [ATTRIBUTION.md](ATTRIBUTION.md): asset index
-- [ROADMAP.md](ROADMAP.md), [docs/target-app-parity.md](docs/target-app-parity.md), [docs/gaps.md](docs/gaps.md): stage, parity with Premiere Pro and the ranked work list (craftrules `standards/progress-docs.md`)
+- [ROADMAP.md](ROADMAP.md), [docs/target-app-parity.md](docs/target-app-parity.md), [docs/gaps.md](docs/gaps.md): stage, parity with Premiere Pro and the ranked work list
 
 ## Contributor credits (About window)
 
@@ -217,10 +211,10 @@ as PhotoCraft does with `cargo xtask corpus`.
   whether they want to be credited by more than their username: a real name, a display name, and/or
   their public GitHub profile name (`sync_github_name = true`). If yes, add **only their own** entry
   (copy the template at the top of the file, or run
-  `python3 ../../craftrules/scripts/contributors.py --add-me . --real-name "…" --sync-github-name`)
+  `python3 /path/to/contributors.py --add-me . --real-name "…" --sync-github-name`)
   and include it in their PR, committed as them. If no, change nothing: they are credited as
   `@username` anyway.
 - Never add, edit, guess or copy anyone else's entry or name (not from git config, commit authors or
   GitHub profiles). Never hand-edit `contributors.json`.
-- Maintainers refresh the stats with `python3 ../../craftrules/scripts/contributors.py .` (it also
+- Maintainers refresh the stats with `python3 /path/to/contributors.py .` (it also
   re-verifies who wrote each `people.toml` entry; `--check` only verifies).

@@ -17,8 +17,8 @@ A CFA4 médiaháttereinek **alapsorrendje**:
 
 Ez az alapsorrend minden feladatra érvényes, **kivéve**, ahol az alábbi útválasztási tábla mást
 rögzít. A legfontosabb kivétel: az idővonal lejátszása és léptetése azokban a formátumokban,
-amelyeket a saját motor már igazoltan, bitpontosan kezel, a saját motorral kezd (a FilmCraft
-eredeti, valódi gépen mért erőssége).
+amelyeket a saját motor már igazoltan, bitpontosan kezel, a saját motorral kezd (az örökölt
+upstream motor eredeti, valódi gépen mért erőssége).
 
 ### Útválasztási tábla (feladatonkénti sorrend)
 
@@ -59,7 +59,7 @@ Ami **nem** változik:
 - A natív VA-API és NVDEC/NVENC útvonal (`crates/platform`, [ADR 0001](0001-platform-ffi.md))
   megmarad; hogy egy feladatot ez vagy az FFmpeg 9 lát el, mérés dönti el.
 - A **gyártófüggetlenség** (AGENTS.md): egy funkció sem lehet csak NVIDIA-n elérhető.
-- A FilmCraft-projektek (`.fcproj`) továbbra is megnyithatók.
+- Az upstream alkalmazásban mentett projektek (`.fcproj`) továbbra is megnyithatók (A1, `crates/project/src/legacy.rs`).
 
 ## Szabályok
 

@@ -123,7 +123,7 @@ igényelnek. Ezért minden gyártónak saját útja van, közös felület mögö
 | bármely Vulkan-képes GPU | Vulkan Video: FFmpeg 9 `*_vulkan`, másodlagosan GStreamer `vulkan*enc`, ahol a meghajtó tudja | gyártófüggetlen jövőbeli út |
 | nincs GPU vagy hiba | a saját szoftveres kódolók (pl. `crates/h264enc`) | mindig elérhető tartalék |
 
-- Mind ugyanazon kódolófelület (`filmcraft_export::VideoEncoder`) mögött van, a választást a futásidejű felmérés
+- Mind ugyanazon kódolófelület (`cfa4_export::VideoEncoder`) mögött van, a választást a futásidejű felmérés
   (az FFmpeg 9 és a GStreamer `probe()`-ja, valamint a #39 gyorsítási terve) és mérés dönti el, nem fordítási idő.
 - Egy funkció sem lehet csak NVIDIA-n elérhető (AGENTS.md, ADR 0002): ha egy képesség NVENC-cel
   megvan, a VA-API-s és a szoftveres útnak is meg kell lennie.

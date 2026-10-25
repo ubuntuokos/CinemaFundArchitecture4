@@ -2,10 +2,10 @@ use serde_json::{Value, json};
 
 use crate::Session;
 use crate::media_test_util::tmp_dir;
-use filmcraft_project::graphic::LayerContent;
-use filmcraft_project::{ClipId, ParamValue, RollMode, TrackItem};
-use filmcraft_render::graphic_clip::item_layer_specs;
-use filmcraft_time::Tick;
+use cfa4_project::graphic::LayerContent;
+use cfa4_project::{ClipId, ParamValue, RollMode, TrackItem};
+use cfa4_render::graphic_clip::item_layer_specs;
+use cfa4_time::Tick;
 
 const SHEET: &str = "Head,Body,Tail,Content Style,Page Style,Page Runtime\n\
                      ,THE LONG WAY HOME,,Heading,Card,4s\n\
@@ -112,7 +112,7 @@ fn styles_lists_builtins_and_a_starter() {
     let v = s.execute("graphics.credits.styles", json!({})).unwrap();
     let names: Vec<&str> = v["contentStyles"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
     assert!(names.contains(&"Gutter") && names.contains(&"Grid"));
-    let starter: filmcraft_credits::Styling = serde_json::from_value(v["starter"].clone()).unwrap();
+    let starter: cfa4_credits::Styling = serde_json::from_value(v["starter"].clone()).unwrap();
     assert!(starter.content_styles.len() >= 5);
 }
 
