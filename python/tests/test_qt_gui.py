@@ -16,6 +16,7 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 QtCore = pytest.importorskip("PySide6.QtCore")
 QtWidgets = pytest.importorskip("PySide6.QtWidgets")
+QtGui = pytest.importorskip("PySide6.QtGui")
 
 from cfa4_qt.commands import Command, CommandRegistry, parse_params, parse_value, qt_shortcut
 from cfa4_qt.engine import EngineClient, EngineError, FrameReader, locate_engine
@@ -474,3 +475,86 @@ def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Pa
         if win.isVisible():
             win._quit_confirmed = True
             win.close()
+
+
+# ----- issues found comparing with the egui editor (2026-10-25) -----
+def test_ruler_labels_fall_on_whole_timecode():
+    """Regression: at 23.976 fps the ruler read 00:00:01:23, 00:00:03:23 ... (wall-clock seconds
+    shown as timecode). Labels must fall on whole timecode units: 00:00:05:00, 00:00:10:00."""
+    from cfa4_qt.panels.timeline import ruler_step
+
+    for num, den in ((24000, 1001), (24, 1), (25, 1), (30000, 1001), (50, 1), (60000, 1001)):
+        ft = TICKS_PER_SECOND * den // num
+        fps = round(num / den)
+        for pps in (1, 5, 20, 40, 120, 300, 1000, 4000):
+            step = ruler_step(ft, pps, 90)
+            assert step * pps / TICKS_PER_SECOND >= 90 or step >= 3600 * fps * ft
+            frames = step // ft
+            # whole seconds, or a divisor of a second: every label lands on a frame :00
+            assert frames % fps == 0 or fps % frames == 0, (num, den, pps, frames)
+            labels = [format_timecode(i * step, ft) for i in range(1, 6)]
+            if frames % fps == 0:
+                assert all(lab.endswith(":00") for lab in labels), labels
+    ft = TICKS_PER_SECOND * 1001 // 24000
+    assert [format_timecode(i * ruler_step(ft, 40, 90), ft) for i in (1, 2)] == ["00:00:05:00", "00:00:10:00"]
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+def test_every_track_is_reachable_in_a_short_timeline(app, tmp_path: Path):
+    """Regression: the timeline had no vertical scrolling, so in a short Timeline panel Audio 2
+    (the demo's music) showed as a sliver and Audio 3 not at all."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None, 60_000)
+        panel = win.timeline
+        canvas = panel.canvas
+        canvas.setFixedHeight(200)  # short, like the default dock
+        wait_until(app, lambda: False, 200)
+        names = [r.name for r in canvas.rows]
+        assert names[-3:] == ["Audio 1", "Audio 2", "Audio 3"], names
+        last = canvas.rows[-1]
+        assert last.top + last.height > canvas.height(), "the demo must not fit, or this test proves nothing"
+        assert panel.vscroll.isVisible() and panel.vscroll.maximum() == canvas.max_scroll_y() > 0
+        panel.vscroll.setValue(panel.vscroll.maximum())
+        wait_until(app, lambda: False, 100)
+        last = canvas.rows[-1]
+        assert last.top + last.height <= canvas.height(), (last.top, canvas.height())
+        # the music clip on Audio 2 can now be hit, and nothing is hit under the ruler
+        a2 = next(r for r in canvas.rows if r.name == "Audio 2")
+        clip = a2.track["items"][0]
+        rect = canvas.clip_rect(a2, clip)
+        row, hit_clip, _edge = canvas.hit(rect.center().toPoint())
+        assert row is a2 and hit_clip is clip
+        assert canvas.row_at(5) is None
+        # Shift+wheel and the wheel over the track headers scroll vertically too
+        panel.vscroll.setValue(0)
+        ev = QtGui.QWheelEvent(
+            QtCore.QPointF(20, 100), QtCore.QPointF(20, 100), QtCore.QPoint(0, 0), QtCore.QPoint(0, -240),
+            QtCore.Qt.MouseButton.NoButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.Qt.ScrollPhase.NoScrollPhase, False,
+        )
+        canvas.wheelEvent(ev)
+        assert canvas.scroll_y > 0 and panel.vscroll.value() == canvas.scroll_y
+        # a tall panel shows everything and hides the bar
+        canvas.setMinimumHeight(0)
+        canvas.setMaximumHeight(16_777_215)
+        canvas.setFixedHeight(900)
+        wait_until(app, lambda: False, 200)
+        assert canvas.scroll_y == 0 and not panel.vscroll.isVisible()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_app_identifies_as_cfa4_to_the_desktop():
+    """Regression: the GUI registered as "cfa4", which matches no .desktop file, so KDE's
+    taskbar showed "python3" and no CFA4 logo. It must use the packaged app id."""
+    src = (ROOT / "python" / "cfa4_qt" / "__main__.py").read_text(encoding="utf-8")
+    assert 'setDesktopFileName("io.github.ubuntuokos.cfa4")' in src
+    assert (ROOT / "packaging" / "linux" / "io.github.ubuntuokos.cfa4.desktop").is_file()

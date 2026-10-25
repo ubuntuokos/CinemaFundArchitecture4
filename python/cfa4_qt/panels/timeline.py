@@ -46,6 +46,22 @@ LABEL_COLORS = {
 }
 
 
+def ruler_step(frame: int, pps: float, min_px: float) -> int:
+    """Ruler label spacing in ticks, on whole timecode units so labels read 00:00:05:00,
+    00:00:10:00 ... (or whole frames when zoomed in). A timecode second is the nominal frame count
+    (24 at 23.976 fps), so steps are counted in frames, not in wall-clock seconds."""
+    frame = max(1, int(frame))
+    fps = max(1, round(TICKS_PER_SECOND / frame))
+    sec = fps  # frames per timecode second
+    # below a second: divisors of the frame count, so every label still falls on whole seconds
+    sub = [d for d in range(1, sec) if sec % d == 0]
+    whole = [m * sec for m in (1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600)]
+    for frames in (*sub, *whole):
+        if frames * frame * pps / TICKS_PER_SECOND >= min_px:
+            return frames * frame
+    return 3600 * sec * frame
+
+
 @dataclass
 class Row:
     track_id: Any
@@ -82,6 +98,7 @@ class TimelineCanvas(QWidget):
         self.rows: list[Row] = []
         self.pps = 40.0  # pixels per second
         self.scroll_ticks = 0
+        self.scroll_y = 0  # pixels the track rows are scrolled up under the ruler
         self.playhead = 0
         self.tool = "selection"
         self._drag: Drag | None = None
@@ -90,6 +107,8 @@ class TimelineCanvas(QWidget):
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
 
     # ----- model -----
+    scrolled_y = Signal()  # the vertical offset changed (the panel's scroll bar follows)
+
     def set_sequence(self, seq: dict[str, Any] | None) -> None:
         self.sequence = seq if isinstance(seq, dict) else None
         if self.sequence and isinstance(self.sequence.get("playhead"), int) and self._drag is None:
@@ -102,7 +121,7 @@ class TimelineCanvas(QWidget):
         self.rows = []
         if not self.sequence:
             return
-        y = RULER_H
+        y = RULER_H - self.scroll_y
         for t in reversed(self.sequence.get("video") or []):  # highest video track on top
             self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, VIDEO_H, t))
             y += VIDEO_H
@@ -111,9 +130,31 @@ class TimelineCanvas(QWidget):
             self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", y, AUDIO_H, t))
             y += AUDIO_H
 
+    def content_height(self) -> int:
+        """Height of every track row together (below the ruler), unscrolled."""
+        if not self.rows:
+            return 0
+        return self.rows[-1].top + self.rows[-1].height + self.scroll_y - RULER_H + 8
+
+    def max_scroll_y(self) -> int:
+        return max(0, self.content_height() - max(0, self.height() - RULER_H))
+
+    def set_scroll_y(self, y: int) -> None:
+        y = max(0, min(int(y), self.max_scroll_y()))
+        if y != self.scroll_y:
+            self.scroll_y = y
+            self._layout_rows()
+            self.update()
+            self.scrolled_y.emit()
+
     def sizeHint(self) -> QSize:
-        bottom = self.rows[-1].top + self.rows[-1].height if self.rows else 200
-        return QSize(800, bottom + 8)
+        return QSize(800, RULER_H + min(self.content_height(), 400))
+
+    def resizeEvent(self, e) -> None:
+        super().resizeEvent(e)
+        # a taller panel may show everything: keep the offset within range
+        self.set_scroll_y(self.scroll_y)
+        self.scrolled_y.emit()
 
     @property
     def duration(self) -> int:
@@ -134,6 +175,8 @@ class TimelineCanvas(QWidget):
         return max(0, int(self.scroll_ticks + (x - HEADER_W) * TICKS_PER_SECOND / self.pps))
 
     def row_at(self, y: int) -> Row | None:
+        if y < RULER_H:  # rows scrolled up under the ruler are hidden there
+            return None
         for r in self.rows:
             if r.top <= y < r.top + r.height:
                 return r
@@ -201,7 +244,8 @@ class TimelineCanvas(QWidget):
                 tr("No sequence open. Double-click a sequence in the Project panel."),
             )
             return
-        self._paint_ruler(p)
+        p.save()
+        p.setClipRect(QRect(0, RULER_H, self.width(), max(0, self.height() - RULER_H)))
         selected = set(self.selection)
         fm = QFontMetrics(self.font_small)
         p.setFont(self.font_small)
@@ -249,6 +293,9 @@ class TimelineCanvas(QWidget):
             p.setPen(QPen(QColor("#ffd54a"), 2))
             p.drawLine(int(x), RULER_H, int(x), self.height())
         self._paint_headers(p)
+        p.restore()
+        self._paint_ruler(p)
+        self._paint_corner(p)
         # playhead
         x = self.x_of(self.playhead)
         if x >= HEADER_W:
@@ -262,15 +309,13 @@ class TimelineCanvas(QWidget):
         p.fillRect(QRect(0, 0, self.width(), RULER_H), pal.window())
         p.setPen(pal.windowText().color())
         p.setFont(self.font_small)
-        seconds_visible = (self.width() - HEADER_W) / self.pps
-        steps = [1 / 30, 0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300, 600, 1800, 3600]
-        step = next((s for s in steps if s * self.pps >= 80), steps[-1])
-        start = self.scroll_ticks / TICKS_PER_SECOND
-        first = int(start / step)
-        n = int(seconds_visible / step) + 2
         ft = self.frame_ticks()
+        label_w = QFontMetrics(self.font_small).horizontalAdvance("00:00:00:00") + 16
+        step = ruler_step(ft, self.pps, label_w)
+        first = self.scroll_ticks // step
+        n = int((self.width() - HEADER_W) / max(1e-9, step * self.pps / TICKS_PER_SECOND)) + 2
         for i in range(first, first + n):
-            t = int(i * step * TICKS_PER_SECOND)
+            t = i * step
             x = self.x_of(t)
             if x < HEADER_W:
                 continue
@@ -291,15 +336,21 @@ class TimelineCanvas(QWidget):
                     QColor(90, 150, 255, 160),
                 )
 
-    def _paint_headers(self, p: QPainter) -> None:
+    def _paint_corner(self, p: QPainter) -> None:
         pal = self.palette()
-        p.fillRect(QRect(0, 0, HEADER_W, self.height()), pal.window())
+        p.fillRect(QRect(0, 0, HEADER_W, RULER_H), pal.window())
         p.setPen(pal.windowText().color())
+        p.setFont(self.font_small)
         p.drawText(
             QRect(6, 0, HEADER_W - 6, RULER_H),
             Qt.AlignmentFlag.AlignVCenter,
             format_timecode(self.playhead, self.frame_ticks()),
         )
+
+    def _paint_headers(self, p: QPainter) -> None:
+        pal = self.palette()
+        p.fillRect(QRect(0, 0, HEADER_W, self.height()), pal.window())
+        p.setPen(pal.windowText().color())
         for row in self.rows:
             r = QRect(0, row.top, HEADER_W - 1, row.height)
             p.fillRect(r.adjusted(2, 1, -2, -1), pal.button())
@@ -443,6 +494,11 @@ class TimelineCanvas(QWidget):
         dy = e.angleDelta().y() or e.angleDelta().x()
         if e.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier):
             self.zoom(1.25 if dy > 0 else 0.8, e.position().x())
+        elif e.modifiers() & Qt.KeyboardModifier.ShiftModifier or (
+            e.position().x() < HEADER_W and e.angleDelta().y()
+        ):
+            # Shift+wheel, or the wheel over the track headers: scroll the tracks up and down
+            self.set_scroll_y(self.scroll_y - int(dy / 120 * 40))
         else:
             self.scroll_ticks = max(0, int(self.scroll_ticks - dy / 120 * 80 * TICKS_PER_SECOND / self.pps))
             self.update()
@@ -517,11 +573,20 @@ class TimelinePanel(QWidget):
             bar.addWidget(b)
         self.hscroll = QScrollBar(Qt.Orientation.Horizontal, self)
         self.hscroll.valueChanged.connect(self._on_scroll)
+        self.vscroll = QScrollBar(Qt.Orientation.Vertical, self)
+        self.vscroll.setObjectName("timeline.vscroll")
+        self.vscroll.valueChanged.connect(self.canvas.set_scroll_y)
+        self.canvas.scrolled_y.connect(self._sync_vscroll)
+        middle = QHBoxLayout()
+        middle.setContentsMargins(0, 0, 0, 0)
+        middle.setSpacing(0)
+        middle.addWidget(self.canvas, 1)
+        middle.addWidget(self.vscroll)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addLayout(bar)
-        layout.addWidget(self.canvas, 1)
+        layout.addLayout(middle, 1)
         layout.addWidget(self.hscroll)
 
     def set_tool(self, tool: str) -> None:
@@ -533,6 +598,18 @@ class TimelinePanel(QWidget):
         self.canvas.set_sequence(seq)
         self.title.setText(f"{tr('Timeline')}: {seq.get('name')}" if seq else tr("Timeline"))
         self._sync_scroll()
+        self.canvas.set_scroll_y(self.canvas.scroll_y)  # tracks added or removed
+        self._sync_vscroll()
+
+    def _sync_vscroll(self) -> None:
+        top = self.canvas.max_scroll_y()
+        self.vscroll.blockSignals(True)
+        self.vscroll.setRange(0, top)
+        self.vscroll.setPageStep(max(1, self.canvas.height() - RULER_H))
+        self.vscroll.setSingleStep(20)
+        self.vscroll.setValue(self.canvas.scroll_y)
+        self.vscroll.blockSignals(False)
+        self.vscroll.setVisible(top > 0)
 
     def _sync_scroll(self) -> None:
         seconds = max(10, int(self.canvas.duration / TICKS_PER_SECOND) + 10)

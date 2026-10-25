@@ -57,7 +57,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 3.10 | Audio Clip Mixer | ❌ | |
 | 3.11 | Metadata | ❌ | |
 | 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |
-| 3.13 | Timeline | 🟡 | tracks, clips, ruler, markers, in/out, playhead, select, move (snap, insert, copy), trim (regular/ripple), razor, drop from Project, zoom/scroll; track header buttons, waveforms, thumbnails, keyframe lanes, transitions drawing, captions track, roll/slip/slide tools, sequence tabs missing |
+| 3.13 | Timeline | 🟡 | tracks, clips, ruler, markers, in/out, playhead, select, move (snap, insert, copy), trim (regular/ripple), razor, drop from Project, zoom, horizontal and vertical scrolling (`test_every_track_is_reachable_in_a_short_timeline`), whole-timecode ruler; track header buttons, waveforms, thumbnails, keyframe lanes, transitions drawing, captions track, roll/slip/slide tools, sequence tabs missing |
 | 3.14 | Tools | 🟡 | Selection and Razor only |
 | 3.15 | Audio Meters | ❌ | |
 | 3.16 | Audio Track Mixer | ❌ | |
