@@ -1,7 +1,7 @@
 # ADR 0004 – Feladatonkénti GPU/NPU/CPU útvonalválasztó
 
-**Dátum:** 2026-10-24 · **Állapot:** javasolt (a 0. fázis ezzel a PR-ral; a tulajdonos, `ubuntuokos`
-jóváhagyására vár) · **Érintett crate:** `crates/route` (`cfa4-route`, L1 réteg)
+**Dátum:** 2026-10-24 · **Állapot:** a döntések elfogadva (a tulajdonos, `ubuntuokos`, 2026-10-25-én
+elfogadta a javasolt alapértelmezéseket); a 0. fázis ezzel a PR-ral · **Érintett crate:** `crates/route` (`cfa4-route`, L1 réteg)
 
 ## Háttér
 
@@ -24,13 +24,15 @@ háttér melyik eszközön (GPU, NPU, CPU) végzi a munkát. Ugyanaz a minta, mi
 (feladatonkénti tábla az alapsorrend fölött).
 
 1. **A saját Rust motor marad az elsődleges** (ADR 0002). A kodek-családokban a saját utak
-   (NVDEC, VA-API, NVENC, a szoftveres kodekek) állnak elöl és a végén. A GStreamer kiegészítő
-   háttér: ott kerül sorra, ahol a saját motor nem tud valamit (Vulkan Video, VP9 és AV1
-   hardveresen), vagy ahol mérés igazolja, hogy jobb.
+   (NVDEC, VA-API, NVENC, a szoftveres kodekek) állnak elöl és a végén. Az FFmpeg 9 és a
+   GStreamer kiegészítő háttér, ebben a sorrendben: ott kerülnek sorra, ahol a saját motor nem tud
+   valamit (Vulkan Video, VP9 és AV1 hardveresen), vagy ahol mérés igazolja, hogy jobb.
 2. **Gyártófüggetlen alap.** Minden családnak van útja, amely bármelyik gyártó GPU-ján fut
    (Vulkan, wgpu, VA-API). A gyártói gyorsító (CUDA, NVENC, OpenVINO) csak gyorsabb kiegészítő.
 3. **Mindig van CPU-tartalék.** Minden család sorrendje CPU-úttal zárul. A
-   `Router::families_without_cpu_route` ezt ellenőrzi, a beépített tábla tesztje őrzi.
+   `Router::families_without_cpu_route` ezt ellenőrzi, a beépített tábla tesztje őrzi. Egyetlen
+   kivétel a valós idejű MI-előnézet: GPU nélkül kikapcsol, de ugyanaz a funkció exportkor CPU-n
+   fut.
 4. **Futásidejű felmérés.** A kiadott csomag minden gépre ugyanaz; a választás az induláskori
    eszközfelmérésből (`cfa4_route::probe`) és a hátterek saját képességvizsgálatából jön.
 5. **Bizonyíték, nem feltételezés** (VISION.md 2.5). Két képes út közül mérés dönti el az
@@ -63,7 +65,7 @@ alapsorrend, és fölötte feladatonkénti sorok.
 
 ```toml
 [compute.default]
-codec_decode = ["nvdec", "vaapi", "gstreamer-vulkan-video", "software"]
+codec_decode = ["nvdec", "vaapi", "ffmpeg", "gstreamer-vulkan-video", "software"]
 ai = ["openvino-npu", "burn-cuda", "burn-vulkan", "candle-cpu"]
 
 [compute.task."ai.speech.whisper"]
@@ -106,16 +108,16 @@ A `cfa4-route` az L1 rétegben van, munkaterületi függősége nincs (`serde`, 
 | 0 | ADR 0004, `cfa4-route`: típusok, tábla, választás, tartalék, `/sys`-felmérés, álháttér-tesztek | CI zöld GPU nélkül | ez a PR |
 | 1 | A mai utak átköltöztetése: platform-gyársorrend, NVENC-kapcsoló, wgpu-adapterválasztás, #632 | a mai tesztek változatlanul zöldek | tervezett |
 | 2 | MI GPU-n: Burn Vulkan- és CUDA-háttér a Whisperhez és a Kokoróhoz | az MI-küszöbök teljesülnek az RTX A1000-en | tervezett |
-| 3 | Saját VA-API kódolás AMD-n és Intelen; kiegészítőként a GStreamer (ADR 0002, 3. lépés) | mérés Intel vagy AMD GPU-n | tervezett |
+| 3 | Saját VA-API kódolás AMD-n és Intelen; kiegészítőként az FFmpeg 9, majd a GStreamer (ADR 0002, 3. lépés) | mérés Intel vagy AMD GPU-n | tervezett |
 | 4 | Intel NPU OpenVINO-val; AMD NPU egyelőre csak felismerés | teszt Intel NPU-s gépen | tervezett |
 | 5 | Felület: Beállítások ▸ Teljesítmény, haladó útvonal-nézet (Qt6) | kiadható, kísérleti jelölésekkel | tervezett |
 
 A 2–4. fázis egymástól független. Minden fázis külön PR, tesztekkel.
 
-## Nyitott döntések (javasolt alapértelmezéssel)
+## Döntések (elfogadva 2026-10-25)
 
-1. Kötelező CPU-tartalék minden funkcióhoz: **igen**; kivétel csak a valós idejű MI-előnézet
-   lehet, amely GPU nélkül kikapcsol, de exportkor ugyanaz a funkció CPU-n fut.
+1. Kötelező CPU-tartalék minden funkcióhoz: **igen**; kivétel csak a valós idejű MI-előnézet,
+   amely GPU nélkül kikapcsol, de exportkor ugyanaz a funkció CPU-n fut.
 2. „Ugyanúgy használható” jelentése: ugyanazok a funkciók minden gyártónál, családonkénti
    mércével (dekódolás bitre azonos, kódolás PSNR-küszöb, MI a 2. fázisban rögzített küszöb).
 3. NPU: első körben Intel (az Intel NPU Driver 1.38 hivatalosan támogatja az Ubuntu 26.04-et).
@@ -125,6 +127,8 @@ A 2–4. fázis egymástól független. Minden fázis külön PR, tesztekkel.
    kódból). Alternatíva: ONNX Runtime.
 5. Tesztgép AMD-re és Intelre: amíg nincs, ezek az útvonalak „kísérleti” jelölést kapnak, és a
    CI-ben szoftveres Vulkan (lavapipe) ellenőrzi a gyártófüggetlen utat.
+6. Médiamotor: a saját Rust motor marad az elsődleges (ADR 0002). Az FFmpeg 9 és a GStreamer
+   kiegészítő háttér az útválasztó táblájában.
 
 ## Elvetett lehetőség
 
@@ -138,3 +142,8 @@ Az NVIDIA-utat a Burn CUDA-háttere és a meglévő NVDEC/NVENC lefedi.
 - A hátterek a saját crate-jükben implementálják a `Backend` traitet; a `cfa4-route` nem függ
   tőlük.
 - Az 1. fázisig a mai kód nem használja a routert, a viselkedés nem változik.
+- **Szabályütközés az FFmpeg-háttérrel.** A `CLAUDE.md` ma azt írja, hogy az ffmpeg/ffprobe csak
+  külső tesztorákulum és fixture-generátor, soha nem linkelt vagy szállított. Az `ffmpeg` háttér
+  ezért egyelőre csak a táblában szerepel (regisztrálatlanul `NotRegistered`). A megvalósítás
+  előtt a szabályt módosítani kell, és rögzíteni kell, hogyan kapcsolódik a CFA4 az FFmpeg 9-hez
+  (dinamikus linkelés a rendszerből vagy külső folyamat), milyen licenccel épített FFmpeggel.

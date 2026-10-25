@@ -162,13 +162,14 @@ mod tests {
     }
 
     #[test]
-    fn our_engine_comes_before_gstreamer_in_the_codec_families() {
+    fn our_engine_comes_before_the_supplementary_backends_in_the_codec_families() {
         let t = Table::builtin().unwrap();
         for f in [Family::CodecDecode, Family::CodecEncode] {
             let order = t.family_order(f);
             let pos = |s: &str| order.iter().position(|b| b.as_str() == s).unwrap();
             let gst = order.iter().position(|b| b.as_str().starts_with("gstreamer")).unwrap();
-            assert!(pos("vaapi") < gst, "{f:?}: our VA-API path first");
+            assert!(pos("vaapi") < pos("ffmpeg"), "{f:?}: our VA-API path first");
+            assert!(pos("ffmpeg") < gst, "{f:?}: FFmpeg 9 before GStreamer");
             assert!(gst < pos("software"), "{f:?}: our software codecs stay the last resort");
         }
     }

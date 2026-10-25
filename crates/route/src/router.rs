@@ -385,7 +385,15 @@ mod tests {
         let d = r.choose(&task("video.decode.h264", Family::CodecDecode)).unwrap();
         assert_eq!(d.backend.as_str(), "software");
         let reasons: Vec<_> = d.declined.iter().map(|x| (x.backend.as_str(), x.reason.clone())).collect();
-        assert_eq!(reasons, vec![("nvdec", Reason::Disabled), ("vaapi", Reason::NotRegistered), ("gstreamer-vulkan-video", Reason::NotRegistered)]);
+        assert_eq!(
+            reasons,
+            vec![
+                ("nvdec", Reason::Disabled),
+                ("vaapi", Reason::NotRegistered),
+                ("ffmpeg", Reason::NotRegistered),
+                ("gstreamer-vulkan-video", Reason::NotRegistered)
+            ]
+        );
 
         r.set_enabled(&BackendId::new("nvdec").unwrap(), true);
         let d = r.choose(&task("video.decode.hevc422", Family::CodecDecode)).unwrap();

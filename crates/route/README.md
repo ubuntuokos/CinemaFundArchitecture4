@@ -39,7 +39,7 @@ let decision = router.choose(&Task::new("video.decode.hevc", Family::CodecDecode
   32 backends per list, 1024 task rows), `/sys` attributes (4 KiB), devices (64), backend reasons
   (256 bytes).
 - The shipped table ends every family on a CPU path and puts CFA4's own engine before the
-  GStreamer paths in the codec families (tests in `table.rs`).
+  supplementary paths in the codec families, FFmpeg 9 before GStreamer (tests in `table.rs`).
 
 ## Not yet
 

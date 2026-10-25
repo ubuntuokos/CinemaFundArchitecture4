@@ -5,13 +5,13 @@
 # first, then the vendor-neutral GPU path, and the CPU path is always last.
 #
 # CFA4's own Rust engine stays primary: in the codec families our own NVDEC / VA-API / NVENC paths
-# and our software codecs come before and after the supplementary GStreamer paths
-# (docs/adr/ADR-0002-gstreamer-backend.md).
+# and our software codecs come before and after the supplementary paths, FFmpeg 9 first, then
+# GStreamer (docs/adr/ADR-0002-gstreamer-backend.md, docs/adr/ADR-0004-compute-routing.md).
 
 [compute.default]
 display = ["wgpu", "cpu-compositor"]
-codec_decode = ["nvdec", "vaapi", "gstreamer-vulkan-video", "software"]
-codec_encode = ["nvenc", "vaapi", "gstreamer-va", "software"]
+codec_decode = ["nvdec", "vaapi", "ffmpeg", "gstreamer-vulkan-video", "software"]
+codec_encode = ["nvenc", "vaapi", "ffmpeg", "gstreamer-va", "software"]
 ai = ["openvino-npu", "burn-cuda", "burn-vulkan", "candle-cpu"]
 compute = ["wgpu-compute", "cpu"]
 
