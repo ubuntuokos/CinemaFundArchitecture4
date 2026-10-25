@@ -453,15 +453,16 @@ fn raw_channels(item: &TrackItem, src: SourceAudio, x0: i64, len: usize, sr: u32
     out
 }
 
-/// A 7.1 source (L, R, C, LFE, Ls, Rs, Lrs, Rrs: the WAV / SMPTE order the decoders give) folded
-/// to 5.1: each rear surround joins the side surround on its side at −3 dB, the ITU-R BS.775
+/// A 7.1 source folded to 5.1. The decoders give 7.1 in the WAV / SMPTE order L, R, C, LFE, back
+/// (rear) left / right, side left / right (`aac_to_wav_order`, `vorbis_to_wav_order` in
+/// `cfa4-codecs`); each rear joins the side surround on its side at −3 dB, the ITU-R BS.775
 /// coefficient the stereo fold uses, so no channel is dropped. `None` unless there are eight
 /// channels.
 fn fold_71(ch: &[Vec<f32>]) -> Option<Vec<Vec<f32>>> {
-    let [l, r, c, lfe, ls, rs, lrs, rrs] = ch else { return None };
+    let [l, r, c, lfe, lb, rb, ls, rs] = ch else { return None };
     let k = std::f32::consts::FRAC_1_SQRT_2;
     let side = |s: &[f32], b: &[f32]| s.iter().zip(b).map(|(s, b)| s + k * b).collect::<Vec<f32>>();
-    Some(vec![l.clone(), r.clone(), c.clone(), lfe.clone(), side(ls, lrs), side(rs, rrs)])
+    Some(vec![l.clone(), r.clone(), c.clone(), lfe.clone(), side(ls, lb), side(rs, rb)])
 }
 
 /// The source channels a clip on a 5.1 track plays: six picked channels (Modify ▸ Audio Channels),

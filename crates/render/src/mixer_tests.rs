@@ -564,10 +564,11 @@ fn a_51_source_on_a_stereo_track_folds_down_instead_of_dropping_centre_and_surro
 
 #[test]
 fn a_71_source_folds_to_51_instead_of_dropping_centre_and_rear_surrounds() {
-    // L R C LFE Ls Rs Lrs Rrs = 0.1 … 0.8; the rears join the side surrounds at -3 dB
+    // L R C LFE Lb Rb Ls Rs (the decoders' WAV order: backs before sides) = 0.1 … 0.8; the backs
+    // join the side surrounds at -3 dB
     let mut r = Rig::with_channels(&[chan_dc], 8);
     let k = std::f32::consts::FRAC_1_SQRT_2;
-    let (ls, rs) = (0.5 + k * 0.7, 0.6 + k * 0.8);
+    let (ls, rs) = (0.7 + k * 0.5, 0.8 + k * 0.6);
     // stereo track, stereo Mix: BS.775 fold of the 5.1
     let st = mix_all(&r, 0, 256);
     assert_eq!(st.len(), 2);
