@@ -65,9 +65,15 @@ IMAGE_SEQUENCES = frozenset({"png", "tiff", "bmp", "jpg", "tga", "dpx", "exr"})
 
 
 def existing_outputs(out: Path, fmt: str) -> list[Path]:
-    """The files an export to ``out`` would replace: ``out`` itself, or for an image sequence
-    the numbered frames ``stem000.ext``, ``stem001.ext``… already there. Raises ``OSError`` when
+    """The files an export to ``out`` would replace: ``out`` itself (and for MXF OP-Atom its
+    ``stem_A1.mxf``… audio files), or for an image sequence the numbered frames ``stem000.ext``,
+    ``stem001.ext``… already there. Raises ``OSError`` when
     the folder cannot be listed: frames there may still be overwritten, so that is not "none"."""
+    if fmt == "mxf-opatom":
+        # one file per audio channel beside the picture: stem_A1.mxf… (`opatom_audio_paths`)
+        audio = re.compile(re.escape(out.stem) + r"_A\d+\.mxf")
+        tracks = sorted(p for p in out.parent.iterdir() if audio.fullmatch(p.name))
+        return ([out] if out.exists() else []) + tracks
     if fmt not in IMAGE_SEQUENCES:
         return [out] if out.exists() else []
     frame = re.compile(re.escape(out.stem) + r"\d{3,}" + re.escape(out.suffix or ".png"))
