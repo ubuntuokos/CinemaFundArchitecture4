@@ -473,7 +473,19 @@ class ExportDialog(QDialog):
         if not params.get("path"):
             self._summary_error(tr("Choose an output file."))
             return
-        out = Path(params["path"]).expanduser()
+        # the engine completes the path (an extension, a folder's sequence-named file): ask it
+        # which file the export will write before checking whether that one exists
+        self.engine.execute(
+            "export.resolve",
+            params,
+            on_reply=lambda r, _b: self._enqueue_resolved(params, start, r),
+            on_error=self._summary_error,
+        )
+
+    def _enqueue_resolved(self, params: dict[str, Any], start: bool, resolved: Any) -> None:
+        settings = resolved.get("settings") if isinstance(resolved, dict) else None
+        target = settings.get("path") if isinstance(settings, dict) else None
+        out = Path(target if isinstance(target, str) and target else params["path"]).expanduser()
         try:
             out.parent.mkdir(parents=True, exist_ok=True)
             exists = out.exists()
