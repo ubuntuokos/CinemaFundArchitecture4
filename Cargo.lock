@@ -765,21 +765,773 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
 
 [[package]]
+name = "cfa4"
+version = "0.10.0"
+dependencies = [
+ "arboard",
+ "cfa4-engine",
+ "cfa4-export",
+ "cfa4-gpu",
+ "cfa4-gstreamer",
+ "cfa4-platform",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "cfa4-ui-egui",
+ "chrono",
+ "cpal",
+ "eframe",
+ "egui",
+ "glob",
+ "log",
+ "muda",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "open",
+ "pollster 0.4.0",
+ "rfd",
+ "serde_json",
+ "sys-locale",
+ "winit",
+ "winresource",
+ "zbus",
+]
+
+[[package]]
+name = "cfa4-aac"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-ac3"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-apv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-audio-dsp"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-automation"
+version = "0.10.0"
+dependencies = [
+ "base64 0.22.1",
+ "cfa4-engine",
+ "cfa4-time",
+ "image",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
+name = "cfa4-av1"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "rustix 1.1.5",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-avi"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-bitstream"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+]
+
+[[package]]
+name = "cfa4-captions"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-project",
+ "cfa4-text",
+ "cfa4-time",
+ "proptest",
+ "roxmltree",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-cfb"
+version = "0.10.0"
+
+[[package]]
+name = "cfa4-cli"
+version = "0.10.0"
+dependencies = [
+ "cfa4-automation",
+ "cfa4-codecs",
+ "cfa4-engine",
+ "cfa4-export",
+ "cfa4-gpu",
+ "cfa4-gstreamer",
+ "cfa4-media",
+ "cfa4-mpegts",
+ "cfa4-mxf",
+ "cfa4-ogg",
+ "cfa4-platform",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-time",
+ "log",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "cfa4-codecs"
+version = "0.10.0"
+dependencies = [
+ "cfa4-aac",
+ "cfa4-ac3",
+ "cfa4-apv",
+ "cfa4-av1",
+ "cfa4-avi",
+ "cfa4-bitstream",
+ "cfa4-color",
+ "cfa4-dnx",
+ "cfa4-frame",
+ "cfa4-h264",
+ "cfa4-hevc",
+ "cfa4-isobmff",
+ "cfa4-matroska",
+ "cfa4-media",
+ "cfa4-mpa",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
+ "cfa4-mxf",
+ "cfa4-ogg",
+ "cfa4-opus",
+ "cfa4-prores",
+ "cfa4-testkit",
+ "cfa4-time",
+ "cfa4-vp8",
+ "cfa4-vp9",
+ "image",
+ "log",
+ "rayon",
+ "serde_json",
+ "symphonia",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-color"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-credits"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "roxmltree",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-dng"
+version = "0.10.0"
+dependencies = [
+ "cfa4-dng",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-dnx"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-docpath"
+version = "0.1.0"
+
+[[package]]
+name = "cfa4-edit"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "proptest",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-engine"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-captions",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-credits",
+ "cfa4-dng",
+ "cfa4-docpath",
+ "cfa4-edit",
+ "cfa4-export",
+ "cfa4-format",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-interchange",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-mxf",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-scopes",
+ "cfa4-speech",
+ "cfa4-testkit",
+ "cfa4-text",
+ "cfa4-time",
+ "cfa4-tts",
+ "image",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-export"
+version = "0.10.0"
+dependencies = [
+ "cfa4-aac",
+ "cfa4-apv",
+ "cfa4-audio-dsp",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-dnx",
+ "cfa4-flac",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-h264enc",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-mxf",
+ "cfa4-project",
+ "cfa4-prores",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-text",
+ "cfa4-time",
+ "image",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-flac"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-format"
+version = "0.10.0"
+dependencies = [
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-frame"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-time",
+ "rayon",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-geom"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-golden"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-gpu",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-time",
+ "pollster 0.4.0",
+ "wgpu",
+]
+
+[[package]]
+name = "cfa4-gpu"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-export",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "image",
+ "log",
+ "pollster 0.4.0",
+ "rayon",
+ "wgpu",
+]
+
+[[package]]
 name = "cfa4-gstreamer"
 version = "0.10.0"
 dependencies = [
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-engine",
- "filmcraft-frame",
- "filmcraft-media",
- "filmcraft-time",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-engine",
+ "cfa4-frame",
+ "cfa4-media",
+ "cfa4-time",
  "gstreamer",
  "gstreamer-app",
  "gstreamer-pbutils",
  "gstreamer-video",
  "log",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-h264"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-h264enc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-hevc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-interchange"
+version = "0.10.0"
+dependencies = [
+ "cfa4-cfb",
+ "cfa4-color",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "proptest",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-isobmff"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "proptest",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-matroska"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-media"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-dng",
+ "cfa4-frame",
+ "cfa4-testkit",
+ "cfa4-time",
+ "image",
+ "log",
+ "png",
+ "rayon",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mpa"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mpeg2v"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mxf"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-ogg"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-opus"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-platform"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-export",
+ "cfa4-frame",
+ "cfa4-h264",
+ "cfa4-hevc",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-time",
+ "libloading",
+ "log",
+ "objc2-core-foundation",
+ "objc2-core-media",
+ "objc2-core-video",
+ "objc2-video-toolbox",
+ "windows 0.62.2",
+]
+
+[[package]]
+name = "cfa4-project"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-time",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-prores"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-render"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-captions",
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-text",
+ "cfa4-time",
+ "image",
+ "rayon",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-scopes"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-speech"
+version = "0.10.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+ "cfa4-project",
+ "cfa4-time",
+ "rayon",
+ "rustls",
+ "rustls-rustcrypto",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.21",
+ "ureq",
+]
+
+[[package]]
+name = "cfa4-testkit"
+version = "0.10.0"
+dependencies = [
+ "png",
+]
+
+[[package]]
+name = "cfa4-text"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "harfrust",
+ "skrifa",
+ "unicode-bidi",
+ "unicode-linebreak",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "cfa4-time"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-tts"
+version = "0.10.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+ "cfa4-audio-dsp",
+ "cfa4-tts-text",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "cfa4-tts-text"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-ui"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-ui-egui"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-edit",
+ "cfa4-engine",
+ "cfa4-export",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-gpu",
+ "cfa4-interchange",
+ "cfa4-media",
+ "cfa4-platform",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-scopes",
+ "cfa4-text",
+ "cfa4-time",
+ "cfa4-tts",
+ "cfa4-ui",
+ "cpu-time",
+ "eframe",
+ "egui",
+ "egui_kittest",
+ "image",
+ "log",
+ "pollster 0.4.0",
+ "rayon",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+ "toml 1.1.6+spec-1.1.0",
+ "unicode-bidi",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-vp8"
+version = "0.10.0"
+dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-vp9"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-web"
+version = "0.10.0"
+dependencies = [
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-engine",
+ "cfa4-format",
+ "cfa4-frame",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-time",
+ "cfa4-ui-egui",
+ "eframe",
+ "egui",
+ "js-sys",
+ "log",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
 ]
 
 [[package]]
@@ -1043,18 +1795,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "craft-docpath"
-version = "0.1.0"
-
-[[package]]
-name = "craft-ui"
-version = "0.1.0"
-dependencies = [
- "egui",
- "serde",
 ]
 
 [[package]]
@@ -1707,746 +2447,6 @@ checksum = "38e2275cc4e4fc009b0669731a1e5ab7ebf11f469eaede2bab9309a5b4d6057f"
 dependencies = [
  "memoffset",
  "rustc_version",
-]
-
-[[package]]
-name = "filmcraft"
-version = "0.10.0"
-dependencies = [
- "arboard",
- "cfa4-gstreamer",
- "chrono",
- "cpal",
- "eframe",
- "egui",
- "filmcraft-engine",
- "filmcraft-export",
- "filmcraft-gpu",
- "filmcraft-platform",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-time",
- "filmcraft-ui-egui",
- "glob",
- "log",
- "muda",
- "objc2 0.6.4",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "open",
- "pollster 0.4.0",
- "rfd",
- "serde_json",
- "sys-locale",
- "winit",
- "winresource",
- "zbus",
-]
-
-[[package]]
-name = "filmcraft-aac"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-ac3"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-apv"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-audio-dsp"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-automation"
-version = "0.10.0"
-dependencies = [
- "base64 0.22.1",
- "filmcraft-engine",
- "filmcraft-time",
- "image",
- "rmcp",
- "schemars",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "tokio",
-]
-
-[[package]]
-name = "filmcraft-av1"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "rustix 1.1.5",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-avi"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-bitstream"
-version = "0.10.0"
-dependencies = [
- "proptest",
-]
-
-[[package]]
-name = "filmcraft-captions"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-project",
- "filmcraft-text",
- "filmcraft-time",
- "proptest",
- "roxmltree",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-cfb"
-version = "0.10.0"
-
-[[package]]
-name = "filmcraft-cli"
-version = "0.10.0"
-dependencies = [
- "cfa4-gstreamer",
- "filmcraft-automation",
- "filmcraft-codecs",
- "filmcraft-engine",
- "filmcraft-export",
- "filmcraft-gpu",
- "filmcraft-media",
- "filmcraft-mpegts",
- "filmcraft-mxf",
- "filmcraft-ogg",
- "filmcraft-platform",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-time",
- "log",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "filmcraft-codecs"
-version = "0.10.0"
-dependencies = [
- "filmcraft-aac",
- "filmcraft-ac3",
- "filmcraft-apv",
- "filmcraft-av1",
- "filmcraft-avi",
- "filmcraft-bitstream",
- "filmcraft-color",
- "filmcraft-dnx",
- "filmcraft-frame",
- "filmcraft-h264",
- "filmcraft-hevc",
- "filmcraft-isobmff",
- "filmcraft-matroska",
- "filmcraft-media",
- "filmcraft-mpa",
- "filmcraft-mpeg2v",
- "filmcraft-mpegts",
- "filmcraft-mxf",
- "filmcraft-ogg",
- "filmcraft-opus",
- "filmcraft-prores",
- "filmcraft-testkit",
- "filmcraft-time",
- "filmcraft-vp8",
- "filmcraft-vp9",
- "image",
- "log",
- "rayon",
- "serde_json",
- "symphonia",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-color"
-version = "0.10.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-credits"
-version = "0.10.0"
-dependencies = [
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "roxmltree",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-dng"
-version = "0.10.0"
-dependencies = [
- "filmcraft-dng",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-dnx"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-edit"
-version = "0.10.0"
-dependencies = [
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "proptest",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-engine"
-version = "0.10.0"
-dependencies = [
- "craft-docpath",
- "filmcraft-audio-dsp",
- "filmcraft-captions",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-credits",
- "filmcraft-dng",
- "filmcraft-edit",
- "filmcraft-export",
- "filmcraft-format",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-interchange",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-mxf",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-scopes",
- "filmcraft-speech",
- "filmcraft-testkit",
- "filmcraft-text",
- "filmcraft-time",
- "filmcraft-tts",
- "image",
- "log",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-export"
-version = "0.10.0"
-dependencies = [
- "filmcraft-aac",
- "filmcraft-apv",
- "filmcraft-audio-dsp",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-dnx",
- "filmcraft-flac",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-h264enc",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-mxf",
- "filmcraft-project",
- "filmcraft-prores",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-text",
- "filmcraft-time",
- "image",
- "rayon",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-flac"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-format"
-version = "0.10.0"
-dependencies = [
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "log",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-frame"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-time",
- "rayon",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-geom"
-version = "0.10.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-golden"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-gpu",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-time",
- "pollster 0.4.0",
- "wgpu",
-]
-
-[[package]]
-name = "filmcraft-gpu"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-export",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-time",
- "image",
- "log",
- "pollster 0.4.0",
- "rayon",
- "wgpu",
-]
-
-[[package]]
-name = "filmcraft-h264"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-h264enc"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-hevc"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-interchange"
-version = "0.10.0"
-dependencies = [
- "filmcraft-cfb",
- "filmcraft-color",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "proptest",
- "roxmltree",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-isobmff"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "proptest",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-matroska"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-media"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-dng",
- "filmcraft-frame",
- "filmcraft-testkit",
- "filmcraft-time",
- "image",
- "log",
- "png",
- "rayon",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mpa"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mpeg2v"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mpegts"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mxf"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-ogg"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-opus"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-platform"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-export",
- "filmcraft-frame",
- "filmcraft-h264",
- "filmcraft-hevc",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-time",
- "libloading",
- "log",
- "objc2-core-foundation",
- "objc2-core-media",
- "objc2-core-video",
- "objc2-video-toolbox",
- "windows 0.62.2",
-]
-
-[[package]]
-name = "filmcraft-project"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-time",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-prores"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-render"
-version = "0.10.0"
-dependencies = [
- "filmcraft-audio-dsp",
- "filmcraft-captions",
- "filmcraft-color",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-text",
- "filmcraft-time",
- "image",
- "rayon",
- "rustix 1.1.5",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-scopes"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-speech"
-version = "0.10.0"
-dependencies = [
- "candle-core",
- "candle-nn",
- "filmcraft-project",
- "filmcraft-time",
- "rayon",
- "rustls",
- "rustls-rustcrypto",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.21",
- "ureq",
-]
-
-[[package]]
-name = "filmcraft-testkit"
-version = "0.10.0"
-dependencies = [
- "png",
-]
-
-[[package]]
-name = "filmcraft-text"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "harfrust",
- "skrifa",
- "unicode-bidi",
- "unicode-linebreak",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "filmcraft-time"
-version = "0.10.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-tts"
-version = "0.10.0"
-dependencies = [
- "candle-core",
- "candle-nn",
- "filmcraft-audio-dsp",
- "filmcraft-tts-text",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "filmcraft-tts-text"
-version = "0.10.0"
-dependencies = [
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-ui-egui"
-version = "0.10.0"
-dependencies = [
- "cpu-time",
- "craft-ui",
- "eframe",
- "egui",
- "egui_kittest",
- "filmcraft-audio-dsp",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-edit",
- "filmcraft-engine",
- "filmcraft-export",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-gpu",
- "filmcraft-interchange",
- "filmcraft-media",
- "filmcraft-platform",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-scopes",
- "filmcraft-text",
- "filmcraft-time",
- "filmcraft-tts",
- "image",
- "log",
- "pollster 0.4.0",
- "rayon",
- "rustix 1.1.5",
- "serde",
- "serde_json",
- "toml 1.1.6+spec-1.1.0",
- "unicode-bidi",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-vp8"
-version = "0.10.0"
-dependencies = [
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-vp9"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-web"
-version = "0.10.0"
-dependencies = [
- "eframe",
- "egui",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-engine",
- "filmcraft-format",
- "filmcraft-frame",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-time",
- "filmcraft-ui-egui",
- "js-sys",
- "log",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "web-time",
 ]
 
 [[package]]
@@ -7756,7 +7756,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 name = "xtask"
 version = "0.10.0"
 dependencies = [
- "filmcraft-testkit",
+ "cfa4-testkit",
  "serde_json",
 ]
 

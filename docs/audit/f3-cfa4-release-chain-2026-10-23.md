@@ -2,8 +2,8 @@
 
 ## Boundary and current state
 
-CFA4 repository only: `ubuntuokos/CinemaFundArchitecture4`. FilmCraft
-is the upstream parent and is neither modified nor used as an artifact
+CFA4 repository only: `ubuntuokos/CinemaFundArchitecture4`. The upstream
+project is the parent and is neither modified nor used as an artifact
 publisher, version override or AppImage update endpoint.
 
 **RELEASE: HOLD**. The new workflow never publishes a GitHub Release. The
@@ -14,9 +14,9 @@ by this source change**. Packages must remain on the user's controlled host;
 the workflow does not upload unapproved binaries or create public releases.
 
 - Version is read from CFA4 `Cargo.toml` exactly once and may not be
-  overridden by `FILMCRAFT_VERSION`.
+  overridden by `CFA4_VERSION`.
 - The package maintainer metadata uses `CFA4_MAINTAINER`; binary-internal
-  `FILMCRAFT_BUILD_*` variables remain solely for inherited Rust engine
+  `CFA4_BUILD_*` variables remain solely for inherited Rust engine
   compatibility and are assigned CFA4-origin values.
 - AppImage update information is restricted to CFA4 GitHub Releases and
   rejects a conflicting `GITHUB_REPOSITORY`.

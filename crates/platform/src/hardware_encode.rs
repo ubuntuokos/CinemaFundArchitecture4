@@ -1,4 +1,4 @@
-//! The VideoToolbox H.264 and HEVC encoders behind `filmcraft_export::VideoEncoder` (macOS; safe code
+//! The VideoToolbox H.264 and HEVC encoders behind `cfa4_export::VideoEncoder` (macOS; safe code
 //! around [`crate::videotoolbox_encode`]).
 //!
 //! H.264 hardware encoding is opt-in per export (`ExportSettings::hardware_encoding`, `Auto`): its output
@@ -15,9 +15,9 @@
 
 use std::sync::{Once, OnceLock};
 
-use filmcraft_export::{BitrateMode, EncodedPacket, EncoderFrame, ExportError, ExportSettings, Format, H264Pass, H264Profile, HardwareEncoding, VideoEncoder};
-use filmcraft_isobmff::{AvcConfig, HevcConfig, SampleEntry};
-use filmcraft_time::FrameRate;
+use cfa4_export::{BitrateMode, EncodedPacket, EncoderFrame, ExportError, ExportSettings, Format, H264Pass, H264Profile, HardwareEncoding, VideoEncoder};
+use cfa4_isobmff::{AvcConfig, HevcConfig, SampleEntry};
+use cfa4_time::FrameRate;
 
 use crate::videotoolbox_encode::{ParamSets, VtCodec, VtConfig, VtEncoder, VtPacket, VtProfile, VtRate};
 
@@ -105,7 +105,7 @@ pub fn hevc_probed() -> bool {
 pub fn warm_hevc_probe() {
     static STARTED: Once = Once::new();
     STARTED.call_once(|| {
-        let spawned = std::thread::Builder::new().name("filmcraft-hevc-probe".into()).spawn(|| {
+        let spawned = std::thread::Builder::new().name("cfa4-hevc-probe".into()).spawn(|| {
             let _ = std::panic::catch_unwind(hevc_available);
         });
         if let Err(why) = spawned {
@@ -117,13 +117,7 @@ pub fn warm_hevc_probe() {
 /// The encoder factory `register` puts in front of the built-in ones: a hardware encoder when the
 /// export asks for one (H.264 with `hardware_encoding`; HEVC always) and the OS takes the
 /// configuration, `None` (the built-in encoder, if there is one) otherwise.
-pub fn videotoolbox_encoder_factory(
-    format: Format,
-    w: u32,
-    h: u32,
-    rate: FrameRate,
-    s: &ExportSettings,
-) -> Option<filmcraft_export::Result<Box<dyn VideoEncoder>>> {
+pub fn videotoolbox_encoder_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<cfa4_export::Result<Box<dyn VideoEncoder>>> {
     let name = match format {
         Format::H264 if s.hardware_encoding == HardwareEncoding::Auto => "H.264",
         Format::Hevc => "HEVC",
@@ -133,18 +127,18 @@ pub fn videotoolbox_encoder_factory(
         Ok(c) => c,
         Err(why) => {
             log::info!("hardware {name} encoding declined: {why}");
-            filmcraft_export::note_hw_encode_declined();
+            cfa4_export::note_hw_encode_declined();
             return None;
         }
     };
     match VtEncoder::new(config) {
         Ok(vt) => {
-            filmcraft_export::note_hw_encode_session();
+            cfa4_export::note_hw_encode_session();
             Some(Ok(Box::new(HardwareEncoder { vt, y: Vec::new(), u: Vec::new(), v: Vec::new(), decoded: 0 })))
         }
         Err(why) => {
             log::info!("hardware {name} encoding declined: {why}");
-            filmcraft_export::note_hw_encode_declined();
+            cfa4_export::note_hw_encode_declined();
             None
         }
     }
@@ -174,7 +168,7 @@ impl HardwareEncoder {
     /// MP4 samples from compressed frames. Without frame reordering every frame is presented at
     /// its decode time, so composition offsets are 0; a frame whose time is not `n × duration`
     /// after the first (a dropped or reordered frame) is an error, never a file with wrong times.
-    fn samples(&mut self, packets: Vec<VtPacket>) -> filmcraft_export::Result<Vec<EncodedPacket>> {
+    fn samples(&mut self, packets: Vec<VtPacket>) -> cfa4_export::Result<Vec<EncodedPacket>> {
         let duration = self.vt.config().frame_duration;
         let mut out = Vec::with_capacity(packets.len());
         for p in packets {
@@ -212,7 +206,7 @@ impl VideoEncoder for HardwareEncoder {
         self.vt.config().timescale
     }
 
-    fn encode(&mut self, f: &EncoderFrame) -> filmcraft_export::Result<Vec<EncodedPacket>> {
+    fn encode(&mut self, f: &EncoderFrame) -> cfa4_export::Result<Vec<EncodedPacket>> {
         let c = self.vt.config();
         let codec = c.profile.codec();
         if f.hdr.is_some() {
@@ -225,9 +219,9 @@ impl VideoEncoder for HardwareEncoder {
         if f.rgba.len() < w.saturating_mul(h).saturating_mul(4) {
             return Err(ExportError::Encode("the RGBA picture is smaller than its size".into()));
         }
-        filmcraft_export::timed(filmcraft_export::Stage::Convert, || filmcraft_export::rgba_to_yuv420_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v));
+        cfa4_export::timed(cfa4_export::Stage::Convert, || cfa4_export::rgba_to_yuv420_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v));
         let packets = self.vt.encode(f.index, &self.y, &self.u, &self.v).map_err(ExportError::Encode)?;
-        filmcraft_export::note_hw_encode_frame();
+        cfa4_export::note_hw_encode_frame();
         // the muxer needs the parameter sets after the first group of pictures
         if f.index == 0 {
             let params = self.vt.parameter_sets().ok_or_else(|| ExportError::Encode("VideoToolbox returned no parameter sets for the first frame".into()))?;
@@ -238,7 +232,7 @@ impl VideoEncoder for HardwareEncoder {
         self.samples(packets)
     }
 
-    fn flush(&mut self) -> filmcraft_export::Result<Vec<EncodedPacket>> {
+    fn flush(&mut self) -> cfa4_export::Result<Vec<EncodedPacket>> {
         let packets = self.vt.flush().map_err(ExportError::Encode)?;
         self.samples(packets)
     }

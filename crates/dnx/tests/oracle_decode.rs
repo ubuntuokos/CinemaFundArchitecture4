@@ -1,8 +1,8 @@
 //! Decode ffmpeg-made DNxHD / DNxHR fixtures and compare with ffmpeg's own decode.
 
 mod common;
+use cfa4_dnx::{DecodeOptions, decode_frame_with};
 use common::*;
-use filmcraft_dnx::{DecodeOptions, decode_frame_with};
 
 fn specs() -> Vec<Spec> {
     let t = |s: &str, r: u32| format!("testsrc2=s={s}:r={r}");
@@ -69,7 +69,7 @@ fn decode_matches_ffmpeg() {
         println!(
             "{:<22} cid {} max {} mean {:.5} exact {:.3}% beyond ±1: {}",
             spec.name,
-            filmcraft_dnx::probe(&pk[0]).unwrap().cid,
+            cfa4_dnx::probe(&pk[0]).unwrap().cid,
             st.max,
             st.mean(),
             st.exact_pct(),

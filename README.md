@@ -1,7 +1,7 @@
 # CFA4 — CinemaFoundArchetecture4
 
-CFA4 is an Ubuntu 26.04 x86_64 (AMD64)-targeted, further-developed derivative of the open-source **FilmCraft**
-video editor. The inherited Rust multimedia engine remains in place; CFA4 development
+CFA4 is an Ubuntu 26.04 x86_64 (AMD64)-targeted, further-developed derivative of an open-source
+video editor (see [Upstream provenance](#upstream-provenance)). The inherited Rust multimedia engine remains in place; CFA4 development
 combines **Rust / Cargo**, **Python**, and **Qt 6**.
 
 > **Goal and priorities:** read [VISION.md](VISION.md) first (in Hungarian). It defines what CFA4 is for: a Qt6 application on every graphical Ubuntu flavour that combines video editing, converting, publishing, subtitling, dubbing, audio editing and 2D/3D animation, with mostly local AI.
@@ -20,22 +20,22 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 6. Install developer tools: `.venv/bin/python -m pip install -e '.[dev,qt]'`.
 7. Check environment: `.venv/bin/cfa4-doctor --strict`.
 8. Run the Qt shell: `.venv/bin/cfa4-qt`.
-9. Build Rust CLI: `cargo build --release --locked -p filmcraft-cli`.
+9. Build Rust CLI: `cargo build --release --locked -p cfa4-cli`.
 10. Verify checks: `bash scripts/dev/verify-linux.sh`.
 
 ## Architecture and transition
 
 | Component | Current status |
 | --- | --- |
-| Existing media engine and CLI | FilmCraft Rust crates, retained without a rewrite |
+| Existing media engine and CLI | Inherited Rust crates (renamed `cfa4-*`), retained without a rewrite |
 | Rust tooling | Pinned 1.97.1, Cargo workspace, existing xtask gates |
 | Python tooling | Isolated venv, lint/tests, environment diagnostics |
 | Qt 6 | Experimental PySide6 Widgets shell and offscreen CI smoke |
 | Desktop editing GUI | Inherited egui implementation still in source; Qt port not complete |
 | CI | Linux AMD64: automatic static checks; full Rust/Python/Qt6/FFmpeg validation only on manual dispatch or PR label |
-| Releases | Paused until trademark/packaging verification and a successful Linux build |
+| Releases | Paused until packaging verification and a successful Linux build |
 
-The Rust CLI is `filmcraft-cli`. In the first Qt iteration it is queried only for
+The Rust CLI is `cfa4-cli`. In the first Qt iteration it is queried only for
 its version; real editor operations require a future explicitly tested adapter.
 
 ## Licence
@@ -48,17 +48,16 @@ policy for reusing code from other projects.
 
 ## Upstream provenance
 
-This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
-by the ArtCraft Team and contributors (MIT OR Apache-2.0). Retain the upstream MIT and
-Apache-2.0 license files, original notices ([NOTICE](NOTICE)) and third-party attribution.
+CFA4 is based on FilmCraft by the ArtCraft team (MIT OR Apache-2.0). That plain-text
+statement and the upstream copyright notices in `LICENSE-MIT`, `LICENSE-APACHE`, [NOTICE](NOTICE),
+`vendor/*/NOTICE` and `ATTRIBUTION.md` are retained because the licences require them. CFA4 is
+not made, sponsored or endorsed by the upstream authors.
+
+All upstream names, logos, icons and screenshots have been removed from the product, its
+crates, packaging and documentation; `python/tests/test_independence.py` keeps them out.
 
 GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
 and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
-
-The **ArtCraft name and logos are not open-source assets**.
-Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
-They must be removed or replaced before independently distributing modified CFA4 builds.
-Existing inherited screenshots and application assets are pending this audit.
 
 PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
 with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
@@ -71,6 +70,6 @@ with its own licensing obligations. The Qt shell does not bundle Qt for distribu
 - [Known inherited gaps](docs/gaps.md)
 - [Licenses and attribution](ATTRIBUTION.md)
 
-The legacy `apps/filmcraft-web`, Windows/macOS/FreeBSD packaging/source components
+The legacy `apps/cfa4-web`, Windows/macOS/FreeBSD packaging/source components
 are not removed in this preparation step to avoid breaking existing crate dependencies;
 none are supported CFA4 release targets.

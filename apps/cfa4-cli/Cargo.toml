@@ -1,0 +1,43 @@
+[package]
+name = "cfa4-cli"
+description = "CFA4 headless CLI and MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "cfa4-cli"
+path = "src/main.rs"
+
+[features]
+default = []
+# Optional GStreamer fallback media backend (ADR 0002; needs libgstreamer1.0-dev and
+# libgstreamer-plugins-base1.0-dev to build). Without it the app behaves exactly as before.
+gstreamer = ["cfa4-gstreamer/gstreamer"]
+# Speech-to-text (Text panel ▸ Transcribe) with Whisper on the CPU, and model downloads.
+whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
+
+[dependencies]
+cfa4-engine = { workspace = true }
+cfa4-export = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-time = { workspace = true }
+cfa4-gpu = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-codecs = { workspace = true }
+cfa4-platform = { workspace = true }
+cfa4-gstreamer = { workspace = true }
+log = { workspace = true }
+cfa4-mxf = { workspace = true }
+cfa4-mpegts = { workspace = true }
+cfa4-ogg = { workspace = true }
+cfa4-automation = { workspace = true }
+serde_json = { workspace = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

@@ -4,7 +4,7 @@
 
 - A CFA4 licence **GPL-3.0-or-later** (GNU GPL 3. vagy későbbi változat). A teljes szöveg a
   [`LICENSE`](../LICENSE) fájlban van.
-- A FilmCraftból örökölt kód és eszközök az eredeti **MIT OR Apache-2.0** feltételek alatt is
+- Az upstream projektből (lásd `NOTICE`) örökölt kód és eszközök az eredeti **MIT OR Apache-2.0** feltételek alatt is
   elérhetők maradnak; a `LICENSE-MIT`, `LICENSE-APACHE` és `NOTICE` fájlokat meg kell tartani.
 - **Átvehető kód:** bármely GPL-3.0-kompatibilis licencű projektből (GPL-2.0-or-later, GPL-3.0,
   LGPL-2.1-or-later, LGPL-3.0, MIT, BSD, Apache-2.0, MPL-2.0 …), forrásmegjelöléssel és az eredeti
@@ -38,10 +38,10 @@ later version** (SPDX: `GPL-3.0-or-later`). The full text is in [`LICENSE`](../L
   agreement (CLA) is required at the moment; if one is introduced later it applies only to new
   contributions.
 
-## 2. Inherited FilmCraft code
+## 2. Inherited upstream code
 
-CFA4 derives from [FilmCraft](https://github.com/storytold/filmcraft) (Copyright (c) 2026 ArtCraft
-Team and the FilmCraft contributors), which is licensed `MIT OR Apache-2.0`. Both licences allow
+CFA4 derives from an upstream open-source video editor (its copyright notice is kept verbatim in
+[`NOTICE`](../NOTICE)), which is licensed `MIT OR Apache-2.0`. Both licences allow
 the code to be combined into a GPL-3.0-or-later work. The obligations that remain:
 
 - keep `LICENSE-MIT`, `LICENSE-APACHE` and the upstream notice in [`NOTICE`](../NOTICE), in the
@@ -49,8 +49,8 @@ the code to be combined into a GPL-3.0-or-later work. The obligations that remai
 - keep existing copyright lines in inherited files; do not replace them, add to them;
 - existing `*.attribution` sidecars keep the licence the asset was published under.
 
-The ArtCraft name, wordmark and logos (`docs/brand/`) are trademarks, not covered by any of these
-licences, and must be replaced before distribution (see `AGENTS.md`).
+The upstream name, wordmark and logos are trademarks, not covered by any of these licences; they
+have been removed from CFA4 and must not be reintroduced (see `AGENTS.md`).
 
 ## 3. What code may be reused
 

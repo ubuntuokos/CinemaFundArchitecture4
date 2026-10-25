@@ -28,7 +28,7 @@ def test_missing_requirements_are_explicit() -> None:
 
 def test_explicit_engine_path_is_checked(tmp_path: Path) -> None:
     assert locate_engine(str(tmp_path / "not-exists")) is None
-    fake_binary = tmp_path / "filmcraft-cli"
+    fake_binary = tmp_path / "cfa4-cli"
     fake_binary.write_text("placeholder", encoding="utf-8")
     assert locate_engine(str(fake_binary)) == fake_binary
 

@@ -79,7 +79,7 @@ def bridge(cli: Path, port: int, command: str, params: dict[str, Any], *, timeou
     proc = run(
         [str(cli), "--bridge", f"127.0.0.1:{port}", "exec", command, json.dumps(params, separators=(",", ":"))],
         timeout=timeout,
-        env=dict(os.environ, FILMCRAFT_CLI_TRACE="1"),
+        env=dict(os.environ, CFA4_CLI_TRACE="1"),
     )
     return parse_command_json(proc, f"native editor command {command}")
 
@@ -107,7 +107,7 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
     rustc = run(["rustc", "--version"], timeout=10)
     if rustc.returncode or not rustc.stdout.split() or not rustc.stdout.split()[1].startswith("1.97."):
         raise RuntimeError(f"R0 Rust toolchain must be 1.97.x, observed {rustc.stdout.strip() or rustc.stderr.strip()}")
-    for name, path in (("filmcraft-cli", cli), ("filmcraft editor", editor)):
+    for name, path in (("cfa4-cli", cli), ("cfa4 editor", editor)):
         if not path.is_file() or not os.access(path, os.X_OK):
             raise RuntimeError(f"{name} binary missing: {path}; build only these two binaries once if needed")
     for source in ("h264.mp4", "hevc.mp4", "av1-software.mkv"):
@@ -170,8 +170,8 @@ def preflight(cli: Path, editor: Path, sources: Path, out: Path, ffprobe: str) -
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sources", type=Path, default=Path("target/audit/ffmpeg/20261022T153037Z"))
-    parser.add_argument("--cli", type=Path, default=Path("target/release/filmcraft-cli"))
-    parser.add_argument("--editor", type=Path, default=Path("target/release/filmcraft"))
+    parser.add_argument("--cli", type=Path, default=Path("target/release/cfa4-cli"))
+    parser.add_argument("--editor", type=Path, default=Path("target/release/cfa4"))
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args(argv)
     root = Path(__file__).resolve().parents[2]
@@ -200,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint(f"input_{codec}", check_ffprobe("ffprobe", sources / name, codec))
         # Own project/data directory: never touch the user's actual CFA4 profile.
         port = reserve_port()
-        editor_env = dict(os.environ, WGPU_BACKEND="vulkan", FILMCRAFT_CONTROL_TRACE="1")
+        editor_env = dict(os.environ, WGPU_BACKEND="vulkan", CFA4_CONTROL_TRACE="1")
         with (out / "native-editor.log").open("w", encoding="utf-8") as log:
             proc = subprocess.Popen(
                 [str(editor), "--empty", "--no-recover", "--control", str(port), "--data-dir", str(out / "data")],

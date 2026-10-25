@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use filmcraft_time::{FrameRate, Tick};
+use cfa4_time::{FrameRate, Tick};
 
 use super::bento::Container;
 use crate::comp::{CClip, CItem, CKind, CTrack, CTransition, Composition, Document, Gain, Source, units_to_ticks};
@@ -221,8 +221,7 @@ impl R<'_, '_> {
             b"SCLP" => vec![self.clip(seg, rate)],
             b"TRAN" => {
                 let cut = units_to_ticks(self.i32(seg, "OMFI:TRAN:CutPoint").unwrap_or(0), rate.0, rate.1);
-                let effect =
-                    self.r#ref(seg, "OMFI:TRAN:Effect").and_then(|e| self.string(e, "FilmCraft:EFFE:EffectID")).unwrap_or_else(|| "constant_power".into());
+                let effect = self.r#ref(seg, "OMFI:TRAN:Effect").and_then(|e| self.string(e, "CFA4:EFFE:EffectID")).unwrap_or_else(|| "constant_power".into());
                 vec![CItem::Transition(CTransition { len, cut: cut.clamp(Tick::ZERO, len), effect })]
             }
             b"EFFE" => {
@@ -279,7 +278,7 @@ impl R<'_, '_> {
     fn clip(&mut self, c: u32, rate: (i64, i64)) -> CItem {
         let len = units_to_ticks(self.len(c), rate.0, rate.1);
         let start = units_to_ticks(self.i32(c, "OMFI:SCLP:StartTime").unwrap_or(0), rate.0, rate.1);
-        let name = self.string(c, "FilmCraft:SCLP:ClipName").unwrap_or_default();
+        let name = self.string(c, "CFA4:SCLP:ClipName").unwrap_or_default();
         let (Some(id), Some(track)) = (self.uid(c, "OMFI:SCLP:SourceID"), self.u32(c, "OMFI:SCLP:SourceTrackID")) else { return CItem::Filler(len) };
         if id == [0; 12] {
             return CItem::Filler(len);
