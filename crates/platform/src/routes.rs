@@ -22,6 +22,9 @@ use cfa4_route::{Backend, BackendId, Chain, Decision, Device, DeviceKind, Error,
 pub const DECODE_TASK: &str = "video.decode";
 /// The task the hardware H.264 export encoder routes.
 pub const ENCODE_TASK: &str = "video.encode.h264";
+/// The task the hardware H.265 export encoder routes (Export ▸ H.265 is offered where it routes to
+/// a hardware encoder: CFA4 has no software HEVC encoder).
+pub const ENCODE_HEVC_TASK: &str = "video.encode.hevc";
 
 /// A driver probe: `Ok(description)` when the backend works here, `Err(why)` otherwise.
 pub type Probe = Box<dyn Fn() -> Result<String, String> + Send + Sync>;
@@ -90,28 +93,69 @@ fn id(s: &str) -> Result<BackendId, Error> {
     BackendId::new(s)
 }
 
-/// The routes of this crate on one machine.
+/// The route of one task: the decision, or none when no route in the order can take it (an
+/// unusable user table), with the chain and every route passed over either way.
+#[derive(Debug, Clone)]
+pub struct TaskRoute {
+    pub decision: Option<Decision>,
+    pub chain: Chain,
+}
+
+impl TaskRoute {
+    fn of(router: &Router, task: &Task) -> TaskRoute {
+        match router.choose(task) {
+            Ok(d) => TaskRoute { chain: router.fallback_chain(task, &d), decision: Some(d) },
+            Err(Error::NoRoute { declined, .. }) => TaskRoute { decision: None, chain: Chain { task: task.id.clone(), routes: Vec::new(), declined } },
+            Err(e) => {
+                log::warn!("route {}: {e}", task.id);
+                TaskRoute { decision: None, chain: Chain { task: task.id.clone(), routes: Vec::new(), declined: Vec::new() } }
+            }
+        }
+    }
+
+    /// The chosen backend, `none` when no route takes the task.
+    pub fn backend(&self) -> &str {
+        self.decision.as_ref().map_or("none", |d| d.backend.as_str())
+    }
+
+    /// The chosen device, `none` when no route takes the task.
+    pub fn device(&self) -> &str {
+        self.decision.as_ref().map_or("none", |d| d.device.as_str())
+    }
+
+    /// Why `backend` was not chosen (its first recorded reason).
+    pub fn why_not(&self, backend: &str) -> String {
+        self.chain.declined.iter().find(|x| x.backend.as_str() == backend).map_or_else(|| "not in the routing order".to_string(), |x| format!("{:?}", x.reason))
+    }
+}
+
+/// The routes of this crate on one machine. Each task is routed on its own: a user table that
+/// leaves one task without a route does not change the others.
 #[derive(Debug, Clone)]
 pub struct Routes {
-    /// The hardware decoder: `nvdec`, `vaapi`, or `software` (no hardware decoder).
-    pub decode: Decision,
-    pub decode_chain: Chain,
-    /// The export encoder an export with hardware encoding Auto takes: `nvenc` or `software`.
-    pub encode: Decision,
-    pub encode_chain: Chain,
+    /// The hardware decoder: `nvdec`, `vaapi`, `software`, or `none` (both mean CFA4's decoders).
+    pub decode: TaskRoute,
+    /// The H.264 encoder an export with hardware encoding Auto takes: `nvenc`, `software` or `none`.
+    pub encode: TaskRoute,
+    /// The H.265 encoder: `nvenc` where the format can be offered.
+    pub encode_hevc: TaskRoute,
 }
 
 impl Routes {
     pub fn decoder(&self) -> &str {
-        self.decode.backend.as_str()
+        self.decode.backend()
     }
 
     pub fn encoder(&self) -> &str {
-        self.encode.backend.as_str()
+        self.encode.backend()
+    }
+
+    pub fn hevc_encoder(&self) -> &str {
+        self.encode_hevc.backend()
     }
 }
 
-/// Routes the hardware decoder and encoder on `inventory` with `table`.
+/// Routes the hardware decoder and encoders on `inventory` with `table`.
 pub fn route(table: Table, inventory: Inventory, probes: Probes) -> Result<Routes, Error> {
     // Registration routes with every family on Automatic: the per-stream Hardware decoding setting
     // and the per-export Hardware encoding setting still decide at run time, as before.
@@ -130,14 +174,11 @@ pub fn route(table: Table, inventory: Inventory, probes: Probes) -> Result<Route
     router.register(Arc::new(Hardware { id: id("nvenc")?, family: Family::CodecEncode, select: nvidia_proprietary, probe: Box::new(|| Ok("NVENC".into())) }));
     router.register(Arc::new(Software(id("software")?)));
 
-    let decode_task = Task::new(DECODE_TASK, Family::CodecDecode)?;
-    let decode = router.choose(&decode_task)?;
-    let decode_chain = router.fallback_chain(&decode_task, &decode);
-
-    let encode_task = Task::new(ENCODE_TASK, Family::CodecEncode)?;
-    let encode = router.choose(&encode_task)?;
-    let encode_chain = router.fallback_chain(&encode_task, &encode);
-    Ok(Routes { decode, decode_chain, encode, encode_chain })
+    Ok(Routes {
+        decode: TaskRoute::of(&router, &Task::new(DECODE_TASK, Family::CodecDecode)?),
+        encode: TaskRoute::of(&router, &Task::new(ENCODE_TASK, Family::CodecEncode)?),
+        encode_hevc: TaskRoute::of(&router, &Task::new(ENCODE_HEVC_TASK, Family::CodecEncode)?),
+    })
 }
 
 /// The table this process routes with: the shipped one, with the user's file on top.
@@ -175,8 +216,9 @@ fn real_probes() -> Probes {
 }
 
 /// This process's routes, made on first use and published to `cfa4_route::report`. `None` only
-/// when the shipped table itself cannot be read (a build error the router tests catch); callers
-/// then keep the pre-router behaviour.
+/// when the shipped table itself cannot be read (a build error the router tests catch): then no
+/// hardware decoder is registered (CFA4's decoders run) and NVENC decides alone, as before the
+/// router.
 pub fn current() -> Option<&'static Routes> {
     static ROUTES: OnceLock<Option<Routes>> = OnceLock::new();
     ROUTES
@@ -192,14 +234,13 @@ pub fn current() -> Option<&'static Routes> {
             let routes = table().and_then(|t| route(t, inventory, real_probes()));
             match routes {
                 Ok(r) => {
-                    for d in [&r.decode, &r.encode] {
-                        log::info!("route {}: {} on {}", d.task, d.backend, d.device);
-                        for x in &d.declined {
-                            log::info!("route {}: passed over {} ({:?})", d.task, x.backend, x.reason);
+                    for t in [&r.decode, &r.encode, &r.encode_hevc] {
+                        log::info!("route {}: {} on {}", t.chain.task, t.backend(), t.device());
+                        for x in &t.chain.declined {
+                            log::info!("route {}: passed over {} ({:?})", t.chain.task, x.backend, x.reason);
                         }
+                        cfa4_route::report::publish(t.chain.clone());
                     }
-                    cfa4_route::report::publish(r.decode_chain.clone());
-                    cfa4_route::report::publish(r.encode_chain.clone());
                     Some(r)
                 }
                 Err(e) => {
@@ -217,15 +258,7 @@ pub fn nvenc_allowed() -> Result<(), String> {
     match current() {
         None => Ok(()),
         Some(r) if r.encoder() == "nvenc" => Ok(()),
-        Some(r) => {
-            let why = r
-                .encode
-                .declined
-                .iter()
-                .find(|x| x.backend.as_str() == "nvenc")
-                .map_or_else(|| "not in the routing order".to_string(), |x| format!("{:?}", x.reason));
-            Err(format!("the compute router chose {} for H.264 encoding (NVENC: {why})", r.encoder()))
-        }
+        Some(r) => Err(format!("the compute router chose {} for H.264 encoding (NVENC: {})", r.encoder(), r.encode.why_not("nvenc"))),
     }
 }
 
@@ -275,20 +308,20 @@ mod tests {
         let (r, vaapi_calls) = routes(inv, Ok("NVDEC"), Ok("VA-API"));
         assert_eq!(r.decoder(), "nvdec");
         assert_eq!(vaapi_calls, 0, "VA-API must not be probed after NVDEC succeeds");
-        assert_eq!(chain(&r.decode_chain), vec!["nvdec", "software"]);
+        assert_eq!(chain(&r.decode.chain), vec!["nvdec", "software"]);
         assert_eq!(r.encoder(), "nvenc");
-        assert_eq!(chain(&r.encode_chain), vec!["nvenc", "software"]);
+        assert_eq!(chain(&r.encode.chain), vec!["nvenc", "software"]);
     }
 
     #[test]
     fn nvdec_failing_moves_to_vaapi_then_to_the_software_decoders() {
         let hybrid = Inventory::new([gpu("renderd128", Vendor::Intel, "i915"), gpu("renderd129", Vendor::Nvidia, "nvidia")]);
         let (r, _) = routes(hybrid.clone(), Err("no libnvcuvid"), Ok("Intel iHD"));
-        assert_eq!((r.decoder(), r.decode.device.as_str()), ("vaapi", "gpu:renderd128"));
-        assert_eq!(r.decode.declined[0].reason, Reason::Declined { why: "no libnvcuvid".into() });
+        assert_eq!((r.decoder(), r.decode.device()), ("vaapi", "gpu:renderd128"));
+        assert_eq!(r.decode.chain.declined[0].reason, Reason::Declined { why: "no libnvcuvid".into() });
 
         let (r, _) = routes(hybrid, Err("no libnvcuvid"), Err("no libva"));
-        assert_eq!((r.decoder(), chain(&r.decode_chain)), ("software", vec!["software"]));
+        assert_eq!((r.decoder(), chain(&r.decode.chain)), ("software", vec!["software"]));
     }
 
     #[test]
@@ -297,7 +330,7 @@ mod tests {
             let (r, calls) = routes(Inventory::new([gpu("renderd128", vendor, driver)]), Ok("NVDEC"), Ok("VA-API"));
             assert_eq!(r.decoder(), "vaapi", "{driver}");
             assert_eq!(calls, 1);
-            assert_eq!(r.decode.declined[0].reason, Reason::NoDevice, "{driver}: NVDEC needs the proprietary driver");
+            assert_eq!(r.decode.chain.declined[0].reason, Reason::NoDevice, "{driver}: NVDEC needs the proprietary driver");
             assert_eq!(r.encoder(), "software", "{driver}: no vendor-neutral hardware encoder yet");
         }
     }
@@ -317,11 +350,40 @@ mod tests {
     }
 
     #[test]
+    fn a_task_without_a_route_leaves_the_others_alone() {
+        // NVIDIA machine, VA-API broken, a user table whose decode order has only VA-API and whose
+        // encode order is software only
+        let user = Table::parse("[compute.default]\ncodec_decode = [\"vaapi\"]\ncodec_encode = [\"software\"]\n").unwrap();
+        let inv = Inventory::new([gpu("renderd128", Vendor::Nvidia, "nvidia")]);
+        let r = route(Table::builtin().unwrap().merged(user), inv.clone(), probes(Ok("NVDEC"), Err("no libva"), Arc::new(AtomicUsize::new(0)))).unwrap();
+        assert_eq!(r.decoder(), "none", "no route: CFA4's decoders, nothing registered");
+        assert!(r.decode.chain.routes.is_empty() && !r.decode.chain.declined.is_empty());
+        assert_eq!(r.encoder(), "software", "the encode order still holds");
+        assert!(r.encode.why_not("nvenc").contains("not in the routing order"));
+
+        // and an unusable encode order keeps the working decoder
+        let user = Table::parse("[compute.default]\ncodec_encode = [\"gstreamer-va\"]\n").unwrap();
+        let r = route(Table::builtin().unwrap().merged(user), inv, probes(Ok("NVDEC"), Ok("VA-API"), Arc::new(AtomicUsize::new(0)))).unwrap();
+        assert_eq!((r.decoder(), r.encoder(), r.hevc_encoder()), ("nvdec", "none", "none"));
+    }
+
+    #[test]
+    fn hevc_routes_on_its_own() {
+        let user = Table::parse("[compute.task.\"video.encode.h264\"]\norder = [\"software\"]\n").unwrap();
+        let inv = Inventory::new([gpu("renderd128", Vendor::Nvidia, "nvidia")]);
+        let r = route(Table::builtin().unwrap().merged(user), inv, probes(Ok("NVDEC"), Ok("VA-API"), Arc::new(AtomicUsize::new(0)))).unwrap();
+        assert_eq!((r.encoder(), r.hevc_encoder()), ("software", "nvenc"), "an H.264 override leaves H.265 alone");
+        let (r, _) = routes(Inventory::new([gpu("renderd128", Vendor::Amd, "amdgpu")]), Ok("NVDEC"), Ok("VA-API"));
+        assert_eq!(r.hevc_encoder(), "software", "no hardware HEVC encoder on AMD yet: the format is not offered");
+    }
+
+    #[test]
     fn the_real_machine_routes_without_panicking() {
         // whatever this machine has, there is a decision and the software path closes both chains
         if let Some(r) = current() {
-            assert_eq!(r.decode_chain.routes.last().map(|x| x.backend.as_str()), Some("software"));
-            assert_eq!(r.encode_chain.routes.last().map(|x| x.backend.as_str()), Some("software"));
+            assert_eq!(r.decode.chain.routes.last().map(|x| x.backend.as_str()), Some("software"));
+            assert!(["nvenc", "software"].contains(&r.hevc_encoder()));
+            assert_eq!(r.encode.chain.routes.last().map(|x| x.backend.as_str()), Some("software"));
         }
         let _ = nvenc_allowed();
     }

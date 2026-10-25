@@ -78,9 +78,10 @@ pub fn register() -> Availability {
         cfa4_export::register_encoder(nvenc::export::factory);
         // Linux uses the same CUDA NVENC HEVC implementation as H.264. A successful hardware
         // probe is required before the HEVC format is offered; the probe is only registered (and
-        // warmed) where the router routes H.264 encoding to NVENC, so other machines never load
-        // the CUDA driver for it (the format was unavailable there anyway).
-        if routes::current().is_none_or(|r| r.encoder() == "nvenc") {
+        // warmed) where the router routes H.265 encoding (`video.encode.hevc`, its own task) to
+        // NVENC, so other machines never load the CUDA driver for it (the format was unavailable
+        // there anyway).
+        if routes::current().is_none_or(|r| r.hevc_encoder() == "nvenc") {
             cfa4_export::register_format_probe(cfa4_export::Format::Hevc, nvenc::hevc_available);
             cfa4_export::register_hdr_probe(cfa4_export::Format::Hevc, nvenc::hevc_hdr_available);
             log::info!("startup stage: scheduling NVENC HEVC probe");
@@ -133,19 +134,19 @@ pub fn register() -> Availability {
             // when NVDEC declined, and unsupported streams still use CFA4's software decoders.
             match routes::current().map(|r| (r.decoder(), &r.decode)) {
                 Some(("nvdec", decision)) => {
-                    NVDEC.call_once(|| log::info!("hardware decoding through NVDEC on {}", decision.device));
+                    NVDEC.call_once(|| log::info!("hardware decoding through NVDEC on {}", decision.device()));
                     cfa4_codecs::register_video_decoder(nvdec_factory);
                     cfa4_codecs::hw::set_hw_backend("NVDEC");
                     available = Availability::Available("NVDEC");
                 }
                 Some(("vaapi", decision)) => {
-                    VAAPI.call_once(|| log::info!("hardware decoding through VA-API on {}", decision.device));
+                    VAAPI.call_once(|| log::info!("hardware decoding through VA-API on {}", decision.device()));
                     cfa4_codecs::register_video_decoder(vaapi_factory);
                     cfa4_codecs::hw::set_hw_backend("VA-API");
                     available = Availability::Available("VA-API");
                 }
                 Some((other, decision)) => {
-                    log::info!("no hardware decoding: the compute router chose {other} ({} routes passed over)", decision.declined.len());
+                    log::info!("no hardware decoding: the compute router chose {other} ({} routes passed over)", decision.chain.declined.len());
                 }
                 None => log::warn!("no hardware decoding: the compute router could not route the decoder"),
             }
