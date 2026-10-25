@@ -63,6 +63,8 @@ dec.reset();                                    // before decoding from another 
   tool, damage) or disagrees with its program's rate or length keeps the core's channels and
   silences its new locations, so the layout does not change mid-stream. Each dependent substream
   keeps its own overlap and exponent state. `decode` alone still returns the 5.1 core.
+  `program_locations` gives the program's layout from the headers alone (the channel count an
+  MPEG-TS stream decodes to).
 - 1, 2, 3 or 6 blocks per syncframe (`Header::samples`), 32 / 44.1 / 48 kHz and the reduced rates
   16 / 22.05 / 24 kHz, every acmod with or without LFE.
 - The whole bsi (mixing and informational metadata, custom channel maps, addbsi) is parsed and
@@ -125,8 +127,7 @@ stream (`src/dependent_tests.rs`), 75.6 dB worst channel in MP4 and Matroska thr
 - E-AC-3: no adaptive hybrid transform, enhanced coupling or transient pre-noise processing;
   Dolby Atmos object audio (JOC, ETSI TS 103 420) is not decoded, its 5.1 / 7.1 bed plays.
 - Dependent substreams are joined only when they follow their independent substream in the same
-  buffer (MP4, Matroska, raw streams); an MPEG-TS packet that splits an access unit plays the
-  core.
+  buffer (MP4, Matroska, MPEG-TS access units, raw streams).
 - The chanmap location table and the dependent-substream bsi differences follow A/52:2012
   Annex E; FFmpeg's decode agrees on the synthetic 7.1 stream, but no Dolby-encoded 7.1 file has
   been tested.

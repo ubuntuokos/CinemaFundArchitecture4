@@ -62,6 +62,10 @@ fn dependent_substream_extends_51_to_71() {
     let file = cfa4_testkit::fixtures_dir("ac3").join("eac3_71_dependent.eac3");
     std::fs::write(&file, &data).unwrap();
 
+    // the headers alone give the layout
+    assert_eq!(program_locations(&data).unwrap(), d_locations());
+    assert_eq!(program_locations(&data[..parse_header(&data).unwrap().frame_bytes]).unwrap().len(), 6);
+
     // ours, one program (independent + dependent syncframe) at a time
     let mut dec = Decoder::new();
     let mut ours: Vec<Vec<f32>> = vec![Vec::new(); 8];

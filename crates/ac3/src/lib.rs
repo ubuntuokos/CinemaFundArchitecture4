@@ -94,6 +94,37 @@ impl Header {
     }
 }
 
+/// The loudspeaker locations, in output order, of the program [`Decoder::decode_program`] decodes
+/// from `data`, read from the headers alone: for a stream's first access unit, the channel count
+/// the stream will decode to. Empty for a dual-mono (1+1) syncframe and for a syncframe that is
+/// not [`Header::is_primary`].
+pub fn program_locations(data: &[u8]) -> Result<Vec<Location>> {
+    let h = parse_header(data)?;
+    if !h.is_primary() {
+        return Ok(Vec::new());
+    }
+    let mut locs = program::acmod_locations(h.acmod as usize & 7, h.lfeon).unwrap_or_default();
+    if h.is_eac3() && !locs.is_empty() {
+        let mut at = h.frame_bytes;
+        while let Some(rest) = data.get(at..)
+            && let Ok(d) = parse_header(rest)
+            && d.is_eac3()
+            && d.strmtyp == 1
+            && rest.len() >= d.frame_bytes
+        {
+            let mut r = Bits::new(rest);
+            if let Ok(bsi) = eac3::read_bsi(&mut r)
+                && let Ok(dl) = program::dependent_locations(d.acmod as usize & 7, d.lfeon, bsi.chanmap)
+            {
+                locs.extend(dl.into_iter().filter(|l| !locs.contains(l)).collect::<Vec<_>>());
+            }
+            at += d.frame_bytes;
+        }
+    }
+    locs.sort();
+    Ok(locs)
+}
+
 /// Parse the frame header at the start of `b`.
 pub fn parse_header(b: &[u8]) -> Result<Header> {
     if b.len() < 7 || b[0] != 0x0B || b[1] != 0x77 {

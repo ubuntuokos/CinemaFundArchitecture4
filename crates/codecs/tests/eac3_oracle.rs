@@ -85,11 +85,11 @@ fn eac3_in_mp4_matroska_and_transport_streams() {
 }
 
 /// E-AC-3 7.1 (a 5.1 independent substream and a dependent substream carrying Ls, Rs, Lrs and Rrs)
-/// in MP4 and Matroska: decoded as eight channels, L R C LFE Lrs Rrs Ls Rs (the WAV order of 7.1). No free encoder writes
+/// in MP4, Matroska and MPEG-TS: decoded as eight channels, L R C LFE Lrs Rrs Ls Rs (the WAV order of 7.1). No free encoder writes
 /// dependent substreams, so ffmpeg's 2/2 syncframes are rewritten into one
 /// (`cfa4_ac3::make_dependent_substream`) and ffmpeg muxes the result.
 #[test]
-fn eac3_71_dependent_substreams_in_mp4_and_matroska() {
+fn eac3_71_dependent_substreams_in_mp4_matroska_and_ts() {
     let ff = cfa4_testkit::require_ffmpeg!();
     let quad = "aevalsrc=exprs=0.25*sin(2*PI*900*t)|0.25*sin(2*PI*1000*t)|0.25*sin(2*PI*1100*t)|0.25*sin(2*PI*1200*t):s=48000:c=quad";
     let enc = |name: &str, input: &str, rate: &str| {
@@ -117,7 +117,7 @@ fn eac3_71_dependent_substreams_in_mp4_and_matroska() {
     // ffmpeg orders 7.1 as FL FR FC LFE BL BR SL SR (E-AC-3's Lrs / Rrs are its back channels):
     // the same order as ours
     const FFMPEG: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
-    for name in ["eac3_71.mp4", "eac3_71.mkv"] {
+    for name in ["eac3_71.mp4", "eac3_71.mkv", "eac3_71.ts"] {
         let f = dir().join(name);
         let _ = std::fs::remove_file(&f);
         assert!(fixture(&ff, name, &["-i", raw_arg, "-c", "copy"]).is_some(), "{name}");
@@ -125,7 +125,13 @@ fn eac3_71_dependent_substreams_in_mp4_and_matroska() {
         let a = src.info().audio().cloned().unwrap();
         let want = ffmpeg_audio_f32(&ff, &f, &[]);
         let n = want.len() / 8;
-        let ours = src.audio(0, n, 48_000).unwrap().channels;
+        assert_eq!(a.channels, 8, "{name}: channels in the stream info");
+        // MPEG-TS audio starts at its first PTS relative to the presentation start
+        let start = match name.ends_with(".ts") {
+            true => cfa4_codecs::MpegSource::open(name, bytes(&f)).unwrap().audio_extent().map_or(0, |e| e.0),
+            false => 0,
+        };
+        let ours = src.audio(start, n, 48_000).unwrap().channels;
         assert_eq!(ours.len(), 8, "{name}: decoded channels (container says {})", a.channels);
         let reordered: Vec<f32> = (0..n).flat_map(|i| FFMPEG.iter().map(move |&c| (i, c))).map(|(i, c)| want[i * 8 + c]).collect();
         let worst = snr(&ours, &reordered, 8, 0);
