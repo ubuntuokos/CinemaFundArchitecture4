@@ -1,0 +1,40 @@
+CFA4 brand assets: terms of use
+
+Owner: ubuntuokos (Horváth István), the author and owner of the CFA4 project.
+
+The CFA4 name as a product name, the CFA4 logo, its emblem (the "A" with the film strip), the
+"CFA4" wordmark and the line "CINEMA FUND ARCHITECTURA 4" (together: the "CFA4 Marks"), in every
+file under assets/cfa4/logo and assets/cfa4/hicolor, in every size and format, are the original
+design and property of the owner. They are NOT open source. They are not covered by CFA4's
+GPL-3.0-or-later licence, by LICENSE-MIT, LICENSE-APACHE or NOTICE, or by any other licence in
+this repository, and nothing in those files grants any right to them.
+
+Permission
+
+The owner grants a limited, non-exclusive, non-transferable, revocable, royalty-free permission
+to use the CFA4 Marks only:
+
+  1. as part of unmodified copies of this repository; and
+  2. within CFA4 itself, its documentation and its official builds and packages published by the
+     owner, to identify CFA4.
+
+Conditions
+
+  - The marks are used exactly as supplied. Do not redraw, recolour, crop, stretch, rotate,
+    animate, add effects to, extract parts of, or combine them with other names or artwork.
+    (The icon sizes in assets/cfa4/hicolor are the owner's own versions and count as supplied.)
+  - They must never suggest that the owner made, sponsors, endorses or supports any other
+    product, service, fork, modified version, plug-in, organisation or person.
+
+Forks and modified versions
+
+Anyone who distributes a modified version of CFA4, or any work derived from it, must remove the
+CFA4 Marks from it, replace them with their own, and must not present it as CFA4. The code stays
+available under GPL-3.0-or-later; only the marks are reserved. Saying in plain text that a work
+is based on CFA4 is allowed. A fork kept only to propose changes back to this repository may keep
+the marks unchanged.
+
+Everything else
+
+Any other use needs the owner's prior written permission. The permission above ends
+automatically for anyone who breaks these terms. All other rights are reserved.

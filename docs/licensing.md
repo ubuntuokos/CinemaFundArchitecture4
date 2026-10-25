@@ -52,6 +52,13 @@ the code to be combined into a GPL-3.0-or-later work. The obligations that remai
 The ArtCraft name, wordmark and logos (`docs/brand/`) are trademarks, not covered by any of these
 licences, and must be replaced before distribution (see `AGENTS.md`).
 
+**The CFA4 logo is not under the GPL.** The CFA4 logo, its emblem, the app icons and the CFA4
+wordmark (`assets/cfa4/logo`, `assets/cfa4/hicolor`) are the owner's own design and stay his
+(owner decision 2026-10-25). They are used under [`assets/cfa4/LICENSE-brand.txt`](../assets/cfa4/LICENSE-brand.txt):
+unmodified, only to identify CFA4 and its official builds; whoever distributes a modified version
+must replace them. The CFA4 code stays GPL-3.0-or-later, so anyone may fork the program, but not
+under the CFA4 logo. Packages ship the terms as `LICENSE-CFA4-brand.txt`.
+
 ## 3. What code may be reused
 
 Allowed, with provenance (section 5):
