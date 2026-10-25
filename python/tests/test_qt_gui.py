@@ -1316,3 +1316,29 @@ def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_engine_ending_after_the_client_is_gone_raises_nothing(app, fake_engine: Path):
+    """Regression (reference machine, at exit): the window and its EngineClient were deleted
+    first, the engine ended after, and the reader thread's last "engine stopped" message raised
+    RuntimeError("Signal source has been deleted") in the background."""
+    import threading
+    import time
+
+    import shiboken6
+
+    errors: list[BaseException] = []
+    previous = threading.excepthook
+    threading.excepthook = lambda a: errors.append(a.exc_value)
+    try:
+        engine = EngineClient(fake_engine)
+        engine.start()
+        assert wait_until(app, lambda: bool(engine.hello), 10_000)
+        process = engine._process
+        shiboken6.delete(engine)
+        process.kill()
+        process.wait(timeout=10)
+        time.sleep(0.8)  # the reader and stderr threads see EOF and finish
+        assert errors == [], errors
+    finally:
+        threading.excepthook = previous
