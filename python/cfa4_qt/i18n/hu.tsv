@@ -31,6 +31,7 @@
 	Align to Selection	Igazítás a kijelöléshez
 	Align to Video Frame	Igazítás a videókockához
 	Align to Video Frame as Group	Igazítás a videókockához csoportként
+	All Panels	Minden panel
 	All files	Minden fájl
 	Amplitude and Compression	Amplitúdó és tömörítés
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	A `serve` nélküli motor olyan ágról készült, amelyen nincs Qt-GUI: váltson a Qt-GUI ágára és fordítsa újra, vagy adja meg: --engine ÚTVONAL.
@@ -41,14 +42,18 @@
 	Apply Default Transitions to Selection	Alapértelmezett átmenetek a kijelölésre
 	Apply Video Transition	Videóátmenet alkalmazása
 	Arrange	Elrendezés
+	Assembly	Összeállítás
 	Attach Proxies…	Proxyk csatolása…
 	Audio	Hang
 	Audio Channels…	Hangcsatornák…
+	Audio Clip Mixer	Hangklipkeverő
 	Audio Effects	Hangeffektek
 	Audio Gain…	Hangerősítés…
 	Audio In	Hang kezdőpont
+	Audio Meters	Hangszintmérők
 	Audio Options	Hangbeállítások
 	Audio Out	Hang végpont
+	Audio Track Mixer	Hangsávkeverő
 	Audio Transitions	Hangátmenetek
 	Audio codec	Hangkodek
 	Auto Bezier	Automatikus Bézier
@@ -81,6 +86,7 @@
 	Cancelled	Megszakítva
 	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
 	Captions	Feliratok
+	Captions and Graphics	Feliratok és grafika
 	Captions…	Feliratok…
 	Caribbean	Karibi
 	Center Horizontally	Vízszintesen középre
@@ -152,7 +158,9 @@
 	Edit Offline…	Offline szerkesztése…
 	Edit Original	Eredeti szerkesztése
 	Edit Subclip…	Alklip szerkesztése…
+	Edit Workspaces…	Munkaterületek szerkesztése…
 	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	A Lumetri- és maszkeszközökben szerkeszthető (a Qt-felületen még nem)
+	Editing	Vágás
 	Effect Controls	Effektvezérlők
 	Effects	Effektek
 	Ellipse	Ellipszis
@@ -163,6 +171,8 @@
 	End	Vége
 	Engine stopped	A motor leállt
 	Entire Sequence	Teljes szekvencia
+	Essential Graphics	Alapgrafika
+	Essential Sound	Alaphang
 	Events	Események
 	Exclusion	Kizárás
 	Export	Exportálás
@@ -238,6 +248,7 @@
 	Import Image Sequence…	Képsorozat importálása…
 	Import from Media Browser	Importálás a médiaböngészőből
 	Import…	Importálás…
+	Info	Információ
 	Ingest Settings…	Behúzási beállítások…
 	Insert	Beszúrás
 	Insert Frame Hold Segment	Kimerevített szakasz beszúrása
@@ -252,6 +263,7 @@
 	Left	Bal
 	Legacy	Örökölt
 	Level	Szint
+	Libraries	Könyvtárak
 	Lift	Kiemelés
 	Lighten	Világosítás
 	Lighter Color	Világosabb szín
@@ -264,6 +276,8 @@
 	Link	Összekapcsolás
 	Link Media…	Média összekapcsolása…
 	Linked Selection	Összekapcsolt kijelölés
+	Lumetri Color	Lumetri szín
+	Lumetri Scopes	Lumetri mérőműszerek
 	Luminosity	Fényerő
 	Magenta	Bíbor
 	Make Offline…	Offline állapotba tétel…
@@ -278,10 +292,12 @@
 	Markers	Jelölők
 	Match Frame	Egyező kocka
 	Match sequence	Mint a szekvencia
+	Media Browser	Médiaböngésző
 	Media offline	A média offline
 	Media…	Média…
 	Merge Clips…	Klipek egyesítése…
 	Merged Clip	Egyesített klip
+	Metadata	Metaadatok
 	Modify	Módosítás
 	Modulation	Moduláció
 	Motion	Mozgás
@@ -294,6 +310,7 @@
 	New	Új
 	New Bin	Új tároló
 	New Layer	Új réteg
+	New Project Panel	Új projektpanel
 	New Sequence…	Új szekvencia…
 	Next in Sequence	Következő a szekvenciában
 	Next in Track	Következő a sávon
@@ -305,6 +322,7 @@
 	Normal	Normál
 	Normalize Mix Track…	Keveréksáv normalizálása…
 	Not Now	Most nem
+	Not yet in the Qt GUI (see docs/qt-parity.md)	A Qt-felületen még nincs meg (lásd: docs/qt-parity.md)
 	OMF…	OMF…
 	Obsolete	Elavult
 	Offline File…	Offline fájl…
@@ -335,8 +353,10 @@
 	Progress	Haladás
 	Project	Projekt
 	Project Manager…	Projektkezelő…
+	Project Notes	Projektjegyzetek
 	Project Settings	Projektbeállítások
 	Project…	Projekt…
+	Properties	Tulajdonságok
 	Proxy	Proxy
 	Purple	Lila
 	Quit	Kilépés
@@ -349,6 +369,7 @@
 	Recover Unsaved Changes…	Nem mentett változások visszaállítása…
 	Rectangle	Téglalap
 	Redo	Újra
+	Reference Monitor	Referenciamonitor
 	Remaining	Hátralévő idő
 	Remix	Remix
 	Remix Properties…	Remix tulajdonságai…
@@ -370,6 +391,7 @@
 	Reset Effect	Effekt visszaállítása
 	Reset Panel Layout	Panelelrendezés visszaállítása
 	Reset Parameter	Paraméter visszaállítása
+	Reset to Saved Layout	Visszaállítás a mentett elrendezésre
 	Restoration	Helyreállítás
 	Restore Captions from Source Clip	Feliratok visszaállítása a forrásklipből
 	Retry	Újra
@@ -387,7 +409,10 @@
 	Save	Mentés
 	Save All	Összes mentése
 	Save As…	Mentés másként…
+	Save Changes to this Workspace	Változások mentése ebbe a munkaterületbe
 	Save a Copy…	Másolat mentése…
+	Save as New Workspace	Mentés új munkaterületként
+	Save as New Workspace…	Mentés új munkaterületként…
 	Save as Template…	Mentés sablonként…
 	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
 	Save changes to '{name}' before continuing?	Menti a(z) „{name}” változásait a folytatás előtt?
@@ -454,6 +479,7 @@
 	Target bitrate	Célbitráta
 	Teal	Kékeszöld
 	Text	Szöveg
+	Text to Speech	Szövegfelolvasás
 	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	A CFA4 motorja (cfa4-cli) nem található. Fordítsa le ezzel: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	A CFA4 motorja váratlanul leállt. A nem mentett változások a helyreállítási naplóban megmaradtak; indítsa újra a CFA4-et a visszaállításukhoz.
 	The engine stopped	A motor leállt
@@ -461,11 +487,13 @@
 	Time Interpolation	Időinterpoláció
 	Time Remapping	Időleképezés
 	Time and Pitch	Idő és hangmagasság
+	Timecode	Időkód
 	Timecode…	Időkód…
 	Timeline	Idővonal
 	Toggle Animation	Animálás be/ki
 	Toggle Proxies	Proxyk be/ki
 	Toggle the effect on or off	Az effekt be- vagy kikapcsolása
+	Tools	Eszközök
 	Top	Felső szélhez
 	Transcribe Sequence…	Szekvencia átiratának készítése…
 	Transcribe…	Átirat készítése…
@@ -498,15 +526,17 @@
 	Violet	Ibolya
 	Vivid Light	Élénk fény
 	Volume	Hangerő
+	Window	Ablak
 	Wipe	Söprés
 	Work Area	Munkaterület
+	Workspaces	Munkaterületek
 	Yellow	Sárga
 	Yes	Igen
 	Zoom to Sequence	Nagyítás a teljes szekvenciára
+	an unknown time	ismeretlen időpont
 	automatic	automatikus
 	frames	képkocka
 	not available	nem érhető el
-	an unknown time	ismeretlen időpont
 	off	ki
 	optional	elhagyható
 	…	…
