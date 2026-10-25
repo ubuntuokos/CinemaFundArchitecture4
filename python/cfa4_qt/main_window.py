@@ -535,7 +535,8 @@ class MainWindow(QMainWindow):
         box = QMessageBox(self)
         box.setObjectName("dialog.about")
         box.setWindowTitle(tr("About CFA4"))
-        box.setIconPixmap(logo_pixmap(96))
+        box.setIconPixmap(logo_pixmap(180))
+        box.setStyleSheet("QLabel#qt_msgbox_label { min-width: 280px; }")
         box.setText(
             f"<b>CFA4</b> — CinemaFundArchitecture4<br>Qt 6 GUI {__version__}<br>{self.engine.hello.get('engine', '')}<br><br>"
             "GPL-3.0-or-later<br>Rust engine · Qt 6 / PySide6 · Ubuntu"

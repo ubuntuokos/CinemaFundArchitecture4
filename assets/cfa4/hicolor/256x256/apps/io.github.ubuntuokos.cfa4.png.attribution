@@ -1,0 +1,7 @@
+asset:        io.github.ubuntuokos.cfa4.png
+title:        CFA4 app icon (256x256): the CFA4 logo emblem
+author:       ubuntuokos (CFA4 project owner)
+source:       Derived from assets/cfa4/logo/cfa4-logo.png by scripts/dev/cfa4_icons.py
+license:      GPL-3.0-or-later
+added:        2026-10-25, replacing the geometric development placeholder icon
+notes:        The CFA4 identity; distinct from every inherited FilmCraft/ArtCraft mark. Licence as the rest of CFA4 until the owner decides otherwise for the brand.
