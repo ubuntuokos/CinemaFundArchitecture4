@@ -376,7 +376,7 @@ proptest! {
 /// A fixed sequence that uses every timing feature the exporter writes: gaps, all three transition
 /// alignments, a lone fade-in, speed changes, reverse, a frame hold, a disabled clip and linked
 /// audio at a sub-frame (sample) position.
-fn mixed(rate: FrameRate) -> (Project, filmcraft_project::ItemId) {
+fn mixed(rate: FrameRate) -> (Project, cfa4_project::ItemId) {
     let mut p = Project::new("P");
     let m = [media(&mut p, "/x/one.mov", true, true, rate), media(&mut p, "/x/two.mov", true, true, rate)];
     let s = sequence(&mut p, "Mixed", rate, rate == FrameRate::FPS_29_97);
@@ -402,7 +402,7 @@ fn mixed(rate: FrameRate) -> (Project, filmcraft_project::ItemId) {
 }
 
 /// What the oracle expects to find in the exported file of sequence `s`.
-fn oracle_expectation(p: &Project, s: filmcraft_project::ItemId, file: &str) -> serde_json::Value {
+fn oracle_expectation(p: &Project, s: cfa4_project::ItemId, file: &str) -> serde_json::Value {
     let seq = p.sequence(s).unwrap();
     let tracks: Vec<serde_json::Value> = [TrackKind::Video, TrackKind::Audio]
         .into_iter()
@@ -421,7 +421,7 @@ fn oracle_expectation(p: &Project, s: filmcraft_project::ItemId, file: &str) -> 
 
 #[test]
 fn oracle_fixtures() {
-    let mut cases: Vec<(String, Project, filmcraft_project::ItemId, ExportOptions)> = Vec::new();
+    let mut cases: Vec<(String, Project, cfa4_project::ItemId, ExportOptions)> = Vec::new();
     let (p, s) = project();
     cases.push(("outer.otio".into(), p.clone(), s, ExportOptions::default()));
     cases.push(("outer_relative.otio".into(), p, s, ExportOptions { relative_to: Some("/m/otio".into()), ..Default::default() }));
@@ -445,7 +445,7 @@ fn oracle_fixtures() {
     }
     let mut fixtures = Vec::new();
     for (file, p, s, opts) in &cases {
-        let (bytes, rep) = filmcraft_interchange::export(p, *s, Format::Otio, opts).unwrap();
+        let (bytes, rep) = cfa4_interchange::export(p, *s, Format::Otio, opts).unwrap();
         assert!(!rep.has_warnings(), "{file}: {rep}");
         let exp = oracle_expectation(p, *s, file);
         // the manifest must describe what was exported: as many items per track as the project has
