@@ -105,6 +105,39 @@ impl Table {
         Ok(table)
     }
 
+    /// The shipped table with the user's file on top, when there is one. A missing file is the
+    /// shipped table; an unreadable, oversized or invalid one is refused whole and the shipped table
+    /// is used, with the reason returned for the log.
+    pub fn builtin_with_user_file(path: &std::path::Path) -> Result<(Table, Option<String>), Error> {
+        use std::io::Read;
+        let builtin = Table::builtin()?;
+        let file = match std::fs::File::open(path) {
+            Ok(f) => f,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok((builtin, None)),
+            Err(e) => return Ok((builtin, Some(format!("{}: {e}", path.display())))),
+        };
+        let mut text = String::new();
+        // one byte more than allowed, so an oversized file is seen as such by `parse`
+        let limit = u64::try_from(MAX_TABLE_BYTES).unwrap_or(u64::MAX).saturating_add(1);
+        if let Err(e) = file.take(limit).read_to_string(&mut text) {
+            return Ok((builtin, Some(format!("{}: {e}", path.display()))));
+        }
+        match Table::parse(&text) {
+            Ok(user) => Ok((builtin.merged(user), None)),
+            Err(e) => Ok((builtin, Some(format!("{}: {e}", path.display())))),
+        }
+    }
+
+    /// The user's routing file: `$XDG_CONFIG_HOME/cfa4/routing.toml`, else
+    /// `$HOME/.config/cfa4/routing.toml`; `None` when neither variable is set.
+    pub fn user_file_path() -> Option<std::path::PathBuf> {
+        let base = std::env::var_os("XDG_CONFIG_HOME")
+            .filter(|v| !v.is_empty())
+            .map(std::path::PathBuf::from)
+            .or_else(|| std::env::var_os("HOME").filter(|v| !v.is_empty()).map(|h| std::path::PathBuf::from(h).join(".config")))?;
+        Some(base.join("cfa4").join("routing.toml"))
+    }
+
     /// This table with `over` on top: a family `over` lists replaces this one's order, a task row
     /// `over` has replaces this one's fields that it sets.
     pub fn merged(mut self, over: Table) -> Table {
@@ -239,6 +272,35 @@ mod tests {
 
         let huge = "#".repeat(MAX_TABLE_BYTES + 1);
         assert!(Table::parse(&huge).is_err());
+    }
+
+    #[test]
+    fn the_user_file_is_merged_and_a_bad_one_falls_back_to_the_shipped_table() {
+        let dir = std::env::temp_dir().join(format!("cfa4-route-user-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("routing.toml");
+        let builtin = Table::builtin().unwrap();
+
+        assert_eq!(Table::builtin_with_user_file(&path).unwrap(), (builtin.clone(), None), "no file: the shipped table");
+
+        std::fs::write(&path, "[compute.default]\ncodec_decode = [\"vaapi\", \"software\"]\n").unwrap();
+        let (t, warn) = Table::builtin_with_user_file(&path).unwrap();
+        assert!(warn.is_none());
+        assert_eq!(t.family_order(Family::CodecDecode), &[id("vaapi"), id("software")]);
+
+        for bad in ["[compute.default]\nvideo = [\"x\"]\n".to_string(), "#".repeat(MAX_TABLE_BYTES + 10)] {
+            std::fs::write(&path, bad).unwrap();
+            let (t, warn) = Table::builtin_with_user_file(&path).unwrap();
+            assert_eq!(t, builtin);
+            assert!(warn.is_some());
+        }
+        // a directory where the file should be
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir_all(&path).unwrap();
+        let (t, warn) = Table::builtin_with_user_file(&path).unwrap();
+        assert_eq!((t, warn.is_some()), (builtin, true));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

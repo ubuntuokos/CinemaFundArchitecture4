@@ -37,6 +37,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod catalog;
 pub mod probe;
+pub mod report;
 mod router;
 mod table;
 
