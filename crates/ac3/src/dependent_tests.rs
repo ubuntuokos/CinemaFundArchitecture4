@@ -44,7 +44,7 @@ fn frames(data: &[u8]) -> Vec<&[u8]> {
 /// The program's locations: 7.1 in output order.
 fn d_locations() -> Vec<Location> {
     use Location::*;
-    vec![L, R, C, Lfe, Ls, Rs, Lrs, Rrs]
+    vec![L, R, C, Lfe, Lrs, Rrs, Ls, Rs]
 }
 
 fn seven_one(ff: &Path) -> Vec<u8> {
@@ -83,9 +83,9 @@ fn dependent_substream_extends_51_to_71() {
     let n = want.len() / 8;
     assert_eq!(n, ours[0].len(), "sample count");
 
-    // ffmpeg orders 7.1 as FL FR FC LFE BL BR SL SR, with E-AC-3's Ls / Rs as its side and Lrs /
-    // Rrs as its back channels
-    const FFMPEG: [usize; 8] = [0, 1, 2, 3, 6, 7, 4, 5];
+    // ffmpeg orders 7.1 as FL FR FC LFE BL BR SL SR, with E-AC-3's Lrs / Rrs as its back and Ls /
+    // Rs as its side channels: the same order as ours
+    const FFMPEG: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
     for (k, ch) in ours.iter().enumerate() {
         let (mut sig, mut err) = (0f64, 0f64);
         for i in 0..n {
@@ -107,8 +107,8 @@ fn dependent_substream_extends_51_to_71() {
         }
         (re * re + im * im).sqrt() / 24_000.0
     };
-    assert!(at(&ours[4], 900.0) > 0.2 && at(&ours[4], 700.0) < 0.01);
-    assert!(at(&ours[7], 1200.0) > 0.2);
+    assert!(at(&ours[6], 900.0) > 0.2 && at(&ours[6], 700.0) < 0.01);
+    assert!(at(&ours[5], 1200.0) > 0.2);
 }
 
 /// Through `cfa4-codecs`' packet path the 7.1 program arrives as eight channels too (an MP4 /

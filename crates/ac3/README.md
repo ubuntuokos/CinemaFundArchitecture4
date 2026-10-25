@@ -58,7 +58,8 @@ dec.reset();                                    // before decoding from another 
   take two channels) or, without one, from its acmod; it replaces the program's channel at that
   location (a 7.1 core's downmixed surrounds) or adds one. `Decoded::locations` names every
   channel; the output is in `Location` order, which keeps the WAV order for 5.1 and gives
-  L R C LFE Ls Rs Lrs Rrs for 7.1. A dependent substream that fails to decode (an unsupported
+  L R C LFE Lrs Rrs Ls Rs for 7.1 (the WAV / SMPTE order of 7.1, back pair before side pair, as
+  the AAC and Opus paths of `cfa4-codecs` give it). A dependent substream that fails to decode (an unsupported
   tool, damage) or disagrees with its program's rate or length keeps the core's channels and
   silences its new locations, so the layout does not change mid-stream. Each dependent substream
   keeps its own overlap and exponent state. `decode` alone still returns the 5.1 core.

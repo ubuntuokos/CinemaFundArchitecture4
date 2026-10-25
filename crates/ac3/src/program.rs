@@ -13,18 +13,19 @@ use crate::{Error, NFCHANS, Result};
 
 /// Loudspeaker locations, in output order. The first six are the WAV / SMPTE 5.1 order the
 /// decoder has always used (L R C LFE Ls Rs), so programs of 5.1 or fewer channels keep their
-/// order; 7.1 comes out as L R C LFE Ls Rs Lrs Rrs.
+/// order. With both surround pairs, the rear pair comes first, as in the WAV / SMPTE order the
+/// other decoders give 7.1 (back pair, then side pair): L R C LFE Lrs Rrs Ls Rs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Location {
     L,
     R,
     C,
     Lfe,
-    Ls,
-    Rs,
     /// Rear surround pair.
     Lrs,
     Rrs,
+    Ls,
+    Rs,
     /// Centre surround (also the single surround S of acmod 2/1 and 3/1).
     Cs,
     /// Left / right of centre pair.
@@ -196,9 +197,9 @@ mod tests {
         p.put(Loc::Cs, vec![9.0; 2]);
         assert_eq!(p.len(), 4);
         let (locs, pcm) = p.finish();
-        assert_eq!(locs, [Loc::L, Loc::R, Loc::C, Loc::Lfe, Loc::Ls, Loc::Rs, Loc::Lrs, Loc::Rrs, Loc::Cs]);
+        assert_eq!(locs, [Loc::L, Loc::R, Loc::C, Loc::Lfe, Loc::Lrs, Loc::Rrs, Loc::Ls, Loc::Rs, Loc::Cs]);
         let first: Vec<f32> = pcm.iter().map(|c| c[0]).collect();
-        assert_eq!(first, [0.0, 2.0, 1.0, 5.0, 10.0, 11.0, 12.0, 13.0, 9.0]);
+        assert_eq!(first, [0.0, 2.0, 1.0, 5.0, 12.0, 13.0, 10.0, 11.0, 9.0]);
         assert_eq!(pcm[8], [9.0, 9.0, 0.0, 0.0]);
     }
 }

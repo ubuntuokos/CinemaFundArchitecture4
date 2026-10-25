@@ -85,7 +85,7 @@ fn eac3_in_mp4_matroska_and_transport_streams() {
 }
 
 /// E-AC-3 7.1 (a 5.1 independent substream and a dependent substream carrying Ls, Rs, Lrs and Rrs)
-/// in MP4 and Matroska: decoded as eight channels, L R C LFE Ls Rs Lrs Rrs. No free encoder writes
+/// in MP4 and Matroska: decoded as eight channels, L R C LFE Lrs Rrs Ls Rs (the WAV order of 7.1). No free encoder writes
 /// dependent substreams, so ffmpeg's 2/2 syncframes are rewritten into one
 /// (`cfa4_ac3::make_dependent_substream`) and ffmpeg muxes the result.
 #[test]
@@ -114,8 +114,9 @@ fn eac3_71_dependent_substreams_in_mp4_and_matroska() {
     let raw_path = dir().join("eac3_71.eac3");
     std::fs::write(&raw_path, raw).unwrap();
     let raw_arg = raw_path.to_str().unwrap();
-    // ffmpeg orders 7.1 as FL FR FC LFE BL BR SL SR: E-AC-3's Lrs / Rrs are its back channels
-    const FFMPEG: [usize; 8] = [0, 1, 2, 3, 6, 7, 4, 5];
+    // ffmpeg orders 7.1 as FL FR FC LFE BL BR SL SR (E-AC-3's Lrs / Rrs are its back channels):
+    // the same order as ours
+    const FFMPEG: [usize; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
     for name in ["eac3_71.mp4", "eac3_71.mkv"] {
         let f = dir().join(name);
         let _ = std::fs::remove_file(&f);
