@@ -204,7 +204,7 @@ felületét is megkapja (C8 folyamatosan), egui-felületet nem.
 
 Egy fázis akkor kész, ha:
 
-- a `filmcraft-credits` és az engine tesztjei lefedik (beleértve az ellenséges bemenetet:
+- a `cfa4-credits` és az engine tesztjei lefedik (beleértve az ellenséges bemenetet:
   sérült táblázat, hiányzó fájl, abszurd számok – soha nem omlik össze);
 - a látható eredményről renderelt képkocka készült, és ellenőrizve lett;
 - a dokumentáció ([credits.md](credits.md), ADR F10) frissült;

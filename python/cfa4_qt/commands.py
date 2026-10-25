@@ -150,6 +150,13 @@ class Command:
         if not isinstance(cid, str) or not cid:
             return None
         menu = raw.get("menu") if isinstance(raw.get("menu"), list) else []
+        shortcuts = [str(s) for s in raw.get("shortcuts") or [] if isinstance(s, str)]
+        # panel-only bindings (History ▸ Left = Undo) would take the key window-wide here:
+        # the Qt GUI has no panel-scoped dispatch yet, so they are left out
+        for b in raw.get("panelShortcuts") or []:
+            keys = b.get("keys") if isinstance(b, dict) else None
+            if isinstance(keys, str) and keys in shortcuts:
+                shortcuts.remove(keys)
         return cls(
             id=cid,
             label=str(raw.get("label") or cid),
@@ -157,7 +164,7 @@ class Command:
             shortcut=str(raw.get("shortcut") or ""),
             params=str(raw.get("params") or "{}"),
             enabled=bool(raw.get("enabled", True)),
-            shortcuts=[str(s) for s in raw.get("shortcuts") or [] if isinstance(s, str)],
+            shortcuts=shortcuts,
         )
 
     @property

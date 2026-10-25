@@ -4,9 +4,10 @@
 # Clean-room: every entry was written from the plain meaning of the English label using ordinary
 # Hungarian video-editing vocabulary (idővonal, sáv, klip, szekvencia, tároló, lejátszófej, jelölő,
 # átmenet). No proprietary localisation resource, string table or product UI was consulted or
-# copied; add entries the same way. Product and format names (CFA4, FilmCraft, AAF, EDL…) keep
+# copied; add entries the same way. Product and format names (CFA4, AAF, EDL…) keep
 # their spelling.
 
+	'{name}' already exists. Replace it?	A(z) „{name}” már létezik. Lecseréli?
 	AAC	AAC
 	AAF…	AAF…
 	About CFA4	A CFA4 névjegye
@@ -78,6 +79,7 @@
 	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
 	Cancel Selected	Kijelöltek megszakítása
 	Cancelled	Megszakítva
+	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
 	Captions	Feliratok
 	Captions…	Feliratok…
 	Caribbean	Karibi
@@ -388,6 +390,7 @@
 	Save a Copy…	Másolat mentése…
 	Save as Template…	Mentés sablonként…
 	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
+	Save changes to '{name}' before continuing?	Menti a(z) „{name}” változásait a folytatás előtt?
 	Scale	Méretezés
 	Scale Width	Szélesség méretezése
 	Scale to Frame Size	Méretezés a képkockához
@@ -408,7 +411,7 @@
 	Selected	Kijelölve
 	Selection Follows Playhead	A kijelölés követi a lejátszófejet
 	Selection Tool	Kijelölő eszköz
-	Selection as FilmCraft Project…	Kijelölés FilmCraft-projektként…
+	Selection as CFA4 Project…	Kijelölés CFA4-projektként…
 	Selection…	Kijelölés…
 	Send Backward	Hátrébb küldés
 	Send to Back	Háttérbe
@@ -451,7 +454,7 @@
 	Target bitrate	Célbitráta
 	Teal	Kékeszöld
 	Text	Szöveg
-	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p filmcraft-cli	A CFA4 motorja (cfa4-cli) nem található. Fordítsa le ezzel: cargo build --release -p filmcraft-cli
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	A CFA4 motorja (cfa4-cli) nem található. Fordítsa le ezzel: cargo build --release -p cfa4-cli
 	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	A CFA4 motorja váratlanul leállt. A nem mentett változások a helyreállítási naplóban megmaradtak; indítsa újra a CFA4-et a visszaállításukhoz.
 	The engine stopped	A motor leállt
 	Time	Idő
@@ -503,6 +506,7 @@
 	automatic	automatikus
 	frames	képkocka
 	not available	nem érhető el
+	an unknown time	ismeretlen időpont
 	off	ki
 	optional	elhagyható
 	…	…

@@ -4,6 +4,7 @@ engine command and every redraw follows the engine's ``projectChanged``."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
@@ -45,6 +46,31 @@ SOURCE_STEPS = {
     "playhead.start": "start",
     "playhead.end": "end",
 }
+
+# commands that replace the open project (and its undo history) without asking the engine
+# whether it is dirty: the frontend offers Save / Don't Save / Cancel first, as egui does
+REPLACES_PROJECT = frozenset({"file.open", "file.newProject", "file.openDemoProject", "file.recover"})
+STATE_TIMEOUT_MS = 3000
+
+
+def recovery_text(cand: dict[str, Any]) -> str:
+    """The recovery prompt for one of the engine's recovery candidates (camelCase on the wire:
+    ``JournalMeta`` in ``crates/engine/src/autosave.rs``)."""
+    import datetime
+
+    try:
+        when = (
+            datetime.datetime.fromtimestamp(int(cand.get("savedUnix")), tz=datetime.UTC)
+            .astimezone()
+            .strftime("%Y-%m-%d %H:%M:%S")
+        )
+    except (TypeError, ValueError, OverflowError, OSError):
+        when = tr("an unknown time")
+    name = str(cand.get("projectName") or tr("Untitled"))
+    text = tr("CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?")
+    if cand.get("cleanExit"):
+        text = tr("CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?")
+    return text.replace("{name}", name).replace("{time}", when)
 
 
 class MainWindow(QMainWindow):
@@ -295,21 +321,11 @@ class MainWindow(QMainWindow):
 
     def _offer_recovery(self, cand: dict[str, Any]) -> None:
         """Unsaved changes of a session that died: Recover / Not Now / Discard (as egui)."""
-        import datetime
-
-        when = (
-            datetime.datetime.fromtimestamp(int(cand.get("saved_unix") or 0), tz=datetime.UTC)
-            .astimezone()
-            .strftime("%Y-%m-%d %H:%M:%S")
-        )
-        name = str(cand.get("project_name") or tr("Untitled"))
-        text = tr("CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?")
-        if cand.get("clean_exit"):
-            text = tr("CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?")
+        text = recovery_text(cand)
         box = QMessageBox(
             QMessageBox.Icon.Question,
             tr("Recover Unsaved Changes"),
-            text.replace("{name}", name).replace("{time}", when),
+            text,
             parent=self,
         )
         recover = box.addButton(tr("Recover"), QMessageBox.ButtonRole.AcceptRole)
@@ -452,8 +468,10 @@ class MainWindow(QMainWindow):
         else:
             self.execute(cid, {})
 
-    def run_command(self, cmd: Command) -> None:
+    def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
+        # an Effect Controls value still in its send delay goes first (Save must write it)
+        self.effect_controls.flush()
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
@@ -475,6 +493,13 @@ class MainWindow(QMainWindow):
             else:
                 self.source_monitor.step(int(step))
             return
+        if cmd.id in REPLACES_PROJECT and not unsaved_ok:
+            self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
+            return
+        if (cmd.id in REPLACES_PROJECT or cmd.id == "file.closeProject") and self.export_dialog is not None:
+            # its sequence id belongs to this project: item ids restart in the next one, so a stale
+            # dialog could export a different sequence than it names. Reopening re-reads it.
+            self.export_dialog.hide()
         project_path = (self.project or {}).get("path")
         params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
         if params is not None:
@@ -584,39 +609,80 @@ class MainWindow(QMainWindow):
         )
         box.open()
 
-    def closeEvent(self, e: QCloseEvent) -> None:
-        if self.engine.running and self.state.get("dirty") and not self._quit_confirmed:
+    def confirm_unsaved(
+        self,
+        proceed: Callable[[], None],
+        discard: Callable[[], None] | None = None,
+        question: str = "Save changes to '{name}' before continuing?",
+    ) -> None:
+        """Run ``proceed`` once unsaved changes are saved, or ``discard`` (default: ``proceed``)
+        when the user doesn't save them; nothing on Cancel. The dirty flag comes from the engine,
+        asked after every command already queued, not from the last (possibly stale) refresh;
+        an engine that doesn't answer within ``STATE_TIMEOUT_MS`` falls back to the last refresh."""
+        asked = [False]
+
+        def decide(result: Any, _b: bytes | None) -> None:
+            if asked[0]:
+                return
+            asked[0] = True
+            self._on_state(result, _b)
+            if not self.state.get("dirty"):
+                proceed()
+                return
             name = (self.project or {}).get("name") or tr("Untitled")
             box = QMessageBox(
                 QMessageBox.Icon.Question,
                 tr("CFA4"),
-                tr("Save changes to '{name}' before closing?").replace("{name}", str(name)),
+                tr(question).replace("{name}", str(name)),
                 parent=self,
             )
+            box.setObjectName("dialog.unsaved")
             box.setStandardButtons(
                 QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
             )
             answer = box.exec()
-            if answer == QMessageBox.StandardButton.Cancel:
-                e.ignore()
+            if answer == QMessageBox.StandardButton.Discard:
+                (discard or proceed)()
                 return
-            if answer == QMessageBox.StandardButton.Save:
-                e.ignore()
-                cmd = self.registry.commands.get("file.save") or Command("file.save", "Save", [], "", "{}", True)
-                params = path_params(cmd, self, (self.project or {}).get("path"))
-                if params and params.get("__cancel__"):
-                    return
-
-                def saved(_r: Any, _b: bytes | None) -> None:
-                    self._quit_confirmed = True
-                    self.close()
-
-                self.engine.execute(
-                    "file.save", params or {}, on_reply=saved, on_error=lambda m: self._command_failed("file.save", m)
-                )
+            if answer != QMessageBox.StandardButton.Save:
                 return
-            # Don't Save: close the project, which also clears its recovery snapshot (as egui does)
-            self.engine.execute("file.closeProject", {"force": True})
+            cmd = self.registry.commands.get("file.save") or Command("file.save", "Save", [], "", "{}", True)
+            project_path = (self.project or {}).get("path")
+            params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
+            if params and params.get("__cancel__"):
+                return
+
+            def saved(_r: Any, _b: bytes | None) -> None:
+                self.schedule_refresh()
+                proceed()
+
+            self.engine.execute(
+                "file.save", params or {}, on_reply=saved, on_error=lambda m: self._command_failed("file.save", m)
+            )
+
+        def unanswered(_message: str = "") -> None:
+            decide(dict(self.state), None)
+
+        # an edit still in Effect Controls' send delay reaches the engine before it is asked
+        self.effect_controls.flush()
+        self.engine.call("session.state", on_reply=decide, on_error=unanswered)
+        QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
+
+    def closeEvent(self, e: QCloseEvent) -> None:
+        if self.engine.running and not self._quit_confirmed:
+            e.ignore()
+
+            def close_now() -> None:
+                self._quit_confirmed = True
+                self.close()
+
+            def discard_and_close() -> None:
+                # Don't Save: close the project, which also clears its recovery snapshot (as egui does)
+                self.engine.execute("file.closeProject", {"force": True})
+                close_now()
+
+            self.confirm_unsaved(close_now, discard_and_close, "Save changes to '{name}' before closing?")
+            return
         self._closing = True
         self.monitor.stop(notify=False)
         self.source_monitor.stop(notify=False)

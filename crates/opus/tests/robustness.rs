@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use filmcraft_opus::{Decoder, OpusHead, StreamDecoder};
+use cfa4_opus::{Decoder, OpusHead, StreamDecoder};
 
 struct Rng(u64);
 impl Rng {

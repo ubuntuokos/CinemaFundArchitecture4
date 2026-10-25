@@ -24,7 +24,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 |---|---|---|
 | F1 | [f1-01-dependencies.md](f1-01-dependencies.md) | Külső függőségek és eredetük felmérése |
 | F1 | [F1-02-SOURCE-CONFIG-GATE-2026-10-21.md](F1-02-SOURCE-CONFIG-GATE-2026-10-21.md) | Forrás- és konfigurációs ellenőrzés |
-| F1 | [f1-02-vendor-migration.md](f1-02-vendor-migration.md) | `craft-docpath` / `craft-ui` beemelése; Ubuntu 26.04 és FFmpeg 9.0.2 döntés |
+| F1 | [f1-02-vendor-migration.md](f1-02-vendor-migration.md) | `cfa4-docpath` / `cfa4-ui` beemelése; Ubuntu 26.04 és FFmpeg 9.0.2 döntés |
 | F1 | [f1-source-detachment.md](f1-source-detachment.md) | A leválasztás összefoglalója (beolvasztva, #20) |
 | F1 | [../development/f1-upstream-independence.md](../development/f1-upstream-independence.md) | CFA4 Linux-identitás (`io.github.ubuntuokos.cfa4`, `cfa4`) |
 | F2 | [../development/linux.md](../development/linux.md) | Linux fejlesztői környezet, Ubuntu 26.04 AMD64 |

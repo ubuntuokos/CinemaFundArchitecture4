@@ -10,7 +10,7 @@ fn demo() -> Session {
     s
 }
 
-fn v1_clip(s: &Session) -> filmcraft_project::TrackItem {
+fn v1_clip(s: &Session) -> cfa4_project::TrackItem {
     s.active_sequence().unwrap().video_tracks[0].items[1].clone()
 }
 
@@ -85,7 +85,7 @@ fn applied_effects_list_every_defined_parameter() {
     let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
     let blur = v["effects"].as_array().unwrap().iter().find(|e| e["effect"] == "gaussian_blur").unwrap();
     assert_eq!(blur["name"], "Gaussian Blur");
-    let def = filmcraft_project::effect_defs().iter().find(|d| d.id == "gaussian_blur").unwrap();
+    let def = cfa4_project::effect_defs().iter().find(|d| d.id == "gaussian_blur").unwrap();
     assert_eq!(blur["params"].as_array().unwrap().len(), def.params.len());
     assert!(blur["index"].as_u64().is_some());
 }

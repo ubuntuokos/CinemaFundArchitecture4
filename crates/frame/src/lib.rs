@@ -11,8 +11,8 @@ pub mod pool;
 
 use std::sync::Arc;
 
-use filmcraft_color::{ColorInfo, DecodeTable, Matrix, Range, linear_to_srgb_u8, normalize_c, normalize_y, srgb_u8_to_linear_table, to_linear, ycbcr_to_rgb};
-use filmcraft_time::Tick;
+use cfa4_color::{ColorInfo, DecodeTable, Matrix, Range, linear_to_srgb_u8, normalize_c, normalize_y, srgb_u8_to_linear_table, to_linear, ycbcr_to_rgb};
+use cfa4_time::Tick;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -507,9 +507,7 @@ impl VideoFrame {
         let (w, h) = (self.width as usize, self.height as usize);
         match &self.data {
             PixelData::Rgba8(d) => d.as_ref().clone(),
-            PixelData::Yuv8 { planes, chroma, alpha: None }
-                if matches!(self.color.transfer, filmcraft_color::Transfer::Bt709 | filmcraft_color::Transfer::Srgb) =>
-            {
+            PixelData::Yuv8 { planes, chroma, alpha: None } if matches!(self.color.transfer, cfa4_color::Transfer::Bt709 | cfa4_color::Transfer::Srgb) => {
                 // Direct display path: Y'CbCr → R'G'B' without linearisation.
                 let (sx, sy) = chroma.shifts();
                 let cw = w.div_ceil(1 << sx);

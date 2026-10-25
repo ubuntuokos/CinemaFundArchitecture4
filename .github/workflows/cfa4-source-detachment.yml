@@ -4,7 +4,7 @@ on:
     paths:
       - Cargo.toml
       - Cargo.lock
-      - vendor/craft-libs/**
+      - vendor/cfa4-libs/**
       - python/cfa4_devtools/dependency_audit.py
       - python/tests/test_dependency_audit_stdlib.py
       - .github/workflows/cfa4-source-detachment.yml
@@ -13,7 +13,7 @@ on:
     paths:
       - Cargo.toml
       - Cargo.lock
-      - vendor/craft-libs/**
+      - vendor/cfa4-libs/**
       - python/cfa4_devtools/dependency_audit.py
       - python/tests/test_dependency_audit_stdlib.py
       - .github/workflows/cfa4-source-detachment.yml

@@ -157,6 +157,9 @@ class KeyframeStrip(QWidget):
             self.seek.emit(max(self.start, min(self.end - 1, target)))
 
 
+# commands the engine runs at its playhead (animated values are evaluated or keyed there)
+AT_PLAYHEAD = frozenset({"effects.toggleAnimation", "effects.resetParam", "effects.reset"})
+
 class ParamRow:
     """Widgets of one parameter: stopwatch, label, editor, keyframe navigation, strip, reset."""
 
@@ -232,18 +235,18 @@ class ParamRow:
         self.strip = KeyframeStrip(parent)
         self.strip.setObjectName(f"{name}.keyframes")
         self.strip.seek.connect(self.panel.seek)
-        self.strip.interpolation.connect(lambda m, i: self.panel.command.emit(
+        self.strip.interpolation.connect(lambda m, i: self.panel.send(
             "effects.setInterpolation",
             {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id, "mediaTime": m, "interpolation": i},
         ))
-        self.strip.delete.connect(lambda m: self.panel.command.emit(
+        self.strip.delete.connect(lambda m: self.panel.send(
             "effects.deleteKeyframe", {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id, "mediaTime": m}
         ))
         reset = QToolButton(parent)
         reset.setObjectName(f"{name}.reset")
         reset.setText("↺")
         reset.setToolTip(tr("Reset Parameter"))
-        reset.clicked.connect(lambda: self.panel.command.emit(
+        reset.clicked.connect(lambda: self.panel.send(
             "effects.resetParam", {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id}
         ))
         # two grid rows per parameter: the controls, then (when animated) the keyframe strip
@@ -341,7 +344,7 @@ class ParamRow:
 
     # ----- widgets -> engine -----
     def _toggle_animation(self) -> None:
-        self.panel.command.emit(
+        self.panel.send(
             "effects.toggleAnimation", {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id}
         )
 
@@ -353,15 +356,25 @@ class ParamRow:
             self.panel.set_param(self, qcolor_to_value(color), immediate=True)
 
     def _add_remove(self) -> None:
-        clip = self.panel.clip or {}
-        here = self._keyframe_here(clip)
-        if here is not None:
-            self.panel.command.emit(
-                "effects.deleteKeyframe",
-                {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id, "mediaTime": here["mediaTime"]},
-            )
+        params: dict[str, Any] = {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id}
+        monitor = getattr(self.panel.window(), "monitor", None)
+        if monitor is not None and getattr(monitor, "playing", False):
+            # the snapshot and the engine playhead are still where playback started: stop on the
+            # shown frame and toggle the keyframe there
+            monitor.stop()
+            at = self.panel._edit_time(monitor.playhead)
+            half = max(1, int(monitor.frame()) // 2)
+            here = None
+            if at is not None:
+                here = next((k for k in self.keyframes if isinstance(k.get("time"), int) and abs(k["time"] - at) < half), None)
+            add = {**params, "time": at} if at is not None else params
         else:
-            self.panel.command.emit("effects.addKeyframe", {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id})
+            here = self._keyframe_here(self.panel.clip or {})
+            add = params
+        if here is not None:
+            self.panel.send("effects.deleteKeyframe", {**params, "mediaTime": here["mediaTime"]})
+        else:
+            self.panel.send("effects.addKeyframe", add)
 
     def _times(self) -> list[int]:
         return sorted(int(k["time"]) for k in self.keyframes if isinstance(k.get("time"), int))
@@ -392,9 +405,11 @@ class EffectControlsPanel(QWidget):
         self._shape: tuple[Any, ...] | None = None
         self.rows: dict[tuple[int, str], ParamRow] = {}
         self.effect_boxes: list[QWidget] = []
-        self._pending: dict[tuple[int, str], Any] = {}
+        # (clip, effect index, param id, timeline time or None) -> value: an edit stays bound to the
+        # clip and, when animated, the time it was made at, whatever the panel shows by the flush
+        self._pending: dict[tuple[int, int, str, int | None], Any] = {}
         self._send_timer = QTimer(self, singleShot=True, interval=SEND_DELAY_MS)
-        self._send_timer.timeout.connect(self._flush)
+        self._send_timer.timeout.connect(self.flush)
         self._last_send = QElapsedTimer()
         self._busy = False
         self._again = False
@@ -443,6 +458,7 @@ class EffectControlsPanel(QWidget):
             self.refresh(selection.get("selection") if isinstance(selection, dict) else None)
 
     def _show(self, clip: dict[str, Any] | None) -> None:
+        self.flush()  # edits made on the clip shown so far go to that clip, at their own time
         self.clip = clip
         self.clip_id = int(clip["clip"]) if clip and isinstance(clip.get("clip"), int) else None
         if clip is None:
@@ -491,7 +507,7 @@ class EffectControlsPanel(QWidget):
             enabled.setObjectName(f"effectControls.{index}.enabled")
             enabled.setChecked(bool(e.get("enabled", True)))
             enabled.setToolTip(tr("Toggle the effect on or off"))
-            enabled.toggled.connect(lambda _on, i=index: self.command.emit("effects.toggleEnabled", {"clip": self.clip_id, "index": i}))
+            enabled.toggled.connect(lambda _on, i=index: self.send("effects.toggleEnabled", {"clip": self.clip_id, "index": i}))
             font = enabled.font()
             font.setBold(True)
             enabled.setFont(font)
@@ -504,7 +520,7 @@ class EffectControlsPanel(QWidget):
                 b.setObjectName(f"effectControls.{index}.{oname}")
                 b.setText(text)
                 b.setToolTip(tr(tip))
-                b.clicked.connect(lambda _c=False, c=cmd, i=index: self.command.emit(c, {"clip": self.clip_id, "index": i}))
+                b.clicked.connect(lambda _c=False, c=cmd, i=index: self.send(c, {"clip": self.clip_id, "index": i}))
                 head.addWidget(b)
             v.addLayout(head)
             grid_host = QWidget(box)
@@ -522,21 +538,51 @@ class EffectControlsPanel(QWidget):
     # ----- edits -----
     def set_param(self, row: ParamRow, value: Any, immediate: bool = False) -> None:
         """Send a new value; spin-box drags are coalesced and become one undo step."""
-        self._pending[(row.effect, row.id)] = value
+        if self.clip_id is None:
+            return
+        self._pending[(self.clip_id, row.effect, row.id, self._edit_time() if row.animated else None)] = value
         if immediate:
-            self._flush()
+            self.flush()
         else:
             self._send_timer.start()
 
-    def _flush(self) -> None:
-        if self.clip_id is None:
-            self._pending.clear()
+    def _edit_time(self, playhead: int | None = None) -> int | None:
+        """Where an animated edit is keyed: ``playhead`` when given, the Program monitor's frame while it plays (the engine
+        playhead and this snapshot stay where playback started), else the shown snapshot's
+        playhead; pinned to the clip as the engine pins its own."""
+        clip = self.clip or {}
+        ph, start, end = clip.get("playhead"), clip.get("start"), clip.get("end")
+        monitor = getattr(self.window(), "monitor", None)
+        if isinstance(playhead, int):
+            ph = playhead
+        elif monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
+            ph = monitor.playhead
+        if not all(isinstance(v, int) for v in (ph, start, end)):
+            return None
+        return max(start, min(ph, max(start, end - 1)))
+
+    def send(self, command: str, params: dict[str, Any]) -> None:
+        """Any other edit from the panel: the coalesced values go first, so they don't land on a
+        reset, removed or reordered effect."""
+        self.flush()
+        if command in AT_PLAYHEAD:
+            # the engine acts at its playhead, which stays where playback started: stop on the
+            # shown frame first (the stop seeks the engine there)
+            monitor = getattr(self.window(), "monitor", None)
+            if monitor is not None and getattr(monitor, "playing", False):
+                monitor.stop()
+        self.command.emit(command, params)
+
+    def flush(self) -> None:
+        """Send the coalesced values now (also before a save or an unsaved-changes check)."""
+        self._send_timer.stop()
+        if not self._pending:
             return
         begin = not self._last_send.isValid() or self._last_send.elapsed() > GESTURE_GAP_MS
-        for (effect, param), value in self._pending.items():
-            self.command.emit(
-                "effects.setParam",
-                {"clip": self.clip_id, "effect": effect, "param": param, "value": value, "merge": True, "begin": begin},
-            )
+        for (clip, effect, param, at), value in self._pending.items():
+            params = {"clip": clip, "effect": effect, "param": param, "value": value, "merge": True, "begin": begin}
+            if at is not None:
+                params["time"] = at
+            self.command.emit("effects.setParam", params)
         self._pending.clear()
         self._last_send.restart()

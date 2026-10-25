@@ -1,17 +1,17 @@
 //! Lay out read credits into graphic-clip layers: one graphic clip per page.
 //!
-//! Every piece of text is an ordinary FilmCraft text layer (`graphic_text`), so a laid-out page
+//! Every piece of text is an ordinary CFA4 text layer (`graphic_text`), so a laid-out page
 //! can be edited afterwards in Essential Graphics like any title. Scroll pages use the graphic's
 //! Roll (start and end off screen); card pages are centred vertically and fade with opacity
 //! keyframes. Text sizes come from the caller's [`Measure`] (the engine uses the real text
 //! engine), so this crate stays free of fonts and rendering.
 
-use filmcraft_geom::Vec2;
-use filmcraft_project::graphic::{new_shape_layer, new_text_layer};
-use filmcraft_project::graphic_design::{GraphicMeta, Roll, RollMode};
-use filmcraft_project::gtemplate::ensure_uids;
-use filmcraft_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
-use filmcraft_time::{FrameRate, Tick};
+use cfa4_geom::Vec2;
+use cfa4_project::graphic::{new_shape_layer, new_text_layer};
+use cfa4_project::graphic_design::{GraphicMeta, Roll, RollMode};
+use cfa4_project::gtemplate::ensure_uids;
+use cfa4_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
+use cfa4_time::{FrameRate, Tick};
 
 use crate::CreditsError;
 use crate::sheet::{Block, Credits, Gap, Page, Warning};

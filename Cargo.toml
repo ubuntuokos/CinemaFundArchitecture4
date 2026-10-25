@@ -2,7 +2,7 @@
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
-exclude = ["vendor/craft-libs/*"]
+exclude = ["vendor/cfa4-libs/*"]
 
 [workspace.package]
 version = "0.10.0"
@@ -13,56 +13,56 @@ repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 
 [workspace.dependencies]
 # internal
-filmcraft-time = { path = "crates/time" }
-filmcraft-geom = { path = "crates/geom" }
-filmcraft-color = { path = "crates/color" }
-filmcraft-bitstream = { path = "crates/bitstream" }
-filmcraft-isobmff = { path = "crates/isobmff" }
-filmcraft-avi = { path = "crates/avi" }
-filmcraft-matroska = { path = "crates/matroska" }
-filmcraft-mxf = { path = "crates/mxf" }
-filmcraft-cfb = { path = "crates/cfb" }
-filmcraft-mpegts = { path = "crates/mpegts" }
-filmcraft-mpeg2v = { path = "crates/mpeg2v" }
-filmcraft-ac3 = { path = "crates/ac3" }
-filmcraft-mpa = { path = "crates/mpa" }
-filmcraft-ogg = { path = "crates/ogg" }
-filmcraft-h264 = { path = "crates/h264" }
-filmcraft-hevc = { path = "crates/hevc" }
-filmcraft-vp8 = { path = "crates/vp8" }
-filmcraft-vp9 = { path = "crates/vp9" }
-filmcraft-prores = { path = "crates/prores" }
-filmcraft-dnx = { path = "crates/dnx" }
-filmcraft-apv = { path = "crates/apv" }
-filmcraft-dng = { path = "crates/dng" }
-filmcraft-av1 = { path = "crates/av1" }
-filmcraft-aac = { path = "crates/aac" }
-filmcraft-flac = { path = "crates/flac" }
-filmcraft-opus = { path = "crates/opus" }
-filmcraft-h264enc = { path = "crates/h264enc" }
-filmcraft-audio-dsp = { path = "crates/audio-dsp" }
-filmcraft-frame = { path = "crates/frame" }
-filmcraft-media = { path = "crates/media" }
-filmcraft-codecs = { path = "crates/codecs" }
-filmcraft-project = { path = "crates/project" }
-filmcraft-edit = { path = "crates/edit" }
-filmcraft-interchange = { path = "crates/interchange" }
-filmcraft-text = { path = "crates/text" }
-filmcraft-captions = { path = "crates/captions" }
-filmcraft-credits = { path = "crates/credits" }
-filmcraft-speech = { path = "crates/speech" }
-filmcraft-tts = { path = "crates/tts" }
-filmcraft-tts-text = { path = "crates/tts-text" }
-filmcraft-render = { path = "crates/render" }
-filmcraft-gpu = { path = "crates/gpu" }
-filmcraft-scopes = { path = "crates/scopes" }
-filmcraft-export = { path = "crates/export" }
-filmcraft-format = { path = "crates/format" }
-filmcraft-engine = { path = "crates/engine" }
-filmcraft-ui-egui = { path = "crates/ui-egui" }
-filmcraft-automation = { path = "crates/automation" }
-filmcraft-platform = { path = "crates/platform" }
-filmcraft-testkit = { path = "crates/testkit" }
+cfa4-time = { path = "crates/time" }
+cfa4-geom = { path = "crates/geom" }
+cfa4-color = { path = "crates/color" }
+cfa4-bitstream = { path = "crates/bitstream" }
+cfa4-isobmff = { path = "crates/isobmff" }
+cfa4-avi = { path = "crates/avi" }
+cfa4-matroska = { path = "crates/matroska" }
+cfa4-mxf = { path = "crates/mxf" }
+cfa4-cfb = { path = "crates/cfb" }
+cfa4-mpegts = { path = "crates/mpegts" }
+cfa4-mpeg2v = { path = "crates/mpeg2v" }
+cfa4-ac3 = { path = "crates/ac3" }
+cfa4-mpa = { path = "crates/mpa" }
+cfa4-ogg = { path = "crates/ogg" }
+cfa4-h264 = { path = "crates/h264" }
+cfa4-hevc = { path = "crates/hevc" }
+cfa4-vp8 = { path = "crates/vp8" }
+cfa4-vp9 = { path = "crates/vp9" }
+cfa4-prores = { path = "crates/prores" }
+cfa4-dnx = { path = "crates/dnx" }
+cfa4-apv = { path = "crates/apv" }
+cfa4-dng = { path = "crates/dng" }
+cfa4-av1 = { path = "crates/av1" }
+cfa4-aac = { path = "crates/aac" }
+cfa4-flac = { path = "crates/flac" }
+cfa4-opus = { path = "crates/opus" }
+cfa4-h264enc = { path = "crates/h264enc" }
+cfa4-audio-dsp = { path = "crates/audio-dsp" }
+cfa4-frame = { path = "crates/frame" }
+cfa4-media = { path = "crates/media" }
+cfa4-codecs = { path = "crates/codecs" }
+cfa4-project = { path = "crates/project" }
+cfa4-edit = { path = "crates/edit" }
+cfa4-interchange = { path = "crates/interchange" }
+cfa4-text = { path = "crates/text" }
+cfa4-captions = { path = "crates/captions" }
+cfa4-credits = { path = "crates/credits" }
+cfa4-speech = { path = "crates/speech" }
+cfa4-tts = { path = "crates/tts" }
+cfa4-tts-text = { path = "crates/tts-text" }
+cfa4-render = { path = "crates/render" }
+cfa4-gpu = { path = "crates/gpu" }
+cfa4-scopes = { path = "crates/scopes" }
+cfa4-export = { path = "crates/export" }
+cfa4-format = { path = "crates/format" }
+cfa4-engine = { path = "crates/engine" }
+cfa4-ui-egui = { path = "crates/ui-egui" }
+cfa4-automation = { path = "crates/automation" }
+cfa4-platform = { path = "crates/platform" }
+cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
 
 # foundation
@@ -73,11 +73,11 @@ log = "0.4"
 rayon = "1"
 proptest = "1"
 roxmltree = "0.21"
-craft-docpath = { version = "0.1.0", path = "vendor/craft-libs/docpath" }
+cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 
 # ui
 # Shared frontend components; keep this dependency above the engine boundary.
-craft-ui = { version = "0.1.0", path = "vendor/craft-libs/ui", features = ["serde"] }
+cfa4-ui = { version = "0.1.0", path = "vendor/cfa4-libs/ui", features = ["serde"] }
 egui = "0.36"
 eframe = { version = "0.36", default-features = false }
 egui_kittest = "0.36"
@@ -100,50 +100,50 @@ opt-level = 2
 opt-level = 1
 
 # Codec hot loops: debug-build tests (RFC/oracle vectors) are minutes slower below opt-level 3.
-[profile.dev.package.filmcraft-h264]
+[profile.dev.package.cfa4-h264]
 opt-level = 3
 
-[profile.dev.package.filmcraft-h264enc]
+[profile.dev.package.cfa4-h264enc]
 opt-level = 3
 
-[profile.dev.package.filmcraft-hevc]
+[profile.dev.package.cfa4-hevc]
 opt-level = 3
 
-[profile.dev.package.filmcraft-prores]
+[profile.dev.package.cfa4-prores]
 opt-level = 3
 
-[profile.dev.package.filmcraft-dnx]
+[profile.dev.package.cfa4-dnx]
 opt-level = 3
 
-[profile.dev.package.filmcraft-apv]
+[profile.dev.package.cfa4-apv]
 opt-level = 3
 
-[profile.dev.package.filmcraft-dng]
+[profile.dev.package.cfa4-dng]
 opt-level = 3
 
-[profile.dev.package.filmcraft-av1]
+[profile.dev.package.cfa4-av1]
 opt-level = 3
 
-[profile.dev.package.filmcraft-aac]
+[profile.dev.package.cfa4-aac]
 opt-level = 3
 
-[profile.dev.package.filmcraft-flac]
+[profile.dev.package.cfa4-flac]
 opt-level = 3
 
 # Audio effects: realtime-factor tests and long convolution / spectral runs.
-[profile.dev.package.filmcraft-audio-dsp]
+[profile.dev.package.cfa4-audio-dsp]
 opt-level = 3
 
-[profile.dev.package.filmcraft-mxf]
+[profile.dev.package.cfa4-mxf]
 opt-level = 3
 
-[profile.dev.package.filmcraft-opus]
+[profile.dev.package.cfa4-opus]
 opt-level = 3
 
-[profile.dev.package.filmcraft-vp8]
+[profile.dev.package.cfa4-vp8]
 opt-level = 3
 
-[profile.dev.package.filmcraft-vp9]
+[profile.dev.package.cfa4-vp9]
 opt-level = 3
 
 [profile.release]

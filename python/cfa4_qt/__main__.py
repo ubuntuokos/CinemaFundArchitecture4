@@ -10,17 +10,27 @@ from pathlib import Path
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cfa4-qt", description="CFA4 Qt 6 editor (Rust engine + PySide6)")
     parser.add_argument("project", nargs="?", help="project file (.fcproj) to open")
-    parser.add_argument("--engine", help="path to cfa4-cli / filmcraft-cli (default: PATH, then target/)")
+    parser.add_argument("--engine", help="path to cfa4-cli (default: PATH, then target/)")
     parser.add_argument("--demo", action="store_true", help="open the built-in demo project")
     parser.add_argument("--data-dir", help="CFA4 data directory (auto-save, recovery, presets)")
     parser.add_argument("--no-autosave", action="store_true", help="no auto-save or crash-recovery journal")
     parser.add_argument("--lang", help="UI language (en, hu, de, ...); default: the system locale")
+    parser.add_argument(
+        "--install-desktop-entry",
+        action="store_true",
+        help="install a desktop entry and the CFA4 icons for this checkout into ~/.local/share "
+        "(so the taskbar shows CFA4 and its logo), then exit",
+    )
     parser.add_argument("--smoke", action="store_true", help="start, wait for the engine, then quit (CI check)")
     parser.add_argument("--screenshot", help="with --smoke: save a PNG of the window before quitting")
     args = parser.parse_args(argv)
 
     if not sys.platform.startswith("linux"):
         parser.error("CFA4 targets Linux (Ubuntu) only")
+    if args.install_desktop_entry:
+        from .desktop_entry import install
+
+        return 0 if install() else 1
     try:
         from PySide6.QtCore import QSettings, QTimer
         from PySide6.QtWidgets import QApplication, QMessageBox
@@ -28,8 +38,12 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"Qt 6 / PySide6 missing: {exc}; install: python -m pip install -e '.[qt]'")
 
     from . import i18n
+    from .desktop_entry import install, requested_by_env
     from .engine import EngineClient, EngineError, locate_engine
     from .main_window import MainWindow
+
+    if requested_by_env():  # opt-in, as the egui launcher's CFA4_DEV_DESKTOP_ENTRY=1
+        install(sys.stderr)
 
     app = QApplication(sys.argv[:1])
     app.setApplicationName("CFA4")
@@ -50,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     engine_path = locate_engine(args.engine, rejected)
     if engine_path is None:
         message = i18n.tr(
-            "The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p filmcraft-cli"
+            "The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli"
         )
         if rejected:
             message += "\n\n" + i18n.tr("Checked:") + "\n" + "\n".join(rejected)

@@ -21,7 +21,7 @@ facts rule out taking the program itself:
 
 The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 
-- New crate `crates/credits` (`filmcraft-credits`, layer **L2**, no I/O, wasm-clean): CSV / TSV
+- New crate `crates/credits` (`cfa4-credits`, layer **L2**, no I/O, wasm-clean): CSV / TSV
   reader, spreadsheet semantics, page / content / letter styles (JSON), layout into ordinary
   graphic-clip text layers with exact `Tick` durations.
 - Engine module `crates/engine/src/credits.rs` (L4): commands `graphics.credits.import`,
@@ -55,7 +55,7 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 ## Consequences
 
 - No GPL code, no JVM, no new third-party dependency (only workspace `serde`, `serde_json`,
-  `roxmltree`; the inflater is CFA4's own, now exported as `filmcraft_media::inflate`).
+  `roxmltree`; the inflater is CFA4's own, now exported as `cfa4_media::inflate`).
 - Never-crash: input limits (16 MiB, 100 000 rows, 256 columns, 20 000 chars per cell, 1 000
   pages, 50 000 blocks, 5 000 layers per page; ZIP: 10 000 entries, 64 MiB per entry, no ZIP64 or
   encryption; XML: 8 million nodes, no DTD), no panicking calls, mutation-fuzz tests for sheets,

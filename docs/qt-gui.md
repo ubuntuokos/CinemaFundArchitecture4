@@ -15,7 +15,7 @@ Ubuntu 26.04 does not let `pip` install into the system Python (PEP 668,
 
 ```sh
 git switch cfa4/qt6-gui                         # not needed once it is merged into main
-cargo build --release -p filmcraft-cli          # the engine (must include `serve`)
+cargo build --release -p cfa4-cli          # the engine (must include `serve`)
 sudo apt install python3-venv                   # once, if `python3 -m venv` is missing
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
@@ -25,8 +25,17 @@ python3 -m venv .venv
 
 `source .venv/bin/activate` lets you type `cfa4-qt` without the path in that terminal.
 
+**Taskbar name and logo.** KDE and GNOME take a window's name and icon from the installed
+`.desktop` file of its app id (`io.github.ubuntuokos.cfa4`). Packages install it; a checkout
+run has none, so the panel shows "python3". Install a user-level entry once (it is never done
+without asking, and an installed package's entry is never overridden):
+
+```sh
+.venv/bin/cfa4-qt --install-desktop-entry      # then start CFA4 again
+```
+
 The engine is `--engine PATH` or `$CFA4_ENGINE` when given; otherwise the build of this checkout
-(`target/release` or `target/debug`, the newer first), then `cfa4-cli` / `filmcraft-cli` on
+(`target/release` or `target/debug`, the newer first), then `cfa4-cli` on
 `PATH`. A candidate without the `serve` subcommand (an engine built from a branch without the
 Qt GUI, or an older installed CLI) is skipped, and if none is usable the GUI lists every path
 it checked and why. `--smoke [--screenshot out.png]`
@@ -117,7 +126,7 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 
 | File | Role |
 |---|---|
-| `apps/filmcraft-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
+| `apps/cfa4-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
 | `python/cfa4_qt/panels/effect_controls.py` | Effect Controls: parameters, stopwatch, keyframes (`effects.inspect` + `effects.*` commands) |
 | `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress |
 | `python/cfa4_qt/panels/credits.py` | Credits window: spreadsheet, worksheet, pictures, styling, pages, warnings, page picture, place at playhead (`graphics.credits.*`, [credits.md](credits.md)) |

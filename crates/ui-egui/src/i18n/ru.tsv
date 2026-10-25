@@ -1,6 +1,6 @@
 # Russian (ru) catalog. Columns separated by TAB: context <TAB> source <TAB> translation
 # Empty context is a plain UI string. Escapes: \n, \t, \\; preserve placeholders and trailing …
-# Original clean-room translations from the meaning of FilmCraft's English menu labels,
+# Original clean-room translations from the meaning of CFA4's English menu labels,
 # using Russian video-editing vocabulary (Premiere-style). No proprietary localization resources were used.
 # Core menu coverage; other interface strings fall back to English.
 
@@ -294,7 +294,7 @@
 	Select Previous Graphic	Выбрать предыдущий графический элемент
 	Select Previous Layer	Выбрать предыдущий слой
 	Selection Follows Playhead	Выделение следует за курсором воспроизведения
-	Selection as FilmCraft Project…	Выделение как проект FilmCraft…
+	Selection as CFA4 Project…	Выделение как проект CFA4…
 	Selection…	Выделение…
 	Send Backward	Переместить назад
 	Send to Back	Переместить на задний план

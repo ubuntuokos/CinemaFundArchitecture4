@@ -81,7 +81,7 @@ class LocalQtBridgeContract(unittest.TestCase):
 
     def test_local_engine_locator_prefers_cfa4_executable(self):
         def where(name):
-            return "/usr/bin/cfa4-cli" if name == "cfa4-cli" else "/usr/bin/filmcraft-cli"
+            return "/usr/bin/cfa4-cli" if name == "cfa4-cli" else None
         with patch("cfa4_devtools.qt_app.shutil.which", side_effect=where):
             self.assertEqual(locate_engine(), Path("/usr/bin/cfa4-cli"))
 

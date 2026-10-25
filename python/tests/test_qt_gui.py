@@ -67,7 +67,7 @@ FAKE_ENGINE = textwrap.dedent(
         elif m == "engine.commands":
             send({"id": rid, "ok": True, "result": commands})
         elif m == "session.state":
-            send({"id": rid, "ok": True, "result": {"dirty": False, "revision": state["revision"]}})
+            send({"id": rid, "ok": True, "result": {"dirty": state.get("dirty", False), "revision": state["revision"]}})
         elif m == "frame.render":
             send({"id": rid, "ok": True, "result": {"w": 4, "h": 2, "format": "rgba8", "offline": []}}, bytes(32))
         elif m == "audio.render":
@@ -90,6 +90,12 @@ FAKE_ENGINE = textwrap.dedent(
                 state["revision"] += 1
                 send({"id": rid, "ok": True, "result": None})
                 send({"event": "projectChanged", "revision": state["revision"]})
+            elif c == "test.makeDirty":
+                state["dirty"] = True
+                send({"id": rid, "ok": True, "result": None})
+            elif c in ("file.save", "file.openDemoProject"):
+                state["dirty"] = False
+                send({"id": rid, "ok": True, "result": None})
             elif c == "playhead.set":
                 state["playhead"] = int(cp.get("time") or 0)
                 send({"id": rid, "ok": True, "result": None})
@@ -163,10 +169,10 @@ def _script(path: Path, body: str) -> Path:
 
 
 def test_locate_engine_skips_engines_without_serve(tmp_path: Path, monkeypatch, fake_engine: Path):
-    """Regression: an older filmcraft-cli on PATH (no `serve`) was picked and exited with 2."""
+    """Regression: an older cfa4-cli on PATH (no `serve`) was picked and exited with 2."""
     from cfa4_qt import engine as engine_mod
 
-    old = _script(tmp_path / "bin" / "filmcraft-cli", "import sys\nprint('USAGE\\n  exec <id>')\n")
+    old = _script(tmp_path / "bin" / "cfa4-cli", "import sys\nprint('USAGE\\n  exec <id>')\n")
     monkeypatch.delenv("CFA4_ENGINE", raising=False)
     monkeypatch.setenv("PATH", str(old.parent))
     rejected: list[str] = []
@@ -178,7 +184,7 @@ def test_locate_engine_skips_engines_without_serve(tmp_path: Path, monkeypatch, 
     (root / "python" / "cfa4_qt").mkdir(parents=True)
     monkeypatch.setattr(engine_mod, "__file__", str(root / "python" / "cfa4_qt" / "engine.py"))
     assert locate_engine() is None
-    build = root / "target" / "release" / "filmcraft-cli"
+    build = root / "target" / "release" / "cfa4-cli"
     build.parent.mkdir(parents=True)
     build.write_bytes(fake_engine.read_bytes())
     build.chmod(0o755)
@@ -337,11 +343,339 @@ def test_engine_stop_fails_pending_requests(app, fake_engine: Path):
     assert errors and "not running" in errors[0]
 
 
+def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path, tmp_path: Path, monkeypatch):
+    """Regression: File ▸ Open / New / Demo Project replaced a dirty project without asking.
+    The engine's dirty flag is asked for after the edit still in flight, not the last refresh."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    sent: list[str] = []
+    execute = engine.execute
+
+    def recording(command, params=None, on_reply=None, on_error=None):
+        sent.append(command)
+        return execute(command, params, on_reply=on_reply, on_error=on_error)
+
+    monkeypatch.setattr(engine, "execute", recording)
+    answers: list[QtWidgets.QMessageBox.StandardButton] = []
+    asked: list[str] = []
+
+    def answer(box):
+        asked.append(box.text())
+        return answers.pop(0)
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+    demo = Command("file.openDemoProject", "Demo Project", ["File", "New"], "", "{}", True)
+    try:
+        assert wait_until(app, lambda: bool(engine.hello))
+        # clean: no question, the command runs
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert not asked
+        # dirty (the refresh has not seen it yet): Cancel keeps the project
+        sent.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.run_command(demo)
+        assert wait_until(app, lambda: bool(asked))
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 50)
+        assert "file.openDemoProject" not in sent
+        assert "continuing" in asked[0]
+        # Save: saves, then replaces
+        answers.append(QtWidgets.QMessageBox.StandardButton.Save)
+        win.project = {"name": "Demo", "path": str(tmp_path / "a.fcproj")}
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert sent.index("file.save") < sent.index("file.openDemoProject")
+        # an Export window left open names the old project's sequence: it is put away
+        class Dialog:
+            hidden = False
+
+            def hide(self):
+                Dialog.hidden = True
+
+        win.export_dialog = Dialog()  # type: ignore[assignment]
+        # Don't Save: replaces without saving
+        sent.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert "file.save" not in sent
+        assert Dialog.hidden
+        win.export_dialog = None
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_deferred_effect_edits_reach_the_engine_before_save_or_close(app, fake_engine: Path, tmp_path: Path, monkeypatch):
+    """Regression: a value in Effect Controls' 120 ms send delay was not sent before Save or the
+    unsaved-changes check, so closing right after an edit lost it."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    sent: list[str] = []
+    execute, call = engine.execute, engine.call
+
+    def recording(command, params=None, on_reply=None, on_error=None):
+        sent.append(command)
+        return execute(command, params, on_reply=on_reply, on_error=on_error)
+
+    def recording_call(method, params=None, on_reply=None, on_error=None):
+        if method != "engine.execute":  # execute() goes through call()
+            sent.append(method)
+        return call(method, params, on_reply=on_reply, on_error=on_error)
+
+    monkeypatch.setattr(engine, "execute", recording)
+    monkeypatch.setattr(engine, "call", recording_call)
+    scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": False,
+             "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+    clip = {"clip": 100, "name": "A", "start": 0, "end": 9000, "playhead": 0,
+            "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]}
+    try:
+        assert wait_until(app, lambda: bool(engine.hello) and "file.save" in win.registry.commands)
+        ec = win.effect_controls
+        ec._show(clip)
+        ec.set_param(ec.rows[(0, "scale")], 150.0)
+        sent.clear()
+        win.confirm_unsaved(lambda: None)
+        assert sent[:2] == ["effects.setParam", "session.state"]
+        ec.set_param(ec.rows[(0, "scale")], 160.0)
+        sent.clear()
+        win.project = {"name": "Demo", "path": str(tmp_path / "a.fcproj")}
+        win.run_command(win.registry.commands["file.save"])
+        assert sent[:2] == ["effects.setParam", "file.save"]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_recovery_prompt_reads_the_engines_camel_case_keys():
+    """Regression: the prompt read snake_case keys, so every candidate was 'Untitled' from 1970."""
+    from cfa4_qt.main_window import recovery_text
+
+    text = recovery_text({"id": "s1", "savedUnix": 1_790_000_000, "projectName": "Interjú", "cleanExit": True})
+    assert "Interjú" in text and "1970" not in text and "was closed" in text
+    crashed = recovery_text({"savedUnix": 1_790_000_000, "projectName": "B", "cleanExit": False})
+    assert "quit unexpectedly" in crashed
+    assert "unknown time" in recovery_text({"savedUnix": "junk"})
+    assert "unknown time" in recovery_text({"savedUnix": 10**30})
+
+
+def test_panel_only_shortcuts_are_not_bound_window_wide(app):
+    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping."""
+    win = QtWidgets.QMainWindow()
+    reg = CommandRegistry(lambda c: None)
+    reg.load(
+        [
+            {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": "Cmd+Z", "shortcuts": ["Cmd+Z", "Left"],
+             "panelShortcuts": [{"keys": "Left", "panel": "History"}], "params": "{}", "enabled": True},
+            {"id": "playhead.stepBack", "label": "Step Back", "menu": [], "shortcut": "Left", "shortcuts": ["Left"],
+             "params": "{}", "enabled": True},
+        ]
+    )
+    assert reg.commands["edit.undo"].shortcuts == ["Cmd+Z"]
+    reg.build_menus(win.menuBar(), win)
+    left = QtGui.QKeySequence("Left")
+    assert left in reg.actions["playhead.stepBack"].shortcuts()
+    assert left not in reg.actions["edit.undo"].shortcuts()
+
+
+def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
+    """Regressions: Export silently truncated an existing output; an output folder that could not
+    be created raised out of the slot and nothing was shown."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``; ``.png``
+        is an image sequence."""
+
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            if command == "export.resolve":
+                path = str((params or {}).get("path"))
+                if on_reply is not None:
+                    fmt = "png" if path.endswith(".png") else "h264"
+                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4", "format": fmt}}, None)
+                return 0
+            self.sent.append((command, dict(params or {})))
+            return 0
+
+    engine = Engine()
+    dlg = ExportDialog(engine)  # type: ignore[arg-type]
+    out = tmp_path / "out.mp4"
+    out.write_bytes(b"previous export")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers = [QtWidgets.QMessageBox.StandardButton.Cancel, QtWidgets.QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    dlg._enqueue(True)
+    assert engine.sent == [] and out.read_bytes() == b"previous export"
+    dlg._enqueue(True)
+    assert [c for c, _ in engine.sent] == ["export.queue.add"]
+    dlg._enqueue(False)  # already confirmed for this path: no second question
+    assert len(engine.sent) == 2 and not answers
+    # typed without its extension: the file the engine will write is the one asked about
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(tmp_path / "out")})
+    dlg._replace_confirmed = set()
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2 and not answers
+    # an image sequence writes numbered frames: an earlier export's frames are asked about
+    from cfa4_qt.panels.export import existing_outputs
+
+    seq_dir = tmp_path / "frames"
+    seq_dir.mkdir()
+    (seq_dir / "cut000.png").write_bytes(b"x")
+    (seq_dir / "cut_notes.png").write_bytes(b"x")
+    assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
+    assert existing_outputs(seq_dir / "cut.png", "h264") == []
+    assert existing_outputs(seq_dir / "other.png", "png") == []
+    # Browse returning cut.png confirms that file only, not the earlier frames
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
+    dlg._browse()
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2 and not answers
+    answers.append(QtWidgets.QMessageBox.StandardButton.Yes)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 3 and not answers
+    dlg._enqueue(True)  # the frames are confirmed now
+    assert len(engine.sent) == 4
+    # a regular file where the folder should be: an error in the dialog, nothing queued
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(blocker / "sub" / "out.mp4")})
+    dlg._enqueue(True)
+    assert len(engine.sent) == 4
+    assert "output folder" in dlg.summary.text()
+    dlg.close()
+
+
+def test_effect_controls_pending_edits_keep_their_clip_and_time(app):
+    """Regressions: a coalesced edit was sent to whichever clip was shown when the 120 ms timer
+    fired, and an animated one at the engine's playhead then rather than where it was made."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    def snapshot(clip: int, playhead: int, animated: bool) -> dict:
+        scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": animated,
+                 "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+        return {"clip": clip, "name": f"C{clip}", "start": 1000, "end": 9000, "playhead": playhead,
+                "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]}
+
+    panel = EffectControlsPanel()
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    panel._show(snapshot(1, 2000, False))
+    panel.set_param(panel.rows[(0, "scale")], 150.0)
+    panel._show(snapshot(2, 2000, False))  # another clip selected before the timer fired
+    assert [(c, p["clip"], p["value"], "time" in p) for c, p in sent] == [("effects.setParam", 1, 150.0, False)]
+    sent.clear()
+    panel._show(snapshot(2, 3000, True))
+    panel.set_param(panel.rows[(0, "scale")], 120.0)
+    panel._show(snapshot(2, 7000, True))  # the playhead moved to another keyframe meanwhile
+    assert [(p["clip"], p["time"]) for _c, p in sent] == [(2, 3000)]
+    sent.clear()
+    panel._show(snapshot(2, 20_000, True))  # past the clip: pinned to it, as the engine pins
+    panel.set_param(panel.rows[(0, "scale")], 110.0)
+    panel.send("effects.reset", {"clip": 2, "index": 0})  # pending values go before another edit
+    assert [c for c, _p in sent] == ["effects.setParam", "effects.reset"] and sent[0][1]["time"] == 8999
+    panel.close()
+
+
+def test_effect_controls_key_animated_edits_at_the_playing_frame(app):
+    """During Program playback neither the engine playhead nor the panel's snapshot moves: an
+    edit is keyed at the frame the monitor shows."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6000
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = EffectControlsPanel(host)
+    host.setCentralWidget(panel)
+    sent: list[dict] = []
+    panel.command.connect(lambda _c, p: sent.append(p))
+    scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": True,
+             "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+    panel._show({"clip": 3, "name": "C", "start": 1000, "end": 9000, "playhead": 2000,
+                 "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]})
+    panel.set_param(panel.rows[(0, "scale")], 130.0, immediate=True)
+    assert sent[-1]["time"] == 6000
+    host.monitor.playing = False  # type: ignore[attr-defined]
+    panel.set_param(panel.rows[(0, "scale")], 140.0, immediate=True)
+    assert sent[-1]["time"] == 2000
+    host.close()
+
+
+def test_effect_controls_toggle_keyframes_at_the_playing_frame(app):
+    """Add/Remove Keyframe during playback acted on playback's start: it deleted the keyframe
+    there, or added one at the stale engine playhead. It stops on the shown frame and acts there."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6010
+
+        def stop(self):
+            self.playing = False
+            self.playhead = 6000
+
+        def frame(self):
+            return 100
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = EffectControlsPanel(host)
+    host.setCentralWidget(panel)
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+
+    def show(keyframes):
+        scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": True,
+                 "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": keyframes}
+        panel._show({"clip": 3, "name": "C", "start": 1000, "end": 9000, "playhead": 2000, "mediaTimeAtPlayhead": 1000,
+                     "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]})
+
+    show([{"time": 2000, "mediaTime": 1000, "value": 1.0}])
+    panel.rows[(0, "scale")]._add_remove()
+    assert sent[-1] == ("effects.addKeyframe", {"clip": 3, "effect": 0, "param": "scale", "time": 6000})
+    host.monitor.playing = True  # type: ignore[attr-defined]
+    show([{"time": 2000, "mediaTime": 1000, "value": 1.0}, {"time": 6000, "mediaTime": 5000, "value": 2.0}])
+    panel.rows[(0, "scale")]._add_remove()
+    assert sent[-1] == ("effects.deleteKeyframe", {"clip": 3, "effect": 0, "param": "scale", "mediaTime": 5000})
+    # the stopwatch stops playback too, so the engine freezes the value of the shown frame
+    host.monitor.playing = True  # type: ignore[attr-defined]
+    panel.rows[(0, "scale")]._toggle_animation()
+    assert host.monitor.playing is False  # type: ignore[attr-defined]
+    assert sent[-1] == ("effects.toggleAnimation", {"clip": 3, "effect": 0, "param": "scale"})
+    # so do the parameter and effect Reset buttons, which key the default at the engine playhead
+    for name in ("effectControls.0.scale.reset", "effectControls.0.reset"):
+        host.monitor.playing = True  # type: ignore[attr-defined]
+        button = panel.findChild(QtWidgets.QToolButton, name)
+        assert button is not None, name
+        button.click()
+        assert host.monitor.playing is False  # type: ignore[attr-defined]
+    assert sent[-1] == ("effects.reset", {"clip": 3, "index": 0})
+    host.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_demo_project(app, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
@@ -392,7 +726,7 @@ def test_hungarian_catalog_covers_the_qt_gui():
     assert not missing, missing
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_hungarian_catalog_covers_every_engine_menu():
     import subprocess
 
@@ -444,7 +778,7 @@ def _items(project: dict) -> list[dict]:
     return out
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_source_monitor(app, tmp_path: Path):
     from cfa4_qt.commands import Command
     from cfa4_qt.main_window import MainWindow
@@ -540,7 +874,7 @@ def test_export_helpers(tmp_path: Path, monkeypatch):
     assert default_output_dir(None) == tmp_path
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
     import shutil
@@ -632,7 +966,7 @@ def test_tick_signals_carry_64_bit_times(app):
 
 
 # ----- Effect Controls -----
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_effect_controls(app, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
@@ -717,7 +1051,7 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
 
 def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):
     """File ▸ Quit exists (Ctrl+Q, asks to save like the close button), and the GUI uses the CFA4
-    logo, not an inherited FilmCraft/ArtCraft one."""
+    logo, not an inherited upstream one."""
     from cfa4_qt import branding
     from cfa4_qt.main_window import MainWindow
 
@@ -725,9 +1059,7 @@ def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Pa
     icon = branding.app_icon()
     assert not icon.isNull() and {s.width() for s in icon.availableSizes()} >= {16, 32, 48, 256}
     assert branding.logo_pixmap(180).width() == 180
-    for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
-        text = path.read_text(encoding="utf-8").lower()
-        assert "ai.storyteller" not in text and "app-icon" not in text, path
+    # inherited marks anywhere in the repository: test_independence.py
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(fake_engine)
@@ -771,7 +1103,7 @@ def test_ruler_labels_fall_on_whole_timecode():
     assert [format_timecode(i * ruler_step(ft, 40, 90), ft) for i in (1, 2)] == ["00:00:05:00", "00:00:10:00"]
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_every_track_is_reachable_in_a_short_timeline(app, tmp_path: Path):
     """Regression: the timeline had no vertical scrolling, so in a short Timeline panel Audio 2
     (the demo's music) showed as a sliver and Audio 3 not at all."""
@@ -841,7 +1173,7 @@ def test_credits_seconds_format():
     assert format_seconds("x") == "" and format_seconds(None) == ""
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_credits_window(app, tmp_path: Path):
     """The Credits window: the menu command opens it, it shows the engine's pages, warnings and a
     page picture, and places the credits on the timeline in one undo step."""
@@ -891,3 +1223,47 @@ def test_real_engine_credits_window(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+# ----- desktop entry for checkout runs -----
+def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, monkeypatch):
+    """Regression: run from a checkout, KDE's panel showed "python3" (no .desktop for the app
+    id). `cfa4-qt --install-desktop-entry` writes one; packaged entries and runs are untouched."""
+    import io
+
+    from cfa4_qt import desktop_entry as de
+    from cfa4_qt.__main__ import main
+
+    home = tmp_path / "data"
+    system = tmp_path / "system"
+    monkeypatch.setenv("XDG_DATA_HOME", str(home))
+    monkeypatch.setenv("XDG_DATA_DIRS", str(system))
+    for var in ("APPIMAGE", "FLATPAK_ID", *de.ENV_FLAGS):
+        monkeypatch.delenv(var, raising=False)
+    entry = home / "applications" / "io.github.ubuntuokos.cfa4.desktop"
+    assert not de.requested_by_env()
+    assert main(["--install-desktop-entry"]) == 0
+    text = entry.read_text(encoding="utf-8")
+    assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
+    exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
+    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
+    assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
+    assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
+    # idempotent
+    out = io.StringIO()
+    assert de.install(out) and "up to date" in out.getvalue()
+    # an installed package's entry wins: nothing is rewritten
+    entry.unlink()
+    (system / "applications").mkdir(parents=True)
+    (system / "applications" / "io.github.ubuntuokos.cfa4.desktop").write_text("[Desktop Entry]\n", encoding="utf-8")
+    assert de.install(io.StringIO()) and not entry.exists()
+    # AppImage / Flatpak runs never write
+    (system / "applications" / "io.github.ubuntuokos.cfa4.desktop").unlink()
+    monkeypatch.setenv("FLATPAK_ID", "io.github.ubuntuokos.cfa4")
+    assert not de.install(io.StringIO()) and not entry.exists()
+    monkeypatch.delenv("FLATPAK_ID")
+    # paths a desktop entry cannot carry are refused, not written broken
+    with pytest.raises(ValueError):
+        de.exec_line(["/tmp/a%b/cfa4-qt"])
+    monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
+    assert de.requested_by_env()
