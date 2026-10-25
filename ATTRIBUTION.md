@@ -9,7 +9,18 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 
 | Asset | Author | Source | Licence |
 |---|---|---|---|
-| `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project | Original CFA4 development geometric icon | MIT OR Apache-2.0 |
+| `assets/cfa4/hicolor/128x128/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 128x128 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/16x16/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 16x16 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/22x22/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 22x22 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/24x24/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 24x24 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 256x256 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/32x32/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 32x32 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/48x48/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 48x48 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 512x512 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/64x64/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner) | CFA4 app icon, 64x64 (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | ubuntuokos (CFA4 project owner) | CFA4 app icon, scalable (derived from the CFA4 logo) | GPL-3.0-or-later |
+| `assets/cfa4/logo/cfa4-emblem.png` | ubuntuokos (CFA4 project owner) | Emblem of the CFA4 logo (derived by scripts/dev/cfa4_icons.py) | GPL-3.0-or-later |
+| `assets/cfa4/logo/cfa4-logo.png` | ubuntuokos (CFA4 project owner) | CFA4 logo supplied by the project owner | GPL-3.0-or-later |
 | `crates/ui-egui/src/i18n/it.tsv` | FilmCraft contributors | Original work: clean-room Italian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/id.tsv` | FilmCraft contributors | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/ko.tsv` | FilmCraft contributors | Original work: clean-room Korean interface translations | MIT OR Apache-2.0 |

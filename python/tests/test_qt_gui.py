@@ -720,8 +720,10 @@ def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Pa
     from cfa4_qt import branding
     from cfa4_qt.main_window import MainWindow
 
-    assert branding.LOGO_SVG.is_file() and "cfa4" in branding.LOGO_SVG.name
-    assert not branding.app_icon().isNull()
+    assert branding.LOGO.is_file() and all(branding.icon_file(n).is_file() for n in branding.ICON_SIZES)
+    icon = branding.app_icon()
+    assert not icon.isNull() and {s.width() for s in icon.availableSizes()} >= {16, 32, 48, 256}
+    assert branding.logo_pixmap(180).width() == 180
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         text = path.read_text(encoding="utf-8").lower()
         assert "ai.storyteller" not in text and "app-icon" not in text, path
