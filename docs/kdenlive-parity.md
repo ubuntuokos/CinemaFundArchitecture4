@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
 > **Utolsó átnézés:** 2026-10-25 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
-> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1; K26–K30 felirat- és átiratlánc, 11.2) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -224,7 +224,8 @@ mérés nélkül.
 | **K19** | További easing-típusok (elastic, bounce, back, expo …) | P3 | 8–15 | – | `kdenlive_ease_generator` |
 
 A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra. A 11.1 pont K20–K25 teendőivel
-együtt (kb. 66–107 óra) a teljes terv kb. 470–810 óra.
+együtt (kb. 66–107 óra) a K1–K25 kb. 470–810 óra; a 11.2 pont K26–K30 teendőivel (kb. 74–120 óra)
+a teljes terv kb. 545–930 óra.
 
 ### Részletek
 
@@ -305,6 +306,35 @@ Tervezési elvek a meglévő pontokhoz:
 - **AI-funkciók (K2, K4, K6):** ugyanazokat a parancsokat hívják, mint az ember, előnézettel,
   visszavonhatóan, naplózva. Előbb stabil kézi szerkesztés, csak utána AI.
 
+### 11.2 Felirat- és átiratlánc az FA3 Kdenlive-konszolidációjából (2026-10-25)
+
+Az FA3 konszolidációja a Kdenlive-ot tette szerkesztővé és az OTIO-t a projekt igazságává; ezt a
+CFA4-ben nem vesszük át (a CFA4 maga a szerkesztő, a `.fcproj` az igazság, a Kdenlive importforrás).
+Egyező szabály: külső `.kdenlive` írás nincs, és az MI által javasolt idővonal-módosítás csak emberi
+jóváhagyással kerül be. A CFA4-ben ma megvan a Whisper (`transcript.generate`), a szószintű időzítés
+és a beszélőfelismerés (`docs/transcripts.md`); az alábbiak hiányoznak.
+
+| # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
+|---|---|---|---|---|---|
+| **K26** | Hangleválasztás (beszéd és zene szétválasztása) opcionális előfeldolgozásként a felismerés előtt | P2 | 25–40 | K2, K18 | Demucs (MIT) |
+| **K27** | Szóidők ellenőrzése és kényszerített igazítás (forced alignment), ha a natív időzítés pontatlan | P2 | 25–40 | K2 | CTC-alapú igazítás (modell licencellenőrzéssel) |
+| **K28** | Fordítás nyomkövetéssel: forrás- és célnyelv, modell, verzió a feliratsáv mellett | P2 (a K6 része) | 6–10 | K6 | FA3 `TranslationArtifact` |
+| **K29** | Feliratminőség-ellenőrzés az idővonalra kerülés előtt: olvasási sebesség, sorhossz, sorok száma, legrövidebb és leghosszabb időtartam, átfedés, rés | P1 | 15–25 | – | FA3 `CaptionQualityEvidence` |
+| **K30** | SBV (YouTube) felirat import és export | P3 | 3–5 | – | Kdenlive feliratimport |
+
+- **K26.** A felismerés a leválasztott beszédsávon fut, de a felirat szövegének és időzítésének
+  forrása a felismerő marad; a leválasztás csak javítja a bemenetet. Saját Rust-futtatás (candle),
+  a modell a K18 letöltőjével, jóváhagyással érkezik. Kész, ha zenés mintán mérhetően csökken a WER.
+- **K27.** Az ellenőrzés jelzi a gyanús szóidőket (nulla hossz, átfedés, ugrás); igazítás csak
+  ezeknél fut. Az eredmény külön, visszavonható lépés. Modell csak kereskedelmi használatot engedő
+  licenccel (a CC-BY-NC súlyok, például az MMS, kizárva).
+- **K28.** A lefordított sáv metaadatban hordozza a forrássávot, a nyelvpárt és a modellt; a forrás
+  módosulása után jelzi, hogy a fordítás elavult.
+- **K29.** Állítható szabálykészlet (alapértelmezés: legfeljebb 17 karakter/másodperc, 42 karakter/sor,
+  2 sor, 0,83–7 másodperc), presetként mentve (K17: sorozatonkénti feliratsablon). A hibák listája a
+  vezérlőcsatornán is lekérdezhető; export előtt figyelmeztet.
+- **K30.** A `crates/captions` meglévő SRT- és VTT-kezelése mellé.
+
 ## 12. Tulajdonosi döntések (2026-10-25)
 
 | Téma | Döntés |
@@ -343,3 +373,4 @@ Tervezési elvek a meglévő pontokhoz:
 | 2026-10-25 | minor | Médiahátterek az ADR 0005 (#62) szerint: saját motor az alap, FFmpeg ≥ 9.0.2 és Ubuntu GStreamer kiegészítő, automatikus útválasztóval (a visszavont #53 helyett) |
 | 2026-10-25 | major | 3. változat: a tíz kiegészítő Kdenlive-repó elemzése, K10–K19, K1 kötelező (OTIO-teszt, kompatibilitási jelentés, `melt`-orákulum, export nélkül), tulajdonosi döntések (12. pont) |
 | 2026-10-25 | minor | 11.1: K20–K25 és tervezési elvek az FA3 elődtervből (FA3-VIDEO-EDITOR-001); a Kdenlive `REUSE.toml` CC0-részei rögzítve |
+| 2026-10-25 | minor | 11.2: K26–K30 felirat- és átiratlánc az FA3 Kdenlive-konszolidációjából (hangleválasztás, kényszerített igazítás, fordítás nyomkövetéssel, feliratminőség-ellenőrzés, SBV) |
