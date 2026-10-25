@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import re
 import shutil
@@ -37,15 +38,21 @@ SYMBOL_VERSION_RE = re.compile(r"\*UND\*\s+\S+\s+\(?([A-Za-z_]+)_([0-9][0-9A-Za-
 LDD_RE = re.compile(r"^\s*(\S+)\s+=>\s+(not found|\S+)", re.MULTILINE)
 # The dynamic loader is printed by absolute path without "=>".
 LDD_LOADER_RE = re.compile(r"^\s*(/\S+/(ld-linux[^/\s]*))\s+\(", re.MULTILINE)
-EMBEDDED_LIB_RE = re.compile(rb"lib[A-Za-z0-9_+\-]+\.so(?:\.[0-9]+)*")
+# Symbol tables are NUL-separated, but string pools glue names together ("XSetXlibControls...libXi.so"):
+# a library name starts after a non-identifier byte and is short.
+EMBEDDED_LIB_RE = re.compile(rb"(?<![A-Za-z0-9_])lib[A-Za-z0-9_+\-]{1,64}\.so(?:\.[0-9]+)*")
 
 
 def run(argv: list[str]) -> str | None:
     """Run a tool and return its stdout, or None when it is missing or fails."""
     if shutil.which(argv[0]) is None:
         return None
+    # Parsers expect untranslated output (dpkg prints "diversion by" in English only under C).
+    env = {**os.environ, "LC_ALL": "C", "LANGUAGE": ""}
     try:
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=TOOL_TIMEOUT_S, check=False)
+        result = subprocess.run(
+            argv, capture_output=True, text=True, timeout=TOOL_TIMEOUT_S, check=False, env=env
+        )
     except (OSError, subprocess.SubprocessError):
         return None
     return result.stdout if result.returncode == 0 else None
@@ -90,8 +97,10 @@ def parse_dpkg_search(output: str) -> str | None:
     """`dpkg-query -S /path` prints `pkg:arch: /path`; return `pkg:arch`."""
     for line in output.splitlines():
         package, sep, _ = line.partition(": ")
-        if sep and package and "diversion" not in line:
-            return package.split(",")[0].strip()
+        # Diversion lines ("diversion by libc6 from: /path") contain spaces; package names never do.
+        first = package.split(",")[0].strip()
+        if sep and first and " " not in first:
+            return first
     return None
 
 
