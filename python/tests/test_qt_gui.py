@@ -469,23 +469,65 @@ def test_recovery_prompt_reads_the_engines_camel_case_keys():
     assert "unknown time" in recovery_text({"savedUnix": 10**30})
 
 
-def test_panel_only_shortcuts_are_not_bound_window_wide(app):
-    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping."""
+def _focus_panel(app, win: QtWidgets.QMainWindow, name: str | None) -> None:
+    target = win.findChild(QtWidgets.QLineEdit, f"focus.{name}") if name else win.findChild(QtWidgets.QLineEdit, "focus.none")
+    target.setFocus()
+    wait_until(app, lambda: QtWidgets.QApplication.focusWidget() is target, 2_000)
+    assert QtWidgets.QApplication.focusWidget() is target
+
+
+def test_panel_only_shortcuts_follow_the_focused_panel(app):
+    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping;
+    then, with panel keys dropped, Delete in the Timeline ran Project ▸ Clear instead of clearing clips."""
+    ran: list[str] = []
     win = QtWidgets.QMainWindow()
-    reg = CommandRegistry(lambda c: None)
+    central = QtWidgets.QWidget()
+    lay = QtWidgets.QVBoxLayout(central)
+    for name in ("Timeline", "Project", "History", None):
+        panel = QtWidgets.QWidget()
+        panel.setObjectName(f"panel.{name}" if name else "elsewhere")
+        field = QtWidgets.QLineEdit(panel)
+        field.setObjectName(f"focus.{name}" if name else "focus.none")
+        lay.addWidget(panel)
+    win.setCentralWidget(central)
+    reg = CommandRegistry(lambda c: ran.append(c.id))
     reg.load(
         [
             {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": "Cmd+Z", "shortcuts": ["Cmd+Z", "Left"],
              "panelShortcuts": [{"keys": "Left", "panel": "History"}], "params": "{}", "enabled": True},
             {"id": "playhead.stepBack", "label": "Step Back", "menu": [], "shortcut": "Left", "shortcuts": ["Left"],
              "params": "{}", "enabled": True},
+            {"id": "project.delete", "label": "Clear", "menu": ["Edit"], "shortcut": "Delete",
+             "shortcuts": ["Delete", "Backspace"], "panelShortcuts": [{"keys": "Backspace", "panel": "Project"}],
+             "params": "{}", "enabled": True},
+            {"id": "edit.clear", "label": "Clear", "menu": ["Edit"], "shortcut": "Delete", "shortcuts": ["Delete"],
+             "panelShortcuts": [{"keys": "Delete", "panel": "Timeline"}], "params": "{}", "enabled": True},
         ]
     )
     assert reg.commands["edit.undo"].shortcuts == ["Cmd+Z"]
+    assert reg.commands["edit.undo"].panel_shortcuts == [("Left", "History")]
     reg.build_menus(win.menuBar(), win)
+    reg.build_menus(win.menuBar(), win)  # a rebuild replaces the dispatchers instead of doubling them
+    win.show()
+    win.activateWindow()
     left = QtGui.QKeySequence("Left")
-    assert left in reg.actions["playhead.stepBack"].shortcuts()
     assert left not in reg.actions["edit.undo"].shortcuts()
+    assert len(win.findChildren(QtGui.QAction, "shortcut.Left")) == 1
+
+    def press(key: str, panel: str | None) -> str | None:
+        _focus_panel(app, win, panel)
+        ran.clear()
+        win.findChild(QtGui.QAction, f"shortcut.{key}").trigger()
+        return ran[0] if ran else None
+
+    assert press("Del", "Timeline") == "edit.clear"
+    assert press("Del", "Project") == "project.delete"
+    assert press("Del", None) == "project.delete"
+    assert press("Left", "History") == "edit.undo"
+    assert press("Left", "Timeline") == "playhead.stepBack"
+    reg.update_enabled([{"id": "edit.clear", "enabled": False}])
+    assert press("Del", "Timeline") is None  # a disabled command does not fall through to another
+    win.close()
 
 
 def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):

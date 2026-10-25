@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import QMenu, QMenuBar, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QMenuBar, QWidget
 
 from .i18n import tr
 
@@ -143,6 +143,8 @@ class Command:
     params: str
     enabled: bool
     shortcuts: list[str] = field(default_factory=list)
+    # (keys, panel): bindings that only apply with that panel focused (History ▸ Left = Undo)
+    panel_shortcuts: list[tuple[str, str]] = field(default_factory=list)
 
     @classmethod
     def from_json(cls, raw: dict[str, Any]) -> Command | None:
@@ -151,12 +153,16 @@ class Command:
             return None
         menu = raw.get("menu") if isinstance(raw.get("menu"), list) else []
         shortcuts = [str(s) for s in raw.get("shortcuts") or [] if isinstance(s, str)]
-        # panel-only bindings (History ▸ Left = Undo) would take the key window-wide here:
-        # the Qt GUI has no panel-scoped dispatch yet, so they are left out
+        # panel-only bindings must not take the key window-wide: build_menus dispatches them by focus
+        panel_shortcuts: list[tuple[str, str]] = []
         for b in raw.get("panelShortcuts") or []:
             keys = b.get("keys") if isinstance(b, dict) else None
-            if isinstance(keys, str) and keys in shortcuts:
+            panel = b.get("panel") if isinstance(b, dict) else None
+            if not isinstance(keys, str) or not isinstance(panel, str):
+                continue
+            if keys in shortcuts:
                 shortcuts.remove(keys)
+            panel_shortcuts.append((keys, panel))
         return cls(
             id=cid,
             label=str(raw.get("label") or cid),
@@ -165,6 +171,7 @@ class Command:
             params=str(raw.get("params") or "{}"),
             enabled=bool(raw.get("enabled", True)),
             shortcuts=shortcuts,
+            panel_shortcuts=panel_shortcuts,
         )
 
     @property
@@ -184,6 +191,8 @@ class CommandRegistry:
         self.commands: dict[str, Command] = {}
         self.order: list[str] = []
         self.actions: dict[str, QAction] = {}
+        # one action per panel-scoped key, picking the command by the focused panel
+        self._dispatchers: list[QAction] = []
 
     def load(self, raw: Any) -> None:
         self.commands.clear()
@@ -255,6 +264,15 @@ class CommandRegistry:
                 menu.addSeparator()
                 for a in actions:
                     menu.addAction(a)
+        # panel-scoped keys: Qt key -> panel -> command id (the first binding per panel wins)
+        scoped: dict[str, dict[str, str]] = {}
+        for cid in self.order:
+            for k, panel in self.commands[cid].panel_shortcuts:
+                q = qt_shortcut(k)
+                if q:
+                    scoped.setdefault(q, {}).setdefault(panel, cid)
+        # the command a scoped key runs when no binding matches the focused panel
+        fallback: dict[str, str] = {}
         # shortcuts: every command, menu or not; the first command to claim a key keeps it
         for cid in self.order:
             cmd = self.commands[cid]
@@ -262,8 +280,13 @@ class CommandRegistry:
             seqs = []
             for k in keys:
                 q = qt_shortcut(k)
-                if q and q not in used:
-                    used.add(q)
+                if not q or q in used:
+                    continue
+                used.add(q)
+                if q in scoped:
+                    fallback[q] = cid
+                    bound.add(cid)
+                else:
                     seqs.append(QKeySequence(q))
             if not seqs:
                 continue
@@ -274,4 +297,44 @@ class CommandRegistry:
             if not cmd.menu:
                 parent.addAction(action)  # menu-less commands still answer their keys
             bound.add(cid)
+        for old in self._dispatchers:
+            old.setShortcuts([])
+            owner = old.parent()
+            if isinstance(owner, QWidget):
+                owner.removeAction(old)
+            old.setParent(None)
+        self._dispatchers = []
+        for q, panels in scoped.items():
+            for cid in panels.values():
+                self.action(cid, parent)
+                bound.add(cid)
+            if q in fallback:
+                self.action(fallback[q], parent)
+            dispatcher = QAction(parent)
+            dispatcher.setObjectName(f"shortcut.{q}")
+            dispatcher.setShortcut(QKeySequence(q))
+            dispatcher.triggered.connect(self._dispatcher_for(dict(panels), fallback.get(q)))
+            parent.addAction(dispatcher)
+            self._dispatchers.append(dispatcher)
         return bound
+
+    def _dispatcher_for(self, panels: dict[str, str], fallback: str | None) -> Callable[..., None]:
+        return lambda *_: self._dispatch(panels, fallback)
+
+    def _dispatch(self, panels: dict[str, str], fallback: str | None) -> None:
+        """Run the command bound to a key in the focused panel, else the key's window-wide command."""
+        cid = panels.get(focused_panel() or "", fallback)
+        action = self.actions.get(cid) if cid else None
+        if action is not None:
+            action.trigger()  # does nothing while the command is disabled
+
+
+def focused_panel() -> str | None:
+    """The engine name of the panel holding keyboard focus (``panel.Timeline`` -> ``Timeline``)."""
+    w = QApplication.focusWidget()
+    while w is not None:
+        name = w.objectName()
+        if name.startswith("panel."):
+            return name.removeprefix("panel.")
+        w = w.parentWidget()
+    return None
