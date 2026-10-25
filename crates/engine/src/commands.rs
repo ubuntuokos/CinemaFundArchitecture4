@@ -3394,8 +3394,12 @@ fn build() -> Vec<CommandSpec> {
                 command_specs()
                     .iter()
                     .map(|c| {
-                        let all: Vec<&str> = s.shortcuts.for_command(c.id).iter().map(|b| b.keys.as_str()).collect();
-                        json!({"id": c.id, "label": c.label, "menu": c.menu, "shortcut": s.shortcuts.primary(c.id), "shortcuts": all, "defaultShortcut": c.shortcut, "params": c.params, "enabled": (c.enabled)(s).is_ok()})
+                        let bindings = s.shortcuts.for_command(c.id);
+                        let all: Vec<&str> = bindings.iter().map(|b| b.keys.as_str()).collect();
+                        // bindings that only apply with one panel focused (History ▸ Left = Undo):
+                        // a frontend without panel-scoped dispatch must not bind them window-wide
+                        let panel: Vec<Value> = bindings.iter().filter_map(|b| b.panel.as_ref().map(|p| json!({"keys": b.keys, "panel": p}))).collect();
+                        json!({"id": c.id, "label": c.label, "menu": c.menu, "shortcut": s.shortcuts.primary(c.id), "shortcuts": all, "panelShortcuts": panel, "defaultShortcut": c.shortcut, "params": c.params, "enabled": (c.enabled)(s).is_ok()})
                     })
                     .collect(),
             ))
