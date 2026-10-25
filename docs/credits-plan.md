@@ -176,7 +176,7 @@ Javasolt sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7**, a C8 a Qt6-a
 
 Egy fázis akkor kész, ha:
 
-- a `filmcraft-credits` és az engine tesztjei lefedik (beleértve az ellenséges bemenetet:
+- a `cfa4-credits` és az engine tesztjei lefedik (beleértve az ellenséges bemenetet:
   sérült táblázat, hiányzó fájl, abszurd számok – soha nem omlik össze);
 - a látható eredményről renderelt képkocka készült, és ellenőrizve lett;
 - a dokumentáció ([credits.md](credits.md), ADR F10) frissült;

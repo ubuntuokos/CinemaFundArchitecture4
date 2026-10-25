@@ -3,7 +3,7 @@
 //! A project file is UTF-8 JSON with an explicit schema version:
 //!
 //! ```json
-//! { "format": "filmcraft.project", "schema_version": 2, "generator": "FilmCraft 0.1.0", "project": { … } }
+//! { "format": "cfa4.project", "schema_version": 2, "generator": "CFA4 0.1.0", "project": { … } }
 //! ```
 //!
 //! - **Versioning.** [`SCHEMA_VERSION`] is the version this build writes. Older files are upgraded on
@@ -45,14 +45,14 @@
 pub mod atomic;
 pub mod autosave;
 
-use filmcraft_project::{Project, ProjectView};
+use cfa4_project::{Project, ProjectView};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub use atomic::atomic_write;
 
 /// The `format` tag written in every envelope.
-pub const FORMAT_ID: &str = "filmcraft.project";
+pub const FORMAT_ID: &str = "cfa4.project";
 
 /// A migration upgrades a whole document from schema `n` to `n + 1`.
 pub type Migration = fn(Value) -> Result<Value, String>;
@@ -70,11 +70,9 @@ pub const OLDEST_SCHEMA: u32 = 1;
 
 #[derive(Debug, thiserror::Error)]
 pub enum FormatError {
-    #[error("not a FilmCraft project: {0}")]
+    #[error("not a CFA4 project: {0}")]
     NotAProject(String),
-    #[error(
-        "this project was saved by a newer version of FilmCraft (project schema v{found}); this build reads up to v{supported}. Update FilmCraft to open it."
-    )]
+    #[error("this project was saved by a newer version of CFA4 (project schema v{found}); this build reads up to v{supported}. Update CFA4 to open it.")]
     TooNew { found: u32, supported: u32 },
     #[error("project schema v{found} is too old for this build (oldest supported: v{oldest})")]
     TooOld { found: u32, oldest: u32 },
@@ -106,7 +104,7 @@ impl Loaded {
 
 /// Writer identification stored in the envelope.
 pub fn generator() -> String {
-    format!("FilmCraft {}", env!("CARGO_PKG_VERSION"))
+    format!("CFA4 {}", env!("CARGO_PKG_VERSION"))
 }
 
 #[derive(Serialize)]
@@ -178,7 +176,7 @@ pub fn detect_version(doc: &Value) -> Result<u32, FormatError> {
 fn probe_version(p: &Probe) -> Result<u32, FormatError> {
     if let Some(v) = p.schema_version {
         if let Some(f) = &p.format
-            && f != FORMAT_ID
+            && !cfa4_project::legacy::format_matches(f, FORMAT_ID)
         {
             return Err(FormatError::NotAProject(format!("format is `{f}`, expected `{FORMAT_ID}`")));
         }
@@ -219,15 +217,15 @@ fn validate_loaded(mut loaded: Loaded) -> Result<Loaded, FormatError> {
     // Out-of-range audio stream data is repaired, not refused: failing the load would lose the
     // whole project over one bad index. A media item keeps its first `MAX_AUDIO_STREAMS` streams; a
     // clip pointing past that plays stream 0.
-    let max = filmcraft_media::MAX_AUDIO_STREAMS;
+    let max = cfa4_media::MAX_AUDIO_STREAMS;
     for item in loaded.project.items.values_mut() {
         let name = item.name.clone();
         match &mut item.kind {
-            filmcraft_project::ItemKind::Media(m) if m.info.audio_streams.len() > max => {
+            cfa4_project::ItemKind::Media(m) if m.info.audio_streams.len() > max => {
                 log::warn!("media `{name}`: {} audio streams, keeping the first {max}", m.info.audio_streams.len());
                 m.info.audio_streams.truncate(max);
             }
-            filmcraft_project::ItemKind::Sequence(sequence) => {
+            cfa4_project::ItemKind::Sequence(sequence) => {
                 let sequence = std::sync::Arc::make_mut(sequence);
                 for clip in sequence.audio_tracks.iter_mut().flat_map(|t| t.items.iter_mut()) {
                     if clip.audio_stream >= max {
@@ -240,7 +238,7 @@ fn validate_loaded(mut loaded: Loaded) -> Result<Loaded, FormatError> {
         }
     }
     for item in loaded.project.sequences() {
-        if let filmcraft_project::ItemKind::Sequence(sequence) = &item.kind {
+        if let cfa4_project::ItemKind::Sequence(sequence) = &item.kind {
             sequence.check_bounds().map_err(|e| FormatError::Corrupt(format!("sequence `{}`: {e}", item.name)))?;
         }
     }
@@ -286,7 +284,7 @@ fn v1_to_v2(doc: Value) -> Result<Value, String> {
     Ok(serde_json::json!({
         "format": FORMAT_ID,
         "schema_version": 2,
-        "generator": "FilmCraft (schema v1)",
+        "generator": "CFA4 (schema v1)",
         "project": Value::Object(project),
     }))
 }
@@ -373,7 +371,7 @@ mod tests {
     #[test]
     fn damaged_sequence_settings_are_rejected_before_rendering() {
         let mut p = Project::new("Invalid sequence");
-        let id = p.new_sequence("Bad", filmcraft_project::SequenceSettings::default(), 1, 1, None);
+        let id = p.new_sequence("Bad", cfa4_project::SequenceSettings::default(), 1, 1, None);
         for (width, height, sample_rate) in [(0, 90, 48000), (160, 0, 48000), (160, 90, 0), (65536, 90, 48000), (32768, 16384, 48000)] {
             let settings = &mut p.sequence_mut(id).unwrap().settings;
             (settings.width, settings.height, settings.sample_rate) = (width, height, sample_rate);
@@ -386,16 +384,12 @@ mod tests {
     /// opens, as it did before; and 16K sequences are not "too large".
     #[test]
     fn structural_rule_breaks_still_open() {
-        use filmcraft_project::{ItemKind, SequenceSettings, TrackKind};
-        use filmcraft_time::{FrameRate, Tick, TimeRange};
+        use cfa4_project::{ItemKind, SequenceSettings, TrackKind};
+        use cfa4_time::{FrameRate, Tick, TimeRange};
         let mut p = Project::new("Legacy");
         let rate = FrameRate::FPS_24;
-        let layer = p.add_item(
-            "Layer",
-            filmcraft_project::Label::Iris,
-            ItemKind::AdjustmentLayer { width: 1920, height: 1080, rate, duration: rate.tick_of(48) },
-            None,
-        );
+        let layer =
+            p.add_item("Layer", cfa4_project::Label::Iris, ItemKind::AdjustmentLayer { width: 1920, height: 1080, rate, duration: rate.tick_of(48) }, None);
         let settings = SequenceSettings { width: 15360, height: 8640, ..Default::default() };
         let seq = p.new_sequence("Sequence 01", settings, 1, 1, None);
         let range = TimeRange::new(Tick::ZERO, rate.tick_of(48));
@@ -426,14 +420,14 @@ mod tests {
     /// read, opens all the same.
     #[test]
     fn the_view_is_kept_beside_the_project_and_never_stops_a_file_from_opening() {
-        use filmcraft_project::{ItemId, SequenceSettings, SequenceView};
+        use cfa4_project::{ItemId, SequenceSettings, SequenceView};
         let mut p = Project::new("Tabs");
         let seq = p.new_sequence("Sequence 01", SequenceSettings::default(), 1, 1, None);
         let view = ProjectView {
             open_sequences: vec![seq],
             active_sequence: Some(seq),
             sequences: [(seq, SequenceView { pps: 80.0, scroll: 1.5, v_scroll: 0.0, a_scroll: 4.0, video_track_h: 60.0, audio_track_h: 56.0 })].into(),
-            playheads: [(seq, filmcraft_time::Tick(3 * filmcraft_time::TICKS_PER_SECOND))].into(),
+            playheads: [(seq, cfa4_time::Tick(3 * cfa4_time::TICKS_PER_SECOND))].into(),
         };
         for pretty in [true, false] {
             let l = decode(&encode_with_view(&p, Some(&view), pretty)).unwrap();
@@ -458,12 +452,12 @@ mod tests {
     /// used to be refused as damaged; it opens, and the points are still "auto".
     #[test]
     fn auto_points_written_as_null_open_again() {
-        use filmcraft_project::{ItemKind, SequenceSettings, TrackKind};
-        use filmcraft_time::{FrameRate, Tick, TimeRange};
+        use cfa4_project::{ItemKind, SequenceSettings, TrackKind};
+        use cfa4_time::{FrameRate, Tick, TimeRange};
         let mut p = Project::new("Imported");
         let layer = p.add_item(
             "Layer",
-            filmcraft_project::Label::Iris,
+            cfa4_project::Label::Iris,
             ItemKind::AdjustmentLayer { width: 3840, height: 2160, rate: FrameRate::FPS_24, duration: FrameRate::FPS_24.tick_of(48) },
             None,
         );
@@ -495,13 +489,27 @@ mod tests {
         assert!(v["project"].get("version").is_none());
     }
 
+    /// Roadmap A1 / owner decision 2026-10-24: projects saved by the upstream application open in
+    /// CFA4, and the next save writes CFA4's own tag.
+    #[test]
+    fn opens_upstream_projects_and_saves_them_as_cfa4() {
+        let mut p = Project::new("Old project");
+        p.name = "Old project".into();
+        let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
+        v["format"] = Value::from(cfa4_project::legacy::PROJECT_FORMAT);
+        let loaded = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
+        assert_eq!(loaded.project.name, "Old project");
+        let saved: Value = serde_json::from_slice(&encode(&loaded.project, false)).unwrap();
+        assert_eq!(saved["format"], FORMAT_ID);
+    }
+
     #[test]
     fn refuses_newer() {
         let mut v: Value = serde_json::from_slice(&encode(&Project::new("x"), false)).unwrap();
         v["schema_version"] = Value::from(SCHEMA_VERSION + 1);
         let e = decode(&serde_json::to_vec(&v).unwrap()).unwrap_err();
         assert!(matches!(e, FormatError::TooNew { .. }));
-        assert!(e.to_string().contains("newer version of FilmCraft"), "{e}");
+        assert!(e.to_string().contains("newer version of CFA4"), "{e}");
     }
 
     #[test]

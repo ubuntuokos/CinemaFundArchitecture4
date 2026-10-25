@@ -28,8 +28,8 @@ def test_repository_git_source_inventory() -> None:
 def test_moving_git_ref_is_rejected() -> None:
     manifest, lock = snapshot()
     manifest = copy.deepcopy(manifest)
-    manifest["workspace"]["dependencies"]["craft-ui"]["git"] = UPSTREAM
-    manifest["workspace"]["dependencies"]["craft-ui"]["rev"] = "main"
+    manifest["workspace"]["dependencies"]["cfa4-ui"]["git"] = UPSTREAM
+    manifest["workspace"]["dependencies"]["cfa4-ui"]["rev"] = "main"
     assert any("unapproved Git source" in error for error in validate_snapshot(manifest, lock))
 
 
@@ -44,16 +44,16 @@ def test_lockfile_pin_must_match_manifest() -> None:
     manifest, lock = snapshot()
     lock = copy.deepcopy(lock)
     for package in lock["package"]:
-        if package["name"] == "craft-ui":
+        if package["name"] == "cfa4-ui":
             package["source"] = "git+" + UPSTREAM + "?rev=main#deadbeef"
-    assert any("vendored craft-ui must have no remote source" in error for error in validate_snapshot(manifest, lock))
+    assert any("vendored cfa4-ui must have no remote source" in error for error in validate_snapshot(manifest, lock))
 
 
 def test_missing_locked_package_is_rejected() -> None:
     manifest, lock = snapshot()
     lock = copy.deepcopy(lock)
-    lock["package"] = [package for package in lock["package"] if package["name"] != "craft-ui"]
-    assert any("missing approved package craft-ui" in error for error in validate_snapshot(manifest, lock))
+    lock["package"] = [package for package in lock["package"] if package["name"] != "cfa4-ui"]
+    assert any("missing approved package cfa4-ui" in error for error in validate_snapshot(manifest, lock))
 
 
 def test_unexpected_transitive_git_package_is_rejected() -> None:
@@ -74,21 +74,21 @@ def test_pins_are_full_commit_shas() -> None:
     import json
 
     for name in ("docpath", "ui"):
-        path = ROOT / "vendor" / "craft-libs" / name / "SOURCE_MANIFEST.json"
+        path = ROOT / "vendor" / "cfa4-libs" / name / "SOURCE_MANIFEST.json"
         rev = json.loads(path.read_text(encoding="utf-8"))["source_commit"]
         assert len(rev) == 40 and all(c in "0123456789abcdef" for c in rev)
 
 def test_docpath_is_local_without_locked_git_source() -> None:
     manifest, lock = snapshot()
-    assert manifest["workspace"]["dependencies"]["craft-docpath"]["path"] == "vendor/craft-libs/docpath"
-    assert all("source" not in package for package in lock["package"] if package["name"] == "craft-docpath")
+    assert manifest["workspace"]["dependencies"]["cfa4-docpath"]["path"] == "vendor/cfa4-libs/docpath"
+    assert all("source" not in package for package in lock["package"] if package["name"] == "cfa4-docpath")
 
 
 def test_changed_vendor_source_is_detected(tmp_path) -> None:
     from shutil import copytree
 
-    vendor = tmp_path / "vendor" / "craft-libs" / "docpath"
-    copytree(ROOT / "vendor" / "craft-libs" / "docpath", vendor)
+    vendor = tmp_path / "vendor" / "cfa4-libs" / "docpath"
+    copytree(ROOT / "vendor" / "cfa4-libs" / "docpath", vendor)
     source = vendor / "src" / "lib.rs"
     source.write_bytes(source.read_bytes() + b"\n// unauthorized mutation\n")
     assert any("changed vendor source" in error for error in verify_vendored_files(tmp_path))
@@ -100,8 +100,8 @@ def test_vendored_source_integrity() -> None:
 
 def test_ui_is_local_without_locked_git_source() -> None:
     manifest, lock = snapshot()
-    assert manifest["workspace"]["dependencies"]["craft-ui"]["path"] == "vendor/craft-libs/ui"
-    assert all("source" not in package for package in lock["package"] if package["name"] == "craft-ui")
+    assert manifest["workspace"]["dependencies"]["cfa4-ui"]["path"] == "vendor/cfa4-libs/ui"
+    assert all("source" not in package for package in lock["package"] if package["name"] == "cfa4-ui")
 
 
 def test_no_direct_cargo_git_source_remains() -> None:

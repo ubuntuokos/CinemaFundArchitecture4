@@ -1,4 +1,4 @@
-//! GPU-vs-CPU parity of the blend modes (`filmcraft_render::blend::composite` is the reference).
+//! GPU-vs-CPU parity of the blend modes (`cfa4_render::blend::composite` is the reference).
 //!
 //! Tolerances: the composited 8-bit output uses the compositor's parity criterion (99th percentile
 //! of the per-pixel max channel difference ≤ 6, mean < 1.5; antialiased edges and half-float
@@ -7,8 +7,8 @@
 //! flip a pixel whose blend lands on its 0.5 threshold.
 
 use super::*;
-use filmcraft_geom::{Affine, Vec2};
-use filmcraft_render::plan::execute_cpu;
+use cfa4_geom::{Affine, Vec2};
+use cfa4_render::plan::execute_cpu;
 
 /// Strict mode is used by the physical GPU acceptance gate, never by generic
 /// hosted CI. Ordinary tests may skip a missing adapter; strict tests must
@@ -58,7 +58,7 @@ pub(crate) fn yuv_frame(w: u32, h: u32) -> Arc<VideoFrame> {
         width: w,
         height: h,
         data: PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: Chroma::C420, alpha: None },
-        color: filmcraft_color::ColorInfo::REC709,
+        color: cfa4_color::ColorInfo::REC709,
         par: (1, 1),
         pts: Default::default(),
     })
@@ -177,14 +177,7 @@ fn gpu_blend_modes_match_cpu() {
     };
     let mut c = GpuCompositor::new(&dev, &q);
     let (w, h) = (320usize, 180usize);
-    let pixels = filmcraft_media::generators::render(
-        &filmcraft_media::Generator::Demo(filmcraft_media::DemoScene::Dunes),
-        320,
-        180,
-        1.0,
-        24,
-        filmcraft_time::FrameRate::FPS_24,
-    );
+    let pixels = cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::Dunes), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
     let demo = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     let base = ramp_layer(200, 180, 3);
     let top = ramp_layer(160, 120, 0);

@@ -40,7 +40,7 @@ def evaluate(data: dict) -> dict:
         ("schema", "cfa4-release-readiness-v1"),
         ("repository", "ubuntuokos/CinemaFundArchitecture4"),
         ("target", "Ubuntu 26.04 AMD64"),
-        ("parent_repository_policy", "READ_ONLY_FILMCRAFT"),
+        ("parent_repository_policy", "READ_ONLY_UPSTREAM"),
     ):
         if data.get(key) != expected:
             raise ReleaseGateError(f"invalid CFA4 {key}")

@@ -1,0 +1,17 @@
+{
+  "source_repository": "https://github.com/storytold/craft-libs",
+  "source_commit": "82a24b006eefa036b43c09a67fb9a3fbd17ffe63",
+  "original_crate_manifest_blob_sha1": "dd94824d6c49873d4cb411946b478081289ea21b",
+  "note": "The original Rust source, tests, NOTICE and licenses are copied byte-for-byte from the pinned upstream commit; the local Cargo.toml is adapted (original manifest Git blob ID recorded). The project excludes vendor code from first-party rustfmt checks to preserve this provenance. CFA4 then renamed the upstream brand identifiers in the files listed under cfa4_modified_files; their hashes are those of the CFA4 copies. NOTICE and license texts remain byte-identical.",
+  "files": {
+    "src/lib.rs": "bfcedf1b9e04b1be27d12acce314907b68347124",
+    "tests/docpath.rs": "efd6c401eabe8d1beabbfd3a656e6c0c2def36e2",
+    "LICENSE-MIT": "e1450bdf57b9c0577e8b947db77ec77f4fea9d38",
+    "LICENSE-APACHE": "f433b1a53f5b830a205fd2df78e2b34974656c7b",
+    "NOTICE": "9467671f33ad83f459201bf6eee19b3a71aa8f2c"
+  },
+  "cfa4_modified_files": {
+    "src/lib.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history",
+    "tests/docpath.rs": "brand identifiers renamed to CFA4 (craft-ui -> cfa4-ui, craft-docpath -> cfa4-docpath, FilmCraft/Craft -> CFA4); upstream blob id is recorded in Git history"
+  }
+}

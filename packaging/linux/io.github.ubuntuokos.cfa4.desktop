@@ -10,5 +10,5 @@ Terminal=false
 StartupNotify=true
 StartupWMClass=io.github.ubuntuokos.cfa4
 Categories=AudioVideo;Video;AudioVideoEditing;
-MimeType=application/x-filmcraft;video/mp4;video/x-m4v;video/quicktime;video/x-matroska;video/webm;video/vnd.avi;video/x-msvideo;application/mxf;video/mp2t;video/mpeg;video/3gpp;
+MimeType=application/x-cfa4;video/mp4;video/x-m4v;video/quicktime;video/x-matroska;video/webm;video/vnd.avi;video/x-msvideo;application/mxf;video/mp2t;video/mpeg;video/3gpp;
 Keywords=video;editor;film;timeline;color;grading;nle;
