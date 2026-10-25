@@ -8,8 +8,8 @@ use crate::Session;
 /// Decoder / GOP-cache counters since the process started (they only grow: diff two readings to
 /// measure an interval).
 pub fn decode_json() -> Value {
-    let g = filmcraft_codecs::gop_stats();
-    let hw = filmcraft_codecs::hw::hw_stats();
+    let g = cfa4_codecs::gop_stats();
+    let hw = cfa4_codecs::hw::hw_stats();
     json!({
         "requests": g.hits + g.misses,
         "cacheHits": g.hits,
@@ -19,26 +19,26 @@ pub fn decode_json() -> Value {
         "samplesDecoded": g.decoded,
         "samplesSkipped": g.skipped,
         "draftFrames": g.draft,
-        "h264Threads": filmcraft_codecs::video::h264_threads(),
+        "h264Threads": cfa4_codecs::video::h264_threads(),
         "evicted": g.evicted,
         // sources that hold a decoder right now (idle ones give theirs up beyond a cap)
-        "liveDecoders": filmcraft_codecs::live_decoders(),
+        "liveDecoders": cfa4_codecs::live_decoders(),
         // decoded frames all sources hold, and the budget idle sources are trimmed to
-        "cacheMB": filmcraft_codecs::cached_bytes() as f64 / 1e6,
-        "cacheBudgetMB": filmcraft_codecs::FRAME_BUDGET as f64 / 1e6,
+        "cacheMB": cfa4_codecs::cached_bytes() as f64 / 1e6,
+        "cacheBudgetMB": cfa4_codecs::FRAME_BUDGET as f64 / 1e6,
         // plane buffers of evicted frames waiting for the next decoded pictures, and how many
         // planes were decoded into a recycled buffer
-        "planePoolMB": filmcraft_frame::pool::stats().idle_bytes as f64 / 1e6,
-        "planesReused": filmcraft_frame::pool::stats().reused,
+        "planePoolMB": cfa4_frame::pool::stats().idle_bytes as f64 / 1e6,
+        "planesReused": cfa4_frame::pool::stats().reused,
         "decodeMs": g.decode_ns as f64 / 1e6,
         "decodeMsPerSample": g.decode_ms_per_sample(),
         "framesDecoded": g.frames,
         // Settings ▸ Playback ▸ Hardware decoding: pictures from OS hardware decoders vs ours,
         // hardware decoders created, streams handed to software up front, mid-stream fallbacks.
         "hardware": {
-            "enabled": filmcraft_codecs::hw::hardware_decoding(),
+            "enabled": cfa4_codecs::hw::hardware_decoding(),
             // the OS decoder backend registered at startup (null where there is none)
-            "backend": filmcraft_codecs::hw::hw_backend(),
+            "backend": cfa4_codecs::hw::hw_backend(),
             "frames": hw.frames,
             "softwareFrames": g.frames.saturating_sub(hw.frames),
             "sessions": hw.sessions,
@@ -54,9 +54,9 @@ pub fn decode_json() -> Value {
 /// Render and encode overlap (the next batch renders while this one is encoded), so their sum can exceed
 /// the export's wall time; `waitMs` is the encoding side's idle wait for the render.
 pub fn export_json() -> Value {
-    let hw = filmcraft_export::hw_encode_stats();
+    let hw = cfa4_export::hw_encode_stats();
     let stages: serde_json::Map<String, Value> =
-        filmcraft_export::stage_times().into_iter().map(|(s, ns)| (format!("{}Ms", s.name()), json!(ns as f64 / 1e6))).collect();
+        cfa4_export::stage_times().into_iter().map(|(s, ns)| (format!("{}Ms", s.name()), json!(ns as f64 / 1e6))).collect();
     json!({"hardware": {"frames": hw.frames, "sessions": hw.sessions, "declined": hw.declined}, "stages": stages})
 }
 

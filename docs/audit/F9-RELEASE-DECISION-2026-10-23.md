@@ -30,7 +30,7 @@ full Qt6 NLE parity; all trademarks/third-party SBOM/codecs/Qt redistribution
 approvals; and verified protected-main integration of the draft PR stack.
 
 The asset/logo release gate remains OPEN until the user's accepted CFA4 icon
-is verified across every inherited FilmCraft binary/asset. A source SVG
+is verified across every inherited upstream binary/asset. A source SVG
 with CFA4 identification alone is not adequate release evidence.
 
 ## Release decision mechanism
@@ -51,6 +51,6 @@ authorization flag is hard-coded false.
 
 ## Preserved architecture
 
-FilmCraft is the read-only upstream parent. CFA4 is developed separately,
+The upstream project is the read-only parent. CFA4 is developed separately,
 Linux Ubuntu 26.04 AMD64 only, Qt6 future GUI, Rust media engine retained,
 local AI only, no public packages or unnecessary repeat hardware tests.

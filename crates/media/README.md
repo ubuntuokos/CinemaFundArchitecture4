@@ -1,7 +1,7 @@
-# filmcraft-media
+# cfa4-media
 
 Media sources, still-image and image-sequence import, generated media, audio streams, and decoded
-frame caching for FilmCraft.
+frame caching for CFA4.
 
 ## Image-sequence filenames
 

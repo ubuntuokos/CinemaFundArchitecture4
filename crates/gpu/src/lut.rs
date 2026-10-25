@@ -1,7 +1,7 @@
 //! GPU 3D LUT application (WGSL compute, tetrahedral interpolation), the counterpart of
-//! [`filmcraft_color::Lut3d::apply`]. Tested for parity with the CPU path.
+//! [`cfa4_color::Lut3d::apply`]. Tested for parity with the CPU path.
 
-use filmcraft_color::Lut3d;
+use cfa4_color::Lut3d;
 
 pub struct GpuLut {
     device: wgpu::Device,
@@ -21,10 +21,8 @@ fn storage(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
 
 impl GpuLut {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("filmcraft-lut"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("lut.wgsl").into()),
-        });
+        let shader = device
+            .create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("cfa4-lut"), source: wgpu::ShaderSource::Wgsl(include_str!("lut.wgsl").into()) });
         let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("lut"),
             entries: &[

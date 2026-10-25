@@ -1,5 +1,5 @@
-use filmcraft_project::{EffectInstance, ParamValue};
-use filmcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use cfa4_project::{EffectInstance, ParamValue};
+use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 use super::*;
 use crate::layout::{Frame, Measure};
@@ -133,7 +133,7 @@ fn scroll_page_rolls_and_lasts_travel_over_speed() {
     let laid = lay("Body\nAnn\nBob\n", &Styling::default());
     let p = &laid.pages[0];
     assert_eq!(p.behaviour, Behaviour::Scroll);
-    assert_eq!(p.meta.roll.mode, filmcraft_project::RollMode::Roll);
+    assert_eq!(p.meta.roll.mode, cfa4_project::RollMode::Roll);
     assert!(p.meta.roll.start_off_screen && p.meta.roll.end_off_screen);
     // one layer for a one-column body; two lines of 40 px * 1.2
     assert_eq!(p.layers.len(), 1);
@@ -149,7 +149,7 @@ fn card_is_centred_and_fades() {
     let laid = lay("Body,Page Style\nTHE END,Card\n", &Styling::default());
     let p = &laid.pages[0];
     assert_eq!(p.behaviour, Behaviour::Card);
-    assert_eq!(p.meta.roll.mode, filmcraft_project::RollMode::Off);
+    assert_eq!(p.meta.roll.mode, cfa4_project::RollMode::Off);
     assert_eq!(p.duration, Tick(FRAME.rate.frame_duration().0 * 120));
     let (_, y) = pos(&p.layers[0]);
     // 48 px line box centred in 1080: top 516, baseline 516 + 36

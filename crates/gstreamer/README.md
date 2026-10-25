@@ -14,11 +14,11 @@ Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
   audio and subtitle streams of a file, through GStreamer's `Discoverer`.
 - `open(path)`: an engine `MediaSource` decoded by GStreamer (RGBA 8-bit video, 32-bit float
   audio at the requested rate, accurate seeks, sequential reads without seeking).
-- `register()`: makes GStreamer the engine's fallback backend (`filmcraft_media::fallback`). The
+- `register()`: makes GStreamer the engine's fallback backend (`cfa4_media::fallback`). The
   built-in openers stay first; GStreamer takes files they reject as unsupported, or open without
   the video they carry (Ogg Theora + Vorbis opened as audio only), and adds `.ogv`, `.flv`, `.wmv`,
   `.wma` and similar extensions to import. The apps call it at startup when built with their
-  `gstreamer` feature (`cargo run -p filmcraft --features gstreamer`).
+  `gstreamer` feature (`cargo run -p cfa4 --features gstreamer`).
 
 ## Building
 
