@@ -97,7 +97,7 @@ pub(crate) fn dpx(rgba: &[u8], w: u32, h: u32) -> Result<Vec<u8>> {
     put32(&mut hd, 24, 1664); // generic header length
     put32(&mut hd, 28, 384); // industry header length
     put32(&mut hd, 32, 0); // user data length
-    hd[160..169].copy_from_slice(b"CFA4");
+    hd[160..164].copy_from_slice(b"CFA4"); // creator (100-byte field, rest stays zero)
     // image information header
     put16(&mut hd, 768, 0); // orientation: left to right, top to bottom
     put16(&mut hd, 770, 1); // one image element

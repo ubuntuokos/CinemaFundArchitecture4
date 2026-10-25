@@ -1222,7 +1222,7 @@ PERCENT  P ER0 S EH1 N T
             ("fives", "fˈIvz"),
             // Letter-to-sound for unknown words.
             ("kokoro", "kˈɑkɑɹɑ"),
-            ("cfa4", "fˈɪlmkɹæft"),
+            ("filmkraft", "fˈɪlmkɹæft"),
             ("knight", "nˈIt"),
             // Punctuation attachment, kept and dropped.
             ("hello, world.", "həlˈO, wˈɜɹld."),
@@ -1266,7 +1266,7 @@ PERCENT  P ER0 S EH1 N T
     #[test]
     fn letter_to_sound_cases() {
         let cases: [(&str, &str); 36] = [
-            ("cfa4", "fˈɪlmkɹæft"),
+            ("filmkraft", "fˈɪlmkɹæft"),
             ("narration", "næɹˈæʃən"),
             ("kokoro", "kˈɑkɑɹɑ"),
             ("phone", "fˈOn"),
@@ -1363,7 +1363,7 @@ PERCENT  P ER0 S EH1 N T
             "999999999999999999999999",
             "007",
             "12345678901234",
-            "cfa4 narration kokoro",
+            "filmkraft narration kokoro",
             "Dr. Smith lives on Main St. in 1999.",
             "The TDA project for NASA costs $1,234,567.",
         ];
