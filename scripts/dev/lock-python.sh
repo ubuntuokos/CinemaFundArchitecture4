@@ -10,6 +10,8 @@ fi
 out=requirements/linux-amd64.txt
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
+# uv keeps the pins of an existing output file unless --upgrade/--upgrade-package is given.
+if [[ -f "$out" ]]; then cp "$out" "$tmp"; fi
 uv pip compile pyproject.toml --extra dev --extra qt --generate-hashes \
   --python-version 3.12 --python-platform x86_64-manylinux_2_39 --no-header -o "$tmp" "$@"
 {
