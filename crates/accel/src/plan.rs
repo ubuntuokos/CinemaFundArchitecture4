@@ -264,7 +264,7 @@ mod tests {
         }
         assert_eq!(chain(&nvidia(), Workload::Composite, &s), vec![Wgpu, Cpu]);
         assert_eq!(chain(&nvidia(), Workload::VideoDecode, &s), vec![Nvdec, Cpu]);
-        // both GPUs of a hybrid laptop: NVDEC first (as `filmcraft_platform::register`), VA-API next
+        // both GPUs of a hybrid laptop: NVDEC first (as `cfa4_platform::register`), VA-API next
         assert_eq!(chain(&hybrid_laptop(), Workload::VideoDecode, &s), vec![Nvdec, VaApiDecode, Cpu]);
     }
 

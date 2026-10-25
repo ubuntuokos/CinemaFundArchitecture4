@@ -16,7 +16,7 @@
 //!    locked to a vendor: the vendor-neutrality gaps still to close.
 //!
 //! The chain is a list of candidates, not a promise: the backend's own factory (for example the
-//! VA-API or NVDEC decoder in `filmcraft-platform`) still verifies the hardware at run time and
+//! VA-API or NVDEC decoder in `cfa4-platform`) still verifies the hardware at run time and
 //! declines what it cannot do, and the next entry of the chain runs instead.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]

@@ -133,7 +133,7 @@ use Workload as W;
 pub const CATALOG: &[Entry] = &[
     entry(W::Composite, B::Wgpu, Done, "crates/gpu", "WGSL compositor, effects, LUTs, masks, transitions"),
     entry(W::Composite, B::Cpu, Done, "crates/render", "reference CPU renderer"),
-    // the order of `filmcraft_platform::register`: NVDEC in front of VA-API
+    // the order of `cfa4_platform::register`: NVDEC in front of VA-API
     entry(W::VideoDecode, B::Nvdec, Done, "crates/platform/src/nvdec", "H.264, HEVC Main / Main 10"),
     entry(W::VideoDecode, B::VaApiDecode, Done, "crates/platform/src/vaapi", "H.264, HEVC Main / Main 10; VP9 / AV1 not yet"),
     entry(W::VideoDecode, B::VulkanVideo, Planned, "crates/platform", "vendor-neutral H.264 / HEVC / AV1 decode queues"),

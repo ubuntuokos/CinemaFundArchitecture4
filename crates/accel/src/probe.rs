@@ -134,7 +134,7 @@ mod tests {
 
     impl FakeSys {
         fn new(name: &str) -> std::io::Result<Self> {
-            let root = std::env::temp_dir().join(format!("filmcraft-accel-{name}-{}", std::process::id()));
+            let root = std::env::temp_dir().join(format!("cfa4-accel-{name}-{}", std::process::id()));
             let _ = fs::remove_dir_all(&root);
             fs::create_dir_all(&root)?;
             Ok(FakeSys { root })
