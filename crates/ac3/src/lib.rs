@@ -12,8 +12,9 @@
 //! - Output: planar f32 at full scale ±1, channels in WAV / SMPTE order (L R C LFE Ls Rs); no
 //!   downmix.
 //!
-//! E-AC-3 (bsid 11-16, Annex E): independent substream 0 (dependent substreams and further
-//! programs are skipped), 1 / 2 / 3 / 6 blocks per syncframe, the reduced sample rates, frame-based
+//! E-AC-3 (bsid 11-16, Annex E): independent substream 0 and, through [`Decoder::decode_program`],
+//! the dependent substreams that carry the channels beyond 5.1 (7.1 and other layouts, §E2.3.1;
+//! further independent programs are skipped), 1 / 2 / 3 / 6 blocks per syncframe, the reduced sample rates, frame-based
 //! exponent strategies and the other frame-level syntax, and spectral extension (§E3.6). The
 //! adaptive hybrid transform and enhanced coupling are refused with [`Error::Unsupported`];
 //! transient pre-noise processing data is read and not applied.
@@ -21,7 +22,15 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod eac3;
+mod program;
 mod tables;
+#[cfg(any(test, feature = "test-util"))]
+mod testutil;
+
+pub use program::Location;
+#[cfg(any(test, feature = "test-util"))]
+#[doc(hidden)]
+pub use testutil::make_dependent_substream;
 
 use std::sync::OnceLock;
 
@@ -78,8 +87,8 @@ impl Header {
     }
     /// Whether the syncframe carries the program [`Decoder::decode`] outputs: AC-3, or E-AC-3
     /// independent substream 0 (§E2.3.1.2). [`Decoder::decode`] returns no channels for the
-    /// others: dependent substreams (the channels beyond 5.1 of a 7.1 program) and further
-    /// independent programs.
+    /// others: dependent substreams (the channels beyond 5.1 of a 7.1 program, which
+    /// [`Decoder::decode_program`] adds to the program) and further independent programs.
     pub fn is_primary(&self) -> bool {
         self.strmtyp != 1 && self.substreamid == 0
     }
@@ -125,6 +134,13 @@ pub fn parse_header(b: &[u8]) -> Result<Header> {
     let lfeon = r.read(1) == 1;
     Ok(Header { sample_rate, bitrate_kbps: kbps >> shift, frame_bytes: words as usize * 2, bsid, acmod, lfeon, blocks: 6, strmtyp: 0, substreamid: 0 })
 }
+
+#[cfg(any(test, feature = "test-util"))]
+use testutil::independent_only;
+
+#[cfg(not(any(test, feature = "test-util")))]
+#[inline(always)]
+fn independent_only(_: std::ops::Range<usize>) {}
 
 /// MSB-first bit reader; reads past the end give zeros.
 struct Bits<'a> {
@@ -651,14 +667,24 @@ fn mantissa(r: &mut Bits, bap: u8, gr: &mut Groups) -> f32 {
     }
 }
 
+/// E-AC-3: the block state of the last syncframe (acmod, lfeon, sample rate code), whose
+/// exponents a syncframe of fewer than six blocks may reuse.
+type Carry = Option<(usize, bool, usize, Box<Frame>)>;
+
+/// The state of one E-AC-3 dependent substream, kept while the independent substream is decoded.
+struct Bank {
+    delay: [[f32; 256]; 6],
+    carry: Carry,
+}
+
 /// A decoder: keeps the overlap of each channel between frames.
 pub struct Decoder {
     delay: [[f32; 256]; 6],
     dither: u32,
     seed: u32,
-    /// E-AC-3: the block state of the last syncframe (acmod, lfeon, sample rate code), whose
-    /// exponents a syncframe of fewer than six blocks may reuse.
-    carry: Option<(usize, bool, usize, Box<Frame>)>,
+    carry: Carry,
+    /// Dependent substreams 0-7 of the program (§E2.3.1.2), by substreamid.
+    deps: Vec<Option<Box<Bank>>>,
 }
 
 impl Default for Decoder {
@@ -673,11 +699,24 @@ impl Default for Decoder {
 pub struct Decoded {
     pub header: Header,
     pub channels: Vec<Vec<f32>>,
+    /// The loudspeaker location of each channel; empty for a dual-mono (1+1) syncframe and when
+    /// there are no channels.
+    pub locations: Vec<Location>,
+}
+
+impl Decoded {
+    /// A program of one syncframe from its channels in coded order (LFE last).
+    fn new(header: Header, pcm: Vec<Vec<f32>>) -> Decoded {
+        let (acmod, lfeon) = (header.acmod as usize & 7, header.lfeon);
+        let mut locations = program::acmod_locations(acmod, lfeon).unwrap_or_default();
+        locations.sort();
+        Decoded { header, channels: wav_order(pcm, acmod, lfeon), locations }
+    }
 }
 
 impl Decoder {
     pub fn new() -> Decoder {
-        Decoder { delay: [[0.0; 256]; 6], dither: 0, seed: 0x1234_5678, carry: None }
+        Decoder { delay: [[0.0; 256]; 6], dither: 0, seed: 0x1234_5678, carry: None, deps: Vec::new() }
     }
 
     /// Seed the dither generator (dither is decoder-specific noise; tests compare two seeds).
@@ -689,6 +728,7 @@ impl Decoder {
     pub fn reset(&mut self) {
         self.delay = [[0.0; 256]; 6];
         self.carry = None;
+        self.deps.clear();
     }
 
     fn dither(&mut self) -> f32 {
@@ -757,14 +797,94 @@ impl Decoder {
         }
         let mut f = Frame::new(NFCHANS[acmod], fscod);
         let pcm = self.blocks(&mut r, &mut f, acmod, lfeon, 6, None)?;
-        Ok(Decoded { header: h, channels: wav_order(pcm, acmod, lfeon) })
+        Ok(Decoded::new(h, pcm))
+    }
+
+    /// Decode the program that starts at `data`: one syncframe, and for E-AC-3 independent
+    /// substream 0 also the dependent substreams that directly follow it in `data` (an MP4 or
+    /// Matroska access unit), whose channels replace or extend the independent substream's
+    /// (§E2.3.1, 7.1 and other layouts beyond 5.1). Returns the program and the bytes it used.
+    ///
+    /// A dependent substream whose audio cannot be decoded (an unsupported tool, damage) leaves the
+    /// independent substream's channels in place and silence at its new locations, so the
+    /// program's layout does not change from frame to frame.
+    pub fn decode_program(&mut self, data: &[u8]) -> Result<(Decoded, usize)> {
+        let h = parse_header(data)?;
+        let mut used = h.frame_bytes;
+        let mut deps = Vec::new();
+        if h.is_eac3() && h.is_primary() && h.acmod != 0 {
+            while let Some(rest) = data.get(used..)
+                && let Ok(d) = parse_header(rest)
+                && d.is_eac3()
+                && d.strmtyp == 1
+                && rest.len() >= d.frame_bytes
+            {
+                deps.push((used, d));
+                used += d.frame_bytes;
+            }
+        }
+        if deps.is_empty() {
+            return Ok((self.decode(data)?, h.frame_bytes));
+        }
+        let frame = data.get(..h.frame_bytes).ok_or(Error::Invalid("truncated syncframe"))?;
+        let pcm = self.eac3_audio(frame, h)?;
+        let mut prog = program::Program::new(&program::acmod_locations(h.acmod as usize & 7, h.lfeon)?, pcm);
+        for (at, d) in deps {
+            if let Some(f) = data.get(at..at + d.frame_bytes) {
+                self.dependent(f, d, &h, &mut prog);
+            }
+        }
+        let (locations, channels) = prog.finish();
+        Ok((Decoded { header: h, channels, locations }, used))
+    }
+
+    /// Decode a dependent substream of the program whose independent substream has header
+    /// `main` into `prog`.
+    fn dependent(&mut self, frame: &[u8], h: Header, main: &Header, prog: &mut program::Program) {
+        // the locations first: a substream whose audio fails still keeps the program's layout
+        let mut r = Bits::new(frame);
+        let Ok(bsi) = eac3::read_bsi(&mut r) else { return };
+        let Ok(locs) = program::dependent_locations(h.acmod as usize & 7, h.lfeon, bsi.chanmap) else { return };
+        let slot = h.substreamid as usize & 7;
+        if self.deps.len() <= slot {
+            self.deps.resize_with(slot + 1, || None);
+        }
+        let mut bank = self.deps.get_mut(slot).and_then(Option::take).unwrap_or_else(|| Box::new(Bank { delay: [[0.0; 256]; 6], carry: None }));
+        std::mem::swap(&mut self.delay, &mut bank.delay);
+        std::mem::swap(&mut self.carry, &mut bank.carry);
+        let pcm = if (h.sample_rate, h.samples()) == (main.sample_rate, main.samples()) {
+            self.eac3_audio(frame, h)
+        } else {
+            Err(Error::Invalid("dependent substream with another rate or length than its program"))
+        };
+        std::mem::swap(&mut self.delay, &mut bank.delay);
+        std::mem::swap(&mut self.carry, &mut bank.carry);
+        if let Some(s) = self.deps.get_mut(slot) {
+            *s = Some(bank);
+        }
+        match pcm {
+            Ok(pcm) => locs.into_iter().zip(pcm).for_each(|(loc, c)| prog.put(loc, c)),
+            Err(_) => {
+                for loc in locs {
+                    if !prog.has(loc) {
+                        prog.put(loc, Vec::new());
+                    }
+                }
+            }
+        }
     }
 
     /// Decode one E-AC-3 syncframe (`frame` is exactly the syncframe).
     fn decode_eac3(&mut self, frame: &[u8], h: Header) -> Result<Decoded> {
         if !h.is_primary() {
-            return Ok(Decoded { header: h, channels: Vec::new() });
+            return Ok(Decoded { header: h, channels: Vec::new(), locations: Vec::new() });
         }
+        let pcm = self.eac3_audio(frame, h)?;
+        Ok(Decoded::new(h, pcm))
+    }
+
+    /// The audio of one E-AC-3 syncframe, in coded channel order with the LFE last.
+    fn eac3_audio(&mut self, frame: &[u8], h: Header) -> Result<Vec<Vec<f32>>> {
         // E-AC-3 has a single CRC, at the end (§E2.2.6): reseed the dither from the last words
         let n = frame.len();
         let tail = frame.get(n.saturating_sub(4)..).and_then(|t| <[u8; 4]>::try_from(t).ok()).unwrap_or_default();
@@ -780,7 +900,7 @@ impl Decoder {
         };
         let pcm = self.blocks(&mut r, &mut f, acmod, lfeon, nblocks, Some(&mut e))?;
         self.carry = Some((acmod, lfeon, bsi.fscod, f));
-        Ok(Decoded { header: h, channels: wav_order(pcm, acmod, lfeon) })
+        Ok(pcm)
     }
 
     /// Decode `nblocks` audio blocks and synthesize them (inverse transform, overlap-add), in coded
@@ -1094,8 +1214,12 @@ impl Decoder {
                 } else {
                     f.fgaincod = [4; 7];
                 }
-                if e.strmtyp == 0 && r.bit() {
-                    r.skip(10); // convsnroffst
+                if e.strmtyp == 0 {
+                    let at = r.pos;
+                    if r.bit() {
+                        r.skip(10); // convsnroffst
+                    }
+                    independent_only(at..r.pos);
                 }
             }
             None => {
@@ -1292,5 +1416,7 @@ fn wav_order(mut pcm: Vec<Vec<f32>>, acmod: usize, lfeon: bool) -> Vec<Vec<f32>>
     out
 }
 
+#[cfg(test)]
+mod dependent_tests;
 #[cfg(test)]
 mod tests;

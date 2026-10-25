@@ -2,7 +2,7 @@
 //! the audio frame (§E2.2.3) and spectral extension (§E2.2.4, §E3.6). The audio blocks share the
 //! AC-3 decoder (`Decoder::audio_block`), which reads the E-AC-3 differences from [`FrameInfo`].
 
-use crate::{Bits, Error, Header, NFCHANS, Result};
+use crate::{Bits, Error, Header, NFCHANS, Result, independent_only};
 
 /// Sample rates by fscod, and by fscod2 when fscod is 3 (Tables E2.2, E2.3).
 const RATES: [u32; 3] = [48_000, 44_100, 32_000];
@@ -116,6 +116,8 @@ pub(crate) struct Bsi {
     /// reduced rates.
     pub fscod: usize,
     pub numblkscod: usize,
+    /// Custom channel map of a dependent substream (`chanmap`, when `chanmape` is set).
+    pub chanmap: Option<u16>,
 }
 
 /// Read syncinfo and bsi (§E2.2.1-2), leaving `r` at the audio frame.
@@ -146,9 +148,10 @@ pub(crate) fn read_bsi(r: &mut Bits) -> Result<Bsi> {
             r.skip(8); // compr2
         }
     }
-    if strmtyp == 1 && r.bit() {
-        r.skip(16); // chanmap
+    if strmtyp == 0 {
+        independent_only(r.pos..r.pos); // where a dependent substream has chanmape
     }
+    let chanmap = if strmtyp == 1 && r.bit() { Some(r.read(16) as u16) } else { None };
     if r.bit() {
         // mixing metadata
         if acmod > 2 {
@@ -164,6 +167,7 @@ pub(crate) fn read_bsi(r: &mut Bits) -> Result<Bsi> {
             r.skip(5); // lfemixlevcod
         }
         if strmtyp == 0 {
+            let at = r.pos;
             if r.bit() {
                 r.skip(6); // pgmscl
             }
@@ -203,6 +207,7 @@ pub(crate) fn read_bsi(r: &mut Bits) -> Result<Bsi> {
                     }
                 }
             }
+            independent_only(at..r.pos);
         }
     }
     if r.bit() {
@@ -225,6 +230,7 @@ pub(crate) fn read_bsi(r: &mut Bits) -> Result<Bsi> {
         }
     }
     if strmtyp == 0 && numblkscod != 3 {
+        independent_only(r.pos..r.pos + 1);
         r.skip(1); // convsync
     }
     if strmtyp == 2 && (numblkscod == 3 || r.bit()) {
@@ -234,7 +240,7 @@ pub(crate) fn read_bsi(r: &mut Bits) -> Result<Bsi> {
         let l = r.read(6) as usize;
         r.skip((l + 1) * 8); // addbsi
     }
-    Ok(Bsi { strmtyp, fscod: rate_code, numblkscod })
+    Ok(Bsi { strmtyp, fscod: rate_code, numblkscod, chanmap })
 }
 
 /// The audio frame (§E2.2.3) and the state that runs from block to block within a syncframe.
@@ -331,8 +337,12 @@ impl FrameInfo {
                 e.lfeexpstr[blk] = r.read(1) as u8;
             }
         }
-        if bsi.strmtyp == 0 && (six || r.bit()) {
-            r.skip(5 * nf); // convexpstr
+        if bsi.strmtyp == 0 {
+            let at = r.pos;
+            if six || r.bit() {
+                r.skip(5 * nf); // convexpstr
+            }
+            independent_only(at..r.pos);
         }
         if ahte {
             // AHT flags exist for channels whose exponents are sent once in the frame (§E3.4.2)

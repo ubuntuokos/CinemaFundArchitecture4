@@ -83,3 +83,52 @@ fn eac3_in_mp4_matroska_and_transport_streams() {
         assert!(seek_err <= 1e-6, "{name}: random-access audio differs by {seek_err}");
     }
 }
+
+/// E-AC-3 7.1 (a 5.1 independent substream and a dependent substream carrying Ls, Rs, Lrs and Rrs)
+/// in MP4 and Matroska: decoded as eight channels, L R C LFE Ls Rs Lrs Rrs. No free encoder writes
+/// dependent substreams, so ffmpeg's 2/2 syncframes are rewritten into one
+/// (`cfa4_ac3::make_dependent_substream`) and ffmpeg muxes the result.
+#[test]
+fn eac3_71_dependent_substreams_in_mp4_and_matroska() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let quad = "aevalsrc=exprs=0.25*sin(2*PI*900*t)|0.25*sin(2*PI*1000*t)|0.25*sin(2*PI*1100*t)|0.25*sin(2*PI*1200*t):s=48000:c=quad";
+    let enc = |name: &str, input: &str, rate: &str| {
+        let f = fixture(&ff, name, &["-f", "lavfi", "-i", input, "-t", "2", "-c:a", "eac3", "-b:a", rate, "-f", "eac3"]).unwrap();
+        std::fs::read(f).unwrap()
+    };
+    let (core, extra) = (enc("eac3_71_core.eac3", SURROUND, "384k"), enc("eac3_71_extra.eac3", quad, "256k"));
+    let syncframes = |d: &[u8]| {
+        let mut out = Vec::new();
+        let mut p = 0;
+        while let Ok(h) = cfa4_ac3::parse_header(&d[p..]) {
+            out.push(d[p..p + h.frame_bytes].to_vec());
+            p += h.frame_bytes;
+        }
+        out
+    };
+    let raw: Vec<u8> = syncframes(&core)
+        .into_iter()
+        .zip(syncframes(&extra))
+        .flat_map(|(c, e)| c.into_iter().chain(cfa4_ac3::make_dependent_substream(&e, 0x1A00).unwrap()))
+        .collect();
+    let raw_path = dir().join("eac3_71.eac3");
+    std::fs::write(&raw_path, raw).unwrap();
+    let raw_arg = raw_path.to_str().unwrap();
+    // ffmpeg orders 7.1 as FL FR FC LFE BL BR SL SR: E-AC-3's Lrs / Rrs are its back channels
+    const FFMPEG: [usize; 8] = [0, 1, 2, 3, 6, 7, 4, 5];
+    for name in ["eac3_71.mp4", "eac3_71.mkv"] {
+        let f = dir().join(name);
+        let _ = std::fs::remove_file(&f);
+        assert!(fixture(&ff, name, &["-i", raw_arg, "-c", "copy"]).is_some(), "{name}");
+        let src = cfa4_codecs::open_bytes(name, bytes(&f)).unwrap();
+        let a = src.info().audio().cloned().unwrap();
+        let want = ffmpeg_audio_f32(&ff, &f, &[]);
+        let n = want.len() / 8;
+        let ours = src.audio(0, n, 48_000).unwrap().channels;
+        assert_eq!(ours.len(), 8, "{name}: decoded channels (container says {})", a.channels);
+        let reordered: Vec<f32> = (0..n).flat_map(|i| FFMPEG.iter().map(move |&c| (i, c))).map(|(i, c)| want[i * 8 + c]).collect();
+        let worst = snr(&ours, &reordered, 8, 0);
+        println!("{name}: {} ({} Hz, container {} ch), worst channel SNR vs ffmpeg {worst:.1} dB", a.codec, a.sample_rate, a.channels);
+        assert!(worst >= 50.0, "{name}: SNR {worst:.1} dB");
+    }
+}
