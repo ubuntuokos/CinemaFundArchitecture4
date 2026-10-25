@@ -25,7 +25,7 @@
 use std::path::Path;
 use std::time::Duration;
 
-use filmcraft_time::{FrameRate, Tick};
+use cfa4_time::{FrameRate, Tick};
 
 #[cfg(feature = "gstreamer")]
 mod backend;
@@ -244,11 +244,11 @@ pub const EXTRA_AUDIO_EXTENSIONS: &[&str] = &["oga", "wma", "ape", "wv", "amr", 
 ///
 /// Video frames come out as RGBA 8-bit, audio as 32-bit float at the rate the engine asks for.
 /// Still images are declined (the engine's still decoders handle those).
-pub fn open(path: &Path) -> Result<filmcraft_media::SharedSource, Error> {
+pub fn open(path: &Path) -> Result<cfa4_media::SharedSource, Error> {
     #[cfg(feature = "gstreamer")]
     {
         let path = checked_path(path)?;
-        guarded(move || source::GstSource::open(&path).map(|s| std::sync::Arc::new(s) as filmcraft_media::SharedSource))
+        guarded(move || source::GstSource::open(&path).map(|s| std::sync::Arc::new(s) as cfa4_media::SharedSource))
     }
     #[cfg(not(feature = "gstreamer"))]
     {
@@ -257,7 +257,7 @@ pub fn open(path: &Path) -> Result<filmcraft_media::SharedSource, Error> {
     }
 }
 
-/// Makes GStreamer the engine's fallback backend (`filmcraft_media::fallback`): files the built-in
+/// Makes GStreamer the engine's fallback backend (`cfa4_media::fallback`): files the built-in
 /// openers cannot open, or open without their video, are opened through [`open`], and the
 /// [`EXTRA_VIDEO_EXTENSIONS`] / [`EXTRA_AUDIO_EXTENSIONS`] become importable.
 ///
@@ -268,7 +268,7 @@ pub fn register() -> Result<Status, Error> {
     #[cfg(feature = "gstreamer")]
     {
         backend::require_element("playbin")?;
-        filmcraft_media::register_fallback(filmcraft_media::Fallback {
+        cfa4_media::register_fallback(cfa4_media::Fallback {
             name: "GStreamer",
             video_extensions: EXTRA_VIDEO_EXTENSIONS,
             audio_extensions: EXTRA_AUDIO_EXTENSIONS,
@@ -280,10 +280,10 @@ pub fn register() -> Result<Status, Error> {
 }
 
 #[cfg(feature = "gstreamer")]
-fn fallback_open(path: &Path) -> filmcraft_media::Result<filmcraft_media::SharedSource> {
+fn fallback_open(path: &Path) -> cfa4_media::Result<cfa4_media::SharedSource> {
     open(path).map_err(|e| match e {
-        Error::InvalidInput(m) => filmcraft_media::MediaError::Io(m),
-        other => filmcraft_media::MediaError::Unsupported(other.to_string()),
+        Error::InvalidInput(m) => cfa4_media::MediaError::Io(m),
+        other => cfa4_media::MediaError::Unsupported(other.to_string()),
     })
 }
 
@@ -372,7 +372,7 @@ mod tests {
 
     #[test]
     fn nanos_convert_exactly_and_saturate() {
-        assert_eq!(ticks_from_nanos(1_000_000_000), Tick(filmcraft_time::TICKS_PER_SECOND));
+        assert_eq!(ticks_from_nanos(1_000_000_000), Tick(cfa4_time::TICKS_PER_SECOND));
         assert_eq!(ticks_from_nanos(40_000_000), Tick::from_units(1, 25));
         // u64::MAX nanoseconds must not panic or wrap.
         assert!(ticks_from_nanos(u64::MAX) > Tick::ZERO);

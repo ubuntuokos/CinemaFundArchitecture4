@@ -1,4 +1,4 @@
-# Contributing to FilmCraft
+# Contributing to CFA4
 
 Thanks for helping. Before you start:
 
@@ -17,4 +17,4 @@ More reading: [docs/architecture.md](docs/architecture.md), [docs/testing.md](do
 [docs/agents.md](docs/agents.md), [ROADMAP.md](ROADMAP.md).
 
 Contributions are licensed under GPL-3.0-or-later, the project licence (see [LICENSE](LICENSE) and
-[docs/licensing.md](docs/licensing.md)). Code inherited from FilmCraft keeps its MIT OR Apache-2.0 notices.
+[docs/licensing.md](docs/licensing.md)). Code inherited from the upstream project (see NOTICE) keeps its MIT OR Apache-2.0 notices.

@@ -8,7 +8,7 @@
 
 | Képesség | CFA4 forrásban bizonyított tény | R0 státusz |
 |---|---|---|
-| Teljes videószerkesztő | `apps/filmcraft` az `eframe`/WGPU/`filmcraft-ui-egui` szerkesztőt indítja; `filmcraft-cli --bridge` localhost JSON RPC-vel vezérelheti az élő appot | Valós Wayland E2E szükséges |
+| Teljes videószerkesztő | `apps/cfa4` az `eframe`/WGPU/`cfa4-ui-egui` szerkesztőt indítja; `cfa4-cli --bridge` localhost JSON RPC-vel vezérelheti az élő appot | Valós Wayland E2E szükséges |
 | Python/Qt6 | `python/cfa4_devtools/qt_app.py` saját fejlécében **„Experimental Linux Qt 6 shell. NOT the complete video editor.”**; csak a CLI-verzió kijelzését tudja | **QT6 NLE NOT_IMPLEMENTED**; a Qt6-smoke nem teljes GUI-elfogadás |
 | H.264 CFA4 NVENC | `crates/platform` regisztrálja a Linux NVENC H.264 export-factoryt, `hardwareEncoding=auto` választással | Hardveres **alkalmazásszintű** exportot igazolni kell |
 | HEVC CFA4 NVENC | A korábbi `crates/platform/src/nvenc/export.rs` kifejezetten **Windows-only** gyári kaput tartalmazott; a PR #17 ezt Linuxra is engedélyezi és runtime feature-probe-ot regisztrál | RTX A1000 fizikai app E2E és külön Rust NVENC-oracle: **PASS**; targeted Linux source CI: **PASS** |
@@ -32,7 +32,7 @@ A tesztek **nem** fogadják el a hardver hiányát sikeres kihagyásként. A nor
 
 A `python/cfa4_devtools/native_media_e2e.py` ellenőrzi a pontos Ubuntu/Python/Wayland/NVIDIA/FFmpeg környezetet, **csak a meglévő futtatható binárisokat** használja; először külön teszteli a kísérleti PySide6 Qt shell létrehozását `--smoke` módban (ennek eredménye nem teljes szerkesztő).
 
-Ezután az **igazi `target/release/filmcraft` egui szerkesztőt** indítja `--empty --control <loopback-port> --data-dir <izolált auditmappa>` kapcsolókkal. A `target/release/filmcraft-cli --bridge` a teljes CFA4 Session UI engine-hez csatlakozik, és az eredeti #14 hardveres H.264/HEVC/AV1 bemeneti mintákat importálja.
+Ezután az **igazi `target/release/cfa4` egui szerkesztőt** indítja `--empty --control <loopback-port> --data-dir <izolált auditmappa>` kapcsolókkal. A `target/release/cfa4-cli --bridge` a teljes CFA4 Session UI engine-hez csatlakozik, és az eredeti #14 hardveres H.264/HEVC/AV1 bemeneti mintákat importálja.
 
 A H.264 és HEVC bemenetekből új CFA4 sequence-et készít, exportál H.264/HEVC NVENC outputot, FFprobe-pal mind a 8 képkockát és 640×360 méretet igazolja, **CFA4 saját médiatárolójába visszaimportál**, majd egy külön, izolált `.fcproj` projektet elment és újranyit. A `perf.stats` `decode.hardware.frames`, `export.hardware.frames` és `export.hardware.sessions` számlálóknak mérhetően nőniük kell; így a szoftveres fallback **nem** minősül automatikusan hardveres PASS-nak.
 
@@ -43,8 +43,8 @@ cd ~/GIT/CinemaFundArchitecture4
 git fetch origin audit/r0-native-media-e2e
 git switch --track origin/audit/r0-native-media-e2e
 
-# Ha target/release/filmcraft* nincs kész:
-# cargo build --release --locked -p filmcraft -p filmcraft-cli
+# Ha target/release/cfa4* nincs kész:
+# cargo build --release --locked -p cfa4 -p cfa4-cli
 
 # Csak a natív app és PySide6 Qt shell; meglévő FFmpeg fixture:
 bash scripts/dev/audit-native-media-e2e.sh
@@ -82,7 +82,7 @@ Bizonyítékfájlok a célgépen: `target/audit/native-media/20261022T194835Z/re
 
 Ez **részleges alkalmazásszintű PASS**, nem a teljes #16 lezárása: a három bemeneti kodek importja igazolt, de AV1 sequence/dekód/render/export nem; natív CFA4 AV1 NVDEC nincs; a Qt6 shell nem teljes szerkesztő; a kézi GUI/valós hang-szinkron, ICC/HDR/HEIF multi-image nyitott.
 
-**Runtime-linkage egyeztetés:** a célgépes `ldd` felvételekben a `filmcraft` és `filmcraft-cli` bináris nem mutat közvetlen `libav*` függőséget. A PR-ág `Cargo.lock` fájljában nincs FFmpeg/libav binding crate; `filmcraft-codecs` Rust/Symphonia codec stackre épül, míg `filmcraft-platform` a GPU-driver API-kat futásidőben tölti be. Ez alapján a CFA4-bináris és a rendszer-FFmpeg libav ABI-paritása **nem alkalmazható**. A kiadási csomag teljes runtime-dependency leltára és a futás közbeni CPU/GPU/kodek útvonalak naplózása továbbra is nyitott.
+**Runtime-linkage egyeztetés:** a célgépes `ldd` felvételekben a `cfa4` és `cfa4-cli` bináris nem mutat közvetlen `libav*` függőséget. A PR-ág `Cargo.lock` fájljában nincs FFmpeg/libav binding crate; `cfa4-codecs` Rust/Symphonia codec stackre épül, míg `cfa4-platform` a GPU-driver API-kat futásidőben tölti be. Ez alapján a CFA4-bináris és a rendszer-FFmpeg libav ABI-paritása **nem alkalmazható**. A kiadási csomag teljes runtime-dependency leltára és a futás közbeni CPU/GPU/kodek útvonalak naplózása továbbra is nyitott.
 
 A két külön fizikai Rust-oracle ugyanazon célgépen sikeresen lefutott: `physical_nvdec_h264_hevc_reimport_matches_cfa4_software` és `physical_nvenc_h264_and_hevc_export_roundtrip`. Eredmény: **2 passed; 0 failed; 0 ignored; 9.45 s**. A célgépen rögzített napló útvonala a dátumgenerált mappában van: `target/audit/native-media/rust-oracles/<UTC-stamp>/r0-native-rust.log`. A tesztek H.264/HEVC NVDEC frame-paritást, valamint H.264/HEVC NVENC exportot, CFA4 visszaimportot és FFprobe ellenőrzést végeztek.
 

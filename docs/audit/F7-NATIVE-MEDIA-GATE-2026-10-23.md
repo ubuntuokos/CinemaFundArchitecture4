@@ -1,6 +1,6 @@
 # CFA4 F7 – Native media capability truth and A/V timestamp oracle
 
-Target: Ubuntu 26.04 AMD64. Parent FilmCraft is read-only; CFA4 is the product.
+Target: Ubuntu 26.04 AMD64. The upstream parent is read-only; CFA4 is the product.
 
 ## Closed evidence (do not repeat)
 - 2026-10-22 RTX A1000 true native Rust/CFA4 H.264/HEVC NVDEC/NVENC,

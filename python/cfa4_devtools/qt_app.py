@@ -1,6 +1,6 @@
 """Experimental Linux Qt 6 shell. NOT the complete video editor.
 
-The Rust filmcraft-cli is only queried for its version, without a shell or remote calls.
+The Rust cfa4-cli is only queried for its version, without a shell or remote calls.
 """
 
 from __future__ import annotations
@@ -17,14 +17,12 @@ def locate_engine(explicit: str | None = None) -> Path | None:
     if explicit:
         candidate = Path(explicit).expanduser()
         return candidate if candidate.is_file() else None
-    # Prefer the installed CFA4 command; the inherited executable name
-    # remains a temporary compatibility fallback during the Qt6 migration.
-    for name in ("cfa4-cli", "filmcraft-cli"):
-        executable = shutil.which(name)
-        if executable:
-            return Path(executable)
+    # Prefer the installed CFA4 command.
+    executable = shutil.which("cfa4-cli")
+    if executable:
+        return Path(executable)
     root = Path(__file__).resolve().parents[2]
-    for relative in ("target/release/filmcraft-cli", "target/debug/filmcraft-cli"):
+    for relative in ("target/release/cfa4-cli", "target/debug/cfa4-cli"):
         candidate = root / relative
         if candidate.is_file():
             return candidate
@@ -33,7 +31,7 @@ def locate_engine(explicit: str | None = None) -> Path | None:
 
 def engine_version(executable: Path | None) -> str:
     if executable is None:
-        return "Rust CLI: not built (cargo build --release -p filmcraft-cli)"
+        return "Rust CLI: not built (cargo build --release -p cfa4-cli)"
     try:
         process = subprocess.run(
             [str(executable), "--version"], capture_output=True, text=True, timeout=8, check=False
@@ -47,7 +45,7 @@ def engine_version(executable: Path | None) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--engine", help="Path to the local filmcraft-cli executable")
+    parser.add_argument("--engine", help="Path to the local cfa4-cli executable")
     parser.add_argument("--smoke", action="store_true", help="Create Qt widgets and exit without interaction")
     args = parser.parse_args(argv)
 

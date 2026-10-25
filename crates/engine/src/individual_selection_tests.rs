@@ -1,8 +1,8 @@
 //! Individual linked-clip selection and deletion (#680, #1163).
 
 use crate::Session;
-use filmcraft_project::ClipId;
-use filmcraft_time::Tick;
+use cfa4_project::ClipId;
+use cfa4_time::Tick;
 use serde_json::json;
 
 fn paired_sequence() -> (Session, [(ClipId, ClipId); 2]) {

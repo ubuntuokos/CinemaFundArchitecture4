@@ -5,22 +5,22 @@ use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
+use cfa4_ui_egui::graphics_notice::GraphicsNotice;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
-use filmcraft_ui_egui::graphics_notice::GraphicsNotice;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
 }
 
 impl Driver {
     fn new(notice: Option<GraphicsNotice>) -> Self {
         let (tx, rx) = channel();
-        let mut app = FilmcraftApp::new(Session::default()).with_control(rx);
+        let mut app = Cfa4App::new(Session::default()).with_control(rx);
         app.graphics_notice = notice;
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
@@ -61,7 +61,7 @@ impl Driver {
         assert_eq!(v["ok"], json!(true), "{id}: {v}");
         self.frames(3);
     }
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut Cfa4App {
         self.harness.state_mut()
     }
 }
@@ -115,9 +115,9 @@ fn a_reset_that_cannot_be_saved_says_why_and_keeps_the_button() {
 fn the_notice_follows_the_interface_language() {
     let notice = GraphicsNotice::new("software rendering", Box::new(|| Ok(())));
     let mut d = Driver::new(Some(notice));
-    d.app().ui.language = filmcraft_ui_egui::i18n::Language::Es;
+    d.app().ui.language = cfa4_ui_egui::i18n::Language::Es;
     d.frames(3);
     assert_eq!(d.label("graphics.notice"), "Modo gráfico seguro: procesamiento por software");
     assert_eq!(d.label("graphics.notice.reset"), "Usar gráficos predeterminados");
-    filmcraft_ui_egui::i18n::set_current(filmcraft_ui_egui::i18n::Language::En);
+    cfa4_ui_egui::i18n::set_current(cfa4_ui_egui::i18n::Language::En);
 }

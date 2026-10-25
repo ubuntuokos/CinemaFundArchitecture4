@@ -1,5 +1,5 @@
 [package]
-name = "filmcraft-export"
+name = "cfa4-export"
 description = "Export pipeline: parallel render → encode → mux, presets, progress/cancel"
 version.workspace = true
 edition.workspace = true
@@ -10,23 +10,23 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-filmcraft-time = { workspace = true }
-filmcraft-frame = { workspace = true }
-filmcraft-color = { workspace = true }
-filmcraft-media = { workspace = true }
-filmcraft-project = { workspace = true }
-filmcraft-render = { workspace = true }
-filmcraft-audio-dsp = { workspace = true }
-filmcraft-geom = { workspace = true }
-filmcraft-text = { workspace = true }
-filmcraft-isobmff = { workspace = true }
-filmcraft-prores = { workspace = true }
-filmcraft-dnx = { workspace = true }
-filmcraft-apv = { workspace = true }
-filmcraft-mxf = { workspace = true }
-filmcraft-aac = { workspace = true }
-filmcraft-flac = { workspace = true }
-filmcraft-h264enc = { workspace = true }
+cfa4-time = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-color = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-audio-dsp = { workspace = true }
+cfa4-geom = { workspace = true }
+cfa4-text = { workspace = true }
+cfa4-isobmff = { workspace = true }
+cfa4-prores = { workspace = true }
+cfa4-dnx = { workspace = true }
+cfa4-apv = { workspace = true }
+cfa4-mxf = { workspace = true }
+cfa4-aac = { workspace = true }
+cfa4-flac = { workspace = true }
+cfa4-h264enc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -35,5 +35,5 @@ web-time = "1"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp"] }
 
 [dev-dependencies]
-filmcraft-testkit = { workspace = true }
-filmcraft-codecs = { workspace = true }
+cfa4-testkit = { workspace = true }
+cfa4-codecs = { workspace = true }
