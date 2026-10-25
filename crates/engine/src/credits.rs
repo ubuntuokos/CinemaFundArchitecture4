@@ -11,12 +11,20 @@
 //! - `graphics.credits.preview` does the same without changing the project and reports pages,
 //!   durations and warnings.
 //! - `graphics.credits.styles` lists the style names and returns a starter styling (JSON).
+//! - **Linked credits.** Every placed page remembers its credits document (`.cfa4credits`:
+//!   source, worksheet, styling, the accepted table) and a fingerprint of each layer it made.
+//!   `graphics.credits.save` writes the document to a file (portable: the table is embedded);
+//!   `graphics.credits.import` also opens such a file. `graphics.credits.diff` compares the
+//!   spreadsheet as it is now with the accepted table, row by row, and lists layers edited by
+//!   hand; `graphics.credits.refresh` applies the accepted changes, keeps the hand edits whose
+//!   block is unchanged, and replaces the pages in place, as one undo step.
 
+use cfa4_credits::doc::{CreditsDoc, SourceRef};
 use cfa4_credits::layout::{Frame, Measure};
 use cfa4_credits::{Laid, Styling};
 use cfa4_geom::Vec2;
 use cfa4_project::graphic::eval_layer;
-use cfa4_project::{ClipId, EffectInstance, Interpolation, ItemId, Keyframe, Param, ParamValue};
+use cfa4_project::{ClipId, CreditsLink, EffectInstance, Interpolation, ItemId, Keyframe, LayerStamp, Param, ParamValue};
 use cfa4_render::graphic_clip::layer_local_bounds;
 use cfa4_time::Tick;
 use serde_json::{Value, json};
@@ -73,14 +81,6 @@ impl Measure for EngineMeasure {
     }
 }
 
-/// The folder pictures are read from: `pictureDir`, else the spreadsheet's folder.
-fn picture_base(p: &Value) -> Option<std::path::PathBuf> {
-    if let Some(d) = str_p(p, "pictureDir") {
-        return Some(std::path::PathBuf::from(d));
-    }
-    str_p(p, "path").and_then(|f| std::path::Path::new(f).parent().map(std::path::Path::to_path_buf))
-}
-
 fn read_file(cmd: &str, path: &str) -> Result<Vec<u8>> {
     let meta = std::fs::metadata(path).map_err(|e| bad(cmd, format!("{path}: {e}")))?;
     if meta.len() > MAX_FILE {
@@ -101,30 +101,63 @@ fn styling_p(cmd: &str, p: &Value) -> Result<Styling> {
     }
 }
 
-/// Read and lay out the spreadsheet a command names, for the active sequence.
-fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, cfa4_credits::office::Sheet)> {
-    let styling = styling_p(cmd, p)?;
-    let bytes = match (str_p(p, "csv"), str_p(p, "path")) {
-        (Some(text), _) => text.as_bytes().to_vec(),
+/// Information about the worksheets of the file that was read.
+type SheetInfo = cfa4_credits::office::Sheet;
+
+/// The credits document a command names: a `.cfa4credits` file, a spreadsheet (`path`, read
+/// now) or inline CSV text (`csv`). `styling` and `pictureDir` override the document's.
+/// Returns the document, the worksheet information and the folder pictures are read from.
+fn doc_p(cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
+    let styling = if p.get("styling").is_some_and(|v| !v.is_null()) { Some(styling_p(cmd, p)?) } else { None };
+    let (mut doc, info, file_dir) = match (str_p(p, "csv"), str_p(p, "path")) {
+        (Some(text), _) => {
+            let mut info = cfa4_credits::read_rows(text.as_bytes(), None).map_err(|e| bad(cmd, e.to_string()))?;
+            let table = std::mem::take(&mut info.rows);
+            (CreditsDoc { table, ..Default::default() }, info, None)
+        }
         (None, Some(path)) => {
             if path.to_lowercase().ends_with(".numbers") {
                 return Err(bad(cmd, "Apple Numbers files are not read; export the sheet as .xlsx or CSV"));
             }
-            read_file(cmd, path)?
+            let bytes = read_file(cmd, path)?;
+            let dir = std::path::Path::new(path).parent().map(std::path::Path::to_path_buf);
+            if cfa4_credits::doc::is_doc(&bytes) {
+                let d = CreditsDoc::from_bytes(&bytes).map_err(|e| bad(cmd, e.to_string()))?;
+                (d, SheetInfo::default(), dir)
+            } else {
+                let mut info = cfa4_credits::read_rows(&bytes, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
+                let table = std::mem::take(&mut info.rows);
+                let abs = std::fs::canonicalize(path).map(|x| x.to_string_lossy().into_owned()).unwrap_or_else(|_| path.to_string());
+                let name = std::path::Path::new(path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                let sheet = (!info.chosen.is_empty()).then(|| info.chosen.clone());
+                (CreditsDoc { table, source: Some(SourceRef { path: abs, name, sheet }), ..Default::default() }, info, dir)
+            }
         }
-        (None, None) => return Err(bad(cmd, "need `path` (.csv, .tsv, .xlsx or .ods) or `csv` (the table as text)")),
+        (None, None) => return Err(bad(cmd, "need `path` (.csv, .tsv, .xlsx, .ods or .cfa4credits) or `csv` (the table as text)")),
     };
-    let (credits, sheet) = cfa4_credits::read_with(&bytes, &styling, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
+    if let Some(st) = styling {
+        doc.styling = st;
+    }
+    if let Some(d) = str_p(p, "pictureDir") {
+        doc.picture_dir = Some(d.to_string());
+    }
+    let base = doc.picture_dir.as_ref().map(std::path::PathBuf::from).or(file_dir);
+    Ok((doc, info, base))
+}
+
+/// Lay out a credits document for the active sequence.
+fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<Laid> {
+    let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
-    let l = cfa4_credits::layout(
-        &credits,
-        &styling,
-        frame,
-        &EngineMeasure { canvas: (frame.width, frame.height), base: picture_base(p), sizes: Default::default() },
-    )
-    .map_err(|e| bad(cmd, e.to_string()))?;
-    Ok((l, sheet))
+    cfa4_credits::layout(&credits, &doc.styling, frame, &EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() })
+        .map_err(|e| bad(cmd, e.to_string()))
+}
+
+/// Read and lay out the credits a command names, for the active sequence.
+fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, SheetInfo)> {
+    let (doc, info, base) = doc_p(cmd, p)?;
+    Ok((lay_doc(s, cmd, &doc, base)?, info))
 }
 
 fn warnings_json(l: &Laid) -> Value {
@@ -158,59 +191,308 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
-fn import(s: &mut Session, p: &Value) -> Result<Value> {
-    const CMD: &str = "graphics.credits.import";
-    let (l, sheet) = laid(s, CMD, p)?;
-    let warnings = warnings_json(&l);
-    let rate = s.sequence_rate();
-    let mut t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
-    let before = s.history.undo.len();
-    let mut placed = Vec::new();
-    let base = picture_base(p);
-    let frame_h = s.active_sequence().map(|q| f64::from(q.settings.height)).unwrap_or(1080.0);
-    let mut items: Vec<(std::path::PathBuf, ItemId)> = Vec::new();
-    let result = (|| -> Result<()> {
-        for pg in l.pages {
-            let mut pp = json!({"time": t.0});
-            if let Some(tr) = u64_p(p, "track") {
-                pp["track"] = json!(tr);
-            }
-            let dur = pg.duration;
-            let meta = pg.meta.clone();
-            let clip = place_video_clip(s, CMD, &pg.name, &pp, "Import Credits", pg.layers.clone(), move |pr, (w, h, rate)| {
-                (crate::graphics::graphic_source(pr, w, h, rate), dur)
-            })?;
-            s.edit_sequence("Import Credits", move |q, _, _| {
-                let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
-                it.graphic = Some(Box::new(meta));
-                Ok(())
-            })?;
-            let mut pics = Vec::new();
-            for pic in &pg.pictures {
-                if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, frame_h)? {
-                    pics.push(c.0);
-                }
-            }
-            placed.push(json!({"clip": clip.0, "name": pg.name, "start": t.0, "duration": dur.0, "behaviour": behaviour_name(pg.behaviour), "pictures": pics}));
-            t = rate.snap(Tick(t.0.saturating_add(dur.0).saturating_add(pg.gap_after.0).max(0)));
-        }
-        Ok(())
-    })();
-    // one undo step for the whole sequence of pages
+/// Keep only the first of the undo steps made since `before`, under `label`; on an error, undo it.
+fn fold_undo(s: &mut Session, before: usize, label: &str, result: &Result<()>) {
     if s.history.undo.len() > before + 1 {
         s.history.undo.truncate(before + 1);
     }
     if let Some(e) = s.history.undo.get_mut(before) {
-        e.0 = "Import Credits".to_string();
+        e.0 = label.to_string();
     }
-    if let Err(e) = result {
-        if s.history.undo.len() > before {
-            let _ = s.execute("edit.undo", json!({}));
+    if result.is_err() && s.history.undo.len() > before {
+        let _ = s.execute("edit.undo", json!({}));
+    }
+}
+
+/// Layers edited by hand, carried into a refresh: key → the layer as the user left it.
+type Overrides = Vec<(String, EffectInstance)>;
+
+/// Place laid-out pages one after another from `t` (each with its pictures) and link them to
+/// `doc`. Returns the placed pages as JSON and the end time.
+fn place_pages(
+    s: &mut Session,
+    cmd: &str,
+    label: &str,
+    laid: Laid,
+    doc: &CreditsDoc,
+    base: Option<std::path::PathBuf>,
+    start: Tick,
+    track: Option<u64>,
+    overrides: &Overrides,
+) -> Result<(Vec<Value>, Tick)> {
+    let rate = s.sequence_rate();
+    let frame_h = s.active_sequence().map(|q| f64::from(q.settings.height)).unwrap_or(1080.0);
+    let doc_text = doc.to_compact();
+    let mut t = start;
+    let mut placed = Vec::new();
+    let mut items: Vec<(std::path::PathBuf, ItemId)> = Vec::new();
+    let mut group = 0u64;
+    for (index, pg) in laid.pages.into_iter().enumerate() {
+        let mut pp = json!({"time": t.0});
+        if let Some(tr) = track {
+            pp["track"] = json!(tr);
         }
-        return Err(e);
+        // fingerprints of the layers as generated, then the hand edits put back
+        let mut layers = pg.layers.clone();
+        let mut stamps = Vec::with_capacity(layers.len());
+        let mut kept = 0usize;
+        for e in &mut layers {
+            let uid = cfa4_project::gtemplate::layer_uid(e);
+            let key = pg.keys.iter().find(|(u, _)| *u == uid).map(|(_, k)| k.clone()).unwrap_or_default();
+            stamps.push(LayerStamp { key: key.clone(), uid, fingerprint: cfa4_credits::doc::layer_fingerprint(e) });
+            if let Some((_, old)) = overrides.iter().find(|(k, _)| !key.is_empty() && *k == key) {
+                let mut o = old.clone();
+                o.layer.get_or_insert_with(Default::default).uid = uid;
+                *e = o;
+                kept += 1;
+            }
+        }
+        let dur = pg.duration;
+        let source =
+            move |pr: &mut cfa4_project::Project, (w, h, rate): (u32, u32, cfa4_time::FrameRate)| (crate::graphics::graphic_source(pr, w, h, rate), dur);
+        // the asked track if it is free there, else the first free one above
+        let clip = match place_video_clip(s, cmd, &pg.name, &pp, label, layers.clone(), source) {
+            Ok(c) => c,
+            Err(_) if track.is_some() => place_video_clip(s, cmd, &pg.name, &json!({"time": t.0}), label, layers, source)?,
+            Err(e) => return Err(e),
+        };
+        if group == 0 {
+            group = clip.0;
+        }
+        let mut pics = Vec::new();
+        for pic in &pg.pictures {
+            if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, frame_h)? {
+                pics.push(c.0);
+            }
+        }
+        let mut meta = pg.meta.clone();
+        meta.credits = Some(Box::new(CreditsLink { group, page: index as u32, doc: doc_text.clone(), pictures: pics.clone(), layers: stamps }));
+        s.edit_sequence(label, move |q, _, _| {
+            let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
+            it.graphic = Some(Box::new(meta));
+            Ok(())
+        })?;
+        placed.push(json!({"clip": clip.0, "name": pg.name, "start": t.0, "duration": dur.0, "behaviour": behaviour_name(pg.behaviour), "pictures": pics, "keptEdits": kept}));
+        t = rate.snap(Tick(t.0.saturating_add(dur.0).saturating_add(pg.gap_after.0).max(0)));
     }
+    Ok((placed, t))
+}
+
+fn import(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.import";
+    let (doc, info, base) = doc_p(CMD, p)?;
+    let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let warnings = warnings_json(&l);
+    let t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
+    let before = s.history.undo.len();
+    let mut out = (Vec::new(), t);
+    let result = place_pages(s, CMD, "Import Credits", l, &doc, base, t, u64_p(p, "track"), &Vec::new()).map(|r| out = r);
+    fold_undo(s, before, "Import Credits", &result);
+    result?;
     s.state.graphic_layers.clear();
-    Ok(json!({"clips": placed, "end": t.0, "sheet": sheet.chosen, "warnings": warnings}))
+    let group = out.0.first().and_then(|v| v["clip"].as_u64());
+    Ok(json!({"clips": out.0, "end": out.1.0, "group": group, "sheet": info.chosen, "warnings": warnings}))
+}
+
+// ------------------------------------------------------------------------------------------------
+// Linked credits: save, diff, refresh
+// ------------------------------------------------------------------------------------------------
+
+/// A placed credits group: its pages in time order (clip, page link, start, track index).
+struct Group {
+    id: u64,
+    pages: Vec<(ClipId, CreditsLink, Tick, usize)>,
+}
+
+fn link_of(it: &cfa4_project::TrackItem) -> Option<&CreditsLink> {
+    it.graphic.as_ref().and_then(|g| g.credits.as_deref())
+}
+
+/// The credits group of `clip` (default: the first selected credits page).
+fn group_p(s: &Session, cmd: &str, p: &Value) -> Result<Group> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let pick = |c: ClipId| q.find_item(c).and_then(|(_, it)| link_of(it)).map(|l| l.group);
+    let gid = match u64_p(p, "clip") {
+        Some(c) => pick(ClipId(c)).ok_or_else(|| bad(cmd, format!("clip {c} is not a credits page")))?,
+        None => s.state.selection.iter().find_map(|c| pick(*c)).ok_or_else(|| bad(cmd, "select a credits page (or give `clip`)"))?,
+    };
+    let mut pages = Vec::new();
+    for (ti, tr) in q.video_tracks.iter().enumerate() {
+        for it in &tr.items {
+            if let Some(l) = link_of(it).filter(|l| l.group == gid) {
+                pages.push((it.id, l.clone(), it.start, ti));
+            }
+        }
+    }
+    pages.sort_by_key(|(_, l, t, _)| (*t, l.page));
+    Ok(Group { id: gid, pages })
+}
+
+fn group_doc(cmd: &str, g: &Group) -> Result<CreditsDoc> {
+    let first = g.pages.first().ok_or_else(|| bad(cmd, "the credits have no pages left"))?;
+    CreditsDoc::from_bytes(first.1.doc.as_bytes()).map_err(|e| bad(cmd, e.to_string()))
+}
+
+fn has_credits_selection(s: &Session) -> std::result::Result<(), String> {
+    has_seq(s)?;
+    let q = s.active_sequence().ok_or("no sequence is open")?;
+    if s.state.selection.iter().any(|c| q.find_item(*c).is_some_and(|(_, it)| link_of(it).is_some())) { Ok(()) } else { Err("select a credits page".into()) }
+}
+
+/// Write a credits document: of a placed group (`clip` or the selection), or of a spreadsheet
+/// (`path`/`csv` and the other import parameters given as `from`).
+fn save(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.save";
+    let out = str_p(p, "to").or_else(|| str_p(p, "file")).ok_or_else(|| bad(CMD, "need `to` (the .cfa4credits file to write)"))?.to_string();
+    let doc = match p.get("from") {
+        Some(from) if from.is_object() => doc_p(CMD, from)?.0,
+        _ => group_doc(CMD, &group_p(s, CMD, p)?)?,
+    };
+    let out = if std::path::Path::new(&out).extension().is_some() { out } else { format!("{out}.{}", cfa4_credits::doc::EXTENSION) };
+    s.services.write_file(&out, doc.to_json().as_bytes()).map_err(|e| EngineError::Other(format!("{out}: {e}")))?;
+    Ok(json!({"path": out, "rows": doc.table.len()}))
+}
+
+/// The spreadsheet a document came from, as it is now.
+fn source_rows(cmd: &str, doc: &CreditsDoc, alt_dir: Option<&std::path::Path>) -> Result<Vec<Vec<String>>> {
+    let src = doc.source.as_ref().ok_or_else(|| bad(cmd, "these credits were not made from a spreadsheet file, so there is nothing to refresh from"))?;
+    let mut candidates = vec![std::path::PathBuf::from(&src.path)];
+    if let Some(d) = alt_dir {
+        candidates.push(d.join(&src.name));
+    }
+    let path = candidates
+        .into_iter()
+        .find(|c| c.is_file())
+        .ok_or_else(|| bad(cmd, format!("the spreadsheet is gone: {} (give `source` with its new place)", src.path)))?;
+    let bytes = read_file(cmd, &path.to_string_lossy())?;
+    let info = cfa4_credits::read_rows(&bytes, src.sheet.as_deref()).map_err(|e| bad(cmd, e.to_string()))?;
+    Ok(info.rows)
+}
+
+/// What differs: the row changes and the layers edited by hand.
+struct Pending {
+    group: Group,
+    doc: CreditsDoc,
+    new_rows: Vec<Vec<String>>,
+    changes: Vec<cfa4_credits::diff::Change>,
+    /// (key, page, layer name, text, the edited layer)
+    manual: Vec<(String, u32, String, String, EffectInstance)>,
+}
+
+fn pending(s: &Session, cmd: &str, p: &Value) -> Result<Pending> {
+    let group = group_p(s, cmd, p)?;
+    let mut doc = group_doc(cmd, &group)?;
+    if let Some(src) = str_p(p, "source") {
+        let name = std::path::Path::new(src).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let sheet = doc.source.as_ref().and_then(|x| x.sheet.clone());
+        doc.source = Some(SourceRef { path: src.to_string(), name, sheet });
+    }
+    let alt = s.path.as_ref().and_then(|p| std::path::Path::new(p).parent().map(std::path::Path::to_path_buf));
+    let new_rows = source_rows(cmd, &doc, alt.as_deref())?;
+    let changes = cfa4_credits::diff::diff(&doc.table, &new_rows);
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let mut manual = Vec::new();
+    for (clip, link, _, _) in &group.pages {
+        let Some((_, it)) = q.find_item(*clip) else { continue };
+        for st in &link.layers {
+            let Some(e) = it.effects.iter().find(|e| cfa4_project::gtemplate::layer_uid(e) == st.uid) else { continue };
+            if cfa4_credits::doc::layer_fingerprint(e) != st.fingerprint {
+                let txt = |k: &str| match e.params.get(k).map(|x| &x.value) {
+                    Some(ParamValue::Text(t)) => t.clone(),
+                    _ => String::new(),
+                };
+                manual.push((st.key.clone(), link.page, txt("name"), txt("text"), e.clone()));
+            }
+        }
+    }
+    Ok(Pending { group, doc, new_rows, changes, manual })
+}
+
+fn rows_json(rows: &[Vec<String>]) -> Value {
+    Value::Array(rows.iter().map(|r| json!(r)).collect())
+}
+
+fn diff_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.diff";
+    let pd = pending(s, CMD, p)?;
+    // which hand edits survive when every change is accepted (their block is unchanged)
+    let all: Vec<usize> = pd.changes.iter().map(|c| c.id).collect();
+    let merged = cfa4_credits::diff::merge(&pd.doc.table, &pd.new_rows, &pd.changes, &all);
+    let keys_after: Vec<String> = {
+        let d2 = CreditsDoc { table: merged, ..pd.doc.clone() };
+        let base = d2.picture_dir.as_ref().map(std::path::PathBuf::from);
+        lay_doc(s, CMD, &d2, base).map(|l| l.pages.into_iter().flat_map(|pg| pg.keys.into_iter().map(|(_, k)| k)).collect()).unwrap_or_default()
+    };
+    Ok(json!({
+        "group": pd.group.id,
+        "source": pd.doc.source.as_ref().map(|x| x.path.clone()),
+        "changes": pd.changes.iter().map(|c| json!({
+            "id": c.id,
+            "kind": c.kind,
+            // 1-based spreadsheet rows, as people count them
+            "oldRows": [c.old_rows.0 + 1, c.old_rows.1],
+            "newRows": [c.new_rows.0 + 1, c.new_rows.1],
+            "before": rows_json(&c.before),
+            "after": rows_json(&c.after),
+        })).collect::<Vec<_>>(),
+        "manual": pd.manual.iter().map(|(k, page, name, text, _)| json!({
+            "key": k, "page": page, "layer": name, "text": text, "survivesAll": keys_after.contains(k),
+        })).collect::<Vec<_>>(),
+    }))
+}
+
+fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.refresh";
+    let pd = pending(s, CMD, p)?;
+    let accept: Vec<usize> = match p.get("accept") {
+        None | Some(Value::Null) => pd.changes.iter().map(|c| c.id).collect(),
+        Some(Value::String(a)) if a == "all" => pd.changes.iter().map(|c| c.id).collect(),
+        Some(Value::String(a)) if a == "none" => Vec::new(),
+        Some(Value::Array(ids)) => ids.iter().filter_map(Value::as_u64).map(|v| v as usize).collect(),
+        Some(_) => return Err(bad(CMD, "`accept` is \"all\", \"none\" or a list of change ids")),
+    };
+    let keep_manual = p.get("keepManual").and_then(Value::as_bool).unwrap_or(true);
+    let table = cfa4_credits::diff::merge(&pd.doc.table, &pd.new_rows, &pd.changes, &accept);
+    let mut doc = CreditsDoc { table, ..pd.doc.clone() };
+    if let Some(st) = p.get("styling").filter(|v| !v.is_null()) {
+        doc.styling = styling_p(CMD, &json!({"styling": st}))?;
+    }
+    let base = doc
+        .picture_dir
+        .as_ref()
+        .map(std::path::PathBuf::from)
+        .or_else(|| doc.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)));
+    let laid = lay_doc(s, CMD, &doc, base.clone())?;
+    let warnings = warnings_json(&laid);
+    let overrides: Overrides = if keep_manual { pd.manual.iter().map(|(k, _, _, _, e)| (k.clone(), e.clone())).collect() } else { Vec::new() };
+    let start = pd.group.pages.first().map(|x| x.2).unwrap_or_else(|| s.playhead());
+    let track = pd.group.pages.first().map(|x| x.3 as u64);
+    let mut old: Vec<u64> = Vec::new();
+    for (clip, link, _, _) in &pd.group.pages {
+        old.push(clip.0);
+        old.extend(link.pictures.iter().copied());
+    }
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    old.retain(|c| q.find_item(ClipId(*c)).is_some());
+    let before = s.history.undo.len();
+    let mut out = (Vec::new(), start);
+    let result = s
+        .execute("edit.clear", json!({"clips": old}))
+        .map(|_| ())
+        .and_then(|_| place_pages(s, CMD, "Refresh Credits", laid, &doc, base, start, track, &overrides).map(|r| out = r));
+    fold_undo(s, before, "Refresh Credits", &result);
+    result?;
+    s.state.graphic_layers.clear();
+    let kept: u64 = out.0.iter().filter_map(|v| v["keptEdits"].as_u64()).sum();
+    Ok(json!({
+        "clips": out.0,
+        "end": out.1.0,
+        "accepted": accept.len(),
+        "changes": pd.changes.len(),
+        "keptEdits": kept,
+        "lostEdits": if keep_manual { overrides.len() as u64 - kept.min(overrides.len() as u64) } else { pd.manual.len() as u64 },
+        "warnings": warnings,
+    }))
 }
 
 /// Place one picture of a page as its own clip above the page: it rolls with a scroll page
@@ -336,7 +618,7 @@ fn styles(_: &mut Session, p: &Value) -> Result<Value> {
 }
 
 pub fn commands() -> Vec<CommandSpec> {
-    const P: &str = r#"{"path":str (.csv, .tsv, .xlsx, .ods)?,"sheet":name|number (a worksheet of an .xlsx / .ods; default the first)?,"pictureDir":str (folder of {{Pic file}} pictures; default the spreadsheet's folder)?,"csv":str (the table as text)?,"styling":object|JSON text|path of a .json?,"time":ticks?,"track":index?}"#;
+    const P: &str = r#"{"path":str (.csv, .tsv, .xlsx, .ods, .cfa4credits)?,"sheet":name|number (a worksheet of an .xlsx / .ods; default the first)?,"pictureDir":str (folder of {{Pic file}} pictures; default the spreadsheet's folder)?,"csv":str (the table as text)?,"styling":object|JSON text|path of a .json?,"time":ticks?,"track":index?}"#;
     vec![
         CommandSpec {
             id: "graphics.credits.import",
@@ -367,6 +649,36 @@ pub fn commands() -> Vec<CommandSpec> {
             enabled: has_seq,
             run: thumbnail,
             journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.save",
+            label: "Save Credits File…",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"to":path (.cfa4credits),"clip":id? (a page of placed credits; default the selection),"from":{import parameters}? (save a spreadsheet instead)}"#,
+            enabled: has_seq,
+            run: save,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.diff",
+            label: "Compare Credits with Spreadsheet",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"clip":id? (a page of the credits; default the selection),"source":path? (the spreadsheet's new place)}"#,
+            enabled: has_credits_selection,
+            run: diff_cmd,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.refresh",
+            label: "Refresh Credits from Spreadsheet…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: r#"{"clip":id?,"source":path?,"accept":"all"|"none"|[change id]="all","keepManual":bool=true,"styling":object|JSON text|path?}"#,
+            enabled: has_credits_selection,
+            run: refresh,
+            journal: true,
         },
         CommandSpec {
             id: "graphics.credits.styles",
