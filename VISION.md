@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-23 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-10-24 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -14,8 +14,16 @@ amely több önálló média-program képességeit egyesíti: videóvágás, kon
 feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és grafika,
 **helyben futó MI-funkciókkal** kiegészítve.
 
-Kiindulópontja a FilmCraft 0.10.0 (MIT OR Apache-2.0) nemlineáris videóvágó, amelynek Rust
-médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejlődik.
+Kiindulópontja egy nyílt forráskódú (MIT OR Apache-2.0) nemlineáris videóvágó 0.10.0-s
+változata, amelynek Rust médiamotorja megmarad (az eredet és a szerzői jogi sorok: `NOTICE`).
+Az upstream csak olvasható ős; a CFA4 önállóan fejlődik, és nem használja az upstream nevét,
+logóit vagy ikonjait.
+
+**Licenc:** a CFA4 egésze **GPL-3.0-or-later** (`LICENSE`, `NOTICE`). Így a lehető legkevesebbet
+kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
+módon kell megvalósítani. Az örökölt upstream kód eredeti MIT/Apache-megjegyzései (`NOTICE`) megmaradnak.
+**Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
+hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](docs/licensing.md).
 
 ## 2. Alapelvek (nem változnak külön döntés nélkül)
 
@@ -23,12 +31,19 @@ médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejl
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
    Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
+   A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
+   VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
+   tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
-4. **Bizonyíték, nem állítás.** Egy funkció csak akkor „kész”, ha teszt vagy valódi gépes mérés
+4. **Gyártófüggetlen gyorsítás.** Semmi nem függhet egyetlen GPU-gyártótól. Az NVIDIA mellett az
+   AMD és Intel GPU-k, valamint a gépben lévő NPU-k ugyanúgy használhatók legyenek (VA-API, Vulkan,
+   ahol van: NPU), és mindig legyen CPU-s tartalék. NVIDIA-specifikus út (NVDEC, NVENC, CUDA) csak
+   gyártófüggetlen párja mellett lehet.
+5. **Bizonyíték, nem állítás.** Egy funkció csak akkor „kész”, ha teszt vagy valódi gépes mérés
    igazolja. A már igazolt hardveres és kézi teszteket nem kell ok nélkül megismételni.
-5. **Minden terv a `main` ágon él.** Terv, cél és döntés nem maradhat csak mellékágon vagy
+6. **Minden terv a `main` ágon él.** Terv, cél és döntés nem maradhat csak mellékágon vagy
    piszkozat PR-ban, mert ott elveszik.
 
 ## 3. Célplatform: minden grafikus Ubuntu-változat
@@ -89,7 +104,8 @@ Tervezett irányok:
 - vágás: jelenetek és csendek felismerése, durva vágás átirat alapján;
 - konvertálás és publikálás: platformonkénti beállítás-javaslat.
 
-Szabály: a modellek a felhasználó gépén futnak (CPU, vagy NVIDIA GPU, ha van). Minden modellnél
+Szabály: a modellek a felhasználó gépén futnak: CPU-n, vagy bármely gyártó GPU-ján, illetve NPU-n,
+ha van (lásd 2.4: gyártófüggetlen gyorsítás). Minden modellnél
 rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a felhasználó tudta nélkül.
 
 ## 6. Prioritási sorrend
@@ -108,6 +124,7 @@ Minden terv, döntés és audit tartalomjegyzéke: [`docs/audit/README.md`](docs
 A legfontosabbak:
 
 - [`docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`](docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) – Qt6 ↔ Rust architektúra
+- [`docs/adr/ADR-0002-gstreamer-backend.md`](docs/adr/ADR-0002-gstreamer-backend.md) – GStreamer mint kiegészítő háttérmotor
 - [`docs/audit/F9-RELEASE-DECISION-2026-10-23.md`](docs/audit/F9-RELEASE-DECISION-2026-10-23.md) és `f9-release-readiness.json` – kiadási kapuk összesítése
 - [`docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md`](docs/audit/F7-NATIVE-MEDIA-GATE-2026-10-23.md) – mi működik ténylegesen a médiakezelésben
 - `docs/audit/R0-*.md` – igazolt hardveres mérések (RTX A1000)

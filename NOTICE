@@ -12,22 +12,21 @@ General Public License for more details.
 The licensing policy (what may be reused, how paid extras are licensed) is in
 docs/licensing.md.
 
-Upstream: FilmCraft
+Upstream
 
-CFA4 is a derivative of FilmCraft (https://github.com/storytold/filmcraft).
+CFA4 is based on the following upstream work, whose notice is retained as required by its licence:
+
 FilmCraft
 Copyright (c) 2026 ArtCraft Team and the FilmCraft contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option
 (LICENSE-MIT, LICENSE-APACHE).
 
-Code and assets inherited from FilmCraft remain available under those original terms; their
+Code and assets inherited from the upstream work remain available under those original terms; their
 copyright notices and licence texts are kept in this repository and in every package. CFA4 as a
 whole, including all changes made after the relicensing, is distributed under GPL-3.0-or-later.
 
-The ArtCraft name, wordmark and logos in docs/brand/ are trademarks of the ArtCraft Team. They are
-not open source and are covered neither by the GPL nor by the MIT/Apache licences above; their
-terms are in docs/brand/LICENSE-brand.txt. They must be removed or replaced before CFA4 builds are
-distributed.
+CFA4 is not made, sponsored or endorsed by the upstream authors, and it uses none of their
+trademarks or logos.
 
 Third-party material
 
@@ -37,10 +36,9 @@ list (author, source, license) is in ATTRIBUTION.md.
 Inter font (assets/fonts/Inter-*.ttf) — OFL-1.1. See assets/fonts/OFL-Inter.txt.
 Noto Serif font (assets/fonts/NotoSerif-Regular.ttf) — OFL-1.1. See assets/fonts/OFL-NotoSerif.txt.
 JetBrains Mono font (assets/fonts/JetBrainsMono-Regular.ttf) — OFL-1.1. See assets/fonts/OFL-JetBrainsMono.txt.
-Builds made with craft-fonts (CRAFT_FONTS_DIR; all official releases) also embed the fonts listed in
-https://github.com/storytold/craft-fonts/blob/main/ATTRIBUTION.md (BIZ UDPGothic, Shippori Mincho,
-BIZ UDMincho) — OFL-1.1. Their licence texts ship with the packages as OFL-<family>.txt.
-Public-domain film and NASA frames and CC0 music shown in README screenshots (docs/images/) — public domain / CC0-1.0. See ATTRIBUTION.md.
+Builds made with an extra font directory (CFA4_FONTS_DIR) also embed the fonts listed in that
+directory's ATTRIBUTION.md (for Japanese: BIZ UDPGothic, Shippori Mincho, BIZ UDMincho) — OFL-1.1.
+Their licence texts ship with the packages as OFL-<family>.txt.
 
 Code reused from GPL-3.0-compatible projects (for example Kdenlive, OpenShot, Audacity, Krita,
 Subtitle Edit) is listed with its origin, copyright holders and licence in docs/licensing.md

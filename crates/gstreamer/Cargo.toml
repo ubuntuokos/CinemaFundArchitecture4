@@ -1,0 +1,35 @@
+[package]
+name = "cfa4-gstreamer"
+description = "Optional GStreamer backend for CFA4 (layer L5): probes the system's GStreamer installation and reads media information through it, as a supplement to the Rust media engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# Off by default: building with it needs the GStreamer development packages
+# (Ubuntu: libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev). Without it every entry point
+# reports `Error::Unavailable` and the Rust engine works exactly as before.
+default = []
+gstreamer = ["dep:gstreamer", "dep:gstreamer-pbutils", "dep:gstreamer-app", "dep:gstreamer-video"]
+
+[dependencies]
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-time = { workspace = true }
+log = { workspace = true }
+thiserror = { workspace = true }
+# gstreamer-rs: MIT OR Apache-2.0 bindings; the GStreamer libraries themselves are LGPL-2.1-or-later
+# and are dynamically linked from the system (docs/adr/ADR-0002-gstreamer-backend.md).
+gstreamer = { version = "0.25", optional = true }
+gstreamer-pbutils = { version = "0.25", optional = true }
+gstreamer-app = { version = "0.25", optional = true }
+gstreamer-video = { version = "0.25", optional = true }
+
+[dev-dependencies]
+cfa4-codecs = { workspace = true }
+cfa4-engine = { workspace = true }

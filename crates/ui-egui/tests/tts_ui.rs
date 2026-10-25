@@ -3,14 +3,14 @@
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
 }
 
@@ -20,7 +20,7 @@ impl Driver {
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         session.execute("file.projectSettings.scratchDisks", json!({"captured": scratch})).expect("scratch disk");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = Cfa4App::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);
@@ -110,7 +110,7 @@ impl Driver {
 }
 
 fn scratch(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("filmcraft-tts-ui-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("cfa4-tts-ui-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     d.to_string_lossy().into_owned()

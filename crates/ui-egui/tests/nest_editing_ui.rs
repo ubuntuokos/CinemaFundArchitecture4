@@ -3,15 +3,15 @@
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
+use cfa4_ui_egui::dock::PanelKind;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
-use filmcraft_ui_egui::dock::PanelKind;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
 }
 
@@ -20,7 +20,7 @@ impl Driver {
         let mut s = Session::default();
         s.execute("file.openDemoProject", json!({})).unwrap();
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(s).with_control(rx);
+        let app = Cfa4App::new(s).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);
@@ -70,7 +70,7 @@ impl Driver {
         v.as_array().unwrap().iter().any(|e| e["id"] == json!(id))
     }
 
-    fn app(&mut self) -> &mut FilmcraftApp {
+    fn app(&mut self) -> &mut Cfa4App {
         self.harness.state_mut()
     }
 }
@@ -87,7 +87,7 @@ fn the_nest_button_toggles_how_sequences_are_edited_in() {
 
 #[test]
 fn reveal_in_project_shows_the_clips_item_in_the_project_panel() {
-    use filmcraft_engine::project_panel::ViewMode;
+    use cfa4_engine::project_panel::ViewMode;
     for mode in [ViewMode::List, ViewMode::Icon] {
         let mut d = Driver::new();
         d.app().session.prefs.project_panel.view.mode = mode;

@@ -7,8 +7,8 @@
 # Prerequisites: cargo; nfpm for deb; for AppImage: reviewed local appimagetool
 # plus CFA4_APPIMAGETOOL_SHA256; optional zsyncmake. Never auto-download tools.
 set -euo pipefail
-# CFA4 LICENSE/IDENTITY GATE: packaging is developer-only until embedded FilmCraft
-# icons, runtime brand and all third-party attribution have been audited.
+# CFA4 LICENSE/IDENTITY GATE: packaging is developer-only until the CFA4 icons,
+# runtime identity and all third-party attribution have been audited.
 if [[ "${CFA4_ALLOW_LOCAL_PACKAGING:-0}" != "1" ]]; then
   echo "CFA4 packaging blocked: set CFA4_ALLOW_LOCAL_PACKAGING=1 for a LOCAL TEST ONLY." >&2
   echo "No redistribution before brand/icon review and Qt6 migration." >&2
@@ -58,7 +58,7 @@ BASENAME="cfa4-$VERSION-linux-$ARCH"
 echo "==> CFA4 $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
-  (cd "$ROOT" && cargo build --release --locked -p filmcraft -p filmcraft-cli)
+  (cd "$ROOT" && cargo build --release --locked -p cfa4 -p cfa4-cli)
 fi
 BIN="$CARGO_TARGET_DIR/release"
 WORK="$CARGO_TARGET_DIR/linux-package"
@@ -66,8 +66,8 @@ STAGE="$WORK/root"
 rm -rf "$WORK"
 
 # ---- stage an FHS tree (shared by every format) -------------------------------------------------
-install -Dm755 "$BIN/filmcraft" "$STAGE/usr/bin/cfa4"
-install -Dm755 "$BIN/filmcraft-cli" "$STAGE/usr/bin/cfa4-cli"
+install -Dm755 "$BIN/cfa4" "$STAGE/usr/bin/cfa4"
+install -Dm755 "$BIN/cfa4-cli" "$STAGE/usr/bin/cfa4-cli"
 strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"

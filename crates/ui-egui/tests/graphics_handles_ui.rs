@@ -2,18 +2,18 @@
 //! about its anchor point, a paragraph-text box is resized, a shape's Size follows the handle
 //! while its opposite side and anchor point stay (docs/graphics.md).
 //!
-//! With `FILMCRAFT_UI_SHOTS=<dir>` the tests also render the UI with wgpu and save PNGs there.
+//! With `CFA4_UI_SHOTS=<dir>` the tests also render the UI with wgpu and save PNGs there.
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
     shots: Option<std::path::PathBuf>,
 }
@@ -23,8 +23,8 @@ impl Driver {
         let mut s = Session::default();
         s.execute("file.openDemoProject", json!({})).unwrap();
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(s).with_control(rx);
-        let shots = std::env::var_os("FILMCRAFT_UI_SHOTS").map(std::path::PathBuf::from);
+        let app = Cfa4App::new(s).with_control(rx);
+        let shots = std::env::var_os("CFA4_UI_SHOTS").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_step_dt(1.0 / 60.0).with_max_steps(10_000);
         if shots.is_some() {
             b = b.wgpu().with_pixels_per_point(1.0);
@@ -521,9 +521,9 @@ fn polygon_handles_keep_the_opposite_corner() {
 /// The Corner Radius of the shape layer of graphic clip `clip`.
 fn corner_radius(d: &mut Driver, clip: u64) -> f64 {
     let s = &d.harness.state().session;
-    let (_, it) = s.active_sequence().unwrap().find_item(filmcraft_project::ClipId(clip)).unwrap();
+    let (_, it) = s.active_sequence().unwrap().find_item(cfa4_project::ClipId(clip)).unwrap();
     let e = it.effects.iter().find(|e| e.effect == "graphic_shape").unwrap();
-    e.param("corner_radius").unwrap().value_at(filmcraft_time::Tick::ZERO).as_f64().unwrap()
+    e.param("corner_radius").unwrap().value_at(cfa4_time::Tick::ZERO).as_f64().unwrap()
 }
 
 #[test]

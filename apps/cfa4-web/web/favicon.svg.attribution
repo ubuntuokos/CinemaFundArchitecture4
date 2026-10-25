@@ -1,0 +1,7 @@
+asset:        favicon.svg
+title:        CFA4 development icon, geometric film frame (web favicon and loading image)
+author:       CFA4 project
+source:       Copy of assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg
+license:      MIT OR Apache-2.0
+added:        2026-10-24 replacing the inherited upstream favicon
+notes:        Distinct from all inherited upstream logos. Placeholder for development use.
