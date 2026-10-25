@@ -7,7 +7,7 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 
 ## Responsibility boundaries
 
-- **Rust 1.95 / Cargo:** existing FilmCraft media engine, codec implementations, project model, rendering, export and `filmcraft-cli`.
+- **Rust 1.97 / Cargo:** existing FilmCraft media engine, codec implementations, project model, rendering, export and `filmcraft-cli`.
 - **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13; newer Linux distributions can use a supported version.
 - **Qt 6 / PySide6:** new Linux-native GUI development path. The initial `cfa4-qt` application is a deliberately minimal **development shell**, not a port of the full video editor.
 - **Existing egui desktop app:** retained during migration to avoid breaking the Rust media engine. Do not mistake it for the finished Qt interface.
@@ -29,7 +29,7 @@ bash scripts/dev/bootstrap-ubuntu.sh --install
 ~~~
 
 Then install the official Rust toolchain via https://rustup.rs/ if it is not installed.
-The repository's `rust-toolchain.toml` selects Rust 1.95.0 with rustfmt/clippy.
+The repository's `rust-toolchain.toml` selects Rust 1.97.1 with rustfmt/clippy.
 No command in this repository silently installs Rust.
 
 Create the Python environment in the repository root (do not install into the system Python):

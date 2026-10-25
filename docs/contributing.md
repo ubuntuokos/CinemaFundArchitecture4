@@ -8,7 +8,7 @@ of the crate you will change.
 
 | | All platforms |
 |---|---|
-| Rust | stable ≥ 1.95 (edition 2024; egui 0.36 requires it), via [rustup](https://rustup.rs) |
+| Rust | 1.97.1, pinned by `rust-toolchain.toml` (minimum 1.97; edition 2024), via [rustup](https://rustup.rs) |
 | wasm target | `rustup target add wasm32-unknown-unknown` (for `cargo xtask wasm`) |
 | Components | `rustup component add rustfmt clippy` |
 | ffmpeg + ffprobe (optional) | test oracle and fixture generator only; tests skip without it |

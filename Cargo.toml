@@ -8,7 +8,7 @@ exclude = ["vendor/craft-libs/*"]
 version = "0.10.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
-rust-version = "1.95"
+rust-version = "1.97"
 repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 
 [workspace.dependencies]

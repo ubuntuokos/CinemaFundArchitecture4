@@ -15,7 +15,7 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 1. Read [the Ubuntu 26.04 developer guide](docs/development/linux.md).
 2. Run `bash scripts/dev/bootstrap-ubuntu.sh --check` (non-modifying checks).
 3. Explicitly install prerequisites with `bash scripts/dev/bootstrap-ubuntu.sh --install` on Ubuntu/Debian.
-4. Install Rust with rustup (1.95.0 is selected by `rust-toolchain.toml`).
+4. Install Rust with rustup (1.97.1 is selected by `rust-toolchain.toml`).
 5. Create Python virtualenv: `python3 -m venv .venv`.
 6. Install developer tools: `.venv/bin/python -m pip install -e '.[dev,qt]'`.
 7. Check environment: `.venv/bin/cfa4-doctor --strict`.
@@ -28,7 +28,7 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 | Component | Current status |
 | --- | --- |
 | Existing media engine and CLI | FilmCraft Rust crates, retained without a rewrite |
-| Rust tooling | Pinned 1.95.0, Cargo workspace, existing xtask gates |
+| Rust tooling | Pinned 1.97.1, Cargo workspace, existing xtask gates |
 | Python tooling | Isolated venv, lint/tests, environment diagnostics |
 | Qt 6 | Experimental PySide6 Widgets shell and offscreen CI smoke |
 | Desktop editing GUI | Inherited egui implementation still in source; Qt port not complete |
