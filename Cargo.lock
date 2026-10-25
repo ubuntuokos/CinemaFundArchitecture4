@@ -817,6 +817,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-accel"
+version = "0.10.0"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-apv"
 version = "0.10.0"
 dependencies = [
