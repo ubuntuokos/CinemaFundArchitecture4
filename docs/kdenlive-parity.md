@@ -264,7 +264,7 @@ A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra.
 |---|---|
 | `.kdenlive`-import (K1) | kötelező; Kdenlive-be exportálás nem lesz |
 | MLT (`melt`) | csak teszt-orákulum, a termékbe nem kerül; az FFmpeg 9 + MLT 7 motorjavaslat elvetve |
-| FFmpeg | változatlanul az ADR 0005 szerint: kiegészítő háttér a `cfa4-route` mögött; a CI FFmpeg 9.0.2-je külön orákulum |
+| FFmpeg | az ADR 0005 (#62) szerint: kiegészítő háttér a `cfa4-route` mögött; a CI FFmpeg 9.0.2-je külön orákulum. **Feltételes:** amíg a #62 (és vele az `AGENTS.md` §2 és az ADR 0003 §10 módosítása) nincs a `main`-ben, az `AGENTS.md` §2 érvényes (FFmpeg csak teszt-orákulum), és az FFmpeg-háttérre épülő K-teendők nem kezdhetők el |
 | `gyroflow-core` (K13) | kell |
 | Hálózati render (K14) | több gép és több GPU engedélyezett; csak renderelő kliens is készül |
 | Fordítómodell (K6) | a csomagba egy nyitott, kereskedelmi használatot is engedő modell (jelölt: Opus-MT/Marian magyar–angol, licencellenőrzés után); a felhasználó opcionálisan cserélheti. SeamlessM4T és NLLB nem (CC-BY-NC) |
