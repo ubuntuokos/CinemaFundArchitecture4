@@ -160,7 +160,6 @@ class CreditsRefreshDialog(QDialog):
         self.result = None
         self.changes.setRowCount(0)
         self.manual.setText("")
-        self.heading.setToolTip(str(src))
         self.heading.setText("")
         self.status.setText(message)
         self.apply_button.setEnabled(False)
@@ -176,6 +175,7 @@ class CreditsRefreshDialog(QDialog):
         manual = result.get("manual") or []
         src = result.get("source") or ""
         name = PurePath(str(src)).name or str(src)
+        self.heading.setToolTip(str(src))
         self.heading.setText(
             (tr("{n} changes in {file} since the credits were placed. Untick what you do not want.") if changes else tr("The spreadsheet {file} has not changed since the credits were placed."))
             .replace("{n}", str(len(changes)))
