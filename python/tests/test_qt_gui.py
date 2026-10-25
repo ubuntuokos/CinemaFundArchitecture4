@@ -407,6 +407,25 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         assert "file.save" not in sent
         assert Dialog.hidden
         win.export_dialog = None
+        # Revert never offers Save (it would overwrite the version reverted to): Cancel keeps the edits
+        revert = Command("file.revert", "Revert", ["File"], "", "{}", True)
+        buttons: list[QtWidgets.QMessageBox.StandardButtons] = []
+        monkeypatch.setattr(
+            QtWidgets.QMessageBox, "exec", lambda box: (buttons.append(box.standardButtons()), answer(box))[1]
+        )
+        sent.clear()
+        asked.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.run_command(revert)
+        assert wait_until(app, lambda: bool(asked))
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 50)
+        assert "file.revert" not in sent and "revert" in asked[0]
+        assert not buttons[0] & QtWidgets.QMessageBox.StandardButton.Save
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.run_command(revert)
+        assert wait_until(app, lambda: "file.revert" in sent)
+        assert "file.save" not in sent
     finally:
         win._quit_confirmed = True
         win.close()
@@ -1284,6 +1303,10 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     # paths a desktop entry cannot carry are refused, not written broken
     with pytest.raises(ValueError):
         de.exec_line(["/tmp/a%b/cfa4-qt"])
+    # quoted and escaped per the Desktop Entry spec, not the shell: a literal backslash survives
+    # the key file's string decoding (shell quoting turned "\\t" into a tab)
+    assert de.exec_line(["/opt/cfa4 dev/cfa4-qt"]) == '"/opt/cfa4 dev/cfa4-qt"'
+    assert de.escape_exec_argument('/a\\tb/"x"$') == '"/a\\\\\\\\tb/\\\\"x\\\\"\\\\$"'
     monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
     assert de.requested_by_env()
 
