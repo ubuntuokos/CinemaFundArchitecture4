@@ -92,13 +92,4 @@ mod tests {
         assert!(pack(&[b"GIF89a".to_vec()]).is_err());
         assert_eq!(png_size(&fake_png(48)).unwrap(), (48, 48));
     }
-
-    #[test]
-    fn committed_icon_is_valid() {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../assets/app-icon/filmcraft.ico");
-        let Ok(ico) = std::fs::read(&path) else { return };
-        assert_eq!(&ico[..4], &[0, 0, 1, 0]);
-        let n = u16::from_le_bytes([ico[4], ico[5]]) as usize;
-        assert!(n >= 4, "expected several sizes in {}", path.display());
-    }
 }

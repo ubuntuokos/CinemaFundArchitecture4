@@ -1,6 +1,6 @@
 # CFA4 – F4/F5 offline csomagolási előfeltétel (2026-10-23)
 
-**Kiadás: HOLD.** A FilmCraft szülőprojektet és a CFA4 `main` ágát nem módosítja.
+**Kiadás: HOLD.** Az upstream szülőprojektet és a CFA4 `main` ágát nem módosítja.
 
 A korábbi `flatpak-bundle.sh` automatikusan Flathub-tárolót vett fel, SDK/runtime-függőséget telepíthetett, és alapértelmezésben a felhasználó Flatpak-alkalmazásai közé telepítette a tesztcsomagot. Ez nem felelt meg az előre ellenőrzött, helyi eszközökkel történő csomagépítés követelményének.
 

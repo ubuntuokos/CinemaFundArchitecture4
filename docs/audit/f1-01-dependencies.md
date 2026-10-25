@@ -16,8 +16,8 @@ egyenként ellenőrizve**.
 
 | Név | Forrás | SHA-1 Git-commit | Közvetlen rendeltetés |
 |---|---|---|---|
-| `craft-ui` | https://github.com/storytold/craft-libs | `5c874d51eeb3de70e735c8ce87a59a7dedd47675` | egui UI-komponensek és ikoninterakciók |
-| `craft-docpath` | https://github.com/storytold/craft-libs | `82a24b006eefa036b43c09a67fb9a3fbd17ffe63` | dokumentumokban tárolt helyi útvonalak felismerése |
+| `cfa4-ui` | upstream library repository | `5c874d51eeb3de70e735c8ce87a59a7dedd47675` | egui UI-komponensek és ikoninterakciók |
+| `cfa4-docpath` | upstream library repository | `82a24b006eefa036b43c09a67fb9a3fbd17ffe63` | dokumentumokban tárolt helyi útvonalak felismerése |
 
 Mindkét commit és az adott revízióban szereplő crate-manifest elérhető.
 A két upstream commit `Cargo.toml` állományának workspace-licence
@@ -25,16 +25,15 @@ A két upstream commit `Cargo.toml` állományának workspace-licence
 `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` megvan.
 A licencek és a NOTICE szerzői/eredetmegjelölési kötelezettségei
 **nem** szűnnek meg azzal, hogy a forrást saját GitHub-tárolóba másoljuk.
-A `craft-ui` régebbi `NOTICE` a PhotoCraft, VectorCraft, PdfCraft,
-FilmCraft, EffectCraft és DesignCraft projektekből adaptált megoldásokat
+A `cfa4-ui` régebbi `NOTICE` több upstream testvérprojektből adaptált megoldásokat
 is megnevez; ezeket a későbbi vendor-másolat származási jegyzékében
 meg kell őrizni.
 
 Források (változatlan, pontos URL-ek):
-- https://github.com/storytold/craft-libs/tree/5c874d51eeb3de70e735c8ce87a59a7dedd47675/crates/ui
-- https://github.com/storytold/craft-libs/tree/82a24b006eefa036b43c09a67fb9a3fbd17ffe63/crates/docpath
-- https://github.com/storytold/craft-libs/blob/5c874d51eeb3de70e735c8ce87a59a7dedd47675/NOTICE
-- https://github.com/storytold/craft-libs/blob/82a24b006eefa036b43c09a67fb9a3fbd17ffe63/NOTICE
+- upstream library `crates/ui` @ `5c874d51eeb3`
+- upstream library `crates/docpath` @ `82a24b006eef`
+- upstream library `NOTICE` @ `5c874d51eeb3`
+- upstream library `NOTICE` @ `82a24b006eef`
 
 **Kockázat:** a `rev` egy változtathatatlan Git-commitra mutat, ezért nem
 mozgó ág vagy címke; azonban a CI és az új munkaállomások továbbra is
@@ -59,8 +58,8 @@ forrásarchívumot és a belső, ellenőrzött checksummal tárolt snapshotot.
 - A fejlesztői környezet apt-/pip-/Rust-registry elérései nem teszik
   a teljes buildet hálózatfüggetlenné. A `cargo build --locked`
   a verziófeloldást rögzíti, **nem** garantálja az offline működést.
-- `docs/brand/LICENSE-brand.txt`: az ArtCraft védjegyei nem kerülhetnek
-  módosított CFA4-terjesztésbe; az attribúciók megtartandók, az eredeti
+- Az upstream márkalicenc szerint az upstream védjegyei nem kerülhetnek
+  módosított CFA4-terjesztésbe (2026-10-24 óta eltávolítva); az attribúciók megtartandók, az eredeti
   márkajelzések nem használhatók a független csomagban.
 
 ## 3. Auditkapu – átmeneti biztonsági ellenőrzés
@@ -81,13 +80,13 @@ a `Cargo.lock` fájlt és a NOTICE dokumentációt.
 
 ## 4. Javasolt F1-02 migrációs sorrend
 
-1. **`craft-docpath` önállósítása elsőként:** a rögzített revízió
+1. **`cfa4-docpath` önállósítása elsőként:** a rögzített revízió
    megfelelő crate-forrása, upstream szerzői jog és licencek pontos
    átvétele; fájlonként ellenőrzött és SHA-256 listával dokumentált
    `third_party` snapshot. A workspace `path` függőségének
    rögzítése és `cargo test --locked` után upstream elérés
    nélküli, tiszta rebuild bizonyítása.
-2. **`craft-ui` önállósítása külön commitban:** ugyanígy, de az eredeti
+2. **`cfa4-ui` önállósítása külön commitban:** ugyanígy, de az eredeti
    `NOTICE` forráseredet-, ikon-, UI-minta- és védjegyhatár
    felülvizsgálatával; Qt6 migráció idején a ki nem használt elemek
    későbbi eltávolítása.
@@ -103,7 +102,7 @@ a `Cargo.lock` fájlt és a NOTICE dokumentációt.
 | Vizsgálat | Állapot |
 |---|---|
 | Közvetlen Cargo Git-source revíziók és `Cargo.lock` | Ellenőrizve |
-| A két `craft-libs` revízió gyökér licence, NOTICE és crate manifest | Ellenőrizve |
+| A két `cfa4-libs` revízió gyökér licence, NOTICE és crate manifest | Ellenőrizve |
 | Python/Rust Git drift-kapu | Bevezetve az auditágon; CI-eredmény külön rögzítendő |
 | 652 registry-függőség minden licence | Nincs teljesen ellenőrizve |
 | PySide6 és összes tranzitív Qt licenc | Nincs teljesen ellenőrizve |

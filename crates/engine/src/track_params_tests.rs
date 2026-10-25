@@ -128,12 +128,12 @@ fn a_track_carries_a_colour_label() {
     assert_eq!(label(&mut s, "audio"), json!("Mango"));
     // saved with the project, and a project from before the field still loads
     let text = serde_json::to_string(&*s.project).unwrap();
-    let back: filmcraft_project::Project = serde_json::from_str(&text).unwrap();
+    let back: cfa4_project::Project = serde_json::from_str(&text).unwrap();
     let q = back.sequence(s.state.active_sequence.unwrap()).unwrap();
-    assert_eq!(q.video_tracks[0].label, Some(filmcraft_project::Label::Forest));
+    assert_eq!(q.video_tracks[0].label, Some(cfa4_project::Label::Forest));
     let mut old = serde_json::to_value(&q.video_tracks[0]).unwrap();
     old.as_object_mut().unwrap().remove("label");
-    let old: filmcraft_project::Track = serde_json::from_value(old).unwrap();
+    let old: cfa4_project::Track = serde_json::from_value(old).unwrap();
     assert_eq!(old.label, None);
     // a plain track does not write the key at all
     assert!(serde_json::to_value(&q.video_tracks[1]).unwrap().get("label").is_none());

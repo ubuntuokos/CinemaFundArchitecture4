@@ -21,8 +21,8 @@ class SourceDetachmentTests(unittest.TestCase):
     def test_unmanifested_vendor_file_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            vendor = root / "vendor" / "craft-libs" / "docpath"
-            shutil.copytree(ROOT / "vendor" / "craft-libs" / "docpath", vendor)
+            vendor = root / "vendor" / "cfa4-libs" / "docpath"
+            shutil.copytree(ROOT / "vendor" / "cfa4-libs" / "docpath", vendor)
             (vendor / "src" / "untracked.rs").write_text(
                 "// not in SOURCE_MANIFEST.json\n", encoding="utf-8"
             )
@@ -34,7 +34,7 @@ class SourceDetachmentTests(unittest.TestCase):
 
     def test_upstream_revisions_are_full_shas(self) -> None:
         for crate in ("docpath", "ui"):
-            manifest = ROOT / "vendor" / "craft-libs" / crate / "SOURCE_MANIFEST.json"
+            manifest = ROOT / "vendor" / "cfa4-libs" / crate / "SOURCE_MANIFEST.json"
             sha = json.loads(manifest.read_text(encoding="utf-8"))["source_commit"]
             self.assertEqual(len(sha), 40)
             self.assertTrue(all(char in "0123456789abcdef" for char in sha))

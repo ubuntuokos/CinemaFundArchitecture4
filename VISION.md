@@ -14,12 +14,14 @@ amely több önálló média-program képességeit egyesíti: videóvágás, kon
 feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és grafika,
 **helyben futó MI-funkciókkal** kiegészítve.
 
-Kiindulópontja a FilmCraft 0.10.0 (MIT OR Apache-2.0) nemlineáris videóvágó, amelynek Rust
-médiamotorja megmarad. A FilmCraft csak olvasható ős; a CFA4 önállóan fejlődik.
+Kiindulópontja egy nyílt forráskódú (MIT OR Apache-2.0) nemlineáris videóvágó 0.10.0-s
+változata, amelynek Rust médiamotorja megmarad (az eredet és a szerzői jogi sorok: `NOTICE`).
+Az upstream csak olvasható ős; a CFA4 önállóan fejlődik, és nem használja az upstream nevét,
+logóit vagy ikonjait.
 
 **Licenc:** a CFA4 egésze **GPL-3.0-or-later** (`LICENSE`, `NOTICE`). Így a lehető legkevesebbet
 kell újraírni: GPL-kompatibilis kód és könyvtár felhasználható. Ami nem használható fel, azt más
-módon kell megvalósítani. Az örökölt FilmCraft-kód eredeti MIT/Apache-megjegyzései megmaradnak.
+módon kell megvalósítani. Az örökölt upstream kód eredeti MIT/Apache-megjegyzései (`NOTICE`) megmaradnak.
 **Üzleti modell:** a kész CFA4 ingyenes és szabadon terjeszthető; csak a pluszfunkciók és a
 hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](docs/licensing.md).
 
