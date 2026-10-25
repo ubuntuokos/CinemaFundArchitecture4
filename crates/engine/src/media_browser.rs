@@ -21,8 +21,8 @@
 
 use std::collections::BTreeMap;
 
-use filmcraft_media::MediaInfo;
-use filmcraft_project::ItemId;
+use cfa4_media::MediaInfo;
+use cfa4_project::ItemId;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -74,7 +74,7 @@ pub const ALL_COLUMNS: [&str; 10] =
 pub const DEFAULT_COLUMNS: [&str; 5] = ["Name", "Frame Rate", "Media Duration", "Video Info", "Size"];
 
 /// Project and interchange files the browser can import. Avid Log Exchange (`.ale`) is left out:
-/// FilmCraft writes it (File ▸ Export) but, like Premiere, does not read it (#1292).
+/// CFA4 writes it (File ▸ Export) but, like Premiere, does not read it (#1292).
 const PROJECT_EXTENSIONS: [&str; 5] = ["fcproj", "edl", "xml", "fcpxml", "otio"];
 const CAPTION_EXTENSIONS: [&str; 3] = ["srt", "vtt", "scc"];
 const RECENT_MAX: usize = 10;
@@ -150,11 +150,11 @@ fn ext_of(name: &str) -> String {
 /// The kind of file a name is, or None when the browser doesn't show it.
 pub fn kind_of(name: &str) -> Option<&'static str> {
     let e = ext_of(name);
-    if filmcraft_media::VIDEO_EXTENSIONS.contains(&e.as_str()) {
+    if cfa4_media::video_extensions().contains(&e.as_str()) {
         Some("video")
-    } else if filmcraft_media::AUDIO_EXTENSIONS.contains(&e.as_str()) {
+    } else if cfa4_media::audio_extensions().contains(&e.as_str()) {
         Some("audio")
-    } else if filmcraft_media::STILL_EXTENSIONS.contains(&e.as_str()) {
+    } else if cfa4_media::STILL_EXTENSIONS.contains(&e.as_str()) {
         Some("image")
     } else if PROJECT_EXTENSIONS.contains(&e.as_str()) {
         Some("project")
@@ -176,14 +176,7 @@ pub fn passes(filter: &str, kind: &str, name: &str) -> bool {
 
 /// Every extension the browser lists (for the file-type menu).
 pub fn extensions() -> Vec<&'static str> {
-    filmcraft_media::VIDEO_EXTENSIONS
-        .iter()
-        .chain(filmcraft_media::AUDIO_EXTENSIONS)
-        .chain(filmcraft_media::STILL_EXTENSIONS)
-        .chain(&PROJECT_EXTENSIONS)
-        .chain(&CAPTION_EXTENSIONS)
-        .copied()
-        .collect()
+    cfa4_media::importable_extensions().into_iter().chain(PROJECT_EXTENSIONS.iter().copied()).chain(CAPTION_EXTENSIONS.iter().copied()).collect()
 }
 
 fn windows_style(p: &str) -> bool {
@@ -243,7 +236,7 @@ pub fn list(services: &dyn Services, dir: &str, filter: &str) -> std::io::Result
             if !passes(filter, kind, &e.name) {
                 return None;
             }
-            let numbered = kind == "image" && filmcraft_media::sequence::Numbered::parse(&path).is_some();
+            let numbered = kind == "image" && cfa4_media::sequence::Numbered::parse(&path).is_some();
             Some(Entry { numbered, name: e.name, path, is_dir: false, kind, size: e.size, modified: e.modified })
         })
         .collect();
@@ -484,7 +477,7 @@ fn import_into(s: &mut Session, files: &[String], bin: Option<u64>, out: &mut se
 /// sub-folder becomes a bin inside it (Premiere's Media Browser keeps the folder structure).
 fn import_folder(s: &mut Session, folder: &Folder, parent: Option<u64>, out: &mut serde_json::Map<String, Value>) -> Result<()> {
     let name = folder.name.clone();
-    let bin = s.edit("New Bin", |pr, _| Ok(pr.add_bin(&name, parent.map(filmcraft_project::BinId))))?;
+    let bin = s.edit("New Bin", |pr, _| Ok(pr.add_bin(&name, parent.map(cfa4_project::BinId))))?;
     merge_import(out, json!({"bins": [bin.0]}));
     if !folder.files.is_empty() {
         import_into(s, &folder.files, Some(bin.0), out);
@@ -555,11 +548,7 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
 
 /// The project item that already references a file.
 pub fn item_for_path(s: &Session, path: &str) -> Option<ItemId> {
-    s.project
-        .items
-        .values()
-        .find(|i| i.as_media().is_some_and(|m| matches!(&m.media, filmcraft_project::MediaRef::File { path: p } if p == path)))
-        .map(|i| i.id)
+    s.project.items.values().find(|i| i.as_media().is_some_and(|m| matches!(&m.media, cfa4_project::MediaRef::File { path: p } if p == path))).map(|i| i.id)
 }
 
 fn open_in_source(s: &mut Session, p: &Value) -> Result<Value> {
@@ -616,7 +605,7 @@ pub fn column_text(e: &Entry, column: &str, probe: Option<&MediaInfo>) -> String
             .filter(|_| e.kind != "image")
             .map(|i| {
                 let rate = i.video.as_ref().map(|v| v.frame_rate).unwrap_or_default();
-                filmcraft_time::format_time(i.duration, rate, false, filmcraft_time::TimeDisplay::Timecode, 48000)
+                cfa4_time::format_time(i.duration, rate, false, cfa4_time::TimeDisplay::Timecode, 48000)
             })
             .unwrap_or_default(),
         "Video Info" => probe.and_then(|i| i.video.as_ref()).map(|v| format!("{} x {}", v.width, v.height)).unwrap_or_default(),

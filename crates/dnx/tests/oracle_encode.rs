@@ -1,8 +1,8 @@
 //! Encode DNxHR with our encoder, decode with ffmpeg (`-xerror`) and with our decoder.
 
 mod common;
+use cfa4_dnx::{ChromaFormat, Encoder, EncoderConfig, Profile, decode_frame};
 use common::*;
-use filmcraft_dnx::{ChromaFormat, Encoder, EncoderConfig, Profile, decode_frame};
 
 struct Case {
     name: &'static str,

@@ -1,4 +1,4 @@
-# filmcraft-credits
+# cfa4-credits
 
 Film credits from a spreadsheet for CFA4 (layer L2, no I/O, wasm-clean).
 
@@ -15,6 +15,6 @@ Clean-room: written from the public user guide of Cinecred (what its spreadsheet
 from its GPL source. User documentation: [`docs/credits.md`](../../docs/credits.md). Decision:
 [ADR F10](../../docs/adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md).
 
-Tests: `cargo test -p filmcraft-credits` (semantics, layout with a deterministic measurer, and
+Tests: `cargo test -p cfa4-credits` (semantics, layout with a deterministic measurer, and
 a mutation-fuzz test that hostile sheets and stylings never panic); engine tests in
 `crates/engine/src/credits_tests.rs` use the real text engine.

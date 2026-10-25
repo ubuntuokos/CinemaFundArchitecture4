@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM = "https://github.com/storytold/craft-libs"
 APPROVED_GIT: dict[str, str] = {}
 VENDORED = {
-    "craft-docpath": "vendor/craft-libs/docpath",
-    "craft-ui": "vendor/craft-libs/ui",
+    "cfa4-docpath": "vendor/cfa4-libs/docpath",
+    "cfa4-ui": "vendor/cfa4-libs/ui",
 }
 
 
@@ -141,7 +141,7 @@ def audit_repository(root: Path) -> list[str]:
     lock = tomllib.loads((root / "Cargo.lock").read_text(encoding="utf-8"))
     errors = validate_snapshot(manifest, lock)
     errors.extend(verify_vendored_files(root))
-    for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml", "vendor/craft-libs/*/Cargo.toml"):
+    for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml", "vendor/cfa4-libs/*/Cargo.toml"):
         for path in sorted(root.glob(pattern)):
             data = tomllib.loads(path.read_text(encoding="utf-8"))
             for location, _ in git_locations(data):

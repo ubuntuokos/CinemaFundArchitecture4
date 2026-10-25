@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use filmcraft_time::Tick;
+use cfa4_time::Tick;
 
 fn chunk(id: &[u8; 4], body: &[u8]) -> Vec<u8> {
     let mut out = id.to_vec();
@@ -53,14 +53,10 @@ fn fixture(rf64: bool, trailing: bool) -> Vec<u8> {
 fn rf64_metadata_stays_outside_audio() {
     for (name, rf64, trailing) in [("rf64.wav", true, false), ("riff_ixml.wav", false, true), ("rf64_ixml.wav", true, true)] {
         let bytes: Arc<[u8]> = fixture(rf64, trailing).into();
-        let src = filmcraft_codecs::open_bytes(name, bytes.clone()).unwrap();
-        let stream = filmcraft_media::reader::open_reader(
-            name,
-            Arc::new(filmcraft_media::reader::MemReader(bytes)),
-            &filmcraft_codecs::reader_openers(),
-            &filmcraft_codecs::openers(),
-        )
-        .unwrap();
+        let src = cfa4_codecs::open_bytes(name, bytes.clone()).unwrap();
+        let stream =
+            cfa4_media::reader::open_reader(name, Arc::new(cfa4_media::reader::MemReader(bytes)), &cfa4_codecs::reader_openers(), &cfa4_codecs::openers())
+                .unwrap();
         for s in [&src, &stream] {
             assert_eq!(s.info().duration, Tick::from_units(4, 48_000), "{name}");
             assert_eq!(s.audio(0, 20, 48_000).unwrap().channels.remove(0), vec![0.0; 20], "{name}");

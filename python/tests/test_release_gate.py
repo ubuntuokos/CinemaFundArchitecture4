@@ -40,7 +40,7 @@ class ReleaseDecisionTests(unittest.TestCase):
 
     def test_does_not_accept_non_cfa4_repository(self):
         data = deepcopy(self.inventory)
-        data["repository"] = "storytold/filmcraft"
+        data["repository"] = "example/upstream"
         with self.assertRaisesRegex(release_gate.ReleaseGateError, "repository"):
             release_gate.evaluate(data)
 

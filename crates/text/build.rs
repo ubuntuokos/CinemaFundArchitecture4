@@ -1,11 +1,11 @@
-//! Optional craft-fonts build input (see storytold/craft-fonts `docs/integration.md` and
-//! craftrules `standards/fonts.md`).
+//! Optional extra-fonts build input (see the font directory's `docs/integration.md` and
+//!).
 //!
-//! With `CRAFT_FONTS_DIR=<absolute path of a craft-fonts checkout>` (a relative path resolves from
+//! With `CFA4_FONTS_DIR=<absolute path of an extra-fonts checkout>` (a relative path resolves from
 //! `crates/text`) this embeds every font listed in its
-//! `fonts/manifest.txt` as [`CRAFT_FONTS`](crate::fonts::CRAFT_FONTS); unset, `CRAFT_FONTS` is
-//! empty and nothing else changes. A `CRAFT_FONTS_DIR` that is not a checkout is a warning, or an
-//! error with `CRAFT_FONTS_REQUIRED=1` (release builds).
+//! `fonts/manifest.txt` as [`CFA4_FONTS`](crate::fonts::CFA4_FONTS); unset, `CFA4_FONTS` is
+//! empty and nothing else changes. A `CFA4_FONTS_DIR` that is not a checkout is a warning, or an
+//! error with `CFA4_FONTS_REQUIRED=1` (release builds).
 //!
 //! Native builds embed every font. The web (wasm32) build embeds only the UI font (BIZ UDPGothic
 //! Regular, ~4.5 MB) to stay under the web size budget (Cloudflare serves files up to 25 MiB).
@@ -16,27 +16,27 @@ use std::path::PathBuf;
 
 fn main() {
     println!("cargo::rerun-if-changed=build.rs");
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_DIR");
-    println!("cargo::rerun-if-env-changed=CRAFT_FONTS_REQUIRED");
-    let mut src = String::from("pub static CRAFT_FONTS: &[CraftFont] = &[\n");
-    if let Some(dir) = std::env::var_os("CRAFT_FONTS_DIR").map(PathBuf::from) {
-        match craft_fonts(&dir) {
+    println!("cargo::rerun-if-env-changed=CFA4_FONTS_DIR");
+    println!("cargo::rerun-if-env-changed=CFA4_FONTS_REQUIRED");
+    let mut src = String::from("pub static CFA4_FONTS: &[ExtraFont] = &[\n");
+    if let Some(dir) = std::env::var_os("CFA4_FONTS_DIR").map(PathBuf::from) {
+        match extra_fonts(&dir) {
             Ok(entries) => src.push_str(&entries),
-            Err(e) if std::env::var_os("CRAFT_FONTS_REQUIRED").is_some() => {
-                println!("cargo::error=CRAFT_FONTS_DIR={}: {e}", dir.display());
+            Err(e) if std::env::var_os("CFA4_FONTS_REQUIRED").is_some() => {
+                println!("cargo::error=CFA4_FONTS_DIR={}: {e}", dir.display());
             }
-            Err(e) => println!("cargo::warning=building without craft-fonts: CRAFT_FONTS_DIR={}: {e}", dir.display()),
+            Err(e) => println!("cargo::warning=building without extra-fonts: CFA4_FONTS_DIR={}: {e}", dir.display()),
         }
     }
     src.push_str("];\n");
-    let out = PathBuf::from(std::env::var_os("OUT_DIR").unwrap_or_default()).join("craft_fonts.rs");
+    let out = PathBuf::from(std::env::var_os("OUT_DIR").unwrap_or_default()).join("extra_fonts.rs");
     if let Err(e) = std::fs::write(&out, src) {
         println!("cargo::error=writing {}: {e}", out.display());
     }
 }
 
-/// One `CraftFont { .. }` initialiser per manifest line.
-fn craft_fonts(dir: &std::path::Path) -> Result<String, String> {
+/// One `ExtraFont { .. }` initialiser per manifest line.
+fn extra_fonts(dir: &std::path::Path) -> Result<String, String> {
     let manifest = dir.join("fonts/manifest.txt");
     println!("cargo::rerun-if-changed={}", manifest.display());
     let text = std::fs::read_to_string(&manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
@@ -55,7 +55,7 @@ fn craft_fonts(dir: &std::path::Path) -> Result<String, String> {
         let scripts: Vec<String> = scripts.split(',').map(|s| format!("{:?}", s.trim())).collect();
         let _ = writeln!(
             out,
-            "    CraftFont {{ family: {family:?}, style: {style:?}, scripts: &[{}], bytes: include_bytes!({:?}) }},",
+            "    ExtraFont {{ family: {family:?}, style: {style:?}, scripts: &[{}], bytes: include_bytes!({:?}) }},",
             scripts.join(", "),
             path.display().to_string(),
         );

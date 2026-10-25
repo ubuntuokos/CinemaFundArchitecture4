@@ -55,10 +55,10 @@ modules:
         CARGO_NET_OFFLINE: 'true'
     build-commands:
       - test "$(uname -s)" = Linux && test "$(uname -m)" = x86_64
-      - cargo --offline build --release --locked -p filmcraft -p filmcraft-cli
-      - install -Dm755 target/release/filmcraft /app/bin/cfa4
+      - cargo --offline build --release --locked -p cfa4 -p cfa4-cli
+      - install -Dm755 target/release/cfa4 /app/bin/cfa4
       # The headless CLI and its stdio MCP server, as in the release bundle (#346).
-      - install -Dm755 target/release/filmcraft-cli /app/bin/cfa4-cli
+      - install -Dm755 target/release/cfa4-cli /app/bin/cfa4-cli
       - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.desktop /app/share/applications/io.github.ubuntuokos.cfa4.desktop
       - install -Dm644 packaging/linux/io.github.ubuntuokos.cfa4.mime.xml /app/share/mime/packages/io.github.ubuntuokos.cfa4.xml
       - mkdir -p /app/share/icons && cp -R assets/cfa4/hicolor /app/share/icons/
