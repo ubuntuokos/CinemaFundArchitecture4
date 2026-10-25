@@ -67,7 +67,7 @@ FAKE_ENGINE = textwrap.dedent(
         elif m == "engine.commands":
             send({"id": rid, "ok": True, "result": commands})
         elif m == "session.state":
-            send({"id": rid, "ok": True, "result": {"dirty": False, "revision": state["revision"]}})
+            send({"id": rid, "ok": True, "result": {"dirty": state.get("dirty", False), "revision": state["revision"]}})
         elif m == "frame.render":
             send({"id": rid, "ok": True, "result": {"w": 4, "h": 2, "format": "rgba8", "offline": []}}, bytes(32))
         elif m == "audio.render":
@@ -90,6 +90,12 @@ FAKE_ENGINE = textwrap.dedent(
                 state["revision"] += 1
                 send({"id": rid, "ok": True, "result": None})
                 send({"event": "projectChanged", "revision": state["revision"]})
+            elif c == "test.makeDirty":
+                state["dirty"] = True
+                send({"id": rid, "ok": True, "result": None})
+            elif c in ("file.save", "file.openDemoProject"):
+                state["dirty"] = False
+                send({"id": rid, "ok": True, "result": None})
             elif c == "playhead.set":
                 state["playhead"] = int(cp.get("time") or 0)
                 send({"id": rid, "ok": True, "result": None})
@@ -324,6 +330,96 @@ def test_engine_stop_fails_pending_requests(app, fake_engine: Path):
     errors = []
     engine.call("hello", on_error=errors.append)
     assert errors and "not running" in errors[0]
+
+
+def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path, tmp_path: Path, monkeypatch):
+    """Regression: File ▸ Open / New / Demo Project replaced a dirty project without asking.
+    The engine's dirty flag is asked for after the edit still in flight, not the last refresh."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    sent: list[str] = []
+    execute = engine.execute
+
+    def recording(command, params=None, on_reply=None, on_error=None):
+        sent.append(command)
+        return execute(command, params, on_reply=on_reply, on_error=on_error)
+
+    monkeypatch.setattr(engine, "execute", recording)
+    answers: list[QtWidgets.QMessageBox.StandardButton] = []
+    asked: list[str] = []
+
+    def answer(box):
+        asked.append(box.text())
+        return answers.pop(0)
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+    demo = Command("file.openDemoProject", "Demo Project", ["File", "New"], "", "{}", True)
+    try:
+        assert wait_until(app, lambda: bool(engine.hello))
+        # clean: no question, the command runs
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert not asked
+        # dirty (the refresh has not seen it yet): Cancel keeps the project
+        sent.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.run_command(demo)
+        assert wait_until(app, lambda: bool(asked))
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 50)
+        assert "file.openDemoProject" not in sent
+        assert "continuing" in asked[0]
+        # Save: saves, then replaces
+        answers.append(QtWidgets.QMessageBox.StandardButton.Save)
+        win.project = {"name": "Demo", "path": str(tmp_path / "a.fcproj")}
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert sent.index("file.save") < sent.index("file.openDemoProject")
+        # Don't Save: replaces without saving
+        sent.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.run_command(demo)
+        assert wait_until(app, lambda: "file.openDemoProject" in sent)
+        assert "file.save" not in sent
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_recovery_prompt_reads_the_engines_camel_case_keys():
+    """Regression: the prompt read snake_case keys, so every candidate was 'Untitled' from 1970."""
+    from cfa4_qt.main_window import recovery_text
+
+    text = recovery_text({"id": "s1", "savedUnix": 1_790_000_000, "projectName": "Interjú", "cleanExit": True})
+    assert "Interjú" in text and "1970" not in text and "was closed" in text
+    crashed = recovery_text({"savedUnix": 1_790_000_000, "projectName": "B", "cleanExit": False})
+    assert "quit unexpectedly" in crashed
+    assert "unknown time" in recovery_text({"savedUnix": "junk"})
+    assert "unknown time" in recovery_text({"savedUnix": 10**30})
+
+
+def test_panel_only_shortcuts_are_not_bound_window_wide(app):
+    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping."""
+    win = QtWidgets.QMainWindow()
+    reg = CommandRegistry(lambda c: None)
+    reg.load(
+        [
+            {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": "Cmd+Z", "shortcuts": ["Cmd+Z", "Left"],
+             "panelShortcuts": [{"keys": "Left", "panel": "History"}], "params": "{}", "enabled": True},
+            {"id": "playhead.stepBack", "label": "Step Back", "menu": [], "shortcut": "Left", "shortcuts": ["Left"],
+             "params": "{}", "enabled": True},
+        ]
+    )
+    assert reg.commands["edit.undo"].shortcuts == ["Cmd+Z"]
+    reg.build_menus(win.menuBar(), win)
+    left = QtGui.QKeySequence("Left")
+    assert left in reg.actions["playhead.stepBack"].shortcuts()
+    assert left not in reg.actions["edit.undo"].shortcuts()
 
 
 # ----- the real engine, when built -----

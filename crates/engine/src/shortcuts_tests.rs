@@ -308,3 +308,15 @@ fn default_keymaps_have_no_conflicts_on_any_platform() {
         assert!(mac.iter().any(|b| b.command == cmd && b.keys == keys), "{cmd} {keys} on macOS");
     }
 }
+
+#[test]
+fn command_list_marks_panel_only_shortcuts() {
+    // The Qt GUI bound History ▸ Left (Undo) window-wide because command.list dropped the panel.
+    let mut s = Session::default();
+    let rows = s.execute("command.list", json!({})).unwrap();
+    let undo = rows.as_array().unwrap().iter().find(|r| r["id"] == "edit.undo").unwrap();
+    assert!(undo["panelShortcuts"].as_array().unwrap().iter().any(|b| b["keys"] == "Left" && b["panel"] == "History"), "{undo}");
+    assert!(undo["panelShortcuts"].as_array().unwrap().iter().all(|b| b["keys"] != undo["shortcut"]));
+    let step = rows.as_array().unwrap().iter().find(|r| r["id"] == "playhead.stepBack").unwrap();
+    assert!(step["panelShortcuts"].as_array().unwrap().is_empty());
+}
