@@ -2,19 +2,19 @@
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_project::ClipId;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
+use cfa4_ui_egui::panels::timeline::Drag;
 use egui::pos2;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_project::ClipId;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
-use filmcraft_ui_egui::panels::timeline::Drag;
 use serde_json::{Value, json};
 
 const DUNES: &str = "Desert_Dunes.mp4";
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
 }
 
@@ -24,7 +24,7 @@ impl Driver {
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         session.execute("sequence.snap", json!({"on": false})).expect("snapping off");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
+        let app = Cfa4App::new(session).with_control(rx);
         let harness = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_step_dt(1.0 / 60.0).with_max_steps(10_000).build_eframe(move |_cc| app);
         let mut d = Driver { harness, tx };
         d.frames(4);
@@ -64,7 +64,7 @@ impl Driver {
         self.ok("engine.execute", json!({"command": command, "params": params}))
     }
 
-    fn app(&self) -> &FilmcraftApp {
+    fn app(&self) -> &Cfa4App {
         self.harness.state()
     }
 

@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use cfa4_gstreamer::{Area, DEFAULT_DISCOVER_TIMEOUT, Error, StreamKind, discover, probe};
-use filmcraft_time::{FrameRate, Tick};
+use cfa4_time::{FrameRate, Tick};
 
 fn status_or_skip() -> Option<cfa4_gstreamer::Status> {
     match probe() {
@@ -80,7 +80,7 @@ fn discover_reads_a_matroska_video_file() {
     assert!(!is_image);
     // 50 frames at 25 fps: 2 s, to within one frame.
     let duration = info.duration.unwrap();
-    let two_s = Tick(2 * filmcraft_time::TICKS_PER_SECOND);
+    let two_s = Tick(2 * cfa4_time::TICKS_PER_SECOND);
     assert!((duration.0 - two_s.0).abs() <= Tick::from_units(1, 25).0, "{duration:?}");
 }
 

@@ -1,11 +1,11 @@
 {
   "mcpServers": {
-    "filmcraft": {
-      "command": "target/release/filmcraft-cli",
+    "cfa4": {
+      "command": "target/release/cfa4-cli",
       "args": ["mcp", "--bridge", "127.0.0.1:9876"]
     },
-    "filmcraft-headless": {
-      "command": "target/release/filmcraft-cli",
+    "cfa4-headless": {
+      "command": "target/release/cfa4-cli",
       "args": ["mcp", "--demo"]
     }
   }
