@@ -194,7 +194,12 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 - **Kötelező** (tulajdonosi döntés, 2026-10-25). MLT-könyvtár nem kell hozzá: a `.kdenlive` XML-t
   a Rust olvasó közvetlenül értelmezi.
 - **Első lépés:** a Kdenlive OTIO-exportja a meglévő `otio.rs`-sel, valódi fájlokon tesztelve
-  (az OTIO-terv, #43, OTIO-4.2 interop-mátrixával együtt).
+  (az OTIO-terv, #43, OTIO-4.2 interop-mátrixával együtt). **Kész (2026-10-25):** a Kdenlive saját
+  CC0 OTIO-tesztkészlete (8 fájl, `crates/interchange/tests/data/kdenlive/`) a
+  `tests/kdenlive_otio.rs`-ben fut: sávok, klipek, vágópontok, guide-ok, klipmarkerek, színklipek,
+  áttűnések, hiányzó média. Javítva: a Kdenlive `kdenlive:SolidColor` színe (`0xRRGGBBAA`) helyesen
+  jön át; a „Transition” nevű áttűnés a `transition_type` szerint képződik le; az üres `target_url`
+  offline médiát ad (korábban a projektmappára mutatott).
 - **Kompatibilitási jelentés:** minden elem „támogatott / átalakított / nem támogatott” osztályba
   kerül; a jelentés az import után megjelenik.
 - **Orákulum:** a `melt` (MLT) csak a tesztekben fut, a Kdenlive-renderrel való képkockás
@@ -375,3 +380,4 @@ jóváhagyással kerül be. A CFA4-ben ma megvan a Whisper (`transcript.generate
 | 2026-10-25 | minor | 11.1: K20–K25 és tervezési elvek az FA3 elődtervből (FA3-VIDEO-EDITOR-001); a Kdenlive `REUSE.toml` CC0-részei rögzítve |
 | 2026-10-25 | minor | 11.2: K26–K30 felirat- és átiratlánc az FA3 Kdenlive-konszolidációjából (hangleválasztás, kényszerített igazítás, fordítás nyomkövetéssel, feliratminőség-ellenőrzés, SBV) |
 | 2026-10-25 | minor | A tulajdonos jóváhagyta a tervet (K1–K30) |
+| 2026-10-25 | minor | K1 első lépése kész: a Kdenlive CC0 OTIO-tesztkészlete a CFA4 OTIO-importjával tesztelve, három javítással |
