@@ -57,6 +57,9 @@ covered by the GPL and may only be used unmodified to identify CFA4
 ([assets/cfa4/LICENSE-brand.txt](assets/cfa4/LICENSE-brand.txt)); modified versions must use
 their own logo. The code is GPL-3.0-or-later.
 
+GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
+and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
 They must be removed or replaced before independently distributing modified CFA4 builds.

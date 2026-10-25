@@ -14,6 +14,9 @@ path = "src/main.rs"
 
 [features]
 default = []
+# Optional GStreamer fallback media backend (ADR 0002; needs libgstreamer1.0-dev and
+# libgstreamer-plugins-base1.0-dev to build). Without it the app behaves exactly as before.
+gstreamer = ["cfa4-gstreamer/gstreamer"]
 # Speech-to-text (Text panel ▸ Transcribe) with Whisper on the CPU, and model downloads.
 whisper = ["filmcraft-engine/whisper", "filmcraft-engine/speech-download"]
 
@@ -27,6 +30,8 @@ filmcraft-gpu = { workspace = true }
 filmcraft-media = { workspace = true }
 filmcraft-codecs = { workspace = true }
 filmcraft-platform = { workspace = true }
+cfa4-gstreamer = { workspace = true }
+log = { workspace = true }
 filmcraft-mxf = { workspace = true }
 filmcraft-mpegts = { workspace = true }
 filmcraft-ogg = { workspace = true }

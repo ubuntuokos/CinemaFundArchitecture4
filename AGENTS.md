@@ -28,6 +28,14 @@ attribution and original copyright/licence requirements remain in force.
     proprietary plug-ins loaded into the CFA4 process (docs/licensing.md §4).
   - Inherited FilmCraft code keeps its MIT/Apache notices (`LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE`).
   - PySide6/Qt6 (LGPLv3) is compatible; bundling Qt/PySide binaries still needs a packaging review.
+- **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
+  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
+  linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
+  copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
+  is always the fallback; this is the one exception to the inherited "pure Rust in the product" rule.
+- **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
+  (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
+  available) or the CPU fallback.
 - A release is blocked until inherited ArtCraft marks, icons, package metadata and public
   branding are replaced or usage separately authorized; retain upstream MIT/Apache notices.
 - **Qt 6 GUI** (`python/cfa4_qt/`, docs: [docs/qt-gui.md](docs/qt-gui.md)) is where all new UI
@@ -133,7 +141,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
 8. **The exceptions: first-party brand marks.** (a) The CFA4 logo, emblem, icons and wordmark in
-   `assets/cfa4/logo` and `assets/cfa4/hicolor` are the original design and property of the project owner
+   `assets/cfa4` (the official logo, its emblem) and `assets/cfa4/hicolor` are the original design and property of the project owner
    (ubuntuokos), not open source and not under the GPL, usable only unmodified and only to identify CFA4
    under `assets/cfa4/LICENSE-brand.txt` (owner decision 2026-10-25); licence
    `LicenseRef-CFA4-Trademark`. Never redraw, recolour or crop them by hand: a new icon size comes from

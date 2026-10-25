@@ -134,6 +134,7 @@ fn main() -> eframe::Result {
     // Hardware decoding switches them off. Unsupported streams and failures use our decoders.
     log::info!("startup stage: registering hardware decoders");
     register_hardware_decoders();
+    register_gstreamer();
     log::info!("startup stage: hardware decoders registered");
     // Which graphics backends and adapter the window starts with: `--graphics`, else the saved
     // mode, which moves on after starts that died before their window painted (a driver crash),
@@ -433,6 +434,14 @@ fn register_gpu_frame_renderer() {
     filmcraft_export::register_frame_renderer(|| {
         filmcraft_gpu::ExportRenderer::new().map(|r| Box::new(GpuFrameRenderer(r)) as Box<dyn filmcraft_export::FrameRenderer>)
     });
+}
+/// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
+/// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
+fn register_gstreamer() {
+    match cfa4_gstreamer::register() {
+        Ok(status) => log::info!("GStreamer {} is the fallback media backend", status.version),
+        Err(e) => log::info!("GStreamer fallback not used: {e}"),
+    }
 }
 
 /// Put the OS hardware video decoders in front of our own. Registered in a statement of its own:

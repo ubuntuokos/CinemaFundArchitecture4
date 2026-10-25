@@ -19,8 +19,8 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner), original design | CFA4 app icon, 512x512 (derived from the CFA4 logo) | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
 | `assets/cfa4/hicolor/64x64/apps/io.github.ubuntuokos.cfa4.png` | ubuntuokos (CFA4 project owner), original design | CFA4 app icon, 64x64 (derived from the CFA4 logo) | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
 | `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | ubuntuokos (CFA4 project owner), original design | CFA4 app icon, scalable (derived from the CFA4 logo) | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
-| `assets/cfa4/logo/cfa4-emblem.png` | ubuntuokos (CFA4 project owner), original design | Emblem of the CFA4 logo (derived by scripts/dev/cfa4_icons.py) | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
-| `assets/cfa4/logo/cfa4-logo.png` | ubuntuokos (CFA4 project owner), original design | CFA4 logo supplied by the project owner | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
+| `assets/cfa4/cfa4-emblem.png` | ubuntuokos (CFA4 project owner), original design | Emblem of the CFA4 logo (derived by scripts/dev/cfa4_icons.py) | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
+| `assets/cfa4/cfa4-official-logo.png` | CFA4 project owner (István), original design | Original CFA3 emblem supplied by the project owner, adapted and approved as the official CFA4 logo on 2026-10-23 | LicenseRef-CFA4-Trademark (`assets/cfa4/LICENSE-brand.txt`) |
 | `crates/ui-egui/src/i18n/it.tsv` | FilmCraft contributors | Original work: clean-room Italian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/id.tsv` | FilmCraft contributors | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/ko.tsv` | FilmCraft contributors | Original work: clean-room Korean interface translations | MIT OR Apache-2.0 |

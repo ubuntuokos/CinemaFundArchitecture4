@@ -27,7 +27,7 @@ use std::process::{Command, ExitCode};
 
 use serde_json::Value;
 
-/// (crate name without the `filmcraft-` prefix, layer).
+/// (crate name without the `filmcraft-` or `cfa4-` prefix, layer).
 const LAYERS: &[(&str, u8)] = &[
     ("testkit", 0),
     ("time", 0),
@@ -84,6 +84,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("format", 3),
     ("engine", 4),
     ("platform", 5),
+    ("gstreamer", 5),
     ("ui-egui", 5),
     ("automation", 5),
     ("filmcraft", 6),
@@ -114,7 +115,7 @@ const SAME_LAYER: &[(&str, &str)] = &[
 const UI_ONLY: &[&str] = &["craft-ui", "egui", "eframe", "egui-wgpu", "winit", "rfd", "cpal", "muda"];
 
 fn short(name: &str) -> &str {
-    name.strip_prefix("filmcraft-").unwrap_or(name)
+    name.strip_prefix("filmcraft-").or_else(|| name.strip_prefix("cfa4-")).unwrap_or(name)
 }
 
 fn layer_of(name: &str) -> Option<u8> {
@@ -161,7 +162,7 @@ fn layers() -> Result<(), String> {
             if l < 5 && UI_ONLY.contains(&d.as_str()) {
                 errors.push(format!("{name} (L{l}) depends on UI/OS crate `{d}`"));
             }
-            if !d.starts_with("filmcraft-") {
+            if !d.starts_with("filmcraft-") && !d.starts_with("cfa4-") {
                 continue;
             }
             let Some(dl) = layer_of(d) else { continue };
