@@ -469,6 +469,37 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     dlg.close()
 
 
+def test_effect_controls_pending_edits_keep_their_clip_and_time(app):
+    """Regressions: a coalesced edit was sent to whichever clip was shown when the 120 ms timer
+    fired, and an animated one at the engine's playhead then rather than where it was made."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    def snapshot(clip: int, playhead: int, animated: bool) -> dict:
+        scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": animated,
+                 "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+        return {"clip": clip, "name": f"C{clip}", "start": 1000, "end": 9000, "playhead": playhead,
+                "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]}
+
+    panel = EffectControlsPanel()
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    panel._show(snapshot(1, 2000, False))
+    panel.set_param(panel.rows[(0, "scale")], 150.0)
+    panel._show(snapshot(2, 2000, False))  # another clip selected before the timer fired
+    assert [(c, p["clip"], p["value"], "time" in p) for c, p in sent] == [("effects.setParam", 1, 150.0, False)]
+    sent.clear()
+    panel._show(snapshot(2, 3000, True))
+    panel.set_param(panel.rows[(0, "scale")], 120.0)
+    panel._show(snapshot(2, 7000, True))  # the playhead moved to another keyframe meanwhile
+    assert [(p["clip"], p["time"]) for _c, p in sent] == [(2, 3000)]
+    sent.clear()
+    panel._show(snapshot(2, 20_000, True))  # past the clip: pinned to it, as the engine pins
+    panel.set_param(panel.rows[(0, "scale")], 110.0)
+    panel.send("effects.reset", {"clip": 2, "index": 0})  # pending values go before another edit
+    assert [c for c, _p in sent] == ["effects.setParam", "effects.reset"] and sent[0][1]["time"] == 8999
+    panel.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 
