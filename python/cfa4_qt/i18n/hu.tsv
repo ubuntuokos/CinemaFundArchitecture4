@@ -7,6 +7,7 @@
 # copied; add entries the same way. Product and format names (CFA4, FilmCraft, AAF, EDL…) keep
 # their spelling.
 
+	'{name}' already exists. Replace it?	A(z) „{name}” már létezik. Lecseréli?
 	AAC	AAC
 	AAF…	AAF…
 	About CFA4	A CFA4 névjegye
@@ -70,6 +71,7 @@
 	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
 	Cancel Selected	Kijelöltek megszakítása
 	Cancelled	Megszakítva
+	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
 	Captions	Feliratok
 	Captions…	Feliratok…
 	Caribbean	Karibi

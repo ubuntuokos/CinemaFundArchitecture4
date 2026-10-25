@@ -433,6 +433,42 @@ def test_panel_only_shortcuts_are_not_bound_window_wide(app):
     assert left not in reg.actions["edit.undo"].shortcuts()
 
 
+def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
+    """Regressions: Export silently truncated an existing output; an output folder that could not
+    be created raised out of the slot and nothing was shown."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.sent.append((command, dict(params or {})))
+            return 0
+
+    engine = Engine()
+    dlg = ExportDialog(engine)  # type: ignore[arg-type]
+    out = tmp_path / "out.mp4"
+    out.write_bytes(b"previous export")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers = [QtWidgets.QMessageBox.StandardButton.Cancel, QtWidgets.QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    dlg._enqueue(True)
+    assert engine.sent == [] and out.read_bytes() == b"previous export"
+    dlg._enqueue(True)
+    assert [c for c, _ in engine.sent] == ["export.queue.add"]
+    dlg._enqueue(False)  # already confirmed for this path: no second question
+    assert len(engine.sent) == 2 and not answers
+    # a regular file where the folder should be: an error in the dialog, nothing queued
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(blocker / "sub" / "out.mp4")})
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2
+    assert "output folder" in dlg.summary.text()
+    dlg.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 
