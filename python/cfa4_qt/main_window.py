@@ -312,7 +312,7 @@ class MainWindow(QMainWindow):
             self.addAction(action)
 
     def _build_menus(self) -> None:
-        bound = self.registry.build_menus(
+        self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action],
@@ -345,7 +345,7 @@ class MainWindow(QMainWindow):
         window_shortcuts = build_window_menu(
             self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
         )
-        keys = {s.toString() for cid in bound for s in self.registry.actions[cid].shortcuts()}
+        keys = self.registry.claimed_keys
         self._bind_local_shortcuts(keys)
         bind_free(self, self.tools.shortcut_pairs(), keys)  # V, A, B, N, R, C, Y, U, H, Z ... as egui
         self._window_actions = bind_free(self, window_shortcuts, keys) + [
@@ -534,7 +534,7 @@ class MainWindow(QMainWindow):
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.effect_controls.flush()
-        if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.")):
+        if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
             self.close()
@@ -555,7 +555,15 @@ class MainWindow(QMainWindow):
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
             self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
             return
-        if (cmd.id in REPLACES_PROJECT or cmd.id == "file.closeProject") and self.export_dialog is not None:
+        if cmd.id == "file.revert" and not unsaved_ok:
+            # saving first would overwrite the version being reverted to: Revert or Cancel only
+            self.confirm_unsaved(
+                lambda: self.run_command(cmd, unsaved_ok=True),
+                question="Discard the unsaved changes to '{name}' and revert to the saved version?",
+                can_save=False,
+            )
+            return
+        if (cmd.id in REPLACES_PROJECT or cmd.id in ("file.closeProject", "file.revert")) and self.export_dialog is not None:
             # its sequence id belongs to this project: item ids restart in the next one, so a stale
             # dialog could export a different sequence than it names. Reopening re-reads it.
             self.export_dialog.hide()
@@ -665,11 +673,13 @@ class MainWindow(QMainWindow):
         proceed: Callable[[], None],
         discard: Callable[[], None] | None = None,
         question: str = "Save changes to '{name}' before continuing?",
+        can_save: bool = True,
     ) -> None:
         """Run ``proceed`` once unsaved changes are saved, or ``discard`` (default: ``proceed``)
         when the user doesn't save them; nothing on Cancel. The dirty flag comes from the engine,
         asked after every command already queued, not from the last (possibly stale) refresh;
-        an engine that doesn't answer within ``STATE_TIMEOUT_MS`` falls back to the last refresh."""
+        an engine that doesn't answer within ``STATE_TIMEOUT_MS`` falls back to the last refresh.
+        Without ``can_save`` the choice is only Discard or Cancel (Cancel is the default)."""
         asked = [False]
 
         def decide(result: Any, _b: bytes | None) -> None:
@@ -688,14 +698,20 @@ class MainWindow(QMainWindow):
                 parent=self,
             )
             box.setObjectName("dialog.unsaved")
-            box.setStandardButtons(
-                QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel
-            )
+            if can_save:
+                box.setStandardButtons(
+                    QMessageBox.StandardButton.Save
+                    | QMessageBox.StandardButton.Discard
+                    | QMessageBox.StandardButton.Cancel
+                )
+            else:
+                box.setStandardButtons(QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+                box.setDefaultButton(QMessageBox.StandardButton.Cancel)
             answer = box.exec()
             if answer == QMessageBox.StandardButton.Discard:
                 (discard or proceed)()
                 return
-            if answer != QMessageBox.StandardButton.Save:
+            if answer != QMessageBox.StandardButton.Save or not can_save:
                 return
             cmd = self.registry.commands.get("file.save") or Command("file.save", "Save", [], "", "{}", True)
             project_path = (self.project or {}).get("path")

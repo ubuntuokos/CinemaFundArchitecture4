@@ -408,6 +408,25 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         assert "file.save" not in sent
         assert Dialog.hidden
         win.export_dialog = None
+        # Revert never offers Save (it would overwrite the version reverted to): Cancel keeps the edits
+        revert = Command("file.revert", "Revert", ["File"], "", "{}", True)
+        buttons: list[QtWidgets.QMessageBox.StandardButtons] = []
+        monkeypatch.setattr(
+            QtWidgets.QMessageBox, "exec", lambda box: (buttons.append(box.standardButtons()), answer(box))[1]
+        )
+        sent.clear()
+        asked.clear()
+        engine.execute("test.makeDirty", {})
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.run_command(revert)
+        assert wait_until(app, lambda: bool(asked))
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 50)
+        assert "file.revert" not in sent and "revert" in asked[0]
+        assert not buttons[0] & QtWidgets.QMessageBox.StandardButton.Save
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.run_command(revert)
+        assert wait_until(app, lambda: "file.revert" in sent)
+        assert "file.save" not in sent
     finally:
         win._quit_confirmed = True
         win.close()
@@ -458,6 +477,25 @@ def test_deferred_effect_edits_reach_the_engine_before_save_or_close(app, fake_e
         win.close()
 
 
+def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
+    """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
+    ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""
+    from cfa4_qt.dialogs import path_params
+
+    (tmp_path / "cut.fcproj").write_text("{}", encoding="utf-8")
+    cmd = Command("file.saveAs", "Save As…", ["File"], "", '{"path":"string"}', True)
+    parent = QtWidgets.QWidget()
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "cut"), ""))
+    answers = [QtWidgets.QMessageBox.StandardButton.Cancel, QtWidgets.QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    assert path_params(cmd, parent, None) == {"__cancel__": True}
+    assert path_params(cmd, parent, None) == {"path": str(tmp_path / "cut.fcproj")}
+    # a new name is not asked about
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "new"), ""))
+    assert path_params(cmd, parent, None) == {"path": str(tmp_path / "new.fcproj")}
+    assert not answers
+
+
 def test_recovery_prompt_reads_the_engines_camel_case_keys():
     """Regression: the prompt read snake_case keys, so every candidate was 'Untitled' from 1970."""
     from cfa4_qt.main_window import recovery_text
@@ -470,23 +508,67 @@ def test_recovery_prompt_reads_the_engines_camel_case_keys():
     assert "unknown time" in recovery_text({"savedUnix": 10**30})
 
 
-def test_panel_only_shortcuts_are_not_bound_window_wide(app):
-    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping."""
+def _focus_panel(app, win: QtWidgets.QMainWindow, name: str | None) -> None:
+    target = win.findChild(QtWidgets.QLineEdit, f"focus.{name}") if name else win.findChild(QtWidgets.QLineEdit, "focus.none")
+    target.setFocus()
+    wait_until(app, lambda: QtWidgets.QApplication.focusWidget() is target, 2_000)
+    assert QtWidgets.QApplication.focusWidget() is target
+
+
+def test_panel_only_shortcuts_follow_the_focused_panel(app):
+    """Regression: History ▸ Left (Undo) was bound window-wide, so Left undid instead of stepping;
+    then, with panel keys dropped, Delete in the Timeline ran Project ▸ Clear instead of clearing clips."""
+    ran: list[str] = []
     win = QtWidgets.QMainWindow()
-    reg = CommandRegistry(lambda c: None)
+    central = QtWidgets.QWidget()
+    lay = QtWidgets.QVBoxLayout(central)
+    for name in ("Timeline", "Project", "History", None):
+        panel = QtWidgets.QWidget()
+        panel.setObjectName(f"panel.{name}" if name else "elsewhere")
+        field = QtWidgets.QLineEdit(panel)
+        field.setObjectName(f"focus.{name}" if name else "focus.none")
+        lay.addWidget(panel)
+    win.setCentralWidget(central)
+    reg = CommandRegistry(lambda c: ran.append(c.id))
     reg.load(
         [
             {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": "Cmd+Z", "shortcuts": ["Cmd+Z", "Left"],
              "panelShortcuts": [{"keys": "Left", "panel": "History"}], "params": "{}", "enabled": True},
             {"id": "playhead.stepBack", "label": "Step Back", "menu": [], "shortcut": "Left", "shortcuts": ["Left"],
              "params": "{}", "enabled": True},
+            {"id": "project.delete", "label": "Clear", "menu": ["Edit"], "shortcut": "Delete",
+             "shortcuts": ["Delete", "Backspace"], "panelShortcuts": [{"keys": "Backspace", "panel": "Project"}],
+             "params": "{}", "enabled": True},
+            {"id": "edit.clear", "label": "Clear", "menu": ["Edit"], "shortcut": "Delete", "shortcuts": ["Delete"],
+             "panelShortcuts": [{"keys": "Delete", "panel": "Timeline"}], "params": "{}", "enabled": True},
         ]
     )
     assert reg.commands["edit.undo"].shortcuts == ["Cmd+Z"]
+    assert reg.commands["edit.undo"].panel_shortcuts == [("Left", "History")]
     reg.build_menus(win.menuBar(), win)
+    reg.build_menus(win.menuBar(), win)  # a rebuild replaces the dispatchers instead of doubling them
+    win.show()
+    win.activateWindow()
     left = QtGui.QKeySequence("Left")
-    assert left in reg.actions["playhead.stepBack"].shortcuts()
     assert left not in reg.actions["edit.undo"].shortcuts()
+    assert len(win.findChildren(QtGui.QAction, "shortcut.Left")) == 1
+    # panel-scoped keys count as taken, so the window's own shortcuts leave them alone
+    assert {"Left", "Del", "Backspace", "Ctrl+Z"} <= reg.claimed_keys
+
+    def press(key: str, panel: str | None) -> str | None:
+        _focus_panel(app, win, panel)
+        ran.clear()
+        win.findChild(QtGui.QAction, f"shortcut.{key}").trigger()
+        return ran[0] if ran else None
+
+    assert press("Del", "Timeline") == "edit.clear"
+    assert press("Del", "Project") == "project.delete"
+    assert press("Del", None) == "project.delete"
+    assert press("Left", "History") == "edit.undo"
+    assert press("Left", "Timeline") == "playhead.stepBack"
+    reg.update_enabled([{"id": "edit.clear", "enabled": False}])
+    assert press("Del", "Timeline") is None  # a disabled command does not fall through to another
+    win.close()
 
 
 def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
@@ -497,6 +579,8 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     class Engine:
         """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``; ``.png``
         is an image sequence."""
+
+        running = False  # the queue poll timer outlives this test: it must not raise later
 
         def __init__(self):
             self.sent = []
@@ -542,6 +626,28 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
     assert existing_outputs(seq_dir / "cut.png", "h264") == []
     assert existing_outputs(seq_dir / "other.png", "png") == []
+    # MXF OP-Atom writes each audio channel to stem_A1.mxf…: those count even without stem.mxf
+    (seq_dir / "cut_A1.mxf").write_bytes(b"x")
+    (seq_dir / "cut_A1.mxf.bak").write_bytes(b"x")
+    assert existing_outputs(seq_dir / "cut.mxf", "mxf-opatom") == [seq_dir / "cut_A1.mxf"]
+    assert existing_outputs(seq_dir / "cut.mxf", "mxf-op1a") == []
+    # a folder that can be written but not listed is not "no frames there": the export stops
+    def unlistable(_self):
+        raise PermissionError("listing denied")
+
+    with monkeypatch.context() as m:
+        m.setattr(Path, "iterdir", unlistable)
+        with pytest.raises(OSError):
+            existing_outputs(seq_dir / "cut.png", "png")
+        m.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
+        dlg._enqueue(True)
+        assert len(engine.sent) == 2 and not answers
+    # the engine keeps the sidecar kind's case (cut.SRT) except for WebVTT
+    from cfa4_qt.panels.export import sidecar_output
+
+    assert sidecar_output("/x/cut.mp4", "SRT") == Path("/x/cut.SRT")
+    assert sidecar_output("/x/cut.mp4", "WebVTT") == Path("/x/cut.vtt")
+    assert sidecar_output("/x/cut.mp4", "none") is None
     # Browse returning cut.png confirms that file only, not the earlier frames
     monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
     dlg._browse()
@@ -1205,7 +1311,7 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     text = entry.read_text(encoding="utf-8")
     assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
     exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
-    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
+    assert exec_line.endswith(" %f") and "%" not in exec_line[:-3]
     assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
     assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
     # idempotent
@@ -1224,6 +1330,10 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     # paths a desktop entry cannot carry are refused, not written broken
     with pytest.raises(ValueError):
         de.exec_line(["/tmp/a%b/cfa4-qt"])
+    # quoted and escaped per the Desktop Entry spec, not the shell: a literal backslash survives
+    # the key file's string decoding (shell quoting turned "\\t" into a tab)
+    assert de.exec_line(["/opt/cfa4 dev/cfa4-qt"]) == '"/opt/cfa4 dev/cfa4-qt"'
+    assert de.escape_exec_argument('/a\\tb/"x"$') == '"/a\\\\\\\\tb/\\\\"x\\\\"\\\\$"'
     monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
     assert de.requested_by_env()
 
@@ -1278,6 +1388,20 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         win.set_language("en")
         keys = [s.toString() for a in win.actions() for s in a.shortcuts()]
         assert keys.count(QtGui.QKeySequence("Shift+1").toString()) == 1, keys
+        # regression: the docks kept callbacks into the deleted actions, so showing a panel after
+        # a rebuild raised "Internal C++ object already deleted"
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        errors: list[BaseException] = []
+        hook, sys.excepthook = sys.excepthook, lambda _t, e, _tb: errors.append(e)
+        try:
+            win.docks["Project"].hide()
+            win.docks["Project"].show()
+            wait_until(app, lambda: False, 100)
+        finally:
+            sys.excepthook = hook
+        assert not errors, errors
+        live = next(a for a in win.findChildren(QtGui.QAction, "window.panel.Project"))
+        assert live.isChecked()
     finally:
         win._quit_confirmed = True
         win.close()

@@ -20,7 +20,6 @@ The shell picks the entry up at the next start of the program.
 from __future__ import annotations
 
 import os
-import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -64,7 +63,15 @@ def exec_line(argv: list[str]) -> str:
     for part in argv:
         if any(c in part for c in "%=\n\r"):
             raise ValueError(f"path cannot be used in a desktop entry: {part!r}")
-    return " ".join(shlex.quote(a) for a in argv)
+    return " ".join(escape_exec_argument(a) for a in argv)
+
+
+def escape_exec_argument(arg: str) -> str:
+    """One quoted ``Exec=`` argument per the Desktop Entry spec: inside double quotes, `` ` ``,
+    ``"``, ``$`` and ``\\`` get a backslash, then every backslash is doubled again because the
+    key file's string decoding runs first (as ``escape_exec_argument`` in apps/cfa4/src/dev_icon.rs)."""
+    quoted = "".join("\\" + c if c in '`"$\\' else c for c in arg)
+    return '"' + quoted.replace("\\", "\\\\") + '"'
 
 
 def entry_text(exec_value: str) -> str:
@@ -75,7 +82,7 @@ def entry_text(exec_value: str) -> str:
         "GenericName=Video Editor\n"
         "GenericName[hu]=Videószerkesztő\n"
         "Comment=CFA4 Qt 6 editor run from a source checkout\n"
-        f"Exec={exec_value} %F\n"
+        f"Exec={exec_value} %f\n"  # one project per launch: cfa4-qt opens one
         f"Icon={ICON_NAME}\n"
         "Terminal=false\n"
         "Categories=AudioVideo;Video;AudioVideoEditing;\n"

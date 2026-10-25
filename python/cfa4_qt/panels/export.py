@@ -65,23 +65,28 @@ IMAGE_SEQUENCES = frozenset({"png", "tiff", "bmp", "jpg", "tga", "dpx", "exr"})
 
 
 def existing_outputs(out: Path, fmt: str) -> list[Path]:
-    """The files an export to ``out`` would replace: ``out`` itself, or for an image sequence
-    the numbered frames ``stem000.ext``, ``stem001.ext``… already there."""
+    """The files an export to ``out`` would replace: ``out`` itself (and for MXF OP-Atom its
+    ``stem_A1.mxf``… audio files), or for an image sequence the numbered frames ``stem000.ext``,
+    ``stem001.ext``… already there. Raises ``OSError`` when
+    the folder cannot be listed: frames there may still be overwritten, so that is not "none"."""
+    if fmt == "mxf-opatom":
+        # one file per audio channel beside the picture: stem_A1.mxf… (`opatom_audio_paths`)
+        audio = re.compile(re.escape(out.stem) + r"_A\d+\.mxf")
+        tracks = sorted(p for p in out.parent.iterdir() if audio.fullmatch(p.name))
+        return ([out] if out.exists() else []) + tracks
     if fmt not in IMAGE_SEQUENCES:
         return [out] if out.exists() else []
     frame = re.compile(re.escape(out.stem) + r"\d{3,}" + re.escape(out.suffix or ".png"))
-    try:
-        return sorted(p for p in out.parent.iterdir() if frame.fullmatch(p.name))
-    except OSError:
-        return []
+    return sorted(p for p in out.parent.iterdir() if frame.fullmatch(p.name))
 
 
 def sidecar_output(target: str, kind: Any) -> Path | None:
     """The caption sidecar an export to ``target`` writes (``captionSidecar``), named as the
-    engine names it: the output path up to its last dot, then ``.srt`` / ``.vtt``."""
+    engine names it (``write_sidecar``): the output path up to its last dot, then ``vtt`` for WebVTT
+    and otherwise ``kind`` exactly as given (``SRT`` writes ``cut.SRT``)."""
     if not isinstance(kind, str) or kind.lower() in ("", "none"):
         return None
-    ext = "vtt" if kind.lower() in ("vtt", "webvtt") else kind.lower()
+    ext = "vtt" if kind.lstrip(".").lower() in ("vtt", "webvtt") else kind
     return Path(f"{target.rsplit('.', 1)[0] if '.' in target else target}.{ext}").expanduser()
 
 
@@ -518,6 +523,10 @@ class ExportDialog(QDialog):
         fmt = str(settings.get("format") or "") if isinstance(settings, dict) else ""
         try:
             out.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            self._summary_error(tr("Cannot create the output folder: {error}").replace("{error}", str(e)))
+            return
+        try:
             existing = existing_outputs(out, fmt)
             # the engine writes the caption sidecar before the encode starts
             sidecar = sidecar_output(str(target if isinstance(target, str) and target else params["path"]),
@@ -525,7 +534,8 @@ class ExportDialog(QDialog):
             if sidecar is not None and sidecar.exists() and sidecar not in existing:
                 existing.append(sidecar)
         except OSError as e:
-            self._summary_error(tr("Cannot create the output folder: {error}").replace("{error}", str(e)))
+            # unlisted files could still be overwritten without asking
+            self._summary_error(tr("Cannot check the output folder for files to replace: {error}").replace("{error}", str(e)))
             return
         unconfirmed = [e for e in existing if str(e) not in self._replace_confirmed]
         if unconfirmed and not self._confirm_replace(out, unconfirmed[0], existing):
