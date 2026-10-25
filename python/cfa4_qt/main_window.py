@@ -489,6 +489,10 @@ class MainWindow(QMainWindow):
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
             self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
             return
+        if (cmd.id in REPLACES_PROJECT or cmd.id == "file.closeProject") and self.export_dialog is not None:
+            # its sequence id belongs to this project: item ids restart in the next one, so a stale
+            # dialog could export a different sequence than it names. Reopening re-reads it.
+            self.export_dialog.hide()
         project_path = (self.project or {}).get("path")
         params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
         if params is not None:
