@@ -16,11 +16,11 @@ class NativeMediaE2ESourceTests(unittest.TestCase):
         params = {"items": [23], "range": "entire", "wait": True}
         completed = subprocess.CompletedProcess(args=[], returncode=0, stdout='{"sequence":101}\n', stderr="")
         with patch.object(audit, "run", return_value=completed) as mocked:
-            result = audit.bridge(Path("/tmp/filmcraft-cli"), 19274, "file.newSequenceFromClip", params)
+            result = audit.bridge(Path("/tmp/cfa4-cli"), 19274, "file.newSequenceFromClip", params)
         self.assertEqual(result["sequence"], 101)
         args = mocked.call_args.args[0]
         self.assertEqual(
-            args[:5], ["/tmp/filmcraft-cli", "--bridge", "127.0.0.1:19274", "exec", "file.newSequenceFromClip"]
+            args[:5], ["/tmp/cfa4-cli", "--bridge", "127.0.0.1:19274", "exec", "file.newSequenceFromClip"]
         )
         self.assertEqual(json.loads(args[5]), params)
 

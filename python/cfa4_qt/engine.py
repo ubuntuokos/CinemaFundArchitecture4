@@ -48,17 +48,17 @@ def engine_candidates(explicit: str | os.PathLike[str] | None = None) -> list[Pa
 
     An explicit path or ``$CFA4_ENGINE`` is the only candidate. Otherwise the build of the
     checkout this GUI runs from comes first (newest first: release and debug), so an older CLI
-    installed on ``PATH`` cannot shadow the engine built next to this GUI; then ``cfa4-cli`` and
-    the inherited ``filmcraft-cli`` on ``PATH``.
+    installed on ``PATH`` cannot shadow the engine built next to this GUI; then ``cfa4-cli`` on
+    ``PATH``.
     """
     chosen = explicit or os.environ.get("CFA4_ENGINE")
     if chosen:
         return [Path(chosen).expanduser()]
     root = Path(__file__).resolve().parents[2]
-    builds = [root / r for r in ("target/release/filmcraft-cli", "target/debug/filmcraft-cli")]
+    builds = [root / r for r in ("target/release/cfa4-cli", "target/debug/cfa4-cli")]
     builds = [b for b in builds if b.is_file()]
     builds.sort(key=lambda b: b.stat().st_mtime, reverse=True)
-    on_path = [Path(f) for f in (shutil.which(n) for n in ("cfa4-cli", "filmcraft-cli")) if f]
+    on_path = [Path(f) for f in (shutil.which(n) for n in ("cfa4-cli",)) if f]
     out: list[Path] = []
     for c in [*builds, *on_path]:
         if c not in out:

@@ -1,6 +1,6 @@
 # Qt 6 GUI ↔ egui parity (point by point)
 
-**Owner decision (2026-10-24):** the egui editor (`crates/ui-egui`, `apps/filmcraft`) is deleted
+**Owner decision (2026-10-24):** the egui editor (`crates/ui-egui`, `apps/cfa4`) is deleted
 **only when the Qt 6 GUI does, point by point, everything the egui editor does.** Until then:
 
 - the egui editor stays the working editor and is **frozen**: bug fixes and security fixes only,
@@ -19,7 +19,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 
 | # | Point | egui | Qt 6 | Evidence / missing |
 |---|---|---|---|---|
-| 1.1 | Rust engine owns all project data; GUI holds views only | ✅ in-process | ✅ child process `cfa4-cli serve` | `apps/filmcraft-cli/src/serve.rs` tests; `test_qt_gui.py` |
+| 1.1 | Rust engine owns all project data; GUI holds views only | ✅ in-process | ✅ child process `cfa4-cli serve` | `apps/cfa4-cli/src/serve.rs` tests; `test_qt_gui.py` |
 | 1.2 | Every engine command reachable from the menus | ✅ | ✅ menus built from `engine.commands` | `test_registry_builds_menus_and_shortcuts` |
 | 1.3 | Keyboard shortcuts (engine bindings, user presets) | ✅ | 🟡 | engine bindings mapped; panel-scoped keys and the shortcut editor dialog missing |
 | 1.4 | Menu enablement follows the selection/state | ✅ | ✅ refreshed after every change | `test_main_window_with_fake_engine` |

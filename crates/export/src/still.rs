@@ -1,6 +1,6 @@
 //! Single-frame formats and true per-channel depth, separate from sequence export settings.
 use crate::{ExportError, Format, Result};
-use filmcraft_render::Image;
+use cfa4_render::Image;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StillFormat {
@@ -57,7 +57,7 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
     let bad = || ExportError::Encode("invalid still image dimensions or pixel buffer".into());
     let w = u32::try_from(image.w).map_err(|_| bad())?;
     let h = u32::try_from(image.h).map_err(|_| bad())?;
-    filmcraft_project::validate_frame_size(w, h).map_err(|_| bad())?;
+    cfa4_project::validate_frame_size(w, h).map_err(|_| bad())?;
     let samples = image.w.checked_mul(image.h).and_then(|n| n.checked_mul(4)).ok_or_else(bad)?;
     if image.px.len() != samples {
         return Err(bad());
@@ -69,7 +69,7 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
         #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
         {
             let png = encode(image, StillFormat::Png, depth)?;
-            return filmcraft_media::still::heif::encode_png(&png).map_err(|e| ExportError::Encode(e.to_string()));
+            return cfa4_media::still::heif::encode_png(&png).map_err(|e| ExportError::Encode(e.to_string()));
         }
         #[cfg(not(all(target_os = "linux", target_arch = "x86_64")))]
         return Err(ExportError::Unsupported("HEIC/HEIF export is supported on Linux AMD64 only".into()));
@@ -105,7 +105,7 @@ pub fn encode(image: &Image, format: StillFormat, depth: u8) -> Result<Vec<u8>> 
         let [r, g, b, a] = *pixel;
         let a = if a.is_finite() { a.clamp(0.0, 1.0) } else { 0.0 };
         let encode_channel = |v: f32| {
-            let v = if a > 0.0 && v.is_finite() { filmcraft_color::linear_to_srgb(v / a).clamp(0.0, 1.0) } else { 0.0 };
+            let v = if a > 0.0 && v.is_finite() { cfa4_color::linear_to_srgb(v / a).clamp(0.0, 1.0) } else { 0.0 };
             (v * 65535.0 + 0.5) as u16
         };
         for v in [encode_channel(r), encode_channel(g), encode_channel(b), (a * 65535.0 + 0.5) as u16] {
@@ -151,8 +151,8 @@ mod tests {
             assert_eq!(StillFormat::parse(format.extension()).unwrap(), format);
             for depth in [8, 16] {
                 let encoded = encode(&source, format, depth).expect("local heif-enc and x265 plugin required");
-                assert!(filmcraft_media::still::heif::sniff(&encoded));
-                let decoded = filmcraft_media::still::heif::decode("export.heic", &encoded).expect("libheif HEIC output must decode");
+                assert!(cfa4_media::still::heif::sniff(&encoded));
+                let decoded = cfa4_media::still::heif::decode("export.heic", &encoded).expect("libheif HEIC output must decode");
                 assert_eq!((decoded.width, decoded.height), (64, 64));
             }
         }

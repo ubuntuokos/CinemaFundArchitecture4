@@ -1,6 +1,6 @@
 [package]
-name = "filmcraft-ui-egui"
-description = "The FilmCraft egui frontend (swappable): panels, docking, timeline, monitors, control channel"
+name = "cfa4-ui-egui"
+description = "The CFA4 egui frontend (swappable): panels, docking, timeline, monitors, control channel"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,22 +10,22 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
-craft-ui = { workspace = true }
-filmcraft-time = { workspace = true }
-filmcraft-geom = { workspace = true }
-filmcraft-color = { workspace = true }
-filmcraft-frame = { workspace = true }
-filmcraft-media = { workspace = true }
-filmcraft-project = { workspace = true }
-filmcraft-tts = { workspace = true }
-filmcraft-edit = { workspace = true }
-filmcraft-render = { workspace = true }
-filmcraft-text = { workspace = true }
-filmcraft-audio-dsp = { workspace = true }
-filmcraft-engine = { workspace = true }
-filmcraft-export = { workspace = true }
-filmcraft-gpu = { workspace = true }
-filmcraft-scopes = { workspace = true }
+cfa4-ui = { workspace = true }
+cfa4-time = { workspace = true }
+cfa4-geom = { workspace = true }
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-tts = { workspace = true }
+cfa4-edit = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-text = { workspace = true }
+cfa4-audio-dsp = { workspace = true }
+cfa4-engine = { workspace = true }
+cfa4-export = { workspace = true }
+cfa4-gpu = { workspace = true }
+cfa4-scopes = { workspace = true }
 egui = { workspace = true }
 eframe = { workspace = true, features = ["default_fonts", "wgpu", "accesskit"] }
 serde = { workspace = true }
@@ -35,7 +35,7 @@ rayon = { workspace = true }
 web-time = "1"
 # Unicode Bidirectional Algorithm for Arabic and Hebrew captions in reading order (MIT OR Apache-2.0).
 unicode-bidi = "0.3.18"
-# ArtCraft wordmark (PNG) for the About dialog and Home screen.
+# PNG decoding for UI images.
 image = { version = "0.25", default-features = false, features = ["png"] }
 
 # Thread/process CPU clocks for frame-job profiling (safe wrappers; see frames.rs).
@@ -47,11 +47,11 @@ cpu-time = "1"
 
 [dev-dependencies]
 pollster = "0.4"
-filmcraft-codecs = { workspace = true }
+cfa4-codecs = { workspace = true }
 # the bench registers OS hardware decoders as the desktop app does (dev-dependency only: ui-egui
 # itself stays OS-independent and web-portable)
-filmcraft-platform = { workspace = true }
-filmcraft-interchange = { workspace = true }
+cfa4-platform = { workspace = true }
+cfa4-interchange = { workspace = true }
 egui_kittest = { workspace = true, features = ["eframe", "wgpu"] }
 
 # build.rs bakes contributors/contributors.json into the binary (About ▸ Contributors).
