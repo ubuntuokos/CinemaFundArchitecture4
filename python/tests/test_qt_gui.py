@@ -460,7 +460,9 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
                 path = str((params or {}).get("path"))
                 if on_reply is not None:
                     fmt = "png" if path.endswith(".png") else "h264"
-                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4", "format": fmt}}, None)
+                    sidecar = (params or {}).get("captionSidecar")
+                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4", "format": fmt,
+                                           "captionSidecar": sidecar}}, None)
                 return 0
             self.sent.append((command, dict(params or {})))
             return 0
@@ -514,6 +516,12 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     dlg._browse()
     assert dlg.path.text() == str(out)
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 4 and not answers
+    # a caption sidecar the export writes next to the video is asked about too
+    (tmp_path / "talk.srt").write_text("1\n")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(tmp_path / "talk.mp4"), "captionSidecar": "srt"})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
     assert len(engine.sent) == 4 and not answers
