@@ -8,6 +8,7 @@ hand edits are kept unless the user says otherwise.
 
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import Any
 
 from PySide6.QtCore import Signal
@@ -159,6 +160,7 @@ class CreditsRefreshDialog(QDialog):
         self.result = None
         self.changes.setRowCount(0)
         self.manual.setText("")
+        self.heading.setToolTip(str(src))
         self.heading.setText("")
         self.status.setText(message)
         self.apply_button.setEnabled(False)
@@ -173,10 +175,11 @@ class CreditsRefreshDialog(QDialog):
         changes = result.get("changes") or []
         manual = result.get("manual") or []
         src = result.get("source") or ""
+        name = PurePath(str(src)).name or str(src)
         self.heading.setText(
             (tr("{n} changes in {file} since the credits were placed. Untick what you do not want.") if changes else tr("The spreadsheet {file} has not changed since the credits were placed."))
             .replace("{n}", str(len(changes)))
-            .replace("{file}", str(src))
+            .replace("{file}", name)
         )
         self.changes.setRowCount(len(changes))
         for row, c in enumerate(changes):
