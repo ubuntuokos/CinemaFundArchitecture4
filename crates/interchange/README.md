@@ -117,7 +117,7 @@ development tool only, like ffmpeg: never linked, imported by the product or shi
 
 ```sh
 pip install -e '.[otio]'
-CFA4_OTIO_ORACLE_DIR=target/fixtures/otio-oracle cargo test -p filmcraft-interchange --test otio oracle_fixtures
+CFA4_OTIO_ORACLE_DIR=target/fixtures/otio-oracle cargo test -p cfa4-interchange --test otio oracle_fixtures
 python -m cfa4_devtools.otio_oracle target/fixtures/otio-oracle    # exit 0 PASS, 1 FAIL, 2 cannot run
 ```
 

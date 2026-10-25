@@ -7,7 +7,7 @@ ffmpeg/ffprobe are used for media: it is never linked into or shipped with CFA4
 Input is a directory written by the Rust test ``oracle_fixtures``::
 
     CFA4_OTIO_ORACLE_DIR=target/fixtures/otio-oracle \\
-        cargo test -p filmcraft-interchange --test otio oracle_fixtures
+        cargo test -p cfa4-interchange --test otio oracle_fixtures
     python -m cfa4_devtools.otio_oracle target/fixtures/otio-oracle
 
 ``manifest.json`` lists every exported file and what the CFA4 project holds: per track (video
