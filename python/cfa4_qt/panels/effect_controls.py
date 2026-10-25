@@ -534,9 +534,14 @@ class EffectControlsPanel(QWidget):
             self._send_timer.start()
 
     def _edit_time(self) -> int | None:
-        """The playhead of the shown snapshot, pinned to the clip as the engine pins its own."""
+        """Where an animated edit is keyed: the Program monitor's frame while it plays (the engine
+        playhead and this snapshot stay where playback started), else the shown snapshot's
+        playhead; pinned to the clip as the engine pins its own."""
         clip = self.clip or {}
         ph, start, end = clip.get("playhead"), clip.get("start"), clip.get("end")
+        monitor = getattr(self.window(), "monitor", None)
+        if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
+            ph = monitor.playhead
         if not all(isinstance(v, int) for v in (ph, start, end)):
             return None
         return max(start, min(ph, max(start, end - 1)))

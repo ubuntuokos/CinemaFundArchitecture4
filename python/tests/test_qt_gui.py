@@ -500,6 +500,33 @@ def test_effect_controls_pending_edits_keep_their_clip_and_time(app):
     panel.close()
 
 
+def test_effect_controls_key_animated_edits_at_the_playing_frame(app):
+    """During Program playback neither the engine playhead nor the panel's snapshot moves: an
+    edit is keyed at the frame the monitor shows."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6000
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = EffectControlsPanel(host)
+    host.setCentralWidget(panel)
+    sent: list[dict] = []
+    panel.command.connect(lambda _c, p: sent.append(p))
+    scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": True,
+             "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+    panel._show({"clip": 3, "name": "C", "start": 1000, "end": 9000, "playhead": 2000,
+                 "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]})
+    panel.set_param(panel.rows[(0, "scale")], 130.0, immediate=True)
+    assert sent[-1]["time"] == 6000
+    host.monitor.playing = False  # type: ignore[attr-defined]
+    panel.set_param(panel.rows[(0, "scale")], 140.0, immediate=True)
+    assert sent[-1]["time"] == 2000
+    host.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 
