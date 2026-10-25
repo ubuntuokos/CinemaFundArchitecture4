@@ -52,6 +52,11 @@ This repository derives from [FilmCraft](https://github.com/storytold/filmcraft)
 by the ArtCraft Team and contributors (MIT OR Apache-2.0). Retain the upstream MIT and
 Apache-2.0 license files, original notices ([NOTICE](NOTICE)) and third-party attribution.
 
+The **CFA4 logo and icons are the owner's own design and are not open source**: they are not
+covered by the GPL and may only be used unmodified to identify CFA4
+([assets/cfa4/LICENSE-brand.txt](assets/cfa4/LICENSE-brand.txt)); modified versions must use
+their own logo. The code is GPL-3.0-or-later.
+
 The **ArtCraft name and logos are not open-source assets**.
 Refer to [the upstream brand license](docs/brand/LICENSE-brand.txt).
 They must be removed or replaced before independently distributing modified CFA4 builds.

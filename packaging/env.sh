@@ -61,6 +61,8 @@ copy_docs() {
   for f in README.md LICENSE LICENSE-MIT LICENSE-APACHE NOTICE COPYRIGHT; do
     if [ -f "$ROOT/$f" ]; then cp "$ROOT/$f" "$dest/"; fi
   done
+  # the CFA4 logo and icons ship under their own terms, not the GPL
+  if [ -f "$ROOT/assets/cfa4/LICENSE-brand.txt" ]; then cp "$ROOT/assets/cfa4/LICENSE-brand.txt" "$dest/LICENSE-CFA4-brand.txt"; fi
   copy_font_licences "$dest"
 }
 
