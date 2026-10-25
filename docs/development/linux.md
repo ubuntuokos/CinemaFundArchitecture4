@@ -37,7 +37,8 @@ Create the Python environment in the repository root (do not install into the sy
 ~~~bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e '.[dev,qt]'
+.venv/bin/python -m pip install --require-hashes -r requirements/linux-amd64.txt
+.venv/bin/python -m pip install --no-deps -e .
 ~~~
 
 The Qt system headers/tools (Qt Widgets, Qt Multimedia, Qt Designer, CMake) are installed by apt.

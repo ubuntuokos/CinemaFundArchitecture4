@@ -265,7 +265,8 @@ jobs:
       - name: Install Python development dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,qt]"
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
       - name: Python static checks and tests
         run: |
           python -m compileall -q python
