@@ -625,6 +625,11 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
     assert existing_outputs(seq_dir / "cut.png", "h264") == []
     assert existing_outputs(seq_dir / "other.png", "png") == []
+    # MXF OP-Atom writes each audio channel to stem_A1.mxf…: those count even without stem.mxf
+    (seq_dir / "cut_A1.mxf").write_bytes(b"x")
+    (seq_dir / "cut_A1.mxf.bak").write_bytes(b"x")
+    assert existing_outputs(seq_dir / "cut.mxf", "mxf-opatom") == [seq_dir / "cut_A1.mxf"]
+    assert existing_outputs(seq_dir / "cut.mxf", "mxf-op1a") == []
     # a folder that can be written but not listed is not "no frames there": the export stops
     def unlistable(_self):
         raise PermissionError("listing denied")
