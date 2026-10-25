@@ -22,8 +22,8 @@ GPL-licencű, ezért **a kódja átvehető**, de csak fájlonként ellenőrizve:
   [`docs/licensing.md` §5](licensing.md) nyilvántartásban, ugyanabban a commitban.
 - **Clean-room marad** a kodekekre és konténerekre (AGENTS.md §2). Ez a Kdenlive-ot nem érinti,
   mert a Kdenlive nem tartalmaz saját kodeket.
-- **Márkák:** a Kdenlive és a KDE neve, logója nem kerülhet a CFA4-be, ahogy az ArtCraft és a
-  *Craft márkák is kikerülnek (#41).
+- **Márkák:** a Kdenlive és a KDE neve, logója nem kerülhet a CFA4-be, ahogy az örökölt upstream
+  márkák is kikerültek (#41).
 
 ### Mit érdemes valóban átvenni
 
