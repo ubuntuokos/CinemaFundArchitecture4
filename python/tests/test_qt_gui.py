@@ -641,6 +641,11 @@ def test_effect_controls_toggle_keyframes_at_the_playing_frame(app):
     show([{"time": 2000, "mediaTime": 1000, "value": 1.0}, {"time": 6000, "mediaTime": 5000, "value": 2.0}])
     panel.rows[(0, "scale")]._add_remove()
     assert sent[-1] == ("effects.deleteKeyframe", {"clip": 3, "effect": 0, "param": "scale", "mediaTime": 5000})
+    # the stopwatch stops playback too, so the engine freezes the value of the shown frame
+    host.monitor.playing = True  # type: ignore[attr-defined]
+    panel.rows[(0, "scale")]._toggle_animation()
+    assert host.monitor.playing is False  # type: ignore[attr-defined]
+    assert sent[-1] == ("effects.toggleAnimation", {"clip": 3, "effect": 0, "param": "scale"})
     host.close()
 
 

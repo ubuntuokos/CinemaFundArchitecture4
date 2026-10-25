@@ -341,6 +341,11 @@ class ParamRow:
 
     # ----- widgets -> engine -----
     def _toggle_animation(self) -> None:
+        # the engine evaluates the value at its playhead, which stays where playback started:
+        # stop on the shown frame first (the stop seeks the engine there)
+        monitor = getattr(self.panel.window(), "monitor", None)
+        if monitor is not None and getattr(monitor, "playing", False):
+            monitor.stop()
         self.panel.send(
             "effects.toggleAnimation", {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id}
         )
