@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
 > **Utolsó átnézés:** 2026-10-24 · **Változás:** major (2. változat: GPL-3.0-or-later, Qt6/PySide6,
-> FFmpeg 9 + GStreamer médiaháttér, márkaeltávolítás) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> kiegészítő médiahátterek útválasztóval, márkaeltávolítás) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -148,9 +148,9 @@ szinte egyik sem érhető el. A Qt6-paritás külön követendő.
 | Render-sablonok, render-sor, zóna-render, előnézet-render | ✅ | `export.presets.*`, `export.queue.*`, `sequence.renderInToOut` |
 | Szüneteltetés és folytatás | 🟡 | Megszakítás van; szüneteltetés ❓ |
 | Alfa export | ✅ | ProRes 4444, PNG-sorozat |
-| Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. Elsődlegesen FFmpeg 9 `*_vaapi` ([ADR 0004](adr/ADR-0004-ffmpeg9-primary-backend.md), #53), másodlagosan GStreamer `va*enc` (ADR 0002 3. lépés), gyártófüggetlen terv (#39) |
+| Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. VA-API-kódolás a saját motorban vagy kiegészítő háttérből (FFmpeg `*_vaapi`, GStreamer `va*enc`), a `cfa4-route` útválasztó választ (ADR 0004 #55, ADR 0005 #62); gyártófüggetlen terv (#39) |
 | Szoftveres HEVC, jobb H.264, MP3 export | ❌ | x265, x264, LAME: ADR 0003 A5, előtte szabadalmi vizsgálat |
-| Széles formátumlefedettség | 🟡 | Médiaháttér-alapsorrend: FFmpeg 9 elsődleges (ADR 0004, #53, tervezett `cfa4-ffmpeg`), GStreamer másodlagos (`crates/gstreamer`, #40), saját Rust-kodekek tartalék; feladatonkénti útválasztási táblával (az igazolt formátumok idővonal-lejátszása a saját motorral kezd). A kiadott csomagok GStreamer nélkül épülnek; az FFmpeg 9 szállítása nyitott döntés |
+| Széles formátumlefedettség | 🟡 | A saját Rust-motor az alap; kiegészítő hátterek: FFmpeg ≥ 9.0.2 (tervezett `cfa4-ffmpeg`) és az Ubuntu GStreamere (`crates/gstreamer`, #40), köztük az automatikus útválasztó (`cfa4-route`) dönt (ADR 0005, #62). Az FFmpeg 9.0.2 szállítása nyitott döntés |
 
 ## 8. Platform és felület
 
@@ -212,4 +212,4 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 |---|---|---|
 | 2026-10-24 | major | Első változat (MIT/Apache-feltételezéssel) |
 | 2026-10-24 | major | 2. változat: GPL-3.0-or-later (Kdenlive-kód átvehető), Qt6/PySide6-felület, GStreamer, gyártófüggetlen gyorsítás, Linux AMD64-only, márkaeltávolítás; rangsor az ADR F8 és ADR 0003 lépéseihez kötve |
-| 2026-10-24 | minor | Médiaháttér-sorrend az ADR 0004 szerint (#53): FFmpeg 9 elsődleges, GStreamer másodlagos, feladatonkénti útválasztással |
+| 2026-10-25 | minor | Médiahátterek az ADR 0005 (#62) szerint: saját motor az alap, FFmpeg ≥ 9.0.2 és Ubuntu GStreamer kiegészítő, automatikus útválasztóval (a visszavont #53 helyett) |
