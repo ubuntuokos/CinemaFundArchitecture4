@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use filmcraft_media::{MediaKind, still::heif};
+use cfa4_media::{MediaKind, still::heif};
 
 fn make_png() -> Vec<u8> {
     let (w, h) = (64u32, 64u32);
@@ -23,15 +23,15 @@ fn make_png() -> Vec<u8> {
 #[test]
 fn heif_and_heic_import_round_trip_through_local_libheif() {
     // The HEIF handler must run before generic ISO-BMFF video openers.
-    fn rejecting_mp4_opener(_name: &str, _bytes: Arc<[u8]>) -> Option<filmcraft_media::Result<filmcraft_media::SharedSource>> {
-        Some(Err(filmcraft_media::MediaError::Unsupported("wrong MP4 opener".into())))
+    fn rejecting_mp4_opener(_name: &str, _bytes: Arc<[u8]>) -> Option<cfa4_media::Result<cfa4_media::SharedSource>> {
+        Some(Err(cfa4_media::MediaError::Unsupported("wrong MP4 opener".into())))
     }
     let heif_bytes = heif::encode_png(&make_png()).expect("libheif HEVC encoder must be installed in CI");
     assert!(heif::sniff(&heif_bytes));
     for ext in ["heic", "heif", "hif"] {
         let name = format!("phone_photo.{ext}");
-        assert!(filmcraft_media::is_importable(std::path::Path::new(&name)));
-        let src = filmcraft_media::open_bytes(&name, Arc::from(heif_bytes.clone()), &[rejecting_mp4_opener])
+        assert!(cfa4_media::is_importable(std::path::Path::new(&name)));
+        let src = cfa4_media::open_bytes(&name, Arc::from(heif_bytes.clone()), &[rejecting_mp4_opener])
             .expect("HEIF still must be handled before video container openers");
         assert_eq!(src.info().kind, MediaKind::Still);
         let meta = src.info().video.as_ref().expect("still video info");

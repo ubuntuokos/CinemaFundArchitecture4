@@ -2,19 +2,19 @@
 //! creates a text layer on the Program monitor, typing and keys edit it, the Properties panel's
 //! controls style it, the Selection tool moves it.
 //!
-//! With `FILMCRAFT_UI_SHOTS=<dir>` the test also renders the UI with wgpu (works without a
+//! With `CFA4_UI_SHOTS=<dir>` the test also renders the UI with wgpu (works without a
 //! window or an unlocked screen) and writes PNGs there for review.
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
     shots: Option<std::path::PathBuf>,
 }
@@ -24,8 +24,8 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
-        let shots = std::env::var_os("FILMCRAFT_UI_SHOTS").map(std::path::PathBuf::from);
+        let app = Cfa4App::new(session).with_control(rx);
+        let shots = std::env::var_os("CFA4_UI_SHOTS").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if shots.is_some() {
             b = b.wgpu().with_pixels_per_point(1.0);
@@ -154,11 +154,11 @@ fn type_tool_edit_style_and_move() {
 }
 
 /// The value of `param` on the text layer of graphic clip `clip`, at its first frame.
-fn text_param(d: &mut Driver, clip: u64, param: &str) -> Option<filmcraft_project::ParamValue> {
+fn text_param(d: &mut Driver, clip: u64, param: &str) -> Option<cfa4_project::ParamValue> {
     let s = &d.harness.state().session;
-    let (_, it) = s.active_sequence()?.find_item(filmcraft_project::ClipId(clip))?;
+    let (_, it) = s.active_sequence()?.find_item(cfa4_project::ClipId(clip))?;
     let e = it.effects.iter().find(|e| e.effect == "graphic_text")?;
-    Some(e.param(param)?.value_at(filmcraft_time::Tick::ZERO))
+    Some(e.param(param)?.value_at(cfa4_time::Tick::ZERO))
 }
 
 /// A drag of a property in the Properties panel is one undo step, so one Cmd+Z restores the
@@ -279,7 +279,7 @@ fn the_tracking_stopwatch_animates_letter_spacing() {
     }
     let keys = |d: &mut Driver| -> Vec<(i64, f64)> {
         let s = &d.harness.state().session;
-        let (_, it) = s.active_sequence().unwrap().find_item(filmcraft_project::ClipId(clip)).unwrap();
+        let (_, it) = s.active_sequence().unwrap().find_item(cfa4_project::ClipId(clip)).unwrap();
         let e = it.effects.iter().find(|e| e.effect == "graphic_text").unwrap();
         e.params.get("tracking").map(|p| p.keyframes.iter().map(|k| (k.time.0, k.value.as_f64().unwrap())).collect()).unwrap_or_default()
     };
@@ -304,9 +304,9 @@ fn the_tracking_stopwatch_animates_letter_spacing() {
     // letter spacing now animates: halfway between the keyframes the value is in between
     let mid = {
         let s = &d.harness.state().session;
-        let (_, it) = s.active_sequence().unwrap().find_item(filmcraft_project::ClipId(clip)).unwrap();
+        let (_, it) = s.active_sequence().unwrap().find_item(cfa4_project::ClipId(clip)).unwrap();
         let e = it.effects.iter().find(|e| e.effect == "graphic_text").unwrap();
-        e.param("tracking").unwrap().value_at(filmcraft_time::Tick((k[0].0 + k[1].0) / 2)).as_f64().unwrap()
+        e.param("tracking").unwrap().value_at(cfa4_time::Tick((k[0].0 + k[1].0) / 2)).as_f64().unwrap()
     };
     assert!(mid > 0.0 && mid < k[1].1, "{mid} between 0 and {}", k[1].1);
     d.ok("ui.click", json!({"id": "graphics.prop.tracking.stopwatch"}));
@@ -349,9 +349,9 @@ fn the_text_panels_graphics_tab_lists_and_edits_graphic_text() {
     // the timecode goes to the clip and selects its layer
     d.ok("ui.click", json!({"id": format!("text.graphics.{credits}.0.goto")}));
     d.frames(3);
-    let start = d.harness.state().session.active_sequence().unwrap().find_item(filmcraft_project::ClipId(credits)).unwrap().1.start;
+    let start = d.harness.state().session.active_sequence().unwrap().find_item(cfa4_project::ClipId(credits)).unwrap().1.start;
     assert_eq!(d.harness.state().session.playhead(), start);
-    assert_eq!(d.harness.state().session.state.selection, vec![filmcraft_project::ClipId(credits)]);
+    assert_eq!(d.harness.state().session.state.selection, vec![cfa4_project::ClipId(credits)]);
     assert_eq!(d.harness.state().session.state.graphic_layers, vec![0]);
     // edit the title's text in place
     let undo0 = d.exec("history.list", json!({}))["undo"].as_array().unwrap().len();
@@ -361,7 +361,7 @@ fn the_text_panels_graphics_tab_lists_and_edits_graphic_text() {
     d.ok("ui.click", json!({"id": "text.graphics.search"}));
     d.frames(3);
     let text = text_param(&mut d, title, "text");
-    assert_eq!(text, Some(filmcraft_project::ParamValue::Text("Night Drive".into())));
+    assert_eq!(text, Some(cfa4_project::ParamValue::Text("Night Drive".into())));
     assert_eq!(d.exec("history.list", json!({}))["undo"].as_array().unwrap().len(), undo0 + 1, "one undo step");
     assert_eq!(rows(&mut d), ["Night Drive", "Closing credits"]);
     d.shot("text-panel-graphics");
@@ -376,7 +376,7 @@ fn a_graphics_tab_edit_writes_keyframed_text_where_it_is_shown() {
     d.ok("ui.set", json!({"workspace": "Captions and Graphics"}));
     d.exec("playhead.set", json!({"seconds": 1.0}));
     let clip = d.exec("graphics.newText", json!({"text": "Start", "seconds": 2}))["clip"].as_u64().unwrap();
-    let it = d.harness.state().session.active_sequence().unwrap().find_item(filmcraft_project::ClipId(clip)).unwrap().1.clone();
+    let it = d.harness.state().session.active_sequence().unwrap().find_item(cfa4_project::ClipId(clip)).unwrap().1.clone();
     // animate the text: "Start" at the clip's start, "End" near its end
     d.exec("effects.toggleAnimation", json!({"clip": clip, "effect": "graphic_text", "param": "text"}));
     let late = it.start.0 + (it.duration.0 * 9) / 10;
@@ -391,10 +391,10 @@ fn a_graphics_tab_edit_writes_keyframed_text_where_it_is_shown() {
     d.ok("ui.click", json!({"id": "text.graphics.search"}));
     d.frames(3);
     let at = |d: &mut Driver, t: i64| {
-        let it = d.harness.state().session.active_sequence().unwrap().find_item(filmcraft_project::ClipId(clip)).unwrap().1.clone();
-        let mt = it.effect_time_at(filmcraft_time::Tick(t));
+        let it = d.harness.state().session.active_sequence().unwrap().find_item(cfa4_project::ClipId(clip)).unwrap().1.clone();
+        let mt = it.effect_time_at(cfa4_time::Tick(t));
         it.effects.iter().find(|e| e.effect == "graphic_text").unwrap().param("text").unwrap().value_at(mt)
     };
-    assert_eq!(at(&mut d, it.start.0), filmcraft_project::ParamValue::Text("Edited".into()), "the shown (start) value changed");
-    assert_eq!(at(&mut d, late), filmcraft_project::ParamValue::Text("End".into()), "the end keeps its own");
+    assert_eq!(at(&mut d, it.start.0), cfa4_project::ParamValue::Text("Edited".into()), "the shown (start) value changed");
+    assert_eq!(at(&mut d, late), cfa4_project::ParamValue::Text("End".into()), "the end keeps its own");
 }

@@ -75,7 +75,7 @@ NVIDIA GPU-n). Ha ugyanarra a feladatra mindkettő képes, mérés dönti el az 
 | Lépés | Tartalom | Állapot |
 |---|---|---|
 | 1 | `cfa4-gstreamer` crate: `probe()` (verzió, elemek, licencek) és `discover()` (konténer, időtartam, sávok), tesztekkel | kész (#40) |
-| 2 | Importálás: a motor által meg nem nyitható (vagy videó nélkül megnyitott) fájlok GStreamer-forrásként (`MediaSource`); `filmcraft_media::fallback` regisztráció, új kiterjesztések (`.ogv`, `.flv`, `.wmv`, `.wma` …) | kész (#40) |
+| 2 | Importálás: a motor által meg nem nyitható (vagy videó nélkül megnyitott) fájlok GStreamer-forrásként (`MediaSource`); `cfa4_media::fallback` regisztráció, új kiterjesztések (`.ogv`, `.flv`, `.wmv`, `.wma` …) | kész (#40) |
 | 3 | Hardveres kódolás exporthoz AMD/Intel GPU-n (`vah264enc`, `vah265enc`, `vaav1enc`) a `VideoEncoder` mögött | tervezett |
 | 4 | Qt6-előnézet `qml6glsink`-kel, az ADR F8 5. lépéséhez igazítva | tervezett |
 | 5 | Felvétel: PipeWire (képernyő, hang) és V4L2 (kamera, rögzítőkártya) | tervezett |

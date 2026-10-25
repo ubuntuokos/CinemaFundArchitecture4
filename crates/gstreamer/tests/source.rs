@@ -7,8 +7,8 @@
 
 use std::path::{Path, PathBuf};
 
-use filmcraft_media::{FrameRequest, MediaKind, SharedSource};
-use filmcraft_time::{FrameRate, TICKS_PER_SECOND, Tick};
+use cfa4_media::{FrameRequest, MediaKind, SharedSource};
+use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
 fn fixture(name: &str, args: &str) -> Option<PathBuf> {
     if let Err(e) = cfa4_gstreamer::probe() {
@@ -90,7 +90,7 @@ fn video_frames_are_rgba_and_land_on_the_requested_time() {
         let f = src.video_frame(FrameRequest::full(t)).unwrap();
         assert_eq!((f.width, f.height), (320, 240));
         assert!(f.pts <= t && t < Tick(f.pts.0 + frame_dur.0), "requested {t:?}, got frame at {:?}", f.pts);
-        let filmcraft_frame::PixelData::Rgba8(px) = &f.data else { panic!("expected RGBA 8-bit") };
+        let cfa4_frame::PixelData::Rgba8(px) = &f.data else { panic!("expected RGBA 8-bit") };
         assert_eq!(px.len(), 320 * 240 * 4);
         // Red after lossy Theora 4:2:0 coding.
         let (r, g, b) = (px[0], px[1], px[2]);
@@ -172,7 +172,7 @@ fn garbage_and_missing_files_are_errors() {
 }
 
 fn engine_open(path: &Path) -> SharedSource {
-    filmcraft_media::open_path(path, &filmcraft_codecs::openers()).unwrap()
+    cfa4_media::open_path(path, &cfa4_codecs::openers()).unwrap()
 }
 
 #[test]
@@ -181,8 +181,8 @@ fn registered_fallback_fills_the_engine_gaps_and_leaves_the_rest_alone() {
     let mjpeg = fixture("mjpeg.avi", "videotestsrc num-buffers=10 ! video/x-raw,width=64,height=64,framerate=25/1 ! jpegenc ! avimux ! filesink location=OUT");
     cfa4_gstreamer::register().unwrap();
 
-    assert!(filmcraft_media::is_importable(Path::new("clip.ogv")));
-    assert!(filmcraft_media::is_importable(Path::new("song.WMA")));
+    assert!(cfa4_media::is_importable(Path::new("clip.ogv")));
+    assert!(cfa4_media::is_importable(Path::new("song.WMA")));
 
     // The engine cannot open Theora at all: GStreamer does.
     let s = engine_open(&video_only);
@@ -208,8 +208,8 @@ fn engine_import_browser_and_thumbnails_use_the_fallback() {
     let Some(path) = theora() else { return };
     cfa4_gstreamer::register().unwrap();
     let p = path.to_string_lossy().to_string();
-    let pool = filmcraft_engine::media_pool::MediaPool::default();
-    let services = filmcraft_engine::FsServices;
+    let pool = cfa4_engine::media_pool::MediaPool::default();
+    let services = cfa4_engine::FsServices;
 
     // Import (MediaPool::open_file) and Media Browser probing (MediaPool::probe_file).
     let imported = pool.open_file(&p, &services).unwrap();
@@ -220,6 +220,6 @@ fn engine_import_browser_and_thumbnails_use_the_fallback() {
         let thumb = src.video_frame(FrameRequest { time: ticks(1, 2), scale: 0.25 }).unwrap();
         assert!(thumb.width > 0 && thumb.height > 0);
     }
-    assert_eq!(filmcraft_engine::media_browser::kind_of("clip.ogv"), Some("video"));
-    assert!(filmcraft_engine::media_browser::extensions().contains(&"ogv"));
+    assert_eq!(cfa4_engine::media_browser::kind_of("clip.ogv"), Some("video"));
+    assert!(cfa4_engine::media_browser::extensions().contains(&"ogv"));
 }
