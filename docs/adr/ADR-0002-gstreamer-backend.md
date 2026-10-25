@@ -79,7 +79,7 @@ NVIDIA GPU-n). Ha ugyanarra a feladatra mindkettő képes, mérés dönti el az 
 | 3 | Hardveres kódolás exporthoz AMD/Intel GPU-n (`vah264enc`, `vah265enc`, `vaav1enc`) a `VideoEncoder` mögött | tervezett |
 | 4 | Qt6-előnézet `qml6glsink`-kel, az ADR F8 5. lépéséhez igazítva | tervezett |
 | 5 | Felvétel: PipeWire (képernyő, hang) és V4L2 (kamera, rögzítőkártya) | tervezett |
-| 6 | Csomagolás: `.deb` függőségek, AppImage-be csomagolás, Flatpak-futtatókörnyezet. **Döntés (2026-10-24): a kiadott csomag GStreamer nélkül fordul**; a `gstreamer` funkció fejlesztői és kísérleti buildekre marad | tervezett |
+| 6 | Csomagolás. **Döntés (2026-10-25, felváltja a 2026-10-24-it, amely szerint a kiadott csomag GStreamer nélkül fordult): a kiadott csomag a `gstreamer` funkcióval fordul, a GStreamer az Ubuntu tárolójából érkezik függőségként, a CFA4 nem csomagolja.** `.deb`: kötelező függőség (Depends) a `libgstreamer1.0-0` és a `libgstreamer-plugins-base1.0-0`; ajánlott (Recommends) a `gstreamer1.0-plugins-base`, `-good` és `-bad` (ebben vannak a `va*enc` kódolók). A `.tar.gz` és az AppImage a gépen telepített GStreamert használja; a Flatpak-futtatókörnyezet (`org.freedesktop.Platform`) tartalmazza. A rendszer GStreamerét nem cseréljük le; ha a 26.04-es kevés, elkülönített futtatókörnyezet jön (`/opt/cfa4`, #51). A munkaterületi alapértelmezés (`default = []`) nem változik: fejlesztéshez és a CI nagy részéhez továbbra sem kell a GStreamer. | a csomagolás kész; a kiadási futón ellenőrizendő |
 
 Minden lépés külön PR, tesztekkel, és csak akkor kerül be az alkalmazásba, ha a saját motor
 tartalékként megmarad.

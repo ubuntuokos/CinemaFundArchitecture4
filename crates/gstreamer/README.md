@@ -23,7 +23,8 @@ Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
 ## Building
 
 The `gstreamer` feature is **off by default**, so the workspace builds and tests without
-GStreamer. Without the feature, every entry point returns `Error::Unavailable`.
+GStreamer. Release packages build with it (`packaging/linux/package.sh`) and take GStreamer from
+Ubuntu's archive as package dependencies (ADR 0002 step 6, owner decision 2026-10-25). Without the feature, every entry point returns `Error::Unavailable`.
 
 ```sh
 sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-tools

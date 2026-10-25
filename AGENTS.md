@@ -32,8 +32,9 @@ attribution and original copyright/licence requirements remain in force.
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
-  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
-  linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
+  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default in the
+  workspace, on in release packages), dynamically linked from Ubuntu's GStreamer packages
+  (LGPL-2.1-or-later; package dependencies, never bundled; ADR 0002 step 6) through the safe gstreamer-rs API: no `unsafe`, no
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
   is always the fallback; this is the one exception to the inherited "pure Rust in the product" rule.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
