@@ -108,7 +108,9 @@ class ExportDialog(QDialog):
         self.setWindowTitle(tr("Export Media"))
         self.setModal(False)
         self.engine = engine
-        self._replace_confirmed = ""  # an existing output the user already chose to replace
+        # existing files the user already chose to replace (the native save dialog asks only about
+        # the file it returns, never about an image sequence's numbered frames)
+        self._replace_confirmed: set[str] = set()
         self.sequence: dict[str, Any] | None = None
         self.project_path: str | None = None
         self.presets: list[dict[str, Any]] = []
@@ -397,9 +399,10 @@ class ExportDialog(QDialog):
         pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
         path, _ = QFileDialog.getSaveFileName(self, tr("Output file"), self.path.text(), pattern)
         if path:
-            # the native dialog has asked about replacing an existing file
-            self._replace_confirmed = path
-            self.path.setText(with_extension(path, ext) if ext and not path.endswith("." + ext) else path)
+            # the native dialog has asked about replacing that one file
+            path = with_extension(path, ext) if ext and not path.endswith("." + ext) else path
+            self._replace_confirmed = {str(Path(path).expanduser())}
+            self.path.setText(path)
 
     def _changed(self) -> None:
         if not self._loading:
@@ -510,13 +513,14 @@ class ExportDialog(QDialog):
         except OSError as e:
             self._summary_error(tr("Cannot create the output folder: {error}").replace("{error}", str(e)))
             return
-        if existing and str(out) != str(Path(self._replace_confirmed).expanduser()) and not self._confirm_replace(out, existing[0]):
+        unconfirmed = [e for e in existing if str(e) not in self._replace_confirmed]
+        if unconfirmed and not self._confirm_replace(out, unconfirmed[0], existing):
             return
         params["start"] = start
         self.engine.execute("export.queue.add", params, on_reply=lambda r, b: self._on_queue(r, b), on_error=self._summary_error)
         self._poll.start()
 
-    def _confirm_replace(self, out: Path, existing: Path | None = None) -> bool:
+    def _confirm_replace(self, out: Path, existing: Path | None = None, replaced: list[Path] | None = None) -> bool:
         """The export truncates its output when it starts: ask before replacing a file."""
         box = QMessageBox(
             QMessageBox.Icon.Warning,
@@ -529,7 +533,7 @@ class ExportDialog(QDialog):
         box.setDefaultButton(QMessageBox.StandardButton.Cancel)
         if box.exec() != QMessageBox.StandardButton.Yes:
             return False
-        self._replace_confirmed = str(out)
+        self._replace_confirmed = {str(p) for p in (replaced or [out])}
         return True
 
     def _queue_command(self, command: str, params: dict[str, Any]) -> None:
