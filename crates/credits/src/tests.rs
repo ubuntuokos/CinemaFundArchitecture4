@@ -322,3 +322,18 @@ fn card_pictures_report_the_fades() {
     // the picture sits in the middle of the frame
     assert!((p.pictures[0].center.1 - 540.0).abs() < 1e-9);
 }
+
+#[test]
+fn scroll_runtime_stretches_gaps_and_keeps_the_speed() {
+    let csv = "Body,Page Runtime\nA,30s\n,\nB,\n,\nC,\n";
+    let laid = lay(csv, &Styling::default());
+    let p = &laid.pages[0];
+    assert!(laid.warnings.is_empty(), "{:?}", laid.warnings);
+    assert_eq!(p.duration, Tick(30 * TICKS_PER_SECOND));
+    // 3 px per frame for 750 frames: the content plus one frame height travels 2250 px
+    assert!((p.content_height + 1080.0 - 3.0 * 750.0).abs() < 1e-6, "{}", p.content_height);
+    // too short for the content: the speed changes instead, with a warning
+    let laid = lay("Body,Page Runtime\nA,1s\n,\nB,\n", &Styling::default());
+    assert_eq!(laid.pages[0].duration, Tick(TICKS_PER_SECOND));
+    assert_eq!(laid.warnings.len(), 1);
+}
