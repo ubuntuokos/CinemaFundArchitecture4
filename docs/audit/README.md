@@ -22,6 +22,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 | Fázis | Dokumentum | Röviden |
 |---|---|---|
 | F1 | [f1-01-dependencies.md](f1-01-dependencies.md) | Külső függőségek és eredetük felmérése |
+| F1 | [F1-01-SBOM-2026-10-25.md](F1-01-SBOM-2026-10-25.md) + [`f1-01-rust-inventory.json`](f1-01-rust-inventory.json) | Licenc- és eredetleltár (Rust 473 csomag, Python/Qt), RustSec-figyelmeztetések |
 | F1 | [F1-02-SOURCE-CONFIG-GATE-2026-10-21.md](F1-02-SOURCE-CONFIG-GATE-2026-10-21.md) | Forrás- és konfigurációs ellenőrzés |
 | F1 | [f1-02-vendor-migration.md](f1-02-vendor-migration.md) | `cfa4-docpath` / `cfa4-ui` beemelése; Ubuntu 26.04 és FFmpeg 9.0.2 döntés |
 | F1 | [f1-source-detachment.md](f1-source-detachment.md) | A leválasztás összefoglalója (beolvasztva, #20) |

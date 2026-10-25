@@ -1,5 +1,9 @@
 # CFA4 – F1-01 külső függőségek és eredet auditja
 
+> **Frissítés 2026-10-25:** a mai állapotot és a teljes licencleltárt a
+> [F1-01-SBOM-2026-10-25.md](F1-01-SBOM-2026-10-25.md) írja le. Az alábbi szöveg a
+> `273b164` állapotot rögzíti; a Git-függőségek és az AppImage-letöltés kockázata azóta megszűnt.
+
 Vizsgált alap: `ubuntuokos/CinemaFundArchitecture4`, `273b164df4ec0a835450c7a830e4bb6c6118584c`.
 Kiadási minősítés: **nem kiadásra kész**; a vizsgálat nem teljes OSS-licenctanúsítás.
 Nyomon követés: [CFA4-FIX-003 / #6](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/6),
