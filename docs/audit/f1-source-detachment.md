@@ -1,14 +1,14 @@
 # F1 source detachment
 
 This change makes the CFA4 Rust workspace independent of Git fetches from the
-FilmCraft/Craft libraries during Cargo dependency resolution.
+upstream libraries during Cargo dependency resolution.
 
 ## Changes
 
 - The workspace repository metadata points to
   `ubuntuokos/CinemaFundArchitecture4`.
-- `craft-docpath` and `craft-ui` are local path dependencies under
-  `vendor/craft-libs/`; their `git+` lockfile sources are removed.
+- `cfa4-docpath` and `cfa4-ui` are local path dependencies under
+  `vendor/cfa4-libs/`; their `git+` lockfile sources are removed.
 - The pinned upstream source files, tests, licence texts and NOTICE files are
   retained with per-file Git blob provenance manifests.
 - A Python standard-library audit checks every workspace manifest, Cargo.lock,
@@ -19,7 +19,7 @@ FilmCraft/Craft libraries during Cargo dependency resolution.
 
 This removes the two direct Cargo Git fetches. It does not make the complete
 application build offline: crates.io dependencies and optional Python/Qt tools
-remain separate supply-chain inputs. The optional `CRAFT_FONTS_DIR` input is a
+remain separate supply-chain inputs. The optional `CFA4_FONTS_DIR` input is a
 local font directory and does not cause a network fetch by itself.
 
 The original attribution and licence notices remain in the vendored crates.

@@ -1,6 +1,6 @@
 # Ukrainian (uk) catalog. Columns separated by TAB: context <TAB> source <TAB> translation
 # Empty context is a plain UI string. Escapes: \n, \t, \\; preserve placeholders and trailing ….
-# Original clean-room translations from the meaning of FilmCraft's English menu labels,
+# Original clean-room translations from the meaning of CFA4's English menu labels,
 # using Ukrainian video-editing vocabulary. No proprietary localization resources were used.
 # Core menu coverage; other interface strings fall back to English.
 
@@ -295,7 +295,7 @@
 	Select Previous Graphic	Вибрати попередній графічний елемент
 	Select Previous Layer	Вибрати попередній шар
 	Selection Follows Playhead	Виділення слідує за курсором відтворення
-	Selection as FilmCraft Project…	Виділення як проєкт FilmCraft…
+	Selection as CFA4 Project…	Виділення як проєкт CFA4…
 	Selection…	Виділення…
 	Send Backward	Перемістити назад
 	Send to Back	На задній план

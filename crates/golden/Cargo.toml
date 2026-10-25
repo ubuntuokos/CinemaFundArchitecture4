@@ -1,5 +1,5 @@
 [package]
-name = "filmcraft-golden"
+name = "cfa4-golden"
 description = "Golden-image tests for the CPU renderer/compositor and GPU-vs-CPU parity (test-only crate)"
 version.workspace = true
 edition.workspace = true
@@ -15,14 +15,14 @@ workspace = true
 [dependencies]
 
 [dev-dependencies]
-filmcraft-testkit = { workspace = true }
-filmcraft-color = { workspace = true }
-filmcraft-frame = { workspace = true }
-filmcraft-time = { workspace = true }
-filmcraft-geom = { workspace = true }
-filmcraft-media = { workspace = true }
-filmcraft-project = { workspace = true }
-filmcraft-render = { workspace = true }
-filmcraft-gpu = { workspace = true }
+cfa4-testkit = { workspace = true }
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-time = { workspace = true }
+cfa4-geom = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-project = { workspace = true }
+cfa4-render = { workspace = true }
+cfa4-gpu = { workspace = true }
 pollster = "0.4"
 wgpu = { version = "30", features = ["wgsl", "metal", "vulkan", "dx12", "gles"] }

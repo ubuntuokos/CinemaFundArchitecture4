@@ -1,41 +1,41 @@
-//! End-to-end GPU export parity: the registered `filmcraft-gpu` frame renderer drives the full
-//! export pipeline (`filmcraft_export::export` → PNG sequence) and its frames must match the
+//! End-to-end GPU export parity: the registered `cfa4-gpu` frame renderer drives the full
+//! export pipeline (`cfa4_export::export` → PNG sequence) and its frames must match the
 //! `GpuRendering::Off` (CPU reference) frames within the GPU-vs-CPU parity tolerance — p99 of the
 //! per-pixel max RGB difference over black ≤ 6 and mean < 1.5 (the golden-test criterion).
 
-use filmcraft_export::{ExportSettings, Format, FrameRenderer, GpuRenderStats, GpuRendering, Progress, export, register_frame_renderer};
-use filmcraft_media::generators::GeneratorSource;
-use filmcraft_media::{Generator, MediaSource};
-use filmcraft_project::{ItemKind, Label, MediaClip, MediaRef, SequenceSettings, TrackKind};
-use filmcraft_render::SourceMap;
-use filmcraft_time::{TICKS_PER_SECOND, TimeRange};
+use cfa4_export::{ExportSettings, Format, FrameRenderer, GpuRenderStats, GpuRendering, Progress, export, register_frame_renderer};
+use cfa4_media::generators::GeneratorSource;
+use cfa4_media::{Generator, MediaSource};
+use cfa4_project::{ItemKind, Label, MediaClip, MediaRef, SequenceSettings, TrackKind};
+use cfa4_render::SourceMap;
+use cfa4_time::{TICKS_PER_SECOND, TimeRange};
 use std::sync::Arc;
 
-/// The same wrapper the app and CLI register: `filmcraft-gpu`'s renderer behind
-/// `filmcraft_export`'s trait.
-struct GpuFrameRenderer(filmcraft_gpu::ExportRenderer);
+/// The same wrapper the app and CLI register: `cfa4-gpu`'s renderer behind
+/// `cfa4_export`'s trait.
+struct GpuFrameRenderer(cfa4_gpu::ExportRenderer);
 
 impl FrameRenderer for GpuFrameRenderer {
     fn render(
         &mut self,
-        project: &filmcraft_project::Project,
-        seq: filmcraft_project::ItemId,
-        t: filmcraft_time::Tick,
-        opts: filmcraft_render::RenderOptions,
-        sources: &dyn filmcraft_render::SourceProvider,
-    ) -> Option<filmcraft_render::Image> {
+        project: &cfa4_project::Project,
+        seq: cfa4_project::ItemId,
+        t: cfa4_time::Tick,
+        opts: cfa4_render::RenderOptions,
+        sources: &dyn cfa4_render::SourceProvider,
+    ) -> Option<cfa4_render::Image> {
         self.0.render(project, seq, t, opts, sources)
     }
 }
 
-fn project(width: u32, height: u32) -> (Arc<filmcraft_project::Project>, filmcraft_project::ItemId, SourceMap) {
-    let mut p = filmcraft_project::Project::new("x");
+fn project(width: u32, height: u32) -> (Arc<cfa4_project::Project>, cfa4_project::ItemId, SourceMap) {
+    let mut p = cfa4_project::Project::new("x");
     let g = GeneratorSource::new(
         Generator::ColorMatte { color: [0.2, 0.5, 0.9, 1.0] },
         320,
         180,
-        filmcraft_time::FrameRate::FPS_24,
-        filmcraft_time::Tick(2 * TICKS_PER_SECOND),
+        cfa4_time::FrameRate::FPS_24,
+        cfa4_time::Tick(2 * TICKS_PER_SECOND),
     );
     let info = g.info().clone();
     let red = p.add_item(
@@ -54,14 +54,14 @@ fn project(width: u32, height: u32) -> (Arc<filmcraft_project::Project>, filmcra
         }),
         None,
     );
-    let seq = p.new_sequence("s", SequenceSettings { width, height, frame_rate: filmcraft_time::FrameRate::FPS_24, ..Default::default() }, 1, 1, None);
+    let seq = p.new_sequence("s", SequenceSettings { width, height, frame_rate: cfa4_time::FrameRate::FPS_24, ..Default::default() }, 1, 1, None);
     let v = p
         .make_track_item(
             red,
             TrackKind::Video,
-            filmcraft_time::Tick::ZERO,
-            TimeRange::new(filmcraft_time::Tick::ZERO, filmcraft_time::FrameRate::FPS_24.tick_of(2)),
-            filmcraft_time::FrameRate::FPS_24,
+            cfa4_time::Tick::ZERO,
+            TimeRange::new(cfa4_time::Tick::ZERO, cfa4_time::FrameRate::FPS_24.tick_of(2)),
+            cfa4_time::FrameRate::FPS_24,
         )
         .unwrap();
     p.sequence_mut(seq).unwrap().video_tracks[0].items.push(v);
@@ -83,7 +83,7 @@ fn export_png(dir: &str, gpu: GpuRendering, (w, h): (u32, u32)) {
         path: std::env::temp_dir().join(format!("fc-gpu-export-{dir}")).to_string_lossy().into_owned(),
         ..Default::default()
     };
-    s.range = Some(TimeRange::new(filmcraft_time::Tick::ZERO, filmcraft_time::FrameRate::FPS_24.tick_of(2)));
+    s.range = Some(TimeRange::new(cfa4_time::Tick::ZERO, cfa4_time::FrameRate::FPS_24.tick_of(2)));
     s.gpu_rendering = gpu;
     export(&p, seq, &s, &m, &Progress::default()).unwrap();
 }
@@ -110,7 +110,7 @@ fn assert_parity(cpu_png: &[u8], gpu_png: &[u8], what: &str) {
 
 #[test]
 fn gpu_export_matches_cpu_and_counts() {
-    let Some(_) = filmcraft_gpu::ExportRenderer::new() else {
+    let Some(_) = cfa4_gpu::ExportRenderer::new() else {
         eprintln!("SKIPPED (gpu export pipeline): no adapter");
         return;
     };
@@ -119,7 +119,7 @@ fn gpu_export_matches_cpu_and_counts() {
     export_png("off-auto", GpuRendering::Auto, (320, 180));
     assert_eq!(png("off-cpu", "img000.png"), png("off-auto", "img000.png"), "Auto with no registered renderer must be byte-equal to Off");
 
-    register_frame_renderer(|| Some(Box::new(GpuFrameRenderer(filmcraft_gpu::ExportRenderer::new().expect("adapter present")))));
+    register_frame_renderer(|| Some(Box::new(GpuFrameRenderer(cfa4_gpu::ExportRenderer::new().expect("adapter present")))));
     let sizes = [(320u32, 180u32), (17, 13), (1, 1), (257, 129)];
     for (i, size) in sizes.into_iter().enumerate() {
         export_png("cpu", GpuRendering::Off, size);
@@ -129,6 +129,6 @@ fn gpu_export_matches_cpu_and_counts() {
         }
         let _ = i;
     }
-    let GpuRenderStats { frames, .. } = filmcraft_export::gpu_render_stats();
+    let GpuRenderStats { frames, .. } = cfa4_export::gpu_render_stats();
     assert!(frames >= 8, "gpu frames counted across the parity exports: {frames}");
 }

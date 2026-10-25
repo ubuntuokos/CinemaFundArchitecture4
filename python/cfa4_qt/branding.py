@@ -1,4 +1,4 @@
-"""CFA4's own identity in the Qt GUI: the CFA4 logo, never an inherited FilmCraft/ArtCraft mark.
+"""CFA4's own identity in the Qt GUI: the CFA4 logo, never an inherited upstream mark.
 
 The logo is the project owner's official logo ``assets/cfa4/cfa4-official-logo.png`` (see the ``.attribution``
 sidecars); the app icons in ``assets/cfa4/hicolor`` are its emblem, made by

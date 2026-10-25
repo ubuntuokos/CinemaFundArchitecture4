@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- shared-mime-info definitions for types the system database doesn't have.
-     Installed to /usr/share/mime/packages/ (update-mime-database runs on install).
-     Keep the FilmCraft project MIME type for compatibility during the CFA4 format migration. -->
+     Installed to /usr/share/mime/packages/ (update-mime-database runs on install). -->
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-  <mime-type type="application/x-filmcraft">
-    <comment>CFA4-compatible FilmCraft project</comment>
+  <mime-type type="application/x-cfa4">
+    <comment>CFA4 project</comment>
     <sub-class-of type="application/json"/>
     <icon name="io.github.ubuntuokos.cfa4"/>
     <glob pattern="*.fcproj"/>

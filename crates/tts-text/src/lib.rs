@@ -1,4 +1,4 @@
-//! Text front end for FilmCraft's Text to Speech (phase P2a).
+//! Text front end for CFA4's Text to Speech (phase P2a).
 //!
 //! [`normalize`] turns a narration script into plain spoken words, structured as
 //! [`Token`]s: words, pauses ([`Token::Pause`], from `[pause 1s]`-style markers),

@@ -139,15 +139,15 @@ mod tests {
         MediaInfo {
             name: "test".into(),
             kind: if video { MediaKind::Movie } else { MediaKind::AudioOnly },
-            duration: filmcraft_time::Tick::from_units(1, 1),
+            duration: cfa4_time::Tick::from_units(1, 1),
             video: video.then(|| VideoStreamInfo {
                 width: 16,
                 height: 16,
-                frame_rate: filmcraft_time::FrameRate::FPS_25,
+                frame_rate: cfa4_time::FrameRate::FPS_25,
                 par: (1, 1),
                 codec: "test".into(),
                 pixel_format: "RGBA".into(),
-                color: filmcraft_color::ColorInfo::SRGB_FULL,
+                color: cfa4_color::ColorInfo::SRGB_FULL,
                 has_alpha: false,
                 bitrate: None,
                 hdr: None,
@@ -232,7 +232,7 @@ mod tests {
         let p = file("nope.mkv");
         let opened = open_with_fallback(&p, Ok(src(false))).unwrap();
         assert!(!opened.info().has_video());
-        assert!(opened.video_frame(FrameRequest::full(filmcraft_time::Tick::ZERO)).is_err());
+        assert!(opened.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_err());
     }
 
     #[test]
