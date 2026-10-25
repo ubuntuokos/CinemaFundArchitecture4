@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
 > **Állapot:** a tulajdonos 2026-10-25-én jóváhagyta (K1–K30). · **Utolsó átnézés:** 2026-10-25 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
-> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1; K26–K30 felirat- és átiratlánc, 11.2) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1; K26–K30 felirat- és átiratlánc, 11.2; K31–K35 Whisper, 11.3; MI-döntések, 12.1) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -230,7 +230,8 @@ mérés nélkül.
 
 A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra. A 11.1 pont K20–K25 teendőivel
 együtt (kb. 66–107 óra) a K1–K25 kb. 470–810 óra; a 11.2 pont K26–K30 teendőivel (kb. 74–120 óra)
-a teljes terv kb. 545–930 óra.
+a K1–K30 kb. 545–930 óra; a 11.3 pont K31–K35 teendőivel (kb. 78–130 óra) a teljes terv
+kb. 625–1060 óra.
 
 ### Részletek
 
@@ -340,6 +341,32 @@ jóváhagyással kerül be. A CFA4-ben ma megvan a Whisper (`transcript.generate
   vezérlőcsatornán is lekérdezhető; export előtt figyelmeztet.
 - **K30.** A `crates/captions` meglévő SRT- és VTT-kezelése mellé.
 
+### 11.3 Whisper-bővítések egy korábbi Kdenlive + Whisper beszélgetésből (2026-10-25)
+
+A beszélgetés Python-szkriptjei (faster-whisper, FFmpeg `shell=True`-val, `sudo`, szöveges
+parancs-tiltólista) a CFA4-be nem kerülnek át: a CFA4-ben a Whisper Rustban, a programba építve fut
+(`crates/speech`, candle), van beszédszakasz-felismerés (`vad.rs`) és beszélőfelismerés, és az MI csak
+regisztrált parancsokat hívhat, shellt nem. Az ötletek közül ezek hiányoznak:
+
+| # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
+|---|---|---|---|---|---|
+| **K31** | Nagyobb Whisper-modellek a katalógusban: `medium`, `large-v3`, `large-v3-turbo` (MIT) | P1 | 6–10 | K2, K18 | OpenAI Whisper (Hugging Face) |
+| **K32** | Whisper (és Kokoro) GPU-n, gyártófüggetlenül, CPU-tartalékkal | P2 | 30–50 | ADR 0004 (#55) 2. fázis | Burn: Vulkan, CUDA, ROCm; Intel NPU: OpenVINO (4. fázis) |
+| **K33** | Magyar pontosságmérés (WER) modellenként, mérési jegyzőkönyvvel | P1 | 4–8 | K2 | `crates/speech/tests/whisper_model.rs` |
+| **K34** | Figyelt mappa: a bedobott médiából átirat és felirat automatikusan, jóváhagyott beállításokkal | P2 (a K16 része) | 8–12 | K10, K16 | – |
+| **K35** | Élő felirat mikrofonról vagy élő bemenetről | P3 | 30–50 | K32, élő adás (VISION, #60) | – |
+
+- **K31.** A modellek nincsenek a csomagban; a K18 letöltője tölti le őket jóváhagyással,
+  SHA-256-tal rögzítve, mint a mai `whisper-tiny/base/small`. A `large-v3-turbo` a gyors
+  alapértelmezés jelöltje, ha a K33 mérése igazolja.
+- **K32.** Nem saját CUDA-út: az ADR 0004 szerint a `cfa4-route` választ, NVIDIA-specifikus út csak
+  gyártófüggetlen párja mellett. Kész, ha az ADR 0004 2. fázisának MI-küszöbei teljesülnek.
+- **K33.** Közös, nyílt licencű magyar beszédmintákon (a minták nem kerülnek a repóba), a mostani
+  angol mérés (`docs/transcripts.md`) mintájára.
+- **K34.** A K16 feladatkezelőjén fut; egy fájl csak akkor indul, ha már nem íródik.
+- **K35.** Az ADR 0004 szerint a valós idejű MI-előnézet az egyetlen kivétel a CPU-tartalék alól:
+  GPU nélkül kikapcsol. Csak az élő adás ütemezési döntése után.
+
 ## 12. Tulajdonosi döntések (2026-10-25)
 
 | Téma | Döntés |
@@ -354,6 +381,31 @@ jóváhagyással kerül be. A CFA4-ben ma megvan a Whisper (`transcript.generate
 | SQLite-nyilvántartás (K17) | kell |
 | Online források (K18) | fontos |
 | Qt6-idővonal | **Qt Widgets marad** (#48, #63); a Kdenlive QML-idővonala csak referencia, átvenni a `.ui` fájlokat és a modell/nézet mintát érdemes |
+
+### 12.1 A CFA4 MI-döntései és a terv (ellenőrizve 2026-10-25)
+
+| Döntés | Forrás | Hol van a tervben |
+|---|---|---|
+| Az MI alapvetően helyi, a felhasználó adatai nem hagyják el a gépet | VISION.md 2.3 | minden MI-teendő (K2, K4, K6, K26–K35) helyben fut |
+| Modell CPU-n, bármely gyártó GPU-ján vagy NPU-n; NVIDIA-út csak gyártófüggetlen párral | VISION.md 2.4, 5. | K4, K13, K32 |
+| Minden modell licence és forrása rögzítve; letöltés csak a felhasználó tudtával | VISION.md 5. | K18 (jóváhagyás, licenc, hash), K31 |
+| Kötelező CPU-tartalék; kivétel csak a valós idejű MI-előnézet | ADR 0004 (#55), 1. döntés | K32, K35 |
+| MI-futtatókörnyezet a candle mellé: Burn (Vulkan, CUDA, ROCm, CPU); NPU: előbb Intel, OpenVINO | ADR 0004 (#55), 3–4. döntés | K32 |
+| A csomagban egy nyílt, kereskedelmi használatot engedő fordítómodell; a felhasználó cserélheti, a betöltött modell licence látszik, nem kereskedelmi licencre figyelmeztet | tulajdonos, 2026-10-25 | K6, K28 |
+| SeamlessM4T, NLLB, MMS-súlyok kizárva (CC-BY-NC) | licencellenőrzés, 2026-10-25 | K6, K27 |
+| Az MI ugyanazokat a parancsokat hívja, mint az ember, előnézettel és visszavonhatóan; idővonal-módosítás csak emberi jóváhagyással | 11.1, 11.2 (FA3-tervekből) | K2, K4, K6, K26–K35 |
+| Előbb stabil kézi szerkesztés, csak utána MI | VISION.md 6.; FA3-terv | sorrend: K1–K3 a K4, K6 előtt |
+| Whisper a kiadott buildekben (ma ki van kapcsolva) | `docs/gaps.md` G19 | K2 |
+
+A VISION.md 5. pontjának MI-irányai közül ezek **nem Kdenlive-eredetűek**, ezért ebben a tervben
+nincs saját teendőjük; a `docs/gaps.md` G12 és a VISION.md követi őket: szinkron (fordított szöveg
+helyi gépi hangon, szájmozgáshoz időzítve), beszédtisztítás, objektumkövetés, médiakeresés tartalom
+szerint, automatikus képkivágás (Auto Reframe), hangtípusok címkézése. Meglévők: jelenetfelismerés,
+színillesztés, szövegalapú vágás, Kokoro-82M felolvasás.
+
+**Nyitott (VISION.md 8.):** hány MI-modell kerüljön a csomagba a fordítómodellen túl, és szabad-e
+kivételesen, kifejezett engedéllyel felhős MI-szolgáltatást használni. A K31 és a K18 addig a
+„csomagban nincs, jóváhagyással letölthető” szabályt követi.
 
 ## 13. Hogyan frissítsd ezt a fájlt
 
@@ -381,3 +433,4 @@ jóváhagyással kerül be. A CFA4-ben ma megvan a Whisper (`transcript.generate
 | 2026-10-25 | minor | 11.2: K26–K30 felirat- és átiratlánc az FA3 Kdenlive-konszolidációjából (hangleválasztás, kényszerített igazítás, fordítás nyomkövetéssel, feliratminőség-ellenőrzés, SBV) |
 | 2026-10-25 | minor | A tulajdonos jóváhagyta a tervet (K1–K30) |
 | 2026-10-25 | minor | K1 első lépése kész: a Kdenlive CC0 OTIO-tesztkészlete a CFA4 OTIO-importjával tesztelve, három javítással |
+| 2026-10-25 | minor | 11.3: K31–K35 Whisper-bővítések; 12.1: a CFA4 MI-döntéseinek ellenőrzése (VISION.md, ADR 0004, tulajdonosi döntések) |
