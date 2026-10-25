@@ -5369,3 +5369,75 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
         else:
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
+
+
+def test_credits_refresh_text_helpers():
+    from cfa4_qt.panels.credits_refresh import row_text, rows_label
+
+    assert rows_label([3, 3]) == "3" and rows_label([3, 5]) == "3–5" and rows_label([4, 3]) == "–"
+    assert rows_label(None) == "" and rows_label(["x", 1]) == ""
+    assert row_text([["Rendező", "Kiss Anna", ""], ["", ""]]).splitlines()[0] == "Rendező | Kiss Anna"
+    assert row_text("bad") == "" and len(row_text([["x" * 500]])) <= 200
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
+    """Linked credits through the Qt windows: save a .cfa4credits file, place the credits, change
+    the spreadsheet, see the changes row by row, apply only some, keep the rest."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "stablista.csv"
+    sheet.write_text(
+        "Fej,Törzs,Oldal\n"
+        "Rendező,Kiss Anna,Scroll\n"
+        ",,\n"
+        "Szereplők,Nagy Béla,\n"
+        ",Tóth Cili,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.refresh" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1 and dlg.save_button.isEnabled(), 30_000), dlg.status.text()
+        # save a portable credits file
+        dlg.save_to(str(tmp_path / "stablista"))
+        assert wait_until(app, lambda: (tmp_path / "stablista.cfa4credits").is_file(), 30_000), dlg.status.text()
+        assert "Kiss Anna" in (tmp_path / "stablista.cfa4credits").read_text(encoding="utf-8")
+        # place, then change the sheet: the director renamed, a new actor
+        dlg.place()
+        assert wait_until(app, lambda: "1" in dlg.status.text() and dlg.import_button.isEnabled(), 30_000), dlg.status.text()
+        sheet.write_text(
+            "Fej,Törzs,Oldal\n"
+            "Rendező,Kiss Anna Mária,Scroll\n"
+            ",,\n"
+            "Szereplők,Nagy Béla,\n"
+            ",Tóth Cili,\n"
+            ",Új Ede,\n",
+            encoding="utf-8",
+        )
+        # the placed page is selected: the menu command opens the Refresh window
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.refresh"].enabled, 30_000)
+        win.invoke("graphics.credits.refresh")
+        ref = win.credits_refresh
+        assert ref is not None and ref.isVisible()
+        assert wait_until(app, lambda: ref.changes.rowCount() == 2, 30_000), ref.status.text()
+        assert "Kiss Anna Mária" in ref.changes.item(0, 3).text()
+        # apply only the first change
+        ref.changes.cellWidget(1, 0).findChild(QtWidgets.QCheckBox).setChecked(False)
+        assert ref.accepted_ids() == [0]
+        undo = win.history.list.count()
+        ref.apply()
+        # after the refresh the window compares again: the rejected change is still offered
+        assert wait_until(app, lambda: ref.changes.rowCount() == 1 and "Új Ede" in ref.changes.item(0, 3).text(), 30_000), ref.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()

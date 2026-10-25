@@ -401,6 +401,40 @@ pub struct GraphicMeta {
     /// The graphics template this graphic was made from, with its editable properties.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template: Option<crate::gtemplate::TemplateLink>,
+    /// A page of a credits sequence made from a spreadsheet (`graphics.credits.*`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub credits: Option<Box<CreditsLink>>,
+}
+
+/// Links a credits page clip to its credits document, so the credits can be refreshed from
+/// their spreadsheet (`graphics.credits.refresh`). Every page of one import carries the same
+/// `group` and document; the document is the `.cfa4credits` JSON (format owned by
+/// `cfa4-credits`), kept as text so this crate does not depend on it.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct CreditsLink {
+    /// Same for every page (and picture) of one import.
+    pub group: u64,
+    /// 0-based page number.
+    pub page: u32,
+    /// The credits document as accepted at the last import or refresh.
+    pub doc: String,
+    /// Clips of the pictures that belong to this page.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub pictures: Vec<u64>,
+    /// Fingerprint of each generated layer by its stable key, to recognise manual edits.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub layers: Vec<LayerStamp>,
+}
+
+/// A generated layer: its key (stable across refreshes while its block is unchanged), the
+/// layer's uid in the clip, and the fingerprint of its parameters as generated.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct LayerStamp {
+    pub key: String,
+    pub uid: u64,
+    pub fingerprint: u64,
 }
 
 fn is_roll_off(r: &Roll) -> bool {

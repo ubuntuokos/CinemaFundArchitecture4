@@ -9,6 +9,8 @@
 //! - [`sheet`]: the spreadsheet's meaning (head / body / tail blocks, gaps, content and page
 //!   styles, spine offsets, page runtimes and gaps) → [`Credits`].
 //! - [`style`]: [`Styling`] (page, content and letter styles, JSON) with built-in styles.
+//! - [`doc`]: the `.cfa4credits` document (source, styling, accepted table); [`diff`]: what
+//!   changed in the sheet since, row by row, and the table after accepting some changes.
 //! - [`layout`]: [`Credits`] → one graphic clip per page ([`layout::PageOut`]): text layers, Roll
 //!   for scroll pages, opacity fades for cards, exact [`cfa4_time::Tick`] durations.
 //!
@@ -17,6 +19,8 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod diff;
+pub mod doc;
 pub mod layout;
 pub mod office;
 pub mod sheet;
@@ -89,3 +93,6 @@ mod tests;
 
 #[cfg(test)]
 mod office_tests;
+
+#[cfg(test)]
+mod diff_tests;

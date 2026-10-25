@@ -39,7 +39,8 @@ from ..engine import EngineClient
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND
 
-SHEET_FILTER = N_("Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)")
+SHEET_FILTER = N_("Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)")
+CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
 STYLING_FILTER = N_("Credits styling (*.json)")
 BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card")}
 PREVIEW_WIDTH = 480
@@ -171,6 +172,10 @@ class CreditsDialog(QDialog):
         self.status = QLabel(self)
         self.status.setObjectName("credits.status")
         self.status.setWordWrap(True)
+        self.save_button = QPushButton(tr("Save as Credits File…"), self)
+        self.save_button.setObjectName("credits.save")
+        self.save_button.setToolTip(tr("Spreadsheet, worksheet, styling and the table in one file, to open on any machine"))
+        self.save_button.clicked.connect(self._save_file)
         self.import_button = QPushButton(tr("Place at Playhead"), self)
         self.import_button.setObjectName("credits.import")
         self.import_button.setDefault(True)
@@ -180,6 +185,7 @@ class CreditsDialog(QDialog):
         close.clicked.connect(self.close)
         buttons = QHBoxLayout()
         buttons.addWidget(self.status, 1)
+        buttons.addWidget(self.save_button)
         buttons.addWidget(self.import_button)
         buttons.addWidget(close)
 
@@ -314,6 +320,7 @@ class CreditsDialog(QDialog):
             text = str(w.get("message") if isinstance(w, dict) else w)
             self.warnings.addItem(tr("Row {row}: {message}").replace("{row}", str(row)).replace("{message}", text) if row else text)
         self.import_button.setEnabled(bool(pages))
+        self.save_button.setEnabled(bool(pages))
         if error:
             self.status.setText(error)
         elif pages:
@@ -351,6 +358,21 @@ class CreditsDialog(QDialog):
             return
         self.picture.setText("")
         self.picture.setPixmap(QPixmap.fromImage(image))
+
+    def _save_file(self) -> None:
+        start = Path(self.path.text().strip() or str(Path.home() / "credits")).with_suffix(".cfa4credits")
+        path, _ = QFileDialog.getSaveFileName(self, tr("Save as Credits File…"), str(start), tr(CREDITS_FILE_FILTER))
+        if path:
+            self.save_to(path)
+
+    def save_to(self, path: str) -> None:
+        """Write the credits as a `.cfa4credits` file (``graphics.credits.save``)."""
+
+        def done(result: Any, _b: bytes | None) -> None:
+            written = result.get("path") if isinstance(result, dict) else path
+            self.status.setText(tr("Saved: {path}").replace("{path}", str(written)))
+
+        self.engine.execute("graphics.credits.save", {"to": path, "from": self.params()}, on_reply=done, on_error=self.status.setText)
 
     def place(self) -> None:
         """Place the credits at the playhead (one undo step)."""

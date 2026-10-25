@@ -1680,3 +1680,30 @@
 	Credits Page Picture	Stáblista-oldal képe
 	Preview Credits	Stáblista előnézete
 	Credits Styles	Stáblista-stílusok
+	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Táblázatok és stáblista-fájlok (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	CFA4 credits file (*.cfa4credits)	CFA4 stáblista-fájl (*.cfa4credits)
+	Save as Credits File…	Mentés stáblista-fájlként…
+	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	A táblázat, a munkalap, a stílus és a sorok egy fájlban – bármelyik gépen megnyitható
+	Saved: {path}	Mentve: {path}
+	Added	Új
+	Removed	Törölve
+	Changed	Módosult
+	(empty row)	(üres sor)
+	Refresh Credits from Spreadsheet	Stáblista frissítése a táblázatból
+	Apply	Alkalmaz
+	Change	Változás
+	Rows	Sorok
+	Before → After	Előtte → utána
+	Select None	Kijelölés törlése
+	Keep my edits on the pages (where their block is unchanged)	A saját módosításaim maradjanak meg az oldalakon (ahol a blokkjuk nem változott)
+	Locate Spreadsheet…	Táblázat megkeresése…
+	Comparing…	Összehasonlítás…
+	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} változás a(z) {file} táblázatban a stáblista elhelyezése óta. Vedd ki a pipát abból, amit nem kérsz.
+	The spreadsheet {file} has not changed since the credits were placed.	A(z) {file} táblázat nem változott a stáblista elhelyezése óta.
+	{n} layers were edited by hand on the pages.	{n} réteget kézzel módosítottál az oldalakon.
+	Accepting every change would replace these, because their block changed: {names}	Ha minden változást elfogadsz, ezek lecserélődnek, mert a blokkjuk megváltozott: {names}
+	Refreshing…	Frissítés…
+	Refreshed: {n} changes applied, {kept} hand edits kept.	Frissítve: {n} változás alkalmazva, {kept} kézi módosítás megtartva.
+	Refresh Credits from Spreadsheet…	Stáblista frissítése a táblázatból…
+	Save Credits File…	Stáblista-fájl mentése…
+	Compare Credits with Spreadsheet	Stáblista összevetése a táblázattal
