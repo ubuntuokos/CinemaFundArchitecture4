@@ -595,6 +595,45 @@ def test_effect_controls_key_animated_edits_at_the_playing_frame(app):
     host.close()
 
 
+def test_effect_controls_toggle_keyframes_at_the_playing_frame(app):
+    """Add/Remove Keyframe during playback acted on playback's start: it deleted the keyframe
+    there, or added one at the stale engine playhead. It stops on the shown frame and acts there."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6010
+
+        def stop(self):
+            self.playing = False
+            self.playhead = 6000
+
+        def frame(self):
+            return 100
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = EffectControlsPanel(host)
+    host.setCentralWidget(panel)
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+
+    def show(keyframes):
+        scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": True,
+                 "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": keyframes}
+        panel._show({"clip": 3, "name": "C", "start": 1000, "end": 9000, "playhead": 2000, "mediaTimeAtPlayhead": 1000,
+                     "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]})
+
+    show([{"time": 2000, "mediaTime": 1000, "value": 1.0}])
+    panel.rows[(0, "scale")]._add_remove()
+    assert sent[-1] == ("effects.addKeyframe", {"clip": 3, "effect": 0, "param": "scale", "time": 6000})
+    host.monitor.playing = True  # type: ignore[attr-defined]
+    show([{"time": 2000, "mediaTime": 1000, "value": 1.0}, {"time": 6000, "mediaTime": 5000, "value": 2.0}])
+    panel.rows[(0, "scale")]._add_remove()
+    assert sent[-1] == ("effects.deleteKeyframe", {"clip": 3, "effect": 0, "param": "scale", "mediaTime": 5000})
+    host.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 

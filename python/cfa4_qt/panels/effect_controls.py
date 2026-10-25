@@ -353,15 +353,25 @@ class ParamRow:
             self.panel.set_param(self, qcolor_to_value(color), immediate=True)
 
     def _add_remove(self) -> None:
-        clip = self.panel.clip or {}
-        here = self._keyframe_here(clip)
-        if here is not None:
-            self.panel.send(
-                "effects.deleteKeyframe",
-                {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id, "mediaTime": here["mediaTime"]},
-            )
+        params: dict[str, Any] = {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id}
+        monitor = getattr(self.panel.window(), "monitor", None)
+        if monitor is not None and getattr(monitor, "playing", False):
+            # the snapshot and the engine playhead are still where playback started: stop on the
+            # shown frame and toggle the keyframe there
+            monitor.stop()
+            at = self.panel._edit_time(monitor.playhead)
+            half = max(1, int(monitor.frame()) // 2)
+            here = None
+            if at is not None:
+                here = next((k for k in self.keyframes if isinstance(k.get("time"), int) and abs(k["time"] - at) < half), None)
+            add = {**params, "time": at} if at is not None else params
         else:
-            self.panel.send("effects.addKeyframe", {"clip": self.panel.clip_id, "effect": self.effect, "param": self.id})
+            here = self._keyframe_here(self.panel.clip or {})
+            add = params
+        if here is not None:
+            self.panel.send("effects.deleteKeyframe", {**params, "mediaTime": here["mediaTime"]})
+        else:
+            self.panel.send("effects.addKeyframe", add)
 
     def _times(self) -> list[int]:
         return sorted(int(k["time"]) for k in self.keyframes if isinstance(k.get("time"), int))
@@ -533,14 +543,16 @@ class EffectControlsPanel(QWidget):
         else:
             self._send_timer.start()
 
-    def _edit_time(self) -> int | None:
-        """Where an animated edit is keyed: the Program monitor's frame while it plays (the engine
+    def _edit_time(self, playhead: int | None = None) -> int | None:
+        """Where an animated edit is keyed: ``playhead`` when given, the Program monitor's frame while it plays (the engine
         playhead and this snapshot stay where playback started), else the shown snapshot's
         playhead; pinned to the clip as the engine pins its own."""
         clip = self.clip or {}
         ph, start, end = clip.get("playhead"), clip.get("start"), clip.get("end")
         monitor = getattr(self.window(), "monitor", None)
-        if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
+        if isinstance(playhead, int):
+            ph = playhead
+        elif monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
             ph = monitor.playhead
         if not all(isinstance(v, int) for v in (ph, start, end)):
             return None
