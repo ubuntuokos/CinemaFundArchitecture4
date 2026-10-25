@@ -63,7 +63,7 @@ def format_seconds(ticks: Any) -> str:
 class CreditsDialog(QDialog):
     """Non-modal: the editor stays usable while the sheet is being written."""
 
-    imported = Signal(int)  # number of pages placed
+    imported = Signal(object)  # number of pages placed (object: Signal(int) is 32-bit, see the tick guard test)
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
