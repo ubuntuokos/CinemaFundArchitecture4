@@ -3,7 +3,7 @@
 //!
 //! Every input is hostile: offsets and sizes are bounds-checked, entry counts and uncompressed
 //! sizes are capped, encrypted and ZIP64 archives are refused. Decompression uses CFA4's own
-//! RFC 1951 inflater (`filmcraft_media::inflate`).
+//! RFC 1951 inflater (`cfa4_media::inflate`).
 
 use crate::CreditsError;
 
@@ -111,7 +111,7 @@ impl<'a> Zip<'a> {
         match e.method {
             0 => Ok(raw.to_vec()),
             8 => {
-                let out = filmcraft_media::inflate::inflate(raw, e.size).map_err(bad)?;
+                let out = cfa4_media::inflate::inflate(raw, e.size).map_err(bad)?;
                 if out.len() != e.size {
                     return Err(bad("entry size does not match"));
                 }

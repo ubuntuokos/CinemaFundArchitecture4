@@ -26,11 +26,11 @@ A munka hat fázisban halad:
 
 ## Kiinduló állapot
 
-A CFA4 a FilmCraft Linux-ra szűkített változata: Rust/Cargo médiamotor 51 crate-tel, mellette egy
+A CFA4 az örökölt upstream vágóprogram (lásd `NOTICE`) Linux-ra szűkített változata: Rust/Cargo médiamotor 51 crate-tel, mellette egy
 PySide6/Qt6 prototípus, ami egy helyi, csak olvasó hídon (`python/cfa4_devtools/qt_control_bridge.py`)
 éri el a motort.
 
-Az OTIO-támogatás a `filmcraft-interchange` crate-ben él (L2 réteg, fájl I/O nélkül), az EDL, FCP7
+Az OTIO-támogatás a `cfa4-interchange` crate-ben él (L2 réteg, fájl I/O nélkül), az EDL, FCP7
 XML, FCPXML, AAF, OMF és ALE mellett.
 
 | Terület | Mai állapot |
@@ -38,7 +38,7 @@ XML, FCPXML, AAF, OMF és ALE mellett.
 | Olvasott és írt sémák | `Timeline.1`, `Stack.1`, `Track.1`, `Clip.1`/`Clip.2`, `Gap.1`, `Transition.1`, `Marker.1`/`Marker.2`, `ExternalReference.1`, `MissingReference.1`, `GeneratorReference.1`, `LinearTimeWarp.1`, `FreezeFrame.1`, `Effect.1`, `SerializableCollection.1` |
 | Időkezelés | Pontos: a lebegőpontos `rate` értéket racionálisra illeszti, majd `Tick`-re alakítja |
 | Beágyazott szekvenciák | Sávon belüli `Stack`-ként, rekurzióvédelemmel |
-| Saját adatok | Effektek, címkék, linkek, csoportok, sávállapot a `metadata.filmcraft` kulcs alatt mennek oda-vissza |
+| Saját adatok | Effektek, címkék, linkek, csoportok, sávállapot a `metadata.cfa4` kulcs alatt mennek oda-vissza |
 | Tesztek | `crates/interchange/tests/otio.rs` és `src/otio.rs` RationalTime-teszt |
 | Fájltípus | Csak `.otio` JSON; a `detect()` az `"OTIO_SCHEMA"` kulcsot keresi |
 | Qt6 híd | Csak `perf.stats` és `sequence.inspect`; import/export még nincs bekötve |
@@ -53,7 +53,7 @@ meglévő Rust kód pedig a funkciók nagy részét már tudja.
 - **Pontos idő:** a CFA4 minden vágási számítást `Tick`-ben végez (254 016 000 000/s). Az OTIO C++
   mag `RationalTime` lebegőpontos értékekkel dolgozik, így a két modell között folyamatos átváltás
   kellene.
-- **Kettős modell:** a C++ magra épülő idővonal mellett a `filmcraft-project` modell is megmaradna,
+- **Kettős modell:** a C++ magra épülő idővonal mellett a `cfa4-project` modell is megmaradna,
   és a kettőt szinkronban kellene tartani.
 - **Build és CI:** C++ fordítás, CMake és Python kötés kerülne a gyors, nem fordító PR-ellenőrzés
   mellé.
@@ -68,8 +68,8 @@ olvasása. A lista az `otio.rs` átolvasásán alapul, a valós hatást az 1. f�
 
 | # | Hiány | Hatás | Hely a kódban | Fázis |
 | --- | --- | --- | --- | --- |
-| H1 | Idegen metaadatok elvesznek: csak a `metadata.filmcraft` kulcsot olvassa | Resolve/Kdenlive saját adatai egy oda-vissza úton eltűnnek | `apply_clip_meta`, `fc()` | 2 |
-| H2 | A metaadat-kulcs neve `filmcraft` | Márkacsere-feltétel a kiadáshoz (AGENTS.md CFA4 rész) | `fc()`, minden `json!` író | 2 |
+| H1 | Idegen metaadatok elvesznek: csak a `metadata.cfa4` kulcsot olvassa | Resolve/Kdenlive saját adatai egy oda-vissza úton eltűnnek | `apply_clip_meta`, `fc()` | 2 |
+| H2 | A #41 óta a kulcs `cfa4`, de a régi, upstream nevű kulcsot már nem olvassa | Az átnevezés előtt mentett OTIO fájlok saját adatai elvesznek | `fc()` | 2 |
 | H3 | `ImageSequenceReference`: csak a `target_url_base` olvasódik, a minta (`name_prefix`, `start_frame`, `frame_zero_padding` stb.) nem | Képszekvencia egyetlen hibás fájlként érkezik | `media()` | 2 |
 | H4 | Több médiahivatkozás (`media_references`) közül csak az aktív marad meg | Proxy/nagy felbontású változatok elvesznek; export csak `DEFAULT_MEDIA` | `clip()`, `media_ref()` | 2 |
 | H5 | Szekvencia-beállítás idegen fájlnál alapértelmezett 1920×1080 | Rossz felbontás például 4K Resolve-projektnél | `sequence()`, `settings_for` | 2 |
@@ -104,7 +104,7 @@ amely előtt a hídon engedélyezett író műveletekről döntés kell.
 | OTIO-1.2 | Fordított irány: az orákulummal generált minták minden olvasott sémára | A CFA4 import jelentése csak várt figyelmeztetéseket tartalmaz |
 | OTIO-1.3 | CI-feladat `workflow_dispatch` / `cfa4-full-validation` címkére | A gyors PR-ellenőrzés nem lassul |
 | OTIO-2.1 | Idegen metaadatok megőrzése (H1) | Ismeretlen `metadata` kulcsok változatlanul visszaíródnak |
-| OTIO-2.2 | `cfa4` metaadat-kulcs, a `filmcraft` olvasása marad (H2) | Régi fájlok olvashatók, új fájlok `cfa4`-et írnak |
+| OTIO-2.2 | A régi, upstream nevű metaadat-kulcs olvasása (H2); az írás a #41 óta `cfa4` | Régi fájlok olvashatók, új fájlok `cfa4`-et írnak |
 | OTIO-2.3 | `ImageSequenceReference` teljes mintával (H3) | Minta és képkocka-tartomány oda-vissza azonos; ha a projektmodell nem ismer képszekvenciát, előbb jelentés-figyelmeztetés |
 | OTIO-2.4 | Több médiahivatkozás megőrzése (H4) | Nem aktív hivatkozások visszaíródnak |
 | OTIO-2.5 | Felbontás idegen fájlból (H5) | Ismert felbontású fájl helyes szekvencia-beállítással nyílik |
@@ -158,12 +158,12 @@ licencével.
 
 Mindegyiknél: miről szól, mik a lehetőségek, és mi a jóváhagyott döntés.
 
-1. **Metaadat-kulcs átnevezése (`filmcraft` → `cfa4`)** — *döntés: (a)*
+1. **Metaadat-kulcs átnevezése (upstream név → `cfa4`)** — *döntés: (a)*
    - Miről szól: amikor a CFA4 OTIO fájlt ment, a saját, OTIO-ban nem létező adatait (effektek,
-     címkék, sávhangerő) egy „fiókba” teszi a fájlon belül. Ennek a neve ma `filmcraft`.
-   - Lehetőségek: (a) átnevezés `cfa4`-re, a régi `filmcraft` fiók olvasása megmarad; (b) marad a
+     címkék, sávhangerő) egy „fiókba” teszi a fájlon belül. Ennek a neve az upstreamből örökölt név volt.
+   - Lehetőségek: (a) átnevezés `cfa4`-re, a régi fiók olvasása megmarad; (b) marad a
      régi név.
-   - Döntés: (a), a 2. fázisban, a közös márkacsere-tervvel összehangolva.
+   - Döntés: (a). Az átnevezést a #41 elvégezte; a régi fiók olvasása az OTIO-2.2-ben jön.
 2. **Clean-room szabály enyhítése** — *döntés: (b)*
    - Miről szól: a „clean-room” azt jelenti, hogy egy formátumot csak a nyilvános leírásából
      szabad megírni, más programok forráskódjába belenézni tilos.
@@ -202,10 +202,9 @@ Ezek nem az OTIO-terv feladatai, de hatnak rá; mindegyikhez kell egy felelős.
   #40-ből a licencrészek kikerülnek, csak a GStreamer marad.
 - [ ] **ADR F10 nyitott kérdései:** OpenFX-kivétel, CLA vagy DCO, NVENC — az első külső GPL-kód
   beemelése előtt.
-- [ ] **Közös márkacsere-terv:** a `filmcraft` metaadat-kulcs mellett a crate-nevek
-  (`filmcraft-*`), a projektfájl formátuma és a menük is érintettek; az OTIO-kód ne fusson előre
-  egyedül.
-- [ ] **Kapcsolat a FilmCraft eredetivel:** GPL-3 után a FilmCraft újdonságai átvehetők, de a CFA4
+- [x] **Közös márkacsere-terv:** a #41 elvégezte (crate-nevek `cfa4-*`, OTIO metaadat-kulcs `cfa4`,
+  projektfájlok és menük); a régi OTIO-kulcs olvasása az OTIO-2.2-ben marad.
+- [ ] **Kapcsolat az upstream eredetivel:** GPL-3 után az upstream újdonságai átvehetők, de a CFA4
   módosításai nem mehetnek vissza. Ha követni akarjuk az eredetit, az `interchange` crate-et inkább
   bővíteni kell, mint átírni.
 - [ ] **Személyes adatok az exportban:** az OTIO export ma abszolút utakat ír

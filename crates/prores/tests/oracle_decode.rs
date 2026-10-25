@@ -1,8 +1,8 @@
 //! Decoder accuracy against ffmpeg's ProRes decoder (oracle only; skipped without ffmpeg).
 
 mod common;
+use cfa4_prores::{AlphaType, ChromaFormat, DecodeOptions, Interlace, decode_frame, decode_frame_with, probe};
 use common::*;
-use filmcraft_prores::{AlphaType, ChromaFormat, DecodeOptions, Interlace, decode_frame, decode_frame_with, probe};
 
 fn specs() -> Vec<Spec> {
     let p422 = "format=yuv422p10le";
@@ -148,6 +148,6 @@ fn generate_fixtures() {
     let Some(ff) = ffmpeg() else { return };
     for spec in specs() {
         let out = [fixture_dir().join(format!("{}.mov", spec.name))];
-        filmcraft_testkit::fixtures::generate_and_report(&format!("prores/{}", spec.name), &out, || Some(make(&ff, &spec)));
+        cfa4_testkit::fixtures::generate_and_report(&format!("prores/{}", spec.name), &out, || Some(make(&ff, &spec)));
     }
 }

@@ -19,6 +19,6 @@ fi
 .venv/bin/python -m pytest -q python/tests
 .venv/bin/python -m ruff check python
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m cfa4_devtools.qt_app --smoke
-FILMCRAFT_REQUIRE_ORACLES=1 cargo xtask ci
+CFA4_REQUIRE_ORACLES=1 cargo xtask ci
 
 echo "CFA4: Linux developer checks passed."

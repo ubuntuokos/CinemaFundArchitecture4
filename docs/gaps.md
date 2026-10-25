@@ -1,8 +1,8 @@
-# Where FilmCraft falls short of Premiere Pro
+# Where CFA4 falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (new file: ROADMAP's "Where we are lacking" re-measured against Premiere Pro 26.5.2 and the open issue list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-24 · **Change:** minor (CFA4 candidates after GPL-3.0-or-later, ADR 0003) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
-Every known shortfall, one entry each, ranked by what most stops an editor using FilmCraft for real
+Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
 [target-app-parity.md](target-app-parity.md); estimates are Opus 5.5 agent-hours, calibrated there.
 When you close or shrink a gap, update its entry, its parity doc and the revision history.
@@ -39,9 +39,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 - **Missing:** a fidelity harness. Every effect, transition, Lumetri control, blend mode, keyframe
   interpolation and audio effect counts once it exists; nothing renders the same project in
-  Premiere and FilmCraft and compares frames or samples. Effects described as approximations
+  Premiere and CFA4 and compares frames or samples. Effects described as approximations
   count the same as exact ones.
-- **Evidence:** catalogue tests check names and folders only. EffectCraft's live After Effects
+- **Evidence:** catalogue tests check names and folders only. A live After Effects
   comparison (its gaps.md G1) found real bugs in features marked done on its first run.
 - **Impact:** "ready for real work" stays an estimate; colour and effect differences surface only
   when a user notices.
@@ -58,7 +58,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Impact:** the beta bar requires opening the target's main format; every switching editor's
   existing work is behind this.
 - **Approach:** `.prproj` is gzip-compressed XML. Clean-room from projects we author ourselves in
-  Premiere (the owner has `plan/premiere/fixtures/filmcraft_ref.prproj`): sequences, tracks, clips,
+  Premiere (the owner has `plan/premiere/fixtures/cfa4_ref.prproj`): sequences, tracks, clips,
   in/out, speed, transitions, markers, bins, labels, then the common effect parameters (Motion,
   Opacity, Lumetri basic, Volume). Report what was not imported. Export later. **60–120 h.**
   Doc: [file-format-parity.md](file-format-parity.md).
@@ -87,7 +87,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   shows a notice with Use Default Graphics; `--graphics default|dx12|software` picks a mode by
   hand. An explicit `WGPU_BACKEND` stays in charge. On Windows, a GPU that Vulkan lists through two
   installed versions of one driver (GPUs on different driver packages) draws with the newer one
-  instead of dying inside the stale one (`filmcraft_gpu::adapter`).
+  instead of dying inside the stale one (`cfa4_gpu::adapter`).
 - **Missing:** a launch that never fails, and CI that runs the gates.
 - **Evidence:** open issues: macOS 12 Monterey aborts on a missing VideoToolbox symbol (#468,
   #661, #655), Intel UHD graphics (`igvk64.dll`, #512), Windows 11 does not run or fails after setup
@@ -119,8 +119,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G6. No real-world media corpus or workflow acceptance tests
 
-- **Done:** first scripted MCP workflows (#835, `apps/filmcraft-cli/tests/workflows.rs`): the
-  `filmcraft-cli mcp` binary imports ffmpeg-made phone-like VFR H.264 + AAC MP4 and long-GOP
+- **Done:** first scripted MCP workflows (#835, `apps/cfa4-cli/tests/workflows.rs`): the
+  `cfa4-cli mcp` binary imports ffmpeg-made phone-like VFR H.264 + AAC MP4 and long-GOP
   H.264 Matroska with two audio tracks (AAC, AC-3), edits (extract, audio gain, title; ripple
   trims, colour matte, cross dissolve), exports H.264 MP4, and saves a project that a new process
   exports as ProRes; ffprobe / ffmpeg check streams, frame count, duration, frame placement, A/V
@@ -132,8 +132,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Evidence:** export stopped producing frames with iPhone HEVC clips on Linux (#480); WebM shows
   black (#432); only the first audio track imported (#397, #416, #601; multi-stream support landed
   in #361, reporters not yet confirmed); bitrate target produced 6.1 Mb/s for 40 (#371).
-- **Done when:** corpus fetched pinned and sha256-verified (as PhotoCraft's `cargo xtask corpus`,
-  craftrules `standards/test-corpora.md`), runs nightly, ≥ 50 files. **40–70 h.**
+- **Done when:** corpus fetched pinned and sha256-verified (with a `cargo xtask corpus` command), runs nightly, ≥ 50 files. **40–70 h.**
 
 ## G7. No measured parity tool in CI
 
@@ -144,7 +143,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   `--min` to fail below a presence threshold. Without a reference it prints our inventory only.
   `--area effects` and `--area transitions` (#831) measure the Effects panel the same way: the
   effects and transitions the engine's effect definitions list (`examples/effect_catalog.rs` in
-  `filmcraft-project`) against a reference of folder paths or bare names (default the local
+  `cfa4-project`) against a reference of folder paths or bare names (default the local
   `plan/premiere/effects.json` / `transitions.json`), placement by folder, Presets and the other
   area out of scope.
 - **Missing:** the other areas (commands, panels, preferences, formats), fidelity tiers (exact,
@@ -170,7 +169,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 - **Have:** files given at launch (terminal, Open With, file associations) open whatever the case
   of `.fcproj` and are made absolute, and arguments that are not Unicode no longer stop the start;
-  `filmcraft-cli import` stores no Windows `\\?\` paths (#850).
+  `cfa4-cli import` stores no Windows `\\?\` paths (#850).
 - **Missing:** routine runtime testing off macOS. Linux playback stutter (#617), Wayland title
   bar (#433), case-sensitive extensions (#593), "Report an issue" link (#642), Windows bins cannot
   be left (#587), Sequence Settings won't open on Windows (#586, #351), old hardware (#491).
@@ -198,6 +197,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
   since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
+- **CFA4 candidates after GPL-3.0-or-later** ([ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md) §6):
+  LibRaw (LGPL-2.1 / CDDL-1.0) for camera RAW, libheif (LGPL-3.0) for HEIF / HEIC, both also
+  through OpenImageIO; OpenEXR for PIZ / B44 / DWA, tiled, multi-part and deep EXR. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 120–200 h (camera RAW alone 60–100 h, and some SDKs have licences we cannot use:
   clean-room from public specs only where specs exist). Docs: [codec-parity.md](codec-parity.md),
   [file-format-parity.md](file-format-parity.md).
@@ -210,6 +212,12 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   (#325).
 - **Impact:** many professional editors depend on third-party effects and audio plug-ins.
 - **Needs:** an owner decision (FFI under the `unsafe` rule, AGENTS.md §0.3). **200–400 h.**
+- **CFA4 decision (2026-10-24, ADR 0003 §4):** no closed plug-ins are loaded and there is no GPL
+  plug-in exception; the capabilities of useful, indispensable closed plug-ins are implemented in
+  our own code. Hosts load only GPL-3-compatible plug-ins.
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): an OpenFX host loading Natron's
+  openfx-misc (GPL-2.0-or-later: keying, colour, transform and tracking, retime, deinterlace,
+  denoise, sharpen); an LV2 host on lilv (ISC); frei0r (GPL-2.0-or-later). Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 
 ## G12. AI features
 
@@ -229,6 +237,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x265 for software HEVC encode
+  (licence: GPL-2.0-or-later, to be confirmed), x264 for a higher-quality software H.264 encoder,
+  LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
 
 ## G14. Localization: 3 of the 12 key languages missing (Hindi, Arabic, Vietnamese)
@@ -238,7 +249,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Missing:** Hindi, Arabic (no RTL interface layout or catalog; the interface has Arabic and Hebrew
   fallback fonts and shows captions in reading order, but other names and fields keep egui's
   left-to-right run order; Arabic titles reported broken, #395),
-  Korean (#508; needs Hangul fonts in craft-fonts),
+  Korean (#508; needs Hangul fonts in extra-fonts),
   Vietnamese; Premiere also ships Russian. Engine errors,
   CLI and MCP stay English. Apart from the German menus (#630), no language has a recorded
   native-speaker review.
@@ -299,6 +310,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   #813), from an on-monitor corner-roundness handle with a live preview (one undo step per drag;
   #844); Shift snaps pen mask segments and dragged-out Bézier handles to 45° steps (#853), and
   Shift constrains vertex and whole-mask drags to 45° steps from the press point (#1408).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): Natron openfx-misc effects (keyers,
+  colour, tracking, retime), Rubber Band (GPL-2.0-or-later) for audio time-stretch and pitch shift,
+  frei0r effects. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h.
 
 ## G19. Speech to text off in release builds
@@ -320,3 +334,4 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
 | 2026-10-12 | minor | G10: MP1 (`A_MPEG/L1`) in Matroska imports (#1402) |
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
+| 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |

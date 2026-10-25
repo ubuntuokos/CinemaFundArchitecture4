@@ -26,9 +26,9 @@
 //! that side. Insert / Overwrite from the Source monitor honour source split points: each channel
 //! takes its own range and lands offset by the difference of the In points (J- and L-cuts).
 
-use filmcraft_edit as edit;
-use filmcraft_project::{AudioChannels, ClipId, ItemId, Label, Marker, MarkerId, MarkerKind, SplitMarks, TrackId, TrackItem, TrackKind};
-use filmcraft_time::{Tick, TimeRange};
+use cfa4_edit as edit;
+use cfa4_project::{AudioChannels, ClipId, ItemId, Label, Marker, MarkerId, MarkerKind, SplitMarks, TrackId, TrackItem, TrackKind};
+use cfa4_time::{Tick, TimeRange};
 use serde_json::{Value, json};
 
 use crate::commands::{
@@ -383,7 +383,7 @@ fn join_through_edit_at(s: &mut Session, cut: &Value) -> Result<Value> {
 /// they are set. The new sequence is added to the project and selected; the original is unchanged.
 /// Give a sequence made from part of `from` (Nest…, Make Subsequence) the track names and audio
 /// channel layouts of `from`'s tracks, track for track.
-pub(crate) fn lay_out_tracks_like(new: &mut filmcraft_project::Sequence, from: &filmcraft_project::Sequence) {
+pub(crate) fn lay_out_tracks_like(new: &mut cfa4_project::Sequence, from: &cfa4_project::Sequence) {
     for (tr, src) in new.video_tracks.iter_mut().zip(&from.video_tracks) {
         tr.name = src.name.clone();
     }
@@ -455,7 +455,7 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
                     let inside = range.is_none_or(|r| trn.start >= r.start && trn.end() <= r.end());
                     if inside && from != Some(None) && to != Some(None) {
                         let mut t = trn.clone();
-                        t.id = filmcraft_project::TransitionId(pr.alloc_id());
+                        t.id = cfa4_project::TransitionId(pr.alloc_id());
                         t.from = from.flatten();
                         t.to = to.flatten();
                         t.start -= offset;
@@ -469,9 +469,7 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
         for (kind, ti, it) in placed {
             nq.tracks_mut(kind)[ti].items.push(it);
         }
-        for (kind, ti, t) in transitions {
-            nq.tracks_mut(kind)[ti].transitions.push(t);
-        }
+        add_transitions(nq, &transitions);
         for tr in nq.all_tracks_mut() {
             tr.sort();
             edit::remove_orphan_transitions(tr);
@@ -485,6 +483,21 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
     })?;
     s.events.push(crate::Event::OpenSource(id));
     Ok(json!({"sequence": id.0, "name": name}))
+}
+
+/// Puts `transitions` on their tracks of `nq`.
+///
+/// The list is read by reference and each transition cloned. Consuming it by value (`for (kind,
+/// ti, t) in transitions` or `pop()`) yielded nothing at opt-level ≥ 1 with rustc 1.95–1.97: the
+/// `Option<(TrackKind, usize, Transition)>` the loop reads came back `None` with three elements
+/// left, so subsequences and sequences edited in as clips lost their transitions
+/// (`nest_editing_tests`). Keep this form until the compiler issue is fixed.
+fn add_transitions(nq: &mut cfa4_project::Sequence, transitions: &[(TrackKind, usize, cfa4_project::Transition)]) {
+    for (kind, ti, t) in transitions {
+        if let Some(track) = nq.tracks_mut(*kind).get_mut(*ti) {
+            track.transitions.push(t.clone());
+        }
+    }
 }
 
 // ---------- a sequence edited in as its clips ----------
@@ -558,7 +571,7 @@ pub(crate) fn place_sequence_clips(
                     let to = trn.to.map(|c| ids.get(&c).copied());
                     if trn.start >= range.start && trn.end() <= range.end() && from != Some(None) && to != Some(None) {
                         let mut t = trn.clone();
-                        t.id = filmcraft_project::TransitionId(p.alloc_id());
+                        t.id = cfa4_project::TransitionId(p.alloc_id());
                         (t.from, t.to) = (from.flatten(), to.flatten());
                         t.start = at + (t.start - range.start);
                         transitions.push((kind, lane, t));
@@ -575,7 +588,7 @@ pub(crate) fn place_sequence_clips(
                 let id = TrackId(p.alloc_id());
                 let tracks = p.sequence_mut(seq_id).ok_or(EngineError::NoSequence)?.tracks_mut(kind);
                 let (word, n) = (if kind == TrackKind::Video { "Video" } else { "Audio" }, tracks.len() + 1);
-                tracks.push(filmcraft_project::Track::new(id, kind, format!("{word} {n}")));
+                tracks.push(cfa4_project::Track::new(id, kind, format!("{word} {n}")));
             }
             let id = p.sequence(seq_id).and_then(|q| q.tracks(kind).get(index)).map(|t| t.id).ok_or(EngineError::NoSequence)?;
             dest.insert((is_audio, lane), id);
@@ -591,9 +604,10 @@ pub(crate) fn place_sequence_clips(
         let min = seq.settings.frame_rate.frame_duration();
         let mut ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: min };
         let new = if insert { edit::insert(seq, placements, &mut ctx)? } else { edit::overwrite(seq, placements, &mut ctx)? };
-        for (kind, lane, t) in transitions {
-            if let Some(tr) = dest.get(&(audio(kind), lane)).and_then(|id| seq.track_mut(*id)) {
-                tr.transitions.push(t);
+        // by reference, for the compiler issue described at `add_transitions`
+        for (kind, lane, t) in &transitions {
+            if let Some(tr) = dest.get(&(audio(*kind), *lane)).and_then(|id| seq.track_mut(*id)) {
+                tr.transitions.push(t.clone());
             }
         }
         for tr in seq.all_tracks_mut() {
@@ -646,7 +660,7 @@ fn placement(p: &Value, key: &str, letter: char, len: usize) -> Result<usize> {
 
 /// Give the tracks that still carry a default name (`<prefix> <number>`) the number of their
 /// place, as Premiere numbers its tracks; a track the user named keeps its name.
-fn renumber(tracks: &mut [filmcraft_project::Track], prefix: &str) {
+fn renumber(tracks: &mut [cfa4_project::Track], prefix: &str) {
     for (i, t) in tracks.iter_mut().enumerate() {
         let default = t.name.strip_prefix(prefix).and_then(|r| r.strip_prefix(' ')).is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()));
         if default {
@@ -692,7 +706,7 @@ pub(crate) fn add_tracks(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let added = s.edit_sequence("Add Tracks", |q, ctx, _| {
         let mut new = |kind: TrackKind, prefix: &str, channels: Option<AudioChannels>| {
-            let mut t = filmcraft_project::Track::new(TrackId(ctx.alloc()), kind, format!("{prefix} 0"));
+            let mut t = cfa4_project::Track::new(TrackId(ctx.alloc()), kind, format!("{prefix} 0"));
             if let Some(c) = channels {
                 t.channels = c;
             }
@@ -888,8 +902,8 @@ impl Side {
 
 fn source_marks(s: &Session, item: ItemId) -> (Option<Tick>, Option<Tick>) {
     match s.project.item(item).map(|i| &i.kind) {
-        Some(filmcraft_project::ItemKind::Media(m)) => (m.mark_in, m.mark_out),
-        Some(filmcraft_project::ItemKind::Sequence(q)) => (q.mark_in, q.mark_out),
+        Some(cfa4_project::ItemKind::Media(m)) => (m.mark_in, m.mark_out),
+        Some(cfa4_project::ItemKind::Sequence(q)) => (q.mark_in, q.mark_out),
         _ => (None, None),
     }
 }

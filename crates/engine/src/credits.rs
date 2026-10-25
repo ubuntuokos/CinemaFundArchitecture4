@@ -1,4 +1,4 @@
-//! Credits sequences from a spreadsheet (`graphics.credits.*`), on [`filmcraft_credits`].
+//! Credits sequences from a spreadsheet (`graphics.credits.*`), on [`cfa4_credits`].
 //!
 //! - `graphics.credits.import` reads a credits spreadsheet (CSV / TSV / `.xlsx` / `.ods` file, or
 //!   inline CSV text),
@@ -12,13 +12,13 @@
 //!   durations and warnings.
 //! - `graphics.credits.styles` lists the style names and returns a starter styling (JSON).
 
-use filmcraft_credits::layout::{Frame, Measure};
-use filmcraft_credits::{Laid, Styling};
-use filmcraft_geom::Vec2;
-use filmcraft_project::graphic::eval_layer;
-use filmcraft_project::{ClipId, EffectInstance, Interpolation, ItemId, Keyframe, Param, ParamValue};
-use filmcraft_render::graphic_clip::layer_local_bounds;
-use filmcraft_time::Tick;
+use cfa4_credits::layout::{Frame, Measure};
+use cfa4_credits::{Laid, Styling};
+use cfa4_geom::Vec2;
+use cfa4_project::graphic::eval_layer;
+use cfa4_project::{ClipId, EffectInstance, Interpolation, ItemId, Keyframe, Param, ParamValue};
+use cfa4_render::graphic_clip::layer_local_bounds;
+use cfa4_time::Tick;
 use serde_json::{Value, json};
 
 use crate::commands::{CommandSpec, always, bad, has_seq, str_p, u64_p};
@@ -65,7 +65,7 @@ impl Measure for EngineMeasure {
             .ok()
             .filter(|m| m.len() <= MAX_PICTURE)
             .and_then(|_| std::fs::read(&path).ok())
-            .and_then(|b| filmcraft_media::still::decode_raster(file, &b).ok())
+            .and_then(|b| cfa4_media::still::decode_raster(file, &b).ok())
             .filter(|r| r.width > 0 && r.height > 0)
             .map(|r| (f64::from(r.width), f64::from(r.height)));
         cache.push((path, sz));
@@ -102,7 +102,7 @@ fn styling_p(cmd: &str, p: &Value) -> Result<Styling> {
 }
 
 /// Read and lay out the spreadsheet a command names, for the active sequence.
-fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, filmcraft_credits::office::Sheet)> {
+fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, cfa4_credits::office::Sheet)> {
     let styling = styling_p(cmd, p)?;
     let bytes = match (str_p(p, "csv"), str_p(p, "path")) {
         (Some(text), _) => text.as_bytes().to_vec(),
@@ -114,10 +114,10 @@ fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, filmcraft_credits::o
         }
         (None, None) => return Err(bad(cmd, "need `path` (.csv, .tsv, .xlsx or .ods) or `csv` (the table as text)")),
     };
-    let (credits, sheet) = filmcraft_credits::read_with(&bytes, &styling, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
+    let (credits, sheet) = cfa4_credits::read_with(&bytes, &styling, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
-    let l = filmcraft_credits::layout(
+    let l = cfa4_credits::layout(
         &credits,
         &styling,
         frame,
@@ -131,10 +131,10 @@ fn warnings_json(l: &Laid) -> Value {
     Value::Array(l.warnings.iter().map(|w| json!({"row": w.row, "message": w.message})).collect())
 }
 
-fn behaviour_name(b: filmcraft_credits::Behaviour) -> &'static str {
+fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
     match b {
-        filmcraft_credits::Behaviour::Card => "card",
-        filmcraft_credits::Behaviour::Scroll => "scroll",
+        cfa4_credits::Behaviour::Card => "card",
+        cfa4_credits::Behaviour::Scroll => "scroll",
     }
 }
 
@@ -146,7 +146,7 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
             "name": pg.name,
             "behaviour": behaviour_name(pg.behaviour),
             "duration": pg.duration.0,
-            "seconds": pg.duration.0 as f64 / filmcraft_time::TICKS_PER_SECOND as f64,
+            "seconds": pg.duration.0 as f64 / cfa4_time::TICKS_PER_SECOND as f64,
             "gapAfter": pg.gap_after.0,
             "layers": pg.layers.len(),
             "contentHeight": pg.content_height,
@@ -181,7 +181,7 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
                 (crate::graphics::graphic_source(pr, w, h, rate), dur)
             })?;
             s.edit_sequence("Import Credits", move |q, _, _| {
-                let (_, it) = q.find_item_mut(clip).ok_or(filmcraft_edit::EditError::NoItem(clip))?;
+                let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
                 it.graphic = Some(Box::new(meta));
                 Ok(())
             })?;
@@ -219,8 +219,8 @@ fn place_picture(
     s: &mut Session,
     base: &Option<std::path::PathBuf>,
     items: &mut Vec<(std::path::PathBuf, ItemId)>,
-    pic: &filmcraft_credits::PicturePlace,
-    pg: &filmcraft_credits::PageOut,
+    pic: &cfa4_credits::PicturePlace,
+    pg: &cfa4_credits::PageOut,
     t: Tick,
     frame_h: f64,
 ) -> Result<Option<ClipId>> {
@@ -245,16 +245,16 @@ fn place_picture(
     let position = match pg.behaviour {
         // the Roll moves the content from just below the frame (offset = frame height − content
         // top, which is 0) to just above it (offset = −content bottom), at constant speed
-        filmcraft_credits::Behaviour::Scroll => Param {
+        cfa4_credits::Behaviour::Scroll => Param {
             value: ParamValue::Vec2(Vec2::new(cx, cy + frame_h)),
             keyframes: vec![kf(Tick::ZERO, ParamValue::Vec2(Vec2::new(cx, cy + frame_h))), kf(dur, ParamValue::Vec2(Vec2::new(cx, cy - pg.content_height)))],
         },
-        filmcraft_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
+        cfa4_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
     };
     let (fin, fout) = (pg.fade_in, pg.fade_out);
-    let card = pg.behaviour == filmcraft_credits::Behaviour::Card;
+    let card = pg.behaviour == cfa4_credits::Behaviour::Card;
     s.edit_sequence("Import Credits", move |q, _, _| {
-        let (_, it) = q.find_item_mut(clip).ok_or(filmcraft_edit::EditError::NoItem(clip))?;
+        let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
         if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
             m.params.insert("position".into(), position);
             m.params.insert("scale".into(), Param::new(ParamValue::Float(scale.clamp(0.0, 10_000.0))));
@@ -287,8 +287,8 @@ fn styles(_: &mut Session, p: &Value) -> Result<Value> {
     let styling = styling_p("graphics.credits.styles", p)?;
     let (pages, contents) = styling.names();
     let starter = Styling {
-        page_styles: filmcraft_credits::style::builtin_page_styles(),
-        content_styles: filmcraft_credits::style::builtin_content_styles(),
+        page_styles: cfa4_credits::style::builtin_page_styles(),
+        content_styles: cfa4_credits::style::builtin_content_styles(),
         ..Styling::default()
     };
     Ok(json!({
