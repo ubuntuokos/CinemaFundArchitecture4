@@ -161,6 +161,21 @@ been removed; the product, crates, application ID and packages are CFA4-only. Th
 and CI do not represent release approval; publication remains blocked until packaging and license
 attribution have been audited.
 
+## Measured runtime dependencies (#22, F9 `runtime_abi_dependencies`)
+
+The supported runtime minimums (glibc, libgcc, ALSA, and the libraries loaded at run time such as
+Wayland, X11, Vulkan, EGL, VA-API and NVIDIA) are taken from the built binaries, not estimated.
+On the Ubuntu 26.04 AMD64 reference machine:
+
+```sh
+bash scripts/dev/audit-runtime-deps.sh --build   # or without --build if target/release is current
+```
+
+It writes `target/audit/runtime-deps/<UTC>/runtime-deps.json` and `runtime-deps.md`: the ELF
+`NEEDED` libraries and their owning Debian packages (`dpkg-query`), the highest required symbol
+version per namespace (`objdump -T`), and the `dlopen` library names that `ldd` cannot see. It
+installs nothing. A report from any other host is marked as not valid F9 evidence.
+
 ## Remaining tasks (intentionally not claimed as implemented)
 
 1. Integrate Rust engine commands with a Qt controller (error/timeouts and project lifecycle).
