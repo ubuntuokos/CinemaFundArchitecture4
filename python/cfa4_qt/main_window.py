@@ -497,7 +497,7 @@ class MainWindow(QMainWindow):
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.effect_controls.flush()
-        if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.")):
+        if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
             self.close()

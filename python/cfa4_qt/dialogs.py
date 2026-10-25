@@ -4,6 +4,7 @@ commands that take paths."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtWidgets import (
@@ -13,6 +14,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QVBoxLayout,
     QWidget,
 )
@@ -82,7 +84,10 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
         if not path:
             return {"__cancel__": True}
         if not path.endswith(".fcproj"):
+            # the dialog asked about the name typed, not this one: ask before replacing it
             path += ".fcproj"
+            if Path(path).exists() and not confirm_replace(parent, tr(command.label), path):
+                return {"__cancel__": True}
         return {"path": path}
     if cid.startswith("file.import") and "paths" in names:
         paths, _ = QFileDialog.getOpenFileNames(parent, tr(command.label), "", tr("All files") + " (*)")
@@ -91,3 +96,17 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
         path, _ = QFileDialog.getOpenFileName(parent, tr(command.label), "", tr("All files") + " (*)")
         return {"path": path} if path else {"__cancel__": True}
     return None
+
+
+def confirm_replace(parent: QWidget, title: str, path: str) -> bool:
+    """Yes / Cancel (Cancel by default) before a save replaces an existing file."""
+    box = QMessageBox(
+        QMessageBox.Icon.Warning,
+        title,
+        tr("'{name}' already exists. Replace it?").replace("{name}", Path(path).name),
+        parent=parent,
+    )
+    box.setObjectName("dialog.replace")
+    box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+    box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+    return box.exec() == QMessageBox.StandardButton.Yes
