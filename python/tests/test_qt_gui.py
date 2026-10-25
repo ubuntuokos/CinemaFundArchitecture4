@@ -743,3 +743,47 @@ def test_app_identifies_as_cfa4_to_the_desktop():
     src = (ROOT / "python" / "cfa4_qt" / "__main__.py").read_text(encoding="utf-8")
     assert 'setDesktopFileName("io.github.ubuntuokos.cfa4")' in src
     assert (ROOT / "packaging" / "linux" / "io.github.ubuntuokos.cfa4.desktop").is_file()
+
+
+# ----- desktop entry for checkout runs -----
+def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, monkeypatch):
+    """Regression: run from a checkout, KDE's panel showed "python3" (no .desktop for the app
+    id). `cfa4-qt --install-desktop-entry` writes one; packaged entries and runs are untouched."""
+    import io
+
+    from cfa4_qt import desktop_entry as de
+    from cfa4_qt.__main__ import main
+
+    home = tmp_path / "data"
+    system = tmp_path / "system"
+    monkeypatch.setenv("XDG_DATA_HOME", str(home))
+    monkeypatch.setenv("XDG_DATA_DIRS", str(system))
+    for var in ("APPIMAGE", "FLATPAK_ID", *de.ENV_FLAGS):
+        monkeypatch.delenv(var, raising=False)
+    entry = home / "applications" / "io.github.ubuntuokos.cfa4.desktop"
+    assert not de.requested_by_env()
+    assert main(["--install-desktop-entry"]) == 0
+    text = entry.read_text(encoding="utf-8")
+    assert "Icon=io.github.ubuntuokos.cfa4" in text and "Name=CFA4 (development)" in text
+    exec_line = next(line for line in text.splitlines() if line.startswith("Exec="))
+    assert exec_line.endswith(" %F") and "%" not in exec_line[:-3]
+    assert (home / "icons" / "hicolor" / "48x48" / "apps" / "io.github.ubuntuokos.cfa4.png").is_file()
+    assert (home / "icons" / "hicolor" / "scalable" / "apps" / "io.github.ubuntuokos.cfa4.svg").is_file()
+    # idempotent
+    out = io.StringIO()
+    assert de.install(out) and "up to date" in out.getvalue()
+    # an installed package's entry wins: nothing is rewritten
+    entry.unlink()
+    (system / "applications").mkdir(parents=True)
+    (system / "applications" / "io.github.ubuntuokos.cfa4.desktop").write_text("[Desktop Entry]\n", encoding="utf-8")
+    assert de.install(io.StringIO()) and not entry.exists()
+    # AppImage / Flatpak runs never write
+    (system / "applications" / "io.github.ubuntuokos.cfa4.desktop").unlink()
+    monkeypatch.setenv("FLATPAK_ID", "io.github.ubuntuokos.cfa4")
+    assert not de.install(io.StringIO()) and not entry.exists()
+    monkeypatch.delenv("FLATPAK_ID")
+    # paths a desktop entry cannot carry are refused, not written broken
+    with pytest.raises(ValueError):
+        de.exec_line(["/tmp/a%b/cfa4-qt"])
+    monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
+    assert de.requested_by_env()
