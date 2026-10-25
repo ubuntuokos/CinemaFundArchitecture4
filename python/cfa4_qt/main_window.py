@@ -176,7 +176,7 @@ class MainWindow(QMainWindow):
 
     def _build_menus(self) -> None:
         view_actions: list[QAction] = [self.fit_action, self.reset_layout]
-        bound = self.registry.build_menus(
+        self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *self.tool_actions],
@@ -193,8 +193,7 @@ class MainWindow(QMainWindow):
         lang = window_menu.addMenu(tr("Language"))
         for a in self.lang_actions.actions():
             lang.addAction(a)
-        keys = {s.toString() for cid in bound for s in self.registry.actions[cid].shortcuts()}
-        self._bind_local_shortcuts(keys)
+        self._bind_local_shortcuts(self.registry.claimed_keys)
 
     def set_language(self, code: str) -> None:
         TR.set_language(code)
