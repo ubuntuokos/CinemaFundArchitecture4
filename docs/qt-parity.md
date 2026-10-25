@@ -37,11 +37,15 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | # | Point | egui | Qt 6 | Evidence / missing |
 |---|---|---|---|---|
 | 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md) |
-| 2.2 | Named workspaces (save, switch, reset) | ✅ | 🟡 | only "Reset Panel Layout" |
+| 2.2 | Named workspaces (save, switch, reset) | ✅ | 🟡 | Window ▸ Workspaces: Editing (default, Alt+Shift+1), own named workspaces (Save as New, Save Changes, switch), Reset to Saved Layout (Alt+Shift+0) (`test_workspaces_save_switch_and_reset`); Assembly/Color/Effects/Audio/Captions and Graphics presets, All Panels and Edit Workspaces… need panels the Qt GUI lacks (listed disabled) |
 | 2.3 | Themes (light/dark, favourites) | ✅ | 🟡 | follows the desktop's Qt/KDE theme; no in-app theme switch |
 | 2.4 | Panel docking commands (`window.floatPanel`, `window.dockPanel`, …) | ✅ | ❌ | |
 
 ## 3. Panels (egui `PanelKind`)
+
+The Window menu lists all 28 egui panels in egui's order with its Shift+1…9 keys; a panel the Qt GUI
+does not have yet is listed disabled (`test_window_menu_lists_every_egui_panel_with_its_shortcut`).
+The Qt Inspector is named Properties, as in egui (3.22).
 
 | # | Panel | Qt 6 | Evidence / missing |
 |---|---|---|---|

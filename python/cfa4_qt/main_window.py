@@ -9,7 +9,7 @@ from typing import Any
 
 from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
-from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMessageBox, QTabBar, QWidget
+from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMenu, QMessageBox, QTabBar, QWidget
 
 from . import __version__
 from .branding import logo_pixmap
@@ -23,8 +23,9 @@ from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
+from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 3  # 2: Source monitor dock; 3: Effect Controls
+LAYOUT_VERSION = 4  # 2: Source monitor dock; 3: Effect Controls; 4: Inspector renamed Properties (egui)
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -32,7 +33,7 @@ DOCK_PLAN = (
     ("Effect Controls", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
-    ("Inspector", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -113,7 +114,7 @@ class MainWindow(QMainWindow):
             "Effect Controls": self.effect_controls,
             "Project": self.project_panel,
             "Effects": self.effects,
-            "Inspector": self.inspector,
+            "Properties": self.inspector,
             "History": self.history,
             "Timeline": self.timeline,
             "Events": self.events,
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         # The window itself only ever gets its tab groups through restoreState() (see
         # _default_layout_state and docs/qt-gui.md, "Known Qt issues").
         self._default_state = self._default_layout_state()
+        self.workspaces = Workspaces(self, self.settings, self._default_state, LAYOUT_VERSION)
 
         self.status_engine = QLabel(tr("Starting engine…"))
         self.status_engine.setObjectName("status.engine")
@@ -169,17 +171,17 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def arrange_default(win: QMainWindow, d: dict[str, QDockWidget]) -> None:
-        """Source over Project/Effects on the left, Program in the middle, Inspector/History on
+        """Source over Project/Effects on the left, Program in the middle, Properties/History on
         the right, Timeline/Events at the bottom."""
         win.splitDockWidget(d["Source"], d["Project"], Qt.Orientation.Vertical)
         win.tabifyDockWidget(d["Source"], d["Effect Controls"])
         win.tabifyDockWidget(d["Project"], d["Effects"])
-        win.tabifyDockWidget(d["Inspector"], d["History"])
+        win.tabifyDockWidget(d["Properties"], d["History"])
         win.tabifyDockWidget(d["Timeline"], d["Events"])
-        for name in ("Source", "Project", "Inspector", "Timeline"):
+        for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
-        win.resizeDocks([d["Source"], d["Inspector"]], [460, 280], Qt.Orientation.Horizontal)
+        win.resizeDocks([d["Source"], d["Properties"]], [460, 280], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Project"]], [320, 300], Qt.Orientation.Vertical)
 
     def _default_layout_state(self) -> QByteArray:
@@ -203,9 +205,12 @@ class MainWindow(QMainWindow):
         return state
 
     def reset_panel_layout(self) -> None:
-        """View ▸ Reset Panel Layout."""
+        """Window ▸ Workspaces ▸ Reset to Saved Layout: the current workspace's saved layout."""
+        self.restore_layout(self.workspaces.saved_state(self.workspaces.current))
+
+    def restore_layout(self, state: QByteArray) -> None:
         before = set(self.findChildren(QTabBar))
-        self.restoreState(self._default_state, LAYOUT_VERSION)
+        self.restoreState(state, LAYOUT_VERSION)
         self._retire_tab_bars(before)
         QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
 
@@ -276,26 +281,48 @@ class MainWindow(QMainWindow):
             self.addAction(action)
 
     def _build_menus(self) -> None:
-        view_actions: list[QAction] = [self.fit_action, self.reset_layout]
         bound = self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *self.tool_actions],
+                "View": [self.fit_action],
                 "Help": [self.about_action],
             }
         )
-        window_menu = self.menuBar().addMenu(tr("Panels"))
-        window_menu.setObjectName("menu.Panels")
-        for dock in self.docks.values():
-            window_menu.addAction(dock.toggleViewAction())
-        window_menu.addSeparator()
-        for a in view_actions:
-            window_menu.addAction(a)
-        lang = window_menu.addMenu(tr("Language"))
-        for a in self.lang_actions.actions():
-            lang.addAction(a)
+        menus = {a.menu().objectName(): a for a in self.menuBar().actions() if a.menu()}
+        view = menus.get("menu.View")
+        if view is not None:
+            lang = view.menu().addMenu(tr("Language"))
+            lang.setObjectName("menu.View.Language")
+            for a in self.lang_actions.actions():
+                lang.addAction(a)
+        # Window, before Help as in the egui editor; the previous build's actions go first
+        for action in getattr(self, "_window_actions", []):
+            self.removeAction(action)
+            if action is not self.reset_layout:  # kept across rebuilds
+                action.deleteLater()
+        if getattr(self, "_window_menu", None) is not None:
+            self._window_menu.deleteLater()
+        window_menu = QMenu(tr("Window"), self.menuBar())
+        self._window_menu = window_menu
+        window_menu.setObjectName("menu.Window")
+        help_action = menus.get("menu.Help")
+        if help_action is not None:
+            self.menuBar().insertMenu(help_action, window_menu)
+        else:
+            self.menuBar().addMenu(window_menu)
+        window_shortcuts = build_window_menu(
+            self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
+        )
         keys = {s.toString() for cid in bound for s in self.registry.actions[cid].shortcuts()}
         self._bind_local_shortcuts(keys)
+        self._window_actions = bind_free(self, window_shortcuts, keys) + [
+            a for a in window_menu.actions() if a not in {p[0] for p in window_shortcuts}
+        ]
+
+    def rebuild_window_menu(self) -> None:
+        """A workspace was added: rebuild the menus (the engine's part comes from the registry)."""
+        self._build_menus()
 
     def set_language(self, code: str) -> None:
         TR.set_language(code)

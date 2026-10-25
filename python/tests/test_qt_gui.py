@@ -732,7 +732,7 @@ def _qt_literals() -> set[str]:
 def test_hungarian_catalog_covers_the_qt_gui():
     """The owner works in Hungarian: every Qt GUI string and panel title has a translation."""
     hu = Translator("hu")
-    titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
+    titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Properties", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
     missing = sorted(s for s in _qt_literals() | titles if not hu.has(s))
     assert not missing, missing
 
@@ -837,7 +837,7 @@ def test_real_engine_source_monitor(app, tmp_path: Path):
         win.close()
 
 
-# Source/Effect Controls, Project/Effects, Inspector/History, Timeline/Events
+# Source/Effect Controls, Project/Effects, Properties/History, Timeline/Events
 TAB_GROUPS = 4
 
 
@@ -1217,3 +1217,94 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
         de.exec_line(["/tmp/a%b/cfa4-qt"])
     monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
     assert de.requested_by_env()
+
+
+
+# ----- Window menu (as the egui editor's) -----
+def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: Path, tmp_path: Path):
+    """The owner compared the menus: egui's Window menu has Workspaces, New Project Panel and all
+    28 panels with Shift+1..9; the Qt GUI had a "Panels" menu with 8. Same entries, same order,
+    same keys now; panels the Qt GUI lacks are listed disabled."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.window_menu import PANELS
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: "file.save" in win.registry.actions)
+        top = [a.menu().objectName() for a in win.menuBar().actions() if a.menu()]
+        assert "menu.Panels" not in top
+        assert top.index("menu.Window") == top.index("menu.Help") - 1, top
+        menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.Window")
+        entries = [a for a in menu.actions() if not a.isSeparator()]
+        assert entries[0].menu() is not None and entries[0].menu().objectName() == "menu.Window.Workspaces"
+        assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
+        panels = entries[2:]
+        assert [a.text() for a in panels] == [p.title for p in PANELS]
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events"}
+        for a, p in zip(panels, PANELS, strict=True):
+            assert a.isEnabled() == (p.title in have), p.title
+            if p.shortcut and a.isEnabled():
+                assert a.shortcut().toString() == QtGui.QKeySequence(p.shortcut).toString(), p.title
+            if not a.isEnabled():
+                assert "Qt GUI" in a.toolTip()
+        # a panel entry closes the panel when it is open in front, and shows it again
+        project = next(a for a in panels if a.text() == "Project")
+        win.docks["Project"].raise_()
+        wait_until(app, lambda: False, 100)
+        project.trigger()
+        assert wait_until(app, lambda: win.docks["Project"].isHidden(), 2_000)
+        project.trigger()
+        assert wait_until(app, lambda: not win.docks["Project"].isHidden(), 2_000)
+        # View carries Zoom to Sequence and Language
+        view = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.View")
+        assert win.fit_action in view.actions()
+        assert any(a.menu() and a.menu().objectName() == "menu.View.Language" for a in view.actions())
+        # a rebuild (language change) leaves exactly one live action per Window shortcut
+        win.set_language("hu")
+        win.set_language("en")
+        keys = [s.toString() for a in win.actions() for s in a.shortcuts()]
+        assert keys.count(QtGui.QKeySequence("Shift+1").toString()) == 1, keys
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.window_menu import DEFAULT_WORKSPACE
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    win.resize(1400, 900)
+    win.show()
+    try:
+        wait_until(app, lambda: False, 200)
+        ws = win.workspaces
+        assert ws.current == DEFAULT_WORKSPACE and ws.names() == []
+        # my own layout: History closed, saved as "Vágás"
+        win.docks["History"].close()
+        ws.save_as("Vágás")
+        assert ws.current == "Vágás" and ws.names() == ["Vágás"]
+        # back to Editing: History is there again
+        ws.switch(DEFAULT_WORKSPACE, win.restore_layout)
+        assert wait_until(app, lambda: not win.docks["History"].isHidden(), 2_000)
+        # my workspace restores my layout; Reset to Saved Layout returns to it after changes
+        ws.switch("Vágás", win.restore_layout)
+        assert wait_until(app, lambda: win.docks["History"].isHidden(), 2_000)
+        win.docks["History"].show()
+        win.reset_layout.trigger()
+        assert wait_until(app, lambda: win.docks["History"].isHidden(), 2_000)
+        # the menu lists it, checked
+        win.rebuild_window_menu()
+        menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.Window")
+        sub = next(a.menu() for a in menu.actions() if a.menu())
+        mine = next(a for a in sub.actions() if a.text() == "Vágás")
+        assert mine.isChecked()
+    finally:
+        win._quit_confirmed = True
+        win.close()
