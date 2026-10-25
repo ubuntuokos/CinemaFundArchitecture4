@@ -16,6 +16,12 @@
 //! ([`Declined`]), so the choice can be shown in the UI and in `perf.stats` (`route.<task>`).
 //! When a running route fails, [`Router::next_after`] continues from the next one.
 //!
+//! The [`catalog`] says, for every backend the table names, whether it works today or is planned
+//! and whether it is locked to one vendor's hardware (NVDEC, NVENC). [`coverage`] turns that into
+//! the vendor-neutrality report: per family, whether an implemented accelerator exists that runs
+//! on any vendor's GPU. [`Preferences::allow_vendor_locked`] switches the vendor-locked backends
+//! off, to prove that every family still runs without them.
+//!
 //! The rules (vendor-neutral path and CPU fallback for every family, CFA4's own engine first in
 //! the codec families) are in `docs/adr/ADR-0004-compute-routing.md`.
 //!
@@ -29,11 +35,13 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+pub mod catalog;
 pub mod probe;
 mod router;
 mod table;
 
-pub use router::{Backend, Decision, Declined, Reason, Router};
+pub use catalog::{Coverage, Maturity, coverage};
+pub use router::{Backend, Chain, Decision, Declined, Reason, Route, Router};
 pub use table::{Table, TaskRule};
 
 /// Longest identifier (task, backend, device) accepted from any input.
@@ -172,7 +180,8 @@ pub enum Vendor {
 }
 
 impl Vendor {
-    /// From a PCI vendor id (`/sys/.../device/vendor`).
+    /// From a PCI vendor id (`/sys/.../device/vendor`). AMD has two: ATI's (graphics) and its own
+    /// (some APU functions and the NPUs).
     pub fn from_pci(id: u16) -> Vendor {
         match id {
             0x10de => Vendor::Nvidia,
@@ -181,6 +190,37 @@ impl Vendor {
             _ => Vendor::Other,
         }
     }
+
+    /// From the kernel driver, for devices without a PCI id (platform devices).
+    pub fn from_driver(driver: &str) -> Vendor {
+        match driver {
+            "nvidia" | "nouveau" | "nvidia-drm" => Vendor::Nvidia,
+            "amdgpu" | "radeon" | "amdxdna" => Vendor::Amd,
+            "i915" | "xe" | "intel_vpu" => Vendor::Intel,
+            _ => Vendor::Other,
+        }
+    }
+
+    /// A short display name.
+    pub fn name(self) -> &'static str {
+        match self {
+            Vendor::Nvidia => "NVIDIA",
+            Vendor::Amd => "AMD",
+            Vendor::Intel => "Intel",
+            Vendor::Other => "Other",
+        }
+    }
+}
+
+/// Parses a PCI id as sysfs writes it (`0x10de\n`). `None` for anything that is not a
+/// hexadecimal 16-bit number (no sign, no spaces inside, at most 4 digits after the prefix).
+pub fn parse_pci_id(text: &str) -> Option<u16> {
+    let t = text.trim();
+    let digits = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")).unwrap_or(t);
+    if digits.is_empty() || digits.len() > 4 || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    u16::from_str_radix(digits, 16).ok()
 }
 
 /// What kind of device it is.
@@ -200,6 +240,13 @@ pub struct Device {
     pub vendor: Vendor,
     /// Human-readable name, for the UI (`NVIDIA RTX A1000`).
     pub name: String,
+    /// The kernel driver bound to the device (`amdgpu`, `i915`, `xe`, `nvidia`, `nouveau`,
+    /// `intel_vpu`, `amdxdna`), when known.
+    #[serde(default)]
+    pub driver: Option<String>,
+    /// The PCI device id, when known.
+    #[serde(default)]
+    pub pci_device: Option<u16>,
     /// Free device memory in MiB when a backend reported it. `None`: unknown, and the memory
     /// budget of a task rule is not applied.
     pub free_memory_mb: Option<u64>,
@@ -208,22 +255,55 @@ pub struct Device {
 impl Device {
     /// The CPU, which every machine has.
     pub fn cpu() -> Device {
-        Device { id: DeviceId("cpu".into()), kind: DeviceKind::Cpu, vendor: Vendor::Other, name: "CPU".into(), free_memory_mb: None }
+        Device {
+            id: DeviceId("cpu".into()),
+            kind: DeviceKind::Cpu,
+            vendor: Vendor::Other,
+            name: "CPU".into(),
+            driver: None,
+            pci_device: None,
+            free_memory_mb: None,
+        }
+    }
+
+    fn driver_is(&self, names: &[&str]) -> bool {
+        self.driver.as_deref().is_some_and(|d| names.contains(&d))
+    }
+
+    /// An NVIDIA GPU on NVIDIA's proprietary driver, which NVDEC, NVENC and CUDA need (nouveau
+    /// has none of them).
+    pub fn is_nvidia_proprietary(&self) -> bool {
+        self.kind == DeviceKind::Gpu && self.vendor == Vendor::Nvidia && self.driver_is(&["nvidia"])
+    }
+
+    /// A GPU whose kernel driver has a VA-API user-space driver (Mesa radeonsi / nouveau, Intel
+    /// iHD / i965). NVIDIA's proprietary driver is left out: NVDEC serves it.
+    pub fn has_vaapi_driver(&self) -> bool {
+        self.kind == DeviceKind::Gpu && self.driver_is(VAAPI_KERNEL_DRIVERS)
     }
 }
+
+/// Kernel drivers whose GPUs have a VA-API user-space driver on Ubuntu.
+pub const VAAPI_KERNEL_DRIVERS: &[&str] = &["amdgpu", "radeon", "i915", "xe", "nouveau"];
 
 /// The devices found on this machine. Always holds the CPU.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Inventory {
     devices: Vec<Device>,
+    /// What the probe could not read or left out (for the log and `perf.stats`).
+    #[serde(default)]
+    notes: Vec<String>,
 }
 
 /// Most devices an inventory keeps (hostile `/sys` contents cannot grow it without bound).
 pub const MAX_DEVICES: usize = 64;
+/// Most notes an inventory keeps, and their longest length in bytes.
+pub const MAX_NOTES: usize = 32;
+const MAX_NOTE_LEN: usize = 256;
 
 impl Default for Inventory {
     fn default() -> Self {
-        Inventory { devices: vec![Device::cpu()] }
+        Inventory { devices: vec![Device::cpu()], notes: Vec::new() }
     }
 }
 
@@ -249,6 +329,35 @@ impl Inventory {
 
     pub fn devices(&self) -> &[Device] {
         &self.devices
+    }
+
+    /// The GPUs.
+    pub fn gpus(&self) -> impl Iterator<Item = &Device> {
+        self.devices.iter().filter(|d| d.kind == DeviceKind::Gpu)
+    }
+
+    /// The NPUs.
+    pub fn npus(&self) -> impl Iterator<Item = &Device> {
+        self.devices.iter().filter(|d| d.kind == DeviceKind::Npu)
+    }
+
+    pub fn notes(&self) -> &[String] {
+        &self.notes
+    }
+
+    /// Records a note (bounded in number and length).
+    pub fn note(&mut self, text: impl Into<String>) {
+        if self.notes.len() < MAX_NOTES {
+            let mut text: String = text.into();
+            if text.len() > MAX_NOTE_LEN {
+                let mut end = MAX_NOTE_LEN;
+                while !text.is_char_boundary(end) {
+                    end = end.saturating_sub(1);
+                }
+                text.truncate(end);
+            }
+            self.notes.push(text);
+        }
     }
 
     pub fn get(&self, id: &DeviceId) -> Option<&Device> {
@@ -283,13 +392,21 @@ pub enum Preference {
 /// Preferences for every family. The default leaves everything to the table, except hardware
 /// encoding, which stays opt-in: the built-in encoders give byte-identical files on every machine
 /// (Export ▸ Hardware encoding, off by default).
+///
+/// Serde, so the UI, the control channel and MCP read and set them; fields left out keep their
+/// default, unknown fields are an error.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct Preferences {
     pub display: Preference,
     pub codec_decode: Preference,
     pub codec_encode: Preference,
     pub ai: Preference,
     pub compute: Preference,
+    /// Whether backends that run on one vendor's hardware only (NVDEC, NVENC, CUDA, OpenVINO NPU)
+    /// may be chosen. Off gives a strictly vendor-neutral routing, to test that every family still
+    /// runs without them. On by default.
+    pub allow_vendor_locked: bool,
 }
 
 impl Default for Preferences {
@@ -300,6 +417,7 @@ impl Default for Preferences {
             codec_encode: Preference::CpuOnly,
             ai: Preference::Automatic,
             compute: Preference::Automatic,
+            allow_vendor_locked: true,
         }
     }
 }
@@ -366,6 +484,8 @@ mod tests {
             kind: DeviceKind::Gpu,
             vendor: Vendor::Amd,
             name: format!("GPU {i}"),
+            driver: Some("amdgpu".into()),
+            pci_device: None,
             free_memory_mb: None,
         };
         let mut inv = Inventory::new((0..200).map(gpu));
@@ -384,6 +504,68 @@ mod tests {
         let mut p = p;
         p.set(Family::CodecEncode, Preference::Automatic);
         assert_eq!(p.get(Family::CodecEncode), &Preference::Automatic);
+    }
+
+    #[test]
+    fn notes_are_bounded() {
+        let mut inv = Inventory::default();
+        for _ in 0..1000 {
+            inv.note("é".repeat(1000));
+        }
+        assert_eq!(inv.notes().len(), MAX_NOTES);
+        assert!(inv.notes().iter().all(|n| n.len() <= MAX_NOTE_LEN && !n.is_empty()));
+    }
+
+    #[test]
+    fn devices_know_their_driver_family() {
+        let gpu = |vendor, driver: &str| Device {
+            id: DeviceId::new("gpu:x").unwrap(),
+            kind: DeviceKind::Gpu,
+            vendor,
+            name: String::new(),
+            driver: Some(driver.into()),
+            pci_device: None,
+            free_memory_mb: None,
+        };
+        assert!(gpu(Vendor::Nvidia, "nvidia").is_nvidia_proprietary());
+        assert!(!gpu(Vendor::Nvidia, "nouveau").is_nvidia_proprietary());
+        assert!(gpu(Vendor::Nvidia, "nouveau").has_vaapi_driver());
+        assert!(!gpu(Vendor::Nvidia, "nvidia").has_vaapi_driver());
+        for d in ["amdgpu", "radeon", "i915", "xe"] {
+            assert!(gpu(Vendor::Other, d).has_vaapi_driver(), "{d}");
+        }
+        assert!(!Device::cpu().has_vaapi_driver() && !Device::cpu().is_nvidia_proprietary());
+    }
+
+    #[test]
+    fn preferences_round_trip_and_hostile_json_is_an_error() {
+        let p: Preferences = serde_json::from_str("{}").unwrap();
+        assert_eq!(p, Preferences::default());
+        let mut p = Preferences { allow_vendor_locked: false, ..Preferences::default() };
+        p.set(Family::Ai, Preference::Device(DeviceId::new("npu:accel0").unwrap()));
+        let json = serde_json::to_string(&p).unwrap();
+        assert_eq!(serde_json::from_str::<Preferences>(&json).unwrap(), p);
+        let partial: Preferences = serde_json::from_str(r#"{"allow_vendor_locked":false}"#).unwrap();
+        assert_eq!(partial.codec_encode, Preference::CpuOnly, "fields left out keep their default");
+        assert!(!partial.allow_vendor_locked);
+        for bad in
+            [r#"{"mining":"automatic"}"#, r#"{"ai":"tpu"}"#, r#"{"ai":{"device":"GPU 0"}}"#, r#"{"ai":[]}"#, r#"{"allow_vendor_locked":"yes"}"#, "", "[1]"]
+        {
+            assert!(serde_json::from_str::<Preferences>(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn pci_ids_parse_and_hostile_text_does_not() {
+        assert_eq!(parse_pci_id("0x10de\n"), Some(0x10de));
+        assert_eq!(parse_pci_id("  0X8086 "), Some(0x8086));
+        assert_eq!(parse_pci_id("1002"), Some(0x1002));
+        for bad in ["", "0x", "\n", "zz", "0x-1", "0x12345", "0x1 2", "0x+1", "+10de", "１２", "0x10de0x10de", "not hex"] {
+            assert_eq!(parse_pci_id(bad), None, "{bad:?}");
+        }
+        assert_eq!(Vendor::from_driver("amdxdna"), Vendor::Amd);
+        assert_eq!(Vendor::from_driver("intel_vpu"), Vendor::Intel);
+        assert_eq!(Vendor::from_driver("virtio_gpu"), Vendor::Other);
     }
 
     #[test]

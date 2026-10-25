@@ -5,7 +5,8 @@ use std::sync::Arc;
 
 use serde::Serialize;
 
-use crate::{BackendId, Device, DeviceId, DeviceKind, Error, Family, Inventory, Preference, Preferences, Table, Task, TaskId};
+use crate::catalog::{self, Maturity};
+use crate::{BackendId, Device, DeviceId, DeviceKind, Error, Family, Inventory, Preference, Preferences, Table, Task, TaskId, Vendor};
 
 /// Longest reason text kept from a backend (a backend's message cannot grow the report unbounded).
 const MAX_REASON_LEN: usize = 256;
@@ -30,8 +31,13 @@ pub trait Backend: Send + Sync {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Reason {
+    /// The catalogue lists the backend as planned: not written yet.
+    NotImplemented,
     /// The table names a backend this build did not register (feature off, other crate absent).
     NotRegistered,
+    /// The backend runs on one vendor's hardware only and vendor-locked backends are switched off
+    /// ([`Preferences::allow_vendor_locked`]).
+    VendorLocked { vendor: Vendor },
     /// Switched off in the settings (for example Settings ▸ Playback ▸ Hardware decoding Off).
     Disabled,
     /// None of the backend's devices are on this machine.
@@ -62,6 +68,30 @@ pub struct Decision {
     pub backend: BackendId,
     pub device: DeviceId,
     pub declined: Vec<Declined>,
+}
+
+/// One backend on one device.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Route {
+    pub backend: BackendId,
+    pub device: DeviceId,
+}
+
+/// Every route that could take a task, in the order they would be tried: the first is what
+/// [`Router::choose`] picks, the rest are what [`Router::next_after`] moves to. `perf.stats`
+/// reports it, and its last route runs on the CPU wherever the table has a CPU path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Chain {
+    pub task: TaskId,
+    pub routes: Vec<Route>,
+    pub declined: Vec<Declined>,
+}
+
+impl Chain {
+    /// Whether the chain ends on the CPU (CFA4's rule for every family).
+    pub fn ends_on_cpu(&self, inventory: &Inventory) -> bool {
+        self.routes.last().and_then(|r| inventory.get(&r.device)).is_some_and(|d| d.kind == DeviceKind::Cpu)
+    }
 }
 
 impl Decision {
@@ -144,18 +174,60 @@ impl Router {
         self.pick(task, Some((&failed.backend, &failed.device)))
     }
 
+    /// Every route that could take `task`, in order, with every route passed over.
+    pub fn chain(&self, task: &Task) -> Chain {
+        let mut routes = Vec::new();
+        let mut declined = Vec::new();
+        self.walk(task, None, &mut declined, |backend, device| {
+            routes.push(Route { backend: backend.clone(), device: device.clone() });
+            false
+        });
+        Chain { task: task.id.clone(), routes, declined }
+    }
+
     fn pick(&self, task: &Task, failed: Option<(&BackendId, &DeviceId)>) -> Result<Decision, Error> {
+        let mut declined = Vec::new();
+        let mut chosen = None;
+        self.walk(task, failed, &mut declined, |backend, device| {
+            chosen = Some((backend.clone(), device.clone()));
+            true
+        });
+        match chosen {
+            Some((backend, device)) => Ok(Decision { task: task.id.clone(), backend, device, declined }),
+            None => Err(Error::NoRoute { task: task.id.clone(), declined }),
+        }
+    }
+
+    /// Why a backend in the order cannot be used at all, before its devices are looked at.
+    fn backend_reason(&self, family: Family, id: &BackendId) -> Option<Reason> {
+        let entry = catalog::lookup(family, id);
+        if self.backend(id).is_none() {
+            return Some(if entry.is_some_and(|e| e.maturity == Maturity::Planned) { Reason::NotImplemented } else { Reason::NotRegistered });
+        }
+        if self.disabled.contains(id) {
+            return Some(Reason::Disabled);
+        }
+        match entry.and_then(|e| e.vendor_lock) {
+            Some(vendor) if !self.preferences.allow_vendor_locked => Some(Reason::VendorLocked { vendor }),
+            _ => None,
+        }
+    }
+
+    /// Walks the order: every usable route goes to `found` (which returns true to stop), every
+    /// route passed over to `declined`.
+    fn walk(&self, task: &Task, failed: Option<(&BackendId, &DeviceId)>, declined: &mut Vec<Declined>, mut found: impl FnMut(&BackendId, &DeviceId) -> bool) {
         let order = self.table.order(&task.id, task.family);
         let need = self.table.rule(&task.id).and_then(|r| r.min_free_vram_mb);
         let pref = self.preferences.get(task.family);
-        let mut declined = Vec::new();
 
         // Routes up to and including the failed one are skipped: they were passed over (or never
         // reached) on the first choice, and the caller already has that report. A failed route that
         // is no longer in the order (the table, the settings or the devices changed since) is simply
         // left out, and the choice starts from the top.
         let failed_in_order = failed.is_some_and(|(fb, fd)| {
-            order.contains(fb) && !self.disabled.contains(fb) && self.backend(fb).is_some_and(|b| b.devices(&self.inventory).iter().any(|d| &d.id == fd))
+            order.contains(fb)
+                && self.backend_reason(task.family, fb).is_none()
+                && self.backend(fb).is_some_and(|b| b.devices(&self.inventory).iter().any(|d| &d.id == fd))
         });
         if let Some((fb, fd)) = failed {
             declined.push(Declined { backend: fb.clone(), device: Some(fd.clone()), reason: Reason::Failed });
@@ -163,18 +235,15 @@ impl Router {
         let mut past_failed = !failed_in_order;
 
         for backend_id in order {
-            let Some(backend) = self.backend(backend_id) else {
+            if let Some(reason) = self.backend_reason(task.family, backend_id) {
                 if past_failed {
-                    declined.push(Declined { backend: backend_id.clone(), device: None, reason: Reason::NotRegistered });
-                }
-                continue;
-            };
-            if self.disabled.contains(backend_id) {
-                if past_failed {
-                    declined.push(Declined { backend: backend_id.clone(), device: None, reason: Reason::Disabled });
+                    declined.push(Declined { backend: backend_id.clone(), device: None, reason });
                 }
                 continue;
             }
+            let Some(backend) = self.backend(backend_id) else {
+                continue;
+            };
             let devices = backend.devices(&self.inventory);
             if devices.is_empty() && past_failed {
                 declined.push(Declined { backend: backend_id.clone(), device: None, reason: Reason::NoDevice });
@@ -203,10 +272,11 @@ impl Router {
                     decline(Reason::NotEnoughMemory { need_mb, free_mb });
                     continue;
                 }
-                return Ok(Decision { task: task.id.clone(), backend: backend_id.clone(), device: device.id.clone(), declined });
+                if found(backend_id, &device.id) {
+                    return;
+                }
             }
         }
-        Err(Error::NoRoute { task: task.id.clone(), declined })
     }
 
     /// Families whose order has no registered, enabled backend that runs on the CPU. CFA4's rule
@@ -217,7 +287,8 @@ impl Router {
             .into_iter()
             .filter(|&family| {
                 !self.table.family_order(family).iter().any(|id| {
-                    !self.disabled.contains(id) && self.backend(id).is_some_and(|b| b.devices(&self.inventory).iter().any(|d| d.kind == DeviceKind::Cpu))
+                    self.backend_reason(family, id).is_none()
+                        && self.backend(id).is_some_and(|b| b.devices(&self.inventory).iter().any(|d| d.kind == DeviceKind::Cpu))
                 })
             })
             .collect()
@@ -263,7 +334,7 @@ mod tests {
     }
 
     fn dev(id: &str, kind: DeviceKind, vendor: Vendor, free: Option<u64>) -> Device {
-        Device { id: DeviceId::new(id).unwrap(), kind, vendor, name: id.into(), free_memory_mb: free }
+        Device { id: DeviceId::new(id).unwrap(), kind, vendor, name: id.into(), driver: None, pci_device: None, free_memory_mb: free }
     }
 
     /// The reference machine: an NVIDIA RTX A1000 with 8 GB.
@@ -390,8 +461,8 @@ mod tests {
             vec![
                 ("nvdec", Reason::Disabled),
                 ("vaapi", Reason::NotRegistered),
-                ("ffmpeg", Reason::NotRegistered),
-                ("gstreamer-vulkan-video", Reason::NotRegistered)
+                ("ffmpeg", Reason::NotImplemented),
+                ("gstreamer-vulkan-video", Reason::NotImplemented)
             ]
         );
 
@@ -462,6 +533,60 @@ mod tests {
         assert_eq!(d.backend.as_str(), "software", "the second registration replaced the first");
         let Reason::Declined { why } = &d.declined[0].reason else { panic!("{:?}", d.declined) };
         assert!(why.len() <= MAX_REASON_LEN && !why.is_empty());
+    }
+
+    #[test]
+    fn vendor_locked_backends_can_be_switched_off_and_everything_still_runs() {
+        let prefs = Preferences { allow_vendor_locked: false, ..Preferences::default() };
+        let r = router(a1000(None), prefs.clone());
+        let d = r.choose(&task("video.decode.hevc", Family::CodecDecode)).unwrap();
+        assert_eq!((d.backend.as_str(), d.device.as_str()), ("software", "cpu"));
+        assert_eq!(
+            d.declined[0],
+            Declined { backend: BackendId::new("nvdec").unwrap(), device: None, reason: Reason::VendorLocked { vendor: Vendor::Nvidia } }
+        );
+        assert!(r.families_without_cpu_route().is_empty(), "the CPU paths are never vendor-locked");
+
+        // a hybrid laptop decodes on its Intel GPU instead
+        let hybrid =
+            Inventory::new([dev("gpu:renderd128", DeviceKind::Gpu, Vendor::Intel, None), dev("gpu:renderd129", DeviceKind::Gpu, Vendor::Nvidia, None)]);
+        let r = router(hybrid.clone(), prefs);
+        assert_eq!(r.choose(&task("video.decode.hevc", Family::CodecDecode)).unwrap().backend.as_str(), "vaapi");
+        let r = router(hybrid, Preferences::default());
+        let chain = r.chain(&task("video.decode.hevc", Family::CodecDecode));
+        let routes: Vec<_> = chain.routes.iter().map(|x| (x.backend.as_str(), x.device.as_str())).collect();
+        assert_eq!(routes, vec![("nvdec", "gpu:renderd129"), ("vaapi", "gpu:renderd128"), ("software", "cpu")]);
+    }
+
+    #[test]
+    fn chains_list_every_usable_route_and_end_on_the_cpu() {
+        let machines = [Inventory::default(), a1000(None), a1000(Some(100)), intel_laptop()];
+        for inv in machines {
+            for allow_vendor_locked in [true, false] {
+                for pref in [Preference::Automatic, Preference::CpuOnly, Preference::Device(DeviceId::new("gpu:renderd128").unwrap())] {
+                    let mut prefs = Preferences { allow_vendor_locked, ..Preferences::default() };
+                    for f in Family::ALL {
+                        prefs.set(f, pref.clone());
+                    }
+                    let r = router(inv.clone(), prefs);
+                    for f in Family::ALL {
+                        let t = task(&format!("x.{}", f.key()), f);
+                        let chain = r.chain(&t);
+                        let ctx = format!("{inv:?} {pref:?} locked={allow_vendor_locked} {f:?}");
+                        assert!(chain.ends_on_cpu(&inv), "{ctx}: {chain:?}");
+                        let first = r.choose(&t).unwrap();
+                        assert_eq!((&first.backend, &first.device), (&chain.routes[0].backend, &chain.routes[0].device), "{ctx}");
+                        for route in &chain.routes {
+                            let entry = crate::catalog::lookup(f, &route.backend).unwrap();
+                            assert!(allow_vendor_locked || entry.vendor_lock.is_none(), "{ctx}: {route:?}");
+                        }
+                        if pref == Preference::CpuOnly {
+                            assert!(chain.routes.iter().all(|x| x.device.as_str() == "cpu"), "{ctx}");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]

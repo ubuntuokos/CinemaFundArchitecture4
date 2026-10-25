@@ -95,6 +95,26 @@ Futás közbeni hiba esetén a `Router::next_after` a következő útvonalat adj
 munkára való (dekódolás, MI-darab, effekt); egy félig megírt kódolt folyam hibája a hívó hibája
 marad, ahogy ma az NVENC-exportnál.
 
+## Katalógus és gyártófüggetlenségi jelentés
+
+A `cfa4-accel` crate (#39) beolvadt ide (a tulajdonos döntése, 2026-10-25): egyetlen router van.
+Átkerült belőle:
+
+- a háttérkatalógus (`catalog::CATALOG`): a tábla minden háttere családonként, megvalósult vagy
+  tervezett állapottal, az eszközfajtával és a gyártói kötéssel (NVDEC, NVENC, Burn CUDA, OpenVINO
+  NPU);
+- a `Preferences::allow_vendor_locked` kapcsoló: kikapcsolva a gyártóhoz kötött hátterek
+  `vendor_locked` okkal kimaradnak, így tesztelhető, hogy minden család fut nélkülük;
+- a `coverage()` jelentés: családonként a megvalósult gyártófüggetlen és gyártóhoz kötött
+  gyorsítók, és a tervezettek, amelyek a hiányt bezárják (`coverage_matches_the_workspace`
+  teszt);
+- a `/sys`-felmérés szigorúbb részei: csak számjegyre végződő csomópontnevek, numerikus sorrend,
+  64 bájtos olvasás, kernelmeghajtó és PCI-eszközazonosító, megjegyzések az olvashatatlan
+  bejegyzésekről, és az ellenséges bemenetek tesztjei.
+
+A tervezett, még meg nem írt háttér a döntésben `not_implemented` okkal szerepel, a megvalósult,
+de ebben a buildben nem regisztrált `not_registered` okkal.
+
 ## Rétegek
 
 A `cfa4-route` az L1 rétegben van, munkaterületi függősége nincs (`serde`, `thiserror`, `toml`).
