@@ -5,8 +5,8 @@
 #   ROOT                    workspace root
 #   VERSION                 [workspace.package] version from CFA4 Cargo.toml (no upstream override)
 #   DIST                    output directory for release artifacts (default: $ROOT/dist/release)
-#   FILMCRAFT_BUILD_SHA    CFA4 git commit used by inherited binary build-info internals
-#   CFA4_BUILD_DATE         UTC release metadata date, YYYY-MM-DD (mirrored to inherited build-info variable)
+#   CFA4_BUILD_SHA          CFA4 git commit embedded as build info
+#   CFA4_BUILD_DATE         UTC release metadata date, YYYY-MM-DD (also embedded as build info)
 #   CARGO_TARGET_DIR        cargo's target dir (default: $ROOT/target)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -36,17 +36,16 @@ DIST="${DIST:-$ROOT/dist/release}"
 mkdir -p "$DIST"
 export DIST
 
-# Historical binary internals retain FILMCRAFT_BUILD_* names; their values are
+# Historical binary internals retain CFA4_BUILD_* names; their values are
 # always produced by this CFA4 repository (never read from parent release env).
-FILMCRAFT_BUILD_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
-export FILMCRAFT_BUILD_SHA
+CFA4_BUILD_SHA="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || true)"
+export CFA4_BUILD_SHA
 CFA4_BUILD_DATE="${CFA4_BUILD_DATE:-$(date -u +%Y-%m-%d)}"
 if [[ ! "$CFA4_BUILD_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
   echo "error: CFA4_BUILD_DATE must be YYYY-MM-DD" >&2
   exit 2
 fi
 export CFA4_BUILD_DATE
-export FILMCRAFT_BUILD_DATE="$CFA4_BUILD_DATE"
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/target}"
 
 # Emit a GitHub Actions warning (plain stderr outside Actions).
@@ -55,21 +54,21 @@ warn() {
 }
 
 # Copy licence and readme files that exist into a package directory, plus the licences of the
-# craft-fonts fonts the build embedded (only when built with CRAFT_FONTS_DIR).
+# extra-fonts fonts the build embedded (only when built with CFA4_FONTS_DIR).
 copy_docs() {
   local dest="$1" f
-  for f in README.md LICENSE LICENSE-MIT LICENSE-APACHE COPYRIGHT; do
+  for f in README.md LICENSE LICENSE-MIT LICENSE-APACHE NOTICE COPYRIGHT; do
     if [ -f "$ROOT/$f" ]; then cp "$ROOT/$f" "$dest/"; fi
   done
   copy_font_licences "$dest"
 }
 
-# Copy each craft-fonts licence ($CRAFT_FONTS_DIR/fonts/<family>/OFL.txt) to <dest>/OFL-<family>.txt.
-# Does nothing without CRAFT_FONTS_DIR.
+# Copy each extra-fonts licence ($CFA4_FONTS_DIR/fonts/<family>/OFL.txt) to <dest>/OFL-<family>.txt.
+# Does nothing without CFA4_FONTS_DIR.
 copy_font_licences() {
   local dest="$1" lic family
-  if [ -z "${CRAFT_FONTS_DIR:-}" ]; then return 0; fi
-  for lic in "$CRAFT_FONTS_DIR"/fonts/*/OFL.txt; do
+  if [ -z "${CFA4_FONTS_DIR:-}" ]; then return 0; fi
+  for lic in "$CFA4_FONTS_DIR"/fonts/*/OFL.txt; do
     [ -f "$lic" ] || continue
     family="$(basename "$(dirname "$lic")")"
     cp "$lic" "$dest/OFL-$family.txt"

@@ -1,4 +1,4 @@
-# filmcraft-accel
+# cfa4-accel
 
 Vendor-neutral acceleration planning for CFA4 (layer L1; no UI, no FFI, no `unsafe`).
 
@@ -9,9 +9,9 @@ no driver: the backends themselves live in `crates/gpu`, `crates/platform`, `cra
 `crates/tts` and the codec crates.
 
 ```rust
-let inventory = filmcraft_accel::probe();                 // GPUs and NPUs from sysfs
-let settings = filmcraft_accel::Settings::default();      // Auto everywhere
-for plan in filmcraft_accel::plan_all(&inventory, &settings) {
+let inventory = cfa4_accel::probe();                 // GPUs and NPUs from sysfs
+let settings = cfa4_accel::Settings::default();      // Auto everywhere
+for plan in cfa4_accel::plan_all(&inventory, &settings) {
     log::info!("{:?}: {:?}", plan.workload, plan.chain); // e.g. VideoDecode: [VaApiDecode, Cpu]
 }
 ```
@@ -65,7 +65,7 @@ The test fails when the catalogue changes, so this table and the code move toget
 
 ## Not yet
 
-- Wiring: `filmcraft_platform::register()` and the export encoder registry should consult the
+- Wiring: `cfa4_platform::register()` and the export encoder registry should consult the
   plan (Settings ▸ Acceleration), and `perf.stats` should report `plan_all` and `coverage`.
 - Merging wgpu's adapter list (`crates/gpu/src/adapter.rs` `Candidate`) into the inventory for
   discrete / integrated and software (llvmpipe) adapters.

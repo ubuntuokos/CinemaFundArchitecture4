@@ -35,7 +35,7 @@ jobs:
           python3 -m py_compile python/cfa4_devtools/native_media_e2e.py python/tests/test_native_media_e2e.py
           PYTHONPATH=python python3 -m unittest discover -s python/tests -p test_native_media_e2e.py -v
       - name: Check Rust platform source formatting
-        run: cargo fmt --check --package filmcraft-platform
+        run: cargo fmt --check --package cfa4-platform
       - name: Install minimal Linux native linker headers
         run: |
           sudo apt-get update
@@ -45,6 +45,6 @@ jobs:
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev
       - name: Test Linux NVDEC probe avoids blocking VA-API after NVDEC success
-        run: cargo test --locked -p filmcraft-platform --lib successful_nvdec_probe_skips_blocking_vaapi_probe
+        run: cargo test --locked -p cfa4-platform --lib successful_nvdec_probe_skips_blocking_vaapi_probe
       - name: Compile exactly two ignored hardware E2E oracles, do not run them
-        run: cargo test --locked -p filmcraft-platform --test r0_native_media_e2e --no-run
+        run: cargo test --locked -p cfa4-platform --test r0_native_media_e2e --no-run

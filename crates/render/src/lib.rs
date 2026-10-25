@@ -36,11 +36,11 @@ pub mod vfx;
 
 use std::sync::Arc;
 
-use filmcraft_frame::{PixelData, VideoFrame, pool};
-use filmcraft_geom::{Affine, Vec2};
-use filmcraft_media::{FrameRequest, SharedSource};
-use filmcraft_project::{ItemId, ItemKind, ParamValue, Project, Sequence, TrackItem};
-use filmcraft_time::{Tick, TimeDisplay, format_time};
+use cfa4_frame::{PixelData, VideoFrame, pool};
+use cfa4_geom::{Affine, Vec2};
+use cfa4_media::{FrameRequest, SharedSource};
+use cfa4_project::{ItemId, ItemKind, ParamValue, Project, Sequence, TrackItem};
+use cfa4_time::{Tick, TimeDisplay, format_time};
 
 pub use blend::Blend;
 pub use image::Image;
@@ -179,7 +179,7 @@ pub(crate) fn render_seq_tracks(project: &Project, seq: &Sequence, t: Tick, opts
     let tc = format_time(t, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, seq.settings.sample_rate as i64);
     for (ti, track) in seq.video_tracks.iter().enumerate() {
         // A cancelled frame job (playback moved on) stops here; its result is discarded.
-        if filmcraft_media::cancel::cancelled() {
+        if cfa4_media::cancel::cancelled() {
             return canvas.into_image();
         }
         if only.is_some_and(|o| o != ti) || (!track.enabled && only.is_none()) {
@@ -337,11 +337,11 @@ fn adjustment_region(seq: &Sequence, item: &TrackItem, project: &Project, mt: Ti
 }
 
 /// Rendered captions of the visible caption tracks at `t` for a `w`×`h` output.
-pub fn caption_overlays(seq: &Sequence, t: Tick, w: usize, h: usize) -> Vec<filmcraft_captions::burn::Overlay> {
+pub fn caption_overlays(seq: &Sequence, t: Tick, w: usize, h: usize) -> Vec<cfa4_captions::burn::Overlay> {
     if seq.caption_tracks.is_empty() {
         return Vec::new();
     }
-    filmcraft_captions::burn::sequence_overlays(seq, t, w, h)
+    cfa4_captions::burn::sequence_overlays(seq, t, w, h)
 }
 
 fn with_opacity(mut img: Image, op: f32) -> Image {
@@ -385,9 +385,9 @@ pub fn source_par(project: &Project, item: ItemId) -> Option<(u32, u32)> {
 /// sequence is narrowed to its display width. Scale to Frame Size fits the display size too.
 pub fn motion_matrix(seq: &Sequence, item: &TrackItem, src: (u32, u32), src_par: Option<(u32, u32)>, mt: Tick) -> Affine {
     let (sw, sh) = (seq.settings.width as f64, seq.settings.height as f64);
-    let seq_par = filmcraft_project::sane_par(seq.settings.par);
-    let src_par = src_par.map_or(seq_par, filmcraft_project::sane_par);
-    let (p, q) = (filmcraft_project::par_ratio(src_par), filmcraft_project::par_ratio(seq_par));
+    let seq_par = cfa4_project::sane_par(seq.settings.par);
+    let src_par = src_par.map_or(seq_par, cfa4_project::sane_par);
+    let (p, q) = (cfa4_project::par_ratio(src_par), cfa4_project::par_ratio(seq_par));
     let mut pos = Vec2::new(sw / 2.0, sh / 2.0);
     let mut anchor = Vec2::new(src.0 as f64 / 2.0, src.1 as f64 / 2.0);
     let mut scale = Vec2::new(1.0, 1.0);
@@ -521,8 +521,8 @@ pub(crate) fn item_layer_ex(
             frame_rate: seq.settings.frame_rate.as_f64(),
             working: seq.settings.color.working,
         };
-        for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !filmcraft_project::graphic::is_layer(e)) {
-            if filmcraft_media::cancel::cancelled() {
+        for e in item.effects.iter().filter(|e| e.def().is_some_and(|d| !d.intrinsic) && !cfa4_project::graphic::is_layer(e)) {
+            if cfa4_media::cancel::cancelled() {
                 return None;
             }
             mask::apply_effect(&mut layer, e, &cx);
@@ -564,7 +564,7 @@ fn media_frame(item: &TrackItem, t: Tick, sources: &dyn SourceProvider, want: f3
 /// request to the nearest unit of a coarse timescale (MP4) land on the next frame from there,
 /// showing one frame past the clip's source range and never its In (#318). Snapped down to the
 /// start of the `media_rate` frame that contains it, every reader shows that frame.
-pub(crate) fn video_source_time(item: &TrackItem, t: Tick, media_rate: filmcraft_time::FrameRate) -> Tick {
+pub(crate) fn video_source_time(item: &TrackItem, t: Tick, media_rate: cfa4_time::FrameRate) -> Tick {
     let ft = item.source_time_at(t);
     if !item.reverse || item.frame_hold.is_some() || media_rate.frame_duration().0 <= 0 {
         return ft;
@@ -581,7 +581,7 @@ fn media_image(project: &Project, seq: &Sequence, item: &TrackItem, t: Tick, src
         Some((next_time, wgt)) => match src.video_frame(FrameRequest { time: next_time, scale: want }) {
             Ok(f2) if f2.width == frame.width && f2.height == frame.height => {
                 let b = colorman::decode(project, item.item, &f2, n, &seq.settings.color);
-                if item.time_interpolation == filmcraft_project::TimeInterpolation::OpticalFlow { flow::interpolate(&img, &b, wgt) } else { img.lerp(&b, wgt) }
+                if item.time_interpolation == cfa4_project::TimeInterpolation::OpticalFlow { flow::interpolate(&img, &b, wgt) } else { img.lerp(&b, wgt) }
             }
             _ => img,
         },
@@ -639,14 +639,7 @@ pub(crate) fn base_layer(
 
 /// The layer of one clip at timeline `t` with its effects applied, on a canvas the size of the
 /// sequence output (transparent elsewhere), before opacity and blending. Used by Apply Match.
-pub fn render_clip(
-    project: &Project,
-    seq_id: ItemId,
-    clip: filmcraft_project::ClipId,
-    t: Tick,
-    opts: RenderOptions,
-    sources: &dyn SourceProvider,
-) -> Option<Image> {
+pub fn render_clip(project: &Project, seq_id: ItemId, clip: cfa4_project::ClipId, t: Tick, opts: RenderOptions, sources: &dyn SourceProvider) -> Option<Image> {
     let seq = project.sequence(seq_id)?;
     let (_, item) = seq.find_item(clip)?;
     let tc = format_time(t, seq.settings.frame_rate, seq.settings.drop_frame, TimeDisplay::Timecode, seq.settings.sample_rate as i64);
@@ -657,8 +650,8 @@ pub fn render_clip(
 /// its weight (0..1) at timeline `t`, or None when the exact media time falls on a source frame
 /// (or the clip plays at 100 %, is frame-held, or uses Frame Sampling). Frame Blending cross-fades
 /// the two frames; Optical Flow synthesises the in-between frame from their motion ([`flow`]).
-pub fn interpolation_blend(item: &TrackItem, t: Tick, src_rate: filmcraft_time::FrameRate) -> Option<(Tick, f32)> {
-    if item.time_interpolation == filmcraft_project::TimeInterpolation::FrameSampling || item.frame_hold.is_some() {
+pub fn interpolation_blend(item: &TrackItem, t: Tick, src_rate: cfa4_time::FrameRate) -> Option<(Tick, f32)> {
+    if item.time_interpolation == cfa4_project::TimeInterpolation::FrameSampling || item.frame_hold.is_some() {
         return None;
     }
     if (item.speed.abs() - 1.0).abs() < 1e-9 {
@@ -699,7 +692,7 @@ pub fn render_item(project: &Project, item: ItemId, t: Tick, scale: f32, sources
             let full_w = src.info().video.as_ref().map_or(f.width, |v| v.width) as f32;
             let n = decimation(f.width as f32, full_w * scale);
             // the Source monitor shows media as SDR Rec. 709 (log/HDR tone mapped per its colour space)
-            Some(colorman::decode(project, item, &f, n, &filmcraft_color::ColorPipeline::REC709))
+            Some(colorman::decode(project, item, &f, n, &cfa4_color::ColorPipeline::REC709))
         }
     }
 }
@@ -714,7 +707,7 @@ impl SourceProvider for SourceMap {
     }
 }
 
-pub fn arc_source(s: impl filmcraft_media::MediaSource + 'static) -> SharedSource {
+pub fn arc_source(s: impl cfa4_media::MediaSource + 'static) -> SharedSource {
     Arc::new(s)
 }
 

@@ -410,7 +410,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "241b621213072e993be4f6f3a9e4b45f65b7e6faad43001be957184b7bb1824b"
 dependencies = [
  "atk-sys",
- "glib",
+ "glib 0.18.5",
  "libc",
 ]
 
@@ -420,10 +420,10 @@ version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5e48b684b0ca77d2bbadeef17424c2ea3c897d44d566a1617e7e8f30614d086"
 dependencies = [
- "glib-sys",
- "gobject-sys",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
 ]
 
 [[package]]
@@ -431,6 +431,12 @@ name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
+
+[[package]]
+name = "atomic_refcell"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21e4227379beff4205943696e6c3e0cd809bacdf3f0edd6e3dd153e2269571a4"
 
 [[package]]
 name = "atspi"
@@ -633,7 +639,7 @@ checksum = "8ca26ef0159422fb77631dc9d17b102f253b876fe1586b03b803e63a309b4ee2"
 dependencies = [
  "bitflags 2.13.2",
  "cairo-sys-rs",
- "glib",
+ "glib 0.18.5",
  "libc",
  "once_cell",
  "thiserror 1.0.69",
@@ -645,9 +651,9 @@ version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "685c9fa8e590b8b3d678873528d83411db17242a73fccaed827770ea0fedda51"
 dependencies = [
- "glib-sys",
+ "glib-sys 0.18.1",
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
 ]
 
 [[package]]
@@ -759,13 +765,802 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
 
 [[package]]
+name = "cfa4"
+version = "0.10.0"
+dependencies = [
+ "arboard",
+ "cfa4-engine",
+ "cfa4-export",
+ "cfa4-gpu",
+ "cfa4-gstreamer",
+ "cfa4-platform",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "cfa4-ui-egui",
+ "chrono",
+ "cpal",
+ "eframe",
+ "egui",
+ "glob",
+ "log",
+ "muda",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-foundation 0.3.2",
+ "open",
+ "pollster 0.4.0",
+ "rfd",
+ "serde_json",
+ "sys-locale",
+ "winit",
+ "winresource",
+ "zbus",
+]
+
+[[package]]
+name = "cfa4-aac"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-ac3"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-accel"
+version = "0.10.0"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-apv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-audio-dsp"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-automation"
+version = "0.10.0"
+dependencies = [
+ "base64 0.22.1",
+ "cfa4-engine",
+ "cfa4-time",
+ "image",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
+name = "cfa4-av1"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "rustix 1.1.5",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-avi"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-bitstream"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+]
+
+[[package]]
+name = "cfa4-captions"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-project",
+ "cfa4-text",
+ "cfa4-time",
+ "proptest",
+ "roxmltree",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-cfb"
+version = "0.10.0"
+
+[[package]]
+name = "cfa4-cli"
+version = "0.10.0"
+dependencies = [
+ "cfa4-automation",
+ "cfa4-codecs",
+ "cfa4-engine",
+ "cfa4-export",
+ "cfa4-gpu",
+ "cfa4-gstreamer",
+ "cfa4-media",
+ "cfa4-mpegts",
+ "cfa4-mxf",
+ "cfa4-ogg",
+ "cfa4-platform",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-time",
+ "log",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "cfa4-codecs"
+version = "0.10.0"
+dependencies = [
+ "cfa4-aac",
+ "cfa4-ac3",
+ "cfa4-apv",
+ "cfa4-av1",
+ "cfa4-avi",
+ "cfa4-bitstream",
+ "cfa4-color",
+ "cfa4-dnx",
+ "cfa4-frame",
+ "cfa4-h264",
+ "cfa4-hevc",
+ "cfa4-isobmff",
+ "cfa4-matroska",
+ "cfa4-media",
+ "cfa4-mpa",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
+ "cfa4-mxf",
+ "cfa4-ogg",
+ "cfa4-opus",
+ "cfa4-prores",
+ "cfa4-testkit",
+ "cfa4-time",
+ "cfa4-vp8",
+ "cfa4-vp9",
+ "image",
+ "log",
+ "rayon",
+ "serde_json",
+ "symphonia",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-color"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-credits"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "roxmltree",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-dng"
+version = "0.10.0"
+dependencies = [
+ "cfa4-dng",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-dnx"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-docpath"
+version = "0.1.0"
+
+[[package]]
+name = "cfa4-edit"
+version = "0.10.0"
+dependencies = [
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "proptest",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-engine"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-captions",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-credits",
+ "cfa4-dng",
+ "cfa4-docpath",
+ "cfa4-edit",
+ "cfa4-export",
+ "cfa4-format",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-interchange",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-mxf",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-scopes",
+ "cfa4-speech",
+ "cfa4-testkit",
+ "cfa4-text",
+ "cfa4-time",
+ "cfa4-tts",
+ "image",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-export"
+version = "0.10.0"
+dependencies = [
+ "cfa4-aac",
+ "cfa4-apv",
+ "cfa4-audio-dsp",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-dnx",
+ "cfa4-flac",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-h264enc",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-mxf",
+ "cfa4-project",
+ "cfa4-prores",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-text",
+ "cfa4-time",
+ "image",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-flac"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-format"
+version = "0.10.0"
+dependencies = [
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-frame"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-time",
+ "rayon",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-geom"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-golden"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-gpu",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-time",
+ "pollster 0.4.0",
+ "wgpu",
+]
+
+[[package]]
+name = "cfa4-gpu"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-export",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-time",
+ "image",
+ "log",
+ "pollster 0.4.0",
+ "rayon",
+ "wgpu",
+]
+
+[[package]]
+name = "cfa4-gstreamer"
+version = "0.10.0"
+dependencies = [
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-engine",
+ "cfa4-frame",
+ "cfa4-media",
+ "cfa4-time",
+ "gstreamer",
+ "gstreamer-app",
+ "gstreamer-pbutils",
+ "gstreamer-video",
+ "log",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-h264"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-h264enc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-hevc"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-interchange"
+version = "0.10.0"
+dependencies = [
+ "cfa4-cfb",
+ "cfa4-color",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-time",
+ "proptest",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-isobmff"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "proptest",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-matroska"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-media"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-dng",
+ "cfa4-frame",
+ "cfa4-testkit",
+ "cfa4-time",
+ "image",
+ "log",
+ "png",
+ "rayon",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mpa"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mpeg2v"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mpegts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-mxf"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-ogg"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-opus"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
+name = "cfa4-platform"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-export",
+ "cfa4-frame",
+ "cfa4-h264",
+ "cfa4-hevc",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-testkit",
+ "cfa4-time",
+ "libloading",
+ "log",
+ "objc2-core-foundation",
+ "objc2-core-media",
+ "objc2-core-video",
+ "objc2-video-toolbox",
+ "windows 0.62.2",
+]
+
+[[package]]
+name = "cfa4-project"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-time",
+ "proptest",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-prores"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-render"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-captions",
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-media",
+ "cfa4-project",
+ "cfa4-text",
+ "cfa4-time",
+ "image",
+ "rayon",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-scopes"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-speech"
+version = "0.10.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+ "cfa4-project",
+ "cfa4-time",
+ "rayon",
+ "rustls",
+ "rustls-rustcrypto",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.21",
+ "ureq",
+]
+
+[[package]]
+name = "cfa4-testkit"
+version = "0.10.0"
+dependencies = [
+ "png",
+]
+
+[[package]]
+name = "cfa4-text"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+ "harfrust",
+ "skrifa",
+ "unicode-bidi",
+ "unicode-linebreak",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "cfa4-time"
+version = "0.10.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-tts"
+version = "0.10.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+ "cfa4-audio-dsp",
+ "cfa4-tts-text",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zip",
+]
+
+[[package]]
+name = "cfa4-tts-text"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-ui"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "serde",
+]
+
+[[package]]
+name = "cfa4-ui-egui"
+version = "0.10.0"
+dependencies = [
+ "cfa4-audio-dsp",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-edit",
+ "cfa4-engine",
+ "cfa4-export",
+ "cfa4-frame",
+ "cfa4-geom",
+ "cfa4-gpu",
+ "cfa4-interchange",
+ "cfa4-media",
+ "cfa4-platform",
+ "cfa4-project",
+ "cfa4-render",
+ "cfa4-scopes",
+ "cfa4-text",
+ "cfa4-time",
+ "cfa4-tts",
+ "cfa4-ui",
+ "cpu-time",
+ "eframe",
+ "egui",
+ "egui_kittest",
+ "image",
+ "log",
+ "pollster 0.4.0",
+ "rayon",
+ "rustix 1.1.5",
+ "serde",
+ "serde_json",
+ "toml 1.1.6+spec-1.1.0",
+ "unicode-bidi",
+ "web-time",
+]
+
+[[package]]
+name = "cfa4-vp8"
+version = "0.10.0"
+dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-vp9"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-web"
+version = "0.10.0"
+dependencies = [
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-engine",
+ "cfa4-format",
+ "cfa4-frame",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-time",
+ "cfa4-ui-egui",
+ "eframe",
+ "egui",
+ "js-sys",
+ "log",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
+]
+
+[[package]]
 name = "cfg-expr"
 version = "0.15.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d067ad48b8650848b989a59a86c6c36a995d02d2bf778d45c3c5d57bc2718f02"
 dependencies = [
  "smallvec",
- "target-lexicon",
+ "target-lexicon 0.12.16",
+]
+
+[[package]]
+name = "cfg-expr"
+version = "0.20.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ba9e9ec16c447027685b1f897b720e18e9a8afd00bd7332c483537e38086c9f"
+dependencies = [
+ "smallvec",
+ "target-lexicon 0.13.5",
 ]
 
 [[package]]
@@ -1009,18 +1804,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "craft-docpath"
-version = "0.1.0"
-
-[[package]]
-name = "craft-ui"
-version = "0.1.0"
-dependencies = [
- "egui",
- "serde",
 ]
 
 [[package]]
@@ -1676,751 +2459,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "filmcraft"
-version = "0.10.0"
-dependencies = [
- "arboard",
- "chrono",
- "cpal",
- "eframe",
- "egui",
- "filmcraft-engine",
- "filmcraft-export",
- "filmcraft-gpu",
- "filmcraft-platform",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-time",
- "filmcraft-ui-egui",
- "glob",
- "log",
- "muda",
- "objc2 0.6.4",
- "objc2-app-kit 0.3.2",
- "objc2-foundation 0.3.2",
- "open",
- "pollster 0.4.0",
- "rfd",
- "serde_json",
- "sys-locale",
- "winit",
- "winresource",
- "zbus",
-]
-
-[[package]]
-name = "filmcraft-aac"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-ac3"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-accel"
-version = "0.10.0"
-dependencies = [
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-apv"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-audio-dsp"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-automation"
-version = "0.10.0"
-dependencies = [
- "base64 0.22.1",
- "filmcraft-engine",
- "filmcraft-time",
- "image",
- "rmcp",
- "schemars",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "tokio",
-]
-
-[[package]]
-name = "filmcraft-av1"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "rustix 1.1.5",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-avi"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-bitstream"
-version = "0.10.0"
-dependencies = [
- "proptest",
-]
-
-[[package]]
-name = "filmcraft-captions"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-project",
- "filmcraft-text",
- "filmcraft-time",
- "proptest",
- "roxmltree",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-cfb"
-version = "0.10.0"
-
-[[package]]
-name = "filmcraft-cli"
-version = "0.10.0"
-dependencies = [
- "filmcraft-automation",
- "filmcraft-codecs",
- "filmcraft-engine",
- "filmcraft-export",
- "filmcraft-gpu",
- "filmcraft-media",
- "filmcraft-mpegts",
- "filmcraft-mxf",
- "filmcraft-ogg",
- "filmcraft-platform",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-time",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "filmcraft-codecs"
-version = "0.10.0"
-dependencies = [
- "filmcraft-aac",
- "filmcraft-ac3",
- "filmcraft-apv",
- "filmcraft-av1",
- "filmcraft-avi",
- "filmcraft-bitstream",
- "filmcraft-color",
- "filmcraft-dnx",
- "filmcraft-frame",
- "filmcraft-h264",
- "filmcraft-hevc",
- "filmcraft-isobmff",
- "filmcraft-matroska",
- "filmcraft-media",
- "filmcraft-mpa",
- "filmcraft-mpeg2v",
- "filmcraft-mpegts",
- "filmcraft-mxf",
- "filmcraft-ogg",
- "filmcraft-opus",
- "filmcraft-prores",
- "filmcraft-testkit",
- "filmcraft-time",
- "filmcraft-vp8",
- "filmcraft-vp9",
- "image",
- "log",
- "rayon",
- "serde_json",
- "symphonia",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-color"
-version = "0.10.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-credits"
-version = "0.10.0"
-dependencies = [
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "roxmltree",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-dng"
-version = "0.10.0"
-dependencies = [
- "filmcraft-dng",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-dnx"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-edit"
-version = "0.10.0"
-dependencies = [
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "proptest",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-engine"
-version = "0.10.0"
-dependencies = [
- "craft-docpath",
- "filmcraft-audio-dsp",
- "filmcraft-captions",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-credits",
- "filmcraft-dng",
- "filmcraft-edit",
- "filmcraft-export",
- "filmcraft-format",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-interchange",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-mxf",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-scopes",
- "filmcraft-speech",
- "filmcraft-testkit",
- "filmcraft-text",
- "filmcraft-time",
- "filmcraft-tts",
- "image",
- "log",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-export"
-version = "0.10.0"
-dependencies = [
- "filmcraft-aac",
- "filmcraft-apv",
- "filmcraft-audio-dsp",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-dnx",
- "filmcraft-flac",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-h264enc",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-mxf",
- "filmcraft-project",
- "filmcraft-prores",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-text",
- "filmcraft-time",
- "image",
- "rayon",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-flac"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-format"
-version = "0.10.0"
-dependencies = [
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "log",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-frame"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-time",
- "rayon",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-geom"
-version = "0.10.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-golden"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-gpu",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-time",
- "pollster 0.4.0",
- "wgpu",
-]
-
-[[package]]
-name = "filmcraft-gpu"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-export",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-time",
- "image",
- "log",
- "pollster 0.4.0",
- "rayon",
- "wgpu",
-]
-
-[[package]]
-name = "filmcraft-h264"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-h264enc"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-hevc"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-interchange"
-version = "0.10.0"
-dependencies = [
- "filmcraft-cfb",
- "filmcraft-color",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-time",
- "proptest",
- "roxmltree",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-isobmff"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "proptest",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-matroska"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-media"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-dng",
- "filmcraft-frame",
- "filmcraft-testkit",
- "filmcraft-time",
- "image",
- "png",
- "rayon",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mpa"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mpeg2v"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mpegts"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-mxf"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-ogg"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-opus"
-version = "0.10.0"
-dependencies = [
- "filmcraft-testkit",
-]
-
-[[package]]
-name = "filmcraft-platform"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-export",
- "filmcraft-frame",
- "filmcraft-h264",
- "filmcraft-hevc",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-testkit",
- "filmcraft-time",
- "libloading",
- "log",
- "objc2-core-foundation",
- "objc2-core-media",
- "objc2-core-video",
- "objc2-video-toolbox",
- "windows 0.62.2",
-]
-
-[[package]]
-name = "filmcraft-project"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-time",
- "proptest",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-prores"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "filmcraft-testkit",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-render"
-version = "0.10.0"
-dependencies = [
- "filmcraft-audio-dsp",
- "filmcraft-captions",
- "filmcraft-color",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-media",
- "filmcraft-project",
- "filmcraft-text",
- "filmcraft-time",
- "image",
- "rayon",
- "rustix 1.1.5",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-scopes"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "filmcraft-speech"
-version = "0.10.0"
-dependencies = [
- "candle-core",
- "candle-nn",
- "filmcraft-project",
- "filmcraft-time",
- "rayon",
- "rustls",
- "rustls-rustcrypto",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.21",
- "ureq",
-]
-
-[[package]]
-name = "filmcraft-testkit"
-version = "0.10.0"
-dependencies = [
- "png",
-]
-
-[[package]]
-name = "filmcraft-text"
-version = "0.10.0"
-dependencies = [
- "filmcraft-color",
- "harfrust",
- "skrifa",
- "unicode-bidi",
- "unicode-linebreak",
- "unicode-segmentation",
-]
-
-[[package]]
-name = "filmcraft-time"
-version = "0.10.0"
-dependencies = [
- "proptest",
- "serde",
-]
-
-[[package]]
-name = "filmcraft-tts"
-version = "0.10.0"
-dependencies = [
- "candle-core",
- "candle-nn",
- "filmcraft-audio-dsp",
- "filmcraft-tts-text",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "zip",
-]
-
-[[package]]
-name = "filmcraft-tts-text"
-version = "0.10.0"
-dependencies = [
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-ui-egui"
-version = "0.10.0"
-dependencies = [
- "cpu-time",
- "craft-ui",
- "eframe",
- "egui",
- "egui_kittest",
- "filmcraft-audio-dsp",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-edit",
- "filmcraft-engine",
- "filmcraft-export",
- "filmcraft-frame",
- "filmcraft-geom",
- "filmcraft-gpu",
- "filmcraft-interchange",
- "filmcraft-media",
- "filmcraft-platform",
- "filmcraft-project",
- "filmcraft-render",
- "filmcraft-scopes",
- "filmcraft-text",
- "filmcraft-time",
- "filmcraft-tts",
- "image",
- "log",
- "pollster 0.4.0",
- "rayon",
- "rustix 1.1.5",
- "serde",
- "serde_json",
- "toml 1.1.6+spec-1.1.0",
- "unicode-bidi",
- "web-time",
-]
-
-[[package]]
-name = "filmcraft-vp8"
-version = "0.10.0"
-dependencies = [
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-vp9"
-version = "0.10.0"
-dependencies = [
- "filmcraft-bitstream",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "filmcraft-web"
-version = "0.10.0"
-dependencies = [
- "eframe",
- "egui",
- "filmcraft-codecs",
- "filmcraft-color",
- "filmcraft-engine",
- "filmcraft-format",
- "filmcraft-frame",
- "filmcraft-isobmff",
- "filmcraft-media",
- "filmcraft-time",
- "filmcraft-ui-egui",
- "js-sys",
- "log",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "web-time",
-]
-
-[[package]]
 name = "find-msvc-tools"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2608,7 +2646,7 @@ dependencies = [
  "gdk-pixbuf",
  "gdk-sys",
  "gio",
- "glib",
+ "glib 0.18.5",
  "libc",
  "pango",
 ]
@@ -2621,7 +2659,7 @@ checksum = "50e1f5f1b0bfb830d6ccc8066d18db35c487b1b2b1e8589b5dfe9f07e8defaec"
 dependencies = [
  "gdk-pixbuf-sys",
  "gio",
- "glib",
+ "glib 0.18.5",
  "libc",
  "once_cell",
 ]
@@ -2632,11 +2670,11 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9839ea644ed9c97a34d129ad56d38a25e6756f99f3a88e15cd39c20629caf7"
 dependencies = [
- "gio-sys",
- "glib-sys",
- "gobject-sys",
+ "gio-sys 0.18.1",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
 ]
 
 [[package]]
@@ -2647,13 +2685,13 @@ checksum = "5c2d13f38594ac1e66619e188c6d5a1adb98d11b2fcf7894fc416ad76aa2f3f7"
 dependencies = [
  "cairo-sys-rs",
  "gdk-pixbuf-sys",
- "gio-sys",
- "glib-sys",
- "gobject-sys",
+ "gio-sys 0.18.1",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
  "pango-sys",
  "pkg-config",
- "system-deps",
+ "system-deps 6.2.2",
 ]
 
 [[package]]
@@ -2860,8 +2898,8 @@ dependencies = [
  "futures-core",
  "futures-io",
  "futures-util",
- "gio-sys",
- "glib",
+ "gio-sys 0.18.1",
+ "glib 0.18.5",
  "libc",
  "once_cell",
  "pin-project-lite",
@@ -2875,11 +2913,24 @@ version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37566df850baf5e4cb0dfb78af2e4b9898d817ed9263d1090a2df958c64737d2"
 dependencies = [
- "glib-sys",
- "gobject-sys",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
  "winapi",
+]
+
+[[package]]
+name = "gio-sys"
+version = "0.22.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c28739f914c15b87a9856000bed9cbd5b3a8afbca5e982d9a299e1601422cb5"
+dependencies = [
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "libc",
+ "system-deps 9.0.1",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2905,15 +2956,36 @@ dependencies = [
  "futures-executor",
  "futures-task",
  "futures-util",
- "gio-sys",
- "glib-macros",
- "glib-sys",
- "gobject-sys",
+ "gio-sys 0.18.1",
+ "glib-macros 0.18.5",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
  "memchr",
  "once_cell",
  "smallvec",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "glib"
+version = "0.22.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4cf9e5bd8713f1990a92c422998826e0fb34824277b46bc59757373483c6694"
+dependencies = [
+ "bitflags 2.13.2",
+ "futures-channel",
+ "futures-core",
+ "futures-executor",
+ "futures-task",
+ "futures-util",
+ "gio-sys 0.22.9",
+ "glib-macros 0.22.9",
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "libc",
+ "memchr",
+ "smallvec",
 ]
 
 [[package]]
@@ -2931,13 +3003,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "glib-macros"
+version = "0.22.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9597c68fa7bdf4154a3079642cd21c4dccac0b0bdd2897d82861523bf91e7b9"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
+]
+
+[[package]]
 name = "glib-sys"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063ce2eb6a8d0ea93d2bf8ba1957e78dbab6be1c2220dd3daca57d5a9d869898"
 dependencies = [
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
+]
+
+[[package]]
+name = "glib-sys"
+version = "0.22.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99b38907e67e40dec9b60f858bcada952598719cb512a13eb13d6cdcd16f8295"
+dependencies = [
+ "libc",
+ "system-deps 9.0.1",
 ]
 
 [[package]]
@@ -3046,9 +3140,20 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0850127b514d1c4a4654ead6dedadb18198999985908e6ffe4436f53c785ce44"
 dependencies = [
- "glib-sys",
+ "glib-sys 0.18.1",
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
+]
+
+[[package]]
+name = "gobject-sys"
+version = "0.22.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07595c9ba696bd9819cb6a8df39f08078f3dd679508fe052dd558492c2053834"
+dependencies = [
+ "glib-sys 0.22.9",
+ "libc",
+ "system-deps 9.0.1",
 ]
 
 [[package]]
@@ -3077,6 +3182,188 @@ dependencies = [
 ]
 
 [[package]]
+name = "gstreamer"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4237e2066a25ecb7e54be6c066409e30615920265b9799b8d560ef8ac9857c6"
+dependencies = [
+ "cfg-if",
+ "futures-channel",
+ "futures-core",
+ "futures-util",
+ "glib 0.22.10",
+ "gstreamer-sys",
+ "itertools",
+ "kstring",
+ "libc",
+ "muldiv",
+ "num-integer",
+ "num-rational",
+ "option-operations",
+ "pastey",
+ "pin-project-lite",
+ "smallvec",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "gstreamer-app"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97f8ae9238c2352398dcc084de28df3f7099af216ac6c160b52318d23f25c010"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "glib 0.22.10",
+ "gstreamer",
+ "gstreamer-app-sys",
+ "gstreamer-base",
+ "libc",
+]
+
+[[package]]
+name = "gstreamer-app-sys"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0798b8aef6694341d40bb81edc759f8979b896b59f9f0f45d8cfa3bb7bf2e743"
+dependencies = [
+ "glib-sys 0.22.9",
+ "gstreamer-base-sys",
+ "gstreamer-sys",
+ "libc",
+ "system-deps 9.0.1",
+]
+
+[[package]]
+name = "gstreamer-audio"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "544f14e19e3b7221845be0e5c2f2cf284576b7baa16835ac16def6e734bfa866"
+dependencies = [
+ "cfg-if",
+ "glib 0.22.10",
+ "gstreamer",
+ "gstreamer-audio-sys",
+ "gstreamer-base",
+ "libc",
+ "smallvec",
+]
+
+[[package]]
+name = "gstreamer-audio-sys"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09a010deb715bc29953a07c6714249132e736b3daf3a529e70586b58a7063888"
+dependencies = [
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "gstreamer-base-sys",
+ "gstreamer-sys",
+ "libc",
+ "system-deps 9.0.1",
+]
+
+[[package]]
+name = "gstreamer-base"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17cbd8f59586a369c40d4b0d2f3a61cf9e9287b3cf5503cdcd8e7c5faa99265e"
+dependencies = [
+ "atomic_refcell",
+ "cfg-if",
+ "glib 0.22.10",
+ "gstreamer",
+ "gstreamer-base-sys",
+ "libc",
+]
+
+[[package]]
+name = "gstreamer-base-sys"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b05f77bfd76b5afee6b29c27dae19eaf5018b5cf8d0d17520f3de44c6385c32"
+dependencies = [
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "gstreamer-sys",
+ "libc",
+ "system-deps 9.0.1",
+]
+
+[[package]]
+name = "gstreamer-pbutils"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b72d09000974d928f66735a0332fc89af5b12d5d6a5897da29c664718655b72"
+dependencies = [
+ "glib 0.22.10",
+ "gstreamer",
+ "gstreamer-audio",
+ "gstreamer-pbutils-sys",
+ "gstreamer-video",
+ "libc",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "gstreamer-pbutils-sys"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a06c546a11c9fa836a509a0383e7aa5a6d2603a115a2d375608610442b7283c"
+dependencies = [
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "gstreamer-audio-sys",
+ "gstreamer-sys",
+ "gstreamer-video-sys",
+ "libc",
+ "system-deps 9.0.1",
+]
+
+[[package]]
+name = "gstreamer-sys"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "436d9532847489a8285d57b8c3670762c12a18f777fdc2ab159b52e0e6f521b9"
+dependencies = [
+ "cfg-if",
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "libc",
+ "system-deps 9.0.1",
+]
+
+[[package]]
+name = "gstreamer-video"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffe4d77b2a5e679973d9c6b6c052da8cda86b83f5c268872f8691fde693fde84"
+dependencies = [
+ "cfg-if",
+ "futures-channel",
+ "glib 0.22.10",
+ "gstreamer",
+ "gstreamer-base",
+ "gstreamer-video-sys",
+ "libc",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "gstreamer-video-sys"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef455da22edca97ac9299d682b868227f3d9217b303748ce0161b31ae82dc106"
+dependencies = [
+ "glib-sys 0.22.9",
+ "gobject-sys 0.22.9",
+ "gstreamer-base-sys",
+ "gstreamer-sys",
+ "libc",
+ "system-deps 9.0.1",
+]
+
+[[package]]
 name = "gtk"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3089,7 +3376,7 @@ dependencies = [
  "gdk",
  "gdk-pixbuf",
  "gio",
- "glib",
+ "glib 0.18.5",
  "gtk-sys",
  "gtk3-macros",
  "libc",
@@ -3107,12 +3394,12 @@ dependencies = [
  "cairo-sys-rs",
  "gdk-pixbuf-sys",
  "gdk-sys",
- "gio-sys",
- "glib-sys",
- "gobject-sys",
+ "gio-sys 0.18.1",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
  "pango-sys",
- "system-deps",
+ "system-deps 6.2.2",
 ]
 
 [[package]]
@@ -3491,6 +3778,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kstring"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "558bf9508a558512042d3095138b1f7b8fe90c5467d94f9f1da28b3731c5dbd1"
+dependencies = [
+ "static_assertions",
+]
+
+[[package]]
 name = "kurbo"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3681,6 +3977,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "muldiv"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "956787520e75e9bd233246045d19f42fb73242759cc57fba9611d940ae96d4b0"
+
+[[package]]
 name = "multiversion_no_op"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3811,6 +4113,16 @@ name = "num-iter"
 version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c92800bd69a1eac91786bcfe9da64a897eb72911b8dc3095decbd07429e8048b"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -4285,6 +4597,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 
 [[package]]
+name = "option-operations"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aca39cf52b03268400c16eeb9b56382ea3c3353409309b63f5c8f0b1faf42754"
+dependencies = [
+ "pastey",
+]
+
+[[package]]
 name = "orbclient"
 version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4344,7 +4665,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ca27ec1eb0457ab26f3036ea52229edbdb74dee1edd29063f5b9b010e7ebee4"
 dependencies = [
  "gio",
- "glib",
+ "glib 0.18.5",
  "libc",
  "once_cell",
  "pango-sys",
@@ -4356,10 +4677,10 @@ version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "436737e391a843e5933d6d9aa102cb126d501e815b83601365a948a518555dc5"
 dependencies = [
- "glib-sys",
- "gobject-sys",
+ "glib-sys 0.18.1",
+ "gobject-sys 0.18.0",
  "libc",
- "system-deps",
+ "system-deps 6.2.2",
 ]
 
 [[package]]
@@ -5986,10 +6307,23 @@ version = "6.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3e535eb8dded36d55ec13eddacd30dec501792ff23a0b1682c38601b8cf2349"
 dependencies = [
- "cfg-expr",
+ "cfg-expr 0.15.8",
  "heck 0.5.0",
  "pkg-config",
  "toml 0.8.2",
+ "version-compare",
+]
+
+[[package]]
+name = "system-deps"
+version = "9.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db551ad38aac61d5e0343e0eeeb0163be3115c4e23b6a025959570ee0c03c67d"
+dependencies = [
+ "cfg-expr 0.20.10",
+ "heck 0.5.0",
+ "pkg-config",
+ "toml 1.1.6+spec-1.1.0",
  "version-compare",
 ]
 
@@ -5998,6 +6332,12 @@ name = "target-lexicon"
 version = "0.12.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
+
+[[package]]
+name = "target-lexicon"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adb6935a6f5c20170eeceb1a3835a49e12e19d792f6dd344ccc76a985ca5a6ca"
 
 [[package]]
 name = "tempfile"
@@ -7425,7 +7765,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 name = "xtask"
 version = "0.10.0"
 dependencies = [
- "filmcraft-testkit",
+ "cfa4-testkit",
  "serde_json",
 ]
 

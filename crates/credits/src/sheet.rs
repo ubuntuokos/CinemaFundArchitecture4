@@ -18,7 +18,7 @@
 //! Anything not understood becomes a [`Warning`] with its row number; reading never fails on
 //! content, only on limits ([`crate::table::Limits`]).
 
-use filmcraft_time::{FrameRate, Tick, parse_timecode};
+use cfa4_time::{FrameRate, Tick, parse_timecode};
 
 use crate::CreditsError;
 
@@ -104,7 +104,7 @@ impl TimeSpec {
             TimeSpec::Timecode(s) => parse_timecode(s, rate, false, 0).ok()?,
         };
         let t = fd.checked_mul(frames)?;
-        (t.unsigned_abs() as f64 / filmcraft_time::TICKS_PER_SECOND as f64 <= MAX_SECONDS).then_some(Tick(t))
+        (t.unsigned_abs() as f64 / cfa4_time::TICKS_PER_SECOND as f64 <= MAX_SECONDS).then_some(Tick(t))
     }
 }
 
@@ -343,8 +343,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         let has_tail = !tail.trim().is_empty();
         if !has_head && !has_body && !has_tail && !has_pics {
             // an empty row (or one with only settings): ends the block; empty rows add a unit
-            let settings_only = !(gap.trim().is_empty() && cstyle.trim().is_empty() && spine_s.trim().is_empty() && pstyle.trim().is_empty())
-                || !(runtime.trim().is_empty() && pgap.trim().is_empty());
+            let settings_only = [&gap, &cstyle, &spine_s, &pstyle, &runtime, &pgap].iter().any(|v| !v.trim().is_empty());
             if !settings_only {
                 pending_units += 1.0;
             }

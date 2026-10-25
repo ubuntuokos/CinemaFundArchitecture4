@@ -4,7 +4,7 @@
 <component type="desktop-application">
   <id>io.github.ubuntuokos.cfa4</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>MIT OR Apache-2.0</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <name>CFA4 (development)</name>
   <summary>Linux video editor under development</summary>
   <developer id="io.github.ubuntuokos">
@@ -15,7 +15,7 @@
       CFA4 is a native video editor under development for Ubuntu 26.04 on
       AMD64 systems. It provides a timeline editing interface, local media
       import and export, and tools for working with picture and sound.
-      The application is developed separately from its FilmCraft parent,
+      The application is developed separately from its upstream parent,
       and this development build is not yet approved for general release.
     </p>
   </description>
@@ -51,7 +51,7 @@
   </supports>
   <provides>
     <binary>cfa4</binary>
-    <mediatype>application/x-filmcraft</mediatype>
+    <mediatype>application/x-cfa4</mediatype>
   </provides>
   <content_rating type="oars-1.1"/>
   <releases>
