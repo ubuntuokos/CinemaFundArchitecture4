@@ -506,6 +506,17 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert len(engine.sent) == 3 and not answers
     dlg._enqueue(True)  # the frames are confirmed now
     assert len(engine.sent) == 4
+    # Browse returning out.mov for an .mp4 format confirmed out.mov, not the existing out.mp4
+    dlg.format.addItem("H.264", "h264")
+    dlg.format.setCurrentIndex(dlg.format.count() - 1)
+    dlg.formats["h264"] = {"extension": "mp4"}
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "out.mov"), ""))
+    dlg._browse()
+    assert dlg.path.text() == str(out)
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 4 and not answers
     # a regular file where the folder should be: an error in the dialog, nothing queued
     blocker = tmp_path / "file"
     blocker.write_text("x")

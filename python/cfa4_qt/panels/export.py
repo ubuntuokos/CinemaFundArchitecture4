@@ -399,10 +399,10 @@ class ExportDialog(QDialog):
         pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
         path, _ = QFileDialog.getSaveFileName(self, tr("Output file"), self.path.text(), pattern)
         if path:
-            # the native dialog has asked about replacing that one file
-            path = with_extension(path, ext) if ext and not path.endswith("." + ext) else path
+            # the native dialog has asked about replacing exactly the file it returned; a
+            # destination with another extension is asked about when exporting
             self._replace_confirmed = {str(Path(path).expanduser())}
-            self.path.setText(path)
+            self.path.setText(with_extension(path, ext) if ext and not path.endswith("." + ext) else path)
 
     def _changed(self) -> None:
         if not self._loading:
