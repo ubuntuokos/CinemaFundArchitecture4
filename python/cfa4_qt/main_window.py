@@ -281,7 +281,7 @@ class MainWindow(QMainWindow):
             self.addAction(action)
 
     def _build_menus(self) -> None:
-        bound = self.registry.build_menus(
+        self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *self.tool_actions],
@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
         window_shortcuts = build_window_menu(
             self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
         )
-        keys = {s.toString() for cid in bound for s in self.registry.actions[cid].shortcuts()}
+        keys = self.registry.claimed_keys
         self._bind_local_shortcuts(keys)
         self._window_actions = bind_free(self, window_shortcuts, keys) + [
             a for a in window_menu.actions() if a not in {p[0] for p in window_shortcuts}

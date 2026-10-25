@@ -513,6 +513,8 @@ def test_panel_only_shortcuts_follow_the_focused_panel(app):
     left = QtGui.QKeySequence("Left")
     assert left not in reg.actions["edit.undo"].shortcuts()
     assert len(win.findChildren(QtGui.QAction, "shortcut.Left")) == 1
+    # panel-scoped keys count as taken, so the window's own shortcuts leave them alone
+    assert {"Left", "Del", "Backspace", "Ctrl+Z"} <= reg.claimed_keys
 
     def press(key: str, panel: str | None) -> str | None:
         _focus_panel(app, win, panel)
