@@ -82,7 +82,7 @@ def entry_text(exec_value: str) -> str:
         "GenericName=Video Editor\n"
         "GenericName[hu]=Videószerkesztő\n"
         "Comment=CFA4 Qt 6 editor run from a source checkout\n"
-        f"Exec={exec_value} %F\n"
+        f"Exec={exec_value} %f\n"  # one project per launch: cfa4-qt opens one
         f"Icon={ICON_NAME}\n"
         "Terminal=false\n"
         "Categories=AudioVideo;Video;AudioVideoEditing;\n"
