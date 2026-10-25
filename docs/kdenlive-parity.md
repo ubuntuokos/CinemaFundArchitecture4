@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
-> **Utolsó átnézés:** 2026-10-24 · **Változás:** major (2. változat: GPL-3.0-or-later, Qt6/PySide6,
-> kiegészítő médiahátterek útválasztóval, márkaeltávolítás) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> **Utolsó átnézés:** 2026-10-25 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
+> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -191,8 +191,89 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 - **Kész, ha:** a mintaprojektek megnyílnak, a vágópontok képkocka-pontosan egyeznek, és az
   import jelenti, mit nem tudott áthozni (VISION.md 2.4: bizonyíték, nem állítás).
 - **Hová:** `crates/interchange` új modulja; a `file.import` felismeri a `.kdenlive`-ot.
+- **Kötelező** (tulajdonosi döntés, 2026-10-25). MLT-könyvtár nem kell hozzá: a `.kdenlive` XML-t
+  a Rust olvasó közvetlenül értelmezi.
+- **Első lépés:** a Kdenlive OTIO-exportja a meglévő `otio.rs`-sel, valódi fájlokon tesztelve
+  (az OTIO-terv, #43, OTIO-4.2 interop-mátrixával együtt).
+- **Kompatibilitási jelentés:** minden elem „támogatott / átalakított / nem támogatott” osztályba
+  kerül; a jelentés az import után megjelenik.
+- **Orákulum:** a `melt` (MLT) csak a tesztekben fut, a Kdenlive-renderrel való képkockás
+  összevetéshez. **Kdenlive-be exportálás nem lesz**, mert csak veszteséggel menne.
 
-## 10. Hogyan frissítsd ezt a fájlt
+## 11. Kiegészítő teendők a Kdenlive segédrepóiból (2026-10-25)
+
+A Kdenlive 26.11 fejlesztői ágán kívül tíz kiegészítő repó került át: `kdenlive-export-profiles`
+(CC0), `kdenlive_ease_generator` (GPL-3.0), `gyroflow-frei0r` (MIT/Apache-2.0, a `gyroflow-core`
+GPL-3.0), `kdenlive-profiles` (GPL-2.0, „or later” nélkül: csak tartalmi minta),
+`kdenlive-clipper` (MIT), `kdenlive-network-render` (GPL-3.0), `kdenlive-multirender` (MIT),
+`kdenlive-post-render-script` (GPL-3.0-or-later), `kdenlive-project-analyzer` (GPL-3.0),
+`kdenlive-tools` (BSD). A legtöbb elavult; a működési elvüket vesszük át. Becslés: ügynökóra,
+mérés nélkül.
+
+| # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
+|---|---|---|---|---|---|
+| **K10** | Külön folyamatban futó render és feladatkezelő a Qt6-ból (`cfa4-cli render`, JSON-sorok) | P1 | 25–45 | ADR F8 2. lépés | `kdenlive_render` + `QLocalSocket`, `TaskManager` |
+| **K11** | Platform-előbeállítások (YouTube, Instagram, TikTok, AV1, VP9, archív, hardveres) | P1 | 15–25 | `cfa4-route` (#55) a hardveres sorokhoz | `kdenlive-export-profiles` (CC0) |
+| **K12** | Kamerák saját proxyfájljainak felismerése (GoPro LRV, DJI LRF, Sony, Insta360) | P1 | 8–15 | megvan (`media.createProxies`) | `data/externalproxies.rc`, `camcorderfilters.rc` |
+| **K13** | Giroszkópos stabilizálás `gyroflow-core`-ral, opcionális funkcióként | P1 | 35–55 | függőség-audit | `gyroflow-frei0r` |
+| **K14** | Párhuzamos és hálózati render, `cfa4-render-node` csak renderelő kliens | P2 | 70–120 | K10 | `kdenlive-multirender`, `kdenlive-network-render` |
+| **K15** | Export utáni lépések: borítókép, MP4-fejezetek, YouTube-fejezetszöveg, export jelölőnként | P2 | 12–20 | K10 | `post-render-script`, `kdenlive-clipper`, `exportguidesdialog` |
+| **K16** | Egyedi klipfeladatok, kötegelt átkódolás | P2 | 25–40 | K10, `cfa4-route` | `customjobtask`, `kdenlivetranscodingrc` |
+| **K17** | Projektnyilvántartás SQLite-tal: sorozatok, epizódok, feliratsablonok, presetek, proxyk, modellek | P2 | 30–50 | ADR F8 3. lépés | Kdenlive Library |
+| **K18** | Online források és letöltéskezelő: Hugging Face-modellek, Freesound, Pixabay, egyéb linkek | P2 | 25–45 | K4 és K6 előtt | `src/onlineresources`, `data/resourceproviders` |
+| **K19** | További easing-típusok (elastic, bounce, back, expo …) | P3 | 8–15 | – | `kdenlive_ease_generator` |
+
+A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra.
+
+### Részletek
+
+- **K10.** A Qt6-héj `QProcess`-szel, munkaszálon indítja a `cfa4-cli render`-t; az előrehaladás
+  JSON-sorokban jön. Kész, ha a Qt-héj leállítása után a render befejeződik, és a megszakítás nem
+  hagy félkész fájlt. Ugyanez a minta szolgálja a proxy- és átkódolási feladatokat.
+- **K11.** A profilok tartalma (felbontás, bitráta, GOP, hang) a `crates/export/src/presets.rs`
+  formátumára átírva, `ATTRIBUTION.md`-bejegyzéssel. A hardveres presetek a `cfa4-route` választásával
+  futnak (saját NVENC / VA-API, FFmpeg `*_vaapi`, GStreamer `va*enc`, ADR 0005). Ha a gyártói
+  meghajtó hiányzik, a CFA4 megmutatja, honnan telepíthető: előbb az Ubuntu-csomag (`apt`, NVIDIA-n
+  „További illesztőprogramok”), utána a gyártó telepítési oldalának linkje; magától semmit nem tölt
+  le. A linkek adatfájlban vannak, kiadás előtt ellenőrizzük őket.
+- **K12.** Adatfájlban leírt névpárok; a kameraproxy a meglévő `ProxySource`-ként csatolódik,
+  újrakódolás nélkül.
+- **K13.** A `gyroflow-core` Rust crate opcionális Cargo-funkcióként, frei0r-felület nélkül,
+  `catch_unwind` alatt. Kész, ha GoPro-mintán mérhetően jobb a 2D Warp Stabilizernél.
+- **K14.** GOP-határon darabolt render, a saját muxer újrakódolás nélkül fűz. Több gép, gépenként
+  több GPU; a vezérlő a csomópontok mért sebessége szerint oszt, a kieső csomópont szakaszát újra
+  kiosztja. A `cfa4-render-node` szerkesztőfelület nélkül, gyenge irodai gépen is fut, alacsony
+  prioritással vagy tétlen időben, a gép használója szüneteltetheti. Helyi hálózat, párosítás,
+  titkosított kapcsolat, ujjlenyomattal ellenőrzött média, azonos CFA4-verzió. Kész, ha két gépen
+  (az egyik csak renderelő kliens) ugyanazt a fájlt adja, mint az egyben renderelés.
+- **K15.** A CFA4 már ír `udta`-metaadatot és ismer fejezetjelölőt (`MarkerKind::Chapter`); ehhez
+  jön a borítókép, az MP4-fejezet, a YouTube-szöveg és a felhasználó által megadott export utáni parancs.
+- **K16.** Kötegelt átkódolás a K10 feladatkezelőjén, a `cfa4-route` által választott háttérrel
+  (saját motor, FFmpeg 9, GStreamer; ADR 0005).
+- **K17.** Helyi SQLite (`rusqlite`) a felhasználói adatkönyvtárban. A projekt igazsága a `.fcproj`
+  marad; az adatbázis a projektfájlokból újraépíthető. Kész, ha egy sorozat új epizódja egy lépésben
+  megkapja a sorozat feliratsablonját és presetjeit.
+- **K18.** Közös letöltő, adatfájlban leírt szolgáltatókkal. Letöltés előtt látszik a forrás, a méret
+  és a licenc; csak jóváhagyással indul (VISION.md 5.); hash-ellenőrzés, folytatható letöltés,
+  bejegyzés a K17-be. Hálózat nélkül minden más működik.
+- **K19.** Penner-függvények új `Interpolation` változatként vagy Bezier-kulcskockákká sütve.
+
+## 12. Tulajdonosi döntések (2026-10-25)
+
+| Téma | Döntés |
+|---|---|
+| `.kdenlive`-import (K1) | kötelező; Kdenlive-be exportálás nem lesz |
+| MLT (`melt`) | csak teszt-orákulum, a termékbe nem kerül; az FFmpeg 9 + MLT 7 motorjavaslat elvetve |
+| FFmpeg | változatlanul az ADR 0005 szerint: kiegészítő háttér a `cfa4-route` mögött; a CI FFmpeg 9.0.2-je külön orákulum |
+| `gyroflow-core` (K13) | kell |
+| Hálózati render (K14) | több gép és több GPU engedélyezett; csak renderelő kliens is készül |
+| Fordítómodell (K6) | a csomagba egy nyitott, kereskedelmi használatot is engedő modell (jelölt: Opus-MT/Marian magyar–angol, licencellenőrzés után); a felhasználó opcionálisan cserélheti. SeamlessM4T és NLLB nem (CC-BY-NC) |
+| Hardveres kódolás (K11) | a gyártói meghajtót a felhasználó telepíti, hiány esetén telepítési link |
+| SQLite-nyilvántartás (K17) | kell |
+| Online források (K18) | fontos |
+| Qt6-idővonal | **Qt Widgets marad** (#48, #63); a Kdenlive QML-idővonala csak referencia, átvenni a `.ui` fájlokat és a modell/nézet mintát érdemes |
+
+## 13. Hogyan frissítsd ezt a fájlt
 
 - Ha egy ❓ sort kipróbáltál, cseréld ✅, 🟡 vagy ❌ jelre, és írd mellé a parancsot vagy issue-t.
 - Ha a Qt6-felületen elkészül egy terület, jelöld külön (pl. „✅ motor, ✅ Qt6”).
@@ -213,3 +294,4 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 | 2026-10-24 | major | Első változat (MIT/Apache-feltételezéssel) |
 | 2026-10-24 | major | 2. változat: GPL-3.0-or-later (Kdenlive-kód átvehető), Qt6/PySide6-felület, GStreamer, gyártófüggetlen gyorsítás, Linux AMD64-only, márkaeltávolítás; rangsor az ADR F8 és ADR 0003 lépéseihez kötve |
 | 2026-10-25 | minor | Médiahátterek az ADR 0005 (#62) szerint: saját motor az alap, FFmpeg ≥ 9.0.2 és Ubuntu GStreamer kiegészítő, automatikus útválasztóval (a visszavont #53 helyett) |
+| 2026-10-25 | major | 3. változat: a tíz kiegészítő Kdenlive-repó elemzése, K10–K19, K1 kötelező (OTIO-teszt, kompatibilitási jelentés, `melt`-orákulum, export nélkül), tulajdonosi döntések (12. pont) |
