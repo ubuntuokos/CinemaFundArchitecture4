@@ -176,6 +176,9 @@ It writes `target/audit/runtime-deps/<UTC>/runtime-deps.json` and `runtime-deps.
 version per namespace (`objdump -T`), and the `dlopen` library names that `ldd` cannot see. It
 installs nothing. A report from any other host is marked as not valid F9 evidence.
 
+Latest measurement (2026-10-25, Ubuntu 26.04.1, `d0cf06e`): glibc ≥ 2.43, libgcc_s, ALSA;
+see `docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md`.
+
 ## Remaining tasks (intentionally not claimed as implemented)
 
 1. Integrate Rust engine commands with a Qt controller (error/timeouts and project lifecycle).

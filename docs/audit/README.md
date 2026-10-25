@@ -28,6 +28,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 | F1 | [f1-source-detachment.md](f1-source-detachment.md) | A leválasztás összefoglalója (beolvasztva, #20) |
 | F1 | [../development/f1-upstream-independence.md](../development/f1-upstream-independence.md) | CFA4 Linux-identitás (`io.github.ubuntuokos.cfa4`, `cfa4`) |
 | F2 | [../development/linux.md](../development/linux.md) | Linux fejlesztői környezet, Ubuntu 26.04 AMD64 |
+| F2 | [F2-01-RUNTIME-DEPS-2026-10-25.md](F2-01-RUNTIME-DEPS-2026-10-25.md) | Mért futásidejű függőségek 26.04-en: GLIBC 2.43, NEEDED, dlopen-lista (#22) |
 | F3 | [f3-cfa4-release-chain-2026-10-23.md](f3-cfa4-release-chain-2026-10-23.md) | Saját kiadási lánc, négy csomagformátum |
 | F5 | [F5-STAGED-RUNTIME-2026-10-23.md](F5-STAGED-RUNTIME-2026-10-23.md) | Csomagok próbatelepítése elkülönítve; tiszta VM-teszt terve |
 | F6 | [F6-XDG-SOURCE-2026-10-23.md](F6-XDG-SOURCE-2026-10-23.md) | Asztali integráció: menü, ikon, fájltársítás, AppStream |

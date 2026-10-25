@@ -57,6 +57,25 @@ def test_parsers_extract_needed_versions_and_paths() -> None:
     }
     assert parse_dpkg_search("libc6:amd64: /usr/lib/x86_64-linux-gnu/libc.so.6\n") == "libc6:amd64"
     assert parse_dpkg_search("") is None
+    assert parse_dpkg_search("libc6:amd64, libc6-dev:amd64: /usr/lib/x\n") == "libc6:amd64"
+
+
+def test_dpkg_search_skips_diversions_in_any_language() -> None:
+    # Measured on a Hungarian 26.04 host before run() forced LC_ALL=C.
+    output = (
+        "eltérítés libc6 által innen: /lib64/ld-linux-x86-64.so.2\n"
+        "diversion by libc6 to: /lib64/ld-linux-x86-64.so.2.usr-is-merged\n"
+        "libc6:amd64: /usr/lib64/ld-linux-x86-64.so.2\n"
+    )
+    assert parse_dpkg_search(output) == "libc6:amd64"
+    assert parse_dpkg_search("eltérítés libc6 által innen: /x\n") is None
+
+
+def test_embedded_libraries_ignore_names_glued_into_string_pools() -> None:
+    # X11 symbol names stored without separators once matched as one huge "lib...libXi.so.6".
+    data = b"\0XSetXlibControlsXkbOpenDisplayXVaCreateNestedListlibXi.so.6\0libXi.so\0" + b"a" * 10
+    assert embedded_libraries(data, []) == ["libXi.so"]
+    assert embedded_libraries(b"\0lib" + b"x" * 100 + b".so\0", []) == []
 
 
 def test_embedded_libraries_exclude_elf_dependencies() -> None:
