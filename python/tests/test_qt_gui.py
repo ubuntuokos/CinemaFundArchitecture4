@@ -538,6 +538,23 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
     assert existing_outputs(seq_dir / "cut.png", "h264") == []
     assert existing_outputs(seq_dir / "other.png", "png") == []
+    # a folder that can be written but not listed is not "no frames there": the export stops
+    def unlistable(_self):
+        raise PermissionError("listing denied")
+
+    with monkeypatch.context() as m:
+        m.setattr(Path, "iterdir", unlistable)
+        with pytest.raises(OSError):
+            existing_outputs(seq_dir / "cut.png", "png")
+        m.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
+        dlg._enqueue(True)
+        assert len(engine.sent) == 2 and not answers
+    # the engine keeps the sidecar kind's case (cut.SRT) except for WebVTT
+    from cfa4_qt.panels.export import sidecar_output
+
+    assert sidecar_output("/x/cut.mp4", "SRT") == Path("/x/cut.SRT")
+    assert sidecar_output("/x/cut.mp4", "WebVTT") == Path("/x/cut.vtt")
+    assert sidecar_output("/x/cut.mp4", "none") is None
     # Browse returning cut.png confirms that file only, not the earlier frames
     monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
     dlg._browse()

@@ -72,6 +72,7 @@
 	Cancel Selected	Kijelöltek megszakítása
 	Cancelled	Megszakítva
 	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
+	Cannot check the output folder for files to replace: {error}	A kimeneti mappában nem ellenőrizhető, mi íródna felül: {error}
 	Captions	Feliratok
 	Captions…	Feliratok…
 	Caribbean	Karibi
