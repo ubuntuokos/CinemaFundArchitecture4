@@ -176,7 +176,7 @@ pub fn detect_version(doc: &Value) -> Result<u32, FormatError> {
 fn probe_version(p: &Probe) -> Result<u32, FormatError> {
     if let Some(v) = p.schema_version {
         if let Some(f) = &p.format
-            && f != FORMAT_ID
+            && !cfa4_project::legacy::format_matches(f, FORMAT_ID)
         {
             return Err(FormatError::NotAProject(format!("format is `{f}`, expected `{FORMAT_ID}`")));
         }
@@ -487,6 +487,20 @@ mod tests {
         assert_eq!(v["format"], FORMAT_ID);
         assert!(v["project"]["items"].is_object());
         assert!(v["project"].get("version").is_none());
+    }
+
+    /// Roadmap A1 / owner decision 2026-10-24: projects saved by the upstream application open in
+    /// CFA4, and the next save writes CFA4's own tag.
+    #[test]
+    fn opens_upstream_projects_and_saves_them_as_cfa4() {
+        let mut p = Project::new("Old project");
+        p.name = "Old project".into();
+        let mut v: Value = serde_json::from_slice(&encode(&p, false)).unwrap();
+        v["format"] = Value::from(cfa4_project::legacy::PROJECT_FORMAT);
+        let loaded = decode(&serde_json::to_vec(&v).unwrap()).unwrap();
+        assert_eq!(loaded.project.name, "Old project");
+        let saved: Value = serde_json::from_slice(&encode(&loaded.project, false)).unwrap();
+        assert_eq!(saved["format"], FORMAT_ID);
     }
 
     #[test]

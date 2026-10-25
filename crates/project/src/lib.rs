@@ -17,6 +17,7 @@ pub mod graphic;
 pub mod graphic_design;
 pub mod gtemplate;
 pub mod keyframe;
+pub mod legacy;
 pub mod mask;
 pub mod mixer;
 pub mod multicam;

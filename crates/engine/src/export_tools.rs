@@ -111,9 +111,14 @@ fn file_bytes(presets: &[ExportPreset], favorites: &[String]) -> Vec<u8> {
     serde_json::to_vec_pretty(&f).unwrap_or_default()
 }
 
+#[cfg(test)]
+pub(crate) fn parse_file_for_tests(bytes: &[u8]) -> std::result::Result<(), String> {
+    parse_file(bytes).map(|_| ())
+}
+
 fn parse_file(bytes: &[u8]) -> std::result::Result<PresetFile, String> {
     let f: PresetFile = serde_json::from_slice(bytes).map_err(|e| format!("not an export preset file: {e}"))?;
-    if f.format != FILE_FORMAT {
+    if !cfa4_project::legacy::format_matches(&f.format, FILE_FORMAT) {
         return Err(format!("not an export preset file (format `{}`)", f.format));
     }
     if f.version > 1 {

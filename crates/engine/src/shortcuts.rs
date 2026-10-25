@@ -1074,7 +1074,7 @@ fn convert(bindings: Vec<Binding>, platform: Option<Platform>) -> Vec<Binding> {
 fn read_file(path: &Path) -> std::result::Result<PresetFile, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let f: PresetFile = serde_json::from_slice(&bytes).map_err(|e| format!("{}: {e}", path.display()))?;
-    if f.format != FILE_FORMAT {
+    if !cfa4_project::legacy::format_matches(&f.format, FILE_FORMAT) {
         return Err(format!("{}: not a CFA4 keyboard shortcuts file", path.display()));
     }
     Ok(f)

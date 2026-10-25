@@ -250,7 +250,7 @@ impl GraphicsTemplate {
         let text =
             std::str::from_utf8(bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes)).map_err(|_| TemplateError::NotTemplate("not UTF-8 text".into()))?;
         let v: serde_json::Value = serde_json::from_str(text).map_err(|e| TemplateError::NotTemplate(e.to_string()))?;
-        if v.get("format").and_then(|f| f.as_str()) != Some(TEMPLATE_FORMAT) {
+        if !v.get("format").and_then(|f| f.as_str()).is_some_and(|f| crate::legacy::format_matches(f, TEMPLATE_FORMAT)) {
             return Err(TemplateError::NotTemplate(format!("`format` is not \"{TEMPLATE_FORMAT}\"")));
         }
         let ver = v.get("version").and_then(|x| x.as_u64()).unwrap_or(0) as u32;
@@ -260,7 +260,9 @@ impl GraphicsTemplate {
         if ver == 0 {
             return Err(TemplateError::Invalid("missing `version`".into()));
         }
-        let t: GraphicsTemplate = serde_json::from_value(v).map_err(|e| TemplateError::Invalid(e.to_string()))?;
+        let mut t: GraphicsTemplate = serde_json::from_value(v).map_err(|e| TemplateError::Invalid(e.to_string()))?;
+        // An upstream-tagged file is upgraded in memory, so the next save writes CFA4's tag.
+        t.format = TEMPLATE_FORMAT.into();
         t.validate()?;
         Ok(t)
     }
@@ -730,6 +732,16 @@ mod tests {
             let back = GraphicsTemplate::from_bytes(t.to_json().as_bytes()).unwrap();
             assert_eq!(back, t);
         }
+    }
+
+    #[test]
+    fn reads_upstream_tagged_templates() {
+        let t = builtin_templates().remove(0);
+        let mut v: serde_json::Value = serde_json::from_str(&t.to_json()).unwrap();
+        v["format"] = serde_json::Value::from(crate::legacy::GRAPHICS_TEMPLATE_FORMAT);
+        let back = GraphicsTemplate::from_bytes(v.to_string().as_bytes()).unwrap();
+        assert_eq!(back, t);
+        assert!(back.to_json().contains(TEMPLATE_FORMAT));
     }
 
     #[test]

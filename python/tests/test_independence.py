@@ -32,6 +32,8 @@ LEGAL = {
     "NOTICE",
     "README.md",
     "python/cfa4_devtools/dependency_audit.py",
+    # Read-only recognition of project/preset files saved by the upstream application (A1).
+    "crates/project/src/legacy.rs",
 }
 LEGAL_NAMES = {"NOTICE", "LICENSE-MIT", "LICENSE-APACHE", "SOURCE_MANIFEST.json"}
 SKIP_DIRS = {".git", "target", ".venv", "venv", "node_modules", "__pycache__", "plan", "build", "dist"}

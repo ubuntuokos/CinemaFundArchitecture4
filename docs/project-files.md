@@ -76,6 +76,22 @@ When you open an older file CFA4 says so ("Upgraded project from schema v1 to v2
 on disk is unchanged until you save. The **first save over it** keeps the original next to it as
 `<name> (schema v1 backup).fcproj`, so an older CFA4 can still open your work.
 
+### Files from the upstream application
+
+CFA4 is a fork (see `NOTICE`), and projects saved by the upstream application keep opening
+(owner decision 2026-10-24, roadmap A1). They use the same `.fcproj` extension and envelope; only
+the `format` tag differs. Readers accept the upstream tag as a synonym of the CFA4 one, writers
+always emit the CFA4 tag, so a file is upgraded the first time CFA4 saves it. The same holds for
+graphics templates (`.fcgt`), effect and export preset files and keyboard-shortcut presets. The
+upstream tags live in one place, `cfa4_project::legacy`, which is also the only file the
+brand-independence test (`python/tests/test_independence.py`) allows them in.
+
+Not carried over: the upstream executable names, desktop ID, MIME type and data directory. CFA4
+never shipped under those names, so there are no transitional aliases to retire; `.fcproj` files
+are still recognised by their glob in `application/x-cfa4`. Presets and shortcuts kept in an
+upstream data directory are not found automatically; bring effect presets and shortcuts over with
+`presets.import` and `shortcuts.import` (Import in their dialogs).
+
 ### Newer files
 
 A file with a `schema_version` newer than the build supports is **refused**, not half-read:

@@ -131,7 +131,7 @@ fn file_bytes(presets: &[EffectPreset]) -> Vec<u8> {
 
 fn parse_file(bytes: &[u8]) -> std::result::Result<Vec<EffectPreset>, String> {
     let f: PresetFile = serde_json::from_slice(bytes).map_err(|e| format!("not an effect preset file: {e}"))?;
-    if f.format != FILE_FORMAT {
+    if !cfa4_project::legacy::format_matches(&f.format, FILE_FORMAT) {
         return Err(format!("not an effect preset file (format `{}`)", f.format));
     }
     if f.version > 1 {
@@ -578,4 +578,18 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     }
     s.presets.persist().map_err(EngineError::Other)?;
     Ok(json!({"imported": names}))
+}
+
+#[cfg(test)]
+mod legacy_tests {
+    /// Roadmap A1: preset files saved by the upstream application still import.
+    #[test]
+    fn imports_upstream_tagged_preset_files() {
+        let fx = serde_json::json!({"format": cfa4_project::legacy::EFFECT_PRESETS_FORMAT, "version": 1, "presets": []});
+        assert!(super::parse_file(fx.to_string().as_bytes()).is_ok());
+        let ex = serde_json::json!({"format": cfa4_project::legacy::EXPORT_PRESETS_FORMAT, "version": 1, "presets": [], "favorites": []});
+        assert!(crate::export_tools::parse_file_for_tests(ex.to_string().as_bytes()).is_ok());
+        let other = serde_json::json!({"format": "other", "version": 1, "presets": []});
+        assert!(super::parse_file(other.to_string().as_bytes()).is_err());
+    }
 }
