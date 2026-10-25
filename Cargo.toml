@@ -63,6 +63,7 @@ cfa4-ui-egui = { path = "crates/ui-egui" }
 cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
 cfa4-testkit = { path = "crates/testkit" }
+cfa4-gstreamer = { path = "crates/gstreamer" }
 
 # foundation
 thiserror = "2"

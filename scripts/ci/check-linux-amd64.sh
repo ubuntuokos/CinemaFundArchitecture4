@@ -41,10 +41,10 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 7
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 8
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
-assert workflow.count("    needs: platform-scope") == 7
-assert workflow.count("    runs-on: ubuntu-26.04") == 8
+assert workflow.count("    needs: platform-scope") == 8
+assert workflow.count("    runs-on: ubuntu-26.04") == 9
 assert "audit-gpu-hardware.sh" not in workflow, "physical GPU gate must not run on hosted CI"
 assert "CFA4_REQUIRE_GPU_FX" in (root / "crates/gpu/src/fx_tests.rs").read_text()
 assert "CFA4_GPU_HARDWARE_ADAPTER:" in (root / "crates/gpu/src/blend_tests.rs").read_text()

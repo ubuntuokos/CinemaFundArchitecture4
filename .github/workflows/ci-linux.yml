@@ -89,6 +89,29 @@ jobs:
           target/release/cfa4-cli --version
           target/release/cfa4-cli --demo inspect project
 
+  gstreamer-backend:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: Optional GStreamer backend (ADR 0002, feature on)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install GStreamer development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
+      - name: Clippy with the gstreamer feature
+        run: cargo clippy --locked -p cfa4-gstreamer --all-targets --features gstreamer -- -D warnings
+      - name: Tests with the gstreamer feature
+        run: cargo test --locked -p cfa4-gstreamer --features gstreamer -- --nocapture
+      - name: Probe report
+        run: cargo run --locked -p cfa4-gstreamer --features gstreamer --example gst_probe
+
   vendored-docpath:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
     needs: platform-scope

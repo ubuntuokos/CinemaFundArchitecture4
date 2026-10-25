@@ -229,8 +229,7 @@ pub fn route(app: &mut Cfa4App, ctx: &egui::Context, id: &str, params: &Value) -
             }));
         }
         "file.mediaPropertiesFile" if params.get("path").is_none() => {
-            let exts: Vec<&str> =
-                cfa4_media::VIDEO_EXTENSIONS.iter().chain(cfa4_media::AUDIO_EXTENSIONS).chain(cfa4_media::STILL_EXTENSIONS).copied().collect();
+            let exts: Vec<&str> = cfa4_media::importable_extensions();
             let id = id.to_string();
             return Some(app.pick(FileDialog::open_file(tl!("Media"), &exts), move |app, paths| {
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };

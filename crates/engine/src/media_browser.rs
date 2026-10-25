@@ -150,9 +150,9 @@ fn ext_of(name: &str) -> String {
 /// The kind of file a name is, or None when the browser doesn't show it.
 pub fn kind_of(name: &str) -> Option<&'static str> {
     let e = ext_of(name);
-    if cfa4_media::VIDEO_EXTENSIONS.contains(&e.as_str()) {
+    if cfa4_media::video_extensions().contains(&e.as_str()) {
         Some("video")
-    } else if cfa4_media::AUDIO_EXTENSIONS.contains(&e.as_str()) {
+    } else if cfa4_media::audio_extensions().contains(&e.as_str()) {
         Some("audio")
     } else if cfa4_media::STILL_EXTENSIONS.contains(&e.as_str()) {
         Some("image")
@@ -176,14 +176,7 @@ pub fn passes(filter: &str, kind: &str, name: &str) -> bool {
 
 /// Every extension the browser lists (for the file-type menu).
 pub fn extensions() -> Vec<&'static str> {
-    cfa4_media::VIDEO_EXTENSIONS
-        .iter()
-        .chain(cfa4_media::AUDIO_EXTENSIONS)
-        .chain(cfa4_media::STILL_EXTENSIONS)
-        .chain(&PROJECT_EXTENSIONS)
-        .chain(&CAPTION_EXTENSIONS)
-        .copied()
-        .collect()
+    cfa4_media::importable_extensions().into_iter().chain(PROJECT_EXTENSIONS.iter().copied()).chain(CAPTION_EXTENSIONS.iter().copied()).collect()
 }
 
 fn windows_style(p: &str) -> bool {

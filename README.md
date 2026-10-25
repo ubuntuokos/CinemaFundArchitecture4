@@ -56,6 +56,9 @@ not made, sponsored or endorsed by the upstream authors.
 All upstream names, logos, icons and screenshots have been removed from the product, its
 crates, packaging and documentation; `python/tests/test_independence.py` keeps them out.
 
+GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
+and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+
 PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
 with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
 

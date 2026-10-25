@@ -241,6 +241,14 @@ impl cfa4_export::FrameRenderer for GpuFrameRenderer {
 fn register_gpu_frame_renderer() {
     cfa4_export::register_frame_renderer(|| cfa4_gpu::ExportRenderer::new().map(|r| Box::new(GpuFrameRenderer(r)) as Box<dyn cfa4_export::FrameRenderer>));
 }
+/// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
+/// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
+fn register_gstreamer() {
+    match cfa4_gstreamer::register() {
+        Ok(status) => log::info!("GStreamer {} is the fallback media backend", status.version),
+        Err(e) => log::info!("GStreamer fallback not used: {e}"),
+    }
+}
 
 fn register_hardware_decoders() -> cfa4_platform::Availability {
     cfa4_platform::register()
@@ -285,6 +293,7 @@ async fn cli() {
         return;
     }
     register_hardware_decoders();
+    register_gstreamer();
     register_gpu_frame_renderer();
     let Some(cmd) = a.pos(0) else { usage("missing subcommand") };
     match cmd {

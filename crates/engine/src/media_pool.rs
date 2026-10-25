@@ -277,8 +277,14 @@ impl MediaPool {
     }
 
     /// Read and open a file through `services` (through its random-access reader when the host
-    /// has one: containers then read only their index now and samples on demand).
+    /// has one: containers then read only their index now and samples on demand). A registered
+    /// fallback backend (GStreamer, `cfa4_media::fallback`) takes local files the built-in
+    /// openers cannot open, or open without their video.
     pub fn open_file(&self, path: &str, services: &dyn Services) -> Result<SharedSource, MediaError> {
+        cfa4_media::open_with_fallback(std::path::Path::new(path), self.open_file_native(path, services))
+    }
+
+    fn open_file_native(&self, path: &str, services: &dyn Services) -> Result<SharedSource, MediaError> {
         let io = |e: std::io::Error| if e.kind() == std::io::ErrorKind::NotFound { MediaError::Offline(e.to_string()) } else { MediaError::Io(e.to_string()) };
         if let Some(r) = services.reader(path) {
             let openers = self.openers.read().unwrap_or_else(|e| e.into_inner()).clone();
@@ -295,7 +301,8 @@ impl MediaPool {
         let Some(r) = services.reader(path) else { return self.open_file(path, services) };
         let r = r.map_err(|e| if e.kind() == std::io::ErrorKind::NotFound { MediaError::Offline(e.to_string()) } else { MediaError::Io(e.to_string()) })?;
         let openers = self.openers.read().unwrap_or_else(|e| e.into_inner()).clone();
-        cfa4_media::reader::open_reader_within(&file_name(path), r, &cfa4_codecs::reader_openers(), &openers, PROBE_WHOLE_FILE_MAX)
+        let native = cfa4_media::reader::open_reader_within(&file_name(path), r, &cfa4_codecs::reader_openers(), &openers, PROBE_WHOLE_FILE_MAX);
+        cfa4_media::open_with_fallback(std::path::Path::new(path), native)
     }
 
     /// Resolve (and cache) the source for a project item, using proxies when they are enabled.

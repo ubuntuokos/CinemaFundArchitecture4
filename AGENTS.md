@@ -31,6 +31,14 @@ attribution and original copyright/licence requirements remain in force.
 - Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
+- **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
+  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
+  linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
+  copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
+  is always the fallback; this is the one exception to the inherited "pure Rust in the product" rule.
+- **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
+  (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
+  available) or the CPU fallback.
 - The Qt shell is a development prototype, NOT a completed migration from egui.
 - Primary setup reference: [docs/development/linux.md](docs/development/linux.md).
 
