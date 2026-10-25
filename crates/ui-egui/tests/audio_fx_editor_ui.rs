@@ -2,18 +2,18 @@
 //! Equalizer, Multiband Compressor, Dynamics): opened from Effect Controls ("Custom Setup ▸
 //! Edit…") and from a mixer effect slot, driven by automation id and by pointer drags.
 //!
-//! Set `FILMCRAFT_UI_SNAPSHOT_DIR=<dir>` to also write PNGs of the windows (`fx-editor-*.png`).
+//! Set `CFA4_UI_SNAPSHOT_DIR=<dir>` to also write PNGs of the windows (`fx-editor-*.png`).
 
 use std::sync::mpsc::{Sender, channel};
 
+use cfa4_engine::Session;
+use cfa4_ui_egui::Cfa4App;
+use cfa4_ui_egui::control::ControlRequest;
 use egui_kittest::Harness;
-use filmcraft_engine::Session;
-use filmcraft_ui_egui::FilmcraftApp;
-use filmcraft_ui_egui::control::ControlRequest;
 use serde_json::{Value, json};
 
 struct Driver {
-    harness: Harness<'static, FilmcraftApp>,
+    harness: Harness<'static, Cfa4App>,
     tx: Sender<ControlRequest>,
     snapshots: Option<std::path::PathBuf>,
 }
@@ -23,8 +23,8 @@ impl Driver {
         let mut session = Session::default();
         session.execute("file.openDemoProject", json!({})).expect("demo project");
         let (tx, rx) = channel();
-        let app = FilmcraftApp::new(session).with_control(rx);
-        let snapshots = std::env::var_os("FILMCRAFT_UI_SNAPSHOT_DIR").map(std::path::PathBuf::from);
+        let app = Cfa4App::new(session).with_control(rx);
+        let snapshots = std::env::var_os("CFA4_UI_SNAPSHOT_DIR").map(std::path::PathBuf::from);
         let mut b = Harness::builder().with_size(egui::vec2(1600.0, 980.0)).with_max_steps(10_000);
         if snapshots.is_some() {
             b = b.wgpu();

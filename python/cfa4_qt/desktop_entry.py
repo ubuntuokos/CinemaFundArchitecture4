@@ -3,10 +3,10 @@
 KDE and GNOME show a window's name and icon from the ``.desktop`` file that matches its app id
 (``io.github.ubuntuokos.cfa4``). Packages install one; a checkout run has none, so the panel
 shows the interpreter ("python3") and a generic icon. ``cfa4-qt --install-desktop-entry`` (or
-``CFA4_DEV_DESKTOP_ENTRY=1``, and the egui launcher's ``FILMCRAFT_DEV_DESKTOP_ENTRY=1``) writes
+``CFA4_DEV_DESKTOP_ENTRY=1``, the same flag as the egui launcher's) writes
 a user-level entry and the CFA4 icons into ``$XDG_DATA_HOME`` (``~/.local/share``).
 
-Same rules as the egui launcher (``apps/filmcraft/src/dev_icon.rs``):
+Same rules as the egui launcher (``apps/cfa4/src/dev_icon.rs``):
 
 - opt-in only: nothing is written into the user's profile unless asked;
 - a packaged entry in a system data dir is never overridden;
@@ -27,7 +27,7 @@ from pathlib import Path
 
 from .branding import ASSETS, ICON_NAME, ICON_SIZES, icon_file
 
-ENV_FLAGS = ("CFA4_DEV_DESKTOP_ENTRY", "FILMCRAFT_DEV_DESKTOP_ENTRY")
+ENV_FLAGS = ("CFA4_DEV_DESKTOP_ENTRY",)
 
 
 def requested_by_env() -> bool:

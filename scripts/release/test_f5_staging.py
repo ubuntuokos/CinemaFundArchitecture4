@@ -21,7 +21,7 @@ class F5StagingTests(unittest.TestCase):
     def test_cli_version_must_match_cfa4_package(self):
         with tempfile.TemporaryDirectory() as tmp:
             app = Path(tmp) / "cfa4-cli"
-            app.write_text("#!/bin/sh\necho 'filmcraft-cli 0.10.0'\n")
+            app.write_text("#!/bin/sh\necho 'cfa4-cli 0.10.0'\n")
             app.chmod(0o755)
             self.assertTrue(f5.cli_smoke(app, "0.10.0", os.environ)["version_match"])
             with self.assertRaisesRegex(AuditError, "lacks expected version"):

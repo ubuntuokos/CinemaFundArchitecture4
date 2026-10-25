@@ -9,7 +9,7 @@
     "flatpak",
     "tar.gz"
   ],
-  "parent_repository_policy": "READ_ONLY_FILMCRAFT",
+  "parent_repository_policy": "READ_ONLY_UPSTREAM",
   "verdict": "HOLD",
   "release_publication_authorized": false,
   "gates": [

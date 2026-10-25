@@ -15,7 +15,7 @@ Ubuntu 26.04 does not let `pip` install into the system Python (PEP 668,
 
 ```sh
 git switch cfa4/qt6-gui                         # not needed once it is merged into main
-cargo build --release -p filmcraft-cli          # the engine (must include `serve`)
+cargo build --release -p cfa4-cli          # the engine (must include `serve`)
 sudo apt install python3-venv                   # once, if `python3 -m venv` is missing
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[qt]'      # PySide6 + cfa4-qt, inside .venv only
@@ -35,7 +35,7 @@ without asking, and an installed package's entry is never overridden):
 ```
 
 The engine is `--engine PATH` or `$CFA4_ENGINE` when given; otherwise the build of this checkout
-(`target/release` or `target/debug`, the newer first), then `cfa4-cli` / `filmcraft-cli` on
+(`target/release` or `target/debug`, the newer first), then `cfa4-cli` on
 `PATH`. A candidate without the `serve` subcommand (an engine built from a branch without the
 Qt GUI, or an older installed CLI) is skipped, and if none is usable the GUI lists every path
 it checked and why. `--smoke [--screenshot out.png]`
@@ -99,7 +99,7 @@ frame fits `maxWidth × maxHeight` (16–8192) and is never upscaled. `audio.ren
 
 | File | Role |
 |---|---|
-| `apps/filmcraft-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
+| `apps/cfa4-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
 | `python/cfa4_qt/main_window.py` | docks, refresh cycle, command routing, close/recovery prompts |

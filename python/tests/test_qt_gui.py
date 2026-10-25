@@ -158,10 +158,10 @@ def _script(path: Path, body: str) -> Path:
 
 
 def test_locate_engine_skips_engines_without_serve(tmp_path: Path, monkeypatch, fake_engine: Path):
-    """Regression: an older filmcraft-cli on PATH (no `serve`) was picked and exited with 2."""
+    """Regression: an older cfa4-cli on PATH (no `serve`) was picked and exited with 2."""
     from cfa4_qt import engine as engine_mod
 
-    old = _script(tmp_path / "bin" / "filmcraft-cli", "import sys\nprint('USAGE\\n  exec <id>')\n")
+    old = _script(tmp_path / "bin" / "cfa4-cli", "import sys\nprint('USAGE\\n  exec <id>')\n")
     monkeypatch.delenv("CFA4_ENGINE", raising=False)
     monkeypatch.setenv("PATH", str(old.parent))
     rejected: list[str] = []
@@ -173,7 +173,7 @@ def test_locate_engine_skips_engines_without_serve(tmp_path: Path, monkeypatch, 
     (root / "python" / "cfa4_qt").mkdir(parents=True)
     monkeypatch.setattr(engine_mod, "__file__", str(root / "python" / "cfa4_qt" / "engine.py"))
     assert locate_engine() is None
-    build = root / "target" / "release" / "filmcraft-cli"
+    build = root / "target" / "release" / "cfa4-cli"
     build.parent.mkdir(parents=True)
     build.write_bytes(fake_engine.read_bytes())
     build.chmod(0o755)
@@ -426,7 +426,7 @@ def test_panel_only_shortcuts_are_not_bound_window_wide(app):
 REAL = locate_engine()
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_demo_project(app, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
@@ -477,7 +477,7 @@ def test_hungarian_catalog_covers_the_qt_gui():
     assert not missing, missing
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_hungarian_catalog_covers_every_engine_menu():
     import subprocess
 
@@ -541,7 +541,7 @@ def test_tick_signals_carry_64_bit_times(app):
 
 def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):
     """File ▸ Quit exists (Ctrl+Q, asks to save like the close button), and the GUI uses the CFA4
-    logo, not an inherited FilmCraft/ArtCraft one."""
+    logo, not an inherited upstream one."""
     from cfa4_qt import branding
     from cfa4_qt.main_window import MainWindow
 
@@ -549,9 +549,7 @@ def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Pa
     icon = branding.app_icon()
     assert not icon.isNull() and {s.width() for s in icon.availableSizes()} >= {16, 32, 48, 256}
     assert branding.logo_pixmap(180).width() == 180
-    for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
-        text = path.read_text(encoding="utf-8").lower()
-        assert "ai.storyteller" not in text and "app-icon" not in text, path
+    # inherited marks anywhere in the repository: test_independence.py
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(fake_engine)
@@ -595,7 +593,7 @@ def test_ruler_labels_fall_on_whole_timecode():
     assert [format_timecode(i * ruler_step(ft, 40, 90), ft) for i in (1, 2)] == ["00:00:05:00", "00:00:10:00"]
 
 
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_every_track_is_reachable_in_a_short_timeline(app, tmp_path: Path):
     """Regression: the timeline had no vertical scrolling, so in a short Timeline panel Audio 2
     (the demo's music) showed as a sliver and Audio 3 not at all."""

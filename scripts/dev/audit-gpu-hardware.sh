@@ -74,7 +74,7 @@ echo "Hardware metadata: $METADATA"
 echo "GPU FX test log: $LOG"
 echo "Running only the 12 GPU FX/CPU-fallback tests, not the full workspace..."
 if ! CFA4_REQUIRE_GPU_FX=1 WGPU_BACKEND=vulkan \
-    cargo test --locked --release -p filmcraft-gpu --lib fx_tests -- --nocapture --test-threads=1 \
+    cargo test --locked --release -p cfa4-gpu --lib fx_tests -- --nocapture --test-threads=1 \
     2>&1 | tee "$LOG"; then
     die "a strict GPU parity or fallback test failed; inspect $LOG"
 fi

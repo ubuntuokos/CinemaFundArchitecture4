@@ -40,7 +40,7 @@ for exe in ffmpeg ffprobe; do
   fi
 done
 # Keep this comprehensive matrix in sync with the external FFmpeg calls in
-# apps/filmcraft-cli/tests and crates/*/tests (including their common fixture helpers).
+# apps/cfa4-cli/tests and crates/*/tests (including their common fixture helpers).
 # Check every dependency in one pass, rather than discovering missing codecs
 # only after a long Rust release-test run.
 video_encoders=(libx264 libx265 libvpx libvpx-vp9 libsvtav1 libaom-av1 libwebp mpeg2video mjpeg prores_ks dnxhd rawvideo png)

@@ -3,8 +3,8 @@
 
 mod common;
 
+use cfa4_aac::{AudioSpecificConfig, Decoder, Encoder, EncoderConfig, split_adts};
 use common::*;
-use filmcraft_aac::{AudioSpecificConfig, Decoder, Encoder, EncoderConfig, split_adts};
 
 fn corpus() -> Vec<(Vec<u8>, Vec<Vec<u8>>)> {
     let mut out = Vec::new();

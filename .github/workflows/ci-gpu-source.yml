@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check Rust GPU formatting (no compilation)
-        run: cargo fmt --check --package filmcraft-gpu
+        run: cargo fmt --check --package cfa4-gpu
       - name: Install native Linux test dependencies
         run: |
           sudo apt-get update
@@ -39,4 +39,4 @@ jobs:
       - name: Compile and run only GPU FX / CPU fallback tests
         env:
           CFA4_REQUIRE_GPU_FX: "0"
-        run: cargo test --locked -p filmcraft-gpu --lib fx_tests -- --nocapture
+        run: cargo test --locked -p cfa4-gpu --lib fx_tests -- --nocapture

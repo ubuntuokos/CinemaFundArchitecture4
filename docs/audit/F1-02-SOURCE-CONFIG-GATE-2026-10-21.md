@@ -14,19 +14,19 @@ nem licencjóváhagyás. A vizsgálat során **nem** indult teljes CI,
 
 | ID | Ellenőrzés | Eredmény | Bizonyíték |
 |---|---|---|---|
-| A01 | `craft-docpath` upstream forráseredet | **PASS** | 5/5 deklarált Git-blob SHA egyezik a CFA4 fával és az upstream `82a24b006eefa036b43c09a67fb9a3fbd17ffe63` fával |
-| A02 | `craft-ui` upstream forráseredet | **PASS** | 25/25 deklarált Git-blob SHA egyezik a CFA4 fával és az upstream `5c874d51eeb3de70e735c8ce87a59a7dedd47675` fával |
+| A01 | `cfa4-docpath` upstream forráseredet | **PASS** | 5/5 deklarált Git-blob SHA egyezik a CFA4 fával és az upstream `82a24b006eefa036b43c09a67fb9a3fbd17ffe63` fával |
+| A02 | `cfa4-ui` upstream forráseredet | **PASS** | 25/25 deklarált Git-blob SHA egyezik a CFA4 fával és az upstream `5c874d51eeb3de70e735c8ce87a59a7dedd47675` fával |
 | A03 | Eredeti `Cargo.toml` származási hivatkozások | **PASS** | Mindkét `original_crate_manifest_blob_sha1` megegyezik a rögzített upstream commit manifestjével |
 | A04 | Cargo közvetlen Git-függőségek | **PASS (statikus)** | Az aktuális fában található **58** `Cargo.toml` ellenőrzése: **0** `git =` deklaráció |
-| A05 | `Cargo.lock` Git-források | **PASS (statikus)** | **709** csomagbejegyzés, **0** `git+` forrás, `craft-docpath` és `craft-ui` helyi bejegyzésekkel |
+| A05 | `Cargo.lock` Git-források | **PASS (statikus)** | **709** csomagbejegyzés, **0** `git+` forrás, `cfa4-docpath` és `cfa4-ui` helyi bejegyzésekkel |
 | A06 | Saját Linux AMD64 platformbeállítások | **PASS (konfiguráció)** | Linux x86_64 korlát a dev/bootstrap, ellenőrzés, telepítő, nFPM, csomagoló és Flatpak útvonalon |
 | A07 | Automatikus CI terhelés | **PASS (konfiguráció + korábbi CI)** | PR/push eseményre csak a könnyű `platform-scope` gate aktív; **7** nagy ellenőrzés `workflow_dispatch` vagy az explicit `cfa4-full-validation` címke felvételére indul |
-| A08 | Rust workspace release teszt scope | **PASS (konfiguráció)** | `cargo test --workspace --exclude craft-ui --release --locked --timings`; az eredeti `craft-ui` tesztek külön CI-jobban |
+| A08 | Rust workspace release teszt scope | **PASS (konfiguráció)** | `cargo test --workspace --exclude cfa4-ui --release --locked --timings`; az eredeti `cfa4-ui` tesztek külön CI-jobban |
 | A09 | FFmpeg teszt-oracle centralizálás | **PASS (konfiguráció)** | FFmpeg 9.0.2 install/cache a `rust-release-tests` jobban; az `xtask ci` nem futtat párhuzamos teljes release-tesztet |
 | A10 | PR-függőségi lánc és egyesítési státusz | **PASS (állapot rögzítve)** | `#3 → #5 → #7 → #8 → #10`; minden PR draft, egyik sincs a `main` ágba egyesítve |
 
 A `SOURCE_MANIFEST.json` önmagában csak állítás lenne; itt az eredeti
-`storytold/craft-libs` **pontos commitjainak Git-fájlfájával** is
+the upstream library repository **pontos commitjainak Git-fájlfájával** is
 összehasonlítás történt. A licencek és NOTICE a két upstream commit gyökérszintjén
 vannak, nem az egyes `crates/*` mappákban; ezt a forrásösszehasonlítás figyelembe vette.
 
@@ -86,8 +86,8 @@ alapján ismét ellenőrizni kell.
 - Korábbi statikus sikeres CI: https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/39634711506
 - F1-02/1 PR: https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/8
 - F1-02/2 PR: https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/10
-- docpath eredeti: https://github.com/storytold/craft-libs/tree/82a24b006eefa036b43c09a67fb9a3fbd17ffe63/crates/docpath
-- UI eredeti: https://github.com/storytold/craft-libs/tree/5c874d51eeb3de70e735c8ce87a59a7dedd47675/crates/ui
+- docpath eredeti: upstream library `crates/docpath` @ `82a24b006eef`
+- UI eredeti: upstream library `crates/ui` @ `5c874d51eeb3`
 - Korábbi F1-01 audit: [f1-01-dependencies.md](f1-01-dependencies.md)
 - F1-02 migráció és korábbi CI-történet: [f1-02-vendor-migration.md](f1-02-vendor-migration.md)
 

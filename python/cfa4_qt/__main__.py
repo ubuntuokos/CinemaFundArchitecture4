@@ -10,7 +10,7 @@ from pathlib import Path
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cfa4-qt", description="CFA4 Qt 6 editor (Rust engine + PySide6)")
     parser.add_argument("project", nargs="?", help="project file (.fcproj) to open")
-    parser.add_argument("--engine", help="path to cfa4-cli / filmcraft-cli (default: PATH, then target/)")
+    parser.add_argument("--engine", help="path to cfa4-cli (default: PATH, then target/)")
     parser.add_argument("--demo", action="store_true", help="open the built-in demo project")
     parser.add_argument("--data-dir", help="CFA4 data directory (auto-save, recovery, presets)")
     parser.add_argument("--no-autosave", action="store_true", help="no auto-save or crash-recovery journal")
@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     from .engine import EngineClient, EngineError, locate_engine
     from .main_window import MainWindow
 
-    if requested_by_env():  # opt-in, as the egui launcher's FILMCRAFT_DEV_DESKTOP_ENTRY=1
+    if requested_by_env():  # opt-in, as the egui launcher's CFA4_DEV_DESKTOP_ENTRY=1
         install(sys.stderr)
 
     app = QApplication(sys.argv[:1])
@@ -64,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     engine_path = locate_engine(args.engine, rejected)
     if engine_path is None:
         message = i18n.tr(
-            "The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p filmcraft-cli"
+            "The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli"
         )
         if rejected:
             message += "\n\n" + i18n.tr("Checked:") + "\n" + "\n".join(rejected)
