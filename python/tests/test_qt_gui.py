@@ -449,10 +449,17 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     from cfa4_qt.panels.export import ExportDialog
 
     class Engine:
+        """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``."""
+
         def __init__(self):
             self.sent = []
 
         def execute(self, command, params=None, on_reply=None, on_error=None):
+            if command == "export.resolve":
+                path = str((params or {}).get("path"))
+                if on_reply is not None:
+                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4"}}, None)
+                return 0
             self.sent.append((command, dict(params or {})))
             return 0
 
@@ -468,6 +475,12 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     dlg._enqueue(True)
     assert [c for c, _ in engine.sent] == ["export.queue.add"]
     dlg._enqueue(False)  # already confirmed for this path: no second question
+    assert len(engine.sent) == 2 and not answers
+    # typed without its extension: the file the engine will write is the one asked about
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(tmp_path / "out")})
+    dlg._replace_confirmed = ""
+    dlg._enqueue(True)
     assert len(engine.sent) == 2 and not answers
     # a regular file where the folder should be: an error in the dialog, nothing queued
     blocker = tmp_path / "file"
