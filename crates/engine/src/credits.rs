@@ -283,6 +283,42 @@ fn place_picture(
     Ok(Some(clip))
 }
 
+/// A picture of one page at a moment, without changing the project: the page's text layers
+/// with the roll or fades applied, and each picture's place outlined (pictures themselves are
+/// clips of their own after the import).
+fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.thumbnail";
+    let (l, _) = laid(s, CMD, p)?;
+    let index = u64_p(p, "page").unwrap_or(0) as usize;
+    let pages = l.pages.len();
+    let pg = l.pages.into_iter().nth(index).ok_or_else(|| bad(CMD, format!("there is no page {index} (pages: {pages})")))?;
+    let (cw, ch) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).ok_or(EngineError::NoSequence)?;
+    let rate = s.sequence_rate();
+    let at = p.get("at").and_then(Value::as_f64).filter(|v| v.is_finite()).unwrap_or(0.5).clamp(0.0, 1.0);
+    let w = u64_p(p, "width").unwrap_or(480).clamp(16, 1920) as u32;
+    let h = ((f64::from(w) * f64::from(ch) / f64::from(cw.max(1))).round() as u32).max(1);
+    let mut layers = pg.layers;
+    for e in &mut layers {
+        if e.effect == "graphic_shape" {
+            e.params.insert("stroke".into(), Param::new(ParamValue::Bool(true)));
+            e.params.insert("stroke_color".into(), Param::new(ParamValue::Color([0.6, 0.6, 0.6, 1.0])));
+            e.params.insert("stroke_width".into(), Param::new(ParamValue::Float(f64::from(ch) / 360.0)));
+        }
+    }
+    let mut pr = filmcraft_project::Project::new("credits preview");
+    let g = pr.add_item("G", filmcraft_project::Label::Rose, filmcraft_project::ItemKind::Graphic { width: cw, height: ch, rate }, None);
+    let range = filmcraft_time::TimeRange::new(Tick::ZERO, pg.duration);
+    let mut it = pr.make_track_item(g, filmcraft_project::TrackKind::Video, Tick::ZERO, range, rate).ok_or_else(|| bad(CMD, "bad preview item"))?;
+    it.effects.extend(layers);
+    it.graphic = Some(Box::new(pg.meta));
+    let t = rate.snap(Tick((pg.duration.0 as f64 * at) as i64)).min(Tick(pg.duration.0.saturating_sub(rate.frame_duration().0).max(0)));
+    let mut img = filmcraft_render::image::Image::new(w as usize, h as usize);
+    let k = f64::from(w) / f64::from(cw.max(1));
+    filmcraft_render::graphic_clip::render_graphic(&it, it.source_in + t, (cw, ch), &filmcraft_geom::Affine::scale(k, k), &mut img);
+    let png = filmcraft_export::encode_png(img.to_rgba8(), w, h).map_err(|x| EngineError::Other(x.to_string()))?;
+    Ok(json!({"width": w, "height": h, "page": index, "pages": pages, "time": t.0, "pngBase64": filmcraft_project::gtemplate::base64_encode(&png)}))
+}
+
 fn styles(_: &mut Session, p: &Value) -> Result<Value> {
     let styling = styling_p("graphics.credits.styles", p)?;
     let (pages, contents) = styling.names();
@@ -320,6 +356,16 @@ pub fn commands() -> Vec<CommandSpec> {
             params: P,
             enabled: has_seq,
             run: preview,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.thumbnail",
+            label: "Credits Page Picture",
+            menu: &[],
+            shortcut: None,
+            params: r#"as graphics.credits.preview, plus {"page":index=0,"at":0..1=0.5 (moment in the page),"width":px=480}"#,
+            enabled: has_seq,
+            run: thumbnail,
             journal: false,
         },
         CommandSpec {

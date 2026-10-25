@@ -1,7 +1,7 @@
 # CFA4 ADR F10 – Credits sequences from a spreadsheet (Cinecred-like capability)
 
 **Date:** 2026-10-23  
-**Status:** ACCEPTED; ENGINE + egui MENU IMPLEMENTED (CSV, xlsx, ods, pictures); Qt6 PANEL PENDING (F8 bridge)  
+**Status:** ACCEPTED; ENGINE (CSV, xlsx, ods, pictures) + Qt6 CREDITS WINDOW; UI IS QT6 ONLY (owner, 2026-10-25)  
 **Owner request:** “a Cinecred feliratozó beépítése a CFA4-be” (owner: ubuntuokos)
 
 ## Context
@@ -50,7 +50,7 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | Inline letter styles and videos (`{{…}}`) | not yet: tags are removed with a warning |
 | Parallel / hooked spines, head/tail leaders, width harmonisation | not yet |
 | Scroll runtime by stretching the gaps between blocks at constant speed (falls back to a speed change with a warning) | done (2026-10-24) |
-| Qt6 panel | pending: the F8 Qt bridge allowlists read-only commands; `graphics.credits.preview` can be allowlisted first, `…import` once mutating commands are allowed |
+| Qt6 Credits window (sheet, worksheet, pictures, styling, pages, warnings, page picture, place at playhead) on the Qt6 GUI's engine server | done (2026-10-25); **the owner decided the UI is Qt6 only**: no more egui work, no standalone app |
 
 ## Consequences
 

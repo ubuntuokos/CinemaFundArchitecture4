@@ -2,7 +2,8 @@
 
 CFA4 builds film credits from a spreadsheet: write the credits in LibreOffice Calc, Excel or
 any spreadsheet, save it (`.ods`, `.xlsx` or CSV), and **Graphics and Titles ▸ Import Credits
-Spreadsheet…** places one graphic clip per page from the playhead. Each page is an ordinary graphic: edit it in Essential
+Spreadsheet…** opens the Credits window (Qt6): choose the sheet, see the pages, warnings and a
+picture of each page, then place them at the playhead: one graphic clip per page. Each page is an ordinary graphic: edit it in Essential
 Graphics, trim it, export it. Design decision: [ADR F10](adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md).
 Code: [`crates/credits`](../crates/credits/README.md), `crates/engine/src/credits.rs`.
 
@@ -83,6 +84,7 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` → `{clips: [{clip, start, duration, pictures}], end, sheet, warnings}`; one undo step |
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings}` |
+| `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width` → `{width, height, page, pages, time, pngBase64}`: the page's text with the roll or fades applied, pictures outlined |
 | `graphics.credits.styles` | (query) | `styling` → style names, column names and a starter styling |
 
 Problems in the sheet (unknown styles, bad numbers, unsupported `{{…}}` tags) are warnings with

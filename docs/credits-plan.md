@@ -1,6 +1,6 @@
 # CFA4 stáblista és feliratkészítő – módosított terv (javaslat)
 
-**Állapot:** JAVASLAT – a tulajdonos (`ubuntuokos`) jóváhagyására vár  
+**Állapot:** JAVASLAT – a tulajdonos (`ubuntuokos`) jóváhagyására vár; 1. döntés meghozva (2026-10-25)  
 **Dátum:** 2026-10-24  
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
@@ -41,11 +41,13 @@ Elkészült és a `main`-en van (#36), illetve a `cfa4/credits-2` ágon:
 ## 3. Alapdöntések a módosított tervben
 
 1. **Egy közös mag, ahogy az eredeti terv is kéri:** a `crates/credits` crate a mag (adat,
-   elrendezés, ellenőrzés), az `engine` a parancsok rétege. Minden felület (egui menü, később
-   Qt6, CLI, MCP) ugyanazokat a parancsokat hívja. Nincs külön stáblista-motor.
-2. **Nincs külön önálló alkalmazás az első körben.** A „Credits & Titles Composer” a CFA4-en
-   belüli **munkaterület** lesz (Qt6), nem külön program. Így nincs második telepítendő,
-   frissítendő és együttélési szempontból vizsgálandó bináris.
+   elrendezés, ellenőrzés), az `engine` a parancsok rétege. Minden felület (Qt6, CLI, MCP)
+   ugyanazokat a parancsokat hívja. Nincs külön stáblista-motor.
+2. **Csak Qt6 (tulajdonosi döntés, 2026-10-25: „már csak qt6 legyen”).** Nincs önálló
+   stáblista-alkalmazás: a „Credits & Titles Composer” a CFA4 Qt6-felületén belüli ablak és
+   munkaterület. Az egui-ba nem kerül több stáblista-funkció (az egui be van fagyasztva, és a
+   Qt6-paritás után törlődik; a meglévő egui-menüpont addig marad). Így nincs második
+   telepítendő, frissítendő és együttélési szempontból vizsgálandó bináris.
 3. **Nincs saját hangrendszer.** A zene a CFA4 normál idővonalán és keverőjén van. Az eredeti
    terv §11-e itt duplikáció lenne; a §12 (igazítás a zenéhez) viszont megmarad.
 4. **A „projektformátum” a CFA4-projekt része.** Külön `.fa3credits` helyett a stáblista
@@ -138,16 +140,23 @@ Az eredeti terv §4-éből („Cinecred-kompatibilis import”).
 
 ### C8 – Qt6 stáblista-munkaterület (N)
 
-Az eredeti terv §14–16-a, a CFA4 Qt6-ütemezéséhez igazítva (`VISION.md` 6.1: előbb a Qt6
-alapjai – háttérszálak, médiaböngésző, idővonal).
+Az eredeti terv §14–16-a. A Qt6-felület (#48 → #50 → #54) már a motor összes parancsát eléri,
+ezért a C8 **első része elkészült** (`cfa4/qt6-credits`):
+
+- **Stáblista ablak** (Grafika és címek ▸ Stáblista importálása táblázatból…): táblázat,
+  munkalap, képmappa és stílusfájl választása; az oldalak listája típussal és hosszal,
+  összidő, figyelmeztetések soronként; az oldal **előnézeti képe** egy csúszkával választott
+  időpontban (`graphics.credits.thumbnail`); elhelyezés a lejátszófejnél egy visszavonási
+  lépésben. Nem modális, magyarul.
+
+Hátravan:
 
 - Elrendezés az eredeti terv szerint: bal oldalon oldalak és blokkok, középen előnézet, jobb
   oldalon tulajdonságok, alul idővonal.
 - **Kontextusfüggő felület** (§16): a vágóprogramból megnyitva csak a vágáshoz szükséges
   funkciók látszanak; a teljes nézet egy gombbal érhető el.
-- Első lépésként a csak olvasó `graphics.credits.preview` és `.styles` kerül a Qt6-híd
-  engedélyezett parancsai közé; a módosító parancsok a híd tranzakciós szabályainak
-  elkészülte után.
+- a C1–C6 új képességeinek felülete (újratöltés eltérés-listával, ellenőrzések, zenéhez
+  igazítás, hátterek, sablonok) ebben az ablakban, illetve dokkolható panelben.
 
 ### C9 – Csomagolás és együttélés (K)
 
@@ -166,11 +175,12 @@ Az eredeti terv §23–24-e, a CFA4 csomagolására szabva.
 C1 kapcsolt stáblista ─┬─> C2 ellenőrzések ─> C3 zene
                        └─> C6 sablonok ─> C7 Cinecred-import
 C4 háttér / átmenet ───> C5 gazdagabb elrendezés
-Qt6 alapok (F8) ───────> C8 Qt6 munkaterület
+Qt6 felület (F8, #48–#54) ─> C8 Qt6 munkaterület (első része kész, a többi fázisonként)
 C9 együttélés: C7 után, illetve minden kiadás előtt
 ```
 
-Javasolt sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7**, a C8 a Qt6-alapok elkészültekor.
+Javasolt sorrend: **C1 → C2 → C3 → C4 → C5 → C6 → C7**. Minden fázis a motorral együtt a Qt6-os
+felületét is megkapja (C8 folyamatosan), egui-felületet nem.
 
 ## 6. Kész-feltételek (az eredeti §32 helyett)
 
@@ -200,7 +210,7 @@ gépen (Kubuntu referenciagép) végigvitt munkamenet igazolja: táblázat → s
 
 ## 8. Döntések a tulajdonosnak
 
-1. **Kell-e valaha önálló stáblista-alkalmazás**, vagy elég a CFA4-en belüli munkaterület?
+1. ~~Kell-e önálló stáblista-alkalmazás?~~ **Eldöntve (2026-10-25): csak Qt6**, a CFA4-en belül.
 2. **Kerüljön-e be az élő adás (OBS, élő grafika)** a CFA4 céljai közé? Ez a `VISION.md`
    módosítását jelentené.
 3. **Külön `.cfa4credits` fájl** kell-e (például más gépre vinni), vagy elég, ha a stáblista a

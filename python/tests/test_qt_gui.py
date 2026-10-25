@@ -830,3 +830,64 @@ def test_app_identifies_as_cfa4_to_the_desktop():
     src = (ROOT / "python" / "cfa4_qt" / "__main__.py").read_text(encoding="utf-8")
     assert 'setDesktopFileName("io.github.ubuntuokos.cfa4")' in src
     assert (ROOT / "packaging" / "linux" / "io.github.ubuntuokos.cfa4.desktop").is_file()
+
+
+def test_credits_seconds_format():
+    from cfa4_qt.panels.credits import format_seconds
+
+    assert format_seconds(0) == "0:00.0"
+    assert format_seconds(int(83.5 * TICKS_PER_SECOND)) == "1:23.5"
+    assert format_seconds(3725 * TICKS_PER_SECOND) == "1:02:05.0"
+    assert format_seconds("x") == "" and format_seconds(None) == ""
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p filmcraft-cli)")
+def test_real_engine_credits_window(app, tmp_path: Path):
+    """The Credits window: the menu command opens it, it shows the engine's pages, warnings and a
+    page picture, and places the credits on the timeline in one undo step."""
+    from cfa4_qt.main_window import MainWindow
+
+    sheet = tmp_path / "credits.csv"
+    sheet.write_text(
+        "Fej,Törzs,Láb,Stílus,Oldal,Játékidő\n"
+        ",A HOSSZÚ ÚT HAZA,,Title,Card,4s\n"
+        "Rendező,Kiss Anna,,Centered,Scroll,\n"
+        ",,,,,\n"
+        "Szereplők,Nagy Béla,Béla szerepében,Gutter,,\n"
+        ",{{Pic nincs.png}},,,,\n",
+        encoding="utf-8",
+    )
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.import" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert dlg is not None and dlg.isVisible()
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
+        assert dlg.pages.item(0, 1).text() and dlg.pages.item(1, 2).text()
+        assert dlg.pages.item(0, 2).text() == "0:04.0"
+        # the missing picture is a warning with its row
+        assert dlg.warnings.count() == 1 and "6" in dlg.warnings.item(0).text()
+        assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # a broken path is an error in the window, not a crash
+        dlg.path.setText(str(tmp_path / "missing.ods"))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 0 and dlg.status.text(), 30_000)
+        assert not dlg.import_button.isEnabled()
+        # place: two clips, one undo step
+        dlg.path.setText(str(sheet))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2 and dlg.import_button.isEnabled(), 30_000)
+        undo_before = win.history.list.count()
+        dlg.place()
+        assert wait_until(app, lambda: "2" in dlg.status.text(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo_before + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()

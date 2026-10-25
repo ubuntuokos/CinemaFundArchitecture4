@@ -73,6 +73,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 3.26 | Reference Monitor | ❌ | |
 | 3.27 | Timecode | ❌ | |
 | 3.28 | Project Notes | ❌ | |
+| 3.29 | Credits from a spreadsheet (Graphics and Titles ▸ Import Credits Spreadsheet…) | ✅ | Credits window: spreadsheet (CSV/TSV/.xlsx/.ods), worksheet, picture folder, styling, pages with type and length, warnings by row, page picture at a chosen moment, place at playhead in one undo step (`test_real_engine_credits_window`); egui had only a file dialog. Further credits work is Qt6-only (owner, 2026-10-25) |
 
 ## 4. Modes and dialogs
 
