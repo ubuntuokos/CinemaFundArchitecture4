@@ -527,6 +527,16 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     dlg._replace_confirmed = ""
     dlg._enqueue(True)
     assert len(engine.sent) == 2 and not answers
+    # an image sequence writes numbered frames: an earlier export's frames are asked about
+    from cfa4_qt.panels.export import existing_outputs
+
+    seq_dir = tmp_path / "frames"
+    seq_dir.mkdir()
+    (seq_dir / "cut000.png").write_bytes(b"x")
+    (seq_dir / "cut_notes.png").write_bytes(b"x")
+    assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
+    assert existing_outputs(seq_dir / "cut.png", "h264") == []
+    assert existing_outputs(seq_dir / "other.png", "png") == []
     # a regular file where the folder should be: an error in the dialog, nothing queued
     blocker = tmp_path / "file"
     blocker.write_text("x")
