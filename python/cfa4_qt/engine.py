@@ -221,6 +221,16 @@ class EngineClient(QObject):
             raise EngineError(f"the engine stopped accepting requests: {exc}") from exc
 
     # ----- reader side -----
+    def _post(self, message: dict[str, Any], binary: bytes | None) -> bool:
+        """Hand a message from a reader thread to the GUI thread. False when this client is gone
+        (the window closed first at exit, while the engine was still ending): the thread then just
+        stops, instead of raising "Signal source has been deleted" in the background."""
+        try:
+            self._message.emit(message, binary)
+        except RuntimeError:
+            return False
+        return True
+
     def _read_loop(self) -> None:
         process = self._process
         if process is None or process.stdout is None:
@@ -238,7 +248,8 @@ class EngineClient(QObject):
                 break
             if message is None:
                 break
-            self._message.emit(message[0], message[1])
+            if not self._post(message[0], message[1]):
+                return
         # stdout can reach EOF a moment before the process is reaped: wait briefly so the exit
         # status is not lost from the reason the user sees
         try:
@@ -247,7 +258,7 @@ class EngineClient(QObject):
             code = process.poll()
         if code is not None and code != 0:
             reason = f"{reason} (exit status {code})"
-        self._message.emit({"__stopped__": reason}, None)
+        self._post({"__stopped__": reason}, None)
 
     def _stderr_loop(self) -> None:
         process = self._process
@@ -255,8 +266,8 @@ class EngineClient(QObject):
             return
         for raw in process.stderr:
             text = raw.decode(errors="replace").rstrip()
-            if text:
-                self._message.emit({"__stderr__": text}, None)
+            if text and not self._post({"__stderr__": text}, None):
+                return
 
     @Slot(dict, object)
     def _dispatch(self, message: dict[str, Any], binary: bytes | None) -> None:
