@@ -67,6 +67,9 @@ pub struct Image {
     pub width: u32,
     pub height: u32,
     pub components: Vec<Plane>,
+    /// A tile applied the inverse multiple-component transform (its COD, main or tile-part, set
+    /// it): the first three components are R, G, B even when the main header says otherwise.
+    pub mct: bool,
 }
 
 /// Samples an image may have across all components; larger images are refused before any

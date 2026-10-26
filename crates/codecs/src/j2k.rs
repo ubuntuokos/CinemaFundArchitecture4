@@ -7,7 +7,7 @@
 //!   Y'CbCr 4:4:4 with the BT.709 matrix, video range.
 //! - X'Y'Z' (the digital cinema profiles, SMPTE ST 428-1) is decoded with the DCI transfer
 //!   (gamma 2.6, 52.37 cd/m² at code 4095, 48 cd/m² reference white), converted to P3-D65 and
-//!   given the display gamma CFA4 uses for BT.709, then Y'CbCr 4:4:4 like R'G'B'.
+//!   encoded with the sRGB curve the pipeline decodes P3-D65 frames with, then Y'CbCr 4:4:4 like R'G'B'.
 
 use std::sync::Arc;
 
@@ -76,14 +76,22 @@ pub fn color(components: Components, width: u32, height: u32, hints: J2kHints) -
 }
 
 /// The samples of `p` as unsigned values of `bits` bits, cut or padded (repeating the last
-/// column and row) to `w`×`h`.
-fn plane(p: &Plane, bits: u32, w: usize, h: usize) -> Vec<u16> {
+/// column and row) to `w`×`h`. Colour samples shift by the precision difference; `alpha` samples
+/// scale across the full range instead, so a 1-bit opaque 1 becomes the `bits`-bit maximum.
+fn plane(p: &Plane, bits: u32, w: usize, h: usize, alpha: bool) -> Vec<u16> {
     let prec = u32::from(p.precision).clamp(1, 16);
     let offset = if p.signed { 1i64 << (prec - 1) } else { 0 };
     let max = (1i64 << prec) - 1;
+    let out_max = (1i64 << bits) - 1;
     let level = |v: i32| -> u16 {
         let v = (i64::from(v) + offset).clamp(0, max);
-        let v = if bits >= prec { v << (bits - prec) } else { v >> (prec - bits) };
+        let v = if alpha {
+            (v * out_max + max / 2) / max
+        } else if bits >= prec {
+            v << (bits - prec)
+        } else {
+            v >> (prec - bits)
+        };
         u16::try_from(v).unwrap_or(u16::MAX)
     };
     let (pw, ph) = (p.width as usize, p.height as usize);
@@ -124,7 +132,9 @@ fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
     let decode: Vec<f32> = (0..=(1u32 << bits) - 1).map(|v| (v as f32 / max).powf(2.6) * (52.37 / 48.0)).collect();
     let m = spaces::to_f32(&spaces::inverse(&Gamut::P3D65.to_xyz()));
     let lin = |v: u16| decode.get(usize::from(v)).copied().unwrap_or(0.0);
-    let enc = |v: f32| (v.clamp(0.0, 1.0).powf(1.0 / 2.4) * max + 0.5) as u16;
+    // the inverse of the curve the pipeline decodes these frames with (`Curve::Sdr`, the sRGB
+    // function in `cfa4_color::transform`), so linear light survives the round trip
+    let enc = |v: f32| (cfa4_color::linear_to_srgb(v.clamp(0.0, 1.0)) * max + 0.5) as u16;
     for ((x, y), z) in x.iter_mut().zip(y.iter_mut()).zip(z.iter_mut()) {
         let [r, g, b] = spaces::apply3(&m, [lin(*x), lin(*y), lin(*z)]);
         (*x, *y, *z) = (enc(r), enc(g), enc(b));
@@ -133,6 +143,12 @@ fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
 
 /// A decoded JPEG 2000 image as a [`VideoFrame`] (see the module documentation).
 pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) -> Result<VideoFrame> {
+    // the output planes are full-size even when the components are sub-sampled, so the codestream's
+    // own sample limit does not bound them
+    let samples = u64::from(image.width).saturating_mul(u64::from(image.height)).saturating_mul(4);
+    if samples > cfa4_j2k::MAX_SAMPLES {
+        return Err(CodecError::Unsupported(format!("JPEG 2000 picture of {}×{} is too large", image.width, image.height)));
+    }
     let (w, h) = (image.width as usize, image.height as usize);
     let c = &image.components;
     let first = c.first().ok_or_else(|| CodecError::Decode("JPEG 2000: no components".into()))?;
@@ -146,8 +162,8 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
     let (cw, ch) = ((w + (1 << sx) - 1) >> sx, (h + (1 << sy) - 1) >> sy);
     let mid = 1u16 << (bits - 1);
     let (mut p0, mut p1, mut p2) = match c.get(1..3) {
-        Some([p1, p2]) if colour_planes == 3 => (plane(first, bits, w, h), plane(p1, bits, cw, ch), plane(p2, bits, cw, ch)),
-        _ => (plane(first, bits, w, h), vec![mid; cw * ch], vec![mid; cw * ch]),
+        Some([p1, p2]) if colour_planes == 3 => (plane(first, bits, w, h, false), plane(p1, bits, cw, ch, false), plane(p2, bits, cw, ch, false)),
+        _ => (plane(first, bits, w, h, false), vec![mid; cw * ch], vec![mid; cw * ch]),
     };
     match components {
         Components::Rgb => rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits),
@@ -157,7 +173,7 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
         }
         Components::Ycbcr(_) | Components::Gray => {}
     }
-    let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h));
+    let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h, true));
     let data = if bits == 8 {
         let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
         PixelData::Yuv8 { planes: [to8(p0), to8(p1), to8(p2)], chroma, alpha: alpha.map(to8) }
@@ -165,6 +181,15 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
         PixelData::Yuv16 { planes: [Arc::new(p0), Arc::new(p1), Arc::new(p2)], chroma, bits, alpha: alpha.map(Arc::new) }
     };
     Ok(VideoFrame { width: image.width, height: image.height, data, color: color(components, image.width, image.height, hints), par: (1, 1), pts: Tick::ZERO })
+}
+
+/// `components` (from the main header) corrected by what decoding found: a tile-part COD can
+/// switch the component transform on when the main one does not, and then the planes are R'G'B'.
+fn after_decode(components: Components, image: &Image) -> Components {
+    match components {
+        Components::Ycbcr(Chroma::C444) if image.mct => Components::Rgb,
+        c => c,
+    }
 }
 
 /// Our JPEG 2000 decoder: every picture is a codestream of its own.
@@ -186,8 +211,8 @@ impl VideoDecoder for J2kDecoder {
         };
         let cs = cfa4_j2k::codestream(sample).map_err(err)?;
         let header = cfa4_j2k::parse_header(cs).map_err(err)?;
-        let components = components(&header, self.hints)?;
         let image = cfa4_j2k::decode(cs).map_err(err)?;
+        let components = after_decode(components(&header, self.hints)?, &image);
         Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, components, self.hints)?, draft: false }])
     }
     fn flush(&mut self) -> Vec<DecodedFrame> {
@@ -254,7 +279,7 @@ mod tests {
         let code = |v: f64| ((v * 48.0 / 52.37).powf(1.0 / 2.6) * 4095.0).round() as i32;
         let white = [code(0.3127 / 0.3290), code(1.0), code((1.0 - 0.3127 - 0.3290) / 0.3290)];
         for (xyz, y, c) in [(white, 235 * 16, 128 * 16), ([0; 3], 16 * 16, 128 * 16)] {
-            let image = Image { width: 8, height: 4, components: xyz.iter().map(|&v| plane_of(8, 4, 12, false, v)).collect() };
+            let image = Image { width: 8, height: 4, components: xyz.iter().map(|&v| plane_of(8, 4, 12, false, v)).collect(), mct: false };
             let f = to_video_frame(&image, Components::Xyz, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
             assert_eq!(f.color.primaries, Primaries::P3D65);
             let PixelData::Yuv16 { planes, bits: 12, .. } = &f.data else { panic!("12-bit Y'CbCr expected") };
@@ -266,15 +291,42 @@ mod tests {
     #[test]
     fn signed_components_are_offset_and_small_planes_are_padded() {
         // a signed 8-bit gray component of 2×2 in a 4×3 image: 0 is mid-grey, edges repeat
-        let image = Image { width: 4, height: 3, components: vec![plane_of(2, 2, 8, true, -128)] };
+        let image = Image { width: 4, height: 3, components: vec![plane_of(2, 2, 8, true, -128)], mct: false };
         let f = to_video_frame(&image, Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         assert_eq!(planes[0].len(), 12);
         assert!(planes[0].iter().all(|&v| v == 0));
-        let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 8, true, 0)] };
+        let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 8, true, 0)], mct: false };
         let f = to_video_frame(&image, Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         assert!(planes[0].iter().all(|&v| v == 128));
+    }
+
+    #[test]
+    fn a_tile_level_component_transform_makes_the_planes_rgb() {
+        let mut image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 8, false, 0); 3], mct: true };
+        assert_eq!(after_decode(Components::Ycbcr(Chroma::C444), &image), Components::Rgb);
+        assert_eq!(after_decode(Components::Xyz, &image), Components::Xyz);
+        image.mct = false;
+        assert_eq!(after_decode(Components::Ycbcr(Chroma::C444), &image), Components::Ycbcr(Chroma::C444));
+    }
+
+    /// A 1-bit alpha component next to 8-bit colour: opaque is 255, not 128.
+    #[test]
+    fn low_precision_alpha_scales_to_the_full_range() {
+        let comps = vec![plane_of(2, 2, 8, false, 7), plane_of(2, 2, 8, false, 7), plane_of(2, 2, 8, false, 7), plane_of(2, 2, 1, false, 1)];
+        let f = to_video_frame(&Image { width: 2, height: 2, components: comps, mct: false }, Components::Ycbcr(Chroma::C444), J2kHints::default())
+            .unwrap_or_else(|e| panic!("{e}"));
+        let PixelData::Yuv8 { alpha: Some(a), .. } = &f.data else { panic!("8-bit with alpha expected") };
+        assert!(a.iter().all(|&v| v == 255));
+    }
+
+    /// A huge reference grid with tiny sub-sampled components is refused before the full-size
+    /// output planes are allocated.
+    #[test]
+    fn huge_output_frames_are_refused() {
+        let image = Image { width: 1_000_000, height: 1_000_000, components: vec![plane_of(4, 4, 8, false, 0)], mct: false };
+        assert!(to_video_frame(&image, Components::Gray, J2kHints::default()).is_err());
     }
 
     /// Images whose planes disagree with their size (hostile input) give a frame, never a panic.
@@ -282,11 +334,15 @@ mod tests {
     fn inconsistent_planes_do_not_panic() {
         let mut short = plane_of(8, 4, 12, false, 100);
         short.data.truncate(3);
-        let image =
-            Image { width: 8, height: 4, components: vec![short, plane_of(0, 0, 16, false, 0), plane_of(9, 9, 1, true, 1), plane_of(1, 1, 16, false, 7)] };
+        let image = Image {
+            width: 8,
+            height: 4,
+            components: vec![short, plane_of(0, 0, 16, false, 0), plane_of(9, 9, 1, true, 1), plane_of(1, 1, 16, false, 7)],
+            mct: false,
+        };
         for c in [Components::Xyz, Components::Rgb, Components::Ycbcr(Chroma::C420), Components::Gray] {
             assert!(to_video_frame(&image, c, J2kHints::default()).is_ok());
         }
-        assert!(to_video_frame(&Image { width: 0, height: 0, components: vec![] }, Components::Gray, J2kHints::default()).is_err());
+        assert!(to_video_frame(&Image { width: 0, height: 0, components: vec![], mct: false }, Components::Gray, J2kHints::default()).is_err());
     }
 }

@@ -367,7 +367,9 @@ fn j2k_dci_xyz_decodes_to_p3() {
     let m = cfa4_color::spaces::inverse(&cfa4_color::spaces::npm([[0.680, 0.320], [0.265, 0.690], [0.150, 0.060]], [0.3127, 0.3290]));
     let reference = |xyz: [u16; 3]| -> [f64; 3] {
         let lin = xyz.map(|c| (f64::from(c >> 4) / 4095.0).powf(2.6) * 52.37 / 48.0);
-        let rgb = cfa4_color::spaces::mul_vec(&m, lin).map(|c| c.clamp(0.0, 1.0).powf(1.0 / 2.4));
+        // encoded with the sRGB curve the pipeline decodes P3-D65 frames with (`Curve::Sdr`)
+        let srgb = |c: f64| if c <= 0.003_130_8 { c * 12.92 } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 };
+        let rgb = cfa4_color::spaces::mul_vec(&m, lin).map(|c| srgb(c.clamp(0.0, 1.0)));
         let y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
         let cb = (rgb[2] - y) / 1.8556;
         let cr = (rgb[0] - y) / 1.5748;
@@ -393,7 +395,7 @@ fn j2k_dci_xyz_decodes_to_p3() {
     }
     let mean = total / count.max(1) as f64;
     eprintln!("DCI X'Y'Z': mean diff {mean:.3}, max {worst:.1}, {over} of {count} over 4");
-    // The decoders may differ by 1 in X'Y'Z' (9/7). Near black the 1/2.4 gamma is steep enough
+    // The decoders may differ by 1 in X'Y'Z' (9/7). Near black the sRGB curve is steep enough
     // to turn that into tens of 12-bit codes, so the bound is on the mean and the share of
     // samples off by more than 4.
     assert!(mean < 0.75, "mean diff {mean}");
