@@ -3634,3 +3634,7 @@
 	Burn Size	Dimensione bruciatura
 	Ember Width	Larghezza della brace
 	Ember Color	Colore della brace
+	Check Text Legibility	Verifica leggibilità del testo
+	Clear Legibility Markers	Cancella marcatori di leggibilità
+	Text legibility: no problems found	Leggibilità del testo: nessun problema trovato
+	Text legibility: {count} problems marked on the timeline (orange markers)	Leggibilità del testo: {count} problemi segnati nella timeline (marcatori arancioni)

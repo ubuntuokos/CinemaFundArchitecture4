@@ -3643,3 +3643,7 @@
 	Burn Size	Tamaño de quemado
 	Ember Width	Ancho de la brasa
 	Ember Color	Color de la brasa
+	Check Text Legibility	Comprobar legibilidad del texto
+	Clear Legibility Markers	Borrar marcadores de legibilidad
+	Text legibility: no problems found	Legibilidad del texto: no se encontraron problemas
+	Text legibility: {count} problems marked on the timeline (orange markers)	Legibilidad del texto: {count} problemas marcados en la línea de tiempo (marcadores naranjas)

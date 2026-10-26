@@ -3618,3 +3618,7 @@
 	Burn Size	燃烧大小
 	Ember Width	余烬宽度
 	Ember Color	余烬颜色
+	Check Text Legibility	检查文本可读性
+	Clear Legibility Markers	清除可读性标记
+	Text legibility: no problems found	文本可读性：未发现问题
+	Text legibility: {count} problems marked on the timeline (orange markers)	文本可读性：已在时间轴上标记 {count} 个问题（橙色标记）

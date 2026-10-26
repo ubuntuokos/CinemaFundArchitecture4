@@ -3638,3 +3638,7 @@
 	Burn Size	Brandgröße
 	Ember Width	Glutbreite
 	Ember Color	Glutfarbe
+	Check Text Legibility	Textlesbarkeit prüfen
+	Clear Legibility Markers	Lesbarkeitsmarken löschen
+	Text legibility: no problems found	Textlesbarkeit: keine Probleme gefunden
+	Text legibility: {count} problems marked on the timeline (orange markers)	Textlesbarkeit: {count} Probleme in der Zeitleiste markiert (orange Marken)

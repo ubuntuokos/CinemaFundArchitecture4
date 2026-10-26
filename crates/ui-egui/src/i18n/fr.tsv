@@ -3610,3 +3610,7 @@
 	Burn Size	Taille de la brûlure
 	Ember Width	Largeur de la braise
 	Ember Color	Couleur de la braise
+	Check Text Legibility	Vérifier la lisibilité du texte
+	Clear Legibility Markers	Effacer les marqueurs de lisibilité
+	Text legibility: no problems found	Lisibilité du texte : aucun problème trouvé
+	Text legibility: {count} problems marked on the timeline (orange markers)	Lisibilité du texte : {count} problèmes marqués dans la timeline (marqueurs orange)
