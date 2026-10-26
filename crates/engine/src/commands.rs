@@ -1575,7 +1575,9 @@ fn build() -> Vec<CommandSpec> {
                 next.set(k, p.get("value").cloned().ok_or_else(|| bad("prefs.set", "need `value`"))?).map_err(|e| bad("prefs.set", e))?;
             }
             if let Some(m) = p.get("values").and_then(Value::as_object) {
-                for (k, v) in m {
+                // Units first: each `set` sanitizes, so a duration is clamped against its new unit.
+                let (units, rest): (Vec<_>, Vec<_>) = m.iter().partition(|(k, _)| crate::settings::is_unit_key(k));
+                for (k, v) in units.into_iter().chain(rest) {
                     next.set(k, v.clone()).map_err(|e| bad("prefs.set", e))?;
                 }
             }
