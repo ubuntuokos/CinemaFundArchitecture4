@@ -339,7 +339,14 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let graph = cfa4_render::mixer::mix_graph(&s.project, seq, start, frames, &provider, Some(live));
     let buf = cfa4_render::audio::to_layout(graph, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::FrontRear);
     let channels = buf.channels.len();
-    let bytes = interleave(&buf.channels, frames);
+    let bytes = if s.voiceover.recording() {
+        // a voice-over's countdown beeps are heard with the programme (not metered, as egui's)
+        let mut heard = buf.channels.clone();
+        cfa4_engine::voiceover::mix_cues(s, buf.sample_rate, start, &mut heard);
+        interleave(&heard, frames)
+    } else {
+        interleave(&buf.channels, frames)
+    };
     let mut meta = json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"});
     let strips = live.take_meters();
     if wants_meter(p) {

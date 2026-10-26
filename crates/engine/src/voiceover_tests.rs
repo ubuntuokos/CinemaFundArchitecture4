@@ -209,3 +209,80 @@ fn cue_times_count_down_whole_seconds() {
     assert_eq!(tone.len(), 4_800);
     assert!(tone.iter().all(|x| x.abs() <= 0.25) && tone[0] == 0.0);
 }
+
+fn b64(samples: &[f32]) -> String {
+    let bytes: Vec<u8> = samples.iter().flat_map(|x| x.to_le_bytes()).collect();
+    cfa4_project::gtemplate::base64_encode(&bytes)
+}
+
+#[test]
+fn a_host_fed_input_records_what_the_front_end_streams_in() {
+    let (mut s, track, index) = demo();
+    let r = s
+        .execute(
+            "audio.voiceover.hostInput",
+            json!({"devices":[{"name":"USB Mic","channels":2},{"name":"Built-in","channels":1}],"default":"Built-in","sampleRate":48000}),
+        )
+        .unwrap();
+    assert_eq!(r["devices"], json!(["USB Mic", "Built-in"]));
+    assert_eq!(r["channels"], 1, "the default device's channels");
+    assert!(s.execute("audio.voiceover.hostInput", json!({"sampleRate": 0})).is_err());
+    // blocks before a take are ignored
+    assert_eq!(s.execute("audio.voiceover.feed", json!({"samples": b64(&[0.9; 100])})).unwrap()["buffered"], 0);
+    s.execute("playhead.set", json!({"seconds": 1})).unwrap();
+    let r = s.execute("audio.voiceover.start", json!({"track": track, "preroll": 0.5})).unwrap();
+    let (record, capture) = (r["recordStart"].as_i64().unwrap(), r["captureStart"].as_i64().unwrap());
+    let at = |t: i64| (t as i128 * 48_000 / TICKS_PER_SECOND as i128) as usize;
+    s.execute("audio.voiceover.feed", json!({"samples": b64(&[0.7; 480])})).unwrap();
+    // playback really started at the capture start: what came before is dropped
+    s.execute("audio.voiceover.sync", json!({"time": capture})).unwrap();
+    let preroll = at(record) - at(capture);
+    let mut block = vec![0.0f32; preroll]; // the pre-roll (not kept)
+    block.extend(std::iter::repeat_n(0.25f32, 24_000));
+    block.push(f32::NAN);
+    let r = s.execute("audio.voiceover.feed", json!({"samples": b64(&block)})).unwrap();
+    assert_eq!((r["buffered"].as_u64(), r["full"].as_bool()), (Some(block.len() as u64), Some(false)));
+    assert!(s.execute("audio.voiceover.feed", json!({"samples": "not base64!"})).is_err());
+    let dir = tmp("host");
+    let end = record + sec(1.0);
+    let r = s.execute("audio.voiceover.stop", json!({"time": end, "dir": dir})).unwrap();
+    assert_eq!((r["placed"].as_bool(), r["samples"].as_u64()), (Some(true), Some((at(end) - at(record)) as u64)), "the take runs from the record point");
+    let clips = track_clips(&s, index);
+    assert_eq!(clips.len(), 1);
+    assert_eq!(clips[0].start.0, record);
+    let audio = mix(&s, at(record) as i64, 48_000);
+    assert!((audio[0][100] - 0.25).abs() < 0.01, "the streamed samples are the take: {}", audio[0][100]);
+    assert!(audio[0][30_000].abs() < 1e-6, "past what was streamed is silence");
+    // a host input is not a synthetic one
+    assert_eq!(s.execute("audio.voiceover.settings", json!({})).unwrap()["devices"], json!(["USB Mic", "Built-in"]));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn feeding_without_a_host_input_is_refused() {
+    let (mut s, _, _) = demo();
+    assert!(s.execute("audio.voiceover.feed", json!({"samples": b64(&[0.1])})).is_err());
+}
+
+#[test]
+fn countdown_cues_are_mixed_into_the_programme_while_recording() {
+    let (mut s, track, _) = demo();
+    let mut block = vec![vec![0.0f32; 48_000]; 2];
+    crate::voiceover::mix_cues(&s, 48_000, 0, &mut block);
+    assert!(block[0].iter().all(|x| *x == 0.0), "no take, no beeps");
+    s.execute("playhead.set", json!({"seconds": 3})).unwrap();
+    let r = s.execute("audio.voiceover.start", json!({"track": track, "preroll": 2})).unwrap();
+    // a beep a second before the record point: the block starts 0.1 s before it
+    let beep = cue_times(cfa4_time::Tick(r["captureStart"].as_i64().unwrap()), cfa4_time::Tick(r["recordStart"].as_i64().unwrap()))[1];
+    let start = beep.to_units_floor(48_000) - 4_800;
+    let mut block = vec![vec![0.0f32; 48_000]; 2];
+    crate::voiceover::mix_cues(&s, 48_000, start, &mut block);
+    let loud = |c: &[f32]| c.iter().filter(|x| x.abs() > 0.01).count();
+    assert!(loud(&block[0]) > 1000 && loud(&block[1]) > 1000, "the beep is in both channels");
+    assert!(block[0][..4_800].iter().all(|x| x.abs() < 1e-6), "nothing before it");
+    s.execute("audio.voiceover.settings", json!({"countdownSoundCues": false})).unwrap();
+    let mut block = vec![vec![0.0f32; 48_000]; 2];
+    crate::voiceover::mix_cues(&s, 48_000, start, &mut block);
+    assert_eq!(loud(&block[0]), 0, "cues off");
+    s.execute("audio.voiceover.stop", json!({"discard": true})).unwrap();
+}

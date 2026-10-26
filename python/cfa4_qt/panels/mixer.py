@@ -17,7 +17,7 @@ import math
 from typing import Any
 
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QMouseEvent, QPainter, QPaintEvent, QPen, QWheelEvent
+from PySide6.QtGui import QColor, QFont, QIcon, QMouseEvent, QPainter, QPaintEvent, QPen, QPixmap, QWheelEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QMenu, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
 from .. import theme
@@ -36,6 +36,22 @@ MAX_INSERTS = MAX_SENDS = 5
 STRIP_W = 98
 SLOT_H = 15
 RED = QColor(0xD8, 0x50, 0x3F)
+
+
+def record_icon(on: bool) -> QIcon:
+    """The mixer's record button: a red dot, dimmed while idle (egui's)."""
+    pm = QPixmap(28, 28)
+    pm.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    c = QColor(RED)
+    if not on:
+        c.setAlphaF(0.55)
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(c)
+    p.drawEllipse(QPointF(14, 14), 12, 12)
+    p.end()
+    return QIcon(pm)
 MUTE_ON = QColor(0x2D, 0x9D, 0x78)
 SOLO_ON = QColor(0xF0, 0xF0, 0x4F)
 MODES = ("Off", "Read", "Latch", "Touch", "Write")
@@ -592,6 +608,8 @@ class TrackMixerPanel(QWidget):
         self.recording = False
         self.now = 0
         self.hidden: set[str] = set()
+        self.meter_input_only = False
+        self.input_level = 0.0  # the voice-over input's peak (linear), for Meter Input(s) Only
         self.strips_data: list[dict[str, Any]] = []
         self.audio_effects: list[dict[str, Any]] = []
         self.sequence: dict[str, Any] | None = None
@@ -661,6 +679,17 @@ class TrackMixerPanel(QWidget):
             b.clicked.connect(lambda _c=False, k=key: self.transport.emit(k))
             footer.addWidget(b)
             self.buttons[key] = b
+        rec = QToolButton(self)
+        rec.setObjectName("mixer.transport.voiceover.recordToggle")
+        rec.setIcon(record_icon(False))
+        rec.setIconSize(QSize(14, 14))
+        rec.setAutoRaise(True)
+        rec.setCheckable(True)
+        rec.setToolTip(tr("Record (voice-over on the record-enabled track)"))
+        rec.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        rec.clicked.connect(lambda _c=False: (rec.setChecked(not rec.isChecked()), self.transport.emit("voiceover.recordToggle")))
+        footer.addWidget(rec)
+        self.buttons["voiceover.recordToggle"] = rec
         footer.addStretch(1)
         footer.addWidget(self.duration_label)
         layout = QVBoxLayout(self)
@@ -721,6 +750,13 @@ class TrackMixerPanel(QWidget):
 
     def set_levels(self, peaks: dict[Any, list[float]], dt: float) -> None:
         """egui's ballistics on each strip: instant attack, 20 dB/s fall, holds 6 dB/s."""
+        if getattr(self, "meter_input_only", False):
+            # armed tracks show the recording input; other meters are idle
+            peaks = {
+                st.sid(): [self.input_level] * max(1, st.channels())
+                for st in self.strips
+                if isinstance(st, Strip) and st.data.get("recordArm") and st.data.get("kind") == "audio"
+            }
         for st in self.strips:
             if not st.isVisible():
                 continue
@@ -769,8 +805,20 @@ class TrackMixerPanel(QWidget):
         a.triggered.connect(self.show_all)
         meter = m.addAction(tr("Meter Input(s) Only"))
         meter.setObjectName("mixer.menu.meterInputOnly")
-        meter.setEnabled(False)
-        meter.setToolTip(tr("Voice-over recording is not in the Qt GUI yet"))
+        meter.setCheckable(True)
+        meter.setChecked(self.meter_input_only)
+        meter.toggled.connect(self.set_meter_input_only)
+
+    def set_meter_input_only(self, on: bool) -> None:
+        """Meter Input(s) Only (egui's): armed tracks meter the recording input, the rest is idle."""
+        self.meter_input_only = bool(on)
+
+    def set_voiceover(self, recording: bool) -> None:
+        """The record button shows a take in progress."""
+        b = self.buttons.get("voiceover.recordToggle")
+        if b is not None:
+            b.setIcon(record_icon(recording))
+            b.setChecked(recording)
 
     def set_hidden(self, ref: str, hidden: bool) -> None:
         (self.hidden.add if hidden else self.hidden.discard)(ref)

@@ -465,6 +465,7 @@ class Monitor(QWidget):
     message = Signal(str)  # an error to show in Events
     # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
     playhead_moved = Signal(object)  # local playhead during playback, ticks
+    playback_stopped = Signal()  # stop(): a voice-over take ends with playback
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -534,6 +535,7 @@ class Monitor(QWidget):
         # playback state
         self.playing = False
         self._automation_pass = False  # a mixer automation pass is running (mixer.recordStart)
+        self.free_run = False  # a voice-over take: playback runs on past the end
         self.speed = 1.0
         self.stop_at: int | None = None  # Play In to Out: stop here…
         self.rest_at: int | None = None  # …and rest the playhead here
@@ -893,7 +895,8 @@ class Monitor(QWidget):
         if self.playing:
             self._halt()
         start, end = self.range()
-        if speed > 0 and end and self.playhead >= end - self.frame():
+        # (not while a voice-over take starts: it was put exactly where the take must begin)
+        if speed > 0 and end and self.playhead >= end - self.frame() and not self.free_run:
             self.playhead = self._range_marks()[0] if self.mv.looping else start
         if speed < 0 and self.playhead <= start:
             return
@@ -963,6 +966,7 @@ class Monitor(QWidget):
         if notify:
             command, params = self.seek_command(self.playhead)
             self.command.emit(command, params)
+        self.playback_stopped.emit()
 
     def _tick(self) -> None:
         if not self.playing or not self.has_content():
@@ -973,6 +977,8 @@ class Monitor(QWidget):
         ft = self.frame()
         if self.speed > 0:
             limit = self.stop_at if self.stop_at is not None else (self._range_marks()[1] if self.mv.looping else end)
+            if self.free_run and self.stop_at is None and not self.mv.looping:
+                limit = 0  # a voice-over take keeps playing (and recording) into the empty timeline past the end
             if limit and t >= limit:
                 if self.mv.looping and self.stop_at is None:
                     lo = self._range_marks()[0]

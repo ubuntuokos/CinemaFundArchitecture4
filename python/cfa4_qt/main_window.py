@@ -61,6 +61,7 @@ from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .panels.tts import TextToSpeechPanel
+from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .window_menu import Workspaces, bind_free, build_window_menu
 
 # an engine that stopped is restarted, unless it stopped this often within this many seconds
@@ -344,6 +345,14 @@ class MainWindow(QMainWindow):
         self.media_browser.attach_settings(self.settings)
         self.media_browser.invoke.connect(self.invoke)
         self.timeline.canvas.files_dropped.connect(self.place_files)
+        # voice-over recording: the audio track headers' microphones and the mixer's record button
+        self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
+        self.voiceover_dialog: VoiceOverSettingsDialog | None = None
+        self.voiceover.changed.connect(self._voiceover_changed)
+        self.voiceover.message.connect(self._voiceover_message)
+        self.voiceover.refresh.connect(self.schedule_refresh)
+        self.timeline.canvas.voiceover.connect(self.voiceover.toggle)
+        self.timeline.canvas.voiceover_settings.connect(self.open_voiceover_settings)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
@@ -860,6 +869,26 @@ class MainWindow(QMainWindow):
         self.last_menu = menu
         return menu
 
+    def open_voiceover_settings(self) -> VoiceOverSettingsDialog:
+        """Voice-Over Record Settings (the microphone's menu, ``voiceover.settingsDialog``)."""
+        dialog = VoiceOverSettingsDialog(self, self.engine, self.voiceover)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.destroyed.connect(lambda *_a: setattr(self, "voiceover_dialog", None))
+        self.voiceover_dialog = dialog
+        self.last_dialog = dialog
+        dialog.open()
+        return dialog
+
+    def _voiceover_changed(self, track: Any) -> None:
+        self.timeline.canvas.voiceover_track = track
+        self.timeline.canvas.update()
+        self.mixer.set_voiceover(track is not None)
+
+    def _voiceover_message(self, text: str, error: bool) -> None:
+        self.statusBar().showMessage(text, 6000)
+        if error:
+            self.events.log(text, error=True)
+
     def open_settings(self, page: str = "general") -> PreferencesDialog:
         """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
         dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
@@ -1130,6 +1159,13 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(text, 6000)
 
     def invoke(self, cid: str) -> None:
+        # egui's UI commands for voice-over recording
+        if cid == "voiceover.recordToggle":
+            self.voiceover.toggle()
+            return
+        if cid == "voiceover.settingsDialog":
+            self.open_voiceover_settings()
+            return
         cmd = self.registry.commands.get(cid)
         if cmd is not None:
             self.run_command(cmd)
@@ -1510,6 +1546,7 @@ class MainWindow(QMainWindow):
             self._mixer_heard = (gen, now)
         else:
             self._mixer_heard = None
+        self.mixer.input_level = self.voiceover.take_level() if self.voiceover.recording else 0.0
         self.mixer.set_levels(peaks, dt)
         self.clip_mixer.set_levels(peaks, dt)
 
@@ -1525,6 +1562,8 @@ class MainWindow(QMainWindow):
             mon.play_in_to_out()
         elif key == "loop":
             mon.set_view(looping=not mon.mv.looping)
+        elif key == "voiceover.recordToggle":
+            self.voiceover.toggle()
 
     def update_timecode(self) -> None:
         """The Timecode panel's rows, read out by the engine (with the playing monitors' times)."""

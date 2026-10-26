@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QScrollBar,
     QToolButton,
     QVBoxLayout,
@@ -126,6 +127,7 @@ HEADER_SWITCHES = {
     "audio": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("muted", "M", N_("Mute Track")), ("solo", "S", N_("Solo Track"))),
 }
 CELL = 20
+VOICEOVER_RED = "#d8503f"
 
 
 @dataclass
@@ -197,6 +199,8 @@ class TimelineCanvas(QWidget):
     command = Signal(str, dict)  # engine command id, params
     seek = Signal(object)  # ticks, while scrubbing (local preview); object, not a 32-bit int
     files_dropped = Signal(list, object, object)  # paths (Media Browser, file manager), time, track id
+    voiceover = Signal(object)  # an audio track header's microphone: record on that track (id) / stop
+    voiceover_settings = Signal()  # …its menu: Voice-Over Record Settings…
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -206,6 +210,7 @@ class TimelineCanvas(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.setMinimumHeight(140)
         self.sequence: dict[str, Any] | None = None
+        self.voiceover_track: str | None = None  # the track a voice-over records on (A1…)
         self.rows: list[Row] = []
         self.media = TimelineMedia(self)
         self.media.updated.connect(self.update)
@@ -592,6 +597,10 @@ class TimelineCanvas(QWidget):
             on = bool(value) if key != "enabled" else value is not False
             cells.append(HeaderCell(key, QRect(x, y, CELL, CELL), text, on, tr(tip)))
             x += CELL + 2
+        if row.kind == "audio":
+            here = self.voiceover_track is not None and self.voiceover_track == row.short
+            tip = tr("Stop Voice-over Recording") if here else tr("Voice-over record (right-click: Voice-Over Record Settings…)")
+            cells.append(HeaderCell("voiceover", QRect(x, y, CELL, CELL), "", here, tip))
         return cells
 
     def _paint_headers(self, p: QPainter) -> None:
@@ -617,7 +626,10 @@ class TimelineCanvas(QWidget):
                     if warn:
                         p.fillRect(c.rect, QColor("#c8892b") if c.key != "solo" else QColor("#c8b32b"))
                     p.setPen(QColor("#ffffff") if warn else (pal.buttonText().color() if c.on else pal.mid().color()))
-                if c.key == "locked":
+                if c.key == "voiceover":
+                    p.setPen(QColor(VOICEOVER_RED) if c.on else pal.buttonText().color())
+                    self._draw_mic(p, c.rect)
+                elif c.key == "locked":
                     self._draw_lock(p, c.rect)
                 elif c.key == "enabled":
                     self._draw_eye(p, c.rect, c.on)
@@ -643,6 +655,18 @@ class TimelineCanvas(QWidget):
         p.restore()
 
     @staticmethod
+    def _draw_mic(p: QPainter, r: QRect) -> None:
+        """A microphone in the current pen colour."""
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        c = r.center()
+        p.drawRoundedRect(QRectF(c.x() - 2.5, c.y() - 7, 5, 9), 2.5, 2.5)
+        p.drawArc(QRectF(c.x() - 5, c.y() - 4, 10, 9), 180 * 16, 180 * 16)
+        p.drawLine(c.x(), c.y() + 5, c.x(), c.y() + 7)
+        p.drawLine(c.x() - 3, c.y() + 7, c.x() + 3, c.y() + 7)
+        p.restore()
+
+    @staticmethod
     def _draw_eye(p: QPainter, r: QRect, on: bool) -> None:
         p.save()
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -660,7 +684,9 @@ class TimelineCanvas(QWidget):
         return row, next((c for c in self.header_cells(row) if c.rect.contains(pos)), None)
 
     def _press_header(self, row: Row, cell: HeaderCell) -> None:
-        if cell.key == "patch":
+        if cell.key == "voiceover":
+            self.voiceover.emit(row.track_id)
+        elif cell.key == "patch":
             self.command.emit("timeline.setTargeting", {"track": row.track_id, "sourcePatch": not cell.on})
         elif cell.key == "target":
             self.command.emit("timeline.setTargeting", {"track": row.track_id, "targeted": not cell.on})
@@ -709,7 +735,20 @@ class TimelineCanvas(QWidget):
             p.drawLine(x, int(mid - max(0.0, min(1.0, hi)) * half), x, int(mid - max(-1.0, min(0.0, lo)) * half))
 
     # ----- mouse -----
+    def voiceover_menu(self, row: Row) -> QMenu:
+        """The microphone's menu (egui's): Voice-Over Record Settings…"""
+        menu = QMenu(self)
+        a = menu.addAction(tr("Voice-Over Record Settings…"))
+        a.setObjectName(f"timeline.track.{row.short}.voiceover.settings")
+        a.triggered.connect(self.voiceover_settings.emit)
+        return menu
+
     def mousePressEvent(self, e: QMouseEvent) -> None:
+        if self.sequence and e.button() == Qt.MouseButton.RightButton:
+            row, cell = self.header_hit(e.position().toPoint())
+            if row is not None and cell is not None and cell.key == "voiceover":
+                self.voiceover_menu(row).popup(e.globalPosition().toPoint())
+                return
         if not self.sequence or e.button() != Qt.MouseButton.LeftButton:
             return
         pos = e.position().toPoint()

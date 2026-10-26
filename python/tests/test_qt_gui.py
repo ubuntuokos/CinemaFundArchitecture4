@@ -1048,6 +1048,123 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tmp_path: Path):
+    """Voice-over as egui's: the audio track header's microphone records on that track (its menu
+    opens Voice-Over Record Settings), playback starts the pre-roll before the playhead with the
+    countdown overlay, the captured input channel is streamed to the engine, and stopping places
+    the take on the track. The mixer's record button stops it; Meter Input(s) Only meters the
+    input on armed tracks."""
+    from array import array
+
+    from cfa4_qt.main_window import MainWindow
+
+    class FakeMic:
+        """Two channels: 0 is silent, 1 holds 0.5, at 48 kHz; 50 ms per read."""
+
+        stopped = False
+
+        def open(self):
+            return 48_000, 2
+
+        def read(self):
+            return array("f", [0.0, 0.5] * 2_400)
+
+        def discard(self):
+            pass
+
+        def stop(self):
+            FakeMic.stopped = True
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    rec = win.voiceover
+    rec.capture_factory = lambda _device: FakeMic()
+    rec.devices = lambda: [("Fake Mic", 2)]
+    rec.default_device = lambda: "Fake Mic"
+    messages: list[tuple[str, bool]] = []
+    rec.message.connect(lambda text, error: messages.append((text, error)))
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("sequence.addTracks", {"video": 0, "audio": 1})
+        canvas = win.timeline.canvas
+        assert wait_until(app, lambda: len([r for r in canvas.rows if r.kind == "audio"]) >= 2, 10_000)
+        row = [r for r in canvas.rows if r.kind == "audio"][-1]
+        mic = next(c for c in canvas.header_cells(row) if c.key == "voiceover")
+        # its menu: Voice-Over Record Settings… (record channel 2, no beeps, ½ s pre-roll)
+        menu = canvas.voiceover_menu(row)
+        next(a for a in menu.actions() if a.objectName() == f"timeline.track.{row.short}.voiceover.settings").trigger()
+        d = win.voiceover_dialog
+        assert d is not None and d.objectName() == "voiceover"
+        assert wait_until(app, lambda: d.ready, 10_000)
+        assert d.findChild(QtWidgets.QLineEdit, "voiceover.name").text() == "Voice-over"
+        source = d.findChild(QtWidgets.QComboBox, "voiceover.source")
+        source.setCurrentIndex(source.findData("Fake Mic"))
+        channel = d.findChild(QtWidgets.QComboBox, "voiceover.input")
+        assert channel.count() == 2
+        channel.setCurrentIndex(1)
+        d.findChild(QtWidgets.QCheckBox, "voiceover.countdown").setChecked(False)
+        d.findChild(QtWidgets.QDoubleSpinBox, "voiceover.preroll").setValue(0.5)
+        d.findChild(QtWidgets.QPushButton, "voiceover.ok").click()
+        got: list = []
+        engine.execute("audio.voiceover.settings", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: bool(got), 10_000)
+        assert {k: got[0]["settings"][k] for k in ("source", "inputChannel", "countdownSoundCues", "prerollSeconds")} == {
+            "source": "Fake Mic", "inputChannel": 1, "countdownSoundCues": False, "prerollSeconds": 0.5,
+        }
+        assert got[0]["devices"] == ["Fake Mic"]
+        # the microphone: record on this track from the playhead (1 s in)
+        win._seek_program(TICKS_PER_SECOND)
+        canvas._press_header(row, mic)
+        assert wait_until(app, lambda: rec.recording and win.monitor.playing, 10_000)
+        assert rec.track == row.short and canvas.voiceover_track == row.short
+        assert next(c for c in canvas.header_cells(row) if c.key == "voiceover").on
+        assert win.mixer.buttons["voiceover.recordToggle"].isChecked()
+        assert rec.overlay.objectName() == "voiceover.countdown.overlay" and rec.overlay.isVisible()
+        assert wait_until(app, lambda: rec.overlay.text() == "● Recording", 5_000)
+        # Meter Input(s) Only: arm the track; its meter shows the input (−6 dB), the others idle
+        win.docks["Audio Track Mixer"].show()
+        win.docks["Audio Track Mixer"].raise_()
+        win.execute("mixer.setStrip", {"strip": row.short, "recordArm": True})
+        win.mixer.set_meter_input_only(True)
+        strip = lambda: next((st for st in win.mixer.strips if st.ref == row.short), None)
+        assert wait_until(app, lambda: strip() is not None and strip().data.get("recordArm") and max(strip().levels or [-90.0]) > -7.0, 10_000)
+        assert all(max(st.levels or [-90.0]) < -60.0 for st in win.mixer.strips if st.ref != row.short and st.data.get("kind") == "audio")
+        wait_until(app, lambda: False, 800)
+        # the mixer's record button stops the take; it lands on the track at the record point
+        win.mixer.buttons["voiceover.recordToggle"].click()
+        assert wait_until(app, lambda: not rec.recording and any("Voice-over recorded" in m for m, _e in messages), 15_000), messages
+        assert not win.monitor.playing and FakeMic.stopped and not rec.overlay.isVisible()
+        assert not win.mixer.buttons["voiceover.recordToggle"].isChecked() and canvas.voiceover_track is None
+        path = Path(next(m for m, _e in messages if "Voice-over recorded" in m).split(": ", 1)[1])
+        assert path.name == "Voice-over 1.wav" and path.is_file()
+        data = path.read_bytes()
+        body = data[data.index(b"data") + 8 :]
+        samples = array("f")
+        samples.frombytes(body[: len(body) // 4 * 4])
+        assert len(samples) > 24_000 and max(samples) == pytest.approx(0.5), "the chosen input channel is the take"
+        last_items = lambda: next((r.track.get("items") or [] for r in canvas.rows if r.track_id == row.track_id), [])
+        assert wait_until(app, lambda: [c.get("name") for c in last_items()] == ["Voice-over 1.wav"], 10_000), last_items()
+        # Record (the UI command: the armed track), then Discard take from the settings dialog
+        win.invoke("voiceover.recordToggle")
+        assert wait_until(app, lambda: rec.recording and rec.track == row.short and win.monitor.playing, 10_000)
+        win.invoke("voiceover.settingsDialog")
+        d = win.voiceover_dialog
+        assert wait_until(app, lambda: d.ready, 10_000)
+        d.findChild(QtWidgets.QPushButton, "voiceover.discard").click()
+        assert wait_until(app, lambda: not rec.recording and ("Voice-over take discarded", False) in messages, 10_000), messages
+        assert not win.monitor.playing
+        wait_until(app, lambda: False, 300)
+        assert [c.get("name") for c in last_items()] == ["Voice-over 1.wav"]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes(app, tmp_path: Path):
     """An engine that stops unexpectedly is restarted at once (on the project that was open); the
     new one offers the dead one's unsaved changes from the recovery journal, and recovering brings

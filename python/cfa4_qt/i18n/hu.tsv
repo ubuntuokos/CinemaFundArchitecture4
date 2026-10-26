@@ -1560,3 +1560,30 @@
 	minute(s)	perc
 	second(s)	másodperc
 	seconds	másodperc
+	 seconds	 másodperc
+	Channel {n}	{n}. csatorna
+	Countdown Sound Cues	Visszaszámláló hangjelzések
+	Discard take	Felvétel elvetése
+	Discard the active take	Az aktuális felvétel elvetése
+	Input:	Bemenet:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	A lejátszás az előfutással a lejátszófej (vagy a kezdőpont) előtt indul; kijelölt kezdő- és végpontnál a felvétel ott kezdődik és ott ér véget.
+	Post-roll	Utófutás
+	Post-roll:	Utófutás:
+	Pre-roll:	Előfutás:
+	Qt Multimedia is not available	A Qt Multimedia nem érhető el
+	Record (voice-over on the record-enabled track)	Felvétel (hangalámondás a felvételre kijelölt sávra)
+	Recording voice-over…	Hangalámondás felvétele…
+	Source:	Forrás:
+	Stop Voice-over Recording	Hangalámondás felvételének leállítása
+	The audio input could not be started	A hangbemenet nem indítható el
+	The audio input does not support a usable format	A hangbemenet nem támogat használható formátumot
+	The voice-over input buffer is full: the take ends here	A hangalámondás bemeneti puffere megtelt: a felvétel itt véget ér
+	There is no audio input device	Nincs hangbemeneti eszköz
+	Voice-Over Record Settings	Hangalámondás felvételi beállításai
+	Voice-Over Record Settings…	Hangalámondás felvételi beállításai…
+	Voice-over input: {error}	Hangalámondás bemenete: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Hangalámondás felvétele (jobb kattintás: felvételi beállítások…)
+	Voice-over recorded: {p}	Hangalámondás felvéve: {p}
+	Voice-over recording stopped (nothing recorded)	A hangalámondás felvétele leállt (nem készült felvétel)
+	Voice-over take discarded	Hangalámondás-felvétel elvetve
+	● Recording	● Felvétel
