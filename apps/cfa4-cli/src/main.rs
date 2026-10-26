@@ -34,6 +34,7 @@ mod args;
 mod probe;
 mod serve;
 mod serve_lumetri;
+mod serve_media_browser;
 mod serve_scopes;
 
 use args::{Args, parse_value};

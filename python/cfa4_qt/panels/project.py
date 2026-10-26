@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND
+from .media_browser import FILES_MIME, dropped_files
 from .timeline import ITEM_MIME
 
 ITEM_ROLE = Qt.ItemDataRole.UserRole
@@ -39,6 +40,8 @@ def _duration(ticks: Any) -> str:
 
 
 class ProjectTree(QTreeWidget):
+    files_dropped = Signal(list)  # paths dragged from the Media Browser or a file manager
+
     def mimeData(self, items: list[QTreeWidgetItem]) -> QMimeData:
         mime = QMimeData()
         ids = [str(i.data(0, ITEM_ROLE)) for i in items if i.data(0, ITEM_ROLE) is not None]
@@ -47,6 +50,31 @@ class ProjectTree(QTreeWidget):
 
     def mimeTypes(self) -> list[str]:
         return [ITEM_MIME]
+
+    def _files(self, e: Any) -> bool:
+        m = e.mimeData()
+        return not m.hasFormat(ITEM_MIME) and (m.hasFormat(FILES_MIME) or m.hasUrls())
+
+    def dragEnterEvent(self, e: Any) -> None:
+        if self._files(e):
+            e.acceptProposedAction()
+        else:
+            super().dragEnterEvent(e)
+
+    def dragMoveEvent(self, e: Any) -> None:
+        if self._files(e):
+            e.acceptProposedAction()
+        else:
+            super().dragMoveEvent(e)
+
+    def dropEvent(self, e: Any) -> None:
+        if self._files(e):
+            paths = dropped_files(e.mimeData())
+            if paths:
+                self.files_dropped.emit(paths)
+            e.acceptProposedAction()
+        else:
+            super().dropEvent(e)
 
 
 class ProjectPanel(QWidget):
@@ -67,6 +95,9 @@ class ProjectPanel(QWidget):
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tree.setDragEnabled(True)
         self.tree.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)
+        self.tree.setAcceptDrops(True)  # files from the Media Browser are imported
+        self.tree.viewport().setAcceptDrops(True)
+        self.tree.files_dropped.connect(lambda paths: self.command.emit("mediaBrowser.import", {"paths": paths}))
         self.tree.itemDoubleClicked.connect(self._open)
         self.tree.itemSelectionChanged.connect(self._selection_changed)
         self.tree.setColumnWidth(0, 200)

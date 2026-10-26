@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2354,6 +2354,95 @@ def test_lumetri_color(app, tmp_path: Path):
         assert lc.grab().width() > 0
         # the open sections are remembered
         assert "Curves" in str(settings.value("lumetri/openSections"))
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_media_browser(app, tmp_path: Path):
+    """egui's Media Browser: locations, the directory's files in List or Thumbnail view, back / up,
+    select, open, Favorites, Edit Columns, and files dropped on the Timeline or Project panel."""
+    import struct
+    import zlib
+
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.media_browser import dropped_files, files_mime
+
+    def png(path: Path, w: int, h: int) -> None:
+        raw = b"".join(b"\x00" + b"".join(bytes([x * 4 % 256, 90, 200]) for x in range(w)) for _ in range(h))
+
+        def chunk(kind: bytes, data: bytes) -> bytes:
+            return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+        ihdr = struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
+        path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+    media = tmp_path / "media"
+    (media / "Shots").mkdir(parents=True)
+    png(media / "still.png", 64, 36)
+    (media / "notes.txt").write_text("not media", encoding="utf-8")
+    assert dropped_files(files_mime(["/a/b.mov", "/c d.wav"])) == ["/a/b.mov", "/c d.wav"]
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    mb = win.media_browser
+    Qt = QtCore.Qt
+
+    def names() -> list[str]:
+        return [mb.list.topLevelItem(i).text(0) for i in range(mb.list.topLevelItemCount())]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Media Browser"].raise_()
+        assert wait_until(app, lambda: mb.isVisible() and bool(mb.data.get("dir")), 20_000), mb.data
+        mb.path.setFocus()
+        mb.path.setText(str(media))
+        QtTest.QTest.keyClick(mb.path, Qt.Key.Key_Return)
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media) and names() == ["Shots", "still.png"], 20_000), (mb.data.get("dir"), names())
+        headers = [mb.list.headerItem().text(i) for i in range(mb.list.columnCount())]
+        assert headers[0] == "Name" and "Video Info" in headers
+        info = headers.index("Video Info")
+        assert wait_until(app, lambda: mb.list.topLevelItem(1).text(info) == "64 x 36", 20_000)
+        assert mb.nav["up"].isEnabled() and mb.nav["back"].isEnabled()
+        tops = [mb.tree.topLevelItem(i).text(0) for i in range(mb.tree.topLevelItemCount())]
+        assert tops == ["Favorites", "Local Drives", "Network", "Recent Directories"]
+
+        # select, then open a folder and come back up
+        mb.list.topLevelItem(1).setSelected(True)
+        assert wait_until(app, lambda: mb.data.get("selection") == [str(media / "still.png")], 10_000), mb.data.get("selection")
+        assert mb.count.text() == "1 of 1 items selected"
+        mb.open_entry(mb.list.topLevelItem(0).data(0, QtCore.Qt.ItemDataRole.UserRole + 1))
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media / "Shots") and names() == [], 10_000)
+        mb.nav["up"].click()
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media), 10_000)
+
+        # Favorites: the current directory joins the tree
+        mb.send("mediaBrowser.favorite", {})
+        assert wait_until(app, lambda: any(r.get("path") == str(media) for r in mb.roots.get("favorites") or []), 10_000), mb.roots
+
+        # Edit Columns: Media Type in front of Size
+        mb.settings_cmd({"columns": ["Name", "Media Type"]})
+        assert wait_until(app, lambda: mb.list.columnCount() == 2 and mb.list.topLevelItem(1).text(1) == "Image", 10_000)
+
+        # Thumbnail View draws the still from the engine
+        mb.view_buttons["thumbnails"].click()
+        assert wait_until(app, lambda: mb.stack.currentWidget() is mb.grid and any(not p.isNull() for p in mb.thumbs.values()), 20_000), mb.thumbs
+        assert mb.size_slider.isVisible()
+
+        # a file dropped on the Timeline is imported and placed there; on the Project panel, imported
+        v1 = next(r for r in win.timeline.canvas.rows if r.short == "V1")
+        win.place_files([str(media / "still.png")], 0, v1.track_id)
+        placed = lambda: [c for t in win.sequence["video"] for c in t["items"] if "still" in str(c.get("name"))]
+        assert wait_until(app, lambda: bool(placed()), 20_000), win.events.text.toPlainText()
+        assert placed()[0]["start"] == 0
+        assert wait_until(app, lambda: any("still" in str(i.get("name")) for i in _items(win.project or {})), 10_000)
+        assert mb.grab().width() > 0
     finally:
         win._quit_confirmed = True
         win.close()

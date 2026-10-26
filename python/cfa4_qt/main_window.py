@@ -31,6 +31,7 @@ from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
+from .panels.media_browser import MediaBrowserPanel
 from .panels.meters import AudioMetersPanel
 from .panels.mixer import ClipMixerPanel, TrackMixerPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
@@ -44,7 +45,7 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 14  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color
+LAYOUT_VERSION = 15  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -53,6 +54,7 @@ DOCK_PLAN = (
     ("Audio Clip Mixer", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Metadata", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Media Browser", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Info", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Markers", Qt.DockWidgetArea.LeftDockWidgetArea),
@@ -167,6 +169,7 @@ class MainWindow(QMainWindow):
         self.scopes = ScopesPanel(engine, self)
         self.scopes.attach_settings(self.settings)
         self.reference.scope_settings = lambda: self.scopes.st
+        self.media_browser = MediaBrowserPanel(engine, self)
         self.lumetri = LumetriColorPanel(self)
         self.lumetri.attach_settings(self.settings)
         self._lumetri_busy = False
@@ -215,6 +218,7 @@ class MainWindow(QMainWindow):
             "Reference Monitor": self.reference,
             "Lumetri Scopes": self.scopes,
             "Lumetri Color": self.lumetri,
+            "Media Browser": self.media_browser,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -241,8 +245,12 @@ class MainWindow(QMainWindow):
             self.mixer,
             self.clip_mixer,
             self.lumetri,
+            self.media_browser,
         ):
             panel.command.connect(self.execute)
+        self.media_browser.attach_settings(self.settings)
+        self.media_browser.invoke.connect(self.invoke)
+        self.timeline.canvas.files_dropped.connect(self.place_files)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
         app = QApplication.instance()
@@ -298,7 +306,8 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["Reference Monitor"], d["Lumetri Scopes"])
         for closed in ("Audio Track Mixer", "Reference Monitor", "Lumetri Scopes"):  # other workspaces; Window menu
             d[closed].hide()
-        win.tabifyDockWidget(d["Project"], d["Info"])
+        win.tabifyDockWidget(d["Project"], d["Media Browser"])
+        win.tabifyDockWidget(d["Media Browser"], d["Info"])
         win.tabifyDockWidget(d["Info"], d["Effects"])
         win.tabifyDockWidget(d["Effects"], d["Markers"])
         win.tabifyDockWidget(d["Markers"], d["History"])
@@ -726,6 +735,7 @@ class MainWindow(QMainWindow):
         self.inspector.set_sequence(self.sequence)
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
         self.update_lumetri()
+        self.media_browser.refresh()
         self.update_inspectors()
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
@@ -977,6 +987,19 @@ class MainWindow(QMainWindow):
             self._clip_mixer_busy = False
 
         self.engine.call("clipMixer.inspect", {"time": self.monitor.playhead}, on_reply=done, on_error=failed)
+
+    def place_files(self, paths: list[str], time: int, track: Any) -> None:
+        """Files dropped on the Timeline: import them (``mediaBrowser.import``), then place each
+        new item there, one after the other."""
+
+        def imported(result: Any, _b: bytes | None) -> None:
+            items = [i for i in (result or {}).get("items") or [] if isinstance(i, int)]
+            for item in items:
+                self.execute("timeline.place", {"item": item, "time": time, "track": track})
+            self.schedule_refresh()
+
+        self.engine.execute("mediaBrowser.import", {"paths": paths}, on_reply=imported,
+                            on_error=lambda m: self._command_failed("mediaBrowser.import", m))
 
     def update_lumetri(self) -> None:
         """The Lumetri Color panel: the selected video clip's Lumetri values at the playhead."""

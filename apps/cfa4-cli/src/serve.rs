@@ -645,6 +645,14 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "mediaBrowser.inspect" => match crate::serve_media_browser::inspect(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
+        "mediaBrowser.thumbnail" => match crate::serve_media_browser::thumbnail(s, &params) {
+            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
         "lumetri.inspect" => match crate::serve_lumetri::inspect(s, &params) {
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),

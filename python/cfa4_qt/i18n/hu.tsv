@@ -807,3 +807,41 @@
 	Warm Film	Meleg film
 	White/Black	Fehér/fekete
 	Whites	Fehérek
+	(none)	(nincs)
+	Add to Favorites	Hozzáadás a kedvencekhez
+	All Supported Files	Minden támogatott fájl
+	Allow Duplicate Media During Project Import	Ismétlődő média engedélyezése projekt importálásakor
+	Audio Files	Hangfájlok
+	Cannot open {dir}: {e}	Nem nyitható meg: {dir}: {e}
+	Clear Recent Directories	Legutóbbi mappák törlése
+	Create Folder For Imported Projects	Mappa létrehozása az importált projekteknek
+	Date Modified	Módosítás dátuma
+	Edit Columns	Oszlopok szerkesztése
+	Edit Columns…	Oszlopok szerkesztése…
+	Favorites	Kedvencek
+	File Extension	Fájlkiterjesztés
+	File Types Displayed	Megjelenített fájltípusok
+	Go Back	Vissza
+	Go Forward	Előre
+	Hover Scrub	Bélyegkép-léptetés rámutatással
+	Import	Importálás
+	Import as Image Sequence	Importálás képsorozatként
+	Ingest	Betöltés
+	List View	Listanézet
+	Local Drives	Helyi meghajtók
+	Network	Hálózat
+	New Media Browser Panel	Új Médiaböngésző panel
+	Open In Source Monitor	Megnyitás a Forrás monitorban
+	Open Ingest Settings	Betöltési beállítások megnyitása
+	Projects and Interchange	Projektek és cserefájlok
+	Recent Directories	Legutóbbi mappák
+	Refresh	Frissítés
+	Remove from Favorites	Eltávolítás a kedvencek közül
+	Show in File Manager	Megjelenítés a fájlkezelőben
+	Size	Méret
+	Still Images	Állóképek
+	Thumbnail View	Bélyegképnézet
+	Up One Level	Egy szinttel feljebb
+	Video Files	Videofájlok
+	{sel} of {total} items selected	{total} elemből {sel} kijelölve
+	{total} items	{total} elem

@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBo
 from .. import theme
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from .media_browser import FILES_MIME, dropped_files
 from .timeline_media import TimelineMedia
 
 ITEM_MIME = "application/x-cfa4-item"
@@ -120,6 +121,7 @@ class Drag:
 class TimelineCanvas(QWidget):
     command = Signal(str, dict)  # engine command id, params
     seek = Signal(object)  # ticks, while scrubbing (local preview); object, not a 32-bit int
+    files_dropped = Signal(list, object, object)  # paths (Media Browser, file manager), time, track id
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -753,7 +755,7 @@ class TimelineCanvas(QWidget):
 
     # ----- drag and drop from the Project panel -----
     def dragEnterEvent(self, e) -> None:
-        if e.mimeData().hasFormat(ITEM_MIME) and self.sequence:
+        if (e.mimeData().hasFormat(ITEM_MIME) or e.mimeData().hasFormat(FILES_MIME) or e.mimeData().hasUrls()) and self.sequence:
             e.acceptProposedAction()
 
     def dragMoveEvent(self, e) -> None:
@@ -777,10 +779,16 @@ class TimelineCanvas(QWidget):
         if preview is None:
             return
         try:
-            items = [int(x) for x in bytes(e.mimeData().data(ITEM_MIME)).decode().split(",") if x]
+            items = [int(x) for x in bytes(e.mimeData().data(ITEM_MIME)).decode().split(",") if x] if e.mimeData().hasFormat(ITEM_MIME) else []
         except ValueError:
             return
         t, row = preview
+        if not e.mimeData().hasFormat(ITEM_MIME):
+            paths = dropped_files(e.mimeData())
+            if paths:
+                self.files_dropped.emit(paths, t, row.track_id)
+                e.acceptProposedAction()
+            return
         for item in items:
             self.command.emit("timeline.place", {"item": item, "time": t, "track": row.track_id})
         e.acceptProposedAction()
