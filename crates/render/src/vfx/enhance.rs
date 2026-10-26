@@ -1,6 +1,7 @@
 //! Enhance: retouch effects outside Premiere's bin (CFA4's own folder), on top of the same
 //! helpers as the rest of `vfx`. Colour maths runs on sRGB-encoded straight colour, like the keys
-//! and limiters: the mask thresholds artists set are display-space numbers.
+//! and limiters: the mask thresholds artists set are display-space numbers. Low Light, the
+//! folder's other effect, also runs on the GPU, so it lives in `gpufx` (`FxOp::LowLight`).
 
 use cfa4_project::EffectInstance;
 use rayon::prelude::*;
@@ -153,52 +154,6 @@ pub fn skin_smoothing(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         let l = dec(out);
         for c in 0..3 {
             p[c] = l[c] * p[3];
-        }
-    });
-}
-
-/// Low Light: brightens what the scene's lighting left dark and leaves what was already lit, in
-/// the manner of LIME (Guo, Li & Ling 2017).
-///
-/// The illumination of a pixel is estimated as its brightest channel, then made smooth but
-/// edge-aware with the same guided filter as Skin Smoothing, so a lamp against a dark wall keeps
-/// its edge instead of glowing. Every channel is divided by `illumination ^ k` (Amount sets `k`):
-/// one gain per pixel, so hues stay, and a lit pixel (illumination near 1) is left alone. Max
-/// Brightening caps the gain so black, noisy corners are not blown up into grain.
-pub fn low_light(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
-    let amount = (fv(e, "amount", cx) / 100.0).clamp(0.0, 1.0);
-    let show = bv(e, "show_illumination");
-    if (amount <= 0.0 && !show) || img.px.is_empty() {
-        return;
-    }
-    let radius = (fv(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
-    let max_gain = (fv(e, "max_gain", cx) / 100.0).clamp(1.0, 20.0);
-    let (w, h) = (img.w, img.h);
-    let src: Vec<[f32; 3]> = img.px.as_chunks::<4>().0.par_iter().map(|p| enc(Image::unpremul(*p))).collect();
-    let peak: Vec<[f32; 3]> = src
-        .par_iter()
-        .map(|c| {
-            let t = c[0].max(c[1]).max(c[2]).clamp(0.0, 1.0);
-            [t, t, t]
-        })
-        .collect();
-    // a sub-pixel radius smooths nothing: the per-pixel peak is the estimate
-    let light = if radius < 0.5 { peak } else { guided_smooth(w, h, &peak, radius, 0.01) };
-    let k = amount * 0.85;
-    img.px.par_chunks_mut(4).enumerate().for_each(|(i, p)| {
-        let Some((c, t)) = src.get(i).zip(light.get(i)) else {
-            return;
-        };
-        let t = t[0].clamp(1e-3, 1.0);
-        let out = if show {
-            [t, t, t]
-        } else {
-            let gain = t.powf(-k).min(max_gain);
-            [(c[0] * gain).min(1.0), (c[1] * gain).min(1.0), (c[2] * gain).min(1.0)]
-        };
-        let l = dec(out);
-        for ch in 0..3 {
-            p[ch] = l[ch] * p[3];
         }
     });
 }

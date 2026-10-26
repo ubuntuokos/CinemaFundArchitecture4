@@ -54,6 +54,9 @@ const OP_VIDEO_LIMITER: u32 = 30;
 const OP_LUMETRI: u32 = 31;
 const OP_SWAP_EYES: u32 = 32;
 const OP_STEREO_TO_2D: u32 = 33;
+const OP_LOW_LIGHT_PEAK: u32 = 34;
+const OP_LOW_LIGHT_COEF: u32 = 35;
+const OP_LOW_LIGHT_APPLY: u32 = 36;
 
 type Target = (wgpu::Texture, wgpu::TextureView);
 
@@ -91,9 +94,9 @@ struct Step {
     code: u32,
     i1: [u32; 4],
     p: [f32; 24],
-    /// Unsharp combine: reads the blurred image and the original.
+    /// Unsharp combine (and Low Light's last pass): reads the working image and the original.
     combine: bool,
-    /// A blur pass of Unsharp Mask (the original stays untouched until the combine).
+    /// A pass before such a combine (the original stays untouched until it).
     unsharp_blur: bool,
 }
 
@@ -154,6 +157,24 @@ fn steps(op: &FxOp) -> Vec<Step> {
             let mut s = step(OP_UNSHARP, [0; 4], &[*amount, *threshold]);
             s.combine = true;
             out.push(s);
+        }
+        FxOp::LowLight { rx, ry, k, max_gain, show } => {
+            if *k > 0.0 || *show {
+                // peak statistics, their means, the guided filter's (a, b), their means, then the
+                // gain on the original
+                out.push(step(OP_LOW_LIGHT_PEAK, [0; 4], &[]));
+                boxes(rx, false, true, &mut out);
+                boxes(ry, true, true, &mut out);
+                out.push(step(OP_LOW_LIGHT_COEF, [0; 4], &[cfa4_render::gpufx::LOW_LIGHT_EPS]));
+                boxes(rx, false, true, &mut out);
+                boxes(ry, true, true, &mut out);
+                for s in &mut out {
+                    s.unsharp_blur = true;
+                }
+                let mut s = step(OP_LOW_LIGHT_APPLY, [*show as u32, 0, 0, 0], &[*k, *max_gain]);
+                s.combine = true;
+                out.push(s);
+            }
         }
         FxOp::Crop { x0, x1, y0, y1, feather } => out.push(step(OP_CROP, [0; 4], &[*x0, *x1, *y0, *y1, *feather])),
         FxOp::Resample(r) => {

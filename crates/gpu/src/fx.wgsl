@@ -17,7 +17,7 @@ struct U {
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var src: texture_2d<f32>;
 @group(0) @binding(2) var dst: texture_storage_2d<rgba32float, write>;
-// Unsharp Mask: the image before blurring.
+// Unsharp Mask and Low Light: the image before their first pass.
 @group(0) @binding(3) var aux: texture_2d<f32>;
 
 const OP_BRIGHTNESS_CONTRAST: u32 = 1u;
@@ -52,6 +52,9 @@ const OP_VIDEO_LIMITER: u32 = 30u;
 const OP_LUMETRI: u32 = 31u;
 const OP_SWAP_EYES: u32 = 32u;
 const OP_STEREO_TO_2D: u32 = 33u;
+const OP_LOW_LIGHT_PEAK: u32 = 34u;
+const OP_LOW_LIGHT_COEF: u32 = 35u;
+const OP_LOW_LIGHT_APPLY: u32 = 36u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -132,6 +135,19 @@ fn enc(c: vec3<f32>) -> vec3<f32> {
 fn dec(c: vec3<f32>) -> vec3<f32> {
     let m = clamp(c, vec3(0.0), vec3(1.0));
     return vec3(srgb_to_linear1(m.x), srgb_to_linear1(m.y), srgb_to_linear1(m.z));
+}
+
+// `effects::enc(Image::unpremul(p))`: straight sRGB-encoded colour (black where transparent).
+fn straight_srgb(p: vec4<f32>) -> vec3<f32> {
+    if p.a <= 1e-6 {
+        return vec3(0.0);
+    }
+    return enc(p.rgb / p.a);
+}
+
+// `gpufx::low_light_peak`
+fn low_light_peak(c: vec3<f32>) -> f32 {
+    return clamp(max(c.x, max(c.y, c.z)), 0.0, 1.0);
 }
 
 fn luma709(c: vec3<f32>) -> f32 {
@@ -601,6 +617,31 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
                 }
             }
             return o;
+        }
+        case OP_LOW_LIGHT_PEAK: {
+            // `gpufx::low_light_peak` of the straight sRGB colour, and its square
+            let t = low_light_peak(straight_srgb(ld(p)));
+            return vec4(t, t * t, 0.0, 0.0);
+        }
+        case OP_LOW_LIGHT_COEF: {
+            // `gpufx::low_light_coeffs` from the box means
+            let m = ld(p);
+            let v = max(m.y - m.x * m.x, 0.0);
+            let a = v / (v + u.p0.x);
+            return vec4(a, m.x - a * m.x, 0.0, 0.0);
+        }
+        case OP_LOW_LIGHT_APPLY: {
+            // `gpufx::low_light_gain`: src = the averaged (a, b), aux = the original
+            let o = textureLoad(aux, p, 0);
+            let ab = ld(p);
+            let c = straight_srgb(o);
+            let t = clamp(ab.x * low_light_peak(c) + ab.y, 1e-3, 1.0);
+            var out = vec3(t);
+            if u.i1.x == 0u {
+                let g = min(powf(t, -u.p0.x), u.p0.y);
+                out = min(c * g, vec3(1.0));
+            }
+            return vec4(dec(out) * o.a, o.a);
         }
         case OP_CROP: {
             let x0 = u.p0.x; let x1 = u.p0.y; let y0 = u.p0.z; let y1 = u.p0.w; let fe = u.p1.x;

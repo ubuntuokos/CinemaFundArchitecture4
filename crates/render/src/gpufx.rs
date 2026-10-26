@@ -106,6 +106,16 @@ pub enum FxOp {
         dy: f32,
         steps: u32,
     },
+    /// Low Light ([`low_light_gain`]): the illumination (brightest channel) smoothed by a
+    /// self-guided filter over repeat-edge box-Gaussians of the given radii, then one gain per
+    /// pixel, `illumination ^ -k` capped at `max_gain`. `show` draws the illumination instead.
+    LowLight {
+        rx: Vec<u32>,
+        ry: Vec<u32>,
+        k: f32,
+        max_gain: f32,
+        show: bool,
+    },
     /// Unsharp mask over a repeat-edge Gaussian of the given box radii (per axis).
     Unsharp {
         rx: Vec<u32>,
@@ -239,6 +249,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "vertical_flip",
     "stereo_swap_eyes",
     "stereo_to_2d",
+    "low_light",
     "mirror",
     "offset",
     "asc_cdl",
@@ -288,6 +299,38 @@ pub fn stereo_view_sample(src: &Image, x: usize, y: usize, sbs: bool, right: boo
         o[k] = a[k] + (b[k] - a[k]) * t;
     }
     o
+}
+
+/// Variance (display 0..1, squared) below which Low Light's illumination counts as flat and is
+/// smoothed by the guided filter; above it an edge (a lamp against a wall) is kept.
+pub const LOW_LIGHT_EPS: f32 = 0.01;
+
+/// The illumination estimate of a straight sRGB colour for Low Light: its brightest channel.
+#[inline]
+pub fn low_light_peak(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2]).clamp(0.0, 1.0)
+}
+
+/// Low Light's per-pixel model of the self-guided filter from the box means of the peak `m` and
+/// its square `m2`: `(a, b)` with `smoothed = a · peak + b`. `fx.wgsl` (`OP_LOW_LIGHT_COEF`)
+/// mirrors this.
+#[inline]
+pub fn low_light_coeffs(m: f32, m2: f32) -> (f32, f32) {
+    let var = (m2 - m * m).max(0.0);
+    let a = var / (var + LOW_LIGHT_EPS);
+    (a, m - a * m)
+}
+
+/// Low Light's output for straight sRGB `c` under the smoothed illumination `t`. `fx.wgsl`
+/// (`OP_LOW_LIGHT_APPLY`) mirrors this.
+#[inline]
+pub fn low_light_gain(c: [f32; 3], t: f32, k: f32, max_gain: f32, show: bool) -> [f32; 3] {
+    let t = t.clamp(1e-3, 1.0);
+    if show {
+        return [t, t, t];
+    }
+    let g = t.powf(-k).min(max_gain);
+    [(c[0] * g).min(1.0), (c[1] * g).min(1.0), (c[2] * g).min(1.0)]
 }
 
 /// `Image::transformed` without the mip path: the destination rectangle it writes and the inverse.
@@ -469,6 +512,17 @@ impl FxOp {
             "horizontal_flip" => FxOp::HFlip,
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
+            "low_light" => {
+                let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
+                let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
+                FxOp::LowLight {
+                    rx,
+                    ry,
+                    k: (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0) * 0.85,
+                    max_gain: (f(e, "max_gain", cx) / 100.0).clamp(1.0, 20.0),
+                    show: b(e, "show_illumination"),
+                }
+            }
             "stereo_to_2d" => FxOp::StereoTo2d { sbs: choice(e, "frame_layout") == 1, right: choice(e, "eye") == 1 },
             "mirror" => {
                 let img = Image { w, h, px: Vec::new() };
@@ -661,6 +715,7 @@ impl FxOp {
             FxOp::Gaussian { .. } => true,
             FxOp::DirectionalBlur { dx, dy, .. } => fin(&[*dx, *dy]),
             FxOp::Unsharp { amount, threshold, .. } => fin(&[*amount, *threshold]),
+            FxOp::LowLight { k, max_gain, .. } => fin(&[*k, *max_gain]),
             FxOp::Crop { x0, x1, y0, y1, feather } => fin(&[*x0, *x1, *y0, *y1, *feather]),
             FxOp::Resample(r) => {
                 r.rect[0] != u32::MAX
@@ -834,6 +889,32 @@ impl FxOp {
             FxOp::Gaussian { rx, ry, repeat } => crate::effects::box_blur(img, rx, ry, *repeat),
             FxOp::DirectionalBlur { dx, dy, steps } => crate::effects::directional_taps(img, *dx, *dy, *steps as usize),
             FxOp::Unsharp { rx, ry, amount, threshold } => crate::effects::unsharp_boxes(img, rx, ry, *amount, *threshold),
+            FxOp::LowLight { rx, ry, k, max_gain, show } => {
+                if *k <= 0.0 && !*show {
+                    return;
+                }
+                // the peak and its square, box-blurred; then the model's (a, b), box-blurred
+                let mut stats = img.clone();
+                stats.px.par_chunks_mut(4).for_each(|p| {
+                    let t = low_light_peak(enc(Image::unpremul([p[0], p[1], p[2], p[3]])));
+                    p.copy_from_slice(&[t, t * t, 0.0, 0.0]);
+                });
+                crate::effects::box_blur(&mut stats, rx, ry, true);
+                stats.px.par_chunks_mut(4).for_each(|p| {
+                    let (a, b) = low_light_coeffs(p[0], p[1]);
+                    p.copy_from_slice(&[a, b, 0.0, 0.0]);
+                });
+                crate::effects::box_blur(&mut stats, rx, ry, true);
+                let (k, max_gain, show) = (*k, *max_gain, *show);
+                img.px.par_chunks_mut(4).zip(stats.px.par_chunks(4)).for_each(|(p, ab)| {
+                    let c = enc(Image::unpremul([p[0], p[1], p[2], p[3]]));
+                    let t = ab[0] * low_light_peak(c) + ab[1];
+                    let l = dec(low_light_gain(c, t, k, max_gain, show));
+                    for ch in 0..3 {
+                        p[ch] = l[ch] * p[3];
+                    }
+                });
+            }
             FxOp::Crop { x0, x1, y0, y1, feather } => crate::effects::crop_px(img, *x0, *x1, *y0, *y1, *feather),
             FxOp::Resample(r) => {
                 let out = match (&r.inv, r.rect[0]) {

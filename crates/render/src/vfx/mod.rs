@@ -475,7 +475,6 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "reduce_interlace_flicker" => blur::interlace_flicker(img, e, cx),
         // Enhance
         "skin_smoothing" => enhance::skin_smoothing(img, e, cx),
-        "low_light" => enhance::low_light(img, e, cx),
         "gaussian_blur_legacy" => alias(img, "gaussian_blur"),
         "directional_blur_legacy" => alias(img, "directional_blur"),
         // Distort / Transform / Utility geometry
