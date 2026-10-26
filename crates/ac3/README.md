@@ -1,6 +1,6 @@
 # cfa4-ac3
 
-Clean-room AC-3 (Dolby Digital) and E-AC-3 (Dolby Digital Plus) audio decoder in pure Rust. Layer L0: depends only on
+Clean-room AC-3 (Dolby Digital) and E-AC-3 (Dolby Digital Plus) audio decoder and encoder in pure Rust. Layer L0: depends only on
 `thiserror`. Builds for `wasm32-unknown-unknown`; no `unsafe`. No GPL/LGPL code (FFmpeg,
 liba52) was consulted; FFmpeg is used only as an external fixture generator and test oracle.
 
@@ -23,6 +23,10 @@ let mut dec = cfa4_ac3::Decoder::new();
 let h = cfa4_ac3::parse_header(frame)?;   // rate, channels, frame size
 let out = dec.decode(frame)?;                  // h.samples() per channel, WAV channel order
 dec.reset();                                    // before decoding from another position
+
+let mut enc = cfa4_ac3::Encoder::new(48_000, 6, 448)?;   // or Encoder::new_eac3(rate, ch, kb/s)
+let frames = enc.encode(&[l, r, c, lfe, ls, rs])?;     // planar f32, WAV order; whole syncframes
+let tail = enc.flush()?;                               // pads; output lags input by 256 samples
 ```
 
 ## Decoder
@@ -90,6 +94,35 @@ sequences differ as much as we differ from FFmpeg. In MPEG-2 TS (AVCHD-style `.m
 maximum sample difference to FFmpeg is 2.3·10⁻³. E-AC-3 through `cfa4-codecs`
 (`tests/eac3_oracle.rs`): 5.1 in MP4 and Matroska 91.3 dB, stereo in QuickTime 87.0 dB and
 MPEG-TS 79.5 dB against FFmpeg's decode.
+
+## Encoder
+
+`Encoder::new` writes AC-3 (bsid 8) at a bit rate of Table 5.18 (32-640 kb/s), `new_eac3` E-AC-3
+(bsid 16, one independent substream, six-block syncframes) at 32-1024 kb/s; 32 / 44.1 / 48 kHz,
+mono, stereo, 3/0, 2/2, 3/2 and 5.1. Written from the same standard, mirroring the decoder:
+
+- Forward MDCT as the exact transpose of the decoder's FFT-based IMDCT (checked against it bin
+  by bin), long blocks only.
+- Exponents per block, shared across the following blocks while the audible spectrum (bins above
+  about -90 dB) moves less than one step per bin on average; the shared set holds each bin's
+  smallest exponent. D45 for a set of one block, D25 for two or three, D15 beyond; differences
+  limited to ±2. Bandwidth (chbwcod) by the bits per channel.
+- Rematrixing (2/0) per band, decided for the whole syncframe.
+- The decoder's own parametric bit allocation with the A/52 default parameters; one SNR offset per
+  syncframe, the largest whose mantissas fit, found by binary search on counted (not written)
+  mantissas; AC-3 keeps blocks 0-1 inside the first 5/8 of the frame.
+- Grouped and asymmetric mantissas, both AC-3 CRC words (crc1 solved so the first 5/8 checks to
+  zero), the E-AC-3 CRC.
+- NaN, infinities and samples beyond full scale are replaced or clamped; a frame whose exponents
+  cannot fit falls back to one D45 set per channel.
+
+Tests: every channel mode and rate through our decoder; ffmpeg decodes our streams with
+`-err_detect crccheck+explode`, and on the same input and bit rate our SNR matches or beats
+ffmpeg's own AC-3 / E-AC-3 encoder (stereo 192 kb/s: 83 vs 51 dB; 5.1 448 kb/s: 75.5 vs 75.5 dB;
+stereo 96 kb/s at 44.1 kHz: 61.6 vs 65.5 dB, where ffmpeg couples). Speed
+(`cargo run --release -p cfa4-ac3 --example ac3_encode_bench`): 5.1 at about 23× real time on
+one thread. Not written yet (#120): coupling, block switching, spectral extension, 7.1, DRC
+words, 1+1; export wiring is #119.
 
 ## Gaps
 
