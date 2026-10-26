@@ -56,6 +56,8 @@ from .panels.tts import TextToSpeechPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
 LAYOUT_VERSION = 19  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech
+# commands that can change which media an item shows, done or undone
+SOURCE_COMMANDS = frozenset({"media.relink", "media.replaceFootage", "media.makeOffline", "edit.undo", "edit.redo"})
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -203,7 +205,7 @@ class MainWindow(QMainWindow):
         self._mixer_busy = False
         self._mixer_clock = QElapsedTimer()
         self._mixer_clock.start()
-        self._mixer_heard: int | None = None
+        self._mixer_heard: tuple[Any, int] | None = None  # (audio generation, sample heard up to)
         self._mixer_timer = QTimer(self)
         self._mixer_timer.setInterval(33)
         self._mixer_timer.timeout.connect(self._mixer_meters)
@@ -818,9 +820,16 @@ class MainWindow(QMainWindow):
         self.engine.execute(
             command,
             params or {},
-            on_reply=lambda _r, _b: self.schedule_refresh(),
+            on_reply=lambda _r, _b, c=command: self._command_done(c),
             on_error=lambda m, c=command: self._command_failed(c, m),
         )
+
+    def _command_done(self, command: str) -> None:
+        if command in SOURCE_COMMANDS:
+            # the item keeps its id but shows other media (or comes back online): cached
+            # thumbnails and waveforms keyed by that id are stale
+            self.timeline.canvas.media.clear()
+        self.schedule_refresh()
 
     def _command_failed(self, command: str, message: str) -> None:
         text = f"{command}: {message}"
@@ -1144,14 +1153,15 @@ class MainWindow(QMainWindow):
         peaks: dict[Any, list[float]] = {}
         if mon.playing:
             now = mon.play_sample()
-            last = self._mixer_heard if self._mixer_heard is not None else now - 1
+            gen = getattr(mon, "audio_generation", None)
+            last = self._mixer_heard[1] if self._mixer_heard is not None and self._mixer_heard[0] == gen else now - 1
             for start, frames, strips in mon.strip_blocks:
                 if start <= now and start + frames > last:  # heard since the last tick
                     for sid, values in strips.items():
                         cur = peaks.setdefault(sid, [0.0] * len(values))
                         for i, v in enumerate(values[: len(cur)]):
                             cur[i] = max(cur[i], float(v or 0.0))
-            self._mixer_heard = now
+            self._mixer_heard = (gen, now)
         else:
             self._mixer_heard = None
         self.mixer.set_levels(peaks, dt)
@@ -1214,7 +1224,11 @@ class MainWindow(QMainWindow):
         self.reference.set_playhead(ticks)
 
     def _seek_program(self, ticks: int) -> None:
-        """A panel (Effect Controls' keyframe navigation) moves the Program playhead."""
+        """A panel (Effect Controls' keyframe navigation, a marker) moves the Program playhead.
+        Playback stops first: its clock would put the playhead back on the next tick, and the
+        engine's playhead is not set while playing."""
+        if self.monitor.playing:
+            self.monitor.stop(notify=False)
         self.monitor.set_playhead(ticks)
         self.reference.set_playhead(ticks)
         self.update_scopes(int(ticks))

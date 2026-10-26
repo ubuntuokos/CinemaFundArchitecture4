@@ -2133,6 +2133,12 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         QtTest.QTest.keyClicks(line, "-12/2")
         QtTest.QTest.keyClick(line, Qt.Key.Key_Return)
         assert wait_until(app, lambda: abs(strip("A1")["volumeDb"] + 6) < 0.01, 10_000), strip("A1")["volumeDb"]
+        # a click on the cap without moving keeps the strip's level (not the last drag's)
+        cap = a1.regions["cap"].center().toPoint()
+        QtTest.QTest.mousePress(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap)
+        QtTest.QTest.mouseRelease(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap)
+        wait_until(app, lambda: False, 300)
+        assert abs(strip("A1")["volumeDb"] + 6) < 0.01, strip("A1")["volumeDb"]
         pan = a1.findChild(HotSpin, "mixer.A1.panValue").lineEdit()
         y = pan.height() // 2
         QtTest.QTest.mousePress(pan, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(20, y))
@@ -3135,6 +3141,13 @@ def test_malformed_saved_panel_state_does_not_stop_the_window(app, fake_engine: 
         win.timecode_panel.attach_settings(settings)
         win.reference.attach_settings(settings)
         assert win.reference.time == 0
+        from cfa4_qt.panels.monitor_view import MonitorView
+
+        for pan in ([None, 0], ["invalid", 0], [1], [float("inf"), 0], [True, 0], 3):
+            settings.setValue("view", json.dumps({"pan": pan}))
+            assert MonitorView.load(settings, "view").pan == [0.0, 0.0]
+        settings.setValue("view", json.dumps({"pan": [2, -1.5]}))
+        assert MonitorView.load(settings, "view").pan == [2.0, -1.5]
     finally:
         win._quit_confirmed = True
         win.close()
@@ -3198,6 +3211,20 @@ def test_long_waveforms_come_in_pieces_of_one_density(app):
     assert [p["buckets"] for p in asked] == [MAX_BUCKETS, MAX_BUCKETS, MAX_BUCKETS // 2]
     assert len(peaks) == MAX_BUCKETS * 5 // 2
 
+    # More ranges on screen than the cache keeps: what one paint shows is never evicted, so
+    # repainting after each reply does not ask for the same ranges again and again.
+    from cfa4_qt.panels.timeline_media import MAX_PEAKS
+
+    asked.clear()
+    media = TimelineMedia()
+    media.attach(Engine())
+    ranges = [(i * TICKS_PER_SECOND, (i + 1) * TICKS_PER_SECOND) for i in range(MAX_PEAKS + 50)]
+    for _ in range(6):
+        media.begin_paint()
+        shown = [media.waveform(8, a, b) for a, b in ranges]
+    assert all(w is not None for w in shown)
+    assert len(asked) == len(ranges)
+
 
 def test_program_playback_runs_a_mixer_automation_pass(app, fake_engine: Path, tmp_path: Path):
     """egui's: playing the Program forward at normal speed starts an automation pass and stopping
@@ -3221,6 +3248,21 @@ def test_program_playback_runs_a_mixer_automation_pass(app, fake_engine: Path, t
         win.monitor.play(2.0)  # fast: no pass
         win.monitor.stop()
         assert [c for c, _p in sent].count("mixer.recordStart") == 1
+        calls: list = []
+        real_call = engine.call
+        engine.call = lambda method, *a, **k: (calls.append(method), real_call(method, *a, **k))[1]  # type: ignore[method-assign]
+        win.monitor.seek(win.monitor.frame() * 20)
+        win.monitor.play(-1.0)  # shuttle: silent, so no audio is decoded to catch up
+        win.monitor._feed_audio()
+        win.monitor.stop()
+        engine.call = real_call  # type: ignore[method-assign]
+        assert "audio.render" not in calls
+        media = win.timeline.canvas.media
+        media.peaks[(1, 0, 10, 100, 32, 0)] = [(0.0, 0.5)]
+        win._command_done("timeline.select")
+        assert media.peaks
+        win._command_done("media.replaceFootage")  # same item id, other media
+        assert not media.peaks
         win.reference.set_sequence({"id": 1}, 5)
         first = win.reference.revision
         win.reference.set_sequence({"id": 2}, 5)
@@ -3274,3 +3316,65 @@ def test_dropping_several_items_places_them_one_after_another(app, tmp_path: Pat
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_meters_keep_responding_after_playback_loops(app):
+    """A loop restarts the played blocks from the in point: the meters follow the new pass
+    instead of waiting for it to pass the previous pass's end."""
+    from collections import deque
+    from types import SimpleNamespace
+
+    from cfa4_qt.panels.meters import FLOOR, AudioMetersPanel
+
+    meters = AudioMetersPanel()
+    mon = SimpleNamespace(playing=True, audio_generation=1, now=48000)
+    mon.play_sample = lambda: mon.now
+    mon.meter_blocks = deque([(0, 4800, [[0.5, 0.5]] * 10, [])])
+    meters.watch(mon)
+    meters.tick()
+    assert meters.levels[0] > FLOOR
+    meters.levels = [FLOOR, FLOOR]
+    mon.audio_generation, mon.now = 2, 4800  # looped back to the start
+    mon.meter_blocks = deque([(0, 4800, [[0.5, 0.5]], [])])
+    meters.tick()
+    assert meters.levels[0] > FLOOR
+
+
+def test_drop_frame_timecode_is_shown_as_the_engine_parses_it():
+    """A 29.97 drop-frame sequence shows HH;MM;SS;FF counted as the engine counts it, so the
+    shown value typed back into the monitor stays on the same frame."""
+    from cfa4_qt.timecode import drop_frame, format_timecode, frame_ticks
+
+    df = {"frame_rate": {"num": 30000, "den": 1001}, "drop_frame": True}
+    ft = frame_ticks(df)
+    assert drop_frame(df) and not drop_frame({**df, "drop_frame": False})
+    assert not drop_frame({"frame_rate": {"num": 25, "den": 1}, "drop_frame": True})
+    assert format_timecode(107_892 * ft, ft, True) == "01;00;00;00"
+    assert format_timecode(1_800 * ft, ft, True) == "00;01;00;02"
+    assert format_timecode(17_982 * ft, ft, True) == "00;10;00;00"
+    assert format_timecode(1_800 * ft, ft) == "00:01:00:00"
+
+
+def test_scopes_take_turns_when_frames_come_faster_than_replies(app):
+    """Several scopes during playback: a newer frame arriving while one scope renders must not
+    start over with the first scope, or the others never show."""
+    from cfa4_qt.panels.scopes import ScopesView
+
+    calls: list = []
+
+    class Engine:
+        running = True
+
+        def call(self, _method, params, on_reply, on_error):
+            calls.append((params["kind"], on_reply))
+
+    view = ScopesView(Engine())
+    view.st.shown = ["vectorscope", "waveform"]
+    view.resize(400, 300)
+    view.show()
+    for t in range(6):
+        view.set_frame(t, 1)  # a newer frame while one scope is rendering
+        _kind, reply = calls[t]  # the oldest request still waiting is answered
+        reply({"w": 1, "h": 1}, b"\0\0\0\0")
+    kinds = [k for k, _r in calls]
+    assert {"vectorscope", "waveform"} <= set(kinds[2:]), kinds

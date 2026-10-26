@@ -297,6 +297,7 @@ class TimelineCanvas(QWidget):
 
     # ----- painting -----
     def paintEvent(self, _event: QPaintEvent) -> None:
+        self.media.begin_paint()
         p = QPainter(self)
         pal = self.palette()
         T = theme.current()
@@ -536,7 +537,7 @@ class TimelineCanvas(QWidget):
                 p.restore()
             return
         start, end = int(clip.get("sourceIn") or 0), int(clip.get("sourceOut") or 0)
-        peaks = self.media.waveform(item, min(start, end), max(start, end))
+        peaks = self.media.waveform(item, min(start, end), max(start, end), clip.get("audioStream", 0))
         if not peaks:
             return
         x0 = max(int(body.left()), HEADER_W)
@@ -548,10 +549,16 @@ class TimelineCanvas(QWidget):
         n = len(peaks)
         reverse = bool(clip.get("reverse")) or end < start
         p.setPen(QPen(base.lighter(170), 1))
+        width = max(1.0, body.width())
         for x in range(x0, x1):
-            f = (x - body.left()) / max(1.0, body.width())
-            i = min(n - 1, max(0, int((1.0 - f if reverse else f) * n)))
-            lo, hi = peaks[i]
+            # every bucket under this pixel, so a short peak shows at any zoom
+            fa, fb = (x - body.left()) / width, (x + 1 - body.left()) / width
+            if reverse:
+                fa, fb = 1.0 - fb, 1.0 - fa
+            i0 = min(n - 1, max(0, int(fa * n)))
+            i1 = min(n, max(i0 + 1, int(fb * n)))
+            lo = min(q[0] for q in peaks[i0:i1])
+            hi = max(q[1] for q in peaks[i0:i1])
             p.drawLine(x, int(mid - max(0.0, min(1.0, hi)) * half), x, int(mid - max(-1.0, min(0.0, lo)) * half))
 
     # ----- mouse -----

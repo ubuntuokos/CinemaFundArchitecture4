@@ -98,8 +98,8 @@ line longer than 4 MiB is skipped with an error reply.
 | `lumetri.presetThumbnail` | `{name, width?}` | `{width, height}` + RGBA8 pixels: a Lumetri preset's thumbnail (the preview picture graded by the preset, 16:9; egui's Effects panel rows and grid) |
 | `clipMixer.inspect` | `{time?}` | `{time, recording, strips: [{track, ref, name, muted, solo, channels, mode, clip: {id, name, volumeDb, pan} \| null}]}`: the Audio Clip Mixer's strips |
 | `time.readout` | `{rows: [{source: program\|source, mode: current\|media\|duration\|inOut\|remaining, display?}], time?, sourceTime?}` | `{rows: [{value, mode, source, name}]}`: the Timecode panel's rows (`time`/`sourceTime` stand in for the playheads while playing) |
-| `time.parse` | `{text, target?}` | `{time, frame}`: a timecode typed into a monitor, read as Premiere does (`01:02:03:04`, `1.2.3.4`, bare digits as right-aligned `HHMMSSFF`, `+15` / `-1.00` relative to the monitor's frame) at the sequence's or the Source clip's rate |
-| `media.peaks` | `{item, start, end (media ticks), buckets ≤ 20000}` | `{item, buckets, start, end, hasAudio}` + `buckets` (min, max) pairs, f32le, the extremes over all channels (≤ 600 s per call) |
+| `time.parse` | `{text, target?, time?}` | `{time, frame}`: a timecode typed into a monitor, read as Premiere does (`01:02:03:04`, `1.2.3.4`, bare digits as right-aligned `HHMMSSFF`, `+15` / `-1.00` relative to the monitor's frame: `time`, the shown one, else the engine's playhead) at the sequence's or the Source clip's rate (drop-frame when the sequence counts it, as the GUI shows it) |
+| `media.peaks` | `{item, start, end (media ticks), buckets ≤ 20000, stream?}` | `{item, buckets, start, end, hasAudio}` + `buckets` (min, max) pairs, f32le, the extremes over all channels of audio stream `stream` (default 0; a clip's `audioStream` in `sequence.inspect`) (≤ 600 s per call) |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 

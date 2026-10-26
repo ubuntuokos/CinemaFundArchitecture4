@@ -9,6 +9,7 @@ High Quality Playback, Safe Margins) act on the focused monitor, as in egui.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any
@@ -110,7 +111,9 @@ class MonitorView:
                 elif name == "hidden":
                     v.hidden = [str(x) for x in value] if isinstance(value, list) else list(default)
                 elif name == "pan":
-                    v.pan = [float(x) for x in value][:2] if isinstance(value, list) and len(value) >= 2 else [0.0, 0.0]
+                    xy = value[:2] if isinstance(value, list) else []
+                    ok = len(xy) == 2 and all(isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) for x in xy)
+                    v.pan = [float(x) for x in xy] if ok else [0.0, 0.0]
                 elif isinstance(default, bool):
                     setattr(v, name, bool(value))
         return v

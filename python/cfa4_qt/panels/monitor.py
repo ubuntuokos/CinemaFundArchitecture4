@@ -45,7 +45,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QMenu, QSizePolicy
 from .. import theme
 from ..engine import EngineClient
 from ..i18n import N_, tr
-from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks
 from .monitor_view import CHANNELS, DISPLAYS, MAX_ZOOM, MIN_ZOOM, RESOLUTIONS, ZOOMS, MonitorView, res_label
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
@@ -490,6 +490,7 @@ class Monitor(QWidget):
         self._audio_rate = 48000
         self._audio_channels = 2
         self._audio_pending = b""
+        self.audio_generation = 0  # bumped when the played blocks restart (a new pass, a loop)
         # (first sample, samples per block, [peaks per block], [loudness per block]) as played
         self.meter_blocks: deque[tuple[int, int, list[Any], list[Any]]] = deque()
         # (first sample, frames, {strip id: peaks}) per played chunk, for the Audio Track Mixer
@@ -523,6 +524,10 @@ class Monitor(QWidget):
 
     def frame(self) -> int:
         raise NotImplementedError
+
+    def drop_frame(self) -> bool:
+        """Whether the timecode counts drop-frame (the engine parses typed timecode the same way)."""
+        return False
 
     def content_key(self) -> Any:
         return None
@@ -670,7 +675,7 @@ class Monitor(QWidget):
         start, end = self.range()
         mark_in, mark_out = self.marks()
         lo, hi = self._range_marks()
-        self.duration_label.setText(format_timecode(max(0, hi - lo), self.frame()))
+        self.duration_label.setText(format_timecode(max(0, hi - lo), self.frame(), self.drop_frame()))
         self.scrub.set_range(start, end, mark_in, mark_out, self.frame())
         self.scrub.set_playhead(self.playhead)
         self._update_timecode()
@@ -712,12 +717,13 @@ class Monitor(QWidget):
             self.seek(mark_out if mark_out is not None else self.range()[1] - self.frame())
 
     def _update_timecode(self) -> None:
-        self.timecode.show_time(format_timecode(self.playhead, self.frame() if self.has_content() else 1))
+        content = self.has_content()
+        self.timecode.show_time(format_timecode(self.playhead, self.frame() if content else 1, content and self.drop_frame()))
 
     def _typed_time(self, text: str) -> None:
         if not self.has_content() or not self.engine.running:
             return
-        params: dict[str, Any] = {"text": text}
+        params: dict[str, Any] = {"text": text, "time": int(self.playhead)}  # "+5" from the shown frame
         if self.target != "program":
             params["target"] = self.target
 
@@ -735,10 +741,12 @@ class Monitor(QWidget):
     def run_transport(self, command: str) -> None:
         """A transport button (or its entry in the overflow menu) was clicked."""
         target = {"target": self.target}
+        # while playing, the engine's playhead is still where playback started: mark the shown frame
+        at = {**target, "time": int(self.playhead)} if self.playing else target
         if command in ("markers.add", "markers.markIn", "markers.markOut"):
-            self.command.emit(command, target)
+            self.command.emit(command, at)
         elif command in ("src.markIn", "src.markOut"):
-            self.command.emit("markers." + command.split(".")[1], target)
+            self.command.emit("markers." + command.split(".")[1], at)
         elif command in ("markers.goToIn", "src.goIn"):
             self.go_to_in()
         elif command in ("markers.goToOut", "src.goOut"):
@@ -953,6 +961,7 @@ class Monitor(QWidget):
         self._audio_busy = False
         self.meter_blocks.clear()
         self.strip_blocks.clear()
+        self.audio_generation += 1
         if HAVE_AUDIO:
             self._open_sink(rate)
         self._feed_audio()
@@ -978,7 +987,8 @@ class Monitor(QWidget):
         self._audio_pending = b""
 
     def _feed_audio(self) -> None:
-        if not self.playing or not self.engine.running:
+        # Audio plays at normal speed only (play() starts it then); shuttle speeds stay silent.
+        if not self.playing or self.speed != 1.0 or not self.engine.running:
             return
         if self._sink is not None and self._sink_io is not None:
             if self._audio_pending:
@@ -1060,6 +1070,9 @@ class ProgramMonitor(Monitor):
 
     def frame(self) -> int:
         return frame_ticks((self.sequence or {}).get("settings"))
+
+    def drop_frame(self) -> bool:
+        return drop_frame((self.sequence or {}).get("settings"))
 
     def content_key(self) -> Any:
         return (self.sequence or {}).get("id")

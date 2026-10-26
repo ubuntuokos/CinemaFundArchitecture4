@@ -101,6 +101,7 @@ is traced or derived from Adobe artwork.
 | Lumetri "Look" presets (Teal & Orange, Warm Film, …) | `crates/render/src/effects.rs` (`apply_look`): procedural colour transforms, not LUT files |
 | Lumetri Presets (Effects panel: Cinematic, Film Emulation, Monochrome, Technical) and their preview picture | `crates/render/src/lumetri_presets.rs`: Lumetri parameter values chosen by contributors, descriptive names, and a procedural preview picture (dusk sky, ridges, lake, grey ramp, colour chips) |
 | Colour palette and layout metrics | `crates/ui-egui/src/theme.rs`: colour values and sizes only; no artwork |
+| Qt GUI icons and glyphs: tools and transport icons, track-header padlock, eye, speaker and sync marks, Effects panel fx / transition / preset glyphs, align glyphs, Lumetri wheels and curves, Essential Sound and Effect Controls drawings | `python/cfa4_qt/panels/`: `tools.py`, `transport.py`, `timeline.py`, `effects.py`, `essential_graphics.py`, `lumetri.py`, `essential_sound.py`, `effect_controls.py`: original shapes drawn with QPainter by CFA4 contributors, GPL-3.0-or-later; no image files, no third-party artwork |
 
 ## Optional build input: extra-fonts
 

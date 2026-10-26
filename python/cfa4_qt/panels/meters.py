@@ -191,7 +191,8 @@ class AudioMetersPanel(QWidget):
         self.levels: list[float] = [FLOOR, FLOOR]  # dB, per channel
         self.holds: list[float] = [FLOOR, FLOOR]
         self.loudness: list[Any] = [None, None, None, None]  # M, S, I LUFS, TP dBTP
-        self._heard: tuple[Any, int | None] | None = None  # (monitor, end of the blocks shown)
+        # (monitor, its audio generation, end of the blocks shown)
+        self._heard: tuple[Any, Any, int | None] | None = None
         self._clock = QElapsedTimer()
         self._clock.start()
         self._timer = QTimer(self)
@@ -215,7 +216,8 @@ class AudioMetersPanel(QWidget):
         mon = next((m for m in self.monitors if getattr(m, "playing", False)), None)
         if mon is not None:
             now = mon.play_sample()
-            consumed = self._heard[1] if self._heard and self._heard[0] is mon else None
+            gen = getattr(mon, "audio_generation", None)
+            consumed = self._heard[2] if self._heard and self._heard[0] is mon and self._heard[1] == gen else None
             peaks, loud, consumed = self.heard(mon.meter_blocks, consumed, now)
             if peaks:
                 if len(peaks) != len(self.levels):
@@ -229,7 +231,7 @@ class AudioMetersPanel(QWidget):
             if loud is not None and loud != self.loudness:
                 self.loudness = loud
                 changed = True
-            self._heard = (mon, consumed)
+            self._heard = (mon, gen, consumed)
         else:
             self._heard = None
         if changed:

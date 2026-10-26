@@ -407,8 +407,9 @@ class Strip(QWidget):
             self.update()
             return
         if key == "cap" or key == "pan":
-            self._drag = "fader" if key == "cap" else "pan"
+            # read the strip's value first: while dragging, volume() / pan() answer the dragged one
             self._value = self.volume() if key == "cap" else self.pan()
+            self._drag = "fader" if key == "cap" else "pan"
             self._last = e.position()
             self.command.emit("mixer.touch", {"strip": sid, "lane": "volume" if key == "cap" else "pan", "value": self._value, "time": self.panel.now})
             return
@@ -929,7 +930,15 @@ class ClipStrip(QWidget):
         elif clip is not None:
             self.command.emit(
                 "clipMixer.set",
-                {"clip": clip.get("id"), "effect": effect, "param": param, "value": value, "keyframe": self.write_keyframes, "begin": begin},
+                {
+                    "clip": clip.get("id"),
+                    "effect": effect,
+                    "param": param,
+                    "value": value,
+                    "keyframe": self.write_keyframes,
+                    "begin": begin,
+                    "time": self.panel.now,  # the shown playhead: the engine's stays put while playing
+                },
             )
 
     def _typed_volume(self, value: float, begin: bool) -> None:

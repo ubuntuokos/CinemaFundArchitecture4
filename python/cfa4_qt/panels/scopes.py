@@ -163,6 +163,8 @@ class ScopesView(QWidget):
         self.images: dict[str, tuple[tuple[Any, ...], QImage, dict[str, Any]]] = {}
         self._busy = False
         self._queue: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
+        self._served: dict[str, int] = {}  # scope kind -> when it was last asked for
+        self._serial = 0
         self.message = ""
         self.setMinimumSize(120, 90)
 
@@ -185,6 +187,9 @@ class ScopesView(QWidget):
             key = (self.time, self.revision, settings, kind, rows)
             if self.images.get(kind, ((),))[0] != key:
                 self._queue.append((kind, key, {**self.st.params(kind, rows), "time": self.time}))
+        # the scope served longest ago first: a newer frame arriving before the batch is done
+        # must not start over with the first scope and starve the others
+        self._queue.sort(key=lambda job: self._served.get(job[0], -1))
         self._pump()
         self.update()
 
@@ -193,6 +198,8 @@ class ScopesView(QWidget):
             return
         kind, key, params = self._queue.pop(0)
         self._busy = True
+        self._serial += 1
+        self._served[kind] = self._serial
         self.engine.call(
             "scopes.image",
             params,

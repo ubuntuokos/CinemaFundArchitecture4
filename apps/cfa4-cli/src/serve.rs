@@ -359,30 +359,40 @@ fn wants_meter(p: &Value) -> bool {
 /// Meter blocks per second in an `audio.render` reply (`meter: true`).
 const METER_BLOCKS_PER_SECOND: u32 = 100;
 
-/// The loudness meter of what the client is playing: (target, sample rate, channels, the sample
-/// the next block must start at, the meter). One server serves one GUI from one thread.
+/// The loudness meter of what the client is playing on one monitor: (target, sample rate,
+/// channels, the sample the next block must start at, the meter). One per target, so the Source
+/// and the Program playing at once each keep integrating. One server serves one GUI from one
+/// thread.
 type Loudness = (&'static str, u32, usize, i64, cfa4_audio_dsp::LoudnessMeter);
 
 thread_local! {
-    static LOUDNESS: std::cell::RefCell<Option<Loudness>> = const { std::cell::RefCell::new(None) };
+    static LOUDNESS: std::cell::RefCell<Vec<Loudness>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
 /// What the Audio Meters show for a block of played audio: every 1/100 s, the sample peak of
 /// each channel (linear) and the BS.1770 / EBU R128 loudness so far (momentary, short-term,
 /// integrated LUFS and true peak dBTP; `null` below the meter's floor). Loudness keeps
-/// integrating while the client asks for consecutive blocks of the same target, and starts over
-/// on a jump (a seek, or another play).
+/// integrating while the client asks for consecutive blocks of a target (whatever it asks for
+/// the other target in between), and starts over on a jump (a seek, or another play).
 fn meter(target: &'static str, sr: u32, start: i64, channels: &[Vec<f32>], frames: usize) -> Value {
     let block = (sr / METER_BLOCKS_PER_SECOND).max(1) as usize;
     let nch = channels.len().max(1);
     let finite = |v: f64| if v.is_finite() && v > -70.0 { json!((v * 10.0).round() / 10.0) } else { Value::Null };
     LOUDNESS.with(|cell| {
-        let mut cell = cell.borrow_mut();
-        let fresh = !matches!(&*cell, Some((t, r, c, next, _)) if *t == target && *r == sr && *c == nch && *next == start);
+        let mut meters = cell.borrow_mut();
+        let i = match meters.iter().position(|(t, ..)| *t == target) {
+            Some(i) => i,
+            None => {
+                meters.push((target, 0, 0, i64::MIN, cfa4_audio_dsp::LoudnessMeter::new(f64::from(sr), nch)));
+                meters.len() - 1
+            }
+        };
+        let Some(entry) = meters.get_mut(i) else { return Value::Null };
+        let fresh = !(entry.1 == sr && entry.2 == nch && entry.3 == start);
         if fresh {
-            *cell = Some((target, sr, nch, start, cfa4_audio_dsp::LoudnessMeter::new(f64::from(sr), nch)));
+            *entry = (target, sr, nch, start, cfa4_audio_dsp::LoudnessMeter::new(f64::from(sr), nch));
         }
-        let Some((_, _, _, next, lm)) = cell.as_mut() else { return Value::Null };
+        let (_, _, _, next, lm) = entry;
         let mut peaks = Vec::new();
         let mut loudness = Vec::new();
         let mut at = 0;
@@ -407,10 +417,11 @@ fn meter(target: &'static str, sr: u32, start: i64, channels: &[Vec<f32>], frame
     })
 }
 
-/// `time.parse {text, target?}`: a timecode typed into a monitor's timecode field, read the way
-/// Premiere reads it (`cfa4_time::parse_timecode`: any of `:;.,` separators, bare digits as
-/// right-aligned `HHMMSSFF`, `+`/`-` relative to the monitor's frame) at the Program sequence's
-/// or the Source clip's rate. Returns the time (ticks) of that frame.
+/// `time.parse {text, target?, time?}`: a timecode typed into a monitor's timecode field, read the
+/// way Premiere reads it (`cfa4_time::parse_timecode`: any of `:;.,` separators, bare digits as
+/// right-aligned `HHMMSSFF`, `+`/`-` relative to the monitor's frame: `time` when given, the
+/// one the GUI shows, else the engine's playhead) at the Program sequence's or the Source clip's
+/// rate. Returns the time (ticks) of that frame.
 fn parse_time(s: &Session, p: &Value) -> Result<Value, String> {
     let text = p.get("text").and_then(Value::as_str).ok_or("`text` must be a string")?;
     let (rate, drop_frame, now) = if wants_source(p)? {
@@ -420,6 +431,11 @@ fn parse_time(s: &Session, p: &Value) -> Result<Value, String> {
     } else {
         let seq = s.active_sequence().ok_or("no active sequence")?;
         (seq.settings.frame_rate, seq.settings.drop_frame, s.playhead())
+    };
+    // the GUI's shown playhead (it runs ahead of the engine's while playing), for "+5" and the like
+    let now = match p.get("time") {
+        None | Some(Value::Null) => now,
+        Some(v) => cfa4_time::Tick(v.as_i64().ok_or("`time` must be integer ticks")?.max(0)),
     };
     let frame = cfa4_time::parse_timecode(text, rate, drop_frame, rate.frame_at(now)).map_err(|e| e.to_string())?;
     Ok(json!({"time": rate.tick_of(frame).0, "frame": frame}))
@@ -583,6 +599,11 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         .and_then(|n| usize::try_from(n).ok())
         .filter(|n| (1..=MAX_PEAK_BUCKETS).contains(n))
         .ok_or_else(|| format!("`buckets` must be an integer in 1..={MAX_PEAK_BUCKETS}"))?;
+    // a timeline clip plays one of its source's audio streams (`audioStream` in sequence.inspect)
+    let stream = match p.get("stream") {
+        None | Some(Value::Null) => 0,
+        Some(v) => v.as_u64().and_then(|n| usize::try_from(n).ok()).filter(|n| *n < 256).ok_or("`stream` must be an audio stream index")?,
+    };
     let sr: u32 = 48_000;
     let f0 = cfa4_time::Tick(t0).to_units_floor(i64::from(sr)).max(0);
     let f1 = cfa4_time::Tick(t1).to_units_floor(i64::from(sr)).max(f0 + 1);
@@ -601,7 +622,7 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         while done < total {
             let n = chunk.min(total - done);
             let start = f0 + i64::try_from(done).map_err(|_| "span too long")?;
-            let sound = source.audio(start, n, sr).map_err(|e| format!("audio decoding failed: {e}"))?;
+            let sound = source.audio_stream(stream, start, n, sr).map_err(|e| format!("audio decoding failed: {e}"))?;
             for i in 0..n {
                 let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
                 if let Some(pair) = out.get_mut(b * 2..b * 2 + 2) {
@@ -874,6 +895,12 @@ mod tests {
         let later = ask(&mut s, "+5");
         assert_eq!(later["result"]["frame"].as_i64(), r["result"]["frame"].as_i64().map(|f| f + 5));
         assert_eq!(ask(&mut s, "abc")["ok"], json!(false));
+        // relative to the GUI's shown frame (playback runs ahead of the engine's playhead)
+        let shown = rate.tick_of(100);
+        let rel = handle(&mut s, json!(3), "time.parse", json!({"text": "+5", "time": shown.0})).expect("reply").json;
+        assert_eq!(rel["result"]["frame"], json!(105), "{rel}");
+        let bad = handle(&mut s, json!(4), "time.parse", json!({"text": "+5", "time": "x"})).expect("reply").json;
+        assert_eq!(bad["ok"], json!(false));
         let frame = handle(&mut s, json!(2), "frame.render", json!({"maxWidth": 64})).expect("reply");
         let seq = s.active_sequence().expect("demo sequence");
         assert_eq!(frame.json["result"]["fullW"], json!(seq.settings.width));
@@ -949,6 +976,11 @@ mod tests {
         let last = second["loudness"].as_array().and_then(|l| l.last()).cloned().expect("loudness");
         assert!(last[0].as_f64().is_some_and(|m| (-70.0..=0.0).contains(&m)), "momentary {last}");
         assert!(last[2].as_f64().is_some(), "integrated {last}");
+        // the other monitor playing in between does not start this one's loudness over
+        let tone = vec![vec![0.25_f32; 4800]; 2];
+        assert_eq!(meter("source", sr, 0, &tone, 4800)["reset"], json!(true));
+        assert_eq!(ask(&mut s, 5, start + 2 * chunk as i64)["reset"], json!(false));
+        assert_eq!(meter("source", sr, 4800, &tone, 4800)["reset"], json!(false));
         // a jump starts over
         assert_eq!(ask(&mut s, 3, 0)["reset"], json!(true));
         // each mixer strip's peaks: the audio tracks and the Mix
@@ -1013,6 +1045,10 @@ mod tests {
         let vals: Vec<f32> = bytes.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]])).collect();
         assert!(vals.iter().all(|v| v.is_finite() && (-1.5..=1.5).contains(v)));
         assert!(vals.chunks_exact(2).all(|p| p[0] <= p[1]), "min <= max in every bucket");
+        let first = handle(&mut s, json!(2), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 100, "stream": 0})).expect("reply");
+        assert_eq!(first.binary.as_deref(), Some(bytes.as_slice()), "stream 0 is the default");
+        let bad = handle(&mut s, json!(3), "media.peaks", json!({"item": music.0, "start": 0, "end": 2 * tps, "buckets": 100, "stream": -1})).expect("reply");
+        assert_eq!(bad.json["ok"], json!(false));
         assert!(vals.chunks_exact(2).any(|p| p[1] - p[0] > 0.001), "the demo score is not silent");
         for bad in [
             json!({"item": music.0, "start": 10, "end": 5, "buckets": 10}),

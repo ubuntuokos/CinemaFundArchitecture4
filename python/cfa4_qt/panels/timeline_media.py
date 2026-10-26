@@ -37,6 +37,25 @@ class TimelineMedia(QObject):
         self._queue: deque[tuple[str, tuple]] = deque()
         self._queued: set[tuple[str, tuple]] = set()
         self._in_flight = 0
+        # what the paint in progress looked up: never evicted, or the next paint asks again
+        self._paint = 0
+        self._used: dict[tuple, int] = {}
+
+    def begin_paint(self) -> None:
+        """A new paint of the timeline starts: what it looks up is the working set."""
+        self._paint += 1
+        if len(self._used) > 4 * (MAX_THUMBS + MAX_PEAKS):  # forget lookups that are long gone
+            self._used = {k: v for k, v in self._used.items() if v >= self._paint - 1}
+
+    def _evict(self, cache: OrderedDict, kind: str, limit: int) -> None:
+        """Drop the least recently used entries beyond ``limit``, but none the current paint
+        shows (it would ask for them again at once, endlessly)."""
+        while len(cache) > limit:
+            oldest = next(iter(cache))
+            if self._used.get((kind, oldest)) == self._paint:
+                break
+            cache.popitem(last=False)
+            self._used.pop((kind, oldest), None)
 
     def attach(self, engine: Any) -> None:
         self.engine = engine
@@ -45,6 +64,7 @@ class TimelineMedia(QObject):
         """Forget everything (another project was opened)."""
         self.thumbs.clear()
         self.peaks.clear()
+        self._used.clear()
         self._queue.clear()
         self._queued.clear()
 
@@ -53,25 +73,28 @@ class TimelineMedia(QObject):
         if not isinstance(item, int) or height < 8:
             return None
         key = (item, int(media_time), max(16, (int(height) + 15) // 16 * 16))  # few sizes
+        self._used[("thumb", key)] = self._paint
         if key in self.thumbs:
             self.thumbs.move_to_end(key)
             return self.thumbs[key]
         self._enqueue("thumb", key)
         return None
 
-    def waveform(self, item: Any, start: int, end: int) -> list[tuple[float, float]] | None:
-        """The peaks of ``start``..``end``, spread evenly over that range. A range longer than the
-        engine reads per request comes in pieces of the same density, joined once all are here."""
+    def waveform(self, item: Any, start: int, end: int, stream: Any = 0) -> list[tuple[float, float]] | None:
+        """The peaks of ``start``..``end`` of the item's audio ``stream`` (the one a clip plays),
+        spread evenly over that range. A range longer than the engine reads per request comes in
+        pieces of the same density, joined once all are here."""
         if not isinstance(item, int) or end <= start:
             return None
         start, end = int(start), int(end)
+        stream = stream if isinstance(stream, int) and not isinstance(stream, bool) and 0 <= stream < 256 else 0
         span = MAX_PEAK_SECONDS * TICKS_PER_SECOND
         if end - start <= span:
-            return self._piece((item, start, end, PEAKS_PER_SECOND, 32))
+            return self._piece((item, start, end, PEAKS_PER_SECOND, 32, stream))
         out: list[tuple[float, float]] = []
         whole = True
         for t0 in range(start, end, span):
-            piece = self._piece((item, t0, min(end, t0 + span), MAX_BUCKETS / MAX_PEAK_SECONDS, 1))
+            piece = self._piece((item, t0, min(end, t0 + span), MAX_BUCKETS / MAX_PEAK_SECONDS, 1, stream))
             if piece is None:
                 whole = False  # keep asking for the other pieces
             elif whole:
@@ -79,6 +102,7 @@ class TimelineMedia(QObject):
         return out if whole else None
 
     def _piece(self, key: tuple) -> list[tuple[float, float]] | None:
+        self._used[("peaks", key)] = self._paint
         if key in self.peaks:
             self.peaks.move_to_end(key)
             return self.peaks[key]
@@ -109,12 +133,12 @@ class TimelineMedia(QObject):
                     on_error=lambda _m, k=key: self._thumb_done(k, None, None),
                 )
             else:
-                item, t0, t1, per_second, least = key
+                item, t0, t1, per_second, least, stream = key
                 seconds = (t1 - t0) / TICKS_PER_SECOND
                 buckets = max(least, min(MAX_BUCKETS, round(seconds * per_second)))
                 engine.call(
                     "media.peaks",
-                    {"item": item, "start": t0, "end": t1, "buckets": buckets},
+                    {"item": item, "start": t0, "end": t1, "buckets": buckets, "stream": stream},
                     on_reply=lambda r, b, k=key: self._peaks_done(k, r, b),
                     on_error=lambda _m, k=key: self._peaks_done(k, None, None),
                 )
@@ -132,8 +156,7 @@ class TimelineMedia(QObject):
             if w > 0 and h > 0 and len(data) == w * h * 4:
                 image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
         self.thumbs[key] = image  # None: no picture (audio-only, offline): don't ask again
-        while len(self.thumbs) > MAX_THUMBS:
-            self.thumbs.popitem(last=False)
+        self._evict(self.thumbs, "thumb", MAX_THUMBS)
         self._finish("thumb", key)
 
     def _peaks_done(self, key: tuple, result: Any, data: bytes | None) -> None:
@@ -142,6 +165,5 @@ class TimelineMedia(QObject):
             values = struct.unpack(f"<{len(data) // 4}f", data)
             peaks = list(zip(values[0::2], values[1::2], strict=True))
         self.peaks[key] = peaks
-        while len(self.peaks) > MAX_PEAKS:
-            self.peaks.popitem(last=False)
+        self._evict(self.peaks, "peaks", MAX_PEAKS)
         self._finish("peaks", key)
