@@ -27,10 +27,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import __version__, theme
+from . import __version__, crash, theme
 from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
-from .dialogs import InterpretFootageDialog, ParamDialog, path_params
+from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
@@ -340,6 +340,9 @@ class MainWindow(QMainWindow):
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
         self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
         self.fx_editors: dict[tuple[Any, ...], FxEditor] = {}
+        # an exception that escaped a slot or event handler (crash.py): shown, the session runs on
+        self.error_dialog: ErrorDialog | None = None
+        crash.reporter().error.connect(self.show_error)
         self.effect_controls.fx_editor.connect(self.open_fx_editor)
         self.mixer.fx_editor.connect(self.open_fx_editor)
         self.monitor.overlay.eyedropper_done.connect(lambda: self.effect_controls.arm_eyedropper(None))
@@ -1180,6 +1183,15 @@ class MainWindow(QMainWindow):
         self.update_clip_mixer()
         for editor in list(self.fx_editors.values()):
             editor.refresh()
+
+    def show_error(self, summary: str) -> None:
+        """egui's error window: playback stops, the error is shown with its log file, the
+        project can be saved from there."""
+        if self.monitor.playing:
+            self.monitor.stop()
+        if self.error_dialog is None:
+            self.error_dialog = ErrorDialog(self, lambda: self.invoke("file.save"))
+        self.error_dialog.show_error(crash.take_last() or summary, crash.log_path())
 
     def open_fx_editor(self, target: dict[str, Any]) -> FxEditor:
         """Open (or raise) the Clip / Track Fx Editor of ``{"clip", "effect"}`` or

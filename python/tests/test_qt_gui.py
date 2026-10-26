@@ -2051,6 +2051,69 @@ def test_the_window_flushes_editors_and_forgets_stale_media_pictures(app, fake_e
     win.close()
 
 
+@pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
+def test_an_escaped_exception_is_logged_and_shown_and_the_session_runs_on(app, fake_engine: Path, tmp_path: Path):
+    """egui's crash guard on the Python side: an exception escaping a slot, an event handler or a
+    background thread is written to the crash log with its traceback and shown in the error
+    window (Save Project / Continue); playback stops and the window keeps working."""
+    import threading
+
+    from cfa4_qt import crash
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    crash.install(tmp_path / "Logs")
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        QtCore.QTimer.singleShot(0, lambda: 1 / 0)
+        assert wait_until(app, lambda: win.error_dialog is not None and win.error_dialog.isVisible(), 5_000)
+        dialog = win.error_dialog
+        assert dialog.objectName() == "error"
+        assert "ZeroDivisionError" in dialog.message.text() and "thread MainThread" in dialog.message.text()
+        log = crash.log_path()
+        assert log is not None and log.parent == tmp_path / "Logs"
+        assert str(log) in dialog.details.text()
+        text = log.read_text(encoding="utf-8")
+        assert "ZeroDivisionError" in text and "Traceback" in text
+        # an event handler that raises: the next repaint still works
+        class Broken(QtWidgets.QWidget):
+            def paintEvent(self, _e):
+                raise ValueError("broken paint")
+
+        broken = Broken()
+        broken.show()
+        broken.update()
+        assert wait_until(app, lambda: "broken paint" in dialog.message.text(), 5_000)
+        broken.hide()
+        # a background thread
+        def worker() -> None:
+            raise IndexError("worker failed")
+
+        t = threading.Thread(target=worker, name="worker")
+        t.start()
+        t.join()
+        assert wait_until(app, lambda: "IndexError" in dialog.message.text() and "thread worker" in dialog.message.text(), 5_000)
+        # Save Project runs file.save; Continue closes the window
+        ran = []
+        win.invoke = lambda cid: ran.append(cid)
+        dialog.findChild(QtWidgets.QPushButton, "error.save").click()
+        assert ran == ["file.save"]
+        dialog.findChild(QtWidgets.QPushButton, "error.dismiss").click()
+        assert not dialog.isVisible()
+        # the log keeps the first errors, not one per repaint forever
+        for _ in range(crash.MAX_LOGGED + 5):
+            try:
+                raise RuntimeError("again")
+            except RuntimeError as e:
+                crash.report(type(e), e, e.__traceback__)
+        assert log.read_text(encoding="utf-8").count("=== cfa4-qt") == crash.MAX_LOGGED
+        assert win.isEnabled()
+    finally:
+        crash.uninstall()
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):
     """File ▸ Quit exists (Ctrl+Q, asks to save like the close button), and the GUI uses the CFA4
     logo, not an inherited upstream one."""

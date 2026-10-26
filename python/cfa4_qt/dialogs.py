@@ -7,15 +7,18 @@ import json
 from pathlib import Path
 from typing import Any
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
     QFormLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPushButton,
     QRadioButton,
     QScrollArea,
     QVBoxLayout,
@@ -227,3 +230,50 @@ class InterpretFootageDialog(QDialog):
             params["items"] = self.items
         self.send("clip.interpretFootage", params)
         super().accept()
+
+
+class ErrorDialog(QDialog):
+    """egui's error window: an exception escaped somewhere in the window; the session keeps
+    running. Save Project (``error.save``) or Continue (``error.dismiss``)."""
+
+    def __init__(self, parent: QWidget, save: Any) -> None:
+        super().__init__(parent)
+        self.setObjectName("error")
+        self.setWindowTitle(tr("CFA4 encountered an error"))
+        self.setModal(False)
+        layout = QVBoxLayout(self)
+        intro = QLabel(tr("Something went wrong while drawing the window. Your project is still open; save it to be safe."), self)
+        intro.setWordWrap(True)
+        intro.setMaximumWidth(460)
+        layout.addWidget(intro)
+        self.message = QLabel(self)
+        self.message.setObjectName("error.message")
+        self.message.setWordWrap(True)
+        self.message.setMaximumWidth(460)
+        self.message.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.message.setStyleSheet("font-family: monospace; font-size: 11px;")
+        layout.addWidget(self.message)
+        self.details = QLabel(self)
+        self.details.setObjectName("error.details")
+        self.details.setWordWrap(True)
+        self.details.setStyleSheet("font-size: 11px;")
+        layout.addWidget(self.details)
+        row = QHBoxLayout()
+        save_button = QPushButton(tr("Save Project"), self)
+        save_button.setObjectName("error.save")
+        save_button.setAutoDefault(False)
+        save_button.clicked.connect(save)
+        dismiss = QPushButton(tr("Continue"), self)
+        dismiss.setObjectName("error.dismiss")
+        dismiss.clicked.connect(self.hide)
+        row.addWidget(save_button)
+        row.addWidget(dismiss)
+        row.addStretch(1)
+        layout.addLayout(row)
+
+    def show_error(self, summary: str, log: Any) -> None:
+        self.message.setText(summary)
+        self.details.setText(fmt("Details: {path}", path=str(log)) if log is not None else "")
+        self.details.setVisible(log is not None)
+        self.show()
+        self.raise_()

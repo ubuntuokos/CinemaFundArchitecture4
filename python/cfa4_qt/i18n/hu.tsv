@@ -1268,3 +1268,7 @@
 	Graphic Equalizer (20 Bands)	Grafikus hangszínszabályzó (20 sáv)
 	Graphic Equalizer (30 Bands)	Grafikus hangszínszabályzó (30 sáv)
 	Multiband Compressor	Többsávos kompresszor
+	CFA4 encountered an error	A CFA4 hibába ütközött
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Hiba történt az ablak rajzolása közben. A projekt továbbra is nyitva van; a biztonság kedvéért mentse el.
+	Continue	Folytatás
+	Details: {path}	Részletek: {path}
