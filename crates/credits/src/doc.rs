@@ -10,6 +10,7 @@
 //! | `pictureDir` | folder of `{{Pic …}}` pictures (default: the spreadsheet's or document's folder) |
 //! | `styling` | the [`Styling`], embedded |
 //! | `table` | the accepted rows of the sheet, embedded: the credits rebuild without the spreadsheet |
+//! | `fit` | optional: fitted to a length (`total`, `cardBeat`, `music`), see [`crate::fit`] |
 //!
 //! The table is the source of truth for the credits as accepted; [`crate::diff`] compares it with
 //! the spreadsheet as it is now.
@@ -46,11 +47,14 @@ pub struct CreditsDoc {
     pub picture_dir: Option<String>,
     pub styling: Styling,
     pub table: Vec<Vec<String>>,
+    /// Fitted to a length (usually the music's), see [`crate::fit`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fit: Option<crate::fit::Fit>,
 }
 
 impl Default for CreditsDoc {
     fn default() -> Self {
-        CreditsDoc { format: FORMAT.into(), version: VERSION, source: None, picture_dir: None, styling: Styling::default(), table: Vec::new() }
+        CreditsDoc { format: FORMAT.into(), version: VERSION, source: None, picture_dir: None, styling: Styling::default(), table: Vec::new(), fit: None }
     }
 }
 
