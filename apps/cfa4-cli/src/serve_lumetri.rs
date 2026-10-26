@@ -129,8 +129,30 @@ pub fn inspect(s: &Session, p: &Value) -> Result<Value, String> {
     Ok(out)
 }
 
+/// `lumetri.presetThumbnail {name, width?}` → `{width, height}` + RGBA8 pixels: a Lumetri preset's
+/// thumbnail, egui's Effects panel picture (the procedural preview graded by the preset, 16:9).
+pub fn preset_thumbnail(p: &Value) -> Result<(Value, Vec<u8>), String> {
+    let name = p.get("name").and_then(Value::as_str).ok_or("need `name`")?;
+    let preset = cfa4_render::lumetri_presets::find(name).ok_or_else(|| format!("no Lumetri preset `{name}`"))?;
+    let w = match p.get("width") {
+        Some(v) => v.as_u64().filter(|w| (8..=1024).contains(w)).ok_or("`width` must be 8..=1024")? as usize,
+        None => 64,
+    };
+    let img = cfa4_render::lumetri_presets::thumbnail(&preset, w, (w * 9 / 16).max(1));
+    Ok((json!({"width": img.w, "height": img.h}), img.over_black_rgba8()))
+}
+
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn renders_a_preset_thumbnail() {
+        let name = cfa4_render::lumetri_presets::presets()[0].name;
+        let (meta, px) = preset_thumbnail(&json!({"name": name, "width": 32})).expect("thumbnail");
+        assert_eq!(meta, json!({"width": 32, "height": 18}));
+        assert_eq!(px.len(), 32 * 18 * 4);
+        assert!(preset_thumbnail(&json!({"name": "No Such Look"})).is_err());
+    }
     use super::*;
 
     fn first_video_clip(s: &Session) -> u64 {

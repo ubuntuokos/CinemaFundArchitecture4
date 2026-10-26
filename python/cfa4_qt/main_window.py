@@ -32,6 +32,7 @@ from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
+from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
 from .panels.essential_sound import EssentialSoundPanel
 from .panels.export import ExportDialog
@@ -47,7 +48,7 @@ from .panels.properties import PropertiesPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.scopes import ScopesPanel
-from .panels.side import EffectsPanel, EventsPanel, HistoryPanel
+from .panels.side import EventsPanel, HistoryPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
@@ -158,7 +159,8 @@ class MainWindow(QMainWindow):
         self.meters = AudioMetersPanel(self)
         self.meters.watch(self.monitor, self.source_monitor)
         self.project_panel = ProjectPanel(self)
-        self.effects = EffectsPanel(self)
+        self.effects = EffectsPanel(engine, self)
+        self.effects.attach_settings(self.settings)
         self.inspector = PropertiesPanel(engine, self)
         self.inspector.attach_settings(self.settings)
         self.effect_controls = EffectControlsPanel(self)
@@ -286,6 +288,7 @@ class MainWindow(QMainWindow):
         self.effect_controls.seek.connect(self._seek_program)
         self.inspector.seek.connect(self._seek_program)
         self.inspector.run.connect(self.run_preset)
+        self.effects.run.connect(self.run_preset)
         self.inspector.invoke.connect(self.invoke)
         self.text_panel.seek.connect(self._seek_program)
         self.text_panel.run.connect(self.run_preset)
@@ -784,6 +787,7 @@ class MainWindow(QMainWindow):
         self.update_essential_sound()
         self.update_essential_graphics()
         self.essential_graphics.refresh_library()
+        self.effects.refresh()
         self.tts.has_sequence = self.sequence is not None
         self.tts.follow_selection()  # also while hidden: a narration clip brings it forward
         self.media_browser.refresh()

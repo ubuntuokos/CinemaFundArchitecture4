@@ -3013,3 +3013,101 @@ def test_properties_panel(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_effects_panel(app, tmp_path: Path):
+    """egui's Effects panel: Premiere's top folders, sub-folders, badges, Presets and Lumetri
+    Presets with engine-rendered thumbnails (and the wide panel's grid), search, double-click
+    applies to the selection, a row dropped on a Timeline clip applies to that clip."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.effects import ROLE_BADGES, ROLE_ID, effect_mime
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    fx = win.effects
+    Qt = QtCore.Qt
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def tops() -> list[str]:
+        return [str(fx.tree.topLevelItem(i).data(0, ROLE_ID)) for i in range(fx.tree.topLevelItemCount())]
+
+    def find(eid: str):
+        it = QtWidgets.QTreeWidgetItemIterator(fx.tree)
+        while it.value():
+            if it.value().data(0, ROLE_ID) == eid:
+                return it.value()
+            it += 1
+        return None
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Effects"].raise_()
+        assert wait_until(app, lambda: "Lumetri Presets" in tops() and "Presets" in tops(), 20_000), tops()
+        assert tops() == ["Presets", "Lumetri Presets", "Audio Effects", "Audio Transitions", "Video Effects", "Video Transitions", "Legacy"]
+        # sub-folders, and the loose audio effects (Volume) after them
+        audio = fx.tree.topLevelItem(2)
+        kinds = [audio.child(i).data(0, QtCore.Qt.ItemDataRole.UserRole + 1) for i in range(audio.childCount())]
+        assert "folder" in kinds and kinds[-1] != "folder" and kinds.index("folder") < len(kinds) - 1
+        # badges and search
+        fx.search.setText("gaussian blur")
+        blur = find("gaussian_blur")
+        assert blur is not None and blur.parent().isExpanded() and not blur.isHidden()
+        assert blur.data(0, ROLE_BADGES), "Gaussian Blur carries its badges"
+        assert find("crop") is None
+        fx.search.clear()
+
+        # a Lumetri preset folder: rows get engine thumbnails; the wide panel shows its grid
+        lumetri = fx.tree.topLevelItem(1)
+        lumetri.setExpanded(True)
+        folder = lumetri.child(0)
+        folder.setExpanded(True)
+        row = folder.child(0)
+        name = str(row.data(0, ROLE_ID))[len("lumetri:"):]
+        assert wait_until(app, lambda: not find(f"lumetri:{name}").icon(0).isNull(), 20_000)
+        win.docks["Effects"].setFloating(True)
+        win.docks["Effects"].resize(900, 500)
+        assert wait_until(app, lambda: fx.grid.isVisible() and fx.grid.count() == folder.childCount(), 10_000)
+        assert wait_until(app, lambda: not fx.grid.item(0).icon().isNull(), 20_000)
+        assert settings.value("effects/expanded") is not None
+
+        # double-click a Lumetri preset with a clip selected: applied
+        video = next(c for t in win.sequence["video"] for c in t.get("items") or [])
+        win.execute("timeline.select", {"clips": [video["clip"]]})
+        assert wait_until(app, lambda: video["clip"] in ((win.sequence or {}).get("selection") or []), 10_000)
+        steps = len(history())
+        fx.tree.itemDoubleClicked.emit(find(f"lumetri:{name}"), 0)
+        assert wait_until(app, lambda: len(history()) == steps + 1 and name in history()[-1], 10_000), history()[-3:]
+
+        # an effect dropped on a clip goes on that clip and selects it
+        canvas = win.timeline.canvas
+        row0 = next(r for r in canvas.rows if r.kind == "video" and r.track.get("items"))
+        clip = row0.track["items"][0]
+        r = canvas.clip_rect(row0, clip)
+        pos = QtCore.QPoint(int(r.center().x()), int(r.center().y()))
+        mime = effect_mime("gaussian_blur")
+        canvas.dragMoveEvent(QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert canvas._effect_target is not None and canvas._effect_target[2] == ""
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+
+        def has_blur() -> bool:
+            c = next((c for t in win.sequence["video"] for c in t.get("items") or [] if c.get("clip") == clip["clip"]), {})
+            return any(e.get("effect") == "gaussian_blur" for e in c.get("effects") or [])
+
+        assert wait_until(app, has_blur, 10_000)
+        assert wait_until(app, lambda: win.sequence.get("selection") == [clip["clip"]] or clip["clip"] in win.sequence.get("selection"), 10_000)
+        # a transition dragged near a clip's start marks that edge
+        cross = next(e["id"] for e in fx.effects if e.get("kind") == "VideoTransition")
+        near_in = QtCore.QPoint(int(r.left() + 4), int(r.center().y()))
+        tmime = effect_mime(cross)  # kept: the event doesn't own its mime data
+        canvas.dragMoveEvent(QtGui.QDragMoveEvent(near_in, Qt.DropAction.CopyAction, tmime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert canvas._effect_target is not None and canvas._effect_target[2] == "in"
+        canvas.dragLeaveEvent(None)
+    finally:
+        win._quit_confirmed = True
+        win.close()

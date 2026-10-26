@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBo
 from .. import theme
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from .effects import EFFECT_MIME, dropped_effect
 from .essential_graphics import TEMPLATE_MIME, dropped_template
 from .media_browser import FILES_MIME, dropped_files
 from .timeline_media import TimelineMedia
@@ -142,6 +143,7 @@ class TimelineCanvas(QWidget):
         self.tool = "selection"
         self._drag: Drag | None = None
         self._drop_preview: tuple[int, Row] | None = None
+        self._effect_target: tuple[Row, dict[str, Any], str] | None = None  # an effect dragged over a clip
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
 
@@ -351,6 +353,16 @@ class TimelineCanvas(QWidget):
                 p.setPen(QColor("#ffffff"))
                 clip_text = fm.elidedText(text, Qt.TextElideMode.ElideRight, int(r.width()) - 8)
                 p.drawText(r.adjusted(4, 2, -4, -2), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, clip_text)
+        if self._effect_target:  # egui's: the clip outlined, a transition's edge marked
+            row, clip, edge = self._effect_target
+            r = self.clip_rect(row, clip)
+            accent = QColor(theme.current().accent)
+            p.setPen(QPen(accent, 2))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 3, 3)
+            if edge:
+                x = r.left() if edge == "in" else r.right()
+                p.fillRect(QRectF(x - 1.5, r.top(), 3, r.height()), accent)
         if self._drop_preview:
             t, row = self._drop_preview
             x = self.x_of(t)
@@ -757,11 +769,32 @@ class TimelineCanvas(QWidget):
     # ----- drag and drop from the Project panel -----
     def dragEnterEvent(self, e) -> None:
         m = e.mimeData()
-        if (m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasUrls()) and self.sequence:
+        if (m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasFormat(EFFECT_MIME) or m.hasUrls()) and self.sequence:
             e.acceptProposedAction()
+
+    def effect_target(self, pos: QPoint, effect: str) -> tuple[Row, dict[str, Any], str] | None:
+        """The clip an effect dropped at ``pos`` goes on; a transition's edge is the nearer one."""
+        row, clip, _edge = self.hit(pos)
+        if row is None or clip is None:
+            return None
+        transition = next((str(x.get("kind") or "") for x in getattr(getattr(self.window(), "effects", None), "effects", []) if x.get("id") == effect), "").endswith("Transition")
+        if not transition:
+            return row, clip, ""
+        r = self.clip_rect(row, clip)
+        return row, clip, "in" if pos.x() - r.left() < r.right() - pos.x() else "out"
 
     def dragMoveEvent(self, e) -> None:
         pos = e.position().toPoint()
+        effect = dropped_effect(e.mimeData())
+        if effect is not None:
+            self._effect_target = self.effect_target(pos, effect)
+            self._drop_preview = None
+            if self._effect_target is None:
+                e.ignore()
+            else:
+                e.acceptProposedAction()
+            self.update()
+            return
         row = self.row_at(pos.y())
         if row is None or pos.x() < HEADER_W or (e.mimeData().hasFormat(TEMPLATE_MIME) and row.kind != "video"):
             self._drop_preview = None
@@ -773,11 +806,29 @@ class TimelineCanvas(QWidget):
 
     def dragLeaveEvent(self, _e) -> None:
         self._drop_preview = None
+        self._effect_target = None
         self.update()
 
     def dropEvent(self, e) -> None:
         preview, self._drop_preview = self._drop_preview, None
+        target, self._effect_target = self._effect_target, None
         self.update()
+        effect = dropped_effect(e.mimeData())
+        if effect is not None:
+            if target is not None:  # egui's: applied to that clip, which is then selected
+                _row, clip, edge = target
+                cid = clip.get("clip")
+                if effect.startswith("preset:"):
+                    self.command.emit("presets.apply", {"preset": effect[len("preset:"):], "clips": [cid]})
+                elif effect.startswith("lumetri:"):
+                    self.command.emit("lumetri.applyPreset", {"name": effect[len("lumetri:"):], "clips": [cid]})
+                elif edge:
+                    self.command.emit("effects.apply", {"effect": effect, "clip": cid, "edge": edge})
+                else:
+                    self.command.emit("effects.apply", {"effect": effect, "clips": [cid]})
+                self.command.emit("timeline.select", {"clips": [cid]})
+                e.acceptProposedAction()
+            return
         if preview is None:
             return
         try:

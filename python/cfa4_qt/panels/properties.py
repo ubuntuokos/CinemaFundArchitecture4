@@ -290,7 +290,7 @@ class PropertiesPanel(QWidget):
 
     def resizeEvent(self, e: Any) -> None:
         super().resizeEvent(e)
-        w = max(70, min(LABEL_W, int(self.scroll.viewport().width() * 0.35)))
+        w = max(90, min(LABEL_W, int(self.scroll.viewport().width() * 0.38)))
         for label in self._labels:
             label.setFixedWidth(w)
 
