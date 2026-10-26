@@ -200,9 +200,10 @@ fn parent_bin(b: &Bin, id: BinId, depth: usize) -> Option<BinId> {
 }
 
 /// `project.panel {bin?, mode?, expanded?, filter?}`: one Project panel view of `bin` (left out or
-/// gone: the project's root) in `mode` (`list` | `icon`; left out: the panel's View setting).
-/// `expanded`: the bins twirled open in the List view. `filter`: the search text (names containing
-/// it, from every sub-bin).
+/// gone: the project's root) in `mode` (`list` | `icon` | `freeform`; left out: the panel's View
+/// setting). `expanded`: the bins twirled open in the List view. `filter`: the search text (names
+/// containing it, from every sub-bin). Freeform also returns the clip `cards` laid out for `width`
+/// (points; the panel's width wraps the cards nobody placed) and the Freeform View Options.
 pub fn panel(s: &Session, p: &Value) -> Result<Value, String> {
     let pr = &s.project;
     let bin = match p.get("bin") {
@@ -213,14 +214,14 @@ pub fn panel(s: &Session, p: &Value) -> Result<Value, String> {
     let shown = pr.root.find_bin(bin).ok_or("the project has no root bin")?;
     let mode = match p.get("mode").and_then(Value::as_str) {
         None => s.prefs.project_panel.view.mode,
-        Some(m) => ViewMode::from_name(m).ok_or_else(|| format!("unknown view `{m}` (list, icon)"))?,
+        Some(m) => ViewMode::from_name(m).ok_or_else(|| format!("unknown view `{m}` (list, icon, freeform)"))?,
     };
     let expanded: HashSet<u64> = p.get("expanded").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_u64).collect()).unwrap_or_default();
     let filter = p.get("filter").and_then(Value::as_str).unwrap_or("").trim().to_lowercase();
     let columns = s.prefs.project_panel.view.columns.clone();
     let mut rows = Vec::new();
     match mode {
-        ViewMode::Icon => icon_rows(s, shown, &filter, &columns, &mut rows),
+        ViewMode::Icon | ViewMode::Freeform => icon_rows(s, shown, &filter, &columns, &mut rows),
         _ => list_rows(s, shown, 0, &expanded, &filter, &columns, &mut rows),
     }
     let mut all = Vec::new();
@@ -239,6 +240,14 @@ pub fn panel(s: &Session, p: &Value) -> Result<Value, String> {
         }
         row
     });
+    // Freeform: the cards of the bin's own clips that the search keeps
+    let cards: Option<Vec<pp::Card>> = (mode == ViewMode::Freeform).then(|| {
+        let width = p.get("width").and_then(Value::as_f64).filter(|w| w.is_finite()).unwrap_or(800.0).clamp(100.0, 100_000.0) as f32;
+        let kept: HashSet<u64> = rows.iter().filter_map(|r| r.get("item").and_then(Value::as_u64)).collect();
+        let mut cards = pp::freeform_layout(pr, Some(bin), &s.prefs.project_panel.freeform, width);
+        cards.retain(|c| kept.contains(&c.item));
+        cards
+    });
     let g = &s.prefs.general;
     Ok(json!({
         "bin": bin.0,
@@ -255,6 +264,8 @@ pub fn panel(s: &Session, p: &Value) -> Result<Value, String> {
         "rows": rows,
         "truncated": rows.len() >= MAX_ROWS,
         "preview": preview,
+        "cards": cards,
+        "freeform": s.prefs.project_panel.freeform,
         // how a double-click opens a bin (Settings ▸ General ▸ Bins): plain, with Ctrl, with Alt
         "open": {"plain": g.bins_double_click, "ctrl": g.bins_cmd_double_click, "alt": g.bins_opt_double_click},
     }))
@@ -303,5 +314,15 @@ mod tests {
         assert!(shown["preview"]["videoUsage"].is_u64());
         assert_eq!(shown["open"]["plain"], json!("openInPlace"));
         assert!(panel(&s, &json!({"mode": "nope"})).is_err());
+        // Freeform: the bin's clips as cards, a moved card where it was put
+        let ff = panel(&s, &json!({"bin": bin, "mode": "freeform", "width": 600})).expect("freeform");
+        let cards = ff["cards"].as_array().cloned().unwrap_or_default();
+        assert!(!cards.is_empty(), "{ff}");
+        let first = cards[0]["item"].as_u64().unwrap_or(0);
+        s.execute("project.freeform.move", json!({"items": [first], "x": 300, "y": 200, "width": 600})).expect("move");
+        let ff = panel(&s, &json!({"bin": bin, "mode": "freeform", "width": f64::NAN})).expect("freeform");
+        let moved = ff["cards"].as_array().and_then(|c| c.iter().find(|c| c["item"] == first)).cloned().unwrap_or_default();
+        assert_eq!((moved["x"].as_f64(), moved["y"].as_f64(), moved["placed"].as_bool()), (Some(300.0), Some(200.0), Some(true)));
+        assert_eq!(ff["freeform"]["cardSize"], json!(128.0));
     }
 }

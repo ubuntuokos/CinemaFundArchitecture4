@@ -1164,3 +1164,25 @@
 	Video Usage: {vu}  Audio Usage: {au}	Videóhasználat: {vu}  Hanghasználat: {au}
 	Zoom	Nagyítás
 	{n} items	{n} elem
+	Freeform View	Szabad nézet
+	Stack	Halmozás
+	Unstack	Halmozás bontása
+	Clip Size	Klipméret
+	Larger	Nagyobb
+	Smaller	Kisebb
+	Align to Grid	Igazítás a rácshoz
+	Reset to Grid	Visszaállítás rácsba
+	Save Arrangement…	Elrendezés mentése…
+	Save Arrangement	Elrendezés mentése
+	Restore Arrangement	Elrendezés visszaállítása
+	Delete Arrangement	Elrendezés törlése
+	Arrangement {n}	{n}. elrendezés
+	Freeform View Options	Szabad nézet beállításai
+	Snap to grid	Illesztés a rácshoz
+	Show clip names	Klipnevek megjelenítése
+	Show clip durations	Klipek hosszának megjelenítése
+	Grid spacing:	Rácstávolság:
+	Default clip size:	Alapértelmezett klipméret:
+	{panel} — coming in a later milestone	{panel} — egy későbbi mérföldkőben érkezik
+	Edit Workspaces	Munkaterületek szerkesztése
+	Restore Original	Eredeti visszaállítása

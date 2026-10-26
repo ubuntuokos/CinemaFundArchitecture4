@@ -1,4 +1,4 @@
-"""Smaller panels: History and Events."""
+"""Smaller panels: History, Events and the Libraries placeholder."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QLabel,
     QListWidget,
     QListWidgetItem,
     QPlainTextEdit,
@@ -14,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..i18n import tr
+from ..i18n import fmt, tr
 
 
 class HistoryPanel(QWidget):
@@ -75,3 +76,15 @@ class EventsPanel(QWidget):
     def log(self, message: str, error: bool = False) -> None:
         stamp = time.strftime("%H:%M:%S")
         self.text.appendPlainText(f"{stamp}  {'⚠ ' if error else ''}{message}")
+
+
+class LibrariesPanel(QLabel):
+    """Libraries: egui shows this panel as a placeholder for a later milestone, and so does the Qt
+    GUI (``crates/ui-egui/src/dock.rs`` ``placeholder``)."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(fmt("{panel} — coming in a later milestone", panel=tr("Libraries")), parent)
+        self.setObjectName("panel.Libraries")
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setWordWrap(True)
+        self.setEnabled(False)  # drawn dimmed, as egui's placeholder text

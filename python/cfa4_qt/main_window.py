@@ -5,6 +5,7 @@ engine command and every redraw follows the engine's ``projectChanged``."""
 from __future__ import annotations
 
 from collections.abc import Callable
+from itertools import pairwise
 from typing import Any
 
 from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QSettings, Qt, QTimer
@@ -48,14 +49,14 @@ from .panels.properties import PropertiesPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.scopes import ScopesPanel
-from .panels.side import EventsPanel, HistoryPanel
+from .panels.side import EventsPanel, HistoryPanel, LibrariesPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .panels.tts import TextToSpeechPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 19  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech
+LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({"media.relink", "media.replaceFootage", "media.makeOffline", "edit.undo", "edit.redo"})
 
@@ -67,6 +68,7 @@ DOCK_PLAN = (
     ("Metadata", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Media Browser", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Libraries", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Info", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Markers", Qt.DockWidgetArea.LeftDockWidgetArea),
@@ -88,6 +90,41 @@ DOCK_PLAN = (
     ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Audio Meters", Qt.DockWidgetArea.BottomDockWidgetArea),
 )
+# egui's other workspaces (crates/ui-egui/src/dock.rs `workspace`): the tab groups left of the
+# Program monitor (with the active tab), the column right of it; Tools, Timeline and Audio Meters
+# always run along the bottom
+PROJECT_GROUP = ["Project", "Media Browser", "Libraries", "Info", "Effects", "Markers", "History"]
+WORKSPACE_LAYOUTS: dict[str, dict[str, Any]] = {
+    "Assembly": {
+        "left": [(PROJECT_GROUP, 0), (["Source", "Effect Controls", "Audio Clip Mixer", "Metadata"], 0)],
+        "leftSplit": Qt.Orientation.Horizontal,
+        "right": [],
+    },
+    "Color": {
+        "left": [(["Lumetri Scopes", "Source", "Effect Controls"], 0), (["Project", "Info", "Markers", "History"], 0)],
+        "right": [(["Lumetri Color", "Effects"], 0)],
+        "rightWidth": 340,
+    },
+    "Effects": {
+        "left": [(["Source", "Effect Controls", "Audio Clip Mixer"], 1), (["Project", "Media Browser", "Info", "Markers", "History"], 0)],
+        "right": [(["Effects"], 0), (["Essential Graphics"], 0)],
+        "rightWidth": 320,
+    },
+    "Audio": {
+        "left": [(["Audio Track Mixer", "Source", "Audio Clip Mixer", "Effect Controls"], 0), (["Project", "Media Browser", "Effects", "Markers", "History"], 0)],
+        "right": [(["Essential Sound", "Text to Speech"], 0)],
+        "rightWidth": 320,
+    },
+    "Captions and Graphics": {
+        "left": [(["Text", "Source", "Effect Controls"], 0), (["Project", "Media Browser", "Libraries"], 0)],
+        "right": [(["Essential Graphics", "Properties"], 0)],
+        "rightWidth": 330,
+    },
+    "All Panels": {
+        "left": [(["Source", "Effect Controls", "Audio Clip Mixer", "Metadata", "Lumetri Scopes", "Text"], 0), (PROJECT_GROUP, 0)],
+        "right": [(["Lumetri Color", "Essential Graphics", "Essential Sound", "Text to Speech", "Properties", "Audio Track Mixer"], 0)],
+    },
+}
 TOOLS_W = 46  # the Tools strip, as egui's
 COMPACT_PANELS = ("Tools", "Audio Meters")  # egui's compact panels: no tab strip, a slim grip
 METERS_W = 116  # the Audio Meters right of the Timeline, as egui's
@@ -188,6 +225,7 @@ class MainWindow(QMainWindow):
         self.scopes.attach_settings(self.settings)
         self.reference.scope_settings = lambda: self.scopes.st
         self.media_browser = MediaBrowserPanel(engine, self)
+        self.libraries = LibrariesPanel(self)
         self.text_panel = TextPanel(engine, self)
         self.essential_sound = EssentialSoundPanel(self)
         self.essential_sound.attach_settings(self.settings)
@@ -247,6 +285,7 @@ class MainWindow(QMainWindow):
             "Lumetri Scopes": self.scopes,
             "Lumetri Color": self.lumetri,
             "Media Browser": self.media_browser,
+            "Libraries": self.libraries,
             "Text": self.text_panel,
             "Essential Sound": self.essential_sound,
             "Essential Graphics": self.essential_graphics,
@@ -257,7 +296,8 @@ class MainWindow(QMainWindow):
         # The window itself only ever gets its tab groups through restoreState() (see
         # _default_layout_state and docs/qt-gui.md, "Known Qt issues").
         self._default_state = self._default_layout_state()
-        self.workspaces = Workspaces(self, self.settings, self._default_state, LAYOUT_VERSION)
+        self._builtin_states: dict[str, QByteArray] = {}
+        self.workspaces = Workspaces(self, self.settings, self._default_state, LAYOUT_VERSION, self.builtin_layout)
 
         self.status_engine = QLabel(tr("Starting engine…"))
         self.status_engine.setObjectName("status.engine")
@@ -359,7 +399,8 @@ class MainWindow(QMainWindow):
         for closed in ("Audio Track Mixer", "Reference Monitor", "Lumetri Scopes"):  # other workspaces; Window menu
             d[closed].hide()
         win.tabifyDockWidget(d["Project"], d["Media Browser"])
-        win.tabifyDockWidget(d["Media Browser"], d["Info"])
+        win.tabifyDockWidget(d["Media Browser"], d["Libraries"])
+        win.tabifyDockWidget(d["Libraries"], d["Info"])
         win.tabifyDockWidget(d["Info"], d["Effects"])
         win.tabifyDockWidget(d["Effects"], d["Markers"])
         win.tabifyDockWidget(d["Markers"], d["History"])
@@ -388,10 +429,67 @@ class MainWindow(QMainWindow):
         win.resizeDocks([d["Source"], d["Properties"]], [460, 280], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Project"]], [320, 300], Qt.Orientation.Vertical)
 
-    def _default_layout_state(self) -> QByteArray:
+    @staticmethod
+    def arrange_workspace(win: QMainWindow, d: dict[str, QDockWidget], name: str) -> None:
+        """egui's layout of a built-in workspace (``dock.rs`` ``workspace``) around the Program
+        monitor: its left groups stacked (or side by side), its right column, and Tools, Timeline
+        and Audio Meters along the bottom; panels it leaves out are closed."""
+        spec = WORKSPACE_LAYOUTS[name]
+        placed: set[str] = set()
+
+        def column(groups: list[tuple[list[str], int]], area: Qt.DockWidgetArea, split: Qt.Orientation) -> None:
+            # the groups' first docks split first: splitting a dock that already has tabs would
+            # add a tab to its group instead
+            prev: QDockWidget | None = None
+            for names, _active in groups:
+                first = d[names[0]]
+                if prev is None:
+                    win.addDockWidget(area, first)
+                else:
+                    win.splitDockWidget(prev, first, split)
+                first.show()
+                prev = first
+            for names, active in groups:
+                for a, b in pairwise(names):
+                    win.tabifyDockWidget(d[a], d[b])
+                    d[b].show()
+                placed.update(names)
+                d[names[min(active, len(names) - 1)]].raise_()
+
+        column(spec["left"], Qt.DockWidgetArea.LeftDockWidgetArea, spec.get("leftSplit", Qt.Orientation.Vertical))
+        column(spec["right"], Qt.DockWidgetArea.RightDockWidgetArea, Qt.Orientation.Vertical)
+        win.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, d["Tools"])
+        win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)
+        win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
+        placed.update(("Tools", "Timeline", "Audio Meters"))
+        for n in ("Tools", "Timeline", "Audio Meters"):
+            d[n].show()
+        for n, dock in d.items():
+            if n not in placed:
+                dock.hide()
+        win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
+        win.resizeDocks([d["Tools"], d["Audio Meters"]], [TOOLS_W, METERS_W], Qt.Orientation.Horizontal)
+        if spec["right"]:
+            firsts = [d[names[0]] for names, _a in spec["right"]]
+            win.resizeDocks(firsts[:1], [spec.get("rightWidth", 330)], Qt.Orientation.Horizontal)
+            if len(firsts) > 1:  # egui splits the column evenly
+                win.resizeDocks(firsts, [400] * len(firsts), Qt.Orientation.Vertical)
+
+    def builtin_layout(self, name: str) -> QByteArray:
+        """The saved state of egui's layout of a built-in workspace (made once, then kept)."""
+        if name not in WORKSPACE_LAYOUTS:
+            return self._default_state
+        state = self._builtin_states.get(name)
+        if state is None:
+            state = self._default_layout_state(name)
+            self._builtin_states[name] = state
+        return state
+
+    def _default_layout_state(self, workspace: str | None = None) -> QByteArray:
         """The default layout, arranged in a hidden stand-in window with empty docks of the
         same names: tabifying the real window's docks directly leaves orphaned tab bars on screen
-        (Qt 6.10.3+) or can crash once it is shown (Qt 6.10.2); restoring a state is clean."""
+        (Qt 6.10.3+) or can crash once it is shown (Qt 6.10.2); restoring a state is clean.
+        ``workspace``: one of egui's other built-in workspaces instead of Editing."""
         helper = QMainWindow()
         helper.setDockOptions(self.dockOptions())
         helper.setTabPosition(Qt.DockWidgetArea.AllDockWidgetAreas, QTabWidget.TabPosition.North)
@@ -404,7 +502,10 @@ class MainWindow(QMainWindow):
             dock.setWidget(QWidget(dock))
             helper.addDockWidget(area, dock)
             stand_ins[name] = dock
-        self.arrange_default(helper, stand_ins)
+        if workspace is None:
+            self.arrange_default(helper, stand_ins)
+        else:
+            self.arrange_workspace(helper, stand_ins, workspace)
         state = helper.saveState(LAYOUT_VERSION)
         helper.deleteLater()
         return state
@@ -432,6 +533,12 @@ class MainWindow(QMainWindow):
         self.resizeDocks([self.docks["Source"], self.docks["Project"]], [int(h * 0.30), int(h * 0.28)], Qt.Orientation.Vertical)
         self.resizeDocks([self.docks["Tools"], self.docks["Audio Meters"]], [TOOLS_W, METERS_W], Qt.Orientation.Horizontal)
 
+    def fit_workspace_sizes(self) -> None:
+        """A built-in workspace's Timeline height and bottom strips in proportion to the window."""
+        h = max(1, self.height())
+        self.resizeDocks([self.docks["Timeline"]], [int(h * self.TIMELINE_SHARE)], Qt.Orientation.Vertical)
+        self.resizeDocks([self.docks["Tools"], self.docks["Audio Meters"]], [TOOLS_W, METERS_W], Qt.Orientation.Horizontal)
+
     def showEvent(self, e) -> None:
         super().showEvent(e)
         if self._fit_pending:
@@ -443,6 +550,8 @@ class MainWindow(QMainWindow):
         self.restoreState(state, LAYOUT_VERSION)
         if state is self._default_state or state == self._default_state:
             QTimer.singleShot(0, self, self.fit_default_sizes)
+        elif any(state is b or state == b for b in self._builtin_states.values()):
+            QTimer.singleShot(0, self, self.fit_workspace_sizes)
         self._retire_tab_bars(before)
         QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
         self._titles_later()
@@ -454,10 +563,20 @@ class MainWindow(QMainWindow):
         def tabs(bar: QTabBar) -> tuple[str, ...]:
             return tuple(bar.tabText(i) for i in range(bar.count()))
 
+        by_title = {dock.windowTitle(): dock for dock in self.docks.values()}
+
+        def stale(bar: QTabBar) -> bool:
+            # a bar whose tabs are no longer one group of open docks (another layout's group)
+            docks = [by_title.get(t) for t in tabs(bar)]
+            if not docks or any(dk is None or dk.isHidden() for dk in docks):
+                return True
+            group = {docks[0], *(x for x in self.tabifiedDockWidgets(docks[0]) if not x.isHidden())}
+            return group != set(docks)
+
         visible = [b for b in self.findChildren(QTabBar) if b.parent() is self and b.isVisible()]
         fresh = {tabs(b) for b in visible if b not in old}
         for bar in visible:
-            if bar in old and (bar.count() == 0 or tabs(bar) in fresh):
+            if bar in old and (bar.count() == 0 or tabs(bar) in fresh or stale(bar)):
                 bar.hide()
 
     def _dock(self, name: str, widget: QWidget, area: Qt.DockWidgetArea) -> QDockWidget:
@@ -870,6 +989,8 @@ class MainWindow(QMainWindow):
         self.lumetri.flush()
         self.essential_sound.flush()
         self.notes.flush()
+        if cmd.id in ("markers.markIn", "markers.markOut") and self.project_panel.hover_mark(cmd.id == "markers.markIn"):
+            return
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":

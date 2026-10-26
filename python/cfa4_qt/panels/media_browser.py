@@ -882,8 +882,9 @@ class MediaBrowserPanel(QWidget):
         d = self.data
         has_sel = bool(d.get("selection"))
 
-        def add(name: str, label: str, slot: Any, checked: bool | None = None, enabled: bool = True) -> None:
-            a = menu.addAction(tr(label))
+        def add(name: str, label: str, slot: Any, checked: bool | None = None, enabled: bool = True, hint: str = "") -> None:
+            # egui shows the key as a hint only: Shift+O is Go to Out everywhere else
+            a = menu.addAction(tr(label) + (f"\t{hint}" if hint else ""))
             a.setObjectName(f"mediaBrowser.menu.{name}")
             if checked is not None:
                 a.setCheckable(True)
@@ -908,7 +909,7 @@ class MediaBrowserPanel(QWidget):
         add("favorite", N_("Remove from Favorites") if fav else N_("Add to Favorites"), lambda: self.send("mediaBrowser.favorite", {"remove": fav}))
         add("clearRecent", N_("Clear Recent Directories"), lambda: self.send("mediaBrowser.clearRecent", {}), enabled=bool(d.get("recent")))
         add("import", N_("Import"), lambda: self.send("mediaBrowser.import", {}), enabled=has_sel)
-        add("openInSource", N_("Open In Source Monitor"), lambda: self.send("mediaBrowser.openInSource", {}), enabled=has_sel)
+        add("openInSource", N_("Open In Source Monitor"), lambda: self.send("mediaBrowser.openInSource", {}), enabled=has_sel, hint="Shift+O")
 
     def _refresh_all(self) -> None:
         """Refresh: list again and probe the files again (egui's)."""

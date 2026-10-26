@@ -1391,7 +1391,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech", "Libraries"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -1465,6 +1465,49 @@ def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path
         sub = next(a.menu() for a in menu.actions() if a.menu())
         mine = next(a for a in sub.actions() if a.text() == "Vágás")
         assert mine.isChecked()
+        # egui's other workspaces, laid out as egui lays them out
+        builtin = {a.objectName(): a for a in sub.actions() if a.objectName().startswith("window.workspace.")}
+        for key in ("Assembly", "Color", "Effects", "Audio", "CaptionsandGraphics", "AllPanels"):
+            assert builtin[f"window.workspace.{key}"].isEnabled(), key
+        builtin["window.workspace.Color"].trigger()
+        assert ws.current == "Color"
+        shown = {"Lumetri Color", "Lumetri Scopes", "Project", "Timeline", "Tools", "Audio Meters"}
+        assert wait_until(app, lambda: all(not win.docks[n].isHidden() for n in shown), 2_000)
+        assert win.docks["Properties"].isHidden() and win.docks["Essential Sound"].isHidden()
+        assert win.dockWidgetArea(win.docks["Lumetri Color"]) == QtCore.Qt.DockWidgetArea.RightDockWidgetArea
+        builtin["window.workspace.Audio"].trigger()
+        assert wait_until(app, lambda: not win.docks["Essential Sound"].isHidden() and not win.docks["Audio Track Mixer"].isHidden(), 2_000)
+        assert win.docks["Lumetri Color"].isHidden()
+        # a built-in workspace saved with changes stays built in, and keeps the changes
+        win.docks["History"].close()
+        ws.save_current()
+        assert ws.names() == ["Vágás"]
+        ws.switch(DEFAULT_WORKSPACE, win.restore_layout)
+        assert wait_until(app, lambda: not win.docks["History"].isHidden(), 2_000)
+        ws.switch("Audio", win.restore_layout)
+        assert wait_until(app, lambda: win.docks["History"].isHidden() and not win.docks["Essential Sound"].isHidden(), 2_000)
+        builtin["window.workspace.AllPanels"].trigger()
+        everything = {"Source", "Lumetri Color", "Essential Graphics", "Essential Sound", "Text to Speech", "Properties", "Audio Track Mixer", "Project", "Libraries", "Text"}
+        assert wait_until(app, lambda: all(not win.docks[n].isHidden() for n in everything), 2_000)
+        # Edit Workspaces…: rename an own workspace, put a built-in one back, delete an own one
+        from cfa4_qt.window_menu import EditWorkspacesDialog
+
+        dlg = EditWorkspacesDialog(ws, win)
+        names = [dlg.list.item(i).data(QtCore.Qt.ItemDataRole.UserRole) for i in range(dlg.list.count())]
+        assert names[:7] == ["Editing", "Assembly", "Color", "Effects", "Audio", "Captions and Graphics", "All Panels"] and names[7:] == ["Vágás"]
+        dlg.list.setCurrentRow(names.index("Color"))
+        assert not dlg.name.isEnabled() and not dlg.delete_button.isEnabled(), "a built-in workspace stays"
+        dlg.list.setCurrentRow(names.index("Audio"))
+        assert dlg.delete_button.text() == "Restore Original" and dlg.delete_button.isEnabled()
+        dlg.delete_button.click()
+        assert not ws.changed("Audio")
+        dlg.list.setCurrentRow(names.index("Vágás"))
+        dlg.name.setText("Vágás 2")
+        dlg.rename_button.click()
+        assert ws.names() == ["Vágás 2"] and ws.changed("Vágás 2")
+        dlg.delete_button.click()
+        assert ws.names() == []
+        dlg.close()
     finally:
         win._quit_confirmed = True
         win.close()
@@ -3419,6 +3462,7 @@ def test_project_panel(app, tmp_path: Path):
         assert names[0] == "Name" and "Media Duration" in names, names
         footage = next(main.tree.topLevelItem(i) for i in range(main.tree.topLevelItemCount()) if main.tree.topLevelItem(i).text(0) == "Footage")
         assert footage.childCount() == 0, "bins start closed"
+        footage_bin = footage.data(0, BIN_ROLE)
         footage.setExpanded(True)
         assert wait_until(app, lambda: any(it.data(0, ITEM_ROLE) == movie_id() for it in all_items(main.tree)), 10_000)
         # a header click sorts by that column
@@ -3471,6 +3515,86 @@ def test_project_panel(app, tmp_path: Path):
         assert main.up.isEnabled()
         main.go_up()
         assert wait_until(app, lambda: main.data.get("bin") == main.data.get("root"), 10_000)
+        # hover scrub: I / O over a card set that clip's In / Out at the hovered time
+        main.navigate(selects)
+        main.set_mode("icon")
+        assert wait_until(app, lambda: main.stack.currentWidget() is main.icons and main.data.get("bin") == selects, 10_000)
+        pp.set_view({"hoverScrub": True})
+        assert wait_until(app, lambda: main.hover_scrub, 10_000)
+        second = 254_016_000_000
+        main.icons.hovered.emit(movie_id(), second)
+        win.run_command(win.registry.commands["markers.markIn"])
+        main.icons.hovered.emit(movie_id(), 2 * second)
+        win.run_command(win.registry.commands["markers.markOut"])
+        main.icons.hovered.emit(None, 0)
+        assert not pp.hover_mark(True), "no card under the pointer: I keeps its usual meaning"
+
+        def marks() -> tuple:
+            row = next((r for r in main.data.get("rows") or [] if r.get("item") == movie_id()), {})
+            return row.get("in"), row.get("out")
+
+        assert wait_until(app, lambda: marks() == (second, 2 * second), 10_000), marks()
+        main.go_up()
+        assert wait_until(app, lambda: main.data.get("bin") == main.data.get("root"), 10_000)
+        # Freeform view: the bin's clips as cards; a dragged card stays where it was dropped
+        pp.set_view({"previewArea": False})
+        win.resizeDocks([win.docks["Project"]], [700], QtCore.Qt.Orientation.Vertical)
+        main.navigate(footage_bin)
+        main.set_mode("freeform")
+        canvas = main.canvas
+        assert wait_until(app, lambda: main.stack.currentWidget() is main.free_scroll and main.data.get("bin") == footage_bin and len(canvas.cards) >= 2, 10_000)
+        assert wait_until(app, lambda: main.preview.isHidden(), 10_000)
+
+        def drag(a: QtCore.QPoint, b: QtCore.QPoint, escape: bool = False) -> None:
+            left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+            mods = QtCore.Qt.KeyboardModifier.NoModifier
+
+            def send(kind, at: QtCore.QPoint, button, buttons) -> None:
+                p = QtCore.QPointF(at)
+                QtWidgets.QApplication.sendEvent(canvas, QtGui.QMouseEvent(kind, p, p, canvas.mapToGlobal(p), button, buttons, mods))
+
+            send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+            send(QtCore.QEvent.Type.MouseMove, (a + b) / 2, none, left)
+            send(QtCore.QEvent.Type.MouseMove, b, none, left)
+            if escape:
+                QtTest.QTest.keyClick(canvas, QtCore.Qt.Key.Key_Escape)
+            send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none)
+        first = dict(min(canvas.cards, key=lambda c: (c["y"], c["x"])))
+        start = canvas.thumb_rect(first).center().toPoint()
+        drag(start, start + QtCore.QPoint(150, 12))
+        def card(item: int) -> dict:
+            return next((c for c in main.data.get("cards") or [] if c.get("item") == item), {})
+
+        moved = first["item"]
+        assert wait_until(app, lambda: card(moved).get("placed") is True, 10_000), card(moved)
+        assert abs(card(moved)["x"] - (first["x"] + 150)) <= 1 and abs(card(moved)["y"] - (first["y"] + 12)) <= 1, card(moved)
+        # Escape during a drag puts the card back and moves nothing
+        before = dict(card(moved))
+        here = canvas.thumb_rect(next(c for c in canvas.cards if c["item"] == moved)).center().toPoint()
+        drag(here, here + QtCore.QPoint(60, 8), escape=True)
+        # a marquee selects the cards it touches; Stack groups them under a ×N badge
+        drag(QtCore.QPoint(2, 2), QtCore.QPoint(canvas.width() - 2, canvas.height() - 2))
+        assert canvas.selected == {c["item"] for c in canvas.cards}, canvas.selected
+        app.processEvents()
+        assert card(moved) == before, "Escape moved nothing"
+        menu = pp.card_menu(main, moved, canvas.rows[moved])
+        stack = next(a for a in menu.actions() if a.objectName() == "project.cardMenu.stack")
+        assert stack.isEnabled()
+        stack.trigger()
+        assert wait_until(app, lambda: canvas.stack_of(moved) is not None, 10_000)
+        assert set(canvas.moving(moved)) == {c["item"] for c in canvas.cards}
+        # the canvas menu's Align to Grid, the panel menu's Freeform View Options…
+        names = [a.objectName() for a in pp.canvas_menu(main).actions()]
+        assert "project.canvasMenu.alignToGrid" in names and "project.canvasMenu.saveArrangement" in names, names
+        menu = main.menu_button.menu()
+        menu.aboutToShow.emit()
+        assert next(a for a in menu.actions() if a.objectName() == "project.menu.freeformOptions").isEnabled()
+        pp.set_view_cmd("project.freeform.options", {"snap": True, "grid": 40})
+        assert wait_until(app, lambda: (main.data.get("freeform") or {}).get("snap") is True, 10_000)
+        assert main.free_scroll.grab().width() > 0
+        main.set_mode("icon")
+        main.go_up()
+        assert wait_until(app, lambda: main.mode == "icon" and main.data.get("bin") == main.data.get("root"), 10_000)
         # the panel menu toggles view settings; Metadata Display picks the columns
         menu = main.menu_button.menu()
         menu.aboutToShow.emit()

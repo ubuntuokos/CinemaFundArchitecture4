@@ -1,6 +1,7 @@
 """Project panel (egui's ``panels/project.rs`` and ``project_views.rs``): the project's bins and
 items in List view (the Metadata Display columns, sortable and resizable, bins twirled open) or
-Icon view (thumbnail cards with hover scrub, the In/Out bar and badges, Sort Icons), with the
+Icon view (thumbnail cards with hover scrub, the In/Out bar and badges, Sort Icons) or Freeform
+view (cards placed freely, stacks, arrangements), with the
 breadcrumb and Up one level, the search and item count, the Preview Area, inline rename (F2, a
 slow second click, the menus), bins opened in place, in a tab or in a window, and the footer and
 panel menu (views, thumbnail size, New Item, New Bin, Find, Clear, Font Size, view presets).
@@ -13,16 +14,44 @@ view settings are engine preferences (``project.view.*``, ``project.columns.*``,
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QMimeData, QModelIndex, QPoint, QPointF, QRect, QRectF, QSize, Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QAction, QColor, QDesktopServices, QFont, QIcon, QImage, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtCore import (
+    QEvent,
+    QMimeData,
+    QModelIndex,
+    QPoint,
+    QPointF,
+    QRect,
+    QRectF,
+    QSize,
+    Qt,
+    QTimer,
+    QUrl,
+    Signal,
+)
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QDesktopServices,
+    QDrag,
+    QFont,
+    QIcon,
+    QImage,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
+    QFormLayout,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -31,7 +60,9 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMenu,
     QPushButton,
+    QScrollArea,
     QSlider,
+    QSpinBox,
     QStackedWidget,
     QStyle,
     QStyledItemDelegate,
@@ -382,6 +413,71 @@ class IconList(QListWidget, _Drops):
         self.hovered.emit(None, 0)
 
 
+def paint_clip(p: QPainter, view: BinView, row: dict[str, Any], th: QRectF, pal: Any, show_name: bool = True, show_dur: bool = True, editing: bool = False) -> None:
+    """A clip card's thumbnail (hover scrub, poster frame), In/Out bar, badges, name and duration
+    (egui's ``card``), for the Icon and Freeform views."""
+    text_y = th.bottom() + 12
+    p.fillRect(th, QColor(12, 12, 12))
+    item = row.get("item")
+    hover = view.hover if view.hover_scrub else None
+    at = hover[1] if hover is not None and hover[0] == item else None
+    img = view.thumbnail(row, at, int(th.height()))
+    if img is not None and not img.isNull():
+        scale = min(th.width() / max(1, img.width()), th.height() / max(1, img.height()))
+        w, h = img.width() * scale, img.height() * scale
+        p.drawImage(QRectF(th.center().x() - w / 2, th.center().y() - h / 2, w, h), img)
+    else:
+        g = min(28.0, th.height()) * 0.8
+        kind_icon(str(row.get("icon") or "film"), pal.placeholderText().color(), 32).paint(
+            p, QRect(int(th.center().x() - g / 2), int(th.center().y() - g / 2), int(g), int(g))
+        )
+    dur = _int(row.get("duration")) or 0
+    mark_in, mark_out = _int(row.get("in")), _int(row.get("out"))
+    if (mark_in is not None or mark_out is not None) and dur > 0:
+        frame = _int(row.get("frame")) or 0
+
+        def fx(t: int) -> float:
+            return th.left() + th.width() * min(1.0, max(0.0, t / dur))
+
+        a = fx(mark_in or 0)
+        b = fx(mark_out + frame if mark_out is not None else dur)
+        p.fillRect(QRectF(a, th.bottom() - 4, max(2.0, b - a), 4), INOUT)
+    if at is not None and dur > 0:
+        x = th.left() + th.width() * at / dur
+        p.setPen(QPen(INOUT, 1))
+        p.drawLine(QPointF(x, th.top()), QPointF(x, th.bottom()))
+    bx = th.right() - 4
+    for has, kind in ((row.get("hasAudio"), "audio"), (row.get("hasVideo") and not row.get("sequence"), "film"), (row.get("sequence"), "sequence")):
+        if has:
+            br = QRectF(bx - 15, th.bottom() - 17, 15, 12)
+            p.fillRect(br, QColor(0, 0, 0, 160))
+            kind_icon(kind, QColor(0x8F, 0xB8, 0xF5), 16).paint(p, br.adjusted(1.5, 0, -1.5, 0).toRect())
+            bx -= 17
+    offline = row.get("offline")
+    if offline:
+        band = QRectF(th.left(), th.bottom() - 20, th.width(), 20)
+        p.fillRect(band, QColor(0x5C, 0x10, 0x16, 230))
+        p.setPen(QColor("white"))
+        p.drawText(band.adjusted(8, 0, 0, 0), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, tr(str(offline)))
+    if row.get("proxy"):
+        pr = QRectF(th.right() - 22, th.top() + 4, 18, 14)
+        p.fillRect(pr, QColor(70, 70, 70))
+        p.setPen(QColor("white"))
+        p.drawText(pr, Qt.AlignmentFlag.AlignCenter, "P")
+    dw = 0
+    if show_dur:
+        dtext = card_duration(dur)
+        dw = p.fontMetrics().horizontalAdvance(dtext)
+        p.setPen(pal.placeholderText().color())
+        p.drawText(QRectF(th.right() - dw, text_y - 9, dw, 18), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, dtext)
+    if show_name and not editing:
+        p.fillRect(QRectF(th.left(), text_y - 5, 8, 10), label_color(row))
+        p.setPen(OFFLINE if offline else pal.text().color())
+        name_r = QRectF(th.left() + 12, text_y - 9, max(0.0, th.width() - dw - 18), 18)
+        name = p.fontMetrics().elidedText(str(row.get("name") or ""), Qt.TextElideMode.ElideRight, int(name_r.width()))
+        p.drawText(name_r, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, name)
+
+
 class CardDelegate(QStyledItemDelegate):
     """Paints an Icon view card (egui's ``card`` / ``bin_card``) and places the rename field
     under its thumbnail."""
@@ -418,7 +514,6 @@ class CardDelegate(QStyledItemDelegate):
         font = QFont(option.font)
         font.setPixelSize(max(8, round(self.view.font_points - 1)))
         p.setFont(font)
-        text_y = th.bottom() + 12
         if row.get("bin") is not None:
             p.fillRect(th, QColor(26, 26, 26))
             g = th.height() * 0.6
@@ -432,64 +527,326 @@ class CardDelegate(QStyledItemDelegate):
                 p.drawText(QRectF(th.left(), th.bottom() + 2, th.width(), 18), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, fmt("{n} items", n=n))
             p.restore()
             return
-        p.fillRect(th, QColor(12, 12, 12))
-        item = row.get("item")
-        hover = self.view.hover if self.view.hover_scrub else None
-        at = hover[1] if hover is not None and hover[0] == item else None
-        img = self.view.thumbnail(row, at, int(th.height()))
-        if img is not None and not img.isNull():
-            scale = min(th.width() / max(1, img.width()), th.height() / max(1, img.height()))
-            w, h = img.width() * scale, img.height() * scale
-            p.drawImage(QRectF(th.center().x() - w / 2, th.center().y() - h / 2, w, h), img)
-        else:
-            g = min(28.0, th.height()) * 0.8
-            kind_icon(str(row.get("icon") or "film"), pal.placeholderText().color(), 32).paint(
-                p, QRect(int(th.center().x() - g / 2), int(th.center().y() - g / 2), int(g), int(g))
-            )
-        dur = _int(row.get("duration")) or 0
-        mark_in, mark_out = _int(row.get("in")), _int(row.get("out"))
-        if (mark_in is not None or mark_out is not None) and dur > 0:
-            frame = _int(row.get("frame")) or 0
-
-            def fx(t: int) -> float:
-                return th.left() + th.width() * min(1.0, max(0.0, t / dur))
-
-            a = fx(mark_in or 0)
-            b = fx(mark_out + frame if mark_out is not None else dur)
-            p.fillRect(QRectF(a, th.bottom() - 4, max(2.0, b - a), 4), INOUT)
-        if at is not None and dur > 0:
-            x = th.left() + th.width() * at / dur
-            p.setPen(QPen(INOUT, 1))
-            p.drawLine(QPointF(x, th.top()), QPointF(x, th.bottom()))
-        bx = th.right() - 4
-        for has, kind in ((row.get("hasAudio"), "audio"), (row.get("hasVideo") and not row.get("sequence"), "film"), (row.get("sequence"), "sequence")):
-            if has:
-                br = QRectF(bx - 15, th.bottom() - 17, 15, 12)
-                p.fillRect(br, QColor(0, 0, 0, 160))
-                kind_icon(kind, QColor(0x8F, 0xB8, 0xF5), 16).paint(p, br.adjusted(1.5, 0, -1.5, 0).toRect())
-                bx -= 17
-        offline = row.get("offline")
-        if offline:
-            band = QRectF(th.left(), th.bottom() - 20, th.width(), 20)
-            p.fillRect(band, QColor(0x5C, 0x10, 0x16, 230))
-            p.setPen(QColor("white"))
-            p.drawText(band.adjusted(8, 0, 0, 0), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, tr(str(offline)))
-        if row.get("proxy"):
-            pr = QRectF(th.right() - 22, th.top() + 4, 18, 14)
-            p.fillRect(pr, QColor(70, 70, 70))
-            p.setPen(QColor("white"))
-            p.drawText(pr, Qt.AlignmentFlag.AlignCenter, "P")
-        dtext = card_duration(dur)
-        dw = p.fontMetrics().horizontalAdvance(dtext)
-        p.setPen(pal.placeholderText().color())
-        p.drawText(QRectF(th.right() - dw, text_y - 9, dw, 18), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, dtext)
-        if not self.view.editing(index):
-            p.fillRect(QRectF(th.left(), text_y - 5, 8, 10), label_color(row))
-            p.setPen(OFFLINE if offline else pal.text().color())
-            name_r = QRectF(th.left() + 12, text_y - 9, max(0.0, th.width() - dw - 18), 18)
-            name = p.fontMetrics().elidedText(str(row.get("name") or ""), Qt.TextElideMode.ElideRight, int(name_r.width()))
-            p.drawText(name_r, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, name)
+        paint_clip(p, self.view, row, th, pal, editing=self.view.editing(index))
         p.restore()
+
+
+class FreeformCanvas(QWidget):
+    """Freeform view (egui's ``freeform_view``): clip cards where the user put them (the others on
+    a grid below), dragged to move with the selection or their stack, stacks with a ×N badge,
+    marquee selection, the snap grid, hover scrub and inline rename. Positions, sizes, stacks and
+    arrangements are item metadata the engine keeps (``project.freeform.*``)."""
+
+    PAD = 10.0
+
+    def __init__(self, view: BinView) -> None:
+        super().__init__(view)
+        self.view = view
+        self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.cards: list[dict[str, Any]] = []
+        self.rows: dict[int, dict[str, Any]] = {}
+        self.opts: dict[str, Any] = {}
+        self.selected: set[int] = set()
+        self._press: QPointF | None = None
+        self._drag: int | None = None  # the card being moved
+        self._offset = QPointF()
+        self._marquee: QRectF | None = None
+        self._editor: QLineEdit | None = None
+
+    # ----- data -----
+    def set_data(self, cards: Any, rows: list[dict[str, Any]], opts: Any, selection: set[int]) -> None:
+        self.rows = {r["item"]: r for r in rows if isinstance(r.get("item"), int)}
+        self.cards = [c for c in cards or [] if self._card_ok(c) and c["item"] in self.rows] if isinstance(cards, list) else []
+        self.opts = opts if isinstance(opts, dict) else {}
+        self.selected = set(selection)
+        w = h = 0.0
+        for c in self.cards:
+            w = max(w, c["x"] + c["size"] + 40)
+            h = max(h, c["y"] + c["size"] * 9 / 16 + 60)
+        self.setMinimumSize(int(min(100_000, w + self.PAD)), int(min(100_000, h + self.PAD)))
+        self.update()
+
+    @staticmethod
+    def _card_ok(c: Any) -> bool:
+        if not isinstance(c, dict) or not isinstance(c.get("item"), int):
+            return False
+        for k in ("x", "y", "size"):
+            v = c.get(k)
+            if not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) or abs(v) > 100_000:
+                return False
+        return c["size"] > 0
+
+    def _opt(self, key: str, default: Any) -> Any:
+        v = self.opts.get(key)
+        if isinstance(default, bool):
+            return v if isinstance(v, bool) else default
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else default
+
+    def stack_of(self, item: int) -> int | None:
+        c = next((c for c in self.cards if c["item"] == item), None)
+        s = c.get("stack") if c is not None else None
+        return s if isinstance(s, int) and not isinstance(s, bool) else None
+
+    def moving(self, item: int) -> list[int]:
+        """The cards a drag of ``item`` moves: it, the selection it is in and its stack, the
+        stack's first card leading so the others keep their offsets."""
+        items = [item]
+        if item in self.selected:
+            items += [i for i in sorted(self.selected) if i != item and i in self.rows]
+        stack = self.stack_of(item)
+        if stack is not None:
+            items += [c["item"] for c in self.cards if c.get("stack") == stack and c["item"] not in items]
+            if stack in items:
+                items.remove(stack)
+                items.insert(0, stack)
+        return items
+
+    # ----- geometry -----
+    def thumb_rect(self, c: dict[str, Any], off: QPointF | None = None) -> QRectF:
+        o = off or QPointF()
+        return QRectF(self.PAD + c["x"] + o.x(), self.PAD + c["y"] + o.y(), c["size"], c["size"] * 9 / 16)
+
+    def card_rect(self, c: dict[str, Any], off: QPointF | None = None) -> QRectF:
+        th = self.thumb_rect(c, off)
+        return QRectF(th.left() - 6, th.top() - 6, th.width() + 12, th.height() + 28)
+
+    def _order(self) -> list[dict[str, Any]]:
+        # a stack's first card is drawn last, on top of the cards stacked behind it
+        return sorted(self.cards, key=lambda c: c.get("stack") == c["item"])
+
+    def card_at(self, pos: QPointF) -> dict[str, Any] | None:
+        for c in reversed(self._order()):
+            if self.card_rect(c, self._off(c)).contains(pos):
+                return c
+        return None
+
+    def _off(self, c: dict[str, Any]) -> QPointF:
+        if self._drag is not None and c["item"] in self.moving(self._drag):
+            return self._offset
+        return QPointF()
+
+    # ----- painting -----
+    def paintEvent(self, _e: Any) -> None:
+        p = QPainter(self)
+        pal = self.palette()
+        p.fillRect(self.rect(), pal.base())
+        if self._opt("snap", False):
+            g = max(4.0, float(self._opt("grid", 20.0)))
+            grid = QColor(pal.mid().color())
+            grid.setAlpha(90)
+            p.setPen(QPen(grid, 0.5))
+            x = self.PAD
+            while x < self.width():
+                p.drawLine(QPointF(x, 0), QPointF(x, self.height()))
+                x += g
+            y = self.PAD
+            while y < self.height():
+                p.drawLine(QPointF(0, y), QPointF(self.width(), y))
+                y += g
+        counts: dict[int, int] = {}
+        for c in self.cards:
+            st = c.get("stack")
+            if isinstance(st, int):
+                counts[st] = counts.get(st, 0) + 1
+        font = QFont(self.font())
+        font.setPixelSize(max(8, round(self.view.font_points - 1)))
+        p.setFont(font)
+        names, durs = bool(self._opt("showNames", True)), bool(self._opt("showDurations", True))
+        for c in self._order():
+            item = c["item"]
+            row = self.rows.get(item)
+            if row is None:
+                continue
+            th = self.thumb_rect(c, self._off(c))
+            p.save()
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            selected = item in self.selected
+            p.setPen(QPen(pal.highlight().color(), 1.5) if selected else Qt.PenStyle.NoPen)
+            p.setBrush(pal.alternateBase() if selected else pal.window())
+            p.drawRoundedRect(QRectF(th.left() - 6, th.top() - 6, th.width() + 12, th.height() + 28), 4, 4)
+            editing = self._editor is not None and self._editor.property("item") == item
+            paint_clip(p, self.view, row, th, pal, names, durs, editing)
+            if c.get("stack") == item and counts.get(item):
+                br = QRectF(th.left() + 4, th.top() + 4, 26, 16)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(pal.highlight())
+                p.drawRoundedRect(br, 3, 3)
+                p.setPen(QColor("white"))
+                p.drawText(br, Qt.AlignmentFlag.AlignCenter, f"×{counts[item]}")
+            p.restore()
+        if self._marquee is not None:
+            fill = QColor(pal.highlight().color())
+            fill.setAlpha(40)
+            p.setPen(QPen(pal.highlight().color(), 1))
+            p.setBrush(fill)
+            p.drawRect(self._marquee.normalized())
+        p.end()
+
+    # ----- mouse -----
+    def mousePressEvent(self, e: Any) -> None:
+        self.setFocus()
+        pos = e.position()
+        if e.button() != Qt.MouseButton.LeftButton:
+            c = self.card_at(pos)
+            if c is not None and c["item"] not in self.selected:
+                self._select({c["item"]})
+            return
+        c = self.card_at(pos)
+        ctrl = bool(e.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier))
+        self._press = pos
+        if c is None:
+            self._marquee = QRectF(pos, pos)
+            if not ctrl:
+                self.view.selected_bin = None
+                self._select(set())
+            return
+        item = c["item"]
+        if ctrl:
+            self._select(self.selected ^ {item})
+        elif item not in self.selected:
+            self._select({item})
+        self._drag = item
+        self._offset = QPointF()
+
+    def mouseMoveEvent(self, e: Any) -> None:
+        pos = e.position()
+        if self._marquee is not None and self._press is not None:
+            self._marquee = QRectF(self._press, pos)
+            self.update()
+            return
+        if self._drag is not None and self._press is not None:
+            self._offset = pos - self._press
+            # leaving the panel turns the move into an item drag (to the Timeline, a monitor)
+            port = self.view.free_scroll.viewport()  # the canvas's parent: its position is the scroll
+            if not port.rect().contains((pos + QPointF(self.pos())).toPoint()):
+                items = self.moving(self._drag)
+                self._cancel()
+                drag = QDrag(self)
+                drag.setMimeData(drag_mime(items, []))
+                drag.exec(Qt.DropAction.CopyAction | Qt.DropAction.MoveAction)
+                return
+            self.update()
+            return
+        self._hover(pos)
+
+    def _hover(self, pos: QPointF) -> None:
+        c = self.card_at(pos)
+        row = self.rows.get(c["item"]) if c is not None else None
+        if c is None or row is None:
+            self.view._hovered(None, 0)
+            return
+        th = self.thumb_rect(c)
+        dur = _int(row.get("duration")) or 0
+        frame = max(1, _int(row.get("frame")) or 1)
+        if not th.contains(pos) or dur <= 0:
+            self.view._hovered(None, 0)
+            return
+        f = min(1.0, max(0.0, (pos.x() - th.left()) / max(1.0, th.width())))
+        t = int(dur * f) // frame * frame
+        self.view._hovered(c["item"], max(0, min(t, dur - frame)))
+
+    def mouseReleaseEvent(self, e: Any) -> None:
+        if self._marquee is not None:
+            r = self._marquee.normalized()
+            self._marquee = None
+            hit = {c["item"] for c in self.cards if r.intersects(self.card_rect(c))}
+            ctrl = bool(e.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier))
+            if hit or r.width() > 2 or r.height() > 2:
+                self._select(self.selected | hit if ctrl else hit)
+            self._press = None
+            self.update()
+            return
+        drag, off = self._drag, self._offset
+        self._drag, self._press, self._offset = None, None, QPointF()
+        if drag is not None and math.hypot(off.x(), off.y()) > 1.0:
+            items = self.moving(drag)
+            lead = next((c for c in self.cards if c["item"] == items[0]), None)
+            if lead is not None:
+                width = self.view.free_scroll.viewport().width()
+                self.view.panel.command.emit(
+                    "project.freeform.move",
+                    {"items": items, "x": max(0.0, lead["x"] + off.x()), "y": max(0.0, lead["y"] + off.y()), "width": width},
+                )
+                # show it there until the engine's layout comes back
+                for c in self.cards:
+                    if c["item"] in items:
+                        c["x"], c["y"] = max(0.0, c["x"] + off.x()), max(0.0, c["y"] + off.y())
+        self.update()
+
+    def _cancel(self) -> None:
+        self._drag, self._press, self._offset, self._marquee = None, None, QPointF(), None
+        self.update()
+
+    def keyPressEvent(self, e: Any) -> None:
+        if e.key() == Qt.Key.Key_Escape and (self._drag is not None or self._marquee is not None):
+            # Escape puts the cards back and drops nothing (#580)
+            self._cancel()
+            return
+        if e.key() == Qt.Key.Key_F2 and self.selected:
+            self.edit(min(self.selected))
+            return
+        super().keyPressEvent(e)
+
+    def mouseDoubleClickEvent(self, e: Any) -> None:
+        c = self.card_at(e.position())
+        if c is None:
+            self.view.panel.invoke.emit("file.import")
+            return
+        self._cancel()
+        self.view._open(c["item"], None, self.rows.get(c["item"]))
+
+    def leaveEvent(self, e: Any) -> None:
+        super().leaveEvent(e)
+        self.view._hovered(None, 0)
+
+    def contextMenuEvent(self, e: Any) -> None:
+        c = self.card_at(QPointF(e.pos()))
+        panel = self.view.panel
+        if c is not None:
+            m = panel.card_menu(self.view, c["item"], self.rows.get(c["item"]) or {})
+        else:
+            m = panel.canvas_menu(self.view)
+        m.popup(e.globalPos())
+
+    def _select(self, items: set[int]) -> None:
+        self.selected = set(items)
+        self.update()
+        self.view.panel.command.emit("project.select", {"items": sorted(self.selected)})
+
+    # ----- rename -----
+    def edit(self, item: int) -> bool:
+        c = next((c for c in self.cards if c["item"] == item), None)
+        if c is None:
+            return False
+        self._end_edit(None)
+        th = self.thumb_rect(c)
+        ed = QLineEdit(self)
+        ed.setObjectName(f"{self.view.prefix}.freeform.rename")
+        ed.setProperty("item", item)
+        ed.setText(str((self.rows.get(item) or {}).get("name") or ""))
+        ed.setGeometry(QRect(int(th.left()), int(th.bottom()) + 2, int(th.width()), 20))
+        ed.selectAll()
+        ed.editingFinished.connect(lambda e=ed: self._end_edit(e))
+        self._editor = ed
+        ed.show()
+        ed.setFocus()
+        self.update()
+        return True
+
+    def _end_edit(self, ed: QLineEdit | None) -> None:
+        cur = self._editor
+        if cur is None or (ed is not None and ed is not cur):
+            return
+        self._editor = None
+        if ed is not None:
+            item = cur.property("item")
+            name = cur.text().strip()
+            if isinstance(item, int) and name and name != (self.rows.get(item) or {}).get("name"):
+                self.view.panel.command.emit("clip.rename", {"item": item, "name": name})
+        cur.hide()
+        cur.deleteLater()
+        self.update()
 
 
 class PreviewArea(QWidget):
@@ -556,6 +913,7 @@ class BinView(QWidget):
         self.expanded: set[int] = set()
         self.selected_bin: int | None = None
         self.hover: tuple[Any, int] | None = None
+        self.arrangements: list[str] = []  # Freeform: the bin's saved arrangements
         self._updating = False
         self._shown: Any = None
         self.setObjectName(f"{prefix}.view")
@@ -667,14 +1025,27 @@ class BinView(QWidget):
         self.tree.itemChanged.connect(lambda it, col: col == 0 and self._renamed(it.data(0, ITEM_ROLE), it.data(0, BIN_ROLE), it.text(0)))
         self.icons.itemChanged.connect(lambda it: self._renamed(it.data(ITEM_ROLE), it.data(BIN_ROLE), it.text()))
 
+        self.canvas = FreeformCanvas(self)
+        self.canvas.setObjectName(f"{prefix}.freeform")
+        self.free_scroll = QScrollArea(self)
+        self.free_scroll.setObjectName(f"{prefix}.freeformScroll")
+        self.free_scroll.setWidget(self.canvas)
+        self.free_scroll.setWidgetResizable(True)
+        self.free_scroll.viewport().installEventFilter(self)
+        self._width_timer = QTimer(self)
+        self._width_timer.setSingleShot(True)
+        self._width_timer.setInterval(250)
+        self._width_timer.timeout.connect(self.refresh)
+
         self.stack = QStackedWidget(self)
         self.stack.addWidget(self.tree)
         self.stack.addWidget(self.icons)
+        self.stack.addWidget(self.free_scroll)
 
         foot = QHBoxLayout()
         foot.setContentsMargins(4, 0, 4, 0)
         self.view_buttons: dict[str, QToolButton] = {}
-        for key, text, tip in (("list", "☰", N_("List View")), ("icon", "▦", N_("Icon View"))):
+        for key, text, tip in (("list", "☰", N_("List View")), ("icon", "▦", N_("Icon View")), ("freeform", "⧉", N_("Freeform View"))):
             b = QToolButton(self)
             b.setObjectName(f"{prefix}.view.{key}")
             b.setText(text)
@@ -733,6 +1104,12 @@ class BinView(QWidget):
         layout.addLayout(foot)
         self._apply_mode()
 
+    def eventFilter(self, obj: Any, e: Any) -> bool:
+        # a wider or narrower Freeform view re-wraps the cards nobody placed
+        if obj is self.free_scroll.viewport() and e.type() == QEvent.Type.Resize and self.mode == "freeform":
+            self._width_timer.start()
+        return super().eventFilter(obj, e)
+
     # ----- state -----
     @property
     def view(self) -> dict[str, Any]:
@@ -742,7 +1119,7 @@ class BinView(QWidget):
     @property
     def mode(self) -> str:
         m = self.own_mode if self.own_mode is not None else self.view.get("mode")
-        return m if m in ("list", "icon") else "list"
+        return m if m in ("list", "icon", "freeform") else "list"
 
     @property
     def icon_size(self) -> int:
@@ -770,6 +1147,8 @@ class BinView(QWidget):
         return self.panel.media.thumbnail(item, t // q * q if at is None else t, height)
 
     def selected_items(self) -> list[int]:
+        if self.mode == "freeform" and not self.data.get("fallback"):
+            return sorted(self.canvas.selected)
         if self.mode == "icon":
             return [it.data(ITEM_ROLE) for it in self.icons.selectedItems() if it.data(ITEM_ROLE) is not None]
         return [it.data(0, ITEM_ROLE) for it in self.tree.selectedItems() if it.data(0, ITEM_ROLE) is not None]
@@ -780,6 +1159,8 @@ class BinView(QWidget):
         params: dict[str, Any] = {"mode": self.mode, "expanded": sorted(self.expanded), "filter": self.filter.text()}
         if self.bin is not None:
             params["bin"] = self.bin
+        if self.mode == "freeform":
+            params["width"] = max(100, self.free_scroll.viewport().width() - 2 * int(FreeformCanvas.PAD))
         if engine is None or not getattr(engine, "running", False):
             self._fallback()
             return
@@ -810,7 +1191,10 @@ class BinView(QWidget):
         self._apply_mode()
         self._updating = True
         try:
-            if self.mode == "icon" and not self.data.get("fallback"):
+            if self.mode == "freeform" and not self.data.get("fallback"):
+                self.canvas.set_data(self.data.get("cards"), rows, self.data.get("freeform"), selection)
+                self._load_arrangements()
+            elif self.mode == "icon" and not self.data.get("fallback"):
                 self._fill_icons(rows, selection)
             else:
                 self._fill_list(rows, selection)
@@ -819,6 +1203,17 @@ class BinView(QWidget):
         self._update_head(selection)
         if self.top is not None:
             self.panel._update_tab_names()
+
+    def _load_arrangements(self) -> None:
+        engine = self.panel.engine
+        if engine is None or not getattr(engine, "running", False):
+            return
+
+        def got(r: Any, _b: Any) -> None:
+            names = r.get("arrangements") if isinstance(r, dict) else None
+            self.arrangements = [n for n in names or [] if isinstance(n, str)]
+
+        engine.execute("project.freeform.arrangements", {"bin": self.data.get("bin")}, on_reply=got, on_error=lambda _m: None)
 
     def _update_head(self, selection: set[int]) -> None:
         d = self.data
@@ -842,8 +1237,10 @@ class BinView(QWidget):
         mode = self.mode
         for k, b in self.view_buttons.items():
             b.setChecked(k == mode)
-        self.stack.setCurrentWidget(self.icons if mode == "icon" else self.tree)
+        fallback = bool(self.data.get("fallback"))
+        self.stack.setCurrentWidget(self.free_scroll if mode == "freeform" and not fallback else self.icons if mode == "icon" else self.tree)
         self.sort_button.setVisible(mode == "icon")
+        self.size_slider.setVisible(mode != "freeform")
         self.size_slider.blockSignals(True)
         self.size_slider.setValue(self.icon_size)
         self.size_slider.blockSignals(False)
@@ -851,6 +1248,7 @@ class BinView(QWidget):
         font.setPixelSize(round(self.font_points))  # egui's points are logical pixels
         self.tree.setFont(font)
         self.icons.setFont(font)
+        self.canvas.setFont(font)
 
     def _fill_list(self, rows: list[dict[str, Any]], selection: set[int]) -> None:
         tree = self.tree
@@ -1015,6 +1413,8 @@ class BinView(QWidget):
         if item is None and bin_id is None:
             sel = self.selected_items()
             item, bin_id = (sel[0], None) if sel else (None, self.selected_bin)
+        if self.mode == "freeform":
+            return item is not None and self.canvas.edit(item)
         if self.mode == "icon":
             for i in range(self.icons.count()):
                 it = self.icons.item(i)
@@ -1055,6 +1455,7 @@ class BinView(QWidget):
         if new != self.hover:
             self.hover = new
             self.icons.viewport().update()
+            self.canvas.update()
 
     def navigate(self, bin_id: int | None) -> None:
         self.bin = bin_id
@@ -1222,6 +1623,58 @@ class MetadataDisplayDialog(QDialog):
         return out
 
 
+class FreeformOptionsDialog(QDialog):
+    """Freeform View Options…: the grid, snapping, card names and durations and the default card
+    size (``project.freeform.options``)."""
+
+    def __init__(self, opts: dict[str, Any], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("project.freeformOptions")
+        self.setWindowTitle(tr("Freeform View Options"))
+
+        def num(key: str, default: float) -> float:
+            v = opts.get(key)
+            return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) else default
+
+        self.grid = QSpinBox(self)
+        self.grid.setObjectName("project.freeformOptions.grid")
+        self.grid.setRange(4, 200)
+        self.grid.setValue(int(min(200, max(4, num("grid", 20)))))
+        self.card = QSpinBox(self)
+        self.card.setObjectName("project.freeformOptions.cardSize")
+        self.card.setRange(48, 480)
+        self.card.setValue(int(min(480, max(48, num("cardSize", 128)))))
+        self.snap = QCheckBox(tr("Snap to grid"), self)
+        self.snap.setObjectName("project.freeformOptions.snap")
+        self.snap.setChecked(opts.get("snap") is True)
+        self.names = QCheckBox(tr("Show clip names"), self)
+        self.names.setObjectName("project.freeformOptions.showNames")
+        self.names.setChecked(opts.get("showNames") is not False)
+        self.durations = QCheckBox(tr("Show clip durations"), self)
+        self.durations.setObjectName("project.freeformOptions.showDurations")
+        self.durations.setChecked(opts.get("showDurations") is not False)
+        form = QFormLayout()
+        form.addRow(tr("Grid spacing:"), self.grid)
+        form.addRow(tr("Default clip size:"), self.card)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addLayout(form)
+        for w in (self.snap, self.names, self.durations):
+            layout.addWidget(w)
+        layout.addWidget(buttons)
+
+    def values(self) -> dict[str, Any]:
+        return {
+            "grid": self.grid.value(),
+            "snap": self.snap.isChecked(),
+            "showNames": self.names.isChecked(),
+            "showDurations": self.durations.isChecked(),
+            "cardSize": self.card.value(),
+        }
+
+
 class ManagePresetsDialog(QDialog):
     """Manage Saved View Presets: rename or delete a slot."""
 
@@ -1330,6 +1783,22 @@ class ProjectPanel(QWidget):
         out = [self.stack.widget(i) for i in range(self.stack.count())]
         out += [w.findChild(BinView) for w in self.windows]
         return [v for v in out if isinstance(v, BinView)]
+
+    def hover_mark(self, is_in: bool) -> bool:
+        """I / O over a hover-scrubbed card sets that item's In / Out at the hovered time (egui's
+        ``hover_mark``); returns False when no card is being scrubbed, so the keys keep their usual
+        meaning."""
+        for v in self.views():
+            hover = v.hover
+            shown = v.stack.currentWidget()
+            if hover is None or not v.hover_scrub or shown not in (v.icons, v.free_scroll) or not shown.isVisible():
+                continue
+            item, t = hover
+            if not isinstance(item, int) or isinstance(item, bool) or not isinstance(t, int):
+                continue
+            self.command.emit("project.setMarks", {"item": item, "in" if is_in else "out": max(0, t)})
+            return True
+        return False
 
     def shown(self) -> BinView:
         w = self.stack.currentWidget()
@@ -1574,6 +2043,82 @@ class ProjectPanel(QWidget):
         add("clear", N_("Clear"), lambda: self.command.emit("project.delete", {"items": [item]}))
         return m
 
+    def card_menu(self, view: BinView, item: int, row: dict[str, Any]) -> QMenu:
+        """A Freeform card's menu: Stack, Unstack, Clip Size, then the item's own menu."""
+        sel = view.selected_items()
+        items = sel if item in sel else [item]
+        m = self.item_menu(view, item, row)
+        first = m.actions()[0] if m.actions() else None
+        entries: list[QAction] = []
+
+        def add(key: str, label: str, cid: str, params: dict[str, Any], enabled: bool = True, menu: QMenu | None = None) -> None:
+            a = QAction(tr(label), menu or m)
+            a.setObjectName(f"{view.prefix}.cardMenu.{key}")
+            a.setEnabled(enabled)
+            a.triggered.connect(lambda _c=False: self.command.emit(cid, params))
+            if menu is not None:
+                menu.addAction(a)
+            else:
+                entries.append(a)
+
+        add("stack", N_("Stack"), "project.freeform.stack", {"items": items}, len(items) > 1)
+        add("unstack", N_("Unstack"), "project.freeform.unstack", {"items": items}, view.canvas.stack_of(item) is not None)
+        m.insertActions(first, entries)
+        size = QMenu(tr("Clip Size"), m)
+        size.setObjectName(f"{view.prefix}.cardMenu.clipSize")
+        add("larger", N_("Larger"), "project.freeform.resize", {"items": items, "step": 1}, menu=size)
+        add("smaller", N_("Smaller"), "project.freeform.resize", {"items": items, "step": -1}, menu=size)
+        card = (self.view.get("freeform") or {}).get("cardSize") if isinstance(self.view.get("freeform"), dict) else None
+        default = card if isinstance(card, (int, float)) and not isinstance(card, bool) else 128
+        add("default", N_("Default"), "project.freeform.resize", {"items": items, "size": default}, menu=size)
+        m.insertMenu(first, size)
+        m.insertSeparator(first)
+        return m
+
+    def canvas_menu(self, view: BinView) -> QMenu:
+        """The Freeform background's menu: grid, arrangements, options, then the usual entries."""
+        m = self.background_menu(view)
+        first = m.actions()[0] if m.actions() else None
+        bin_id = view.data.get("bin")
+        top = QMenu(m)
+
+        def add(menu: QMenu, key: str, label: str, fn: Any, enabled: bool = True) -> None:
+            a = menu.addAction(tr(label))
+            a.setObjectName(f"{view.prefix}.canvasMenu.{key}")
+            a.setEnabled(enabled)
+            a.triggered.connect(fn)
+
+        add(top, "alignToGrid", N_("Align to Grid"), lambda: self.command.emit("project.freeform.alignToGrid", {"bin": bin_id}))
+        add(top, "resetToGrid", N_("Reset to Grid"), lambda: self.command.emit("project.freeform.reset", {"bin": bin_id}))
+        top.addSeparator()
+        add(top, "saveArrangement", N_("Save Arrangement…"), lambda: self.save_arrangement(view))
+        for key, label, cid in (
+            ("restoreArrangement", N_("Restore Arrangement"), "project.freeform.restoreArrangement"),
+            ("deleteArrangement", N_("Delete Arrangement"), "project.freeform.deleteArrangement"),
+        ):
+            sub = top.addMenu(tr(label))
+            sub.setObjectName(f"{view.prefix}.canvasMenu.{key}")
+            sub.setEnabled(bool(view.arrangements))
+            for name in view.arrangements:
+                a = sub.addAction(name)
+                a.triggered.connect(lambda _c=False, n=name, c=cid: self.command.emit(c, {"name": n, "bin": bin_id}))
+        top.addSeparator()
+        add(top, "options", N_("Freeform View Options…"), self.freeform_options)
+        top.addSeparator()
+        m.insertActions(first, top.actions())
+        return m
+
+    def save_arrangement(self, view: BinView) -> None:
+        name, ok = QInputDialog.getText(self, tr("Save Arrangement"), tr("Name:"), text=fmt("Arrangement {n}", n=len(view.arrangements) + 1))
+        if ok and name.strip():
+            self.command.emit("project.freeform.saveArrangement", {"name": name.strip(), "bin": view.data.get("bin")})
+
+    def freeform_options(self) -> None:
+        opts = self.view.get("freeform") if isinstance(self.view.get("freeform"), dict) else {}
+        dlg = FreeformOptionsDialog(opts, self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self.set_view_cmd("project.freeform.options", dlg.values())
+
     def bin_menu(self, view: BinView, bin_id: int) -> QMenu:
         m = QMenu(self)
         m.setObjectName(f"{view.prefix}.binMenu")
@@ -1641,9 +2186,8 @@ class ProjectPanel(QWidget):
         item("automateToSequence", N_("Automate to Sequence…"), lambda: self.invoke.emit("clip.automateToSequence"), bool(view.selected_items()))
         item("find", N_("Find…"), lambda: self.invoke.emit("edit.find"))
         m.addSeparator()
-        for key, label in (("list", N_("List")), ("icon", N_("Icon"))):
+        for key, label in (("list", N_("List")), ("icon", N_("Icon")), ("freeform", N_("Freeform"))):
             item(f"view.{key}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
-        item("view.freeform", N_("Freeform"), None, False, False)
         m.addSeparator()
         for key, label, shortcut in TOGGLES:
             on = bool(self.view.get(key))
@@ -1682,7 +2226,7 @@ class ProjectPanel(QWidget):
             a.triggered.connect(lambda _c=False, s=slot: self.set_view_cmd("project.viewPreset.restore", {"slot": s}))
         item("manageViewPresets", N_("Manage Saved View Presets"), self.manage_presets, bool(filled))
         m.addSeparator()
-        item("freeformOptions", N_("Freeform View Options…"), None, False)
+        item("freeformOptions", N_("Freeform View Options…"), self.freeform_options, view.mode == "freeform")
         self._load_presets()
 
     def _load_presets(self) -> None:
