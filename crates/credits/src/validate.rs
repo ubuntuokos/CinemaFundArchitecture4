@@ -271,7 +271,9 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
         let (sx0, sx1) = (w * TITLE_SAFE_MARGIN, w * (1.0 - TITLE_SAFE_MARGIN));
         let (sy0, sy1) = (h * TITLE_SAFE_MARGIN, h * (1.0 - TITLE_SAFE_MARGIN));
         let mut unsafe_reported = false;
-        for e in pg.layers.iter().filter(|e| e.effect == "graphic_text") {
+        for (li, e) in pg.layers.iter().enumerate().filter(|(_, e)| e.effect == "graphic_text") {
+            // the row of the layer's own block, else the page's
+            let row = pg.layer_rows.get(li).copied().filter(|r| *r > 0).or(row);
             let text = text_of(e, "text");
             if text.trim().is_empty() {
                 continue;

@@ -134,3 +134,11 @@ fn many_issues_of_one_kind_are_capped() {
     assert_eq!(v.iter().filter(|i| i.code == "low-contrast").count(), 50);
     assert!(v.iter().any(|i| i.code == "more-issues" && i.values.get("more").is_some_and(|m| m == "70")));
 }
+
+#[test]
+fn layer_issues_point_at_their_block_row() {
+    let st = Styling::from_json(r##"{"contentStyles":[{"name":"Dark","body":{"color":"#222222"}}]}"##).unwrap();
+    let v = codes("Body,Style\nFine,Centered\n,\nToo dark,Dark\n", &st);
+    let dark = v.iter().find(|(c, _, _)| *c == "low-contrast").unwrap();
+    assert_eq!(dark.2, Some(4));
+}

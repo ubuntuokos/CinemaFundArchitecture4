@@ -5462,5 +5462,15 @@ def test_credits_issue_text_is_worded_from_code_and_values():
     import re
 
     src = (ROOT / "crates" / "credits" / "src" / "validate.rs").read_text(encoding="utf-8")
-    codes = set(re.findall(r'^//! \| `([a-z-]+)` \|', src, re.M))
+    codes = set(re.findall(r'^//! \| `([a-z-]+)` \|', src, re.MULTILINE))
     assert codes and codes <= set(ISSUE_TEXT), codes - set(ISSUE_TEXT)
+
+
+def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import local_number
+
+    monkeypatch.setattr(i18n.TR, "language", "hu")
+    assert local_number("7.47") == "7,47" and local_number("12") == "12" and local_number("v1.2.3") == "v1.2.3"
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert local_number("7.47") == "7.47"

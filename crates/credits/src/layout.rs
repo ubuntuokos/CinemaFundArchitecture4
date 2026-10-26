@@ -61,6 +61,8 @@ pub struct PageOut {
     /// `(uid, key)` of every layer: the key stays the same across refreshes while the layer's
     /// block is unchanged, so manual edits can be carried over.
     pub keys: Vec<(u64, String)>,
+    /// Spreadsheet row (1-based) of each layer's block, in the order of `layers`.
+    pub layer_rows: Vec<usize>,
     pub meta: GraphicMeta,
     pub duration: Tick,
     /// Empty time after the page; negative overlaps the next page.
@@ -99,6 +101,8 @@ struct Piece {
     pic: Option<Box<(String, f64, f64, usize)>>,
     /// Stable key of the layer: its block's content and its own name (see [`block_key`]).
     key: String,
+    /// Spreadsheet row (1-based) of the layer's block.
+    row: usize,
 }
 
 impl Piece {
@@ -209,7 +213,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
             if n == 1 {
                 let (e, bb) = ctx.text(b.row, "Body", &b.body.join("\n"), &cs.body, align, None)?;
-                out.push(Piece { key: String::new(), layer: e, b: bb, x, top, pic: None });
+                out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top, pic: None });
                 return Ok(out);
             }
             // pad every cell of a row to the row's line count so the columns stay in step
@@ -240,7 +244,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             let total = colw * n as f64 + gap * (n as f64 - 1.0);
             let mut left = left_of(x, total, align);
             for (e, bb) in measured {
-                out.push(Piece { key: String::new(), layer: e, b: bb, x: origin_in_box(left, colw, align), top, pic: None });
+                out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x: origin_in_box(left, colw, align), top, pic: None });
                 left += colw + gap;
             }
         }
@@ -248,7 +252,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             let wrap = finite_or(cs.wrap_width, 1200.0).clamp(10.0, 100_000.0) * s;
             let text = b.body.iter().map(|c| c.replace('\n', " ")).collect::<Vec<_>>().join(&cs.flow_separator);
             let (e, bb) = ctx.text(b.row, "Body", &text, &cs.body, align, Some(wrap))?;
-            out.push(Piece { key: String::new(), layer: e, b: bb, x: left_of(x, wrap, align), top, pic: None });
+            out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x: left_of(x, wrap, align), top, pic: None });
         }
         BodyLayout::Paragraphs => {
             let wrap = finite_or(cs.wrap_width, 1200.0).clamp(10.0, 100_000.0) * s;
@@ -257,7 +261,7 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
             for (k, cell) in b.body.iter().enumerate() {
                 let (e, bb) = ctx.text(b.row, &format!("Paragraph {}", k + 1), cell, &cs.body, align, Some(wrap))?;
                 let h = bb[3] - bb[1];
-                out.push(Piece { key: String::new(), layer: e, b: bb, x: left_of(x, wrap, align), top: y, pic: None });
+                out.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x: left_of(x, wrap, align), top: y, pic: None });
                 y += h + gap;
             }
         }
@@ -304,6 +308,7 @@ fn lay_pictures(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, anchor_x: f64, alig
         set(&mut e, "fill", ParamValue::Bool(false));
         let top_k = top + (row_h - h) / 2.0;
         out.push(Piece {
+            row: b.row,
             key: String::new(),
             layer: e,
             b: [-w / 2.0, -h / 2.0, w / 2.0, h / 2.0],
@@ -327,7 +332,7 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
             let mut y = top;
             if let Some(h) = &b.head {
                 let (e, bb) = ctx.text(b.row, "Head", h, &cs.head, cs.align, None)?;
-                let p = Piece { key: String::new(), layer: e, b: bb, x: spine_x, top: y, pic: None };
+                let p = Piece { row: 0, key: String::new(), layer: e, b: bb, x: spine_x, top: y, pic: None };
                 y += p.height() + head_gap;
                 pieces.push(p);
             }
@@ -339,7 +344,7 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
             if !b.tails.is_empty() {
                 let text = b.tails.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n");
                 let (e, bb) = ctx.text(b.row, "Tail", &text, &cs.tail, cs.align, None)?;
-                pieces.push(Piece { key: String::new(), layer: e, b: bb, x: spine_x, top: y + tail_gap, pic: None });
+                pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x: spine_x, top: y + tail_gap, pic: None });
             }
         }
         Orientation::Horizontal => {
@@ -353,7 +358,15 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
             let at_baseline = |bb: [f64; 4], baseline: Option<f64>| baseline.map(|bl| bl + bb[1]).unwrap_or(top);
             if let Some(h) = &b.head {
                 let (e, bb) = ctx.text(b.row, "Head", h, &cs.head, Align::Right, None)?;
-                pieces.push(Piece { key: String::new(), layer: e, b: bb, x: spine_x - head_gap / 2.0, top: at_baseline(bb, first_baseline), pic: None });
+                pieces.push(Piece {
+                    row: 0,
+                    key: String::new(),
+                    layer: e,
+                    b: bb,
+                    x: spine_x - head_gap / 2.0,
+                    top: at_baseline(bb, first_baseline),
+                    pic: None,
+                });
             }
             let right = body.iter().map(Piece::right).reduce(f64::max).unwrap_or(spine_x + head_gap / 2.0);
             let single_column = cs.layout == BodyLayout::Grid && body.len() == 1 && b.pictures.is_empty();
@@ -369,12 +382,12 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
                         let line: usize = b.body.iter().take(*at).map(|c| c.split('\n').count()).sum();
                         let bl = first_baseline.map(|b0| b0 + advance * line as f64);
                         let (e, bb) = ctx.text(b.row, &format!("Tail {}", k + 1), t, &cs.tail, Align::Left, None)?;
-                        pieces.push(Piece { key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, bl), pic: None });
+                        pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, bl), pic: None });
                     }
                 } else {
                     let text = b.tails.iter().map(|(_, t)| t.as_str()).collect::<Vec<_>>().join("\n");
                     let (e, bb) = ctx.text(b.row, "Tail", &text, &cs.tail, Align::Left, None)?;
-                    pieces.push(Piece { key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, first_baseline), pic: None });
+                    pieces.push(Piece { row: 0, key: String::new(), layer: e, b: bb, x, top: at_baseline(bb, first_baseline), pic: None });
                 }
             }
         }
@@ -505,6 +518,7 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
                 _ => String::new(),
             };
             p.key = piece_key(bk, nth, k, &name);
+            p.row = b.row;
         }
         y += bh;
         pieces.extend(ps_);
@@ -603,9 +617,11 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     };
     let mut layers = Vec::with_capacity(pieces.len());
     let mut keys = Vec::with_capacity(pieces.len());
+    let mut layer_rows = Vec::with_capacity(pieces.len());
     let mut pictures = Vec::new();
     for p in pieces {
         let p_key = p.key;
+        layer_rows.push(p.row);
         let mut e = p.layer;
         let y = p.top + dy - p.b[1];
         set(&mut e, "position", ParamValue::Vec2(Vec2::new(p.x, y)));
@@ -623,7 +639,7 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     let name = page.blocks.iter().find_map(|b| b.head.clone().or_else(|| b.body.first().cloned())).unwrap_or_default();
     let name = name.lines().next().unwrap_or("").chars().take(40).collect::<String>();
     let name = if name.trim().is_empty() { format!("Credits {}", index + 1) } else { format!("Credits {}: {}", index + 1, name.trim()) };
-    Ok(PageOut { name, behaviour: ps.behaviour, layers, keys, meta, duration, gap_after, content_height: content_h, pictures, fade_in, fade_out })
+    Ok(PageOut { name, behaviour: ps.behaviour, layers, keys, layer_rows, meta, duration, gap_after, content_height: content_h, pictures, fade_in, fade_out })
 }
 
 /// Lay out `credits` for `frame` with `styling`.
