@@ -19,6 +19,12 @@ MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_TIMEOUT = 30
 # The Qt-only page of the Hardware & Devices group: the accelerator inventory (`cfa4-cli hardware`).
 ACCELERATORS_PAGE = "accelerators"
+# The Qt-only page of Media & Playback: the codec table (`cfa4-cli codecs`) and the decoding
+# settings, which move here from the Playback page.
+DECODING_PAGE = "decoding"
+DECODING_FIELDS = ("playback.hardwareDecoding", "playback.draftDecode")
+# Pages the window adds itself: no engine category, so no `settings reset` for them.
+QT_ONLY_PAGES = (ACCELERATORS_PAGE, DECODING_PAGE)
 # Bounded read of the system PCI id database (hwdata / pciutils) for device names.
 PCI_IDS_PATHS = (Path("/usr/share/hwdata/pci.ids"), Path("/usr/share/misc/pci.ids"))
 MAX_PCI_IDS_BYTES = 8 * 1024 * 1024
@@ -86,6 +92,11 @@ def run_save(cli: Path, changes: dict[str, Any], data_dir: Path | None = None) -
 
 def run_hardware(cli: Path) -> Hardware:
     return Hardware.parse(run_cli(cli, ["hardware"]))
+
+
+def run_codecs(cli: Path) -> Codecs:
+    # the hardware decoder probe can wait on a driver; give it the most time a call may take
+    return Codecs.parse(run_cli(cli, ["codecs"], timeout=MAX_TIMEOUT))
 
 
 def _str(value: Any, default: str = "") -> str:
@@ -172,10 +183,13 @@ class Schema:
         raw_groups = [g for g in raw.get("groups") or [] if isinstance(g, dict) and isinstance(g.get("id"), str)]
         known = {g["id"] for g in raw_groups}
         pages: list[Page] = []
+        decoding: list[Field] = []
         for c in raw["categories"]:
             if not isinstance(c, dict) or not isinstance(c.get("id"), str):
                 continue
-            fields = tuple(f for f in (Field.parse(x) for x in c.get("fields") or []) if f is not None)
+            parsed = [f for f in (Field.parse(x) for x in c.get("fields") or []) if f is not None]
+            decoding += [f for f in parsed if f.key in DECODING_FIELDS]
+            fields = tuple(f for f in parsed if f.key not in DECODING_FIELDS)
             group = _str(c.get("group"), "general")
             # a page of a group the schema does not list still shows, under General
             pages.append(Page(c["id"], _str(c.get("title"), c["id"]), group if group in known else "general", fields))
@@ -184,6 +198,10 @@ class Schema:
             members = [p for p in pages if p.group == g["id"]]
             if g["id"] == "hardware":
                 members.insert(0, Page(ACCELERATORS_PAGE, "Accelerators (GPU / NPU)", "hardware"))
+            if g["id"] == "media":
+                after = next((i + 1 for i, p in enumerate(members) if p.id == "media"), len(members))
+                ordered = tuple(sorted(decoding, key=lambda f: DECODING_FIELDS.index(f.key)))
+                members.insert(after, Page(DECODING_PAGE, "Decoding & Encoding", "media", ordered))
             if members:
                 groups.append(Group(g["id"], _str(g.get("title"), g["id"]), tuple(members)))
         if not raw_groups and pages:
@@ -278,6 +296,54 @@ class Hardware:
             plans.append(Plan(p["workload"], chain, skipped))
         notes = tuple(n for n in inv.get("notes") or [] if isinstance(n, str))
         return Hardware(devices, tuple(plans), notes)
+
+
+@dataclass(frozen=True)
+class CodecRow:
+    codec: str
+    kind: str
+    decode: str
+    decode_note: str
+    hardware_decode: str | None
+    encode: str
+    export_format: str | None
+
+
+@dataclass(frozen=True)
+class Backend:
+    """A media backend found or not found on this machine (hardware decoder, GStreamer)."""
+
+    name: str | None
+    reason: str
+
+
+@dataclass(frozen=True)
+class Codecs:
+    rows: tuple[CodecRow, ...]
+    hardware_decoder: Backend
+    gstreamer: Backend
+    gstreamer_compiled_in: bool
+
+    @staticmethod
+    def parse(raw: Any) -> Codecs:
+        if not isinstance(raw, dict) or not isinstance(raw.get("codecs"), list):
+            raise SettingsBackendError("codec report must be an object with codecs")
+        rows = tuple(
+            CodecRow(r["codec"], _str(r.get("kind"), "video"), _str(r.get("decode"), "none"), _str(r.get("decodeNote")),
+                     r.get("hardwareDecode") if isinstance(r.get("hardwareDecode"), str) else None,
+                     _str(r.get("encode"), "none"),
+                     r.get("exportFormat") if isinstance(r.get("exportFormat"), str) else None)
+            for r in raw["codecs"] if isinstance(r, dict) and isinstance(r.get("codec"), str)
+        )
+        hw = raw.get("hardwareDecoder") if isinstance(raw.get("hardwareDecoder"), dict) else {}
+        gst = raw.get("gstreamer") if isinstance(raw.get("gstreamer"), dict) else {}
+        return Codecs(
+            rows,
+            Backend(hw.get("backend") if isinstance(hw.get("backend"), str) else None, _str(hw.get("reason"))),
+            Backend(gst.get("version") if gst.get("available") is True and isinstance(gst.get("version"), str) else None,
+                    _str(gst.get("reason"))),
+            gst.get("compiledIn") is True,
+        )
 
 
 def pci_name(vendor: int, device: int, paths: tuple[Path, ...] = PCI_IDS_PATHS) -> str | None:

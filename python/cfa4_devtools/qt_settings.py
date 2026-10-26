@@ -50,7 +50,10 @@ from PySide6.QtWidgets import (
 
 from cfa4_devtools.settings_backend import (
     ACCELERATORS_PAGE,
+    DECODING_PAGE,
+    QT_ONLY_PAGES,
     WORKLOAD_TITLES,
+    Codecs,
     Field,
     Hardware,
     Page,
@@ -60,6 +63,7 @@ from cfa4_devtools.settings_backend import (
     duration_limits,
     pci_name,
     run_cli,
+    run_codecs,
     run_hardware,
     run_load,
     run_save,
@@ -108,6 +112,8 @@ class SettingsDialog(QDialog):
         self.edited: dict[str, Any] = {}
         self.hardware: Hardware | None = None
         self.hardware_error = ""
+        self.codecs: Codecs | None = None
+        self.codecs_error = ""
         self.page_widgets: dict[str, QWidget] = {}
         self.enablers: dict[str, list[QWidget]] = {}
 
@@ -166,12 +172,29 @@ class SettingsDialog(QDialog):
         cli, data_dir = self.cli, self.data_dir
         self._run(lambda: run_load(cli, data_dir), self._loaded, self._load_failed)
         self._refresh_hardware()
+        self._refresh_codecs()
 
     def _refresh_hardware(self) -> None:
         cli = self.cli
         if cli is None:
             return
         self._run(lambda: run_hardware(cli), self._hardware_loaded, self._hardware_failed)
+
+    def _refresh_codecs(self) -> None:
+        cli = self.cli
+        if cli is None:
+            return
+        self.codecs, self.codecs_error = None, ""
+        self._rebuild_codecs()
+        self._run(lambda: run_codecs(cli), self._codecs_loaded, self._codecs_failed)
+
+    def _codecs_loaded(self, codecs: Any) -> None:
+        self.codecs, self.codecs_error = codecs, ""
+        self._rebuild_codecs()
+
+    def _codecs_failed(self, message: str) -> None:
+        self.codecs, self.codecs_error = None, message
+        self._rebuild_codecs()
 
     def _loaded(self, result: Any, pending: dict[str, Any] | None = None, page: str | None = None) -> None:
         """Show freshly loaded settings; `pending` are unsaved edits to keep, `page` the page to reopen."""
@@ -183,7 +206,7 @@ class SettingsDialog(QDialog):
         self._build(page)
         self.status.setText("")
         self.ok_button.setEnabled(True)
-        self.reset_button.setEnabled(True)
+        self._show_page(self.tree.currentItem())  # Reset Page follows the shown page
 
     def _load_failed(self, message: str) -> None:
         self.status.setText(f"Could not read the settings: {message}")
@@ -226,7 +249,12 @@ class SettingsDialog(QDialog):
                 item = QTreeWidgetItem([page.title])
                 item.setData(0, PAGE_ROLE, page.id)
                 head.addChild(item)
-                widget = self._accelerators_page() if page.id == ACCELERATORS_PAGE else self._fields_page(page)
+                if page.id == ACCELERATORS_PAGE:
+                    widget = self._accelerators_page()
+                elif page.id == DECODING_PAGE:
+                    widget = self._decoding_page(page)
+                else:
+                    widget = self._fields_page(page)
                 widget.setObjectName(f"settings.category.{page.id}")
                 self.page_widgets[page.id] = widget
                 self.stack.addWidget(widget)
@@ -241,7 +269,7 @@ class SettingsDialog(QDialog):
         widget = self.page_widgets.get(page) if isinstance(page, str) else None
         if widget is not None:
             self.stack.setCurrentWidget(widget)
-            self.reset_button.setEnabled(page != ACCELERATORS_PAGE and self.schema is not None)
+            self.reset_button.setEnabled(page not in QT_ONLY_PAGES and self.schema is not None)
 
     def current_page(self) -> str | None:
         item = self.tree.currentItem()
@@ -249,6 +277,12 @@ class SettingsDialog(QDialog):
         return page if isinstance(page, str) else None
 
     def _fields_page(self, page: Page) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(self._fields_body(page))
+        return scroll
+
+    def _fields_body(self, page: Page) -> QWidget:
         body = QWidget()
         # a grid, not a QFormLayout: it gives wrapped labels their full height next to small controls
         grid = QGridLayout(body)
@@ -272,10 +306,7 @@ class SettingsDialog(QDialog):
         if not page.fields:
             grid.addWidget(QLabel("This page has no settings in the Qt window yet."), 0, 0)
         grid.setRowStretch(max(len(page.fields), 1), 1)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(body)
-        return scroll
+        return body
 
     def _set(self, key: str, value: Any) -> None:
         self.edited[key] = value
@@ -415,6 +446,107 @@ class SettingsDialog(QDialog):
         button.clicked.connect(pick)
         return button
 
+    # ------------------------------------------------------------------ decoding & encoding
+
+    def _decoding_page(self, page: Page) -> QWidget:
+        body = QWidget()
+        lay = QVBoxLayout(body)
+        lay.addWidget(self._heading("Decoding"))
+        lay.addWidget(self._fields_body(page))
+        lay.addWidget(self._heading("On this machine"))
+        holder = QWidget()
+        self.codec_layout = QVBoxLayout(holder)
+        self.codec_layout.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(holder)
+        self._fill_codecs()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(body)
+        return scroll
+
+    @staticmethod
+    def _heading(text: str) -> QLabel:
+        label = QLabel(text)
+        font = QFont(label.font())
+        font.setBold(True)
+        label.setFont(font)
+        return label
+
+    def _rebuild_codecs(self) -> None:
+        if DECODING_PAGE not in self.page_widgets:
+            return
+        while self.codec_layout.count():
+            item = self.codec_layout.takeAt(0)
+            if item is not None and item.widget() is not None:
+                item.widget().deleteLater()
+        self._fill_codecs()
+
+    def _fill_codecs(self) -> None:
+        lay = self.codec_layout
+        intro = QLabel(
+            "Read-only: what CFA4 decodes and encodes here. Its own software codecs always work; a hardware "
+            "decoder takes the streams it supports while Hardware decoding is on, and hands back to software "
+            "on any error."
+        )
+        intro.setWordWrap(True)
+        lay.addWidget(intro)
+        refresh = self._button("settings.codecs.refresh", "Detect Again", self._refresh_codecs)
+        lay.addWidget(refresh, 0, Qt.AlignmentFlag.AlignLeft)
+        if self.codecs is None:
+            lay.addWidget(QLabel(f"Detection failed: {self.codecs_error}" if self.codecs_error else "Detecting…"))
+            return
+        c = self.codecs
+        hw = QLabel(
+            f"Hardware decoder: {c.hardware_decoder.name}" if c.hardware_decoder.name
+            else f"Hardware decoder: none ({c.hardware_decoder.reason or 'not found'}). Install your GPU vendor's "
+                 "driver (NVIDIA: the proprietary driver; AMD / Intel: the VA-API driver) to decode H.264 and HEVC "
+                 "in hardware."
+        )
+        hw.setObjectName("settings.codecs.hardwareDecoder")
+        hw.setWordWrap(True)
+        lay.addWidget(hw)
+        if c.gstreamer.name:
+            gst_text = f"GStreamer backend: {c.gstreamer.name} (fallback for files CFA4 does not open itself)"
+        elif c.gstreamer_compiled_in:
+            gst_text = f"GStreamer backend: not available ({c.gstreamer.reason or 'not installed'})"
+        else:
+            gst_text = "GStreamer backend: not part of this build"
+        gst = QLabel(gst_text)
+        gst.setObjectName("settings.codecs.gstreamer")
+        gst.setWordWrap(True)
+        lay.addWidget(gst)
+        table = QTableWidget(len(c.rows), 5)
+        table.setObjectName("settings.codecs.table")
+        table.setHorizontalHeaderLabels(["Codec", "Decode", "Hardware decode", "Encode", "Notes"])
+        words = {"software": "Software", "hardware": "Hardware only", "none": "—"}
+        for row, r in enumerate(c.rows):
+            cells = [r.codec, words.get(r.decode, r.decode), r.hardware_decode or "—", words.get(r.encode, r.encode),
+                     r.decode_note]
+            for col, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                if col == 3 and r.export_format and r.encode != "none":
+                    item.setToolTip(f"Export ▸ {r.export_format}")
+                table.setItem(row, col, item)
+        self._read_only(table)
+        header = table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        header.resizeSection(0, 170)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        table.setWordWrap(True)
+        # the page scrolls; the table shows every row instead of a second scroll bar
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        def fit(*_args: Any) -> None:
+            table.resizeRowsToContents()
+            rows = sum(table.rowHeight(i) for i in range(table.rowCount()))
+            table.setFixedHeight(header.height() + rows + 2 * table.frameWidth())
+
+        header.sectionResized.connect(fit)  # wrapped rows change height with the column width
+        fit()
+        lay.addWidget(table)
+
     # ------------------------------------------------------------------ accelerators
 
     def _accelerators_page(self) -> QWidget:
@@ -488,7 +620,7 @@ class SettingsDialog(QDialog):
         """While a save or reset runs, nothing can be edited, saved, reset or closed."""
         for w in (self.tree, self.stack, self.ok_button, self.cancel_button):
             w.setEnabled(not busy)
-        self.reset_button.setEnabled(not busy and self.current_page() not in (None, ACCELERATORS_PAGE))
+        self.reset_button.setEnabled(not busy and self.current_page() not in (None, *QT_ONLY_PAGES))
         self.status.setText(message)
 
     def reject(self) -> None:
@@ -510,7 +642,7 @@ class SettingsDialog(QDialog):
 
     def _reset_page(self) -> None:
         page = self.current_page()
-        if self.cli is None or self.schema is None or page is None or page == ACCELERATORS_PAGE:
+        if self.cli is None or self.schema is None or page is None or page in QT_ONLY_PAGES:
             return
         answer = QMessageBox.question(
             self, "Reset Page", "Set every setting on this page back to its default now? Other unsaved edits are kept.",

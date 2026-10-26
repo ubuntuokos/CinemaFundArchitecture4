@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-10-26 · **Change:** new file (phase 1 of the Settings / Hardware menu plan)
+> **Last updated:** 2026-10-26 · **Change:** minor (phase 2: Decoding & Encoding page, `cfa4-cli codecs`)
 
 The Settings window of the Qt 6 shell (`python/cfa4_devtools/qt_settings.py`, Edit ▸ Settings…,
 Ctrl+,). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
@@ -22,6 +22,10 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
     `CFA4_DATA_DIR` / `XDG_DATA_HOME/cfa4`).
   - `cfa4-cli hardware` prints the accelerator inventory (`cfa4-accel` sysfs probe), the backend
     chain per workload and the vendor coverage.
+  - `cfa4-cli codecs` prints what this machine decodes and encodes: CFA4's own codecs
+    ([codec-parity.md](codec-parity.md)), the hardware decoder `cfa4_platform::register` found
+    (NVDEC or VA-API, for H.264 and HEVC), the export formats whose encoder is available here
+    (HEVC / AV1 only through a hardware encoder) and the GStreamer backend's state.
 - OK saves only the changed keys; Reset Page… resets one category after a confirmation and keeps
   unsaved edits of the other pages. Settings the engine stores but does not act on yet are shown
   greyed out with "no effect yet".
@@ -33,7 +37,7 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
 | General | General, Auto Save, Plugins |
 | Appearance | Appearance, Labels |
 | Editing | Color, Graphics, Timeline, Trim |
-| Media & Playback | Audio, Media, Media Cache, Playback |
+| Media & Playback | Audio, Media, **Decoding & Encoding** (Qt only), Media Cache, Playback |
 | Hardware & Devices | **Accelerators (GPU / NPU)** (read-only, Qt only), Audio Hardware, Memory |
 | Local AI | Media Analysis & Transcription |
 
@@ -41,9 +45,22 @@ Removed from the schema in phase 1 (keys still load from old files): `media.hard
 (an unwired duplicate of `playback.hardwareDecoding`) and `media.proresHardwareEncoding`
 (macOS VideoToolbox only, not a Linux target).
 
+## Decoding & Encoding (phase 2)
+
+The page holds the decoding settings that work today, moved here from Playback in the Qt window
+(same keys, `playback.hardwareDecoding` and `playback.draftDecode`), and a read-only "On this
+machine" table with the hardware decoder, the GStreamer backend and one row per codec. When no
+hardware decoder is found the page says which vendor driver to install; CFA4 never installs
+drivers itself. Reset Page is off on the Qt-only pages: their keys belong to engine categories
+(Playback) and reset with them.
+
+Planned for this page once the engine acts on them: decode / encode / proxy threads, a backend
+per codec where several exist (own software, VA-API, NVDEC, GStreamer), decoder and encoder GPU,
+maximum hardware resolution, and the default GPU rendering of exports.
+
 ## Later phases
 
-Decoding & Encoding page (codec settings from [codec-parity.md](codec-parity.md)), devices
+Devices
 (cameras, storage, monitors, drawing tablets), Local AI models, Publishing & providers, and the
 System (root) section with confirmation-gated helpers (GPU Unlock as an optional, separately
 installed component). Secret storage (tokens, passwords) is designed in a separate security
@@ -54,7 +71,9 @@ project; no token value is ever written to settings files, logs or projects.
 `settings.window`, `settings.categories`, `settings.page`, `settings.category.<page>`,
 `settings.<key>` (and `settings.<unitKey>` for a duration's unit), `settings.ok`,
 `settings.cancel`, `settings.reset`, `settings.accelerators.devices`,
-`settings.accelerators.plans`, `settings.accelerators.refresh`, `menu.edit.settings`.
+`settings.accelerators.plans`, `settings.accelerators.refresh`, `settings.codecs.table`,
+`settings.codecs.hardwareDecoder`, `settings.codecs.gstreamer`, `settings.codecs.refresh`,
+`menu.edit.settings`.
 
 ## Tests
 
