@@ -848,7 +848,6 @@ version = "0.10.0"
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
- "cfa4-accel",
  "cfa4-automation",
  "cfa4-codecs",
  "cfa4-engine",
@@ -862,6 +861,7 @@ dependencies = [
  "cfa4-platform",
  "cfa4-project",
  "cfa4-render",
+ "cfa4-route",
  "cfa4-testkit",
  "cfa4-time",
  "log",

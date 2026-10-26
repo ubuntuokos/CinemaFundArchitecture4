@@ -20,8 +20,8 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
   - `cfa4-cli settings schema|get|set|reset [arg]` reads and writes `<data dir>/preferences.json`
     through the same validated `prefs.*` commands as the desktop app (`--data-dir`, else
     `CFA4_DATA_DIR` / `XDG_DATA_HOME/cfa4`).
-  - `cfa4-cli hardware` prints the accelerator inventory (`cfa4-accel` sysfs probe), the backend
-    chain per workload and the vendor coverage.
+  - `cfa4-cli hardware` prints the accelerator inventory (`cfa4-route` sysfs probe), the backend
+    chain per family from the routing table and the vendor coverage.
 - OK saves only the changed keys; Reset Page… resets one category after a confirmation and keeps
   unsaved edits of the other pages. Settings the engine stores but does not act on yet are shown
   greyed out with "no effect yet".
