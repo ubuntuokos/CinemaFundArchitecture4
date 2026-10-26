@@ -573,6 +573,8 @@ impl Meta<'_> {
         let mut transforms = Vec::new();
         let mut hvcc = None;
         for p in self.properties(item) {
+            // every resolved association is a copy (a grid may repeat one tile many times)
+            budget.take_bytes(std::mem::size_of::<Property>())?;
             match p {
                 Property::Hvcc(h) => hvcc = Some(*h),
                 Property::Ispe(w, h) => size = Some((*w, *h)),

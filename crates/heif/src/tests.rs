@@ -196,3 +196,34 @@ fn repeated_property_copies_are_charged_to_the_budget() {
     let small = Item { id: 10, kind: *b"grid", data: grid_data(2, 2, 128, 96), references: vec![(*b"dimg", vec![1; 4])], ..Item::default() };
     assert!(parse(&build(10, &[small, tile])).is_ok());
 }
+
+/// Repeated `ipma` entries can tie one rotation to a tile thousands of times, and a grid copies
+/// the tile's properties per reference: every copy counts against the budget.
+#[test]
+fn repeated_property_associations_are_charged_to_the_budget() {
+    let meta = |grid: Vec<u8>, refs: usize| {
+        let len = grid.len() as u64;
+        let mut m = Meta {
+            file: &[],
+            primary: 10,
+            types: HashMap::from([(10, *b"grid"), (1, *b"hvc1")]),
+            locations: HashMap::from([
+                (10, Location { method: 1, base: 0, extents: vec![Extent { offset: 0, length: len }] }),
+                (1, Location { method: 1, base: 0, extents: vec![Extent { offset: 0, length: 4 }] }),
+            ]),
+            idat: &[],
+            properties: vec![Property::Hvcc(&[1, 2, 3]), Property::Ispe(64, 48), Property::Rotate(1)],
+            associations: HashMap::new(),
+            references: HashMap::from([((*b"dimg", 10), vec![1; refs])]),
+        };
+        m.associations.insert(1, [0, 1].into_iter().chain(std::iter::repeat_n(2, 30_000)).collect());
+        (m, grid)
+    };
+    let (mut m, grid) = meta(grid_data(16, 16, 1024, 768), 256);
+    m.idat = &grid;
+    assert!(matches!(m.image(10, 0, &mut Budget::for_source(grid.len())), Err(Error::Invalid(_))));
+    // a few references to that tile still resolve
+    let (mut m, grid) = meta(grid_data(2, 2, 128, 96), 4);
+    m.idat = &grid;
+    assert!(m.image(10, 0, &mut Budget::for_source(grid.len())).is_ok());
+}
