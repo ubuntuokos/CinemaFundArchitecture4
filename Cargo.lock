@@ -770,15 +770,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cfa4-accel"
-version = "0.10.0"
-dependencies = [
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "cfa4-apv"
 version = "0.10.0"
 dependencies = [
@@ -1340,6 +1331,16 @@ dependencies = [
  "rustix 1.1.5",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cfa4-route"
+version = "0.10.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]
