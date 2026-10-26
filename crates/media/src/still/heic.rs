@@ -167,6 +167,8 @@ fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samp
         e => MediaError::Decode(format!("{name}: HEVC: {e}")),
     };
     let mut dec = cfa4_hevc::Decoder::from_hvcc(hvcc).map_err(hevc_error)?;
+    // an image item holds one picture: whatever follows its access unit is never decoded
+    let data = first_access_unit(data, dec.nal_length_size().unwrap_or(4));
     let mut pictures = dec.decode(data, 0).map_err(hevc_error)?;
     pictures.extend(dec.flush());
     if let Some(e) = dec.take_error() {
@@ -206,6 +208,27 @@ fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samp
     };
     let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO };
     Ok(Rgba { width: p.width, height: p.height, px: frame.to_rgba8() })
+}
+
+/// The NAL units of `data` (each behind an `n`-byte big-endian length) up to the start of a
+/// second access unit: a VCL NAL unit starting a new picture (`first_slice_segment_in_pic_flag`),
+/// or an access unit delimiter / parameter set / prefix SEI after a picture's slices.
+fn first_access_unit(data: &[u8], n: usize) -> &[u8] {
+    let (mut at, mut seen_slice) = (0usize, false);
+    while let Some(len_bytes) = data.get(at..at.saturating_add(n)) {
+        let len = len_bytes.iter().fold(0usize, |v, &b| v.saturating_mul(256).saturating_add(usize::from(b)));
+        let start = at.saturating_add(n);
+        let Some(&[h0, _, h2]) = data.get(start..start.saturating_add(3)) else { break };
+        let kind = (h0 >> 1) & 0x3f;
+        let vcl = kind < 32;
+        let starts_picture = vcl && h2 & 0x80 != 0;
+        if seen_slice && (starts_picture || matches!(kind, 32..=35 | 39)) {
+            return data.get(..at).unwrap_or(data);
+        }
+        seen_slice |= vcl;
+        at = start.saturating_add(len);
+    }
+    data
 }
 
 /// The luma of `p` as 8-bit alpha in all four channels (`len` bytes): higher bit depths keep

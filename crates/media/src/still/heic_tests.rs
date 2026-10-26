@@ -128,3 +128,28 @@ fn nested_grid_canvases_are_charged_together() {
     let Err(e) = decode_image("one.heic", &one, None, Samples::Colour, &mut Live::default()) else { panic!("decoded") };
     assert!(e.to_string().contains("'jpeg'"), "{e}");
 }
+
+/// Only the first access unit of an image item is decoded: further pictures (a second slice
+/// with `first_slice_segment_in_pic_flag`, or parameter sets after the slices) are cut off.
+#[test]
+fn only_the_first_access_unit_is_decoded() {
+    let nal = |kind: u8, first: bool| {
+        let body = [kind << 1, 1, if first { 0x80 } else { 0 }, 0xaa];
+        let mut v = (body.len() as u32).to_be_bytes().to_vec();
+        v.extend_from_slice(&body);
+        v
+    };
+    let au1: Vec<u8> = [nal(32, false), nal(33, false), nal(34, false), nal(19, true), nal(1, false)].concat();
+    let mut data = au1.clone();
+    data.extend(nal(1, true));
+    data.extend(nal(1, false));
+    assert_eq!(first_access_unit(&data, 4), &au1[..]);
+    let mut data = au1.clone();
+    data.extend(nal(34, false));
+    data.extend(nal(1, true));
+    assert_eq!(first_access_unit(&data, 4), &au1[..]);
+    // a single access unit and truncated data stay as they are
+    assert_eq!(first_access_unit(&au1, 4), &au1[..]);
+    assert_eq!(first_access_unit(&au1[..7], 4), &au1[..7]);
+    assert_eq!(first_access_unit(&[], 4), &[] as &[u8]);
+}
