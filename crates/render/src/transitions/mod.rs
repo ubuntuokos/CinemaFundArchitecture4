@@ -154,6 +154,23 @@ impl Tx<'_> {
             _ => (1.0, 0.0),
         }
     }
+    /// Full-frame displacement for the eight-way `direction` of Slide: the cardinal
+    /// directions as [`Tx::dir`] × [`Tx::travel`], the diagonals (4–7: from north-west,
+    /// north-east, south-east, south-west) one frame width and one frame height at once.
+    pub fn shift8(&self) -> (f32, f32) {
+        let (w, h) = (self.wf.max(1.0), self.hf.max(1.0));
+        match self.choice("direction") {
+            4 => (w, h),
+            5 => (-w, h),
+            6 => (-w, -h),
+            7 => (w, -h),
+            _ => {
+                let (dx, dy) = self.dir();
+                let travel = self.travel();
+                (dx * travel, dy * travel)
+            }
+        }
+    }
     /// Frame extent along the direction of travel.
     pub fn travel(&self) -> f32 {
         let (dx, dy) = self.dir();

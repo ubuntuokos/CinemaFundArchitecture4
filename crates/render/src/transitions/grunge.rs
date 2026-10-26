@@ -138,7 +138,8 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
         }
         "grunge" => {
             let scale = t.px("scale").max(4.0);
-            let st = WipeStyle { feather: 2.0 * t.scale, border: t.px("edge_width"), border_color: t.color("edge_color"), aa: 1.0 };
+            // Feather (0 by default) softens the torn edge into cloud-like blotches
+            let st = WipeStyle { feather: 2.0 * t.scale + t.px("feather"), border: t.px("edge_width"), border_color: t.color("edge_color"), aa: 1.0 };
             field_wipe(t, st, move |x, y| {
                 let n = fbm(x / scale, y / scale, s) * 0.8 + vnoise(x / (scale * 0.15), y / (scale * 0.15), s + 9) * 0.2;
                 n * scale * 3.0
