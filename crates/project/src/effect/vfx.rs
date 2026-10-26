@@ -262,6 +262,34 @@ pub(super) fn defs() -> Vec<EffectDef> {
             ],
         ),
         video("reduce_interlace_flicker", "Reduce Interlace Flicker", BLUR, vec![fs("softness", "Softness", 0.0, (0.0, 10.0), (0.0, 10.0), "", 2)]),
+        // ---- Enhance (CFA4's own folder) ----
+        video(
+            "skin_smoothing",
+            "Skin Smoothing",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 50.0),
+                px("radius", "Radius", 10.0, 500.0, 60.0),
+                pct("smoothness", "Smoothness", 50.0),
+                pct("texture", "Keep Texture", 40.0),
+                col("skin_tone", "Skin Tone", [0.86, 0.67, 0.56, 1.0]),
+                pct("tolerance", "Tolerance", 40.0),
+                pct("softness", "Softness", 50.0),
+                b("whole_image", "Smooth Entire Image", false),
+                b("show_mask", "Show Mask", false),
+            ],
+        ),
+        video(
+            "low_light",
+            "Low Light",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 50.0),
+                px("radius", "Radius", 15.0, 500.0, 60.0),
+                fs("max_gain", "Max Brightening", 400.0, (100.0, 2000.0), (100.0, 1000.0), "%", 0),
+                b("show_illumination", "Show Illumination", false),
+            ],
+        ),
         // ---- Color Correction ----
         video(
             "asc_cdl",
@@ -1278,7 +1306,7 @@ mod tests {
         // nothing else sits in the current folders
         for d in effect_defs().iter().filter(|d| d.kind == EffectKind::Video && d.category.first() == Some(&"Video Effects")) {
             let f = d.category[1];
-            if f == "Obsolete" || d.category == crate::effect::STEREO_3D || crate::effect::CFA4_OWN.contains(&d.id) {
+            if f == "Obsolete" || crate::effect::OWN_FOLDERS.contains(&f) || crate::effect::CFA4_OWN.contains(&d.id) {
                 continue;
             }
             let listed = CATALOGUE.iter().any(|(cf, names)| *cf == f && names.contains(&d.name));

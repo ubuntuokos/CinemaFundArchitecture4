@@ -3622,3 +3622,11 @@
 	Time Span (seconds)	時間幅（秒）
 	Current Frame At	現在のフレームの位置
 	Blend Slices	スライスをブレンド
+	Enhance	補正
+	Skin Smoothing	肌のなめらか補正
+	Keep Texture	質感を保持
+	Skin Tone	肌の色
+	Smooth Entire Image	画像全体をなめらかに
+	Low Light	暗所補正
+	Max Brightening	最大明るさ補正
+	Show Illumination	照明を表示

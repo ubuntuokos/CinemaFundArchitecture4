@@ -255,6 +255,11 @@ const STYLIZE: &[&str] = &["Video Effects", "Stylize"];
 const TRANSFORM: &[&str] = &["Video Effects", "Transform"];
 /// CFA4's own folder (not in Premiere's bin): effects on over/under or side-by-side stereo frames.
 pub const STEREO_3D: &[&str] = &["Video Effects", "Stereoscopic 3D"];
+/// CFA4's own folder (not in Premiere's bin): retouch and picture-enhancement effects.
+pub const ENHANCE: &[&str] = &["Video Effects", "Enhance"];
+/// The Video Effects folders that are CFA4's own, so the Premiere catalogue checks skip them.
+/// Every one of them is still a folder of the Effects panel tree, like the rest.
+pub const OWN_FOLDERS: &[&str] = &["Stereoscopic 3D", "Enhance"];
 /// CFA4's own effects that sit in one of Premiere's folders.
 pub const CFA4_OWN: &[&str] = &["slit_scan"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
@@ -903,5 +908,29 @@ mod tests {
         assert!(effect_defs().len() > 90);
         assert_eq!(find_effect_by_name("Gaussian Blur").unwrap().id, "gaussian_blur");
         assert_eq!(intrinsic_video().len(), 3);
+    }
+
+    /// Everything an artist can apply has to be in a folder the Effects panel draws
+    /// (`panels/effects.rs` walks [`crate::vtransition::EFFECT_TOP_FOLDERS`]), else the effect
+    /// exists but nothing in the interface leads to it. Only three kinds have no folder on
+    /// purpose: the intrinsic parameter groups (Motion, Opacity, Volume…), which the Effect
+    /// Controls panel always shows, the graphic layer kinds, which Graphics ▸ New Layer creates,
+    /// and the obsolete transitions kept so old projects still render.
+    #[test]
+    fn every_effect_is_in_a_folder_the_effects_panel_shows() {
+        for d in effect_defs() {
+            if d.intrinsic || crate::graphic::is_layer_id(d.id) {
+                assert!(d.category.is_empty(), "{} has a folder but is not applied from the panel", d.id);
+                continue;
+            }
+            let top = d.category.first().copied().unwrap_or_default();
+            if top == "Obsolete" {
+                continue;
+            }
+            assert!(crate::vtransition::EFFECT_TOP_FOLDERS.contains(&top), "{} is in {:?}, which the Effects panel does not show", d.id, d.category);
+            // a sub-folder, or none: the panel lists folderless items (Balance, Mute, Volume…)
+            // after the folders of their top-level bin
+            assert!(d.category.len() <= 2, "{} has a path deeper than the panel's two levels: {:?}", d.id, d.category);
+        }
     }
 }
