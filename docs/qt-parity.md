@@ -25,7 +25,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 1.4 | Menu enablement follows the selection/state | ✅ | ✅ refreshed after every change | `test_main_window_with_fake_engine` |
 | 1.5 | Auto-save and crash-recovery journal | ✅ | 🟡 | `serve --autosave`, Recover / Not Now / Discard prompt; needs a kill-the-engine recovery test |
 | 1.6 | Save / Don't Save / Cancel on close | ✅ | 🟡 | implemented; no automated test yet |
-| 1.7 | Engine crash does not take the GUI down | n/a | 🟡 | GUI reports it and keeps running; automatic engine restart + recovery missing |
+| 1.7 | Engine crash does not take the GUI down | n/a | ✅ | GUI reports it and keeps running (`test_engine_that_dies_does_not_block_the_gui`); a fresh engine starts at once on the project that was open and offers the dead one's unsaved changes from the recovery journal (Recover brings them back); one that dies 3 times within a minute is left stopped with the message to restart CFA4 (`test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes`) |
 | 1.8 | Translations (12 languages) | ✅ | 🟡 | shared TSV catalogs + full Hungarian `hu.tsv` for the Qt GUI (`test_hungarian_catalog_covers_*`: every Qt string, every engine menu label); panel-specific engine data (track names) not translated, other languages only through the shared catalogs |
 | 1.9 | Wayland and X11 on every Ubuntu 26.04 flavour | 🟡 | ❌ | to be checked per flavour (VISION §3) |
 | 1.10 | Packaging (.deb, AppImage, Flatpak, tar.gz) with the Qt runtime | n/a | ❌ | ADR F8 phase 7 |

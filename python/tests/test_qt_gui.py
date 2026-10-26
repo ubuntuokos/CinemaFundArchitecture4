@@ -924,6 +924,56 @@ def test_engine_that_dies_does_not_block_the_gui(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes(app, tmp_path: Path):
+    """An engine that stops unexpectedly is restarted at once (on the project that was open); the
+    new one offers the dead one's unsaved changes from the recovery journal, and recovering brings
+    them back. One that keeps dying is left stopped."""
+    from cfa4_qt import main_window
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    data = tmp_path / "data"
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(data), "--autosave"])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("project.setNotes", {"text": "written before the crash"})
+        # the recovery journal has it
+        assert wait_until(app, lambda: any(data.rglob("snapshot.fcproj")), 20_000)
+        offers: list[dict] = []
+
+        def offer(cand: dict) -> None:
+            offers.append(cand)
+            win.execute("file.recover", {"id": cand.get("id")})
+
+        win._offer_recovery = offer
+        first = engine._process.pid
+        engine._process.kill()
+        assert wait_until(app, lambda: engine.running and engine._process.pid != first and bool(offers), 30_000)
+        assert win.engine_stopped_box.objectName() == "dialog.engineStopped"
+        assert "restarted" in win.engine_stopped_box.text()
+        notes: list[str] = []
+        engine.execute("project.notes", {}, on_reply=lambda r, _b: notes.append(str((r or {}).get("text"))))
+        assert wait_until(app, lambda: bool(notes), 10_000)
+        assert notes[-1] == "written before the crash", "the new engine has the dead one's unsaved change"
+        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "written before the crash", 20_000), win.notes.edit.toPlainText()
+        # a saved project is reopened from its file, not from the start arguments
+        win.project = {**(win.project or {}), "path": str(tmp_path / "a.fcproj")}
+        assert win.restart_args() == ["--data-dir", str(data), "--autosave", "--project", str(tmp_path / "a.fcproj")]
+        # an engine that keeps dying is left stopped
+        win._engine_restarts = [main_window.time.monotonic()] * main_window.MAX_RESTARTS
+        win.project = {**(win.project or {}), "path": None}
+        engine._process.kill()
+        assert wait_until(app, lambda: not engine.running and "restart CFA4" in win.engine_stopped_box.text(), 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def _items(project: dict) -> list[dict]:
     out: list[dict] = []
 

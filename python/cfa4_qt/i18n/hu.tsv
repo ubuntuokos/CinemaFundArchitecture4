@@ -1272,3 +1272,5 @@
 	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Hiba történt az ablak rajzolása közben. A projekt továbbra is nyitva van; a biztonság kedvéért mentse el.
 	Continue	Folytatás
 	Details: {path}	Részletek: {path}
+	Engine restarted	Motor újraindítva
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	A CFA4 motorja váratlanul leállt, és újraindult. A nem mentett változások a helyreállítási naplóban vannak; a motor felajánlja a visszaállításukat.

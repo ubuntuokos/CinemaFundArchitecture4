@@ -156,6 +156,15 @@ class EngineClient(QObject):
         threading.Thread(target=self._stderr_loop, name="cfa4-engine-stderr", daemon=True).start()
         self.call("hello", on_reply=self._on_hello)
 
+    def restart(self, args: list[str] | None = None) -> None:
+        """Start a fresh engine after this one stopped (``args`` replace the start arguments)."""
+        self.stop(timeout=2.0)
+        self._process = None
+        if args is not None:
+            self.args = list(args)
+        self.hello = {}
+        self.start()
+
     @property
     def running(self) -> bool:
         return self._process is not None and self._process.poll() is None

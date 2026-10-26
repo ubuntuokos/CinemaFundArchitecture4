@@ -4,6 +4,7 @@ engine command and every redraw follows the engine's ``projectChanged``."""
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from itertools import pairwise
 from typing import Any
@@ -31,7 +32,7 @@ from . import __version__, crash, theme
 from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
-from .engine import EngineClient
+from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
@@ -58,6 +59,9 @@ from .panels.tools import ToolsPanel
 from .panels.tts import TextToSpeechPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
+# an engine that stopped is restarted, unless it stopped this often within this many seconds
+MAX_RESTARTS = 3
+RESTART_WINDOW_S = 60.0
 LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
 # commands that can change which media an item shows, done or undone
 SOURCE_COMMANDS = frozenset({
@@ -185,6 +189,7 @@ class MainWindow(QMainWindow):
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
+        self._engine_restarts: list[float] = []
         self._quit_confirmed = False
 
         # egui's Darkest until the engine says which theme Settings ▸ Appearance selects
@@ -848,22 +853,57 @@ class MainWindow(QMainWindow):
         if self._closing:
             return
         self.events.log(f"{tr('The engine stopped')}: {reason}", error=True)
+        # a fresh engine at once, on the project that was open; the dead one's unsaved changes are
+        # in the recovery journal, which the new one offers (Recover / Not Now / Discard). An
+        # engine that keeps dying is left stopped.
+        now = time.monotonic()
+        self._engine_restarts = [t for t in self._engine_restarts if now - t < RESTART_WINDOW_S]
+        restarted = False
+        if len(self._engine_restarts) < MAX_RESTARTS:
+            self._engine_restarts.append(now)
+            try:
+                self.engine.restart(self.restart_args())
+                restarted = True
+            except EngineError as exc:
+                reason = f"{reason}\n{exc}"
+        if restarted:
+            self.revision = -1
+            self.clear_media_caches()
+            self.status_engine.setText(tr("Engine restarted"))
+            text = tr("The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.")
+        else:
+            text = tr("The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.")
         # window-modal but non-blocking: a nested event loop here would freeze the GUI's own
-        # handling of the stopped engine (and hang unattended runs)
-        box = QMessageBox(
-            QMessageBox.Icon.Critical,
-            tr("CFA4"),
-            tr(
-                "The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them."
-            )
-            + f"\n\n{reason}",
-            QMessageBox.StandardButton.Ok,
-            self,
-        )
+        # handling of the stopped engine (and hang unattended runs); one message at a time
+        old = getattr(self, "engine_stopped_box", None)
+        if old is not None:
+            try:
+                old.close()
+            except RuntimeError:
+                pass  # already closed and deleted
+        box = QMessageBox(QMessageBox.Icon.Critical, tr("CFA4"), text + f"\n\n{reason}", QMessageBox.StandardButton.Ok, self)
         box.setObjectName("dialog.engineStopped")
         box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         box.open()
         self.engine_stopped_box = box
+
+    def restart_args(self) -> list[str]:
+        """The engine's start arguments for a restart: the project that was open (saved) instead
+        of the one it started with; data directory and auto-save as before."""
+        args: list[str] = []
+        skip = False
+        path = (self.project or {}).get("path")
+        for a in self.engine.args:
+            if skip:
+                skip = False
+                continue
+            if isinstance(path, str) and path and a in ("--project", "--demo"):
+                skip = a == "--project"
+                continue
+            args.append(a)
+        if isinstance(path, str) and path:
+            args += ["--project", path]
+        return args
 
     def _on_event(self, ev: dict[str, Any]) -> None:
         kind = ev.get("event")
