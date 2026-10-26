@@ -28,6 +28,8 @@ pub(crate) enum AudioSync {
     Adts,
     Loas,
     Ac3,
+    /// DTS: core frames, each with the extension substream (DTS-HD) that follows it.
+    Dts,
 }
 
 impl Mode {
@@ -40,6 +42,7 @@ impl Mode {
             Codec::AacAdts => Mode::Audio(AudioSync::Adts),
             Codec::AacLatm => Mode::Audio(AudioSync::Loas),
             Codec::Ac3 | Codec::Eac3 => Mode::Audio(AudioSync::Ac3),
+            Codec::Dts => Mode::Audio(AudioSync::Dts),
             _ => Mode::Pes,
         }
     }
@@ -186,6 +189,7 @@ pub fn frame_bytes(codec: &Codec, b: &[u8]) -> Option<usize> {
         Codec::AacAdts => AudioSync::Adts,
         Codec::AacLatm => AudioSync::Loas,
         Codec::Ac3 | Codec::Eac3 => AudioSync::Ac3,
+        Codec::Dts => AudioSync::Dts,
         _ => return None,
     };
     frame_len(sync, b)
@@ -255,6 +259,31 @@ pub fn frame_info(codec: &Codec, b: &[u8]) -> Option<FrameInfo> {
 
 /// Whether the syncframe at the start of `b` is E-AC-3 (bsid 11-16) other than independent
 /// substream 0: a dependent substream (strmtyp 1) or another program (A/52 §E2.3.1.1-2).
+/// DTS core syncword (ETSI TS 102 114 §5.3.1, 16-bit big-endian).
+const DTS_CORE_SYNC: [u8; 4] = [0x7F, 0xFE, 0x80, 0x01];
+/// DTS extension substream syncword (ETSI TS 102 114 §7.5.1).
+const DTS_EXSS_SYNC: [u8; 4] = [0x64, 0x58, 0x20, 0x25];
+
+/// Bytes of the DTS core frame or extension substream whose header starts `b`.
+fn dts_frame_len(b: &[u8]) -> Option<usize> {
+    let word = |at: usize| b.get(at..at + 8).and_then(|w| w.first_chunk::<8>()).map(|w| u64::from_be_bytes(*w));
+    if b.get(..4)? == DTS_CORE_SYNC {
+        // FTYPE(1) SHORT(5) CPF(1) NBLKS(7) FSIZE(14): FSIZE is bits 46..60
+        let fsize = ((word(4)? >> 36) & 0x3FFF) as usize + 1;
+        return (fsize >= 96).then_some(fsize);
+    }
+    if b.get(..4)? == DTS_EXSS_SYNC {
+        // UserDefinedBits(8) nExtSSIndex(2) bHeaderSizeType(1) nuExtSSHeaderSize(8 | 12)
+        // nuExtSSFsize(16 | 20)
+        let w = word(4)?;
+        let wide = (w >> 53) & 1 == 1;
+        let (hbits, fbits) = if wide { (12, 20) } else { (8, 16) };
+        let size = ((w >> (53 - hbits - fbits)) & ((1 << fbits) - 1)) as usize + 1;
+        return (size >= 8).then_some(size);
+    }
+    None
+}
+
 fn eac3_joins_unit(b: &[u8]) -> bool {
     match b.get(2..6) {
         Some(&[b2, _, _, b5]) => (11..=16).contains(&(b5 >> 3)) && (b2 >> 6 == 1 || (b2 >> 3) & 7 != 0),
@@ -311,6 +340,7 @@ fn frame_len(sync: AudioSync, b: &[u8]) -> Option<usize> {
                 None
             }
         }
+        AudioSync::Dts => dts_frame_len(b),
     }
 }
 
@@ -625,7 +655,13 @@ impl Splitter {
                 Some(len) if self.next_frame == Some(at) || self.confirmed(sync, i, len) => {
                     // an E-AC-3 dependent substream or further program joins the access unit of
                     // the independent substream 0 before it, as in MP4 and Matroska
-                    if !(sync == AudioSync::Ac3 && self.open.is_some() && eac3_joins_unit(&self.buf[i..])) {
+                    // so does a DTS extension substream join the core frame before it
+                    let joins = match sync {
+                        AudioSync::Ac3 => eac3_joins_unit(&self.buf[i..]),
+                        AudioSync::Dts => self.buf.get(i..i + 4) == Some(&DTS_EXSS_SYNC[..]),
+                        _ => false,
+                    };
+                    if !(self.open.is_some() && joins) {
                         self.close(at);
                         let (pos, offset) = self.locate(at).unwrap_or((u64::MAX, 0));
                         let mut o = Open { start: at, pos, offset, pts: None, dts: None, key: true, disposable: false, vcl: false, picture: None };
@@ -646,9 +682,12 @@ impl Splitter {
                     // lost sync: look for the next header from the following byte
                     self.next_frame = None;
                     self.skipped += 1;
-                    let next = self.buf[i + 1..]
-                        .iter()
-                        .position(|&b| matches!((sync, b), (AudioSync::Ac3, 0x0B) | (AudioSync::Loas, 0x56) | (AudioSync::Mpa | AudioSync::Adts, 0xFF)));
+                    let next = self.buf[i + 1..].iter().position(|&b| {
+                        matches!(
+                            (sync, b),
+                            (AudioSync::Ac3, 0x0B) | (AudioSync::Loas, 0x56) | (AudioSync::Mpa | AudioSync::Adts, 0xFF) | (AudioSync::Dts, 0x7F)
+                        )
+                    });
                     match next {
                         Some(d) => {
                             self.skipped += d as u64;

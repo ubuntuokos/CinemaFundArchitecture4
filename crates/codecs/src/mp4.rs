@@ -83,6 +83,7 @@ fn audio_starts(file: &Mp4File, bytes: &crate::Src, ti: usize, rate: u32) -> Vec
         Some(CodecConfig::Mp3) => fixed_packet_samples(FixedFrames::MpegAudio, &first(), rate),
         Some(CodecConfig::Ac3 { .. }) => fixed_packet_samples(FixedFrames::Ac3, &first(), rate),
         Some(CodecConfig::Eac3 { .. }) => fixed_packet_samples(FixedFrames::Eac3, &first(), rate),
+        Some(CodecConfig::Dts { .. }) => fixed_packet_samples(FixedFrames::Dts, &first(), rate),
         _ => None,
     };
     let Some(frame) = frame else { return stamps };

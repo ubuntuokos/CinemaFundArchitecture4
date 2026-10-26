@@ -30,6 +30,8 @@ enum Inner {
     Symphonia(Box<dyn Decoder>),
     /// Our AC-3 and E-AC-3 decoder (ATSC A/52, Annex E).
     Ac3(Box<cfa4_ac3::Decoder>),
+    /// DTS: the core, DTS-HD High Resolution and Master Audio (`cfa4-dts`).
+    Dts(Box<cfa4_dts::cfa4::Decoder>),
     /// Our MPEG-1/2 audio Layer I and II decoder (ISO/IEC 11172-3, 13818-3).
     Mpa(Box<cfa4_mpa::Decoder>),
 }
@@ -167,6 +169,10 @@ impl PacketDecoder {
     pub fn ac3() -> Result<Self> {
         Ok(Self { inner: Inner::Ac3(Box::new(cfa4_ac3::Decoder::new())), channels: 0 })
     }
+    /// DTS (core, DTS-HD High Resolution, DTS-HD Master Audio). Packets hold whole frames.
+    pub fn dts() -> Self {
+        Self { inner: Inner::Dts(Box::default()), channels: 0 }
+    }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
         matches!(self.inner, Inner::Opus { .. })
@@ -177,6 +183,7 @@ impl PacketDecoder {
             C::Aac(a) => Self::aac(&a.asc, if rate > 0 { rate } else { a.sample_rate }),
             C::Mp3 => Ok(Self::lazy_mpeg_audio(rate)),
             C::Ac3 { .. } | C::Eac3 { .. } => Self::ac3(),
+            C::Dts { .. } => Ok(Self::dts()),
             C::Alac { cookie } => Self::new(CODEC_TYPE_ALAC, rate, Some(cookie.clone())),
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_TYPE_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
@@ -232,6 +239,11 @@ impl PacketDecoder {
                         }
                     }
                 }
+                self.channels = out.len();
+                return Ok(out);
+            }
+            Inner::Dts(d) => {
+                let out = d.decode_packet(data).map_err(|e| CodecError::Decode(e.to_string()))?.channels;
                 self.channels = out.len();
                 return Ok(out);
             }
@@ -292,6 +304,7 @@ impl PacketDecoder {
             Inner::Opus { dec, .. } => dec.reset(),
             Inner::Symphonia(d) => d.reset(),
             Inner::Ac3(d) => d.reset(),
+            Inner::Dts(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) => {}
         }
     }
@@ -345,6 +358,8 @@ pub enum FixedFrames<'a> {
     /// E-AC-3 packets of whole syncframes (MP4, Matroska): an access unit may hold several
     /// syncframes and dependent substreams.
     Eac3,
+    /// DTS packets of whole frames (a core frame and its extension substream).
+    Dts,
 }
 
 /// Samples each packet decodes to at the stream's output `rate`, for codecs where that is the same
@@ -372,6 +387,13 @@ pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Opti
                 p += h.frame_bytes;
             }
             return i64::try_from(samples).ok().filter(|&n| n > 0);
+        }
+        FixedFrames::Dts => {
+            // DTS-HD may decode at another rate than its core (96 kHz over a 48 kHz core): the
+            // decode of `first` says what a packet gives
+            let d = cfa4_dts::cfa4::Decoder::new().decode_packet(first).ok()?;
+            let n = d.channels.first().map_or(0, Vec::len);
+            return (d.sample_rate == rate).then_some(n as i64).filter(|&n| n > 0);
         }
         FixedFrames::MpegAudio => cfa4_mpegts::Codec::MpegAudio,
         FixedFrames::Ac3 => cfa4_mpegts::Codec::Ac3,

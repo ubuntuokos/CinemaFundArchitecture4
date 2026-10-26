@@ -70,6 +70,7 @@ enum ACodec {
     Adts,
     Latm,
     Ac3,
+    Dts,
     LpcmBluray,
     LpcmDvd(cfa4_mpegts::LpcmFormat),
 }
@@ -122,7 +123,7 @@ fn vkind(c: &Codec) -> Option<VKind> {
 }
 
 fn audio_supported(c: &Codec) -> bool {
-    matches!(c, Codec::MpegAudio | Codec::AacAdts | Codec::AacLatm | Codec::LpcmBluray | Codec::LpcmDvd | Codec::Ac3 | Codec::Eac3)
+    matches!(c, Codec::MpegAudio | Codec::AacAdts | Codec::AacLatm | Codec::LpcmBluray | Codec::LpcmDvd | Codec::Ac3 | Codec::Eac3 | Codec::Dts)
 }
 
 /// The coded rate unless the timestamps say otherwise (3:2 pulldown, field-rate coding). Never
@@ -543,6 +544,16 @@ impl MpegSource {
                     return self.audio_unsupported(&codec_name, "AAC (LATM): unsupported StreamMuxConfig (only AAC-LC is decoded)".into());
                 }
             },
+            // a unit holds a core frame and, for DTS-HD, its extension substream; the decode of the
+            // first says the output rate, layout and length (96 kHz Master Audio over a 48 kHz core)
+            Codec::Dts => match cfa4_dts::cfa4::Decoder::new().decode_packet(&first) {
+                Ok(d) if !d.channels.is_empty() => {
+                    let n = d.channels.first().map_or(0, Vec::len) as u32;
+                    (ACodec::Dts, d.sample_rate, d.channels.len(), Some(n), None)
+                }
+                Ok(_) => return self.audio_unsupported(&codec_name, "DTS: no decodable frame".into()),
+                Err(e) => return self.audio_unsupported(&codec_name, format!("{codec_name}: {e}")),
+            },
             Codec::LpcmBluray => match crate::audio::bluray_lpcm_header(&first) {
                 Some(h) => (ACodec::LpcmBluray, h.sample_rate, h.channels, None, Some(h.bits)),
                 None => {
@@ -715,6 +726,7 @@ impl AudioDecoder {
             ACodec::Mpa(layer) => AudioDecoder::Packet { dec: PacketDecoder::mpeg_audio(layer, rate)?, codec, latm: None },
             ACodec::Adts | ACodec::Latm => AudioDecoder::Packet { dec: PacketDecoder::lazy_aac(), codec, latm },
             ACodec::Ac3 => AudioDecoder::Packet { dec: PacketDecoder::ac3()?, codec, latm: None },
+            ACodec::Dts => AudioDecoder::Packet { dec: PacketDecoder::dts(), codec, latm: None },
             ACodec::LpcmBluray | ACodec::LpcmDvd(_) => AudioDecoder::Pcm { codec, channels },
         })
     }

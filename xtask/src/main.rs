@@ -42,6 +42,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("mpegts", 0),
     ("mpeg2v", 0),
     ("ac3", 0),
+    ("dts", 0),
     ("mpa", 0),
     ("ogg", 0),
     ("riff", 0),
@@ -419,6 +420,7 @@ const FIXTURE_GENERATORS: &[(&str, &str)] = &[
     ("codecs", "mpeg_oracle"),
     ("mpeg2v", "oracle"),
     ("ac3", "oracle"),
+    ("dts", "oracle"),
     ("mpa", "oracle"),
     ("codecs", "ogg_oracle"),
 ];
