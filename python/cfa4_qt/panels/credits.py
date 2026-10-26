@@ -10,6 +10,7 @@ moment (``graphics.credits.thumbnail``), and places the credits at the playhead
 from __future__ import annotations
 
 import base64
+import re
 from pathlib import Path
 from typing import Any
 
@@ -38,7 +39,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..engine import EngineClient
-from ..i18n import N_, tr
+from ..i18n import N_, TR, tr
 from ..timecode import TICKS_PER_SECOND
 
 SHEET_FILTER = N_("Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)")
@@ -64,6 +65,19 @@ ISSUE_TEXT = {
 }
 
 
+# languages of the GUI that write decimals with a comma
+COMMA_DECIMAL = {"hu", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"}
+DECIMAL = re.compile(r"-?\d+\.\d+")
+
+
+def local_number(value: Any) -> str:
+    """A value as text; decimals with the GUI language's separator (7.47 → 7,47 in Hungarian)."""
+    text = str(value)
+    if TR.language in COMMA_DECIMAL and DECIMAL.fullmatch(text):
+        return text.replace(".", ",")
+    return text
+
+
 def issue_text(issue: dict[str, Any]) -> str:
     """An engine check in the user's language: its template filled with its values, after its
     place (row or page). Unknown codes fall back to the engine's English message."""
@@ -72,7 +86,7 @@ def issue_text(issue: dict[str, Any]) -> str:
     if template:
         text = tr(template)
         for k, v in values.items():
-            text = text.replace("{" + str(k) + "}", str(v))
+            text = text.replace("{" + str(k) + "}", local_number(v))
     else:
         text = str(issue.get("message") or issue.get("code") or "")
     row, page = issue.get("row"), issue.get("page")
