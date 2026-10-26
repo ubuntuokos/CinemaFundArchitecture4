@@ -116,3 +116,52 @@ fn damaged_files_never_panic() {
         let _ = parse(&b);
     }
 }
+
+/// Eight nested grids of 16 references each to the next: nine items, within the depth and tile
+/// limits, that expanded into 16^8 leaf images.
+#[test]
+fn nested_grids_sharing_items_cannot_multiply() {
+    let start = std::time::Instant::now();
+    let mut items: Vec<Item> = (0..8u32)
+        .map(|k| Item {
+            id: 10 + k,
+            kind: *b"grid",
+            data: grid_data(4, 4, 64, 64),
+            references: vec![(*b"dimg", vec![11 + k; 16])],
+            hidden: k > 0,
+            ..Item::default()
+        })
+        .collect();
+    items.push(Item { hidden: true, ..hevc(18, b"leaf") });
+    assert!(matches!(parse(&build(10, &items)), Err(Error::Invalid(_))));
+    assert!(start.elapsed() < std::time::Duration::from_secs(5));
+    // one level of the same (16 references to one tile) is a legal grid
+    let one = vec![
+        Item { id: 10, kind: *b"grid", data: grid_data(4, 4, 64, 64), references: vec![(*b"dimg", vec![1; 16])], ..Item::default() },
+        Item { hidden: true, ..hevc(1, b"tile") },
+    ];
+    assert!(parse(&build(10, &one)).is_ok());
+}
+
+/// 65 535 extents over the same megabyte asked for 64 GiB of item data.
+#[test]
+fn repeated_extents_are_capped_by_the_budget() {
+    let file = vec![0u8; 1 << 20];
+    let mut meta = Meta {
+        file: &file,
+        primary: 1,
+        types: HashMap::new(),
+        locations: HashMap::new(),
+        idat: &[],
+        properties: Vec::new(),
+        associations: HashMap::new(),
+        references: HashMap::new(),
+    };
+    let extents = (0..65_535).map(|_| Extent { offset: 0, length: 0 }).collect();
+    meta.locations.insert(1, Location { method: 0, base: 0, extents });
+    let mut budget = Budget::for_source(file.len());
+    assert!(matches!(meta.data(1, &mut budget), Err(Error::Invalid(_))));
+    // a few copies fit
+    meta.locations.insert(2, Location { method: 0, base: 0, extents: vec![Extent { offset: 0, length: 16 }; 3] });
+    assert_eq!(meta.data(2, &mut Budget::for_source(file.len())).map(|d| d.len()), Ok(48));
+}

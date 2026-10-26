@@ -78,7 +78,7 @@ fn damaged_files_are_errors_not_panics() {
 
 #[test]
 fn colour_follows_colr_then_the_vui_then_libheif_defaults() {
-    let pic = |matrix: u8, primaries: u8| cfa4_hevc::Picture {
+    let pic = |matrix: u8, primaries: u8, range_signalled: bool| cfa4_hevc::Picture {
         width: 2,
         height: 2,
         chroma_width: 1,
@@ -92,15 +92,18 @@ fn colour_follows_colr_then_the_vui_then_libheif_defaults() {
         pts: 0,
         poc: 0,
         key: true,
-        color: cfa4_hevc::ColorInfo { full_range: false, primaries, transfer: 1, matrix },
+        color: cfa4_hevc::ColorInfo { full_range: false, range_signalled, primaries, transfer: 1, matrix },
         sar: (0, 0),
         draft: false,
     };
     let nclx = Colour::Nclx { primaries: 12, transfer: 13, matrix: 1, full_range: true };
-    let c = colour(Some(&nclx), &pic(9, 9));
+    let c = colour(Some(&nclx), &pic(9, 9, true));
     assert_eq!((c.matrix, c.primaries, c.transfer, c.range), (Matrix::Bt709, Primaries::P3D65, Transfer::Srgb, Range::Full));
-    let c = colour(None, &pic(9, 9));
+    let c = colour(None, &pic(9, 9, true));
     assert_eq!((c.matrix, c.primaries, c.range), (Matrix::Bt2020Ncl, Primaries::Bt2020, Range::Limited));
-    let c = colour(None, &pic(2, 2));
+    let c = colour(None, &pic(2, 2, false));
     assert_eq!((c.matrix, c.transfer, c.range), (Matrix::Bt601, Transfer::Srgb, Range::Full));
+    // a VUI that signals limited range without colour codes keeps its range
+    let c = colour(None, &pic(2, 2, true));
+    assert_eq!((c.matrix, c.transfer, c.range), (Matrix::Bt601, Transfer::Srgb, Range::Limited));
 }

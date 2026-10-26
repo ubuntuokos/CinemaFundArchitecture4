@@ -148,14 +148,16 @@ fn tight<T: Copy + Default>(plane: &[T], stride: usize, w: usize, h: usize) -> V
 }
 
 /// The colour of an image: its `colr` nclx, else the HEVC VUI when it describes colour, else
-/// libheif's default (BT.601 matrix, sRGB, full range).
+/// libheif's default (BT.601 matrix, sRGB, full range). A range the VUI signals holds even
+/// when it leaves the colour codes unspecified.
 fn colour(nclx: Option<&Colour>, p: &cfa4_hevc::Picture) -> ColorInfo {
+    let vui_full = if p.color.range_signalled { p.color.full_range } else { true };
     let (primaries, transfer, matrix, full) = match nclx {
         Some(Colour::Nclx { primaries, transfer, matrix, full_range }) => (*primaries, *transfer, *matrix, *full_range),
         _ if p.color.matrix != 2 || p.color.primaries != 2 => {
             (u16::from(p.color.primaries), u16::from(p.color.transfer), u16::from(p.color.matrix), p.color.full_range)
         }
-        _ => (2, 2, 6, true),
+        _ => (2, 2, 6, vui_full),
     };
     let code = |c: u16| u8::try_from(c).unwrap_or(2);
     ColorInfo {

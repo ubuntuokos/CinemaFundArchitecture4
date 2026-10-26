@@ -29,6 +29,12 @@ pub const MAX_ITEMS: usize = 65_536;
 pub const MAX_TILES: usize = 65_536;
 /// Deepest chain of derived images (`iden` of `grid` of …).
 pub const MAX_DEPTH: usize = 8;
+/// Most images one resolution builds (tiles, their alpha and derivations, counted each time
+/// they are referenced): nested grids referring to the same items would otherwise multiply.
+pub const MAX_IMAGES: usize = MAX_TILES + 1024;
+/// Item data one resolution may copy beyond the source's own size: repeated or overlapping
+/// extents and references to one item would otherwise copy the same bytes without limit.
+pub const ITEM_DATA_SLACK: usize = 64 << 20;
 
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
 pub enum Error {
@@ -294,7 +300,8 @@ pub fn parse(bytes: &[u8]) -> Result<Heif> {
     }
     let meta = boxes(bytes).find(|b| &b.kind == b"meta").ok_or(Error::NotHeif("no meta box"))?;
     let meta = read_meta(bytes, meta.body)?;
-    let primary = meta.image(meta.primary, 0)?;
+    let mut budget = Budget::for_source(bytes.len().saturating_add(meta.idat.len()));
+    let primary = meta.image(meta.primary, 0, &mut budget)?;
     Ok(Heif { brand, primary })
 }
 
@@ -497,12 +504,36 @@ fn read_property<'a>(b: &BoxRef<'a>) -> Result<Property<'a>> {
     })
 }
 
+/// What resolving one primary image may still build and copy.
+struct Budget {
+    images: usize,
+    bytes: usize,
+}
+
+impl Budget {
+    /// Every byte of the source twice over (a master and its alpha may share data), plus
+    /// [`ITEM_DATA_SLACK`].
+    fn for_source(len: usize) -> Budget {
+        Budget { images: MAX_IMAGES, bytes: len.saturating_mul(2).saturating_add(ITEM_DATA_SLACK) }
+    }
+
+    fn take_image(&mut self) -> Result<()> {
+        self.images = self.images.checked_sub(1).ok_or_else(|| invalid("too many derived images"))?;
+        Ok(())
+    }
+
+    fn take_bytes(&mut self, n: usize) -> Result<()> {
+        self.bytes = self.bytes.checked_sub(n).ok_or_else(|| invalid("item data larger than the file allows"))?;
+        Ok(())
+    }
+}
+
 impl Meta<'_> {
     fn properties(&self, item: u32) -> impl Iterator<Item = &Property<'_>> {
         self.associations.get(&item).into_iter().flatten().filter_map(|&i| self.properties.get(i))
     }
 
-    fn data(&self, item: u32) -> Result<Vec<u8>> {
+    fn data(&self, item: u32, budget: &mut Budget) -> Result<Vec<u8>> {
         let loc = self.locations.get(&item).ok_or_else(|| invalid(format!("item {item} has no location")))?;
         let source = match loc.method {
             0 => self.file,
@@ -517,15 +548,17 @@ impl Meta<'_> {
             // length 0: to the end of the source
             let len = if e.length == 0 { rest.len() } else { usize::try_from(e.length).map_err(|_| invalid("extent length"))? };
             let bytes = rest.get(..len).ok_or_else(|| invalid(format!("item {item}: extent past the end of the file")))?;
+            budget.take_bytes(bytes.len())?;
             out.extend_from_slice(bytes);
         }
         Ok(out)
     }
 
-    fn image(&self, item: u32, depth: usize) -> Result<Image> {
+    fn image(&self, item: u32, depth: usize, budget: &mut Budget) -> Result<Image> {
         if depth > MAX_DEPTH {
             return Err(invalid("derived images nest too deeply"));
         }
+        budget.take_image()?;
         let kind = *self.types.get(&item).ok_or_else(|| invalid(format!("item {item} has no item info")))?;
         let mut size = None;
         let mut colour = Vec::new();
@@ -546,10 +579,10 @@ impl Meta<'_> {
         let mut image = match &kind {
             b"hvc1" => {
                 let hvcc = hvcc.ok_or_else(|| invalid(format!("item {item}: HEVC image without hvcC")))?.to_vec();
-                Image { item, coding: Coding::Hevc { hvcc, data: self.data(item)? }, size, colour, transforms, alpha: None }
+                Image { item, coding: Coding::Hevc { hvcc, data: self.data(item, budget)? }, size, colour, transforms, alpha: None }
             }
             b"grid" => {
-                let data = self.data(item)?;
+                let data = self.data(item, budget)?;
                 let mut r = Reader::new(&data);
                 r.u8()?;
                 let flags = r.u8()?;
@@ -561,12 +594,12 @@ impl Meta<'_> {
                 if n > MAX_TILES || dimg.len() != n {
                     return Err(invalid(format!("grid of {rows}×{columns} has {} tiles", dimg.len())));
                 }
-                let tiles = dimg.iter().map(|&t| self.image(t, depth + 1)).collect::<Result<Vec<_>>>()?;
+                let tiles = dimg.iter().map(|&t| self.image(t, depth + 1, budget)).collect::<Result<Vec<_>>>()?;
                 Image { item, coding: Coding::Grid { rows, columns, width, height, tiles }, size, colour, transforms, alpha: None }
             }
             b"iden" => {
                 let [source] = dimg else { return Err(invalid(format!("identity item {item} needs one source"))) };
-                let mut image = self.image(*source, depth + 1)?;
+                let mut image = self.image(*source, depth + 1, budget)?;
                 image.item = item;
                 image.transforms.extend(transforms);
                 if !colour.is_empty() {
@@ -586,7 +619,7 @@ impl Meta<'_> {
                 .filter(|&a| self.properties(a).any(|p| matches!(p, Property::Aux(urn) if ALPHA_URNS.contains(urn))))
                 .min();
             if let Some(a) = alpha {
-                image.alpha = Some(Box::new(self.image(a, depth + 1)?));
+                image.alpha = Some(Box::new(self.image(a, depth + 1, budget)?));
             }
         }
         Ok(image)
