@@ -233,6 +233,104 @@ fn push_moves_frames_by_the_eased_distance() {
     }
 }
 
+fn close(got: [f32; 4], want: [f32; 4], tol: f32) -> bool {
+    want.iter().zip(got).all(|(p, q)| (p - q).abs() < tol)
+}
+
+fn tx<'a>(e: &'a cfa4_project::EffectInstance, a: &'a Image, b: &'a Image) -> Tx<'a> {
+    Tx { e, a, b, p: 0.5, w: a.w, h: a.h, wf: a.w as f32, hf: a.h as f32, scale: 1.0 }
+}
+
+#[test]
+fn slide_and_push_move_diagonally() {
+    let (a, b) = (frame_a(), frame_b());
+    let (w, h) = (W as i64, H as i64);
+    // direction → B's offset at the eased half-way point (half a frame from its corner)
+    for (dir, (bx, by)) in [(4u32, (-w / 2, -h / 2)), (5, (w / 2, -h / 2)), (6, (w / 2, h / 2)), (7, (-w / 2, h / 2))] {
+        for id in ["slide", "push"] {
+            let mut e = cfa4_project::find_effect(id).unwrap().instance();
+            e.params.get_mut("motion_blur").unwrap().value = ParamValue::Float(0.0);
+            e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
+            let m = apply(&e, &a, &b, 0.5);
+            let at = |x: i64, y: i64| m.get(x as usize, y as usize);
+            // the middle of B's visible quarter
+            let (px, py) = (w / 2 + bx / 2, h / 2 + by / 2);
+            assert!(close(at(px, py), b.get((px - bx) as usize, (py - by) as usize), 1e-3), "{id} dir {dir}: B at ({px}, {py})");
+            // the opposite quarter: A in place (Slide) or pushed the other way (Push)
+            let (qx, qy) = (w / 2 - bx / 2, h / 2 - by / 2);
+            let (sx, sy) = if id == "slide" { (qx, qy) } else { (qx + bx, qy + by) };
+            assert!(close(at(qx, qy), a.get(sx as usize, sy as usize), 1e-3), "{id} dir {dir}: A at ({qx}, {qy})");
+        }
+    }
+}
+
+#[test]
+fn slide_and_push_cardinal_directions_are_unchanged() {
+    let (a, b) = (frame_a(), frame_b());
+    for id in ["slide", "push"] {
+        let def = cfa4_project::find_effect(id).unwrap();
+        for dir in 0..4u32 {
+            let mut e = def.instance();
+            e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
+            let t = tx(&e, &a, &b);
+            let (dx, dy) = t.dir();
+            assert_eq!(t.shift8(), (dx * t.travel(), dy * t.travel()), "{id} dir {dir}");
+        }
+        // an out-of-range choice from a project file falls back to From West, as everywhere
+        let mut e = def.instance();
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(u32::MAX);
+        assert_eq!(apply(&e, &a, &b, 0.4), apply(&def.instance(), &a, &b, 0.4), "{id}");
+    }
+}
+
+#[test]
+fn motion_camera_negative_zoom_pulls_back_without_smeared_edges() {
+    let (a, b) = (frame_a(), frame_b());
+    let mut e = cfa4_project::find_effect("motion_camera").unwrap().instance();
+    for (k, v) in [("zoom", -30.0), ("rotation", 0.0), ("motion_blur", 0.0)] {
+        e.params.get_mut(k).unwrap().value = ParamValue::Float(v);
+    }
+    assert_eq!(apply(&e, &a, &b, 0.0), a);
+    assert_eq!(apply(&e, &a, &b, 1.0), b);
+    // before the cut A has shrunk: the corner shows the (magnified) blue B, not A's smeared edge
+    let m = apply(&e, &a, &b, 0.3);
+    let corner = m.get(1, 1);
+    assert!(corner[2] > 0.3 && (corner[3] - 1.0).abs() < 1e-3, "corner {corner:?}");
+    // while the centre is still the warm A
+    let centre = m.get(W / 2, H / 2);
+    assert!(centre[0] > 0.3, "centre {centre:?}");
+    // a hostile zoom (−1000 %) is clamped, never a division by zero
+    e.params.get_mut("zoom").unwrap().value = ParamValue::Float(-1000.0);
+    for p in [0.2, 0.5, 0.8] {
+        assert!(apply(&e, &a, &b, p).px.iter().all(|v| v.is_finite()), "p={p}");
+    }
+}
+
+#[test]
+fn grunge_feather_softens_the_torn_edge() {
+    let (a, b) = (frame_a(), frame_b());
+    let def = cfa4_project::find_effect("grunge").unwrap();
+    assert_eq!(def.instance().f64_at("feather", cfa4_time::Tick::ZERO), 0.0, "hard edge by default");
+    let mut soft = def.instance();
+    soft.params.get_mut("edge_width").unwrap().value = ParamValue::Float(0.0);
+    soft.params.get_mut("feather").unwrap().value = ParamValue::Float(40.0);
+    let mut sharp = soft.clone();
+    sharp.params.get_mut("feather").unwrap().value = ParamValue::Float(0.0);
+    // pixels that are a real blend of A and B (neither side within 2 %)
+    let blended = |m: &Image| {
+        (0..H)
+            .flat_map(|y| (0..W).map(move |x| (x, y)))
+            .filter(|&(x, y)| !close(m.get(x, y), a.get(x, y), 0.02) && !close(m.get(x, y), b.get(x, y), 0.02))
+            .count()
+    };
+    let (ns, nh) = (blended(&apply(&soft, &a, &b, 0.5)), blended(&apply(&sharp, &a, &b, 0.5)));
+    assert!(ns > nh * 2, "feather widens the blended edge ({ns} vs {nh} px)");
+    assert_eq!(apply(&soft, &a, &b, 0.0), a);
+    assert_eq!(apply(&soft, &a, &b, 1.0), b);
+    soft.params.get_mut("feather").unwrap().value = ParamValue::Float(1e30);
+    assert!(apply(&soft, &a, &b, 0.5).px.iter().all(|v| v.is_finite()));
+}
+
 #[test]
 fn modern_and_legacy_ids_are_distinct_renders() {
     let (a, b) = (frame_a(), frame_b());

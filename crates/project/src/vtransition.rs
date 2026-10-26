@@ -35,6 +35,9 @@ const WIPE: &[&str] = &["Video Transitions", "Wipe"];
 
 /// Direction choices (index 3, "From West", moves left → right).
 pub const DIR_OPTS: &[&str] = &["From North", "From East", "From South", "From West"];
+/// [`DIR_OPTS`] plus the four diagonals (Slide and Push only; indices 0–3 are unchanged).
+pub const DIR8_OPTS: &[&str] =
+    &["From North", "From East", "From South", "From West", "From North-West", "From North-East", "From South-East", "From South-West"];
 pub const AA_OPTS: &[&str] = &["Off", "Low", "Medium", "High"];
 pub const AXIS_OPTS: &[&str] = &["Horizontal", "Vertical"];
 pub const CORNER_OPTS: &[&str] = &["Top Left", "Top Right", "Bottom Right", "Bottom Left"];
@@ -64,6 +67,9 @@ fn centre() -> ParamDef {
 }
 fn direction() -> ParamDef {
     ch("direction", "Direction", DIR_OPTS, 3)
+}
+fn direction8() -> ParamDef {
+    ch("direction", "Direction", DIR8_OPTS, 3)
 }
 fn motion_blur() -> ParamDef {
     num("motion_blur", "Motion Blur", 50.0, 100.0, "%")
@@ -178,6 +184,7 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
                 colour("edge_color", "Edge Color", [0.22, 0.14, 0.08, 1.0]),
                 num("edge_width", "Edge Width", 12.0, 200.0, "px"),
                 seed(),
+                feather(0.0),
             ],
         ),
         tr("kaleidoscope", "Kaleidoscope", GRUNGE, m, vec![range("segments", "Segments", 6.0, 2.0, 32.0, ""), num("zoom", "Zoom", 30.0, 100.0, "%")]),
@@ -243,14 +250,14 @@ pub(crate) fn video_transition_defs() -> Vec<EffectDef> {
             m,
             vec![direction(), num("gap", "Gap", 40.0, 400.0, "px"), colour("gap_color", "Gap Color", [0.03, 0.03, 0.03, 1.0]), motion_blur()],
         ),
-        tr("push", "Push", SLIDE, m, vec![direction(), motion_blur()]),
+        tr("push", "Push", SLIDE, m, vec![direction8(), motion_blur()]),
         tr("roll", "Roll", SLIDE, m, vec![direction(), motion_blur()]),
-        tr("slide", "Slide", SLIDE, m, vec![direction(), motion_blur()]),
+        tr("slide", "Slide", SLIDE, m, vec![direction8(), motion_blur()]),
         tr("split", "Split", SLIDE, m, vec![ch("orientation", "Orientation", AXIS_OPTS, 0), motion_blur()]),
         tr("stretch", "Stretch", SLIDE, m, vec![direction()]),
         tr("whip", "Whip", SLIDE, m, vec![direction(), num("blur", "Blur", 80.0, 100.0, "%")]),
         // ---- Smart Tools ----
-        tr("motion_camera", "Motion Camera", SMART, m, vec![range("zoom", "Zoom", 40.0, 0.0, 200.0, "%"), angle("rotation", "Rotation", 8.0), motion_blur()]),
+        tr("motion_camera", "Motion Camera", SMART, m, vec![range("zoom", "Zoom", 40.0, -90.0, 200.0, "%"), angle("rotation", "Rotation", 8.0), motion_blur()]),
         tr("motion_tween", "Motion Tween", SMART, m, vec![range("scale", "Scale Match", 15.0, 0.0, 100.0, "%")]),
         tr(
             "shape_dissolve",
