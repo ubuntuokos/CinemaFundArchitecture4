@@ -653,6 +653,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "text.inspect" => match crate::serve_text::inspect(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
         "lumetri.inspect" => match crate::serve_lumetri::inspect(s, &params) {
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),

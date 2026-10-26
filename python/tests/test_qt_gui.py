@@ -963,7 +963,9 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
 
     def bars(win) -> list[tuple[str, ...]]:
         return [
-            tuple(tb.tabText(i) for i in range(tb.count())) for tb in win.findChildren(QtWidgets.QTabBar) if tb.isVisible()
+            tuple(tb.tabText(i) for i in range(tb.count()))
+            for tb in win.findChildren(QtWidgets.QTabBar)
+            if tb.isVisible() and tb.parent() is win  # the dock groups' bars, not a panel's own tabs
         ]
 
     for _ in range(2):  # first start (default layout), then with the saved layout
@@ -1364,7 +1366,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2443,6 +2445,77 @@ def test_media_browser(app, tmp_path: Path):
         assert placed()[0]["start"] == 0
         assert wait_until(app, lambda: any("still" in str(i.get("name")) for i in _items(win.project or {})), 10_000)
         assert mb.grab().width() > 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_text_panel(app, tmp_path: Path):
+    """egui's Text panel: Transcript (Transcribe when there is none, else the words), Captions (a new caption track,
+    a caption added at the playhead, its text edited in the list) and Graphics (the sequence's text
+    layers, edited in place)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    tp = win.text_panel
+
+    def captions() -> list[dict]:
+        return [c for t in tp.captions.tracks() for c in t.get("captions") or []]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert win.docks["Text"].isVisible() or not tp.isVisible(), "tabbed with Properties"
+        win.docks["Text"].raise_()
+        assert wait_until(app, lambda: tp.isVisible() and tp.tab() == "Transcript", 10_000)
+        assert wait_until(app, lambda: tp.transcript.stack.currentWidget() is tp.transcript.empty, 10_000), tp.transcript.data
+        assert tp.transcript.generate.isVisible()
+        # an imported transcript: speaker paragraphs of words; click, Shift+click, search
+        clip = win.sequence["video"][0]["items"][0]
+        sec = 254_016_000_000
+        words = [
+            {"text": t, "start": clip["sourceIn"] + i * sec // 2, "end": clip["sourceIn"] + i * sec // 2 + sec // 3, "speaker": int(i > 1)}
+            for i, t in enumerate(["Hello", "there", "my", "friend"])
+        ]
+        win.execute("transcript.set", {"item": clip["item"], "transcript": {"language": "en", "words": words}})
+        assert wait_until(app, lambda: len(tp.transcript.words) == 4, 10_000), tp.transcript.data
+        assert tp.transcript.stack.currentWidget() is tp.transcript.body
+        assert "Speaker 2" in tp.transcript.view.toPlainText() and "friend" in tp.transcript.view.toPlainText()
+        assert not tp.transcript.extract.isEnabled()
+        tp.transcript.select(1)
+        tp.transcript.select(2, extend=True)
+        assert tp.transcript.sel == (1, 2) and tp.transcript.extract.isEnabled()
+        tp.transcript.search.setText("friend")
+        assert wait_until(app, lambda: tp.transcript.hits == {3}, 10_000), tp.transcript.hits
+
+        # Captions: none yet, then a track, a caption at the playhead and its text
+        tp.set_tab("Captions")
+        assert wait_until(app, lambda: tp.captions.stack.currentWidget() is tp.captions.empty and tp.captions.isVisible(), 10_000)
+        tp.findChild(QtWidgets.QPushButton, "text.captions.newTrack").click()
+        assert wait_until(app, lambda: tp.captions.stack.currentWidget() is tp.captions.body, 10_000), tp.captions.data
+        assert tp.captions.note.isVisible() and tp.captions.add.isEnabled()
+        tp.captions.add.click()
+        assert wait_until(app, lambda: tp.captions.table.rowCount() == 1, 10_000), tp.captions.data
+        assert tp.captions.table.item(0, 1).text() == captions()[0]["in"]
+        tp.captions.table.item(0, 4).setText("Hello captions")
+        assert wait_until(app, lambda: [c.get("text") for c in captions()] == ["Hello captions"], 10_000), captions()
+        tp.captions.search.setText("nothing like it")
+        assert tp.captions.table.rowCount() == 0 and tp.captions.note.text() == "No matching captions."
+        tp.captions.search.clear()
+
+        # Graphics: a text layer shows up and edits in place
+        win.execute("graphics.newText", {"text": "Hello Qt"})
+        tp.set_tab("Graphics")
+        assert wait_until(app, lambda: [g.get("text") for g in tp.graphics.rows] == ["Hello Qt"], 20_000), tp.graphics.rows
+        assert tp.graphics.table.rowCount() == 1 and tp.graphics.table.item(0, 0).text()
+        tp.graphics.table.item(0, 2).setText("Hi Qt")
+        assert wait_until(app, lambda: [g.get("text") for g in tp.graphics.rows] == ["Hi Qt"], 20_000), tp.graphics.rows
+        assert tp.grab().width() > 0
     finally:
         win._quit_confirmed = True
         win.close()

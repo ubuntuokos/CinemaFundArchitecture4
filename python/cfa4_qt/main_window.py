@@ -41,11 +41,12 @@ from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.scopes import ScopesPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
+from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 15  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser
+LAYOUT_VERSION = 16  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -65,6 +66,7 @@ DOCK_PLAN = (
     ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Lumetri Color", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -170,6 +172,7 @@ class MainWindow(QMainWindow):
         self.scopes.attach_settings(self.settings)
         self.reference.scope_settings = lambda: self.scopes.st
         self.media_browser = MediaBrowserPanel(engine, self)
+        self.text_panel = TextPanel(engine, self)
         self.lumetri = LumetriColorPanel(self)
         self.lumetri.attach_settings(self.settings)
         self._lumetri_busy = False
@@ -219,6 +222,7 @@ class MainWindow(QMainWindow):
             "Lumetri Scopes": self.scopes,
             "Lumetri Color": self.lumetri,
             "Media Browser": self.media_browser,
+            "Text": self.text_panel,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -246,6 +250,7 @@ class MainWindow(QMainWindow):
             self.clip_mixer,
             self.lumetri,
             self.media_browser,
+            self.text_panel,
         ):
             panel.command.connect(self.execute)
         self.media_browser.attach_settings(self.settings)
@@ -253,6 +258,8 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.files_dropped.connect(self.place_files)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
+        self.text_panel.seek.connect(self._seek_program)
+        self.text_panel.run.connect(self.run_preset)
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.focusChanged.connect(self._focus_changed)
@@ -265,6 +272,7 @@ class MainWindow(QMainWindow):
         self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
         self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
+        self.docks["Text"].visibilityChanged.connect(lambda shown: shown and QTimer.singleShot(0, self.text_panel.refresh))
 
         self._refresh_timer = QTimer(self, singleShot=True, interval=40)
         self._refresh_timer.timeout.connect(self.refresh)
@@ -319,8 +327,10 @@ class MainWindow(QMainWindow):
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
         win.tabifyDockWidget(d["Timeline"], d["Events"])
-        # egui's Color workspace puts Lumetri Color at the right; opened from the Window menu
-        win.tabifyDockWidget(d["Properties"], d["Lumetri Color"])
+        # egui's Editing group: Properties, Text; its Color workspace puts Lumetri Color there
+        # too (opened from the Window menu)
+        win.tabifyDockWidget(d["Properties"], d["Text"])
+        win.tabifyDockWidget(d["Text"], d["Lumetri Color"])
         d["Lumetri Color"].hide()
         for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
@@ -736,6 +746,7 @@ class MainWindow(QMainWindow):
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
         self.update_lumetri()
         self.media_browser.refresh()
+        self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
@@ -1133,6 +1144,8 @@ class MainWindow(QMainWindow):
         self.update_mixer()
         self.update_clip_mixer()
         self.update_lumetri()
+        if self.text_panel.isVisible():
+            self.text_panel.set_playhead(ticks)
 
     # ----- export -----
     def open_export(self) -> None:

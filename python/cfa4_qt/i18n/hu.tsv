@@ -845,3 +845,49 @@
 	Video Files	Videofájlok
 	{sel} of {total} items selected	{total} elemből {sel} kijelölve
 	{total} items	{total} elem
+	#	#
+	Add caption at playhead	Felirat hozzáadása a lejátszófejnél
+	Add captions	Feliratok hozzáadása
+	Align	Igazítás
+	Align center	Középre igazítás
+	Align left	Balra igazítás
+	Align right	Jobbra igazítás
+	Box	Háttérdoboz
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Hozzon létre egy feliratsávot, vagy importáljon feliratfájlt.
+	Create captions	Feliratok létrehozása
+	Create new caption track	Új feliratsáv létrehozása
+	Delete selected captions	Kijelölt feliratok törlése
+	Export captions…	Feliratok exportálása…
+	Extract selected text	Kijelölt szöveg kivágása
+	Go to caption	Ugrás a felirathoz
+	Go to graphic	Ugrás a grafikához
+	Graphics	Grafika
+	Import captions file…	Feliratfájl importálása…
+	In	Be
+	Lift selected text	Kijelölt szöveg kiemelése
+	Merge selected captions	Kijelölt feliratok egyesítése
+	New {format} track	Új {format}-sáv
+	No captions on this track. Press + to add one at the playhead.	Ezen a sávon nincs felirat. A + gombbal adhat hozzá egyet a lejátszófejnél.
+	No matching captions.	Nincs egyező felirat.
+	No matching text.	Nincs egyező szöveg.
+	No text graphics in this sequence. Add text with the Type tool.	Ebben a szekvenciában nincs szöveges grafika. Szöveget a Szöveg eszközzel adhat hozzá.
+	Open a sequence to search its graphics	Nyisson meg egy szekvenciát a grafikái kereséséhez
+	Open a sequence to see its transcript	Nyisson meg egy szekvenciát az átirata megtekintéséhez
+	Open a sequence to work with captions	Nyisson meg egy szekvenciát a feliratok szerkesztéséhez
+	Out	Ki
+	Position: bottom	Helyzet: lent
+	Position: middle	Helyzet: középen
+	Position: top	Helyzet: fent
+	Remove filler words	Töltelékszavak eltávolítása
+	Speaker	Beszélő
+	Speech-to-text turns the dialogue into editable text.	A beszédfelismerés szerkeszthető szöveggé alakítja a párbeszédet.
+	Split caption at playhead	Felirat kettévágása a lejátszófejnél
+	Subtitle	Felirat
+	Teletext	Teletext
+	Text colour	Szövegszín
+	This build has no speech-to-text; import a transcript with transcript.set.	Ez a változat nem tartalmaz beszédfelismerést; átiratot a transcript.set paranccsal importálhat.
+	Track	Sáv
+	Transcribe	Átírás
+	Transcribe sequence	Szekvencia átírása
