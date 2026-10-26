@@ -3618,6 +3618,10 @@
 	Side by Side	左右
 	Stereo to 2D	ステレオから 2D へ
 	Eye	目
+	Slit Scan	スリットスキャン
+	Time Span (seconds)	時間幅（秒）
+	Current Frame At	現在のフレームの位置
+	Blend Slices	スライスをブレンド
 	Enhance	補正
 	Skin Smoothing	肌のなめらか補正
 	Keep Texture	質感を保持

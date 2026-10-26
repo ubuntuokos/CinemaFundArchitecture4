@@ -121,6 +121,7 @@ const NEW_IDS: &[&str] = &[
     "stroke",
     "metadata_burnin",
     "echo",
+    "slit_scan",
     "lightning",
     "cell_pattern",
     "checkerboard",
@@ -255,6 +256,7 @@ fn neutral_parameters_are_identity() {
         ("roughen_edges", vec![("border", ParamValue::Float(0.0))]),
         ("posterize_time", vec![]),
         ("echo", vec![]),
+        ("slit_scan", vec![]),
         ("warp_stabilizer", vec![]),
         ("track_matte", vec![]),
         ("noise", vec![]),
@@ -1005,6 +1007,53 @@ fn posterize_time_and_echo_read_other_frames() {
     crate::effects::apply(&mut img, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
     assert!(close(img.get(50, 4)[0], 1.0, 1e-5), "current bar {:?}", img.get(50, 4));
     assert!(close(img.get(40, 4)[0], 0.5, 1e-5), "echo bar {:?}", img.get(40, 4));
+}
+
+#[test]
+fn slit_scan_shows_a_different_time_in_each_band() {
+    // the picture's grey level is its time / 10
+    fn clock(_x: f64, _y: f64, t: f64) -> [f32; 3] {
+        let v = (t / 10.0) as f32;
+        [v, v, v]
+    }
+    let env = ClipEnv { w: 16, h: 8, fps: 24.0, secs: 10.0, now: 5.0, key: 78, seq: (16, 8), pic: clock };
+    let run_ss = |e: &EffectInstance| {
+        let mut img = env.render(5.0, 1.0);
+        crate::effects::apply(&mut img, e, &FxCtx { seconds: 5.0, env: Some(&env), ..cx() });
+        img
+    };
+    // two hard slices, now at the top, a second earlier at the bottom
+    let mut e = inst("slit_scan");
+    setf(&mut e, "time", -1.0);
+    setf(&mut e, "slices", 2.0);
+    set(&mut e, "smooth", ParamValue::Bool(false));
+    let img = run_ss(&e);
+    assert!(close(img.get(3, 0)[0], 0.5, 1e-6), "top {:?}", img.get(3, 0));
+    assert!(close(img.get(3, 3)[0], 0.5, 1e-6), "upper half {:?}", img.get(3, 3));
+    assert!(close(img.get(3, 4)[0], 0.4, 1e-6), "lower half {:?}", img.get(3, 4));
+    assert!(close(img.get(3, 7)[0], 0.4, 1e-6), "bottom {:?}", img.get(3, 7));
+    assert!(close(img.get(3, 7)[3], 1.0, 1e-6), "alpha {:?}", img.get(3, 7));
+    // blended: a smooth gradient in time from left (now) to right (a second earlier)
+    set(&mut e, "smooth", ParamValue::Bool(true));
+    set(&mut e, "direction", ParamValue::Choice(2));
+    let img = run_ss(&e);
+    for x in 0..16 {
+        let p = (x as f32 + 0.5) / 16.0;
+        assert!(close(img.get(x, 2)[0], 0.5 - 0.1 * p, 1e-5), "x {x}: {:?}", img.get(x, 2));
+    }
+    // future frames from the Right edge
+    setf(&mut e, "time", 1.0);
+    set(&mut e, "smooth", ParamValue::Bool(false));
+    set(&mut e, "direction", ParamValue::Choice(3));
+    let img = run_ss(&e);
+    assert!(close(img.get(15, 0)[0], 0.5, 1e-6) && close(img.get(0, 0)[0], 0.6, 1e-6), "{:?} {:?}", img.get(0, 0), img.get(15, 0));
+    // hostile parameters leave the picture finite (NaN span: unchanged; NaN slices: two)
+    let plain = env.render(5.0, 1.0);
+    setf(&mut e, "time", f64::NAN);
+    assert_eq!(run_ss(&e).px, plain.px);
+    setf(&mut e, "time", -1.0);
+    setf(&mut e, "slices", f64::NAN);
+    assert!(run_ss(&e).px.iter().all(|v| v.is_finite()));
 }
 
 #[test]

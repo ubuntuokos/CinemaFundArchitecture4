@@ -260,6 +260,8 @@ pub const ENHANCE: &[&str] = &["Video Effects", "Enhance"];
 /// The Video Effects folders that are CFA4's own, so the Premiere catalogue checks skip them.
 /// Every one of them is still a folder of the Effects panel tree, like the rest.
 pub const OWN_FOLDERS: &[&str] = &["Stereoscopic 3D", "Enhance"];
+/// CFA4's own effects that sit in one of Premiere's folders.
+pub const CFA4_OWN: &[&str] = &["slit_scan"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
 const A_AMP: &[&str] = &["Audio Effects", "Amplitude and Compression"];
 const A_DELAY: &[&str] = &["Audio Effects", "Delay and Echo"];

@@ -3594,6 +3594,10 @@
 	Side by Side	左右并排
 	Stereo to 2D	立体转 2D
 	Eye	眼
+	Slit Scan	狭缝扫描
+	Time Span (seconds)	时间跨度（秒）
+	Current Frame At	当前帧位置
+	Blend Slices	混合切片
 	Enhance	增强
 	Skin Smoothing	皮肤柔化
 	Keep Texture	保留纹理
