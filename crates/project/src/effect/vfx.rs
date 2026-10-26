@@ -679,6 +679,19 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 seed(),
             ],
         ),
+        // CFA4's own (not in Premiere's bin): projected-film look, the frame wobbling in the gate
+        // and the exposure flickering from frame to frame.
+        video(
+            "film_gate",
+            "Film Gate",
+            STYLIZE,
+            vec![
+                fs("weave", "Gate Weave", 1.5, (0.0, 50.0), (0.0, 10.0), "", 2),
+                fs("weave_rotation", "Weave Rotation", 0.1, (0.0, 5.0), (0.0, 1.0), "°", 2),
+                pct("flicker", "Flicker", 6.0),
+                seed(),
+            ],
+        ),
         video(
             "grow",
             "Grow",
@@ -1154,6 +1167,7 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
                 | "mosaic"
                 | "rotate_3d"
                 | "camera_shake"
+                | "film_gate"
                 | "grow"
                 | "move"
                 | "shrink"

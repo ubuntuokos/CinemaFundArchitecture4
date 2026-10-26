@@ -485,6 +485,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "spin" => distort::spin(img, e, cx),
         "wiggle" => distort::wiggle(img, e, cx),
         "camera_shake" => distort::camera_shake(img, e, cx),
+        "film_gate" => distort::film_gate(img, e, cx),
         "transform" if bv(e, "shutter_override") && fv(e, "shutter_angle", cx) > 0.5 => distort::transform_fx(img, e, cx),
         "spacer" => distort::spacer(img, e, cx),
         "clone" => distort::clone_fx(img, e, cx),

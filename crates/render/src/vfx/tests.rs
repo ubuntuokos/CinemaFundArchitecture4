@@ -107,6 +107,7 @@ const NEW_IDS: &[&str] = &[
     "rotate_3d",
     "auto_reframe",
     "camera_shake",
+    "film_gate",
     "grow",
     "shrink",
     "move",
@@ -251,6 +252,7 @@ fn neutral_parameters_are_identity() {
         ("posterize_time", vec![]),
         ("echo", vec![]),
         ("slit_scan", vec![]),
+        ("film_gate", vec![("weave", ParamValue::Float(0.0)), ("weave_rotation", ParamValue::Float(0.0)), ("flicker", ParamValue::Float(0.0))]),
         ("warp_stabilizer", vec![]),
         ("track_matte", vec![]),
         ("noise", vec![]),
@@ -1001,6 +1003,40 @@ fn posterize_time_and_echo_read_other_frames() {
     crate::effects::apply(&mut img, &e, &FxCtx { seconds: 0.5, env: Some(&env), ..cx() });
     assert!(close(img.get(50, 4)[0], 1.0, 1e-5), "current bar {:?}", img.get(50, 4));
     assert!(close(img.get(40, 4)[0], 0.5, 1e-5), "echo bar {:?}", img.get(40, 4));
+}
+
+#[test]
+fn film_gate_holds_each_frame_and_changes_between_frames() {
+    let env = ClipEnv { w: 32, h: 24, fps: 24.0, secs: 10.0, now: 5.0, key: 79, seq: (32, 24), pic: |x, y, _| [x as f32 / 32.0, y as f32 / 24.0, 0.5] };
+    let img = picture(32, 24);
+    let mut e = inst("film_gate");
+    setf(&mut e, "weave", 4.0);
+    setf(&mut e, "flicker", 30.0);
+    let at = |e: &EffectInstance, s: f64| run("film_gate", e, &img, &FxCtx { seconds: s, env: Some(&env), ..cx() });
+    // held for the whole frame (frame 120 spans 5.0..5.0417 s)
+    assert_eq!(max_diff(&at(&e, 5.001), &at(&e, 5.04)), 0.0, "one frame, one gate position");
+    // and different from frame to frame
+    let changes = (0..12).filter(|i| max_diff(&at(&e, 5.0 + *i as f64 / 24.0), &at(&e, 5.0 + (*i + 1) as f64 / 24.0)) > 1e-3).count();
+    assert!(changes >= 10, "the gate moves or flickers on most frames: {changes}/12");
+    // a different seed gives a different film
+    let a = at(&e, 5.0);
+    setf(&mut e, "seed", 7.0);
+    assert!(max_diff(&a, &at(&e, 5.0)) > 1e-3);
+}
+
+#[test]
+fn film_gate_survives_hostile_values() {
+    let img = picture(16, 12);
+    let mut e = inst("film_gate");
+    for v in [f64::NAN, f64::INFINITY, -1e9, 1e9] {
+        for k in ["weave", "weave_rotation", "flicker", "seed"] {
+            setf(&mut e, k, v);
+        }
+        for s in [f64::NAN, -5.0, 1e12] {
+            let o = run("film_gate", &e, &img, &FxCtx { seconds: s, ..cx() });
+            assert!(o.px.iter().all(|c| c.is_finite()), "weave/flicker {v} at {s}s");
+        }
+    }
 }
 
 #[test]

@@ -374,6 +374,38 @@ pub fn camera_shake(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     });
 }
 
+/// Film Gate (CFA4): each frame sits slightly off in the projector gate (mostly vertically) and is
+/// exposed a little brighter or darker. Both are held for the whole frame, like real film.
+pub fn film_gate(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+    let seed = fv(e, "seed", cx).max(0.0) as u64;
+    let finite = |v: f32, max: f32| if v.is_finite() { v.clamp(0.0, max) } else { 0.0 };
+    let short = img.w.min(img.h).max(1) as f64;
+    let weave = ((finite(fv(e, "weave", cx), 50.0) * cx.px_scale) as f64).min(short / 4.0);
+    let rot = finite(fv(e, "weave_rotation", cx), 5.0) as f64;
+    let flicker = finite(fv(e, "flicker", cx), 100.0) / 100.0;
+    let fps = cx.env.map_or(24.0, |env| env.frame_rate());
+    let fps = if fps.is_finite() && fps > 0.0 { fps } else { 24.0 };
+    let frame = (cx.seconds * fps).floor();
+    let frame = if frame.is_finite() { frame } else { 0.0 };
+    // a slow drift plus a frame-to-frame jump, in about −1..1
+    let wobble = |ch: u64| -> f64 { (noise1(frame * 0.07, ch, seed) as f64 * 1.2 + noise1(frame * 0.9, ch + 10, seed) as f64 * 0.6).clamp(-1.5, 1.5) };
+    if weave > 0.0 || rot > 0.0 {
+        let c = Vec2::new(img.w as f64 / 2.0, img.h as f64 / 2.0);
+        let off = Vec2::new(wobble(0) * weave * 0.4, wobble(1) * weave);
+        // zoom in just enough that the frame edges stay covered
+        let s = 1.0 + (3.0 * weave + short * rot.to_radians()) / short;
+        place(img, c, off, s, wobble(2) * rot);
+    }
+    if flicker > 0.0 {
+        let gain = (1.0 + flicker * (noise1(frame * 0.9, 3, seed) * 1.6).clamp(-1.0, 1.0)).max(0.0);
+        img.px.par_chunks_mut(4).for_each(|p| {
+            p[0] *= gain;
+            p[1] *= gain;
+            p[2] *= gain;
+        });
+    }
+}
+
 /// Spacer: insets the layer inside margins (scaled to fit), with rounded corners and an optional
 /// background fill.
 pub fn spacer(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
