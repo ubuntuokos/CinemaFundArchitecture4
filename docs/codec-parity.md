@@ -21,7 +21,7 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
 | DNxHD / DNxHR | decode + encode, MXF / MOV | own decode (all SMPTE ST 2019-1 CIDs, 8/10/12-bit, 4:2:2 / 4:4:4, interlaced, alpha) and encode LB / SQ / HQ / HQX / 444 | yes, MOV + MXF | within IDCT precision of ffmpeg on 22 fixtures | 90% | 2–4 h |
 | AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors; hardware on Windows | none | slow in software (~4 fps 1080p single-thread) | 55% | 30–50 h (encoder + speed) |
-| VP9 | not a Premiere import format on all versions | own decoder profiles 0–3, 8/10/12-bit, bit-exact on 50+ fixtures, frame threading | none | conformance | ahead | — |
+| VP9 | not a Premiere import format on all versions | own decoder profiles 0–3, 8/10/12-bit, bit-exact on 50+ fixtures, frame threading | own encoder, profile 0 (8-bit 4:2:0), key + inter frames, constant quantizer or bit rate (#89); not yet in export (WebM: #149); about twice libvpx's size at equal PSNR (#151) | conformance; ffmpeg decodes our streams sample-exactly like we do | ahead | — |
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
 | MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT) | **none** | conformance fixtures | 60% | 20–35 h (encoder) |
 | Motion JPEG | decode + encode | yes | yes (MOV) | — | 90% | — |
@@ -61,6 +61,7 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | VP9 encoder (`cfa4_vp9::encode`, #89) |
 | 2026-10-26 | minor | JPEG 2000 Part 1 decoder (`cfa4-j2k`) |
 | 2026-10-11 | minor | CinemaDNG / DNG decode (#1065) |
 | 2026-10-10 | major | Created: codec-by-codec comparison with Premiere 26.5.2 from the codec crates' READMEs, the export format registry and the installed bundle's listings |
