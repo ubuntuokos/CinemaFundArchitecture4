@@ -51,6 +51,7 @@ const OP_OFFSET: u32 = 29u;
 const OP_VIDEO_LIMITER: u32 = 30u;
 const OP_LUMETRI: u32 = 31u;
 const OP_SWAP_EYES: u32 = 32u;
+const OP_STEREO_TO_2D: u32 = 33u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -644,6 +645,30 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
                 if p.y < half { q.y = p.y + half; } else if p.y < 2 * half { q.y = p.y - half; }
             }
             return ld(q);
+        }
+        case OP_STEREO_TO_2D: {
+            // `gpufx::stereo_view_sample`: i1.x = side by side, i1.y = keep the right / bottom view
+            let sbs = u.i1.x == 1u;
+            var n = s.y; var at = p.y;
+            if sbs { n = s.x; at = p.x; }
+            if n < 2 {
+                return ld(p);
+            }
+            let vw = n / 2;
+            var v0 = 0;
+            if u.i1.y == 1u { v0 = vw; }
+            let scale = f32(vw) / f32(n);
+            let f = clamp(f32(v0) + (f32(at) + 0.5) * scale - 0.5, f32(v0), f32(v0 + vw - 1));
+            let lo = i32(floor(f));
+            let hi = min(lo + 1, v0 + vw - 1);
+            let t = f - f32(lo);
+            var a: vec4<f32>; var b: vec4<f32>;
+            if sbs {
+                a = ld(vec2(lo, p.y)); b = ld(vec2(hi, p.y));
+            } else {
+                a = ld(vec2(p.x, lo)); b = ld(vec2(p.x, hi));
+            }
+            return a + (b - a) * t;
         }
         case OP_MIRROR: {
             let c = u.p0.xy; let nrm = u.p0.zw;

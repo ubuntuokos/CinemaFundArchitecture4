@@ -144,6 +144,8 @@ impl EffectInstance {
 /// Frame layouts of the Stereoscopic 3D effects: the two views stacked (left eye on top) or side
 /// by side (left eye on the left).
 pub const STEREO_LAYOUTS: &[&str] = &["Over/Under", "Side by Side"];
+/// The view a Stereoscopic 3D effect keeps.
+pub const STEREO_EYES: &[&str] = &["Left", "Right"];
 
 pub const BLEND_MODES: &[&str] = &[
     "Normal",
@@ -611,6 +613,7 @@ fn build_effects() -> Vec<EffectDef> {
         video("horizontal_flip", "Horizontal Flip", TRANSFORM, vec![]),
         video("vertical_flip", "Vertical Flip", TRANSFORM, vec![]),
         video("stereo_swap_eyes", "Swap Eyes", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0)]),
+        video("stereo_to_2d", "Stereo to 2D", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0), ch("eye", "Eye", STEREO_EYES, 0)]),
         video("edge_feather", "Edge Feather", vfx::LEGACY, vec![fs("amount", "Amount", 0.0, (0.0, 100.0), (0.0, 100.0), "", 0)]),
         video(
             "transform",
