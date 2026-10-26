@@ -68,8 +68,9 @@ fn an_excessive_packet_count_is_refused_before_it_is_built() {
 }
 
 /// `data` rewritten with its packet headers packed into PPM (main header) or PPT (tile-part
-/// headers) markers, one tile-part per tile.
-fn packed_headers(data: &[u8], ppm: bool) -> Vec<u8> {
+/// headers) markers, in `parts` tile-parts per tile (with PPT, each tile-part's segments number
+/// their Zppt from 0 again).
+fn packed_headers(data: &[u8], ppm: bool, parts: usize) -> Vec<u8> {
     let spans = crate::decode::packet_spans(data).unwrap_or_else(|e| panic!("{e}"));
     // the main header ends at the first SOT
     let mut at = 2;
@@ -104,23 +105,47 @@ fn packed_headers(data: &[u8], ppm: bool) -> Vec<u8> {
         }
     }
     for (((index, _, _), h), b) in spans.iter().zip(&heads).zip(&bodies) {
-        let mut tp = Vec::new();
-        if !ppm {
-            for (z, chunk) in h.chunks(700).enumerate() {
-                segment(&mut tp, 0x61, z as u8, chunk);
+        let parts = parts.max(1);
+        let (hn, bn) = (h.len().div_ceil(parts).max(1), b.len().div_ceil(parts).max(1));
+        for part in 0..parts {
+            let hp = h.get(part * hn..((part + 1) * hn).min(h.len())).unwrap_or_default();
+            let bp = b.get(part * bn..((part + 1) * bn).min(b.len())).unwrap_or_default();
+            let mut tp = Vec::new();
+            if !ppm {
+                for (z, chunk) in hp.chunks(40).enumerate() {
+                    segment(&mut tp, 0x61, z as u8, chunk);
+                }
             }
+            let psot = 12 + tp.len() + 2 + bp.len();
+            out.extend([0xFF, 0x90, 0, 10]);
+            out.extend((*index as u16).to_be_bytes());
+            out.extend((psot as u32).to_be_bytes());
+            out.extend([part as u8, parts as u8]);
+            out.extend(tp);
+            out.extend([0xFF, 0x93]);
+            out.extend_from_slice(bp);
         }
-        let psot = 12 + tp.len() + 2 + b.len();
-        out.extend([0xFF, 0x90, 0, 10]);
-        out.extend((*index as u16).to_be_bytes());
-        out.extend((psot as u32).to_be_bytes());
-        out.extend([0, 1]);
-        out.extend(tp);
-        out.extend([0xFF, 0x93]);
-        out.extend_from_slice(b);
     }
     out.extend([0xFF, 0xD9]);
     out
+}
+
+/// Many empty PPM segments are refused at the first repeated index, in linear time.
+#[test]
+fn repeated_packed_marker_indexes_are_refused() {
+    let d = codestream(8, 8, &[(1, 1)], 0, (4, 4), 1, Some(0));
+    let mut bad = d[..d.len() - 2].to_vec();
+    // the main header ends at the first SOT: put the markers before it
+    let sot = (2..bad.len()).find(|&i| bad[i] == 0xFF && bad[i + 1] == 0x90).unwrap_or(bad.len());
+    let mut markers = Vec::new();
+    for _ in 0..80_000 {
+        markers.extend([0xFF, 0x60, 0, 3, 0]);
+    }
+    bad.splice(sot..sot, markers);
+    bad.extend([0xFF, 0xD9]);
+    let t = std::time::Instant::now();
+    assert!(decode(&bad).is_err());
+    assert!(t.elapsed() < std::time::Duration::from_secs(1), "{:?}", t.elapsed());
 }
 
 /// Packet headers packed into PPM or PPT markers decode to the same picture as in the packets
@@ -140,11 +165,13 @@ fn packed_packet_headers_decode_like_unpacked_ones() {
     assert!(st.is_ok_and(|s| s.success()), "ffmpeg");
     let data = std::fs::read(&f).unwrap_or_default();
     let want = decode(&data).unwrap_or_else(|e| panic!("{e}"));
-    for ppm in [false, true] {
-        let packed = packed_headers(&data, ppm);
+    // PPT in two tile-parts per tile: Zppt restarts in the second, whose headers follow the
+    // first's (sorting all of a tile's segments together would interleave them)
+    for (ppm, parts) in [(false, 1), (true, 1), (false, 2)] {
+        let packed = packed_headers(&data, ppm, parts);
         assert_ne!(packed, data);
-        let got = decode(&packed).unwrap_or_else(|e| panic!("ppm {ppm}: {e}"));
-        assert!(got == want, "ppm {ppm}: decodes differently");
+        let got = decode(&packed).unwrap_or_else(|e| panic!("ppm {ppm}, {parts} parts: {e}"));
+        assert!(got == want, "ppm {ppm}, {parts} parts: decodes differently");
         // damaged packed headers are errors or pictures, never a panic
         for cut in (2..packed.len()).step_by(97) {
             let _ = decode(&packed[..cut]);

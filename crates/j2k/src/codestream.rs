@@ -320,8 +320,12 @@ struct Defaults {
     qcc: Vec<Option<Quant>>,
     poc: Vec<Poc>,
     rgn: Vec<Option<u8>>,
-    /// PPM (main header) or PPT (tile-part header) segments: (Zppm / Zppt, data).
+    /// PPM (main header) or PPT (tile-part header) segments: (Zppm / Zppt, data). Zppt restarts
+    /// in every tile-part, so a tile-part's segments are taken out ([`Defaults::take_packed`])
+    /// before the next one's header is read.
     packed: Vec<(u8, Vec<u8>)>,
+    /// Bytes ever added to `packed` (kept as a running total so each marker costs O(1)).
+    packed_bytes: usize,
 }
 
 /// Most bytes of packed packet headers a codestream may carry (bounds what hostile PPM / PPT
@@ -330,7 +334,17 @@ const MAX_PACKED: usize = 1 << 28;
 
 impl Defaults {
     fn new(n: usize) -> Defaults {
-        Defaults { global: None, cod: None, coc: vec![None; n], qcd: None, qcc: vec![None; n], poc: Vec::new(), rgn: vec![None; n], packed: Vec::new() }
+        Defaults {
+            global: None,
+            cod: None,
+            coc: vec![None; n],
+            qcd: None,
+            qcc: vec![None; n],
+            poc: Vec::new(),
+            rgn: vec![None; n],
+            packed: Vec::new(),
+            packed_bytes: 0,
+        }
     }
 
     /// The packed segments in index order, concatenated.
@@ -338,6 +352,17 @@ impl Defaults {
         let mut segs: Vec<&(u8, Vec<u8>)> = self.packed.iter().collect();
         segs.sort_by_key(|s| s.0);
         segs.into_iter().flat_map(|s| s.1.iter().copied()).collect()
+    }
+
+    /// [`Defaults::packed`] of the segments read since the last call, which are removed (one
+    /// tile-part's PPT segments); `None` when there were none.
+    fn take_packed(&mut self) -> Option<Vec<u8>> {
+        if self.packed.is_empty() {
+            return None;
+        }
+        let out = self.packed();
+        self.packed.clear();
+        Some(out)
     }
 
     fn marker(&mut self, marker: u16, seg: &[u8], ncomp: usize) -> Result<()> {
@@ -396,8 +421,13 @@ impl Defaults {
             }
             PPM | PPT => {
                 let (&z, data) = seg.split_first().ok_or(Error::Truncated)?;
-                let held: usize = self.packed.iter().map(|p| p.1.len()).sum();
-                if held.saturating_add(data.len()) > MAX_PACKED {
+                // Zppm / Zppt numbers the segments of one scope (the main header or one
+                // tile-part), 0..=255, each once: at most 256 entries are ever held
+                if self.packed.iter().any(|p| p.0 == z) {
+                    return Err(Error::Invalid("repeated Zppm / Zppt index"));
+                }
+                self.packed_bytes = self.packed_bytes.saturating_add(data.len());
+                if self.packed_bytes > MAX_PACKED {
                     return Err(Error::TooLarge);
                 }
                 self.packed.push((z, data.to_vec()));
@@ -485,8 +515,9 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
     if ntiles > 65_535 {
         return Err(Error::Invalid("more than 65535 tiles"));
     }
-    // tiles in order of their first tile-part: index, data, header defaults, PPM headers
-    let mut parts: Vec<(u32, Vec<u8>, Defaults, Vec<u8>)> = Vec::new();
+    // tiles in order of their first tile-part: index, data, header defaults, packed headers (PPM,
+    // or each tile-part's PPT in turn), whether any were given
+    let mut parts: Vec<(u32, Vec<u8>, Defaults, Vec<u8>, bool)> = Vec::new();
     // PPM: Nppm and the packed headers of each tile-part in turn (A.7.4)
     let ppm = main.packed();
     let mut ppm_at = 0usize;
@@ -513,11 +544,11 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
         let slot = match parts.iter().position(|p| p.0 == isot) {
             Some(i) => i,
             None => {
-                parts.push((isot, Vec::new(), Defaults::new(n), Vec::new()));
+                parts.push((isot, Vec::new(), Defaults::new(n), Vec::new(), false));
                 parts.len() - 1
             }
         };
-        let Some((_, data, td, headers)) = parts.get_mut(slot) else { return Err(Error::Invalid("tile")) };
+        let Some((_, data, td, headers, has_headers)) = parts.get_mut(slot) else { return Err(Error::Invalid("tile")) };
         loop {
             let m = r.u16()?;
             if m == SOD {
@@ -532,6 +563,11 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
                 td.marker(m, seg, n)?;
             }
         }
+        // this tile-part's PPT segments, in Zppt order, follow the previous tile-parts' (A.7.5)
+        if let Some(ppt) = td.take_packed() {
+            headers.extend_from_slice(&ppt);
+            *has_headers = true;
+        }
         let body = cs.get(r.at..end.max(r.at)).unwrap_or_default();
         // with Psot 0 the tile-part runs to EOC
         let body = if psot == 0 { body.strip_suffix(&[0xFF, 0xD9]).unwrap_or(body) } else { body };
@@ -540,20 +576,15 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
             let mut pr = Reader { d: &ppm, at: ppm_at };
             let len = pr.u32()? as usize;
             headers.extend_from_slice(pr.bytes(len)?);
+            *has_headers = true;
             ppm_at = pr.at;
         }
         r.at = end.max(r.at);
     }
     let mut out = Vec::with_capacity(parts.len());
-    for (index, data, td, ppm_headers) in parts {
+    for (index, data, td, packed, has_headers) in parts {
         let params = Defaults::resolve(&main, &td)?;
-        let headers = if !ppm.is_empty() {
-            Some(ppm_headers)
-        } else if td.packed.is_empty() {
-            None
-        } else {
-            Some(td.packed())
-        };
+        let headers = has_headers.then_some(packed);
         out.push(Tile { index, params, data, headers });
     }
     Ok(Codestream { header, tiles: out })
