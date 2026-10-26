@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBo
 from .. import theme
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from .essential_graphics import TEMPLATE_MIME, dropped_template
 from .media_browser import FILES_MIME, dropped_files
 from .timeline_media import TimelineMedia
 
@@ -755,13 +756,14 @@ class TimelineCanvas(QWidget):
 
     # ----- drag and drop from the Project panel -----
     def dragEnterEvent(self, e) -> None:
-        if (e.mimeData().hasFormat(ITEM_MIME) or e.mimeData().hasFormat(FILES_MIME) or e.mimeData().hasUrls()) and self.sequence:
+        m = e.mimeData()
+        if (m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasUrls()) and self.sequence:
             e.acceptProposedAction()
 
     def dragMoveEvent(self, e) -> None:
         pos = e.position().toPoint()
         row = self.row_at(pos.y())
-        if row is None or pos.x() < HEADER_W:
+        if row is None or pos.x() < HEADER_W or (e.mimeData().hasFormat(TEMPLATE_MIME) and row.kind != "video"):
             self._drop_preview = None
             e.ignore()
         else:
@@ -783,6 +785,13 @@ class TimelineCanvas(QWidget):
         except ValueError:
             return
         t, row = preview
+        template = dropped_template(e.mimeData())
+        if template is not None:  # an Essential Graphics template card: egui places it on that video track
+            videos = [v.get("id") for v in (self.sequence or {}).get("video") or []]
+            if row.kind == "video" and row.track_id in videos:
+                self.command.emit("graphics.template.apply", {"template": template, "time": t, "track": videos.index(row.track_id)})
+                e.acceptProposedAction()
+            return
         if not e.mimeData().hasFormat(ITEM_MIME):
             paths = dropped_files(e.mimeData())
             if paths:

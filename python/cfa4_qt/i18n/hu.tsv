@@ -967,3 +967,92 @@
 	Warm Voice	Meleg hang
 	Wide Outdoor	Tág szabadtér
 	{name} (user)	{name} (saját)
+	Align Bottom	Igazítás alulra
+	Align Center Horizontally	Vízszintes középre igazítás
+	Align Center Vertically	Függőleges középre igazítás
+	Align Left	Igazítás balra
+	Align Right	Igazítás jobbra
+	Align Top	Igazítás felülre
+	Align and Transform	Igazítás és átalakítás
+	Alignment	Igazítás
+	All Caps	Csupa nagybetű
+	All Categories	Minden kategória
+	Anchor point	Horgonypont
+	Angle	Szög
+	Apply	Alkalmaz
+	Background	Háttér
+	Baseline Shift	Alapvonal-eltolás
+	Center	Közép
+	Center Align Text	Szöveg középre igazítása
+	Corner Radius	Saroksugár
+	Crawl Left	Balra úsztatás
+	Crawl Right	Jobbra úsztatás
+	Create new graphic	Új grafika létrehozása
+	Delete Layer	Réteg törlése
+	Distance	Távolság
+	End Off Screen	Képen kívül ér véget
+	Faux Bold	Ál-félkövér
+	Faux Italic	Ál-dőlt
+	Fill	Kitöltés
+	Font	Betűtípus
+	Font Size	Betűméret
+	Font Style	Betűstílus
+	Gradient	Színátmenet
+	Inner	Belső
+	Install Motion Graphics Template (.fcgt)	Mozgógrafikai sablon telepítése (.fcgt)
+	Install…	Telepítés…
+	Intro Duration	Bevezető hossza
+	Justify	Sorkizárt
+	Kerning	Alávágás
+	Layers	Rétegek
+	Leading	Sorköz
+	Left Align Text	Szöveg balra igazítása
+	Ligatures	Ligatúrák
+	Linear Gradient	Lineáris színátmenet
+	New Ellipse	Új ellipszis
+	New Rectangle	Új téglalap
+	New Text	Új szöveg
+	New Text Layer	Új szövegréteg
+	No templates match.	Nincs a keresésnek megfelelő sablon.
+	OK	OK
+	OpenType	OpenType
+	Orientation	Tájolás
+	Outer	Külső
+	Outro Duration	Lezárás hossza
+	Paragraph Text	Bekezdésszöveg
+	Path	Útvonal
+	Pin To	Rögzítés ehhez
+	Pinned Edges	Rögzített élek
+	Point Text	Pontszöveg
+	Polygon Sides	Sokszög oldalai
+	Postroll	Utófutás
+	Preroll	Előfutás
+	Responsive Design - Position	Rugalmas kialakítás – pozíció
+	Responsive Design - Time	Rugalmas kialakítás – idő
+	Right Align Text	Szöveg jobbra igazítása
+	Roll	Görgetés
+	Search templates	Sablonok keresése
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Jelölj ki egy grafikus klipet, vagy használd a Szöveg eszközt (T) a Program monitoron
+	Select a layer to edit its properties.	Jelölj ki egy réteget a tulajdonságai szerkesztéséhez.
+	Shadow	Árnyék
+	Shape	Alakzat
+	Small Caps	Kiskapitális
+	Solid	Egyszínű
+	Start Off Screen	Képen kívülről indul
+	Stroke	Körvonal
+	Stroke 2	Körvonal 2
+	Style	Stílus
+	Template Properties	Sablon tulajdonságai
+	Template: {name}	Sablon: {name}
+	Text Box Height	Szövegdoboz magassága
+	Text Box Width	Szövegdoboz szélessége
+	Text Layer Type	Szövegréteg típusa
+	Text Properties	Szöveg tulajdonságai
+	Text Styling	Szövegformázás
+	Toggle animation	Animáció be/ki
+	Toggle visibility	Láthatóság be/ki
+	Tracking	Betűköz
+	Underline	Aláhúzás
+	Video Frame	Videókép
+	{category} · My Template	{category} · Saját sablon
+	{n} editable properties	{n} szerkeszthető tulajdonság

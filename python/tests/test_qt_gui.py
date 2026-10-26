@@ -1366,7 +1366,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2618,3 +2618,111 @@ def test_essential_sound(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_essential_graphics(app, tmp_path: Path):
+    """egui's Essential Graphics panel: Browse lists and applies templates (a card dropped on a
+    video track places it there); Edit shows the selected graphic's layers and properties, a hot
+    number scrub is one undo step, typed values, stopwatches and the source text go to the engine."""
+    from cfa4_qt.hot_number import HotSpin
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.essential_graphics import template_mime
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    eg = win.essential_graphics
+    mouse = QtTest.QTest
+    Qt = QtCore.Qt
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def graphics_on(track: int) -> list[dict]:
+        items = ((win.sequence or {}).get("video") or [{}] * (track + 1))[track].get("items") or []
+        return [c for c in items if any(str(e.get("effect")).startswith("graphic_") for e in c.get("effects") or [])]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert not win.docks["Essential Graphics"].isHidden(), "open in the Editing workspace, as egui"
+        win.docks["Essential Graphics"].raise_()
+        assert wait_until(app, lambda: eg.tab() == "browse" and eg.browser.list.count() > 0, 20_000)
+        total = eg.browser.list.count()
+        eg.browser.search.setText("lower third")
+        assert 0 < eg.browser.list.count() < total
+        eg.browser.list.item(0).setSelected(True)
+        assert eg.browser.apply_button.isEnabled()
+        steps = len(history())
+        eg.browser.apply_button.click()
+        assert wait_until(app, lambda: len(history()) > steps and eg.editor.clip is not None and eg.tab() == "edit", 20_000), history()[-3:]
+        assert eg.editor.data.get("template"), "a template graphic shows its Template Properties"
+        assert eg.findChild(QtWidgets.QWidget, "graphics.section.TemplateProperties") is not None
+
+        # a new text graphic: layers and properties
+        win.execute("graphics.newText", {"text": "Hello Qt"})
+        assert wait_until(app, lambda: eg.editor.param("text") == "Hello Qt" and eg.editor.layer == 0, 20_000), eg.editor.data
+        clip = eg.editor.clip
+        eg.findChild(QtWidgets.QToolButton, "graphics.NewRectangle").click()
+        assert wait_until(app, lambda: len(eg.editor.data.get("layers") or []) == 2, 10_000)
+        win.execute("graphics.selectLayer", {"clip": clip, "layers": [0]})
+        assert wait_until(app, lambda: eg.editor.layer == 0 and eg.editor.data.get("kind") == "text", 10_000)
+
+        # a scrub of Opacity (half a percent a pixel) is one undo step
+        spin = eg.findChild(HotSpin, "graphics.prop.opacity")
+        eg.editor.scroll.ensureWidgetVisible(spin)
+        app.processEvents()
+        line = spin.lineEdit()
+        steps = len(history())
+        y = line.height() // 2
+        mouse.mousePress(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(30, y))
+        for x in (25, 15, 5):
+            mouse.mouseMove(line, QtCore.QPoint(x, y))
+            wait_until(app, lambda: False, 30)
+        mouse.mouseRelease(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(5, y))
+        assert wait_until(app, lambda: abs(float(eg.editor.param("opacity") or 0) - 88) < 0.5, 10_000), eg.editor.param("opacity")
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()[-4:]
+
+        # a click types a value; Enter sets it (and runs no menu shortcut)
+        spin = eg.findChild(HotSpin, "graphics.prop.scale")
+        eg.editor.scroll.ensureWidgetVisible(spin)
+        app.processEvents()
+        line = spin.lineEdit()
+        mouse.mouseClick(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(10, line.height() // 2))
+        assert line.hasFocus()
+        line.selectAll()
+        mouse.keyClicks(line, "50")
+        mouse.keyClick(line, Qt.Key.Key_Return)
+        assert wait_until(app, lambda: abs(float(eg.editor.param("scale") or 0) - 50) < 0.01, 10_000), eg.editor.param("scale")
+
+        # a stopwatch animates the property
+        eg.findChild(QtWidgets.QToolButton, "graphics.prop.rotation.stopwatch").click()
+        assert wait_until(app, lambda: ((eg.editor.data.get("params") or {}).get("rotation") or {}).get("animated") is True, 10_000)
+
+        # the source text
+        source = eg.findChild(QtWidgets.QPlainTextEdit, "graphics.sourceText")
+        eg.editor.scroll.ensureWidgetVisible(source)
+        source.setFocus()
+        source.moveCursor(QtGui.QTextCursor.MoveOperation.End)
+        mouse.keyClicks(source, "!")
+        assert wait_until(app, lambda: eg.editor.param("text") == "Hello Qt!", 10_000), eg.editor.param("text")
+
+        # a template card dropped on V2 places the template there; not on an audio track
+        canvas = win.timeline.canvas
+        assert graphics_on(1) == []
+        mime = template_mime(str(eg.browser.entries[0]["id"]))
+        a1 = next(r for r in canvas.rows if r.kind == "audio")
+        pos = QtCore.QPoint(canvas.width() - 60, a1.top + a1.height // 2)
+        canvas.dragMoveEvent(QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert canvas._drop_preview is None
+        v2 = next(r for r in canvas.rows if r.short == "V2")
+        pos = QtCore.QPoint(canvas.width() - 60, v2.top + v2.height // 2)
+        canvas.dragMoveEvent(QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert wait_until(app, lambda: len(graphics_on(1)) == 1, 20_000), win.sequence["video"][1]
+    finally:
+        win._quit_confirmed = True
+        win.close()

@@ -32,6 +32,7 @@ from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
+from .panels.essential_graphics import EssentialGraphicsPanel
 from .panels.essential_sound import EssentialSoundPanel
 from .panels.export import ExportDialog
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
@@ -51,7 +52,7 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 17  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound
+LAYOUT_VERSION = 18  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -71,6 +72,7 @@ DOCK_PLAN = (
     ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Essential Graphics", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Lumetri Color", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Essential Sound", Qt.DockWidgetArea.RightDockWidgetArea),
@@ -181,6 +183,9 @@ class MainWindow(QMainWindow):
         self.text_panel = TextPanel(engine, self)
         self.essential_sound = EssentialSoundPanel(self)
         self.essential_sound.attach_settings(self.settings)
+        self.essential_graphics = EssentialGraphicsPanel(engine, self)
+        self.essential_graphics.attach_settings(self.settings)
+        self._graphics_busy = False
         self._essential_busy = False
         self.lumetri = LumetriColorPanel(self)
         self.lumetri.attach_settings(self.settings)
@@ -233,6 +238,7 @@ class MainWindow(QMainWindow):
             "Media Browser": self.media_browser,
             "Text": self.text_panel,
             "Essential Sound": self.essential_sound,
+            "Essential Graphics": self.essential_graphics,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -262,6 +268,7 @@ class MainWindow(QMainWindow):
             self.media_browser,
             self.text_panel,
             self.essential_sound,
+            self.essential_graphics,
         ):
             panel.command.connect(self.execute)
         self.media_browser.attach_settings(self.settings)
@@ -271,6 +278,7 @@ class MainWindow(QMainWindow):
         self.effect_controls.seek.connect(self._seek_program)
         self.text_panel.seek.connect(self._seek_program)
         self.text_panel.run.connect(self.run_preset)
+        self.essential_graphics.run.connect(self.run_preset)
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.focusChanged.connect(self._focus_changed)
@@ -284,6 +292,7 @@ class MainWindow(QMainWindow):
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
         self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
         self.docks["Essential Sound"].visibilityChanged.connect(lambda shown: shown and self.update_essential_sound())
+        self.docks["Essential Graphics"].visibilityChanged.connect(lambda shown: shown and self.update_essential_graphics())
         self.docks["Text"].visibilityChanged.connect(lambda shown: shown and QTimer.singleShot(0, self.text_panel.refresh))
 
         self._refresh_timer = QTimer(self, singleShot=True, interval=40)
@@ -339,9 +348,10 @@ class MainWindow(QMainWindow):
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
         win.tabifyDockWidget(d["Timeline"], d["Events"])
-        # egui's Editing group: Properties, Text; its Color workspace puts Lumetri Color there
-        # too (opened from the Window menu)
-        win.tabifyDockWidget(d["Properties"], d["Text"])
+        # egui's Editing group: Properties, Essential Graphics, Text; its Color workspace puts
+        # Lumetri Color there too (opened from the Window menu)
+        win.tabifyDockWidget(d["Properties"], d["Essential Graphics"])
+        win.tabifyDockWidget(d["Essential Graphics"], d["Text"])
         win.tabifyDockWidget(d["Text"], d["Lumetri Color"])
         win.tabifyDockWidget(d["Lumetri Color"], d["Essential Sound"])  # egui's Audio workspace
         d["Lumetri Color"].hide()
@@ -760,6 +770,8 @@ class MainWindow(QMainWindow):
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
         self.update_lumetri()
         self.update_essential_sound()
+        self.update_essential_graphics()
+        self.essential_graphics.refresh_library()
         self.media_browser.refresh()
         self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()
@@ -1051,6 +1063,30 @@ class MainWindow(QMainWindow):
 
         self.engine.execute("essentialSound.inspect", {}, on_reply=done, on_error=failed)
 
+    def update_essential_graphics(self, time: int | None = None) -> None:
+        """The Essential Graphics ▸ Edit tab: the selected graphic clip at the playhead (``time``
+        while playing)."""
+        if self._graphics_busy:
+            self._graphics_again = True
+            return
+        if not self.engine.running or not self.essential_graphics.isVisible() or self.essential_graphics.scrubbing():
+            return
+        self._graphics_busy = True
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self._graphics_busy = False
+            self.essential_graphics.set_state(result)
+            if getattr(self, "_graphics_again", False):
+                self._graphics_again = False
+                self.update_essential_graphics()
+
+        def failed(_m: str) -> None:
+            self._graphics_busy = False
+            self._graphics_again = False
+            self.essential_graphics.set_state(None)
+
+        self.engine.call("graphics.inspect", {} if time is None else {"time": time}, on_reply=done, on_error=failed)
+
     def update_lumetri(self) -> None:
         """The Lumetri Color panel: the selected video clip's Lumetri values at the playhead."""
         if self._lumetri_busy:
@@ -1183,6 +1219,8 @@ class MainWindow(QMainWindow):
         self.update_mixer()
         self.update_clip_mixer()
         self.update_lumetri()
+        if self.essential_graphics.isVisible() and not self.essential_graphics.visibleRegion().isEmpty():
+            self.update_essential_graphics(ticks)
         if self.text_panel.isVisible():
             self.text_panel.set_playhead(ticks)
 
