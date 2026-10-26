@@ -43,3 +43,4 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
+cfa4-tts = { workspace = true }

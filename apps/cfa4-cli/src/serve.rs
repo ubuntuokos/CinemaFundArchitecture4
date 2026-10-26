@@ -681,6 +681,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "tts.previewAudio" => match crate::serve_tts::preview_audio(s, &params) {
+            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
         "audio.render" => match render_audio(s, &params) {
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),

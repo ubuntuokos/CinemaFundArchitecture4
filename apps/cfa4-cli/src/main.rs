@@ -38,6 +38,7 @@ mod serve_lumetri;
 mod serve_media_browser;
 mod serve_scopes;
 mod serve_text;
+mod serve_tts;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;

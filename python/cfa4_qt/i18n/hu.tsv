@@ -1056,3 +1056,39 @@
 	Video Frame	Videókép
 	{category} · My Template	{category} · Saját sablon
 	{n} editable properties	{n} szerkeszthető tulajdonság
+	Add pause	Szünet beszúrása
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	A Szünet beszúrása ezt illeszti be: [pause 1s]. A számot átírva hosszabb vagy rövidebb lesz a szünet, például [pause 500ms] vagy [pause 2s].
+	Add to timeline	Hozzáadás az idővonalhoz
+	Advanced	Speciális
+	Basic voices (built in)	Alaphangok (beépített)
+	Default	Alapértelmezett
+	Download	Letöltés
+	Download natural voices ({mb} MB)…	Természetes hangok letöltése ({mb} MB)…
+	Download of the natural voices failed: {e}	Nem sikerült letölteni a természetes hangokat: {e}
+	Download the natural voices? {mb} MB, once.	Letöltöd a természetes hangokat? {mb} MB, egyszeri letöltés.
+	Downloading…	Letöltés…
+	Editing the selected narration	A kijelölt narráció szerkesztése
+	Extra high	Nagyon magas
+	Extra low	Nagyon mély
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Forrás: {source} és github.com/cmusphinx/cmudict (kiejtések). Licenc: {license}. Minden fájlt rögzített SHA-256 ellenőrzőösszeggel vetünk össze.
+	Hear this voice	Hang meghallgatása
+	High	Magas
+	Low	Mély
+	Narration added on {track}	Narráció hozzáadva ide: {track}
+	Narration updated	Narráció frissítve
+	Natural voices	Természetes hangok
+	Natural voices installed	Természetes hangok telepítve
+	Natural voices need a one-time download.	A természetes hangokat egyszer le kell tölteni.
+	New narration	Új narráció
+	Pace	Tempó
+	Preview	Előnézet
+	Synthesizing narration…	Narráció előállítása…
+	Synthesizing…	Előállítás…
+	Text to Speech: {e}	Szövegfelolvasás: {e}
+	Type what you want the voice to say	Írd be, mit mondjon a hang
+	Vocal pitch	Hangmagasság
+	Voice	Hang
+	an audio track	egy hangsáv
+	no audio output (check Settings ▸ Audio Hardware)	nincs hangkimenet (lásd Beállítások ▸ Hanghardver)
+	the job disappeared	a feladat eltűnt
+	{name} (download)	{name} (letöltendő)

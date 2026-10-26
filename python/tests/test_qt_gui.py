@@ -1366,7 +1366,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound", "Essential Graphics", "Text to Speech"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2723,6 +2723,85 @@ def test_essential_graphics(app, tmp_path: Path):
         canvas.dragMoveEvent(QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
         canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
         assert wait_until(app, lambda: len(graphics_on(1)) == 1, 20_000), win.sequence["video"][1]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_text_to_speech(app, tmp_path: Path):
+    """egui's Text to Speech panel: voices grouped Natural / Basic, the natural voices' download
+    prompt, Add pause, Preview, Add to timeline, Save regenerates the selected narration, New, and
+    selecting a narration clip loads it and brings the panel forward."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    p = win.tts
+
+    def narrations() -> list[dict]:
+        return [c for t in (win.sequence or {}).get("audio") or [] for c in t.get("items") or [] if str(c.get("name") or "").startswith("Narration")]
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and bool(p.catalog), 60_000)
+        assert win.docks["Text to Speech"].isHidden(), "closed in the Editing workspace, as egui"
+        win.docks["Text to Speech"].show()
+        win.docks["Text to Speech"].raise_()
+        model = p.voice_combo.model()
+        rows = [model.item(i) for i in range(model.rowCount())]
+        assert rows[0].text() == "Natural voices" and not rows[0].isEnabled()
+        assert any(r.text() == "Basic voices (built in)" and not r.isEnabled() for r in rows)
+        assert p.voice == "basic-female" and not p.download_box.isVisible()
+
+        # a natural voice needs the one-time download first
+        p.voice_combo.setCurrentIndex(p.voice_combo.findData("kokoro-heart"))
+        p.voice_combo.activated.emit(p.voice_combo.currentIndex())
+        assert p.download_box.isVisible() and not p.hear.isEnabled()
+        p.download_button.click()
+        assert p.download_ok.isVisible() and "SHA-256" in p.download_note.text()
+        p.download_cancel.click()
+        assert p.download_button.isVisible()
+        p.voice_combo.setCurrentIndex(p.voice_combo.findData("basic-male"))
+        p.voice_combo.activated.emit(p.voice_combo.currentIndex())
+        assert not p.download_box.isVisible() and p.hear.isEnabled()
+
+        # the script, Preview, Add to timeline
+        assert not p.preview.isEnabled()
+        p.text.setPlainText("Hello from the Qt panel.")
+        p.add_pause.click()
+        assert p.text.toPlainText() == "Hello from the Qt panel. [pause 1s] "
+        p.text.insertPlainText("Goodbye.")
+        assert p.preview.isEnabled() and p.save.text().endswith("Add to timeline")
+        p.preview.click()
+        assert wait_until(app, lambda: p.pending is None and bool(win.statusBar().currentMessage()) and p.preview.isEnabled(), 30_000)
+        before = len(narrations())
+        p.save.click()
+        assert wait_until(app, lambda: len(narrations()) == before + 1 and p.loaded_from is not None, 30_000), win.statusBar().currentMessage()
+        assert p.save.text().endswith("Save") and p.new_button.isVisible()
+        clip = narrations()[-1]["clip"]
+
+        # Save regenerates it in place with the new pace
+        p.pace_slider.setValue(30)
+        assert p.pace == 1.5
+        p.save.click()
+        assert wait_until(app, lambda: "Edit Narration" in history(), 30_000), history()[-3:]
+        assert len(narrations()) == before + 1
+
+        # New starts an empty script; selecting the clip loads it and brings the panel forward
+        p.new_button.click()
+        assert p.text.toPlainText() == "" and p.loaded_from is None
+        win.docks["Text to Speech"].hide()
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: p.loaded_from is not None and p.text.toPlainText().startswith("Hello from the Qt panel."), 20_000)
+        assert wait_until(app, lambda: not win.docks["Text to Speech"].isHidden(), 5_000)
+        assert abs(p.pace - 1.5) < 1e-6
     finally:
         win._quit_confirmed = True
         win.close()

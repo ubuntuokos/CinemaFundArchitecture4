@@ -50,9 +50,10 @@ from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
+from .panels.tts import TextToSpeechPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 18  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics
+LAYOUT_VERSION = 19  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -76,6 +77,7 @@ DOCK_PLAN = (
     ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Lumetri Color", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Essential Sound", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Text to Speech", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -185,6 +187,7 @@ class MainWindow(QMainWindow):
         self.essential_sound.attach_settings(self.settings)
         self.essential_graphics = EssentialGraphicsPanel(engine, self)
         self.essential_graphics.attach_settings(self.settings)
+        self.tts = TextToSpeechPanel(engine, self)
         self._graphics_busy = False
         self._essential_busy = False
         self.lumetri = LumetriColorPanel(self)
@@ -239,6 +242,7 @@ class MainWindow(QMainWindow):
             "Text": self.text_panel,
             "Essential Sound": self.essential_sound,
             "Essential Graphics": self.essential_graphics,
+            "Text to Speech": self.tts,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -269,6 +273,7 @@ class MainWindow(QMainWindow):
             self.text_panel,
             self.essential_sound,
             self.essential_graphics,
+            self.tts,
         ):
             panel.command.connect(self.execute)
         self.media_browser.attach_settings(self.settings)
@@ -279,6 +284,9 @@ class MainWindow(QMainWindow):
         self.text_panel.seek.connect(self._seek_program)
         self.text_panel.run.connect(self.run_preset)
         self.essential_graphics.run.connect(self.run_preset)
+        self.tts.status.connect(lambda text: self.statusBar().showMessage(text, 6000))
+        self.tts.changed.connect(self.schedule_refresh)
+        self.tts.bring_forward.connect(lambda: (self.docks["Text to Speech"].show(), self.docks["Text to Speech"].raise_()))
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.focusChanged.connect(self._focus_changed)
@@ -354,8 +362,10 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["Essential Graphics"], d["Text"])
         win.tabifyDockWidget(d["Text"], d["Lumetri Color"])
         win.tabifyDockWidget(d["Lumetri Color"], d["Essential Sound"])  # egui's Audio workspace
+        win.tabifyDockWidget(d["Essential Sound"], d["Text to Speech"])
         d["Lumetri Color"].hide()
         d["Essential Sound"].hide()
+        d["Text to Speech"].hide()
         for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
@@ -772,6 +782,8 @@ class MainWindow(QMainWindow):
         self.update_essential_sound()
         self.update_essential_graphics()
         self.essential_graphics.refresh_library()
+        self.tts.has_sequence = self.sequence is not None
+        self.tts.follow_selection()  # also while hidden: a narration clip brings it forward
         self.media_browser.refresh()
         self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()

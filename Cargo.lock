@@ -912,6 +912,7 @@ dependencies = [
  "cfa4-scopes",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-tts",
  "log",
  "serde_json",
  "tokio",
