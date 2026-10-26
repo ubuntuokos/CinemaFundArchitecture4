@@ -228,3 +228,24 @@ fn the_29_97_cadence_maps_samples_to_frames() {
         assert!(ia.start_of(k) <= s && s < ia.start_of(k + 1), "{s} → {k}");
     }
 }
+
+/// A frame whose IAFrame rate disagrees with the track (a damaged rate field) plays as silence of
+/// the track's frame length: later frames stay where the cadence puts them, whatever the request
+/// boundaries.
+#[test]
+fn a_frame_with_the_wrong_rate_keeps_the_cadence() {
+    let rate = cfa4_iab::FrameRate::R24;
+    let mut frames: Vec<Frame> = (0..5).map(|i| bed_frame(rate, 0, i, Coding::Pcm)).collect();
+    frames[1] = bed_frame(cfa4_iab::FrameRate::R120, 0, 1, Coding::Pcm);
+    let bytes: Vec<Vec<u8>> = frames.iter().map(|f| cfa4_iab::write(f).unwrap()).collect();
+    let src = MxfSource::open("iab.mxf", Arc::from(iab_mxf(&bytes, (24, 1)))).unwrap();
+    let whole = src.audio(0, 6_000, 48_000).unwrap();
+    let tail = src.audio(4_000, 2_000, 48_000).unwrap();
+    for (w, t) in whole.channels.iter().zip(&tail.channels) {
+        assert_eq!(w[4_000..], t[..]);
+        assert!(w[2_000..4_000].iter().all(|&v| v == 0.0));
+    }
+    // frame 2 starts at sample 4000, as in a track of good frames
+    let r2 = cfa4_iab::render(&frames[2], &Layout::surround_7_1()).unwrap();
+    assert_eq!(whole.channels[0][4_000..4_100], r2[0][..100]);
+}

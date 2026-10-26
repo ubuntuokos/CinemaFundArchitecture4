@@ -160,7 +160,7 @@ fn pan_point(layout: &Layout, p: [f32; 3], spread: [f32; 3], zones: Option<&[Zon
             && d <= tol
             && let Some(v) = g.get_mut(i)
         {
-            *v = 1.0;
+            *v = layout.speakers.get(i).map_or(1.0, zone);
             return g;
         }
     }
@@ -169,8 +169,13 @@ fn pan_point(layout: &Layout, p: [f32; 3], spread: [f32; 3], zones: Option<&[Zon
         if s.lfe {
             continue;
         }
+        // a zone at 0 takes the speaker out of the panning; other zone gains apply after the
+        // normalisation, or equal gains everywhere would cancel out
+        if zone(s) <= 0.0 {
+            continue;
+        }
         let d2: f32 = s.position.iter().zip(p).map(|(a, b)| (a - b) * (a - b)).sum();
-        *v = zone(s) / ((d2 + eps) * (d2 + eps));
+        *v = 1.0 / ((d2 + eps) * (d2 + eps));
     }
     let sum: f32 = g.iter().sum();
     for v in &mut g {
@@ -180,8 +185,8 @@ fn pan_point(layout: &Layout, p: [f32; 3], spread: [f32; 3], zones: Option<&[Zon
     }
     let norm = g.iter().map(|v| v * v).sum::<f32>().sqrt();
     if norm > 0.0 {
-        for v in &mut g {
-            *v /= norm;
+        for (v, s) in g.iter_mut().zip(&layout.speakers) {
+            *v = *v / norm * zone(s);
         }
     }
     g

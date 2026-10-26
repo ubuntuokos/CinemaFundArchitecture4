@@ -112,11 +112,26 @@ impl IabAudio {
             .read_sample(bytes, self.track, j)
             .map_err(|e| e.to_string())
             .and_then(|b| cfa4_iab::parse(&b).map_err(|e| e.to_string()))
-            .and_then(|f| cfa4_iab::render(&f, &self.layout).map_err(|e| e.to_string()))
+            .and_then(|f| {
+                // a frame whose rate disagrees with the track would shift every later frame:
+                // it plays as silence of the track's cadence instead
+                if f.frame_rate != self.rate || f.rate96() != self.rate96 {
+                    return Err(format!("frame rate {:?} differs from the track's {:?}", f.frame_rate, self.rate));
+                }
+                cfa4_iab::render(&f, &self.layout).map_err(|e| e.to_string())
+            })
             .unwrap_or_else(|e| {
                 log::warn!("IAB frame {j}: {e}");
                 vec![vec![0.0; n]; self.layout.channels()]
             });
+        // every frame is exactly its cadence length, whatever the payload held
+        let out: Vec<Vec<f32>> = out
+            .into_iter()
+            .map(|mut c| {
+                c.resize(n, 0.0);
+                c
+            })
+            .collect();
         let out = Arc::new(out);
         *cache = Some((j, out.clone()));
         out
@@ -566,7 +581,8 @@ impl MediaSource for MxfSource {
             let mut at = ia.start_of(k) as i64;
             while at < b && k < ia.count {
                 let out = ia.rendered(&self.file, &self.bytes, k);
-                let len = out.first().map_or(0, Vec::len) as i64;
+                // advance by the track's cadence, as `frame_of` locates frames
+                let len = (ia.start_of(k + 1) as i64).saturating_sub(at);
                 // the overlap of this frame [at, at + len) with the request [a, b)
                 let (lo, hi) = (a.max(at), b.min(at + len));
                 for (c, ch) in out.iter().enumerate() {

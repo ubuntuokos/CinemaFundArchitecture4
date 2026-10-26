@@ -244,6 +244,15 @@ fn objects_pan_by_position_with_snap_and_zones() {
     let g = at(Pan { zones: Some(zones), ..pan(32767, 32767, 0) });
     assert_eq!(g[0], 0.0);
     assert!(g[6] > 0.0);
+    // a zone gain attenuates: every zone at about half gives about half the unity level, panned
+    // and snapped alike (equal gains must not cancel in the normalisation)
+    let half = [ZoneGain::Code(512); 9];
+    let k = ZoneGain::Code(512).linear();
+    for p in [pan(49151, 32767, 0), Pan { snap: Snap::On(None), ..pan(32767, 32767, 0) }] {
+        let unity: f32 = at(p.clone()).iter().map(|v| v * v).sum::<f32>().sqrt();
+        let g: f32 = at(Pan { zones: Some(half), ..p }).iter().map(|v| v * v).sum::<f32>().sqrt();
+        assert!((g - unity * k).abs() < unity * 0.01, "{g} vs {unity} × {k}");
+    }
     // the LFE never carries objects
     assert_eq!(at(pan(49151, 32767, 0))[3], 0.0);
     assert_eq!(n, 1000);
