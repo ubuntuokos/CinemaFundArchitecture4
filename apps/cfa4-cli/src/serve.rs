@@ -715,6 +715,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "project.panel" => match crate::serve_project::panel(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
         "lumetri.presetThumbnail" => match crate::serve_lumetri::preset_thumbnail(&params) {
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),

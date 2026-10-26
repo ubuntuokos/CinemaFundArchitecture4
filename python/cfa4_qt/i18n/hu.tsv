@@ -1109,3 +1109,58 @@
 	Search effects	Effektek keresése
 	Text to Speech: another sequence is open now; the narration was not placed	Szövegfelolvasás: közben másik szekvencia nyílt meg, a narráció nem került elhelyezésre
 	Effect presets	Effektkészletek
+	Automate to Sequence	Automatizálás szekvenciába
+	Bin: {name}	Tároló: {name}
+	Clear (Delete)	Törlés (Delete)
+	Convert to Master Clip	Átalakítás mesterklippé
+	Date Created	Létrehozás dátuma
+	Delete	Törlés
+	Descending	Csökkenő
+	Drag to reorder; tick the columns to show.	Húzással rendezheti át; jelölje be a megjelenítendő oszlopokat.
+	Extra Large	Nagyon nagy
+	Find	Keresés
+	Freeform	Szabad elrendezés
+	Freeform View Options…	Szabad nézet beállításai…
+	Icon	Ikon
+	Icon View	Ikonnézet
+	Large	Nagy
+	List	Lista
+	Manage Saved View Presets	Mentett nézetkészletek kezelése
+	Medium (default)	Közepes (alapértelmezett)
+	Metadata Display	Metaadat-megjelenítés
+	Metadata Display…	Metaadat-megjelenítés…
+	Name:	Név:
+	New Bin From Selection	Új tároló a kijelölésből
+	New Item	Új elem
+	New Project Shortcut	Új projekt-parancsikon
+	New Search Bin	Új keresőtároló
+	New Sequence From Clip	Új szekvencia a klipből
+	Open in New Tab	Megnyitás új lapon
+	Open in New Window	Megnyitás új ablakban
+	Open in Place	Megnyitás helyben
+	Open in Source Monitor	Megnyitás a forrásmonitoron
+	Open in Timeline	Megnyitás az idővonalon
+	Preview Area	Előnézeti terület
+	Project View Preset {n}	{n}. projektnézet-készlet
+	Project: {name}	Projekt: {name}
+	Refresh Project	Projekt frissítése
+	Refresh Sort Order	Rendezési sorrend frissítése
+	Rename	Átnevezés
+	Restore View Preset	Nézetkészlet visszaállítása
+	Reveal Project in Finder…	Projekt megjelenítése a fájlkezelőben…
+	Reveal in Finder	Megjelenítés a fájlkezelőben
+	Save As New View Preset	Mentés új nézetkészletként
+	Save Current View Preset	Jelenlegi nézetkészlet mentése
+	Save Project	Projekt mentése
+	Select an item to preview it	Válasszon ki egy elemet az előnézethez
+	Set Poster Frame	Plakátkocka beállítása
+	Small	Kicsi
+	Sort Icons	Ikonok rendezése
+	Thumbnail controls for all pointing devices	Bélyegkép-vezérlők minden mutatóeszközhöz
+	Thumbnails	Bélyegképek
+	Thumbnails show effects applied	A bélyegképek mutatják az alkalmazott effekteket
+	Up one level	Egy szinttel feljebb
+	User Order	Saját sorrend
+	Video Usage: {vu}  Audio Usage: {au}	Videóhasználat: {vu}  Hanghasználat: {au}
+	Zoom	Nagyítás
+	{n} items	{n} elem

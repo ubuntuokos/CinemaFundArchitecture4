@@ -2000,7 +2000,15 @@ def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
         # Metadata and Info follow the Project panel's selection
         movie = next(i for i in _items(win.project) if i.get("name") == "Ocean_Sunset.mp4")
         tree = win.project_panel.tree
-        node = next(it for it in tree.findItems("Ocean_Sunset.mp4", QtCore.Qt.MatchFlag.MatchRecursive) if it.data(0, ITEM_ROLE) == movie["item"])
+
+        def movie_row():
+            return next((it for it in tree.findItems("Ocean_Sunset.mp4", QtCore.Qt.MatchFlag.MatchRecursive) if it.data(0, ITEM_ROLE) == movie["item"]), None)
+
+        win.project_panel.main.set_mode("list")
+        assert wait_until(app, lambda: win.project_panel.main.mode == "list", 10_000)
+        win.project_panel.filter.setText("Ocean")  # bins start closed: the search lists it
+        assert wait_until(app, lambda: movie_row() is not None, 10_000)
+        node = movie_row()
         tree.setFocus()
         tree.setCurrentItem(node)
         node.setSelected(True)
@@ -3378,3 +3386,109 @@ def test_scopes_take_turns_when_frames_come_faster_than_replies(app):
         reply({"w": 1, "h": 1}, b"\0\0\0\0")
     kinds = [k for k, _r in calls]
     assert {"vectorscope", "waveform"} <= set(kinds[2:]), kinds
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_project_panel(app, tmp_path: Path):
+    """egui's Project panel: List view with the Metadata Display columns and sorting, bins that
+    twirl open, inline rename, Icon view cards, New Bin ready to name, bins in a tab or a window,
+    the Preview Area and the panel menu."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.project import BIN_ROLE, ITEM_ROLE, MetadataDisplayDialog, all_items
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    pp = win.project_panel
+    main = pp.main
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and bool(main.data.get("rows")), 30_000)
+        win.docks["Project"].raise_()
+        # Icon view (the default): bins and cards
+        main.set_mode("icon")
+        assert wait_until(app, lambda: main.mode == "icon" and main.icons.count() > 0, 10_000)
+        assert main.stack.currentWidget() is main.icons
+        assert main.icons.grab().width() > 0
+        # List view: the columns, a bin twirled open shows its items
+        main.set_mode("list")
+        assert wait_until(app, lambda: main.mode == "list" and main.tree.topLevelItemCount() > 0, 10_000)
+        names = [main.tree.headerItem().text(i) for i in range(main.tree.columnCount())]
+        assert names[0] == "Name" and "Media Duration" in names, names
+        footage = next(main.tree.topLevelItem(i) for i in range(main.tree.topLevelItemCount()) if main.tree.topLevelItem(i).text(0) == "Footage")
+        assert footage.childCount() == 0, "bins start closed"
+        footage.setExpanded(True)
+        assert wait_until(app, lambda: any(it.data(0, ITEM_ROLE) == movie_id() for it in all_items(main.tree)), 10_000)
+        # a header click sorts by that column
+        col = names.index("Media Duration")
+        main.tree.header().sectionClicked.emit(col)
+        assert wait_until(app, lambda: (main.data.get("sort") or {}).get("column") == "Media Duration", 10_000), main.data.get("sort")
+        # inline rename (F2 / a slow click): the edited name is the item's new name
+        node = next(it for it in all_items(main.tree) if it.data(0, ITEM_ROLE) == movie_id())
+        assert main.rename(movie_id(), None)
+        editor = main.tree.findChild(QtWidgets.QLineEdit)
+        assert editor is not None
+        editor.setText("Sunset Renamed")
+        QtTest.QTest.keyClick(editor, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: any(i.get("name") == "Sunset Renamed" for i in _items(win.project)), 10_000)
+        del node
+        # selecting rows selects the items in the engine; the count and the Preview Area follow
+        pp.set_view({"previewArea": True})
+        node = next(it for it in all_items(main.tree) if it.data(0, ITEM_ROLE) == movie_id())
+        node.setSelected(True)
+        assert wait_until(app, lambda: (main.data.get("preview") or {}).get("item") == movie_id(), 10_000)
+        assert wait_until(app, lambda: not main.preview.isHidden(), 10_000) and "of" in main.count.text(), main.count.text()
+        # New Bin: made in the shown bin, its name ready to type
+        before = sum(1 for it in all_items(main.tree) if it.data(0, BIN_ROLE) is not None)
+        main._footer("file.newBin")
+        assert wait_until(app, lambda: main.tree.findChild(QtWidgets.QLineEdit) is not None and main.tree.state() == QtWidgets.QAbstractItemView.State.EditingState, 10_000)
+        editor = main.tree.findChild(QtWidgets.QLineEdit)
+        editor.setText("Selects")
+        QtTest.QTest.keyClick(editor, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: any(it.text(0) == "Selects" and it.data(0, BIN_ROLE) is not None for it in all_items(main.tree)), 10_000)
+        assert sum(1 for it in all_items(main.tree) if it.data(0, BIN_ROLE) is not None) == before + 1
+        selects = next(it.data(0, BIN_ROLE) for it in all_items(main.tree) if it.text(0) == "Selects")
+        # dropping items on a bin moves them there
+        main._moved([movie_id()], selects)
+        assert wait_until(app, lambda: any(it.data(0, ITEM_ROLE) == movie_id() and it.parent() is not None and it.parent().data(0, BIN_ROLE) == selects for it in all_items(main.tree)) or selects not in main.expanded, 10_000)
+        # a bin opened in a tab, in a window and in place
+        pp.open_bin(main, selects, "newTab")
+        assert pp.tabs.isVisible() and pp.tabs.count() == 2
+        assert wait_until(app, lambda: pp.tabs.tabText(1) == "Bin: Selects", 10_000), pp.tabs.tabText(1)
+        tab = pp.shown()
+        assert wait_until(app, lambda: tab.data.get("bin") == selects, 10_000)
+        pp.close_tab(1)
+        assert not pp.tabs.isVisible()
+        pp.open_bin(main, selects, "newWindow")
+        assert len(pp.windows) == 1
+        assert wait_until(app, lambda: pp.windows[0].windowTitle() == "Bin: Selects", 10_000)
+        pp.windows[0].close()
+        app.processEvents()
+        main.navigate(selects)
+        assert wait_until(app, lambda: main.data.get("bin") == selects and main.crumb.text().endswith("/ Selects"), 10_000), main.crumb.text()
+        assert main.up.isEnabled()
+        main.go_up()
+        assert wait_until(app, lambda: main.data.get("bin") == main.data.get("root"), 10_000)
+        # the panel menu toggles view settings; Metadata Display picks the columns
+        menu = main.menu_button.menu()
+        menu.aboutToShow.emit()
+        thumbs = next(a for a in menu.actions() if a.objectName() == "project.menu.thumbnails")
+        thumbs.trigger()
+        assert wait_until(app, lambda: pp.view.get("thumbnails") is True, 10_000)
+        dlg = MetadataDisplayDialog(["Name", "Label", "Media Duration"], ["Name", "Media Duration"])
+        dlg.list.item(2).setCheckState(QtCore.Qt.CheckState.Checked)
+        assert dlg.columns() == ["Name", "Media Duration", "Label"]
+        assert pp.grab().width() > 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def movie_id() -> int:
+    return _MOVIE["id"]
+
+
+_MOVIE: dict = {"id": 5}  # Ocean_Sunset.mp4 in the demo project

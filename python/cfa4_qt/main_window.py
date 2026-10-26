@@ -160,7 +160,7 @@ class MainWindow(QMainWindow):
             mon.message.connect(lambda m: self.events.log(m, error=True))
         self.meters = AudioMetersPanel(self)
         self.meters.watch(self.monitor, self.source_monitor)
-        self.project_panel = ProjectPanel(self)
+        self.project_panel = ProjectPanel(engine, self)
         self.effects = EffectsPanel(engine, self)
         self.effects.attach_settings(self.settings)
         self.inspector = PropertiesPanel(engine, self)
@@ -304,6 +304,8 @@ class MainWindow(QMainWindow):
         if isinstance(app, QApplication):
             app.focusChanged.connect(self._focus_changed)
         self.project_panel.invoke.connect(self.invoke)
+        self.project_panel.run.connect(self.run_preset)
+        self.project_panel.message.connect(lambda text: (self.events.log(text, error=True), self.statusBar().showMessage(text, 6000)))
         self.timeline.canvas.seek.connect(self._scrub)
         self.monitor.playhead_moved.connect(self._playback_moved)
         self.source_monitor.playhead_moved.connect(lambda _t: self.update_timecode())
