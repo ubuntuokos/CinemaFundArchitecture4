@@ -193,7 +193,7 @@ class PropertiesPanel(QWidget):
         self.audio_clip: dict[str, Any] | None = None  # … of the first selected audio clip
         self.video = False  # the first selected clip is on a video track
         self.collapsed: set[str] = set()
-        self._pending: dict[tuple[int, str, str], Any] = {}
+        self._pending: dict[tuple[int, str, str, int | None], Any] = {}
         self._applied: set[tuple[int, str]] = set()  # effects applied since the last inspect
         self._send_timer = QTimer(self, singleShot=True, interval=SEND_DELAY_MS)
         self._send_timer.timeout.connect(self.flush)
@@ -412,7 +412,11 @@ class PropertiesPanel(QWidget):
 
     def set_param(self, clip: dict[str, Any], effect: str, param: str, value: Any) -> None:
         self.ensure_effect(clip, effect)
-        self._pending[(int(clip["clip"]), effect, param)] = value
+        monitor = getattr(self.window(), "monitor", None)
+        at = None  # while playing, the shown frame: the engine's playhead stays where playback started
+        if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
+            at = monitor.playhead
+        self._pending[(int(clip["clip"]), effect, param, at)] = value
         self._send_timer.start()
 
     def new_gesture(self) -> None:
@@ -430,8 +434,11 @@ class PropertiesPanel(QWidget):
             return
         begin = self._new_gesture or not self._last_send.isValid() or self._last_send.elapsed() > GESTURE_GAP_MS
         self._new_gesture = False
-        for (clip, effect, param), value in self._pending.items():
-            self.command.emit("effects.setParam", {"clip": clip, "effect": effect, "param": param, "value": value, "merge": True, "begin": begin})
+        for (clip, effect, param, at), value in self._pending.items():
+            params = {"clip": clip, "effect": effect, "param": param, "value": value, "merge": True, "begin": begin}
+            if at is not None:
+                params["time"] = at
+            self.command.emit("effects.setParam", params)
         self._pending.clear()
         self._last_send.restart()
 

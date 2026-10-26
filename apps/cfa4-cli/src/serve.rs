@@ -227,6 +227,18 @@ fn item_size(s: &Session, id: cfa4_project::ItemId) -> (u32, u32) {
     item.as_media().and_then(|m| m.info.video.as_ref()).map(|v| (v.width, v.height)).unwrap_or((1920, 1080))
 }
 
+/// The frame's pixels: RGB over black, alpha opaque, or, with `alpha: true`, the frame's own
+/// alpha in the fourth byte (the monitors' Alpha display mode).
+fn frame_bytes(img: &cfa4_render::Image, p: &Value) -> Vec<u8> {
+    let mut bytes = img.over_black_rgba8();
+    if p.get("alpha").and_then(Value::as_bool).unwrap_or(false) {
+        for (o, px) in bytes.chunks_exact_mut(4).zip(img.px.chunks_exact(4)) {
+            o[3] = (px[3].clamp(0.0, 1.0) * 255.0).round() as u8;
+        }
+    }
+    bytes
+}
+
 fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     if wants_source(p)? {
         let item = source_item(s, p)?;
@@ -238,7 +250,7 @@ fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         };
         let provider = s.media.provider(s.project.clone(), s.services.clone());
         let img = cfa4_render::render_item(&s.project, item, t, scale, &provider).ok_or("the source picture is unavailable (offline media?)")?;
-        let bytes = img.over_black_rgba8();
+        let bytes = frame_bytes(&img, p);
         let par = s.project.source_par(item).map_or(1.0, cfa4_project::par_ratio);
         return Ok((
             json!({"w": img.w, "h": img.h, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "item": item.0, "target": "source"}),
@@ -250,7 +262,7 @@ fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let scale = frame_scale(w, h, p)?;
     let t = time_param(s, p)?;
     let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
-    let bytes = img.over_black_rgba8();
+    let bytes = frame_bytes(&img, p);
     let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
     let par = cfa4_project::par_ratio(seq.settings.par);
     Ok((
@@ -555,7 +567,7 @@ const MAX_PEAK_BUCKETS: usize = 20_000;
 const MAX_PEAK_FRAMES: i64 = 48_000 * 600;
 
 /// `media.peaks {item, start, end, buckets}`: the waveform of a media item's sound between two
-/// media times (ticks), as `buckets` (min, max) pairs of the channels mixed to mono, f32le. The
+/// media times (ticks), as `buckets` (min, max) pairs over all the channels, f32le. The
 /// timeline draws its audio clips from these.
 fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let item = source_item(s, p)?;
@@ -590,13 +602,14 @@ fn media_peaks(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
             let n = chunk.min(total - done);
             let start = f0 + i64::try_from(done).map_err(|_| "span too long")?;
             let sound = source.audio(start, n, sr).map_err(|e| format!("audio decoding failed: {e}"))?;
-            let chans = sound.channels.len().max(1) as f32;
             for i in 0..n {
-                let v: f32 = sound.channels.iter().map(|c| c.get(i).copied().unwrap_or(0.0)).sum::<f32>() / chans;
                 let b = ((done + i) as u128 * buckets as u128 / total as u128) as usize;
                 if let Some(pair) = out.get_mut(b * 2..b * 2 + 2) {
-                    pair[0] = pair[0].min(v);
-                    pair[1] = pair[1].max(v);
+                    // the extremes over every channel: a mono mix would cancel out-of-phase channels
+                    for v in sound.channels.iter().filter_map(|c| c.get(i).copied()) {
+                        pair[0] = pair[0].min(v);
+                        pair[1] = pair[1].max(v);
+                    }
                 }
             }
             done += n;
@@ -776,6 +789,17 @@ pub fn run(mut s: Session) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn frame_bytes_keep_the_alpha_only_when_asked() {
+        let mut img = cfa4_render::Image::new(2, 1);
+        img.px = vec![0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0];
+        let opaque = frame_bytes(&img, &json!({}));
+        assert_eq!((opaque[3], opaque[7]), (255, 255));
+        let alpha = frame_bytes(&img, &json!({"alpha": true}));
+        assert_eq!((alpha[3], alpha[7]), (128, 0));
+        assert_eq!(alpha[..3], opaque[..3]);
+    }
 
     #[test]
     fn parses_requests_and_rejects_non_requests() {

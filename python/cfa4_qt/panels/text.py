@@ -51,6 +51,33 @@ ID_ROLE = Qt.ItemDataRole.UserRole
 FORMAT_LABELS = (N_("Subtitle"), N_("CEA-608"), N_("CEA-708"), N_("Teletext"))
 
 
+def rgba_color(value: Any) -> QColor:
+    """The engine's caption colour (``#rrggbbaa`` or ``#rrggbb``): QColor reads eight digits as
+    ``#aarrggbb``, so the components are taken apart here."""
+    text = str(value or "").strip().lstrip("#")
+    try:
+        if len(text) in (6, 8):
+            return QColor(int(text[0:2], 16), int(text[2:4], 16), int(text[4:6], 16))
+    except ValueError:
+        pass
+    return QColor("#ffffff")
+
+
+def word_at(words: list[dict[str, Any]], t: int) -> int | None:
+    """The word playing at ``t`` (engine ``transcript::word_at``): the last starting at or
+    before it, if it has not ended."""
+    best = None
+    for w in words:
+        start, end = w.get("start"), w.get("end")
+        if not isinstance(start, int) or not isinstance(end, int) or start > t:
+            continue
+        if best is None or start >= best[0]:
+            best = (start, end, w.get("i"))
+    if best is None or t >= best[1]:
+        return None
+    return best[2] if isinstance(best[2], int) else None
+
+
 def _tool(parent: QWidget, name: str, text: str, tip: str) -> QToolButton:
     b = QToolButton(parent)
     b.setObjectName(name)
@@ -283,7 +310,8 @@ class CaptionsTab(QWidget):
         self.merge = _tool(self.body, "text.captions.merge", "⛓", N_("Merge selected captions"))
         self.delete = _tool(self.body, "text.captions.delete", "🗑", N_("Delete selected captions"))
         self.export = _tool(self.body, "text.captions.export", "⇪", N_("Export captions…"))
-        self.add.clicked.connect(lambda: panel.send("captions.add", {"track": self.track().get("id")}))
+        # at the shown playhead: while playing the engine's stays where playback started
+        self.add.clicked.connect(lambda: panel.send("captions.add", {"track": self.track().get("id"), "time": panel.playhead()}))
         self.split.clicked.connect(self._split)
         self.merge.clicked.connect(lambda: panel.send("captions.merge", {}))
         self.delete.clicked.connect(lambda: panel.send("captions.delete", {}))
@@ -479,7 +507,7 @@ class CaptionsTab(QWidget):
             self.font_box.setCurrentText(font)
             if not self.size.hasFocus():
                 self.size.setValue(float(st.get("size") or 40))
-            color = QColor(str(st.get("color") or "#ffffff"))
+            color = rgba_color(st.get("color"))
             self.color.setStyleSheet(f"background: {color.name()};")
             self.color.setProperty("cfa4_color", color.name())
             self.box.setChecked(bool(st.get("background")))
@@ -729,7 +757,7 @@ class TextPanel(QWidget):
         from ..timecode import format_timecode, frame_ticks
 
         try:
-            return format_timecode(int(ticks), frame_ticks(self.sequence or {}))
+            return format_timecode(int(ticks), frame_ticks((self.sequence or {}).get("settings")))
         except (TypeError, ValueError, ZeroDivisionError):
             return ""
 
@@ -743,6 +771,8 @@ class TextPanel(QWidget):
         """The Program playhead moved: the current word and caption follow it."""
         if ticks != self._playhead:
             self._playhead = int(ticks)
+            # the word under the shown playhead: the engine's own stays where playback started
+            self.transcript.set_current(word_at(self.transcript.words, self._playhead))
             if self.tab() != "Graphics":
                 self.refresh()
 
@@ -788,7 +818,11 @@ class TextPanel(QWidget):
 
         call("text.inspect", {"time": self.playhead()}, self._on_text, command=False)
         if tab == "Transcript":
-            call("transcript.inspect", {}, lambda r: self.transcript.set_data(r, self.speech))
+            def transcript(r: Any) -> None:
+                self.transcript.set_data(r, self.speech)
+                self.transcript.set_current(word_at(self.transcript.words, self.playhead()))
+
+            call("transcript.inspect", {}, transcript)
         elif tab == "Captions":
             call("captions.list", {}, self.captions.set_data)
             if not self._fonts_asked:

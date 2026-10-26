@@ -70,11 +70,17 @@ class TimecodePanel(QWidget):
         except ValueError:
             data = None
         if isinstance(data, dict):
-            rows = [r for r in data.get("rows") or [] if isinstance(r, dict)]
+            raw_rows = data.get("rows")
+            rows = [r for r in raw_rows if isinstance(r, dict)] if isinstance(raw_rows, list) else []  # saved state is untrusted
+
+            def valid(r: dict[str, Any], key: str, allowed: tuple[tuple[str, str], ...]) -> bool:
+                v = r.get(key, DEFAULT_ROW[key])
+                return isinstance(v, str) and v in dict(allowed)
+
             ok = [
                 {k: str(r.get(k, DEFAULT_ROW[k])) for k in DEFAULT_ROW}
                 for r in rows
-                if r.get("source", "active") in dict(TC_SOURCES) and r.get("mode", "current") in dict(TC_MODES) and r.get("display", "Timecode") in dict(TC_DISPLAYS)
+                if valid(r, "source", TC_SOURCES) and valid(r, "mode", TC_MODES) and valid(r, "display", TC_DISPLAYS)
             ]
             self.rows = ok or [dict(DEFAULT_ROW)]
             self.show_name = bool(data.get("showName", True))

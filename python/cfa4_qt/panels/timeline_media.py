@@ -60,10 +60,25 @@ class TimelineMedia(QObject):
         return None
 
     def waveform(self, item: Any, start: int, end: int) -> list[tuple[float, float]] | None:
+        """The peaks of ``start``..``end``, spread evenly over that range. A range longer than the
+        engine reads per request comes in pieces of the same density, joined once all are here."""
         if not isinstance(item, int) or end <= start:
             return None
-        end = min(int(end), int(start) + MAX_PEAK_SECONDS * TICKS_PER_SECOND)
-        key = (item, int(start), end)
+        start, end = int(start), int(end)
+        span = MAX_PEAK_SECONDS * TICKS_PER_SECOND
+        if end - start <= span:
+            return self._piece((item, start, end, PEAKS_PER_SECOND, 32))
+        out: list[tuple[float, float]] = []
+        whole = True
+        for t0 in range(start, end, span):
+            piece = self._piece((item, t0, min(end, t0 + span), MAX_BUCKETS / MAX_PEAK_SECONDS, 1))
+            if piece is None:
+                whole = False  # keep asking for the other pieces
+            elif whole:
+                out.extend(piece)
+        return out if whole else None
+
+    def _piece(self, key: tuple) -> list[tuple[float, float]] | None:
         if key in self.peaks:
             self.peaks.move_to_end(key)
             return self.peaks[key]
@@ -94,9 +109,9 @@ class TimelineMedia(QObject):
                     on_error=lambda _m, k=key: self._thumb_done(k, None, None),
                 )
             else:
-                item, t0, t1 = key
+                item, t0, t1, per_second, least = key
                 seconds = (t1 - t0) / TICKS_PER_SECOND
-                buckets = max(32, min(MAX_BUCKETS, int(seconds * PEAKS_PER_SECOND)))
+                buckets = max(least, min(MAX_BUCKETS, round(seconds * per_second)))
                 engine.call(
                     "media.peaks",
                     {"item": item, "start": t0, "end": t1, "buckets": buckets},

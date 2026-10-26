@@ -5,6 +5,9 @@
 use cfa4_engine::Session;
 use serde_json::{Value, json};
 
+/// Largest reply: the Qt GUI's engine client takes at most 512 MiB of binary per reply.
+const MAX_PREVIEW_BYTES: usize = 512 * 1024 * 1024;
+
 /// `tts.previewAudio {sampleRate?, channels?}` → `{seconds, sampleRate, channels, frames}` + f32 frames.
 pub fn preview_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let audio = s.tts_preview.clone().ok_or("nothing to preview")?;
@@ -18,7 +21,12 @@ pub fn preview_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String>
     };
     let step = f64::from(audio.sample_rate.max(1)) / f64::from(rate);
     let frames = (audio.samples.len() as f64 / step).floor() as usize;
-    let mut out = Vec::with_capacity(frames * channels * 4);
+    let bytes = frames.saturating_mul(channels).saturating_mul(4);
+    if bytes > MAX_PREVIEW_BYTES {
+        // the GUI reads at most this much in one reply: refuse rather than send what it drops
+        return Err(format!("the preview is too long to play here ({:.0} min); create the narration and play it on the timeline", audio.seconds() / 60.0));
+    }
+    let mut out = Vec::with_capacity(bytes);
     for n in 0..frames {
         let pos = n as f64 * step;
         let i = pos as usize;
@@ -48,6 +56,10 @@ mod tests {
         assert_eq!(bytes.len(), 8 * 2 * 4);
         let v: Vec<f32> = bytes.chunks(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();
         assert_eq!(&v[..6], &[0.0, 0.0, 0.5, 0.5, 1.0, 1.0]);
+        // longer than the GUI takes in one reply: an error, not an oversized reply
+        s.tts_preview = Some(Arc::new(cfa4_tts::Audio { samples: vec![0.0; 24_000 * 60 * 24], sample_rate: 24_000 }));
+        assert!(preview_audio(&s, &json!({"sampleRate": 48_000, "channels": 2})).is_err());
+        assert!(preview_audio(&s, &json!({"sampleRate": 8_000, "channels": 1})).is_ok());
         assert!(preview_audio(&s, &json!({"channels": 0})).is_err());
     }
 }

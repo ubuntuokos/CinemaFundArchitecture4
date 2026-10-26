@@ -473,6 +473,7 @@ class Monitor(QWidget):
 
         # playback state
         self.playing = False
+        self._automation_pass = False  # a mixer automation pass is running (mixer.recordStart)
         self.speed = 1.0
         self.stop_at: int | None = None  # Play In to Out: stop here…
         self.rest_at: int | None = None  # …and rest the playhead here
@@ -776,6 +777,8 @@ class Monitor(QWidget):
         params: dict[str, Any] = {"time": t, "maxWidth": width, "maxHeight": height, "scale": scale}
         if self.target != "program":
             params["target"] = self.target
+        if self.mv.display == "alpha":
+            params["alpha"] = True  # the frame's own alpha, not the opaque monitor picture
         self.engine.call(
             "frame.render",
             params,
@@ -832,6 +835,10 @@ class Monitor(QWidget):
         self._clock.start()
         if self.speed == 1.0:
             self._start_audio()
+            if self.target == "program" and not self._automation_pass:
+                # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)
+                self._automation_pass = True
+                self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
         self._timer.start()
 
     def shuttle(self, direction: int) -> None:
@@ -861,6 +868,9 @@ class Monitor(QWidget):
         self.playing = False
         self._timer.stop()
         self._stop_audio()
+        if self._automation_pass:  # writes the pass's fader moves (also on a loop or a speed change)
+            self._automation_pass = False
+            self.command.emit("mixer.recordStop", {"time": int(self.playhead)})
 
     def stop(self, notify: bool = True) -> None:
         if not self.playing:

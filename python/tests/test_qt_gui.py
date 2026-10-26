@@ -7,6 +7,7 @@ import io
 import json
 import os
 import stat
+import struct
 import sys
 import textwrap
 from pathlib import Path
@@ -3110,6 +3111,166 @@ def test_effects_panel(app, tmp_path: Path):
         canvas.dragMoveEvent(QtGui.QDragMoveEvent(near_in, Qt.DropAction.CopyAction, tmime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
         assert canvas._effect_target is not None and canvas._effect_target[2] == "in"
         canvas.dragLeaveEvent(None)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_malformed_saved_panel_state_does_not_stop_the_window(app, fake_engine: Path, tmp_path: Path):
+    """Saved panel state is untrusted (AGENTS.md): valid JSON of the wrong shapes falls back to
+    the defaults instead of raising while the window is built."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    settings.setValue("panels/scopes", json.dumps({"waveform_type": [], "shown": {"a": 1}, "scale": {}}))
+    settings.setValue("panels/timecode", json.dumps({"rows": [{"source": []}, {"mode": {}}]}))
+    settings.setValue("panels/reference", json.dumps({"time": "invalid", "scopes": 1, "display": []}))
+    settings.sync()
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        assert win.timecode_panel.rows == [{"source": "active", "mode": "current", "display": "Timecode"}]
+        assert win.reference.time == 0
+        settings.setValue("panels/timecode", json.dumps({"rows": 1}))
+        settings.setValue("panels/reference", json.dumps({"time": float("nan")}))
+        win.timecode_panel.attach_settings(settings)
+        win.reference.attach_settings(settings)
+        assert win.reference.time == 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_lumetri_curve_double_click_keeps_the_end_points(app):
+    """An added curve point is stored after the two end points: double-click removes it, and
+    double-clicking an end point (by position, not by list index) does not."""
+    from cfa4_qt.panels.lumetri import CurveEditor
+
+    ed = CurveEditor("curve_luma", False, QtGui.QColor("white"))
+    ed.resize(240, 240)
+    ed.show()
+    sent: list = []
+    ed.changed.connect(lambda pid, pts, imm: sent.append(pts))
+    ed.points = [[0.0, 0.0], [1.0, 1.0], [0.5, 0.75]]
+    end = ed.to_screen([1.0, 1.0]).toPoint()
+    QtTest.QTest.mouseDClick(ed, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier, end)
+    assert ed.points == [[0.0, 0.0], [1.0, 1.0], [0.5, 0.75]]
+    mid = ed.to_screen([0.5, 0.75]).toPoint()
+    QtTest.QTest.mouseDClick(ed, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier, mid)
+    assert ed.points == [[0.0, 0.0], [1.0, 1.0]]
+    ed.close()
+
+
+def test_caption_colours_and_transcript_word_follow_the_engine_formats():
+    """Caption colours come as ``#rrggbbaa`` (QColor reads eight digits as ``#aarrggbb``); the
+    word under the shown playhead is found as the engine's ``word_at`` finds it."""
+    from cfa4_qt.panels.text import rgba_color, word_at
+
+    assert rgba_color("#ff0000ff").getRgb()[:3] == (255, 0, 0)
+    assert rgba_color("#00ff00").getRgb()[:3] == (0, 255, 0)
+    assert rgba_color("nonsense").getRgb()[:3] == (255, 255, 255)
+    words = [{"i": 0, "start": 0, "end": 10}, {"i": 1, "start": 10, "end": 20}, {"i": 2, "start": 30, "end": 40}]
+    assert [word_at(words, t) for t in (-1, 0, 9, 10, 25, 35, 40)] == [None, 0, 0, 1, None, 2, None]
+
+
+def test_long_waveforms_come_in_pieces_of_one_density(app):
+    """A clip longer than one ``media.peaks`` request: its pieces share one density, so the
+    joined peaks spread evenly over the whole clip."""
+    from cfa4_qt.panels.timeline_media import MAX_BUCKETS, MAX_PEAK_SECONDS, TimelineMedia
+
+    asked: list[dict] = []
+
+    class Engine:
+        running = True
+
+        def call(self, _method, params, on_reply, on_error):
+            asked.append(params)
+            on_reply({"buckets": params["buckets"]}, struct.pack(f"<{params['buckets'] * 2}f", *([0.5] * params["buckets"] * 2)))
+
+    media = TimelineMedia()
+    media.attach(Engine())
+    span = MAX_PEAK_SECONDS * TICKS_PER_SECOND
+    peaks = None
+    for _ in range(5):
+        peaks = media.waveform(7, 0, 2 * span + span // 2)
+        if peaks is not None:
+            break
+    assert peaks is not None
+    assert [p["buckets"] for p in asked] == [MAX_BUCKETS, MAX_BUCKETS, MAX_BUCKETS // 2]
+    assert len(peaks) == MAX_BUCKETS * 5 // 2
+
+
+def test_program_playback_runs_a_mixer_automation_pass(app, fake_engine: Path, tmp_path: Path):
+    """egui's: playing the Program forward at normal speed starts an automation pass and stopping
+    writes it, at the shown times; the Reference Monitor's frames are told apart by sequence."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.monitor.has_content())
+        sent: list = []
+        win.monitor.command.connect(lambda c, p: sent.append((c, p)))
+        win.monitor.play(1.0)
+        assert sent[-1][0] == "mixer.recordStart"
+        wait_until(app, lambda: False, 100)
+        win.monitor.stop()
+        stops = [p for c, p in sent if c == "mixer.recordStop"]
+        assert len(stops) == 1 and stops[0]["time"] >= sent[0][1]["time"]
+        win.monitor.play(2.0)  # fast: no pass
+        win.monitor.stop()
+        assert [c for c, _p in sent].count("mixer.recordStart") == 1
+        win.reference.set_sequence({"id": 1}, 5)
+        first = win.reference.revision
+        win.reference.set_sequence({"id": 2}, 5)
+        assert win.reference.revision != first
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_dropping_several_items_places_them_one_after_another(app, tmp_path: Path):
+    """Several Project items dropped on the Timeline go one after another as one undo step,
+    not each at the drop time (where each would overwrite the last)."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import ITEM_MIME
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    Qt = QtCore.Qt
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas = win.timeline.canvas
+        clips = [c for t in win.sequence["video"] for c in t.get("items") or []]
+        items = list(dict.fromkeys(c["item"] for c in clips))[:2]
+        assert len(items) == 2
+        end = max(int(c["end"]) for t in win.sequence["video"] for c in t.get("items") or [])
+        v1 = next(r for r in canvas.rows if r.kind == "video")
+        canvas.scroll_ticks = max(0, end - 2 * TICKS_PER_SECOND)
+        x = int(canvas.x_of(end + TICKS_PER_SECOND))
+        pos = QtCore.QPoint(x, v1.top + v1.height // 2)
+        mime = QtCore.QMimeData()
+        mime.setData(ITEM_MIME, ",".join(str(i) for i in items).encode())
+        before = len(clips)
+        steps = win.history.list.count()
+        canvas.dragMoveEvent(QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+
+        def placed() -> list[dict]:
+            track = next(t for t in win.sequence["video"] if t.get("id") == v1.track_id)
+            return sorted((c for c in track.get("items") or [] if int(c["start"]) > end), key=lambda c: int(c["start"]))
+
+        assert wait_until(app, lambda: len(placed()) == 2, 10_000), placed()
+        a, b = placed()
+        assert int(b["start"]) == int(a["end"])
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+        assert len([c for t in win.sequence["video"] for c in t.get("items") or []]) == before + 2
     finally:
         win._quit_confirmed = True
         win.close()

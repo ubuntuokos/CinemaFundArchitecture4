@@ -382,7 +382,10 @@ class CurveEditor(QWidget):
         self.dragging = None
         i = self.near(e.position())
         if i is not None:
-            if self.hue or 0 < i < len(self.points) - 1:
+            # the end points are the leftmost and rightmost, not the first and last stored: an
+            # added point is appended after them
+            xs = [q[0] for q in self.points]
+            if self.hue or (len(self.points) > 2 and min(xs) < xs[i] < max(xs)):
                 del self.points[i]
                 self._send(True)
         elif not self.hue:

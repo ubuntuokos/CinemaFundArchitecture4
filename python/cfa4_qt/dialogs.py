@@ -102,6 +102,23 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
             if Path(path).exists() and not confirm_replace(parent, tr("Export Frame"), path):
                 return {"__cancel__": True}
         return {"path": path, "format": fmt}
+    if cid == "captions.export":  # the format follows the extension (the engine's)
+        filt = tr("Captions") + " (*.srt *.vtt *.scc *.mcc *.stl *.ttml *.xml *.dfxp);;" + tr("All files") + " (*)"
+        path, _ = QFileDialog.getSaveFileName(parent, tr(command.label), "", filt)
+        if not path:
+            return {"__cancel__": True}
+        if not Path(path).suffix:
+            path += ".srt"
+        return {"path": path}
+    if cid in ("presets.export", "presets.import"):
+        filt = tr("Effect presets") + " (*.json)"
+        if cid == "presets.import":
+            path, _ = QFileDialog.getOpenFileName(parent, tr(command.label), "", filt)
+            return {"path": path} if path else {"__cancel__": True}
+        path, _ = QFileDialog.getSaveFileName(parent, tr(command.label), "", filt)
+        if not path:
+            return {"__cancel__": True}
+        return {"path": path if path.endswith(".json") else path + ".json"}
     if cid.startswith("file.import") and "paths" in names:
         paths, _ = QFileDialog.getOpenFileNames(parent, tr(command.label), "", tr("All files") + " (*)")
         return {"paths": paths} if paths else {"__cancel__": True}

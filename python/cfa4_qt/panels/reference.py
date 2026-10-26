@@ -30,7 +30,7 @@ class ReferenceMonitor(QWidget):
         self.engine = engine
         self.settings: QSettings | None = None
         self.sequence: dict[str, Any] | None = None
-        self.revision = -1
+        self.revision: Any = -1
         self.playhead = 0
         self.ganged = False  # egui's default
         self.scope_kinds = ["vectorscopeYuv", "waveform"]
@@ -109,10 +109,12 @@ class ReferenceMonitor(QWidget):
             data = {}
         if isinstance(data, dict):
             self.ganged = bool(data.get("ganged", False))
-            self.time = int(data.get("time") or 0)
-            kinds = [k for k in data.get("scopes") or [] if k in ORDER]
+            t = data.get("time")  # saved state is untrusted
+            self.time = int(t) if isinstance(t, (int, float)) and not isinstance(t, bool) and abs(t) < 2**62 else 0
+            raw = data.get("scopes")
+            kinds = [k for k in raw if isinstance(k, str) and k in ORDER] if isinstance(raw, list) else []
             self.scope_kinds = sorted(set(kinds), key=ORDER.index) or self.scope_kinds
-            if data.get("display") in ("composite", "scopes"):
+            if isinstance(data.get("display"), str) and data["display"] in ("composite", "scopes"):
                 self.display.setCurrentIndex(self.display.findData(data["display"]))
                 self.stack.setCurrentIndex(1 if data["display"] == "scopes" else 0)
         self._sync_gang()
@@ -165,7 +167,8 @@ class ReferenceMonitor(QWidget):
 
     def set_sequence(self, seq: dict[str, Any] | None, revision: int) -> None:
         self.sequence = seq
-        self.revision = revision
+        # the sequence is part of what a cached frame shows: opening another one doesn't change the revision
+        self.revision = ((seq or {}).get("id"), revision)
         if seq is not None and isinstance(seq.get("playhead"), int):
             self.playhead = seq["playhead"]
         self.request()

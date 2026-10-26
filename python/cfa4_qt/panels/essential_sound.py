@@ -715,7 +715,6 @@ class EssentialSoundPanel(QWidget):
         # Preset: [▾] save delete
         self.edit_layout.addWidget(_hint(tr("Preset:"), body, 12, dim=True))
         row = self._row()
-        mine = self.presets(kind)
         combo = QComboBox(body)
         combo.setObjectName("essentialSound.preset")
         combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
@@ -744,7 +743,10 @@ class EssentialSoundPanel(QWidget):
 
         def update(st: dict[str, Any]) -> None:
             # "(Custom)" once a setting is changed by hand (the engine clears the preset)
+            mine = self.presets(kind)  # now: a preset saved or deleted since the build
             current = str(st.get("preset") or "")
+            if not any(p.get("name") == current for p in mine):
+                current = ""  # a deleted preset reads as (Custom), not as the first one listed
             items = ([(tr("(Custom)"), None)] if not current else []) + [
                 (tr(str(p.get("name") or "")) if p.get("builtin") else str(p.get("name") or ""), p.get("name")) for p in mine
             ]

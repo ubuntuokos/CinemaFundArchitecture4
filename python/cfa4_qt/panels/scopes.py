@@ -109,9 +109,10 @@ class ScopesState:
                 "targets": dict(TARGETS),
             }
             for name, allowed in ok.items():
-                if data.get(name) in allowed:
+                if isinstance(data.get(name), str) and data[name] in allowed:  # saved state is untrusted
                     setattr(st, name, data[name])
-            shown = [k for k in data.get("shown") or [] if k in ORDER]
+            raw_shown = data.get("shown")
+            shown = [k for k in raw_shown if isinstance(k, str) and k in ORDER] if isinstance(raw_shown, list) else []
             st.shown = sorted(set(shown), key=ORDER.index) or st.shown
             st.clamp = bool(data.get("clamp", True))
             st.preset = str(data.get("preset") or "")
@@ -158,14 +159,14 @@ class ScopesView(QWidget):
         self.engine = engine
         self.st = ScopesState()
         self.time: int | None = None
-        self.revision = -1
+        self.revision: Any = -1  # what the frame shows: (sequence id, project revision)
         self.images: dict[str, tuple[tuple[Any, ...], QImage, dict[str, Any]]] = {}
         self._busy = False
         self._queue: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = []
         self.message = ""
         self.setMinimumSize(120, 90)
 
-    def set_frame(self, time: int | None, revision: int) -> None:
+    def set_frame(self, time: int | None, revision: Any) -> None:
         self.time, self.revision = time, revision
         self.request()
 
@@ -427,7 +428,7 @@ class ScopesPanel(QWidget):
         self._sync()
         self.view.request()
 
-    def set_frame(self, time: int | None, revision: int) -> None:
+    def set_frame(self, time: int | None, revision: Any) -> None:
         self.view.set_frame(time, revision)
         self._sync()
 

@@ -13,6 +13,7 @@ plays through the default audio output (``tts.previewAudio``).
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QBuffer, QByteArray, QIODevice, QSize, Qt, QTimer, Signal
@@ -63,6 +64,7 @@ class TextToSpeechPanel(QWidget):
         super().__init__(parent)
         self.setObjectName("panel.TextToSpeech")
         self.engine = engine
+        self.context: Callable[[], Any] = lambda: None  # the open project and sequence (the window sets it)
         self.catalog: dict[str, Any] = {}
         self.language = "en-US"
         self.voice = ""
@@ -318,7 +320,8 @@ class TextToSpeechPanel(QWidget):
         if not self.running or self.pending is not None:
             return
         render = {k: v for k, v in params.items() if k not in ("dir", "time")}
-        self.pending = {"cmd": cmd, "params": params, "play": play, "job": None}
+        # the project and sequence it is for: a narration finished after another one was opened is not placed there
+        self.pending = {"cmd": cmd, "params": params, "play": play, "job": None, "context": self.context()}
         self._sync()
 
         def rendered(r: Any, _b: bytes | None) -> None:
@@ -417,6 +420,8 @@ class TextToSpeechPanel(QWidget):
                     err = ((j or {}).get("result") or {}).get("error") if j else tr("the job disappeared")
                     if err:
                         self.status.emit(fmt("Text to Speech: {e}", e=str(err)))
+                    elif p.get("context") != self.context():
+                        self.status.emit(tr("Text to Speech: another sequence is open now; the narration was not placed"))
                     else:
                         self.run_now(p["cmd"], p["params"], p["play"])
             if self.download_job is not None:

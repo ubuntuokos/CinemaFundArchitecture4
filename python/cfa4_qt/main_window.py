@@ -192,6 +192,8 @@ class MainWindow(QMainWindow):
         self.essential_graphics = EssentialGraphicsPanel(engine, self)
         self.essential_graphics.attach_settings(self.settings)
         self.tts = TextToSpeechPanel(engine, self)
+        self._project_generation = 0  # counts project opens: two untitled projects share a name
+        self.tts.context = lambda: (self._project_generation, (self.sequence or {}).get("id"))
         self._graphics_busy = False
         self._essential_busy = False
         self.lumetri = LumetriColorPanel(self)
@@ -770,6 +772,7 @@ class MainWindow(QMainWindow):
         if (old.get("path"), old.get("name")) != (new.get("path"), new.get("name")):
             # another project: its item ids mean other media, so cached pictures are wrong
             self.timeline.canvas.media.clear()
+            self._project_generation += 1
         self.project_panel.set_project(self.project)
         self._update_title()
 
@@ -1051,8 +1054,8 @@ class MainWindow(QMainWindow):
 
         def imported(result: Any, _b: bytes | None) -> None:
             items = [i for i in (result or {}).get("items") or [] if isinstance(i, int)]
-            for item in items:
-                self.execute("timeline.place", {"item": item, "time": time, "track": track})
+            if items:  # one request: the engine places them one after another, as one undo step
+                self.execute("timeline.place", {"items": items, "time": time, "track": track})
             self.schedule_refresh()
 
         self.engine.execute("mediaBrowser.import", {"paths": paths}, on_reply=imported,
@@ -1224,7 +1227,8 @@ class MainWindow(QMainWindow):
             return
         t = self.monitor.playhead if ticks is None else ticks
         ft = self.monitor.frame()
-        self.scopes.set_frame(t // ft * ft, self.revision)
+        # with the sequence: opening another one doesn't change the revision
+        self.scopes.set_frame(t // ft * ft, (self.sequence.get("id"), self.revision))
 
     def _playback_moved(self, ticks: int) -> None:
         self.update_scopes(ticks)

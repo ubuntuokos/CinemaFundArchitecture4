@@ -549,6 +549,9 @@ class GraphicEditor(QWidget):
             params.update(merge=True, begin=False)
         elif self.panel.scrubbing():
             params.update(merge=True, begin=True)
+        monitor = getattr(self.window(), "monitor", None)
+        if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
+            params["time"] = monitor.playhead  # the shown frame: the engine's playhead stays where playback started
         self.panel.send("graphics.set", params)
 
     # ----- building -----

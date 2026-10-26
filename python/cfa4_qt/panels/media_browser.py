@@ -12,6 +12,7 @@ every action is an engine command (``mediaBrowser.navigate``, ``.select``, ``.fa
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from typing import Any
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QSettings, QSize, Qt, QTimer, QUrl, Signal
@@ -47,6 +48,7 @@ ENTRY_ROLE = Qt.ItemDataRole.UserRole + 1
 SECTION_ROLE = Qt.ItemDataRole.UserRole + 2
 POLL_MS = 3000  # egui re-lists every 3 s
 PROBE_AGAIN_MS = 150
+THUMB_CACHE_BYTES = 128 * 1024 * 1024  # decoded thumbnails kept (scrub frames add up)
 FOLDER = QColor(237, 150, 58)
 SECTIONS = (
     ("favorites", N_("Favorites")),
@@ -232,7 +234,7 @@ class MediaBrowserPanel(QWidget):
         self.data: dict[str, Any] = {}
         self.roots: dict[str, Any] = {}
         self.expanded: set[str] = set()
-        self.thumbs: dict[tuple[str, int, int], QPixmap] = {}
+        self.thumbs: OrderedDict[tuple[str, int, int], QPixmap] = OrderedDict()  # least recently used first
         self._thumbs_busy = 0
         self._wanted: list[tuple[str, float, int]] = []
         self._busy = False
@@ -458,8 +460,8 @@ class MediaBrowserPanel(QWidget):
                 self.stack.setCurrentWidget(self.message)
             else:
                 self.stack.setCurrentWidget(self.grid if view == "thumbnails" else self.list)
-            shape = (old.get("dir"), old.get("columns"), [(e.get("path"), e.get("cells")) for e in old.get("entries") or []])
-            if shape != (data.get("dir"), data.get("columns"), [(e.get("path"), e.get("cells")) for e in entries]):
+            shape = (old.get("dir"), old.get("columns"), old.get("thumbnailSize"), [(e.get("path"), e.get("cells")) for e in old.get("entries") or []])
+            if shape != (data.get("dir"), data.get("columns"), data.get("thumbnailSize"), [(e.get("path"), e.get("cells")) for e in entries]):
                 self._fill_list(entries)
                 self._fill_grid(entries)
             self._show_selection()
@@ -502,8 +504,10 @@ class MediaBrowserPanel(QWidget):
             self.list.addTopLevelItem(it)
         self.list.blockSignals(False)
 
-    def _fill_grid(self, entries: list[dict[str, Any]]) -> None:
-        size = int(float(self.data.get("thumbnailSize") or 120))
+    def _fill_grid(self, entries: list[dict[str, Any]], size: int | None = None) -> None:
+        """``size``: the slider's while it moves, else the saved thumbnail size."""
+        if size is None:
+            size = int(float(self.data.get("thumbnailSize") or 120))
         self.grid.blockSignals(True)
         self.grid.clear()
         self.grid.setIconSize(QSize(size, size * 9 // 16))
@@ -545,7 +549,11 @@ class MediaBrowserPanel(QWidget):
                     blocker.blockSignals(False)
 
     def set_roots(self, roots: Any) -> None:
-        self.roots = roots if isinstance(roots, dict) else {}
+        roots = roots if isinstance(roots, dict) else {}
+        if roots == self.roots and self.tree.topLevelItemCount():
+            self._mark_current()  # the poll found nothing new: keep the tree as browsed
+            return
+        self.roots = roots
         open_paths = set(self.expanded)
         self.tree.blockSignals(True)
         self.tree.clear()
@@ -569,8 +577,12 @@ class MediaBrowserPanel(QWidget):
         self.tree.blockSignals(False)
         for path in open_paths:
             for it in self._tree_items():
-                if it.data(0, PATH_ROLE) == path and it.childCount():
+                # a new node has no children yet, only its indicator: expanding it loads them
+                expandable = it.childCount() or it.childIndicatorPolicy() == QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator
+                if it.data(0, PATH_ROLE) == path and expandable and not it.isExpanded():
+                    self.tree.blockSignals(True)
                     it.setExpanded(True)
+                    self.tree.blockSignals(False)
                     self._tree_expanded(it)
         self._mark_current()
 
@@ -660,6 +672,7 @@ class MediaBrowserPanel(QWidget):
     def _want(self, path: str, frac: float, width: int) -> None:
         key = (path, self._bucket(frac), width)
         if key in self.thumbs:
+            self.thumbs.move_to_end(key)
             self._show_thumb(path, key)
         elif all((p, self._bucket(f), w) != key for p, f, w in self._wanted):
             self._wanted.append((path, frac, width))
@@ -675,16 +688,25 @@ class MediaBrowserPanel(QWidget):
                 w, h = int((result or {}).get("w") or 0), int((result or {}).get("h") or 0)
                 if data and w > 0 and h > 0 and len(data) >= w * h * 4:
                     img = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
-                    self.thumbs[k] = QPixmap.fromImage(img)
+                    self._keep_thumb(k, QPixmap.fromImage(img))
                     self._show_thumb(k[0], k)
                 self._pump()
 
             def failed(_m: str, k: tuple[str, int, int] = key) -> None:
                 self._thumbs_busy -= 1
-                self.thumbs[k] = QPixmap()  # not a picture: keep the placeholder, don't ask again
+                self._keep_thumb(k, QPixmap())  # not a picture: keep the placeholder, don't ask again
                 self._pump()
 
             self.engine.call("mediaBrowser.thumbnail", {"path": path, "fraction": frac, "width": width}, on_reply=done, on_error=failed)
+
+    def _keep_thumb(self, key: tuple[str, int, int], pm: QPixmap) -> None:
+        """Cache a decoded thumbnail, dropping the least recently used beyond THUMB_CACHE_BYTES."""
+        self.thumbs[key] = pm
+        self.thumbs.move_to_end(key)
+        total = sum(p.width() * p.height() * 4 for p in self.thumbs.values())
+        while total > THUMB_CACHE_BYTES and len(self.thumbs) > 1:
+            _k, old = self.thumbs.popitem(last=False)
+            total -= old.width() * old.height() * 4
 
     def _show_thumb(self, path: str, key: tuple[str, int, int]) -> None:
         pm = self.thumbs.get(key)
@@ -730,7 +752,7 @@ class MediaBrowserPanel(QWidget):
             return
         self.grid.setIconSize(QSize(v, v * 9 // 16))
         self.grid.setGridSize(QSize(v + 16, v * 9 // 16 + 30))
-        self._fill_grid([e for e in self.data.get("entries") or [] if isinstance(e, dict)])
+        self._fill_grid([e for e in self.data.get("entries") or [] if isinstance(e, dict)], v)
         self._request_visible()
 
     # ----- panel -> engine -----

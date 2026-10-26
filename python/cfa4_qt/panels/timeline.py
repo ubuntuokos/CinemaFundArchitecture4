@@ -849,8 +849,8 @@ class TimelineCanvas(QWidget):
                 self.files_dropped.emit(paths, t, row.track_id)
                 e.acceptProposedAction()
             return
-        for item in items:
-            self.command.emit("timeline.place", {"item": item, "time": t, "track": row.track_id})
+        if items:  # one after another, as one undo step (each at ``t`` would overwrite the last)
+            self.command.emit("timeline.place", {"items": items, "time": t, "track": row.track_id})
         e.acceptProposedAction()
 
 
