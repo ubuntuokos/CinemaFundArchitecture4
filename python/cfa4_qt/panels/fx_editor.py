@@ -128,6 +128,7 @@ class FxEditor(QDialog):
         self.drafts: dict[str, float] = {}
         # committed values shown until an answer asked after their edit arrives
         self.settling: dict[str, float] = {}
+        self.gesture = 0  # numbers the merge keys of grouped clip edits
         self.syncs: list[Any] = []
         self.plots: list[QWidget] = []
         self._busy = False
@@ -234,21 +235,33 @@ class FxEditor(QDialog):
 
     def commit(self, pid: str, value: float) -> None:
         """One edit of the project (one undo step)."""
-        is_bool = bool(self.info(pid).get("bool"))
-        val: Any = value >= 0.5 if is_bool else value
+        self.commit_many({pid: value})
+
+    def commit_many(self, values: dict[str, float]) -> None:
+        """Several parameters as one edit (one undo step): a node dragged in frequency and gain,
+        Reset of every band."""
+        if not values:
+            return
+        out = {pid: (v >= 0.5 if self.info(pid).get("bool") else v) for pid, v in values.items()}
         if "clip" in self.target:
-            self.command.emit("effects.setParam", {"clip": self.target["clip"], "effect": self.target["effect"], "param": pid, "value": val})
+            # a shared merge key makes the clip's parameter edits one history entry
+            self.gesture += 1
+            key = f"fxEditor:{self.target['effect']}:{self.gesture}"
+            for i, (pid, val) in enumerate(out.items()):
+                self.command.emit(
+                    "effects.setParam",
+                    {"clip": self.target["clip"], "effect": self.target["effect"], "param": pid, "value": val, "merge": key, "begin": i == 0},
+                )
         else:
-            self.command.emit("mixer.setInsert", {"strip": self.target["strip"], "slot": self.target["slot"], "params": {pid: val}})
-        # the edit is queued before the next query: show the value until that answer does
-        self.drafts.pop(pid, None)
-        self.settling[pid] = value
+            self.command.emit("mixer.setInsert", {"strip": self.target["strip"], "slot": self.target["slot"], "params": out})
+        # the edit is queued before the next query: show the values until that answer does
+        for pid, value in values.items():
+            self.drafts.pop(pid, None)
+            self.settling[pid] = value
         self.refresh()
 
     def release(self, pids: list[str]) -> None:
-        for pid in pids:
-            if pid in self.drafts:
-                self.commit(pid, self.drafts[pid])
+        self.commit_many({pid: self.drafts[pid] for pid in pids if pid in self.drafts})
 
     def cancel(self, pids: list[str]) -> None:
         for pid in pids:
@@ -327,10 +340,7 @@ class FxEditor(QDialog):
         col.addLayout(row)
 
     def _reset_bands(self, n: int) -> None:
-        for i in range(n):
-            pid = f"b{i + 1}"
-            if self.v(pid) != 0.0:
-                self.commit(pid, 0.0)
+        self.commit_many({f"b{i + 1}": 0.0 for i in range(n) if self.v(f"b{i + 1}") != 0.0})
 
     def _multiband(self, body: QWidget) -> None:
         col = QVBoxLayout(body)

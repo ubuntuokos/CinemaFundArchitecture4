@@ -2147,13 +2147,21 @@ def test_real_engine_fx_editor_windows_edit_eq_and_dynamics_as_egui(app, tmp_pat
         release(node, up)
         assert wait_until(app, lambda: settled(ed) and max(db for _f, db in ed.data["response"]) < 1.0, 10_000)
         assert win.history.list.count() == steps
-        # the same drag released: frequency and gain are edited
+        # the same drag released: frequency and gain are edited, as one undo step
         node.sync()
+        before = (ed.v("mid_freq"), ed.v("mid_gain"))
         press_move(node, start, up)
         release(node, up)
         assert wait_until(app, lambda: settled(ed) and ed.v("mid_gain") > 5.0, 10_000), ed.v("mid_gain")
-        assert wait_until(app, lambda: win.history.list.count() == steps + 2, 10_000)
+        assert ed.v("mid_freq") != before[0]
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+        wait_until(app, lambda: False, 300)
+        assert win.history.list.count() == steps + 1
         assert max(db for _f, db in ed.data["response"]) > 5.0
+        win.execute("edit.undo")
+        assert wait_until(app, lambda: settled(ed) and (ed.v("mid_freq"), ed.v("mid_gain")) == before, 10_000)
+        win.execute("edit.redo")
+        assert wait_until(app, lambda: settled(ed) and ed.v("mid_gain") > 5.0 and ed.v("mid_freq") != before[0], 10_000)
         # the wheel sets Q, a double-click switches the band off, its toggle on again
         q = ed.v("mid_q")
         QtWidgets.QApplication.sendEvent(node, QtGui.QWheelEvent(start, node.mapToGlobal(start), QtCore.QPoint(), QtCore.QPoint(0, 120),
