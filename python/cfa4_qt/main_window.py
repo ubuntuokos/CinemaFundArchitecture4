@@ -259,6 +259,7 @@ class MainWindow(QMainWindow):
             self.monitor,
             self.source_monitor,
             self.timeline.canvas,
+            self.history,
             self.project_panel,
             self.effects,
             self.inspector,

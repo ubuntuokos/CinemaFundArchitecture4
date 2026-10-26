@@ -21,6 +21,7 @@ from PySide6.QtGui import QColor, QFont, QMouseEvent, QPainter, QPaintEvent, QPe
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QMenu, QScrollArea, QToolButton, QVBoxLayout, QWidget
 
 from .. import theme
+from ..hot_number import HotSpin
 from ..i18n import N_, tr
 from ..timecode import format_timecode, frame_ticks
 from .meters import AudioMetersPanel, to_db
@@ -62,6 +63,28 @@ def db_text(db: float) -> str:
     return "-∞" if db <= FADER_MIN_DB else f"{db:.1f}"
 
 
+def hot(parent: QWidget, lo: float, hi: float, speed: float, centered: bool = False, decimals: int = 1, suffix: str = "") -> HotSpin:
+    """egui's hot number on a painted strip: a fader or pan value to scrub or type."""
+    spin = HotSpin(parent, lo, hi, decimals, speed, suffix)
+    f = QFont(spin.font())
+    f.setPixelSize(11)
+    spin.setFont(f)
+    if lo <= FADER_MIN_DB:
+        spin.setSpecialValueText("-∞")
+    if centered:
+        spin.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    return spin
+
+
+def place(spin: HotSpin, rect: QRectF | None, value: float) -> None:
+    if rect is None:
+        spin.hide()
+        return
+    spin.setGeometry(rect.toRect())
+    spin.set_value(max(spin.minimum(), value))
+    spin.show()
+
+
 class Strip(QWidget):
     """One mixer strip, painted as egui paints it; the dropdowns open menus."""
 
@@ -79,6 +102,16 @@ class Strip(QWidget):
         self._last = QPointF()
         self._value: float = 0.0  # the dragged value, shown while the engine catches up
         self.regions: dict[str, QRectF] = {}
+        self.hot_volume = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.1)
+        self.hot_volume.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": v}))
+        self.hot_pan = hot(self, -100.0, 100.0, 1.0, centered=True)
+        self.hot_pan.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": v}))
+        # the 5.1 panner's Center % and LFE
+        self.hot_center = hot(self, 0.0, 100.0, 1.0, decimals=0, suffix="%")
+        self.hot_center.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.center", "value": v}))
+        self.hot_lfe = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.5)
+        self.hot_lfe.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.lfe", "value": v}))
+        self._puck = (0.0, 0.0)  # the dragged 5.1 puck
 
     # ----- data -----
     @property
@@ -106,9 +139,26 @@ class Strip(QWidget):
     def pan(self) -> float:
         return self._value if self._drag == "pan" else self.at("pan")
 
+    def pan51(self) -> dict[str, float]:
+        """The 5.1 panner's puck (x left … right, y rear … front), Center % and LFE dB."""
+        d = self.data.get("pan51") or {}
+
+        def num(k: str, default: float) -> float:
+            try:
+                return float(d.get(k, default))
+            except (TypeError, ValueError):
+                return default
+
+        x, y = self._puck if self._drag == "pan51" else (num("x", 0.0), num("y", 100.0))
+        return {"x": x, "y": y, "center": num("center", 100.0), "lfeDb": num("lfeDb", FADER_MIN_DB)}
+
     def set_data(self, data: dict[str, Any]) -> None:
         self.data = data
         self.setObjectName(f"mixer.{self.ref}")
+        self.hot_volume.setObjectName(f"mixer.{self.ref}.value")
+        self.hot_pan.setObjectName(f"mixer.{self.ref}.panValue")
+        self.hot_center.setObjectName(f"mixer.{self.ref}.pan51.center")
+        self.hot_lfe.setObjectName(f"mixer.{self.ref}.pan51.lfe")
         self.update()
 
     def channels(self) -> int:
@@ -135,8 +185,13 @@ class Strip(QWidget):
             y += 24
             r["output"] = QRectF(4, y, w - 8, 20)
             y += 26
-            r["pan"] = QRectF(w / 2 - 19, y + 1, 38, 38)
-            r["panValue"] = QRectF(w / 2 - 28, y + 40, 56, 16)
+            if self.data.get("pans51"):  # egui's pan51_panner: the listening square, Center, LFE
+                r["pan51"] = QRectF(4, y, 46, 46)
+                r["pan51.center"] = QRectF(54, y + 12, w - 58, 14)
+                r["pan51.lfe"] = QRectF(54, y + 38, w - 58, 14)
+            else:
+                r["pan"] = QRectF(w / 2 - 19, y + 1, 38, 38)
+                r["panValue"] = QRectF(w / 2 - 28, y + 40, 56, 16)
             y += 62
         else:
             y += 112
@@ -164,10 +219,19 @@ class Strip(QWidget):
         t = self.regions["track"]
         return t.bottom() - db_to_pos(db) * t.height()
 
+    def puck_pos(self, x: float, y: float) -> QPointF:
+        inner = self.regions["pan51"].adjusted(5, 5, -5, -5)
+        return QPointF(inner.center().x() + x / 100 * inner.width() / 2, inner.center().y() - y / 100 * inner.height() / 2)
+
     # ----- painting -----
     def paintEvent(self, _e: QPaintEvent) -> None:
         self.regions = self.layout_regions()
         r = self.regions
+        place(self.hot_volume, r["value"], self.volume())
+        place(self.hot_pan, r.get("panValue"), self.pan())
+        p51 = self.pan51()
+        place(self.hot_center, r.get("pan51.center"), p51["center"])
+        place(self.hot_lfe, r.get("pan51.lfe"), p51["lfeDb"])
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         T = theme.current()
@@ -204,10 +268,26 @@ class Strip(QWidget):
             box(r["input"], tr(str(self.data.get("inputMap") or "Stereo")))
             out = str(self.data.get("output") or "Mix")
             box(r["output"], tr("Mix") if out == "Mix" else self.panel.strip_name(out))
-            if self.data.get("pans51"):
-                pan51 = self.data.get("pan51") or {}
+            if "pan51" in r:
+                sq = r["pan51"]
+                grey = (lambda g: QColor(g, g, g))
+                p.setPen(QPen(T.c("tab_text_active") if self._drag == "pan51" else grey(96 if T.dark else 150), 1))
+                p.setBrush(grey(22 if T.dark else 196))
+                p.drawRoundedRect(sq.adjusted(0.5, 0.5, -0.5, -0.5), 3, 3)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(grey(144 if T.dark else 100))
+                for sx, sy in ((-100, 100), (0, 100), (100, 100), (-100, -100), (100, -100)):
+                    c = self.puck_pos(sx, sy)
+                    p.drawRoundedRect(QRectF(c.x() - 2, c.y() - 2, 4, 4), 1, 1)
+                p.setBrush(T.c("accent") if self._drag == "pan51" else T.c("hot_text"))
+                p.drawEllipse(self.puck_pos(p51["x"], p51["y"]), 4, 4)
+                tiny = QFont(small)
+                tiny.setPixelSize(9)
+                p.setFont(tiny)
                 p.setPen(T.c("text_dim"))
-                p.drawText(r["pan"].adjusted(-20, 0, 20, 0), Qt.AlignmentFlag.AlignCenter, f"5.1  {pan51.get('x', 0):.0f}, {pan51.get('y', 0):.0f}")
+                p.drawText(QRectF(r["pan51.center"].left() + 2, sq.top(), 60, 12), Qt.AlignmentFlag.AlignVCenter, tr("Center"))
+                p.drawText(QRectF(r["pan51.lfe"].left() + 2, sq.top() + 26, 60, 12), Qt.AlignmentFlag.AlignVCenter, "LFE")
+                p.setFont(small)
             else:
                 kc = r["pan"].center()
                 ring = T.c("tab_text_active") if self._drag == "pan" else T.c("text_dim")
@@ -219,7 +299,6 @@ class Strip(QWidget):
                 p.setPen(T.c("hot_text"))
                 p.drawText(QRectF(kc.x() - 30, kc.y() + 10, 16, 14), Qt.AlignmentFlag.AlignCenter, "L")
                 p.drawText(QRectF(kc.x() + 14, kc.y() + 10, 16, 14), Qt.AlignmentFlag.AlignCenter, "R")
-                p.drawText(r["panValue"], Qt.AlignmentFlag.AlignCenter, f"{self.pan():.1f}")
         mode = str(self.data.get("mode") or "Read")
         box(r["mode"], tr(mode))
         if self.panel.recording and mode in ("Latch", "Touch", "Write"):
@@ -306,10 +385,6 @@ class Strip(QWidget):
             p.setPen(T.c("text_dim"))
             p.drawText(QRectF(72, y - 6, 19, 12), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, str(d))
             d -= step
-        small.setPixelSize(11)
-        p.setFont(small)
-        p.setPen(T.c("hot_text"))
-        p.drawText(r["value"], Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, db_text(vol))
 
     # ----- input -----
     def region_at(self, pos: QPointF) -> str | None:
@@ -324,6 +399,13 @@ class Strip(QWidget):
         if e.button() != Qt.MouseButton.LeftButton or key is None:
             return
         sid = self.sid()
+        if key == "pan51":
+            p51 = self.pan51()
+            self._drag, self._puck, self._last = "pan51", (p51["x"], p51["y"]), e.position()
+            for lane, v in (("pan51.x", p51["x"]), ("pan51.y", p51["y"])):
+                self.command.emit("mixer.touch", {"strip": sid, "lane": lane, "value": v, "time": self.panel.now})
+            self.update()
+            return
         if key == "cap" or key == "pan":
             self._drag = "fader" if key == "cap" else "pan"
             self._value = self.volume() if key == "cap" else self.pan()
@@ -357,6 +439,18 @@ class Strip(QWidget):
             return
         d = e.position() - self._last
         self._last = e.position()
+        if self._drag == "pan51":
+            inner = self.regions["pan51"].adjusted(5, 5, -5, -5)
+            x, y = self._puck
+            nx = min(100.0, max(-100.0, x + d.x() / (inner.width() / 2) * 100))
+            ny = min(100.0, max(-100.0, y - d.y() / (inner.height() / 2) * 100))
+            self._puck = (nx, ny)
+            if nx != x:
+                self.command.emit("mixer.touch", {"strip": self.sid(), "lane": "pan51.x", "value": nx, "time": self.panel.now})
+            if ny != y:
+                self.command.emit("mixer.touch", {"strip": self.sid(), "lane": "pan51.y", "value": ny, "time": self.panel.now})
+            self.update()
+            return
         if self._drag == "fader":
             fine = 0.1 if e.modifiers() & Qt.KeyboardModifier.ControlModifier else 1.0
             t = self.regions["track"]
@@ -370,8 +464,9 @@ class Strip(QWidget):
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         if self._drag is not None:
-            lane = "volume" if self._drag == "fader" else "pan"
-            self.command.emit("mixer.release", {"strip": self.sid(), "lane": lane, "time": self.panel.now})
+            lanes = ["pan51.x", "pan51.y"] if self._drag == "pan51" else ["volume" if self._drag == "fader" else "pan"]
+            for lane in lanes:
+                self.command.emit("mixer.release", {"strip": self.sid(), "lane": lane, "time": self.panel.now})
             self._drag = None
             self.update()
 
@@ -381,6 +476,9 @@ class Strip(QWidget):
             self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": 0.0})
         elif key == "pan":
             self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": 0.0})
+        elif key == "pan51":  # front centre
+            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.x", "value": 0.0})
+            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.y", "value": 100.0})
 
     def wheelEvent(self, e: QWheelEvent) -> None:
         e.ignore()  # the panel scrolls
@@ -389,6 +487,7 @@ class Strip(QWidget):
         return {
             "cap": tr("Volume (drag; double-click: 0 dB)"),
             "pan": tr("Pan / balance (drag; double-click: centre)"),
+            "pan51": tr("5.1 panner (drag the puck; double-click: front centre)"),
             "mute": tr("Mute Track"),
             "solo": tr("Solo Track"),
             "third": tr("Solo safe") if self.data.get("kind") == "submix" else tr("Enable track for recording"),
@@ -690,6 +789,9 @@ class ClipStrip(QWidget):
         self._last = QPointF()
         self._value = 0.0
         self.regions: dict[str, QRectF] = {}
+        self.hot_volume = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.1)
+        self.hot_volume.edited.connect(self._typed_volume)
+        self.hot_volume.released.connect(lambda: self._release("volume"))
         self.setMinimumWidth(CLIP_STRIP_MIN_W)
         self.setMaximumWidth(STRIP_W)
 
@@ -713,6 +815,7 @@ class ClipStrip(QWidget):
     def set_data(self, data: dict[str, Any]) -> None:
         self.data = data
         self.setObjectName(f"clipMixer.{self.ref}")
+        self.hot_volume.setObjectName(f"clipMixer.{self.ref}.value")
         self.update()
 
     def layout_regions(self) -> dict[str, QRectF]:
@@ -740,6 +843,8 @@ class ClipStrip(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         T = theme.current()
         active = self.clip() is not None
+        place(self.hot_volume, r["value"], self.volume())
+        self.hot_volume.setEnabled(active)
 
         def dim(c: QColor) -> QColor:
             if active:
@@ -807,10 +912,6 @@ class ClipStrip(QWidget):
                 br = QRectF(m.left() + c * (bw + gap), m.top() + 6, bw, m.height() - 6)
                 AudioMetersPanel._bar(p, br, lv, hd)
                 p.fillRect(QRectF(br.left(), m.top(), bw, 4), RED if hd >= -0.1 else (QColor(0x30, 0x30, 0x30) if T.dark else QColor(0x9B, 0x9B, 0x9B)))
-        f.setPixelSize(11)
-        p.setFont(f)
-        p.setPen(dim(T.c("hot_text")))
-        p.drawText(r["value"], Qt.AlignmentFlag.AlignVCenter, db_text(self.volume()))
         f.setPixelSize(12)
         p.setFont(f)
         p.setPen(T.c("text"))
@@ -830,6 +931,14 @@ class ClipStrip(QWidget):
                 "clipMixer.set",
                 {"clip": clip.get("id"), "effect": effect, "param": param, "value": value, "keyframe": self.write_keyframes, "begin": begin},
             )
+
+    def _typed_volume(self, value: float, begin: bool) -> None:
+        """The hot value: a scrub step or a typed value (which ends its gesture at once)."""
+        if self.clip() is None:
+            return
+        self._set("volume", "level", value, begin)
+        if begin and not self.hot_volume._scrubbing:
+            self._release("volume")
 
     def _release(self, effect: str) -> None:
         if self.panel.recording:

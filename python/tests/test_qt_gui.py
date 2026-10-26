@@ -827,6 +827,19 @@ def test_real_engine_demo_project(app, tmp_path: Path):
             app, lambda: sum(len(t.get("items") or []) for t in (win.sequence or {}).get("video") or []) == before + 1, 30_000
         )
         assert wait_until(app, lambda: "Razor" in " ".join(win.history.list.item(i).text() for i in range(win.history.list.count())), 10_000)
+
+        # History: Open first, the current step selected; a click undoes or redoes to a step
+        def videos() -> int:
+            return sum(len(t.get("items") or []) for t in (win.sequence or {}).get("video") or [])
+
+        lst = win.history.list
+        assert lst.item(0).text() == "Open"
+        steps = lst.count() - 1
+        assert steps >= 1 and lst.item(steps).isSelected(), [lst.item(i).text() for i in range(lst.count())]
+        lst.itemClicked.emit(lst.item(0))
+        assert wait_until(app, lambda: videos() == before and lst.count() == steps + 1 and lst.item(0).isSelected(), 30_000)
+        lst.itemClicked.emit(lst.item(lst.count() - 1))
+        assert wait_until(app, lambda: videos() == before + 1 and lst.item(lst.count() - 1).isSelected(), 30_000)
     finally:
         win._quit_confirmed = True
         win.close()
@@ -2098,6 +2111,46 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         assert wait_until(app, lambda: strip("A1")["volumeDb"] < -1.0, 10_000), strip("A1")["volumeDb"]
         QtTest.QTest.mouseDClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["cap"].center().toPoint())
         assert wait_until(app, lambda: abs(strip("A1")["volumeDb"]) < 0.01, 10_000), strip("A1")["volumeDb"]
+        # egui's hot values: type the fader value (a calculation too), scrub the pan value
+        from cfa4_qt.hot_number import HotSpin
+
+        value = a1.findChild(HotSpin, "mixer.A1.value")
+        line = value.lineEdit()
+        QtTest.QTest.mouseClick(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(8, line.height() // 2))
+        line.selectAll()
+        QtTest.QTest.keyClicks(line, "-12/2")
+        QtTest.QTest.keyClick(line, Qt.Key.Key_Return)
+        assert wait_until(app, lambda: abs(strip("A1")["volumeDb"] + 6) < 0.01, 10_000), strip("A1")["volumeDb"]
+        pan = a1.findChild(HotSpin, "mixer.A1.panValue").lineEdit()
+        y = pan.height() // 2
+        QtTest.QTest.mousePress(pan, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(20, y))
+        for x in (25, 35, 45):
+            QtTest.QTest.mouseMove(pan, QtCore.QPoint(x, y))
+        QtTest.QTest.mouseRelease(pan, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(45, y))
+        assert wait_until(app, lambda: abs(strip("A1")["pan"] - 25) < 0.01, 10_000), strip("A1")["pan"]
+        # routed to a 5.1 submix: egui's 5.1 panner (puck, double-click front centre, Center, LFE)
+        win.execute("mixer.addSubmix", {"name": "Surround", "channels": "5.1"})
+        assert wait_until(app, lambda: any(s.get("kind") == "submix" for s in mixer.strips_data), 10_000)
+        sub = next(s for s in mixer.strips_data if s.get("kind") == "submix")
+        win.execute("mixer.setStrip", {"strip": strip("A1")["id"], "output": sub["ref"]})
+        assert wait_until(app, lambda: strip("A1").get("pans51") is True and "pan51" in a1.regions, 10_000), strip("A1")
+        sq = a1.regions["pan51"]
+        start = a1.puck_pos(0, 100).toPoint()
+        QtTest.QTest.mousePress(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, start)
+        for i in range(1, 5):
+            QtTest.QTest.mouseMove(a1, start + QtCore.QPoint(-3 * i, 3 * i))
+        QtTest.QTest.mouseRelease(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, start + QtCore.QPoint(-12, 12))
+        assert wait_until(app, lambda: strip("A1")["pan51"]["x"] < -20 and strip("A1")["pan51"]["y"] < 80, 10_000), strip("A1")["pan51"]
+        QtTest.QTest.mouseDClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, sq.center().toPoint())
+        assert wait_until(app, lambda: strip("A1")["pan51"]["x"] == 0 and strip("A1")["pan51"]["y"] == 100, 10_000), strip("A1")["pan51"]
+        line = a1.findChild(HotSpin, "mixer.A1.pan51.center").lineEdit()
+        QtTest.QTest.mouseClick(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(6, line.height() // 2))
+        line.selectAll()
+        QtTest.QTest.keyClicks(line, "50")
+        QtTest.QTest.keyClick(line, Qt.Key.Key_Return)
+        assert wait_until(app, lambda: strip("A1")["pan51"]["center"] == 50, 10_000), strip("A1")["pan51"]
+        win.execute("mixer.setStrip", {"strip": strip("A1")["id"], "output": "Mix"})
+        assert wait_until(app, lambda: "pan" in a1.regions and not strip("A1").get("pans51"), 10_000)
         # M / S / R
         QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["mute"].center().toPoint())
         assert wait_until(app, lambda: strip("A1")["muted"] is True, 10_000)
@@ -2158,6 +2211,15 @@ def test_audio_clip_mixer(app, tmp_path: Path):
             QtTest.QTest.mouseMove(a1, cap + QtCore.QPoint(0, -6 * i))
         QtTest.QTest.mouseRelease(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap + QtCore.QPoint(0, -30))
         assert wait_until(app, lambda: (a1.clip() or {}).get("volumeDb", before) > before + 0.5, 10_000), (before, a1.data)
+        # the hot value under the fader takes a typed value
+        from cfa4_qt.hot_number import HotSpin
+
+        line = a1.findChild(HotSpin, "clipMixer.A1.value").lineEdit()
+        QtTest.QTest.mouseClick(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(8, line.height() // 2))
+        line.selectAll()
+        QtTest.QTest.keyClicks(line, "-3")
+        QtTest.QTest.keyClick(line, Qt.Key.Key_Return)
+        assert wait_until(app, lambda: abs((a1.clip() or {}).get("volumeDb", 0) + 3) < 0.01, 10_000), a1.data
         QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["mute"].center().toPoint())
         assert wait_until(app, lambda: a1.data.get("muted") is True, 10_000)
         QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["keyframe"].center().toPoint())
@@ -2296,6 +2358,7 @@ def test_lumetri_color(app, tmp_path: Path):
         assert not lc.sliders["hdr_white"].isVisible(), "HDR rows only in an HDR sequence"
 
         # a slider drag is one undo step
+        assert wait_until(app, lambda: history()[-1:] == ["Apply Lumetri Color"], 10_000), history()
         steps = len(history())
         s = lc.sliders["exposure"]
         lc.scroll.ensureWidgetVisible(s)
@@ -2312,6 +2375,19 @@ def test_lumetri_color(app, tmp_path: Path):
         assert wait_until(app, lambda: value("exposure") == -1.5, 10_000)
         mouse.mouseDClick(s, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(t.left() + 5), y))
         assert wait_until(app, lambda: value("exposure") == 0.0, 10_000), "double-click: the default"
+        # the typed value and the double-click are undo steps of their own, however quick
+        assert wait_until(app, lambda: len(history()) == steps + 3, 10_000), history()
+        # scrubbing the hot value is one undo step too
+        steps = len(history())
+        line = s.spin.lineEdit()
+        ly = line.height() // 2
+        mouse.mousePress(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(10, ly))
+        for x in (15, 25, 40):
+            mouse.mouseMove(line, QtCore.QPoint(x, ly))
+            wait_until(app, lambda: False, 30)
+        mouse.mouseRelease(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(40, ly))
+        assert wait_until(app, lambda: (value("exposure") or 0) > 0.2, 10_000), lc.params.get("exposure")
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()[-4:]
 
         # the Look menu, the section switch
         look = lc.combos["look"]

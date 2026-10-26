@@ -19,7 +19,6 @@ from PySide6.QtGui import QColor, QConicalGradient, QFont, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QDoubleSpinBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -34,6 +33,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import theme
+from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
 from .effect_controls import GESTURE_GAP_MS, SEND_DELAY_MS
 
@@ -119,10 +119,11 @@ def points_of(value: Any) -> list[list[float]]:
 
 class Slider(QWidget):
     """egui's spectrum slider: label, a 1 pt track (or a gradient), a hollow ring knob, and the
-    value at the right (typed, arrows and wheel). Click or drag sets the value; double-click
-    restores the default."""
+    value at the right, egui's hot number (drag it to scrub, click to type a value or a
+    calculation). Click or drag the track sets the value; double-click restores the default."""
 
     changed = Signal(str, float, bool)  # param id, value, immediate
+    gesture = Signal()  # a new undo step starts: a press on the track, a scrub, a typed value
 
     def __init__(self, pid: str, label: str, gradient: str | None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -135,40 +136,38 @@ class Slider(QWidget):
         self.info: dict[str, Any] = {}
         self.value = 0.0
         self.dragging = False
-        self.spin = QDoubleSpinBox(self)
+        self.spin = HotSpin(self)
         self.spin.setObjectName(f"lumetri.param.{pid}.value")
-        self.spin.setKeyboardTracking(False)
         self.spin.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self._style = ""
         self.spin.setFixedWidth(VALUE_W - 4)
-        self.spin.valueChanged.connect(lambda v: self.changed.emit(self.pid, float(v), True))
+        # a typed value applies at once; a scrub is sent like a drag of the track (one undo step)
+        self.spin.edited.connect(self._edited)
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 3, 0, 3)
         row.addStretch(1)
         row.addWidget(self.spin)
 
+    def _edited(self, value: float, begin: bool) -> None:
+        self.value = value
+        self.update()
+        if begin:
+            self.gesture.emit()
+        self.changed.emit(self.pid, value, begin and not self.spin._scrubbing)
+
     def set_info(self, info: dict[str, Any]) -> None:
         self.info = info
-        # egui's hot value: blue text, no field; zero-width arrows (NoButtons under a style sheet
-        # leaves the line edit 1 px wide)
-        style = (
-            f"QDoubleSpinBox {{ background: transparent; border: none; padding: 0 2px; color: {theme.current().hot_text}; }}"
-            " QDoubleSpinBox::up-button, QDoubleSpinBox::down-button { width: 0px; border: none; }"
-        )
-        if style != self._style:
-            self._style = style
-            self.spin.setStyleSheet(style)
+        self.spin.restyle()
         decimals = int(finite(info.get("decimals"), 1))
         self.spin.blockSignals(True)
         self.spin.setDecimals(max(0, min(6, decimals)))
         self.spin.setRange(finite(info.get("min"), -1e6), finite(info.get("max"), 1e6))
         span = self.soft()[1] - self.soft()[0]
         self.spin.setSingleStep(max(10 ** -decimals, round(span / 100.0, decimals)))
-        if not self.dragging:
-            self.value = finite(info.get("value"))
-            if not self.spin.hasFocus():
-                self.spin.setValue(self.value)
+        self.spin.speed = span / 300.0  # egui's
         self.spin.blockSignals(False)
+        if not self.dragging and not self.spin.busy:
+            self.value = finite(info.get("value"))
+            self.spin.set_value(self.value)
         self.update()
 
     def soft(self) -> tuple[float, float]:
@@ -224,6 +223,7 @@ class Slider(QWidget):
     def mousePressEvent(self, e: QMouseEvent) -> None:
         if e.button() == Qt.MouseButton.LeftButton and self._hit(e):
             self.dragging = True
+            self.gesture.emit()
             self._set_from(e.position().x())
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
@@ -241,6 +241,7 @@ class Slider(QWidget):
             self.spin.setValue(self.value)
             self.spin.blockSignals(False)
             self.update()
+            self.gesture.emit()
             self.changed.emit(self.pid, self.value, True)
 
 
@@ -653,6 +654,7 @@ class LumetriColorPanel(QWidget):
     def _slider(self, v: QVBoxLayout, pid: str, label: str, gradient: str | None = None) -> Slider:
         s = Slider(pid, tr(label), gradient)
         s.changed.connect(lambda p, val, now: self.set_param(p, val, now))
+        s.gesture.connect(self.new_gesture)
         v.addWidget(s)
         self.sliders[pid] = s
         return s
@@ -966,6 +968,11 @@ class LumetriColorPanel(QWidget):
         else:
             self._send_timer.start()
 
+    def new_gesture(self) -> None:
+        """The next value starts its own undo step, however soon it follows the last one."""
+        self.flush()
+        self._new_gesture = True
+
     def send(self, command: str, params: dict[str, Any]) -> None:
         self.flush()
         self.command.emit(command, params)
@@ -974,7 +981,8 @@ class LumetriColorPanel(QWidget):
         self._send_timer.stop()
         if not self._pending:
             return
-        begin = not self._last_send.isValid() or self._last_send.elapsed() > GESTURE_GAP_MS
+        begin = getattr(self, "_new_gesture", False) or not self._last_send.isValid() or self._last_send.elapsed() > GESTURE_GAP_MS
+        self._new_gesture = False
         for (clip, effect, param, at), value in self._pending.items():
             params: dict[str, Any] = {"clip": clip, "effect": effect, "param": param, "value": value, "merge": True, "begin": begin}
             if at is not None:

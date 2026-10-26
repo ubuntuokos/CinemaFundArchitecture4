@@ -1,15 +1,17 @@
 """egui's hot number (``crates/ui-egui/src/widgets.rs`` ``hot_number``): a blue value that is
-dragged left / right to scrub it (Shift: ten times as fast) or clicked to type a new one."""
+dragged left / right to scrub it (Shift: ten times as fast, Ctrl: a tenth) or clicked to type a new one: a
+number, or a calculation (``*2``, ``1920/3``; ``calc.evaluate``, egui's calc.rs)."""
 
 from __future__ import annotations
 
 from typing import Any
 
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, Signal
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QMouseEvent, QValidator
 from PySide6.QtWidgets import QDoubleSpinBox, QWidget
 
 from . import theme
+from .calc import evaluate
 
 SCRUB_PX = 3  # movement before a press becomes a scrub
 
@@ -19,6 +21,7 @@ class HotSpin(QDoubleSpinBox):
     value and for the first step of a scrub, so a whole scrub is one undo step."""
 
     edited = Signal(float, bool)
+    released = Signal()  # a scrub ended
 
     def __init__(
         self,
@@ -64,6 +67,21 @@ class HotSpin(QDoubleSpinBox):
             self._style = style
             self.setStyleSheet(style)
 
+    def _typed(self, text: str) -> float | None:
+        if self.suffix().strip():
+            text = text.replace(self.suffix().strip(), "")
+        v = evaluate(text, self.value())
+        return None if v is None else max(self.minimum(), min(self.maximum(), v))
+
+    def validate(self, text: str, pos: int) -> object:
+        # anything may be typed; Enter takes it when it reads as a number or a calculation
+        state = QValidator.State.Acceptable if self._typed(text) is not None else QValidator.State.Intermediate
+        return (state, text, pos)
+
+    def valueFromText(self, text: str) -> float:
+        v = self._typed(text)
+        return self.value() if v is None else v
+
     def sizeHint(self) -> QSize:
         # as wide as the value shown, not as the widest value in range (egui's)
         h = super().sizeHint()
@@ -106,7 +124,8 @@ class HotSpin(QDoubleSpinBox):
                 return True
             begin = not self._scrubbing
             self._scrubbing = True
-            fast = 10.0 if e.modifiers() & Qt.KeyboardModifier.ShiftModifier else 1.0
+            mods = e.modifiers()
+            fast = 10.0 if mods & Qt.KeyboardModifier.ShiftModifier else 0.1 if mods & Qt.KeyboardModifier.ControlModifier else 1.0
             v = max(self.minimum(), min(self.maximum(), round(v0 + dx * self.speed * fast, self.decimals())))
             if v != self.value() or begin:
                 self.blockSignals(True)
@@ -118,6 +137,7 @@ class HotSpin(QDoubleSpinBox):
             self._press = None
             if self._scrubbing:
                 self._scrubbing = False
+                self.released.emit()
             else:  # a click: type a value
                 self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
                 self._line.setFocusPolicy(Qt.FocusPolicy.ClickFocus)

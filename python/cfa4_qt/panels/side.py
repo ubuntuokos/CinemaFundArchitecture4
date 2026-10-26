@@ -174,6 +174,9 @@ class InspectorPanel(QWidget):
 
 
 class HistoryPanel(QWidget):
+    """egui's History: Open, then every undo step (the current one highlighted), then the
+    redo steps dimmed; a click undoes or redoes to that step."""
+
     command = Signal(str, dict)
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -181,6 +184,7 @@ class HistoryPanel(QWidget):
         self.setObjectName("panel.History")
         self.list = QListWidget(self)
         self.list.setObjectName("history.list")
+        self.list.itemClicked.connect(self._clicked)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(2, 2, 2, 2)
         layout.addWidget(self.list)
@@ -189,13 +193,27 @@ class HistoryPanel(QWidget):
         self.list.clear()
         if not isinstance(history, dict):
             return
-        for label in history.get("undo") or []:
-            self.list.addItem(tr(str(label)))
-        for label in reversed(history.get("redo") or []):
-            it = QListWidgetItem(tr(str(label)))
+        undo = [str(x) for x in history.get("undo") or []]
+        redo = [str(x) for x in reversed(history.get("redo") or [])]
+        rows = [(tr("Open"), -len(undo))] + [(tr(label), i + 1 - len(undo)) for i, label in enumerate(undo)]
+        for label, steps in rows:
+            it = QListWidgetItem(label)
+            it.setData(Qt.ItemDataRole.UserRole, steps)
+            self.list.addItem(it)
+            if steps == 0:
+                it.setSelected(True)
+                self.list.setCurrentItem(it)
+        for i, label in enumerate(redo):
+            it = QListWidgetItem(tr(label))
+            it.setData(Qt.ItemDataRole.UserRole, i + 1)
             it.setForeground(self.palette().placeholderText())
             self.list.addItem(it)
         self.list.scrollToBottom()
+
+    def _clicked(self, item: QListWidgetItem) -> None:
+        steps = int(item.data(Qt.ItemDataRole.UserRole) or 0)
+        for _ in range(abs(steps)):
+            self.command.emit("edit.undo" if steps < 0 else "edit.redo", {})
 
 
 class EventsPanel(QWidget):
