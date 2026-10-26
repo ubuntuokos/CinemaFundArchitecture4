@@ -132,16 +132,13 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
     let far = focal_for(w, h, 0.0);
     Some(match id {
         // ---------------- Slide ----------------
-        "push" => {
-            let (ox, oy) = t.shift8();
-            scene(t, far, shutter(t, 0.12), move |q| {
-                let e = ease_in_out(q);
-                vec![
-                    Layer::new(Card::flat().translate([ox * e, oy * e, 0.0]), t.a),
-                    Layer::new(Card::flat().translate([ox * (e - 1.0), oy * (e - 1.0), 0.0]), t.b),
-                ]
-            })
-        }
+        "push" => scene(t, far, shutter(t, 0.12), |q| {
+            let e = ease_in_out(q);
+            vec![
+                Layer::new(Card::flat().translate([dx * travel * e, dy * travel * e, 0.0]), t.a),
+                Layer::new(Card::flat().translate([dx * travel * (e - 1.0), dy * travel * (e - 1.0), 0.0]), t.b),
+            ]
+        }),
         "slide" => {
             let (ox, oy) = t.shift8();
             scene(t, far, shutter(t, 0.12), move |q| {

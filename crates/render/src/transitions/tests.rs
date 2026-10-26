@@ -242,44 +242,43 @@ fn tx<'a>(e: &'a cfa4_project::EffectInstance, a: &'a Image, b: &'a Image) -> Tx
 }
 
 #[test]
-fn slide_and_push_move_diagonally() {
+fn slide_moves_diagonally_and_keeps_the_frame_covered() {
     let (a, b) = (frame_a(), frame_b());
     let (w, h) = (W as i64, H as i64);
     // direction → B's offset at the eased half-way point (half a frame from its corner)
     for (dir, (bx, by)) in [(4u32, (-w / 2, -h / 2)), (5, (w / 2, -h / 2)), (6, (w / 2, h / 2)), (7, (-w / 2, h / 2))] {
-        for id in ["slide", "push"] {
-            let mut e = cfa4_project::find_effect(id).unwrap().instance();
-            e.params.get_mut("motion_blur").unwrap().value = ParamValue::Float(0.0);
-            e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
-            let m = apply(&e, &a, &b, 0.5);
-            let at = |x: i64, y: i64| m.get(x as usize, y as usize);
-            // the middle of B's visible quarter
-            let (px, py) = (w / 2 + bx / 2, h / 2 + by / 2);
-            assert!(close(at(px, py), b.get((px - bx) as usize, (py - by) as usize), 1e-3), "{id} dir {dir}: B at ({px}, {py})");
-            // the opposite quarter: A in place (Slide) or pushed the other way (Push)
-            let (qx, qy) = (w / 2 - bx / 2, h / 2 - by / 2);
-            let (sx, sy) = if id == "slide" { (qx, qy) } else { (qx + bx, qy + by) };
-            assert!(close(at(qx, qy), a.get(sx as usize, sy as usize), 1e-3), "{id} dir {dir}: A at ({qx}, {qy})");
+        let mut e = cfa4_project::find_effect("slide").unwrap().instance();
+        e.params.get_mut("motion_blur").unwrap().value = ParamValue::Float(0.0);
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
+        let m = apply(&e, &a, &b, 0.5);
+        // B fills its quarter; the other three quarters are A, still in place
+        for (qx, qy) in [(w / 4, h / 4), (3 * w / 4, h / 4), (w / 4, 3 * h / 4), (3 * w / 4, 3 * h / 4)] {
+            let in_b = (qx - bx) >= 0 && (qx - bx) < w && (qy - by) >= 0 && (qy - by) < h;
+            let want = if in_b { b.get((qx - bx) as usize, (qy - by) as usize) } else { a.get(qx as usize, qy as usize) };
+            assert!(close(m.get(qx as usize, qy as usize), want, 1e-3), "dir {dir}: ({qx}, {qy}) in B {in_b}");
         }
+        assert!(m.px.chunks(4).all(|c| (c[3] - 1.0).abs() < 1e-3), "dir {dir}: every pixel opaque");
     }
 }
 
 #[test]
-fn slide_and_push_cardinal_directions_are_unchanged() {
+fn slide_cardinal_directions_and_push_are_unchanged() {
     let (a, b) = (frame_a(), frame_b());
-    for id in ["slide", "push"] {
-        let def = cfa4_project::find_effect(id).unwrap();
-        for dir in 0..4u32 {
-            let mut e = def.instance();
-            e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
-            let t = tx(&e, &a, &b);
-            let (dx, dy) = t.dir();
-            assert_eq!(t.shift8(), (dx * t.travel(), dy * t.travel()), "{id} dir {dir}");
-        }
-        // an out-of-range choice from a project file falls back to From West, as everywhere
+    let def = cfa4_project::find_effect("slide").unwrap();
+    for dir in 0..4u32 {
         let mut e = def.instance();
-        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(u32::MAX);
-        assert_eq!(apply(&e, &a, &b, 0.4), apply(&def.instance(), &a, &b, 0.4), "{id}");
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(dir);
+        let t = tx(&e, &a, &b);
+        let (dx, dy) = t.dir();
+        assert_eq!(t.shift8(), (dx * t.travel(), dy * t.travel()), "dir {dir}");
+    }
+    // out-of-range choices from a project file fall back to From West, as everywhere; Push has
+    // no diagonals (two cards moving diagonally would leave two quarters of the frame empty)
+    for (id, bad) in [("slide", u32::MAX), ("push", u32::MAX), ("push", 4)] {
+        let def = cfa4_project::find_effect(id).unwrap();
+        let mut e = def.instance();
+        e.params.get_mut("direction").unwrap().value = ParamValue::Choice(bad);
+        assert_eq!(apply(&e, &a, &b, 0.4), apply(&def.instance(), &a, &b, 0.4), "{id} {bad}");
     }
 }
 

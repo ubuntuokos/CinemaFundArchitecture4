@@ -154,7 +154,7 @@ impl Tx<'_> {
             _ => (1.0, 0.0),
         }
     }
-    /// Full-frame displacement for the eight-way `direction` of Slide and Push: the cardinal
+    /// Full-frame displacement for the eight-way `direction` of Slide: the cardinal
     /// directions as [`Tx::dir`] × [`Tx::travel`], the diagonals (4–7: from north-west,
     /// north-east, south-east, south-west) one frame width and one frame height at once.
     pub fn shift8(&self) -> (f32, f32) {
