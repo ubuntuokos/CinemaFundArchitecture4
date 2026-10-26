@@ -16,6 +16,10 @@
   hosszabb támogatás (LTS-ágak, frissítések), a kész csomagok és a szolgáltatások, a nem kód
   jellegű tartalmak, valamint a **külön folyamatként** futó extra modulok. A CFA4 folyamatába
   betöltődő zárt bővítmény nem megengedett.
+- **Szabadalmilag korlátozott komponensek – Ubuntu-modell (tulajdonosi döntés, 2026-10-25):**
+  az alapcsomag nélkülük épül és működik; a felhasználó kifejezett kérésére a
+  `cfa4-restricted-extras` kiegészítő csomag telepíti őket (pl. x264, x265). Ez minden jövőbeli
+  hasonló esetben a követendő út. A CFA4 saját kodekjei az alapcsomagban maradnak. Részletek: 7. pont.
 
 *Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kereskedelmi kiadás előtt érdemes
 jogásszal átnézetni.*
@@ -131,3 +135,31 @@ that adds them names the source and revision.
   licence as well, but must be listed in `NOTICE` when shipped.
 - Packages must ship `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and the licences of
   bundled fonts and programs.
+
+## 7. Patent-restricted components (Ubuntu model)
+
+Owner decision, 2026-10-25 (recorded in [ADR 0003](adr/ADR-0003-aswf-and-conversion-sources.md)
+§12). Patents are separate from copyright licences: a component can be free software (x264 and
+x265 are GPL) and still implement a patent-encumbered format. Ubuntu does not install such codecs
+by default; the user opts in (`ubuntu-restricted-extras`). CFA4 follows the same model, and it is
+the path for **every** such component, now and in future:
+
+1. **The base package builds and runs without them.** No mandatory link dependency: the FFmpeg
+   backend and every other part of CFA4 start when they are absent.
+2. **They ship in a separate package, `cfa4-restricted-extras`,** installed only on the user's
+   explicit request (from the package manager, or from within CFA4 after a confirmation).
+3. **Run-time detection:** CFA4 checks whether a component is installed. If it is not, the feature
+   stays visible but disabled, with the option to install it; a missing component never causes an
+   error or a crash.
+4. **Information before installation:** the user is told that the component may be restricted in
+   some countries and that checking whether its use is permitted is up to them.
+
+Current classification:
+
+| Component | Package |
+|---|---|
+| x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` |
+| CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
+
+A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides
+otherwise; record each decision in the table above.
