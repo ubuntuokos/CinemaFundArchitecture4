@@ -20,7 +20,7 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 | ProRes 422 family / 4444 / XQ | decode + encode all | own decode + encode, all six profiles, alpha | yes (export UI exposes 422 flavours; 4444 / XQ request #342) | ±1 LSB, 318 fps | 85% | 3–6 h |
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
 | DNxHD / DNxHR | decode + encode, MXF / MOV | own decode (all SMPTE ST 2019-1 CIDs, 8/10/12-bit, 4:2:2 / 4:4:4, interlaced, alpha) and encode LB / SQ / HQ / HQX / 444 | yes, MOV + MXF | within IDCT precision of ffmpeg on 22 fixtures | 90% | 2–4 h |
-| AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors; hardware on Windows | none | slow in software (~4 fps 1080p single-thread) | 55% | 30–50 h (encoder + speed) |
+| AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors; hardware on Windows | own software encoder Main 8/10-bit (HDR), CRF / CBR / VBR, ~10% smaller than x265 medium (P-frames) | decode ~4 fps 1080p single-thread; encode ~0.5 fps 1080p per core | 75% | 20–40 h (encoder tools, references, speed) |
 | VP9 | not a Premiere import format on all versions | own decoder profiles 0–3, 8/10/12-bit, bit-exact on 50+ fixtures, frame threading | none | conformance | ahead | — |
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
 | MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT) | **none** | conformance fixtures | 60% | 20–35 h (encoder) |
@@ -53,7 +53,7 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 - **Ahead of Premiere:** VP9, Opus, APV decode / encode; bit-exact software decoders everywhere,
   including Linux and FreeBSD, where Premiere does not run.
 - **Behind, by user impact:** 10-bit / 4:2:2 H.264 and HEVC in software ([G3](gaps.md#g3-10-bit-and-422-camera-media-needs-hardware)),
-  E-AC-3, camera RAW, HEVC and AV1 software encoding, MPEG-2 / JPEG 2000 encoding for broadcast
+  E-AC-3, camera RAW, HEVC software encoding, AV1 encoding speed, MPEG-2 / JPEG 2000 encoding for broadcast
   and DCP, DV, WMV.
 - **Codec dimension: ~60%, 150–250 h** ([target-app-parity.md](target-app-parity.md#by-dimension)).
 

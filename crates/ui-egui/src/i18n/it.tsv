@@ -3456,7 +3456,9 @@
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bit; Main 10 per le sequenze HDR)
 	Encoder	Codificatore
 	Hardware (H.265 has no software encoder)	Hardware (H.265 non ha un codificatore software)
-	Hardware (AV1 has no software encoder)	Hardware (AV1 non ha un codificatore software)
+	Main (10-bit, HDR)	Main (10 bit, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bit; 10 bit per le sequenze HDR)
+	Software, or hardware where available	Software, o hardware se disponibile
 	Text Properties	Proprietà testo
 	Text Box Height	Altezza casella di testo
 	Paragraph Text	Testo in paragrafo

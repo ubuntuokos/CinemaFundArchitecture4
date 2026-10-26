@@ -1015,6 +1015,7 @@ dependencies = [
  "cfa4-aac",
  "cfa4-apv",
  "cfa4-audio-dsp",
+ "cfa4-av1",
  "cfa4-codecs",
  "cfa4-color",
  "cfa4-dnx",

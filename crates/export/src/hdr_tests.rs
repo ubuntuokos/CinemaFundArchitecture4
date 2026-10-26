@@ -122,8 +122,8 @@ fn which_exports_are_hdr() {
     use crate::job::hdr_output;
     let never = |_: Format| false;
     let hevc_only = |f: Format| f == Format::Hevc;
-    // H.264, ProRes, DNxHR and APV follow the working space, whatever the probes say
-    for f in [Format::H264, Format::ProRes, Format::DnxHr, Format::Apv] {
+    // H.264, AV1, ProRes, DNxHR and APV follow the working space, whatever the probes say
+    for f in [Format::H264, Format::Av1, Format::ProRes, Format::DnxHr, Format::Apv] {
         assert!(hdr_output(true, false, f, never), "{f:?}");
         assert!(!hdr_output(false, false, f, hevc_only), "{f:?}: SDR working space");
         assert!(!hdr_output(true, true, f, hevc_only), "{f:?}: SDR asked for");

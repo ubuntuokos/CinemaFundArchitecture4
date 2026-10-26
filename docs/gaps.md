@@ -230,11 +230,12 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 export (software or hardware), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
+- **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   interlaced encoding, smart render, HEVC software encoder (HEVC exists only where a hardware
   encoder does).
-- **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
+- **Have:** AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
+  metadata, MP4 `av01`; #95); PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x265 for software HEVC encode

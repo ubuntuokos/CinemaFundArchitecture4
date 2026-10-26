@@ -912,7 +912,7 @@ fn a_time_left_reads_like_a_clock() {
 }
 
 #[test]
-fn av1_is_an_mp4_format_that_needs_a_registered_encoder() {
+fn av1_is_an_mp4_format_with_a_builtin_encoder() {
     for name in ["av1", "AV1", "av01"] {
         assert_eq!(Format::from_name(name), Some(Format::Av1), "{name}");
     }
@@ -934,14 +934,11 @@ fn av1_is_an_mp4_format_that_needs_a_registered_encoder() {
     assert!(summary.video.contains("AV1 Main"), "{}", summary.video);
     let e = ExportSettings { bitrate_mode: BitrateMode::Vbr2Pass, ..a.clone() }.validate().unwrap_err();
     assert!(e.to_string().contains("two-pass"), "{e}");
-    let e = ExportSettings { bitrate_mode: BitrateMode::Crf, ..a.clone() }.validate().unwrap_err();
-    assert!(e.to_string().contains("no CRF mode"), "{e}");
-    assert!(!Format::Av1.has_builtin_encoder());
-    assert!(!available(Format::Av1), "nothing registered an encoder for it");
-    let (p, seq, m) = matte([0.0, 0.0, 1.0, 1.0], 160, 96, None);
-    let sc = Scratch::new("av1-missing");
-    let err = export(&p, seq, &ExportSettings { path: sc.path("x.mp4"), include_audio: false, ..a.clone() }, &m, &Progress::default()).unwrap_err().to_string();
-    assert!(err.contains("AV1") && err.contains("encoder not available"), "{err}");
+    let crf = ExportSettings { bitrate_mode: BitrateMode::Crf, ..a.clone() };
+    assert!(crf.validate().is_ok());
+    assert!(crf.summary(1920, 1088, FrameRate::FPS_25, 48_000, Tick(10 * TICKS_PER_SECOND)).video.contains("CRF"));
+    assert!(Format::Av1.has_builtin_encoder());
+    assert!(available(Format::Av1));
 }
 
 #[test]

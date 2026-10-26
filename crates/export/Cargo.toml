@@ -27,6 +27,7 @@ cfa4-mxf = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-flac = { workspace = true }
 cfa4-h264enc = { workspace = true }
+cfa4-av1 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

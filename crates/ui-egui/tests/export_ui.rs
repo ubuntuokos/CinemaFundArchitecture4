@@ -252,6 +252,29 @@ fn h265_shows_the_h264_family_controls_without_the_h264_only_ones() {
 }
 
 #[test]
+fn av1_has_the_software_encoder_with_constant_quality() {
+    use cfa4_engine::export::{BitrateMode, ExportSettings, Format};
+    let mut d = Driver::new("av1");
+    d.ok("ui.set", json!({"mode": "export"}));
+    d.app().ui.export.settings = ExportSettings { format: Format::Av1, ..Default::default() };
+    d.frames(4);
+    for id in ["export.video.bitrateMode", "export.video.target", "export.video.keyframeOn", "export.section.audio"] {
+        assert!(d.has(id), "AV1: {id}");
+    }
+    for id in ["export.video.profile", "export.video.level", "export.video.hardwareEncoding"] {
+        assert!(!d.has(id), "AV1 has no {id}");
+    }
+    let sum = d.ok("ui.elements", json!({"prefix": "export.summary"}))[0]["label"].as_str().unwrap().to_string();
+    assert!(sum.contains("AV1 Main") && sum.contains("Target 20.00 Mbps"), "{sum}");
+    // constant quality runs on the software encoder
+    d.app().ui.export.settings.bitrate_mode = BitrateMode::Crf;
+    d.frames(4);
+    let sum = d.ok("ui.elements", json!({"prefix": "export.summary"}))[0]["label"].as_str().unwrap().to_string();
+    assert!(sum.contains("CRF"), "{sum}");
+    assert!(d.app().ui.export.settings.validate().is_ok());
+}
+
+#[test]
 fn preset_manager_search_favourite_save_apply() {
     let mut d = Driver::new("manager");
     d.ok("ui.set", json!({"mode": "export"}));
