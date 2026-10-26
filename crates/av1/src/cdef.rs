@@ -148,27 +148,8 @@ fn filter(fs: &FrameState, out: &mut [RowBand; 3], plane: usize, r: usize, c: us
     let h = 8 >> sub_y;
     let src = &fs.cur.planes[plane];
     let (mi_rows, mi_cols) = (fs.fh.mi_rows as isize, fs.fh.mi_cols as isize);
-    // CdefAvailable per sample: its 4x4 block is inside the frame.
-    let mut buf = [CDEF_NA; PAD_STRIDE * PAD_STRIDE];
-    let mut all_avail = true;
-    for i in 0..h + 4 {
-        let y = (y0 + i) as isize - 2;
-        let cand_r = (y << sub_y) >> 2;
-        if y < 0 || cand_r >= mi_rows {
-            all_avail = false;
-            continue;
-        }
-        let row = src.row(y as usize);
-        for j in 0..w + 4 {
-            let x = (x0 + j) as isize - 2;
-            let cand_c = (x << sub_x) >> 2;
-            if x >= 0 && cand_c < mi_cols {
-                buf[i * PAD_STRIDE + j] = row[x as usize] as i32;
-            } else {
-                all_avail = false;
-            }
-        }
-    }
+    // CdefAvailable per sample: its 4x4 block is inside the frame (monotonic in x and y, so the
+    // corners of the 2-sample border decide whether every tap is available)
     let pri_tap = ((pri >> coeff_shift) & 1) as usize;
     let off = |d: usize, k: usize| CDEF_DIRECTIONS[d][k][0] as isize * PAD_STRIDE as isize + CDEF_DIRECTIONS[d][k][1] as isize;
     let pri_off = [off(dir, 0), off(dir, 1)];
@@ -179,9 +160,21 @@ fn filter(fs: &FrameState, out: &mut [RowBand; 3], plane: usize, r: usize, c: us
     let sec_taps = [CDEF_SEC_TAPS[pri_tap][0] as i32, CDEF_SEC_TAPS[pri_tap][1] as i32];
     let adj = |t: i32| if t == 0 { 0 } else { (damping - (31 - (t as u32).leading_zeros()) as i32).max(0) as u32 };
     let (pri_adj, sec_adj) = (adj(pri), adj(sec));
-    let dst = &mut out[plane];
-    if all_avail {
+    let inside = |v: isize, sub: usize, lim: isize| v >= 0 && (v << sub) >> 2 < lim;
+    let (yl, yh) = (y0 as isize - 2, (y0 + h + 1) as isize);
+    let (xl, xh) = (x0 as isize - 2, (x0 + w + 1) as isize);
+    if inside(yl, sub_y, mi_rows) && inside(yh, sub_y, mi_rows) && inside(xl, sub_x, mi_cols) && inside(xh, sub_x, mi_cols) {
         // Every tap is available: whole rows at a time (constrain() with threshold 0 is 0).
+        let mut b16 = [0i16; PAD_STRIDE * PAD_STRIDE];
+        for i in 0..h + 4 {
+            let row = src.row(y0 + i - 2);
+            let (Some(sr), Some(dr)) = (row.get(x0 - 2..x0 + w + 2), b16.get_mut(i * PAD_STRIDE..i * PAD_STRIDE + w + 4)) else {
+                return;
+            };
+            for (d, &v) in dr.iter_mut().zip(sr) {
+                *d = v as i16;
+            }
+        }
         let mut taps = [(0isize, 0i32, 0i32, 0u32); 12];
         let mut n = 0;
         for k in 0..2 {
@@ -192,13 +185,31 @@ fn filter(fs: &FrameState, out: &mut [RowBand; 3], plane: usize, r: usize, c: us
                 n += 3;
             }
         }
+        let dst = &mut out[plane];
         let rows = (y0, x0, h);
         match w {
-            8 => filter_rows::<8>(&buf, &taps, dst, rows),
-            _ => filter_rows::<4>(&buf, &taps, dst, rows),
+            8 => filter_rows::<8>(&b16, &taps, dst, rows),
+            _ => filter_rows::<4>(&b16, &taps, dst, rows),
         }
         return;
     }
+    let mut buf = [CDEF_NA; PAD_STRIDE * PAD_STRIDE];
+    for i in 0..h + 4 {
+        let y = (y0 + i) as isize - 2;
+        let cand_r = (y << sub_y) >> 2;
+        if y < 0 || cand_r >= mi_rows {
+            continue;
+        }
+        let row = src.row(y as usize);
+        for j in 0..w + 4 {
+            let x = (x0 + j) as isize - 2;
+            let cand_c = (x << sub_x) >> 2;
+            if x >= 0 && cand_c < mi_cols {
+                buf[i * PAD_STRIDE + j] = row[x as usize] as i32;
+            }
+        }
+    }
+    let dst = &mut out[plane];
     for i in 0..h {
         // The centre sample is read even where CdefAvailable is 0 (8x8 blocks straddling an odd
         // MiRows / MiCols edge).
@@ -241,15 +252,11 @@ fn filter(fs: &FrameState, out: &mut [RowBand; 3], plane: usize, r: usize, c: us
 /// bits), differences and the weighted tap sum all fit in i16, which doubles the SIMD width.
 #[inline(always)]
 fn filter_rows<const W: usize>(
-    buf: &[i32; PAD_STRIDE * PAD_STRIDE],
+    b16: &[i16; PAD_STRIDE * PAD_STRIDE],
     taps: &[(isize, i32, i32, u32); 12],
     dst: &mut RowBand,
     (y0, x0, h): (usize, usize, usize),
 ) {
-    let mut b16 = [0i16; PAD_STRIDE * PAD_STRIDE];
-    for (d, &s) in b16.iter_mut().zip(buf.iter()) {
-        *d = s as i16;
-    }
     for i in 0..h {
         let ci = ((i + 2) * PAD_STRIDE + 2) as isize;
         let Some(&x) = b16.get(ci as usize..).and_then(|r| r.first_chunk::<W>()) else {

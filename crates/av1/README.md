@@ -125,6 +125,17 @@ motion vectors nor CDFs reach another frame — skip deblocking, CDEF and loop r
 (super-resolution still runs, it sets the output size) and are flagged `Picture::draft`. In
 SVT-AV1's hierarchical GOPs that is the top layer, half of the frames.
 
+### #95 part 1 (2026-10-26)
+
+Instructions per 12 frames of `perf_1080p_gop` (callgrind, 1 thread): 7.30 G before, 6.13 G
+after (−16%), bit-exact as before. Intra prediction writes into a scratch buffer owned by the
+tile decoder instead of zeroing 8 KB per block. CDEF decides from the four corners of its border
+whether every tap is available, and then copies whole rows instead of testing each sample.
+Copies of recycled frame buffers are no longer zeroed first. On a 4-core x86-64 container:
+`perf_1080p_intra` 12.5 → 15.3 fps on 1 thread (29.6 → 31.3 on 4), `perf_1080p_gop` ~13 fps on
+1 thread and ~20 on 4. What is left for real time on 4 cores (row-level frame threads,
+deblocking, DCT) is #183.
+
 ## API
 
 ```rust

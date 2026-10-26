@@ -98,6 +98,8 @@ pub(crate) struct TileDecoder<'a, 'f> {
     pub mask: Vec<i32>,
     /// Intermediate rows of the sub-pixel filters (up to 2 x 128 + 8 rows of 128 with 2:1 scaled references).
     pub mc_tmp: Vec<i32>,
+    /// Intra prediction scratch (64 x 64).
+    intra_pred: Vec<u16>,
     /// Coefficient levels of the current transform block, padded (see TX_PAD).
     levels: Vec<u8>,
 }
@@ -145,6 +147,7 @@ impl<'a, 'f> TileDecoder<'a, 'f> {
             pred_buf: [vec![0; 128 * 128], vec![0; 128 * 128]],
             mask: vec![0; 128 * 128],
             mc_tmp: vec![0; (2 * 128 + 8) * 128],
+            intra_pred: vec![0; 64 * 64],
             levels: vec![0; (32 + TX_PAD) * (32 + TX_PAD)],
         }
     }
@@ -1187,7 +1190,7 @@ impl<'a, 'f> TileDecoder<'a, 'f> {
                     enable_intra_edge_filter: self.fs.seq.enable_intra_edge_filter,
                     filter_type: if is_directional_mode(mode) && self.fs.seq.enable_intra_edge_filter { self.get_filter_type(plane) } else { false },
                 };
-                predict_intra(&mut self.t.cur.planes[plane], &params);
+                predict_intra(&mut self.t.cur.planes[plane], &params, &mut self.intra_pred);
             }
             let mut pred_w = block_width(self.b.mi_size) >> sub_x;
             let mut pred_h = block_height(self.b.mi_size) >> sub_y;
@@ -1374,7 +1377,7 @@ impl<'a, 'f> TileDecoder<'a, 'f> {
                     enable_intra_edge_filter: self.fs.seq.enable_intra_edge_filter,
                     filter_type,
                 };
-                predict_intra(&mut self.t.cur.planes[plane], &params);
+                predict_intra(&mut self.t.cur.planes[plane], &params, &mut self.intra_pred);
                 if is_cfl {
                     self.predict_cfl(plane, start_x, start_y, tx_sz);
                 }
