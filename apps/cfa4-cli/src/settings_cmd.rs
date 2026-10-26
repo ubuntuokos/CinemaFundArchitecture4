@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn media_backends_lists_the_engine_first_and_reads_the_switches() {
         let d = tmp("backends");
-        settings("set", Some(r#"{"media.ffmpegBackend": false}"#), Some(d.clone())).unwrap();
+        settings("set", Some(r#"{"mediaBackends.ffmpeg": false}"#), Some(d.clone())).unwrap();
         let v = media_backends(Some(d)).unwrap();
         let list = v["backends"].as_array().unwrap();
         assert_eq!(list[0]["id"], "builtin");

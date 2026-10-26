@@ -166,6 +166,7 @@ pub struct Preferences {
     pub graphics: settings::GraphicsPrefs,
     pub labels: settings::LabelPrefs,
     pub media: MediaPrefs,
+    pub media_backends: settings::MediaBackendPrefs,
     pub media_analysis: settings::MediaAnalysisPrefs,
     pub media_cache: settings::MediaCachePrefs,
     pub memory: settings::MemoryPrefs,
@@ -196,6 +197,7 @@ impl Default for Preferences {
             graphics: Default::default(),
             labels: Default::default(),
             media: Default::default(),
+            media_backends: Default::default(),
             media_analysis: Default::default(),
             media_cache: Default::default(),
             memory: Default::default(),
@@ -264,11 +266,6 @@ pub struct MediaPrefs {
     pub growing_refresh_seconds: u32,
     pub hardware_decoding: bool,
     pub prores_hardware_encoding: bool,
-    /// Settings ▸ Media Backends: the FFmpeg supplementary backend is used (ADR 0005). Shown only
-    /// by the Qt GUI's Media Backends panel (egui is frozen), set with `prefs.set`.
-    pub ffmpeg_backend: bool,
-    /// Settings ▸ Media Backends: the GStreamer supplementary backend is used (ADR 0002).
-    pub gstreamer_backend: bool,
 }
 
 impl Default for MediaPrefs {
@@ -293,8 +290,6 @@ impl Default for MediaPrefs {
             growing_refresh_seconds: 60,
             hardware_decoding: true,
             prores_hardware_encoding: true,
-            ffmpeg_backend: true,
-            gstreamer_backend: true,
         }
     }
 }

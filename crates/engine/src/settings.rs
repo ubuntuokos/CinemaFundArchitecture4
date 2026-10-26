@@ -622,6 +622,23 @@ impl Session {
     }
 }
 
+/// Settings ▸ Media & Playback ▸ Media Backends (ADR 0005): which supplementary backends take
+/// files the own engine cannot open. Shown by the Qt Settings window (egui is frozen).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct MediaBackendPrefs {
+    /// FFmpeg (>= 9.0.2, GPL-3 build), tried first after the engine.
+    pub ffmpeg: bool,
+    /// The system's GStreamer (ADR 0002), tried after FFmpeg.
+    pub gstreamer: bool,
+}
+
+impl Default for MediaBackendPrefs {
+    fn default() -> Self {
+        Self { ffmpeg: true, gstreamer: true }
+    }
+}
+
 /// Settings ▸ Media Analysis & Transcription.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -1278,8 +1295,8 @@ static CATEGORIES: &[Category] = &[
         group: "media",
         title: "Media Backends",
         rows: &[
-            b("media.ffmpegBackend", "Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)", true),
-            b("media.gstreamerBackend", "Use the system's GStreamer for files neither the engine nor FFmpeg can open", true),
+            b("mediaBackends.ffmpeg", "Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)", true),
+            b("mediaBackends.gstreamer", "Use the system's GStreamer for files neither the engine nor FFmpeg can open", true),
         ],
     },
     Category {
@@ -1570,8 +1587,8 @@ impl crate::autosave::Preferences {
     /// Settings ▸ Media Backends as the switches the supplementary backends consult before they
     /// open a file (`cfa4_media::backends`; new files only).
     pub fn apply_media_backends(&self) {
-        cfa4_media::set_backend_enabled("ffmpeg", self.media.ffmpeg_backend);
-        cfa4_media::set_backend_enabled("gstreamer", self.media.gstreamer_backend);
+        cfa4_media::set_backend_enabled("ffmpeg", self.media_backends.ffmpeg);
+        cfa4_media::set_backend_enabled("gstreamer", self.media_backends.gstreamer);
     }
 
     /// Values of one category as a JSON object.

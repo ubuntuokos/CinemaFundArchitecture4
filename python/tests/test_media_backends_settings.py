@@ -91,7 +91,7 @@ class RealEngine(unittest.TestCase):
             schema, _prefs = run_load(cli, Path(d))
             media = next(g for g in schema.groups if g.id == "media")
             self.assertIn(MEDIA_BACKENDS_PAGE, [p.id for p in media.pages])
-            self.assertEqual(schema.page_keys(MEDIA_BACKENDS_PAGE), {"media.ffmpegBackend", "media.gstreamerBackend"})
+            self.assertEqual(schema.page_keys(MEDIA_BACKENDS_PAGE), {"mediaBackends.ffmpeg", "mediaBackends.gstreamer"})
             m = run_media_backends(cli, Path(d))
             self.assertEqual(m.backends[0].id, "builtin")
             self.assertEqual({b.id for b in m.backends}, {"builtin", "ffmpeg", "gstreamer"})
@@ -108,8 +108,8 @@ def qt_available():
 SCHEMA = {
     "groups": [{"id": "media", "title": "Media & Playback"}],
     "categories": [{"id": MEDIA_BACKENDS_PAGE, "title": "Media Backends", "group": "media", "fields": [
-        {"key": "media.ffmpegBackend", "label": "Use FFmpeg", "wired": True, "value": True, "kind": {"type": "bool"}},
-        {"key": "media.gstreamerBackend", "label": "Use GStreamer", "wired": True, "value": True, "kind": {"type": "bool"}},
+        {"key": "mediaBackends.ffmpeg", "label": "Use FFmpeg", "wired": True, "value": True, "kind": {"type": "bool"}},
+        {"key": "mediaBackends.gstreamer", "label": "Use GStreamer", "wired": True, "value": True, "kind": {"type": "bool"}},
     ]}],
 }
 
@@ -127,10 +127,10 @@ class QtPage(unittest.TestCase):
         from PySide6.QtWidgets import QCheckBox, QLabel, QTableWidget
 
         dialog = SettingsDialog(None, page=MEDIA_BACKENDS_PAGE)
-        dialog._loaded((Schema.parse(SCHEMA), {"media": {"ffmpegBackend": True, "gstreamerBackend": True}}))
+        dialog._loaded((Schema.parse(SCHEMA), {"mediaBackends": {"ffmpeg": True, "gstreamer": True}}))
         self.assertEqual(dialog.current_page(), MEDIA_BACKENDS_PAGE)
-        dialog.findChild(QCheckBox, "settings.media.ffmpegBackend").setChecked(False)
-        self.assertEqual(dialog.changes(), {"media.ffmpegBackend": False})
+        dialog.findChild(QCheckBox, "settings.mediaBackends.ffmpeg").setChecked(False)
+        self.assertEqual(dialog.changes(), {"mediaBackends.ffmpeg": False})
         dialog._backends_loaded(MediaBackends.parse(REPORT))
         listing = dialog.findChild(QTableWidget, "settings.mediaBackends.list")
         self.assertEqual(listing.rowCount(), 3)

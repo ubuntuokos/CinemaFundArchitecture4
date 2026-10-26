@@ -1580,7 +1580,7 @@ fn build() -> Vec<CommandSpec> {
             for r in cfa4_media::backend_reports() {
                 let mut v = serde_json::to_value(&r).unwrap_or_else(|_| json!({}));
                 v["canDisable"] = json!(true);
-                v["preference"] = json!(format!("media.{}Backend", r.id));
+                v["preference"] = json!(format!("mediaBackends.{}", r.id));
                 list.push(v);
             }
             Ok(json!({"backends": list, "importable": cfa4_media::importable_extensions()}))
