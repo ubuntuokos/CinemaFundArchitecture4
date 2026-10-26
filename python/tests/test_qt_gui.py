@@ -1048,6 +1048,44 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_insert_while_program_plays_edits_at_the_shown_playhead(app, tmp_path: Path):
+    """Insert / Overwrite / Lift / Extract from a monitor button while the Program monitor plays:
+    playback stops and the shown playhead reaches the engine before the edit (its playhead was
+    still where playback started)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    sent: list[tuple[str, dict]] = []
+    real_execute = engine.execute
+
+    def spy(command, params=None, **kw):
+        sent.append((command, dict(params or {})))
+        return real_execute(command, params, **kw)
+
+    engine.execute = spy
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.monitor.play()
+        assert wait_until(app, lambda: win.monitor.playhead > TICKS_PER_SECOND // 2, 10_000)
+        sent.clear()
+        win.execute("source.overwrite", {})
+        assert not win.monitor.playing
+        names = [c for c, _p in sent]
+        assert "playhead.set" in names and names.index("playhead.set") < names.index("source.overwrite"), names
+        shown = next(p for c, p in sent if c == "playhead.set")
+        assert shown.get("time") == win.monitor.playhead > 0
+    finally:
+        engine.execute = real_execute
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tmp_path: Path):
     """Voice-over as egui's: the audio track header's microphone records on that track (its menu
     opens Voice-Over Record Settings), playback starts the pre-roll before the playhead with the

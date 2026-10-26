@@ -178,6 +178,9 @@ def recovery_text(cand: dict[str, Any]) -> str:
     return text.replace("{name}", name).replace("{time}", when)
 
 
+# placement edits the Source monitor's and Program monitor's buttons run at the sequence playhead
+EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract"})
+
 class MainWindow(QMainWindow):
     def __init__(self, engine: EngineClient, settings: QSettings | None = None) -> None:
         super().__init__()
@@ -1133,6 +1136,10 @@ class MainWindow(QMainWindow):
             return
         if command == "source.setPlayhead" and self.source_monitor.playing:
             return
+        if command in EDITS_AT_PLAYHEAD and self.monitor.playing:
+            # the engine's playhead is still where Program playback started: stopping sends the
+            # shown frame first, so the edit lands where the timeline shows the playhead
+            self.monitor.stop()
         self.engine.execute(
             command,
             params or {},
