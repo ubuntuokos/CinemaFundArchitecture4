@@ -25,11 +25,11 @@ description: |-
 
 # The binaries link only glibc and libgcc_s directly. Windowing (X11/Wayland, xkbcommon) and the
 # GPU (Vulkan, EGL/GL) are loaded at runtime, so they are dependencies/recommendations here
-# rather than ELF NEEDED entries.
+# rather than ELF NEEDED entries. Measured on Ubuntu 26.04: docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md.
 overrides:
   deb:
     depends:
-      - libc6 (>= 2.35)
+      - libc6 (>= 2.43)
       - libgcc-s1
       - libxkbcommon0
       - libvulkan1 | libegl1
@@ -41,6 +41,12 @@ overrides:
       - libxcursor1
       - libxi6
       - libxrandr2
+      - libwayland-egl1
+      - libxkbcommon-x11-0
+      - libdbus-1-3
+      # VA-API hardware decoding; loaded only when present.
+      - libva2
+      - libva-drm2
       - mesa-vulkan-drivers
       # Local HEIF/HEIC import/export via system libheif tools (not bundled).
       # GPL/LGPL redistribution remains a separate release audit gate.

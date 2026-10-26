@@ -44,6 +44,8 @@ pub mod media_foundation;
 pub mod nvdec;
 #[cfg(any(target_os = "windows", all(target_os = "linux", target_pointer_width = "64")))]
 pub mod nvenc;
+#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+pub mod routes;
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub mod vaapi;
 #[cfg(target_os = "macos")]
@@ -64,41 +66,28 @@ pub enum Availability {
     Unavailable(&'static str),
 }
 
-#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
-#[derive(Debug, PartialEq, Eq)]
-enum LinuxDecoderProbe {
-    Nvdec(String),
-    Vaapi { driver: String, nvdec_error: String },
-    Unavailable { nvdec_error: String, vaapi_error: String },
-}
-
-#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
-fn probe_linux_decoder(nvdec_probe: impl FnOnce() -> Result<String, String>, vaapi_probe: impl FnOnce() -> Result<String, String>) -> LinuxDecoderProbe {
-    let nvdec_error = match nvdec_probe() {
-        Ok(driver) => return LinuxDecoderProbe::Nvdec(driver),
-        Err(error) => error,
-    };
-    match vaapi_probe() {
-        Ok(driver) => LinuxDecoderProbe::Vaapi { driver, nvdec_error },
-        Err(vaapi_error) => LinuxDecoderProbe::Unavailable { nvdec_error, vaapi_error },
-    }
-}
-
 /// Register the platform's hardware video decoders (call once at startup; repeated calls are
 /// harmless). Streams they do not take, and every stream while hardware decoding is Off, keep
 /// using CFA4's own decoders.
 pub fn register() -> Availability {
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
     {
+        // The H.264 factory is registered on every machine, as before; it asks the compute router
+        // (`routes::nvenc_allowed`) before it opens the driver, and an export with hardware
+        // encoding Auto that the router sends to the software encoder counts as declined.
         cfa4_export::register_encoder(nvenc::export::factory);
-        // Linux uses the same CUDA NVENC HEVC implementation as H.264. A
-        // successful hardware probe is required before the HEVC format is
-        // offered, instead of the former Windows-only Format::Hevc gate.
-        cfa4_export::register_format_probe(cfa4_export::Format::Hevc, nvenc::hevc_available);
-        cfa4_export::register_hdr_probe(cfa4_export::Format::Hevc, nvenc::hevc_hdr_available);
-        log::info!("startup stage: scheduling NVENC HEVC probe");
-        nvenc::warm_hevc_probe();
-        log::info!("startup stage: NVENC HEVC probe scheduled");
+        // Linux uses the same CUDA NVENC HEVC implementation as H.264. A successful hardware
+        // probe is required before the HEVC format is offered; the probe is only registered (and
+        // warmed) where the router routes H.265 encoding (`video.encode.hevc`, its own task) to
+        // NVENC, so other machines never load the CUDA driver for it (the format was unavailable
+        // there anyway).
+        if routes::current().is_none_or(|r| r.hevc_encoder() == "nvenc") {
+            cfa4_export::register_format_probe(cfa4_export::Format::Hevc, nvenc::hevc_available);
+            cfa4_export::register_hdr_probe(cfa4_export::Format::Hevc, nvenc::hevc_hdr_available);
+            log::info!("startup stage: scheduling NVENC HEVC probe");
+            nvenc::warm_hevc_probe();
+            log::info!("startup stage: NVENC HEVC probe scheduled");
+        }
     }
     #[cfg(target_os = "macos")]
     {
@@ -139,40 +128,27 @@ pub fn register() -> Availability {
         let mut available = Availability::Unavailable("no VA-API driver (libva and a DRM render node) and no NVIDIA driver (NVDEC)");
         #[cfg(target_pointer_width = "64")]
         {
-            // Probe NVIDIA first. Some NVIDIA DRM nodes expose a libva implementation whose
-            // vaInitialize call can block indefinitely; a working NVDEC path makes that fallback
-            // unnecessary, since unsupported streams still use CFA4's software decoders.
-            match probe_linux_decoder(
-                || {
-                    log::info!("startup stage: probing NVDEC CUDA device");
-                    let result = nvdec::cuvid::probe();
-                    log::info!("startup stage: NVDEC CUDA device probe returned");
-                    result
-                },
-                || {
-                    log::info!("startup stage: probing VA-API display");
-                    let result = (*vaapi::va::probe()).clone();
-                    log::info!("startup stage: VA-API display probe returned");
-                    result
-                },
-            ) {
-                LinuxDecoderProbe::Nvdec(driver) => {
-                    NVDEC.call_once(|| log::info!("hardware decoding through NVDEC: {driver}"));
+            // The compute router decides (ADR 0004): the shipped order is NVDEC, VA-API, then the
+            // software decoders. NVIDIA comes first because some NVIDIA DRM nodes expose a libva
+            // implementation whose vaInitialize can block indefinitely; the router asks VA-API only
+            // when NVDEC declined, and unsupported streams still use CFA4's software decoders.
+            match routes::current().map(|r| (r.decoder(), &r.decode)) {
+                Some(("nvdec", decision)) => {
+                    NVDEC.call_once(|| log::info!("hardware decoding through NVDEC on {}", decision.device()));
                     cfa4_codecs::register_video_decoder(nvdec_factory);
                     cfa4_codecs::hw::set_hw_backend("NVDEC");
                     available = Availability::Available("NVDEC");
                 }
-                LinuxDecoderProbe::Vaapi { driver, nvdec_error } => {
-                    log::info!("no NVDEC hardware decoding: {nvdec_error}");
-                    VAAPI.call_once(|| log::info!("hardware decoding through VA-API: {driver}"));
+                Some(("vaapi", decision)) => {
+                    VAAPI.call_once(|| log::info!("hardware decoding through VA-API on {}", decision.device()));
                     cfa4_codecs::register_video_decoder(vaapi_factory);
                     cfa4_codecs::hw::set_hw_backend("VA-API");
                     available = Availability::Available("VA-API");
                 }
-                LinuxDecoderProbe::Unavailable { nvdec_error, vaapi_error } => {
-                    log::info!("no NVDEC hardware decoding: {nvdec_error}");
-                    log::info!("no VA-API hardware decoding: {vaapi_error}");
+                Some((other, decision)) => {
+                    log::info!("no hardware decoding: the compute router chose {other} ({} routes passed over)", decision.chain.declined.len());
                 }
+                None => log::warn!("no hardware decoding: the compute router could not route the decoder"),
             }
         }
         #[cfg(not(target_pointer_width = "64"))]
@@ -323,28 +299,5 @@ pub fn nvdec_factory(entry: &cfa4_isobmff::SampleEntry) -> Option<cfa4_codecs::R
             }
             None
         }
-    }
-}
-
-#[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
-mod linux_probe_tests {
-    use std::cell::Cell;
-
-    use super::{LinuxDecoderProbe, probe_linux_decoder};
-
-    #[test]
-    fn successful_nvdec_probe_skips_blocking_vaapi_probe() {
-        let vaapi_called = Cell::new(false);
-
-        let selected = probe_linux_decoder(
-            || Ok("NVDEC test device".to_string()),
-            || {
-                vaapi_called.set(true);
-                Ok("VA-API test device".to_string())
-            },
-        );
-
-        assert_eq!(selected, LinuxDecoderProbe::Nvdec("NVDEC test device".to_string()));
-        assert!(!vaapi_called.get(), "VA-API probe must not run after NVDEC succeeds");
     }
 }

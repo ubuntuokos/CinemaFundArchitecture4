@@ -541,7 +541,15 @@ impl Imp<'_, '_> {
                 None => {
                     let n = name_of(c);
                     let ty = c.get("transition_type").and_then(Value::as_str).unwrap_or("SMPTE_Dissolve");
-                    transition_effect(if n.is_empty() { ty } else { &n }, kind == TrackKind::Audio, self.report)
+                    let audio = kind == TrackKind::Audio;
+                    // A name we know wins; otherwise the standard `transition_type` (Kdenlive names every
+                    // transition just "Transition").
+                    let mut probe = Report::default();
+                    let named = (!n.is_empty()).then(|| transition_effect(&n, audio, &mut probe));
+                    match named {
+                        Some(e) if probe.entries.is_empty() => e,
+                        _ => transition_effect(ty, audio, self.report),
+                    }
                 }
             };
             let align = meta.and_then(|m| m.get("align")).and_then(|a| serde_json::from_value(a.clone()).ok()).unwrap_or(if inn == Tick::ZERO {
@@ -687,9 +695,11 @@ impl Imp<'_, '_> {
             start_tc: None,
             kind: None,
         };
+        let url = r.get("target_url").and_then(Value::as_str).or_else(|| r.get("target_url_base").and_then(Value::as_str)).unwrap_or("");
         let id = match schema_name(r) {
-            "ExternalReference" | "ImageSequenceReference" => {
-                let url = r.get("target_url").and_then(Value::as_str).or_else(|| r.get("target_url_base").and_then(Value::as_str)).unwrap_or("");
+            // Kdenlive writes an empty `target_url` for media it could not find: that is missing media,
+            // not the project folder.
+            "ExternalReference" | "ImageSequenceReference" if !url.trim().is_empty() => {
                 let path = resolve_path(url, self.opts.base_dir.as_deref());
                 let display = if name.is_empty() { file_name(&path).to_string() } else { name.clone() };
                 let key = format!("file:{path}");
@@ -703,6 +713,19 @@ impl Imp<'_, '_> {
             "GeneratorReference" => {
                 let g: Generator = meta.and_then(|m| m.get("generator")).and_then(|g| serde_json::from_value(g.clone()).ok()).unwrap_or_else(|| {
                     match r.get("generator_kind").and_then(Value::as_str).unwrap_or("").to_ascii_lowercase().as_str() {
+                        "kdenlive:solidcolor" => {
+                            let c = r
+                                .get("parameters")
+                                .and_then(|p| p.get("kdenlive"))
+                                .and_then(|p| p.get("color"))
+                                .and_then(Value::as_str)
+                                .and_then(mlt_color)
+                                .unwrap_or_else(|| {
+                                    self.report.warn("Kdenlive solid colour without a readable colour; imported as black");
+                                    [0.0, 0.0, 0.0, 1.0]
+                                });
+                            Generator::ColorMatte { color: c }
+                        }
                         "solidcolor" | "solid_color" => {
                             let c = r
                                 .get("parameters")
@@ -728,8 +751,11 @@ impl Imp<'_, '_> {
                 id
             }
             _ => {
-                if schema_name(r) != "MissingReference" && !r.is_null() {
-                    self.report.warn(format!("OTIO media reference {} is not supported; imported offline", schema(r)));
+                match schema_name(r) {
+                    "MissingReference" => {}
+                    "ExternalReference" | "ImageSequenceReference" => self.report.warn("OTIO media reference without a path; imported offline"),
+                    _ if r.is_null() => {}
+                    _ => self.report.warn(format!("OTIO media reference {} is not supported; imported offline", schema(r))),
                 }
                 let key = format!("missing:{name}");
                 let existed = self.b.find_media(&key);
@@ -802,9 +828,37 @@ impl Imp<'_, '_> {
     }
 }
 
+/// An MLT / Kdenlive colour (`0xRRGGBBAA`, `#RRGGBB` or `#AARRGGBB`) as RGBA in 0..=1.
+fn mlt_color(s: &str) -> Option<[f32; 4]> {
+    let s = s.trim();
+    let hex = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).map(|h| (h, false)).or_else(|| s.strip_prefix('#').map(|h| (h, true)))?;
+    let (h, hash) = hex;
+    if !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let byte = |i: usize| h.get(i..i + 2).and_then(|b| u8::from_str_radix(b, 16).ok()).map(|v| f32::from(v) / 255.0);
+    match (h.len(), hash) {
+        (8, false) => Some([byte(0)?, byte(2)?, byte(4)?, byte(6)?]),
+        (8, true) => Some([byte(2)?, byte(4)?, byte(6)?, byte(0)?]),
+        (6, _) => Some([byte(0)?, byte(2)?, byte(4)?, 1.0]),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mlt_colors() {
+        assert_eq!(mlt_color("0xff0000ff"), Some([1.0, 0.0, 0.0, 1.0]));
+        assert_eq!(mlt_color(" 0x0000FF80 "), Some([0.0, 0.0, 1.0, 128.0 / 255.0]));
+        assert_eq!(mlt_color("#80ffff00"), Some([1.0, 1.0, 0.0, 128.0 / 255.0]));
+        assert_eq!(mlt_color("#00ff00"), Some([0.0, 1.0, 0.0, 1.0]));
+        for bad in ["", "0x", "red", "0xff00", "0xgg0000ff", "#ééé", "0xff0000ff00", "0x+f0000ff"] {
+            assert_eq!(mlt_color(bad), None, "{bad:?}");
+        }
+    }
 
     #[test]
     fn rational_time() {

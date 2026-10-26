@@ -10,7 +10,7 @@ fi
 . scripts/ci/require-ubuntu-2604.sh
 
 if [[ ! -x .venv/bin/python ]]; then
-  echo "Missing .venv. Run: python3 -m venv .venv && .venv/bin/python -m pip install -e '.[dev,qt]'" >&2
+  echo "Missing .venv. Run: python3 -m venv .venv && .venv/bin/python -m pip install --require-hashes -r requirements/linux-amd64.txt && .venv/bin/python -m pip install --no-deps -e ." >&2
   exit 2
 fi
 

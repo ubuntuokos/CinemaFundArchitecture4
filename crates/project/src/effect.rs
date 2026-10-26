@@ -141,6 +141,12 @@ impl EffectInstance {
     }
 }
 
+/// Frame layouts of the Stereoscopic 3D effects: the two views stacked (left eye on top) or side
+/// by side (left eye on the left).
+pub const STEREO_LAYOUTS: &[&str] = &["Over/Under", "Side by Side"];
+/// The view a Stereoscopic 3D effect keeps.
+pub const STEREO_EYES: &[&str] = &["Left", "Right"];
+
 pub const BLEND_MODES: &[&str] = &[
     "Normal",
     "Dissolve",
@@ -247,6 +253,10 @@ const NOISE: &[&str] = &["Video Effects", "Noise & Grain"];
 const PERSPECTIVE: &[&str] = &["Video Effects", "Perspective"];
 const STYLIZE: &[&str] = &["Video Effects", "Stylize"];
 const TRANSFORM: &[&str] = &["Video Effects", "Transform"];
+/// CFA4's own folder (not in Premiere's bin): effects on over/under or side-by-side stereo frames.
+pub const STEREO_3D: &[&str] = &["Video Effects", "Stereoscopic 3D"];
+/// CFA4's own effects that sit in one of Premiere's folders.
+pub const CFA4_OWN: &[&str] = &["slit_scan"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
 const A_AMP: &[&str] = &["Audio Effects", "Amplitude and Compression"];
 const A_DELAY: &[&str] = &["Audio Effects", "Delay and Echo"];
@@ -604,6 +614,8 @@ fn build_effects() -> Vec<EffectDef> {
         ),
         video("horizontal_flip", "Horizontal Flip", TRANSFORM, vec![]),
         video("vertical_flip", "Vertical Flip", TRANSFORM, vec![]),
+        video("stereo_swap_eyes", "Swap Eyes", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0)]),
+        video("stereo_to_2d", "Stereo to 2D", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0), ch("eye", "Eye", STEREO_EYES, 0)]),
         video("edge_feather", "Edge Feather", vfx::LEGACY, vec![fs("amount", "Amount", 0.0, (0.0, 100.0), (0.0, 100.0), "", 0)]),
         video(
             "transform",
