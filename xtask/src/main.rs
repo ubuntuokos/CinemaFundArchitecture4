@@ -53,6 +53,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("prores", 0),
     ("mjpeg", 0),
     ("dnx", 0),
+    ("cineform", 0),
     ("j2k", 0),
     ("apv", 0),
     ("dng", 0),

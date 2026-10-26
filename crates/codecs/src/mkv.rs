@@ -256,6 +256,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Hevc { hvcc } => SampleEntry::hevc(HevcConfig::parse(hvcc).ok()?, w, h),
         Codec::ProRes { fourcc } => SampleEntry::prores(FourCc(fourcc.unwrap_or(*b"apcn")), w, h),
         Codec::Mjpeg => SampleEntry::jpeg(w, h),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"CFHD") => SampleEntry::cineform(w, h),
         // MPEG-1/2 video: the factory finds `mp2v` (CodecPrivate holds the sequence header)
         Codec::Other(id) if id == "V_MPEG2" || id == "V_MPEG1" => {
             SampleEntry::video(FourCc(*b"mp2v"), CodecConfig::Unknown { fourcc: FourCc(*b"mp2v"), raw: private.to_vec() }, w, h)
@@ -311,6 +312,7 @@ fn codec_label(c: &Codec) -> String {
         },
         Codec::ProRes { .. } => "Apple ProRes".into(),
         Codec::Mjpeg => "Motion JPEG".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"CFHD") => "GoPro CineForm".into(),
         Codec::Aac { .. } => "AAC".into(),
         Codec::Opus { .. } => "Opus".into(),
         Codec::Vorbis { .. } => "Vorbis".into(),

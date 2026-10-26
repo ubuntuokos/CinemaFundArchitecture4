@@ -116,7 +116,7 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/cineform/src/tables.rs` (codebooks), and the tag syntax, companding and inverse 2/6 wavelet re-expressed in `crates/cineform/src/{decode,vlc,wavelet}.rs` | GoPro CineForm SDK, https://github.com/gopro/cineform-sdk, rev. `11574d0295771edccadd17af14af74a539f924c7`, `Common/table9.inc`, `Common/table17.inc`, `Codec/codec.h`, `Codec/spatial.c`, `Codec/InvertHorizontalStrip16s.c`, `Codec/vlc.c` | (C) 2017 GoPro, Inc. | Apache-2.0 OR MIT (MIT used) |
 
 ## 6. Dependency checks
 
