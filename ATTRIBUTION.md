@@ -73,6 +73,12 @@ procedural demo footage (`crates/media/src/generators.rs`); no external media. R
 | `crates/golden/goldens/vfx_vr_rotate.png` | Upstream contributors (see NOTICE) | Original work: golden reference rendered by the project renderer (crates/golden/tests/golden.rs, scene `vfx_vr_rotate`) from procedurally generated media | MIT OR Apache-2.0 |
 | `crates/golden/goldens/vfx_stylize.png` | Upstream contributors (see NOTICE) | Original work: golden reference rendered by the project renderer (crates/golden/tests/golden.rs, scene `vfx_stylize`) from procedurally generated media | MIT OR Apache-2.0 |
 
+## Third-party test data
+
+| Data | Author | Source | Licence |
+|---|---|---|---|
+| `crates/interchange/tests/data/kdenlive/*.otio` | Jean-Baptiste Mardelle, Eric Jiang (Kdenlive) | Kdenlive `tests/dataset/*.otio`, unchanged; details in `crates/interchange/tests/data/kdenlive/README.md` | CC0-1.0 |
+
 ## Third-party media shown in screenshots
 
 The README screenshots show frames from these works. The media files themselves are not in the

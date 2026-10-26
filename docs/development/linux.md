@@ -37,7 +37,8 @@ Create the Python environment in the repository root (do not install into the sy
 ~~~bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e '.[dev,qt]'
+.venv/bin/python -m pip install --require-hashes -r requirements/linux-amd64.txt
+.venv/bin/python -m pip install --no-deps -e .
 ~~~
 
 The Qt system headers/tools (Qt Widgets, Qt Multimedia, Qt Designer, CMake) are installed by apt.
@@ -160,6 +161,24 @@ Read https://www.qt.io/development/open-source-lgpl-obligations .
 been removed; the product, crates, application ID and packages are CFA4-only. The Linux bootstrap
 and CI do not represent release approval; publication remains blocked until packaging and license
 attribution have been audited.
+
+## Measured runtime dependencies (#22, F9 `runtime_abi_dependencies`)
+
+The supported runtime minimums (glibc, libgcc, ALSA, and the libraries loaded at run time such as
+Wayland, X11, Vulkan, EGL, VA-API and NVIDIA) are taken from the built binaries, not estimated.
+On the Ubuntu 26.04 AMD64 reference machine:
+
+```sh
+bash scripts/dev/audit-runtime-deps.sh --build   # or without --build if target/release is current
+```
+
+It writes `target/audit/runtime-deps/<UTC>/runtime-deps.json` and `runtime-deps.md`: the ELF
+`NEEDED` libraries and their owning Debian packages (`dpkg-query`), the highest required symbol
+version per namespace (`objdump -T`), and the `dlopen` library names that `ldd` cannot see. It
+installs nothing. A report from any other host is marked as not valid F9 evidence.
+
+Latest measurement (2026-10-25, Ubuntu 26.04.1, `d0cf06e`): glibc ≥ 2.43, libgcc_s, ALSA;
+see `docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md`.
 
 ## Remaining tasks (intentionally not claimed as implemented)
 
