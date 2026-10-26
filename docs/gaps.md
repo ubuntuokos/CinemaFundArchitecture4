@@ -237,7 +237,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
     existing Skin Smoothing effect to faces.
   - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
     (Apache-2.0) as the fallback.
-  - *AI foley*: MMAudio (code MIT; the weights' licence is not yet verified).
+  - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
+    model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
 ## G13. Delivery formats
 
