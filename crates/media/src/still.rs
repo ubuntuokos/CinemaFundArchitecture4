@@ -1,4 +1,4 @@
-//! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, DNG camera raw) as media
+//! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, JPEG XL, DNG camera raw) as media
 //! sources. Animated PNG and GIF files open as movies instead ([`crate::animated`]); here they would
 //! show their first frame.
 
@@ -14,6 +14,7 @@ pub mod exr;
 pub mod hdr;
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub mod heif;
+pub mod jxl;
 mod ycbcr_tiff;
 
 /// Default still duration (Premiere's preference default is 5 seconds).
@@ -27,6 +28,7 @@ pub fn sniff(name: &str, b: &[u8]) -> bool {
     }
     crate::dpx::sniff(b)
         || hdr::sniff(b)
+        || jxl::sniff(b)
         || crate::tga::sniff(name, b)
         || b.starts_with(b"\x89PNG")
         || b.starts_with(&[0xFF, 0xD8, 0xFF])
@@ -62,11 +64,36 @@ pub fn decode_raster(name: &str, bytes: &[u8]) -> Result<Raster> {
     if ycbcr_tiff::sniff(bytes) {
         return ycbcr_tiff::decode(name, bytes);
     }
+    if jxl::sniff(bytes) {
+        return jxl_raster(name, bytes);
+    }
     let img = image::load_from_memory(bytes).map_err(|e| MediaError::Decode(format!("{name}: {e}")))?;
     let has_alpha = img.color().has_alpha();
     let rgba = img.to_rgba8();
     let (width, height) = rgba.dimensions();
     Ok(Raster { width, height, rgba: rgba.into_raw(), has_alpha })
+}
+
+/// A JPEG XL picture as straight sRGB RGBA8 (deeper pictures are rounded to 8 bits here).
+fn jxl_raster(name: &str, bytes: &[u8]) -> Result<Raster> {
+    let d = jxl::decode(name, bytes)?;
+    let (width, height) = (d.frame.width, d.frame.height);
+    let rgba = match &d.frame.data {
+        cfa4_frame::PixelData::Rgba8(p) => p.to_vec(),
+        cfa4_frame::PixelData::RgbaF32(p) => p
+            .chunks_exact(4)
+            .flat_map(|q| {
+                let a = q.get(3).copied().unwrap_or(1.0);
+                let s = |v: f32| {
+                    let v = if a > 0.0 { v / a } else { 0.0 };
+                    (cfa4_color::from_linear(v, cfa4_color::Transfer::Srgb).clamp(0.0, 1.0) * 255.0).round() as u8
+                };
+                [s(q[0]), s(q[1]), s(q[2]), (a.clamp(0.0, 1.0) * 255.0).round() as u8]
+            })
+            .collect(),
+        _ => return Err(MediaError::Decode(format!("{name}: JPEG XL: unexpected pixel layout"))),
+    };
+    Ok(Raster { width, height, rgba, has_alpha: d.has_alpha })
 }
 
 pub struct StillSource {
@@ -82,6 +109,9 @@ impl StillSource {
         }
         if hdr::sniff(bytes) {
             return hdr::still(name, bytes);
+        }
+        if jxl::sniff(bytes) {
+            return jxl::still(name, bytes);
         }
         let r = decode_raster(name, bytes)?;
         Ok(Self::from_rgba(name, r.width, r.height, r.rgba, r.has_alpha, bytes.len() as u64))

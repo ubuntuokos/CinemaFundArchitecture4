@@ -116,7 +116,7 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/jxl/src/` (105 files, each with a provenance header) | jxl-oxide, <https://github.com/tirr-c/jxl-oxide>, crates jxl-oxide 0.12, jxl-render 0.12.4, jxl-bitstream 1.1.0, jxl-modular, jxl-vardct, jxl-frame, jxl-image, jxl-grid, jxl-color, jxl-coding, jxl-oxide-common, jxl-threadpool (crates.io releases of 2025; repository revisions 74c45ba5, 1d4e4289, f37ac036, b2042ccf); rewritten without `unsafe` and panics | Wonwoo Choi and the jxl-oxide contributors | MIT OR Apache-2.0 (`crates/jxl/LICENSE-MIT`, `crates/jxl/LICENSE-APACHE`); CFA4 changes GPL-3.0-or-later |
 
 ## 6. Dependency checks
 
