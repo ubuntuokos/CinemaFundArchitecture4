@@ -71,13 +71,14 @@ fn effects_list_reports_folders_and_badges() {
             e["kind"] == "Video"
                 && e["category"][0] == "Video Effects"
                 && e["folder"] != "Obsolete"
-                && e["folder"] != "Stereoscopic 3D"
+                && !cfa4_project::effect::OWN_FOLDERS.contains(&e["folder"].as_str().unwrap_or_default())
                 && e["folder"] != Value::Null
         })
         .count();
     assert_eq!(n, 93, "Premiere 26's current Video Effects");
-    // CFA4's own folder sits beside them
+    // CFA4's own folders sit beside them
     assert_eq!(find("stereo_swap_eyes")["category"], json!(["Video Effects", "Stereoscopic 3D"]));
+    assert_eq!(find("skin_smoothing")["category"], json!(["Video Effects", "Enhance"]));
 }
 
 #[test]

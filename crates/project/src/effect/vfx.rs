@@ -260,6 +260,23 @@ pub(super) fn defs() -> Vec<EffectDef> {
             ],
         ),
         video("reduce_interlace_flicker", "Reduce Interlace Flicker", BLUR, vec![fs("softness", "Softness", 0.0, (0.0, 10.0), (0.0, 10.0), "", 2)]),
+        // ---- Enhance (CFA4's own folder) ----
+        video(
+            "skin_smoothing",
+            "Skin Smoothing",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 50.0),
+                px("radius", "Radius", 10.0, 500.0, 60.0),
+                pct("smoothness", "Smoothness", 50.0),
+                pct("texture", "Keep Texture", 40.0),
+                col("skin_tone", "Skin Tone", [0.86, 0.67, 0.56, 1.0]),
+                pct("tolerance", "Tolerance", 40.0),
+                pct("softness", "Softness", 50.0),
+                b("whole_image", "Smooth Entire Image", false),
+                b("show_mask", "Show Mask", false),
+            ],
+        ),
         // ---- Color Correction ----
         video(
             "asc_cdl",
@@ -1152,7 +1169,7 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
         let accel = match e.category.first().copied() {
             Some("Legacy") => !matches!(id, "camera_blur"),
             _ if folder == "Obsolete" => false,
-            _ => !matches!(id, "clone" | "stroke"),
+            _ => !matches!(id, "clone" | "stroke" | "skin_smoothing"),
         };
         e.accelerated = accel;
         e.float32 = a32;
@@ -1264,7 +1281,7 @@ mod tests {
         // nothing else sits in the current folders
         for d in effect_defs().iter().filter(|d| d.kind == EffectKind::Video && d.category.first() == Some(&"Video Effects")) {
             let f = d.category[1];
-            if f == "Obsolete" || d.category == crate::effect::STEREO_3D {
+            if f == "Obsolete" || crate::effect::OWN_FOLDERS.contains(&f) {
                 continue;
             }
             let listed = CATALOGUE.iter().any(|(cf, names)| *cf == f && names.contains(&d.name));

@@ -67,6 +67,7 @@ const NEW_IDS: &[&str] = &[
     "compound_blur",
     "focus_blur",
     "reduce_interlace_flicker",
+    "skin_smoothing",
     "asc_cdl",
     "video_limiter",
     "vignette",
@@ -231,6 +232,9 @@ fn neutral_parameters_are_identity() {
         ("channel_blur", vec![]),
         ("bokeh_blur", vec![("amount", ParamValue::Float(0.0))]),
         ("reduce_interlace_flicker", vec![]),
+        ("skin_smoothing", vec![("amount", ParamValue::Float(0.0))]),
+        ("skin_smoothing", vec![("texture", ParamValue::Float(100.0))]),
+        ("skin_smoothing", vec![("radius", ParamValue::Float(0.0))]),
         ("vr_blur", vec![]),
         ("vr_sharpen", vec![]),
         ("vr_denoise", vec![]),
@@ -1182,4 +1186,99 @@ fn transform_shutter_uses_the_sequence_frame_rate_without_env() {
     for frame in [60, 90, 120] {
         assert!(delta(frame) > 1e-3, "frame {frame} moves but is sharp");
     }
+}
+
+/// A picture of skin-coloured noise on the left half and a saturated blue, equally noisy, right
+/// half: smoothing has to quieten the left half and leave the right one alone.
+fn skin_and_blue(w: usize, h: usize) -> Image {
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let n = (noise3(x as f32 * 1.7, y as f32 * 1.3, 0.25, 3) - 0.5) * 0.2;
+            let base = if x < w / 2 { [0.86, 0.67, 0.56] } else { [0.1, 0.2, 0.9] };
+            let c = [(base[0] + n).clamp(0.0, 1.0), (base[1] + n).clamp(0.0, 1.0), (base[2] + n).clamp(0.0, 1.0)];
+            let l = dec(c);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    img
+}
+
+/// Mean absolute difference between neighbouring pixels of a column band: how noisy it is.
+fn roughness(img: &Image, x0: usize, x1: usize) -> f32 {
+    let mut sum = 0.0;
+    let mut n = 0.0;
+    for y in 0..img.h {
+        for x in x0..x1.min(img.w).saturating_sub(1) {
+            sum += (img.get(x, y)[1] - img.get(x + 1, y)[1]).abs();
+            n += 1.0;
+        }
+    }
+    if n == 0.0 { 0.0 } else { sum / n }
+}
+
+#[test]
+fn skin_smoothing_quietens_skin_and_leaves_other_colours() {
+    let img = skin_and_blue(80, 24);
+    let mut e = inst("skin_smoothing");
+    setf(&mut e, "amount", 100.0);
+    setf(&mut e, "texture", 0.0);
+    setf(&mut e, "radius", 6.0);
+    let o = run("skin_smoothing", &e, &img, &cx());
+    let (w, h) = (img.w, img.h);
+    // bands kept clear of the colour boundary, which the filter window straddles
+    let skin = (roughness(&img, 2, w / 2 - 10), roughness(&o, 2, w / 2 - 10));
+    let blue = (roughness(&img, w / 2 + 10, w - 2), roughness(&o, w / 2 + 10, w - 2));
+    assert!(skin.1 < skin.0 * 0.5, "skin not smoothed: {} → {}", skin.0, skin.1);
+    assert!(blue.1 > blue.0 * 0.9, "the blue half was smoothed too: {} → {}", blue.0, blue.1);
+    // the skin keeps its colour: the smoothed half's mean is within a hair of the original's
+    let mean = |i: &Image, x0: usize, x1: usize| {
+        let mut s = 0.0;
+        for y in 0..h {
+            for x in x0..x1 {
+                s += i.get(x, y)[1];
+            }
+        }
+        s / ((x1 - x0) * h) as f32
+    };
+    let (a, b) = (mean(&img, 2, w / 2 - 10), mean(&o, 2, w / 2 - 10));
+    assert!((a - b).abs() < 0.02, "skin brightness drifted: {a} → {b}");
+}
+
+#[test]
+fn skin_smoothing_keeps_an_edge_inside_the_skin() {
+    // a hard light/dark edge in skin tones: a guided filter keeps it, a plain blur would not
+    let (w, h) = (32, 16);
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let c = if x < w / 2 { [0.86, 0.67, 0.56] } else { [0.43, 0.33, 0.28] };
+            let l = dec(c);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    let mut e = inst("skin_smoothing");
+    setf(&mut e, "amount", 100.0);
+    setf(&mut e, "texture", 0.0);
+    let o = run("skin_smoothing", &e, &img, &cx());
+    let step = |i: &Image| enc_px(i, w / 2 - 1, h / 2)[1] - enc_px(i, w / 2, h / 2)[1];
+    // the same radius as a plain Gaussian, which is what an edge-preserving filter must beat
+    let mut plain = img.clone();
+    crate::effects::gaussian(&mut plain, 10.0, 10.0, true);
+    assert!(step(&o) > step(&img) * 0.5, "the edge was blurred away: {} → {}", step(&img), step(&o));
+    assert!(step(&o) > step(&plain) * 3.0, "no better than a Gaussian: {} vs {}", step(&o), step(&plain));
+}
+
+#[test]
+fn skin_smoothing_show_mask_marks_the_skin_only() {
+    let img = skin_and_blue(24, 8);
+    let mut e = inst("skin_smoothing");
+    set(&mut e, "show_mask", ParamValue::Bool(true));
+    let o = run("skin_smoothing", &e, &img, &cx());
+    assert!(enc_px(&o, 4, 4)[0] > 0.8, "skin is not in the mask: {:?}", enc_px(&o, 4, 4));
+    assert!(enc_px(&o, 20, 4)[0] < 0.1, "the blue half is in the mask: {:?}", enc_px(&o, 20, 4));
+    // Smooth Entire Image drops the mask
+    set(&mut e, "whole_image", ParamValue::Bool(true));
+    let o = run("skin_smoothing", &e, &img, &cx());
+    assert!(enc_px(&o, 20, 4)[0] > 0.8, "the mask is not everywhere: {:?}", enc_px(&o, 20, 4));
 }
