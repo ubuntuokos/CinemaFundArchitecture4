@@ -128,6 +128,9 @@ that adds them names the source and revision.
   `cargo deny check licenses` (installed with `cargo install cargo-deny --locked`); the manual full
   validation in CI runs it too. Dual-licensed crates (`MIT OR Apache-2.0 OR LGPL`, …) pass as long
   as one option is allowed.
+- Security advisories: the same CI step runs `cargo deny check advisories` against the RustSec
+  database. A new advisory fails the build; a temporary exception goes into `deny.toml`
+  `[advisories].ignore` with a reason, and is removed when the dependency moves.
 - Python: `PySide6`/Qt 6 (LGPL-3.0) is compatible. GPL-only Qt modules are compatible with CFA4's
   licence as well, but must be listed in `NOTICE` when shipped.
 - Packages must ship `LICENSE`, `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` and the licences of
