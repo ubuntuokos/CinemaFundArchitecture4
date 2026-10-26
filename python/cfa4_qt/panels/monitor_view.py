@@ -90,6 +90,18 @@ def res_label(res: str) -> str:
     return tr(next((lab for k, lab, _s in RESOLUTIONS if k == res), "1/2"))
 
 
+def finite(value: object) -> float | None:
+    """A saved number as a finite float; None for anything else (a bool, NaN, or an integer too
+    large for a float, which ``float()`` refuses with OverflowError)."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    try:
+        x = float(value)
+    except OverflowError:
+        return None
+    return x if math.isfinite(x) else None
+
+
 @dataclass
 class MonitorView:
     res: str = "half"  # Playback Resolution (while playing)
@@ -131,7 +143,8 @@ class MonitorView:
             for name, default in asdict(cls()).items():
                 value = data.get(name, default)
                 if name == "zoom":
-                    v.zoom = None if value is None else min(MAX_ZOOM, max(MIN_ZOOM, float(value))) if isinstance(value, (int, float)) else None
+                    z = finite(value)
+                    v.zoom = None if z is None else min(MAX_ZOOM, max(MIN_ZOOM, z))
                 elif name in ("res", "paused_res"):
                     setattr(v, name, value if any(value == k for k, _l, _s in RESOLUTIONS) else default)
                 elif name == "display":
@@ -139,9 +152,8 @@ class MonitorView:
                 elif name == "hidden":
                     v.hidden = [str(x) for x in value] if isinstance(value, list) else list(default)
                 elif name == "pan":
-                    xy = value[:2] if isinstance(value, list) else []
-                    ok = len(xy) == 2 and all(isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) for x in xy)
-                    v.pan = [float(x) for x in xy] if ok else [0.0, 0.0]
+                    xy = [finite(x) for x in value[:2]] if isinstance(value, list) else []
+                    v.pan = [float(x) for x in xy if x is not None] if len(xy) == 2 and None not in xy else [0.0, 0.0]
                 elif isinstance(default, bool):
                     setattr(v, name, bool(value))
         return v

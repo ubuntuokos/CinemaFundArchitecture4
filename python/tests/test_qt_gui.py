@@ -4882,3 +4882,19 @@ def movie_id() -> int:
 
 
 _MOVIE: dict = {"id": 5}  # Ocean_Sunset.mp4 in the demo project
+
+
+def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(app, tmp_path: Path):
+    """Hostile persisted state must not stop the window from opening: an integer too large for a
+    float (OverflowError before), NaN or a bool falls back to the default zoom and pan."""
+    from cfa4_qt.panels.monitor_view import MonitorView
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    for zoom, pan in ((10**400, [10**400, 1]), ("NaN", [True, 2.0]), (2.0, [1.5, -3.0])):
+        px, py = (str(p).lower() for p in pan)
+        settings.setValue("monitor/program", f'{{"zoom": {zoom}, "pan": [{px}, {py}]}}')
+        v = MonitorView.load(settings, "monitor/program")
+        if zoom == 2.0:
+            assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
+        else:
+            assert (v.zoom, v.pan) == (None, [0.0, 0.0])
