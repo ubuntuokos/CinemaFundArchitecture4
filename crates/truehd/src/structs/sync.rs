@@ -501,6 +501,9 @@ impl MajorSyncInfo {
                 self.extended_substream_info
             );
             state.substream_info_changed = true;
+            // Modified for CFA4: the presentation map changes with it, so the presentations,
+            // substream mask and labels are worked out again.
+            state.valid = false;
         }
 
         state.substreams = self.substreams;
@@ -531,6 +534,21 @@ mod tests {
         assert!(read(5).contains("substreams"), "{}", read(5));
         assert!(read(15).contains("substreams"));
         assert!(!read(4).contains("at most"));
+    }
+
+    /// A new presentation map with the same substream count used to keep the old substream
+    /// mask and presentations, so the decoder went on decoding the old layout.
+    #[test]
+    fn a_new_substream_info_reworks_the_presentations() {
+        let ms = MajorSyncInfo { substreams: 2, substream_info: 0x58, ..Default::default() };
+        let mut state = DecoderState { valid: true, substreams: 2, substream_info: 0x48, ..Default::default() };
+        assert!(ms.update_decoder_state(&mut state).is_ok());
+        assert!(!state.valid);
+        assert!(state.substream_info_changed);
+
+        let mut state = DecoderState { valid: true, substreams: 2, substream_info: 0x58, ..Default::default() };
+        assert!(ms.update_decoder_state(&mut state).is_ok());
+        assert!(state.valid, "an unchanged map keeps the state");
     }
 
     /// The 4-bit rate code is split across two families: 0..2 are the 48 kHz multiples and

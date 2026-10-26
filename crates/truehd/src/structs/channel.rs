@@ -82,9 +82,13 @@ impl ExtraChannelMeaning {
                 }
             }
 
+            // Modified for CFA4: a length too short for the fields read is an error, not an
+            // underflowing seek.
             let pos = reader.position()?;
-
-            reader.seek((end_pos - pos) as i64)?;
+            let Some(rest) = end_pos.checked_sub(pos).and_then(|r| i64::try_from(r).ok()) else {
+                bail!(ChannelError::ExtraChannelMeaningOverrun { length_bits: (u64::from(extra_channel_meaning_length) + 1) << 4 });
+            };
+            reader.seek(rest)?;
         }
 
         Ok(ecm)
@@ -522,5 +526,25 @@ impl ChannelGroup {
             3 => Ok(ChannelGroup::Mono),
             _ => bail!("Invalid channel group modifier: {}", modifier),
         }
+    }
+}
+
+#[cfg(test)]
+mod cfa4_tests {
+    use super::*;
+
+    /// A 16-bit `extra_channel_meaning` holds fewer bits than its fields; the seek to its end
+    /// used to underflow.
+    #[test]
+    fn a_short_extra_channel_meaning_is_an_error() {
+        // length 0 (16 bits), then a dynamic-object-only description of 22 bits
+        let d = [0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        let mut state = ParserState { substream_info: 0x80, ..Default::default() };
+        let r = ExtraChannelMeaning::read(&mut state, &mut BsIoSliceReader::from_slice(&d));
+        assert!(r.is_err_and(|e| e.to_string().contains("shorter than its fields")));
+
+        // a length that covers the fields is read
+        let d = [0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+        assert!(ExtraChannelMeaning::read(&mut state, &mut BsIoSliceReader::from_slice(&d)).is_ok());
     }
 }

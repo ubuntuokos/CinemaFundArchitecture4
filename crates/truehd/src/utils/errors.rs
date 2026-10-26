@@ -237,6 +237,9 @@ pub enum ChannelError {
          heavy_drc_update_gain[{index}]={update_gain} (linear)"
     )]
     HeavyDrcStartUpGainTooLarge { index: usize, start_up_gain: f64, update_gain: f64 },
+
+    #[error("extra_channel_meaning of {length_bits} bits is shorter than its fields")]
+    ExtraChannelMeaningOverrun { length_bits: u64 },
 }
 
 #[derive(thiserror::Error, Debug)]

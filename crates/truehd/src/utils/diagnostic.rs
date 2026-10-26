@@ -159,6 +159,7 @@ rule_ids! {
         HuffLsbsTooLarge = "huff_lsbs_too_large",
         DrcStartUpGainTooLarge = "drc_start_up_gain_too_large",
         HeavyDrcStartUpGainTooLarge = "heavy_drc_start_up_gain_too_large",
+        ExtraChannelMeaningOverrun = "extra_channel_meaning_overrun",
     }
     ExtraDataError => ExtraData / ExtraDataRule / "extra_data" {
         MisalignedExtraDataStart = "misaligned_extra_data_start",
