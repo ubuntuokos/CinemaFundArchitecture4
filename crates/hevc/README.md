@@ -32,7 +32,8 @@ and fixture generators.
 | Draft mode (non-reference pictures skip deblocking / SAO; reduced-resolution playback only) | done |
 | Tiles / WPP | parsed and decoded sequentially within a picture (parallelism is across pictures) |
 | Monochrome (4:0:0, 8 / 10-bit; HEIF alpha and depth planes): no chroma syntax, chroma planes output mid-grey | done |
-| 4:2:2 / 4:4:4, range-extension tools (RExt), 12-bit+ with extended precision | not yet (`Error::Unsupported`) |
+| 4:2:2 / 4:4:4 (Main 4:2:2 10 / 12, Main 4:4:4 / 10 / 12, Main 12): chroma geometry per format, Table 8-3 4:2:2 intra mode mapping, 4:4:4 per-PU chroma modes, two 4:2:2 chroma blocks per TU, QpC = Min(qPi, 51), per-axis chroma MV / deblocking / SAO | done (8 / 10 / 12-bit, bit-exact) |
+| Range-extension coding tools (RDPCM, cross-component prediction, extended precision, persistent Rice, bypass alignment, chroma QP offset lists), 16-bit, separate colour planes | not yet (`Error::Unsupported`, #167) |
 | SCC, multilayer (SHVC / MV-HEVC), 3D extensions | not supported (layers > 0 are ignored) |
 
 ## API
@@ -186,12 +187,10 @@ context-coded bins are branch-free. Single-threaded 4K now splits into CABAC res
 
 ## Known gaps
 
-- 4:2:2 (Main 4:2:2 10, RExt) is the next step: chroma geometry is 4:2:0-specific in `slicedec`
-  (chroma TU placement, second chroma cbf flags, Table 8-3 intra mode mapping), `inter` (vertical
-  chroma MV scaling), `filter` (chroma edge spacing, QpC = Min(qPi, 51)) and `picture`. Range
-  extension tools (implicit / explicit RDPCM, cross-component prediction, extended precision,
-  persistent Rice adaptation, bypass alignment, chroma QP offset lists) are rejected with
-  `Error::Unsupported`.
+- Range extension coding tools (implicit / explicit RDPCM, cross-component prediction, extended
+  precision, persistent Rice adaptation, bypass alignment, chroma QP offset lists), bit depths above
+  12 and separate colour planes are rejected with `Error::Unsupported` (#167). libx265 emits none of
+  them, so they need hand-built streams or the JCT-VC RExt conformance bitstreams.
 - Tiles and WPP substreams are decoded sequentially (entry points are parsed but the decoder finds
   substream starts itself); parallelism is at the picture level.
 - Error concealment is minimal: missing references are replaced by grey pictures, undecodable
