@@ -10,6 +10,9 @@
 //!   placeholder layer for each so its size and roll include them.
 //! - `graphics.credits.preview` does the same without changing the project and reports pages,
 //!   durations and warnings.
+//! - `graphics.credits.validate` checks credits (names, fonts and missing letters, title-safe
+//!   area, contrast, text size, scroll speed, card length, pictures); the preview reports the
+//!   same `issues`.
 //! - `graphics.credits.styles` lists the style names and returns a starter styling (JSON).
 //! - **Linked credits.** Every placed page remembers its credits document (`.cfa4credits`:
 //!   source, worksheet, styling, the accepted table) and a fingerprint of each layer it made.
@@ -43,6 +46,23 @@ struct EngineMeasure {
     base: Option<std::path::PathBuf>,
     /// Picture sizes already looked up.
     sizes: std::cell::RefCell<Vec<(std::path::PathBuf, Option<(f64, f64)>)>>,
+}
+
+/// Fonts as the text engine finds them.
+struct EngineFonts;
+
+impl cfa4_credits::validate::FontInfo for EngineFonts {
+    fn check(&self, family: &str, style: &str, text: &str) -> cfa4_credits::validate::FontCheck {
+        let r = cfa4_text::resolve(family, style);
+        let face = cfa4_text::fonts::face(r.face);
+        let mut uncovered: Vec<char> = Vec::new();
+        for c in text.chars().filter(|c| !c.is_whitespace() && !c.is_control()) {
+            if !uncovered.contains(&c) && uncovered.len() < 32 && !face.has_char(c) {
+                uncovered.push(c);
+            }
+        }
+        cfa4_credits::validate::FontCheck { missing: r.missing, uncovered }
+    }
 }
 
 /// Largest picture file read for credits.
@@ -174,6 +194,16 @@ fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::Pat
         .map_err(|e| bad(cmd, e.to_string()))
 }
 
+/// The checks on laid-out credits (`cfa4_credits::validate`), as JSON.
+fn issues_json(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>, laid: &Laid) -> Result<Value> {
+    let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
+    let measure = EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() };
+    let issues = cfa4_credits::validate::validate(&credits, laid, frame, &measure, &EngineFonts);
+    Ok(serde_json::to_value(issues).unwrap_or(Value::Array(vec![])))
+}
+
 /// Read and lay out the credits a command names, for the active sequence.
 fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, SheetInfo)> {
     let (doc, info, base) = doc_p(cmd, p)?;
@@ -192,7 +222,10 @@ fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
 }
 
 fn preview(s: &mut Session, p: &Value) -> Result<Value> {
-    let (l, sheet) = laid(s, "graphics.credits.preview", p)?;
+    const CMD: &str = "graphics.credits.preview";
+    let (doc, sheet, base) = doc_p(CMD, p)?;
+    let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let issues = issues_json(s, CMD, &doc, base, &l)?;
     let total: i64 = l.pages.iter().fold(0i64, |a, pg| a.saturating_add(pg.duration.0).saturating_add(pg.gap_after.0));
     Ok(json!({
         "pages": l.pages.iter().map(|pg| json!({
@@ -208,7 +241,30 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
         "sheets": sheet.sheets,
         "sheet": sheet.chosen,
         "warnings": warnings_json(&l),
+        "issues": issues,
     }))
+}
+
+/// Check credits: the spreadsheet or file a command names, or placed credits (`clip` or the
+/// selection, as they were accepted).
+fn validate_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.validate";
+    let (doc, base) = if p.get("path").is_some() || p.get("csv").is_some() {
+        let (d, _, b) = doc_p(CMD, p)?;
+        (d, b)
+    } else {
+        let d = group_doc(CMD, &group_p(s, CMD, p)?)?;
+        let b = d
+            .picture_dir
+            .as_ref()
+            .map(std::path::PathBuf::from)
+            .or_else(|| d.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)));
+        (d, b)
+    };
+    let l = lay_doc(s, CMD, &doc, base.clone())?;
+    let issues = issues_json(s, CMD, &doc, base, &l)?;
+    let count = |sev: &str| issues.as_array().map(|a| a.iter().filter(|i| i["severity"] == sev).count()).unwrap_or(0);
+    Ok(json!({"errors": count("error"), "warnings": count("warning"), "infos": count("info"), "issues": issues}))
 }
 
 /// Layers edited by hand, carried into a refresh: key → the layer as the user left it, and the
@@ -705,6 +761,16 @@ pub fn commands() -> Vec<CommandSpec> {
             params: r#"as graphics.credits.preview, plus {"page":index=0,"at":0..1=0.5 (moment in the page),"width":px=480}"#,
             enabled: has_seq,
             run: thumbnail,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.validate",
+            label: "Check Credits",
+            menu: &[],
+            shortcut: None,
+            params: r#"as graphics.credits.preview, or {"clip":id?} for placed credits (default the selection) → {errors, warnings, infos, issues:[{code, severity, page?, row?, values, message}]}"#,
+            enabled: has_seq,
+            run: validate_cmd,
             journal: false,
         },
         CommandSpec {

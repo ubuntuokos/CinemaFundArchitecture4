@@ -11,6 +11,8 @@
 //! - [`style`]: [`Styling`] (page, content and letter styles, JSON) with built-in styles.
 //! - [`doc`]: the `.cfa4credits` document (source, styling, accepted table); [`diff`]: what
 //!   changed in the sheet since, row by row, and the table after accepting some changes.
+//! - [`validate`]: checks a viewer or broadcaster would notice (names, fonts, safe area,
+//!   contrast, scroll speed, card length, pictures), with stable codes.
 //! - [`layout`]: [`Credits`] → one graphic clip per page ([`layout::PageOut`]): text layers, Roll
 //!   for scroll pages, opacity fades for cards, exact [`cfa4_time::Tick`] durations.
 //!
@@ -26,6 +28,7 @@ pub mod office;
 pub mod sheet;
 pub mod style;
 pub mod table;
+pub mod validate;
 pub mod zip;
 
 pub use layout::{Frame, Laid, Measure, PageOut, PicturePlace, layout};
@@ -96,3 +99,6 @@ mod office_tests;
 
 #[cfg(test)]
 mod diff_tests;
+
+#[cfg(test)]
+mod validate_tests;

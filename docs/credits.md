@@ -78,6 +78,30 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `margin`. Page style fields: `behaviour` (`scroll`, `card`), `scrollPxPerFrame`, `cardFrames`,
 `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`.
 
+## Checks
+
+The Credits window lists the engine's checks under *Checks and warnings*, with an error, warning
+or information icon and the spreadsheet row or page (`graphics.credits.validate`, also part of
+`graphics.credits.preview`). They are advice: nothing stops the import.
+
+| Check | Severity | When |
+|---|---|---|
+| A name twice in one block | warning | the same name (ignoring case, accents, spacing) appears twice in a block |
+| One person written two ways | warning | e.g. `Kiss Anna` and `Kiss Ánna`; names the other row |
+| Font not installed | error | another font is used instead |
+| Letters missing from a font | warning | e.g. a font without `ő` / `ű`: another font draws them |
+| Outside the title-safe area | warning | text beyond 5 % from the frame edges (rolls: the sides only) |
+| Low contrast | warning | text colour against black below 4.5:1 (WCAG 2.1) |
+| Small text | warning | below 24 px on a 1080-line frame |
+| Shimmering roll | warning | not a whole number of pixels per frame |
+| Fast roll | warning | a line crosses the frame in under 6 seconds |
+| Short card | warning | less than 2 seconds on screen after its fades |
+| Overlapping pages | info | a negative page gap |
+| Soft picture | warning | a picture shown larger than its pixels |
+
+More than 50 of one kind are counted in one line. Codes, severities and values are stable
+(`crates/credits/src/validate.rs`), so the Qt GUI words them in Hungarian.
+
 ## Credits files and refreshing (linked credits)
 
 **Credits file (`.cfa4credits`).** *Save as Credits File…* in the Credits window (or
@@ -121,8 +145,9 @@ fails leaves the old pages as they were.
 | Command | Menu | Params |
 |---|---|---|
 | `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` → `{clips: [{clip, start, duration, pictures}], group, end, sheet, warnings}`; one undo step |
-| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings}` |
+| `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width` → `{width, height, page, pages, time, pngBase64}`: the page's text with the roll or fades applied, pictures outlined |
+| `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
 | `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
 | `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
 | `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |

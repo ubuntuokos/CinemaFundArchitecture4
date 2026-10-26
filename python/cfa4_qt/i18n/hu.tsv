@@ -1707,3 +1707,20 @@
 	Refresh Credits from Spreadsheet…	Stáblista frissítése a táblázatból…
 	Save Credits File…	Stáblista-fájl mentése…
 	Compare Credits with Spreadsheet	Stáblista összevetése a táblázattal
+	“{name}” appears twice in the same block	„{name}” kétszer szerepel ugyanabban a blokkban
+	“{name}” is written as “{other}” in row {otherRow}	„{name}” a(z) {otherRow}. sorban „{other}” alakban szerepel
+	The font “{font}” is not installed; another font is used	A(z) „{font}” betűtípus nincs telepítve; helyette másik betűtípus látszik
+	The font “{font}” has no “{chars}”; another font draws them	A(z) „{font}” betűtípusból hiányzik: „{chars}”; ezeket másik betűtípus rajzolja
+	“{text}” is outside the title-safe area	„{text}” kilóg a címbiztos területből
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” túl sötét fekete alapon (kontraszt {ratio}:1; legalább 4,5:1 kell)
+	“{text}” is {px} px high; 24 px or more reads well	„{text}” {px} px magas; 24 px felett jól olvasható
+	The roll moves {speed} px per frame; a whole number does not shimmer	A gördülés képkockánként {speed} px; egész számnál nem vibrál
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Egy sor {seconds} mp alatt fut át a képen; legalább 6 mp kell a kényelmes olvasáshoz
+	The card holds for only {seconds} s after its fades	A kártya az áttűnések után csak {seconds} mp-ig áll
+	This page starts {seconds} s before the previous one ends	Ez az oldal {seconds} mp-cel az előző vége előtt indul
+	“{file}” is shown at {percent} % of its pixels; it will look soft	„{file}” a képpontjai {percent} %-án látszik; elmosódott lesz
+	{more} more of the same	még {more} ugyanilyen
+	Page {page}: {message}	{page}. oldal: {message}
+	Checks and warnings	Ellenőrzés és figyelmeztetések
+	Checks: {errors} errors, {warnings} warnings	Ellenőrzés: {errors} hiba, {warnings} figyelmeztetés
+	Check Credits	Stáblista ellenőrzése

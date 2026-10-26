@@ -1,6 +1,6 @@
 # CFA4 stáblista és feliratkészítő – módosított terv (javaslat)
 
-**Állapot:** JÓVÁHAGYVA (2026-10-25) – mind a négy döntés meghozva; C1 kész  
+**Állapot:** JÓVÁHAGYVA (2026-10-25) – mind a négy döntés meghozva; C1, C2 kész  
 **Dátum:** 2026-10-24  
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
@@ -88,20 +88,25 @@ döntésével (külön stáblista-fájl kell) együtt.
   visszavonás, táblázat nélküli megnyitás, elköltözött forrás), Qt-teszt valódi motorral
   (mentés → elhelyezés → táblázat módosítása → frissítés részleges elfogadással).
 
-### C2 – Ellenőrzések (K)
+### C2 – Ellenőrzések (K) – **KÉSZ (2026-10-26)**
 
-Az eredeti terv §20-ából a CFA4-ben értelmesek, géppel olvasható (JSON) eredménnyel:
+Az eredeti terv §20-ából a CFA4-ben értelmesek, géppel olvasható eredménnyel
+(`graphics.credits.validate`; stabil kód, súlyosság, oldal/sor, értékek):
 
-- hiányzó vagy duplikált név, eltérően írt név (ugyanaz a személy két alakban);
-- hiányzó kép, hiányzó betűtípus, kis felbontású kép (felnagyítás);
-- **safe area** megsértése (címbiztos és akcióbiztos terület);
-- **elégtelen kontraszt** a háttérhez képest;
-- **túl gyors vagy vibráló gördülés** (nem egész px/képkocka, vagy a sorok olvashatósági határa
-  felett);
-- időzítési ütközés (átfedő oldalak, kártya rövidebb a beúszás és a kiúszás összegénél).
+- kétszer szereplő név egy blokkban; **ugyanaz a személy kétféle írásmóddal** (ékezet,
+  kis-nagybetű, szóköz, írásjel);
+- **nem telepített betűtípus** (hiba) és **betűtípusból hiányzó karakterek** (pl. ő, ű) – a
+  valódi szövegmotor dönti el;
+- szöveg a **címbiztos területen** kívül (5 % a széleken; gördülésnél csak oldalt);
+- **kontraszt** fekete alapon 4,5:1 alatt (WCAG 2.1); 24 px alatti szöveg;
+- **vibráló gördülés** (nem egész px/képkocka) és **túl gyors gördülés** (egy sor 6 mp alatt fut
+  át);
+- 2 mp-nél rövidebb kártya az áttűnések után; átfedő oldalak;
+- a képpontjainál nagyobban mutatott kép (elmosódott).
 
-**Kész, ha:** minden ellenőrzéshez van pozitív és negatív teszt, és az előnézet mutatja a
-figyelmeztetéseket.
+A Qt6 Stáblista ablak súlyosság szerinti ikonnal, magyarul, sorszámmal mutatja; a mintatáblázat
+hamis riasztás nélkül átmegy. Hátravan, amíg a C4 nincs kész: a kontraszt a valódi háttérhez
+(most fekete alaphoz mér).
 
 ### C3 – Igazítás a zenéhez (K → K+)
 
