@@ -30,6 +30,7 @@ from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
+from .panels.lumetri import LumetriColorPanel
 from .panels.meters import AudioMetersPanel
 from .panels.mixer import ClipMixerPanel, TrackMixerPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
@@ -43,7 +44,7 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 13  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes
+LAYOUT_VERSION = 14  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -62,6 +63,7 @@ DOCK_PLAN = (
     ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Lumetri Color", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -165,6 +167,9 @@ class MainWindow(QMainWindow):
         self.scopes = ScopesPanel(engine, self)
         self.scopes.attach_settings(self.settings)
         self.reference.scope_settings = lambda: self.scopes.st
+        self.lumetri = LumetriColorPanel(self)
+        self.lumetri.attach_settings(self.settings)
+        self._lumetri_busy = False
         self._clip_mixer_busy = False
         self._mixer_busy = False
         self._mixer_clock = QElapsedTimer()
@@ -209,6 +214,7 @@ class MainWindow(QMainWindow):
             "Audio Clip Mixer": self.clip_mixer,
             "Reference Monitor": self.reference,
             "Lumetri Scopes": self.scopes,
+            "Lumetri Color": self.lumetri,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -234,6 +240,7 @@ class MainWindow(QMainWindow):
             self.progress,
             self.mixer,
             self.clip_mixer,
+            self.lumetri,
         ):
             panel.command.connect(self.execute)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
@@ -249,6 +256,7 @@ class MainWindow(QMainWindow):
         self.docks["Progress"].visibilityChanged.connect(lambda shown: shown and self.update_jobs())
         self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
+        self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
 
         self._refresh_timer = QTimer(self, singleShot=True, interval=40)
         self._refresh_timer.timeout.connect(self.refresh)
@@ -302,6 +310,9 @@ class MainWindow(QMainWindow):
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
         win.tabifyDockWidget(d["Timeline"], d["Events"])
+        # egui's Color workspace puts Lumetri Color at the right; opened from the Window menu
+        win.tabifyDockWidget(d["Properties"], d["Lumetri Color"])
+        d["Lumetri Color"].hide()
         for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
@@ -714,6 +725,7 @@ class MainWindow(QMainWindow):
         self.update_scopes()
         self.inspector.set_sequence(self.sequence)
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
+        self.update_lumetri()
         self.update_inspectors()
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
@@ -775,6 +787,7 @@ class MainWindow(QMainWindow):
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.effect_controls.flush()
+        self.lumetri.flush()
         self.notes.flush()
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
@@ -965,6 +978,33 @@ class MainWindow(QMainWindow):
 
         self.engine.call("clipMixer.inspect", {"time": self.monitor.playhead}, on_reply=done, on_error=failed)
 
+    def update_lumetri(self) -> None:
+        """The Lumetri Color panel: the selected video clip's Lumetri values at the playhead."""
+        if self._lumetri_busy:
+            self._lumetri_again = True
+            return
+        if not self.engine.running or not self.lumetri.isVisible():
+            return
+        if self.sequence is None:
+            self.lumetri.set_state(None)
+            return
+        self._lumetri_busy = True
+        playhead = self.monitor.playhead
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self._lumetri_busy = False
+            self.lumetri.playhead = playhead
+            self.lumetri.set_state(result)
+            if getattr(self, "_lumetri_again", False):
+                self._lumetri_again = False
+                self.update_lumetri()
+
+        def failed(_m: str) -> None:
+            self._lumetri_busy = False
+            self._lumetri_again = False
+
+        self.engine.call("lumetri.inspect", {"time": playhead}, on_reply=done, on_error=failed)
+
     def _mixer_meters(self) -> None:
         """Each strip's peaks of the audio being heard (the Program monitor's blocks)."""
         dt = min(0.1, self._mixer_clock.restart() / 1000.0)
@@ -1069,6 +1109,7 @@ class MainWindow(QMainWindow):
         self.update_timecode()
         self.update_mixer()
         self.update_clip_mixer()
+        self.update_lumetri()
 
     # ----- export -----
     def open_export(self) -> None:
@@ -1160,6 +1201,7 @@ class MainWindow(QMainWindow):
 
         # an edit still in Effect Controls' send delay reaches the engine before it is asked
         self.effect_controls.flush()
+        self.lumetri.flush()
         self.notes.flush()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)
         QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)

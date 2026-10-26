@@ -953,7 +953,7 @@ def test_real_engine_source_monitor(app, tmp_path: Path):
 
 
 # Source/Effect Controls/Metadata, Project/Info/Effects/Markers/History, Timeline/Events (egui's)
-TAB_GROUPS = 3
+TAB_GROUPS = 4  # Source, Project, Properties (with the closed Lumetri Color, as egui), Timeline
 
 
 def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path):
@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2250,6 +2250,110 @@ def test_lumetri_scopes(app, tmp_path: Path):
         assert wait_until(app, lambda: panel.view.images["waveform"][2]["lo"] < 0, 20_000)
         assert ScopesState.load(settings, "panels/scopes").shown == panel.st.shown
         assert panel.grab().width() > 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_lumetri_color(app, tmp_path: Path):
+    """egui's Lumetri Color: the selected video clip's Lumetri effect by section; a slider drag is
+    one undo step, curves take points, the wheels an offset, the section switches and menus act."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    lc = win.lumetri
+    Qt = QtCore.Qt
+    mouse = QtTest.QTest
+
+    def value(pid: str):
+        return (lc.params.get(pid) or {}).get("value")
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert not win.docks["Lumetri Color"].isVisible(), "closed in the Editing workspace, as egui"
+        win.docks["Lumetri Color"].show()
+        win.docks["Lumetri Color"].raise_()
+        assert wait_until(app, lambda: lc.placeholder.isVisible(), 10_000)
+        clip = win.sequence["video"][0]["items"][1]
+        win._seek_program(clip["start"] + 1)
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        assert wait_until(app, lambda: lc.clip_id == clip["clip"] and lc.add_button.isVisible(), 20_000), lc.data
+        lc.add_button.click()
+        assert wait_until(app, lambda: lc.effect is not None and lc.scroll.isVisible(), 20_000), lc.data
+        assert lc.bodies["Basic Correction"].isVisible() and not lc.bodies["Curves"].isVisible()
+        assert not lc.sliders["hdr_white"].isVisible(), "HDR rows only in an HDR sequence"
+
+        # a slider drag is one undo step
+        steps = len(history())
+        s = lc.sliders["exposure"]
+        lc.scroll.ensureWidgetVisible(s)
+        app.processEvents()
+        t = s.track()
+        y = int(t.center().y())
+        mouse.mousePress(s, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(t.center().x()), y))
+        for i in range(1, 6):
+            mouse.mouseMove(s, QtCore.QPoint(int(t.center().x() + 8 * i), y))
+        mouse.mouseRelease(s, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(t.center().x() + 40), y))
+        assert wait_until(app, lambda: (value("exposure") or 0) > 0.5, 10_000), lc.params.get("exposure")
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()
+        s.spin.setValue(-1.5)  # typed value
+        assert wait_until(app, lambda: value("exposure") == -1.5, 10_000)
+        mouse.mouseDClick(s, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(t.left() + 5), y))
+        assert wait_until(app, lambda: value("exposure") == 0.0, 10_000), "double-click: the default"
+
+        # the Look menu, the section switch
+        look = lc.combos["look"]
+        look.setCurrentIndex(1)
+        look.activated.emit(1)
+        assert wait_until(app, lambda: value("look") == 1, 10_000)
+        assert lc.headers["HSL Secondary"].on is False
+        head = lc.headers["HSL Secondary"]
+        lc.scroll.ensureWidgetVisible(head)
+        mouse.mouseClick(head, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, head.switch_rect().center().toPoint())
+        assert wait_until(app, lambda: value("hsl_on") is True and lc.headers["HSL Secondary"].on, 10_000)
+
+        # Curves: open the section, add a point on the luma curve, then the red curve
+        curves = lc.headers["Curves"]
+        mouse.mouseClick(curves, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(40, 20))
+        assert lc.bodies["Curves"].isVisible()
+        ed = lc.rgb_curve
+        lc.scroll.ensureWidgetVisible(ed)
+        app.processEvents()
+        a = ed.area()
+        at = QtCore.QPoint(int(a.left() + a.width() * 0.5), int(a.bottom() - a.height() * 0.75))
+        mouse.mousePress(ed, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, at)
+        mouse.mouseRelease(ed, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, at)
+        assert wait_until(app, lambda: len(value("curve_luma") or []) == 3 and (lc.params["curve_luma"]["line"][64] or 0) > 0.6, 10_000), lc.params.get("curve_luma")
+        lc.channel_buttons[1].click()
+        assert ed.pid == "curve_red" and len(ed.points) == 2
+        mouse.mouseDClick(ed, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, at)
+        assert wait_until(app, lambda: len(value("curve_red") or []) == 2, 10_000)
+
+        # Color Wheels: drag the midtones puck
+        mouse.mouseClick(lc.headers["Color Wheels & Match"], Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(40, 20))
+        wheel = next(w for w in lc.wheels if w.pid == "wheel_midtones")
+        lc.scroll.ensureWidgetVisible(wheel)
+        app.processEvents()
+        c, _ro, r_in, _track = wheel.geometry_()
+        mouse.mouseClick(wheel, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(c.x() + r_in / 2), int(c.y())))
+        assert wait_until(app, lambda: (value("wheel_midtones") or [0, 0])[0] > 0.3, 10_000), value("wheel_midtones")
+
+        # fx: the effect off and on
+        lc.fx.click()
+        assert wait_until(app, lambda: lc.data.get("enabled") is False, 10_000)
+        assert lc.grab().width() > 0
+        # the open sections are remembered
+        assert "Curves" in str(settings.value("lumetri/openSections"))
     finally:
         win._quit_confirmed = True
         win.close()

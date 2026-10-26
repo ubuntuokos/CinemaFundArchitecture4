@@ -737,3 +737,73 @@
 	YC	YC
 	YC no Chroma	YC króma nélkül
 	YUV	YUV
+	(no clip selected)	(nincs kijelölt klip)
+	Add Lumetri Color to clip	Lumetri szín hozzáadása a klipre
+	Adjustments	Beállítások
+	Amount	Mérték
+	Apply Match	Egyeztetés alkalmazása
+	Basic Correction	Alapkorrekció
+	Blacks	Feketék
+	Bleach Bypass	Fehérítés kihagyása
+	Blur	Elmosás
+	Color Match	Színegyeztetés
+	Color Wheels & Match	Színkorongok és egyeztetés
+	Color/Black	Szín/fekete
+	Color/Gray	Szín/szürke
+	Comparison View	Összehasonlító nézet
+	Contrast	Kontraszt
+	Cool Blue	Hideg kék
+	Correction	Korrekció
+	Creative	Kreatív
+	Curves	Görbék
+	Denoise	Zajszűrés
+	Exposure	Expozíció
+	Face Detection (protect skin tones)	Arcfelismerés (a bőrtónusok védelme)
+	Faded Film	Fakult film
+	Faded Matte	Fakult matt
+	Feather	Lágy szél
+	Golden Hour	Aranyóra
+	HDR Range	HDR-tartomány
+	HDR Specular	HDR csúcsfények
+	HDR White	HDR fehér
+	HSL Secondary	HSL másodlagos
+	Highlights	Csúcsfények
+	Hue Range	Színezettartomány
+	Hue Saturation Curves	Színezet- és telítettséggörbék
+	Hue Shift	Színezeteltolás
+	Hue vs Hue	Színezet–színezet
+	Hue vs Luma	Színezet–luma
+	Hue vs Sat	Színezet–telítettség
+	Input LUT	Bemeneti LUT
+	Intensity	Erősség
+	Key	Kulcs
+	LUT	LUT
+	Look	Hangulat
+	Look LUT	Hangulat-LUT
+	Luma Max	Luma max.
+	Luma Min	Luma min.
+	Luma vs Sat	Luma–telítettség
+	Master · {name}	Fő · {name}
+	Midpoint	Középpont
+	Midtones	Középtónusok
+	Monochrome	Fekete-fehér
+	Night	Éjszaka
+	None	Nincs
+	RGB Curves	RGB-görbék
+	Reference	Referencia
+	Refine	Finomítás
+	Roundness	Kerekség
+	Sat vs Sat	Telítettség–telítettség
+	Saturation Min	Telítettség min.
+	Shadows	Árnyékok
+	Sharpen	Élesítés
+	Show Mask	Maszk megjelenítése
+	Soften	Lágyítás
+	Teal & Orange	Kékeszöld és narancs
+	Temperature	Színhőmérséklet
+	Tint	Színárnyalat
+	Vibrance	Élénkség
+	Vignette	Vignetta
+	Warm Film	Meleg film
+	White/Black	Fehér/fekete
+	Whites	Fehérek
