@@ -65,9 +65,19 @@ fn effects_list_reports_folders_and_badges() {
     assert_eq!(find("crop")["category"], json!(["Legacy", "Video Effects"]));
     assert_eq!(find("luma_key")["badges"], json!({"accelerated": true, "float32": true, "yuv": true}));
     assert_eq!(find("lens_flare")["folder"], "Lights & Glows");
-    let n =
-        arr.iter().filter(|e| e["kind"] == "Video" && e["category"][0] == "Video Effects" && e["folder"] != "Obsolete" && e["folder"] != Value::Null).count();
+    let n = arr
+        .iter()
+        .filter(|e| {
+            e["kind"] == "Video"
+                && e["category"][0] == "Video Effects"
+                && e["folder"] != "Obsolete"
+                && e["folder"] != "Stereoscopic 3D"
+                && e["folder"] != Value::Null
+        })
+        .count();
     assert_eq!(n, 93, "Premiere 26's current Video Effects");
+    // CFA4's own folder sits beside them
+    assert_eq!(find("stereo_swap_eyes")["category"], json!(["Video Effects", "Stereoscopic 3D"]));
 }
 
 #[test]

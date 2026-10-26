@@ -50,6 +50,7 @@ const OP_MIRROR: u32 = 28u;
 const OP_OFFSET: u32 = 29u;
 const OP_VIDEO_LIMITER: u32 = 30u;
 const OP_LUMETRI: u32 = 31u;
+const OP_SWAP_EYES: u32 = 32u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -630,6 +631,19 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
         }
         case OP_VFLIP: {
             return ld(vec2(p.x, s.y - 1 - p.y));
+        }
+        case OP_SWAP_EYES: {
+            // `gpufx::swap_eyes_src`: views of half the width (i1.x = 1, side by side) or height;
+            // an odd last column / row stays put
+            var q = p;
+            if u.i1.x == 1u {
+                let half = s.x / 2;
+                if p.x < half { q.x = p.x + half; } else if p.x < 2 * half { q.x = p.x - half; }
+            } else {
+                let half = s.y / 2;
+                if p.y < half { q.y = p.y + half; } else if p.y < 2 * half { q.y = p.y - half; }
+            }
+            return ld(q);
         }
         case OP_MIRROR: {
             let c = u.p0.xy; let nrm = u.p0.zw;
