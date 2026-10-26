@@ -181,6 +181,55 @@ fn a_failed_packet_leaves_nothing_for_the_next() {
     assert!(n <= 40, "the next 40-sample packet gave {n} samples");
 }
 
+/// A later major sync may reassign the speakers with the same substream count: the labels
+/// follow it (they used to stay those of the first layout). The second half of a 5.1 stream has
+/// its six-channel assignment changed from Ls / Rs to Tfl / Tfr, with the major sync CRC redone.
+#[test]
+fn a_new_speaker_layout_at_a_major_sync_updates_the_labels() {
+    use cfa4_truehd::utils::bitstream_io::BsIoSliceReader;
+    use cfa4_truehd::utils::crc::{CRC_MAJOR_SYNC_INFO_ALG, Crc16};
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let s = &SPECS[2];
+    let f = make(&ff, s).unwrap_or_else(|| panic!("could not generate {}", s.name));
+    let data = std::fs::read(&f).unwrap();
+    let crc = Crc16::new(&CRC_MAJOR_SYNC_INFO_ALG);
+    let mut aus: Vec<Vec<u8>> = access_units(&data).into_iter().map(<[u8]>::to_vec).collect();
+    let half = aus.len() / 2;
+    let mut changed = 0;
+    for au in aus.iter_mut().skip(half) {
+        if au.get(4..8) != Some(&[0xF8, 0x72, 0x6F, 0xBA][..]) {
+            continue;
+        }
+        // the major sync CRC follows a variable-length channel meaning: find where it matches
+        let k = (20..au.len().min(64) - 6)
+            .find(|&k| {
+                let got = BsIoSliceReader::from_slice(au).crc16_check(&crc, 32, (k as u64) * 8).ok();
+                got == Some(u16::from_be_bytes([au[4 + k], au[5 + k]]))
+            })
+            .expect("major sync CRC");
+        // format info bits 12..17 hold the six-channel assignment: swap bit 3 (Ls/Rs) for bit 4
+        let mut fi = u32::from_be_bytes([au[8], au[9], au[10], au[11]]);
+        let assign = (fi >> 15) & 0x1F;
+        assert_eq!(assign & 0x18, 0x08, "expected Ls/Rs in assignment {assign:#x}");
+        fi ^= 0x18 << 15;
+        au[8..12].copy_from_slice(&fi.to_be_bytes());
+        let c = BsIoSliceReader::from_slice(au).crc16_check(&crc, 32, (k as u64) * 8).unwrap();
+        au[4 + k..6 + k].copy_from_slice(&c.to_be_bytes());
+        changed += 1;
+    }
+    assert!(changed > 0);
+    let mut dec = Decoder::new();
+    let mut layouts = Vec::new();
+    for au in &aus {
+        let d = dec.decode(au).unwrap();
+        if !d.channels.is_empty() && layouts.last() != Some(&d.labels) {
+            layouts.push(d.labels);
+        }
+    }
+    assert_eq!(layouts.len(), 2, "{layouts:?}");
+    assert_ne!(layouts[0], layouts[1]);
+}
+
 /// Damaged variants per stream (a local run with 6000 in release and 1500 in debug found no panic).
 const FUZZ: u32 = 150;
 

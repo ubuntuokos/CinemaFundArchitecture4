@@ -330,6 +330,14 @@ impl DecoderState {
                     self.substream_state[i].channel_labels = access_unit.get_channel_labels(i).unwrap_or_default();
                 }
             }
+        } else if access_unit.major_sync_info.is_some() {
+            // Modified for CFA4: a major sync may reassign the speakers without changing the
+            // substream count; the labels follow it.
+            for (i, &required) in self.effective_presentations.iter().enumerate() {
+                if required && let Some(labels) = access_unit.get_channel_labels(i) {
+                    self.substream_state[i].channel_labels = labels;
+                }
+            }
         }
 
         self.has_duplicate_timing = false;

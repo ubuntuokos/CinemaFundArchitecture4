@@ -29,7 +29,9 @@ allows.
   (the two dither channels must fit the 16-wide buffers), the restart A dither is widened to
   `i32` before `dither_shift` is applied, a segment whose blocks do not add up to one access unit
   is an error instead of a warning, and `decode_multi` refuses any block that would overrun its
-  buffers.
+  buffers. More than four substreams are rejected; Huffman residuals are reconstructed in 64 bits
+  and range-checked; an Evolution frame that overruns its extra data is an error; and a major
+  sync that reassigns the speakers refreshes the channel labels.
 - `cfa4.rs` (new) is the interface the rest of CFA4 uses: [`cfa4::Decoder`] takes container
   packets and gives planar `f32` channels in CFA4's WAV / SMPTE order, plus the helpers the
   Matroska / MP4 sources use for packet timing and seek pre-roll.

@@ -264,6 +264,11 @@ impl MajorSyncInfo {
         ms.peak_data_rate = reader.get_n(15)?;
         ms.substreams = reader.get_n::<u8>(4)? as usize;
 
+        // Modified for CFA4: every substream table holds four entries.
+        if ms.substreams > crate::process::MAX_PRESENTATIONS {
+            bail!("{} substreams; at most {} are supported", ms.substreams, crate::process::MAX_PRESENTATIONS);
+        }
+
         // peak data rate check
         if state.check_fifo && state.has_parsed_au && state.peak_data_rate != ms.peak_data_rate as usize {
             if state.allow_seamless_branch {
@@ -511,6 +516,22 @@ impl MajorSyncInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Every substream table has four entries; a fifth declared substream used to index past
+    /// them when the access unit was read.
+    #[test]
+    fn more_than_four_substreams_are_rejected() {
+        let read = |substreams: u8| {
+            // FBA sync, 48 kHz format info, signature, flags, reserved, rate, substream count
+            let mut d = vec![0xF8, 0x72, 0x6F, 0xBA, 0, 0, 0, 0, 0xB7, 0x52, 0, 0, 0, 0, 0, 0, substreams << 4];
+            d.resize(64, 0);
+            let mut state = ParserState::default();
+            MajorSyncInfo::read(&mut state, &mut BsIoSliceReader::from_slice(&d)).err().map(|e| e.to_string()).unwrap_or_default()
+        };
+        assert!(read(5).contains("substreams"), "{}", read(5));
+        assert!(read(15).contains("substreams"));
+        assert!(!read(4).contains("at most"));
+    }
 
     /// The 4-bit rate code is split across two families: 0..2 are the 48 kHz multiples and
     /// 8..10 the 44.1 kHz ones, with everything between and above reserved.

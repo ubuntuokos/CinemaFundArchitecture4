@@ -368,7 +368,7 @@ impl Block {
                     0
                 };
 
-                let mut audio_data = if huff_type != 0 {
+                let audio_data = if huff_type != 0 {
                     let huff_code = reader.get_huffman(huff_type)?;
 
                     // Every table reaches its deepest leaf through a nine-bit code whose
@@ -381,17 +381,12 @@ impl Block {
                         }
                     }
 
-                    let lsbs = if lsbs_bits > 0 { reader.get_n::<u32>(lsbs_bits)? as i32 } else { 0 };
-                    let shift = lsbs_bits as i32 + (2 - huff_type as i32);
-
-                    lsbs + (huff_code << lsbs_bits) - if shift < 0 { 0 } else { 1 << shift }
+                    let lsbs = if lsbs_bits > 0 { reader.get_n::<u32>(lsbs_bits)? } else { 0 };
+                    residual(Some((huff_type, huff_code)), lsbs, lsbs_bits, huff_offset, quantiser_step_size)?
                 } else {
-                    let lsbs = if lsbs_bits > 0 { reader.get_n::<u32>(lsbs_bits)? as i32 } else { 0 };
-                    lsbs - (if lsbs_bits > 0 { 1 << (lsbs_bits - 1) } else { 0 })
+                    let lsbs = if lsbs_bits > 0 { reader.get_n::<u32>(lsbs_bits)? } else { 0 };
+                    residual(None, lsbs, lsbs_bits, huff_offset, quantiser_step_size)?
                 };
-
-                audio_data += huff_offset;
-                audio_data <<= quantiser_step_size;
 
                 if position_checks_needed {
                     let huff_size = reader.position()? - huff_start_pos;
@@ -456,5 +451,45 @@ impl Block {
         *ss_state.block_data = self.block_data;
 
         Ok(())
+    }
+}
+
+/// One channel's sample from its Huffman code (`None` for the plain LSB coding), LSBs, offset and
+/// quantiser step.
+///
+/// Modified for CFA4: computed in 64 bits and range-checked, as `lsbs_bits` up to 31 overflows
+/// the upstream `i32` arithmetic (a shift of 32 with restart C's widths).
+fn residual(huffman: Option<(usize, i32)>, lsbs: u32, lsbs_bits: u32, huff_offset: i32, quantiser_step_size: u32) -> Result<i32> {
+    let lsbs = i64::from(lsbs);
+    let value = match huffman {
+        Some((huff_type, huff_code)) => {
+            let shift = lsbs_bits as i64 + 2 - huff_type as i64;
+            lsbs + (i64::from(huff_code) << lsbs_bits) - if shift < 0 { 0 } else { 1i64 << shift }
+        }
+        None => lsbs - if lsbs_bits > 0 { 1i64 << (lsbs_bits - 1) } else { 0 },
+    } + i64::from(huff_offset);
+    let Some(scaled) = value.checked_shl(quantiser_step_size).filter(|v| v >> quantiser_step_size == value) else {
+        bail!("residual too wide for its quantiser step");
+    };
+    let Ok(sample) = i32::try_from(scaled) else {
+        bail!("residual {scaled} exceeds 32 bits");
+    };
+    Ok(sample)
+}
+
+#[cfg(test)]
+mod cfa4_tests {
+    use super::*;
+
+    /// Restart C allows 31 LSB bits with no quantiser step: Huffman type 1 then shifts by 32,
+    /// which overflowed the upstream i32 arithmetic.
+    #[test]
+    fn residuals_with_31_lsb_bits_do_not_overflow() {
+        assert_eq!(residual(Some((1, 1)), 0x7FFF_FFFF, 31, 0, 0).ok(), Some(-1));
+        assert!(residual(Some((1, 5)), 0, 31, 0, 0).is_err());
+        assert!(residual(None, 1, 1, 0, 31).is_ok());
+        assert!(residual(Some((1, 0)), 0, 30, 0, 31).is_err());
+        assert_eq!(residual(None, 5, 4, 0, 1).ok(), Some(-6));
+        assert_eq!(residual(Some((2, -3)), 1, 2, 7, 0).ok(), Some(1 - 12 - 4 + 7));
     }
 }

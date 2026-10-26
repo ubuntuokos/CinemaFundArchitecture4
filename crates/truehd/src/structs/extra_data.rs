@@ -5,7 +5,7 @@
 //! This module contains structures for handling extra data sections,
 //! which may contain Evolution frames and other auxiliary information.
 
-use crate::anyhow::{Result, anyhow};
+use crate::anyhow::{Result, anyhow, bail};
 use log::trace;
 
 use crate::log_or_err;
@@ -153,7 +153,12 @@ impl ExtraData {
 
             let actual_evo_frame_bits = evo_frame.as_ref().map_or(0, |(_, bits)| *bits);
 
-            for _ in 0..(extra_data_bits - 24 - actual_evo_frame_bits) {
+            // Modified for CFA4: the frame is read from the rest of the access unit, so it can
+            // run past the payload its length declared.
+            let Some(padding) = extra_data_bits.checked_sub(24 + actual_evo_frame_bits) else {
+                bail!("Evolution frame of {actual_evo_frame_bits} bits overruns its {extra_data_bits}-bit extra data");
+            };
+            for _ in 0..padding {
                 if reader.get()? {
                     log_or_err!(state, log::Level::Warn, anyhow!(ExtraDataError::EvoFramePaddingNotZero), reader);
                 }
@@ -227,5 +232,23 @@ impl ExtraData {
         }
 
         Some(evo)
+    }
+}
+
+#[cfg(test)]
+mod cfa4_tests {
+    use super::*;
+
+    /// The Evolution frame is read from the rest of the access unit; one that runs past its
+    /// declared extra data used to underflow the padding count.
+    #[test]
+    fn an_evolution_frame_overrunning_its_extra_data_is_an_error() {
+        // extra_data_length 2 (32 bits), a one-byte frame declared, then a frame whose primary
+        // protection word (16 bytes) runs far past it
+        let mut data = vec![0xF0, 0x02, 0x00, 0x01, 0b0000_0000, 0b0011_0000];
+        data.resize(64, 0);
+        let mut state = ParserState { flags: 0x1000, au_start_pos: 0, access_unit_length: 32, ..Default::default() };
+        let err = ExtraData::read(&mut state, &mut BsIoSliceReader::from_slice(&data)).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(err.contains("overruns"), "{err}");
     }
 }
