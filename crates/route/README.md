@@ -75,5 +75,7 @@ vendor-lock switch, coverage report and the hostile-input tests of its `/sys` pr
 
 ## Not yet
 
-Registering the existing backends (NVDEC, VA-API, NVENC, wgpu, candle) through this crate is phase 1
-of ADR 0004; until then nothing in CFA4 calls the router and behaviour is unchanged.
+Phase 1 of ADR 0004 is partly done: `cfa4-platform` routes the Linux hardware decoder (NVDEC,
+VA-API, software) and the NVENC export encoder through this crate, with unchanged behaviour, and
+`perf.stats` → `route` reports the chains (`report::snapshot`). Still to move: the wgpu adapter
+choice of the compositor (#632) and the AI backends (candle), which phase 2 joins with Burn.

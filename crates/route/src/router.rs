@@ -25,6 +25,15 @@ pub trait Backend: Send + Sync {
     /// Whether the backend takes this task on this device. `Err` carries the reason, in English,
     /// for the UI and `perf.stats` ("HEVC 4:2:2 is not decoded by this GPU").
     fn accepts(&self, task: &Task, device: &Device) -> Result<(), String>;
+
+    /// Whether the backend does this family's work. One id can name backends of two families
+    /// (`vaapi` decodes, and will encode); a backend registered for one is not taken for the
+    /// other, and the router reports it there as not registered (or not implemented, when the
+    /// catalogue lists it as planned). All families by default.
+    fn serves(&self, family: Family) -> bool {
+        let _ = family;
+        true
+    }
 }
 
 /// Why a route was passed over.
@@ -201,7 +210,7 @@ impl Router {
     /// Why a backend in the order cannot be used at all, before its devices are looked at.
     fn backend_reason(&self, family: Family, id: &BackendId) -> Option<Reason> {
         let entry = catalog::lookup(family, id);
-        if self.backend(id).is_none() {
+        if !self.backend(id).is_some_and(|b| b.serves(family)) {
             return Some(if entry.is_some_and(|e| e.maturity == Maturity::Planned) { Reason::NotImplemented } else { Reason::NotRegistered });
         }
         if self.disabled.contains(id) {
@@ -277,6 +286,34 @@ impl Router {
                 }
             }
         }
+    }
+
+    /// The first CPU route in the task's order that takes it, without asking any GPU or NPU route
+    /// (their `accepts` may be a slow driver probe): the last resort of every family.
+    pub fn cpu_route(&self, task: &Task) -> Option<Route> {
+        let pref = self.preferences.get(task.family);
+        self.table.order(&task.id, task.family).iter().filter(|id| self.backend_reason(task.family, id).is_none()).find_map(|id| {
+            let backend = self.backend(id)?;
+            backend
+                .devices(&self.inventory)
+                .into_iter()
+                .find(|d| d.kind == DeviceKind::Cpu && Self::allowed(pref, d) && backend.accepts(task, d).is_ok())
+                .map(|d| Route { backend: id.clone(), device: d.id.clone() })
+        })
+    }
+
+    /// What runs for a task once `decision` is made: the chosen route, then the CPU route (when the
+    /// choice is not already on the CPU). The routes between them are not asked, so a slow or
+    /// blocking driver probe is never run after a working one. This is the chain `perf.stats`
+    /// reports for the hardware decoder and encoder.
+    pub fn fallback_chain(&self, task: &Task, decision: &Decision) -> Chain {
+        let mut routes = vec![Route { backend: decision.backend.clone(), device: decision.device.clone() }];
+        if let Some(cpu) = self.cpu_route(task)
+            && routes.first() != Some(&cpu)
+        {
+            routes.push(cpu);
+        }
+        Chain { task: task.id.clone(), routes, declined: decision.declined.clone() }
     }
 
     /// Families whose order has no registered, enabled backend that runs on the CPU. CFA4's rule
@@ -587,6 +624,71 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn the_fallback_chain_is_the_choice_then_the_cpu_without_asking_the_routes_between() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        struct Counting(BackendId, Arc<AtomicUsize>);
+        impl Backend for Counting {
+            fn id(&self) -> &BackendId {
+                &self.0
+            }
+            fn devices<'a>(&self, inv: &'a Inventory) -> Vec<&'a Device> {
+                inv.devices().iter().filter(|d| d.kind == DeviceKind::Gpu).collect()
+            }
+            fn accepts(&self, _: &Task, _: &Device) -> Result<(), String> {
+                self.1.fetch_add(1, Ordering::Relaxed);
+                Ok(())
+            }
+        }
+        let vaapi_asked = Arc::new(AtomicUsize::new(0));
+        let mut r = Router::new(Table::builtin().unwrap(), a1000(None), Preferences::default());
+        r.register(Arc::new(Fake::gpu("nvdec", &[Vendor::Nvidia])));
+        r.register(Arc::new(Counting(BackendId::new("vaapi").unwrap(), vaapi_asked.clone())));
+        r.register(Fake::cpu("software"));
+        let t = task("video.decode", Family::CodecDecode);
+        let d = r.choose(&t).unwrap();
+        let chain = r.fallback_chain(&t, &d);
+        let routes: Vec<_> = chain.routes.iter().map(|x| (x.backend.as_str(), x.device.as_str())).collect();
+        assert_eq!(routes, vec![("nvdec", "gpu:renderd128"), ("software", "cpu")]);
+        assert_eq!(vaapi_asked.load(Ordering::Relaxed), 0, "VA-API is never probed after NVDEC works");
+        assert!(chain.ends_on_cpu(r.inventory()));
+
+        // a choice already on the CPU is not repeated
+        let r = router(Inventory::default(), Preferences::default());
+        let d = r.choose(&t).unwrap();
+        assert_eq!(r.fallback_chain(&t, &d).routes.len(), 1);
+        assert_eq!(r.cpu_route(&t).map(|x| x.backend.as_str().to_string()), Some("software".into()));
+    }
+
+    #[test]
+    fn a_backend_serves_only_its_families() {
+        struct DecodeOnly(BackendId);
+        impl Backend for DecodeOnly {
+            fn id(&self) -> &BackendId {
+                &self.0
+            }
+            fn devices<'a>(&self, inv: &'a Inventory) -> Vec<&'a Device> {
+                inv.devices().iter().filter(|d| d.kind == DeviceKind::Gpu).collect()
+            }
+            fn accepts(&self, _: &Task, _: &Device) -> Result<(), String> {
+                Ok(())
+            }
+            fn serves(&self, family: Family) -> bool {
+                family == Family::CodecDecode
+            }
+        }
+        let mut prefs = Preferences::default();
+        prefs.set(Family::CodecEncode, Preference::Automatic);
+        let mut r = Router::new(Table::builtin().unwrap(), intel_laptop(), prefs);
+        r.register(Arc::new(DecodeOnly(BackendId::new("vaapi").unwrap())));
+        r.register(Fake::cpu("software"));
+        assert_eq!(r.choose(&task("video.decode.hevc", Family::CodecDecode)).unwrap().backend.as_str(), "vaapi");
+        let enc = r.choose(&task("video.encode.h264", Family::CodecEncode)).unwrap();
+        assert_eq!(enc.backend.as_str(), "software");
+        let vaapi = enc.declined.iter().find(|x| x.backend.as_str() == "vaapi").unwrap();
+        assert_eq!(vaapi.reason, Reason::NotImplemented, "VA-API encoding is planned, not written");
     }
 
     #[test]

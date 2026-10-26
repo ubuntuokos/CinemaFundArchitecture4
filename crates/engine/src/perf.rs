@@ -60,12 +60,22 @@ pub fn export_json() -> Value {
     json!({"hardware": {"frames": hw.frames, "sessions": hw.sessions, "declined": hw.declined}, "stages": stages})
 }
 
+/// The compute router (ADR 0004): the chain chosen for each routed task (`chains`: the route that
+/// runs first, then its fallback, with every route passed over and why), the device inventory they
+/// were chosen on (`null` until the platform registered its backends), and the vendor-neutrality
+/// coverage of every family (`coverage`: implemented accelerators that run on any vendor's GPU,
+/// the vendor-locked ones, and the planned ones that close the gap).
+pub fn route_json() -> Value {
+    serde_json::to_value(cfa4_route::report::snapshot()).unwrap_or(Value::Null)
+}
+
 /// The engine's `perf.stats`.
 pub fn stats(s: &Session) -> Value {
     let running = s.jobs.iter().filter(|j| j.result.lock().map(|r| r.is_none()).unwrap_or(false)).count();
     json!({
         "decode": decode_json(),
         "export": export_json(),
+        "route": route_json(),
         "media": {"openSources": s.media.open_sources()},
         "jobs": {"total": s.jobs.len(), "running": running},
     })
@@ -114,6 +124,11 @@ mod tests {
         for k in ["setupMs", "loudnessMs", "renderMs", "encodeMs", "convertMs", "audioMs", "muxMs", "finishMs", "waitMs"] {
             assert!(v["export"]["stages"][k].is_number(), "export.stages.{k} in {v}");
         }
+        assert!(v["route"]["chains"].is_array(), "route.chains in {v}");
+        let coverage = v["route"]["coverage"].as_array().expect("route.coverage");
+        assert_eq!(coverage.len(), 5, "one row per family");
+        assert_eq!(coverage[0]["family"], "display");
+        assert!(coverage.iter().all(|c| c["vendor_neutral"].is_boolean()));
         assert!(v["media"]["openSources"].is_number());
         assert_eq!(v["jobs"]["running"], json!(0));
         assert_eq!(s.history.undo.len(), undo, "a query adds no undo step");

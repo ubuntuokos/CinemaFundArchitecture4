@@ -126,7 +126,7 @@ A `cfa4-route` az L1 rétegben van, munkaterületi függősége nincs (`serde`, 
 | Fázis | Tartalom | Kapu | Állapot |
 |---|---|---|---|
 | 0 | ADR 0004, `cfa4-route`: típusok, tábla, választás, tartalék, `/sys`-felmérés, álháttér-tesztek | CI zöld GPU nélkül | ez a PR |
-| 1 | A mai utak átköltöztetése: platform-gyársorrend, NVENC-kapcsoló, wgpu-adapterválasztás, #632 | a mai tesztek változatlanul zöldek | tervezett |
+| 1 | A mai utak átköltöztetése: platform-gyársorrend, NVENC-kapcsoló, wgpu-adapterválasztás, #632 | a mai tesztek változatlanul zöldek | részben kész: a Linux hardveres dekóder és az NVENC-export a routeren át, `perf.stats` → `route`; a wgpu-adapterválasztás és a #632 hátravan |
 | 2 | MI GPU-n: Burn Vulkan- és CUDA-háttér a Whisperhez és a Kokoróhoz | az MI-küszöbök teljesülnek az RTX A1000-en | tervezett |
 | 3 | Saját VA-API kódolás AMD-n és Intelen; kiegészítőként az FFmpeg 9, majd a GStreamer (ADR 0002, 3. lépés) | mérés Intel vagy AMD GPU-n | tervezett |
 | 4 | Intel NPU OpenVINO-val; AMD NPU egyelőre csak felismerés | teszt Intel NPU-s gépen | tervezett |
