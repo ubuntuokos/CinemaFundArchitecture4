@@ -179,7 +179,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 - **Have:** E-AC-3 (Dolby Digital Plus) in MP4, MOV, Matroska and MPEG-TS (#647): independent
   substream, 1–6 blocks per syncframe, spectral extension. Dolby TrueHD and MLP in raw files,
-  Matroska and MP4 (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate): lossless,
+  Matroska, MP4 and Blu-ray MPEG-TS (AC-3 core left out, #85) (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate): lossless,
   bit-exact against ffmpeg, the 7.1 / 5.1 bed of Atmos streams. MP1 / MP2 (MPEG audio Layer I / II):
   own decoder (#809) in raw files, MP4 and MOV (#800), MPEG-TS / PS and Matroska (`A_MPEG/L1` and `L2`, #1402), including the
   bit rate / mode combinations ISO/IEC 11172-3 disallows but ffmpeg writes (its mono default is
@@ -189,7 +189,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
 - **Missing:** Dolby Atmos object rendering (TrueHD's 16-channel presentation, E-AC-3 JOC),
-  TrueHD in MPEG-TS / Blu-ray (interleaved with its AC-3 core), free-format MPEG audio, E-AC-3 adaptive hybrid
+  free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling and the extra channels of 7.1 dependent substreams (played as the
   5.1 core), AVI (#598; listed as an extension but no
   demuxer), WMV / ASF, DV / DVCPRO / DV100, MPEG-4 Part 2, FLAC in MP4 (#603), camera RAW (R3D
