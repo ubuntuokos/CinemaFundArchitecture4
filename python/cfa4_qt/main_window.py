@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QTabBar,
     QTabWidget,
     QTextEdit,
+    QToolButton,
     QWidget,
 )
 
@@ -34,6 +35,7 @@ from .commands import Command, CommandRegistry
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, tr
+from .i18n import system_language as i18n_system_language
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -52,6 +54,8 @@ from .panels.properties import PropertiesPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.scopes import ScopesPanel
+from .panels.settings import MENU as SETTINGS_MENU
+from .panels.settings import PreferencesDialog
 from .panels.side import EventsPanel, HistoryPanel, LibrariesPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
@@ -730,6 +734,18 @@ class MainWindow(QMainWindow):
             lang.setObjectName("menu.View.Language")
             for a in self.lang_actions.actions():
                 lang.addAction(a)
+        edit = menus.get("menu.Edit")
+        if edit is not None:
+            edit.menu().addSeparator()
+            prefs = edit.menu().addMenu(tr("Preferences"))
+            prefs.setObjectName("menu.Edit.Preferences")
+            for page, label in SETTINGS_MENU:
+                a = prefs.addAction(tr(label))
+                a.setObjectName(f"app.settings.{page}")
+                if page == "general" and "Ctrl+," not in self.registry.claimed_keys:
+                    a.setShortcut(QKeySequence("Ctrl+,"))
+                a.triggered.connect(lambda _c=False, pg=page: self.open_settings(pg))
+        self._build_appearance_button()
         # Window, before Help as in the egui editor; the previous build's actions go first
         for action in getattr(self, "_window_actions", []):
             self.removeAction(action)
@@ -791,8 +807,100 @@ class MainWindow(QMainWindow):
                 theme.apply(theme.tokens_from_prefs(self.appearance))
                 for a in self.theme_actions.actions():
                     a.setChecked(a.data() == theme.current().kind)
+                self._update_appearance_button()
 
         self.engine.execute("prefs.get", {"key": "appearance"}, on_reply=got)
+
+    def _build_appearance_button(self) -> None:
+        """egui's header Appearance Mode button, at the menu bar's right: a click goes to the next
+        mode (Auto, Light, Dark), its context menu has Appearance Settings… and the favourite
+        themes."""
+        button = getattr(self, "appearance_button", None)
+        if button is None:
+            button = QToolButton(self.menuBar())
+            button.setObjectName("header.appearance")
+            button.setAutoRaise(True)
+            button.clicked.connect(self.next_appearance_mode)
+            button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            button.customContextMenuRequested.connect(lambda pos: self.appearance_menu().exec(button.mapToGlobal(pos)))
+            self.appearance_button = button
+        if self.menuBar().cornerWidget(Qt.Corner.TopRightCorner) is not button:
+            self.menuBar().setCornerWidget(button, Qt.Corner.TopRightCorner)
+        button.show()
+        self._update_appearance_button()
+
+    def _update_appearance_button(self) -> None:
+        button = getattr(self, "appearance_button", None)
+        if button is None:
+            return
+        mode = str(self.appearance.get("appearanceMode") or "dark")
+        icon, name = {"auto": ("🖥", tr("Sync with system")), "light": ("☀", tr("Light"))}.get(mode, ("☾", tr("Dark")))
+        button.setText(icon)
+        button.setToolTip(f"{tr('Appearance Mode')}: {name}")
+
+    def appearance_menu(self) -> QMenu:
+        """Appearance Settings… and the favourite themes, light ones first (egui's
+        ``appearance_context_menu``)."""
+        menu = QMenu(self)
+        menu.setObjectName("header.appearance.menu")
+        a = menu.addAction(tr("Appearance Settings…"))
+        a.setObjectName("header.appearance.settings")
+        a.triggered.connect(lambda: self.open_settings("appearance"))
+        favourites = [str(x) for x in self.appearance.get("favoriteThemes") or [] if isinstance(x, str)]
+        for group in (("light",), ("darkest", "dark")):
+            items = [(k, label) for k, label in theme.THEMES if k in group and k in favourites]
+            if items:
+                menu.addSeparator()
+            for k, label in items:
+                act = menu.addAction(tr(label))
+                act.setObjectName(f"header.appearance.theme.{k}")
+                act.setCheckable(True)
+                act.setChecked(theme.current().kind == k)
+                act.triggered.connect(lambda _c=False, name=k: self.set_theme(name))
+        self.last_menu = menu
+        return menu
+
+    def open_settings(self, page: str = "general") -> PreferencesDialog:
+        """Edit ▸ Preferences ▸ <category> (egui's ``app.settings.<category>``)."""
+        dialog = PreferencesDialog(self, self.engine, page, devices=self.audio_devices, memory=self.memory_usage)
+        dialog.applied.connect(self._settings_applied)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.settings_dialog = dialog
+        self.last_dialog = dialog
+        dialog.open()
+        return dialog
+
+    def _settings_applied(self, changes: dict[str, Any]) -> None:
+        self.load_appearance()
+        lang = changes.get("general.interfaceLanguage")
+        if isinstance(lang, str):
+            code = i18n_system_language() if lang == "system" else lang
+            if code in LANGUAGES and code != TR.language:
+                self.set_language(code)
+        self.schedule_refresh()
+
+    def audio_devices(self) -> dict[str, Any]:
+        """The audio devices Qt reports, for Settings ▸ Audio Hardware."""
+        try:
+            from PySide6.QtMultimedia import QMediaDevices
+        except ImportError:
+            return {}
+        outputs = QMediaDevices.audioOutputs()
+        default = QMediaDevices.defaultAudioOutput()
+        return {
+            "hosts": [],
+            "inputs": [d.description() for d in QMediaDevices.audioInputs()],
+            "outputs": [d.description() for d in outputs],
+            "outputChannels": default.maximumChannelCount() if not default.isNull() else 0,
+        }
+
+    def memory_usage(self) -> int:
+        """Bytes of decoded pictures held for the Timeline, Project panel and Source monitor."""
+        total = 0
+        for media in (self.timeline.canvas.media, self.project_panel.media, self.source_monitor.media):
+            for img in list(getattr(media, "thumbs", {}).values()):
+                total += img.sizeInBytes() if img is not None else 0
+        return total
 
     def set_theme(self, name: str) -> None:
         """View ▸ Appearance ▸ Darkest / Dark / Light (egui's view.theme.*): that theme, and the

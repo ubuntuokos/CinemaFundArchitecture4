@@ -925,6 +925,129 @@ def test_engine_that_dies_does_not_block_the_gui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_path: Path):
+    """egui's Preferences: Edit ▸ Preferences ▸ <category> opens the dialog on that page (laid out
+    from the engine's schema: groups, notes, indented fields enabled by their switch); edits are a
+    draft, Cancel drops them, OK applies them with one prefs.set, Reset… puts the page's defaults
+    back. Appearance: mode, theme cards with favourite stars; the header's appearance button goes
+    to the next mode and its menu lists the favourite themes."""
+    from cfa4_qt import theme
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])
+    from cfa4_qt.main_window import MainWindow
+
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+
+    def pref(key: str):
+        got: list = []
+        engine.execute("prefs.get", {"key": key}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: bool(got), 10_000)
+        return got[0]
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def opened(page: str):
+        action = win.menuBar().findChild(QtGui.QAction, f"app.settings.{page}")
+        assert action is not None, page
+        action.trigger()
+        d = win.settings_dialog
+        assert wait_until(app, lambda: d.ready and d.findChild(QtWidgets.QWidget, f"settings.page.{page}") is not None, 10_000)
+        return d
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert win.menuBar().findChild(QtGui.QAction, "app.settings.general").shortcut().toString() == "Ctrl+,"
+        d = opened("timeline")
+        assert d.objectName() == "settings" and d.findChild(QtWidgets.QPushButton, "settings.category.timeline").isChecked()
+        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 16
+        scroll = d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll")
+        scroll.setCurrentIndex(scroll.findData("smoothScroll"))
+        d.findChild(QtWidgets.QPushButton, "settings.cancel").click()
+        assert pref("timeline.autoScroll") == "pageScroll"
+        d = opened("timeline")
+        scroll = d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll")
+        scroll.setCurrentIndex(scroll.findData("smoothScroll"))
+        d.findChild(QtWidgets.QCheckBox, "settings.timeline.focusTimelineOnEdit").setChecked(True)
+        d.findChild(QtWidgets.QAbstractSpinBox, "settings.timeline.stillImageDuration").setValue(7)
+        # a seconds unit turns the field into seconds with decimals
+        unit = d.findChild(QtWidgets.QComboBox, "settings.timeline.videoTransitionUnit")
+        unit.setCurrentIndex(unit.findData("seconds"))
+        assert isinstance(d.findChild(QtWidgets.QDoubleSpinBox, "settings.timeline.videoTransitionDuration"), QtWidgets.QDoubleSpinBox)
+        d.findChild(QtWidgets.QPushButton, "settings.ok").click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert (pref("timeline.autoScroll"), pref("timeline.focusTimelineOnEdit"), pref("timeline.stillImageDuration")) == ("smoothScroll", True, 7)
+        assert pref("timeline.videoTransitionUnit") == "seconds"
+        # Reset… puts the page's defaults back (OK applies them)
+        d = opened("timeline")
+        d.findChild(QtWidgets.QPushButton, "settings.reset").click()
+        assert d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll").currentData() == "pageScroll"
+        d.findChild(QtWidgets.QPushButton, "settings.ok").click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert pref("timeline.autoScroll") == "pageScroll"
+        # Auto Save: groups, a note, and indented fields enabled by their switch
+        d = opened("autoSave")
+        page = d.findChild(QtWidgets.QWidget, "settings.page.autoSave")
+        assert [g.title() for g in page.findChildren(QtWidgets.QGroupBox)] == ["Local Projects", "Crash Recovery"]
+        interval = d.findChild(QtWidgets.QSpinBox, "settings.autoSave.intervalMinutes")
+        assert interval.isEnabled()
+        d.findChild(QtWidgets.QCheckBox, "settings.autoSave.enabled").setChecked(False)
+        assert not interval.isEnabled()
+        # a page that is another category's goes there from the list
+        d.findChild(QtWidgets.QPushButton, "settings.category.mediaCache").click()
+        assert wait_until(app, lambda: d.findChild(QtWidgets.QPushButton, "settings.mediaCache.clean") is not None, 5_000)
+        d.findChild(QtWidgets.QPushButton, "settings.mediaCache.clean").click()
+        assert wait_until(app, lambda: d.findChild(QtWidgets.QLabel, "settings.message") is not None, 10_000)
+        assert "Deleted" in d.findChild(QtWidgets.QLabel, "settings.message").text()
+        d.findChild(QtWidgets.QPushButton, "settings.cancel").click()
+        assert pref("autoSave.enabled") is True
+        # Labels: a renamed label, Revert takes the preset's names back
+        d = opened("labels")
+        name = d.findChild(QtWidgets.QLineEdit, "settings.labels.colors.violet.name")
+        assert wait_until(app, lambda: d.findChild(QtWidgets.QToolButton, "settings.labelPresets.revert") is not None, 10_000)
+        name.setText("Hero")
+        name.textEdited.emit("Hero")
+        d.select_page("labels")
+        revert = d.findChild(QtWidgets.QToolButton, "settings.labelPresets.revert")
+        assert revert.isEnabled()
+        revert.click()
+        assert d.findChild(QtWidgets.QLineEdit, "settings.labels.colors.violet.name").text() == "Violet"
+        d.findChild(QtWidgets.QPushButton, "settings.cancel").click()
+        # Appearance from the header button's menu: a favourite star and the dark theme
+        menu = win.appearance_menu()
+        next(a for a in menu.actions() if a.objectName() == "header.appearance.settings").trigger()
+        d = win.settings_dialog
+        assert wait_until(app, lambda: d.ready and d.findChild(QtWidgets.QWidget, "settings.page.appearance") is not None, 10_000)
+        assert d.findChild(QtWidgets.QWidget, "settings.appearance.darkTheme.active") is not None
+        d.findChild(QtWidgets.QToolButton, "settings.favorite.light").click()
+        d.findChild(QtWidgets.QRadioButton, "settings.appearance.darkTheme.dark").click()
+        assert d.findChild(QtWidgets.QToolButton, "settings.favorite.light").text() == "★"
+        d.findChild(QtWidgets.QPushButton, "settings.ok").click()
+        assert wait_until(app, lambda: theme.current().kind == "dark", 10_000)
+        assert pref("appearance.favoriteThemes") == ["light"]
+        menu = win.appearance_menu()
+        light = next(a for a in menu.actions() if a.objectName() == "header.appearance.theme.light")
+        light.trigger()
+        assert wait_until(app, lambda: theme.current().kind == "light", 10_000)
+        # the header button goes to the next Appearance Mode
+        button = win.menuBar().cornerWidget(QtCore.Qt.Corner.TopRightCorner)
+        assert button.objectName() == "header.appearance" and button.isVisible()
+        before = pref("appearance.appearanceMode")
+        button.click()
+        assert wait_until(app, lambda: pref("appearance.appearanceMode") != before, 10_000)
+    finally:
+        theme.apply(theme.DARKEST)
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes(app, tmp_path: Path):
     """An engine that stops unexpectedly is restarted at once (on the project that was open); the
     new one offers the dead one's unsaved changes from the recovery journal, and recovering brings
