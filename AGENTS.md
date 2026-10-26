@@ -134,8 +134,14 @@ reproduce an image (for example, point lists traced from someone else's icon).
    `crates/media`, procedural looks in `crates/render`) are original work under the project licence
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
-8. **No trademark exceptions.** No non-open asset is allowed, and third-party marks (Adobe, Discord,
-   GitHub and other logos) stay out; draw a generic icon instead.
+8. **The one exception: the CFA4 logo.** The CFA4 name, emblem, wordmark and every file depicting them
+   (`assets/cfa4/cfa4-official-logo.png`, `assets/cfa4/hicolor/**`, `apps/cfa4-web/web/favicon.svg`)
+   are the project owner's own mark, NOT under the GPL; their terms are in
+   [`assets/cfa4/LICENSE-logo.txt`](assets/cfa4/LICENSE-logo.txt) (`LicenseRef-CFA4-Logo`). Use them
+   only unmodified (scaling and format conversion are fine), derive new variants only from the master
+   and record them with that licence in the sidecar and `ATTRIBUTION.md`. No other non-open asset is
+   allowed, and third-party marks (Adobe, Discord, GitHub, upstream and other logos) stay out; draw a
+   generic icon instead.
 9. **Fonts live in an external font directory, never in this
    repo.** Don't commit new font files (the small Latin UI fonts already in `assets/fonts/` stay). A
    font CFA4 needs is added to extra-fonts, which the app reads through the optional build input

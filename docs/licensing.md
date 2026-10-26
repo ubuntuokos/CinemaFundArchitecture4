@@ -20,6 +20,8 @@
   az alapcsomag nélkülük épül és működik; a felhasználó kifejezett kérésére a
   `cfa4-restricted-extras` kiegészítő csomag telepíti őket (pl. x264, x265). Ez minden jövőbeli
   hasonló esetben a követendő út. A CFA4 saját kodekjei az alapcsomagban maradnak. Részletek: 7. pont.
+- A **CFA4 logó** (név, embléma, szóvédjegy, ikonok) István saját, védett jele, **nem** GPL alatti; a
+  feltételek: [`assets/cfa4/LICENSE-logo.txt`](../assets/cfa4/LICENSE-logo.txt). A kód GPL marad.
 
 *Ez a dokumentum projektszabályzat, nem jogi tanácsadás. Kereskedelmi kiadás előtt érdemes
 jogásszal átnézetni.*
@@ -55,6 +57,15 @@ the code to be combined into a GPL-3.0-or-later work. The obligations that remai
 
 The upstream name, wordmark and logos are trademarks, not covered by any of these licences; they
 have been removed from CFA4 and must not be reintroduced (see `AGENTS.md`).
+
+### The CFA4 logo
+
+The CFA4 name, emblem and wordmark are the project owner's own mark (owner decision 2026-10-25) and
+are **not** under GPL-3.0-or-later; the code stays GPL. Every file depicting them is licensed under
+[`assets/cfa4/LICENSE-logo.txt`](../assets/cfa4/LICENSE-logo.txt) (`LicenseRef-CFA4-Logo`): it may be
+kept in copies of the repository, used in official builds and documentation and shipped in
+unmodified CFA4 packages, but only unmodified; forks and modified versions must remove or replace
+it and must not call themselves CFA4.
 
 ## 3. What code may be reused
 
