@@ -1086,7 +1086,7 @@ def test_real_engine_insert_while_program_plays_edits_at_the_shown_playhead(app,
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
-def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tmp_path: Path):
+def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tmp_path: Path, monkeypatch):
     """Voice-over as egui's: the audio track header's microphone records on that track (its menu
     opens Voice-Over Record Settings), playback starts the pre-roll before the playhead with the
     countdown overlay, the captured input channel is streamed to the engine, and stopping places
@@ -1196,6 +1196,23 @@ def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tm
         assert not win.monitor.playing
         wait_until(app, lambda: False, 300)
         assert [c.get("name") for c in last_items()] == ["Voice-over 1.wav"]
+        # closing the window while recording places the take first, so the unsaved-changes
+        # question includes it (Cancel keeps the window)
+        win.invoke("voiceover.recordToggle")
+        assert wait_until(app, lambda: rec.recording and win.monitor.playing, 10_000)
+        wait_until(app, lambda: False, 1500)
+        asked: list = []
+
+        def answer(box) -> QtWidgets.QMessageBox.StandardButton:
+            asked.append((box.objectName(), rec.busy, sum("Voice-over recorded" in m for m, _e in messages)))
+            return QtWidgets.QMessageBox.StandardButton.Cancel
+
+        monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+        win.close()
+        assert wait_until(app, lambda: bool(asked), 15_000), messages
+        assert asked[0] == ("dialog.unsaved", False, 2), asked
+        assert win.isVisible()
+        assert wait_until(app, lambda: [c.get("name") for c in last_items()] == ["Voice-over 1.wav", "Voice-over 2.wav"], 10_000), last_items()
     finally:
         win._quit_confirmed = True
         win.close()

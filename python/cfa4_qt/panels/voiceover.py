@@ -180,6 +180,8 @@ class VoiceOverRecorder(QObject):
         self.level = 0.0  # the input's peak since the mixer last took it (linear)
         self._starting = False
         self._stopping = False
+        # run once the take in progress is placed (before the project is replaced or the window closes)
+        self._after: list[Callable[[], None]] = []
         self.timer = QTimer(self)
         self.timer.setInterval(FEED_MS)
         self.timer.timeout.connect(self._tick)
@@ -189,6 +191,32 @@ class VoiceOverRecorder(QObject):
     @property
     def recording(self) -> bool:
         return self.rec is not None
+
+    @property
+    def busy(self) -> bool:
+        """A take is starting, recording or being saved."""
+        return self.rec is not None or self._starting or self._stopping
+
+    def finish_then(self, then: Callable[[], None]) -> None:
+        """Finish the take (it is placed in this project), then ``then``; at once when there is
+        none. A take whose save fails keeps ``then`` from running: the error is shown and the take
+        can be saved or discarded first."""
+        if not self.busy:
+            then()
+            return
+        self._after.append(then)
+        if self._starting:
+            return  # _started finishes it at once
+        if self.rec is not None and not self._stopping:
+            if self.monitor.playing:
+                self.monitor.stop()  # finishes the take (playback_stopped)
+            else:
+                self.finish()
+
+    def _run_after(self) -> None:
+        after, self._after = self._after, []
+        for then in after:
+            then()
 
     def announce(self, rate: int = 48_000) -> None:
         """Tell the engine which inputs Qt sees, so ``audio.voiceover.settings`` lists them (for
@@ -222,6 +250,7 @@ class VoiceOverRecorder(QObject):
             self.capture.stop()
             self.capture = None
         self.message.emit(error, True)
+        self._run_after()
 
     def _open(self, settings: Any, track: Any) -> None:
         vo = settings.get("settings") if isinstance(settings, dict) else None
@@ -249,9 +278,13 @@ class VoiceOverRecorder(QObject):
     def _started(self, r: Any) -> None:
         self._starting = False
         if not isinstance(r, dict) or self.capture is None:
+            self._run_after()
             return
         self.rec = r
         self.track = str(r.get("track") or "") or None
+        if self._after:  # the project is about to be replaced or the window closed: nothing to record
+            self.finish()
+            return
         start = int(r.get("captureStart") or 0)
         mon = self.monitor
         mon.free_run = True  # a take keeps playing (and recording) into the empty timeline past the end
@@ -284,10 +317,12 @@ class VoiceOverRecorder(QObject):
         else:
             self.message.emit(tr("Voice-over recording stopped (nothing recorded)"), False)
         self.refresh.emit()
+        self._run_after()
 
     def _failed_stop(self, error: str) -> None:
         # the engine keeps the take: stopping again retries the save
         self._stopping = False
+        self._after.clear()
         self.message.emit(error, True)
 
     def discard(self, done: Callable[[], None] | None = None) -> None:

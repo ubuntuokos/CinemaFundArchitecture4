@@ -286,3 +286,19 @@ fn countdown_cues_are_mixed_into_the_programme_while_recording() {
     assert_eq!(loud(&block[0]), 0, "cues off");
     s.execute("audio.voiceover.stop", json!({"discard": true})).unwrap();
 }
+
+#[test]
+fn replacing_the_project_drops_the_take_in_progress() {
+    let (mut s, track, _) = demo();
+    s.execute("audio.voiceover.start", json!({"track": track, "preroll": 0})).unwrap();
+    assert!(s.voiceover.recording());
+    // the same ids exist in the next demo project: the take must not land there
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    assert!(!s.voiceover.recording());
+    assert!(s.execute("audio.voiceover.stop", json!({"time": sec(2.0)})).is_err());
+    let before = s.project.clone();
+    s.execute("audio.voiceover.start", json!({"preroll": 0})).unwrap();
+    s.execute("file.newProject", json!({"name": "Next"})).unwrap();
+    assert!(!s.voiceover.recording(), "a new project drops it too");
+    assert_ne!(before.name, s.project.name);
+}

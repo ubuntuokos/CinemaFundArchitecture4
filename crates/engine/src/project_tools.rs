@@ -679,6 +679,7 @@ fn new_from_template(s: &mut Session, p: &Value) -> Result<Value> {
     proj.root.name = name;
     s.project = std::sync::Arc::new(proj);
     s.history = Default::default();
+    s.voiceover.abandon();
     s.history.limit = 200;
     s.state = Session::default().state;
     s.state.active_sequence = s.project.sequences().next().map(|i| i.id);

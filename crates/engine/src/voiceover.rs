@@ -256,6 +256,18 @@ impl VoiceOver {
     pub fn recording(&self) -> bool {
         self.rec.is_some()
     }
+    /// The project is being replaced: a take in progress (or one stopped but not saved) is
+    /// dropped, as its sequence and track ids mean other things, or nothing, in the next project.
+    pub fn abandon(&mut self) {
+        if self.rec.is_some() {
+            if let Some(input) = self.input.as_mut() {
+                input.stop();
+            }
+            self.rec = None;
+        }
+        self.pending_stop = None;
+        self.captured.clear();
+    }
     fn input(&mut self) -> &mut Box<dyn AudioInput> {
         self.input.get_or_insert_with(|| Box::new(SyntheticInput::clicks()))
     }

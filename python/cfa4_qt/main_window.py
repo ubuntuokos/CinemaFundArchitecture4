@@ -1243,6 +1243,10 @@ class MainWindow(QMainWindow):
             else:
                 self.source_monitor.step(int(step))
             return
+        if cmd.id in REPLACES_PROJECT and self.voiceover.busy:
+            # a take is placed in the project it was recorded for, before that project goes
+            self.voiceover.finish_then(lambda: self.run_command(cmd, unsaved_ok))
+            return
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
             self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
             return
@@ -1759,6 +1763,11 @@ class MainWindow(QMainWindow):
         return super().event(e)
 
     def closeEvent(self, e: QCloseEvent) -> None:
+        if self.engine.running and not self._quit_confirmed and self.voiceover.busy:
+            # the take goes into the project first, so the unsaved-changes check includes it
+            e.ignore()
+            self.voiceover.finish_then(self.close)
+            return
         if self.engine.running and not self._quit_confirmed:
             e.ignore()
 
