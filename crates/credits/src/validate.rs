@@ -278,7 +278,10 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
             if text.trim().is_empty() {
                 continue;
             }
-            let first_line = text.lines().next().unwrap_or("").chars().take(40).collect::<String>();
+            let first_line = {
+                let line = text.lines().next().unwrap_or("");
+                if line.chars().count() > 40 { format!("{}…", line.chars().take(39).collect::<String>().trim_end()) } else { line.to_string() }
+            };
             let size = float_of(e, "size");
             if size > 0.0 && size < MIN_TEXT_PX * s {
                 out.add(
