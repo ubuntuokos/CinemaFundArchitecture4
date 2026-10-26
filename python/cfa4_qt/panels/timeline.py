@@ -23,6 +23,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBoxLayout, QWidget
 
+from .. import theme
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
 from .timeline_media import TimelineMedia
@@ -293,7 +294,8 @@ class TimelineCanvas(QWidget):
     def paintEvent(self, _event: QPaintEvent) -> None:
         p = QPainter(self)
         pal = self.palette()
-        p.fillRect(self.rect(), pal.base())
+        T = theme.current()
+        p.fillRect(self.rect(), T.c("tl_bg"))
         if not self.sequence:
             p.setPen(pal.text().color())
             p.drawText(
@@ -309,8 +311,8 @@ class TimelineCanvas(QWidget):
         p.setFont(self.font_small)
         for row in self.rows:
             band = QRect(HEADER_W, row.top, self.width() - HEADER_W, row.height)
-            p.fillRect(band, pal.alternateBase() if row.kind == "video" else pal.base())
-            p.setPen(QPen(pal.mid().color()))
+            p.fillRect(band, T.c("tl_track_bg_alt") if row.kind == "video" else T.c("tl_track_bg"))
+            p.setPen(QPen(T.c("separator")))
             p.drawLine(HEADER_W, row.top + row.height - 1, self.width(), row.top + row.height - 1)
             if row.track.get("locked"):
                 p.fillRect(band, QBrush(QColor(128, 128, 128, 90), Qt.BrushStyle.BDiagPattern))
@@ -334,7 +336,7 @@ class TimelineCanvas(QWidget):
                     p.setPen(QPen(QColor("#ffffff"), 1, Qt.PenStyle.DashLine))
                     p.drawRect(ghost)
                 pen = QPen(
-                    QColor("#ffd54a") if clip.get("clip") in selected else base.darker(160),
+                    T.c("clip_selected_border") if clip.get("clip") in selected else base.darker(160),
                     2 if clip.get("clip") in selected else 1,
                 )
                 self._paint_clip_media(p, row, clip, r, base)
@@ -361,15 +363,15 @@ class TimelineCanvas(QWidget):
         # playhead
         x = self.x_of(self.playhead)
         if x >= HEADER_W:
-            p.setPen(QPen(QColor("#e8453c"), 1))
+            p.setPen(QPen(T.c("playhead"), 1))
             p.drawLine(int(x), 0, int(x), self.height())
-            p.setBrush(QColor("#e8453c"))
+            p.setBrush(T.c("playhead"))
             p.drawPolygon([QPoint(int(x) - 6, 0), QPoint(int(x) + 6, 0), QPoint(int(x), 9)])
 
     def _paint_ruler(self, p: QPainter) -> None:
-        pal = self.palette()
-        p.fillRect(QRect(0, 0, self.width(), RULER_H), pal.window())
-        p.setPen(pal.windowText().color())
+        T = theme.current()
+        p.fillRect(QRect(0, 0, self.width(), RULER_H), T.c("tl_ruler_bg"))
+        p.setPen(T.c("tl_ruler_text"))
         p.setFont(self.font_small)
         ft = self.frame_ticks()
         label_w = QFontMetrics(self.font_small).horizontalAdvance("00:00:00:00") + 16
@@ -381,7 +383,9 @@ class TimelineCanvas(QWidget):
             x = self.x_of(t)
             if x < HEADER_W:
                 continue
+            p.setPen(T.c("tl_ruler_tick"))
             p.drawLine(int(x), RULER_H - 8, int(x), RULER_H)
+            p.setPen(T.c("tl_ruler_text"))
             p.drawText(int(x) + 3, RULER_H - 10, format_timecode(t, ft))
         for marker in self.sequence.get("markers") or [] if self.sequence else []:
             x = self.x_of(int(marker.get("start") or 0))
@@ -395,13 +399,13 @@ class TimelineCanvas(QWidget):
                 x1 = self.x_of(mo if isinstance(mo, int) else self.duration)
                 p.fillRect(
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
-                    QColor(90, 150, 255, 160),
+                    T.c("in_out_shade"),
                 )
 
     def _paint_corner(self, p: QPainter) -> None:
-        pal = self.palette()
-        p.fillRect(QRect(0, 0, HEADER_W, RULER_H), pal.window())
-        p.setPen(pal.windowText().color())
+        T = theme.current()
+        p.fillRect(QRect(0, 0, HEADER_W, RULER_H), T.c("tl_header_bg"))
+        p.setPen(T.c("timecode"))
         p.setFont(self.font_small)
         p.drawText(
             QRect(6, 0, HEADER_W - 6, RULER_H),
@@ -429,8 +433,9 @@ class TimelineCanvas(QWidget):
 
     def _paint_headers(self, p: QPainter) -> None:
         pal = self.palette()
-        p.fillRect(QRect(0, 0, HEADER_W, self.height()), pal.window())
-        accent = QColor("#3d6fd6")
+        T = theme.current()
+        p.fillRect(QRect(0, 0, HEADER_W, self.height()), T.c("tl_header_bg"))
+        accent = T.c("track_target")
         for row in self.rows:
             r = QRect(0, row.top, HEADER_W - 1, row.height)
             p.fillRect(r.adjusted(2, 1, -2, -1), pal.button())

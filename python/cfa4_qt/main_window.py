@@ -9,9 +9,19 @@ from typing import Any
 
 from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
-from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMenu, QMessageBox, QTabBar, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QDockWidget,
+    QLabel,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QTabBar,
+    QTabWidget,
+    QWidget,
+)
 
-from . import __version__
+from . import __version__, theme
 from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
@@ -44,6 +54,7 @@ DOCK_PLAN = (
     ("Audio Meters", Qt.DockWidgetArea.BottomDockWidgetArea),
 )
 TOOLS_W = 46  # the Tools strip, as egui's
+COMPACT_PANELS = ("Tools", "Audio Meters")  # egui's compact panels: no tab strip, a slim grip
 METERS_W = 116  # the Audio Meters right of the Timeline, as egui's
 
 # engine playhead commands that act on the Source monitor's playhead when it has the focus
@@ -98,6 +109,9 @@ class MainWindow(QMainWindow):
         self._closing = False
         self._quit_confirmed = False
 
+        # egui's Darkest until the engine says which theme Settings ▸ Appearance selects
+        theme.apply(theme.DARKEST)
+        self.appearance: dict[str, Any] = {}
         self.monitor = ProgramMonitor(engine, self)
         self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
@@ -125,6 +139,8 @@ class MainWindow(QMainWindow):
             | QMainWindow.DockOption.AllowNestedDocks
             | QMainWindow.DockOption.AnimatedDocks
         )
+        # panel tabs along the top, as egui's (and Premiere's)
+        self.setTabPosition(Qt.DockWidgetArea.AllDockWidgetAreas, QTabWidget.TabPosition.North)
         self.docks: dict[str, QDockWidget] = {}
         widgets = {
             "Source": self.source_monitor,
@@ -190,6 +206,7 @@ class MainWindow(QMainWindow):
             self.restoreState(self._default_state, LAYOUT_VERSION)
             self._fit_pending = True
         self._update_title()
+        self._titles_later()
 
     @staticmethod
     def arrange_default(win: QMainWindow, d: dict[str, QDockWidget]) -> None:
@@ -215,6 +232,7 @@ class MainWindow(QMainWindow):
         (Qt 6.10.3+) or can crash once it is shown (Qt 6.10.2); restoring a state is clean."""
         helper = QMainWindow()
         helper.setDockOptions(self.dockOptions())
+        helper.setTabPosition(Qt.DockWidgetArea.AllDockWidgetAreas, QTabWidget.TabPosition.North)
         helper.setCentralWidget(QWidget(helper))
         helper.resize(1440, 900)
         stand_ins: dict[str, QDockWidget] = {}
@@ -265,6 +283,7 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(0, self, self.fit_default_sizes)
         self._retire_tab_bars(before)
         QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
+        self._titles_later()
 
     def _retire_tab_bars(self, old: set[QTabBar]) -> None:
         """restoreState() on a window that is on screen makes new tab bars and leaves the old
@@ -285,7 +304,43 @@ class MainWindow(QMainWindow):
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
         self.docks[name] = dock
+        dock.dockLocationChanged.connect(lambda _a: self._titles_later())
+        dock.topLevelChanged.connect(lambda _f: self._titles_later())
+        dock.visibilityChanged.connect(lambda _v: self._titles_later())
         return dock
+
+    def _titles_later(self) -> None:
+        if getattr(self, "_titles_pending", False):
+            return
+        try:  # docks also report while the window is being destroyed
+            QTimer.singleShot(0, self, self.update_dock_titles)
+        except RuntimeError:
+            return
+        self._titles_pending = True
+
+    def update_dock_titles(self) -> None:
+        """egui shows a panel's name once, on its tab: a panel in a tab group has no title bar of
+        its own (its tab names it and drags it), the narrow Tools and Audio Meters panels a slim
+        grip instead (egui's compact panels); a panel alone or floating keeps its title bar."""
+        self._titles_pending = False
+        for name, dock in self.docks.items():
+            if dock.isFloating():
+                mode = "title"
+            elif name in COMPACT_PANELS:
+                mode = "grip"
+            else:
+                mode = "tab" if self.tabifiedDockWidgets(dock) else "title"
+            if dock.property("titleMode") == mode:
+                continue
+            dock.setProperty("titleMode", mode)
+            if mode == "title":
+                dock.setTitleBarWidget(None)
+            else:
+                bar = QWidget(dock)
+                bar.setObjectName(f"dock.{name}.{mode}")
+                bar.setFixedHeight(6 if mode == "grip" else 0)
+                bar.setToolTip(tr(name))
+                dock.setTitleBarWidget(bar)
 
     # ----- actions owned by the Qt GUI (view, playback, help) -----
     def _build_local_actions(self) -> None:
@@ -317,6 +372,17 @@ class MainWindow(QMainWindow):
             a.setObjectName(f"qt.playback.{name}")
             a.triggered.connect(slot)
             self.shuttle_actions.append((a, keys))
+        self.theme_actions = QActionGroup(self)
+        for name, label in theme.THEMES:
+            a = QAction(tr(label), self, checkable=True)
+            a.setObjectName(f"view.theme.{name}")
+            a.setData(name)
+            a.setChecked(name == theme.current().kind)
+            a.triggered.connect(lambda _c=False, n=name: self.set_theme(n))
+            self.theme_actions.addAction(a)
+        self.next_mode_action = QAction(tr("Next Appearance Mode"), self)
+        self.next_mode_action.setObjectName("view.appearanceMode.next")
+        self.next_mode_action.triggered.connect(self.next_appearance_mode)
         self.lang_actions = QActionGroup(self)
         for code, name in LANGUAGES.items():
             a = QAction(name, self, checkable=True)
@@ -352,6 +418,11 @@ class MainWindow(QMainWindow):
             view.menu().addSeparator()
             build_view_menu(view.menu(), self.focused_monitor)
             view.menu().addSeparator()
+            appearance = view.menu().addMenu(tr("Appearance"))
+            appearance.setObjectName("menu.View.Appearance")
+            for a in self.theme_actions.actions():
+                appearance.addAction(a)
+            appearance.addAction(self.next_mode_action)
             lang = view.menu().addMenu(tr("Language"))
             lang.setObjectName("menu.View.Language")
             for a in self.lang_actions.actions():
@@ -400,10 +471,46 @@ class MainWindow(QMainWindow):
         self.status_engine.setText(str(hello.get("engine") or "engine"))
         self.engine.call("engine.commands", on_reply=self._on_commands)
         self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
+        self.load_appearance()
         self.refresh()
         recovery = hello.get("recovery")
         if isinstance(recovery, list) and recovery and isinstance(recovery[0], dict):
             QTimer.singleShot(0, lambda c=recovery[0]: self._offer_recovery(c))
+
+    # ----- appearance -----
+    def load_appearance(self) -> None:
+        """Take the theme from the engine's Settings ▸ Appearance (shared with egui)."""
+
+        def got(result: Any, _data: bytes | None) -> None:
+            if isinstance(result, dict):
+                value = result.get("value", result)
+                self.appearance = value if isinstance(value, dict) else {}
+                theme.apply(theme.tokens_from_prefs(self.appearance))
+                for a in self.theme_actions.actions():
+                    a.setChecked(a.data() == theme.current().kind)
+
+        self.engine.execute("prefs.get", {"key": "appearance"}, on_reply=got)
+
+    def set_theme(self, name: str) -> None:
+        """View ▸ Appearance ▸ Darkest / Dark / Light (egui's view.theme.*): that theme, and the
+        Appearance Mode of its family."""
+        self.engine.execute(
+            "prefs.set",
+            {"key": "appearance.colorTheme", "value": name},
+            on_reply=lambda _r, _b: self.load_appearance(),
+            on_error=lambda m: self.events.log(m, error=True),
+        )
+
+    def next_appearance_mode(self) -> None:
+        """View ▸ Appearance ▸ Next Appearance Mode: Auto, Light, Dark, then Auto again."""
+        mode = str(self.appearance.get("appearanceMode") or "dark")
+        nxt = {"auto": "light", "light": "dark"}.get(mode, "auto")
+        self.engine.execute(
+            "prefs.set",
+            {"key": "appearance.appearanceMode", "value": nxt},
+            on_reply=lambda _r, _b: self.load_appearance(),
+            on_error=lambda m: self.events.log(m, error=True),
+        )
 
     def _offer_recovery(self, cand: dict[str, Any]) -> None:
         """Unsaved changes of a session that died: Recover / Not Now / Discard (as egui)."""

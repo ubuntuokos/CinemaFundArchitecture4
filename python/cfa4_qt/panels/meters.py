@@ -18,6 +18,7 @@ from PySide6.QtCore import QElapsedTimer, QPointF, QRectF, QSizeF, Qt, QTimer
 from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from .. import theme
 from ..i18n import tr
 
 FLOOR = -90.0
@@ -27,11 +28,6 @@ SCALE_PX = 11
 READOUT_PX = 12
 
 # egui's colours (theme.rs / widgets.rs meter_bar)
-METER_BG = QColor(0, 0, 0)
-READOUT_BG = QColor(0x14, 0x14, 0x14)
-TEXT = QColor(0xD0, 0xD0, 0xD0)
-TEXT_DIM = QColor(0x8C, 0x8C, 0x8C)
-HOT_TEXT = QColor(0x40, 0x96, 0xF3)
 TP_OVER = QColor(0xE0, 0x50, 0x40)
 RED = QColor(0xE3, 0x48, 0x50)
 YELLOW = QColor(0xF0, 0xF0, 0x4F)
@@ -272,33 +268,35 @@ class AudioMetersPanel(QWidget):
     # ----- drawing -----
     def paintEvent(self, e: QPaintEvent) -> None:
         p = QPainter(self)
+        T = theme.current()
+        text_color, text_dim, hot = T.c("text"), T.c("text_dim"), T.c("hot_text")
         rect = QRectF(self.rect())
         names = channel_names(len(self.levels))
         pt = parts(rect, names)
         area = pt.area
         if pt.readout is not None:
             lr, units = pt.readout
-            p.fillRect(lr, READOUT_BG)
+            p.fillRect(lr, T.c("meter_readout_bg"))
             m, s, i, tp = (self.loudness + [None] * 4)[:4]
             values = {"M": m, "S": s, "I": i, "TP": tp}
             over = isinstance(tp, (int, float)) and tp > -1.0
             for label, left, right in readout_rows(lr, units):
                 p.setFont(readout_font())
-                p.setPen(TEXT_DIM)
+                p.setPen(text_dim)
                 size = _size(label, readout_font())
                 p.drawText(_anchored(size, left, "left"), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, label)
                 unit = "" if not units else (" dBTP" if label == "TP" else " LUFS")
                 text = lufs_text(values[label]) + unit
                 p.setFont(readout_font(True))
-                p.setPen(TP_OVER if label == "TP" and over else HOT_TEXT if label == "I" else TEXT)
+                p.setPen(TP_OVER if label == "TP" and over else hot if label == "I" else text_color)
                 vs = _size(text, readout_font(True))
                 p.drawText(_anchored(vs, right, "right"), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, text)
-        p.fillRect(QRectF(QPointF(rect.left() + 4.0, rect.top() + 4.0), QPointF(rect.right() - 4.0, area.bottom() + 4.0)), METER_BG)
+        p.fillRect(QRectF(QPointF(rect.left() + 4.0, rect.top() + 4.0), QPointF(rect.right() - 4.0, area.bottom() + 4.0)), T.c("meter_bg"))
         w, pitch = bar_pitch(area, len(names))
         for c in range(len(names)):
             r = QRectF(area.left() + c * pitch, area.top(), w, area.height())
             self._bar(p, r, self.levels[c], self.holds[c])
-        p.setPen(TEXT_DIM)
+        p.setPen(text_dim)
         p.setFont(scale_font())
         for db, r in pt.scale:
             p.drawText(r, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, str(db))

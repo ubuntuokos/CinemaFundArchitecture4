@@ -36,9 +36,9 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 
 | # | Point | egui | Qt 6 | Evidence / missing |
 |---|---|---|---|---|
-| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; the default layout sizes follow the window (timeline ~40 %, `test_default_layout_follows_the_window_size`); Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md) |
+| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; the default layout sizes follow the window (timeline ~40 %, `test_default_layout_follows_the_window_size`); Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md); panel tabs on top and a panel in a tab group named once (on its tab), Tools and Audio Meters with egui's slim grip (`test_dark_theme_and_egui_panel_chrome`) |
 | 2.2 | Named workspaces (save, switch, reset) | ✅ | 🟡 | Window ▸ Workspaces: Editing (default, Alt+Shift+1), own named workspaces (Save as New, Save Changes, switch), Reset to Saved Layout (Alt+Shift+0) (`test_workspaces_save_switch_and_reset`); Assembly/Color/Effects/Audio/Captions and Graphics presets, All Panels and Edit Workspaces… need panels the Qt GUI lacks (listed disabled) |
-| 2.3 | Themes (light/dark, favourites) | ✅ | 🟡 | follows the desktop's Qt/KDE theme; no in-app theme switch |
+| 2.3 | Themes (light/dark, favourites) | ✅ | 🟡 | egui's Darkest, Dark and Light design tokens (Fusion style, palette, style sheet; panels that paint themselves use the tokens), chosen from the engine's Settings ▸ Appearance prefs shared with egui (Appearance Mode auto/light/dark, light and dark theme, highlight colour tinting the other blues, accessible contrast); View ▸ Appearance ▸ Darkest / Dark / Light / Next Appearance Mode (`test_theme_tokens_follow_egui_and_the_appearance_prefs`, `test_dark_theme_and_egui_panel_chrome`); favourite themes in the header and the Settings ▸ Appearance dialog missing |
 | 2.4 | Panel docking commands (`window.floatPanel`, `window.dockPanel`, …) | ✅ | ❌ | |
 
 ## 3. Panels (egui `PanelKind`)

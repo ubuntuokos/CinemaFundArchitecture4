@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPainterPath, QPalette, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QMenu, QToolButton, QWidget
 
@@ -176,6 +176,7 @@ class TransportBar(QWidget):
         self.defs = defs
         self.hidden = list(hidden)
         self.buttons: dict[str, QToolButton] = {}
+        self.icons: dict[str, tuple[str, QColor | None]] = {}  # icons set since (play / pause…)
         self.checked: dict[str, Callable[[], bool]] = {}
         for d in defs:
             b = QToolButton(self)
@@ -214,7 +215,16 @@ class TransportBar(QWidget):
 
     def set_icon(self, key: str, icon: str, color: QColor | None = None) -> None:
         if key in self.buttons:
+            self.icons[key] = (icon, color)
             self.buttons[key].setIcon(transport_icon(icon, color or icon_color(self)))
+
+    def changeEvent(self, e) -> None:
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.PaletteChange and hasattr(self, "editor"):
+            for d in self.defs:
+                icon, color = self.icons.get(d.key, (d.icon, None))
+                self.buttons[d.key].setIcon(transport_icon(icon, color or icon_color(self)))
+            self.editor.setIcon(transport_icon("plus", icon_color(self)))
 
     def shown(self) -> list[TransportDef]:
         return [d for d in self.defs if d.command not in self.hidden]

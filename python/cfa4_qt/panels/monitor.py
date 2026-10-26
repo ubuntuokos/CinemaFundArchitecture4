@@ -42,6 +42,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QMenu, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
+from .. import theme
 from ..engine import EngineClient
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
@@ -60,8 +61,6 @@ AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 MAX_SPEED = 8.0
-PANEL_BG = QColor("#111111")
-MONITOR_BG = QColor("#000000")
 GREEN = QColor(0x4C, 0xC0, 0x5A)
 YELLOW = QColor(0xF0, 0xC8, 0x40)
 
@@ -241,11 +240,12 @@ class FrameView(QWidget):
     # ----- drawing -----
     def paintEvent(self, _e: QPaintEvent) -> None:
         p = QPainter(self)
-        p.fillRect(self.rect(), PANEL_BG)
+        T = theme.current()
+        p.fillRect(self.rect(), T.c("panel_bg"))
         img = self.shown
         if img is not None and not img.isNull():
             pic = self.picture_rect()
-            p.fillRect(pic, MONITOR_BG)
+            p.fillRect(pic, QColor("#000000"))
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             p.drawImage(pic, img)
             if self.mv.safe_margins:
@@ -271,7 +271,7 @@ class FrameView(QWidget):
             p.setBrush(YELLOW if self.dropped > 0 else GREEN)
             p.drawEllipse(QPointF(10, 10), 4, 4)
         if self.message:
-            p.setPen(QColor("#cccccc"))
+            p.setPen(T.c("text_dim"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
 
 
@@ -288,9 +288,20 @@ class TimecodeField(QLineEdit):
         self.setFixedWidth(110)
         self.setFrame(False)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  # never the window's first focus
-        self.setStyleSheet("QLineEdit { color: #4096f3; background: transparent; font-family: monospace; font-size: 14px; }")
+        self._restyle()
         self.shown_text = "00:00:00:00"
         self.returnPressed.connect(lambda: self.submitted.emit(self.text()))
+
+    def _restyle(self) -> None:
+        c = theme.current().timecode
+        sheet = f"QLineEdit {{ color: {c}; background: transparent; border: none; font-family: monospace; font-size: 14px; }}"
+        if self.styleSheet() != sheet:  # setting it changes the palette again
+            self.setStyleSheet(sheet)
+
+    def changeEvent(self, e: QEvent) -> None:
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.PaletteChange:
+            self._restyle()
 
     def show_time(self, text: str) -> None:
         self.shown_text = text
@@ -363,17 +374,18 @@ class ScrubBar(QWidget):
 
     def paintEvent(self, _e: QPaintEvent) -> None:
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor("#1c1c1c"))
+        T = theme.current()
+        p.fillRect(self.rect(), T.c("panel_bg"))
         if self.end <= self.start:
             return
         h = self.height()
-        p.fillRect(QRectF(4, h / 2 - 2, self.width() - 8, 4), QColor("#3a3a3a"))
+        p.fillRect(QRectF(4, h / 2 - 2, self.width() - 8, 4), T.c("separator"))
         if self.mark_in is not None or self.mark_out is not None:
             a = self._x(self.mark_in if self.mark_in is not None else self.start)
             b = self._x(self.mark_out if self.mark_out is not None else self.end)
             p.fillRect(QRectF(a, 2, max(1.0, b - a), h - 4), QColor(90, 140, 220, 110))
         x = self._x(self.playhead)
-        p.fillRect(QRectF(x - 1, 0, 2, h), QColor("#e04040"))
+        p.fillRect(QRectF(x - 1, 0, 2, h), T.c("playhead"))
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         if e.button() == Qt.MouseButton.LeftButton:
@@ -415,7 +427,6 @@ class Monitor(QWidget):
         self.timecode.submitted.connect(self._typed_time)
         self.duration_label = QLabel("", self)
         self.duration_label.setObjectName(f"{self.target}.duration")
-        self.duration_label.setStyleSheet("QLabel { color: #8c8c8c; font-family: monospace; font-size: 14px; }")
 
         def dropdown(name: str, tip: str) -> QToolButton:
             b = QToolButton(self)
@@ -481,6 +492,20 @@ class Monitor(QWidget):
         # (first sample, samples per block, [peaks per block], [loudness per block]) as played
         self.meter_blocks: deque[tuple[int, int, list[Any], list[Any]]] = deque()
         self._apply_view(request=False)
+        self._restyle()
+
+    def _restyle(self) -> None:
+        sheet = f"QLabel {{ color: {theme.current().text_dim}; font-family: monospace; font-size: 14px; }}"
+        if self.duration_label.styleSheet() != sheet:
+            self.duration_label.setStyleSheet(sheet)
+        self.wrench.setIcon(transport_icon("wrench", icon_color(self)))
+        self.transport.set_icon("loop", "loop", ACCENT if self.mv.looping else None)
+        self.transport.set_icon("toggle", "pause" if getattr(self, "playing", False) else "play")
+
+    def changeEvent(self, e: QEvent) -> None:
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.PaletteChange and hasattr(self, "transport"):
+            self._restyle()
 
     # ----- what each monitor shows (overridden) -----
     def has_content(self) -> bool:

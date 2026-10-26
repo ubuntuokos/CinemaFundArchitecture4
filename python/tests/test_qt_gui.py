@@ -1876,3 +1876,58 @@ def test_program_monitor_controls_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_theme_tokens_follow_egui_and_the_appearance_prefs(app):
+    """egui's Darkest / Dark / Light tokens, picked as egui picks them from Settings ▸ Appearance;
+    a highlight colour of the user's own tints the other blues, accessible contrast brightens."""
+    from cfa4_qt import theme
+
+    assert theme.tokens_from_prefs({}).kind == "darkest"
+    assert theme.tokens_from_prefs({"appearanceMode": "dark", "darkTheme": "dark"}).panel_bg == "#323232"
+    light = theme.tokens_from_prefs({"appearanceMode": "light", "lightTheme": "light", "darkTheme": "darkest"})
+    assert light.kind == "light" and light.panel_bg == "#e8e8e8"
+    same = theme.tokens_from_prefs({"highlightColor": "#2f6bdf"})
+    assert same.playhead == theme.DARKEST.playhead, "the theme's own highlight changes nothing"
+    red = theme.tokens_from_prefs({"highlightColor": "#d03030"})
+    assert red.accent == "#d03030" and red.playhead != theme.DARKEST.playhead
+    assert QtGui.QColor(red.playhead).hue() in range(350, 360) or QtGui.QColor(red.playhead).hue() < 10
+    assert theme.tokens_from_prefs({"accessibleContrast": True}).text_dim == theme.DARKEST.text
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_dark_theme_and_egui_panel_chrome(app, tmp_path: Path):
+    """The window takes the theme from the engine's prefs and switches with View ▸ Appearance;
+    panels in a tab group are named once, on their tab; Tools and Audio Meters get a slim grip."""
+    from cfa4_qt import theme
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.appearance), 20_000)
+        assert theme.current().kind == "darkest"
+        assert app.palette().color(QtGui.QPalette.ColorRole.Window).name() == "#1d1d1d"
+        assert win.tabPosition(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea) == QtWidgets.QTabWidget.TabPosition.North
+        assert wait_until(app, lambda: win.docks["Source"].property("titleMode") == "tab", 5_000)
+        assert win.docks["Source"].titleBarWidget().height() == 0
+        assert win.docks["Tools"].property("titleMode") == "grip"
+        assert win.docks["Audio Meters"].titleBarWidget().height() == 6
+        appearance = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.View").findChild(QtWidgets.QMenu, "menu.View.Appearance")
+        assert [a.objectName() for a in appearance.actions()] == ["view.theme.darkest", "view.theme.dark", "view.theme.light", "view.appearanceMode.next"]
+        win.set_theme("light")
+        assert wait_until(app, lambda: theme.current().kind == "light", 10_000)
+        assert app.palette().color(QtGui.QPalette.ColorRole.Window).name() == "#e8e8e8"
+        assert win.appearance.get("appearanceMode") == "light"
+        win.set_theme("dark")
+        assert wait_until(app, lambda: theme.current().kind == "dark", 10_000)
+        win.set_theme("darkest")
+        assert wait_until(app, lambda: theme.current().kind == "darkest", 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

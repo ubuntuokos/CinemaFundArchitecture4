@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPainterPath, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import QMenu, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
@@ -205,8 +205,15 @@ class ToolsPanel(QWidget):
         self._refresh()
         self.tool_selected.emit(tool)
 
+    def changeEvent(self, e) -> None:
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.PaletteChange and self.buttons:
+            self._refresh()
+
     def _refresh(self) -> None:
         color = self.palette().buttonText().color()
+        for tid, a in self.actions.items():
+            a.setIcon(tool_icon(tid, color))
         for gi, b in enumerate(self.buttons):
             t = TOOLS[self.group_tool[gi]]
             b.setIcon(tool_icon(t.id, color))
