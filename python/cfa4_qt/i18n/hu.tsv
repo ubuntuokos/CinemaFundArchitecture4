@@ -663,7 +663,7 @@
 	{mode} · no sequence	{mode} · nincs szekvencia
 	Render	Renderelés
 	Job	Feladat
-	Audio Track Mixer menu	Hangsáv-keverő menü
+	Audio Track Mixer menu	Hangsávkeverő menü
 	Automation mode	Automatizálási mód
 	Enable track for recording	Sáv engedélyezése felvételre
 	Fill the slots above first	Előbb a fenti helyeket töltsd ki
@@ -694,3 +694,4 @@
 	Stereo	Sztereó
 	Swap	Csere
 	Mono	Monó
+	Write keyframes	Kulcskockák írása

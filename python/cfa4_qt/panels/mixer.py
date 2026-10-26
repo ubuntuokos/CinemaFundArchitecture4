@@ -612,7 +612,7 @@ class TrackMixerPanel(QWidget):
             if not st.isVisible():
                 continue
             fresh = peaks.get(st.sid())
-            n = len(fresh) if fresh else (len(st.levels) or st.channels())
+            n = len(fresh) if fresh else (len(st.levels) or (st.channels() if isinstance(st, Strip) else int(st.data.get("channels") or 2)))
             if len(st.levels) != n:
                 st.levels, st.holds = [-90.0] * n, [-90.0] * n
             changed = False
@@ -669,3 +669,286 @@ class TrackMixerPanel(QWidget):
 
 
 
+
+
+CLIP_STRIP_MIN_W = 66
+
+
+class ClipStrip(QWidget):
+    """One Audio Clip Mixer strip: the clip under the playhead on one audio track."""
+
+    command = Signal(str, dict)
+
+    def __init__(self, panel: ClipMixerPanel) -> None:
+        super().__init__(panel.box)
+        self.panel = panel
+        self.data: dict[str, Any] = {}
+        self.levels: list[float] = []
+        self.holds: list[float] = []
+        self.write_keyframes = False
+        self._drag: str | None = None
+        self._last = QPointF()
+        self._value = 0.0
+        self.regions: dict[str, QRectF] = {}
+        self.setMinimumWidth(CLIP_STRIP_MIN_W)
+        self.setMaximumWidth(STRIP_W)
+
+    @property
+    def ref(self) -> str:
+        return str(self.data.get("ref") or "")
+
+    def sid(self) -> Any:
+        return self.data.get("track")
+
+    def clip(self) -> dict[str, Any] | None:
+        c = self.data.get("clip")
+        return c if isinstance(c, dict) else None
+
+    def volume(self) -> float:
+        return self._value if self._drag == "fader" else float((self.clip() or {}).get("volumeDb") or 0.0)
+
+    def pan(self) -> float:
+        return self._value if self._drag == "pan" else float((self.clip() or {}).get("pan") or 0.0)
+
+    def set_data(self, data: dict[str, Any]) -> None:
+        self.data = data
+        self.setObjectName(f"clipMixer.{self.ref}")
+        self.update()
+
+    def layout_regions(self) -> dict[str, QRectF]:
+        w, h = self.width(), self.height()
+        r: dict[str, QRectF] = {"mode": QRectF(4, 2, w - 8, 16)}
+        r["pan"] = QRectF(w / 2 - 15, 21, 30, 30)
+        y = 72.0
+        step = min(24.0, (w - 6 - 18) / 2)
+        for k, key in enumerate(("mute", "solo", "keyframe")):
+            r[key] = QRectF(w / 2 - step - 9 + k * step, y, 18, 16)
+        r["area"] = QRectF(0, y + 30, w, max(0.0, h - 46 - (y + 30)))
+        r["track"] = QRectF(33, r["area"].top() + 8, 4, max(0.0, r["area"].height() - 16))
+        r["meter"] = QRectF(46, r["area"].top(), max(4.0, w - 52), r["area"].height())
+        r["value"] = QRectF(4, h - 42, 50, 16)
+        r["name"] = QRectF(0, h - 20, w, 20)
+        return r
+
+    def fader_y(self, db: float) -> float:
+        t = self.regions["track"]
+        return t.bottom() - db_to_pos(db) * t.height()
+
+    def paintEvent(self, _e: QPaintEvent) -> None:
+        self.regions = r = self.layout_regions()
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        T = theme.current()
+        active = self.clip() is not None
+
+        def dim(c: QColor) -> QColor:
+            if active:
+                return c
+            c = QColor(c)
+            c.setAlphaF(0.4)
+            return c
+
+        p.fillRect(self.rect(), T.c("control_surface"))
+        f = QFont(self.font())
+        f.setPixelSize(10)
+        p.setFont(f)
+        p.setPen(QPen(T.c("field_border"), 1))
+        p.setBrush(T.c("field_bg"))
+        p.drawRoundedRect(r["mode"].adjusted(0.5, 0.5, -0.5, -0.5), 2, 2)
+        p.setPen(T.c("text"))
+        p.drawText(r["mode"].adjusted(4, 0, -4, 0), Qt.AlignmentFlag.AlignVCenter, tr(str(self.data.get("mode") or "Read")))
+        kc = r["pan"].center()
+        p.setPen(QPen(dim(T.c("text_dim")), 2))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawEllipse(kc, 14, 14)
+        ang = self.pan() / 100.0 * math.radians(135)
+        p.drawLine(kc, kc + QPointF(math.sin(ang) * 12, -math.cos(ang) * 12))
+        p.setPen(dim(T.c("hot_text")))
+        p.drawText(QRectF(kc.x() - 26, kc.y() + 9, 16, 14), Qt.AlignmentFlag.AlignCenter, "L")
+        p.drawText(QRectF(kc.x() + 10, kc.y() + 9, 16, 14), Qt.AlignmentFlag.AlignCenter, "R")
+        p.drawText(QRectF(kc.x() - 28, kc.y() + 19, 56, 14), Qt.AlignmentFlag.AlignCenter, f"{self.pan():.1f}")
+        for key, letter, on, color in (
+            ("mute", "M", bool(self.data.get("muted")), MUTE_ON),
+            ("solo", "S", bool(self.data.get("solo")), SOLO_ON),
+            ("keyframe", "◇", self.write_keyframes, T.c("accent")),
+        ):
+            p.setPen(QPen(T.c("button_border"), 1))
+            p.setBrush(color if on else T.c("field_bg"))
+            p.drawRoundedRect(r[key], 3, 3)
+            p.setPen(QColor("#111111") if on and key != "keyframe" else (QColor("#ffffff") if on else T.c("text_dim")))
+            p.drawText(r[key], Qt.AlignmentFlag.AlignCenter, letter)
+        area, track = r["area"], r["track"]
+        if area.height() > 40:
+            f.setPixelSize(9)
+            p.setFont(f)
+            for d in SCALE:
+                y = self.fader_y(d)
+                p.setPen(T.c("text_dim"))
+                p.drawText(QRectF(0, y - 6, 26, 12), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, "-∞" if d <= FADER_MIN_DB else str(int(d)))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(0x10, 0x10, 0x10) if T.dark else QColor(0xC4, 0xC4, 0xC4))
+            p.drawRoundedRect(track, 2, 2)
+            cy = self.fader_y(self.volume())
+            cap = QRectF(track.center().x() - 9, cy - 13, 18, 26)
+            r["cap"] = cap
+            col = dim(T.c("accent") if self._drag == "fader" else (QColor(0xE0, 0xE0, 0xE0) if T.dark else QColor(0x32, 0x32, 0x32)))
+            p.setPen(QPen(col, 2))
+            p.setBrush(QColor(0x2A, 0x2A, 0x2A) if T.dark else QColor(0xCD, 0xCD, 0xCD))
+            p.drawRoundedRect(cap.adjusted(1, 1, -1, -1), 3, 3)
+            p.drawLine(QPointF(cap.left() + 5, cy), QPointF(cap.right() - 5, cy))
+            m = r["meter"]
+            p.fillRect(m, T.c("meter_bg"))
+            n = max(1, len(self.levels) or int(self.data.get("channels") or 2))
+            gap = 1.0 if n > 2 else 2.0
+            bw = (m.width() - gap * (n - 1)) / n
+            for c in range(n):
+                lv = self.levels[c] if c < len(self.levels) else -90.0
+                hd = self.holds[c] if c < len(self.holds) else -90.0
+                br = QRectF(m.left() + c * (bw + gap), m.top() + 6, bw, m.height() - 6)
+                AudioMetersPanel._bar(p, br, lv, hd)
+                p.fillRect(QRectF(br.left(), m.top(), bw, 4), RED if hd >= -0.1 else (QColor(0x30, 0x30, 0x30) if T.dark else QColor(0x9B, 0x9B, 0x9B)))
+        f.setPixelSize(11)
+        p.setFont(f)
+        p.setPen(dim(T.c("hot_text")))
+        p.drawText(r["value"], Qt.AlignmentFlag.AlignVCenter, db_text(self.volume()))
+        f.setPixelSize(12)
+        p.setFont(f)
+        p.setPen(T.c("text"))
+        p.drawText(r["name"].adjusted(6, 0, 0, 0), Qt.AlignmentFlag.AlignVCenter, self.ref)
+        p.drawText(r["name"].adjusted(30, 0, -2, 0), Qt.AlignmentFlag.AlignVCenter, str(self.data.get("name") or ""))
+
+    # ----- input -----
+    def _set(self, effect: str, param: str, value: float, begin: bool) -> None:
+        """egui's clip mixer move: a live gesture during an automation pass, else the clip's
+        Volume / Panner (a keyframe at the playhead with Write Keyframes on)."""
+        clip = self.clip()
+        if self.panel.recording:
+            lane = "pan" if effect == "panner" else "volume"
+            self.command.emit("clipMixer.touch", {"track": self.sid(), "lane": lane, "value": value, "time": self.panel.now})
+        elif clip is not None:
+            self.command.emit(
+                "clipMixer.set",
+                {"clip": clip.get("id"), "effect": effect, "param": param, "value": value, "keyframe": self.write_keyframes, "begin": begin},
+            )
+
+    def _release(self, effect: str) -> None:
+        if self.panel.recording:
+            lane = "pan" if effect == "panner" else "volume"
+            self.command.emit("clipMixer.release", {"track": self.sid(), "lane": lane, "time": self.panel.now})
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        if e.button() != Qt.MouseButton.LeftButton:
+            return
+        pos = e.position()
+        r = self.regions
+        if r.get("cap") is not None and r["cap"].adjusted(-3, -3, 3, 3).contains(pos) and self.clip() is not None:
+            self._drag, self._value, self._last = "fader", self.volume(), pos
+            self._set("volume", "level", self._value, True)
+        elif r.get("pan") is not None and r["pan"].contains(pos) and self.clip() is not None:
+            self._drag, self._value, self._last = "pan", self.pan(), pos
+            self._set("panner", "balance", self._value, True)
+        elif r["mode"].contains(pos):
+            menu = QMenu(self)
+            for m in MODES:
+                a = menu.addAction(tr(m))
+                a.setObjectName(f"clipMixer.{self.ref}.mode.{m}")
+                a.setCheckable(True)
+                a.setChecked(self.data.get("mode") == m)
+                a.triggered.connect(lambda _c=False, mm=m: self.command.emit("clipMixer.setMode", {"track": self.sid(), "mode": mm}))
+            menu.exec(self.mapToGlobal(r["mode"].bottomLeft().toPoint()))
+        elif r["mute"].contains(pos):
+            self.command.emit("mixer.setStrip", {"strip": self.sid(), "muted": not bool(self.data.get("muted"))})
+        elif r["solo"].contains(pos):
+            self.command.emit("mixer.setStrip", {"strip": self.sid(), "solo": not bool(self.data.get("solo"))})
+        elif r["keyframe"].contains(pos):
+            self.write_keyframes = not self.write_keyframes
+            self.update()
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if self._drag is None:
+            r = self.regions
+            pos = e.position()
+            tip = ""
+            if r.get("keyframe") is not None and r["keyframe"].contains(pos):
+                tip = tr("Write keyframes")
+            elif r.get("mute") is not None and r["mute"].contains(pos):
+                tip = tr("Mute Track")
+            elif r.get("solo") is not None and r["solo"].contains(pos):
+                tip = tr("Solo Track")
+            self.setToolTip(tip)
+            return
+        d = e.position() - self._last
+        self._last = e.position()
+        if self._drag == "fader":
+            self._value = pos_to_db(db_to_pos(self._value) - d.y() / max(1.0, self.regions["track"].height()))
+            self._set("volume", "level", self._value, False)
+        else:
+            self._value = min(100.0, max(-100.0, self._value + d.x() - d.y()))
+            self._set("panner", "balance", self._value, False)
+        self.update()
+
+    def mouseReleaseEvent(self, _e: QMouseEvent) -> None:
+        if self._drag is not None:
+            self._release("volume" if self._drag == "fader" else "panner")
+            self._drag = None
+            self.update()
+
+    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+        r = self.regions
+        if r.get("cap") is not None and r["cap"].contains(e.position()):
+            self._set("volume", "level", 0.0, True)
+        elif r.get("pan") is not None and r["pan"].contains(e.position()):
+            self._set("panner", "balance", 0.0, True)
+
+
+class ClipMixerPanel(QWidget):
+    """egui's Audio Clip Mixer: one strip per audio track, controlling the clip under the
+    playhead (its Volume and Panner). The strips narrow so every track fits, down to the
+    narrowest usable strip; below that the row scrolls."""
+
+    command = Signal(str, dict)
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("panel.AudioClipMixer")
+        self.recording = False
+        self.now = 0
+        self.box = QWidget()
+        self.row = QHBoxLayout(self.box)
+        self.row.setContentsMargins(6, 4, 2, 4)
+        self.row.setSpacing(2)
+        self.row.addStretch(1)
+        self.scroll = QScrollArea(self)
+        self.scroll.setObjectName("clipMixer.scroll")
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.scroll.setWidget(self.box)
+        self.empty = QLabel(tr("(no sequence)"), self)
+        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.empty)
+        layout.addWidget(self.scroll, 1)
+        self.strips: list[ClipStrip] = []
+        self.box.setMinimumHeight(260)
+
+    def set_state(self, result: Any) -> None:
+        data = result if isinstance(result, dict) else {}
+        self.recording = bool(data.get("recording"))
+        self.now = int(data.get("time") or 0)
+        rows = [s for s in data.get("strips") or [] if isinstance(s, dict)]
+        self.empty.setVisible(not rows)
+        while len(self.strips) < len(rows):
+            st = ClipStrip(self)
+            st.command.connect(self.command.emit)
+            self.row.insertWidget(len(self.strips), st, 1)
+            self.strips.append(st)
+        for i, st in enumerate(self.strips):
+            if i < len(rows):
+                st.set_data(rows[i])
+                st.show()
+            else:
+                st.hide()
+
+    def set_levels(self, peaks: dict[Any, list[float]], dt: float) -> None:
+        TrackMixerPanel.set_levels(self, peaks, dt)  # same ballistics, keyed by track id

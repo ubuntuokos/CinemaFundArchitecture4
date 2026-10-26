@@ -413,6 +413,44 @@ fn parse_time(s: &Session, p: &Value) -> Result<Value, String> {
     Ok(json!({"time": rate.tick_of(frame).0, "frame": frame}))
 }
 
+/// `clipMixer.inspect {time?}`: the Audio Clip Mixer's strips, one per audio track: the enabled
+/// clip under the playhead with its Volume level (dB) and Panner balance there (keyframes
+/// included; a held control's live value while it is held), the track's mute / solo, the Clip
+/// Mixer automation mode and the channel layout.
+fn clip_mixer_inspect(s: &Session, p: &Value) -> Result<Value, String> {
+    use cfa4_time::Tick;
+    let seq = s.active_sequence().ok_or("no active sequence")?;
+    let now = p.get("time").and_then(Value::as_i64).map(Tick).unwrap_or_else(|| s.playhead());
+    let live = &s.previews.live;
+    let strips: Vec<Value> = seq
+        .audio_tracks
+        .iter()
+        .enumerate()
+        .map(|(i, tr)| {
+            let clip = tr.item_at(now).filter(|c| c.enabled);
+            let clip = clip.map(|c| {
+                let mt = c.source_time_at(now);
+                let vol = c.effect("volume").map(|e| e.f64_at("level", mt)).unwrap_or(0.0);
+                let pan = c.effect("panner").map(|e| e.f64_at("balance", mt)).unwrap_or(0.0);
+                let vol = live.get(tr.id, cfa4_render::audio::CLIP_LANE_VOLUME).map_or(vol, |o| o.value);
+                let pan = live.get(tr.id, cfa4_render::audio::CLIP_LANE_PAN).map_or(pan, |o| o.value);
+                json!({"id": c.id.0, "name": c.name, "volumeDb": vol, "pan": pan})
+            });
+            json!({
+                "track": tr.id.0,
+                "ref": format!("A{}", i + 1),
+                "name": tr.name,
+                "muted": tr.muted,
+                "solo": tr.solo,
+                "channels": cfa4_render::mixer::width_of(tr.channels),
+                "mode": cfa4_engine::mixer::clip_mode(s, tr.id).label(),
+                "clip": clip,
+            })
+        })
+        .collect();
+    Ok(json!({"time": now.0, "recording": s.mixrec.active(), "strips": strips}))
+}
+
 /// `time.readout {rows: [{source, mode, display}], time?, sourceTime?}`: the Timecode panel's rows
 /// (egui's `timecode::row_text`), each `{value, caption}`. `source` is `program` or `source`;
 /// `mode` is `current`, `media` (the source timecode of the topmost enabled video clip under the
@@ -603,6 +641,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "clipMixer.inspect" => match clip_mixer_inspect(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
         "time.readout" => match time_readout(s, &params) {
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),
@@ -781,6 +823,22 @@ mod tests {
         assert_eq!(frame.json["result"]["fullW"], json!(seq.settings.width));
         assert_eq!(frame.json["result"]["fullH"], json!(seq.settings.height));
         assert_eq!(frame.json["result"]["pixelAspect"], json!(1.0));
+    }
+
+    #[test]
+    fn inspects_the_clip_mixer() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let rate = s.active_sequence().map(|q| q.settings.frame_rate).expect("demo sequence");
+        let t = rate.tick_of(2 * rate.timecode_base());
+        let r = handle(&mut s, json!(1), "clipMixer.inspect", json!({"time": t.0})).expect("reply").json;
+        let strips = r["result"]["strips"].as_array().cloned().expect("strips");
+        assert_eq!(strips.len(), 3, "{r}");
+        assert_eq!(strips[0]["ref"], json!("A1"));
+        let clip = &strips[0]["clip"];
+        assert!(clip["id"].is_u64(), "a clip under the playhead on A1: {r}");
+        assert!(clip["volumeDb"].as_f64().is_some_and(|v| (-96.0..=15.0).contains(&v)), "{r}");
+        assert_eq!(strips[0]["mode"], json!("Read"));
     }
 
     #[test]

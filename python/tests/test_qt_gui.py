@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -1949,7 +1949,7 @@ def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
     try:
         assert wait_until(app, lambda: bool(win.sequence) and win.project is not None, 30_000)
         # egui's groups
-        assert win.docks["Metadata"] in win.tabifiedDockWidgets(win.docks["Source"])
+        assert {win.docks["Metadata"], win.docks["Audio Clip Mixer"]} <= set(win.tabifiedDockWidgets(win.docks["Source"]))
         assert {win.docks[n] for n in ("Info", "Effects", "Markers", "History")} <= set(win.tabifiedDockWidgets(win.docks["Project"]))
         assert not win.docks["Project Notes"].isVisible()
         # Markers: every sequence marker, newest data from the engine
@@ -2122,6 +2122,45 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         assert wait_until(app, lambda: max(mix.levels or [-90]) > -60, 10_000)
         win.monitor.stop()
         assert mixer.grab().width() > 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_audio_clip_mixer(app, tmp_path: Path):
+    """egui's Audio Clip Mixer: a strip per audio track for the clip under the playhead; the fader
+    sets the clip's Volume (a keyframe with Write Keyframes on), M / S, the clip automation mode."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1700, 1000)
+    win.show()
+    engine.start()
+    cm = win.clip_mixer
+    Qt = QtCore.Qt
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 30_000)
+        win.docks["Audio Clip Mixer"].raise_()
+        win._seek_program(2 * TICKS_PER_SECOND)
+        assert wait_until(app, lambda: [s.ref for s in cm.strips if s.isVisible()] == ["A1", "A2", "A3"], 10_000)
+        a1 = cm.strips[0]
+        assert wait_until(app, lambda: a1.clip() is not None and a1.regions.get("cap") is not None, 10_000), a1.data
+        before = a1.volume()
+        cap = a1.regions["cap"].center().toPoint()
+        QtTest.QTest.mousePress(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap)
+        for i in range(1, 6):
+            QtTest.QTest.mouseMove(a1, cap + QtCore.QPoint(0, -6 * i))
+        QtTest.QTest.mouseRelease(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap + QtCore.QPoint(0, -30))
+        assert wait_until(app, lambda: (a1.clip() or {}).get("volumeDb", before) > before + 0.5, 10_000), (before, a1.data)
+        QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["mute"].center().toPoint())
+        assert wait_until(app, lambda: a1.data.get("muted") is True, 10_000)
+        QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["keyframe"].center().toPoint())
+        assert a1.write_keyframes
+        assert cm.grab().width() > 0
     finally:
         win._quit_confirmed = True
         win.close()
