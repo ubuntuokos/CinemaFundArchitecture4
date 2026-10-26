@@ -3,7 +3,7 @@
 **Dátum:** 2026-10-25 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos`, 2026-10-25-i döntése) ·
 **Kapcsolódik:** [ADR 0002](ADR-0002-gstreamer-backend.md) (GStreamer),
 [ADR 0003](ADR-0003-aswf-and-conversion-sources.md) 3. pont (az FFmpeg helye),
-ADR 0004 – feladatonkénti útvonalválasztó (`crates/route`, #55)
+[ADR 0004](ADR-0004-compute-routing.md) – feladatonkénti útvonalválasztó (`crates/route`, #55, #72)
 
 ## Döntés
 
@@ -36,13 +36,19 @@ ADR 0004 – feladatonkénti útvonalválasztó (`crates/route`, #55)
   [ADR 0001](0001-platform-ffi.md) feltételei érvényesek.
 - **Szabadalmilag korlátozott részek** (pl. x264, x265): az Ubuntu-modell szerint, külön, kérésre
   telepíthető csomagban (#57); az alapcsomag nélkülük is működik.
+- **Szállítás (tulajdonosi döntés, 2026-10-25):** az Ubuntu 26.04 tárolóiban 8.x van, ezért a CFA4
+  saját FFmpeg 9.0.2-buildet szállít, megosztott könyvtárakként **`/opt/cfa4` alá** telepítve (a
+  rendszer FFmpeg-jét nem cseréli): GPL v3, `nonfree` nélkül, x264 és x265 nélkül (azok a #57
+  szerinti külön csomagban), VA-API-val. Az rsmedia erre a buildre fordul.
 - **A tesztorákulum külön marad:** a CI rögzített FFmpeg 9.0.2 CLI-je
   (`scripts/ci/install-ffmpeg-9.0.2.sh`) a saját kodekek független ellenőrzője, nem a termék része.
 
 ## GStreamer
 
 - **Az Ubuntu által a telepítő tárolóiban terjesztett GStreamer** a háttér: a rendszer csomagjaiból,
-  dinamikusan töltődik be (LGPL-2.1-or-later). A rendszer GStreamerét lecserélő tárolót nem
+  dinamikusan töltődik be (LGPL-2.1-or-later). **A kiadott csomag GStreamerrel fordul** (tulajdonosi
+  döntés, 2026-10-25, a korábbi „GStreamer nélkül” helyett): az Ubuntu archívumából függőségként
+  települ (`Depends` az alapkönyvtárakra, `Recommends` a bővítményekre), nem a csomagba ágyazva. A rendszer GStreamerét lecserélő tárolót nem
   használunk; ha egyszer újabb kellene, csak elkülönített, CFA4-es futtatókörnyezet jöhet szóba
   (ADR 0002, #51).
 - A többi szabály az ADR 0002-ben marad (nincs `unsafe`, `ugly`/`libav` elemek nélkül, opcionális
@@ -65,12 +71,9 @@ ADR 0004 – feladatonkénti útvonalválasztó (`crates/route`, #55)
 | 1 | `cfa4-ffmpeg` crate: kötés, `probe()` (verzió ≥ 9.0.2, GPL-3-as build ellenőrzése, kodekek, gyorsítók), `discover()`; FFmpeg nélkül is fordul | tervezett |
 | 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után) | tervezett |
 | 3 | Feladatsorok a táblában (pl. felvétel, konvertálás) mérés alapján | tervezett |
-| 4 | Csomagolás: az FFmpeg 9.0.2 szállítása (az Ubuntu 26.04 saját FFmpeg-je 8.x) | nyitott, lásd lent |
+| 4 | Csomagolás: FFmpeg 9.0.2 `/opt/cfa4` alatt; GStreamer `Depends`/`Recommends` az Ubuntu archívumából (a kiadási munka a Qt6-átállás után jön) | eldöntve, tervezett |
 
 ## Nyitott kérdések (tulajdonos)
 
-- Hogyan érkezik az FFmpeg 9.0.2 a kiadott csomaggal, mivel az Ubuntu 26.04 tárolóiban 8.x van:
-  elkülönített, csak CFA4-es futtatókörnyezetként (`/opt/cfa4`, a CFA4 csomagtárolójából), vagy a
-  csomagba ágyazva.
 - Számozás: az ADR 0003 az FFI-kivétel elvének szánta a 0004-es számot, de azt a #55
   útvonalválasztó-ADR-je használja; az FFI-elv ADR-je új számot kap, amikor elkészül.
