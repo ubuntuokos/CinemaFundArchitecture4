@@ -273,6 +273,12 @@ pub struct SliceDecoder<'a, S> {
 }
 
 impl<'a, S: Sample> SliceDecoder<'a, S> {
+    /// Monochrome (4:0:0, `ChromaArrayType` 0): no chroma syntax, prediction or residual; the
+    /// chroma planes stay mid-grey.
+    fn mono(&self) -> bool {
+        self.sps.chroma_array_type() == 0
+    }
+
     #[inline(always)]
     fn dd(&mut self, ctx: usize) -> u32 {
         self.c.decode_decision(ctx)
@@ -794,7 +800,8 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
         let data = self.c.data();
         let n = 1usize << log2;
         let (bl, bc) = (self.sps.pcm_bit_depth_luma, self.sps.pcm_bit_depth_chroma);
-        let total_bits = n * n * bl as usize + 2 * (n / 2) * (n / 2) * bc as usize;
+        let chroma_planes = if self.mono() { 0 } else { 2 };
+        let total_bits = n * n * bl as usize + chroma_planes * (n / 2) * (n / 2) * bc as usize;
         ensure!(start + total_bits.div_ceil(8) <= data.len(), "PCM samples truncated");
         let mut r = cfa4_bitstream::BitReader::new(&data[start..]);
         let (sy, sc) = (self.pic.bd_y - bl, self.pic.bd_c - bc);
@@ -806,7 +813,7 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
             }
         }
         let cw = self.pic.cwidth;
-        for c in 1..3 {
+        for c in 1..1 + chroma_planes {
             for y in 0..n / 2 {
                 for x in 0..n / 2 {
                     let v = r.read_bits(bc)? as u16;
@@ -878,6 +885,9 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
                 self.fill_blk(xp, yp, pb, pb, |b| b.ipm = mode as u8);
             }
         }
+        if self.mono() {
+            return Ok(());
+        }
         // chroma mode (4:2:0: one per CU, derived from the first PU's luma mode)
         let icpm = if self.dd(INTRA_CHROMA) == 0 { 4 } else { self.bypass_bits(2) };
         let luma = self.pic.blk_at(x0, y0).ipm as u32;
@@ -900,7 +910,7 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
             log2 > self.sps.log2_max_tb || (self.intra_split && depth == 0) || inter_split
         };
         let mut cbf_c = [false, false];
-        if log2 > 2 {
+        if log2 > 2 && !self.mono() {
             for (c, cbf) in cbf_c.iter_mut().enumerate() {
                 if depth == 0 || parent_cbf_c[c] {
                     *cbf = self.dd(CBF_CHROMA + depth as usize) == 1;
@@ -968,7 +978,7 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
             self.residual(x0, y0, log2, 0, qp)?;
             self.fill_blk(x0, y0, n, n, |b| b.flags |= F_CBF);
         }
-        if !chroma_here {
+        if !chroma_here || self.mono() {
             return Ok(());
         }
         let (xc, yc, log2c) = if log2 > 2 { (x0 / 2, y0 / 2, log2 - 1) } else { (xb / 2, yb / 2, 2) };
@@ -1447,7 +1457,7 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
         };
         let bi = f.pred(0) && f.pred(1);
         let pwt = self.sh.pwt.as_ref().filter(|_| weighted);
-        for c in 0..3 {
+        for c in 0..if self.mono() { 1 } else { 3 } {
             let (x, y, bw, bh, bd) = if c == 0 { (xp, yp, w, h, self.pic.bd_y) } else { (xp / 2, yp / 2, w / 2, h / 2, self.pic.bd_c) };
             // Explicit weights equal to the default ones (weight 2^denom and offset 0 for every
             // list used, as signalled for most slices of a weighted-prediction stream) give exactly
