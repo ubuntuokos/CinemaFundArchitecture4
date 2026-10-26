@@ -314,8 +314,9 @@ def test_main_window_with_fake_engine(app, fake_engine: Path, tmp_path: Path):
         menus = [a.text() for a in win.menuBar().actions()]
         assert "File" in menus and "Edit" in menus
         assert not win.registry.actions["edit.undo"].isEnabled()
-        assert win.project_panel.tree.topLevelItemCount() == 2
-        assert win.effects.tree.topLevelItemCount() == 1
+        # the replies come in their own time (the Program monitor's overlay asks too)
+        assert wait_until(app, lambda: win.project_panel.tree.topLevelItemCount() == 2)
+        assert wait_until(app, lambda: win.effects.tree.topLevelItemCount() == 1)
         assert wait_until(app, lambda: win.monitor.view.image is not None)
         assert win.monitor.view.image.width() == 4
         # clicking a clip selects it in the engine; the projectChanged event redraws from it
@@ -1486,7 +1487,7 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         def mask() -> dict:
             return effect("opacity")["maskList"][0]
 
-        mh, mrows, inverted = ec.masks[(cid, opa, 0)]
+        mh, _mrows, inverted = ec.masks[(cid, opa, 0)]
         assert mh.objectName() == f"effectControls.{opa}.mask0" and mh.glyph.text() == "◯"
         mh.mode.setCurrentIndex(2)
         mh.mode.activated.emit(2)
@@ -1519,6 +1520,134 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         mh.contextMenuEvent(QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Reason.Mouse, QtCore.QPoint(5, 5),
                                                     mh.mapToGlobal(QtCore.QPoint(5, 5))))
         assert wait_until(app, lambda: not effect("opacity")["maskList"], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: Path):
+    """egui's on-monitor editing: Motion selected draws its box (drag inside: Position, a corner:
+    Scale, one undo step each; a click beside it lets go); double-clicking a picture selects its
+    Motion; the selected mask's handles move it, a vertex, its feather and round its corners; Esc
+    lets go of it; the pen places a Bezier mask's points and Enter closes it."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    view = win.monitor.view
+    ov = win.monitor.overlay
+    ec = win.effect_controls
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    nomod = QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(kind, at: QtCore.QPointF, button, buttons, mods=nomod) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(view, QtGui.QMouseEvent(kind, p, p, view.mapToGlobal(p), button, buttons, mods))
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        for i in range(1, 5):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none)
+
+    def click(a: QtCore.QPointF) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, a, left, none)
+
+    def motion(pid: str):
+        e = next(e for e in ec.clip["effects"] if e["effect"] == "motion")
+        return next(p for p in e["params"] if p["id"] == pid)["value"]
+
+    def history() -> int:
+        return win.history.list.count()
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["video"][0]["items"][1]
+        cid = clip["clip"]
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        win.execute("timeline.select", {"clips": [cid]})
+        win.execute("effects.setParam", {"clip": cid, "effect": "motion", "param": "scale", "value": 60.0})
+        win.execute("effects.select", {"clip": cid, "effect": "motion"})
+        assert wait_until(app, lambda: ov.placement() is not None and ec.clip_id == cid, 20_000)
+        assert wait_until(app, lambda: motion("scale") == 60.0, 10_000)
+
+        # drag inside the box: Position moves by the drag (in frame pixels), one undo step
+        before, steps = motion("position"), history()
+        box = ov.hit("transform.box")
+        anchor0 = motion("anchor")
+        drag(box, box + QtCore.QPointF(40, 20))
+        assert wait_until(app, lambda: motion("position") != before, 10_000)
+        assert motion("position")[0] > before[0] and motion("position")[1] > before[1]
+        assert motion("anchor") == anchor0, "the box, not the anchor point"
+        assert wait_until(app, lambda: history() == steps + 1, 10_000)
+        # a corner: Scale about the anchor point
+        assert wait_until(app, lambda: ov.placement() is not None and ov.hit("transform.box") != box, 10_000)
+        corner = ov.hit("transform.handle.2")
+        anchor = ov.hit("transform.anchor")
+        drag(corner, corner + (corner - anchor) * 0.5)
+        assert wait_until(app, lambda: motion("scale") > 80.0, 10_000), motion("scale")
+        # a click beside the box lets go of it; double-clicking the picture selects Motion again
+        q = ov.placement()["quad"]
+        beside = q[1] + QtCore.QPointF(36, 0)  # past the rotate reach, inside the click-beside area
+        click(beside)
+        assert wait_until(app, lambda: ov.placement() is None, 10_000)
+        centre = (q[0] + q[2]) / 2
+        p = QtCore.QPointF(centre)
+        QtWidgets.QApplication.sendEvent(view, QtGui.QMouseEvent(QtCore.QEvent.Type.MouseButtonDblClick, p, p,
+                                                                 view.mapToGlobal(p), left, left, nomod))
+        assert wait_until(app, lambda: ov.placement() is not None, 10_000)
+
+        # the selected mask: move it, a vertex, its feather; round its corners; Esc lets go
+        win.execute("masks.add", {"clip": cid, "effect": "opacity", "shape": "polygon"})
+        win.execute("masks.select", {"clip": cid, "effect": "opacity", "mask": 0})
+        assert wait_until(app, lambda: ov.mask_geometry() is not None, 10_000)
+
+        def mask() -> dict:
+            return (ov.data or {}).get("mask") or {}
+
+        v0 = mask()["vertices"][0]["p"]
+        body = ov.hit("mask.body")
+        drag(body, body + QtCore.QPointF(15, 0))
+        assert wait_until(app, lambda: mask().get("vertices") and mask()["vertices"][0]["p"][0] > v0[0] + 1, 10_000)
+        v1 = mask()["vertices"][1]["p"]
+        vert = ov.hit("mask.vertex.1")
+        drag(vert, vert + QtCore.QPointF(0, 12))
+        assert wait_until(app, lambda: mask()["vertices"][1]["p"][1] > v1[1] + 1, 10_000)
+        feather = mask()["feather"]
+        h = ov.hit("mask.feather")
+        normal = ov.mask_geometry()["handles"]["feather"]["pos"] - ov.mask_geometry()["handles"]["feather"]["base"]
+        drag(h, h + normal * 2)
+        assert wait_until(app, lambda: mask().get("feather", 0) > feather + 1, 10_000)
+        r = ov.hit("mask.roundness")
+        corner = ov.mask_geometry()["roundness"]
+        drag(r, r - (corner["pos"] - corner["anchor"]) * -2)
+        assert wait_until(app, lambda: mask().get("roundness") is None or len(mask()["vertices"]) > 4, 10_000)
+        assert len(mask()["vertices"]) > 4, "the corners are rounded"
+        view.setFocus()
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: ov.mask_geometry() is None, 10_000)
+
+        # the pen: three points and Enter make a Bezier mask
+        assert wait_until(app, lambda: (cid, next(e["index"] for e in ec.clip["effects"] if e["effect"] == "opacity")) in ec.mask_tools, 10_000)
+        opa = next(e["index"] for e in ec.clip["effects"] if e["effect"] == "opacity")
+        pen = ec.mask_tools[(cid, opa)].buttons["pen"]
+        pen.click()
+        assert ov.pen is not None
+        assert wait_until(app, lambda: ov.pen.get("toFrame") is not None, 10_000)
+        pic = view.picture_rect()
+        for fx, fy in ((0.4, 0.4), (0.6, 0.4), (0.5, 0.6)):
+            click(QtCore.QPointF(pic.x() + pic.width() * fx, pic.y() + pic.height() * fy))
+        assert len(ov.pen["points"]) == 3
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Return)
+        assert ov.pen is None and not pen.isChecked()
+        assert wait_until(app, lambda: len(next(e for e in ec.clip["effects"] if e["effect"] == "opacity")["maskList"]) == 2,
+                          10_000)
     finally:
         win._quit_confirmed = True
         win.close()

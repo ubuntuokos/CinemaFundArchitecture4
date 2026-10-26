@@ -136,6 +136,7 @@ class FrameView(QWidget):
         self.dropped: int | None = None  # dropped frames while playing (None: stopped)
         self._pan_from: QPointF | None = None
         self._press: QPointF | None = None
+        self.overlay: Any = None  # the Program monitor's on-monitor editing (program_overlay)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(160, 90)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -239,6 +240,9 @@ class FrameView(QWidget):
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             e.accept()
             return
+        if self.overlay is not None and not self.hand and self.overlay.press(e):
+            e.accept()
+            return
         self._press = e.position() if e.button() == Qt.MouseButton.LeftButton and not self.hand else None
         super().mousePressEvent(e)
 
@@ -247,6 +251,8 @@ class FrameView(QWidget):
             d = e.position() - self._pan_from
             self._pan_from = e.position()
             self.pan_by(d.x(), d.y())
+            return
+        if self.overlay is not None and not self.hand and self.overlay.move(e):
             return
         if self._press is not None and (e.position() - self._press).manhattanLength() >= QApplication.startDragDistance():
             self._press = None
@@ -260,7 +266,26 @@ class FrameView(QWidget):
             self._pan_from = None
             self.set_hand(self.hand)
             return
+        if self.overlay is not None and self.overlay.release(e):
+            return
         super().mouseReleaseEvent(e)
+
+    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+        if self.overlay is not None and not self.hand and self.overlay.double_click(e):
+            return
+        super().mouseDoubleClickEvent(e)
+
+    def event(self, e: QEvent) -> bool:
+        if e.type() == QEvent.Type.ShortcutOverride and isinstance(e, QKeyEvent) and self.overlay is not None \
+                and self.overlay.claims_key(e):
+            e.accept()
+            return True
+        return super().event(e)
+
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        if self.overlay is not None and self.overlay.key(e):
+            return
+        super().keyPressEvent(e)
 
     def set_hand(self, on: bool) -> None:
         self.hand = on
@@ -297,6 +322,8 @@ class FrameView(QWidget):
                 f.setPixelSize(11)
                 p.setFont(f)
                 p.drawText(QRectF(0, 6, self.width() - 8, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop, label)
+        if self.overlay is not None and img is not None and not img.isNull():
+            self.overlay.paint(p)
         if self.dropped is not None:
             p.setRenderHint(QPainter.RenderHint.Antialiasing)
             p.setPen(Qt.PenStyle.NoPen)
@@ -1085,6 +1112,10 @@ class ProgramMonitor(Monitor):
         super().__init__(engine, parent)
         self.sequence: dict[str, Any] | None = None
         self.view.set_image(None, self.empty_message())
+        from .program_overlay import ProgramOverlay
+
+        self.overlay = ProgramOverlay(self.view, engine, lambda c, p: self.command.emit(c, p))
+        self.view.overlay = self.overlay
 
     def set_sequence(self, seq: dict[str, Any] | None, revision: int) -> None:
         self.sequence = seq

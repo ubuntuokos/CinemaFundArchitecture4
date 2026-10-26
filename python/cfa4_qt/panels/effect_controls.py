@@ -1894,6 +1894,15 @@ class EffectControlsPanel(QWidget):
             else:
                 overlay.stop_pen()
 
+    def pen_done(self) -> None:
+        """The pen on the Program monitor closed or cancelled its mask: its button goes off."""
+        for tools in self.mask_tools.values():
+            pen = tools.buttons.get("pen")
+            if pen is not None and pen.isChecked():
+                pen.blockSignals(True)
+                pen.setChecked(False)
+                pen.blockSignals(False)
+
     def toggle_collapsed(self, clip: int, index: int) -> None:
         """Only the twirl arrow opens or shuts an effect (the rest of its header selects it)."""
         self.collapsed ^= {(clip, index)}
