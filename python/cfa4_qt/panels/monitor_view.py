@@ -50,7 +50,35 @@ DISPLAYS: tuple[tuple[str, str], ...] = (
     ("green", N_("Green")),
     ("blue", N_("Blue")),
 )
+# the Source monitor's audio display modes (egui's DisplayMode::AudioWaveform / VideoAndWaveform)
+SOURCE_DISPLAYS: tuple[tuple[str, str], ...] = (
+    ("audioWaveform", N_("Audio Waveform")),
+    ("videoAndWaveform", N_("Video and Audio Waveform Split")),
+)
 CHANNELS = ("alpha", "red", "green", "blue")
+# the marked span of the Source clip dragged to the Timeline: JSON {item, sourceIn, duration,
+# video, audio} (egui's SourceDrag)
+SOURCE_MIME = "application/x-cfa4-source"
+
+
+def source_payload(raw: Any) -> dict[str, Any] | None:
+    """A dragged Source span, checked: the media item, a span inside its media and the streams."""
+    try:
+        data = json.loads(bytes(raw).decode()) if raw is not None else None
+    except (ValueError, UnicodeDecodeError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    def whole(k: str) -> int | None:
+        v = data.get(k)
+        return v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v < 1 << 62 else None
+
+    item, start, dur = whole("item"), whole("sourceIn"), whole("duration")
+    video, audio = data.get("video") is True, data.get("audio") is True
+    if item is None or start is None or not dur or not (video or audio):
+        return None
+    return {"item": item, "sourceIn": start, "duration": dur, "video": video, "audio": audio}
 DEFAULT_HIDDEN = ("playback.loop",)  # egui: the Loop button is in the Button Editor, not shown
 
 
@@ -107,7 +135,7 @@ class MonitorView:
                 elif name in ("res", "paused_res"):
                     setattr(v, name, value if any(value == k for k, _l, _s in RESOLUTIONS) else default)
                 elif name == "display":
-                    v.display = value if any(value == k for k, _l in DISPLAYS) else default
+                    v.display = value if any(value == k for k, _l in (*DISPLAYS, *SOURCE_DISPLAYS)) else default
                 elif name == "hidden":
                     v.hidden = [str(x) for x in value] if isinstance(value, list) else list(default)
                 elif name == "pan":

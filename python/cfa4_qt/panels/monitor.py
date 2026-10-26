@@ -24,14 +24,16 @@ Without an audio device the sound is still fetched at the playing pace, for the 
 
 from __future__ import annotations
 
+import json
 from collections import deque
 from typing import Any
 
-from PySide6.QtCore import QElapsedTimer, QEvent, QPointF, QRectF, QSettings, Qt, QTimer, Signal
+from PySide6.QtCore import QElapsedTimer, QEvent, QMimeData, QPointF, QRect, QRectF, QSettings, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
     QColor,
+    QDrag,
     QImage,
     QKeyEvent,
     QMouseEvent,
@@ -40,13 +42,35 @@ from PySide6.QtGui import (
     QPen,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QMenu, QSizePolicy, QToolButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .. import theme
 from ..engine import EngineClient
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks
-from .monitor_view import CHANNELS, DISPLAYS, MAX_ZOOM, MIN_ZOOM, RESOLUTIONS, ZOOMS, MonitorView, res_label
+from .monitor_view import (
+    CHANNELS,
+    DISPLAYS,
+    MAX_ZOOM,
+    MIN_ZOOM,
+    RESOLUTIONS,
+    SOURCE_DISPLAYS,
+    SOURCE_MIME,
+    ZOOMS,
+    MonitorView,
+    res_label,
+)
+from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
 try:  # QtMultimedia is optional: without it playback is silent
@@ -97,6 +121,7 @@ class FrameView(QWidget):
     dropped-frame light drawn over it."""
 
     view_changed = Signal()  # magnification or pan
+    drag_out = Signal()  # a left-button drag on the picture (the Source monitor lifts its clip)
 
     def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -110,6 +135,7 @@ class FrameView(QWidget):
         self.hand = False  # the Hand tool is selected: a drag pans
         self.dropped: int | None = None  # dropped frames while playing (None: stopped)
         self._pan_from: QPointF | None = None
+        self._press: QPointF | None = None
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(160, 90)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -213,6 +239,7 @@ class FrameView(QWidget):
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             e.accept()
             return
+        self._press = e.position() if e.button() == Qt.MouseButton.LeftButton and not self.hand else None
         super().mousePressEvent(e)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
@@ -221,9 +248,14 @@ class FrameView(QWidget):
             self._pan_from = e.position()
             self.pan_by(d.x(), d.y())
             return
+        if self._press is not None and (e.position() - self._press).manhattanLength() >= QApplication.startDragDistance():
+            self._press = None
+            self.drag_out.emit()
+            return
         super().mouseMoveEvent(e)
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+        self._press = None
         if self._pan_from is not None:
             self._pan_from = None
             self.set_hand(self.hand)
@@ -448,6 +480,7 @@ class Monitor(QWidget):
         self.wrench.menu().aboutToShow.connect(self._fill_wrench_menu)
 
         controls = QHBoxLayout()
+        self.controls = controls
         controls.setContentsMargins(10, 2, 10, 0)
         controls.setSpacing(6)
         controls.addWidget(self.timecode)
@@ -639,6 +672,9 @@ class Monitor(QWidget):
         channels = m.addMenu(tr("RGBA Channels"))
         for key, label in DISPLAYS[1:]:
             display(key, label, channels)
+        if self.target == "source":
+            for key, label in SOURCE_DISPLAYS:
+                display(key, label, m)
         m.addSeparator()
         self._res_actions(m.addMenu(tr("Playback Resolution")), paused=False)
         self._res_actions(m.addMenu(tr("Paused Resolution")), paused=True)
@@ -1097,11 +1133,134 @@ class SourceMonitor(Monitor):
         super().__init__(engine, parent)
         self.source: dict[str, Any] | None = None
         self.view.set_image(None, self.empty_message())
+        self.view.drag_out.connect(lambda: self.start_source_drag(self.view, True, True))
+        # the audio waveform (egui's Audio Waveform / Video and Audio Waveform Split, and any
+        # clip without video)
+        self.media = TimelineMedia(self)
+        self.media.attach(engine)
+        self.wave = WaveformView(self)
+        self.media.updated.connect(self.wave.update)
+        layout = self.layout()
+        if isinstance(layout, QVBoxLayout):
+            layout.insertWidget(1, self.wave, 1)
+        self.wave.hide()
+        # Drag Video Only / Drag Audio Only / Drag Video and Audio (egui's source_drag::controls)
+        self.drag_buttons: dict[str, SourceDragButton] = {}
+        for i, (key, tip, video, audio) in enumerate(
+            (
+                ("video", N_("Drag Video Only"), True, False),
+                ("audio", N_("Drag Audio Only"), False, True),
+                ("both", N_("Drag Video and Audio"), True, True),
+            )
+        ):
+            b = SourceDragButton(self, key, video, audio)
+            b.setToolTip(tr(tip))
+            self.controls.insertWidget(3 + i, b)
+            self.drag_buttons[key] = b
+        # the recently opened clips, then Close / Close All (egui's Source panel menu, #313)
+        self.clips_button = QToolButton(self)
+        self.clips_button.setObjectName("source.clips")
+        self.clips_button.setToolTip(tr("Source clips"))
+        self.clips_button.setText("≡")
+        self.clips_button.setAutoRaise(True)
+        self.clips_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.clips_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.clips_button.setStyleSheet("QToolButton::menu-indicator { image: none; }")
+        self.clips_button.setMenu(QMenu(self.clips_button))
+        self.clips_button.menu().aboutToShow.connect(self._fill_clips_menu)
+        self.controls.insertWidget(0, self.clips_button)
+        self._apply_wave()
+
+    def _fill_clips_menu(self) -> None:
+        m = self.clips_button.menu()
+        m.clear()
+        current = (self.source or {}).get("item")
+        recent = [r for r in (self.source or self._recent_only or {}).get("recent") or [] if isinstance(r, dict) and isinstance(r.get("item"), int)]
+        for r in recent:
+            a = m.addAction(str(r.get("name") or ""))
+            a.setObjectName(f"source.clips.recent.{r['item']}")
+            a.setCheckable(True)
+            a.setChecked(r["item"] == current)
+            if r["item"] != current:
+                a.triggered.connect(lambda _c=False, i=r["item"]: self.command.emit("source.open", {"item": i}))
+        if recent:
+            m.addSeparator()
+        for cid, key, label in (("source.close", "close", N_("Close")), ("source.closeAll", "closeAll", N_("Close All"))):
+            a = m.addAction(tr(label))
+            a.setObjectName(f"source.clips.{key}")
+            a.setEnabled(current is not None)
+            a.triggered.connect(lambda _c=False, c=cid: self.command.emit(c, {}))
+
+    def has_video(self) -> bool:
+        return (self.source or {}).get("hasVideo") is not False
+
+    def has_audio(self) -> bool:
+        return (self.source or {}).get("hasAudio") is True
+
+    def _apply_wave(self) -> None:
+        """Picture, waveform or both, as egui's Source monitor shows them."""
+        shown = self.source is not None
+        wave_only = shown and (not self.has_video() or self.mv.display == "audioWaveform")
+        split = shown and not wave_only and self.mv.display == "videoAndWaveform"
+        self.view.setVisible(not wave_only)
+        self.wave.setVisible(wave_only or split)
+        layout = self.layout()
+        if isinstance(layout, QVBoxLayout):
+            layout.setStretch(0, 62 if split else 1)
+            layout.setStretch(1, 38 if split else 1)
+        for key, b in self.drag_buttons.items():
+            b.setEnabled(shown and (self.has_video() if key != "audio" else True) and (self.has_audio() if key != "video" else True))
+        self.wave.update()
+
+    def _apply_view(self, request: bool = True) -> None:
+        super()._apply_view(request)
+        if hasattr(self, "wave"):
+            self._apply_wave()
+
+    def _update_timecode(self) -> None:
+        super()._update_timecode()
+        if hasattr(self, "wave") and self.wave.isVisible():
+            self.wave.update()
+
+    def selected_span(self) -> tuple[int, int] | None:
+        """The marked span a drag carries (egui's ``selected_range``): (start, duration)."""
+        sel = (self.source or {}).get("selected")
+        if not isinstance(sel, dict):
+            return None
+        start, dur = sel.get("start"), sel.get("duration")
+        ok = all(isinstance(v, int) and not isinstance(v, bool) for v in (start, dur))
+        return (int(start), int(dur)) if ok and int(dur) > 0 and int(start) >= 0 else None
+
+    def source_payload(self, video: bool, audio: bool) -> dict[str, Any] | None:
+        src = self.source or {}
+        media = src.get("media")
+        span = self.selected_span()
+        video, audio = video and self.has_video(), audio and self.has_audio()
+        if not isinstance(media, int) or isinstance(media, bool) or span is None or not (video or audio):
+            return None
+        return {"item": media, "sourceIn": span[0], "duration": span[1], "video": video, "audio": audio}
+
+    def start_source_drag(self, widget: QWidget, video: bool, audio: bool) -> bool:
+        """Lift the marked span (video, audio or both) to drop on the Timeline."""
+        payload = self.source_payload(video, audio)
+        if payload is None:
+            return False
+        if self.playing:
+            self.stop()
+        mime = QMimeData()
+        mime.setData(SOURCE_MIME, json.dumps(payload).encode())
+        drag = QDrag(widget)
+        drag.setMimeData(mime)
+        drag.exec(Qt.DropAction.CopyAction)
+        return True
+
+    _recent_only: dict[str, Any] | None = None  # the reply with nothing open (its recent clips)
 
     def set_source(self, state: dict[str, Any] | None, revision: int) -> None:
         """``state`` is the ``source.inspect`` reply (``item`` null when nothing is open)."""
         previous = (self.source or {}).get("item")
         self.source = state if isinstance(state, dict) and state.get("item") is not None else None
+        self._recent_only = state if isinstance(state, dict) and self.source is None else None
         self.revision = revision
         if self.source is not None and not self.playing:
             ph = self.source.get("playhead")
@@ -1112,6 +1271,7 @@ class SourceMonitor(Monitor):
         if self.source is None or self.source.get("item") != previous:
             self.stop(notify=False)
         self._content_changed()
+        self._apply_wave()
 
     def has_content(self) -> bool:
         return self.source is not None
@@ -1143,3 +1303,137 @@ class SourceMonitor(Monitor):
 
     def sample_rate(self) -> int:
         return SOURCE_SAMPLE_RATE
+
+
+class SourceDragButton(QToolButton):
+    """Drag Video Only / Audio Only / Video and Audio: pressed and dragged, it lifts the marked
+    span of the Source clip with those streams."""
+
+    def __init__(self, monitor: SourceMonitor, key: str, video: bool, audio: bool) -> None:
+        super().__init__(monitor)
+        self.monitor = monitor
+        self.video, self.audio = video, audio
+        self.setObjectName(f"source.drag.{key}")
+        self.setAutoRaise(True)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.setFixedSize(30 if video and audio else 22, 22)
+        self._press: QPointF | None = None
+
+    def paintEvent(self, e: QPaintEvent) -> None:
+        super().paintEvent(e)
+        from .project import kind_icon  # the Project panel's film and audio glyphs
+
+        p = QPainter(self)
+        color = icon_color(self) if self.isEnabled() else theme.current().c("text_dim")
+        kinds = [k for k, on in (("film", self.video), ("audio", self.audio)) if on]
+        w = 14
+        x = (self.width() - w * len(kinds)) // 2
+        for k in kinds:
+            kind_icon(k, color, 14).paint(p, QRect(x, (self.height() - 14) // 2, 14, 14))
+            x += w
+        p.end()
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        self._press = e.position() if e.button() == Qt.MouseButton.LeftButton else None
+        super().mousePressEvent(e)
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if self._press is not None and (e.position() - self._press).manhattanLength() >= QApplication.startDragDistance():
+            self._press = None
+            self.setDown(False)
+            self.monitor.start_source_drag(self, self.video, self.audio)
+            return
+        super().mouseMoveEvent(e)
+
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+        self._press = None
+        super().mouseReleaseEvent(e)
+
+
+class WaveformView(QWidget):
+    """The Source clip's audio waveform (egui's ``monitor_view::waveform``): In / Out shading,
+    the playhead; a click or a sideways drag scrubs, a downward drag lifts the marked audio."""
+
+    COLOR = QColor(0x4F, 0xC3, 0x7A)
+
+    def __init__(self, monitor: SourceMonitor) -> None:
+        super().__init__(monitor)
+        self.monitor = monitor
+        self.setObjectName("source.waveform")
+        self.setMinimumHeight(40)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._press: QPointF | None = None
+
+    def span(self) -> tuple[int, int]:
+        start, end = self.monitor.range()
+        return start, max(start + 1, end)
+
+    def x_of(self, t: int) -> float:
+        start, end = self.span()
+        return min(1.0, max(0.0, (t - start) / (end - start))) * self.width()
+
+    def time_at(self, x: float) -> int:
+        start, end = self.span()
+        f = min(1.0, max(0.0, x / max(1, self.width())))
+        return start + int((end - start) * f)
+
+    def peaks(self) -> list[tuple[float, float]] | None:
+        src = self.monitor.source or {}
+        start, end = self.span()
+        return self.monitor.media.waveform(src.get("media"), start, end)
+
+    def paintEvent(self, _e: QPaintEvent) -> None:
+        p = QPainter(self)
+        T = theme.current()
+        p.fillRect(self.rect(), T.c("monitor_bg"))
+        if self.monitor.source is None:
+            p.end()
+            return
+        w, h = self.width(), self.height()
+        mark_in, mark_out = self.monitor.marks()
+        start, end = self.span()
+        if mark_in is not None or mark_out is not None:
+            a, b = self.x_of(mark_in if mark_in is not None else start), self.x_of(mark_out if mark_out is not None else end)
+            p.fillRect(QRectF(a, 0, max(0.0, b - a), h), QColor(255, 255, 255, 14))
+        mid = h / 2
+        p.setPen(QPen(QColor(255, 255, 255, 30), 1))
+        p.drawLine(QPointF(0, mid), QPointF(w, mid))
+        self.monitor.media.begin_paint()
+        peaks = self.peaks()
+        if peaks:
+            half = h * 0.45
+            n = len(peaks)
+            for x in range(w):
+                i0 = min(n - 1, x * n // max(1, w))
+                i1 = max(i0 + 1, min(n, (x + 1) * n // max(1, w)))
+                lo = min(pk[0] for pk in peaks[i0:i1])
+                hi = max(pk[1] for pk in peaks[i0:i1])
+                if hi - lo > 0.002:
+                    p.fillRect(QRectF(x, mid - min(1.0, hi) * half, 1, (min(1.0, hi) - max(-1.0, lo)) * half + 1), self.COLOR)
+        else:
+            p.setPen(T.c("text_dim"))
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, tr("(no audio)") if peaks is not None else tr("Generating waveform…"))
+        x = self.x_of(self.monitor.playhead)
+        p.setPen(QPen(T.c("playhead"), 1))
+        p.drawLine(QPointF(x, 0), QPointF(x, h))
+        p.end()
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        if e.button() == Qt.MouseButton.LeftButton and self.monitor.source is not None:
+            self._press = e.position()
+            self.monitor.seek(self.time_at(e.position().x()))
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if self._press is None:
+            return
+        d = e.position() - self._press
+        if abs(d.y()) > max(abs(d.x()), 6.0):
+            # dragging down lifts the marked audio to the Timeline
+            self._press = None
+            self.monitor.start_source_drag(self, False, True)
+            return
+        self.monitor.seek(self.time_at(e.position().x()))
+
+    def mouseReleaseEvent(self, _e: QMouseEvent) -> None:
+        self._press = None

@@ -2568,9 +2568,22 @@ fn build() -> Vec<CommandSpec> {
             Ok(json!({"time": s.state.source_playhead.0}))
         }),
         query!("source.inspect", "Inspect Source Monitor", "{}", |s, _| {
-            let Some(item) = s.state.source_item else { return Ok(json!({"item": null})) };
+            // the Source panel menu's recently opened clips (#313)
+            let recent: Vec<Value> = s.state.source_history.iter().filter_map(|i| s.project.item(*i).map(|it| json!({"item": i.0, "name": it.name}))).collect();
+            let Some(item) = s.state.source_item else { return Ok(json!({"item": null, "recent": recent})) };
             let v = crate::clip_ops::source_view(s, item).ok_or_else(|| bad("source.inspect", "the source item is gone"))?;
-            Ok(v.to_json(s.state.source_playhead))
+            let mut out = v.to_json(s.state.source_playhead);
+            // what a drag from the picture or the waveform can carry to the Timeline
+            let media = s.project.item(v.media);
+            let range = v.selected_range();
+            if let Some(o) = out.as_object_mut() {
+                o.insert("name".into(), json!(s.project.item(item).map(|i| i.name.clone())));
+                o.insert("hasVideo".into(), json!(media.is_some_and(|m| m.has_video())));
+                o.insert("hasAudio".into(), json!(media.is_some_and(|m| m.has_audio())));
+                o.insert("selected".into(), json!({"start": range.start.0, "duration": range.duration.0}));
+                o.insert("recent".into(), json!(recent));
+            }
+            Ok(out)
         }),
         cmd!("source.insert", "Insert", ["Clip"], Some(","), "{}", has_source, |s, _| edit_at_source(s, true)),
         cmd!("source.overwrite", "Overwrite", ["Clip"], Some("."), "{}", has_source, |s, _| edit_at_source(s, false)),

@@ -961,6 +961,56 @@ def test_real_engine_source_monitor(app, tmp_path: Path):
         assert wait_until(app, lambda: count() > before or bool(win.events.text.toPlainText().strip()), 20_000)
         assert count() > before, win.events.text.toPlainText()
         assert isinstance(win.registry.commands.get("source.overwrite"), Command)
+        # egui's source drag: the marked span (In 2, Out 10: 9 frames), video only, to an empty
+        # stretch of V2
+        from cfa4_qt.panels.monitor_view import SOURCE_MIME
+
+        assert src.drag_buttons["video"].isEnabled() and src.drag_buttons["both"].isEnabled()
+        payload = src.source_payload(True, False)
+        assert payload == {"item": src.source["media"], "sourceIn": 2 * ft, "duration": 9 * ft, "video": True, "audio": False}, payload
+        canvas = win.timeline.canvas
+        clips = lambda kind: [c for t in (win.sequence or {}).get(kind) or [] for c in t.get("items") or []]
+        videos, audios = len(clips("video")), len(clips("audio"))
+        end = max((int(c.get("start") or 0) + int(c.get("duration") or 0)) for c in clips("video"))
+        drop_at = end + 50 * ft
+        v2 = next(r for r in canvas.rows if r.short == "V2")
+        a1 = next(r for r in canvas.rows if r.short == "A1")
+        mime = QtCore.QMimeData()
+        mime.setData(SOURCE_MIME, json.dumps(payload).encode())
+        Qt = QtCore.Qt
+        pos = QtCore.QPoint(int(canvas.x_of(drop_at)), a1.top + a1.height // 2)
+        move = QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        canvas.dragMoveEvent(move)
+        assert not move.isAccepted() and canvas._drop_preview is None, "video only: no drop on an audio track"
+        pos = QtCore.QPoint(int(canvas.x_of(drop_at)), v2.top + v2.height // 2)
+        canvas.dragMoveEvent(QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert wait_until(app, lambda: len(clips("video")) == videos + 1, 20_000), win.events.text.toPlainText()
+        assert len(clips("audio")) == audios, "video only"
+        placed = next(c for t in (win.sequence or {}).get("video") or [] if t.get("id") == v2.track_id for c in t.get("items") or [] if int(c.get("start") or 0) >= end)
+        assert int(placed.get("duration") or 0) == 9 * ft, placed
+        # Audio Waveform display: the waveform instead of the picture, with peaks from the engine
+        src.set_view(display="audioWaveform")
+        assert src.wave.isVisible() and not src.view.isVisible()
+        assert wait_until(app, lambda: bool(src.wave.peaks()), 20_000)
+        src.wave.grab()
+        src.set_view(display="videoAndWaveform")
+        assert src.wave.isVisible() and src.view.isVisible()
+        src.set_view(display="composite")
+        assert not src.wave.isVisible() and src.view.isVisible()
+        # the recent clips menu: switch between opened clips, Close All
+        other = next(i for i in _items(win.project) if i.get("type") == "Movie" and i["item"] != movie["item"])
+        win.execute("source.open", {"item": other["item"]})
+        assert wait_until(app, lambda: (src.source or {}).get("item") == other["item"], 10_000)
+        menu = src.clips_button.menu()
+        menu.aboutToShow.emit()
+        names = {a.objectName(): a for a in menu.actions()}
+        assert names[f"source.clips.recent.{other['item']}"].isChecked()
+        names[f"source.clips.recent.{movie['item']}"].trigger()
+        assert wait_until(app, lambda: (src.source or {}).get("item") == movie["item"], 10_000)
+        menu.aboutToShow.emit()
+        next(a for a in menu.actions() if a.objectName() == "source.clips.closeAll").trigger()
+        assert wait_until(app, lambda: not src.has_content(), 10_000)
     finally:
         win._quit_confirmed = True
         win.close()

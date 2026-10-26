@@ -29,6 +29,7 @@ from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
 from .effects import EFFECT_MIME, dropped_effect
 from .essential_graphics import TEMPLATE_MIME, dropped_template
 from .media_browser import FILES_MIME, dropped_files
+from .monitor_view import SOURCE_MIME, source_payload
 from .timeline_media import TimelineMedia
 
 ITEM_MIME = "application/x-cfa4-item"
@@ -776,7 +777,8 @@ class TimelineCanvas(QWidget):
     # ----- drag and drop from the Project panel -----
     def dragEnterEvent(self, e) -> None:
         m = e.mimeData()
-        if (m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasFormat(EFFECT_MIME) or m.hasUrls()) and self.sequence:
+        ours = m.hasFormat(ITEM_MIME) or m.hasFormat(SOURCE_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasFormat(EFFECT_MIME)
+        if (ours or m.hasUrls()) and self.sequence:
             e.acceptProposedAction()
 
     def effect_target(self, pos: QPoint, effect: str) -> tuple[Row, dict[str, Any], str] | None:
@@ -803,13 +805,38 @@ class TimelineCanvas(QWidget):
             self.update()
             return
         row = self.row_at(pos.y())
-        if row is None or pos.x() < HEADER_W or (e.mimeData().hasFormat(TEMPLATE_MIME) and row.kind != "video"):
+        source = source_payload(e.mimeData().data(SOURCE_MIME)) if e.mimeData().hasFormat(SOURCE_MIME) else None
+        # a Source span lands only on tracks of a stream it carries (egui's)
+        wrong_stream = source is not None and row is not None and not source["video" if row.kind == "video" else "audio"]
+        if row is None or pos.x() < HEADER_W or wrong_stream or (e.mimeData().hasFormat(TEMPLATE_MIME) and row.kind != "video"):
             self._drop_preview = None
             e.ignore()
         else:
             self._drop_preview = (self.snap(self.time_at(pos.x()), set()), row)
             e.acceptProposedAction()
         self.update()
+
+    def source_place_params(self, source: dict[str, Any], t: int, row: Row, insert: bool) -> dict[str, Any]:
+        """``timeline.place`` for a Source span dropped on ``row`` at ``t``: the other stream goes
+        on the track of the same number (egui's), Ctrl inserts."""
+        seq = self.sequence or {}
+        videos = [v.get("id") for v in seq.get("video") or [] if isinstance(v, dict)]
+        audios = [a.get("id") for a in seq.get("audio") or [] if isinstance(a, dict)]
+        mine, other = (videos, audios) if row.kind == "video" else (audios, videos)
+        index = mine.index(row.track_id) if row.track_id in mine else 0
+        partner = other[index] if index < len(other) else (other[0] if other else None)
+        vt, at = (row.track_id, partner) if row.kind == "video" else (partner, row.track_id)
+        return {
+            "item": source["item"],
+            "time": t,
+            "track": vt,
+            "audioTrack": at,
+            "insert": insert,
+            "sourceIn": source["sourceIn"],
+            "duration": source["duration"],
+            "video": source["video"],
+            "audio": source["audio"],
+        }
 
     def dragLeaveEvent(self, _e) -> None:
         self._drop_preview = None
@@ -848,6 +875,12 @@ class TimelineCanvas(QWidget):
             videos = [v.get("id") for v in (self.sequence or {}).get("video") or []]
             if row.kind == "video" and row.track_id in videos:
                 self.command.emit("graphics.template.apply", {"template": template, "time": t, "track": videos.index(row.track_id)})
+                e.acceptProposedAction()
+            return
+        if e.mimeData().hasFormat(SOURCE_MIME):
+            source = source_payload(e.mimeData().data(SOURCE_MIME))
+            if source is not None:
+                self.command.emit("timeline.place", self.source_place_params(source, t, row, bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier)))
                 e.acceptProposedAction()
             return
         if not e.mimeData().hasFormat(ITEM_MIME):

@@ -824,6 +824,10 @@ fn subclip_source_monitor_trims_and_markers() {
     let v = s.execute("source.inspect", json!({})).unwrap();
     assert_eq!((v["start"].as_i64(), v["end"].as_i64(), v["playhead"].as_i64()), (Some(f(24).0), Some(f(72).0), Some(f(24).0)));
     assert_eq!(v["media"], ocean.0);
+    // what a drag carries (the marked span of the master clip's media) and the recent clips
+    assert_eq!((v["hasVideo"].as_bool(), v["hasAudio"].as_bool()), (Some(true), Some(true)));
+    assert_eq!((v["selected"]["start"].as_i64(), v["selected"]["duration"].as_i64()), (Some(f(24).0), Some(f(48).0)));
+    assert_eq!(v["recent"][0]["item"], sub.0);
     // inherited markers: the master clip's markers inside the range
     let names: Vec<&str> = v["markers"].as_array().unwrap().iter().map(|m| m["name"].as_str().unwrap()).collect();
     assert_eq!(names, ["m30", "m60"]);
