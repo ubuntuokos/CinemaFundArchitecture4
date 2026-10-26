@@ -30,7 +30,10 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
 1. **Qt6-felület az első prioritás.** A célfelület Qt6 (Qt6 Widgets + PySide6). A meglévő Rust
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
-   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
+   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat **pontról pontra**
+   nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
+   befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
+   (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
    A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
    VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
    tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.

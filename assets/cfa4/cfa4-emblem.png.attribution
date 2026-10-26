@@ -1,0 +1,8 @@
+asset:        cfa4-emblem.png
+title:        CFA4 logo emblem on a transparent background
+author:       ubuntuokos (Horváth István), CFA4 project owner — original design
+source:       Derived from assets/cfa4/cfa4-official-logo.png by scripts/dev/cfa4_icons.py
+license:      LicenseRef-CFA4-Logo
+license-file: assets/cfa4/LICENSE-logo.txt
+added:        2026-10-25, replacing the geometric development placeholder icon
+notes:        CFA4 mark owned by the project owner; not covered by the GPL. Forks and modified versions must replace it (assets/cfa4/LICENSE-logo.txt).
