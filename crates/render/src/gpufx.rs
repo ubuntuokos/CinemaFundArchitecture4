@@ -129,6 +129,12 @@ pub enum FxOp {
     SwapEyes {
         sbs: bool,
     },
+    /// Stereo to 2D: one view (the left, or the right with `right`) stretched over the whole frame
+    /// along the split axis ([`stereo_view_sample`]).
+    StereoTo2d {
+        sbs: bool,
+        right: bool,
+    },
     Mirror {
         cx: f32,
         cy: f32,
@@ -232,6 +238,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "horizontal_flip",
     "vertical_flip",
     "stereo_swap_eyes",
+    "stereo_to_2d",
     "mirror",
     "offset",
     "asc_cdl",
@@ -259,6 +266,28 @@ pub fn swap_eyes_src(x: usize, y: usize, w: usize, h: usize, sbs: bool) -> (usiz
         }
     };
     if sbs { (swap(x, w), y) } else { (x, swap(y, h)) }
+}
+
+/// Output pixel (`x`, `y`) of Stereo to 2D on `src`: the kept view (`w / 2` columns or `h / 2`
+/// rows, the right / bottom one with `right`) stretched over the whole size along the split axis,
+/// linearly interpolated along that axis and clamped to the view so the other eye never bleeds in.
+/// The caller checks that the split size is at least 2. `fx.wgsl` (`OP_STEREO_TO_2D`) mirrors
+/// this.
+pub fn stereo_view_sample(src: &Image, x: usize, y: usize, sbs: bool, right: bool) -> [f32; 4] {
+    let (n, at) = if sbs { (src.w, x) } else { (src.h, y) };
+    let vw = n / 2;
+    let v0 = if right { vw } else { 0 };
+    let scale = vw as f32 / n as f32;
+    let f = (v0 as f32 + (at as f32 + 0.5) * scale - 0.5).clamp(v0 as f32, (v0 + vw - 1) as f32);
+    let lo = f.floor() as usize;
+    let hi = (lo + 1).min(v0 + vw - 1);
+    let t = f - lo as f32;
+    let (a, b) = if sbs { (src.get(lo, y), src.get(hi, y)) } else { (src.get(x, lo), src.get(x, hi)) };
+    let mut o = [0.0; 4];
+    for k in 0..4 {
+        o[k] = a[k] + (b[k] - a[k]) * t;
+    }
+    o
 }
 
 /// `Image::transformed` without the mip path: the destination rectangle it writes and the inverse.
@@ -440,6 +469,7 @@ impl FxOp {
             "horizontal_flip" => FxOp::HFlip,
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
+            "stereo_to_2d" => FxOp::StereoTo2d { sbs: choice(e, "frame_layout") == 1, right: choice(e, "eye") == 1 },
             "mirror" => {
                 let img = Image { w, h, px: Vec::new() };
                 let c = point(e, "center", cx, &img);
@@ -618,7 +648,7 @@ impl FxOp {
             FxOp::BrightnessContrast { br, co } => fin(&[*br, *co]),
             FxOp::ProcAmp { br, co, hue, sat } => fin(&[*br, *co, *hue, *sat]),
             FxOp::Tint { black, white, amount } => fin(black) && fin(white) && amount.is_finite(),
-            FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip | FxOp::SwapEyes { .. } => true,
+            FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip | FxOp::SwapEyes { .. } | FxOp::StereoTo2d { .. } => true,
             FxOp::ColorBalance { sh, md, hi, .. } => fin(sh) && fin(md) && fin(hi),
             FxOp::LeaveColor { amount, key_hue, tol, soft } => fin(&[*amount, *key_hue, *tol, *soft]),
             FxOp::ChangeToColor { from_hue, to_hue, tol, soft } => fin(&[*from_hue, *to_hue, *tol, *soft]),
@@ -840,6 +870,21 @@ impl FxOp {
                         let s = (sy * w + sx) * 4;
                         if let (Some(d), Some(v)) = (row.get_mut(x * 4..x * 4 + 4), src.px.get(s..s + 4)) {
                             d.copy_from_slice(v);
+                        }
+                    }
+                });
+            }
+            FxOp::StereoTo2d { sbs, right } => {
+                let (sbs, right) = (*sbs, *right);
+                let (w, h) = (img.w, img.h);
+                if (if sbs { w } else { h }) < 2 {
+                    return;
+                }
+                let src = img.clone();
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
+                            d.copy_from_slice(&stereo_view_sample(&src, x, y, sbs, right));
                         }
                     }
                 });
@@ -1260,5 +1305,59 @@ mod tests {
         let mut img = Image::new(0, 0);
         FxOp::SwapEyes { sbs: true }.apply(&mut img);
         assert!(img.px.is_empty());
+    }
+
+    fn stereo_to_2d(layout: u32, eye: u32) -> EffectInstance {
+        let mut e = find_effect("stereo_to_2d").unwrap().instance();
+        e.params.get_mut("frame_layout").unwrap().value = ParamValue::Choice(layout);
+        e.params.get_mut("eye").unwrap().value = ParamValue::Choice(eye);
+        e
+    }
+
+    #[test]
+    fn stereo_to_2d_stretches_the_kept_view() {
+        let mut row = Image::new(4, 1);
+        for (x, v) in [0.0, 1.0, 2.0, 3.0].into_iter().enumerate() {
+            row.px[x * 4..x * 4 + 4].copy_from_slice(&[v, v, v, 1.0]);
+        }
+        let run = |eye| {
+            let mut img = row.clone();
+            FxOp::eval(&stereo_to_2d(1, eye), &eval_ctx(), 4, 1).unwrap().apply(&mut img);
+            (0..4).map(|x| img.get(x, 0)[0]).collect::<Vec<_>>()
+        };
+        assert_eq!(run(0), [0.0, 0.25, 0.75, 1.0], "left view 0..1 over four columns");
+        assert_eq!(run(1), [2.0, 2.25, 2.75, 3.0], "right view 2..3 over four columns");
+    }
+
+    #[test]
+    fn stereo_to_2d_never_mixes_in_the_other_eye() {
+        for (w, h, layout) in [(9, 6, 0), (9, 7, 0), (10, 5, 1), (11, 5, 1), (2, 2, 1), (2, 2, 0)] {
+            let mut src = Image::new(w, h);
+            for y in 0..h {
+                for x in 0..w {
+                    let left = if layout == 1 { x < w / 2 } else { y < h / 2 };
+                    let c = if left { [1.0, 0.0, 0.0, 1.0] } else { [0.0, 0.0, 1.0, 1.0] };
+                    src.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&c);
+                }
+            }
+            for eye in [0, 1] {
+                let mut img = src.clone();
+                let op = FxOp::eval(&stereo_to_2d(layout, eye), &eval_ctx(), w, h).unwrap();
+                assert!(op.gpu_ok());
+                op.apply(&mut img);
+                let want = if eye == 0 { [1.0, 0.0, 0.0, 1.0] } else { [0.0, 0.0, 1.0, 1.0] };
+                assert!(img.px.chunks(4).all(|p| p == want), "{w}x{h} layout {layout} eye {eye}");
+            }
+        }
+    }
+
+    #[test]
+    fn stereo_to_2d_without_two_views_is_a_no_op() {
+        for (w, h, layout) in [(1, 5, 1), (5, 1, 0), (1, 1, 0), (1, 1, 1)] {
+            let src = numbered(w, h);
+            let mut img = src.clone();
+            FxOp::eval(&stereo_to_2d(layout, 1), &eval_ctx(), w, h).unwrap().apply(&mut img);
+            assert_eq!(img.px, src.px, "{w}x{h} layout {layout}");
+        }
     }
 }
