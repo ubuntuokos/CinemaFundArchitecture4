@@ -57,6 +57,7 @@ from cfa4_devtools.settings_backend import (
     Schema,
     SettingsBackendError,
     changed_values,
+    duration_limits,
     pci_name,
     run_cli,
     run_hardware,
@@ -332,23 +333,43 @@ class SettingsDialog(QDialog):
 
     def _number(self, f: Field, value: Any) -> QWidget:
         spin = QDoubleSpinBox()
-        spin.setDecimals(f.decimals if f.kind == "float" else 2)
-        lo = f.minimum if f.minimum is not None else 0.0
-        hi = f.maximum if f.maximum is not None else 1_000_000.0
-        spin.setRange(lo, max(lo, hi))
-        spin.setValue(float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else lo)
-        if f.unit:
-            spin.setSuffix(f" {f.unit}")
-        integral = isinstance(value, int) and not isinstance(value, bool)
-        spin.valueChanged.connect(lambda v, k=f.key, i=integral: self._set(k, round(v) if i else float(v)))
+        number = float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
         if f.kind != "duration" or not f.unit_key:
+            spin.setDecimals(f.decimals)
+            lo = f.minimum if f.minimum is not None else 0.0
+            hi = f.maximum if f.maximum is not None else 1_000_000.0
+            spin.setRange(lo, max(lo, hi))
+            spin.setValue(number if number is not None else lo)
+            if f.unit:
+                spin.setSuffix(f" {f.unit}")
+            integral = isinstance(value, int) and not isinstance(value, bool)
+            spin.valueChanged.connect(lambda v, k=f.key, i=integral: self._set(k, round(v) if i else float(v)))
             return spin
         unit = QComboBox()
         unit.setObjectName(f"settings.{f.unit_key}")
         unit.addItem("Frames", "frames")
         unit.addItem("Seconds", "seconds")
         unit.setCurrentIndex(max(unit.findData(self.edited.get(f.unit_key)), 0))
-        unit.currentIndexChanged.connect(lambda _i, k=f.unit_key, box=unit: self._set(k, box.currentData()))
+
+        def limit(unit_value: Any) -> None:
+            """Range and precision of the engine's sanitize for this unit (whole frames)."""
+            lo, hi, decimals = duration_limits(unit_value)
+            spin.setDecimals(decimals)
+            spin.setRange(lo, hi)  # clamps the shown value; valueChanged records it
+
+        def changed(v: float, k: str = f.key, box: QComboBox = unit) -> None:
+            self._set(k, round(v) if box.currentData() == "frames" else float(v))
+
+        limit(unit.currentData())
+        spin.setValue(number if number is not None else spin.minimum())
+        spin.valueChanged.connect(changed)
+
+        def unit_changed(_i: int, k: str = f.unit_key) -> None:
+            self._set(k, unit.currentData())
+            limit(unit.currentData())
+            changed(spin.value())
+
+        unit.currentIndexChanged.connect(unit_changed)
         row = QWidget()
         h = QHBoxLayout(row)
         h.setContentsMargins(0, 0, 0, 0)
@@ -463,23 +484,33 @@ class SettingsDialog(QDialog):
     def changes(self) -> dict[str, Any]:
         return changed_values(self.saved, self.edited)
 
+    def _busy(self, busy: bool, message: str = "") -> None:
+        """While a save or reset runs, nothing can be edited, saved, reset or closed."""
+        for w in (self.tree, self.stack, self.ok_button, self.cancel_button):
+            w.setEnabled(not busy)
+        self.reset_button.setEnabled(not busy and self.current_page() not in (None, ACCELERATORS_PAGE))
+        self.status.setText(message)
+
+    def reject(self) -> None:
+        if not self.cancel_button.isEnabled() and self.schema is not None:
+            return  # Escape / window close during a save or reset
+        super().reject()
+
     def _save(self) -> None:
         changes = self.changes()
         if not changes or self.cli is None:
             self.accept()
             return
         cli, data_dir = self.cli, self.data_dir
-        self.ok_button.setEnabled(False)
-        self.status.setText("Saving…")
+        self._busy(True, "Saving…")
         self._run(lambda: run_save(cli, changes, data_dir), lambda _r: self.accept(), self._save_failed)
 
     def _save_failed(self, message: str) -> None:
-        self.ok_button.setEnabled(True)
-        self.status.setText(f"Not saved: {message}")
+        self._busy(False, f"Not saved: {message}")
 
     def _reset_page(self) -> None:
         page = self.current_page()
-        if self.cli is None or page is None or page == ACCELERATORS_PAGE:
+        if self.cli is None or self.schema is None or page is None or page == ACCELERATORS_PAGE:
             return
         answer = QMessageBox.question(
             self, "Reset Page", "Set every setting on this page back to its default now? Other unsaved edits are kept.",
@@ -487,15 +518,17 @@ class SettingsDialog(QDialog):
         if answer != QMessageBox.StandardButton.Yes:
             return
         cli, data_dir = self.cli, self.data_dir
-        pending = self.changes()
-        self.status.setText("Resetting…")
+        # editing is off until the reset finishes, so this snapshot stays complete
+        page_keys = self.schema.page_keys(page)
+        pending = {k: v for k, v in self.changes().items() if k not in page_keys}
+        self._busy(True, "Resetting…")
 
         def work() -> Any:
             run_cli(cli, ["settings", "reset", page], data_dir=data_dir)
             return run_load(cli, data_dir)
 
         def done(result: Any) -> None:
-            page_keys = {f.key for f in getattr(self.schema.page(page) if self.schema else None, "fields", ())}
-            self._loaded(result, {k: v for k, v in pending.items() if k not in page_keys}, page)
+            self._busy(False)
+            self._loaded(result, pending, page)
 
-        self._run(work, done, lambda e: self.status.setText(f"Not reset: {e}"))
+        self._run(work, done, lambda e: self._busy(False, f"Not reset: {e}"))

@@ -193,6 +193,12 @@ class Schema:
     def page(self, page_id: str) -> Page | None:
         return next((p for g in self.groups for p in g.pages if p.id == page_id), None)
 
+    def page_keys(self, page_id: str) -> set[str]:
+        """Every key a page edits: its fields and their duration unit keys."""
+        page = self.page(page_id)
+        fields = page.fields if page is not None else ()
+        return {f.key for f in fields} | {f.unit_key for f in fields if f.unit_key}
+
     def values(self, prefs: dict[str, Any]) -> dict[str, Any]:
         """Every field's saved value by key, plus the unit keys of duration fields (from `prefs`)."""
         out: dict[str, Any] = {}
@@ -203,6 +209,14 @@ class Schema:
                     if f.unit_key:
                         out[f.unit_key] = lookup(prefs, f.unit_key)
         return out
+
+
+# `settings::sanitize` limits of a duration by its unit: (min, max, decimals); frames are whole.
+DURATION_LIMITS = {"frames": (1.0, 100_000.0, 0), "seconds": (0.01, 3600.0, 2)}
+
+
+def duration_limits(unit: Any) -> tuple[float, float, int]:
+    return DURATION_LIMITS.get(unit if isinstance(unit, str) else "", DURATION_LIMITS["seconds"])
 
 
 def changed_values(original: dict[str, Any], edited: dict[str, Any]) -> dict[str, Any]:

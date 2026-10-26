@@ -17,6 +17,7 @@ from cfa4_devtools.settings_backend import (
     Schema,
     SettingsBackendError,
     changed_values,
+    duration_limits,
     lookup,
     pci_name,
     run_cli,
@@ -77,6 +78,14 @@ class SchemaModel(unittest.TestCase):
         values = Schema.parse(SCHEMA).values(PREFS)
         self.assertEqual(values["timeline.stillUnit"], "seconds")
         self.assertEqual(values["memory.reserved"], 4)
+
+    def test_page_keys_and_duration_limits(self):
+        schema = Schema.parse(SCHEMA)
+        self.assertEqual(schema.page_keys("timeline"), {"timeline.still", "timeline.stillUnit", "timeline.scroll"})
+        self.assertEqual(schema.page_keys("missing"), set())
+        self.assertEqual(duration_limits("frames"), (1.0, 100_000.0, 0))
+        self.assertEqual(duration_limits("seconds"), (0.01, 3600.0, 2))
+        self.assertEqual(duration_limits(None), (0.01, 3600.0, 2))
 
     def test_hostile_schema(self):
         for bad in (None, [], "x", {"categories": "x"}, {}):
@@ -243,6 +252,36 @@ class QtWindow(unittest.TestCase):
             {"workload": "composite", "chain": ["cpu"]}]}))
         self.assertIsNotNone(dialog.findChild(object, "settings.accelerators.plans"))
         dialog._hardware_failed("boom")
+        dialog.close()
+
+    def test_duration_follows_the_unit_limits(self):
+        from cfa4_devtools.qt_settings import SettingsDialog
+        from PySide6.QtWidgets import QComboBox, QDoubleSpinBox
+
+        dialog = SettingsDialog(None)
+        dialog._loaded((Schema.parse(SCHEMA), PREFS))
+        spin = dialog.findChild(QDoubleSpinBox)
+        unit = dialog.findChild(QComboBox, "settings.timeline.stillUnit")
+        spin.setValue(7200)  # seconds: the engine caps at 3600
+        self.assertEqual(dialog.edited["timeline.still"], 3600.0)
+        unit.setCurrentIndex(unit.findData("frames"))
+        self.assertEqual(spin.decimals(), 0)
+        spin.setValue(2.6)
+        self.assertEqual(dialog.edited["timeline.still"], 3)
+        self.assertEqual(dialog.edited["timeline.stillUnit"], "frames")
+        dialog.close()
+
+    def test_busy_blocks_editing_and_closing(self):
+        from cfa4_devtools.qt_settings import SettingsDialog
+
+        dialog = SettingsDialog(None)
+        dialog._loaded((Schema.parse(SCHEMA), PREFS))
+        dialog._busy(True, "Saving…")
+        self.assertFalse(dialog.stack.isEnabled() or dialog.ok_button.isEnabled() or dialog.reset_button.isEnabled())
+        dialog.reject()
+        self.assertEqual(dialog.result(), 0)
+        dialog._busy(False)
+        self.assertTrue(dialog.stack.isEnabled() and dialog.ok_button.isEnabled())
         dialog.close()
 
 
