@@ -87,6 +87,10 @@ impl Measure for EngineMeasure {
         Some(b.map(f64::from))
     }
 
+    fn file_exists(&self, file: &str) -> bool {
+        picture_path(self.base.as_deref(), file).is_some()
+    }
+
     fn picture_size(&self, file: &str) -> Option<(f64, f64)> {
         let path = picture_path(self.base.as_deref(), file)?;
         let mut cache = self.sizes.borrow_mut();
@@ -228,12 +232,6 @@ fn issues_json(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path:
     Ok(serde_json::to_value(issues).unwrap_or(Value::Array(vec![])))
 }
 
-/// Read and lay out the credits a command names, for the active sequence.
-fn laid(s: &Session, cmd: &str, p: &Value) -> Result<(Laid, SheetInfo)> {
-    let (doc, info, base) = doc_p(cmd, p)?;
-    Ok((lay_doc(s, cmd, &doc, base)?, info))
-}
-
 fn warnings_json(l: &Laid) -> Value {
     Value::Array(l.warnings.iter().map(|w| json!({"row": w.row, "message": w.message})).collect())
 }
@@ -242,7 +240,15 @@ fn behaviour_name(b: cfa4_credits::Behaviour) -> &'static str {
     match b {
         cfa4_credits::Behaviour::Card => "card",
         cfa4_credits::Behaviour::Scroll => "scroll",
+        cfa4_credits::Behaviour::Crawl => "crawl",
     }
+}
+
+/// A page's background and transition, as JSON for the preview.
+fn look_json(pg: &cfa4_credits::PageOut) -> (Value, Value) {
+    let bg = pg.background.as_ref().map(|b| serde_json::to_value(b).unwrap_or(Value::Null)).unwrap_or(Value::Null);
+    let tr = pg.transition.as_ref().map(|(id, d)| json!({"effect": id, "duration": d.0})).unwrap_or(Value::Null);
+    (bg, tr)
 }
 
 fn preview(s: &mut Session, p: &Value) -> Result<Value> {
@@ -260,6 +266,9 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
             "gapAfter": pg.gap_after.0,
             "layers": pg.layers.len(),
             "contentHeight": pg.content_height,
+            "contentWidth": pg.content_width,
+            "background": look_json(pg).0,
+            "transition": look_json(pg).1,
         })).collect::<Vec<_>>(),
         "duration": total.max(0),
         "sheets": sheet.sheets,
@@ -317,8 +326,10 @@ fn rebase_edit(new: &EffectInstance, user: &EffectInstance, base: Option<&Effect
     out
 }
 
-/// Place laid-out pages one after another from `t` (each with its pictures) and link them to
-/// `doc`. Returns the placed pages as JSON and the end time.
+/// Place laid-out pages one after another from `t` (each with its background below it and its
+/// pictures above it), put the pages' transitions on the cuts, and link the pages to `doc`.
+/// `track` is where the lowest clip of each page goes (its background, else the page). Returns
+/// the placed pages as JSON and the end time.
 fn place_pages(
     s: &mut Session,
     cmd: &str,
@@ -331,15 +342,26 @@ fn place_pages(
     overrides: &Overrides,
 ) -> Result<(Vec<Value>, Tick)> {
     let rate = s.sequence_rate();
-    let frame_h = s.active_sequence().map(|q| f64::from(q.settings.height)).unwrap_or(1080.0);
+    let (frame_w, frame_h) = s.active_sequence().map(|q| (f64::from(q.settings.width), f64::from(q.settings.height))).unwrap_or((1920.0, 1080.0));
     let doc_text = doc.to_compact();
     let mut t = start;
     let mut placed = Vec::new();
     let mut items: Vec<(std::path::PathBuf, ItemId)> = Vec::new();
     let mut group = 0u64;
+    // (page clip, background clip, transition into the next page)
+    let mut cuts: Vec<(ClipId, Option<ClipId>, Option<(String, Tick)>)> = Vec::new();
     for (index, pg) in laid.pages.into_iter().enumerate() {
+        let bg = match &pg.background {
+            Some(b) => place_background(s, &base, &mut items, b, &pg, t, track, (frame_w, frame_h))?,
+            None => None,
+        };
+        // the page goes on the asked track, or just above its background
+        let want = match (bg, track) {
+            (Some(b), _) => clip_track(s, b).map(|i| i as u64 + 1),
+            (None, tr) => tr,
+        };
         let mut pp = json!({"time": t.0});
-        if let Some(tr) = track {
+        if let Some(tr) = want {
             pp["track"] = json!(tr);
         }
         // fingerprints of the layers as generated, then the hand edits put back
@@ -363,7 +385,7 @@ fn place_pages(
         // the asked track if it is free there, else the first free one above
         let clip = match place_video_clip(s, cmd, &pg.name, &pp, label, layers.clone(), source) {
             Ok(c) => c,
-            Err(_) if track.is_some() => place_video_clip(s, cmd, &pg.name, &json!({"time": t.0}), label, layers, source)?,
+            Err(_) if want.is_some() => place_video_clip(s, cmd, &pg.name, &json!({"time": t.0}), label, layers, source)?,
             Err(e) => return Err(e),
         };
         if group == 0 {
@@ -371,21 +393,200 @@ fn place_pages(
         }
         let mut pics = Vec::new();
         for pic in &pg.pictures {
-            if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, frame_h)? {
+            if let Some(c) = place_picture(s, &base, &mut items, pic, &pg, t, (frame_w, frame_h))? {
                 pics.push(c.0);
             }
         }
+        // the background is replaced with the page on a refresh
+        let mut owned = pics.clone();
+        if let Some(b) = bg {
+            owned.push(b.0);
+        }
         let mut meta = pg.meta.clone();
-        meta.credits = Some(Box::new(CreditsLink { group, page: index as u32, doc: doc_text.clone(), pictures: pics.clone(), layers: stamps }));
+        meta.credits = Some(Box::new(CreditsLink { group, page: index as u32, doc: doc_text.clone(), pictures: owned, layers: stamps }));
         s.edit_sequence(label, move |q, _, _| {
             let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
             it.graphic = Some(Box::new(meta));
             Ok(())
         })?;
-        placed.push(json!({"clip": clip.0, "name": pg.name, "start": t.0, "duration": dur.0, "behaviour": behaviour_name(pg.behaviour), "pictures": pics, "keptEdits": kept}));
+        placed.push(json!({
+            "clip": clip.0,
+            "name": pg.name,
+            "start": t.0,
+            "duration": dur.0,
+            "behaviour": behaviour_name(pg.behaviour),
+            "pictures": pics,
+            "background": bg.map(|b| b.0),
+            "keptEdits": kept,
+        }));
+        cuts.push((clip, bg, pg.transition.clone()));
         t = rate.snap(Tick(t.0.saturating_add(dur.0).saturating_add(pg.gap_after.0).max(0)));
     }
+    let mut applied = vec![false; placed.len()];
+    for (i, w) in cuts.windows(2).enumerate() {
+        let (Some(a), Some(b)) = (w.first(), w.get(1)) else { continue };
+        let Some((id, d)) = &a.2 else { continue };
+        let done = add_cut_transition(s, label, a.0, b.0, id, *d)?;
+        // the backgrounds follow the pages when both have one
+        if let (Some(x), Some(y)) = (a.1, b.1) {
+            add_cut_transition(s, label, x, y, id, *d)?;
+        }
+        if let Some(f) = applied.get_mut(i) {
+            *f = done;
+        }
+    }
+    for (v, done) in placed.iter_mut().zip(applied) {
+        v["transition"] = json!(done);
+    }
     Ok((placed, t))
+}
+
+/// Video-track index of a clip.
+fn clip_track(s: &Session, c: ClipId) -> Option<usize> {
+    let q = s.active_sequence()?;
+    q.video_tracks.iter().position(|tr| tr.items.iter().any(|it| it.id == c))
+}
+
+/// Put transition `id` on the cut between `from` and `to`, centred, when they are adjacent on
+/// one track. Returns whether it was placed.
+fn add_cut_transition(s: &mut Session, label: &str, from: ClipId, to: ClipId, id: &str, d: Tick) -> Result<bool> {
+    let Some(def) = cfa4_project::vtransition::find_transition(id, cfa4_project::EffectKind::VideoTransition) else { return Ok(false) };
+    let rate = s.sequence_rate();
+    let Some(q) = s.active_sequence() else { return Ok(false) };
+    let found = q.video_tracks.iter().find_map(|tr| {
+        let a = tr.items.iter().find(|it| it.id == from)?;
+        let b = tr.items.iter().find(|it| it.id == to)?;
+        (a.end() == b.start).then_some((tr.id, b.start, a.duration.min(b.duration)))
+    });
+    let Some((track, cut, room)) = found else { return Ok(false) };
+    let d = rate.snap(d.min(room)).max(rate.frame_duration());
+    let tr = cfa4_project::Transition {
+        id: cfa4_project::TransitionId(0),
+        effect: def.instance(),
+        start: rate.snap(cut - d.mul_ratio(1, 2)),
+        duration: d,
+        from: Some(from),
+        to: Some(to),
+        align: Default::default(),
+        reverse: false,
+    };
+    s.edit_sequence(label, move |q, ctx, _| Ok(cfa4_edit::add_transition(q, track, tr, ctx)?))?;
+    Ok(true)
+}
+
+/// Place a page's background as its own clip at `t`, below the page: a colour or gradient is a
+/// full-frame shape in a graphic clip; a picture or video fills or fits the frame. Opacity and
+/// blur are the clip's own effects, so they stay editable.
+#[allow(clippy::too_many_arguments)]
+fn place_background(
+    s: &mut Session,
+    base: &Option<std::path::PathBuf>,
+    items: &mut Vec<(std::path::PathBuf, ItemId)>,
+    bg: &cfa4_credits::Background,
+    pg: &cfa4_credits::PageOut,
+    t: Tick,
+    track: Option<u64>,
+    (fw, fh): (f64, f64),
+) -> Result<Option<ClipId>> {
+    use cfa4_credits::{BackgroundFit, BackgroundKind as K};
+    const CMD: &str = "graphics.credits.import";
+    const LABEL: &str = "Import Credits";
+    let dur = pg.duration;
+    let mut pp = json!({"time": t.0});
+    if let Some(tr) = track {
+        pp["track"] = json!(tr);
+    }
+    let s1 = fh / 1080.0;
+    let clip = match bg.kind {
+        K::None => return Ok(None),
+        K::Color | K::Gradient => {
+            let layer = background_layer(bg, (fw, fh));
+            let source =
+                move |pr: &mut cfa4_project::Project, (w, h, rate): (u32, u32, cfa4_time::FrameRate)| (crate::graphics::graphic_source(pr, w, h, rate), dur);
+            let name = format!("{} – background", pg.name);
+            match place_video_clip(s, CMD, &name, &pp, LABEL, vec![layer.clone()], source) {
+                Ok(c) => c,
+                Err(_) if track.is_some() => place_video_clip(s, CMD, &name, &json!({"time": t.0}), LABEL, vec![layer], source)?,
+                Err(e) => return Err(e),
+            }
+        }
+        K::Image | K::Video => {
+            let Some(path) = picture_path(base.as_deref(), &bg.file) else { return Ok(None) };
+            let item = match items.iter().find(|(p, _)| *p == path) {
+                Some((_, i)) => *i,
+                None => {
+                    let r = s.execute("file.import", json!({"paths": [path.to_string_lossy()]}))?;
+                    let Some(i) = r["items"].as_array().and_then(|a| a.first()).and_then(Value::as_u64).map(ItemId) else { return Ok(None) };
+                    items.push((path.clone(), i));
+                    i
+                }
+            };
+            // a video shorter than the page ends early (nothing is looped)
+            let media = s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0 && bg.kind == K::Video);
+            let d = media.map_or(dur, |m| m.min(dur));
+            let name = std::path::Path::new(&bg.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| bg.file.clone());
+            let c = match place_video_clip(s, CMD, &name, &pp, LABEL, Vec::new(), move |_, _| (item, d)) {
+                Ok(c) => c,
+                Err(_) if track.is_some() => place_video_clip(s, CMD, &name, &json!({"time": t.0}), LABEL, Vec::new(), move |_, _| (item, d))?,
+                Err(e) => return Err(e),
+            };
+            let (sw, sh) = s.project.source_size(item).map(|(w, h)| (f64::from(w), f64::from(h))).filter(|(w, h)| *w > 0.0 && *h > 0.0).unwrap_or((fw, fh));
+            let k = match bg.fit {
+                BackgroundFit::Fill => (fw / sw).max(fh / sh),
+                BackgroundFit::Fit => (fw / sw).min(fh / sh),
+            };
+            let scale = (k * 100.0).clamp(0.0, 10_000.0);
+            s.edit_sequence(LABEL, move |q, _, _| {
+                let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
+                if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
+                    m.params.insert("position".into(), Param::new(ParamValue::Vec2(Vec2::new(fw / 2.0, fh / 2.0))));
+                    m.params.insert("scale".into(), Param::new(ParamValue::Float(scale)));
+                }
+                Ok(())
+            })?;
+            c
+        }
+    };
+    let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
+    let blur = (if bg.blur.is_finite() { bg.blur } else { 0.0 }).clamp(0.0, 1_000.0) * s1;
+    s.edit_sequence(LABEL, move |q, _, _| {
+        let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
+        if opacity < 100.0
+            && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
+        {
+            o.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
+        }
+        if blur > 0.0
+            && let Some(def) = cfa4_project::find_effect("gaussian_blur")
+        {
+            let mut e = def.instance();
+            e.params.insert("blurriness".into(), Param::new(ParamValue::Float(blur.min(3_000.0))));
+            e.params.insert("repeat_edge".into(), Param::new(ParamValue::Bool(true)));
+            it.effects.push(e);
+        }
+        Ok(())
+    })?;
+    Ok(Some(clip))
+}
+
+/// A full-frame shape layer with a background's colour or gradient.
+fn background_layer(bg: &cfa4_credits::Background, (fw, fh): (f64, f64)) -> EffectInstance {
+    let black = [0.0, 0.0, 0.0, 1.0];
+    let colour = |c: &str| cfa4_credits::style::parse_color(c).unwrap_or(black);
+    let mut e = cfa4_project::graphic::new_shape_layer(0, Vec2::new(fw / 2.0, fh / 2.0), Vec2::new(fw, fh), vec![]);
+    let mut set = |k: &str, v: ParamValue| {
+        e.params.insert(k.into(), Param::new(v));
+    };
+    set("name", ParamValue::Text("Background".into()));
+    set("fill", ParamValue::Bool(true));
+    set("fill_color", ParamValue::Color(colour(&bg.color)));
+    if bg.kind == cfa4_credits::BackgroundKind::Gradient {
+        set("fill_kind", ParamValue::Choice(1));
+        set("gradient_start", ParamValue::Color(colour(&bg.color)));
+        set("gradient_end", ParamValue::Color(colour(&bg.color2)));
+        set("gradient_angle", ParamValue::Float(if bg.angle.is_finite() { bg.angle.rem_euclid(360.0) } else { 0.0 }));
+    }
+    e
 }
 
 fn import(s: &mut Session, p: &Value) -> Result<Value> {
@@ -544,7 +745,6 @@ fn replace_group(
     start: Option<Tick>,
 ) -> Result<(Vec<Value>, Tick)> {
     let start = start.or_else(|| group.pages.first().map(|x| x.2)).unwrap_or_else(|| s.playhead());
-    let track = group.pages.first().map(|x| x.3 as u64);
     let mut old: Vec<u64> = Vec::new();
     for (clip, link, _, _) in &group.pages {
         old.push(clip.0);
@@ -552,6 +752,12 @@ fn replace_group(
     }
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     old.retain(|c| q.find_item(ClipId(*c)).is_some());
+    // the first page's lowest clip (its background, if it has one) keeps its track
+    let track = group.pages.first().and_then(|(_, link, _, ti)| {
+        let mut own = vec![*ti];
+        own.extend(link.pictures.iter().filter_map(|x| clip_track(s, ClipId(*x))));
+        own.into_iter().min().map(|i| i as u64)
+    });
     // one undo step; on any failure the old pages are back as they were
     let out = s.edit_group(label, |s| {
         s.execute("edit.clear", json!({"clips": old}))?;
@@ -662,7 +868,7 @@ fn place_picture(
     pic: &cfa4_credits::PicturePlace,
     pg: &cfa4_credits::PageOut,
     t: Tick,
-    frame_h: f64,
+    (frame_w, frame_h): (f64, f64),
 ) -> Result<Option<ClipId>> {
     const CMD: &str = "graphics.credits.import";
     let Some(path) = picture_path(base.as_deref(), &pic.file) else { return Ok(None) };
@@ -688,6 +894,12 @@ fn place_picture(
         cfa4_credits::Behaviour::Scroll => Param {
             value: ParamValue::Vec2(Vec2::new(cx, cy + frame_h)),
             keyframes: vec![kf(Tick::ZERO, ParamValue::Vec2(Vec2::new(cx, cy + frame_h))), kf(dur, ParamValue::Vec2(Vec2::new(cx, cy - pg.content_height)))],
+        },
+        // the Crawl moves the line from just right of the frame (offset = frame width − line
+        // start, which is 0) to just left of it (offset = −line end)
+        cfa4_credits::Behaviour::Crawl => Param {
+            value: ParamValue::Vec2(Vec2::new(cx + frame_w, cy)),
+            keyframes: vec![kf(Tick::ZERO, ParamValue::Vec2(Vec2::new(cx + frame_w, cy))), kf(dur, ParamValue::Vec2(Vec2::new(cx - pg.content_width, cy)))],
         },
         cfa4_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
     };
@@ -723,12 +935,15 @@ fn place_picture(
     Ok(Some(clip))
 }
 
-/// A picture of one page at a moment, without changing the project: the page's text layers
-/// with the roll or fades applied, and each picture's place outlined (pictures themselves are
-/// clips of their own after the import).
+/// A picture of one page at a moment, without changing the project: its background (a picture
+/// or video background is a grey stand-in), the page's text layers with the roll, crawl or fades
+/// applied, and each picture's place outlined (pictures themselves are clips of their own after
+/// the import). `guides` draws the action-safe (93 %) and title-safe (90 %) areas, the centre
+/// and the page's spines; `grid` the baseline grid (one gap unit apart, moving with the page).
 fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.thumbnail";
-    let (l, _) = laid(s, CMD, p)?;
+    let (doc, _, base) = doc_p(CMD, p)?;
+    let l = lay_doc(s, CMD, &doc, base)?;
     let index = u64_p(p, "page").unwrap_or(0) as usize;
     let pages = l.pages.len();
     let pg = l.pages.into_iter().nth(index).ok_or_else(|| bad(CMD, format!("there is no page {index} (pages: {pages})")))?;
@@ -745,18 +960,132 @@ fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
             e.params.insert("stroke_width".into(), Param::new(ParamValue::Float(f64::from(ch) / 360.0)));
         }
     }
-    let mut pr = cfa4_project::Project::new("credits preview");
-    let g = pr.add_item("G", cfa4_project::Label::Rose, cfa4_project::ItemKind::Graphic { width: cw, height: ch, rate }, None);
-    let range = cfa4_time::TimeRange::new(Tick::ZERO, pg.duration);
-    let mut it = pr.make_track_item(g, cfa4_project::TrackKind::Video, Tick::ZERO, range, rate).ok_or_else(|| bad(CMD, "bad preview item"))?;
-    it.effects.extend(layers);
-    it.graphic = Some(Box::new(pg.meta));
     let t = rate.snap(Tick((pg.duration.0 as f64 * at) as i64)).min(Tick(pg.duration.0.saturating_sub(rate.frame_duration().0).max(0)));
     let mut img = cfa4_render::image::Image::new(w as usize, h as usize);
     let k = f64::from(w) / f64::from(cw.max(1));
-    cfa4_render::graphic_clip::render_graphic(&it, it.source_in + t, (cw, ch), &cfa4_geom::Affine::scale(k, k), &mut img);
-    let png = cfa4_export::encode_png(img.to_rgba8(), w, h).map_err(|x| EngineError::Other(x.to_string()))?;
+    let mut pr = cfa4_project::Project::new("credits preview");
+    let g = pr.add_item("G", cfa4_project::Label::Rose, cfa4_project::ItemKind::Graphic { width: cw, height: ch, rate }, None);
+    let range = cfa4_time::TimeRange::new(Tick::ZERO, pg.duration);
+    let mut render = |layers: Vec<EffectInstance>, meta: cfa4_project::GraphicMeta, img: &mut cfa4_render::image::Image| -> Result<()> {
+        let mut it = pr.make_track_item(g, cfa4_project::TrackKind::Video, Tick::ZERO, range, rate).ok_or_else(|| bad(CMD, "bad preview item"))?;
+        it.effects.extend(layers);
+        it.graphic = Some(Box::new(meta));
+        cfa4_render::graphic_clip::render_graphic(&it, it.source_in + t, (cw, ch), &cfa4_geom::Affine::scale(k, k), img);
+        Ok(())
+    };
+    // the background stands still behind the page
+    if let Some(bg) = &pg.background {
+        let mut stand_in = bg.clone();
+        if matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video) {
+            stand_in.kind = cfa4_credits::BackgroundKind::Color;
+            stand_in.color = "#3a3a3a".into();
+        }
+        let mut e = background_layer(&stand_in, (f64::from(cw), f64::from(ch)));
+        let opacity = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0);
+        e.params.insert("opacity".into(), Param::new(ParamValue::Float(opacity)));
+        render(vec![e], cfa4_project::GraphicMeta::default(), &mut img)?;
+    }
+    let roll = pg.meta.roll.clone();
+    render(layers, pg.meta, &mut img)?;
+    let mut rgba = img.to_rgba8();
+    let mut lines: Vec<Guide> = Vec::new();
+    let (fw, fh) = (f64::from(cw), f64::from(ch));
+    if p.get("grid").and_then(Value::as_bool).unwrap_or(false) && pg.behaviour != cfa4_credits::Behaviour::Crawl {
+        let unit = (if doc.styling.unit_px.is_finite() { doc.styling.unit_px } else { 32.0 }).clamp(0.0, 10_000.0) * fh / 1080.0;
+        // where the content's top is now
+        let top = pg.content_top + cfa4_project::graphic_design::roll_offset(&roll, t, pg.duration, (cw, ch), [0.0, 0.0, fw, pg.content_height.max(0.0)]).1;
+        if unit * k >= 3.0 {
+            let first = top - ((top / unit).floor() * unit);
+            let mut y = first;
+            while y < fh && lines.len() < 2_000 {
+                lines.push(Guide::H(y, GRID));
+                y += unit;
+            }
+        }
+    }
+    if p.get("guides").and_then(Value::as_bool).unwrap_or(false) {
+        for (m, colour) in [(0.035, ACTION_SAFE), (0.05, TITLE_SAFE)] {
+            let (x0, x1, y0, y1) = (fw * m, fw * (1.0 - m), fh * m, fh * (1.0 - m));
+            lines.push(Guide::Rect(x0, y0, x1, y1, colour));
+        }
+        lines.push(Guide::H(fh / 2.0, CENTRE));
+        lines.push(Guide::V(fw / 2.0, CENTRE));
+        for x in pg.spines.iter().filter(|x| (*x - fw / 2.0).abs() > 0.5) {
+            lines.push(Guide::V(*x, SPINE));
+        }
+    }
+    draw_guides(&mut rgba, w as usize, h as usize, k, &lines);
+    let png = cfa4_export::encode_png(rgba, w, h).map_err(|x| EngineError::Other(x.to_string()))?;
     Ok(json!({"width": w, "height": h, "page": index, "pages": pages, "time": t.0, "pngBase64": cfa4_project::gtemplate::base64_encode(&png)}))
+}
+
+/// A guide line in frame pixels.
+enum Guide {
+    H(f64, [u8; 4]),
+    V(f64, [u8; 4]),
+    Rect(f64, f64, f64, f64, [u8; 4]),
+}
+
+const ACTION_SAFE: [u8; 4] = [80, 200, 255, 200];
+const TITLE_SAFE: [u8; 4] = [255, 210, 60, 220];
+const CENTRE: [u8; 4] = [200, 200, 200, 140];
+const SPINE: [u8; 4] = [255, 90, 200, 200];
+const GRID: [u8; 4] = [120, 160, 255, 90];
+
+/// Blend one straight-RGBA8 pixel over another.
+fn blend(px: &mut [u8], c: [u8; 4]) {
+    let a = u32::from(c[3]);
+    for (d, s) in px.iter_mut().zip(c).take(3) {
+        *d = ((u32::from(s) * a + u32::from(*d) * (255 - a)) / 255) as u8;
+    }
+    if let Some(alpha) = px.get_mut(3) {
+        *alpha = (*alpha).max(c[3]);
+    }
+}
+
+/// Draw guides (frame pixels, scaled by `k`) on a straight-RGBA8 image `w`×`h`.
+fn draw_guides(rgba: &mut [u8], w: usize, h: usize, k: f64, guides: &[Guide]) {
+    let mut hline = |y: f64, x0: f64, x1: f64, c: [u8; 4]| {
+        let y = (y * k).round();
+        if !(0.0..h as f64).contains(&y) {
+            return;
+        }
+        let (a, b) = (((x0 * k).round().max(0.0)) as usize, ((x1 * k).round().min(w as f64 - 1.0)).max(0.0) as usize);
+        for x in a..=b.min(w.saturating_sub(1)) {
+            let i = (y as usize * w + x) * 4;
+            if let Some(px) = rgba.get_mut(i..i + 4) {
+                blend(px, c);
+            }
+        }
+    };
+    let mut vlines: Vec<(f64, f64, f64, [u8; 4])> = Vec::new();
+    let fw = w as f64 / k.max(1e-9);
+    let fh = h as f64 / k.max(1e-9);
+    for g in guides {
+        match *g {
+            Guide::H(y, c) => hline(y, 0.0, fw, c),
+            Guide::V(x, c) => vlines.push((x, 0.0, fh, c)),
+            Guide::Rect(x0, y0, x1, y1, c) => {
+                hline(y0, x0, x1, c);
+                hline(y1, x0, x1, c);
+                vlines.push((x0, y0, y1, c));
+                vlines.push((x1, y0, y1, c));
+            }
+        }
+    }
+    for (x, y0, y1, c) in vlines {
+        let x = (x * k).round();
+        if !(0.0..w as f64).contains(&x) {
+            continue;
+        }
+        let (a, b) = (((y0 * k).round().max(0.0)) as usize, ((y1 * k).round().min(h as f64 - 1.0)).max(0.0) as usize);
+        for y in a..=b.min(h.saturating_sub(1)) {
+            let i = (y * w + x as usize) * 4;
+            if let Some(px) = rgba.get_mut(i..i + 4) {
+                blend(px, c);
+            }
+        }
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
