@@ -3623,3 +3623,8 @@
 	Time Span (seconds)	Intervalo de tiempo (segundos)
 	Current Frame At	Fotograma actual en
 	Blend Slices	Fundir franjas
+	Easing Presets	Ajustes de suavizado
+	Sine	Sinusoidal
+	Exponential	Exponencial
+	Circular	Circular
+	Elastic	Elástica

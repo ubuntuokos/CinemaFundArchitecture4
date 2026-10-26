@@ -3598,3 +3598,8 @@
 	Time Span (seconds)	时间跨度（秒）
 	Current Frame At	当前帧位置
 	Blend Slices	混合切片
+	Easing Presets	缓动预设
+	Sine	正弦
+	Exponential	指数
+	Circular	圆形
+	Elastic	弹性

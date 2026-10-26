@@ -3591,3 +3591,8 @@
 	Time Span (seconds)	Intervalo de tempo (segundos)
 	Current Frame At	Quadro atual em
 	Blend Slices	Mesclar fatias
+	Easing Presets	Predefinições de suavização
+	Sine	Senoidal
+	Exponential	Exponencial
+	Circular	Circular
+	Elastic	Elástica

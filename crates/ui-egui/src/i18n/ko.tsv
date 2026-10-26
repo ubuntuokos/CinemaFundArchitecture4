@@ -3609,3 +3609,8 @@
 	Time Span (seconds)	시간 범위(초)
 	Current Frame At	현재 프레임 위치
 	Blend Slices	슬라이스 혼합
+	Easing Presets	이징 프리셋
+	Sine	사인
+	Exponential	지수
+	Circular	원형
+	Elastic	탄성

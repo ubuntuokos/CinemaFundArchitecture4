@@ -3590,3 +3590,8 @@
 	Time Span (seconds)	Intervalle de temps (secondes)
 	Current Frame At	Image actuelle à
 	Blend Slices	Fondre les tranches
+	Easing Presets	Préréglages d'accélération
+	Sine	Sinusoïdale
+	Exponential	Exponentielle
+	Circular	Circulaire
+	Elastic	Élastique

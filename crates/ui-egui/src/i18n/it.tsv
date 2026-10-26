@@ -3614,3 +3614,8 @@
 	Time Span (seconds)	Intervallo di tempo (secondi)
 	Current Frame At	Fotogramma corrente a
 	Blend Slices	Fondi sezioni
+	Easing Presets	Preset di andamento
+	Sine	Sinusoidale
+	Exponential	Esponenziale
+	Circular	Circolare
+	Elastic	Elastica

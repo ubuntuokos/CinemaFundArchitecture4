@@ -3219,7 +3219,7 @@ fn build() -> Vec<CommandSpec> {
             "Keyframe Interpolation",
             [],
             None,
-            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut"}"#,
+            r#"{"clip":id,"effect":str|index,"param":str,"mediaTime":ticks,"interpolation":"linear|bezier|autoBezier|continuousBezier|hold|easeIn|easeOut|sine|expo|circ|overshoot|elastic|bounce"}"#,
             has_seq,
             |s, p| keyframe_op(s, p, "interp")
         ),
@@ -3554,6 +3554,12 @@ fn keyframe_op(s: &mut Session, p: &Value, op: &str) -> Result<Value> {
                     "hold" => cfa4_project::Interpolation::Hold,
                     "easein" => cfa4_project::Interpolation::EaseIn,
                     "easeout" => cfa4_project::Interpolation::EaseOut,
+                    "sine" => cfa4_project::Interpolation::Sine,
+                    "expo" => cfa4_project::Interpolation::Expo,
+                    "circ" => cfa4_project::Interpolation::Circ,
+                    "overshoot" => cfa4_project::Interpolation::Overshoot,
+                    "elastic" => cfa4_project::Interpolation::Elastic,
+                    "bounce" => cfa4_project::Interpolation::Bounce,
                     _ => cfa4_project::Interpolation::Linear,
                 };
                 let k = prm.keyframes.iter_mut().find(|k| k.time == at).ok_or_else(|| bad("keyframe", "no keyframe at that time"))?;
