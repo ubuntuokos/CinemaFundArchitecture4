@@ -18,6 +18,7 @@ use crate::commands::{CommandSpec, always, bad, bool_p, f64_p, has_seq, str_p, t
 use crate::{EngineError, Result, Session};
 
 type Run = fn(&mut Session, &Value) -> Result<Value>;
+const ANIM_PARAMS: &str = r#"{"clip":id?,"layer":n|name?,"duration":seconds?,"delay":seconds?}"#;
 type Enabled = fn(&Session) -> std::result::Result<(), String>;
 
 fn spec(
@@ -219,6 +220,7 @@ pub(crate) fn to_param(template: &ParamValue, id: &str, v: &Value) -> Option<Par
             "caps" => graphic::CAPS_OPTS,
             "stroke_type" | "stroke2_type" => graphic::STROKE_OPTS,
             "fill_kind" => graphic::FILL_KIND_OPTS,
+            "anim" => cfa4_project::text_animator::ANIMATOR_OPTS,
             "shape" => SHAPE_OPTS,
             _ => &[],
         };
@@ -950,8 +952,56 @@ fn menu_commands() -> Vec<CommandSpec> {
     ]
 }
 
+/// Graphics and Titles ▸ Text Animator ▸ …: set the animator of the selected (or `layer`) text
+/// layer; `duration` / `delay` (seconds) optional. See [`cfa4_project::text_animator`].
+fn set_text_animator(s: &mut Session, p: &Value, kind: u32) -> Result<Value> {
+    const CMD: &str = "graphics.textAnimator";
+    let clip = target_clip(s, p).ok_or_else(|| bad(CMD, "select a graphic clip"))?;
+    let (layer, ei) = layer_effect_index(s, clip, p)?;
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let (_, it) = seq.find_item(clip).ok_or_else(|| bad(CMD, "no such clip"))?;
+    if it.effects.get(ei).is_none_or(|e| e.effect != graphic::TEXT_LAYER) {
+        return Err(bad(CMD, "the selected layer is not a text layer"));
+    }
+    let mut props = serde_json::Map::new();
+    props.insert("anim".into(), json!(kind));
+    for (k, id) in [("duration", "anim_duration"), ("delay", "anim_delay")] {
+        if let Some(v) = crate::commands::f64_p(p, k) {
+            if !(0.0..=600.0).contains(&v) {
+                return Err(bad(CMD, format!("`{k}` must be 0 … 600 seconds")));
+            }
+            props.insert(id.into(), json!(v));
+        }
+    }
+    let t = s.playhead();
+    let label = format!("Text Animator: {}", cfa4_project::text_animator::ANIMATOR_OPTS.get(kind as usize).copied().unwrap_or("None"));
+    set_props(s, clip, ei, &props, t, &label, None)?;
+    Ok(json!({"clip": clip.0, "layer": layer, "animator": cfa4_project::text_animator::ANIMATOR_OPTS.get(kind as usize)}))
+}
+
+fn has_text_layer(s: &Session) -> std::result::Result<(), String> {
+    has_seq(s)?;
+    let clip = target_clip(s, &Value::Null).ok_or("select a graphic clip with a text layer")?;
+    let (_, ei) = layer_effect_index(s, clip, &Value::Null).map_err(|e| e.to_string())?;
+    let seq = s.active_sequence().ok_or("no sequence is open")?;
+    let ok = seq.find_item(clip).and_then(|(_, it)| it.effects.get(ei)).is_some_and(|e| e.effect == graphic::TEXT_LAYER);
+    if ok { Ok(()) } else { Err("select a text layer".into()) }
+}
+
 pub fn commands() -> Vec<CommandSpec> {
     let mut v = vec![
+        spec("graphics.textAnimator.none", "None", &["Graphics and Titles", "Text Animator"], None, ANIM_PARAMS, has_text_layer, |s, p| {
+            set_text_animator(s, p, 0)
+        }),
+        spec("graphics.textAnimator.counter", "Counter", &["Graphics and Titles", "Text Animator"], None, ANIM_PARAMS, has_text_layer, |s, p| {
+            set_text_animator(s, p, 1)
+        }),
+        spec("graphics.textAnimator.typewriter", "Typewriter", &["Graphics and Titles", "Text Animator"], None, ANIM_PARAMS, has_text_layer, |s, p| {
+            set_text_animator(s, p, 2)
+        }),
+        spec("graphics.textAnimator.wordByWord", "Word by Word", &["Graphics and Titles", "Text Animator"], None, ANIM_PARAMS, has_text_layer, |s, p| {
+            set_text_animator(s, p, 3)
+        }),
         spec(
             "graphics.newText",
             "Text",

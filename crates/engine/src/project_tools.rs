@@ -403,7 +403,7 @@ fn has_audio_selection(s: &Session) -> std::result::Result<(), String> {
         Err("select a clip with audio".into())
     }
 }
-fn is_offline(s: &Session, id: ItemId) -> bool {
+pub(crate) fn is_offline(s: &Session, id: ItemId) -> bool {
     media_of(&s.project, id).is_some_and(|(mid, m)| m.offline || s.media.offline_status(mid).is_some())
 }
 fn has_offline_selection(s: &Session) -> std::result::Result<(), String> {

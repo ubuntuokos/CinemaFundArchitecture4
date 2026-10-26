@@ -127,6 +127,14 @@ pub fn route(app: &mut Cfa4App, id: &str, params: &Value) -> Option<Result<Value
     if let Some(d) = rest.strip_prefix("display.") {
         return Some(set_display(app, w, d));
     }
+    if let Some(z) = rest.strip_prefix("socialSafeZone.") {
+        let zone = match z {
+            "off" => String::new(),
+            z => cfa4_engine::social::SafeZone::from_id(z)?.id().to_string(),
+        };
+        view_mut(app, w).social_zone = zone.clone();
+        return Some(Ok(json!({"monitor": pfx, "socialSafeZone": if zone.is_empty() { Value::Null } else { json!(zone) }})));
+    }
     if let Some(z) = rest.strip_prefix("magnification.") {
         let zoom = if z == "fit" { None } else { Some(ZOOMS.iter().find(|(n, _)| *n == z)?.1) };
         let v = view_mut(app, w);
@@ -297,6 +305,9 @@ pub fn checked(app: &Cfa4App, id: &str) -> Option<bool> {
             _ => v,
         };
         return Some(v.display_mode() == Some(*mode));
+    }
+    if let Some(z) = rest.strip_prefix("socialSafeZone.") {
+        return Some(if z == "off" { v.social_zone.is_empty() } else { v.social_zone == z });
     }
     if let Some(z) = rest.strip_prefix("magnification.") {
         return Some(if z == "fit" { v.zoom.is_none() } else { ZOOMS.iter().find(|(n, _)| *n == z).is_some_and(|(_, f)| v.zoom == Some(*f)) });

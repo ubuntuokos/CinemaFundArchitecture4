@@ -1403,6 +1403,20 @@ impl Cfa4App {
                     r
                 })
             }
+            // File ▸ Export ▸ Batch Variants from Spreadsheet…: one sequence (and export) per row
+            "export.batchVariants" => self.pick(FileDialog::open_files(&["csv", "tsv", "txt", "xlsx", "ods"]), |app, paths| {
+                let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
+                let r = app.session.execute("export.batchVariants", json!({"path": path})).map_err(|e| e.to_string());
+                match &r {
+                    Ok(v) => {
+                        if let Some(m) = crate::menus::result_status("export.batchVariants", v) {
+                            app.ui.status = m;
+                        }
+                    }
+                    Err(e) => app.ui.status = e.clone(),
+                }
+                r
+            }),
             "captions.import" => self.pick(FileDialog::open_files(&["srt", "vtt", "scc", "mcc", "stl", "ttml", "dfxp", "xml"]), |app, paths| {
                 let Some(path) = paths.into_iter().next() else { return Ok(Value::Null) };
                 app.session.execute("captions.import", json!({"path": path})).map_err(|e| e.to_string())
