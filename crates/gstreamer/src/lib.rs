@@ -279,8 +279,46 @@ pub fn register() -> Result<Status, Error> {
     Ok(status)
 }
 
+/// The id of this backend in `cfa4_media::backends` and the compute router.
+pub const BACKEND_ID: &str = "gstreamer";
+
+/// Registers this backend's report for Settings ▸ Media Backends (`media.backends`). The apps call
+/// it at startup whether or not [`register`] succeeds, so the panel can say why GStreamer is not
+/// used.
+pub fn register_status() {
+    cfa4_media::register_backend(cfa4_media::BackendEntry { id: BACKEND_ID, report });
+}
+
+/// The report of [`register_status`].
+pub fn report() -> cfa4_media::BackendReport {
+    let mut r = cfa4_media::BackendReport {
+        id: BACKEND_ID.into(),
+        name: "GStreamer".into(),
+        role: "Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories".into(),
+        compiled_in: compiled_in(),
+        enabled: cfa4_media::backend_enabled(BACKEND_ID),
+        license: Some("LGPL-2.1-or-later".into()),
+        ..Default::default()
+    };
+    match probe() {
+        Ok(status) => {
+            r.available = status.elements.iter().any(|e| e.available && e.spec.factory == "uridecodebin3") || status.has(Area::Pipeline);
+            r.version = Some(status.version.clone());
+            r.capabilities = status.elements.iter().filter(|e| e.available).map(|e| e.spec.factory.to_string()).collect();
+            if !r.available {
+                r.problem = Some("GStreamer is installed but its decoding elements are missing".into());
+            }
+        }
+        Err(e) => r.problem = Some(e.to_string()),
+    }
+    r
+}
+
 #[cfg(feature = "gstreamer")]
 fn fallback_open(path: &Path) -> cfa4_media::Result<cfa4_media::SharedSource> {
+    if !cfa4_media::backend_enabled(BACKEND_ID) {
+        return Err(cfa4_media::MediaError::Unsupported("the GStreamer backend is switched off in Settings ▸ Media Backends".into()));
+    }
     open(path).map_err(|e| match e {
         Error::InvalidInput(m) => cfa4_media::MediaError::Io(m),
         other => cfa4_media::MediaError::Unsupported(other.to_string()),

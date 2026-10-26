@@ -64,6 +64,8 @@ cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
+cfa4-ffmpeg = { path = "crates/ffmpeg" }
+cfa4-route = { path = "crates/route" }
 
 # foundation
 thiserror = "2"

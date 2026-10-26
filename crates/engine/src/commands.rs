@@ -1565,6 +1565,26 @@ fn build() -> Vec<CommandSpec> {
             let files = cfa4_format::autosave::list_auto_saves(&dir, &auto_save_name(s));
             Ok(json!({"dir": dir, "files": files.iter().rev().map(|p| p.to_string_lossy().into_owned()).collect::<Vec<_>>()}))
         }),
+        query!("media.backends", "Media Backends", "{}", |_s, _p| {
+            // the own engine first, then the supplementary backends in the order they are tried
+            let mut list = vec![json!({
+                "id": "builtin",
+                "name": "CFA4 engine",
+                "role": "Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails",
+                "compiledIn": true,
+                "available": true,
+                "enabled": true,
+                "canDisable": false,
+                "hardwareDecoding": cfa4_codecs::hw::hardware_decoding(),
+            })];
+            for r in cfa4_media::backend_reports() {
+                let mut v = serde_json::to_value(&r).unwrap_or_else(|_| json!({}));
+                v["canDisable"] = json!(true);
+                v["preference"] = json!(format!("media.{}Backend", r.id));
+                list.push(v);
+            }
+            Ok(json!({"backends": list, "importable": cfa4_media::importable_extensions()}))
+        }),
         query!("prefs.get", "Get Preferences", r#"{"key":str?}"#, |s, p| match str_p(p, "key") {
             Some(k) => s.prefs.get(k).ok_or_else(|| bad("prefs.get", format!("unknown preference `{k}`"))),
             None => Ok(json!({"values": s.prefs.to_value(), "keys": s.prefs.keys()})),

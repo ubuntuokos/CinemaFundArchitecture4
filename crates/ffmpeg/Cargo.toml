@@ -1,0 +1,47 @@
+[package]
+name = "cfa4-ffmpeg"
+description = "FFmpeg (>= 9.0.2) supplementary media backend for CFA4 (layer L5): probes the FFmpeg the build links, opens media the Rust engine cannot open and decodes it at its native bit depth, as a fallback behind the own engine (ADR 0005)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# Off by default: building with it needs FFmpeg >= 9.0.2 development files (headers and .pc files),
+# for example the GPL-3 build of scripts/dev/build-ffmpeg-9.0.2.sh under /opt/cfa4/ffmpeg-9.0.2.
+# Without it every entry point reports `Error::Unavailable` and the Rust engine works as before.
+default = []
+ffmpeg = ["dep:rsmedia", "dep:rsmpeg"]
+
+[dependencies]
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-route = { workspace = true }
+cfa4-time = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+# rsmedia: MIT OR Apache-2.0, safe Rust API over the FFmpeg libraries (via rsmpeg). Not published on
+# crates.io, so it is pinned to a reviewed commit; its rsmpeg dependency is pinned by Cargo.lock
+# (deny.toml allows exactly these two git sources). FFmpeg itself is dynamically linked, GPL-3 build
+# (docs/adr/ADR-0005-media-backends.md).
+rsmedia = { git = "https://github.com/dromara/rsmedia", rev = "eb0dbd0a702ea6be59fa70035ec358ce9d9888d3", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"], optional = true }
+# The same rsmpeg rsmedia builds on (one copy in Cargo.lock), for codec lookups rsmedia does not
+# re-export. MIT.
+rsmpeg = { git = "https://github.com/phial3/rsmpeg", branch = "main", default-features = false, optional = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }
+serde_json = { workspace = true }
+
+[[example]]
+name = "ff_audio_debug"
+required-features = ["ffmpeg"]
+
+[[example]]
+name = "ff_frame_dump"
+required-features = ["ffmpeg"]

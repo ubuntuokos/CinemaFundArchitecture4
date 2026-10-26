@@ -31,6 +31,7 @@ from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
+from .media_backends import MediaBackendsDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -137,6 +138,7 @@ class MainWindow(QMainWindow):
         self.revision = -1
         self.source_state: dict[str, Any] | None = None
         self.export_dialog: ExportDialog | None = None
+        self.media_backends_dialog: MediaBackendsDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -518,6 +520,17 @@ class MainWindow(QMainWindow):
         self.quit_action.triggered.connect(self.close)  # asks to save unsaved changes first
         self.about_action = QAction(tr("About CFA4"), self)
         self.about_action.triggered.connect(self._about)
+        # Edit ▸ Preferences ▸ Media Backends… (Qt GUI settings panel; egui is frozen) and
+        # Help ▸ Restricted Codecs… (the same panel at its Ubuntu-model section)
+        self.preferences_menu = QMenu(tr("Preferences"), self)
+        self.preferences_menu.setObjectName("menu.Edit.Preferences")
+        self.media_backends_action = QAction(tr("Media Backends…"), self)
+        self.media_backends_action.setObjectName("qt.settings.mediaBackends")
+        self.media_backends_action.triggered.connect(self.open_media_backends)
+        self.preferences_menu.addAction(self.media_backends_action)
+        self.restricted_codecs_action = QAction(tr("Restricted Codecs…"), self)
+        self.restricted_codecs_action.setObjectName("qt.help.restrictedCodecs")
+        self.restricted_codecs_action.triggered.connect(self.open_restricted_codecs)
         # J / K / L shuttle and Play In to Out on the focused monitor (egui's playback.*)
         self.shuttle_actions: list[tuple[QAction, list[str]]] = []
         for name, label, keys, slot in (
@@ -566,8 +579,9 @@ class MainWindow(QMainWindow):
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
+                "Edit": [self.preferences_menu.menuAction()],
                 "View": [self.fit_action],
-                "Help": [self.about_action],
+                "Help": [self.restricted_codecs_action, self.about_action],
             }
         )
         menus = {a.menu().objectName(): a for a in self.menuBar().actions() if a.menu()}
@@ -1253,6 +1267,20 @@ class MainWindow(QMainWindow):
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
+
+    def _media_backends(self) -> MediaBackendsDialog:
+        if self.media_backends_dialog is None:
+            self.media_backends_dialog = MediaBackendsDialog(self.engine.execute, self)
+        return self.media_backends_dialog
+
+    def open_media_backends(self) -> None:
+        dialog = self._media_backends()
+        dialog.show()
+        dialog.raise_()
+        dialog.refresh()
+
+    def open_restricted_codecs(self) -> None:
+        self._media_backends().show_restricted()
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)

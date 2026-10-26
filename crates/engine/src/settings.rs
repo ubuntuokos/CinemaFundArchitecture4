@@ -1512,6 +1512,14 @@ impl crate::autosave::Preferences {
     /// factories consult (new decoders only).
     pub fn apply_hardware_decoding(&self) {
         cfa4_codecs::hw::set_hardware_decoding(self.playback.hardware_decoding != "off");
+        self.apply_media_backends();
+    }
+
+    /// Settings ▸ Media Backends as the switches the supplementary backends consult before they
+    /// open a file (`cfa4_media::backends`; new files only).
+    pub fn apply_media_backends(&self) {
+        cfa4_media::set_backend_enabled("ffmpeg", self.media.ffmpeg_backend);
+        cfa4_media::set_backend_enabled("gstreamer", self.media.gstreamer_backend);
     }
 
     /// Values of one category as a JSON object.
