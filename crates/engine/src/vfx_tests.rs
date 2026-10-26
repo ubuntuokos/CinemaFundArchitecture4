@@ -73,11 +73,14 @@ fn effects_list_reports_folders_and_badges() {
                 && e["folder"] != "Obsolete"
                 && e["folder"] != "Stereoscopic 3D"
                 && e["folder"] != Value::Null
+                && !e["id"].as_str().is_some_and(|id| cfa4_project::effect::CFA4_OWN.contains(&id))
         })
         .count();
     assert_eq!(n, 93, "Premiere 26's current Video Effects");
     // CFA4's own folder sits beside them
     assert_eq!(find("stereo_swap_eyes")["category"], json!(["Video Effects", "Stereoscopic 3D"]));
+    // and CFA4's own effects in Premiere's folders
+    assert_eq!(find("slit_scan")["category"], json!(["Video Effects", "Time"]));
 }
 
 #[test]
