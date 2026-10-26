@@ -357,6 +357,11 @@ impl RestartHeader {
             reader.skip_n(12)?;
         }
 
+        // The two dither channels of restart A follow the matrix channels in 16-wide buffers.
+        if rh.restart_sync_word == RestartSyncWord::A && rh.max_matrix_chan > 13 {
+            bail!(RestartHeaderError::MatrixChannelsTooMany(rh.max_matrix_chan))
+        }
+
         // TODO: as context?
         let mut permutation: u16 = 0;
 
@@ -589,13 +594,18 @@ mod tests {
     /// `heavy_drc_present` is the field; `heavy_drc_fields` the twelve bits after it,
     /// a gain and time update in FBA and reserved otherwise.
     fn crafted_restart_header(heavy_drc_present: u32, heavy_drc_fields: usize) -> Vec<u8> {
+        crafted_restart_header_with(0, heavy_drc_present, heavy_drc_fields)
+    }
+
+    /// The same with `max_matrix_chan` matrix channels, assigned in order.
+    fn crafted_restart_header_with(max_matrix_chan: u32, heavy_drc_present: u32, heavy_drc_fields: usize) -> Vec<u8> {
         let mut bits = Bits::default();
 
         bits.push(14, 0x31EA); // restart_sync_word
         bits.push(16, 0); // output_timing
         bits.push(4, 0); // min_chan
         bits.push(4, 0); // max_chan
-        bits.push(4, 0); // max_matrix_chan
+        bits.push(4, max_matrix_chan); // max_matrix_chan
         bits.push(4, 0); // dither_shift
         bits.push(23, 0); // dither_seed
         bits.push(4, 0); // max_shift
@@ -608,7 +618,9 @@ mod tests {
         bits.push(2, 0);
         bits.push(1, heavy_drc_present);
         bits.push(heavy_drc_fields, 0);
-        bits.push(6, 0); // ch_assign[0]
+        for ch in 0..=max_matrix_chan {
+            bits.push(6, ch); // ch_assign
+        }
 
         let crc = BsIoSliceReader::from_slice(&bits.data).crc8_check(&Crc8::new(&CRC_RESTART_BLOCK_HEADER_ALG), 0, bits.len as u64).unwrap();
         bits.push(8, crc as u32);
@@ -690,6 +702,20 @@ mod tests {
             state.substream_state[0].heavy_drc_present = true;
         });
         assert!(!quiet.contains(&rule), "{quiet:?}");
+    }
+
+    /// Restart A rematrixes two dither channels after the matrix channels in 16-wide rows, so
+    /// more than 14 matrix channels used to index past them in the decoder.
+    #[test]
+    fn restart_a_leaves_room_for_the_dither_channels() {
+        let read = |max_matrix_chan| {
+            let mut state = ParserState { format_sync: MAJOR_SYNC_FBB, substreams: Some(1), ..Default::default() };
+            let data = crafted_restart_header_with(max_matrix_chan, 0, 12);
+            RestartHeader::read(&mut state, &mut BsIoSliceReader::from_slice(&data))
+        };
+        let err = read(14).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(err.contains("dither channels"), "{err}");
+        assert!(read(13).is_ok());
     }
 
     #[test]

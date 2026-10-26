@@ -1521,7 +1521,14 @@ impl SampleEntry {
             });
             b.i16(if version == 1 { a.compression_id } else { 0 });
             b.u16(0);
-            let sr = if a.sample_rate < 65536.0 { (a.sample_rate * 65536.0).round() as u32 } else { 0 };
+            // `mlpa` stores the rate as a plain integer (Dolby TrueHD in ISOBMFF), not 16.16
+            let sr = if format == *b"mlpa" {
+                a.sample_rate.round().clamp(0.0, f64::from(u32::MAX)) as u32
+            } else if a.sample_rate < 65536.0 {
+                (a.sample_rate * 65536.0).round() as u32
+            } else {
+                0
+            };
             b.u32(sr);
             if version == 1 {
                 b.u32(a.samples_per_packet);
@@ -1592,6 +1599,16 @@ mod tests {
         e.write(&mut b, qt).unwrap();
         let bx = crate::bytes::boxes(&b.buf).next().unwrap().unwrap();
         parse_sample_entry(bx.kind, bx.payload, FourCc(*handler), qt).unwrap()
+    }
+
+    #[test]
+    fn mlpa_rate_round_trips_as_an_integer() {
+        for rate in [48_000.0, 96_000.0, 192_000.0] {
+            let e = SampleEntry::audio(FourCc(*b"mlpa"), CodecConfig::TrueHd { dmlp: vec![1, 2, 3] }, 6, rate, 16);
+            let back = roundtrip(&e, false, b"soun");
+            assert_eq!(back.audio.unwrap().sample_rate, rate);
+            assert_eq!(back.codec, e.codec);
+        }
     }
 
     #[test]

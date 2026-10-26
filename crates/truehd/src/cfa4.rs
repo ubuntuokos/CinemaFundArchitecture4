@@ -144,7 +144,10 @@ impl Decoder {
         *self = Self::default();
     }
 
+    /// After a bad access unit: the rest of the failed call's bytes are dropped too, so they
+    /// cannot come out with the next call's packet.
     fn resync(&mut self) {
+        self.extractor = Default::default();
         self.parser.reset_for_next_major_sync();
         self.decoder.reset_for_next_major_sync();
         self.presentation = None;

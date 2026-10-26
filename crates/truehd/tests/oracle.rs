@@ -138,6 +138,49 @@ fn ffmpeg_encoded_streams_decode_bit_exact() {
     }
 }
 
+/// The access units of a raw stream, by the length in each one's first two bytes.
+fn access_units(data: &[u8]) -> Vec<&[u8]> {
+    let mut out = Vec::new();
+    let mut p = 0;
+    while p + 2 <= data.len() {
+        let len = ((usize::from(data[p] & 0x0F) << 8) | usize::from(data[p + 1])) * 2;
+        if len < 4 || p + len > data.len() {
+            break;
+        }
+        out.push(&data[p..p + len]);
+        p += len;
+    }
+    out
+}
+
+/// A packet that fails keeps none of its bytes: they used to come out with the next packet's
+/// samples, shifting the audio after damage.
+#[test]
+fn a_failed_packet_leaves_nothing_for_the_next() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let s = &SPECS[0];
+    let f = make(&ff, s).unwrap_or_else(|| panic!("could not generate {}", s.name));
+    let data = std::fs::read(&f).unwrap();
+    let aus = access_units(&data);
+    let major: Vec<usize> = (0..aus.len()).filter(|&i| aus[i].get(4..8) == Some(&[0xF8, 0x72, 0x6F, 0xBA][..])).collect();
+    assert!(major.len() >= 2, "need two major syncs");
+    let (m1, m2) = (major[0], major[1]);
+    let mut dec = Decoder::new();
+    for au in &aus[..=m1] {
+        dec.decode(au).unwrap();
+    }
+    // a damaged access unit, then a good one with a major sync, in one packet
+    let mut bad = aus[m1 + 1].to_vec();
+    for b in bad.iter_mut().skip(4) {
+        *b ^= 0x5A;
+    }
+    let packet = [bad.as_slice(), aus[m2]].concat();
+    assert!(dec.decode(&packet).is_err());
+    let next = dec.decode(aus[m2 + 1]).unwrap();
+    let n = next.channels.first().map_or(0, Vec::len);
+    assert!(n <= 40, "the next 40-sample packet gave {n} samples");
+}
+
 /// Damaged variants per stream (a local run with 6000 in release and 1500 in debug found no panic).
 const FUZZ: u32 = 150;
 

@@ -464,6 +464,14 @@ impl DecoderState {
         let samples_per_au = self.samples_per_au;
         let current_substream_index = self.substream_index;
 
+        // Modified for CFA4: the buffers below are indexed directly; refuse what would overrun
+        // them (the parser rejects such streams, this keeps the decoder safe on its own).
+        let offset = self.substream_state()?.decoded_sample_len;
+        let matrix_channels = max_matrix_chan + if restart_sync_word == 0x31EA { 3 } else { 1 };
+        if offset.saturating_add(block_size) > samples_per_au.min(160) || matrix_channels > 16 || max_chan >= 16 || min_chan > max_chan {
+            bail!(DecodeError::BlockExceedsBuffers { offset, block_size, channels: matrix_channels });
+        }
+
         let (max_val, min_val) = if restart_sync_word == 0x31EC { (1 << 31, -(1 << 31)) } else { (1 << 23, -(1 << 23)) };
 
         // recorrelation
@@ -568,8 +576,8 @@ impl DecoderState {
                         let bypassed_lsb = &mut bypassed_lsb[blki];
                         let dither_seed_shr7 = *dither_seed >> 7;
 
-                        rematrix_buffer[max_matrix_chan + 1] = (((*dither_seed >> 15) as i8) << dither_shift) as i32;
-                        rematrix_buffer[max_matrix_chan + 2] = ((dither_seed_shr7 as i8) << dither_shift) as i32;
+                        rematrix_buffer[max_matrix_chan + 1] = i32::from((*dither_seed >> 15) as i8) << dither_shift;
+                        rematrix_buffer[max_matrix_chan + 2] = i32::from(dither_seed_shr7 as i8) << dither_shift;
 
                         *dither_seed = (dither_seed_shr7 ^ (dither_seed_shr7 << 5) ^ (*dither_seed << 16)) & 0x7FFFFF;
 
@@ -759,5 +767,45 @@ impl DecoderState {
         };
 
         Ok(decoded)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Restart A's dither is shifted after widening: a four-bit `dither_shift` of 8 or more used
+    /// to overflow the `i8` (a panic with overflow checks) and smaller shifts lost its high bits.
+    #[test]
+    fn the_restart_a_dither_shift_widens_before_shifting() {
+        let mut d = DecoderState { samples_per_au: 40, ..Default::default() };
+        d.effective_presentations[0] = true;
+        let ss = &mut d.substream_state[0];
+        ss.restart_sync_word = 0x31EA;
+        ss.dither_shift = 15;
+        ss.dither_seed = 0x7F_FFFF;
+        ss.block_size = 1;
+        assert!(d.decode_multi().is_ok());
+        // the seed's bits 15..23 and 7..15 as signed bytes (both -1), shifted by 15
+        assert_eq!(d.rematrix_buffer[0][1], -1 << 15);
+        assert_eq!(d.rematrix_buffer[0][2], -1 << 15);
+    }
+
+    /// Restart A rematrixes two dither channels after the matrix channels in 16-wide rows, and
+    /// blocks fill one access unit: a state that would overrun either is an error, not a panic.
+    #[test]
+    fn states_that_would_overrun_the_buffers_are_errors() {
+        let mut d = DecoderState { samples_per_au: 40, ..Default::default() };
+        d.effective_presentations[0] = true;
+        d.substream_state[0].restart_sync_word = 0x31EA;
+        d.substream_state[0].max_matrix_chan = 14;
+        assert!(d.decode_multi().is_err());
+
+        let mut d = DecoderState { samples_per_au: 40, ..Default::default() };
+        d.effective_presentations[0] = true;
+        d.substream_state[0].restart_sync_word = 0x31EB;
+        d.substream_state[0].decoded_sample_len = 160;
+        d.substream_state[0].block_size = 40;
+        assert!(d.decode_multi().is_err());
     }
 }

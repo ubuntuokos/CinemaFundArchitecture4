@@ -17,7 +17,7 @@
 //!
 //! Optional 8-bit parity check and CRC protection.
 
-use crate::anyhow::{Result, anyhow};
+use crate::anyhow::{Result, anyhow, bail};
 use log::trace;
 
 use crate::log_or_err;
@@ -220,13 +220,9 @@ impl SubstreamSegment {
         // The blocks of a segment carry one access unit of samples between them, whatever
         // sizes they are split into. A terminated segment is no exception: the termination
         // word only marks how much of the completed access unit is silence.
+        // Modified for CFA4: fatal, as the decoder's buffers hold exactly one access unit.
         if decoded != state.samples_per_au {
-            log_or_err!(
-                state,
-                log::Level::Warn,
-                anyhow!(SubstreamError::SampleCountMismatch { substream: state.substream_index, decoded, expected: state.samples_per_au }),
-                reader
-            );
+            bail!(SubstreamError::SampleCountMismatch { substream: state.substream_index, decoded, expected: state.samples_per_au });
         }
 
         let current_pos = reader.position()?;

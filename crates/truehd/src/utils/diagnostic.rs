@@ -103,6 +103,7 @@ rule_ids! {
         FilterBInputTooWide24 = "filter_b_input_too_wide24",
         InvalidPresentation = "invalid_presentation",
         OutputsExceedMaxBits = "outputs_exceed_max_bits",
+        BlockExceedsBuffers = "block_exceeds_buffers",
     }
     ExtractError => Extract / ExtractRule / "extract" {
         SubstreamMismatch = "substream_mismatch",
@@ -205,6 +206,7 @@ rule_ids! {
         InvalidSyncBForSubstream0 = "invalid_sync_b_for_substream0",
         InvalidSyncC = "invalid_sync_c",
         MaxBitsMismatch = "max_bits_mismatch",
+        MatrixChannelsTooMany = "matrix_channels_too_many",
         ChannelAssignTooHigh = "channel_assign_too_high",
         ChannelAssignMisordered = "channel_assign_misordered",
         ChannelAssignDuplicate = "channel_assign_duplicate",

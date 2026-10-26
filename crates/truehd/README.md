@@ -25,6 +25,11 @@ allows.
 - No panicking calls outside tests (`unreachable!`, `unwrap` on a poisoned lock, the `unsafe`
   `get_unchecked` / `transmute` in `structs/oamd.rs` replaced by checked code); the crate denies
   them with clippy lints.
+- Hostile-stream hardening: restart A headers with more than 14 matrix channels are rejected
+  (the two dither channels must fit the 16-wide buffers), the restart A dither is widened to
+  `i32` before `dither_shift` is applied, a segment whose blocks do not add up to one access unit
+  is an error instead of a warning, and `decode_multi` refuses any block that would overrun its
+  buffers.
 - `cfa4.rs` (new) is the interface the rest of CFA4 uses: [`cfa4::Decoder`] takes container
   packets and gives planar `f32` channels in CFA4's WAV / SMPTE order, plus the helpers the
   Matroska / MP4 sources use for packet timing and seek pre-roll.
