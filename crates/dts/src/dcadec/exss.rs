@@ -161,6 +161,16 @@ pub(crate) struct ExssParser {
     pub(crate) asset: ExssAsset,
 }
 
+/// The substream size an EXSS header declares, from its fixed fields alone (at most ten bytes),
+/// so a reader can wait for the rest of a substream that is not all there yet.
+pub(crate) fn declared_size(data: &[u8]) -> Option<usize> {
+    let mut gb = BitReader::new(data);
+    skip(&mut gb, 32 + 8 + 2).ok()?; // sync word, user defined bits, index
+    let wide_hdr = rb1(&mut gb).ok()?;
+    skip(&mut gb, 8 + 4 * wide_hdr as usize).ok()?; // header size
+    Some(rb(&mut gb, 16 + 4 * wide_hdr as usize).ok()? as usize + 1)
+}
+
 impl ExssParser {
     /// Total size of this extension substream in bytes (for demuxing).
     pub(crate) fn substream_size(&self) -> usize {

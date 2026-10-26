@@ -75,18 +75,20 @@ fn audio_mode_ch_mask(mode: AudioMode) -> u32 {
 }
 
 /// `prm_ch_to_spkr_map[mode][ch]` — DCA speaker for each primary channel.
-fn prm_ch_to_spkr(mode: AudioMode, ch: usize) -> usize {
+/// `None` past the mode's channels.
+fn prm_ch_to_spkr(mode: AudioMode, ch: usize) -> Option<usize> {
     use AudioMode::*;
     let row: &[usize] = match mode {
-        Mono | MonoDual => &[DCA_SPEAKER_C],
-        Stereo | StereoSumDiff | StereoTotal => &[DCA_SPEAKER_L, DCA_SPEAKER_R],
+        Mono => &[DCA_SPEAKER_C],
+        // dual mono carries two channels, laid out like stereo (`audio_mode_ch_mask`)
+        MonoDual | Stereo | StereoSumDiff | StereoTotal => &[DCA_SPEAKER_L, DCA_SPEAKER_R],
         ThreeF => &[DCA_SPEAKER_C, DCA_SPEAKER_L, DCA_SPEAKER_R],
         TwoF1R => &[DCA_SPEAKER_L, DCA_SPEAKER_R, DCA_SPEAKER_CS],
         ThreeF1R => &[DCA_SPEAKER_C, DCA_SPEAKER_L, DCA_SPEAKER_R, DCA_SPEAKER_CS],
         TwoF2R => &[DCA_SPEAKER_L, DCA_SPEAKER_R, DCA_SPEAKER_LS, DCA_SPEAKER_RS],
         ThreeF2R => &[DCA_SPEAKER_C, DCA_SPEAKER_L, DCA_SPEAKER_R, DCA_SPEAKER_LS, DCA_SPEAKER_RS],
     };
-    row[ch]
+    row.get(ch).copied()
 }
 
 // ───────────────────────── fixed-point helpers (dcamath.h) ─────────────────
@@ -205,6 +207,8 @@ pub(crate) struct CoreDecoder {
     predictor_history: bool,
     filter_perfect: bool,
     crc_present: bool,
+    /// The header's dynamic range flag: each subframe header then carries a coefficient byte.
+    drc_present: bool,
     sync_ssf: bool,
     audio_mode: AudioMode,
     /// Channels of the primary set; extension sets are appended after it.
@@ -366,7 +370,7 @@ impl CoreDecoder {
         // is 96 kb/s (ffmpeg dca_core.c: `s->bit_rate == 3`).
         self.bit_rate_lossless = BIT_RATES[br_code as usize] == 3;
         rb1(gb)?; // reserved
-        rb1(gb)?; // drc
+        self.drc_present = rb1(gb)?;
         let _ts = rb1(gb)?;
         let _aux = rb1(gb)?;
         rb1(gb)?; // hdcd
@@ -672,8 +676,10 @@ impl CoreDecoder {
                 }
             }
         }
-        // Dynamic range coefficient (drc_present) — drc flag not retained; the
-        // header parser skipped it. The core path here assumes drc absent.
+        // Dynamic range coefficient: not applied, but it precedes the audio
+        if self.drc_present {
+            rb(gb, 8)?;
+        }
         if self.crc_present {
             rb(gb, 16)?;
         }
@@ -1034,7 +1040,7 @@ impl CoreDecoder {
     /// for a bare extension set's channels, which have no speaker.
     pub(crate) fn speaker_for(&self, ch: usize) -> Option<usize> {
         if ch < self.nchannels_core {
-            return Some(prm_ch_to_spkr(self.audio_mode, ch));
+            return prm_ch_to_spkr(self.audio_mode, ch);
         }
         if ch >= self.extension_base {
             return None;
@@ -1207,6 +1213,46 @@ fn decode_blockcodes(code1: u32, code2: u32, abits: usize, audio: &mut [i32; 8])
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The dynamic range flag was dropped, so a subframe's coefficient byte was read as audio.
+    #[test]
+    fn the_dynamic_range_flag_is_kept_for_the_subframes() {
+        for drc in [false, true] {
+            // sync, normal frame, deficit 31, no CRC, 15 blocks, size 1023, stereo, 48 kHz,
+            // 768 kb/s, reserved, then the flag; the rest zero
+            let fields: [(u64, u32); 11] =
+                [(0x7FFE_8001, 32), (1, 1), (31, 5), (0, 1), (15, 7), (1023, 14), (2, 6), (13, 4), (15, 5), (0, 1), (u64::from(drc), 1)];
+            let mut bits = 0u128;
+            let mut n = 0;
+            for (v, w) in fields {
+                bits = (bits << w) | u128::from(v);
+                n += w;
+            }
+            let mut data = (bits << (128 - n)).to_be_bytes().to_vec();
+            data.resize(32, 0);
+            let mut dec = CoreDecoder::default();
+            let mut gb = BitReader::new(&data);
+            assert!(dec.skip_frame_header(&mut gb).is_ok());
+            assert_eq!(dec.drc_present, drc);
+        }
+    }
+
+    /// Dual mono had one speaker for its two channels: `speaker_for(1)` indexed past the row.
+    #[test]
+    fn every_primary_channel_has_a_speaker_in_the_mode_mask() {
+        use AudioMode::*;
+        for mode in [Mono, MonoDual, Stereo, StereoSumDiff, StereoTotal, ThreeF, TwoF1R, ThreeF1R, TwoF2R, ThreeF2R] {
+            let n = mode.channel_count();
+            assert_eq!(primary_bed_layout(mode).len(), n, "{mode:?}");
+            let mut mask = 0u32;
+            for ch in 0..n {
+                let spkr = prm_ch_to_spkr(mode, ch).unwrap_or_else(|| panic!("{mode:?} channel {ch}"));
+                mask |= 1 << spkr;
+            }
+            assert_eq!(mask, audio_mode_ch_mask(mode), "{mode:?}");
+            assert_eq!(prm_ch_to_spkr(mode, n), None);
+        }
+    }
 
     /// ffmpeg's `decode_blockcodes`: one division per sample.
     fn reference(mut code1: i32, mut code2: i32, levels: i32, audio: &mut [i32; 8]) -> i32 {

@@ -1891,27 +1891,31 @@ impl XllDecoder {
                 }
             }
         }
-        // Normalize side-surround to Ls/Rs slots if present, remembering
-        // what the carrier actually named.
         self.coded_mask = self.output_mask;
-        if self.output[DCA_SPEAKER_LSS].is_some() {
-            let lss = self.output[DCA_SPEAKER_LSS].take();
-            if let Some(old) = std::mem::replace(&mut self.output[3], lss) {
-                self.pool.give(old);
-            }
-            self.output_mask = (self.output_mask & !(1 << DCA_SPEAKER_LSS)) | (1 << 3);
-        }
-        if self.output[DCA_SPEAKER_RSS].is_some() {
-            let rss = self.output[DCA_SPEAKER_RSS].take();
-            if let Some(old) = std::mem::replace(&mut self.output[4], rss) {
-                self.pool.give(old);
-            }
-            self.output_mask = (self.output_mask & !(1 << DCA_SPEAKER_RSS)) | (1 << 4);
-        }
+        self.normalize_side_surrounds();
 
         self.sample_rate = p_freq;
         self.pcm_bit_res = p_pcm_bit_res;
         Ok(())
+    }
+}
+
+impl XllDecoder {
+    /// Moves side surrounds (Lss, Rss) into the Ls/Rs slots a 5.1/7.1 layout plays them from,
+    /// as ffmpeg does, but only into a free slot: a layout with both keeps all four channels.
+    fn normalize_side_surrounds(&mut self) {
+        use super::core::{DCA_SPEAKER_LS, DCA_SPEAKER_RS};
+        for (side, to) in [(DCA_SPEAKER_LSS, DCA_SPEAKER_LS), (DCA_SPEAKER_RSS, DCA_SPEAKER_RS)] {
+            let free = self.output.get(to).is_some_and(Option::is_none);
+            if !free {
+                continue;
+            }
+            let Some(moved) = self.output.get_mut(side).and_then(Option::take) else { continue };
+            if let Some(slot) = self.output.get_mut(to) {
+                *slot = Some(moved);
+            }
+            self.output_mask = (self.output_mask & !(1 << side)) | (1 << to);
+        }
     }
 }
 
@@ -1938,6 +1942,36 @@ fn map_core_spkr(core_mask: u32, spkr: usize) -> Option<usize> {
 
 fn ceil_log2(n: usize) -> usize {
     if n <= 1 { 0 } else { (usize::BITS - (n - 1).leading_zeros()) as usize }
+}
+
+#[cfg(test)]
+mod surround_tests {
+    use super::*;
+    use crate::dcadec::core::{DCA_SPEAKER_LS, DCA_SPEAKER_RS};
+
+    /// Lss/Rss replaced Ls/Rs even when the layout had both, losing two lossless channels.
+    #[test]
+    fn side_surrounds_only_move_into_free_slots() {
+        let mut x = XllDecoder::new();
+        for (spkr, v) in [(DCA_SPEAKER_LS, 1), (DCA_SPEAKER_RS, 2), (DCA_SPEAKER_LSS, 3), (DCA_SPEAKER_RSS, 4)] {
+            x.output[spkr] = Some(vec![v; 4]);
+            x.output_mask |= 1 << spkr;
+        }
+        let mask = x.output_mask;
+        x.normalize_side_surrounds();
+        assert_eq!(x.output_mask, mask);
+        for (spkr, v) in [(DCA_SPEAKER_LS, 1), (DCA_SPEAKER_RS, 2), (DCA_SPEAKER_LSS, 3), (DCA_SPEAKER_RSS, 4)] {
+            assert_eq!(x.output[spkr], Some(vec![v; 4]), "speaker {spkr}");
+        }
+
+        // a 7.1 layout without Ls/Rs plays its side surrounds there
+        let mut x = XllDecoder::new();
+        x.output[DCA_SPEAKER_LSS] = Some(vec![3; 4]);
+        x.output_mask = 1 << DCA_SPEAKER_LSS;
+        x.normalize_side_surrounds();
+        assert_eq!((x.output[DCA_SPEAKER_LS].as_deref(), x.output[DCA_SPEAKER_LSS].as_deref()), (Some(&[3; 4][..]), None));
+        assert_eq!(x.output_mask, 1 << DCA_SPEAKER_LS);
+    }
 }
 
 #[cfg(test)]

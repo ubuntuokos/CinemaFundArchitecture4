@@ -33,7 +33,7 @@ pub use dcadec::xmeta::{
 };
 pub use dcadec::xrender::FoldRenderer;
 pub use extract::{ExtractError, Extractor, Frame};
-pub use hd::{ExssKind, HdDecoder, HdError, HdFrame, exss_has_xll, exss_kind, exss_substream_size};
+pub use hd::{ExssKind, HdDecoder, HdError, HdFrame, exss_declared_size, exss_has_xll, exss_kind, exss_substream_size};
 pub use parser::{AudioMode, FrameInfo, ParseError as HeaderParseError, SYNCWORD_CORE_BE, SYNCWORD_SUBSTREAM, parse_header};
 pub use pcm::{CorePcmFrame, DecodeError, PcmDecoder, PcmPushResult, bed_layout};
 pub use spatial::{SpatialChannel, XPresentation};

@@ -13,7 +13,7 @@
 //! substream nothing here reads (XBR-only High Resolution) plays its core.
 
 use crate::dcadec::core::DCA_SPEAKER_COUNT;
-use crate::hd::{ExssKind, HdDecoder, HdError, HdFrame, exss_kind, exss_substream_size};
+use crate::hd::{ExssKind, HdDecoder, HdError, HdFrame, exss_declared_size, exss_kind, exss_substream_size};
 use crate::parser::{ParseError, SYNCWORD_CORE_BE, SYNCWORD_SUBSTREAM, parse_header};
 use crate::pcm::{CorePcmFrame, PcmDecoder};
 use crate::types::BedChannel;
@@ -255,8 +255,12 @@ impl Decoder {
     /// there is (a packet, or the end of a stream).
     fn frame(&mut self, data: &[u8], complete: bool, out: &mut Decoded, err: &mut Option<Error>) -> Step {
         let Some(sync) = data.windows(4).position(|w| w == CORE_SYNC) else {
-            // keep a possible partial syncword
-            return if complete { Step::Skip(data.len()) } else { Step::Skip(data.len().saturating_sub(3)) };
+            // keep a possible partial syncword: skipping it too would lose the frame it starts
+            return match data.len().saturating_sub(3) {
+                _ if complete => Step::Skip(data.len()),
+                0 => Step::Short,
+                n => Step::Skip(n),
+            };
         };
         if sync > 0 {
             return Step::Skip(sync);
@@ -278,11 +282,13 @@ impl Decoder {
             return Step::Short;
         }
         let exss = if after.get(..4) == Some(&EXSS_SYNC[..]) {
-            match exss_substream_size(after) {
-                Some(es) if es <= after.len() => after.get(..es),
-                // a substream that is cut off or unreadable: the core plays alone
+            // the declared size comes from the fixed header, so a substream still arriving is
+            // waited for rather than mistaken for an unreadable one
+            match exss_declared_size(after) {
+                Some(es) if es <= after.len() => after.get(..es).filter(|_| exss_substream_size(after).is_some()),
                 Some(_) if !complete => return Step::Short,
-                None if !complete && after.len() < 16 => return Step::Short,
+                None if !complete => return Step::Short,
+                // a substream that is cut off or unreadable: the core plays alone
                 _ => None,
             }
         } else {

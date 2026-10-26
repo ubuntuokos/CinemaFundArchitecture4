@@ -291,30 +291,7 @@ fn random_lossless_assets_never_panic() {
             xll[at] ^= 1 << (rnd() % 8);
         }
 
-        // the extension substream: no static fields, one asset in XLL coding mode
-        let header = 16usize;
-        let mut e = Bits::default();
-        e.put(u64::from(cfa4_dts::SYNCWORD_SUBSTREAM), 32);
-        e.put(0, 8);
-        e.put(0, 2); // substream index
-        e.put(0, 1); // narrow header
-        e.put(header as u64 - 1, 8);
-        e.put((header + xll.len()) as u64 - 1, 16);
-        e.put(0, 1); // no static fields
-        e.put(xll.len() as u64 - 1, 16); // asset size
-        let descr = e.0.len();
-        e.put(4, 9); // descriptor of 5 bytes
-        e.put(0, 3); // asset index
-        e.put(0, 1); // no DRC
-        e.put(0, 1); // no dialogue normalisation
-        e.put(1, 2); // coding mode: XLL alone
-        e.put(xll.len() as u64 - 1, 16);
-        e.put(0, 1); // no XLL sync
-        e.put(0, 3); // stream id
-        e.pad_to(descr + 40);
-        e.pad_to(header * 8);
-        let mut exss = e.bytes();
-        exss.extend(&xll);
+        let exss = xll_substream(&xll);
         assert_eq!(cfa4_dts::exss_kind(&exss), cfa4_dts::ExssKind::Lossless, "the substream must reach the lossless decoder");
         let mut d = fr[rnd() as usize % fr.len()].to_vec();
         d.extend(exss);
@@ -337,4 +314,57 @@ fn generate_fixtures() {
         let out = cfa4_testkit::fixtures_dir("dts").join(format!("{}.dts", s.name));
         cfa4_testkit::fixtures::generate_and_report(&format!("dts/{}", s.name), &[out], || make(&ff, s));
     }
+}
+
+/// An extension substream (no static fields) of one asset in XLL coding mode around `xll`.
+fn xll_substream(xll: &[u8]) -> Vec<u8> {
+    let header = 16usize;
+    let mut e = Bits::default();
+    e.put(u64::from(cfa4_dts::SYNCWORD_SUBSTREAM), 32);
+    e.put(0, 8);
+    e.put(0, 2); // substream index
+    e.put(0, 1); // narrow header
+    e.put(header as u64 - 1, 8);
+    e.put((header + xll.len()) as u64 - 1, 16);
+    e.put(0, 1); // no static fields
+    e.put(xll.len() as u64 - 1, 16); // asset size
+    let descr = e.0.len();
+    e.put(4, 9); // descriptor of 5 bytes
+    e.put(0, 3); // asset index
+    e.put(0, 1); // no DRC
+    e.put(0, 1); // no dialogue normalisation
+    e.put(1, 2); // coding mode: XLL alone
+    e.put(xll.len() as u64 - 1, 16);
+    e.put(0, 1); // no XLL sync
+    e.put(0, 3); // stream id
+    e.pad_to(descr + 40);
+    e.pad_to(header * 8);
+    let mut exss = e.bytes();
+    exss.extend(xll);
+    exss
+}
+
+/// A raw stream fed one byte at a time, or cut inside an extension substream, decodes as a whole.
+#[test]
+fn chunk_boundaries_do_not_lose_frames() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let data = std::fs::read(make(&ff, &SPECS[1]).unwrap()).unwrap();
+    let whole = decode_raw(&data, data.len());
+    // a push ending in a partial core syncword used to drop it, so every frame was lost
+    assert_eq!(decode_raw(&data, 1), whole);
+    assert_eq!(decode_raw(&data, 3), whole);
+
+    // a core whose substream is still arriving waits for it rather than playing alone
+    let fr = frames(&data);
+    let exss = xll_substream(&[0; 200]);
+    let mut first = fr[0].to_vec();
+    first.extend(fr[1]);
+    first.extend(&exss[..20]);
+    let mut dec = Decoder::new();
+    let d = dec.push(&first).unwrap();
+    let per = cfa4_dts::cfa4::packet_samples(fr[0]).unwrap() as usize;
+    assert_eq!(d.channels.first().map_or(0, Vec::len), per, "the second core waits for its substream");
+    assert_eq!(cfa4_dts::exss_declared_size(&exss[..9]), Some(exss.len()));
+    assert_eq!(cfa4_dts::exss_declared_size(&exss[..8]), None);
+    assert_eq!(cfa4_dts::exss_substream_size(&exss[..20]), None);
 }

@@ -306,6 +306,11 @@ pub(crate) const MAX_UNITS: usize = 1 << 23;
 /// Full-bandwidth channels per AC-3 audio coding mode (A/52 Table 5.8).
 const AC3_CHANNELS: [u32; 8] = [2, 1, 2, 3, 3, 4, 4, 5];
 
+/// Bytes [`frame_len`] reads at most: a DTS core header's frame size ends in its twelfth byte.
+fn header_bytes(sync: AudioSync) -> usize {
+    if matches!(sync, AudioSync::Dts) { 12 } else { 8 }
+}
+
 /// Frame length at the start of `b` for the given sync type (`None`: no valid header; `Some(0)`
 /// is never returned).
 fn frame_len(sync: AudioSync, b: &[u8]) -> Option<usize> {
@@ -646,7 +651,7 @@ impl Splitter {
                 _ => self.buf_start,
             };
             let i = (at - self.buf_start) as usize;
-            if i + 8 > self.buf.len() {
+            if i + header_bytes(sync) > self.buf.len() {
                 // not enough bytes for a header yet
                 self.trim(self.buf.len().saturating_sub(i));
                 return;
@@ -708,7 +713,7 @@ impl Splitter {
     /// it (or the data ends before it).
     fn confirmed(&self, sync: AudioSync, i: usize, len: usize) -> bool {
         let j = i + len;
-        if j + 8 > self.buf.len() {
+        if j + header_bytes(sync) > self.buf.len() {
             return true;
         }
         frame_len(sync, &self.buf[j..]).is_some()
@@ -823,5 +828,28 @@ mod tests {
         s.finish();
         assert_eq!(s.units.len(), 10);
         assert!(s.truncated);
+    }
+
+    /// A payload ending 8 to 11 bytes into a DTS core header passed the 8-byte guard, but the
+    /// frame size needs 12: the header was taken for lost sync and its frame dropped.
+    #[test]
+    fn a_dts_header_split_after_eight_bytes_waits_for_the_rest() {
+        let frame = || {
+            // FTYPE 1, SHORT 31, CPF 0, NBLKS 15, FSIZE 127 (128 bytes)
+            let bits: u64 = (1 << 63) | (31 << 58) | (15 << 50) | (127 << 36);
+            let mut f = vec![0x7F, 0xFE, 0x80, 0x01];
+            f.extend(bits.to_be_bytes());
+            f.resize(128, 0);
+            f
+        };
+        let es: Vec<u8> = (0..4).flat_map(|_| frame()).collect();
+        assert_eq!(dts_frame_len(&es), Some(128));
+        for cut in 128 + 8..128 + 12 {
+            let mut s = Splitter::new(&Codec::Dts);
+            s.feed(0, &es[..cut]);
+            s.feed(188, &es[cut..]);
+            s.finish();
+            assert_eq!(s.units.iter().map(|u| u.size).collect::<Vec<_>>(), vec![128; 4], "cut at {cut}");
+        }
     }
 }

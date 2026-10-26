@@ -546,13 +546,15 @@ impl MpegSource {
             },
             // a unit holds a core frame and, for DTS-HD, its extension substream; the decode of the
             // first says the output rate, layout and length (96 kHz Master Audio over a 48 kHz core)
-            Codec::Dts => match cfa4_dts::cfa4::Decoder::new().decode_packet(&first) {
-                Ok(d) if !d.channels.is_empty() => {
+            // a Master Audio stream may open by buffering for peak bit rate smoothing (no output
+            // for a few units), so the probe decodes on until a unit gives audio
+            Codec::Dts => match dts_probe(&first, |k| file.read_unit(&self.bytes, ai, k).ok(), st.units.len()) {
+                Ok(d) => {
                     let n = d.channels.first().map_or(0, Vec::len) as u32;
                     (ACodec::Dts, d.sample_rate, d.channels.len(), Some(n), None)
                 }
-                Ok(_) => return self.audio_unsupported(&codec_name, "DTS: no decodable frame".into()),
-                Err(e) => return self.audio_unsupported(&codec_name, format!("{codec_name}: {e}")),
+                Err(Some(e)) => return self.audio_unsupported(&codec_name, format!("{codec_name}: {e}")),
+                Err(None) => return self.audio_unsupported(&codec_name, "DTS: no decodable frame".into()),
             },
             Codec::LpcmBluray => match crate::audio::bluray_lpcm_header(&first) {
                 Some(h) => (ACodec::LpcmBluray, h.sample_rate, h.channels, None, Some(h.bits)),
@@ -887,10 +889,61 @@ pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader)
     Some(MpegSource::open_reader(name, reader.clone()).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
 }
 
+/// Units a DTS probe decodes at most before it gives up on finding audio.
+const DTS_PROBE_UNITS: usize = 64;
+
+/// The first audio of a DTS stream: `first` and then the units `unit(k)` gives (up to `units` of
+/// them, at most [`DTS_PROBE_UNITS`]) through one decoder, until one decodes to audio.
+/// `Err(Some(_))`: the last decode error when none does.
+fn dts_probe(first: &[u8], unit: impl Fn(usize) -> Option<Vec<u8>>, units: usize) -> Result<cfa4_dts::cfa4::Decoded, Option<cfa4_dts::cfa4::Error>> {
+    let mut dec = cfa4_dts::cfa4::Decoder::new();
+    let mut err = None;
+    for k in 0..units.clamp(1, DTS_PROBE_UNITS) {
+        let next;
+        let data = if k == 0 {
+            first
+        } else {
+            let Some(b) = unit(k) else { break };
+            next = b;
+            &next
+        };
+        match dec.decode_packet(data) {
+            Ok(d) if !d.channels.is_empty() => return Ok(d),
+            Ok(_) => {}
+            Err(e) => err = Some(e),
+        }
+    }
+    Err(err)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use cfa4_media::MediaSource;
+
+    /// The probe decoded only the first unit, so a Master Audio stream opening with peak bit rate
+    /// smoothing (no audio for its first units) lost the whole track. Units without audio are
+    /// stood in for here by ones without a frame.
+    #[test]
+    fn the_dts_probe_decodes_on_past_units_without_audio() {
+        let ff = cfa4_testkit::require_ffmpeg!();
+        let out = cfa4_testkit::fixtures_dir("codecs").join("probe_stereo.dts");
+        let ok = std::process::Command::new(&ff)
+            .args(["-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=500:sample_rate=48000", "-t", "0.2", "-ac", "2"])
+            .args(["-c:a", "dca", "-strict", "-2", "-f", "dts"])
+            .arg(&out)
+            .status()
+            .is_ok_and(|s| s.success());
+        assert!(ok);
+        let data = std::fs::read(&out).unwrap();
+        let len = cfa4_dts::parse_header(&data).unwrap().frame_size;
+        let frame = data[..len].to_vec();
+        let units = [vec![0u8; 64], vec![0u8; 64], frame];
+        let d = dts_probe(&units[0], |k| units.get(k).cloned(), units.len()).unwrap();
+        assert_eq!((d.sample_rate, d.channels.len()), (48_000, 2));
+        // nothing decodable: no audio, and the probe stops at the units there are
+        assert!(dts_probe(&units[0], |k| units.get(k).filter(|_| k < 2).cloned(), 1000).is_err());
+    }
 
     /// A mutated transport stream whose PTS span gave ~0 fps panicked on open with "attempt to
     /// divide by zero" (`FrameRate::tick_of`).
