@@ -73,12 +73,22 @@ fn lossless_round_trips_are_exact() {
         ),
         (97, 3, vec![(8, false, 1, 1); 4], EncodeOptions { progression: Progression::Rlcp, levels: 7, ..EncodeOptions::lossless() }),
         (50, 50, rgb8.to_vec(), EncodeOptions { mct: false, ..EncodeOptions::lossless() }),
+        // components of different precisions: no component transform (it would clip)
+        (9, 6, vec![(1, false, 1, 1), (16, false, 1, 1), (16, false, 1, 1)], EncodeOptions { levels: 0, ..EncodeOptions::lossless() }),
+        (9, 6, vec![(8, false, 1, 1), (8, true, 1, 1), (8, false, 1, 1)], EncodeOptions::lossless()),
     ];
     for (k, (w, h, comps, opts)) in cases.into_iter().enumerate() {
         let img = picture(w, h, &comps, k as u32 + 3);
         let cs = encode(&img, &opts).unwrap();
         assert_eq!(decode(&cs).unwrap(), img, "case {k}: {w}x{h}");
     }
+    // the reported case: [0, 65535, 0] in 1-, 16- and 16-bit components
+    let mut img = picture(1, 1, &[(1, false, 1, 1), (16, false, 1, 1), (16, false, 1, 1)], 1);
+    for (p, v) in img.components.iter_mut().zip([0, 65535, 0]) {
+        p.data = vec![v];
+    }
+    let cs = encode(&img, &EncodeOptions { levels: 0, ..EncodeOptions::lossless() }).unwrap();
+    assert_eq!(decode(&cs).unwrap(), img);
 }
 
 #[test]

@@ -372,9 +372,13 @@ fn validate(image: &Image, opts: &EncodeOptions) -> Result<()> {
     Ok(())
 }
 
+/// The component transform applies to the first three components when they share the
+/// sub-sampling, the precision and the signedness: with different precisions the transformed
+/// coefficients can exceed what the components' exponents and guard bits represent, and a
+/// lossless encode would be clipped.
 fn mct_possible(image: &Image) -> bool {
     let c = &image.components;
-    c.len() >= 3 && c.iter().take(3).all(|p| p.dx == c[0].dx && p.dy == c[0].dy)
+    c.len() >= 3 && c.iter().take(3).all(|p| p.dx == c[0].dx && p.dy == c[0].dy && p.precision == c[0].precision && p.signed == c[0].signed)
 }
 
 /// A plane's samples with the DC level shift (G.1.2), clamped into the component's range.
