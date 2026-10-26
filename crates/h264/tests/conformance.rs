@@ -50,6 +50,12 @@ fixture_tests!(
     no8x8dct,
     qp50,
     qp1,
+    high10_intra,
+    high10_cavlc,
+    high10_cabac_b,
+    high10_qp_low,
+    high10_qp_high,
+    high10_1080p,
     vt_high,
     vt_main,
     vt_baseline,
@@ -78,7 +84,7 @@ fn draft_mode_changes_only_flagged_non_reference_pictures() {
             let (mut draft, mut changed) = (0, 0);
             for (i, p) in pics.iter().enumerate() {
                 let r = &reference[i * fsize..(i + 1) * fsize];
-                let same = p.y == r[..w * h] && [&p.u[..], &p.v[..]].concat() == r[w * h..];
+                let same = *p.y.to_bytes() == r[..w * h] && [&p.u.to_bytes()[..], &p.v.to_bytes()[..]].concat() == r[w * h..];
                 if p.draft {
                     draft += 1;
                     changed += !same as usize;
@@ -157,8 +163,16 @@ fn concurrent_fixture_publication_is_safe() {
     }
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
     let name = Box::leak(format!("concurrent_fixture_{}_{stamp}", std::process::id()).into_boxed_str());
-    let fixture =
-        common::Fixture { name, source: "testsrc2", width: 64, height: 48, frames: 2, filter: "", args: &["-preset", "ultrafast", "-x264-params", "keyint=1"] };
+    let fixture = common::Fixture {
+        name,
+        pix_fmt: "yuv420p",
+        source: "testsrc2",
+        width: 64,
+        height: 48,
+        frames: 2,
+        filter: "",
+        args: &["-preset", "ultrafast", "-x264-params", "keyint=1"],
+    };
     let open_published = |path: &std::path::Path| {
         let mut options = std::fs::OpenOptions::new();
         options.read(true);
