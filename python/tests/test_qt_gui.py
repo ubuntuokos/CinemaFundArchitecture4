@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2185,6 +2185,8 @@ def test_reference_monitor(app, tmp_path: Path):
         win.docks["Reference Monitor"].show()
         win.docks["Reference Monitor"].raise_()
         assert wait_until(app, lambda: ref.view.image is not None, 20_000)
+        assert not ref.ganged, "parked by default, as egui"
+        ref.gang.click()
         ft = ref.frame_ticks()
         win._seek_program(48 * ft)
         assert wait_until(app, lambda: ref.frame_time() == 48 * ft, 10_000)
@@ -2200,6 +2202,54 @@ def test_reference_monitor(app, tmp_path: Path):
         assert ref.ganged
         win._seek_program(20 * ft)
         assert wait_until(app, lambda: ref.frame_time() == 20 * ft, 10_000)
+        # Lumetri Scopes of the reference frame: its own scopes (egui's default two)
+        ref.set_display("scopes")
+        assert wait_until(app, lambda: set(ref.scopes.images) == {"vectorscopeYuv", "waveform"}, 30_000), ref.scopes.message
+        next(a for a in ref.scopes_menu().actions() if a.objectName() == "reference.scope.histogram").trigger()
+        assert ref.scope_kinds == ["vectorscopeYuv", "histogram", "waveform"]
+        assert wait_until(app, lambda: "histogram" in ref.scopes.images, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_lumetri_scopes(app, tmp_path: Path):
+    """egui's Lumetri Scopes: the engine's trace images of the Program frame for every scope,
+    egui's 4:3 grid, presets, settings menu and footer, remembered."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.scopes import ScopesState, layout
+
+    cells = layout(QtCore.QRectF(0, 0, 800, 600), 4)
+    assert len(cells) == 4 and abs(cells[0].width() - cells[1].width()) < 1 and cells[0].top() != cells[2].top()
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel = win.scopes
+    try:
+        assert wait_until(app, lambda: bool(win.sequence), 30_000)
+        win._seek_program(10 * TICKS_PER_SECOND)
+        assert not win.docks["Lumetri Scopes"].isVisible()
+        win.docks["Lumetri Scopes"].show()
+        win.docks["Lumetri Scopes"].raise_()
+        assert wait_until(app, lambda: "parade" in panel.view.images, 20_000), panel.view.message
+        menu = panel.settings_menu()
+        presets = menu.findChild(QtWidgets.QMenu, "scopes.menu.presets")
+        next(a for a in presets.actions() if a.text().startswith("Four Scopes (RGB")).trigger()
+        assert panel.st.shown == ["vectorscopeYuv", "histogram", "parade", "waveform"]
+        assert wait_until(app, lambda: all(k in panel.view.images for k in panel.st.shown), 30_000), panel.view.message
+        vec = panel.view.images["vectorscopeYuv"][2]
+        assert len(vec["targets"]) == 2 and vec["extent"] > 0
+        assert panel.view.images["waveform"][1].width() > 0
+        panel.clamp.setChecked(False)
+        assert not panel.st.clamp and panel.st.preset == ""
+        assert wait_until(app, lambda: panel.view.images["waveform"][2]["lo"] < 0, 20_000)
+        assert ScopesState.load(settings, "panels/scopes").shown == panel.st.shown
+        assert panel.grab().width() > 0
     finally:
         win._quit_confirmed = True
         win.close()

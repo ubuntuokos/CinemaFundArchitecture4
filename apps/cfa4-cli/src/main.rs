@@ -33,6 +33,7 @@ macro_rules! out {
 mod args;
 mod probe;
 mod serve;
+mod serve_scopes;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;

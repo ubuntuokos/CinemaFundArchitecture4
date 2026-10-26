@@ -37,12 +37,13 @@ from .panels.monitor_view import build_view_menu
 from .panels.project import ProjectPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
+from .panels.scopes import ScopesPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 12  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor
+LAYOUT_VERSION = 13  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -58,6 +59,7 @@ DOCK_PLAN = (
     ("Timecode", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Audio Track Mixer", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Reference Monitor", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Lumetri Scopes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
@@ -160,6 +162,9 @@ class MainWindow(QMainWindow):
         self.clip_mixer = ClipMixerPanel(self)
         self.reference = ReferenceMonitor(engine, self)
         self.reference.attach_settings(self.settings)
+        self.scopes = ScopesPanel(engine, self)
+        self.scopes.attach_settings(self.settings)
+        self.reference.scope_settings = lambda: self.scopes.st
         self._clip_mixer_busy = False
         self._mixer_busy = False
         self._mixer_clock = QElapsedTimer()
@@ -203,6 +208,7 @@ class MainWindow(QMainWindow):
             "Audio Track Mixer": self.mixer,
             "Audio Clip Mixer": self.clip_mixer,
             "Reference Monitor": self.reference,
+            "Lumetri Scopes": self.scopes,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -281,7 +287,8 @@ class MainWindow(QMainWindow):
         win.tabifyDockWidget(d["Audio Clip Mixer"], d["Metadata"])
         win.tabifyDockWidget(d["Metadata"], d["Audio Track Mixer"])
         win.tabifyDockWidget(d["Audio Track Mixer"], d["Reference Monitor"])
-        for closed in ("Audio Track Mixer", "Reference Monitor"):  # other workspaces; Window menu
+        win.tabifyDockWidget(d["Reference Monitor"], d["Lumetri Scopes"])
+        for closed in ("Audio Track Mixer", "Reference Monitor", "Lumetri Scopes"):  # other workspaces; Window menu
             d[closed].hide()
         win.tabifyDockWidget(d["Project"], d["Info"])
         win.tabifyDockWidget(d["Info"], d["Effects"])
@@ -704,6 +711,7 @@ class MainWindow(QMainWindow):
         self.timeline.set_sequence(self.sequence)
         self.monitor.set_sequence(self.sequence, self.revision)
         self.reference.set_sequence(self.sequence, self.revision)
+        self.update_scopes()
         self.inspector.set_sequence(self.sequence)
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
         self.update_inspectors()
@@ -1039,9 +1047,20 @@ class MainWindow(QMainWindow):
         """A panel (Effect Controls' keyframe navigation) moves the Program playhead."""
         self.monitor.set_playhead(ticks)
         self.reference.set_playhead(ticks)
+        self.update_scopes(int(ticks))
         self.execute("playhead.set", {"time": int(ticks)})
 
+    def update_scopes(self, ticks: int | None = None) -> None:
+        """The Lumetri Scopes follow the Program frame."""
+        if self.sequence is None:
+            self.scopes.set_frame(None, self.revision)
+            return
+        t = self.monitor.playhead if ticks is None else ticks
+        ft = self.monitor.frame()
+        self.scopes.set_frame(t // ft * ft, self.revision)
+
     def _playback_moved(self, ticks: int) -> None:
+        self.update_scopes(ticks)
         self.reference.set_playhead(ticks)
         self.timeline.canvas.playhead = ticks
         self.timeline.canvas.update()

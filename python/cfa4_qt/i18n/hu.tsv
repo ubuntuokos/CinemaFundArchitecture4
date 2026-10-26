@@ -698,3 +698,42 @@
 	Match Playhead	Lejátszófejhez igazítás
 	Gang to Program	Programhoz kötés
 	(no sequences)	(nincsenek szekvenciák)
+	8 Bit	8 bit
+	Auto	Automatikus
+	Bright	Világos
+	Brightness	Fényerő
+	Clamp Signal	Jel korlátozása
+	Colour Space	Színtér
+	Dimmed	Tompított
+	Float	Lebegőpontos
+	Four Scopes (RGB, 8 bit)	Négy szkóp (RGB, 8 bit)
+	Four Scopes (YUV, float, no clamp)	Négy szkóp (YUV, lebegőpontos, korlátozás nélkül)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS vektorszkóp + hisztogram
+	Histogram	Hisztogram
+	Luma	Luma
+	Parade	Parádé
+	Parade (RGB)	Parádé (RGB)
+	Parade ({kind})	Parádé ({kind})
+	Parade Type	Parádé típusa
+	Presets	Előbeállítások
+	RGB	RGB
+	RGB-White	RGB-fehér
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Szkópbeállítások
+	Signal Scale	Jelskála
+	Vectorscope (YUV)	Vektorszkóp (YUV)
+	Vectorscope + Waveform YC	Vektorszkóp + YC hullámforma
+	Vectorscope HLS	HLS vektorszkóp
+	Vectorscope Targets	Vektorszkóp célpontjai
+	Vectorscope YUV	YUV vektorszkóp
+	Waveform	Hullámforma
+	Waveform (Luma)	Hullámforma (Luma)
+	Waveform (RGB)	Hullámforma (RGB)
+	Waveform ({kind})	Hullámforma ({kind})
+	Waveform Type	Hullámforma típusa
+	YC	YC
+	YC no Chroma	YC króma nélkül
+	YUV	YUV

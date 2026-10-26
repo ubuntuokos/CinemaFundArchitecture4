@@ -909,6 +909,7 @@ dependencies = [
  "cfa4-platform",
  "cfa4-project",
  "cfa4-render",
+ "cfa4-scopes",
  "cfa4-testkit",
  "cfa4-time",
  "log",

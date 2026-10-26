@@ -1,21 +1,25 @@
 """Reference Monitor, as egui's (crates/ui-egui/src/panels/reference.rs): a second view of the
 active sequence for comparing shots while grading. It is either ganged to the Program monitor
-(follows the playhead) or parked on its own frame. Frames are the engine's (``frame.render``).
+(follows the playhead) or parked on its own frame, and shows the picture (Composite Video) or
+Lumetri Scopes of that frame (its own choice of scopes, right-click; the other scope settings
+are the Lumetri Scopes panel's). Frames and traces are the engine's.
 """
 
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from typing import Any
 
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QToolButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QMenu, QStackedWidget, QToolButton, QVBoxLayout, QWidget
 
 from .. import theme
 from ..i18n import N_, tr
 from ..timecode import format_timecode, frame_ticks
 from .monitor import FrameView
+from .scopes import KINDS, ORDER, ScopesState, ScopesView
 from .transport import icon_color, transport_icon
 
 
@@ -28,12 +32,19 @@ class ReferenceMonitor(QWidget):
         self.sequence: dict[str, Any] | None = None
         self.revision = -1
         self.playhead = 0
-        self.ganged = True
+        self.ganged = False  # egui's default
+        self.scope_kinds = ["vectorscopeYuv", "waveform"]
+        self.scope_settings: Any = None  # the Lumetri Scopes panel's settings (a callable)
         self.time = 0
         self._busy = False
         self._wanted: tuple[Any, ...] | None = None
         self._shown: tuple[Any, ...] | None = None
         self.view = FrameView("reference", parent=self)
+        self.scopes = ScopesView(engine, "reference.scopes", self)
+        self.scopes.menu_requested.connect(lambda pos: self.scopes_menu().exec(pos))
+        self.stack = QStackedWidget(self)
+        self.stack.addWidget(self.view)
+        self.stack.addWidget(self.scopes)
         self.timecode = QLabel("00:00:00:00", self)
         self.timecode.setObjectName("reference.timecode")
         self.back = self._button("reference.stepBack", N_("Step Back 1 Frame"), "stepBack", lambda: self.step(-1))
@@ -51,9 +62,7 @@ class ReferenceMonitor(QWidget):
         self.display.setObjectName("reference.display")
         self.display.addItem(tr("Composite Video"), "composite")
         self.display.addItem(tr("Lumetri Scopes"), "scopes")
-        model_item = self.display.model().item(1)  # type: ignore[attr-defined]
-        model_item.setEnabled(False)  # the scopes are not in the Qt GUI yet
-        model_item.setToolTip(tr("Not yet in the Qt GUI (see docs/qt-parity.md)"))
+        self.display.activated.connect(lambda _i: self.set_display(str(self.display.currentData())))
         bar = QHBoxLayout()
         bar.setContentsMargins(10, 2, 8, 4)
         bar.setSpacing(4)
@@ -66,7 +75,7 @@ class ReferenceMonitor(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 0)
         layout.setSpacing(2)
-        layout.addWidget(self.view, 1)
+        layout.addWidget(self.stack, 1)
         layout.addLayout(bar)
         self._restyle()
         self._sync_gang()
@@ -99,13 +108,47 @@ class ReferenceMonitor(QWidget):
         except ValueError:
             data = {}
         if isinstance(data, dict):
-            self.ganged = bool(data.get("ganged", True))
+            self.ganged = bool(data.get("ganged", False))
             self.time = int(data.get("time") or 0)
+            kinds = [k for k in data.get("scopes") or [] if k in ORDER]
+            self.scope_kinds = sorted(set(kinds), key=ORDER.index) or self.scope_kinds
+            if data.get("display") in ("composite", "scopes"):
+                self.display.setCurrentIndex(self.display.findData(data["display"]))
+                self.stack.setCurrentIndex(1 if data["display"] == "scopes" else 0)
         self._sync_gang()
 
     def _save(self) -> None:
         if self.settings is not None:
-            self.settings.setValue("panels/reference", json.dumps({"ganged": self.ganged, "time": self.time}))
+            self.settings.setValue(
+                "panels/reference",
+                json.dumps({"ganged": self.ganged, "time": self.time, "display": self.display.currentData(), "scopes": self.scope_kinds}),
+            )
+
+    def set_display(self, display: str) -> None:
+        self.display.setCurrentIndex(max(0, self.display.findData(display)))
+        self.stack.setCurrentIndex(1 if display == "scopes" else 0)
+        self._save()
+        self.request()
+
+    def scopes_menu(self) -> QMenu:
+        """Right-click on the scopes: which scopes the Reference Monitor shows."""
+        m = QMenu(self)
+        for k, label in KINDS:
+            a = m.addAction(tr(label))
+            a.setObjectName(f"reference.scope.{k}")
+            a.setCheckable(True)
+            a.setChecked(k in self.scope_kinds)
+            a.triggered.connect(lambda _c=False, kk=k: self.toggle_scope(kk))
+        return m
+
+    def toggle_scope(self, kind: str) -> None:
+        if kind in self.scope_kinds:
+            if len(self.scope_kinds) > 1:
+                self.scope_kinds.remove(kind)
+        else:
+            self.scope_kinds = sorted([*self.scope_kinds, kind], key=ORDER.index)
+        self._save()
+        self.request()
 
     def _sync_gang(self) -> None:
         self.gang.setChecked(self.ganged)
@@ -163,6 +206,12 @@ class ReferenceMonitor(QWidget):
         t = self.frame_time()
         self.timecode.setText(format_timecode(t, self.frame_ticks()))
         if not self.isVisible():
+            return
+        if self.display.currentData() == "scopes":
+            base = self.scope_settings() if callable(self.scope_settings) else None
+            st = ScopesState(**{**(asdict(base) if base is not None else {}), "shown": list(self.scope_kinds)})
+            self.scopes.st = st
+            self.scopes.set_frame(t, self.revision)
             return
         w, h = self.view.wanted_size()
         self._wanted = (t, self.revision, w, h)
