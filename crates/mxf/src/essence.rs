@@ -156,6 +156,11 @@ impl PictureInfo {
     pub fn frame_width(&self) -> u32 {
         if self.display_width > 0 { self.display_width } else { self.stored_width }
     }
+    /// The components are R, G, B: an RGBA descriptor, or coding equations of GBR (the identity
+    /// matrix, SMPTE RP 224 04.01.01.01.02.05).
+    pub fn rgb(&self) -> bool {
+        self.rgba || self.coding_equations.is_some_and(|ul| ul.0.get(8..14) == Some(&[0x04, 0x01, 0x01, 0x01, 0x02, 0x05][..]))
+    }
     /// Full-range coding (black at 0 and white at the maximum code value).
     pub fn full_range(&self) -> bool {
         let d = self.component_depth;
