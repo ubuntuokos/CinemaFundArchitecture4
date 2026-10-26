@@ -851,3 +851,36 @@ fn builtin_label_presets_are_complete_and_distinct() {
     }
     assert!(!settings::is_builtin_label_preset("Team"));
 }
+
+#[test]
+fn every_category_is_listed_under_a_known_group() {
+    let groups: Vec<&str> = settings::groups().iter().map(|g| g.id).collect();
+    let mut seen = std::collections::HashSet::new();
+    assert!(groups.iter().all(|g| seen.insert(*g)), "duplicate group ids: {groups:?}");
+    for c in settings::categories() {
+        assert!(groups.contains(&c.group), "{} is in unknown group {}", c.id, c.group);
+    }
+    // every group lists at least one page (Hardware & Devices: Memory, Audio Hardware)
+    for g in &groups {
+        assert!(settings::categories().iter().any(|c| c.group == *g), "empty group {g}");
+    }
+    assert_eq!(settings::category("memory").map(|c| c.group), Some("hardware"));
+    assert_eq!(settings::category("audioHardware").map(|c| c.group), Some("hardware"));
+}
+
+#[test]
+fn schema_reports_groups_and_hides_the_unwired_duplicate_hardware_fields() {
+    let mut s = Session::default();
+    let r = s.execute("prefs.schema", json!({})).unwrap();
+    assert_eq!(r["groups"].as_array().unwrap().len(), settings::groups().len());
+    assert!(r["categories"].as_array().unwrap().iter().all(|c| c["group"].is_string()));
+    // hardware decoding has one control (Playback, wired); the Media page copy and the
+    // macOS-only ProRes hardware encoding switch are gone from the schema
+    for gone in ["media.hardwareDecoding", "media.proresHardwareEncoding"] {
+        assert!(settings::field(gone).is_none(), "{gone}");
+    }
+    assert!(settings::field("playback.hardwareDecoding").is_some_and(|f| f.wired));
+    // old preference files keep loading, and the keys stay settable for older clients
+    set(&mut s, "media.hardwareDecoding", json!(true));
+    assert_eq!(s.prefs.get("media.hardwareDecoding"), Some(json!(true)));
+}
