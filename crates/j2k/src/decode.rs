@@ -11,6 +11,9 @@ use crate::{Error, Image, Plane, Result};
 
 /// Most code-blocks a tile may have (bounds the bookkeeping a hostile header can ask for).
 const MAX_CODEBLOCKS: usize = 1 << 22;
+/// Precincts and packets a tile may have (layers × precincts); larger is refused before the
+/// packet order is built.
+const MAX_PACKETS: usize = 1 << 22;
 
 fn ceil_div(a: u64, b: u64) -> u64 {
     a.div_ceil(b.max(1))
@@ -113,6 +116,7 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
     }
     let trect = Rect { u0: tx0 as u32, v0: ty0 as u32, u1: tx1 as u32, v1: ty1 as u32 };
     let mut blocks_total = 0usize;
+    let mut precincts_total = 0usize;
     let mut comps = Vec::with_capacity(header.components.len());
     for (c, info) in header.components.iter().enumerate() {
         let style = params.cod.get(c).ok_or(Error::Invalid("component without coding style"))?.clone();
@@ -131,6 +135,10 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
             }
             let count = |a0: u32, a1: u32, pp: u32| -> usize { if a1 <= a0 { 0 } else { (u64::from(a1).div_ceil(1 << pp) - (u64::from(a0) >> pp)) as usize } };
             let (pw, ph) = (count(rect.u0, rect.u1, ppx), count(rect.v0, rect.v1, ppy));
+            precincts_total = precincts_total.saturating_add(pw.saturating_mul(ph));
+            if precincts_total > MAX_PACKETS {
+                return Err(Error::TooLarge);
+            }
             let mut bands = Vec::new();
             let orients: &[u8] = if r == 0 { &[0] } else { &[1, 2, 3] };
             for &o in orients {
@@ -196,9 +204,13 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
 }
 
 /// The packets of a tile in its progression order (B.12).
-fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) -> Vec<Packet> {
+fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) -> Result<Vec<Packet>> {
     let layers = params.global.layers;
     let max_r = comps.iter().map(|c| c.res.len()).max().unwrap_or(0);
+    let precincts: usize = comps.iter().flat_map(|c| &c.res).map(|r| r.pw.saturating_mul(r.ph)).fold(0, usize::saturating_add);
+    if precincts.saturating_mul(usize::from(layers)) > MAX_PACKETS {
+        return Err(Error::TooLarge);
+    }
     let mut out = Vec::new();
     // reference-grid corner of a precinct (where the position loops of B.12.1.3 meet it)
     let corner = |c: usize, r: usize, p: usize| -> (u64, u64) {
@@ -260,7 +272,7 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
             }
         }
     }
-    out
+    Ok(out)
 }
 
 fn floor_log2(n: u32) -> u32 {
@@ -424,7 +436,7 @@ pub fn decode(data: &[u8]) -> Result<Image> {
 
 fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
     let (trect, mut comps) = build(h, &tile.params, tile.index)?;
-    let order = packets(h, trect, &comps, &tile.params);
+    let order = packets(h, trect, &comps, &tile.params)?;
     let mut pos = 0;
     for p in order {
         if pos >= tile.data.len() {

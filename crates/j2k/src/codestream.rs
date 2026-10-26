@@ -201,9 +201,10 @@ fn parse_siz(s: &[u8]) -> Result<Header> {
         }
         components.push(ComponentInfo { precision, signed: ssiz & 0x80 != 0, dx, dy });
     }
-    let area = u64::from(x1 - x0) * u64::from(y1 - y0);
-    let samples: u64 = components.iter().map(|c| area / (u64::from(c.dx) * u64::from(c.dy)).max(1)).sum();
-    if samples > MAX_SAMPLES {
+    // each component's own size (B.2), as the decoder allocates it
+    let span = |a0: u32, a1: u32, d: u8| u64::from(a1).div_ceil(u64::from(d)) - u64::from(a0).div_ceil(u64::from(d));
+    let samples = components.iter().try_fold(0u64, |sum, c| sum.checked_add(span(x0, x1, c.dx).checked_mul(span(y0, y1, c.dy))?));
+    if samples.is_none_or(|n| n > MAX_SAMPLES) {
         return Err(Error::TooLarge);
     }
     Ok(Header { x0, y0, x1, y1, tile_x0, tile_y0, tile_w, tile_h, components, levels: 0, layers: 1, reversible: true, progression: 0 })
@@ -212,7 +213,7 @@ fn parse_siz(s: &[u8]) -> Result<Header> {
 /// SPcod / SPcoc, with Scod / Scoc's "precincts defined" flag.
 fn parse_sp(r: &mut Reader, precincts_defined: bool) -> Result<CodingStyle> {
     let levels = r.u8()?;
-    let (cbw, cbh) = (r.u8()? + 2, r.u8()? + 2);
+    let (cbw, cbh) = (r.u8()?.saturating_add(2), r.u8()?.saturating_add(2));
     let cblk_style = r.u8()?;
     let transform = r.u8()?;
     if levels > MAX_LEVELS {
