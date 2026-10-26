@@ -29,6 +29,7 @@ from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
+from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.meters import AudioMetersPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.monitor_view import build_view_menu
@@ -38,16 +39,20 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 7  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters
+LAYOUT_VERSION = 8  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
     ("Source", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effect Controls", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Metadata", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Info", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Markers", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Project Notes", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
-    ("History", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -131,6 +136,13 @@ class MainWindow(QMainWindow):
         self.effect_controls = EffectControlsPanel(self)
         self.effect_controls.attach(engine)
         self.history = HistoryPanel(self)
+        self.markers = MarkersPanel(self)
+        self.info = InfoPanel(self)
+        self.metadata = MetadataPanel(self)
+        self.notes = NotesPanel(self)
+        self.inspector_source = "project"  # which selection Info and Metadata follow (egui's)
+        self.hidden_markers: list[Any] = []
+        self.target_item: int | None = None
         self.events = EventsPanel(self)
 
         self.setCentralWidget(self.monitor)
@@ -153,6 +165,10 @@ class MainWindow(QMainWindow):
             "Timeline": self.timeline,
             "Events": self.events,
             "Audio Meters": self.meters,
+            "Info": self.info,
+            "Markers": self.markers,
+            "Metadata": self.metadata,
+            "Project Notes": self.notes,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -173,8 +189,11 @@ class MainWindow(QMainWindow):
             self.effects,
             self.inspector,
             self.effect_controls,
+            self.metadata,
+            self.notes,
         ):
             panel.command.connect(self.execute)
+        self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
         app = QApplication.instance()
         if isinstance(app, QApplication):
@@ -213,9 +232,16 @@ class MainWindow(QMainWindow):
         """Source over Project/Effects on the left, Program in the middle, Properties/History on
         the right, Timeline/Events at the bottom."""
         win.splitDockWidget(d["Source"], d["Project"], Qt.Orientation.Vertical)
+        # egui's Editing groups: Source, Effect Controls, Metadata; Project, Info, Effects,
+        # Markers, History (Project Notes there too, closed until Window ▸ Project Notes)
         win.tabifyDockWidget(d["Source"], d["Effect Controls"])
-        win.tabifyDockWidget(d["Project"], d["Effects"])
-        win.tabifyDockWidget(d["Properties"], d["History"])
+        win.tabifyDockWidget(d["Effect Controls"], d["Metadata"])
+        win.tabifyDockWidget(d["Project"], d["Info"])
+        win.tabifyDockWidget(d["Info"], d["Effects"])
+        win.tabifyDockWidget(d["Effects"], d["Markers"])
+        win.tabifyDockWidget(d["Markers"], d["History"])
+        win.tabifyDockWidget(d["History"], d["Project Notes"])
+        d["Project Notes"].hide()
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
         win.tabifyDockWidget(d["Timeline"], d["Events"])
@@ -628,6 +654,7 @@ class MainWindow(QMainWindow):
         self.monitor.set_sequence(self.sequence, self.revision)
         self.inspector.set_sequence(self.sequence)
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
+        self.update_inspectors()
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
         self.source_state = result if isinstance(result, dict) else None
@@ -688,6 +715,7 @@ class MainWindow(QMainWindow):
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.effect_controls.flush()
+        self.notes.flush()
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
@@ -778,10 +806,60 @@ class MainWindow(QMainWindow):
     def _focus_changed(self, _old: QWidget | None, new: QWidget | None) -> None:
         if new is None:
             return
+        if new is self.project_panel or self.project_panel.isAncestorOf(new):
+            self._follow("project")
+        elif new is self.timeline or self.timeline.isAncestorOf(new):
+            self._follow("timeline")
         if new is self.source_monitor or self.source_monitor.isAncestorOf(new):
             self.active_monitor = "source"
         elif new is self.monitor or self.monitor.isAncestorOf(new) or self.timeline.isAncestorOf(new):
             self.active_monitor = "program"
+
+    # ----- Info, Metadata, Markers, Project Notes -----
+    def _follow(self, source: str) -> None:
+        if source != self.inspector_source:
+            self.inspector_source = source
+            self.update_inspectors()
+
+    def selected_item(self) -> int | None:
+        """The item Info and Metadata show (egui's metadata::target): the Project panel's
+        selection or the item of the clip selected in the Timeline, whichever was used last."""
+        project = next(iter(self.project_panel.selected_items()), None)
+        timeline = None
+        selection = (self.sequence or {}).get("selection") or []
+        if selection:
+            for track in [*((self.sequence or {}).get("video") or []), *((self.sequence or {}).get("audio") or [])]:
+                for c in track.get("items") or []:
+                    if c.get("clip") == selection[0] and isinstance(c.get("item"), int):
+                        timeline = c["item"]
+        return (timeline if timeline is not None else project) if self.inspector_source == "timeline" else (project if project is not None else timeline)
+
+    def update_inspectors(self) -> None:
+        """Ask the engine for what Info, Metadata, Markers and Project Notes show."""
+        if not self.engine.running:
+            return
+        item = self.selected_item()
+        self.target_item = item
+
+        def got(result: Any, _b: bytes | None, it: int | None = item) -> None:
+            if it != self.target_item:
+                return
+            data = result if isinstance(result, dict) else None
+            self.metadata.set_fields(it, data)
+            self.item_info = data
+            self.info.update_info(data, self.sequence, self.monitor.playhead)
+
+        if item is None:
+            got(None, None)
+        else:
+            self.engine.execute("metadata.get", {"item": item}, on_reply=got, on_error=lambda _m: got(None, None))
+        self.engine.execute("state.inspect", {}, on_reply=self._on_state_inspect)
+        self.engine.execute("project.notes", {}, on_reply=lambda r, _b: self.notes.set_notes(str((r or {}).get("text") or "")))
+
+    def _on_state_inspect(self, result: Any, _b: bytes | None) -> None:
+        state = result if isinstance(result, dict) else {}
+        self.hidden_markers = list(state.get("hidden_marker_colors") or [])
+        self.markers.set_state(self.sequence, self.hidden_markers)
 
     # ----- playhead -----
     def _scrub(self, ticks: int) -> None:
@@ -795,6 +873,8 @@ class MainWindow(QMainWindow):
     def _playback_moved(self, ticks: int) -> None:
         self.timeline.canvas.playhead = ticks
         self.timeline.canvas.update()
+        if self.info.isVisible():
+            self.info.update_info(getattr(self, "item_info", None), self.sequence, ticks)
 
     # ----- export -----
     def open_export(self) -> None:
@@ -886,6 +966,7 @@ class MainWindow(QMainWindow):
 
         # an edit still in Effect Controls' send delay reaches the engine before it is asked
         self.effect_controls.flush()
+        self.notes.flush()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)
         QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
 

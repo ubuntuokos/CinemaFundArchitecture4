@@ -952,8 +952,8 @@ def test_real_engine_source_monitor(app, tmp_path: Path):
         win.close()
 
 
-# Source/Effect Controls, Project/Effects, Properties/History, Timeline/Events
-TAB_GROUPS = 4
+# Source/Effect Controls/Metadata, Project/Info/Effects/Markers/History, Timeline/Events (egui's)
+TAB_GROUPS = 3
 
 
 def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path):
@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -1927,6 +1927,73 @@ def test_dark_theme_and_egui_panel_chrome(app, tmp_path: Path):
         assert wait_until(app, lambda: theme.current().kind == "dark", 10_000)
         win.set_theme("darkest")
         assert wait_until(app, lambda: theme.current().kind == "darkest", 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
+    """egui's Markers (colour filter, go to, recolour), Metadata (editable log fields), Info and
+    Project Notes panels, in egui's Editing tab groups."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.project import ITEM_ROLE
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and win.project is not None, 30_000)
+        # egui's groups
+        assert win.docks["Metadata"] in win.tabifiedDockWidgets(win.docks["Source"])
+        assert {win.docks[n] for n in ("Info", "Effects", "Markers", "History")} <= set(win.tabifiedDockWidgets(win.docks["Project"]))
+        assert not win.docks["Project Notes"].isVisible()
+        # Markers: every sequence marker, newest data from the engine
+        markers = win.sequence["markers"]
+        assert wait_until(app, lambda: len(win.markers.list.markers) == len(markers), 10_000)
+        greens = [m for m in markers if m["color"] == "Green"]
+        assert greens
+        win.markers.chips["Green"].click()
+        assert wait_until(app, lambda: len(win.markers.list.markers) == len(markers) - len(greens), 10_000)
+        assert "Green" in win.hidden_markers
+        win.markers.chips["Green"].click()
+        assert wait_until(app, lambda: len(win.markers.list.markers) == len(markers), 10_000)
+        target = win.markers.list.markers[2]
+        win.docks["Markers"].raise_()
+        assert wait_until(app, lambda: win.markers.list.isVisible(), 5_000)
+        QtTest.QTest.mouseClick(win.markers.list, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier, win.markers.list.row_rect(2).center())
+        assert wait_until(app, lambda: (win.sequence or {}).get("playhead") == target["start"], 10_000)
+        menu = win.markers.list.menu_for(2)
+        next(a for a in menu.findChildren(QtGui.QAction) if a.objectName() == "markers.menu.color.Teal").trigger()
+        assert wait_until(app, lambda: next(m for m in win.sequence["markers"] if m["id"] == target["id"])["color"] == "Teal", 10_000)
+        # Metadata and Info follow the Project panel's selection
+        movie = next(i for i in _items(win.project) if i.get("name") == "Ocean_Sunset.mp4")
+        tree = win.project_panel.tree
+        node = next(it for it in tree.findItems("Ocean_Sunset.mp4", QtCore.Qt.MatchFlag.MatchRecursive) if it.data(0, ITEM_ROLE) == movie["item"])
+        tree.setFocus()
+        tree.setCurrentItem(node)
+        node.setSelected(True)
+        assert win.project_panel.selected_items() == [movie["item"]]
+        assert wait_until(app, lambda: win.metadata.item == movie["item"], 10_000), (win.project_panel.selected_items(), win.target_item, win.inspector_source, win.metadata.item)
+        assert win.metadata.header.text() == "Clip: Ocean_Sunset.mp4"
+        scene = win.metadata.edits["Scene"]
+        scene.setText("12A")
+        scene.editingFinished.emit()
+        assert wait_until(app, lambda: any(f["name"] == "Scene" and f["value"] == "12A" for f in win.metadata.fields), 10_000)
+        assert wait_until(app, lambda: "Ocean_Sunset.mp4" in win.info.text.text() and "1920 x 1080" in win.info.text.text(), 10_000)
+        assert "Video 1:" in win.info.text.text() and "Playhead:" in win.info.text.text()
+        # Project Notes: from Window ▸ Project Notes; typing is saved in the project
+        win.docks["Project Notes"].show()
+        win.docks["Project Notes"].raise_()
+        win.notes.edit.setFocus()
+        QtTest.QTest.keyClicks(win.notes.edit, "Check the mix")
+        win.notes.flush()
+        got: list[str] = []
+        assert wait_until(app, lambda: (engine.execute("project.notes", {}, on_reply=lambda r, _b: got.append(r.get("text"))) and False) or "Check the mix" in got, 10_000)
     finally:
         win._quit_confirmed = True
         win.close()

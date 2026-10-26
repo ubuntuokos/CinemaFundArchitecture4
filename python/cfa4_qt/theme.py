@@ -323,6 +323,6 @@ def apply(t: Tokens, app: QApplication | None = None) -> None:
     if app.style().name().lower() != "fusion":
         app.setStyle("Fusion")
     app.setPalette(palette(t))
-    app.setStyleSheet(style_sheet(t))
-    for w in app.allWidgets():
-        w.update()
+    sheet = style_sheet(t)
+    if app.styleSheet() != sheet:  # re-polishing every widget is the slow part
+        app.setStyleSheet(sheet)

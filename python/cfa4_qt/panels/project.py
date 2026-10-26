@@ -127,9 +127,14 @@ class ProjectPanel(QWidget):
                 if it.data(0, BIN_ROLE) in expanded or not expanded:
                     it.setExpanded(True)
                 if it.data(0, ITEM_ROLE) in selected:
-                    it.setSelected(True)
+                    reselect.append(it)
 
+        # selected only once in the tree: an item in a bin is built before its bin is added, and
+        # selecting an item outside a tree does nothing (the selection was lost on every refresh)
+        reselect: list[QTreeWidgetItem] = []
         add(None, root)
+        for it in reselect:
+            it.setSelected(True)
         self._apply_filter(self.filter.text())
         self._updating = False
 
@@ -156,6 +161,9 @@ class ProjectPanel(QWidget):
             self.command.emit("sequence.open", {"item": iid})
         else:
             self.command.emit("source.open", {"item": iid})
+
+    def selected_items(self) -> list[int]:
+        return [it.data(0, ITEM_ROLE) for it in self.tree.selectedItems() if it.data(0, ITEM_ROLE) is not None]
 
     def _selection_changed(self) -> None:
         if self._updating:

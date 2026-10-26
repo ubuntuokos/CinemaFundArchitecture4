@@ -606,3 +606,40 @@
 	Darkest	Legsötétebb
 	Light	Világos
 	Next Appearance Mode	Következő megjelenési mód
+	(no sequence)	(nincs szekvencia)
+	All markers are hidden by the colour filter.	A színszűrő minden jelölőt elrejt.
+	Audio {n}:	Hang {n}:
+	Audio:	Hang:
+	Clip: {name}	Klip: {name}
+	Codec:	Kodek:
+	Duration:	Időtartam:
+	Marker	Jelölő
+	No markers. Press M to add one.	Nincs jelölő. Az M billentyűvel adhatsz hozzá.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Jegyzetek a projekthez: teendők, utasítások, képkockaszámok… A projekttel együtt mentődik.
+	Playhead:	Lejátszófej:
+	Select a clip to view its metadata.	Válassz ki egy klipet a metaadatai megtekintéséhez.
+	Settings:	Beállítások:
+	Show or hide {color} markers	A(z) {color} jelölők megjelenítése vagy elrejtése
+	Type:	Típus:
+	Video {n}:	Videó {n}:
+	Video:	Videó:
+	{tc}  Chapter	{tc}  Fejezet
+	Media Type	Médiatípus
+	Frame Rate	Képkockasebesség
+	Media Start	Média kezdete
+	Media End	Média vége
+	Media Duration	Média hossza
+	Video Info	Videóadatok
+	Video Codec	Videókodek
+	Color Space	Színtér
+	Audio Info	Hangadatok
+	Audio Codec	Hangkodek
+	Description	Leírás
+	Scene	Jelenet
+	Shot	Snitt
+	Log Note	Naplójegyzet
+	Comment	Megjegyzés
+	Tape Name	Szalagnév
+	Client	Ügyfél
+	Camera Angle	Kameraállás
+	File Path	Fájl elérési útja
