@@ -25,6 +25,7 @@ ffmpeg = ["cfa4-ffmpeg/ffmpeg"]
 whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 
 [dependencies]
+cfa4-accel = { workspace = true }
 cfa4-engine = { workspace = true }
 cfa4-export = { workspace = true }
 cfa4-project = { workspace = true }
