@@ -28,6 +28,14 @@ whole, including all changes made after the relicensing, is distributed under GP
 CFA4 is not made, sponsored or endorsed by the upstream authors, and it uses none of their
 trademarks or logos.
 
+CFA4 logo
+
+The CFA4 name, emblem and wordmark, and every file depicting them (assets/cfa4/cfa4-official-logo.png,
+assets/cfa4/hicolor/, apps/cfa4-web/web/favicon.svg), are the own mark of István, owner of the CFA4
+project. They are not covered by the GPL nor by the MIT/Apache licences above; their terms are in
+assets/cfa4/LICENSE-logo.txt (LicenseRef-CFA4-Logo). Modified versions of CFA4 must remove or replace
+them.
+
 Third-party material
 
 This product bundles third-party material under its own licenses, listed below. The per-file
