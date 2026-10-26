@@ -1,7 +1,8 @@
 # ADR 0003 – ASWF-projektek és a konvertálás forrásai GPL-3.0-or-later alatt
 
 **Dátum:** 2026-10-24 · **Állapot:** JÓVÁHAGYVA (a tulajdonos, `ubuntuokos`, 2026-10-24-én
-jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed.
+jóváhagyta, #38). A jóváhagyás a 10. pont minden pontjára kiterjed. **Kiegészítve:** 2026-10-25
+(12. pont, szabadalmilag korlátozott komponensek).
 
 **Előfeltételek:** a licencváltás (#37, `docs/licensing.md`, már a `main`-ben) és a
 GStreamer-háttérmotor (#40, [ADR 0002](ADR-0002-gstreamer-backend.md), összevonásra vár).
@@ -234,5 +235,27 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
   A VISION.md konvertálási sorát és kapcsolódó-dokumentum
   listáját, valamint a `docs/gaps.md` G10, G11, G13 és G18 pontjait egészíti ki a 6. pont
   jelöltjeivel.
+
+## 12. Kiegészítés (2026-10-25): szabadalmilag korlátozott komponensek
+
+**Tulajdonosi döntés (2026-10-25).** A 6., 9. és 10.5 pontban rögzített szabadalmi kérdést a CFA4
+az Ubuntu-modell szerint kezeli, és ez minden hasonló esetben a követendő út. Részletek és a
+besorolási táblázat: [`docs/licensing.md`](../licensing.md) 7. pont.
+
+- Az alapcsomag a szabadalmilag korlátozott komponensek nélkül épül és működik; kötelező
+  linkfüggőség nem lehet.
+- Ezek a `cfa4-restricted-extras` kiegészítő csomagba kerülnek, amelyet a felhasználó kifejezett
+  kérésére telepít.
+- Ha egy komponens hiányzik, a funkció látható, de inaktív, mellette a telepítés lehetőségével;
+  a hiány nem okoz hibát vagy összeomlást.
+- Telepítés előtt a felhasználó tájékoztatást kap arról, hogy a komponens egyes országokban
+  korlátozás alá eshet.
+
+Besorolás: az **x264** és az **x265** a `cfa4-restricted-extras` csomagba kerül; a **CFA4 saját
+kodekjei** (H.264, HEVC, AAC, AC-3 és a többi dekóder, a H.264-kódoló) az **alapcsomagban**
+maradnak.
+
+Ez a 10.5 pontot így pontosítja: az x264 és az x265 csak a `cfa4-restricted-extras` csomagban
+jelenhet meg. Az NVENC licencjogi vizsgálata (5. pont) változatlanul érvényes.
 
 *Ez műszaki-licenc összefoglaló, nem jogi tanács.*
