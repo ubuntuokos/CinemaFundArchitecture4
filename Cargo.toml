@@ -25,6 +25,7 @@ cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
 cfa4-ac3 = { path = "crates/ac3" }
+cfa4-truehd = { path = "crates/truehd" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }

@@ -199,6 +199,10 @@ pub enum CodecConfig {
     Eac3 {
         dec3: Vec<u8>,
     },
+    /// Dolby TrueHD (`mlpa`); `dmlp` payload.
+    TrueHd {
+        dmlp: Vec<u8>,
+    },
     Timecode(TimecodeConfig),
     /// Anything else; `raw` is the full sample entry payload (after the 8-byte box header).
     Unknown {
@@ -227,6 +231,7 @@ impl CodecConfig {
             CodecConfig::Flac(_) => "flac",
             CodecConfig::Ac3 { .. } => "ac3",
             CodecConfig::Eac3 { .. } => "eac3",
+            CodecConfig::TrueHd { .. } => "truehd",
             CodecConfig::Timecode(_) => "timecode",
             CodecConfig::Unknown { .. } => "unknown",
         }
@@ -887,6 +892,7 @@ fn is_audio_fourcc(f: &[u8; 4]) -> bool {
             | b"fLaC"
             | b"ac-3"
             | b"ec-3"
+            | b"mlpa"
             | b".mp3"
             | b".mp2"
             | b"enca"
@@ -996,7 +1002,9 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
         a.sample_size = c.u16()?;
         a.compression_id = c.i16()?;
         let _packet_size = c.u16()?;
-        a.sample_rate = c.u32()? as f64 / 65536.0;
+        let rate = c.u32()?;
+        // Dolby TrueHD stores the rate as a 32-bit integer (192 kHz does not fit 16.16)
+        a.sample_rate = if format.0 == *b"mlpa" { f64::from(rate) } else { f64::from(rate) / 65536.0 };
         if is_qt && a.qt_version == 1 {
             a.samples_per_packet = c.u32()?;
             a.bytes_per_packet = c.u32()?;
@@ -1049,6 +1057,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
             },
             b"ac-3" => CodecConfig::Ac3 { dac3: get(b"dac3").unwrap_or(&[]).to_vec() },
             b"ec-3" => CodecConfig::Eac3 { dec3: get(b"dec3").unwrap_or(&[]).to_vec() },
+            b"mlpa" => CodecConfig::TrueHd { dmlp: get(b"dmlp").unwrap_or(&[]).to_vec() },
             b"lpcm" | b"sowt" | b"twos" | b"in24" | b"in32" | b"fl32" | b"fl64" | b"raw " | b"NONE" => CodecConfig::Pcm(qt_pcm(f, &a)),
             b"ipcm" | b"fpcm" => {
                 let mut pcm =
@@ -1541,6 +1550,7 @@ impl SampleEntry {
             }
             CodecConfig::Ac3 { dac3 } => b.leaf(b"dac3", dac3),
             CodecConfig::Eac3 { dec3 } => b.leaf(b"dec3", dec3),
+            CodecConfig::TrueHd { dmlp } => b.leaf(b"dmlp", dmlp),
             CodecConfig::Pcm(p) if !qt => {
                 let m = b.start_full(b"pcmC", 0, 0);
                 b.u8(if p.big_endian { 0 } else { 1 });

@@ -1,0 +1,192 @@
+//! TrueHD and MLP against ffmpeg: ffmpeg's TrueHD and MLP encoders write raw streams from
+//! generated tones and noise. Both formats are lossless, so the decode must be bit-exact: equal to
+//! ffmpeg's decode of the same file and to the encoder's 24-bit (or 16-bit) input.
+
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+
+use cfa4_truehd::cfa4::Decoder;
+
+struct Spec {
+    name: &'static str,
+    /// ffmpeg encoder and raw muxer: "truehd" or "mlp".
+    codec: &'static str,
+    input: &'static str,
+    /// ffmpeg sample format given to the encoder: "s32" (24-bit) or "s16".
+    format: &'static str,
+    rate: u32,
+    channels: usize,
+}
+
+const SPECS: &[Spec] = &[
+    Spec {
+        name: "truehd_stereo_48k",
+        codec: "truehd",
+        input: "aevalsrc=exprs=0.3*sin(2*PI*441*t)+0.1*sin(2*PI*3100*t)|0.25*sin(2*PI*660*t)+0.1*sin(2*PI*(500+4000*t)*t):s=48000",
+        format: "s32",
+        rate: 48_000,
+        channels: 2,
+    },
+    Spec { name: "truehd_mono_44k_s16", codec: "truehd", input: "sine=frequency=1000:sample_rate=44100", format: "s16", rate: 44_100, channels: 1 },
+    // 5.1 with LFE: L R C LFE Ls Rs
+    Spec {
+        name: "truehd_51_48k",
+        codec: "truehd",
+        input: "aevalsrc=exprs=0.3*sin(2*PI*300*t)|0.3*sin(2*PI*400*t)|0.3*sin(2*PI*500*t)|0.3*sin(2*PI*60*t)|0.2*sin(2*PI*700*t)|0.2*sin(2*PI*800*t):s=48000:c=5.1(side)",
+        format: "s32",
+        rate: 48_000,
+        channels: 6,
+    },
+    Spec {
+        name: "truehd_51_96k_noise",
+        codec: "truehd",
+        input: "anoisesrc=color=pink:sample_rate=96000:amplitude=0.3:seed=3,pan=5.1(side)|c0=c0|c1=-0.5*c0|c2=0.3*c0|c3=0.1*c0|c4=0.7*c0|c5=-0.2*c0",
+        format: "s32",
+        rate: 96_000,
+        channels: 6,
+    },
+    Spec {
+        name: "truehd_40_48k",
+        codec: "truehd",
+        input: "aevalsrc=exprs=0.3*sin(2*PI*300*t)|0.3*sin(2*PI*400*t)|0.3*sin(2*PI*500*t)|0.2*sin(2*PI*700*t):s=48000:c=4.0",
+        format: "s32",
+        rate: 48_000,
+        channels: 4,
+    },
+    // MLP (DVD-Audio's Meridian Lossless Packing)
+    Spec {
+        name: "mlp_stereo_48k",
+        codec: "mlp",
+        input: "aevalsrc=exprs=0.3*sin(2*PI*441*t)|0.25*sin(2*PI*660*t):s=48000",
+        format: "s32",
+        rate: 48_000,
+        channels: 2,
+    },
+];
+
+fn make(ff: &Path, s: &Spec) -> Option<PathBuf> {
+    let out = cfa4_testkit::fixtures_dir("truehd").join(format!("{}.{}", s.name, s.codec));
+    cfa4_testkit::fixtures::generate(&out, |tmp| {
+        let st = Command::new(ff)
+            .args(["-hide_banner", "-v", "error", "-y", "-f", "lavfi", "-i", s.input, "-t", "1"])
+            .args(["-af", &format!("aformat={}", s.format)])
+            .args(["-c:a", s.codec, "-strict", "-2", "-f", s.codec])
+            .arg(tmp)
+            .stdin(Stdio::null())
+            .status();
+        matches!(st, Ok(x) if x.success())
+    })
+}
+
+/// Interleaved samples as signed 24-bit integers, from ffmpeg's s32 output.
+fn s24(ff: &Path, args: &[&str]) -> Vec<i32> {
+    let o = Command::new(ff).args(["-v", "error"]).args(args).args(["-f", "s32le", "-"]).output().unwrap();
+    o.stdout.as_chunks::<4>().0.iter().map(|b| i32::from_le_bytes(*b) >> 8).collect()
+}
+
+fn decode_all(data: &[u8], chunk: usize) -> cfa4_truehd::cfa4::Decoded {
+    let mut dec = Decoder::new();
+    let mut all = cfa4_truehd::cfa4::Decoded::default();
+    for piece in data.chunks(chunk) {
+        let d = dec.decode(piece).unwrap();
+        if d.channels.is_empty() {
+            continue;
+        }
+        if all.channels.is_empty() {
+            all = d;
+        } else {
+            assert_eq!(all.labels, d.labels);
+            for (a, c) in all.channels.iter_mut().zip(d.channels) {
+                a.extend(c);
+            }
+        }
+    }
+    all
+}
+
+#[test]
+fn ffmpeg_encoded_streams_decode_bit_exact() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    for s in SPECS {
+        let f = make(&ff, s).unwrap_or_else(|| panic!("could not generate {}", s.name));
+        let data = std::fs::read(&f).unwrap();
+        // whole file at once, and in odd pieces (access units split across calls)
+        for chunk in [data.len(), 1000] {
+            let d = decode_all(&data, chunk);
+            assert_eq!((d.sample_rate, d.channels.len()), (s.rate, s.channels), "{}", s.name);
+            let ours: Vec<Vec<i32>> = d.channels.iter().map(|c| c.iter().map(|&x| (x * 8_388_608.0) as i32).collect()).collect();
+            let want = s24(&ff, &["-i", f.to_str().unwrap()]);
+            let n = want.len() / s.channels;
+            // ffmpeg pads the last access unit (40 samples at 44.1 kHz) with silence and, without
+            // a container to give the duration, its decoder drops the padding
+            let extra = ours[0].len().checked_sub(n).unwrap_or_else(|| panic!("{}: {} samples < {n}", s.name, ours[0].len()));
+            assert!(extra < 160 && ours.iter().all(|c| c[n..].iter().all(|&x| x == 0)), "{}: {extra} extra samples", s.name);
+            for (c, o) in ours.iter().enumerate() {
+                let bad = (0..n).filter(|&i| o[i] != want[i * s.channels + c]).count();
+                assert_eq!(bad, 0, "{}: channel {c} differs from ffmpeg in {bad} of {n} samples", s.name);
+            }
+            // lossless: the encoder's input, at the stream's precision
+            let src = s24(&ff, &["-f", "lavfi", "-i", s.input, "-t", "1", "-af", &format!("aformat={}", s.format)]);
+            let m = n.min(src.len() / s.channels);
+            assert!(m + 2048 >= n, "{}: source has {m} samples, decode {n}", s.name);
+            for (c, o) in ours.iter().enumerate() {
+                let bad = (0..m).filter(|&i| o[i] != src[i * s.channels + c]).count();
+                assert_eq!(bad, 0, "{}: channel {c} is not the encoder input in {bad} of {m} samples", s.name);
+            }
+            println!("{}: {} Hz, {} ch, {n} samples bit-exact (pieces of {chunk} bytes)", s.name, s.rate, s.channels);
+        }
+    }
+}
+
+/// Damaged variants per stream (a local run with 6000 in release and 1500 in debug found no panic).
+const FUZZ: u32 = 150;
+
+/// Damaged streams (bit flips, truncation, scrambled bytes) give errors or noise, never a panic.
+#[test]
+fn damaged_streams_never_panic() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let mut x = 0x00C0_FFEEu32;
+    let mut rnd = move || {
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        x
+    };
+    for s in SPECS {
+        let f = make(&ff, s).unwrap_or_else(|| panic!("could not generate {}", s.name));
+        let data = std::fs::read(&f).unwrap();
+        let head = &data[..data.len().min(20_000)];
+        for k in 0..FUZZ {
+            let mut m = head.to_vec();
+            match k % 3 {
+                0 => {
+                    for _ in 0..1 + rnd() % 16 {
+                        let bit = rnd() as usize % (m.len() * 8);
+                        m[bit / 8] ^= 0x80 >> (bit % 8);
+                    }
+                }
+                1 => m.truncate(rnd() as usize % m.len()),
+                _ => {
+                    let at = rnd() as usize % m.len();
+                    for b in m.iter_mut().skip(at).take(1 + rnd() as usize % 64) {
+                        *b = rnd() as u8;
+                    }
+                }
+            }
+            let mut dec = Decoder::new();
+            for piece in m.chunks(1 + rnd() as usize % 4000) {
+                let _ = dec.decode(piece);
+            }
+        }
+    }
+}
+
+#[test]
+#[ignore]
+fn generate_fixtures() {
+    let Some(ff) = cfa4_testkit::ffmpeg_or_skip("truehd fixtures") else { return };
+    for s in SPECS {
+        let out = cfa4_testkit::fixtures_dir("truehd").join(format!("{}.{}", s.name, s.codec));
+        cfa4_testkit::fixtures::generate_and_report(&format!("truehd/{}", s.name), &[out], || make(&ff, s));
+    }
+}
