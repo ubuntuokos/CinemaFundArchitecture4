@@ -103,7 +103,7 @@ fn hardware_from(inventory: Inventory) -> Value {
         .devices()
         .iter()
         .filter(|d| d.kind != DeviceKind::Cpu)
-        .map(|d| json!({ "kind": d.kind, "vendor": d.vendor, "name": d.name, "driver": d.driver, "pci_device": d.pci_device, "node": d.id }))
+        .map(|d| json!({ "kind": d.kind, "vendor": d.vendor, "pci_vendor": pci_vendor(d), "name": d.name, "driver": d.driver, "pci_device": d.pci_device, "node": d.id }))
         .collect();
     let inventory_json = json!({ "devices": devices, "notes": inventory.notes() });
     let plans = match table {
@@ -114,6 +114,19 @@ fn hardware_from(inventory: Inventory) -> Value {
         }
     };
     json!({ "inventory": inventory_json, "plans": plans, "coverage": cfa4_route::coverage() })
+}
+
+/// The PCI vendor id of a device (for the PCI ID column and the pci.ids model lookup), from the
+/// vendor the probe read from it: AMD graphics carry ATI's id, AMD NPUs AMD's own.
+fn pci_vendor(d: &Device) -> Option<u16> {
+    d.pci_device?;
+    match (d.vendor, d.kind) {
+        (Vendor::Nvidia, _) => Some(0x10de),
+        (Vendor::Amd, DeviceKind::Npu) => Some(0x1022),
+        (Vendor::Amd, _) => Some(0x1002),
+        (Vendor::Intel, _) => Some(0x8086),
+        (Vendor::Other, _) => None,
+    }
 }
 
 /// One plan per family: the backends tried in order (each once, best device first) and the ones
@@ -237,5 +250,7 @@ mod tests {
         assert_eq!(chain, ["vaapi", "software"]);
         assert!(decode["skipped"].as_array().unwrap().iter().any(|s| s["backend"] == "nvdec"), "{decode}");
         assert_eq!(v["inventory"]["devices"][0]["driver"], "amdgpu");
+        assert_eq!(v["inventory"]["devices"][0]["pci_vendor"], 0x1002);
+        assert_eq!(v["inventory"]["devices"][0]["pci_device"], 0x73bf);
     }
 }
