@@ -114,6 +114,23 @@ fn the_bit_rate_is_followed() {
     assert!(bits < target * 2 && bits * 2 > target, "{bits} bits for a target of {target}");
 }
 
+/// Frequent key frames must not raise the average: their extra allowance is borrowed from the
+/// following frames, not added to the budget.
+#[test]
+fn frequent_key_frames_keep_the_bit_rate() {
+    for interval in [1, 4] {
+        let mut cfg = Config::new(64, 64);
+        cfg.rate = Rate::Bitrate { bits_per_second: 100_000, fps_num: 25, fps_den: 1 };
+        cfg.keyframe_interval = interval;
+        cfg.speed = 2;
+        let (packets, _) = encode_all(cfg, 100);
+        // after the controller settles
+        let bits: usize = packets.iter().skip(40).map(|p| p.data.len() * 8).sum();
+        let rate = bits as f64 * 25.0 / 60.0;
+        assert!(rate < 140_000.0 && rate > 60_000.0, "interval {interval}: {rate:.0} bit/s for 100000");
+    }
+}
+
 #[test]
 fn tiny_frames_encode() {
     for (w, h) in [(1, 1), (2, 3), (9, 9), (17, 8)] {

@@ -335,10 +335,11 @@ impl Encoder {
         self.since_key = if key { 1 } else { self.since_key.saturating_add(1) };
         if let Some(rc) = &mut self.rc {
             let bits = frame.len() as f64 * 8.0;
-            // a key frame may spend more; what it overspends is paid back over the next frames
-            let target = if key { rc.target * 4.0 } else { rc.target };
-            rc.debt = (rc.debt + bits - target).clamp(-rc.target * 30.0, rc.target * 30.0);
-            let err = (bits / target).max(1e-3).log2() * 6.0 + rc.debt / (rc.target * 10.0) * 6.0;
+            // a key frame may spend more at once, but the debt counts every frame against the
+            // nominal budget, so what it overspends is paid back over the next frames
+            let allowance = if key { rc.target * 4.0 } else { rc.target };
+            rc.debt = (rc.debt + bits - rc.target).clamp(-rc.target * 30.0, rc.target * 30.0);
+            let err = (bits / allowance).max(1e-3).log2() * 6.0 + rc.debt / (rc.target * 10.0) * 6.0;
             rc.q = (rc.q + err.clamp(-12.0, 12.0)).clamp(1.0, 255.0);
         }
         Ok(Packet { data: frame, key })
