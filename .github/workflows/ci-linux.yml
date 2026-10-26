@@ -185,6 +185,7 @@ jobs:
             libdav1d-dev libsvtav1enc-dev libaom-dev
             libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev zlib1g-dev
             libheif-examples libheif-plugin-libde265 libheif-plugin-x265
+            webp
           )
           missing_packages=()
           for pkg in "${oracle_dev_packages[@]}"; do

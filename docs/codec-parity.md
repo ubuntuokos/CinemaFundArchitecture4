@@ -32,7 +32,8 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 | WMV / VC-1 | decode, encode on Windows | none | none | — | 0% | 20–35 h |
 | CinemaDNG / DNG | decode | own decoder (#1065): uncompressed and lossless JPEG raw, Bayer and LinearRaw, DNG colour model to linear Rec. 709 floats; folders of `.dng` frames as one clip with the CinemaDNG frame rate and time code; **no** lossy / JPEG XL DNG, MXF-wrapped CinemaDNG, opcode lists or Raw settings UI | — | raw samples bit-exact (and identical to LibRaw's on our synthetic files), processing against hand-computed values | 60% | 10–20 h |
 | Camera RAW: R3D (incl. R3D NE), ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW (plug-in) | decode (vendor SDKs) | none (#383) | — | — | 0% | 50–90 h for the ones with public specs; vendor-SDK-only formats need an owner decision |
-| GIF (animated) | encode | decode as still | encode | — | 80% | — |
+| GIF (animated) | encode | decode as a clip (#402) | encode | — | 80% | — |
+| WebP | none | stills: lossy (VP8, with or without alpha) and lossless (VP8L) via the pure-Rust `image-webp`; animations as clips, composed on the canvas by CFA4's own code (#87) | none | stills and animations (offsets, disposal, blending, lossy / lossless / mixed) bit-exact against libwebp's `dwebp` and `anim_dump`; damaged-file fuzzing | ahead | — |
 | Uncompressed / v210 / RGB | decode + encode (AVI, MOV) | partial (MOV PCM-style video not verified) | none | — | 30% | 8–15 h |
 
 ## Audio
