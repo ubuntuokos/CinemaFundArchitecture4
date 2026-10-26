@@ -25,57 +25,57 @@ fn ceil_shift(a: i64, n: u32) -> i64 {
     (a + d - 1).div_euclid(d)
 }
 
-struct CodeBlock {
+pub(crate) struct CodeBlock {
     /// Rectangle in subband coordinates.
-    x0: u32,
-    y0: u32,
-    x1: u32,
-    y1: u32,
-    included: bool,
-    lblock: u32,
-    zero: u32,
-    segments: Vec<(Vec<u8>, u32)>,
+    pub(crate) x0: u32,
+    pub(crate) y0: u32,
+    pub(crate) x1: u32,
+    pub(crate) y1: u32,
+    pub(crate) included: bool,
+    pub(crate) lblock: u32,
+    pub(crate) zero: u32,
+    pub(crate) segments: Vec<(Vec<u8>, u32)>,
 }
 
 /// The code-blocks of one subband inside one precinct.
-struct PrecinctBand {
-    cw: usize,
-    blocks: Vec<CodeBlock>,
-    incl: TagTree,
-    zero: TagTree,
+pub(crate) struct PrecinctBand {
+    pub(crate) cw: usize,
+    pub(crate) blocks: Vec<CodeBlock>,
+    pub(crate) incl: TagTree,
+    pub(crate) zero: TagTree,
 }
 
-struct Band {
+pub(crate) struct Band {
     /// 0 LL, 1 HL, 2 LH, 3 HH.
-    orient: u8,
-    rect: Rect,
+    pub(crate) orient: u8,
+    pub(crate) rect: Rect,
     /// Bit-planes (Mb).
-    mb: u32,
+    pub(crate) mb: u32,
     /// Quantization step (irreversible).
-    step: f32,
+    pub(crate) step: f32,
 }
 
-struct Resolution {
-    rect: Rect,
-    ppx: u32,
-    ppy: u32,
-    pw: usize,
-    ph: usize,
-    bands: Vec<Band>,
+pub(crate) struct Resolution {
+    pub(crate) rect: Rect,
+    pub(crate) ppx: u32,
+    pub(crate) ppy: u32,
+    pub(crate) pw: usize,
+    pub(crate) ph: usize,
+    pub(crate) bands: Vec<Band>,
     /// Per precinct, per band.
-    precincts: Vec<Vec<PrecinctBand>>,
+    pub(crate) precincts: Vec<Vec<PrecinctBand>>,
 }
 
-struct TileComp {
-    rect: Rect,
-    style: CodingStyle,
-    res: Vec<Resolution>,
+pub(crate) struct TileComp {
+    pub(crate) rect: Rect,
+    pub(crate) style: CodingStyle,
+    pub(crate) res: Vec<Resolution>,
     /// Region of interest shift (RGN Maxshift, Annex H): 0 for none.
-    roi: u8,
+    pub(crate) roi: u8,
 }
 
 /// A packet: layer, resolution, component, precinct.
-type Packet = (u16, usize, usize, usize);
+pub(crate) type Packet = (u16, usize, usize, usize);
 
 fn band_rect(tc: Rect, n: u32, orient: u8) -> Rect {
     if orient == 0 {
@@ -93,7 +93,7 @@ fn band_rect(tc: Rect, n: u32, orient: u8) -> Rect {
 }
 
 /// Step size and bit-planes of a subband (E.1.1.1, E.1.1.2).
-fn quant(q: &Quant, band: usize, levels: u8, precision: u8, orient: u8) -> Result<(u32, f32)> {
+pub(crate) fn quant(q: &Quant, band: usize, levels: u8, precision: u8, orient: u8) -> Result<(u32, f32)> {
     let (e, mu) = q.step(band, levels)?;
     let mb = (u32::from(q.guard) + u32::from(e)).saturating_sub(1);
     let gain = match orient {
@@ -106,7 +106,7 @@ fn quant(q: &Quant, band: usize, levels: u8, precision: u8, orient: u8) -> Resul
     Ok((mb, step))
 }
 
-fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileComp>)> {
+pub(crate) fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileComp>)> {
     let (tw, _) = header.tiles();
     let (p, q) = (tile % tw.max(1), tile / tw.max(1));
     let tx0 = (u64::from(header.tile_x0) + u64::from(p) * u64::from(header.tile_w)).max(u64::from(header.x0));
@@ -209,7 +209,7 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
 }
 
 /// The packets of a tile in its progression order (B.12).
-fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) -> Result<Vec<Packet>> {
+pub(crate) fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) -> Result<Vec<Packet>> {
     let layers = params.global.layers;
     let max_r = comps.iter().map(|c| c.res.len()).max().unwrap_or(0);
     let precincts: usize = comps.iter().flat_map(|c| &c.res).map(|r| r.pw.saturating_mul(r.ph)).fold(0, usize::saturating_add);
@@ -308,7 +308,7 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
     Ok(out)
 }
 
-fn floor_log2(n: u32) -> u32 {
+pub(crate) fn floor_log2(n: u32) -> u32 {
     31 - n.max(1).leading_zeros()
 }
 
@@ -463,7 +463,7 @@ enum Samples {
 }
 
 /// Maps `f` over `items`, on all cores with the `threads` feature.
-fn map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> Result<U> + Sync + Send) -> Result<Vec<U>> {
+pub(crate) fn map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> Result<U> + Sync + Send) -> Result<Vec<U>> {
     #[cfg(feature = "threads")]
     {
         use rayon::prelude::*;
