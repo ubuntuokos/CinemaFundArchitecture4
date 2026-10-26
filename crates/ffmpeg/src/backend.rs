@@ -25,10 +25,8 @@ pub(crate) fn probe() -> Status {
         .filter_map(|t| rsmedia::avutil::hwdevice_get_type_name(t).map(|n| n.to_string_lossy().into_owned()))
         .take(64)
         .collect();
-    let restricted = RESTRICTED
-        .iter()
-        .map(|r| RestrictedStatus { encoder: r.encoder.into(), purpose: r.purpose.into(), available: has_encoder(r.encoder) })
-        .collect();
+    let restricted =
+        RESTRICTED.iter().map(|r| RestrictedStatus { encoder: r.encoder.into(), purpose: r.purpose.into(), available: has_encoder(r.encoder) }).collect();
     status_from(version, license, configuration, hwaccels, restricted)
 }
 
@@ -69,9 +67,7 @@ pub(crate) fn probe_file(path: &Path) -> Result<(StreamReader, Probed), Error> {
 }
 
 pub(crate) fn codec_name(s: &FfStream) -> String {
-    rsmpeg::avcodec::AVCodec::find_decoder(s.codec_id)
-        .map(|c| c.name().to_string_lossy().into_owned())
-        .unwrap_or_else(|| format!("codec {}", s.codec_id))
+    rsmpeg::avcodec::AVCodec::find_decoder(s.codec_id).map(|c| c.name().to_string_lossy().into_owned()).unwrap_or_else(|| format!("codec {}", s.codec_id))
 }
 
 pub(crate) fn pixel_format_name(s: &FfStream) -> String {

@@ -1269,6 +1269,19 @@ static CATEGORIES: &[Category] = &[
             ),
         ],
     },
+    // ADR 0005: the own engine always goes first; these supplementary backends take over, in this
+    // order, only for files it cannot open. The Qt window adds the live status and the
+    // restricted codecs of the Ubuntu model (docs/licensing.md §7) under these switches
+    // (`cfa4-cli media-backends`, `media.backends`).
+    Category {
+        id: "mediaBackends",
+        group: "media",
+        title: "Media Backends",
+        rows: &[
+            b("media.ffmpegBackend", "Use FFmpeg for files the CFA4 engine cannot open (FFmpeg 9.0.2 or later, GPL-3 build)", true),
+            b("media.gstreamerBackend", "Use the system's GStreamer for files neither the engine nor FFmpeg can open", true),
+        ],
+    },
     Category {
         id: "mediaAnalysis",
         group: "ai",

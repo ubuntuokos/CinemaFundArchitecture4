@@ -196,7 +196,8 @@ impl FfSource {
             let pix_fmt = s.format.into_pixel().filter(|_| output != Output::Rgba).unwrap_or(PixelFormat::RGBA);
             let rate = backend::rational(s.avg_frame_rate.num, s.avg_frame_rate.den).or_else(|| backend::rational(s.frame_rate.num, s.frame_rate.den));
             let frame_rate = rate.map(|(num, den)| FrameRate { num, den }).unwrap_or_default();
-            let frame_ts = rate.map_or(1, |(num, den)| i64::try_from(i128::from(den) * i128::from(tb.1) / (i128::from(num) * i128::from(tb.0))).unwrap_or(1).max(1));
+            let frame_ts =
+                rate.map_or(1, |(num, den)| i64::try_from(i128::from(den) * i128::from(tb.1) / (i128::from(num) * i128::from(tb.0))).unwrap_or(1).max(1));
             let par = backend::rational(s.sample_aspect_ratio.num, s.sample_aspect_ratio.den)
                 .and_then(|(n, d)| Some((u32::try_from(n).ok()?, u32::try_from(d).ok()?)))
                 .unwrap_or((1, 1));

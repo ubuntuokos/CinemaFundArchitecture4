@@ -25,23 +25,14 @@ cfa4-time = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
-# rsmedia: MIT OR Apache-2.0, safe Rust API over the FFmpeg libraries (via rsmpeg). Not published on
-# crates.io, so it is pinned to a reviewed commit; its rsmpeg dependency is pinned by Cargo.lock
-# (deny.toml allows exactly these two git sources). FFmpeg itself is dynamically linked, GPL-3 build
-# (docs/adr/ADR-0005-media-backends.md).
-rsmedia = { git = "https://github.com/dromara/rsmedia", rev = "eb0dbd0a702ea6be59fa70035ec358ce9d9888d3", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"], optional = true }
-# The same rsmpeg rsmedia builds on (one copy in Cargo.lock), for codec lookups rsmedia does not
-# re-export. MIT.
-rsmpeg = { git = "https://github.com/phial3/rsmpeg", branch = "main", default-features = false, optional = true }
+# rsmedia (MIT OR Apache-2.0): safe Rust API over the FFmpeg libraries, through rsmpeg (MIT) and
+# rusty_ffmpeg (MIT). Vendored byte-for-byte from pinned commits under vendor/ffmpeg-bindings/
+# (scripts/dev/vendor_ffmpeg_bindings.py, SOURCE_MANIFEST.json, checked by the F1-02 dependency
+# audit): no Cargo Git source. FFmpeg itself is dynamically linked, GPL-3 build (ADR 0005).
+rsmedia = { workspace = true, optional = true }
+# The same rsmpeg rsmedia builds on, for codec lookups rsmedia does not re-export.
+rsmpeg = { workspace = true, optional = true }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }
-
-[[example]]
-name = "ff_audio_debug"
-required-features = ["ffmpeg"]
-
-[[example]]
-name = "ff_frame_dump"
-required-features = ["ffmpeg"]

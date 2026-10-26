@@ -1,0 +1,31 @@
+# Vendored by scripts/dev/vendor_ffmpeg_bindings.py from https://github.com/phial3/rsmpeg @ 709e97446315eab89cd200452e4ef08cc7554fbe.
+# Adapted: Git dependencies replaced by local paths; tests, examples and benches not vendored.
+[package]
+name = "rsmpeg"
+edition = "2024"
+rust-version = "1.89"
+version = "0.18.1+ffmpeg.9.0"
+authors = ["liudingming <liudingming@bytedance.com>"]
+description = "A Rust crate that exposes FFmpeg's power as much as possible."
+keywords = ["ffmpeg", "ffi", "binding", "audio", "video"]
+repository = "https://github.com/larksuite/rsmpeg"
+license = "MIT"
+publish = false
+
+[dependencies]
+rusty_ffmpeg = { path = "../rusty_ffmpeg" }
+paste = "1.0"
+thiserror = "2.0"
+bon = "3"
+
+[features]
+default = ["ffmpeg9"]
+ffmpeg6 = ["rusty_ffmpeg/ffmpeg6"]
+ffmpeg6_1 = ["ffmpeg6", "rusty_ffmpeg/ffmpeg6_1"]
+ffmpeg7 = ["ffmpeg6_1", "rusty_ffmpeg/ffmpeg7"]
+ffmpeg7_1 = ["ffmpeg7", "rusty_ffmpeg/ffmpeg7_1"]
+ffmpeg8 = ["ffmpeg7_1", "rusty_ffmpeg/ffmpeg8"]
+ffmpeg8_1 = ["ffmpeg8", "rusty_ffmpeg/ffmpeg8_1"]
+ffmpeg9 = ["ffmpeg8_1", "rusty_ffmpeg/ffmpeg9"]
+link_system_ffmpeg = ["rusty_ffmpeg/link_system_ffmpeg"]
+link_vcpkg_ffmpeg = ["rusty_ffmpeg/link_vcpkg_ffmpeg"]

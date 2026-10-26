@@ -62,15 +62,15 @@ ADR 0004 – feladatonkénti útvonalválasztó (`crates/route`, #55)
 
 | Lépés | Tartalom | Állapot |
 |---|---|---|
-| 1 | `cfa4-ffmpeg` crate: kötés, `probe()` (verzió ≥ 9.0.2, GPL-3-as build ellenőrzése, kodekek, gyorsítók), `discover()`; FFmpeg nélkül is fordul | tervezett |
-| 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után) | tervezett |
+| 1 | `cfa4-ffmpeg` crate: kötés (vendorozott rsmedia → rsmpeg → rusty_ffmpeg, `vendor/ffmpeg-bindings/`), `probe()` (verzió ≥ 9.0.2, GPL-3-as build, nonfree tiltva, korlátozott kodekek), `discover()`, `open()` natív bitmélységgel, első tartalék a GStreamer előtt; FFmpeg nélkül is fordul | kész (a buildpróba 2026-10-26: bitpontos a G3- és G10-esetekre) |
+| 1a | Beállítások ▸ Média és lejátszás ▸ Médiahátterek (kapcsolók, állapot, korlátozott kodekek), `media.backends`, `cfa4-cli media-backends`; menü: Szerkesztés ▸ Médiahátterek…, Súgó ▸ Korlátozott kodekek… | kész |
+| 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után) | előkészítve (`route_backend()`), a #55 után |
 | 3 | Feladatsorok a táblában (pl. felvétel, konvertálás) mérés alapján | tervezett |
-| 4 | Csomagolás: az FFmpeg 9.0.2 szállítása (az Ubuntu 26.04 saját FFmpeg-je 8.x) | nyitott, lásd lent |
+| 4 | Csomagolás: FFmpeg 9.0.2 elkülönítve `/opt/cfa4/ffmpeg-9.0.2` alatt (`scripts/dev/build-ffmpeg-9.0.2.sh`); a `cfa4-restricted-extras` ugyanazt az FFmpeg-et x264-gyel és x265-tel `/opt/cfa4/ffmpeg-9.0.2-restricted` alá teszi, és a programok futásidejű keresési útja ezt nézi először (`apps/*/build.rs`) | build kész; `.deb`-csomagok hátra |
 
 ## Nyitott kérdések (tulajdonos)
 
-- Hogyan érkezik az FFmpeg 9.0.2 a kiadott csomaggal, mivel az Ubuntu 26.04 tárolóiban 8.x van:
-  elkülönített, csak CFA4-es futtatókörnyezetként (`/opt/cfa4`, a CFA4 csomagtárolójából), vagy a
-  csomagba ágyazva.
+- ~~Hogyan érkezik az FFmpeg 9.0.2 a kiadott csomaggal~~ – eldöntve (2026-10-25): elkülönített,
+  csak CFA4-es futtatókörnyezet `/opt/cfa4` alatt, a CFA4 csomagtárolójából.
 - Számozás: az ADR 0003 az FFI-kivétel elvének szánta a 0004-es számot, de azt a #55
   útvonalválasztó-ADR-je használja; az FFI-elv ADR-je új számot kap, amikor elkészül.

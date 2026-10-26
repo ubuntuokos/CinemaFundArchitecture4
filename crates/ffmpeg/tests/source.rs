@@ -48,7 +48,20 @@ fn fixture(name: &str, size: &str, args: &[&str]) -> Option<PathBuf> {
     let tmp = dir.join(format!("{name}.{}.{:?}.part.{ext}", std::process::id(), std::thread::current().id()).replace(['(', ')'], ""));
     let source = format!("testsrc2=size={size}:rate={FPS}:duration=2");
     let out = Command::new(&ff)
-        .args(["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", &source, "-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000"])
+        .args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            &source,
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=2:sample_rate=48000",
+        ])
         .args(args)
         .arg(&tmp)
         .output()
@@ -118,7 +131,11 @@ fn h264_high_422_10_bit_is_native_and_bit_exact() {
 
 #[test]
 fn hevc_main_422_10_is_native_and_bit_exact() {
-    let Some(p) = fixture("hevc_422_10.mov", "640x360", &["-c:v", "libx265", "-pix_fmt", "yuv422p10le", "-x265-params", "log-level=error", "-c:a", "pcm_s16le"]) else { return };
+    let Some(p) =
+        fixture("hevc_422_10.mov", "640x360", &["-c:v", "libx265", "-pix_fmt", "yuv422p10le", "-x265-params", "log-level=error", "-c:a", "pcm_s16le"])
+    else {
+        return;
+    };
     check_bit_exact(&p, "yuv422p10le", "YUV 4:2:2 10-bit");
 }
 

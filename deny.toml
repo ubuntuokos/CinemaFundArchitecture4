@@ -60,7 +60,3 @@ ignore = []
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-# The FFmpeg backend's safe bindings (crates/ffmpeg, ADR 0005): rsmedia is not published on crates.io
-# and builds on its own rsmpeg fork. Both are pinned (rsmedia by `rev`, rsmpeg by Cargo.lock); no
-# other git source is allowed.
-allow-git = ["https://github.com/dromara/rsmedia", "https://github.com/phial3/rsmpeg"]

@@ -26,7 +26,7 @@
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use cfa4_time::Tick;
@@ -219,11 +219,13 @@ pub fn report() -> cfa4_media::BackendReport {
             r.license = Some(status.license);
             r.location = status.prefix;
             r.capabilities = status.hwaccels.iter().map(|h| format!("hwaccel: {h}")).collect();
-            r.restricted = status.restricted.into_iter().map(|x| cfa4_media::RestrictedItem { name: x.encoder, purpose: x.purpose, available: x.available }).collect();
+            r.restricted =
+                status.restricted.into_iter().map(|x| cfa4_media::RestrictedItem { name: x.encoder, purpose: x.purpose, available: x.available }).collect();
         }
         Err(e) => {
             r.problem = Some(e.to_string());
-            r.restricted = RESTRICTED.iter().map(|x| cfa4_media::RestrictedItem { name: x.encoder.into(), purpose: x.purpose.into(), available: false }).collect();
+            r.restricted =
+                RESTRICTED.iter().map(|x| cfa4_media::RestrictedItem { name: x.encoder.into(), purpose: x.purpose.into(), available: false }).collect();
         }
     }
     r
@@ -325,7 +327,8 @@ fn not_compiled_in() -> Error {
 /// Validates a path up front, so FFmpeg only ever sees existing regular files whose path it can
 /// take: a NUL byte panics inside rsmedia (`CString::new(..).unwrap()`), and FFmpeg would read a
 /// path that is not valid UTF-8 differently from the file system.
-fn checked_path(path: &Path) -> Result<PathBuf, Error> {
+#[cfg(any(feature = "ffmpeg", test))]
+fn checked_path(path: &Path) -> Result<std::path::PathBuf, Error> {
     let meta = std::fs::metadata(path).map_err(|e| Error::InvalidInput(format!("{}: {e}", path.display())))?;
     if !meta.is_file() {
         return Err(Error::InvalidInput(format!("{}: not a regular file", path.display())));
@@ -336,6 +339,7 @@ fn checked_path(path: &Path) -> Result<PathBuf, Error> {
 }
 
 /// The text checks of [`checked_path`]: UTF-8, no NUL byte, not taken for a URL or a protocol.
+#[cfg(any(feature = "ffmpeg", test))]
 fn check_path_text(path: &Path) -> Result<(), Error> {
     let text = path.to_str().ok_or_else(|| Error::InvalidInput(format!("{}: the path is not valid UTF-8", path.display())))?;
     if text.contains('\0') {
