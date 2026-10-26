@@ -29,6 +29,7 @@ cfa4-frame = { workspace = true }
 cfa4-h264 = { workspace = true }
 cfa4-hevc = { workspace = true }
 cfa4-isobmff = { workspace = true }
+cfa4-route = { workspace = true }
 cfa4-time = { workspace = true }
 log = { workspace = true }
 

@@ -1,4 +1,5 @@
-//! Effects that look at other frames: Posterize Time, Echo, Auto Reframe and Warp Stabilizer.
+//! Effects that look at other frames: Posterize Time, Echo, Slit Scan, Auto Reframe and Warp
+//! Stabilizer.
 //!
 //! Warp Stabilizer is a 2-D (similarity / translation) stabilizer: on first use it analyses the
 //! clip — every frame decoded small, Shi–Tomasi features tracked frame to frame with pyramidal
@@ -50,6 +51,62 @@ pub fn echo(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         }
     }
     *img = combine_echoes(&layers, op);
+}
+
+/// Slit Scan (time displacement): each band across the frame shows the clip from a different
+/// time, from now at the Current Frame At edge to Time Span seconds away at the opposite edge.
+/// Frames are fetched one at a time and accumulated, so memory stays at two images whatever the
+/// slice count. Blend Slices cross-fades neighbouring slices (a smooth time gradient).
+pub fn slit_scan(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
+    let Some(env) = cx.env else { return };
+    let span = fv(e, "time", cx) as f64;
+    if !span.is_finite() || span.abs() < 1e-6 {
+        return;
+    }
+    let (w, h) = (img.w, img.h);
+    if w == 0 || h == 0 || img.px.len() != w * h * 4 {
+        return;
+    }
+    // NaN casts to 0, so the max keeps at least two slices
+    let n = (fv(e, "slices", cx).clamp(2.0, 60.0) as usize).max(2);
+    let last = (n - 1) as f32;
+    let smooth = bv(e, "smooth");
+    let dir = chv(e, "direction");
+    // slice coordinate of pixel (x, y): 0 at the current-frame edge, n - 1 at the far edge
+    let along = move |x: usize, y: usize| -> f32 {
+        let p = match dir {
+            0 => (y as f32 + 0.5) / h as f32,
+            1 => 1.0 - (y as f32 + 0.5) / h as f32,
+            2 => (x as f32 + 0.5) / w as f32,
+            _ => 1.0 - (x as f32 + 0.5) / w as f32,
+        };
+        p * last
+    };
+    let weight = move |s: f32, k: usize| -> f32 {
+        let d = (s - k as f32).abs();
+        if smooth {
+            (1.0 - d).max(0.0)
+        } else if s.round() as usize == k {
+            1.0
+        } else {
+            0.0
+        }
+    };
+    let current = std::mem::replace(img, Image::new(w, h));
+    for k in 0..n {
+        let fetched =
+            if k == 0 { None } else { env.frame(span * k as f64 / (n - 1) as f64, e).filter(|f| f.w == w && f.h == h && f.px.len() == current.px.len()) };
+        // a time outside the media falls back to the current picture
+        let src = fetched.as_ref().unwrap_or(&current);
+        img.px.par_chunks_mut(4).zip(src.px.par_chunks(4)).enumerate().for_each(|(i, (o, p))| {
+            let wk = weight(along(i % w, i / w), k);
+            if wk > 0.0 {
+                for (o, p) in o.iter_mut().zip(p) {
+                    *o += p * wk;
+                }
+            }
+        });
+    }
 }
 
 /// Combine echo layers (index 0 = the current frame) with an Echo Operator.
