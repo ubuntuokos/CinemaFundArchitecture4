@@ -124,6 +124,11 @@ pub enum FxOp {
     Resample(Resample),
     HFlip,
     VFlip,
+    /// Swap Eyes: the left and right views of an over/under (`sbs` false) or side-by-side frame
+    /// trade places ([`swap_eyes_src`]).
+    SwapEyes {
+        sbs: bool,
+    },
     Mirror {
         cx: f32,
         cy: f32,
@@ -226,6 +231,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "transform",
     "horizontal_flip",
     "vertical_flip",
+    "stereo_swap_eyes",
     "mirror",
     "offset",
     "asc_cdl",
@@ -236,6 +242,24 @@ pub const GPU_EFFECTS: &[&str] = &[
     "video_limiter",
     "lumetri",
 ];
+
+/// The source pixel of output pixel (`x`, `y`) when the two views of a `w`×`h` stereo frame swap
+/// places. Each view is `w / 2` columns (side by side) or `h / 2` rows (over/under); with an odd
+/// size the last column / row belongs to neither view and stays where it is, so the swap is its
+/// own inverse. `fx.wgsl` (`OP_SWAP_EYES`) mirrors this.
+pub fn swap_eyes_src(x: usize, y: usize, w: usize, h: usize, sbs: bool) -> (usize, usize) {
+    let swap = |v: usize, n: usize| {
+        let half = n / 2;
+        if v < half {
+            v + half
+        } else if v < 2 * half {
+            v - half
+        } else {
+            v
+        }
+    };
+    if sbs { (swap(x, w), y) } else { (x, swap(y, h)) }
+}
 
 /// `Image::transformed` without the mip path: the destination rectangle it writes and the inverse.
 fn resample(w: usize, h: usize, m: &Affine, opacity: f32) -> Resample {
@@ -415,6 +439,7 @@ impl FxOp {
             }
             "horizontal_flip" => FxOp::HFlip,
             "vertical_flip" => FxOp::VFlip,
+            "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
             "mirror" => {
                 let img = Image { w, h, px: Vec::new() };
                 let c = point(e, "center", cx, &img);
@@ -593,7 +618,7 @@ impl FxOp {
             FxOp::BrightnessContrast { br, co } => fin(&[*br, *co]),
             FxOp::ProcAmp { br, co, hue, sat } => fin(&[*br, *co, *hue, *sat]),
             FxOp::Tint { black, white, amount } => fin(black) && fin(white) && amount.is_finite(),
-            FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip => true,
+            FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip | FxOp::SwapEyes { .. } => true,
             FxOp::ColorBalance { sh, md, hi, .. } => fin(sh) && fin(md) && fin(hi),
             FxOp::LeaveColor { amount, key_hue, tol, soft } => fin(&[*amount, *key_hue, *tol, *soft]),
             FxOp::ChangeToColor { from_hue, to_hue, tol, soft } => fin(&[*from_hue, *to_hue, *tol, *soft]),
@@ -805,6 +830,19 @@ impl FxOp {
                     let (a, bb) = img.px.split_at_mut((h - 1 - y) * w * 4);
                     a[y * w * 4..(y + 1) * w * 4].swap_with_slice(&mut bb[..w * 4]);
                 }
+            }
+            FxOp::SwapEyes { sbs } => {
+                let (sbs, src) = (*sbs, img.clone());
+                let (w, h) = (img.w, img.h);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let (sx, sy) = swap_eyes_src(x, y, w, h, sbs);
+                        let s = (sy * w + sx) * 4;
+                        if let (Some(d), Some(v)) = (row.get_mut(x * 4..x * 4 + 4), src.px.get(s..s + 4)) {
+                            d.copy_from_slice(v);
+                        }
+                    }
+                });
             }
             FxOp::Mirror { cx, cy, nx, ny } => {
                 let (c, n) = ((*cx as f64, *cy as f64), (*nx as f64, *ny as f64));
@@ -1149,5 +1187,78 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// A picture where every pixel is distinct, so a swap that moves the wrong pixel shows.
+    fn numbered(w: usize, h: usize) -> Image {
+        let mut img = Image::new(w, h);
+        for (i, p) in img.px.chunks_mut(4).enumerate() {
+            p.copy_from_slice(&[i as f32, (i % w) as f32, (i / w.max(1)) as f32, 1.0]);
+        }
+        img
+    }
+
+    fn swap_eyes(layout: u32) -> EffectInstance {
+        let mut e = find_effect("stereo_swap_eyes").unwrap().instance();
+        e.params.get_mut("frame_layout").unwrap().value = ParamValue::Choice(layout);
+        e
+    }
+
+    fn eval_ctx() -> FxCtx<'static> {
+        FxCtx {
+            t: Tick::ZERO,
+            px_scale: 1.0,
+            seconds: 0.0,
+            timecode: "",
+            clip_name: "",
+            project: None,
+            env: None,
+            frame_rate: 24.0,
+            working: cfa4_color::WorkingSpace::Rec709,
+        }
+    }
+
+    #[test]
+    fn swap_eyes_trades_the_views() {
+        let src = numbered(6, 4);
+        // over/under: the top two rows come from the bottom half and back
+        let mut ou = src.clone();
+        FxOp::eval(&swap_eyes(0), &eval_ctx(), 6, 4).unwrap().apply(&mut ou);
+        assert_eq!(ou.get(1, 0), src.get(1, 2));
+        assert_eq!(ou.get(5, 3), src.get(5, 1));
+        // side by side: the left three columns come from the right half and back
+        let mut sbs = src.clone();
+        FxOp::eval(&swap_eyes(1), &eval_ctx(), 6, 4).unwrap().apply(&mut sbs);
+        assert_eq!(sbs.get(0, 1), src.get(3, 1));
+        assert_eq!(sbs.get(5, 2), src.get(2, 2));
+    }
+
+    #[test]
+    fn swap_eyes_twice_is_identity_and_odd_edges_stay() {
+        for (w, h) in [(7, 5), (1, 1), (2, 1), (1, 2), (67, 41)] {
+            for layout in [0, 1, 9] {
+                let src = numbered(w, h);
+                let op = FxOp::eval(&swap_eyes(layout), &eval_ctx(), w, h).unwrap();
+                assert!(op.gpu_ok());
+                let mut img = src.clone();
+                op.apply(&mut img);
+                op.apply(&mut img);
+                assert_eq!(img.px, src.px, "{w}x{h} layout {layout}");
+            }
+        }
+        let src = numbered(7, 5);
+        let mut img = src.clone();
+        FxOp::SwapEyes { sbs: true }.apply(&mut img);
+        assert_eq!(img.get(6, 2), src.get(6, 2), "the odd last column belongs to neither view");
+        let mut img = src.clone();
+        FxOp::SwapEyes { sbs: false }.apply(&mut img);
+        assert_eq!(img.get(3, 4), src.get(3, 4), "the odd last row belongs to neither view");
+    }
+
+    #[test]
+    fn swap_eyes_on_an_empty_image_is_a_no_op() {
+        let mut img = Image::new(0, 0);
+        FxOp::SwapEyes { sbs: true }.apply(&mut img);
+        assert!(img.px.is_empty());
     }
 }
