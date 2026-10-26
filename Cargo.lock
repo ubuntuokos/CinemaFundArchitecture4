@@ -1154,6 +1154,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-heif"
+version = "0.10.0"
+dependencies = [
+ "cfa4-heif",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-hevc"
 version = "0.10.0"
 dependencies = [
@@ -1214,6 +1222,8 @@ dependencies = [
  "cfa4-color",
  "cfa4-dng",
  "cfa4-frame",
+ "cfa4-heif",
+ "cfa4-hevc",
  "cfa4-testkit",
  "cfa4-time",
  "image",
