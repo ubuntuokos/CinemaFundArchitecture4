@@ -54,6 +54,7 @@ const OP_VIDEO_LIMITER: u32 = 30;
 const OP_LUMETRI: u32 = 31;
 const OP_SWAP_EYES: u32 = 32;
 const OP_STEREO_TO_2D: u32 = 33;
+const OP_STEREO_PARALLAX: u32 = 34;
 
 type Target = (wgpu::Texture, wgpu::TextureView);
 
@@ -167,6 +168,7 @@ fn steps(op: &FxOp) -> Vec<Step> {
         FxOp::VFlip => out.push(step(OP_VFLIP, [0; 4], &[])),
         FxOp::SwapEyes { sbs } => out.push(step(OP_SWAP_EYES, [*sbs as u32, 0, 0, 0], &[])),
         FxOp::StereoTo2d { sbs, right } => out.push(step(OP_STEREO_TO_2D, [*sbs as u32, *right as u32, 0, 0], &[])),
+        FxOp::StereoParallax { sbs, shift, repeat } => out.push(step(OP_STEREO_PARALLAX, [*sbs as u32, *repeat as u32, 0, 0], &[*shift])),
         FxOp::Mirror { cx, cy, nx, ny } => out.push(step(OP_MIRROR, [0; 4], &[*cx, *cy, *nx, *ny])),
         FxOp::Offset { dx, dy, blend } => out.push(step(OP_OFFSET, [0; 4], &[*dx, *dy, *blend])),
         FxOp::AscCdl { slope: s, offset: o, power: p, sat } => {
