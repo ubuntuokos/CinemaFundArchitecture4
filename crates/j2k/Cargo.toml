@@ -1,0 +1,16 @@
+[package]
+name = "cfa4-j2k"
+description = "Clean-room JPEG 2000 (ITU-T T.800 | ISO/IEC 15444-1) decoder"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

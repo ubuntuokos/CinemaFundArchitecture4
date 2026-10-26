@@ -23,6 +23,8 @@ pub const TRACK_CHOICES: &[&str] = &["None", "Video 1", "Video 2", "Video 3", "V
 pub const FRAME_LAYOUTS: &[&str] = &["Monoscopic", "Stereoscopic - Over/Under", "Stereoscopic - Side by Side"];
 /// Easing for the animated Transform presets (Grow, Shrink, Move, Spin).
 pub const EASINGS: &[&str] = &["Linear", "Ease In", "Ease Out", "Ease In and Out"];
+/// Slit Scan: the edge that shows the current frame (the opposite edge is the most delayed).
+pub const SLIT_DIRECTIONS: &[&str] = &["Top", "Bottom", "Left", "Right"];
 pub const ECHO_OPERATORS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 pub const SIMPLE_BLEND: &[&str] = &["Normal", "Add", "Screen", "Multiply", "Overlay"];
 
@@ -626,6 +628,18 @@ pub(super) fn defs() -> Vec<EffectDef> {
         ),
         // ---- Time ----
         video("posterize_time", "Posterize Time", TIME, vec![fs("rate", "Frame Rate", 12.0, (0.1, 99.0), (1.0, 60.0), "", 2)]),
+        // CFA4's own (not in Premiere's bin): time displacement along one axis of the frame.
+        video(
+            "slit_scan",
+            "Slit Scan",
+            TIME,
+            vec![
+                fs("time", "Time Span (seconds)", -1.0, (-10.0, 10.0), (-4.0, 4.0), "", 3),
+                fs("slices", "Slices", 16.0, (2.0, 60.0), (2.0, 60.0), "", 0),
+                ch("direction", "Current Frame At", SLIT_DIRECTIONS, 0),
+                b("smooth", "Blend Slices", true),
+            ],
+        ),
         // ---- Transform ----
         video(
             "rotate_3d",
@@ -1264,7 +1278,7 @@ mod tests {
         // nothing else sits in the current folders
         for d in effect_defs().iter().filter(|d| d.kind == EffectKind::Video && d.category.first() == Some(&"Video Effects")) {
             let f = d.category[1];
-            if f == "Obsolete" {
+            if f == "Obsolete" || d.category == crate::effect::STEREO_3D || crate::effect::CFA4_OWN.contains(&d.id) {
                 continue;
             }
             let listed = CATALOGUE.iter().any(|(cf, names)| *cf == f && names.contains(&d.name));
