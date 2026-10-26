@@ -3617,3 +3617,10 @@
 	Film Gate	필름 게이트
 	Gate Weave	게이트 흔들림
 	Weave Rotation	흔들림 회전
+	Particles	파티클
+	Emitter Position	이미터 위치
+	Birth Rate	생성률
+	Lifetime (seconds)	수명(초)
+	Velocity Random	속도 무작위
+	Gravity	중력
+	Particle Size	파티클 크기

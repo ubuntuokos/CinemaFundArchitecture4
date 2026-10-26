@@ -108,6 +108,7 @@ const NEW_IDS: &[&str] = &[
     "auto_reframe",
     "camera_shake",
     "film_gate",
+    "particles",
     "grow",
     "shrink",
     "move",
@@ -1006,6 +1007,50 @@ fn posterize_time_and_echo_read_other_frames() {
 }
 
 #[test]
+fn particles_are_a_pure_function_of_time() {
+    let img = solid(64, 48, [0.0, 0.0, 0.0]);
+    let mut e = inst("particles");
+    set(&mut e, "emitter", ParamValue::Vec2(cfa4_geom::Vec2::new(32.0, 40.0)));
+    setf(&mut e, "gravity", 0.0);
+    setf(&mut e, "speed", 20.0);
+    let at = |e: &EffectInstance, s: f64| run("particles", e, &img, &FxCtx { seconds: s, ..cx() });
+    // nothing before the first birth, something after
+    assert_eq!(max_diff(&at(&e, -1.0), &img), 0.0);
+    let one = at(&e, 1.0);
+    assert!(max_diff(&one, &img) > 0.1, "particles drawn after a second");
+    // deterministic: the same time gives the same frame, without rendering earlier frames
+    assert_eq!(max_diff(&one, &at(&e, 1.0)), 0.0);
+    // direction 0 sends them up: everything lit sits above the emitter (plus the dot radius)
+    for y in 45..48 {
+        for x in 0..64 {
+            assert_eq!(one.get(x, y)[3], 1.0);
+            assert!(one.get(x, y)[0] < 1e-6, "below the emitter at ({x},{y}): {:?}", one.get(x, y));
+        }
+    }
+    // without compositing the background is transparent
+    set(&mut e, "composite", ParamValue::Bool(false));
+    let alone = at(&e, 1.0);
+    assert_eq!(alone.get(0, 47)[3], 0.0);
+    assert!(alone.px.chunks(4).any(|p| p[3] > 0.5), "the particles stay opaque");
+}
+
+#[test]
+fn particles_survive_hostile_values() {
+    let img = picture(16, 12);
+    let mut e = inst("particles");
+    for v in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1e9, 1e9] {
+        for k in ["rate", "life", "direction", "spread", "speed", "speed_random", "gravity", "size", "seed"] {
+            setf(&mut e, k, v);
+        }
+        set(&mut e, "emitter", ParamValue::Vec2(cfa4_geom::Vec2::new(v, v)));
+        for s in [f64::NAN, -5.0, 0.0, 3.0, 1e12] {
+            let o = run("particles", &e, &img, &FxCtx { seconds: s, ..cx() });
+            assert!(o.px.iter().all(|c| c.is_finite()), "{v} at {s}s");
+        }
+    }
+}
+
+#[test]
 fn film_gate_holds_each_frame_and_changes_between_frames() {
     let env = ClipEnv { w: 32, h: 24, fps: 24.0, secs: 10.0, now: 5.0, key: 79, seq: (32, 24), pic: |x, y, _| [x as f32 / 32.0, y as f32 / 24.0, 0.5] };
     let img = picture(32, 24);
@@ -1022,6 +1067,34 @@ fn film_gate_holds_each_frame_and_changes_between_frames() {
     let a = at(&e, 5.0);
     setf(&mut e, "seed", 7.0);
     assert!(max_diff(&a, &at(&e, 5.0)) > 1e-3);
+}
+
+#[test]
+fn film_gate_uses_the_sequence_rate_without_an_environment() {
+    // an adjustment layer at 60 fps: consecutive 60 fps frames differ
+    let img = picture(32, 24);
+    let mut e = inst("film_gate");
+    setf(&mut e, "weave", 4.0);
+    let at = |s: f64| run("film_gate", &e, &img, &FxCtx { seconds: s, env: None, frame_rate: 60.0, ..cx() });
+    let changes = (0..12).filter(|i| max_diff(&at(5.0 + (*i as f64 + 0.5) / 60.0), &at(5.0 + (*i as f64 + 1.5) / 60.0)) > 1e-3).count();
+    assert!(changes >= 10, "a new gate position on most 60 fps frames: {changes}/12");
+}
+
+#[test]
+fn film_gate_keeps_wide_frames_covered() {
+    // 16:9, strong weave and the largest rotation: no transparent corners on any frame
+    let img = solid(96, 54, [0.5, 0.5, 0.5]);
+    for (weave, rot) in [(0.0, 5.0), (10.0, 5.0), (10.0, 0.0)] {
+        let mut e = inst("film_gate");
+        setf(&mut e, "weave", weave);
+        setf(&mut e, "weave_rotation", rot);
+        setf(&mut e, "flicker", 0.0);
+        for f in 0..120 {
+            let o = run("film_gate", &e, &img, &FxCtx { seconds: f as f64 / 24.0, env: None, frame_rate: 24.0, ..cx() });
+            let min_alpha = o.px.chunks(4).map(|p| p[3]).fold(1.0f32, f32::min);
+            assert!(min_alpha > 0.999, "weave {weave} rotation {rot} frame {f}: alpha {min_alpha}");
+        }
+    }
 }
 
 #[test]

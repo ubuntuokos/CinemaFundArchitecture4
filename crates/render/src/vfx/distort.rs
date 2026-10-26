@@ -383,7 +383,8 @@ pub fn film_gate(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let weave = ((finite(fv(e, "weave", cx), 50.0) * cx.px_scale) as f64).min(short / 4.0);
     let rot = finite(fv(e, "weave_rotation", cx), 5.0) as f64;
     let flicker = finite(fv(e, "flicker", cx), 100.0) / 100.0;
-    let fps = cx.env.map_or(24.0, |env| env.frame_rate());
+    // adjustment layers and nested temporal renders have no environment, only the sequence rate
+    let fps = cx.env.map_or(cx.frame_rate, |env| env.frame_rate());
     let fps = if fps.is_finite() && fps > 0.0 { fps } else { 24.0 };
     let frame = (cx.seconds * fps).floor();
     let frame = if frame.is_finite() { frame } else { 0.0 };
@@ -392,8 +393,14 @@ pub fn film_gate(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     if weave > 0.0 || rot > 0.0 {
         let c = Vec2::new(img.w as f64 / 2.0, img.h as f64 / 2.0);
         let off = Vec2::new(wobble(0) * weave * 0.4, wobble(1) * weave);
-        // zoom in just enough that the frame edges stay covered
-        let s = 1.0 + (3.0 * weave + short * rot.to_radians()) / short;
+        // one steady zoom that keeps the frame covered at the largest shift and turn `wobble`
+        // can reach (|wobble| ≤ 1.5): every output corner must map back inside the source
+        let (hw, hh) = (c.x.max(0.5), c.y.max(0.5));
+        let (ax, ay) = (1.5 * 0.4 * weave, 1.5 * weave);
+        let (sn, cs) = (1.5 * rot).to_radians().sin_cos();
+        let reach_x = cs * (hw + ax) + sn.abs() * (hh + ay);
+        let reach_y = sn.abs() * (hw + ax) + cs * (hh + ay);
+        let s = ((reach_x / hw).max(reach_y / hh) + 1.0 / short).clamp(1.0, 4.0);
         place(img, c, off, s, wobble(2) * rot);
     }
     if flicker > 0.0 {

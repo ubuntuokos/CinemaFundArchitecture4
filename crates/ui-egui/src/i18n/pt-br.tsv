@@ -3599,3 +3599,10 @@
 	Film Gate	Janela do filme
 	Gate Weave	Oscilação da janela
 	Weave Rotation	Rotação da oscilação
+	Particles	Partículas
+	Emitter Position	Posição do emissor
+	Birth Rate	Taxa de nascimento
+	Lifetime (seconds)	Tempo de vida (segundos)
+	Velocity Random	Velocidade aleatória
+	Gravity	Gravidade
+	Particle Size	Tamanho da partícula

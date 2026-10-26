@@ -3606,3 +3606,10 @@
 	Film Gate	片门
 	Gate Weave	片门晃动
 	Weave Rotation	晃动旋转
+	Particles	粒子
+	Emitter Position	发射器位置
+	Birth Rate	生成速率
+	Lifetime (seconds)	寿命（秒）
+	Velocity Random	随机速度
+	Gravity	重力
+	Particle Size	粒子大小

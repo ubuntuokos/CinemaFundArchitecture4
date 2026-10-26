@@ -510,6 +510,7 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "long_shadow" => stylize::long_shadow(img, e, cx),
         "stroke" => stylize::stroke(img, e, cx),
         "gradient" => stylize::gradient(img, e, cx),
+        "particles" => stylize::particles(img, e, cx),
         "block_dissolve" => stylize::block_dissolve(img, e, cx),
         "gradient_wipe_legacy" => stylize::gradient_wipe(img, e, cx),
         "linear_wipe_legacy" => stylize::linear_wipe(img, e, cx),
