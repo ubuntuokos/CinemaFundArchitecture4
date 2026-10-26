@@ -1654,6 +1654,53 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_colour_eyedropper_picks_from_the_program_monitor(app, tmp_path: Path):
+    """egui's eyedropper: armed beside a colour parameter, the Program monitor's next click fills
+    it with the colour there (one undo step) and lets go; Esc lets go without picking."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    ec, view, ov = win.effect_controls, win.monitor.view, win.monitor.overlay
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["video"][0]["items"][1]
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        win.execute("effects.apply", {"clips": [clip["clip"]], "effect": "ultra_key"})
+
+        def key_row():
+            e = next((e for e in (ec.clip or {}).get("effects") or [] if e["effect"] == "ultra_key"), None)
+            return None if e is None else ec.rows.get((e["index"], "key_color"))
+
+        assert wait_until(app, lambda: key_row() is not None and ec.clip_id == clip["clip"], 20_000)
+        row = key_row()
+        before = row.info["value"]
+        # armed, then let go with Esc
+        row.eyedropper.click()
+        assert ov.eyedropper == row.target() and row.eyedropper.isChecked()
+        view.setFocus()
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert ov.eyedropper is None and not row.eyedropper.isChecked()
+        # armed, then a click on the picture picks
+        steps = win.history.list.count()
+        row.eyedropper.click()
+        QtTest.QTest.mouseClick(view, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier,
+                                view.picture_rect().center().toPoint())
+        assert ov.eyedropper is None and not row.eyedropper.isChecked()
+        assert wait_until(app, lambda: key_row() is not None and key_row().info["value"] != before, 10_000)
+        assert key_row().info["value"][3] == 1.0
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_path: Path):
     """egui's transitions: drawn on the Timeline, a click selects one (Effect Controls shows it:
     Duration, Alignment, Reverse, its settings, its own timeline), dragging an end changes its

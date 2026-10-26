@@ -21,6 +21,7 @@ pub mod demo;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
+mod eyedropper;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;

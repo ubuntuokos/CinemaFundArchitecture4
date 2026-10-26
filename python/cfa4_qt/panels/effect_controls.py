@@ -32,7 +32,7 @@ import math
 from typing import Any
 
 from PySide6.QtCore import QElapsedTimer, QPoint, QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QKeyEvent, QMouseEvent, QPainter, QPaintEvent, QPen, QPolygonF
+from PySide6.QtGui import QColor, QFont, QIcon, QKeyEvent, QMouseEvent, QPainter, QPaintEvent, QPen, QPixmap, QPolygonF
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -98,6 +98,22 @@ def color_to_qcolor(value: Any) -> QColor:
         except (TypeError, ValueError):
             pass
     return QColor("#000000")
+
+
+def eyedropper_icon() -> QIcon:
+    """A pipette: a slanted tube with its bulb, drawn in the text colour."""
+    pm = QPixmap(16, 16)
+    pm.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    c = theme.current().c("text_dim")
+    p.setPen(QPen(c, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+    p.drawLine(QPointF(3, 13), QPointF(10, 6))
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(c)
+    p.drawEllipse(QPointF(11.5, 4.5), 2.8, 2.8)
+    p.end()
+    return QIcon(pm)
 
 
 def qcolor_to_value(color: QColor) -> list[float]:
@@ -383,6 +399,17 @@ class ParamRow(LinedRow):
         h.addWidget(self.stopwatch)
         h.addWidget(label, 2)
         h.addWidget(self.editor, 3)
+        self.eyedropper: QToolButton | None = None
+        if self.kind == "color":
+            # arm it, then click a pixel in the Program monitor (Esc cancels), as in egui
+            self.eyedropper = QToolButton(self)
+            self.eyedropper.setObjectName(f"{name}.eyedropper")
+            self.eyedropper.setIcon(eyedropper_icon())
+            self.eyedropper.setCheckable(True)
+            self.eyedropper.setAutoRaise(True)
+            self.eyedropper.setToolTip(tr("Eyedropper (pick a color from the Program monitor)"))
+            self.eyedropper.clicked.connect(lambda on: self.panel.arm_eyedropper(self.target() if on else None))
+            h.addWidget(self.eyedropper)
         for b in (self.prev_key, self.add_key, self.next_key):
             h.addWidget(b)
         h.addWidget(reset)
@@ -459,6 +486,8 @@ class ParamRow(LinedRow):
         self.animated = bool(info.get("animated"))
         self.keyframes = [k for k in info.get("keyframes") or [] if isinstance(k, dict)]
         value = info.get("valueAtPlayhead") if self.animated else info.get("value")
+        if self.eyedropper is not None:
+            self.eyedropper.setChecked(self.panel.eyedropper == self.target())
         self.stopwatch.blockSignals(True)
         self.stopwatch.setChecked(self.animated)
         self.stopwatch.blockSignals(False)
@@ -1508,6 +1537,7 @@ class SavePresetDialog(QDialog):
 class EffectControlsPanel(QWidget):
     command = Signal(str, dict)
     seek = Signal(object)  # ticks; object, not a 32-bit int
+    eyedropper_armed = Signal(object)  # the colour parameter (effects.* target) or None
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -1532,6 +1562,7 @@ class EffectControlsPanel(QWidget):
         self.split = 0  # the list's width
         self.user_split = 0  # the width the divider was dragged to (0: egui's default)
         self.last_menu: QMenu | None = None
+        self.eyedropper: dict[str, Any] | None = None  # the colour parameter an armed eyedropper fills
         # (clip, effect index, param id, timeline time or None) -> value: an edit stays bound to the
         # clip and, when animated, the time it was made at, whatever the panel shows by the flush
         self._pending: dict[tuple[int, int, str, int | None, int | None], Any] = {}
@@ -1634,6 +1665,15 @@ class EffectControlsPanel(QWidget):
         self.transition_view.set_split(width)
         self.lane.update()
         self.ruler.update()
+
+    def arm_eyedropper(self, target: dict[str, Any] | None) -> None:
+        """Arm (or with None disarm) the eyedropper of a colour parameter: the Program monitor's
+        next click fills it (``effects.eyedropper``)."""
+        self.eyedropper = target
+        for row in self.param_rows():
+            if row.eyedropper is not None:
+                row.eyedropper.setChecked(target is not None and row.target() == target)
+        self.eyedropper_armed.emit(target)
 
     def param_rows(self) -> list[ParamRow]:
         return [*self.rows.values(), *self.linked_rows.values()]

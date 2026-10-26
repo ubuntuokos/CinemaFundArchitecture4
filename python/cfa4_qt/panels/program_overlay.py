@@ -141,6 +141,7 @@ class ProgramOverlay(QObject):
     (and refreshes the window), ``engine`` answers ``program.overlay``."""
 
     pen_finished = Signal()
+    eyedropper_done = Signal()  # the armed eyedropper picked (or was let go with Esc)
 
     def __init__(self, view: QWidget, engine: Any, send: Callable[[str, dict[str, Any]], None]) -> None:
         super().__init__(view)
@@ -154,6 +155,8 @@ class ProgramOverlay(QObject):
         self.gesture = 0
         self.selected_vertex: int | None = None
         self.round_radius: float | None = None
+        # an armed eyedropper (Effect Controls): the colour parameter the next click on the picture fills
+        self.eyedropper: dict[str, Any] | None = None
         self._busy = False
         self._again = False
 
@@ -512,8 +515,30 @@ class ProgramOverlay(QObject):
         self.view.update()
 
     # ----- input -----
+    def arm_eyedropper(self, target: dict[str, Any] | None) -> None:
+        self.eyedropper = target
+        self.view.update()
+
+    def _eyedropper_press(self, e: QMouseEvent) -> bool:
+        """An armed eyedropper owns clicks on the picture: the colour under the pointer (the frame
+        rendered without the armed effect) fills its parameter."""
+        target = self.eyedropper
+        pic = self.view.picture_rect()
+        if target is None or e.button() != Qt.MouseButton.LeftButton or pic.width() <= 0 or pic.height() <= 0:
+            return False
+        if not pic.contains(e.position()):
+            return True
+        u = (e.position().x() - pic.x()) / pic.width()
+        v = (e.position().y() - pic.y()) / pic.height()
+        self.eyedropper = None
+        self.send("effects.eyedropper", {**target, "u": min(1.0, max(0.0, u)), "v": min(1.0, max(0.0, v))})
+        self.eyedropper_done.emit()
+        return True
+
     def press(self, e: QMouseEvent) -> bool:
         """A press on the view: True when the overlay took it."""
+        if self.eyedropper is not None:
+            return self._eyedropper_press(e)
         if self.pen is not None:
             return self._pen_press(e)
         if e.button() != Qt.MouseButton.LeftButton:
@@ -580,6 +605,9 @@ class ProgramOverlay(QObject):
         return False
 
     def move(self, e: QMouseEvent) -> bool:
+        if self.eyedropper is not None:
+            self.view.setCursor(Qt.CursorShape.CrossCursor)
+            return True
         if self.pen is not None:
             self._pen_move(e)
             return True
@@ -671,6 +699,8 @@ class ProgramOverlay(QObject):
         """Keys the overlay takes ahead of the app's shortcuts (Enter closes the pen's mask, not
         Render Effects In to Out; Ctrl+Z takes back a pen point, not an edit)."""
         k, mods = e.key(), e.modifiers()
+        if self.eyedropper is not None:
+            return k == Qt.Key.Key_Escape
         if self.pen is not None:
             ctrl_z = k == Qt.Key.Key_Z and mods & Qt.KeyboardModifier.ControlModifier and not mods & Qt.KeyboardModifier.ShiftModifier
             return bool(ctrl_z) or k in (Qt.Key.Key_Escape, Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Backspace,
@@ -678,6 +708,11 @@ class ProgramOverlay(QObject):
         return k == Qt.Key.Key_Escape and (self.drag is not None or self.mask_geometry() is not None)
 
     def key(self, e: QKeyEvent) -> bool:
+        if self.eyedropper is not None and e.key() == Qt.Key.Key_Escape:
+            self.eyedropper = None
+            self.view.unsetCursor()
+            self.eyedropper_done.emit()
+            return True
         if self.pen is not None:
             pts = self.pen["points"]
             if e.key() == Qt.Key.Key_Escape:

@@ -331,6 +331,8 @@ class MainWindow(QMainWindow):
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
+        self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
+        self.monitor.overlay.eyedropper_done.connect(lambda: self.effect_controls.arm_eyedropper(None))
         self.tools.tool_selected.connect(lambda tool: setattr(self.monitor.overlay, "enabled", tool == "selection"))
         self.inspector.seek.connect(self._seek_program)
         self.inspector.run.connect(self.run_preset)

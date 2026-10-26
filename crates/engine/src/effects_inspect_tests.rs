@@ -263,3 +263,32 @@ fn inspects_a_transition_and_drags_it_by_an_end_or_its_middle() {
     s.execute("edit.deselectAll", json!({})).unwrap();
     assert!(s.state.transition_selection.is_empty());
 }
+
+#[test]
+fn the_eyedropper_fills_a_colour_parameter_from_the_program_picture() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    s.execute("playhead.set", json!({"time": (it.start + Tick(it.duration.0 / 2)).0})).unwrap();
+    s.execute("effects.apply", json!({"clips": [it.id.0], "effect": "ultra_key"})).unwrap();
+    let index = v1_clip(&s).effects.iter().position(|e| e.effect == "ultra_key").unwrap();
+    let undo = s.history.undo.len();
+    let r = s.execute("effects.eyedropper", json!({"clip": it.id.0, "effect": index, "param": "key_color", "u": 0.5, "v": 0.5})).unwrap();
+    let rgb: Vec<f64> = r["color"].as_array().unwrap().iter().map(|c| c.as_f64().unwrap()).collect();
+    assert!(rgb.iter().all(|c| (0.0..=1.0).contains(c)), "{r}");
+    let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
+    let set = param(&v, "ultra_key", "key_color")["value"].clone();
+    assert_eq!(set.as_array().map(Vec::len), Some(4));
+    assert!((set[0].as_f64().unwrap() - rgb[0]).abs() < 1e-6 && set[3] == 1.0, "{set} vs {r}");
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
+    // hostile or wrong arguments are refused
+    for bad in [
+        json!({"clip": it.id.0, "effect": index, "param": "transparency", "u": 0.5, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": 999, "param": "key_color", "u": 0.5, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": index, "param": "key_color", "u": f64::NAN, "v": 0.5}),
+        json!({"clip": it.id.0, "effect": index, "param": "key_color", "u": 0.5}),
+    ] {
+        assert!(s.execute("effects.eyedropper", bad.clone()).is_err(), "{bad}");
+    }
+    // far outside the picture is its edge
+    assert!(s.execute("effects.eyedropper", json!({"clip": it.id.0, "effect": index, "param": "key_color", "u": 1e300, "v": -5.0})).is_ok());
+}
