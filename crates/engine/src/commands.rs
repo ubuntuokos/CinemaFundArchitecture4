@@ -4008,7 +4008,7 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
         .enumerate()
         .map(|(index, e)| {
             let def = e.def();
-            let params: Vec<Value> = def.map(|d| d.params.iter().map(|pd| param_state_json(s, it, at, pd, e.params.get(pd.id))).collect()).unwrap_or_default();
+            let params: Vec<Value> = def.map(|d| d.params.iter().map(|pd| param_state_json(s, it, at, pd, e.params.get(pd.id), &e.effect)).collect()).unwrap_or_default();
             // masks of a maskable effect (video effects and Opacity, not Motion or graphic layers)
             let maskable = def
                 .is_some_and(|d| d.kind == cfa4_project::EffectKind::Video && (!d.intrinsic || e.effect == "opacity") && !cfa4_project::graphic::is_layer(e));
@@ -4041,7 +4041,7 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
                         "selected": s.state.selected_mask == Some(target),
                         "trackJob": job,
                         "trackProgress": progress,
-                        "params": cfa4_project::mask::mask_param_defs().iter().map(|pd| param_state_json(s, it, at, pd, m.param(pd.id))).collect::<Vec<_>>(),
+                        "params": cfa4_project::mask::mask_param_defs().iter().map(|pd| param_state_json(s, it, at, pd, m.param(pd.id), "mask")).collect::<Vec<_>>(),
                     })
                 })
                 .collect();
@@ -4104,10 +4104,14 @@ fn graph_param(s: &Session, p: &Value) -> Result<Value> {
     let speed = if speed.is_finite() { speed.max(1e-6) } else { 1.0 };
     let span = it.duration.0.max(1) as f64 * speed;
     let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    // evenly across the clip in timeline order, through the clip's own timeline-to-effect-time
+    // mapping (a reversed clip's curve runs backwards like its keyframes and its picture)
+    let last = it.end().0.saturating_sub(1).max(it.start.0);
     let values: Vec<Value> = (0..=n)
         .map(|i| {
-            let offset = (i as f64 / n as f64 * span) as i64;
-            match prm.value_at(Tick(it.source_in.0.saturating_add(offset))) {
+            let offset = (i as f64 / n as f64 * it.duration.0.max(0) as f64) as i64;
+            let t = Tick(it.start.0.saturating_add(offset).min(last));
+            match prm.value_at(it.effect_time_at(t)) {
                 ParamValue::Float(x) => json!([num(x)]),
                 ParamValue::Vec2(v) => json!([num(v.x), num(v.y)]),
                 _ => json!([]),
@@ -4120,8 +4124,20 @@ fn graph_param(s: &Session, p: &Value) -> Result<Value> {
 /// One parameter as `effects.inspect` lists it: its definition, static value, the value at media
 /// time `at`, and the keyframes in media and timeline time. A parameter the effect has not stored
 /// yet reads as its default.
-fn param_state_json(s: &Session, it: &cfa4_project::TrackItem, at: Tick, pd: &cfa4_project::ParamDef, prm: Option<&cfa4_project::Param>) -> Value {
+fn param_state_json(
+    s: &Session,
+    it: &cfa4_project::TrackItem,
+    at: Tick,
+    pd: &cfa4_project::ParamDef,
+    prm: Option<&cfa4_project::Param>,
+    effect: &str,
+) -> Value {
     let mut j = param_info(pd);
+    // where an automatic (null) coordinate of a point is, so an editor can show it and keep it
+    // when only the other coordinate is edited
+    if matches!(pd.kind, cfa4_project::ParamKind::Point) {
+        j["auto"] = auto_point_at(s, it, effect, pd.id).map_or(Value::Null, |(x, y)| json!([x, y]));
+    }
     let fallback;
     let prm = match prm {
         Some(prm) => prm,
@@ -4155,6 +4171,18 @@ fn param_state_json(s: &Session, it: &cfa4_project::TrackItem, at: Tick, pd: &cf
             .collect(),
     );
     j
+}
+
+/// Where the render puts an automatic point parameter: Motion's Position at the sequence frame's
+/// centre, other points at their effect's place in the clip's picture (its centre by default).
+fn auto_point_at(s: &Session, it: &cfa4_project::TrackItem, effect: &str, param: &str) -> Option<(f64, f64)> {
+    let q = s.active_sequence()?;
+    if effect == "motion" && param == "position" {
+        return Some((f64::from(q.settings.width) / 2.0, f64::from(q.settings.height) / 2.0));
+    }
+    let (w, h) = cfa4_render::source_size(&s.project, it.item).unwrap_or((q.settings.width, q.settings.height));
+    let (fx, fy) = cfa4_project::effect::auto_point(effect, param).unwrap_or((0.5, 0.5));
+    Some((f64::from(w) * fx, f64::from(h) * fy))
 }
 
 fn param_info(p: &cfa4_project::ParamDef) -> Value {

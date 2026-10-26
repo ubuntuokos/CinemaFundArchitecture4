@@ -1115,6 +1115,7 @@ class ProgramMonitor(Monitor):
         from .program_overlay import ProgramOverlay
 
         self.overlay = ProgramOverlay(self.view, engine, lambda c, p: self.command.emit(c, p))
+        self.overlay.monitor = self
         self.view.overlay = self.overlay
 
     def set_sequence(self, seq: dict[str, Any] | None, revision: int) -> None:

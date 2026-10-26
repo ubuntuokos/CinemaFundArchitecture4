@@ -171,6 +171,12 @@ fn graphs_an_animated_parameter_across_its_clip() {
         s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "scale", "samples": u64::MAX})).unwrap()["values"].as_array().unwrap().len(),
         2001
     );
+    // a reversed clip: the curve runs in timeline order, like its keyframes (150 first)
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("clip.speedDuration", json!({"speed": 100.0, "reverse": true})).unwrap();
+    assert!(v1_clip(&s).reverse);
+    let g = s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "scale", "samples": 10})).unwrap();
+    assert!(g["values"][0][0].as_f64().unwrap() > 140.0 && (g["values"][10][0].as_f64().unwrap() - 50.0).abs() < 0.5, "{g}");
 }
 
 #[test]
@@ -291,4 +297,42 @@ fn the_eyedropper_fills_a_colour_parameter_from_the_program_picture() {
     }
     // far outside the picture is its edge
     assert!(s.execute("effects.eyedropper", json!({"clip": it.id.0, "effect": index, "param": "key_color", "u": 1e300, "v": -5.0})).is_ok());
+}
+
+#[test]
+fn program_overlay_follows_effects_that_animate_through_a_frame_hold() {
+    // Hold Filters off: the picture holds, its Motion keeps animating (as rendered), so the box
+    // follows the effect time, not the held media time
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    for (t, val) in [(it.start, 50.0), (it.end() - Tick(1), 150.0)] {
+        s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": val, "keyframe": true, "time": t.0})).unwrap();
+    }
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("clip.frameHoldOptions", json!({"clips": [c], "holdOn": "in", "holdFilters": false})).unwrap();
+    assert!(v1_clip(&s).frame_hold.is_some());
+    s.execute("effects.select", json!({"clip": c, "effect": "motion"})).unwrap();
+    let width = |s: &mut Session, t: Tick| {
+        s.execute("playhead.set", json!({"time": t.0})).unwrap();
+        let v = s.execute("program.overlay", json!({})).unwrap();
+        let q = &v["transform"]["quad"];
+        q[1][0].as_f64().unwrap() - q[0][0].as_f64().unwrap()
+    };
+    let (early, late) = (width(&mut s, it.start + Tick(it.duration.0 / 10)), width(&mut s, it.end() - Tick(it.duration.0 / 10)));
+    assert!(late > early * 1.5, "{early} → {late}");
+}
+
+#[test]
+fn inspect_reports_where_automatic_points_are() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    s.execute("effects.apply", json!({"clips": [it.id.0], "effect": "corner_pin"})).unwrap();
+    let v = s.execute("effects.inspect", json!({"clip": it.id.0})).unwrap();
+    let ur = param(&v, "corner_pin", "upper_right");
+    let auto = ur["auto"].as_array().unwrap();
+    assert!(auto[0].as_f64().unwrap() > 100.0 && auto[1].as_f64().unwrap() == 0.0, "{ur}");
+    let (w, h) = (s.active_sequence().unwrap().settings.width, s.active_sequence().unwrap().settings.height);
+    assert_eq!(param(&v, "motion", "position")["auto"], json!([f64::from(w) / 2.0, f64::from(h) / 2.0]));
+    assert!(param(&v, "motion", "scale").get("auto").is_none(), "points only");
 }

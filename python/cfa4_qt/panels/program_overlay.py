@@ -157,6 +157,7 @@ class ProgramOverlay(QObject):
         self.round_radius: float | None = None
         # an armed eyedropper (Effect Controls): the colour parameter the next click on the picture fills
         self.eyedropper: dict[str, Any] | None = None
+        self.monitor: Any = None  # the Program monitor (its playback)
         self._busy = False
         self._again = False
 
@@ -543,6 +544,11 @@ class ProgramOverlay(QObject):
             return self._pen_press(e)
         if e.button() != Qt.MouseButton.LeftButton:
             return False
+        if getattr(self.monitor, "playing", False) and (self.placement() is not None or self.mask_geometry() is not None):
+            # the box and the engine's playhead are where playback started: stop on the shown frame
+            # (the overlay follows it) so the next drag edits what is on screen
+            self.monitor.stop()
+            return True
         at = e.position()
         self.gesture += 1
         mods = e.modifiers()

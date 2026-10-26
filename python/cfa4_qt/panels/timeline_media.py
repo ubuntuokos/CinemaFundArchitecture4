@@ -67,6 +67,7 @@ class TimelineMedia(QObject):
         self._used.clear()
         self._queue.clear()
         self._queued.clear()
+        self.updated.emit()  # views ask again
 
     # ----- lookups (return what is cached, queue what is not) -----
     def thumbnail(self, item: Any, media_time: int, height: int) -> QImage | None:

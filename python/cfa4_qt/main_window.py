@@ -13,6 +13,7 @@ from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeyEvent, QKeySeq
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
+    QDialog,
     QDockWidget,
     QLabel,
     QLineEdit,
@@ -29,7 +30,7 @@ from PySide6.QtWidgets import (
 from . import __version__, theme
 from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
-from .dialogs import ParamDialog, path_params
+from .dialogs import InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
@@ -58,7 +59,11 @@ from .window_menu import Workspaces, bind_free, build_window_menu
 
 LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
 # commands that can change which media an item shows, done or undone
-SOURCE_COMMANDS = frozenset({"media.relink", "media.replaceFootage", "media.makeOffline", "edit.undo", "edit.redo"})
+SOURCE_COMMANDS = frozenset({
+    "media.relink", "media.replaceFootage", "media.makeOffline", "media.offlineAll", "media.autoRelink", "media.linkMedia",
+    "media.findMissing", "media.refreshChanged", "media.refreshGrowingFiles", "media.attachProxies", "media.detachProxies",
+    "media.toggleProxies", "media.enableProxies", "media.reconnectFullRes", "clip.interpretFootage", "edit.undo", "edit.redo",
+})
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -233,6 +238,7 @@ class MainWindow(QMainWindow):
         self.essential_graphics.attach_settings(self.settings)
         self.tts = TextToSpeechPanel(engine, self)
         self._project_generation = 0  # counts project opens: two untitled projects share a name
+        self.last_dialog: QDialog | None = None  # the last frontend dialog opened (tests, agents)
         self.tts.context = lambda: (self._project_generation, (self.sequence or {}).get("id"))
         self._graphics_busy = False
         self._essential_busy = False
@@ -898,7 +904,7 @@ class MainWindow(QMainWindow):
         new = self.project or {}
         if (old.get("path"), old.get("name")) != (new.get("path"), new.get("name")):
             # another project: its item ids mean other media, so cached pictures are wrong
-            self.timeline.canvas.media.clear()
+            self.clear_media_caches()
             self._project_generation += 1
         self.project_panel.set_project(self.project)
         self._update_title()
@@ -954,8 +960,14 @@ class MainWindow(QMainWindow):
         if command in SOURCE_COMMANDS:
             # the item keeps its id but shows other media (or comes back online): cached
             # thumbnails and waveforms keyed by that id are stale
-            self.timeline.canvas.media.clear()
+            self.clear_media_caches()
         self.schedule_refresh()
+
+    def clear_media_caches(self) -> None:
+        """Forget every cached thumbnail and waveform (Timeline, Project panel, Source monitor):
+        they are keyed by item id, which can now mean other media."""
+        for media in (self.timeline.canvas.media, self.project_panel.media, self.source_monitor.media):
+            media.clear()
 
     def _command_failed(self, command: str, message: str) -> None:
         text = f"{command}: {message}"
@@ -976,6 +988,8 @@ class MainWindow(QMainWindow):
         if cmd is None:
             self.execute(cid, params)
             return
+        if self.interpret_footage(cid, params):
+            return
         project_path = (self.project or {}).get("path")
         asked = path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
         if asked.get("__cancel__"):
@@ -987,13 +1001,28 @@ class MainWindow(QMainWindow):
             on_error=lambda m: self._command_failed(cid, m),
         )
 
+    def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
+        """Interpret Footage without settings opens its dialog (egui's), for the items given or
+        the Project panel's selection. True when it did."""
+        if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
+            return False
+        items = [i for i in params.get("items") or self.project_panel.selected_items() if isinstance(i, int)]
+        dialog = InterpretFootageDialog(self, self.engine, items, self.execute)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = dialog
+        dialog.open()
+        return True
+
+    def flush_editors(self) -> None:
+        """Send every value still in a panel's send delay (before a command, Save or a check of
+        whether the project needs saving)."""
+        for panel in (self.effect_controls, self.inspector, self.lumetri, self.essential_sound, self.notes):
+            panel.flush()
+
     def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
         # an Effect Controls value still in its send delay goes first (Save must write it)
-        self.effect_controls.flush()
-        self.lumetri.flush()
-        self.essential_sound.flush()
-        self.notes.flush()
+        self.flush_editors()
         if cmd.id in ("markers.markIn", "markers.markOut") and self.project_panel.hover_mark(cmd.id == "markers.markIn"):
             return
         if cmd.id == "edit.selectAll" and self.effect_controls.select_all_keyframes():
@@ -1031,6 +1060,8 @@ class MainWindow(QMainWindow):
             # its sequence id belongs to this project: item ids restart in the next one, so a stale
             # dialog could export a different sequence than it names. Reopening re-reads it.
             self.export_dialog.hide()
+        if self.interpret_footage(cmd.id, {}):
+            return
         project_path = (self.project or {}).get("path")
         params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
         if params is not None:
@@ -1479,10 +1510,7 @@ class MainWindow(QMainWindow):
             decide(dict(self.state), None)
 
         # an edit still in Effect Controls' send delay reaches the engine before it is asked
-        self.effect_controls.flush()
-        self.lumetri.flush()
-        self.essential_sound.flush()
-        self.notes.flush()
+        self.flush_editors()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)
         QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
 

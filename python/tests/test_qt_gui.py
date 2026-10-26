@@ -479,6 +479,25 @@ def test_deferred_effect_edits_reach_the_engine_before_save_or_close(app, fake_e
         win.close()
 
 
+def test_installing_a_graphics_template_asks_for_its_file(app, tmp_path: Path, monkeypatch):
+    """Essential Graphics ▸ Install sends no path: the window asks for the .fcgt file first."""
+    from cfa4_qt.dialogs import path_params
+
+    cmd = Command("graphics.template.install", "Install Motion Graphics Template…", [], "", '{"path":str}', True)
+    parent = QtWidgets.QWidget()
+    asked = []
+
+    def pick(*a, **_k):
+        asked.append(a)
+        return (str(tmp_path / "lower third.fcgt"), "")
+
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", pick)
+    assert path_params(cmd, parent, None) == {"path": str(tmp_path / "lower third.fcgt")}
+    assert "*.fcgt" in asked[0][3]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", lambda *_a, **_k: ("", ""))
+    assert path_params(cmd, parent, None) == {"__cancel__": True}
+
+
 def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
     """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
     ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""
@@ -1577,6 +1596,15 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         assert wait_until(app, lambda: ov.placement() is not None and ec.clip_id == cid, 20_000)
         assert wait_until(app, lambda: motion("scale") == 60.0, 10_000)
 
+        # during playback a press stops it on the shown frame first, editing nothing
+        win.monitor.play(1.0)
+        assert win.monitor.playing
+        before, steps = motion("position"), history()
+        click(ov.hit("transform.box"))
+        assert not win.monitor.playing
+        assert wait_until(app, lambda: ov.placement() is not None, 10_000)
+        assert motion("position") == before and history() == steps
+
         # drag inside the box: Position moves by the drag (in frame pixels), one undo step
         before, steps = motion("position"), history()
         box = ov.hit("transform.box")
@@ -1648,6 +1676,35 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         assert ov.pen is None and not pen.isChecked()
         assert wait_until(app, lambda: len(next(e for e in ec.clip["effects"] if e["effect"] == "opacity")["maskList"]) == 2,
                           10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: Path):
+    """Interpret Footage… (the Project item menu, or the menu with items selected) opens egui's
+    dialog: the colour space from the file's metadata and an override; OK interprets."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        item = win.sequence["video"][0]["items"][1]["item"]
+        win.run_preset("clip.interpretFootage", {"items": [item]})
+        dialog = win.last_dialog
+        assert dialog is not None and dialog.objectName() == "interpretFootage"
+        assert wait_until(app, lambda: "rec709" in dialog.choices and "—" not in dialog.detected.text(), 10_000), dialog.detected.text()
+        assert dialog.chosen() == "auto"
+        dialog.choices["rec709"].setChecked(True)
+        dialog.findChild(QtWidgets.QPushButton, "interpretFootage.ok").click()
+        info = {}
+        engine.execute("media.colorInfo", {"item": item}, on_reply=lambda r, _b: info.update(r))
+        assert wait_until(app, lambda: info.get("override") == "rec709", 10_000), info
     finally:
         win._quit_confirmed = True
         win.close()
@@ -1816,6 +1873,45 @@ def format_tc(ticks: int, frame: int) -> str:
     from cfa4_qt.timecode import format_timecode
 
     return format_timecode(ticks, frame)
+
+
+def test_properties_keep_an_automatic_coordinate_when_the_other_is_edited(app):
+    """A default Motion's Position is automatic (null): it shows where the render puts it, so
+    editing X sends that Y, not 0 (which would move the picture to the top)."""
+    from cfa4_qt.panels.properties import PropertiesPanel
+
+    panel = PropertiesPanel()
+    panel.clip = {"clip": 7, "effects": [{"effect": "motion", "index": 0, "params": [
+        {"id": "position", "type": "point", "value": [None, None], "valueAtPlayhead": [None, None], "auto": [960.0, 540.0],
+         "keyframes": []}]}]}
+    row = next(r for r in panel.rows if (r.effect, r.param) == ("motion", "position"))
+    row.show()
+    assert [s.value() for s in row.spins] == [960.0, 540.0]
+    row._edited(0, 900.0, True)
+    assert list(panel._pending.values()) == [[900.0, 540.0]]
+    sent = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    panel.flush()  # what the window does before any command, Save or Undo (flush_editors)
+    assert not panel._pending and sent and sent[-1][1]["value"] == [900.0, 540.0]
+
+
+def test_the_window_flushes_editors_and_forgets_stale_media_pictures(app, fake_engine: Path, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    flushed = []
+    win.inspector.flush = lambda: flushed.append(True)
+    win.flush_editors()
+    assert flushed
+    # relinking (or undoing it) gives an item id other media: every thumbnail and waveform cache goes
+    caches = (win.timeline.canvas.media, win.project_panel.media, win.source_monitor.media)
+    for media in caches:
+        media.thumbs[(1, 0, 32)] = QtGui.QImage(4, 4, QtGui.QImage.Format.Format_RGB32)
+    win._command_done("media.relink")
+    assert all(not media.thumbs for media in caches)
+    win._quit_confirmed = True
+    win.close()
 
 
 def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):

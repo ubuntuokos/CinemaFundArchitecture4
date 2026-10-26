@@ -514,9 +514,11 @@ class ParamRow(LinedRow):
             if self.kind in ("float", "angle"):
                 self.spins[0].set_value(finite(value))
             elif self.kind == "point":
-                xy = value if isinstance(value, list) and len(value) == 2 else [0.0, 0.0]
-                for s, v in zip(self.spins, xy, strict=True):
-                    s.set_value(finite(v))
+                xy = value if isinstance(value, list) and len(value) == 2 else [None, None]
+                # an automatic coordinate shows where the render puts it (editing the other keeps it)
+                auto = self.info.get("auto") if isinstance(self.info.get("auto"), list) else [0.0, 0.0]
+                for s, v, a in zip(self.spins, xy, [*auto, 0.0, 0.0][:2], strict=True):
+                    s.set_value(finite(v, finite(a)) if v is not None else finite(a))
                     s.setToolTip(tr("automatic") if v is None else "")
             elif isinstance(w, QCheckBox):
                 w.setChecked(bool(value))

@@ -1229,3 +1229,10 @@
 	End at Cut	Befejezés a vágásnál
 	Custom Start	Egyéni kezdés
 	Eyedropper (pick a color from the Program monitor)	Pipetta (szín a Program monitorról)
+	Interpret Footage	Felvétel értelmezése
+	Color Management · {n} item	Színkezelés · {n} elem
+	Color Management · {n} items	Színkezelés · {n} elem
+	Media colour space (from file metadata): {detected}	Média színtere (a fájl metaadataiból): {detected}
+	Override media colour space:	Média színterének felülírása:
+	Use file metadata	A fájl metaadatai szerint
+	Motion Graphics Templates	Mozgógrafikai sablonok

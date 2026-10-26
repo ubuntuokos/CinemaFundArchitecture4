@@ -95,14 +95,14 @@ fn overlay(s: &mut Session, p: &Value) -> Result<Value> {
     let mut clips = Vec::new();
     for tr in seq.video_tracks.iter().rev().filter(|t| t.enabled) {
         let Some(it) = tr.item_at(ph).filter(|it| it.enabled) else { continue };
-        if let Some((m, size)) = clip_to_frame(s, it, it.source_time_at(ph), frame) {
+        if let Some((m, size)) = clip_to_frame(s, it, it.effect_time_at(ph), frame) {
             clips.push(json!({"clip": it.id.0, "quad": points(&quad(&m, size))}));
         }
     }
     out["clips"] = Value::Array(clips);
     if let Some(c) = clip_p(p, "clip") {
         let (_, it) = seq.find_item(c).ok_or_else(|| bad("program.overlay", "no such clip"))?;
-        let mt = it.source_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
+        let mt = it.effect_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
         if let Some((m, _)) = clip_to_frame(s, it, mt, frame) {
             out["clipToFrame"] = matrix(&m).unwrap_or(Value::Null);
         }
@@ -136,7 +136,7 @@ fn transform(s: &Session, frame: (u32, u32)) -> Option<Value> {
     let index = sel.index(&it.effects)?;
     let e = it.effects.get(index).filter(|e| e.enabled)?;
     let def = e.def().filter(|d| d.id == "motion" || d.id == "transform")?;
-    let mt = it.source_time_at(ph);
+    let mt = it.effect_time_at(ph);
     let (motion, size) = clip_to_frame(s, it, mt, frame)?;
     // "auto" points (NaN) are where the render puts them
     let point = |e: &EffectInstance, id: &str, auto: Vec2| {
@@ -238,7 +238,7 @@ fn mask(s: &Session, frame: (u32, u32), round: Option<f64>) -> Option<Value> {
     }
     let e = it.effects.get(sel.effect)?;
     let m = e.masks.get(sel.mask)?;
-    let mt = it.source_time_at(ph);
+    let mt = it.effect_time_at(ph);
     let (to_frame, _) = clip_to_frame(s, it, mt, frame)?;
     let path = m.path_at(mt);
     let feather = m.feather.f64_at(mt).max(0.0);

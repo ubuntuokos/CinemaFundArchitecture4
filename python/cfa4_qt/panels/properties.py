@@ -131,8 +131,13 @@ class PropRow:
         self.info = _param(clip, self.effect, self.param)
         v = (self.info or {}).get("valueAtPlayhead")
         values = v if isinstance(v, list) else [v]
-        for spin, x in zip(self.spins, values, strict=False):
-            spin.set_value(x if isinstance(x, (int, float)) else 0.0)
+        # an automatic coordinate (null) shows where the render puts it, so editing the other
+        # one keeps the picture where it is
+        auto = (self.info or {}).get("auto")
+        auto = auto if isinstance(auto, list) else []
+        for i, (spin, x) in enumerate(zip(self.spins, values, strict=False)):
+            fallback = auto[i] if i < len(auto) and isinstance(auto[i], (int, float)) else 0.0
+            spin.set_value(x if isinstance(x, (int, float)) else fallback)
         if self.add is None:
             return
         keys = [k for k in (self.info or {}).get("keyframes") or [] if isinstance(k, dict)]
