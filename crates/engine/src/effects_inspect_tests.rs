@@ -215,3 +215,51 @@ fn program_overlay_reports_the_transform_box_and_the_selected_mask() {
     assert!(s.execute("program.overlay", json!({"clip": 987_654_321u64})).is_err());
     assert!(s.execute("program.overlay", json!({"roundRadius": f64::MAX})).is_ok());
 }
+
+#[test]
+fn inspects_a_transition_and_drags_it_by_an_end_or_its_middle() {
+    let mut s = demo();
+    assert!(s.execute("transitions.inspect", json!({})).is_err(), "none selected");
+    // the dip to black between shots 3 and 4
+    s.execute("timeline.select", json!({"transitions": [900_003]})).unwrap();
+    let v = s.execute("transitions.inspect", json!({})).unwrap();
+    assert_eq!(v["transition"], 900_003);
+    assert_eq!(v["effect"], "dip_to_black");
+    assert_eq!(v["kind"], "video");
+    assert_eq!(v["align"], "center");
+    assert_eq!(v["oneSided"], false);
+    assert!(v["a"]["clip"].is_u64() && v["b"]["clip"].is_u64() && v["a"]["name"].is_string());
+    assert!(v["maxFrames"].as_i64().unwrap() > v["frames"].as_i64().unwrap());
+    assert!(v["params"].as_array().is_some(), "{v}");
+    let (start, duration, frame, cut) =
+        (v["start"].as_i64().unwrap(), v["duration"].as_i64().unwrap(), v["frame"].as_i64().unwrap(), v["cut"].as_i64().unwrap());
+
+    // its out end, dragged 3 frames on: the in end stays, one undo step for the whole drag
+    let undo = s.history.undo.len();
+    let drag = |delta: i64, begin: bool| json!({"transition": 900_003, "drag": {"edge": "out", "delta": delta, "start": start, "duration": duration}, "merge": true, "begin": begin});
+    s.execute("sequence.setTransition", drag(frame, true)).unwrap();
+    let r = s.execute("sequence.setTransition", drag(3 * frame, false)).unwrap();
+    assert_eq!((r["start"].as_i64(), r["duration"].as_i64()), (Some(start), Some(duration + 3 * frame)));
+    assert_eq!(r["align"], "custom");
+    assert_eq!(s.history.undo.len(), undo + 1);
+    // the middle slides it, never off the cut; a hostile delta is clamped
+    let r = s
+        .execute("sequence.setTransition", json!({"transition": 900_003, "drag": {"edge": null, "delta": i64::MAX, "start": start, "duration": duration}}))
+        .unwrap();
+    assert_eq!(r["start"].as_i64(), Some(cut), "slid as far as it goes: it starts at the cut");
+    assert!(
+        s.execute("sequence.setTransition", json!({"transition": 900_003, "drag": {"edge": "sideways", "delta": 0, "start": start, "duration": duration}}))
+            .is_err()
+    );
+    assert!(s.execute("sequence.setTransition", json!({"transition": 900_003, "drag": {"delta": 0, "start": i64::MIN, "duration": duration}})).is_err());
+    assert!(
+        s.execute("sequence.setTransition", json!({"transition": 900_003, "frames": 4, "drag": {"delta": 0, "start": start, "duration": duration}})).is_err()
+    );
+    // a typed timecode duration (Set Transition Duration)
+    let r = s.execute("sequence.setTransition", json!({"transition": 900_003, "timecode": "00:00:00:10"})).unwrap();
+    assert_eq!(r["duration"].as_i64(), Some(10 * frame));
+    assert!(s.execute("sequence.setTransition", json!({"transition": 900_003, "timecode": "soon"})).is_err());
+    // Deselect All (a click on empty Timeline space) lets go of it too
+    s.execute("edit.deselectAll", json!({})).unwrap();
+    assert!(s.state.transition_selection.is_empty());
+}

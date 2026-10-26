@@ -1739,6 +1739,7 @@ fn build() -> Vec<CommandSpec> {
         cmd!("edit.deselectAll", "Deselect All", ["Edit"], Some("Cmd+Shift+A"), "{}", always, |s, _| {
             s.state.selection.clear();
             s.state.caption_selection.clear();
+            s.state.transition_selection.clear();
             s.state.gap_selection = None;
             Ok(Value::Null)
         }),
@@ -2121,7 +2122,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Transition Settings",
             [],
             None,
-            r#"{"transition":id,"params":{param:value}?,"reverse":bool?,"reset":bool?,"duration":ticks?|"frames":n?,"align":"center"|"start"|"end"?|"start":ticks?,"merge":bool?,"begin":bool?}"#,
+            r#"{"transition":id,"params":{param:value}?,"reverse":bool?,"reset":bool?,"duration":ticks?|"frames":n?|"timecode":"hh:mm:ss:ff"?,"align":"center"|"start"|"end"?|"start":ticks?|"drag":{"edge":"in"|"out"|null,"delta":ticks,"start":ticks,"duration":ticks}?,"merge":bool?,"begin":bool?}"#,
             has_seq,
             set_transition
         ),
@@ -3025,6 +3026,7 @@ fn build() -> Vec<CommandSpec> {
             run: select_effect,
             journal: false,
         },
+        query!("transitions.inspect", "Inspect Transition", r#"{"transition":id? (default: the first selected transition)}"#, |s, p| inspect_transition(s, p)),
         query!("effects.inspect", "Inspect Clip Effects", r#"{"clip":id? (default: the first selected clip)}"#, |s, p| inspect_effects(s, p)),
         query!(
             "effects.graph",
@@ -4360,7 +4362,16 @@ fn set_transition(s: &mut Session, p: &Value) -> Result<Value> {
     let (lo, cut, hi) = edit::transitions::bounds(track, &cur).ok_or_else(|| bad(CMD, "the transition's clips are gone"))?;
     // times outside the clips it joins are refused before any frame arithmetic (hostile input)
     let room = Tick(hi.0.saturating_sub(lo.0));
-    let duration = match (p.get("frames").and_then(Value::as_i64), p.get("duration").and_then(Value::as_i64)) {
+    // a typed duration may be timecode (Effect Controls' field, Set Transition Duration)
+    let typed = match str_p(p, "timecode") {
+        Some(tc) => Some(parse_timecode(tc, rate, q.settings.drop_frame, 0).map_err(|e| bad(CMD, format!("timecode: {e:?}")))?),
+        None => None,
+    };
+    let frames = match (typed, p.get("frames").and_then(Value::as_i64)) {
+        (Some(_), Some(_)) => return Err(bad(CMD, "give `frames` or `timecode`, not both")),
+        (t, f) => t.or(f),
+    };
+    let duration = match (frames, p.get("duration").and_then(Value::as_i64)) {
         (Some(_), Some(_)) => return Err(bad(CMD, "give `duration` or `frames`, not both")),
         (Some(f), None) if (1..=10_000_000).contains(&f) && rate.tick_of(f) <= room => Some(rate.tick_of(f)),
         (None, Some(d)) if d > 0 && d <= room.0 => Some(rate.snap_nearest(Tick(d)).max(frame)),
@@ -4379,7 +4390,30 @@ fn set_transition(s: &mut Session, p: &Value) -> Result<Value> {
     if start.is_some() && align.is_some() {
         return Err(bad(CMD, "give `start` or `align`, not both"));
     }
-    let span = if duration.is_some() || align.is_some() || start.is_some() {
+    // a drag in a timeline: from where it began, by `delta`, as the Timeline's rules put it
+    let dragged = match p.get("drag") {
+        Some(d) => {
+            if duration.is_some() || align.is_some() || start.is_some() {
+                return Err(bad(CMD, "give `drag` alone, without `duration`, `frames`, `align` or `start`"));
+            }
+            let edge = match d.get("edge") {
+                None | Some(Value::Null) => None,
+                Some(Value::String(e)) if e == "in" => Some(Edge::In),
+                Some(Value::String(e)) if e == "out" => Some(Edge::Out),
+                Some(_) => return Err(bad(CMD, "`drag.edge` is \"in\", \"out\" or null (the middle)")),
+            };
+            let at = |k: &str| d.get(k).and_then(Value::as_i64);
+            let st = at("start").filter(|t| (lo.0..=hi.0).contains(t)).ok_or_else(|| bad(CMD, "`drag.start`: where the transition began, inside its clips"))?;
+            let du = at("duration").filter(|t| *t > 0 && *t <= room.0).ok_or_else(|| bad(CMD, "`drag.duration`: its duration when the drag began"))?;
+            let delta = Tick(at("delta").ok_or_else(|| bad(CMD, "need `drag.delta`"))?.clamp(-room.0, room.0));
+            let was = cfa4_project::Transition { start: Tick(st), duration: Tick(du), ..cur.clone() };
+            Some(edit::transitions::drag_span(track, &was, edge, rate.snap_nearest(delta), frame).ok_or_else(|| bad(CMD, "the transition's clips are gone"))?)
+        }
+        None => None,
+    };
+    let span = if let Some(span) = dragged {
+        Some(span)
+    } else if duration.is_some() || align.is_some() || start.is_some() {
         let d = duration.unwrap_or(cur.duration);
         let st = match start {
             Some(st) => st,
@@ -4430,6 +4464,64 @@ fn set_transition(s: &mut Session, p: &Value) -> Result<Value> {
         })
         .map(|(x, cut)| edit::transitions::alignment(&x, cut, frame).id());
     Ok(json!({"transition": id, "effect": cur.effect.effect, "reverse": cur.reverse, "start": st.0, "duration": d.0, "align": al}))
+}
+
+/// `transitions.inspect`: a transition for Effect Controls (egui's transition view): its settings
+/// with their definitions, Duration (`frames`, at most `maxFrames`), Alignment, Reverse, where it
+/// may be (`lo` .. `hi` over the `cut`) and the clips it joins (`a` outgoing, `b` incoming), for
+/// its own timeline.
+fn inspect_transition(s: &Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "transitions.inspect";
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let exists = |id: TransitionId| q.all_tracks().any(|t| t.transitions.iter().any(|x| x.id == id));
+    let id = match p.get("transition") {
+        Some(v) => TransitionId(v.as_u64().ok_or_else(|| bad(CMD, "`transition` is an id"))?),
+        None => s.state.transition_selection.iter().copied().find(|id| exists(*id)).ok_or_else(|| bad(CMD, "no transition selected"))?,
+    };
+    let (track, x) =
+        q.all_tracks().find_map(|tr| tr.transitions.iter().find(|x| x.id == id).map(|x| (tr, x))).ok_or_else(|| bad(CMD, format!("no transition {}", id.0)))?;
+    let (lo, cut, hi) = edit::transitions::bounds(track, x).ok_or_else(|| bad(CMD, "the transition's clips are gone"))?;
+    let rate = q.settings.frame_rate.sane();
+    let frame = rate.frame_duration();
+    let clip = |c: Option<ClipId>| c.and_then(|c| track.item(c)).map(|it| json!({"clip": it.id.0, "start": it.start.0, "end": it.end().0, "name": it.name}));
+    let def = x.effect.def();
+    let params: Vec<Value> = def
+        .map(|d| {
+            d.params
+                .iter()
+                .map(|pd| {
+                    let mut j = param_info(pd);
+                    j["value"] = param_value_json(x.effect.params.get(pd.id).map_or(&pd.default, |p| &p.value));
+                    j
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    Ok(json!({
+        "transition": id.0,
+        "effect": x.effect.effect,
+        "name": def.map_or(x.effect.effect.as_str(), |d| d.name),
+        "kind": if def.is_some_and(|d| d.kind == cfa4_project::EffectKind::AudioTransition) { "audio" } else { "video" },
+        "track": track.id.0,
+        "sequenceName": s.state.active_sequence.and_then(|i| s.project.item(i)).map(|i| i.name.clone()).unwrap_or_default(),
+        "frameSize": [q.settings.width, q.settings.height],
+        "frame": frame.0,
+        "dropFrame": q.settings.drop_frame,
+        "start": x.start.0,
+        "duration": x.duration.0,
+        "frames": rate.frame_at(x.duration).max(1),
+        "maxFrames": rate.frame_at(Tick(hi.0.saturating_sub(lo.0))).max(1),
+        "align": edit::transitions::alignment(x, cut, frame).id(),
+        "oneSided": x.from.is_none() || x.to.is_none(),
+        "reverse": x.reverse,
+        "lo": lo.0,
+        "cut": cut.0,
+        "hi": hi.0,
+        "a": clip(x.from),
+        "b": clip(x.to),
+        "playhead": s.playhead().0,
+        "params": params,
+    }))
 }
 
 fn apply_transition(s: &mut Session, p: &Value, kind: TrackKind) -> Result<Value> {
@@ -4552,7 +4644,7 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
                 "enabled": i.enabled, "link": i.link, "label": i.label.name(),
                 "effects": i.effects.iter().map(|e| json!({"effect": e.effect, "enabled": e.enabled, "masks": e.masks.len(), "params": e.params.iter().map(|(k, p)| (k.clone(), json!({"value": format!("{:?}", p.value), "keyframes": p.keyframes.len()}))).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
-            "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
+            "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "name": x.effect.def().map_or(x.effect.effect.as_str(), |d| d.name), "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
         })
     };
     // the frames export renders, a partial last frame included

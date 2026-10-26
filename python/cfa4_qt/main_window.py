@@ -910,7 +910,7 @@ class MainWindow(QMainWindow):
         self.reference.set_sequence(self.sequence, self.revision)
         self.update_scopes()
         self.inspector.set_sequence(self.sequence)
-        self.effect_controls.refresh((self.sequence or {}).get("selection"))
+        self.effect_controls.refresh((self.sequence or {}).get("selection"), (self.sequence or {}).get("transitionSelection"))
         self.monitor.overlay.refresh()
         self.update_lumetri()
         self.update_essential_sound()

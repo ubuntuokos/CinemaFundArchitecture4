@@ -1653,6 +1653,124 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_path: Path):
+    """egui's transitions: drawn on the Timeline, a click selects one (Effect Controls shows it:
+    Duration, Alignment, Reverse, its settings, its own timeline), dragging an end changes its
+    duration (one undo step), dragging it in its own timeline slides it, its ruler moves the
+    playhead, a double-click opens Set Transition Duration, a click on empty space lets go."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    ec = win.effect_controls
+    view = ec.transition_view
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    nomod = QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(widget, kind, at: QtCore.QPointF, button, buttons) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(widget, QtGui.QMouseEvent(kind, p, p, widget.mapToGlobal(p), button, buttons, nomod))
+
+    def drag(widget, a: QtCore.QPointF, b: QtCore.QPointF) -> None:
+        send(widget, QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        for i in range(1, 5):
+            send(widget, QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left)
+        send(widget, QtCore.QEvent.Type.MouseButtonRelease, b, left, none)
+
+    def transition() -> tuple:
+        for row in canvas.rows:
+            for x in row.track.get("transitions") or []:
+                if x["id"] == 900_003:
+                    return row, x
+        raise AssertionError("no dip to black")
+
+    def history() -> int:
+        return win.history.list.count()
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        row, x = transition()
+        assert x["name"] == "Dip to Black"
+        canvas.pps = 200.0
+        canvas.scroll_ticks = max(0, x["start"] - 2 * 254_016_000_000)
+        canvas.update()
+        r = canvas.transition_rect(row, x)
+        assert r.width() > 60
+        # a click selects it; Effect Controls shows it
+        mid = r.center().toPoint()
+        assert canvas.transition_hit(mid)[2] == ""
+        QtTest.QTest.mouseClick(canvas, left, nomod, mid)
+        assert wait_until(app, lambda: win.sequence.get("transitionSelection") == [900_003], 10_000)
+        assert wait_until(app, lambda: view.isVisible() and (view.data or {}).get("transition") == 900_003, 10_000)
+        assert not ec.title.isVisible()
+        assert view.title.text().endswith("Dip to Black")
+        assert view.duration.text() == format_tc(x["duration"], view.duration.frame)
+        assert view.alignment.currentData() == "center" and view.alignment.isEnabled()
+
+        # its out end, dragged right: longer from that end, one undo step
+        steps, start, duration = history(), x["start"], x["duration"]
+        out = QtCore.QPointF(r.right() - 2, r.center().y())
+        assert canvas.transition_hit(out.toPoint())[2] == "out"
+        drag(canvas, out, out + QtCore.QPointF(40, 0))
+        assert wait_until(app, lambda: transition()[1]["duration"] > duration, 10_000)
+        assert transition()[1]["start"] == start
+        assert wait_until(app, lambda: history() == steps + 1, 10_000)
+        assert wait_until(app, lambda: view.alignment.currentData() == "custom", 10_000)
+
+        # Effect Controls: a typed duration (frames), alignment, reverse
+        view.duration.lineEdit().setText("12")
+        view.duration.interpretText()
+        assert wait_until(app, lambda: transition()[1]["duration"] == 12 * view.duration.frame, 10_000)
+        i = view.alignment.findData("start")
+        view.alignment.setCurrentIndex(i)
+        view.alignment.activated.emit(i)
+        assert wait_until(app, lambda: (view.data or {}).get("align") == "start", 10_000)
+        view.reverse.click()
+        assert wait_until(app, lambda: transition()[1]["reverse"] is True, 10_000)
+
+        # its own timeline: the middle slides it over the cut; the ruler moves the playhead
+        lane = view.lane
+        lane.repaint()
+        span = lane.span_rect()
+        before = transition()[1]["start"]
+        drag(lane, span.center(), span.center() - QtCore.QPointF(span.width() / 2, 0))
+        assert wait_until(app, lambda: transition()[1]["start"] < before, 10_000)
+        ruler = lane.ruler_rect()
+        QtTest.QTest.mouseClick(lane, left, nomod, QtCore.QPoint(int(ruler.left() + 5), int(ruler.center().y())))
+        assert wait_until(app, lambda: win.sequence["playhead"] < transition()[1]["start"], 10_000)
+
+        # a double-click: Set Transition Duration
+        row, x = transition()
+        mid = canvas.transition_rect(row, x).center().toPoint()
+        QtTest.QTest.mouseDClick(canvas, left, nomod, mid)
+        dialog = canvas.last_dialog
+        assert dialog is not None and dialog.objectName() == "transitionDuration"
+        assert dialog.value.text() == format_tc(x["duration"], view.duration.frame)
+        dialog.value.setText("00:00:00:08")
+        dialog.findChild(QtWidgets.QPushButton, "transitionDuration.ok").click()
+        assert wait_until(app, lambda: transition()[1]["duration"] == 8 * view.duration.frame, 10_000)
+
+        # a click on empty space lets go of it
+        QtTest.QTest.mouseClick(canvas, left, nomod, QtCore.QPoint(canvas.width() - 5, canvas.rows[0].top + 5))
+        assert wait_until(app, lambda: not win.sequence.get("transitionSelection"), 10_000)
+        assert wait_until(app, lambda: not view.isVisible() and ec.title.isVisible(), 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def format_tc(ticks: int, frame: int) -> str:
+    from cfa4_qt.timecode import format_timecode
+
+    return format_timecode(ticks, frame)
+
+
 def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):
     """File ▸ Quit exists (Ctrl+Q, asks to save like the close button), and the GUI uses the CFA4
     logo, not an inherited upstream one."""
@@ -2103,7 +2221,8 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
         row = next(r for r in canvas.rows if r.short == "V1")
         r = canvas.clip_rect(row, clip)
         x = r.left() + 2 if which == "in" else r.right() - 2
-        return QtCore.QPoint(int(x), int(r.center().y()))
+        # the name strip: a transition over a cut takes the row's lower part (egui's)
+        return QtCore.QPoint(int(x), int(r.top() + 8))
 
     def body(clip: dict) -> QtCore.QPoint:
         row = next(r for r in canvas.rows if r.short == "V1")

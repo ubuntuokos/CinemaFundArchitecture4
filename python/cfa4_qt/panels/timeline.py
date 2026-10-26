@@ -2,14 +2,21 @@
 engine commands (``timeline.select``, ``timeline.move``, ``timeline.trim``, ``timeline.razor``,
 ``timeline.place``, ``playhead.set``). The widget keeps no copy of the edit truth: after every
 command the engine reports ``projectChanged`` and the panel redraws from a fresh inspection.
+
+Transitions are drawn as egui's: hatched over the lower part of the row, the name on a video one,
+crossing fade curves on an audio one, outlined when selected. A click selects one (Shift adds or
+removes), dragging an end changes its duration from that end and dragging its middle slides it
+over the cut (``sequence.setTransition`` ``drag``, one undo step), a double-click opens Set
+Transition Duration.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any
 
-from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -17,15 +24,27 @@ from PySide6.QtGui import (
     QFontMetrics,
     QMouseEvent,
     QPainter,
+    QPainterPath,
     QPaintEvent,
     QPen,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QScrollBar,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .. import theme
+from ..calc import evaluate
 from ..i18n import N_, tr
-from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks, parse_timecode
 from .effects import EFFECT_MIME, dropped_effect
 from .essential_graphics import TEMPLATE_MIME, dropped_template
 from .media_browser import FILES_MIME, dropped_files
@@ -41,6 +60,8 @@ AUDIO_H = 52
 LABEL_H = 14  # the clip name strip above a thumbnail or waveform
 EDGE_PX = 6
 SNAP_PX = 8
+TRANSITION_TOP = 17  # a transition covers its row under the clips' name strip (egui's)
+TRANSITION_EDGE_PX = 7  # how far into a transition from either end a press grabs that end
 
 # label names (engine colour labels) -> display colour
 LABEL_COLORS = {
@@ -119,6 +140,57 @@ class Drag:
     mode: str = "regular"  # trim: regular | ripple
     partner: dict[str, Any] | None = None  # roll: the clip on the other side of the cut
     scroll: tuple[int, int] = (0, 0)  # hand: scroll position at the press
+    transition: dict[str, Any] | None = None  # transition: the one dragged, as it was at the press
+    begun: bool = False  # transition: its first change went (the rest merge into that undo step)
+
+
+def as_int(v: Any, default: int = 0) -> int:
+    return v if isinstance(v, int) and not isinstance(v, bool) else default
+
+
+def duration_frames(text: str, current: int, frame: int, drop: bool) -> int | None:
+    """A typed transition duration in frames, as egui's field reads one: a whole number is
+    frames, otherwise timecode (``1.00`` is a second), otherwise a calculation in frames
+    (``48/2``)."""
+    t = text.strip()
+    if t.isascii() and t.isdecimal():
+        return int(t)
+    tc = parse_timecode(t, frame, drop)
+    if tc is not None:
+        return tc
+    v = evaluate(t, float(current))
+    return None if v is None else round(v)
+
+
+class TransitionDurationDialog(QDialog):
+    """Set Transition Duration (double-clicking a transition): the duration as timecode; OK
+    applies it (``sequence.setTransition`` ``frames``) when it changed."""
+
+    def __init__(self, parent: QWidget, transition: dict[str, Any], frame: int, drop: bool, send: Any) -> None:
+        super().__init__(parent)
+        self.setObjectName("transitionDuration")
+        self.setWindowTitle(tr("Set Transition Duration"))
+        self.transition, self.frame, self.drop, self.send = transition, max(1, frame), drop, send
+        self.frames = max(1, as_int(transition.get("duration")) // self.frame)
+        layout = QVBoxLayout(self)
+        row = QHBoxLayout()
+        row.addWidget(QLabel(tr("Duration:"), self))
+        self.value = QLineEdit(format_timecode(self.frames * self.frame, self.frame, drop), self)
+        self.value.setObjectName("transitionDuration.value")
+        row.addWidget(self.value, 1)
+        layout.addLayout(row)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("transitionDuration.ok")
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("transitionDuration.cancel")
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def accept(self) -> None:
+        frames = duration_frames(self.value.text(), self.frames, self.frame, self.drop)
+        if frames is not None and frames >= 1 and frames != self.frames:
+            self.send("sequence.setTransition", {"transition": self.transition.get("id"), "frames": frames})
+        super().accept()
 
 
 class TimelineCanvas(QWidget):
@@ -145,6 +217,7 @@ class TimelineCanvas(QWidget):
         self._drag: Drag | None = None
         self._drop_preview: tuple[int, Row] | None = None
         self._effect_target: tuple[Row, dict[str, Any], str] | None = None  # an effect dragged over a clip
+        self.last_dialog: QDialog | None = None
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
 
@@ -245,6 +318,32 @@ class TimelineCanvas(QWidget):
                     return row, clip, "out"
                 return row, clip, ""
         return row, None, ""
+
+    @property
+    def transition_selection(self) -> list[Any]:
+        return list(self.sequence.get("transitionSelection") or []) if self.sequence else []
+
+    def transition_rect(self, row: Row, x: dict[str, Any]) -> QRectF:
+        start = as_int(x.get("start"))
+        x0, x1 = self.x_of(start), self.x_of(start + max(0, as_int(x.get("duration"))))
+        return QRectF(x0, row.top + TRANSITION_TOP, max(1.0, x1 - x0), max(1.0, row.height - TRANSITION_TOP - 1.0))
+
+    def transition_hit(self, pos: QPoint) -> tuple[Row, dict[str, Any], str] | None:
+        """The transition under ``pos`` and the end it is at ("in", "out" or "" for the middle);
+        ahead of the clips under it, as in egui."""
+        row = self.row_at(pos.y())
+        if row is None or pos.x() < HEADER_W or pos.y() <= row.top + TRANSITION_TOP:
+            return None
+        for x in row.track.get("transitions") or []:
+            if not isinstance(x, dict):
+                continue
+            r = self.transition_rect(row, x)
+            if r.left() <= pos.x() <= r.right():
+                # the ends are edge zones, narrower on a short transition so its middle stays grabbable
+                zone = min(TRANSITION_EDGE_PX, r.width() / 3)
+                edge = "in" if pos.x() - r.left() <= zone else "out" if r.right() - pos.x() <= zone else ""
+                return row, x, edge
+        return None
 
     def neighbour(self, row: Row, clip: dict[str, Any], edge: str) -> dict[str, Any] | None:
         """The clip touching ``clip`` at ``edge`` on the same track (a roll needs both sides)."""
@@ -355,6 +454,12 @@ class TimelineCanvas(QWidget):
                 p.setPen(QColor("#ffffff"))
                 clip_text = fm.elidedText(text, Qt.TextElideMode.ElideRight, int(r.width()) - 8)
                 p.drawText(r.adjusted(4, 2, -4, -2), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, clip_text)
+            chosen = set(self.transition_selection)
+            for x in row.track.get("transitions") or []:
+                if isinstance(x, dict):
+                    r = self.transition_rect(row, x)
+                    if r.right() >= HEADER_W and r.left() <= self.width():
+                        self._paint_transition(p, r, x, row.kind == "audio", x.get("id") in chosen)
         if self._effect_target:  # egui's: the clip outlined, a transition's edge marked
             row, clip, edge = self._effect_target
             r = self.clip_rect(row, clip)
@@ -384,6 +489,47 @@ class TimelineCanvas(QWidget):
             p.drawLine(int(x), 0, int(x), self.height())
             p.setBrush(T.c("playhead"))
             p.drawPolygon([QPoint(int(x) - 6, 0), QPoint(int(x) + 6, 0), QPoint(int(x), 9)])
+
+    def _paint_transition(self, p: QPainter, r: QRectF, x: dict[str, Any], audio: bool, selected: bool) -> None:
+        """egui's: darkened and hatched, crossing fade curves on an audio one, the name on a video
+        one wide enough, a light outline, the accent when selected."""
+        p.save()
+        p.setClipRect(r.intersected(QRectF(HEADER_W, RULER_H, self.width() - HEADER_W, self.height())))
+        p.fillRect(r, QColor(0, 0, 0, 90))
+        p.setPen(QPen(QColor(0xD9, 0xD9, 0xD9, 110), 1))
+        hx = r.left() - r.height()
+        for _ in range(4096):  # 4 px apart; the cap is for damaged geometry
+            if hx >= r.right():
+                break
+            p.drawLine(QPointF(hx, r.bottom()), QPointF(hx + r.height(), r.top()))
+            hx += 4
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if audio:
+            p.setPen(QPen(QColor("#ffffff"), 1))
+            for curve in (math.sin, math.cos):
+                path = QPainterPath()
+                for i in range(17):
+                    f = i / 16
+                    pt = QPointF(r.left() + r.width() * f, r.top() + r.height() * (1 - curve(f * math.pi / 2)))
+                    if i == 0:
+                        path.moveTo(pt)
+                    else:
+                        path.lineTo(pt)
+                p.drawPath(path)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.setPen(QPen(QColor(0xEB, 0xEB, 0xEB), 1))
+        p.drawRect(r.adjusted(0.5, 0.5, -0.5, -0.5))
+        if selected:
+            p.setPen(QPen(theme.current().c("accent"), 2))
+            p.drawRect(r.adjusted(1, 1, -1, -1))
+        if r.width() > 34 and not audio:
+            tag = QRectF(r.left() + 2, r.top() + 2, min(r.width() - 4, 80), 13)
+            p.fillRect(tag, QColor(0, 0, 0, 170))
+            p.setPen(QColor(0xD9, 0xD9, 0xD9))
+            name = tr(str(x.get("name") or x.get("effect") or ""))
+            p.drawText(tag.adjusted(3, 0, -2, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                       QFontMetrics(p.font()).elidedText(name, Qt.TextElideMode.ElideRight, int(tag.width()) - 5))
+        p.restore()
 
     def _paint_ruler(self, p: QPainter) -> None:
         T = theme.current()
@@ -584,6 +730,11 @@ class TimelineCanvas(QWidget):
         if self.tool == "zoom":
             self.zoom(1 / 1.5 if mods & Qt.KeyboardModifier.AltModifier else 1.5, pos.x())
             return
+        th = self.transition_hit(pos)
+        if th is not None:
+            if self.tool == "selection":
+                self._press_transition(th, bool(mods & Qt.KeyboardModifier.ShiftModifier), pos)
+            return
         row, clip, edge = self.hit(pos)
         if self.tool in ("trackSelectForward", "trackSelectBackward") and row is not None:
             t = self.time_at(pos.x())
@@ -637,6 +788,21 @@ class TimelineCanvas(QWidget):
         else:
             self._drag = Drag("move", clip, pos, int(clip.get("start") or 0))
 
+    def _press_transition(self, hit: tuple[Row, dict[str, Any], str], shift: bool, pos: QPoint) -> None:
+        """Select it (Shift adds or removes; a selected one is chosen on release, so dragging a
+        selection keeps it) and get ready to drag it."""
+        _row, x, edge = hit
+        tid = x.get("id")
+        if tid not in self.transition_selection:
+            self.command.emit("timeline.select", {"transitions": [tid], "toggle": shift})
+            if self.sequence is not None:  # local echo until the engine's reply
+                self.sequence["transitionSelection"] = [*self.transition_selection, tid] if shift else [tid]
+                if not shift:
+                    self.sequence["selection"] = []
+            shift = False
+            self.update()
+        self._drag = Drag("transition", None, pos, 0, edge=edge, mode="toggle" if shift else "pick", transition=dict(x))
+
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         pos = e.position().toPoint()
         d = self._drag
@@ -646,6 +812,10 @@ class TimelineCanvas(QWidget):
             self.unsetCursor()
             return
         if d is None:
+            th = self.transition_hit(pos) if self.tool == "selection" else None
+            if th is not None:
+                self.setCursor(Qt.CursorShape.SizeHorCursor if th[2] else Qt.CursorShape.OpenHandCursor)
+                return
             _row, clip, edge = self.hit(pos)
             if self.tool == "hand":
                 self.setCursor(Qt.CursorShape.OpenHandCursor)
@@ -662,6 +832,9 @@ class TimelineCanvas(QWidget):
             return
         if d.kind == "scrub":
             self._scrub_to(pos.x())
+            return
+        if d.kind == "transition":
+            self._drag_transition(d, pos)
             return
         if d.kind == "hand":
             dx, dy = pos.x() - d.origin.x(), pos.y() - d.origin.y()
@@ -696,12 +869,37 @@ class TimelineCanvas(QWidget):
         d.delta = target - d.origin_time
         self.update()
 
+    def _drag_transition(self, d: Drag, pos: QPoint) -> None:
+        """An end changes its duration from that end, the middle slides it over the cut: the
+        engine applies the Timeline's rules to the span the drag began with; one undo step."""
+        x = d.transition or {}
+        ft = self.frame_ticks()
+        delta = round((pos.x() - d.origin.x()) * TICKS_PER_SECOND / self.pps / ft) * ft
+        if delta == d.delta:
+            return
+        d.delta = delta
+        self.command.emit("sequence.setTransition", {
+            "transition": x.get("id"),
+            "drag": {"edge": d.edge or None, "delta": delta, "start": as_int(x.get("start")), "duration": as_int(x.get("duration"))},
+            "merge": True,
+            "begin": not d.begun,
+        })
+        d.begun = True
+
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         d, self._drag = self._drag, None
         if d is None or e.button() != Qt.MouseButton.LeftButton:
             return
         if d.kind == "scrub":
             self.command.emit("playhead.set", {"time": self.playhead})
+            return
+        if d.kind == "transition":
+            if not d.begun:  # a click on a selected transition: it alone, or (Shift) out of the selection
+                tid = (d.transition or {}).get("id")
+                if d.mode == "toggle":
+                    self.command.emit("timeline.select", {"transitions": [tid], "toggle": True})
+                elif self.transition_selection != [tid] or self.selection:
+                    self.command.emit("timeline.select", {"transitions": [tid]})
             return
         if d.clip is None or (d.delta == 0 and d.row_delta == 0):
             self.update()
@@ -747,9 +945,25 @@ class TimelineCanvas(QWidget):
         self.command.emit("timeline.move", params)
 
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+        th = self.transition_hit(e.position().toPoint())
+        if th is not None:
+            if self.tool == "selection":
+                self.open_transition_duration(th[1])
+            return
         _row, clip, _edge = self.hit(e.position().toPoint())
         if clip is not None and clip.get("item") is not None:
             self.command.emit("source.open", {"item": clip.get("item")})
+
+    def open_transition_duration(self, x: dict[str, Any]) -> TransitionDurationDialog:
+        """Set Transition Duration, as a double-click on a transition opens it in egui."""
+        self.command.emit("timeline.select", {"transitions": [x.get("id")]})
+        settings = (self.sequence or {}).get("settings")
+        dialog = TransitionDurationDialog(self, x, self.frame_ticks(), drop_frame(settings),
+                                          lambda c, prm: self.command.emit(c, prm))
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = dialog
+        dialog.open()
+        return dialog
 
     def _scrub_to(self, x: float) -> None:
         t = min(self.time_at(x), max(self.duration, 0)) if self.duration else self.time_at(x)

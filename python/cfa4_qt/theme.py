@@ -64,6 +64,7 @@ class Tokens:
     track_target: str
     in_out_shade: str
     clip_selected_border: str
+    clip_bar_bg: str  # a clip's bar in Effect Controls' lane (egui's)
     monitor_bg: str
     timecode: str
     meter_bg: str
@@ -117,6 +118,7 @@ DARKEST = Tokens(
     track_target="#265bc1",
     in_out_shade="#3f3f3f",
     clip_selected_border="#ebebeb",
+    clip_bar_bg="#3a3a46",
     monitor_bg="#1d1d1d",
     timecode="#4096f3",
     meter_bg="#000000",
@@ -143,6 +145,7 @@ DARK = replace(
 LIGHT = replace(
     DARKEST,
     kind="light",
+    clip_bar_bg="#becbe0",
     app_bg="#b4b4b4",
     header_bg="#d6d6d6",
     panel_bg="#e8e8e8",

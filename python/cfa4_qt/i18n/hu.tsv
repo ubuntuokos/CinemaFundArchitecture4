@@ -1222,3 +1222,9 @@
 	Tracking method: {method}	Követési módszer: {method}
 	Value	Érték
 	Velocity	Sebesség
+	Set Transition Duration	Átmenet időtartamának beállítása
+	Reverse	Fordított
+	Center at Cut	Középre a vágáson
+	Start at Cut	Kezdés a vágásnál
+	End at Cut	Befejezés a vágásnál
+	Custom Start	Egyéni kezdés

@@ -1390,7 +1390,7 @@ class Ruler(QWidget):
                 f += step
         bar = QRectF(left, RULER_H + 4 + 2, w, CLIP_BAR_H - 4)
         p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(t.c("tl_track_bg"))
+        p.setBrush(t.c("clip_bar_bg"))
         p.drawRoundedRect(bar, 2, 2)
         p.setPen(t.c("text"))
         p.drawText(bar.adjusted(4, 0, -4, 0), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
@@ -1597,15 +1597,21 @@ class EffectControlsPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        # a transition selected in the Timeline (no clip): its own view (egui's transition_controls.rs)
+        from .transition_controls import TransitionControls
+
+        self.transition_view = TransitionControls(self)
+        self.transition_view.hide()
         layout.addWidget(self.title)
         layout.addWidget(self.header)
         layout.addWidget(self.scroll, 1)
+        layout.addWidget(self.transition_view, 1)
         layout.addWidget(self.timecode)
         self._set_visible(False)
 
     def _set_visible(self, has_clip: bool) -> None:
         self.title.setVisible(not has_clip)
-        for w in (self.header, self.timecode):
+        for w in (self.header, self.scroll, self.timecode):
             w.setVisible(has_clip)
 
     # ----- layout -----
@@ -1625,6 +1631,7 @@ class EffectControlsPanel(QWidget):
         self.split = width
         self.column.setFixedWidth(width)
         self.pills.setFixedWidth(width)
+        self.transition_view.set_split(width)
         self.lane.update()
         self.ruler.update()
 
@@ -1641,18 +1648,26 @@ class EffectControlsPanel(QWidget):
     def attach(self, engine: Any) -> None:
         self.engine = engine
 
-    def refresh(self, selection: list[Any] | None) -> None:
+    def refresh(self, selection: list[Any] | None, transitions: list[Any] | None = None) -> None:
         """Ask the engine about the selected clip (a video one first, as egui) and the audio
-        linked to it (or clear the panel)."""
+        linked to it; with no clip selected, about the selected transition (or clear the panel)."""
         clips = [c for c in selection or [] if isinstance(c, int)]
-        if not clips or self.engine is None or not self.engine.running:
+        transitions = [t for t in transitions or [] if isinstance(t, int)]
+        if not (clips or transitions) or self.engine is None or not self.engine.running:
             self._show(None)
             return
         if self._busy:
             self._again = True
             return
         self._busy = True
-        self.engine.execute("effects.inspect", {}, on_reply=self._on_reply, on_error=lambda _m: self._on_reply(None, None))
+        if clips:
+            self.engine.execute("effects.inspect", {}, on_reply=self._on_reply, on_error=lambda _m: self._on_reply(None, None))
+        else:
+            self.engine.execute("transitions.inspect", {}, on_reply=self._on_transition,
+                                on_error=lambda _m: self._on_transition(None, None))
+
+    def _on_transition(self, result: Any, _b: bytes | None) -> None:
+        self._done(None, None, result if isinstance(result, dict) else None)
 
     def _on_reply(self, result: Any, _b: bytes | None) -> None:
         clip = result if isinstance(result, dict) else None
@@ -1666,14 +1681,19 @@ class EffectControlsPanel(QWidget):
             return
         self._done(clip, None)
 
-    def _done(self, clip: dict[str, Any] | None, audio: dict[str, Any] | None) -> None:
+    def _done(self, clip: dict[str, Any] | None, audio: dict[str, Any] | None,
+              transition: dict[str, Any] | None = None) -> None:
         self._busy = False
         self._show(clip, audio)
+        if clip is None and transition is not None:
+            self.title.hide()
+            self.transition_view.show_transition(transition)
+            self.transition_view.show()
         if self._again:
             self._again = False
-            parent = self.window()
-            selection = getattr(parent, "sequence", None) or {}
-            self.refresh(selection.get("selection") if isinstance(selection, dict) else None)
+            seq = getattr(self.window(), "sequence", None)
+            seq = seq if isinstance(seq, dict) else {}
+            self.refresh(seq.get("selection"), seq.get("transitionSelection"))
 
     def _show(self, clip: dict[str, Any] | None, audio: dict[str, Any] | None = None) -> None:
         self.flush()  # edits made on the clip shown so far go to that clip, at their own time
@@ -1682,6 +1702,7 @@ class EffectControlsPanel(QWidget):
         if self.clip_id is not None and self.clip_id < 0:
             self.clip_id, self.clip = None, None
         self.clips = [c for c in (self.clip, audio) if c is not None and as_int(c.get("clip"), -1) >= 0]
+        self.transition_view.hide()
         self._set_visible(self.clip is not None)
         if self.clip is None:
             self.title.setText(tr("Select a clip in the Timeline."))
