@@ -58,20 +58,40 @@ const STATES: [(u32, u8, u8, bool); 47] = [
     (0x5601, 46, 46, false),
 ];
 
-/// A context: its state index and MPS.
+/// A context: its state index and MPS, as `state << 1 | mps` (an index into [`TABLE`]).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Ctx {
-    state: u8,
+pub(crate) struct Ctx(u8);
+
+/// One entry per state and MPS: Qe, the MPS, and the contexts after an MPS and after an LPS (the
+/// MPS switch applied).
+#[derive(Clone, Copy)]
+struct Entry {
+    qe: u32,
     mps: u8,
+    nmps: Ctx,
+    nlps: Ctx,
 }
+
+const TABLE: [Entry; 94] = {
+    let mut t = [Entry { qe: 0, mps: 0, nmps: Ctx(0), nlps: Ctx(0) }; 94];
+    let mut i = 0;
+    while i < 94 {
+        let (qe, nmps, nlps, switch) = STATES[i / 2];
+        let mps = (i % 2) as u8;
+        let lps_mps = if switch { 1 - mps } else { mps };
+        t[i] = Entry { qe, mps, nmps: Ctx(nmps << 1 | mps), nlps: Ctx(nlps << 1 | lps_mps) };
+        i += 1;
+    }
+    t
+};
 
 /// The initial states of the contexts (Table D.7): all 0 except zero coding context 0 (state 4),
 /// run-length (3) and uniform (46).
 pub(crate) fn initial_contexts() -> [Ctx; CONTEXTS] {
     let mut c = [Ctx::default(); CONTEXTS];
-    c[0].state = 4;
-    c[CTX_RL].state = 3;
-    c[CTX_UNIFORM].state = 46;
+    c[0] = Ctx(4 << 1);
+    c[CTX_RL] = Ctx(3 << 1);
+    c[CTX_UNIFORM] = Ctx(46 << 1);
     c
 }
 
@@ -97,6 +117,7 @@ impl<'a> Mq<'a> {
         m
     }
 
+    #[inline]
     fn byte(&self, at: usize) -> u32 {
         u32::from(self.data.get(at).copied().unwrap_or(0xFF))
     }
@@ -135,43 +156,38 @@ impl<'a> Mq<'a> {
     }
 
     /// DECODE: one decision in context `cx`.
+    #[inline]
     pub fn decode(&mut self, cx: &mut Ctx) -> u8 {
-        let (qe, nmps, nlps, switch) = STATES[usize::from(cx.state).min(46)];
+        let e = TABLE.get(usize::from(cx.0)).copied().unwrap_or(TABLE[0]);
+        let qe = e.qe;
         self.a = self.a.wrapping_sub(qe);
-        let d;
         if (self.c >> 16) < qe {
             // LPS exchange
-            if self.a < qe {
-                d = cx.mps;
-                cx.state = nmps;
+            let d = if self.a < qe {
+                *cx = e.nmps;
+                e.mps
             } else {
-                d = 1 - cx.mps;
-                if switch {
-                    cx.mps = 1 - cx.mps;
-                }
-                cx.state = nlps;
-            }
+                *cx = e.nlps;
+                1 - e.mps
+            };
             self.a = qe;
             self.renorm();
+            d
         } else {
             self.c = self.c.wrapping_sub(qe << 16);
-            if self.a & 0x8000 == 0 {
-                // MPS exchange
-                if self.a < qe {
-                    d = 1 - cx.mps;
-                    if switch {
-                        cx.mps = 1 - cx.mps;
-                    }
-                    cx.state = nlps;
-                } else {
-                    d = cx.mps;
-                    cx.state = nmps;
-                }
-                self.renorm();
-            } else {
-                d = cx.mps;
+            if self.a & 0x8000 != 0 {
+                return e.mps;
             }
+            // MPS exchange
+            let d = if self.a < qe {
+                *cx = e.nlps;
+                1 - e.mps
+            } else {
+                *cx = e.nmps;
+                e.mps
+            };
+            self.renorm();
+            d
         }
-        d
     }
 }

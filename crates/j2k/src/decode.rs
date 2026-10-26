@@ -350,40 +350,59 @@ fn read_packet(data: &[u8], mut pos: usize, comps: &mut [TileComp], (layer, r, c
     Ok(pos)
 }
 
+/// Nearest integer, halves away from zero (as `f32::round`, without the library call).
+fn round(x: f32) -> i32 {
+    (x + if x >= 0.0 { 0.5 } else { -0.5 }) as i32
+}
+
 enum Samples {
     Int(Vec<i32>),
     Float(Vec<f32>),
 }
 
+/// Maps `f` over `items`, on all cores with the `threads` feature.
+fn map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> Result<U> + Sync + Send) -> Result<Vec<U>> {
+    #[cfg(feature = "threads")]
+    {
+        use rayon::prelude::*;
+        items.par_iter().map(f).collect()
+    }
+    #[cfg(not(feature = "threads"))]
+    {
+        items.iter().map(f).collect()
+    }
+}
+
 fn reconstruct(tc: &TileComp) -> Result<Samples> {
     let reversible = tc.style.reversible;
-    // decode every code-block into its subband
-    let mut bands: Vec<Vec<Vec<i32>>> = Vec::with_capacity(tc.res.len());
-    for res in &tc.res {
-        let mut rb: Vec<Vec<i32>> = res.bands.iter().map(|b| vec![0; b.rect.w() * b.rect.h()]).collect();
+    // every code-block with data: (resolution, band, block)
+    let mut jobs: Vec<(usize, usize, &CodeBlock)> = Vec::new();
+    for (r, res) in tc.res.iter().enumerate() {
         for prec in &res.precincts {
             for (bi, pb) in prec.iter().enumerate() {
-                let Some(band) = res.bands.get(bi) else { continue };
-                let Some(out) = rb.get_mut(bi) else { continue };
-                for cb in &pb.blocks {
-                    if cb.segments.is_empty() {
-                        continue;
-                    }
-                    let (w, h) = ((cb.x1 - cb.x0) as usize, (cb.y1 - cb.y0) as usize);
-                    let coeffs =
-                        t1::decode(&t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments })?;
-                    let bw = band.rect.w();
-                    let (ox, oy) = ((cb.x0 - band.rect.u0) as usize, (cb.y0 - band.rect.v0) as usize);
-                    for (j, row) in coeffs.chunks(w.max(1)).enumerate() {
-                        let start = (oy + j) * bw + ox;
-                        if let Some(dst) = out.get_mut(start..start + row.len()) {
-                            dst.copy_from_slice(row);
-                        }
-                    }
-                }
+                jobs.extend(pb.blocks.iter().filter(|cb| !cb.segments.is_empty()).map(|cb| (r, bi, cb)));
             }
         }
-        bands.push(rb);
+    }
+    let decoded = map(&jobs, |&(r, bi, cb)| {
+        let band = tc.res.get(r).and_then(|res| res.bands.get(bi)).ok_or(Error::Invalid("subband"))?;
+        let (w, h) = ((cb.x1 - cb.x0) as usize, (cb.y1 - cb.y0) as usize);
+        t1::decode(&t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments })
+    })?;
+    // into their subbands
+    let mut bands: Vec<Vec<Vec<i32>>> = tc.res.iter().map(|res| res.bands.iter().map(|b| vec![0; b.rect.w() * b.rect.h()]).collect()).collect();
+    for (&(r, bi, cb), coeffs) in jobs.iter().zip(decoded) {
+        let Some(band) = tc.res.get(r).and_then(|res| res.bands.get(bi)) else { continue };
+        let Some(out) = bands.get_mut(r).and_then(|b| b.get_mut(bi)) else { continue };
+        let w = (cb.x1 - cb.x0) as usize;
+        let bw = band.rect.w();
+        let (ox, oy) = ((cb.x0 - band.rect.u0) as usize, (cb.y0 - band.rect.v0) as usize);
+        for (j, row) in coeffs.chunks(w.max(1)).enumerate() {
+            let start = (oy + j) * bw + ox;
+            if let Some(dst) = out.get_mut(start..start + row.len()) {
+                dst.copy_from_slice(row);
+            }
+        }
     }
     let empty: Vec<i32> = Vec::new();
     let get = |r: usize, b: usize| bands.get(r).and_then(|x| x.get(b)).unwrap_or(&empty);
@@ -404,13 +423,6 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
             ll = dwt::level(&ll, &scale(r, 0), &scale(r, 1), &scale(r, 2), res.rect);
         }
         Ok(Samples::Float(ll))
-    }
-}
-
-fn to_float(s: Samples) -> Vec<f32> {
-    match s {
-        Samples::Int(v) => v.into_iter().map(|x| x as f32).collect(),
-        Samples::Float(v) => v,
     }
 }
 
@@ -448,64 +460,70 @@ fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
             Err(_) => break,
         }
     }
-    let mut samples: Vec<Samples> = comps.iter().map(reconstruct).collect::<Result<_>>()?;
+    let mut samples: Vec<Samples> = map(&comps, reconstruct)?;
     let mct = tile.params.global.mct && comps.len() >= 3 && comps.iter().take(3).all(|c| c.rect == comps[0].rect);
     if mct {
         let reversible = comps.iter().take(3).all(|c| c.style.reversible);
-        let mut rest = samples.split_off(3);
-        let mut it = samples.into_iter();
-        let (Some(a), Some(b), Some(c)) = (it.next(), it.next(), it.next()) else { return Err(Error::Invalid("components")) };
-        let mut out = match (reversible, a, b, c) {
-            (true, Samples::Int(y0), Samples::Int(y1), Samples::Int(y2)) => {
-                // RCT (G.2)
-                let mut r = Vec::with_capacity(y0.len());
-                let mut g = Vec::with_capacity(y0.len());
-                let mut bl = Vec::with_capacity(y0.len());
-                for ((&y, &cb), &cr) in y0.iter().zip(&y1).zip(&y2) {
-                    let gv = y.wrapping_sub(cb.wrapping_add(cr).div_euclid(4));
-                    r.push(cr.wrapping_add(gv));
-                    g.push(gv);
-                    bl.push(cb.wrapping_add(gv));
-                }
-                vec![Samples::Int(r), Samples::Int(g), Samples::Int(bl)]
+        if let [Samples::Int(y0), Samples::Int(y1), Samples::Int(y2), ..] = &mut samples[..]
+            && reversible
+        {
+            // RCT (G.2), in place: Y0 Y1 Y2 → R G B
+            for ((y, cb), cr) in y0.iter_mut().zip(y1.iter_mut()).zip(y2.iter_mut()) {
+                let g = y.wrapping_sub(cb.wrapping_add(*cr) >> 2);
+                (*y, *cb, *cr) = (cr.wrapping_add(g), g, cb.wrapping_add(g));
             }
-            (_, a, b, c) => {
-                // ICT (G.3)
-                let (y0, y1, y2) = (to_float(a), to_float(b), to_float(c));
-                let mut r = Vec::with_capacity(y0.len());
-                let mut g = Vec::with_capacity(y0.len());
-                let mut bl = Vec::with_capacity(y0.len());
-                for ((&y, &cb), &cr) in y0.iter().zip(&y1).zip(&y2) {
-                    r.push(y + 1.402 * cr);
-                    g.push(y - 0.344_136 * cb - 0.714_136 * cr);
-                    bl.push(y + 1.772 * cb);
+        } else {
+            for s in samples.iter_mut().take(3) {
+                if let Samples::Int(v) = s {
+                    *s = Samples::Float(v.iter().map(|&x| x as f32).collect());
                 }
-                vec![Samples::Float(r), Samples::Float(g), Samples::Float(bl)]
             }
-        };
-        out.append(&mut rest);
-        samples = out;
+            if let [Samples::Float(y0), Samples::Float(y1), Samples::Float(y2), ..] = &mut samples[..] {
+                // ICT (G.3), in place
+                for ((y, cb), cr) in y0.iter_mut().zip(y1.iter_mut()).zip(y2.iter_mut()) {
+                    let (yy, b, r) = (*y, *cb, *cr);
+                    (*y, *cb, *cr) = (yy + 1.402 * r, yy - 0.344_136 * b - 0.714_136 * r, yy + 1.772 * b);
+                }
+            }
+        }
     }
-    for ((s, tc), plane) in samples.into_iter().zip(&comps).zip(planes.iter_mut()) {
+    let put = |(plane, (s, tc)): (&mut Plane, (&Samples, &TileComp))| {
         let p = u32::from(plane.precision);
         let (lo, hi, shift) = if plane.signed { (-(1i64 << (p - 1)), (1i64 << (p - 1)) - 1, 0i64) } else { (0, (1i64 << p) - 1, 1i64 << (p - 1)) };
+        let (lo, hi, shift) = (lo as i32, hi as i32, shift as i32);
         let px0 = ceil_div(u64::from(h.x0), u64::from(plane.dx)) as u32;
         let py0 = ceil_div(u64::from(h.y0), u64::from(plane.dy)) as u32;
         let (w, ox, oy) = (tc.rect.w(), (tc.rect.u0 - px0) as usize, (tc.rect.v0 - py0) as usize);
         let pw = plane.width as usize;
-        let put = |plane: &mut Plane, i: usize, v: i64| {
-            let (x, y) = (ox + i % w.max(1), oy + i / w.max(1));
-            if x >= pw {
-                return;
-            }
-            if let Some(d) = plane.data.get_mut(y * pw + x) {
-                *d = (v + shift).clamp(lo, hi) as i32;
-            }
-        };
-        match s {
-            Samples::Int(v) => v.iter().enumerate().for_each(|(i, &x)| put(plane, i, i64::from(x))),
-            Samples::Float(v) => v.iter().enumerate().for_each(|(i, &x)| put(plane, i, x.round() as i64)),
+        if w == 0 || ox >= pw {
+            return;
         }
+        // the tile-component's rows into the plane, level shifted and clamped (G.1.2)
+        let n = w.min(pw - ox);
+        let rows = plane.data.chunks_exact_mut(pw).skip(oy);
+        match s {
+            Samples::Int(v) => {
+                for (dst, src) in rows.zip(v.chunks_exact(w)) {
+                    for (d, &x) in dst[ox..ox + n].iter_mut().zip(src) {
+                        *d = x.saturating_add(shift).clamp(lo, hi);
+                    }
+                }
+            }
+            Samples::Float(v) => {
+                for (dst, src) in rows.zip(v.chunks_exact(w)) {
+                    for (d, &x) in dst[ox..ox + n].iter_mut().zip(src) {
+                        *d = round(x).saturating_add(shift).clamp(lo, hi);
+                    }
+                }
+            }
+        }
+    };
+    #[cfg(feature = "threads")]
+    {
+        use rayon::prelude::*;
+        planes.par_iter_mut().zip(samples.par_iter().zip(comps.par_iter())).for_each(put);
     }
+    #[cfg(not(feature = "threads"))]
+    planes.iter_mut().zip(samples.iter().zip(comps.iter())).for_each(put);
     Ok(())
 }

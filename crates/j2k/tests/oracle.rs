@@ -185,6 +185,85 @@ fn ffmpeg_encoded_codestreams_decode() {
     }
 }
 
+/// OpenJPEG's command-line tools, when installed (`libopenjp2-tools`): the code-block styles
+/// ffmpeg cannot write.
+fn opj(tool: &str) -> Option<PathBuf> {
+    let ok = Command::new(tool).arg("-h").stdout(Stdio::null()).stderr(Stdio::null()).status().is_ok();
+    ok.then(|| PathBuf::from(tool))
+}
+
+/// R, G, B planes of a binary PPM (P6, 8-bit).
+fn ppm(data: &[u8]) -> Vec<Vec<i32>> {
+    let mut fields = Vec::new();
+    let mut at = 0;
+    while fields.len() < 4 {
+        loop {
+            while data.get(at).is_some_and(u8::is_ascii_whitespace) {
+                at += 1;
+            }
+            if data.get(at) != Some(&b'#') {
+                break;
+            }
+            while data.get(at).is_some_and(|&b| b != b'\n') {
+                at += 1;
+            }
+        }
+        let start = at;
+        while data.get(at).is_some_and(|b| !b.is_ascii_whitespace()) {
+            at += 1;
+        }
+        fields.push(String::from_utf8_lossy(&data[start..at]).to_string());
+    }
+    assert_eq!(fields[0], "P6");
+    let n = fields[1].parse::<usize>().unwrap() * fields[2].parse::<usize>().unwrap();
+    let px = &data[at + 1..at + 1 + 3 * n];
+    (0..3).map(|c| (0..n).map(|i| i32::from(px[3 * i + c])).collect()).collect()
+}
+
+/// Every code-block style but the bypass (RESET, TERMALL, VSC, predictable termination,
+/// segmentation symbols, and all of them together), written by OpenJPEG: 5/3 bit-exact to the
+/// input, 9/7 within ±1 of OpenJPEG's own decode. Skipped without `opj_compress`.
+#[test]
+fn openjpeg_code_block_styles() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let (Some(enc), Some(dec)) = (opj("opj_compress"), opj("opj_decompress")) else {
+        eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("opj");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.ppm");
+    let st =
+        Command::new(&ff).args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=203x117", "-frames:v", "1", "-pix_fmt", "rgb24"]).arg(&input).status();
+    assert!(matches!(st, Ok(s) if s.success()));
+    let src = ppm(&std::fs::read(&input).unwrap());
+    // RESET 2, TERMALL 4, VSC 8, predictable termination 16, segmentation symbols 32
+    for mode in [2, 4, 8, 16, 32, 62] {
+        for lossy in [false, true] {
+            let name = format!("m{mode}{}", if lossy { "_97" } else { "" });
+            let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
+            let mut c = Command::new(&enc);
+            c.arg("-i").arg(&input).arg("-o").arg(&cs).args(["-M", &mode.to_string(), "-b", "32,32"]);
+            if lossy {
+                c.args(["-I", "-r", "20"]);
+            }
+            assert!(c.stdout(Stdio::null()).status().is_ok_and(|s| s.success()), "{name}: opj_compress");
+            let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+            let want = if lossy {
+                let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+                assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+                ppm(&std::fs::read(&out).unwrap())
+            } else {
+                src.clone()
+            };
+            for (c, p) in img.components.iter().enumerate() {
+                let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+                assert!(worst <= i32::from(lossy), "{name}: component {c} differs by {worst}");
+            }
+        }
+    }
+}
+
 /// Damaged variants per stream.
 const FUZZ: u32 = 60;
 

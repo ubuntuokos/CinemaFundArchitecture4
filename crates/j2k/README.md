@@ -55,10 +55,22 @@ Part 2 extensions and HTJ2K (Part 15).
 - **Damaged streams:** bit flips, truncation and scrambled bytes of every fixture decode to an
   error or a picture, never a panic.
 
-The code-block styles other than the default are implemented from the spec but not yet checked
-against an encoder that writes them.
+- **Code-block styles (OpenJPEG, when `opj_compress` is installed):** RESET, TERMALL, VSC,
+  predictable termination, segmentation symbols and all of them together, 5/3 bit-exact to the
+  input and 9/7 within ±1 of `opj_decompress`. Skipped where the tools are missing.
 
 ## Speed
 
-Single-threaded, about 1.4 s for a 2K DCI frame on the development machine (release build).
-Real-time DCP playback needs code-block parallelism and SIMD wavelets; that is follow-up work.
+`cargo run --release -p cfa4-j2k --example j2k_bench -- FILE…` times decodes. On the 4-core
+development machine, a 2K DCI frame (`dci_2k.j2k`, 586 kB) decodes in about 150 ms
+(about 360 ms on one thread; it was 1.16 s before #78):
+
+- **Tier-1:** each sample's flags carry its neighbours' significance and signs, so the zero and
+  sign coding contexts are table lookups. A per-stripe-column summary lets the passes skip
+  columns with nothing to code. The MQ decoder keeps state and MPS in one table index.
+- **Wavelet:** rows are lifted on their low- and high-pass halves before interleaving, and
+  columns as whole-row operations in 64-column strips.
+- **Threads** (the default `threads` feature, rayon): code-blocks, components, wavelet rows and
+  strips, and the output planes run in parallel.
+
+Players also decode several frames at once, since every picture is intra coded.

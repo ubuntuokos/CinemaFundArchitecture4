@@ -9,8 +9,13 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["threads"]
+threads = ["dep:rayon"]
+
 [dependencies]
 thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
