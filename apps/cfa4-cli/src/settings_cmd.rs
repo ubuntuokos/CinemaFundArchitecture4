@@ -50,7 +50,11 @@ pub fn settings(action: &str, arg: Option<&str>, data_dir: Option<PathBuf>) -> R
 /// The accelerator inventory (GPUs and NPUs from sysfs), the backend chain per family and the
 /// vendor-neutrality coverage: what the Settings ▸ Hardware & Devices ▸ Accelerators page shows.
 pub fn hardware() -> Value {
-    hardware_from(cfa4_route::probe::probe(Path::new("/")))
+    let table = match Table::user_file_path() {
+        Some(path) => Table::builtin_with_user_file(&path),
+        None => Table::builtin().map(|t| (t, None)),
+    };
+    hardware_from(cfa4_route::probe::probe(Path::new("/")), table)
 }
 
 /// A backend as the catalogue describes it: it runs on every device of the kinds it lists (on the
@@ -94,25 +98,31 @@ impl Backend for Listed {
     }
 }
 
-fn hardware_from(inventory: Inventory) -> Value {
-    let table = match Table::user_file_path() {
-        Some(path) => Table::builtin_with_user_file(&path).map(|(t, _)| t),
-        None => Table::builtin(),
-    };
+/// `table` is the routing table with the reason the user's file was rejected, if it was: that
+/// reason goes to the notes, so the page says why the shipped routes are shown.
+fn hardware_from(inventory: Inventory, table: Result<(Table, Option<String>), cfa4_route::Error>) -> Value {
     let devices: Vec<Value> = inventory
         .devices()
         .iter()
         .filter(|d| d.kind != DeviceKind::Cpu)
         .map(|d| json!({ "kind": d.kind, "vendor": d.vendor, "pci_vendor": pci_vendor(d), "name": d.name, "driver": d.driver, "pci_device": d.pci_device, "node": d.id }))
         .collect();
-    let inventory_json = json!({ "devices": devices, "notes": inventory.notes() });
+    let mut notes: Vec<String> = inventory.notes().to_vec();
     let plans = match table {
-        Ok(table) => plans(table, inventory),
+        Ok((table, warning)) => {
+            if let Some(w) = warning {
+                log::warn!("routing table: {w}; using the shipped table");
+                notes.push(format!("routing table: {w}; using the shipped table"));
+            }
+            plans(table, inventory)
+        }
         Err(e) => {
             log::warn!("routing table: {e}");
+            notes.push(format!("routing table: {e}"));
             Vec::new()
         }
     };
+    let inventory_json = json!({ "devices": devices, "notes": notes });
     json!({ "inventory": inventory_json, "plans": plans, "coverage": cfa4_route::coverage() })
 }
 
@@ -222,7 +232,7 @@ mod tests {
 
     #[test]
     fn hardware_reports_the_cpu_fallback_without_devices() {
-        let v = hardware_from(Inventory::default());
+        let v = hardware_from(Inventory::default(), Table::builtin().map(|t| (t, None)));
         let plans = v["plans"].as_array().unwrap();
         assert_eq!(plans.len(), Family::ALL.len());
         for p in plans {
@@ -231,6 +241,16 @@ mod tests {
         }
         assert!(v["inventory"]["devices"].as_array().unwrap().is_empty());
         assert_eq!(v["coverage"].as_array().unwrap().len(), Family::ALL.len());
+    }
+
+    #[test]
+    fn hardware_notes_a_rejected_routing_file() {
+        let v = hardware_from(Inventory::default(), Table::builtin().map(|t| (t, Some("bad TOML".into()))));
+        assert!(v["inventory"]["notes"].as_array().unwrap().iter().any(|n| n.as_str().unwrap().contains("bad TOML")), "{v}");
+        assert!(!v["plans"].as_array().unwrap().is_empty());
+        let v = hardware_from(Inventory::default(), Err(cfa4_route::Error::Table("unreadable".into())));
+        assert!(v["plans"].as_array().unwrap().is_empty());
+        assert!(v["inventory"]["notes"][0].as_str().unwrap().contains("unreadable"), "{v}");
     }
 
     #[test]
@@ -244,7 +264,7 @@ mod tests {
             pci_device: Some(0x73bf),
             free_memory_mb: None,
         };
-        let v = hardware_from(Inventory::new([gpu]));
+        let v = hardware_from(Inventory::new([gpu]), Table::builtin().map(|t| (t, None)));
         let decode = v["plans"].as_array().unwrap().iter().find(|p| p["workload"] == "codec_decode").unwrap();
         let chain: Vec<&str> = decode["chain"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
         assert_eq!(chain, ["vaapi", "software"]);
