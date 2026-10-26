@@ -46,6 +46,8 @@ pub fn editor_of(effect: &str) -> Option<&'static str> {
 
 fn inspect(s: &mut Session, p: &Value) -> Result<Value> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    // the rate the programme is rendered at: filter designs (and so the curves) depend on it
+    let rate = q.settings.sample_rate.clamp(8_000, 384_000);
     let ph = s.playhead();
     let (inst, mt, kind, track, clip_name) = if p.get("clip").is_some() {
         let clip = clip_p(p, "clip").ok_or_else(|| bad(CMD, "`clip` is an id"))?;
@@ -77,7 +79,7 @@ fn inspect(s: &mut Session, p: &Value) -> Result<Value> {
         let v = if v.is_finite() { v } else { 0.0 };
         params.insert(d.id.to_string(), json!({"value": v, "min": min, "max": max, "unit": unit, "bool": matches!(d.kind, ParamKind::Bool), "label": d.label}));
     }
-    let dsp = cfa4_render::audio_fx::configured(&preview, mt, 48000);
+    let dsp = cfa4_render::audio_fx::configured(&preview, mt, rate);
     let response: Vec<Value> = dsp
         .as_ref()
         .map(|d| {
@@ -117,6 +119,7 @@ fn inspect(s: &mut Session, p: &Value) -> Result<Value> {
         _ => &[],
     };
     Ok(json!({
+        "sampleRate": rate,
         "effect": inst.effect,
         "name": def.name,
         "editor": editor,

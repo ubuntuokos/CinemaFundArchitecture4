@@ -179,3 +179,21 @@ fn fx_editor_reports_the_dsp_curves_and_previews_overrides() {
     assert!(s.execute("audio.fxEditor", json!({"clip": -1, "effect": 0})).is_err());
     assert!(s.execute("audio.fxEditor", json!({})).is_err());
 }
+
+#[test]
+fn fx_editor_curves_use_the_sequence_sample_rate() {
+    let mut s = demo();
+    let clip = a1_clip(&s);
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    let idx = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effects.len() - 1;
+    let ask =
+        |s: &mut Session| s.execute("audio.fxEditor", json!({"clip": clip, "effect": idx, "overrides": {"high_gain": 12.0, "high_freq": 15000.0}})).unwrap();
+    let rate = s.active_sequence().unwrap().settings.sample_rate;
+    let a = ask(&mut s);
+    assert_eq!(a["sampleRate"], rate);
+    let seq = s.state.active_sequence.unwrap();
+    std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap().settings.sample_rate = if rate == 44_100 { 48_000 } else { 44_100 };
+    let b = ask(&mut s);
+    assert_ne!(a["sampleRate"], b["sampleRate"]);
+    assert_ne!(a["response"], b["response"], "the filter design follows the rate the programme plays at");
+}
