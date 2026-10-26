@@ -111,8 +111,8 @@ let packets = enc.encode(&YuvFrame::U8 { y, u, v, y_stride, uv_stride }, pts)?;
 ```
 
 Speed (one 4-core machine, `examples/hevcenc.rs`): CIF 31 fps with 4 slices, 1080p 2.3 fps; at
-equal QP on CIF (one slice) about 20% larger than x265 medium with `bframes=0`, for 0.3–0.9 dB
-less PSNR.
+equal QP on CIF (one slice) 7–10% larger than x265 medium with `bframes=0`, at -0.2 to +0.1 dB
+PSNR.
 Tests (`src/encode/tests.rs`): 8-bit and Main 10 HDR round trips through our decoder, bit-exact
 agreement of our decoder and ffmpeg on the encoder's output, slices / IDR intervals / cropping,
 CBR bitrate accuracy, length-prefixed samples with the `hvcC`.

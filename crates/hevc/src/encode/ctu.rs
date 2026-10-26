@@ -157,13 +157,16 @@ impl<'a, S: Sample> Coder<'a, S> {
         let inside = x0 + n <= w && y0 + n <= h;
         let can_split = log2 > self.sps.log2_min_cb;
         let start = est.clone();
+        let start_bits = start.bits;
         let mut best: Option<(f64, Node, Estimator)> = None;
         if inside {
             let mut e = start.clone();
             if can_split {
                 self.write_split(&mut e, x0, y0, depth, false);
             }
+            let flag = (e.bits - start.bits) as f64 / BIT as f64 * self.lambda;
             let (cost, leaf, e_out) = self.best_leaf(x0, y0, log2, depth, &e);
+            let cost = cost + flag;
             // early termination: a skipped CU, or an inter CU without residual, is not split further
             let skip = matches!(leaf.mode, Mode::Skip(_)) || (!matches!(leaf.mode, Mode::Intra(_)) && !leaf.cbf.iter().any(|&c| c));
             best = Some((cost, Node::Leaf(Box::new(leaf)), e_out));
@@ -181,9 +184,8 @@ impl<'a, S: Sample> Coder<'a, S> {
         }
         let half = n >> 1;
         let mut children = Vec::with_capacity(4);
-        let mut cost = (e.bits as f64 / BIT as f64) * self.lambda;
-        let base_bits = e.bits;
-        e.bits = 0;
+        // both alternatives count only the bits coded from `start` on (the split flags included)
+        let mut cost = (e.bits - start_bits) as f64 / BIT as f64 * self.lambda;
         for (dx, dy) in [(0, 0), (half, 0), (0, half), (half, half)] {
             let (xs, ys) = (x0 + dx, y0 + dy);
             if xs >= w || ys >= h {
@@ -198,7 +200,6 @@ impl<'a, S: Sample> Coder<'a, S> {
                 break;
             }
         }
-        let _ = base_bits;
         match best {
             Some((bc, node, be)) if bc <= cost => {
                 if let Some(s) = saved {

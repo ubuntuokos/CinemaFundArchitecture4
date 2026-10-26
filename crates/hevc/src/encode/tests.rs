@@ -249,3 +249,21 @@ fn check_ffmpeg(name: &str, stream: &[u8], pics: &[crate::Picture], bits: u32) {
     let _ = std::fs::remove_file(&yuv);
     let _ = std::fs::remove_file(&src);
 }
+
+/// Hostile strides, short planes and extreme bitrates are errors or clamped, never a panic.
+#[test]
+fn hostile_input_is_an_error() {
+    let mut cfg = EncoderConfig::new(16, 16, 25, 1);
+    cfg.rate = RateControl::Vbr { target_kbps: u32::MAX, max_kbps: u32::MAX };
+    let mut enc = Encoder::new(cfg).expect("encoder");
+    let p = vec![128u8; 16 * 16];
+    for (ys, uvs) in [(usize::MAX, 8), (16, usize::MAX), (usize::MAX / 2, usize::MAX / 2), (4, 8)] {
+        let f = YuvFrame::U8 { y: &p, u: &p, v: &p, y_stride: ys, uv_stride: uvs };
+        assert!(matches!(enc.encode(&f, 0), Err(EncodeError::BadFrame)), "strides {ys} / {uvs}");
+    }
+    let short = vec![0u8; 10];
+    let f = YuvFrame::U8 { y: &short, u: &p, v: &p, y_stride: 16, uv_stride: 8 };
+    assert!(matches!(enc.encode(&f, 0), Err(EncodeError::BadFrame)));
+    let f = YuvFrame::U8 { y: &p, u: &p, v: &p, y_stride: 16, uv_stride: 8 };
+    assert_eq!(enc.encode(&f, 0).expect("a good frame after bad ones").len(), 1);
+}

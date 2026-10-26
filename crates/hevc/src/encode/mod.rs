@@ -355,7 +355,7 @@ impl<S: Sample> State<S> {
             RateControl::Cbr { kbps } => (rc::RcKind::Abr { kbps: kbps.max(1) }, (Some(kbps.max(1)), Some(kbps.max(1)))),
             RateControl::Vbr { target_kbps, max_kbps } => {
                 let max = max_kbps.max(target_kbps).max(1);
-                (rc::RcKind::Abr { kbps: target_kbps.max(1) }, (Some(max), Some(max * 2)))
+                (rc::RcKind::Abr { kbps: target_kbps.max(1) }, (Some(max), Some(max.saturating_mul(2))))
             }
         };
         Ok(State {
@@ -388,7 +388,8 @@ impl<S: Sample> State<S> {
         let bd = self.seq.bit_depth;
         let mut src = Source { y: vec![0; w * h], u: vec![0; w * h / 4], v: vec![0; w * h / 4], w, h };
         fn fill<T: Copy>(dst: &mut [u16], dw: usize, dh: usize, s: &[T], stride: usize, vw: usize, vh: usize, conv: impl Fn(T) -> u16) -> bool {
-            if vw == 0 || vh == 0 || stride < vw || s.len() < (vh - 1) * stride + vw {
+            let need = vh.checked_sub(1).and_then(|r| r.checked_mul(stride)).and_then(|n| n.checked_add(vw));
+            if vw == 0 || vh == 0 || stride < vw || need.is_none_or(|n| s.len() < n) {
                 return false;
             }
             for y in 0..dh {
