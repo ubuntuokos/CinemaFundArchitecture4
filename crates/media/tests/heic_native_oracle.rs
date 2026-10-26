@@ -196,22 +196,44 @@ fn opens_as_a_still_through_the_media_layer() {
     assert_eq!(src.info().kind, cfa4_media::MediaKind::Still);
 }
 
+/// The alpha plane, a monochrome HEVC auxiliary image (#136), decodes natively like libheif's:
+/// plain, and with transforms on the master alone or on both items.
 #[test]
-fn alpha_images_fall_back_to_libheif() {
+fn alpha_images_decode_like_libheif() {
     let Some(o) = Oracle::new() else { return };
-    let rgba = image::RgbaImage::from_fn(32, 24, |x, y| image::Rgba([(x * 8) as u8, (y * 10) as u8, 90, if x < 16 { 255 } else { 40 }]));
+    let rgba = image::RgbaImage::from_fn(64, 48, |x, y| image::Rgba([(x * 4) as u8, (y * 5) as u8, 90, if x < 32 { 255 } else { (x * 3 + y) as u8 }]));
     let png = o.dir.join("alpha.png");
     let out = o.dir.join("alpha.heic");
     rgba.save(&png).unwrap();
     run(Command::new(&o.enc).args(["-q", "90"]).arg("-o").arg(&out).arg(&png));
     let bytes = std::fs::read(&out).unwrap();
     assert!(cfa4_heif::parse(&bytes).unwrap().primary.alpha.is_some(), "heif-enc writes the alpha as an auxiliary image");
-    match cfa4_media::open_bytes("alpha.heic", bytes.into(), &[]) {
-        // the libheif bridge runs heif-dec
-        Ok(src) => assert!(src.info().video.as_ref().unwrap().has_alpha),
-        Err(e) => {
-            assert!(cfa4_testkit::oracle::find_tool("heif-dec").is_none(), "heif-dec is installed but the fallback failed: {e}");
-            assert!(e.to_string().contains("#136"), "{e}");
-        }
-    }
+    let got = heic::decode("alpha.heic", &bytes).unwrap();
+    assert!(got.has_alpha);
+    o.check("alpha", &bytes, 3);
+    // 10-bit colour and alpha
+    let out10 = o.dir.join("alpha10.heic");
+    run(Command::new(&o.enc).args(["-q", "90", "-b", "10"]).arg("-o").arg(&out10).arg(&png));
+    o.check("alpha10", &std::fs::read(&out10).unwrap(), 3);
+    // the alpha follows the master's rotation and mirroring
+    let p = cfa4_heif::parse(&bytes).unwrap().primary;
+    let a = p.alpha.as_ref().unwrap();
+    let (Coding::Hevc { hvcc, data }, Coding::Hevc { hvcc: ahvcc, data: adata }) = (&p.coding, &a.coding) else { panic!("HEVC items") };
+    let mut colour = vec![writer::hvcc_box(hvcc), writer::ispe_box(64, 48), writer::irot_box(1), writer::imir_box(0)];
+    colour.extend(nclx_box(&p.nclx().cloned()));
+    let alpha = Item {
+        id: 2,
+        kind: *b"hvc1",
+        data: adata.clone(),
+        properties: vec![writer::hvcc_box(ahvcc), writer::ispe_box(64, 48), writer::auxc_box("urn:mpeg:mpegB:cicp:systems:auxiliary:alpha")],
+        references: vec![(*b"auxl", vec![1])],
+        hidden: true,
+    };
+    let file = writer::build(1, &[Item { id: 1, kind: *b"hvc1", data: data.clone(), properties: colour.clone(), ..Item::default() }, alpha.clone()]);
+    o.check("alpha_master_transforms_only", &file, 3);
+    // as an encoder writes it: the alpha item carries the same transforms
+    let mut alpha = alpha;
+    alpha.properties.extend([writer::irot_box(1), writer::imir_box(0)]);
+    let file = writer::build(1, &[Item { id: 1, kind: *b"hvc1", data: data.clone(), properties: colour, ..Item::default() }, alpha]);
+    o.check("alpha_rot_mirror", &file, 3);
 }

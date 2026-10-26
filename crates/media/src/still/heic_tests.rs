@@ -39,20 +39,6 @@ fn hevc_file(data: &[u8], extra: Vec<Vec<u8>>) -> Vec<u8> {
 fn what_we_do_not_decode_is_unsupported_so_libheif_can_try() {
     let av1 = writer::build(1, &[Item { id: 1, kind: *b"av01", data: vec![0; 8], ..Item::default() }]);
     assert!(matches!(decode("a.avif", &av1), Err(MediaError::Unsupported(_))));
-
-    let mut alpha = Item {
-        id: 2,
-        kind: *b"hvc1",
-        data: vec![0; 4],
-        properties: vec![writer::hvcc_box(&[1; 23]), writer::auxc_box("urn:mpeg:mpegB:cicp:systems:auxiliary:alpha")],
-        ..Item::default()
-    };
-    alpha.references.push((*b"auxl", vec![1]));
-    let mut colour = Item { id: 1, kind: *b"hvc1", data: vec![0; 4], properties: vec![writer::hvcc_box(&[1; 23])], ..Item::default() };
-    colour.properties.push(writer::ispe_box(8, 8));
-    let file = writer::build(1, &[colour, alpha]);
-    let Err(e) = decode("alpha.heic", &file) else { panic!("alpha decoded") };
-    assert!(matches!(&e, MediaError::Unsupported(why) if why.contains("#136")), "{e}");
 }
 
 #[test]

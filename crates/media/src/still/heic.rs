@@ -3,9 +3,13 @@
 //! are applied in the file's order, and Y'CbCr becomes RGB with the image's `colr` description
 //! (or the HEVC VUI, or BT.601 full range like libheif when neither says anything).
 //!
+//! An auxiliary alpha image (monochrome HEVC, #136) becomes the alpha channel: its luma samples
+//! scaled to 8 bits under the alpha item's own transforms, stretched to the transformed master's
+//! size if it differs, as libheif does.
+//!
 //! What this cannot decode yet comes back as [`MediaError::Unsupported`]: other coding formats
-//! (AVIF, JPEG, uncompressed items), HEVC outside Main / Main 10 4:2:0, and images with an alpha
-//! plane (monochrome HEVC, #136). The caller then tries the libheif tools ([`super::heif`]).
+//! (AVIF, JPEG, uncompressed items) and HEVC outside Main / Main 10 4:0:0 / 4:2:0. The caller
+//! then tries the libheif tools ([`super::heif`]).
 
 use cfa4_color::{ColorInfo, Matrix, Primaries, Range, Transfer};
 use cfa4_frame::{Chroma, PixelData, VideoFrame};
@@ -45,26 +49,59 @@ pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
         e => MediaError::Decode(format!("{name}: {e}")),
     })?;
     let image = heif.primary;
-    if image.alpha.is_some() {
-        return Err(MediaError::Unsupported(format!("{name}: HEIF alpha planes need monochrome HEVC (#136)")));
-    }
-    let mut pic = decode_image(name, &image, image.nclx())?;
+    let mut pic = decode_image(name, &image, image.nclx(), Samples::Colour)?;
     for t in &image.transforms {
         pic = transform(pic, *t)?;
     }
-    Ok(Raster { width: pic.width, height: pic.height, rgba: pic.px, has_alpha: false })
+    let has_alpha = match &image.alpha {
+        Some(a) => {
+            let mut alpha = decode_image(name, a, None, Samples::Alpha)?;
+            for t in &a.transforms {
+                alpha = transform(alpha, *t)?;
+            }
+            merge_alpha(&mut pic, &alpha);
+            true
+        }
+        None => false,
+    };
+    Ok(Raster { width: pic.width, height: pic.height, rgba: pic.px, has_alpha })
 }
 
-fn decode_image(name: &str, image: &Image, nclx: Option<&Colour>) -> Result<Rgba> {
+/// What an image's samples are: a colour picture, or an alpha plane (its luma alone, in every
+/// channel of the RGBA being assembled).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Samples {
+    Colour,
+    Alpha,
+}
+
+/// Put the alpha plane `alpha` (in its red channel) into `pic`'s alpha channel, nearest
+/// sample when the two sizes differ.
+fn merge_alpha(pic: &mut Rgba, alpha: &Rgba) {
+    let (w, h) = (pic.width as usize, pic.height as usize);
+    let (aw, ah) = (alpha.width as usize, alpha.height as usize);
+    for y in 0..h {
+        let ay = (y * ah / h.max(1)).min(ah.saturating_sub(1));
+        for x in 0..w {
+            let ax = (x * aw / w.max(1)).min(aw.saturating_sub(1));
+            let a = alpha.px.get((ay * aw + ax) * 4).copied().unwrap_or(255);
+            if let Some(p) = pic.px.get_mut((y * w + x) * 4 + 3) {
+                *p = a;
+            }
+        }
+    }
+}
+
+fn decode_image(name: &str, image: &Image, nclx: Option<&Colour>, samples: Samples) -> Result<Rgba> {
     match &image.coding {
-        Coding::Hevc { hvcc, data } => decode_hevc(name, hvcc, data, image.nclx().or(nclx)),
+        Coding::Hevc { hvcc, data } => decode_hevc(name, hvcc, data, image.nclx().or(nclx), samples),
         Coding::Grid { columns, width, height, tiles, .. } => {
             let len = check_size(*width, *height)?;
             let mut out = Rgba { width: *width, height: *height, px: vec![0; len] };
             let (mut x, mut y, mut row_height) = (0u32, 0u32, 0u32);
             for (i, tile) in tiles.iter().enumerate() {
                 // tiles take the grid's colour description when they have none of their own
-                let t = decode_image(name, tile, image.nclx().or(nclx))?;
+                let t = decode_image(name, tile, image.nclx().or(nclx), samples)?;
                 if i > 0 && (i as u32).is_multiple_of(*columns) {
                     (x, y) = (0, y.saturating_add(row_height));
                 }
@@ -92,7 +129,7 @@ fn paste(canvas: &mut Rgba, tile: &Rgba, x: u32, y: u32, w: u32, h: u32) {
     }
 }
 
-fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>) -> Result<Rgba> {
+fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samples: Samples) -> Result<Rgba> {
     let hevc_error = |e: cfa4_hevc::Error| match e {
         cfa4_hevc::Error::Unsupported(what) => MediaError::Unsupported(format!("{name}: HEVC {what}")),
         e => MediaError::Decode(format!("{name}: HEVC: {e}")),
@@ -104,7 +141,10 @@ fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>) -> R
         return Err(hevc_error(e));
     }
     let p = pictures.into_iter().next().ok_or_else(|| MediaError::Decode(format!("{name}: HEVC image item has no picture")))?;
-    check_size(p.width, p.height)?;
+    let len = check_size(p.width, p.height)?;
+    if samples == Samples::Alpha {
+        return Ok(Rgba { width: p.width, height: p.height, px: alpha_rgba(&p, len) });
+    }
     let color = colour(nclx, &p);
     let (w, h) = (p.width as usize, p.height as usize);
     let (cw, ch) = (p.chroma_width as usize, p.chroma_height as usize);
@@ -133,6 +173,28 @@ fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>) -> R
     };
     let frame = VideoFrame { width: p.width, height: p.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO };
     Ok(Rgba { width: p.width, height: p.height, px: frame.to_rgba8() })
+}
+
+/// The luma of `p` as 8-bit alpha in all four channels (`len` bytes): higher bit depths keep
+/// their top 8 bits, as libheif does.
+fn alpha_rgba(p: &cfa4_hevc::Picture, len: usize) -> Vec<u8> {
+    let (w, h) = (p.width as usize, p.height as usize);
+    let shift = p.bit_depth.saturating_sub(8);
+    let mut out = Vec::with_capacity(len);
+    for y in 0..h {
+        for x in 0..w {
+            let i = y * p.y_stride + x;
+            let v = match &p.y {
+                cfa4_hevc::Plane::U8(v) => v.get(i).map(|&s| u16::from(s)),
+                cfa4_hevc::Plane::U16(v) => v.get(i).copied(),
+            }
+            .unwrap_or(0)
+                >> shift;
+            let a = u8::try_from(v).unwrap_or(u8::MAX);
+            out.extend_from_slice(&[a; 4]);
+        }
+    }
+    out
 }
 
 /// A `w`×`h` plane from rows `stride` samples apart (missing samples are zero).
