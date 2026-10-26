@@ -285,6 +285,8 @@ pub struct Encoder {
     /// Input waiting for a whole syncframe, per input channel.
     pending: Vec<Vec<f32>>,
     endmant: usize,
+    /// Input has been taken since the last flush, so the transform tail still owes a frame.
+    tail_due: bool,
 }
 
 impl Encoder {
@@ -346,7 +348,7 @@ impl Encoder {
             3500..5000 => 52,
             _ => 60,
         };
-        Ok(Encoder {
+        let mut enc = Encoder {
             rate: sample_rate,
             eac3,
             fscod,
@@ -358,7 +360,24 @@ impl Encoder {
             map,
             pending: vec![Vec::new(); channels],
             endmant: (bw + 12) * 3 + 37,
-        })
+            tail_due: false,
+        };
+        // exponent side information grows with the bandwidth and does not depend on the signal:
+        // narrow it until a silent syncframe fits, or refuse a rate too low for the channels
+        let silence = vec![vec![0.0; FRAME_SAMPLES]; enc.map.len()];
+        let mut bw = bw;
+        loop {
+            enc.endmant = (bw + 12) * 3 + 37;
+            if enc.frame(&silence).is_ok() {
+                break;
+            }
+            if bw == 0 {
+                return Err(Error::Unsupported(format!("{bitrate_kbps} kb/s is too low for {channels} AC-3 channels")));
+            }
+            bw = bw.saturating_sub(6);
+        }
+        enc.tail = vec![[0.0; 256]; enc.map.len()];
+        Ok(enc)
     }
 
     pub fn sample_rate(&self) -> u32 {
@@ -376,6 +395,12 @@ impl Encoder {
         if pcm.len() != self.pending.len() {
             return Err(Error::Invalid("channel count differs from the encoder's"));
         }
+        let len = pcm.first().map_or(0, |s| s.len());
+        if pcm.iter().any(|s| s.len() != len) {
+            // unequal slices would leave the channels' pending input misaligned for good
+            return Err(Error::Invalid("channel slices differ in length"));
+        }
+        self.tail_due |= len > 0;
         for (p, s) in self.pending.iter_mut().zip(pcm) {
             // NaN and infinities would poison the transform's overlap
             p.extend(s.iter().map(|&v| if v.is_finite() { v.clamp(-1.0, 1.0) } else { 0.0 }));
@@ -384,7 +409,12 @@ impl Encoder {
     }
 
     /// Pads what is pending with silence and encodes it, plus the transform's 256-sample tail.
+    /// Nothing comes out when no input arrived since the last flush.
     pub fn flush(&mut self) -> Result<Vec<Vec<u8>>> {
+        if !self.tail_due {
+            return Ok(Vec::new());
+        }
+        self.tail_due = false;
         let n = self.pending.iter().map(Vec::len).max().unwrap_or(0) + 256;
         let pad = n.div_ceil(FRAME_SAMPLES) * FRAME_SAMPLES;
         for p in &mut self.pending {
@@ -912,5 +942,41 @@ mod tests {
         let x: Vec<f32> = (0..3000).map(|i| bad[i % 4]).collect();
         let frames = e.encode(&[&x, &x]).unwrap();
         assert!(frames.iter().all(|f| crate::Decoder::new().decode(f).is_ok()));
+    }
+
+    /// 32 kb/s left five and six channels too little room for even coarse exponents at the
+    /// narrowest bandwidth: the encoder was built but every syncframe failed.
+    #[test]
+    fn low_rate_multichannel_encodes_or_is_refused_up_front() {
+        for rate in [48_000, 44_100, 32_000] {
+            for ch in 1..=6 {
+                let Ok(mut enc) = Encoder::new(rate, ch, 32) else { continue };
+                let pcm: Vec<Vec<f32>> = (0..ch).map(|c| tone(rate, 4000, 440.0 + c as f32 * 100.0, 0.3, 0.0)).collect();
+                let refs: Vec<&[f32]> = pcm.iter().map(Vec::as_slice).collect();
+                assert!(enc.encode(&refs).is_ok(), "{rate} Hz, {ch} ch");
+                assert!(enc.flush().is_ok(), "{rate} Hz, {ch} ch");
+            }
+            assert!(Encoder::new(rate, 6, 32).is_ok() || matches!(Encoder::new(rate, 6, 32), Err(Error::Unsupported(_))));
+        }
+    }
+
+    #[test]
+    fn unequal_channel_slices_are_refused_without_taking_any() {
+        let mut enc = Encoder::new(48_000, 2, 192).unwrap();
+        let (a, b) = (vec![0.1; 1536], vec![0.1; 1000]);
+        assert!(enc.encode(&[&a, &b]).is_err());
+        assert!(enc.pending.iter().all(Vec::is_empty));
+        assert!(enc.flush().unwrap().is_empty());
+    }
+
+    #[test]
+    fn flush_twice_or_on_a_fresh_encoder_emits_nothing_more() {
+        let mut enc = Encoder::new(48_000, 2, 192).unwrap();
+        assert!(enc.flush().unwrap().is_empty());
+        let a = vec![0.1; 1536];
+        let mut n = enc.encode(&[&a, &a]).unwrap().len();
+        n += enc.flush().unwrap().len();
+        assert_eq!(n, 2);
+        assert!(enc.flush().unwrap().is_empty());
     }
 }
