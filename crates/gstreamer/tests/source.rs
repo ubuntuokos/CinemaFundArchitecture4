@@ -6,11 +6,17 @@
 #![cfg(feature = "gstreamer")]
 
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, PoisonError};
 
 use cfa4_media::{FrameRequest, MediaKind, SharedSource};
 use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 
+/// Tests run in parallel and share fixtures: one encoder at a time, so no test sees (or renames
+/// away) a file another pipeline is still writing.
+static FIXTURE_LOCK: Mutex<()> = Mutex::new(());
+
 fn fixture(name: &str, args: &str) -> Option<PathBuf> {
+    let _guard = FIXTURE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     if let Err(e) = cfa4_gstreamer::probe() {
         eprintln!("skipped: {e}");
         return None;
@@ -21,7 +27,8 @@ fn fixture(name: &str, args: &str) -> Option<PathBuf> {
     if path.exists() {
         return Some(path);
     }
-    let tmp = dir.join(format!("{name}.part"));
+    // Per-process name: another test binary or run never shares the half-written file.
+    let tmp = dir.join(format!("{name}.{}.part", std::process::id()));
     let args = args.replace("OUT", &tmp.display().to_string());
     match std::process::Command::new("gst-launch-1.0").arg("-q").args(args.split(' ')).output() {
         Ok(o) if o.status.success() && tmp.exists() => {
