@@ -23,6 +23,7 @@ from .commands import Command, parse_value
 from .i18n import tr
 
 PROJECT_FILTER = "CFA4 project (*.fcproj);;All files (*)"
+FRAME_FILTER = "PNG (*.png);;JPEG (*.jpg *.jpeg);;TIFF (*.tif *.tiff);;BMP (*.bmp)"
 
 
 class ParamDialog(QDialog):
@@ -89,6 +90,18 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
             if Path(path).exists() and not confirm_replace(parent, tr(command.label), path):
                 return {"__cancel__": True}
         return {"path": path}
+    if cid == "file.exportFrame" and "path" in names:
+        path, chosen = QFileDialog.getSaveFileName(parent, tr("Export Frame"), "", FRAME_FILTER)
+        if not path:
+            return {"__cancel__": True}
+        ext = Path(path).suffix.lower().lstrip(".")
+        fmt = {"jpg": "jpeg", "jpeg": "jpeg", "tif": "tiff", "tiff": "tiff", "bmp": "bmp", "png": "png"}.get(ext)
+        if fmt is None:
+            fmt = next((f for f in ("jpeg", "tiff", "bmp") if f.upper() in chosen.upper()), "png")
+            path += {"png": ".png", "jpeg": ".jpg", "tiff": ".tif", "bmp": ".bmp"}[fmt]
+            if Path(path).exists() and not confirm_replace(parent, tr("Export Frame"), path):
+                return {"__cancel__": True}
+        return {"path": path, "format": fmt}
     if cid.startswith("file.import") and "paths" in names:
         paths, _ = QFileDialog.getOpenFileNames(parent, tr(command.label), "", tr("All files") + " (*)")
         return {"paths": paths} if paths else {"__cancel__": True}

@@ -16,11 +16,12 @@ from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
-from .i18n import LANGUAGES, TR, tr
+from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.meters import AudioMetersPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
+from .panels.monitor_view import build_view_menu
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
@@ -103,6 +104,11 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
+        for mon in (self.monitor, self.source_monitor):
+            mon.attach_settings(self.settings)
+            self.tools.tool_selected.connect(lambda tool, m=mon: m.view.set_hand(tool == "hand"))
+            mon.run.connect(self.run_preset)
+            mon.message.connect(lambda m: self.events.log(m, error=True))
         self.meters = AudioMetersPanel(self)
         self.meters.watch(self.monitor, self.source_monitor)
         self.project_panel = ProjectPanel(self)
@@ -299,6 +305,18 @@ class MainWindow(QMainWindow):
         self.quit_action.triggered.connect(self.close)  # asks to save unsaved changes first
         self.about_action = QAction(tr("About CFA4"), self)
         self.about_action.triggered.connect(self._about)
+        # J / K / L shuttle and Play In to Out on the focused monitor (egui's playback.*)
+        self.shuttle_actions: list[tuple[QAction, list[str]]] = []
+        for name, label, keys, slot in (
+            ("reverse", N_("Shuttle Left"), ["J"], lambda: self.focused_monitor().shuttle(-1)),
+            ("stop", N_("Shuttle Stop"), ["K"], lambda: self.focused_monitor().stop()),
+            ("forward", N_("Shuttle Right"), ["L"], lambda: self.focused_monitor().shuttle(1)),
+            ("inToOut", N_("Play In to Out"), ["Alt+K"], lambda: self.focused_monitor().play_in_to_out()),
+        ):
+            a = QAction(tr(label), self)
+            a.setObjectName(f"qt.playback.{name}")
+            a.triggered.connect(slot)
+            self.shuttle_actions.append((a, keys))
         self.lang_actions = QActionGroup(self)
         for code, name in LANGUAGES.items():
             a = QAction(name, self, checkable=True)
@@ -313,6 +331,7 @@ class MainWindow(QMainWindow):
             (self.play_action, ["Space"]),
             (self.export_action, ["Ctrl+M"]),
             (self.quit_action, ["Ctrl+Q"]),
+            *self.shuttle_actions,
         ):
             free = [QKeySequence(k) for k in keys if k not in bound_keys]
             action.setShortcuts(free)
@@ -322,7 +341,7 @@ class MainWindow(QMainWindow):
         self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
-                "Sequence": [self.play_action],
+                "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "View": [self.fit_action],
                 "Help": [self.about_action],
             }
@@ -330,6 +349,9 @@ class MainWindow(QMainWindow):
         menus = {a.menu().objectName(): a for a in self.menuBar().actions() if a.menu()}
         view = menus.get("menu.View")
         if view is not None:
+            view.menu().addSeparator()
+            build_view_menu(view.menu(), self.focused_monitor)
+            view.menu().addSeparator()
             lang = view.menu().addMenu(tr("Language"))
             lang.setObjectName("menu.View.Language")
             for a in self.lang_actions.actions():
@@ -536,6 +558,24 @@ class MainWindow(QMainWindow):
             self.run_command(cmd)
         else:
             self.execute(cid, {})
+
+    def run_preset(self, cid: str, params: dict[str, Any]) -> None:
+        """A panel runs ``cid`` with ``params`` already known (the monitor's Export Frame knows
+        its monitor and time): ask only for what is still missing, such as the file."""
+        cmd = self.registry.commands.get(cid)
+        if cmd is None:
+            self.execute(cid, params)
+            return
+        project_path = (self.project or {}).get("path")
+        asked = path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
+        if asked.get("__cancel__"):
+            return
+        self.engine.execute(
+            cid,
+            {**params, **asked},
+            on_reply=lambda _r, _b: self.schedule_refresh(),
+            on_error=lambda m: self._command_failed(cid, m),
+        )
 
     def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""

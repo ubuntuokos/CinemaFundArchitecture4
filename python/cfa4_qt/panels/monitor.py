@@ -3,10 +3,19 @@
 Both monitors share one implementation (``Monitor``) and differ only in what they show:
 the Program monitor shows the active sequence at the sequence playhead, the Source monitor the
 clip opened with ``source.open`` at the Source playhead (``target: "source"`` in the engine
-protocol). Frames come from the engine (``frame.render``, RGBA8 at the monitor's size); sound
-from ``audio.render`` (interleaved float32) into a QAudioSink. Requests are coalesced: at most one
-frame and one audio request are in flight, and a newer wanted time replaces an older one, so a
-slow render drops frames instead of building a queue.
+protocol). Frames come from the engine (``frame.render``, RGBA8) at the smaller of the
+playback/paused resolution and the size on screen; sound from ``audio.render`` (interleaved
+float32) into a QAudioSink. Requests are coalesced: at most one frame and one audio request are
+in flight, and a newer wanted time replaces an older one, so a slow render drops frames (the
+dropped-frame light turns yellow) instead of building a queue.
+
+As egui's monitors (crates/ui-egui/src/panels/monitor.rs): a timecode field to type a time in,
+the magnification (Fit, 10 %…1600 %; the wheel zooms about the pointer, a middle-button drag or
+the Hand tool pans), Playback Resolution, the settings (wrench) menu with the display modes
+(composite, alpha, red, green, blue), Paused Resolution, High Quality Playback, Safe Margins,
+Show Transport Controls and Loop, the duration of the marked range, the time bar, and egui's
+transport row with its Button Editor. J/K/L shuttle (doubling up to 8×) and Play In to Out work
+on the focused monitor. What a monitor shows is kept per monitor (``MonitorView``).
 
 Every ``audio.render`` asks for the engine's meter of the block too (``meter: true``: sample
 peaks every 1/100 s and the loudness so far); the Audio Meters panel shows the block being heard.
@@ -18,13 +27,26 @@ from __future__ import annotations
 from collections import deque
 from typing import Any
 
-from PySide6.QtCore import QElapsedTimer, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QImage, QMouseEvent, QPainter, QPaintEvent
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QToolButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QElapsedTimer, QEvent, QPointF, QRectF, QSettings, Qt, QTimer, Signal
+from PySide6.QtGui import (
+    QAction,
+    QActionGroup,
+    QColor,
+    QImage,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPaintEvent,
+    QPen,
+    QWheelEvent,
+)
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QMenu, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
+from .monitor_view import CHANNELS, DISPLAYS, MAX_ZOOM, MIN_ZOOM, RESOLUTIONS, ZOOMS, MonitorView, res_label
+from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
 try:  # QtMultimedia is optional: without it playback is silent
     from PySide6.QtMultimedia import QAudioFormat, QAudioSink, QMediaDevices
@@ -37,6 +59,11 @@ AUDIO_CHUNK_SECONDS = 0.1
 AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
+MAX_SPEED = 8.0
+PANEL_BG = QColor("#111111")
+MONITOR_BG = QColor("#000000")
+GREEN = QColor(0x4C, 0xC0, 0x5A)
+YELLOW = QColor(0xF0, 0xC8, 0x40)
 
 
 def ticks_per_frame_from_fps(fps: Any) -> int:
@@ -50,34 +77,249 @@ def ticks_per_frame_from_fps(fps: Any) -> int:
     return max(1, round(TICKS_PER_SECOND / value))
 
 
+def channel_image(image: QImage, display: str) -> QImage:
+    """One channel of a frame as greyscale (the Alpha, Red, Green and Blue display modes)."""
+    if display not in CHANNELS or image.isNull():
+        return image
+    img = image.convertToFormat(QImage.Format.Format_RGBA8888)
+    w, h = img.width(), img.height()
+    data = bytes(img.constBits())
+    bpl = img.bytesPerLine()
+    index = {"red": 0, "green": 1, "blue": 2, "alpha": 3}[display]
+    if bpl == w * 4:
+        plane = data[index::4]
+    else:
+        plane = b"".join(data[y * bpl : y * bpl + w * 4][index::4] for y in range(h))
+    return QImage(plane, w, h, w, QImage.Format.Format_Grayscale8).copy()
+
+
 class FrameView(QWidget):
-    def __init__(self, name: str = "program", parent: QWidget | None = None) -> None:
+    """The picture: fitted or magnified and panned, with the display mode, safe margins and the
+    dropped-frame light drawn over it."""
+
+    view_changed = Signal()  # magnification or pan
+
+    def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName(f"{name}.view")
-        self.image: QImage | None = None
+        self.mv = mv or MonitorView()
+        self.image: QImage | None = None  # as the engine rendered it
+        self.shown: QImage | None = None  # in the display mode
+        self.full = (0, 0)  # the frame's own size (pixels)
+        self.par = 1.0
         self.message = ""
+        self.hand = False  # the Hand tool is selected: a drag pans
+        self.dropped: int | None = None  # dropped frames while playing (None: stopped)
+        self._pan_from: QPointF | None = None
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(160, 90)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-    def set_image(self, image: QImage | None, message: str = "") -> None:
+    def set_image(self, image: QImage | None, message: str = "", full: tuple[int, int] | None = None, par: float | None = None) -> None:
         self.image = image
         self.message = message
+        if full is not None and full[0] > 0 and full[1] > 0:
+            self.full = (int(full[0]), int(full[1]))
+        elif image is not None and not image.isNull() and self.full == (0, 0):
+            self.full = (image.width(), image.height())
+        if par is not None and par > 0:
+            self.par = float(par)
+        self.refresh_display()
+
+    def refresh_display(self) -> None:
+        self.shown = channel_image(self.image, self.mv.display) if self.image is not None else None
         self.update()
 
+    # ----- geometry -----
+    def display_size(self) -> tuple[float, float]:
+        """The picture's size at 100 % on screen (its display aspect, in device-independent px)."""
+        fw, fh = self.full
+        if fw <= 0 or fh <= 0:
+            if self.image is None or self.image.isNull():
+                return 0.0, 0.0
+            fw, fh = self.image.width(), self.image.height()
+        dpr = max(0.1, self.devicePixelRatioF())
+        return fw * self.par / dpr, fh / dpr
+
+    def picture_rect(self) -> QRectF:
+        """Fitted, or magnified about the centre plus the (clamped) pan (egui's picture_rect)."""
+        w, h = self.display_size()
+        area = QRectF(self.rect())
+        if w <= 0 or h <= 0:
+            return area
+        if self.mv.zoom is None:
+            s = min(area.width() / w, area.height() / h)
+            size = (w * s, h * s)
+        else:
+            size = (w * self.mv.zoom, h * self.mv.zoom)
+        maxx, maxy = max(0.0, (size[0] - area.width()) / 2), max(0.0, (size[1] - area.height()) / 2)
+        px = min(maxx, max(-maxx, self.mv.pan[0])) if self.mv.zoom is not None else 0.0
+        py = min(maxy, max(-maxy, self.mv.pan[1])) if self.mv.zoom is not None else 0.0
+        c = area.center()
+        return QRectF(c.x() + px - size[0] / 2, c.y() + py - size[1] / 2, size[0], size[1])
+
+    def wanted_size(self) -> tuple[int, int]:
+        """The largest frame (pixels) worth rendering for the picture as shown."""
+        pic = self.picture_rect()
+        dpr = max(0.1, self.devicePixelRatioF())
+        w = int(pic.width() * dpr / max(0.01, self.par))
+        h = int(pic.height() * dpr)
+        return min(8192, max(16, w)), min(8192, max(16, h))
+
+    def current_zoom(self) -> float:
+        """The magnification shown (1.0: one frame pixel per screen pixel), Fit included."""
+        w, _h = self.display_size()
+        return self.picture_rect().width() / w if w > 0 else 1.0
+
+    def zoom_about(self, factor: float, at: QPointF) -> None:
+        """Zoom by ``factor`` keeping the point under ``at`` where it is (egui's zoom_pan_input)."""
+        pic = self.picture_rect()
+        if pic.width() <= 0:
+            return
+        cur = self.current_zoom()
+        z = min(MAX_ZOOM, max(MIN_ZOOM, cur * factor))
+        k = z / cur
+        centre = at - (at - pic.center()) * k
+        area = QRectF(self.rect())
+        maxx = max(0.0, (pic.width() * k - area.width()) / 2)
+        maxy = max(0.0, (pic.height() * k - area.height()) / 2)
+        self.mv.zoom = z
+        self.mv.pan = [min(maxx, max(-maxx, centre.x() - area.center().x())), min(maxy, max(-maxy, centre.y() - area.center().y()))]
+        self.update()
+        self.view_changed.emit()
+
+    def pan_by(self, dx: float, dy: float) -> None:
+        if self.mv.zoom is None:
+            return
+        pic = self.picture_rect()
+        area = QRectF(self.rect())
+        maxx, maxy = max(0.0, (pic.width() - area.width()) / 2), max(0.0, (pic.height() - area.height()) / 2)
+        self.mv.pan = [min(maxx, max(-maxx, self.mv.pan[0] + dx)), min(maxy, max(-maxy, self.mv.pan[1] + dy))]
+        self.update()
+        self.view_changed.emit()
+
+    # ----- input -----
+    def wheelEvent(self, e: QWheelEvent) -> None:
+        steps = e.angleDelta().y() / 120.0
+        if not steps:
+            return super().wheelEvent(e)
+        # about 10 % a notch, so a notch out undoes a notch in exactly
+        self.zoom_about(1.1**steps, e.position())
+        e.accept()
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        pans = e.button() == Qt.MouseButton.MiddleButton or (e.button() == Qt.MouseButton.LeftButton and self.hand)
+        if pans and self.mv.zoom is not None:
+            self._pan_from = e.position()
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            e.accept()
+            return
+        super().mousePressEvent(e)
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if self._pan_from is not None:
+            d = e.position() - self._pan_from
+            self._pan_from = e.position()
+            self.pan_by(d.x(), d.y())
+            return
+        super().mouseMoveEvent(e)
+
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+        if self._pan_from is not None:
+            self._pan_from = None
+            self.set_hand(self.hand)
+            return
+        super().mouseReleaseEvent(e)
+
+    def set_hand(self, on: bool) -> None:
+        self.hand = on
+        if on:
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+        else:
+            self.unsetCursor()
+
+    # ----- drawing -----
     def paintEvent(self, _e: QPaintEvent) -> None:
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor("#111111"))
-        if self.image is not None and not self.image.isNull():
-            iw, ih = self.image.width(), self.image.height()
-            scale = min(self.width() / iw, self.height() / ih)
-            w, h = iw * scale, ih * scale
-            target = QRectF((self.width() - w) / 2, (self.height() - h) / 2, w, h)
+        p.fillRect(self.rect(), PANEL_BG)
+        img = self.shown
+        if img is not None and not img.isNull():
+            pic = self.picture_rect()
+            p.fillRect(pic, MONITOR_BG)
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            p.drawImage(target, self.image)
+            p.drawImage(pic, img)
+            if self.mv.safe_margins:
+                for f, alpha in ((0.9, 120), (0.8, 90)):
+                    r = QRectF(0, 0, pic.width() * f, pic.height() * f)
+                    r.moveCenter(pic.center())
+                    p.setPen(QPen(QColor(255, 255, 255, alpha), 1.0))
+                    p.drawRect(r)
+                c = pic.center()
+                p.setPen(QPen(QColor(255, 255, 255, 120), 1.0))
+                p.drawLine(QPointF(c.x() - 8, c.y()), QPointF(c.x() + 8, c.y()))
+                p.drawLine(QPointF(c.x(), c.y() - 8), QPointF(c.x(), c.y() + 8))
+            if self.mv.display != "composite":
+                label = tr(dict(DISPLAYS).get(self.mv.display, ""))
+                p.setPen(QColor(0x8C, 0x8C, 0x8C))
+                f = p.font()
+                f.setPixelSize(11)
+                p.setFont(f)
+                p.drawText(QRectF(0, 6, self.width() - 8, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop, label)
+        if self.dropped is not None:
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(YELLOW if self.dropped > 0 else GREEN)
+            p.drawEllipse(QPointF(10, 10), 4, 4)
         if self.message:
             p.setPen(QColor("#cccccc"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
+
+
+class TimecodeField(QLineEdit):
+    """The monitor's timecode: shows the playhead, takes a typed time (Enter) as egui's
+    timecode field does: ``01:02:03:04``, bare digits (``1000`` is 00:00:10:00), ``+15`` /
+    ``-1.00`` relative. The engine reads it (``time.parse``). Escape puts the time back."""
+
+    submitted = Signal(str)
+
+    def __init__(self, name: str, parent: QWidget | None = None) -> None:
+        super().__init__("00:00:00:00", parent)
+        self.setObjectName(f"{name}.timecode")
+        self.setFixedWidth(110)
+        self.setFrame(False)
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  # never the window's first focus
+        self.setStyleSheet("QLineEdit { color: #4096f3; background: transparent; font-family: monospace; font-size: 14px; }")
+        self.shown_text = "00:00:00:00"
+        self.returnPressed.connect(lambda: self.submitted.emit(self.text()))
+
+    def show_time(self, text: str) -> None:
+        self.shown_text = text
+        if not self.hasFocus():
+            self.setText(text)
+
+    def event(self, e: QEvent) -> bool:
+        # while typing, the keys are the field's: Enter, digits and letters are also editor
+        # shortcuts (Render Effects In to Out, Mark In, …)
+        typing = isinstance(e, QKeyEvent) and not e.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+        if e.type() == QEvent.Type.ShortcutOverride and typing:
+            e.accept()
+            return True
+        return super().event(e)
+
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        if e.key() == Qt.Key.Key_Escape:
+            self.setText(self.shown_text)
+            self.clearFocus()
+            return
+        super().keyPressEvent(e)
+
+    def focusInEvent(self, e) -> None:
+        super().focusInEvent(e)
+        QTimer.singleShot(0, self.selectAll)
+
+    def focusOutEvent(self, e) -> None:
+        super().focusOutEvent(e)
+        self.setText(self.shown_text)
 
 
 class ScrubBar(QWidget):
@@ -143,10 +385,13 @@ class ScrubBar(QWidget):
 
 
 class Monitor(QWidget):
-    """Shared monitor: frame view, time bar, transport, marks, playback with sound."""
+    """Shared monitor: picture, controls row, time bar, transport, playback with sound."""
 
     target = "program"
-    command = Signal(str, dict)
+    BUTTONS: tuple[TransportDef, ...] = PROGRAM_BUTTONS
+    command = Signal(str, dict)  # an engine command to execute as is
+    run = Signal(str, dict)  # a command that may need the GUI first (Export Frame asks for a file)
+    message = Signal(str)  # an error to show in Events
     # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
     playhead_moved = Signal(object)  # local playhead during playback, ticks
 
@@ -155,53 +400,72 @@ class Monitor(QWidget):
         self.setObjectName(f"panel.{self.target.capitalize()}")
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.engine = engine
+        self.settings: QSettings | None = None
+        self.mv = MonitorView()
         self.playhead = 0
         self.revision = -1
         self._frame_busy = False
         self._frame_wanted: int | None = None
-        self._shown: tuple[int, int, int, Any] | None = None  # (time, revision, width, item)
-        self.view = FrameView(self.target, self)
+        self._shown: tuple[Any, ...] | None = None
+        self.view = FrameView(self.target, self.mv, self)
+        self.view.view_changed.connect(self._view_changed)
         self.scrub = ScrubBar(self.target, self)
         self.scrub.seek.connect(self.seek)
-        self.timecode = QLabel("00:00:00:00", self)
-        self.timecode.setObjectName(f"{self.target}.timecode")
+        self.timecode = TimecodeField(self.target, self)
+        self.timecode.submitted.connect(self._typed_time)
         self.duration_label = QLabel("", self)
+        self.duration_label.setObjectName(f"{self.target}.duration")
+        self.duration_label.setStyleSheet("QLabel { color: #8c8c8c; font-family: monospace; font-size: 14px; }")
 
-        bar = QHBoxLayout()
-        bar.setContentsMargins(4, 2, 4, 2)
-        bar.addWidget(self.timecode)
-        bar.addStretch(1)
-        self.buttons: dict[str, QToolButton] = {}
-        transport = (
-            ("markIn", "{", "Mark In", lambda: self.command.emit("markers.markIn", {"target": self.target})),
-            ("markOut", "}", "Mark Out", lambda: self.command.emit("markers.markOut", {"target": self.target})),
-            ("start", "⏮", N_("Go to Start"), lambda: self.seek(self.range()[0])),
-            ("stepBack", "◀|", N_("Step Back 1 Frame"), lambda: self.step(-1)),
-            ("toggle", "▶", N_("Play/Stop"), self.toggle_playback),
-            ("stepForward", "|▶", N_("Step Forward 1 Frame"), lambda: self.step(1)),
-            ("end", "⏭", N_("Go to End"), lambda: self.seek(self.range()[1] - self.frame())),
-            *self.extra_buttons(),
-        )
-        for name, text, tip, slot in transport:
+        def dropdown(name: str, tip: str) -> QToolButton:
             b = QToolButton(self)
-            b.setObjectName(f"{self.target}.transport.{name}")
-            b.setText(text)
+            b.setObjectName(f"{self.target}.{name}")
             b.setToolTip(tr(tip))
+            b.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
             b.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-            b.clicked.connect(slot)
-            bar.addWidget(b)
-            self.buttons[name] = b
-        bar.addStretch(1)
-        bar.addWidget(self.duration_label)
+            b.setMenu(QMenu(b))
+            return b
+
+        self.zoom_button = dropdown("zoom", N_("Select Zoom Level"))
+        self.zoom_button.menu().aboutToShow.connect(self._fill_zoom_menu)
+        self.res_button = dropdown("resolution", N_("Select Playback Resolution"))
+        self.res_button.menu().aboutToShow.connect(self._fill_res_menu)
+        self.wrench = dropdown("settings", N_("Settings"))
+        self.wrench.setIcon(transport_icon("wrench", icon_color(self)))
+        self.wrench.setAutoRaise(True)
+        self.wrench.setStyleSheet("QToolButton::menu-indicator { image: none; }")
+        self.wrench.menu().aboutToShow.connect(self._fill_wrench_menu)
+
+        controls = QHBoxLayout()
+        controls.setContentsMargins(10, 2, 10, 0)
+        controls.setSpacing(6)
+        controls.addWidget(self.timecode)
+        controls.addWidget(self.zoom_button)
+        controls.addStretch(1)
+        controls.addWidget(self.res_button)
+        controls.addWidget(self.wrench)
+        controls.addSpacing(8)
+        controls.addWidget(self.duration_label)
+
+        self.transport = TransportBar(self.target, self.BUTTONS, self.mv.hidden, self)
+        self.transport.triggered.connect(self.run_transport)
+        self.transport.hidden_changed.connect(self._hidden_changed)
+        self.transport.checked["playback.loop"] = lambda: self.mv.looping
+        self.buttons = self.transport.buttons
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(2)
         layout.addWidget(self.view, 1)
+        layout.addLayout(controls)
         layout.addWidget(self.scrub)
-        layout.addLayout(bar)
+        layout.addWidget(self.transport)
 
         # playback state
         self.playing = False
+        self.speed = 1.0
+        self.stop_at: int | None = None  # Play In to Out: stop here…
+        self.rest_at: int | None = None  # …and rest the playhead here
+        self.dropped = 0
         self._clock = QElapsedTimer()
         self._play_from = 0
         self._timer = QTimer(self)
@@ -216,11 +480,9 @@ class Monitor(QWidget):
         self._audio_pending = b""
         # (first sample, samples per block, [peaks per block], [loudness per block]) as played
         self.meter_blocks: deque[tuple[int, int, list[Any], list[Any]]] = deque()
+        self._apply_view(request=False)
 
     # ----- what each monitor shows (overridden) -----
-    def extra_buttons(self) -> tuple[tuple[str, str, str, Any], ...]:
-        return ()
-
     def has_content(self) -> bool:
         raise NotImplementedError
 
@@ -249,7 +511,127 @@ class Monitor(QWidget):
     def sample_rate(self) -> int:
         return 48000
 
+    # ----- view settings -----
+    def attach_settings(self, settings: QSettings | None) -> None:
+        """Remember this monitor's view in ``settings`` (and take the one saved there)."""
+        self.settings = settings
+        loaded = MonitorView.load(settings, self._settings_key())
+        for name in vars(loaded):
+            setattr(self.mv, name, getattr(loaded, name))
+        self.transport.hidden = list(self.mv.hidden)
+        self._apply_view(request=False)
+
+    def _settings_key(self) -> str:
+        return f"monitor/{self.target}"
+
+    def _save_view(self) -> None:
+        self.mv.save(self.settings, self._settings_key())
+
+    def _apply_view(self, request: bool = True) -> None:
+        self.zoom_button.setText(self.mv.zoom_label())
+        self.res_button.setText(res_label(self.mv.res))
+        self.transport.setVisible(self.mv.show_transport)
+        self.transport.set_icon("loop", "loop", ACCENT if self.mv.looping else icon_color(self))
+        self.transport._layout()
+        self.view.refresh_display()
+        if request:
+            self.request_frame()
+
+    def set_view(self, **changes: Any) -> None:
+        for name, value in changes.items():
+            setattr(self.mv, name, value)
+        self._save_view()
+        self._apply_view()
+
+    def set_zoom(self, zoom: float | None) -> None:
+        self.mv.set_zoom(zoom)
+        self._save_view()
+        self._apply_view()
+
+    def set_resolution(self, res: str, paused: bool = False) -> None:
+        self.set_view(**{"paused_res" if paused else "res": res})
+
+    def _view_changed(self) -> None:
+        self.zoom_button.setText(self.mv.zoom_label())
+        self._save_view()
+        self.request_frame()
+
+    def _hidden_changed(self, hidden: list[str]) -> None:
+        self.mv.hidden = list(hidden)
+        self._save_view()
+
+    def _fill_zoom_menu(self) -> None:
+        m = self.zoom_button.menu()
+        m.clear()
+        group = QActionGroup(m)
+        items = [("fit", tr("Fit"), None), *((k, f"{k}%", z) for k, z in ZOOMS)]
+        for i, (key, label, z) in enumerate(items):
+            a = QAction(label, m, checkable=True)
+            a.setObjectName(f"{self.target}.zoom.{key}")
+            a.setChecked(self.mv.zoom is None if z is None else self.mv.zoom is not None and abs(self.mv.zoom - z) < 1e-6)
+            a.triggered.connect(lambda _c=False, z=z: self.set_zoom(z))
+            group.addAction(a)
+            m.addAction(a)
+            if i == 0:
+                m.addSeparator()
+
+    def _res_actions(self, menu: QMenu, paused: bool) -> None:
+        group = QActionGroup(menu)
+        current = self.mv.paused_res if paused else self.mv.res
+        for key, label, _scale in RESOLUTIONS:
+            a = QAction(tr(label), menu, checkable=True)
+            a.setObjectName(f"{self.target}.{'pausedRes' if paused else 'playbackRes'}.{key}")
+            a.setChecked(key == current)
+            a.triggered.connect(lambda _c=False, k=key: self.set_resolution(k, paused))
+            group.addAction(a)
+            menu.addAction(a)
+
+    def _fill_res_menu(self) -> None:
+        m = self.res_button.menu()
+        m.clear()
+        self._res_actions(m, paused=False)
+
+    def _fill_wrench_menu(self) -> None:
+        m = self.wrench.menu()
+        m.clear()
+
+        def display(key: str, label: str, menu: QMenu) -> None:
+            a = menu.addAction(tr(label))
+            a.setObjectName(f"{self.target}.settings.display.{key}")
+            a.setCheckable(True)
+            a.setChecked(self.mv.display == key)
+            a.triggered.connect(lambda _c=False, k=key: self.set_view(display=k))
+
+        display("composite", "Composite Video", m)
+        channels = m.addMenu(tr("RGBA Channels"))
+        for key, label in DISPLAYS[1:]:
+            display(key, label, channels)
+        m.addSeparator()
+        self._res_actions(m.addMenu(tr("Playback Resolution")), paused=False)
+        self._res_actions(m.addMenu(tr("Paused Resolution")), paused=True)
+
+        def toggle(name: str, label: str, attr: str) -> None:
+            a = m.addAction(tr(label))
+            a.setObjectName(f"{self.target}.settings.{name}")
+            a.setCheckable(True)
+            a.setChecked(bool(getattr(self.mv, attr)))
+            a.triggered.connect(lambda on: self.set_view(**{attr: bool(on)}))
+
+        toggle("highQualityPlayback", N_("High Quality Playback"), "high_quality")
+        m.addSeparator()
+        toggle("safeMargins", N_("Safe Margins"), "safe_margins")
+        toggle("showTransport", N_("Show Transport Controls"), "show_transport")
+        toggle("loop", N_("Loop") if self.target == "program" else N_("Loop marked range"), "looping")
+
     # ----- shared model -----
+    def _range_marks(self) -> tuple[int, int]:
+        """The marked range (In to the end of Out, or the whole), egui's duration and loop range."""
+        start, end = self.range()
+        mark_in, mark_out = self.marks()
+        lo = mark_in if mark_in is not None else start
+        hi = mark_out + self.frame() if mark_out is not None else end
+        return lo, max(lo, hi)
+
     def _content_changed(self) -> None:
         if not self.has_content():
             self.stop()
@@ -259,7 +641,8 @@ class Monitor(QWidget):
             return
         start, end = self.range()
         mark_in, mark_out = self.marks()
-        self.duration_label.setText(format_timecode(max(0, end - start), self.frame()))
+        lo, hi = self._range_marks()
+        self.duration_label.setText(format_timecode(max(0, hi - lo), self.frame()))
         self.scrub.set_range(start, end, mark_in, mark_out, self.frame())
         self.scrub.set_playhead(self.playhead)
         self._update_timecode()
@@ -290,8 +673,60 @@ class Monitor(QWidget):
             ft = self.frame()
             self.seek((self.playhead // ft + frames) * ft)
 
+    def go_to_in(self) -> None:
+        if self.has_content():
+            mark_in = self.marks()[0]
+            self.seek(mark_in if mark_in is not None else self.range()[0])
+
+    def go_to_out(self) -> None:
+        if self.has_content():
+            mark_out = self.marks()[1]
+            self.seek(mark_out if mark_out is not None else self.range()[1] - self.frame())
+
     def _update_timecode(self) -> None:
-        self.timecode.setText(format_timecode(self.playhead, self.frame() if self.has_content() else 1))
+        self.timecode.show_time(format_timecode(self.playhead, self.frame() if self.has_content() else 1))
+
+    def _typed_time(self, text: str) -> None:
+        if not self.has_content() or not self.engine.running:
+            return
+        params: dict[str, Any] = {"text": text}
+        if self.target != "program":
+            params["target"] = self.target
+
+        def done(result: Any, _data: bytes | None) -> None:
+            if isinstance(result, dict) and isinstance(result.get("time"), int):
+                self.timecode.clearFocus()
+                self.seek(result["time"])
+
+        def failed(msg: str) -> None:
+            self.timecode.selectAll()
+            self.message.emit(f"{tr('Timecode')}: {msg}")
+
+        self.engine.call("time.parse", params, on_reply=done, on_error=failed)
+
+    def run_transport(self, command: str) -> None:
+        """A transport button (or its entry in the overflow menu) was clicked."""
+        target = {"target": self.target}
+        if command in ("markers.add", "markers.markIn", "markers.markOut"):
+            self.command.emit(command, target)
+        elif command in ("src.markIn", "src.markOut"):
+            self.command.emit("markers." + command.split(".")[1], target)
+        elif command in ("markers.goToIn", "src.goIn"):
+            self.go_to_in()
+        elif command in ("markers.goToOut", "src.goOut"):
+            self.go_to_out()
+        elif command in ("playhead.stepBack", "src.stepBack"):
+            self.step(-1)
+        elif command in ("playhead.stepForward", "src.stepFwd"):
+            self.step(1)
+        elif command in ("playback.toggle", "source.playback.toggle"):
+            self.toggle_playback()
+        elif command == "exportFrame":
+            self.run.emit("file.exportFrame", {**target, "time": self.playhead})
+        elif command == "playback.loop":
+            self.set_view(looping=not self.mv.looping)
+        else:  # sequence.lift / extract, source.insert / overwrite, media.toggleProxies
+            self.command.emit(command, {})
 
     # ----- frames -----
     def request_frame(self, at: int | None = None) -> None:
@@ -304,14 +739,14 @@ class Monitor(QWidget):
         if self._frame_busy or self._frame_wanted is None or not self.engine.running:
             return
         t = self._frame_wanted
-        width = max(64, int(self.view.width() * self.view.devicePixelRatioF()))
-        height = max(64, int(self.view.height() * self.view.devicePixelRatioF()))
-        key = (t, self.revision, width, self.content_key())
+        width, height = self.view.wanted_size()
+        scale = self.mv.scale(self.playing)
+        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key())
         self._frame_wanted = None
         if key == self._shown:
             return
         self._frame_busy = True
-        params: dict[str, Any] = {"time": t, "maxWidth": min(width, 8192), "maxHeight": min(height, 8192)}
+        params: dict[str, Any] = {"time": t, "maxWidth": width, "maxHeight": height, "scale": scale}
         if self.target != "program":
             params["target"] = self.target
         self.engine.call(
@@ -321,14 +756,16 @@ class Monitor(QWidget):
             on_error=self._on_frame_error,
         )
 
-    def _on_frame(self, key: tuple[int, int, int, Any], result: Any, data: bytes | None) -> None:
+    def _on_frame(self, key: tuple[Any, ...], result: Any, data: bytes | None) -> None:
         self._frame_busy = False
         if isinstance(result, dict) and data:
             w, h = int(result.get("w") or 0), int(result.get("h") or 0)
             if w > 0 and h > 0 and len(data) == w * h * 4:
                 image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
                 offline = result.get("offline") or []
-                self.view.set_image(image, tr("Media offline") if offline else "")
+                full = (int(result.get("fullW") or 0), int(result.get("fullH") or 0))
+                par = result.get("pixelAspect")
+                self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
                 self._shown = key
         self._pump_frame()
 
@@ -348,29 +785,73 @@ class Monitor(QWidget):
         else:
             self.play()
 
-    def play(self) -> None:
-        if not self.has_content() or self.playing:
+    def play(self, speed: float = 1.0) -> None:
+        """Play at ``speed`` (negative: backwards) from the playhead."""
+        if not self.has_content():
             return
+        if self.playing:
+            self._halt()
         start, end = self.range()
-        if end and self.playhead >= end - self.frame():
-            self.playhead = start
+        if speed > 0 and end and self.playhead >= end - self.frame():
+            self.playhead = self._range_marks()[0] if self.mv.looping else start
+        if speed < 0 and self.playhead <= start:
+            return
         self.playing = True
-        self.buttons["toggle"].setText("■")
+        self.speed = float(speed)
+        self.dropped = 0
+        self.view.dropped = 0
+        self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
-        self._start_audio()
+        if self.speed == 1.0:
+            self._start_audio()
         self._timer.start()
+
+    def shuttle(self, direction: int) -> None:
+        """J / L: play backwards / forwards; again in the same direction doubles the speed, up
+        to 8× (egui's playback.reverse / forward)."""
+        if self.playing and self.speed * direction > 0:
+            speed = min(MAX_SPEED, max(-MAX_SPEED, self.speed * 2))
+        else:
+            speed = float(direction)
+        self.stop_at = self.rest_at = None
+        self.play(speed)
+
+    def play_in_to_out(self) -> None:
+        """Play the marked range once and rest at Out (egui's playback.inToOut)."""
+        if not self.has_content():
+            return
+        mark_in, mark_out = self.marks()
+        if self.playing:
+            self.stop(notify=False)
+        if mark_in is not None:
+            self.set_playhead(mark_in)
+        self.play(1.0)
+        self.stop_at = mark_out + self.frame() if mark_out is not None else None
+        self.rest_at = mark_out
+
+    def _halt(self) -> None:
+        self.playing = False
+        self._timer.stop()
+        self._stop_audio()
 
     def stop(self, notify: bool = True) -> None:
         if not self.playing:
             return
-        self.playing = False
-        self._timer.stop()
-        self.buttons["toggle"].setText("▶")
-        self._stop_audio()
+        self._halt()
+        self.speed = 1.0
+        self.view.dropped = None
+        self.view.update()
+        self.transport.set_icon("toggle", "play")
+        if self.rest_at is not None:
+            self.playhead = self.rest_at
+        self.stop_at = self.rest_at = None
         # snap to the frame grid and tell the engine where we stopped
         ft = self.frame()
         self.playhead = (self.playhead // ft) * ft
+        self._update_timecode()
+        self.scrub.set_playhead(self.playhead)
+        self.request_frame()  # at the paused resolution
         if notify:
             command, params = self.seek_command(self.playhead)
             self.command.emit(command, params)
@@ -379,15 +860,32 @@ class Monitor(QWidget):
         if not self.playing or not self.has_content():
             return
         elapsed = self._clock.nsecsElapsed()
-        t = self._play_from + elapsed * TICKS_PER_SECOND // 1_000_000_000
+        t = self._play_from + int(elapsed * TICKS_PER_SECOND * self.speed) // 1_000_000_000
         start, end = self.range()
-        if end and t >= end:
-            self.playhead = max(start, end - self.frame())
+        ft = self.frame()
+        if self.speed > 0:
+            limit = self.stop_at if self.stop_at is not None else (self._range_marks()[1] if self.mv.looping else end)
+            if limit and t >= limit:
+                if self.mv.looping and self.stop_at is None:
+                    lo = self._range_marks()[0]
+                    self._halt()
+                    self.playhead = lo
+                    self.play(self.speed)
+                    return
+                self.playhead = max(start, limit - ft)
+                self.stop()
+                return
+        elif t <= start:
+            self.playhead = start
             self.stop()
             return
-        ft = self.frame()
         frame_t = (t // ft) * ft
         if frame_t != self.playhead:
+            if self._frame_busy:
+                self.dropped += 1
+                if self.view.dropped == 0:
+                    self.view.dropped = self.dropped
+                    self.view.update()
             self.playhead = frame_t
             self._update_timecode()
             self.scrub.set_playhead(frame_t)
@@ -535,17 +1033,12 @@ class SourceMonitor(Monitor):
     """The clip opened in the Source monitor (``source.open``), at the Source playhead."""
 
     target = "source"
+    BUTTONS = SOURCE_BUTTONS
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(engine, parent)
         self.source: dict[str, Any] | None = None
         self.view.set_image(None, self.empty_message())
-
-    def extra_buttons(self) -> tuple[tuple[str, str, str, Any], ...]:
-        return (
-            ("insert", "⤵", N_("Insert"), lambda: self.command.emit("source.insert", {})),
-            ("overwrite", "⇣", N_("Overwrite"), lambda: self.command.emit("source.overwrite", {})),
-        )
 
     def set_source(self, state: dict[str, Any] | None, revision: int) -> None:
         """``state`` is the ``source.inspect`` reply (``item`` null when nothing is open)."""

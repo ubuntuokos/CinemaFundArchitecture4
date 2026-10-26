@@ -239,7 +239,11 @@ fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         let provider = s.media.provider(s.project.clone(), s.services.clone());
         let img = cfa4_render::render_item(&s.project, item, t, scale, &provider).ok_or("the source picture is unavailable (offline media?)")?;
         let bytes = img.over_black_rgba8();
-        return Ok((json!({"w": img.w, "h": img.h, "format": "rgba8", "time": t.0, "item": item.0, "target": "source"}), bytes));
+        let par = s.project.source_par(item).map_or(1.0, cfa4_project::par_ratio);
+        return Ok((
+            json!({"w": img.w, "h": img.h, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "item": item.0, "target": "source"}),
+            bytes,
+        ));
     }
     let seq = s.active_sequence().ok_or("no active sequence")?;
     let (w, h) = (seq.settings.width, seq.settings.height);
@@ -248,7 +252,11 @@ fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
     let bytes = img.over_black_rgba8();
     let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
-    Ok((json!({"w": img.w, "h": img.h, "format": "rgba8", "time": t.0, "offline": offline, "target": "program"}), bytes))
+    let par = cfa4_project::par_ratio(seq.settings.par);
+    Ok((
+        json!({"w": img.w, "h": img.h, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "offline": offline, "target": "program"}),
+        bytes,
+    ))
 }
 
 fn audio_frames(p: &Value) -> Result<usize, String> {
@@ -377,6 +385,24 @@ fn meter(target: &'static str, sr: u32, start: i64, channels: &[Vec<f32>], frame
     })
 }
 
+/// `time.parse {text, target?}`: a timecode typed into a monitor's timecode field, read the way
+/// Premiere reads it (`cfa4_time::parse_timecode`: any of `:;.,` separators, bare digits as
+/// right-aligned `HHMMSSFF`, `+`/`-` relative to the monitor's frame) at the Program sequence's
+/// or the Source clip's rate. Returns the time (ticks) of that frame.
+fn parse_time(s: &Session, p: &Value) -> Result<Value, String> {
+    let text = p.get("text").and_then(Value::as_str).ok_or("`text` must be a string")?;
+    let (rate, drop_frame, now) = if wants_source(p)? {
+        let item = source_item(s, p)?;
+        let view = cfa4_engine::clip_ops::source_view(s, item).ok_or("the Source clip is unavailable")?;
+        (view.rate, false, s.state.source_playhead)
+    } else {
+        let seq = s.active_sequence().ok_or("no active sequence")?;
+        (seq.settings.frame_rate, seq.settings.drop_frame, s.playhead())
+    };
+    let frame = cfa4_time::parse_timecode(text, rate, drop_frame, rate.frame_at(now)).map_err(|e| e.to_string())?;
+    Ok(json!({"time": rate.tick_of(frame).0, "frame": frame}))
+}
+
 /// Most buckets one `media.peaks` returns.
 const MAX_PEAK_BUCKETS: usize = 20_000;
 /// Longest media span one `media.peaks` reads (10 minutes at 48 kHz), so a request stays short.
@@ -467,6 +493,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
         },
         "frame.render" => match render_frame(s, &params) {
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
+        "time.parse" => match parse_time(s, &params) {
+            Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),
         },
         "media.peaks" => match media_peaks(s, &params) {
@@ -617,6 +647,28 @@ mod tests {
         let unknown = handle(&mut s, json!(8), "nope", json!({})).expect("reply");
         assert_eq!(unknown.json["ok"], json!(false));
         assert!(handle(&mut s, json!(9), "app.quit", json!({})).is_none());
+    }
+
+    #[test]
+    fn parses_typed_timecodes_and_reports_the_frame_size() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let rate = s.active_sequence().map(|q| q.settings.frame_rate).expect("demo sequence");
+        let ask = |s: &mut Session, text: &str| handle(s, json!(1), "time.parse", json!({"text": text})).expect("reply").json;
+        let r = ask(&mut s, "00:00:02:00");
+        let two_seconds = 2 * rate.timecode_base();
+        assert_eq!(r["result"]["frame"], json!(two_seconds), "{r}");
+        assert_eq!(r["result"]["time"], json!(rate.tick_of(two_seconds).0), "{r}");
+        assert_eq!(ask(&mut s, "200")["result"]["time"], r["result"]["time"], "bare digits are HHMMSSFF");
+        s.execute("playhead.set", json!({"time": r["result"]["time"]})).expect("seek");
+        let later = ask(&mut s, "+5");
+        assert_eq!(later["result"]["frame"].as_i64(), r["result"]["frame"].as_i64().map(|f| f + 5));
+        assert_eq!(ask(&mut s, "abc")["ok"], json!(false));
+        let frame = handle(&mut s, json!(2), "frame.render", json!({"maxWidth": 64})).expect("reply");
+        let seq = s.active_sequence().expect("demo sequence");
+        assert_eq!(frame.json["result"]["fullW"], json!(seq.settings.width));
+        assert_eq!(frame.json["result"]["fullH"], json!(seq.settings.height));
+        assert_eq!(frame.json["result"]["pixelAspect"], json!(1.0));
     }
 
     #[test]

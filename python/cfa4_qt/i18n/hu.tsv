@@ -564,3 +564,40 @@
 	Type Tool	Szöveg eszköz
 	Vertical Type Tool	Függőleges szöveg eszköz
 	Zoom Tool	Nagyító eszköz
+	Add Marker (M)	Jelölő hozzáadása (M)
+	Alpha	Alfa
+	Button Editor	Gombszerkesztő
+	Composite Video	Kompozit videó
+	Display Mode	Megjelenítési mód
+	Export Frame	Képkocka exportálása
+	Extract (')	Kivonás (')
+	Full	Teljes
+	Go to In (Shift+I)	Ugrás a kezdőponthoz (Shift+I)
+	Go to Out (Shift+O)	Ugrás a végponthoz (Shift+O)
+	High Quality Playback	Kiváló minőségű lejátszás
+	Insert (,)	Beszúrás (,)
+	Lift (;)	Kiemelés (;)
+	Loop	Ismétlés
+	Loop marked range	A kijelölt tartomány ismétlése
+	Magnification	Nagyítás
+	Mark In (I)	Kezdőpont jelölése (I)
+	Mark Out (O)	Végpont jelölése (O)
+	More transport controls	További lejátszásvezérlők
+	Overwrite (.)	Felülírás (.)
+	Paused Resolution	Felbontás szünetben
+	Play In to Out	Lejátszás a kezdőponttól a végpontig
+	Play-Stop Toggle (Space)	Lejátszás/Leállítás (Szóköz)
+	Playback Resolution	Lejátszási felbontás
+	RGBA Channels	RGBA-csatornák
+	Red	Vörös
+	Reset	Visszaállítás
+	Safe Margins	Biztonsági keretek
+	Select Playback Resolution	Lejátszási felbontás kiválasztása
+	Select Zoom Level	Nagyítás kiválasztása
+	Settings	Beállítások
+	Show Transport Controls	Lejátszásvezérlők megjelenítése
+	Shuttle Left	Léptetés balra
+	Shuttle Right	Léptetés jobbra
+	Shuttle Stop	Léptetés leállítása
+	Step Back 1 Frame (Left)	Egy kockát vissza (Balra)
+	Step Forward 1 Frame (Right)	Egy kockát előre (Jobbra)

@@ -1757,3 +1757,122 @@ def test_audio_meters_show_what_plays(app, tmp_path: Path, monkeypatch):
     finally:
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_program_monitor_controls_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's Program monitor: typed timecode, magnification with wheel zoom and pan, playback
+    and paused resolution, display modes, safe margins, the transport row with its Button Editor
+    and overflow menu, J/K/L shuttle, Play In to Out and Export Frame. The view is remembered."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+    from cfa4_qt.panels.monitor_view import MonitorView
+    from cfa4_qt.panels.transport import PROGRAM_BUTTONS
+
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", False)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1800, 1000)
+    win.show()
+    engine.start()
+    mon = win.monitor
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and mon.view.image is not None and len(win.registry.commands) > 100, 30_000)
+        ft = mon.frame()
+        base = round(TICKS_PER_SECOND / ft)
+        # the controls row
+        assert mon.zoom_button.text() == "Fit" and mon.res_button.text() == "1/2"
+        assert mon.view.full == (1920, 1080)
+        # a typed timecode, read by the engine
+        mon.timecode.setFocus()
+        mon.timecode.setText("00:00:02:00")
+        QtTest.QTest.keyClick(mon.timecode, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: mon.playhead == 2 * base * ft, 10_000), mon.playhead
+        assert wait_until(app, lambda: (win.sequence or {}).get("playhead") == 2 * base * ft, 10_000)
+        mon.timecode.setText("+5")
+        QtTest.QTest.keyClick(mon.timecode, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: mon.playhead == (2 * base + 5) * ft, 10_000), mon.playhead
+        # magnification: 200 % shows two screen pixels a frame pixel; the frame asked for grows
+        fit_width = mon.view.picture_rect().width()
+        mon.set_zoom(2.0)
+        assert mon.zoom_button.text() == "200%"
+        assert abs(mon.view.picture_rect().width() - 2 * 1920 / mon.view.devicePixelRatioF()) < 1
+        # paused at Full: the frame comes at the size shown (up to the frame's own size)
+        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.width() == 1920, 20_000), mon.view.image.width()
+        # a pan stays inside the picture
+        mon.view.pan_by(10_000, 0)
+        pic, area = mon.view.picture_rect(), QtCore.QRectF(mon.view.rect())
+        assert abs(pic.left() - area.left()) < 1, (pic, area)
+        # the wheel zooms about the pointer, from Fit too
+        mon.set_zoom(None)
+        assert mon.view.picture_rect().width() == fit_width
+        mon.view.zoom_about(1.1, mon.view.rect().center().toPointF())
+        assert mon.mv.zoom is not None and abs(mon.view.picture_rect().width() - fit_width * 1.1) < 1
+        mon.set_zoom(None)
+        # Paused Resolution 1/4: a quarter of the frame
+        mon.set_resolution("quarter", paused=True)
+        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.width() == 480, 20_000), mon.view.image.width()
+        # display modes: one channel as grey
+        mon.set_view(display="red")
+        assert mon.view.shown.format() == QtGui.QImage.Format.Format_Grayscale8
+        mon.set_view(display="composite", safe_margins=True)
+        assert mon.view.shown.format() != QtGui.QImage.Format.Format_Grayscale8
+        # remembered
+        saved = MonitorView.load(settings, "monitor/program")
+        assert saved.paused_res == "quarter" and saved.safe_margins and saved.zoom is None
+        # the wrench menu, as egui's
+        mon._fill_wrench_menu()
+        names = {a.objectName() for a in mon.wrench.menu().actions()}
+        assert {"program.settings.display.composite", "program.settings.safeMargins", "program.settings.showTransport", "program.settings.loop"} <= names
+        # the View menu acts on the focused monitor
+        view_menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.View")
+        titles = [a.text() for a in view_menu.actions()]
+        assert "Playback Resolution" in titles and "Magnification" in titles and "Safe Margins" in titles
+        # the transport row: egui's buttons, Loop only from the Button Editor
+        shown = [d.command for d in mon.transport.shown()]
+        assert shown == [d.command for d in PROGRAM_BUTTONS if d.command != "playback.loop"]
+        assert all(mon.buttons[d.key].isVisible() for d in mon.transport.shown())
+        mon.transport.set_hidden([*mon.mv.hidden, "markers.add"])
+        assert not mon.buttons["marker"].isVisible()
+        assert "markers.add" in MonitorView.load(settings, "monitor/program").hidden
+        mon.transport.set_hidden(["playback.loop"])
+        # narrow: what doesn't fit goes to the overflow menu
+        mon.transport.resize(220, mon.transport.height())
+        assert mon.transport.overflow and mon.transport.more.isVisible()
+        mon.transport.resize(900, mon.transport.height())
+        assert not mon.transport.overflow
+        # Mark In / Mark Out buttons mark the sequence
+        mon.seek(2 * base * ft)
+        mon.buttons["markIn"].click()
+        assert wait_until(app, lambda: (win.sequence or {}).get("in") == 2 * base * ft, 10_000), win.sequence.get("in")
+        mon.seek(3 * base * ft)
+        mon.buttons["markOut"].click()
+        assert wait_until(app, lambda: (win.sequence or {}).get("out") == 3 * base * ft, 10_000)
+        assert mon.duration_label.text() == format_timecode(base * ft + ft, ft)
+        # Go to In
+        mon.buttons["goIn"].click()
+        assert mon.playhead == 2 * base * ft
+        # Play In to Out: plays the marked second once and rests at Out
+        mon.play_in_to_out()
+        assert mon.playing
+        assert wait_until(app, lambda: not mon.playing, 10_000)
+        assert mon.playhead == 3 * base * ft
+        # J / K / L
+        mon.shuttle(1)
+        assert mon.playing and mon.speed == 1.0
+        mon.shuttle(1)
+        assert mon.speed == 2.0
+        mon.shuttle(-1)
+        assert mon.speed == -1.0
+        mon.stop()
+        assert not mon.playing and mon.speed == 1.0
+        # Export Frame asks for the file and writes it
+        out = tmp_path / "still.png"
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), "PNG (*.png)"))
+        mon.buttons["exportFrame"].click()
+        assert wait_until(app, lambda: out.exists() and out.stat().st_size > 0, 30_000), win.events.text.toPlainText()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
