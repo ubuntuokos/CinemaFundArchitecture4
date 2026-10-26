@@ -491,6 +491,8 @@ class Monitor(QWidget):
         self._audio_pending = b""
         # (first sample, samples per block, [peaks per block], [loudness per block]) as played
         self.meter_blocks: deque[tuple[int, int, list[Any], list[Any]]] = deque()
+        # (first sample, frames, {strip id: peaks}) per played chunk, for the Audio Track Mixer
+        self.strip_blocks: deque[tuple[int, int, dict[Any, list[float]]]] = deque()
         self._apply_view(request=False)
         self._restyle()
 
@@ -940,6 +942,7 @@ class Monitor(QWidget):
         self._audio_pending = b""
         self._audio_busy = False
         self.meter_blocks.clear()
+        self.strip_blocks.clear()
         if HAVE_AUDIO:
             self._open_sink(rate)
         self._feed_audio()
@@ -1001,6 +1004,13 @@ class Monitor(QWidget):
             )
             while len(self.meter_blocks) > max(4, int(METER_KEEP_SECONDS / AUDIO_CHUNK_SECONDS)):
                 self.meter_blocks.popleft()
+            strips = meter.get("strips")
+            if isinstance(strips, list):
+                self.strip_blocks.append(
+                    (int(result["start"]), int(result.get("frames") or 0), {s.get("id"): list(s.get("peaks") or []) for s in strips if isinstance(s, dict)})
+                )
+                while len(self.strip_blocks) > max(4, int(METER_KEEP_SECONDS / AUDIO_CHUNK_SECONDS)):
+                    self.strip_blocks.popleft()
         if self._sink_io is None or not data:
             self._feed_audio()
             return

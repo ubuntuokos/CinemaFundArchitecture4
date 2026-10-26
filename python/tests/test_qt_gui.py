@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -1994,6 +1994,134 @@ def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
         win.notes.flush()
         got: list[str] = []
         assert wait_until(app, lambda: (engine.execute("project.notes", {}, on_reply=lambda r, _b: got.append(r.get("text"))) and False) or "Check the mix" in got, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_timecode_and_progress_panels(app, tmp_path: Path):
+    """egui's Timecode panel (rows read out by the engine, row menu, "+", remembered) and
+    Progress panel (the engine's jobs, cancel)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 900)
+    win.show()
+    engine.start()
+    panel = win.timecode_panel
+    try:
+        assert wait_until(app, lambda: bool(win.sequence), 30_000)
+        assert not win.docks["Timecode"].isVisible() and not win.docks["Progress"].isVisible()
+        win.docks["Timecode"].show()
+        win.docks["Timecode"].raise_()
+        ft = win.monitor.frame()
+        base = round(TICKS_PER_SECOND / ft)
+        win._seek_program(2 * base * ft)
+        assert wait_until(app, lambda: [v.get("value") for v in panel.values] == ["00:00:02:00"], 10_000), panel.values
+        assert panel.values[0]["mode"] == "Current Time" and panel.values[0]["source"] == "Program"
+        # "+" adds a Duration row; the menu turns it into Frames of the current time
+        panel.add.click()
+        assert [r["mode"] for r in panel.rows] == ["current", "duration"]
+        menu = panel.menu_for(1)
+        next(a for a in menu.actions() if a.objectName() == "timecode.row.1.mode.current").trigger()
+        menu = panel.menu_for(1)
+        next(a for a in menu.actions() if a.objectName() == "timecode.row.1.display.Frames").trigger()
+        assert wait_until(app, lambda: len(panel.values) == 2 and panel.values[1].get("value") == str(2 * base), 10_000), panel.values
+        grab = panel.grab()
+        assert grab.width() > 0
+        # remembered
+        from cfa4_qt.panels.readouts import TimecodePanel
+
+        again = TimecodePanel()
+        again.attach_settings(settings)
+        assert again.rows == panel.rows
+        # Progress: the engine's background jobs
+        win.docks["Progress"].show()
+        win.docks["Progress"].raise_()
+        assert wait_until(app, lambda: win.progress.empty_text.isVisible(), 5_000)
+        win.progress.set_jobs([{"id": 7, "label": "Render", "progress": 0.5, "finished": False, "status": "", "done": 1, "total": 2}])
+        row = win.progress.rows[0]
+        assert row.isVisible() and row.status().startswith("50 %") and row.stop.isVisibleTo(row)
+        win.progress.set_jobs([{"id": 7, "label": "Render", "finished": True, "result": {"error": "cancelled"}}])
+        assert not win.progress.rows[0].isVisible()
+        win.progress.finished.setChecked(True)
+        assert win.progress.rows[0].isVisible() and win.progress.rows[0].status() == "Cancelled"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
+    """egui's Audio Track Mixer: a strip per track and the Mix, fader (egui's taper, touch while
+    dragged, double-click 0 dB), M / S / R, automation mode, effect slots, and per-strip meters
+    of the audio being played."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+    from cfa4_qt.panels.mixer import db_to_pos, pos_to_db
+
+    assert db_to_pos(0.0) == pytest.approx(0.76) and pos_to_db(0.76) == pytest.approx(0.0)
+    assert pos_to_db(0.0) == -96.0 and db_to_pos(15.0) == 1.0
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", False)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1700, 1000)
+    win.show()
+    engine.start()
+    mixer = win.mixer
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 30_000)
+        assert not win.docks["Audio Track Mixer"].isVisible()
+        win.docks["Audio Track Mixer"].show()
+        win.docks["Audio Track Mixer"].raise_()
+        assert wait_until(app, lambda: [s.ref for s in mixer.strips if s.isVisible()] == ["A1", "A2", "A3", "Mix"], 10_000)
+        a1 = mixer.strips[0]
+
+        def strip(ref: str) -> dict:
+            return next(s for s in mixer.strips_data if s.get("ref") == ref)
+
+        assert wait_until(app, lambda: a1.regions.get("cap") is not None, 5_000)
+        cap = a1.regions["cap"].center().toPoint()
+        Qt = QtCore.Qt
+        QtTest.QTest.mousePress(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap)
+        for i in range(1, 6):
+            QtTest.QTest.mouseMove(a1, cap + QtCore.QPoint(0, 8 * i))
+        QtTest.QTest.mouseRelease(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, cap + QtCore.QPoint(0, 40))
+        assert wait_until(app, lambda: strip("A1")["volumeDb"] < -1.0, 10_000), strip("A1")["volumeDb"]
+        QtTest.QTest.mouseDClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["cap"].center().toPoint())
+        assert wait_until(app, lambda: abs(strip("A1")["volumeDb"]) < 0.01, 10_000), strip("A1")["volumeDb"]
+        # M / S / R
+        QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["mute"].center().toPoint())
+        assert wait_until(app, lambda: strip("A1")["muted"] is True, 10_000)
+        QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["mute"].center().toPoint())
+        assert wait_until(app, lambda: strip("A1")["muted"] is False, 10_000)
+        # automation mode
+        menu = a1.menu_for("mode")
+        next(a for a in menu.actions() if a.objectName() == "mixer.A1.mode.Touch").trigger()
+        assert wait_until(app, lambda: strip("A1")["mode"] == "Touch", 10_000)
+        # an effect in the first insert slot
+        mixer.fx_button.click()
+        assert mixer.fx_open
+        assert wait_until(app, lambda: "fx.0" in a1.layout_regions(), 2_000)
+        menu = a1.menu_for("fx.0")
+        acts = [a for m in [menu, *menu.findChildren(QtWidgets.QMenu)] for a in m.actions() if a.objectName().startswith("mixer.A1.fx.0.")]
+        assert acts, [a.text() for a in menu.actions()]
+        acts[0].trigger()
+        assert wait_until(app, lambda: len(strip("A1")["inserts"]) == 1, 10_000), win.events.text.toPlainText()[-400:]
+        # per-strip meters while the Program plays
+        win.monitor.seek(10 * TICKS_PER_SECOND)
+        win.monitor.play()
+        assert wait_until(app, lambda: any(max(s.levels or [-90]) > -60 for s in mixer.strips if s.isVisible()), 15_000), [s.levels for s in mixer.strips]
+        mix = next(s for s in mixer.strips if s.ref == "Mix")
+        assert wait_until(app, lambda: max(mix.levels or [-90]) > -60, 10_000)
+        win.monitor.stop()
+        assert mixer.grab().width() > 0
     finally:
         win._quit_confirmed = True
         win.close()

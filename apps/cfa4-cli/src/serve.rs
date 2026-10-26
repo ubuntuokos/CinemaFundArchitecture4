@@ -320,12 +320,22 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         None => time_param(s, p)?.to_units_floor(i64::from(sr)),
     };
     let provider = s.media.provider(s.project.clone(), s.services.clone());
-    let buf = cfa4_render::audio::mix_sequence(&s.project, seq, start, frames, &provider);
+    // through the live mixer state: a fader or knob held in the Audio Track Mixer (`mixer.touch`)
+    // is heard while it is held, and each strip's peaks are measured on the way
+    let live = &s.previews.live;
+    let _ = live.take_meters(); // what earlier mixes left
+    let graph = cfa4_render::mixer::mix_graph(&s.project, seq, start, frames, &provider, Some(live));
+    let buf = cfa4_render::audio::to_layout(graph, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::FrontRear);
     let channels = buf.channels.len();
     let bytes = interleave(&buf.channels, frames);
     let mut meta = json!({"sampleRate": buf.sample_rate, "channels": channels, "frames": frames, "start": start, "format": "f32le", "target": "program"});
+    let strips = live.take_meters();
     if wants_meter(p) {
         meta["meter"] = meter("program", buf.sample_rate, start, &buf.channels, frames);
+        // each mixer strip's peak (linear, post-fader, one per channel) over this block
+        let mut strips: Vec<Value> = strips.into_iter().map(|(id, peaks)| json!({"id": id.0, "peaks": peaks})).collect();
+        strips.sort_by_key(|v| v["id"].as_u64());
+        meta["meter"]["strips"] = Value::Array(strips);
     }
     Ok((meta, bytes))
 }
@@ -401,6 +411,104 @@ fn parse_time(s: &Session, p: &Value) -> Result<Value, String> {
     };
     let frame = cfa4_time::parse_timecode(text, rate, drop_frame, rate.frame_at(now)).map_err(|e| e.to_string())?;
     Ok(json!({"time": rate.tick_of(frame).0, "frame": frame}))
+}
+
+/// `time.readout {rows: [{source, mode, display}], time?, sourceTime?}`: the Timecode panel's rows
+/// (egui's `timecode::row_text`), each `{value, caption}`. `source` is `program` or `source`;
+/// `mode` is `current`, `media` (the source timecode of the topmost enabled video clip under the
+/// playhead, or the Source clip's own), `duration`, `inOut` or `remaining`; `display` is a
+/// `TimeDisplay` (`Timecode`, `Frames`, `Feet16`, `Feet35`, `AudioSamples`, `Seconds`). `time` /
+/// `sourceTime` stand in for the playheads while the GUI plays.
+fn time_readout(s: &Session, p: &Value) -> Result<Value, String> {
+    use cfa4_time::{FrameRate, Tick, TimeDisplay, format_time};
+    struct View {
+        name: String,
+        rate: FrameRate,
+        df: bool,
+        t: Tick,
+        dur: Tick,
+        marks: (Option<Tick>, Option<Tick>),
+        media: Option<(Tick, FrameRate)>,
+        sample_rate: i64,
+    }
+    let program_t = p.get("time").and_then(Value::as_i64).map(Tick).unwrap_or_else(|| s.playhead());
+    let source_t = p.get("sourceTime").and_then(Value::as_i64).map(Tick).unwrap_or(s.state.source_playhead);
+    let source_view = || {
+        s.state.source_item.and_then(|i| s.project.item(i)).map(|it| {
+            let start = it.as_media().and_then(|m| m.info.start_timecode).map(|f| it.frame_rate().tick_of(f)).unwrap_or_default();
+            let marks = match &it.kind {
+                cfa4_project::ItemKind::Media(m) => (m.mark_in, m.mark_out),
+                cfa4_project::ItemKind::Sequence(q) => (q.mark_in, q.mark_out),
+                _ => (None, None),
+            };
+            let sr = it.as_media().and_then(|m| m.info.audio()).map(|a| i64::from(a.sample_rate)).unwrap_or(48000);
+            View {
+                name: it.name.clone(),
+                rate: it.frame_rate(),
+                df: false,
+                t: source_t,
+                dur: it.duration(),
+                marks,
+                media: Some((start + source_t, it.frame_rate())),
+                sample_rate: sr,
+            }
+        })
+    };
+    let program_view = || {
+        s.active_sequence().map(|q| {
+            let t = program_t;
+            let media = q.video_tracks.iter().rev().find_map(|tr| tr.item_at(t).filter(|c| c.enabled)).and_then(|c| {
+                let it = s.project.item(c.item)?;
+                let m = it.as_media()?;
+                let rate = m.frame_rate();
+                let start = m.info.start_timecode.map(|f| rate.tick_of(f)).unwrap_or_default();
+                Some((start + c.source_time_at(t), rate))
+            });
+            View {
+                name: s.state.active_sequence.and_then(|i| s.project.item(i)).map(|i| i.name.clone()).unwrap_or_default(),
+                rate: q.settings.frame_rate,
+                df: q.settings.drop_frame,
+                t,
+                dur: q.duration(),
+                marks: (q.mark_in, q.mark_out),
+                media,
+                sample_rate: i64::from(q.settings.sample_rate),
+            }
+        })
+    };
+    let rows = p.get("rows").and_then(Value::as_array).ok_or("`rows` must be an array")?;
+    let mut out = Vec::new();
+    for row in rows {
+        let source = row.get("source").and_then(Value::as_str).unwrap_or("program");
+        let mode = row.get("mode").and_then(Value::as_str).unwrap_or("current");
+        let display: TimeDisplay =
+            row.get("display").cloned().map(serde_json::from_value).transpose().map_err(|e| format!("bad `display`: {e}"))?.unwrap_or_default();
+        let mode_label = match mode {
+            "current" => "Current Time",
+            "media" => "Media Time",
+            "duration" => "Duration",
+            "inOut" => "In/Out Duration",
+            "remaining" => "Remaining",
+            other => return Err(format!("unknown mode `{other}`")),
+        };
+        let is_source = source == "source";
+        let view = if is_source { source_view() } else { program_view() };
+        let Some(v) = view else {
+            out.push(json!({"value": "--:--:--:--", "mode": mode_label, "source": if is_source { "Source" } else { "Program" }, "name": null}));
+            continue;
+        };
+        let fmt = |t: Tick, rate: FrameRate, df: bool| format_time(t, rate, df, display, v.sample_rate);
+        let (a, b) = (v.marks.0.unwrap_or(Tick::ZERO), v.marks.1.unwrap_or(v.dur));
+        let value = match mode {
+            "current" => fmt(v.t, v.rate, v.df),
+            "media" => v.media.map_or_else(|| "--:--:--:--".to_string(), |(t, r)| fmt(t, r, false)),
+            "duration" => fmt(v.dur, v.rate, v.df),
+            "inOut" => fmt((b - a).max(Tick::ZERO), v.rate, v.df),
+            _ => fmt((b - v.t).max(Tick::ZERO), v.rate, v.df),
+        };
+        out.push(json!({"value": value, "mode": mode_label, "source": if is_source { "Source" } else { "Program" }, "name": v.name}));
+    }
+    Ok(json!({"rows": out}))
 }
 
 /// Most buckets one `media.peaks` returns.
@@ -493,6 +601,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
         },
         "frame.render" => match render_frame(s, &params) {
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
+        "time.readout" => match time_readout(s, &params) {
+            Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),
         },
         "time.parse" => match parse_time(s, &params) {
@@ -672,6 +784,31 @@ mod tests {
     }
 
     #[test]
+    fn reads_out_the_timecode_panel_rows() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let rate = s.active_sequence().map(|q| q.settings.frame_rate).expect("demo sequence");
+        let t = rate.tick_of(2 * rate.timecode_base());
+        let rows = json!([
+            {"source": "program", "mode": "current", "display": "Timecode"},
+            {"source": "program", "mode": "current", "display": "Frames"},
+            {"source": "program", "mode": "duration"},
+            {"source": "program", "mode": "media"},
+            {"source": "source", "mode": "current"},
+        ]);
+        let r = handle(&mut s, json!(1), "time.readout", json!({"rows": rows, "time": t.0})).expect("reply").json;
+        let out = r["result"]["rows"].as_array().cloned().expect("rows");
+        assert_eq!(out[0]["value"], json!("00:00:02:00"), "{r}");
+        assert_eq!(out[0]["mode"], json!("Current Time"));
+        assert_eq!(out[1]["value"], json!((2 * rate.timecode_base()).to_string()));
+        assert_ne!(out[2]["value"], json!("--:--:--:--"));
+        assert_ne!(out[3]["value"], json!("--:--:--:--"), "a clip is under the playhead at 2 s");
+        assert_eq!(out[4]["value"], json!("--:--:--:--"), "nothing open in the Source monitor");
+        let bad = handle(&mut s, json!(2), "time.readout", json!({"rows": [{"mode": "nope"}]})).expect("reply").json;
+        assert_eq!(bad["ok"], json!(false));
+    }
+
+    #[test]
     fn audio_render_meters_what_it_plays() {
         let mut s = Session::default();
         let _ = s.execute("file.openDemoProject", json!({}));
@@ -700,6 +837,10 @@ mod tests {
         assert!(last[2].as_f64().is_some(), "integrated {last}");
         // a jump starts over
         assert_eq!(ask(&mut s, 3, 0)["reset"], json!(true));
+        // each mixer strip's peaks: the audio tracks and the Mix
+        let strips = first["strips"].as_array().cloned().expect("strips");
+        assert!(strips.len() >= 2, "{strips:?}");
+        assert!(strips.iter().any(|v| v["id"].as_u64() == Some(u64::MAX)), "the Mix");
         // without `meter`, no meter
         let plain = handle(&mut s, json!(4), "audio.render", json!({"start": 0, "frames": 480})).expect("reply");
         assert!(plain.json["result"].get("meter").is_none());

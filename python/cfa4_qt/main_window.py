@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
+from PySide6.QtCore import QByteArray, QElapsedTimer, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
@@ -31,15 +31,17 @@ from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.meters import AudioMetersPanel
+from .panels.mixer import TrackMixerPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.monitor_view import build_view_menu
 from .panels.project import ProjectPanel
+from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 8  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups
+LAYOUT_VERSION = 10  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -51,6 +53,9 @@ DOCK_PLAN = (
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Markers", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project Notes", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Timecode", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Audio Track Mixer", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Progress", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -140,6 +145,23 @@ class MainWindow(QMainWindow):
         self.info = InfoPanel(self)
         self.metadata = MetadataPanel(self)
         self.notes = NotesPanel(self)
+        self.timecode_panel = TimecodePanel(self)
+        self.timecode_panel.attach_settings(self.settings)
+        self.timecode_panel.on_change = self.update_timecode
+        self._timecode_busy = False
+        self.progress = ProgressPanel(self)
+        self.progress.attach_settings(self.settings)
+        self.progress.poll.timeout.connect(self.update_jobs)
+        self.mixer = TrackMixerPanel(self)
+        self.mixer.transport.connect(self._mixer_transport)
+        self._mixer_busy = False
+        self._mixer_clock = QElapsedTimer()
+        self._mixer_clock.start()
+        self._mixer_heard: int | None = None
+        self._mixer_timer = QTimer(self)
+        self._mixer_timer.setInterval(33)
+        self._mixer_timer.timeout.connect(self._mixer_meters)
+        self._mixer_timer.start()
         self.inspector_source = "project"  # which selection Info and Metadata follow (egui's)
         self.hidden_markers: list[Any] = []
         self.target_item: int | None = None
@@ -169,6 +191,9 @@ class MainWindow(QMainWindow):
             "Markers": self.markers,
             "Metadata": self.metadata,
             "Project Notes": self.notes,
+            "Timecode": self.timecode_panel,
+            "Progress": self.progress,
+            "Audio Track Mixer": self.mixer,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -191,6 +216,8 @@ class MainWindow(QMainWindow):
             self.effect_controls,
             self.metadata,
             self.notes,
+            self.progress,
+            self.mixer,
         ):
             panel.command.connect(self.execute)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
@@ -201,6 +228,10 @@ class MainWindow(QMainWindow):
         self.project_panel.invoke.connect(self.invoke)
         self.timeline.canvas.seek.connect(self._scrub)
         self.monitor.playhead_moved.connect(self._playback_moved)
+        self.source_monitor.playhead_moved.connect(lambda _t: self.update_timecode())
+        self.docks["Timecode"].visibilityChanged.connect(lambda shown: shown and self.update_timecode())
+        self.docks["Progress"].visibilityChanged.connect(lambda shown: shown and self.update_jobs())
+        self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
 
         self._refresh_timer = QTimer(self, singleShot=True, interval=40)
         self._refresh_timer.timeout.connect(self.refresh)
@@ -236,12 +267,17 @@ class MainWindow(QMainWindow):
         # Markers, History (Project Notes there too, closed until Window ▸ Project Notes)
         win.tabifyDockWidget(d["Source"], d["Effect Controls"])
         win.tabifyDockWidget(d["Effect Controls"], d["Metadata"])
+        win.tabifyDockWidget(d["Metadata"], d["Audio Track Mixer"])
+        d["Audio Track Mixer"].hide()  # in egui's Audio workspace; Window ▸ Audio Track Mixer
         win.tabifyDockWidget(d["Project"], d["Info"])
         win.tabifyDockWidget(d["Info"], d["Effects"])
         win.tabifyDockWidget(d["Effects"], d["Markers"])
         win.tabifyDockWidget(d["Markers"], d["History"])
         win.tabifyDockWidget(d["History"], d["Project Notes"])
-        d["Project Notes"].hide()
+        win.tabifyDockWidget(d["Project Notes"], d["Timecode"])
+        win.tabifyDockWidget(d["Timecode"], d["Progress"])
+        for closed in ("Project Notes", "Timecode", "Progress"):  # opened from the Window menu
+            d[closed].hide()
         win.splitDockWidget(d["Tools"], d["Timeline"], Qt.Orientation.Horizontal)  # Tools left of it
         win.splitDockWidget(d["Timeline"], d["Audio Meters"], Qt.Orientation.Horizontal)
         win.tabifyDockWidget(d["Timeline"], d["Events"])
@@ -559,6 +595,7 @@ class MainWindow(QMainWindow):
 
     def _on_effects_list(self, result: Any, _b: bytes | None) -> None:
         self.effects.set_effects(result)
+        self.mixer.set_effects(result)
         if isinstance(result, list):
             self.inspector.effect_names = {
                 str(e["id"]): str(e.get("name") or e["id"]) for e in result if isinstance(e, dict) and e.get("id")
@@ -812,8 +849,10 @@ class MainWindow(QMainWindow):
             self._follow("timeline")
         if new is self.source_monitor or self.source_monitor.isAncestorOf(new):
             self.active_monitor = "source"
+            QTimer.singleShot(0, self, self.update_timecode)
         elif new is self.monitor or self.monitor.isAncestorOf(new) or self.timeline.isAncestorOf(new):
             self.active_monitor = "program"
+            QTimer.singleShot(0, self, self.update_timecode)
 
     # ----- Info, Metadata, Markers, Project Notes -----
     def _follow(self, source: str) -> None:
@@ -855,6 +894,98 @@ class MainWindow(QMainWindow):
             self.engine.execute("metadata.get", {"item": item}, on_reply=got, on_error=lambda _m: got(None, None))
         self.engine.execute("state.inspect", {}, on_reply=self._on_state_inspect)
         self.engine.execute("project.notes", {}, on_reply=lambda r, _b: self.notes.set_notes(str((r or {}).get("text") or "")))
+        self.update_timecode()
+        self.update_jobs()
+        self.update_mixer()
+
+    def update_mixer(self) -> None:
+        """The Audio Track Mixer's strips at the playhead (``mixer.inspect``)."""
+        if self._mixer_busy:
+            self._mixer_again = True
+            return
+        if not self.engine.running or not self.mixer.isVisible() or self.sequence is None:
+            return
+        playhead = self.monitor.playhead
+        self._mixer_busy = True
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self._mixer_busy = False
+            self.mixer.set_state(result, self.sequence, playhead)
+            if getattr(self, "_mixer_again", False):
+                self._mixer_again = False
+                self.update_mixer()
+
+        def failed(_m: str) -> None:
+            self._mixer_busy = False
+
+        self.engine.execute("mixer.inspect", {"time": playhead}, on_reply=done, on_error=failed)
+
+    def _mixer_meters(self) -> None:
+        """Each strip's peaks of the audio being heard (the Program monitor's blocks)."""
+        dt = min(0.1, self._mixer_clock.restart() / 1000.0)
+        if not self.mixer.isVisible():
+            return
+        mon = self.monitor
+        peaks: dict[Any, list[float]] = {}
+        if mon.playing:
+            now = mon.play_sample()
+            last = self._mixer_heard if self._mixer_heard is not None else now - 1
+            for start, frames, strips in mon.strip_blocks:
+                if start <= now and start + frames > last:  # heard since the last tick
+                    for sid, values in strips.items():
+                        cur = peaks.setdefault(sid, [0.0] * len(values))
+                        for i, v in enumerate(values[: len(cur)]):
+                            cur[i] = max(cur[i], float(v or 0.0))
+            self._mixer_heard = now
+        else:
+            self._mixer_heard = None
+        self.mixer.set_levels(peaks, dt)
+
+    def _mixer_transport(self, key: str) -> None:
+        mon = self.monitor
+        if key == "goIn":
+            mon.go_to_in()
+        elif key == "goOut":
+            mon.go_to_out()
+        elif key == "toggle":
+            mon.toggle_playback()
+        elif key == "inToOut":
+            mon.play_in_to_out()
+        elif key == "loop":
+            mon.set_view(looping=not mon.mv.looping)
+
+    def update_timecode(self) -> None:
+        """The Timecode panel's rows, read out by the engine (with the playing monitors' times)."""
+        panel = self.timecode_panel
+        if self._timecode_busy:
+            self._timecode_again = True  # ask again when this reply is in
+            return
+        if not self.engine.running or not panel.isVisible():
+            return
+        panel.active = "source" if self.active_monitor == "source" and self.source_monitor.has_content() else "program"
+        params = panel.request()
+        if self.monitor.playing:
+            params["time"] = self.monitor.playhead
+        if self.source_monitor.playing:
+            params["sourceTime"] = self.source_monitor.playhead
+        self._timecode_busy = True
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self._timecode_busy = False
+            panel.set_values(result)
+            if getattr(self, "_timecode_again", False):
+                self._timecode_again = False
+                self.update_timecode()
+
+        def failed(_m: str) -> None:
+            self._timecode_busy = False
+            self._timecode_again = False
+
+        self.engine.call("time.readout", params, on_reply=done, on_error=failed)
+
+    def update_jobs(self) -> None:
+        if self.engine.running and (self.progress.isVisible() or self.progress.poll.isActive()):
+            self.engine.execute("jobs.list", {}, on_reply=lambda r, _b: self.progress.set_jobs(r))
 
     def _on_state_inspect(self, result: Any, _b: bytes | None) -> None:
         state = result if isinstance(result, dict) else {}
@@ -875,6 +1006,8 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.update()
         if self.info.isVisible():
             self.info.update_info(getattr(self, "item_info", None), self.sequence, ticks)
+        self.update_timecode()
+        self.update_mixer()
 
     # ----- export -----
     def open_export(self) -> None:

@@ -643,3 +643,54 @@
 	Client	Ügyfél
 	Camera Angle	Kameraállás
 	File Path	Fájl elérési útja
+	 · {time} left	 · még {time}
+	Active Monitor	Aktív monitor
+	Add a timecode row	Időkódsor hozzáadása
+	Audio Samples	Hangminták
+	Cancel	Mégse
+	Current Time	Aktuális idő
+	Failed: {e}	Sikertelen: {e}
+	Feet + Frames 16mm	Láb + kocka 16 mm
+	Feet + Frames 35mm	Láb + kocka 35 mm
+	Frames	Képkockák
+	In/Out Duration	Kezdő- és végpont közti hossz
+	Media Time	Médiaidő
+	No background jobs.	Nincs háttérfeladat.
+	Remove Row	Sor eltávolítása
+	Seconds	Másodpercek
+	Show finished jobs	Befejezett feladatok megjelenítése
+	{mode} · no clip	{mode} · nincs klip
+	{mode} · no sequence	{mode} · nincs szekvencia
+	Render	Renderelés
+	Job	Feladat
+	Audio Track Mixer menu	Hangsáv-keverő menü
+	Automation mode	Automatizálási mód
+	Enable track for recording	Sáv engedélyezése felvételre
+	Fill the slots above first	Előbb a fenti helyeket töltsd ki
+	Go to In Point	Ugrás a kezdőponthoz
+	Go to Out Point	Ugrás a végponthoz
+	Input channel mapping	Bemeneti csatornakiosztás
+	Meter Input(s) Only	Csak a bemenet(ek) mérése
+	Mix	Mix
+	Mute Send	Küldés némítása
+	New Submix	Új almix
+	Pan / balance (drag; double-click: centre)	Panoráma / balansz (húzás; dupla kattintás: középre)
+	Post-Fader	Fader után
+	Pre-Fader	Fader előtt
+	Remove Send	Küldés eltávolítása
+	Show All	Összes megjelenítése
+	Show/Hide Effects and Sends	Effektek és küldések megjelenítése/elrejtése
+	Show/Hide Tracks	Sávok megjelenítése/elrejtése
+	Solo safe	Szóló-védett
+	Track output assignment	Sáv kimenet-hozzárendelése
+	Voice-over recording is not in the Qt GUI yet	A narrációfelvétel a Qt-felületen még nincs meg
+	Volume (drag; double-click: 0 dB)	Hangerő (húzás; dupla kattintás: 0 dB)
+	pre 	előtte 
+	Off	Ki
+	Read	Olvasás
+	Latch	Rögzítés
+	Touch	Érintés
+	Write	Írás
+	Stereo	Sztereó
+	Swap	Csere
+	Mono	Monó
