@@ -3026,6 +3026,12 @@ fn build() -> Vec<CommandSpec> {
             journal: false,
         },
         query!("effects.inspect", "Inspect Clip Effects", r#"{"clip":id? (default: the first selected clip)}"#, |s, p| inspect_effects(s, p)),
+        query!(
+            "effects.graph",
+            "Graph Effect Parameter",
+            r#"{"clip":id,"effect":index|id,"param":str,"mask":n?,"samples":n? (8..2000, default 200)}"#,
+            |s, p| graph_param(s, p)
+        ),
         cmd!(
             "effects.setParam",
             "Set Effect Parameter",
@@ -3449,6 +3455,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
+    v.extend(crate::program_overlay::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
     v.extend(crate::transcript::commands());
@@ -3959,11 +3966,36 @@ pub(crate) fn timeline_time_of(it: &cfa4_project::TrackItem, m: Tick) -> Option<
 /// at the playhead and the keyframes, in the shapes `effects.setParam` / `effects.setKeyframe` take.
 fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let kind_of = |c: ClipId| q.find_item(c).and_then(|(tid, _)| q.track(tid)).map(|t| t.kind);
+    // as egui's panel: the first selected video clip, else the first selected clip
     let c = match clip_p(p, "clip") {
         Some(c) => c,
-        None => *s.state.selection.first().ok_or_else(|| bad("effects.inspect", "no clip selected"))?,
+        None => s
+            .state
+            .selection
+            .iter()
+            .copied()
+            .find(|c| kind_of(*c) == Some(TrackKind::Video))
+            .or_else(|| s.state.selection.first().copied())
+            .ok_or_else(|| bad("effects.inspect", "no clip selected"))?,
     };
-    let (_, it) = q.find_item(c).ok_or_else(|| bad("effects.inspect", "no such clip in the active sequence"))?;
+    let (tid, it) = q.find_item(c).ok_or_else(|| bad("effects.inspect", "no such clip in the active sequence"))?;
+    let kind = q.track(tid).map_or(TrackKind::Video, |t| t.kind);
+    // the audio linked to a video clip, shown under it when that audio is selected too or linked
+    // selection is on (so clip audio effects stay in reach on A/V pairs)
+    let linked_audio = match (kind, it.link) {
+        (TrackKind::Video, Some(link)) => s
+            .state
+            .selection
+            .iter()
+            .copied()
+            .find(|a| kind_of(*a) == Some(TrackKind::Audio) && q.find_item(*a).is_some_and(|(_, ai)| ai.link == Some(link)))
+            .or_else(|| {
+                s.state.linked_selection.then(|| q.audio_tracks.iter().find_map(|t| t.items.iter().find(|i| i.link == Some(link)).map(|i| i.id))).flatten()
+            }),
+        _ => None,
+    };
+    let selected_effect = s.state.selected_effect.as_ref().filter(|e| e.clip == c).and_then(|e| e.index(&it.effects));
     let ph = s.playhead();
     let inside = ph >= it.start && ph < it.end();
     let at = it.effect_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
@@ -3973,47 +4005,53 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
         .enumerate()
         .map(|(index, e)| {
             let def = e.def();
-            let params: Vec<Value> = def
-                .map(|d| {
-                    d.params
-                        .iter()
-                        .map(|pd| {
-                            let mut j = param_info(pd);
-                            let fallback;
-                            let prm = match e.params.get(pd.id) {
-                                Some(prm) => prm,
-                                None => {
-                                    fallback = cfa4_project::Param::new(pd.default.clone());
-                                    &fallback
-                                }
-                            };
-                            j["value"] = param_value_json(&prm.value);
-                            j["valueAtPlayhead"] = param_value_json(&prm.value_at(at));
-                            j["animated"] = json!(prm.is_animated());
-                            j["keyframes"] = Value::Array(
-                                prm.keyframes
-                                    .iter()
-                                    .map(|k| {
-                                        json!({
-                                            "mediaTime": k.time.0,
-                                            "time": timeline_time_of(it, k.time).map(|t| t.0),
-                                            "value": param_value_json(&k.value),
-                                            "interpolation": interpolation_id(k.interp),
-                                        })
-                                    })
-                                    .collect(),
-                            );
-                            j
-                        })
-                        .collect()
+            let params: Vec<Value> = def.map(|d| d.params.iter().map(|pd| param_state_json(s, it, at, pd, e.params.get(pd.id))).collect()).unwrap_or_default();
+            // masks of a maskable effect (video effects and Opacity, not Motion or graphic layers)
+            let maskable = def
+                .is_some_and(|d| d.kind == cfa4_project::EffectKind::Video && (!d.intrinsic || e.effect == "opacity") && !cfa4_project::graphic::is_layer(e));
+            let mask_list: Vec<Value> = e
+                .masks
+                .iter()
+                .enumerate()
+                .map(|(k, m)| {
+                    let target = crate::masks::MaskSel { clip: c, effect: index, mask: k };
+                    let path = m.path_at(at);
+                    let shape = if path.vertices.iter().all(|v| v.is_corner()) {
+                        "polygon"
+                    } else if path.len() == 4 {
+                        "ellipse"
+                    } else {
+                        "bezier"
+                    };
+                    let job = s.mask_jobs.iter().find(|j| j.target == target).map(|j| j.job);
+                    let progress = job.and_then(|id| s.jobs.iter().find(|j| j.id == id)).map(|j| {
+                        use std::sync::atomic::Ordering::Relaxed;
+                        json!([j.progress.done.load(Relaxed), j.progress.total.load(Relaxed)])
+                    });
+                    json!({
+                        "mask": k,
+                        "name": m.name,
+                        "mode": m.mode.label(),
+                        "inverted": m.inverted,
+                        "trackMethod": m.track_method.label(),
+                        "shape": shape,
+                        "selected": s.state.selected_mask == Some(target),
+                        "trackJob": job,
+                        "trackProgress": progress,
+                        "params": cfa4_project::mask::mask_param_defs().iter().map(|pd| param_state_json(s, it, at, pd, m.param(pd.id))).collect::<Vec<_>>(),
+                    })
                 })
-                .unwrap_or_default();
+                .collect();
             json!({
                 "index": index,
                 "effect": e.effect,
                 "name": def.map(|d| d.name).unwrap_or(e.effect.as_str()),
                 "enabled": e.enabled,
+                "intrinsic": def.is_some_and(|d| d.intrinsic),
+                "selected": selected_effect == Some(index),
                 "masks": e.masks.len(),
+                "maskable": maskable,
+                "maskList": mask_list,
                 "params": params,
             })
         })
@@ -4021,6 +4059,11 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
     Ok(json!({
         "clip": c.0,
         "name": it.name,
+        "kind": if kind == TrackKind::Audio { "audio" } else { "video" },
+        "linkedAudio": linked_audio.map(|a| a.0),
+        "sequenceName": s.state.active_sequence.and_then(|id| s.project.item(id)).map(|i| i.name.clone()).unwrap_or_default(),
+        "frame": q.settings.frame_rate.frame_duration().0,
+        "dropFrame": q.settings.drop_frame,
         "start": it.start.0,
         "end": it.end().0,
         "sourceIn": it.source_in.0,
@@ -4031,6 +4074,84 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
         "mediaTimeAtPlayhead": at.0,
         "effects": effects,
     }))
+}
+
+/// `effects.graph`: an animated scalar or point parameter sampled evenly across its clip (`values`:
+/// one `[x]` or `[x, y]` per sample, `null` where a value is not finite), for Effect Controls'
+/// value and velocity graphs; `seconds` is the clip's media length the samples span.
+fn graph_param(s: &Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "effects.graph";
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let c = clip_p(p, "clip").ok_or_else(|| bad(CMD, "need `clip`"))?;
+    let (_, it) = q.find_item(c).ok_or_else(|| bad(CMD, "no such clip in the active sequence"))?;
+    let e = match p.get("effect") {
+        Some(Value::Number(n)) => n.as_u64().and_then(|i| usize::try_from(i).ok()).and_then(|i| it.effects.get(i)),
+        Some(Value::String(id)) => it.effects.iter().find(|e| &e.effect == id),
+        _ => None,
+    }
+    .ok_or_else(|| bad(CMD, "no such effect on clip"))?;
+    let pid = str_p(p, "param").ok_or_else(|| bad(CMD, "need `param`"))?;
+    let prm = match p.get("mask").and_then(Value::as_u64) {
+        Some(m) => usize::try_from(m).ok().and_then(|m| e.masks.get(m)).and_then(|m| m.param(pid)),
+        None => e.params.get(pid),
+    }
+    .ok_or_else(|| bad(CMD, "no such param"))?;
+    let n = p.get("samples").and_then(Value::as_u64).unwrap_or(200).clamp(8, 2000) as usize;
+    let speed = it.speed.abs();
+    let speed = if speed.is_finite() { speed.max(1e-6) } else { 1.0 };
+    let span = it.duration.0.max(1) as f64 * speed;
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    let values: Vec<Value> = (0..=n)
+        .map(|i| {
+            let offset = (i as f64 / n as f64 * span) as i64;
+            match prm.value_at(Tick(it.source_in.0.saturating_add(offset))) {
+                ParamValue::Float(x) => json!([num(x)]),
+                ParamValue::Vec2(v) => json!([num(v.x), num(v.y)]),
+                _ => json!([]),
+            }
+        })
+        .collect();
+    Ok(json!({"values": values, "seconds": span / cfa4_time::TICKS_PER_SECOND as f64}))
+}
+
+/// One parameter as `effects.inspect` lists it: its definition, static value, the value at media
+/// time `at`, and the keyframes in media and timeline time. A parameter the effect has not stored
+/// yet reads as its default.
+fn param_state_json(s: &Session, it: &cfa4_project::TrackItem, at: Tick, pd: &cfa4_project::ParamDef, prm: Option<&cfa4_project::Param>) -> Value {
+    let mut j = param_info(pd);
+    let fallback;
+    let prm = match prm {
+        Some(prm) => prm,
+        None => {
+            fallback = cfa4_project::Param::new(pd.default.clone());
+            &fallback
+        }
+    };
+    j["value"] = param_value_json(&prm.value);
+    j["valueAtPlayhead"] = param_value_json(&prm.value_at(at));
+    j["animated"] = json!(prm.is_animated());
+    // a LUT reference reads as the LUT's name
+    if let cfa4_project::ParamValue::Text(spec) = &prm.value
+        && pd.id.ends_with("_lut")
+    {
+        j["display"] = json!(cfa4_render::luts::label(Some(&s.project), spec));
+    }
+    j["keyframes"] = Value::Array(
+        prm.keyframes
+            .iter()
+            .map(|k| {
+                json!({
+                    "mediaTime": k.time.0,
+                    "time": timeline_time_of(it, k.time).map(|t| t.0),
+                    "value": param_value_json(&k.value),
+                    "interpolation": interpolation_id(k.interp),
+                    "inInfluence": k.in_influence,
+                    "outInfluence": k.out_influence,
+                })
+            })
+            .collect(),
+    );
+    j
 }
 
 fn param_info(p: &cfa4_project::ParamDef) -> Value {

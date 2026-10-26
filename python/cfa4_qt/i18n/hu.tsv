@@ -1195,3 +1195,30 @@
 	Generating waveform…	Hullámforma készül…
 	Audio Waveform	Hang hullámformája
 	Video and Audio Waveform Split	Videó és hullámforma osztva
+	Anchor to In Point	Rögzítés a kezdőponthoz
+	Anchor to Out Point	Rögzítés a végponthoz
+	Custom ({n} points)	Egyéni ({n} pont)
+	Description:	Leírás:
+	Save Preset…	Előbeállítás mentése…
+	Source · {name}	Forrás · {name}
+	Temporal Interpolation	Időbeli interpoláció
+	Twirl open or shut	Kinyitás vagy becsukás
+	Without keyframes	Kulcskockák nélkül
+	Add	Hozzáadás
+	Create 4-point polygon mask	4 pontos sokszögmaszk létrehozása
+	Create ellipse mask	Ellipszismaszk létrehozása
+	Delete Mask	Maszk törlése
+	Free draw bezier	Szabadkézi Bezier-rajz
+	Intersect	Metszet
+	Inverted	Invertálva
+	Position & Rotation	Pozíció és forgatás
+	Position, Scale & Rotation	Pozíció, méretezés és forgatás
+	Show graphs	Grafikonok megjelenítése
+	Stop tracking	Követés leállítása
+	Track selected mask backward	Kijelölt maszk követése visszafelé
+	Track selected mask backward 1 frame	Kijelölt maszk követése 1 képkockával vissza
+	Track selected mask forward	Kijelölt maszk követése előre
+	Track selected mask forward 1 frame	Kijelölt maszk követése 1 képkockával előre
+	Tracking method: {method}	Követési módszer: {method}
+	Value	Érték
+	Velocity	Sebesség

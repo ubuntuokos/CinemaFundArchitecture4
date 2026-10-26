@@ -1220,7 +1220,8 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         assert clip["start"] < later < clip["end"]
         scale.spins[0].setValue(60.0)
         assert wait_until(app, lambda: len(param("motion", "scale")["keyframes"]) == 2, 10_000), param("motion", "scale")
-        assert scale.strip.isVisible() and scale.next_key.isVisible()
+        assert scale.next_key.isVisible()
+        assert len([pt for pt in ec.lane.points() if pt["ref"][2] == "scale"]) == 2
         times = sorted(k["time"] for k in param("motion", "scale")["keyframes"])
         # keyframe navigation moves the Program playhead to the keyframes
         scale.prev_key.click()
@@ -1236,7 +1237,8 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         blend = ec.rows[(opacity, "blend")]
         blend.editor.setCurrentIndex(3)
         assert wait_until(app, lambda: param("opacity", "blend")["value"] == 3, 10_000)
-        check = ec.effect_boxes[opacity].findChild(QtWidgets.QCheckBox, f"effectControls.{opacity}.enabled")
+        check = ec.headers[(clip["clip"], opacity)].fx
+        assert check.objectName() == f"effectControls.{opacity}.enabled"
         was = check.isChecked()
         check.click()
         assert wait_until(
@@ -1250,6 +1252,276 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
 
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
+    """egui's Effect Controls layout: the list with Video / Audio headings (the linked audio under
+    the video clip), fixed effects first, twirl, fx switch, a click selects the effect, Save
+    Preset… / Clear; the keyframe lane with a ruler that moves the playhead, a divider that sets
+    the list's width, and keyframes selected by click, Shift+click, marquee and Select All, dragged
+    as one ``effects.moveKeyframes`` (Esc cancels), interpolation from their menu."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    ec = win.effect_controls
+    lane = ec.lane
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    shift, nomod = QtCore.Qt.KeyboardModifier.ShiftModifier, QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(widget, kind, at: QtCore.QPointF, button, buttons, mods=nomod) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(widget, QtGui.QMouseEvent(kind, p, p, widget.mapToGlobal(p), button, buttons, mods))
+
+    def click(at: QtCore.QPointF, mods=nomod) -> None:
+        send(lane, QtCore.QEvent.Type.MouseButtonPress, at, left, left, mods)
+        send(lane, QtCore.QEvent.Type.MouseButtonRelease, at, left, none, mods)
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF, mods=nomod, escape: bool = False) -> None:
+        send(lane, QtCore.QEvent.Type.MouseButtonPress, a, left, left, mods)
+        for i in range(1, 6):
+            send(lane, QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 5), none, left, mods)
+        if escape:
+            QtTest.QTest.keyClick(lane, QtCore.Qt.Key.Key_Escape)
+        send(lane, QtCore.QEvent.Type.MouseButtonRelease, b, left, none, mods)
+
+    def points() -> dict:
+        """The shown keyframes as "<param>@<n>", n counting each parameter's from the first."""
+        out: dict = {}
+        for pt in sorted(lane.points(), key=lambda p: (p["ref"][2], p["time"])):
+            out[f"{pt['ref'][2]}@{sum(k.startswith(pt['ref'][2] + '@') for k in out)}"] = pt
+        return out
+
+    def keys(pid: str) -> list[dict]:
+        e = next(e for e in ec.clip["effects"] if e["effect"] == "motion")
+        return next(p for p in e["params"] if p["id"] == pid)["keyframes"]
+
+    def effect(effect_id: str) -> dict:
+        return next(e for e in ec.clip["effects"] if e["effect"] == effect_id)
+
+    def run_menu(name: str) -> None:
+        def pick() -> None:
+            menu = ec.last_menu
+            action = next(a for a in menu.actions() if a.objectName() == name)
+            menu.close()
+            action.trigger()
+        QtCore.QTimer.singleShot(50, pick)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        dock = next(d for d in win.findChildren(QtWidgets.QDockWidget) if d.widget() is ec)
+        dock.setFloating(True)
+        dock.resize(1000, 640)
+        dock.show()
+        clip = win.sequence["video"][0]["items"][1]
+        cid = clip["clip"]
+        start, end = clip["start"], clip["end"]
+        for t, v in ((start, 80.0), (start + (end - start) // 3, 120.0)):
+            win.execute("effects.setParam", {"clip": cid, "effect": "motion", "param": "scale", "value": v,
+                                             "keyframe": True, "time": t})
+        win.execute("effects.setParam", {"clip": cid, "effect": "motion", "param": "rotation", "value": 10.0,
+                                         "keyframe": True, "time": start + (end - start) // 2})
+        win.execute("timeline.select", {"clips": [cid]})
+        assert wait_until(app, lambda: ec.clip_id == cid and len(lane.points()) == 3, 30_000)
+
+        # the list: Video and (the linked audio's) Audio headings, Motion before added effects
+        audio = ec.clip.get("linkedAudio")
+        assert isinstance(audio, int) and len(ec.clips) == 2 and ec.linked_rows
+        headings = [w.text() for w in ec.column.findChildren(QtWidgets.QLabel) if w.objectName().endswith(".heading")]
+        assert sorted(headings) == ["Audio", "Video"]
+        assert ec.source_tab.text().startswith("Source · ") and clip["name"] in ec.sequence_tab.text()
+        assert ec.timecode.text().count(":") == 3
+
+        # the divider sets the list's width; each side keeps its minimum
+        ec.set_split(300, dragged=True)
+        assert ec.column.width() == 300 or ec.column.minimumWidth() == 300
+        ec.set_split(10, dragged=True)
+        assert ec.split == 200
+        ec.set_split(420, dragged=True)
+        wait_until(app, lambda: False, 100)
+
+        # a click selects a keyframe and moves the playhead to it; Shift+click adds another
+        pts = points()
+        click(pts["scale@1"]["pos"])
+        assert ec.keyframe_selection == [pts["scale@1"]["ref"]]
+        assert wait_until(app, lambda: abs(ec.clip.get("playhead") - pts["scale@1"]["time"]) < ec.clip["frame"], 10_000)
+        pts = points()
+        click(pts["rotation@0"]["pos"], shift)
+        assert set(ec.keyframe_selection) == {pts["scale@1"]["ref"], pts["rotation@0"]["ref"]}
+        # a click on the lane's background clears it; a marquee over all selects all three
+        click(QtCore.QPointF(lane.width() - 3, 4))
+        assert ec.keyframe_selection == []
+        top = min(p["pos"].y() for p in pts.values()) - 13
+        bottom = max(p["pos"].y() for p in pts.values()) + 13
+        drag(QtCore.QPointF(1, top), QtCore.QPointF(lane.width() - 2, bottom))
+        assert len(ec.keyframe_selection) == 3 and lane.marquee is None
+        # Edit > Select All with the panel focused: every keyframe; elsewhere the Timeline's clips
+        ec.set_keyframe_selection([])
+        lane.setFocus()
+        win.run_command(win.registry.commands["edit.selectAll"])
+        assert len(ec.keyframe_selection) == 3
+
+        # dragging a selected keyframe moves the selection by one delta, on frames: one step
+        pts = points()
+        ec.set_keyframe_selection([pts["scale@1"]["ref"], pts["rotation@0"]["ref"]])
+        before = {"scale": sorted(k["time"] for k in keys("scale")), "rotation": [k["time"] for k in keys("rotation")]}
+        a = pts["scale@1"]["pos"]
+        drag(a, a + QtCore.QPointF(60, 0), escape=True)  # Esc: nothing moves
+        assert lane.group is None
+        wait_until(app, lambda: False, 300)
+        assert sorted(k["time"] for k in keys("scale")) == before["scale"]
+        steps = win.history.list.count()
+        drag(a, a + QtCore.QPointF(60, 0))
+        assert wait_until(app, lambda: [k["time"] for k in keys("rotation")] != before["rotation"], 10_000)
+        moved = next(k["time"] for k in keys("rotation")) - before["rotation"][0]
+        landed = sorted(k["time"] for k in keys("scale"))[1]
+        assert moved > 0 and min(landed % ec.clip["frame"], -landed % ec.clip["frame"]) <= 2, "the dragged key lands on a frame"
+        assert sorted(k["time"] for k in keys("scale"))[1] - before["scale"][1] == moved
+        assert min(k["time"] for k in keys("scale")) == before["scale"][0], "an unselected key stays"
+        assert wait_until(app, lambda: win.history.list.count() == steps + 1, 10_000)
+        assert len(ec.keyframe_selection) == 2 and all(r in {p["ref"] for p in lane.points()} for r in ec.keyframe_selection)
+
+        # the keyframe menu sets the interpolation
+        pts = points()
+        run_menu("effectControls.keyframeMenu.hold")
+        send(lane, QtCore.QEvent.Type.MouseButtonPress, pts["scale@0"]["pos"], QtCore.Qt.MouseButton.RightButton,
+             QtCore.Qt.MouseButton.RightButton)
+        assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["interpolation"] == "hold", 10_000)
+
+        # value and velocity graphs: a keyframe drags vertically for its value, a Bezier
+        # influence handle horizontally; Esc abandons a drag
+        first = min(keys("scale"), key=lambda k: k["time"])
+        win.execute("effects.setInterpolation", {"clip": cid, "effect": "motion", "param": "scale",
+                                                 "mediaTime": first["mediaTime"], "interpolation": "bezier"})
+        assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["interpolation"] == "bezier", 10_000)
+        scale_row = ec.rows[(effect("motion")["index"], "scale")]
+        assert scale_row.graph_twirl.isVisible()
+        scale_row.graph_twirl.click()
+        graph = scale_row.graph
+        assert wait_until(app, lambda: graph.isVisible() and len(graph.values) > 8 and graph.range is not None, 10_000)
+        assert graph.velocity and graph.vmax > 0
+        handles = lane.graph_handles()
+        assert len(handles) == 1 and handles[0]["side"] == 1, "one out-handle on the eased first key"
+        h = handles[0]
+        send(lane, QtCore.QEvent.Type.MouseButtonPress, h["handle"], left, left)
+        send(lane, QtCore.QEvent.Type.MouseMove, h["handle"] + QtCore.QPointF(30, 0), none, left)
+        send(lane, QtCore.QEvent.Type.MouseButtonRelease, h["handle"] + QtCore.QPointF(30, 0), left, none)
+        assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["outInfluence"] > first["outInfluence"] + 0.01,
+                          10_000)
+        pt = next(q for q in lane.graph_points() if q["key"]["mediaTime"] == first["mediaTime"])
+        drag(pt["pos"], pt["pos"] + QtCore.QPointF(0, -20), escape=True)
+        wait_until(app, lambda: False, 300)
+        assert min(keys("scale"), key=lambda k: k["time"])["value"] == first["value"]
+        pt = next(q for q in lane.graph_points() if q["key"]["mediaTime"] == first["mediaTime"])
+        drag(pt["pos"], pt["pos"] + QtCore.QPointF(0, -20))
+        assert wait_until(app, lambda: min(keys("scale"), key=lambda k: k["time"])["value"] > first["value"] + 1, 10_000)
+        scale_row.graph_twirl.click()
+        assert not graph.isVisibleTo(ec) and lane.graph_points() == []
+
+        # the ruler moves the playhead
+        ruler = ec.ruler
+        x0, w = ruler.lane_range()
+        send(ruler, QtCore.QEvent.Type.MouseButtonPress, QtCore.QPointF(x0 + w * 0.75, 8), left, left)
+        send(ruler, QtCore.QEvent.Type.MouseButtonRelease, QtCore.QPointF(x0 + w * 0.75, 8), left, none)
+        want = start + (end - start) * 3 // 4
+        assert wait_until(app, lambda: abs(ec.clip.get("playhead") - want) <= 2 * ec.clip["frame"], 10_000)
+
+        # an effect's header: twirl, fx switch, a click selects it
+        motion = effect("motion")["index"]
+        header = ec.headers[(cid, motion)]
+        header.twirl.click()
+        assert not ec.rows[(motion, "scale")].isVisibleTo(ec) and lane.points() == []
+        header.twirl.click()
+        assert ec.rows[(motion, "scale")].isVisibleTo(ec)
+        QtTest.QTest.mouseClick(header, left, nomod, QtCore.QPoint(header.width() // 2, header.height() // 2))
+        assert wait_until(app, lambda: effect("motion")["selected"], 10_000)
+        header.fx.click()
+        assert wait_until(app, lambda: not effect("motion")["enabled"], 10_000)
+        header.fx.click()
+        assert wait_until(app, lambda: effect("motion")["enabled"], 10_000)
+
+        # Save Preset… from the header's menu; Clear only for an added effect
+        def fill() -> None:
+            dlg = ec.last_dialog
+            dlg.name.setText("qt motion")
+            dlg.findChild(QtWidgets.QRadioButton, "savePreset.keyframes.none").setChecked(True)
+            dlg.accept()
+
+        run_menu("effectControls.menu.savePreset")
+        header.contextMenuEvent(QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Reason.Mouse, QtCore.QPoint(5, 5),
+                                                        header.mapToGlobal(QtCore.QPoint(5, 5))))
+        assert wait_until(app, lambda: getattr(ec, "last_dialog", None) is not None and ec.last_dialog.isVisible(), 5_000)
+        assert ec.last_dialog.name.text() == "Motion"
+        fill()
+        assert wait_until(app, lambda: ec.last_dialog.result() == QtWidgets.QDialog.DialogCode.Accepted, 10_000)
+        presets: list = []
+        engine.execute("presets.list", {}, on_reply=lambda r, _b: presets.extend((r or {}).get("presets") or []))
+        assert wait_until(app, lambda: bool(presets), 10_000)
+        saved = next(p for p in presets if p.get("name") == "qt motion")
+        assert saved.get("animated") is False
+        assert not [a for a in ec.last_menu.actions() if a.objectName() == "effectControls.menu.clear"]
+        win.execute("effects.apply", {"clips": [cid], "effect": "gaussian_blur"})
+        assert wait_until(app, lambda: any(e["effect"] == "gaussian_blur" for e in ec.clip["effects"]), 10_000)
+        blur = effect("gaussian_blur")["index"]
+        assert ec.headers[(cid, blur)].accent_line, "a line above the first added effect"
+        run_menu("effectControls.menu.clear")
+        hb = ec.headers[(cid, blur)]
+        hb.contextMenuEvent(QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Reason.Mouse, QtCore.QPoint(5, 5),
+                                                    hb.mapToGlobal(QtCore.QPoint(5, 5))))
+        assert wait_until(app, lambda: not any(e["effect"] == "gaussian_blur" for e in ec.clip["effects"]), 10_000)
+
+        # masks under Opacity: create, mode, inverted, a parameter, select, animate the path,
+        # the tracking method, twirl, delete
+        opa = effect("opacity")["index"]
+        tools = ec.mask_tools[(cid, opa)]
+        assert (cid, motion) not in ec.mask_tools, "Motion takes no masks"
+        tools.buttons["ellipse"].click()
+        assert wait_until(app, lambda: (cid, opa, 0) in ec.masks, 10_000)
+
+        def mask() -> dict:
+            return effect("opacity")["maskList"][0]
+
+        mh, mrows, inverted = ec.masks[(cid, opa, 0)]
+        assert mh.objectName() == f"effectControls.{opa}.mask0" and mh.glyph.text() == "◯"
+        mh.mode.setCurrentIndex(2)
+        mh.mode.activated.emit(2)
+        assert wait_until(app, lambda: mask()["mode"] == "Subtract", 10_000)
+        inverted.check.click()
+        assert wait_until(app, lambda: mask()["inverted"] is True, 10_000)
+        feather = ec.rows[(opa, "mask0.feather")]
+        assert feather.mask == 0 and feather.objectName() == f"effectControls.{opa}.mask0.feather"
+        feather.spins[0].setValue(42.0)
+        feather.panel.flush()
+        assert wait_until(app, lambda: next(p for p in mask()["params"] if p["id"] == "feather")["value"] == 42.0, 10_000)
+        QtTest.QTest.mouseClick(mh, left, nomod, QtCore.QPoint(mh.width() // 2, mh.height() // 2))
+        assert wait_until(app, lambda: mask()["selected"], 10_000)
+        mh = ec.masks[(cid, opa, 0)][0]
+        QtTest.QTest.mouseClick(mh, left, nomod, QtCore.QPoint(mh.width() // 2, mh.height() // 2))
+        assert wait_until(app, lambda: not mask()["selected"], 10_000)
+        path = ec.rows[(opa, "mask0.path")]
+        path.stopwatch.click()
+        assert wait_until(app, lambda: next(p for p in mask()["params"] if p["id"] == "path")["animated"], 10_000)
+        assert wait_until(app, lambda: any(pt["ref"][3] == 0 and pt["ref"][2] == "path" for pt in lane.points()), 10_000)
+        tracking = ec.rows[(opa, "mask0.path")].editor
+        method = next(a for a in tracking.method_menu.actions() if a.text() == "Position")
+        method.trigger()
+        assert wait_until(app, lambda: mask()["trackMethod"] == "Position", 10_000)
+        mh = ec.masks[(cid, opa, 0)][0]
+        mh.twirl.click()
+        assert not ec.rows[(opa, "mask0.feather")].isVisibleTo(ec)
+        mh.twirl.click()
+        run_menu("effectControls.menu.deleteMask")
+        mh.contextMenuEvent(QtGui.QContextMenuEvent(QtGui.QContextMenuEvent.Reason.Mouse, QtCore.QPoint(5, 5),
+                                                    mh.mapToGlobal(QtCore.QPoint(5, 5))))
+        assert wait_until(app, lambda: not effect("opacity")["maskList"], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
 
 
 def test_file_menu_quits_and_the_window_shows_the_cfa4_logo(app, fake_engine: Path, tmp_path: Path):

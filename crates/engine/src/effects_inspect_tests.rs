@@ -110,3 +110,108 @@ fn reversed_and_slowed_clips_map_keyframes_to_the_timeline() {
     it.speed = 0.0;
     assert_eq!(crate::commands::timeline_time_of(&it, m), None);
 }
+
+#[test]
+fn reports_the_panel_shape_kind_linked_audio_fixed_and_selected_effects() {
+    let mut s = demo();
+    let q = s.active_sequence().unwrap();
+    let (video, audio) = q.video_tracks[0]
+        .items
+        .iter()
+        .find_map(|v| {
+            let link = v.link?;
+            q.audio_tracks.iter().find_map(|t| t.items.iter().find(|a| a.link == Some(link))).map(|a| (v.clone(), a.clone()))
+        })
+        .expect("the demo has a linked A/V pair");
+    // the audio is selected first, but the video one is shown, with its audio under it
+    s.execute("timeline.select", json!({"clips": [audio.id.0, video.id.0]})).unwrap();
+    let v = s.execute("effects.inspect", json!({})).unwrap();
+    assert_eq!(v["clip"], json!(video.id.0));
+    assert_eq!(v["kind"], "video");
+    assert_eq!(v["linkedAudio"], json!(audio.id.0));
+    assert!(v["frame"].as_i64().unwrap() > 0);
+    assert!(!v["sequenceName"].as_str().unwrap().is_empty());
+    let motion = v["effects"].as_array().unwrap().iter().find(|e| e["effect"] == "motion").unwrap();
+    assert_eq!(motion["intrinsic"], json!(true));
+    assert_eq!(motion["selected"], json!(false));
+    s.execute("effects.select", json!({"clip": video.id.0, "effect": "motion"})).unwrap();
+    let v = s.execute("effects.inspect", json!({})).unwrap();
+    let motion = v["effects"].as_array().unwrap().iter().find(|e| e["effect"] == "motion").unwrap();
+    assert_eq!(motion["selected"], json!(true));
+    let a = s.execute("effects.inspect", json!({"clip": audio.id.0})).unwrap();
+    assert_eq!((a["kind"].as_str(), a["linkedAudio"].is_null()), (Some("audio"), true));
+    // only the video clip, linked selection off: no audio under it
+    s.state.linked_selection = false;
+    s.execute("timeline.select", json!({"clips": [video.id.0]})).unwrap();
+    assert!(s.execute("effects.inspect", json!({})).unwrap()["linkedAudio"].is_null());
+}
+
+#[test]
+fn graphs_an_animated_parameter_across_its_clip() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    for (t, val) in [(it.start, 50.0), (it.end() - Tick(1), 150.0)] {
+        s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": val, "keyframe": true, "time": t.0})).unwrap();
+    }
+    let g = s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "scale", "samples": 10})).unwrap();
+    let v = g["values"].as_array().unwrap();
+    assert_eq!(v.len(), 11);
+    assert!((v[0][0].as_f64().unwrap() - 50.0).abs() < 0.5);
+    assert!(v[10][0].as_f64().unwrap() > 140.0);
+    assert!(g["seconds"].as_f64().unwrap() > 0.0);
+    // a point draws two curves; damaged requests are errors or clamped, never a panic
+    let g = s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "position", "samples": 1})).unwrap();
+    assert_eq!(g["values"].as_array().unwrap().len(), 9);
+    assert_eq!(g["values"][0].as_array().unwrap().len(), 2);
+    assert!(s.execute("effects.graph", json!({"clip": c, "effect": 999, "param": "scale"})).is_err());
+    assert!(s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "nope"})).is_err());
+    assert!(s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "scale", "mask": 7})).is_err());
+    assert_eq!(
+        s.execute("effects.graph", json!({"clip": c, "effect": "motion", "param": "scale", "samples": u64::MAX})).unwrap()["values"].as_array().unwrap().len(),
+        2001
+    );
+}
+
+#[test]
+fn program_overlay_reports_the_transform_box_and_the_selected_mask() {
+    let mut s = demo();
+    let it = v1_clip(&s);
+    let c = it.id.0;
+    let mid = Tick(it.start.0 + it.duration.0 / 2);
+    s.execute("playhead.set", json!({"time": mid.0})).unwrap();
+    // nothing selected: the pictures at the playhead only
+    s.execute("edit.deselectAll", json!({})).unwrap();
+    let v = s.execute("program.overlay", json!({})).unwrap();
+    assert!(v["transform"].is_null() && v["mask"].is_null());
+    assert!(v["clips"].as_array().unwrap().iter().any(|q| q["clip"] == json!(c)));
+    assert_eq!(v["frame"].as_array().unwrap().len(), 2);
+    // Motion selected on a selected clip: its box, with the values a drag starts from
+    s.execute("timeline.select", json!({"clips": [c]})).unwrap();
+    s.execute("effects.select", json!({"clip": c, "effect": "motion"})).unwrap();
+    let v = s.execute("program.overlay", json!({"clip": c})).unwrap();
+    let t = &v["transform"];
+    assert_eq!((t["clip"].as_u64(), t["effectId"].as_str()), (Some(c), Some("motion")));
+    assert_eq!(t["quad"].as_array().unwrap().len(), 4);
+    assert_eq!(t["toFrame"].as_array().unwrap().len(), 6);
+    assert_eq!(t["height"], json!(100.0));
+    assert!(v["clipToFrame"].is_array());
+    // a polygon mask selected: contour, vertices, handles; the rounded preview on request
+    let opacity = it.effects.iter().position(|e| e.effect == "opacity").unwrap();
+    s.execute("masks.add", json!({"clip": c, "effect": opacity, "shape": "polygon"})).unwrap();
+    s.execute("masks.set", json!({"clip": c, "effect": opacity, "mask": 0, "expansion": 12.0})).unwrap();
+    s.execute("masks.select", json!({"clip": c, "effect": opacity, "mask": 0})).unwrap();
+    let v = s.execute("program.overlay", json!({"roundRadius": 20.0})).unwrap();
+    let m = &v["mask"];
+    assert_eq!(m["vertices"].as_array().unwrap().len(), 4);
+    assert!(m["contour"].as_array().unwrap().len() >= 4);
+    assert!(m["expansionContour"].is_array() && m["featherContour"].is_array());
+    assert!(m["featherHandle"]["normal"].is_array() && m["expansionHandle"]["dist"] == json!(12.0));
+    assert!(m["roundness"]["maxRadius"].as_f64().unwrap() > 0.0);
+    assert!(m["roundedContour"].as_array().unwrap().len() > 4);
+    // off the clip, or the clip deselected: no mask handles
+    s.execute("playhead.set", json!({"time": it.end().0 + 1})).unwrap();
+    assert!(s.execute("program.overlay", json!({})).unwrap()["mask"].is_null());
+    assert!(s.execute("program.overlay", json!({"clip": 987_654_321u64})).is_err());
+    assert!(s.execute("program.overlay", json!({"roundRadius": f64::MAX})).is_ok());
+}

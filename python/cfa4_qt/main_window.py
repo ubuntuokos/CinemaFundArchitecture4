@@ -991,6 +991,8 @@ class MainWindow(QMainWindow):
         self.notes.flush()
         if cmd.id in ("markers.markIn", "markers.markOut") and self.project_panel.hover_mark(cmd.id == "markers.markIn"):
             return
+        if cmd.id == "edit.selectAll" and self.effect_controls.select_all_keyframes():
+            return
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
