@@ -1086,6 +1086,57 @@ def test_real_engine_insert_while_program_plays_edits_at_the_shown_playhead(app,
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_mixer_numbers_while_playing_and_the_chosen_audio_output(app, tmp_path: Path):
+    """A number typed into a Track Mixer strip while the Program monitor plays is written at the
+    shown playhead (the engine's is still where playback started); Settings ▸ Audio Hardware ▸
+    Default Output is the output the monitors and Text to Speech play through."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.monitor import output_device
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    sent: list[tuple[str, dict]] = []
+    real_execute = engine.execute
+
+    def spy(command, params=None, **kw):
+        sent.append((command, dict(params or {})))
+        return real_execute(command, params, **kw)
+
+    engine.execute = spy
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Audio Track Mixer"].show()
+        win.docks["Audio Track Mixer"].raise_()
+        assert wait_until(app, lambda: any(st.ref == "A1" for st in win.mixer.strips), 10_000)
+        win.monitor.play()
+        assert wait_until(app, lambda: win.mixer.now > TICKS_PER_SECOND // 2, 10_000)
+        a1 = next(st for st in win.mixer.strips if st.ref == "A1")
+        sent.clear()
+        a1.hot_volume.edited.emit(-6.0, False)
+        params = next(p for c, p in sent if c == "mixer.setValue")
+        assert params["lane"] == "volume" and params["time"] == win.mixer.now > 0
+        win.monitor.stop()
+        # the output preference reaches the players; an output that is not connected plays
+        # through the system default
+        done: list = []
+        real_execute("prefs.set", {"values": {"audioHardware.defaultOutput": "Studio Monitors"}}, on_reply=lambda r, _b: done.append(r))
+        assert wait_until(app, lambda: bool(done), 10_000)
+        win._settings_applied({})
+        assert wait_until(app, lambda: (win.monitor.audio_output, win.source_monitor.audio_output, win.tts.audio_output) == ("Studio Monitors",) * 3, 10_000)
+        from PySide6.QtMultimedia import QMediaDevices
+
+        assert output_device("Studio Monitors").id() == QMediaDevices.defaultAudioOutput().id()
+    finally:
+        engine.execute = real_execute
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tmp_path: Path, monkeypatch):
     """Voice-over as egui's: the audio track header's microphone records on that track (its menu
     opens Voice-Over Record Settings), playback starts the pre-roll before the playhead with the

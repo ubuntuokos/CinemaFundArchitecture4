@@ -80,6 +80,16 @@ try:  # QtMultimedia is optional: without it playback is silent
 except ImportError:  # pragma: no cover - depends on the PySide6 build
     HAVE_AUDIO = False
 
+
+def output_device(name: str) -> Any:
+    """Settings ▸ Audio Hardware ▸ Default Output: the Qt output with that name, else the
+    system default (also when that device is not connected now)."""
+    if name:
+        for d in QMediaDevices.audioOutputs():
+            if d.description() == name:
+                return d
+    return QMediaDevices.defaultAudioOutput()
+
 AUDIO_CHUNK_SECONDS = 0.1
 AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
@@ -536,6 +546,7 @@ class Monitor(QWidget):
         self.playing = False
         self._automation_pass = False  # a mixer automation pass is running (mixer.recordStart)
         self.free_run = False  # a voice-over take: playback runs on past the end
+        self.audio_output = ""  # Settings ▸ Audio Hardware ▸ Default Output ("" = the system's)
         self.speed = 1.0
         self.stop_at: int | None = None  # Play In to Out: stop here…
         self.rest_at: int | None = None  # …and rest the playhead here
@@ -1040,12 +1051,21 @@ class Monitor(QWidget):
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
         fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
-        device = QMediaDevices.defaultAudioOutput()
+        device = output_device(self.audio_output)
         if device.isNull() or not device.isFormatSupported(fmt):
             return  # silent: the meters still play
         self._sink = QAudioSink(device, fmt, self)
         self._sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
         self._sink_io = self._sink.start()
+
+    def set_audio_output(self, name: str) -> None:
+        """Play through another output; playback that is running moves to it at once."""
+        if name == self.audio_output:
+            return
+        self.audio_output = name
+        if self.playing and self.speed == 1.0 and HAVE_AUDIO:
+            self._stop_audio()
+            self._start_audio()
 
     def _stop_audio(self) -> None:
         if self._sink is not None:

@@ -38,7 +38,7 @@ from ..i18n import N_, fmt, tr
 from .essential_graphics import SectionHeader
 
 try:  # QtMultimedia is optional: without it a preview is silent
-    from PySide6.QtMultimedia import QAudio, QAudioFormat, QAudioSink, QMediaDevices
+    from PySide6.QtMultimedia import QAudio, QAudioFormat, QAudioSink
 
     HAVE_AUDIO = True
 except ImportError:  # pragma: no cover - depends on the PySide6 build
@@ -64,6 +64,7 @@ class TextToSpeechPanel(QWidget):
         super().__init__(parent)
         self.setObjectName("panel.TextToSpeech")
         self.engine = engine
+        self.audio_output = ""  # Settings ▸ Audio Hardware ▸ Default Output ("" = the system's)
         self.context: Callable[[], Any] = lambda: None  # the open project and sequence (the window sets it)
         self.catalog: dict[str, Any] = {}
         self.language = "en-US"
@@ -362,7 +363,9 @@ class TextToSpeechPanel(QWidget):
         if not HAVE_AUDIO:
             self.status.emit(tr("no audio output (check Settings ▸ Audio Hardware)"))
             return
-        device = QMediaDevices.defaultAudioOutput()
+        from .monitor import output_device
+
+        device = output_device(self.audio_output)
         fmt_ = QAudioFormat()
         fmt_.setSampleRate(48_000)
         fmt_.setChannelCount(2)

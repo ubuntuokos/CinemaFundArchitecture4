@@ -120,14 +120,14 @@ class Strip(QWidget):
         self._value: float = 0.0  # the dragged value, shown while the engine catches up
         self.regions: dict[str, QRectF] = {}
         self.hot_volume = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.1)
-        self.hot_volume.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": v}))
+        self.hot_volume.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": v, "time": self.panel.now}))
         self.hot_pan = hot(self, -100.0, 100.0, 1.0, centered=True)
-        self.hot_pan.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": v}))
+        self.hot_pan.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": v, "time": self.panel.now}))
         # the 5.1 panner's Center % and LFE
         self.hot_center = hot(self, 0.0, 100.0, 1.0, decimals=0, suffix="%")
-        self.hot_center.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.center", "value": v}))
+        self.hot_center.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.center", "value": v, "time": self.panel.now}))
         self.hot_lfe = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.5)
-        self.hot_lfe.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.lfe", "value": v}))
+        self.hot_lfe.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.lfe", "value": v, "time": self.panel.now}))
         self._puck = (0.0, 0.0)  # the dragged 5.1 puck
 
     # ----- data -----
@@ -497,12 +497,12 @@ class Strip(QWidget):
             if e is not None and str(e.get("effect") or "") in HAS_EDITOR:
                 self.panel.fx_editor.emit({"strip": self.sid(), "slot": k})
         elif key == "cap":
-            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": 0.0})
+            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": 0.0, "time": self.panel.now})
         elif key == "pan":
-            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": 0.0})
+            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": 0.0, "time": self.panel.now})
         elif key == "pan51":  # front centre
-            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.x", "value": 0.0})
-            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.y", "value": 100.0})
+            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.x", "value": 0.0, "time": self.panel.now})
+            self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.y", "value": 100.0, "time": self.panel.now})
 
     def wheelEvent(self, e: QWheelEvent) -> None:
         e.ignore()  # the panel scrolls

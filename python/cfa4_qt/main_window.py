@@ -803,6 +803,7 @@ class MainWindow(QMainWindow):
         self.engine.call("engine.commands", on_reply=self._on_commands)
         self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.load_appearance()
+        self.load_audio_output()
         self.refresh()
         recovery = hello.get("recovery")
         if isinstance(recovery, list) and recovery and isinstance(recovery[0], dict):
@@ -902,8 +903,21 @@ class MainWindow(QMainWindow):
         dialog.open()
         return dialog
 
+    def load_audio_output(self) -> None:
+        """Play through Settings ▸ Audio Hardware ▸ Default Output (shared with egui)."""
+
+        def got(result: Any, _data: bytes | None) -> None:
+            value = result.get("value", result) if isinstance(result, dict) else None
+            name = str(value.get("defaultOutput") or "") if isinstance(value, dict) else ""
+            self.monitor.set_audio_output(name)
+            self.source_monitor.set_audio_output(name)
+            self.tts.audio_output = name
+
+        self.engine.execute("prefs.get", {"key": "audioHardware"}, on_reply=got)
+
     def _settings_applied(self, changes: dict[str, Any]) -> None:
         self.load_appearance()
+        self.load_audio_output()
         lang = changes.get("general.interfaceLanguage")
         if isinstance(lang, str):
             code = i18n_system_language() if lang == "system" else lang
