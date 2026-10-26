@@ -21,6 +21,7 @@ gstreamer = ["cfa4-gstreamer/gstreamer"]
 whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 
 [dependencies]
+cfa4-route = { workspace = true }
 cfa4-engine = { workspace = true }
 cfa4-export = { workspace = true }
 cfa4-project = { workspace = true }

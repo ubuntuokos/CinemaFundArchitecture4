@@ -1,0 +1,56 @@
+name: CFA4 PR check (required cargo gate)
+
+# Required merge gate: every PR to main (and every merge-queue group) must have
+# a loadable Cargo workspace that type-checks and whose tests compile.
+# Catches breakage like apps/cfa4-cli still depending on the removed cfa4-accel (#187).
+on:
+  pull_request:
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-pr-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  cargo-check:
+    name: cargo-check
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Native Linux build dependencies (Rust only, no Qt/Python)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang libclang-dev cmake ninja-build \
+            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
+            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm
+
+      - name: Rust toolchain from rust-toolchain.toml (1.97.1)
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: cfa4-pr-check
+          save-if: ${{ github.event_name != 'merge_group' }}
+
+      - name: Workspace resolves (cargo metadata)
+        run: cargo metadata --locked --format-version 1 > /dev/null
+
+      - name: Type-check libraries and binaries
+        run: cargo check --locked --workspace --lib --bins
