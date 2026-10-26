@@ -13,6 +13,16 @@ let availability = cfa4_platform::register(); // Available("VideoToolbox") on ma
 
 ## What it does
 
+- **Linux: the compute router chooses** (`routes.rs`, ADR 0004 phase 1). `register()` asks
+  `cfa4-route` which hardware decoder to put in front of CFA4's decoders, from the routing table
+  (the shipped `routing.toml`, the user's `~/.config/cfa4/routing.toml` on top) and the `/sys`
+  device probe. The shipped order is the one before the router: NVDEC (NVIDIA GPUs on the
+  proprietary driver), then VA-API, then the software decoders. Each backend's driver probe is
+  asked only when the router reaches it, so VA-API is never probed after NVDEC works. The NVENC
+  export factory asks the router too (`routes::nvenc_allowed`) before it opens the driver, and the
+  HEVC format probe is registered only where the router routes H.264 encoding to NVENC. Hardware
+  encoding stays opt-in per export (Off by default). The chosen chains, the device inventory and
+  the vendor-neutrality coverage are in `perf.stats` → `route`.
 - **macOS: VideoToolbox H.264 (`avcC`) and HEVC (`hvcC`)**, 8- and 10-bit, 4:2:0 and 4:2:2
   (`videotoolbox.rs`). The session is created from the sample entry's parameter sets with a
   hardware decoder *required*; samples go in as `CMSampleBuffer`s with asynchronous decompression
@@ -353,7 +363,7 @@ The device binding uses NVIDIA's [CUDA Driver API 12.1 primary-context reference
 and the existing [Video Codec SDK 12.1 encode API](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.1/nvenc-video-encoder-api-prog-guide/index.html).
 It uses the first CUDA device. On Linux this backend handles H.264 only (H.265 through NVENC is
 Windows-only for now); other formats and unsupported H.264 settings use the existing encoder selection.
-Linux registers the export factory even without a driver; `register()`'s return value and
+Linux registers the export factory even without a driver (it asks the compute router before it opens one); `register()`'s return value and
 `registered()` still describe hardware **decoding**, which this backend does not provide.
 Absent / old drivers decline once per export, with an informational log and
 `perf.stats` → `export.hardware.declined`; hardware encoding Off never opens the driver.

@@ -1,6 +1,8 @@
 """Experimental Linux Qt 6 shell. NOT the complete video editor.
 
-The Rust cfa4-cli is only queried for its version, without a shell or remote calls.
+The Rust cfa4-cli is queried for its version, and Edit ▸ Settings… opens the Settings window
+(`qt_settings.py`), which reads and writes preferences through local `cfa4-cli settings` calls
+on a worker thread. No shell, no remote calls.
 """
 
 from __future__ import annotations
@@ -55,7 +57,10 @@ def main(argv: list[str] | None = None) -> int:
     # Optional dependency: the Rust workspace does not link Qt or depend on Python.
     try:
         from PySide6.QtCore import QTimer
+        from PySide6.QtGui import QAction, QKeySequence
         from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+
+        from cfa4_devtools.qt_settings import SettingsDialog
     except ImportError as exc:
         parser.error(f"Qt 6/PySide6 missing: {exc}; install: python -m pip install -e '.[qt]'")
 
@@ -78,6 +83,20 @@ def main(argv: list[str] | None = None) -> int:
     layout.addWidget(status)
     layout.addWidget(button)
     window.setCentralWidget(container)
+
+    def open_settings() -> None:
+        if engine is None:
+            status.setText("Settings need the Rust CLI: cargo build --release -p cfa4-cli")
+            return
+        SettingsDialog(engine, parent=window).exec()
+
+    settings_action = QAction("Settings…", window)
+    settings_action.setObjectName("menu.edit.settings")
+    settings_action.setShortcut(QKeySequence.StandardKey.Preferences)
+    if settings_action.shortcut().isEmpty():
+        settings_action.setShortcut(QKeySequence("Ctrl+,"))
+    settings_action.triggered.connect(open_settings)
+    window.menuBar().addMenu("&Edit").addAction(settings_action)
     window.resize(650, 200)
     refresh()
     window.show()

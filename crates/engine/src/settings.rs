@@ -887,6 +887,8 @@ pub enum Row {
 pub struct Category {
     /// Category id: first segment of its keys, `app.settings.<id>` command, `settings.category.<id>`.
     pub id: &'static str,
+    /// The [`Group`] it is listed under in the Qt Settings window.
+    pub group: &'static str,
     pub title: &'static str,
     pub rows: &'static [Row],
 }
@@ -991,9 +993,33 @@ pub fn category(id: &str) -> Option<&'static Category> {
     CATEGORIES.iter().find(|c| c.id == id)
 }
 
+/// A heading of the Qt Settings window's category list (the CFA3 / FA3 Control Center layout):
+/// the categories whose [`Category::group`] names it are listed under it, in [`categories`] order.
+#[derive(Clone, Copy, Debug)]
+pub struct Group {
+    pub id: &'static str,
+    pub title: &'static str,
+}
+
+/// The groups in display order. `hardware` also holds the Qt-only Accelerators page
+/// (`cfa4-cli hardware`), which has no preference keys yet.
+pub fn groups() -> &'static [Group] {
+    GROUPS
+}
+
+static GROUPS: &[Group] = &[
+    Group { id: "general", title: "General" },
+    Group { id: "appearance", title: "Appearance" },
+    Group { id: "editing", title: "Editing" },
+    Group { id: "media", title: "Media & Playback" },
+    Group { id: "hardware", title: "Hardware & Devices" },
+    Group { id: "ai", title: "Local AI" },
+];
+
 static CATEGORIES: &[Category] = &[
     Category {
         id: "general",
+        group: "general",
         title: "General",
         rows: &[
             f(
@@ -1045,6 +1071,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "appearance",
+        group: "appearance",
         title: "Appearance",
         rows: &[
             // Drawn by the dialog as the Appearance Mode selector above the light and dark theme
@@ -1062,6 +1089,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "audio",
+        group: "media",
         title: "Audio",
         rows: &[
             f("audio.automatchTime", "Automatch Time", float(0.0, 30.0, 3, "seconds"), true),
@@ -1089,6 +1117,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "audioHardware",
+        group: "hardware",
         title: "Audio Hardware",
         rows: &[
             f("audioHardware.deviceClass", "Device Class", Kind::Device(DeviceList::Hosts), true),
@@ -1109,6 +1138,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "autoSave",
+        group: "general",
         title: "Auto Save",
         rows: &[
             Row::Group(
@@ -1135,6 +1165,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "color",
+        group: "editing",
         title: "Color",
         rows: &[
             Row::Group(
@@ -1150,6 +1181,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "graphics",
+        group: "editing",
         title: "Graphics",
         rows: &[
             Row::Group(
@@ -1188,6 +1220,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "labels",
+        group: "appearance",
         title: "Labels",
         rows: &[
             Row::Custom("labelColors"),
@@ -1209,6 +1242,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "media",
+        group: "media",
         title: "Media",
         rows: &[
             f("media.indeterminateTimebase", "Indeterminate Media Timebase", Kind::Choice(TIMEBASE), true),
@@ -1233,12 +1267,11 @@ static CATEGORIES: &[Category] = &[
                     sub("media.growingRefreshSeconds", "Refresh growing Files Every", int(1.0, 3600.0, "seconds"), "media.refreshGrowingFiles", true),
                 ],
             ),
-            b("media.hardwareDecoding", "Enable hardware accelerated decoding (requires restart)", false),
-            b("media.proresHardwareEncoding", "Enable ProRes hardware accelerated encoding, if available", false),
         ],
     },
     Category {
         id: "mediaAnalysis",
+        group: "ai",
         title: "Media Analysis & Transcription",
         rows: &[
             f("mediaAnalysis.cacheResults", "Cache analysis results for re-use", Kind::Choice(ANALYSIS_CACHE), false),
@@ -1261,6 +1294,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "mediaCache",
+        group: "media",
         title: "Media Cache",
         rows: &[
             Row::Group(
@@ -1288,6 +1322,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "memory",
+        group: "hardware",
         title: "Memory",
         rows: &[
             Row::Custom("memoryInfo"),
@@ -1297,6 +1332,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "playback",
+        group: "media",
         title: "Playback",
         rows: &[
             f("playback.prerollSeconds", "Preroll", float(0.0, 60.0, 0, "seconds"), true),
@@ -1314,6 +1350,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "plugins",
+        group: "general",
         title: "Plugins",
         rows: &[
             Row::Group("Plugins", &[b("plugins.developerMode", "Enable developer mode", false)]),
@@ -1322,6 +1359,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "timeline",
+        group: "editing",
         title: "Timeline",
         rows: &[
             f("timeline.videoTransitionDuration", "Video Transition Default Duration", Kind::Duration { unit_key: "timeline.videoTransitionUnit" }, true),
@@ -1352,6 +1390,7 @@ static CATEGORIES: &[Category] = &[
     },
     Category {
         id: "trim",
+        group: "editing",
         title: "Trim",
         rows: &[
             f("trim.largeTrimOffset", "Large Trim Offset", int(1.0, 1000.0, "frames"), true),
@@ -1782,7 +1821,7 @@ fn schema(s: &mut Session, p: &Value) -> Result<Value> {
                     json!({"key": f.key, "label": f.label, "kind": kind_json(f.kind), "wired": f.wired, "enabledBy": f.enabled_by, "value": s.prefs.get(f.key)})
                 })
                 .collect();
-            json!({"id": c.id, "title": c.title, "command": format!("app.settings.{}", c.id), "fields": fields})
+            json!({"id": c.id, "title": c.title, "group": c.group, "command": format!("app.settings.{}", c.id), "fields": fields})
         })
         .collect();
     if let Some(w) = want
@@ -1790,7 +1829,8 @@ fn schema(s: &mut Session, p: &Value) -> Result<Value> {
     {
         return Err(bad("prefs.schema", format!("unknown category `{w}`")));
     }
-    Ok(json!({"categories": cats}))
+    let groups: Vec<Value> = GROUPS.iter().map(|g| json!({"id": g.id, "title": g.title})).collect();
+    Ok(json!({"groups": groups, "categories": cats}))
 }
 
 fn cache_info(s: &mut Session, _: &Value) -> Result<Value> {

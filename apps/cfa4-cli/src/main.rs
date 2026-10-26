@@ -33,6 +33,7 @@ macro_rules! out {
 mod args;
 mod probe;
 mod serve;
+mod settings_cmd;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;
@@ -96,6 +97,11 @@ SUBCOMMANDS
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
   bench-decode <media> [--frames N]
+  settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
+  settings get [key]            the saved preferences of the data directory, or one key
+  settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
+  settings reset [category]     a category (or everything) back to its defaults
+  hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
                                 stdin/stdout with binary frames (docs/qt-gui.md); --autosave
@@ -524,6 +530,15 @@ async fn cli() {
             }
             serve::run(*s);
         }
+        "settings" => {
+            let action = a.pos(1).unwrap_or_else(|| usage("settings schema|get|set|reset [arg]"));
+            let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);
+            match settings_cmd::settings(action, a.pos(2), dir) {
+                Ok(v) => print(&a, &v),
+                Err(e) => fail(e),
+            }
+        }
+        "hardware" => print(&a, &settings_cmd::hardware()),
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
                 usage(format!("unknown mcp option `{opt}`"));
