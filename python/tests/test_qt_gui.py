@@ -1364,7 +1364,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2161,6 +2161,45 @@ def test_audio_clip_mixer(app, tmp_path: Path):
         QtTest.QTest.mouseClick(a1, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a1.regions["keyframe"].center().toPoint())
         assert a1.write_keyframes
         assert cm.grab().width() > 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_reference_monitor(app, tmp_path: Path):
+    """egui's Reference Monitor: ganged to the Program playhead, or parked (step, Match Playhead)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 900)
+    win.show()
+    engine.start()
+    ref = win.reference
+    try:
+        assert wait_until(app, lambda: bool(win.sequence), 30_000)
+        assert not win.docks["Reference Monitor"].isVisible()
+        win.docks["Reference Monitor"].show()
+        win.docks["Reference Monitor"].raise_()
+        assert wait_until(app, lambda: ref.view.image is not None, 20_000)
+        ft = ref.frame_ticks()
+        win._seek_program(48 * ft)
+        assert wait_until(app, lambda: ref.frame_time() == 48 * ft, 10_000)
+        assert ref.timecode.text() == format_timecode(48 * ft, ft)
+        ref.forward.click()
+        assert not ref.ganged and ref.frame_time() == 49 * ft
+        win._seek_program(10 * ft)
+        assert wait_until(app, lambda: win.monitor.playhead == 10 * ft, 5_000)
+        assert ref.frame_time() == 49 * ft, "parked"
+        ref.match.click()
+        assert ref.frame_time() == 10 * ft
+        ref.gang.click()
+        assert ref.ganged
+        win._seek_program(20 * ft)
+        assert wait_until(app, lambda: ref.frame_time() == 20 * ft, 10_000)
     finally:
         win._quit_confirmed = True
         win.close()

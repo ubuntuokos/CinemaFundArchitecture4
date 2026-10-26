@@ -74,7 +74,7 @@ The Qt Inspector is named Properties, as in egui (3.22).
 | 3.23 | Text (transcript, captions) | ❌ | |
 | 3.24 | Events | ✅ | engine toasts and errors logged |
 | 3.25 | Progress (export/render jobs) | 🟡 | export queue with status, progress bar and remaining time in the Export window; a dockable Progress panel and render-job progress missing; Progress panel with the engine's background jobs (`jobs.list`), bar, status, time left, cancel (`jobs.cancel`), Show finished jobs (`test_timecode_and_progress_panels`) |
-| 3.26 | Reference Monitor | ❌ | |
+| 3.26 | Reference Monitor | 🟡 | a second view of the active sequence (`frame.render`), ganged to the Program playhead or parked on its own frame (step back/forward, Match Playhead, Gang to Program), remembered (`test_reference_monitor`); the Lumetri Scopes display waits for the Scopes panel |
 | 3.27 | Timecode | ✅ | one large row and optional smaller rows, each Current Time / Media Time / Duration / In-Out Duration / Remaining of the active monitor, the Program or the Source, in timecode, feet+frames 35/16 mm, frames, audio samples or seconds, read out by the engine (`time.readout`); row menu, "+", remembered (`test_timecode_and_progress_panels`, engine `reads_out_the_timecode_panel_rows`) |
 | 3.28 | Project Notes | ✅ | plain text saved in the project (`project.notes` / `project.setNotes`), one undo step per typing session; in the Project group, opened from Window ▸ Project Notes (`test_markers_info_metadata_and_project_notes`) |
 
