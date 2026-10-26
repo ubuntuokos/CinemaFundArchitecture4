@@ -73,7 +73,8 @@
 | 3 | Feladatsorok a táblában (pl. felvétel, konvertálás) mérés alapján | tervezett |
 | 4 | Csomagolás: FFmpeg 9.0.2 `/opt/cfa4` alatt; GStreamer `Depends`/`Recommends` az Ubuntu archívumából (a kiadási munka a Qt6-átállás után jön) | eldöntve, tervezett |
 
-## Nyitott kérdések (tulajdonos)
+## Számozás
 
-- Számozás: az ADR 0003 az FFI-kivétel elvének szánta a 0004-es számot, de azt a #55
-  útvonalválasztó-ADR-je használja; az FFI-elv ADR-je új számot kap, amikor elkészül.
+Az ADR 0003 eredetileg az FFI-kivétel elvének szánta a 0004-es számot. A 0004 az útvonalválasztóé
+(#55), a 0005 ezé az ADR-é; az FFI-elv ADR-je elkészültekor a következő szabad számot kapja
+(várhatóan 0006). Az ADR 0003 hivatkozásai ennek megfelelően módosultak.
