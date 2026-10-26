@@ -10,11 +10,12 @@
 //! | `name-spelling` | warning | one person written two ways (differs only in accents, case, spacing or punctuation) |
 //! | `missing-font` | error | the font is not installed; another is used |
 //! | `missing-glyphs` | warning | the font lacks some characters (e.g. ő, ű); they come from another font |
-//! | `outside-title-safe` | warning | text outside the title-safe area (5 % from each edge; for rolls, the sides only) |
-//! | `low-contrast` | warning | text colour too dark against black (contrast below 4.5:1, WCAG 2.1) |
+//! | `outside-title-safe` | warning | text outside the title-safe area (5 % from each edge; for rolls the sides only, for crawls the top and bottom only) |
+//! | `low-contrast` | warning | text against the page's background (black without one) below 4.5:1 (WCAG 2.1); `against`: `black` or `background` |
+//! | `contrast-unchecked` | info | a picture or video is behind the page's text: its contrast is not measured |
 //! | `small-text` | warning | text smaller than 24 px on a 1080-line frame |
-//! | `uneven-scroll` | warning | the roll does not move a whole number of pixels per frame, which shimmers |
-//! | `fast-scroll` | warning | a line crosses the frame in under 6 seconds: hard to read |
+//! | `uneven-scroll` | warning | the roll or crawl does not move a whole number of pixels per frame, which shimmers |
+//! | `fast-scroll` | warning | a line crosses the frame (a crawl: its width) in under 6 seconds: hard to read |
 //! | `short-card` | warning | a card is on screen for less than 2 seconds after its fades |
 //! | `overlap` | info | a page starts before the previous one has ended (negative page gap) |
 //! | `upscaled-picture` | warning | a picture is shown larger than its pixels |
@@ -142,10 +143,39 @@ fn lin(c: f32) -> f64 {
     if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
 }
 
+fn luminance(rgb: [f32; 4]) -> f64 {
+    0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2])
+}
+
 /// WCAG 2.1 contrast ratio of a colour against black.
 pub fn contrast_on_black(rgb: [f32; 4]) -> f64 {
-    let l = 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
-    (l + 0.05) / 0.05
+    contrast(rgb, [0.0, 0.0, 0.0, 1.0])
+}
+
+/// WCAG 2.1 contrast ratio of two colours.
+pub fn contrast(a: [f32; 4], b: [f32; 4]) -> f64 {
+    let (la, lb) = (luminance(a), luminance(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
+/// The colours behind a page's text: black without a background; a colour or both ends of a
+/// gradient, mixed with black by the background's opacity; `None` for a picture or video (not
+/// known here).
+pub fn colours_behind(bg: Option<&crate::style::Background>) -> Option<Vec<[f32; 4]>> {
+    use crate::style::BackgroundKind as K;
+    let black = [0.0, 0.0, 0.0, 1.0];
+    let Some(bg) = bg else { return Some(vec![black]) };
+    let o = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0) as f32 / 100.0;
+    let mix = |c: &str| {
+        let c = crate::style::parse_color(c).unwrap_or(black);
+        [c[0] * o, c[1] * o, c[2] * o, 1.0]
+    };
+    match bg.kind {
+        K::None => Some(vec![black]),
+        K::Color => Some(vec![mix(&bg.color)]),
+        K::Gradient => Some(vec![mix(&bg.color), mix(&bg.color2)]),
+        K::Image | K::Video => None,
+    }
 }
 
 /// A character's capital, when it is one character (as the text engine draws all caps).
@@ -233,8 +263,9 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
         }
         prev_dur = Some(pg.duration);
         match pg.behaviour {
-            Behaviour::Scroll => {
-                let travel = h + pg.content_height;
+            Behaviour::Scroll | Behaviour::Crawl => {
+                // a roll crosses the frame's height, a crawl its width
+                let (extent, travel) = if pg.behaviour == Behaviour::Crawl { (w, w + pg.content_width) } else { (h, h + pg.content_height) };
                 let frames = secs(pg.duration) * fps;
                 if frames > 0.0 {
                     let speed = travel / frames;
@@ -248,7 +279,7 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                             format!("page {} rolls {speed:.2} px per frame; a whole number does not shimmer", pi + 1),
                         );
                     }
-                    let crossing = h / speed.max(1e-9) / fps;
+                    let crossing = extent / speed.max(1e-9) / fps;
                     if crossing < MIN_CROSSING_SECONDS {
                         out.add(
                             "fast-scroll",
@@ -278,6 +309,17 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
         let (sx0, sx1) = (w * TITLE_SAFE_MARGIN, w * (1.0 - TITLE_SAFE_MARGIN));
         let (sy0, sy1) = (h * TITLE_SAFE_MARGIN, h * (1.0 - TITLE_SAFE_MARGIN));
         let mut unsafe_reported = false;
+        let behind = colours_behind(pg.background.as_ref());
+        if behind.is_none() && pg.layers.iter().any(|e| e.effect == "graphic_text") {
+            out.add(
+                "contrast-unchecked",
+                Severity::Info,
+                Some(pi),
+                row,
+                &[],
+                format!("page {} has a picture or video behind it; check the contrast by eye", pi + 1),
+            );
+        }
         for (li, e) in pg.layers.iter().enumerate().filter(|(_, e)| e.effect == "graphic_text") {
             // the row of the layer's own block, else the page's
             let row = pg.layer_rows.get(li).copied().filter(|r| *r > 0).or(row);
@@ -300,16 +342,18 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                     format!("`{first_line}` is {:.0} px high (on a 1080-line frame); {MIN_TEXT_PX} px or more reads well", size / s),
                 );
             }
-            if let Some(ParamValue::Color(c)) = e.params.get("fill_color").map(|p| &p.value) {
-                let ratio = contrast_on_black(*c);
+            if let (Some(ParamValue::Color(c)), Some(bgs)) = (e.params.get("fill_color").map(|p| &p.value), &behind) {
+                // the worst contrast against what is behind the text
+                let ratio = bgs.iter().map(|b| contrast(*c, *b)).fold(f64::INFINITY, f64::min);
                 if ratio < MIN_CONTRAST {
+                    let against = if pg.background.is_some() { "background" } else { "black" };
                     out.add(
                         "low-contrast",
                         Severity::Warning,
                         Some(pi),
                         row,
-                        &[("text", first_line.clone()), ("ratio", format!("{ratio:.1}"))],
-                        format!("`{first_line}` has a contrast of {ratio:.1}:1 against black; at least {MIN_CONTRAST}:1 is needed"),
+                        &[("text", first_line.clone()), ("ratio", format!("{ratio:.1}")), ("against", against.into())],
+                        format!("`{first_line}` has a contrast of {ratio:.1}:1 against the {against}; at least {MIN_CONTRAST}:1 is needed"),
                     );
                 }
             }
@@ -349,8 +393,9 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                     _ => (0.0, 0.0),
                 };
                 let (x0, x1, y0, y1) = (px + b[0], px + b[2], py + b[1], py + b[3]);
-                let sideways = x0 < sx0 - 0.5 || x1 > sx1 + 0.5;
-                let vertical = pg.behaviour == Behaviour::Card && (y0 < sy0 - 0.5 || y1 > sy1 + 0.5);
+                // a roll passes the top and bottom, a crawl the sides
+                let sideways = pg.behaviour != Behaviour::Crawl && (x0 < sx0 - 0.5 || x1 > sx1 + 0.5);
+                let vertical = pg.behaviour != Behaviour::Scroll && (y0 < sy0 - 0.5 || y1 > sy1 + 0.5);
                 if sideways || vertical {
                     unsafe_reported = true;
                     out.add(

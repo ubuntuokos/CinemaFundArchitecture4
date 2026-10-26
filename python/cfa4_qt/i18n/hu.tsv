@@ -1714,7 +1714,7 @@
 	“{text}” is outside the title-safe area	„{text}” kilóg a címbiztos területből
 	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” túl sötét fekete alapon (kontraszt {ratio}:1; legalább 4,5:1 kell)
 	“{text}” is {px} px high; 24 px or more reads well	„{text}” {px} px magas; 24 px felett jól olvasható
-	The roll moves {speed} px per frame; a whole number does not shimmer	A gördülés képkockánként {speed} px; egész számnál nem vibrál
+	The text moves {speed} px per frame; a whole number does not shimmer	A szöveg képkockánként {speed} px-t mozdul; egész számnál nem vibrál
 	A line crosses the frame in {seconds} s; at least 6 s reads well	Egy sor {seconds} mp alatt fut át a képen; legalább 6 mp kell a kényelmes olvasáshoz
 	The card holds for only {seconds} s after its fades	A kártya az áttűnések után csak {seconds} mp-ig áll
 	This page starts {seconds} s before the previous one ends	Ez az oldal {seconds} mp-cel az előző vége előtt indul
@@ -1747,3 +1747,17 @@
 	Fitting removed.	Az igazítás megszűnt.
 	Fit to This Length	Igazítás erre a hosszra
 	No music to measure ({problem}); type the length.	Nincs mérhető zene ({problem}); add meg a hosszt.
+	Crawl	Futószöveg
+	Gradient	Színátmenet
+	Picture: {file}	Kép: {file}
+	Video: {file}	Videó: {file}
+	Push	Eltolás
+	Dip to Black	Áttűnés feketén át
+	Background	Háttér
+	Into the next	Átmenet a következőbe
+	Safe areas and spines	Biztonsági területek és gerincek
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei
+	Baseline grid	Alapvonal-rács
+	Lines one gap unit apart, moving with the page	Egy térköz-egységnyi vonalak, az oldallal együtt mozognak
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nem válik el a háttértől (kontraszt {ratio}:1; legalább 4,5:1 kell)
+	A picture or video is behind the text: check the contrast by eye	A szöveg mögött kép vagy videó van: a kontrasztot szemmel ellenőrizd

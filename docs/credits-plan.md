@@ -105,8 +105,7 @@ Az eredeti terv §20-ából a CFA4-ben értelmesek, géppel olvasható eredménn
 - a képpontjainál nagyobban mutatott kép (elmosódott).
 
 A Qt6 Stáblista ablak súlyosság szerinti ikonnal, magyarul, sorszámmal mutatja; a mintatáblázat
-hamis riasztás nélkül átmegy. Hátravan, amíg a C4 nincs kész: a kontraszt a valódi háttérhez
-(most fekete alaphoz mér).
+hamis riasztás nélkül átmegy. A kontraszt a C4 óta a valódi háttérszínhez mér.
 
 ### C3 – Igazítás a zenéhez (K → K+) – **KÉSZ (2026-10-26)**
 
@@ -125,15 +124,23 @@ Az eredeti terv §12-e.
   megtartja; *Igazítás megszüntetése* visszavonja. Egy visszavonási lépés, a kézi módosítások
   megmaradnak.
 
-### C4 – Háttér, átmenet, futószöveg, segédvonalak (K+)
+### C4 – Háttér, átmenet, futószöveg, segédvonalak (K+) – **KÉSZ (2026-10-26)**
 
 Az eredeti terv §6, §7, §10 pontjaiból:
 
-- oldalanként **háttér**: átlátszó, szín, színátmenet, kép, videó (kitöltés/illesztés,
-  átlátszóság, elmosás);
-- oldalak közti **átmenet** (áttűnés, eltolás) a meglévő átmenet-rendszerrel;
-- **vízszintes futószöveg** (crawl) oldaltípus – a motor már tudja;
-- **segédvonalak** az előnézetben: safe area, gerinc, alapvonal-rács.
+- oldalstílusonként **háttér**: nincs (átlátszik), szín, színátmenet, kép, videó
+  (kitöltés/illesztés, átlátszóság, elmosás). Saját klip közvetlenül az oldal alatt, az oldallal
+  azonos hosszal; nem gördül, a beállításai a klipen szerkeszthetők; frissítéskor az oldallal
+  együtt cserélődik;
+- oldalak közti **átmenet** (áttűnés, eltolás, csúsztatás, törlés, áttűnés feketén át, vagy
+  bármely átmenet azonosítója) a meglévő átmenet-rendszerrel, a vágásra középre; a hátterek is
+  megkapják; kártyán a vágásnál az áttűnés helyére lép. Csak egymáshoz érő oldalak közt;
+- **vízszintes futószöveg** (`Crawl`) oldaltípus: a blokkok egy sorban, jobbról balra, a képek
+  vele futnak;
+- **segédvonalak** az előnézetben: akcióbiztos és címbiztos terület, középvonalak, gerincek,
+  alapvonal-rács (az oldallal mozog);
+- a kontraszt-ellenőrzés a valódi háttérszínhez mér; kép vagy videó mögött tájékoztat, hogy
+  szemmel kell ellenőrizni.
 
 ### C5 – Gazdagabb elrendezés (N, részekre bontva)
 

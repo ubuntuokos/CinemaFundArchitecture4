@@ -3031,13 +3031,31 @@ def test_real_engine_credits_window(app, tmp_path: Path):
         dlg.path.setText(str(sheet))
         dlg.refresh()
         assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
-        assert dlg.pages.item(0, 1).text() and dlg.pages.item(1, 2).text()
-        assert dlg.pages.item(0, 2).text() == "0:04.0"
+        assert dlg.pages.item(0, 1).text() and dlg.pages.item(1, 4).text()
+        assert dlg.pages.item(0, 4).text() == "0:04.0"
         # the missing picture is a warning with its row (the checks may list more)
         texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
         assert any("6" in t and "nincs.png" in t for t in texts), texts
         assert dlg.check_summary.text()
         assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
+        # guides change the page picture
+        before = dlg.picture.pixmap().toImage()
+        dlg.guides.setChecked(True)
+        assert wait_until(app, lambda: dlg.picture.pixmap().toImage() != before, 30_000)
+        # a styling with a background, a transition and a crawl shows in the pages table
+        styling = tmp_path / "look.json"
+        styling.write_text(
+            '{"pageStyles":[{"name":"Card","behaviour":"card","transition":"dissolve",'
+            '"background":{"kind":"gradient","color":"#203060","color2":"#000000","opacity":80}},'
+            '{"name":"Scroll","behaviour":"crawl"}]}',
+            encoding="utf-8",
+        )
+        dlg.styling.setText(str(styling))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 2 and "80" in (dlg.pages.item(0, 2).text() if dlg.pages.item(0, 2) else ""), 30_000)
+        assert dlg.pages.item(0, 3).text().endswith("0:00.5"), dlg.pages.item(0, 3).text()
+        assert dlg.pages.item(1, 1).text() == "Crawl" and dlg.pages.item(1, 3).text() == ""
+        dlg.styling.setText("")
         # a broken path is an error in the window, not a crash
         dlg.path.setText(str(tmp_path / "missing.ods"))
         dlg.refresh()
@@ -5466,6 +5484,29 @@ def test_credits_issue_text_is_worded_from_code_and_values():
     src = (ROOT / "crates" / "credits" / "src" / "validate.rs").read_text(encoding="utf-8")
     codes = set(re.findall(r'^//! \| `([a-z-]+)` \|', src, re.MULTILINE))
     assert codes and codes <= set(ISSUE_TEXT), codes - set(ISSUE_TEXT)
+
+
+def test_credits_page_look_texts(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import background_text, issue_text, transition_text
+
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert background_text(None) == "" and background_text({"kind": "none"}) == "" and background_text("x") == ""
+    assert background_text({"kind": "color", "opacity": 100}) == "Color"
+    assert background_text({"kind": "gradient", "opacity": 80}) == "Gradient (80 %)"
+    assert background_text({"kind": "image", "file": "/a/b/sky.png", "opacity": 12.5}) == "Picture: sky.png (12.5 %)"
+    assert transition_text(None) == "" and transition_text([]) == ""
+    assert transition_text({"effect": "cross_dissolve", "duration": TICKS_PER_SECOND // 2}) == "Dissolve, 0:00.5"
+    assert transition_text({"effect": "iris_round", "duration": TICKS_PER_SECOND}) == "iris round, 0:01.0"
+    on_bg = issue_text({"code": "low-contrast", "values": {"text": "A", "ratio": "1.2", "against": "background"}})
+    on_black = issue_text({"code": "low-contrast", "values": {"text": "A", "ratio": "1.2", "against": "black"}})
+    assert "background" in on_bg and "black" in on_black
+    i18n.TR.set_language("hu")
+    try:
+        assert background_text({"kind": "gradient", "opacity": 12.5}) == "Színátmenet (12,5 %)"
+        assert transition_text({"effect": "push", "duration": TICKS_PER_SECOND}) == "Eltolás, 0:01,0"
+    finally:
+        i18n.TR.set_language("en")
 
 
 def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
