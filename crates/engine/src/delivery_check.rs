@@ -5,18 +5,20 @@
 //! |---|---|
 //! | `flashFrame` | a picture clip (or graphic) only one or two frames long |
 //! | `blackGap` | time inside the edit where no enabled video track shows anything |
-//! | `offline` | a clip whose media is offline |
+//! | `offline` | a clip (on any track) whose media is offline |
 //! | `captionFast` | a caption with more characters per second than `maxCps` (20) |
 //! | `captionShort` | a caption on screen for less than 0.7 s |
 //! | `offFrame` | a graphic layer that reaches outside the frame |
 //! | `safeZone` | a text layer under a platform's buttons (TikTok / Reels / Shorts, see [`crate::social::SafeZone`]) |
 //!
 //! Everything is computed from the timeline (no rendering, no models), so it is instant and
-//! deterministic. Graphics are measured on their canvas (the sequence frame) at the middle of the
-//! clip, before the clip's Motion. With `markers` (default on) each problem gets a red sequence
-//! marker whose comment starts with [`CHECK_COMMENT`]; running the check again replaces them, and
-//! `markers.clearChecks` removes them.
+//! deterministic. Graphics are measured at the middle of the clip, through the clip's Motion,
+//! against the sequence frame (so titles left outside a reframed copy are found). With `markers`
+//! (default on) each problem gets a red sequence marker whose comment starts with
+//! [`CHECK_COMMENT`]; running the check again replaces them, and `markers.clearChecks` removes
+//! them.
 
+use cfa4_geom::Rect;
 use cfa4_project::graphic::LayerContent;
 use cfa4_project::{ItemKind, Label, Marker, MarkerId, MarkerKind, TrackKind};
 use cfa4_time::Tick;
@@ -112,18 +114,23 @@ fn check(s: &mut Session, p: &Value) -> Result<Value> {
                     clip: Some(it.id.0),
                 });
             }
-            if pi.is_some_and(|x| matches!(x.kind, ItemKind::Media(_) | ItemKind::Subclip { .. })) && crate::project_tools::is_offline(s, it.item) {
-                issues.push(Issue { kind: "offline", title: "Offline media".into(), start: it.start, duration: it.duration, clip: Some(it.id.0) });
-            }
             let Some(ItemKind::Graphic { width, height, .. }) = pi.map(|x| &x.kind) else { continue };
             let canvas = (*width, *height);
             let mid = it.source_in + Tick(it.duration.0 / 2);
-            let frame_rect = [0.0, 0.0, canvas.0 as f64, canvas.1 as f64];
+            // layers are laid out on the graphic's canvas; its Motion places that canvas in the
+            // sequence frame (which differs after Auto Reframe Sequence)
+            let motion = cfa4_render::motion_matrix(&q, it, canvas, cfa4_render::source_par(&s.project, it.item), mid);
+            let frame_rect = [0.0, 0.0, w, h];
             let mut off = false;
             let mut unsafe_text = false;
             for (_, spec) in cfa4_render::graphic_clip::item_layer_specs(it, mid, canvas) {
                 let b = cfa4_render::graphic_clip::layer_bounds(&spec);
                 if !b.iter().all(|v| v.is_finite()) || b[2] <= b[0] || b[3] <= b[1] {
+                    continue;
+                }
+                let r = motion.bounds(&Rect::new(b[0], b[1], b[2] - b[0], b[3] - b[1]));
+                let b = [r.x, r.y, r.right(), r.bottom()];
+                if !b.iter().all(|v| v.is_finite()) {
                     continue;
                 }
                 off |= !inside(b, frame_rect);
@@ -145,6 +152,15 @@ fn check(s: &mut Session, p: &Value) -> Result<Value> {
                     duration: it.duration,
                     clip: Some(it.id.0),
                 });
+            }
+        }
+    }
+    // offline media on any track (music and voice-over included)
+    for t in q.all_tracks() {
+        for it in &t.items {
+            let media = s.project.item(it.item).is_some_and(|x| matches!(x.kind, ItemKind::Media(_) | ItemKind::Subclip { .. }));
+            if media && crate::project_tools::is_offline(s, it.item) {
+                issues.push(Issue { kind: "offline", title: "Offline media".into(), start: it.start, duration: it.duration, clip: Some(it.id.0) });
             }
         }
     }

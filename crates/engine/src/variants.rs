@@ -9,14 +9,16 @@
 //! The first row names the columns. In every text layer of every graphic clip, `{{Column}}`
 //! is replaced by that row's cell (case-insensitive; static text and every Source Text keyframe),
 //! and a text layer whose Layer Name equals a column name gets the cell as its whole text.
-//! Per-character styles follow the edited text. A `Name` (or `File`) column names the sequence
-//! and the exported file; otherwise the variants are numbered. Placeholders without a column
-//! are left as they are and reported. At most [`MAX_ROWS`] rows. `path` is the spreadsheet;
-//! the export folder is `exportPath`. The whole batch is one undo step.
+//! Per-character styles follow the edited text, and a changed instance of a source graphic gets
+//! its own project item (so variants never sync back to the template). A `Name` (or `File`)
+//! column names the sequence and the exported file (repeated names get ` (2)`, ` (3)`…);
+//! otherwise the variants are numbered. Placeholders without a column are left as they are and
+//! reported. At most [`MAX_ROWS`] rows. `path` is the spreadsheet; the export folder is
+//! `exportPath`. The whole batch is one undo step.
 
 use cfa4_project::graphic::TEXT_LAYER;
 use cfa4_project::graphic_design::adjust_runs;
-use cfa4_project::{ItemId, ParamValue};
+use cfa4_project::{ItemId, ParamValue, Project};
 use serde_json::{Value, json};
 
 use crate::commands::{CommandSpec, bad, bool_p, has_seq, str_p};
@@ -57,11 +59,14 @@ fn file_safe(s: &str) -> String {
     if t.is_empty() { "Variant".into() } else { t.chars().take(80).collect() }
 }
 
-/// Put one row into the text layers of a sequence; returns how many layers changed.
-fn apply_row(q: &mut cfa4_project::Sequence, row: &[(String, String)], missing: &mut Vec<String>) -> usize {
+/// Put one row into the text layers of a sequence; returns how many layers changed. A changed
+/// instance of a source graphic gets its own project item, so the variant's text is not synced
+/// back to the template and the other variants.
+fn apply_row(p: &mut Project, q: &mut cfa4_project::Sequence, row: &[(String, String)], missing: &mut Vec<String>) -> usize {
     let mut n = 0;
     for t in &mut q.video_tracks {
         for it in &mut t.items {
+            let before = n;
             for e in it.effects.iter_mut().filter(|e| e.effect == TEXT_LAYER) {
                 let layer_name = match e.params.get("name").map(|p| &p.value) {
                     Some(ParamValue::Text(s)) => s.trim().to_string(),
@@ -100,9 +105,27 @@ fn apply_row(q: &mut cfa4_project::Sequence, row: &[(String, String)], missing: 
                     }
                 }
             }
+            if n > before
+                && p.source_graphics.contains_key(&it.item)
+                && let Some(src) = p.item(it.item).cloned()
+            {
+                it.item = p.add_item(&src.name, src.label, src.kind, None);
+            }
         }
     }
     n
+}
+
+/// `label`, or `label (2)`, `label (3)`… when an earlier variant already took it (compared as
+/// file names, case-insensitively), so no two variants export to the same file.
+fn unique(label: String, taken: &mut std::collections::HashSet<String>) -> String {
+    let mut out = label.clone();
+    let mut k = 2u32;
+    while !taken.insert(out.to_lowercase()) {
+        out = format!("{label} ({k})");
+        k = k.saturating_add(1);
+    }
+    out
 }
 
 fn read_rows(cmd: &str, p: &Value) -> Result<Vec<Vec<String>>> {
@@ -143,36 +166,34 @@ fn batch(s: &mut Session, p: &Value) -> Result<Value> {
     let mut made = Vec::new();
     let mut missing: Vec<String> = Vec::new();
     let mut unchanged = 0usize;
-    let before = s.history.undo.len();
-    for (i, cells) in data.iter().enumerate() {
-        let row: Vec<(String, String)> =
-            header.iter().enumerate().filter(|(_, h)| !h.is_empty()).map(|(k, h)| (h.clone(), cells.get(k).cloned().unwrap_or_default())).collect();
-        let label =
-            name_col.and_then(|k| cells.get(k)).map(|v| v.trim()).filter(|v| !v.is_empty()).map(file_safe).unwrap_or_else(|| format!("Variant {}", i + 1));
-        let name = format!("{base} – {label}");
-        let mut changed = 0;
-        let mut miss = Vec::new();
-        let id = crate::social::copy_sequence(s, seq, &name, "Batch Variant", |_, q| {
-            changed = apply_row(q, &row, &mut miss);
-            Ok(())
-        })?;
-        if changed == 0 {
-            unchanged += 1;
-        }
-        for m in miss {
-            if !missing.iter().any(|x| x.eq_ignore_ascii_case(&m)) {
-                missing.push(m);
+    let mut taken = std::collections::HashSet::new();
+    // one undo step for the whole batch
+    s.edit_group("Batch Variants", |s| {
+        for (i, cells) in data.iter().enumerate() {
+            let row: Vec<(String, String)> =
+                header.iter().enumerate().filter(|(_, h)| !h.is_empty()).map(|(k, h)| (h.clone(), cells.get(k).cloned().unwrap_or_default())).collect();
+            let label =
+                name_col.and_then(|k| cells.get(k)).map(|v| v.trim()).filter(|v| !v.is_empty()).map(file_safe).unwrap_or_else(|| format!("Variant {}", i + 1));
+            let label = unique(label, &mut taken);
+            let name = format!("{base} – {label}");
+            let mut changed = 0;
+            let mut miss = Vec::new();
+            let id = crate::social::copy_sequence(s, seq, &name, "Batch Variant", |p, q| {
+                changed = apply_row(p, q, &row, &mut miss);
+                Ok(())
+            })?;
+            if changed == 0 {
+                unchanged += 1;
             }
+            for m in miss {
+                if !missing.iter().any(|x| x.eq_ignore_ascii_case(&m)) {
+                    missing.push(m);
+                }
+            }
+            made.push((id, label));
         }
-        made.push((id, label));
-    }
-    // one undo step for the whole batch (the first step holds the project from before it)
-    if s.history.undo.len() > before + 1 {
-        s.history.undo.truncate(before + 1);
-    }
-    if let Some(last) = s.history.undo.last_mut() {
-        last.0 = "Batch Variants".into();
-    }
+        Ok(())
+    })?;
     let mut queued = Value::Array(Vec::new());
     if export {
         let mut q = json!({"sequences": made.iter().map(|(i, _)| i.0).collect::<Vec<_>>()});

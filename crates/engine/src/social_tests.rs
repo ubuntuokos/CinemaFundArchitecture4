@@ -293,3 +293,101 @@ fn text_animators_change_what_a_title_shows_over_time() {
     s.execute("graphics.newShape", json!({"clip": clip.0})).unwrap();
     assert!(s.execute("graphics.textAnimator.counter", json!({"clip": clip.0, "layer": 1})).is_err());
 }
+
+#[test]
+fn reframe_moves_motion_positions_with_the_frame_centre() {
+    let (mut s, clips) = session(0.0, &[2.0]);
+    let c = clips[0].0;
+    // explicitly centred, and animated off-centre
+    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "position", "value": [960.0, 540.0]})).unwrap();
+    s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "scale", "value": 90.0})).unwrap();
+    let r = s.execute("sequence.autoReframe", json!({"aspect": "9:16"})).unwrap();
+    let q = s.project.sequence(ItemId(r["sequence"].as_u64().unwrap())).unwrap();
+    let it = q.video_tracks.iter().flat_map(|t| &t.items).next().unwrap();
+    let p = it.effect("motion").unwrap().vec2_at("position", it.source_in);
+    assert_eq!((p.x, p.y), (540.0, 960.0), "the centre of 1920×1080 becomes the centre of 1080×1920");
+    // keyframes move too
+    let (mut s, clips) = session(0.0, &[2.0]);
+    let c = clips[0].0;
+    for (t, x) in [(0i64, 100.0), (1, 1800.0)] {
+        let time = cfa4_time::Tick::from_seconds_f64(t as f64).0;
+        s.execute("effects.setParam", json!({"clip": c, "effect": "motion", "param": "position", "value": [x, 540.0], "keyframe": true, "time": time}))
+            .unwrap();
+    }
+    let r = s.execute("sequence.autoReframe", json!({"aspect": "1:1"})).unwrap();
+    let q = s.project.sequence(ItemId(r["sequence"].as_u64().unwrap())).unwrap();
+    let it = q.video_tracks.iter().flat_map(|t| &t.items).next().unwrap();
+    let pos = it.effect("motion").unwrap().params.get("position").unwrap();
+    let xs: Vec<(f64, f64)> = pos
+        .keyframes
+        .iter()
+        .filter_map(|k| match k.value {
+            cfa4_project::ParamValue::Vec2(v) => Some((v.x, v.y)),
+            _ => None,
+        })
+        .collect();
+    // 1920×1080 → 1080×1080: the centre moves by (−420, 0)
+    assert_eq!(xs, vec![(-320.0, 540.0), (1380.0, 540.0)]);
+}
+
+#[test]
+fn check_measures_graphics_in_the_reframed_frame_and_audio_offline() {
+    let (mut s, _) = session(0.0, &[3.0]);
+    s.execute("playhead.set", json!({"seconds": 1.0})).unwrap();
+    // inside 1920 wide; the copy keeps it 790 px right of the centre, outside 1080 wide
+    s.execute("graphics.newText", json!({"text": "Hi", "position": [1750, 540]})).unwrap();
+    let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
+    assert_eq!(issues(&r, "offFrame"), 0, "{r:#}");
+    s.execute("sequence.autoReframe", json!({"aspect": "9:16"})).unwrap();
+    let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
+    assert_eq!(issues(&r, "offFrame"), 1, "{r:#}");
+    // an offline music clip on an audio track is reported
+    let (mut s, _) = session(0.0, &[3.0]);
+    let r = s.execute("file.newOfflineFile", json!({"fileName": "music.wav", "video": false, "audio": true, "seconds": 3.0})).unwrap();
+    s.execute("timeline.place", json!({"item": r["item"], "track": "A1", "seconds": 0.0})).unwrap();
+    let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
+    assert_eq!(issues(&r, "offline"), 1, "{r:#}");
+}
+
+#[test]
+fn batch_variants_keep_names_unique_undo_whole_and_detach_source_graphics() {
+    let (mut s, _) = session(0.0, &[3.0]);
+    let r = s.execute("graphics.newText", json!({"text": "{{Headline}}"})).unwrap();
+    let clip = r["clip"].as_u64().unwrap();
+    let r = s.execute("graphics.upgradeToSourceGraphic", json!({"clip": clip})).unwrap();
+    let source = ItemId(r["item"].as_u64().unwrap());
+    let orig = s.state.active_sequence.unwrap();
+    // a history limit smaller than the batch must still give one undo step
+    let undo0 = s.history.undo.len();
+    s.history.limit = undo0 + 2;
+    let csv = "Name,Headline\nA/B,One\nA:B,Two\na/b,Three\nOther,Four\nLast,Five\n";
+    let r = s.execute("export.batchVariants", json!({"csv": csv, "export": false})).unwrap();
+    let names: Vec<&str> = r["variants"].as_array().unwrap().iter().map(|v| v["name"].as_str().unwrap()).collect();
+    assert_eq!(names, vec!["A_B", "A_B (2)", "a_b (3)", "Other", "Last"]);
+    assert_eq!(s.history.undo.len(), undo0 + 1);
+    let text_of = |s: &Session, seq: ItemId| -> (ItemId, String) {
+        let q = s.project.sequence(seq).unwrap();
+        let it = q.video_tracks.iter().flat_map(|t| &t.items).find(|i| i.effects.iter().any(|e| e.effect == cfa4_project::graphic::TEXT_LAYER)).unwrap();
+        let e = it.effects.iter().find(|e| e.effect == cfa4_project::graphic::TEXT_LAYER).unwrap();
+        match &e.params["text"].value {
+            cfa4_project::ParamValue::Text(t) => (it.item, t.clone()),
+            _ => panic!(),
+        }
+    };
+    let seqs: Vec<ItemId> = r["variants"].as_array().unwrap().iter().map(|v| ItemId(v["sequence"].as_u64().unwrap())).collect();
+    for (i, seq) in seqs.iter().enumerate() {
+        let (item, _) = text_of(&s, *seq);
+        assert_ne!(item, source, "variant {i} has its own graphic item");
+    }
+    // an unrelated graphics edit afterwards does not sync one variant's text everywhere
+    s.execute("sequence.open", json!({"item": orig.0})).unwrap();
+    s.execute("playhead.set", json!({"seconds": 2.0})).unwrap();
+    s.execute("graphics.newText", json!({"text": "Unrelated"})).unwrap();
+    assert_eq!(text_of(&s, orig).1, "{{Headline}}");
+    assert_eq!(text_of(&s, seqs[0]).1, "One");
+    assert_eq!(text_of(&s, seqs[4]).1, "Five");
+    // one undo removes the whole batch even though it was longer than the history limit
+    s.execute("edit.undo", json!({})).unwrap();
+    s.execute("edit.undo", json!({})).unwrap();
+    assert!(seqs.iter().all(|q| s.project.sequence(*q).is_none()));
+}

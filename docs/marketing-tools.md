@@ -45,8 +45,9 @@ outline as a guide. Monitor state key: `social_zone` (`tiktok`, `reels`, `shorts
 
 Sequence ▸ Auto Reframe Sequence… copies the active sequence at 9:16, 1:1, 4:5 or 16:9: the short
 side of the frame stays, the long side follows the aspect. Every picture clip in the copy gets
-the Auto Reframe effect (Target Aspect: Sequence), which keeps the subject in frame. Graphics keep
-their pixel positions, as in Premiere; the check below reports layers that leave the frame.
+the Auto Reframe effect (Target Aspect: Sequence), which keeps the subject in frame. Motion
+positions (keyframes included) move with the frame's centre, so centred clips and titles stay
+centred; titles keep their size, and the check below reports layers that leave the new frame.
 
 File ▸ Export ▸ Social Deliverables… does that for every aspect (default 16:9, 9:16, 1:1, 4:5;
 the sequence itself stands for its own aspect) and adds one export per aspect to the export
@@ -62,14 +63,15 @@ Finds what usually spoils a finished promo, and marks each problem with a red ma
 |---|---|
 | `flashFrame` | a picture clip or graphic only one or two frames long (`flashFrames`) |
 | `blackGap` | time inside the edit where no enabled video track shows anything |
-| `offline` | a clip whose media is offline |
+| `offline` | a clip on any track (music and voice-over included) whose media is offline |
 | `captionFast` | a caption with more than `maxCps` (20) characters per second |
 | `captionShort` | a caption on screen for less than 0.7 s |
 | `offFrame` | a graphic layer reaching outside the frame |
 | `safeZone` | a text layer under a platform's buttons (`zone`: `tiktok`, `reels`, `shorts`, `all`, `none`; vertical frames default to `all`) |
 
 It reads the timeline only (no rendering, no models), so it is instant and deterministic.
-Graphics are measured on their canvas at the middle of the clip, before the clip's Motion.
+Graphics are measured at the middle of the clip, through the clip's Motion, against the
+sequence frame, so titles left outside a reframed copy are found.
 
 ## Batch Variants from Spreadsheet
 
@@ -77,7 +79,9 @@ Build one sequence as a template, write `{{Column}}` placeholders into its title
 text layer a Layer Name equal to a column name), then choose File ▸ Export ▸ Batch Variants from
 Spreadsheet… and pick a CSV, TSV, `.xlsx` or `.ods` file. The first row names the columns; every
 other row becomes a copy of the sequence with its values filled in, and each copy is queued for
-export. A `Name` (or `File`) column names the sequences and files. Placeholders with no column
+export. A `Name` (or `File`) column names the sequences and files; a name that repeats gets
+` (2)`, ` (3)`…, so no export overwrites another. A changed source graphic gets its own project
+item in each variant, so variants never sync back to the template. Placeholders with no column
 are reported. Up to 500 rows; the whole batch is one undo step.
 
 ```csv

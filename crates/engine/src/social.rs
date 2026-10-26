@@ -16,7 +16,8 @@
 //! new ids. Graphics keep their pixel positions (as in Premiere), so a title made for 16:9 may
 //! need moving: the delivery check reports layers that leave the frame.
 
-use cfa4_project::{ClipId, ItemId, ItemKind, Label, Sequence, TrackKind};
+use cfa4_geom::Vec2;
+use cfa4_project::{ClipId, ItemId, ItemKind, Label, ParamValue, Sequence, TrackKind};
 use serde_json::{Value, json};
 
 use crate::commands::{CommandSpec, bad, bool_p, f64_p, has_seq, str_p};
@@ -120,7 +121,7 @@ pub(crate) fn copy_sequence(
     seq: ItemId,
     name: &str,
     label: &str,
-    f: impl FnOnce(&cfa4_project::Project, &mut Sequence) -> Result<()>,
+    f: impl FnOnce(&mut cfa4_project::Project, &mut Sequence) -> Result<()>,
 ) -> Result<ItemId> {
     let src = s.project.sequence(seq).ok_or(EngineError::NoSequence)?.clone();
     let color = s.project.item(seq).map(|i| i.label).unwrap_or(Label::Forest);
@@ -160,10 +161,20 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
     let (w, h) = reframed_size(src.settings.width, src.settings.height, aw, ah);
     let new_name = new_name.unwrap_or_else(|| format!("{old_name} ({})", name.replace(':', "×")));
     copy_sequence(s, seq, &new_name, "Auto Reframe Sequence", |p, q| {
+        // Motion positions are in sequence pixels: move them with the frame's centre so every
+        // clip keeps its place relative to the centre (keyframes included)
+        let dx = (w as f64 - q.settings.width as f64) / 2.0;
+        let dy = (h as f64 - q.settings.height as f64) / 2.0;
         q.settings.width = w;
         q.settings.height = h;
         for t in q.video_tracks.iter_mut().filter(|t| t.kind == TrackKind::Video) {
             for it in &mut t.items {
+                if let Some(pos) = it.effect_mut("motion").and_then(|m| m.params.get_mut("position")) {
+                    pos.map_values(|v| match v {
+                        ParamValue::Vec2(v) if v.x.is_finite() && v.y.is_finite() => ParamValue::Vec2(Vec2::new(v.x + dx, v.y + dy)),
+                        v => v,
+                    });
+                }
                 let picture = p.item(it.item).is_some_and(|x| is_picture(&x.kind));
                 if !picture || it.effects.iter().any(|e| e.effect == "auto_reframe") {
                     continue;
