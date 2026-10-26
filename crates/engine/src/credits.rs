@@ -13,6 +13,11 @@
 //! - `graphics.credits.validate` checks credits (names, fonts and missing letters, title-safe
 //!   area, contrast, text size, scroll speed, card length, pictures); the preview reports the
 //!   same `issues`.
+//! - **Fit to music.** `graphics.credits.music` analyses a music clip (length, where the sound
+//!   ends, beats) and offers lengths without changing anything; `graphics.credits.fit` fits
+//!   placed credits to a length (cards keep theirs, rolls stretch their gaps), optionally with
+//!   cards on the beat and the credits moved to where the music starts; the setting stays in the
+//!   credits document, so refreshing keeps it.
 //! - `graphics.credits.styles` lists the style names and returns a starter styling (JSON).
 //! - **Linked credits.** Every placed page remembers its credits document (`.cfa4credits`:
 //!   source, worksheet, styling, the accepted table) and a fingerprint of each layer it made.
@@ -181,17 +186,36 @@ fn doc_p(cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::pat
     if let Some(d) = str_p(p, "pictureDir") {
         doc.picture_dir = Some(d.to_string());
     }
+    match p.get("fit") {
+        None => {}
+        Some(Value::Null) => doc.fit = None,
+        Some(v) => {
+            let f: cfa4_credits::fit::Fit = serde_json::from_value(v.clone()).map_err(|e| bad(cmd, format!("fit: {e}")))?;
+            doc.fit = (f.total > 0).then_some(f);
+        }
+    }
     let base = doc.picture_dir.as_ref().map(std::path::PathBuf::from).or(file_dir);
     Ok((doc, info, base))
 }
 
 /// Lay out a credits document for the active sequence.
 fn lay_doc(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<Laid> {
+    lay_doc_report(s, cmd, doc, base).map(|(l, _)| l)
+}
+
+/// [`lay_doc`], with the fitting report when the document is fitted to a length.
+fn lay_doc_report(s: &Session, cmd: &str, doc: &CreditsDoc, base: Option<std::path::PathBuf>) -> Result<(Laid, Option<cfa4_credits::fit::FitReport>)> {
     let credits = doc.credits().map_err(|e| bad(cmd, e.to_string()))?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let frame = Frame { width: q.settings.width, height: q.settings.height, rate: q.settings.frame_rate };
-    cfa4_credits::layout(&credits, &doc.styling, frame, &EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() })
-        .map_err(|e| bad(cmd, e.to_string()))
+    let measure = EngineMeasure { canvas: (frame.width, frame.height), base, sizes: Default::default() };
+    match doc.fit.as_ref().filter(|f| f.total > 0) {
+        Some(fit) => {
+            let (_, l, r) = cfa4_credits::fit::fit_layout(&credits, &doc.styling, frame, &measure, fit).map_err(|e| bad(cmd, e.to_string()))?;
+            Ok((l, Some(r)))
+        }
+        None => cfa4_credits::layout(&credits, &doc.styling, frame, &measure).map(|l| (l, None)).map_err(|e| bad(cmd, e.to_string())),
+    }
 }
 
 /// The checks on laid-out credits (`cfa4_credits::validate`), as JSON.
@@ -475,6 +499,12 @@ fn pending(s: &Session, cmd: &str, p: &Value) -> Result<Pending> {
     let alt = s.path.as_ref().and_then(|p| std::path::Path::new(p).parent().map(std::path::Path::to_path_buf));
     let new_rows = source_rows(cmd, &doc, alt.as_deref())?;
     let changes = cfa4_credits::diff::diff(&doc.table, &new_rows);
+    let manual = manual_edits(s, &group)?;
+    Ok(Pending { group, doc, new_rows, changes, manual })
+}
+
+/// Layers of a group edited by hand: (key, page, layer name, text, the edited layer).
+fn manual_edits(s: &Session, group: &Group) -> Result<Vec<(String, u32, String, String, EffectInstance)>> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let mut manual = Vec::new();
     for (clip, link, _, _) in &group.pages {
@@ -490,7 +520,7 @@ fn pending(s: &Session, cmd: &str, p: &Value) -> Result<Pending> {
             }
         }
     }
-    Ok(Pending { group, doc, new_rows, changes, manual })
+    Ok(manual)
 }
 
 /// The folder a document's pictures are read from.
@@ -499,6 +529,36 @@ fn doc_base(doc: &CreditsDoc) -> Option<std::path::PathBuf> {
         .as_ref()
         .map(std::path::PathBuf::from)
         .or_else(|| doc.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)))
+}
+
+/// Replace a placed group with `doc` laid out anew, from `start` (default: where it was), keeping
+/// `overrides`; one undo step under `label`. Returns the placed pages and the end.
+fn replace_group(
+    s: &mut Session,
+    cmd: &str,
+    label: &str,
+    group: &Group,
+    doc: &CreditsDoc,
+    laid: Laid,
+    overrides: &Overrides,
+    start: Option<Tick>,
+) -> Result<(Vec<Value>, Tick)> {
+    let start = start.or_else(|| group.pages.first().map(|x| x.2)).unwrap_or_else(|| s.playhead());
+    let track = group.pages.first().map(|x| x.3 as u64);
+    let mut old: Vec<u64> = Vec::new();
+    for (clip, link, _, _) in &group.pages {
+        old.push(clip.0);
+        old.extend(link.pictures.iter().copied());
+    }
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    old.retain(|c| q.find_item(ClipId(*c)).is_some());
+    // one undo step; on any failure the old pages are back as they were
+    let out = s.edit_group(label, |s| {
+        s.execute("edit.clear", json!({"clips": old}))?;
+        place_pages(s, cmd, label, laid, doc, doc_base(doc), start, track, overrides)
+    })?;
+    s.state.graphic_layers.clear();
+    Ok(out)
 }
 
 /// Hand edits with the layer each was generated as: `doc` (as accepted before) laid out again.
@@ -577,25 +637,10 @@ fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(st) = p.get("styling").filter(|v| !v.is_null()) {
         doc.styling = styling_p(CMD, &json!({"styling": st}))?;
     }
-    let base = doc_base(&doc);
-    let laid = lay_doc(s, CMD, &doc, base.clone())?;
+    let laid = lay_doc(s, CMD, &doc, doc_base(&doc))?;
     let warnings = warnings_json(&laid);
     let overrides: Overrides = if keep_manual { baselined(s, CMD, &pd.doc, &pd.manual) } else { Vec::new() };
-    let start = pd.group.pages.first().map(|x| x.2).unwrap_or_else(|| s.playhead());
-    let track = pd.group.pages.first().map(|x| x.3 as u64);
-    let mut old: Vec<u64> = Vec::new();
-    for (clip, link, _, _) in &pd.group.pages {
-        old.push(clip.0);
-        old.extend(link.pictures.iter().copied());
-    }
-    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    old.retain(|c| q.find_item(ClipId(*c)).is_some());
-    // one undo step; on any failure the old pages are back as they were
-    let out = s.edit_group("Refresh Credits", |s| {
-        s.execute("edit.clear", json!({"clips": old}))?;
-        place_pages(s, CMD, "Refresh Credits", laid, &doc, base, start, track, &overrides)
-    })?;
-    s.state.graphic_layers.clear();
+    let out = replace_group(s, CMD, "Refresh Credits", &pd.group, &doc, laid, &overrides, None)?;
     let kept: u64 = out.0.iter().filter_map(|v| v["keptEdits"].as_u64()).sum();
     Ok(json!({
         "clips": out.0,
@@ -714,6 +759,209 @@ fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({"width": w, "height": h, "page": index, "pages": pages, "time": t.0, "pngBase64": cfa4_project::gtemplate::base64_encode(&png)}))
 }
 
+// ------------------------------------------------------------------------------------------------
+// Fit to music
+// ------------------------------------------------------------------------------------------------
+
+/// Longest music analysed for beats (longer music still gives its length and where it ends).
+const MAX_BEAT_SECONDS: i64 = 15 * 60;
+/// Below this level (−50 dBFS RMS over 50 ms) the music counts as silent.
+const SILENCE_RMS: f32 = 0.003_16;
+
+/// The audio clip a command means: `audio`, else the first selected audio clip, else the audio
+/// clip that overlaps the credits most (without credits: the one at the playhead).
+fn audio_clip(s: &Session, cmd: &str, p: &Value, group: Option<&Group>) -> Result<ClipId> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let is_audio = |c: ClipId| q.find_item(c).and_then(|(t, _)| q.track(t)).is_some_and(|t| t.kind == cfa4_project::TrackKind::Audio);
+    if let Some(c) = u64_p(p, "audio") {
+        let c = ClipId(c);
+        return if is_audio(c) { Ok(c) } else { Err(bad(cmd, format!("clip {} is not an audio clip", c.0))) };
+    }
+    if let Some(c) = s.state.selection.iter().copied().find(|c| is_audio(*c)) {
+        return Ok(c);
+    }
+    // the audio clip that overlaps the credits most (or plays at the playhead)
+    let (a, b) = match group {
+        Some(g) => {
+            let a = g.pages.first().map(|x| x.2).unwrap_or_else(|| s.playhead());
+            let b = g.pages.iter().filter_map(|(c, _, _, _)| q.find_item(*c).map(|(_, it)| it.start + it.duration)).max().unwrap_or(a);
+            (a, b.max(a + q.settings.frame_rate.frame_duration()))
+        }
+        None => {
+            let t = s.playhead();
+            (t, t + q.settings.frame_rate.frame_duration())
+        }
+    };
+    q.audio_tracks
+        .iter()
+        .flat_map(|t| t.items.iter())
+        .map(|it| (it.id, (it.start + it.duration).min(b).0 - it.start.max(a).0))
+        .filter(|(_, overlap)| *overlap > 0)
+        .max_by_key(|(c, overlap)| (*overlap, std::cmp::Reverse(c.0)))
+        .map(|(c, _)| c)
+        .ok_or_else(|| bad(cmd, "select the music (an audio clip), or give `audio`"))
+}
+
+/// What the music clip is like: its length, where its sound ends, its beats (clip time).
+fn music_info(s: &Session, cmd: &str, clip: ClipId) -> Result<(String, Tick, cfa4_credits::fit::Music, f64)> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let (_, it) = q.find_item(clip).ok_or_else(|| bad(cmd, "no such clip"))?;
+    let (item, source_in, dur, start, name) = (it.item, it.source_in, it.duration, it.start, it.name.clone());
+    let sr = q.settings.sample_rate.max(1);
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    let src = cfa4_render::SourceProvider::source(&provider, item).ok_or_else(|| bad(cmd, "the music's media is offline"))?;
+    let m0 = source_in.to_units_floor(i64::from(sr));
+    let len = dur.to_units_floor(i64::from(sr)).max(0);
+    // where the sound ends: RMS over 50 ms windows, read in 10-second pieces
+    let win = (sr / 20).max(1) as i64;
+    let chunk = i64::from(sr) * 10;
+    let mut last_loud: Option<i64> = None;
+    let mut off = 0i64;
+    while off < len {
+        let n = chunk.min(len - off);
+        let buf = src.audio(m0 + off, n as usize, sr).map_err(|e| bad(cmd, format!("reading the music: {e}")))?;
+        let mut w0 = 0i64;
+        while w0 < n {
+            let w1 = (w0 + win).min(n);
+            let mut sum = 0f64;
+            let mut cnt = 0usize;
+            for ch in &buf.channels {
+                for v in ch.get(w0 as usize..w1 as usize).unwrap_or(&[]) {
+                    sum += f64::from(*v) * f64::from(*v);
+                    cnt += 1;
+                }
+            }
+            if cnt > 0 && (sum / cnt as f64).sqrt() as f32 > SILENCE_RMS {
+                last_loud = Some(off + w1);
+            }
+            w0 = w1;
+        }
+        off += n;
+    }
+    let to_tick = |samples: i64| Tick::from_units(samples, i64::from(sr));
+    let sound_end = last_loud.map(to_tick);
+    // beats, as Remix finds them
+    let mut beats = Vec::new();
+    let mut bpm = 0.0;
+    if len > 0
+        && len <= MAX_BEAT_SECONDS * i64::from(sr)
+        && let Ok(buf) = src.audio(m0, len as usize, sr)
+    {
+        let refs: Vec<&[f32]> = buf.channels.iter().map(Vec::as_slice).collect();
+        if let Ok(a) = cfa4_audio_dsp::remix::analyze(&refs, sr) {
+            beats = a.beats.iter().map(|b| to_tick(*b)).collect();
+            bpm = a.bpm;
+        }
+    }
+    Ok((name, start, cfa4_credits::fit::Music { duration: dur, sound_end, beats }, bpm))
+}
+
+fn group_or_none(s: &Session, cmd: &str, p: &Value) -> Option<Group> {
+    if u64_p(p, "clip").is_some()
+        || s.state.selection.iter().any(|c| s.active_sequence().and_then(|q| q.find_item(*c)).is_some_and(|(_, it)| link_of(it).is_some()))
+    {
+        group_p(s, cmd, p).ok()
+    } else {
+        None
+    }
+}
+
+/// Analyse the music and offer lengths. Changes nothing.
+fn music(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.music";
+    let group = group_or_none(s, CMD, p);
+    let audio = audio_clip(s, CMD, p, group.as_ref())?;
+    let (name, start, m, bpm) = music_info(s, CMD, audio)?;
+    let suggestions = cfa4_credits::fit::suggestions(&m);
+    let beat = cfa4_credits::fit::beat_period(&m.beats).map(|t| t.0);
+    let (natural, fit) = match &group {
+        Some(g) => {
+            let mut doc = group_doc(CMD, g)?;
+            let fit = doc.fit.take();
+            let l = lay_doc(s, CMD, &doc, doc_base(&doc))?;
+            (Some(cfa4_credits::fit::total_length(&l).0), fit)
+        }
+        None => (None, None),
+    };
+    Ok(json!({
+        "audio": audio.0,
+        "name": name,
+        "start": start.0,
+        "duration": m.duration.0,
+        "soundEnd": m.sound_end.map(|t| t.0),
+        "bpm": if bpm > 0.0 { json!((bpm * 10.0).round() / 10.0) } else { Value::Null },
+        "beat": beat,
+        "beats": m.beats.len(),
+        "suggestions": suggestions,
+        "credits": group.as_ref().map(|g| g.id),
+        "natural": natural,
+        "fit": fit,
+    }))
+}
+
+/// Fit placed credits to a length – the music's, or one given – in place, as one undo step.
+fn fit_cmd(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.fit";
+    let group = group_p(s, CMD, p)?;
+    let mut doc = group_doc(CMD, &group)?;
+    let off = p.get("off").and_then(Value::as_bool).unwrap_or(false);
+    let mut start = None;
+    if off {
+        doc.fit = None;
+    } else {
+        let wants_music = p.get("use").is_some()
+            || p.get("audio").is_some()
+            || p.get("cardsOnBeat").and_then(Value::as_bool).unwrap_or(false)
+            || p.get("alignToAudio").and_then(Value::as_bool).unwrap_or(false);
+        let music = if wants_music || (p.get("total").is_none() && p.get("seconds").is_none()) {
+            let audio = audio_clip(s, CMD, p, Some(&group))?;
+            Some(music_info(s, CMD, audio)?)
+        } else {
+            None
+        };
+        let total = if let Some(t) = p.get("total").and_then(Value::as_i64) {
+            Tick(t)
+        } else if let Some(sec) = p.get("seconds").and_then(Value::as_f64).filter(|v| v.is_finite()) {
+            Tick::from_seconds_f64(sec)
+        } else {
+            let (_, _, m, _) = music.as_ref().ok_or_else(|| bad(CMD, "need `total`, `seconds` or music"))?;
+            let want = str_p(p, "use").unwrap_or("musicLength");
+            let sug = cfa4_credits::fit::suggestions(m);
+            Tick(
+                sug.iter()
+                    .find(|x| x.id == want)
+                    .ok_or_else(|| {
+                        bad(CMD, format!("no `{want}` length for this music (offered: {})", sug.iter().map(|x| x.id).collect::<Vec<_>>().join(", ")))
+                    })?
+                    .total,
+            )
+        };
+        if total.0 <= 0 || total.0 > 24 * 3600 * cfa4_time::TICKS_PER_SECOND {
+            return Err(bad(CMD, "the length must be between one frame and 24 hours"));
+        }
+        let card_beat = if p.get("cardsOnBeat").and_then(Value::as_bool).unwrap_or(false) {
+            let (_, _, m, _) = music.as_ref().ok_or_else(|| bad(CMD, "cards on the beat need music"))?;
+            cfa4_credits::fit::beat_period(&m.beats).ok_or_else(|| bad(CMD, "no beat was found in the music"))?.0
+        } else {
+            0
+        };
+        if p.get("alignToAudio").and_then(Value::as_bool).unwrap_or(false)
+            && let Some((_, st, _, _)) = &music
+        {
+            start = Some(*st);
+        }
+        let name = music.as_ref().map(|m| m.0.clone()).unwrap_or_default();
+        doc.fit = Some(cfa4_credits::fit::Fit { total: total.0, card_beat, music: name });
+    }
+    let (laid, report) = lay_doc_report(s, CMD, &doc, doc_base(&doc))?;
+    let warnings = warnings_json(&laid);
+    let manual = manual_edits(s, &group)?;
+    let overrides: Overrides = baselined(s, CMD, &group_doc(CMD, &group)?, &manual);
+    let label = if off { "Unfit Credits" } else { "Fit Credits to Music" };
+    let out = replace_group(s, CMD, label, &group, &doc, laid, &overrides, start)?;
+    Ok(json!({"clips": out.0, "end": out.1.0, "fit": doc.fit, "report": report, "warnings": warnings}))
+}
+
 fn styles(_: &mut Session, p: &Value) -> Result<Value> {
     let styling = styling_p("graphics.credits.styles", p)?;
     let (pages, contents) = styling.names();
@@ -772,6 +1020,26 @@ pub fn commands() -> Vec<CommandSpec> {
             enabled: has_seq,
             run: validate_cmd,
             journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.music",
+            label: "Analyse Music for Credits",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"audio":clip? (default: the selected audio clip, else the one under the credits),"clip":credits page?} → {audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions:[{id: musicLength|soundEnd|lastBar, total}], natural, fit}; changes nothing"#,
+            enabled: has_seq,
+            run: music,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.fit",
+            label: "Fit Credits to Music…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: r#"{"clip":credits page?,"total":ticks?|"seconds":n?|"use":"musicLength|soundEnd|lastBar"="musicLength","audio":clip?,"cardsOnBeat":bool=false,"alignToAudio":bool=false,"off":bool=false}"#,
+            enabled: has_credits_selection,
+            run: fit_cmd,
+            journal: true,
         },
         CommandSpec {
             id: "graphics.credits.save",

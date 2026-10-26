@@ -2998,6 +2998,8 @@ def test_credits_seconds_format():
     assert format_seconds(int(83.5 * TICKS_PER_SECOND)) == "1:23.5"
     assert format_seconds(3725 * TICKS_PER_SECOND) == "1:02:05.0"
     assert format_seconds("x") == "" and format_seconds(None) == ""
+    # rounded, not cut: 27.986 s is 0:28.0
+    assert format_seconds(int(27.986 * TICKS_PER_SECOND)) == "0:28.0" and format_seconds(int(59.97 * TICKS_PER_SECOND)) == "1:00.0"
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -5468,9 +5470,97 @@ def test_credits_issue_text_is_worded_from_code_and_values():
 
 def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
     from cfa4_qt import i18n
-    from cfa4_qt.panels.credits import local_number
+    from cfa4_qt.panels.credits import format_seconds, local_number
 
     monkeypatch.setattr(i18n.TR, "language", "hu")
     assert local_number("7.47") == "7,47" and local_number("12") == "12" and local_number("v1.2.3") == "v1.2.3"
+    assert format_seconds(28 * TICKS_PER_SECOND) == "0:28,0"
     monkeypatch.setattr(i18n.TR, "language", "en")
     assert local_number("7.47") == "7.47"
+
+
+def _music_wav(path: Path, seconds: float = 32.0, silent_tail: float = 4.0, bpm: float = 120.0) -> None:
+    """A click track: a short tone burst on every beat, then silence."""
+    import math
+    import struct
+    import wave
+
+    sr = 48_000
+    n = int(seconds * sr)
+    loud = int((seconds - silent_tail) * sr)
+    beat = int(sr * 60 / bpm)
+    frames = bytearray()
+    for i in range(n):
+        v = 0.0
+        if i < loud:
+            k = i % beat
+            if k < sr // 20:
+                v = 0.6 * math.sin(2 * math.pi * 880 * i / sr) * (1 - k / (sr / 20))
+            v += 0.05 * math.sin(2 * math.pi * 110 * i / sr)
+        s = int(max(-1.0, min(1.0, v)) * 32767)
+        frames += struct.pack("<hh", s, s)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes(bytes(frames))
+
+
+def test_credits_fit_helpers():
+    from cfa4_qt.panels.credits_fit import audio_clips
+
+    seq = {"audio": [{"items": [{"clip": 5, "start": 10}, {"clip": "x"}]}, {"items": [{"clip": 3, "start": 2}]}]}
+    assert [c["clip"] for c in audio_clips(seq)] == [3, 5]
+    assert audio_clips(None) == [] and audio_clips({"audio": None}) == []
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_fit_credits_to_music(app, tmp_path: Path):
+    """Place credits and music, open Fit Credits to Music, see the offered lengths, fit to where
+    the sound ends: one undo step, the credits as long as asked."""
+    from cfa4_qt.main_window import MainWindow
+
+    wav = tmp_path / "zene.wav"
+    _music_wav(wav)
+    sheet = tmp_path / "stablista.csv"
+    sheet.write_text("Törzs,Oldal,Térköz\nCÍM,Card,\nA,Scroll,\nB,,4\nC,,4\nD,,4\nVÉGE,Card,\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    replies: list = []
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.fit" in win.registry.commands, 60_000)
+        # the music on an audio track far after the demo clips, then the credits at the same place
+        engine.execute("file.import", {"paths": [str(wav)]}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: replies, 30_000)
+        item = replies[-1]["items"][0]
+        engine.execute("timeline.place", {"item": item, "audioTrack": "A2", "seconds": 600}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: len(replies) == 2, 30_000), replies
+        music = replies[-1]["clips"][0]
+        engine.execute("graphics.credits.import", {"path": str(sheet), "seconds": 600}, on_reply=lambda r, _b: replies.append(r))
+        assert wait_until(app, lambda: len(replies) == 3, 30_000), replies
+        page = replies[-1]["clips"][0]["clip"]
+        win.execute("timeline.select", {"clips": [page]})
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.fit"].enabled, 30_000)
+        win.invoke("graphics.credits.fit")
+        dlg = win.credits_fit
+        assert dlg is not None and dlg.isVisible()
+        # the music under the credits is found; its lengths are offered
+        assert wait_until(app, lambda: dlg.info is not None and dlg.apply_button.isEnabled(), 60_000), dlg.status.text()
+        assert dlg.info["audio"] == music and dlg.credits is not None
+        names = [b.objectName() for b in dlg.choices.buttons()]
+        assert "creditsFit.use.musicLength" in names and "creditsFit.use.soundEnd" in names, names
+        assert "28" in dlg.findChild(QtWidgets.QRadioButton, "creditsFit.use.soundEnd").text()
+        assert dlg.cards_on_beat.isEnabled(), dlg.facts.text()
+        dlg.findChild(QtWidgets.QRadioButton, "creditsFit.use.soundEnd").setChecked(True)
+        assert dlg.fit_params()["use"] == "soundEnd"
+        undo = win.history.list.count()
+        dlg.apply()
+        assert wait_until(app, lambda: "0:28" in dlg.status.text(), 30_000), dlg.status.text()
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+        assert dlg.off_button.isVisible()
+    finally:
+        win._quit_confirmed = True
+        win.close()

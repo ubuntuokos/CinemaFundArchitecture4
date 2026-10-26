@@ -1,6 +1,6 @@
 # CFA4 stáblista és feliratkészítő – módosított terv (javaslat)
 
-**Állapot:** JÓVÁHAGYVA (2026-10-25) – mind a négy döntés meghozva; C1, C2 kész  
+**Állapot:** JÓVÁHAGYVA (2026-10-25) – mind a négy döntés meghozva; C1, C2, C3 kész  
 **Dátum:** 2026-10-24  
 **Forrás:** az „FA3 Credits & Titles Composer – végleges materializációs és végrehajtási terv”,
 átdolgozva a CFA4 valós állapotára, a [`VISION.md`](../VISION.md) prioritásaira és a
@@ -108,15 +108,22 @@ A Qt6 Stáblista ablak súlyosság szerinti ikonnal, magyarul, sorszámmal mutat
 hamis riasztás nélkül átmegy. Hátravan, amíg a C4 nincs kész: a kontraszt a valódi háttérhez
 (most fekete alaphoz mér).
 
-### C3 – Igazítás a zenéhez (K → K+)
+### C3 – Igazítás a zenéhez (K → K+) – **KÉSZ (2026-10-26)**
 
 Az eredeti terv §12-e.
 
-- Első lépés: a kijelölt hangklip (vagy idővonal-tartomány) hossza adja a stáblista teljes
-  futásidejét. A gördülő oldalak a térközök nyújtásával igazodnak, a kártyák hossza marad.
-- Második lépés: **javaslat** csendekre, hangerő-csúcsokra és ütemre (a meglévő `audio-dsp`
-  crate-tel): hol kezdődjön a kártya, hol legyen a kiúszás. **Csak javaslat, jóváhagyás nélkül
-  nem módosít** – ahogy az eredeti terv is kéri.
+- **Grafika és címek ▸ Stáblista igazítása a zenéhez…**: a zene a kijelölt hangklip, vagy ami a
+  stáblistával a legjobban átfed. Az ablak megmutatja a zene hosszát, hogy hol ér véget a hang,
+  a tempót és a stáblista igazítás nélküli hosszát, és **csak javasol**: a teljes zene,
+  ameddig a hang tart, az utolsó ütemhatárig (a Remix ütemfelismerésével), vagy kézzel megadott
+  hossz. Jóváhagyás (*Igazítás erre a hosszra*) nélkül semmi nem változik.
+- Igazításkor a kártyák, az oldalközök és a saját játékidejű oldalak hossza marad; a gördülő
+  oldalak a természetes hosszuk arányában osztoznak a maradékon, a blokkok közti térközök
+  nyújtásával (állandó sebességgel). Az eredmény képkockára pontos.
+- *A kártyák egész ütemig tartanak* (vágás ütemre); *a stáblista a zene kezdetén induljon*.
+- Az igazítás a stáblista-dokumentumban tárolódik (`fit`), így a táblázatból frissítés
+  megtartja; *Igazítás megszüntetése* visszavonja. Egy visszavonási lépés, a kézi módosítások
+  megmaradnak.
 
 ### C4 – Háttér, átmenet, futószöveg, segédvonalak (K+)
 

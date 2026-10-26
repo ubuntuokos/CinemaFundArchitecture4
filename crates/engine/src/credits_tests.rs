@@ -460,3 +460,104 @@ fn the_example_credits_pass_the_checks() {
     let serious: Vec<&Value> = v["issues"].as_array().unwrap().iter().filter(|i| i["severity"] != "info").collect();
     assert!(serious.is_empty(), "{serious:#?}");
 }
+
+// ----- fit to music -----
+
+/// A sequence with 32 s of generated 120 BPM music on A1 (the last 4 s silent), at 0 s.
+fn with_music() -> (Session, ClipId) {
+    use cfa4_audio_dsp::remix as dsp;
+    const SR: u32 = 48_000;
+    let (mut m, _) = dsp::test_music(SR, 120.0, 16, 3);
+    // silence the last 4 seconds: the sound ends at 28 s
+    for ch in &mut m {
+        let n = ch.len();
+        for v in ch.iter_mut().skip(n - 4 * SR as usize) {
+            *v = 0.0;
+        }
+    }
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "credits", "audio": 1, "video": 2})).unwrap();
+    let inter: Vec<f32> = (0..m[0].len()).flat_map(|i| [m[0][i], m[1][i]]).collect();
+    let bytes: std::sync::Arc<[u8]> = crate::previews::write_wav_f32(&inter, SR).into();
+    let item = crate::commands::import_bytes(&mut s, "/music.wav", bytes, None).unwrap();
+    let r = s.execute("timeline.place", json!({"item": item.0, "audioTrack": "A1", "seconds": 0.0})).unwrap();
+    (s, ClipId(r["clips"][0].as_u64().unwrap()))
+}
+
+fn total(s: &Session, group: u64) -> Tick {
+    let p = group_pages(s, group);
+    let (first, last) = (p.first().unwrap(), p.last().unwrap());
+    Tick(last.start.0 + last.duration.0 - first.start.0)
+}
+
+#[test]
+fn music_analysis_offers_lengths_and_changes_nothing() {
+    let (mut s, music) = with_music();
+    let undo = s.history.undo.len();
+    let v = s.execute("graphics.credits.music", json!({"audio": music.0})).unwrap();
+    let sec = |k: &str| v[k].as_i64().unwrap() as f64 / cfa4_time::TICKS_PER_SECOND as f64;
+    assert!((sec("duration") - 32.0).abs() < 0.01, "{v}");
+    assert!((sec("soundEnd") - 28.0).abs() < 0.1, "{v}");
+    assert!((v["bpm"].as_f64().unwrap() - 120.0).abs() < 2.0, "{v}");
+    let ids: Vec<&str> = v["suggestions"].as_array().unwrap().iter().filter_map(|x| x["id"].as_str()).collect();
+    assert_eq!(&ids[..2], &["musicLength", "soundEnd"], "{v}");
+    assert_eq!(s.history.undo.len(), undo, "analysis changes nothing");
+}
+
+#[test]
+fn fit_to_music_in_place_keeps_cards_and_survives_a_refresh() {
+    let (mut s, music) = with_music();
+    let dir = tmp_dir("credits-fit");
+    let sheet = dir.join("credits.csv");
+    std::fs::write(&sheet, "Body,Page Style,Vertical Gap\nTITLE,Card,\nA,Scroll,\nB,,4\nC,,4\nD,,4\nEND,Card,\n").unwrap();
+    s.execute("playhead.set", json!({"seconds": 3})).unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let group = v["group"].as_u64().unwrap();
+    let card = Tick(v["clips"][0]["duration"].as_i64().unwrap());
+
+    // fit to where the sound ends, with the credits moved to the start of the music
+    let undo = s.history.undo.len();
+    let r = s.execute("graphics.credits.fit", json!({"clip": group, "audio": music.0, "use": "soundEnd", "alignToAudio": true})).unwrap();
+    assert_eq!(s.history.undo.len(), undo + 1, "one undo step");
+    let g = r["clips"][0]["clip"].as_u64().unwrap();
+    let want = r["report"]["target"].as_i64().unwrap();
+    assert_eq!(total(&s, g).0, want, "exact to the frame: {r}");
+    assert!((want as f64 / cfa4_time::TICKS_PER_SECOND as f64 - 28.0).abs() < 0.1);
+    let pages = group_pages(&s, g);
+    assert_eq!(pages[0].start, Tick::ZERO, "moved to the music's start");
+    assert_eq!(pages[0].duration, card, "cards keep their length");
+
+    // cards on the beat: whole beats of 0.5 s
+    let r = s.execute("graphics.credits.fit", json!({"clip": g, "audio": music.0, "use": "musicLength", "cardsOnBeat": true})).unwrap();
+    let g = r["clips"][0]["clip"].as_u64().unwrap();
+    let pages = group_pages(&s, g);
+    let beat = r["fit"]["cardBeat"].as_i64().unwrap() as f64 / cfa4_time::TICKS_PER_SECOND as f64;
+    assert!((beat - 0.5).abs() < 0.02, "{r}");
+    let card_beats = pages[0].duration.0 as f64 / r["fit"]["cardBeat"].as_f64().unwrap();
+    assert!((card_beats - card_beats.round()).abs() < 0.05, "{card_beats}");
+    assert_eq!(total(&s, g).0, r["report"]["target"].as_i64().unwrap());
+
+    // a refresh from the sheet keeps the fit
+    std::fs::write(&sheet, "Body,Page Style,Vertical Gap\nTITLE,Card,\nA,Scroll,\nB,,4\nC,,4\nD,,4\nE,,4\nEND,Card,\n").unwrap();
+    let rr = s.execute("graphics.credits.refresh", json!({"clip": g})).unwrap();
+    let g2 = rr["clips"][0]["clip"].as_u64().unwrap();
+    assert_eq!(total(&s, g2).0, r["report"]["target"].as_i64().unwrap(), "{rr}");
+
+    // and it can be undone, or switched off
+    let off = s.execute("graphics.credits.fit", json!({"clip": g2, "off": true})).unwrap();
+    assert!(off["fit"].is_null());
+    assert!(s.execute("graphics.credits.fit", json!({"clip": g2, "seconds": -5})).is_err());
+}
+
+#[test]
+fn the_music_under_the_credits_is_found_even_a_frame_off() {
+    let (mut s, music) = with_music();
+    // the credits start a little before the music
+    s.execute("timeline.move", json!({"clips": [music.0], "delta": cfa4_time::TICKS_PER_SECOND / 50})).ok();
+    let v = s.execute("graphics.credits.import", json!({"csv": "Body\nA\n", "time": 0})).unwrap();
+    let page = v["clips"][0]["clip"].as_u64().unwrap();
+    s.execute("timeline.select", json!({"clips": [page]})).unwrap();
+    let m = s.execute("graphics.credits.music", json!({})).unwrap();
+    assert_eq!(m["audio"].as_u64(), Some(music.0), "{m}");
+    assert_eq!(m["credits"].as_u64(), Some(v["group"].as_u64().unwrap()));
+}

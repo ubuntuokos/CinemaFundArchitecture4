@@ -102,6 +102,27 @@ or information icon and the spreadsheet row or page (`graphics.credits.validate`
 More than 50 of one kind are counted in one line. Codes, severities and values are stable
 (`crates/credits/src/validate.rs`), so the Qt GUI words them in Hungarian.
 
+## Fit to music
+
+With a credits page selected, **Graphics and Titles ▸ Fit Credits to Music…** picks the music –
+the selected audio clip, else the audio clip that overlaps the credits most – and shows what the
+engine found in it: its length, where the sound ends, its tempo, and the credits' length without
+fitting. It offers lengths, and changes nothing until you choose:
+
+- **the whole music**; **until the sound ends** (when it ends more than half a second before the
+  clip); **to the last bar line** before the sound ends (bars of four beats; the beats come from
+  the same analysis as Clip ▸ Remix); or a length you type;
+- **Cards last whole beats** – cards without their own `Page Runtime` last a whole number of
+  beats, so their cuts fall on the beat;
+- **Start the credits where the music starts**.
+
+*Fit to This Length* replaces the pages in place, as one undo step, keeping hand edits: cards,
+page gaps and pages with their own runtime keep their length, and the scroll pages share the rest
+in proportion to their natural length, each reaching its share by stretching or squeezing the
+gaps between its blocks at its normal speed (if a page cannot, its speed changes, with a
+warning). The result is exact to the frame. The fitting is stored in the credits document
+(`fit`), so *Refresh Credits from Spreadsheet* keeps it; *Remove Fitting* undoes it.
+
 ## Credits files and refreshing (linked credits)
 
 **Credits file (`.cfa4credits`).** *Save as Credits File…* in the Credits window (or
@@ -148,6 +169,8 @@ fails leaves the old pages as they were.
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width` → `{width, height, page, pages, time, pngBase64}`: the page's text with the roll or fades applied, pictures outlined |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
+| `graphics.credits.music` | (query; the Fit window) | `audio`?, `clip`? → `{audio, name, start, duration, soundEnd, bpm, beat, beats, suggestions: [{id: musicLength/soundEnd/lastBar, total}], credits, natural, fit}`; changes nothing |
+| `graphics.credits.fit` | Graphics and Titles ▸ Fit Credits to Music… | `clip`?, `total` / `seconds` / `use` (a suggestion id, default `musicLength`), `audio`?, `cardsOnBeat`, `alignToAudio`, `off` → `{clips, end, fit, report: {natural, target, result, scrollPages}, warnings}`; one undo step |
 | `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
 | `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
 | `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |

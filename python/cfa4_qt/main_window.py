@@ -37,6 +37,7 @@ from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, tr
 from .i18n import system_language as i18n_system_language
 from .panels.credits import CreditsDialog
+from .panels.credits_fit import CreditsFitDialog
 from .panels.credits_refresh import CreditsRefreshDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
@@ -203,6 +204,7 @@ class MainWindow(QMainWindow):
         self.export_dialog: ExportDialog | None = None
         self.credits_dialog: CreditsDialog | None = None
         self.credits_refresh: CreditsRefreshDialog | None = None
+        self.credits_fit: CreditsFitDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -1340,6 +1342,9 @@ class MainWindow(QMainWindow):
         if cmd.id == "graphics.credits.refresh":
             self.open_credits_refresh()
             return
+        if cmd.id == "graphics.credits.fit":
+            self.open_credits_fit()
+            return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]
             start, end = self.source_monitor.range()
@@ -1800,6 +1805,13 @@ class MainWindow(QMainWindow):
             self.credits_refresh = CreditsRefreshDialog(self.engine, self)
             self.credits_refresh.refreshed.connect(lambda _r: self.schedule_refresh())
         self.credits_refresh.open_for(clip)
+
+    def open_credits_fit(self) -> None:
+        """Graphics and Titles ▸ Fit Credits to Music…: lengths from the music, then fit."""
+        if self.credits_fit is None:
+            self.credits_fit = CreditsFitDialog(self.engine, self)
+            self.credits_fit.fitted.connect(lambda _r: self.schedule_refresh())
+        self.credits_fit.open_for(self.sequence)
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)
