@@ -891,3 +891,79 @@
 	Track	Sáv
 	Transcribe	Átírás
 	Transcribe sequence	Szekvencia átírása
+	(Custom)	(Egyéni)
+	(Default)	(Alapértelmezett)
+	Ambience	Háttérzaj
+	Assign an audio type to the selection:	Rendeljen hangtípust a kijelöléshez:
+	Auto-Match	Automatikus illesztés
+	Balanced Voice	Kiegyensúlyozott hang
+	Bright Air	Fényes levegősség
+	Bright Studio	Világos stúdió
+	Browse	Böngészés
+	Clarity	Tisztaság
+	Clean Up Noisy Dialogue	Zajos párbeszéd tisztítása
+	Clear Audio Type	Hangtípus törlése
+	Clear Muddiness	Tompaság eltávolítása
+	Clip Volume	Klip hangereje
+	DeEss	Sziszegéscsökkentés
+	DeHum	Búgáscsökkentés
+	Delete Preset	Készlet törlése
+	Dialogue	Párbeszéd
+	Dry Up a Roomy Voice	Visszhangos hang szárazabbá tétele
+	Duck Deep Under Dialogue	Mély elhalkítás párbeszéd alatt
+	Duck Under Dialogue	Elhalkítás párbeszéd alatt
+	Duck Under Voice and Effects	Elhalkítás hang és effektek alatt
+	Duck against:	Elhalkítás ezekre:
+	Ducking	Elhalkítás
+	Dynamics	Dinamika
+	EQ	EQ
+	Enhance Speech	Beszéd kiemelése
+	Fades	Áttűnések
+	Far Away	Távoli
+	From the Left	Balról
+	From the Right	Jobbról
+	Generate Keyframes	Kulcskockák létrehozása
+	High Tone	Magas hangszín
+	In a Room	Szobában
+	Interior Room Tone	Beltéri szobazaj
+	Large Hall	Nagy terem
+	Loudness	Hangosság
+	Low Tone	Mély hangszín
+	Matches each of the {n} clips on its own.	A(z) {n} klip mindegyikét külön illeszti.
+	Medium Room	Közepes szoba
+	Multiple Clips Selected	Több klip kijelölve
+	Music	Zene
+	Mute	Némítás
+	Not matched yet	Még nincs illesztve
+	Open Air	Szabadtér
+	Pan	Panoráma
+	Phone Call	Telefonhívás
+	Podcast Voice	Podcasthang
+	Presence Lift	Jelenlét kiemelése
+	Preset name	Készlet neve
+	Preset:	Készlet:
+	Radio Announcer	Rádióbemondó
+	Radio Voice	Rádióhang
+	Reduce By	Csökkentés mértéke
+	Reduce Noise	Zajcsökkentés
+	Reduce Reverb	Visszhangcsökkentés
+	Reduce Rumble	Dübörgéscsökkentés
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	A zene adott hosszra keverése még nem érhető el. Vágja meg a klipet, és tegyen rá áttűnést.
+	Repair	Javítás
+	SFX	Hangeffekt
+	Save Preset	Készlet mentése
+	Select audio clips to edit them here	Jelöljön ki hangklipeket a szerkesztésükhöz
+	Select audio clips, then click a preset to apply it.	Jelöljön ki hangklipeket, majd kattintson egy készletre az alkalmazásához.
+	Sensitivity	Érzékenység
+	Small Room	Kis szoba
+	Soften Harshness	Élesség lágyítása
+	Stereo Width	Sztereó szélesség
+	Stone Church	Kőtemplom
+	Telephone	Telefon
+	The selected clips have different audio types. Assign one type to edit them together.	A kijelölt klipek hangtípusa eltérő. Rendeljen hozzájuk egy típust az együttes szerkesztéshez.
+	Untagged	Címkézetlen
+	Voice in a Hall	Hang teremben
+	Warm Room	Meleg szoba
+	Warm Voice	Meleg hang
+	Wide Outdoor	Tág szabadtér
+	{name} (user)	{name} (saját)

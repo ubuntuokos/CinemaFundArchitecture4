@@ -677,6 +677,7 @@ class TextPanel(QWidget):
         self.tabs.setObjectName("text.tabs")
         self.tabs.setDrawBase(False)
         self.tabs.setExpanding(False)
+        self.tabs.setStyleSheet("QTabBar { background: transparent; }")  # the app sheet paints dock tab bars
         for _key, label in TABS:
             self.tabs.addTab(tr(label))
         self.transcript = TranscriptTab(self)

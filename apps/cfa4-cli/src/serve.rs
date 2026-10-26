@@ -657,6 +657,10 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),
         },
+        "graphics.inspect" => match crate::serve_graphics::inspect(s, &params) {
+            Ok(v) => Reply::ok(id, v),
+            Err(e) => Reply::err(id, e),
+        },
         "lumetri.inspect" => match crate::serve_lumetri::inspect(s, &params) {
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),

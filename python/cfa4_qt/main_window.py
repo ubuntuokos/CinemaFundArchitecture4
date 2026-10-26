@@ -7,17 +7,21 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from PySide6.QtCore import QByteArray, QElapsedTimer, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
+from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QSettings, Qt, QTimer
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
+    QAbstractSpinBox,
     QApplication,
     QDockWidget,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMenu,
     QMessageBox,
+    QPlainTextEdit,
     QTabBar,
     QTabWidget,
+    QTextEdit,
     QWidget,
 )
 
@@ -28,6 +32,7 @@ from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
 from .panels.effect_controls import EffectControlsPanel
+from .panels.essential_sound import EssentialSoundPanel
 from .panels.export import ExportDialog
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
@@ -46,7 +51,7 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
 from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 16  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text
+LAYOUT_VERSION = 17  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
@@ -68,6 +73,7 @@ DOCK_PLAN = (
     ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Text", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Lumetri Color", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Essential Sound", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Tools", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -173,6 +179,9 @@ class MainWindow(QMainWindow):
         self.reference.scope_settings = lambda: self.scopes.st
         self.media_browser = MediaBrowserPanel(engine, self)
         self.text_panel = TextPanel(engine, self)
+        self.essential_sound = EssentialSoundPanel(self)
+        self.essential_sound.attach_settings(self.settings)
+        self._essential_busy = False
         self.lumetri = LumetriColorPanel(self)
         self.lumetri.attach_settings(self.settings)
         self._lumetri_busy = False
@@ -223,6 +232,7 @@ class MainWindow(QMainWindow):
             "Lumetri Color": self.lumetri,
             "Media Browser": self.media_browser,
             "Text": self.text_panel,
+            "Essential Sound": self.essential_sound,
         }
         for name, area in DOCK_PLAN:
             self._dock(name, widgets[name], area)
@@ -251,6 +261,7 @@ class MainWindow(QMainWindow):
             self.lumetri,
             self.media_browser,
             self.text_panel,
+            self.essential_sound,
         ):
             panel.command.connect(self.execute)
         self.media_browser.attach_settings(self.settings)
@@ -272,6 +283,7 @@ class MainWindow(QMainWindow):
         self.docks["Audio Track Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_mixer())
         self.docks["Audio Clip Mixer"].visibilityChanged.connect(lambda shown: shown and self.update_clip_mixer())
         self.docks["Lumetri Color"].visibilityChanged.connect(lambda shown: shown and self.update_lumetri())
+        self.docks["Essential Sound"].visibilityChanged.connect(lambda shown: shown and self.update_essential_sound())
         self.docks["Text"].visibilityChanged.connect(lambda shown: shown and QTimer.singleShot(0, self.text_panel.refresh))
 
         self._refresh_timer = QTimer(self, singleShot=True, interval=40)
@@ -331,7 +343,9 @@ class MainWindow(QMainWindow):
         # too (opened from the Window menu)
         win.tabifyDockWidget(d["Properties"], d["Text"])
         win.tabifyDockWidget(d["Text"], d["Lumetri Color"])
+        win.tabifyDockWidget(d["Lumetri Color"], d["Essential Sound"])  # egui's Audio workspace
         d["Lumetri Color"].hide()
+        d["Essential Sound"].hide()
         for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
@@ -745,6 +759,7 @@ class MainWindow(QMainWindow):
         self.inspector.set_sequence(self.sequence)
         self.effect_controls.refresh((self.sequence or {}).get("selection"))
         self.update_lumetri()
+        self.update_essential_sound()
         self.media_browser.refresh()
         self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()
@@ -809,6 +824,7 @@ class MainWindow(QMainWindow):
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.effect_controls.flush()
         self.lumetri.flush()
+        self.essential_sound.flush()
         self.notes.flush()
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
@@ -1011,6 +1027,29 @@ class MainWindow(QMainWindow):
 
         self.engine.execute("mediaBrowser.import", {"paths": paths}, on_reply=imported,
                             on_error=lambda m: self._command_failed("mediaBrowser.import", m))
+
+    def update_essential_sound(self) -> None:
+        """The Essential Sound panel: the selected audio clips' audio type and settings."""
+        if self._essential_busy:
+            self._essential_again = True
+            return
+        if not self.engine.running or not self.essential_sound.isVisible():
+            return
+        self._essential_busy = True
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self._essential_busy = False
+            self.essential_sound.set_state(result)
+            if getattr(self, "_essential_again", False):
+                self._essential_again = False
+                self.update_essential_sound()
+
+        def failed(_m: str) -> None:
+            self._essential_busy = False
+            self._essential_again = False
+            self.essential_sound.set_state(None)
+
+        self.engine.execute("essentialSound.inspect", {}, on_reply=done, on_error=failed)
 
     def update_lumetri(self) -> None:
         """The Lumetri Color panel: the selected video clip's Lumetri values at the playhead."""
@@ -1238,9 +1277,23 @@ class MainWindow(QMainWindow):
         # an edit still in Effect Controls' send delay reaches the engine before it is asked
         self.effect_controls.flush()
         self.lumetri.flush()
+        self.essential_sound.flush()
         self.notes.flush()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)
         QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
+
+    def event(self, e: QEvent) -> bool:
+        # Enter is also an editor shortcut (Render Effects In to Out): in a text field, a spin box
+        # or a table cell editor it confirms the typing instead (the field ignores the override,
+        # so it reaches the window)
+        if e.type() == QEvent.Type.ShortcutOverride and isinstance(e, QKeyEvent) and e.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            w = QApplication.focusWidget()
+            if isinstance(w, QLineEdit | QAbstractSpinBox | QPlainTextEdit | QTextEdit) and not (
+                isinstance(w, QTextEdit | QPlainTextEdit) and w.isReadOnly()
+            ):
+                e.accept()
+                return True
+        return super().event(e)
 
     def closeEvent(self, e: QCloseEvent) -> None:
         if self.engine.running and not self._quit_confirmed:

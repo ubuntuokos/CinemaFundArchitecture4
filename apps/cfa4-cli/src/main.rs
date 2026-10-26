@@ -33,6 +33,7 @@ macro_rules! out {
 mod args;
 mod probe;
 mod serve;
+mod serve_graphics;
 mod serve_lumetri;
 mod serve_media_browser;
 mod serve_scopes;

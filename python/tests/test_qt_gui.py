@@ -1366,7 +1366,7 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
         panels = entries[2:]
         assert [a.text() for a in panels] == [p.title for p in PANELS]
-        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text"}
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events", "Tools", "Audio Meters", "Info", "Markers", "Metadata", "Project Notes", "Timecode", "Progress", "Audio Track Mixer", "Audio Clip Mixer", "Reference Monitor", "Lumetri Scopes", "Lumetri Color", "Media Browser", "Text", "Essential Sound"}
         for a, p in zip(panels, PANELS, strict=True):
             assert a.isEnabled() == (p.title in have), p.title
             if p.shortcut and a.isEnabled():
@@ -2451,6 +2451,7 @@ def test_media_browser(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_text_panel(app, tmp_path: Path):
     """egui's Text panel: Transcript (Transcribe when there is none, else the words), Captions (a new caption track,
     a caption added at the playhead, its text edited in the list) and Graphics (the sequence's text
@@ -2502,7 +2503,15 @@ def test_text_panel(app, tmp_path: Path):
         tp.captions.add.click()
         assert wait_until(app, lambda: tp.captions.table.rowCount() == 1, 10_000), tp.captions.data
         assert tp.captions.table.item(0, 1).text() == captions()[0]["in"]
-        tp.captions.table.item(0, 4).setText("Hello captions")
+        # typed in the cell: Enter confirms it (not the editor's Enter shortcut, Render Effects In to Out)
+        table = tp.captions.table
+        table.setCurrentCell(0, 4)
+        table.editItem(table.item(0, 4))
+        editor = QtWidgets.QApplication.focusWidget()
+        assert isinstance(editor, QtWidgets.QLineEdit), editor
+        editor.selectAll()
+        QtTest.QTest.keyClicks(editor, "Hello captions")
+        QtTest.QTest.keyClick(editor, QtCore.Qt.Key.Key_Return)
         assert wait_until(app, lambda: [c.get("text") for c in captions()] == ["Hello captions"], 10_000), captions()
         tp.captions.search.setText("nothing like it")
         assert tp.captions.table.rowCount() == 0 and tp.captions.note.text() == "No matching captions."
@@ -2516,6 +2525,95 @@ def test_text_panel(app, tmp_path: Path):
         tp.graphics.table.item(0, 2).setText("Hi Qt")
         assert wait_until(app, lambda: [g.get("text") for g in tp.graphics.rows] == ["Hi Qt"], 20_000), tp.graphics.rows
         assert tp.grab().width() > 0
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_essential_sound(app, tmp_path: Path):
+    """egui's Essential Sound panel: assign an audio type, the type's sections with switches and
+    sliders (a drag is one undo step), presets (Edit and Browse), Clip Volume, Clear Audio Type."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.essential_sound import SoundSlider, Switch, setting
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    es = win.essential_sound
+    mouse = QtTest.QTest
+    Qt = QtCore.Qt
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def find(cls, name):
+        return es.findChild(cls, name)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert not win.docks["Essential Sound"].isVisible(), "closed in the Editing workspace, as egui"
+        win.docks["Essential Sound"].show()
+        win.docks["Essential Sound"].raise_()
+        assert wait_until(app, lambda: es.placeholder.isVisible(), 10_000)
+        clip = win.sequence["audio"][0]["items"][0]
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        assert wait_until(app, lambda: es.clip_ids() == [clip["clip"]] and find(QtWidgets.QPushButton, "essentialSound.type.Dialogue") is not None, 20_000), es.data
+        assert not es.footer.isVisible()
+        find(QtWidgets.QPushButton, "essentialSound.type.Dialogue").click()
+        assert wait_until(app, lambda: es.data.get("type") == "Dialogue" and es.footer.isVisible(), 10_000), es.data
+        heads = [w.title for w in es.edit.findChildren(QtWidgets.QWidget) if type(w).__name__ == "SectionHeader"]
+        assert heads == ["Loudness", "Repair", "Clarity", "Creative"]
+        assert find(SoundSlider, "essentialSound.repair.noise.amount") is not None, "Repair opens by default"
+        assert find(QtWidgets.QPushButton, "essentialSound.autoMatch") is None, "Loudness is closed by default"
+
+        # a switch, then a slider drag as one undo step
+        noise = find(SoundSlider, "essentialSound.repair.noise.amount")
+        assert not noise.active
+        find(Switch, "essentialSound.repair.noise.on").clicked.emit()
+        assert wait_until(app, lambda: setting(es.st, "repair.noise.on") is True and noise.active, 10_000)
+        assert wait_until(app, lambda: history()[-2:] == ["Set Audio Type to Dialogue", "Essential Sound"], 10_000), history()
+        steps = len(history())
+        es.edit_scroll.ensureWidgetVisible(noise)
+        app.processEvents()
+        tr_ = noise.track()
+        y = int(tr_.center().y())
+        mouse.mousePress(noise, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(tr_.left() + tr_.width() * 0.2), y))
+        for f in (0.4, 0.6, 0.8):
+            mouse.mouseMove(noise, QtCore.QPoint(int(tr_.left() + tr_.width() * f), y))
+            wait_until(app, lambda: False, 30)
+        mouse.mouseRelease(noise, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(int(tr_.left() + tr_.width() * 0.8), y))
+        assert wait_until(app, lambda: abs(float(setting(es.st, "repair.noise.amount") or 0) - 8.0) < 0.2, 10_000), es.st
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()[-4:]
+        assert es.findChild(QtWidgets.QComboBox, "essentialSound.preset").currentText() == "(Custom)"
+
+        # Loudness twirls open; a preset applies; Browse applies too
+        es._twirl("Loudness")
+        assert find(QtWidgets.QPushButton, "essentialSound.autoMatch") is not None
+        combo = es.findChild(QtWidgets.QComboBox, "essentialSound.preset")
+        combo.activated.emit(combo.findData("Podcast Voice"))
+        assert wait_until(app, lambda: es.st.get("preset") == "Podcast Voice", 10_000), es.st.get("preset")
+        es.tabs.setCurrentIndex(0)
+        b = find(QtWidgets.QPushButton, "essentialSound.browse.Dialogue.Phone Call")
+        assert b is not None and b.isEnabled()
+        b.click()
+        assert wait_until(app, lambda: es.st.get("preset") == "Phone Call", 10_000), es.st.get("preset")
+        es.tabs.setCurrentIndex(1)
+
+        # Clip Volume and Mute, then Clear Audio Type
+        es.volume_on.clicked.emit()
+        assert wait_until(app, lambda: setting(es.st, "volume.on") is True and es.volume.active, 10_000)
+        es.volume.spin.setValue(-6.0)
+        assert wait_until(app, lambda: setting(es.st, "volume.levelDb") == -6.0, 10_000), es.st.get("volume")
+        es.mute.clicked.emit()
+        assert wait_until(app, lambda: setting(es.st, "mute") is True, 10_000)
+        assert es.grab().width() > 0
+        find(QtWidgets.QPushButton, "essentialSound.clearType").click()
+        assert wait_until(app, lambda: es.data.get("type") is None and not es.footer.isVisible(), 10_000), es.data.get("type")
     finally:
         win._quit_confirmed = True
         win.close()
