@@ -165,3 +165,34 @@ fn repeated_extents_are_capped_by_the_budget() {
     meta.locations.insert(2, Location { method: 0, base: 0, extents: vec![Extent { offset: 0, length: 16 }; 3] });
     assert_eq!(meta.data(2, &mut Budget::for_source(file.len())).map(|d| d.len()), Ok(48));
 }
+
+/// Extents of zero-width fields take no bytes of the iloc box, but each is an allocation.
+#[test]
+fn zero_width_extents_are_bounded() {
+    let items = MAX_EXTENTS / 65_535 + 1;
+    let mut body = vec![0u8, 0, 0, 0, 0x00, 0x00];
+    body.extend((items as u16).to_be_bytes());
+    for id in 0..items as u16 {
+        body.extend(id.to_be_bytes());
+        body.extend(0u16.to_be_bytes()); // data_reference_index
+        body.extend(u16::MAX.to_be_bytes());
+    }
+    let mut locations = HashMap::new();
+    assert!(matches!(read_iloc(&body, &mut locations), Err(Error::Invalid(_))));
+    // one item with that many is fine
+    let mut one = vec![0u8, 0, 0, 0, 0x00, 0x00, 0, 1, 0, 1, 0, 0];
+    one.extend(u16::MAX.to_be_bytes());
+    assert!(read_iloc(&one, &mut HashMap::new()).is_ok());
+}
+
+/// A grid repeating one tile copies its hvcC per reference: the copies count against the budget.
+#[test]
+fn repeated_property_copies_are_charged_to_the_budget() {
+    let mut tile = Item { hidden: true, ..hevc(1, b"tile") };
+    tile.properties = vec![hvcc_box(&vec![7u8; 1 << 20]), ispe_box(64, 48)];
+    let grid = Item { id: 10, kind: *b"grid", data: grid_data(16, 16, 1024, 768), references: vec![(*b"dimg", vec![1; 256])], ..Item::default() };
+    assert!(matches!(parse(&build(10, &[grid, tile.clone()])), Err(Error::Invalid(_))));
+    // a few references to a large hvcC still parse
+    let small = Item { id: 10, kind: *b"grid", data: grid_data(2, 2, 128, 96), references: vec![(*b"dimg", vec![1; 4])], ..Item::default() };
+    assert!(parse(&build(10, &[small, tile])).is_ok());
+}

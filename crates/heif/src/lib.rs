@@ -35,6 +35,8 @@ pub const MAX_IMAGES: usize = MAX_TILES + 1024;
 /// Item data one resolution may copy beyond the source's own size: repeated or overlapping
 /// extents and references to one item would otherwise copy the same bytes without limit.
 pub const ITEM_DATA_SLACK: usize = 64 << 20;
+/// Most extents all item locations of a file may declare together.
+pub const MAX_EXTENTS: usize = 1 << 18;
 
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
 pub enum Error {
@@ -392,13 +394,19 @@ fn read_iloc(body: &[u8], locations: &mut HashMap<u32, Location>) -> Result<()> 
         }
     }
     let count = if v < 2 { u32::from(r.u16()?) } else { r.u32()? };
+    // zero-width fields make an extent cost no bytes of the box: bound them by count
+    let mut total_extents = 0usize;
     for _ in 0..count {
         let id = if v < 2 { u32::from(r.u16()?) } else { r.u32()? };
         let method = if v >= 1 { (r.u16()? & 15) as u8 } else { 0 };
         let data_reference = r.u16()?;
         let base = r.uint(base_size)?;
         let extents = r.u16()?;
-        let mut list = Vec::new();
+        total_extents += usize::from(extents);
+        if total_extents > MAX_EXTENTS {
+            return Err(invalid("too many item extents"));
+        }
+        let mut list = Vec::with_capacity(usize::from(extents));
         for _ in 0..extents {
             r.uint(index_size)?;
             let offset = r.uint(offset_size)?;
@@ -568,7 +576,13 @@ impl Meta<'_> {
             match p {
                 Property::Hvcc(h) => hvcc = Some(*h),
                 Property::Ispe(w, h) => size = Some((*w, *h)),
-                Property::Colour(c) => colour.push(c.clone()),
+                Property::Colour(c) => {
+                    // every copy of a shared ICC profile counts against the budget
+                    if let Colour::Icc(icc) = c {
+                        budget.take_bytes(icc.len())?;
+                    }
+                    colour.push(c.clone());
+                }
                 Property::Rotate(q) => transforms.push(Transform::Rotate(*q)),
                 Property::Mirror(v) => transforms.push(Transform::Mirror { left_right: *v }),
                 Property::Crop(c) => transforms.push(Transform::Crop(*c)),
@@ -578,7 +592,9 @@ impl Meta<'_> {
         let dimg = self.references.get(&(*b"dimg", item)).map(Vec::as_slice).unwrap_or(&[]);
         let mut image = match &kind {
             b"hvc1" => {
-                let hvcc = hvcc.ok_or_else(|| invalid(format!("item {item}: HEVC image without hvcC")))?.to_vec();
+                let hvcc = hvcc.ok_or_else(|| invalid(format!("item {item}: HEVC image without hvcC")))?;
+                budget.take_bytes(hvcc.len())?;
+                let hvcc = hvcc.to_vec();
                 Image { item, coding: Coding::Hevc { hvcc, data: self.data(item, budget)? }, size, colour, transforms, alpha: None }
             }
             b"grid" => {
