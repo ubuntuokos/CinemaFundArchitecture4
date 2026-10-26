@@ -1194,7 +1194,7 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
         let accel = match e.category.first().copied() {
             Some("Legacy") => !matches!(id, "camera_blur"),
             _ if folder == "Obsolete" => false,
-            _ => !matches!(id, "clone" | "stroke" | "skin_smoothing"),
+            _ => !matches!(id, "clone" | "stroke"),
         };
         e.accelerated = accel;
         e.float32 = a32;

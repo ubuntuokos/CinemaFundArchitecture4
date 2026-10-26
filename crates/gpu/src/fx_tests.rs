@@ -205,6 +205,14 @@ fn cases() -> Vec<(&'static str, Vec<(&'static str, ParamValue)>, bool)> {
         ("stereo_swap_eyes", vec![], false),
         ("stereo_swap_eyes", vec![("frame_layout", ch(1))], false),
         ("stereo_swap_eyes", vec![("frame_layout", ch(9))], false),
+        ("skin_smoothing", vec![], false),
+        ("skin_smoothing", vec![("amount", fl(100.0)), ("texture", fl(0.0)), ("radius", fl(4.0))], false),
+        ("skin_smoothing", vec![("amount", fl(80.0)), ("radius", fl(60.0)), ("smoothness", fl(100.0)), ("tolerance", fl(100.0))], false),
+        ("skin_smoothing", vec![("whole_image", ParamValue::Bool(true)), ("texture", fl(20.0))], false),
+        ("skin_smoothing", vec![("show_mask", ParamValue::Bool(true)), ("softness", fl(0.0))], false),
+        ("skin_smoothing", vec![("skin_tone", col(0.2, 0.4, 0.9)), ("tolerance", fl(60.0))], false),
+        ("skin_smoothing", vec![("texture", fl(100.0))], false),
+        ("skin_smoothing", vec![("radius", fl(0.0))], false),
         ("low_light", vec![], false),
         ("low_light", vec![("amount", fl(100.0)), ("radius", fl(4.0))], false),
         ("low_light", vec![("amount", fl(80.0)), ("radius", fl(60.0)), ("max_gain", fl(150.0))], false),
@@ -434,6 +442,15 @@ fn gpu_effect_chains_match_cpu() {
             effect("offset", &[("shift", pt(70.0, 10.0))]),
             effect("invert", &[("channel", ParamValue::Choice(4))]),
             effect("directional_blur", &[("length", fl(6.0)), ("direction", fl(90.0))]),
+        ],
+        // explicit slot routing starting mid-chain, then the Unsharp-style route, twice over
+        vec![
+            effect("brightness_contrast", &[("brightness", fl(10.0))]),
+            effect("skin_smoothing", &[("amount", fl(100.0)), ("texture", fl(10.0)), ("whole_image", ParamValue::Bool(true))]),
+            effect("low_light", &[("amount", fl(70.0))]),
+            effect("unsharp_mask", &[("amount", fl(80.0)), ("radius", fl(2.0))]),
+            effect("skin_smoothing", &[("radius", fl(3.0)), ("tolerance", fl(100.0))]),
+            effect("tint", &[("amount", fl(30.0))]),
         ],
     ];
     for chain in chains {

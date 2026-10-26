@@ -19,6 +19,8 @@ struct U {
 @group(0) @binding(2) var dst: texture_storage_2d<rgba32float, write>;
 // Unsharp Mask and Low Light: the image before their first pass.
 @group(0) @binding(3) var aux: texture_2d<f32>;
+// Skin Smoothing: a second input plane.
+@group(0) @binding(4) var aux2: texture_2d<f32>;
 
 const OP_BRIGHTNESS_CONTRAST: u32 = 1u;
 const OP_PROC_AMP: u32 = 2u;
@@ -55,6 +57,12 @@ const OP_STEREO_TO_2D: u32 = 33u;
 const OP_LOW_LIGHT_PEAK: u32 = 34u;
 const OP_LOW_LIGHT_COEF: u32 = 35u;
 const OP_LOW_LIGHT_APPLY: u32 = 36u;
+const OP_SKIN_STATS_A: u32 = 37u;
+const OP_SKIN_STATS_B: u32 = 38u;
+const OP_SKIN_COEF_A: u32 = 39u;
+const OP_SKIN_COEF_B: u32 = 40u;
+const OP_SKIN_APPLY: u32 = 41u;
+const OP_SKIN_MASK: u32 = 42u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -148,6 +156,31 @@ fn straight_srgb(p: vec4<f32>) -> vec3<f32> {
 // `gpufx::low_light_peak`
 fn low_light_peak(c: vec3<f32>) -> f32 {
     return clamp(max(c.x, max(c.y, c.z)), 0.0, 1.0);
+}
+
+// `gpufx::skin_guide`
+fn skin_guide(c: vec3<f32>) -> f32 {
+    return 0.299 * c.x + 0.587 * c.y + 0.114 * c.z;
+}
+
+// `gpufx::skin_mask`: m = (Cb, Cr, tolerance, softness) of the skin tone; whole = every pixel
+fn skin_mask(c: vec3<f32>, m: vec4<f32>, whole: bool) -> f32 {
+    if whole {
+        return 1.0;
+    }
+    let y = skin_guide(c);
+    let cb = 0.564 * (c.z - y);
+    let cr = 0.713 * (c.x - y);
+    let d = sqrt((cb - m.x) * (cb - m.x) + (cr - m.y) * (cr - m.y));
+    let t = clamp((d - m.z) / max(m.w, 1e-4), 0.0, 1.0);
+    return 1.0 - t * t * (3.0 - 2.0 * t);
+}
+
+// `gpufx::skin_coeffs` for one channel group: a (all three channels) from the box means
+fn skin_a(ma: vec4<f32>, mb: vec4<f32>, eps: f32) -> vec3<f32> {
+    let v = max(ma.y - ma.x * ma.x, 0.0);
+    let mp = vec3(ma.z, ma.w, mb.x);
+    return (mb.yzw - ma.x * mp) / (v + eps);
 }
 
 fn luma709(c: vec3<f32>) -> f32 {
@@ -642,6 +675,52 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
                 out = min(c * g, vec3(1.0));
             }
             return vec4(dec(out) * o.a, o.a);
+        }
+        case OP_SKIN_STATS_A: {
+            // the guide, its square, and the input's red and green (straight sRGB)
+            let c = straight_srgb(ld(p));
+            let g = skin_guide(c);
+            return vec4(g, g * g, c.x, c.y);
+        }
+        case OP_SKIN_STATS_B: {
+            // the input's blue, and guide × input
+            let c = straight_srgb(ld(p));
+            let g = skin_guide(c);
+            return vec4(c.z, g * c.x, g * c.y, g * c.z);
+        }
+        case OP_SKIN_COEF_A: {
+            // src = the statistics' means (A), aux = (B); eps in p0.x
+            return vec4(skin_a(ld(p), textureLoad(aux, p, 0), u.p0.x), 0.0);
+        }
+        case OP_SKIN_COEF_B: {
+            let ma = ld(p);
+            let mb = textureLoad(aux, p, 0);
+            let a = skin_a(ma, mb, u.p0.x);
+            let mp = vec3(ma.z, ma.w, mb.x);
+            return vec4(mp - a * ma.x, 0.0);
+        }
+        case OP_SKIN_APPLY: {
+            // `gpufx::skin_retouch`: src = averaged a, aux = the original, aux2 = averaged b;
+            // p0 = mask (Cb, Cr, tolerance, softness), p1.xy = amount, keep
+            let o = textureLoad(aux, p, 0);
+            let c = straight_srgb(o);
+            let m = skin_mask(c, u.p0, u.i1.x == 1u);
+            let amount = u.p1.x;
+            let keep = u.p1.y;
+            let k = amount * m;
+            if k <= 0.0 {
+                return o;
+            }
+            let g = skin_guide(c);
+            let smoothed = ld(p).xyz * g + textureLoad(aux2, p, 0).xyz;
+            let retouched = smoothed + (c - smoothed) * keep;
+            let out = c + (retouched - c) * k;
+            return vec4(dec(out) * o.a, o.a);
+        }
+        case OP_SKIN_MASK: {
+            let o = ld(p);
+            let m = skin_mask(straight_srgb(o), u.p0, u.i1.x == 1u);
+            return vec4(dec(vec3(m)) * o.a, o.a);
         }
         case OP_CROP: {
             let x0 = u.p0.x; let x1 = u.p0.y; let y0 = u.p0.z; let y1 = u.p0.w; let fe = u.p1.x;

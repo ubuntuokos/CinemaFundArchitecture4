@@ -106,6 +106,18 @@ pub enum FxOp {
         dy: f32,
         steps: u32,
     },
+    /// Skin Smoothing ([`skin_mask`], [`skin_retouch`]): a guided filter (luma guide) over
+    /// repeat-edge box-Gaussians of the given radii, inside the skin mask, with Keep Texture's
+    /// share of the removed detail added back. `show` draws the mask instead.
+    SkinSmoothing {
+        rx: Vec<u32>,
+        ry: Vec<u32>,
+        eps: f32,
+        amount: f32,
+        keep: f32,
+        mask: SkinMask,
+        show: bool,
+    },
     /// Low Light ([`low_light_gain`]): the illumination (brightest channel) smoothed by a
     /// self-guided filter over repeat-edge box-Gaussians of the given radii, then one gain per
     /// pixel, `illumination ^ -k` capped at `max_gain`. `show` draws the illumination instead.
@@ -250,6 +262,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "stereo_swap_eyes",
     "stereo_to_2d",
     "low_light",
+    "skin_smoothing",
     "mirror",
     "offset",
     "asc_cdl",
@@ -299,6 +312,82 @@ pub fn stereo_view_sample(src: &Image, x: usize, y: usize, sbs: bool, right: boo
         o[k] = a[k] + (b[k] - a[k]) * t;
     }
     o
+}
+
+/// Skin Smoothing's mask: the skin tone's Rec. 601 chroma, how far from it still counts as skin
+/// (`tol`), the falloff after that (`soft`), or every pixel (`whole`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SkinMask {
+    pub cb: f32,
+    pub cr: f32,
+    pub tol: f32,
+    pub soft: f32,
+    pub whole: bool,
+}
+
+/// Rec. 601 luma of a straight sRGB colour: Skin Smoothing's guide.
+#[inline]
+pub fn skin_guide(c: [f32; 3]) -> f32 {
+    0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+}
+
+/// Rec. 601 chroma (Cb, Cr) of a straight sRGB colour. Skin sits in a small, well-known patch of
+/// this plane whatever the exposure, so the mask is a distance here and ignores brightness.
+#[inline]
+pub fn skin_chroma(c: [f32; 3]) -> (f32, f32) {
+    let y = skin_guide(c);
+    (0.564 * (c[2] - y), 0.713 * (c[0] - y))
+}
+
+/// How much of a straight sRGB colour is skin, 0..1. `fx.wgsl` (`skin_mask`) mirrors this.
+#[inline]
+pub fn skin_mask(c: [f32; 3], m: &SkinMask) -> f32 {
+    if m.whole {
+        return 1.0;
+    }
+    let (cb, cr) = skin_chroma(c);
+    let d = ((cb - m.cb) * (cb - m.cb) + (cr - m.cr) * (cr - m.cr)).sqrt();
+    let t = ((d - m.tol) / m.soft.max(1e-4)).clamp(0.0, 1.0);
+    1.0 - t * t * (3.0 - 2.0 * t)
+}
+
+/// The guided filter's per-pixel model from the box means: `ma = [mean g, mean g², …]` packs the
+/// guide's mean and mean square and the input's red and green means, `mb` the input's blue mean
+/// and the guide × input means. Returns `(a, b)` per channel, `smoothed = a · g + b`. `fx.wgsl`
+/// (`OP_SKIN_COEF_A` / `_B`) mirrors this.
+#[inline]
+pub fn skin_coeffs(ma: [f32; 4], mb: [f32; 4], eps: f32) -> ([f32; 3], [f32; 3]) {
+    let var = (ma[1] - ma[0] * ma[0]).max(0.0);
+    let mp = [ma[2], ma[3], mb[0]];
+    let mut a = [0.0; 3];
+    let mut b = [0.0; 3];
+    for k in 0..3 {
+        a[k] = (mb[k + 1] - ma[0] * mp[k]) / (var + eps);
+        b[k] = mp[k] - a[k] * ma[0];
+    }
+    (a, b)
+}
+
+/// Skin Smoothing's output for straight sRGB `c` (mask `m`) given the guided filter's averaged
+/// coefficients: the smoothed colour plus Keep Texture's share of the detail it removed, mixed in
+/// by Amount × mask. `fx.wgsl` (`OP_SKIN_APPLY`) mirrors this.
+#[inline]
+pub fn skin_retouch(c: [f32; 3], m: f32, a: [f32; 3], b: [f32; 3], amount: f32, keep: f32) -> [f32; 3] {
+    let k = amount * m;
+    let g = skin_guide(c);
+    let mut out = [0.0; 3];
+    for ch in 0..3 {
+        let smoothed = a[ch] * g + b[ch];
+        let retouched = smoothed + (c[ch] - smoothed) * keep;
+        out[ch] = c[ch] + (retouched - c[ch]) * k;
+    }
+    out
+}
+
+/// Whether Skin Smoothing (not showing its mask) changes anything: some smoothing radius, some
+/// Amount, and less than all of the texture kept.
+pub fn skin_smoothing_runs(rx: &[u32], ry: &[u32], amount: f32, keep: f32) -> bool {
+    (rx.iter().chain(ry).any(|r| *r > 0)) && amount > 0.0 && keep < 1.0
 }
 
 /// Variance (display 0..1, squared) below which Low Light's illumination counts as flat and is
@@ -512,6 +601,25 @@ impl FxOp {
             "horizontal_flip" => FxOp::HFlip,
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
+            "skin_smoothing" => {
+                let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
+                let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
+                // Smoothness is the luma standard deviation (display 0..1) still counted as flat
+                // skin: 2 % at 0 (only sensor noise), 20 % at 100 (everything but a hard edge)
+                let sd = 0.02 + 0.18 * (f(e, "smoothness", cx) / 100.0).clamp(0.0, 1.0);
+                let tone = color(e, "skin_tone", cx);
+                let (cb, cr) = skin_chroma(enc(dec([tone[0], tone[1], tone[2]])));
+                let tol = (f(e, "tolerance", cx) / 100.0).clamp(0.0, 1.0) * 0.3;
+                FxOp::SkinSmoothing {
+                    rx,
+                    ry,
+                    eps: sd * sd,
+                    amount: (f(e, "amount", cx) / 100.0).clamp(0.0, 1.0),
+                    keep: (f(e, "texture", cx) / 100.0).clamp(0.0, 1.0),
+                    mask: SkinMask { cb, cr, tol, soft: (f(e, "softness", cx) / 100.0).clamp(0.0, 1.0) * 0.3, whole: b(e, "whole_image") },
+                    show: b(e, "show_mask"),
+                }
+            }
             "low_light" => {
                 let r = (f(e, "radius", cx) * cx.px_scale).clamp(0.0, 500.0);
                 let (rx, ry) = if r < 0.5 { (Vec::new(), Vec::new()) } else { gaussian_boxes(w, h, r, r) };
@@ -716,6 +824,7 @@ impl FxOp {
             FxOp::DirectionalBlur { dx, dy, .. } => fin(&[*dx, *dy]),
             FxOp::Unsharp { amount, threshold, .. } => fin(&[*amount, *threshold]),
             FxOp::LowLight { k, max_gain, .. } => fin(&[*k, *max_gain]),
+            FxOp::SkinSmoothing { eps, amount, keep, mask, .. } => fin(&[*eps, *amount, *keep, mask.cb, mask.cr, mask.tol, mask.soft]),
             FxOp::Crop { x0, x1, y0, y1, feather } => fin(&[*x0, *x1, *y0, *y1, *feather]),
             FxOp::Resample(r) => {
                 r.rect[0] != u32::MAX
@@ -889,6 +998,52 @@ impl FxOp {
             FxOp::Gaussian { rx, ry, repeat } => crate::effects::box_blur(img, rx, ry, *repeat),
             FxOp::DirectionalBlur { dx, dy, steps } => crate::effects::directional_taps(img, *dx, *dy, *steps as usize),
             FxOp::Unsharp { rx, ry, amount, threshold } => crate::effects::unsharp_boxes(img, rx, ry, *amount, *threshold),
+            FxOp::SkinSmoothing { rx, ry, eps, amount, keep, mask, show } => {
+                let (amount, keep, eps, mask) = (*amount, *keep, *eps, *mask);
+                let straight = |p: &[f32]| enc(Image::unpremul([p[0], p[1], p[2], p[3]]));
+                if *show {
+                    img.px.par_chunks_mut(4).for_each(|p| {
+                        let m = skin_mask(straight(p), &mask);
+                        let l = dec([m, m, m]);
+                        for ch in 0..3 {
+                            p[ch] = l[ch] * p[3];
+                        }
+                    });
+                    return;
+                }
+                if !skin_smoothing_runs(rx, ry, amount, keep) {
+                    return;
+                }
+                // the guide's and the input's statistics in two planes, box-blurred; then the
+                // model's coefficients in two more, box-blurred
+                let (mut sa, mut sb) = (img.clone(), img.clone());
+                sa.px.par_chunks_mut(4).zip(sb.px.par_chunks_mut(4)).for_each(|(a, b)| {
+                    let c = straight(a);
+                    let g = skin_guide(c);
+                    a.copy_from_slice(&[g, g * g, c[0], c[1]]);
+                    b.copy_from_slice(&[c[2], g * c[0], g * c[1], g * c[2]]);
+                });
+                crate::effects::box_blur(&mut sa, rx, ry, true);
+                crate::effects::box_blur(&mut sb, rx, ry, true);
+                sa.px.par_chunks_mut(4).zip(sb.px.par_chunks_mut(4)).for_each(|(a, b)| {
+                    let (ca, cb) = skin_coeffs([a[0], a[1], a[2], a[3]], [b[0], b[1], b[2], b[3]], eps);
+                    a.copy_from_slice(&[ca[0], ca[1], ca[2], 0.0]);
+                    b.copy_from_slice(&[cb[0], cb[1], cb[2], 0.0]);
+                });
+                crate::effects::box_blur(&mut sa, rx, ry, true);
+                crate::effects::box_blur(&mut sb, rx, ry, true);
+                img.px.par_chunks_mut(4).zip(sa.px.par_chunks(4).zip(sb.px.par_chunks(4))).for_each(|(p, (a, b))| {
+                    let c = straight(p);
+                    let m = skin_mask(c, &mask);
+                    if amount * m <= 0.0 {
+                        return;
+                    }
+                    let l = dec(skin_retouch(c, m, [a[0], a[1], a[2]], [b[0], b[1], b[2]], amount, keep));
+                    for ch in 0..3 {
+                        p[ch] = l[ch] * p[3];
+                    }
+                });
+            }
             FxOp::LowLight { rx, ry, k, max_gain, show } => {
                 if *k <= 0.0 && !*show {
                     return;

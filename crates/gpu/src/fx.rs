@@ -57,6 +57,15 @@ const OP_STEREO_TO_2D: u32 = 33;
 const OP_LOW_LIGHT_PEAK: u32 = 34;
 const OP_LOW_LIGHT_COEF: u32 = 35;
 const OP_LOW_LIGHT_APPLY: u32 = 36;
+const OP_SKIN_STATS_A: u32 = 37;
+const OP_SKIN_STATS_B: u32 = 38;
+const OP_SKIN_COEF_A: u32 = 39;
+const OP_SKIN_COEF_B: u32 = 40;
+const OP_SKIN_APPLY: u32 = 41;
+const OP_SKIN_MASK: u32 = 42;
+
+/// Working textures an op with explicit routing ([`Step::slots`]) may use: its input and four more.
+const SLOTS: usize = 5;
 
 type Target = (wgpu::Texture, wgpu::TextureView);
 
@@ -98,6 +107,12 @@ struct Step {
     combine: bool,
     /// A pass before such a combine (the original stays untouched until it).
     unsharp_blur: bool,
+    /// Explicit routing for ops that juggle several planes (Skin Smoothing): `[src, dst, aux,
+    /// aux2]` as slots of the op, where slot 0 is the image the op starts from and 1..4 are the
+    /// other working textures. The op's result is the `dst` of its last step.
+    slots: Option<[usize; 4]>,
+    /// The first step of an op with explicit routing (its slot 0 is the current image).
+    op_start: bool,
 }
 
 fn step(code: u32, i1: [u32; 4], p: &[f32]) -> Step {
@@ -105,7 +120,29 @@ fn step(code: u32, i1: [u32; 4], p: &[f32]) -> Step {
     for (d, s) in q.iter_mut().zip(p) {
         *d = *s;
     }
-    Step { run: false, code, i1, p: q, combine: false, unsharp_blur: false }
+    Step { run: false, code, i1, p: q, combine: false, unsharp_blur: false, slots: None, op_start: false }
+}
+
+/// A step with explicit routing ([`Step::slots`]).
+fn routed(code: u32, i1: [u32; 4], p: &[f32], src: usize, dst: usize, aux: usize, aux2: usize) -> Step {
+    let mut s = step(code, i1, p);
+    s.slots = Some([src, dst, aux, aux2]);
+    s
+}
+
+/// Box passes over the plane in slot `plane`, ping-ponging with slot `scratch`; returns the slot
+/// that holds the result (repeat edges, like `effects::gaussian`).
+fn routed_boxes(rx: &[u32], ry: &[u32], plane: usize, scratch: usize, out: &mut Vec<Step>) -> usize {
+    let mut tmp = Vec::new();
+    boxes(rx, false, true, &mut tmp);
+    boxes(ry, true, true, &mut tmp);
+    let (mut cur, mut other) = (plane, scratch);
+    for mut s in tmp {
+        s.slots = Some([cur, other, 0, 0]);
+        out.push(s);
+        std::mem::swap(&mut cur, &mut other);
+    }
+    cur
 }
 
 /// Box passes along x (vertical = false) or y for the radii (radius 0 is a no-op on the CPU).
@@ -157,6 +194,36 @@ fn steps(op: &FxOp) -> Vec<Step> {
             let mut s = step(OP_UNSHARP, [0; 4], &[*amount, *threshold]);
             s.combine = true;
             out.push(s);
+        }
+        FxOp::SkinSmoothing { rx, ry, eps, amount, keep, mask, show } => {
+            let m = [mask.cb, mask.cr, mask.tol, mask.soft];
+            let whole = mask.whole as u32;
+            if *show {
+                out.push(step(OP_SKIN_MASK, [whole, 0, 0, 0], &m));
+            } else if cfa4_render::gpufx::skin_smoothing_runs(rx, ry, *amount, *keep) {
+                // slot 0 is the original throughout; statistics in 1 and 2 (scratch 3 and 4), the
+                // coefficients in the two slots left free, blurred with the statistics' slots
+                out.push(routed(OP_SKIN_STATS_A, [0; 4], &[], 0, 1, 0, 0));
+                out.push(routed(OP_SKIN_STATS_B, [0; 4], &[], 0, 2, 0, 0));
+                let sa = routed_boxes(rx, ry, 1, 3, &mut out);
+                let sb = routed_boxes(rx, ry, 2, 4, &mut out);
+                let mut free = (1..SLOTS).filter(|k| *k != sa && *k != sb);
+                let (Some(fa), Some(fb)) = (free.next(), free.next()) else {
+                    return out;
+                };
+                out.push(routed(OP_SKIN_COEF_A, [0; 4], &[*eps], sa, fa, sb, 0));
+                out.push(routed(OP_SKIN_COEF_B, [0; 4], &[*eps], sa, fb, sb, 0));
+                let ca = routed_boxes(rx, ry, fa, sa, &mut out);
+                let cb = routed_boxes(rx, ry, fb, sb, &mut out);
+                let Some(dst) = (1..SLOTS).find(|k| *k != ca && *k != cb) else {
+                    return out;
+                };
+                let p = [m[0], m[1], m[2], m[3], *amount, *keep];
+                out.push(routed(OP_SKIN_APPLY, [whole, 0, 0, 0], &p, ca, dst, 0, cb));
+                if let Some(first) = out.first_mut() {
+                    first.op_start = true;
+                }
+            }
         }
         FxOp::LowLight { rx, ry, k, max_gain, show } => {
             if *k > 0.0 || *show {
@@ -274,6 +341,16 @@ fn steps(op: &FxOp) -> Vec<Step> {
     out
 }
 
+/// Workgroups of a pass: one invocation per row / column for a running-sum box, else 16×16 tiles.
+fn groups(s: &Step, w: u32, h: u32) -> (u32, u32) {
+    if s.run {
+        let lines = if s.i1[2] != 0 { w } else { h };
+        (lines.div_ceil(64), 1)
+    } else {
+        (w.div_ceil(16), h.div_ceil(16))
+    }
+}
+
 impl FxStage {
     /// Whether `device` can run the stage: compute shaders with 16×16 workgroups and a storage
     /// texture (WebGL2-class devices can't; they render effects on the CPU).
@@ -320,6 +397,7 @@ impl FxStage {
                     count: None,
                 },
                 tex(3),
+                tex(4),
             ],
         });
         let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("fx"), bind_group_layouts: &[Some(&bgl)], immediate_size: 0 });
@@ -415,14 +493,37 @@ impl FxStage {
             return None;
         }
         let all: Vec<Step> = fx.ops.iter().flat_map(steps).collect();
-        let n = if all.iter().any(|s| s.combine) { 3 } else { 2 };
+        let n = if all.iter().any(|s| s.slots.is_some()) {
+            SLOTS
+        } else if all.iter().any(|s| s.combine) {
+            3
+        } else {
+            2
+        };
         let targets = self.targets(device, (w, h), n);
         let views: Vec<wgpu::TextureView> = targets.iter().map(|t| t.1.clone()).collect();
         let mut dispatches = Vec::with_capacity(all.len());
         let mut cur = 0usize;
         // Unsharp: the image its blur started from (kept while its blur passes run)
         let mut orig: Option<usize> = None;
+        // an explicitly routed op's slots → working textures (slot 0: the image it starts from)
+        let mut map = [0usize; SLOTS];
         for s in &all {
+            if s.op_start {
+                map[0] = cur;
+                for (slot, k) in map.iter_mut().skip(1).zip((0..n).filter(|k| *k != cur)) {
+                    *slot = k;
+                }
+            }
+            if let Some([src, dst, a1, a2]) = s.slots {
+                let at = |slot: usize| map.get(slot).and_then(|k| views.get(*k));
+                let (src_v, dst_v) = (at(src)?, at(dst)?);
+                let (aux, aux2) = (at(a1)?, at(a2)?);
+                let bg = self.bind(device, queue, s, (w, h), src_v, dst_v, aux, aux2);
+                dispatches.push(Dispatch { run: s.run, bg, groups: groups(s, w, h) });
+                cur = *map.get(dst)?;
+                continue;
+            }
             // (an Unsharp without blur passes, radius 0, combines the original with itself)
             if (s.unsharp_blur || s.combine) && orig.is_none() {
                 orig = Some(cur);
@@ -433,37 +534,8 @@ impl FxStage {
                 (true, Some(o)) => views.get(o)?,
                 _ => dummy,
             };
-            let mut bytes = Vec::with_capacity(128);
-            for v in [s.code, w, h, 0].iter().chain(&s.i1) {
-                bytes.extend_from_slice(&v.to_le_bytes());
-            }
-            for v in &s.p {
-                bytes.extend_from_slice(&v.to_le_bytes());
-            }
-            let buf = device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("fx-u"),
-                size: bytes.len() as u64,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            });
-            queue.write_buffer(&buf, 0, &bytes);
-            let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("fx"),
-                layout: &self.bgl,
-                entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: buf.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(views.get(cur)?) },
-                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(views.get(dst)?) },
-                    wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(aux) },
-                ],
-            });
-            let groups = if s.run {
-                let lines = if s.i1[2] != 0 { w } else { h };
-                (lines.div_ceil(64), 1)
-            } else {
-                (w.div_ceil(16), h.div_ceil(16))
-            };
-            dispatches.push(Dispatch { run: s.run, bg, groups });
+            let bg = self.bind(device, queue, s, (w, h), views.get(cur)?, views.get(dst)?, aux, dummy);
+            dispatches.push(Dispatch { run: s.run, bg, groups: groups(s, w, h) });
             cur = dst;
             if s.combine {
                 orig = None;
@@ -475,6 +547,47 @@ impl FxStage {
             dispatches,
             result: views.get(cur)?.clone(),
             result_texture: targets.get(cur)?.0.clone(),
+        })
+    }
+
+    /// The bind group of one pass: its uniforms, the image it reads, the one it writes and the two
+    /// auxiliary inputs (the original for Unsharp / Low Light, planes for Skin Smoothing).
+    #[allow(clippy::too_many_arguments)]
+    fn bind(
+        &self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        s: &Step,
+        (w, h): (u32, u32),
+        src: &wgpu::TextureView,
+        dst: &wgpu::TextureView,
+        aux: &wgpu::TextureView,
+        aux2: &wgpu::TextureView,
+    ) -> wgpu::BindGroup {
+        let mut bytes = Vec::with_capacity(128);
+        for v in [s.code, w, h, 0].iter().chain(&s.i1) {
+            bytes.extend_from_slice(&v.to_le_bytes());
+        }
+        for v in &s.p {
+            bytes.extend_from_slice(&v.to_le_bytes());
+        }
+        let buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("fx-u"),
+            size: bytes.len() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        queue.write_buffer(&buf, 0, &bytes);
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("fx"),
+            layout: &self.bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: buf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(src) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(dst) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(aux) },
+                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(aux2) },
+            ],
         })
     }
 
