@@ -220,11 +220,12 @@ fn ppm(data: &[u8]) -> Vec<Vec<i32>> {
     (0..3).map(|c| (0..n).map(|i| i32::from(px[3 * i + c])).collect()).collect()
 }
 
-/// Every code-block style but the bypass (RESET, TERMALL, VSC, predictable termination,
-/// segmentation symbols, and all of them together), written by OpenJPEG: 5/3 bit-exact to the
-/// input, 9/7 within ±1 of OpenJPEG's own decode. Skipped without `opj_compress`.
+/// What OpenJPEG writes and ffmpeg cannot: every code-block style (selective arithmetic coding
+/// bypass, RESET, TERMALL, VSC, predictable termination, segmentation symbols, and combinations),
+/// progression order changes and regions of interest. 5/3 bit-exact to the input, 9/7 within ±1
+/// of OpenJPEG's own decode. Skipped without `opj_compress`.
 #[test]
-fn openjpeg_code_block_styles() {
+fn openjpeg_codestreams() {
     let ff = cfa4_testkit::require_ffmpeg!();
     let (Some(enc), Some(dec)) = (opj("opj_compress"), opj("opj_decompress")) else {
         eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
@@ -237,29 +238,37 @@ fn openjpeg_code_block_styles() {
         Command::new(&ff).args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=203x117", "-frames:v", "1", "-pix_fmt", "rgb24"]).arg(&input).status();
     assert!(matches!(st, Ok(s) if s.success()));
     let src = ppm(&std::fs::read(&input).unwrap());
-    // RESET 2, TERMALL 4, VSC 8, predictable termination 16, segmentation symbols 32
-    for mode in [2, 4, 8, 16, 32, 62] {
-        for lossy in [false, true] {
-            let name = format!("m{mode}{}", if lossy { "_97" } else { "" });
-            let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
-            let mut c = Command::new(&enc);
-            c.arg("-i").arg(&input).arg("-o").arg(&cs).args(["-M", &mode.to_string(), "-b", "32,32"]);
-            if lossy {
-                c.args(["-I", "-r", "20"]);
-            }
-            assert!(c.stdout(Stdio::null()).status().is_ok_and(|s| s.success()), "{name}: opj_compress");
-            let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
-            let want = if lossy {
-                let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
-                assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
-                ppm(&std::fs::read(&out).unwrap())
-            } else {
-                src.clone()
-            };
-            for (c, p) in img.components.iter().enumerate() {
-                let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
-                assert!(worst <= i32::from(lossy), "{name}: component {c} differs by {worst}");
-            }
+    // bypass 1, RESET 2, TERMALL 4, VSC 8, predictable termination 16, segmentation symbols 32
+    // (name, options, compared with: None the input exactly, Some(tolerance) OpenJPEG's decode)
+    let mut cases: Vec<(String, Vec<String>, Option<i32>)> = Vec::new();
+    for mode in [1, 2, 4, 8, 16, 32, 62, 5, 9, 63] {
+        cases.push((format!("m{mode}"), vec!["-M".into(), mode.to_string(), "-b".into(), "32,32".into()], None));
+        cases.push((format!("m{mode}_97"), vec!["-M".into(), mode.to_string(), "-b".into(), "32,32".into(), "-I".into(), "-r".into(), "20".into()], Some(1)));
+    }
+    let args = |a: &str| a.split(' ').map(String::from).collect::<Vec<_>>();
+    // progression order changes (POC), in the main header and per tile with tile-parts
+    cases.push(("poc".into(), args("-r 20,10,1 -POC T0=0,0,2,3,3,RLCP/T0=0,0,3,6,3,CPRL"), None));
+    // OpenJPEG writes this one with packets missing (its own decode is not lossless either), so
+    // it is compared with OpenJPEG's decode
+    cases.push(("poc_tiles".into(), args("-r 20,10,1 -t 64,64 -POC T0=0,0,1,6,3,LRCP/T1=0,0,2,4,2,PCRL/T1=0,0,3,6,3,RLCP"), Some(0)));
+    // region of interest (RGN Maxshift on one component)
+    cases.push(("roi".into(), args("-ROI c=0,U=4"), None));
+    cases.push(("roi_97".into(), args("-ROI c=1,U=6 -I -r 15"), Some(1)));
+    for (name, opts, against) in cases {
+        let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
+        let st = Command::new(&enc).arg("-i").arg(&input).arg("-o").arg(&cs).args(&opts).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_compress");
+        let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let want = if against.is_some() {
+            let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+            assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+            ppm(&std::fs::read(&out).unwrap())
+        } else {
+            src.clone()
+        };
+        for (c, p) in img.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= against.unwrap_or(0), "{name}: component {c} differs by {worst}");
         }
     }
 }

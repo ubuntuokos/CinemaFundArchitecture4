@@ -6,14 +6,16 @@
 //!   bits (signed or unsigned), image and tile offsets.
 //! - All five progression orders (LRCP, RLCP, RPCL, PCRL, CPRL), quality layers, precincts,
 //!   SOP / EPH markers, tile-specific COD / COC / QCD / QCC.
-//! - EBCOT tier-1 decoding with the MQ arithmetic decoder, every code-block style except the
-//!   selective arithmetic coding bypass (RESET, TERMALL, vertically causal context, predictable
+//! - EBCOT tier-1 decoding with the MQ arithmetic decoder and every code-block style (selective
+//!   arithmetic coding bypass, RESET, TERMALL, vertically causal context, predictable
 //!   termination, segmentation symbols).
+//! - POC progression changes, packed packet headers (PPM / PPT) and Maxshift region of interest
+//!   (RGN).
 //! - Reversible 5/3 (bit-exact, lossless) and irreversible 9/7 wavelets, the reversible and
 //!   irreversible multiple-component transforms, scalar derived and expounded quantization.
 //!
-//! Not supported (an [`Error::Unsupported`]): the bypass code-block style, POC progression
-//! changes, packed packet headers (PPM / PPT), region of interest (RGN) and the Part 2 extensions.
+//! Not supported (an [`Error::Unsupported`]): the Part 2 extensions (other ROI styles, wavelet
+//! kernels) and HTJ2K (Part 15).
 //! See the crate README for the specification and accuracy.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]

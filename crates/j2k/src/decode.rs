@@ -5,7 +5,7 @@
 
 use crate::codestream::{self, CodingStyle, Header, Params, Quant, Tile};
 use crate::dwt::{self, Rect};
-use crate::t1::{self, STYLE_TERMALL};
+use crate::t1;
 use crate::t2::{Bits, TagTree};
 use crate::{Error, Image, Plane, Result};
 
@@ -70,6 +70,8 @@ struct TileComp {
     rect: Rect,
     style: CodingStyle,
     res: Vec<Resolution>,
+    /// Region of interest shift (RGN Maxshift, Annex H): 0 for none.
+    roi: u8,
 }
 
 /// A packet: layer, resolution, component, precinct.
@@ -121,6 +123,7 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
     for (c, info) in header.components.iter().enumerate() {
         let style = params.cod.get(c).ok_or(Error::Invalid("component without coding style"))?.clone();
         let qz = params.quant.get(c).ok_or(Error::Invalid("component without quantization"))?;
+        let roi = params.roi.get(c).copied().unwrap_or(0);
         let (dx, dy) = (u64::from(info.dx), u64::from(info.dy));
         let tc = Rect { u0: ceil_div(tx0, dx) as u32, v0: ceil_div(ty0, dy) as u32, u1: ceil_div(tx1, dx) as u32, v1: ceil_div(ty1, dy) as u32 };
         let levels = u32::from(style.levels);
@@ -146,6 +149,8 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
                 let brect = band_rect(tc, n, o);
                 let index = if r == 0 { 0 } else { 1 + 3 * (r as usize - 1) + (o as usize - 1) };
                 let (mb, step) = quant(qz, index, style.levels, info.precision, o)?;
+                // the region of interest is coded above the background (H.1)
+                let mb = mb + u32::from(roi);
                 bands.push(Band { orient: o, rect: brect, mb, step });
             }
             // code-block size within this resolution (B.7)
@@ -198,7 +203,7 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
             }
             res.push(Resolution { rect, ppx, ppy, pw, ph, bands, precincts });
         }
-        comps.push(TileComp { rect: tc, style, res });
+        comps.push(TileComp { rect: tc, style, res, roi });
     }
     Ok((trect, comps))
 }
@@ -211,7 +216,6 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
     if precincts.saturating_mul(usize::from(layers)) > MAX_PACKETS {
         return Err(Error::TooLarge);
     }
-    let mut out = Vec::new();
     // reference-grid corner of a precinct (where the position loops of B.12.1.3 meet it)
     let corner = |c: usize, r: usize, p: usize| -> (u64, u64) {
         let (Some(tc), Some(info)) = (comps.get(c), header.components.get(c)) else { return (0, 0) };
@@ -225,11 +229,12 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
         (y.max(u64::from(trect.v0)), x.max(u64::from(trect.u0)))
     };
     let np = |c: usize, r: usize| comps.get(c).and_then(|tc| tc.res.get(r)).map_or(0, |res| res.pw * res.ph);
-    match params.global.progression {
+    // the packets of one progression over resolutions rs..re, components cs..ce, layers below le
+    let order = |progression: u8, (rs, re): (usize, usize), (cs, ce): (usize, usize), le: u16, out: &mut Vec<Packet>| match progression {
         0 => {
-            for l in 0..layers {
-                for r in 0..max_r {
-                    for c in 0..comps.len() {
+            for l in 0..le {
+                for r in rs..re {
+                    for c in cs..ce {
                         for p in 0..np(c, r) {
                             out.push((l, r, c, p));
                         }
@@ -238,9 +243,9 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
             }
         }
         1 => {
-            for r in 0..max_r {
-                for l in 0..layers {
-                    for c in 0..comps.len() {
+            for r in rs..re {
+                for l in 0..le {
+                    for c in cs..ce {
                         for p in 0..np(c, r) {
                             out.push((l, r, c, p));
                         }
@@ -251,8 +256,8 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
         order => {
             // (sort key, r, c, p)
             let mut items: Vec<((u64, u64, u64, u64), usize, usize, usize)> = Vec::new();
-            for c in 0..comps.len() {
-                for r in 0..max_r {
+            for c in cs..ce {
+                for r in rs..re {
                     for p in 0..np(c, r) {
                         let (y, x) = corner(c, r, p);
                         let key = match order {
@@ -266,10 +271,38 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
             }
             items.sort_by_key(|i| i.0);
             for (_, r, c, p) in items {
-                for l in 0..layers {
+                for l in 0..le {
                     out.push((l, r, c, p));
                 }
             }
+        }
+    };
+    let all = ((0, max_r), (0, comps.len()));
+    let mut out = Vec::new();
+    if params.poc.is_empty() {
+        order(params.global.progression, all.0, all.1, layers, &mut out);
+        return Ok(out);
+    }
+    // progression changes (B.12.2): each packet once, the layers of a precinct in order; what
+    // they leave out follows in the COD progression
+    let mut candidates = Vec::new();
+    for poc in &params.poc {
+        let r = (usize::from(poc.rs), usize::from(poc.re).min(max_r));
+        let c = (usize::from(poc.cs), usize::from(poc.ce).min(comps.len()));
+        order(poc.progression, r, c, poc.layer_end.min(layers), &mut candidates);
+        if candidates.len() > MAX_PACKETS {
+            return Err(Error::TooLarge);
+        }
+    }
+    order(params.global.progression, all.0, all.1, layers, &mut candidates);
+    // next layer per (component, resolution, precinct)
+    let mut next: Vec<Vec<Vec<u16>>> = comps.iter().map(|tc| tc.res.iter().map(|res| vec![0; res.pw * res.ph]).collect()).collect();
+    for (l, r, c, p) in candidates {
+        if let Some(n) = next.get_mut(c).and_then(|v| v.get_mut(r)).and_then(|v| v.get_mut(p))
+            && *n == l
+        {
+            *n += 1;
+            out.push((l, r, c, p));
         }
     }
     Ok(out)
@@ -279,18 +312,35 @@ fn floor_log2(n: u32) -> u32 {
     31 - n.max(1).leading_zeros()
 }
 
-/// Reads one packet at `pos`; returns the position after it.
-fn read_packet(data: &[u8], mut pos: usize, comps: &mut [TileComp], (layer, r, c, p): Packet, params: &Params) -> Result<usize> {
+/// Reads one packet at `pos`, its header there too or at `packed` (the header stream of PPM /
+/// PPT, which this moves past it); returns the position after the packet body.
+fn read_packet(data: &[u8], pos: usize, packed: Option<(&[u8], &mut usize)>, comps: &mut [TileComp], packet: Packet, params: &Params) -> Result<usize> {
+    read_packet_spans(data, pos, packed, comps, packet, params).map(|s| s.1)
+}
+
+/// [`read_packet`], also giving where the header ends: (header end, body end).
+fn read_packet_spans(
+    data: &[u8],
+    mut pos: usize,
+    packed: Option<(&[u8], &mut usize)>,
+    comps: &mut [TileComp],
+    (layer, r, c, p): Packet,
+    params: &Params,
+) -> Result<(usize, usize)> {
     if params.global.sop && data.get(pos..pos + 2) == Some(&[0xFF, 0x91]) {
         pos += 6;
     }
     let tc = comps.get_mut(c).ok_or(Error::Invalid("packet component"))?;
-    let termall = tc.style.cblk_style & STYLE_TERMALL != 0;
+    let style = tc.style.cblk_style;
     let res = tc.res.get_mut(r).ok_or(Error::Invalid("packet resolution"))?;
     let prec = res.precincts.get_mut(p).ok_or(Error::Invalid("packet precinct"))?;
-    let mut bits = Bits::new(data, pos);
-    // (band, block, passes, lengths)
-    let mut included: Vec<(usize, usize, u32, Vec<u32>)> = Vec::new();
+    let (hdr, hpos) = match &packed {
+        Some((h, at)) => (*h, **at),
+        None => (data, pos),
+    };
+    let mut bits = Bits::new(hdr, hpos);
+    // (band, block, passes before this packet, (length, passes) per segment piece)
+    let mut included: Vec<(usize, usize, u32, Vec<(u32, u32)>)> = Vec::new();
     if bits.bit()? == 1 {
         for (bi, pb) in prec.iter_mut().enumerate() {
             for k in 0..pb.blocks.len() {
@@ -320,34 +370,72 @@ fn read_packet(data: &[u8], mut pos: usize, comps: &mut [TileComp], (layer, r, c
                         return Err(Error::Invalid("Lblock"));
                     }
                 }
-                let lens = if termall { (0..n).map(|_| bits.bits(b.lblock)).collect::<Result<Vec<_>>>()? } else { vec![bits.bits(b.lblock + floor_log2(n))?] };
-                included.push((bi, k, n, lens));
+                // the new passes, split where codeword segments end (B.10.7.2): a length per piece
+                let prior: u32 = b.segments.iter().map(|s| s.1).sum();
+                let mut lens = Vec::new();
+                let mut start = 0;
+                for i in 0..n {
+                    if i + 1 == n || t1::ends_segment(prior + i, style) {
+                        let passes = i + 1 - start;
+                        lens.push((bits.bits(b.lblock + floor_log2(passes))?, passes));
+                        start = i + 1;
+                    }
+                }
+                included.push((bi, k, prior, lens));
             }
         }
     }
     bits.align();
-    pos = bits.pos;
-    if params.global.eph && data.get(pos..pos + 2) == Some(&[0xFF, 0x92]) {
-        pos += 2;
+    let mut end = bits.pos;
+    if params.global.eph && hdr.get(end..end + 2) == Some(&[0xFF, 0x92]) {
+        end += 2;
     }
-    for (bi, k, n, lens) in included {
+    let header_end = end;
+    match packed {
+        Some((_, at)) => *at = end,
+        None => pos = end,
+    }
+    for (bi, k, prior, lens) in included {
         let Some(b) = prec.get_mut(bi).and_then(|pb| pb.blocks.get_mut(k)) else { continue };
-        for (i, &len) in lens.iter().enumerate() {
+        for (i, &(len, passes)) in lens.iter().enumerate() {
             let end = pos.saturating_add(len as usize).min(data.len());
             let bytes = data.get(pos..end).unwrap_or_default();
             pos = end;
-            let passes = if termall { 1 } else { n };
+            // the first piece continues the last segment unless that one was terminated
+            let open = i == 0 && prior > 0 && !t1::ends_segment(prior - 1, style);
             match b.segments.last_mut() {
-                Some(last) if !termall => {
+                Some(last) if open => {
                     last.0.extend_from_slice(bytes);
                     last.1 += passes;
                 }
                 _ => b.segments.push((bytes.to_vec(), passes)),
             }
-            let _ = i;
         }
     }
-    Ok(pos)
+    Ok((header_end, pos))
+}
+
+/// For tests: the packets of each tile of a codestream (no SOP / EPH markers, headers in the tile
+/// data) as (tile index, tile data, (header start, header end, body end) per packet).
+#[cfg(test)]
+pub(crate) fn packet_spans(data: &[u8]) -> Result<Vec<(u32, Vec<u8>, Vec<(usize, usize, usize)>)>> {
+    let cs = codestream::parse(data, true)?;
+    let mut out = Vec::new();
+    for tile in &cs.tiles {
+        let (trect, mut comps) = build(&cs.header, &tile.params, tile.index)?;
+        let mut spans = Vec::new();
+        let mut pos = 0;
+        for p in packets(&cs.header, trect, &comps, &tile.params)? {
+            if pos >= tile.data.len() {
+                break;
+            }
+            let (he, be) = read_packet_spans(&tile.data, pos, None, &mut comps, p, &tile.params)?;
+            spans.push((pos, he, be));
+            pos = be;
+        }
+        out.push((tile.index, tile.data.clone(), spans));
+    }
+    Ok(out)
 }
 
 /// Nearest integer, halves away from zero (as `f32::round`, without the library call).
@@ -387,7 +475,19 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
     let decoded = map(&jobs, |&(r, bi, cb)| {
         let band = tc.res.get(r).and_then(|res| res.bands.get(bi)).ok_or(Error::Invalid("subband"))?;
         let (w, h) = ((cb.x1 - cb.x0) as usize, (cb.y1 - cb.y0) as usize);
-        t1::decode(&t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments })
+        let mut coeffs = t1::decode(&t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments })?;
+        if tc.roi > 0 {
+            // Maxshift (H.1): coefficients at or above 2^s are the region, scaled back down
+            // (the values carry one fractional bit)
+            let s = u32::from(tc.roi);
+            let threshold = 1i64 << (s + 1);
+            for v in &mut coeffs {
+                if i64::from(*v).abs() >= threshold {
+                    *v = v.signum() * (v.unsigned_abs() >> s.min(31)) as i32;
+                }
+            }
+        }
+        Ok(coeffs)
     })?;
     // into their subbands
     let mut bands: Vec<Vec<Vec<i32>>> = tc.res.iter().map(|res| res.bands.iter().map(|b| vec![0; b.rect.w() * b.rect.h()]).collect()).collect();
@@ -449,12 +549,17 @@ pub fn decode(data: &[u8]) -> Result<Image> {
 fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
     let (trect, mut comps) = build(h, &tile.params, tile.index)?;
     let order = packets(h, trect, &comps, &tile.params)?;
-    let mut pos = 0;
+    let (mut pos, mut hpos) = (0, 0);
     for p in order {
-        if pos >= tile.data.len() {
+        let packed = tile.headers.as_deref().map(|h| (h, &mut hpos));
+        let more = match &packed {
+            Some((h, at)) => **at < h.len(),
+            None => pos < tile.data.len(),
+        };
+        if !more {
             break;
         }
-        match read_packet(&tile.data, pos, &mut comps, p, &tile.params) {
+        match read_packet(&tile.data, pos, packed, &mut comps, p, &tile.params) {
             Ok(next) => pos = next,
             // a damaged or truncated packet ends the tile; what arrived still decodes
             Err(_) => break,

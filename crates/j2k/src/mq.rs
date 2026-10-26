@@ -191,3 +191,41 @@ impl<'a> Mq<'a> {
         }
     }
 }
+
+/// The raw (bypass) decoder of the selective arithmetic coding bypass (D.6): bits straight from
+/// the bytes, most significant first; after a 0xFF byte the next byte's top bit is a stuffed 0.
+/// Past the end of `data` it reads 1 bits, as from a terminating 0xFF.
+pub(crate) struct Raw<'a> {
+    data: &'a [u8],
+    pos: usize,
+    c: u32,
+    ct: u32,
+}
+
+impl<'a> Raw<'a> {
+    pub fn new(data: &'a [u8]) -> Self {
+        Raw { data, pos: 0, c: 0, ct: 0 }
+    }
+
+    #[inline]
+    pub fn bit(&mut self) -> u8 {
+        if self.ct == 0 {
+            let stuffed = self.c == 0xFF;
+            let next = self.data.get(self.pos).copied();
+            match next {
+                // a marker (0xFF followed by more than 0x8F) ends the segment
+                Some(b) if !(stuffed && b > 0x8F) => {
+                    self.c = u32::from(b);
+                    self.pos += 1;
+                    self.ct = if stuffed { 7 } else { 8 };
+                }
+                _ => {
+                    self.c = 0xFF;
+                    self.ct = 8;
+                }
+            }
+        }
+        self.ct -= 1;
+        ((self.c >> self.ct) & 1) as u8
+    }
+}

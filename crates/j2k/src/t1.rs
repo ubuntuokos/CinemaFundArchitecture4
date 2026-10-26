@@ -5,7 +5,7 @@
 //! moves it by ±2^q. Fully decoded, `mag >> 1` is the exact magnitude; truncated, `mag / 2` is
 //! the midpoint reconstruction (r = 1/2, E.1.1.2).
 
-use crate::mq::{CONTEXTS, CTX_RL, CTX_UNIFORM, Ctx, Mq, initial_contexts};
+use crate::mq::{CONTEXTS, CTX_RL, CTX_UNIFORM, Ctx, Mq, Raw, initial_contexts};
 use crate::{Error, Result};
 
 /// Code-block style bits (A.6.1, Table A.19).
@@ -58,6 +58,50 @@ pub(crate) struct Block<'a> {
     pub zero: u32,
     /// Codeword segments: their bytes and how many coding passes each holds.
     pub segments: &'a [(Vec<u8>, u32)],
+}
+
+/// Where the decisions of a coding pass come from: the MQ decoder, or raw bits in the bypassed
+/// passes (D.6), where neither contexts nor the sign prediction are used.
+trait Coder {
+    fn decide(&mut self, cx: &mut [Ctx; CONTEXTS], c: usize) -> u8;
+    fn sign(&mut self, cx: &mut [Ctx; CONTEXTS], c: usize, xor: u8) -> u8;
+}
+
+impl Coder for Mq<'_> {
+    #[inline]
+    fn decide(&mut self, cx: &mut [Ctx; CONTEXTS], c: usize) -> u8 {
+        self.decode(&mut cx[c])
+    }
+    #[inline]
+    fn sign(&mut self, cx: &mut [Ctx; CONTEXTS], c: usize, xor: u8) -> u8 {
+        self.decode(&mut cx[c]) ^ xor
+    }
+}
+
+impl Coder for Raw<'_> {
+    #[inline]
+    fn decide(&mut self, _: &mut [Ctx; CONTEXTS], _: usize) -> u8 {
+        self.bit()
+    }
+    #[inline]
+    fn sign(&mut self, _: &mut [Ctx; CONTEXTS], _: usize, _: u8) -> u8 {
+        self.bit()
+    }
+}
+
+/// Whether coding pass `pass` (0 the first cleanup, then SPP, MRP, cleanup per bit-plane) is raw
+/// coded: the significance and refinement passes after the first ten in bypass mode (D.6).
+pub(crate) fn raw_pass(pass: u32, style: u8) -> bool {
+    style & STYLE_BYPASS != 0 && pass >= 10 && (pass + 2) % 3 != 2
+}
+
+/// Whether a codeword segment ends with coding pass `pass` (Table D.9): every pass with
+/// TERMALL; in bypass mode the tenth pass, each raw SPP + MRP pair and each cleanup after it.
+pub(crate) fn ends_segment(pass: u32, style: u8) -> bool {
+    if style & STYLE_TERMALL != 0 {
+        return true;
+    }
+    style & STYLE_BYPASS != 0 && (pass == 9 || (pass > 9 && pass % 3 != 1))
 }
 
 /// Zero coding context (Table D.1) from the significant neighbours: horizontal, vertical and
@@ -222,10 +266,10 @@ impl State {
     /// Decodes the sign of the sample at `i` (column `x`, row `k` of stripe `stripe`), which has
     /// become significant in bit-plane `plane`, and tells its neighbours.
     #[inline]
-    fn become_significant(&mut self, mq: &mut Mq, cx: &mut [Ctx; CONTEXTS], i: usize, x: usize, stripe: usize, k: usize, plane: u32) {
+    fn become_significant(&mut self, mq: &mut impl Coder, cx: &mut [Ctx; CONTEXTS], i: usize, x: usize, stripe: usize, k: usize, plane: u32) {
         let f = self.flags(i, k);
         let (c, xor) = SC_LUT[usize::from((f >> 4) & 0xF) | usize::from((f >> 12) << 4)];
-        let neg = mq.decode(&mut cx[usize::from(c)]) ^ xor == 1;
+        let neg = mq.sign(cx, usize::from(c), xor) == 1;
         let s = self.stride;
         self.or(i, SIG | if neg { NEG } else { 0 });
         self.or(i - s, SIG_S | if neg { NEG_S } else { 0 });
@@ -253,7 +297,7 @@ impl State {
     }
 
     /// Significance propagation pass (D.3.1).
-    fn spp(&mut self, mq: &mut Mq, cx: &mut [Ctx; CONTEXTS], plane: u32) {
+    fn spp(&mut self, mq: &mut impl Coder, cx: &mut [Ctx; CONTEXTS], plane: u32) {
         let s = self.stride;
         for (stripe, y0) in (0..self.h).step_by(4).enumerate() {
             let rows = (self.h - y0).min(4);
@@ -268,7 +312,7 @@ impl State {
                     if f & SIG != 0 || f & NEIGHBOURS == 0 {
                         continue;
                     }
-                    if mq.decode(&mut cx[self.zc(f)]) == 1 {
+                    if mq.decide(cx, self.zc(f)) == 1 {
                         self.become_significant(mq, cx, i, x, stripe, k, plane);
                     }
                     self.or(i, VISIT);
@@ -278,7 +322,7 @@ impl State {
     }
 
     /// Magnitude refinement pass (D.3.3).
-    fn mrp(&mut self, mq: &mut Mq, cx: &mut [Ctx; CONTEXTS], plane: u32) {
+    fn mrp(&mut self, mq: &mut impl Coder, cx: &mut [Ctx; CONTEXTS], plane: u32) {
         let s = self.stride;
         for (stripe, y0) in (0..self.h).step_by(4).enumerate() {
             let rows = (self.h - y0).min(4);
@@ -300,7 +344,7 @@ impl State {
                     } else {
                         14
                     };
-                    let bit = mq.decode(&mut cx[c]);
+                    let bit = mq.decide(cx, c);
                     if let Some(m) = self.mag.get_mut(i) {
                         *m = if bit == 1 { m.wrapping_add(1 << plane) } else { m.wrapping_sub(1 << plane) };
                     }
@@ -351,9 +395,6 @@ impl State {
 /// documentation), `w · h` of them in raster order.
 pub(crate) fn decode(b: &Block) -> Result<Vec<i32>> {
     let n = b.w.checked_mul(b.h).ok_or(Error::TooLarge)?;
-    if b.style & STYLE_BYPASS != 0 {
-        return Err(Error::Unsupported("selective arithmetic coding bypass"));
-    }
     if b.mb <= b.zero || b.segments.is_empty() || n == 0 {
         return Ok(vec![0; n]);
     }
@@ -372,7 +413,10 @@ pub(crate) fn decode(b: &Block) -> Result<Vec<i32>> {
     let total: u32 = b.segments.iter().map(|s| s.1).sum();
     let total = total.min(3 * planes - 2);
     'segments: for (data, count) in b.segments {
+        // a segment is raw or MQ coded throughout (Table D.9)
+        let raw = raw_pass(pass, b.style);
         let mut mq = Mq::new(data);
+        let mut bits = Raw::new(data);
         for _ in 0..*count {
             if pass >= total {
                 break 'segments;
@@ -381,6 +425,8 @@ pub(crate) fn decode(b: &Block) -> Result<Vec<i32>> {
             let kind = (pass + 2) % 3;
             let Some(plane) = (planes - 1).checked_sub(pass.div_ceil(3)) else { break 'segments };
             match kind {
+                0 if raw => st.spp(&mut bits, &mut cx, plane),
+                1 if raw => st.mrp(&mut bits, &mut cx, plane),
                 0 => st.spp(&mut mq, &mut cx, plane),
                 1 => st.mrp(&mut mq, &mut cx, plane),
                 _ => {

@@ -30,18 +30,20 @@ let h = cfa4_j2k::parse_header(cfa4_j2k::codestream(&bytes)?)?; // size, compone
 
 - Any number of tiles and tile-parts, components, sub-sampling, precisions 1-16 bits signed or
   unsigned, image and tile offsets.
-- LRCP, RLCP, RPCL, PCRL and CPRL progressions, quality layers, user precincts, SOP / EPH markers,
-  tile-specific COD / COC / QCD / QCC.
-- MQ decoder and the three coding passes with run-length mode; code-block styles RESET, TERMALL,
-  VSC, predictable termination and segmentation symbols.
+- LRCP, RLCP, RPCL, PCRL and CPRL progressions and POC progression changes (main and tile
+  headers), quality layers, user precincts, SOP / EPH markers, tile-specific COD / COC / QCD / QCC,
+  packed packet headers in PPM (main header) and PPT (tile-part headers) markers.
+- MQ decoder and the three coding passes with run-length mode; every code-block style: selective
+  arithmetic coding bypass (raw segments), RESET, TERMALL, VSC, predictable termination and
+  segmentation symbols.
+- Region of interest by the Maxshift method (RGN, main and tile headers).
 - Reversible 5/3 in integers (lossless) and irreversible 9/7 in `f32`; RCT and ICT; scalar
   derived and expounded quantization; truncated streams reconstruct at the midpoint.
 - Hostile input: every size and count is checked, allocations are capped (`MAX_SAMPLES`,
   code-block count), and errors are returned, never a panic.
 
-Not supported yet (`Error::Unsupported`): the selective arithmetic coding bypass code-block
-style, POC progression changes, packed packet headers (PPM / PPT), region of interest (RGN),
-Part 2 extensions and HTJ2K (Part 15).
+Not supported yet (`Error::Unsupported`): Part 2 extensions (other ROI styles, arbitrary wavelet
+kernels) and HTJ2K (Part 15, #80).
 
 ## Accuracy and tests
 
@@ -55,9 +57,12 @@ Part 2 extensions and HTJ2K (Part 15).
 - **Damaged streams:** bit flips, truncation and scrambled bytes of every fixture decode to an
   error or a picture, never a panic.
 
-- **Code-block styles (OpenJPEG, when `opj_compress` is installed):** RESET, TERMALL, VSC,
-  predictable termination, segmentation symbols and all of them together, 5/3 bit-exact to the
-  input and 9/7 within ±1 of `opj_decompress`. Skipped where the tools are missing.
+- **Code-block styles, POC and ROI (OpenJPEG, when `opj_compress` is installed):** bypass, RESET,
+  TERMALL, VSC, predictable termination, segmentation symbols and combinations of them, POC
+  progression changes (also per tile) and Maxshift ROI, 5/3 bit-exact to the input and 9/7 within
+  ±1 of `opj_decompress`. Skipped where the tools are missing.
+- **Packed headers:** an ffmpeg tiled, layered stream rewritten with its packet headers in PPM and
+  in PPT markers decodes to the same picture; truncated and damaged copies never panic.
 
 ## Speed
 

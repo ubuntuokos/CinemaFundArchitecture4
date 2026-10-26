@@ -117,19 +117,36 @@ impl Quant {
     }
 }
 
-/// Coding parameters of a tile: COD, COC, QCD and QCC after the precedence rules (A.6).
+/// One progression of a POC marker (A.6.6): resolutions [rs, re), components [cs, ce) and layers
+/// below `layer_end`, in progression order `progression`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Poc {
+    pub rs: u8,
+    pub cs: u16,
+    pub layer_end: u16,
+    pub re: u8,
+    pub ce: u16,
+    pub progression: u8,
+}
+
+/// Coding parameters of a tile: COD, COC, QCD and QCC after the precedence rules (A.6), the
+/// progression changes (POC, main then tile) and the region of interest shift per component (RGN).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Params {
     pub global: Global,
     pub cod: Vec<CodingStyle>,
     pub quant: Vec<Quant>,
+    pub poc: Vec<Poc>,
+    pub roi: Vec<u8>,
 }
 
-/// One tile's coding parameters and data (its tile-parts' SOD..end bodies, concatenated).
+/// One tile's coding parameters and data (its tile-parts' SOD..end bodies, concatenated), and
+/// its packet headers when they are packed into PPM or PPT markers (A.7.4, A.7.5).
 pub(crate) struct Tile {
     pub index: u32,
     pub params: Params,
     pub data: Vec<u8>,
+    pub headers: Option<Vec<u8>>,
 }
 
 pub(crate) struct Codestream {
@@ -301,11 +318,26 @@ struct Defaults {
     coc: Vec<Option<CodingStyle>>,
     qcd: Option<Quant>,
     qcc: Vec<Option<Quant>>,
+    poc: Vec<Poc>,
+    rgn: Vec<Option<u8>>,
+    /// PPM (main header) or PPT (tile-part header) segments: (Zppm / Zppt, data).
+    packed: Vec<(u8, Vec<u8>)>,
 }
+
+/// Most bytes of packed packet headers a codestream may carry (bounds what hostile PPM / PPT
+/// segments can make the decoder hold).
+const MAX_PACKED: usize = 1 << 28;
 
 impl Defaults {
     fn new(n: usize) -> Defaults {
-        Defaults { global: None, cod: None, coc: vec![None; n], qcd: None, qcc: vec![None; n] }
+        Defaults { global: None, cod: None, coc: vec![None; n], qcd: None, qcc: vec![None; n], poc: Vec::new(), rgn: vec![None; n], packed: Vec::new() }
+    }
+
+    /// The packed segments in index order, concatenated.
+    fn packed(&self) -> Vec<u8> {
+        let mut segs: Vec<&(u8, Vec<u8>)> = self.packed.iter().collect();
+        segs.sort_by_key(|s| s.0);
+        segs.into_iter().flat_map(|s| s.1.iter().copied()).collect()
     }
 
     fn marker(&mut self, marker: u16, seg: &[u8], ncomp: usize) -> Result<()> {
@@ -330,9 +362,46 @@ impl Defaults {
                     *slot = Some(q);
                 }
             }
-            RGN => return Err(Error::Unsupported("region of interest (RGN)")),
-            POC => return Err(Error::Unsupported("progression order change (POC)")),
-            PPM | PPT => return Err(Error::Unsupported("packed packet headers (PPM / PPT)")),
+            RGN => {
+                let mut r = Reader { d: seg, at: 0 };
+                let c = component_index(&mut r, ncomp)?;
+                if r.u8()? != 0 {
+                    return Err(Error::Unsupported("region of interest style other than Maxshift"));
+                }
+                let shift = r.u8()?;
+                if shift > 37 {
+                    return Err(Error::Invalid("region of interest shift"));
+                }
+                if let Some(slot) = self.rgn.get_mut(c) {
+                    *slot = Some(shift);
+                }
+            }
+            POC => {
+                let mut r = Reader { d: seg, at: 0 };
+                while r.at < seg.len() {
+                    let comp = |r: &mut Reader| if ncomp < 257 { r.u8().map(u16::from) } else { r.u16() };
+                    let (rs, cs, layer_end, re) = (r.u8()?, comp(&mut r)?, r.u16()?, r.u8()?);
+                    let ce = comp(&mut r)?;
+                    let progression = r.u8()?;
+                    if progression > 4 {
+                        return Err(Error::Invalid("POC progression order"));
+                    }
+                    // CEpoc 0 means 256 (A.6.6)
+                    let ce = if ce == 0 && ncomp < 257 { 256 } else { ce };
+                    if self.poc.len() >= 1024 {
+                        return Err(Error::Invalid("too many progression changes"));
+                    }
+                    self.poc.push(Poc { rs, cs, layer_end, re, ce, progression });
+                }
+            }
+            PPM | PPT => {
+                let (&z, data) = seg.split_first().ok_or(Error::Truncated)?;
+                let held: usize = self.packed.iter().map(|p| p.1.len()).sum();
+                if held.saturating_add(data.len()) > MAX_PACKED {
+                    return Err(Error::TooLarge);
+                }
+                self.packed.push((z, data.to_vec()));
+            }
             _ => {}
         }
         Ok(())
@@ -361,7 +430,9 @@ impl Defaults {
             cod.push(style);
             quant.push(q);
         }
-        Ok(Params { global, cod, quant })
+        let roi = (0..n).map(|c| tile.rgn[c].or(main.rgn[c]).unwrap_or(0)).collect();
+        let poc = if tile.poc.is_empty() { main.poc.clone() } else { tile.poc.clone() };
+        Ok(Params { global, cod, quant, poc, roi })
     }
 }
 
@@ -414,8 +485,11 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
     if ntiles > 65_535 {
         return Err(Error::Invalid("more than 65535 tiles"));
     }
-    let mut out: Vec<Tile> = Vec::new();
-    let mut tile_defaults: Vec<(u32, Defaults)> = Vec::new();
+    // tiles in order of their first tile-part: index, data, header defaults, PPM headers
+    let mut parts: Vec<(u32, Vec<u8>, Defaults, Vec<u8>)> = Vec::new();
+    // PPM: Nppm and the packed headers of each tile-part in turn (A.7.4)
+    let ppm = main.packed();
+    let mut ppm_at = 0usize;
     // tile-parts
     while r.at + 2 <= cs.len() {
         let start = r.at;
@@ -436,10 +510,14 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
         }
         let end = if psot == 0 { cs.len() } else { start.checked_add(psot).ok_or(Error::Truncated)?.min(cs.len()) };
         // tile-part header
-        let mut td = match tile_defaults.iter().position(|(i, _)| *i == isot) {
-            Some(i) => tile_defaults.swap_remove(i).1,
-            None => Defaults::new(n),
+        let slot = match parts.iter().position(|p| p.0 == isot) {
+            Some(i) => i,
+            None => {
+                parts.push((isot, Vec::new(), Defaults::new(n), Vec::new()));
+                parts.len() - 1
+            }
         };
+        let Some((_, data, td, headers)) = parts.get_mut(slot) else { return Err(Error::Invalid("tile")) };
         loop {
             let m = r.u16()?;
             if m == SOD {
@@ -457,12 +535,26 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
         let body = cs.get(r.at..end.max(r.at)).unwrap_or_default();
         // with Psot 0 the tile-part runs to EOC
         let body = if psot == 0 { body.strip_suffix(&[0xFF, 0xD9]).unwrap_or(body) } else { body };
-        match out.iter_mut().find(|t| t.index == isot) {
-            Some(t) => t.data.extend_from_slice(body),
-            None => out.push(Tile { index: isot, params: Defaults::resolve(&main, &td)?, data: body.to_vec() }),
+        data.extend_from_slice(body);
+        if !ppm.is_empty() {
+            let mut pr = Reader { d: &ppm, at: ppm_at };
+            let len = pr.u32()? as usize;
+            headers.extend_from_slice(pr.bytes(len)?);
+            ppm_at = pr.at;
         }
-        tile_defaults.push((isot, td));
         r.at = end.max(r.at);
+    }
+    let mut out = Vec::with_capacity(parts.len());
+    for (index, data, td, ppm_headers) in parts {
+        let params = Defaults::resolve(&main, &td)?;
+        let headers = if !ppm.is_empty() {
+            Some(ppm_headers)
+        } else if td.packed.is_empty() {
+            None
+        } else {
+            Some(td.packed())
+        };
+        out.push(Tile { index, params, data, headers });
     }
     Ok(Codestream { header, tiles: out })
 }
