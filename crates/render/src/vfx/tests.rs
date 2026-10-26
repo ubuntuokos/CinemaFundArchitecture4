@@ -68,6 +68,7 @@ const NEW_IDS: &[&str] = &[
     "focus_blur",
     "reduce_interlace_flicker",
     "skin_smoothing",
+    "low_light",
     "asc_cdl",
     "video_limiter",
     "vignette",
@@ -235,6 +236,7 @@ fn neutral_parameters_are_identity() {
         ("skin_smoothing", vec![("amount", ParamValue::Float(0.0))]),
         ("skin_smoothing", vec![("texture", ParamValue::Float(100.0))]),
         ("skin_smoothing", vec![("radius", ParamValue::Float(0.0))]),
+        ("low_light", vec![("amount", ParamValue::Float(0.0))]),
         ("vr_blur", vec![]),
         ("vr_sharpen", vec![]),
         ("vr_denoise", vec![]),
@@ -1281,4 +1283,48 @@ fn skin_smoothing_show_mask_marks_the_skin_only() {
     set(&mut e, "whole_image", ParamValue::Bool(true));
     let o = run("skin_smoothing", &e, &img, &cx());
     assert!(enc_px(&o, 20, 4)[0] > 0.8, "the mask is not everywhere: {:?}", enc_px(&o, 20, 4));
+}
+
+#[test]
+fn low_light_lifts_the_dark_side_and_keeps_the_lit_one() {
+    // left half in deep shadow, right half lit; both the same orange hue
+    let (w, h) = (48, 16);
+    let mut img = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let c = if x < w / 2 { [0.16, 0.08, 0.04] } else { [0.96, 0.48, 0.24] };
+            let l = dec(c);
+            img.px[(y * w + x) * 4..(y * w + x) * 4 + 4].copy_from_slice(&[l[0], l[1], l[2], 1.0]);
+        }
+    }
+    let mut e = inst("low_light");
+    setf(&mut e, "amount", 100.0);
+    let o = run("low_light", &e, &img, &cx());
+    let (dark_in, dark_out) = (enc_px(&img, 4, 8), enc_px(&o, 4, 8));
+    let (lit_in, lit_out) = (enc_px(&img, w - 4, 8), enc_px(&o, w - 4, 8));
+    assert!(dark_out[0] > dark_in[0] * 2.0, "shadow not lifted: {dark_in:?} → {dark_out:?}");
+    // 0.96 gets a gain of 0.96^-0.85 ≈ 1.035: a lit pixel moves by a few percent at most
+    assert!((lit_out[0] - lit_in[0]).abs() < 0.05, "lit side changed: {lit_in:?} → {lit_out:?}");
+    // one gain for all channels: the hue (channel ratios) stays
+    assert!(close(dark_out[1] / dark_out[0], 0.5, 0.02) && close(dark_out[2] / dark_out[0], 0.25, 0.02), "hue shifted: {dark_out:?}");
+    // the lamp edge between the halves survives the smoothing of the illumination
+    let step = enc_px(&o, w / 2, 8)[0] - enc_px(&o, w / 2 - 1, 8)[0];
+    assert!(step > 0.1, "edge lost: {step}");
+}
+
+#[test]
+fn low_light_caps_the_gain_in_near_black() {
+    let img = solid(8, 8, [0.01, 0.01, 0.01]);
+    let mut e = inst("low_light");
+    setf(&mut e, "amount", 100.0);
+    setf(&mut e, "max_gain", 200.0);
+    let o = run("low_light", &e, &img, &cx());
+    let v = enc_px(&o, 4, 4)[0];
+    assert!(v <= 0.02 + 1e-3 && v > 0.015, "gain not capped at 2×: {v}");
+    // Show Illumination draws the estimate, even with Amount at 0
+    let mut e = inst("low_light");
+    setf(&mut e, "amount", 0.0);
+    set(&mut e, "show_illumination", ParamValue::Bool(true));
+    let o = run("low_light", &e, &solid(8, 8, [0.5, 0.2, 0.1]), &cx());
+    assert!(close(enc_px(&o, 4, 4)[1], 0.5, 0.01), "{:?}", enc_px(&o, 4, 4));
 }

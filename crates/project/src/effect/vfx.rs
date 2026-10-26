@@ -277,6 +277,17 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 b("show_mask", "Show Mask", false),
             ],
         ),
+        video(
+            "low_light",
+            "Low Light",
+            ENHANCE,
+            vec![
+                pct("amount", "Amount", 50.0),
+                px("radius", "Radius", 15.0, 500.0, 60.0),
+                fs("max_gain", "Max Brightening", 400.0, (100.0, 2000.0), (100.0, 1000.0), "%", 0),
+                b("show_illumination", "Show Illumination", false),
+            ],
+        ),
         // ---- Color Correction ----
         video(
             "asc_cdl",
@@ -1169,7 +1180,7 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
         let accel = match e.category.first().copied() {
             Some("Legacy") => !matches!(id, "camera_blur"),
             _ if folder == "Obsolete" => false,
-            _ => !matches!(id, "clone" | "stroke" | "skin_smoothing"),
+            _ => !matches!(id, "clone" | "stroke" | "skin_smoothing" | "low_light"),
         };
         e.accelerated = accel;
         e.float32 = a32;
