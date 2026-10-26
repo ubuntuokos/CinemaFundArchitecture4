@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QColorDialog,
     QComboBox,
-    QDoubleSpinBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -35,6 +34,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..hot_number import HotSpin
 from ..i18n import N_, tr
 
 # a pause longer than this starts a new undo step for the next change of the same value
@@ -184,16 +184,17 @@ class ParamRow:
         label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         unit = str(info.get("unit") or "")
         self.editor: QWidget
-        self.spins: list[QDoubleSpinBox] = []
+        self.spins: list[HotSpin] = []
         if self.kind in ("float", "angle"):
-            spin = self._spin(parent, info, unit if self.kind == "float" else "°")
+            spin = self._spin(parent, info, unit) if self.kind == "float" else self._spin(parent, {"speed": 0.5, "decimals": 1, "min": -36000, "max": 36000}, "°")
             self.spins = [spin]
             self.editor = spin
         elif self.kind == "point":
             box = QWidget(parent)
             h = QHBoxLayout(box)
             h.setContentsMargins(0, 0, 0, 0)
-            self.spins = [self._spin(box, {}, ""), self._spin(box, {}, "")]
+            point = {"speed": 1.0, "decimals": 1, "min": -100_000, "max": 100_000}
+            self.spins = [self._spin(box, point, ""), self._spin(box, point, "")]
             for s in self.spins:
                 h.addWidget(s)
             self.editor = box
@@ -260,21 +261,23 @@ class ParamRow:
         self.animated = False
         self.keyframes: list[dict[str, Any]] = []
 
-    def _spin(self, parent: QWidget, info: dict[str, Any], suffix: str) -> QDoubleSpinBox:
-        spin = QDoubleSpinBox(parent)
+    def _spin(self, parent: QWidget, info: dict[str, Any], suffix: str) -> HotSpin:
+        """egui's hot number: drag to scrub (one undo step), click to type a value or a calculation."""
         lo = finite(info.get("min"), -1_000_000.0)
         hi = finite(info.get("max"), 1_000_000.0)
-        spin.setRange(lo, hi)
-        spin.setDecimals(2 if hi - lo > 10 else 3)
-        spin.setKeyboardTracking(False)
+        soft_lo, soft_hi = finite(info.get("softMin"), lo), finite(info.get("softMax"), hi)
+        speed = finite(info.get("speed"), max(0.01, (soft_hi - soft_lo) / 400.0))  # egui's
+        decimals = int(finite(info.get("decimals"), 2 if hi - lo > 10 else 3))
+        spin = HotSpin(parent, lo, hi, max(0, min(6, decimals)), speed, f" {suffix}" if suffix else "")
         # narrow docks: let the value fields shrink instead of pushing the buttons out of view
-        spin.setMinimumWidth(56)
         spin.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-        spin.setAccelerated(True)
-        if suffix:
-            spin.setSuffix(f" {suffix}")
-        spin.valueChanged.connect(lambda _v: self.panel.set_param(self, self._spin_value()))
+        spin.edited.connect(lambda _v, begin, s=spin: self._edited(begin, s))
         return spin
+
+    def _edited(self, begin: bool, spin: HotSpin) -> None:
+        if begin:  # a typed value or a new scrub: its own undo step
+            self.panel.new_gesture()
+        self.panel.set_param(self, self._spin_value(), immediate=begin and not spin._scrubbing)
 
     def _spin_value(self) -> Any:
         if self.kind == "point":
@@ -316,11 +319,11 @@ class ParamRow:
             s.blockSignals(True)
         try:
             if self.kind in ("float", "angle"):
-                self.spins[0].setValue(finite(value))
+                self.spins[0].set_value(finite(value))
             elif self.kind == "point":
                 xy = value if isinstance(value, list) and len(value) == 2 else [0.0, 0.0]
                 for s, v in zip(self.spins, xy, strict=True):
-                    s.setValue(finite(v))
+                    s.set_value(finite(v))
                     s.setToolTip(tr("automatic") if v is None else "")
             elif isinstance(w, QCheckBox):
                 w.setChecked(bool(value))
@@ -561,6 +564,11 @@ class EffectControlsPanel(QWidget):
             return None
         return max(start, min(ph, max(start, end - 1)))
 
+    def new_gesture(self) -> None:
+        """The next value starts its own undo step, however soon it follows the last one."""
+        self.flush()
+        self._new_gesture = True
+
     def send(self, command: str, params: dict[str, Any]) -> None:
         """Any other edit from the panel: the coalesced values go first, so they don't land on a
         reset, removed or reordered effect."""
@@ -578,7 +586,8 @@ class EffectControlsPanel(QWidget):
         self._send_timer.stop()
         if not self._pending:
             return
-        begin = not self._last_send.isValid() or self._last_send.elapsed() > GESTURE_GAP_MS
+        begin = getattr(self, "_new_gesture", False) or not self._last_send.isValid() or self._last_send.elapsed() > GESTURE_GAP_MS
+        self._new_gesture = False
         for (clip, effect, param, at), value in self._pending.items():
             params = {"clip": clip, "effect": effect, "param": param, "value": value, "merge": True, "begin": begin}
             if at is not None:

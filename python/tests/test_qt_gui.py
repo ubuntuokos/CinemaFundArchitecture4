@@ -1138,13 +1138,24 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         scale = ec.rows[(motion, "scale")]
         assert scale.kind == "float" and not scale.animated
 
-        # a drag of one value (several changes in a row) is one undo step
+        # egui's hot number: a scrub of one value is one undo step; a typed value (a calculation
+        # too) is its own
         steps = len(history())
-        for v in (110.0, 120.0, 135.0):
-            scale.spins[0].setValue(v)
-            app.processEvents()
-        assert wait_until(app, lambda: param("motion", "scale")["value"] == 135.0, 10_000), param("motion", "scale")
+        line = scale.spins[0].lineEdit()
+        y = line.height() // 2
+        QtTest.QTest.mousePress(line, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(10, y))
+        for x in (20, 40, 60):
+            QtTest.QTest.mouseMove(line, QtCore.QPoint(x, y))
+            wait_until(app, lambda: False, 30)
+        QtTest.QTest.mouseRelease(line, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(60, y))
+        assert wait_until(app, lambda: param("motion", "scale")["value"] > 100.0, 10_000), param("motion", "scale")
         assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()
+        QtTest.QTest.mouseClick(line, QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(10, y))
+        line.selectAll()
+        QtTest.QTest.keyClicks(line, "270/2")
+        QtTest.QTest.keyClick(line, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: param("motion", "scale")["value"] == 135.0, 10_000), param("motion", "scale")
+        assert wait_until(app, lambda: len(history()) == steps + 2, 10_000), history()
 
         # animate: the stopwatch puts a keyframe at the playhead; a change elsewhere adds another
         win._seek_program(clip["start"])

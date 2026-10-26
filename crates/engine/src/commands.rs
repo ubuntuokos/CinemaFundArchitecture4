@@ -4028,9 +4028,12 @@ fn param_info(p: &cfa4_project::ParamDef) -> Value {
             j["options"] = json!(opts);
             "choice"
         }
-        K::Float { min, max, unit, .. } => {
+        K::Float { min, max, soft_min, soft_max, unit, decimals } => {
             j["min"] = json!(min);
             j["max"] = json!(max);
+            j["softMin"] = json!(soft_min);
+            j["softMax"] = json!(soft_max);
+            j["decimals"] = json!(decimals);
             j["unit"] = json!(unit);
             "float"
         }
