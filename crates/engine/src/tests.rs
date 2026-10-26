@@ -531,7 +531,8 @@ fn every_video_transition_applies_via_command() {
     s.execute("playhead.set", json!({"time": cut.0})).unwrap();
     let defs: Vec<_> =
         cfa4_project::effect_defs().iter().filter(|d| d.kind == cfa4_project::EffectKind::VideoTransition && d.category[0] != "Obsolete").collect();
-    assert_eq!(defs.len(), 84 + 21);
+    // + Keyhole and Burn Away (CFA4-own)
+    assert_eq!(defs.len(), 84 + 21 + cfa4_project::vtransition::CFA4_OWN_TRANSITIONS.len());
     for (i, d) in defs.iter().enumerate() {
         // alternate id and display-name lookups
         let name = if i % 2 == 0 { d.id } else { d.name };
@@ -595,7 +596,7 @@ fn effects_list_reports_transition_folders() {
     assert!(all.iter().all(|e| e["kind"] == "VideoTransition" && e["folder"].is_string()));
     let wipes = s.execute("effects.list", json!({"folder": "Video Transitions/Wipe", "detail": true})).unwrap();
     let wipes = wipes.as_array().unwrap();
-    assert_eq!(wipes.len(), 9);
+    assert_eq!(wipes.len(), 10, "Premiere's 9 wipes + CFA4's Keyhole");
     let lw = wipes.iter().find(|e| e["id"] == "linear_wipe").unwrap();
     assert_eq!(lw["folder"], "Wipe");
     assert_eq!(lw["path"], "Video Transitions/Wipe");

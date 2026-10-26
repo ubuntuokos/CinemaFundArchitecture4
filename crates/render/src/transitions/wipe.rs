@@ -100,6 +100,36 @@ pub(crate) fn shape_dist(shape: u32, x: f32, y: f32) -> f32 {
     }
 }
 
+/// Keyhole metric (value < R ⇔ inside a keyhole of size R, y up): a round head above a tapering
+/// slot. The shape is star-shaped about the origin, so the metric is |p| over the distance to the
+/// outline along p's direction.
+pub(crate) fn keyhole_dist(x: f32, y: f32) -> f32 {
+    let r = (x * x + y * y).sqrt();
+    if !r.is_finite() || r < 1e-6 {
+        return 0.0;
+    }
+    let (ux, uy) = (x / r, y / r);
+    // head: circle at (0, 0.3), radius 0.45 (contains the origin); far intersection of the ray
+    let (ccy, cr) = (0.3f32, 0.45f32);
+    let b = uy * ccy;
+    let head = b + (b * b - ccy * ccy + cr * cr).max(0.0).sqrt();
+    // slot: trapezoid from y = 0.3 (half-width 0.18) down to y = −0.75 (half-width 0.4)
+    let poly = [(-0.18f32, 0.3f32), (0.18, 0.3), (0.4, -0.75), (-0.4, -0.75)];
+    let mut slot = f32::INFINITY;
+    for i in 0..4 {
+        let (ax, ay) = poly[i];
+        let (bx, by) = poly[(i + 1) % 4];
+        // outward normal of edge a→b (the polygon runs clockwise, y up)
+        let (nx, ny) = (ay - by, bx - ax);
+        let along = ux * nx + uy * ny;
+        if along > 1e-6 {
+            slot = slot.min((ax * nx + ay * ny) / along);
+        }
+    }
+    let reach = head.max(if slot.is_finite() { slot } else { 0.0 }).max(1e-3);
+    r / reach
+}
+
 /// Star metric with `n` points and inner radius `inner` (fraction of outer): straight edges
 /// between each point and the neighbouring inner vertex.
 pub(crate) fn star_dist(x: f32, y: f32, n: u32, inner: f32) -> f32 {
@@ -234,6 +264,7 @@ pub(super) fn apply(id: &str, t: &Tx) -> Option<Image> {
         }
         // Legacy wipes rebuilt on the field engine (border / anti-aliasing / centre).
         "iris_round" => field_wipe(t, st, move |x, y| ((x - cx).powi(2) + (y - cy).powi(2)).sqrt()),
+        "keyhole" => field_wipe(t, st, move |x, y| keyhole_dist(x - cx, -(y - cy))),
         "iris_box" => field_wipe(t, st, move |x, y| (x - cx).abs().max((y - cy).abs() * asp)),
         "iris_diamond" => field_wipe(t, st, move |x, y| (x - cx).abs() + (y - cy).abs() * asp),
         "iris_cross" => field_wipe(t, st, move |x, y| {
