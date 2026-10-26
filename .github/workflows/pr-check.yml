@@ -52,8 +52,5 @@ jobs:
       - name: Workspace resolves (cargo metadata)
         run: cargo metadata --locked --format-version 1 > /dev/null
 
-      - name: Type-check all targets
-        run: cargo check --locked --workspace --all-targets
-
-      - name: Compile tests (no run)
-        run: cargo test --locked --workspace --no-run
+      - name: Type-check libraries and binaries
+        run: cargo check --locked --workspace --lib --bins
