@@ -186,6 +186,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
+  Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling and the extra channels of 7.1 dependent substreams (played as the
   5.1 core), AVI (#598; listed as an extension but no
