@@ -2894,6 +2894,7 @@ def test_text_to_speech(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_properties_panel(app, tmp_path: Path):
     """egui's Properties panel: the selected clip's Transform, Crop and Audio values as hot numbers
     (a scrub is one undo step, a typed value its own), the keyframe navigator, a section's reset,
@@ -3015,6 +3016,7 @@ def test_properties_panel(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_effects_panel(app, tmp_path: Path):
     """egui's Effects panel: Premiere's top folders, sub-folders, badges, Presets and Lumetri
     Presets with engine-rendered thumbnails (and the wide panel's grid), search, double-click
