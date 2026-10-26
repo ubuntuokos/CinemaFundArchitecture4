@@ -1,0 +1,22 @@
+# CFA4 default routing table (docs/adr/ADR-0004-compute-routing.md).
+#
+# Installed as /usr/share/cfa4/routing.toml; a user file at ~/.config/cfa4/routing.toml overrides
+# it family by family and task by task. Each list is tried in order. Vendor accelerators come
+# first, then the vendor-neutral GPU path, and the CPU path is always last.
+#
+# CFA4's own Rust engine stays primary: in the codec families our own NVDEC / VA-API / NVENC paths
+# and our software codecs come before and after the supplementary paths, FFmpeg 9 first, then
+# GStreamer (docs/adr/ADR-0002-gstreamer-backend.md, docs/adr/ADR-0004-compute-routing.md).
+
+[compute.default]
+display = ["wgpu", "cpu-compositor"]
+codec_decode = ["nvdec", "vaapi", "ffmpeg", "gstreamer-vulkan-video", "software"]
+codec_encode = ["nvenc", "vaapi", "ffmpeg", "gstreamer-va", "software"]
+ai = ["openvino-npu", "burn-cuda", "burn-vulkan", "candle-cpu"]
+compute = ["wgpu-compute", "cpu"]
+
+# Whisper shares video memory with the compositor and the decoder on an 8 GB card: it goes to the
+# GPU only when this much is free, otherwise to the next route.
+[compute.task."ai.speech.whisper"]
+order = ["burn-cuda", "burn-vulkan", "candle-cpu"]
+min_free_vram_mb = 2048

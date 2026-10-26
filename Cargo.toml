@@ -8,12 +8,13 @@ exclude = ["vendor/cfa4-libs/*"]
 version = "0.10.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
-rust-version = "1.95"
+rust-version = "1.97"
 repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 
 [workspace.dependencies]
 # internal
 cfa4-time = { path = "crates/time" }
+cfa4-route = { path = "crates/route" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -33,6 +34,7 @@ cfa4-vp8 = { path = "crates/vp8" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
+cfa4-j2k = { path = "crates/j2k" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-av1 = { path = "crates/av1" }
@@ -62,7 +64,6 @@ cfa4-engine = { path = "crates/engine" }
 cfa4-ui-egui = { path = "crates/ui-egui" }
 cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
-cfa4-accel = { path = "crates/accel" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
 
@@ -114,6 +115,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-dnx]
+opt-level = 3
+
+[profile.dev.package.cfa4-j2k]
 opt-level = 3
 
 [profile.dev.package.cfa4-apv]

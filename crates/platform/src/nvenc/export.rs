@@ -214,6 +214,18 @@ pub fn factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
         // encode HEVC is decided by the registered hardware format probe.
         return hevc_factory(w, h, rate, s);
     }
+    // the compute router decides whether NVENC is the H.264 route on this machine (ADR 0004); an
+    // export that asked for hardware encoding and is routed to the software encoder counts as
+    // declined, as when the driver is missing
+    #[cfg(target_os = "linux")]
+    if s.hardware_encoding == HardwareEncoding::Auto
+        && format == Format::H264
+        && let Err(why) = crate::routes::nvenc_allowed()
+    {
+        log::info!("hardware encoding declined: {why}");
+        cfa4_export::note_hw_encode_declined();
+        return None;
+    }
     factory_with(format, w, h, rate, s, |cfg| open(cfg, &Signal::default()))
 }
 
