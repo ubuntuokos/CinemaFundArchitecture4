@@ -93,3 +93,38 @@ fn colour_follows_colr_then_the_vui_then_libheif_defaults() {
     let c = colour(None, &pic(2, 2, true));
     assert_eq!((c.matrix, c.transfer, c.range), (Matrix::Bt601, Transfer::Srgb, Range::Limited));
 }
+
+/// Nested grids keep each parent canvas alive while their tiles decode: eight nested 1×1 grids
+/// of 8192×16384 (512 MiB each) must stop at the live limit, not allocate 4 GiB.
+#[test]
+fn nested_grid_canvases_are_charged_together() {
+    let leaf = Image { item: 9, coding: Coding::Other(*b"jpeg"), size: None, colour: vec![], transforms: vec![], alpha: None };
+    let image = (0..8).fold(leaf, |tile, i| Image {
+        item: i,
+        coding: Coding::Grid { rows: 1, columns: 1, width: 8192, height: 16384, tiles: vec![tile] },
+        size: Some((8192, 16384)),
+        colour: vec![],
+        transforms: vec![],
+        alpha: None,
+    });
+    let mut live = Live::default();
+    let Err(e) = decode_image("nested.heic", &image, None, Samples::Colour, &mut live) else { panic!("decoded") };
+    assert!(e.to_string().contains("decoding limit"), "{e}");
+    // a single grid of that size still gets as far as its tile
+    let one = Image {
+        item: 1,
+        coding: Coding::Grid {
+            rows: 1,
+            columns: 1,
+            width: 8192,
+            height: 16384,
+            tiles: vec![Image { item: 2, coding: Coding::Other(*b"jpeg"), size: None, colour: vec![], transforms: vec![], alpha: None }],
+        },
+        size: None,
+        colour: vec![],
+        transforms: vec![],
+        alpha: None,
+    };
+    let Err(e) = decode_image("one.heic", &one, None, Samples::Colour, &mut Live::default()) else { panic!("decoded") };
+    assert!(e.to_string().contains("'jpeg'"), "{e}");
+}

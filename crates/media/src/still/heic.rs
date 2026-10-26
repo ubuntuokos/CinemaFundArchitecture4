@@ -22,6 +22,34 @@ use crate::{MediaError, Result};
 /// Largest decoded picture (RGBA bytes), like the libheif bridge.
 const MAX_RGBA_BYTES: u64 = 512 * 1024 * 1024;
 
+/// Most RGBA bytes held at once while decoding one file: the colour picture, an alpha canvas
+/// and the tile being pasted. Nested grids keep every parent canvas alive while their tiles
+/// decode, so they are charged here too.
+const MAX_LIVE_BYTES: u64 = 3 * MAX_RGBA_BYTES;
+
+/// The RGBA bytes alive during one decode.
+#[derive(Default)]
+struct Live {
+    bytes: u64,
+}
+
+impl Live {
+    /// Charge `len` bytes before allocating them.
+    fn take(&mut self, len: usize) -> Result<()> {
+        let total = self.bytes.saturating_add(len as u64);
+        if total > MAX_LIVE_BYTES {
+            return Err(MediaError::Unsupported("HEIF pictures exceed the 1.5 GiB decoding limit".into()));
+        }
+        self.bytes = total;
+        Ok(())
+    }
+
+    /// Return `len` bytes once their picture is dropped.
+    fn give(&mut self, len: usize) {
+        self.bytes = self.bytes.saturating_sub(len as u64);
+    }
+}
+
 /// Whether `bytes` is a HEIF image file.
 pub fn sniff(bytes: &[u8]) -> bool {
     cfa4_heif::sniff(bytes)
@@ -49,13 +77,14 @@ pub fn decode(name: &str, bytes: &[u8]) -> Result<Raster> {
         e => MediaError::Decode(format!("{name}: {e}")),
     })?;
     let image = heif.primary;
-    let mut pic = decode_image(name, &image, image.nclx(), Samples::Colour)?;
+    let mut live = Live::default();
+    let mut pic = decode_image(name, &image, image.nclx(), Samples::Colour, &mut live)?;
     for t in &image.transforms {
         pic = transform(pic, *t)?;
     }
     let has_alpha = match &image.alpha {
         Some(a) => {
-            let mut alpha = decode_image(name, a, None, Samples::Alpha)?;
+            let mut alpha = decode_image(name, a, None, Samples::Alpha, &mut live)?;
             for t in &a.transforms {
                 alpha = transform(alpha, *t)?;
             }
@@ -92,22 +121,25 @@ fn merge_alpha(pic: &mut Rgba, alpha: &Rgba) {
     }
 }
 
-fn decode_image(name: &str, image: &Image, nclx: Option<&Colour>, samples: Samples) -> Result<Rgba> {
+/// Decode `image`; its RGBA bytes stay charged to `live`.
+fn decode_image(name: &str, image: &Image, nclx: Option<&Colour>, samples: Samples, live: &mut Live) -> Result<Rgba> {
     match &image.coding {
-        Coding::Hevc { hvcc, data } => decode_hevc(name, hvcc, data, image.nclx().or(nclx), samples),
+        Coding::Hevc { hvcc, data } => decode_hevc(name, hvcc, data, image.nclx().or(nclx), samples, live),
         Coding::Grid { columns, width, height, tiles, .. } => {
             let len = check_size(*width, *height)?;
+            live.take(len)?;
             let mut out = Rgba { width: *width, height: *height, px: vec![0; len] };
             let (mut x, mut y, mut row_height) = (0u32, 0u32, 0u32);
             for (i, tile) in tiles.iter().enumerate() {
                 // tiles take the grid's colour description when they have none of their own
-                let t = decode_image(name, tile, image.nclx().or(nclx), samples)?;
+                let t = decode_image(name, tile, image.nclx().or(nclx), samples, live)?;
                 if i > 0 && (i as u32).is_multiple_of(*columns) {
                     (x, y) = (0, y.saturating_add(row_height));
                 }
                 // tiles are placed by their declared size (`ispe`), as libheif does
                 let (tw, th) = tile.size.unwrap_or((t.width, t.height));
                 paste(&mut out, &t, x, y, tw, th);
+                live.give(t.px.len());
                 x = x.saturating_add(tw);
                 row_height = th;
             }
@@ -129,7 +161,7 @@ fn paste(canvas: &mut Rgba, tile: &Rgba, x: u32, y: u32, w: u32, h: u32) {
     }
 }
 
-fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samples: Samples) -> Result<Rgba> {
+fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samples: Samples, live: &mut Live) -> Result<Rgba> {
     let hevc_error = |e: cfa4_hevc::Error| match e {
         cfa4_hevc::Error::Unsupported(what) => MediaError::Unsupported(format!("{name}: HEVC {what}")),
         e => MediaError::Decode(format!("{name}: HEVC: {e}")),
@@ -142,6 +174,7 @@ fn decode_hevc(name: &str, hvcc: &[u8], data: &[u8], nclx: Option<&Colour>, samp
     }
     let p = pictures.into_iter().next().ok_or_else(|| MediaError::Decode(format!("{name}: HEVC image item has no picture")))?;
     let len = check_size(p.width, p.height)?;
+    live.take(len)?;
     if samples == Samples::Alpha {
         return Ok(Rgba { width: p.width, height: p.height, px: alpha_rgba(&p, len) });
     }
