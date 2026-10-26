@@ -15,12 +15,12 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 1. Read [the Ubuntu 26.04 developer guide](docs/development/linux.md).
 2. Run `bash scripts/dev/bootstrap-ubuntu.sh --check` (non-modifying checks).
 3. Explicitly install prerequisites with `bash scripts/dev/bootstrap-ubuntu.sh --install` on Ubuntu/Debian.
-4. Install Rust with rustup (1.95.0 is selected by `rust-toolchain.toml`).
+4. Install Rust with rustup (1.97.1 is selected by `rust-toolchain.toml`).
 5. Create Python virtualenv: `python3 -m venv .venv`.
 6. Install developer tools: `.venv/bin/python -m pip install -e '.[dev,qt]'`.
 7. Check environment: `.venv/bin/cfa4-doctor --strict`.
-8. Run the Qt shell: `.venv/bin/cfa4-qt`.
-9. Build Rust CLI: `cargo build --release --locked -p cfa4-cli`.
+8. Build the Rust engine: `cargo build --release --locked -p cfa4-cli`.
+9. Run the Qt 6 GUI: `.venv/bin/cfa4-qt` (demo: `.venv/bin/cfa4-qt --demo --lang hu`; see [docs/qt-gui.md](docs/qt-gui.md)).
 10. Verify checks: `bash scripts/dev/verify-linux.sh`.
 
 ## Architecture and transition
@@ -28,7 +28,7 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 | Component | Current status |
 | --- | --- |
 | Existing media engine and CLI | Inherited Rust crates (renamed `cfa4-*`), retained without a rewrite |
-| Rust tooling | Pinned 1.95.0, Cargo workspace, existing xtask gates |
+| Rust tooling | Pinned 1.97.1, Cargo workspace, existing xtask gates |
 | Python tooling | Isolated venv, lint/tests, environment diagnostics |
 | Qt 6 | Experimental PySide6 Widgets shell and offscreen CI smoke |
 | Desktop editing GUI | Inherited egui implementation still in source; Qt port not complete |
@@ -55,6 +55,11 @@ not made, sponsored or endorsed by the upstream authors.
 
 All upstream names, logos, icons and screenshots have been removed from the product, its
 crates, packaging and documentation; `python/tests/test_independence.py` keeps them out.
+
+The **CFA4 logo and icons are the owner's own design and are not open source**: they are not
+covered by the GPL and may only be used unmodified to identify CFA4
+([assets/cfa4/LICENSE-logo.txt](assets/cfa4/LICENSE-logo.txt)); modified versions must use
+their own logo. The code is GPL-3.0-or-later.
 
 GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
 and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).

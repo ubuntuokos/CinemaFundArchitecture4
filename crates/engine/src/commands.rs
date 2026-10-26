@@ -1575,7 +1575,9 @@ fn build() -> Vec<CommandSpec> {
                 next.set(k, p.get("value").cloned().ok_or_else(|| bad("prefs.set", "need `value`"))?).map_err(|e| bad("prefs.set", e))?;
             }
             if let Some(m) = p.get("values").and_then(Value::as_object) {
-                for (k, v) in m {
+                // Units first: each `set` sanitizes, so a duration is clamped against its new unit.
+                let (units, rest): (Vec<_>, Vec<_>) = m.iter().partition(|(k, _)| crate::settings::is_unit_key(k));
+                for (k, v) in units.into_iter().chain(rest) {
                     next.set(k, v.clone()).map_err(|e| bad("prefs.set", e))?;
                 }
             }
@@ -3393,8 +3395,12 @@ fn build() -> Vec<CommandSpec> {
                 command_specs()
                     .iter()
                     .map(|c| {
-                        let all: Vec<&str> = s.shortcuts.for_command(c.id).iter().map(|b| b.keys.as_str()).collect();
-                        json!({"id": c.id, "label": c.label, "menu": c.menu, "shortcut": s.shortcuts.primary(c.id), "shortcuts": all, "defaultShortcut": c.shortcut, "params": c.params, "enabled": (c.enabled)(s).is_ok()})
+                        let bindings = s.shortcuts.for_command(c.id);
+                        let all: Vec<&str> = bindings.iter().map(|b| b.keys.as_str()).collect();
+                        // bindings that only apply with one panel focused (History ▸ Left = Undo):
+                        // a frontend without panel-scoped dispatch must not bind them window-wide
+                        let panel: Vec<Value> = bindings.iter().filter_map(|b| b.panel.as_ref().map(|p| json!({"keys": b.keys, "panel": p}))).collect();
+                        json!({"id": c.id, "label": c.label, "menu": c.menu, "shortcut": s.shortcuts.primary(c.id), "shortcuts": all, "panelShortcuts": panel, "defaultShortcut": c.shortcut, "params": c.params, "enabled": (c.enabled)(s).is_ok()})
                     })
                     .collect(),
             ))

@@ -7,10 +7,10 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 
 ## Responsibility boundaries
 
-- **Rust 1.95 / Cargo:** existing inherited media engine, codec implementations, project model, rendering, export and `cfa4-cli`.
+- **Rust 1.97 / Cargo:** existing inherited media engine, codec implementations, project model, rendering, export and `cfa4-cli`.
 - **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13; newer Linux distributions can use a supported version.
-- **Qt 6 / PySide6:** new Linux-native GUI development path. The initial `cfa4-qt` application is a deliberately minimal **development shell**, not a port of the full video editor.
-- **Existing egui desktop app:** retained during migration to avoid breaking the Rust media engine. Do not mistake it for the finished Qt interface.
+- **Qt 6 / PySide6:** the CFA4 editor GUI (`cfa4-qt`, `python/cfa4_qt/`), driving the Rust engine through `cfa4-cli serve` ([docs/qt-gui.md](../qt-gui.md)). All new UI work goes here. What it already does compared with egui: [docs/qt-parity.md](../qt-parity.md).
+- **Existing egui desktop app:** still the complete editor, **frozen** (bug and security fixes only). It is deleted only when the Qt 6 GUI does point by point everything it does and the owner approves.
 - **FFmpeg / ffprobe:** test oracle tools, not linked runtime dependencies of the existing Rust codec implementation.
 - **Python-to-Rust integration:** `cfa4-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
 
@@ -29,7 +29,7 @@ bash scripts/dev/bootstrap-ubuntu.sh --install
 ~~~
 
 Then install the official Rust toolchain via https://rustup.rs/ if it is not installed.
-The repository's `rust-toolchain.toml` selects Rust 1.95.0 with rustfmt/clippy.
+The repository's `rust-toolchain.toml` selects Rust 1.97.1 with rustfmt/clippy.
 No command in this repository silently installs Rust.
 
 Create the Python environment in the repository root (do not install into the system Python):
@@ -54,7 +54,7 @@ cargo metadata --format-version 1 --no-deps
 cargo build --locked -p cfa4-cli
 cargo build --locked -p cfa4
 cargo xtask ci
-QT_QPA_PLATFORM=offscreen .venv/bin/cfa4-qt --smoke
+QT_QPA_PLATFORM=offscreen .venv/bin/cfa4-qt --demo --smoke --screenshot qt.png
 .venv/bin/cfa4-qt
 bash scripts/ci/check-linux-amd64.sh  # fast, no Rust compilation
 bash scripts/dev/verify-linux.sh    # full local checks, explicit opt-in

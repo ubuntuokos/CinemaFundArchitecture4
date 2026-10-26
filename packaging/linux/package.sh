@@ -113,8 +113,9 @@ if has appimage; then
   mv "$APPDIR/usr/share/doc" "$WORK/doc-unused"
   ln -s usr/bin/cfa4 "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
-  cp "$ROOT/assets/cfa4/hicolor/scalable/apps/$APP_ID.svg" "$APPDIR/$APP_ID.svg"
-  ln -s "$APP_ID.svg" "$APPDIR/.DirIcon"
+  # the CFA4 logo is raster artwork: the 256 px PNG is the AppImage icon
+  cp "$ROOT/assets/cfa4/hicolor/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
+  ln -s "$APP_ID.png" "$APPDIR/.DirIcon"
 
   # Never download or execute a moving upstream binary automatically.
   # Install a reviewed, version-pinned appimagetool beforehand and supply its
