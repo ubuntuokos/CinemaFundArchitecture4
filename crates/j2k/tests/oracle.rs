@@ -273,6 +273,117 @@ fn openjpeg_codestreams() {
     }
 }
 
+/// HTJ2K (T.814) codestreams written by Grok (`grokj2k-tools`, HT code-block style `-M 64`):
+/// 5/3 bit-exact to the input, 9/7 within ±1 of OpenJPEG's decode (OpenJPEG 2.5 decodes HT).
+/// Skipped without `grk_compress` / `opj_decompress`.
+#[test]
+fn htj2k_codestreams() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let (Some(enc), Some(dec)) = (opj("grk_compress"), opj("opj_decompress")) else {
+        eprintln!("skipped: Grok (grokj2k-tools) or OpenJPEG (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("ht");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.ppm");
+    let st =
+        Command::new(&ff).args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=203x117", "-frames:v", "1", "-pix_fmt", "rgb24"]).arg(&input).status();
+    assert!(matches!(st, Ok(s) if s.success()));
+    let src = ppm(&std::fs::read(&input).unwrap());
+    let args = |a: &str| a.split(' ').map(String::from).collect::<Vec<_>>();
+    // (name, options, compared with: None the input exactly, Some(tolerance) OpenJPEG's decode)
+    let cases: Vec<(&str, Vec<String>, Option<i32>)> = vec![
+        ("ht", args("-M 64"), None),
+        ("ht_cb32x16", args("-M 64 -b 32,16"), None),
+        ("ht_cb4x4", args("-M 64 -b 4,4 -n 3"), None),
+        ("ht_tiles_rpcl", args("-M 64 -t 64,48 -p RPCL"), None),
+        ("ht_precincts", args("-M 64 -c [64,64],[32,32] -b 16,16"), None),
+        ("ht_vsc", args("-M 72"), None),
+        ("ht_97", args("-M 64 -I"), Some(1)),
+        ("ht_97_r20", args("-M 64 -I -r 20"), Some(1)),
+        ("ht_97_r60", args("-M 64 -I -r 60 -b 32,32"), Some(1)),
+        ("ht_53_r10", args("-M 64 -r 10"), Some(0)),
+    ];
+    for (name, opts, against) in cases {
+        let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
+        let st = Command::new(&enc).arg("-i").arg(&input).arg("-o").arg(&cs).args(&opts).stdout(Stdio::null()).stderr(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: grk_compress");
+        let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let want = if against.is_some() {
+            let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+            assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+            ppm(&std::fs::read(&out).unwrap())
+        } else {
+            src.clone()
+        };
+        for (c, p) in img.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= against.unwrap_or(0), "{name}: component {c} differs by {worst}");
+        }
+        // damaged HT code-blocks give errors or a picture, never a panic
+        let data = std::fs::read(&cs).unwrap();
+        let mut x = 0x5EED_0042u32 ^ data.len() as u32;
+        for k in 0..FUZZ {
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            let mut m = data.clone();
+            if k % 2 == 0 {
+                let bit = x as usize % (m.len() * 8);
+                m[bit / 8] ^= 0x80 >> (bit % 8);
+            } else {
+                let at = x as usize % m.len();
+                for (i, b) in m.iter_mut().skip(at).take(1 + (x >> 24) as usize % 32).enumerate() {
+                    *b = (x >> (i % 24)) as u8;
+                }
+            }
+            let _ = cfa4_j2k::decode(&m);
+        }
+        println!("{name}: ok");
+    }
+}
+
+/// HTJ2K codestreams from other encoders, dropped into `target/fixtures/j2k/ht-samples/` (never
+/// committed): Grok writes cleanup passes only, so the significance propagation and magnitude
+/// refinement passes and placeholder passes are checked here, against OpenJPEG's decode (±1).
+/// OpenJPH's `subprojects/js/html/test.j2c` (Kakadu-style, with refinement passes) is one such
+/// stream. 8-bit RGB streams only; skipped without samples or `opj_decompress`.
+#[test]
+fn htj2k_sample_codestreams() {
+    let Some(dec) = opj("opj_decompress") else {
+        eprintln!("skipped: OpenJPEG (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("ht-samples");
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        eprintln!("skipped: no HTJ2K samples in {}", dir.display());
+        return;
+    };
+    let out_dir = cfa4_testkit::fixtures_dir("j2k").join("ht-samples-out");
+    std::fs::create_dir_all(&out_dir).unwrap();
+    for e in entries.flatten() {
+        let cs = e.path();
+        if !matches!(cs.extension().and_then(|x| x.to_str()), Some("j2c" | "j2k" | "jph" | "jhc")) {
+            continue;
+        }
+        let name = cs.file_name().unwrap().to_string_lossy().to_string();
+        let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        if img.components.len() != 3 || img.components.iter().any(|p| p.precision != 8) {
+            eprintln!("{name}: skipped (not 8-bit RGB)");
+            continue;
+        }
+        let out = out_dir.join(format!("{name}.ppm"));
+        let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+        let want = ppm(&std::fs::read(&out).unwrap());
+        for (c, p) in img.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= 1, "{name}: component {c} differs by {worst}");
+        }
+        println!("{name}: ok");
+    }
+}
+
 /// Damaged variants per stream.
 const FUZZ: u32 = 60;
 

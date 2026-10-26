@@ -242,6 +242,9 @@ fn parse_sp(r: &mut Reader, precincts_defined: bool) -> Result<CodingStyle> {
     if transform > 1 {
         return Err(Error::Unsupported("Part 2 wavelet transform"));
     }
+    if cblk_style & crate::ht::STYLE_HT_MIXED != 0 {
+        return Err(Error::Unsupported("mixed HT and Part 1 code-blocks"));
+    }
     let mut precincts = Vec::with_capacity(usize::from(levels) + 1);
     for _ in 0..=levels {
         if precincts_defined {

@@ -116,7 +116,7 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/j2k/src/ht.rs`, `crates/j2k/src/ht_tables.rs` (HTJ2K block decoder, ported) | OpenJPH, https://github.com/aous72/OpenJPH, 0.28.1 (Ubuntu `openjph_0.28.1.orig.tar.gz`), `src/core/coding/ojph_block_decoder32.cpp`, `ojph_block_common.cpp`, `table0.h`, `table1.h` | Aous Naman; Kakadu Software Pty Ltd; The University of New South Wales | BSD-2-Clause (`crates/j2k/src/LICENSE-OpenJPH`) |
 
 ## 6. Dependency checks
 

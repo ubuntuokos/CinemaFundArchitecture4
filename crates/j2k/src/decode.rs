@@ -5,9 +5,9 @@
 
 use crate::codestream::{self, CodingStyle, Header, Params, Quant, Tile};
 use crate::dwt::{self, Rect};
-use crate::t1;
 use crate::t2::{Bits, TagTree};
 use crate::{Error, Image, Plane, Result};
+use crate::{ht, t1};
 
 /// Most code-blocks a tile may have (bounds the bookkeeping a hostile header can ask for).
 const MAX_CODEBLOCKS: usize = 1 << 22;
@@ -373,6 +373,20 @@ fn read_packet_spans(
                 // the new passes, split where codeword segments end (B.10.7.2): a length per piece
                 let prior: u32 = b.segments.iter().map(|s| s.1).sum();
                 let mut lens = Vec::new();
+                if style & ht::STYLE_HT != 0 {
+                    // HT (T.814 B.3): placeholder passes, the cleanup pass, then at most two
+                    // refinement passes in a second segment; one HT set per code-block
+                    if prior > 0 {
+                        return Err(Error::Unsupported("HT code-block contributions in more than one layer"));
+                    }
+                    let cup = 3 * ((n - 1) / 3) + 1;
+                    lens.push((bits.bits(b.lblock + floor_log2(cup))?, cup));
+                    if n > cup {
+                        lens.push((bits.bits(b.lblock + floor_log2(n - cup))?, n - cup));
+                    }
+                    included.push((bi, k, prior, lens));
+                    continue;
+                }
                 let mut start = 0;
                 for i in 0..n {
                     if i + 1 == n || t1::ends_segment(prior + i, style) {
@@ -402,7 +416,7 @@ fn read_packet_spans(
             let bytes = data.get(pos..end).unwrap_or_default();
             pos = end;
             // the first piece continues the last segment unless that one was terminated
-            let open = i == 0 && prior > 0 && !t1::ends_segment(prior - 1, style);
+            let open = i == 0 && prior > 0 && style & ht::STYLE_HT == 0 && !t1::ends_segment(prior - 1, style);
             match b.segments.last_mut() {
                 Some(last) if open => {
                     last.0.extend_from_slice(bytes);
@@ -475,7 +489,8 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
     let decoded = map(&jobs, |&(r, bi, cb)| {
         let band = tc.res.get(r).and_then(|res| res.bands.get(bi)).ok_or(Error::Invalid("subband"))?;
         let (w, h) = ((cb.x1 - cb.x0) as usize, (cb.y1 - cb.y0) as usize);
-        let mut coeffs = t1::decode(&t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments })?;
+        let block = t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments };
+        let mut coeffs = if block.style & ht::STYLE_HT != 0 { ht::decode(&block)? } else { t1::decode(&block)? };
         if tc.roi > 0 {
             // Maxshift (H.1): coefficients at or above 2^s are the region, scaled back down
             // (the values carry one fractional bit)

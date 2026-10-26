@@ -23,6 +23,8 @@
 mod codestream;
 mod decode;
 mod dwt;
+mod ht;
+mod ht_tables;
 mod jp2;
 mod mq;
 mod t1;

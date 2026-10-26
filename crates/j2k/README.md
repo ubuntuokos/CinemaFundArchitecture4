@@ -1,10 +1,12 @@
 # cfa4-j2k
 
-Clean-room JPEG 2000 Part 1 decoder in pure Rust: the picture codec of Digital Cinema Packages
+Clean-room JPEG 2000 Part 1 and HTJ2K (Part 15) decoder in pure Rust: the picture codec of Digital Cinema Packages
 (SMPTE ST 429-4) and of JPEG 2000 in MXF / IMF. Layer L0: depends only on `thiserror`. No
-`unsafe`, no panics on malformed input. No OpenJPEG, Kakadu or FFmpeg code was consulted; FFmpeg
-(its `jpeg2000` encoder and `libopenjpeg`) is used only as an external fixture generator and
-test oracle.
+`unsafe`, no panics on malformed input. No OpenJPEG, Kakadu or FFmpeg code was consulted for
+Part 1. The HT block decoder (`src/ht.rs`, `src/ht_tables.rs`) is ported from OpenJPH
+(BSD-2-Clause, `src/LICENSE-OpenJPH`, register in `docs/licensing.md` §5). FFmpeg (its `jpeg2000`
+encoder and `libopenjpeg`), OpenJPEG and Grok are used only as external fixture generators and
+test oracles.
 
 ## Specification
 
@@ -37,13 +39,19 @@ let h = cfa4_j2k::parse_header(cfa4_j2k::codestream(&bytes)?)?; // size, compone
   arithmetic coding bypass (raw segments), RESET, TERMALL, VSC, predictable termination and
   segmentation symbols.
 - Region of interest by the Maxshift method (RGN, main and tile headers).
+- HTJ2K (ITU-T T.814 | ISO/IEC 15444-15, code-block style 0x40): the HT cleanup pass (MEL,
+  VLC / UVLC, MagSgn), the significance propagation and magnitude refinement passes, placeholder
+  passes; HT packet headers (cleanup and refinement segment lengths). The CAP marker needs no
+  handling. Ported to safe Rust from OpenJPH 0.28.1 (`ojph_block_decoder32.cpp`,
+  `ojph_block_common.cpp`, `table0.h`, `table1.h`) with byte-wise readers.
 - Reversible 5/3 in integers (lossless) and irreversible 9/7 in `f32`; RCT and ICT; scalar
   derived and expounded quantization; truncated streams reconstruct at the midpoint.
 - Hostile input: every size and count is checked, allocations are capped (`MAX_SAMPLES`,
   code-block count), and errors are returned, never a panic.
 
 Not supported yet (`Error::Unsupported`): Part 2 extensions (other ROI styles, arbitrary wavelet
-kernels) and HTJ2K (Part 15, #80).
+kernels), mixed HT / Part 1 code-blocks (style 0x80) and HT code-blocks that receive passes in
+more than one quality layer.
 
 ## Accuracy and tests
 
@@ -61,6 +69,12 @@ kernels) and HTJ2K (Part 15, #80).
   TERMALL, VSC, predictable termination, segmentation symbols and combinations of them, POC
   progression changes (also per tile) and Maxshift ROI, 5/3 bit-exact to the input and 9/7 within
   ±1 of `opj_decompress`. Skipped where the tools are missing.
+- **HTJ2K (Grok `grk_compress -M 64` and OpenJPEG 2.5's decoder, when installed):** 5/3 bit-exact
+  to the input with 64×64, 32×16 and 4×4 code-blocks, tiles with RPCL, precincts, VSC; 9/7 and
+  rate-limited streams within ±1 (5/3: exactly) of `opj_decompress`; damaged copies never panic.
+  Grok writes cleanup passes only, so the refinement passes are checked on samples dropped into
+  `target/fixtures/j2k/ht-samples/` (OpenJPH's `test.j2c`: ±1 against OpenJPEG; leaving out the
+  SigProp / MagRef passes makes it fail by 25 / 5).
 - **Packed headers:** an ffmpeg tiled, layered stream rewritten with its packet headers in PPM and
   in PPT markers decodes to the same picture; truncated and damaged copies never panic.
 
