@@ -43,10 +43,11 @@ from .panels.mixer import ClipMixerPanel, TrackMixerPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.monitor_view import build_view_menu
 from .panels.project import ProjectPanel
+from .panels.properties import PropertiesPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.scopes import ScopesPanel
-from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
+from .panels.side import EffectsPanel, EventsPanel, HistoryPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel
@@ -158,7 +159,8 @@ class MainWindow(QMainWindow):
         self.meters.watch(self.monitor, self.source_monitor)
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
-        self.inspector = InspectorPanel(self)
+        self.inspector = PropertiesPanel(engine, self)
+        self.inspector.attach_settings(self.settings)
         self.effect_controls = EffectControlsPanel(self)
         self.effect_controls.attach(engine)
         self.history = HistoryPanel(self)
@@ -282,6 +284,9 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.files_dropped.connect(self.place_files)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
+        self.inspector.seek.connect(self._seek_program)
+        self.inspector.run.connect(self.run_preset)
+        self.inspector.invoke.connect(self.invoke)
         self.text_panel.seek.connect(self._seek_program)
         self.text_panel.run.connect(self.run_preset)
         self.essential_graphics.run.connect(self.run_preset)
@@ -682,10 +687,6 @@ class MainWindow(QMainWindow):
     def _on_effects_list(self, result: Any, _b: bytes | None) -> None:
         self.effects.set_effects(result)
         self.mixer.set_effects(result)
-        if isinstance(result, list):
-            self.inspector.effect_names = {
-                str(e["id"]): str(e.get("name") or e["id"]) for e in result if isinstance(e, dict) and e.get("id")
-            }
 
     def _on_commands(self, result: Any, _binary: bytes | None) -> None:
         self.registry.load(result)

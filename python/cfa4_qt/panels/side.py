@@ -1,4 +1,4 @@
-"""Smaller panels: Effects browser, Inspector (selected clips), History and Events."""
+"""Smaller panels: Effects browser, History and Events."""
 
 from __future__ import annotations
 
@@ -7,21 +7,17 @@ from typing import Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QFormLayout,
-    QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPlainTextEdit,
-    QPushButton,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
-from ..i18n import N_, tr
-from ..timecode import format_timecode, frame_ticks
+from ..i18n import tr
 
 
 class EffectsPanel(QWidget):
@@ -91,86 +87,6 @@ class EffectsPanel(QWidget):
             self.command.emit("sequence.applyAudioTransition" if audio else "sequence.applyVideoTransition", {})
         else:
             self.command.emit("effects.apply", {"effect": eid})
-
-
-class InspectorPanel(QWidget):
-    """The selected clips: timing, speed, gain and effects (read from ``sequence.inspect``)."""
-
-    command = Signal(str, dict)
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setObjectName("panel.Inspector")
-        self.form = QFormLayout()
-        self.effect_names: dict[str, str] = {}  # effect id -> display name (from effects.list)
-        self.effects = QListWidget(self)
-        self.effects.setObjectName("inspector.effects")
-        self.remove = QPushButton(tr("Remove Effect"), self)
-        self.remove.setObjectName("inspector.removeEffect")
-        self.remove.clicked.connect(self._remove_effect)
-        self.empty = QLabel(tr("Select a clip in the Timeline."), self)
-        self.empty.setWordWrap(True)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.addWidget(self.empty)
-        layout.addLayout(self.form)
-        layout.addWidget(QLabel(tr("Effects"), self))
-        layout.addWidget(self.effects, 1)
-        layout.addWidget(self.remove)
-        self._clip: dict[str, Any] | None = None
-
-    def set_sequence(self, seq: dict[str, Any] | None) -> None:
-        while self.form.rowCount():
-            self.form.removeRow(0)
-        self.effects.clear()
-        self._clip = None
-        selected = set((seq or {}).get("selection") or [])
-        clips = [
-            c
-            for kind in ("video", "audio")
-            for t in (seq or {}).get(kind) or []
-            for c in t.get("items") or []
-            if c.get("clip") in selected
-        ]
-        self.empty.setVisible(not clips)
-        self.remove.setEnabled(False)
-        if not clips:
-            return
-        ft = frame_ticks((seq or {}).get("settings"))
-        if len(clips) > 1:
-            self.form.addRow(tr("Selected"), QLabel(str(len(clips))))
-        clip = clips[0]
-        self._clip = clip
-        rows = [
-            (N_("Name"), str(clip.get("name") or "")),
-            (N_("Start"), format_timecode(int(clip.get("start") or 0), ft)),
-            (N_("End"), format_timecode(int(clip.get("end") or 0), ft)),
-            (N_("Duration"), format_timecode(int(clip.get("duration") or 0), ft)),
-            (N_("Source In"), format_timecode(int(clip.get("sourceIn") or 0), ft)),
-            (N_("Speed"), f"{float(clip.get('speed') or 1.0) * 100:.1f}%" + (" ⟲" if clip.get("reverse") else "")),
-            (N_("Gain"), f"{float(clip.get('gainDb') or 0.0):+.1f} dB"),
-            (N_("Enabled"), tr("Yes") if clip.get("enabled", True) else tr("No")),
-        ]
-        for label, value in rows:
-            v = QLabel(value)
-            v.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            self.form.addRow(tr(label), v)
-        for idx, e in enumerate(clip.get("effects") or []):
-            # names only: the values and keyframes are in Effect Controls
-            effect_id = str(e.get("effect"))
-            text = tr(self.effect_names.get(effect_id, effect_id)) + ("" if e.get("enabled", True) else f"  ({tr('off')})")
-            it = QListWidgetItem(text)
-            it.setData(Qt.ItemDataRole.UserRole, idx)
-            self.effects.addItem(it)
-        self.remove.setEnabled(self.effects.count() > 0)
-
-    def _remove_effect(self) -> None:
-        it = self.effects.currentItem()
-        if it is None or self._clip is None:
-            return
-        self.command.emit(
-            "effects.remove", {"clip": self._clip.get("clip"), "index": it.data(Qt.ItemDataRole.UserRole)}
-        )
 
 
 class HistoryPanel(QWidget):

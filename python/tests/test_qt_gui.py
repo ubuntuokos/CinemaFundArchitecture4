@@ -2892,3 +2892,124 @@ def test_text_to_speech(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_properties_panel(app, tmp_path: Path):
+    """egui's Properties panel: the selected clip's Transform, Crop and Audio values as hot numbers
+    (a scrub is one undo step, a typed value its own), the keyframe navigator, a section's reset,
+    Crop applied on the first edit, the Speed button, and a graphic clip's editor."""
+    from cfa4_qt.hot_number import HotSpin
+    from cfa4_qt.i18n import tr
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    props = win.inspector
+    mouse = QtTest.QTest
+    Qt = QtCore.Qt
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def spin(name: str) -> HotSpin:
+        s = props.findChild(HotSpin, name)
+        assert s is not None, name
+        return s
+
+    def param(clip: dict | None, effect: str, pid: str):
+        e = next((e for e in (clip or {}).get("effects") or [] if e.get("effect") == effect), None)
+        p = next((p for p in (e or {}).get("params") or [] if p.get("id") == pid), None)
+        return (p or {}).get("valueAtPlayhead")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Properties"].raise_()
+        assert wait_until(app, lambda: props.empty.isVisibleTo(props))
+        video = next(c for t in win.sequence["video"] for c in t.get("items") or [])
+        win.execute("timeline.select", {"clips": [video["clip"]]})
+        win._seek_program(int(video["start"]) + (int(video["end"]) - int(video["start"])) // 2)
+        assert wait_until(app, lambda: props.clip is not None and props.clip.get("clip") == video["clip"] and props.scroll.isVisibleTo(props), 20_000)
+        assert props.title.text() == video.get("name")
+        assert props.speed.text().startswith(tr("Speed {n}%").split("{")[0])
+        for title in ("Transform", "Crop"):
+            assert props.sections[title][0].isVisibleTo(props)
+
+        # a Scale scrub (half a percent a pixel) is one undo step
+        scale = spin("properties.motion.scale")
+        props.scroll.ensureWidgetVisible(scale)
+        app.processEvents()
+        start = scale.value()
+        line = scale.lineEdit()
+        steps = len(history())
+        y = line.height() // 2
+        mouse.mousePress(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(10, y))
+        for x in (15, 25, 35):
+            mouse.mouseMove(line, QtCore.QPoint(x, y))
+            wait_until(app, lambda: False, 30)
+        mouse.mouseRelease(line, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, QtCore.QPoint(35, y))
+        assert wait_until(app, lambda: param(props.clip, "motion", "scale") in (start + 12, start + 13), 10_000), param(props.clip, "motion", "scale")
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()[-4:]
+
+        # Position X typed as a calculation: its own step, Y kept
+        x = spin("properties.motion.position.x")
+        y0 = spin("properties.motion.position.y").value()
+        x.edited.emit(x.valueFromText("100*2"), True)
+        assert wait_until(app, lambda: param(props.clip, "motion", "position") == [200.0, y0], 10_000), param(props.clip, "motion", "position")
+        assert wait_until(app, lambda: len(history()) == steps + 2, 10_000), history()[-4:]
+
+        # the keyframe navigator: the diamond turns animation on and adds a keyframe; another one
+        # later; the previous-keyframe arrow goes back to it
+        add = props.findChild(QtWidgets.QToolButton, "properties.opacity.opacity.addKeyframe")
+        prev = props.findChild(QtWidgets.QToolButton, "properties.opacity.opacity.prevKeyframe")
+        assert add.toolTip() == tr("Turn on animation and add keyframe") and not prev.isVisibleTo(props)
+        add.click()
+        assert wait_until(app, lambda: add.text() == "◆" and prev.isVisibleTo(props), 10_000)
+        first = int(props.clip["playhead"])
+        win._seek_program(first + 10 * frame_ticks(win.sequence.get("settings")))
+        assert wait_until(app, lambda: add.text() == "◇" and prev.isEnabled() and add.toolTip() == tr("Add keyframe"), 10_000)
+        prev.click()
+        assert wait_until(app, lambda: int((props.clip or {}).get("playhead") or 0) == first and add.text() == "◆", 10_000)
+
+        # the Transform reset puts Scale back
+        props.findChild(QtWidgets.QToolButton, "properties.section.Transform.reset").click()
+        assert wait_until(app, lambda: param(props.clip, "motion", "scale") == 100.0, 10_000)
+
+        # Crop: the first value applies the effect, then the reset shows
+        assert not props.sections["Crop"][3].isVisibleTo(props)
+        spin("properties.crop.left").edited.emit(10.0, True)
+        assert wait_until(app, lambda: param(props.clip, "crop", "left") == 10.0 and props.sections["Crop"][3].isVisibleTo(props), 10_000)
+
+        # a section twirls closed and stays closed
+        props.sections["Crop"][0].twirled.emit("Crop")
+        assert not props.sections["Crop"][1].isVisibleTo(props)
+        assert settings.value("properties/collapsed") in (["Crop"], "Crop")
+
+        # an audio clip: Level and Pan
+        audio = next(c for t in win.sequence["audio"] for c in t.get("items") or [])
+        win.execute("timeline.select", {"clips": [audio["clip"]]})
+        assert wait_until(app, lambda: props.audio_clip is not None and props.audio_clip.get("clip") == audio["clip"], 20_000)
+        assert props.sections["Audio"][0].isVisibleTo(props)
+        with_video = any(c[1] == "video" for c in props.selected())  # a linked clip selects both
+        assert props.sections["Transform"][0].isVisibleTo(props) == with_video
+        spin("properties.volume.level").edited.emit(-6.0, True)
+        assert wait_until(app, lambda: param(props.audio_clip, "volume", "level") == -6.0, 10_000), param(props.audio_clip, "volume", "level")
+
+        # the Speed button opens Speed/Duration
+        opened: list[str] = []
+        win.invoke = lambda cid: opened.append(cid)  # type: ignore[method-assign]
+        props.invoke.disconnect()
+        props.invoke.connect(win.invoke)
+        props.speed.click()
+        assert opened == ["clip.speedDuration"]
+
+        # a graphic clip shows the graphic editor
+        win.execute("graphics.newText", {"text": "Props"})
+        assert wait_until(app, lambda: props.graphic.isVisibleTo(props) and props.graphic.editor.param("text") == "Props", 20_000)
+        assert not props.scroll.isVisibleTo(props) and not props.graphic.tabs.isVisibleTo(props)
+    finally:
+        win._quit_confirmed = True
+        win.close()

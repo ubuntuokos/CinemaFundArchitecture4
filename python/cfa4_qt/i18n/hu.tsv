@@ -1094,3 +1094,11 @@
 	{name} (download)	{name} (letöltendő)
 	Open	Megnyitás
 	5.1 panner (drag the puck; double-click: front centre)	5.1-es panoráma (húzd a pöttyöt; dupla kattintás: elöl középre)
+	Add keyframe	Kulcskocka hozzáadása
+	Crop	Körbevágás
+	Go to next keyframe	Ugrás a következő kulcskockához
+	Go to previous keyframe	Ugrás az előző kulcskockához
+	Remove keyframe	Kulcskocka eltávolítása
+	Select a clip to see its properties	Jelöljön ki egy klipet a tulajdonságai megtekintéséhez
+	Speed {n}%	Sebesség: {n}%
+	Turn on animation and add keyframe	Animáció bekapcsolása és kulcskocka hozzáadása
