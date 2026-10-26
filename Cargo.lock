@@ -1193,6 +1193,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-j2k"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-matroska"
 version = "0.10.0"
 dependencies = [
