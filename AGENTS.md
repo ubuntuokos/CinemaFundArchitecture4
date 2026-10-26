@@ -31,11 +31,18 @@ attribution and original copyright/licence requirements remain in force.
 - Upstream brand names, marks and icons are removed from CFA4 and must not be reintroduced
   (`python/tests/test_independence.py` guards this). Retain the upstream MIT/Apache copyright
   notices in `LICENSE-MIT`, `NOTICE`, `vendor/*/NOTICE` and the `ATTRIBUTION.md` author columns.
+- **Media backends** ([ADR 0005](docs/adr/ADR-0005-media-backends.md)): our own Rust engine is the base. Supplementary
+  backends (FFmpeg ≥ 9.0.2 via the planned `cfa4-ffmpeg` crate, GPL-3 build only, never
+  `--enable-nonfree`; the GStreamer that Ubuntu ships in its repositories; further engines later)
+  are registered with the automatic task router (`cfa4-route`, ADR 0004) and picked by its table,
+  default order own paths → FFmpeg → GStreamer → own software codecs. Callers use only the engine's
+  interfaces through the router, never a backend directly; order changes need tests and measurement.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
   linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
-  is always the fallback; this is the one exception to the inherited "pure Rust in the product" rule.
+  is always the fallback; GStreamer and FFmpeg (ADR 0005) are the exceptions to the inherited "pure
+  Rust in the product" rule.
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
@@ -170,8 +177,10 @@ reproduce an image (for example, point lists traced from someone else's icon).
   and AV1 bitstream specs, SMPTE documents, published container specs) by default. Porting an existing
   implementation is allowed only when its licence is permitted by docs/licensing.md §3 and the port is
   recorded in the reused-code register. Record the spec edition used in the crate README.
-- ffmpeg/ffprobe may be used only as external test oracles and fixture generators. They are never
-  linked, bundled or shipped.
+- FFmpeg (≥ 9.0.2) may be linked and shipped only as a supplementary backend through the
+  `cfa4-ffmpeg` crate under [ADR 0005](docs/adr/ADR-0005-media-backends.md) (GPL-3 build, no `nonfree`, no copied FFmpeg
+  source). The pinned ffmpeg/ffprobe 9.0.2 CLI stays a separate external test oracle and fixture
+  generator.
 - Dependencies must use GPL-3.0-compatible licences, as listed in `deny.toml`
   (`cargo deny check licenses`). GPL-2.0-only and AGPL dependencies are not allowed.
 
