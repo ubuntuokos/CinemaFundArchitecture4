@@ -4,14 +4,10 @@
 //! - H.264: it takes an export only when Export ▸ Hardware encoding is Auto and NVENC can do what
 //!   the settings ask; otherwise it returns `None` and the software encoder runs, exactly as before.
 //! - H.265 (HEVC Main 8-bit 4:2:0 SDR BT.709, or Main 10 HDR: 10-bit 4:2:0, BT.2020, PQ or HLG, limited
-//!   range; progressive): there is no software encoder, so the Hardware encoding toggle does not apply
-//!   (as with VideoToolbox) and choosing the format is the opt-in. The export crate hands HDR pictures
-//!   over (`EncoderFrame::hdr`) only where [`super::hevc_hdr_available`] said this GPU has a 10-bit
-//!   encoder, otherwise an HDR sequence is tone-mapped to SDR as before. What NVENC cannot do
-//!   (interlaced, two-pass, non-square pixels, 10-bit on a GPU without it, sizes outside its
-//!   limits...) is counted as declined and ends the export with an error that says why; when this
-//!   machine has no HEVC encoder at all, [`cfa4_export::available`] says so and the factory
-//!   returns `None` (the export's own "encoder not available" error).
+//!   range; progressive): NVENC goes first whatever the Hardware encoding toggle says (as with
+//!   VideoToolbox). What it cannot do (interlaced, two-pass, CRF, non-square pixels, 10-bit on a GPU
+//!   without it, sizes outside its limits...) is counted as declined and the factory returns `None`:
+//!   CFA4's software HEVC encoder takes the export.
 //!
 //! A hardware encoder that fails in the middle of an export (a lost device) ends the export with an
 //! error naming it; unlike a decoder it cannot be replayed into the software encoder, because the
@@ -261,13 +257,13 @@ fn factory_with(
     }
 }
 
-/// The H.265 side of [`factory`]: CFA4's only HEVC encoder on Windows, so the Hardware encoding toggle
-/// does not apply and a request NVENC cannot take is an error, not a fall-through.
+/// The H.265 side of [`factory`]: NVENC whatever the Hardware encoding toggle says; a request it cannot
+/// take falls through to the software encoder.
 fn hevc_factory(w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     let declined = |why: &str| {
         log::info!("hardware H.265 encoding declined: {why}");
         cfa4_export::note_hw_encode_declined();
-        Some(Err(ExportError::Unsupported(format!("H.265 export with NVENC: {why}"))))
+        None
     };
     let cfg = match config(Format::Hevc, w, h, rate, s) {
         Ok(c) => c,
@@ -278,7 +274,7 @@ fn hevc_factory(w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<R
             cfa4_export::note_hw_encode_session();
             Some(Ok(Box::new(new_encoder(enc, w, h, rate, s.signal))))
         }
-        // no HEVC encoder here at all: not a hardware attempt, the export's own "encoder not available" error
+        // no HEVC encoder here at all: not a hardware attempt (the software encoder runs)
         Err(why) if !super::hevc_available() => {
             log::info!("no hardware H.265 encoder: {why}");
             None
@@ -353,7 +349,7 @@ mod tests {
             assert_eq!(config(Format::Hevc, 1280, 720, FrameRate::FPS_24, &hdr).unwrap().profile, Profile::HevcMain10);
             assert!(config(Format::H264, 1280, 720, FrameRate::FPS_24, &ExportSettings { format: Format::H264, ..hdr }).is_err());
         }
-        // the Hardware encoding toggle does not matter for HEVC (it has no software encoder)
+        // the Hardware encoding toggle does not matter for HEVC (NVENC goes first)
         let off = ExportSettings { hardware_encoding: HardwareEncoding::Off, ..ok.clone() };
         assert!(config(Format::Hevc, 1280, 720, FrameRate::FPS_24, &off).is_ok());
         for (what, s) in [

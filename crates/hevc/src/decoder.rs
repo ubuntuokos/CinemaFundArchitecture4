@@ -89,6 +89,8 @@ pub struct Decoder {
     in_flight: VecDeque<FrameRef>,
     max_in_flight: usize,
     draft: bool,
+    /// The picture started last (the encoder's reconstructed reference).
+    last_started: Option<FrameRef>,
 }
 
 impl Default for Decoder {
@@ -143,6 +145,7 @@ impl Decoder {
             in_flight: VecDeque::new(),
             max_in_flight: threads.max(1) + 2,
             draft: false,
+            last_started: None,
         }
     }
 
@@ -247,6 +250,12 @@ impl Decoder {
     /// unchanged.
     pub fn set_draft(&mut self, on: bool) {
         self.draft = on;
+    }
+
+    /// The most recently started picture (complete once [`Decoder::decode`] returned on a
+    /// single-threaded decoder); the encoder takes its reference pictures from here.
+    pub(crate) fn last_frame(&self) -> Option<FrameRef> {
+        self.last_started.clone()
     }
 
     pub fn take_error(&mut self) -> Option<Error> {
@@ -443,6 +452,7 @@ impl Decoder {
             self.stat(|s| s.draft_pictures += 1);
         }
         let meta = Arc::new(output_meta(sps, pts, hdr.is_irap(), draft));
+        self.last_started = Some(frame.clone());
         self.pending = Some(PendingPic {
             frame,
             sps: sps.clone(),

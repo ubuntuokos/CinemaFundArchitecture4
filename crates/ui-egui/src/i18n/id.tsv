@@ -3462,7 +3462,7 @@
 	Main 10 (10-bit, HDR)	Main 10 (10-bit, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8-bit; Main 10 untuk sekuens HDR)
 	Encoder	Enkoder
-	Hardware (H.265 has no software encoder)	Perangkat keras (H.265 tidak memiliki enkoder perangkat lunak)
+	Software, or hardware where available	Perangkat lunak, atau perangkat keras bila tersedia
 	Hardware (AV1 has no software encoder)	Perangkat keras (AV1 tidak memiliki enkoder perangkat lunak)
 	Text Properties	Properti Teks
 	Text Box Height	Tinggi Kotak Teks
