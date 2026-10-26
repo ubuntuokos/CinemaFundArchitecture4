@@ -884,3 +884,14 @@ fn schema_reports_groups_and_hides_the_unwired_duplicate_hardware_fields() {
     set(&mut s, "media.hardwareDecoding", json!(true));
     assert_eq!(s.prefs.get("media.hardwareDecoding"), Some(json!(true)));
 }
+
+#[test]
+fn a_batch_applies_duration_units_before_their_values() {
+    // `timeline.videoTransitionDuration` sorts before its unit key; 0.5 must be read as seconds,
+    // not rounded to whole frames under the old unit.
+    let mut s = Session::default();
+    s.execute("prefs.set", json!({"values": {"timeline.videoTransitionUnit": "frames"}})).unwrap();
+    let r = s.execute("prefs.set", json!({"values": {"timeline.videoTransitionDuration": 0.5, "timeline.videoTransitionUnit": "seconds"}})).unwrap();
+    assert_eq!(r["timeline"]["videoTransitionUnit"], "seconds");
+    assert_eq!(r["timeline"]["videoTransitionDuration"], 0.5);
+}
