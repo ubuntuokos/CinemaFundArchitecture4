@@ -848,6 +848,7 @@ version = "0.10.0"
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
+ "cfa4-audio-dsp",
  "cfa4-automation",
  "cfa4-codecs",
  "cfa4-engine",

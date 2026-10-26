@@ -1,7 +1,10 @@
-"""Program monitor and playback.
+"""Program and Source monitors, with playback.
 
-Frames come from the engine (``frame.render``, RGBA8 at the monitor's size); sound from
-``audio.render`` (interleaved float32) into a QAudioSink. Requests are coalesced: at most one
+Both monitors share one implementation (``Monitor``) and differ only in what they show:
+the Program monitor shows the active sequence at the sequence playhead, the Source monitor the
+clip opened with ``source.open`` at the Source playhead (``target: "source"`` in the engine
+protocol). Frames come from the engine (``frame.render``, RGBA8 at the monitor's size); sound
+from ``audio.render`` (interleaved float32) into a QAudioSink. Requests are coalesced: at most one
 frame and one audio request are in flight, and a newer wanted time replaces an older one, so a
 slow render drops frames instead of building a queue.
 """
@@ -11,11 +14,11 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtCore import QElapsedTimer, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPaintEvent
+from PySide6.QtGui import QColor, QImage, QMouseEvent, QPainter, QPaintEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
 from ..engine import EngineClient
-from ..i18n import tr
+from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
 
 try:  # QtMultimedia is optional: without it playback is silent
@@ -27,16 +30,29 @@ except ImportError:  # pragma: no cover - depends on the PySide6 build
 
 AUDIO_CHUNK_SECONDS = 0.1
 AUDIO_LEAD_SECONDS = 0.35
+SOURCE_SAMPLE_RATE = 48_000
+
+
+def ticks_per_frame_from_fps(fps: Any) -> int:
+    """Frame length in ticks for a float frame rate (``source.inspect`` reports ``fps``)."""
+    try:
+        value = float(fps)
+    except (TypeError, ValueError):
+        value = 0.0
+    if not 1.0 <= value <= 1000.0:
+        value = 30.0
+    return max(1, round(TICKS_PER_SECOND / value))
 
 
 class FrameView(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, name: str = "program", parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setObjectName("program.view")
+        self.setObjectName(f"{name}.view")
         self.image: QImage | None = None
         self.message = ""
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(160, 90)
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
     def set_image(self, image: QImage | None, message: str = "") -> None:
         self.image = image
@@ -55,27 +71,94 @@ class FrameView(QWidget):
             p.drawImage(target, self.image)
         if self.message:
             p.setPen(QColor("#cccccc"))
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.message)
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
 
 
-class ProgramMonitor(QWidget):
+class ScrubBar(QWidget):
+    """The monitor's time bar: range, In/Out shading, playhead. Click or drag to seek."""
+
+    seek = Signal(object)  # ticks; object, not a 32-bit int
+
+    def __init__(self, name: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName(f"{name}.scrub")
+        self.setFixedHeight(18)
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self.start = 0
+        self.end = 0
+        self.playhead = 0
+        self.mark_in: int | None = None
+        self.mark_out: int | None = None
+        self.frame = 1
+
+    def set_range(self, start: int, end: int, mark_in: int | None, mark_out: int | None, frame: int) -> None:
+        self.start, self.end = int(start), max(int(start), int(end))
+        self.mark_in, self.mark_out = mark_in, mark_out
+        self.frame = max(1, int(frame))
+        self.update()
+
+    def set_playhead(self, t: int) -> None:
+        self.playhead = int(t)
+        self.update()
+
+    def _x(self, t: int) -> float:
+        span = max(1, self.end - self.start)
+        return 4 + (self.width() - 8) * (t - self.start) / span
+
+    def time_at(self, x: float) -> int:
+        span = max(0, self.end - self.start)
+        frac = min(1.0, max(0.0, (x - 4) / max(1.0, self.width() - 8)))
+        t = self.start + int(span * frac)
+        # snap to the frame grid, never past the last frame
+        t = self.start + (t - self.start) // self.frame * self.frame
+        return min(t, max(self.start, self.end - self.frame))
+
+    def paintEvent(self, _e: QPaintEvent) -> None:
+        p = QPainter(self)
+        p.fillRect(self.rect(), QColor("#1c1c1c"))
+        if self.end <= self.start:
+            return
+        h = self.height()
+        p.fillRect(QRectF(4, h / 2 - 2, self.width() - 8, 4), QColor("#3a3a3a"))
+        if self.mark_in is not None or self.mark_out is not None:
+            a = self._x(self.mark_in if self.mark_in is not None else self.start)
+            b = self._x(self.mark_out if self.mark_out is not None else self.end)
+            p.fillRect(QRectF(a, 2, max(1.0, b - a), h - 4), QColor(90, 140, 220, 110))
+        x = self._x(self.playhead)
+        p.fillRect(QRectF(x - 1, 0, 2, h), QColor("#e04040"))
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        if e.button() == Qt.MouseButton.LeftButton:
+            self.seek.emit(self.time_at(e.position().x()))
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if e.buttons() & Qt.MouseButton.LeftButton:
+            self.seek.emit(self.time_at(e.position().x()))
+
+
+class Monitor(QWidget):
+    """Shared monitor: frame view, time bar, transport, marks, playback with sound."""
+
+    target = "program"
     command = Signal(str, dict)
     # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
     playhead_moved = Signal(object)  # local playhead during playback, ticks
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setObjectName("panel.Program")
+        self.setObjectName(f"panel.{self.target.capitalize()}")
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.engine = engine
-        self.sequence: dict[str, Any] | None = None
         self.playhead = 0
         self.revision = -1
         self._frame_busy = False
         self._frame_wanted: int | None = None
-        self._shown: tuple[int, int, int] | None = None  # (time, revision, width)
-        self.view = FrameView(self)
+        self._shown: tuple[int, int, int, Any] | None = None  # (time, revision, width, item)
+        self.view = FrameView(self.target, self)
+        self.scrub = ScrubBar(self.target, self)
+        self.scrub.seek.connect(self.seek)
         self.timecode = QLabel("00:00:00:00", self)
-        self.timecode.setObjectName("program.timecode")
+        self.timecode.setObjectName(f"{self.target}.timecode")
         self.duration_label = QLabel("", self)
 
         bar = QHBoxLayout()
@@ -83,17 +166,22 @@ class ProgramMonitor(QWidget):
         bar.addWidget(self.timecode)
         bar.addStretch(1)
         self.buttons: dict[str, QToolButton] = {}
-        for name, text, tip, slot in (
-            ("start", "⏮", "Go to Start", lambda: self.command.emit("playhead.start", {})),
-            ("stepBack", "◀|", "Step Back 1 Frame", lambda: self.command.emit("playhead.stepBack", {})),
-            ("toggle", "▶", "Play/Stop", self.toggle_playback),
-            ("stepForward", "|▶", "Step Forward 1 Frame", lambda: self.command.emit("playhead.stepForward", {})),
-            ("end", "⏭", "Go to End", lambda: self.command.emit("playhead.end", {})),
-        ):
+        transport = (
+            ("markIn", "{", "Mark In", lambda: self.command.emit("markers.markIn", {"target": self.target})),
+            ("markOut", "}", "Mark Out", lambda: self.command.emit("markers.markOut", {"target": self.target})),
+            ("start", "⏮", N_("Go to Start"), lambda: self.seek(self.range()[0])),
+            ("stepBack", "◀|", N_("Step Back 1 Frame"), lambda: self.step(-1)),
+            ("toggle", "▶", N_("Play/Stop"), self.toggle_playback),
+            ("stepForward", "|▶", N_("Step Forward 1 Frame"), lambda: self.step(1)),
+            ("end", "⏭", N_("Go to End"), lambda: self.seek(self.range()[1] - self.frame())),
+            *self.extra_buttons(),
+        )
+        for name, text, tip, slot in transport:
             b = QToolButton(self)
-            b.setObjectName(f"program.transport.{name}")
+            b.setObjectName(f"{self.target}.transport.{name}")
             b.setText(text)
             b.setToolTip(tr(tip))
+            b.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             b.clicked.connect(slot)
             bar.addWidget(b)
             self.buttons[name] = b
@@ -101,7 +189,9 @@ class ProgramMonitor(QWidget):
         bar.addWidget(self.duration_label)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         layout.addWidget(self.view, 1)
+        layout.addWidget(self.scrub)
         layout.addLayout(bar)
 
         # playback state
@@ -119,35 +209,85 @@ class ProgramMonitor(QWidget):
         self._audio_channels = 2
         self._audio_pending = b""
 
-    # ----- model -----
-    def set_sequence(self, seq: dict[str, Any] | None, revision: int) -> None:
-        self.sequence = seq
-        self.revision = revision
-        if seq is None:
-            self.stop()
-            self.view.set_image(None, tr("No sequence"))
-            self.duration_label.setText("")
-            return
-        if not self.playing and isinstance(seq.get("playhead"), int):
-            self.playhead = seq["playhead"]
-        self.duration_label.setText(format_timecode(int(seq.get("duration") or 0), self.frame()))
-        self._update_timecode()
-        self.request_frame()
+    # ----- what each monitor shows (overridden) -----
+    def extra_buttons(self) -> tuple[tuple[str, str, str, Any], ...]:
+        return ()
+
+    def has_content(self) -> bool:
+        raise NotImplementedError
+
+    def range(self) -> tuple[int, int]:
+        """(first tick, end tick) of what is shown."""
+        raise NotImplementedError
+
+    def marks(self) -> tuple[int | None, int | None]:
+        return None, None
 
     def frame(self) -> int:
-        return frame_ticks((self.sequence or {}).get("settings"))
+        raise NotImplementedError
 
-    def set_playhead(self, ticks: int) -> None:
-        self.playhead = max(0, int(ticks))
+    def content_key(self) -> Any:
+        return None
+
+    def empty_message(self) -> str:
+        return ""
+
+    def seek_command(self, t: int) -> tuple[str, dict[str, Any]]:
+        raise NotImplementedError
+
+    def audio_params(self, start: int, frames: int) -> dict[str, Any]:
+        return {"start": start, "frames": frames}
+
+    def sample_rate(self) -> int:
+        return 48000
+
+    # ----- shared model -----
+    def _content_changed(self) -> None:
+        if not self.has_content():
+            self.stop()
+            self.view.set_image(None, self.empty_message())
+            self.duration_label.setText("")
+            self.scrub.set_range(0, 0, None, None, 1)
+            return
+        start, end = self.range()
+        mark_in, mark_out = self.marks()
+        self.duration_label.setText(format_timecode(max(0, end - start), self.frame()))
+        self.scrub.set_range(start, end, mark_in, mark_out, self.frame())
+        self.scrub.set_playhead(self.playhead)
         self._update_timecode()
         self.request_frame()
 
+    def set_playhead(self, ticks: int) -> None:
+        """Show ``ticks`` (already the engine's playhead, or a local scrub)."""
+        start = self.range()[0] if self.has_content() else 0
+        self.playhead = max(start, int(ticks))
+        self._update_timecode()
+        self.scrub.set_playhead(self.playhead)
+        self.request_frame()
+
+    def seek(self, ticks: int) -> None:
+        """Move the playhead here and tell the engine."""
+        if not self.has_content():
+            return
+        if self.playing:
+            self.stop(notify=False)
+        start, end = self.range()
+        t = min(max(start, int(ticks)), max(start, end - self.frame()))
+        self.set_playhead(t)
+        command, params = self.seek_command(t)
+        self.command.emit(command, params)
+
+    def step(self, frames: int) -> None:
+        if self.has_content():
+            ft = self.frame()
+            self.seek((self.playhead // ft + frames) * ft)
+
     def _update_timecode(self) -> None:
-        self.timecode.setText(format_timecode(self.playhead, self.frame()))
+        self.timecode.setText(format_timecode(self.playhead, self.frame() if self.has_content() else 1))
 
     # ----- frames -----
     def request_frame(self, at: int | None = None) -> None:
-        if self.sequence is None:
+        if not self.has_content():
             return
         self._frame_wanted = self.playhead if at is None else at
         self._pump_frame()
@@ -158,19 +298,22 @@ class ProgramMonitor(QWidget):
         t = self._frame_wanted
         width = max(64, int(self.view.width() * self.view.devicePixelRatioF()))
         height = max(64, int(self.view.height() * self.view.devicePixelRatioF()))
-        key = (t, self.revision, width)
+        key = (t, self.revision, width, self.content_key())
         self._frame_wanted = None
         if key == self._shown:
             return
         self._frame_busy = True
+        params: dict[str, Any] = {"time": t, "maxWidth": min(width, 8192), "maxHeight": min(height, 8192)}
+        if self.target != "program":
+            params["target"] = self.target
         self.engine.call(
             "frame.render",
-            {"time": t, "maxWidth": min(width, 8192), "maxHeight": min(height, 8192)},
+            params,
             on_reply=lambda r, b, k=key: self._on_frame(k, r, b),
             on_error=self._on_frame_error,
         )
 
-    def _on_frame(self, key: tuple[int, int, int], result: Any, data: bytes | None) -> None:
+    def _on_frame(self, key: tuple[int, int, int, Any], result: Any, data: bytes | None) -> None:
         self._frame_busy = False
         if isinstance(result, dict) and data:
             w, h = int(result.get("w") or 0), int(result.get("h") or 0)
@@ -198,11 +341,11 @@ class ProgramMonitor(QWidget):
             self.play()
 
     def play(self) -> None:
-        if self.sequence is None or self.playing:
+        if not self.has_content() or self.playing:
             return
-        duration = int(self.sequence.get("duration") or 0)
-        if duration and self.playhead >= duration - self.frame():
-            self.playhead = 0
+        start, end = self.range()
+        if end and self.playhead >= end - self.frame():
+            self.playhead = start
         self.playing = True
         self.buttons["toggle"].setText("■")
         self._play_from = self.playhead
@@ -210,7 +353,7 @@ class ProgramMonitor(QWidget):
         self._start_audio()
         self._timer.start()
 
-    def stop(self) -> None:
+    def stop(self, notify: bool = True) -> None:
         if not self.playing:
             return
         self.playing = False
@@ -220,16 +363,18 @@ class ProgramMonitor(QWidget):
         # snap to the frame grid and tell the engine where we stopped
         ft = self.frame()
         self.playhead = (self.playhead // ft) * ft
-        self.command.emit("playhead.set", {"time": self.playhead})
+        if notify:
+            command, params = self.seek_command(self.playhead)
+            self.command.emit(command, params)
 
     def _tick(self) -> None:
-        if not self.playing or self.sequence is None:
+        if not self.playing or not self.has_content():
             return
         elapsed = self._clock.nsecsElapsed()
         t = self._play_from + elapsed * TICKS_PER_SECOND // 1_000_000_000
-        duration = int(self.sequence.get("duration") or 0)
-        if duration and t >= duration:
-            self.playhead = max(0, duration - self.frame())
+        start, end = self.range()
+        if end and t >= end:
+            self.playhead = max(start, end - self.frame())
             self.stop()
             return
         ft = self.frame()
@@ -237,15 +382,16 @@ class ProgramMonitor(QWidget):
         if frame_t != self.playhead:
             self.playhead = frame_t
             self._update_timecode()
+            self.scrub.set_playhead(frame_t)
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
         self._feed_audio()
 
     # ----- audio -----
     def _start_audio(self) -> None:
-        if not HAVE_AUDIO or self.sequence is None:
+        if not HAVE_AUDIO or not self.has_content():
             return
-        rate = int((self.sequence.get("settings") or {}).get("sample_rate") or 48000)
+        rate = self.sample_rate()
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
@@ -289,7 +435,7 @@ class ProgramMonitor(QWidget):
         self._audio_next += frames
         self.engine.call(
             "audio.render",
-            {"start": start, "frames": frames},
+            self.audio_params(start, frames),
             on_reply=self._on_audio,
             on_error=lambda _m: setattr(self, "_audio_busy", False),
         )
@@ -302,3 +448,110 @@ class ProgramMonitor(QWidget):
             return
         self._audio_pending += data
         self._feed_audio()
+
+
+class ProgramMonitor(Monitor):
+    """The active sequence at the sequence playhead."""
+
+    target = "program"
+
+    def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
+        super().__init__(engine, parent)
+        self.sequence: dict[str, Any] | None = None
+        self.view.set_image(None, self.empty_message())
+
+    def set_sequence(self, seq: dict[str, Any] | None, revision: int) -> None:
+        self.sequence = seq
+        self.revision = revision
+        if seq is not None and not self.playing and isinstance(seq.get("playhead"), int):
+            self.playhead = seq["playhead"]
+        self._content_changed()
+
+    def has_content(self) -> bool:
+        return self.sequence is not None
+
+    def range(self) -> tuple[int, int]:
+        return 0, int((self.sequence or {}).get("duration") or 0)
+
+    def marks(self) -> tuple[int | None, int | None]:
+        seq = self.sequence or {}
+        mark_in, mark_out = seq.get("in"), seq.get("out")
+        return (mark_in if isinstance(mark_in, int) else None, mark_out if isinstance(mark_out, int) else None)
+
+    def frame(self) -> int:
+        return frame_ticks((self.sequence or {}).get("settings"))
+
+    def content_key(self) -> Any:
+        return (self.sequence or {}).get("id")
+
+    def empty_message(self) -> str:
+        return tr("No sequence")
+
+    def seek_command(self, t: int) -> tuple[str, dict[str, Any]]:
+        return "playhead.set", {"time": t}
+
+    def sample_rate(self) -> int:
+        return int(((self.sequence or {}).get("settings") or {}).get("sample_rate") or 48000)
+
+
+class SourceMonitor(Monitor):
+    """The clip opened in the Source monitor (``source.open``), at the Source playhead."""
+
+    target = "source"
+
+    def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
+        super().__init__(engine, parent)
+        self.source: dict[str, Any] | None = None
+        self.view.set_image(None, self.empty_message())
+
+    def extra_buttons(self) -> tuple[tuple[str, str, str, Any], ...]:
+        return (
+            ("insert", "⤵", N_("Insert"), lambda: self.command.emit("source.insert", {})),
+            ("overwrite", "⇣", N_("Overwrite"), lambda: self.command.emit("source.overwrite", {})),
+        )
+
+    def set_source(self, state: dict[str, Any] | None, revision: int) -> None:
+        """``state`` is the ``source.inspect`` reply (``item`` null when nothing is open)."""
+        previous = (self.source or {}).get("item")
+        self.source = state if isinstance(state, dict) and state.get("item") is not None else None
+        self.revision = revision
+        if self.source is not None and not self.playing:
+            ph = self.source.get("playhead")
+            if isinstance(ph, int):
+                self.playhead = ph
+            elif self.source.get("item") != previous:
+                self.playhead = int(self.source.get("start") or 0)
+        if self.source is None or self.source.get("item") != previous:
+            self.stop(notify=False)
+        self._content_changed()
+
+    def has_content(self) -> bool:
+        return self.source is not None
+
+    def range(self) -> tuple[int, int]:
+        src = self.source or {}
+        start = int(src.get("start") or 0)
+        return start, max(start, int(src.get("end") or 0))
+
+    def marks(self) -> tuple[int | None, int | None]:
+        src = self.source or {}
+        mark_in, mark_out = src.get("markIn"), src.get("markOut")
+        return (mark_in if isinstance(mark_in, int) else None, mark_out if isinstance(mark_out, int) else None)
+
+    def frame(self) -> int:
+        return ticks_per_frame_from_fps((self.source or {}).get("fps"))
+
+    def content_key(self) -> Any:
+        return (self.source or {}).get("item")
+
+    def empty_message(self) -> str:
+        return tr("Double-click a clip in the Project panel to open it here.")
+
+    def seek_command(self, t: int) -> tuple[str, dict[str, Any]]:
+        return "source.setPlayhead", {"time": t}
+
+    def audio_params(self, start: int, frames: int) -> dict[str, Any]:
+        return {"target": "source", "start": start, "frames": frames, "sampleRate": SOURCE_SAMPLE_RATE}
+
+    def sample_rate(self) -> int:
+        return SOURCE_SAMPLE_RATE

@@ -9,20 +9,40 @@ from typing import Any
 
 from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
-from PySide6.QtWidgets import QDockWidget, QLabel, QMainWindow, QMessageBox, QWidget
+from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMessageBox, QTabBar, QWidget
 
 from . import __version__
 from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
-from .i18n import LANGUAGES, TR, tr
-from .panels.monitor import ProgramMonitor
+from .i18n import LANGUAGES, N_, TR, tr
+from .panels.export import ExportDialog
+from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
 
-LAYOUT_VERSION = 1
+LAYOUT_VERSION = 2  # 2: Source monitor dock
+
+# panels docked around the Program monitor, in the order they are created
+DOCK_PLAN = (
+    ("Source", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Inspector", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("History", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
+    ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
+)
+
+# engine playhead commands that act on the Source monitor's playhead when it has the focus
+SOURCE_STEPS = {
+    "playhead.stepForward": 1,
+    "playhead.stepBack": -1,
+    "playhead.start": "start",
+    "playhead.end": "end",
+}
 
 # commands that replace the open project (and its undo history) without asking the engine
 # whether it is dirty: the frontend offers Save / Don't Save / Cancel first, as egui does
@@ -61,10 +81,15 @@ class MainWindow(QMainWindow):
         self.sequence: dict[str, Any] | None = None
         self.state: dict[str, Any] = {}
         self.revision = -1
+        self.source_state: dict[str, Any] | None = None
+        self.export_dialog: ExportDialog | None = None
+        # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
+        self.active_monitor = "program"
         self._closing = False
         self._quit_confirmed = False
 
         self.monitor = ProgramMonitor(engine, self)
+        self.source_monitor = SourceMonitor(engine, self)
         self.timeline = TimelinePanel(self)
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
@@ -79,28 +104,30 @@ class MainWindow(QMainWindow):
             | QMainWindow.DockOption.AnimatedDocks
         )
         self.docks: dict[str, QDockWidget] = {}
-        self._dock("Project", self.project_panel, Qt.DockWidgetArea.LeftDockWidgetArea)
-        self._dock("Effects", self.effects, Qt.DockWidgetArea.LeftDockWidgetArea)
-        self.tabifyDockWidget(self.docks["Project"], self.docks["Effects"])
-        self.docks["Project"].raise_()
-        self._dock("Inspector", self.inspector, Qt.DockWidgetArea.RightDockWidgetArea)
-        self._dock("History", self.history, Qt.DockWidgetArea.RightDockWidgetArea)
-        self.tabifyDockWidget(self.docks["Inspector"], self.docks["History"])
-        self.docks["Inspector"].raise_()
-        self._dock("Timeline", self.timeline, Qt.DockWidgetArea.BottomDockWidgetArea)
-        self._dock("Events", self.events, Qt.DockWidgetArea.BottomDockWidgetArea)
-        self.tabifyDockWidget(self.docks["Timeline"], self.docks["Events"])
-        self.docks["Timeline"].raise_()
-        self.resizeDocks([self.docks["Timeline"]], [300], Qt.Orientation.Vertical)
-        self.resizeDocks([self.docks["Project"], self.docks["Inspector"]], [300, 280], Qt.Orientation.Horizontal)
-        self._default_state = self.saveState(LAYOUT_VERSION)
+        widgets = {
+            "Source": self.source_monitor,
+            "Project": self.project_panel,
+            "Effects": self.effects,
+            "Inspector": self.inspector,
+            "History": self.history,
+            "Timeline": self.timeline,
+            "Events": self.events,
+        }
+        for name, area in DOCK_PLAN:
+            self._dock(name, widgets[name], area)
+        # The window itself only ever gets its tab groups through restoreState() (see
+        # _default_layout_state and docs/qt-gui.md, "Known Qt issues").
+        self._default_state = self._default_layout_state()
 
         self.status_engine = QLabel(tr("Starting engine…"))
         self.status_engine.setObjectName("status.engine")
         self.statusBar().addPermanentWidget(self.status_engine)
 
-        for panel in (self.monitor, self.timeline.canvas, self.project_panel, self.effects, self.inspector):
+        for panel in (self.monitor, self.source_monitor, self.timeline.canvas, self.project_panel, self.effects, self.inspector):
             panel.command.connect(self.execute)
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.focusChanged.connect(self._focus_changed)
         self.project_panel.invoke.connect(self.invoke)
         self.timeline.canvas.seek.connect(self._scrub)
         self.monitor.playhead_moved.connect(self._playback_moved)
@@ -122,32 +149,90 @@ class MainWindow(QMainWindow):
         if isinstance(geometry, QByteArray):
             self.restoreGeometry(geometry)
         state = self.settings.value("windowState")
-        if isinstance(state, QByteArray):
-            self.restoreState(state, LAYOUT_VERSION)
+        if not (isinstance(state, QByteArray) and self.restoreState(state, LAYOUT_VERSION)):
+            self.restoreState(self._default_state, LAYOUT_VERSION)
         self._update_title()
 
-    def _dock(self, name: str, widget: QWidget, area: Qt.DockWidgetArea) -> None:
+    @staticmethod
+    def arrange_default(win: QMainWindow, d: dict[str, QDockWidget]) -> None:
+        """Source over Project/Effects on the left, Program in the middle, Inspector/History on
+        the right, Timeline/Events at the bottom."""
+        win.splitDockWidget(d["Source"], d["Project"], Qt.Orientation.Vertical)
+        win.tabifyDockWidget(d["Project"], d["Effects"])
+        win.tabifyDockWidget(d["Inspector"], d["History"])
+        win.tabifyDockWidget(d["Timeline"], d["Events"])
+        for name in ("Project", "Inspector", "Timeline"):
+            d[name].raise_()
+        win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
+        win.resizeDocks([d["Source"], d["Inspector"]], [460, 280], Qt.Orientation.Horizontal)
+        win.resizeDocks([d["Source"], d["Project"]], [320, 300], Qt.Orientation.Vertical)
+
+    def _default_layout_state(self) -> QByteArray:
+        """The default layout, arranged in a hidden stand-in window with empty docks of the
+        same names: tabifying the real window's docks directly leaves orphaned tab bars on screen
+        (Qt 6.10.3+) or can crash once it is shown (Qt 6.10.2); restoring a state is clean."""
+        helper = QMainWindow()
+        helper.setDockOptions(self.dockOptions())
+        helper.setCentralWidget(QWidget(helper))
+        helper.resize(1440, 900)
+        stand_ins: dict[str, QDockWidget] = {}
+        for name, area in DOCK_PLAN:
+            dock = QDockWidget(name, helper)
+            dock.setObjectName(f"dock.{name}")
+            dock.setWidget(QWidget(dock))
+            helper.addDockWidget(area, dock)
+            stand_ins[name] = dock
+        self.arrange_default(helper, stand_ins)
+        state = helper.saveState(LAYOUT_VERSION)
+        helper.deleteLater()
+        return state
+
+    def reset_panel_layout(self) -> None:
+        """View ▸ Reset Panel Layout."""
+        before = set(self.findChildren(QTabBar))
+        self.restoreState(self._default_state, LAYOUT_VERSION)
+        self._retire_tab_bars(before)
+        QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
+
+    def _retire_tab_bars(self, old: set[QTabBar]) -> None:
+        """restoreState() on a window that is on screen makes new tab bars and leaves the old
+        ones visible under or over them (Qt 6.10.3, 6.11, 6.12). Hide an old bar when a new
+        bar shows the same tabs; a stale bar on top would swallow the clicks on the tabs."""
+        def tabs(bar: QTabBar) -> tuple[str, ...]:
+            return tuple(bar.tabText(i) for i in range(bar.count()))
+
+        visible = [b for b in self.findChildren(QTabBar) if b.parent() is self and b.isVisible()]
+        fresh = {tabs(b) for b in visible if b not in old}
+        for bar in visible:
+            if bar in old and (bar.count() == 0 or tabs(bar) in fresh):
+                bar.hide()
+
+    def _dock(self, name: str, widget: QWidget, area: Qt.DockWidgetArea) -> QDockWidget:
         dock = QDockWidget(tr(name), self)
         dock.setObjectName(f"dock.{name}")
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
         self.docks[name] = dock
+        return dock
 
     # ----- actions owned by the Qt GUI (view, playback, help) -----
     def _build_local_actions(self) -> None:
         self.play_action = QAction(tr("Play/Stop"), self)
         self.play_action.setObjectName("qt.playback.toggle")
-        self.play_action.triggered.connect(self.monitor.toggle_playback)
+        self.play_action.triggered.connect(lambda: self.focused_monitor().toggle_playback())
         self.tool_actions = []
-        for tool, label in (("selection", "Selection Tool"), ("razor", "Razor Tool")):
+        for tool, label in (("selection", N_("Selection Tool")), ("razor", N_("Razor Tool"))):
             a = QAction(tr(label), self)
             a.setObjectName(f"qt.tool.{tool}")
             a.triggered.connect(lambda _c=False, t=tool: self.timeline.set_tool(t))
             self.tool_actions.append(a)
+        self.export_action = QAction(tr("Export Media…"), self)
+        self.export_action.setObjectName("qt.export")
+        self.export_action.triggered.connect(self.open_export)
         self.fit_action = QAction(tr("Zoom to Sequence"), self)
         self.fit_action.triggered.connect(self.timeline.canvas.zoom_to_fit)
         self.reset_layout = QAction(tr("Reset Panel Layout"), self)
-        self.reset_layout.triggered.connect(lambda: self.restoreState(self._default_state, LAYOUT_VERSION))
+        self.reset_layout.triggered.connect(self.reset_panel_layout)
         self.quit_action = QAction(tr("Quit"), self)
         self.quit_action.setObjectName("qt.quit")
         self.quit_action.setMenuRole(QAction.MenuRole.QuitRole)
@@ -166,6 +251,7 @@ class MainWindow(QMainWindow):
         """Playback and tool keys, unless an engine command already claims them."""
         for action, keys in (
             (self.play_action, ["Space"]),
+            (self.export_action, ["Ctrl+M"]),
             (self.quit_action, ["Ctrl+Q"]),
             (self.tool_actions[0], ["V"]),
             (self.tool_actions[1], ["C"]),
@@ -244,7 +330,8 @@ class MainWindow(QMainWindow):
 
     def _on_engine_stopped(self, reason: str) -> None:
         self.status_engine.setText(tr("Engine stopped"))
-        self.monitor.stop()
+        self.monitor.stop(notify=False)
+        self.source_monitor.stop(notify=False)
         if self._closing:
             return
         self.events.log(f"{tr('The engine stopped')}: {reason}", error=True)
@@ -277,6 +364,9 @@ class MainWindow(QMainWindow):
             self.docks["Timeline"].raise_()
             self.schedule_refresh()
         elif kind == "openSource":
+            self.docks["Source"].show()
+            self.docks["Source"].raise_()
+            self.active_monitor = "source"
             self.schedule_refresh()
         elif kind == "revealInProject":
             self.docks["Project"].raise_()
@@ -295,6 +385,7 @@ class MainWindow(QMainWindow):
             "sequence.inspect", {}, on_reply=self._on_sequence, on_error=lambda _m: self._on_sequence(None, None)
         )
         self.engine.execute("history.list", {}, on_reply=lambda r, _b: self.history.set_history(r))
+        self.engine.execute("source.inspect", {}, on_reply=self._on_source, on_error=lambda _m: self._on_source(None, None))
 
     def _on_state(self, result: Any, _b: bytes | None) -> None:
         self.state = result if isinstance(result, dict) else {}
@@ -314,6 +405,12 @@ class MainWindow(QMainWindow):
         self.monitor.set_sequence(self.sequence, self.revision)
         self.inspector.set_sequence(self.sequence)
 
+    def _on_source(self, result: Any, _b: bytes | None) -> None:
+        self.source_state = result if isinstance(result, dict) else None
+        self.source_monitor.set_source(self.source_state, self.revision)
+        if self.source_monitor.source is None and self.active_monitor == "source":
+            self.active_monitor = "program"
+
     def _update_title(self) -> None:
         name = (self.project or {}).get("name") or tr("Untitled")
         dirty = "*" if self.state.get("dirty") else ""
@@ -323,6 +420,8 @@ class MainWindow(QMainWindow):
     def execute(self, command: str, params: dict[str, Any] | None = None) -> None:
         """Run an engine command; errors go to the status bar and the Events panel."""
         if command == "playhead.set" and self.monitor.playing:
+            return
+        if command == "source.setPlayhead" and self.source_monitor.playing:
             return
         self.engine.execute(
             command,
@@ -350,6 +449,19 @@ class MainWindow(QMainWindow):
         if cmd.id == "app.quit":
             self.close()
             return
+        if cmd.id in ("file.exportMedia", "export.queue.add"):
+            self.open_export()
+            return
+        if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
+            step = SOURCE_STEPS[cmd.id]
+            start, end = self.source_monitor.range()
+            if step == "start":
+                self.source_monitor.seek(start)
+            elif step == "end":
+                self.source_monitor.seek(end - self.source_monitor.frame())
+            else:
+                self.source_monitor.step(int(step))
+            return
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
             self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
             return
@@ -361,6 +473,10 @@ class MainWindow(QMainWindow):
                 can_save=False,
             )
             return
+        if (cmd.id in REPLACES_PROJECT or cmd.id in ("file.closeProject", "file.revert")) and self.export_dialog is not None:
+            # its sequence id belongs to this project: item ids restart in the next one, so a stale
+            # dialog could export a different sequence than it names. Reopening re-reads it.
+            self.export_dialog.hide()
         project_path = (self.project or {}).get("path")
         params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
         if params is not None:
@@ -373,8 +489,9 @@ class MainWindow(QMainWindow):
                 on_error=lambda m: self._command_failed(cmd.id, m),
             )
             return
-        if cmd.needs_params:
-            self._ask_params(cmd)
+        auto = self.targeted(cmd, {})
+        if self.missing_params(cmd, auto):
+            self._ask_params(cmd, values=auto)
             return
 
         def failed(message: str) -> None:
@@ -384,7 +501,7 @@ class MainWindow(QMainWindow):
             else:
                 self._command_failed(cmd.id, message)
 
-        self.engine.execute(cmd.id, {}, on_reply=lambda _r, _b: self.schedule_refresh(), on_error=failed)
+        self.engine.execute(cmd.id, auto, on_reply=lambda _r, _b: self.schedule_refresh(), on_error=failed)
 
     def _ask_params(self, cmd: Command, error: str = "", values: dict[str, Any] | None = None) -> None:
         dlg = ParamDialog(cmd, self, error, values)
@@ -398,6 +515,30 @@ class MainWindow(QMainWindow):
             on_error=lambda m: self._ask_params(cmd, m, params),
         )
 
+    def targeted(self, cmd: Command, params: dict[str, Any]) -> dict[str, Any]:
+        """Commands that take a ``target`` act on the focused monitor (Mark In with the Source
+        monitor focused marks the source clip), as in the egui editor."""
+        if "target" not in params and any(p.name == "target" and "source" in p.hint for p in cmd.param_specs):
+            return {**params, "target": self.active_monitor}
+        return params
+
+    def missing_params(self, cmd: Command, params: dict[str, Any]) -> list[str]:
+        """Required parameters the GUI cannot fill in itself."""
+        return [p.name for p in cmd.param_specs if not p.optional and p.name not in params]
+
+    def focused_monitor(self) -> Monitor:
+        if self.active_monitor == "source" and self.source_monitor.has_content():
+            return self.source_monitor
+        return self.monitor
+
+    def _focus_changed(self, _old: QWidget | None, new: QWidget | None) -> None:
+        if new is None:
+            return
+        if new is self.source_monitor or self.source_monitor.isAncestorOf(new):
+            self.active_monitor = "source"
+        elif new is self.monitor or self.monitor.isAncestorOf(new) or self.timeline.isAncestorOf(new):
+            self.active_monitor = "program"
+
     # ----- playhead -----
     def _scrub(self, ticks: int) -> None:
         self.monitor.set_playhead(ticks)
@@ -405,6 +546,19 @@ class MainWindow(QMainWindow):
     def _playback_moved(self, ticks: int) -> None:
         self.timeline.canvas.playhead = ticks
         self.timeline.canvas.update()
+
+    # ----- export -----
+    def open_export(self) -> None:
+        if self.export_dialog is None:
+            self.export_dialog = ExportDialog(self.engine, self)
+            self.export_dialog.finished_export.connect(self._export_finished)
+        path = (self.project or {}).get("path")
+        self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
+
+    def _export_finished(self, path: str, ok: bool) -> None:
+        text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)
+        self.events.log(text, error=not ok)
+        self.statusBar().showMessage(text, 10_000)
 
     # ----- misc -----
     def _about(self) -> None:
@@ -500,7 +654,8 @@ class MainWindow(QMainWindow):
             self.confirm_unsaved(close_now, discard_and_close, "Save changes to '{name}' before closing?")
             return
         self._closing = True
-        self.monitor.stop()
+        self.monitor.stop(notify=False)
+        self.source_monitor.stop(notify=False)
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("windowState", self.saveState(LAYOUT_VERSION))
         self.engine.stop()

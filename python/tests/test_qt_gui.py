@@ -113,6 +113,17 @@ def app():
     yield instance
 
 
+@pytest.fixture(autouse=True)
+def no_modal_dialogs(monkeypatch):
+    """A modal dialog in a test would wait for a click forever: fail fast and name it instead."""
+
+    def refuse(self, *_args, **_kwargs):
+        raise AssertionError(f"modal dialog opened: {type(self).__name__} {self.objectName()!r} {self.windowTitle()!r}")
+
+    monkeypatch.setattr(QtWidgets.QDialog, "exec", refuse)
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", refuse)
+
+
 @pytest.fixture
 def fake_engine(tmp_path: Path) -> Path:
     path = tmp_path / "fake-cfa4-cli"
@@ -379,6 +390,14 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.run_command(demo)
         assert wait_until(app, lambda: "file.openDemoProject" in sent)
         assert sent.index("file.save") < sent.index("file.openDemoProject")
+        # an Export window left open names the old project's sequence: it is put away
+        class Dialog:
+            hidden = False
+
+            def hide(self):
+                Dialog.hidden = True
+
+        win.export_dialog = Dialog()  # type: ignore[assignment]
         # Don't Save: replaces without saving
         sent.clear()
         engine.execute("test.makeDirty", {})
@@ -386,6 +405,8 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.run_command(demo)
         assert wait_until(app, lambda: "file.openDemoProject" in sent)
         assert "file.save" not in sent
+        assert Dialog.hidden
+        win.export_dialog = None
         # Revert never offers Save (it would overwrite the version reverted to): Cancel keeps the edits
         revert = Command("file.revert", "Revert", ["File"], "", "{}", True)
         buttons: list[QtWidgets.QMessageBox.StandardButtons] = []
@@ -504,6 +525,120 @@ def test_panel_only_shortcuts_follow_the_focused_panel(app):
     win.close()
 
 
+def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
+    """Regressions: Export silently truncated an existing output; an output folder that could not
+    be created raised out of the slot and nothing was shown."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``; ``.png``
+        is an image sequence."""
+
+        def __init__(self):
+            self.sent = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            if command == "export.resolve":
+                path = str((params or {}).get("path"))
+                if on_reply is not None:
+                    fmt = "png" if path.endswith(".png") else "h264"
+                    sidecar = (params or {}).get("captionSidecar")
+                    on_reply({"settings": {"path": path if Path(path).suffix else path + ".mp4", "format": fmt,
+                                           "captionSidecar": sidecar}}, None)
+                return 0
+            self.sent.append((command, dict(params or {})))
+            return 0
+
+    engine = Engine()
+    dlg = ExportDialog(engine)  # type: ignore[arg-type]
+    out = tmp_path / "out.mp4"
+    out.write_bytes(b"previous export")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers = [QtWidgets.QMessageBox.StandardButton.Cancel, QtWidgets.QMessageBox.StandardButton.Yes]
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    dlg._enqueue(True)
+    assert engine.sent == [] and out.read_bytes() == b"previous export"
+    dlg._enqueue(True)
+    assert [c for c, _ in engine.sent] == ["export.queue.add"]
+    dlg._enqueue(False)  # already confirmed for this path: no second question
+    assert len(engine.sent) == 2 and not answers
+    # typed without its extension: the file the engine will write is the one asked about
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(tmp_path / "out")})
+    dlg._replace_confirmed = set()
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2 and not answers
+    # an image sequence writes numbered frames: an earlier export's frames are asked about
+    from cfa4_qt.panels.export import existing_outputs
+
+    seq_dir = tmp_path / "frames"
+    seq_dir.mkdir()
+    (seq_dir / "cut000.png").write_bytes(b"x")
+    (seq_dir / "cut_notes.png").write_bytes(b"x")
+    assert existing_outputs(seq_dir / "cut.png", "png") == [seq_dir / "cut000.png"]
+    assert existing_outputs(seq_dir / "cut.png", "h264") == []
+    assert existing_outputs(seq_dir / "other.png", "png") == []
+    # MXF OP-Atom writes each audio channel to stem_A1.mxf…: those count even without stem.mxf
+    (seq_dir / "cut_A1.mxf").write_bytes(b"x")
+    (seq_dir / "cut_A1.mxf.bak").write_bytes(b"x")
+    assert existing_outputs(seq_dir / "cut.mxf", "mxf-opatom") == [seq_dir / "cut_A1.mxf"]
+    assert existing_outputs(seq_dir / "cut.mxf", "mxf-op1a") == []
+    # a folder that can be written but not listed is not "no frames there": the export stops
+    def unlistable(_self):
+        raise PermissionError("listing denied")
+
+    with monkeypatch.context() as m:
+        m.setattr(Path, "iterdir", unlistable)
+        with pytest.raises(OSError):
+            existing_outputs(seq_dir / "cut.png", "png")
+        m.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
+        dlg._enqueue(True)
+        assert len(engine.sent) == 2 and not answers
+    # the engine keeps the sidecar kind's case (cut.SRT) except for WebVTT
+    from cfa4_qt.panels.export import sidecar_output
+
+    assert sidecar_output("/x/cut.mp4", "SRT") == Path("/x/cut.SRT")
+    assert sidecar_output("/x/cut.mp4", "WebVTT") == Path("/x/cut.vtt")
+    assert sidecar_output("/x/cut.mp4", "none") is None
+    # Browse returning cut.png confirms that file only, not the earlier frames
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
+    dlg._browse()
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 2 and not answers
+    answers.append(QtWidgets.QMessageBox.StandardButton.Yes)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 3 and not answers
+    dlg._enqueue(True)  # the frames are confirmed now
+    assert len(engine.sent) == 4
+    # Browse returning out.mov for an .mp4 format confirmed out.mov, not the existing out.mp4
+    dlg.format.addItem("H.264", "h264")
+    dlg.format.setCurrentIndex(dlg.format.count() - 1)
+    dlg.formats["h264"] = {"extension": "mp4"}
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "out.mov"), ""))
+    dlg._browse()
+    assert dlg.path.text() == str(out)
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 4 and not answers
+    # a caption sidecar the export writes next to the video is asked about too
+    (tmp_path / "talk.srt").write_text("1\n")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(tmp_path / "talk.mp4"), "captionSidecar": "srt"})
+    answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+    dlg._enqueue(True)
+    assert len(engine.sent) == 4 and not answers
+    # a regular file where the folder should be: an error in the dialog, nothing queued
+    blocker = tmp_path / "file"
+    blocker.write_text("x")
+    monkeypatch.setattr(dlg, "params", lambda: {"path": str(blocker / "sub" / "out.mp4")})
+    dlg._enqueue(True)
+    assert len(engine.sent) == 4
+    assert "output folder" in dlg.summary.text()
+    dlg.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 
@@ -546,16 +681,16 @@ def _qt_literals() -> set[str]:
     found: set[str] = set()
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         src = path.read_text(encoding="utf-8")
-        found.update(m.group(1) for m in re.finditer(r'\b(?:tr|fmt)\(\s*"((?:[^"\\]|\\.)*)"', src))
-        found.update(m.group(1) for m in re.finditer(r"\b(?:tr|fmt)\(\s*'((?:[^'\\]|\\.)*)'", src))
+        found.update(m.group(1) for m in re.finditer(r'\b(?:tr|fmt|N_)\(\s*"((?:[^"\\]|\\.)*)"', src))
+        found.update(m.group(1) for m in re.finditer(r"\b(?:tr|fmt|N_)\(\s*'((?:[^'\\]|\\.)*)'", src))
     return found
 
 
 def test_hungarian_catalog_covers_the_qt_gui():
     """The owner works in Hungarian: every Qt GUI string and panel title has a translation."""
     hu = Translator("hu")
-    titles = {"Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
-    missing = sorted(s for s in _qt_literals() | titles if hu.tr(s) == s and s != "CFA4")
+    titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
+    missing = sorted(s for s in _qt_literals() | titles if not hu.has(s))
     assert not missing, missing
 
 
@@ -597,6 +732,178 @@ def test_engine_that_dies_does_not_block_the_gui(app, tmp_path: Path):
         win.close()
 
 
+def _items(project: dict) -> list[dict]:
+    out: list[dict] = []
+
+    def walk(b: dict) -> None:
+        for c in b.get("children") or []:
+            if "item" in c:
+                out.append(c)
+            else:
+                walk(c)
+
+    walk((project or {}).get("root") or {})
+    return out
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_source_monitor(app, tmp_path: Path):
+    from cfa4_qt.commands import Command
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1280, 800)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        movie = next(i for i in _items(win.project) if i.get("type") == "Movie")
+        src = win.source_monitor
+        assert not src.has_content()
+        win.execute("source.open", {"item": movie["item"]})
+        assert wait_until(app, lambda: src.has_content() and src.view.image is not None, 60_000)
+        assert win.active_monitor == "source"
+        assert win.docks["Source"].isVisible()
+        ft = src.frame()
+        # Step Forward with the Source monitor focused moves the source playhead, not the program's
+        program_before = win.monitor.playhead
+        win.run_command(win.registry.commands["playhead.stepForward"])
+        win.run_command(win.registry.commands["playhead.stepForward"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("playhead") == 2 * ft, 10_000), win.source_state
+        assert win.monitor.playhead == program_before
+        # Mark In / Mark Out go to the source clip
+        win.run_command(win.registry.commands["markers.markIn"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("markIn") == 2 * ft, 10_000), win.source_state
+        src.seek(10 * ft)
+        win.run_command(win.registry.commands["markers.markOut"])
+        assert wait_until(app, lambda: (win.source_state or {}).get("markOut") == 10 * ft, 10_000), win.source_state
+        assert src.scrub.mark_in == 2 * ft and src.scrub.mark_out == 10 * ft
+        # the program's own In point stayed untouched
+        assert (win.sequence or {}).get("in") is None
+        # Overwrite puts the marked range into the sequence
+        count = lambda: sum(len(t.get("items") or []) for t in (win.sequence or {}).get("video") or [])
+        before = count()
+        src.buttons["overwrite"].click()
+        assert wait_until(app, lambda: count() > before or bool(win.events.text.toPlainText().strip()), 20_000)
+        assert count() > before, win.events.text.toPlainText()
+        assert isinstance(win.registry.commands.get("source.overwrite"), Command)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path):
+    """Regression: tabifying docks before show() left a stale, visible copy of a tab bar drawn
+    over the panels. Every visible tab bar must belong to exactly one tab group."""
+    from cfa4_qt.main_window import MainWindow
+
+    def bars(win) -> list[tuple[str, ...]]:
+        return [
+            tuple(tb.tabText(i) for i in range(tb.count())) for tb in win.findChildren(QtWidgets.QTabBar) if tb.isVisible()
+        ]
+
+    for _ in range(2):  # first start (default layout), then with the saved layout
+        settings = QtCore.QSettings(str(tmp_path / "layout.ini"), QtCore.QSettings.Format.IniFormat)
+        win = MainWindow(EngineClient(fake_engine), settings)
+        win.resize(1440, 900)
+        win.show()
+        assert wait_until(app, lambda w=win: len(bars(w)) >= 3, 5_000)
+        wait_until(app, lambda: False, 300)
+        found = bars(win)
+        assert len(found) == len(set(found)) == 3, found
+        win.reset_layout.trigger()
+        wait_until(app, lambda: False, 300)
+        found = bars(win)
+        assert len(found) == len(set(found)) == 3, found
+        win._quit_confirmed = True
+        win.close()
+
+
+# ----- export window -----
+def test_export_helpers(tmp_path: Path, monkeypatch):
+    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name, with_extension
+
+    assert with_extension("/a/b.mp4", "mov") == "/a/b.mov"
+    assert with_extension("/a/b", "mp4") == "/a/b.mp4"
+    assert with_extension("/a/b.mp4", "") == "/a/b.mp4"
+    assert safe_file_name("Main/Edit\\x") == "Main_Edit_x"
+    assert safe_file_name(" .. ") == "export"
+    assert format_eta(75) == "1:15" and format_eta(3725) == "1:02:05" and format_eta("x") == ""
+    project = tmp_path / "p" / "film.fcproj"
+    project.parent.mkdir()
+    assert default_output_dir(str(project)) == project.parent
+    monkeypatch.setenv("XDG_VIDEOS_DIR", str(tmp_path))
+    assert default_output_dir(None) == tmp_path
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
+    """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        # File ▸ Export ▸ Media… opens the export window instead of a parameter form
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and dlg.isVisible()
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        # untouched, the preset decides codec, bitrate mode, sound and hardware encoding
+        untouched = dlg.params()
+        for key in ("bitrateMode", "audioCodec", "audio", "hardwareEncoding", "burnCaptions"):
+            assert key not in untouched, untouched
+        assert untouched["sequence"] == win.sequence["id"]
+        dlg.hardware.setChecked(True)
+        assert dlg.params()["hardwareEncoding"] == "auto"
+        dlg.hardware.setChecked(False)
+        assert dlg.params()["hardwareEncoding"] == "off"
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(160)
+        dlg.height_spin.setValue(90)
+        out = tmp_path / "out" / "cut.mp4"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "160×90" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True)
+        assert out.is_file() and out.stat().st_size > 0
+        if shutil.which("ffprobe"):
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height", "-of", "json", str(out)],
+                capture_output=True, check=True, timeout=60,
+            )
+            streams = json.loads(probe.stdout)["streams"]
+            kinds = {s["codec_type"] for s in streams}
+            assert kinds == {"video", "audio"}, streams
+            video = next(s for s in streams if s["codec_type"] == "video")
+            assert (video["width"], video["height"]) == (160, 90)
+        # the export goes back into the project
+        before = len(_items(win.project))
+        win.execute("file.import", {"paths": [str(out)]})
+        assert wait_until(app, lambda: len(_items(win.project)) == before + 1, 30_000)
+        assert any(i.get("name") == "cut.mp4" for i in _items(win.project))
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_tick_signals_carry_64_bit_times(app):
     """Regression: Signal(int) is a 32-bit C int in PySide6, so a playhead past 8.5 ms (ticks are
     254 016 000 000 per second) wrapped to a wrong, often negative time while scrubbing the
@@ -613,8 +920,10 @@ def test_tick_signals_carry_64_bit_times(app):
     timeline.canvas.seek.emit(late)
     monitor = ProgramMonitor(EngineClient(Path(sys.executable)))
     monitor.playhead_moved.connect(got.append)
+    monitor.scrub.seek.connect(got.append)
     monitor.playhead_moved.emit(late)
-    assert got == [late, late]
+    monitor.scrub.seek.emit(late)
+    assert got == [late, late, late]
     # and no tick-carrying Signal(int) comes back anywhere in the GUI
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         assert not re.search(r"Signal\([^)]*\bint\b", path.read_text(encoding="utf-8")), path

@@ -86,8 +86,8 @@ line longer than 4 MiB is skipped with an error reply.
 | `hello` | – | `{protocol, engine, pid, autosave, recovery: [candidate…]}` |
 | `engine.execute` | `{command, params}` | the command's result (any engine command id) |
 | `engine.commands` | – | the registry (`command.list`: id, label, menu, shortcut(s), params, enabled) |
-| `frame.render` | `{time \| seconds \| frame, scale?, maxWidth?, maxHeight?}` | `{w, h, format: "rgba8", time, offline}` + `w·h·4` bytes (sRGB over black) |
-| `audio.render` | `{start (samples) \| time \| seconds, frames}` | `{sampleRate, channels, frames, start, format: "f32le"}` + interleaved samples |
+| `frame.render` | `{target?: "program" \| "source", item?, time \| seconds \| frame, scale?, maxWidth?, maxHeight?}` | `{w, h, format: "rgba8", time, target, offline \| item}` + `w·h·4` bytes (sRGB over black) |
+| `audio.render` | `{target?, item?, start (samples) \| time \| seconds, frames, sampleRate? (source only)}` | `{sampleRate, channels, frames, start, format: "f32le", target}` + interleaved samples |
 | `session.state` | – | `{dirty, revision, path, canUndo, canRedo, playhead}` |
 | `app.quit` | – | `{quit: true}`, then the session ends (as stdin EOF does) |
 
@@ -95,14 +95,56 @@ line longer than 4 MiB is skipped with an error reply.
 frame fits `maxWidth × maxHeight` (16–8192) and is never upscaled. `audio.render` mixes at most
 1 920 000 sample frames per call. Times are engine ticks (254 016 000 000 per second).
 
+With `target: "source"` both render the Source monitor instead: the clip open there (or `item`),
+at the source playhead unless a time is given, in media time. A source picture comes from the
+decoder by whole-number decimation, so it is at least the asked size, not exactly it; the
+source sound is the media's own stream as stereo at `sampleRate` (default 48 000).
+
+## Known Qt issues
+
+Checked 2026-10-24 with PySide6 6.10.2, 6.10.3, 6.11.2 and 6.12.0 (offscreen and minimal
+platforms), each with a minimal reproduction that contains no CFA4 code:
+
+- **Tabifying docks in two dock areas before `show()`** leaves an orphaned copy of a tab bar
+  drawn over the panels (6.10.3, 6.11.2, 6.12.0).
+- **`restoreState()` on a window that is on screen** makes new tab bars and leaves the old ones
+  visible at the same place, one more set per call (6.10.3, 6.11.2, 6.12.0). A stale bar on top
+  of the live one swallows the clicks on the tabs.
+- **Tabifying docks after `show()`** can crash in `tabifyDockWidget` (6.10.2: segmentation fault
+  in 8 of 12 runs).
+- **Restoring a tabbed state into a window whose docks are not tabbed yet** is clean on every
+  version above, before or after `show()`.
+
+So the main window never tabifies its own docks. The default layout is arranged in a hidden
+stand-in window with empty docks of the same names (`MainWindow._default_layout_state`), and the
+real window only restores states: the saved layout, or that default. View ▸ Reset Panel Layout
+restores the default on the live window and hides every tab bar that existed before the restore
+when a new bar shows the same tabs. `test_layout_has_no_orphaned_tab_bars` checks first start,
+start with a saved layout and reset; it passes on all four versions, so `PySide6>=6.10,<7` stays.
+
 ## Code map
 
 | File | Role |
 |---|---|
 | `apps/cfa4-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
+| `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
 | `python/cfa4_qt/main_window.py` | docks, refresh cycle, command routing, close/recovery prompts |
 | `python/cfa4_qt/panels/` | Project, Timeline, Program monitor + playback, Effects, Inspector, History, Events |
 | `python/cfa4_qt/i18n.py`, `i18n/*.tsv` | translations (shared catalogs + Qt/Hungarian) |
 | `python/tests/test_qt_gui.py` | framing, registry, i18n, window against a fake and the real engine |
+
+## Export window
+
+File ▸ Export ▸ Media… (and `export.queue.add`, Ctrl+M) opens a non-modal Export window. It
+lists the engine's presets (`export.presets.list`) and formats (`export.formats`), shows what
+the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames) and sends
+the export to the engine's queue (`export.queue.add`), which the engine server encodes between
+requests; the queue table polls `export.queue.list` for status, progress and remaining time,
+with start/stop, cancel, retry, remove and clear. **Only the settings the user changed override
+the preset** — bitrate mode, audio codec, sound on/off, hardware encoding and caption burn-in
+are not sent until touched, so a preset's own choices are never silently replaced. Frame size
+is always sent when set (the fields show the preset's size; 0 × 0 is the preset's or the
+sequence's). `test_real_engine_export_through_the_dialog_and_reimport` exports through the
+window, checks the file with ffprobe (H.264 + AAC, the asked size) and imports it back.

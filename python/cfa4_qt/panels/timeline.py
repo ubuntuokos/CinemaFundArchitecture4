@@ -13,7 +13,7 @@ from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPainter, QPaintEvent, QPen, QWheelEvent
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QScrollBar, QToolButton, QVBoxLayout, QWidget
 
-from ..i18n import tr
+from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode, frame_ticks
 
 ITEM_MIME = "application/x-cfa4-item"
@@ -552,7 +552,7 @@ class TimelinePanel(QWidget):
         bar.addWidget(self.title)
         bar.addStretch(1)
         self.tool_buttons: dict[str, QToolButton] = {}
-        for tool, label, key in (("selection", "Selection Tool", "V"), ("razor", "Razor Tool", "C")):
+        for tool, label, key in (("selection", N_("Selection Tool"), "V"), ("razor", N_("Razor Tool"), "C")):
             b = QToolButton(self)
             b.setObjectName(f"tools.{tool}")
             b.setText(f"{tr(label)} ({key})")
