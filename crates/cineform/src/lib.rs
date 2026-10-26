@@ -1,4 +1,4 @@
-//! Pure-Rust GoPro CineForm (CFHD) decoder.
+//! Pure-Rust GoPro CineForm (CFHD) decoder and encoder.
 //!
 //! CineForm is a wavelet intermediate codec: in an intra sample every channel is a three-level
 //! 2/6 spatial wavelet pyramid whose highpass bands are run-length / variable-length coded. The
@@ -15,17 +15,22 @@
 //! The SDK and ffmpeg decoders round prescaled levels differently and treat alpha differently;
 //! [`decode_frame`] picks the behaviour of the encoder that wrote the sample ([`Flavor`]).
 //!
+//! [`encode_frame`] writes intra samples (4:2:2 10-bit, RGB / RGBA 12-bit) that ffmpeg's decoder
+//! reads exactly as ours.
+//!
 //! See the crate README for the limitations.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod decode;
+mod encode;
 mod tables;
 mod tags;
 mod vlc;
 mod wavelet;
 
 pub use decode::{decode_frame, decode_frame_as, probe};
+pub use encode::{EncoderConfig, Quality, encode_frame};
 
 /// Codec errors.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

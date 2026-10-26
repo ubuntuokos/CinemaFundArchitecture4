@@ -87,6 +87,9 @@ pub enum Format {
     /// another profile) + PCM.
     #[serde(rename = "apv", alias = "Apv")]
     Apv,
+    /// QuickTime, GoPro CineForm (10-bit 4:2:2 unless the settings pick 12-bit RGB or RGBA) + PCM.
+    #[serde(rename = "cineform", alias = "Cineform")]
+    Cineform,
     /// QuickTime, Motion-JPEG + PCM.
     #[serde(rename = "mjpeg", alias = "Mjpeg")]
     Mjpeg,
@@ -142,6 +145,7 @@ impl Format {
             "prores" | "mov" | "appleprores" => Format::ProRes,
             "dnxhr" | "dnxhd" | "dnx" | "avid" | "aviddnxhr" | "aviddnxhd" | "vc3" => Format::DnxHr,
             "apv" | "apv1" => Format::Apv,
+            "cineform" | "cfhd" | "goprocineform" => Format::Cineform,
             "mxf" | "mxfop1a" | "op1a" => Format::MxfOp1a,
             "mxfopatom" | "opatom" | "mxfatom" | "avidmxf" => Format::MxfOpAtom,
             "mjpeg" | "motionjpeg" | "jpeg" => Format::Mjpeg,
@@ -170,6 +174,7 @@ impl Format {
             Format::ProRes => "prores",
             Format::DnxHr => "dnxhr",
             Format::Apv => "apv",
+            Format::Cineform => "cineform",
             Format::Mjpeg => "mjpeg",
             Format::PngSequence => "png",
             Format::TiffSequence => "tiff",
@@ -190,7 +195,7 @@ impl Format {
     pub fn extension(self) -> &'static str {
         match self {
             Format::H264 | Format::Hevc | Format::Av1 => "mp4",
-            Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg => "mov",
+            Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg => "mov",
             Format::PngSequence => "png",
             Format::TiffSequence => "tif",
             Format::BmpSequence => "bmp",
@@ -214,6 +219,7 @@ impl Format {
             Format::ProRes => "Apple ProRes",
             Format::DnxHr => "Avid DNxHR",
             Format::Apv => "APV",
+            Format::Cineform => "GoPro CineForm",
             Format::Mjpeg => "QuickTime (Motion JPEG)",
             Format::PngSequence => "PNG",
             Format::TiffSequence => "TIFF",
@@ -269,13 +275,14 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 21] = [
+    pub const ALL: [Format; 22] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
         Format::ProRes,
         Format::DnxHr,
         Format::Apv,
+        Format::Cineform,
         Format::Mjpeg,
         Format::PngSequence,
         Format::TiffSequence,
@@ -334,6 +341,14 @@ pub struct ExportSettings {
     /// APV profile: `422-10`, `422-12`, `444-10` or `444-12` (empty = `422-10`).
     #[serde(default)]
     pub apv_profile: String,
+    /// GoPro CineForm encoding: `422` (10-bit YUV), `444` (12-bit RGB) or `4444` (12-bit RGBA)
+    /// (empty = `422`).
+    #[serde(default)]
+    pub cineform_profile: String,
+    /// GoPro CineForm quality: `filmscan3`, `filmscan2`, `filmscan1`, `high`, `medium` or `low`
+    /// (empty = Film Scan 1).
+    #[serde(default)]
+    pub cineform_quality: String,
     /// Video codec of the MXF formats (DNxHR unless set; the ProRes / DNxHR profile fields apply).
     #[serde(default)]
     pub mxf_video_codec: MxfVideoCodec,
@@ -560,6 +575,8 @@ impl Default for ExportSettings {
             prores_profile: String::new(),
             dnx_profile: String::new(),
             apv_profile: String::new(),
+            cineform_profile: String::new(),
+            cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
             sdr: false,
             alpha: false,
@@ -777,7 +794,7 @@ pub type AudioEncoderFactory = fn(format: Format, sample_rate: u32, channels: u3
 
 fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
     static F: OnceLock<RwLock<Vec<EncoderFactory>>> = OnceLock::new();
-    F.get_or_init(|| RwLock::new(vec![h264_factory, prores_factory, dnx_factory, apv_factory, mjpeg_factory]))
+    F.get_or_init(|| RwLock::new(vec![h264_factory, prores_factory, dnx_factory, apv_factory, cineform_factory, mjpeg_factory]))
 }
 fn audio_factories() -> &'static RwLock<Vec<AudioEncoderFactory>> {
     static F: OnceLock<RwLock<Vec<AudioEncoderFactory>>> = OnceLock::new();
@@ -1479,6 +1496,133 @@ fn apv_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
         let chroma = cfg.chroma;
         let enc = cfa4_apv::Encoder::with_config(cfg).map_err(|e| ExportError::Encode(e.to_string()))?;
         Ok(Box::new(ApvEncoder { enc, chroma, w, h, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
+    })
+}
+
+/// The GoPro CineForm encoding named by [`ExportSettings::cineform_profile`].
+pub fn cineform_profile(name: &str) -> cfa4_cineform::EncodedFormat {
+    use cfa4_cineform::EncodedFormat;
+    match name.to_ascii_lowercase().replace([' ', '-', '_', ':'], "").as_str() {
+        "444" | "rgb" | "rgb444" => EncodedFormat::Rgb444,
+        "4444" | "rgba" | "rgba4444" => EncodedFormat::Rgba4444,
+        _ => EncodedFormat::Yuv422,
+    }
+}
+
+/// The GoPro CineForm quality named by [`ExportSettings::cineform_quality`].
+pub fn cineform_quality(name: &str) -> cfa4_cineform::Quality {
+    use cfa4_cineform::Quality;
+    match name.to_ascii_lowercase().replace([' ', '-', '_'], "").as_str() {
+        "filmscan3" | "film3" => Quality::FilmScan3,
+        "filmscan2" | "film2" => Quality::FilmScan2,
+        "high" => Quality::High,
+        "medium" => Quality::Medium,
+        "low" => Quality::Low,
+        _ => Quality::FilmScan1,
+    }
+}
+
+/// Label of a GoPro CineForm encoding and quality ("YUV 4:2:2 10-bit, Film Scan 1").
+pub fn cineform_label(format: cfa4_cineform::EncodedFormat, quality: cfa4_cineform::Quality) -> String {
+    use cfa4_cineform::{EncodedFormat, Quality};
+    let f = match format {
+        EncodedFormat::Rgb444 => "RGB 4:4:4 12-bit",
+        EncodedFormat::Rgba4444 => "RGBA 4:4:4:4 12-bit",
+        _ => "YUV 4:2:2 10-bit",
+    };
+    let q = match quality {
+        Quality::FilmScan3 => "Film Scan 3",
+        Quality::FilmScan2 => "Film Scan 2",
+        Quality::FilmScan1 => "Film Scan 1",
+        Quality::High => "High",
+        Quality::Medium => "Medium",
+        Quality::Low => "Low",
+    };
+    format!("{f}, {q}")
+}
+
+/// GoPro CineForm encoder: 10-bit limited-range 4:2:2 (BT.709, or the HDR matrix) or 12-bit
+/// full-range RGB(A) from RGBA8 or HDR floats.
+struct CineformEncoder {
+    cfg: cfa4_cineform::EncoderConfig,
+    rate: FrameRate,
+    signal: ColorSignal,
+}
+
+impl VideoEncoder for CineformEncoder {
+    fn sample_entry(&self) -> SampleEntry {
+        let mut e = SampleEntry::cineform(self.cfg.width as u16, self.cfg.height as u16);
+        let rgb = self.cfg.format != cfa4_cineform::EncodedFormat::Yuv422;
+        // RGB samples carry no matrix; decoders derive Y'CbCr from them with BT.709
+        let signal = if rgb { ColorSignal { matrix: 1, ..self.signal } } else { self.signal };
+        signal.apply_to(&mut e, true);
+        if let Some(v) = e.video.as_mut()
+            && self.cfg.format == cfa4_cineform::EncodedFormat::Rgba4444
+        {
+            v.depth = 32;
+        }
+        e
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        use cfa4_cineform::EncodedFormat;
+        let (w, h) = (f.width as usize, f.height as usize);
+        if (f.width, f.height) != (self.cfg.width, self.cfg.height) {
+            return Err(ExportError::Encode("CineForm frame size changed".into()));
+        }
+        let planes: Vec<Vec<u16>> = timed(Stage::Convert, || match self.cfg.format {
+            EncodedFormat::Yuv422 => {
+                let cw = w.div_ceil(2);
+                let (mut y, mut cb, mut cr) = (vec![0u16; w * h], vec![0u16; cw * h], vec![0u16; cw * h]);
+                match f.hdr {
+                    Some(rgb) => {
+                        let (kr, kb) = self.signal.kr_kb();
+                        rgbf_to_yuv422_10(rgb, w, h, kr, kb, &mut y, &mut cb, &mut cr)
+                    }
+                    None => rgba_to_yuv422_10(f.rgba, w, h, &mut y, &mut cb, &mut cr),
+                }
+                vec![y, cb, cr]
+            }
+            format => {
+                let n = w * h;
+                let mut planes = vec![vec![0u16; n]; format.channels()];
+                let to12 = |v: u8| ((u32::from(v) * 4095 + 127) / 255) as u16;
+                for (i, px) in (0..n).zip(f.rgba.chunks_exact(4)) {
+                    for (c, plane) in planes.iter_mut().enumerate() {
+                        let v = match (f.hdr, c) {
+                            (Some(rgb), 0..=2) => rgb.get(i * 3 + c).map_or(0, |&x| (x.clamp(0.0, 1.0) * 4095.0).round() as u16),
+                            (Some(_), _) => 4095,
+                            (None, _) => px.get(c).map_or(4095, |&x| to12(x)),
+                        };
+                        if let Some(d) = plane.get_mut(i) {
+                            *d = v;
+                        }
+                    }
+                }
+                planes
+            }
+        });
+        let refs: Vec<&[u16]> = planes.iter().map(Vec::as_slice).collect();
+        let data = cfa4_cineform::encode_frame(&self.cfg, &refs).map_err(|e| ExportError::Encode(e.to_string()))?;
+        Ok(vec![EncodedPacket { data, key: true, duration: self.rate.den as u32, composition_offset: 0 }])
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        Ok(Vec::new())
+    }
+}
+
+fn cineform_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    (format == Format::Cineform).then(|| {
+        let mut encoded = cineform_profile(&s.cineform_profile);
+        // alpha needs the RGBA encoding; without it the alpha channel is not coded
+        if encoded == cfa4_cineform::EncodedFormat::Rgba4444 && !s.keeps_alpha() {
+            encoded = cfa4_cineform::EncodedFormat::Rgb444;
+        }
+        let cfg = cfa4_cineform::EncoderConfig { width: w, height: h, format: encoded, quality: cineform_quality(&s.cineform_quality) };
+        cfg.validate().map_err(|e| ExportError::Unsupported(format!("GoPro CineForm at {w}×{h}: {e}")))?;
+        Ok(Box::new(CineformEncoder { cfg, rate, signal: s.signal }) as Box<dyn VideoEncoder>)
     })
 }
 
