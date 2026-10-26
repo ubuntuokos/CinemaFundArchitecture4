@@ -1341,3 +1341,19 @@ fn transform_shutter_uses_the_sequence_frame_rate_without_env() {
         assert!(delta(frame) > 1e-3, "frame {frame} moves but is sharp");
     }
 }
+
+#[test]
+fn film_gate_counts_exact_frame_boundaries_as_their_own_frame() {
+    // ticks per frame at 25 fps and at 30000/1001 fps are whole numbers
+    for (num, den) in [(25i64, 1i64), (24, 1), (30000, 1001), (60000, 1001), (50, 1)] {
+        let tpf = cfa4_time::TICKS_PER_SECOND / num * den;
+        let fps = num as f64 / den as f64;
+        for n in 0..2000i64 {
+            let t = cfa4_time::Tick(tpf * n);
+            assert_eq!(super::distort::gate_frame(t.seconds(), fps), n as f64, "frame {n} at {num}/{den}");
+            // the middle of the frame stays in it too
+            assert_eq!(super::distort::gate_frame(cfa4_time::Tick(tpf * n + tpf / 2).seconds(), fps), n as f64);
+        }
+    }
+    assert_eq!(super::distort::gate_frame(f64::NAN, 24.0), 0.0);
+}

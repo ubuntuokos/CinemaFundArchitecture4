@@ -374,6 +374,14 @@ pub fn camera_shake(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     });
 }
 
+/// The frame index at `seconds`. A tick time at an exact frame boundary can come out a hair
+/// under the whole frame in f64 (frame 29 at 25 fps is 28.999999999999996), so the index is
+/// nudged by far less than a frame before flooring.
+pub(crate) fn gate_frame(seconds: f64, fps: f64) -> f64 {
+    let f = (seconds * fps + 1e-6).floor();
+    if f.is_finite() { f } else { 0.0 }
+}
+
 /// Film Gate (CFA4): each frame sits slightly off in the projector gate (mostly vertically) and is
 /// exposed a little brighter or darker. Both are held for the whole frame, like real film.
 pub fn film_gate(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
@@ -386,8 +394,7 @@ pub fn film_gate(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     // adjustment layers and nested temporal renders have no environment, only the sequence rate
     let fps = cx.env.map_or(cx.frame_rate, |env| env.frame_rate());
     let fps = if fps.is_finite() && fps > 0.0 { fps } else { 24.0 };
-    let frame = (cx.seconds * fps).floor();
-    let frame = if frame.is_finite() { frame } else { 0.0 };
+    let frame = gate_frame(cx.seconds, fps);
     // a slow drift plus a frame-to-frame jump, in about −1..1
     let wobble = |ch: u64| -> f64 { (noise1(frame * 0.07, ch, seed) as f64 * 1.2 + noise1(frame * 0.9, ch + 10, seed) as f64 * 0.6).clamp(-1.5, 1.5) };
     if weave > 0.0 || rot > 0.0 {
