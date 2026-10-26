@@ -60,6 +60,7 @@ from .. import theme
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode
+from .fx_editor import HAS_EDITOR
 
 # a pause longer than this starts a new undo step for the next change of the same value
 GESTURE_GAP_MS = 800
@@ -288,6 +289,24 @@ class EffectHeader(LinedRow):
             clear.triggered.connect(lambda: self.panel.send("effects.remove", {"clip": self.clip, "index": self.index}))
         self.panel.last_menu = menu
         menu.exec(e.globalPos())
+
+
+class CustomSetupRow(LinedRow):
+    """Premiere's "Custom Setup ▸ Edit…" row of an audio effect with a graphical editor (egui's
+    ``custom_setup_row``): opens its Clip Fx Editor window."""
+
+    def __init__(self, panel: EffectControlsPanel, parent: QWidget, clip: int, index: int, effect: str) -> None:
+        super().__init__(parent)
+        self.setFixedHeight(ROW_H)
+        label = QLabel(tr("Custom Setup"), self)
+        label.setStyleSheet(f"color: {theme.current().text_dim};")
+        label.move(42, 0)
+        label.setFixedHeight(ROW_H)
+        self.edit = QPushButton(tr("Edit…"), self)
+        self.edit.setObjectName(f"effectControls.effect.{effect}.edit")
+        self.edit.setAutoDefault(False)
+        self.edit.setGeometry(160, 2, 60, ROW_H - 4)
+        self.edit.clicked.connect(lambda: panel.fx_editor.emit({"clip": clip, "effect": index}))
 
 
 class ParamRow(LinedRow):
@@ -1540,6 +1559,7 @@ class EffectControlsPanel(QWidget):
     command = Signal(str, dict)
     seek = Signal(object)  # ticks; object, not a 32-bit int
     eyedropper_armed = Signal(object)  # the colour parameter (effects.* target) or None
+    fx_editor = Signal(dict)  # open the Clip Fx Editor of {"clip", "effect"}
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -1554,6 +1574,7 @@ class EffectControlsPanel(QWidget):
         self.linked_rows: dict[tuple[int, str], ParamRow] = {}
         self.headers: dict[tuple[int, int], EffectHeader] = {}
         self.effect_rows: dict[tuple[int, int], list[ParamRow]] = {}
+        self.custom_rows: dict[tuple[int, int], CustomSetupRow] = {}
         self.collapsed: set[tuple[int, int]] = set()
         self.open_graphs: set[tuple[int, int, str]] = set()
         self.collapsed_masks: set[tuple[int, int, int]] = set()
@@ -1819,6 +1840,7 @@ class EffectControlsPanel(QWidget):
                 w.setParent(None)
                 w.deleteLater()
         self.rows, self.linked_rows, self.headers, self.effect_rows = {}, {}, {}, {}
+        self.custom_rows = {}
         self.masks, self.mask_tools = {}, {}
         self._shape = None
         for n, c in enumerate(clips):
@@ -1848,6 +1870,10 @@ class EffectControlsPanel(QWidget):
                 header = EffectHeader(self, self.column, cid, e, f"{prefix}.{index}", first_added)
                 self.headers[(cid, index)] = header
                 self._add(header)
+                if str(e.get("effect") or "") in HAS_EDITOR:
+                    custom = CustomSetupRow(self, self.column, cid, index, str(e.get("effect")))
+                    self.custom_rows[(cid, index)] = custom
+                    self._add(custom)
                 params: list[ParamRow] = []
                 for info in e.get("params") or []:
                     if isinstance(info, dict):
@@ -1902,6 +1928,9 @@ class EffectControlsPanel(QWidget):
         tools = self.mask_tools.get((clip, index))
         if tools is not None:
             tools.setVisible(is_open)
+        custom = self.custom_rows.get((clip, index))
+        if custom is not None:
+            custom.setVisible(is_open)
         for (c, i, k), (mh, mrows, inverted) in self.masks.items():
             if (c, i) == (clip, index):
                 mh.setVisible(is_open)

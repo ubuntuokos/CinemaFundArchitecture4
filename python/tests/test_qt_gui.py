@@ -1758,6 +1758,143 @@ def test_real_engine_colour_eyedropper_picks_from_the_program_monitor(app, tmp_p
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_fx_editor_windows_edit_eq_and_dynamics_as_egui(app, tmp_path: Path):
+    """egui's Clip / Track Fx Editor: Effect Controls' "Custom Setup ▸ Edit…" opens the clip
+    effect's window, a mixer insert slot's "Edit…" the track effect's; curves come from the DSP;
+    a drag previews without editing and commits on release (Esc drops it), a double-click
+    switches an EQ band, the wheel sets its Q; removing the effect closes its window."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.fx_editor import BandFader, CrossoverHandle, EqNode, FxSlider
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1700, 1000)
+    win.show()
+    engine.start()
+    ec, mixer = win.effect_controls, win.mixer
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    nomod = QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(widget, kind, at: QtCore.QPointF, button, buttons) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(widget, QtGui.QMouseEvent(kind, p, p, widget.mapToGlobal(p), button, buttons, nomod))
+
+    def press_move(widget, a: QtCore.QPointF, b: QtCore.QPointF) -> None:
+        send(widget, QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        for i in range(1, 6):
+            send(widget, QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 5), none, left)
+
+    def release(widget, b: QtCore.QPointF) -> None:
+        send(widget, QtCore.QEvent.Type.MouseButtonRelease, b, left, none)
+
+    def settled(ed) -> bool:
+        return not ed.drafts and not ed.settling and not ed._busy
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["audio"][0]["items"][0]
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        win.execute("effects.apply", {"clips": [clip["clip"]], "effect": "parametric_eq"})
+        assert wait_until(app, lambda: any(k[0] == clip["clip"] for k in ec.custom_rows), 20_000)
+        (cid, index), row = next((k, r) for k, r in ec.custom_rows.items() if k[0] == clip["clip"])
+        assert row.edit.objectName() == "effectControls.effect.parametric_eq.edit"
+        row.edit.click()
+        ed = win.fx_editors[("clip", cid, index)]
+        assert wait_until(app, lambda: ed.fx == "parametric_eq" and len(ed.data.get("response") or []) == 241, 10_000)
+        assert ed.windowTitle().startswith("Clip Fx Editor - Parametric Equalizer: ")
+        row.edit.click()  # raised, not a second window
+        assert len(win.fx_editors) == 1
+        plot = ed.findChild(QtWidgets.QWidget, "fxEditor.parametric_eq.plot")
+        node = ed.findChild(EqNode, "fxEditor.parametric_eq.node.mid")
+        assert plot is not None and node is not None and ed.findChild(QtWidgets.QWidget, "fxEditor.parametric_eq.close") is not None
+        steps = win.history.list.count()
+        # a drag up previews a boost (the curve, not the project), Esc drops it
+        start = QtCore.QPointF(node.width() / 2, node.height() / 2)
+        up = start + QtCore.QPointF(0, -plot.height() / 5)
+        press_move(node, start, up)
+        assert wait_until(app, lambda: max(db for _f, db in ed.data["response"]) > 5.0, 10_000)
+        QtTest.QTest.keyClick(node, QtCore.Qt.Key.Key_Escape)
+        release(node, up)
+        assert wait_until(app, lambda: settled(ed) and max(db for _f, db in ed.data["response"]) < 1.0, 10_000)
+        assert win.history.list.count() == steps
+        # the same drag released: frequency and gain are edited
+        node.sync()
+        press_move(node, start, up)
+        release(node, up)
+        assert wait_until(app, lambda: settled(ed) and ed.v("mid_gain") > 5.0, 10_000), ed.v("mid_gain")
+        assert wait_until(app, lambda: win.history.list.count() == steps + 2, 10_000)
+        assert max(db for _f, db in ed.data["response"]) > 5.0
+        # the wheel sets Q, a double-click switches the band off, its toggle on again
+        q = ed.v("mid_q")
+        QtWidgets.QApplication.sendEvent(node, QtGui.QWheelEvent(start, node.mapToGlobal(start), QtCore.QPoint(), QtCore.QPoint(0, 120),
+                                                                 none, nomod, QtCore.Qt.ScrollPhase.NoScrollPhase, False))
+        assert wait_until(app, lambda: settled(ed) and abs(ed.v("mid_q") - round(q * 1.1, 2)) < 1e-6, 10_000), ed.v("mid_q")
+        QtTest.QTest.mouseDClick(node, left, nomod, start.toPoint())
+        assert wait_until(app, lambda: settled(ed) and not ed.on("mid_on"), 10_000)
+        toggle = ed.findChild(QtWidgets.QToolButton, "fxEditor.parametric_eq.toggle.mid_on")
+        assert not toggle.isChecked()
+        toggle.click()
+        assert wait_until(app, lambda: settled(ed) and ed.on("mid_on") and toggle.isChecked(), 10_000)
+        master = ed.findChild(FxSlider, "fxEditor.parametric_eq.param.master_gain")
+        a = QtCore.QPointF(master.track().center())
+        press_move(master, a, a + QtCore.QPointF(master.track().width() / 4, 0))
+        release(master, a + QtCore.QPointF(master.track().width() / 4, 0))
+        assert wait_until(app, lambda: settled(ed) and ed.v("master_gain") > 5.0, 10_000), ed.v("master_gain")
+        # removing the effect closes its window
+        win.execute("effects.remove", {"clip": cid, "index": index})
+        assert wait_until(app, lambda: not win.fx_editors and not ed.isVisible(), 10_000)
+
+        # Track Fx Editor from a mixer insert slot
+        win.docks["Audio Track Mixer"].show()
+        win.docks["Audio Track Mixer"].raise_()
+        for fx in ("graphic_eq", "multiband_compressor", "dynamics_rack"):
+            win.execute("mixer.addInsert", {"strip": "A1", "effect": fx})
+        assert wait_until(app, lambda: any(s.ref == "A1" and len(s.data.get("inserts") or []) == 3 for s in mixer.strips), 10_000)
+        a1 = next(s for s in mixer.strips if s.ref == "A1")
+        edit = next(a for a in a1.menu_for("fx.0").actions() if a.objectName() == "mixer.A1.fx.0.edit")
+        edit.trigger()
+        geq = win.fx_editors[("insert", a1.sid(), 0)]
+        assert wait_until(app, lambda: geq.fx == "graphic_eq" and geq.windowTitle().startswith("Track Fx Editor - Graphic Equalizer (10 Bands): "), 10_000), geq.windowTitle()
+        band = geq.findChild(BandFader, "fxEditor.graphic_eq.param.b3")
+        mid = QtCore.QPointF(band.track().center())
+        press_move(band, mid, mid + QtCore.QPointF(0, -band.track().height() / 4))
+        release(band, mid + QtCore.QPointF(0, -band.track().height() / 4))
+        assert wait_until(app, lambda: settled(geq) and geq.v("b3") >= 11.5, 10_000), geq.v("b3")
+        geq.findChild(QtWidgets.QPushButton, "fxEditor.graphic_eq.reset").click()
+        assert wait_until(app, lambda: settled(geq) and geq.v("b3") == 0.0, 10_000)
+        if not mixer.fx_open:
+            mixer.fx_button.click()
+        assert wait_until(app, lambda: "fx.1" in a1.regions, 5_000)
+        a1.mouseDoubleClickEvent(QtGui.QMouseEvent(QtCore.QEvent.Type.MouseButtonDblClick, a1.regions["fx.1"].center(), a1.regions["fx.1"].center(),
+                                                   a1.mapToGlobal(a1.regions["fx.1"].center()), left, left, nomod))
+        mb = win.fx_editors[("insert", a1.sid(), 1)]
+        assert wait_until(app, lambda: mb.fx == "multiband_compressor" and len(mb.data.get("transfer") or []) == 4, 10_000)
+        assert mb.findChild(QtWidgets.QWidget, "fxEditor.multiband_compressor.curve.4") is not None
+        xo = mb.findChild(CrossoverHandle, "fxEditor.multiband_compressor.xo2")
+        before = mb.v("xo2")
+        c = QtCore.QPointF(5, xo.height() / 2)
+        press_move(xo, c, c + QtCore.QPointF(60, 0))
+        release(xo, c + QtCore.QPointF(60, 0))
+        assert wait_until(app, lambda: settled(mb) and mb.v("xo2") > before * 1.5, 10_000), (before, mb.v("xo2"))
+        solo = mb.findChild(QtWidgets.QToolButton, "fxEditor.multiband_compressor.toggle.b2_solo")
+        solo.click()
+        assert wait_until(app, lambda: settled(mb) and mb.on("b2_solo"), 10_000)
+        dyn = win.open_fx_editor({"strip": a1.sid(), "slot": 2})
+        assert wait_until(app, lambda: dyn.fx == "dynamics_rack" and len(dyn.data.get("transfer") or []) == 1, 10_000)
+        flat = list(dyn.data["transfer"][0])
+        dyn.findChild(QtWidgets.QToolButton, "fxEditor.dynamics_rack.toggle.comp_on").click()
+        assert wait_until(app, lambda: settled(dyn) and dyn.data["transfer"][0] != flat, 10_000)
+        assert dyn.grab().width() > 0 and mb.grab().width() > 0 and geq.grab().width() > 0
+        dyn.findChild(QtWidgets.QPushButton, "fxEditor.dynamics_rack.close").click()
+        assert ("insert", a1.sid(), 2) not in win.fx_editors
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_path: Path):
     """egui's transitions: drawn on the Timeline, a click selects one (Effect Controls shows it:
     Duration, Alignment, Reverse, its settings, its own timeline), dragging an end changes its

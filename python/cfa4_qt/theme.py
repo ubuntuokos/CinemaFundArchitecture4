@@ -65,6 +65,16 @@ class Tokens:
     in_out_shade: str
     clip_selected_border: str
     clip_bar_bg: str  # a clip's bar in Effect Controls' lane (egui's)
+    plot_bg: str  # Fx Editor plots (egui's)
+    plot_grid: str
+    plot_axis: str
+    eq_track: str
+    eq_tick: str
+    eq_knob: str
+    eq_knob_active: str
+    eq_node: str
+    eq_node_off: str
+    crossover_handle: str
     monitor_bg: str
     timecode: str
     meter_bg: str
@@ -119,6 +129,16 @@ DARKEST = Tokens(
     in_out_shade="#3f3f3f",
     clip_selected_border="#ebebeb",
     clip_bar_bg="#3a3a46",
+    plot_bg="#181818",
+    plot_grid="#2c2c2c",
+    plot_axis="#444444",
+    eq_track="#303030",
+    eq_tick="#606060",
+    eq_knob="#c0c0c0",
+    eq_knob_active="#f0f0f0",
+    eq_node="#e8e8e8",
+    eq_node_off="#707070",
+    crossover_handle="#ffffff",
     monitor_bg="#1d1d1d",
     timecode="#4096f3",
     meter_bg="#000000",
@@ -146,6 +166,16 @@ LIGHT = replace(
     DARKEST,
     kind="light",
     clip_bar_bg="#becbe0",
+    plot_bg="#f5f5f5",
+    plot_grid="#d2d2d2",
+    plot_axis="#aaaaaa",
+    eq_track="#c4c4c4",
+    eq_tick="#969696",
+    eq_knob="#555555",
+    eq_knob_active="#222222",
+    eq_node="#323232",
+    eq_node_off="#8c8c8c",
+    crossover_handle="#323232",
     app_bg="#b4b4b4",
     header_bg="#d6d6d6",
     panel_bg="#e8e8e8",

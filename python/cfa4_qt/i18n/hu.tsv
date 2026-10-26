@@ -1236,3 +1236,35 @@
 	Override media colour space:	Média színterének felülírása:
 	Use file metadata	A fájl metaadatai szerint
 	Motion Graphics Templates	Mozgógrafikai sablonok
+	Clip Fx Editor	Klip effektszerkesztő
+	Track Fx Editor	Sáv effektszerkesztő
+	Custom Setup	Egyéni beállítás
+	Edit…	Szerkesztés…
+	Master Gain	Fő erősítés
+	Band {n}	{n}. sáv
+	Solo	Szóló
+	Thr	Küsz.
+	Ratio	Arány
+	Att	Felf.
+	Rel	Lecs.
+	Output Gain	Kimeneti erősítés
+	Limiter	Limiter
+	Link Channels	Csatornák összekapcsolása
+	Limiter Threshold	Limiter küszöbszint
+	Limiter Release	Limiter lecsengés
+	Auto Gate	Automatikus kapu
+	Threshold	Küszöbszint
+	Attack	Felfutás
+	Release	Lecsengés
+	Compressor	Kompresszor
+	Auto Makeup	Automatikus szintpótlás
+	Makeup	Szintpótlás
+	Expander	Expander
+	Soft Clip	Lágy vágás
+	out	ki
+	in	be
+	Parametric Equalizer	Parametrikus hangszínszabályzó
+	Graphic Equalizer (10 Bands)	Grafikus hangszínszabályzó (10 sáv)
+	Graphic Equalizer (20 Bands)	Grafikus hangszínszabályzó (20 sáv)
+	Graphic Equalizer (30 Bands)	Grafikus hangszínszabályzó (30 sáv)
+	Multiband Compressor	Többsávos kompresszor

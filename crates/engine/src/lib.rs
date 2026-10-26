@@ -22,6 +22,7 @@ pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
 mod eyedropper;
+mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;

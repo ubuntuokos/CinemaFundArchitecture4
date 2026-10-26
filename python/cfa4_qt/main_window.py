@@ -38,6 +38,7 @@ from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
 from .panels.essential_sound import EssentialSoundPanel
 from .panels.export import ExportDialog
+from .panels.fx_editor import FxEditor, target_key
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
@@ -338,6 +339,9 @@ class MainWindow(QMainWindow):
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
         self.effect_controls.eyedropper_armed.connect(self.monitor.overlay.arm_eyedropper)
+        self.fx_editors: dict[tuple[Any, ...], FxEditor] = {}
+        self.effect_controls.fx_editor.connect(self.open_fx_editor)
+        self.mixer.fx_editor.connect(self.open_fx_editor)
         self.monitor.overlay.eyedropper_done.connect(lambda: self.effect_controls.arm_eyedropper(None))
         self.tools.tool_selected.connect(lambda tool: setattr(self.monitor.overlay, "enabled", tool == "selection"))
         self.inspector.seek.connect(self._seek_program)
@@ -1174,6 +1178,27 @@ class MainWindow(QMainWindow):
         self.update_jobs()
         self.update_mixer()
         self.update_clip_mixer()
+        for editor in list(self.fx_editors.values()):
+            editor.refresh()
+
+    def open_fx_editor(self, target: dict[str, Any]) -> FxEditor:
+        """Open (or raise) the Clip / Track Fx Editor of ``{"clip", "effect"}`` or
+        ``{"strip", "slot"}``, as egui's ``audio_fx_editor::open``."""
+        key = target_key(target)
+        editor = self.fx_editors.get(key)
+        if editor is None:
+            def query(params: dict[str, Any], on_reply: Any, on_error: Any) -> None:
+                self.engine.execute("audio.fxEditor", params, on_reply=lambda r, _b: on_reply(r), on_error=on_error)
+
+            editor = FxEditor(target, query, self)
+            editor.command.connect(self.execute)
+            editor.closed.connect(lambda ed: self.fx_editors.pop(ed.key, None) if self.fx_editors.get(ed.key) is ed else None)
+            self.fx_editors[key] = editor
+            editor.refresh()
+        editor.show()
+        editor.raise_()
+        editor.activateWindow()
+        return editor
 
     def update_mixer(self) -> None:
         """The Audio Track Mixer's strips at the playhead (``mixer.inspect``)."""

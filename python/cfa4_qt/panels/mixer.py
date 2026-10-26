@@ -24,6 +24,7 @@ from .. import theme
 from ..hot_number import HotSpin
 from ..i18n import N_, tr
 from ..timecode import format_timecode, frame_ticks
+from .fx_editor import HAS_EDITOR
 from .meters import AudioMetersPanel, to_db
 from .transport import transport_icon
 
@@ -473,7 +474,13 @@ class Strip(QWidget):
 
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
         key = self.region_at(e.position())
-        if key == "cap":
+        if key is not None and key.startswith("fx."):
+            k = int(key.split(".")[1])
+            inserts = {int(e.get("slot", i)): e for i, e in enumerate(self.data.get("inserts") or [])}
+            e = inserts.get(k)
+            if e is not None and str(e.get("effect") or "") in HAS_EDITOR:
+                self.panel.fx_editor.emit({"strip": self.sid(), "slot": k})
+        elif key == "cap":
             self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "volume", "value": 0.0})
         elif key == "pan":
             self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan", "value": 0.0})
@@ -525,6 +532,11 @@ class Strip(QWidget):
             inserts = {int(e.get("slot", i)): e for i, e in enumerate(self.data.get("inserts") or [])}
             e = inserts.get(k)
             if e is not None:
+                if str(e.get("effect") or "") in HAS_EDITOR:
+                    edit = menu.addAction(tr("Edit…"))
+                    edit.setObjectName(f"mixer.{self.ref}.{key}.edit")
+                    edit.triggered.connect(lambda _c=False: self.panel.fx_editor.emit({"strip": sid, "slot": k}))
+                    menu.addSeparator()
                 item(tr("Bypass"), "mixer.setInsert", {"strip": sid, "slot": k, "enabled": not e.get("enabled", True)}, not e.get("enabled", True), "bypass")
                 item(tr("Post-Fader"), "mixer.setInsert", {"strip": sid, "slot": k, "postFader": not e.get("postFader")}, bool(e.get("postFader")), "postFader")
                 menu.addSeparator()
@@ -571,6 +583,7 @@ class Strip(QWidget):
 class TrackMixerPanel(QWidget):
     command = Signal(str, dict)
     transport = Signal(str)  # a footer button: goIn, goOut, toggle, inToOut, loop
+    fx_editor = Signal(dict)  # open the Track Fx Editor of {"strip", "slot"}
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
