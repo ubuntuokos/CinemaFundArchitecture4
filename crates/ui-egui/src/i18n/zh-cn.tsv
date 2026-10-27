@@ -3598,3 +3598,27 @@
 	Time Span (seconds)	时间跨度（秒）
 	Current Frame At	当前帧位置
 	Blend Slices	混合切片
+	Easing Presets	缓动预设
+	Sine	正弦
+	Exponential	指数
+	Circular	圆形
+	Elastic	弹性
+	Film Gate	片门
+	Gate Weave	片门晃动
+	Weave Rotation	晃动旋转
+	Particles	粒子
+	Emitter Position	发射器位置
+	Birth Rate	生成速率
+	Lifetime (seconds)	寿命（秒）
+	Velocity Random	随机速度
+	Gravity	重力
+	Particle Size	粒子大小
+	Keyhole	钥匙孔
+	Burn Away	烧毁
+	Burn Size	燃烧大小
+	Ember Width	余烬宽度
+	Ember Color	余烬颜色
+	Check Text Legibility	检查文本可读性
+	Clear Legibility Markers	清除可读性标记
+	Text legibility: no problems found	文本可读性：未发现问题
+	Text legibility: {count} problems marked on the timeline (orange markers)	文本可读性：已在时间轴上标记 {count} 个问题（橙色标记）

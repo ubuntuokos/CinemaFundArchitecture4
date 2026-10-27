@@ -28,6 +28,7 @@ pub mod graphics;
 pub mod interchange;
 pub mod keyboard;
 mod keyframe_move;
+pub mod legibility;
 mod marker_export;
 pub mod masks;
 pub mod media_browser;
@@ -1248,6 +1249,8 @@ mod individual_selection_tests;
 mod interchange_auto_points_tests;
 #[cfg(test)]
 mod keyboard_tests;
+#[cfg(test)]
+mod legibility_tests;
 #[cfg(test)]
 mod linked_speed_tests;
 #[cfg(test)]

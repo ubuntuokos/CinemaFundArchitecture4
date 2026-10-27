@@ -3591,3 +3591,27 @@
 	Time Span (seconds)	Intervalo de tempo (segundos)
 	Current Frame At	Quadro atual em
 	Blend Slices	Mesclar fatias
+	Easing Presets	Predefinições de suavização
+	Sine	Senoidal
+	Exponential	Exponencial
+	Circular	Circular
+	Elastic	Elástica
+	Film Gate	Janela do filme
+	Gate Weave	Oscilação da janela
+	Weave Rotation	Rotação da oscilação
+	Particles	Partículas
+	Emitter Position	Posição do emissor
+	Birth Rate	Taxa de nascimento
+	Lifetime (seconds)	Tempo de vida (segundos)
+	Velocity Random	Velocidade aleatória
+	Gravity	Gravidade
+	Particle Size	Tamanho da partícula
+	Keyhole	Buraco de fechadura
+	Burn Away	Queimar
+	Burn Size	Tamanho da queima
+	Ember Width	Largura da brasa
+	Ember Color	Cor da brasa
+	Check Text Legibility	Verificar legibilidade do texto
+	Clear Legibility Markers	Limpar marcadores de legibilidade
+	Text legibility: no problems found	Legibilidade do texto: nenhum problema encontrado
+	Text legibility: {count} problems marked on the timeline (orange markers)	Legibilidade do texto: {count} problemas marcados na linha do tempo (marcadores laranja)

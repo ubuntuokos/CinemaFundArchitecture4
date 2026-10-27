@@ -3609,3 +3609,27 @@
 	Time Span (seconds)	시간 범위(초)
 	Current Frame At	현재 프레임 위치
 	Blend Slices	슬라이스 혼합
+	Easing Presets	이징 프리셋
+	Sine	사인
+	Exponential	지수
+	Circular	원형
+	Elastic	탄성
+	Film Gate	필름 게이트
+	Gate Weave	게이트 흔들림
+	Weave Rotation	흔들림 회전
+	Particles	파티클
+	Emitter Position	이미터 위치
+	Birth Rate	생성률
+	Lifetime (seconds)	수명(초)
+	Velocity Random	속도 무작위
+	Gravity	중력
+	Particle Size	파티클 크기
+	Keyhole	열쇠 구멍
+	Burn Away	타들어 가기
+	Burn Size	타는 크기
+	Ember Width	불씨 폭
+	Ember Color	불씨 색상
+	Check Text Legibility	텍스트 가독성 검사
+	Clear Legibility Markers	가독성 마커 지우기
+	Text legibility: no problems found	텍스트 가독성: 문제가 없습니다
+	Text legibility: {count} problems marked on the timeline (orange markers)	텍스트 가독성: 타임라인에 문제 {count}개를 표시했습니다(주황색 마커)

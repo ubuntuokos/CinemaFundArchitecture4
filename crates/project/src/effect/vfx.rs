@@ -405,6 +405,28 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 blend_orig(),
             ],
         ),
+        // CFA4's own (not in Premiere's bin): a seeded particle fountain, computed from the clip time
+        // alone so any frame renders the same without simulating the frames before it.
+        video(
+            "particles",
+            "Particles",
+            GENERATE,
+            vec![
+                pt("emitter", "Emitter Position", f64::NAN, f64::NAN),
+                fs("rate", "Birth Rate", 40.0, (0.0, 500.0), (0.0, 200.0), "/s", 1),
+                fs("life", "Lifetime (seconds)", 2.0, (0.05, 10.0), (0.05, 5.0), "", 2),
+                ang("direction", "Direction", 0.0),
+                fs("spread", "Spread", 60.0, (0.0, 360.0), (0.0, 360.0), "°", 0),
+                px("speed", "Velocity", 300.0, 5000.0, 1000.0),
+                pct("speed_random", "Velocity Random", 30.0),
+                fs("gravity", "Gravity", 200.0, (-5000.0, 5000.0), (-1000.0, 1000.0), "", 0),
+                px("size", "Particle Size", 6.0, 200.0, 50.0),
+                col("color", "Color", [1.0, 0.85, 0.4, 1.0]),
+                b("fade", "Fade Out", true),
+                b("composite", "Composite on Original", true),
+                seed(),
+            ],
+        ),
         // ---- Image Control ----
         video(
             "channel_mix",
@@ -676,6 +698,19 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 fs("frequency", "Frequency", 4.0, (0.1, 60.0), (0.1, 20.0), "Hz", 2),
                 fs("complexity", "Complexity", 3.0, (1.0, 6.0), (1.0, 6.0), "", 0),
                 pct("motion_blur", "Motion Blur", 0.0),
+                seed(),
+            ],
+        ),
+        // CFA4's own (not in Premiere's bin): projected-film look, the frame wobbling in the gate
+        // and the exposure flickering from frame to frame.
+        video(
+            "film_gate",
+            "Film Gate",
+            STYLIZE,
+            vec![
+                fs("weave", "Gate Weave", 1.5, (0.0, 50.0), (0.0, 10.0), "", 2),
+                fs("weave_rotation", "Weave Rotation", 0.1, (0.0, 5.0), (0.0, 1.0), "°", 2),
+                pct("flicker", "Flicker", 6.0),
                 seed(),
             ],
         ),
@@ -1154,6 +1189,7 @@ pub(super) fn apply_badges(v: &mut [EffectDef]) {
                 | "mosaic"
                 | "rotate_3d"
                 | "camera_shake"
+                | "film_gate"
                 | "grow"
                 | "move"
                 | "shrink"

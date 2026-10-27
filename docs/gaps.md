@@ -1,6 +1,6 @@
 # Where CFA4 falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 decoder, G10) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (AI candidates, G12) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -227,6 +227,18 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
+- **CFA4 candidates** (from the 2026-10-26 repository reviews; each needs its model's licence and
+  weights checked before it ships, and a menu entry like every effect):
+  - *Word Highlight captions* (karaoke style: the spoken word lights up). Needs word timings
+    from the local Whisper transcription (`crates/speech`, G19); the styling itself is not AI.
+  - *Low Light* enhancement: SGZ / Semantic-Guided LLIE (MIT, ~53 KB ONNX); alternatives
+    TBEFN (BSD-3) and URetinex-Net (MIT). Zero-DCE, SCI and RUAS have no licence and are out.
+  - *Face-limited Skin Smoothing*: YuNet face detection (libfacedetection, BSD-3) to restrict the
+    existing Skin Smoothing effect to faces.
+  - *Background blur / replace*: Robust Video Matting (GPL-3.0) for the subject matte; MODNet
+    (Apache-2.0) as the fallback.
+  - *AI foley*: MMAudio (code MIT, weights CC BY-NC 4.0): blocked until a commercially usable
+    model exists (see [kdenlive-parity.md](kdenlive-parity.md) 12.1).
 
 ## G13. Delivery formats
 
@@ -338,3 +350,4 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
 | 2026-10-25 | minor | G10: E-AC-3 7.1 (dependent substreams) |
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
+| 2026-10-26 | minor | G12: AI candidates from the repository reviews (word-highlight captions, low light, face detection, background matting, foley) |
