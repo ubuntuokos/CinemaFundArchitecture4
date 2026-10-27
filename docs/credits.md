@@ -105,7 +105,10 @@ and the background is left out. A refresh replaces the backgrounds with the page
 on the cut, centred, from the transition library, so it can be changed or removed on the
 timeline; when both pages have a background, their backgrounds get the same transition. It needs
 the pages to touch (page gap 0; otherwise a warning), the last page has none, and on cards it
-takes the place of the fade at that cut. Pictures (`{{Pic …}}`) cut at the page edge.
+takes the place of the fade at that cut. All pages of the credits go on one track (the asked
+`track`, else the first above everything the credits cover), their backgrounds on the track
+below, so every transition finds its two pages. Pictures (`{{Pic …}}`) fade out and in across
+half of each transition.
 
 **Crawl.** A `crawl` page puts its blocks side by side on one line – each block as it would look
 on a roll (head above or beside the body), `crawlGap` pixels (default 120) plus the block's own
@@ -131,7 +134,7 @@ or information icon and the spreadsheet row or page (`graphics.credits.validate`
 | Font not installed | error | another font is used instead |
 | Letters missing from a font | warning | e.g. a font without `ő` / `ű`: another font draws them |
 | Outside the title-safe area | warning | text beyond 5 % from the frame edges (rolls: the sides only; crawls: top and bottom only) |
-| Low contrast | warning | text against the page's background colour (both ends of a gradient; black without a background, mixed by its opacity) below 4.5:1 (WCAG 2.1) |
+| Low contrast | warning | text against the page's background colour (both ends of a gradient; black without a background; a background's opacity mixed with black in linear light, as it is rendered) below 4.5:1 (WCAG 2.1) |
 | Contrast not measured | info | a picture or video is behind the text: check it by eye |
 | Small text | warning | below 24 px on a 1080-line frame |
 | Shimmering roll or crawl | warning | not a whole number of pixels per frame |

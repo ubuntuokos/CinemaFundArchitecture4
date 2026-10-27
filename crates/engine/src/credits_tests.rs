@@ -716,3 +716,33 @@ fn thumbnail_shows_the_background_and_guides() {
     let x = ((960.0 - 400.0 * f64::from(h) / 1080.0 * 1080.0 / f64::from(h)) * f64::from(w) / 1920.0).round() as u32;
     assert_ne!(plain.get_pixel(x, h / 3), guided.get_pixel(x, h / 3), "spine at x={x}");
 }
+
+#[test]
+fn transitions_join_pages_with_and_without_backgrounds_and_take_their_pictures_along() {
+    let mut s = demo("credits-look-mixed");
+    let dir = tmp_dir("credits-look-mixed");
+    image::RgbaImage::from_pixel(200, 100, image::Rgba([200, 30, 30, 255])).save(dir.join("logo.png")).unwrap();
+    let styling = r##"{"pageStyles":[
+        {"name":"Lit","behaviour":"card","transition":"dissolve","transitionFrames":10,"background":{"kind":"color","color":"#202040"}},
+        {"name":"Plain","behaviour":"card","transition":"dissolve","transitionFrames":10}
+    ]}"##;
+    let csv = "Body,Page Style\nFIRST,Lit\n{{Pic logo.png}},Plain\nTHIRD,Lit\n";
+    let v = s.execute("graphics.credits.import", json!({"csv": csv, "styling": styling, "pictureDir": dir, "track": 0})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    let pages = clips(&v);
+    // all pages on one track, the backgrounds on the one below
+    let tracks: Vec<usize> = pages.iter().map(|c| track_of(&s, *c)).collect();
+    assert!(tracks.iter().all(|t| *t == tracks[0]), "{tracks:?}");
+    let bg = ClipId(v["clips"][0]["background"].as_u64().unwrap());
+    assert_eq!(track_of(&s, bg) + 1, tracks[0]);
+    for c in &pages[..2] {
+        let q = s.active_sequence().unwrap();
+        assert!(q.video_tracks.iter().flat_map(|t| t.transitions.iter()).any(|x| x.from == Some(*c)), "a transition out of every page but the last");
+    }
+    // the middle page's picture fades in and out across half of each transition
+    let pic = item(&s, ClipId(v["clips"][1]["pictures"][0].as_u64().unwrap()));
+    let op = &pic.effects.iter().find(|e| e.effect == "opacity").unwrap().params["opacity"];
+    assert_eq!(op.value_at(Tick::ZERO), ParamValue::Float(0.0));
+    assert_eq!(op.value_at(pic.duration), ParamValue::Float(0.0));
+    assert_eq!(op.value_at(Tick(pic.duration.0 / 2)), ParamValue::Float(100.0));
+}

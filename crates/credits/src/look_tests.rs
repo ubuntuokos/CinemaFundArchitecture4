@@ -127,8 +127,12 @@ fn contrast_maths() {
     assert!((contrast(black, white) - 21.0).abs() < 1e-6);
     assert!((contrast(white, white) - 1.0).abs() < 1e-9);
     assert_eq!(colours_behind(None), Some(vec![black]));
-    let half = Background { kind: BackgroundKind::Color, color: "#ffffff".into(), opacity: 50.0, ..Default::default() };
-    assert_eq!(colours_behind(Some(&half)), Some(vec![[0.5, 0.5, 0.5, 1.0]]));
+    // opacity mixes with black in linear light, as the renderer does: white at 20 % over black
+    // is light enough that white text on it reads only 4.2:1
+    let fifth = Background { kind: BackgroundKind::Color, color: "#ffffff".into(), opacity: 20.0, ..Default::default() };
+    let behind = colours_behind(Some(&fifth)).unwrap();
+    let ratio = contrast(white, behind[0]);
+    assert!((ratio - 4.2).abs() < 0.05, "{ratio}");
     let nan = Background { kind: BackgroundKind::Gradient, opacity: f64::NAN, ..Default::default() };
     assert_eq!(colours_behind(Some(&nan)).map(|v| v.len()), Some(2));
 }

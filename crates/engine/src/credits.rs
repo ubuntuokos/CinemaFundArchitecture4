@@ -350,16 +350,28 @@ fn place_pages(
     let mut group = 0u64;
     // (page clip, background clip, transition into the next page)
     let mut cuts: Vec<(ClipId, Option<ClipId>, Option<(String, Tick)>)> = Vec::new();
+    // every page on one track (so transitions can join them), backgrounds on the one below:
+    // the asked track, or the first above everything the credits cover
+    let any_bg = laid.pages.iter().any(|p| p.background.is_some());
+    let end = laid.pages.iter().fold(start.0, |a, p| a.saturating_add(p.duration.0).saturating_add(p.gap_after.0.max(0)));
+    let lowest = match track {
+        Some(tr) => tr,
+        None => s
+            .active_sequence()
+            .map(|q| {
+                let span = cfa4_time::TimeRange::new(start, Tick(end.saturating_sub(start.0).max(1)));
+                q.video_tracks.iter().rposition(|tr| tr.items.iter().any(|i| i.range().overlaps(&span))).map_or(0, |k| k + 1) as u64
+            })
+            .unwrap_or(0),
+    };
+    let text_track = lowest + u64::from(any_bg);
+    ensure_video_tracks(s, label, text_track as usize + 1)?;
     for (index, pg) in laid.pages.into_iter().enumerate() {
         let bg = match &pg.background {
-            Some(b) => place_background(s, &base, &mut items, b, &pg, t, track, (frame_w, frame_h))?,
+            Some(b) => place_background(s, &base, &mut items, b, &pg, t, Some(lowest), (frame_w, frame_h))?,
             None => None,
         };
-        // the page goes on the asked track, or just above its background
-        let want = match (bg, track) {
-            (Some(b), _) => clip_track(s, b).map(|i| i as u64 + 1),
-            (None, tr) => tr,
-        };
+        let want = Some(text_track);
         let mut pp = json!({"time": t.0});
         if let Some(tr) = want {
             pp["track"] = json!(tr);
@@ -439,6 +451,22 @@ fn place_pages(
         v["transition"] = json!(done);
     }
     Ok((placed, t))
+}
+
+/// Make sure the active sequence has at least `n` video tracks (at most 99).
+fn ensure_video_tracks(s: &mut Session, label: &str, n: usize) -> Result<()> {
+    let n = n.min(99);
+    if s.active_sequence().is_none_or(|q| q.video_tracks.len() >= n) {
+        return Ok(());
+    }
+    s.edit_sequence(label, move |q, ctx, _| {
+        while q.video_tracks.len() < n {
+            let k = q.video_tracks.len() + 1;
+            q.video_tracks.push(cfa4_project::Track::new(cfa4_project::TrackId(ctx.alloc()), cfa4_project::TrackKind::Video, format!("Video {k}")));
+        }
+        Ok(())
+    })?;
+    Ok(())
 }
 
 /// Video-track index of a clip.
@@ -903,16 +931,20 @@ fn place_picture(
         },
         cfa4_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
     };
-    let (fin, fout) = (pg.fade_in, pg.fade_out);
+    // a picture fades with its card, and across half of a transition at either end (it is a clip
+    // of its own, so the page's transition does not reach it)
+    let half = |d: Tick| Tick(d.0 / 2);
+    let tr_in = half(pg.transition_in);
+    let tr_out = half(pg.transition.as_ref().map(|(_, d)| *d).unwrap_or(Tick::ZERO));
     let card = pg.behaviour == cfa4_credits::Behaviour::Card;
+    let (fin, fout) = if card { (pg.fade_in.max(tr_in), pg.fade_out.max(tr_out)) } else { (tr_in, tr_out) };
     s.edit_sequence("Import Credits", move |q, _, _| {
         let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
         if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
             m.params.insert("position".into(), position);
             m.params.insert("scale".into(), Param::new(ParamValue::Float(scale.clamp(0.0, 10_000.0))));
         }
-        if card
-            && (fin.0 > 0 || fout.0 > 0)
+        if (fin.0 > 0 || fout.0 > 0)
             && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
         {
             let mut k = vec![];

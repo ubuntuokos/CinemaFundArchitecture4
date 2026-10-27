@@ -143,6 +143,12 @@ fn lin(c: f32) -> f64 {
     if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
 }
 
+/// Linear light to an sRGB channel.
+fn delin(l: f64) -> f32 {
+    let l = l.clamp(0.0, 1.0);
+    (if l <= 0.003_130_8 { l * 12.92 } else { 1.055 * l.powf(1.0 / 2.4) - 0.055 }) as f32
+}
+
 fn luminance(rgb: [f32; 4]) -> f64 {
     0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2])
 }
@@ -165,10 +171,12 @@ pub fn colours_behind(bg: Option<&crate::style::Background>) -> Option<Vec<[f32;
     use crate::style::BackgroundKind as K;
     let black = [0.0, 0.0, 0.0, 1.0];
     let Some(bg) = bg else { return Some(vec![black]) };
-    let o = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0) as f32 / 100.0;
+    let o = (if bg.opacity.is_finite() { bg.opacity } else { 100.0 }).clamp(0.0, 100.0) / 100.0;
+    // over black, in linear light, as the renderer blends
     let mix = |c: &str| {
         let c = crate::style::parse_color(c).unwrap_or(black);
-        [c[0] * o, c[1] * o, c[2] * o, 1.0]
+        let m = |v: f32| delin(lin(v) * o);
+        [m(c[0]), m(c[1]), m(c[2]), 1.0]
     };
     match bg.kind {
         K::None => Some(vec![black]),
