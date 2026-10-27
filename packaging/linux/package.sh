@@ -78,6 +78,9 @@ mkdir -p "$STAGE/usr/share/icons"
 cp -R "$ROOT/assets/cfa4/hicolor" "$STAGE/usr/share/icons/"
 mkdir -p "$STAGE/usr/share/doc/cfa4"
 copy_docs "$STAGE/usr/share/doc/cfa4"
+# Debian-style copyright summary (the full texts sit next to it).
+install -Dm644 "$HERE/copyright" "$STAGE/usr/share/doc/cfa4/copyright"
+bash "$ROOT/scripts/ci/check-package-docs.sh" "$STAGE/usr/share/doc/cfa4"
 
 if command -v desktop-file-validate >/dev/null; then
   desktop-file-validate "$STAGE/usr/share/applications/$APP_ID.desktop"
@@ -110,7 +113,7 @@ fi
 if has appimage; then
   APPDIR="$WORK/CFA4.AppDir"
   cp -R "$STAGE" "$APPDIR"
-  mv "$APPDIR/usr/share/doc" "$WORK/doc-unused"
+  # Keep usr/share/doc: licences, NOTICE and attributions must ship inside the AppImage too.
   ln -s usr/bin/cfa4 "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
   # the CFA4 logo is raster artwork: the 256 px PNG is the AppImage icon
