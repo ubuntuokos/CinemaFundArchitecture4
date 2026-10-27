@@ -14,7 +14,7 @@
 //! Coefficients can be updated with delta encoding and bit masks controlling
 //! which coefficients are modified.
 
-use crate::anyhow::{Result, anyhow};
+use crate::anyhow::{Result, anyhow, bail};
 use log::Level::Warn;
 
 use crate::log_or_err;
@@ -233,8 +233,12 @@ impl Matrixing {
                     let frac_bits = ss_state.frac_bits[pmi] as u32;
                     let cf_shift_code = ss_state.cf_shift_code[pmi];
 
+                    let shift = 18 + i32::from(cf_shift_code) - frac_bits as i32;
+                    if !(0..32).contains(&shift) {
+                        bail!(MatrixError::CoefficientShiftOutOfRange(shift));
+                    }
                     for chi in 0..=max_matrix_chan {
-                        ss_state.m_coeff[pmi][chi] = (matrices.m_coeff[chi]) << (18 + cf_shift_code - frac_bits as i8);
+                        ss_state.m_coeff[pmi][chi] = (matrices.m_coeff[chi]) << shift;
                     }
                 }
             }
@@ -254,12 +258,15 @@ impl Matrixing {
                         let cf_shift_code = ss_state.cf_shift_code[pmi];
                         let delta_precision = ss_state.delta_precision[pmi] as i8;
 
-                        let scale = cf_shift_code - frac_bits - delta_precision;
+                        let shift = 18 + i32::from(cf_shift_code) - i32::from(frac_bits) - i32::from(delta_precision);
+                        if !(0..32).contains(&shift) {
+                            bail!(MatrixError::CoefficientShiftOutOfRange(shift));
+                        }
 
                         let delta_cf = &mut ss_state.delta_cf[pmi];
 
                         for (chi, delta_cf) in delta_cf.iter_mut().enumerate().take(max_matrix_chan + 1) {
-                            *delta_cf = matrices.delta_cf[chi] << (18 + scale);
+                            *delta_cf = matrices.delta_cf[chi] << shift;
                         }
                     }
                 }

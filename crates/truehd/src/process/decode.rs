@@ -766,7 +766,7 @@ impl DecoderState {
         let decoded = DecodedAccessUnit {
             channel_labels: self.substream_state[presentation_idx].channel_labels.clone(),
             sampling_frequency: self.sampling_frequency,
-            sample_length: self.samples_per_au - self.substream_state[presentation_idx].zero_samples,
+            sample_length: self.samples_per_au.saturating_sub(self.substream_state[presentation_idx].zero_samples),
             channel_count: self.substream_state[presentation_idx].max_matrix_chan + 1,
             pcm_data: *self.substream_state[presentation_idx].output_buffer,
             oamd: if presentation_idx == 3 && self.effective_presentations[3] { self.oamd.iter().cloned().collect::<Vec<_>>() } else { vec![] },
@@ -815,5 +815,40 @@ mod tests {
         d.substream_state[0].decoded_sample_len = 160;
         d.substream_state[0].block_size = 40;
         assert!(d.decode_multi().is_err());
+    }
+
+    /// Matrix shifts come from stream fields; a combination that shifts by a negative amount
+    /// (frac_bits 15, cf_shift_code -1, delta_precision 3) used to panic with overflow checks.
+    #[test]
+    fn out_of_range_matrix_shifts_are_errors() {
+        use crate::structs::matrix::Matrixing;
+        let mut d = DecoderState { samples_per_au: 40, ..Default::default() };
+        d.substream_state[0].restart_sync_word = 0x31EC;
+        let mut m = Matrixing {
+            primitive_matrices: 1,
+            new_matrix: true,
+            new_matrix_config: true,
+            interpolation_used: true,
+            new_delta: true,
+            new_delta_config: true,
+            ..Default::default()
+        };
+        m.matrices[0].frac_bits = 15;
+        m.matrices[0].cf_shift_code = -1;
+        m.matrices[0].delta_precision = 3;
+        assert!(m.update_decoder_state(&mut d).is_err());
+        // shifts that stay in range still apply
+        m.matrices[0].frac_bits = 14;
+        m.matrices[0].cf_shift_code = 0;
+        m.matrices[0].delta_precision = 0;
+        assert!(m.update_decoder_state(&mut d).is_ok());
+    }
+
+    /// More zero samples than the access unit holds used to underflow its length.
+    #[test]
+    fn excess_zero_samples_do_not_underflow_the_length() {
+        let mut d = DecoderState { samples_per_au: 40, ..Default::default() };
+        d.substream_state[0].zero_samples = 41;
+        assert_eq!(d.create_decoded_result(0).map(|r| r.sample_length).ok(), Some(0));
     }
 }

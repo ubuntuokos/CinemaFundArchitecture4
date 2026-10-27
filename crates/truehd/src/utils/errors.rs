@@ -310,12 +310,21 @@ pub enum MatrixError {
     #[error("frac_bits must be <= 14. Read {0}")]
     FracBitsTooHigh(u8),
 
+    // Modified for CFA4: frac_bits, cf_shift_code and delta_precision that shift by a negative
+    // or oversized amount.
+    #[error("matrix coefficient shift {0} out of range")]
+    CoefficientShiftOutOfRange(i32),
+
     #[error("Cannot use lsb_bypass in substream 0 when substream_info = {info:#02X} or sampling frequency is 192kHz or 176.4kHz")]
     InvalidLsbBypass { info: u8 },
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum RestartHeaderError {
+    // Modified for CFA4: a reversed channel range would slice backwards.
+    #[error("min_chan {min} must not exceed max_chan {max}")]
+    ChannelRangeReversed { min: u8, max: u8 },
+
     // Modified for CFA4: restart A rematrixes two dither channels after the matrix channels.
     #[error("max_matrix_chan {0} leaves no room for the two dither channels of restart sync word 0x31EA")]
     MatrixChannelsTooMany(u8),

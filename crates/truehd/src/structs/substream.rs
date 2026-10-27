@@ -187,12 +187,8 @@ impl SubstreamSegment {
                     if (tm.zero_samples as usize) < state.samples_per_au {
                         trace!("{} sample period(s) added to complete access unit for substream {}", tm.zero_samples, state.substream_index)
                     } else {
-                        log_or_err!(
-                            state,
-                            log::Level::Warn,
-                            anyhow!(SubstreamError::TooManyZeroSamples { substream: state.substream_index, zero_samples: tm.zero_samples }),
-                            reader
-                        );
+                        // Modified for CFA4: fatal, the access unit would have a negative length.
+                        bail!(SubstreamError::TooManyZeroSamples { substream: state.substream_index, zero_samples: tm.zero_samples });
                     }
                 } else {
                     tm.terminator_b = reader.get_n(13)?;

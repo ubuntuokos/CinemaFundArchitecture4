@@ -186,6 +186,7 @@ rule_ids! {
     MatrixError => Matrix / MatrixRule / "matrix" {
         MatrixChannelTooHigh = "matrix_channel_too_high",
         FracBitsTooHigh = "frac_bits_too_high",
+        CoefficientShiftOutOfRange = "coefficient_shift_out_of_range",
         InvalidLsbBypass = "invalid_lsb_bypass",
     }
     RestartHeaderError => RestartHeader / RestartHeaderRule / "restart_header" {
@@ -208,6 +209,7 @@ rule_ids! {
         InvalidSyncC = "invalid_sync_c",
         MaxBitsMismatch = "max_bits_mismatch",
         MatrixChannelsTooMany = "matrix_channels_too_many",
+        ChannelRangeReversed = "channel_range_reversed",
         ChannelAssignTooHigh = "channel_assign_too_high",
         ChannelAssignMisordered = "channel_assign_misordered",
         ChannelAssignDuplicate = "channel_assign_duplicate",
