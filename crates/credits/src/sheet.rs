@@ -128,6 +128,8 @@ pub struct Block {
     pub tails: Vec<(usize, String)>,
     /// Pictures shown in place of a body (a body cell holding only `{{Pic …}}` tags).
     pub pictures: Vec<Picture>,
+    /// 1-based spreadsheet row of each body cell (rows of heads or tails alone are skipped).
+    pub body_rows: Vec<usize>,
     /// 1-based row of the block's first cell.
     pub row: usize,
 }
@@ -363,6 +365,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 gap_before,
                 head: has_head.then(|| head.trim().to_string()),
                 body: if has_body { vec![body_text] } else { vec![] },
+                body_rows: if has_body { vec![rowno] } else { vec![] },
                 tails: vec![],
                 pictures: pics,
                 row: rowno,
@@ -372,6 +375,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
             open = !has_pics;
         } else if has_body && let Some(b) = page.blocks.last_mut() {
             b.body.push(body_text);
+            b.body_rows.push(rowno);
         }
         if has_tail && let Some(b) = page.blocks.last_mut() {
             let at = b.body.len().saturating_sub(1);
