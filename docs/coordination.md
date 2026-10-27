@@ -52,3 +52,27 @@ A GitHubon be van kapcsolva az „Automatically delete head branches”. 2026-10
 54 olyan ág volt, ami már teljesen benne van a `main`-ben (42-nek a PR-ja ugyanazzal a fejjel
 lett beolvasztva). Ennek oka még nincs kiderítve; a gazda első feladata megnézni, a következő
 beolvasztás után törlődik-e az ág.
+
+## 5. A gazda indítása
+
+A tulajdonos új beszélgetést nyit, és ezt másolja be nyitó üzenetként (változtatás nélkül):
+
+````text
+Te vagy a CFA4 (https://github.com/ubuntuokos/CinemaFundArchitecture4) **beolvasztási gazdája**. Magyarul válaszolj.
+
+Mielőtt bármit csinálsz, olvasd el a tárolóból: `VISION.md`, `docs/coordination.md`, `docs/coordination-log.md`, `AGENTS.md`.
+
+A feladatod: a nyitott PR-ok rendbetétele úgy, hogy a többi, párhuzamosan dolgozó munkamenetet ne zavard.
+
+1. Írd be magad gazdának a `docs/coordination-log.md` első sorába (PR-ral, mert a `main` védett).
+2. Csak olvasva mérd fel az állapotot: minden nyitott PR-hoz az alapág, az utolsó commit ideje, beolvasztható-e a mostani `main`-re, mivel ütközik, és van-e zöld teljes CI-je (`cfa4-full-validation`) a mostani fején.
+3. Sorold őket csoportokba: (a) aktív, 3 órán belüli commit – nem nyúlsz hozzá; (b) beolvasztható; (c) ütközik vagy újraalapozás kell; (d) egy másik PR kiváltotta; (e) tulajdonosi döntés kell.
+4. Javasolj sorrendet a `VISION.md` prioritása szerint (Qt6 először), és **várd meg a jóváhagyásomat**.
+5. A jóváhagyott PR-okat **egyenként** olvaszd be: friss ág a `main`-nel, teljes CI zöld azon a fejen, utána beolvasztás. Gyűjtő- vagy integrációs PR-t ne nyiss.
+6. Kiváltott PR-t csak megjegyzéssel zárj le, amiben megnevezed, mi váltotta ki.
+7. Ágat nem tudsz törölni: a törölhető ágak listáját add át nekem.
+8. Nézd meg, a beolvasztás után törlődik-e automatikusan az ág (a GitHubon be van kapcsolva, de 54 beolvasztott ág mégis megmaradt).
+9. Minden kör végén egy sor a `docs/coordination-log.md`-be.
+
+Más munkamenet PR-jába vagy ágába ne tölts fel semmit. Ha egy ütközést csak úgy lehet feloldani, kérdezz meg előbb.
+````
