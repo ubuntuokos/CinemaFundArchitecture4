@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cfa4-devtools"
 version = "0.1.0"
-description = "CFA4 Linux development diagnostics and experimental Qt 6 frontend"
+description = "CFA4 Qt 6 GUI (PySide6) and Linux development diagnostics"
 readme = "docs/development/linux.md"
 requires-python = ">=3.12"
 license = { text = "GPL-3.0-or-later" }
@@ -17,11 +17,15 @@ qt = ["PySide6>=6.10,<7"]
 
 [project.scripts]
 cfa4-doctor = "cfa4_devtools.health:main"
-cfa4-qt = "cfa4_devtools.qt_app:main"
+cfa4-qt = "cfa4_qt.__main__:main"
+cfa4-qt-shell = "cfa4_devtools.qt_app:main"
 
 [tool.setuptools.packages.find]
 where = ["python"]
-include = ["cfa4_devtools*"]
+include = ["cfa4_devtools*", "cfa4_qt*"]
+
+[tool.setuptools.package-data]
+cfa4_qt = ["i18n/*.tsv"]
 
 [tool.ruff]
 target-version = "py312"

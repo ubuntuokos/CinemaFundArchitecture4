@@ -21,10 +21,13 @@ gstreamer = ["cfa4-gstreamer/gstreamer"]
 whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 
 [dependencies]
+cfa4-route = { workspace = true }
 cfa4-engine = { workspace = true }
 cfa4-export = { workspace = true }
 cfa4-project = { workspace = true }
 cfa4-render = { workspace = true }
+cfa4-scopes = { workspace = true }
+cfa4-audio-dsp = { workspace = true }
 cfa4-time = { workspace = true }
 cfa4-gpu = { workspace = true }
 cfa4-media = { workspace = true }
@@ -41,3 +44,4 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
+cfa4-tts = { workspace = true }
