@@ -2108,6 +2108,32 @@ impl XllDecoder {
     }
 }
 
+/// The samples per channel and the sample rate an XLL frame (`xll`, from its syncword) decodes
+/// to, from its common header and its first channel set's header; `None` when they do not parse.
+pub(crate) fn frame_geometry(xll: &[u8]) -> Option<(usize, u32)> {
+    let mut gb = BitReader::new(xll);
+    if rb(&mut gb, 32).ok()? != DCA_SYNCWORD_XLL {
+        return None;
+    }
+    rb(&mut gb, 4).ok()?;
+    let header_size = rb(&mut gb, 8).ok()? as usize + 1;
+    let frame_size_nbits = rb(&mut gb, 5).ok()? as usize + 1;
+    rb(&mut gb, frame_size_nbits).ok()?;
+    rb(&mut gb, 4).ok()?;
+    let nsamples_log2 = rb(&mut gb, 4).ok()? as usize + rb(&mut gb, 4).ok()? as usize;
+    if nsamples_log2 > 16 {
+        return None;
+    }
+    seek(&mut gb, header_size * 8).ok()?;
+    rb(&mut gb, 10).ok()?;
+    let nchannels = rb(&mut gb, 4).ok()? as usize + 1;
+    rb(&mut gb, nchannels).ok()?;
+    rb(&mut gb, 10).ok()?;
+    let freq = sampling_freq(rb(&mut gb, 4).ok()? as usize);
+    let bands = if freq > 96000 { 2 } else { 1 };
+    (freq > 0).then_some((bands << nsamples_log2, freq))
+}
+
 /// `assemble_freq_bands` (dcadsp.c): the synthesis filter joining band 0 (`src0`, the decimator
 /// history then `len` samples) and band 1 (`src1`, `len` samples) into `dst` (`2 * len`).
 fn assemble_freq_bands(dst: &mut [i32], src0: &mut [i32], src1: &mut [i32], len: usize) {
