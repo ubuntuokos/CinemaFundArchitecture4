@@ -36,6 +36,7 @@ from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_para
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, tr
 from .i18n import system_language as i18n_system_language
+from .panels.credits import CreditsDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -199,6 +200,7 @@ class MainWindow(QMainWindow):
         self.revision = -1
         self.source_state: dict[str, Any] | None = None
         self.export_dialog: ExportDialog | None = None
+        self.credits_dialog: CreditsDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -1330,6 +1332,9 @@ class MainWindow(QMainWindow):
         if cmd.id in ("file.exportMedia", "export.queue.add"):
             self.open_export()
             return
+        if cmd.id == "graphics.credits.import":
+            self.open_credits()
+            return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]
             start, end = self.source_monitor.range()
@@ -1775,6 +1780,14 @@ class MainWindow(QMainWindow):
             self.export_dialog.finished_export.connect(self._export_finished)
         path = (self.project or {}).get("path")
         self.export_dialog.open_for(self.sequence, path if isinstance(path, str) else None)
+
+    # ----- credits -----
+    def open_credits(self, path: str | None = None) -> None:
+        """Graphics and Titles ▸ Import Credits Spreadsheet…: the Credits window."""
+        if self.credits_dialog is None:
+            self.credits_dialog = CreditsDialog(self.engine, self)
+            self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
+        self.credits_dialog.open_with(path)
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)

@@ -77,6 +77,7 @@ The Qt Inspector is named Properties, as in egui (3.22).
 | 3.26 | Reference Monitor | ✅ | a second view of the active sequence (`frame.render`), parked on its own frame by default or ganged to the Program playhead (step back/forward, Match Playhead, Gang to Program); Composite Video or Lumetri Scopes of that frame with its own scopes (right-click), the other scope settings the Lumetri Scopes panel's; remembered (`test_reference_monitor`) |
 | 3.27 | Timecode | ✅ | one large row and optional smaller rows, each Current Time / Media Time / Duration / In-Out Duration / Remaining of the active monitor, the Program or the Source, in timecode, feet+frames 35/16 mm, frames, audio samples or seconds, read out by the engine (`time.readout`); row menu, "+", remembered (`test_timecode_and_progress_panels`, engine `reads_out_the_timecode_panel_rows`) |
 | 3.28 | Project Notes | ✅ | plain text saved in the project (`project.notes` / `project.setNotes`), one undo step per typing session; in the Project group, opened from Window ▸ Project Notes (`test_markers_info_metadata_and_project_notes`) |
+| 3.29 | Credits from a spreadsheet (Graphics and Titles ▸ Import Credits Spreadsheet…) | ✅ | Credits window: spreadsheet (CSV/TSV/.xlsx/.ods), worksheet, picture folder, styling, pages with type and length, warnings by row, page picture at a chosen moment, place at playhead in one undo step (`test_real_engine_credits_window`); egui had only a file dialog. Further credits work is Qt6-only (owner, 2026-10-25) |
 
 ## 4. Modes and dialogs
 
