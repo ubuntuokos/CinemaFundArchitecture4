@@ -5,9 +5,9 @@
 
 use crate::codestream::{self, CodingStyle, Header, Params, Quant, Tile};
 use crate::dwt::{self, Rect};
-use crate::t1::{self, STYLE_TERMALL};
 use crate::t2::{Bits, TagTree};
 use crate::{Error, Image, Plane, Result};
+use crate::{ht, t1};
 
 /// Most code-blocks a tile may have (bounds the bookkeeping a hostile header can ask for).
 const MAX_CODEBLOCKS: usize = 1 << 22;
@@ -25,55 +25,57 @@ fn ceil_shift(a: i64, n: u32) -> i64 {
     (a + d - 1).div_euclid(d)
 }
 
-struct CodeBlock {
+pub(crate) struct CodeBlock {
     /// Rectangle in subband coordinates.
-    x0: u32,
-    y0: u32,
-    x1: u32,
-    y1: u32,
-    included: bool,
-    lblock: u32,
-    zero: u32,
-    segments: Vec<(Vec<u8>, u32)>,
+    pub(crate) x0: u32,
+    pub(crate) y0: u32,
+    pub(crate) x1: u32,
+    pub(crate) y1: u32,
+    pub(crate) included: bool,
+    pub(crate) lblock: u32,
+    pub(crate) zero: u32,
+    pub(crate) segments: Vec<(Vec<u8>, u32)>,
 }
 
 /// The code-blocks of one subband inside one precinct.
-struct PrecinctBand {
-    cw: usize,
-    blocks: Vec<CodeBlock>,
-    incl: TagTree,
-    zero: TagTree,
+pub(crate) struct PrecinctBand {
+    pub(crate) cw: usize,
+    pub(crate) blocks: Vec<CodeBlock>,
+    pub(crate) incl: TagTree,
+    pub(crate) zero: TagTree,
 }
 
-struct Band {
+pub(crate) struct Band {
     /// 0 LL, 1 HL, 2 LH, 3 HH.
-    orient: u8,
-    rect: Rect,
+    pub(crate) orient: u8,
+    pub(crate) rect: Rect,
     /// Bit-planes (Mb).
-    mb: u32,
+    pub(crate) mb: u32,
     /// Quantization step (irreversible).
-    step: f32,
+    pub(crate) step: f32,
 }
 
-struct Resolution {
-    rect: Rect,
-    ppx: u32,
-    ppy: u32,
-    pw: usize,
-    ph: usize,
-    bands: Vec<Band>,
+pub(crate) struct Resolution {
+    pub(crate) rect: Rect,
+    pub(crate) ppx: u32,
+    pub(crate) ppy: u32,
+    pub(crate) pw: usize,
+    pub(crate) ph: usize,
+    pub(crate) bands: Vec<Band>,
     /// Per precinct, per band.
-    precincts: Vec<Vec<PrecinctBand>>,
+    pub(crate) precincts: Vec<Vec<PrecinctBand>>,
 }
 
-struct TileComp {
-    rect: Rect,
-    style: CodingStyle,
-    res: Vec<Resolution>,
+pub(crate) struct TileComp {
+    pub(crate) rect: Rect,
+    pub(crate) style: CodingStyle,
+    pub(crate) res: Vec<Resolution>,
+    /// Region of interest shift (RGN Maxshift, Annex H): 0 for none.
+    pub(crate) roi: u8,
 }
 
 /// A packet: layer, resolution, component, precinct.
-type Packet = (u16, usize, usize, usize);
+pub(crate) type Packet = (u16, usize, usize, usize);
 
 fn band_rect(tc: Rect, n: u32, orient: u8) -> Rect {
     if orient == 0 {
@@ -91,7 +93,7 @@ fn band_rect(tc: Rect, n: u32, orient: u8) -> Rect {
 }
 
 /// Step size and bit-planes of a subband (E.1.1.1, E.1.1.2).
-fn quant(q: &Quant, band: usize, levels: u8, precision: u8, orient: u8) -> Result<(u32, f32)> {
+pub(crate) fn quant(q: &Quant, band: usize, levels: u8, precision: u8, orient: u8) -> Result<(u32, f32)> {
     let (e, mu) = q.step(band, levels)?;
     let mb = (u32::from(q.guard) + u32::from(e)).saturating_sub(1);
     let gain = match orient {
@@ -104,7 +106,7 @@ fn quant(q: &Quant, band: usize, levels: u8, precision: u8, orient: u8) -> Resul
     Ok((mb, step))
 }
 
-fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileComp>)> {
+pub(crate) fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileComp>)> {
     let (tw, _) = header.tiles();
     let (p, q) = (tile % tw.max(1), tile / tw.max(1));
     let tx0 = (u64::from(header.tile_x0) + u64::from(p) * u64::from(header.tile_w)).max(u64::from(header.x0));
@@ -121,6 +123,7 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
     for (c, info) in header.components.iter().enumerate() {
         let style = params.cod.get(c).ok_or(Error::Invalid("component without coding style"))?.clone();
         let qz = params.quant.get(c).ok_or(Error::Invalid("component without quantization"))?;
+        let roi = params.roi.get(c).copied().unwrap_or(0);
         let (dx, dy) = (u64::from(info.dx), u64::from(info.dy));
         let tc = Rect { u0: ceil_div(tx0, dx) as u32, v0: ceil_div(ty0, dy) as u32, u1: ceil_div(tx1, dx) as u32, v1: ceil_div(ty1, dy) as u32 };
         let levels = u32::from(style.levels);
@@ -146,6 +149,8 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
                 let brect = band_rect(tc, n, o);
                 let index = if r == 0 { 0 } else { 1 + 3 * (r as usize - 1) + (o as usize - 1) };
                 let (mb, step) = quant(qz, index, style.levels, info.precision, o)?;
+                // the region of interest is coded above the background (H.1)
+                let mb = mb + u32::from(roi);
                 bands.push(Band { orient: o, rect: brect, mb, step });
             }
             // code-block size within this resolution (B.7)
@@ -198,20 +203,19 @@ fn build(header: &Header, params: &Params, tile: u32) -> Result<(Rect, Vec<TileC
             }
             res.push(Resolution { rect, ppx, ppy, pw, ph, bands, precincts });
         }
-        comps.push(TileComp { rect: tc, style, res });
+        comps.push(TileComp { rect: tc, style, res, roi });
     }
     Ok((trect, comps))
 }
 
 /// The packets of a tile in its progression order (B.12).
-fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) -> Result<Vec<Packet>> {
+pub(crate) fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) -> Result<Vec<Packet>> {
     let layers = params.global.layers;
     let max_r = comps.iter().map(|c| c.res.len()).max().unwrap_or(0);
     let precincts: usize = comps.iter().flat_map(|c| &c.res).map(|r| r.pw.saturating_mul(r.ph)).fold(0, usize::saturating_add);
     if precincts.saturating_mul(usize::from(layers)) > MAX_PACKETS {
         return Err(Error::TooLarge);
     }
-    let mut out = Vec::new();
     // reference-grid corner of a precinct (where the position loops of B.12.1.3 meet it)
     let corner = |c: usize, r: usize, p: usize| -> (u64, u64) {
         let (Some(tc), Some(info)) = (comps.get(c), header.components.get(c)) else { return (0, 0) };
@@ -225,11 +229,12 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
         (y.max(u64::from(trect.v0)), x.max(u64::from(trect.u0)))
     };
     let np = |c: usize, r: usize| comps.get(c).and_then(|tc| tc.res.get(r)).map_or(0, |res| res.pw * res.ph);
-    match params.global.progression {
+    // the packets of one progression over resolutions rs..re, components cs..ce, layers below le
+    let order = |progression: u8, (rs, re): (usize, usize), (cs, ce): (usize, usize), le: u16, out: &mut Vec<Packet>| match progression {
         0 => {
-            for l in 0..layers {
-                for r in 0..max_r {
-                    for c in 0..comps.len() {
+            for l in 0..le {
+                for r in rs..re {
+                    for c in cs..ce {
                         for p in 0..np(c, r) {
                             out.push((l, r, c, p));
                         }
@@ -238,9 +243,9 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
             }
         }
         1 => {
-            for r in 0..max_r {
-                for l in 0..layers {
-                    for c in 0..comps.len() {
+            for r in rs..re {
+                for l in 0..le {
+                    for c in cs..ce {
                         for p in 0..np(c, r) {
                             out.push((l, r, c, p));
                         }
@@ -251,8 +256,8 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
         order => {
             // (sort key, r, c, p)
             let mut items: Vec<((u64, u64, u64, u64), usize, usize, usize)> = Vec::new();
-            for c in 0..comps.len() {
-                for r in 0..max_r {
+            for c in cs..ce {
+                for r in rs..re {
                     for p in 0..np(c, r) {
                         let (y, x) = corner(c, r, p);
                         let key = match order {
@@ -266,31 +271,76 @@ fn packets(header: &Header, trect: Rect, comps: &[TileComp], params: &Params) ->
             }
             items.sort_by_key(|i| i.0);
             for (_, r, c, p) in items {
-                for l in 0..layers {
+                for l in 0..le {
                     out.push((l, r, c, p));
                 }
             }
+        }
+    };
+    let all = ((0, max_r), (0, comps.len()));
+    let mut out = Vec::new();
+    if params.poc.is_empty() {
+        order(params.global.progression, all.0, all.1, layers, &mut out);
+        return Ok(out);
+    }
+    // progression changes (B.12.2): each packet once, the layers of a precinct in order; what
+    // they leave out follows in the COD progression
+    let mut candidates = Vec::new();
+    for poc in &params.poc {
+        let r = (usize::from(poc.rs), usize::from(poc.re).min(max_r));
+        let c = (usize::from(poc.cs), usize::from(poc.ce).min(comps.len()));
+        order(poc.progression, r, c, poc.layer_end.min(layers), &mut candidates);
+        if candidates.len() > MAX_PACKETS {
+            return Err(Error::TooLarge);
+        }
+    }
+    order(params.global.progression, all.0, all.1, layers, &mut candidates);
+    // next layer per (component, resolution, precinct)
+    let mut next: Vec<Vec<Vec<u16>>> = comps.iter().map(|tc| tc.res.iter().map(|res| vec![0; res.pw * res.ph]).collect()).collect();
+    for (l, r, c, p) in candidates {
+        if let Some(n) = next.get_mut(c).and_then(|v| v.get_mut(r)).and_then(|v| v.get_mut(p))
+            && *n == l
+        {
+            *n += 1;
+            out.push((l, r, c, p));
         }
     }
     Ok(out)
 }
 
-fn floor_log2(n: u32) -> u32 {
+pub(crate) fn floor_log2(n: u32) -> u32 {
     31 - n.max(1).leading_zeros()
 }
 
-/// Reads one packet at `pos`; returns the position after it.
-fn read_packet(data: &[u8], mut pos: usize, comps: &mut [TileComp], (layer, r, c, p): Packet, params: &Params) -> Result<usize> {
+/// Reads one packet at `pos`, its header there too or at `packed` (the header stream of PPM /
+/// PPT, which this moves past it); returns the position after the packet body.
+fn read_packet(data: &[u8], pos: usize, packed: Option<(&[u8], &mut usize)>, comps: &mut [TileComp], packet: Packet, params: &Params) -> Result<usize> {
+    read_packet_spans(data, pos, packed, comps, packet, params).map(|s| s.1)
+}
+
+/// [`read_packet`], also giving where the header ends: (header end, body end).
+fn read_packet_spans(
+    data: &[u8],
+    mut pos: usize,
+    packed: Option<(&[u8], &mut usize)>,
+    comps: &mut [TileComp],
+    (layer, r, c, p): Packet,
+    params: &Params,
+) -> Result<(usize, usize)> {
     if params.global.sop && data.get(pos..pos + 2) == Some(&[0xFF, 0x91]) {
         pos += 6;
     }
     let tc = comps.get_mut(c).ok_or(Error::Invalid("packet component"))?;
-    let termall = tc.style.cblk_style & STYLE_TERMALL != 0;
+    let style = tc.style.cblk_style;
     let res = tc.res.get_mut(r).ok_or(Error::Invalid("packet resolution"))?;
     let prec = res.precincts.get_mut(p).ok_or(Error::Invalid("packet precinct"))?;
-    let mut bits = Bits::new(data, pos);
-    // (band, block, passes, lengths)
-    let mut included: Vec<(usize, usize, u32, Vec<u32>)> = Vec::new();
+    let (hdr, hpos) = match &packed {
+        Some((h, at)) => (*h, **at),
+        None => (data, pos),
+    };
+    let mut bits = Bits::new(hdr, hpos);
+    // (band, block, passes before this packet, (length, passes) per segment piece)
+    let mut included: Vec<(usize, usize, u32, Vec<(u32, u32)>)> = Vec::new();
     if bits.bit()? == 1 {
         for (bi, pb) in prec.iter_mut().enumerate() {
             for k in 0..pb.blocks.len() {
@@ -320,34 +370,91 @@ fn read_packet(data: &[u8], mut pos: usize, comps: &mut [TileComp], (layer, r, c
                         return Err(Error::Invalid("Lblock"));
                     }
                 }
-                let lens = if termall { (0..n).map(|_| bits.bits(b.lblock)).collect::<Result<Vec<_>>>()? } else { vec![bits.bits(b.lblock + floor_log2(n))?] };
-                included.push((bi, k, n, lens));
+                // the new passes, split where codeword segments end (B.10.7.2): a length per piece
+                let prior: u32 = b.segments.iter().map(|s| s.1).sum();
+                let mut lens = Vec::new();
+                if style & ht::STYLE_HT != 0 {
+                    // HT (T.814 B.3): placeholder passes, the cleanup pass, then at most two
+                    // refinement passes in a second segment; one HT set per code-block
+                    if prior > 0 {
+                        return Err(Error::Unsupported("HT code-block contributions in more than one layer"));
+                    }
+                    let cup = 3 * ((n - 1) / 3) + 1;
+                    lens.push((bits.bits(b.lblock + floor_log2(cup))?, cup));
+                    if n > cup {
+                        lens.push((bits.bits(b.lblock + floor_log2(n - cup))?, n - cup));
+                    }
+                    included.push((bi, k, prior, lens));
+                    continue;
+                }
+                let mut start = 0;
+                for i in 0..n {
+                    if i + 1 == n || t1::ends_segment(prior + i, style) {
+                        let passes = i + 1 - start;
+                        lens.push((bits.bits(b.lblock + floor_log2(passes))?, passes));
+                        start = i + 1;
+                    }
+                }
+                included.push((bi, k, prior, lens));
             }
         }
     }
     bits.align();
-    pos = bits.pos;
-    if params.global.eph && data.get(pos..pos + 2) == Some(&[0xFF, 0x92]) {
-        pos += 2;
+    let mut end = bits.pos;
+    if params.global.eph && hdr.get(end..end + 2) == Some(&[0xFF, 0x92]) {
+        end += 2;
     }
-    for (bi, k, n, lens) in included {
+    let header_end = end;
+    match packed {
+        Some((_, at)) => *at = end,
+        None => pos = end,
+    }
+    for (bi, k, prior, lens) in included {
         let Some(b) = prec.get_mut(bi).and_then(|pb| pb.blocks.get_mut(k)) else { continue };
-        for (i, &len) in lens.iter().enumerate() {
+        for (i, &(len, passes)) in lens.iter().enumerate() {
             let end = pos.saturating_add(len as usize).min(data.len());
             let bytes = data.get(pos..end).unwrap_or_default();
             pos = end;
-            let passes = if termall { 1 } else { n };
+            // the first piece continues the last segment unless that one was terminated
+            let open = i == 0 && prior > 0 && style & ht::STYLE_HT == 0 && !t1::ends_segment(prior - 1, style);
             match b.segments.last_mut() {
-                Some(last) if !termall => {
+                Some(last) if open => {
                     last.0.extend_from_slice(bytes);
                     last.1 += passes;
                 }
                 _ => b.segments.push((bytes.to_vec(), passes)),
             }
-            let _ = i;
         }
     }
-    Ok(pos)
+    Ok((header_end, pos))
+}
+
+/// For tests: the packets of each tile of a codestream (no SOP / EPH markers, headers in the tile
+/// data) as (tile index, tile data, (header start, header end, body end) per packet).
+#[cfg(test)]
+pub(crate) fn packet_spans(data: &[u8]) -> Result<Vec<(u32, Vec<u8>, Vec<(usize, usize, usize)>)>> {
+    let cs = codestream::parse(data, true)?;
+    let mut out = Vec::new();
+    for tile in &cs.tiles {
+        let (trect, mut comps) = build(&cs.header, &tile.params, tile.index)?;
+        let mut spans = Vec::new();
+        let mut pos = 0;
+        for p in packets(&cs.header, trect, &comps, &tile.params)? {
+            if pos >= tile.data.len() {
+                break;
+            }
+            let (he, be) = read_packet_spans(&tile.data, pos, None, &mut comps, p, &tile.params)?;
+            spans.push((pos, he, be));
+            pos = be;
+        }
+        out.push((tile.index, tile.data.clone(), spans));
+    }
+    Ok(out)
+}
+
+/// Nearest integer, halves away from zero (as `f32::round`, without the library call).
+fn round(x: f32) -> i32 {
+    (x + if x >= 0.0 { 0.5 } else { -0.5 }) as i32
 }
 
 enum Samples {
@@ -355,35 +462,62 @@ enum Samples {
     Float(Vec<f32>),
 }
 
+/// Maps `f` over `items`, on all cores with the `threads` feature.
+pub(crate) fn map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> Result<U> + Sync + Send) -> Result<Vec<U>> {
+    #[cfg(feature = "threads")]
+    {
+        use rayon::prelude::*;
+        items.par_iter().map(f).collect()
+    }
+    #[cfg(not(feature = "threads"))]
+    {
+        items.iter().map(f).collect()
+    }
+}
+
 fn reconstruct(tc: &TileComp) -> Result<Samples> {
     let reversible = tc.style.reversible;
-    // decode every code-block into its subband
-    let mut bands: Vec<Vec<Vec<i32>>> = Vec::with_capacity(tc.res.len());
-    for res in &tc.res {
-        let mut rb: Vec<Vec<i32>> = res.bands.iter().map(|b| vec![0; b.rect.w() * b.rect.h()]).collect();
+    // every code-block with data: (resolution, band, block)
+    let mut jobs: Vec<(usize, usize, &CodeBlock)> = Vec::new();
+    for (r, res) in tc.res.iter().enumerate() {
         for prec in &res.precincts {
             for (bi, pb) in prec.iter().enumerate() {
-                let Some(band) = res.bands.get(bi) else { continue };
-                let Some(out) = rb.get_mut(bi) else { continue };
-                for cb in &pb.blocks {
-                    if cb.segments.is_empty() {
-                        continue;
-                    }
-                    let (w, h) = ((cb.x1 - cb.x0) as usize, (cb.y1 - cb.y0) as usize);
-                    let coeffs =
-                        t1::decode(&t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments })?;
-                    let bw = band.rect.w();
-                    let (ox, oy) = ((cb.x0 - band.rect.u0) as usize, (cb.y0 - band.rect.v0) as usize);
-                    for (j, row) in coeffs.chunks(w.max(1)).enumerate() {
-                        let start = (oy + j) * bw + ox;
-                        if let Some(dst) = out.get_mut(start..start + row.len()) {
-                            dst.copy_from_slice(row);
-                        }
-                    }
+                jobs.extend(pb.blocks.iter().filter(|cb| !cb.segments.is_empty()).map(|cb| (r, bi, cb)));
+            }
+        }
+    }
+    let decoded = map(&jobs, |&(r, bi, cb)| {
+        let band = tc.res.get(r).and_then(|res| res.bands.get(bi)).ok_or(Error::Invalid("subband"))?;
+        let (w, h) = ((cb.x1 - cb.x0) as usize, (cb.y1 - cb.y0) as usize);
+        let block = t1::Block { w, h, orient: band.orient, style: tc.style.cblk_style, mb: band.mb, zero: cb.zero, segments: &cb.segments };
+        let mut coeffs = if block.style & ht::STYLE_HT != 0 { ht::decode(&block)? } else { t1::decode(&block)? };
+        if tc.roi > 0 {
+            // Maxshift (H.1): coefficients at or above 2^s are the region, scaled back down
+            // (the values carry one fractional bit)
+            let s = u32::from(tc.roi);
+            let threshold = 1i64 << (s + 1);
+            for v in &mut coeffs {
+                if i64::from(*v).abs() >= threshold {
+                    *v = v.signum() * (v.unsigned_abs() >> s.min(31)) as i32;
                 }
             }
         }
-        bands.push(rb);
+        Ok(coeffs)
+    })?;
+    // into their subbands
+    let mut bands: Vec<Vec<Vec<i32>>> = tc.res.iter().map(|res| res.bands.iter().map(|b| vec![0; b.rect.w() * b.rect.h()]).collect()).collect();
+    for (&(r, bi, cb), coeffs) in jobs.iter().zip(decoded) {
+        let Some(band) = tc.res.get(r).and_then(|res| res.bands.get(bi)) else { continue };
+        let Some(out) = bands.get_mut(r).and_then(|b| b.get_mut(bi)) else { continue };
+        let w = (cb.x1 - cb.x0) as usize;
+        let bw = band.rect.w();
+        let (ox, oy) = ((cb.x0 - band.rect.u0) as usize, (cb.y0 - band.rect.v0) as usize);
+        for (j, row) in coeffs.chunks(w.max(1)).enumerate() {
+            let start = (oy + j) * bw + ox;
+            if let Some(dst) = out.get_mut(start..start + row.len()) {
+                dst.copy_from_slice(row);
+            }
+        }
     }
     let empty: Vec<i32> = Vec::new();
     let get = |r: usize, b: usize| bands.get(r).and_then(|x| x.get(b)).unwrap_or(&empty);
@@ -404,13 +538,6 @@ fn reconstruct(tc: &TileComp) -> Result<Samples> {
             ll = dwt::level(&ll, &scale(r, 0), &scale(r, 1), &scale(r, 2), res.rect);
         }
         Ok(Samples::Float(ll))
-    }
-}
-
-fn to_float(s: Samples) -> Vec<f32> {
-    match s {
-        Samples::Int(v) => v.into_iter().map(|x| x as f32).collect(),
-        Samples::Float(v) => v,
     }
 }
 
@@ -437,75 +564,88 @@ pub fn decode(data: &[u8]) -> Result<Image> {
 fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
     let (trect, mut comps) = build(h, &tile.params, tile.index)?;
     let order = packets(h, trect, &comps, &tile.params)?;
-    let mut pos = 0;
+    let (mut pos, mut hpos) = (0, 0);
     for p in order {
-        if pos >= tile.data.len() {
+        let packed = tile.headers.as_deref().map(|h| (h, &mut hpos));
+        let more = match &packed {
+            Some((h, at)) => **at < h.len(),
+            None => pos < tile.data.len(),
+        };
+        if !more {
             break;
         }
-        match read_packet(&tile.data, pos, &mut comps, p, &tile.params) {
+        match read_packet(&tile.data, pos, packed, &mut comps, p, &tile.params) {
             Ok(next) => pos = next,
+            // a stream using a tool we lack must not decode to a silently incomplete picture
+            Err(e @ Error::Unsupported(_)) => return Err(e),
             // a damaged or truncated packet ends the tile; what arrived still decodes
             Err(_) => break,
         }
     }
-    let mut samples: Vec<Samples> = comps.iter().map(reconstruct).collect::<Result<_>>()?;
+    let mut samples: Vec<Samples> = map(&comps, reconstruct)?;
     let mct = tile.params.global.mct && comps.len() >= 3 && comps.iter().take(3).all(|c| c.rect == comps[0].rect);
     if mct {
         let reversible = comps.iter().take(3).all(|c| c.style.reversible);
-        let mut rest = samples.split_off(3);
-        let mut it = samples.into_iter();
-        let (Some(a), Some(b), Some(c)) = (it.next(), it.next(), it.next()) else { return Err(Error::Invalid("components")) };
-        let mut out = match (reversible, a, b, c) {
-            (true, Samples::Int(y0), Samples::Int(y1), Samples::Int(y2)) => {
-                // RCT (G.2)
-                let mut r = Vec::with_capacity(y0.len());
-                let mut g = Vec::with_capacity(y0.len());
-                let mut bl = Vec::with_capacity(y0.len());
-                for ((&y, &cb), &cr) in y0.iter().zip(&y1).zip(&y2) {
-                    let gv = y.wrapping_sub(cb.wrapping_add(cr).div_euclid(4));
-                    r.push(cr.wrapping_add(gv));
-                    g.push(gv);
-                    bl.push(cb.wrapping_add(gv));
-                }
-                vec![Samples::Int(r), Samples::Int(g), Samples::Int(bl)]
+        if let [Samples::Int(y0), Samples::Int(y1), Samples::Int(y2), ..] = &mut samples[..]
+            && reversible
+        {
+            // RCT (G.2), in place: Y0 Y1 Y2 → R G B
+            for ((y, cb), cr) in y0.iter_mut().zip(y1.iter_mut()).zip(y2.iter_mut()) {
+                let g = y.wrapping_sub(cb.wrapping_add(*cr) >> 2);
+                (*y, *cb, *cr) = (cr.wrapping_add(g), g, cb.wrapping_add(g));
             }
-            (_, a, b, c) => {
-                // ICT (G.3)
-                let (y0, y1, y2) = (to_float(a), to_float(b), to_float(c));
-                let mut r = Vec::with_capacity(y0.len());
-                let mut g = Vec::with_capacity(y0.len());
-                let mut bl = Vec::with_capacity(y0.len());
-                for ((&y, &cb), &cr) in y0.iter().zip(&y1).zip(&y2) {
-                    r.push(y + 1.402 * cr);
-                    g.push(y - 0.344_136 * cb - 0.714_136 * cr);
-                    bl.push(y + 1.772 * cb);
+        } else {
+            for s in samples.iter_mut().take(3) {
+                if let Samples::Int(v) = s {
+                    *s = Samples::Float(v.iter().map(|&x| x as f32).collect());
                 }
-                vec![Samples::Float(r), Samples::Float(g), Samples::Float(bl)]
             }
-        };
-        out.append(&mut rest);
-        samples = out;
+            if let [Samples::Float(y0), Samples::Float(y1), Samples::Float(y2), ..] = &mut samples[..] {
+                // ICT (G.3), in place
+                for ((y, cb), cr) in y0.iter_mut().zip(y1.iter_mut()).zip(y2.iter_mut()) {
+                    let (yy, b, r) = (*y, *cb, *cr);
+                    (*y, *cb, *cr) = (yy + 1.402 * r, yy - 0.344_136 * b - 0.714_136 * r, yy + 1.772 * b);
+                }
+            }
+        }
     }
-    for ((s, tc), plane) in samples.into_iter().zip(&comps).zip(planes.iter_mut()) {
+    let put = |(plane, (s, tc)): (&mut Plane, (&Samples, &TileComp))| {
         let p = u32::from(plane.precision);
         let (lo, hi, shift) = if plane.signed { (-(1i64 << (p - 1)), (1i64 << (p - 1)) - 1, 0i64) } else { (0, (1i64 << p) - 1, 1i64 << (p - 1)) };
+        let (lo, hi, shift) = (lo as i32, hi as i32, shift as i32);
         let px0 = ceil_div(u64::from(h.x0), u64::from(plane.dx)) as u32;
         let py0 = ceil_div(u64::from(h.y0), u64::from(plane.dy)) as u32;
         let (w, ox, oy) = (tc.rect.w(), (tc.rect.u0 - px0) as usize, (tc.rect.v0 - py0) as usize);
         let pw = plane.width as usize;
-        let put = |plane: &mut Plane, i: usize, v: i64| {
-            let (x, y) = (ox + i % w.max(1), oy + i / w.max(1));
-            if x >= pw {
-                return;
-            }
-            if let Some(d) = plane.data.get_mut(y * pw + x) {
-                *d = (v + shift).clamp(lo, hi) as i32;
-            }
-        };
-        match s {
-            Samples::Int(v) => v.iter().enumerate().for_each(|(i, &x)| put(plane, i, i64::from(x))),
-            Samples::Float(v) => v.iter().enumerate().for_each(|(i, &x)| put(plane, i, x.round() as i64)),
+        if w == 0 || ox >= pw {
+            return;
         }
+        // the tile-component's rows into the plane, level shifted and clamped (G.1.2)
+        let n = w.min(pw - ox);
+        let rows = plane.data.chunks_exact_mut(pw).skip(oy);
+        match s {
+            Samples::Int(v) => {
+                for (dst, src) in rows.zip(v.chunks_exact(w)) {
+                    for (d, &x) in dst[ox..ox + n].iter_mut().zip(src) {
+                        *d = x.saturating_add(shift).clamp(lo, hi);
+                    }
+                }
+            }
+            Samples::Float(v) => {
+                for (dst, src) in rows.zip(v.chunks_exact(w)) {
+                    for (d, &x) in dst[ox..ox + n].iter_mut().zip(src) {
+                        *d = round(x).saturating_add(shift).clamp(lo, hi);
+                    }
+                }
+            }
+        }
+    };
+    #[cfg(feature = "threads")]
+    {
+        use rayon::prelude::*;
+        planes.par_iter_mut().zip(samples.par_iter().zip(comps.par_iter())).for_each(put);
     }
+    #[cfg(not(feature = "threads"))]
+    planes.iter_mut().zip(samples.iter().zip(comps.iter())).for_each(put);
     Ok(())
 }

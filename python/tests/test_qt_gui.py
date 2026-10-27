@@ -1764,6 +1764,23 @@ def test_export_helpers(tmp_path: Path, monkeypatch):
     assert default_output_dir(None) == tmp_path
 
 
+def test_export_sends_the_audio_bitrate(app):
+    """AAC and Opus Audio take a bit rate: 0 keeps the preset's, any other value is sent."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    assert "audioBitrateKbps" not in dlg.params()
+    dlg.audio_bitrate.setValue(96)
+    assert dlg.params()["audioBitrateKbps"] == 96
+    assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
@@ -1823,6 +1840,76 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.execute("file.import", {"paths": [str(out)]})
         assert wait_until(app, lambda: len(_items(win.project)) == before + 1, 30_000)
         assert any(i.get("name") == "cut.mp4" for i in _items(win.project))
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
+    """MPEG-2: the Container choice sets the file extension and the audio, and the engine writes
+    that container (#243)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.container.isEnabled()
+        assert "mpeg2Container" not in dlg.params()
+        # the built-in transport stream preset picks MPEG-2 and its container
+        dlg.preset.setCurrentIndex(dlg.preset.findData("MPEG-2 Transport Stream HD 1080"))
+        assert dlg.format.currentData() == "mpeg2" and dlg.container.isEnabled()
+        assert dlg.container.currentData() == "ts"
+        dlg.container.setCurrentIndex(dlg.container.findData("es"))
+        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled()
+        dlg.container.setCurrentIndex(dlg.container.findData("ts"))
+        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled()
+        assert dlg.params()["mpeg2Container"] == "ts"
+        # GOP, quantiser and chroma go to the engine once chosen
+        dlg.gop.setValue(12)
+        dlg.chroma.setCurrentIndex(dlg.chroma.findData("422"))
+        p = dlg.params()
+        assert (p["keyframeDistance"], p["mpeg2Chroma"]) == (12, "422") and "mpeg2Quantizer" not in p
+        dlg.quantizer.setValue(4)
+        assert dlg.params()["mpeg2Quantizer"] == 4
+        dlg.quantizer.setValue(0)
+        dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(320)
+        dlg.height_spin.setValue(180)
+        out = tmp_path / "out" / "cut.ts"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "320×180" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        assert out.read_bytes()[:1] == b"\x47"
+        if shutil.which("ffprobe"):
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=format_name:stream=codec_name,width,height", "-of", "json", str(out)],
+                capture_output=True, check=True, timeout=60,
+            )
+            info = json.loads(probe.stdout)
+            assert info["format"]["format_name"] == "mpegts"
+            assert sorted(s["codec_name"] for s in info["streams"]) == ["aac", "mpeg2video"], info
     finally:
         if win.export_dialog is not None:
             win.export_dialog.hide()
@@ -2378,11 +2465,15 @@ def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: 
         assert dialog is not None and dialog.objectName() == "interpretFootage"
         assert wait_until(app, lambda: "rec709" in dialog.choices and "—" not in dialog.detected.text(), 10_000), dialog.detected.text()
         assert dialog.chosen() == "auto"
-        dialog.choices["rec709"].setChecked(True)
+        # RED Log3G10 / REDWideGamutRGB is offered (REDCINE-X exports, #252)
+        red = dialog.choices.get("log3g10-rwg")
+        assert red is not None and red.text() == "RED Log3G10 / REDWideGamutRGB"
+        red.setChecked(True)
         dialog.findChild(QtWidgets.QPushButton, "interpretFootage.ok").click()
         info = {}
         engine.execute("media.colorInfo", {"item": item}, on_reply=lambda r, _b: info.update(r))
-        assert wait_until(app, lambda: info.get("override") == "rec709", 10_000), info
+        assert wait_until(app, lambda: info.get("override") == "log3g10-rwg", 10_000), info
+        assert info.get("hdr") is True
     finally:
         win._quit_confirmed = True
         win.close()

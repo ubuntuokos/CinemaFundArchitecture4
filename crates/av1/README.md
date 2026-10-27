@@ -13,6 +13,36 @@ shape is checked against its declared dimensions; one missing comma in the spec'
 SVT-AV1 or any other implementation; ffmpeg (libsvtav1 to encode fixtures, libdav1d to decode the
 reference) is used only as an external test oracle.
 
+## Encoder
+
+`cfa4_av1::encode` is a software AV1 encoder (Main profile, 8- or 10-bit 4:2:0, any picture
+size up to 16384x8704) built on the decoder itself: the tile syntax code is generic over a
+symbol coder, and when it encodes, every symbol read becomes a policy question ("which
+partition, mode, motion vector, coefficient level here?") answered by the encoder and written by
+a range encoder (`symbol.rs`). Reconstruction, contexts, MV prediction and the loop filters are
+therefore the decoder's own, so the encoder's reference pictures match what any conforming
+decoder produces (checked against libdav1d by `tests/oracle_encoder.rs`). The decoding path is
+unchanged (the policy hooks compile away).
+
+| Part | What it does |
+|---|---|
+| Bitstream | temporal units with sequence header and HDR metadata OBUs (mastering display, content light) on key frames; `av1C` for ISOBMFF; uniform tiles coded in parallel (output depends on the tile count, never the thread count) |
+| Partition | 64x64 superblocks, square splits down to 8x8, decided from the source: intra predictors from neighbouring source samples and integer motion search, each costed as squared error plus estimated coefficient bits after quantization |
+| Modes | 13 intra modes (top candidates by SATD, then rate-distortion), chroma mode; inter: LAST_FRAME with NEAREST / NEAR (DRL) / GLOBAL / NEWMV (seeded integer search, sub-sample refinement on the real interpolation), skip when nothing survives quantization |
+| Transforms | forward transforms measured from the decoder's inverse ones (least-squares, every size and type), largest transform per block, DCT for luma and the mode's type for chroma |
+| Quantization | dead-zone rounding plus a rate-distortion pass (levels rounded down, trailing ones dropped) |
+| Filters | deblocking level searched on the frame, one CDEF strength per frame (luma and chroma searched separately) |
+| Rate control | CRF on the H.264 / HEVC QP scale, CBR, VBR (1-pass, VBV), constant qindex |
+| Presets | Speed / Balanced / Quality: search effort (modes tried, motion range, filter search) |
+
+On 20 CIF frames it is about 10% smaller than x265 `medium` without B-frames at the same PSNR;
+SVT-AV1 (hierarchical references) is still about 1.5-2x smaller. A 1080p frame takes about 2 s
+of one core at Balanced. `examples/av1enc.rs` encodes raw 4:2:0 to IVF. Not yet done: more references and
+an altref GOP (#193), compound / OBMC / warped motion (#194), transform size and type search
+(#195), CFL, angle deltas, palette and finer partitions (#196), per-superblock CDEF and loop
+restoration (#197), 4:2:2 / 4:4:4 / 12-bit (#198), adaptive quantization and two-pass (#199),
+speed (#200).
+
 ## Conformance status
 
 | Stage | Spec | Status |
@@ -124,6 +154,17 @@ frames whose `refresh_frame_flags` is 0 — no reference slot keeps them, so nei
 motion vectors nor CDFs reach another frame — skip deblocking, CDEF and loop restoration
 (super-resolution still runs, it sets the output size) and are flagged `Picture::draft`. In
 SVT-AV1's hierarchical GOPs that is the top layer, half of the frames.
+
+### #95 part 1 (2026-10-26)
+
+Instructions per 12 frames of `perf_1080p_gop` (callgrind, 1 thread): 7.30 G before, 6.13 G
+after (−16%), bit-exact as before. Intra prediction writes into a scratch buffer owned by the
+tile decoder instead of zeroing 8 KB per block. CDEF decides from the four corners of its border
+whether every tap is available, and then copies whole rows instead of testing each sample.
+Copies of recycled frame buffers are no longer zeroed first. On a 4-core x86-64 container:
+`perf_1080p_intra` 12.5 → 15.3 fps on 1 thread (29.6 → 31.3 on 4), `perf_1080p_gop` ~13 fps on
+1 thread and ~20 on 4. What is left for real time on 4 cores (row-level frame threads,
+deblocking, DCT) is #183.
 
 ## API
 

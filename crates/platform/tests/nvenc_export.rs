@@ -2,7 +2,7 @@
 //! pipeline: the same frames, a file both decode, counters showing which encoder ran, and what NVENC
 //! declines (hardware encoding Off, two-pass, MXF...) going to the software encoder. Its own test
 //! binary: the encoder registry is process-wide. Skips without an NVIDIA GPU with NVENC.
-#![cfg(any(target_os = "windows", all(target_os = "linux", target_pointer_width = "64")))]
+#![cfg(all(target_os = "linux", target_pointer_width = "64"))]
 
 use std::sync::Arc;
 

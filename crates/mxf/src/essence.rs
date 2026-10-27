@@ -31,6 +31,9 @@ pub enum Codec {
     Pcm,
     /// 8-channel AES3 element data (ST 331, D-10 sound).
     Aes3Element,
+    /// Immersive Audio Bitstream (SMPTE ST 2098-2; ST 429-18 in DCPs, ST 2067-201 in IMF): one
+    /// IABitstream frame per edit unit.
+    Iab,
     Unknown,
 }
 
@@ -48,12 +51,13 @@ impl Codec {
             Codec::Uncompressed => "Uncompressed",
             Codec::Pcm => "PCM",
             Codec::Aes3Element => "AES3 PCM",
+            Codec::Iab => "IAB",
             Codec::Unknown => "unknown",
         }
     }
     /// Every picture is coded independently.
     pub fn intra_only(&self) -> bool {
-        matches!(self, Codec::Avc { intra: true } | Codec::Vc3 | Codec::ProRes { .. } | Codec::Jpeg2000 | Codec::Dv | Codec::Uncompressed)
+        matches!(self, Codec::Avc { intra: true } | Codec::Vc3 | Codec::ProRes { .. } | Codec::Jpeg2000 | Codec::Dv | Codec::Uncompressed | Codec::Iab)
     }
 }
 
@@ -170,6 +174,8 @@ pub enum SoundFormat {
     Pcm,
     /// ST 331 8-channel AES3 element data (4-byte header, 8 × 32-bit sub-frames per sample).
     Aes3Element,
+    /// Immersive Audio Bitstream frames, one per edit unit (in the track's `samples`).
+    Iab,
     /// A coding we do not decode.
     Other,
 }
@@ -254,7 +260,7 @@ pub fn decode_pcm(v: &[u8], format: SoundFormat, channels: usize, bits: u32, fra
             }
             Ok(out)
         }
-        SoundFormat::Other => Err(crate::Error::Unsupported("sound coding".into())),
+        SoundFormat::Iab | SoundFormat::Other => Err(crate::Error::Unsupported("sound coding".into())),
     }
 }
 

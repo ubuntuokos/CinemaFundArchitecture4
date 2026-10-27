@@ -1,5 +1,10 @@
 # CFA4 — developer rules (Linux x86_64/AMD64 only; Rust / Cargo / Python / Qt 6)
 
+> **CFA4 PR rules (owner decision, 2026-10-27): read [`docs/coordination.md`](docs/coordination.md).**
+> Only the designated merge coordinator merges into `main`. Every other session: branch from a
+> fresh `main`, one topic per PR, never build on another open PR, never merge, and never push to,
+> rebase or close another session's PR or branch (no collector/integration PRs).
+
 This CFA4-specific section takes priority over inherited upstream platform and frontend
 instructions below. Existing engine safety, clean-room codec implementation, open-asset
 attribution and original copyright/licence requirements remain in force.
@@ -144,7 +149,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
 8. **The one exception: the CFA4 logo.** The CFA4 name, emblem, wordmark and every file depicting them
-   (`assets/cfa4/cfa4-official-logo.png`, `assets/cfa4/hicolor/**`, `apps/cfa4-web/web/favicon.svg`)
+   (`assets/cfa4/cfa4-official-logo.png`, `assets/cfa4/hicolor/**`)
    are the project owner's own mark, NOT under the GPL; their terms are in
    [`assets/cfa4/LICENSE-logo.txt`](assets/cfa4/LICENSE-logo.txt) (`LicenseRef-CFA4-Logo`). Use them
    only unmodified (scaling and format conversion are fine), derive new variants only from the master
