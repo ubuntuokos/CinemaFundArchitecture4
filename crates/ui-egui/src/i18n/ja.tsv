@@ -3624,3 +3624,7 @@
 	Blend Slices	スライスをブレンド
 	Stereo Parallax	ステレオ視差
 	Horizontal Shift	水平シフト
+	From North-West	左上から
+	From North-East	右上から
+	From South-East	右下から
+	From South-West	左下から

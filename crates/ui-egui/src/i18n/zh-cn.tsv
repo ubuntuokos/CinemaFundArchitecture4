@@ -3600,3 +3600,7 @@
 	Blend Slices	混合切片
 	Stereo Parallax	立体视差
 	Horizontal Shift	水平偏移
+	From North-West	西北向
+	From North-East	东北向
+	From South-East	东南向
+	From South-West	西南向
