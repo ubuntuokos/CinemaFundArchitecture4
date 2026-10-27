@@ -135,6 +135,14 @@ pub enum FxOp {
         sbs: bool,
         right: bool,
     },
+    /// Stereo Parallax: the left view moves `shift` pixels right and the right view as far left
+    /// (negative: the other way), each inside its own view ([`stereo_parallax_sample`]); uncovered
+    /// pixels become transparent or, with `repeat`, repeat the view's edge.
+    StereoParallax {
+        sbs: bool,
+        shift: f32,
+        repeat: bool,
+    },
     Mirror {
         cx: f32,
         cy: f32,
@@ -239,6 +247,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "vertical_flip",
     "stereo_swap_eyes",
     "stereo_to_2d",
+    "stereo_parallax",
     "mirror",
     "offset",
     "asc_cdl",
@@ -283,6 +292,50 @@ pub fn stereo_view_sample(src: &Image, x: usize, y: usize, sbs: bool, right: boo
     let hi = (lo + 1).min(v0 + vw - 1);
     let t = f - lo as f32;
     let (a, b) = if sbs { (src.get(lo, y), src.get(hi, y)) } else { (src.get(x, lo), src.get(x, hi)) };
+    let mut o = [0.0; 4];
+    for k in 0..4 {
+        o[k] = a[k] + (b[k] - a[k]) * t;
+    }
+    o
+}
+
+/// Output pixel (`x`, `y`) of Stereo Parallax on `src`: inside the left view the content moves
+/// `shift` pixels right, inside the right view `shift` pixels left, linearly interpolated and never
+/// crossing into the other view. Pixels outside both views (an odd last column / row) keep their
+/// value. Uncovered pixels fade to transparent, or repeat the view's edge with `repeat`.
+/// `fx.wgsl` (`OP_STEREO_PARALLAX`) mirrors this.
+pub fn stereo_parallax_sample(src: &Image, x: usize, y: usize, sbs: bool, shift: f32, repeat: bool) -> [f32; 4] {
+    let (w, h) = (src.w, src.h);
+    let (vw, x0, left) = if sbs {
+        let vw = w / 2;
+        if x < vw {
+            (vw, 0, true)
+        } else if x < 2 * vw {
+            (vw, vw, false)
+        } else {
+            return src.get(x, y);
+        }
+    } else {
+        let half = h / 2;
+        if y < half {
+            (w, 0, true)
+        } else if y < 2 * half {
+            (w, 0, false)
+        } else {
+            return src.get(x, y);
+        }
+    };
+    let off = if left { shift } else { -shift };
+    let mut fx = (x - x0) as f32 - off;
+    if repeat {
+        fx = fx.clamp(0.0, (vw - 1) as f32);
+    }
+    let lo = fx.floor();
+    let t = fx - lo;
+    let tap = |i: f32| {
+        if i >= 0.0 && i < vw as f32 { src.get(x0 + i as usize, y) } else { [0.0; 4] }
+    };
+    let (a, b) = (tap(lo), tap(lo + 1.0));
     let mut o = [0.0; 4];
     for k in 0..4 {
         o[k] = a[k] + (b[k] - a[k]) * t;
@@ -470,6 +523,14 @@ impl FxOp {
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
             "stereo_to_2d" => FxOp::StereoTo2d { sbs: choice(e, "frame_layout") == 1, right: choice(e, "eye") == 1 },
+            "stereo_parallax" => {
+                let sbs = choice(e, "frame_layout") == 1;
+                // percent of the view width, split between the two eyes
+                let pct = f(e, "shift", cx);
+                let pct = if pct.is_finite() { pct.clamp(-10.0, 10.0) } else { 0.0 };
+                let vw = if sbs { w / 2 } else { w };
+                FxOp::StereoParallax { sbs, shift: pct / 100.0 * vw as f32 / 2.0, repeat: b(e, "repeat_edge") }
+            }
             "mirror" => {
                 let img = Image { w, h, px: Vec::new() };
                 let c = point(e, "center", cx, &img);
@@ -649,6 +710,7 @@ impl FxOp {
             FxOp::ProcAmp { br, co, hue, sat } => fin(&[*br, *co, *hue, *sat]),
             FxOp::Tint { black, white, amount } => fin(black) && fin(white) && amount.is_finite(),
             FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip | FxOp::SwapEyes { .. } | FxOp::StereoTo2d { .. } => true,
+            FxOp::StereoParallax { shift, .. } => shift.is_finite(),
             FxOp::ColorBalance { sh, md, hi, .. } => fin(sh) && fin(md) && fin(hi),
             FxOp::LeaveColor { amount, key_hue, tol, soft } => fin(&[*amount, *key_hue, *tol, *soft]),
             FxOp::ChangeToColor { from_hue, to_hue, tol, soft } => fin(&[*from_hue, *to_hue, *tol, *soft]),
@@ -885,6 +947,18 @@ impl FxOp {
                     for x in 0..w {
                         if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
                             d.copy_from_slice(&stereo_view_sample(&src, x, y, sbs, right));
+                        }
+                    }
+                });
+            }
+            FxOp::StereoParallax { sbs, shift, repeat } => {
+                let (sbs, shift, repeat) = (*sbs, *shift, *repeat);
+                let src = img.clone();
+                let w = img.w;
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
+                            d.copy_from_slice(&stereo_parallax_sample(&src, x, y, sbs, shift, repeat));
                         }
                     }
                 });
@@ -1359,5 +1433,62 @@ mod tests {
             FxOp::eval(&stereo_to_2d(layout, 1), &eval_ctx(), w, h).unwrap().apply(&mut img);
             assert_eq!(img.px, src.px, "{w}x{h} layout {layout}");
         }
+    }
+
+    fn parallax(layout: u32, shift: f64, repeat: bool) -> EffectInstance {
+        let mut e = find_effect("stereo_parallax").unwrap().instance();
+        e.params.get_mut("frame_layout").unwrap().value = ParamValue::Choice(layout);
+        e.params.get_mut("shift").unwrap().value = ParamValue::Float(shift);
+        e.params.get_mut("repeat_edge").unwrap().value = ParamValue::Bool(repeat);
+        e
+    }
+
+    #[test]
+    fn stereo_parallax_moves_the_views_apart() {
+        // side by side, 2 × 10 columns: 10 % of a 10-pixel view = 1 px, half of it per eye
+        let mut row = Image::new(20, 1);
+        for x in 0..20 {
+            row.px[x * 4..x * 4 + 4].copy_from_slice(&[x as f32, 0.0, 0.0, 1.0]);
+        }
+        let run = |shift, repeat| {
+            let mut img = row.clone();
+            FxOp::eval(&parallax(1, shift, repeat), &eval_ctx(), 20, 1).unwrap().apply(&mut img);
+            img
+        };
+        let img = run(10.0, false);
+        // left view content 0.5 px right: column 3 shows 2.5, column 0 half faded from the edge
+        assert_eq!(img.get(3, 0), [2.5, 0.0, 0.0, 1.0]);
+        assert_eq!(img.get(0, 0), [0.0, 0.0, 0.0, 0.5]);
+        // right view content 0.5 px left, never reaching into the left view
+        assert_eq!(img.get(13, 0), [13.5, 0.0, 0.0, 1.0]);
+        assert_eq!(img.get(19, 0), [9.5, 0.0, 0.0, 0.5]);
+        let img = run(10.0, true);
+        assert_eq!(img.get(0, 0), [0.0, 0.0, 0.0, 1.0], "repeat edge");
+        assert_eq!(img.get(19, 0), [19.0, 0.0, 0.0, 1.0], "repeat edge");
+        let img = run(0.0, false);
+        assert_eq!(img.px, row.px, "no shift is the identity");
+    }
+
+    #[test]
+    fn stereo_parallax_over_under_and_odd_edges() {
+        let src = numbered(9, 7);
+        for (layout, shift) in [(0, 4.0), (1, -7.5), (0, 1e9), (1, f64::NAN)] {
+            let op = FxOp::eval(&parallax(layout, shift, false), &eval_ctx(), 9, 7).unwrap();
+            assert!(op.gpu_ok(), "{layout} {shift}");
+            let mut img = src.clone();
+            op.apply(&mut img);
+            assert!(img.px.iter().all(|v| v.is_finite()));
+            if layout == 0 {
+                assert_eq!(img.get(4, 6), src.get(4, 6), "the odd last row belongs to neither view");
+            } else {
+                assert_eq!(img.get(8, 3), src.get(8, 3), "the odd last column belongs to neither view");
+            }
+        }
+        // over/under: both views shift horizontally in opposite directions
+        let mut img = numbered(8, 4);
+        FxOp::StereoParallax { sbs: false, shift: 1.0, repeat: true }.apply(&mut img);
+        let src = numbered(8, 4);
+        assert_eq!(img.get(3, 0), src.get(2, 0));
+        assert_eq!(img.get(3, 3), src.get(4, 3));
     }
 }
