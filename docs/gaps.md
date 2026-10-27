@@ -33,7 +33,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G17 | Audio device and playback reliability | stability | partly | 20–40 h |
 | G18 | Effects depth: approximations and missing behaviour | feature | no | 60–110 h |
 | G19 | Speech to text off in release builds | feature, AI | no | 5–10 h |
-| G20 | The web app shell | platforms | no | 40–80 h |
+| G20 | The web app shell (dropped: no web build) | platforms | n/a | — |
 
 ## G1. Nothing compares our output with Premiere's
 
@@ -327,9 +327,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G20. The web app shell
 
-- **Missing:** file access, WebCodecs decode, audio in the browser build beyond what exists;
-  image-sequence export downloads drop frames in Chrome (#378).
-- **Estimate:** 40–80 h. Doc: [web.md](web.md).
+- **Dropped (2026-10-27):** CFA4 is Linux-only and the browser app `apps/cfa4-web` was removed
+  (WASM is not a release target), so this gap no longer applies.
 
 ## Revision history
 

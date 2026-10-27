@@ -22,7 +22,7 @@ Design principles:
 ## 1. Layers
 
 ```text
- L6  apps/cfa4 · apps/cfa4-cli · apps/cfa4-web
+ L6  apps/cfa4 · apps/cfa4-cli
  L5  ui-egui · automation · platform · gstreamer (cfa4-gstreamer, optional)
  L4  engine
  L3  render · gpu · export · golden (test-only)
@@ -86,7 +86,6 @@ and `cfa4-cli`.
 | `platform` | L5 | OS media FFI only: hardware video decoding (VideoToolbox H.264 / HEVC on macOS; Media Foundation / Direct3D 11 H.264 / HEVC / VP9 / AV1 on Windows; VA-API H.264 / HEVC on Linux, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and hardware H.264 encoding (VideoToolbox, opt-in) and H.265 encoding (VideoToolbox, the only H.265 encoder; the format exists only where a hardware encoder does) and NVIDIA NVENC H.264 (Windows and 64-bit Linux, opt-in) and H.265 (Windows, CFA4's only H.265 encoder there) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
 | `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, native macOS menu, TCP control server |
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
-| `cfa4-web` | L6 | the browser app (wasm32): eframe web runner on WebGPU/WebGL2, Blob-backed services, OPFS recovery, WebAudio, WebCodecs, `window.cfa4` API ([web.md](web.md)) |
 
 ### What `cargo xtask layers` enforces
 
@@ -102,9 +101,9 @@ are exempt):
 | L0 codecs stay standalone | L0 crates other than `time`, `geom`, `color`, `bitstream`, `testkit` may depend on no workspace crate except `cfa4-bitstream`. External crates such as `thiserror` and `rayon` are allowed. |
 | No UI/OS crates below L5 | `egui`, `eframe`, `egui-wgpu`, `winit`, `rfd`, `cpal`, `muda` are allowed only in L5 and L6. |
 
-`cargo xtask wasm` runs `cargo check --target wasm32-unknown-unknown` on every L0–L4 crate, the
-egui UI and the web app, so everything up to the engine stays web-portable and the web app builds
-([web.md](web.md)). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
+`cargo xtask wasm` (opt-in, not a CI or release gate) runs `cargo check --target
+wasm32-unknown-unknown` on every L0–L4 crate and the egui UI. CFA4 is Linux-only: the browser app
+`apps/cfa4-web` was removed (#286). `unsafe_code = "forbid"` applies workspace-wide, except in `platform`
 (`deny`, allowed only on its FFI modules; [ADR 0001](adr/0001-platform-ffi.md)).
 
 ## 2. Time base
