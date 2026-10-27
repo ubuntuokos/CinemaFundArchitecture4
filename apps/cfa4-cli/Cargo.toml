@@ -32,6 +32,8 @@ cfa4-time = { workspace = true }
 cfa4-gpu = { workspace = true }
 cfa4-media = { workspace = true }
 cfa4-codecs = { workspace = true }
+cfa4-format = { workspace = true }
+cfa4-qc = { workspace = true }
 cfa4-platform = { workspace = true }
 cfa4-gstreamer = { workspace = true }
 log = { workspace = true }
