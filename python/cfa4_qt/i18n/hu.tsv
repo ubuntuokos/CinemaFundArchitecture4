@@ -1652,3 +1652,31 @@
 	Target Duration:	Célhossz:
 	Variations:	Változatok:
 	the selected clip is not remixed	a kijelölt klip nincs remixelve
+# Credits window (crates/credits, python/cfa4_qt/panels/credits.py)
+	Credits from a Spreadsheet	Stáblista táblázatból
+	A .ods, .xlsx or CSV credits sheet	Egy .ods, .xlsx vagy CSV stáblista-táblázat
+	The spreadsheet's folder	A táblázat mappája
+	Built-in styles	Beépített stílusok
+	Spreadsheet	Táblázat
+	Sheet	Munkalap
+	Pictures	Képek
+	Styling	Stílus
+	Page	Oldal
+	Warnings	Figyelmeztetések
+	Moment in the page	Időpont az oldalon belül
+	Place at Playhead	Elhelyezés a lejátszófejnél
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Táblázatok (*.ods *.xlsx *.csv *.tsv *.txt)
+	Credits styling (*.json)	Stáblista-stílus (*.json)
+	Card	Kártya
+	Credits Spreadsheet	Stáblista-táblázat
+	Reading…	Beolvasás…
+	(one table)	(egyetlen táblázat)
+	Total: {time}	Összesen: {time}
+	Row {row}: {message}	{row}. sor: {message}
+	Choose a credits spreadsheet.	Válassz egy stáblista-táblázatot.
+	No preview	Nincs előnézet
+	Placing…	Elhelyezés…
+	Placed {n} pages on the timeline.	{n} oldal került az idővonalra.
+	Credits Page Picture	Stáblista-oldal képe
+	Preview Credits	Stáblista előnézete
+	Credits Styles	Stáblista-stílusok

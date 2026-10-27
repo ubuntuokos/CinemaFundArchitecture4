@@ -161,3 +161,17 @@ fn pictures_become_clips_that_roll_with_the_page() {
     s.execute("edit.undo", json!({})).unwrap();
     assert!(s.active_sequence().unwrap().find_item(pic).is_none());
 }
+
+#[test]
+fn thumbnail_renders_a_page_without_changing_the_project() {
+    let mut s = demo("credits-thumb");
+    let undo = s.history.undo.len();
+    let v = s.execute("graphics.credits.thumbnail", json!({"csv": SHEET, "page": 0, "width": 320})).unwrap();
+    assert_eq!((v["width"].as_u64(), v["height"].as_u64(), v["pages"].as_u64()), (Some(320), Some(180), Some(2)));
+    let png = cfa4_project::gtemplate::base64_decode(v["pngBase64"].as_str().unwrap()).unwrap();
+    let img = image::load_from_memory(&png).unwrap().to_rgba8();
+    // the title card shows white text in the middle
+    assert!(img.pixels().any(|p| p[0] > 200 && p[3] > 200));
+    assert_eq!(s.history.undo.len(), undo);
+    assert!(s.execute("graphics.credits.thumbnail", json!({"csv": SHEET, "page": 9})).is_err());
+}
