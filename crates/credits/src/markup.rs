@@ -83,7 +83,7 @@ pub fn style_tag(tag: &str) -> Option<&str> {
     let t = tag.trim();
     let (word, rest) = t.split_once(char::is_whitespace).unwrap_or((t, ""));
     let w = word.to_lowercase();
-    (w == "style" || w == "stílus").then_some(rest.trim())
+    (w == "style" || w == "stílus" || crate::cinecred::is_style_word(&w)).then_some(rest.trim())
 }
 
 /// `text` without its style tags.

@@ -156,6 +156,24 @@ action-safe (93 %) and title-safe (90 %) areas, the centre lines and the spines 
 blocks; *Baseline grid* draws lines one gap unit (`unitPx`) apart that move with the page. They
 are only in the picture, never in the credits.
 
+## Cinecred projects
+
+A [Cinecred](https://cinecred.com) project folder opens in the Credits window like a spreadsheet
+(*Cinecred Project…*, or `path` naming the folder or its `Styling.toml`): its credits
+spreadsheet (the one called *Credits…*, else the first; `credits` picks another) with its
+`Styling.toml` turned into CFA4 styles. Pictures are found in the project folder, also without
+their extension (`{{Pic logo}}`). Cinecred's column and tag names in its languages work in any
+CFA4 sheet (`@Kopf`, `{{Bild …}}`, `{{Stil …}}`, `400 Parallel`, …).
+
+What carries over: page styles (card / scroll, card length and fades, scroll speed, page gap),
+content styles (orientation, grid / flow / paragraphs, columns, gaps, wrap widths, head
+alignment, head-width harmonisation, head leaders), letter styles (font and weight, size and
+leading, tracking, capitals, the colour of the first coloured layer), the unit gap; sizes are
+scaled from the project's resolution to a 1080-line frame. What does not – each is listed among
+the warnings: further letter layers (outlines, shadows, stripes), transition, picture and video
+(tape) styles, sorting, and the whole-credits runtime (use *Fit Credits to Music*). The
+spreadsheet stays the source: *Refresh Credits from Spreadsheet* works as for any sheet.
+
 ## Templates
 
 A credits template is a ready look: the styling (page and content styles, backgrounds,
@@ -270,7 +288,7 @@ fails leaves the old pages as they were.
 
 | Command | Menu | Params |
 |---|---|---|
-| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
+| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits, or a Cinecred project folder / its `Styling.toml`, with `credits` to pick its spreadsheet) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
@@ -293,5 +311,5 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), hooked spines, body-width harmonisation, looping a short
-background or credits video.
+Online sheets (download as `.xlsx`), hooked and fused spines, body-width harmonisation, looping
+a short background or credits video, writing Cinecred projects (only on request, per the plan).

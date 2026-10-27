@@ -22,6 +22,7 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod cinecred;
 pub mod diff;
 pub mod doc;
 pub mod fit;
@@ -120,3 +121,6 @@ mod rich_tests;
 
 #[cfg(test)]
 mod template_tests;
+
+#[cfg(test)]
+mod cinecred_tests;

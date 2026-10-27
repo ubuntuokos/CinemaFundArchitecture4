@@ -149,6 +149,13 @@ that adds them names the source and revision.
 | `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA CORPORATION & AFFILIATES (Copyright 2026) | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
 | `crates/aac/src/usac/`, `crates/aac/src/drc/`, `crates/aac/tools/usac_tables.py` | libxaac, <https://github.com/ittiam-systems/libxaac> (Android `platform/external/libxaac`), commit `2fbadd57bca46693b7a077bcf1513131106d960c`, `decoder/` (USAC) and `decoder/drc_src/` (MPEG-D DRC); fixed point converted to floating point, the arithmetic-coder tables generated from its sources | The Android Open Source Project; Ittiam Systems Pvt. Ltd | Apache-2.0 (`crates/aac/LICENSE.libxaac`, `crates/aac/NOTICE.libxaac`) |
 
+**File formats read, no code copied.** CFA4 code written independently to read another
+program's file format, from its documentation and published source:
+
+| CFA4 path | Format (project, URL, revision) | Licence of the source consulted |
+|---|---|---|
+| `crates/credits/src/cinecred.rs` | Cinecred project: `Styling.toml` keys and values, credits-sheet column and tag names in its languages ([LoadingByte/cinecred](https://github.com/LoadingByte/cinecred), 1.9.1, `24e5083`) | GPL-3.0-or-later |
+
 ## 6. Dependency checks
 
 - Rust dependencies: `deny.toml` lists the licences that are GPL-3.0 compatible. Run
