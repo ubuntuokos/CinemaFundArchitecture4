@@ -753,8 +753,49 @@ impl XllDecoder {
         self.chset.first().map(|c| c.freq)
     }
 
-    pub(crate) fn filter(&mut self, core: Option<&CoreOutput>) -> R<()> {
+    /// Combine with `core` and assemble the output. In `recovery` the frame is the core alone
+    /// (ffmpeg's `DCA_PACKET_RECOVERY`, `force_lossy_output`): the band data is cleared and every
+    /// residual channel the core carries takes the core's samples, embedded downmixes are left
+    /// in, and no scalable LSBs are applied.
+    pub(crate) fn filter(&mut self, core: Option<&CoreOutput>, recovery: bool) -> R<()> {
+        if recovery {
+            self.force_lossy_output(core);
+        }
         self.filter_frame(core)
+    }
+
+    /// Channel sets with channels coded as a residual over the core (`nreschsets`).
+    pub(crate) fn residual_chsets(&self) -> usize {
+        self.chset.iter().take(self.nchsets).filter(|c| c.nchannels < 32 && c.residual_encode != (1u32 << c.nchannels) - 1).count()
+    }
+
+    /// Number of channel sets in the frame.
+    pub(crate) fn chsets(&self) -> usize {
+        self.nchsets
+    }
+
+    fn force_lossy_output(&mut self, core: Option<&CoreOutput>) {
+        let core_mask = core.map_or(0, |c| c.ch_mask);
+        let active = self.nactivechsets;
+        for (i, c) in self.chset.iter_mut().take(self.nchsets).enumerate() {
+            if i < active {
+                for buf in c.band.msb.iter_mut().chain(c.band.lsb.iter_mut()) {
+                    buf.fill(0);
+                }
+                c.band.nscalablelsbs = [0; DCA_XLL_CHANNELS_MAX];
+                c.band.bit_width_adjust = [0; DCA_XLL_CHANNELS_MAX];
+                for ch in 0..c.nchannels.min(DCA_XLL_CHANNELS_MAX) {
+                    if c.residual_encode & (1 << ch) != 0 && map_core_spkr(core_mask, c.ch_remap[ch]).is_some() {
+                        c.residual_encode &= !(1 << ch);
+                    }
+                }
+            }
+            if !c.primary_chset {
+                c.dmix_embedded = false;
+            }
+        }
+        self.scalable_lsbs = false;
+        self.fixed_lsb_width = 0;
     }
 
     /// Empty `output`, keeping its buffers for the next frame.
@@ -1202,6 +1243,19 @@ impl XllDecoder {
         }
         if self.nfreqbands > 1 {
             return Err(XllError::Unsupported("XLL with 2 frequency bands"));
+        }
+        // Modified for CFA4: pre-scale the downmix coefficients of every non-primary set by the
+        // next set that downmixes into it, from the last set back (ffmpeg's
+        // `prescale_down_mix`). Without it a third channel set's embedded downmix came out of
+        // the first set's channels with slightly wrong coefficients.
+        for i in (1..self.nchsets).rev() {
+            if !is_hier_dmix_chset(&self.chset[i]) {
+                continue;
+            }
+            if let Some(o) = self.find_next_hier_dmix_chset(i) {
+                let (head, tail) = self.chset.split_at_mut(o);
+                prescale_down_mix(&mut head[i], &tail[0]);
+            }
         }
         self.nactivechsets = self.nchsets;
         Ok(())
@@ -1915,6 +1969,30 @@ impl XllDecoder {
                 *slot = Some(moved);
             }
             self.output_mask = (self.output_mask & !(1 << side)) | (1 << to);
+        }
+    }
+}
+
+/// `prescale_down_mix`: fold the downmix of set `o` (the next one downmixing into the hierarchy)
+/// into set `c`'s own scales and coefficients.
+fn prescale_down_mix(c: &mut XllChSet, o: &XllChSet) {
+    let mut k = 0;
+    for i in 0..c.hier_ofs {
+        let (Some(&scale), Some(&scale_inv)) = (o.dmix_scale.get(i), o.dmix_scale_inv.get(i)) else {
+            return;
+        };
+        if let Some(v) = c.dmix_scale.get_mut(i) {
+            *v = rmul15(*v, scale);
+        }
+        if let Some(v) = c.dmix_scale_inv.get_mut(i) {
+            *v = mul16(*v, scale_inv);
+        }
+        for j in 0..c.nchannels {
+            let o_scale = o.dmix_scale.get(c.hier_ofs + j).copied().unwrap_or(0);
+            if let Some(v) = c.dmix_coeff.get_mut(k) {
+                *v = rmul15(mul16(*v, scale_inv), o_scale);
+            }
+            k += 1;
         }
     }
 }

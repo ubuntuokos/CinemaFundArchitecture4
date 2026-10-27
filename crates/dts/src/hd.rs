@@ -213,6 +213,10 @@ pub struct HdDecoder {
     xll: XllDecoder,
     /// The core as synthesized for the current frame, kept for its buffers.
     core_out: CoreOutput,
+    /// The previous frame combined XLL with a core (ffmpeg's `DCA_PACKET_RESIDUAL`). Without it
+    /// a stream of several channel sets with residual channels starts in recovery: its first
+    /// frame is the lossy core, as ffmpeg and the reference decoder give it after a seek.
+    residual_ok: bool,
 }
 
 impl Default for HdDecoder {
@@ -225,13 +229,14 @@ impl Default for HdDecoder {
 
 impl HdDecoder {
     pub fn new() -> Self {
-        HdDecoder { core: CoreDecoder::default(), synth: SynthState::default(), xll: XllDecoder::new(), core_out: CoreOutput::default() }
+        HdDecoder { core: CoreDecoder::default(), synth: SynthState::default(), xll: XllDecoder::new(), core_out: CoreOutput::default(), residual_ok: false }
     }
 
     pub fn reset(&mut self) {
         self.core.reset();
         self.synth.reset();
         self.xll.reset();
+        self.residual_ok = false;
     }
 
     /// The lossless 24-bit samples of the last decoded frame, by DCA speaker
@@ -255,6 +260,7 @@ impl HdDecoder {
     /// whose layout holds decodes without allocating once they are sized.
     /// On error `frame` is left as it was.
     pub fn decode_into(&mut self, core_au: &[u8], exss: &[u8], frame: &mut HdFrame) -> Result<(), HdError> {
+        let residual_ok = std::mem::take(&mut self.residual_ok);
         // 1) Core bitstream decode (the residual base).
         let info = parse_header(core_au)?;
         self.core.decode_frame(&info, core_au).map_err(|_| HdError::Core)?;
@@ -280,8 +286,11 @@ impl HdDecoder {
         let x96_synth = self.xll.primary_freq() == Some(96_000) && self.core.sample_rate() == 48_000;
         self.synth.synthesize_fixed_by_speaker(&mut self.core, x96_synth, &mut self.core_out);
 
-        // 5) Combine the lossless XLL bands with the core residual.
-        match self.xll.filter(Some(&self.core_out)) {
+        // 5) Combine the lossless XLL bands with the core residual (the core alone on the first
+        // frame of a multi-set stream, see `residual_ok`).
+        let recovery = !residual_ok && self.xll.residual_chsets() > 0 && self.xll.chsets() > 1;
+        self.residual_ok = true;
+        match self.xll.filter(Some(&self.core_out), recovery) {
             Ok(()) => {}
             Err(XllError::Eagain) => return Err(HdError::Pending),
             Err(e) => return Err(HdError::Xll(format!("{e:?}"))),
@@ -325,6 +334,8 @@ impl HdDecoder {
             x_descriptor_offset: exssp.asset.xll_x_offset,
             x_descriptor_size: exssp.asset.xll_x_size,
             x_descriptor_navigation_used: self.xll.x_descriptor_navigation_used,
+            // a recovery frame is the lossy core, but the stream is lossless from the next frame;
+            // ffmpeg reports the profile the same way
             lossless: true,
             xxch_decode_error: None,
         };
@@ -383,6 +394,9 @@ impl HdDecoder {
         }
 
         self.synth.synthesize_fixed_by_speaker(&mut self.core, false, &mut self.core_out);
+        // the lossy output plays the XCH rear centre on its own (the XLL residual base keeps it
+        // folded into the surrounds)
+        self.core.undo_xch_dmix(&mut self.core_out.samples);
         let mut samples = std::mem::take(&mut frame.samples);
         fill_speakers(&mut samples, &self.core_out.samples);
         let mut x_samples = std::mem::take(&mut frame.x_samples);

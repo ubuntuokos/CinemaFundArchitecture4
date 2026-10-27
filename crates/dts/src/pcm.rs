@@ -115,6 +115,10 @@ impl PcmDecoder {
         pcm.sample_rate = info.sample_rate;
         pcm.fullband_channel_order.clear();
         pcm.fullband_channel_order.extend_from_slice(primary_bed_layout(info.audio_mode));
+        // Modified for CFA4: a DTS-ES XCH channel follows the primary ones
+        if self.core.xch_decoded() {
+            pcm.fullband_channel_order.push(BedChannel::RearCenter);
+        }
         pcm.decoded = true;
         Ok(info)
     }

@@ -38,6 +38,14 @@ DTS has no other open implementation to build on. No FFmpeg library is linked or
   channel. The float LFE path and its table are removed.
 - The unused `rustfft` dependency is dropped. Lints from the workspace are fixed.
 - `cfa4.rs` (new) is the interface the rest of CFA4 uses, described below.
+- Found on real streams (#131), ported from FFmpeg:
+  - XLL recovery: the first frame of a stream with several channel sets and residual-coded
+    channels (and the first after a reset) is the lossy core (`DCA_PACKET_RECOVERY`,
+    `force_lossy_output`).
+  - The downmix coefficients of a channel set are pre-scaled by the next set that downmixes into
+    it (`prescale_down_mix`); a third set's downmix came out with slightly wrong coefficients.
+  - The XCH rear centre of DTS-ES core streams (`parse_xch_frame`), lossy and as the XLL residual
+    base, with the surround downmix taken back out of the lossy output (`dmix_sub_xch`).
 
 ## What it decodes
 
@@ -46,15 +54,17 @@ DTS has no other open implementation to build on. No FFmpeg library is linked or
 `push` / `flush` take a raw stream in pieces. Both give planar `f32` in CFA4's WAV / SMPTE order
 (L R C LFE back-L back-R … side-L side-R …), with the speakers named.
 
-- DTS core: mono to 5.1, 32–48 kHz, bit-exact against FFmpeg.
-- DTS-HD Master Audio (XLL), lossless up to 7.1 at 48 / 96 / 192 kHz.
+- DTS core: mono to 5.1, and 6.1 with the DTS-ES rear centre (XCH), 32–48 kHz, bit-exact
+  against FFmpeg.
+- DTS-HD Master Audio (XLL), lossless up to 7.1 (and 6.1 over a DTS-ES core) at 48 / 96 kHz.
 - DTS-HD High Resolution: the core plus its XXCH channels. XBR-only streams play their core.
 - DTS:X: the backward-compatible bed. The encoder has folded the heights and objects into it.
   Placing them on their own loudspeakers is #130.
 - A frame that does not decode gives silence of its length, so timing holds.
 
-Not decoded: DTS Express (LBR), 14-bit and little-endian DTS (DTS-CD, DTS in WAV), the XCh back
-centre of DTS-ES core streams, and raw `.dts` file import (#132).
+Not decoded: DTS Express (LBR), 14-bit and little-endian DTS (DTS-CD, DTS in WAV), 192 kHz XLL
+(two frequency bands, #253), DTS-HD Master Audio without a core (#254), and raw `.dts` file import
+(#132).
 
 ## Tests
 
@@ -64,8 +74,11 @@ centre of DTS-ES core streams, and raw `.dts` file import (#132).
   streams (bit flips, truncation, scrambled bytes, random extension substreams) never panic, and
   neither do 3000 extension substreams that reach the lossless decoder with random channel sets.
 - `a_real_dts_hd_stream_decodes_like_ffmpeg`: when `CFA4_DTSHD_SAMPLE` names a DTS-HD Master
-  Audio stream, it must be lossless and bit-exact against ffmpeg. No free encoder writes one, and
-  none is committed (#131).
+  Audio stream (raw `.dts`, or a `.dtshd` file, whose `STRMDATA` chunk is read), it must be
+  lossless and bit-exact against ffmpeg. No free encoder writes one, and none is committed. FFmpeg's
+  FATE samples `dts/master_audio_7.1_24bit.dts`, `dts/dtsx_7.1.4_24bit.dts` and the
+  `dts/dcadec-suite/xll_*` streams at 48 and 96 kHz (5.1, 6.1 over DTS-ES, 7.1 in two and three
+  channel sets) all pass (#131).
 - `crates/codecs/tests/dts_oracle.rs`: DTS in Matroska, MP4 and MPEG-TS, bit-exact, also on
   random access.
 - The harletty-bridge unit tests. Those that need its private corpora skip without them.
