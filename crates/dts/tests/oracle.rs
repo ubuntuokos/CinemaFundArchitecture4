@@ -89,6 +89,25 @@ fn decode_raw(data: &[u8], chunk: usize) -> Decoded {
     all
 }
 
+/// The audio of a DTS-HD file (`.dtshd`): its `STRMDATA` chunk. The chunks are an 8-byte id and
+/// a 64-bit big-endian size; others (a `BLACKOUT` chunk holds a silent frame) are not the stream,
+/// and ffmpeg's demuxer skips them. A raw `.dts` comes back whole.
+fn stream_data(data: &[u8]) -> &[u8] {
+    if !data.starts_with(b"DTSHDHDR") {
+        return data;
+    }
+    let mut p = 0;
+    while let Some(head) = data.get(p..p + 16) {
+        let size = usize::try_from(u64::from_be_bytes(head[8..16].try_into().unwrap())).unwrap();
+        let body = data.get(p + 16..).map_or(&[][..], |b| &b[..size.min(b.len())]);
+        if &head[..8] == b"STRMDATA" {
+            return body;
+        }
+        p += 16 + size;
+    }
+    &[]
+}
+
 /// The stream's frames (a core frame and its extension substream), as a demuxer gives them.
 fn frames(data: &[u8]) -> Vec<&[u8]> {
     let mut out = Vec::new();
@@ -226,7 +245,7 @@ fn a_real_dts_hd_stream_decodes_like_ffmpeg() {
     let ff = cfa4_testkit::require_ffmpeg!();
     let path = PathBuf::from(path);
     let data = std::fs::read(&path).unwrap();
-    let d = decode_raw(&data, 65_536);
+    let d = decode_raw(stream_data(&data), 65_536);
     eprintln!("{} Hz {:?} lossless {}", d.sample_rate, d.speakers, d.lossless);
     assert!(d.lossless);
     assert_bit_exact("CFA4_DTSHD_SAMPLE", &d, &reference(&ff, &path));
