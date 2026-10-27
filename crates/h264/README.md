@@ -31,7 +31,11 @@ oracles and fixture generators.
   the level (or VUI `max_dec_frame_buffering`) and `max_num_reorder_frames`.
 - Deblocking filter: full bS derivation, `disable_deblocking_filter_idc` 0/1/2, slice offsets,
   8x8-transform edges.
-- Output: cropped 8-bit planar 4:2:0 pictures in output order with the caller's `pts`, POC, key
+- Bit depth 8 to 14 (High 10 and the 4:2:0 subset of the higher profiles): samples are stored as
+  `u8` for 8-bit streams and `u16` above, through one generic decoder (`picture::Sample`), with
+  `QpBdOffset` QP ranges (negative QPY), scaled deblocking thresholds, scaled explicit weighted
+  prediction offsets and `bit_depth`-bit I_PCM samples.
+- Output: cropped planar 4:2:0 pictures (`Plane::U8` or `Plane::U16`, `Picture::bit_depth`) in output order with the caller's `pts`, POC, key
   flag, VUI colour description (range, primaries, transfer, matrix) and sample aspect ratio.
 - Frame-level multithreading (see below).
 - Draft mode for reduced-resolution playback (off by default): non-reference pictures skip the
@@ -203,20 +207,22 @@ file; `H264_BENCH_ITERS=n` (and `H264_THREADS=t`, `H264_DRAFT=1`) turns it into 
 
 - Interlaced coding (field pictures, PAFF, MBAFF): streams with `frame_mbs_only_flag = 0` return
   `Error::Unsupported`.
-- Only 8-bit 4:2:0. High 10 / 4:2:2 / 4:4:4 / monochrome and lossless
-  (`qpprime_y_zero_transform_bypass`) return `Error::Unsupported`.
+- Only 4:2:0 (8 to 14 bits, luma and chroma depth equal). 4:2:2 / 4:4:4 / monochrome
+  ([#161](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/161)) and lossless
+  (`qpprime_y_zero_transform_bypass`, [#163](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/163))
+  return `Error::Unsupported`; interlaced is [#162](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/162).
+- The ffmpeg oracle covers 10 bits only (libx264 encodes 8 and 10); 9 / 12 / 14 bits are untested
+  ([#164](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/164)).
 - FMO (slice groups), SP/SI slices, data partitioning (Extended profile), MVC/SVC NAL units.
 - Error concealment is minimal: undecodable slices leave the prediction/previous content; missing
   references are replaced by other references.
 - No SIMD intrinsics (the hot loops are written to auto-vectorise); CABAC residual decoding is
   inherently serial and now dominates.
 
-### Extending to High 10 and 4:2:2
+### Extending to 4:2:2 and 4:4:4
 
-The chroma format and bit depth are isolated behind `Sps::check_supported`. The parts that are
-format-specific today: `Planes`/`FrameRow` sample type (`u8`; a `u16` variant or a generic sample
-type is needed for bit depths > 8, together with `Clip1` ranges, `QpBdOffset` in the QP
-derivations and the scaled tC0/alpha/beta in deblocking), chroma block geometry (`MbWidthC` /
+The chroma format is isolated behind `Sps::check_supported`. The parts that are
+format-specific today: chroma block geometry (`MbWidthC` /
 `MbHeightC` = 8x8 in `slicedec`, `intra::pred_chroma`, the chroma DC transform and the CABAC/CAVLC
 chroma DC parsing — the 2x4 total_zeros tables and ctxBlockCat 3 `NumC8x8` handling are already in
 place), chroma motion-vector vertical scaling and the chroma deblocking edges (4:2:2 has four

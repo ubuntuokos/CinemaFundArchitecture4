@@ -14,8 +14,9 @@
   Ezeknek a képességét saját kóddal vagy külső programként hívva kell megvalósítani.
 - **Fizetős rész:** a CFA4 alapprogram ingyenes és szabadon terjeszthető. Fizetős lehet a
   hosszabb támogatás (LTS-ágak, frissítések), a kész csomagok és a szolgáltatások, a nem kód
-  jellegű tartalmak, valamint a **külön folyamatként** futó extra modulok. A CFA4 folyamatába
-  betöltődő zárt bővítmény nem megengedett.
+  jellegű tartalmak, valamint a **GPL-3.0-or-later licencű fizetős kiegészítők** (a tulajdonos
+  döntése, 2026-10-24): eladhatók, de a vevő a forrással együtt továbbadhatja őket. Zárt (nem GPL)
+  kódmodul – sem a CFA4 folyamatába betöltődő, sem külön folyamatként futó – nem készül.
 - **Szabadalmilag korlátozott komponensek – Ubuntu-modell (tulajdonosi döntés, 2026-10-25):**
   az alapcsomag nélkülük épül és működik; a felhasználó kifejezett kérésére a
   `cfa4-restricted-extras` kiegészítő csomag telepíti őket (pl. x264, x265). Ez minden jövőbeli
@@ -108,20 +109,19 @@ GPL. Revenue comes from things that are compatible with that:
    Ubuntu releases, direct help. The code of any released LTS build is still GPL and its source is
    provided to its recipients.
 2. **Convenience:** signed, ready-made packages (deb, Snap, Flatpak) with automatic updates.
-3. **Separate-process extras:** proprietary modules may exist only as **independent programs**
-   that run in their own process and talk to CFA4 through a documented, generic interface (the
-   control channel, a local network/IPC protocol, command line, files). Rules:
-   - they do not link to CFA4 crates or Python modules and are not loaded into the CFA4 process;
-   - they contain no CFA4 or other GPL code;
-   - CFA4 works fully without them (no artificially crippled core);
-   - the interface is documented and usable by free alternatives too.
+3. **Paid extras are GPL too** (owner decision, 2026-10-24): extra features sold on top of the
+   free core are licensed `GPL-3.0-or-later`, like the core. They may be loaded into the CFA4
+   process or run separately; buyers receive the source and may redistribute it. Rules:
+   - every distributed binary comes with its corresponding source (GPL-3.0 §6): a source archive or
+     a link to the exact source version, built into the release chain before the release hold is
+     lifted;
+   - CFA4 works fully without them (no artificially crippled core).
 4. **Content and services:** templates, effect presets, AI models, sample media, cloud or hosted
    processing. Non-code content can carry its own (also paid) licence.
 
-**Not allowed:** proprietary plug-ins loaded into the CFA4 process (dynamic libraries, Rust
-crates, Python modules). Such a plug-in forms a combined work with the GPL core and would have to
-be GPL as well. Paid extras that are GPL themselves are possible, but buyers may redistribute
-them.
+**Not part of the model:** proprietary (non-GPL) code extras of any kind, whether loaded into the
+CFA4 process (dynamic libraries, Rust crates, Python modules) or shipped as separate programs.
+Third-party proprietary plug-ins are not loaded either (ADR 0003 §4).
 
 ## 5. Reused code register
 
@@ -131,7 +131,12 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/dts/src/` (except `cfa4.rs`) | `dca` crate 0.9.0 of harletty-bridge, <https://github.com/harletty/harletty-bridge>, commit `74cf6edaef6742777d3eb4da35387fd370f2e9f3`, `dca/src/`; itself a port of FFmpeg `libavcodec/dca*.c`, `dcadsp.c`, `dcadct.c`, `synth_filter.c` | foo86 and the FFmpeg developers; the harletty-bridge contributors | LGPL-2.1-or-later (`crates/dts/COPYING.LGPL-2.1`; published by harletty-bridge as Apache-2.0, `crates/dts/LICENSE.harletty-bridge`). FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (#83) |
+| `crates/jxl/src/` (105 files, each with a provenance header) | jxl-oxide, <https://github.com/tirr-c/jxl-oxide>, crates jxl-oxide 0.12, jxl-render 0.12.4, jxl-bitstream 1.1.0, jxl-modular, jxl-vardct, jxl-frame, jxl-image, jxl-grid, jxl-color, jxl-coding, jxl-oxide-common, jxl-threadpool (crates.io releases of 2025; repository revisions 74c45ba5, 1d4e4289, f37ac036, b2042ccf); rewritten without `unsafe` and panics | Wonwoo Choi and the jxl-oxide contributors | MIT OR Apache-2.0 (`crates/jxl/LICENSE-MIT`, `crates/jxl/LICENSE-APACHE`); CFA4 changes GPL-3.0-or-later |
+| `crates/opus/src/celt/encoder.rs`, encoder parts of `crates/opus/src/celt/{bands,energy,mdct}.rs` | RFC 6716 reference implementation (libopus `celt/`): algorithm structure and tuning constants of the encoder analysis (transient detector, stereo / intensity decisions, PVQ search, coarse / fine energy quantisation, forward MDCT folding), reimplemented in Rust; no files copied | IETF Trust and the RFC 6716 authors (Xiph.Org Foundation, Skype Limited, Octasic, J.-M. Valin, T. B. Terriberry, and others) | BSD-3-Clause |
+| `crates/cineform/src/tables.rs` (codebooks), and the tag syntax, companding and inverse 2/6 wavelet re-expressed in `crates/cineform/src/{decode,vlc,wavelet}.rs` | GoPro CineForm SDK, https://github.com/gopro/cineform-sdk, rev. `11574d0295771edccadd17af14af74a539f924c7`, `Common/table9.inc`, `Common/table17.inc`, `Codec/codec.h`, `Codec/spatial.c`, `Codec/InvertHorizontalStrip16s.c`, `Codec/vlc.c` | (C) 2017 GoPro, Inc. | Apache-2.0 OR MIT (MIT used) |
+| `crates/j2k/src/ht.rs`, `crates/j2k/src/ht_tables.rs` (HTJ2K block decoder, ported) | OpenJPH, https://github.com/aous72/OpenJPH, 0.28.1 (Ubuntu `openjph_0.28.1.orig.tar.gz`), `src/core/coding/ojph_block_decoder32.cpp`, `ojph_block_common.cpp`, `table0.h`, `table1.h` | Aous Naman; Kakadu Software Pty Ltd; The University of New South Wales | BSD-2-Clause (`crates/j2k/src/LICENSE-OpenJPH`) |
+| `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
 
 ## 6. Dependency checks
 

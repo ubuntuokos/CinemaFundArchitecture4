@@ -1,8 +1,0 @@
-asset:        favicon.svg
-title:        CFA4 application icon (web favicon and loading image), emblem of the official CFA4 logo
-author:       István, CFA4 project owner
-source:       Copy of assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg
-license:      LicenseRef-CFA4-Logo
-license-file: assets/cfa4/LICENSE-logo.txt
-added:        2026-10-26 replacing the rejected geometric placeholder favicon
-notes:        CFA4 mark owned by the project owner; not covered by the GPL.

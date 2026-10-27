@@ -2996,6 +2996,12 @@
 	Gang to Program	Mit Programm koppeln
 	AAC Audio	AAC-Audio
 	AAC Audio 48 kHz 320 kbps	AAC-Audio 48 kHz 320 kbit/s
+	Opus Audio	Opus-Audio
+	Opus Audio 48 kHz 160 kbps	Opus-Audio 48 kHz 160 kbit/s
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), Stereo 48 kHz mit 160 kbit/s
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 mit 8 Mbit/s, Opus 128 kbit/s Stereo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4-Audio (.m4a), Stereo 48 kHz AAC-LC mit 320 kbit/s
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 Bit
@@ -3476,8 +3482,10 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 Bit, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 Bit; Main 10 für HDR-Sequenzen)
 	Encoder	Encoder
-	Hardware (H.265 has no software encoder)	Hardware (für H.265 gibt es keinen Software-Encoder)
-	Hardware (AV1 has no software encoder)	Hardware (für AV1 gibt es keinen Software-Encoder)
+	Encoding	Kodierung
+	Software, or hardware where available	Software, oder Hardware wo verfügbar
+	Main (10-bit, HDR)	Main (10 Bit, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 Bit; 10 Bit für HDR-Sequenzen)
 	Text Properties	Texteigenschaften
 	Text Box Height	Textfeldhöhe
 	Paragraph Text	Absatztext
@@ -3618,3 +3626,6 @@
 	Time Span (seconds)	Zeitspanne (Sekunden)
 	Current Frame At	Aktuelles Bild am
 	Blend Slices	Scheiben überblenden
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 mit 8 Mbit/s, AAC 160 kbit/s, 6-Sekunden-Segmente im fragmentierten MP4
