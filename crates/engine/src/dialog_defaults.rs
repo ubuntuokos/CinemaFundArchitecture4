@@ -43,8 +43,9 @@ pub const DIALOGS: [&str; 27] = [
     "markers.addFlashCue",
 ];
 
-/// Further menu dialogs (egui's `menu_dialogs`) that run a command of their own.
-const MORE: [&str; 2] = ["file.newColorMatte", "project.matteColor"];
+/// Further menu dialogs (egui's `menu_dialogs`, Sequence ▸ Color Management… of `color_dialogs`)
+/// that run a command of their own.
+const MORE: [&str; 3] = ["file.newColorMatte", "project.matteColor", "sequence.colorSettings"];
 
 /// The command a menu item's dialog runs: the Project Settings items share one.
 fn dialog_command(id: &str) -> &str {
@@ -189,6 +190,11 @@ fn menu_defaults(s: &mut Session, id: &str, p: &Value) -> Result<(Value, Value)>
             };
             let (item, color) = matte.ok_or_else(|| crate::EngineError::Other("select one Color Matte".into()))?;
             (json!({"item": item.0, "color": cfa4_color::to_hex(color)}), Value::Null)
+        }
+        "sequence.colorSettings" => {
+            let c = s.active_sequence().map(|q| q.settings.color).unwrap_or(cfa4_color::ColorPipeline::REC709);
+            let spaces: Vec<Value> = cfa4_color::WorkingSpace::ALL.iter().map(|w| json!([w.id(), w.label()])).collect();
+            (json!({"workingSpace": c.working.id(), "wideGamut": c.wide_gamut, "autoToneMap": c.auto_tone_map}), json!({"workingSpaces": spaces}))
         }
         _ => (json!({}), Value::Null),
     })

@@ -1813,12 +1813,26 @@ class MainWindow(QMainWindow):
         the Project panel's selection. True when it did."""
         if cid != "clip.interpretFootage" or "colorSpace" in params or "pixelAspect" in params:
             return False
-        items = [i for i in params.get("items") or self.project_panel.selected_items() if isinstance(i, int)]
+        items = [i for i in params.get("items") or self.project_panel.selected_items() or self.selected_clip_items() if isinstance(i, int)]
         dialog = InterpretFootageDialog(self, self.engine, items, self.execute)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.last_dialog = dialog
         dialog.open()
         return True
+
+    def selected_clip_items(self) -> list[int]:
+        """The project items of the Timeline's selected clips, once each (egui's Interpret
+        Footage without a Project panel selection)."""
+        seq = self.sequence or {}
+        chosen = {i for i in seq.get("selection") or [] if isinstance(i, int)}
+        out: list[int] = []
+        for kind in ("video", "audio"):
+            for track in seq.get(kind) or [] if isinstance(seq.get(kind), list) else []:
+                for it in (track.get("items") or []) if isinstance(track, dict) else []:
+                    item = it.get("item") if isinstance(it, dict) else None
+                    if isinstance(it, dict) and it.get("clip") in chosen and isinstance(item, int) and item not in out:
+                        out.append(item)
+        return out
 
     def flush_editors(self) -> None:
         """Send every value still in a panel's send delay (before a command, Save or a check of

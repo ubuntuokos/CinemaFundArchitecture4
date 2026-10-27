@@ -1979,3 +1979,7 @@
 	System Compatibility Report…	Rendszerkompatibilitási jelentés…
 	not available now	most nem érhető el
 	{name} Selection.fcproj	{name} kijelölés.fcproj
+# colour dialogs (4.9)
+	Auto tone map media (HDR and log into SDR)	Automatikus tónusleképezés (HDR és log SDR-re)
+	Sequence Color Management	Szekvencia színkezelése
+	Working Color Space	Munka-színtér

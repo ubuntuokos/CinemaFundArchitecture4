@@ -66,6 +66,8 @@ MENU_DIALOGS: dict[str, tuple[str, str, str]] = {
     "file.newColorMatte": (N_("New Color Matte"), "colorMatte", N_("OK")),
     "project.matteColor": (N_("Color Matte Color"), "matteColor", N_("OK")),
     "help.systemCompatibilityReport": (N_("System Compatibility Report"), "systemReport", N_("Close")),
+    # egui's color_dialogs: Sequence ▸ Color Management…
+    "sequence.colorSettings": (N_("Sequence Color Management"), "colorDialog", N_("OK")),
 }
 # the menu items that open one of them (the Project Settings items share one)
 # (the System Compatibility Report is the frontend's: MainWindow opens it from ``help.systemReport``)
@@ -147,6 +149,7 @@ class MenuDialog(ClipDialog):
             "file.newColorMatte": self._color_matte,
             "project.matteColor": lambda: self.color("color", N_("Color:")),
             "help.systemCompatibilityReport": self._system_report,
+            "sequence.colorSettings": self._color_management,
         }
 
     # ----- helpers -----
@@ -445,6 +448,22 @@ class MenuDialog(ClipDialog):
             a = v.get("audio")
             if isinstance(a, dict):
                 line(N_("Audio"), fmt("{codec} · {rate} Hz · {n} channel(s)", codec=_str(a.get("codec")), rate=_str(a.get("sampleRate")), n=_str(a.get("channels"))))
+
+    def _color_management(self) -> None:
+        """Working Color Space (radio list), Wide gamut, Auto tone map: one
+        ``sequence.colorSettings`` on OK, so one undo step."""
+        p = self.params
+        self._heading(N_("Working Color Space"))
+        group = QButtonGroup(self)
+        for wid, label in _pairs(self.info.get("workingSpaces")) or [("rec709", "Rec. 709")]:
+            r = QRadioButton(tr(label), self)
+            r.setObjectName(f"colorDialog.working.{wid}")
+            r.setChecked(p.get("workingSpace") == wid)
+            group.addButton(r)
+            r.toggled.connect(lambda on, w=wid: on and p.__setitem__("workingSpace", w))
+            self.body_lay.addWidget(r)
+        self.check("wideGamut", N_("Wide gamut color (composite in BT.2020)"))
+        self.check("autoToneMap", N_("Auto tone map media (HDR and log into SDR)"))
 
     def _system_report(self) -> None:
         r = self.info

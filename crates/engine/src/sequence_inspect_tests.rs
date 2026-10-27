@@ -289,3 +289,16 @@ fn dialog_defaults_cover_the_menu_dialogs() {
     assert_eq!(s.execute("dialog.defaults", json!({"command": "sequence.transcribe"})).is_err(), !s.is_enabled("sequence.transcribe"));
     assert!(s.execute("dialog.defaults", json!({"command": "project.matteColor"})).is_err(), "no Color Matte selected");
 }
+
+#[test]
+fn dialog_defaults_start_color_management_from_the_sequence() {
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "sequence.colorSettings"})).unwrap();
+    assert_eq!(d["command"], "sequence.colorSettings");
+    assert_eq!(d["params"], json!({"workingSpace": "rec709", "wideGamut": false, "autoToneMap": true}), "{d}");
+    assert_eq!(d["info"]["workingSpaces"].as_array().map(Vec::len), Some(cfa4_color::WorkingSpace::ALL.len()));
+    s.execute("sequence.colorSettings", json!({"workingSpace": "rec2100-pq", "wideGamut": true})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "sequence.colorSettings"})).unwrap();
+    assert_eq!((d["params"]["workingSpace"].as_str(), d["params"]["wideGamut"].as_bool()), (Some("rec2100-pq"), Some(true)));
+}

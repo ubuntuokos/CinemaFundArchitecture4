@@ -2868,6 +2868,39 @@ def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: 
         engine.execute("media.colorInfo", {"item": item}, on_reply=lambda r, _b: info.update(r))
         assert wait_until(app, lambda: info.get("override") == "log3g10-rwg", 10_000), info
         assert info.get("hdr") is True
+        # from the menu bar with only a Timeline clip selected: that clip's item, its override shown
+        clip = win.sequence["video"][0]["items"][1]["clip"]
+        win.execute("project.select", {"items": []})
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: clip in (win.sequence.get("selection") or []) and not win.project_panel.selected_items(), 10_000)
+        action = win.registry.actions["clip.interpretFootage"]
+        assert wait_until(app, action.isEnabled, 10_000)
+        action.trigger()
+        d = win.last_dialog
+        assert d is not dialog and d.objectName() == "interpretFootage" and d.items == [item]
+        assert wait_until(app, lambda: d.chosen() == "log3g10-rwg", 10_000)
+        d.reject()
+        # Sequence ▸ Color Management…: egui's dialog; OK is one undo step
+        before = win.last_dialog
+        win.registry.actions["sequence.colorSettings"].trigger()
+        assert wait_until(app, lambda: win.last_dialog is not before and win.last_dialog.objectName() == "colorDialog", 10_000)
+        d = win.last_dialog
+        assert d.windowTitle() == "Sequence Color Management"
+        assert d.findChild(QtWidgets.QRadioButton, "colorDialog.working.rec709").isChecked()
+        assert d.findChild(QtWidgets.QCheckBox, "colorDialog.autoToneMap").isChecked()
+        d.findChild(QtWidgets.QRadioButton, "colorDialog.working.rec2100-pq").setChecked(True)
+        d.findChild(QtWidgets.QCheckBox, "colorDialog.wideGamut").setChecked(True)
+        d.findChild(QtWidgets.QPushButton, "colorDialog.ok").click()
+
+        def color() -> dict:
+            out: dict = {}
+            engine.execute("dialog.defaults", {"command": "sequence.colorSettings"}, on_reply=lambda r, _b: out.update(r["params"]))
+            assert wait_until(app, lambda: bool(out), 10_000)
+            return out
+
+        assert wait_until(app, lambda: color() == {"workingSpace": "rec2100-pq", "wideGamut": True, "autoToneMap": True}, 10_000)
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: color() == {"workingSpace": "rec709", "wideGamut": False, "autoToneMap": True}, 10_000)
     finally:
         win._quit_confirmed = True
         win.close()
