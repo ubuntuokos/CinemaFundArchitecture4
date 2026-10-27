@@ -1,5 +1,10 @@
 # CFA4 — developer rules (Linux x86_64/AMD64 only; Rust / Cargo / Python / Qt 6)
 
+> **CFA4 PR rules (owner decision, 2026-10-27): read [`docs/coordination.md`](docs/coordination.md).**
+> Only the designated merge coordinator merges into `main`. Every other session: branch from a
+> fresh `main`, one topic per PR, never build on another open PR, never merge, and never push to,
+> rebase or close another session's PR or branch (no collector/integration PRs).
+
 This CFA4-specific section takes priority over inherited upstream platform and frontend
 instructions below. Existing engine safety, clean-room codec implementation, open-asset
 attribution and original copyright/licence requirements remain in force.
