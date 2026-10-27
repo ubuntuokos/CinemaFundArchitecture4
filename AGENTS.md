@@ -149,7 +149,7 @@ reproduce an image (for example, point lists traced from someone else's icon).
    and are listed in `ATTRIBUTION.md`.
 7. **When in doubt, leave it out** and draw or generate it yourself.
 8. **The one exception: the CFA4 logo.** The CFA4 name, emblem, wordmark and every file depicting them
-   (`assets/cfa4/cfa4-official-logo.png`, `assets/cfa4/hicolor/**`, `apps/cfa4-web/web/favicon.svg`)
+   (`assets/cfa4/cfa4-official-logo.png`, `assets/cfa4/hicolor/**`)
    are the project owner's own mark, NOT under the GPL; their terms are in
    [`assets/cfa4/LICENSE-logo.txt`](assets/cfa4/LICENSE-logo.txt) (`LicenseRef-CFA4-Logo`). Use them
    only unmodified (scaling and format conversion are fine), derive new variants only from the master
