@@ -416,9 +416,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
                     self.tab(ui, &entry.panel, title_rect, entry.open, panel_rect);
                     let collapse = Rect::from_min_max(pos2((title_rect.right() - 18.0).max(title_rect.left()), title_rect.top()), title_rect.max);
                     let response = ui.interact(collapse, self.id.with(("collapse", &entry.panel)), Sense::click());
-                    response.widget_info(|| {
-                        egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), entry.open, (self.label)(&entry.panel))
-                    });
+                    response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), entry.open, (self.label)(&entry.panel)));
                     ui.painter().with_clip_rect(collapse).text(
                         collapse.center(),
                         egui::Align2::CENTER_CENTER,
@@ -535,8 +533,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
             return;
         }
         ui.painter().rect_filled(rect, 0.0, self.style.background);
-        let mut child =
-            ui.new_child(UiBuilder::new().id(self.id.with(("body", panel))).max_rect(rect).layout(egui::Layout::top_down(egui::Align::Min)));
+        let mut child = ui.new_child(UiBuilder::new().id(self.id.with(("body", panel))).max_rect(rect).layout(egui::Layout::top_down(egui::Align::Min)));
         child.set_clip_rect(rect.intersect(ui.clip_rect()));
         self.content.body(&mut child, panel);
         if child.rect_contains_pointer(rect) && child.input(|i| i.pointer.primary_pressed()) {
@@ -550,14 +547,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
         let bare = panels.len() == 1 && policy == Permissions::PROTECTED;
         if bare {
             self.contents(ui, selected, rect);
-            self.targets.push(DropTarget {
-                anchor: selected.clone(),
-                rect,
-                tab_strip: None,
-                tabs: Vec::new(),
-                allow_splits: !floating,
-                accepts_tabs: false,
-            });
+            self.targets.push(DropTarget { anchor: selected.clone(), rect, tab_strip: None, tabs: Vec::new(), allow_splits: !floating, accepts_tabs: false });
             return;
         }
         let mut strip = Rect::from_min_max(rect.min, pos2(rect.right(), (rect.top() + self.style.tab_height).min(rect.bottom())));
@@ -585,9 +575,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
             {
                 let moved = clamp_float(rect.translate(ui.input(|i| i.pointer.delta())), ui.ctx().content_rect());
                 if let Some(first) = panels.first() {
-                    self.output
-                        .actions
-                        .push(Action::MoveFloating { panel: first.clone(), rect: [moved.left(), moved.top(), moved.width(), moved.height()] });
+                    self.output.actions.push(Action::MoveFloating { panel: first.clone(), rect: [moved.left(), moved.top(), moved.width(), moved.height()] });
                 }
             }
             ui.painter().line_segment([grip.center() - vec2(0.0, 5.0), grip.center() + vec2(0.0, 5.0)], self.style.border);
@@ -773,10 +761,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
                 let mut delta = if response.dragged() { ui.input(|i| i.pointer.delta()) } else { Vec2::ZERO };
                 if response.has_focus() {
                     ui.memory_mut(|memory| {
-                        memory.set_focus_lock_filter(
-                            response.id,
-                            egui::EventFilter { horizontal_arrows: true, vertical_arrows: true, ..Default::default() },
-                        )
+                        memory.set_focus_lock_filter(response.id, egui::EventFilter { horizontal_arrows: true, vertical_arrows: true, ..Default::default() })
                     });
                     ui.input_mut(|input| {
                         if input.consume_key(egui::Modifiers::NONE, Key::ArrowLeft) {
@@ -829,8 +814,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
 
     fn finish_drag(&mut self, ctx: &Context) {
         let Some(drag) = ctx.data(|d| d.get_temp::<Drag<P>>(self.id.with("drag"))) else { return };
-        let (pointer, down, released, focused) =
-            ctx.input(|i| (i.pointer.interact_pos(), i.pointer.primary_down(), i.pointer.primary_released(), i.focused));
+        let (pointer, down, released, focused) = ctx.input(|i| (i.pointer.interact_pos(), i.pointer.primary_down(), i.pointer.primary_released(), i.focused));
         let escape = ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, Key::Escape));
         if escape || !focused || !self.layout.contains(&drag.panel) || (!down && !released) {
             cancel_drag::<P>(ctx, self.id);
@@ -877,13 +861,7 @@ impl<P: Clone + Eq + Hash + Debug + Send + Sync + 'static> Renderer<'_, P> {
         }
         let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, self.id.with("drop-preview")));
         if let Some(proposal) = proposal {
-            painter.rect(
-                proposal.preview.shrink(1.0),
-                0.0,
-                self.style.accent.gamma_multiply(0.15),
-                Stroke::new(2.0, self.style.accent),
-                StrokeKind::Inside,
-            );
+            painter.rect(proposal.preview.shrink(1.0), 0.0, self.style.accent.gamma_multiply(0.15), Stroke::new(2.0, self.style.accent), StrokeKind::Inside);
             if let Some(marker) = proposal.insertion {
                 painter.rect_filled(marker, 0.0, self.style.accent);
             }

@@ -31,13 +31,9 @@ fn tiny_panes_never_invert_clamp_bounds_or_escape_the_parent() {
         for axis in [SplitAxis::Horizontal, SplitAxis::Vertical] {
             let rect = Rect::from_min_size(Pos2::ZERO, Vec2::splat(span));
             for gap in [0.0, 4.0, 2000.0] {
-                for size in [
-                    SplitSize::Ratio(-10.0),
-                    SplitSize::Ratio(0.5),
-                    SplitSize::Ratio(10.0),
-                    SplitSize::FixedFirst(300.0),
-                    SplitSize::FixedSecond(300.0),
-                ] {
+                for size in
+                    [SplitSize::Ratio(-10.0), SplitSize::Ratio(0.5), SplitSize::Ratio(10.0), SplitSize::FixedFirst(300.0), SplitSize::FixedSecond(300.0)]
+                {
                     let layout = split_rect(rect, axis, size, gap, 20.0).unwrap();
                     for child in [layout.first, layout.divider, layout.second] {
                         assert!(rect.contains_rect(child), "{rect:?}: {child:?}");
@@ -123,17 +119,14 @@ impl HandleTest {
     fn frame(&mut self, events: Vec<Event>) -> (ResizeResponse, FullOutput) {
         let ctx = self.ctx.clone();
         let mut result = None;
-        let mut output =
-            ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(400.0, 200.0))), events, ..Default::default() }, |ui| {
-                result = Some(
-                    ui.add_enabled_ui(self.enabled, |ui| {
-                        ResizeHandle::new(Id::new("divider"), self.axis, self.rect, &self.label, handle_style())
-                            .value(self.value, 0.0..=300.0)
-                            .show(ui)
-                    })
-                    .inner,
-                );
-            });
+        let mut output = ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(400.0, 200.0))), events, ..Default::default() }, |ui| {
+            result = Some(
+                ui.add_enabled_ui(self.enabled, |ui| {
+                    ResizeHandle::new(Id::new("divider"), self.axis, self.rect, &self.label, handle_style()).value(self.value, 0.0..=300.0).show(ui)
+                })
+                .inner,
+            );
+        });
         output.textures_delta.clear();
         (result.unwrap(), output)
     }
@@ -185,12 +178,7 @@ fn focused_handle_resizes_with_axis_arrows_and_draws_visible_focus() {
         let (response, output) = h.frame(vec![key(forward)]);
         assert_eq!(response.delta, 8.0);
         assert!(response.response.has_focus());
-        assert!(
-            output
-                .shapes
-                .iter()
-                .any(|shape| matches!(&shape.shape, egui::epaint::Shape::Rect(rect) if rect.rect == h.rect && rect.fill == Color32::BLUE))
-        );
+        assert!(output.shapes.iter().any(|shape| matches!(&shape.shape, egui::epaint::Shape::Rect(rect) if rect.rect == h.rect && rect.fill == Color32::BLUE)));
         assert_eq!(h.frame(vec![key(back)]).0.delta, -8.0);
     }
 }

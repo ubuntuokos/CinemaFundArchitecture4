@@ -61,8 +61,7 @@ fn absent_fallback_is_an_empty_source_not_a_panic() {
 
 #[test]
 fn duplicate_names_keep_the_last_entry_and_invalid_utf8_is_lossy() {
-    let icons =
-        SvgIconSet::new(&[("a", b"first"), ("a", b"last\xff")], SvgStyle { current_color: "white", stroke_width: None }, "bytes://duplicates/", "a");
+    let icons = SvgIconSet::new(&[("a", b"first"), ("a", b"last\xff")], SvgStyle { current_color: "white", stroke_width: None }, "bytes://duplicates/", "a");
     assert_eq!(std::str::from_utf8(&parts(icons.source("a")).1).unwrap(), "last\u{fffd}");
 }
 

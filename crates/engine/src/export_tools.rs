@@ -327,6 +327,9 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
             _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
         };
     }
+    if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2BFrames", cmd)? {
+        settings.mpeg2_b_frames = Some(u8::try_from(v).ok().filter(|b| *b <= 7).ok_or_else(|| bad(cmd, "mpeg2BFrames: 0 to 7"))?);
+    }
     if let Some(v) = bool_p(p, "sdr") {
         settings.sdr = v;
     }

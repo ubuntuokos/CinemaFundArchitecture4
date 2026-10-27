@@ -92,18 +92,12 @@ mod tests {
             Some(ToolbarFit { shown: vec![(0, 24.0), (1, 36.0)], overflow: vec![2], overflow_width: 20.0 })
         );
         // At 87 points the second group and its gap would overlap the overflow control.
-        assert_eq!(
-            fit_toolbar(&[24.0, 36.0, 48.0], 87.0, 4.0, 20.0),
-            Some(ToolbarFit { shown: vec![(0, 24.0)], overflow: vec![1, 2], overflow_width: 20.0 })
-        );
+        assert_eq!(fit_toolbar(&[24.0, 36.0, 48.0], 87.0, 4.0, 20.0), Some(ToolbarFit { shown: vec![(0, 24.0)], overflow: vec![1, 2], overflow_width: 20.0 }));
     }
 
     #[test]
     fn a_wide_first_group_is_not_compressed_or_skipped() {
-        assert_eq!(
-            fit_toolbar(&[200.0, 24.0, 24.0], 120.0, 4.0, 20.0),
-            Some(ToolbarFit { shown: vec![], overflow: vec![0, 1, 2], overflow_width: 20.0 })
-        );
+        assert_eq!(fit_toolbar(&[200.0, 24.0, 24.0], 120.0, 4.0, 20.0), Some(ToolbarFit { shown: vec![], overflow: vec![0, 1, 2], overflow_width: 20.0 }));
         assert_eq!(fit_toolbar(&[200.0], 60.0, 4.0, 20.0), Some(ToolbarFit { shown: vec![], overflow: vec![0], overflow_width: 20.0 }));
     }
 

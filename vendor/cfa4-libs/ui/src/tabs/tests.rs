@@ -107,8 +107,7 @@ impl TabTest {
         let ctx = self.ctx.clone();
         let mut responses = Vec::new();
         self.paints = 0;
-        let raw =
-            RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(500.0, 200.0))), events, time: Some(self.time), ..Default::default() };
+        let raw = RawInput { screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(500.0, 200.0))), events, time: Some(self.time), ..Default::default() };
         let mut output = ctx.run_ui(raw, |ui| {
             ui.add_enabled_ui(self.enabled, |ui| {
                 for (i, label) in self.labels.iter().enumerate() {
@@ -186,14 +185,7 @@ fn pointer_and_keyboard_activate_once_and_disabled_tabs_do_not_activate() {
     assert_eq!(h.clicks, 1);
     assert!(!responses[1].enabled());
     assert!(
-        output
-            .platform_output
-            .accesskit_update
-            .unwrap()
-            .nodes
-            .iter()
-            .filter(|(_, n)| n.role() == egui::accesskit::Role::Tab)
-            .all(|(_, n)| n.is_disabled())
+        output.platform_output.accesskit_update.unwrap().nodes.iter().filter(|(_, n)| n.role() == egui::accesskit::Role::Tab).all(|(_, n)| n.is_disabled())
     );
 }
 

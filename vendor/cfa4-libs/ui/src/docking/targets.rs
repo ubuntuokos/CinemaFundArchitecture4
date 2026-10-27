@@ -76,9 +76,9 @@ pub fn resolve_drop<P: Clone + Eq>(panel: &P, pointer: Pos2, targets: &[DropTarg
         }
         let before = target.tabs.iter().filter(|(_, r)| usable(*r)).find(|(_, r)| pointer.x < r.center().x);
         let before_panel = before.map(|(p, _)| p.clone());
-        let x = before.map(|(_, r)| r.left()).unwrap_or_else(|| {
-            target.tabs.iter().filter(|(_, r)| usable(*r)).map(|(_, r)| r.right()).fold(strip.left(), f32::max).min(strip.right())
-        });
+        let x = before
+            .map(|(_, r)| r.left())
+            .unwrap_or_else(|| target.tabs.iter().filter(|(_, r)| usable(*r)).map(|(_, r)| r.right()).fold(strip.left(), f32::max).min(strip.right()));
         let insertion = Rect::from_min_max(pos2((x - 1.0).max(strip.left()), strip.top()), pos2((x + 1.0).min(strip.right()), strip.bottom()));
         return Some(DropProposal {
             anchor: anchor.clone(),

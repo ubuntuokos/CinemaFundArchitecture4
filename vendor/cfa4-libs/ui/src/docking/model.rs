@@ -515,8 +515,7 @@ impl<P: Clone + Eq + Hash> Layout<P> {
                 Node::Split { first, second, .. } => in_node(first, panel, anchor) || in_node(second, panel, anchor),
             }
         }
-        self.root.as_ref().is_some_and(|n| in_node(n, panel, anchor))
-            || self.floating.iter().any(|g| g.panels.contains(panel) && g.panels.contains(anchor))
+        self.root.as_ref().is_some_and(|n| in_node(n, panel, anchor)) || self.floating.iter().any(|g| g.panels.contains(panel) && g.panels.contains(anchor))
     }
 
     fn take(&mut self, panel: &P) -> Option<StackEntry<P>> {
@@ -705,11 +704,8 @@ fn node_location<P: Clone + Eq>(node: &Node<P>, panel: &P) -> Option<Location<P>
             Some(location)
         }
         Node::Split { axis, size, first, second } => {
-            let (mut location, sibling, is_first) = if let Some(location) = node_location(first, panel) {
-                (location, second, true)
-            } else {
-                (node_location(second, panel)?, first, false)
-            };
+            let (mut location, sibling, is_first) =
+                if let Some(location) = node_location(first, panel) { (location, second, true) } else { (node_location(second, panel)?, first, false) };
             if location.anchor.is_none()
                 && let Some(anchor) = first_panel(sibling)
             {

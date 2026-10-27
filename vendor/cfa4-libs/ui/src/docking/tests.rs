@@ -94,9 +94,7 @@ fn reordering_tabs_uses_destination_identity_after_removal() {
 #[test]
 fn accordion_open_state_and_custom_height_survive_reorder() {
     let mut layout = Layout {
-        root: Some(Node::Stack {
-            entries: vec![StackEntry { panel: 1, open: false, height: Some(123.0) }, StackEntry { panel: 2, open: true, height: None }],
-        }),
+        root: Some(Node::Stack { entries: vec![StackEntry { panel: 1, open: false, height: Some(123.0) }, StackEntry { panel: 2, open: true, height: None }] }),
         floating: Vec::new(),
     };
     layout.apply(Action::Move { panel: 1, anchor: 2, placement: Placement::Tab { before: None } }).unwrap();
@@ -206,11 +204,7 @@ fn target(anchor: u32, members: &[u32], rect: Rect) -> DropTarget<u32> {
         anchor,
         rect,
         tab_strip: Some(strip),
-        tabs: members
-            .iter()
-            .enumerate()
-            .map(|(i, panel)| (*panel, Rect::from_min_size(rect.min + vec2(i as f32 * 60.0, 0.0), vec2(60.0, 24.0))))
-            .collect(),
+        tabs: members.iter().enumerate().map(|(i, panel)| (*panel, Rect::from_min_size(rect.min + vec2(i as f32 * 60.0, 0.0), vec2(60.0, 24.0)))).collect(),
         allow_splits: true,
         accepts_tabs: true,
     }
@@ -342,12 +336,8 @@ fn cancelling_or_losing_focus_during_a_drag_does_not_move_panels() {
     let press = Event::PointerButton { pos: pos2(30.0, 30.0), button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE };
     frame(&ctx, &layout, vec![Event::PointerMoved(pos2(30.0, 30.0)), press], true);
     assert!(begin_drag(&ctx, Id::new("test-area"), 2u32, source));
-    let (out, _) = frame(
-        &ctx,
-        &layout,
-        vec![Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }],
-        true,
-    );
+    let (out, _) =
+        frame(&ctx, &layout, vec![Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }], true);
     assert!(out.actions.is_empty());
     assert!(begin_drag(&ctx, Id::new("test-area"), 2u32, source));
     let (out, _) = frame(&ctx, &layout, Vec::new(), false);
@@ -499,11 +489,7 @@ fn stack_dividers_resize_adjacent_open_bodies_by_pointer_and_keyboard() {
     assert!(!entries[1].open);
     assert_eq!(entries[3].height, Some(120.0));
     ctx.memory_mut(|memory| memory.request_focus(id));
-    step(
-        &ctx,
-        &mut layout,
-        vec![Event::Key { key: egui::Key::ArrowDown, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }],
-    );
+    step(&ctx, &mut layout, vec![Event::Key { key: egui::Key::ArrowDown, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }]);
     let Node::Stack { entries } = layout.root.as_ref().unwrap() else { panic!() };
     assert!(entries[0].height.unwrap() > after_pointer);
     assert!((entries[0].height.unwrap() + entries[2].height.unwrap() - 300.0).abs() < 0.001);
@@ -700,14 +686,7 @@ impl DockContent<u32> for CustomContent {
     }
 }
 
-fn custom_frame(
-    ctx: &Context,
-    layout: &Layout<u32>,
-    content: &mut CustomContent,
-    events: Vec<Event>,
-    blockers: &[Rect],
-    raise: bool,
-) -> DockOutput<u32> {
+fn custom_frame(ctx: &Context, layout: &Layout<u32>, content: &mut CustomContent, events: Vec<Event>, blockers: &[Rect], raise: bool) -> DockOutput<u32> {
     let mut out = DockOutput::default();
     ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 600.0))), events, ..Default::default() }, |ui| {
         let style = DockStyle::from_ui(ui);
@@ -783,11 +762,7 @@ fn group_move_escape_restores_original_geometry() {
     step(&ctx, &mut layout, vec![Event::PointerMoved(start), pointer_button(start, true)]);
     step(&ctx, &mut layout, vec![Event::PointerMoved(start + vec2(50.0, 40.0))]);
     assert_ne!(layout.floating[0].rect, original);
-    step(
-        &ctx,
-        &mut layout,
-        vec![Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }],
-    );
+    step(&ctx, &mut layout, vec![Event::Key { key: egui::Key::Escape, physical_key: None, pressed: true, repeat: false, modifiers: Modifiers::NONE }]);
     assert_eq!(layout.floating[0].rect, original);
 }
 
@@ -860,22 +835,21 @@ fn chrome_focus_classifies_rendered_tab_but_excludes_body_text_field_and_invalid
     let text = Id::new("body-text");
     let mut value = String::new();
     let mut paint = |focus: Id| {
-        let mut output =
-            ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 600.0))), ..Default::default() }, |ui| {
-                DockArea::new(Id::new("focus-area")).show(
-                    ui,
-                    &layout,
-                    &DockStyle::from_ui(ui),
-                    |p| format!("Panel {p}"),
-                    |_| Permissions::default(),
-                    |ui, p| {
-                        if *p == 3 {
-                            ui.add(egui::TextEdit::singleline(&mut value).id(text));
-                        }
-                    },
-                );
-                ui.memory_mut(|memory| memory.request_focus(focus));
-            });
+        let mut output = ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 600.0))), ..Default::default() }, |ui| {
+            DockArea::new(Id::new("focus-area")).show(
+                ui,
+                &layout,
+                &DockStyle::from_ui(ui),
+                |p| format!("Panel {p}"),
+                |_| Permissions::default(),
+                |ui, p| {
+                    if *p == 3 {
+                        ui.add(egui::TextEdit::singleline(&mut value).id(text));
+                    }
+                },
+            );
+            ui.memory_mut(|memory| memory.request_focus(focus));
+        });
         output.textures_delta.clear();
     };
     paint(tab);
@@ -908,20 +882,19 @@ fn chrome_focus_classifies_rendered_accordion_and_split_and_floating_resizers() 
         (sample(), area.with(("split", Vec::<bool>::new()))),
         (sample(), area.with(("floating", 5u32)).with("resize")),
     ] {
-        let mut output =
-            ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 600.0))), ..Default::default() }, |ui| {
-                DockArea::new(area).show(
-                    ui,
-                    &layout,
-                    &DockStyle::from_ui(ui),
-                    |p| format!("Panel {p}"),
-                    |_| Permissions::default(),
-                    |ui, _| {
-                        ui.label("Body");
-                    },
-                );
-                ui.memory_mut(|memory| memory.request_focus(id));
-            });
+        let mut output = ctx.run_ui(RawInput { screen_rect: Some(Rect::from_min_size(pos2(0.0, 0.0), vec2(800.0, 600.0))), ..Default::default() }, |ui| {
+            DockArea::new(area).show(
+                ui,
+                &layout,
+                &DockStyle::from_ui(ui),
+                |p| format!("Panel {p}"),
+                |_| Permissions::default(),
+                |ui, _| {
+                    ui.label("Body");
+                },
+            );
+            ui.memory_mut(|memory| memory.request_focus(id));
+        });
         output.textures_delta.clear();
         assert!(ctx.read_response(id).is_some(), "the fixture must render the control");
         assert!(DockArea::new(area).chrome_has_focus(&ctx, &layout));
@@ -1067,26 +1040,18 @@ fn popup_action_labels_use_custom_visual_text_and_logical_accessibility() {
     h.run_steps(2);
     let tab = Id::new("action-label-test").with(("tab", &5_u32));
     let at = h.ctx.read_response(tab).unwrap().rect.center();
-    h.input_mut().events.extend([
-        Event::PointerMoved(at),
-        Event::PointerButton { pos: at, button: PointerButton::Secondary, pressed: true, modifiers: Modifiers::NONE },
-    ]);
+    h.input_mut()
+        .events
+        .extend([Event::PointerMoved(at), Event::PointerButton { pos: at, button: PointerButton::Secondary, pressed: true, modifiers: Modifiers::NONE }]);
     h.run_steps(1);
     h.input_mut().events.push(Event::PointerButton { pos: at, button: PointerButton::Secondary, pressed: false, modifiers: Modifiers::NONE });
     h.run_steps(2);
     assert!(egui::Popup::is_any_open(&h.ctx));
     for logical in ["Float panel", "Move to group", "Close panel"] {
-        assert!(
-            h.output().shapes.iter().any(|shape| paints(&shape.shape, &format!("Action visual: {logical}"))),
-            "custom action must paint: {logical}"
-        );
+        assert!(h.output().shapes.iter().any(|shape| paints(&shape.shape, &format!("Action visual: {logical}"))), "custom action must paint: {logical}");
         // This sample also has a floating-group grip labeled Move to group.
         let expected = if logical == "Move to group" { 2 } else { 1 };
         assert_eq!(h.query_all_by_label(logical).count(), expected, "popup action must retain its own logical accessibility: {logical}");
-        assert_eq!(
-            h.query_all_by_label(&format!("Action visual: {logical}")).count(),
-            0,
-            "visual substitution must not replace logical accessibility"
-        );
+        assert_eq!(h.query_all_by_label(&format!("Action visual: {logical}")).count(), 0, "visual substitution must not replace logical accessibility");
     }
 }
