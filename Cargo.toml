@@ -2,7 +2,7 @@
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
-exclude = ["vendor/cfa4-libs/*"]
+exclude = ["vendor/cfa4-libs/*", "vendor/ffmpeg-bindings/*"]
 
 [workspace.package]
 version = "0.10.0"
@@ -66,6 +66,11 @@ cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
+cfa4-ffmpeg = { path = "crates/ffmpeg" }
+# FFmpeg bindings of cfa4-ffmpeg (ADR 0005), vendored snapshots (vendor/ffmpeg-bindings/*/SOURCE_MANIFEST.json)
+rsmedia = { version = "0.7.1", path = "vendor/ffmpeg-bindings/rsmedia", default-features = false, features = ["ndarray", "ffmpeg9", "link_system_ffmpeg"] }
+rsmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rsmpeg", default-features = false, features = ["ffmpeg9", "link_system_ffmpeg"] }
+rusty_ffmpeg = { version = "0.18.1", path = "vendor/ffmpeg-bindings/rusty_ffmpeg" }
 
 # foundation
 thiserror = "2"

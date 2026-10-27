@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QColor, QFont, QGuiApplication
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDoubleSpinBox,
+    QGroupBox,
     QFileDialog,
     QGridLayout,
     QHBoxLayout,
@@ -50,9 +51,11 @@ from PySide6.QtWidgets import (
 
 from cfa4_devtools.settings_backend import (
     ACCELERATORS_PAGE,
+    MEDIA_BACKENDS_PAGE,
     WORKLOAD_TITLES,
     Field,
     Hardware,
+    MediaBackends,
     Page,
     Schema,
     SettingsBackendError,
@@ -62,6 +65,7 @@ from cfa4_devtools.settings_backend import (
     run_cli,
     run_hardware,
     run_load,
+    run_media_backends,
     run_save,
 )
 
@@ -94,8 +98,10 @@ class _Job(QRunnable):
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, cli: Path | None, data_dir: Path | None = None, parent: QWidget | None = None):
+    def __init__(self, cli: Path | None, data_dir: Path | None = None, parent: QWidget | None = None, page: str | None = None):
         super().__init__(parent)
+        # the page to open first (Help ▸ Restricted Codecs… opens Media Backends)
+        self.initial_page = page
         self.setWindowTitle("Settings")
         self.setObjectName("settings.window")
         self.resize(940, 640)
@@ -108,6 +114,9 @@ class SettingsDialog(QDialog):
         self.edited: dict[str, Any] = {}
         self.hardware: Hardware | None = None
         self.hardware_error = ""
+        self.backends: MediaBackends | None = None
+        self.backends_error = ""
+        self.backends_layout: QVBoxLayout | None = None
         self.page_widgets: dict[str, QWidget] = {}
         self.enablers: dict[str, list[QWidget]] = {}
 
@@ -166,6 +175,21 @@ class SettingsDialog(QDialog):
         cli, data_dir = self.cli, self.data_dir
         self._run(lambda: run_load(cli, data_dir), self._loaded, self._load_failed)
         self._refresh_hardware()
+        self._refresh_backends()
+
+    def _refresh_backends(self) -> None:
+        cli, data_dir = self.cli, self.data_dir
+        if cli is None:
+            return
+        self._run(lambda: run_media_backends(cli, data_dir), self._backends_loaded, self._backends_failed)
+
+    def _backends_loaded(self, backends: Any) -> None:
+        self.backends, self.backends_error = backends, ""
+        self._rebuild_backends()
+
+    def _backends_failed(self, message: str) -> None:
+        self.backends, self.backends_error = None, message
+        self._rebuild_backends()
 
     def _refresh_hardware(self) -> None:
         cli = self.cli
@@ -180,7 +204,7 @@ class SettingsDialog(QDialog):
         self.saved = schema.values(prefs)
         self.edited = dict(self.saved)
         self.edited.update({k: v for k, v in (pending or {}).items() if k in self.saved})
-        self._build(page)
+        self._build(page or self.initial_page)
         self.status.setText("")
         self.ok_button.setEnabled(True)
         self.reset_button.setEnabled(True)
@@ -226,7 +250,12 @@ class SettingsDialog(QDialog):
                 item = QTreeWidgetItem([page.title])
                 item.setData(0, PAGE_ROLE, page.id)
                 head.addChild(item)
-                widget = self._accelerators_page() if page.id == ACCELERATORS_PAGE else self._fields_page(page)
+                if page.id == ACCELERATORS_PAGE:
+                    widget = self._accelerators_page()
+                elif page.id == MEDIA_BACKENDS_PAGE:
+                    widget = self._media_backends_page(page)
+                else:
+                    widget = self._fields_page(page)
                 widget.setObjectName(f"settings.category.{page.id}")
                 self.page_widgets[page.id] = widget
                 self.stack.addWidget(widget)
@@ -414,6 +443,113 @@ class SettingsDialog(QDialog):
 
         button.clicked.connect(pick)
         return button
+
+    # ------------------------------------------------------------------ media backends
+
+    def _media_backends_page(self, page: Page) -> QWidget:
+        """The engine's switches on top, the live status and the restricted codecs below."""
+        widget = QWidget()
+        outer = QVBoxLayout(widget)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self._fields_page(page), 0)
+        status = QWidget()
+        status.setObjectName("settings.mediaBackends.status")
+        self.backends_layout = QVBoxLayout(status)
+        self._fill_backends()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(status)
+        outer.addWidget(scroll, 1)
+        return widget
+
+    def _rebuild_backends(self) -> None:
+        lay = self.backends_layout
+        if lay is None or MEDIA_BACKENDS_PAGE not in self.page_widgets:
+            return
+        while lay.count():
+            item = lay.takeAt(0)
+            if item is not None and item.widget() is not None:
+                item.widget().deleteLater()
+        self._fill_backends()
+
+    def _fill_backends(self) -> None:
+        lay = self.backends_layout
+        if lay is None:
+            return
+        intro = QLabel(
+            "CFA4's own engine opens every file it can. The backends below take over, in this order, only "
+            "for files the engine cannot open yet. A switch changes files opened after you press OK; "
+            "the status shows the saved settings."
+        )
+        intro.setWordWrap(True)
+        lay.addWidget(intro)
+        lay.addWidget(self._button("settings.mediaBackends.refresh", "Check Again", self._refresh_backends), 0, Qt.AlignmentFlag.AlignLeft)
+        if self.backends is None:
+            lay.addWidget(QLabel(f"Could not read the backends: {self.backends_error}" if self.backends_error else "Checking…"))
+            lay.addStretch(1)
+            return
+        rows = self.backends.backends
+        table = QTableWidget(len(rows), 5)
+        table.setObjectName("settings.mediaBackends.list")
+        table.setHorizontalHeaderLabels(["Order", "Backend", "Status", "Version", "Licence"])
+        for row, b in enumerate(rows):
+            status = QTableWidgetItem(b.status)
+            if b.problem and not b.available:
+                status.setToolTip(b.problem)
+            for col, item in enumerate([QTableWidgetItem(str(row + 1)), QTableWidgetItem(b.name), status,
+                                        QTableWidgetItem(b.version or "—"), QTableWidgetItem(b.license or "—")]):
+                item.setToolTip(item.toolTip() or b.role)
+                table.setItem(row, col, item)
+        self._read_only(table)
+        lay.addWidget(table)
+        for b in rows:
+            if b.problem and not b.available:
+                why = QLabel(f"{b.name}: {b.problem}")
+                why.setObjectName(f"settings.mediaBackends.{b.id}.problem")
+                why.setWordWrap(True)
+                lay.addWidget(why)
+        lay.addWidget(self._restricted_box())
+        lay.addStretch(1)
+
+    def _restricted_box(self) -> QWidget:
+        box = QGroupBox("Restricted codecs")
+        box.setObjectName("settings.mediaBackends.restricted")
+        v = QVBoxLayout(box)
+        note = QLabel(
+            "Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not "
+            "install them by default: the base package works without them, and you decide whether to "
+            "install them. Their use may be restricted in some countries; check that it is permitted "
+            "where you are."
+        )
+        note.setWordWrap(True)
+        v.addWidget(note)
+        items = self.backends.restricted if self.backends is not None else ()
+        if not items:
+            v.addWidget(QLabel("No restricted codec is relevant to this build."))
+            return box
+        table = QTableWidget(len(items), 3)
+        table.setObjectName("settings.mediaBackends.restricted.list")
+        table.setHorizontalHeaderLabels(["Codec", "Used for", "Installed"])
+        for row, (_b, r) in enumerate(items):
+            for col, text in enumerate([r.name, r.purpose, "Yes" if r.available else "No"]):
+                table.setItem(row, col, QTableWidgetItem(text))
+        self._read_only(table)
+        v.addWidget(table)
+        command = self.backends.install_command() if self.backends is not None else None
+        if command:
+            row_layout = QHBoxLayout()
+            how = QLabel(f"To install them: {command}")
+            how.setObjectName("settings.mediaBackends.restricted.install")
+            how.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            how.setWordWrap(True)
+            row_layout.addWidget(how, 1)
+            copy = self._button("settings.mediaBackends.restricted.copy", "Copy Command", lambda: QGuiApplication.clipboard().setText(command))
+            row_layout.addWidget(copy)
+            v.addLayout(row_layout)
+            later = QLabel("After installing, restart CFA4.")
+            later.setWordWrap(True)
+            v.addWidget(later)
+        return box
 
     # ------------------------------------------------------------------ accelerators
 

@@ -47,6 +47,20 @@ pub fn settings(action: &str, arg: Option<&str>, data_dir: Option<PathBuf>) -> R
     s.execute(id, params).map_err(|e| e.to_string())
 }
 
+/// `cfa4-cli media-backends`: what Settings ▸ Media & Playback ▸ Media Backends shows under its
+/// switches: the own engine and the supplementary backends (FFmpeg, GStreamer; ADR 0005) in the
+/// order they are tried, each with whether it is compiled in, available and switched on, its
+/// version, licence and problem, and the patent-restricted codecs (Ubuntu model). The switches
+/// are read from the data directory's preferences, as the app does at startup.
+pub fn media_backends(data_dir: Option<PathBuf>) -> Result<Value, String> {
+    let mut s = match data_dir {
+        Some(dir) => session(&dir),
+        None => Session::default(),
+    };
+    s.prefs.apply_media_backends();
+    s.execute("media.backends", json!({})).map_err(|e| e.to_string())
+}
+
 /// The accelerator inventory (GPUs and NPUs from sysfs), the backend chain per family and the
 /// vendor-neutrality coverage: what the Settings ▸ Hardware & Devices ▸ Accelerators page shows.
 pub fn hardware() -> Value {
@@ -228,6 +242,20 @@ mod tests {
         assert!(groups.contains(&"hardware"));
         let memory = r["categories"].as_array().unwrap().iter().find(|c| c["id"] == "memory").unwrap();
         assert_eq!(memory["group"], "hardware");
+    }
+
+    #[test]
+    fn media_backends_lists_the_engine_first_and_reads_the_switches() {
+        let d = tmp("backends");
+        settings("set", Some(r#"{"mediaBackends.ffmpeg": false}"#), Some(d.clone())).unwrap();
+        let v = media_backends(Some(d)).unwrap();
+        let list = v["backends"].as_array().unwrap();
+        assert_eq!(list[0]["id"], "builtin");
+        assert_eq!(list[0]["canDisable"], false);
+        // the switch is read from the data directory, as the app does at startup
+        assert!(!cfa4_media::backend_enabled("ffmpeg"));
+        cfa4_media::set_backend_enabled("ffmpeg", true);
+        assert!(media_backends(None).is_ok());
     }
 
     #[test]

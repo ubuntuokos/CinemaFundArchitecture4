@@ -73,10 +73,11 @@
 
 | Lépés | Tartalom | Állapot |
 |---|---|---|
-| 1 | `cfa4-ffmpeg` crate: kötés, `probe()` (verzió ≥ 9.0.2, GPL-3-as build ellenőrzése, kodekek, gyorsítók), `discover()`; FFmpeg nélkül is fordul | tervezett |
-| 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után) | tervezett |
+| 1 | `cfa4-ffmpeg` crate: kötés (vendorozott rsmedia → rsmpeg → rusty_ffmpeg, `vendor/ffmpeg-bindings/`), `probe()` (verzió ≥ 9.0.2, GPL-3-as build, nonfree tiltva, korlátozott kodekek), `discover()`, `open()` natív bitmélységgel, első tartalék a GStreamer előtt; FFmpeg nélkül is fordul | kész (a buildpróba 2026-10-26: bitpontos a G3- és G10-esetekre) |
+| 1a | Beállítások ▸ Média és lejátszás ▸ Médiahátterek (kapcsolók, állapot, korlátozott kodekek), `media.backends`, `cfa4-cli media-backends`; menü: Szerkesztés ▸ Médiahátterek…, Súgó ▸ Korlátozott kodekek… | kész |
+| 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után) | előkészítve (`route_backend()`); a `cfa4-route` (#55) már a `main`-ben, a bekötés következik |
 | 3 | Feladatsorok a táblában (pl. felvétel, konvertálás) mérés alapján | tervezett |
-| 4 | Csomagolás: FFmpeg 9.0.2 `/opt/cfa4` alatt; GStreamer `Depends`/`Recommends` az Ubuntu archívumából (a kiadási munka a Qt6-átállás után jön) | eldöntve, tervezett |
+| 4 | Csomagolás: FFmpeg 9.0.2 elkülönítve `/opt/cfa4/ffmpeg-9.0.2` alatt (`scripts/dev/build-ffmpeg-9.0.2.sh`); a `cfa4-restricted-extras` ugyanazt az FFmpeg-et x264-gyel és x265-tel `/opt/cfa4/ffmpeg-9.0.2-restricted` alá teszi, és a programok futásidejű keresési útja ezt nézi először (`apps/*/build.rs`); GStreamer `Depends`/`Recommends` az Ubuntu archívumából | FFmpeg-build kész; `.deb`-csomagok a Qt6-átállás után |
 
 ## Számozás
 
