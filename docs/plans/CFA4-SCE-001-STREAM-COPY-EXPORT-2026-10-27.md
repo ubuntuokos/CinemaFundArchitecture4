@@ -416,11 +416,11 @@ A CFA4 profilbeállításai nevezzék meg a felhasználási célt, de minden té
 
 #### 5. Időbélyegek és streamszinkron
 
-- Az export előkészítése ellenőrizze, hogy minden stream időbélyege monoton és a stream időalapjában értelmezhető.
+- Az export előkészítése ellenőrizze, hogy minden stream DTS-e dekódolási sorrendben monoton és a stream időalapjában értelmezhető. B-frame-es videónál a PTS átrendezett, ezért visszafelé léphet; ez nem hiba.
 - A CFA4 projektidőből (`Tick`) a 90 kHz-es PTS/DTS-re és 27 MHz-es PCR-re történő átalakítás legyen egyetlen közös, tesztelt útvonalon (a 14. fejezet `TimestampNormalizer` modulja).
 - B-frame-es videónál a DTS/PTS viszonyt a bemeneti codec packetekből kell megőrizni; a muxernek nem szabad mesterségesen egyenlővé tennie őket.
 - A stream-ek kezdési eltérését a kiválasztott timestamp-profil szerint kezelje; az eredeti timestamp megőrzése és a nulláról induló időbélyeg külön mód legyen.
-- A hibás, hiányzó vagy visszafelé ugró timestamp az export előtt vagy közben diagnosztizálható hibát okozzon; ne készüljön megtévesztően sikeres fájl.
+- A hibás vagy hiányzó timestamp, illetve a visszafelé ugró DTS (a 33 bites átfordulás feloldása után vizsgálva) az export előtt vagy közben diagnosztizálható hibát okozzon; ne készüljön megtévesztően sikeres fájl.
 
 #### 6. Exportbiztonság és részleges fájlok
 
