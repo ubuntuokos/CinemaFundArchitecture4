@@ -291,6 +291,19 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
         self.sps.chroma_array_type() == 3
     }
 
+    fn mv_ctx(&self) -> crate::mvpred::MvCtx<'_, S> {
+        crate::mvpred::MvCtx {
+            pic: self.pic,
+            sh: self.sh,
+            pps: self.pps,
+            sps: self.sps,
+            refs: self.refs,
+            col: self.col.as_ref(),
+            no_backward_pred: self.no_backward_pred,
+            slice_addr: self.slice_addr,
+        }
+    }
+
     #[inline(always)]
     fn dd(&mut self, ctx: usize) -> u32 {
         self.c.decode_decision(ctx)
@@ -1042,56 +1055,8 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
 
     /// Intra prediction of an n x n block of component `c` at component position (x0, y0).
     fn intra_predict(&mut self, x0: i32, y0: i32, log2: u32, c: usize, mode: u32) {
-        let n = 1usize << log2;
-        let (sx, sy) = if c == 0 { (0, 0) } else { (self.pic.sx, self.pic.sy) };
-        let (xl, yl) = (x0 << sx, y0 << sy);
-        // component samples per 4x4 luma block, across and down
-        let (ux, uy) = (4usize >> sx, 4usize >> sy);
-        let stride = if c == 0 { self.pic.width } else { self.pic.cwidth };
-        let constrained = self.pps.constrained_intra_pred;
-        let filter_refs = c == 0 || self.c444();
-        let mut al = [false; 129];
-        let mut at = [false; 129];
-        let addr = self.slice_addr;
-        let avail =
-            |pic: &PicState<S>, xn: i32, yn: i32| -> bool { pic.zavail(xl, yl, xn, yn, addr) && (!constrained || pic.blk_at(xn, yn).flags & F_INTRA != 0) };
-        let plane = &self.pic.planes[c];
-        let r = &mut self.refs_buf;
-        // corner
-        if avail(self.pic, xl - 1, yl - 1) {
-            al[0] = true;
-            at[0] = true;
-            let v = plane[(y0 - 1) as usize * stride + (x0 - 1) as usize].to_u16();
-            r.left[0] = v;
-            r.top[0] = v;
-        }
-        for k in (0..2 * n).step_by(uy) {
-            let yn = y0 + k as i32;
-            if avail(self.pic, xl - 1, yn << sy) {
-                for i in 0..uy {
-                    al[1 + k + i] = true;
-                    r.left[1 + k + i] = plane[(yn as usize + i) * stride + (x0 - 1) as usize].to_u16();
-                }
-            }
-        }
-        for k in (0..2 * n).step_by(ux) {
-            let xn = x0 + k as i32;
-            if avail(self.pic, xn << sx, yl - 1) {
-                let o = (y0 - 1) as usize * stride + xn as usize;
-                for i in 0..ux {
-                    at[1 + k + i] = true;
-                    r.top[1 + k + i] = plane[o + i].to_u16();
-                }
-            }
-        }
-        let bd = if c == 0 { self.pic.bd_y } else { self.pic.bd_c };
-        intra::substitute(r, &al, &at, n, bd);
-        // neighbouring samples are filtered for luma, and for chroma in 4:4:4 (8.4.4.2.3)
-        if filter_refs {
-            intra::filter(r, mode, n, self.sps.strong_intra_smoothing, c == 0, bd);
-        }
-        let off = y0 as usize * stride + x0 as usize;
-        intra::predict(r, mode, n, c == 0, bd, &mut self.pic.planes[c][off..], stride);
+        let (strong, constrained) = (self.sps.strong_intra_smoothing, self.pps.constrained_intra_pred);
+        predict_intra(self.pic, &mut self.refs_buf, strong, constrained, self.slice_addr, x0, y0, log2, c, mode);
     }
 
     /// residual_coding() + scaling + transform + reconstruction for one transform block.
@@ -1331,54 +1296,10 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
     }
 
     /// Scaling, transform and addition to the prediction.
+    #[allow(clippy::too_many_arguments)]
     fn reconstruct(&mut self, x0: i32, y0: i32, log2: u32, c: usize, qp: i32, ts: bool, max_x: usize, max_y: usize) -> Result<()> {
-        let n = 1usize << log2;
-        let bd = if c == 0 { self.pic.bd_y } else { self.pic.bd_c };
-        let coeffs = &mut self.coeffs[..n * n];
-        let mut dc_only = false;
-        if !self.cu_transquant_bypass {
-            // scaling (8.6.3)
-            let bd_shift = bd + log2 - 5;
-            let round = 1i64 << (bd_shift - 1);
-            let scale = (LEVEL_SCALE[(qp % 6) as usize] as i64) << (qp / 6);
-            let m: Option<&[u8]> = match &self.pic.scaling {
-                Some(s) if !(ts && n > 4) => {
-                    let size_id = (log2 - 2) as usize;
-                    let matrix_id = if self.cu_intra { c } else { 3 + c };
-                    Some(&s[size_id * 6 + matrix_id])
-                }
-                _ => None,
-            };
-            for y in 0..=max_y {
-                for x in 0..=max_x {
-                    let v = coeffs[y * n + x];
-                    if v != 0 {
-                        let f = m.map_or(16, |m| m[y * n + x] as i64);
-                        coeffs[y * n + x] = ((v as i64 * f * scale + round) >> bd_shift).clamp(-32768, 32767) as i32;
-                    }
-                }
-            }
-            let bd_shift = 20 - bd;
-            if ts {
-                transform::transform_skip(coeffs, n, bd_shift);
-            } else if max_x == 0 && max_y == 0 && !(self.cu_intra && c == 0 && n == 4) {
-                let v = transform::inverse_dc(coeffs[0], bd_shift);
-                coeffs.fill(v);
-                dc_only = true;
-            } else {
-                let dst = self.cu_intra && c == 0 && n == 4;
-                transform::inverse_transform(coeffs, n, dst, max_x, max_y, bd_shift);
-            }
-        }
-        let _ = dc_only;
-        let (stride, max) = (if c == 0 { self.pic.width } else { self.pic.cwidth }, (1i32 << bd) - 1);
-        let plane = &mut self.pic.planes[c];
-        for y in 0..n {
-            let row = &mut plane[(y0 as usize + y) * stride + x0 as usize..][..n];
-            for (x, s) in row.iter_mut().enumerate() {
-                *s = S::from_i32((s.to_i32() + coeffs[y * n + x]).clamp(0, max));
-            }
-        }
+        let (intra, bypass) = (self.cu_intra, self.cu_transquant_bypass);
+        reconstruct(self.pic, &mut self.coeffs, intra, bypass, x0, y0, log2, c, qp, ts, max_x, max_y);
         Ok(())
     }
 
@@ -1398,7 +1319,7 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
             } else {
                 0
             };
-            self.derive_merge(xc, yc, ncb, xp, yp, w, h, part_idx, part, idx as usize)
+            self.mv_ctx().derive_merge(xc, yc, ncb, xp, yp, w, h, part_idx, part, idx as usize)
         } else {
             let pred_idc = if self.sh.is_b() {
                 if w + h != 12 {
@@ -1442,7 +1363,7 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
                 if ref_idx[l] < 0 {
                     continue;
                 }
-                let mvp = self.derive_amvp(xc, yc, ncb, xp, yp, w, h, part_idx, l, ref_idx[l] as usize, mvp_flag[l] as usize);
+                let mvp = self.mv_ctx().derive_amvp(xc, yc, ncb, xp, yp, w, h, part_idx, l, ref_idx[l] as usize, mvp_flag[l] as usize);
                 // mvLX = (mvp + mvd) wrapped to 16 bits (8-94)
                 f.mv[l] = [(mvp[0] as i32 + mvd[l][0]) as i16, (mvp[1] as i32 + mvd[l][1]) as i16];
             }
@@ -1503,78 +1424,9 @@ impl<'a, S: Sample> SliceDecoder<'a, S> {
             SliceType::B => self.pps.weighted_bipred,
             SliceType::I => false,
         };
-        let bi = f.pred(0) && f.pred(1);
         let pwt = self.sh.pwt.as_ref().filter(|_| weighted);
-        let (sx, sy) = (self.pic.sx, self.pic.sy);
-        for c in 0..if self.mono() { 1 } else { 3 } {
-            let (x, y, bw, bh, bd) = if c == 0 { (xp, yp, w, h, self.pic.bd_y) } else { (xp >> sx, yp >> sy, w >> sx, h >> sy, self.pic.bd_c) };
-            // luma mvs in quarter samples; chroma ones in eighths of a chroma sample (8-228 ff.):
-            // mvC = mv * 2 / SubWidthC (SubHeightC)
-            let mv_of = |l: usize| -> [i32; 2] {
-                let mv = f.mv[l];
-                if c == 0 { [mv[0] as i32, mv[1] as i32] } else { [(mv[0] as i32) << (1 - sx), (mv[1] as i32) << (1 - sy)] }
-            };
-            // Explicit weights equal to the default ones (weight 2^denom and offset 0 for every
-            // list used, as signalled for most slices of a weighted-prediction stream) give exactly
-            // the default prediction: with log2WD = denom + shift1 the weighted sums of 8-265 /
-            // 8-266 are those of 8-262 / 8-263 multiplied by 2^denom.
-            let pwt = pwt.filter(|pwt| !default_weights(pwt, f, c));
-            // Uni-prediction at a full-sample position without weighting: the prediction
-            // ((s << shift3) + off) >> shift3 (8-228, 8-262) is the reference sample itself.
-            if !bi && pwt.is_none() {
-                let l = if f.pred(0) { 0 } else { 1 };
-                let frac = if c == 0 { 3 } else { 7 };
-                let mv = mv_of(l);
-                if f.pred(l) && mv[0] & frac == 0 && mv[1] & frac == 0 {
-                    let sh = if c == 0 { 2 } else { 3 };
-                    let stride = if c == 0 { self.pic.width } else { self.pic.cwidth };
-                    let frame = &self.refs[l][f.ref_idx[l] as usize].frame;
-                    let dst = &mut self.pic.planes[c][y as usize * stride + x as usize..];
-                    frame.copy_block(c, x + (mv[0] >> sh), y + (mv[1] >> sh), bw, bh, dst, stride);
-                    continue;
-                }
-            }
-            let mut lists = [false; 2];
-            for l in 0..2 {
-                if !f.pred(l) {
-                    continue;
-                }
-                lists[l] = true;
-                let frame = &self.refs[l][f.ref_idx[l] as usize].frame;
-                let buf = if l == 0 || !bi { &mut self.pred0 } else { &mut self.pred1 };
-                if c == 0 {
-                    inter::mc_luma::<S>(frame, x, y, f.mv[l], bw, bh, buf, &mut self.mc);
-                } else {
-                    inter::mc_chroma::<S>(frame, c - 1, x, y, mv_of(l), bw, bh, buf, &mut self.mc);
-                }
-            }
-            let stride = if c == 0 { self.pic.width } else { self.pic.cwidth };
-            let dst = &mut self.pic.planes[c][y as usize * stride + x as usize..];
-            let Some(pwt) = pwt else {
-                if bi {
-                    inter::put_bi(&self.pred0, &self.pred1, bw, bh, bd, dst, stride);
-                } else {
-                    inter::put_uni(&self.pred0, bw, bh, bd, dst, stride);
-                }
-                continue;
-            };
-            let shift1 = 14 - bd;
-            let log2wd = if c == 0 { pwt.luma_log2_denom } else { pwt.chroma_log2_denom } + shift1;
-            let get = |l: usize| -> (i32, i32) {
-                let e = &pwt.l[l][f.ref_idx[l] as usize];
-                let (wt, o) = if c == 0 { e.luma } else { e.chroma[c - 1] };
-                (wt, o << (bd - 8))
-            };
-            if bi {
-                let (w0, o0) = get(0);
-                let (w1, o1) = get(1);
-                inter::put_weighted_bi(&self.pred0, &self.pred1, bw, bh, bd, log2wd, w0, w1, o0, o1, dst, stride);
-            } else {
-                let l = if lists[0] { 0 } else { 1 };
-                let (wt, o) = get(l);
-                inter::put_weighted_uni(&self.pred0, bw, bh, bd, log2wd, wt, o, dst, stride);
-            }
-        }
+        let mono = self.mono();
+        motion_compensate(self.pic, self.refs, pwt, mono, &mut self.pred0, &mut self.pred1, &mut self.mc, xp, yp, w, h, f);
     }
 }
 
@@ -1588,4 +1440,224 @@ fn default_weights(pwt: &crate::slice::PredWeightTable, f: &MvField, c: usize) -
             wt == 1 << denom && o == 0
         })
     })
+}
+
+/// Intra prediction of an n x n block of component `c` at component position (x0, y0) into the
+/// picture (8.4.4.2): neighbour availability, substitution, filtering and the prediction itself.
+#[allow(clippy::too_many_arguments)]
+pub fn predict_intra<S: Sample>(
+    pic: &mut PicState<S>,
+    r: &mut Refs,
+    strong: bool,
+    constrained: bool,
+    slice_addr: u32,
+    x0: i32,
+    y0: i32,
+    log2: u32,
+    c: usize,
+    mode: u32,
+) {
+    let n = 1usize << log2;
+    let (sx, sy) = if c == 0 { (0, 0) } else { (pic.sx, pic.sy) };
+    let (xl, yl) = (x0 << sx, y0 << sy);
+    // component samples per 4x4 luma block, across and down
+    let (ux, uy) = (4usize >> sx, 4usize >> sy);
+    let stride = if c == 0 { pic.width } else { pic.cwidth };
+    let filter_refs = c == 0 || (pic.sx == 0 && pic.sy == 0);
+    let mut al = [false; 129];
+    let mut at = [false; 129];
+    let avail =
+        |pic: &PicState<S>, xn: i32, yn: i32| -> bool { pic.zavail(xl, yl, xn, yn, slice_addr) && (!constrained || pic.blk_at(xn, yn).flags & F_INTRA != 0) };
+    let plane = &pic.planes[c];
+    // corner
+    if avail(&*pic, xl - 1, yl - 1) {
+        al[0] = true;
+        at[0] = true;
+        let v = plane[(y0 - 1) as usize * stride + (x0 - 1) as usize].to_u16();
+        r.left[0] = v;
+        r.top[0] = v;
+    }
+    for k in (0..2 * n).step_by(uy) {
+        let yn = y0 + k as i32;
+        if avail(&*pic, xl - 1, yn << sy) {
+            for i in 0..uy {
+                al[1 + k + i] = true;
+                r.left[1 + k + i] = plane[(yn as usize + i) * stride + (x0 - 1) as usize].to_u16();
+            }
+        }
+    }
+    for k in (0..2 * n).step_by(ux) {
+        let xn = x0 + k as i32;
+        if avail(&*pic, xn << sx, yl - 1) {
+            let o = (y0 - 1) as usize * stride + xn as usize;
+            for i in 0..ux {
+                at[1 + k + i] = true;
+                r.top[1 + k + i] = plane[o + i].to_u16();
+            }
+        }
+    }
+    let bd = if c == 0 { pic.bd_y } else { pic.bd_c };
+    intra::substitute(r, &al, &at, n, bd);
+    // neighbouring samples are filtered for luma, and for chroma in 4:4:4 (8.4.4.2.3)
+    if filter_refs {
+        intra::filter(r, mode, n, strong, c == 0, bd);
+    }
+    let off = y0 as usize * stride + x0 as usize;
+    intra::predict(r, mode, n, c == 0, bd, &mut pic.planes[c][off..], stride);
+}
+
+/// Scaling (8.6.2 - 8.6.4) of the coefficient levels in `coeffs` (row-major n x n, non-zero only up to
+/// (max_x, max_y)), inverse transform and addition to the prediction already in the picture.
+#[allow(clippy::too_many_arguments)]
+pub fn reconstruct<S: Sample>(
+    pic: &mut PicState<S>,
+    coeffs: &mut [i32],
+    intra: bool,
+    bypass: bool,
+    x0: i32,
+    y0: i32,
+    log2: u32,
+    c: usize,
+    qp: i32,
+    ts: bool,
+    max_x: usize,
+    max_y: usize,
+) {
+    let n = 1usize << log2;
+    let bd = if c == 0 { pic.bd_y } else { pic.bd_c };
+    let coeffs = &mut coeffs[..n * n];
+    let mut dc_only = false;
+    if !bypass {
+        // scaling (8.6.3)
+        let bd_shift = bd + log2 - 5;
+        let round = 1i64 << (bd_shift - 1);
+        let scale = (LEVEL_SCALE[(qp % 6) as usize] as i64) << (qp / 6);
+        let m: Option<&[u8]> = match &pic.scaling {
+            Some(s) if !(ts && n > 4) => {
+                let size_id = (log2 - 2) as usize;
+                let matrix_id = if intra { c } else { 3 + c };
+                Some(&s[size_id * 6 + matrix_id])
+            }
+            _ => None,
+        };
+        for y in 0..=max_y {
+            for x in 0..=max_x {
+                let v = coeffs[y * n + x];
+                if v != 0 {
+                    let f = m.map_or(16, |m| m[y * n + x] as i64);
+                    coeffs[y * n + x] = ((v as i64 * f * scale + round) >> bd_shift).clamp(-32768, 32767) as i32;
+                }
+            }
+        }
+        let bd_shift = 20 - bd;
+        if ts {
+            transform::transform_skip(coeffs, n, bd_shift);
+        } else if max_x == 0 && max_y == 0 && !(intra && c == 0 && n == 4) {
+            let v = transform::inverse_dc(coeffs[0], bd_shift);
+            coeffs.fill(v);
+            dc_only = true;
+        } else {
+            let dst = intra && c == 0 && n == 4;
+            transform::inverse_transform(coeffs, n, dst, max_x, max_y, bd_shift);
+        }
+    }
+    let _ = dc_only;
+    let (stride, max) = (if c == 0 { pic.width } else { pic.cwidth }, (1i32 << bd) - 1);
+    let plane = &mut pic.planes[c];
+    for y in 0..n {
+        let row = &mut plane[(y0 as usize + y) * stride + x0 as usize..][..n];
+        for (x, s) in row.iter_mut().enumerate() {
+            *s = S::from_i32((s.to_i32() + coeffs[y * n + x]).clamp(0, max));
+        }
+    }
+}
+
+/// Motion compensation of one PU into the picture (8.5.3.3), with explicit weighted prediction when
+/// `pwt` is given.
+#[allow(clippy::too_many_arguments)]
+pub fn motion_compensate<S: Sample>(
+    pic: &mut PicState<S>,
+    refs: &[Vec<RefPic>; 2],
+    pwt: Option<&crate::slice::PredWeightTable>,
+    mono: bool,
+    pred0: &mut [i16],
+    pred1: &mut [i16],
+    mc: &mut crate::inter::McScratch,
+    xp: i32,
+    yp: i32,
+    w: usize,
+    h: usize,
+    f: &MvField,
+) {
+    let bi = f.pred(0) && f.pred(1);
+    let (sx, sy) = (pic.sx, pic.sy);
+    for c in 0..if mono { 1 } else { 3 } {
+        let (x, y, bw, bh, bd) = if c == 0 { (xp, yp, w, h, pic.bd_y) } else { (xp >> sx, yp >> sy, w >> sx, h >> sy, pic.bd_c) };
+        // luma mvs in quarter samples; chroma ones in eighths of a chroma sample (8-228 ff.):
+        // mvC = mv * 2 / SubWidthC (SubHeightC)
+        let mv_of = |l: usize| -> [i32; 2] {
+            let mv = f.mv[l];
+            if c == 0 { [mv[0] as i32, mv[1] as i32] } else { [(mv[0] as i32) << (1 - sx), (mv[1] as i32) << (1 - sy)] }
+        };
+        // Explicit weights equal to the default ones (weight 2^denom and offset 0 for every
+        // list used, as signalled for most slices of a weighted-prediction stream) give exactly
+        // the default prediction: with log2WD = denom + shift1 the weighted sums of 8-265 /
+        // 8-266 are those of 8-262 / 8-263 multiplied by 2^denom.
+        let pwt = pwt.filter(|pwt| !default_weights(pwt, f, c));
+        // Uni-prediction at a full-sample position without weighting: the prediction
+        // ((s << shift3) + off) >> shift3 (8-228, 8-262) is the reference sample itself.
+        if !bi && pwt.is_none() {
+            let l = if f.pred(0) { 0 } else { 1 };
+            let frac = if c == 0 { 3 } else { 7 };
+            let mv = mv_of(l);
+            if f.pred(l) && mv[0] & frac == 0 && mv[1] & frac == 0 {
+                let sh = if c == 0 { 2 } else { 3 };
+                let stride = if c == 0 { pic.width } else { pic.cwidth };
+                let frame = &refs[l][f.ref_idx[l] as usize].frame;
+                let dst = &mut pic.planes[c][y as usize * stride + x as usize..];
+                frame.copy_block(c, x + (mv[0] >> sh), y + (mv[1] >> sh), bw, bh, dst, stride);
+                continue;
+            }
+        }
+        let mut lists = [false; 2];
+        for l in 0..2 {
+            if !f.pred(l) {
+                continue;
+            }
+            lists[l] = true;
+            let frame = &refs[l][f.ref_idx[l] as usize].frame;
+            let buf = if l == 0 || !bi { &mut *pred0 } else { &mut *pred1 };
+            if c == 0 {
+                inter::mc_luma::<S>(frame, x, y, f.mv[l], bw, bh, buf, mc);
+            } else {
+                inter::mc_chroma::<S>(frame, c - 1, x, y, mv_of(l), bw, bh, buf, mc);
+            }
+        }
+        let stride = if c == 0 { pic.width } else { pic.cwidth };
+        let dst = &mut pic.planes[c][y as usize * stride + x as usize..];
+        let Some(pwt) = pwt else {
+            if bi {
+                inter::put_bi(&*pred0, &*pred1, bw, bh, bd, dst, stride);
+            } else {
+                inter::put_uni(&*pred0, bw, bh, bd, dst, stride);
+            }
+            continue;
+        };
+        let shift1 = 14 - bd;
+        let log2wd = if c == 0 { pwt.luma_log2_denom } else { pwt.chroma_log2_denom } + shift1;
+        let get = |l: usize| -> (i32, i32) {
+            let e = &pwt.l[l][f.ref_idx[l] as usize];
+            let (wt, o) = if c == 0 { e.luma } else { e.chroma[c - 1] };
+            (wt, o << (bd - 8))
+        };
+        if bi {
+            let (w0, o0) = get(0);
+            let (w1, o1) = get(1);
+            inter::put_weighted_bi(&*pred0, &*pred1, bw, bh, bd, log2wd, w0, w1, o0, o1, dst, stride);
+        } else {
+            let l = if lists[0] { 0 } else { 1 };
+            let (wt, o) = get(l);
+            inter::put_weighted_uni(&*pred0, bw, bh, bd, log2wd, wt, o, dst, stride);
+        }
+    }
 }

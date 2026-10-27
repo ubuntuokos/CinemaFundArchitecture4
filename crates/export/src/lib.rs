@@ -251,7 +251,7 @@ impl Format {
     /// Whether the crate carries an encoder for the format; the others need one registered at runtime
     /// ([`register_format_probe`]).
     pub fn has_builtin_encoder(self) -> bool {
-        !matches!(self, Format::Hevc | Format::Av1)
+        self != Format::Av1
     }
     /// Sound without picture: Waveform Audio, AIFF, AAC Audio and FLAC.
     pub fn is_audio_only(self) -> bool {
@@ -645,9 +645,6 @@ impl ExportSettings {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
         }
         if self.bitrate_mode == BitrateMode::Crf {
-            if self.format == Format::Hevc {
-                return Err(ExportError::Unsupported("H.265 export has no CRF mode: choose CBR or VBR, 1 pass".into()));
-            }
             if self.format == Format::Av1 {
                 return Err(ExportError::Unsupported("AV1 export has no CRF mode: choose CBR or VBR, 1 pass".into()));
             }
@@ -777,7 +774,7 @@ pub type AudioEncoderFactory = fn(format: Format, sample_rate: u32, channels: u3
 
 fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
     static F: OnceLock<RwLock<Vec<EncoderFactory>>> = OnceLock::new();
-    F.get_or_init(|| RwLock::new(vec![h264_factory, prores_factory, dnx_factory, apv_factory, mjpeg_factory]))
+    F.get_or_init(|| RwLock::new(vec![h264_factory, hevc_factory, prores_factory, dnx_factory, apv_factory, mjpeg_factory]))
 }
 fn audio_factories() -> &'static RwLock<Vec<AudioEncoderFactory>> {
     static F: OnceLock<RwLock<Vec<AudioEncoderFactory>>> = OnceLock::new();
@@ -1710,6 +1707,130 @@ fn h264_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
         cfa4_h264enc::Encoder::new(cfg)
             .map(|enc| Box::new(H264Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new(), signal: s.signal }) as Box<dyn VideoEncoder>)
             .map_err(|e| ExportError::Encode(e.to_string())),
+    )
+}
+
+/// H.265 (our software encoder; a registered hardware encoder goes first): Main, 8-bit BT.709 4:2:0
+/// from RGBA8, or for HDR Main 10, 10-bit 4:2:0 BT.2020 PQ / HLG from the HDR floats with the static
+/// metadata in an SEI. Length-prefixed samples with the `hvcC` in the sample entry.
+struct HevcEncoder {
+    enc: cfa4_hevc::encode::Encoder,
+    w: u32,
+    h: u32,
+    rate: FrameRate,
+    y: Vec<u8>,
+    u: Vec<u8>,
+    v: Vec<u8>,
+    y10: Vec<u16>,
+    u10: Vec<u16>,
+    v10: Vec<u16>,
+    signal: ColorSignal,
+}
+
+impl HevcEncoder {
+    fn packets(&self, ps: Vec<cfa4_hevc::encode::Packet>) -> Vec<EncodedPacket> {
+        // no B-pictures: decode order is presentation order
+        ps.into_iter().map(|p| EncodedPacket { data: p.data, key: p.keyframe, duration: self.rate.den as u32, composition_offset: 0 }).collect()
+    }
+}
+
+impl VideoEncoder for HevcEncoder {
+    fn sample_entry(&self) -> SampleEntry {
+        let cfg = cfa4_isobmff::HevcConfig::parse(&self.enc.hvcc()).unwrap_or_default();
+        let (w, h) = (u16::try_from(self.w).unwrap_or(u16::MAX), u16::try_from(self.h).unwrap_or(u16::MAX));
+        let mut e = SampleEntry::hevc(cfg, w, h);
+        self.signal.apply_to(&mut e, false);
+        e
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        let cw = w.div_ceil(2);
+        let main10 = self.enc.config().bit_depth > 8;
+        let frame = match f.hdr {
+            Some(rgb) if main10 => {
+                let (kr, kb) = self.signal.kr_kb();
+                timed(Stage::Convert, || rgbf_to_yuv420_10(rgb, w, h, kr, kb, &mut self.y10, &mut self.u10, &mut self.v10))?;
+                cfa4_hevc::encode::YuvFrame::U16 { y: &self.y10, u: &self.u10, v: &self.v10, y_stride: w, uv_stride: cw }
+            }
+            hdr => {
+                timed(Stage::Convert, || match hdr {
+                    Some(rgb) => {
+                        let (kr, kb) = self.signal.kr_kb();
+                        rgbf_to_yuv420_8(rgb, w, h, kr, kb, &mut self.y, &mut self.u, &mut self.v)
+                    }
+                    None => rgba_to_yuv420_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v),
+                });
+                cfa4_hevc::encode::YuvFrame::U8 { y: &self.y, u: &self.u, v: &self.v, y_stride: w, uv_stride: cw }
+            }
+        };
+        let ps = self.enc.encode(&frame, (f.index as i64).saturating_mul(self.rate.den)).map_err(|e| ExportError::Encode(e.to_string()))?;
+        Ok(self.packets(ps))
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        let ps = self.enc.flush().map_err(|e| ExportError::Encode(e.to_string()))?;
+        Ok(self.packets(ps))
+    }
+}
+
+/// Slices per H.265 picture: one per four rows of 32x32 CTUs, at most eight. Fixed by the picture
+/// height (not the core count) so the stream is the same on every machine.
+pub(crate) fn hevc_slices(height: u32) -> u32 {
+    (height.div_ceil(32) / 4).clamp(1, 8)
+}
+
+fn hevc_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    if format != Format::Hevc {
+        return None;
+    }
+    use cfa4_hevc::encode as he;
+    let (Ok(num), Ok(den)) = (u32::try_from(rate.num), u32::try_from(rate.den)) else {
+        return Some(Err(ExportError::Unsupported(format!("H.265 export: frame rate {}/{}", rate.num, rate.den))));
+    };
+    let mut cfg = he::EncoderConfig::new(w, h, num, den);
+    cfg.format = he::PacketFormat::LengthPrefixed;
+    cfg.keyint = s.keyframe_distance.filter(|k| *k > 0).unwrap_or_else(|| (rate.num as f64 / rate.den as f64 * 2.0).round().max(1.0) as u32);
+    cfg.slices = hevc_slices(h);
+    let kbps = s.bitrate_kbps.max(100);
+    let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).unwrap_or_else(|| (u64::from(kbps) * 3 / 2).min(u64::from(u32::MAX)) as u32);
+    cfg.rate = match s.bitrate_mode {
+        BitrateMode::Cbr => he::RateControl::Cbr { kbps },
+        BitrateMode::Crf => he::RateControl::Crf(if s.crf.is_finite() { s.crf } else { DEFAULT_CRF }),
+        _ => he::RateControl::Vbr { target_kbps: kbps, max_kbps: max },
+    };
+    if let Some((n, d)) = s.pixel_aspect {
+        cfg.sar = (n.clamp(1, 65535) as u16, d.clamp(1, 65535) as u16);
+    }
+    if s.signal.is_hdr() {
+        cfg.bit_depth = 10;
+        cfg.color = he::ColorConfig { primaries: s.signal.primaries, transfer: s.signal.transfer, matrix: s.signal.matrix, full_range: false };
+        if let Some((md, cll)) = s.signal.static_metadata() {
+            let mut b = [0u8; 24];
+            b.copy_from_slice(&md.to_bytes());
+            cfg.mastering_display = Some(b);
+            cfg.content_light = Some(cll);
+        }
+    }
+    Some(
+        he::Encoder::new(cfg)
+            .map(|enc| {
+                Box::new(HevcEncoder {
+                    enc,
+                    w,
+                    h,
+                    rate,
+                    y: Vec::new(),
+                    u: Vec::new(),
+                    v: Vec::new(),
+                    y10: Vec::new(),
+                    u10: Vec::new(),
+                    v10: Vec::new(),
+                    signal: s.signal,
+                }) as Box<dyn VideoEncoder>
+            })
+            .map_err(|e| ExportError::Encode(format!("H.265: {e}"))),
     )
 }
 
