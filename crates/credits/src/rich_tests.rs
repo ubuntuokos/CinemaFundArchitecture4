@@ -182,3 +182,103 @@ fn parallel_columns_start_at_the_same_top() {
     assert!(c.pages[0].blocks[1].parallel);
     assert_eq!(c.warnings.len(), 1);
 }
+
+/// Every picture is 300 × 400 (portrait); a video 1920 × 1080.
+struct P;
+impl Measure for P {
+    fn bounds(&self, e: &EffectInstance) -> Option<[f64; 4]> {
+        M.bounds(e)
+    }
+    fn picture_size(&self, file: &str) -> Option<(f64, f64)> {
+        if file == "missing.jpg" {
+            None
+        } else if file.ends_with(".mp4") {
+            Some((1920.0, 1080.0))
+        } else {
+            Some((300.0, 400.0))
+        }
+    }
+}
+
+#[test]
+fn portraits_stand_above_or_beside_their_names() {
+    let st = Styling::default();
+    let sheet = "Body,Content Style\n{{Pic a.jpg}} Kiss Anna,Portraits\n{{Kép b.jpg}} Nagy Béla,\nTóth Cili,\n{{Pic missing.jpg}} Szabó Dóra,\n";
+    let c = read(sheet.as_bytes(), &st).unwrap();
+    assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    let b = &c.pages[0].blocks[0];
+    assert_eq!(b.body, vec!["Kiss Anna", "Nagy Béla", "Tóth Cili", "Szabó Dóra"]);
+    assert_eq!(
+        b.portraits.iter().map(|p| p.as_ref().map(|p| p.file.as_str())).collect::<Vec<_>>(),
+        vec![Some("a.jpg"), Some("b.jpg"), None, Some("missing.jpg")]
+    );
+    let l = layout(&c, &st, FRAME, &P).unwrap();
+    let pg = &l.pages[0];
+    // two readable portraits, 220 high (300 × 400 → 165 × 220), each above its name
+    assert_eq!(pg.pictures.len(), 2, "a.jpg and b.jpg: {:?}", pg.pictures);
+    for pic in &pg.pictures {
+        assert!((pic.size.1 - 220.0).abs() < 1e-6 && (pic.size.0 - 165.0).abs() < 1e-6);
+    }
+    let name = |t: &str| pg.layers.iter().find(|e| text_of(e) == t).map(pos).unwrap();
+    let anna = name("Kiss Anna");
+    let a = &pg.pictures[0];
+    assert!((a.center.0 - anna.0).abs() < 1e-6, "centred over the name");
+    assert!(a.center.1 + a.size.1 / 2.0 < anna.1, "above the name");
+    // four columns: the names stand side by side on one line
+    assert!((name("Tóth Cili").1 - anna.1).abs() < 1e-6);
+    assert!(l.warnings.iter().any(|w| w.message.contains("missing.jpg")));
+    // beside the name
+    let st = Styling::from_json(r#"{"contentStyles":[{"name":"Side","columns":1,"portraitSide":"left","portraitHeight":100}]}"#).unwrap();
+    let c = read("Body,Content Style\n{{Pic a.jpg}} Kiss Anna,Side\n".as_bytes(), &st).unwrap();
+    let l = layout(&c, &st, FRAME, &P).unwrap();
+    let pg = &l.pages[0];
+    let pic = &pg.pictures[0];
+    let anna = pg.layers.iter().find(|e| text_of(e) == "Kiss Anna").map(pos).unwrap();
+    assert!(pic.center.0 + pic.size.0 / 2.0 <= anna.0 + 1e-6, "left of the name");
+}
+
+#[test]
+fn videos_are_placed_like_pictures() {
+    let st = Styling::default();
+    let c = read("Body\n{{Video intro.mp4 270}}\n{{Videó szalag.mp4}}\n".as_bytes(), &st).unwrap();
+    assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    let pics = &c.pages[0].blocks[0].pictures;
+    assert!(pics.iter().all(|p| p.video));
+    let l = layout(&c, &st, FRAME, &P).unwrap();
+    let v: Vec<&crate::PicturePlace> = l.pages[0].pictures.iter().collect();
+    assert_eq!(v.len(), 2);
+    assert!(v.iter().all(|p| p.video));
+    assert!((v[0].size.1 - 270.0).abs() < 1e-6 && (v[0].size.0 - 480.0).abs() < 1e-6);
+}
+
+#[test]
+fn cards_slide_in_and_stagger_their_blocks() {
+    let st = Styling::from_json(
+        r#"{"pageStyles":[{"name":"In","behaviour":"card","entrance":"slideUp","entranceFrames":10,"entranceDistance":100,"staggerFrames":5}]}"#,
+    )
+    .unwrap();
+    let c = read("Head,Body,Page Style\nA,One,In\n,,\nB,Two,\n,,\nC,{{Pic a.jpg}},\n".as_bytes(), &st).unwrap();
+    let l = layout(&c, &st, FRAME, &P).unwrap();
+    let pg = &l.pages[0];
+    let fd = FRAME.rate.frame_duration().0;
+    let (dx, dy, len) = pg.entrance.unwrap();
+    assert_eq!((dx, dy, len.0), (0.0, 100.0, 10 * fd));
+    let one = pg.layers.iter().find(|e| text_of(e) == "One").unwrap();
+    let two = pg.layers.iter().find(|e| text_of(e) == "Two").unwrap();
+    let start = |e: &EffectInstance| e.params["position"].keyframes.iter().map(|k| k.time.0).collect::<Vec<_>>();
+    // the first block moves from the start, the second five frames later
+    assert_eq!(start(one), vec![0, 10 * fd]);
+    assert_eq!(start(two), vec![0, 5 * fd, 15 * fd]);
+    // it is hidden until then
+    let op = &two.params["opacity"];
+    assert_eq!(op.value_at(cfa4_time::Tick(4 * fd)), ParamValue::Float(0.0));
+    assert_eq!(op.value_at(cfa4_time::Tick(30 * fd)), ParamValue::Float(100.0));
+    // the picture block comes third
+    assert_eq!(pg.pictures[0].delay.0, 10 * fd);
+    // scroll pages ignore an entrance
+    let st = Styling::from_json(r#"{"pageStyles":[{"name":"R","entrance":"slideLeft","staggerFrames":5}]}"#).unwrap();
+    let c = read("Body,Page Style\nA,R\n".as_bytes(), &st).unwrap();
+    let l = layout(&c, &st, FRAME, &P).unwrap();
+    assert!(l.pages[0].entrance.is_none());
+    assert!(!l.pages[0].layers[0].params["position"].is_animated());
+}

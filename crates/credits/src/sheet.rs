@@ -128,6 +128,9 @@ pub struct Block {
     pub tails: Vec<(usize, String)>,
     /// Pictures shown in place of a body (a body cell holding only `{{Pic …}}` tags).
     pub pictures: Vec<Picture>,
+    /// A portrait beside each body cell (a cell with a picture tag and a name), or `None`;
+    /// empty when the block has none.
+    pub portraits: Vec<Option<Picture>>,
     /// 1-based spreadsheet row of each body cell (rows of heads or tails alone are skipped).
     pub body_rows: Vec<usize>,
     /// Starts a parallel column: the block stands beside the column before it, from the same
@@ -144,9 +147,13 @@ pub struct Picture {
     /// As written: a file name relative to the spreadsheet's folder, or an absolute path.
     pub file: String,
     pub height: Option<f64>,
+    /// A video (`{{Video …}}`), placed and moved like a picture, playing from its start.
+    pub video: bool,
 }
 
 const PIC_TAGS: [&str; 4] = ["pic", "picture", "kép", "logo"];
+/// Tags of a video in a cell.
+const VIDEO_TAGS: [&str; 3] = ["video", "videó", "mozgókép"];
 
 /// Take the picture tags out of a cell: the rest of the cell and the pictures, in order.
 pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
@@ -159,7 +166,8 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
         let tag = after.get(..j).unwrap_or("").trim();
         let (word, arg) = tag.split_once(char::is_whitespace).unwrap_or((tag, ""));
         let lower = word.to_lowercase();
-        if PIC_TAGS.contains(&lower.as_str()) && !arg.trim().is_empty() && pics.len() < 64 {
+        let video = VIDEO_TAGS.contains(&lower.as_str());
+        if (video || PIC_TAGS.contains(&lower.as_str())) && !arg.trim().is_empty() && pics.len() < 64 {
             let arg = arg.trim();
             let (file, height) = match arg.rsplit_once(char::is_whitespace) {
                 Some((f, h)) => {
@@ -172,7 +180,7 @@ pub fn take_pictures(cell: &str) -> (String, Vec<Picture>) {
                 None => (arg, None),
             };
             out.push_str(rest.get(..i).unwrap_or(""));
-            pics.push(Picture { file: file.to_string(), height });
+            pics.push(Picture { file: file.to_string(), height, video });
         } else {
             out.push_str(rest.get(..i + 2 + j + 2).unwrap_or(""));
         }
@@ -280,19 +288,25 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
     for (i, r) in rows.iter().enumerate().skip(header + 1) {
         let rowno = i + 1;
         let raw_body = cols.iter().position(|k| *k == Some(Column::Body)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
-        // a body cell of only picture tags is a picture block
+        // a body cell of only picture tags is a picture block; a picture tag with a name is a
+        // portrait beside that name
         let (pic_rest, pics) = take_pictures(raw_body);
-        let pics = if pic_rest.trim().is_empty() { pics } else { Vec::new() };
+        let (pics, portrait) = if pic_rest.trim().is_empty() { (pics, None) } else { (Vec::new(), pics.into_iter().next()) };
         let pic_only = !pics.is_empty();
         let mut cell = |c: Column| -> String {
             if c == Column::Body && pic_only {
                 return String::new();
             }
             let raw = cols.iter().position(|k| *k == Some(c)).and_then(|j| r.get(j)).map(String::as_str).unwrap_or("");
+            let raw = if c == Column::Body && portrait.is_some() { pic_rest.trim() } else { raw };
             let (t, dropped) = clean_markup(raw);
             if dropped && !warned_markup {
                 warned_markup = true;
-                warn(&mut out, rowno, "videos in `{{…}}` are not supported yet, and a picture needs a body cell of its own; the tags were removed".into());
+                warn(
+                    &mut out,
+                    rowno,
+                    "a picture or video tag stands alone in a body cell (or with one name, as a portrait); the other tags were removed".into(),
+                );
             }
             t
         };
@@ -379,6 +393,7 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
                 body: if has_body { vec![body_text] } else { vec![] },
                 body_rows: if has_body { vec![rowno] } else { vec![] },
                 tails: vec![],
+                portraits: if has_body && portrait.is_some() { vec![portrait.clone()] } else { vec![] },
                 pictures: pics,
                 parallel: std::mem::take(&mut parallel_next),
                 row: rowno,
@@ -389,6 +404,11 @@ pub fn read_sheet(rows: &[Vec<String>], default_page: &str, default_content: &st
         } else if has_body && let Some(b) = page.blocks.last_mut() {
             b.body.push(body_text);
             b.body_rows.push(rowno);
+            if portrait.is_some() || !b.portraits.is_empty() {
+                // portraits line up with the body cells
+                b.portraits.resize(b.body.len() - 1, None);
+                b.portraits.push(portrait.clone());
+            }
         }
         if has_tail && let Some(b) = page.blocks.last_mut() {
             let at = b.body.len().saturating_sub(1);

@@ -14,7 +14,7 @@ use cfa4_project::{EffectInstance, Interpolation, Keyframe, Param, ParamValue};
 use cfa4_time::{FrameRate, Tick};
 
 use crate::CreditsError;
-use crate::sheet::{Block, Credits, Gap, Page, Warning};
+use crate::sheet::{Block, Credits, Gap, Page, Picture, Warning};
 use crate::style::{Align, Behaviour, BodyLayout, ContentStyle, LetterStyle, Orientation, Styling, parse_color};
 
 /// Measures text layers.
@@ -44,6 +44,20 @@ pub struct PicturePlace {
     pub center: (f64, f64),
     pub size: (f64, f64),
     pub row: usize,
+    /// A video, playing from its start.
+    pub video: bool,
+    /// When it comes in on a card with a staggered entrance (zero otherwise).
+    pub delay: Tick,
+}
+
+/// A picture placeholder's file and size on screen.
+#[derive(Clone, Debug)]
+struct PicInfo {
+    file: String,
+    w: f64,
+    h: f64,
+    row: usize,
+    video: bool,
 }
 
 /// Default picture height (1080-high pixels).
@@ -92,6 +106,9 @@ pub struct PageOut {
     pub transition: Option<(String, Tick)>,
     /// Length of the transition from the previous page into this one (zero for none).
     pub transition_in: Tick,
+    /// A card's entrance: where its content starts relative to where it ends (frame pixels) and
+    /// how long the move takes; pictures move the same way from their own `delay`.
+    pub entrance: Option<(f64, f64, Tick)>,
 }
 
 /// Laid-out credits.
@@ -116,7 +133,7 @@ struct Piece {
     /// Top of the line box in content pixels.
     top: f64,
     /// A picture's placeholder: the file and its size on screen.
-    pic: Option<Box<(String, f64, f64, usize)>>,
+    pic: Option<Box<PicInfo>>,
     /// Stable key of the layer: its block's content and its own name (see [`block_key`]).
     key: String,
     /// Spreadsheet row (1-based) of the layer's block.
@@ -242,6 +259,9 @@ fn lay_body(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, t
     if b.body.is_empty() {
         return Ok(out);
     }
+    if b.portraits.iter().any(Option::is_some) {
+        return lay_portraits(ctx, b, cs, align, x, top);
+    }
     match cs.layout {
         BodyLayout::Grid => {
             let n = (cs.columns.clamp(1, 16) as usize).min(b.body.len()).max(1);
@@ -309,50 +329,121 @@ fn bottom(pieces: &[Piece]) -> Option<f64> {
 
 /// A row of pictures with its top at `top`: placeholder pieces (transparent rectangles, so the
 /// page's size and roll include them). `anchor_x` and `align` place the row like text.
+/// A picture's size on screen (`default_h` high unless the tag gives a height, never wider than
+/// the frame), or `None` with a warning when it cannot be read.
+fn size_picture(ctx: &mut Ctx, row: usize, p: &Picture, default_h: f64) -> Option<(f64, f64)> {
+    let s = ctx.s;
+    let Some((pw, ph)) = ctx.measure.picture_size(&p.file).filter(|(w, h)| w.is_finite() && h.is_finite() && *w > 0.0 && *h > 0.0) else {
+        if !ctx.missing_pics.contains(&p.file) {
+            ctx.missing_pics.push(p.file.clone());
+            let what = if p.video { "video" } else { "picture" };
+            ctx.warn(row, format!("{what} `{}` was not found or cannot be read; it is left out", p.file));
+        }
+        return None;
+    };
+    let mut h = finite_or(p.height.unwrap_or(default_h), default_h).clamp(1.0, 10_000.0) * s;
+    let mut w = h * pw / ph;
+    let max_w = ctx.w * 0.95;
+    if w > max_w {
+        h *= max_w / w;
+        w = max_w;
+    }
+    Some((w, h))
+}
+
+/// A transparent placeholder piece for a picture centred at `cx` with its top at `top`.
+fn picture_piece(p: &Picture, k: usize, w: f64, h: f64, cx: f64, top: f64, row: usize) -> Piece {
+    let mut e = new_shape_layer(0, Vec2::new(0.0, 0.0), Vec2::new(w, h), vec![]);
+    let what = if p.video { "Video" } else { "Picture" };
+    set(&mut e, "name", ParamValue::Text(format!("{what} {}: {}", k + 1, p.file)));
+    set(&mut e, "fill", ParamValue::Bool(false));
+    Piece {
+        row,
+        key: String::new(),
+        layer: e,
+        b: [-w / 2.0, -h / 2.0, w / 2.0, h / 2.0],
+        x: cx,
+        top,
+        pic: Some(Box::new(PicInfo { file: p.file.clone(), w, h, row, video: p.video })),
+    }
+}
+
+/// A row of pictures with its top at `top`: placeholder pieces (transparent rectangles, so the
+/// page's size and roll include them). `anchor_x` and `align` place the row like text.
 fn lay_pictures(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, anchor_x: f64, align: Align, top: f64) -> Vec<Piece> {
     let s = ctx.s;
     let mut sized = Vec::new();
     for p in &b.pictures {
-        let Some((pw, ph)) = ctx.measure.picture_size(&p.file).filter(|(w, h)| w.is_finite() && h.is_finite() && *w > 0.0 && *h > 0.0) else {
-            if !ctx.missing_pics.contains(&p.file) {
-                ctx.missing_pics.push(p.file.clone());
-                ctx.warn(b.row, format!("picture `{}` was not found or cannot be read; it is left out", p.file));
-            }
-            continue;
-        };
-        let mut h = finite_or(p.height.unwrap_or(DEFAULT_PICTURE_HEIGHT), DEFAULT_PICTURE_HEIGHT).clamp(1.0, 10_000.0) * s;
-        let mut w = h * pw / ph;
-        // never wider than the frame
-        let max_w = ctx.w * 0.95;
-        if w > max_w {
-            h *= max_w / w;
-            w = max_w;
+        if let Some((w, h)) = size_picture(ctx, b.row, p, DEFAULT_PICTURE_HEIGHT) {
+            sized.push((p, w, h));
         }
-        sized.push((p.file.clone(), w, h));
     }
     let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
     let total: f64 = sized.iter().map(|(_, w, _)| *w).sum::<f64>() + gap * (sized.len().saturating_sub(1)) as f64;
     let row_h = sized.iter().map(|(_, _, h)| *h).fold(0.0f64, f64::max);
     let mut left = left_of(anchor_x, total, align);
     let mut out = Vec::new();
-    for (k, (file, w, h)) in sized.into_iter().enumerate() {
-        let cx = left + w / 2.0;
-        let mut e = new_shape_layer(0, Vec2::new(0.0, 0.0), Vec2::new(w, h), vec![]);
-        set(&mut e, "name", ParamValue::Text(format!("Picture {}: {file}", k + 1)));
-        set(&mut e, "fill", ParamValue::Bool(false));
-        let top_k = top + (row_h - h) / 2.0;
-        out.push(Piece {
-            row: b.row,
-            key: String::new(),
-            layer: e,
-            b: [-w / 2.0, -h / 2.0, w / 2.0, h / 2.0],
-            x: cx,
-            top: top_k,
-            pic: Some(Box::new((file, w, h, b.row))),
-        });
+    for (k, (p, w, h)) in sized.into_iter().enumerate() {
+        out.push(picture_piece(p, k, w, h, left + w / 2.0, top + (row_h - h) / 2.0, b.row));
         left += w + gap;
     }
     out
+}
+
+/// Names with their portraits, `columns` to a row: each portrait above its name (or left of
+/// it, `portraitSide: left`), the grid placed like text at `x` with `align`.
+fn lay_portraits(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, align: Align, x: f64, top: f64) -> Result<Vec<Piece>, CreditsError> {
+    let s = ctx.s;
+    let left_side = cs.portrait_side == crate::style::PortraitSide::Left;
+    let pgap = finite_or(cs.portrait_gap, 0.0).clamp(0.0, 10_000.0) * s;
+    let ph_default = finite_or(cs.portrait_height, 220.0).clamp(1.0, 10_000.0);
+    // each cell: its name, its portrait (if readable)
+    let mut cells = Vec::with_capacity(b.body.len());
+    for (i, cell) in b.body.iter().enumerate() {
+        let row = b.body_rows.get(i).copied().unwrap_or(b.row);
+        let (e, bb) = ctx.text(row, &format!("Name {}", i + 1), cell, &cs.body, if left_side { Align::Left } else { Align::Center }, None)?;
+        let pic = b.portraits.get(i).cloned().flatten().and_then(|p| size_picture(ctx, row, &p, ph_default).map(|(w, h)| (p, w, h)));
+        cells.push((e, bb, pic, row));
+    }
+    let n = (cs.columns.clamp(1, 16) as usize).min(cells.len()).max(1);
+    let gap = finite_or(cs.column_gap, 0.0).max(0.0) * s;
+    let row_gap = finite_or(cs.paragraph_gap, 0.0).max(0.0) * s;
+    let pic_w = cells.iter().filter_map(|c| c.2.as_ref().map(|p| p.1)).fold(0.0f64, f64::max);
+    let text_w = cells.iter().map(|c| (c.1[2] - c.1[0]).max(0.0)).fold(0.0f64, f64::max);
+    let col_w = if left_side { pic_w + if pic_w > 0.0 { pgap } else { 0.0 } + text_w } else { pic_w.max(text_w) };
+    let total = col_w * n as f64 + gap * (n as f64 - 1.0);
+    let left = left_of(x, total, align);
+    let mut out = Vec::new();
+    let mut y = top;
+    let mut k = 0usize;
+    for chunk in cells.chunks(n) {
+        let row_ph = chunk.iter().filter_map(|c| c.2.as_ref().map(|p| p.2)).fold(0.0f64, f64::max);
+        let row_th = chunk.iter().map(|c| (c.1[3] - c.1[1]).max(0.0)).fold(0.0f64, f64::max);
+        let row_h = if left_side { row_ph.max(row_th) } else { row_ph + if row_ph > 0.0 { pgap } else { 0.0 } + row_th };
+        for (j, (e, bb, pic, row)) in chunk.iter().enumerate() {
+            let col_left = left + j as f64 * (col_w + gap);
+            let th = (bb[3] - bb[1]).max(0.0);
+            if left_side {
+                if let Some((p, w, h)) = pic {
+                    out.push(picture_piece(p, k, *w, *h, col_left + pic_w / 2.0, y + (row_h - h) / 2.0, *row));
+                    k += 1;
+                }
+                let tx = col_left + if pic_w > 0.0 { pic_w + pgap } else { 0.0 };
+                out.push(Piece { row: *row, key: String::new(), layer: e.clone(), b: *bb, x: tx, top: y + (row_h - th) / 2.0, pic: None });
+            } else {
+                let cx = col_left + col_w / 2.0;
+                if let Some((p, w, h)) = pic {
+                    // portraits stand on one line at the bottom of the row's picture band
+                    out.push(picture_piece(p, k, *w, *h, cx, y + row_ph - h, *row));
+                    k += 1;
+                }
+                let ty = y + if row_ph > 0.0 { row_ph + pgap } else { 0.0 };
+                out.push(Piece { row: *row, key: String::new(), layer: e.clone(), b: *bb, x: cx, top: ty, pic: None });
+            }
+        }
+        y += row_h + row_gap;
+    }
+    Ok(out)
 }
 
 /// The longest leader text on a line.
@@ -454,9 +545,59 @@ fn lay_block(ctx: &mut Ctx, b: &Block, cs: &ContentStyle, spine_x: f64, top: f64
     Ok((pieces, h))
 }
 
-fn opacity_fade(e: &mut EffectInstance, d: Tick, fin: Tick, fout: Tick) {
+/// A card layer's keyframes: it comes in at `delay` (fading in over `fin`, and with `motion`
+/// sliding from `(dx, dy)` away over its frames to `at`) and fades out over `fout` at the end.
+pub fn card_keys(e: &mut EffectInstance, d: Tick, delay: Tick, fin: Tick, fout: Tick, motion: Option<(f64, f64, Tick)>, at: (f64, f64)) {
+    let (opacity, position) = card_params(d, delay, fin, fout, motion, at);
+    if let Some(o) = opacity {
+        e.params.insert("opacity".into(), o);
+    }
+    if let Some(p) = position {
+        e.params.insert("position".into(), p);
+    }
+}
+
+/// The opacity (`None`: always fully shown) and position (`None`: standing still) of something
+/// on a card, as [`card_keys`] gives a text layer; pictures use the same.
+pub fn card_params(d: Tick, delay: Tick, fin: Tick, fout: Tick, motion: Option<(f64, f64, Tick)>, at: (f64, f64)) -> (Option<Param>, Option<Param>) {
+    let kf = |t: Tick, v: ParamValue, interp: Interpolation| Keyframe { time: t, value: v, interp, out_influence: 1.0 / 3.0, in_influence: 1.0 / 3.0 };
+    let opacity = if delay.0 <= 0 && motion.is_none() {
+        fade_param(d, fin, fout)
+    } else {
+        // hidden until `delay`, then in over `fin` (at least a tick)
+        let fin = Tick(fin.0.max(1));
+        let out_start = Tick(d.0.saturating_sub(fout.0));
+        let mut ok = vec![kf(Tick::ZERO, ParamValue::Float(0.0), if delay.0 > 0 { Interpolation::Hold } else { Interpolation::Linear })];
+        if delay.0 > 0 {
+            ok.push(kf(delay, ParamValue::Float(0.0), Interpolation::Linear));
+        }
+        let shown = Tick((delay.0.saturating_add(fin.0)).min(out_start.0).max(delay.0));
+        ok.push(kf(shown, ParamValue::Float(100.0), Interpolation::Linear));
+        if fout.0 > 0 && out_start > shown {
+            ok.push(kf(out_start, ParamValue::Float(100.0), Interpolation::Linear));
+            ok.push(kf(d, ParamValue::Float(0.0), Interpolation::Linear));
+        }
+        ok.dedup_by_key(|k| k.time);
+        Some(Param { value: ParamValue::Float(100.0), keyframes: ok })
+    };
+    let position = motion.map(|(dx, dy, len)| {
+        let from = ParamValue::Vec2(Vec2::new(at.0 + dx, at.1 + dy));
+        let to = ParamValue::Vec2(Vec2::new(at.0, at.1));
+        let mut pk = vec![kf(Tick::ZERO, from.clone(), if delay.0 > 0 { Interpolation::Hold } else { Interpolation::EaseOut })];
+        if delay.0 > 0 {
+            pk.push(kf(delay, from, Interpolation::EaseOut));
+        }
+        pk.push(kf(Tick(delay.0.saturating_add(len.0).min(d.0)), to.clone(), Interpolation::Linear));
+        pk.dedup_by_key(|k| k.time);
+        Param { value: to, keyframes: pk }
+    });
+    (opacity, position)
+}
+
+/// Opacity fading in over `fin` and out over `fout` of `d`; `None` without fades.
+fn fade_param(d: Tick, fin: Tick, fout: Tick) -> Option<Param> {
     if fin.0 <= 0 && fout.0 <= 0 {
-        return;
+        return None;
     }
     let kf =
         |t: Tick, v: f64| Keyframe { time: t, value: ParamValue::Float(v), interp: Interpolation::Linear, out_influence: 1.0 / 3.0, in_influence: 1.0 / 3.0 };
@@ -475,7 +616,7 @@ fn opacity_fade(e: &mut EffectInstance, d: Tick, fin: Tick, fout: Tick) {
         kfs.push(kf(d, 0.0));
     }
     kfs.dedup_by_key(|k| k.time);
-    e.params.insert("opacity".into(), Param { value: ParamValue::Float(100.0), keyframes: kfs });
+    Some(Param { value: ParamValue::Float(100.0), keyframes: kfs })
 }
 
 fn frames(rate: FrameRate, n: i64) -> Tick {
@@ -494,7 +635,10 @@ pub fn block_key(b: &Block) -> u64 {
         parts.push(format!("{i}:{t}").into_bytes());
     }
     for p in &b.pictures {
-        parts.push(format!("{}@{:?}", p.file, p.height).into_bytes());
+        parts.push(format!("{}@{:?}{}", p.file, p.height, if p.video { "v" } else { "" }).into_bytes());
+    }
+    for p in b.portraits.iter().flatten() {
+        parts.push(format!("portrait {}@{:?}", p.file, p.height).into_bytes());
     }
     if b.parallel {
         parts.push(b"parallel".to_vec());
@@ -805,17 +949,33 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     let mut keys = Vec::with_capacity(pieces.len());
     let mut layer_rows = Vec::with_capacity(pieces.len());
     let mut pictures = Vec::new();
+    // a card's entrance: how far its content travels, how long, and each block's delay
+    let card = ps.behaviour == Behaviour::Card;
+    let (ux, uy) = ps.entrance.from();
+    let dist = finite_or(ps.entrance_distance, 0.0).clamp(0.0, 100_000.0) * s;
+    let motion = (card && ps.entrance != crate::style::Entrance::None && dist > 0.0)
+        .then(|| (ux * dist, uy * dist, frames(rate, i64::from(ps.entrance_frames.clamp(1, 100_000))).min(duration)));
+    let stagger = if card { frames(rate, i64::from(ps.stagger_frames.min(100_000))) } else { Tick::ZERO };
+    let mut block_rows: Vec<usize> = pieces.iter().map(|p| p.row).collect();
+    block_rows.sort_unstable();
+    block_rows.dedup();
+    let latest = Tick(duration.0.saturating_sub(fade_out.0).saturating_sub(motion.map_or(0, |m| m.2.0)).max(0));
+    let delay_of = |row: usize| -> Tick {
+        let k = block_rows.iter().position(|r| *r == row).unwrap_or(0) as i64;
+        Tick(stagger.0.saturating_mul(k)).min(latest)
+    };
     for p in pieces {
         let p_key = p.key;
         layer_rows.push(p.row);
         let mut e = p.layer;
         let y = p.top + dy - p.b[1];
         set(&mut e, "position", ParamValue::Vec2(Vec2::new(p.x, y)));
+        let delay = delay_of(p.row);
         if let Some(pic) = p.pic {
-            let (file, w, h, row) = *pic;
-            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row });
-        } else if ps.behaviour == Behaviour::Card {
-            opacity_fade(&mut e, duration, fade_in, fade_out);
+            let PicInfo { file, w, h, row, video } = *pic;
+            pictures.push(PicturePlace { file, center: (p.x, y), size: (w, h), row, video, delay });
+        } else if card {
+            card_keys(&mut e, duration, delay, fade_in, fade_out, motion, (p.x, y));
         }
         keys.push(p_key);
         layers.push(e);
@@ -878,6 +1038,7 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
         background,
         transition,
         transition_in: Tick::ZERO,
+        entrance: motion,
     })
 }
 

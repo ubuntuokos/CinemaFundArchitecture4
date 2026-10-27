@@ -124,6 +124,12 @@ pub struct PageStyle {
     pub transition: String,
     /// Transition length in frames.
     pub transition_frames: u32,
+    /// Card: how the content comes in, over `entranceFrames`, from `entranceDistance` pixels away.
+    pub entrance: Entrance,
+    pub entrance_frames: u32,
+    pub entrance_distance: f64,
+    /// Card: each block comes in this many frames after the one before (0 = all together).
+    pub stagger_frames: u32,
 }
 
 impl Default for PageStyle {
@@ -141,6 +147,10 @@ impl Default for PageStyle {
             background: Background::default(),
             transition: String::new(),
             transition_frames: 12,
+            entrance: Entrance::None,
+            entrance_frames: 18,
+            entrance_distance: 120.0,
+            stagger_frames: 0,
         }
     }
 }
@@ -218,6 +228,45 @@ impl LetterStyle {
     }
 }
 
+/// Where a portrait stands next to its name.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PortraitSide {
+    #[default]
+    Above,
+    Left,
+}
+
+/// How a card's content comes in.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Entrance {
+    /// Only the card's fade.
+    #[default]
+    None,
+    /// From the right, moving left.
+    SlideLeft,
+    /// From the left, moving right.
+    SlideRight,
+    /// From below, moving up.
+    SlideUp,
+    /// From above, moving down.
+    SlideDown,
+}
+
+impl Entrance {
+    /// Where the content starts, relative to where it ends (unit vector).
+    pub fn from(self) -> (f64, f64) {
+        match self {
+            Entrance::None => (0.0, 0.0),
+            Entrance::SlideLeft => (1.0, 0.0),
+            Entrance::SlideRight => (-1.0, 0.0),
+            Entrance::SlideUp => (0.0, 1.0),
+            Entrance::SlideDown => (0.0, -1.0),
+        }
+    }
+}
+
 /// A content style (`Content Style` column).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -254,6 +303,10 @@ pub struct ContentStyle {
     pub leader: String,
     /// Space between the leader and the text on either side.
     pub leader_gap: f64,
+    /// Portraits (`{{Pic face.jpg}} Name`): their height, side and gap to the name.
+    pub portrait_height: f64,
+    pub portrait_side: PortraitSide,
+    pub portrait_gap: f64,
 }
 
 impl Default for ContentStyle {
@@ -278,6 +331,9 @@ impl Default for ContentStyle {
             harmonize_heads: false,
             leader: String::new(),
             leader_gap: 16.0,
+            portrait_height: 220.0,
+            portrait_side: PortraitSide::Above,
+            portrait_gap: 16.0,
         }
     }
 }
@@ -354,6 +410,8 @@ pub fn builtin_content_styles() -> Vec<ContentStyle> {
             ..base.clone()
         },
         ContentStyle { name: "Centered".into(), ..base.clone() },
+        // Faces above names, four to a row.
+        ContentStyle { name: "Portraits".into(), columns: 4, body: LetterStyle::with(32.0, "Regular"), column_gap: 48.0, paragraph_gap: 40.0, ..base.clone() },
         // Roles in an even left column, dots to the names.
         ContentStyle {
             name: "Leaders".into(),

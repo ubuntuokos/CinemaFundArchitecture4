@@ -36,7 +36,9 @@ pub mod zip;
 
 pub use layout::{Frame, Laid, Measure, PageOut, PicturePlace, layout};
 pub use sheet::{Block, Credits, Gap, Page, Picture, TimeSpec, Warning, read_sheet};
-pub use style::{Align, Background, BackgroundFit, BackgroundKind, Behaviour, BodyLayout, ContentStyle, LetterStyle, Orientation, PageStyle, Styling};
+pub use style::{
+    Align, Background, BackgroundFit, BackgroundKind, Behaviour, BodyLayout, ContentStyle, Entrance, LetterStyle, Orientation, PageStyle, PortraitSide, Styling,
+};
 
 /// Why credits could not be read or laid out.
 #[derive(Clone, Debug, PartialEq, Eq)]
