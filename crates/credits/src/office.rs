@@ -33,6 +33,8 @@ pub struct Sheet {
     pub rows: Vec<Vec<String>>,
     pub sheets: Vec<String>,
     pub chosen: String,
+    /// Notes about reading it (e.g. what a Cinecred styling could not carry over).
+    pub notes: Vec<String>,
 }
 
 fn parse_xml(bytes: &[u8]) -> Result<String, CreditsError> {
@@ -231,7 +233,7 @@ fn xlsx(zip: &Zip, sheet: Option<&str>, limits: Limits) -> Result<Sheet, Credits
             grid.set(rr, cc, text.replace("\r\n", "\n"))?;
         }
     }
-    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names })
+    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names, notes: Vec::new() })
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -321,5 +323,5 @@ fn ods(zip: &Zip, sheet: Option<&str>, limits: Limits) -> Result<Sheet, CreditsE
         }
         r = r.saturating_add(rep_r);
     }
-    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names })
+    Ok(Sheet { rows: grid.rows, chosen: names.get(idx).cloned().unwrap_or_default(), sheets: names, notes: Vec::new() })
 }

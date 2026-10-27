@@ -5658,3 +5658,36 @@ def test_real_engine_credits_templates(app, tmp_path: Path, monkeypatch):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_window_opens_a_cinecred_project(app, tmp_path: Path):
+    """A Cinecred project folder in the Credits window: its styles and sheet, and what could not
+    be carried over among the warnings."""
+    from cfa4_qt.main_window import MainWindow
+
+    proj = tmp_path / "Film"
+    proj.mkdir()
+    (proj / "Styling.toml").write_text(
+        '[global]\nresolution = "1920x1080"\n[[pageStyle]]\nname = "Card"\nbehavior = "CARD"\n'
+        '[[contentStyle]]\nname = "Gutter"\nblockOrientation = "HORIZONTAL"\n[[tapeStyle]]\nname = "T"\n',
+        encoding="utf-8",
+    )
+    (proj / "Credits.csv").write_text("@Kopf,@Körper,@Seitenstil\nRegie,Anna Kiss,Card\n", encoding="utf-8")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.import" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        dlg.path.setText(str(proj))
+        dlg.refresh()
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 1, 30_000), dlg.status.text()
+        texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
+        assert any("tape" in t for t in texts), texts
+    finally:
+        win._quit_confirmed = True
+        win.close()

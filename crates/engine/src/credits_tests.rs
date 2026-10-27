@@ -917,3 +917,52 @@ fn template_review_fixes_big_files_style_changes_and_background_paths() {
     let file = t["template"]["styling"]["pageStyles"][0]["background"]["file"].as_str().unwrap().to_string();
     assert!(std::path::Path::new(&file).is_absolute() && file.ends_with("sky.png"), "{file}");
 }
+
+// ----- C7: Cinecred projects -----
+
+#[test]
+fn a_cinecred_project_folder_opens_as_credits() {
+    let mut s = demo("credits-cinecred");
+    let dir = tmp_dir("credits-cinecred");
+    let proj = dir.join("Film");
+    std::fs::create_dir_all(&proj).unwrap();
+    std::fs::write(
+        proj.join("Styling.toml"),
+        "version = \"1.9.1\"\n[global]\nresolution = \"1920x1080\"\nunitVGapPx = 32.0\n\
+         [[pageStyle]]\nname = \"Card\"\nbehavior = \"CARD\"\ncardRuntimeFrames = 100\n\
+         [[pageStyle]]\nname = \"Scroll\"\nbehavior = \"SCROLL\"\nscrollPxPerFrame = 3.0\n\
+         [[contentStyle]]\nname = \"Gutter\"\nblockOrientation = \"HORIZONTAL\"\nbodyLetterStyleName = \"Name\"\n\
+         [[letterStyle]]\nname = \"Name\"\nfont = \"Inter Bold\"\nheightPx = 48.0\n\
+         [[transitionStyle]]\nname = \"Linear\"\n",
+    )
+    .unwrap();
+    image::RgbaImage::from_pixel(80, 40, image::Rgba([10, 200, 10, 255])).save(proj.join("logo.png")).unwrap();
+    std::fs::write(
+        proj.join("Credits.csv"),
+        "@Head,@Body,@Tail,@Vertical Gap,@Content Style,@Break Harmonization,@Spine Position,@Page Style,@Page Runtime,@Page Gap\n\
+         ,A FILM,,,Gutter,,,Card,,\n\
+         Director,Anna Kiss,,,,,,Scroll,,\n\
+         ,{{Pic logo}},,,,,,,,\n",
+    )
+    .unwrap();
+    std::fs::write(proj.join("other.csv"), "Body\nX\n").unwrap();
+    let pv = s.execute("graphics.credits.preview", json!({"path": proj})).unwrap();
+    let warnings: Vec<String> = pv["warnings"].as_array().unwrap().iter().map(|w| w["message"].as_str().unwrap().to_string()).collect();
+    assert!(warnings.iter().any(|w| w.contains("Credits.csv") && w.contains("2 credits spreadsheets")), "{warnings:?}");
+    assert!(warnings.iter().any(|w| w.contains("transition curves")), "{warnings:?}");
+    assert_eq!(pv["pages"].as_array().unwrap().len(), 2);
+    // the Styling.toml file names the project too; import places the pages and the logo
+    let v = s.execute("graphics.credits.import", json!({"path": proj.join("Styling.toml")})).unwrap();
+    assert_eq!(v["clips"][1]["pictures"].as_array().unwrap().len(), 1, "{v}");
+    let card = item(&s, clips(&v)[0]);
+    let title = card.effects.iter().find(|e| matches!(e.params.get("text").map(|p| &p.value), Some(ParamValue::Text(t)) if t == "A FILM")).unwrap();
+    assert_eq!(title.params["font_style"].value, ParamValue::Text("Bold".into()));
+    assert_eq!(card.duration, s.sequence_rate().tick_of(100));
+    // linked like any credits: the spreadsheet is the source to refresh from
+    std::fs::write(proj.join("Credits.csv"), std::fs::read_to_string(proj.join("Credits.csv")).unwrap().replace("Anna Kiss", "Anna Kiss-Nagy")).unwrap();
+    let d = s.execute("graphics.credits.diff", json!({"clip": clips(&v)[0].0})).unwrap();
+    assert_eq!(d["changes"].as_array().unwrap().len(), 1, "{d}");
+    // the other spreadsheet on request; a missing one is an error
+    assert!(s.execute("graphics.credits.preview", json!({"path": proj, "credits": "other.csv"})).is_ok());
+    assert!(s.execute("graphics.credits.preview", json!({"path": proj, "credits": "nope.csv"})).is_err());
+}

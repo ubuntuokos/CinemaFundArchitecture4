@@ -77,7 +77,19 @@ const MAX_PICTURE: u64 = 256 << 20;
 fn picture_path(base: Option<&std::path::Path>, file: &str) -> Option<std::path::PathBuf> {
     let f = std::path::Path::new(file.trim());
     let p = if f.is_absolute() { f.to_path_buf() } else { base?.join(f) };
-    p.is_file().then_some(p)
+    if p.is_file() {
+        return Some(p);
+    }
+    // Cinecred lets a sheet leave the extension out
+    if p.extension().is_none() {
+        for ext in ["png", "jpg", "jpeg", "svg", "webp", "tif", "tiff", "gif", "mp4", "mov", "mkv", "webm"] {
+            let c = p.with_extension(ext);
+            if c.is_file() {
+                return Some(c);
+            }
+        }
+    }
+    None
 }
 
 impl Measure for EngineMeasure {
@@ -179,6 +191,10 @@ fn doc_p(s: &Session, cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Op
             let table = std::mem::take(&mut info.rows);
             (CreditsDoc { table, ..Default::default() }, info, None)
         }
+        (None, Some(path)) if cinecred_dir(path).is_some() => {
+            let dir = cinecred_dir(path).ok_or_else(|| bad(cmd, "not a Cinecred project"))?;
+            cinecred_doc(cmd, &dir, str_p(p, "credits"), str_p(p, "sheet"))?
+        }
         (None, Some(path)) => {
             if path.to_lowercase().ends_with(".numbers") {
                 return Err(bad(cmd, "Apple Numbers files are not read; export the sheet as .xlsx or CSV"));
@@ -228,6 +244,79 @@ fn doc_p(s: &Session, cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Op
     }
     let base = doc.picture_dir.as_ref().map(std::path::PathBuf::from).or(file_dir);
     Ok((doc, info, base))
+}
+
+/// The folder of a Cinecred project `path` names: the folder itself (holding `Styling.toml`) or
+/// its `Styling.toml`.
+fn cinecred_dir(path: &str) -> Option<std::path::PathBuf> {
+    let p = std::path::Path::new(path);
+    if p.is_dir() && p.join(cfa4_credits::cinecred::STYLING_FILE).is_file() {
+        return Some(p.to_path_buf());
+    }
+    let is_styling = p.file_name().is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(cfa4_credits::cinecred::STYLING_FILE));
+    if is_styling && p.is_file() { p.parent().map(std::path::Path::to_path_buf) } else { None }
+}
+
+/// A Cinecred project as a credits document: its `Styling.toml` as CFA4 styles and its credits
+/// spreadsheet (`credits`: a file name in the folder; else the one called "credits…", else the
+/// first). Pictures are found in the project folder.
+fn cinecred_doc(cmd: &str, dir: &std::path::Path, credits: Option<&str>, sheet: Option<&str>) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
+    let styling_path = dir.join(cfa4_credits::cinecred::STYLING_FILE);
+    let text = String::from_utf8_lossy(&read_file_max(cmd, &styling_path.to_string_lossy(), cfa4_credits::cinecred::MAX_STYLING_BYTES as u64)?).into_owned();
+    let imported = cfa4_credits::cinecred::read_styling(&text).map_err(|e| bad(cmd, e.to_string()))?;
+    let mut sheets: Vec<String> = std::fs::read_dir(dir)
+        .map_err(|e| bad(cmd, format!("{}: {e}", dir.display())))?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_file())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| {
+            let l = n.to_lowercase();
+            !l.starts_with('.') && [".csv", ".tsv", ".ods", ".xlsx"].iter().any(|x| l.ends_with(x))
+        })
+        .take(1_000)
+        .collect();
+    sheets.sort();
+    let chosen = match credits {
+        Some(c) => sheets
+            .iter()
+            .find(|n| n.eq_ignore_ascii_case(c))
+            .cloned()
+            .ok_or_else(|| bad(cmd, format!("there is no credits spreadsheet `{c}` in the Cinecred project")))?,
+        None => sheets
+            .iter()
+            .find(|n| n.to_lowercase().starts_with("credits"))
+            .or(sheets.first())
+            .cloned()
+            .ok_or_else(|| bad(cmd, "the Cinecred project has no credits spreadsheet (.csv, .ods or .xlsx)"))?,
+    };
+    let path = dir.join(&chosen);
+    let bytes = read_file(cmd, &path.to_string_lossy())?;
+    let mut info = cfa4_credits::read_rows(&bytes, sheet).map_err(|e| bad(cmd, e.to_string()))?;
+    let table = std::mem::take(&mut info.rows);
+    let abs_dir = std::fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf());
+    let abs = abs_dir.join(&chosen);
+    let sheet_name = (!info.chosen.is_empty()).then(|| info.chosen.clone());
+    info.notes = imported.notes;
+    if sheets.len() > 1 {
+        info.notes.insert(0, format!("the Cinecred project has {} credits spreadsheets; `{chosen}` is used (choose another with `credits`)", sheets.len()));
+    }
+    let doc = CreditsDoc {
+        table,
+        styling: imported.styling,
+        source: Some(SourceRef { path: abs.to_string_lossy().into_owned(), name: chosen, sheet: sheet_name }),
+        picture_dir: Some(abs_dir.to_string_lossy().into_owned()),
+        ..Default::default()
+    };
+    Ok((doc, info, Some(abs_dir)))
+}
+
+/// Notes about reading the credits (before the layout's warnings), as warnings.
+fn notes_json(info: &SheetInfo, l: &Laid) -> Value {
+    let mut v: Vec<Value> = info.notes.iter().map(|n| json!({"row": 0, "message": n})).collect();
+    if let Value::Array(w) = warnings_json(l) {
+        v.extend(w);
+    }
+    Value::Array(v)
 }
 
 /// Lay out a credits document for the active sequence.
@@ -301,7 +390,7 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
         "duration": total.max(0),
         "sheets": sheet.sheets,
         "sheet": sheet.chosen,
-        "warnings": warnings_json(&l),
+        "warnings": notes_json(&sheet, &l),
         "issues": issues,
     }))
 }
@@ -649,7 +738,7 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.import";
     let (doc, info, base) = doc_p(s, CMD, p)?;
     let l = lay_doc(s, CMD, &doc, base.clone())?;
-    let warnings = warnings_json(&l);
+    let warnings = notes_json(&info, &l);
     let t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
     // one undo step, and nothing left behind if a page cannot be placed
     let track = u64_p(p, "track");
