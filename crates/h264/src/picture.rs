@@ -2,25 +2,103 @@
 
 use std::sync::{Arc, OnceLock};
 
-/// Planar 4:2:0 8-bit sample buffers (MB-aligned dimensions, stride == width).
+/// Storage type of decoded samples: `u8` for 8-bit pictures (half the memory and cache traffic
+/// of 16-bit storage in prediction reads, filters and output), `u16` for High 10 and above.
+/// Values are always within `0..1 << bit_depth`.
+pub trait Sample: Copy + Default + PartialEq + Eq + std::fmt::Debug + Send + Sync + 'static {
+    /// More than 8 bits: arithmetic that fits 16-bit lanes for 8-bit samples needs 32-bit ones.
+    const WIDE: bool;
+    /// Storage of a value already clipped to the bit depth.
+    fn from_i32(v: i32) -> Self;
+    fn to_i32(self) -> i32;
+    /// The rows of `f` when they are stored with this type.
+    fn rows(f: &Frame) -> Option<&[OnceLock<FrameRow<Self>>]>;
+    /// A finished plane for [`crate::Plane`].
+    fn wrap_plane(v: Vec<Self>) -> crate::Plane;
+    /// The samples of `p` when it holds this type.
+    fn plane_slice(p: &crate::Plane) -> Option<&[Self]>;
+    /// An empty output plane with room for `n` samples (from the host's allocator).
+    fn plane_buffer(n: usize) -> Vec<Self>;
+}
+
+impl Sample for u8 {
+    const WIDE: bool = false;
+    #[inline(always)]
+    fn from_i32(v: i32) -> Self {
+        v as u8
+    }
+    #[inline(always)]
+    fn to_i32(self) -> i32 {
+        self as i32
+    }
+    #[inline(always)]
+    fn rows(f: &Frame) -> Option<&[OnceLock<FrameRow<u8>>]> {
+        match &f.rows {
+            Rows::U8(r) => Some(r),
+            Rows::U16(_) => None,
+        }
+    }
+    fn wrap_plane(v: Vec<u8>) -> crate::Plane {
+        crate::Plane::U8(v)
+    }
+    fn plane_slice(p: &crate::Plane) -> Option<&[u8]> {
+        p.as_u8()
+    }
+    fn plane_buffer(n: usize) -> Vec<u8> {
+        plane_allocator()(n)
+    }
+}
+
+impl Sample for u16 {
+    const WIDE: bool = true;
+    #[inline(always)]
+    fn from_i32(v: i32) -> Self {
+        v as u16
+    }
+    #[inline(always)]
+    fn to_i32(self) -> i32 {
+        self as i32
+    }
+    #[inline(always)]
+    fn rows(f: &Frame) -> Option<&[OnceLock<FrameRow<u16>>]> {
+        match &f.rows {
+            Rows::U16(r) => Some(r),
+            Rows::U8(_) => None,
+        }
+    }
+    fn wrap_plane(v: Vec<u16>) -> crate::Plane {
+        crate::Plane::U16(v)
+    }
+    fn plane_slice(p: &crate::Plane) -> Option<&[u16]> {
+        p.as_u16()
+    }
+    fn plane_buffer(n: usize) -> Vec<u16> {
+        Vec::with_capacity(n)
+    }
+}
+
+/// Planar 4:2:0 sample buffers (MB-aligned dimensions, stride == width).
 #[derive(Clone)]
-pub struct Planes {
-    pub y: Vec<u8>,
-    pub cb: Vec<u8>,
-    pub cr: Vec<u8>,
+pub struct Planes<S> {
+    pub y: Vec<S>,
+    pub cb: Vec<S>,
+    pub cr: Vec<S>,
     pub width: usize,
     pub height: usize,
     pub cwidth: usize,
 }
 
-impl Planes {
-    pub fn new(width: usize, height: usize) -> Self {
+impl<S: Sample> Planes<S> {
+    /// Buffers for a `width × height` picture of `bit_depth` bits: luma black, chroma neutral.
+    pub fn new(width: usize, height: usize, bit_depth: u32) -> Self {
         let (cw, ch) = (width / 2, height / 2);
-        Planes { y: vec![0; width * height], cb: vec![128; cw * ch], cr: vec![128; cw * ch], width, height, cwidth: cw }
+        let mid = S::from_i32(1 << bit_depth.saturating_sub(1));
+        Planes { y: vec![S::default(); width * height], cb: vec![mid; cw * ch], cr: vec![mid; cw * ch], width, height, cwidth: cw }
     }
-    pub fn gray(width: usize, height: usize) -> Self {
-        let mut p = Self::new(width, height);
-        p.y.fill(128);
+    /// Every plane neutral (a picture that could not be decoded).
+    pub fn gray(width: usize, height: usize, bit_depth: u32) -> Self {
+        let mut p = Self::new(width, height, bit_depth);
+        p.y.fill(S::from_i32(1 << bit_depth.saturating_sub(1)));
         p
     }
 }
@@ -57,9 +135,10 @@ pub struct MbState {
     pub transform_8x8: bool,
     /// coded_block_pattern: bits 0..3 luma, bits 4..5 chroma.
     pub cbp: u8,
-    pub qp: u8,
+    /// QPY, which high bit depths allow down to -QpBdOffsetY.
+    pub qp: i8,
     /// QPc for Cb / Cr (used by deblocking).
-    pub qpc: [u8; 2],
+    pub qpc: [i8; 2],
     pub intra_chroma_mode: u8,
     /// Intra4x4PredMode / Intra8x8PredMode per 4x4 block (raster order).
     pub intra_modes: [u8; 16],
@@ -112,12 +191,12 @@ impl Default for MbState {
 
 /// One published macroblock row of a decoded frame: final (deblocked) samples plus the motion data
 /// needed as co-located information for direct prediction.
-pub struct FrameRow {
+pub struct FrameRow<S> {
     /// 16 luma lines.
-    pub y: Box<[u8]>,
+    pub y: Box<[S]>,
     /// 8 lines per chroma component.
-    pub cb: Box<[u8]>,
-    pub cr: Box<[u8]>,
+    pub cb: Box<[S]>,
+    pub cr: Box<[S]>,
     /// Per 4x4 block: index mb_x * 16 + raster.
     pub mv: [Box<[[i16; 2]]>; 2],
     /// Per 8x8 block: index mb_x * 4 + b8.
@@ -139,56 +218,87 @@ pub struct Frame {
     pub cwidth: usize,
     pub cheight: usize,
     pub mb_w: usize,
-    rows: Box<[OnceLock<FrameRow>]>,
+    /// Bits per sample of both luma and chroma (8 for 8-bit storage, 9..=14 for 16-bit).
+    pub bit_depth: u32,
+    rows: Rows,
+}
+
+/// The published rows of a frame, in the storage type its bit depth needs.
+pub enum Rows {
+    U8(Box<[OnceLock<FrameRow<u8>>]>),
+    U16(Box<[OnceLock<FrameRow<u16>>]>),
+}
+
+impl Rows {
+    fn len(&self) -> usize {
+        match self {
+            Rows::U8(r) => r.len(),
+            Rows::U16(r) => r.len(),
+        }
+    }
 }
 
 impl Frame {
-    pub fn new(id: u32, poc: i32, mb_w: usize, mb_h: usize) -> Self {
-        Frame { id, poc, width: mb_w * 16, height: mb_h * 16, cwidth: mb_w * 8, cheight: mb_h * 8, mb_w, rows: (0..mb_h).map(|_| OnceLock::new()).collect() }
+    pub fn new(id: u32, poc: i32, mb_w: usize, mb_h: usize, bit_depth: u32) -> Self {
+        let rows = if bit_depth > 8 { Rows::U16((0..mb_h).map(|_| OnceLock::new()).collect()) } else { Rows::U8((0..mb_h).map(|_| OnceLock::new()).collect()) };
+        Frame { id, poc, width: mb_w * 16, height: mb_h * 16, cwidth: mb_w * 8, cheight: mb_h * 8, mb_w, bit_depth, rows }
     }
 
     pub fn mb_h(&self) -> usize {
         self.rows.len()
     }
 
-    /// Publish MB row `r` (ignored if already published).
-    pub fn publish(&self, r: usize, row: FrameRow) {
-        let _ = self.rows[r].set(row);
+    /// Publish MB row `r` (ignored if already published, or if the frame stores another type).
+    pub fn publish<S: Sample>(&self, r: usize, row: FrameRow<S>) {
+        if let Some(slot) = S::rows(self).and_then(|rows| rows.get(r)) {
+            let _ = slot.set(row);
+        }
     }
 
     pub fn is_published(&self, r: usize) -> bool {
-        self.rows[r].get().is_some()
+        match &self.rows {
+            Rows::U8(rows) => rows.get(r).is_some_and(|s| s.get().is_some()),
+            Rows::U16(rows) => rows.get(r).is_some_and(|s| s.get().is_some()),
+        }
     }
 
-    /// MB row `r`, waiting until it has been published.
+    /// MB row `r` of a frame stored as `S`, waiting until it has been published.
     #[inline]
-    pub fn row(&self, r: usize) -> &FrameRow {
+    pub fn row<S: Sample>(&self, r: usize) -> Option<&FrameRow<S>> {
+        let slot = S::rows(self)?.get(r)?;
         #[cfg(feature = "threads")]
         {
-            self.rows[r].wait()
+            Some(slot.wait())
         }
         #[cfg(not(feature = "threads"))]
         {
-            self.rows[r].get().expect("reference row decoded before use")
+            slot.get()
         }
     }
 
     /// Wait until the whole frame is available.
     pub fn wait_complete(&self) {
         for r in 0..self.rows.len() {
-            self.row(r);
+            match &self.rows {
+                Rows::U8(_) => {
+                    let _ = self.row::<u8>(r);
+                }
+                Rows::U16(_) => {
+                    let _ = self.row::<u16>(r);
+                }
+            }
         }
     }
 
     /// Build a published row from a contiguous plane set (rows of MB row `r`) and motion data.
-    pub fn make_row(planes: &Planes, r: usize, mbs: &[MbState], ref_ids: &dyn Fn(&MbState, usize, i8) -> u32) -> FrameRow {
+    pub fn make_row<S: Sample>(planes: &Planes<S>, r: usize, mbs: &[MbState], ref_ids: &dyn Fn(&MbState, usize, i8) -> u32) -> FrameRow<S> {
         let w = planes.width;
         let cw = planes.cwidth;
         let mb_w = w / 16;
-        let y = planes.y[r * 16 * w..(r + 1) * 16 * w].into();
-        let cb = planes.cb[r * 8 * cw..(r + 1) * 8 * cw].into();
-        let cr = planes.cr[r * 8 * cw..(r + 1) * 8 * cw].into();
-        let row_mbs = &mbs[r * mb_w..(r + 1) * mb_w];
+        let y = planes.y.get(r * 16 * w..(r + 1) * 16 * w).unwrap_or(&[]).into();
+        let cb = planes.cb.get(r * 8 * cw..(r + 1) * 8 * cw).unwrap_or(&[]).into();
+        let cr = planes.cr.get(r * 8 * cw..(r + 1) * 8 * cw).unwrap_or(&[]).into();
+        let row_mbs = mbs.get(r * mb_w..(r + 1) * mb_w).unwrap_or(&[]);
         let mut mv = [vec![[0i16; 2]; mb_w * 16], vec![[0i16; 2]; mb_w * 16]];
         let mut ref_idx = [vec![-1i8; mb_w * 4], vec![-1i8; mb_w * 4]];
         let mut ref_id = [vec![u32::MAX; mb_w * 4], vec![u32::MAX; mb_w * 4]];
@@ -217,9 +327,9 @@ impl Frame {
 
     /// A frame with every row published from `planes` and no motion (intra), e.g. "non-existing"
     /// frames inferred for frame_num gaps.
-    pub fn from_planes(id: u32, poc: i32, planes: &Planes) -> Self {
+    pub fn from_planes<S: Sample>(id: u32, poc: i32, planes: &Planes<S>, bit_depth: u32) -> Self {
         let (mb_w, mb_h) = (planes.width / 16, planes.height / 16);
-        let f = Frame::new(id, poc, mb_w, mb_h);
+        let f = Frame::new(id, poc, mb_w, mb_h, bit_depth);
         let blank = vec![MbState::default(); mb_w * mb_h];
         for r in 0..mb_h {
             f.publish(r, Frame::make_row(planes, r, &blank, &|_, _, _| u32::MAX));
@@ -229,48 +339,58 @@ impl Frame {
 
     /// Copy the w x h luma window at (x0, y0) (clamped to the picture) into `out` (stride `os`).
     #[inline]
-    pub fn luma_window(&self, x0: i32, y0: i32, w: usize, h: usize, out: &mut [u8], os: usize) {
+    pub fn luma_window<S: Sample>(&self, x0: i32, y0: i32, w: usize, h: usize, out: &mut [S], os: usize) {
         let (width, height) = (self.width, self.height);
         for r in 0..h {
             let yy = (y0 + r as i32).clamp(0, height as i32 - 1) as usize;
-            let row = self.row(yy >> 4);
-            let line = &row.y[(yy & 15) * width..(yy & 15) * width + width];
-            copy_line::<24>(line, x0, &mut out[r * os..], w);
+            let Some(row) = self.row::<S>(yy >> 4) else { return };
+            let Some(line) = row.y.get((yy & 15) * width..(yy & 15) * width + width) else { return };
+            if let Some(dst) = out.get_mut(r * os..) {
+                copy_line::<S, 24>(line, x0, dst, w);
+            }
         }
     }
 
     /// Copy the w x h window of chroma component `c` at (x0, y0) (clamped) into `out`.
     #[inline]
-    pub fn chroma_window(&self, c: usize, x0: i32, y0: i32, w: usize, h: usize, out: &mut [u8], os: usize) {
+    pub fn chroma_window<S: Sample>(&self, c: usize, x0: i32, y0: i32, w: usize, h: usize, out: &mut [S], os: usize) {
         let (cw, ch) = (self.cwidth, self.cheight);
         for r in 0..h {
             let yy = (y0 + r as i32).clamp(0, ch as i32 - 1) as usize;
-            let row = self.row(yy >> 3);
+            let Some(row) = self.row::<S>(yy >> 3) else { return };
             let plane = if c == 0 { &row.cb } else { &row.cr };
-            let line = &plane[(yy & 7) * cw..(yy & 7) * cw + cw];
-            copy_line::<16>(line, x0, &mut out[r * os..], w);
+            let Some(line) = plane.get((yy & 7) * cw..(yy & 7) * cw + cw) else { return };
+            if let Some(dst) = out.get_mut(r * os..) {
+                copy_line::<S, 16>(line, x0, dst, w);
+            }
         }
     }
 
     /// Crop and copy the frame into planar buffers (waits for completion).
-    pub fn copy_cropped(&self, crop: (usize, usize, usize, usize)) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+    pub fn copy_cropped(&self, crop: (usize, usize, usize, usize)) -> (crate::Plane, crate::Plane, crate::Plane) {
+        match &self.rows {
+            Rows::U8(_) => self.copy_cropped_as::<u8>(crop),
+            Rows::U16(_) => self.copy_cropped_as::<u16>(crop),
+        }
+    }
+
+    fn copy_cropped_as<S: Sample>(&self, crop: (usize, usize, usize, usize)) -> (crate::Plane, crate::Plane, crate::Plane) {
         let (cx, cy, cw, ch) = crop;
-        let alloc = plane_allocator();
-        let mut y = alloc(cw * ch);
+        let mut y = S::plane_buffer(cw * ch);
         for r in cy..cy + ch {
-            let row = self.row(r >> 4);
-            y.extend_from_slice(&row.y[(r & 15) * self.width + cx..(r & 15) * self.width + cx + cw]);
+            let Some(row) = self.row::<S>(r >> 4) else { break };
+            y.extend_from_slice(row.y.get((r & 15) * self.width + cx..(r & 15) * self.width + cx + cw).unwrap_or(&[]));
         }
         let (ccx, ccy, ccw, cch) = (cx / 2, cy / 2, cw.div_ceil(2), ch.div_ceil(2));
-        let mut u = alloc(ccw * cch);
-        let mut v = alloc(ccw * cch);
+        let mut u = S::plane_buffer(ccw * cch);
+        let mut v = S::plane_buffer(ccw * cch);
         for r in ccy..ccy + cch {
-            let row = self.row(r >> 3);
+            let Some(row) = self.row::<S>(r >> 3) else { break };
             let o = (r & 7) * self.cwidth + ccx;
-            u.extend_from_slice(&row.cb[o..o + ccw]);
-            v.extend_from_slice(&row.cr[o..o + ccw]);
+            u.extend_from_slice(row.cb.get(o..o + ccw).unwrap_or(&[]));
+            v.extend_from_slice(row.cr.get(o..o + ccw).unwrap_or(&[]));
         }
-        (y, u, v)
+        (S::wrap_plane(y), S::wrap_plane(u), S::wrap_plane(v))
     }
 }
 
@@ -289,7 +409,7 @@ fn plane_allocator() -> fn(usize) -> Vec<u8> {
 /// Copy `w` samples of `line` starting at x0 into `out`; when possible a fixed-size block of `N`
 /// bytes is copied instead (cheaper than a variable-length copy; `out` must then have room for `N`).
 #[inline(always)]
-fn copy_line<const N: usize>(line: &[u8], x0: i32, out: &mut [u8], w: usize) {
+fn copy_line<S: Sample, const N: usize>(line: &[S], x0: i32, out: &mut [S], w: usize) {
     if w <= N
         && x0 >= 0
         && let Some(src) = line.get(x0 as usize..).and_then(|l| l.first_chunk::<N>())
@@ -303,14 +423,16 @@ fn copy_line<const N: usize>(line: &[u8], x0: i32, out: &mut [u8], w: usize) {
 
 /// Copy `out.len()` samples of `line` starting at x0, replicating edge samples outside the line.
 #[inline(always)]
-fn copy_clamped(line: &[u8], x0: i32, out: &mut [u8]) {
+fn copy_clamped<S: Sample>(line: &[S], x0: i32, out: &mut [S]) {
     let w = out.len();
     if x0 >= 0 && x0 as usize + w <= line.len() {
-        out.copy_from_slice(&line[x0 as usize..x0 as usize + w]);
+        if let Some(src) = line.get(x0 as usize..x0 as usize + w) {
+            out.copy_from_slice(src);
+        }
     } else {
         let max = line.len() as i32 - 1;
         for (c, o) in out.iter_mut().enumerate() {
-            *o = line[(x0 + c as i32).clamp(0, max) as usize];
+            *o = line.get((x0 + c as i32).clamp(0, max) as usize).copied().unwrap_or_default();
         }
     }
 }

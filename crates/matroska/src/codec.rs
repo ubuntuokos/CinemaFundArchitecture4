@@ -41,6 +41,8 @@ pub enum Codec {
     Ac3,
     /// `A_EAC3`.
     Eac3,
+    /// `A_DTS` (core, DTS-HD High Resolution and Master Audio).
+    Dts,
     /// `A_TRUEHD` (Dolby TrueHD) and `A_MLP` (Meridian Lossless Packing).
     TrueHd,
     /// `A_MPEG/L3`.
@@ -88,6 +90,7 @@ impl Codec {
             }
             Codec::Ac3 => "ac3".into(),
             Codec::Eac3 => "eac3".into(),
+            Codec::Dts => "dts".into(),
             Codec::TrueHd => "truehd".into(),
             Codec::Mp3 => "mp3".into(),
             Codec::Mp2 => "mp2".into(),
@@ -177,6 +180,7 @@ pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInf
         }
         "A_AC3" | "A_AC3/BSID9" | "A_AC3/BSID10" => Codec::Ac3,
         "A_EAC3" => Codec::Eac3,
+        "A_DTS" | "A_DTS/LOSSLESS" => Codec::Dts,
         "A_TRUEHD" | "A_MLP" => Codec::TrueHd,
         "A_MPEG/L3" => Codec::Mp3,
         "A_MPEG/L2" => Codec::Mp2,

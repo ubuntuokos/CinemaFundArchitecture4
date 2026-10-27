@@ -1,6 +1,6 @@
 # Where CFA4 falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 decoder, G10) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 encoder, G10) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -33,7 +33,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G17 | Audio device and playback reliability | stability | partly | 20–40 h |
 | G18 | Effects depth: approximations and missing behaviour | feature | no | 60–110 h |
 | G19 | Speech to text off in release builds | feature, AI | no | 5–10 h |
-| G20 | The web app shell | platforms | no | 40–80 h |
+| G20 | The web app shell (dropped: no web build) | platforms | n/a | — |
 
 ## G1. Nothing compares our output with Premiere's
 
@@ -65,8 +65,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G3. 10-bit and 4:2:2 camera media needs hardware
 
-- **Missing:** our H.264 decoder is 8-bit 4:2:0 only (`crates/h264/README.md`: no High 10, High
-  4:2:2, 4:4:4, lossless, interlaced field / MBAFF); HEVC has no 4:2:2 / RExt. Most mirrorless and
+- **Have:** our H.264 decoder does 4:2:0 at 8 to 14 bits (High 10 bit-exact with ffmpeg).
+- **Missing:** H.264 High 4:2:2 / 4:4:4 (#161), interlaced field / MBAFF (#162), lossless (#163)
+  (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
 - **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). On macOS VideoToolbox decodes 10-bit
@@ -74,7 +75,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   there is no software fallback, so the clip fails. Premiere decodes them everywhere (and in
   hardware on Apple silicon, Intel and NVIDIA Blackwell).
 - **Impact:** camera originals from most current cameras do not open on Windows or Linux.
-- **Estimate:** H.264 High 10 + High 4:2:2 (chroma geometry, deblocking, transforms) 15–25 h;
+- **Estimate:** H.264 High 4:2:2 (chroma geometry, deblocking, transforms) 10–20 h;
   HEVC Main 4:2:2 10 (RExt subset) 15–25 h. Doc: [codec-parity.md](codec-parity.md).
 
 ## G4. Crashes at start-up, and no test CI on pull requests
@@ -177,7 +178,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G10. Container and codec gaps on import
 
-- **Have:** E-AC-3 (Dolby Digital Plus) in MP4, MOV, Matroska and MPEG-TS (#647): independent
+- **Have:** DTS (core, DTS-HD Master Audio and High Resolution, the DTS:X bed) in Matroska, MP4
+  and MPEG-TS / Blu-ray (`cfa4-dts`, #83), the core bit-exact against ffmpeg. E-AC-3 (Dolby Digital Plus) in MP4, MOV, Matroska and MPEG-TS (#647): independent
   substream, 1–6 blocks per syncframe, spectral extension; 7.1 and other layouts beyond 5.1 from
   dependent substreams with custom channel maps. Dolby TrueHD and MLP in raw files,
   Matroska, MP4 and Blu-ray MPEG-TS (AC-3 core left out, #85) (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate): lossless,
@@ -190,14 +192,17 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
-- **Missing:** E-AC-3 JOC Atmos (#126), Atmos on real streams / in the app / binaural (#124, #123,
+  IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
+  Beds, remaps and Objects, rendered to 7.1 for playback.
+- **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
+  DTS-ES XCh and raw `.dts` import (#132), E-AC-3 JOC Atmos (#126), Atmos on real streams / in the app / binaural (#124, #123,
   #125), free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling, AVI (#598; listed as an extension but no
   demuxer), WMV / ASF, DV / DVCPRO / DV100, MPEG-4 Part 2, FLAC in MP4 (#603), camera RAW (R3D
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), JPEG 2000 in
   MXF / DCP import (the `cfa4-j2k` codestream decoder exists, not yet wired in), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
   settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 (PIZ, B44, DWA,
-  tiled, multi-part, deep), HEIF / HEIC,
+  tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
   since #821, packed 10/12-bit and Y'CbCr DPX since #841, deeper than 8 bits kept at 8); transparent
   video (#402); Sony start timecode in `rtmd` (#460); stereo 3D flag (#500); MKV multi-audio (#601).
@@ -234,15 +239,20 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 export (software or hardware), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
+- **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), MPEG-2 export / DVD / Blu-ray (the MPEG-2
+  video encoder exists in `cfa4-mpeg2v`, #98), DCP, JPEG 2000 MXF
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; export wiring #115),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
-  interlaced encoding, smart render, HEVC software encoder (HEVC exists only where a hardware
-  encoder does).
-- **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
+  AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
+  interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
+  (#171–#180).
+- **Have:** AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
+  metadata, MP4 `av01`; #95); PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
-  (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342).
-- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x265 for software HEVC encode
-  (licence: GPL-2.0-or-later, to be confirmed), x264 for a higher-quality software H.264 encoder,
+  (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); WebM (VP9 + Opus, own encoders, #149); ProRes 4444 / 4444 XQ in the export UI (#342);
+  H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
+  encoders go first where present; #94); HLS (H.264 + AAC CMAF segments, one rendition; #100, ABR ladder #230).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,
   LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
 
@@ -327,9 +337,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G20. The web app shell
 
-- **Missing:** file access, WebCodecs decode, audio in the browser build beyond what exists;
-  image-sequence export downloads drop frames in Chrome (#378).
-- **Estimate:** 40–80 h. Doc: [web.md](web.md).
+- **Dropped (2026-10-27):** CFA4 is Linux-only and the browser app `apps/cfa4-web` was removed
+  (WASM is not a release target), so this gap no longer applies.
 
 ## Revision history
 

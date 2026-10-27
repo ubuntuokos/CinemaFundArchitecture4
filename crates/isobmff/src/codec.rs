@@ -178,6 +178,8 @@ pub enum CodecConfig {
     Dnx {
         fourcc: FourCc,
     },
+    /// GoPro CineForm (`CFHD`).
+    Cineform,
     /// Advanced Professional Video (`apv1` + `apvC`).
     Apv(ApvConfig),
     Aac(AacConfig),
@@ -198,6 +200,11 @@ pub enum CodecConfig {
     /// `dec3` payload.
     Eac3 {
         dec3: Vec<u8>,
+    },
+    /// DTS (`dtsc` core, `dtsh` / `dtsl` DTS-HD): the `ddts` payload (ETSI TS 102 114 Annex E),
+    /// empty when absent.
+    Dts {
+        ddts: Vec<u8>,
     },
     /// Dolby TrueHD (`mlpa`); `dmlp` payload.
     TrueHd {
@@ -222,6 +229,7 @@ impl CodecConfig {
             CodecConfig::ProRes { .. } => "prores",
             CodecConfig::Jpeg { .. } => "mjpeg",
             CodecConfig::Dnx { .. } => "dnxhd",
+            CodecConfig::Cineform => "cfhd",
             CodecConfig::Apv(_) => "apv",
             CodecConfig::Aac(_) => "aac",
             CodecConfig::Mp3 => "mp3",
@@ -231,6 +239,7 @@ impl CodecConfig {
             CodecConfig::Flac(_) => "flac",
             CodecConfig::Ac3 { .. } => "ac3",
             CodecConfig::Eac3 { .. } => "eac3",
+            CodecConfig::Dts { .. } => "dts",
             CodecConfig::TrueHd { .. } => "truehd",
             CodecConfig::Timecode(_) => "timecode",
             CodecConfig::Unknown { .. } => "unknown",
@@ -892,6 +901,9 @@ fn is_audio_fourcc(f: &[u8; 4]) -> bool {
             | b"fLaC"
             | b"ac-3"
             | b"ec-3"
+            | b"dtsc"
+            | b"dtsh"
+            | b"dtsl"
             | b"mlpa"
             | b".mp3"
             | b".mp2"
@@ -988,6 +1000,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"apch" | b"apcn" | b"apcs" | b"apco" | b"ap4h" | b"ap4x" => CodecConfig::ProRes { fourcc: format },
                 b"jpeg" | b"mjpa" | b"mjpb" => CodecConfig::Jpeg { fourcc: format },
                 b"AVdn" | b"AVdh" => CodecConfig::Dnx { fourcc: format },
+                b"CFHD" => CodecConfig::Cineform,
                 b"apv1" => CodecConfig::Apv(ApvConfig::default()),
                 _ => unknown(),
             },
@@ -1057,6 +1070,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
             },
             b"ac-3" => CodecConfig::Ac3 { dac3: get(b"dac3").unwrap_or(&[]).to_vec() },
             b"ec-3" => CodecConfig::Eac3 { dec3: get(b"dec3").unwrap_or(&[]).to_vec() },
+            b"dtsc" | b"dtsh" | b"dtsl" => CodecConfig::Dts { ddts: get(b"ddts").unwrap_or(&[]).to_vec() },
             b"mlpa" => CodecConfig::TrueHd { dmlp: get(b"dmlp").unwrap_or(&[]).to_vec() },
             b"lpcm" | b"sowt" | b"twos" | b"in24" | b"in32" | b"fl32" | b"fl64" | b"raw " | b"NONE" => CodecConfig::Pcm(qt_pcm(f, &a)),
             b"ipcm" | b"fpcm" => {
@@ -1188,6 +1202,8 @@ fn parse_esds(p: &[u8]) -> Result<CodecConfig> {
         }
         return Ok(match oti {
             0x69 | 0x6B => CodecConfig::Mp3,
+            // DTS, DTS-HD High Resolution, DTS-HD Master Audio (as ffmpeg writes DTS in MP4)
+            0xA9..=0xAB => CodecConfig::Dts { ddts: Vec::new() },
             _ => {
                 let mut a = AacConfig::from_asc(asc);
                 a.max_bitrate = max_bitrate;
@@ -1309,6 +1325,15 @@ impl SampleEntry {
         let mut e = Self::video(fourcc, CodecConfig::Dnx { fourcc }, width, height);
         if let Some(v) = e.video.as_mut() {
             v.depth = 24;
+        }
+        e
+    }
+    /// GoPro CineForm entry (`CFHD`).
+    pub fn cineform(width: u16, height: u16) -> Self {
+        let mut e = Self::video(FourCc(*b"CFHD"), CodecConfig::Cineform, width, height);
+        if let Some(v) = e.video.as_mut() {
+            v.depth = 24;
+            v.compressor_name = "GoPro CineForm".into();
         }
         e
     }
@@ -1557,6 +1582,10 @@ impl SampleEntry {
             }
             CodecConfig::Ac3 { dac3 } => b.leaf(b"dac3", dac3),
             CodecConfig::Eac3 { dec3 } => b.leaf(b"dec3", dec3),
+            CodecConfig::Dts { .. } if format == *b"mp4a" => {
+                b.leaf(b"esds", &esds_payload(0xA9, &[], 0, 0, 0));
+            }
+            CodecConfig::Dts { ddts } if !ddts.is_empty() => b.leaf(b"ddts", ddts),
             CodecConfig::TrueHd { dmlp } => b.leaf(b"dmlp", dmlp),
             CodecConfig::Pcm(p) if !qt => {
                 let m = b.start_full(b"pcmC", 0, 0);

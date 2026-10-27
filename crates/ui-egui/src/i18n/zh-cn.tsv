@@ -2964,6 +2964,12 @@
 	Gang to Program	联动到节目
 	AAC Audio	AAC 音频
 	AAC Audio 48 kHz 320 kbps	AAC 音频 48 kHz 320 kbps
+	Opus Audio	Opus 音频
+	Opus Audio 48 kHz 160 kbps	Opus 音频 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus)，立体声 48 kHz，160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM，VP9 1920×1080，8 Mbps，Opus 128 kbps 立体声
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 音频 (.m4a)，立体声 48 kHz AAC-LC，320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 位
@@ -3445,8 +3451,10 @@
 	Main 10 (10-bit, HDR)	主要 10（10 位，HDR）
 	Main (8-bit; Main 10 for HDR sequences)	主要（8 位；HDR 序列使用主要 10）
 	Encoder	编码器
-	Hardware (H.265 has no software encoder)	硬件（H.265 无软件编码器）
-	Hardware (AV1 has no software encoder)	硬件（AV1 无软件编码器）
+	Encoding	编码
+	Software, or hardware where available	软件（可用时使用硬件）
+	Main (10-bit, HDR)	Main（10 位，HDR）
+	Main (8-bit; 10-bit for HDR sequences)	Main（8 位；HDR 序列为 10 位）
 	Text Properties	文本属性
 	Text Box Height	文本框高度
 	Paragraph Text	段落文本
@@ -3598,3 +3606,6 @@
 	Time Span (seconds)	时间跨度（秒）
 	Current Frame At	当前帧位置
 	Blend Slices	混合切片
+	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段

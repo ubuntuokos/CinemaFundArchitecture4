@@ -86,6 +86,7 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         Codec::Mp3 | Codec::Mp2 | Codec::Mp1 => fixed_packet_samples(FixedFrames::MpegAudio, &first(), out_rate),
         Codec::Ac3 => fixed_packet_samples(FixedFrames::Ac3, &first(), out_rate),
         Codec::Eac3 => fixed_packet_samples(FixedFrames::Eac3, &first(), out_rate),
+        Codec::Dts => fixed_packet_samples(FixedFrames::Dts, &first(), out_rate),
         _ => None,
     };
     if matches!(t.codec, Codec::TrueHd) {
@@ -266,6 +267,7 @@ fn sample_entry(c: &Codec, private: &[u8], v: Option<&cfa4_matroska::VideoInfo>,
         Codec::Hevc { hvcc } => SampleEntry::hevc(HevcConfig::parse(hvcc).ok()?, w, h),
         Codec::ProRes { fourcc } => SampleEntry::prores(FourCc(fourcc.unwrap_or(*b"apcn")), w, h),
         Codec::Mjpeg => SampleEntry::jpeg(w, h),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"CFHD") => SampleEntry::cineform(w, h),
         // MPEG-1/2 video: the factory finds `mp2v` (CodecPrivate holds the sequence header)
         Codec::Other(id) if id == "V_MPEG2" || id == "V_MPEG1" => {
             SampleEntry::video(FourCc(*b"mp2v"), CodecConfig::Unknown { fourcc: FourCc(*b"mp2v"), raw: private.to_vec() }, w, h)
@@ -321,6 +323,7 @@ fn codec_label(c: &Codec) -> String {
         },
         Codec::ProRes { .. } => "Apple ProRes".into(),
         Codec::Mjpeg => "Motion JPEG".into(),
+        Codec::VfwFourcc { fourcc, .. } if fourcc.eq_ignore_ascii_case(b"CFHD") => "GoPro CineForm".into(),
         Codec::Aac { .. } => "AAC".into(),
         Codec::Opus { .. } => "Opus".into(),
         Codec::Vorbis { .. } => "Vorbis".into(),
@@ -500,6 +503,7 @@ impl MkvSource {
             Codec::Mp2 => PacketDecoder::mpeg_audio(2, rate),
             Codec::Mp1 => PacketDecoder::mpeg_audio(1, rate),
             Codec::Ac3 | Codec::Eac3 => PacketDecoder::ac3(),
+            Codec::Dts => Ok(PacketDecoder::dts()),
             Codec::TrueHd => Ok(PacketDecoder::truehd()),
             // symphonia wants the STREAMINFO block body: skip `fLaC` + the 4-byte block header.
             Codec::Flac { private } => PacketDecoder::new(CODEC_TYPE_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
@@ -538,14 +542,14 @@ impl MkvSource {
                     st.decoder = Some(self.audio_decoder(c, ainfo.sample_rate)?);
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
-                // one packet, or `SeekPreRoll` worth for Opus).
+                // a packet, more for DTS, or `SeekPreRoll` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
                     d.reset();
                     let from = if a.preroll > 0 {
                         a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
                     } else {
-                        i.saturating_sub(1)
+                        i.saturating_sub(d.pre_roll_packets())
                     };
                     for j in from..i {
                         if let Ok(prev) = self.read(ti, j) {
