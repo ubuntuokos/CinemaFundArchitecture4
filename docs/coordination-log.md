@@ -6,6 +6,7 @@ Szabályok: [`coordination.md`](coordination.md). Minden kör egy sor, a legúja
 
 | Dátum | Gazda | Mi történt |
 |---|---|---|
+| 2026-10-27 | Claude | A #271 utolsó teljes futása (`3cd7b5f`) is az FFmpeg oracle-teszteken bukott, a `main` valószínűleg piros. 14:43–15:15 UTC között a gazdán kívül beolvadt: #272, #258, #256, #260 (`ubuntuokos` névvel, csak gyors CI-vel). A `main` feje `d91aaf1`. |
 | 2026-10-27 | Claude | A #271 (kodekes gyűjtő-PR, a tulajdonos kivételével) 14:35 UTC-kor beolvadt `ubuntuokos` névvel, nem a gazda által, zöld teljes CI nélkül a beolvasztott fején (a megelőző 4 teljes futás az FFmpeg oracle-teszteken bukott; az utolsó, `3cd7b5f`-en még futott). 20 PR lett „merged” (köztük a mellékágba olvasztott #105, #112, #114, #118, #128, #160). Előtte a #287 is beolvadt. A `main` új feje `514421c`; az ágak törlődtek. |
 | 2026-10-27 | Claude | Issue-felmérés: 110 nyitott issue csoportosítva. A tulajdonos jóváhagyásával lezárva 4, már a `main`-ben megoldott issue (#93 ← #168, #94 ← #181, #11 és #16 ← #17), mindegyik megjegyzéssel. |
 | 2026-10-27 | Claude | A #134-et (DTS-dekóder) a tulajdonos olvasztotta be 10:28 UTC-kor; teljes CI nem futott rajta, a következő teljes CI-futás a `main`-en lefedi. Az ága automatikusan törlődött, a #256 alapága magától `main` lett. |
