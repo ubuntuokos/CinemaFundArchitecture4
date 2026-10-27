@@ -168,9 +168,14 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
     let mid = 1u16 << (bits - 1);
     let (full, sub) = ((1, 1), (1 << sx, 1 << sy));
     let rgb = matches!(components, Components::Rgb | Components::Xyz);
+    // full-range luma (gray or Y') spans the whole code range too; chroma keeps the shift that
+    // holds its mid level
+    let luma_full = rgb || hints.full_range;
     let (mut p0, mut p1, mut p2) = match c.get(1..3) {
-        Some([p1, p2]) if colour_planes == 3 => (plane(first, bits, w, h, full, rgb), plane(p1, bits, cw, ch, sub, rgb), plane(p2, bits, cw, ch, sub, rgb)),
-        _ => (plane(first, bits, w, h, full, rgb), vec![mid; cw * ch], vec![mid; cw * ch]),
+        Some([p1, p2]) if colour_planes == 3 => {
+            (plane(first, bits, w, h, full, luma_full), plane(p1, bits, cw, ch, sub, rgb), plane(p2, bits, cw, ch, sub, rgb))
+        }
+        _ => (plane(first, bits, w, h, full, luma_full), vec![mid; cw * ch], vec![mid; cw * ch]),
     };
     match components {
         Components::Rgb => rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits),
@@ -361,6 +366,18 @@ mod tests {
             let f = to_video_frame(&image, Components::Rgb, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
             let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
             assert!(planes[0].iter().all(|&v| v == 235), "{prec}-bit white gives Y {:?}", planes[0].first());
+        }
+    }
+
+    /// Full-range gray below 8 bits keeps its white: a 1-bit 1 is 255, not the 128 a shift gives
+    /// (which `Range::Full` would show at half brightness). Limited range still shifts.
+    #[test]
+    fn low_precision_full_range_gray_keeps_its_white() {
+        let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 1, false, 1)], mct: false };
+        for (full_range, want) in [(true, 255), (false, 128)] {
+            let f = to_video_frame(&image, Components::Gray, J2kHints { full_range, ..J2kHints::default() }).unwrap_or_else(|e| panic!("{e}"));
+            let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
+            assert!(planes[0].iter().all(|&v| v == want), "full range {full_range}: {:?}", planes[0].first());
         }
     }
 
