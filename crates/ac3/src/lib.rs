@@ -12,6 +12,8 @@
 //! - Output: planar f32 at full scale ±1, channels in WAV / SMPTE order (L R C LFE Ls Rs); no
 //!   downmix.
 //!
+//! [`Encoder`] writes AC-3 and E-AC-3 (long blocks, no coupling; see `encode.rs`).
+//!
 //! E-AC-3 (bsid 11-16, Annex E): independent substream 0 and, through [`Decoder::decode_program`],
 //! the dependent substreams that carry the channels beyond 5.1 (7.1 and other layouts, §E2.3.1;
 //! further independent programs are skipped), 1 / 2 / 3 / 6 blocks per syncframe, the reduced sample rates, frame-based
@@ -22,6 +24,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod eac3;
+mod encode;
 mod program;
 mod tables;
 #[cfg(any(test, feature = "test-util"))]
@@ -31,6 +34,8 @@ pub use program::Location;
 #[cfg(any(test, feature = "test-util"))]
 #[doc(hidden)]
 pub use testutil::make_dependent_substream;
+
+pub use encode::{Encoder, FRAME_SAMPLES};
 
 use std::sync::OnceLock;
 
