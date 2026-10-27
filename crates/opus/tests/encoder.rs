@@ -119,3 +119,22 @@ fn zero_frame_after_sound_finishes_the_overlap() {
     let snr = 10.0 * (s / e.max(1e-20)).log10();
     assert!(snr > 15.0, "tail SNR {snr:.1} dB");
 }
+
+/// Regression: a silent frame reported a final range of 0 (the decoder's is the coder state), and
+/// the next frame's folding started from that wrong seed.
+#[test]
+fn silent_frames_keep_the_decoders_final_range() {
+    let fs = Encoder::FRAME_SIZE;
+    for channels in [1, 2] {
+        let mut enc = Encoder::new(channels, 128_000).unwrap();
+        let mut dec = StreamDecoder::new(48_000, channels).unwrap();
+        let tone: Vec<f32> = (0..fs * channels).map(|i| 0.3 * (i as f32 * 0.047).sin()).collect();
+        let silence = vec![0.0; fs * channels];
+        let mut out = Vec::new();
+        for (f, frame) in [&[][..], &silence, &tone, &silence, &silence, &tone, &tone].into_iter().enumerate() {
+            let pkt = enc.encode(frame);
+            dec.decode_interleaved(Some(&pkt), &mut out).unwrap();
+            assert_eq!(dec.final_range(), enc.final_range(), "{channels} ch, frame {f}");
+        }
+    }
+}

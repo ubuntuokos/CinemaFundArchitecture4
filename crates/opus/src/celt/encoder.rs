@@ -114,9 +114,9 @@ impl CeltEncoder {
             self.buf = buf;
             self.consec_transient = 0;
             self.frames += 1;
-            let out = enc.done();
-            self.rng = 0;
-            return out;
+            // the decoder's final range, and the next frame's folding seed
+            self.rng = enc.rng();
+            return enc.done();
         }
         // No pitch post-filter.
         if enc.tell() + 16 <= total_bits {
