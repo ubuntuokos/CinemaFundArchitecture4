@@ -457,7 +457,8 @@ class CreditsDialog(QDialog):
             **self.params(),
             "page": page,
             "at": self.position.value() / 100.0,
-            "width": PREVIEW_WIDTH,
+            # as wide as the picture area (sharp on large windows), within reason
+            "width": max(PREVIEW_WIDTH // 2, min(960, self.picture.width() - 8)),
             "guides": self.guides.isChecked(),
             "grid": self.grid.isChecked(),
         }

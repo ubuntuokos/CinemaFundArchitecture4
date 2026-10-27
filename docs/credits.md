@@ -19,13 +19,26 @@ leading `@` is allowed, and Hungarian names work too.
 | Tail | Láb | Text after the body (e.g. a character name) |
 | Vertical Gap | Térköz | Space before the next block: `2` (units) or `40px`. An empty row = 1 unit |
 | Content Style | Stílus | Style of this and the following blocks |
-| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels |
+| Spine Position | Gerinc | Horizontal offset of the following blocks from the centre, pixels; `450 parallel` (`párhuzamos`) starts a column beside the previous one, from the same top |
 | Page Style | Oldal | Starts a new page with that style (`Scroll`, `Card`, or your own) |
 | Page Runtime | Játékidő | Page length: `00:00:12:00`, `12s`, `300f`. On a scroll page the speed is kept and the gaps between blocks stretch or shrink to fit (up to 20-fold); if they cannot, the speed changes, with a warning |
 | Page Gap | Oldalköz | Empty time after the page; negative overlaps the next page |
 
 A new head, an empty row, a new style or a new page starts a new block. `{{Blank}}` is an empty
 line inside a block. Line breaks inside a cell are kept.
+
+**Letter styles inside a cell.** `{{Style Bold}}Kiss{{Style}} Anna` sets *Kiss* in bold: a
+`{{Style Name}}` tag (`{{Stílus Név}}`) switches the text after it to that inline style until the
+next style tag or the end of the line, and `{{Style}}` alone switches back. Built-in: `Bold`
+(`Félkövér`), `Italic` (`Dőlt`), `Caps` (`Nagybetűs`), `Underline` (`Aláhúzott`); your own are
+`inlineStyles` in the styling (`font`, `fontStyle`, `size`, `color`, `tracking`, `allCaps`,
+`underline`, `baselineShift`; only what a style names changes). They become the text layer's own
+character styles, editable in Essential Graphics. An unknown name is a warning.
+
+**Parallel columns.** Blocks with a spine position followed by `parallel` stand beside the
+column before them, starting at the same height: e.g. *Camera* at `-450`, then *Sound* at
+`450 parallel`. The column set ends at the next spine position without `parallel`; what follows
+goes below the longest column. On a roll with a `Page Runtime`, the first column's gaps stretch.
 
 **Files.** `.ods` (LibreOffice), `.xlsx` (Excel, LibreOffice, Google Sheets download) and CSV /
 TSV (comma, semicolon or tab). A workbook's first sheet is used unless `sheet` names another (by
@@ -52,7 +65,8 @@ Sizes are pixels of a 1080-pixel-high frame and scale with the sequence.
   (120 frames, 12-frame fades) and `Crawl` (a one-line ticker near the bottom, right to left,
   4 px per frame).
 - **Content styles:** `Gutter` (role left of the centre, names right; the default), `Centered`,
-  `Heading`, `Title`, `Grid` (3 columns), `Bullets` (names run on with •), `Paragraphs`.
+  `Heading`, `Title`, `Grid` (3 columns), `Bullets` (names run on with •), `Paragraphs`,
+  `Leaders` (roles in one even left column, dots to the names).
 
 Your own styles are JSON (`styling` parameter, or a `.json` path). `graphics.credits.styles`
 returns every built-in style as a starter file to copy and edit:
@@ -76,7 +90,10 @@ Content style fields: `orientation` (`horizontal` = head beside the body, `verti
 `layout` (`grid`, `flow`, `paragraphs`), `columns`, `align` (`left`, `center`, `right`), `body` /
 `head` / `tail` letter styles (`font`, `fontStyle`, `size`, `color`, `tracking`, `allCaps`,
 `leading`), `headGap`, `tailGap`, `columnGap`, `paragraphGap`, `wrapWidth`, `flowSeparator`,
-`margin`. Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
+`margin`, and for the horizontal orientation `headAlign` (`right` by default; `left` makes a
+column), `harmonizeHeads` (every head of the style on a page gets the widest one's width),
+`leader` (e.g. `" ."`: repeated from the head to the body, on the head's line, in its letter
+style) and `leaderGap` (space on either side of the dots, default 16). Page style fields: `behaviour` (`scroll`, `card`, `crawl`), `scrollPxPerFrame` (rolls
 and crawls), `cardFrames`, `fadeInFrames`, `fadeOutFrames`, `gapAfterFrames`, `crawlLine`,
 `crawlGap`, `background`, `transition`, `transitionFrames` (see below).
 
@@ -230,6 +247,6 @@ broken JSON are errors.
 
 ## Not yet
 
-Online sheets (download as `.xlsx`), inline letter styles, videos in the credits (inside a
-page; a video *background* works), parallel and hooked spines, leaders, head-width
-harmonisation, looping a short background video, transitions on pictures.
+Online sheets (download as `.xlsx`), videos in the credits (inside a page; a video *background*
+works), portraits beside names, hooked spines, body-width harmonisation, looping a short
+background video, transitions on pictures.
