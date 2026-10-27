@@ -44,6 +44,8 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | AAC (LC, HE, LATM) | decode + encode | own decoder (LC, HE core), LATM | own LC encoder | loudness oracle vs ffmpeg | 90% | 3–5 h |
 | AC-3 | decode (licensed) | own decoder (ATSC A/52) | none | conformance | 80% | — |
 | E-AC-3 (Dolby Digital Plus) | decode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension, 7.1 and other layouts from dependent substreams with custom channel maps; **no** adaptive hybrid transform or enhanced coupling | none | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS); 7.1 72–86 dB | 85% | 5–10 h |
+| E-AC-3 (Dolby Digital Plus) | decode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension; **no** adaptive hybrid transform, enhanced coupling or 7.1 dependent substreams (plays the 5.1 core) | none | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS) | 75% | 10–20 h |
+| Dolby TrueHD, MLP | decode | `cfa4-truehd`, ported from the Apache-2.0 `truehd` crate (G10): 2-, 6- and 8-channel presentations (7.1 / 5.1 bed of Atmos streams), 44.1–192 kHz, raw `.thd` / `.mlp`, Matroska, MP4; **no** Atmos object rendering, no MPEG-TS / Blu-ray (AC-3 core interleaved) | none | bit-exact vs ffmpeg and the encoder input (mono to 5.1, 48 / 96 kHz), also after a seek; 7.1 untested (no free encoder) | 80% | — |
 | MP3 / MP2 | decode + MP3 encode | MP3: symphonia (MPL-2.0); MP1 / MP2: own decoder (ISO/IEC 11172-3 / 13818-3, #809), also the bit rate / mode combinations ffmpeg writes by default (mono 384 kbit/s); in raw, MP4, MOV (#800), Matroska, TS, PS | **none** | MP1 / MP2: SNR vs ffmpeg 73–84 dB; MP2 in MP4 / MOV within 1e-4 of ffmpeg, also after a seek (#800) | 65% | 10–20 h (MP3 encoder) |
 | Opus | — (not a Premiere import format) | own decoder, RFC 8251 range-exact | none | conformance vectors | ahead | — |
 | FLAC, ALAC, Vorbis | partial | decode (symphonia); FLAC in MP4 silent (#603) | none | — | 70% | 3–6 h |
@@ -62,6 +64,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | Dolby TrueHD / MLP decode (`cfa4-truehd`) |
 | 2026-10-26 | minor | JPEG 2000 Part 1 decoder (`cfa4-j2k`) |
 | 2026-10-25 | minor | E-AC-3 7.1 from dependent substreams |
 | 2026-10-11 | minor | CinemaDNG / DNG decode (#1065) |

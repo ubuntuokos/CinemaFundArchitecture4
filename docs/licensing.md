@@ -131,7 +131,7 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
 
 ## 6. Dependency checks
 
