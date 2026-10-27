@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -27,6 +27,7 @@ from PySide6.QtGui import (
     QPainterPath,
     QPaintEvent,
     QPen,
+    QPolygonF,
     QWheelEvent,
 )
 from PySide6.QtWidgets import (
@@ -53,6 +54,7 @@ from .info import marker_rgb
 from .media_browser import FILES_MIME, dropped_files
 from .monitor_view import SOURCE_MIME, source_payload
 from .timeline_media import TimelineMedia
+from .transport import icon_color, transport_icon
 
 ITEM_MIME = "application/x-cfa4-item"
 # egui's trim bracket colours (trim_monitor.rs)
@@ -160,6 +162,54 @@ def as_int(v: Any, default: int = 0) -> int:
     return v if isinstance(v, int) and not isinstance(v, bool) else default
 
 
+THUMBNAIL_MODES = (("head", N_("Head")), ("headAndTail", N_("Head and Tail")), ("continuous", N_("Continuous")))
+MAX_THUMBNAIL_TILES = 256
+
+
+def thumbnail_tiles(
+    mode: str, x0: float, x1: float, tile_w: float, visible: tuple[float, float], dur: int, frame: int
+) -> list[tuple[float, int]]:
+    """egui's ``thumbnail_tiles``: the video thumbnails of a clip whose picture spans ``x0..x1``,
+    for frames ``tile_w`` wide: each tile's left edge and its offset into the clip (``dur`` long).
+    Only tiles meeting ``visible`` are listed; continuous tiles sit on a grid from the clip's head
+    and a clip too narrow for two shows its head only."""
+    width = x1 - x0
+    if not (abs(x0) < 1e12 and 0 < width < 1e12 and 1 <= tile_w < 1e6 and math.isfinite(x0)):
+        return []
+    last = max(0, dur - frame)
+
+    def offset_at(x: float) -> int:
+        return min(last, max(0, round((x - x0) / width * dur)))
+
+    head = (x0, 0)
+    if mode == "headAndTail":
+        tiles = [head, (x1 - tile_w, last)] if width >= 2 * tile_w else [head]
+    elif mode == "continuous":
+        first = int(max(0.0, visible[0] - x0) // tile_w)
+        end = max(1, math.ceil((min(visible[1], x1) - x0) / tile_w))
+        tiles = [(x0 + k * tile_w, offset_at(x0 + k * tile_w)) for k in range(first, min(end, first + MAX_THUMBNAIL_TILES))]
+    else:
+        tiles = [head]
+    return [(x, t) for x, t in tiles if x < visible[1] and x + tile_w > visible[0]]
+
+
+def source_time_at(clip: dict[str, Any], offset: int) -> int:
+    """The media time ``offset`` into a clip shows (egui's ``TrackItem::source_time_at``): its
+    held frame, or the source in point moved on at the clip's speed (backwards when reversed)."""
+    hold = clip.get("frameHold")
+    if isinstance(hold, int) and not isinstance(hold, bool):
+        return hold
+    speed = clip.get("speed")
+    speed = abs(float(speed)) if isinstance(speed, (int, float)) and not isinstance(speed, bool) and abs(speed) < 1e6 else 1.0
+    if not math.isfinite(speed):
+        speed = 1.0
+    source_in = as_int(clip.get("sourceIn"))
+    scaled = round(offset * speed)
+    if clip.get("reverse") is True:
+        return source_in + round(as_int(clip.get("duration")) * speed) - scaled - 1
+    return source_in + scaled
+
+
 def duration_frames(text: str, current: int, frame: int, drop: bool) -> int | None:
     """A typed transition duration in frames, as egui's field reads one: a whole number is
     frames, otherwise timecode (``1.00`` is a second), otherwise a calculation in frames
@@ -230,6 +280,10 @@ class TimelineCanvas(QWidget):
         self.video_h = VIDEO_H  # every video track's height (egui's video_track_h)
         self.audio_h = AUDIO_H
         self.saved_heights: tuple[int, int] | None = None  # before Expand / Minimize All Tracks
+        # Timeline Display Settings (egui's wrench menu)
+        self.show_thumbnails = True
+        self.thumbnail_mode = "head"
+        self.show_waveforms = True
         self.playhead = 0
         self.tool = "selection"
         self._drag: Drag | None = None
@@ -526,6 +580,8 @@ class TimelineCanvas(QWidget):
                     r = self.transition_rect(row, x)
                     if r.right() >= HEADER_W and r.left() <= self.width():
                         self._paint_transition(p, r, x, row.kind == "audio", x.get("id") in chosen)
+        for row in self.rows:
+            self._paint_through_edits(p, row)
         self._paint_edit_points(p)
         if self._effect_target:  # egui's: the clip outlined, a transition's edge marked
             row, clip, edge = self._effect_target
@@ -832,14 +888,10 @@ class TimelineCanvas(QWidget):
             return
         item = clip.get("item")
         if row.kind == "video":
-            img = self.media.thumbnail(item, int(clip.get("sourceIn") or 0), int(body.height()))
-            if img is not None and not img.isNull():
-                w = min(body.width(), body.height() * img.width() / max(1, img.height()))
-                target = QRectF(body.left(), body.top(), w, body.height())
-                p.save()
-                p.setClipRect(body.intersected(QRectF(HEADER_W, 0, self.width(), self.height())))
-                p.drawImage(target, img)
-                p.restore()
+            if self.show_thumbnails and clip.get("enabled") is not False:
+                self._paint_thumbnails(p, clip, body)
+            return
+        if not self.show_waveforms:
             return
         start, end = int(clip.get("sourceIn") or 0), int(clip.get("sourceOut") or 0)
         peaks = self.media.waveform(item, min(start, end), max(start, end), clip.get("audioStream", 0))
@@ -865,6 +917,97 @@ class TimelineCanvas(QWidget):
             lo = min(q[0] for q in peaks[i0:i1])
             hi = max(q[1] for q in peaks[i0:i1])
             p.drawLine(x, int(mid - max(0.0, min(1.0, hi)) * half), x, int(mid - max(-1.0, min(0.0, lo)) * half))
+
+    def _paint_thumbnails(self, p: QPainter, clip: dict[str, Any], body: QRectF) -> None:
+        """The head frame, head and tail, or frames side by side (Display Settings), each as wide
+        as the picture's aspect at the body's height."""
+        item, h = clip.get("item"), int(body.height())
+        frame = self.frame_ticks()
+        head = self.media.thumbnail(item, (source_time_at(clip, 0) // frame) * frame, h)
+        if head is None or head.isNull() or head.height() <= 0:
+            return
+        tile_w = body.height() * head.width() / head.height()
+        shown = body.intersected(QRectF(HEADER_W, 0, max(0, self.width() - HEADER_W), self.height()))
+        if shown.isEmpty():
+            return
+        tiles = thumbnail_tiles(self.thumbnail_mode, body.left(), body.right(), tile_w, (shown.left(), shown.right()),
+                                as_int(clip.get("duration")), frame)
+        p.save()
+        p.setClipRect(shown)
+        for x, offset in tiles:
+            img = head if offset == 0 else self.media.thumbnail(item, (source_time_at(clip, offset) // frame) * frame, h)
+            if img is not None and not img.isNull():
+                p.drawImage(QRectF(x, body.top(), tile_w, body.height()), img)
+        p.restore()
+
+    def through_edit_times(self, row: Row) -> list[tuple[int, int]]:
+        """(time, right clip) of the row's through edits, when Show Through Edits is on."""
+        seq = self.sequence or {}
+        if (seq.get("toggles") or {}).get("showThroughEdits") is not True:
+            return []
+        starts = {c.get("clip"): as_int(c.get("start")) for c in row.track.get("items") or [] if isinstance(c, dict)}
+        return [(starts[e["right"]], e["right"]) for e in seq.get("throughEdits") or []
+                if isinstance(e, dict) and e.get("right") in starts and e.get("left") in starts]
+
+    def _paint_through_edits(self, p: QPainter, row: Row) -> None:
+        """egui's bow-tie on a cut between continuous pieces of one clip, over a dashed line."""
+        for t, _right in self.through_edit_times(row):
+            x = self.x_of(t)
+            if x < HEADER_W - 6 or x > self.width() + 6:
+                continue
+            p.setPen(QPen(QColor(255, 255, 255, 140), 1))
+            y = row.top + 2.0
+            while y < row.top + row.height - 2:
+                p.drawLine(QPointF(x, y), QPointF(x, min(y + 3.0, row.top + row.height - 2.0)))
+                y += 6.0
+            cy = max(row.top + row.height / 2, row.top + 10.0)
+            p.setPen(QPen(QColor(0, 0, 0), 0.5))
+            p.setBrush(QColor(255, 255, 255, 230))
+            p.drawPolygon(QPolygonF([QPointF(x - 4, cy - 4), QPointF(x, cy), QPointF(x - 4, cy + 4)]))
+            p.drawPolygon(QPolygonF([QPointF(x + 4, cy - 4), QPointF(x + 4, cy + 4), QPointF(x, cy)]))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+
+    def display_menu(self) -> QMenu:
+        """egui's Timeline Display Settings (the toolbar's wrench)."""
+        menu = QMenu(self)
+        menu.setObjectName("timeline.settings")
+        a = menu.addAction(tr("Show Video Thumbnails"))
+        a.setObjectName("timeline.settings.showThumbnails")
+        a.setCheckable(True)
+        a.setChecked(self.show_thumbnails)
+        a.toggled.connect(lambda on: self._set_display(show_thumbnails=on))
+        for mode, label in THUMBNAIL_MODES:
+            m = menu.addAction("    " + tr(label))
+            m.setObjectName(f"timeline.settings.thumbnails.{mode}")
+            m.setCheckable(True)
+            m.setChecked(self.thumbnail_mode == mode)
+            m.setEnabled(self.show_thumbnails)
+            m.triggered.connect(lambda _c=False, md=mode: self._set_display(thumbnail_mode=md))
+        a = menu.addAction(tr("Show Audio Waveform"))
+        a.setObjectName("timeline.settings.showWaveforms")
+        a.setCheckable(True)
+        a.setChecked(self.show_waveforms)
+        a.toggled.connect(lambda on: self._set_display(show_waveforms=on))
+        menu.addSeparator()
+        a = menu.addAction(tr("Show Through Edits"))
+        a.setObjectName("timeline.settings.showThroughEdits")
+        a.setCheckable(True)
+        a.setChecked(((self.sequence or {}).get("toggles") or {}).get("showThroughEdits") is True)
+        a.toggled.connect(lambda on: self.command.emit("sequence.showThroughEdits", {"on": on}))
+        menu.addSeparator()
+        # the menu's own Expand / Minimize: fixed heights, as egui's wrench menu
+        a = menu.addAction(tr("Expand All Tracks"))
+        a.setObjectName("timeline.settings.expandAllTracks")
+        a.triggered.connect(lambda _c=False: self.set_track_heights(64, 64))
+        a = menu.addAction(tr("Minimize All Tracks"))
+        a.setObjectName("timeline.settings.minimizeAllTracks")
+        a.triggered.connect(lambda _c=False: self.set_track_heights(26, 26))
+        return menu
+
+    def _set_display(self, **kw: Any) -> None:
+        for k, v in kw.items():
+            setattr(self, k, v)
+        self.update()
 
     # ----- mouse -----
     def voiceover_menu(self, row: Row) -> QMenu:
@@ -1418,6 +1561,18 @@ class TimelineCanvas(QWidget):
         e.acceptProposedAction()
 
 
+# egui's timeline toolbar: (key, icon, tip, command run on a click)
+TOOLBAR = (
+    ("nest", "nest", N_("Insert and overwrite sequences as nests or individual clips"), "sequence.nestSequences"),
+    ("snap", "magnet", N_("Snap in Timeline (S)"), "sequence.snap"),
+    ("linked", "link", N_("Linked Selection"), "sequence.linkedSelection"),
+    ("captions", "captions", N_("Caption track options"), ""),
+    ("marker", "marker", N_("Add Marker (M)"), "markers.add"),
+    ("settings", "wrench", N_("Timeline Display Settings"), ""),
+)
+TOOLBAR_TOGGLES = {"nest": "nest", "snap": "snapping", "linked": "linkedSelection"}  # key → inspect toggle
+
+
 class TimelinePanel(QWidget):
     """Toolbar (tools, zoom) + canvas + horizontal scroll bar."""
 
@@ -1429,6 +1584,24 @@ class TimelinePanel(QWidget):
         bar.setContentsMargins(4, 2, 4, 2)
         self.title = QLabel(tr("Timeline"))
         bar.addWidget(self.title)
+        # egui's toolbar: Nest, Snap, Linked Selection (on: pressed), Captions, Add Marker, the
+        # Timeline Display Settings menu
+        self.toggles: dict[str, QToolButton] = {}
+        for key, icon, tip, cid in TOOLBAR:
+            b = QToolButton(self)
+            b.setObjectName(f"timeline.toggle.{key}")
+            b.setToolTip(tr(tip))
+            b.setAutoRaise(True)
+            b.setIcon(transport_icon(icon, icon_color(self)))
+            if key in TOOLBAR_TOGGLES:
+                b.setCheckable(True)
+            if key == "settings":
+                b.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+                b.clicked.connect(lambda _c=False, btn=b: self._show_display_menu(btn))
+            elif cid:
+                b.clicked.connect(lambda _c=False, c=cid: self.canvas.command.emit(c, {}))
+            self.toggles[key] = b
+            bar.addWidget(b)
         bar.addStretch(1)
         for text, slot, name in (
             ("−", lambda: self.canvas.zoom(0.8), "zoomOut"),
@@ -1458,6 +1631,19 @@ class TimelinePanel(QWidget):
         layout.addLayout(middle, 1)
         layout.addWidget(self.hscroll)
 
+    def changeEvent(self, e: QEvent) -> None:
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.PaletteChange:  # a theme change: the icons follow the text
+            for key, icon, _tip, _cid in TOOLBAR:
+                self.toggles[key].setIcon(transport_icon(icon, icon_color(self)))
+
+    def _show_display_menu(self, button: QToolButton) -> None:
+        menu = self.canvas.display_menu()
+        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.canvas.last_menu = menu
+        menu.destroyed.connect(lambda _o=None, m=menu: self.canvas._menu_gone(m))
+        menu.popup(button.mapToGlobal(button.rect().bottomLeft()))
+
     def set_tool(self, tool: str) -> None:
         """The Tools panel picked ``tool`` (it decides what a drag on the timeline does)."""
         self.canvas.tool = tool
@@ -1465,6 +1651,12 @@ class TimelinePanel(QWidget):
 
     def set_sequence(self, seq: dict[str, Any] | None) -> None:
         self.canvas.set_sequence(seq)
+        toggles = (seq or {}).get("toggles") or {}
+        for key, field in TOOLBAR_TOGGLES.items():
+            b = self.toggles[key]
+            b.blockSignals(True)
+            b.setChecked(toggles.get(field) is True)
+            b.blockSignals(False)
         self.title.setText(f"{tr('Timeline')}: {seq.get('name')}" if seq else tr("Timeline"))
         self._sync_scroll()
         self.canvas.set_scroll_y(self.canvas.scroll_y)  # tracks added or removed

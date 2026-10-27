@@ -3805,6 +3805,146 @@ def test_real_engine_timeline_clip_and_gap_menus_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+def test_timeline_thumbnail_tiles_as_egui():
+    """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
+    continuous tiles on a grid from the head, only the visible ones; source_time_at follows the
+    clip's speed, reverse and frame hold."""
+    from cfa4_qt.panels.timeline import MAX_THUMBNAIL_TILES, source_time_at, thumbnail_tiles
+
+    vis = (0.0, 1000.0)
+    assert thumbnail_tiles("head", 100, 400, 50, vis, 3000, 10) == [(100, 0)]
+    assert thumbnail_tiles("headAndTail", 100, 400, 50, vis, 3000, 10) == [(100, 0), (350, 2990)]
+    assert thumbnail_tiles("headAndTail", 100, 190, 50, vis, 3000, 10) == [(100, 0)]  # no room for two
+    tiles = thumbnail_tiles("continuous", 100, 400, 50, vis, 3000, 10)
+    assert [x for x, _ in tiles] == [100, 150, 200, 250, 300, 350]
+    assert [t for _, t in tiles] == [0, 500, 1000, 1500, 2000, 2500]
+    # scrolled: only the tiles in view, still on the head's grid
+    assert [x for x, _ in thumbnail_tiles("continuous", 100, 400, 50, (260.0, 330.0), 3000, 10)] == [250, 300]
+    assert len(thumbnail_tiles("continuous", 0, 1e9, 1, (0.0, 1e9), 10**9, 1)) == MAX_THUMBNAIL_TILES
+    for bad in (float("nan"), float("inf"), 1e300):
+        assert thumbnail_tiles("continuous", bad, 400, 50, vis, 3000, 10) == []
+        assert thumbnail_tiles("continuous", 0, 400, bad, vis, 3000, 10) == []
+    assert thumbnail_tiles("head", 100, 100, 50, vis, 3000, 10) == []
+    clip = {"sourceIn": 1000, "duration": 600, "speed": 2.0, "reverse": False}
+    assert source_time_at(clip, 100) == 1200
+    assert source_time_at({**clip, "reverse": True}, 100) == 1000 + 1200 - 200 - 1
+    assert source_time_at({**clip, "frameHold": 1500}, 100) == 1500
+    assert source_time_at({**clip, "speed": float("nan")}, 100) == 1100
+    assert source_time_at({**clip, "speed": 1e300}, 100) == 1100
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_toolbar_and_display_settings_as_egui(app, tmp_path: Path):
+    """egui's timeline toolbar: Nest, Snap and Linked Selection pressed as the engine has them
+    (a click toggles), Add Marker; the wrench's Display Settings: thumbnails (Head, Head and Tail,
+    Continuous), Show Audio Waveform, Show Through Edits (bow-ties on through edits), Expand /
+    Minimize All Tracks."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel, canvas = win.timeline, win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        names = [b.objectName() for b in panel.toggles.values()]
+        assert names == [f"timeline.toggle.{k}" for k in ("nest", "snap", "linked", "captions", "marker", "settings")]
+        toggles = canvas.sequence["toggles"]
+        assert panel.toggles["snap"].isChecked() is toggles["snapping"]
+        assert panel.toggles["linked"].isChecked() is toggles["linkedSelection"]
+        assert panel.toggles["nest"].isChecked() is toggles["nest"]
+        panel.toggles["snap"].click()
+        assert wait_until(app, lambda: canvas.sequence["toggles"]["snapping"] is not toggles["snapping"], 10_000)
+        assert wait_until(app, lambda: panel.toggles["snap"].isChecked() is not toggles["snapping"], 10_000)
+        markers = len(canvas.sequence["markers"])
+        panel.toggles["marker"].click()
+        assert wait_until(app, lambda: len(canvas.sequence["markers"]) == markers + 1, 10_000)
+
+        # thumbnails: record what the canvas asks for, at a zoom where clips are wide
+        asked: list[int] = []
+        img = QtGui.QImage(32, 18, QtGui.QImage.Format.Format_RGB32)
+        img.fill(QtGui.QColor("#3080c0"))
+        canvas.media.thumbnail = lambda item, t, h: (asked.append(t), img)[1]
+        canvas.zoom_to_fit()
+
+        def times(mode: str) -> set[int]:
+            canvas.thumbnail_mode = mode
+            asked.clear()
+            canvas.grab()
+            return set(asked)
+
+        def menu_action(name: str) -> QtGui.QAction:
+            panel.toggles["settings"].click()
+            assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+            return next(a for a in canvas.last_menu.actions() if a.objectName() == name)
+
+        head = times("head")
+        assert head and len(times("headAndTail")) > len(head)
+        assert len(times("continuous")) > len(times("headAndTail"))
+        canvas.thumbnail_mode = "head"
+        act = menu_action("timeline.settings.thumbnails.continuous")
+        assert act.isEnabled() and not act.isChecked()
+        act.trigger()
+        canvas.last_menu.close()
+        assert canvas.thumbnail_mode == "continuous"
+        act = menu_action("timeline.settings.showThumbnails")
+        act.trigger()
+        canvas.last_menu.close()
+        assert canvas.show_thumbnails is False and times("continuous") == set()
+        menu = menu_action("timeline.settings.showThumbnails").parent()
+        assert not next(a for a in menu.actions() if a.objectName() == "timeline.settings.thumbnails.head").isEnabled()
+        menu.close()
+        # waveforms off: no peaks asked for
+        peaks: list[tuple] = []
+        canvas.media.waveform = lambda *a: (peaks.append(a), None)[1]
+        canvas.grab()
+        assert peaks
+        act = menu_action("timeline.settings.showWaveforms")
+        act.trigger()
+        canvas.last_menu.close()
+        peaks.clear()
+        canvas.grab()
+        assert canvas.show_waveforms is False and not peaks
+        # Show Through Edits: razor a clip, the cut is marked once the engine says so
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        first = v1.track["items"][0]
+        mid = first["start"] + first["duration"] // 2
+        win.execute("timeline.razor", {"time": mid, "clip": first["clip"]})
+        assert wait_until(app, lambda: canvas.sequence.get("throughEdits"), 10_000)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        assert canvas.through_edit_times(v1) == []
+        act = menu_action("timeline.settings.showThroughEdits")
+        assert not act.isChecked()
+        act.trigger()
+        canvas.last_menu.close()
+        assert wait_until(app, lambda: canvas.sequence["toggles"]["showThroughEdits"] is True, 10_000)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        cuts = canvas.through_edit_times(v1)
+        assert [t for t, _r in cuts] == [mid]
+        x = int(canvas.x_of(mid))
+        cy = int(max(v1.top + v1.height / 2, v1.top + 10))
+        px = canvas.grab().toImage().pixelColor(x - 2, cy)
+        assert px.red() > 200 and px.green() > 200 and px.blue() > 200, px.name()
+        # the wrench's own Expand / Minimize
+        menu_action("timeline.settings.expandAllTracks").trigger()
+        canvas.last_menu.close()
+        assert (canvas.video_h, canvas.audio_h) == (64, 64)
+        menu_action("timeline.settings.minimizeAllTracks").trigger()
+        canvas.last_menu.close()
+        assert (canvas.video_h, canvas.audio_h) == (26, 26) and tl.DRAG_MIN_H <= 26
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_track_heights_as_egui(app, tmp_path: Path):
     """egui's track heights: dragging a header's bottom edge (or the top video track's top edge)

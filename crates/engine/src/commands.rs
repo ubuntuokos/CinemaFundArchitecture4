@@ -4673,7 +4673,7 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
             "label": t.label.map(|l| l.name()),
             "items": t.items.iter().map(|i| json!({
                 "clip": i.id.0, "item": i.item.0, "name": i.name, "start": i.start.0, "duration": i.duration.0,
-                "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse,
+                "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse, "frameHold": i.frame_hold.map(|t| t.0),
                 "end": i.end().0, "endFrame": rate.frame_at(i.end()), "sourceOut": i.source_out().0, "gainDb": i.gain_db, "audioStream": i.audio_stream,
                 "enabled": i.enabled, "link": i.link, "label": i.label.name(),
                 // the clip menu's Multi-Camera submenu: nested sequences, their switch and cameras
@@ -4713,6 +4713,8 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         } else {
             Value::Null
         },
+        // the timeline toolbar's toggles and Display Settings (session-wide)
+        "toggles": {"snapping": s.state.snapping, "linkedSelection": s.state.linked_selection, "nest": !s.state.sequences_as_clips, "showThroughEdits": s.state.show_through_edits},
     })
 }
 
