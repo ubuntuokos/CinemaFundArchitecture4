@@ -90,6 +90,8 @@ pub struct PageOut {
     /// The transition into the next page (video transition id and length), when it has one
     /// and the pages touch.
     pub transition: Option<(String, Tick)>,
+    /// Length of the transition from the previous page into this one (zero for none).
+    pub transition_in: Tick,
 }
 
 /// Laid-out credits.
@@ -800,6 +802,7 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
         spines,
         background,
         transition,
+        transition_in: Tick::ZERO,
     })
 }
 
@@ -823,8 +826,10 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
     let n = credits.pages.len();
     let mut pages: Vec<PageOut> = Vec::with_capacity(n);
     for (i, p) in credits.pages.iter().enumerate() {
-        let cut_in = pages.last().is_some_and(|x| x.transition.is_some());
-        pages.push(lay_page(&mut ctx, styling, p, frame, i, i + 1 == n, cut_in)?);
+        let incoming = pages.last().and_then(|x| x.transition.as_ref().map(|(_, d)| *d));
+        let mut page = lay_page(&mut ctx, styling, p, frame, i, i + 1 == n, incoming.is_some())?;
+        page.transition_in = incoming.unwrap_or(Tick::ZERO);
+        pages.push(page);
     }
     Ok(Laid { pages, warnings: ctx.warnings })
 }
