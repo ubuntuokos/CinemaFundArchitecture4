@@ -430,3 +430,33 @@ fn a_credits_file_elsewhere_keeps_its_picture_folder_and_big_sheets_save() {
     assert!(std::fs::metadata(&big).unwrap().len() < 1 << 20);
     assert!(s.execute("graphics.credits.preview", json!({"path": big})).is_ok());
 }
+
+#[test]
+fn validate_reports_issues_for_sheets_and_placed_credits() {
+    let mut s = demo("credits-validate");
+    let sheet = "Head,Body,Content Style,Page Style\nCast,Kiss Anna,Gutter,Scroll\n,Kiss Ánna,,\n,{{Blank}},,\n,Bob,,\n";
+    let v = s
+        .execute("graphics.credits.validate", json!({"csv": sheet, "styling": {"contentStyles": [{"name": "Gutter", "body": {"font": "No Such Font"}}]}}))
+        .unwrap();
+    let codes: Vec<&str> = v["issues"].as_array().unwrap().iter().filter_map(|i| i["code"].as_str()).collect();
+    assert!(codes.contains(&"missing-font") && codes.contains(&"name-spelling"), "{v}");
+    assert!(v["errors"].as_u64().unwrap() >= 1);
+    // the bundled font has Hungarian letters: no missing-glyphs for ő/ű in the default style
+    let v = s.execute("graphics.credits.preview", json!({"csv": "Head,Body\nZeneszerző,Hegedűs Hanna\n"})).unwrap();
+    let codes: Vec<&str> = v["issues"].as_array().unwrap().iter().filter_map(|i| i["code"].as_str()).collect();
+    assert!(!codes.contains(&"missing-glyphs") && !codes.contains(&"missing-font"), "{v}");
+    // placed credits: checked as accepted
+    let placed = s.execute("graphics.credits.import", json!({"csv": SHEET})).unwrap();
+    let page = placed["clips"][0]["clip"].as_u64().unwrap();
+    let v = s.execute("graphics.credits.validate", json!({"clip": page})).unwrap();
+    assert!(v["issues"].is_array(), "{v}");
+    assert!(s.execute("graphics.credits.validate", json!({"clip": 999_999})).is_err());
+}
+
+#[test]
+fn the_example_credits_pass_the_checks() {
+    let mut s = demo("credits-validate-example");
+    let v = s.execute("graphics.credits.validate", json!({"csv": include_str!("../../credits/examples/credits.csv")})).unwrap();
+    let serious: Vec<&Value> = v["issues"].as_array().unwrap().iter().filter(|i| i["severity"] != "info").collect();
+    assert!(serious.is_empty(), "{serious:#?}");
+}

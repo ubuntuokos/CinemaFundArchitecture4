@@ -3031,8 +3031,10 @@ def test_real_engine_credits_window(app, tmp_path: Path):
         assert wait_until(app, lambda: dlg.pages.rowCount() == 2, 30_000), dlg.status.text()
         assert dlg.pages.item(0, 1).text() and dlg.pages.item(1, 2).text()
         assert dlg.pages.item(0, 2).text() == "0:04.0"
-        # the missing picture is a warning with its row
-        assert dlg.warnings.count() == 1 and "6" in dlg.warnings.item(0).text()
+        # the missing picture is a warning with its row (the checks may list more)
+        texts = [dlg.warnings.item(i).text() for i in range(dlg.warnings.count())]
+        assert any("6" in t and "nincs.png" in t for t in texts), texts
+        assert dlg.check_summary.text()
         assert wait_until(app, lambda: dlg.picture.pixmap() is not None and not dlg.picture.pixmap().isNull(), 30_000)
         # a broken path is an error in the window, not a crash
         dlg.path.setText(str(tmp_path / "missing.ods"))
@@ -5444,3 +5446,31 @@ def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_credits_issue_text_is_worded_from_code_and_values():
+    from cfa4_qt.panels.credits import ISSUE_TEXT, issue_text
+
+    i = {"code": "name-spelling", "severity": "warning", "row": 5, "values": {"name": "Kiss Ánna", "other": "Kiss Anna", "otherRow": "3"}}
+    text = issue_text(i)
+    assert "Kiss Ánna" in text and "Kiss Anna" in text and "5" in text
+    assert issue_text({"code": "fast-scroll", "page": 1, "values": {"seconds": "4.8"}}).count("4.8") == 1
+    # unknown codes fall back to the engine's message
+    assert issue_text({"code": "new-check", "message": "something new"}) == "something new"
+    assert issue_text({}) == ""
+    # every check the engine has is worded
+    import re
+
+    src = (ROOT / "crates" / "credits" / "src" / "validate.rs").read_text(encoding="utf-8")
+    codes = set(re.findall(r'^//! \| `([a-z-]+)` \|', src, re.MULTILINE))
+    assert codes and codes <= set(ISSUE_TEXT), codes - set(ISSUE_TEXT)
+
+
+def test_credits_numbers_use_the_languages_decimal_separator(monkeypatch):
+    from cfa4_qt import i18n
+    from cfa4_qt.panels.credits import local_number
+
+    monkeypatch.setattr(i18n.TR, "language", "hu")
+    assert local_number("7.47") == "7,47" and local_number("12") == "12" and local_number("v1.2.3") == "v1.2.3"
+    monkeypatch.setattr(i18n.TR, "language", "en")
+    assert local_number("7.47") == "7.47"
