@@ -102,6 +102,7 @@ class InspectorPanel(QWidget):
         super().__init__(parent)
         self.setObjectName("panel.Inspector")
         self.form = QFormLayout()
+        self.effect_names: dict[str, str] = {}  # effect id -> display name (from effects.list)
         self.effects = QListWidget(self)
         self.effects.setObjectName("inspector.effects")
         self.remove = QPushButton(tr("Remove Effect"), self)
@@ -155,10 +156,9 @@ class InspectorPanel(QWidget):
             v.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             self.form.addRow(tr(label), v)
         for idx, e in enumerate(clip.get("effects") or []):
-            params = e.get("params") or {}
-            text = f"{tr(str(e.get('effect')))}" + ("" if e.get("enabled", True) else f"  ({tr('off')})")
-            if params:
-                text += "\n    " + ", ".join(f"{k}={v.get('value')}" for k, v in list(params.items())[:6])
+            # names only: the values and keyframes are in Effect Controls
+            effect_id = str(e.get("effect"))
+            text = tr(self.effect_names.get(effect_id, effect_id)) + ("" if e.get("enabled", True) else f"  ({tr('off')})")
             it = QListWidgetItem(text)
             it.setData(Qt.ItemDataRole.UserRole, idx)
             self.effects.addItem(it)

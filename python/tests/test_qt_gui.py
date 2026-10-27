@@ -431,6 +431,51 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         win.close()
 
 
+def test_deferred_effect_edits_reach_the_engine_before_save_or_close(app, fake_engine: Path, tmp_path: Path, monkeypatch):
+    """Regression: a value in Effect Controls' 120 ms send delay was not sent before Save or the
+    unsaved-changes check, so closing right after an edit lost it."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    sent: list[str] = []
+    execute, call = engine.execute, engine.call
+
+    def recording(command, params=None, on_reply=None, on_error=None):
+        sent.append(command)
+        return execute(command, params, on_reply=on_reply, on_error=on_error)
+
+    def recording_call(method, params=None, on_reply=None, on_error=None):
+        if method != "engine.execute":  # execute() goes through call()
+            sent.append(method)
+        return call(method, params, on_reply=on_reply, on_error=on_error)
+
+    monkeypatch.setattr(engine, "execute", recording)
+    monkeypatch.setattr(engine, "call", recording_call)
+    scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": False,
+             "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+    clip = {"clip": 100, "name": "A", "start": 0, "end": 9000, "playhead": 0,
+            "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]}
+    try:
+        assert wait_until(app, lambda: bool(engine.hello) and "file.save" in win.registry.commands)
+        ec = win.effect_controls
+        ec._show(clip)
+        ec.set_param(ec.rows[(0, "scale")], 150.0)
+        sent.clear()
+        win.confirm_unsaved(lambda: None)
+        assert sent[:2] == ["effects.setParam", "session.state"]
+        ec.set_param(ec.rows[(0, "scale")], 160.0)
+        sent.clear()
+        win.project = {"name": "Demo", "path": str(tmp_path / "a.fcproj")}
+        win.run_command(win.registry.commands["file.save"])
+        assert sent[:2] == ["effects.setParam", "file.save"]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
     """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
     ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""
@@ -533,6 +578,8 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     class Engine:
         """Answers export.resolve as the engine does: an extension-less path gets ``.mp4``; ``.png``
         is an image sequence."""
+
+        running = False  # the queue poll timer outlives this test: it must not raise later
 
         def __init__(self):
             self.sent = []
@@ -639,6 +686,116 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     dlg.close()
 
 
+def test_effect_controls_pending_edits_keep_their_clip_and_time(app):
+    """Regressions: a coalesced edit was sent to whichever clip was shown when the 120 ms timer
+    fired, and an animated one at the engine's playhead then rather than where it was made."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    def snapshot(clip: int, playhead: int, animated: bool) -> dict:
+        scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": animated,
+                 "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+        return {"clip": clip, "name": f"C{clip}", "start": 1000, "end": 9000, "playhead": playhead,
+                "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]}
+
+    panel = EffectControlsPanel()
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    panel._show(snapshot(1, 2000, False))
+    panel.set_param(panel.rows[(0, "scale")], 150.0)
+    panel._show(snapshot(2, 2000, False))  # another clip selected before the timer fired
+    assert [(c, p["clip"], p["value"], "time" in p) for c, p in sent] == [("effects.setParam", 1, 150.0, False)]
+    sent.clear()
+    panel._show(snapshot(2, 3000, True))
+    panel.set_param(panel.rows[(0, "scale")], 120.0)
+    panel._show(snapshot(2, 7000, True))  # the playhead moved to another keyframe meanwhile
+    assert [(p["clip"], p["time"]) for _c, p in sent] == [(2, 3000)]
+    sent.clear()
+    panel._show(snapshot(2, 20_000, True))  # past the clip: pinned to it, as the engine pins
+    panel.set_param(panel.rows[(0, "scale")], 110.0)
+    panel.send("effects.reset", {"clip": 2, "index": 0})  # pending values go before another edit
+    assert [c for c, _p in sent] == ["effects.setParam", "effects.reset"] and sent[0][1]["time"] == 8999
+    panel.close()
+
+
+def test_effect_controls_key_animated_edits_at_the_playing_frame(app):
+    """During Program playback neither the engine playhead nor the panel's snapshot moves: an
+    edit is keyed at the frame the monitor shows."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6000
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = EffectControlsPanel(host)
+    host.setCentralWidget(panel)
+    sent: list[dict] = []
+    panel.command.connect(lambda _c, p: sent.append(p))
+    scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": True,
+             "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": []}
+    panel._show({"clip": 3, "name": "C", "start": 1000, "end": 9000, "playhead": 2000,
+                 "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]})
+    panel.set_param(panel.rows[(0, "scale")], 130.0, immediate=True)
+    assert sent[-1]["time"] == 6000
+    host.monitor.playing = False  # type: ignore[attr-defined]
+    panel.set_param(panel.rows[(0, "scale")], 140.0, immediate=True)
+    assert sent[-1]["time"] == 2000
+    host.close()
+
+
+def test_effect_controls_toggle_keyframes_at_the_playing_frame(app):
+    """Add/Remove Keyframe during playback acted on playback's start: it deleted the keyframe
+    there, or added one at the stale engine playhead. It stops on the shown frame and acts there."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6010
+
+        def stop(self):
+            self.playing = False
+            self.playhead = 6000
+
+        def frame(self):
+            return 100
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = EffectControlsPanel(host)
+    host.setCentralWidget(panel)
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+
+    def show(keyframes):
+        scale = {"id": "scale", "label": "Scale", "kind": "float", "animatable": True, "animated": True,
+                 "value": 100.0, "valueAtPlayhead": 100.0, "keyframes": keyframes}
+        panel._show({"clip": 3, "name": "C", "start": 1000, "end": 9000, "playhead": 2000, "mediaTimeAtPlayhead": 1000,
+                     "effects": [{"index": 0, "effect": "motion", "name": "Motion", "enabled": True, "params": [scale]}]})
+
+    show([{"time": 2000, "mediaTime": 1000, "value": 1.0}])
+    panel.rows[(0, "scale")]._add_remove()
+    assert sent[-1] == ("effects.addKeyframe", {"clip": 3, "effect": 0, "param": "scale", "time": 6000})
+    host.monitor.playing = True  # type: ignore[attr-defined]
+    show([{"time": 2000, "mediaTime": 1000, "value": 1.0}, {"time": 6000, "mediaTime": 5000, "value": 2.0}])
+    panel.rows[(0, "scale")]._add_remove()
+    assert sent[-1] == ("effects.deleteKeyframe", {"clip": 3, "effect": 0, "param": "scale", "mediaTime": 5000})
+    # the stopwatch stops playback too, so the engine freezes the value of the shown frame
+    host.monitor.playing = True  # type: ignore[attr-defined]
+    panel.rows[(0, "scale")]._toggle_animation()
+    assert host.monitor.playing is False  # type: ignore[attr-defined]
+    assert sent[-1] == ("effects.toggleAnimation", {"clip": 3, "effect": 0, "param": "scale"})
+    # so do the parameter and effect Reset buttons, which key the default at the engine playhead
+    for name in ("effectControls.0.scale.reset", "effectControls.0.reset"):
+        host.monitor.playing = True  # type: ignore[attr-defined]
+        button = panel.findChild(QtWidgets.QToolButton, name)
+        assert button is not None, name
+        button.click()
+        assert host.monitor.playing is False  # type: ignore[attr-defined]
+    assert sent[-1] == ("effects.reset", {"clip": 3, "index": 0})
+    host.close()
+
+
 # ----- the real engine, when built -----
 REAL = locate_engine()
 
@@ -689,7 +846,7 @@ def _qt_literals() -> set[str]:
 def test_hungarian_catalog_covers_the_qt_gui():
     """The owner works in Hungarian: every Qt GUI string and panel title has a translation."""
     hu = Translator("hu")
-    titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Inspector", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
+    titles = {"Source", "Go to Start", "Go to End", "Step Back 1 Frame", "Step Forward 1 Frame", "Mark In", "Mark Out", "Insert", "Overwrite", "Play/Stop", "Project", "Effects", "Properties", "History", "Timeline", "Events", "Selection Tool", "Razor Tool", "New Bin", "New Sequence…", "Import…"}
     missing = sorted(s for s in _qt_literals() | titles if not hu.has(s))
     assert not missing, missing
 
@@ -794,6 +951,10 @@ def test_real_engine_source_monitor(app, tmp_path: Path):
         win.close()
 
 
+# Source/Effect Controls, Project/Effects, Properties/History, Timeline/Events
+TAB_GROUPS = 4
+
+
 def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path):
     """Regression: tabifying docks before show() left a stale, visible copy of a tab bar drawn
     over the panels. Every visible tab bar must belong to exactly one tab group."""
@@ -809,14 +970,14 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
         win = MainWindow(EngineClient(fake_engine), settings)
         win.resize(1440, 900)
         win.show()
-        assert wait_until(app, lambda w=win: len(bars(w)) >= 3, 5_000)
+        assert wait_until(app, lambda w=win: len(bars(w)) >= TAB_GROUPS, 5_000)
         wait_until(app, lambda: False, 300)
         found = bars(win)
-        assert len(found) == len(set(found)) == 3, found
+        assert len(found) == len(set(found)) == TAB_GROUPS, found
         win.reset_layout.trigger()
         wait_until(app, lambda: False, 300)
         found = bars(win)
-        assert len(found) == len(set(found)) == 3, found
+        assert len(found) == len(set(found)) == TAB_GROUPS, found
         win._quit_confirmed = True
         win.close()
 
@@ -927,6 +1088,89 @@ def test_tick_signals_carry_64_bit_times(app):
     # and no tick-carrying Signal(int) comes back anywhere in the GUI
     for path in (ROOT / "python" / "cfa4_qt").rglob("*.py"):
         assert not re.search(r"Signal\([^)]*\bint\b", path.read_text(encoding="utf-8")), path
+
+
+# ----- Effect Controls -----
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_effect_controls(app, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1440, 900)
+    win.show()
+    engine.start()
+    ec = win.effect_controls
+
+    def param(effect: str, pid: str) -> dict:
+        for e in (ec.clip or {}).get("effects") or []:
+            if e.get("effect") == effect:
+                return next(p for p in e["params"] if p["id"] == pid)
+        raise AssertionError(f"{effect}.{pid} not shown")
+
+    def history() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        clip = win.sequence["video"][0]["items"][1]
+        assert ec.clip is None and "Timeline" in ec.title.text()
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        assert wait_until(app, lambda: ec.clip_id == clip["clip"] and (0, "scale") in ec.rows, 30_000)
+        motion = next(e["index"] for e in ec.clip["effects"] if e["effect"] == "motion")
+        scale = ec.rows[(motion, "scale")]
+        assert scale.kind == "float" and not scale.animated
+
+        # a drag of one value (several changes in a row) is one undo step
+        steps = len(history())
+        for v in (110.0, 120.0, 135.0):
+            scale.spins[0].setValue(v)
+            app.processEvents()
+        assert wait_until(app, lambda: param("motion", "scale")["value"] == 135.0, 10_000), param("motion", "scale")
+        assert wait_until(app, lambda: len(history()) == steps + 1, 10_000), history()
+
+        # animate: the stopwatch puts a keyframe at the playhead; a change elsewhere adds another
+        win._seek_program(clip["start"])
+        assert wait_until(app, lambda: ec.clip and ec.clip.get("playhead") == clip["start"], 10_000)
+        scale.stopwatch.click()
+        assert wait_until(app, lambda: param("motion", "scale")["animated"], 10_000)
+        # the engine puts the playhead on a frame boundary: use the time it reports
+        win._seek_program(clip["start"] + (clip["end"] - clip["start"]) // 2)
+        assert wait_until(app, lambda: ec.clip.get("playhead") != clip["start"], 10_000)
+        later = ec.clip["playhead"]
+        assert clip["start"] < later < clip["end"]
+        scale.spins[0].setValue(60.0)
+        assert wait_until(app, lambda: len(param("motion", "scale")["keyframes"]) == 2, 10_000), param("motion", "scale")
+        assert scale.strip.isVisible() and scale.next_key.isVisible()
+        times = sorted(k["time"] for k in param("motion", "scale")["keyframes"])
+        # keyframe navigation moves the Program playhead to the keyframes
+        scale.prev_key.click()
+        assert wait_until(app, lambda: ec.clip.get("playhead") == times[0], 10_000), (ec.clip.get("playhead"), times)
+        scale.next_key.click()
+        assert wait_until(app, lambda: ec.clip.get("playhead") == times[1], 10_000)
+        # the keyframe button removes the keyframe under the playhead
+        scale.add_key.click()
+        assert wait_until(app, lambda: len(param("motion", "scale")["keyframes"]) == 1, 10_000)
+
+        # a choice parameter and the effect's on/off switch
+        opacity = next(e["index"] for e in ec.clip["effects"] if e["effect"] == "opacity")
+        blend = ec.rows[(opacity, "blend")]
+        blend.editor.setCurrentIndex(3)
+        assert wait_until(app, lambda: param("opacity", "blend")["value"] == 3, 10_000)
+        check = ec.effect_boxes[opacity].findChild(QtWidgets.QCheckBox, f"effectControls.{opacity}.enabled")
+        was = check.isChecked()
+        check.click()
+        assert wait_until(
+            app, lambda: next(e for e in ec.clip["effects"] if e["index"] == opacity)["enabled"] != was, 10_000
+        )
+
+        # deselecting clears the panel
+        win.execute("edit.deselectAll", {})
+        assert wait_until(app, lambda: ec.clip is None and not ec.rows, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
 
 
 
@@ -1091,6 +1335,111 @@ def test_desktop_entry_is_opt_in_and_never_overrides_a_package(tmp_path: Path, m
     assert de.escape_exec_argument('/a\\tb/"x"$') == '"/a\\\\\\\\tb/\\\\"x\\\\"\\\\$"'
     monkeypatch.setenv("CFA4_DEV_DESKTOP_ENTRY", "1")
     assert de.requested_by_env()
+
+
+
+# ----- Window menu (as the egui editor's) -----
+def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: Path, tmp_path: Path):
+    """The owner compared the menus: egui's Window menu has Workspaces, New Project Panel and all
+    28 panels with Shift+1..9; the Qt GUI had a "Panels" menu with 8. Same entries, same order,
+    same keys now; panels the Qt GUI lacks are listed disabled."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.window_menu import PANELS
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: "file.save" in win.registry.actions)
+        top = [a.menu().objectName() for a in win.menuBar().actions() if a.menu()]
+        assert "menu.Panels" not in top
+        assert top.index("menu.Window") == top.index("menu.Help") - 1, top
+        menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.Window")
+        entries = [a for a in menu.actions() if not a.isSeparator()]
+        assert entries[0].menu() is not None and entries[0].menu().objectName() == "menu.Window.Workspaces"
+        assert entries[1].text() == "New Project Panel" and not entries[1].isEnabled()
+        panels = entries[2:]
+        assert [a.text() for a in panels] == [p.title for p in PANELS]
+        have = {"Project", "Effects", "History", "Source", "Effect Controls", "Program", "Timeline", "Properties", "Events"}
+        for a, p in zip(panels, PANELS, strict=True):
+            assert a.isEnabled() == (p.title in have), p.title
+            if p.shortcut and a.isEnabled():
+                assert a.shortcut().toString() == QtGui.QKeySequence(p.shortcut).toString(), p.title
+            if not a.isEnabled():
+                assert "Qt GUI" in a.toolTip()
+        # a panel entry closes the panel when it is open in front, and shows it again
+        project = next(a for a in panels if a.text() == "Project")
+        win.docks["Project"].raise_()
+        wait_until(app, lambda: False, 100)
+        project.trigger()
+        assert wait_until(app, lambda: win.docks["Project"].isHidden(), 2_000)
+        project.trigger()
+        assert wait_until(app, lambda: not win.docks["Project"].isHidden(), 2_000)
+        # View carries Zoom to Sequence and Language
+        view = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.View")
+        assert win.fit_action in view.actions()
+        assert any(a.menu() and a.menu().objectName() == "menu.View.Language" for a in view.actions())
+        # a rebuild (language change) leaves exactly one live action per Window shortcut
+        win.set_language("hu")
+        win.set_language("en")
+        keys = [s.toString() for a in win.actions() for s in a.shortcuts()]
+        assert keys.count(QtGui.QKeySequence("Shift+1").toString()) == 1, keys
+        # regression: the docks kept callbacks into the deleted actions, so showing a panel after
+        # a rebuild raised "Internal C++ object already deleted"
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+        errors: list[BaseException] = []
+        hook, sys.excepthook = sys.excepthook, lambda _t, e, _tb: errors.append(e)
+        try:
+            win.docks["Project"].hide()
+            win.docks["Project"].show()
+            wait_until(app, lambda: False, 100)
+        finally:
+            sys.excepthook = hook
+        assert not errors, errors
+        live = next(a for a in win.findChildren(QtGui.QAction, "window.panel.Project"))
+        assert live.isChecked()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
+def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path):
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.window_menu import DEFAULT_WORKSPACE
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    win.resize(1400, 900)
+    win.show()
+    try:
+        wait_until(app, lambda: False, 200)
+        ws = win.workspaces
+        assert ws.current == DEFAULT_WORKSPACE and ws.names() == []
+        # my own layout: History closed, saved as "Vágás"
+        win.docks["History"].close()
+        ws.save_as("Vágás")
+        assert ws.current == "Vágás" and ws.names() == ["Vágás"]
+        # back to Editing: History is there again
+        ws.switch(DEFAULT_WORKSPACE, win.restore_layout)
+        assert wait_until(app, lambda: not win.docks["History"].isHidden(), 2_000)
+        # my workspace restores my layout; Reset to Saved Layout returns to it after changes
+        ws.switch("Vágás", win.restore_layout)
+        assert wait_until(app, lambda: win.docks["History"].isHidden(), 2_000)
+        win.docks["History"].show()
+        win.reset_layout.trigger()
+        assert wait_until(app, lambda: win.docks["History"].isHidden(), 2_000)
+        # the menu lists it, checked
+        win.rebuild_window_menu()
+        menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.Window")
+        sub = next(a.menu() for a in menu.actions() if a.menu())
+        mine = next(a for a in sub.actions() if a.text() == "Vágás")
+        assert mine.isChecked()
+    finally:
+        win._quit_confirmed = True
+        win.close()
 
 
 def test_engine_ending_after_the_client_is_gone_raises_nothing(app, fake_engine: Path):

@@ -9,7 +9,7 @@ from typing import Any
 
 from PySide6.QtCore import QByteArray, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeySequence
-from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMessageBox, QTabBar, QWidget
+from PySide6.QtWidgets import QApplication, QDockWidget, QLabel, QMainWindow, QMenu, QMessageBox, QTabBar, QWidget
 
 from . import __version__
 from .branding import logo_pixmap
@@ -17,20 +17,23 @@ from .commands import Command, CommandRegistry
 from .dialogs import ParamDialog, path_params
 from .engine import EngineClient
 from .i18n import LANGUAGES, N_, TR, tr
+from .panels.effect_controls import EffectControlsPanel
 from .panels.export import ExportDialog
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.project import ProjectPanel
 from .panels.side import EffectsPanel, EventsPanel, HistoryPanel, InspectorPanel
 from .panels.timeline import TimelinePanel
+from .window_menu import Workspaces, bind_free, build_window_menu
 
-LAYOUT_VERSION = 2  # 2: Source monitor dock
+LAYOUT_VERSION = 4  # 2: Source monitor dock; 3: Effect Controls; 4: Inspector renamed Properties (egui)
 
 # panels docked around the Program monitor, in the order they are created
 DOCK_PLAN = (
     ("Source", Qt.DockWidgetArea.LeftDockWidgetArea),
+    ("Effect Controls", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Project", Qt.DockWidgetArea.LeftDockWidgetArea),
     ("Effects", Qt.DockWidgetArea.LeftDockWidgetArea),
-    ("Inspector", Qt.DockWidgetArea.RightDockWidgetArea),
+    ("Properties", Qt.DockWidgetArea.RightDockWidgetArea),
     ("History", Qt.DockWidgetArea.RightDockWidgetArea),
     ("Timeline", Qt.DockWidgetArea.BottomDockWidgetArea),
     ("Events", Qt.DockWidgetArea.BottomDockWidgetArea),
@@ -94,6 +97,8 @@ class MainWindow(QMainWindow):
         self.project_panel = ProjectPanel(self)
         self.effects = EffectsPanel(self)
         self.inspector = InspectorPanel(self)
+        self.effect_controls = EffectControlsPanel(self)
+        self.effect_controls.attach(engine)
         self.history = HistoryPanel(self)
         self.events = EventsPanel(self)
 
@@ -106,9 +111,10 @@ class MainWindow(QMainWindow):
         self.docks: dict[str, QDockWidget] = {}
         widgets = {
             "Source": self.source_monitor,
+            "Effect Controls": self.effect_controls,
             "Project": self.project_panel,
             "Effects": self.effects,
-            "Inspector": self.inspector,
+            "Properties": self.inspector,
             "History": self.history,
             "Timeline": self.timeline,
             "Events": self.events,
@@ -118,13 +124,23 @@ class MainWindow(QMainWindow):
         # The window itself only ever gets its tab groups through restoreState() (see
         # _default_layout_state and docs/qt-gui.md, "Known Qt issues").
         self._default_state = self._default_layout_state()
+        self.workspaces = Workspaces(self, self.settings, self._default_state, LAYOUT_VERSION)
 
         self.status_engine = QLabel(tr("Starting engine…"))
         self.status_engine.setObjectName("status.engine")
         self.statusBar().addPermanentWidget(self.status_engine)
 
-        for panel in (self.monitor, self.source_monitor, self.timeline.canvas, self.project_panel, self.effects, self.inspector):
+        for panel in (
+            self.monitor,
+            self.source_monitor,
+            self.timeline.canvas,
+            self.project_panel,
+            self.effects,
+            self.inspector,
+            self.effect_controls,
+        ):
             panel.command.connect(self.execute)
+        self.effect_controls.seek.connect(self._seek_program)
         app = QApplication.instance()
         if isinstance(app, QApplication):
             app.focusChanged.connect(self._focus_changed)
@@ -155,16 +171,17 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def arrange_default(win: QMainWindow, d: dict[str, QDockWidget]) -> None:
-        """Source over Project/Effects on the left, Program in the middle, Inspector/History on
+        """Source over Project/Effects on the left, Program in the middle, Properties/History on
         the right, Timeline/Events at the bottom."""
         win.splitDockWidget(d["Source"], d["Project"], Qt.Orientation.Vertical)
+        win.tabifyDockWidget(d["Source"], d["Effect Controls"])
         win.tabifyDockWidget(d["Project"], d["Effects"])
-        win.tabifyDockWidget(d["Inspector"], d["History"])
+        win.tabifyDockWidget(d["Properties"], d["History"])
         win.tabifyDockWidget(d["Timeline"], d["Events"])
-        for name in ("Project", "Inspector", "Timeline"):
+        for name in ("Source", "Project", "Properties", "Timeline"):
             d[name].raise_()
         win.resizeDocks([d["Timeline"]], [300], Qt.Orientation.Vertical)
-        win.resizeDocks([d["Source"], d["Inspector"]], [460, 280], Qt.Orientation.Horizontal)
+        win.resizeDocks([d["Source"], d["Properties"]], [460, 280], Qt.Orientation.Horizontal)
         win.resizeDocks([d["Source"], d["Project"]], [320, 300], Qt.Orientation.Vertical)
 
     def _default_layout_state(self) -> QByteArray:
@@ -188,9 +205,12 @@ class MainWindow(QMainWindow):
         return state
 
     def reset_panel_layout(self) -> None:
-        """View ▸ Reset Panel Layout."""
+        """Window ▸ Workspaces ▸ Reset to Saved Layout: the current workspace's saved layout."""
+        self.restore_layout(self.workspaces.saved_state(self.workspaces.current))
+
+    def restore_layout(self, state: QByteArray) -> None:
         before = set(self.findChildren(QTabBar))
-        self.restoreState(self._default_state, LAYOUT_VERSION)
+        self.restoreState(state, LAYOUT_VERSION)
         self._retire_tab_bars(before)
         QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
 
@@ -261,25 +281,48 @@ class MainWindow(QMainWindow):
             self.addAction(action)
 
     def _build_menus(self) -> None:
-        view_actions: list[QAction] = [self.fit_action, self.reset_layout]
         self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *self.tool_actions],
+                "View": [self.fit_action],
                 "Help": [self.about_action],
             }
         )
-        window_menu = self.menuBar().addMenu(tr("Panels"))
-        window_menu.setObjectName("menu.Panels")
-        for dock in self.docks.values():
-            window_menu.addAction(dock.toggleViewAction())
-        window_menu.addSeparator()
-        for a in view_actions:
-            window_menu.addAction(a)
-        lang = window_menu.addMenu(tr("Language"))
-        for a in self.lang_actions.actions():
-            lang.addAction(a)
-        self._bind_local_shortcuts(self.registry.claimed_keys)
+        menus = {a.menu().objectName(): a for a in self.menuBar().actions() if a.menu()}
+        view = menus.get("menu.View")
+        if view is not None:
+            lang = view.menu().addMenu(tr("Language"))
+            lang.setObjectName("menu.View.Language")
+            for a in self.lang_actions.actions():
+                lang.addAction(a)
+        # Window, before Help as in the egui editor; the previous build's actions go first
+        for action in getattr(self, "_window_actions", []):
+            self.removeAction(action)
+            if action is not self.reset_layout:  # kept across rebuilds
+                action.deleteLater()
+        if getattr(self, "_window_menu", None) is not None:
+            self._window_menu.deleteLater()
+        window_menu = QMenu(tr("Window"), self.menuBar())
+        self._window_menu = window_menu
+        window_menu.setObjectName("menu.Window")
+        help_action = menus.get("menu.Help")
+        if help_action is not None:
+            self.menuBar().insertMenu(help_action, window_menu)
+        else:
+            self.menuBar().addMenu(window_menu)
+        window_shortcuts = build_window_menu(
+            self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
+        )
+        keys = self.registry.claimed_keys
+        self._bind_local_shortcuts(keys)
+        self._window_actions = bind_free(self, window_shortcuts, keys) + [
+            a for a in window_menu.actions() if a not in {p[0] for p in window_shortcuts}
+        ]
+
+    def rebuild_window_menu(self) -> None:
+        """A workspace was added: rebuild the menus (the engine's part comes from the registry)."""
+        self._build_menus()
 
     def set_language(self, code: str) -> None:
         TR.set_language(code)
@@ -295,7 +338,7 @@ class MainWindow(QMainWindow):
     def _on_started(self, hello: dict[str, Any]) -> None:
         self.status_engine.setText(str(hello.get("engine") or "engine"))
         self.engine.call("engine.commands", on_reply=self._on_commands)
-        self.engine.execute("effects.list", {}, on_reply=lambda r, _b: self.effects.set_effects(r))
+        self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.refresh()
         recovery = hello.get("recovery")
         if isinstance(recovery, list) and recovery and isinstance(recovery[0], dict):
@@ -319,6 +362,13 @@ class MainWindow(QMainWindow):
             self.execute("file.recover", {"id": cid})
         elif box.clickedButton() is discard:
             self.execute("file.discardRecovery", {"id": cid})
+
+    def _on_effects_list(self, result: Any, _b: bytes | None) -> None:
+        self.effects.set_effects(result)
+        if isinstance(result, list):
+            self.inspector.effect_names = {
+                str(e["id"]): str(e.get("name") or e["id"]) for e in result if isinstance(e, dict) and e.get("id")
+            }
 
     def _on_commands(self, result: Any, _binary: bytes | None) -> None:
         self.registry.load(result)
@@ -404,6 +454,7 @@ class MainWindow(QMainWindow):
         self.timeline.set_sequence(self.sequence)
         self.monitor.set_sequence(self.sequence, self.revision)
         self.inspector.set_sequence(self.sequence)
+        self.effect_controls.refresh((self.sequence or {}).get("selection"))
 
     def _on_source(self, result: Any, _b: bytes | None) -> None:
         self.source_state = result if isinstance(result, dict) else None
@@ -444,6 +495,8 @@ class MainWindow(QMainWindow):
 
     def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
+        # an Effect Controls value still in its send delay goes first (Save must write it)
+        self.effect_controls.flush()
         if self.monitor.playing and cmd.id.startswith(("playhead.", "edit.", "timeline.", "markers.")):
             self.monitor.stop()
         if cmd.id == "app.quit":
@@ -543,6 +596,11 @@ class MainWindow(QMainWindow):
     def _scrub(self, ticks: int) -> None:
         self.monitor.set_playhead(ticks)
 
+    def _seek_program(self, ticks: int) -> None:
+        """A panel (Effect Controls' keyframe navigation) moves the Program playhead."""
+        self.monitor.set_playhead(ticks)
+        self.execute("playhead.set", {"time": int(ticks)})
+
     def _playback_moved(self, ticks: int) -> None:
         self.timeline.canvas.playhead = ticks
         self.timeline.canvas.update()
@@ -635,6 +693,8 @@ class MainWindow(QMainWindow):
         def unanswered(_message: str = "") -> None:
             decide(dict(self.state), None)
 
+        # an edit still in Effect Controls' send delay reaches the engine before it is asked
+        self.effect_controls.flush()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)
         QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
 
