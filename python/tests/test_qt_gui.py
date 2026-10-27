@@ -4482,6 +4482,83 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_properties_caption_as_egui(app, tmp_path: Path):
+    """egui's text::caption_properties: a selected caption (checked before the clips) shows
+    "C1 · track", its text and In / Out timecodes, each sent on focus loss (captions.setText,
+    captions.setTimes), and its duration; without a caption selection the clips come back."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    props = win.inspector
+    cap_panel = props.caption
+
+    def caption():
+        tracks = win.timeline.canvas.caption_tracks()
+        return tracks[0]["captions"][0] if tracks and tracks[0]["captions"] else None
+
+    def field(name):
+        return props.findChild(QtWidgets.QWidget, f"properties.caption.{name}")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        dock = props.parentWidget()
+        while dock is not None and not isinstance(dock, QtWidgets.QDockWidget):
+            dock = dock.parentWidget()
+        if dock is not None:
+            dock.show()
+            dock.raise_()
+        assert wait_until(app, props.isVisible, 10_000)
+        win.execute("captions.add", {"text": "Hello there", "time": 0, "durationSeconds": 4})
+        assert wait_until(app, lambda: caption() is not None, 10_000)
+        win.execute("captions.select", {"captions": [caption()["id"]]})
+        assert wait_until(app, cap_panel.isVisible, 10_000)
+        assert not props.empty.isVisible() and not props.scroll.isVisible() and not props.graphic.isVisible()
+        assert field("header").text().startswith("C1 · ")
+        assert field("text").toPlainText() == "Hello there"
+        assert field("in").text() == "00:00:00:00"
+        assert field("duration").text().startswith("00:00:04")
+        # the text goes to the engine when the field loses focus
+        text = field("text")
+        text.setFocus()
+        text.setPlainText("Goodbye")
+        field("in").setFocus()
+        assert wait_until(app, lambda: caption()["text"] == "Goodbye", 10_000)
+        # a new Out timecode trims it
+        out = field("out")
+        out.setFocus()
+        out.setText("00:00:02:00")
+        QtTest.QTest.keyClick(out, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: field("duration").text().startswith("00:00:02"), 10_000)
+        assert wait_until(app, lambda: caption()["end"] < caption()["start"] + 3 * TICKS_PER_SECOND, 10_000)
+        # an empty or unchanged timecode sends nothing
+        sent = []
+        cap_panel.command.connect(lambda c, p: sent.append(c))
+        out.setText("  ")
+        cap_panel._tc_done("out", "endTimecode")
+        cap_panel._tc_done("in", "startTimecode")
+        assert sent == []
+        # no caption selection: the clips' properties again
+        win.execute("captions.select", {"captions": []})
+        assert wait_until(app, lambda: not cap_panel.isVisible(), 10_000)
+        # damaged data reads as nothing
+        props.set_sequence({**(win.sequence or {}), "captionTracks": 3, "captionSelection": "x"})
+        assert props.selected_captions() == []
+        props._caption_listed({"tracks": [7, {"captions": ["x"]}], "selection": [1]}, None)
+        assert not cap_panel.isVisible()
+        cap_panel.set_caption({}, {"text": None, "in": 5})
+        assert field("header").text() == "C1 · "
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_thumbnail_tiles_as_egui():
     """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
     continuous tiles on a grid from the head, only the visible ones; source_time_at follows the

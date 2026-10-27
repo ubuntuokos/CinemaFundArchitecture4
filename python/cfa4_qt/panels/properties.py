@@ -6,7 +6,8 @@ The first selected clip: a header with its label colour and name, then collapsib
 section (Level, Pan) for the first selected audio clip, each value an egui hot number (a scrub is one
 undo step), each row with Premiere's keyframe navigator (previous / add-remove / next) and each
 section with a reset; a Speed button at the foot opens Speed/Duration. A graphic clip shows the
-graphic editor of Essential Graphics ▸ Edit instead. The values come from ``effects.inspect`` (and
+graphic editor of Essential Graphics ▸ Edit instead, and a selected caption (checked first, as egui's
+``text::caption_selected``) its text and In / Out timecodes (caption_properties.py). The values come from ``effects.inspect`` (and
 ``graphics.inspect``); every change is an engine command.
 """
 
@@ -30,6 +31,7 @@ from PySide6.QtWidgets import (
 
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
+from .caption_properties import CaptionProperties
 from .essential_graphics import EssentialGraphicsPanel, SectionHeader
 from .timeline import LABEL_COLORS
 
@@ -222,6 +224,9 @@ class PropertiesPanel(QWidget):
         self.graphic.command.connect(self.command)
         self.graphic.run.connect(self.run)
         self.graphic.hide()
+        self.caption = CaptionProperties(self)
+        self.caption.command.connect(self.command)
+        self.caption.hide()
 
         self.body = QWidget(self)
         self.lay = QVBoxLayout(self.body)
@@ -286,6 +291,7 @@ class PropertiesPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.empty, 1)
         layout.addWidget(self.graphic, 1)
+        layout.addWidget(self.caption, 1)
         layout.addWidget(self.scroll, 1)
 
     def attach_settings(self, settings: QSettings) -> None:
@@ -313,16 +319,63 @@ class PropertiesPanel(QWidget):
         sel = set(seq.get("selection") or [])
         return [(c, kind) for kind in ("video", "audio") for t in seq.get(kind) or [] for c in t.get("items") or [] if c.get("clip") in sel]
 
+    def selected_captions(self) -> list[int]:
+        """The selected captions that are on the sequence's caption tracks, in selection order."""
+        seq = self.sequence or {}
+        tracks = seq.get("captionTracks")
+        on = {
+            c.get("id")
+            for t in (tracks if isinstance(tracks, list) else [])
+            if isinstance(t, dict) and isinstance(t.get("captions"), list)
+            for c in t["captions"]
+            if isinstance(c, dict) and isinstance(c.get("id"), int)
+        }
+        sel = seq.get("captionSelection")
+        return [c for c in (sel if isinstance(sel, list) else []) if isinstance(c, int) and c in on]
+
     def set_sequence(self, seq: dict[str, Any] | None) -> None:
         self.sequence = seq
-        if not self.selected():
-            self._show(None, None, None)
-        self.empty.setVisible(not self.selected())
+        if not self.selected_captions():
+            self.caption.hide()
+            if not self.selected():
+                self._show(None, None, None)
+            self.empty.setVisible(not self.selected())
         self.refresh()
 
+    def _caption_listed(self, r: Any, _b: bytes | None) -> None:
+        """``captions.list``: show the first selected caption, or the clips when it is gone."""
+        r = r if isinstance(r, dict) else {}
+        tracks = [t for t in r.get("tracks") or [] if isinstance(t, dict)] if isinstance(r.get("tracks"), list) else []
+        caps = [(t, c) for t in tracks if isinstance(t.get("captions"), list) for c in t["captions"] if isinstance(c, dict)]
+        found = None
+        for cid in r.get("selection") if isinstance(r.get("selection"), list) else []:
+            found = next(((t, c) for t, c in caps if c.get("id") == cid), None)
+            if found is not None:
+                break
+        self._busy = False
+        if found is None:
+            self._again = False
+            self.set_sequence({**(self.sequence or {}), "captionSelection": []})
+            return
+        self.flush()
+        for w in (self.empty, self.graphic, self.scroll):
+            w.hide()
+        self.caption.set_caption(*found)
+        self.caption.show()
+        if self._again:
+            self._again = False
+            self.refresh()
+
     def refresh(self) -> None:
-        """Ask the engine about the selection (a graphic clip first, as egui's)."""
+        """Ask the engine about the selection (a caption, then a graphic clip, as egui's)."""
         clips = self.selected()
+        if self.selected_captions() and self.engine is not None and getattr(self.engine, "running", False) and self.isVisible():
+            if self._busy:
+                self._again = True
+                return
+            self._busy = True
+            self.engine.execute("captions.list", {}, on_reply=self._caption_listed, on_error=lambda _m: self._caption_listed(None, None))
+            return
         if not clips or self.engine is None or not getattr(self.engine, "running", False) or not self.isVisible():
             return
         if self._busy or self.scrubbing():
@@ -373,6 +426,7 @@ class PropertiesPanel(QWidget):
         self.flush()  # values scrubbed on the clip shown so far go to that clip
         self._applied.clear()
         has = bool(self.selected())
+        self.caption.hide()
         self.empty.setVisible(not has)
         self.graphic.setVisible(has and graphic is not None)
         self.scroll.setVisible(has and graphic is None)
