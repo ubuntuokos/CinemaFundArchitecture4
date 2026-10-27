@@ -190,9 +190,11 @@ class ToolsPanel(QWidget):
         self.actions[t.id] = a
         return a
 
-    def shortcut_pairs(self) -> list[tuple[QAction, str]]:
-        """(action, key) for the window to bind where no engine command uses the key."""
-        return [(self.actions[t.id], t.key) for g in GROUPS for t in g if t.key and t.available]
+    def shortcut_pairs(self) -> list[tuple[QAction, str, str]]:
+        """(action, command id, default key) for the window to bind where no engine command uses
+        the key (the keys come from the engine's shortcut set: Keyboard Shortcuts edits them)."""
+        return [(self.actions[t.id], f"tool.{t.id}", t.key) for g in GROUPS for t in g if t.available]
+
 
     def select(self, tool: str) -> None:
         t = TOOLS.get(tool)
@@ -222,3 +224,8 @@ class ToolsPanel(QWidget):
             b.setEnabled(any(x.available for x in GROUPS[gi]))
         for tid, a in self.actions.items():
             a.setChecked(tid == self.current)
+
+
+def tool_commands() -> list[tuple[str, str, list[str], str]]:
+    """(id, label, menu, default key) of every tool, egui's ``tool.*`` commands."""
+    return [(f"tool.{t.id}", t.label, [], t.key) for g in GROUPS for t in g]
