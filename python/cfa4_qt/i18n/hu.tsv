@@ -1954,3 +1954,15 @@
 	Video effects	Videóeffektek
 	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	A kijelölt klip(ek) ({n}) metaadatainak írása a média melletti XMP-fájlokba?
 	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} csatorna
+# MPEG-2 export settings
+	4:2:0 (Main Profile)	4:2:0 (Main Profile)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transport stream (.m2ts, AAC hang)
+	Chroma	Színkülönbség
+	Constant quantiser	Állandó kvantáló
+	Container	Konténer
+	Elementary Stream (.m2v, no audio)	Elemi adatfolyam (.m2v, hang nélkül)
+	Keyframe distance	Kulcsképkocka-távolság
+	Off (target bitrate)	Ki (cél-bitráta)
+	Program Stream (.mpg, LPCM audio)	Program stream (.mpg, LPCM hang)
+	Transport Stream (.ts, AAC audio)	Transport stream (.ts, AAC hang)
