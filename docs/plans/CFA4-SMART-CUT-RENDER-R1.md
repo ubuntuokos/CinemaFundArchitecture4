@@ -30,8 +30,11 @@ ez a dokumentum eltér tőle, a v1.5 döntései érvényesek:
 3. **Terminológia:** „Smart Render” = idővonal-hibrid. A `BoundaryReencode` szegmens neve
    **határ-újrakódolás**; ebben a dokumentumban a korábbi „Smart Render” megnevezés, ahol a
    határszakasz-újrakódolást jelentette, erre módosult.
-4. **Bitstream-adapterek** natív Rustban; az FFmpeg 9.0.2 kizárólag CI-teszt-orákulum, futásidejű
-   függőség nincs (lásd még `docs/audit/smart-edit-baseline.md` §3).
+4. **Bitstream-adapterek** natív Rustban. A Smart Cut / Smart Render végrehajtásában az FFmpeg 9.0.2
+   kizárólag CI-teszt-orákulum, futásidejű függőség nincs (lásd még `docs/audit/smart-edit-baseline.md`
+   §3). Az ADR 0005 szerinti, opcionális `cfa4-ffmpeg` termékbackend (terve:
+   `docs/plans/CFA4-FFMPEG-BACKEND-R1-2026-10-27.md`) ettől független: a Smart Edit nem függhet tőle,
+   legfeljebb a `cfa4-route` által választott, külön igazolt kódolási/dekódolási háttér lehet.
 5. **Rétegzett validáció:** a szerkezeti egyezés (`BITSTREAM_EQUIVALENT`) elég a PASS-hoz; dekódolásos
    összevetés csak a saját dekóder által támogatott profilnál fut.
 6. **Atomikus írás:** közös segéd a `cfa4-export`-ban (ideiglenes fájl, fsync, átnevezés).
@@ -51,7 +54,7 @@ A fejlesztés kizárólag a CFA4 downstream repositoryban történhet.
 - Architektúra: amd64.
 - Grafikus felület: Qt6, elsődlegesen KDE Plasma / Wayland.
 - Vezérlési és feldolgozási réteg: Rust/Cargo.
-- Natív multimédia-feldolgozás: a CFA4 saját Rust crate-jei (demux, dekódolás, kódolás, mux). Az FFmpeg 9.0.2 kizárólag CI-teszt-orákulum, futásidejű függőség nincs (0. fejezet, 4. pont).
+- Natív multimédia-feldolgozás: a CFA4 saját Rust crate-jei (demux, dekódolás, kódolás, mux). A Smart Cut / Smart Render végrehajtásában az FFmpeg 9.0.2 kizárólag CI-teszt-orákulum, futásidejű függőség nincs; az opcionális `cfa4-ffmpeg` backend külön terv (0. fejezet, 4. pont).
 - Megengedett kiegészítő nyelvek: C++, Python 3.14.
 - Terjesztés: DEB, Flatpak, AppImage.
 - Conda/Miniforge alkalmazása tilos.
