@@ -72,7 +72,9 @@ pub fn parse(bytes: &[u8]) -> Option<Animation<'_>> {
     }
     let width = u24(vp8x, 4)?.checked_add(1)?;
     let height = u24(vp8x, 7)?.checked_add(1)?;
-    let frames = it.filter(|(f, _)| f == b"ANMF").map(|(_, p)| p).collect();
+    // decoding stops at `MAX_FRAMES` anyway; indexing more would let a file of empty chunks
+    // allocate twice its own size
+    let frames = it.filter(|(f, _)| f == b"ANMF").map(|(_, p)| p).take(crate::animated::MAX_FRAMES).collect();
     Some(Animation { width, height, frames })
 }
 

@@ -190,3 +190,20 @@ fn damaged_files_never_panic() {
         let _ = open_bytes("flipped.webp", b.into(), &[]);
     }
 }
+
+/// Empty ANMF chunks are 8 bytes in the file but a slice each in the index; the index stops at
+/// `MAX_FRAMES` instead of growing with the file.
+#[test]
+fn the_frame_index_is_capped() {
+    let mut body = Vec::new();
+    chunk(&mut body, b"VP8X", &[0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    for _ in 0..crate::animated::MAX_FRAMES + 100 {
+        chunk(&mut body, b"ANMF", &[]);
+    }
+    let mut file = b"RIFF".to_vec();
+    file.extend_from_slice(&(body.len() as u32 + 4).to_le_bytes());
+    file.extend_from_slice(b"WEBP");
+    file.extend_from_slice(&body);
+    let anim = parse(&file).unwrap();
+    assert_eq!(anim.frames.len(), crate::animated::MAX_FRAMES);
+}
