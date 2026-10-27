@@ -19,9 +19,10 @@ mér; minden állítás mellett ott a forrás, ahol ellenőrizhető.
 - Hiányzik: tartós, képkockaszintű GOP/hozzáférésipont-index, referenciafüggőség-gráf,
   packet-copy végrehajtás az exportban, MPEG-2 encoder, MPEG TS/PS muxer, MPEG-2 videó MP4-mintabejegyzés,
   szoftveres HEVC/AV1 encoder, a Qt6 idővonal GOP-overlay-e és az export módválasztója.
-- **Szabályütközés (tulajdonosi döntés kell):** a terv „Native FFmpeg 9 Adapter”-t (libavformat,
-  libavcodec, …) ír elő, a repository kötelező szabályai szerint viszont az ffmpeg/ffprobe csak
-  külső tesztorákulum, **soha nem linkelt és nem szállított** (§3).
+- **Szabályütközés, eldöntve:** a terv „Native FFmpeg 9 Adapter”-t (libavformat, libavcodec, …) ír
+  elő, a repository kötelező szabályai szerint viszont az ffmpeg/ffprobe csak külső tesztorákulum,
+  soha nem linkelt és nem szállított. **Tulajdonosi döntés (2026-10-27): saját Rust végrehajtás**,
+  az FFmpeg 9 csak validációs orákulum (§3).
 - MLT-integráció nincs a kódban, így a terv MLT-re vonatkozó kikötése ma nem érint semmit (§8).
 
 ## 1. Natív média- és exportmodulok
@@ -46,7 +47,7 @@ Rétegek: `docs/architecture.md` §1, ellenőrzi a `cargo xtask layers` (`xtask/
 | Szerkesztési algebra | `edit` (L2) | insert, overwrite, razor, ripple, roll, slip, slide, rate stretch, lift, extract. |
 | Export | `export` (L3) | `Format` enum (`lib.rs:64`; H.264, HEVC, AV1, ProRes, DNxHR, APV, MJPEG, képsorozatok, GIF, WAV, AIFF, AAC, FLAC, MXF), `VideoEncoder` trait (`lib.rs:737`), `register_encoder`, `register_format_probe` + `available(format)` (futásidejű elérhetőség, `lib.rs:1009–1046`), `hdr_available`, `Exporter` / `Step` léptetett job (`job.rs`), progress és cancel atomikus jelzőkkel, `ExportError::{Unsupported, Cancelled, …}`. |
 | Motor | `engine` (L4) | `Session`, parancsregiszter, `jobs` (háttérfeladatok), `export_tools.rs`: `export.resolve`, `export.presets.*`, `export.queue.*`, `export.formats`. |
-| Hardver | `platform` (L5) | NVENC H.264/H.265, VA-API dekódolás; HEVC/AV1 exportot csak hardveres encoder regisztrál. |
+| Hardver | `platform` (L5) | NVENC H.264/H.265, VA-API dekódolás; HEVC exportot csak hardveres encoder regisztrál. AV1 encodert semmi nem regisztrál (`export/src/settings_tests.rs`: `Format::Av1` nem elérhető). |
 | Útválasztó | `route` (L1) | ADR 0004 számítási útválasztó; az `ffmpeg` háttér a táblában `NotRegistered`. |
 | Qt6 felület | `python/cfa4_qt` | PySide6 kliens; a `cfa4-cli serve` Rust motorral stdin/stdout JSON-sorokon beszél (`engine.py`, protokoll: `docs/qt-gui.md`). |
 
@@ -97,8 +98,16 @@ valósítható meg. A VISION.md szerint az ütközést a tulajdonosnak kell eld�
 2. **FFmpeg 9 háttér új ADR-rel:** opcionális, rendszerből dinamikusan linkelt libav (vagy külső
    folyamat), a saját motor tartalékként; szabálymódosítás az AGENTS.md-ben és a CLAUDE.md-ben.
 
-A WP-01 és WP-02 mindkét úton azonos (háttérfüggetlen nyilvántartás és saját bitstream-elemzés),
-ezért ezek a döntésig is haladhatnak.
+A WP-01 és WP-02 mindkét úton azonos (háttérfüggetlen nyilvántartás és saját bitstream-elemzés).
+
+**Döntés (ubuntuokos, 2026-10-27): 1. út, saját Rust végrehajtás.** A packet-copy, a mux és a
+határszakasz-újrakódolás a CFA4 saját crate-jeivel készül; az FFmpeg 9 kizárólag validációs
+orákulum (ffprobe, dekódolhatóság, payload-összevetés). Az AGENTS.md és a CLAUDE.md FFmpeg-szabálya
+változatlan; a terv §3 „Native FFmpeg 9 Adapter” rétegét a meglévő `export` pipeline és a saját
+muxerek töltik be. Ehhez hiányzik és külön munkacsomagban pótlandó: MPEG TS/PS muxer, MPEG-2
+encoder (az MPEG-2 Smart Renderhez), MP4 MPEG-2 mintabejegyzés, szoftveres HEVC encoder (a
+HEVC Smart Render addig csak hardveres encoderrel, képességvizsgálat után), és AV1 encoder
+(se szoftveres, se hardveres integráció nincs; az AV1 Smart Render addig nem lehetséges).
 
 ## 4. Meglévő stream-copy képességek
 
@@ -165,23 +174,23 @@ Jelölés: ✅ megvan, 🟡 részben / csak építőkő, ❌ nincs.
 
 | Képesség | MPEG-2 | H.264 | HEVC | AV1 |
 |---|---|---|---|---|
-| Demux (konténerek) | ✅ PS/TS, MXF | ✅ MP4/MOV/MKV/TS/MXF | ✅ MP4/MOV/MKV/TS | ✅ MP4/MKV/WebM |
+| Demux (konténerek) | ✅ PS/TS, MXF, MP4/MOV/MKV | ✅ MP4/MOV/MKV/TS/MXF | ✅ MP4/MOV/MKV/TS | ✅ MP4/MKV/WebM |
 | Dekódolás (saját) | ✅ | ✅ | ✅ Main/Main 10 | ✅ Main |
 | Paraméter-/fejlécelemzés | ✅ sequence/GOP header | ✅ SPS/PPS, IDR | ✅ VPS/SPS/PPS | ✅ sequence/frame header |
 | Nyitott/zárt GOP, RA-típus index | 🟡 GOP header | 🟡 IDR, recovery point ❌ | 🟡 dekóderben (CRA/RASL) | 🟡 `is_key_frame_unit` |
 | Referenciafüggőség-gráf | ❌ | ❌ | ❌ | ❌ |
 | Packet-copy export | ❌ (muxer sincs) | 🟡 MP4/MOV muxer kész | 🟡 MP4/MOV muxer kész | 🟡 MP4 muxer kész |
-| Encoder határszakaszhoz | ❌ | ✅ `h264enc` (4:2:0 8 bit) | 🟡 csak hardveres | 🟡 csak hardveres |
+| Encoder határszakaszhoz | ❌ | ✅ `h264enc` (4:2:0 8 bit) | 🟡 csak hardveres | ❌ nincs (hardveres sem) |
 | Smart Render | ❌ | ❌ | ❌ | ❌ |
 
 ## 10. Kapufeltétel és következő lépések
 
 A WP-00 kapufeltétele (egyértelműen dokumentált meglévő és hiányzó képességek) a fenti 1–9.
-pontokkal teljesül. Nyitott tulajdonosi döntés: FFmpeg 9 háttér vs. saját Rust végrehajtás (§3).
+pontokkal teljesül. A végrehajtás módjáról a tulajdonos döntött: saját Rust végrehajtás (§3).
 
 1. **WP-01 – Capability Registry** (`crates/smart-edit`, `capabilities`): háttérfüggetlen,
    determinisztikus nyilvántartás a fenti táblával mint kezdőállapottal; futásidejű probe-ok
-   (`export::available` mintájára); az FFmpeg háttér `NotRegistered`, amíg nincs ADR.
+   (`export::available` mintájára); FFmpeg háttér nincs (tulajdonosi döntés, §3).
 2. **WP-02 – Media/GOP Indexer:** MPEG-2 és H.264 első körben, a meglévő `mpeg2v` és `h264`
    parserekre építve, a `codecs::VideoSamples` mintatábláiból.
 3. Projektséma-bővítés (Smart Export beállítás) csak `format` migrációval, visszafelé kompatibilisen.
