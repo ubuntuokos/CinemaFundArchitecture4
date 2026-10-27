@@ -2,7 +2,8 @@
 //! CFA4: the decoder interface the rest of CFA4 uses (not part of the ported crate).
 //!
 //! [`Decoder::decode_packet`] takes whole frames (a Matroska / MP4 / MPEG-TS packet: a DTS core
-//! frame, optionally followed by its extension substream) and [`Decoder::push`] a raw `.dts`
+//! frame, optionally followed by its extension substream, or the extension substream alone of a
+//! DTS-HD Master Audio stream without a core) and [`Decoder::push`] a raw `.dts`
 //! stream in pieces. Both give planar `f32` channels in the WAV / SMPTE order used across CFA4
 //! (L R C LFE back-L back-R … side-L side-R …).
 //!
@@ -13,7 +14,7 @@
 //! substream nothing here reads (XBR-only High Resolution) plays its core.
 
 use crate::dcadec::core::DCA_SPEAKER_COUNT;
-use crate::hd::{ExssKind, HdDecoder, HdError, HdFrame, exss_declared_size, exss_kind, exss_substream_size};
+use crate::hd::{ExssKind, HdDecoder, HdError, HdFrame, exss_declared_size, exss_kind, exss_substream_size, exss_xll_geometry};
 use crate::parser::{ParseError, SYNCWORD_CORE_BE, SYNCWORD_SUBSTREAM, parse_header};
 use crate::pcm::{CorePcmFrame, PcmDecoder};
 use crate::types::BedChannel;
@@ -260,7 +261,7 @@ impl Decoder {
     /// Decodes the frame at the start of `data` into `out`. `complete`: `data` holds everything
     /// there is (a packet, or the end of a stream).
     fn frame(&mut self, data: &[u8], complete: bool, out: &mut Decoded, err: &mut Option<Error>) -> Step {
-        let Some(sync) = data.windows(4).position(|w| w == CORE_SYNC) else {
+        let Some(sync) = data.windows(4).position(|w| w == CORE_SYNC || w == EXSS_SYNC) else {
             // keep a possible partial syncword: skipping it too would lose the frame it starts
             return match data.len().saturating_sub(3) {
                 _ if complete => Step::Skip(data.len()),
@@ -270,6 +271,9 @@ impl Decoder {
         };
         if sync > 0 {
             return Step::Skip(sync);
+        }
+        if data.get(..4) == Some(&EXSS_SYNC[..]) {
+            return self.exss_frame(data, complete, out, err);
         }
         let info = match parse_header(data) {
             Ok(i) => i,
@@ -317,6 +321,39 @@ impl Decoder {
         Step::Frame(len)
     }
 
+    /// Decodes the extension substream at the start of `data` that no core frame precedes: a
+    /// frame of DTS-HD Master Audio without a core. One that needs a core (a stream entered
+    /// between a core frame and its substream) is skipped.
+    fn exss_frame(&mut self, data: &[u8], complete: bool, out: &mut Decoded, err: &mut Option<Error>) -> Step {
+        let short = if complete { Step::Skip(data.len()) } else { Step::Short };
+        let Some(size) = exss_declared_size(data) else { return short };
+        let Some(exss) = data.get(..size) else { return if complete { Step::Skip(4) } else { Step::Short } };
+        if exss_substream_size(exss).is_none() {
+            return Step::Skip(4);
+        }
+        match self.hd.decode_exss_into(exss, &mut self.hd_frame) {
+            Ok(()) => {
+                let frame = &self.hd_frame;
+                let chans: Vec<(Speaker, Vec<f32>)> =
+                    frame.samples.iter().take(DCA_SPEAKER_COUNT).enumerate().filter_map(|(i, c)| Some((dca_speaker(i)?, c.clone()?))).collect();
+                if chans.is_empty() {
+                    *err = Some(Error::Decode("no channels".into()));
+                } else {
+                    out.append(frame.sample_rate, frame.lossless, chans);
+                }
+            }
+            Err(HdError::Pending) => {}
+            Err(HdError::NeedsCore) => return Step::Skip(size),
+            Err(e) => {
+                if let Some((n, rate)) = exss_xll_geometry(exss) {
+                    out.silence(n, rate);
+                }
+                *err = Some(Error::Decode(format!("{e:?}")));
+            }
+        }
+        Step::Frame(size)
+    }
+
     /// Decodes a core-only frame. `Err(None)` is not used here.
     fn core_frame(&mut self, core: &[u8], out: &mut Decoded) -> Result<(), Option<Error>> {
         let pcm = &mut self.core_frame;
@@ -349,9 +386,20 @@ impl Decoder {
     }
 }
 
-/// Samples a packet of whole DTS frames decodes to: the sum of its core frames' lengths. `None`
-/// when the packet does not start with a core frame.
+/// Samples a packet of whole DTS frames decodes to: the sum of its core frames' lengths, or for a
+/// stream without a core its lossless frames' lengths. `None` when the packet starts with
+/// neither.
 pub fn packet_samples(data: &[u8]) -> Option<i64> {
+    if data.get(..4) == Some(&EXSS_SYNC[..]) {
+        let mut n = 0i64;
+        let mut p = 0usize;
+        while let Some(rest) = data.get(p..).filter(|r| r.len() >= 4) {
+            let size = exss_substream_size(rest)?;
+            n = n.saturating_add(exss_xll_geometry(rest.get(..size)?)?.0 as i64);
+            p = p.saturating_add(size.max(4));
+        }
+        return Some(n);
+    }
     parse_header(data).ok()?;
     let mut n = 0i64;
     let mut p = 0usize;
@@ -416,5 +464,11 @@ mod tests {
         assert!(d.push(&[0x7F, 0xFE, 0x80, 0x01, 0xFF, 0xFF]).unwrap().channels.is_empty());
         assert!(d.flush().is_ok());
         assert_eq!(packet_samples(&[1, 2, 3]), None);
+        // an extension substream syncword without a readable substream
+        let mut x = vec![0u8; 64];
+        x[..4].copy_from_slice(&EXSS_SYNC);
+        assert!(d.decode_packet(&x).map_or(true, |o| o.channels.is_empty()));
+        assert!(d.push(&x).unwrap().channels.is_empty());
+        assert_eq!(packet_samples(&x), None);
     }
 }

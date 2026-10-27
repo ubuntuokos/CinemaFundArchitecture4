@@ -92,6 +92,9 @@ pub enum HdError {
     Xll(String),
     /// XLL is buffering across substreams (PBR); no output this frame.
     Pending,
+    /// An extension substream without a core that cannot be decoded on its own (residual-coded
+    /// lossless channels, or no lossless asset).
+    NeedsCore,
 }
 
 impl From<ParseError> for HdError {
@@ -203,6 +206,14 @@ pub fn exss_declared_size(data: &[u8]) -> Option<usize> {
     crate::dcadec::exss::declared_size(data)
 }
 
+/// The samples per channel and the sample rate of the lossless (XLL) frame in the EXSS at `data`,
+/// read from its headers without decoding; `None` without a readable XLL asset.
+pub fn exss_xll_geometry(data: &[u8]) -> Option<(usize, u32)> {
+    let p = ExssParser::parse(data).ok().filter(ExssParser::has_xll)?;
+    let xll = data.get(p.asset.xll_offset..p.asset.xll_offset.checked_add(p.asset.xll_size)?)?;
+    crate::dcadec::xll::frame_geometry(xll)
+}
+
 pub fn exss_has_xll(data: &[u8]) -> bool {
     ExssParser::parse(data).map(|p| p.has_xll()).unwrap_or(false)
 }
@@ -296,7 +307,40 @@ impl HdDecoder {
             Err(e) => return Err(HdError::Xll(format!("{e:?}"))),
         }
 
-        // 6) Convert 24-bit lossless ints to f32 by speaker, into the frame's
+        self.xll_frame(exss, &exssp, frame);
+        Ok(())
+    }
+
+    /// Decodes a DTS-HD Master Audio frame without a core: an extension substream whose XLL asset
+    /// codes every channel itself. A frame with residual-coded channels needs the core it was
+    /// coded against and gives [`HdError::NeedsCore`].
+    pub fn decode_exss_into(&mut self, exss: &[u8], frame: &mut HdFrame) -> Result<(), HdError> {
+        // no core: the next frame with one starts as after a seek (ffmpeg's `DCA_PACKET_RESIDUAL`)
+        self.residual_ok = false;
+        let exssp = ExssParser::parse(exss).map_err(|_| HdError::Exss)?;
+        if !exssp.has_xll() {
+            return Err(HdError::NeedsCore);
+        }
+        match self.xll.parse(exss, &exssp.asset) {
+            Ok(()) => {}
+            Err(XllError::Eagain) => return Err(HdError::Pending),
+            Err(e) => return Err(HdError::Xll(format!("{e:?}"))),
+        }
+        if self.xll.residual_chsets() > 0 {
+            return Err(HdError::NeedsCore);
+        }
+        match self.xll.filter(None, false) {
+            Ok(()) => {}
+            Err(XllError::Eagain) => return Err(HdError::Pending),
+            Err(e) => return Err(HdError::Xll(format!("{e:?}"))),
+        }
+        self.xll_frame(exss, &exssp, frame);
+        Ok(())
+    }
+
+    /// Hands the lossless output of the frame just filtered to `frame`.
+    fn xll_frame(&mut self, exss: &[u8], exssp: &ExssParser, frame: &mut HdFrame) {
+        // Convert 24-bit lossless ints to f32 by speaker, into the frame's
         // own buffers.
         let mut samples = std::mem::take(&mut frame.samples);
         fill_speakers(&mut samples, &self.xll.output);
@@ -339,7 +383,6 @@ impl HdDecoder {
             lossless: true,
             xxch_decode_error: None,
         };
-        Ok(())
     }
 
     /// The lossy route: the core (already decoded) plus the asset's XXCH
