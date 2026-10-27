@@ -11,7 +11,7 @@ Historical sources and target-specific transitive entries in Cargo.lock may rema
 - **Python 3.12+:** developer tooling and orchestration. Project CI exercises Python 3.13; newer Linux distributions can use a supported version.
 - **Qt 6 / PySide6:** the CFA4 editor GUI (`cfa4-qt`, `python/cfa4_qt/`), driving the Rust engine through `cfa4-cli serve` ([docs/qt-gui.md](../qt-gui.md)). All new UI work goes here. What it already does compared with egui: [docs/qt-parity.md](../qt-parity.md).
 - **Existing egui desktop app:** still the complete editor, **frozen** (bug and security fixes only). It is deleted only when the Qt 6 GUI does point by point everything it does and the owner approves.
-- **FFmpeg / ffprobe:** test oracle tools, not linked runtime dependencies of the existing Rust codec implementation.
+- **FFmpeg (≥ 9.0.2):** a supplementary media backend next to the own Rust engine, chosen by the automatic task router (planned `cfa4-ffmpeg` crate, GPL-3 build, [ADR 0005](../adr/ADR-0005-media-backends.md)). The pinned FFmpeg/ffprobe 9.0.2 CLI (`scripts/ci/install-ffmpeg-9.0.2.sh`) remains a separate test oracle.
 - **Python-to-Rust integration:** `cfa4-cli` subprocess, JSON command interfaces or documented local control protocol. Do not silently replace the engine with Python implementations.
 
 ## Bootstrap (Ubuntu 26.04 AMD64)
