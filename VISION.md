@@ -80,7 +80,7 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 ## 4. Egyesítendő programok és képességeik
 
 A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
-Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (2. pont, Licenc).
+Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (1. pont, Licenc).
 Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
 nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
 clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
