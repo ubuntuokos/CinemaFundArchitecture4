@@ -117,7 +117,7 @@ fn main() -> eframe::Result {
     // Panics anywhere go to <data dir>/Logs/crash-<day>.log with a backtrace; the UI pass and
     // frame workers catch them and keep running (see cfa4_ui_egui::crash).
     cfa4_ui_egui::crash::install(log_dir);
-    // OS hardware video decoders (VideoToolbox on macOS) in front of our own; Settings ▸ Playback ▸
+    // OS hardware video decoders (VA-API, NVDEC) in front of our own; Settings ▸ Playback ▸
     // Hardware decoding switches them off. Unsupported streams and failures use our decoders.
     log::info!("startup stage: registering hardware decoders");
     register_hardware_decoders();
@@ -137,8 +137,8 @@ fn main() -> eframe::Result {
     }
     let started = loop {
         let mut options = native_options(launch.control_port.is_some());
-        // Before eframe creates the wgpu instance (e.g. no OpenGL on Windows, see graphics.rs).
-        graphics::apply(&mut options, graphics.mode(), backend_override);
+        // Before eframe creates the wgpu instance (see graphics.rs).
+        graphics::apply(&mut options, graphics.mode());
         let app_created = Arc::new(AtomicBool::new(false));
         log::info!("startup stage: entering egui native event loop");
         let result = eframe::run_native("CFA4", options, app_creator(launch.clone(), graphics.clone(), Arc::clone(&app_created)));
@@ -509,9 +509,8 @@ mod tests {
     fn startup_registers_the_hardware_decoders_without_a_logger() {
         assert!(!log::log_enabled!(log::Level::Info));
         let hardware = super::register_hardware_decoders();
-        // always on macOS and Windows; on Linux when a VA-API driver or NVIDIA's driver (NVDEC) is there
-        let expected = cfg!(any(target_os = "macos", target_os = "windows"))
-            || (cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_)));
+        // when a VA-API driver or NVIDIA's driver (NVDEC) is there
+        let expected = cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_));
         assert_eq!(cfa4_platform::registered(), expected, "{hardware:?}");
     }
 

@@ -25,7 +25,7 @@ pub struct CommandSpec {
     pub label: &'static str,
     /// Menu placement, e.g. `["Sequence"]` or `["File", "New"]`. Empty = not in menus.
     pub menu: &'static [&'static str],
-    /// Default shortcut (egui-style names, `Cmd` = ⌘ on macOS / Ctrl elsewhere).
+    /// Default shortcut (egui-style names, `Cmd` = Ctrl).
     pub shortcut: Option<&'static str>,
     /// Parameter description (JSON-ish, for agents and the MCP schema).
     pub params: &'static str,

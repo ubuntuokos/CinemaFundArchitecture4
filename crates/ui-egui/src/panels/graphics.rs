@@ -994,7 +994,7 @@ fn start_edit_at(app: &mut Cfa4App, ui: &egui::Ui, v: &LayerView, p: Pos2, actio
 }
 
 /// Edit ▸ Select All while text is edited on the monitor selects all of that text, not the
-/// timeline clips: on macOS the native menu takes Cmd+A before the text sees the key (#1102).
+/// timeline clips (#1102).
 /// False when no text is being edited.
 pub(crate) fn select_all_edited_text(app: &mut Cfa4App) -> bool {
     let Some((clip, layer)) = app.ui.gfx_edit.as_ref().map(|e| (e.clip, e.layer)) else { return false };

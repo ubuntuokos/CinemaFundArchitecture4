@@ -303,7 +303,7 @@ fn preview_files_are_streamed_not_read_whole() {
     std::fs::write(&png, PNG).unwrap();
     assert!(s.media.open_bytes("still.png", PNG.into()).is_ok(), "the image opens from its bytes");
     // (the web, without a file reader, still reads preview files whole)
-    if cfg!(any(unix, windows)) {
+    if cfg!(unix) {
         assert!(crate::previews::open_preview_file(&s.media, "still.png", &png).is_none());
     }
     let _ = std::fs::remove_dir_all(dir);

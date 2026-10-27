@@ -1,4 +1,4 @@
-//! NVENC H.264 encoding (Windows, NVIDIA GPU): the stream decodes with our own decoder to pictures
+//! NVENC H.264 encoding (NVIDIA GPU): the stream decodes with our own decoder to pictures
 //! close to the source, keyframes and timestamps are right, and Export takes it only when asked.
 //! Skips without an NVIDIA GPU / driver with NVENC.
 #![cfg(all(target_os = "linux", target_pointer_width = "64"))]

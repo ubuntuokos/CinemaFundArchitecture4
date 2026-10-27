@@ -1,5 +1,5 @@
 //! Headless UI test of the caption track font picker in the Text panel's Captions tab: picking a
-//! family sets the track style's font, and macOS-private (`.`-prefixed) faces are not offered.
+//! family sets the track style's font, and private (`.`-prefixed) faces are not offered.
 
 use std::sync::mpsc::{Sender, channel};
 

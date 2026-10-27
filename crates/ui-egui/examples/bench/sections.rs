@@ -501,7 +501,7 @@ pub fn export(o: &Opts) -> Vec<Value> {
             cfa4_export::reset_export_lock_wait();
             cfa4_gpu::export_renderer::timing::reset();
             let (t0, c0) = (Instant::now(), cpu_now());
-            // `--hw auto`: the hardware encoder too (NVENC H.264 on Windows); `--hw off`: ours
+            // `--hw auto`: the hardware encoder too (NVENC or VA-API); `--hw off`: ours
             let hardware = if o.hw == "off" { "off" } else { "auto" };
             let r = s.execute("file.exportMedia", json!({"path": out.to_string_lossy(), "format": format, "hardwareEncoding": hardware, "gpuRendering": if o.hw == "off" { "off" } else { "auto" }, "wait": true}));
             let dt = t0.elapsed().as_secs_f64();

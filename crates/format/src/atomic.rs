@@ -46,8 +46,7 @@ pub fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
     Ok(())
 }
 
-/// Best-effort directory fsync (persists the rename on POSIX; not possible on Windows, where
-/// `MoveFileEx` with write-through semantics is already durable enough).
+/// Best-effort directory fsync (persists the rename on POSIX).
 fn sync_dir(dir: &Path) {
     if let Ok(d) = File::open(dir) {
         let _ = d.sync_all();

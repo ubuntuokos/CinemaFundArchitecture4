@@ -436,8 +436,7 @@ pub struct ExportSettings {
     /// 18 is visually near-lossless.
     #[serde(default = "default_crf")]
     pub crf: f32,
-    /// May H.264 be encoded by the system's hardware encoder (VideoToolbox on macOS, NVENC on
-    /// Windows)? Off unless asked for: hardware output depends on the machine, so it is not
+    /// May H.264 be encoded by the system's hardware encoder (NVENC)? Off unless asked for: hardware output depends on the machine, so it is not
     /// byte-reproducible like the built-in encoder's (`determinism_tests`).
     #[serde(default)]
     pub hardware_encoding: HardwareEncoding,
@@ -865,7 +864,18 @@ pub type AudioEncoderFactory = fn(format: Format, sample_rate: u32, channels: u3
 fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
     static F: OnceLock<RwLock<Vec<EncoderFactory>>> = OnceLock::new();
     F.get_or_init(|| {
-        RwLock::new(vec![h264_factory, hevc_factory, av1_factory, vp9_factory, prores_factory, dnx_factory, apv_factory, cineform_factory, mjpeg_factory, mpeg2_factory])
+        RwLock::new(vec![
+            h264_factory,
+            hevc_factory,
+            av1_factory,
+            vp9_factory,
+            prores_factory,
+            dnx_factory,
+            apv_factory,
+            cineform_factory,
+            mjpeg_factory,
+            mpeg2_factory,
+        ])
     })
 }
 fn audio_factories() -> &'static RwLock<Vec<AudioEncoderFactory>> {

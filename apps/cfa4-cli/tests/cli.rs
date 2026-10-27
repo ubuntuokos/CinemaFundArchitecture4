@@ -55,7 +55,7 @@ fn long_help_matches_help_command() {
 
 #[test]
 fn probe_reports_mpeg_transport_and_program_streams() {
-    let Some(ffmpeg) = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
+    let Some(ffmpeg) = ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
         eprintln!("SKIPPED (probe_reports_mpeg_transport_and_program_streams): ffmpeg not found");
         return;
     };
@@ -156,7 +156,7 @@ fn export_with_presets() {
     let v = json_out(&o);
     assert_eq!(v["preset"], "Apple ProRes 422 Proxy");
     assert!(std::fs::metadata(&out).map(|m| m.len() > 1000).unwrap_or(false));
-    if let Some(ffprobe) = ["/opt/homebrew/bin/ffprobe", "/usr/local/bin/ffprobe", "/usr/bin/ffprobe"].into_iter().find(|p| std::path::Path::new(p).exists()) {
+    if let Some(ffprobe) = ["/usr/local/bin/ffprobe", "/usr/bin/ffprobe"].into_iter().find(|p| std::path::Path::new(p).exists()) {
         let p = Command::new(ffprobe)
             .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,profile,width", "-of", "csv=p=0", out.to_str().unwrap()])
             .output()

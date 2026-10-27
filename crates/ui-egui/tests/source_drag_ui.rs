@@ -123,7 +123,7 @@ fn clear_in_out_shortcut_addresses_the_focused_monitor_and_is_undoable() {
     h.state_mut().session.execute("markers.markIn", json!({"time":start.0})).unwrap();
     h.state_mut().session.execute("markers.markOut", json!({"time":out.0})).unwrap();
     let before = h.state().session.project.to_json();
-    let modifiers = egui::Modifiers { shift: true, command: true, ctrl: !cfg!(target_os = "macos"), mac_cmd: cfg!(target_os = "macos"), ..Default::default() };
+    let modifiers = egui::Modifiers { shift: true, command: true, ctrl: true, ..Default::default() };
     let press = |h: &mut Harness<'static, Cfa4App>| {
         h.input_mut().events.push(egui::Event::Key { key: egui::Key::X, physical_key: Some(egui::Key::X), pressed: true, repeat: false, modifiers });
         step(h);
@@ -246,13 +246,7 @@ fn range_move_clamps_to_media_bounds_and_keeps_duration() {
     }
 }
 fn chord(h: &mut Harness<'static, Cfa4App>, key: egui::Key, shift: bool, primary: bool) {
-    let modifiers = egui::Modifiers {
-        shift,
-        command: primary,
-        ctrl: primary && !cfg!(target_os = "macos"),
-        mac_cmd: primary && cfg!(target_os = "macos"),
-        ..Default::default()
-    };
+    let modifiers = egui::Modifiers { shift, command: primary, ctrl: primary, ..Default::default() };
     for pressed in [true, false] {
         h.input_mut().events.push(egui::Event::Key { key, physical_key: Some(key), pressed, repeat: false, modifiers });
         step(h);

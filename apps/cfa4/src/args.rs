@@ -19,7 +19,7 @@ Options:
   --data-dir <dir>   folder for auto-save, crash recovery and logs
                      (also: CFA4_DATA_DIR)
   --graphics <mode>  start with this graphics mode and keep it: default,
-                     dx12 (Windows), software (Windows, Linux);
+                     software;
                      `--graphics default` undoes an automatic fallback
   --version          print the version and exit
   -h, --help         print this help and exit
@@ -90,13 +90,11 @@ pub fn parse(env_control_port: Option<String>, args: impl IntoIterator<Item = Os
             "--no-recover" => l.recover = Some(false),
             "--data-dir" => l.data_dir = Some(args.next().map(PathBuf::from).ok_or("--data-dir needs a folder")?),
             "--graphics" => {
-                let name = args.next().ok_or("--graphics needs a mode: default, dx12 or software")?;
+                let name = args.next().ok_or("--graphics needs a mode: default or software")?;
                 l.graphics = Some(graphics_mode(&name.to_string_lossy())?);
             }
             // everything after `--` is a file, whatever it looks like
             "--" => l.files.extend(args.by_ref().map(|f| f.to_string_lossy().into_owned())),
-            // macOS adds a process serial number when it launches an app bundle
-            _ if a.starts_with("-psn_") => {}
             _ if a.len() > 1 && a.starts_with('-') => return Err(format!("unknown option `{a}`")),
             _ => l.files.push(a.into_owned()),
         }
@@ -118,16 +116,15 @@ pub fn parse(env_control_port: Option<String>, args: impl IntoIterator<Item = Os
     Ok(Cli::Run(l))
 }
 
-/// Whether a launch file is a CFA4 project. The extension's case does not matter: Windows file
-/// associations and the Linux MIME glob start the app for `CUT.FCPROJ` too (#850).
+/// Whether a launch file is a CFA4 project. The extension's case does not matter: the Linux
+/// MIME glob starts the app for `CUT.FCPROJ` too (#850).
 pub fn is_project(path: &str) -> bool {
     Path::new(path).extension().is_some_and(|e| e.eq_ignore_ascii_case("fcproj"))
 }
 
 /// `path` made absolute against the working directory, so a project or media file named relative
 /// to a terminal's folder is still found once the app runs from another one (Recent Projects, the
-/// media paths saved in the project). Unlike `canonicalize`, `std::path::absolute` keeps symlinks
-/// and adds no Windows verbatim `\\?\` prefix. A path it cannot resolve is kept as given.
+/// media paths saved in the project). Unlike `canonicalize`, `std::path::absolute` keeps symlinks. A path it cannot resolve is kept as given.
 pub fn absolute(path: &str) -> String {
     std::path::absolute(path).ok().and_then(|p| p.into_os_string().into_string().ok()).unwrap_or_else(|| path.to_string())
 }
@@ -140,15 +137,11 @@ pub fn project_and_media(files: &[String]) -> (Option<String>, Vec<String>) {
     (project, media)
 }
 
-/// A `--graphics` value: one of this platform's modes.
+/// A `--graphics` value: one of the modes.
 fn graphics_mode(name: &str) -> Result<crate::graphics::Mode, String> {
     use crate::graphics::{LADDER, Mode};
     let here = || LADDER.iter().map(|m| m.name()).collect::<Vec<_>>().join(", ");
-    let mode = Mode::parse(name).ok_or_else(|| format!("--graphics needs one of {}, got `{name}`", here()))?;
-    if !LADDER.contains(&mode) {
-        return Err(format!("--graphics {name} is not available on this platform (use one of {})", here()));
-    }
-    Ok(mode)
+    Mode::parse(name).ok_or_else(|| format!("--graphics needs one of {}, got `{name}`", here()))
 }
 
 #[cfg(test)]
@@ -243,9 +236,9 @@ mod tests {
         assert_eq!(l.data_dir, Some(std::path::PathBuf::from("/tmp/fc")));
         assert_eq!(l.files, ["cut.fcproj", "a.mp4"]);
         assert_eq!((launch(&["--demo"]).demo, launch(&["--demo"]).startup_flag, launch(&["--recover"]).recover), (true, true, Some(true)));
-        // `--` ends the options; a lone `-` and macOS' process serial number are not options
+        // `--` ends the options; a lone `-` is not an option
         assert_eq!(launch(&["--", "--odd name.mov", "-h"]).files, ["--odd name.mov", "-h"]);
-        assert_eq!(launch(&["-", "-psn_0_12345"]).files, ["-"]);
+        assert_eq!(launch(&["-"]).files, ["-"]);
     }
 
     /// `std::env::args` panics on an argument that is not Unicode, so such a file name (Latin-1 on
@@ -263,11 +256,11 @@ mod tests {
         assert_eq!(l.files, ["caf\u{fffd}.mov", "caf\u{fffd}.mov"]);
     }
 
-    /// Windows file associations and the Linux MIME glob match `CUT.FCPROJ` too; it used to be
+    /// The Linux MIME glob matches `CUT.FCPROJ` too; it used to be
     /// imported as a media file instead of opened (#850).
     #[test]
     fn a_project_is_recognised_whatever_the_case_of_its_extension() {
-        for p in ["cut.fcproj", "CUT.FCPROJ", "Cut.FcProj", "/edits/a b.fcproj", r"C:\Edits\CUT.FCPROJ"] {
+        for p in ["cut.fcproj", "CUT.FCPROJ", "Cut.FcProj", "/edits/a b.fcproj"] {
             assert!(is_project(p), "{p}");
         }
         for p in ["cut.mp4", "fcproj", ".fcproj", "a.fcproj.mov", "a.fcprojx", ""] {
@@ -305,17 +298,15 @@ mod tests {
     }
 
     #[test]
-    fn graphics_picks_one_of_this_platforms_modes() {
+    fn graphics_picks_one_of_the_modes() {
         use crate::graphics::{LADDER, Mode};
         assert_eq!(launch(&[]).graphics, None);
         assert_eq!(launch(&["--graphics", "default"]).graphics, Some(Mode::Default));
         for mode in LADDER {
             assert_eq!(launch(&["--graphics", mode.name()]).graphics, Some(*mode));
         }
-        // a mode this platform has not is refused, not ignored
-        for mode in [Mode::Dx12, Mode::Software].into_iter().filter(|m| !LADDER.contains(m)) {
-            assert!(parse_args(&["--graphics", mode.name()]).unwrap_err().contains("not available"));
-        }
+        // an unknown mode is refused, not ignored
+        assert!(parse_args(&["--graphics", "dx12"]).unwrap_err().contains("dx12"));
         assert!(parse_args(&["--graphics"]).is_err(), "missing mode");
         assert!(parse_args(&["--graphics", "vulkan"]).unwrap_err().contains("vulkan"));
         assert!(parse_args(&["--graphics", "DEFAULT"]).is_err());

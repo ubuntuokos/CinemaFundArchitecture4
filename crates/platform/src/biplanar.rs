@@ -2,8 +2,8 @@
 //! words) as read back from a decoder surface, into the planar [`PixelData::Yuv8`] /
 //! [`PixelData::Yuv16`] frames the rest of CFA4 uses. Safe code, tested on every target.
 //!
-//! This is the one place the Windows backend copies pixels (surface to staging texture to these
-//! planes). A zero-copy path would replace it, not the decoder around it.
+//! This is the one place the hardware decoders copy pixels (surface to these planes). A zero-copy
+//! path would replace it, not the decoder around it.
 
 use std::sync::Arc;
 

@@ -1,5 +1,5 @@
 //! Length-prefixed (`avcC` / `hvcC`) access units to Annex B byte streams, the input format of
-//! Windows' H.264 and HEVC decoder MFTs. Safe code, tested on every target.
+//! NVDEC. Safe code, tested on every target.
 
 use cfa4_codecs::hw::NalStreamInfo;
 

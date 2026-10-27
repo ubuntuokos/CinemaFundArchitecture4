@@ -942,7 +942,6 @@
 	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	プログラムモニターをクリックしてマスクのポイントを配置します (ドラッグで曲線)。最初のポイントをクリックするか Enter キーを押すと、マスクが閉じます
 	Delete Mask	マスクを削除
 	Inverted	反転
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	ドラッグ: 移動 · Alt+クリック: スムーズ/コーナー · Cmd+クリック: 削除
 	Track selected mask backward	選択したマスクを逆方向にトラッキング
 	Track selected mask backward 1 frame	選択したマスクを 1 フレーム逆方向にトラッキング
 	Track selected mask forward 1 frame	選択したマスクを 1 フレーム順方向にトラッキング
@@ -1820,7 +1819,7 @@
 	Hard Limiter	ハードリミッター
 	Hard Mix	ハードミックス
 	Hardware decoding	ハードウェアデコード
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	ハードウェアデコード: 「自動」では、対応しているストリームにはシステムのビデオデコーダー (macOS では VideoToolbox、Windows では Media Foundation、Linux では H.264・HEVC 用の VA-API または NVDEC) を使用し、それ以外のストリームや、ハードウェアで失敗した場合は CFA4 独自のデコーダーを使用します。すでに開いているメディアは、開き直すまで現在のデコーダーを使い続けます。
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	ハードウェアデコード: 「自動」では、対応しているストリームにはシステムのビデオデコーダー (H.264・HEVC 用の VA-API または NVDEC) を使用し、それ以外のストリームや、ハードウェアで失敗した場合は CFA4 独自のデコーダーを使用します。すでに開いているメディアは、開き直すまで現在のデコーダーを使い続けます。
 	Head Size	頭部サイズ
 	Heart	ハート
 	Height	高さ
@@ -2836,7 +2835,6 @@
 	Export: no file chosen (agents: shortcuts.export {path})	書き出し: ファイルが選択されていません (エージェント: shortcuts.export {path})
 	Imported “{name}”	「{name}」を読み込みました
 	Import: no file chosen (agents: shortcuts.import {path})	読み込み: ファイルが選択されていません (エージェント: shortcuts.import {path})
-	Keyboard: US (macOS)	キーボード: US 配列 (macOS)
 	Keyboard: US	キーボード: US 配列
 	Save preset as:	保存するプリセット名:
 	Commands:	コマンド:
@@ -2948,7 +2946,6 @@
 	Quick Export: {path}	クイック書き出し: {path}
 	Graphics problem: switched to software compositing	グラフィックスに問題が発生したため、ソフトウェア合成に切り替えました
 	Exporting	書き出し中
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	クリックで選択します。何もない場所からドラッグすると範囲選択になります。Shift、Opt、Cmd キーを併用すると、ほかのオプションも使えます。
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	クリックすると、全トラックでクリック位置より右にあるクリップをすべて選択します。Shift+クリックでは 1 つのトラックだけが対象になります。
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	クリックすると、全トラックでクリック位置より左にあるクリップをすべて選択します。Shift+クリックでは 1 つのトラックだけが対象になります。
 	Drag an edit point to ripple trim; later clips move to keep the gap closed.	編集点をドラッグしてリップルトリムします。後続のクリップも移動するため、ギャップは生じません。
@@ -2959,7 +2956,6 @@
 	Drag a clip to slip its source in/out without moving it.	クリップをドラッグすると、位置はそのままでソースのイン点とアウト点をずらします。
 	Drag a clip to slide it between its neighbours.	クリップをドラッグすると、前後のクリップの間でスライドします。
 	Drag to scroll the timeline.	ドラッグしてタイムラインをスクロールします。
-	Click to zoom in; Opt-click to zoom out.	クリックでズームイン、Opt+クリックでズームアウトします。
 	CFA4 hit an error	CFA4 でエラーが発生しました
 	Details: {path}	詳細: {path}
 	Opened {url}	{url} を開きました

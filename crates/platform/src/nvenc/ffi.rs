@@ -25,7 +25,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 //! The NVIDIA Video Codec SDK's encode API (`nvEncodeAPI.h`, API 12.1, MIT-licensed header by
-//! NVIDIA) as the driver's `nvEncodeAPI64.dll` / `libnvidia-encode.so.1` expects it: the structures this backend fills in,
+//! NVIDIA) as the driver's `libnvidia-encode.so.1` expects it: the structures this backend fills in,
 //! the function table, and the constants it uses. Written from the public header; sizes and field
 //! offsets are checked against a C compiler's by the generated `abi_tests.rs`.
 //!
@@ -38,7 +38,7 @@
 
 use std::ffi::{c_char, c_int, c_void};
 
-// NVIDIA's public header defines this same layout on non-Windows systems.
+// NVIDIA's public header defines this layout on Linux.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Guid {

@@ -5,14 +5,14 @@
 # was consulted or copied; add entries the same way. Text addresses the user informally ("du") and commands use the infinitive ("Projekt
 # öffnen…"). Product, format and feature names (CFA4, Lumetri, Essential Graphics,
 # EDL, AAF…) keep their spelling. The catalog covers the whole interface: first every menu,
-# including the native macOS app menu, then the rest of the Spanish catalog (panels, dialogs,
+# then the rest of the Spanish catalog (panels, dialogs,
 # effects and their parameters, presets, settings, status messages). Strings added later show in
 # English until they are translated.
 #
 # Terms: track = Spur, bin = Ablage, marker = Marker, playhead = Abspielposition, In/Out = In-/Out-
 # Punkt, transition = Übergang, frame hold = Standbild, panel = Bedienfeld, workspace =
-# Arbeitsbereich, label (colour) = Farbmarkierung, preferences (also the native macOS Settings
-# menu) = Voreinstellungen. "Timeline" is not translated. Further: frame = Frame, keyframe =
+# Arbeitsbereich, label (colour) = Farbmarkierung, preferences =
+# Voreinstellungen. "Timeline" is not translated. Further: frame = Frame, keyframe =
 # Keyframe, preset = Vorgabe, footage = Material, render = rendern, application = Anwendung;
 # ripple, roll, slip and slide edits keep their names (Ripple-Trimmen, Rollen-Werkzeug…); in
 # Lumetri highlights = Lichter, shadows = Tiefen, midtones = Mitteltöne. Keys: Shift = Umschalt,
@@ -183,8 +183,6 @@
 	Guide Templates	Hilfslinienvorlagen
 	Help	Hilfe
 	Hide All Caption Tracks	Alle Untertitelspuren ausblenden
-	Hide CFA4	CFA4 ausblenden
-	Hide Others	Andere ausblenden
 	High Quality Playback	Wiedergabe in hoher Qualität
 	History	Verlauf
 	Import From	Importieren aus
@@ -341,7 +339,6 @@
 	Sequence From Clip	Sequenz aus Clip
 	Sequence Settings…	Sequenzeinstellungen…
 	Sequence…	Sequenz…
-	Settings	Voreinstellungen
 	Show Active Caption Tracks Only	Nur aktive Untertitelspuren anzeigen
 	Show All Caption Tracks	Alle Untertitelspuren anzeigen
 	Show All Marker Colors	Alle Markerfarben anzeigen
@@ -980,7 +977,6 @@
 	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Klick in den Programmmonitor, um Maskenpunkte zu setzen (ziehen für Kurven); klick auf den ersten Punkt oder drück die Eingabetaste, um sie zu schließen
 	Delete Mask	Maske löschen
 	Inverted	Umgekehrt
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	Ziehen: verschieben · Alt+Klick: glatt/Ecke · Cmd+Klick: löschen
 	Track selected mask backward	Ausgewählte Maske rückwärts verfolgen
 	Track selected mask backward 1 frame	Ausgewählte Maske 1 Frame rückwärts verfolgen
 	Track selected mask forward 1 frame	Ausgewählte Maske 1 Frame vorwärts verfolgen
@@ -1856,7 +1852,7 @@
 	Hard Limiter	Harter Limiter
 	Hard Mix	Hart mischen
 	Hardware decoding	Hardwaredekodierung
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardwaredekodierung: „Automatisch“ verwendet den Videodecoder des Systems (VideoToolbox unter macOS, Media Foundation unter Windows, VA-API oder NVDEC für H.264 und HEVC unter Linux) für die Streams, die er unterstützt, und den eigenen Decoder von CFA4 für alles andere oder wenn die Hardware versagt. Bereits geöffnete Medien behalten ihren Decoder, bis sie erneut geöffnet werden.
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardwaredekodierung: „Automatisch“ verwendet den Videodecoder des Systems (VA-API oder NVDEC für H.264 und HEVC) für die Streams, die er unterstützt, und den eigenen Decoder von CFA4 für alles andere oder wenn die Hardware versagt. Bereits geöffnete Medien behalten ihren Decoder, bis sie erneut geöffnet werden.
 	Head Size	Kopfgröße
 	Heart	Herz
 	Height	Höhe
@@ -2861,7 +2857,6 @@
 	Export: no file chosen (agents: shortcuts.export {path})	Exportieren: keine Datei gewählt (Agenten: shortcuts.export {path})
 	Imported “{name}”	„{name}“ importiert
 	Import: no file chosen (agents: shortcuts.import {path})	Importieren: keine Datei gewählt (Agenten: shortcuts.import {path})
-	Keyboard: US (macOS)	Tastatur: US (macOS)
 	Keyboard: US	Tastatur: US
 	Save preset as:	Vorgabe speichern als:
 	Commands:	Befehle:
@@ -2974,7 +2969,6 @@
 	Graphics problem: switched to software compositing	Grafikproblem: auf Software-Compositing umgeschaltet
 	GPU acceleration is unavailable; preview renders on the CPU	GPU-Beschleunigung ist nicht verfügbar; die Vorschau wird auf der CPU gerendert
 	Exporting	Export läuft
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	Klicken zum Auswählen oder in einen leeren Bereich klicken und ziehen für eine Rahmenauswahl. Umschalt, Wahl und Cmd bieten weitere Optionen.
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	Klicken wählt alle Clips rechts davon auf allen Spuren aus. Umschalt+Klick für eine einzelne Spur.
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	Klicken wählt alle Clips links davon auf allen Spuren aus. Umschalt+Klick für eine einzelne Spur.
 	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Zieh einen Schnittpunkt für Ripple-Trimmen; spätere Clips rücken nach, sodass keine Lücke entsteht.
@@ -2985,7 +2979,6 @@
 	Drag a clip to slip its source in/out without moving it.	Zieh einen Clip, um sein Quell-In/-Out zu verschieben, ohne ihn zu bewegen (Slip).
 	Drag a clip to slide it between its neighbours.	Zieh einen Clip, um ihn zwischen seinen Nachbarn zu verschieben (Slide).
 	Drag to scroll the timeline.	Ziehen scrollt die Timeline.
-	Click to zoom in; Opt-click to zoom out.	Klicken vergrößert; Wahl+Klick verkleinert.
 	CFA4 hit an error	In CFA4 ist ein Fehler aufgetreten
 	Details: {path}	Details: {path}
 	Opened {url}	{url} geöffnet

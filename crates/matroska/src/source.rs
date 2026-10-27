@@ -80,20 +80,7 @@ impl ByteSource for std::fs::File {
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<()> {
         std::os::unix::fs::FileExt::read_exact_at(self, buf, offset)
     }
-    #[cfg(windows)]
-    fn read_at(&self, mut offset: u64, mut buf: &mut [u8]) -> io::Result<()> {
-        use std::os::windows::fs::FileExt;
-        while !buf.is_empty() {
-            let n = self.seek_read(buf, offset)?;
-            if n == 0 {
-                return Err(eof());
-            }
-            offset += n as u64;
-            buf = &mut buf[n..];
-        }
-        Ok(())
-    }
-    #[cfg(not(any(unix, windows)))]
+    #[cfg(not(unix))]
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<()> {
         let mut f = self;
         f.seek(SeekFrom::Start(offset))?;
