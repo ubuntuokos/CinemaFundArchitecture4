@@ -46,6 +46,7 @@ pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
 pub mod proxies;
+pub mod qc;
 pub mod relink;
 pub mod remix;
 pub mod scene_detect;
@@ -436,6 +437,8 @@ pub struct Session {
     pub export_presets: export_tools::ExportPresetLibrary,
     /// The export queue (session state, not saved with the project).
     pub export_queue: export_tools::ExportQueue,
+    /// Media QC jobs whose results are still to be applied (`qc.*` commands).
+    pub qc: qc::QcSession,
     /// Exports run a batch at a time by [`Session::pump_jobs`] (hosts without threads: web).
     pub stepped: Vec<SteppedJob>,
     /// Speech recogniser for `transcript.generate` (None = the Whisper model named by the command,
@@ -537,6 +540,7 @@ impl Session {
             presets: Default::default(),
             export_presets: Default::default(),
             export_queue: Default::default(),
+            qc: Default::default(),
             stepped: Vec::new(),
             transcriber: None,
             log: Default::default(),
@@ -572,7 +576,7 @@ impl Session {
                 break;
             }
         }
-        !self.stepped.is_empty() || self.export_queue.is_active()
+        !self.stepped.is_empty() || self.export_queue.is_active() || !self.qc.pending.is_empty()
     }
 
     /// Start auto-save and the crash-recovery journal (native frontends). Loads preferences from
@@ -630,6 +634,7 @@ impl Session {
         masks::poll(self);
         scene_detect::poll(self);
         export_tools::pump_queue(self, false);
+        qc::poll(self);
         panels::log_jobs(self);
         let Some(p) = self.persistence.as_mut() else { return };
         for ev in p.drain_events() {
@@ -1290,6 +1295,8 @@ mod project_manager_tests;
 mod project_panel_tests;
 #[cfg(test)]
 mod proxies_tests;
+#[cfg(test)]
+mod qc_tests;
 #[cfg(test)]
 mod relink_tests;
 #[cfg(test)]
