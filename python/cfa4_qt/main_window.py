@@ -83,6 +83,15 @@ GUIDE_COMMANDS = {
     "view.guideTemplates.manage": N_("Manage Guides…"),
 }
 # an engine that stopped is restarted, unless it stopped this often within this many seconds
+# egui's timeline height UI commands (keyboard.rs): id → (label, default key)
+TRACK_HEIGHT_COMMANDS = {
+    "timeline.expandAllTracks": (N_("Expand All Tracks"), "Shift+="),
+    "timeline.minimizeAllTracks": (N_("Minimize All Tracks"), "Shift+-"),
+    "timeline.increaseVideoHeight": (N_("Increase Video Tracks Height"), ""),
+    "timeline.decreaseVideoHeight": (N_("Decrease Video Tracks Height"), ""),
+    "timeline.increaseAudioHeight": (N_("Increase Audio Tracks Height"), ""),
+    "timeline.decreaseAudioHeight": (N_("Decrease Audio Tracks Height"), ""),
+}
 MAX_RESTARTS = 3
 RESTART_WINDOW_S = 60.0
 LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
@@ -796,6 +805,7 @@ class MainWindow(QMainWindow):
             *((cid, dock_commands.LABELS[cid], [], "") for cid in dock_commands.COMMANDS),
             *((cid, label, ["View"], "") for cid, label in GUIDE_COMMANDS.items()),
             ("view.compare.setReference", N_("Set Comparison Reference"), [], ""),
+            *((cid, label, [], key) for cid, (label, key) in TRACK_HEIGHT_COMMANDS.items()),
         ]
         out += [(f"app.settings.{page}", label, ["Edit", "Preferences"], "Cmd+," if page == "general" else "") for page, label in SETTINGS_MENU]
         return out + tool_commands() + window_commands()
@@ -1440,6 +1450,9 @@ class MainWindow(QMainWindow):
                 self.monitor.set_reference(round(secs * TICKS_PER_SECOND))
             else:
                 self.monitor.set_reference(self.monitor.playhead)
+            return True
+        if cid in TRACK_HEIGHT_COMMANDS:
+            self.timeline.canvas.height_command(cid)
             return True
         if cid in GUIDE_COMMANDS:
             try:

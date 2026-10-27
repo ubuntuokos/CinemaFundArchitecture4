@@ -1728,3 +1728,10 @@
 	Roll Edit	Gördülő vágás
 	Trim In	Kezdőpont igazítása
 	Trim Out	Végpont igazítása
+	Expand All Tracks	Minden sáv kibontása
+	Minimize All Tracks	Minden sáv minimalizálása
+	Increase Video Tracks Height	Videosávok magasságának növelése
+	Decrease Video Tracks Height	Videosávok magasságának csökkentése
+	Increase Audio Tracks Height	Hangsávok magasságának növelése
+	Decrease Audio Tracks Height	Hangsávok magasságának csökkentése
+	Drag to change the track height	Húzza a sáv magasságának módosításához

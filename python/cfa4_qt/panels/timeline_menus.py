@@ -1,6 +1,7 @@
 """The timeline's context menus, as egui's (``crates/ui-egui/src/panels/timeline.rs``): the clip
 menu (``CLIP_MENU``, with the Label and Multi-Camera submenus), the edit point menu of a
-right-clicked cut and the menu of a right-clicked gap (Ripple Delete). Object names are egui's automation ids: ``timeline.clipMenu.<command>``,
+right-clicked cut, the marker menu on the ruler and the menu of a right-clicked gap (Ripple
+Delete). Object names are egui's automation ids: ``timeline.clipMenu.<command>``,
 ``timeline.clipMenu.label.<Label>``, ``timeline.clipMenu.multicam.camera.<angle>`` and
 ``timeline.editPointMenu.<id>`` and ``timeline.gapMenu.edit.rippleDelete``.
 
@@ -207,6 +208,31 @@ def edit_point_menu(
     a.setObjectName("timeline.editPointMenu.joinThroughEdits")
     a.setEnabled(through and left is not None and right is not None)
     a.triggered.connect(lambda _c=False: host.run_menu_command("sequence.joinThroughEdits", {"cut": [left, right]}))
+    return menu
+
+
+def marker_menu(parent: QWidget, host: MenuHost, marker: dict[str, Any]) -> QMenu:
+    """egui's marker menu on the ruler: Label ▸ the marker colours, Clear Selected Marker, Clear
+    Markers."""
+    from .info import LABELS, marker_rgb
+
+    menu = QMenu(parent)
+    menu.setObjectName("timeline.markerMenu")
+    sub = menu.addMenu(tr("Label"))
+    sub.setObjectName("timeline.markerMenu.label")
+    for name in LABELS:
+        a = sub.addAction(swatch(marker_rgb(name).name()), tr(name))
+        a.setObjectName(f"timeline.markerMenu.color.{name}")
+        a.setCheckable(True)
+        a.setChecked(marker.get("color") == name)
+        a.triggered.connect(
+            lambda _c=False, n=name: host.run_menu_command("markers.edit", {"target": "program", "marker": marker.get("id"), "color": n})
+        )
+    menu.addSeparator()
+    for label, cid in ((N_("Clear Selected Marker"), "markers.clearCurrent"), (N_("Clear Markers"), "markers.clearAll")):
+        a = menu.addAction(tr(label))
+        a.setObjectName(f"timeline.markerMenu.{cid}")
+        a.triggered.connect(lambda _c=False, c=cid: host.run_menu_command(c, {"target": "program"}))
     return menu
 
 

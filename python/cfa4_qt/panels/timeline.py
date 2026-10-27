@@ -49,6 +49,7 @@ from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_tick
 from . import timeline_menus
 from .effects import EFFECT_MIME, dropped_effect
 from .essential_graphics import TEMPLATE_MIME, dropped_template
+from .info import marker_rgb
 from .media_browser import FILES_MIME, dropped_files
 from .monitor_view import SOURCE_MIME, source_payload
 from .timeline_media import TimelineMedia
@@ -60,8 +61,12 @@ ROLL_YELLOW = QColor(0xF2, 0xC4, 0x3D)
 
 HEADER_W = 200
 RULER_H = 26
-VIDEO_H = 56
-AUDIO_H = 52
+VIDEO_H = 60  # egui's default track heights (state.rs)
+AUDIO_H = 56
+DRAG_MIN_H, DRAG_MAX_H = 22, 220  # dragging a header edge (timeline.rs)
+KEY_MIN_H, KEY_MAX_H = 24, 240  # Increase / Decrease … Tracks Height (keyboard.rs)
+HEIGHT_STEP = 12
+EXPANDED_H = 120  # Expand All Tracks
 LABEL_H = 14  # the clip name strip above a thumbnail or waveform
 EDGE_PX = 6
 SNAP_PX = 8
@@ -136,7 +141,7 @@ VOICEOVER_RED = "#d8503f"
 
 @dataclass
 class Drag:
-    kind: str  # "move" | "trim" | "scrub" | "roll" | "stretch" | "remix" | "slip" | "slide" | "hand"
+    kind: str  # "move" | "trim" | "scrub" | "roll" | "stretch" | "remix" | "slip" | "slide" | "hand" | "height"
     clip: dict[str, Any] | None
     origin: QPoint
     origin_time: int
@@ -148,6 +153,7 @@ class Drag:
     scroll: tuple[int, int] = (0, 0)  # hand: scroll position at the press
     transition: dict[str, Any] | None = None  # transition: the one dragged, as it was at the press
     begun: bool = False  # transition: its first change went (the rest merge into that undo step)
+    track_kind: str = ""  # height: "video" | "audio"
 
 
 def as_int(v: Any, default: int = 0) -> int:
@@ -221,6 +227,9 @@ class TimelineCanvas(QWidget):
         self.pps = 40.0  # pixels per second
         self.scroll_ticks = 0
         self.scroll_y = 0  # pixels the track rows are scrolled up under the ruler
+        self.video_h = VIDEO_H  # every video track's height (egui's video_track_h)
+        self.audio_h = AUDIO_H
+        self.saved_heights: tuple[int, int] | None = None  # before Expand / Minimize All Tracks
         self.playhead = 0
         self.tool = "selection"
         self._drag: Drag | None = None
@@ -252,12 +261,57 @@ class TimelineCanvas(QWidget):
         videos = list(self.sequence.get("video") or [])
         for i in reversed(range(len(videos))):  # highest video track on top
             t = videos[i]
-            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, VIDEO_H, t, f"V{i + 1}"))
-            y += VIDEO_H
+            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, self.video_h, t, f"V{i + 1}"))
+            y += self.video_h
         y += 4
         for i, t in enumerate(self.sequence.get("audio") or []):
-            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", y, AUDIO_H, t, f"A{i + 1}"))
-            y += AUDIO_H
+            self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "audio", y, self.audio_h, t, f"A{i + 1}"))
+            y += self.audio_h
+
+    # ----- track heights (egui's timeline.rs header edges, keyboard.rs commands) -----
+    def set_track_heights(self, video: int | None = None, audio: int | None = None) -> None:
+        if video is not None:
+            self.video_h = max(DRAG_MIN_H, min(KEY_MAX_H, int(video)))
+        if audio is not None:
+            self.audio_h = max(DRAG_MIN_H, min(KEY_MAX_H, int(audio)))
+        self._layout_rows()
+        self.set_scroll_y(self.scroll_y)  # the content may have shrunk under the offset
+        self.updateGeometry()
+        self.update()
+        self.scrolled_y.emit()  # the scroll bar's range follows the content
+
+    def height_command(self, cid: str) -> dict[str, int]:
+        """Expand / Minimize All Tracks (again: the heights from before), Increase / Decrease
+        Video / Audio Tracks Height."""
+        if cid in ("timeline.expandAllTracks", "timeline.minimizeAllTracks"):
+            target = EXPANDED_H if cid == "timeline.expandAllTracks" else KEY_MIN_H
+            if self.video_h == target and self.audio_h == target and self.saved_heights is not None:
+                (v, a), self.saved_heights = self.saved_heights, None
+                self.set_track_heights(v, a)
+            else:
+                self.saved_heights = (self.video_h, self.audio_h)
+                self.set_track_heights(target, target)
+        else:
+            d = HEIGHT_STEP if "increase" in cid else -HEIGHT_STEP
+            if "Video" in cid:
+                self.set_track_heights(video=max(KEY_MIN_H, min(KEY_MAX_H, self.video_h + d)))
+            else:
+                self.set_track_heights(audio=max(KEY_MIN_H, min(KEY_MAX_H, self.audio_h + d)))
+        return {"videoTrackHeight": self.video_h, "audioTrackHeight": self.audio_h}
+
+    def height_edge_at(self, pos: QPoint) -> Row | None:
+        """The track whose height a press at ``pos`` drags: a header's bottom edge, or the top
+        edge of the top video track."""
+        if pos.x() >= HEADER_W or pos.y() < RULER_H:
+            return None
+        y = pos.y()
+        for i, r in enumerate(self.rows):
+            bottom = r.top + r.height
+            if bottom - 3 <= y < bottom + 2:
+                return r
+            if i == 0 and r.kind == "video" and r.top - 2 <= y < r.top + 3:
+                return r
+        return None
 
     def content_height(self) -> int:
         """Height of every track row together (below the ruler), unscrolled."""
@@ -593,10 +647,27 @@ class TimelineCanvas(QWidget):
             p.drawLine(int(x), RULER_H - 8, int(x), RULER_H)
             p.setPen(T.c("tl_ruler_text"))
             p.drawText(int(x) + 3, RULER_H - 10, format_timecode(t, ft))
+        # markers in their colours (egui's), a marker with a duration with its range band
         for marker in self.sequence.get("markers") or [] if self.sequence else []:
-            x = self.x_of(int(marker.get("start") or 0))
-            if x >= HEADER_W:
-                p.fillRect(QRectF(x - 3, RULER_H - 7, 7, 7), QColor("#4caf50"))
+            if not isinstance(marker, dict):
+                continue
+            col = marker_rgb(marker.get("color"))
+            band = self.marker_band(marker)
+            if band is not None:
+                band = band.intersected(QRectF(HEADER_W, 0, max(0.0, self.width() - HEADER_W), RULER_H))
+                c = QColor(col)
+                c.setAlpha(110)
+                p.fillRect(band, c)
+            r = self.marker_rect(marker)
+            if r.right() >= HEADER_W:
+                path = QPainterPath()
+                path.moveTo(r.left(), r.top())
+                path.lineTo(r.right(), r.top())
+                path.lineTo(r.right(), r.top() + r.height() * 0.6)
+                path.lineTo(r.center().x(), r.bottom())
+                path.lineTo(r.left(), r.top() + r.height() * 0.6)
+                path.closeSubpath()
+                p.fillPath(path, col)
         # in / out
         if self.sequence:
             mi, mo = self.sequence.get("in"), self.sequence.get("out")
@@ -607,6 +678,29 @@ class TimelineCanvas(QWidget):
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
                     T.c("in_out_shade"),
                 )
+
+    # ----- markers (egui's timeline_hit.rs marker_rect / marker_range_rect) -----
+    def marker_rect(self, marker: dict[str, Any]) -> QRectF:
+        x = self.x_of(as_int(marker.get("start")))
+        return QRectF(x - 5.0, RULER_H - 15.0, 10.0, 13.0)
+
+    def marker_band(self, marker: dict[str, Any]) -> QRectF | None:
+        d = as_int(marker.get("duration"))
+        if d <= 0:
+            return None
+        x0 = self.x_of(as_int(marker.get("start")))
+        return QRectF(x0, 2.0, max(1.0, self.x_of(as_int(marker.get("start")) + d) - x0), 8.0)
+
+    def marker_at(self, pos: QPoint) -> dict[str, Any] | None:
+        """The topmost marker under ``pos`` on the ruler, its range band included."""
+        if pos.y() >= RULER_H or pos.x() < HEADER_W or self.sequence is None:
+            return None
+        at = QPointF(pos)
+        for m in reversed([m for m in self.sequence.get("markers") or [] if isinstance(m, dict)]):
+            band = self.marker_band(m)
+            if self.marker_rect(m).contains(at) or (band is not None and band.contains(at)):
+                return m
+        return None
 
     def _paint_corner(self, p: QPainter) -> None:
         T = theme.current()
@@ -793,6 +887,11 @@ class TimelineCanvas(QWidget):
             return
         pos = e.position().toPoint()
         if pos.x() < HEADER_W and pos.y() >= RULER_H:
+            edge_row = self.height_edge_at(pos)
+            if edge_row is not None:
+                start = self.video_h if edge_row.kind == "video" else self.audio_h
+                self._drag = Drag("height", None, pos, start, track_kind=edge_row.kind)
+                return
             row, cell = self.header_hit(pos)
             if row is not None and cell is not None:
                 self._press_header(row, cell)
@@ -878,7 +977,18 @@ class TimelineCanvas(QWidget):
         """egui's right-click on the tracks: a clip selects it (unless it is selected) and opens
         the clip menu; empty time between clips selects the gap and opens its menu."""
         host = self.menu_host
-        if host is None or self.sequence is None or pos.x() < HEADER_W or pos.y() < RULER_H:
+        if host is None or self.sequence is None or pos.x() < HEADER_W:
+            return
+        if pos.y() < RULER_H:
+            marker = self.marker_at(pos)
+            if marker is not None:
+                # egui: the playhead goes to the marker, for Clear Selected Marker
+                t = max(0, as_int(marker.get("start")))
+                self.playhead = t
+                self.seek.emit(t)
+                self.command.emit("playhead.set", {"time": t})
+                self.update()
+                self._popup(timeline_menus.marker_menu(self, host, marker), global_pos)
             return
         row, clip, edge = self.hit(pos)
         if row is None:
@@ -979,9 +1089,20 @@ class TimelineCanvas(QWidget):
         pos = e.position().toPoint()
         d = self._drag
         if d is None and pos.x() < HEADER_W:
+            if self.height_edge_at(pos) is not None:
+                self.setToolTip(tr("Drag to change the track height"))
+                self.setCursor(Qt.CursorShape.SizeVerCursor)
+                return
             _row, cell = self.header_hit(pos)
             self.setToolTip(cell.tip if cell is not None else "")
             self.unsetCursor()
+            return
+        if d is not None and d.kind == "height":
+            # video tracks stack upwards: dragging up makes them taller
+            dy = pos.y() - d.origin.y()
+            h = d.origin_time + (-dy if d.track_kind == "video" else dy)
+            h = max(DRAG_MIN_H, min(DRAG_MAX_H, h))
+            self.set_track_heights(**{d.track_kind: h})
             return
         if d is None:
             th = self.transition_hit(pos) if self.tool == "selection" else None
@@ -1064,7 +1185,7 @@ class TimelineCanvas(QWidget):
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         d, self._drag = self._drag, None
-        if d is None or e.button() != Qt.MouseButton.LeftButton:
+        if d is None or e.button() != Qt.MouseButton.LeftButton or d.kind == "height":
             return
         if d.kind == "scrub":
             self.command.emit("playhead.set", {"time": self.playhead})
@@ -1125,6 +1246,15 @@ class TimelineCanvas(QWidget):
         self.command.emit("timeline.move", params)
 
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+        pos = e.position().toPoint()
+        if pos.x() < HEADER_W and pos.y() >= RULER_H:
+            # egui: a double-click on a header (off its buttons) toggles that kind's tracks
+            # between tall and short
+            row, cell = self.header_hit(pos)
+            if row is not None and cell is None and self.height_edge_at(pos) is None:
+                h = self.video_h if row.kind == "video" else self.audio_h
+                self.set_track_heights(**{row.kind: 64 if h < 50 else 30})
+            return
         th = self.transition_hit(e.position().toPoint())
         if th is not None:
             if self.tool == "selection":

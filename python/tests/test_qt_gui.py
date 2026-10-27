@@ -3806,6 +3806,160 @@ def test_real_engine_timeline_clip_and_gap_menus_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_track_heights_as_egui(app, tmp_path: Path):
+    """egui's track heights: dragging a header's bottom edge (or the top video track's top edge)
+    resizes that kind's tracks, a double-click on a header toggles tall / short, and the UI
+    commands Expand / Minimize All Tracks (again: back) and Increase / Decrease … Height."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def row(short: str):
+        return next(r for r in canvas.rows if r.short == short)
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint) -> None:
+        QtTest.QTest.mousePress(canvas, btn, pos=a)
+        QtTest.QTest.mouseMove(canvas, b)
+        QtTest.QTest.mouseRelease(canvas, btn, pos=b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(600)
+        wait_until(app, lambda: False, 200)
+        assert (row("V1").height, row("A1").height) == (tl.VIDEO_H, tl.AUDIO_H) == (60, 56)
+        a1 = row("A1")
+        edge = QtCore.QPoint(100, a1.top + a1.height - 1)
+        assert canvas.height_edge_at(edge) is a1
+        QtTest.QTest.mouseMove(canvas, edge)
+        assert canvas.cursor().shape() == QtCore.Qt.CursorShape.SizeVerCursor
+        # an audio edge down: taller audio tracks, every one of them
+        drag(edge, edge + QtCore.QPoint(0, 30))
+        assert canvas.audio_h == 86 and all(r.height == 86 for r in canvas.rows if r.kind == "audio")
+        assert row("A2").top == row("A1").top + 86
+        # the top video track's top edge up: taller video tracks
+        top = canvas.rows[0]
+        assert top.kind == "video"
+        drag(QtCore.QPoint(100, top.top), QtCore.QPoint(100, top.top - 20))
+        assert canvas.video_h == 80 and row("V1").height == 80
+        # clamped as egui's (22…220)
+        a1 = row("A1")
+        drag(QtCore.QPoint(100, a1.top + a1.height - 1), QtCore.QPoint(100, a1.top + a1.height - 300))
+        assert canvas.audio_h == tl.DRAG_MIN_H
+        # a double-click off the header's buttons: tall ↔ short
+        a1 = row("A1")
+        spot = QtCore.QPoint(tl.HEADER_W - 8, a1.top + a1.height // 2)
+        assert canvas.header_hit(spot)[1] is None and canvas.height_edge_at(spot) is None
+        QtTest.QTest.mouseDClick(canvas, btn, pos=spot)
+        assert canvas.audio_h == 64
+        a1 = row("A1")
+        QtTest.QTest.mouseDClick(canvas, btn, pos=QtCore.QPoint(tl.HEADER_W - 8, a1.top + a1.height // 2))
+        assert canvas.audio_h == 30
+        # the UI commands
+        win.invoke("timeline.expandAllTracks")
+        assert (canvas.video_h, canvas.audio_h) == (120, 120)
+        win.invoke("timeline.expandAllTracks")
+        assert (canvas.video_h, canvas.audio_h) == (80, 30)
+        win.invoke("timeline.minimizeAllTracks")
+        assert (canvas.video_h, canvas.audio_h) == (24, 24)
+        win.invoke("timeline.decreaseVideoHeight")
+        assert canvas.video_h == 24  # not below 24
+        win.invoke("timeline.increaseVideoHeight")
+        win.invoke("timeline.increaseAudioHeight")
+        win.invoke("timeline.increaseAudioHeight")
+        win.invoke("timeline.decreaseAudioHeight")
+        assert (canvas.video_h, canvas.audio_h) == (36, 36)
+        assert canvas.saved_heights == (80, 30)
+        # listed and bound as egui's: Expand All Tracks is Shift+=
+        assert "timeline.expandAllTracks" in win.registry.local_actions
+        assert any(c == "timeline.expandAllTracks" for c, _l, _m, _k in win.local_commands())
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_marker_menu_as_egui(app, tmp_path: Path):
+    """egui's ruler markers: drawn in their colour, right-click moves the playhead to the marker
+    and opens Label ▸ colours, Clear Selected Marker, Clear Markers."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.info import LABELS, marker_rgb
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        fr = canvas.frame_ticks()
+        t = fr * 48
+        before = len(win.sequence.get("markers") or [])  # the demo's own markers
+        win.execute("markers.add", {"target": "program", "time": t, "color": "Blue"})
+        win.execute("markers.add", {"target": "program", "time": fr * 200, "color": "Rose", "durationFrames": 24})
+        assert wait_until(app, lambda: len((canvas.sequence or {}).get("markers") or []) == before + 2, 10_000)
+        wait_until(app, lambda: False, 200)
+        marker = next(m for m in canvas.sequence["markers"] if m["start"] == t)
+        r = canvas.marker_rect(marker)
+        # painted in its colour
+        img = canvas.grab().toImage()
+        px = img.pixelColor(int(r.center().x()), int(r.top() + 3))
+        want = marker_rgb("Blue")
+        assert abs(px.red() - want.red()) + abs(px.green() - want.green()) + abs(px.blue() - want.blue()) < 40, px.name()
+        ranged = next(m for m in canvas.sequence["markers"] if m["duration"] > 0)
+        band = canvas.marker_band(ranged)
+        assert band is not None and band.width() > 1
+        assert canvas.marker_at(band.center().toPoint()) is ranged
+        assert canvas.marker_at(QtCore.QPoint(int(r.center().x()), canvas.height() - 5)) is None
+        # right-click: playhead to the marker, then the menu
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        assert menu.objectName() == "timeline.markerMenu"
+        assert canvas.playhead == t
+        names = [a.objectName() or (a.menu().objectName() if a.menu() else "") for a in menu.actions() if not a.isSeparator()]
+        assert names == ["timeline.markerMenu.label", "timeline.markerMenu.markers.clearCurrent", "timeline.markerMenu.markers.clearAll"], names
+        sub = next(a.menu() for a in menu.actions() if a.menu())
+        colors = {a.objectName(): a for a in sub.actions()}
+        assert list(colors) == [f"timeline.markerMenu.color.{n}" for n in LABELS]
+        assert colors["timeline.markerMenu.color.Blue"].isChecked()
+        colors["timeline.markerMenu.color.Mango"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: next(m for m in canvas.sequence["markers"] if m["id"] == marker["id"]).get("color") == "Mango", 10_000)
+        # Clear Selected Marker removes the marker under the playhead only
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.markerMenu.markers.clearCurrent").trigger()
+        menu.close()
+        assert wait_until(app, lambda: len(canvas.sequence["markers"]) == before + 1, 10_000)
+        assert all(m["id"] != marker["id"] for m in canvas.sequence["markers"])
+        # Clear Markers removes the rest
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=band.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.markerMenu.markers.clearAll").trigger()
+        menu.close()
+        assert wait_until(app, lambda: not canvas.sequence["markers"], 10_000)
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_edit_point_menu_as_egui(app, tmp_path: Path):
     """egui's edit point menu: right-clicking a clip's edge selects that edit point (Roll with the
     Rolling Edit tool) and opens the trim types (the selected one checked), Apply Default
