@@ -155,7 +155,12 @@ sequence as tone-mapped SDR.
 `shortcuts.get`, `shortcuts.set {command, keys, panel?, add?, keepConflicts?}`, `shortcuts.clear`,
 `shortcuts.undo` / `shortcuts.redo`, `shortcuts.conflicts {platform?}`, `shortcuts.forKey {key}`,
 `shortcuts.resolve {keys, panel?}`, `shortcuts.presets`, `shortcuts.loadPreset` / `savePreset` /
-`deletePreset {name}`, `shortcuts.export` / `import {path}`, `shortcuts.audit`. Keys use `Cmd` (⌘ /
+`deletePreset {name}`, `shortcuts.export` / `import {path}`, `shortcuts.audit`,
+`shortcuts.keyboard {mods?, panel?}` (the editor's keyboard: per key the application and panel
+command with exactly those modifiers), `shortcuts.beginEditing` / `endEditing` / `cancelEditing`
+(an editor dialog in another process: Cancel restores the set it opened with) and
+`shortcuts.registerExternal {commands: [{id, label, menu?, shortcut?}]}` (a frontend's own
+commands, such as the Qt GUI's tools and transport, so they can be listed and bound). Keys use `Cmd` (⌘ /
 Ctrl), `Ctrl` (macOS ⌃), `Alt`, `Shift`. The dialog (Edit ▸ Keyboard Shortcuts…, ⌥⌘K) uses ids
 `shortcuts.*` (`shortcuts.key.K`, `shortcuts.cell.<command>`, `shortcuts.ok`, …).
 

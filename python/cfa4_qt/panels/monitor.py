@@ -25,6 +25,7 @@ Without an audio device the sound is still fetched at the playing pace, for the 
 from __future__ import annotations
 
 import json
+import math
 from collections import deque
 from typing import Any
 
@@ -44,6 +45,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -56,13 +58,15 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..engine import EngineClient
-from ..i18n import N_, tr
+from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks
+from .guides import AddGuideDialog, GuideLayer, ManageGuidesDialog, SaveGuidesDialog
 from .monitor_view import (
     CHANNELS,
     DISPLAYS,
     MAX_ZOOM,
     MIN_ZOOM,
+    PROGRAM_DISPLAYS,
     RESOLUTIONS,
     SOURCE_DISPLAYS,
     SOURCE_MIME,
@@ -131,6 +135,7 @@ class FrameView(QWidget):
     dropped-frame light drawn over it."""
 
     view_changed = Signal()  # magnification or pan
+    guides_changed = Signal()  # a guide added, moved or removed on the picture
     drag_out = Signal()  # a left-button drag on the picture (the Source monitor lifts its clip)
 
     def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
@@ -147,6 +152,9 @@ class FrameView(QWidget):
         self._pan_from: QPointF | None = None
         self._press: QPointF | None = None
         self.overlay: Any = None  # the Program monitor's on-monitor editing (program_overlay)
+        self.guides = GuideLayer(self, self.guides_changed.emit)
+        self._guide_cursor = False
+        self.setMouseTracking(True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(160, 90)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -178,9 +186,10 @@ class FrameView(QWidget):
         return fw * self.par / dpr, fh / dpr
 
     def picture_rect(self) -> QRectF:
-        """Fitted, or magnified about the centre plus the (clamped) pan (egui's picture_rect)."""
+        """Fitted, or magnified about the centre plus the (clamped) pan (egui's picture_rect), in
+        the picture area (the view less the rulers)."""
         w, h = self.display_size()
-        area = QRectF(self.rect())
+        area = self.guides.area()
         if w <= 0 or h <= 0:
             return area
         if self.mv.zoom is None:
@@ -216,7 +225,7 @@ class FrameView(QWidget):
         z = min(MAX_ZOOM, max(MIN_ZOOM, cur * factor))
         k = z / cur
         centre = at - (at - pic.center()) * k
-        area = QRectF(self.rect())
+        area = self.guides.area()
         maxx = max(0.0, (pic.width() * k - area.width()) / 2)
         maxy = max(0.0, (pic.height() * k - area.height()) / 2)
         self.mv.zoom = z
@@ -228,7 +237,7 @@ class FrameView(QWidget):
         if self.mv.zoom is None:
             return
         pic = self.picture_rect()
-        area = QRectF(self.rect())
+        area = self.guides.area()
         maxx, maxy = max(0.0, (pic.width() - area.width()) / 2), max(0.0, (pic.height() - area.height()) / 2)
         self.mv.pan = [min(maxx, max(-maxx, self.mv.pan[0] + dx)), min(maxy, max(-maxy, self.mv.pan[1] + dy))]
         self.update()
@@ -250,6 +259,9 @@ class FrameView(QWidget):
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
             e.accept()
             return
+        if not self.hand and self.guides.press(e):
+            e.accept()
+            return
         if self.overlay is not None and not self.hand and self.overlay.press(e):
             e.accept()
             return
@@ -262,6 +274,17 @@ class FrameView(QWidget):
             self._pan_from = e.position()
             self.pan_by(d.x(), d.y())
             return
+        if self.guides.move(e):
+            return
+        if not self.hand and e.buttons() == Qt.MouseButton.NoButton:
+            shape = self.guides.hover_cursor(e.position())
+            if shape is not None:
+                self.setCursor(shape)
+                self._guide_cursor = True
+                return
+            if self._guide_cursor:
+                self._guide_cursor = False
+                self.set_hand(self.hand)
         if self.overlay is not None and not self.hand and self.overlay.move(e):
             return
         if self._press is not None and (e.position() - self._press).manhattanLength() >= QApplication.startDragDistance():
@@ -276,6 +299,8 @@ class FrameView(QWidget):
             self._pan_from = None
             self.set_hand(self.hand)
             return
+        if self.guides.release(e):
+            return
         if self.overlay is not None and self.overlay.release(e):
             return
         super().mouseReleaseEvent(e)
@@ -286,6 +311,10 @@ class FrameView(QWidget):
         super().mouseDoubleClickEvent(e)
 
     def event(self, e: QEvent) -> bool:
+        if e.type() == QEvent.Type.ShortcutOverride and isinstance(e, QKeyEvent) and self.guides.drag is not None \
+                and e.key() == Qt.Key.Key_Escape:
+            e.accept()
+            return True
         if e.type() == QEvent.Type.ShortcutOverride and isinstance(e, QKeyEvent) and self.overlay is not None \
                 and self.overlay.claims_key(e):
             e.accept()
@@ -293,6 +322,8 @@ class FrameView(QWidget):
         return super().event(e)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
+        if self.guides.key(e):
+            return
         if self.overlay is not None and self.overlay.key(e):
             return
         super().keyPressEvent(e)
@@ -334,6 +365,8 @@ class FrameView(QWidget):
                 p.drawText(QRectF(0, 6, self.width() - 8, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop, label)
         if self.overlay is not None and img is not None and not img.isNull():
             self.overlay.paint(p)
+        if img is not None and not img.isNull():
+            self.guides.paint(p)
         if self.dropped is not None:
             p.setRenderHint(QPainter.RenderHint.Antialiasing)
             p.setPen(Qt.PenStyle.NoPen)
@@ -477,6 +510,8 @@ class Monitor(QWidget):
     playhead_moved = Signal(object)  # local playhead during playback, ticks
     playback_stopped = Signal()  # stop(): a voice-over take ends with playback
     playback_started = Signal()  # play(): a multi-camera recording pass starts with playback
+    status = Signal(str)  # a passing message for the status bar
+    view_set = Signal()  # a view setting changed (display mode, Comparison reference, …)
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -492,6 +527,9 @@ class Monitor(QWidget):
         self._shown: tuple[Any, ...] | None = None
         self.view = FrameView(self.target, self.mv, self)
         self.view.view_changed.connect(self._view_changed)
+        self.view.guides_changed.connect(self._guides_changed)
+        self.program_peer: Monitor | None = None  # the Program monitor (Snap in Program Monitor)
+        self.last_dialog: QDialog | None = None
         self.scrub = ScrubBar(self.target, self)
         self.scrub.seek.connect(self.seek)
         self.timecode = TimecodeField(self.target, self)
@@ -649,6 +687,7 @@ class Monitor(QWidget):
             setattr(self.mv, name, value)
         self._save_view()
         self._apply_view()
+        self.view_set.emit()
 
     def set_zoom(self, zoom: float | None) -> None:
         self.mv.set_zoom(zoom)
@@ -662,6 +701,54 @@ class Monitor(QWidget):
         self.zoom_button.setText(self.mv.zoom_label())
         self._save_view()
         self.request_frame()
+
+    # ----- guides (egui's monitor_view.rs) -----
+    def _guides_changed(self) -> None:
+        self._save_view()
+        self.view.update()
+
+    def program_mv(self) -> MonitorView:
+        return (self.program_peer or self).mv
+
+    def program_view(self, **changes: Any) -> None:
+        """A Program-monitor setting (Snap in Program Monitor) from whichever monitor's menu."""
+        (self.program_peer or self).set_view(**changes)
+
+    def add_guide(self, vertical: bool, position: float) -> None:
+        if len(self.mv.guides) < 256 and abs(position) <= 1e6 and math.isfinite(position):
+            self.mv.guides.append({"vertical": bool(vertical), "position": float(position)})
+            self.mv.show_guides = True
+            self._guides_changed()
+
+    def clear_guides(self) -> int:
+        n = len(self.mv.guides)
+        self.mv.guides.clear()
+        self._guides_changed()
+        return n
+
+    def apply_guides(self, guides: list[dict[str, Any]]) -> None:
+        self.mv.guides = [dict(g) for g in guides]
+        self.mv.show_guides = True
+        self._guides_changed()
+
+    def _show_dialog(self, d: QDialog) -> QDialog:
+        d.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = d
+        d.open()
+        return d
+
+    def open_add_guide(self) -> QDialog:
+        middle = float(self.view.full[0] // 2) if self.view.full[0] > 0 else 960.0
+        return self._show_dialog(AddGuideDialog(self.window(), middle, self.add_guide))
+
+    def open_save_guides(self) -> QDialog | None:
+        if not self.mv.guides:
+            self.status.emit(tr("There are no guides to save."))
+            return None
+        return self._show_dialog(SaveGuidesDialog(self.window(), self.engine, self.mv.guides, self.status.emit))
+
+    def open_manage_guides(self) -> QDialog:
+        return self._show_dialog(ManageGuidesDialog(self.window(), self.engine, self.apply_guides))
 
     def _hidden_changed(self, hidden: list[str]) -> None:
         self.mv.hidden = list(hidden)
@@ -728,6 +815,16 @@ class Monitor(QWidget):
             a.triggered.connect(lambda on: self.set_view(**{attr: bool(on)}))
 
         toggle("highQualityPlayback", N_("High Quality Playback"), "high_quality")
+        m.addSeparator()
+        toggle("showRulers", N_("Show Rulers"), "show_rulers")
+        toggle("showGuides", N_("Show Guides"), "show_guides")
+        if self.mv.guides:
+            toggle("lockGuides", N_("Lock Guides"), "lock_guides")
+            clear = m.addAction(tr("Clear Guides"))
+            clear.setObjectName(f"{self.target}.settings.clearGuides")
+            clear.triggered.connect(lambda: self.clear_guides())
+        if self.target == "program":
+            toggle("snapInProgramMonitor", N_("Snap in Program Monitor"), "snap")
         m.addSeparator()
         toggle("safeMargins", N_("Safe Margins"), "safe_margins")
         toggle("showTransport", N_("Show Transport Controls"), "show_transport")
@@ -1157,8 +1254,42 @@ class ProgramMonitor(Monitor):
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(4)
         row.addWidget(self.grid, 1)
+        # Comparison View: the reference frame left of the current one, with its bar (egui's
+        # compare_bar: the reference timecode, previous / next frame, Set to the playhead)
+        self.compare_box = QWidget(self)
+        self.compare_box.setObjectName("program.compare")
+        cb = QVBoxLayout(self.compare_box)
+        cb.setContentsMargins(0, 0, 0, 0)
+        cb.setSpacing(2)
+        self.ref_view = FrameView("program.compare", MonitorView(), self.compare_box)
+        self.ref_view.setObjectName("program.compare.reference")
+        cb.addWidget(self.ref_view, 1)
+        bar = QHBoxLayout()
+        bar.setContentsMargins(4, 0, 4, 0)
+        self.compare_label = QLabel("", self.compare_box)
+        self.compare_label.setObjectName("program.compare.label")
+        bar.addWidget(self.compare_label)
+        bar.addStretch(1)
+        for key, text, tip in (
+            ("prev", "◀", N_("Reference: previous frame")),
+            ("next", "▶", N_("Reference: next frame")),
+            ("set", N_("Set"), N_("Set the reference to the playhead")),
+        ):
+            b = QToolButton(self.compare_box)
+            b.setObjectName(f"program.compare.{key}")
+            b.setText(tr(text))
+            b.setToolTip(tr(tip))
+            b.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            b.clicked.connect(lambda _c=False, k=key: self.step_reference(k))
+            bar.addWidget(b)
+        cb.addLayout(bar)
+        self.compare_box.hide()
+        row.addWidget(self.compare_box, 1)
         row.addWidget(self.view, 1)
         lay.insertLayout(0, row, 1)
+        self._ref_busy = False
+        self._ref_shown: tuple[Any, ...] | None = None
+        self._ref_wanted = False
         self.grid.info_changed.connect(self._grid_info)
         self._apply_view(request=False)
 
@@ -1166,9 +1297,77 @@ class ProgramMonitor(Monitor):
         # another display mode leaves the Multi-Camera view (egui's set_display)
         if "display" in changes and "multicam" not in changes:
             changes["multicam"] = False
+        # Comparison View starts with the playhead as its reference
+        if changes.get("display") == "comparison" and self.mv.compare_ref is None and "compare_ref" not in changes:
+            changes["compare_ref"] = int(self.playhead)
         super().set_view(**changes)
 
+    # ----- Comparison View -----
+    def comparing(self) -> bool:
+        return self.mv.display == "comparison" and not self.mv.multicam
+
+    def reference(self) -> int:
+        return self.mv.compare_ref if self.mv.compare_ref is not None else int(self.playhead)
+
+    def set_reference(self, t: int) -> None:
+        """``view.compare.setReference``: the reference frame (sequence ticks, at least 0)."""
+        self.mv.compare_ref = max(0, int(t))
+        self._save_view()
+        self._show_reference()
+        self.view_set.emit()
+
+    def step_reference(self, key: str) -> None:
+        if key == "set":
+            self.set_reference(self.playhead)
+        else:
+            f = max(1, self.frame())
+            self.set_reference(self.reference() + (f if key == "next" else -f))
+
+    def _show_reference(self) -> None:
+        if not self.comparing():
+            return
+        tc = format_timecode(self.reference(), self.frame(), self.drop_frame())
+        self.compare_label.setText(fmt("Reference  {tc}", tc=tc))
+        self._ref_wanted = True
+        self._pump_reference()
+
+    def _pump_reference(self) -> None:
+        if self._ref_busy or not self._ref_wanted or not self.engine.running or not self.has_content():
+            return
+        self._ref_wanted = False
+        width, height = self.ref_view.wanted_size()
+        scale = self.mv.scale(False)
+        key = (self.reference(), self.revision, width, height, scale, self.content_key())
+        if key == self._ref_shown:
+            return
+        self._ref_busy = True
+
+        def got(r: Any, b: bytes | None) -> None:
+            self._ref_busy = False
+            if isinstance(r, dict) and b:
+                w, h = int(r.get("w") or 0), int(r.get("h") or 0)
+                if w > 0 and h > 0 and len(b) == w * h * 4:
+                    image = QImage(b, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
+                    full = (int(r.get("fullW") or 0), int(r.get("fullH") or 0))
+                    par = r.get("pixelAspect")
+                    self.ref_view.set_image(image, "", full, float(par) if isinstance(par, (int, float)) else None)
+                    self._ref_shown = key
+            self._pump_reference()
+
+        def failed(m: str) -> None:
+            self._ref_busy = False
+            self.ref_view.set_image(None, m)
+            self._pump_reference()
+
+        self.engine.call(
+            "frame.render", {"time": key[0], "maxWidth": width, "maxHeight": height, "scale": scale}, on_reply=got, on_error=failed
+        )
+
     def _apply_view(self, request: bool = True) -> None:
+        box = getattr(self, "compare_box", None)
+        if box is not None:
+            box.setVisible(self.comparing())
+            self._show_reference()
         grid = getattr(self, "grid", None)
         if grid is not None:
             on = bool(self.mv.multicam)
@@ -1182,6 +1381,9 @@ class ProgramMonitor(Monitor):
     def request_frame(self, at: int | None = None) -> None:
         if not self.view.isHidden():
             super().request_frame(at)
+        if getattr(self, "compare_box", None) is not None and self.comparing():
+            self._ref_wanted = True
+            self._pump_reference()
         grid = getattr(self, "grid", None)
         if grid is not None and self.mv.multicam and self.has_content():
             grid.request(self.playhead if at is None else at, self.playing, self.mv.scale(self.playing), self.revision)
@@ -1205,6 +1407,13 @@ class ProgramMonitor(Monitor):
         mc.setChecked(bool(self.mv.multicam))
         mc.triggered.connect(lambda on: self.set_view(multicam=bool(on)))
         m.insertAction(first, mc)
+        for key, label in PROGRAM_DISPLAYS:
+            a = QAction(tr(label), m)
+            a.setObjectName(f"program.settings.display.{key}")
+            a.setCheckable(True)
+            a.setChecked(self.comparing())
+            a.triggered.connect(lambda on, k=key: self.set_view(display=k if on else "composite"))
+            m.insertAction(first, a)
         for a in m.actions():
             if a.objectName() == "program.settings.display.composite" and self.mv.multicam:
                 a.setChecked(False)

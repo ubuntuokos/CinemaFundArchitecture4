@@ -55,6 +55,8 @@ SOURCE_DISPLAYS: tuple[tuple[str, str], ...] = (
     ("audioWaveform", N_("Audio Waveform")),
     ("videoAndWaveform", N_("Video and Audio Waveform Split")),
 )
+# the Program monitor's Comparison View (egui's DisplayMode::Comparison)
+PROGRAM_DISPLAYS: tuple[tuple[str, str], ...] = (("comparison", N_("Comparison View")),)
 CHANNELS = ("alpha", "red", "green", "blue")
 # the marked span of the Source clip dragged to the Timeline: JSON {item, sourceIn, duration,
 # video, audio} (egui's SourceDrag)
@@ -115,6 +117,13 @@ class MonitorView:
     hidden: list[str] = field(default_factory=lambda: list(DEFAULT_HIDDEN))
     looping: bool = False
     multicam: bool = False  # Program monitor: the Multi-Camera view (egui's MonitorView::multicam)
+    show_rulers: bool = False
+    show_guides: bool = True
+    lock_guides: bool = False
+    # {"vertical": bool, "position": frame px} (egui's Guide)
+    guides: list[dict[str, Any]] = field(default_factory=list)
+    snap: bool = True  # Program monitor: Snap in Program Monitor
+    compare_ref: int | None = None  # Comparison View's reference frame (sequence ticks)
 
     def scale(self, playing: bool) -> float:
         """egui's effective_res: Playback Resolution while playing (or the paused one with High
@@ -149,7 +158,14 @@ class MonitorView:
                 elif name in ("res", "paused_res"):
                     setattr(v, name, value if any(value == k for k, _l, _s in RESOLUTIONS) else default)
                 elif name == "display":
-                    v.display = value if any(value == k for k, _l in (*DISPLAYS, *SOURCE_DISPLAYS)) else default
+                    v.display = value if any(value == k for k, _l in (*DISPLAYS, *SOURCE_DISPLAYS, *PROGRAM_DISPLAYS)) else default
+                elif name == "compare_ref":
+                    ok = isinstance(value, int) and not isinstance(value, bool) and 0 <= value < 1 << 62
+                    v.compare_ref = value if ok else None
+                elif name == "guides":
+                    from .guides import guides_of
+
+                    v.guides = guides_of(value)
                 elif name == "hidden":
                     v.hidden = [str(x) for x in value] if isinstance(value, list) else list(default)
                 elif name == "pan":
@@ -199,7 +215,14 @@ def build_view_menu(menu: QMenu, monitor: Callable[[], Any]) -> list[QAction]:
     hq.triggered.connect(lambda on: monitor().set_view(high_quality=bool(on)))
     menu.addAction(hq)
     added.append(hq)
-    radio(N_("Display Mode"), "display", DISPLAYS, lambda v: v.display, lambda m, k: m.set_view(display=k))
+    radio(
+        N_("Display Mode"),
+        "display",
+        (*DISPLAYS, *PROGRAM_DISPLAYS),
+        lambda v: v.display,
+        # Comparison View is a Program monitor mode, whichever monitor has focus (egui's set_display)
+        lambda m, k: m.program_view(display=k) if k == "comparison" else m.set_view(display=k),
+    )
     zoom_items = (("fit", N_("Fit")), *((k, f"{k}%") for k, _z in ZOOMS))
     radio(
         N_("Magnification"),
@@ -213,11 +236,53 @@ def build_view_menu(menu: QMenu, monitor: Callable[[], Any]) -> list[QAction]:
     safe.triggered.connect(lambda on: monitor().set_view(safe_margins=bool(on)))
     menu.addAction(safe)
     added.append(safe)
+    # rulers and guides (egui's View menu); Snap in Program Monitor is the Program monitor's
+    toggles: list[tuple[QAction, Callable[[MonitorView], bool]]] = []
+    for cid, label, attr in (
+        ("view.showRulers", N_("Show Rulers"), "show_rulers"),
+        ("view.showGuides", N_("Show Guides"), "show_guides"),
+        ("view.lockGuides", N_("Lock Guides"), "lock_guides"),
+    ):
+        a = QAction(tr(label), menu, checkable=True)
+        a.setObjectName(cid)
+        a.triggered.connect(lambda on, at=attr: monitor().set_view(**{at: bool(on)}))
+        menu.addAction(a)
+        added.append(a)
+        toggles.append((a, lambda v, at=attr: bool(getattr(v, at))))
+    add = QAction(tr("Add Guide…"), menu)
+    add.setObjectName("view.addGuide")
+    add.triggered.connect(lambda: monitor().open_add_guide())
+    clear = QAction(tr("Clear Guides"), menu)
+    clear.setObjectName("view.clearGuides")
+    clear.triggered.connect(lambda: monitor().clear_guides())
+    snap = QAction(tr("Snap in Program Monitor"), menu, checkable=True)
+    snap.setObjectName("view.snapInProgramMonitor")
+    snap.triggered.connect(lambda on: monitor().program_view(snap=bool(on)))
+    for a in (add, clear, snap):
+        menu.addAction(a)
+        added.append(a)
+    templates = QMenu(tr("Guide Templates"), menu)
+    templates.setObjectName("menu.View.Guide Templates")
+    save = templates.addAction(tr("Save Guides as Template…"))
+    save.setObjectName("view.guideTemplates.save")
+    save.triggered.connect(lambda: monitor().open_save_guides())
+    manage = templates.addAction(tr("Manage Guides…"))
+    manage.setObjectName("view.guideTemplates.manage")
+    manage.triggered.connect(lambda: monitor().open_manage_guides())
+    added.append(menu.addMenu(templates))
 
     def tick_toggles() -> None:
-        v = monitor().mv
+        m = monitor()
+        v = m.mv
         hq.setChecked(v.high_quality)
         safe.setChecked(v.safe_margins)
+        for a, get in toggles:
+            a.setChecked(get(v))
+        has = bool(v.guides)
+        toggles[2][0].setEnabled(has)
+        clear.setEnabled(has)
+        save.setEnabled(has)
+        snap.setChecked(m.program_mv().snap)
 
     menu.aboutToShow.connect(tick_toggles)
     return added

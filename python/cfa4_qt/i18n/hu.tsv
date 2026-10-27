@@ -1680,3 +1680,96 @@
 	Credits Page Picture	Stáblista-oldal képe
 	Preview Credits	Stáblista előnézete
 	Credits Styles	Stáblista-stílusok
+	 (removed from {list})	 (eltávolítva innen: {list})
+	 and 	 és 
+	Add another shortcut	Újabb billentyűparancs hozzáadása
+	Application shortcuts work whatever panel has focus	Az alkalmazás billentyűparancsai bármely panel fókuszában működnek
+	Assign {key} to {command}	{key} hozzárendelése ehhez: {command}
+	Cleared {n} shortcut(s) of {command}	{n} billentyűparancs törölve: {command}
+	Click a command's Shortcut cell and press keys to assign it; + adds another shortcut.	Kattintson egy parancs Billentyűparancs cellájára, és nyomja le a billentyűket a hozzárendeléshez; a + újabbat ad hozzá.
+	Click a key on the keyboard to see its shortcuts	Kattintson a billentyűzet egy billentyűjére a parancsai megtekintéséhez
+	Click and press keys to assign	Kattintson, és nyomja le a hozzárendelendő billentyűket
+	Command	Parancs
+	Commands:	Parancsok:
+	Conflict: {key} is assigned to {commands} ({ctx})	Ütközés: a(z) {key} ezekhez van rendelve: {commands} ({ctx})
+	Export: no file chosen (agents: shortcuts.export {path})	Exportálás: nincs fájl kiválasztva (ügynököknek: shortcuts.export {path})
+	Export…	Exportálás…
+	Import: no file chosen (agents: shortcuts.import {path})	Importálás: nincs fájl kiválasztva (ügynököknek: shortcuts.import {path})
+	Key:	Billentyű:
+	Keyboard Shortcuts	Billentyűparancsok
+	Keyboard Shortcuts…	Billentyűparancsok…
+	Keyboard: US	Billentyűzet: amerikai
+	Loaded “{name}”	Betöltve: „{name}”
+	Modifier held / selected	Lenyomott / kiválasztott módosítóbillentyű
+	Modifiers	Módosítók
+	My Shortcuts	Saját billentyűparancsok
+	No matching commands	Nincs egyező parancs
+	Nothing is assigned to this key	Ehhez a billentyűhöz nincs semmi rendelve
+	Panel shortcuts override application shortcuts while that panel has focus	A panel billentyűparancsai felülírják az alkalmazáséit, amíg a panelé a fókusz
+	Save preset as:	Készlet mentése másként:
+	Saved preset “{name}”	Készlet mentve: „{name}”
+	Search commands or keys	Parancsok vagy billentyűk keresése
+	Selected: {command}	Kiválasztva: {command}
+	Shortcut	Billentyűparancs
+	Type a shortcut… (Esc cancels)	Nyomja le a billentyűparancsot… (Esc: mégse)
+	{active} (modified)	{active} (módosítva)
+	{key} can't be used as a shortcut	A(z) {key} nem használható billentyűparancsként
+	{panel} Panel	{panel} panel
+	Docking Action	Dokkolási művelet
+	Dock Panel	Panel dokkolása
+	Undock Panel	Panel leválasztása
+	Close Panel	Panel bezárása
+	Restore Workspace	Munkaterület visszaállítása
+	Add Guide	Segédvonal hozzáadása
+	Add Guide…	Segédvonal hozzáadása…
+	Clear Guides	Segédvonalak törlése
+	Guide Templates	Segédvonal-sablonok
+	Guides	Segédvonalak
+	Lock Guides	Segédvonalak zárolása
+	Manage Guides	Segédvonalak kezelése
+	Manage Guides…	Segédvonalak kezelése…
+	No saved guide templates.	Nincs mentett segédvonal-sablon.
+	Orientation:	Irány:
+	Position:	Pozíció:
+	Reference  {tc}	Referencia  {tc}
+	Reference: next frame	Referencia: következő képkocka
+	Reference: previous frame	Referencia: előző képkocka
+	Save Guides as Template	Segédvonalak mentése sablonként
+	Save Guides as Template…	Segédvonalak mentése sablonként…
+	Saved guide template “{name}”	Segédvonal-sablon mentve: „{name}”
+	Set	Beállítás
+	Set Comparison Reference	Összehasonlítási referencia beállítása
+	Set the reference to the playhead	A referencia beállítása a lejátszófejre
+	Show Guides	Segédvonalak megjelenítése
+	Show Rulers	Vonalzók megjelenítése
+	Snap in Program Monitor	Illesztés a programmonitoron
+	The template needs a name.	A sablonnak nevet kell adni.
+	There are no guides to save.	Nincs menthető segédvonal.
+	Join Through Edits	Átmenő vágások egyesítése
+	Replace With Clip From Source Monitor	Csere a forrásmonitor klipjére
+	Reveal Nested Sequence	Beágyazott szekvencia megjelenítése
+	Reveal in Project	Megjelenítés a projektben
+	Unlink	Szétválasztás
+	Apply Default Transitions	Alapértelmezett átmenetek alkalmazása
+	Ripple Trim In	Kezdőpont hullámvágása
+	Ripple Trim Out	Végpont hullámvágása
+	Roll Edit	Gördülő vágás
+	Trim In	Kezdőpont igazítása
+	Trim Out	Végpont igazítása
+	Expand All Tracks	Minden sáv kibontása
+	Minimize All Tracks	Minden sáv minimalizálása
+	Increase Video Tracks Height	Videosávok magasságának növelése
+	Decrease Video Tracks Height	Videosávok magasságának csökkentése
+	Increase Audio Tracks Height	Hangsávok magasságának növelése
+	Decrease Audio Tracks Height	Hangsávok magasságának csökkentése
+	Drag to change the track height	Húzza a sáv magasságának módosításához
+	Head	Eleje
+	Head and Tail	Eleje és vége
+	Continuous	Folyamatos
+	Show Video Thumbnails	Videó-bélyegképek megjelenítése
+	Show Audio Waveform	Hanghullámforma megjelenítése
+	Timeline Display Settings	Idővonal megjelenítési beállításai
+	Snap in Timeline (S)	Illesztés az idővonalon (S)
+	Caption track options	Feliratsáv beállításai
+	Insert and overwrite sequences as nests or individual clips	Szekvenciák beszúrása és felülírása beágyazva vagy külön klipekként
+	Close Other Timeline Panels	Többi idővonalpanel bezárása

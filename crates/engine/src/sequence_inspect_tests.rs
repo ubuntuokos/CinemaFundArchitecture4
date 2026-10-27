@@ -87,3 +87,71 @@ fn sequence_inspect_reports_a_reversed_clip() {
     let js = s.execute("sequence.inspect", json!({})).unwrap();
     assert!(all(&js).iter().all(|(_, reversed)| !reversed));
 }
+
+#[test]
+fn sequence_inspect_reports_edit_points_and_through_edits() {
+    // the Qt timeline's edit point menu: the selected edit point and whether a cut is a through edit
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    s.execute("sequence.linkedSelection", json!({"on": false})).unwrap();
+    let (clip, mid) = {
+        let q = s.active_sequence().unwrap();
+        let it = &q.video_tracks[0].items[0];
+        (it.id, crate::Tick(it.start.0 + it.duration.0 / 2))
+    };
+    s.execute("timeline.razor", json!({"time": mid.0, "clip": clip.0})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let right = js["video"][0]["items"][1]["clip"].clone();
+    assert_eq!(js["editPoints"], json!([]));
+    assert!(js["throughEdits"].as_array().unwrap().contains(&json!({"left": clip.0, "right": right})));
+    s.execute("trim.selectEditPoint", json!({"clip": clip.0, "edge": "out", "kind": "roll"})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["editPoints"], json!([{"clip": clip.0, "out": true, "kind": "roll"}]));
+}
+
+#[test]
+fn sequence_inspect_reports_frame_holds_and_the_timeline_toggles() {
+    // the Qt timeline's thumbnails show a held frame; its toolbar shows Snap, Linked Selection, Nest
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    s.execute("sequence.linkedSelection", json!({"on": false})).unwrap();
+    let (clip, source_in) = {
+        let it = &s.active_sequence().unwrap().video_tracks[0].items[0];
+        (it.id, it.source_in.0)
+    };
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["video"][0]["items"][0]["frameHold"], json!(null));
+    assert_eq!(js["toggles"]["linkedSelection"], json!(false));
+    let snapping = js["toggles"]["snapping"].as_bool().unwrap();
+    s.execute("timeline.select", json!({"clips": [clip.0]})).unwrap();
+    s.execute("clip.frameHoldOptions", json!({"holdOn": "in"})).unwrap();
+    s.execute("sequence.snap", json!({})).unwrap();
+    s.execute("sequence.nestSequences", json!({"on": false})).unwrap();
+    s.execute("sequence.showThroughEdits", json!({"on": true})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["video"][0]["items"][0]["frameHold"], json!(source_in));
+    assert_eq!(js["toggles"], json!({"snapping": !snapping, "linkedSelection": false, "nest": false, "showThroughEdits": true}));
+}
+
+#[test]
+fn sequence_inspect_lists_the_open_sequences_in_tab_order() {
+    // the Qt Timeline's sequence tabs: open, reorder, close
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let a = s.state.active_sequence.unwrap();
+    s.execute("file.newSequence", json!({"name": "Second"})).unwrap();
+    let b = s.state.active_sequence.unwrap();
+    assert_ne!(a, b);
+    s.execute("sequence.open", json!({"item": b.0})).unwrap();
+    let names = |s: &mut Session| -> Vec<u64> {
+        let js = s.execute("sequence.inspect", json!({})).unwrap();
+        js["openSequences"].as_array().unwrap().iter().map(|t| t["id"].as_u64().unwrap()).collect()
+    };
+    assert_eq!(names(&mut s), vec![a.0, b.0]);
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["openSequences"][1]["name"], json!("Second"));
+    s.execute("sequence.moveTab", json!({"item": b.0, "index": 0})).unwrap();
+    assert_eq!(names(&mut s), vec![b.0, a.0]);
+    s.execute("sequence.close", json!({"item": a.0})).unwrap();
+    assert_eq!(names(&mut s), vec![b.0]);
+}

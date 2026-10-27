@@ -4,13 +4,14 @@ engine command and every redraw follows the engine's ``projectChanged``."""
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Callable
 from itertools import pairwise
 from typing import Any
 
 from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QKeyEvent, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
@@ -29,9 +30,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import __version__, crash, theme
+from . import __version__, crash, dock_commands, theme
 from .branding import logo_pixmap
-from .commands import Command, CommandRegistry
+from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, tr
@@ -59,15 +60,39 @@ from .panels.remix import RemixPropertiesDialog
 from .panels.scopes import ScopesPanel
 from .panels.settings import MENU as SETTINGS_MENU
 from .panels.settings import PreferencesDialog
+from .panels.shortcuts import ShortcutsDialog
 from .panels.side import EventsPanel, HistoryPanel, LibrariesPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
-from .panels.tools import ToolsPanel
+from .panels.tools import ToolsPanel, tool_commands
 from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
-from .window_menu import Workspaces, bind_free, build_window_menu
+from .timecode import TICKS_PER_SECOND
+from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
+# egui's rulers and guides UI commands (menus.rs), run on the focused monitor
+# egui's ROLL_PX: a right-click this close to a cut picks Roll (timeline_hit.rs)
+ROLL_PX = 2.5
+GUIDE_COMMANDS = {
+    "view.showRulers": N_("Show Rulers"),
+    "view.showGuides": N_("Show Guides"),
+    "view.lockGuides": N_("Lock Guides"),
+    "view.addGuide": N_("Add Guide…"),
+    "view.clearGuides": N_("Clear Guides"),
+    "view.snapInProgramMonitor": N_("Snap in Program Monitor"),
+    "view.guideTemplates.save": N_("Save Guides as Template…"),
+    "view.guideTemplates.manage": N_("Manage Guides…"),
+}
 # an engine that stopped is restarted, unless it stopped this often within this many seconds
+# egui's timeline height UI commands (keyboard.rs): id → (label, default key)
+TRACK_HEIGHT_COMMANDS = {
+    "timeline.expandAllTracks": (N_("Expand All Tracks"), "Shift+="),
+    "timeline.minimizeAllTracks": (N_("Minimize All Tracks"), "Shift+-"),
+    "timeline.increaseVideoHeight": (N_("Increase Video Tracks Height"), ""),
+    "timeline.decreaseVideoHeight": (N_("Decrease Video Tracks Height"), ""),
+    "timeline.increaseAudioHeight": (N_("Increase Audio Tracks Height"), ""),
+    "timeline.decreaseAudioHeight": (N_("Decrease Audio Tracks Height"), ""),
+}
 MAX_RESTARTS = 3
 RESTART_WINDOW_S = 60.0
 LAYOUT_VERSION = 20  # 2: Source monitor; 3: Effect Controls; 4: Properties (egui name); 5: proportional sizes; 6: Tools panel; 7: Audio Meters; 8: Info, Markers, Metadata, Project Notes, egui's groups; 9: Timecode, Progress; 10: Audio Track Mixer; 11: Audio Clip Mixer; 12: Reference Monitor; 13: Lumetri Scopes; 14: Lumetri Color; 15: Media Browser; 16: Text; 17: Essential Sound; 18: Essential Graphics; 19: Text to Speech; 20: Libraries
@@ -194,6 +219,11 @@ class MainWindow(QMainWindow):
         self.engine = engine
         self.settings = settings or QSettings("CFA4", "CFA4-Qt")
         self.registry = CommandRegistry(self.run_command)
+        # the engine's application-wide keys of the Qt-run commands (None: their defaults)
+        self.local_keys: dict[str, list[str]] | None = None
+        # their panel-scoped keys (keys, panel), dispatched by the focused panel as the engine's
+        self.local_panel_keys: dict[str, list[tuple[str, str]]] = {}
+        self.shortcuts_dialog: ShortcutsDialog | None = None
         self.project: dict[str, Any] | None = None
         self.sequence: dict[str, Any] | None = None
         self.state: dict[str, Any] = {}
@@ -221,6 +251,8 @@ class MainWindow(QMainWindow):
             self.tools.tool_selected.connect(lambda tool, m=mon: m.view.set_hand(tool == "hand"))
             mon.run.connect(self.run_preset)
             mon.message.connect(lambda m: self.events.log(m, error=True))
+            mon.status.connect(lambda m: self.statusBar().showMessage(m, 6000))
+            mon.program_peer = self.monitor
         self.meters = AudioMetersPanel(self)
         self.meters.watch(self.monitor, self.source_monitor)
         self.project_panel = ProjectPanel(engine, self)
@@ -264,6 +296,8 @@ class MainWindow(QMainWindow):
         self._graphics_busy = False
         self._essential_busy = False
         self.lumetri = LumetriColorPanel(self)
+        self.lumetri.program = self.monitor
+        self.monitor.view_set.connect(self.lumetri.show_comparison)
         self.lumetri.attach_settings(self.settings)
         self._lumetri_busy = False
         self._clip_mixer_busy = False
@@ -355,6 +389,7 @@ class MainWindow(QMainWindow):
         self.media_browser.attach_settings(self.settings)
         self.media_browser.invoke.connect(self.invoke)
         self.timeline.canvas.files_dropped.connect(self.place_files)
+        self.timeline.canvas.menu_host = self
         # voice-over recording: the audio track headers' microphones and the mixer's record button
         self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
         self.voiceover_dialog: VoiceOverSettingsDialog | None = None
@@ -536,16 +571,14 @@ class MainWindow(QMainWindow):
             self._builtin_states[name] = state
         return state
 
-    def _default_layout_state(self, workspace: str | None = None) -> QByteArray:
-        """The default layout, arranged in a hidden stand-in window with empty docks of the
-        same names: tabifying the real window's docks directly leaves orphaned tab bars on screen
-        (Qt 6.10.3+) or can crash once it is shown (Qt 6.10.2); restoring a state is clean.
-        ``workspace``: one of egui's other built-in workspaces instead of Editing."""
+    def stand_in_window(self, size: tuple[int, int] = (1440, 900)) -> tuple[QMainWindow, dict[str, QDockWidget]]:
+        """A hidden window with empty docks of the same names, to arrange a layout in: the
+        caller saves its state, restores that here and deletes the helper."""
         helper = QMainWindow()
         helper.setDockOptions(self.dockOptions())
         helper.setTabPosition(Qt.DockWidgetArea.AllDockWidgetAreas, QTabWidget.TabPosition.North)
         helper.setCentralWidget(QWidget(helper))
-        helper.resize(1440, 900)
+        helper.resize(*size)
         stand_ins: dict[str, QDockWidget] = {}
         for name, area in DOCK_PLAN:
             dock = QDockWidget(name, helper)
@@ -553,6 +586,14 @@ class MainWindow(QMainWindow):
             dock.setWidget(QWidget(dock))
             helper.addDockWidget(area, dock)
             stand_ins[name] = dock
+        return helper, stand_ins
+
+    def _default_layout_state(self, workspace: str | None = None) -> QByteArray:
+        """The default layout, arranged in a hidden stand-in window with empty docks of the
+        same names: tabifying the real window's docks directly leaves orphaned tab bars on screen
+        (Qt 6.10.3+) or can crash once it is shown (Qt 6.10.2); restoring a state is clean.
+        ``workspace``: one of egui's other built-in workspaces instead of Editing."""
+        helper, stand_ins = self.stand_in_window()
         if workspace is None:
             self.arrange_default(helper, stand_ins)
         else:
@@ -641,6 +682,16 @@ class MainWindow(QMainWindow):
         dock.visibilityChanged.connect(lambda _v: self._titles_later())
         return dock
 
+    def createPopupMenu(self) -> QMenu | None:
+        """Right-click on a panel's tab or title bar: egui's panel menu (Close Panel, Undock
+        Panel, Restore Workspace) instead of Qt's list of docks."""
+        title = dock_commands.dock_at(self, QCursor.pos())
+        if title is None:
+            return super().createPopupMenu()
+        menu = dock_commands.panel_menu(self, title, self)
+        self.last_panel_menu = menu
+        return menu
+
     def _titles_later(self) -> None:
         if getattr(self, "_titles_pending", False):
             return
@@ -693,28 +744,31 @@ class MainWindow(QMainWindow):
         self.about_action = QAction(tr("About CFA4"), self)
         self.about_action.triggered.connect(self._about)
         # J / K / L shuttle and Play In to Out on the focused monitor (egui's playback.*)
-        self.shuttle_actions: list[tuple[QAction, list[str]]] = []
-        for name, label, keys, slot in (
-            ("reverse", N_("Shuttle Left"), ["J"], lambda: self.focused_monitor().shuttle(-1)),
-            ("stop", N_("Shuttle Stop"), ["K"], lambda: self.focused_monitor().stop()),
-            ("forward", N_("Shuttle Right"), ["L"], lambda: self.focused_monitor().shuttle(1)),
-            ("inToOut", N_("Play In to Out"), ["Alt+K"], lambda: self.focused_monitor().play_in_to_out()),
+        self.shuttle_actions: list[tuple[QAction, str]] = []
+        for name, label, key, slot in (
+            ("reverse", N_("Shuttle Left"), "J", lambda: self.focused_monitor().shuttle(-1)),
+            ("stop", N_("Shuttle Stop"), "K", lambda: self.focused_monitor().stop()),
+            ("forward", N_("Shuttle Right"), "L", lambda: self.focused_monitor().shuttle(1)),
+            ("inToOut", N_("Play In to Out"), "Alt+K", lambda: self.focused_monitor().play_in_to_out()),
         ):
             a = QAction(tr(label), self)
             a.setObjectName(f"qt.playback.{name}")
             a.triggered.connect(slot)
-            self.shuttle_actions.append((a, keys))
+            self.shuttle_actions.append((a, key))
         # egui's multi-camera UI commands (menus.rs): Multi-Camera View, Record On/Off, Edit Cameras
-        self.multicam_actions: list[tuple[QAction, list[str]]] = []
-        for cid, label, keys in (
-            ("multicam.toggleView", N_("Multi-Camera View"), ["Shift+0"]),
-            ("multicam.recordToggle", N_("Multi-Camera Record On/Off Toggle"), ["0"]),
-            ("multicam.editCamerasDialog", N_("Edit Cameras…"), []),
+        self.multicam_actions: list[tuple[QAction, str]] = []
+        for cid, label, key in (
+            ("multicam.toggleView", N_("Multi-Camera View"), "Shift+0"),
+            ("multicam.recordToggle", N_("Multi-Camera Record On/Off Toggle"), "0"),
+            ("multicam.editCamerasDialog", N_("Edit Cameras…"), ""),
         ):
             a = QAction(tr(label), self)
             a.setObjectName(cid)
             a.triggered.connect(lambda _c=False, c=cid: self.invoke(c))
-            self.multicam_actions.append((a, keys))
+            self.multicam_actions.append((a, key))
+        self.shortcuts_action = QAction(tr("Keyboard Shortcuts…"), self)
+        self.shortcuts_action.setObjectName("app.keyboardShortcuts")
+        self.shortcuts_action.triggered.connect(lambda _c=False: self.open_shortcuts())
         self.theme_actions = QActionGroup(self)
         for name, label in theme.THEMES:
             a = QAction(tr(label), self, checkable=True)
@@ -734,28 +788,69 @@ class MainWindow(QMainWindow):
             a.triggered.connect(lambda _c=False, c=code: self.set_language(c))
             self.lang_actions.addAction(a)
 
-    def _bind_local_shortcuts(self, bound_keys: set[str]) -> None:
-        """Playback and tool keys, unless an engine command already claims them."""
-        for action, keys in (
-            (self.play_action, ["Space"]),
-            (self.export_action, ["Ctrl+M"]),
-            (self.quit_action, ["Ctrl+Q"]),
-            *self.shuttle_actions,
-            *self.multicam_actions,
-        ):
-            free = [QKeySequence(k) for k in keys if k not in bound_keys]
-            action.setShortcuts(free)
-            self.addAction(action)
+    def local_commands(self) -> list[tuple[str, str, list[str], str]]:
+        """(id, label, menu, default key) of the commands the Qt GUI runs itself, with egui's ids
+        (``menus.rs`` UI_COMMANDS): registered with the engine's shortcut set
+        (``shortcuts.registerExternal``) so Keyboard Shortcuts lists and rebinds them as egui's."""
+        out: list[tuple[str, str, list[str], str]] = [
+            ("playback.toggle", N_("Play/Stop"), [], "Space"),
+            ("playback.reverse", N_("Shuttle Left"), [], "J"),
+            ("playback.stop", N_("Shuttle Stop"), [], "K"),
+            ("playback.forward", N_("Shuttle Right"), [], "L"),
+            ("playback.inToOut", N_("Play In to Out"), [], "Alt+K"),
+            ("mode.export", N_("Export"), ["File", "Export"], "Cmd+M"),
+            ("app.quit", N_("Quit"), [], "Cmd+Q"),
+            ("multicam.toggleView", N_("Multi-Camera View"), ["View"], "Shift+0"),
+            ("multicam.recordToggle", N_("Multi-Camera Record On/Off Toggle"), [], "0"),
+            ("multicam.editCamerasDialog", N_("Edit Cameras…"), [], ""),
+            ("app.keyboardShortcuts", N_("Keyboard Shortcuts…"), ["Edit"], "Cmd+Alt+K"),
+            *((cid, dock_commands.LABELS[cid], [], "") for cid in dock_commands.COMMANDS),
+            *((cid, label, ["View"], "") for cid, label in GUIDE_COMMANDS.items()),
+            ("view.compare.setReference", N_("Set Comparison Reference"), [], ""),
+            *((cid, label, [], key) for cid, (label, key) in TRACK_HEIGHT_COMMANDS.items()),
+        ]
+        out += [(f"app.settings.{page}", label, ["Edit", "Preferences"], "Cmd+," if page == "general" else "") for page, label in SETTINGS_MENU]
+        return out + tool_commands() + window_commands()
+
+    def _local_keys(self, cid: str, default: str) -> list[str]:
+        """Qt key strings of a Qt-run command: its engine bindings (application-wide), or its
+        default before the engine has answered (or when it could not take the commands)."""
+        keys = self.local_keys.get(cid, []) if self.local_keys is not None else ([default] if default else [])
+        return [q for k in keys if (q := qt_shortcut(k))]
+
+    def local_action_pairs(self) -> list[tuple[QAction, str, str]]:
+        """(action, command id, default key) of the Qt-run commands with an action of their own."""
+        return [
+            (self.play_action, "playback.toggle", "Space"),
+            (self.export_action, "mode.export", "Cmd+M"),
+            (self.quit_action, "app.quit", "Cmd+Q"),
+            (self.shortcuts_action, "app.keyboardShortcuts", "Cmd+Alt+K"),
+            *((a, f"playback.{a.objectName().rsplit('.', 1)[-1]}", k) for a, k in self.shuttle_actions),
+            *((a, a.objectName(), k) for a, k in self.multicam_actions),
+        ]
+
+    def _bind_local_shortcuts(self, bound_keys: set[str]) -> list[QAction]:
+        """Playback, multi-camera and other Qt-run keys, unless an engine command claims them."""
+        pairs = self.local_action_pairs()
+        added = bind_free(self, [(a, self._local_keys(cid, k)) for a, cid, k in pairs], bound_keys)
+        for a, _cid, _k in pairs:
+            if a not in added:
+                self.addAction(a)
+        return [a for a, _c, _k in pairs]
 
     def _build_menus(self) -> None:
         self.registry.build_menus(
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
+                "Edit": [self.shortcuts_action],
                 "View": [self.fit_action, self.multicam_actions[0][0]],
                 "Help": [self.about_action],
-            }
+            },
+            self.local_panel_keys,
+            self.local_keys or {},
         )
+        local: dict[str, QAction] = {}
         menus = {a.menu().objectName(): a for a in self.menuBar().actions() if a.menu()}
         view = menus.get("menu.View")
         if view is not None:
@@ -779,9 +874,10 @@ class MainWindow(QMainWindow):
             for page, label in SETTINGS_MENU:
                 a = prefs.addAction(tr(label))
                 a.setObjectName(f"app.settings.{page}")
-                if page == "general" and "Ctrl+," not in self.registry.claimed_keys:
-                    a.setShortcut(QKeySequence("Ctrl+,"))
+                keys = [QKeySequence(q) for q in self._local_keys(a.objectName(), "Cmd+," if page == "general" else "")]
+                a.setShortcuts([k for k in keys if k.toString() not in self.registry.claimed_keys])
                 a.triggered.connect(lambda _c=False, pg=page: self.open_settings(pg))
+                local[a.objectName()] = a
         self._build_appearance_button()
         # Window, before Help as in the egui editor; the previous build's actions go first
         for action in getattr(self, "_window_actions", []):
@@ -801,12 +897,37 @@ class MainWindow(QMainWindow):
         window_shortcuts = build_window_menu(
             self, window_menu, self.docks, self.monitor, self.workspaces, self.restore_layout, self.reset_layout
         )
-        keys = self.registry.claimed_keys
-        self._bind_local_shortcuts(keys)
-        bind_free(self, self.tools.shortcut_pairs(), keys)  # V, A, B, N, R, C, Y, U, H, Z ... as egui
-        self._window_actions = bind_free(self, window_shortcuts, keys) + [
+        keys = set(self.registry.claimed_keys)
+        for a in self._bind_local_shortcuts(keys):
+            keys |= {s.toString() for s in a.shortcuts()}
+        # V, A, B, N, R, C, Y, U, H, Z ... as egui, then the Window menu's keys
+        tools = bind_free(self, [(a, self._local_keys(cid, k)) for a, cid, k in self.tools.shortcut_pairs()], keys)
+        for a in tools:
+            keys |= {s.toString() for s in a.shortcuts()}
+        self._window_actions = bind_free(self, [(a, self._local_keys(cid, k)) for a, cid, k in window_shortcuts], keys) + [
             a for a in window_menu.actions() if a not in {p[0] for p in window_shortcuts}
         ]
+        for a in self._window_actions:
+            keys |= {s.toString() for s in a.shortcuts()}
+        for a, cid, _k in [*self.local_action_pairs(), *self.tools.shortcut_pairs(), *window_shortcuts]:
+            local.setdefault(cid, a)
+        # the other Qt-run commands (docking, guides, the comparison reference …): an action each,
+        # so a key given to them in Keyboard Shortcuts runs them
+        for old in getattr(self, "_command_actions", []):
+            self.removeAction(old)
+            old.deleteLater()
+        extra = []
+        for cid, label, _menu, default in self.local_commands():
+            if cid in local:
+                continue
+            a = QAction(tr(label), self)
+            a.setObjectName(f"shortcut.{cid}")
+            a.triggered.connect(lambda _c=False, c=cid: self.ui_command(c))
+            local[cid] = a
+            extra.append((a, self._local_keys(cid, default)))
+        self._command_actions = [a for a, _k in extra]
+        bind_free(self, extra, keys)
+        self.registry.local_actions = local
 
     def rebuild_window_menu(self) -> None:
         """A workspace was added: rebuild the menus (the engine's part comes from the registry)."""
@@ -825,6 +946,7 @@ class MainWindow(QMainWindow):
     # ----- engine lifecycle -----
     def _on_started(self, hello: dict[str, Any]) -> None:
         self.status_engine.setText(str(hello.get("engine") or "engine"))
+        self.register_local_commands()
         self.engine.call("engine.commands", on_reply=self._on_commands)
         self.engine.execute("effects.list", {}, on_reply=self._on_effects_list)
         self.load_appearance()
@@ -1068,6 +1190,67 @@ class MainWindow(QMainWindow):
         self.registry.load(result)
         self._build_menus()
 
+    # ----- keyboard shortcuts -----
+    def register_local_commands(self) -> None:
+        """Give the engine's shortcut set the Qt-run commands (egui registers its UI commands the
+        same way), then read their keys; the menus are built with them."""
+        cmds = [{"id": cid, "label": label, "menu": menu, "shortcut": key or None} for cid, label, menu, key in self.local_commands()]
+        self.local_keys = None
+        ok = {"registered": False}
+
+        def registered(_r: Any, _b: bytes | None) -> None:
+            ok["registered"] = True
+
+        self.engine.execute("shortcuts.registerExternal", {"commands": cmds}, on_reply=registered, on_error=lambda _m: None)
+        self.engine.execute(
+            "shortcuts.list", {}, on_reply=lambda r, _b: self._on_local_keys(r) if ok["registered"] else None, on_error=lambda _m: None
+        )
+
+    def _on_local_keys(self, rows: Any) -> None:
+        ids = {c[0] for c in self.local_commands()}
+        keys: dict[str, list[str]] = {}
+        panel_keys: dict[str, list[tuple[str, str]]] = {}
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict) or row.get("id") not in ids:
+                continue
+            binds = [b for b in row.get("shortcuts") or [] if isinstance(b, dict) and isinstance(b.get("keys"), str)]
+            keys[row["id"]] = [b["keys"] for b in binds if not b.get("panel")]
+            # a panel binding of the command's own application-wide key adds nothing
+            scoped = [
+                (b["keys"], b["panel"]) for b in binds if isinstance(b.get("panel"), str) and b["panel"] and b["keys"] not in keys[row["id"]]
+            ]
+            if scoped:
+                panel_keys[row["id"]] = scoped
+        self.local_keys = keys
+        self.local_panel_keys = panel_keys
+        if self.registry.commands:
+            self._build_menus()
+
+    def reload_shortcuts(self) -> None:
+        """Keyboard Shortcuts changed a key: rebind the menus and the Qt-run commands."""
+        if self.local_keys is not None:
+            self.engine.execute("shortcuts.list", {}, on_reply=lambda r, _b: self._on_local_keys(r), on_error=lambda _m: None)
+        self.engine.call("engine.commands", on_reply=self._on_commands)
+
+    def open_shortcuts(self) -> ShortcutsDialog:
+        """Edit ▸ Keyboard Shortcuts… (egui's ``shortcuts_dialog.rs``)."""
+        if self.shortcuts_dialog is not None:
+            self.shortcuts_dialog.raise_()
+            self.shortcuts_dialog.activateWindow()
+            return self.shortcuts_dialog
+        dialog = ShortcutsDialog(self, self.engine, on_closed=lambda _ok: self.reload_shortcuts())
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.changed.connect(self.reload_shortcuts)
+
+        def gone() -> None:
+            self.shortcuts_dialog = None
+
+        dialog.destroyed.connect(lambda *_a: gone())
+        self.shortcuts_dialog = dialog
+        self.last_dialog = dialog
+        dialog.open()
+        return dialog
+
     def _refresh_enabled(self) -> None:
         if self.engine.running:
             self.engine.call("engine.commands", on_reply=lambda r, _b: self.registry.update_enabled(r))
@@ -1251,8 +1434,34 @@ class MainWindow(QMainWindow):
         self.events.log(text, error=True)
         self.statusBar().showMessage(text, 6000)
 
-    def ui_command(self, cid: str) -> bool:
-        """egui's UI commands (voice-over, multi-camera): True when ``cid`` was one."""
+    def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
+        """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid in dock_commands.COMMANDS:
+            try:
+                dock_commands.run(self, cid, dict(params or {}))
+            except dock_commands.DockError as e:
+                self._command_failed(cid, str(e))
+            return True
+        if cid == "view.compare.setReference":
+            p = params or {}
+            t = p.get("time")
+            secs = p.get("seconds")
+            if isinstance(t, int) and not isinstance(t, bool) and 0 <= t < 2**62:
+                self.monitor.set_reference(t)
+            elif isinstance(secs, (int, float)) and not isinstance(secs, bool) and 0 <= secs < 1e7 and math.isfinite(secs):
+                self.monitor.set_reference(round(secs * TICKS_PER_SECOND))
+            else:
+                self.monitor.set_reference(self.monitor.playhead)
+            return True
+        if cid in TRACK_HEIGHT_COMMANDS:
+            self.timeline.canvas.height_command(cid)
+            return True
+        if cid in GUIDE_COMMANDS:
+            try:
+                self.guide_command(cid, dict(params or {}))
+            except ValueError as e:
+                self._command_failed(cid, str(e))
+            return True
         if cid == "voiceover.recordToggle":
             self.voiceover.toggle()
         elif cid == "voiceover.settingsDialog":
@@ -1263,9 +1472,54 @@ class MainWindow(QMainWindow):
             self.multicam.toggle_record()
         elif cid == "multicam.editCamerasDialog":
             self.open_edit_cameras()
+        elif cid in ("app.keyboardShortcuts", "help.shortcuts"):
+            self.open_shortcuts()
         else:
             return False
         return True
+
+    def guide_command(self, cid: str, params: dict[str, Any]) -> dict[str, Any]:
+        """egui's rulers and guides commands (``monitor_view.rs`` route) on ``params.monitor``
+        ("program" / "source"), else the focused monitor; ``enabled`` sets a toggle."""
+        name = params.get("monitor")
+        mon: Monitor = self.source_monitor if name == "source" else self.monitor if name == "program" else self.focused_monitor()
+        v = mon.mv
+
+        def toggled(cur: bool) -> bool:
+            on = params.get("enabled")
+            return on if isinstance(on, bool) else not cur
+
+        rest = cid.removeprefix("view.")
+        if rest in ("showRulers", "showGuides", "lockGuides"):
+            attr = {"showRulers": "show_rulers", "showGuides": "show_guides", "lockGuides": "lock_guides"}[rest]
+            mon.set_view(**{attr: toggled(getattr(v, attr))})
+            return {"monitor": mon.target, rest: getattr(v, attr)}
+        if rest == "snapInProgramMonitor":
+            self.monitor.set_view(snap=toggled(self.monitor.mv.snap))
+            return {"snap": self.monitor.mv.snap}
+        if rest == "clearGuides":
+            return {"monitor": mon.target, "cleared": mon.clear_guides()}
+        if rest == "addGuide":
+            pos = params.get("position")
+            if pos is None:
+                mon.open_add_guide()
+                return {"dialog": "addGuide"}
+            if isinstance(pos, bool) or not isinstance(pos, (int, float)) or abs(pos) > 1e6 or not math.isfinite(pos):
+                raise ValueError("`position` must be a number of frame pixels")
+            mon.add_guide(params.get("orientation") != "horizontal", float(pos))
+            return {"monitor": mon.target, "guides": len(v.guides)}
+        if rest == "guideTemplates.save":
+            if not v.guides:
+                raise ValueError("there are no guides to save")
+            d = mon.open_save_guides()
+            if d is not None and isinstance(params.get("name"), str):
+                d.name.setText(params["name"])
+                d.save()
+            return {"dialog": "saveGuides"}
+        if rest == "guideTemplates.manage":
+            mon.open_manage_guides()
+            return {"dialog": "manageGuides"}
+        raise ValueError(f"unknown guide command `{cid}`")
 
     def invoke(self, cid: str) -> None:
         if self.ui_command(cid):
@@ -1276,10 +1530,45 @@ class MainWindow(QMainWindow):
         else:
             self.execute(cid, {})
 
+    # ----- the timeline's context menus (panels/timeline_menus.py) -----
+    def command_enabled(self, cid: str) -> bool:
+        cmd = self.registry.commands.get(cid)
+        return cmd is not None and cmd.enabled
+
+    def run_menu_command(self, cid: str, params: dict[str, Any]) -> None:
+        if params:
+            self.run_preset(cid, params)
+        else:
+            self.invoke(cid)
+
+    def menu_request(self, cid: str, params: dict[str, Any], then: Any) -> None:
+        ok = [True]
+
+        def failed(_m: str) -> None:
+            ok[0] = False
+
+        if cid:
+            self.engine.execute(cid, params, on_reply=lambda _r, _b: None, on_error=failed)
+        # replies come in request order: these enabled states follow the command above
+        self.engine.call(
+            "engine.commands",
+            on_reply=lambda r, _b: (self.registry.update_enabled(r), then(ok[0])),
+            on_error=lambda _m: then(ok[0]),
+        )
+        self.schedule_refresh()
+
+    def edit_point_kind(self, dist_px: float, neighbour: bool, then: Any) -> None:
+        def got(on: Any) -> None:
+            # egui's selection_trim_kind with no modifier: Roll on the cut, else Ripple, when the
+            # Trim preference lets the Selection tool choose; a plain trim otherwise
+            then(("roll" if neighbour and dist_px <= ROLL_PX else "ripple") if on is True else "trim")
+
+        self.engine.execute("prefs.get", {"key": "trim.selectionToolRollRipple"}, on_reply=lambda r, _b: got(r), on_error=lambda _m: got(False))
+
     def run_preset(self, cid: str, params: dict[str, Any]) -> None:
         """A panel runs ``cid`` with ``params`` already known (the monitor's Export Frame knows
         its monitor and time): ask only for what is still missing, such as the file."""
-        if self.ui_command(cid):
+        if self.ui_command(cid, params):
             return
         cmd = self.registry.commands.get(cid)
         if cmd is None:

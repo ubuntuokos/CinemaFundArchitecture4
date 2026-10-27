@@ -34,7 +34,6 @@ mod args;
 mod codecs_cmd;
 mod probe;
 mod serve;
-mod settings_cmd;
 mod serve_graphics;
 mod serve_lumetri;
 mod serve_media_browser;
@@ -43,6 +42,7 @@ mod serve_project;
 mod serve_scopes;
 mod serve_text;
 mod serve_tts;
+mod settings_cmd;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;

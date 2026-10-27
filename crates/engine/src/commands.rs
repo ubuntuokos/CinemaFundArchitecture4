@@ -4680,9 +4680,13 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
             "label": t.label.map(|l| l.name()),
             "items": t.items.iter().map(|i| json!({
                 "clip": i.id.0, "item": i.item.0, "name": i.name, "start": i.start.0, "duration": i.duration.0,
-                "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse,
+                "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse, "frameHold": i.frame_hold.map(|t| t.0),
                 "end": i.end().0, "endFrame": rate.frame_at(i.end()), "sourceOut": i.source_out().0, "gainDb": i.gain_db, "audioStream": i.audio_stream,
                 "enabled": i.enabled, "link": i.link, "label": i.label.name(),
+                // the clip menu's Multi-Camera submenu: nested sequences, their switch and cameras
+                "nested": s.project.sequence(i.item).is_some(),
+                "multicam": i.multicam.map(|m| json!({"enabled": m.enabled, "angle": m.angle})),
+                "cameras": i.multicam.filter(|m| m.enabled).and_then(|_| s.project.sequence(i.item)).map(|q| q.cameras().video_angles().map(|(a, c)| json!({"angle": a, "name": c.name})).collect::<Vec<_>>()),
                 "effects": i.effects.iter().map(|e| json!({"effect": e.effect, "enabled": e.enabled, "masks": e.masks.len(), "params": e.params.iter().map(|(k, p)| (k.clone(), json!({"value": format!("{:?}", p.value), "keyframes": p.keyframes.len()}))).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
             "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "name": x.effect.def().map_or(x.effect.effect.as_str(), |d| d.name), "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
@@ -4706,6 +4710,9 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         "selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>(),
         "transitionSelection": s.state.transition_selection.iter().map(|t| t.0).collect::<Vec<_>>(),
         "gapSelection": s.state.gap_selection.map(|g| json!({"track": g.track.0, "start": g.range.start.0, "end": g.range.end().0})),
+        // the selected edit points ({clip, out, kind}) and the through edits (the edit point menu)
+        "editPoints": if s.state.active_sequence == Some(id) { serde_json::to_value(&s.state.edit_points).unwrap_or_default() } else { json!([]) },
+        "throughEdits": cfa4_edit::through::through_edits(q).iter().map(|e| json!({"left": e.left.0, "right": e.right.0})).collect::<Vec<_>>(),
         // the active sequence's track targeting and source patching (the track header switches)
         "targeting": if s.state.active_sequence == Some(id) {
             let t = s.targeting();
@@ -4713,6 +4720,10 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         } else {
             Value::Null
         },
+        // the Timeline's tabs: the open sequences in tab order (`sequence.open` / `close` / `moveTab`)
+        "openSequences": s.state.open_sequences.iter().filter_map(|i| s.project.sequence(*i).map(|_| json!({"id": i.0, "name": s.project.item(*i).map(|x| x.name.clone())}))).collect::<Vec<_>>(),
+        // the timeline toolbar's toggles and Display Settings (session-wide)
+        "toggles": {"snapping": s.state.snapping, "linkedSelection": s.state.linked_selection, "nest": !s.state.sequences_as_clips, "showThroughEdits": s.state.show_through_edits},
     })
 }
 
