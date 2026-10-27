@@ -37,6 +37,19 @@ struct PendingPic {
     pts: i64,
     key: bool,
     slices: Vec<SliceJob>,
+    /// Field picture: its parity (0 top, 1 bottom).
+    field: Option<u8>,
+    /// The second field of `frame` (whose first field is already decoded).
+    second: bool,
+}
+
+/// The first field of a frame whose second field may follow.
+struct FirstField {
+    frame: FrameRef,
+    parity: u8,
+    frame_num: u32,
+    is_ref: bool,
+    sps: Arc<Sps>,
 }
 
 /// Counters describing what the decoder has seen (useful to check test coverage).
@@ -86,6 +99,9 @@ pub struct Decoder {
     poc_state: PocState,
     prev_ref_frame_num: u32,
     pending: Option<PendingPic>,
+    /// The last picture was a first field (8.2.1: it pairs with an opposite-parity field of the
+    /// same frame_num that follows).
+    first_field: Option<FirstField>,
     next_id: u32,
     active_sps: Option<Arc<Sps>>,
     ls_cache: Vec<(Arc<Pps>, Arc<LevelScale>)>,
@@ -94,7 +110,8 @@ pub struct Decoder {
     shared: Arc<Shared>,
     #[cfg(feature = "threads")]
     pool: Option<rayon::ThreadPool>,
-    in_flight: VecDeque<FrameRef>,
+    /// Pictures being decoded: a frame, or one field of it.
+    in_flight: VecDeque<(FrameRef, Option<u8>)>,
     max_in_flight: usize,
     threads: usize,
     /// Draft mode: skip deblocking of non-reference pictures ([`Decoder::set_draft`]).
@@ -147,6 +164,7 @@ impl Decoder {
             poc_state: PocState::default(),
             prev_ref_frame_num: 0,
             pending: None,
+            first_field: None,
             next_id: 1,
             active_sps: None,
             ls_cache: Vec::new(),
@@ -256,12 +274,13 @@ impl Decoder {
     /// Output all remaining pictures (end of stream).
     pub fn flush(&mut self) -> Vec<Picture> {
         self.submit_pending();
+        self.finish_unpaired_field();
         let mut outs = Vec::new();
         self.dpb.flush(&mut outs);
         self.emit(outs);
         let pics = self.out_queue.drain(..).map(|o| make_picture(&o)).collect();
-        while let Some(f) = self.in_flight.pop_front() {
-            f.wait_complete();
+        while let Some((f, field)) = self.in_flight.pop_front() {
+            f.wait_units(field);
         }
         pics
     }
@@ -340,9 +359,6 @@ impl Decoder {
         if pps.num_slice_groups > 1 {
             return unsupported("slice groups (FMO)");
         }
-        if sh.field_pic {
-            return unsupported("field pictures");
-        }
         if matches!(sh.slice_type, SliceType::Sp | SliceType::Si) {
             return unsupported("SP/SI slices");
         }
@@ -364,11 +380,14 @@ impl Decoder {
         let Some(pending) = self.pending.as_mut() else {
             return invalid("slice without a started picture");
         };
-        let refs = self.dpb.build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e| RefPic {
+        let refs = self.dpb.build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e, f| RefPic {
             frame: e.frame.clone(),
-            long_term: e.mark == RefMark::Long,
-            field: None,
-            poc: e.poc,
+            long_term: match f {
+                None => e.mark() == RefMark::Long,
+                Some(q) => e.field_mark[q as usize & 1] == RefMark::Long,
+            },
+            field: f,
+            poc: f.map_or(e.poc, |q| e.field_poc[q as usize & 1]),
             field_poc: e.frame.field_poc(),
         })?;
         if !sh.slice_type.is_intra() {
@@ -406,6 +425,31 @@ impl Decoder {
     }
 
     fn start_picture(&mut self, sh: &SliceHeader, sps: &Arc<Sps>, pts: i64) -> Result<()> {
+        let parity = sh.field_pic.then_some(sh.bottom_field as u8);
+        // the second field of a complementary field pair (3.30, 3.29) is decoded into the frame of
+        // the first one
+        if let Some(p) = parity
+            && !sh.idr
+            && let Some(first) =
+                self.first_field.take_if(|f| f.parity != p && f.frame_num == sh.frame_num && f.is_ref == (sh.nal_ref_idc != 0) && Arc::ptr_eq(&f.sps, sps))
+        {
+            let poc = self.poc_state.compute(sh, sps);
+            let temp = if sh.has_mmco5() { poc.frame() } else { 0 };
+            first.frame.set_field_poc(p as usize, poc.top.wrapping_sub(temp));
+            self.pending = Some(PendingPic {
+                frame: first.frame,
+                sps: sps.clone(),
+                first: sh.clone(),
+                poc,
+                pts,
+                key: false,
+                slices: Vec::new(),
+                field: Some(p),
+                second: true,
+            });
+            return Ok(());
+        }
+        self.finish_unpaired_field();
         // Activate SPS; a resolution change flushes the DPB.
         let changed = match &self.active_sps {
             None => true,
@@ -473,42 +517,65 @@ impl Decoder {
         let temp = if sh.has_mmco5() { poc.frame() } else { 0 };
         frame.set_field_poc(0, poc.top.wrapping_sub(temp));
         frame.set_field_poc(1, poc.bottom.wrapping_sub(temp));
-        self.pending = Some(PendingPic { frame, sps: sps.clone(), first: sh.clone(), poc, pts, key: sh.idr, slices: Vec::new() });
+        self.pending = Some(PendingPic { frame, sps: sps.clone(), first: sh.clone(), poc, pts, key: sh.idr, slices: Vec::new(), field: parity, second: false });
         Ok(())
+    }
+
+    /// A first field that the next picture does not pair with: its missing field is concealed
+    /// from it and the frame is output on its own.
+    fn finish_unpaired_field(&mut self) {
+        let Some(first) = self.first_field.take() else { return };
+        first.frame.conceal_missing_field(first.parity);
+        let mut outs = Vec::new();
+        self.dpb.complete_field(&mut outs);
+        self.emit(outs);
     }
 
     /// Start decoding the pending picture and do its reference marking / DPB insertion.
     fn submit_pending(&mut self) {
         let Some(p) = self.pending.take() else { return };
-        let PendingPic { frame, sps, first, poc, pts, key, slices } = p;
+        let PendingPic { frame, sps, first, poc, pts, key, slices, field, second } = p;
         let draft = self.draft && first.nal_ref_idc == 0;
-        self.dispatch(frame.clone(), slices, draft);
+        self.dispatch(frame.clone(), slices, draft, field);
         self.poc_state.update(&first, &poc);
         if first.nal_ref_idc != 0 {
             self.prev_ref_frame_num = if first.has_mmco5() { 0 } else { first.frame_num };
         }
         let meta = Arc::new(OutputMeta { draft, ..output_meta(&sps, pts, key) });
         let mut outs = Vec::new();
-        let fpoc = frame.poc;
-        self.dpb.store_picture(&first, frame, fpoc, sps.max_frame_num(), sps.max_num_ref_frames as usize, meta, &mut outs);
+        let (max_frame_num, max_refs) = (sps.max_frame_num(), sps.max_num_ref_frames as usize);
+        match field {
+            None => {
+                let (fpoc, field_poc) = (frame.poc, frame.field_poc());
+                self.dpb.store_picture(&first, frame, fpoc, field_poc, max_frame_num, max_refs, meta, &mut outs);
+            }
+            Some(p) => {
+                let fpoc = frame.field_poc()[p as usize & 1];
+                self.dpb.store_field(&first, frame.clone(), p, fpoc, second, max_frame_num, max_refs, meta, &mut outs);
+                if !second {
+                    let frame_num = if first.has_mmco5() { 0 } else { first.frame_num };
+                    self.first_field = Some(FirstField { frame, parity: p, frame_num, is_ref: first.nal_ref_idc != 0, sps });
+                }
+            }
+        }
         self.emit(outs);
     }
 
-    fn dispatch(&mut self, frame: FrameRef, slices: Vec<SliceJob>, draft: bool) {
+    fn dispatch(&mut self, frame: FrameRef, slices: Vec<SliceJob>, draft: bool, field: Option<u8>) {
         let shared = self.shared.clone();
         #[cfg(feature = "threads")]
         if let Some(pool) = &self.pool {
-            self.in_flight.retain(|f| !f.is_published(f.mb_h() - 1));
+            self.in_flight.retain(|(f, p)| !f.units_done(*p));
             while self.in_flight.len() >= self.max_in_flight {
-                if let Some(f) = self.in_flight.pop_front() {
-                    f.wait_complete();
+                if let Some((f, p)) = self.in_flight.pop_front() {
+                    f.wait_units(p);
                 }
             }
-            self.in_flight.push_back(frame.clone());
-            pool.spawn_fifo(move || run_job(frame, slices, &shared, draft));
+            self.in_flight.push_back((frame.clone(), field));
+            pool.spawn_fifo(move || run_job(frame, slices, &shared, draft, field));
             return;
         }
-        run_job(frame, slices, &shared, draft);
+        run_job(frame, slices, &shared, draft, field);
     }
 
     fn emit(&mut self, outs: Vec<Output<FrameRef>>) {
@@ -541,16 +608,23 @@ fn conceal_frame<S: crate::picture::Sample>(
 }
 
 /// Decode all slices of one picture and publish its rows.
-fn run_job(frame: FrameRef, slices: Vec<SliceJob>, shared: &Shared, draft: bool) {
+fn run_job(frame: FrameRef, slices: Vec<SliceJob>, shared: &Shared, draft: bool, field: Option<u8>) {
     if frame.bit_depth > 8 {
-        run_job_as::<u16>(frame, slices, shared, draft, &shared.pool16);
+        run_job_as::<u16>(frame, slices, shared, draft, field, &shared.pool16);
     } else {
-        run_job_as::<u8>(frame, slices, shared, draft, &shared.pool8);
+        run_job_as::<u8>(frame, slices, shared, draft, field, &shared.pool8);
     }
 }
 
-fn run_job_as<S: crate::deblock::Lanes>(frame: FrameRef, slices: Vec<SliceJob>, shared: &Shared, draft: bool, pool: &Mutex<Vec<PicState<S>>>) {
-    let (field, mbaff) = (None, frame.coding == Coding::Mbaff);
+fn run_job_as<S: crate::deblock::Lanes>(
+    frame: FrameRef,
+    slices: Vec<SliceJob>,
+    shared: &Shared,
+    draft: bool,
+    field: Option<u8>,
+    pool: &Mutex<Vec<PicState<S>>>,
+) {
+    let mbaff = field.is_none() && frame.coding == Coding::Mbaff;
     let reuse = pool.lock().ok().and_then(|mut p| p.pop());
     let mut pic = match reuse {
         Some(mut p) if p.mb_w == frame.mb_w && p.mb_h == PicState::<S>::rows_for(&frame, field) && p.planes.chroma == frame.chroma => {
@@ -560,6 +634,9 @@ fn run_job_as<S: crate::deblock::Lanes>(frame: FrameRef, slices: Vec<SliceJob>, 
         _ => PicState::new(frame.clone(), field, mbaff),
     };
     pic.skip_deblock = draft;
+    if let Some(p) = field {
+        pic.poc = frame.field_poc()[p as usize & 1];
+    }
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let mut first_err = None;
         for s in &slices {
@@ -575,7 +652,7 @@ fn run_job_as<S: crate::deblock::Lanes>(frame: FrameRef, slices: Vec<SliceJob>, 
         Err(_) => {
             // Make sure readers never block on this frame.
             let fallback = Planes::<S>::gray(frame.width, frame.height, frame.bit_depth, frame.chroma);
-            frame.publish_all(&fallback);
+            frame.publish_units(&fallback, field);
             pic = PicState::new(frame.clone(), field, mbaff);
             Some(Error::Invalid("internal error while decoding a picture".into()))
         }

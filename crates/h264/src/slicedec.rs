@@ -1419,9 +1419,11 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
             return None;
         }
         // an Intra_8x8 block takes the 4x4 block of an Intra_4x4 neighbour next to its first
-        // row or column (8.3.2.1: n = 1 for A, 2 for B)
+        // row or column (8.3.2.1: n = 1 for A, 2 for B; n = 3 for A of 8x8 block 2 of a frame
+        // macroblock next to a field pair in an MBAFF frame)
+        let lower = self.mbaff && !self.field_mb && st.field && by == 2;
         let (nx, ny) = match (is8x8, left) {
-            (true, true) => (2 * (xw / 8) + 1, 2 * (yw / 8)),
+            (true, true) => (2 * (xw / 8) + 1, 2 * (yw / 8) + lower as usize),
             (true, false) => (2 * (xw / 8), 2 * (yw / 8) + 1),
             _ => (xw / 4, yw / 4),
         };

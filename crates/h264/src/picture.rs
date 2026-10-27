@@ -418,9 +418,19 @@ impl Frame {
         }
     }
 
-    /// Wait until the whole frame is available.
-    pub fn wait_complete(&self) {
-        for r in 0..self.rows.len() {
+    /// The row units of the frame (`field` None) or of one of its fields (interlaced storage).
+    fn units(&self, field: Option<u8>) -> impl Iterator<Item = usize> + use<> {
+        let n = self.rows.len();
+        let (step, first) = match field {
+            Some(p) if self.interlaced => (2, p as usize & 1),
+            _ => (1, 0),
+        };
+        (first..n).step_by(step)
+    }
+
+    /// Wait until the frame (`field` None) or one of its fields has been published.
+    pub fn wait_units(&self, field: Option<u8>) {
+        for r in self.units(field) {
             match &self.rows {
                 Rows::U8(_) => {
                     let _ = self.row::<u8>(r);
@@ -429,6 +439,46 @@ impl Frame {
                     let _ = self.row::<u16>(r);
                 }
             }
+        }
+    }
+
+    /// The frame (`field` None) or one of its fields has been published completely.
+    pub fn units_done(&self, field: Option<u8>) -> bool {
+        self.units(field).last().is_none_or(|r| self.is_published(r))
+    }
+
+    /// Fill the units of field `1 - decoded`, which was never decoded (a non-paired field), with
+    /// the lines of field `decoded`, without motion.
+    pub fn conceal_missing_field(&self, decoded: u8) {
+        match &self.rows {
+            Rows::U8(_) => self.conceal_missing_field_as::<u8>(decoded),
+            Rows::U16(_) => self.conceal_missing_field_as::<u16>(decoded),
+        }
+    }
+
+    fn conceal_missing_field_as<S: Sample>(&self, decoded: u8) {
+        if !self.interlaced {
+            return;
+        }
+        let d = decoded as usize & 1;
+        for u in 0..self.rows.len() / 2 {
+            let (dst, src) = (2 * u + (1 - d), 2 * u + d);
+            if self.is_published(dst) {
+                continue;
+            }
+            let Some(row) = self.row::<S>(src) else { continue };
+            let mb_w = self.mb_w;
+            let copy = FrameRow {
+                y: row.y.clone(),
+                cb: row.cb.clone(),
+                cr: row.cr.clone(),
+                mv: [vec![[0i16; 2]; mb_w * 16].into(), vec![[0i16; 2]; mb_w * 16].into()],
+                ref_idx: [vec![-1i8; mb_w * 4].into(), vec![-1i8; mb_w * 4].into()],
+                ref_id: [vec![u32::MAX; mb_w * 4].into(), vec![u32::MAX; mb_w * 4].into()],
+                intra: vec![true; mb_w].into(),
+                field: vec![true; mb_w].into(),
+            };
+            self.publish(dst, copy);
         }
     }
 
@@ -505,7 +555,12 @@ impl Frame {
     /// Publish every unit not published yet from frame-structured `planes` without motion (a
     /// picture that could not be decoded, or a missing field).
     pub fn publish_all<S: Sample>(&self, planes: &Planes<S>) {
-        for i in 0..self.mb_h() {
+        self.publish_units(planes, None);
+    }
+
+    /// [`Frame::publish_all`] for the units of the frame (`field` None) or of one of its fields.
+    pub fn publish_units<S: Sample>(&self, planes: &Planes<S>, field: Option<u8>) {
+        for i in self.units(field) {
             if !self.is_published(i) {
                 self.publish(i, Frame::make_row(planes, self.unit_lines(i), &|_| None, &|_, _, _| u32::MAX));
             }
