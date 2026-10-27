@@ -53,6 +53,18 @@ pub struct Header {
     pub reversible: bool,
     /// Progression order: 0 LRCP, 1 RLCP, 2 RPCL, 3 PCRL, 4 CPRL.
     pub progression: u8,
+    /// Capabilities (Rsiz): 0 for unrestricted Part 1, 3 / 4 for the 2K / 4K digital cinema
+    /// profiles, 5 / 6 for the scalable ones (T.800 Table A.10).
+    pub capabilities: u16,
+    /// The first three components are coded with a multiple-component transform (main COD).
+    pub mct: bool,
+}
+
+impl Header {
+    /// A digital cinema profile (DCI 2K / 4K, scalable or not): the components are X'Y'Z'.
+    pub fn digital_cinema(&self) -> bool {
+        matches!(self.capabilities & 0x7FFF, 3..=6)
+    }
 }
 
 impl Header {
@@ -172,7 +184,7 @@ impl<'a> Reader<'a> {
 
 fn parse_siz(s: &[u8]) -> Result<Header> {
     let mut r = Reader { d: s, at: 0 };
-    let _rsiz = r.u16()?;
+    let capabilities = r.u16()?;
     let (x1, y1, x0, y0) = (r.u32()?, r.u32()?, r.u32()?, r.u32()?);
     let (tile_w, tile_h, tile_x0, tile_y0) = (r.u32()?, r.u32()?, r.u32()?, r.u32()?);
     let csiz = r.u16()?;
@@ -207,7 +219,23 @@ fn parse_siz(s: &[u8]) -> Result<Header> {
     if samples.is_none_or(|n| n > MAX_SAMPLES) {
         return Err(Error::TooLarge);
     }
-    Ok(Header { x0, y0, x1, y1, tile_x0, tile_y0, tile_w, tile_h, components, levels: 0, layers: 1, reversible: true, progression: 0 })
+    Ok(Header {
+        x0,
+        y0,
+        x1,
+        y1,
+        tile_x0,
+        tile_y0,
+        tile_w,
+        tile_h,
+        components,
+        levels: 0,
+        layers: 1,
+        reversible: true,
+        progression: 0,
+        capabilities,
+        mct: false,
+    })
 }
 
 /// SPcod / SPcoc, with Scod / Scoc's "precincts defined" flag.
@@ -405,6 +433,7 @@ pub(crate) fn parse(data: &[u8], tiles: bool) -> Result<Codestream> {
     header.levels = first.cod.first().map_or(0, |c| c.levels);
     header.reversible = first.cod.first().is_some_and(|c| c.reversible);
     header.layers = first.global.layers;
+    header.mct = first.global.mct;
     header.progression = first.global.progression;
     if !tiles {
         return Ok(Codestream { header, tiles: Vec::new() });

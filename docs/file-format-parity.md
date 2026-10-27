@@ -1,6 +1,6 @@
 # File format parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-12 · **Change:** major (new file: every file type Premiere Pro 26.5.2 reads or writes, against ours) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 MXF import) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Containers, stills, audio files, project and interchange files, captions and presets. Codecs inside
 the containers are in [codec-parity.md](codec-parity.md). Our import list is
@@ -37,7 +37,7 @@ only). "Tested" names the evidence.
 |---|---|---|---|---|---|
 | MP4 / M4V / 3GP | read + write | yes | yes (H.264, HEVC + AAC) | ffprobe, round trips | 90% |
 | QuickTime MOV | read + write | yes | yes (H.264, HEVC, ProRes, DNxHR, APV, MJPEG, PCM) | ffprobe | 90% |
-| MXF OP1a / OP-Atom | read + write (XDCAM, AVC-Intra, P2, AS-10 / AS-11, JPEG 2000, DNx) | yes (AVC, DNx, ProRes, MPEG-2, PCM / AES3, timecode) | OP1a (DNxHR, ProRes, H.264), OP-Atom | index-table seeking tests | 70% |
+| MXF OP1a / OP-Atom | read + write (XDCAM, AVC-Intra, P2, AS-10 / AS-11, JPEG 2000, DNx) | yes (AVC, DNx, ProRes, MPEG-2, JPEG 2000 incl. DCP X'Y'Z', PCM / AES3, timecode) | OP1a (DNxHR, ProRes, H.264), OP-Atom | index-table seeking tests | 70% |
 | MPEG TS / PS (AVCHD `.mts`, `.m2ts`, `.ts`, `.mpg`, `.vob`, `.mod`) | read; write MPEG-2 / Blu-ray / DVD | yes | **no** | fixtures | 65% |
 | Matroska / WebM | read (limited) | yes (H.264, HEVC, VP9, AV1, ProRes, MJPEG + AAC, Opus, FLAC, MP3, Vorbis, PCM); WebM black report (#432), MKV multi-audio (#601) | no | fixtures; audio sample-aligned with the encoded signal (#790) | 75% |
 | **AVI** | read + write | **no** (extension listed, no demuxer, #598) | no | — | 0% |
@@ -92,4 +92,5 @@ validation in Avid and Pro Tools, DVD / Blu-ray / DCP / broadcast MXF delivery.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | JPEG 2000 MXF import, DCP picture tracks included (#77) |
 | 2026-10-10 | major | Created: format-by-format comparison with Premiere 26.5.2 from the import / export registries, crate READMEs, the installed bundle's exporter listings and open issues |

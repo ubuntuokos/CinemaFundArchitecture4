@@ -1,9 +1,10 @@
 //! MXF media source (`cfa4-mxf` demux, GOP-aware video via [`crate::gop`]).
 //!
 //! - Video: H.264 / AVC-Intra (Annex B byte stream, our decoder), MPEG-2 (D-10 / IMX, XDCAM HD /
-//!   HD422; our decoder), VC-3 (DNxHD/DNxHR) and ProRes through the decoder factories. Other
-//!   codings (JPEG 2000, DV, MPEG-4 visual…) are identified and reported as unsupported; the file
-//!   still opens so its audio can be used.
+//!   HD422; our decoder), VC-3 (DNxHD/DNxHR) and ProRes through the decoder factories, JPEG 2000
+//!   (broadcast and DCP picture tracks, X'Y'Z' included; [`crate::j2k`]). Other codings (DV,
+//!   MPEG-4 visual…) are identified and reported as unsupported; the file still opens so its audio
+//!   can be used.
 //! - Presentation order: the index table's temporal offsets; for AVC whose index marks B pictures
 //!   but carries no temporal offsets, the picture order counts of the slice headers (8.2.1).
 //! - Audio: every PCM sound track (Broadcast Wave / AES3, ST 382; ST 331 AES3 elements in D-10)
@@ -53,6 +54,8 @@ pub struct MxfSource {
     unsupported: Option<String>,
     /// MPEG-2: the first sequence header (primes decoders that start without one).
     mpeg2_header: Vec<u8>,
+    /// How the JPEG 2000 picture track's components are read.
+    j2k_hints: crate::j2k::J2kHints,
     /// Sound tracks combined into one stream: (track, first stored sample frame).
     atracks: Vec<(usize, u64)>,
     /// Presented sample frames.
@@ -223,6 +226,7 @@ impl MxfSource {
         let (mut vpts, mut vorder, mut vfirst, mut vcount) = (Vec::new(), Vec::new(), 0, 0);
         let mut explicit_color = None;
         let mut mpeg2_header = Vec::new();
+        let mut j2k_hints = crate::j2k::J2kHints::default();
         if let Some(vi) = vtrack {
             let t = &file.tracks[vi];
             let p = t.picture.clone().unwrap_or_default();
@@ -255,9 +259,17 @@ impl MxfSource {
                 .then(|| file.read_sample(&bytes, vi, 0).ok())
                 .flatten()
                 .and_then(|s| Some((cfa4_mpeg2v::probe(&s)?, cfa4_mpeg2v::scan_access_unit(&s), crate::video::mpeg2_sequence_header(&s)?)));
-            let (w, h) = match &mpeg {
-                Some((info, _, _)) => (info.width, info.height),
-                None => (p.frame_width(), p.frame_height()),
+            // JPEG 2000: the main header of the first picture
+            j2k_hints = crate::j2k::J2kHints { rgb: p.rgb(), full_range: p.full_range() };
+            let j2k = (t.codec == Codec::Jpeg2000)
+                .then(|| file.read_sample(&bytes, vi, 0).ok())
+                .flatten()
+                .and_then(|s| cfa4_j2k::parse_header(cfa4_j2k::codestream(&s).ok()?).ok())
+                .map(|h| (crate::j2k::components(&h, j2k_hints), h));
+            let (w, h) = match (&mpeg, &j2k) {
+                (Some((info, _, _)), _) => (info.width, info.height),
+                (_, Some((_, hd))) => (hd.width(), hd.height()),
+                _ => (p.frame_width(), p.frame_height()),
             };
             let par = if p.aspect_ratio.is_valid() && w > 0 && h > 0 {
                 let n = p.aspect_ratio.num as u64 * h as u64;
@@ -277,6 +289,18 @@ impl MxfSource {
                 Codec::ProRes { profile } => prores_name(profile).into(),
                 c @ Codec::Avc { .. } => c.name().into(),
                 Codec::Mpeg2 if mpeg.is_some() => mpeg.as_ref().map(|m| m.0.codec_name()).unwrap_or_default(),
+                Codec::Jpeg2000 => match &j2k {
+                    Some((Ok(_), hd)) if hd.digital_cinema() => "JPEG 2000 (digital cinema)".into(),
+                    Some((Ok(_), _)) => "JPEG 2000".into(),
+                    Some((Err(e), _)) => {
+                        unsupported = Some(e.to_string());
+                        "JPEG 2000 (unsupported)".into()
+                    }
+                    None => {
+                        unsupported = Some("JPEG 2000: unreadable first picture".into());
+                        "JPEG 2000 (unreadable)".into()
+                    }
+                },
                 other => {
                     let why = format!("{} video in MXF (CFA4 has no {} decoder)", other.name(), other.name());
                     unsupported = Some(why);
@@ -304,7 +328,17 @@ impl MxfSource {
                 mpeg2_header = header.clone();
             }
             let mut color = cfa4_color::ColorInfo { matrix: cfa4_frame::default_matrix(w, h), ..cfa4_color::ColorInfo::REC709 };
-            if p.full_range() {
+            if let Some((Ok(c), hd)) = &j2k {
+                // the decoder sets each frame's colour (R'G'B' and X'Y'Z' become Y'CbCr)
+                color = crate::j2k::color(*c, w, h, j2k_hints);
+                let depth = hd.components.first().map_or(8, |c| c.precision);
+                pixel_format = match c {
+                    crate::j2k::Components::Ycbcr(ch) => format!("YUV {} {depth}-bit", ch.label()),
+                    crate::j2k::Components::Gray => format!("Gray {depth}-bit"),
+                    crate::j2k::Components::Rgb => format!("RGB {depth}-bit"),
+                    crate::j2k::Components::Xyz => format!("X'Y'Z' {depth}-bit"),
+                };
+            } else if p.full_range() {
                 color.range = cfa4_color::Range::Full;
                 explicit_color = Some(color);
             }
@@ -378,6 +412,7 @@ impl MxfSource {
             video: GopCache::new(explicit_color),
             unsupported,
             mpeg2_header,
+            j2k_hints,
             atracks: combined,
             aframes,
             file,
@@ -431,6 +466,7 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::Mpeg2 => Ok(Box::new(crate::video::Mpeg2Decoder::new(self.src.mpeg2_header.clone()))),
             Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
+            Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             other => Err(CodecError::Unsupported(format!("{} video in MXF", other.name()))),
         }
     }

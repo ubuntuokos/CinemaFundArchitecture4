@@ -1,6 +1,6 @@
 //! MXF against ffmpeg: ffmpeg writes the files (OP1a, OP-Atom, D-10) and decodes them as the
-//! oracle. Our decode must match frame for frame (H.264 bit-exact, VC-3 ±2, ProRes ±1 LSB), seek
-//! to random frames exactly, and give sample-exact PCM.
+//! oracle. Our decode must match frame for frame (H.264 bit-exact, VC-3 ±2, ProRes ±1 LSB, JPEG
+//! 2000 5/3 bit-exact and 9/7 ±1), seek to random frames exactly, and give sample-exact PCM.
 
 mod common;
 
@@ -105,6 +105,16 @@ fn spec(name: &str) -> Vec<String> {
                 "mxf_d10",
             ],
         ]),
+        // JPEG 2000 (ffmpeg's encoder): 5/3 lossless 4:2:2 10-bit, 9/7 4:2:0, R'G'B' (RCT), gray
+        "mxf_j2k_422p10.mxf" => cat(&[V25, TONE, &["-t", "0.4", "-c:v", "jpeg2000", "-pred", "1", "-pix_fmt", "yuv422p10le", "-c:a", "pcm_s24le"]]),
+        "mxf_j2k_420_97.mxf" => cat(&[V25, &["-t", "0.4", "-c:v", "jpeg2000", "-pred", "0", "-pix_fmt", "yuv420p"]]),
+        "mxf_j2k_rgb.mxf" => cat(&[V25, &["-t", "0.2", "-c:v", "jpeg2000", "-pred", "1", "-pix_fmt", "rgb24"]]),
+        "mxf_j2k_gray.mxf" => cat(&[V25, &["-t", "0.2", "-c:v", "jpeg2000", "-pred", "1", "-pix_fmt", "gray"]]),
+        // a DCP-style picture track: DCI 2K, 12-bit X'Y'Z', 9/7 (libopenjpeg's cinema profile)
+        "mxf_j2k_dci2k.mxf" => cat(&[
+            &["-f", "lavfi", "-i", "testsrc2=size=2048x1080:rate=24"],
+            &["-frames:v", "2", "-c:v", "libopenjpeg", "-profile:v", "cinema2k", "-pix_fmt", "xyz12le"],
+        ]),
         other => panic!("unknown fixture {other}"),
     }
 }
@@ -119,6 +129,11 @@ pub const ALL: &[&str] = &[
     "mxf_atom_dnxhr.mxf",
     "mxf_atom_pcm.mxf",
     "mxf_d10.mxf",
+    "mxf_j2k_422p10.mxf",
+    "mxf_j2k_420_97.mxf",
+    "mxf_j2k_rgb.mxf",
+    "mxf_j2k_gray.mxf",
+    "mxf_j2k_dci2k.mxf",
 ];
 
 fn make(ff: &Path, name: &str) -> PathBuf {
@@ -261,6 +276,132 @@ fn prores_op1a_within_one_lsb() {
     check_audio_exact(&ff, &f, &[]);
 }
 
+#[test]
+fn j2k_lossless_422_10bit_bit_exact() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let f = make(&ff, "mxf_j2k_422p10.mxf");
+    let src = open(&f);
+    let v = src.info().video.as_ref().unwrap();
+    assert_eq!((v.codec.as_str(), v.pixel_format.as_str()), ("JPEG 2000", "YUV 4:2:2 10-bit"));
+    check_video(&ff, &f, "yuv422p10le", (2, 1), 2, 0, 6);
+    check_audio_exact(&ff, &f, &[]);
+}
+
+#[test]
+fn j2k_irreversible_420_within_one_lsb() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let f = make(&ff, "mxf_j2k_420_97.mxf");
+    check_video(&ff, &f, "yuv420p", (2, 2), 1, 1, 6);
+}
+
+/// R'G'B' pictures become BT.709 video-range Y'CbCr 4:4:4; ffmpeg's swscale makes the same
+/// conversion from its R'G'B' decode, within its rounding.
+#[test]
+fn j2k_rgb_becomes_bt709_ycbcr() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let f = make(&ff, "mxf_j2k_rgb.mxf");
+    let src = open(&f);
+    let v = src.info().video.clone().unwrap();
+    assert_eq!(v.pixel_format, "RGB 8-bit");
+    let (w, h) = (v.width as usize, v.height as usize);
+    let raw = ffmpeg_out(
+        &ff,
+        &[
+            "-i",
+            f.to_str().unwrap(),
+            "-vf",
+            "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int+bitexact",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "yuv444p",
+            "-",
+        ],
+    );
+    let n = raw.len() / (w * h * 3);
+    assert!(n >= 4);
+    for i in 0..n {
+        let fr = src.video_frame(FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
+        assert_eq!(fr.color.matrix, cfa4_color::Matrix::Bt709);
+        let want = raw_planes(&raw[i * w * h * 3..(i + 1) * w * h * 3], w, h, w, h, 1);
+        let d = max_diff(&planes(&fr), &want);
+        assert!(d <= 2, "frame {i} differs by {d}");
+    }
+}
+
+#[test]
+fn j2k_gray_luma_bit_exact() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let f = make(&ff, "mxf_j2k_gray.mxf");
+    let src = open(&f);
+    let v = src.info().video.clone().unwrap();
+    assert_eq!(v.pixel_format, "Gray 8-bit");
+    let (w, h) = (v.width as usize, v.height as usize);
+    let raw = ffmpeg_frames(&ff, &f, "gray");
+    assert!(raw.len() >= 4 * w * h);
+    for (i, want) in raw.chunks_exact(w * h).enumerate() {
+        let fr = src.video_frame(FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
+        let p = planes(&fr);
+        assert!(p[0].iter().zip(want).all(|(&a, &b)| a == u16::from(b)), "frame {i}");
+        assert!(p[1].iter().chain(&p[2]).all(|&c| c == 128), "neutral chroma");
+    }
+}
+
+/// The DCP picture track: ffmpeg's X'Y'Z' decode, put through an independent f64 reference of
+/// the DCI decode (ST 428-1 gamma 2.6, 48 cd/m² white), XYZ → P3-D65, gamma 1/2.4 and BT.709
+/// video-range Y'CbCr, matches ours.
+#[test]
+fn j2k_dci_xyz_decodes_to_p3() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let f = make(&ff, "mxf_j2k_dci2k.mxf");
+    let src = open(&f);
+    let v = src.info().video.clone().unwrap();
+    assert_eq!((v.codec.as_str(), v.pixel_format.as_str()), ("JPEG 2000 (digital cinema)", "X'Y'Z' 12-bit"));
+    assert_eq!((v.width, v.height), (2048, 1080));
+    assert_eq!(v.color.primaries, cfa4_color::Primaries::P3D65);
+    let (w, h) = (v.width as usize, v.height as usize);
+    let raw = ffmpeg_frames(&ff, &f, "xyz12le");
+    let n = raw.len() / (w * h * 6);
+    assert_eq!(n, 2);
+    // SMPTE EG 432-1 P3-D65 primaries, D65 white
+    let m = cfa4_color::spaces::inverse(&cfa4_color::spaces::npm([[0.680, 0.320], [0.265, 0.690], [0.150, 0.060]], [0.3127, 0.3290]));
+    let reference = |xyz: [u16; 3]| -> [f64; 3] {
+        let lin = xyz.map(|c| (f64::from(c >> 4) / 4095.0).powf(2.6) * 52.37 / 48.0);
+        // encoded with the sRGB curve the pipeline decodes P3-D65 frames with (`Curve::Sdr`)
+        let srgb = |c: f64| if c <= 0.003_130_8 { c * 12.92 } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 };
+        let rgb = cfa4_color::spaces::mul_vec(&m, lin).map(|c| srgb(c.clamp(0.0, 1.0)));
+        let y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+        let cb = (rgb[2] - y) / 1.8556;
+        let cr = (rgb[0] - y) / 1.5748;
+        [(16.0 + 219.0 * y) * 16.0, (128.0 + 224.0 * cb) * 16.0, (128.0 + 224.0 * cr) * 16.0]
+    };
+    let (mut worst, mut total, mut count, mut over) = (0.0f64, 0.0f64, 0usize, 0usize);
+    for i in 0..n {
+        let fr = src.video_frame(FrameRequest::full(v.frame_rate.tick_of(i as i64))).unwrap();
+        assert_eq!(fr.color.primaries, cfa4_color::Primaries::P3D65);
+        let p = planes(&fr);
+        let frame = &raw[i * w * h * 6..(i + 1) * w * h * 6];
+        for (k, px) in frame.as_chunks::<6>().0.iter().enumerate().step_by(7) {
+            let xyz = [u16::from_le_bytes([px[0], px[1]]), u16::from_le_bytes([px[2], px[3]]), u16::from_le_bytes([px[4], px[5]])];
+            let want = reference(xyz);
+            for c in 0..3 {
+                let d = (f64::from(p[c][k]) - want[c]).abs();
+                worst = worst.max(d);
+                total += d;
+                count += 1;
+                over += usize::from(d > 4.0);
+            }
+        }
+    }
+    let mean = total / count.max(1) as f64;
+    eprintln!("DCI X'Y'Z': mean diff {mean:.3}, max {worst:.1}, {over} of {count} over 4");
+    // The decoders may differ by 1 in X'Y'Z' (9/7). Near black the sRGB curve is steep enough
+    // to turn that into tens of 12-bit codes, so the bound is on the mean and the share of
+    // samples off by more than 4.
+    assert!(mean < 0.75, "mean diff {mean}");
+    assert!(over * 10_000 < count, "{over} of {count} samples differ by more than 4");
+}
+
 /// MPEG-2 frames are compared within the IDCT tolerance of `cfa4-mpeg2v` (an
 /// IEEE 1180-accurate IDCT against ffmpeg's integer one).
 const MPEG2_TOL: u16 = 4;
@@ -332,7 +473,7 @@ fn d10_aes3_elements_sample_exact() {
 #[test]
 fn truncated_and_corrupt_files_never_panic() {
     let ff = cfa4_testkit::require_ffmpeg!();
-    for name in ["mxf_h264_bf2.mxf", "mxf_atom_pcm.mxf", "mxf_prores.mxf"] {
+    for name in ["mxf_h264_bf2.mxf", "mxf_atom_pcm.mxf", "mxf_prores.mxf", "mxf_j2k_420_97.mxf"] {
         let f = make(&ff, name);
         let full = std::fs::read(&f).unwrap();
         let mut rng = Rng(0xDEAD_BEEF);
