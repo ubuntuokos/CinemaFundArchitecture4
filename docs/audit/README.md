@@ -3,6 +3,8 @@
 A projekt célja és prioritásai: [`VISION.md`](../../VISION.md). Ha az alábbiak bármelyike
 ellentmond neki, a `VISION.md` az irányadó.
 
+PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordination.md).
+
 > **Fontos:** a dokumentumok és a hozzájuk tartozó kód (szkriptek, Qt6-héj, Qt6-híd, csomagolás,
 > tesztek) 2026-10-24 óta a `main`-ben vannak: a #3 … #33 PR-lánc a #35-tel került be
 > (merge commit `6889664`). A régi PR-ok lezárva, az águk megmaradt.
