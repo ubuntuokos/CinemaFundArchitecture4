@@ -2,7 +2,7 @@
 //! fixture generator) are truncated, bit-flipped and overwritten, and every result goes through
 //! the decoder without its panic guard.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use cfa4_jxl::cfa4::decode_unguarded;
@@ -13,6 +13,29 @@ fn cjxl() -> Option<PathBuf> {
         cfa4_testkit::skip("jxl fuzz", "cjxl not found (Ubuntu package libjxl-tools)");
     }
     found
+}
+
+/// `args` for this `cjxl`: libjxl 0.8 renamed `--photon_noise ISO<n>` to `--photon_noise_iso=<n>`
+/// (Ubuntu 24.04 ships 0.7, newer releases the new spelling).
+fn cjxl_args(cjxl: &Path, args: &[&str]) -> Vec<String> {
+    let help = Command::new(cjxl)
+        .args(["-h", "-v", "-v", "-v", "-v"])
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned() + &String::from_utf8_lossy(&o.stderr))
+        .unwrap_or_default();
+    let renamed = help.contains("--photon_noise_iso");
+    let mut out = Vec::new();
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match (*a, renamed) {
+            ("--photon_noise", true) => {
+                let iso = it.next().map_or("", |v| v.trim_start_matches("ISO"));
+                out.push(format!("--photon_noise_iso={iso}"));
+            }
+            _ => out.push((*a).to_owned()),
+        }
+    }
+    out
 }
 
 /// A small picture with edges and noise, encoded with `args`.
@@ -28,7 +51,7 @@ fn encode(cjxl: &PathBuf, name: &str, args: &[&str]) -> Vec<u8> {
     let png = dir.join(format!("{name}.png"));
     let jxl = dir.join(format!("{name}.jxl"));
     img.save(&png).unwrap();
-    let out = Command::new(cjxl).arg(&png).arg(&jxl).args(args).arg("--quiet").output().unwrap();
+    let out = Command::new(cjxl).arg(&png).arg(&jxl).args(cjxl_args(cjxl, args)).arg("--quiet").output().unwrap();
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     std::fs::read(&jxl).unwrap()
 }
