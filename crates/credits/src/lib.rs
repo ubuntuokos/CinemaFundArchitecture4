@@ -26,6 +26,7 @@ pub mod diff;
 pub mod doc;
 pub mod fit;
 pub mod layout;
+pub mod markup;
 pub mod office;
 pub mod sheet;
 pub mod style;
@@ -110,3 +111,6 @@ mod fit_tests;
 
 #[cfg(test)]
 mod look_tests;
+
+#[cfg(test)]
+mod rich_tests;

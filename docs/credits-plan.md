@@ -142,11 +142,16 @@ Az eredeti terv §6, §7, §10 pontjaiból:
 - a kontraszt-ellenőrzés a valódi háttérszínhez mér; kép vagy videó mögött tájékoztat, hogy
   szemmel kell ellenőrizni.
 
-### C5 – Gazdagabb elrendezés (N, részekre bontva)
+### C5 – Gazdagabb elrendezés (N, részekre bontva) – **első rész KÉSZ (2026-10-27)**
 
-- pontsor a szerep és a név között, egyforma szélességű szerep-oszlop;
-- betűstílus soron belül (`{{Stílus}}…{{Style}}`);
-- párhuzamos oszlopok (gerincek);
+- ✅ pontsor a szerep és a név között, egyforma szélességű szerep-oszlop (`Leaders` stílus,
+  `leader`, `harmonizeHeads`, `headAlign`);
+- ✅ betűstílus soron belül (`{{Stílus Félkövér}}…{{Stílus}}`; beépített és saját
+  `inlineStyles`);
+- ✅ párhuzamos oszlopok (gerinc `450 párhuzamos`);
+
+Hátravan (második rész):
+
 - **portré + név rács** (fotók a nevek fölött vagy mellett);
 - **videó** a stáblistában (egy oldalon belül, a gördüléssel együtt mozogva);
 - egyszerű mozgás-előbeállítások kártyákra: beúszás oldalról, lépcsőzetes (stagger) megjelenés.

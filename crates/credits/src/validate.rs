@@ -217,6 +217,7 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
             for (ci, cell) in b.body.iter().enumerate() {
                 // the cell's own spreadsheet row
                 let cell_row = b.body_rows.get(ci).copied().unwrap_or_else(|| b.row.saturating_add(ci));
+                let cell = crate::markup::plain(cell);
                 for line in cell.lines().map(str::trim).filter(|l| !l.is_empty()) {
                     let key = name_key(line);
                     if key.is_empty() {
