@@ -2,7 +2,18 @@
 
 **Dátum:** 2026-10-27  
 **Státusz:** a terv tulajdonos által jóváhagyva (2026-10-27); a natív CFA4-integráció irányát a korábbi tulajdonosi döntés rögzíti  
-**Kapcsolódó terv:** [Smart Render](SMART-RENDER-2026-10-27.md)
+**Kapcsolódó tervek:** [Smart Render](SMART-RENDER-2026-10-27.md), [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md) (a végleges, egyesített terv), `CFA4-SMART-CUT-RENDER-R1.md` munkacsomag-terv (ág: `feature/native-smart-cut-render`)
+
+## Igazítás a CFA4-SCE-001 v1.5 döntéseihez (2026-10-27)
+
+A tulajdonos 2026-10-27-én véglegesítette a [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md) tervet. Ahol ez a dokumentum eltér tőle, a v1.5 döntései érvényesek:
+
+- **A GOP Smart Cut a Smart Render egyklipes esete.** Ugyanazt az `ExportExecutionPlan` tervtípust és ugyanazt a végrehajtót használja, egy forrástartományra szűkítve. A Qt6-ban a forrásmonitor „Forrás vágása” művelete indítja, nem külön exportüzemmód. A lenti `SmartCutPlan`/`SmartCutRequest` típusnevek ezért logikai nevek; a megvalósításban a közös tervtípus egyklipes hatókörét jelentik.
+- **Munkacsomagok.** A fázisok az R1 terv munkacsomagjaihoz kötődnek: 1. fázis = WP-01/WP-02, 2. fázis = WP-03, 3. fázis = WP-04, 4. fázis = WP-08, 5. fázis = WP-07. A tervezés (capability, index, planner) a `cfa4-smart-edit` crate-ben, a végrehajtás a `cfa4-export`-ban (`smart_render/`) készül.
+- **Határ-újrakódolás csak H.264-re** az első kiadásban. MPEG-2 (nincs natív kódoló), HEVC (ma csak NVENC, gyártófüggő) és AV1 (nincs kódoló) forrásnál a vágás kulcskockára kerekít, a felület mutatja az eltérést, vagy teljes újrakódolást javasol.
+- **Parancsok:** egységes `export.analyze`, `export.plan`, `export.start`, `export.cancel`, `export.validate` névtér; a `smartCut.*` parancscsalád nem készül.
+- **Validáció:** rétegzett. A szerkezeti egyezés (`BITSTREAM_EQUIVALENT`) elég a PASS-hoz; dekódolásos összevetés csak a saját dekóder által támogatott profilnál fut.
+- **Atomikus írás:** a kimenet a `cfa4-export` közös atomikus író segédjén megy át (ideiglenes fájl, fsync, átnevezés).
 
 ## Cél
 
@@ -54,7 +65,7 @@ A vágási számítás CFA4 `Tick`-ben, a demux indexe pedig minta- és decode/d
 
 ### 2. fázis – Tiszta vágási tervelőállítás
 
-**Fájl:** új `crates/export/src/smart_cut.rs`; GOP-metaadat esetén módosítás a `crates/codecs`/container API-kban.
+**Fájl:** a `cfa4-smart-edit` planner moduljai (v1.5; korábban új `crates/export/src/smart_cut.rs`); GOP-metaadat esetén módosítás a `crates/codecs`/container API-kban.
 
 - Definiáld a szerializálható `SmartCutRequest`, `SmartCutOptions`, `SmartCutPlan`, `CutMode`, `CopyGuarantee`, `SmartCutReport` típusokat.
 - A planner bemenete a source index, a CFA4 Tick alapú In/Out, a célkonténer/codec és a policy; kimenete felsorolja a kiválasztott képkockákat, a dekódolási kezdőpontot, újrakódolandó széleket, másolt belső mintákat, hangmintákat és kimeneti timestamp-leképezést.
@@ -65,7 +76,7 @@ A vágási számítás CFA4 `Tick`-ben, a demux indexe pedig minta- és decode/d
 
 ### 3. fázis – Hibrid mintamásolás és határ-GOP render
 
-**Fájl:** `crates/export/src/smart_cut.rs`, a céltároló muxer moduljai, a meglévő encoder-regiszter.
+**Fájl:** `crates/export/src/smart_render/` (v1.5: közös végrehajtó), a céltároló muxer moduljai, a meglévő encoder-regiszter.
 
 - A planner által jóváhagyott belső GOP-okat mintánként, payload-módosítás nélkül írd ki.
 - A határrégiót a legkorábbi szükséges biztonságos random-access mintától dekódold, majd csak a kért képkockákat add az encodernek.
@@ -79,7 +90,7 @@ A vágási számítás CFA4 `Tick`-ben, a demux indexe pedig minta- és decode/d
 
 **Érintett területek:** új `crates/engine/src/smart_cut.rs`, parancsregiszter, `python/cfa4_qt`, control-protocol dokumentáció.
 
-- Regisztráld a `smartCut.plan`, `smartCut.run`, `smartCut.cancel` műveleteket `enabled()` indoklással, szerializált paraméterekkel és progress/cancel állapottal.
+- Regisztráld a Smart Cutot az egységes `export.plan` / `export.start` / `export.cancel` parancsokon, forrástartomány hatókörrel (v1.5; korábban `smartCut.plan`, `smartCut.run`, `smartCut.cancel`), `enabled()` indoklással, szerializált paraméterekkel és progress/cancel állapottal.
 - A Qt6-ban a képkocka-pontos/GOP-határ vágás és a Bitazonos/Kompatibilis garancia külön kontroll legyen; az előnézet közölje a tényleges határt és újrakódolt GOP-okat.
 - UI, CLI és control-channel ugyanazt az engine parancsot hívja; UI-ban saját média-/vágási logika nem keletkezhet.
 - Projektadat ne változzon, kivéve, ha a felhasználó külön kéri a kivágás klipként történő elhelyezését.
