@@ -239,7 +239,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   (#171–#180).
 - **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
-  (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342);
+  (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); ProRes 4444 / 4444 XQ in the export UI (#342);
   H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
   encoders go first where present; #94).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,

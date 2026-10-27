@@ -71,7 +71,7 @@ only). "Tested" names the evidence.
 | AIFF / AIFC | read + write | yes | yes | 95% |
 | MP3 | read + write | read | **no** | 60% |
 | AAC / M4A | read + write | yes | yes (in MP4 / MOV, and AAC Audio: `.m4a` or ADTS `.aac`, #814) | 95% |
-| FLAC, Ogg, Opus | partial | yes | no | ahead on read |
+| FLAC, Ogg, Opus | partial | yes | FLAC; Opus Audio (`.opus`, Ogg Opus, own CELT encoder, 48 kHz mono / stereo, #99) | ahead |
 | WMA | read (Windows) | no | no | 0% |
 
 ## Captions and subtitles

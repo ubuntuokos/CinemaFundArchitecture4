@@ -541,6 +541,93 @@ fn flac_audio_in_mp4_and_mov() {
 }
 
 #[test]
+fn opus_audio_writes_ogg_opus() {
+    let (p, seq, m) = matte([0.0, 0.0, 0.0, 1.0], 64, 36, Some(-6.0));
+    let dir = Scratch::new("opus-audio");
+    let range = Some(TimeRange::new(Tick::ZERO, Tick(TICKS_PER_SECOND)));
+    let path = dir.path("a.opus");
+    // asked for 44.1 kHz 5.1: Opus Audio codes 48 kHz stereo
+    let mut s = ExportSettings { format: Format::Opus, path: path.clone(), range, ..Default::default() };
+    s.audio = AudioSettings { sample_rate: Some(44_100), channels: 6, bitrate_kbps: 128, ..Default::default() };
+    s.metadata.title = "Opus test".into();
+    assert!(!s.has_video());
+    assert_eq!((s.audio_codec(), s.extension()), (AudioCodec::Opus, "opus"));
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 48_000, "one second of samples");
+    let bytes = std::fs::read(&path).unwrap();
+    let ogg = cfa4_ogg::open(&bytes).unwrap();
+    assert!(ogg.warnings.is_empty(), "{:?}", ogg.warnings);
+    let st = &ogg.streams[ogg.stream_of(cfa4_ogg::Codec::Opus).unwrap()];
+    assert!(String::from_utf8_lossy(&st.headers[1]).contains("TITLE=Opus test"));
+    let head = cfa4_opus::OpusHead::parse(&st.headers[0]).unwrap();
+    assert_eq!((head.channels, head.pre_skip), (2, cfa4_opus::Encoder::LOOKAHEAD as u16));
+    // 128 kbit/s CBR in 20 ms packets
+    assert!(st.packets.iter().all(|p| p.size == 320), "constant packet size");
+    let granule = st.last_granule.unwrap();
+    assert_eq!(granule, 48_000 + i64::from(head.pre_skip), "end trimming to the exact length");
+    let mut dec = cfa4_opus::Decoder::from_head(head, 48_000).unwrap();
+    dec.set_trim_pre_skip(true);
+    let mut pcm = vec![Vec::new(); 2];
+    for i in 0..st.packets.len() {
+        let out = dec.decode(Some(&ogg.read_packet(&bytes, 0, i).unwrap())).unwrap();
+        pcm.iter_mut().zip(out).for_each(|(a, b)| a.extend(b));
+    }
+    pcm.iter_mut().for_each(|c| c.truncate(48_000));
+    assert!((0.2..0.5).contains(&rms(&pcm)), "rms {}", rms(&pcm));
+    if let Some(j) = ffprobe_json(&["-show_streams", "-show_format"], &path) {
+        let st = &j["streams"][0];
+        assert_eq!(st["codec_name"], "opus");
+        assert_eq!(st["sample_rate"], "48000");
+        assert_eq!(st["channels"], 2);
+        let d: f64 = j["format"]["duration"].as_str().unwrap().parse().unwrap();
+        assert!((d - 1.0).abs() < 0.01, "duration {d}");
+    }
+    if let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("Opus Audio decode") {
+        let out = std::process::Command::new(&ffmpeg).args(["-v", "error", "-xerror", "-i", &path, "-f", "null", "-"]).output().unwrap();
+        assert!(out.status.success() && out.stderr.is_empty(), "{}", String::from_utf8_lossy(&out.stderr));
+    }
+
+    // mono, and a range shorter than one frame
+    let path = dir.path("b.opus");
+    let mut s = ExportSettings {
+        format: Format::Opus,
+        path: path.clone(),
+        range: Some(TimeRange::new(Tick::ZERO, Tick(TICKS_PER_SECOND / 100))),
+        ..Default::default()
+    };
+    s.audio.channels = 1;
+    assert_eq!(export(&p, seq, &s, &m, &Progress::default()).unwrap().frames, 480);
+    let bytes = std::fs::read(&path).unwrap();
+    let ogg = cfa4_ogg::open(&bytes).unwrap();
+    let st = &ogg.streams[0];
+    assert_eq!(cfa4_opus::OpusHead::parse(&st.headers[0]).unwrap().channels, 1);
+    assert_eq!(st.last_granule, Some(480 + cfa4_opus::Encoder::LOOKAHEAD as i64));
+}
+
+#[test]
+fn opus_settings_round_trip_and_summary() {
+    let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "opus", "audio": {"bitrate_kbps": 96}})).unwrap();
+    assert_eq!((s.format, s.audio_codec(), s.has_video()), (Format::Opus, AudioCodec::Opus, false));
+    assert_eq!(
+        (s.extension(), Format::from_name("Opus Audio"), Format::from_name("ogg"), Format::Opus.id()),
+        ("opus", Some(Format::Opus), Some(Format::Opus), "opus")
+    );
+    assert!(Format::ALL.contains(&Format::Opus) && Format::Opus.is_audio_only() && Format::Opus.has_builtin_encoder());
+    let sum = s.summary(64, 36, FrameRate::FPS_24, 44_100, Tick(TICKS_PER_SECOND));
+    assert_eq!(sum.audio, "Opus, 96 kbps, 48000 Hz, Stereo");
+    assert_eq!(s.estimate_bytes(64, 36, FrameRate::FPS_24, 44_100, Tick(TICKS_PER_SECOND)), 12_000);
+    assert!(!s.supports_sample_format(SampleFormat::Int16));
+    // Opus asked for a video format falls back to that format's default
+    let mut mp4 = ExportSettings { format: Format::H264, ..Default::default() };
+    mp4.audio.codec = AudioCodec::Opus;
+    assert_eq!(mp4.audio_codec(), AudioCodec::Aac);
+    mp4.format = Format::ProRes;
+    assert_eq!(mp4.audio_codec(), AudioCodec::Pcm);
+    let preset = crate::presets::find_builtin("Opus Audio 48 kHz 160 kbps").unwrap();
+    assert_eq!((preset.settings.format, preset.settings.audio.bitrate_kbps), (Format::Opus, 160));
+}
+
+#[test]
 fn flac_settings_round_trip_and_summary() {
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "flac"})).unwrap();
     assert_eq!((s.format, s.audio_codec(), s.audio.flac_level, s.has_video()), (Format::Flac, AudioCodec::Flac, 5, false));
@@ -952,7 +1039,7 @@ fn h265_is_a_format_with_a_built_in_encoder() {
     }
     assert_eq!(Format::from_name(Format::Hevc.id()), Some(Format::Hevc));
     assert_eq!((Format::Hevc.extension(), Format::Hevc.label()), ("mp4", "H.265 (HEVC)"));
-    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 21);
+    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 22);
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "hevc"})).unwrap();
     assert_eq!(s.format, Format::Hevc);
     assert_eq!(serde_json::to_value(&s).unwrap()["format"], "hevc");
