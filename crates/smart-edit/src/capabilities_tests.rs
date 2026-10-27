@@ -78,7 +78,7 @@ fn no_smart_cut_is_allowed_before_it_is_implemented() {
     }
     let d = r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT);
     let blocked: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
-    assert_eq!(blocked, vec![Operation::GopIndex, Operation::PacketCopy]);
+    assert_eq!(blocked, vec![Operation::PacketCopy]);
 }
 
 #[test]
@@ -87,10 +87,12 @@ fn smart_cut_needs_every_step() {
     let index = Key::codec(Operation::GopIndex, Codec::H264);
     let copy = Key::in_container(Operation::PacketCopy, Codec::H264, Container::Mp4);
     let ok = |key| Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None };
-    r.insert(ok(index)).unwrap();
     assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
     r.insert(ok(copy)).unwrap();
     assert!(r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
+    // every step counts: without the GOP index there is no Smart Cut
+    r.insert(Entry { level: SupportLevel::Unsupported, ..ok(index) }).unwrap();
+    assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
     // MPEG-2 in a program stream cannot be written back: no muxer
     let mut m = Registry::native();
     m.insert(ok(Key::codec(Operation::GopIndex, Codec::Mpeg2Video))).unwrap();

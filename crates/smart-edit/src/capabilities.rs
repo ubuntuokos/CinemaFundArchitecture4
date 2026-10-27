@@ -135,8 +135,9 @@ pub enum Backend {
     Platform,
     /// The optional GStreamer backend (ADR 0002).
     Gstreamer,
-    /// An FFmpeg backend. Not registered: AGENTS.md §2 allows ffmpeg only as an external test
-    /// oracle until an ADR says otherwise (ADR 0004, smart-edit-baseline §3).
+    /// An FFmpeg backend. Never registered: Smart Edit runs on CFA4's own Rust code and ffmpeg is
+    /// only an external validation oracle (owner decision 2026-10-27, smart-edit-baseline §3;
+    /// AGENTS.md §2).
     Ffmpeg,
 }
 
@@ -562,8 +563,8 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(ParseHeaders, Hevc), Native, Supported, "cfa4-hevc params (VPS/SPS/PPS) and slice headers"),
         row(c(ParseHeaders, Av1), Native, Supported, "cfa4-av1 sequence and frame headers"),
         // GOP index, packet copy and boundary re-encode are what this work adds
-        row(c(GopIndex, Mpeg2Video), Native, Unsupported, "not implemented yet (WP-02)"),
-        row(c(GopIndex, H264), Native, Unsupported, "not implemented yet (WP-02)"),
+        row(c(GopIndex, Mpeg2Video), Native, Supported, "cfa4-smart-edit mpeg2_index; crates/smart-edit/tests/index_oracle.rs (open / closed GOP, ffprobe)"),
+        row(c(GopIndex, H264), Native, Supported, "cfa4-smart-edit h264_index; crates/smart-edit/tests/index_oracle.rs (IDR / open GOP, ffprobe)"),
         row(c(GopIndex, Hevc), Native, Unsupported, "not implemented yet (WP-07)"),
         row(c(GopIndex, Av1), Native, Unsupported, "not implemented yet (WP-07)"),
         // encode
