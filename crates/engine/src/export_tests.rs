@@ -252,6 +252,15 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 }
                 continue;
             }
+            "mpeg2" => {
+                // program stream + LPCM, transport stream + AAC
+                let ts = settings["mpeg2Container"] == "ts";
+                assert!(out.ends_with(if ts { ".ts" } else { ".mpg" }), "{name}: {out}");
+                assert_eq!(fmt_name, if ts { "mpegts" } else { "mpeg" }, "{name}");
+                assert_eq!(stream(&j, "video").unwrap()["codec_name"], "mpeg2video", "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], if ts { "aac" } else { "pcm_dvd" }, "{name}");
+                continue;
+            }
             "gif" => {
                 let v = stream(&j, "video").unwrap();
                 assert_eq!(v["codec_name"], "gif");
