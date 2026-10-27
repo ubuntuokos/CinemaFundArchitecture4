@@ -156,6 +156,26 @@ action-safe (93 %) and title-safe (90 %) areas, the centre lines and the spines 
 blocks; *Baseline grid* draws lines one gap unit (`unitPx`) apart that move with the page. They
 are only in the picture, never in the credits.
 
+## Templates
+
+A credits template is a ready look: the styling (page and content styles, backgrounds,
+transitions, entrances, inline styles), an optional fitting length and a sample sheet showing
+the pages it is made for. In the Credits window, *Template* picks one (a styling file, if given,
+wins); *New Spreadsheet from Template…* writes its sample as a CSV to start from; *Save as
+Template…* keeps the current look (styling or template, and the sheet's first rows as the sample)
+as your own. **Graphics and Titles ▸ Apply Credits Template…** gives placed credits another look,
+keeping their rows and hand edits, as one undo step.
+
+| Kind | Where | Licence |
+|---|---|---|
+| built in | in CFA4: *Classic Roll*, *Cards and Roll*, *News Crawl*, *Cast Portraits* (original designs) | MIT OR Apache-2.0 |
+| user | `<data dir>/Credits Templates/*.cfa4credtpl` | what its `license` says |
+| project | kept in the project file | what its `license` says |
+
+A template file is versioned JSON: `format` (`"cfa4.credits-template"`), `version` (1), `id`,
+`name`, `description`, `category`, `source` (who made it), `license`, `styling`, `sample` (rows),
+`fit`. Newer versions are refused; unknown fields are ignored.
+
 ## Checks
 
 The Credits window lists the engine's checks under *Checks and warnings*, with an error, warning
@@ -248,7 +268,7 @@ fails leaves the old pages as they were.
 
 | Command | Menu | Params |
 |---|---|---|
-| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
+| `graphics.credits.import` | Graphics and Titles ▸ Import Credits Spreadsheet… | `path` (.csv/.tsv/.xlsx/.ods/.cfa4credits) or `csv` (text), `sheet`, `pictureDir`, `styling`, `template` (its styling and fitting; `styling` wins), `time`, `track` (of each page's lowest clip: its background, else the page) → `{clips: [{clip, start, duration, behaviour, pictures, background, transition}], group, end, sheet, warnings}`; one undo step |
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour (scroll/card/crawl), duration, seconds, layers, contentHeight, contentWidth, background, transition: {effect, duration}}], duration, sheets, sheet, warnings, issues}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width`, `guides`, `grid` → `{width, height, page, pages, time, pngBase64}`: the page's background (a picture or video as grey) and text with the roll, crawl or fades applied, pictures outlined, guides drawn |
 | `graphics.credits.validate` | (query; shown in the Credits window) | as preview, or `clip` for placed credits → `{errors, warnings, infos, issues: [{code, severity, page?, row?, values, message}]}` |
@@ -257,7 +277,13 @@ fails leaves the old pages as they were.
 | `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
 | `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
 | `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |
-| `graphics.credits.styles` | (query) | `styling` → style names, column names and a starter styling |
+| `graphics.credits.styles` | (query) | `styling` → style names, inline style names, column names and a starter styling |
+| `graphics.credits.templates` | (query) | → `{templates: [{id, name, description, category, source, license, path, pages, fit}]}` |
+| `graphics.credits.template.get` | (query) | `id` (id, name or `.cfa4credtpl` path) → `{template, sampleCsv}` |
+| `graphics.credits.template.save` | Credits window: *Save as Template…* | `name`, `description`?, `license`?, `source`?, `where` (`user`, `project`, `file` with `to`), and `clip` (placed credits) or `from` {import parameters} or `styling` (+ `sample`) → `{id, category, path?}`; to the project: one undo step |
+| `graphics.credits.template.delete` | (query) | `id` (user or project templates) |
+| `graphics.credits.template.apply` | Graphics and Titles ▸ Apply Credits Template… | `id`, `clip`? → `{clips, end, template, warnings}`; one undo step |
+| `graphics.credits.template.newSheet` | Credits window: *New Spreadsheet from Template…* | `id`, `to` (.csv) → `{path, rows}` |
 
 Problems in the sheet (unknown styles, bad numbers, unsupported `{{…}}` tags) are warnings with
 the row number; the import still succeeds. Wrong files, missing header, too-large input and
