@@ -22,7 +22,9 @@ CFA4-gyel. A Kdenlive-tervben már szereplő tételeket **nem ismétli**, csak h
   in/out horgonnyal). Az értéke ezért nem a funkciólistában, hanem **néhány kiforrott
   működési elvben** van: beszédérzékelés modellel, hardveres kódoló önellenőrzése,
   ügynökbiztos MCP-hoszt, inkrementális hangerőmérés.
-- Javasolt sorrend: **V1, V2, V3** (P1, együtt ~50–80 óra), utána a P2-k mérés alapján.
+- Javasolt sorrend: **V2, V3** (P1, nem MI), utána a P2-k mérés alapján. A **V1** (neurális
+  VAD) és a **V7** (átirat) MI-funkció, ezért csak az MI-réteg üzembe helyezése után indulhat
+  (tulajdonosi szabály, 2026-10-27; lásd 5. pont).
   Két tétel (V6 VST3, V7 felhős átirat) tulajdonosi döntést kér.
 
 ## 1. Licenc: mit lehet átvenni
@@ -198,14 +200,14 @@ audit, hogy a CFA4 klip-, sáv- és médiaazonosítói teljesítik-e ezt; ha nem
 
 | # | Teendő | Prioritás | Óra | Függ |
 |---|---|:-:|---:|---|
-| V1 | Silero VAD, szünettörlés átirat nélkül, Whisper-előszűrő | P1 | 20–35 | — (K31–K35-öt erősíti) |
+| V1 | Silero VAD, szünettörlés átirat nélkül, Whisper-előszűrő | P1 | 20–35 | **MI-réteg üzembe helyezése** (K31–K35-öt erősíti) |
 | V2 | Hardveres kódoló önellenőrzése a `cfa4-route`-ban | P1 | 12–20 | ADR 0004, #39, #263 |
 | V3 | Ügynökbiztos MCP: Unix socket, visszatartás mozdulat alatt | P1 | 15–25 | ADR F8 CLI-híd |
 | V10 | Stabil azonosítók auditja | P2 | 4–8 | — |
 | V4 | Inkrementális hangerőmérés | P2 | 20–30 | előbb mérés |
 | V5 | Előre dekódoló puffer elvei | P2 | 15–30 | előbb mérés |
 | V6 | VST3 külön folyamatban | P2 | 60–100 | **G11 döntés** |
-| V7 | Whisper-kompatibilis HTTP-átirat | P3 | 20–30 | **felhős MI döntés** |
+| V7 | Whisper-kompatibilis HTTP-átirat | P3 | 20–30 | **MI-réteg üzembe helyezése** |
 | V9 | Felhasználói telepítő | P3 | 6–10 | F9 kiadás |
 | V8 | Hálózati kezelőfelület | P3 | — | ötlet |
 
@@ -222,6 +224,11 @@ A tulajdonos a tervet a javasolt döntésekkel együtt jóváhagyta:
 3. **V8:** a hálózati kezelőfelület **ötlet marad**; a K7 hálózati render után újranézzük.
 
 A megvalósítás a meglévő szabály szerint csak a tulajdonos kérésére indul, teendőnként.
+
+**Projektszintű szabály (2026-10-27):** minden MI-funkció, minden alkalmazásban, csak az MI-réteg
+üzembe helyezése után készül el (az MI-réteg terve folyamatban van). Ez itt a **V1**-et (Silero VAD
+neurális modell) és a **V7**-et (átirat) érinti: mindkettő az MI-rétegre épül, és utána indul. A
+V2, V3, V4, V5, V6, V9, V10 nem MI, ettől függetlenül indítható.
 
 ## 6. Hogyan frissítsd ezt a fájlt
 
@@ -240,3 +247,4 @@ kódrészhez sor a [`licensing.md` §5](licensing.md) nyilvántartásban.
 
 - 2026-10-27: első változat (V1–V10).
 - 2026-10-27: a tulajdonos jóváhagyta; 5. pont döntésekké alakítva.
+- 2026-10-27: MI-réteg szabály: V1 és V7 az MI-réteg után; javasolt kezdés V2, V3.
