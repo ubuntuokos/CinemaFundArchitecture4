@@ -994,6 +994,8 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
  "cfa4-mxf",
  "cfa4-ogg",
  "cfa4-opus",
