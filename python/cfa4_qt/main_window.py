@@ -244,6 +244,7 @@ class MainWindow(QMainWindow):
         self.timeline.canvas.media.attach(engine)  # clip thumbnails and waveforms
         self.tools = ToolsPanel(self)
         self.tools.tool_selected.connect(self.timeline.set_tool)
+        self.tools.tool_selected.connect(self.monitor.overlay.set_tool)
         for mon in (self.monitor, self.source_monitor):
             mon.attach_settings(self.settings)
             self.tools.tool_selected.connect(lambda tool, m=mon: m.view.set_hand(tool == "hand"))

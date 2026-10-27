@@ -336,3 +336,36 @@ fn inspect_reports_where_automatic_points_are() {
     assert_eq!(param(&v, "motion", "position")["auto"], json!([f64::from(w) / 2.0, f64::from(h) / 2.0]));
     assert!(param(&v, "motion", "scale").get("auto").is_none(), "points only");
 }
+
+#[test]
+fn program_overlay_reports_the_graphic_layers_at_the_playhead() {
+    // the Qt Program monitor's graphics tools: each layer's box and matrices, the selection and
+    // where a new layer goes
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let g = &s.execute("program.overlay", json!({})).unwrap()["graphics"];
+    assert_eq!(g["canvasTarget"]["clip"], json!(null));
+    assert_eq!(g["canvasTarget"]["toFrame"], json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]));
+    let made = s.execute("graphics.newShape", json!({"shape": "rectangle", "position": [960, 540], "size": [400, 200], "time": 0})).unwrap();
+    let clip = made["clip"].as_u64().unwrap();
+    s.execute("graphics.newText", json!({"clip": clip, "text": "Hi", "position": [100, 200]})).unwrap();
+    s.execute("graphics.selectLayer", json!({"clip": clip, "layers": [1]})).unwrap();
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let layers = g["layers"].as_array().unwrap();
+    assert_eq!(layers.len(), 2);
+    // front-most first: the text added last
+    assert_eq!((layers[0]["layer"].as_u64(), layers[0]["text"]["text"].as_str()), (Some(1), Some("Hi")));
+    assert_eq!(layers[0]["text"]["paragraph"], json!(false));
+    // its caret stops, in characters: before H, between, after i
+    let line = &layers[0]["text"]["lines"][0];
+    assert_eq!((line["start"].as_u64(), line["end"].as_u64()), (Some(0), Some(2)));
+    let stops: Vec<u64> = line["carets"].as_array().unwrap().iter().map(|c| c[0].as_u64().unwrap()).collect();
+    assert_eq!(stops, vec![0, 1, 2]);
+    assert_eq!(layers[1]["shape"]["shape"], json!(0));
+    assert_eq!(layers[1]["shape"]["size"], json!([400.0, 200.0]));
+    assert_eq!(layers[1]["position"], json!([960.0, 540.0]));
+    assert_eq!(layers[1]["toFrame"].as_array().unwrap().len(), 6);
+    assert_eq!(layers[1]["local"].as_array().unwrap().len(), 4);
+    assert_eq!((g["clip"].as_u64(), g["selectedLayers"].clone()), (Some(clip), json!([1])));
+    assert_eq!(g["canvasTarget"]["clip"].as_u64(), Some(clip));
+}

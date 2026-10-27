@@ -2,9 +2,9 @@
 
 A group shows its current tool; the others of the group are in a flyout (right-click, or hold
 the button). The tool decides what a drag on the timeline does; every edit it makes is an
-engine command (see ``TimelineCanvas``). Tools that draw on the Program monitor or edit
-keyframes there (Pen, Rectangle, Ellipse, Type) are not in the Qt GUI yet: they are
-listed disabled, so the gap shows (docs/qt-parity.md).
+engine command (see ``TimelineCanvas``). Pen, Rectangle and Ellipse draw graphic layers on the
+Program monitor and the Type tools write text there (``program_graphics``); the Pen also adds
+keyframes on the timeline's Volume line and track lanes.
 """
 
 from __future__ import annotations
@@ -39,12 +39,12 @@ GROUPS: tuple[tuple[ToolDef, ...], ...] = (
     (ToolDef("razor", N_("Razor Tool"), "C"),),
     (ToolDef("slip", N_("Slip Tool"), "Y"), ToolDef("slide", N_("Slide Tool"), "U")),
     (
-        ToolDef("pen", N_("Pen Tool"), "P", available=False),
-        ToolDef("rectangle", N_("Rectangle Tool"), "", available=False),
-        ToolDef("ellipse", N_("Ellipse Tool"), "", available=False),
+        ToolDef("pen", N_("Pen Tool"), "P"),
+        ToolDef("rectangle", N_("Rectangle Tool"), ""),
+        ToolDef("ellipse", N_("Ellipse Tool"), ""),
     ),
     (ToolDef("hand", N_("Hand Tool"), "H"), ToolDef("zoom", N_("Zoom Tool"), "Z")),
-    (ToolDef("type", N_("Type Tool"), "T", available=False), ToolDef("verticalType", N_("Vertical Type Tool"), "", available=False)),
+    (ToolDef("type", N_("Type Tool"), "T"), ToolDef("verticalType", N_("Vertical Type Tool"), "")),
 )
 TOOLS = {t.id: t for g in GROUPS for t in g}
 NOT_YET = N_("Not yet in the Qt GUI (see docs/qt-parity.md)")

@@ -328,6 +328,16 @@ class FrameView(QWidget):
             return
         super().keyPressEvent(e)
 
+    def inputMethodEvent(self, e) -> None:
+        """An input method's finished text (Chinese, Japanese, Korean) goes into the text being
+        edited on the monitor."""
+        if self.overlay is not None and self.overlay.graphics.edit is not None:
+            if e.commitString():
+                self.overlay.graphics.type_text(e.commitString())
+            e.accept()
+            return
+        super().inputMethodEvent(e)
+
     def set_hand(self, on: bool) -> None:
         self.hand = on
         if on:

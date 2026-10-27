@@ -2324,6 +2324,189 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path):
+    """egui's graphics tools on the Program monitor: the Rectangle and Ellipse tools drag out
+    shapes (into the selected graphic), the Pen clicks a path and Enter / the first point closes
+    it; with the Selection tool a click selects a layer (its box, handles, anchor point), dragging
+    moves it, a handle changes a shape's Size, the anchor point moves alone, a corner circle rounds
+    a rectangle, a click beside the layers lets go of them."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import program_graphics as pg
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    view = win.monitor.view
+    ov = win.monitor.overlay
+    gt = ov.graphics
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    nomod = QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(kind, at: QtCore.QPointF, button, buttons, mods=nomod) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(view, QtGui.QMouseEvent(kind, p, p, view.mapToGlobal(p), button, buttons, mods))
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF, mods=nomod) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left, mods)
+        for i in range(1, 5):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left, mods)
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none, mods)
+
+    def click(a: QtCore.QPointF) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, a, left, none)
+
+    def layers():
+        return [d for d in ((ov.data or {}).get("graphics") or {}).get("layers") or []]
+
+    def layer(n):
+        return next(d for d in layers() if d["layer"] == n)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win._seek_program(0)
+        assert wait_until(app, lambda: ov.data is not None and ov.frame_to_view() is not None, 20_000)
+        pic = view.picture_rect()
+        at = lambda fx, fy: QtCore.QPointF(pic.left() + pic.width() * fx, pic.top() + pic.height() * fy)
+        # Rectangle: a new graphic clip with the shape where it was dragged
+        win.tools.select("rectangle")
+        assert gt.tool == "rectangle" and not ov.enabled
+        drag(at(0.2, 0.2), at(0.6, 0.6))
+        assert wait_until(app, lambda: len(layers()) == 1, 20_000)
+        rect = layers()[0]
+        assert rect["shape"]["shape"] == 0
+        w, h = rect["shape"]["size"]
+        assert abs(w - 0.4 * 1920) < 8 and abs(h - 0.4 * 1080) < 8, (w, h)
+        assert abs(rect["position"][0] - 0.4 * 1920) < 8
+        # the Selection tool: a click selects it, the box and handles come up
+        win.tools.select("selection")
+        assert ov.enabled
+        click(at(0.4, 0.4))
+        assert wait_until(app, lambda: [v.layer for v in gt.selected()] == [0], 10_000)
+        # dragging it moves it (Ctrl: no snapping)
+        before = layer(0)["position"]
+        drag(at(0.4, 0.4), at(0.45, 0.45), QtCore.Qt.KeyboardModifier.ControlModifier)
+        assert wait_until(app, lambda: layer(0)["position"][0] > before[0] + 50, 10_000)
+        assert layer(0)["position"][1] > before[1] + 30
+        # the bottom-right handle: Size grows, the top-left corner stays
+        assert wait_until(app, lambda: gt.hit(f"layer.{layer(0)['clip']}.0.handle.2") is not None, 10_000)
+        clip = layer(0)["clip"]
+        tl0 = gt.hit(f"layer.{clip}.0.handle.0")
+        h2 = gt.hit(f"layer.{clip}.0.handle.2")
+        drag(h2, h2 + QtCore.QPointF(30, 20))
+        assert wait_until(app, lambda: layer(0)["shape"]["size"][0] > w + 20, 10_000)
+        assert wait_until(app, lambda: gt.hit(f"layer.{clip}.0.handle.0") is not None, 10_000)
+        tl1 = gt.hit(f"layer.{clip}.0.handle.0")
+        assert abs(tl1.x() - tl0.x()) < 2 and abs(tl1.y() - tl0.y()) < 2, (tl0, tl1)
+        # the anchor point moves alone: the box stays
+        a = gt.hit(f"layer.{clip}.0.anchor")
+        anchor0 = layer(0)["anchor"]
+        drag(a, a + QtCore.QPointF(20, 0))
+        assert wait_until(app, lambda: layer(0)["anchor"] != anchor0, 10_000)
+        wait_until(app, lambda: False, 300)
+        tl2 = gt.hit(f"layer.{clip}.0.handle.0")
+        assert abs(tl2.x() - tl1.x()) < 2 and abs(tl2.y() - tl1.y()) < 2
+        # a corner circle rounds the rectangle
+        c0 = gt.hit(f"layer.{clip}.0.corner.0")
+        assert c0 is not None
+        drag(c0, c0 + QtCore.QPointF(15, 15))
+        assert wait_until(app, lambda: layer(0)["shape"]["cornerRadius"] > 5, 10_000)
+        # Ellipse: into the selected graphic, as its second layer
+        win.tools.select("ellipse")
+        drag(at(0.65, 0.65), at(0.8, 0.8))
+        assert wait_until(app, lambda: len(layers()) == 2, 10_000)
+        assert layer(1)["shape"]["shape"] == 1 and layer(1)["clip"] == clip
+        # Pen: three clicks and Enter close a path
+        win.tools.select("pen")
+        for fx, fy in ((0.1, 0.7), (0.2, 0.9), (0.05, 0.9)):
+            click(at(fx, fy))
+        assert len(gt.pen_points) == 3
+        view.setFocus()
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: len(layers()) == 3, 10_000)
+        assert layer(2)["shape"]["shape"] == 3 and gt.pen_points == []
+        # Esc drops a path in progress; a click on the first point closes it
+        click(at(0.9, 0.1))
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.pen_points == []
+        for fx, fy in ((0.85, 0.1), (0.95, 0.1), (0.9, 0.3), (0.85, 0.1)):
+            click(at(fx, fy))
+        assert wait_until(app, lambda: len(layers()) == 4, 10_000)
+        # Type: a click starts point text with a caret; typing goes into it, not to the shortcuts
+        def texts():
+            return [d for d in layers() if d.get("text")]
+
+        win.tools.select("type")
+        click(at(0.5, 0.15))
+        assert wait_until(app, lambda: gt.edit is not None and len(texts()) == 1, 10_000)
+        QtTest.QTest.keyClicks(view, "Hic")
+        assert win.tools.current == "type", "C typed, not the Razor tool"
+        assert wait_until(app, lambda: texts()[0]["text"]["text"] == "Hic", 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Backspace)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Home)
+        QtTest.QTest.keyClicks(view, "O")
+        assert wait_until(app, lambda: texts()[0]["text"]["text"] == "OHi", 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_End, QtCore.Qt.KeyboardModifier.ShiftModifier)
+        assert (gt.edit["anchor"], gt.edit["caret"]) == (1, 3)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Return)
+        QtTest.QTest.keyClicks(view, "K")
+        assert wait_until(app, lambda: texts()[0]["text"]["text"] == "O\nK", 10_000)
+        assert wait_until(app, lambda: len(texts()[0]["text"]["lines"]) == 2, 10_000)
+        view.grab()  # the caret and the red box draw
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None
+        # a drag starts paragraph text in the dragged box
+        drag(at(0.3, 0.75), at(0.6, 0.9))
+        assert wait_until(app, lambda: len(texts()) == 2 and gt.edit is not None, 10_000)
+        para = next(d for d in texts() if d["text"]["paragraph"])
+        assert abs(para["text"]["boxWidth"] - 0.3 * 1920) < 8
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        # Vertical Type: point text
+        win.tools.select("verticalType")
+        click(at(0.7, 0.3))
+        assert wait_until(app, lambda: len(texts()) == 3 and gt.edit is not None, 10_000)
+        QtTest.QTest.keyClicks(view, "AB")
+        ime = QtGui.QInputMethodEvent()
+        ime.setCommitString("日本")
+        QtWidgets.QApplication.sendEvent(view, ime)  # an input method's finished text
+        assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本" for d in texts()), 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        # the Selection tool: a double-click edits a text layer with all of it selected
+        win.tools.select("selection")
+        first = next(d for d in texts() if d["text"]["text"] == "O\nK")
+        mid = gt.hit(f"layer.{first['clip']}.{first['layer']}")
+        send(QtCore.QEvent.Type.MouseButtonPress, mid, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, mid, left, none)
+        send(QtCore.QEvent.Type.MouseButtonDblClick, mid, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, mid, left, none)
+        assert gt.edit is not None and (gt.edit["anchor"], gt.edit["caret"]) == (0, 3)
+        QtTest.QTest.keyClicks(view, "Z")
+        assert wait_until(app, lambda: any(d["text"]["text"] == "Z" for d in texts()), 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None
+        # a click beside every layer lets go of them
+        win.tools.select("selection")
+        click(at(0.95, 0.95))
+        assert wait_until(app, lambda: gt.selected() == [], 10_000)
+        # damaged data draws nothing and hits nothing
+        assert pg.drag_sides([0, 0, 10, 10], 2, -50, -50, 1.0) == [0, 0, 1.0, 1.0]
+        assert pg.text_lines({"lines": [5, {"carets": [[True, 1], ["x", 2], [2**70, 1e300]], "start": "x"}]})[0]["carets"] == [(400_000, 0.0)]
+        assert pg.caret_hit([], 1, 1) == 0 and pg.caret_xy([], 3) == (0.0, 0.0, 0) and pg.selection_rects([], 0, 5) == []
+        assert (pg.word_left("ab cd", 5), pg.word_right("ab cd", 0), pg.word_left("", 9)) == (3, 2, 0)
+        ov.data = {**ov.data, "graphics": {"layers": [{"toFrame": [0, 0, 0, 0, 0, 0]}, 5, {"toFrame": "x"}],
+                                           "canvasTarget": None, "selectedLayers": "x"}}
+        assert gt.layers() == [] and gt.selected() == [] and gt.canvas_target() is None
+        view.grab()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: Path):
     """egui's on-monitor editing: Motion selected draws its box (drag inside: Position, a corner:
     Scale, one undo step each; a click beside it lets go); double-clicking a picture selects its
@@ -3565,9 +3748,9 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
         canvas.pps = 60.0
         canvas.scroll_ticks = 0
         wait_until(app, lambda: False, 300)
-        # the panel: egui's 8 groups; unsupported tools listed disabled
+        # the panel: egui's 8 groups
         assert len(win.tools.buttons) == len(GROUPS) == 8
-        assert not win.tools.actions["pen"].isEnabled() and win.tools.actions["slip"].isEnabled()
+        assert all(a.isEnabled() for a in win.tools.actions.values()), "every egui tool works in Qt"
         assert "Tools" in win.docks and not win.docks["Tools"].isHidden()
         # egui's keys pick the tools
         for key, tool in (("B", "ripple"), ("N", "rolling"), ("R", "rateStretch"), ("Y", "slip"), ("U", "slide"), ("A", "trackSelectForward"), ("H", "hand"), ("Z", "zoom"), ("C", "razor"), ("V", "selection")):
@@ -3640,9 +3823,6 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
         assert canvas.pps > pps
         QtTest.QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.AltModifier, QtCore.QPoint(700, 200))
         assert abs(canvas.pps - pps) < 1e-6
-        # unsupported tools cannot be picked
-        win.tools.select("pen")
-        assert win.tools.current == "zoom" and canvas.tool == "zoom"
         assert all(TOOLS[t].available for g in GROUPS for t in (x.id for x in g) if win.tools.actions[t].isEnabled())
     finally:
         win._quit_confirmed = True

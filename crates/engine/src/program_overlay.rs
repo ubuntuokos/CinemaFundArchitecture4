@@ -12,12 +12,19 @@
 //!   and the corner-roundness handle, in clip pixels (`toFrame` maps them). Drags send
 //!   `masks.translate` / `masks.moveVertex` / `masks.set` / `masks.roundCorners`.
 //! * `clipToFrame` for the `clip` asked for (the pen draws a new mask's points on it).
+//! * `graphics`: the graphic layers in the picture at the playhead, front-most first (egui's
+//!   `visible_layers`: `toFrame` layer pixels → frame, `canvasToFrame` graphic canvas → frame,
+//!   `local` box, transform, text (with its `lines` and caret stops, in characters) or shape
+//!   properties), the selected graphic clip and layers and
+//!   `canvasTarget`, where the Type, shape and pen tools put a new layer. Edits send `graphics.*`.
 //!
 //! Every number here comes from project data: matrices that are not invertible or not finite
 //! leave their part out instead of drawing garbage.
 
 use cfa4_geom::{Affine, Vec2};
-use cfa4_project::{ClipId, EffectInstance, MaskPath, TrackItem};
+use cfa4_project::graphic::{LayerContent, eval_layer, layer_display_name, layer_indices};
+use cfa4_project::{ClipId, EffectInstance, ItemKind, MaskPath, TrackItem};
+use cfa4_render::graphic_clip::{layer_local_bounds, layer_matrix, text_layout};
 use cfa4_time::Tick;
 use serde_json::{Value, json};
 
@@ -113,7 +120,109 @@ fn overlay(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(m) = mask(s, frame, f64_p(p, "roundRadius")) {
         out["mask"] = m;
     }
+    out["graphics"] = graphics(s);
     Ok(out)
+}
+
+fn num(x: f64) -> Value {
+    if x.is_finite() { json!(x) } else { Value::Null }
+}
+
+/// The graphic clip `it` is (its canvas size), if it is one.
+fn graphic_size(s: &Session, it: &TrackItem) -> Option<(u32, u32)> {
+    match s.project.item(it.item).map(|p| &p.kind) {
+        Some(ItemKind::Graphic { width, height, .. }) => Some((*width, *height)),
+        _ => None,
+    }
+}
+
+/// The graphic layers in the picture at the playhead, front-most first (a hidden layer is not in
+/// the picture, so it has no box), the selected graphic clip and layers, and where new layers go:
+/// the selected graphic clip under the playhead (its Motion applies), else the frame.
+fn graphics(s: &Session) -> Value {
+    let Some(seq) = s.active_sequence() else { return Value::Null };
+    let t = s.playhead();
+    let mut layers = Vec::new();
+    for tr in seq.video_tracks.iter().rev().filter(|t| t.enabled) {
+        let Some(it) = tr.item_at(t).filter(|it| it.enabled) else { continue };
+        let Some(size) = graphic_size(s, it) else { continue };
+        let mt = it.source_time_at(t);
+        let base = cfa4_render::motion_matrix(seq, it, size, None, mt);
+        let Some(canvas) = matrix(&base) else { continue };
+        let idx = layer_indices(&it.effects);
+        for (li, &ei) in idx.iter().enumerate().rev() {
+            let Some(e) = it.effects.get(ei) else { continue };
+            let Some(spec) = eval_layer(e, mt, size).filter(|l| l.enabled) else { continue };
+            let m = base.then_apply(&layer_matrix(&spec));
+            let Some(to_frame) = matrix(&m).filter(|_| m.inverse().is_some()) else { continue };
+            let local = layer_local_bounds(&spec);
+            if !local.iter().all(|x| x.is_finite()) {
+                continue;
+            }
+            let tf = &spec.transform;
+            let mut v = json!({
+                "clip": it.id.0,
+                "layer": li,
+                "name": layer_display_name(e, li),
+                "toFrame": to_frame,
+                "canvasToFrame": canvas,
+                "local": local,
+                "position": pt(tf.position),
+                "anchor": pt(tf.anchor),
+                "scale": [num(tf.scale.x * 100.0), num(tf.scale.y * 100.0)],
+            });
+            match &spec.content {
+                LayerContent::Text(tp) => {
+                    let l = text_layout(tp);
+                    // character (not byte) offsets: what a GUI's strings count
+                    let ch = |b: usize| {
+                        tp.text.get(..b.min(tp.text.len())).map_or_else(|| tp.text.char_indices().take_while(|(i, _)| *i < b).count(), |x| x.chars().count())
+                    };
+                    let lines: Vec<Value> = l
+                        .lines
+                        .iter()
+                        .map(|ln| {
+                            json!({
+                                "start": ch(ln.range.start), "end": ch(ln.range.end),
+                                "baseline": num(f64::from(ln.baseline)), "x": num(f64::from(ln.x)), "width": num(f64::from(ln.width)),
+                                "ascent": num(f64::from(ln.ascent)), "descent": num(f64::from(ln.descent)),
+                                "carets": ln.carets.iter().map(|(b, x)| json!([ch(*b), num(f64::from(*x))])).collect::<Vec<_>>(),
+                            })
+                        })
+                        .collect();
+                    v["text"] = json!({
+                        "lines": lines,
+                        "text": tp.text,
+                        "size": num(f64::from(tp.size)),
+                        "vertical": tp.vertical,
+                        "paragraph": tp.box_width > 0.0 && !tp.vertical,
+                        "boxWidth": num(f64::from(tp.box_width)),
+                        "boxHeight": num(f64::from(tp.box_height)),
+                        "overflow": l.overflow,
+                    });
+                }
+                LayerContent::Shape(sh) => {
+                    v["shape"] = json!({
+                        "shape": sh.shape,
+                        "size": [num(f64::from(sh.size.0)), num(f64::from(sh.size.1))],
+                        "cornerRadius": num(f64::from(sh.corner_radius)),
+                    });
+                }
+            }
+            layers.push(v);
+        }
+    }
+    let selected = s.state.selection.iter().find_map(|c| seq.find_item(*c).map(|(_, it)| it).filter(|it| graphic_size(s, it).is_some()));
+    let target = selected.filter(|it| it.range().contains(t)).and_then(|it| {
+        let m = cfa4_render::motion_matrix(seq, it, graphic_size(s, it)?, None, it.source_time_at(t));
+        Some(json!({"clip": it.id.0, "toFrame": matrix(&m).filter(|_| m.inverse().is_some())?}))
+    });
+    json!({
+        "layers": layers,
+        "clip": selected.map(|it| it.id.0),
+        "selectedLayers": if selected.is_some() { json!(s.state.graphic_layers) } else { json!([]) },
+        "canvasTarget": target.unwrap_or_else(|| json!({"clip": null, "toFrame": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]})),
+    })
 }
 
 /// Scale's parameter: Motion's `scale` is the height when Uniform Scale is off.

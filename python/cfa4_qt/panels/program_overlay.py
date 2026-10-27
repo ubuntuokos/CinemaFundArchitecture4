@@ -36,6 +36,7 @@ from PySide6.QtWidgets import QWidget
 
 from .. import theme
 from .guides import SNAP_COLOR, snap_move
+from .program_graphics import DRAW_TOOLS, GraphicsTools
 
 MASK_COLOR = QColor(0x5A, 0xB4, 0xFF)
 # how close (points) the pointer must be to a handle or the anchor point to grab it
@@ -163,6 +164,7 @@ class ProgramOverlay(QObject):
         self.monitor: Any = None  # the Program monitor (its playback)
         self._busy = False
         self._again = False
+        self.graphics = GraphicsTools(self)  # the Selection / shape / pen tools on graphic layers
 
     # ----- engine -----
     def refresh(self) -> None:
@@ -321,9 +323,20 @@ class ProgramOverlay(QObject):
         return None
 
     # ----- painting -----
+    def set_tool(self, tool: str) -> None:
+        """The Tools panel picked ``tool``: the shape and pen tools draw graphic layers instead of
+        editing the transform box and masks."""
+        self.enabled = tool not in DRAW_TOOLS
+        self.graphics.set_tool(tool)
+        if not self.enabled:
+            self.drag = None
+        self.view.update()
+
     def paint(self, p: QPainter) -> None:
         p.save()
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if self.pen is None:
+            self.graphics.paint(p)
         if self.pen is not None:
             self._paint_pen(p)
         else:
@@ -555,6 +568,8 @@ class ProgramOverlay(QObject):
             return self._pen_press(e)
         if e.button() != Qt.MouseButton.LeftButton:
             return False
+        if self.graphics.tool in DRAW_TOOLS:
+            return self.graphics.press(e)
         if getattr(self.monitor, "playing", False) and (self.placement() is not None or self.mask_geometry() is not None):
             # the box and the engine's playhead are where playback started: stop on the shown frame
             # (the overlay follows it) so the next drag edits what is on screen
@@ -619,7 +634,7 @@ class ProgramOverlay(QObject):
             if area.contains(at):
                 self.drag = {"kind": "deselectEffect", "press": at}
                 return True
-        return False
+        return self.graphics.press(e)
 
     def move(self, e: QMouseEvent) -> bool:
         if self.eyedropper is not None:
@@ -628,10 +643,12 @@ class ProgramOverlay(QObject):
         if self.pen is not None:
             self._pen_move(e)
             return True
+        if self.graphics.drag is not None:
+            return self.graphics.move(e)
         d = self.drag
         if d is None:
             self._hover_cursor(e.position())
-            return False
+            return self.graphics.move(e)
         at = e.position()
         shift = bool(e.modifiers() & Qt.KeyboardModifier.ShiftModifier)
         kind = d["kind"]
@@ -678,6 +695,8 @@ class ProgramOverlay(QObject):
         if self.pen is not None:
             self.drag = None
             return True
+        if self.graphics.drag is not None:
+            return self.graphics.release(e)
         d, self.drag = self.drag, None
         self.snap_lines = []
         if d is None:
@@ -699,6 +718,8 @@ class ProgramOverlay(QObject):
         """Double-clicking a clip's picture selects it and its Motion (its box comes up)."""
         if self.pen is not None or not self.enabled or e.button() != Qt.MouseButton.LeftButton:
             return self.pen is not None
+        if self.graphics.double_click(e):
+            return True
         frame = self.frame_to_view()
         if frame is None or not self.view.picture_rect().contains(e.position()):
             return False
@@ -719,6 +740,8 @@ class ProgramOverlay(QObject):
         k, mods = e.key(), e.modifiers()
         if self.eyedropper is not None:
             return k == Qt.Key.Key_Escape
+        if self.graphics.claims_key(e):
+            return True
         if self.pen is not None:
             ctrl_z = k == Qt.Key.Key_Z and mods & Qt.KeyboardModifier.ControlModifier and not mods & Qt.KeyboardModifier.ShiftModifier
             return bool(ctrl_z) or k in (Qt.Key.Key_Escape, Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Backspace,
@@ -726,6 +749,8 @@ class ProgramOverlay(QObject):
         return k == Qt.Key.Key_Escape and (self.drag is not None or self.mask_geometry() is not None)
 
     def key(self, e: QKeyEvent) -> bool:
+        if self.pen is None and self.graphics.key(e):
+            return True
         if self.eyedropper is not None and e.key() == Qt.Key.Key_Escape:
             self.eyedropper = None
             self.view.unsetCursor()
