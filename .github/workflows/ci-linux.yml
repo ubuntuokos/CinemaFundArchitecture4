@@ -183,7 +183,7 @@ jobs:
           # package in a single fast failure, not one by one across costly CI runs.
           oracle_dev_packages=(
             libdav1d-dev libsvtav1enc-dev libaom-dev
-            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev zlib1g-dev
+            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
             libheif-examples libheif-plugin-libde265 libheif-plugin-x265
           )
           missing_packages=()
@@ -208,8 +208,8 @@ jobs:
       - name: Cache FFmpeg 9.0.2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v6
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v6
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
       - name: Install verified FFmpeg 9.0.2
         run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 versions
