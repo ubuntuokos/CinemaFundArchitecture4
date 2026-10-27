@@ -892,7 +892,7 @@ fn pair_p(p: &Value, k: &str) -> Option<(f64, f64)> {
 pub const RENDERER_GPU: &str = "CFA4 GPU Acceleration (wgpu)";
 pub const RENDERER_SOFTWARE: &str = "CFA4 Software Only (CPU)";
 
-fn general_json(st: &cfa4_project::ProjectSettings) -> Value {
+pub(crate) fn general_json(st: &cfa4_project::ProjectSettings) -> Value {
     json!({
         "renderer": st.renderer,
         "renderers": [RENDERER_GPU, RENDERER_SOFTWARE],

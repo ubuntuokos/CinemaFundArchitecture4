@@ -1850,3 +1850,105 @@
 	Use the file's timecode	A fájl időkódjának használata
 	Video Attributes	Videoattribútumok
 	no dialog	nincs párbeszédablak
+# menu dialogs (4.8)
+	Action Safe Area	Akcióbiztos terület
+	Action and Title Safe Areas	Akció- és címbiztos területek
+	Action:	Művelet:
+	All	Mind
+	Analyze	Elemzés
+	Any	Bármelyik
+	Apply Default Audio Transition	Alapértelmezett hangáttűnés alkalmazása
+	Apply Default Video Transition	Alapértelmezett videóáttűnés alkalmazása
+	Apply a cut at each detected cut point	Vágás minden észlelt vágáspontnál
+	At Unnumbered Markers	A számozatlan jelölőknél
+	Audio Only	Csak hang
+	Audio Previews:	Hang-előnézetek:
+	Audio analysis:	Hangelemzés:
+	Audio effects	Hangeffektek
+	Audio on track {t}	Hang a(z) {t} sávon
+	Automate To Sequence	Automatizálás szekvenciába
+	Average Data Rate	Átlagos adatsebesség
+	Capture	Rögzítés
+	Capture Format:	Rögzítési formátum:
+	Captured and Generated:	Rögzített és generált:
+	Case Sensitive	Kis- és nagybetű különbözik
+	Clip Names and Markers	Klipnevek és jelölők
+	Clip Overlap:	Klipátfedés:
+	Clips	Klipek
+	Codec: {codec}	Kodek: {codec}
+	Color Matte Color	Színháttér színe
+	Color:	Szín:
+	Colour	Szín
+	Comments:	Megjegyzések:
+	Copy and Create Proxies	Másolás és proxyk létrehozása
+	Create Proxies	Proxyk létrehozása
+	Create Search Bin	Keresőmappa létrehozása
+	Create a bin of subclips from each detected cut point	Alklipek mappája minden észlelt vágáspontból
+	Create a clip marker at each detected cut point	Klipjelölő minden észlelt vágáspontnál
+	Destination:	Cél:
+	Disabled clips	Letiltott klipek
+	Edit Offline File	Offline fájl szerkesztése
+	Empty tracks	Üres sávok
+	Existing XMP files written by other applications are left unchanged.	A más alkalmazások által írt meglévő XMP-fájlok változatlanok maradnak.
+	File Size	Fájlméret
+	Find in:	Keresés itt:
+	Find:	Keresés:
+	Flash Cue Marker	Flash Cue jelölő
+	Frames per Still:	Képkocka állóképenként:
+	Gaps	Hézagok
+	Ignore Audio	Hang figyelmen kívül hagyása
+	Ignore Options	Kihagyási beállítások
+	Ignore Video	Videó figyelmen kívül hagyása
+	Ingest Settings	Betöltési beállítások
+	Insert Edit	Beszúró vágás
+	Keep:	Megtartás:
+	Language:	Nyelv:
+	Log Note:	Naplójegyzet:
+	Match {n} of {total}	{n}. találat / {total}
+	Match:	Egyezés:
+	Media Name:	Médianév:
+	Method:	Módszer:
+	Move clips to the lowest track possible	Klipek áthelyezése a lehető legalsó sávra
+	New Color Matte	Új színháttér
+	Next to the media	A média mellett
+	Normalize Mix Track	Keveréksáv normalizálása
+	Normalize Mix Track to:	Keveréksáv normalizálása erre:
+	Ordering:	Sorrend:
+	Overwrite Edit	Felülíró vágás
+	Path: {path}	Útvonal: {path}
+	Placement:	Elhelyezés:
+	Project Auto Save:	Projekt automatikus mentése:
+	Recognize when different speakers are talking	Különböző beszélők felismerése
+	Renderer:	Renderelő:
+	Same as Project	Ugyanaz, mint a projekt
+	Save as Template	Mentés sablonként
+	Saved template {path}	Sablon mentve: {path}
+	Scene Edit Detection	Jelenetváltás-észlelés
+	Scene Edit Detection: analysing in the background (see Progress)	Jelenetváltás-észlelés: elemzés a háttérben (lásd: Folyamat)
+	Scene:	Jelenet:
+	Scratch Disks	Munkalemezek
+	Search:	Keresés:
+	Selection Order	Kijelölési sorrend
+	Sensitivity:	Érzékenység:
+	Sequentially	Egymás után
+	Shot/Take:	Snitt/felvétel:
+	Simplify	Egyszerűsítés
+	Simplify Sequence	Szekvencia egyszerűsítése
+	Sort Order	Rendezési sorrend
+	Source Settings	Forrásbeállítások
+	Template Name:	Sablon neve:
+	Text (graphics and captions)	Szöveg (grafikák és feliratok)
+	Title Safe Area	Címbiztos terület
+	To {name}	Ide: {name}
+	Total Duration	Teljes időtartam
+	Transcode	Átkódolás
+	Transcribe Sequence	Szekvencia átirata
+	Transitions	Áttűnések
+	Update Metadata	Metaadatok frissítése
+	Video Only	Csak videó
+	Video Previews:	Videó-előnézetek:
+	Video Rendering and Playback	Videórenderelés és lejátszás
+	Video and Audio	Videó és hang
+	Video effects	Videóeffektek
+	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	A kijelölt klip(ek) ({n}) metaadatainak írása a média melletti XMP-fájlokba?
+	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} csatorna

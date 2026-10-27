@@ -68,6 +68,7 @@ HOLD_ON = [
 ]
 PROCESSING = [("none", N_("None")), ("alwaysDeinterlace", N_("Always Deinterlace")), ("flickerRemoval", N_("Flicker Removal"))]
 INTERPOLATION = [("frameSampling", N_("Frame Sampling")), ("frameBlending", N_("Frame Blending")), ("opticalFlow", N_("Optical Flow"))]
+Runner = Callable[[str, dict[str, Any], Callable[..., None]], None]
 MAX_CHANNELS = 64  # a matrix this wide is already unusable; more is damaged data
 MAX_FRAME = 2**60
 
@@ -116,18 +117,21 @@ def finish(command: str, params: dict[str, Any]) -> dict[str, Any]:
 
 class ClipDialog(QDialog):
     """``state`` is ``dialog.defaults``' answer; ``run(command, params, then)`` sends the command
-    and calls ``then(error)`` (None on success)."""
+    and calls ``then(error, result)`` (error None on success)."""
 
-    def __init__(self, parent: QWidget | None, state: dict[str, Any], run: Callable[[str, dict[str, Any], Callable[[str | None], None]], None]) -> None:
+    info_only = False  # a dialog that only shows something: one button, which closes it
+
+    def __init__(self, parent: QWidget | None, state: dict[str, Any], run: Runner) -> None:
         super().__init__(parent)
         self.command = str(state.get("command") or "")
-        title, self.pre = DIALOGS.get(self.command, (self.command, "clipDialog"))
+        title, self.pre, ok_text = self.meta()
         self.setObjectName(self.pre)
         self.setWindowTitle(tr(title))
         self.setMinimumWidth(360)
         params = state.get("params")
         info = state.get("info")
         self.params: dict[str, Any] = copy.deepcopy(params) if isinstance(params, dict) else {}
+        self.raw_info: Any = info
         self.info: dict[str, Any] = info if isinstance(info, dict) else {}
         self.run = run
         self.sent: list[dict[str, Any]] = []
@@ -137,7 +141,39 @@ class ClipDialog(QDialog):
         self.body_lay = QVBoxLayout(self.body)
         self.body_lay.setContentsMargins(0, 0, 0, 0)
         self.lay.addWidget(self.body)
-        build = {
+        build = self.builders().get(self.command)
+        if build is not None:
+            build()
+        self.error = QLabel(self)
+        self.error.setObjectName(f"{self.pre}.error")
+        self.error.setWordWrap(True)
+        self.error.setStyleSheet("color: #e06060;")
+        self.error.hide()
+        self.lay.addWidget(self.error)
+        buttons = QHBoxLayout()
+        self.cancel = QPushButton(tr(self.cancel_text()), self)
+        self.cancel.setObjectName(f"{self.pre}.cancel")
+        self.cancel.clicked.connect(self.reject)
+        self.cancel.setVisible(not self.info_only)
+        self.ok = QPushButton(tr(ok_text), self)
+        self.ok.setObjectName(f"{self.pre}.ok")
+        self.ok.setDefault(True)
+        self.ok.clicked.connect(self.accept if self.info_only else self.apply)
+        buttons.addWidget(self.cancel)
+        buttons.addWidget(self.ok)
+        buttons.addStretch(1)
+        self.lay.addLayout(buttons)
+
+    def meta(self) -> tuple[str, str, str]:
+        """(title, automation prefix, OK button text)."""
+        title, pre = DIALOGS.get(self.command, (self.command, "clipDialog"))
+        return title, pre, N_("OK")
+
+    def cancel_text(self) -> str:
+        return N_("Cancel")
+
+    def builders(self) -> dict[str, Callable[[], None]]:
+        return {
             "edit.pasteAttributes": self._attributes,
             "edit.removeAttributes": self._attributes,
             "file.newOfflineFile": self._offline,
@@ -149,27 +185,7 @@ class ClipDialog(QDialog):
             "clip.frameHoldOptions": self._frame_hold,
             "clip.fieldOptions": self._field_options,
             "clip.speedDuration": self._speed,
-        }.get(self.command)
-        if build is not None:
-            build()
-        self.error = QLabel(self)
-        self.error.setObjectName(f"{self.pre}.error")
-        self.error.setWordWrap(True)
-        self.error.setStyleSheet("color: #e06060;")
-        self.error.hide()
-        self.lay.addWidget(self.error)
-        buttons = QHBoxLayout()
-        self.cancel = QPushButton(tr("Cancel"), self)
-        self.cancel.setObjectName(f"{self.pre}.cancel")
-        self.cancel.clicked.connect(self.reject)
-        self.ok = QPushButton(tr("OK"), self)
-        self.ok.setObjectName(f"{self.pre}.ok")
-        self.ok.setDefault(True)
-        self.ok.clicked.connect(self.apply)
-        buttons.addWidget(self.cancel)
-        buttons.addWidget(self.ok)
-        buttons.addStretch(1)
-        self.lay.addLayout(buttons)
+        }
 
     # ----- controls bound to a parameter -----
     def _heading(self, text: str) -> None:
@@ -482,15 +498,18 @@ class ClipDialog(QDialog):
         self.sent.append(params)
         self.ok.setEnabled(False)
 
-        def done(error: str | None) -> None:
+        def done(error: str | None, _result: Any = None) -> None:
             self.ok.setEnabled(True)
             if error is None:
                 self.accept()
                 return
-            self.error.setText(error)
-            self.error.show()
+            self.fail(error)
 
         self.run(self.command, params, done)
+
+    def fail(self, error: str) -> None:
+        self.error.setText(error)
+        self.error.show()
 
 
 __all__ = ["DIALOGS", "ClipDialog", "channel_map", "finish", "timecode_of_frames"]

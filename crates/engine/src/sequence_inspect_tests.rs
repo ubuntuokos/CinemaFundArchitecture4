@@ -267,3 +267,25 @@ fn dialog_defaults_start_each_dialog_from_the_selection() {
     s.execute("timeline.select", json!({"clips": []})).unwrap();
     assert!(s.execute("dialog.defaults", json!({"command": "clip.speedDuration"})).is_err(), "nothing selected: no dialog");
 }
+
+/// `dialog.defaults` for the menu long tail (egui's `menu_dialogs::defaults`): the Project Settings
+/// items share one dialog on their tab, Find follows the focused panel, Simplify names the copy.
+#[test]
+fn dialog_defaults_cover_the_menu_dialogs() {
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "file.projectSettings.scratchDisks"})).unwrap();
+    assert_eq!((d["command"].as_str(), d["params"]["tab"].as_str()), (Some("project.settings"), Some("scratchDisks")));
+    assert!(d["info"]["renderers"].as_array().is_some_and(|r| r.len() == 2), "{d}");
+    let d = s.execute("dialog.defaults", json!({"command": "edit.find", "timeline": true})).unwrap();
+    assert_eq!(d["params"]["scope"], "timeline");
+    assert_eq!(d["params"]["rows"].as_array().map(Vec::len), Some(2));
+    assert!(d["info"]["operators"].as_array().is_some_and(|o| o.len() == 5));
+    let d = s.execute("dialog.defaults", json!({"command": "file.newSearchBin", "searchText": "beach"})).unwrap();
+    assert_eq!(d["params"]["text"], "beach");
+    let d = s.execute("dialog.defaults", json!({"command": "sequence.simplify"})).unwrap();
+    assert!(d["params"]["name"].as_str().is_some_and(|n| n.ends_with(" (Simplified)")), "{d}");
+    // a command that can't run (no speech-to-text in this build) opens no dialog
+    assert_eq!(s.execute("dialog.defaults", json!({"command": "sequence.transcribe"})).is_err(), !s.is_enabled("sequence.transcribe"));
+    assert!(s.execute("dialog.defaults", json!({"command": "project.matteColor"})).is_err(), "no Color Matte selected");
+}

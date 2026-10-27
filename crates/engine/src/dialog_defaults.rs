@@ -11,8 +11,9 @@ use serde_json::{Value, json};
 use crate::commands::{CommandSpec, always, bad, str_p};
 use crate::{Result, Session};
 
-/// The commands that have a dialog.
-pub const DIALOGS: [&str; 11] = [
+/// The commands that have a dialog: egui's `clip_dialogs` (Edit / Clip / File) and
+/// `menu_dialogs` (the menu long tail).
+pub const DIALOGS: [&str; 27] = [
     "edit.pasteAttributes",
     "edit.removeAttributes",
     "file.newOfflineFile",
@@ -24,7 +25,34 @@ pub const DIALOGS: [&str; 11] = [
     "clip.frameHoldOptions",
     "clip.fieldOptions",
     "clip.speedDuration",
+    "edit.find",
+    "file.newSearchBin",
+    "file.projectSettings.general",
+    "file.projectSettings.scratchDisks",
+    "project.ingestSettings",
+    "file.mediaProperties",
+    "clip.editOffline",
+    "clip.sourceSettings",
+    "clip.updateMetadata",
+    "clip.automateToSequence",
+    "clip.sceneEditDetection",
+    "sequence.normalizeMixTrack",
+    "sequence.simplify",
+    "sequence.transcribe",
+    "file.saveAsTemplate",
+    "markers.addFlashCue",
 ];
+
+/// Further menu dialogs (egui's `menu_dialogs`) that run a command of their own.
+const MORE: [&str; 2] = ["file.newColorMatte", "project.matteColor"];
+
+/// The command a menu item's dialog runs: the Project Settings items share one.
+fn dialog_command(id: &str) -> &str {
+    match id {
+        "file.projectSettings.general" | "file.projectSettings.scratchDisks" | "project.ingestSettings" => "project.settings",
+        _ => id,
+    }
+}
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![CommandSpec {
@@ -32,7 +60,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         label: "Dialog Defaults",
         menu: &[],
         shortcut: None,
-        params: r#"{"command":"edit.pasteAttributes|edit.removeAttributes|file.newOfflineFile|clip.nest|clip.makeSubclip|clip.editSubclip|clip.audioChannels|clip.modifyTimecode|clip.frameHoldOptions|clip.fieldOptions|clip.speedDuration"}"#,
+        params: r#"{"command":"clip.speedDuration|edit.find|file.projectSettings.general|…"(a menu command with a dialog),"timeline":bool? (Find: the Timeline has focus),"searchText":str? (New Search Bin: the Project panel's search)}"#,
         enabled: always,
         run: dialog_defaults,
         journal: false,
@@ -42,15 +70,128 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
 fn dialog_defaults(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "dialog.defaults";
     let id = str_p(p, "command").ok_or_else(|| bad(CMD, "`command` is required"))?;
-    if !DIALOGS.contains(&id) {
+    if !DIALOGS.contains(&id) && !MORE.contains(&id) {
         return Err(bad(CMD, format!("`{id}` has no dialog")));
     }
     // a command that can't run now opens no dialog (egui's)
     if let Some(c) = crate::find_command(id) {
         (c.enabled)(s).map_err(crate::EngineError::Other)?;
     }
-    let (params, info) = defaults(s, id);
-    Ok(json!({"command": id, "params": params, "info": info}))
+    let (params, info) = match defaults(s, id) {
+        Some(x) => x,
+        None => menu_defaults(s, id, p)?,
+    };
+    Ok(json!({"command": dialog_command(id), "params": params, "info": info}))
+}
+
+/// Run a query command for what a dialog shows (Properties, Source Settings).
+fn query(s: &mut Session, id: &str) -> Result<Value> {
+    let c = crate::find_command(id).ok_or_else(|| bad("dialog.defaults", format!("no command `{id}`")))?;
+    (c.run)(s, &json!({}))
+}
+
+/// egui's `menu_dialogs::defaults`.
+fn menu_defaults(s: &mut Session, id: &str, p: &Value) -> Result<(Value, Value)> {
+    use crate::commands::bool_p;
+    let ops: Vec<Value> = cfa4_project::FindOp::ALL.iter().map(|o| json!([o.name(), o.label()])).collect();
+    Ok(match dialog_command(id) {
+        "edit.find" => {
+            let timeline = bool_p(p, "timeline").unwrap_or(false) && s.active_sequence().is_some();
+            let mut rows: Vec<Value> = match &s.state.find {
+                Some(f) if f.scope == "project" => f.query.rows.iter().map(|r| json!({"column": r.column, "operator": r.op.name(), "text": r.text})).collect(),
+                _ => Vec::new(),
+            };
+            while rows.len() < 2 {
+                rows.push(json!({"column": "Name", "operator": "contains", "text": ""}));
+            }
+            (
+                json!({"scope": if timeline { "timeline" } else { "project" }, "rows": rows, "matchAll": true, "caseSensitive": false, "in": "all"}),
+                json!({"columns": cfa4_project::find::COLUMNS, "operators": ops}),
+            )
+        }
+        "file.newSearchBin" => (
+            json!({"name": "", "column": "All", "operator": "contains", "text": str_p(p, "searchText").unwrap_or_default()}),
+            json!({"columns": cfa4_project::find::COLUMNS, "operators": ops}),
+        ),
+        "project.settings" => {
+            let tab = match id {
+                "file.projectSettings.scratchDisks" => "scratchDisks",
+                "project.ingestSettings" => "ingest",
+                _ => "general",
+            };
+            let st = s.project.settings.clone();
+            let general = crate::project_tools::general_json(&st);
+            let ingest = serde_json::to_value(&st.ingest).unwrap_or_default();
+            let sc = &st.scratch;
+            (
+                json!({
+                    "tab": tab,
+                    "renderer": general["renderer"], "videoDisplay": general["videoDisplay"], "audioDisplay": general["audioDisplay"],
+                    "captureFormat": general["captureFormat"], "titleSafe": general["titleSafe"], "actionSafe": general["actionSafe"],
+                    "captured": sc.captured, "videoPreviews": sc.video_previews, "audioPreviews": sc.audio_previews, "autoSave": sc.auto_save,
+                    "ingest": ingest.clone(),
+                }),
+                json!({
+                    "scratch": crate::project_tools::scratch_paths(s), "ingest": ingest, "project": s.project.name,
+                    "renderers": general["renderers"],
+                    "videoDisplays": cfa4_time::TimeDisplay::ALL.iter().map(|t| t.label()).collect::<Vec<_>>(),
+                }),
+            )
+        }
+        "file.mediaProperties" => (json!({}), query(s, "file.mediaProperties")?),
+        "clip.sourceSettings" => (json!({}), query(s, "clip.sourceSettings")?),
+        "clip.editOffline" => {
+            let item = s.state.project_selection.first().copied().and_then(|i| s.project.item(i)).cloned();
+            let mut p = json!({});
+            if let Some(it) = item {
+                p["item"] = json!(it.id.0);
+                p["mediaName"] = json!(it.name);
+                for (k, key) in crate::project_tools::OFFLINE_FIELDS {
+                    p[k] = json!(it.metadata.get(key).cloned().unwrap_or_default());
+                }
+            }
+            (p, Value::Null)
+        }
+        "clip.updateMetadata" => (json!({}), json!({"count": s.state.project_selection.len().max(s.state.selection.len())})),
+        "clip.automateToSequence" => (
+            json!({"ordering": "sort", "placement": "sequentially", "method": "insert", "overlapFrames": 30, "stillFrames": 150, "videoTransition": true, "audioTransition": true, "ignoreAudio": false, "ignoreVideo": false}),
+            json!({"sequence": s.active_sequence().map(|_| s.state.active_sequence.and_then(|q| s.project.item(q)).map(|i| i.name.clone()).unwrap_or_default())}),
+        ),
+        "clip.sceneEditDetection" => (json!({"applyCuts": true, "createSubclips": false, "generateMarkers": false, "sensitivity": 50.0}), Value::Null),
+        "sequence.normalizeMixTrack" => (json!({"db": 0.0}), Value::Null),
+        "sequence.simplify" => {
+            let name = s.state.active_sequence.and_then(|q| s.project.item(q)).map(|i| format!("{} (Simplified)", i.name)).unwrap_or_default();
+            (
+                json!({"name": name, "removeDisabled": true, "removeEmptyTracks": true, "closeGaps": false, "moveClipsDown": false, "removeVideoEffects": false, "removeAudioEffects": false, "removeText": false, "keep": "both"}),
+                Value::Null,
+            )
+        }
+        "sequence.transcribe" => {
+            let tracks: Vec<String> = s.active_sequence().map(|q| (1..=q.audio_tracks.len()).map(|i| format!("A{i}")).collect()).unwrap_or_default();
+            (json!({"language": "auto", "track": "mix", "diarize": true}), json!({"tracks": tracks}))
+        }
+        "file.saveAsTemplate" => (json!({"name": s.project.name}), Value::Null),
+        "markers.addFlashCue" => (json!({"name": "", "comment": ""}), Value::Null),
+        "file.newColorMatte" => {
+            let st = s.active_sequence().map(|q| q.settings.clone()).unwrap_or_default();
+            (json!({"color": "#000000", "name": "Color Matte", "width": st.width, "height": st.height, "seconds": 5.0}), Value::Null)
+        }
+        "project.matteColor" => {
+            let matte = match s.state.project_selection.as_slice() {
+                [id] => s.project.item(*id).and_then(|it| match &it.kind {
+                    ItemKind::Media(m) => match &m.media {
+                        cfa4_project::MediaRef::Generator(cfa4_media::Generator::ColorMatte { color }) => Some((it.id, *color)),
+                        _ => None,
+                    },
+                    _ => None,
+                }),
+                _ => None,
+            };
+            let (item, color) = matte.ok_or_else(|| crate::EngineError::Other("select one Color Matte".into()))?;
+            (json!({"item": item.0, "color": cfa4_color::to_hex(color)}), Value::Null)
+        }
+        _ => (json!({}), Value::Null),
+    })
 }
 
 fn format_name(f: AudioChannels) -> &'static str {
@@ -62,9 +203,9 @@ fn format_name(f: AudioChannels) -> &'static str {
     }
 }
 
-/// Initial parameters (and display info) of a command's dialog.
-fn defaults(s: &Session, id: &str) -> (Value, Value) {
-    match id {
+/// Initial parameters (and display info) of a clip dialog; None for a menu dialog.
+fn defaults(s: &Session, id: &str) -> Option<(Value, Value)> {
+    Some(match id {
         "edit.pasteAttributes" | "edit.removeAttributes" => {
             // effects offered: the copied clips' (Paste) or the selected clips' (Remove) standard effects
             let mut names: Vec<(String, String)> = Vec::new();
@@ -115,8 +256,8 @@ fn defaults(s: &Session, id: &str) -> (Value, Value) {
         }
         "clip.editSubclip" => {
             let sub = s.state.project_selection.iter().find_map(|i| s.project.item(*i).filter(|it| matches!(it.kind, ItemKind::Subclip { .. })));
-            let Some(it) = sub else { return (json!({}), Value::Null) };
-            let ItemKind::Subclip { parent, range, restrict_trims } = &it.kind else { return (json!({}), Value::Null) };
+            let Some(it) = sub else { return Some((json!({}), Value::Null)) };
+            let ItemKind::Subclip { parent, range, restrict_trims } = &it.kind else { return Some((json!({}), Value::Null)) };
             let rate = s.project.item(*parent).and_then(|p| p.as_media()).map(|m| m.frame_rate()).unwrap_or_default();
             (
                 json!({"item": it.id.0, "startFrame": rate.frame_at(range.start), "endFrame": rate.frame_at(range.end()), "restrictTrims": restrict_trims, "convertToMaster": false}),
@@ -171,6 +312,6 @@ fn defaults(s: &Session, id: &str) -> (Value, Value) {
                 json!({"duration": it.as_ref().map_or(0, |i| i.duration.0), "speed": speed.abs(), "fps": rate.as_f64(), "fpsNum": rate.num, "fpsDen": rate.den}),
             )
         }
-        _ => (json!({}), Value::Null),
-    }
+        _ => return None,
+    })
 }

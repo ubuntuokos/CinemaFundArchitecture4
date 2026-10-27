@@ -49,6 +49,7 @@ from .panels.fx_editor import FxEditor, target_key
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
+from .panels.menu_dialogs import MENU_COMMANDS, MenuDialog
 from .panels.meters import AudioMetersPanel
 from .panels.mixer import ClipMixerPanel, TrackMixerPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
@@ -1059,11 +1060,11 @@ class MainWindow(QMainWindow):
         """An Edit / Clip / File menu command's dialog, from the engine's ``dialog.defaults``."""
 
         def run(command: str, params: dict[str, Any], then: Any) -> None:
-            def ok(_r: Any, _b: bytes | None) -> None:
+            def ok(r: Any, _b: bytes | None) -> None:
                 self.schedule_refresh()
-                then(None)
+                then(None, r)
 
-            self.engine.execute(command, params, on_reply=ok, on_error=lambda m: then(str(m)))
+            self.engine.execute(command, params, on_reply=ok, on_error=lambda m: then(str(m), None))
 
         def got(state: Any, _b: bytes | None) -> None:
             if not isinstance(state, dict):
@@ -1075,6 +1076,29 @@ class MainWindow(QMainWindow):
             dialog.open()
 
         self.engine.execute("dialog.defaults", {"command": cid}, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
+    def open_menu_dialog(self, cid: str) -> None:
+        """A File / Edit / Clip / Sequence / Markers menu dialog (egui's ``menu_dialogs``), from the
+        engine's ``dialog.defaults``; Find starts from the project search and the timeline focus."""
+
+        def run(command: str, params: dict[str, Any], then: Any) -> None:
+            def ok(r: Any, _b: bytes | None) -> None:
+                self.schedule_refresh()
+                then(None, r)
+
+            self.engine.execute(command, params, on_reply=ok, on_error=lambda m: then(str(m), None))
+
+        def got(state: Any, _b: bytes | None) -> None:
+            if not isinstance(state, dict):
+                self._command_failed(cid, tr("no dialog"))
+                return
+            dialog = MenuDialog(self, state, run, status=lambda t: self.statusBar().showMessage(t, 6000))
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.last_dialog = dialog
+            dialog.open()
+
+        query = {"command": cid, "timeline": self.inspector_source == "timeline", "searchText": self.project_panel.filter.text()}
+        self.engine.execute("dialog.defaults", query, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
 
     def open_sequence_settings(self, new: bool = False) -> None:
         """Sequence Settings… of the active sequence, or New Sequence (egui's
@@ -1541,6 +1565,8 @@ class MainWindow(QMainWindow):
         elif cid in CLIP_DIALOGS and not params:
             # egui's clip_dialogs: from the menu the dialog; with parameters the command runs
             self.open_clip_dialog(cid)
+        elif cid in MENU_COMMANDS and not params:
+            self.open_menu_dialog(cid)
         elif cid in ("sequence.settings", "file.newSequence") and not params:
             # egui's: from the menu the dialog; with parameters the engine command applies them
             self.open_sequence_settings(new=cid == "file.newSequence")

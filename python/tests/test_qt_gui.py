@@ -4795,7 +4795,7 @@ def test_clip_dialogs_as_egui(app):
 
     def run(cid, params, then):
         sent.append((cid, params))
-        then(answer[0])
+        then(answer[0], None)
 
     def child(d, name, kind=QtWidgets.QWidget):
         return d.findChild(kind, f"{d.pre}.{name}")
@@ -4943,6 +4943,210 @@ def test_real_engine_clip_dialogs_as_egui(app, tmp_path: Path):
         # with parameters the command applies directly
         win.execute("timeline.select", {"clips": [first_clip()["clip"]]})
         win.run_preset("clip.fieldOptions", {"processing": "none"})
+        wait_until(app, lambda: False, 200)
+        assert win.last_dialog is last
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_menu_dialogs_as_egui(app):
+    """egui's menu_dialogs without an engine: Find switching its boxes with the scope and staying
+    open with "Match n of total", Project Settings' tabs applying General then Scratch Disks then
+    (only when changed) Ingest, info-only Properties with one button, egui's ``finish``; damaged
+    defaults read as nothing."""
+    from cfa4_qt.panels.menu_dialogs import MENU_COMMANDS, MenuDialog, finish
+
+    assert "file.projectSettings.general" in MENU_COMMANDS and "project.settings" not in MENU_COMMANDS
+    assert finish("edit.find", {"scope": "timeline", "rows": [{"text": "a"}, {"text": "b"}]})["rows"] == [{"text": "a"}]
+    assert finish("edit.find", {"scope": "project", "rows": [1, 2]})["rows"] == [1, 2]
+    assert finish("markers.addFlashCue", {"name": "", "comment": "c"}) == {"comment": "c"}
+    assert finish("sequence.transcribe", {"language": "auto", "diarize": True}) == {"diarize": True}
+
+    sent: list[tuple[str, dict]] = []
+    answer: list = [None, {}]
+    status: list[str] = []
+
+    def run(cid, params, then):
+        sent.append((cid, params))
+        then(answer[0], answer[1])
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    # Find: Project rows or the Timeline's one field; OK keeps the dialog with the match count
+    state = {
+        "command": "edit.find",
+        "params": {"scope": "project", "in": "all", "rows": [{"column": "Name", "operator": "contains", "text": "neon"}], "matchAll": True, "caseSensitive": False},
+        "info": {"columns": [["Name", "Name"], ["Label", "Label"]], "operators": [["contains", "Contains"], ["beginsWith", "Begins With"]]},
+    }
+    d = MenuDialog(None, state, run)
+    d.show()
+    assert d.windowTitle() == "Find" and child(d, "find.cancel", QtWidgets.QPushButton).text() == "Done"
+    assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "neon" and not d.timeline_box.isVisible()
+    child(d, "find.scope.timeline", QtWidgets.QRadioButton).setChecked(True)
+    assert d.timeline_box.isVisible() and not d.project_box.isVisible()
+    child(d, "find.row.0.text", QtWidgets.QLineEdit).setText("sky")
+    assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "sky"
+    child(d, "find.in.markers", QtWidgets.QRadioButton).setChecked(True)
+    answer[1] = {"matches": 3, "index": 1}
+    child(d, "find.ok", QtWidgets.QPushButton).click()
+    assert sent[-1][0] == "edit.find" and sent[-1][1]["scope"] == "timeline" and sent[-1][1]["in"] == "markers"
+    assert sent[-1][1]["rows"] == [{"column": "Name", "operator": "contains", "text": "sky"}]
+    assert d.isVisible() and child(d, "find.result", QtWidgets.QLabel).text() == "Match 2 of 3"
+    answer[0] = "no matches"
+    child(d, "find.ok", QtWidgets.QPushButton).click()
+    assert d.isVisible() and child(d, "find.error", QtWidgets.QLabel).text() == "no matches"
+    d.close()
+    answer[:] = [None, {}]
+    # Project Settings: the asked tab; General and Scratch Disks always, Ingest only when changed
+    ingest = {"enabled": False, "action": "copy", "destination": None}
+    state = {
+        "command": "project.settings",
+        "params": {"tab": "scratchDisks", "renderer": "R1", "videoDisplay": "Timecode", "audioDisplay": "Milliseconds", "captureFormat": "DV", "titleSafe": [20, 20], "actionSafe": [10, 10], "captured": None, "videoPreviews": "/v", "audioPreviews": None, "autoSave": None, "ingest": dict(ingest)},
+        "info": {"project": "Demo", "renderers": ["R1", "R2"], "videoDisplays": ["Timecode", "Frames"], "scratch": {"videoPreviews": {"path": "/v"}}, "ingest": dict(ingest)},
+    }
+    d = MenuDialog(None, state, run)
+    d.show()
+    assert d.windowTitle() == "Project Settings" and d.stack.currentIndex() == 1
+    assert child(d, "projectSettings.scratch.videoPreviews", QtWidgets.QLineEdit).text() == "/v"
+    child(d, "projectSettings.scratch.videoPreviews.same", QtWidgets.QPushButton).click()
+    child(d, "projectSettings.tab.general", QtWidgets.QToolButton).click()
+    assert d.stack.currentIndex() == 0
+    child(d, "projectSettings.titleSafe.horizontal", QtWidgets.QDoubleSpinBox).setValue(15.0)
+    child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+    assert [c for c, _p in sent[-2:]] == ["file.projectSettings.general", "file.projectSettings.scratchDisks"]
+    general, scratch = sent[-2][1], sent[-1][1]
+    assert general["titleSafe"] == [15.0, 20.0] and general["audioDisplay"] == "milliseconds" and general["renderer"] == "R1"
+    assert scratch["videoPreviews"] is None
+    assert wait_until(app, lambda: closed(d), 5000)
+    n = len(sent)
+    d = MenuDialog(None, state, run)
+    d.set_tab("ingest")
+    child(d, "projectSettings.ingest.enabled", QtWidgets.QCheckBox).setChecked(True)
+    answer[0] = "bad scratch disk"
+    child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+    # the first failure stops the chain and stays in red
+    assert len(sent) == n + 1 and child(d, "projectSettings.error", QtWidgets.QLabel).text() == "bad scratch disk"
+    answer[0] = None
+    child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+    assert [c for c, _p in sent[-3:]] == ["file.projectSettings.general", "file.projectSettings.scratchDisks", "project.ingestSettings"]
+    assert sent[-1][1]["enabled"] is True
+    # Properties: information only, one button
+    d = MenuDialog(None, {"command": "file.mediaProperties", "params": {}, "info": [{"name": "a.mov", "path": "/m/a.mov", "fileSize": 2_000_000, "video": {"codec": "h264"}}, 7]}, run)
+    d.show()
+    assert not child(d, "properties.cancel", QtWidgets.QPushButton).isVisible() and child(d, "properties.ok", QtWidgets.QPushButton).text() == "Close"
+    texts = [w.text() for w in d.findChildren(QtWidgets.QLabel)]
+    assert "a.mov" in texts and "File Size: 2.00 MB" in texts
+    n = len(sent)
+    child(d, "properties.ok", QtWidgets.QPushButton).click()
+    assert len(sent) == n and wait_until(app, lambda: closed(d), 5000)
+    # Save as Template says where it saved; Simplify sends its checkboxes and Keep
+    d = MenuDialog(None, {"command": "file.saveAsTemplate", "params": {"name": "Demo"}}, run, status=status.append)
+    answer[1] = {"path": "/t/Demo.cfa4template"}
+    child(d, "saveTemplate.ok", QtWidgets.QPushButton).click()
+    assert sent[-1] == ("file.saveAsTemplate", {"name": "Demo"}) and status[-1] == "Saved template /t/Demo.cfa4template"
+    d = MenuDialog(None, {"command": "sequence.simplify", "params": {"name": "S (Simplified)", "removeDisabled": True, "closeGaps": False, "keep": "both"}}, run)
+    child(d, "simplify.closeGaps", QtWidgets.QCheckBox).setChecked(True)
+    child(d, "simplify.keep.video", QtWidgets.QRadioButton).setChecked(True)
+    child(d, "simplify.ok", QtWidgets.QPushButton).click()
+    assert sent[-1] == ("sequence.simplify", {"name": "S (Simplified)", "removeDisabled": True, "closeGaps": True, "keep": "video"})
+    # damaged defaults: still a dialog, no crash
+    for state in (
+        {"command": "edit.find", "params": {"rows": [5, None]}, "info": {"columns": 3, "operators": [[1, 2]]}},
+        {"command": "project.settings", "params": {"titleSafe": "x", "ingest": 4, "tab": 9}, "info": {"scratch": [], "renderers": None}},
+        {"command": "file.mediaProperties", "params": None, "info": {"fileSize": "big", "dataRateKbps": float("nan"), "duration": 3}},
+        {"command": "sequence.transcribe", "params": {"language": 5}, "info": {"tracks": [1, "A1"]}},
+        {"command": "file.newColorMatte", "params": {"color": "nope", "width": -5}},
+    ):
+        d = MenuDialog(None, state, run)
+        d.grab()
+        d.deleteLater()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_menu_dialogs_as_egui(app, tmp_path: Path):
+    """Edit ▸ Find…, File ▸ Project Settings ▸ General…, Sequence ▸ Simplify Sequence… and Normalize
+    Mix Track… from the menu open egui's dialogs from ``dialog.defaults``: Find selects the match
+    and stays open, the Title Safe change reaches the project, Simplify makes the new sequence."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.menu_dialogs import MenuDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def opened(name, before):
+        return wait_until(app, lambda: isinstance(win.last_dialog, MenuDialog) and win.last_dialog is not before and win.last_dialog.objectName() == name, 10_000)
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def query(cid, params=None):
+        out: list = []
+        engine.execute(cid, params or {}, on_reply=lambda r, _b: out.append(r), on_error=lambda m: out.append(m))
+        assert wait_until(app, lambda: bool(out), 10_000)
+        return out[0]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        # Find in the timeline: the first clip's name selects it, the dialog stays with the count
+        name = win.sequence["video"][0]["items"][0]["name"]
+        win.inspector_source = "timeline"
+        win.invoke("edit.find")
+        assert opened("find", None)
+        d = win.last_dialog
+        assert child(d, "find.scope.timeline", QtWidgets.QRadioButton).isChecked()
+        child(d, "find.row.0.text", QtWidgets.QLineEdit).setText(name)
+        child(d, "find.in.clips", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "find.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: child(d, "find.result", QtWidgets.QLabel).isVisible(), 10_000)
+        assert child(d, "find.result", QtWidgets.QLabel).text().startswith("Match 1 of ") and d.isVisible()
+        assert wait_until(app, lambda: bool(win.sequence.get("selection")), 10_000)
+        child(d, "find.cancel", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # Project Settings ▸ General…: the General tab, a Title Safe change reaches the project
+        win.invoke("file.projectSettings.general")
+        assert opened("projectSettings", d)
+        d = win.last_dialog
+        assert d.stack.currentIndex() == 0
+        child(d, "projectSettings.titleSafe.horizontal", QtWidgets.QDoubleSpinBox).setValue(17.0)
+        child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert query("dialog.defaults", {"command": "file.projectSettings.general"})["params"]["titleSafe"][0] == 17.0
+        # Simplify Sequence…: a new sequence named as the dialog says
+        win.invoke("sequence.simplify")
+        assert opened("simplify", d)
+        d = win.last_dialog
+        new_name = child(d, "simplify.name", QtWidgets.QLineEdit).text()
+        assert new_name.endswith("(Simplified)")
+        child(d, "simplify.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert wait_until(app, lambda: new_name in json.dumps(win.project), 10_000)
+        # Normalize Mix Track…: 0 dB
+        win.invoke("sequence.normalizeMixTrack")
+        assert opened("normalizeMix", d)
+        d = win.last_dialog
+        assert child(d, "normalizeMix.db", QtWidgets.QDoubleSpinBox).value() == 0.0
+        QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # with parameters the command applies directly
+        last = win.last_dialog
+        win.run_preset("sequence.normalizeMixTrack", {"db": -3.0})
         wait_until(app, lambda: False, 200)
         assert win.last_dialog is last
     finally:
