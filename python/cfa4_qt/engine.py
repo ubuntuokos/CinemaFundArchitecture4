@@ -124,11 +124,11 @@ class EngineClient(QObject):
     ``on_error(message)`` runs later on the GUI thread.
     """
 
-    started = Signal(dict)  # the `hello` reply
-    event = Signal(dict)  # engine notifications (projectChanged, toast, openSequence, ...)
+    started = Signal(object)  # the `hello` reply (object: a dict through QVariantMap loses big ints)
+    event = Signal(object)  # engine notifications (projectChanged, toast, openSequence, ...)
     stopped = Signal(str)  # the process ended; reason
     failure = Signal(str)  # any request error, for the Events panel
-    _message = Signal(dict, object)  # reader thread -> GUI thread
+    _message = Signal(object, object)  # reader thread -> GUI thread (object: ids like the Mix strip are u64)
 
     def __init__(self, engine: Path, args: list[str] | None = None, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -155,6 +155,15 @@ class EngineClient(QObject):
         threading.Thread(target=self._read_loop, name="cfa4-engine-reader", daemon=True).start()
         threading.Thread(target=self._stderr_loop, name="cfa4-engine-stderr", daemon=True).start()
         self.call("hello", on_reply=self._on_hello)
+
+    def restart(self, args: list[str] | None = None) -> None:
+        """Start a fresh engine after this one stopped (``args`` replace the start arguments)."""
+        self.stop(timeout=2.0)
+        self._process = None
+        if args is not None:
+            self.args = list(args)
+        self.hello = {}
+        self.start()
 
     @property
     def running(self) -> bool:

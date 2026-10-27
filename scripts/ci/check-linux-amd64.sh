@@ -23,6 +23,7 @@ for script in \
   scripts/ci/test-ffmpeg-audit-sha256.sh \
   scripts/ci/test-gpu-hardware-log.sh \
   scripts/dev/test-vendored-ui.sh \
+  scripts/ci/check-package-docs.sh \
   scripts/ci/install-ffmpeg-9.0.2.sh; do
   bash -n "$script"
 done
@@ -30,6 +31,8 @@ done
 # no cargo, no GPU and no expensive full Rust/Qt/FFmpeg tests).
 bash scripts/ci/test-gpu-hardware-log.sh
 bash scripts/ci/test-ffmpeg-audit-sha256.sh
+# Licence/attribution files must be in every Linux package (issue #6).
+bash scripts/ci/check-package-docs.sh
 python3 -m py_compile python/cfa4_devtools/native_media_e2e.py python/tests/test_native_media_e2e.py
 PYTHONPATH=python python3 -m unittest discover -s python/tests -p 'test_native_media_e2e.py' -v
 python3 -m unittest discover -s scripts/ci -p 'test_cfa4_xdg.py' -v

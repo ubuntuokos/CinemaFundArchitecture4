@@ -4,7 +4,8 @@ so the menu shows the parity gap instead of hiding it (docs/qt-parity.md).
 
 Workspaces are saved dock layouts. "Editing" is the default layout; the user can save changes
 to the current workspace, save the layout as a new named one, and reset to the saved layout.
-The other egui workspaces need panels the Qt GUI does not have yet and are listed disabled.
+egui's other workspaces (Assembly, Color, Effects, Audio, Captions and Graphics, All Panels)
+start from egui's layouts of them (``crates/ui-egui/src/dock.rs`` ``workspace``).
 """
 
 from __future__ import annotations
@@ -12,9 +13,23 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from PySide6.QtCore import QByteArray, QObject, QSettings
+from PySide6.QtCore import QByteArray, QObject, QSettings, Qt
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence
-from PySide6.QtWidgets import QDockWidget, QInputDialog, QMainWindow, QMenu, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QDockWidget,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMainWindow,
+    QMenu,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .i18n import N_, tr
 
@@ -67,6 +82,8 @@ EGUI_WORKSPACES = (
     (N_("Audio"), "Alt+Shift+5"),
     (N_("Captions and Graphics"), "Alt+Shift+6"),
 )
+ALL_PANELS = N_("All Panels")
+BUILTIN_NAMES = frozenset([*(n for n, _k in EGUI_WORKSPACES), ALL_PANELS])
 NOT_YET = N_("Not yet in the Qt GUI (see docs/qt-parity.md)")
 
 
@@ -74,27 +91,38 @@ class Workspaces:
     """Named dock layouts in QSettings (``workspaces/<name>``); "Editing" falls back to the
     built-in default layout."""
 
-    def __init__(self, window: QMainWindow, settings: QSettings, default_state: QByteArray, version: int) -> None:
+    def __init__(
+        self,
+        window: QMainWindow,
+        settings: QSettings,
+        default_state: QByteArray,
+        version: int,
+        builtin: Callable[[str], QByteArray] | None = None,
+    ) -> None:
         self.window = window
         self.settings = settings
         self.default_state = default_state
         self.version = version
+        self.builtin = builtin  # egui's layout of a built-in workspace (Assembly, Color, …)
 
     def names(self) -> list[str]:
+        """The user's own workspaces (a built-in one saved with changes is still built in)."""
         self.settings.beginGroup("workspaces")
-        keys = [k for k in self.settings.childKeys() if k != DEFAULT_WORKSPACE]
+        keys = [k for k in self.settings.childKeys() if k not in BUILTIN_NAMES]
         self.settings.endGroup()
         return sorted(keys, key=str.casefold)
 
     @property
     def current(self) -> str:
         name = str(self.settings.value("workspace/current") or DEFAULT_WORKSPACE)
-        return name if name == DEFAULT_WORKSPACE or name in self.names() else DEFAULT_WORKSPACE
+        return name if name in BUILTIN_NAMES or name in self.names() else DEFAULT_WORKSPACE
 
     def saved_state(self, name: str) -> QByteArray:
         state = self.settings.value(f"workspaces/{name}")
         if isinstance(state, QByteArray) and not state.isEmpty():
             return state
+        if name != DEFAULT_WORKSPACE and name in BUILTIN_NAMES and self.builtin is not None:
+            return self.builtin(name)
         return self.default_state
 
     def switch(self, name: str, restore: Callable[[QByteArray], None]) -> None:
@@ -104,9 +132,111 @@ class Workspaces:
     def save_current(self) -> None:
         self.settings.setValue(f"workspaces/{self.current}", self.window.saveState(self.version))
 
+    def all_names(self) -> list[str]:
+        return [*(n for n, _k in EGUI_WORKSPACES), ALL_PANELS, *self.names()]
+
+    def changed(self, name: str) -> bool:
+        """A workspace with a saved layout (a built-in one saved with changes)."""
+        state = self.settings.value(f"workspaces/{name}")
+        return isinstance(state, QByteArray) and not state.isEmpty()
+
+    def rename(self, old: str, new: str) -> bool:
+        new = new.strip().replace("/", "-")
+        if old in BUILTIN_NAMES or old not in self.names() or not new or new in BUILTIN_NAMES or new in self.names():
+            return False
+        self.settings.setValue(f"workspaces/{new}", self.settings.value(f"workspaces/{old}"))
+        self.settings.remove(f"workspaces/{old}")
+        if str(self.settings.value("workspace/current") or "") == old:
+            self.settings.setValue("workspace/current", new)
+        return True
+
+    def delete(self, name: str) -> None:
+        """Delete an own workspace, or a built-in one's saved changes (Restore Original)."""
+        self.settings.remove(f"workspaces/{name}")
+        if name not in BUILTIN_NAMES and str(self.settings.value("workspace/current") or "") == name:
+            self.settings.setValue("workspace/current", DEFAULT_WORKSPACE)
+
     def save_as(self, name: str) -> None:
         self.settings.setValue(f"workspaces/{name}", self.window.saveState(self.version))
         self.settings.setValue("workspace/current", name)
+
+
+class EditWorkspacesDialog(QDialog):
+    """Edit Workspaces… (egui's): rename or delete an own workspace; a built-in one that was
+    saved with changes can go back to its original layout."""
+
+    def __init__(self, workspaces: Workspaces, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.workspaces = workspaces
+        self.setObjectName("workspaces.edit")
+        self.setWindowTitle(tr("Edit Workspaces"))
+        self.list = QListWidget(self)
+        self.list.setObjectName("workspaces.edit.list")
+        self.name = QLineEdit(self)
+        self.name.setObjectName("workspaces.edit.name")
+        self.rename_button = QPushButton(tr("Rename"), self)
+        self.rename_button.setObjectName("workspaces.edit.rename")
+        self.delete_button = QPushButton(tr("Delete"), self)
+        self.delete_button.setObjectName("workspaces.edit.delete")
+        close = QPushButton(tr("Close"), self)
+        close.setObjectName("workspaces.edit.close")
+        close.clicked.connect(self.accept)
+        self.rename_button.clicked.connect(self._rename)
+        self.delete_button.clicked.connect(self._delete)
+        self.list.currentItemChanged.connect(lambda _c, _p: self._selected())
+        self.name.textChanged.connect(lambda _t: self._selected(keep_name=True))
+        row = QHBoxLayout()
+        row.addWidget(QLabel(tr("Name:"), self))
+        row.addWidget(self.name, 1)
+        row.addWidget(self.rename_button)
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.delete_button)
+        buttons.addStretch(1)
+        buttons.addWidget(close)
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.list, 1)
+        layout.addLayout(row)
+        layout.addLayout(buttons)
+        self._fill()
+
+    def _fill(self, select: str | None = None) -> None:
+        self.list.clear()
+        for n in self.workspaces.all_names():
+            it = QListWidgetItem(tr(n) if n in BUILTIN_NAMES else n)
+            it.setData(Qt.ItemDataRole.UserRole, n)
+            self.list.addItem(it)
+            if n == select:
+                self.list.setCurrentItem(it)
+        self._selected()
+
+    def current(self) -> str | None:
+        it = self.list.currentItem()
+        v = it.data(Qt.ItemDataRole.UserRole) if it is not None else None
+        return v if isinstance(v, str) else None
+
+    def _selected(self, keep_name: bool = False) -> None:
+        sel = self.current()
+        own = sel is not None and sel not in BUILTIN_NAMES
+        restore = sel is not None and sel in BUILTIN_NAMES and self.workspaces.changed(sel)
+        if not keep_name:
+            self.name.blockSignals(True)
+            self.name.setText(sel if own else "")
+            self.name.blockSignals(False)
+        self.name.setEnabled(own)
+        self.rename_button.setEnabled(own and self.name.text().strip() not in ("", sel))
+        self.delete_button.setText(tr("Restore Original") if restore else tr("Delete"))
+        self.delete_button.setEnabled(own or restore)
+
+    def _rename(self) -> None:
+        sel, new = self.current(), self.name.text().strip()
+        if sel is not None and self.workspaces.rename(sel, new):
+            self._fill(new.replace("/", "-"))
+
+    def _delete(self) -> None:
+        sel = self.current()
+        if sel is not None:
+            self.workspaces.delete(sel)
+            self._fill(sel if sel in BUILTIN_NAMES else None)
 
 
 def panel_action(window: QMainWindow, entry: PanelEntry, dock: QDockWidget | None, central: QWidget | None) -> QAction:
@@ -160,23 +290,16 @@ def build_window_menu(
     ws.setObjectName("menu.Window.Workspaces")
     ws.setToolTipsVisible(True)
     group = QActionGroup(window)
-    for name, key in EGUI_WORKSPACES:
+    for name, key in (*EGUI_WORKSPACES, (ALL_PANELS, "")):
         a = QAction(tr(name), window)
         a.setObjectName(f"window.workspace.{name.replace(' ', '')}")
-        if name == DEFAULT_WORKSPACE:
-            a.setCheckable(True)
-            a.setChecked(workspaces.current == DEFAULT_WORKSPACE)
-            a.triggered.connect(lambda _c=False, n=name: workspaces.switch(n, restore))
-            group.addAction(a)
+        a.setCheckable(True)
+        a.setChecked(workspaces.current == name)
+        a.triggered.connect(lambda _c=False, n=name: workspaces.switch(n, restore))
+        group.addAction(a)
+        if key:
             shortcuts.append((a, key))
-        else:
-            a.setEnabled(False)
-            a.setToolTip(tr(NOT_YET))
         ws.addAction(a)
-    all_panels = QAction(tr("All Panels"), window)
-    all_panels.setEnabled(False)
-    all_panels.setToolTip(tr(NOT_YET))
-    ws.addAction(all_panels)
     own = workspaces.names()
     if own:
         ws.addSeparator()
@@ -202,15 +325,20 @@ def build_window_menu(
     def ask_name() -> None:
         name, ok = QInputDialog.getText(window, tr("Save as New Workspace"), tr("Name"))
         name = name.strip().replace("/", "-")
-        if ok and name and name != DEFAULT_WORKSPACE:
+        if ok and name and name not in BUILTIN_NAMES:
             workspaces.save_as(name)
             window.rebuild_window_menu()  # type: ignore[attr-defined]
 
     save_as.triggered.connect(ask_name)
     ws.addAction(save_as)
     edit = QAction(tr("Edit Workspaces…"), window)
-    edit.setEnabled(False)
-    edit.setToolTip(tr(NOT_YET))
+    edit.setObjectName("window.workspace.edit")
+
+    def edit_workspaces() -> None:
+        EditWorkspacesDialog(workspaces, window).exec()
+        window.rebuild_window_menu()  # type: ignore[attr-defined]
+
+    edit.triggered.connect(edit_workspaces)
     ws.addAction(edit)
 
     new_project = QAction(tr("New Project Panel"), window)

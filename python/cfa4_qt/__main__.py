@@ -56,6 +56,12 @@ def main(argv: list[str] | None = None) -> int:
     icon = app_icon()
     if not icon.isNull():
         app.setWindowIcon(icon)
+    # exceptions that escape a slot or an event handler go to <data dir>/Logs/crash-<day>.log and
+    # the window's error dialog; the session keeps running (egui's crash::install)
+    from . import crash
+
+    data_dir = Path(args.data_dir).expanduser() if args.data_dir else crash.default_data_dir()
+    crash.install(data_dir / "Logs" if data_dir is not None else None)
     settings = QSettings("CFA4", "CFA4-Qt")
     language = args.lang or str(settings.value("language") or "") or i18n.system_language()
     i18n.TR.set_language(language)

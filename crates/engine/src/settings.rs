@@ -1808,20 +1808,42 @@ fn kind_json(k: Kind) -> Value {
     }
 }
 
+fn field_json(s: &Session, f: &Field) -> Value {
+    json!({"key": f.key, "label": f.label, "kind": kind_json(f.kind), "wired": f.wired, "enabledBy": f.enabled_by, "indent": f.indent, "value": s.prefs.get(f.key)})
+}
+
+/// A category's page as the dialog lays it out: fields, titled groups, notes, buttons and the
+/// sections a frontend draws itself.
+fn rows_json(s: &Session, rows: &[Row]) -> Vec<Value> {
+    rows.iter()
+        .map(|r| match r {
+            Row::Field(f) => json!({"type": "field", "field": field_json(s, f)}),
+            Row::Group(title, inner) => json!({"type": "group", "title": title, "rows": rows_json(s, inner)}),
+            Row::Note(text) => json!({"type": "note", "text": text}),
+            Row::Button { id, label, command } => json!({"type": "button", "id": id, "label": label, "command": command}),
+            Row::Custom(id) => json!({"type": "custom", "id": id}),
+        })
+        .collect()
+}
+
 fn schema(s: &mut Session, p: &Value) -> Result<Value> {
     let want = str_p(p, "category");
+    let defaults = crate::autosave::Preferences::default().to_value();
     let cats: Vec<Value> = CATEGORIES
         .iter()
         .filter(|c| want.is_none_or(|w| w == c.id))
         .map(|c| {
-            let fields: Vec<Value> = fields()
-                .into_iter()
-                .filter(|(cat, _)| *cat == c.id)
-                .map(|(_, f)| {
-                    json!({"key": f.key, "label": f.label, "kind": kind_json(f.kind), "wired": f.wired, "enabledBy": f.enabled_by, "value": s.prefs.get(f.key)})
-                })
-                .collect();
-            json!({"id": c.id, "title": c.title, "group": c.group, "command": format!("app.settings.{}", c.id), "fields": fields})
+            let fields: Vec<Value> = fields().into_iter().filter(|(cat, _)| *cat == c.id).map(|(_, f)| field_json(s, &f)).collect();
+            json!({
+                "id": c.id,
+                "title": c.title,
+                "group": c.group,
+                "command": format!("app.settings.{}", c.id),
+                "fields": fields,
+                "rows": rows_json(s, c.rows),
+                // Reset… puts these back (OK applies them)
+                "defaults": defaults.get(c.id).cloned().unwrap_or(Value::Null),
+            })
         })
         .collect();
     if let Some(w) = want
