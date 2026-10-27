@@ -1,6 +1,7 @@
 //! CELT layer decoder (RFC 6716 §4.3).
 
 pub(crate) mod bands;
+pub(crate) mod encoder;
 pub(crate) mod energy;
 pub(crate) mod mdct;
 pub(crate) mod rate;
@@ -11,10 +12,10 @@ use std::sync::OnceLock;
 use bands::{anti_collapse, denormalise_bands, quant_all_bands, renormalise_vector};
 use energy::{unquant_coarse_energy, unquant_energy_finalise, unquant_fine_energy};
 use mdct::ImdctScratch;
-use rate::{Mode, compute_allocation};
+use rate::{AllocHints, Mode, compute_allocation};
 use tables::*;
 
-use crate::range::{BITRES, RangeDecoder};
+use crate::range::{BITRES, Coder, RangeDecoder};
 
 const DECODE_BUFFER_SIZE: usize = 2048;
 const COMBFILTER_MINPERIOD: i32 = 15;
@@ -215,7 +216,7 @@ impl CeltDecoder {
         let intra = if tell + 3 <= total_bits_raw { dec.bit_logp(3) } else { false };
         unquant_coarse_energy(start, end, &mut self.old_band_e, intra, dec, c, lm);
         let mut tf_res = [0i32; NB_EBANDS];
-        tf_decode(start, end, is_transient, &mut tf_res, lm, dec);
+        tf_code(start, end, is_transient, &mut tf_res, 0, lm, dec);
         tell = dec.tell();
         let mut spread = 2usize;
         if tell + 4 <= total_bits_raw {
@@ -250,7 +251,7 @@ impl CeltDecoder {
         let mut bits = ((len as i32 * 8) << BITRES) - dec.tell_frac() as i32 - 1;
         let anti_collapse_rsv = if is_transient && lm >= 2 && bits >= ((lm as i32 + 2) << BITRES) { 1 << BITRES } else { 0 };
         bits -= anti_collapse_rsv;
-        let alloc = compute_allocation(m, start, end, &offsets, &cap, alloc_trim, bits, c, lm, dec);
+        let alloc = compute_allocation(m, start, end, &offsets, &cap, alloc_trim, bits, c, lm, dec, &AllocHints::default());
         unquant_fine_energy(start, end, &mut self.old_band_e, &alloc.fine_quant, dec, c);
 
         // Shift the decode memory by one frame.
@@ -284,6 +285,7 @@ impl CeltDecoder {
                 ((len as i32) * (8 << BITRES)) - anti_collapse_rsv,
                 alloc.balance,
                 dec,
+                &[],
                 lm,
                 alloc.coded_bands,
                 &mut seed,
@@ -561,7 +563,9 @@ fn find_pitch(x: &[f32]) -> usize {
     best
 }
 
-fn tf_decode(start: usize, end: usize, is_transient: bool, tf_res: &mut [i32; NB_EBANDS], lm: usize, dec: &mut RangeDecoder) {
+/// TF resolution flags (`tf_decode` / `tf_encode`). The encoder passes its per-band 0/1 choices
+/// in `tf_res` and its `tf_select`; on return `tf_res` holds the TF changes for both sides.
+fn tf_code<C: Coder>(start: usize, end: usize, is_transient: bool, tf_res: &mut [i32; NB_EBANDS], tf_select: usize, lm: usize, dec: &mut C) {
     let mut budget = dec.storage() as i32 * 8;
     let mut tell = dec.tell();
     let mut logp: u32 = if is_transient { 2 } else { 4 };
@@ -571,18 +575,19 @@ fn tf_decode(start: usize, end: usize, is_transient: bool, tf_res: &mut [i32; NB
     let mut curr = 0;
     for r in tf_res.iter_mut().take(end).skip(start) {
         if tell + logp as i32 <= budget {
-            curr ^= dec.bit_logp(logp) as i32;
+            curr ^= dec.bit_logp((*r & 1) ^ curr != 0, logp) as i32;
             tell = dec.tell();
             tf_changed |= curr;
         }
         *r = curr;
         logp = if is_transient { 4 } else { 5 };
     }
-    let mut tf_select = 0;
     let ti = 4 * is_transient as usize;
-    if tf_select_rsv && TF_SELECT_TABLE[lm][ti + tf_changed as usize] != TF_SELECT_TABLE[lm][ti + 2 + tf_changed as usize] {
-        tf_select = dec.bit_logp(1) as usize;
-    }
+    let tf_select = if tf_select_rsv && TF_SELECT_TABLE[lm][ti + tf_changed as usize] != TF_SELECT_TABLE[lm][ti + 2 + tf_changed as usize] {
+        dec.bit_logp(tf_select != 0, 1) as usize
+    } else {
+        0
+    };
     for r in tf_res.iter_mut().take(end).skip(start) {
         *r = TF_SELECT_TABLE[lm][ti + 2 * tf_select + *r as usize] as i32;
     }

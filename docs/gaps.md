@@ -269,6 +269,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
   encoders go first where present; #94).
 - **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,
+  (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); ProRes 4444 / 4444 XQ in the export UI (#342).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x265 for software HEVC encode
+  (licence: GPL-2.0-or-later, to be confirmed), x264 for a higher-quality software H.264 encoder,
   LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
 

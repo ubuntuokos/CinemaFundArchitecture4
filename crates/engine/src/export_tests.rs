@@ -221,6 +221,15 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
                 continue;
             }
+            "opus" => {
+                // Opus Audio: an Ogg file, sound only
+                assert!(fmt_name.contains("ogg"), "{name}: {fmt_name}");
+                assert_eq!(j["streams"].as_array().unwrap().len(), 1, "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
             "gif" => {
                 let v = stream(&j, "video").unwrap();
                 assert_eq!(v["codec_name"], "gif");
@@ -346,6 +355,25 @@ fn aac_audio_keeps_a_dot_aac_path_as_adts_and_adds_m4a_otherwise() {
     let m4a = run(&mut s, dir.path("Mix"));
     assert!(m4a.ends_with("Mix.m4a"), "{m4a}");
     assert_eq!(&std::fs::read(&m4a).unwrap()[4..8], b"ftyp");
+}
+
+#[test]
+fn opus_audio_keeps_a_dot_ogg_path_and_adds_opus_otherwise() {
+    let mut s = demo();
+    let dir = Scratch::new("opus-audio");
+    let range = json!({"range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true, "format": "opus"});
+    let run = |s: &mut Session, path: String| {
+        let mut p = range.clone();
+        p["path"] = json!(path);
+        s.execute("file.exportMedia", p).unwrap()["path"].as_str().unwrap().to_string()
+    };
+    for (asked, want) in [("Mix.ogg", "Mix.ogg"), ("Mix", "Mix.opus")] {
+        let path = run(&mut s, dir.path(asked));
+        assert!(path.ends_with(want), "{path}");
+        let b = std::fs::read(&path).unwrap();
+        assert_eq!(&b[..4], b"OggS");
+        assert_eq!(&b[28..36], b"OpusHead");
+    }
 }
 
 #[test]

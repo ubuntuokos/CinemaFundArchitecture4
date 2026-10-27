@@ -2984,6 +2984,9 @@
 	Gang to Program	Vincular ao programa
 	AAC Audio	Áudio AAC
 	AAC Audio 48 kHz 320 kbps	Áudio AAC 48 kHz 320 kbps
+	Opus Audio	Áudio Opus
+	Opus Audio 48 kHz 160 kbps	Áudio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), estéreo, 48 kHz a 160 kbps
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Áudio MPEG-4 (.m4a), estéreo, AAC-LC de 48 kHz a 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bits

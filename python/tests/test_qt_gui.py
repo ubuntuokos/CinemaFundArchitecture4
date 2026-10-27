@@ -1865,6 +1865,23 @@ def test_export_helpers(tmp_path: Path, monkeypatch):
     assert default_output_dir(None) == tmp_path
 
 
+def test_export_sends_the_audio_bitrate(app):
+    """AAC and Opus Audio take a bit rate: 0 keeps the preset's, any other value is sent."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    assert "audioBitrateKbps" not in dlg.params()
+    dlg.audio_bitrate.setValue(96)
+    assert dlg.params()["audioBitrateKbps"] == 96
+    assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""

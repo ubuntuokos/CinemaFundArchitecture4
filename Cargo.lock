@@ -971,6 +971,8 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-media",
  "cfa4-mxf",
+ "cfa4-ogg",
+ "cfa4-opus",
  "cfa4-project",
  "cfa4-prores",
  "cfa4-render",
@@ -1232,6 +1234,7 @@ dependencies = [
 name = "cfa4-opus"
 version = "0.10.0"
 dependencies = [
+ "cfa4-ogg",
  "cfa4-testkit",
 ]
 

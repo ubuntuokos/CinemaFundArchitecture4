@@ -20,6 +20,7 @@ mod audio_out;
 mod deflate;
 mod job;
 mod mxf_out;
+mod opus_out;
 mod pace;
 mod pcm;
 mod pipeline;
@@ -124,6 +125,9 @@ pub enum Format {
     /// FLAC (RFC 9639): lossless compressed audio.
     #[serde(rename = "flac", alias = "Flac")]
     Flac,
+    /// Opus Audio (RFC 6716 in Ogg, RFC 7845): lossy compressed audio at 48 kHz, mono or stereo.
+    #[serde(rename = "opus", alias = "Opus")]
+    Opus,
     /// MXF OP1a (SMPTE ST 378): frame-wrapped DNxHR, ProRes or H.264 ([`MxfVideoCodec`]) + PCM.
     #[serde(rename = "mxf-op1a", alias = "MxfOp1a")]
     MxfOp1a,
@@ -158,6 +162,7 @@ impl Format {
             "aif" | "aiff" | "aifc" => Format::Aiff,
             "aac" | "aacaudio" | "m4a" | "adts" => Format::Aac,
             "flac" | "fla" => Format::Flac,
+            "opus" | "opusaudio" | "ogg" | "oggopus" => Format::Opus,
             _ => return None,
         })
     }
@@ -183,6 +188,7 @@ impl Format {
             Format::Aiff => "aiff",
             Format::Aac => "aac",
             Format::Flac => "flac",
+            Format::Opus => "opus",
             Format::MxfOp1a => "mxf-op1a",
             Format::MxfOpAtom => "mxf-opatom",
         }
@@ -203,6 +209,7 @@ impl Format {
             Format::Aiff => "aif",
             Format::Aac => "m4a",
             Format::Flac => "flac",
+            Format::Opus => "opus",
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
         }
     }
@@ -227,6 +234,7 @@ impl Format {
             Format::Aiff => "AIFF",
             Format::Aac => "AAC Audio",
             Format::Flac => "FLAC",
+            Format::Opus => "Opus Audio",
             Format::MxfOp1a => "MXF OP1a",
             Format::MxfOpAtom => "MXF OP-Atom",
         }
@@ -253,9 +261,9 @@ impl Format {
     pub fn has_builtin_encoder(self) -> bool {
         self != Format::Av1
     }
-    /// Sound without picture: Waveform Audio, AIFF, AAC Audio and FLAC.
+    /// Sound without picture: Waveform Audio, AIFF, AAC Audio, FLAC and Opus Audio.
     pub fn is_audio_only(self) -> bool {
-        matches!(self, Format::Wav | Format::Aiff | Format::Aac | Format::Flac)
+        matches!(self, Format::Wav | Format::Aiff | Format::Aac | Format::Flac | Format::Opus)
     }
     /// H.264 or H.265: MPEG-4 (or QuickTime) with AAC audio, set up with the same bitrate controls.
     pub fn is_h26x(self) -> bool {
@@ -269,7 +277,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 21] = [
+    pub const ALL: [Format; 22] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -289,6 +297,7 @@ impl Format {
         Format::Aiff,
         Format::Aac,
         Format::Flac,
+        Format::Opus,
         Format::MxfOp1a,
         Format::MxfOpAtom,
     ];
@@ -628,7 +637,10 @@ impl ExportSettings {
             return Err(ExportError::Unsupported("floating-point audio is 32-bit: set the sample size to 32".into()));
         }
         let sample_format = self.audio.sample_format();
-        if (self.has_audio() || self.format.is_audio_only()) && self.audio_codec() != AudioCodec::Aac && !self.supports_sample_format(sample_format) {
+        if (self.has_audio() || self.format.is_audio_only())
+            && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus)
+            && !self.supports_sample_format(sample_format)
+        {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
@@ -1971,6 +1983,7 @@ pub fn export(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, so
     let batch = rayon::current_num_threads().clamp(2, 16) as i64;
     let (bytes, nframes) = match settings.format {
         Format::Aac => aac_out::export(project, seq, settings, range, sources, progress)?,
+        Format::Opus => opus_out::export(project, seq, settings, range, sources, progress)?,
         Format::Wav | Format::Aiff | Format::Flac => {
             let mut a = audio_out::AudioOut::new(project.clone(), seq, settings, range)?;
             let (ch, sr, fmt) = (a.channels as u16, a.sr, settings.audio.sample_format());

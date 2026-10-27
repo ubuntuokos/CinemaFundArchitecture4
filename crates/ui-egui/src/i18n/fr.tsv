@@ -2982,6 +2982,9 @@
 	Gang to Program	Coupler au moniteur programme
 	AAC Audio	AAC Audio
 	AAC Audio 48 kHz 320 kbps	AAC Audio 48 kHz 320 kbps
+	Opus Audio	Audio Opus
+	Opus Audio 48 kHz 160 kbps	Audio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stéréo 48 kHz à 160 kbps
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Audio MPEG-4 (.m4a), AAC-LC stéréo 48 kHz à 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bits
