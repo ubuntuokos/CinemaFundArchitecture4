@@ -77,6 +77,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("gpu", 3),
     ("golden", 3),
     ("scopes", 3),
+    ("qc", 3),
     ("playback", 3),
     ("export", 3),
     ("format", 3),
