@@ -44,17 +44,11 @@ signing jobs are refused, and the draft-release job, which needs them, is skippe
 
 | Platform | Artifacts | Built on |
 |---|---|---|
-| macOS 11+ (universal: Apple silicon and Intel) | `cfa4-<v>-macos-universal.dmg`, `cfa4-cli-<v>-macos-universal.zip` | `macos-15` |
-| Windows x64 | `cfa4-<v>-windows-x64.msi`, `cfa4-<v>-windows-x64-portable.zip` | `windows-latest` |
-| Windows x86 (32-bit) | `cfa4-<v>-windows-x86.msi`, `cfa4-<v>-windows-x86-portable.zip` | `windows-latest` |
-| Windows on ARM64 | `cfa4-<v>-windows-arm64.msi`, `cfa4-<v>-windows-arm64-portable.zip` | `windows-latest` (cross-compiled) |
 | Linux x86_64 | `cfa4-<v>-linux-x86_64.{AppImage,deb,rpm,tar.gz}` | `ubuntu-22.04` |
 | Linux aarch64 | `cfa4-<v>-linux-aarch64.{AppImage,deb,rpm,tar.gz}` | `ubuntu-22.04-arm` |
 | Linux riscv64 | `cfa4-<v>-linux-riscv64.tar.gz` | `ubuntu-24.04`, cross-compiled (glibc 2.39+; CLI smoke-tested under QEMU) |
 | AppImage updates | `cfa4-<v>-linux-{x86_64,aarch64}.AppImage.zsync` | with the AppImage |
 | Flatpak | `cfa4-<v>-linux-x86_64.flatpak`, `cfa4-<v>-linux-aarch64.flatpak` | `ubuntu-24.04`, `ubuntu-24.04-arm` (repackaged Linux tarball) |
-| FreeBSD 14 x86_64 | `cfa4-<v>-freebsd-x86_64.tar.gz` | FreeBSD 14.3 VM on `ubuntu-latest` |
-| Web | `cfa4-web-<v>.zip`, a static site (see [`packaging/web/README.md`](../packaging/web/README.md)) | `ubuntu-latest` |
 
 `cfa4 --version` and `cfa4-cli --version` print the version from `Cargo.toml`.
 
@@ -64,40 +58,6 @@ with `CFA4_FONTS_DIR` and `CFA4_FONTS_REQUIRED=1`, so releases embed its Japanes
 rather than ship without them (the web build embeds only the UI font, to stay small). The packages
 carry each embedded font's licence (`copy_font_licences` in `packaging/env.sh`). Bump the pins
 deliberately, in every job at once.
-
-### macOS
-
-`packaging/macos/package.sh` builds `aarch64-apple-darwin` and `x86_64-apple-darwin` with
-`MACOSX_DEPLOYMENT_TARGET=11.0`, joins them with `lipo` and assembles `CFA4.app`:
-
-- `Info.plist` is generated from `Info.plist.in` (bundle id `io.github.ubuntuokos.cfa4`, the
-  version and the build commit).
-- **Signing** uses the hardened runtime and a secure timestamp, with the entitlements in
-  `entitlements.plist`. The Developer ID certificate is imported into a temporary keychain by
-  `packaging/macos/import-cert.sh`.
-- **Notarization:** the app is sent with `xcrun notarytool submit`, then the ticket is stapled
-  and checked with `stapler validate`. The app goes on a DMG (`hdiutil makehybrid`), which is
-  signed and notarized too. The universal `cfa4-cli` is signed the same way, zipped, and the zip is notarized.
-  The DMG volume is named `CFA4` without the version; the DMG file name keeps the version.
-
-Locally, without certificates, the script signs ad hoc and skips notarization, which is enough to
-check the bundle and the DMG on your own Mac (`packaging/macos/package.sh`).
-
-### Windows
-
-`packaging/windows/package.ps1 -Arch x64|x86|arm64` builds with `+crt-static`, so neither the MSI
-nor the portable zip needs the Visual C++ redistributable.
-
-- `cfa4.wxs` (WiX) is a per-machine install into Program Files with a Start Menu shortcut and
-  an App Paths entry (Win+R `cfa4`). Same-version upgrades are allowed, so release candidates
-  replace each other.
-- The ARM64 build is cross-compiled on the x64 runner. `.github/workflows/windows-arm64.yml`
-  installs that MSI on a Windows 11 ARM64 runner, runs `cfa4-cli --version` natively and
-  uninstalls.
-- **Signing:** `packaging/windows/sign.ps1` signs the executables and then the `.msi` with
-  `signtool`, using whichever material is present: a `.pfx` certificate (`WINDOWS_CERTIFICATE`,
-  base64, and `WINDOWS_CERTIFICATE_PASSWORD`) or Azure Trusted Signing (the `AZURE_*` secrets). With
-  neither, it warns and leaves the files unsigned, so test builds still produce installers.
 
 ### Linux
 
@@ -140,24 +100,6 @@ submission (its header says how to build it). Both manifests must keep the same 
 `finish-args`, and install the same programs: the app and `cfa4-cli`, which runs the
 headless commands and the MCP server in the sandbox
 (`flatpak run --command=cfa4-cli io.github.ubuntuokos.cfa4 mcp`). packaging-lint checks this.
-
-### FreeBSD
-
-GitHub has no FreeBSD runners, so the `freebsd` job builds in a FreeBSD 14.3 VM
-([vmactions/freebsd-vm](https://github.com/vmactions/freebsd-vm), pinned by commit) on
-`ubuntu-latest`. `packaging/freebsd/package.sh` builds both programs and packs a
-`/usr/local`-style tree as `cfa4-<v>-freebsd-x86_64.tar.gz`; install it with
-`tar -xzf cfa4-<v>-freebsd-x86_64.tar.gz --strip-components 1 -C /usr/local`. The build needs
-the packages listed in the job (winit/wgpu, GTK 3 for the file dialogs, fontconfig, and
-`alsa-lib` for audio through cpal). `.github/workflows/freebsd.yml` builds and packages the same
-way nightly, so a FreeBSD break shows up before a release. `package.sh --dry-run` checks the
-tree's layout with stub binaries on any OS (packaging-lint runs it).
-
-### Web
-
-The web job builds `apps/cfa4-web` with `cargo xtask web` (the `wasm-bindgen` CLI must match
-the crate's version exactly, `WASM_BINDGEN` in `xtask/src/main.rs`) and zips the static site with
-`packaging/web/package.sh`. [`packaging/web/README.md`](../packaging/web/README.md) covers hosting.
 
 ## The draft release
 
