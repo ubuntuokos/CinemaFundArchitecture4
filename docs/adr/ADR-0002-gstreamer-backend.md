@@ -1,7 +1,10 @@
 # ADR 0002 – GStreamer mint kiegészítő háttérmotor
 
 **Dátum:** 2026-10-24 · **Állapot:** elfogadva (a tulajdonos, `ubuntuokos` jóváhagyta) ·
-**Érintett crate:** `crates/gstreamer` (`cfa4-gstreamer`, L5 réteg)
+**Érintett crate:** `crates/gstreamer` (`cfa4-gstreamer`, L5 réteg) ·
+**Kiegészítette:** [ADR 0005](ADR-0005-media-backends.md) (2026-10-25): a GStreamer az Ubuntu tárolóiból
+telepített rendszercsomag (alapértelmezés; elkülönített futtatókörnyezet csak újabb verziót igénylő funkcióhoz, lásd „GStreamer-verzió és frissítés”); az FFmpeg (≥ 9.0.2) is kiegészítő háttér; a hátterek között az
+automatikus útválasztó (`cfa4-route`, ADR 0004) választ, alapsorrend: saját → FFmpeg → GStreamer
 
 ## Háttér
 
@@ -64,6 +67,37 @@ Pontos (accurate) kereséssel ugrik, egymást követő kérésnél csak a követ
 így lejátszáskor nem keres minden képkockánál. A nem használt adattípusokhoz `fakesink` kerül,
 mert a `playbin` automatikus kimenetei (hangkártya, kijelző) kijelző nélküli gépen összeomolhatnak.
 
+## GStreamer-verzió és frissítés (döntés, 2026-10-24; egységesítve 2026-10-27)
+
+A GStreamer fejlesztői Linuxra nem adnak saját csomagtárolót, az Ubuntu LTS pedig a kiadás után
+jellemzően csak hibajavítást hoz, új főverziót nem. A 26.04 GStreamere (1.28.2) a referenciagépen
+mindent tud, ami a 2–5. lépéshez kell (Vulkan Video dekódolás, `qml6glsink`, PipeWire, V4L2).
+
+- **Alapértelmezés: a rendszer (Ubuntu) GStreamere.** Ez az alap: a kiadott csomag az Ubuntu
+  archívumából függőségként húzza be ([ADR 0005](ADR-0005-media-backends.md)). A kód csak azt
+  használja, ami az aktuális LTS GStreamerében megvan; ami újabb, azt futáskori felmérés (`probe()`)
+  kapcsolja be.
+- **Ha egy funkcióhoz újabb GStreamer kell** (legvalószínűbb a Vulkan Video kódolás): saját,
+  **elkülönített** futtatókörnyezet-csomag készül (`cfa4-gstreamer-runtime`, `/opt/cfa4/gstreamer`
+  alá), amelyet csak a CFA4 használ, és a CFA4 saját csomagtárolójából (F3 kiadási lánc)
+  terjesztünk. **Csak az adott funkcióhoz** veszi át a munkát; a sorrend: elkülönített
+  futtatókörnyezet (ha telepítve van és a funkció igényli) → rendszer GStreamer → saját Rust-motor.
+  Ugyanezt a fordítást az AppImage is beépítheti; a Flatpak a futtatókörnyezete saját, évente
+  frissülő GStreamerét használja.
+  - Csak a szükséges bővítmények kerülnek bele; **szabadalmilag korlátozott elemek és kodekek
+    nem** (az `ugly` és a `libav` kimarad, fent, 7. pont). Ezeket továbbra is az Ubuntu adja, az
+    Ubuntu-modell szerint (`cfa4-restricted-extras`, #57).
+  - LGPL: a bináris mellé a forrás is elérhető.
+  - **A biztonsági frissítések a CFA4 felelőssége:** az elkülönített futtatókörnyezetet a CFA4
+    minden kiadásával frissítjük (és biztonsági hiba esetén soron kívül).
+- **A rendszer GStreamerét soha nem cseréljük le:** nem készül ilyen tároló (az a GNOME-ot, a
+  lejátszókat, a böngészőket és a PipeWire-t is érintené), és harmadik féltől származó ilyen PPA-t
+  sem ajánlunk.
+
+Ez feloldja a korábbi ellentmondást: a #62 (ADR 0005) szerint „csak az Ubuntu GStreamere”, a #51
+szerint elkülönített futtatókörnyezet is lehet. Az egységes szabály: az Ubuntu GStreamere az alap és
+az alapértelmezés, az elkülönített futtatókörnyezet csak kiegészítés, ha egy funkció újabbat igényel.
+
 ## Viszony az ADR 0001-hez
 
 A natív VA-API és NVDEC dekóder a `crates/platform`-ban marad. A GStreamer nem helyettesíti őket,
@@ -79,7 +113,7 @@ NVIDIA GPU-n). Ha ugyanarra a feladatra mindkettő képes, mérés dönti el az 
 | 3 | Hardveres kódolás exporthoz AMD/Intel GPU-n (`vah264enc`, `vah265enc`, `vaav1enc`) a `VideoEncoder` mögött | tervezett |
 | 4 | Qt6-előnézet `qml6glsink`-kel, az ADR F8 5. lépéséhez igazítva | tervezett |
 | 5 | Felvétel: PipeWire (képernyő, hang) és V4L2 (kamera, rögzítőkártya) | tervezett |
-| 6 | Csomagolás: `.deb` függőségek, AppImage-be csomagolás, Flatpak-futtatókörnyezet. **Döntés (2026-10-24): a kiadott csomag GStreamer nélkül fordul**; a `gstreamer` funkció fejlesztői és kísérleti buildekre marad | tervezett |
+| 6 | Csomagolás: `.deb` függőségek, AppImage-be csomagolás, Flatpak-futtatókörnyezet. **Döntés (2026-10-25, a 2026-10-24-i „GStreamer nélkül” helyett): a kiadott csomag GStreamerrel fordul**, a GStreamer az Ubuntu archívumából függőségként települ (`Depends` az alapkönyvtárakra, `Recommends` a bővítményekre), nem ágyazzuk be ([ADR 0005](ADR-0005-media-backends.md)). Újabb GStreamer csak elkülönített futtatókörnyezetként: lásd fent, „GStreamer-verzió és frissítés” | tervezett |
 
 Minden lépés külön PR, tesztekkel, és csak akkor kerül be az alkalmazásba, ha a saját motor
 tartalékként megmarad.

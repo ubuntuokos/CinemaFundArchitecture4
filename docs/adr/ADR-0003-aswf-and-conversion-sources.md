@@ -75,10 +75,10 @@ A VISION.md táblázatában a HandBrake helyét két GPL-3.0 licencű program ve
   profilkezelővel. A logikája a Python/Qt6 rétegbe átemelhető, a wxPython-felületet Qt6-ban újra
   kell írni.
 
-A konvertálás **motorja** a saját Rust-motor, kiegészítve a GStreamerrel (ADR 0002): ez adja a
-gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n). Az FFmpeg csak akkor kerül a
-termékbe, ha a saját motor és a GStreamer együtt sem elég; akkor saját ADR kell hozzá, csak
-GPL-3-as builddel (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
+A konvertálás **motorja** a saját Rust-motor, kiegészítve az FFmpeggel (legalább 9.0.2) és a
+GStreamerrel; köztük az automatikus útválasztó választ ([ADR 0005](ADR-0005-media-backends.md)).
+Ezek adják a gyártófüggetlen hardveres kódolást (VA-API AMD- és Intel-GPU-n). Az FFmpeg csak
+GPL-3-as builddel használható (`--enable-gpl --enable-version3`, soha `--enable-nonfree`).
 
 Az Avidemux csak a licencének tisztázása után jöhet szóba: a tárolójának licencfájlja GPL v2-t ír,
 más források GPL-2.0-or-later-t.
@@ -155,7 +155,7 @@ Ami a licenctől függetlenül marad:
 - **Szabadalmak.** A H.264, a HEVC és az AAC szabadalmi kérdése független a szerzői jogi
   licenctől; az x264 és az x265 terjesztése előtt külön meg kell vizsgálni.
 - **Mérnöki szabályok.** Az AGENTS.md `unsafe`- és „pure Rust”-szabálya, valamint az, hogy az
-  ffmpeg nem linkelhető, továbbra is érvényes; minden beépítéshez az ADR-nek kell kivételt
+  ffmpeg csak az [ADR 0005](ADR-0005-media-backends.md) szerint linkelhető, továbbra is érvényes; minden beépítéshez az ADR-nek kell kivételt
   kérnie, az ADR 0001 feltételeivel.
 
 ## 7. Végrehajtási terv
@@ -169,7 +169,7 @@ ADR F8 megfelelő lépéséhez kötődnek. A becslések durva, ügynökórában 
 |---|---|---|---|
 | **A0** | A #40 (ADR 0002) és ez a PR összevonva; az ADR 0003 bekerül a `docs/audit/README.md` tartalomjegyzékébe | most | 1–2 óra |
 | **A1** | Tesztorákulumok: OpenTimelineIO oda-vissza teszt az `otio.rs`-hez; OpenAPV bitpontos összevetés a `crates/apv`-vel; OpenColorIO + ACES-config ΔE-mérés a `crates/color`-hoz. A termékbe nem kerülnek, hiányzó eszköznél kihagyódnak | most indítható, a Qt6-munkát nem akasztja | 10–20 óra |
-| **A2** | **ADR 0004: FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
+| **A2** | **Külön ADR (a következő szabad számmal, várhatóan 0006): FFI-kivétel elve** (az AGENTS.md §0.3 bővítése: további FFI-crate-ek az ADR 0001 feltételeivel), majd `crates/ocio`: OpenColorIO-színkezelés, ACES-config olvasása | az ADR F8 5. lépésénél (előnézet, GPU) | 40–80 óra |
 | **A3** | OpenImageIO + OpenEXR + LibRaw + libheif: PSD, HEIF/HEIC, JPEG 2000, kamera-RAW, a hiányzó EXR-tömörítések, többrészes és mély EXR (G10) | az ADR F8 3. lépése (médiaböngésző) után | 60–120 óra |
 | **A4** | OpenFX-host **külön folyamatban** (lásd 9. pont), első csomag a Natron openfx-misc (G11, G18) | az ADR F8 4. lépése (idővonal) után | 120–250 óra |
 | **A5** | Szoftveres kódolók: x265 (HEVC), x264 (H.264), LAME (MP3) (G13); előtte szabadalmi vizsgálat | az ADR F8 6. lépésénél (export) | 30–60 óra + jogi vizsgálat |
@@ -218,10 +218,12 @@ A PR összevonásával a tulajdonos ezeket hagyja jóvá:
 
 1. Az 1–6. pont döntései és jelöltjei, a 7. pont szakaszai és sorrendje.
 2. Az FFI-kivétel elve: további C/C++ könyvtár csak saját ADR-rel, az ADR 0001 feltételeivel
-   köthető be (az első ilyen az ADR 0004, az A2-ben). Az AGENTS.md szövege az ADR 0004-gyel
+   köthető be (az első ilyen az A2 FFI-elv ADR-je, a következő szabad számmal; a 0004 és a 0005 már foglalt:
+   útválasztó és médiahátterek). Az AGENTS.md szövege azzal az ADR-rel
    változik, nem ezzel a PR-ral.
 3. A bővítmény-hostok (OpenFX, LV2) külön folyamatban futnak.
-4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet; addig külső tesztorákulum marad.
+4. Az FFmpeg a termékbe csak saját ADR-rel kerülhet. **Teljesült:** [ADR 0005](ADR-0005-media-backends.md)
+   (kiegészítő háttér, legalább 9.0.2); a CI-orákulum külön marad.
 5. Az x264 és az x265 kiadása előtt szabadalmi, az NVENC kiadása előtt licencjogi vizsgálat kell.
 6. Az A1 (tesztorákulumok) az összevonás után azonnal indulhat.
 
