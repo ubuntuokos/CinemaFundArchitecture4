@@ -1756,3 +1756,49 @@
 	Drag In point	Kezdőpont húzása
 	Drag Out point	Végpont húzása
 	Move marked range	Jelölt tartomány mozgatása
+	Auto Tone Map Media (HDR and log into SDR)	Média automatikus tónusleképezése (HDR és log SDR-re)
+	CFA4 always composites in linear light	A CFA4 mindig lineáris fényben komponál
+	Captured View:	Rögzített nézet:
+	Channel Format:	Csatornaformátum:
+	Color Management	Színkezelés
+	Composite in Linear Color	Komponálás lineáris színben
+	Configure…	Beállítás…
+	Custom ({ratio})	Egyéni ({ratio})
+	Display Format:	Megjelenítési formátum:
+	Editing Mode:	Szerkesztési mód:
+	Fields:	Félképek:
+	Frame Size:	Képméret:
+	Height:	Magasság:
+	Layout:	Elrendezés:
+	Maximum Bit Depth	Maximális bitmélység
+	Maximum Render Quality	Maximális renderelési minőség
+	Milliseconds	Ezredmásodperc
+	Monoscopic	Monoszkopikus
+	New Sequence	Új szekvencia
+	No Fields (Progressive Scan)	Nincs félkép (progresszív)
+	Not supported in CFA4 yet	A CFA4 ezt még nem támogatja
+	Number of Channels:	Csatornák száma:
+	Pixel Aspect Ratio:	Képpont-méretarány:
+	Preview File Format:	Előnézeti fájlformátum:
+	Projection:	Vetítés:
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Sample Rate:	Mintavételi frekvencia:
+	Scale motion effects proportionally when changing frame size	Mozgáseffektusok arányos méretezése a képméret változásakor
+	Sequence Settings	Szekvenciabeállítások
+	Square Pixels (1.0)	Négyzetes képpontok (1.0)
+	Timebase:	Időalap:
+	Tracks	Sávok
+	VR Properties	VR-tulajdonságok
+	Video Previews	Videoelőnézetek
+	Wide gamut color (composite in BT.2020)	Széles színtartomány (komponálás BT.2020-ban)
+	Width:	Szélesség:
+	Working Color Space:	Munka-színtér:
+	horizontal	vízszintes
+	no sequence is open	nincs megnyitott szekvencia
+	tracks	sáv
+	vertical	függőleges
+	{rate} fps Drop-Frame Timecode	{rate} fps Drop-Frame időkód
+	{rate} fps Non Drop-Frame Timecode	{rate} fps Non Drop-Frame időkód
+	{rate} fps Timecode	{rate} fps időkód
+	{rate} frames/second	{rate} képkocka/másodperc

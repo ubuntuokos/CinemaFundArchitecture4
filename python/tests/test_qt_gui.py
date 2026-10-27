@@ -4559,6 +4559,175 @@ def test_real_engine_properties_caption_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+def test_sequence_settings_draft_as_egui():
+    """egui's sequence_settings tests: only changed settings are sent, drop-frame only for a rate
+    that has it, New Sequence's parameters, the aspect label; damaged settings read as defaults."""
+    from dataclasses import replace
+
+    from cfa4_qt.panels.sequence_settings import (
+        Draft,
+        aspect,
+        changes,
+        count_sequences,
+        display_width,
+        draft_from,
+        new_sequence_params,
+        rate_label,
+        supports_drop_frame,
+    )
+
+    assert aspect(1920, 1080) == "16:9" and aspect(1080, 1920) == "9:16" and aspect(1440, 1080) == "4:3"
+    assert aspect(4096, 2160) == "1.90:1" and aspect(0, 0) == "0:0"
+    assert aspect(display_width(1440, 1080, (4, 3)), 1080) == "16:9"
+    assert display_width(1440, 1080, (0, 0)) == 1440
+    assert rate_label(24_000, 1001) == "23.976" and rate_label(30_000, 1001) == "29.97" and rate_label(25, 2) == "12.5"
+    assert rate_label(0, 0) == "23.976"
+    assert supports_drop_frame(30_000, 1001) and supports_drop_frame(60_000, 1001) and not supports_drop_frame(24_000, 1001)
+    cur = Draft()
+    assert changes(Draft(), cur, "") == {}
+    d = replace(Draft(), width=1280, height=720, max_render_quality=True)
+    assert changes(d, cur, "") == {"width": 1280, "height": 720, "scaleMotion": True, "maxRenderQuality": True}
+    d = replace(Draft(), drop_frame=True)
+    assert changes(d, cur, "") == {}
+    d.fps = (30_000, 1001)
+    assert changes(d, cur, "") == {"fps": 30_000 / 1001, "dropFrame": True}
+    d = replace(Draft(), name="  Rough Cut  ")
+    assert changes(d, cur, "Sequence 01") == {"name": "Rough Cut"}
+    assert changes(d, cur, "Rough Cut") == {}
+    assert changes(replace(Draft(), name="   "), cur, "Sequence 01") == {}
+    p, rest = new_sequence_params(replace(Draft(), new_sequence=True, name=" Shorts ", width=1080, height=1920, video_tracks=2, audio_tracks=4))
+    assert p == {"name": "Shorts", "width": 1080, "height": 1920, "fps": 24_000 / 1001, "sampleRate": 48_000, "mix": "Stereo", "video": 2, "audio": 4}
+    assert rest == {}
+    p, rest = new_sequence_params(replace(Draft(), new_sequence=True, name=" ", fps=(30_000, 1001), drop_frame=True, max_render_quality=True, video_tracks=9999))
+    assert "name" not in p and p["video"] == 256
+    assert rest == {"dropFrame": True, "maxRenderQuality": True}
+    # sequence.inspect's settings (serde SequenceSettings)
+    d = draft_from(
+        {
+            "width": 1280,
+            "height": 720,
+            "frame_rate": {"num": 30_000, "den": 1001},
+            "par": [4, 3],
+            "sample_rate": 44_100,
+            "drop_frame": True,
+            "audio_master": "Surround51",
+            "max_render_quality": True,
+            "color": {"working": "Rec2100Pq", "wide_gamut": True, "auto_tone_map": False},
+        },
+        "Seq",
+    )
+    assert (d.name, d.width, d.height, d.fps, d.par, d.sample_rate, d.drop_frame, d.mix) == ("Seq", 1280, 720, (30_000, 1001), (4, 3), 44_100, True, "5.1")
+    assert d.max_render_quality and d.working_space == "rec2100-pq" and d.wide_gamut and not d.auto_tone_map
+    for bad in (None, 5, "x", {"width": -1, "height": 10**9, "frame_rate": {"num": 0, "den": "x"}, "par": [1], "color": 3, "drop_frame": "yes"}):
+        d = draft_from(bad)
+        assert (d.width, d.height, d.fps, d.par, d.drop_frame) == (1920, 1080, (24_000, 1001), (1, 1), False)
+    tree = {"children": [{"item": 1, "type": "Sequence"}, {"id": 2, "children": [{"item": 3, "type": "sequence"}, {"item": 4, "type": "Video"}, 7]}, None]}
+    assert count_sequences(tree) == 2 and count_sequences(None) == 0 and count_sequences({"children": 5}) == 0
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_sequence_settings_dialog_as_egui(app, tmp_path: Path):
+    """Sequence ▸ Sequence Settings… and File ▸ New ▸ Sequence… open egui's dialog: General /
+    Color Management / VR Properties (General / Tracks for New Sequence), unsupported settings
+    greyed, a new timebase picks its usual timecode, OK sends what changed."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.sequence_settings import SequenceSettingsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def closed(d):
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def w(dialog, name, kind=QtWidgets.QWidget):
+        return dialog.findChild(kind, f"sequenceSettings.{name}")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.invoke("sequence.settings")
+        assert wait_until(app, lambda: isinstance(win.last_dialog, SequenceSettingsDialog) and win.last_dialog.isVisible(), 10_000)
+        d = win.last_dialog
+        assert d.windowTitle() == "Sequence Settings"
+        assert set(d.tabs) == {"general", "color", "vr"}
+        assert w(d, "name", QtWidgets.QLineEdit).text() == win.sequence["name"]
+        for fixed in ("editingMode", "par", "fields", "channels", "audioDisplay", "previewFormat", "previewCodec", "previewWidth", "maxBitDepth", "linearColor"):
+            assert not w(d, fixed).isEnabled(), fixed
+        assert w(d, "linearColor", QtWidgets.QCheckBox).isChecked()
+        # 29.97: drop-frame timecode first, then non-drop-frame
+        tb = w(d, "timebase", QtWidgets.QComboBox)
+        i = next(i for i in range(tb.count()) if tb.itemData(i) == (30_000, 1001))
+        tb.activated.emit(i)
+        vd = w(d, "videoDisplay", QtWidgets.QComboBox)
+        assert vd.currentData() == "df" and "Drop-Frame" in vd.currentText()
+        vd.activated.emit(1)
+        assert d.d.drop_frame is False
+        w(d, "width", QtWidgets.QSpinBox).setValue(1280)
+        w(d, "height", QtWidgets.QSpinBox).setValue(720)
+        assert w(d, "aspect", QtWidgets.QLabel).text() == "16:9" and w(d, "previewWidth").text() == "1280"
+        w(d, "maxRenderQuality", QtWidgets.QCheckBox).setChecked(True)
+        d.set_tab("color")
+        ws = w(d, "workingSpace", QtWidgets.QComboBox)
+        ws.activated.emit(1)
+        w(d, "wideGamut", QtWidgets.QCheckBox).setChecked(True)
+        d.set_tab("vr")
+        assert not w(d, "vr.projection").isEnabled()
+        w(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        st = lambda: (win.sequence or {}).get("settings") or {}
+        assert wait_until(app, lambda: st().get("width") == 1280 and st().get("height") == 720, 10_000)
+        assert st()["frame_rate"] == {"num": 30_000, "den": 1001} and st()["drop_frame"] is False
+        assert st()["max_render_quality"] is True and st()["color"]["working"] == "Rec2100Pq" and st()["color"]["wide_gamut"] is True
+        # OK with nothing changed adds no undo step
+        revision = win.revision
+        win.invoke("sequence.settings")
+        assert wait_until(app, lambda: win.last_dialog is not d and isinstance(win.last_dialog, SequenceSettingsDialog), 10_000)
+        d = win.last_dialog
+        w(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert d.sent == []
+        wait_until(app, lambda: False, 300)
+        assert win.revision == revision
+        # File ▸ New ▸ Sequence…: General and Tracks
+        win.invoke("file.newSequence")
+        assert wait_until(app, lambda: win.last_dialog is not d and isinstance(win.last_dialog, SequenceSettingsDialog), 10_000)
+        d = win.last_dialog
+        assert d.windowTitle() == "New Sequence" and set(d.tabs) == {"general", "tracks"}
+        assert w(d, "name", QtWidgets.QLineEdit).text().startswith("Sequence ")
+        name = w(d, "name", QtWidgets.QLineEdit)
+        name.setText("Shorts")
+        name.textEdited.emit("Shorts")
+        w(d, "width", QtWidgets.QSpinBox).setValue(1080)
+        w(d, "height", QtWidgets.QSpinBox).setValue(1920)
+        assert w(d, "aspect", QtWidgets.QLabel).text() == "9:16"
+        d.set_tab("tracks")
+        w(d, "tracks.video", QtWidgets.QSpinBox).setValue(2)
+        w(d, "tracks.audio", QtWidgets.QSpinBox).setValue(4)
+        w(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: (win.sequence or {}).get("name") == "Shorts", 10_000)
+        assert wait_until(app, lambda: len(win.sequence.get("video") or []) == 2 and len(win.sequence.get("audio") or []) == 4, 10_000)
+        assert st()["width"] == 1080 and st()["height"] == 1920
+        # with parameters the command applies directly (agents, presets)
+        win.run_preset("sequence.settings", {"width": 640, "height": 360})
+        assert wait_until(app, lambda: st().get("width") == 640, 10_000)
+        # Escape cancels
+        win.invoke("sequence.settings")
+        assert wait_until(app, lambda: win.last_dialog is not d and isinstance(win.last_dialog, SequenceSettingsDialog), 10_000)
+        d = win.last_dialog
+        QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert d.sent == []
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_thumbnail_tiles_as_egui():
     """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
     continuous tiles on a grid from the head, only the visible ones; source_time_at follows the

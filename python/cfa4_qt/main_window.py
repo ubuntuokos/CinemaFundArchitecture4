@@ -7,6 +7,7 @@ from __future__ import annotations
 import math
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from itertools import pairwise
 from typing import Any
 
@@ -57,6 +58,9 @@ from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
 from .panels.scopes import ScopesPanel
+from .panels.sequence_settings import Draft as SeqDraft
+from .panels.sequence_settings import SequenceSettingsDialog, count_sequences
+from .panels.sequence_settings import draft_from as seq_draft_from
 from .panels.settings import MENU as SETTINGS_MENU
 from .panels.settings import PreferencesDialog
 from .panels.shortcuts import ShortcutsDialog
@@ -1049,6 +1053,37 @@ class MainWindow(QMainWindow):
         dialog.open()
         return dialog
 
+    def open_sequence_settings(self, new: bool = False) -> None:
+        """Sequence Settings… of the active sequence, or New Sequence (egui's
+        ``panels/sequence_settings.rs``)."""
+        if not new and self.sequence is None:
+            self._command_failed("sequence.settings", tr("no sequence is open"))
+            return
+
+        def run(cid: str, params: dict[str, Any], then: Any) -> None:
+            def failed(m: str) -> None:
+                self._command_failed(cid, m)
+                then(False)
+
+            self.engine.execute(cid, params, on_reply=lambda _r, _b: (self.schedule_refresh(), then(True)), on_error=failed)
+
+        def show(general: Any) -> None:
+            samples = not (isinstance(general, dict) and general.get("audioDisplay") == "Milliseconds")
+            if new:
+                n = count_sequences((self.project or {}).get("root")) + 1
+                draft = replace(SeqDraft(), new_sequence=True, name=f"Sequence {n:02}")
+                cur_name = ""
+            else:
+                seq = self.sequence or {}
+                cur_name = str(seq.get("name") or "")
+                draft = seq_draft_from(seq.get("settings"), cur_name)
+            dialog = SequenceSettingsDialog(self, draft, run, cur_name, samples)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.last_dialog = dialog
+            dialog.open()
+
+        self.engine.execute("file.projectSettings.general", {}, on_reply=lambda r, _b: show(r), on_error=lambda _m: show(None))
+
     def open_remix_properties(self) -> None:
         """Remix Properties… of the selected remixed clip (egui's: the menu entry opens the
         dialog; with parameters the command applies directly)."""
@@ -1480,6 +1515,9 @@ class MainWindow(QMainWindow):
             self.open_edit_cameras()
         elif cid in ("app.keyboardShortcuts", "help.shortcuts"):
             self.open_shortcuts()
+        elif cid in ("sequence.settings", "file.newSequence") and not params:
+            # egui's: from the menu the dialog; with parameters the engine command applies them
+            self.open_sequence_settings(new=cid == "file.newSequence")
         else:
             return False
         return True
