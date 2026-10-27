@@ -79,6 +79,26 @@ pub(crate) fn rational(num: i32, den: i32) -> Option<(i64, i64)> {
     (num > 0 && den > 0).then_some((i64::from(num), i64::from(den)))
 }
 
+/// The stream's frame rate: the average rate, unless it is not credible, then the base rate.
+/// FFmpeg reports raw DV with `avg_frame_rate` = 60000/1 (its time base inverted) and the real
+/// 25/1 only as `r_frame_rate`; trusting the average would make every frame one time-base unit
+/// long and land seeks on the neighbouring frame.
+pub(crate) fn stream_rate(s: &FfStream) -> Option<(i64, i64)> {
+    choose_rate(rational(s.avg_frame_rate.num, s.avg_frame_rate.den), rational(s.frame_rate.num, s.frame_rate.den))
+}
+
+/// [`stream_rate`] on plain numbers: above 1000 fps the average is not taken, nor when it is more
+/// than twice the base rate.
+pub(crate) fn choose_rate(avg: Option<(i64, i64)>, base: Option<(i64, i64)>) -> Option<(i64, i64)> {
+    let fps = |(n, d): (i64, i64)| n as f64 / d as f64;
+    match (avg, base) {
+        (Some(a), Some(b)) if fps(a) > 1000.0 || fps(a) > 2.0 * fps(b) => Some(b),
+        (Some(a), _) if fps(a) <= 1000.0 => Some(a),
+        (_, Some(b)) if fps(b) <= 1000.0 => Some(b),
+        _ => None,
+    }
+}
+
 pub(crate) fn discover(path: &Path) -> Result<MediaInfo, Error> {
     let (_reader, probed) = probe_file(path)?;
     let streams = probed
@@ -90,7 +110,7 @@ pub(crate) fn discover(path: &Path) -> Result<MediaInfo, Error> {
                     width: u32::try_from(s.width).unwrap_or(0),
                     height: u32::try_from(s.height).unwrap_or(0),
                     pixel_format: pixel_format_name(s),
-                    frame_rate: rational(s.avg_frame_rate.num, s.avg_frame_rate.den).or_else(|| rational(s.frame_rate.num, s.frame_rate.den)),
+                    frame_rate: stream_rate(s),
                 }
             } else if s.media_type == MediaType::AUDIO {
                 StreamKind::Audio { channels: u32::try_from(s.channel_layout.nb_channels).unwrap_or(0), sample_rate: u32::try_from(s.sample_rate).unwrap_or(0) }
@@ -103,4 +123,23 @@ pub(crate) fn discover(path: &Path) -> Result<MediaInfo, Error> {
         })
         .collect();
     Ok(MediaInfo { container: probed.container, duration: probed.duration, streams })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::choose_rate;
+
+    #[test]
+    fn an_incredible_average_frame_rate_falls_back_to_the_base_rate() {
+        // raw DV: FFmpeg's avg_frame_rate is its time base inverted (60000/1), r_frame_rate 25/1
+        assert_eq!(choose_rate(Some((60_000, 1)), Some((25, 1))), Some((25, 1)));
+        // more than twice the base rate is not taken either
+        assert_eq!(choose_rate(Some((120, 1)), Some((50, 1))), Some((50, 1)));
+        // a credible average wins: variable frame rate phones average below their base rate
+        assert_eq!(choose_rate(Some((30_000, 1001)), Some((30, 1))), Some((30_000, 1001)));
+        assert_eq!(choose_rate(Some((25, 1)), None), Some((25, 1)));
+        assert_eq!(choose_rate(None, Some((24, 1))), Some((24, 1)));
+        assert_eq!(choose_rate(Some((60_000, 1)), None), None);
+        assert_eq!(choose_rate(None, None), None);
+    }
 }

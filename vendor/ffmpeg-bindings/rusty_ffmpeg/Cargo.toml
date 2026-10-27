@@ -40,3 +40,9 @@ ffmpeg7_1 = ["ffmpeg7"]
 ffmpeg8 = ["ffmpeg7_1"]
 ffmpeg8_1 = ["ffmpeg8"]
 ffmpeg9 = ["ffmpeg8_1"]
+
+[lints.rust]
+unknown_lints = "allow"
+
+[lints.clippy]
+all = { level = "allow", priority = -1 }

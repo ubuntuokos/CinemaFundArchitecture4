@@ -123,9 +123,9 @@ fn chroma_size(w: usize, h: usize, chroma: Chroma) -> (usize, usize) {
 fn color_info(s: &FfStream, height: u32, full_range_format: bool) -> ColorInfo {
     let code = |v: u32| u8::try_from(v).unwrap_or(2);
     let sd = height <= 576;
-    let matrix = Matrix::from_code(code(s.color_space as u32)).unwrap_or(if sd { Matrix::Bt601 } else { Matrix::Bt709 });
-    let transfer = Transfer::from_code(code(s.color_transfer as u32)).unwrap_or(Transfer::Bt709);
-    let primaries = match code(s.color_primaries as u32) {
+    let matrix = Matrix::from_code(code(s.color_space)).unwrap_or(if sd { Matrix::Bt601 } else { Matrix::Bt709 });
+    let transfer = Transfer::from_code(code(s.color_transfer)).unwrap_or(Transfer::Bt709);
+    let primaries = match code(s.color_primaries) {
         1 => Primaries::Bt709,
         5 => Primaries::Bt601_625,
         6 | 7 => Primaries::Bt601_525,
@@ -136,7 +136,7 @@ fn color_info(s: &FfStream, height: u32, full_range_format: bool) -> ColorInfo {
         _ => Primaries::Bt709,
     };
     // AVCOL_RANGE_JPEG = 2 is full range; the yuvj* formats are full range by definition
-    let range = if s.color_range as u32 == 2 || full_range_format { Range::Full } else { Range::Limited };
+    let range = if s.color_range == 2 || full_range_format { Range::Full } else { Range::Limited };
     ColorInfo { matrix, transfer, primaries, range }
 }
 
@@ -194,7 +194,7 @@ impl FfSource {
             let native = backend::pixel_format_name(s);
             let (output, out_name) = output_for(&native);
             let pix_fmt = s.format.into_pixel().filter(|_| output != Output::Rgba).unwrap_or(PixelFormat::RGBA);
-            let rate = backend::rational(s.avg_frame_rate.num, s.avg_frame_rate.den).or_else(|| backend::rational(s.frame_rate.num, s.frame_rate.den));
+            let rate = backend::stream_rate(s);
             let frame_rate = rate.map(|(num, den)| FrameRate { num, den }).unwrap_or_default();
             let frame_ts =
                 rate.map_or(1, |(num, den)| i64::try_from(i128::from(den) * i128::from(tb.1) / (i128::from(num) * i128::from(tb.0))).unwrap_or(1).max(1));
@@ -338,14 +338,45 @@ impl VideoState {
             (None, Some((pp, _))) => target >= *pp && target <= pp.saturating_add(window),
             (None, None) => false,
         };
-        if let (Some((lp, f)), Some((pp, _))) = (&self.last, &self.pending) {
-            if target >= *lp && target < *pp {
-                return Ok(f.clone());
-            }
+        if let (Some((lp, f)), Some((pp, _))) = (&self.last, &self.pending)
+            && target >= *lp
+            && target < *pp
+        {
+            return Ok(f.clone());
         }
-        if !near {
+        // Some demuxers land after the target even when asked to seek backwards (FFmpeg's raw DV
+        // demuxer rounds up to the next frame): when the first frame after a seek is already past
+        // the target, seek again further back (1, 8, 64 frames, then the start) instead of showing
+        // the next frame.
+        let mut back = 0i64;
+        let mut seeked = !near;
+        if seeked {
             self.seek(target, meta)?;
         }
+        loop {
+            self.pull_until(target, meta)?;
+            let overshot = seeked && self.last.is_none() && self.pending.as_ref().is_some_and(|(ts, _)| *ts > target);
+            let from = target.saturating_sub(back);
+            if !overshot || from <= meta.origin {
+                break;
+            }
+            back = if back == 0 { meta.frame_ts } else { back.saturating_mul(8) };
+            self.seek(target.saturating_sub(back).max(meta.origin), meta)?;
+            seeked = true;
+        }
+        if let Some((_, f)) = &self.last {
+            return Ok(f.clone());
+        }
+        // a target before the first frame shows the first frame
+        if let Some((_, f)) = &self.pending {
+            return Ok(f.clone());
+        }
+        Err(MediaError::Decode("FFmpeg decoded no video frame".into()))
+    }
+
+    /// Decodes forward until the frame after `target`: `last` is the newest frame at or before
+    /// it, `pending` the first one after it.
+    fn pull_until(&mut self, target: i64, meta: &VideoMeta) -> cfa4_media::Result<()> {
         for _ in 0..MAX_VIDEO_PULLS {
             let next = match self.pending.take() {
                 Some(p) => Some(p),
@@ -363,14 +394,7 @@ impl VideoState {
                 break;
             }
         }
-        if let Some((_, f)) = &self.last {
-            return Ok(f.clone());
-        }
-        // a target before the first frame shows the first frame
-        if let Some((_, f)) = &self.pending {
-            return Ok(f.clone());
-        }
-        Err(MediaError::Decode("FFmpeg decoded no video frame".into()))
+        Ok(())
     }
 
     fn seek(&mut self, target: i64, _meta: &VideoMeta) -> cfa4_media::Result<()> {

@@ -88,6 +88,10 @@ def manifest(name: str, original: dict) -> str:
                 lines += [f"{d} = {toml_value(s)}" for d, s in spec[table].items()]
     if original.get("features"):
         lines += ["", "[features]"] + [f"{k} = {toml_value(v)}" for k, v in original["features"].items()]
+    # Third-party code is not linted by CFA4's gates (`clippy -D warnings` reaches path dependencies):
+    # its own lint attributes and style stay as upstream wrote them.
+    lines += ["", "[lints.rust]", 'unknown_lints = "allow"', "",
+              "[lints.clippy]", 'all = { level = "allow", priority = -1 }']
     return "\n".join(lines) + "\n"
 
 

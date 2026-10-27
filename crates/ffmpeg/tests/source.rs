@@ -75,12 +75,17 @@ fn fixture(name: &str, size: &str, args: &[&str]) -> Option<PathBuf> {
 }
 
 /// The oracle's decoding of frame `n` as raw planar bytes in `pix_fmt`.
+/// The frame FFmpeg shows at frame position `n` of the timeline: its `fps` filter repeats a frame
+/// where the file leaves a gap (an AVI "repeat the previous frame" chunk) and drops extras, so the
+/// oracle is placed by time like the engine, not by the count of decoded frames. `start_time=0`
+/// counts from the start of the file, as the engine does, so a video stream that starts after
+/// its audio (ASF / WMV preroll) keeps its offset.
 fn oracle_frame(path: &Path, n: i64, pix_fmt: &str) -> Vec<u8> {
     let ff = cfa4_testkit::oracle::ffmpeg().unwrap_or_else(|| panic!("ffmpeg vanished"));
     let out = Command::new(ff)
         .args(["-hide_banner", "-loglevel", "error", "-i"])
         .arg(path)
-        .args(["-map", "0:v:0", "-vf", &format!("select=eq(n\\,{n})"), "-frames:v", "1", "-pix_fmt", pix_fmt, "-f", "rawvideo", "-"])
+        .args(["-map", "0:v:0", "-vf", &format!("fps={FPS}:start_time=0,select=eq(n\\,{n})"), "-frames:v", "1", "-pix_fmt", pix_fmt, "-f", "rawvideo", "-"])
         .output()
         .unwrap_or_else(|e| panic!("ffmpeg: {e}"));
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));

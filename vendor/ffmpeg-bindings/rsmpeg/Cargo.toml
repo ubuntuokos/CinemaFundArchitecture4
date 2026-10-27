@@ -29,3 +29,9 @@ ffmpeg8_1 = ["ffmpeg8", "rusty_ffmpeg/ffmpeg8_1"]
 ffmpeg9 = ["ffmpeg8_1", "rusty_ffmpeg/ffmpeg9"]
 link_system_ffmpeg = ["rusty_ffmpeg/link_system_ffmpeg"]
 link_vcpkg_ffmpeg = ["rusty_ffmpeg/link_vcpkg_ffmpeg"]
+
+[lints.rust]
+unknown_lints = "allow"
+
+[lints.clippy]
+all = { level = "allow", priority = -1 }
