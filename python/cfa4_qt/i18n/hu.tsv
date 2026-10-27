@@ -1966,3 +1966,16 @@
 	Off (target bitrate)	Ki (cél-bitráta)
 	Program Stream (.mpg, LPCM audio)	Program stream (.mpg, LPCM hang)
 	Transport Stream (.ts, AAC audio)	Transport stream (.ts, AAC hang)
+# menu long tail, frontend side (4.8)
+	 (unavailable)	 (nem érhető el)
+	Avid Log Exchange	Avid Log Exchange
+	Containers	Konténerek
+	Decoders	Dekóderek
+	Dynamic Audio Waveforms	Dinamikus hanghullámformák
+	Export formats	Exportformátumok
+	Reveal Log Files…	Naplófájlok megjelenítése…
+	Session log: {path}	Munkamenet-napló: {path}
+	System Compatibility Report	Rendszerkompatibilitási jelentés
+	System Compatibility Report…	Rendszerkompatibilitási jelentés…
+	not available now	most nem érhető el
+	{name} Selection.fcproj	{name} kijelölés.fcproj

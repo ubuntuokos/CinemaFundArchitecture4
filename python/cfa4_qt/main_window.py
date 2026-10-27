@@ -9,15 +9,17 @@ import time
 from collections.abc import Callable
 from dataclasses import replace
 from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QKeyEvent, QKeySequence
+from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QSettings, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QDesktopServices, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
     QApplication,
     QDialog,
     QDockWidget,
+    QFileDialog,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -36,7 +38,7 @@ from .branding import logo_pixmap
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient, EngineError
-from .i18n import LANGUAGES, N_, TR, tr
+from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
 from .panels.clip_dialogs import ClipDialog
@@ -773,6 +775,21 @@ class MainWindow(QMainWindow):
             a.setObjectName(cid)
             a.triggered.connect(lambda _c=False, c=cid: self.invoke(c))
             self.multicam_actions.append((a, key))
+        # egui's menu long tail UI commands (menus.rs): View ▸ Dynamic Audio Waveforms (on by
+        # default), Help ▸ Reveal Log Files…, System Compatibility Report…
+        self.dynamic_waveforms_action = QAction(tr("Dynamic Audio Waveforms"), self)
+        self.dynamic_waveforms_action.setObjectName("view.dynamicAudioWaveforms")
+        self.dynamic_waveforms_action.setCheckable(True)
+        self.dynamic_waveforms_action.setChecked(True)
+        self.dynamic_waveforms_action.toggled.connect(self._set_dynamic_waveforms)
+        self.help_actions: list[QAction] = []
+        for cid, label in (("help.revealLogFiles", N_("Reveal Log Files…")), ("help.systemCompatibilityReport", N_("System Compatibility Report…"))):
+            a = QAction(tr(label), self)
+            a.setObjectName(cid)
+            a.triggered.connect(lambda _c=False, c=cid: self.invoke(c))
+            self.help_actions.append(a)
+        self.opened: list[str] = []  # paths handed to the file manager (egui's extras.opened)
+        self.open_path_hook: Callable[[str, bool], None] | None = None  # tests: instead of the OS
         self.shortcuts_action = QAction(tr("Keyboard Shortcuts…"), self)
         self.shortcuts_action.setObjectName("app.keyboardShortcuts")
         self.shortcuts_action.triggered.connect(lambda _c=False: self.open_shortcuts())
@@ -811,6 +828,9 @@ class MainWindow(QMainWindow):
             ("multicam.recordToggle", N_("Multi-Camera Record On/Off Toggle"), [], "0"),
             ("multicam.editCamerasDialog", N_("Edit Cameras…"), [], ""),
             ("app.keyboardShortcuts", N_("Keyboard Shortcuts…"), ["Edit"], "Cmd+Alt+K"),
+            ("view.dynamicAudioWaveforms", N_("Dynamic Audio Waveforms"), ["View"], ""),
+            ("help.revealLogFiles", N_("Reveal Log Files…"), ["Help"], ""),
+            ("help.systemCompatibilityReport", N_("System Compatibility Report…"), ["Help"], ""),
             *((cid, dock_commands.LABELS[cid], [], "") for cid in dock_commands.COMMANDS),
             *((cid, label, ["View"], "") for cid, label in GUIDE_COMMANDS.items()),
             ("view.compare.setReference", N_("Set Comparison Reference"), [], ""),
@@ -834,6 +854,8 @@ class MainWindow(QMainWindow):
             (self.shortcuts_action, "app.keyboardShortcuts", "Cmd+Alt+K"),
             *((a, f"playback.{a.objectName().rsplit('.', 1)[-1]}", k) for a, k in self.shuttle_actions),
             *((a, a.objectName(), k) for a, k in self.multicam_actions),
+            (self.dynamic_waveforms_action, "view.dynamicAudioWaveforms", ""),
+            *((a, a.objectName(), "") for a in self.help_actions),
         ]
 
     def _bind_local_shortcuts(self, bound_keys: set[str]) -> list[QAction]:
@@ -851,8 +873,8 @@ class MainWindow(QMainWindow):
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
                 "Edit": [self.shortcuts_action],
-                "View": [self.fit_action, self.multicam_actions[0][0]],
-                "Help": [self.about_action],
+                "View": [self.fit_action, self.multicam_actions[0][0], self.dynamic_waveforms_action],
+                "Help": [*self.help_actions, self.about_action],
             },
             self.local_panel_keys,
             self.local_keys or {},
@@ -1099,6 +1121,96 @@ class MainWindow(QMainWindow):
 
         query = {"command": cid, "timeline": self.inspector_source == "timeline", "searchText": self.project_panel.filter.text()}
         self.engine.execute("dialog.defaults", query, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
+    # ----- the frontend side of the menu long tail (egui's menu_dialogs::route) -----
+    def _set_dynamic_waveforms(self, on: bool) -> None:
+        self.timeline.canvas.dynamic_waveforms = on
+        self.timeline.canvas.update()
+
+    def open_path(self, path: str, reveal: bool = False) -> None:
+        """Hand a file to the OS: open it, or (``reveal``) show its folder in the file manager."""
+        self.opened = [*self.opened, path][-50:]
+        if self.open_path_hook is not None:
+            self.open_path_hook(path, reveal)
+            return
+        target = str(Path(path).parent) if reveal else path
+        QDesktopServices.openUrl(QUrl.fromLocalFile(target))
+
+    def open_system_report(self) -> None:
+        def got(report: Any, _b: bytes | None) -> None:
+            state = {"command": "help.systemCompatibilityReport", "params": {}, "info": report if isinstance(report, dict) else {}}
+            self._show_menu_dialog(state)
+
+        self.engine.execute("help.systemReport", {}, on_reply=got, on_error=lambda m: self._command_failed("help.systemCompatibilityReport", m))
+
+    def reveal_log_files(self) -> None:
+        """This session's log (system report and command journal) written by the engine, then
+        shown in the file manager."""
+
+        def got(r: Any, _b: bytes | None) -> None:
+            path = r.get("path") if isinstance(r, dict) else None
+            if isinstance(path, str) and path:
+                self.open_path(path, reveal=True)
+                self.statusBar().showMessage(fmt("Session log: {path}", path=path), 6000)
+
+        self.engine.execute("help.writeSessionLog", {}, on_reply=got, on_error=lambda m: self._command_failed("help.revealLogFiles", m))
+
+    def open_originals(self, cid: str, params: dict[str, Any]) -> None:
+        """Edit Original opens the media files, Reveal in Finder shows them in the file manager."""
+
+        def got(r: Any, _b: bytes | None) -> None:
+            paths = r.get("paths") if isinstance(r, dict) else None
+            for p in paths if isinstance(paths, list) else []:
+                if isinstance(p, str) and p:
+                    self.open_path(p, reveal=cid == "file.reveal")
+
+        self.engine.execute(cid, params, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
+    def generate_waveforms(self, params: dict[str, Any]) -> None:
+        """Generate Audio Waveform: the engine re-reads the peaks; the Timeline forgets its own."""
+
+        def got(r: Any, _b: bytes | None) -> None:
+            items = r.get("items") if isinstance(r, dict) else None
+            ids = {i for i in items if isinstance(i, int) and not isinstance(i, bool)} if isinstance(items, list) else set()
+            if ids:
+                self.timeline.canvas.media.forget_peaks(ids)
+            self.schedule_refresh()
+
+        self.engine.execute("clip.generateAudioWaveform", params, on_reply=got, on_error=lambda m: self._command_failed("clip.generateAudioWaveform", m))
+
+    def pick_and_run(self, cid: str, params: dict[str, Any]) -> None:
+        """Export Selection as Project / Avid Log Exchange ask where to save; Get Media File
+        Properties for ▸ File… asks for the file and shows its Properties."""
+        if cid == "file.mediaPropertiesFile":
+            path, _f = QFileDialog.getOpenFileName(self, tr("Media"), "", tr("All files") + " (*)")
+        else:
+            cmd = self.registry.commands.get(cid)
+            if cmd is not None and not cmd.enabled:
+                self._command_failed(cid, tr("not available now"))
+                return
+            name = str((self.project or {}).get("name") or tr("Untitled"))
+            if cid == "file.exportAle":
+                start, filt, ext = f"{name}.ale", tr("Avid Log Exchange") + " (*.ale)", ".ale"
+            else:
+                start, filt, ext = fmt("{name} Selection.fcproj", name=name), "CFA4 Project (*.fcproj)", ".fcproj"
+            path, _f = QFileDialog.getSaveFileName(self, tr(cmd.label if cmd is not None else cid), start, filt)
+            if path and not path.endswith(ext):
+                path += ext
+        if not path:
+            return
+
+        def got(r: Any, _b: bytes | None) -> None:
+            self.schedule_refresh()
+            if cid == "file.mediaPropertiesFile":
+                self._show_menu_dialog({"command": "file.mediaProperties", "params": {}, "info": [r]})
+
+        self.engine.execute(cid, {**params, "path": path}, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
+    def _show_menu_dialog(self, state: dict[str, Any]) -> None:
+        dialog = MenuDialog(self, state, lambda _c, _p, then: then(None, None))
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = dialog
+        dialog.open()
 
     def open_sequence_settings(self, new: bool = False) -> None:
         """Sequence Settings… of the active sequence, or New Sequence (egui's
@@ -1567,6 +1679,19 @@ class MainWindow(QMainWindow):
             self.open_clip_dialog(cid)
         elif cid in MENU_COMMANDS and not params:
             self.open_menu_dialog(cid)
+        elif cid == "view.dynamicAudioWaveforms":
+            on = (params or {}).get("on")
+            self.dynamic_waveforms_action.setChecked(on if isinstance(on, bool) else not self.dynamic_waveforms_action.isChecked())
+        elif cid == "help.systemCompatibilityReport":
+            self.open_system_report()
+        elif cid == "help.revealLogFiles":
+            self.reveal_log_files()
+        elif cid in ("edit.editOriginal", "file.reveal"):
+            self.open_originals(cid, dict(params or {}))
+        elif cid == "clip.generateAudioWaveform":
+            self.generate_waveforms(dict(params or {}))
+        elif cid in ("file.exportSelectionProject", "file.exportAle", "file.mediaPropertiesFile") and not (params or {}).get("path"):
+            self.pick_and_run(cid, dict(params or {}))
         elif cid in ("sequence.settings", "file.newSequence") and not params:
             # egui's: from the menu the dialog; with parameters the engine command applies them
             self.open_sequence_settings(new=cid == "file.newSequence")
@@ -1716,6 +1841,10 @@ class MainWindow(QMainWindow):
             return
         if cmd.id in ("file.exportMedia", "export.queue.add"):
             self.open_export()
+            return
+        if self.ui_command(cmd.id):
+            # a menu item or key whose dialog or file manager is the frontend's (clip and menu
+            # dialogs, Sequence Settings…, Reveal in Finder…), as from ``invoke``
             return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]

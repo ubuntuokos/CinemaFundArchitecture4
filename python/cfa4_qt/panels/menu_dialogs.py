@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -64,10 +65,12 @@ MENU_DIALOGS: dict[str, tuple[str, str, str]] = {
     "markers.addFlashCue": (N_("Flash Cue Marker"), "flashCue", N_("OK")),
     "file.newColorMatte": (N_("New Color Matte"), "colorMatte", N_("OK")),
     "project.matteColor": (N_("Color Matte Color"), "matteColor", N_("OK")),
+    "help.systemCompatibilityReport": (N_("System Compatibility Report"), "systemReport", N_("Close")),
 }
 # the menu items that open one of them (the Project Settings items share one)
-MENU_COMMANDS = [*(c for c in MENU_DIALOGS if c != "project.settings"), "file.projectSettings.general", "file.projectSettings.scratchDisks", "project.ingestSettings"]
-INFO_ONLY = {"file.mediaProperties", "clip.sourceSettings"}
+# (the System Compatibility Report is the frontend's: MainWindow opens it from ``help.systemReport``)
+MENU_COMMANDS = [*(c for c in MENU_DIALOGS if c not in ("project.settings", "help.systemCompatibilityReport")), "file.projectSettings.general", "file.projectSettings.scratchDisks", "project.ingestSettings"]
+INFO_ONLY = {"file.mediaProperties", "clip.sourceSettings", "help.systemCompatibilityReport"}
 LANGUAGES = ["auto", "en", "es", "fr", "de", "it", "pt", "ja", "ko", "zh", "nl", "ru"]
 INGEST_ACTIONS = [("copy", N_("Copy")), ("transcode", N_("Transcode")), ("createProxies", N_("Create Proxies")), ("copyAndCreateProxies", N_("Copy and Create Proxies"))]
 SCRATCH = [
@@ -143,6 +146,7 @@ class MenuDialog(ClipDialog):
             "markers.addFlashCue": self._flash_cue,
             "file.newColorMatte": self._color_matte,
             "project.matteColor": lambda: self.color("color", N_("Color:")),
+            "help.systemCompatibilityReport": self._system_report,
         }
 
     # ----- helpers -----
@@ -441,6 +445,29 @@ class MenuDialog(ClipDialog):
             a = v.get("audio")
             if isinstance(a, dict):
                 line(N_("Audio"), fmt("{codec} · {rate} Hz · {n} channel(s)", codec=_str(a.get("codec")), rate=_str(a.get("sampleRate")), n=_str(a.get("channels"))))
+
+    def _system_report(self) -> None:
+        r = self.info
+        title = self._label(_str(r.get("app")))
+        font = title.font()
+        font.setBold(True)
+        title.setFont(font)
+        for c in r.get("checks") if isinstance(r.get("checks"), list) else []:
+            if isinstance(c, dict):
+                mark = "✔" if c.get("ok") is True else "⚠"
+                self._label(f"{mark} {tr(_str(c.get('name')))}: {_str(c.get('detail'))}").setObjectName(f"systemReport.check.{_str(c.get('name'))}")
+        line = QFrame(self)
+        line.setFrameShape(QFrame.Shape.HLine)
+        self.body_lay.addWidget(line)
+
+        def entry(x: Any) -> str:
+            if isinstance(x, dict):
+                return _str(x.get("format")) + (tr(" (unavailable)") if x.get("available") is False else "")
+            return _str(x)
+
+        for key, label in (("decoders", N_("Decoders")), ("containers", N_("Containers")), ("exportFormats", N_("Export formats"))):
+            items = r.get(key) if isinstance(r.get(key), list) else []
+            self._label(f"{tr(label)}: {', '.join(entry(x) for x in items)}").setObjectName(f"systemReport.{key}")
 
     def _edit_offline(self) -> None:
         for key, label in (

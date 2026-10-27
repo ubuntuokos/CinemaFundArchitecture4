@@ -5219,8 +5219,8 @@ def test_real_engine_menu_dialogs_as_egui(app, tmp_path: Path):
         child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
         assert wait_until(app, lambda: closed(d), 10_000)
         assert query("dialog.defaults", {"command": "file.projectSettings.general"})["params"]["titleSafe"][0] == 17.0
-        # Simplify Sequence…: a new sequence named as the dialog says
-        win.invoke("sequence.simplify")
+        # Simplify Sequence…: a new sequence named as the dialog says (from the menu bar's action)
+        win.registry.actions["sequence.simplify"].trigger()
         assert opened("simplify", d)
         d = win.last_dialog
         new_name = child(d, "simplify.name", QtWidgets.QLineEdit).text()
@@ -5240,6 +5240,110 @@ def test_real_engine_menu_dialogs_as_egui(app, tmp_path: Path):
         win.run_preset("sequence.normalizeMixTrack", {"db": -3.0})
         wait_until(app, lambda: False, 200)
         assert win.last_dialog is last
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_menu_frontend_items_as_egui(app, tmp_path: Path, monkeypatch):
+    """The frontend side of egui's menu long tail: View ▸ Dynamic Audio Waveforms toggles the
+    Timeline's scale, Help ▸ System Compatibility Report… shows the engine's report, Reveal Log
+    Files… writes the session log and shows it, Edit Original / Reveal in Finder hand the media
+    file to the OS, Get Media File Properties for ▸ File… shows the picked file, Export Selection
+    as Project / Avid Log Exchange ask where to save; Clip ▸ Speed/Duration… from the menu bar opens
+    its dialog."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.clip_dialogs import ClipDialog
+    from cfa4_qt.panels.menu_dialogs import MenuDialog
+    from cfa4_qt.panels.timeline import waveform_level
+
+    assert waveform_level(1.0) == 1.0 and waveform_level(0.0) == 0.0 and waveform_level(-1.0) == 0.0
+    assert abs(waveform_level(10 ** (-24 / 20)) - 0.5) < 1e-9 and waveform_level(float("nan")) == 0.0
+    music = tmp_path / "music.wav"
+    _test_music(music, bars=2)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])  # as the app: the data dir holds Logs
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    opened: list[tuple[str, bool]] = []
+    win.open_path_hook = lambda path, reveal: opened.append((path, reveal))
+
+    def dialog(name, before):
+        return wait_until(app, lambda: win.last_dialog is not before and win.last_dialog is not None and win.last_dialog.objectName() == name, 10_000)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        # Dynamic Audio Waveforms: on by default, the menu item and the command toggle it
+        a = win.dynamic_waveforms_action
+        assert a.isChecked() and win.timeline.canvas.dynamic_waveforms
+        a.trigger()
+        assert not win.timeline.canvas.dynamic_waveforms
+        win.invoke("view.dynamicAudioWaveforms")
+        assert a.isChecked() and win.timeline.canvas.dynamic_waveforms
+        win.run_preset("view.dynamicAudioWaveforms", {"on": False})
+        assert not a.isChecked()
+        # System Compatibility Report… from the Help menu
+        next(x for x in win.help_actions if x.objectName() == "help.systemCompatibilityReport").trigger()
+        assert dialog("systemReport", None)
+        d = win.last_dialog
+        assert isinstance(d, MenuDialog) and d.windowTitle() == "System Compatibility Report"
+        assert d.findChild(QtWidgets.QLabel, "systemReport.check.CPU") is not None
+        assert "H.264" in d.findChild(QtWidgets.QLabel, "systemReport.decoders").text()
+        d.findChild(QtWidgets.QPushButton, "systemReport.ok").click()
+        # Reveal Log Files…: the session log, shown in the file manager
+        win.invoke("help.revealLogFiles")
+        assert wait_until(app, lambda: bool(opened), 10_000)
+        log, reveal = opened[-1]
+        assert reveal and Path(log).is_file() and Path(log).parent == tmp_path / "data" / "Logs"
+        assert json.loads(Path(log).read_text().splitlines()[0])["app"].startswith("CFA4")
+        # Edit Original / Reveal in Finder of an imported file
+        win.execute("file.import", {"paths": [str(music)]})
+        assert wait_until(app, lambda: any(i.get("name") == "music.wav" for i in _items(win.project)), 20_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        win.execute("project.select", {"items": [item]})
+        wait_until(app, lambda: False, 300)
+        win.invoke("edit.editOriginal")
+        assert wait_until(app, lambda: opened[-1] == (str(music), False), 10_000), opened
+        win.run_preset("file.reveal", {"items": [item]})
+        assert wait_until(app, lambda: opened[-1] == (str(music), True), 10_000), opened
+        # Generate Audio Waveform forgets the item's cached peaks
+        media = win.timeline.canvas.media
+        media.peaks[(item, 0, 1, 1, 1, 0)] = [(0.0, 0.0)]
+        win.run_preset("clip.generateAudioWaveform", {"items": [item]})
+        assert wait_until(app, lambda: (item, 0, 1, 1, 1, 0) not in media.peaks, 10_000)
+        # Get Media File Properties for ▸ File…: the picked file's Properties
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", lambda *_a, **_k: (str(music), ""))
+        last = win.last_dialog
+        win.invoke("file.mediaPropertiesFile")
+        assert dialog("properties", last)
+        d = win.last_dialog
+        assert "music.wav" in [w.text() for w in d.findChildren(QtWidgets.QLabel)]
+        d.findChild(QtWidgets.QPushButton, "properties.ok").click()
+        # Avid Log Exchange…: the save dialog starts at the project's name, .ale is added
+        asked: list[str] = []
+
+        def save(_parent, _title, start, _filter):
+            asked.append(start)
+            return (str(tmp_path / "log"), "")
+
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", save)
+        win.invoke("file.exportAle")
+        assert wait_until(app, lambda: (tmp_path / "log.ale").is_file(), 10_000)
+        assert asked[-1].endswith(".ale")
+        # Clip ▸ Speed/Duration… from the menu bar opens egui's dialog, not a parameter form
+        clip = win.sequence["video"][0]["items"][0]["clip"]
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: clip in (win.sequence.get("selection") or []), 10_000)
+        last = win.last_dialog
+        speed = win.registry.actions["clip.speedDuration"]
+        assert wait_until(app, lambda: speed.isEnabled(), 10_000), win.events.text.toPlainText()[-500:]
+        speed.trigger()
+        assert wait_until(app, lambda: isinstance(win.last_dialog, ClipDialog) and win.last_dialog is not last and win.last_dialog.objectName() == "speedDuration", 10_000)
+        QtTest.QTest.keyClick(win.last_dialog, QtCore.Qt.Key.Key_Escape)
     finally:
         win._quit_confirmed = True
         win.close()

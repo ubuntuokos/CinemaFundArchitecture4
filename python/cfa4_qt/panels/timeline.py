@@ -76,6 +76,14 @@ KEY_MIN_H, KEY_MAX_H = 24, 240  # Increase / Decrease … Tracks Height (keyboar
 HEIGHT_STEP = 12
 EXPANDED_H = 120  # Expand All Tracks
 LABEL_H = 14  # the clip name strip above a thumbnail or waveform
+
+
+def waveform_level(amplitude: float) -> float:
+    """egui's Dynamic Audio Waveforms scale: −48 dB → 0, 0 dB → 1 (nothing for silence)."""
+    a = amplitude if math.isfinite(amplitude) else 0.0
+    if a <= 0.0:
+        return 0.0
+    return max(0.0, min(1.0, (20.0 * math.log10(max(a, 1e-5)) + 48.0) / 48.0))
 EDGE_PX = 6
 CAPTION_ROW_H = 28  # egui's timeline_captions::ROW_H
 CAPTION_DIVIDER_H = 5  # between the caption rows and the video tracks (egui's DIVIDER_H)
@@ -397,6 +405,9 @@ class TimelineCanvas(QWidget):
         self.show_thumbnails = True
         self.thumbnail_mode = "head"
         self.show_waveforms = True
+        # View ▸ Dynamic Audio Waveforms (egui's, on by default): a logarithmic scale, −48 dB at the
+        # centre line and 0 dB at the edge; off: linear amplitude
+        self.dynamic_waveforms = True
         self.track_lanes: dict[int, str] = {}  # audio track id → the automation lane it shows
         self.playhead = 0
         self.tool = "selection"
@@ -1289,6 +1300,8 @@ class TimelineCanvas(QWidget):
             i1 = min(n, max(i0 + 1, int(fb * n)))
             lo = min(q[0] for q in peaks[i0:i1])
             hi = max(q[1] for q in peaks[i0:i1])
+            if self.dynamic_waveforms:
+                hi, lo = waveform_level(hi), -waveform_level(-lo)
             p.drawLine(x, int(mid - max(0.0, min(1.0, hi)) * half), x, int(mid - max(-1.0, min(0.0, lo)) * half))
 
     # ----- the Volume line on audio clips (egui's timeline_volume.rs) -----
