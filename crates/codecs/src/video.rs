@@ -302,23 +302,34 @@ impl H264Decoder {
         Self { avcc: Vec::new(), dec: cfa4_h264::Decoder::with_threads(threads), length_size: 0, draft: false, threads }
     }
     fn convert(p: cfa4_h264::Picture) -> DecodedFrame {
+        use cfa4_h264::Plane;
         use std::sync::Arc;
         let draft = p.draft;
         let (w, h) = (p.width as usize, p.height as usize);
         let (cw, ch) = (p.chroma_width as usize, p.chroma_height as usize);
-        let y = tight_plane(p.y, p.y_stride, w, h);
-        let u = tight_plane(p.u, p.uv_stride, cw, ch);
-        let v = tight_plane(p.v, p.uv_stride, cw, ch);
+        let (ys, uvs) = (p.y_stride, p.uv_stride);
+        let wide = |pl: Plane| -> Vec<u16> {
+            match pl {
+                Plane::U16(v) => v,
+                Plane::U8(v) => v.into_iter().map(u16::from).collect(),
+            }
+        };
+        let data = match (p.y, p.u, p.v) {
+            (Plane::U8(y), Plane::U8(u), Plane::U8(v)) => cfa4_frame::PixelData::Yuv8 {
+                planes: [Arc::new(tight_plane(y, ys, w, h)), Arc::new(tight_plane(u, uvs, cw, ch)), Arc::new(tight_plane(v, uvs, cw, ch))],
+                chroma: cfa4_frame::Chroma::C420,
+                alpha: None,
+            },
+            (y, u, v) => cfa4_frame::PixelData::Yuv16 {
+                planes: [Arc::new(tight_plane(wide(y), ys, w, h)), Arc::new(tight_plane(wide(u), uvs, cw, ch)), Arc::new(tight_plane(wide(v), uvs, cw, ch))],
+                chroma: cfa4_frame::Chroma::C420,
+                bits: p.bit_depth as u32,
+                alpha: None,
+            },
+        };
         let color = vui_color(p.width, p.height, p.color.primaries, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
-        let frame = VideoFrame {
-            width: p.width,
-            height: p.height,
-            data: cfa4_frame::PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: cfa4_frame::Chroma::C420, alpha: None },
-            color,
-            par,
-            pts: cfa4_time::Tick::ZERO,
-        };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO };
         DecodedFrame { pts: p.pts, frame, draft }
     }
 }
