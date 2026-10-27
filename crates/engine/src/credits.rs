@@ -104,10 +104,30 @@ impl Measure for EngineMeasure {
             .and_then(|_| std::fs::read(&path).ok())
             .and_then(|b| cfa4_media::still::decode_raster(file, &b).ok())
             .filter(|r| r.width > 0 && r.height > 0)
-            .map(|r| (f64::from(r.width), f64::from(r.height)));
+            .map(|r| (f64::from(r.width), f64::from(r.height)))
+            .or_else(|| video_size(&path));
         cache.push((path, sz));
         sz
     }
+}
+
+/// Extensions read as video in the credits (`{{Video …}}`).
+const VIDEO_EXT: [&str; 10] = ["mp4", "mov", "m4v", "mkv", "webm", "mxf", "avi", "mpg", "mpeg", "ts"];
+
+/// A video's frame size: read from the file when it is small enough to open here, else (a long
+/// video) assumed 16:9.
+fn video_size(path: &std::path::Path) -> Option<(f64, f64)> {
+    let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if !VIDEO_EXT.contains(&ext.as_str()) {
+        return None;
+    }
+    let len = std::fs::metadata(path).ok()?.len();
+    if len > MAX_PICTURE {
+        return Some((1920.0, 1080.0));
+    }
+    let src = cfa4_media::open_path(path, &cfa4_codecs::openers()).ok()?;
+    let v = src.info().video.as_ref()?;
+    (v.width > 0 && v.height > 0).then(|| (f64::from(v.width), f64::from(v.height)))
 }
 
 fn read_file(cmd: &str, path: &str) -> Result<Vec<u8>> {
@@ -910,8 +930,10 @@ fn place_picture(
         }
     };
     let dur = pg.duration;
+    // a video shorter than its page ends early (it is not looped)
+    let clip_dur = if pic.video { s.project.item(item).map(|x| x.duration()).filter(|d| d.0 > 0).map_or(dur, |m| m.min(dur)) } else { dur };
     let name = std::path::Path::new(&pic.file).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| pic.file.clone());
-    let clip = place_video_clip(s, CMD, &name, &json!({"time": t.0}), "Import Credits", Vec::new(), move |_, _| (item, dur))?;
+    let clip = place_video_clip(s, CMD, &name, &json!({"time": t.0}), "Import Credits", Vec::new(), move |_, _| (item, clip_dur))?;
     let src_h = s.project.source_size(item).map(|(_, h)| f64::from(h)).filter(|h| *h > 0.0).unwrap_or(pic.size.1);
     let scale = pic.size.1 / src_h * 100.0;
     let (cx, cy) = pic.center;
@@ -931,18 +953,34 @@ fn place_picture(
         },
         cfa4_credits::Behaviour::Card => Param::new(ParamValue::Vec2(Vec2::new(cx, cy))),
     };
+    let card = pg.behaviour == cfa4_credits::Behaviour::Card;
+    // on a card the picture comes in and goes like the text: with the entrance, its delay and the
+    // fades (or half of a transition)
+    let (card_opacity, card_position) = if card {
+        let half = |d: Tick| Tick(d.0 / 2);
+        let fin = pg.fade_in.max(half(pg.transition_in));
+        let fout = pg.fade_out.max(half(pg.transition.as_ref().map(|(_, d)| *d).unwrap_or(Tick::ZERO)));
+        cfa4_credits::layout::card_params(dur, pic.delay, fin, fout, pg.entrance, (cx, cy))
+    } else {
+        (None, None)
+    };
+    let position = card_position.unwrap_or(position);
     // a picture fades with its card, and across half of a transition at either end (it is a clip
     // of its own, so the page's transition does not reach it)
     let half = |d: Tick| Tick(d.0 / 2);
     let tr_in = half(pg.transition_in);
     let tr_out = half(pg.transition.as_ref().map(|(_, d)| *d).unwrap_or(Tick::ZERO));
-    let card = pg.behaviour == cfa4_credits::Behaviour::Card;
-    let (fin, fout) = if card { (pg.fade_in.max(tr_in), pg.fade_out.max(tr_out)) } else { (tr_in, tr_out) };
+    let (fin, fout) = if card { (Tick::ZERO, Tick::ZERO) } else { (tr_in, tr_out) };
     s.edit_sequence("Import Credits", move |q, _, _| {
         let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
         if let Some(m) = it.effects.iter_mut().find(|e| e.effect == "motion") {
             m.params.insert("position".into(), position);
             m.params.insert("scale".into(), Param::new(ParamValue::Float(scale.clamp(0.0, 10_000.0))));
+        }
+        if let Some(op) = card_opacity
+            && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
+        {
+            o.params.insert("opacity".into(), op);
         }
         if (fin.0 > 0 || fout.0 > 0)
             && let Some(o) = it.effects.iter_mut().find(|e| e.effect == "opacity")
