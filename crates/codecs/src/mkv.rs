@@ -89,6 +89,16 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         Codec::Dts => fixed_packet_samples(FixedFrames::Dts, &first(), out_rate),
         _ => None,
     };
+    if matches!(t.codec, Codec::TrueHd) {
+        // TrueHD packets hold whole access units, a fixed number of samples each
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime {
+            stamp: at(s.pts),
+            stamped: own_stamp(s),
+            samples: file.read_sample(bytes, ti, i).ok().and_then(|p| cfa4_truehd::cfa4::packet_samples(&p, out_rate)),
+        });
+        let au = cfa4_truehd::cfa4::samples_per_au(out_rate).unwrap_or(0);
+        return contiguous_starts(packets, (au / 2).max(stamp_tolerance(t, rate)));
+    }
     let Some(frame) = frame else {
         return t.samples.iter().map(|s| at(s.pts)).collect();
     };
@@ -321,6 +331,7 @@ fn codec_label(c: &Codec) -> String {
         Codec::Pcm { bits, float, .. } => format!("PCM {bits}-bit{}", if *float { " float" } else { "" }),
         Codec::Mp3 => "MP3".into(),
         Codec::Mp2 | Codec::Mp1 => "MPEG Audio".into(),
+        Codec::TrueHd => "Dolby TrueHD".into(),
         Codec::Other(id) if id == "V_MPEG2" => "MPEG-2 Video".into(),
         Codec::Other(id) if id == "V_MPEG1" => "MPEG-1 Video".into(),
         other => other.name().to_string(),
@@ -447,6 +458,7 @@ impl MkvSource {
                         let container = (t.seek_pre_roll_ns as u128 * rate as u128).div_ceil(1_000_000_000) as i64;
                         container.max(crate::audio::OPUS_PRE_ROLL as i64 * rate / 48_000)
                     }
+                    Codec::TrueHd => crate::audio::truehd_preroll(ainfo.sample_rate),
                     _ => 0,
                 };
                 let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
@@ -492,6 +504,7 @@ impl MkvSource {
             Codec::Mp1 => PacketDecoder::mpeg_audio(1, rate),
             Codec::Ac3 | Codec::Eac3 => PacketDecoder::ac3(),
             Codec::Dts => Ok(PacketDecoder::dts()),
+            Codec::TrueHd => Ok(PacketDecoder::truehd()),
             // symphonia wants the STREAMINFO block body: skip `fLaC` + the 4-byte block header.
             Codec::Flac { private } => PacketDecoder::new(CODEC_TYPE_FLAC, rate, private.get(8..42).map(<[u8]>::to_vec)),
             Codec::Vorbis { headers } if headers.len() == 3 => {

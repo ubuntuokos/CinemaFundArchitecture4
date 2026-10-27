@@ -181,7 +181,10 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** DTS (core, DTS-HD Master Audio and High Resolution, the DTS:X bed) in Matroska, MP4
   and MPEG-TS / Blu-ray (`cfa4-dts`, #83), the core bit-exact against ffmpeg. E-AC-3 (Dolby Digital Plus) in MP4, MOV, Matroska and MPEG-TS (#647): independent
   substream, 1–6 blocks per syncframe, spectral extension; 7.1 and other layouts beyond 5.1 from
-  dependent substreams with custom channel maps. MP1 / MP2 (MPEG audio Layer I / II):
+  dependent substreams with custom channel maps. Dolby TrueHD and MLP in raw files,
+  Matroska, MP4 and Blu-ray MPEG-TS (AC-3 core left out, #85) (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate): lossless,
+  bit-exact against ffmpeg, the 7.1 / 5.1 bed of Atmos streams, and their objects rendered to
+  2.0–7.1.4 by `cfa4-truehd` (#84; not yet in the app, #123). MP1 / MP2 (MPEG audio Layer I / II):
   own decoder (#809) in raw files, MP4 and MOV (#800), MPEG-TS / PS and Matroska (`A_MPEG/L1` and `L2`, #1402), including the
   bit rate / mode combinations ISO/IEC 11172-3 disallows but ffmpeg writes (its mono default is
   384 kbit/s). Radiance HDR (`.hdr`) stills and image sequences (#1407): RGBE as linear float, flat
@@ -190,8 +193,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
 - **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
-  DTS-ES XCh and raw `.dts` import (#132), free-format MPEG audio, E-AC-3 adaptive hybrid
-  transform, enhanced coupling, Dolby Atmos objects (E-AC-3 JOC; the bed plays), AVI (#598; listed as an extension but no
+  DTS-ES XCh and raw `.dts` import (#132), E-AC-3 JOC Atmos (#126), Atmos on real streams / in the app / binaural (#124, #123,
+  #125), free-format MPEG audio, E-AC-3 adaptive hybrid
+  transform, enhanced coupling, AVI (#598; listed as an extension but no
   demuxer), WMV / ASF, DV / DVCPRO / DV100, MPEG-4 Part 2, FLAC in MP4 (#603), camera RAW (R3D
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), JPEG 2000 in
   MXF / DCP import (the `cfa4-j2k` codestream decoder exists, not yet wired in), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw

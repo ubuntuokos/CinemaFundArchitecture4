@@ -345,6 +345,7 @@ impl Mp4Source {
                         // (Opus plays at 48 kHz: the pre-roll is in its sample frames)
                         (off, crate::audio::OPUS_PRE_ROLL as i64)
                     }
+                    Some(CodecConfig::TrueHd { .. }) => (t.edit_offset, crate::audio::truehd_preroll(ainfo.sample_rate)),
                     _ => (t.edit_offset, 0),
                 };
                 let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
@@ -607,6 +608,7 @@ fn codec_label(c: &CodecConfig) -> String {
         }
         CodecConfig::Pcm(p) => format!("PCM {}-bit{}", p.bits, if p.float { " float" } else { "" }),
         CodecConfig::Opus(_) => "Opus".into(),
+        CodecConfig::TrueHd { .. } => "Dolby TrueHD".into(),
         CodecConfig::Dnx { fourcc } if fourcc.0 == *b"AVdh" => "Avid DNxHR".into(),
         CodecConfig::Dnx { .. } => "Avid DNxHD".into(),
         CodecConfig::Cineform => "GoPro CineForm".into(),

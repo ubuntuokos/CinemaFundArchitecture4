@@ -858,6 +858,7 @@ dependencies = [
  "cfa4-prores",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-vp8",
  "cfa4-vp9",
  "image",
@@ -1392,6 +1393,15 @@ version = "0.10.0"
 dependencies = [
  "proptest",
  "serde",
+]
+
+[[package]]
+name = "cfa4-truehd"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "log",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
