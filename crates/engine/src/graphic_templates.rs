@@ -252,7 +252,7 @@ fn mt_at_playhead(s: &Session, it: &TrackItem) -> Tick {
 
 /// Set template controls `values` ({control id or name: value}) on `clip`, each as its own
 /// property change (callers fold the undo steps).
-fn set_controls(s: &mut Session, clip: ClipId, values: &serde_json::Map<String, Value>) -> Result<usize> {
+fn set_controls(s: &mut Session, clip: ClipId, values: &serde_json::Map<String, Value>, merge: Option<&str>) -> Result<usize> {
     let it = clip_item(s, clip)?;
     let link = it.graphic.as_ref().and_then(|m| m.template.clone()).ok_or_else(|| bad("graphics.template.set", "the graphic was not made from a template"))?;
     let tl = s.playhead().clamp(it.start, it.end() - Tick(1));
@@ -287,7 +287,7 @@ fn set_controls(s: &mut Session, clip: ClipId, values: &serde_json::Map<String, 
                 props.insert(c.param.clone(), v.clone());
             }
         }
-        set_props(s, clip, ei, &props, tl, "Change Template Property", None)?;
+        set_props(s, clip, ei, &props, tl, "Change Template Property", merge)?;
         n += 1;
     }
     Ok(n)
@@ -324,7 +324,7 @@ fn apply_template(s: &mut Session, p: &Value) -> Result<Value> {
     })?;
     if let Some(vals) = p.get("values").and_then(Value::as_object) {
         let vals = vals.clone();
-        if let Err(e) = set_controls(s, clip, &vals) {
+        if let Err(e) = set_controls(s, clip, &vals, None) {
             // undo the whole apply
             fold_undo(s, before, "Apply Graphics Template");
             let _ = s.execute("edit.undo", json!({}));
@@ -1166,7 +1166,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "graphics.template.set",
             "Set Template Property",
             &[],
-            r#"{"clip":id?,"control":id|name,"value":any} or {"clip":id?,"values":{control: value}}"#,
+            r#"{"clip":id?,"control":id|name,"value":any} or {"clip":id?,"values":{control: value}}, "merge":bool? (a drag is one undo step), "begin":bool? (starts a new one)"#,
             has_graphic,
             |s, p| {
                 let clip = target_clip(s, p).ok_or_else(|| bad("graphics.template.set", "no graphic clip"))?;
@@ -1177,8 +1177,16 @@ pub fn commands() -> Vec<CommandSpec> {
                 if vals.is_empty() {
                     return Err(bad("graphics.template.set", "need `control` and `value`, or `values`"));
                 }
+                // `merge`: the values of one gesture (a slider dragged) are one undo step; `begin`
+                // starts a new one
+                let mut keys: Vec<&String> = vals.keys().collect();
+                keys.sort();
+                let merge = bool_p(p, "merge").unwrap_or(false).then(|| format!("graphics.template.set:{}:{keys:?}", clip.0));
+                if bool_p(p, "begin").unwrap_or(false) {
+                    s.history.merge_key = None;
+                }
                 let before = s.history.undo.len();
-                let n = set_controls(s, clip, &vals);
+                let n = set_controls(s, clip, &vals, merge.as_deref());
                 fold_undo(s, before, "Change Template Property");
                 Ok(json!({"clip": clip.0, "set": n?}))
             },

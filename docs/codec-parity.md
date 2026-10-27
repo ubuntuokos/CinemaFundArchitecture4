@@ -9,7 +9,8 @@ pure Rust from public specifications ([AGENTS.md](../AGENTS.md) §2); ffmpeg is 
 
 Premiere's list comes from Adobe's published supported-formats pages and the names of the
 installed bundle's `MediaIO/systempresets` and `Frameworks` entries (listings only, never their
-contents). Percent is ready-for-real-work for that codec: depth, profiles, speed.
+contents). Percent is ready-for-real-work for that codec: depth, profiles, speed. The plan for
+Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.md).
 
 ## Video
 
@@ -42,7 +43,7 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 | PCM (WAV, BWF, AIFF, MOV, MXF, Blu-ray / DVD LPCM) | yes | yes, BWF timecode | WAV, AIFF, MOV, MXF | sample-exact | 95% | — |
 | AAC (LC, HE, LATM) | decode + encode | own decoder (LC, HE core), LATM | own LC encoder | loudness oracle vs ffmpeg | 90% | 3–5 h |
 | AC-3 | decode (licensed) | own decoder (ATSC A/52) | none | conformance | 80% | — |
-| E-AC-3 (Dolby Digital Plus) | decode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension; **no** adaptive hybrid transform, enhanced coupling or 7.1 dependent substreams (plays the 5.1 core) | none | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS) | 75% | 10–20 h |
+| E-AC-3 (Dolby Digital Plus) | decode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension, 7.1 and other layouts from dependent substreams with custom channel maps; **no** adaptive hybrid transform or enhanced coupling | none | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS); 7.1 72–86 dB | 85% | 5–10 h |
 | MP3 / MP2 | decode + MP3 encode | MP3: symphonia (MPL-2.0); MP1 / MP2: own decoder (ISO/IEC 11172-3 / 13818-3, #809), also the bit rate / mode combinations ffmpeg writes by default (mono 384 kbit/s); in raw, MP4, MOV (#800), Matroska, TS, PS | **none** | MP1 / MP2: SNR vs ffmpeg 73–84 dB; MP2 in MP4 / MOV within 1e-4 of ffmpeg, also after a seek (#800) | 65% | 10–20 h (MP3 encoder) |
 | IAB (SMPTE ST 2098-2, DCP / IMF immersive audio) | — | own decoder (`cfa4-iab`, #82): PCM and DLC assets at 48 / 96 kHz, every frame rate incl. the 1001 cadence, Beds, conditional Beds, BedRemap, Objects; rendered to 2.0 / 5.1 / 7.1 / 7.1.4 (MXF playback: 7.1); in MXF frame- or clip-wrapped | own writer (PCM, DLC) | DLC lossless round trips; no third-party IAB stream tested yet | 60% | 10–20 h (real streams #107, layouts and decorrelation #108, IMF export #109) |
 | Opus | — (not a Premiere import format) | own decoder, RFC 8251 range-exact | none | conformance vectors | ahead | — |
@@ -63,5 +64,6 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-26 | minor | JPEG 2000 Part 1 decoder (`cfa4-j2k`) |
+| 2026-10-25 | minor | E-AC-3 7.1 from dependent substreams |
 | 2026-10-11 | minor | CinemaDNG / DNG decode (#1065) |
 | 2026-10-10 | major | Created: codec-by-codec comparison with Premiere 26.5.2 from the codec crates' READMEs, the export format registry and the installed bundle's listings |

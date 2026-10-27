@@ -21,6 +21,8 @@ pub mod demo;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
+mod eyedropper;
+mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
@@ -39,6 +41,7 @@ pub mod paste_media;
 pub mod perf;
 pub mod presets;
 pub mod previews;
+pub mod program_overlay;
 pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
@@ -1225,6 +1228,8 @@ mod avi_import_tests;
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod effects_inspect_tests;
 #[cfg(test)]
 mod essential_sound_tests;
 #[cfg(test)]
