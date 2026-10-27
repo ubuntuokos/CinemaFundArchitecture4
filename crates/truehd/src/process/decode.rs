@@ -590,15 +590,16 @@ impl DecoderState {
                         *dither_seed = (dither_seed_shr7 ^ (dither_seed_shr7 << 5) ^ (*dither_seed << 16)) & 0x7FFFFF;
 
                         for pmi in 0..primitive_matrices {
-                            let mut acc = 0;
+                            let mut acc = 0i64;
                             let matrix_ch = matrix_ch[pmi] as usize;
                             let m_coeff = &m_coeff[pmi];
 
                             for chi in 0..=max_matrix_chan + 2 {
-                                acc += rematrix_buffer[chi] as i64 * m_coeff[chi] as i64;
+                                acc = acc.wrapping_add((rematrix_buffer[chi] as i64).wrapping_mul(m_coeff[chi] as i64));
                             }
 
-                            rematrix_buffer[matrix_ch] = (((acc >> 18) as i32) & (!((1 << quantiser_step_size[matrix_ch]) - 1))) + bypassed_lsb[pmi];
+                            rematrix_buffer[matrix_ch] =
+                                (((acc >> 18) as i32) & (!((1 << quantiser_step_size[matrix_ch]) - 1))).wrapping_add(bypassed_lsb[pmi]);
                         }
                     }
                 }
@@ -615,7 +616,7 @@ impl DecoderState {
                         let blki_abs = blki + *decoded_sample_len;
 
                         for pmi in 0..primitive_matrices {
-                            let mut acc = 0;
+                            let mut acc = 0i64;
                             let m_coeff = &m_coeff[pmi];
                             let dither_scale = dither_scale[pmi] as i64;
                             let matrix_ch = matrix_ch[pmi] as usize;
@@ -623,14 +624,15 @@ impl DecoderState {
                             let dither_index = (primitive_matrices - pmi) * (2 * blki_abs + 1) + blki_abs;
 
                             for chi in 0..=max_matrix_chan {
-                                acc += rematrix_buffer[chi] as i64 * m_coeff[chi] as i64;
+                                acc = acc.wrapping_add((rematrix_buffer[chi] as i64).wrapping_mul(m_coeff[chi] as i64));
                             }
 
                             if dither_scale != 0 {
-                                acc += (dither_table[dither_index & dither_index_mask] as i64) << (11 + dither_scale);
+                                acc = acc.wrapping_add((dither_table[dither_index & dither_index_mask] as i64) << (11 + dither_scale));
                             }
 
-                            rematrix_buffer[matrix_ch] = (((acc >> 18) as i32) & (!((1 << quantiser_step_size[matrix_ch]) - 1))) + bypassed_lsb[pmi];
+                            rematrix_buffer[matrix_ch] =
+                                (((acc >> 18) as i32) & (!((1 << quantiser_step_size[matrix_ch]) - 1))).wrapping_add(bypassed_lsb[pmi]);
                         }
                     }
                 }
@@ -649,8 +651,8 @@ impl DecoderState {
                         let blki_abs = blki + *decoded_sample_len;
 
                         for pmi in 0..primitive_matrices {
-                            let mut acc = 0;
-                            let mut acc_delta = 0;
+                            let mut acc = 0i64;
+                            let mut acc_delta = 0i64;
                             let dither_scale = dither_scale[pmi] as u64;
                             let matrix_ch = matrix_ch[pmi] as usize;
                             let m_coeff = &m_coeff[pmi];
@@ -659,17 +661,18 @@ impl DecoderState {
                             let dither_index = (primitive_matrices - pmi) * (2 * blki_abs + 1) + blki_abs;
 
                             for chi in 0..=max_matrix_chan {
-                                acc += rematrix_buffer[chi] as i64 * m_coeff[chi] as i64;
-                                acc_delta += rematrix_buffer[chi] as i64 * delta_cf[chi] as i64;
+                                acc = acc.wrapping_add((rematrix_buffer[chi] as i64).wrapping_mul(m_coeff[chi] as i64));
+                                acc_delta = acc_delta.wrapping_add((rematrix_buffer[chi] as i64).wrapping_mul(delta_cf[chi] as i64));
                             }
 
                             if dither_scale != 0 {
-                                acc += (dither_table[dither_index & dither_index_mask] as i64) << (11 + dither_scale);
+                                acc = acc.wrapping_add((dither_table[dither_index & dither_index_mask] as i64) << (11 + dither_scale));
                             }
 
-                            acc += (acc_delta >> 18) * (blki_abs as i64) * (samples_per_au_recip << 2);
+                            acc = acc.wrapping_add((acc_delta >> 18).wrapping_mul(blki_abs as i64).wrapping_mul(samples_per_au_recip << 2));
 
-                            rematrix_buffer[matrix_ch] = (((acc >> 18) as i32) & (!((1 << quantiser_step_size[matrix_ch]) - 1))) + bypassed_lsb[pmi];
+                            rematrix_buffer[matrix_ch] =
+                                (((acc >> 18) as i32) & (!((1 << quantiser_step_size[matrix_ch]) - 1))).wrapping_add(bypassed_lsb[pmi]);
                         }
                     }
 
@@ -678,7 +681,11 @@ impl DecoderState {
                             let m_coeff = &mut m_coeff[pmi];
                             let delta_cf = &delta_cf[pmi];
                             for chi in 0..=max_matrix_chan {
-                                m_coeff[chi] += delta_cf[chi];
+                                // Modified for CFA4: a hostile delta can push the coefficient out of i32.
+                                let Some(c) = m_coeff[chi].checked_add(delta_cf[chi]) else {
+                                    bail!(DecodeError::MatrixCoefficientOverflow { matrix: pmi, channel: chi });
+                                };
+                                m_coeff[chi] = c;
                             }
                         }
                     }
@@ -842,6 +849,28 @@ mod tests {
         m.matrices[0].cf_shift_code = 0;
         m.matrices[0].delta_precision = 0;
         assert!(m.update_decoder_state(&mut d).is_ok());
+    }
+
+    /// Interpolating a matrix coefficient by a hostile delta at the end of the access unit used
+    /// to overflow i32 (a panic with overflow checks); it is a decode error.
+    #[test]
+    fn matrix_coefficient_interpolation_overflow_is_an_error() {
+        let mut d = DecoderState { samples_per_au: 40, ..Default::default() };
+        d.effective_presentations[0] = true;
+        let s = &mut d.substream_state[0];
+        s.restart_sync_word = 0x31EC;
+        s.block_size = 40;
+        s.primitive_matrices = 1;
+        s.m_coeff[0][0] = 1 << 24;
+        s.delta_cf[0][0] = i32::MAX - 1000;
+        assert!(d.decode_multi().is_err());
+        // a coefficient that stays in range interpolates
+        let s = &mut d.substream_state[0];
+        s.decoded_sample_len = 0;
+        s.m_coeff[0][0] = 1 << 24;
+        s.delta_cf[0][0] = 1 << 20;
+        assert!(d.decode_multi().is_ok());
+        assert_eq!(d.substream_state[0].m_coeff[0][0], (1 << 24) + (1 << 20));
     }
 
     /// More zero samples than the access unit holds used to underflow its length.

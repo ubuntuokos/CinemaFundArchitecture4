@@ -81,6 +81,10 @@ pub enum DecodeError {
     // Modified for CFA4: the decode buffers hold one access unit of 16 channels.
     #[error("Block of {block_size} samples at {offset} or {channels} matrix channels exceeds the decode buffers")]
     BlockExceedsBuffers { offset: usize, block_size: usize, channels: usize },
+
+    // Modified for CFA4: interpolating a matrix coefficient by its delta must stay in i32.
+    #[error("Matrix {matrix} coefficient for channel {channel} overflows when its delta is added")]
+    MatrixCoefficientOverflow { matrix: usize, channel: usize },
 }
 
 #[derive(thiserror::Error, Debug)]

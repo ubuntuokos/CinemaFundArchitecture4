@@ -104,6 +104,7 @@ rule_ids! {
         InvalidPresentation = "invalid_presentation",
         OutputsExceedMaxBits = "outputs_exceed_max_bits",
         BlockExceedsBuffers = "block_exceeds_buffers",
+        MatrixCoefficientOverflow = "matrix_coefficient_overflow",
     }
     ExtractError => Extract / ExtractRule / "extract" {
         SubstreamMismatch = "substream_mismatch",

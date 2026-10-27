@@ -228,7 +228,16 @@ impl Extractor {
                 return self.insufficient();
             };
 
-            if self.buffered_len() < access_unit_len || access_unit_len <= major_sync_info_len + 6 {
+            // Modified for CFA4: a length too short to hold the major sync info and its CRC can
+            // never complete, so the candidate is skipped instead of waited for (waiting stalls
+            // on it forever while the buffer grows).
+            if access_unit_len <= major_sync_info_len + 6 {
+                log::warn!("access unit length {access_unit_len} cannot hold its major sync; skipping the candidate");
+                self.error_count = self.error_count.saturating_add(1);
+                self.consume_front(1);
+                continue;
+            }
+            if self.buffered_len() < access_unit_len {
                 return self.insufficient();
             }
 
@@ -709,4 +718,22 @@ fn skip_invalid_data() -> Result<()> {
     assert_eq!(frame_count, 4);
     assert!(end_with_insufficient_data);
     Ok(())
+}
+
+/// A major sync whose access-unit header declares a length too short to hold it can never
+/// complete; it used to be waited for forever, so the valid access units after it never came out.
+#[test]
+fn an_impossible_access_unit_length_is_skipped_not_waited_for() {
+    use crate::process::EXAMPLE_DATA;
+
+    // the 16-byte timestamp, then an access-unit header of length 0 in front of the major sync
+    let mut bogus = EXAMPLE_DATA[..60].to_vec();
+    bogus[16] &= 0xF0;
+    bogus[17] = 0;
+    let mut extractor = Extractor::default();
+    extractor.push_bytes(&bogus);
+    extractor.push_bytes(EXAMPLE_DATA);
+    let frames = (&mut extractor).filter(Result::is_ok).count();
+    assert_eq!(frames, 2);
+    assert_eq!(extractor.error_count(), 1);
 }
