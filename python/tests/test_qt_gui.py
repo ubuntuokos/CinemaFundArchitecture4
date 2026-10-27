@@ -1049,9 +1049,9 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_insert_while_program_plays_edits_at_the_shown_playhead(app, tmp_path: Path):
-    """Insert / Overwrite / Lift / Extract from a monitor button while the Program monitor plays:
-    playback stops and the shown playhead reaches the engine before the edit (its playhead was
-    still where playback started)."""
+    """Insert / Overwrite / Lift / Extract from a monitor button, or the Program monitor's
+    eyedropper, while the Program monitor plays: playback stops and the shown playhead reaches the
+    engine before the edit (its playhead was still where playback started)."""
     from cfa4_qt.main_window import MainWindow
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
@@ -1078,6 +1078,14 @@ def test_real_engine_insert_while_program_plays_edits_at_the_shown_playhead(app,
         assert "playhead.set" in names and names.index("playhead.set") < names.index("source.overwrite"), names
         shown = next(p for c, p in sent if c == "playhead.set")
         assert shown.get("time") == win.monitor.playhead > 0
+        # the eyedropper samples the shown frame too
+        win.monitor.play()
+        assert wait_until(app, lambda: win.monitor.playhead > shown["time"] + TICKS_PER_SECOND // 4, 10_000)
+        sent.clear()
+        win.execute("effects.eyedropper", {"clip": 1, "effect": "lumetri", "param": "x", "u": 0.5, "v": 0.5})
+        assert not win.monitor.playing
+        names = [c for c, _p in sent]
+        assert names.index("playhead.set") < names.index("effects.eyedropper"), names
     finally:
         engine.execute = real_execute
         win._quit_confirmed = True

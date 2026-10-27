@@ -178,8 +178,9 @@ def recovery_text(cand: dict[str, Any]) -> str:
     return text.replace("{name}", name).replace("{time}", when)
 
 
-# placement edits the Source monitor's and Program monitor's buttons run at the sequence playhead
-EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract"})
+# what the monitors run at the sequence playhead: placement edits from their buttons, and the
+# Program monitor's eyedropper (it samples the frame there and keys an animated colour there)
+EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper"})
 
 class MainWindow(QMainWindow):
     def __init__(self, engine: EngineClient, settings: QSettings | None = None) -> None:
