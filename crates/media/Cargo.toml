@@ -16,6 +16,7 @@ cfa4-frame = { workspace = true }
 cfa4-dng = { workspace = true }
 cfa4-heif = { workspace = true }
 cfa4-hevc = { workspace = true }
+cfa4-jxl = { workspace = true, features = ["threads"] }
 log = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
