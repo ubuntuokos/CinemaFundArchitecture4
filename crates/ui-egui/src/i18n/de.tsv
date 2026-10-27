@@ -3476,7 +3476,7 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 Bit, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 Bit; Main 10 für HDR-Sequenzen)
 	Encoder	Encoder
-	Hardware (H.265 has no software encoder)	Hardware (für H.265 gibt es keinen Software-Encoder)
+	Software, or hardware where available	Software, oder Hardware wo verfügbar
 	Hardware (AV1 has no software encoder)	Hardware (für AV1 gibt es keinen Software-Encoder)
 	Text Properties	Texteigenschaften
 	Text Box Height	Textfeldhöhe
@@ -3608,3 +3608,13 @@
 	Couldn't open your web browser	Dein Webbrowser konnte nicht geöffnet werden
 	Open this address in your browser yourself:	Öffne diese Adresse selbst in deinem Browser:
 	Import Credits Spreadsheet…	Abspann-Tabelle importieren…
+	Stereoscopic 3D	Stereoskopisches 3D
+	Swap Eyes	Augen tauschen
+	Over/Under	Übereinander
+	Side by Side	Nebeneinander
+	Stereo to 2D	Stereo zu 2D
+	Eye	Auge
+	Slit Scan	Slit-Scan
+	Time Span (seconds)	Zeitspanne (Sekunden)
+	Current Frame At	Aktuelles Bild am
+	Blend Slices	Scheiben überblenden

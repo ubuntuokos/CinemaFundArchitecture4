@@ -3445,7 +3445,7 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 bits, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits ; Main 10 pour les séquences HDR)
 	Encoder	Encodeur
-	Hardware (H.265 has no software encoder)	Matériel (H.265 n'a pas d'encodeur logiciel)
+	Software, or hardware where available	Logiciel, ou matériel si disponible
 	Hardware (AV1 has no software encoder)	Matériel (AV1 n'a pas d'encodeur logiciel)
 	Text Properties	Propriétés du texte
 	Text Box Height	Hauteur de la zone de texte
@@ -3580,3 +3580,13 @@
 	No text graphics in this sequence. Add text with the Type tool.	Aucun graphique avec du texte dans cette séquence. Ajoutez du texte avec l'outil Texte.
 	No matching text.	Aucun texte ne correspond.
 	Import Credits Spreadsheet…	Importer une feuille de calcul de générique…
+	Stereoscopic 3D	3D stéréoscopique
+	Swap Eyes	Inverser les yeux
+	Over/Under	Dessus/dessous
+	Side by Side	Côte à côte
+	Stereo to 2D	Stéréo vers 2D
+	Eye	Œil
+	Slit Scan	Slit-scan
+	Time Span (seconds)	Intervalle de temps (secondes)
+	Current Frame At	Image actuelle à
+	Blend Slices	Fondre les tranches

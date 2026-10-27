@@ -66,7 +66,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 ## G3. 10-bit and 4:2:2 camera media needs hardware
 
 - **Missing:** our H.264 decoder is 8-bit 4:2:0 only (`crates/h264/README.md`: no High 10, High
-  4:2:2, 4:4:4, lossless, interlaced field / MBAFF); HEVC has no 4:2:2 / RExt. Most mirrorless and
+  4:2:2, 4:4:4, lossless, interlaced field / MBAFF); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
 - **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). On macOS VideoToolbox decodes 10-bit
@@ -178,7 +178,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 ## G10. Container and codec gaps on import
 
 - **Have:** E-AC-3 (Dolby Digital Plus) in MP4, MOV, Matroska and MPEG-TS (#647): independent
-  substream, 1–6 blocks per syncframe, spectral extension. MP1 / MP2 (MPEG audio Layer I / II):
+  substream, 1–6 blocks per syncframe, spectral extension; 7.1 and other layouts beyond 5.1 from
+  dependent substreams with custom channel maps. MP1 / MP2 (MPEG audio Layer I / II):
   own decoder (#809) in raw files, MP4 and MOV (#800), MPEG-TS / PS and Matroska (`A_MPEG/L1` and `L2`, #1402), including the
   bit rate / mode combinations ISO/IEC 11172-3 disallows but ffmpeg writes (its mono default is
   384 kbit/s). Radiance HDR (`.hdr`) stills and image sequences (#1407): RGBE as linear float, flat
@@ -187,8 +188,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
 - **Missing:** free-format MPEG audio, E-AC-3 adaptive hybrid
-  transform, enhanced coupling and the extra channels of 7.1 dependent substreams (played as the
-  5.1 core), AVI (#598; listed as an extension but no
+  transform, enhanced coupling, Dolby Atmos objects (E-AC-3 JOC; the bed plays), AVI (#598; listed as an extension but no
   demuxer), WMV / ASF, DV / DVCPRO / DV100, MPEG-4 Part 2, FLAC in MP4 (#603), camera RAW (R3D
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), JPEG 2000 in
   MXF / DCP import (the `cfa4-j2k` codestream decoder exists, not yet wired in), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
@@ -232,13 +232,15 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 - **Missing:** AV1 export (software or hardware), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
-  interlaced encoding, smart render, HEVC software encoder (HEVC exists only where a hardware
-  encoder does).
+  AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
+  interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
+  (#171–#180).
 - **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
-  (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342).
-- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x265 for software HEVC encode
-  (licence: GPL-2.0-or-later, to be confirmed), x264 for a higher-quality software H.264 encoder,
+  (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342);
+  H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware
+  encoders go first where present; #94).
+- **CFA4 candidates after GPL-3.0-or-later** (ADR 0003 §6): x264 for a higher-quality software H.264 encoder,
   LAME (LGPL) for MP3 audio. H.264 / HEVC / AAC patents are a separate question from the licence. Candidates are not commitments: each needs its own ADR (FFI rule, own engine as fallback).
 - **Estimate:** 60–110 h. Doc: [file-format-parity.md](file-format-parity.md).
 
@@ -334,4 +336,5 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
 | 2026-10-12 | minor | G10: MP1 (`A_MPEG/L1`) in Matroska imports (#1402) |
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
+| 2026-10-25 | minor | G10: E-AC-3 7.1 (dependent substreams) |
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |

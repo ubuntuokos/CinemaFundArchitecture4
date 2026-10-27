@@ -3462,7 +3462,7 @@
 	Main 10 (10-bit, HDR)	Main 10 (10-bit, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8-bit; Main 10 untuk sekuens HDR)
 	Encoder	Enkoder
-	Hardware (H.265 has no software encoder)	Perangkat keras (H.265 tidak memiliki enkoder perangkat lunak)
+	Software, or hardware where available	Perangkat lunak, atau perangkat keras bila tersedia
 	Hardware (AV1 has no software encoder)	Perangkat keras (AV1 tidak memiliki enkoder perangkat lunak)
 	Text Properties	Properti Teks
 	Text Box Height	Tinggi Kotak Teks
@@ -3578,3 +3578,13 @@
 	No text graphics in this sequence. Add text with the Type tool.	Tidak ada grafis teks di sekuens ini. Tambahkan teks dengan alat Teks.
 	No matching text.	Tidak ada teks yang cocok.
 	Import Credits Spreadsheet…	Impor spreadsheet kredit…
+	Stereoscopic 3D	3D Stereoskopis
+	Swap Eyes	Tukar Mata
+	Over/Under	Atas/Bawah
+	Side by Side	Berdampingan
+	Stereo to 2D	Stereo ke 2D
+	Eye	Mata
+	Slit Scan	Slit Scan
+	Time Span (seconds)	Rentang Waktu (detik)
+	Current Frame At	Bingkai Saat Ini di
+	Blend Slices	Campur Irisan

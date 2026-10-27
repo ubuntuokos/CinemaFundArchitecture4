@@ -1,5 +1,5 @@
 //! Still images (PNG, JPEG, GIF, WebP, HEIF/HEIC, TIFF, BMP, Targa, DPX, OpenEXR, Radiance HDR, DNG camera raw) as media
-//! sources. Animated PNG and GIF files open as movies instead ([`crate::animated`]); here they would
+//! sources. Animated PNG, GIF and WebP files open as movies instead ([`crate::animated`]); here they would
 //! show their first frame.
 
 use std::sync::Arc;

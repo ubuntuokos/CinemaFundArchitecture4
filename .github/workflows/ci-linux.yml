@@ -52,10 +52,10 @@ jobs:
           rustup show
           rustc --version
           cargo --version
-      - name: Licence policy (GPL-3.0-or-later compatible dependencies, see docs/licensing.md)
+      - name: Licence policy and security advisories (docs/licensing.md, deny.toml)
         run: |
           cargo install cargo-deny --locked --version 0.20.2
-          cargo deny check licenses sources
+          cargo deny check licenses sources advisories
       - name: Linux quality gates (no WASM target)
         env:
           CFA4_REQUIRE_ORACLES: "1"
@@ -185,6 +185,7 @@ jobs:
             libdav1d-dev libsvtav1enc-dev libaom-dev
             libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev zlib1g-dev
             libheif-examples libheif-plugin-libde265 libheif-plugin-x265
+            webp
           )
           missing_packages=()
           for pkg in "${oracle_dev_packages[@]}"; do

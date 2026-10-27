@@ -3445,7 +3445,7 @@
 	Main 10 (10-bit, HDR)	主要 10（10 位，HDR）
 	Main (8-bit; Main 10 for HDR sequences)	主要（8 位；HDR 序列使用主要 10）
 	Encoder	编码器
-	Hardware (H.265 has no software encoder)	硬件（H.265 无软件编码器）
+	Software, or hardware where available	软件（可用时使用硬件）
 	Hardware (AV1 has no software encoder)	硬件（AV1 无软件编码器）
 	Text Properties	文本属性
 	Text Box Height	文本框高度
@@ -3588,3 +3588,13 @@
 	No text graphics in this sequence. Add text with the Type tool.	此序列中没有文本图形。请用文字工具添加文本。
 	No matching text.	没有匹配的文本。
 	Import Credits Spreadsheet…	导入演职员表电子表格…
+	Stereoscopic 3D	立体 3D
+	Swap Eyes	交换左右眼
+	Over/Under	上下
+	Side by Side	左右并排
+	Stereo to 2D	立体转 2D
+	Eye	眼
+	Slit Scan	狭缝扫描
+	Time Span (seconds)	时间跨度（秒）
+	Current Frame At	当前帧位置
+	Blend Slices	混合切片
