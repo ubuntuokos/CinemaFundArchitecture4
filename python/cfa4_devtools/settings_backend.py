@@ -312,16 +312,35 @@ class Backend:
     problem: str = ""
     restricted_package: str = ""
     restricted: tuple[Restricted, ...] = ()
+    # the router's place after the engine (ADR 0005 step 2); None: not tried, or not routed yet
+    tried: int | None = None
+    routed: bool = False
+
+    @property
+    def order(self) -> str:
+        """The place in the order files are tried in: the engine 1, then the routed backends."""
+        if self.id == "builtin":
+            return "1"
+        return str(self.tried + 1) if self.tried is not None else "—"
 
     @property
     def status(self) -> str:
         if not self.compiled_in:
             return "Not part of this build"
+        if self.available and self.enabled and self.routed and self.tried is None and self.id != "builtin":
+            return "Left out by the routing table"
         if self.available and self.enabled:
             return "In use"
         if self.available:
             return "Available, switched off"
         return "Not available"
+
+
+def _tried(value: Any) -> int | None:
+    """A 1-based place from the CLI, or None (hostile values: not a place)."""
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 64:
+        return None
+    return value
 
 
 @dataclass(frozen=True)
@@ -333,6 +352,7 @@ class MediaBackends:
         if not isinstance(raw, dict) or not isinstance(raw.get("backends"), list):
             raise SettingsBackendError("media-backends must return an object with a backends list")
         out = []
+        routed = isinstance(raw.get("route"), dict)
         for b in raw["backends"]:
             if not isinstance(b, dict) or not isinstance(b.get("id"), str):
                 continue
@@ -345,6 +365,7 @@ class MediaBackends:
                 b.get("available") is True, b.get("enabled") is True, b.get("canDisable") is True,
                 _str(b.get("version")), _str(b.get("license")), _str(b.get("problem")),
                 _str(b.get("restrictedPackage")), restricted,
+                _tried(b.get("tried")), routed,
             ))
         return MediaBackends(tuple(out))
 

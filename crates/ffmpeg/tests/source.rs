@@ -237,7 +237,7 @@ fn register_makes_ffmpeg_the_first_fallback_and_respects_the_switch() {
     let Some(p) = fixture("fallback.wmv", "320x240", &["-c:v", "wmv2", "-c:a", "wmav2"]) else { return };
     let status = cfa4_ffmpeg::register().unwrap_or_else(|e| panic!("{e}"));
     assert!(status.refusal().is_none());
-    assert!(cfa4_media::fallback::fallbacks().iter().any(|f| f.name == "FFmpeg"));
+    assert!(cfa4_media::registered_fallbacks().iter().any(|f| f.id == "ffmpeg" && f.name == "FFmpeg"));
     assert!(cfa4_media::is_importable(&p), ".wmv becomes importable");
     let native = Err(cfa4_media::MediaError::Unsupported("built-in openers do not read WMV".into()));
     let src = cfa4_media::open_with_fallback(&p, native).unwrap_or_else(|e| panic!("{e}"));

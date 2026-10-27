@@ -295,6 +295,7 @@ pub fn register() -> Result<Status, Error> {
         return Err(Error::Unavailable(reason));
     }
     cfa4_media::register_fallback(cfa4_media::Fallback {
+        id: ROUTE_ID,
         name: "FFmpeg",
         video_extensions: EXTRA_VIDEO_EXTENSIONS,
         audio_extensions: EXTRA_AUDIO_EXTENSIONS,

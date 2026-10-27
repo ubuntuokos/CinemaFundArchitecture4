@@ -14,8 +14,13 @@
    közvetlenül FFmpeg-et vagy GStreamert, csak a motor felületeit (`MediaSource`,
    `VideoEncoder`, szűrők). A választást a `routing.toml` táblája, a futásidejű felmérés és a mérés
    dönti el; a felhasználó felülbírálhatja (`~/.config/cfa4/routing.toml`).
-3. **A kiegészítő hátterek alapsorrendje** a kodek-családokban: saját utak → **FFmpeg 9** →
-   **GStreamer** → saját szoftveres kodekek (ahogy a `crates/route/routing.toml` rögzíti). Ahol egy
+3. **A kiegészítő hátterek alapsorrendje** a kodek-családokban: saját utak (hardveres és
+   szoftveres) → **FFmpeg 9** → **GStreamer** (ahogy a `crates/route/routing.toml` rögzíti;
+   tulajdonosi döntés, 2026-10-27). A saját motor minden fájlt elsőként nyit meg; a kiegészítő
+   hátterek csak azt kapják meg, amit a motor nem tud megnyitni vagy dekódolni. Az útválasztó a
+   `media.fallback` feladaton dönti el a sorrendjüket és azt, melyik léphet működésbe (Beállítások ▸
+   Médiahátterek kapcsolói, a felhasználói tábla), és a láncot a `perf.stats` és a `media.backends`
+   jelenti, minden kihagyott háttérrel és okkal. Ahol egy
    feladatra a saját motor nem képes (például képernyő- és kamerafelvétel PipeWire-ből), ott a
    kiegészítő háttér kerül előre; ezt a tábla feladatsora rögzíti, mérés alapján.
 4. **Újabb motorok is jöhetnek.** Az útválasztó nyitott: új motor új háttérként és új táblasorként
@@ -66,7 +71,8 @@
 3. **A saját dekóderek ellenőrként is maradnak:** a kiegészítő hátterek kimenetét a tesztek a
    saját, bitpontos dekóderekhez mérik.
 4. **Mindig van tartalék:** ha egy kiegészítő háttér hiányzik vagy hibázik, a következő út jön
-   (`Router::next_after`), végül a saját szoftveres kodekek.
+   (`Router::next_after`); a saját szoftveres kodekek a kiegészítő hátterek előtt állnak, ezért ha
+   egy kiegészítő háttér hibázik, a motor eredeti hibaüzenete marad.
 5. **Nem crash-el** (AGENTS.md 0. pont): minden háttérhiba `Result`, sérült fájlra hibaüzenet jön.
 
 ## Lépések
@@ -75,7 +81,7 @@
 |---|---|---|
 | 1 | `cfa4-ffmpeg` crate: kötés (vendorozott rsmedia → rsmpeg → rusty_ffmpeg, `vendor/ffmpeg-bindings/`), `probe()` (verzió ≥ 9.0.2, GPL-3-as build, nonfree tiltva, korlátozott kodekek), `discover()`, `open()` natív bitmélységgel, első tartalék a GStreamer előtt; FFmpeg nélkül is fordul | kész (a buildpróba 2026-10-26: bitpontos a G3- és G10-esetekre) |
 | 1a | Beállítások ▸ Média és lejátszás ▸ Médiahátterek (kapcsolók, állapot, korlátozott kodekek), `media.backends`, `cfa4-cli media-backends`; menü: Szerkesztés ▸ Médiahátterek…, Súgó ▸ Korlátozott kodekek… | kész |
-| 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után) | előkészítve (`route_backend()`); a `cfa4-route` (#55) már a `main`-ben, a bekötés következik |
+| 2 | FFmpeg- és GStreamer-háttér regisztrálása a `cfa4-route`-ban (ADR 0004 1. fázisa után): a `media.fallback` feladat lánca (`crates/engine/src/media_route.rs`) adja a `cfa4_media::set_fallback_order` sorrendjét; a felhasználói `[compute.task."media.fallback"]` sor felcserélheti vagy kihagyhatja őket | kész (2026-10-27) |
 | 3 | Feladatsorok a táblában (pl. felvétel, konvertálás) mérés alapján | tervezett |
 | 4 | Csomagolás: FFmpeg 9.0.2 elkülönítve `/opt/cfa4/ffmpeg-9.0.2` alatt (`scripts/dev/build-ffmpeg-9.0.2.sh`); a `cfa4-restricted-extras` ugyanazt az FFmpeg-et x264-gyel és x265-tel `/opt/cfa4/ffmpeg-9.0.2-restricted` alá teszi, és a programok futásidejű keresési útja ezt nézi először (`apps/*/build.rs`); GStreamer `Depends`/`Recommends` az Ubuntu archívumából | FFmpeg-build kész; `.deb`-csomagok a Qt6-átállás után |
 

@@ -61,6 +61,7 @@ class MediaBackendsDialog(QDialog):
         self.resize(640, 600)
         self._execute = execute
         self.backends: list[dict[str, Any]] = []
+        self.routed = False
         self.switches: dict[str, QCheckBox] = {}
         self.restricted_box: QGroupBox | None = None
 
@@ -131,6 +132,8 @@ class MediaBackendsDialog(QDialog):
                 widget.deleteLater()
         self.switches.clear()
         self.restricted_box = None
+        # the router's order comes with the reply (`route`); a backend it does not try has no place
+        self.routed = isinstance(result, dict) and isinstance(result.get("route"), dict)
         for i, b in enumerate(self.backends):
             self.body_layout.insertWidget(i, self._backend_box(i, b))
         restricted = [(b, r) for b in self.backends for r in b.get("restricted") or [] if isinstance(r, dict)]
@@ -144,7 +147,14 @@ class MediaBackendsDialog(QDialog):
     def _backend_box(self, index: int, b: dict[str, Any]) -> QGroupBox:
         bid = str(b.get("id") or "")
         name = tr(NAMES.get(bid, str(b.get("name") or bid)))
-        box = QGroupBox(f"{index + 1}. {name}", self.body)
+        tried = b.get("tried")
+        if bid == "builtin":
+            place: str | None = "1"
+        elif isinstance(tried, int) and not isinstance(tried, bool) and 1 <= tried <= 64:
+            place = str(tried + 1)
+        else:
+            place = None if self.routed else str(index + 1)
+        box = QGroupBox(f"{place}. {name}" if place else name, self.body)
         box.setObjectName(f"mediaBackends.{bid}")
         form = QFormLayout(box)
         role = QLabel(tr(ROLES.get(bid, str(b.get("role") or ""))), box)
@@ -180,6 +190,8 @@ class MediaBackendsDialog(QDialog):
     def _status_label(self, parent: QWidget, bid: str, b: dict[str, Any]) -> QLabel:
         if not b.get("compiledIn"):
             text = tr("Not part of this build")
+        elif b.get("available") and b.get("enabled") and bid != "builtin" and self.routed and b.get("tried") is None:
+            text = tr("Left out by the routing table")
         elif b.get("available") and b.get("enabled"):
             text = tr("In use")
         elif b.get("available"):

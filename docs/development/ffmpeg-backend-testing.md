@@ -49,7 +49,21 @@ target/release/cfa4-cli media-backends
 
 **Elvárt:** három háttér ebben a sorrendben: `builtin` (CFA4-motor), `ffmpeg`
 (`"available": true`, `"version": "n9.0.2"`, `"license": "GPL version 3 or later"`), `gstreamer`.
-A `restricted` listában `libx264` és `libx265` `"available": false`.
+A `restricted` listában `libx264` és `libx265` `"available": false`. Az útválasztó döntése a
+`route` mezőben: a `media.fallback` lánc `software` → `ffmpeg` → `gstreamer` (a saját motor mindig
+elöl), az `ffmpeg` `"tried": 1`, a `gstreamer` `"tried": 2` (vagy `null`, ha nincs a buildben).
+
+### 4a. A sorrend felcserélése a felhasználói táblával
+
+```sh
+mkdir -p ~/.config/cfa4
+printf '[compute.task."media.fallback"]\norder = ["software", "gstreamer", "ffmpeg"]\n' >> ~/.config/cfa4/routing.toml
+target/release/cfa4-cli media-backends
+```
+
+**Elvárt:** a `gstreamer` kerül a második helyre (`"tried": 1`), az `ffmpeg` a harmadikra. Ha a
+sorból kihagyod az `ffmpeg`-et, az állapota `"tried": null`, a Beállítások oldalon *Left out by the
+routing table*. A próba után töröld a sort a `routing.toml`-ból.
 
 ## 5. Dekódolás – a tesztkészlet
 

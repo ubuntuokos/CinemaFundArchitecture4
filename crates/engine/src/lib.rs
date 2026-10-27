@@ -32,6 +32,7 @@ mod marker_export;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
+pub mod media_route;
 pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
