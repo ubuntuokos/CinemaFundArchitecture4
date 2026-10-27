@@ -45,6 +45,7 @@ from .media_backends import MediaBackendsDialog
 from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
 from .panels.clip_dialogs import ClipDialog
+from .panels.credits import CreditsDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -288,6 +289,7 @@ class MainWindow(QMainWindow):
         self.media_backends_dialog: MediaBackendsDialog | None = None
         # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
         self.mode = "Edit"
+        self.credits_dialog: CreditsDialog | None = None
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -2076,6 +2078,10 @@ class MainWindow(QMainWindow):
 
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
         """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid == "graphics.credits.import" and not params:
+            # from the menu or a key, the Credits window; an agent's parameters import directly
+            self.open_credits()
+            return True
         if cid == "history.deleteRedoable" and not params:
             # the History panel menu or its key asks for OK first, as in Premiere (upstream #3075);
             # with parameters (an agent) the command runs as it is
@@ -2982,6 +2988,14 @@ class MainWindow(QMainWindow):
 
     def open_restricted_codecs(self) -> None:
         self._media_backends().show_restricted()
+
+    # ----- credits -----
+    def open_credits(self, path: str | None = None) -> None:
+        """Graphics and Titles ▸ Import Credits Spreadsheet…: the Credits window."""
+        if self.credits_dialog is None:
+            self.credits_dialog = CreditsDialog(self.engine, self)
+            self.credits_dialog.imported.connect(lambda _n: self.schedule_refresh())
+        self.credits_dialog.open_with(path)
 
     def _export_finished(self, path: str, ok: bool) -> None:
         text = (tr("Export finished: {path}") if ok else tr("Export failed: {path}")).replace("{path}", path)
