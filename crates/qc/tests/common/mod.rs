@@ -22,16 +22,38 @@ pub struct Spec {
     pub stretch: Vec<(u32, u32)>,
     /// Write the video track with an unknown codec (no decoder can read it).
     pub unknown_codec: bool,
+    /// Peak amplitude of the 1 kHz tone (0.2: about −14 LUFS in stereo).
+    pub amplitude: f32,
+    /// Seconds of silence in the middle of the audio: `(from, to)`.
+    pub silence: Option<(f32, f32)>,
+    /// The last channel carries no signal.
+    pub mute_last_channel: bool,
+    /// Frames rendered black (luma 16) and frames with a white bar above legal white (luma 255).
+    pub black: Vec<u32>,
+    pub white: Vec<u32>,
 }
 
 impl Default for Spec {
     fn default() -> Self {
-        Spec { frames: 24, audio_channels: Some(2), stretch: Vec::new(), unknown_codec: false }
+        Spec {
+            frames: 24,
+            audio_channels: Some(2),
+            stretch: Vec::new(),
+            unknown_codec: false,
+            amplitude: 0.2,
+            silence: None,
+            mute_last_channel: false,
+            black: Vec::new(),
+            white: Vec::new(),
+        }
     }
 }
 
-fn picture(i: u32) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
+fn picture(i: u32, spec: &Spec) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     let (w, h) = (W as usize, H as usize);
+    if spec.black.contains(&i) {
+        return (vec![16; w * h], vec![128; w * h / 4], vec![128; w * h / 4]);
+    }
     let base = 40 + (i * 7 % 160) as u8;
     let mut y = vec![base; w * h];
     let bar = (i as usize * 3) % w;
@@ -39,6 +61,10 @@ fn picture(i: u32) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
         for x in bar..(bar + 4).min(w) {
             y[row * w + x] = 235;
         }
+    }
+    if spec.white.contains(&i) {
+        // the top quarter of the picture at code 255
+        y.iter_mut().take(w * h / 4).for_each(|v| *v = 255);
     }
     (y, vec![128; w * h / 4], vec![128; w * h / 4])
 }
@@ -52,7 +78,7 @@ pub fn mp4(spec: &Spec) -> Vec<u8> {
     let mut enc = cfa4_h264enc::Encoder::new(cfg).unwrap();
     let mut packets = Vec::new();
     for i in 0..spec.frames {
-        let (y, u, v) = picture(i);
+        let (y, u, v) = picture(i, spec);
         let f = cfa4_h264enc::YuvFrame { y: &y, u: &u, v: &v, y_stride: W as usize, uv_stride: W as usize / 2 };
         packets.extend(enc.try_encode(&f, i64::from(i)).unwrap());
     }
@@ -76,8 +102,13 @@ pub fn mp4(spec: &Spec) -> Vec<u8> {
         at.media_start = Some(i64::from(aenc.priming_samples()));
         let a = mux.add_track(at).unwrap();
         let n = (rate as usize * spec.frames as usize) / FPS as usize;
-        let tone: Vec<f32> = (0..n).map(|k| (k as f32 * 1000.0 * std::f32::consts::TAU / rate as f32).sin() * 0.25).collect();
-        let planes: Vec<&[f32]> = (0..ch).map(|_| tone.as_slice()).collect();
+        let mut tone: Vec<f32> = (0..n).map(|k| (k as f32 * 1000.0 * std::f32::consts::TAU / rate as f32).sin() * spec.amplitude).collect();
+        if let Some((a, b)) = spec.silence {
+            let (a, b) = ((a * rate as f32) as usize, ((b * rate as f32) as usize).min(n));
+            tone[a..b].iter_mut().for_each(|x| *x = 0.0);
+        }
+        let mute = vec![0.0f32; n];
+        let planes: Vec<&[f32]> = (0..ch).map(|c| if spec.mute_last_channel && c + 1 == ch { mute.as_slice() } else { tone.as_slice() }).collect();
         let mut aps = aenc.encode(&planes);
         aps.extend(aenc.flush());
         for p in &aps {

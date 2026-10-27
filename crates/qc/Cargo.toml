@@ -10,6 +10,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+cfa4-audio-dsp = { workspace = true }
 cfa4-codecs = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
@@ -19,6 +20,7 @@ cfa4-time = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+png = "0.18"
 sha2 = "0.10"
 toml = "1"
 
