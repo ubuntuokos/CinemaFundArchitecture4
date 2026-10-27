@@ -10,7 +10,7 @@ Ez a v1.1 Stream Copy terv és az MPEG-TS muxer terv összevont változata. A TS
 
 A v1.5 a tulajdonos 2026-10-27-i döntéseit vezeti át (lásd a Döntési naplót); az érintett részeket \[v1.5\] jelöli.
 
-**Dokumentumazonosító:** CFA4-SCE-001 · **Verzió:** 1.5 (végleges) · **Repository:** https://github.com/ubuntuokos/CinemaFundArchitecture4 · **Célplatform:** Ubuntu 26.04 LTS, amd64 · **Technológiai alapok:** Rust/Cargo, Qt6 (FFmpeg 9.0.2 csak CI-teszt-orákulum) · **Implementáció:** Stream Copy és TS még nem; Smart Cut/Render WP-00–WP-02 folyamatban, nem a main-ben.
+**Dokumentumazonosító:** CFA4-SCE-001 · **Verzió:** 1.5 (végleges) · **Repository:** https://github.com/ubuntuokos/CinemaFundArchitecture4 · **Célplatform:** Ubuntu 26.04 LTS, amd64 · **Technológiai alapok:** Rust/Cargo, Qt6 (e terv hatókörében az FFmpeg 9.0.2 csak CI-teszt-orákulum) · **Implementáció:** Stream Copy és TS még nem; Smart Cut/Render WP-00–WP-02 folyamatban, nem a main-ben.
 
 ## Döntési napló (v1.5)
 
@@ -26,6 +26,8 @@ A tulajdonos 2026-10-27-én az egyesített terv ellenőrzésének mind a hét ja
 8. **Egységes parancsnévtér.** Minden exportmód az export.analyze, export.plan, export.start, export.cancel és export.validate parancsokon keresztül érhető el; a mód és a hatókör a terv paramétere. A meglévő export.formats, export.resolve és export.queue.\* megmarad. (17. fejezet)
 
 **Véglegesítve 2026-10-27:** a tulajdonos a 8. döntést is elfogadta, és a tervet véglegesnek nyilvánította. A megvalósítás a Qt port elkészülte után indul, a 22. fejezet fázissorrendje szerint. Nyitva csak a repó oldali teendők maradnak: a két párhuzamos Smart Cut/Render terv összefésülése, az R1 dokumentum átnevezése („határ-újrakódolás”) és FFmpeg-utalásainak javítása.
+
+**Hatókör az FFmpeg backenddel (2026-10-27):** az ADR 0005 (#224) óta az FFmpeg ≥ 9.0.2 a termékben kiegészítő backend lehet a `cfa4-ffmpeg` crate-en keresztül; ennek terve a [CFA4-FFMPEG-BACKEND-R1](CFA4-FFMPEG-BACKEND-R1-2026-10-27.md). E terv „FFmpeg csak CI-orákulum” szabálya a Strict/Compatible Stream Copy, a GOP Smart Cut, a Smart Render és a natív MPEG-TS/M2TS muxer végrehajtására vonatkozik: ezek a CFA4 saját Rust-motorján futnak, és nem függhetnek az FFmpeg backendtől vagy workertől (CFA4-FFMPEG-BACKEND-R1, 9. fejezet). Smart Renderben az FFmpeg legfeljebb a `cfa4-route` által választott, külön igazolt kódolási vagy dekódolási háttér lehet; ettől egy szakasz nem válik másolhatóvá.
 
 ## 1. Célkitűzés
 
