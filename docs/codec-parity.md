@@ -1,6 +1,6 @@
 # Codec parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (HEVC software encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (AC-3 / E-AC-3 encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
@@ -43,8 +43,8 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 |---|---|---|---|---|---|---|
 | PCM (WAV, BWF, AIFF, MOV, MXF, Blu-ray / DVD LPCM) | yes | yes, BWF timecode | WAV, AIFF, MOV, MXF | sample-exact | 95% | — |
 | AAC (LC, HE, LATM) | decode + encode | own decoder (LC, HE core), LATM | own LC encoder | loudness oracle vs ffmpeg | 90% | 3–5 h |
-| AC-3 | decode (licensed) | own decoder (ATSC A/52) | none | conformance | 80% | — |
-| E-AC-3 (Dolby Digital Plus) | decode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension, 7.1 and other layouts from dependent substreams with custom channel maps; **no** adaptive hybrid transform or enhanced coupling | none | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS); 7.1 72–86 dB | 85% | 5–10 h |
+| AC-3 | decode + encode (licensed) | own decoder (ATSC A/52) | own encoder (#86): 1.0–5.1, 32–640 kb/s, rematrixing, no coupling / block switching (#120); **not yet in export** (#119) | conformance; encoder: ffmpeg decodes with CRC checking, SNR equal to or above ffmpeg's encoder | 85% | 5–10 h (export wiring) |
+| E-AC-3 (Dolby Digital Plus) | decode + encode | own decoder (ATSC A/52 Annex E, #647): independent substream, 1–6 blocks, spectral extension, 7.1 and other layouts from dependent substreams with custom channel maps; **no** adaptive hybrid transform or enhanced coupling | own encoder (#86): 1.0–5.1, 32–1024 kb/s, six-block frames; no 7.1 / spectral extension (#120); **not yet in export** (#119) | SNR vs ffmpeg 65–91 dB (raw, MP4, MOV, Matroska, TS); 7.1 72–86 dB | 85% | 5–10 h |
 | DTS, DTS-HD MA / HRA, DTS:X | decode | `cfa4-dts`, FFmpeg's decoder via the harletty-bridge `dca` port, LGPL-2.1-or-later (#83): core up to 5.1, Master Audio lossless up to 7.1 / 192 kHz, High Resolution core + XXCH, the DTS:X bed; in Matroska, MP4, MPEG-TS / Blu-ray; **no** DTS:X heights on their own speakers (#130), Express / 14-bit / DTS-ES XCh / raw `.dts` (#132) | none | core bit-exact vs ffmpeg (raw, Matroska, MP4, TS, random access); Master Audio unverified here (#131) | 70% | — |
 | MP3 / MP2 | decode + MP3 encode | MP3: symphonia (MPL-2.0); MP1 / MP2: own decoder (ISO/IEC 11172-3 / 13818-3, #809), also the bit rate / mode combinations ffmpeg writes by default (mono 384 kbit/s); in raw, MP4, MOV (#800), Matroska, TS, PS | **none** | MP1 / MP2: SNR vs ffmpeg 73–84 dB; MP2 in MP4 / MOV within 1e-4 of ffmpeg, also after a seek (#800) | 65% | 10–20 h (MP3 encoder) |
 | Opus | — (not a Premiere import format) | own decoder, RFC 8251 range-exact | none | conformance vectors | ahead | — |
@@ -56,7 +56,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 - **Ahead of Premiere:** VP9, Opus, APV decode / encode; bit-exact software decoders everywhere,
   including Linux and FreeBSD, where Premiere does not run.
 - **Behind, by user impact:** 10-bit / 4:2:2 H.264 and HEVC in software ([G3](gaps.md#g3-10-bit-and-422-camera-media-needs-hardware)),
-  E-AC-3, camera RAW, AV1 software encoding, HEVC B pictures and 4:2:2 encoding, MPEG-2 / JPEG 2000 encoding for broadcast
+  E-AC-3 decode tools, camera RAW, AV1 software encoding, HEVC B pictures and 4:2:2 encoding, MPEG-2 / JPEG 2000 encoding for broadcast
   and DCP, DV, WMV.
 - **Codec dimension: ~60%, 150–250 h** ([target-app-parity.md](target-app-parity.md#by-dimension)).
 
@@ -64,6 +64,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | AC-3 / E-AC-3 encoder (#86) |
 | 2026-10-26 | minor | HEVC software encoder (Main / Main 10, `cfa4_hevc::encode`), H.265 export without hardware |
 | 2026-10-26 | minor | HEVC 4:2:2 / 4:4:4 and 12-bit decode (Main 4:2:2 10, Main 4:4:4, Main 12) |
 | 2026-10-26 | minor | HEVC monochrome (4:0:0) decode |
