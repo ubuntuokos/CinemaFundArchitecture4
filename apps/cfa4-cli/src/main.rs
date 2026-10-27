@@ -110,6 +110,7 @@ SUBCOMMANDS
   settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
+  media-backends                engine + FFmpeg / GStreamer backends, status, restricted codecs
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
                                 stdin/stdout with binary frames (docs/qt-gui.md); --autosave
@@ -261,7 +262,20 @@ fn register_gpu_frame_renderer() {
 }
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
+/// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
+/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
+/// Backends.
+fn register_ffmpeg() {
+    cfa4_ffmpeg::register_status();
+    match cfa4_ffmpeg::register() {
+        Ok(status) => log::info!("FFmpeg {} ({}) is a fallback media backend", status.version, status.license),
+        Err(e) => log::info!("FFmpeg fallback not used: {e}"),
+    }
+}
+
 fn register_gstreamer() {
+    cfa4_gstreamer::register_status();
     match cfa4_gstreamer::register() {
         Ok(status) => log::info!("GStreamer {} is the fallback media backend", status.version),
         Err(e) => log::info!("GStreamer fallback not used: {e}"),
@@ -311,6 +325,7 @@ async fn cli() {
         return;
     }
     register_hardware_decoders();
+    register_ffmpeg();
     register_gstreamer();
     register_gpu_frame_renderer();
     let Some(cmd) = a.pos(0) else { usage("missing subcommand") };
@@ -547,6 +562,13 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "media-backends" => {
+            let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);
+            match settings_cmd::media_backends(dir) {
+                Ok(v) => print(&a, &v),
+                Err(e) => fail(e),
+            }
+        }
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
                 usage(format!("unknown mcp option `{opt}`"));

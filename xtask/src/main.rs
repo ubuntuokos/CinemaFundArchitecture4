@@ -83,6 +83,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("engine", 4),
     ("platform", 5),
     ("gstreamer", 5),
+    ("ffmpeg", 5),
     ("ui-egui", 5),
     ("automation", 5),
     ("cfa4", 6),
@@ -132,8 +133,9 @@ fn workspace_crates(md: &Value) -> Vec<(String, Vec<String>)> {
         .as_array()
         .into_iter()
         .flatten()
-        // External vendor crates have their own provenance checks; they are not CFA4 architecture layers.
-        .filter(|p| p["name"] != "xtask" && p["name"] != "cfa4-docpath" && p["name"] != "cfa4-ui")
+        // External vendor crates (vendor/cfa4-libs, vendor/ffmpeg-bindings) have their own provenance
+        // checks; they are not CFA4 architecture layers.
+        .filter(|p| !matches!(p["name"].as_str(), Some("xtask" | "cfa4-docpath" | "cfa4-ui" | "rsmedia" | "rsmpeg" | "rusty_ffmpeg")))
         .map(|p| {
             let deps = p["dependencies"]
                 .as_array()

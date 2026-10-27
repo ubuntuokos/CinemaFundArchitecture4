@@ -1,0 +1,38 @@
+[package]
+name = "cfa4-ffmpeg"
+description = "FFmpeg (>= 9.0.2) supplementary media backend for CFA4 (layer L5): probes the FFmpeg the build links, opens media the Rust engine cannot open and decodes it at its native bit depth, as a fallback behind the own engine (ADR 0005)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# Off by default: building with it needs FFmpeg >= 9.0.2 development files (headers and .pc files),
+# for example the GPL-3 build of scripts/dev/build-ffmpeg-9.0.2.sh under /opt/cfa4/ffmpeg-9.0.2.
+# Without it every entry point reports `Error::Unavailable` and the Rust engine works as before.
+default = []
+ffmpeg = ["dep:rsmedia", "dep:rsmpeg"]
+
+[dependencies]
+cfa4-color = { workspace = true }
+cfa4-frame = { workspace = true }
+cfa4-media = { workspace = true }
+cfa4-route = { workspace = true }
+cfa4-time = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+# rsmedia (MIT OR Apache-2.0): safe Rust API over the FFmpeg libraries, through rsmpeg (MIT) and
+# rusty_ffmpeg (MIT). Vendored byte-for-byte from pinned commits under vendor/ffmpeg-bindings/
+# (scripts/dev/vendor_ffmpeg_bindings.py, SOURCE_MANIFEST.json, checked by the F1-02 dependency
+# audit): no Cargo Git source. FFmpeg itself is dynamically linked, GPL-3 build (ADR 0005).
+rsmedia = { workspace = true, optional = true }
+# The same rsmpeg rsmedia builds on, for codec lookups rsmedia does not re-export.
+rsmpeg = { workspace = true, optional = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }
+serde_json = { workspace = true }

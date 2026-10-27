@@ -1,0 +1,21 @@
+{
+  "source_repository": "https://github.com/phial3/rusty_ffmpeg",
+  "source_commit": "045c0262cea4f83d504d5c588e2e98e03655e7bb",
+  "original_crate_manifest_blob_sha1": "b53da8d663a9a562621fb703fa9008d44075c1a6",
+  "note": "Sources, build script, licences and README copied byte-for-byte from the pinned upstream commit by scripts/dev/vendor_ffmpeg_bindings.py; Cargo.toml adapted (Git dependencies to local paths, no tests, examples or benches). Used only by cfa4-ffmpeg with its `ffmpeg` feature (ADR 0005).",
+  "files": {
+    "LICENSE": "e662c7862164f4dfb47bd395c151b6f94d5ea1c2",
+    "README.md": "ae096cf0a317247294bf491f84888ff49e21c2f6",
+    "build.rs": "bd8638cfc8b6d27e5b4ec162db1a619e2f94b74a",
+    "src/README.md": "1268265d92ea8b279c0acaa754b010f60b7940dd",
+    "src/avutil/_avutil.rs": "0485c8dc93a1b5fc80b2346387723be64fc5055a",
+    "src/avutil/channel_layout.rs": "d9434e383f9cf74dc36c07f7aefa27786818a046",
+    "src/avutil/common.rs": "75472e16e8709ddf6330b87e5e43b98f95ac7103",
+    "src/avutil/error.rs": "6f4919774078de644eb8126e6439eea5a9cc035e",
+    "src/avutil/mod.rs": "316bd0ff45aa8fae56e5ad59ffd798b31a15ac28",
+    "src/avutil/pixfmt.rs": "818e7b2789bc252eefad263cbe812be154cf20cc",
+    "src/avutil/rational.rs": "eb01bce6df224466e955fc73f7d194bd1dfbeaec",
+    "src/binding.rs": "c0718e976fc93d1c0fadafd97501660ae266b0a7",
+    "src/lib.rs": "3ff1233839a369da76333efe7c8392377f84eba7"
+  }
+}

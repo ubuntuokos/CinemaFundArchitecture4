@@ -10,6 +10,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod animated;
+pub mod backends;
 pub mod cache;
 pub mod cancel;
 pub mod digits;
@@ -181,6 +182,7 @@ pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
 ];
 
+pub use backends::{BackendEntry, BackendReport, RestrictedItem, backend_enabled, backend_reports, register_backend, set_backend_enabled};
 pub use fallback::{Fallback, audio_extensions, importable_extensions, open_with_fallback, register_fallback, video_extensions};
 
 /// Whether `path` has an extension we import: the built-in lists plus those of registered

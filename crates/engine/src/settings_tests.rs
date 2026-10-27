@@ -95,6 +95,7 @@ fn categories_follow_premiere_order() {
             "graphics",
             "labels",
             "media",
+            "mediaBackends",
             "mediaAnalysis",
             "mediaCache",
             "memory",

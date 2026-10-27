@@ -17,6 +17,10 @@ default = []
 # Optional GStreamer fallback media backend (ADR 0002; needs libgstreamer1.0-dev and
 # libgstreamer-plugins-base1.0-dev to build). Without it the app behaves exactly as before.
 gstreamer = ["cfa4-gstreamer/gstreamer"]
+# FFmpeg (>= 9.0.2, GPL-3 build) supplementary media backend (ADR 0005; needs the FFmpeg development
+# files, e.g. PKG_CONFIG_PATH=/opt/cfa4/ffmpeg-9.0.2/lib/pkgconfig from
+# scripts/dev/build-ffmpeg-9.0.2.sh). Without it the app behaves exactly as before.
+ffmpeg = ["cfa4-ffmpeg/ffmpeg"]
 # Speech-to-text (Text panel ▸ Transcribe) with Whisper on the CPU, and model downloads.
 whisper = ["cfa4-engine/whisper", "cfa4-engine/speech-download"]
 
@@ -34,6 +38,7 @@ cfa4-media = { workspace = true }
 cfa4-codecs = { workspace = true }
 cfa4-platform = { workspace = true }
 cfa4-gstreamer = { workspace = true }
+cfa4-ffmpeg = { workspace = true }
 log = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-mpegts = { workspace = true }

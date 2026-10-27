@@ -1652,3 +1652,31 @@
 	Target Duration:	Célhossz:
 	Variations:	Változatok:
 	the selected clip is not remixed	a kijelölt klip nincs remixelve
+# Settings ▸ Media Backends and Help ▸ Restricted Codecs (ADR 0005, docs/licensing.md §7)
+	After installing, restart CFA4.	Telepítés után indítsa újra a CFA4-et.
+	Available, switched off	Elérhető, kikapcsolva
+	CFA4 engine	CFA4-motor
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	A CFA4 saját motorja minden fájlt megnyit, amelyet tud. Az alábbi kiegészítő hátterek ebben a sorrendben, csak azoknál a fájloknál lépnek be, amelyeket a motor még nem tud megnyitni. Egy háttér kikapcsolása az ezután megnyitott fájlokra vonatkozik.
+	Capabilities	Képességek
+	Copy command	Parancs másolása
+	H.264 software encoding (x264)	H.264 szoftveres kódolás (x264)
+	HEVC software encoding (x265)	HEVC szoftveres kódolás (x265)
+	In use	Használatban
+	Licence	Licenc
+	Media Backends	Médiahátterek
+	Media Backends…	Médiahátterek…
+	Not available	Nem érhető el
+	Not part of this build	Ez a változat nem tartalmazza
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Saját Rust-dekóderek és -kódolók: mindig ezek az elsők, és ezek a tartalék, ha egy kiegészítő háttér hibázik
+	Restricted Codecs…	Korlátozott kodekek…
+	Restricted codecs	Korlátozott kodekek
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Egyes kodekek szabad szoftverek, de szabadalommal védett formátumot valósítanak meg. Az Ubuntuhoz hasonlóan a CFA4 alapból nem telepíti őket: az alapcsomag nélkülük is működik, és Ön dönti el, telepíti-e őket. Használatuk egyes országokban korlátozott lehet; ellenőrizze, hogy ahol Ön van, megengedett-e.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Kiegészítő dekóder azokhoz a formátumokhoz, amelyeket a saját motor még nem olvas (10 bites és 4:2:2-es kameraanyag, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Kiegészítő dekóder a rendszer GStreamerjéből (Ogg Theora, FLV, WMV és más formátumok); LGPL, az Ubuntu tárolóiból
+	The engine did not answer: {message}	A motor nem válaszolt: {message}
+	To install them: {command}	Telepítésük: {command}
+	Use this backend	Ennek a háttérnek a használata
+	Version	Verzió
+	installed	telepítve
+	not installed	nincs telepítve
+	on	be
