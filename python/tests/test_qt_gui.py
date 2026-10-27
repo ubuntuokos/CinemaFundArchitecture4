@@ -2378,11 +2378,15 @@ def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: 
         assert dialog is not None and dialog.objectName() == "interpretFootage"
         assert wait_until(app, lambda: "rec709" in dialog.choices and "—" not in dialog.detected.text(), 10_000), dialog.detected.text()
         assert dialog.chosen() == "auto"
-        dialog.choices["rec709"].setChecked(True)
+        # RED Log3G10 / REDWideGamutRGB is offered (REDCINE-X exports, #252)
+        red = dialog.choices.get("log3g10-rwg")
+        assert red is not None and red.text() == "RED Log3G10 / REDWideGamutRGB"
+        red.setChecked(True)
         dialog.findChild(QtWidgets.QPushButton, "interpretFootage.ok").click()
         info = {}
         engine.execute("media.colorInfo", {"item": item}, on_reply=lambda r, _b: info.update(r))
-        assert wait_until(app, lambda: info.get("override") == "rec709", 10_000), info
+        assert wait_until(app, lambda: info.get("override") == "log3g10-rwg", 10_000), info
+        assert info.get("hdr") is True
     finally:
         win._quit_confirmed = True
         win.close()
