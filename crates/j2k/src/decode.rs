@@ -576,6 +576,8 @@ fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
         }
         match read_packet(&tile.data, pos, packed, &mut comps, p, &tile.params) {
             Ok(next) => pos = next,
+            // a stream using a tool we lack must not decode to a silently incomplete picture
+            Err(e @ Error::Unsupported(_)) => return Err(e),
             // a damaged or truncated packet ends the tile; what arrived still decodes
             Err(_) => break,
         }

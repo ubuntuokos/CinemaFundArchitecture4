@@ -183,3 +183,23 @@ fn packed_packet_headers_decode_like_unpacked_ones() {
         }
     }
 }
+
+#[test]
+fn ht_contributions_in_a_second_layer_are_unsupported_not_dropped() {
+    // one 8×8 component, one HT code-block, two layers that both contribute a cleanup pass
+    let mut d = codestream(8, 8, &[(1, 1)], 0, (4, 4), 2, None);
+    let cod = d.windows(2).position(|w| w == [0xFF, 0x52]).unwrap();
+    d[cod + 12] = ht::STYLE_HT; // code-block style (after the marker, Lcod, Scod, SGcod, levels, xcb, ycb)
+    // layer 0: included (tag trees), no zero bit-planes, one pass, Lblock 3, length 0;
+    // layer 1: included again, one more pass
+    let body = [0b1110_0000, 0b1100_0000];
+    let sot = d.windows(2).position(|w| w == [0xFF, 0x90]).unwrap();
+    d[sot + 6..sot + 10].copy_from_slice(&(14 + body.len() as u32).to_be_bytes());
+    let eoc = d.len() - 2;
+    d.splice(eoc..eoc, body);
+    assert_eq!(decode(&d).err(), Some(Error::Unsupported("HT code-block contributions in more than one layer")));
+    // the first layer alone still decodes
+    let mut one = d.clone();
+    one[cod + 6..cod + 8].copy_from_slice(&1u16.to_be_bytes());
+    assert!(decode(&one).is_ok());
+}
