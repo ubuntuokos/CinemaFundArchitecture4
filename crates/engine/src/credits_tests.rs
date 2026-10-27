@@ -798,3 +798,34 @@ fn inline_styles_leaders_and_parallel_columns_with_the_real_text_engine() {
     assert!(st["inlineStyles"].as_array().unwrap().iter().any(|n| n == "Bold"));
     assert!(st["contentStyles"].as_array().unwrap().iter().any(|n| n == "Leaders"));
 }
+
+// ----- C5 (2): portraits, videos, card entrances -----
+
+#[test]
+fn portraits_videos_and_card_entrances_with_the_real_engine() {
+    use crate::media_test_util::make_movie;
+    let mut s = demo("credits-portraits");
+    let dir = tmp_dir("credits-portraits");
+    image::RgbaImage::from_pixel(300, 400, image::Rgba([90, 120, 200, 255])).save(dir.join("anna.png")).unwrap();
+    make_movie(&dir.join("intro.mp4"), cfa4_media::DemoScene::Aurora, 320, 180, 12);
+    let styling = r#"{"pageStyles":[{"name":"In","behaviour":"card","cardFrames":150,"entrance":"slideLeft","staggerFrames":6}]}"#;
+    let csv = "Body,Content Style,Page Style\n{{Pic anna.png}} Kiss Anna,Portraits,In\nNagy Béla,,\n,,\n{{Video intro.mp4 180}},,\n";
+    let v = s.execute("graphics.credits.import", json!({"csv": csv, "styling": styling, "pictureDir": dir})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    let pics: Vec<ClipId> = v["clips"][0]["pictures"].as_array().unwrap().iter().map(|c| ClipId(c.as_u64().unwrap())).collect();
+    assert_eq!(pics.len(), 2, "a portrait and a video: {v}");
+    let page = item(&s, clips(&v)[0]);
+    let (portrait, video) = (item(&s, pics[0]), item(&s, pics[1]));
+    // the video is 12 frames at 24 fps: half a second, shorter than the card, so it ends early
+    assert!(video.duration < page.duration && video.duration.0 > 0);
+    // the portrait slides in with its block; the video comes later (the next block)
+    let pos = |it: &TrackItem| it.effects.iter().find(|e| e.effect == "motion").unwrap().params["position"].clone();
+    assert!(pos(&portrait).is_animated() && pos(&video).is_animated());
+    let arrives = |it: &TrackItem| pos(it).keyframes.iter().map(|k| k.time).max().unwrap();
+    assert!(arrives(&video) > arrives(&portrait));
+    // the name is under its portrait
+    let name = page.effects.iter().find(|e| matches!(e.params.get("text").map(|p| &p.value), Some(ParamValue::Text(t)) if t == "Kiss Anna")).unwrap();
+    let ParamValue::Vec2(at) = name.params["position"].value.clone() else { panic!() };
+    let ParamValue::Vec2(face) = pos(&portrait).value else { panic!() };
+    assert!((at.x - face.x).abs() < 1e-6 && face.y < at.y);
+}

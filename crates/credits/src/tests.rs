@@ -116,7 +116,7 @@ fn blocks_gaps_styles_and_pages() {
 
 #[test]
 fn hungarian_headers_and_unknown_markup_warn() {
-    let csv = "Fej;Törzs;Stílus\nRendező;{{Pic logo}}Kiss Anna;\n";
+    let csv = "Fej;Törzs;Stílus\nRendező;{{Hang zene.wav}}Kiss Anna;\n";
     let c = read(csv.as_bytes(), &Styling::default()).unwrap();
     assert_eq!(c.pages[0].blocks[0].body, vec!["Kiss Anna"]);
     assert_eq!(c.warnings.len(), 1);
@@ -282,8 +282,11 @@ fn tails_stand_beside_their_body_lines() {
 fn picture_tags_parse() {
     let (rest, p) = sheet::take_pictures("{{Pic logo.png}} {{Kép Alap logó.png 120px}}{{Bold}}x");
     assert_eq!(rest, " {{Bold}}x");
-    assert_eq!(p, vec![Picture { file: "logo.png".into(), height: None }, Picture { file: "Alap logó.png".into(), height: Some(120.0) }]);
-    assert_eq!(sheet::take_pictures("{{Pic}} {{Pic a b}}").1, vec![Picture { file: "a b".into(), height: None }]);
+    assert_eq!(
+        p,
+        vec![Picture { file: "logo.png".into(), height: None, video: false }, Picture { file: "Alap logó.png".into(), height: Some(120.0), video: false }]
+    );
+    assert_eq!(sheet::take_pictures("{{Pic}} {{Pic a b}}").1, vec![Picture { file: "a b".into(), height: None, video: false }]);
 }
 
 #[test]
