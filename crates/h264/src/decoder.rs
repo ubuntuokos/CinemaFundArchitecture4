@@ -9,7 +9,7 @@
 use crate::dpb::{Dpb, Output, OutputMeta, RefMark};
 use crate::error::{Error, Result, ensure, invalid, unsupported};
 use crate::params::{Pps, Sps};
-use crate::picture::{Chroma, Frame, FrameRef, MbKind, MbState, Planes, RefPic};
+use crate::picture::{Chroma, Coding, Frame, FrameRef, MbKind, Planes, RefPic};
 use crate::slice::{NalHeader, Poc, PocState, SliceHeader, SliceType, is_new_picture, nal_type};
 use crate::slicedec::{PicState, SliceDecoder};
 use crate::transform::LevelScale;
@@ -364,9 +364,13 @@ impl Decoder {
         let Some(pending) = self.pending.as_mut() else {
             return invalid("slice without a started picture");
         };
-        let refs = self
-            .dpb
-            .build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e| RefPic { frame: e.frame.clone(), long_term: e.mark == RefMark::Long })?;
+        let refs = self.dpb.build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e| RefPic {
+            frame: e.frame.clone(),
+            long_term: e.mark == RefMark::Long,
+            field: None,
+            poc: e.poc,
+            field_poc: e.frame.field_poc(),
+        })?;
         if !sh.slice_type.is_intra() {
             ensure!(!refs[0].is_empty(), "no reference pictures available for inter slice");
             if sh.slice_type.is_b() {
@@ -434,13 +438,14 @@ impl Decoder {
                 let last = self.dpb.entries.iter().filter(|e| !e.non_existing).max_by_key(|e| e.frame.id).map(|e| e.frame.clone());
                 let bd = sps.bit_depth_luma;
                 let chroma = Chroma(sps.chroma_array_type() as u8);
+                let interlaced = !sps.frame_mbs_only;
                 let mut make = |_fnum: u32| {
                     let id = *next_id;
                     *next_id += 1;
                     let f = if bd > 8 {
-                        conceal_frame::<u16>(id, last.as_ref(), mb_w, mb_h, bd, chroma)
+                        conceal_frame::<u16>(id, last.as_ref(), mb_w, mb_h, bd, chroma, interlaced)
                     } else {
-                        conceal_frame::<u8>(id, last.as_ref(), mb_w, mb_h, bd, chroma)
+                        conceal_frame::<u8>(id, last.as_ref(), mb_w, mb_h, bd, chroma, interlaced)
                     };
                     (Arc::new(f), 0, meta.clone())
                 };
@@ -455,7 +460,19 @@ impl Decoder {
         let frame_poc = if sh.has_mmco5() { 0 } else { poc.frame() };
         let id = self.next_id;
         self.next_id += 1;
-        let frame = Arc::new(Frame::new(id, frame_poc, mb_w, mb_h, sps.bit_depth_luma, Chroma(sps.chroma_array_type() as u8)));
+        let coding = if sh.field_pic {
+            Coding::Fields
+        } else if sps.mb_adaptive_frame_field {
+            Coding::Mbaff
+        } else {
+            Coding::Frame
+        };
+        let chroma = Chroma(sps.chroma_array_type() as u8);
+        let frame = Arc::new(Frame::new(id, frame_poc, mb_w, mb_h, sps.bit_depth_luma, chroma, !sps.frame_mbs_only, coding));
+        // tempPicOrderCnt of a picture with MMCO 5 is subtracted from both fields (8.2.1)
+        let temp = if sh.has_mmco5() { poc.frame() } else { 0 };
+        frame.set_field_poc(0, poc.top.wrapping_sub(temp));
+        frame.set_field_poc(1, poc.bottom.wrapping_sub(temp));
         self.pending = Some(PendingPic { frame, sps: sps.clone(), first: sh.clone(), poc, pts, key: sh.idr, slices: Vec::new() });
         Ok(())
     }
@@ -501,7 +518,16 @@ impl Decoder {
 
 /// A "non-existing" frame (8.2.5.2): its samples are never used by a conforming stream, so conceal
 /// it with the latest decoded picture of the same geometry, or neutral grey.
-fn conceal_frame<S: crate::picture::Sample>(id: u32, last: Option<&FrameRef>, mb_w: usize, mb_h: usize, bit_depth: u32, chroma: Chroma) -> Frame {
+#[allow(clippy::too_many_arguments)]
+fn conceal_frame<S: crate::picture::Sample>(
+    id: u32,
+    last: Option<&FrameRef>,
+    mb_w: usize,
+    mb_h: usize,
+    bit_depth: u32,
+    chroma: Chroma,
+    interlaced: bool,
+) -> Frame {
     let mut p = Planes::<S>::gray(mb_w * 16, mb_h * 16, bit_depth, chroma);
     if let Some(f) = last.filter(|f| f.mb_w == mb_w && f.mb_h() == mb_h && f.bit_depth == bit_depth && f.chroma == chroma) {
         let (y, u, v) = f.copy_cropped((0, 0, mb_w * 16, mb_h * 16));
@@ -511,7 +537,7 @@ fn conceal_frame<S: crate::picture::Sample>(id: u32, last: Option<&FrameRef>, mb
             }
         }
     }
-    Frame::from_planes(id, 0, &p, bit_depth)
+    Frame::from_planes(id, 0, &p, bit_depth, interlaced)
 }
 
 /// Decode all slices of one picture and publish its rows.
@@ -524,13 +550,14 @@ fn run_job(frame: FrameRef, slices: Vec<SliceJob>, shared: &Shared, draft: bool)
 }
 
 fn run_job_as<S: crate::deblock::Lanes>(frame: FrameRef, slices: Vec<SliceJob>, shared: &Shared, draft: bool, pool: &Mutex<Vec<PicState<S>>>) {
+    let (field, mbaff) = (None, frame.coding == Coding::Mbaff);
     let reuse = pool.lock().ok().and_then(|mut p| p.pop());
     let mut pic = match reuse {
-        Some(mut p) if p.mb_w == frame.mb_w && p.mb_h == frame.mb_h() && p.planes.chroma == frame.chroma => {
-            p.reset(frame.clone());
+        Some(mut p) if p.mb_w == frame.mb_w && p.mb_h == PicState::<S>::rows_for(&frame, field) && p.planes.chroma == frame.chroma => {
+            p.reset(frame.clone(), field, mbaff);
             p
         }
-        _ => PicState::new(frame.clone()),
+        _ => PicState::new(frame.clone(), field, mbaff),
     };
     pic.skip_deblock = draft;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -548,13 +575,8 @@ fn run_job_as<S: crate::deblock::Lanes>(frame: FrameRef, slices: Vec<SliceJob>, 
         Err(_) => {
             // Make sure readers never block on this frame.
             let fallback = Planes::<S>::gray(frame.width, frame.height, frame.bit_depth, frame.chroma);
-            let blank = vec![MbState::default(); frame.mb_w * frame.mb_h()];
-            for r in 0..frame.mb_h() {
-                if !frame.is_published(r) {
-                    frame.publish(r, Frame::make_row(&fallback, r, &blank, &|_, _, _| u32::MAX));
-                }
-            }
-            pic = PicState::new(frame.clone());
+            frame.publish_all(&fallback);
+            pic = PicState::new(frame.clone(), field, mbaff);
             Some(Error::Invalid("internal error while decoding a picture".into()))
         }
     };
@@ -589,7 +611,8 @@ fn run_job_as<S: crate::deblock::Lanes>(frame: FrameRef, slices: Vec<SliceJob>, 
 }
 
 fn decode_slice<S: crate::deblock::Lanes>(s: &SliceJob, pic: &mut PicState<S>) -> Result<()> {
-    let mut sd = SliceDecoder::new(&s.sh, &s.pps, &s.sps, pic, &s.refs, &s.ls)?;
+    let field_poc = pic.frame.field_poc();
+    let mut sd = SliceDecoder::new(&s.sh, &s.pps, &s.sps, pic, &s.refs, &s.ls, field_poc)?;
     if s.pps.entropy_coding_mode {
         sd.decode_cabac(&s.rbsp)
     } else {

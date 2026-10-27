@@ -185,6 +185,10 @@ impl<A: Accel> Front<A> {
         .map_err(decode_err)?;
         let Some((pps, sps)) = found else { return Err(decode_err("slice without a PPS")) };
         sps.check_supported().map_err(decode_err)?;
+        if !sps.frame_mbs_only {
+            // interlaced coding runs on the software decoder
+            return Err(unsupported("interlaced (field / MBAFF) coding"));
+        }
         if pps.num_slice_groups > 1 {
             return Err(unsupported("slice groups (FMO)"));
         }
