@@ -3472,6 +3472,14 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 bits, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits; Main 10 para secuencias HDR)
 	Encoder	Codificador
+	Encoding	Codificación
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bits
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bits con alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bits
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bits, Film Scan 1, PCM de 24 bits y 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bits con canal alfa, Film Scan 1, PCM de 24 bits y 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bits, Film Scan 1, PCM de 24 bits y 48 kHz
 	Software, or hardware where available	Software, o hardware si está disponible
 	Main (10-bit, HDR)	Main (10 bits, HDR)
 	Main (8-bit; 10-bit for HDR sequences)	Main (8 bits; 10 bits para secuencias HDR)
