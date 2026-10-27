@@ -42,7 +42,7 @@ its version; real editor operations require a future explicitly tested adapter.
 
 CFA4 is free software under the **GNU General Public License, version 3 or later**
 (`GPL-3.0-or-later`, see [LICENSE](LICENSE)). The core application is free to use, change and
-redistribute. Paid offerings (extended support, ready-made packages, separate-process extras,
+redistribute. Paid offerings (extended support, ready-made packages, GPL-licensed paid extras,
 content and services) are described in [docs/licensing.md](docs/licensing.md), which is also the
 policy for reusing code from other projects.
 
