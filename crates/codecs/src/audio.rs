@@ -34,6 +34,8 @@ enum Inner {
     Dts(Box<cfa4_dts::cfa4::Decoder>),
     /// Our MPEG-1/2 audio Layer I and II decoder (ISO/IEC 11172-3, 13818-3).
     Mpa(Box<cfa4_mpa::Decoder>),
+    /// Dolby TrueHD and MLP (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate).
+    TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
 }
 
 /// Opus always decodes at 48 kHz (RFC 7845 §5.1: the input rate in the header is informational).
@@ -186,6 +188,11 @@ impl PacketDecoder {
             _ => 1,
         }
     }
+    /// Dolby TrueHD and MLP. After a reset nothing decodes until the next major sync: callers
+    /// pre-roll [`cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL`] access units (see [`truehd_preroll`]).
+    pub fn truehd() -> Self {
+        Self { inner: Inner::TrueHd(Box::default()), channels: 0 }
+    }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
         matches!(self.inner, Inner::Opus { .. })
@@ -197,6 +204,7 @@ impl PacketDecoder {
             C::Mp3 => Ok(Self::lazy_mpeg_audio(rate)),
             C::Ac3 { .. } | C::Eac3 { .. } => Self::ac3(),
             C::Dts { .. } => Ok(Self::dts()),
+            C::TrueHd { .. } => Ok(Self::truehd()),
             C::Alac { cookie } => Self::new(CODEC_TYPE_ALAC, rate, Some(cookie.clone())),
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_TYPE_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
@@ -261,6 +269,11 @@ impl PacketDecoder {
                 self.channels = out.len();
                 return Ok(out);
             }
+            Inner::TrueHd(d) => {
+                let out = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?.channels;
+                self.channels = out.len();
+                return Ok(out);
+            }
             Inner::Mpa(d) => {
                 // a packet holds one frame or several; a damaged first frame is an error, damage
                 // after a good frame ends the packet
@@ -319,6 +332,7 @@ impl PacketDecoder {
             Inner::Symphonia(d) => d.reset(),
             Inner::Ac3(d) => d.reset(),
             Inner::Dts(d) => d.reset(),
+            Inner::TrueHd(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) => {}
         }
     }
@@ -358,6 +372,12 @@ pub fn aac_output_rate<'a>(asc: &[u8], first_units: impl IntoIterator<Item = &'a
 /// Whether [`PacketDecoder::aac`] upsamples a decoded AAC core at `core` Hz to `rate` (HE-AAC).
 fn upsamples_core(core: u32, rate: u32) -> bool {
     core.checked_mul(2) == Some(rate)
+}
+
+/// Samples to decode before a random-access position in a TrueHD / MLP stream at `rate`, so the
+/// decoder has met a major sync by then.
+pub fn truehd_preroll(rate: u32) -> i64 {
+    cfa4_truehd::cfa4::samples_per_au(rate).unwrap_or(160) * cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL
 }
 
 /// A codec whose packets all decode to the same number of samples (see [`fixed_packet_samples`]).
