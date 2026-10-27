@@ -554,6 +554,9 @@ pub(crate) struct SynthState {
     isa: Isa,
     /// One channel's fixed-point output, reused by the float path.
     scratch: Vec<i32>,
+    /// Every channel's fixed-point output when an XCH downmix has to come out of the
+    /// surrounds before the float conversion.
+    ints: Vec<Vec<i32>>,
     /// Whether the delay lines currently hold 64-band (X96) history. Switching
     /// bank size invalidates them, so they are erased on change — this mirrors
     /// ffmpeg's `set_filter_mode` / `erase_dsp_history`.
@@ -565,7 +568,7 @@ pub(crate) struct SynthState {
 
 impl Default for SynthState {
     fn default() -> Self {
-        Self { channels: Vec::new(), isa: Isa::detect(), scratch: Vec::new(), x96_mode: false, lfe_x96_hist: 0 }
+        Self { channels: Vec::new(), isa: Isa::detect(), scratch: Vec::new(), ints: Vec::new(), x96_mode: false, lfe_x96_hist: 0 }
     }
 }
 
@@ -603,16 +606,37 @@ impl SynthState {
 
         fullband.resize_with(nch, Vec::new);
         self.scratch.resize(nsamples, 0);
-        for ch in 0..nch {
-            // Gather subband samples [band][block] into the per-block input.
-            let mut subs: [&[i32]; DCA_SUBBANDS] = [&[]; DCA_SUBBANDS];
-            for (band, s) in subs.iter_mut().enumerate() {
-                *s = dec.subband(ch, band);
+        if dec.xch_downmixed() {
+            // Modified for CFA4: DTS-ES. The rear centre comes back out of the surrounds in
+            // fixed point (`dmix_sub_xch`), so every channel is synthesized before converting.
+            self.ints.resize_with(nch, Vec::new);
+            for ch in 0..nch {
+                let mut subs: [&[i32]; DCA_SUBBANDS] = [&[]; DCA_SUBBANDS];
+                for (band, s) in subs.iter_mut().enumerate() {
+                    *s = dec.subband(ch, band);
+                }
+                let out = &mut self.ints[ch];
+                out.clear();
+                out.resize(nsamples, 0);
+                bank_32(self.isa, &mut self.channels[ch], perfect, &subs, out);
             }
-            bank_32(self.isa, &mut self.channels[ch], perfect, &subs, &mut self.scratch);
-            let out = &mut fullband[ch];
-            out.clear();
-            out.extend(self.scratch.iter().map(|&x| x as f32 / PCM_SCALE));
+            dec.undo_xch_dmix_channels(&mut self.ints[..nch]);
+            for (out, ints) in fullband.iter_mut().zip(&self.ints) {
+                out.clear();
+                out.extend(ints.iter().map(|&x| x as f32 / PCM_SCALE));
+            }
+        } else {
+            for ch in 0..nch {
+                // Gather subband samples [band][block] into the per-block input.
+                let mut subs: [&[i32]; DCA_SUBBANDS] = [&[]; DCA_SUBBANDS];
+                for (band, s) in subs.iter_mut().enumerate() {
+                    *s = dec.subband(ch, band);
+                }
+                bank_32(self.isa, &mut self.channels[ch], perfect, &subs, &mut self.scratch);
+                let out = &mut fullband[ch];
+                out.clear();
+                out.extend(self.scratch.iter().map(|&x| x as f32 / PCM_SCALE));
+            }
         }
 
         // LFE. lfe_present==2 (DCA_LFE_FLAG_64) uses the 64-tap interpolator,

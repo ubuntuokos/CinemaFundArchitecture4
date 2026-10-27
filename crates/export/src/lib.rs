@@ -20,6 +20,7 @@ mod audio_out;
 mod deflate;
 mod hls_out;
 mod job;
+mod mpeg_out;
 mod mxf_out;
 mod opus_out;
 mod pace;
@@ -33,6 +34,7 @@ mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
+pub use mpeg_out::Mpeg2Container;
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
 pub use pipeline::limit_rgba8;
@@ -148,6 +150,11 @@ pub enum Format {
     /// audio channel ([`opatom_audio_paths`]).
     #[serde(rename = "mxf-opatom", alias = "MxfOpAtom")]
     MxfOpAtom,
+    /// MPEG-2 video (ITU-T H.262, Main Profile 4:2:0, I and P pictures) in an MPEG-2 program stream
+    /// with 16-bit DVD LPCM (`.mpg`), a transport stream with AAC (`.ts`, `.m2ts`), or an
+    /// elementary stream without audio (`.m2v`): [`Mpeg2Container`].
+    #[serde(rename = "mpeg2", alias = "Mpeg2")]
+    Mpeg2,
 }
 
 impl Format {
@@ -179,6 +186,7 @@ impl Format {
             "aac" | "aacaudio" | "m4a" | "adts" => Format::Aac,
             "flac" | "fla" => Format::Flac,
             "opus" | "opusaudio" | "ogg" | "oggopus" => Format::Opus,
+            "mpeg2" | "mpeg2video" | "h262" | "mpg" | "mpeg" | "m2v" | "m2p" | "ts" | "m2ts" | "mts" | "mpegts" | "mpegps" => Format::Mpeg2,
             _ => return None,
         })
     }
@@ -210,6 +218,7 @@ impl Format {
             Format::Opus => "opus",
             Format::MxfOp1a => "mxf-op1a",
             Format::MxfOpAtom => "mxf-opatom",
+            Format::Mpeg2 => "mpeg2",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -232,6 +241,7 @@ impl Format {
             Format::Flac => "flac",
             Format::Opus => "opus",
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
+            Format::Mpeg2 => "mpg",
         }
     }
     pub fn label(self) -> &'static str {
@@ -261,6 +271,7 @@ impl Format {
             Format::Opus => "Opus Audio",
             Format::MxfOp1a => "MXF OP1a",
             Format::MxfOpAtom => "MXF OP-Atom",
+            Format::Mpeg2 => "MPEG-2",
         }
     }
     /// Numbered stills, one per frame ([`image_sequence_path`]).
@@ -302,7 +313,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 25] = [
+    pub const ALL: [Format; 26] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -328,6 +339,7 @@ impl Format {
         Format::Opus,
         Format::MxfOp1a,
         Format::MxfOpAtom,
+        Format::Mpeg2,
     ];
 }
 
@@ -382,6 +394,16 @@ pub struct ExportSettings {
     /// Video codec of the MXF formats (DNxHR unless set; the ProRes / DNxHR profile fields apply).
     #[serde(default)]
     pub mxf_video_codec: MxfVideoCodec,
+    /// Container of MPEG-2 exports: `ps`, `ts`, `m2ts` or `es` (empty = from the path's
+    /// extension, a program stream unless it is `.ts`, `.m2ts` / `.mts` or `.m2v`).
+    #[serde(default)]
+    pub mpeg2_container: String,
+    /// MPEG-2 4:2:2 Profile instead of Main Profile 4:2:0.
+    #[serde(default)]
+    pub mpeg2_422: bool,
+    /// MPEG-2 constant quantiser_scale_code 1-31 (lower is better) instead of the bitrate.
+    #[serde(default)]
+    pub mpeg2_quantizer: Option<u8>,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -608,6 +630,9 @@ impl Default for ExportSettings {
             cineform_profile: String::new(),
             cineform_quality: String::new(),
             mxf_video_codec: MxfVideoCodec::default(),
+            mpeg2_container: String::new(),
+            mpeg2_422: false,
+            mpeg2_quantizer: None,
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -679,6 +704,9 @@ impl ExportSettings {
             && !matches!(self.audio_codec(), AudioCodec::Aac | AudioCodec::Opus)
             && !self.supports_sample_format(sample_format)
         {
+            if self.format == Format::Mpeg2 {
+                return Err(ExportError::Unsupported("MPEG-2 program streams carry 16-bit LPCM: set the sample size to 16".into()));
+            }
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
@@ -690,6 +718,23 @@ impl ExportSettings {
         }
         if self.format == Format::Hevc && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("H.265 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
+        }
+        if self.format == Format::Mpeg2 {
+            if self.mpeg2_quantizer.is_some_and(|q| !(1..=31).contains(&q)) {
+                return Err(ExportError::Unsupported("MPEG-2 quantiser must be between 1 and 31".into()));
+            }
+            if matches!(self.bitrate_mode, BitrateMode::Vbr2Pass | BitrateMode::Crf) {
+                return Err(ExportError::Unsupported("MPEG-2 export encodes to an average bitrate: choose CBR or VBR, 1 pass".into()));
+            }
+            if !self.mpeg2_container.trim().is_empty() && Mpeg2Container::from_name(&self.mpeg2_container).is_none() {
+                return Err(ExportError::Unsupported(format!("unknown MPEG-2 container {:?}: choose ps, ts, m2ts or es", self.mpeg2_container)));
+            }
+            if self.has_audio()
+                && self.audio_codec() == AudioCodec::Pcm
+                && self.audio.sample_rate.is_some_and(|r| ![48_000, 96_000, 44_100, 32_000].contains(&r))
+            {
+                return Err(ExportError::Unsupported("MPEG-2 program streams carry LPCM at 48, 96, 44.1 or 32 kHz".into()));
+            }
         }
         if self.format == Format::Av1 && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
@@ -820,7 +865,7 @@ pub type AudioEncoderFactory = fn(format: Format, sample_rate: u32, channels: u3
 fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
     static F: OnceLock<RwLock<Vec<EncoderFactory>>> = OnceLock::new();
     F.get_or_init(|| {
-        RwLock::new(vec![h264_factory, hevc_factory, av1_factory, vp9_factory, prores_factory, dnx_factory, apv_factory, cineform_factory, mjpeg_factory])
+        RwLock::new(vec![h264_factory, hevc_factory, av1_factory, vp9_factory, prores_factory, dnx_factory, apv_factory, cineform_factory, mjpeg_factory, mpeg2_factory])
     })
 }
 fn audio_factories() -> &'static RwLock<Vec<AudioEncoderFactory>> {
@@ -1119,6 +1164,85 @@ fn mjpeg_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
     (format == Format::Mjpeg).then(|| Ok(Box::new(MjpegEncoder { w: w as u16, h: h as u16, quality: s.quality.clamp(1, 100), rate }) as Box<dyn VideoEncoder>))
 }
 
+/// MPEG-2 video (our encoder): BT.709 limited-range 4:2:0, average bitrate, I and P pictures.
+struct Mpeg2Encoder {
+    enc: cfa4_mpeg2v::encode::Encoder,
+    rate: FrameRate,
+    w: u16,
+    h: u16,
+    /// 4:2:2 Profile.
+    yuv422: bool,
+    y: Vec<u8>,
+    u: Vec<u8>,
+    v: Vec<u8>,
+}
+
+impl VideoEncoder for Mpeg2Encoder {
+    fn sample_entry(&self) -> SampleEntry {
+        // never written: MPEG-2 goes to program / transport streams, not MPEG-4
+        let fourcc = cfa4_isobmff::FourCc(*b"mp2v");
+        SampleEntry::video(fourcc, cfa4_isobmff::CodecConfig::Unknown { fourcc, raw: Vec::new() }, self.w, self.h)
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        if self.yuv422 {
+            timed(Stage::Convert, || rgba_to_yuv422_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v));
+        } else {
+            timed(Stage::Convert, || rgba_to_yuv420_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v));
+        }
+        let input = cfa4_mpeg2v::encode::Input { y: &self.y, cb: &self.u, cr: &self.v, y_stride: w, c_stride: w.div_ceil(2) };
+        let p = self.enc.encode(&input).map_err(|e| ExportError::Encode(format!("MPEG-2: {e}")))?;
+        Ok(vec![EncodedPacket { data: p.data, key: p.keyframe, duration: self.rate.den as u32, composition_offset: 0 }])
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        Ok(Vec::new())
+    }
+}
+
+/// The display aspect ratio MPEG-2 signals for `w` x `h` pictures of pixel aspect `par`: 4:3, 16:9
+/// or 2.21:1 when the picture is within 1 % of one, square samples otherwise.
+fn mpeg2_aspect(w: u32, h: u32, par: Option<(u32, u32)>) -> cfa4_mpeg2v::encode::AspectRatio {
+    use cfa4_mpeg2v::encode::AspectRatio;
+    let Some((n, d)) = par.filter(|(n, d)| *n > 0 && *d > 0 && n != d) else { return AspectRatio::Square };
+    let dar = f64::from(w) * f64::from(n) / (f64::from(h.max(1)) * f64::from(d));
+    [(4.0 / 3.0, AspectRatio::Dar4x3), (16.0 / 9.0, AspectRatio::Dar16x9), (2.21, AspectRatio::Dar221x100)]
+        .into_iter()
+        .find(|(r, _)| (dar / r - 1.0).abs() < 0.01)
+        .map_or(AspectRatio::Square, |(_, a)| a)
+}
+
+fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    if format != Format::Mpeg2 {
+        return None;
+    }
+    Some((|| {
+        if !mpeg_out::mpeg2_rate(rate) {
+            return Err(ExportError::Unsupported(format!("MPEG-2 video has no {} fps: choose 23.976, 24, 25, 29.97, 30, 50, 59.94 or 60", rate.label())));
+        }
+        let (Ok(w16), Ok(h16)) = (u16::try_from(w), u16::try_from(h)) else {
+            return Err(ExportError::Unsupported(format!("MPEG-2 video has no {w}x{h} pictures")));
+        };
+        let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
+        cfg.rate = match s.mpeg2_quantizer {
+            Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
+            None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
+        };
+        if s.mpeg2_422 {
+            cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;
+        }
+        cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
+        cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
+        // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
+        cfg.colour = Some((1, 1, 1));
+        cfg.adaptive_quantization = true;
+        let enc = cfa4_mpeg2v::encode::Encoder::new(cfg).map_err(|e| ExportError::Unsupported(format!("MPEG-2: {e}")))?;
+        Ok(Box::new(Mpeg2Encoder { enc, rate, w: w16, h: h16, yuv422: s.mpeg2_422, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
+    })())
+}
+
 /// AAC-LC (our encoder), 320 kbps stereo by default.
 struct AacEncoder {
     enc: cfa4_aac::Encoder,
@@ -1318,6 +1442,20 @@ pub fn rgba_to_yuv422_10(rgba: &[u8], w: usize, h: usize, y: &mut [u16], cb: &mu
             crr[cx] = (512.0 + 896.0 * v).round().clamp(4.0, 1019.0) as u16;
         }
     });
+}
+
+/// BT.709 limited-range 8-bit 4:2:2 from straight RGBA8 ([`rgba_to_yuv422_10`] rounded to 8 bits).
+pub fn rgba_to_yuv422_8(rgba: &[u8], w: usize, h: usize, y: &mut Vec<u8>, u: &mut Vec<u8>, v: &mut Vec<u8>) {
+    let cw = w.div_ceil(2);
+    let (mut y10, mut u10, mut v10) = (vec![0u16; w * h], vec![0u16; cw * h], vec![0u16; cw * h]);
+    rgba_to_yuv422_10(rgba, w, h, &mut y10, &mut u10, &mut v10);
+    let to8 = |src: &[u16], dst: &mut Vec<u8>| {
+        dst.clear();
+        dst.extend(src.iter().map(|&s| ((s + 2) >> 2).clamp(1, 254) as u8));
+    };
+    to8(&y10, y);
+    to8(&u10, u);
+    to8(&v10, v);
 }
 
 /// The ProRes profile named by [`ExportSettings::prores_profile`].
@@ -2493,6 +2631,8 @@ mod settings_tests;
 #[cfg(test)]
 mod surround_tests;
 
+#[cfg(test)]
+mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
 
