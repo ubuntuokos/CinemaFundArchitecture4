@@ -13,7 +13,7 @@ prefix="${CFA4_FFMPEG_CACHE_DIR:-${HOME}/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v
 if [[ ! -x "${prefix}/bin/ffmpeg" || ! -x "${prefix}/bin/ffprobe" ]]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
-  curl --fail --location --show-error --silent --retry 3 \
+  curl --fail --location --show-error --silent --retry 5 --retry-all-errors --retry-delay 10 \
     --proto '=https' --tlsv1.2 "$source_url" --output "${tmp}/${archive}"
   printf '%s  %s\n' "$sha256" "${tmp}/${archive}" | sha256sum --check
   mkdir -p "${tmp}/src" "$prefix"
