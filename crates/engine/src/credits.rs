@@ -254,7 +254,8 @@ fn cinecred_dir(path: &str) -> Option<std::path::PathBuf> {
         return Some(p.to_path_buf());
     }
     let is_styling = p.file_name().is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(cfa4_credits::cinecred::STYLING_FILE));
-    if is_styling && p.is_file() { p.parent().map(std::path::Path::to_path_buf) } else { None }
+    // a bare `Styling.toml` is in the current folder
+    if is_styling && p.is_file() { p.parent().map(|d| if d.as_os_str().is_empty() { std::path::PathBuf::from(".") } else { d.to_path_buf() }) } else { None }
 }
 
 /// A Cinecred project as a credits document: its `Styling.toml` as CFA4 styles and its credits
@@ -296,7 +297,7 @@ fn cinecred_doc(cmd: &str, dir: &std::path::Path, credits: Option<&str>, sheet: 
     let abs_dir = std::fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf());
     let abs = abs_dir.join(&chosen);
     let sheet_name = (!info.chosen.is_empty()).then(|| info.chosen.clone());
-    info.notes = imported.notes;
+    info.notes = imported.notes.clone();
     if sheets.len() > 1 {
         info.notes.insert(0, format!("the Cinecred project has {} credits spreadsheets; `{chosen}` is used (choose another with `credits`)", sheets.len()));
     }
@@ -305,6 +306,7 @@ fn cinecred_doc(cmd: &str, dir: &std::path::Path, credits: Option<&str>, sheet: 
         styling: imported.styling,
         source: Some(SourceRef { path: abs.to_string_lossy().into_owned(), name: chosen, sheet: sheet_name }),
         picture_dir: Some(abs_dir.to_string_lossy().into_owned()),
+        pixel_scale: imported.scale,
         ..Default::default()
     };
     Ok((doc, info, Some(abs_dir)))

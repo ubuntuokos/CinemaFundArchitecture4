@@ -173,3 +173,34 @@ fn broken_or_hostile_stylings_do_not_crash() {
         }
     }
 }
+
+#[test]
+fn review_fixes_multiword_tags_and_sheet_pixels() {
+    // the Tamil style keyword is two words
+    assert_eq!(crate::markup::style_tag("சூல் தண்டு Small"), Some("Small"));
+    assert_eq!(crate::markup::style_tag("சூல் தண்டு"), Some(""));
+    let imp = read_styling(STYLING).unwrap();
+    let c = read("Body\n{{சூல் தண்டு Small}}Anna{{சூல் தண்டு}} Kiss\n".as_bytes(), &imp.styling).unwrap();
+    assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    // a 2160-line project: the sheet's pixels halve too
+    assert!((imp.scale - 0.5).abs() < 1e-12);
+    let doc = crate::doc::CreditsDoc {
+        table: vec![
+            vec!["Body".into(), "Spine Position".into(), "Vertical Gap".into()],
+            vec!["A".into(), "800".into(), "".into()],
+            vec!["{{Pic x.png 300}}".into(), "".into(), "40px".into()],
+        ],
+        styling: imp.styling.clone(),
+        pixel_scale: imp.scale,
+        ..Default::default()
+    };
+    let c = doc.credits().unwrap();
+    let blocks = &c.pages[0].blocks;
+    assert_eq!(blocks[0].spine, 400.0);
+    assert_eq!(blocks[1].gap_before, crate::Gap::Px(20.0));
+    assert_eq!(blocks[1].pictures[0].height, Some(150.0));
+    // and the scale survives the document's round trip; CFA4's own documents leave it out
+    let back = crate::doc::CreditsDoc::from_bytes(doc.to_json().as_bytes()).unwrap();
+    assert_eq!(back.pixel_scale, 0.5);
+    assert!(!crate::doc::CreditsDoc::default().to_json().contains("pixelScale"));
+}

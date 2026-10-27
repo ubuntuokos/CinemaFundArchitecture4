@@ -140,6 +140,15 @@ pub fn column(header: &str) -> Option<Column> {
 pub fn is_style_word(w: &str) -> bool {
     STYLE_WORDS.contains(&w)
 }
+
+/// A style tag whose keyword is several words (Tamil): the rest of the tag after it.
+pub fn multiword_style(tag: &str) -> Option<&str> {
+    let t = tag.trim();
+    STYLE_WORDS.iter().filter(|w| w.contains(' ')).find_map(|w| {
+        let rest = t.strip_prefix(w)?;
+        (rest.is_empty() || rest.starts_with(char::is_whitespace)).then_some(rest.trim())
+    })
+}
 pub fn is_pic_word(w: &str) -> bool {
     PIC_WORDS.contains(&w)
 }
@@ -159,6 +168,9 @@ pub fn is_parallel_word(w: &str) -> bool {
 #[derive(Clone, Debug, Default)]
 pub struct Imported {
     pub styling: Styling,
+    /// What the project's pixels are worth on a 1080-line frame (1080 / its height): the sheet's
+    /// own pixel values are scaled by this too ([`crate::doc::CreditsDoc::pixel_scale`]).
+    pub scale: f64,
     /// Plain-English notes on what could not be carried over.
     pub notes: Vec<String>,
 }
@@ -415,5 +427,5 @@ pub fn read_styling(text: &str) -> Result<Imported, CreditsError> {
     if let Some(first) = st.content_styles.first() {
         st.default_content_style = first.name.clone();
     }
-    Ok(Imported { styling: st, notes })
+    Ok(Imported { styling: st, scale, notes })
 }
