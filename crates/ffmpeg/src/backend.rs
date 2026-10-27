@@ -17,7 +17,15 @@ pub(crate) const NOPTS: i64 = i64::MIN;
 /// Most streams looked at in one file (the count comes from the file and is never trusted).
 const MAX_STREAMS: usize = 256;
 
+/// Routes FFmpeg's own log lines (`av_dump_format`'s "Input #0 …", demuxer warnings) to the
+/// `tracing` crate instead of the terminal, once per process: CFA4 reports FFmpeg's failures as
+/// errors, and a desktop app prints nothing behind the user's back.
+fn quiet() {
+    let _ = rsmedia::init();
+}
+
 pub(crate) fn probe() -> Status {
+    quiet();
     let version = rsmedia::avutil::version_info().to_string_lossy().into_owned();
     let license = rsmedia::avutil::license().to_string_lossy().into_owned();
     let configuration = rsmedia::avutil::configuration().to_string_lossy().into_owned();
@@ -45,6 +53,7 @@ pub(crate) struct Probed {
 }
 
 pub(crate) fn open_reader(path: &Path) -> Result<StreamReader, Error> {
+    quiet();
     let text = path.to_str().ok_or_else(|| Error::InvalidInput("the path is not valid UTF-8".into()))?;
     StreamReader::new(text).map_err(|e| Error::Media(e.to_string()))
 }
