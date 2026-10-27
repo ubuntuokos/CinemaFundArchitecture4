@@ -449,18 +449,40 @@ impl Registry {
     pub fn smart_render(&self, codec: Codec, source: Container, output: Container, stream: &StreamFormat, policy: Policy) -> CompositeDecision {
         let mut steps = self.smart_cut(codec, source, output, policy).steps;
         steps.push(self.decide(Key::codec(Operation::Decode, codec), policy));
-        steps.push(self.decide(Key::codec(Operation::Encode, codec), policy));
-        steps.push(self.decide(Key::in_container(Operation::BoundaryReencode, codec, output), policy));
-        let mut conditions = Vec::new();
-        match self.encoder_limits(codec, policy) {
-            Some(limits) => {
-                if let Err(why) = limits.check(stream) {
-                    conditions.extend(why);
-                }
-            }
-            None => conditions.push(format!("no encoder limits are known for {}: compatibility cannot be shown", codec.label())),
+        let mut encode = self.decide(Key::codec(Operation::Encode, codec), policy);
+        let (backend, conditions) = self.encoder_for(codec, stream, policy);
+        if encode.allowed {
+            // the encoder that fits the stream, not merely the first one allowed
+            encode.backend = backend;
+            encode.allowed = backend.is_some();
         }
+        steps.push(encode);
+        steps.push(self.decide(Key::in_container(Operation::BoundaryReencode, codec, output), policy));
         CompositeDecision::new(steps, conditions)
+    }
+
+    /// The first allowed encoder backend (in [`Backend`] order) whose limits fit `stream`; when
+    /// none does, why not, one line per allowed backend.
+    fn encoder_for(&self, codec: Codec, stream: &StreamFormat, policy: Policy) -> (Option<Backend>, Vec<String>) {
+        let key = Key::codec(Operation::Encode, codec);
+        let mut why = Vec::new();
+        for e in self.entries.range((key, Backend::Native)..=(key, Backend::Ffmpeg)).map(|(_, e)| e) {
+            let accepted = e.level == SupportLevel::Supported || (policy.allow_experimental && e.level == SupportLevel::Experimental);
+            if !accepted {
+                continue;
+            }
+            match &e.limits {
+                Some(limits) => match limits.check(stream) {
+                    Ok(()) => return (Some(e.backend), Vec::new()),
+                    Err(reasons) => why.extend(reasons.into_iter().map(|r| format!("{:?} encoder: {r}", e.backend))),
+                },
+                None => why.push(format!("{:?} encoder: no limits are known for {}, compatibility cannot be shown", e.backend, codec.label())),
+            }
+        }
+        if why.is_empty() {
+            why.push(format!("no encoder limits are known for {}: compatibility cannot be shown", codec.label()));
+        }
+        (None, why)
     }
 
     /// The registry as data: every row in key order, and the probes applied.
@@ -506,6 +528,9 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         // demux
         row(k(Demux, Mpeg2Video, MpegPs), Native, Supported, "cfa4-mpegts program streams; crates/codecs/tests/mpeg_oracle.rs"),
         row(k(Demux, Mpeg2Video, MpegTs), Native, Supported, "cfa4-mpegts transport streams; crates/codecs/tests/mpeg_oracle.rs"),
+        row(k(Demux, Mpeg2Video, Mp4), Native, Supported, "cfa4-isobmff; crates/codecs/tests/mpeg_oracle.rs (mpeg2_in_quicktime_mp4_and_matroska)"),
+        row(k(Demux, Mpeg2Video, Mov), Native, Supported, "cfa4-isobmff; crates/codecs/tests/mpeg_oracle.rs (mpeg2_in_quicktime_mp4_and_matroska)"),
+        row(k(Demux, Mpeg2Video, Matroska), Native, Supported, "cfa4-matroska; crates/codecs/tests/mpeg_oracle.rs (mpeg2_in_quicktime_mp4_and_matroska)"),
         row(k(Demux, Mpeg2Video, Mxf), Native, Supported, "cfa4-mxf MPEG-2 essence; crates/codecs/tests/mxf_oracle.rs"),
         row(k(Demux, H264, Mp4), Native, Supported, "cfa4-isobmff; crates/codecs/tests/mp4_oracle.rs"),
         row(k(Demux, H264, Mov), Native, Supported, "cfa4-isobmff; crates/codecs/tests/mp4_oracle.rs"),
@@ -546,7 +571,12 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(Encode, Hevc), Native, Unsupported, "CFA4 has no software HEVC encoder"),
         row(c(Encode, Hevc), Platform, NeedsProbe, "hardware encoder registered by cfa4-platform (NVENC); export::available(Format::Hevc)"),
         row(c(Encode, Av1), Native, Unsupported, "CFA4 has no software AV1 encoder"),
-        row(c(Encode, Av1), Platform, NeedsProbe, "hardware encoder registered by cfa4-platform; export::available(Format::Av1)"),
+        row(
+            c(Encode, Av1),
+            Platform,
+            Unsupported,
+            "cfa4-platform registers no AV1 encoder; crates/export/src/settings_tests.rs asserts Format::Av1 is unavailable",
+        ),
         row(c(Encode, Aac), Native, Supported, "cfa4-aac encoder; crates/export/src/surround_tests.rs"),
         row(c(Encode, Pcm), Native, Supported, "crates/export/src/pcm.rs"),
         // mux

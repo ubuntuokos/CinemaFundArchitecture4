@@ -115,7 +115,9 @@ fn smart_render_checks_encoder_limits() {
     let d = r.smart_render(Codec::H264, Container::Mp4, Container::Mp4, &ten_bit_422, STRICT);
     assert!(!d.allowed);
     assert_eq!(d.conditions.len(), 3, "{:?}", d.conditions);
-    assert!(d.steps.iter().all(|s| s.allowed));
+    // only the encoder is refused: no allowed encoder fits the stream
+    let refused: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
+    assert_eq!(refused, vec![Operation::Encode]);
 }
 
 #[test]
@@ -125,6 +127,51 @@ fn smart_render_without_known_limits_is_refused() {
     assert!(!d.allowed);
     assert!(d.conditions.iter().any(|c| c.contains("cannot be shown")));
     assert!(d.blockers().iter().any(|b| b.contains("no MPEG-2 video encoder")));
+}
+
+#[test]
+fn smart_render_picks_the_encoder_that_fits_the_stream() {
+    let mut r = Registry::native();
+    let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    for key in [
+        Key::codec(Operation::GopIndex, Codec::Hevc),
+        Key::in_container(Operation::PacketCopy, Codec::Hevc, Container::Mp4),
+        Key::in_container(Operation::BoundaryReencode, Codec::Hevc, Container::Mp4),
+    ] {
+        r.insert(Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None }).unwrap();
+    }
+    let lim = |depth: u8, profile: &str| Some(EncoderLimits { profiles: vec![profile.into()], chroma: vec!["4:2:0".into()], bit_depths: vec![depth] });
+    r.insert(Entry { key: hevc, backend: Backend::Platform, level: SupportLevel::Supported, evidence: "test".into(), limits: lim(8, "main") }).unwrap();
+    r.insert(Entry { key: hevc, backend: Backend::Gstreamer, level: SupportLevel::Supported, evidence: "test".into(), limits: lim(10, "main10") }).unwrap();
+    let main10 = StreamFormat { profile: "main10".into(), chroma: "4:2:0".into(), bit_depth: 10 };
+    let d = r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &main10, STRICT);
+    assert!(d.allowed, "{:?}", d.blockers());
+    let enc = d.steps.iter().find(|s| s.key == hevc).unwrap();
+    assert_eq!(enc.backend, Some(Backend::Gstreamer));
+    let main = StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 };
+    let d = r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &main, STRICT);
+    assert_eq!(d.steps.iter().find(|s| s.key == hevc).unwrap().backend, Some(Backend::Platform));
+    // nothing fits 4:2:2: refused, with each backend's reason
+    let yuv422 = StreamFormat { profile: "main422-10".into(), chroma: "4:2:2".into(), bit_depth: 10 };
+    let d = r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &yuv422, STRICT);
+    assert!(!d.allowed);
+    assert!(!d.steps.iter().find(|s| s.key == hevc).unwrap().allowed);
+    assert!(
+        d.conditions.iter().any(|c| c.starts_with("Platform encoder")) && d.conditions.iter().any(|c| c.starts_with("Gstreamer encoder")),
+        "{:?}",
+        d.conditions
+    );
+}
+
+#[test]
+fn baseline_av1_has_no_encoder_and_mpeg2_demuxes_from_iso_and_matroska() {
+    let r = Registry::native();
+    let d = r.decide(Key::codec(Operation::Encode, Codec::Av1), LAX);
+    assert!(!d.allowed);
+    assert_eq!(d.level, SupportLevel::Unsupported);
+    for c in [Container::Mp4, Container::Mov, Container::Matroska, Container::MpegPs, Container::MpegTs, Container::Mxf] {
+        assert!(r.decide(Key::in_container(Operation::Demux, Codec::Mpeg2Video, c), STRICT).allowed, "{c:?}");
+    }
 }
 
 #[test]
