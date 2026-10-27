@@ -304,3 +304,12 @@ fn corrupted_access_units_do_not_panic() {
         }
     }
 }
+
+/// The A/V sync test stream (no reference WAV) decodes without errors.
+#[test]
+fn av_sync_stream_decodes() {
+    let Some(m) = read_mp4(&samples().join("xhe-aac/xheAvSync_v2.mp4")) else { return };
+    let pcm = decode_all(&m);
+    assert_eq!(pcm.len(), 2);
+    assert!(pcm.iter().all(|c| c.len() == m.aus.len() * 1024 && c.iter().all(|s| s.is_finite())));
+}
