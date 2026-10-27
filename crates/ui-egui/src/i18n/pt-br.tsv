@@ -2984,6 +2984,12 @@
 	Gang to Program	Vincular ao programa
 	AAC Audio	Áudio AAC
 	AAC Audio 48 kHz 320 kbps	Áudio AAC 48 kHz 320 kbps
+	Opus Audio	Áudio Opus
+	Opus Audio 48 kHz 160 kbps	Áudio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), estéreo, 48 kHz a 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 a 8 Mbps, Opus 128 kbps estéreo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Áudio MPEG-4 (.m4a), estéreo, AAC-LC de 48 kHz a 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bits
@@ -3459,8 +3465,10 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 bits, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits; Main 10 para sequências HDR)
 	Encoder	Codificador
+	Encoding	Codificação
 	Software, or hardware where available	Software, ou hardware quando disponível
-	Hardware (AV1 has no software encoder)	Hardware (o AV1 não tem codificador por software)
+	Main (10-bit, HDR)	Main (10 bits, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bits; 10 bits para sequências HDR)
 	Text Properties	Propriedades do texto
 	Text Box Height	Altura da caixa de texto
 	Paragraph Text	Texto de parágrafo
@@ -3591,3 +3599,6 @@
 	Time Span (seconds)	Intervalo de tempo (segundos)
 	Current Frame At	Quadro atual em
 	Blend Slices	Mesclar fatias
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 a 8 Mbps, AAC 160 kbps, segmentos MP4 fragmentados de 6 segundos

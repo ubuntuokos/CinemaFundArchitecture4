@@ -2,7 +2,8 @@
 //! ST 377-1 (file format: KLV, partitions, primer pack, header metadata, index tables, random
 //! index pack), ST 378 (OP1a), ST 390 (OP-Atom), ST 379-1/2 (generic container), ST 381-1 (MPEG
 //! video mapping), ST 381-3 (AVC mapping), ST 382 (AES3 / Broadcast Wave audio mapping), ST 331
-//! (AES3 element data, D-10 sound), ST 2019-4 (VC-3 mapping) and RDD 44 (ProRes mapping).
+//! (AES3 element data, D-10 sound), ST 2019-4 (VC-3 mapping), RDD 44 (ProRes mapping) and ST
+//! 2067-201 (IAB immersive audio track files).
 //!
 //! [`open`] walks the file's KLV packets (keys and lengths only; essence payloads are never read
 //! while opening), parses the partition packs, the primer pack and header metadata of the most

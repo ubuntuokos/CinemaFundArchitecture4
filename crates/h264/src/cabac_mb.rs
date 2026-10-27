@@ -37,7 +37,7 @@ const CHROMA_DC_CTX: [u8; 4] = [0, 1, 2, 2];
 /// Table 9-40 ctxIdxBlockCatOffset for ctxBlockCat 0..=5: (coded_block_flag, significant/last, abs level).
 const CAT_OFFSET: [(usize, usize, usize); 6] = [(0, 0, 0), (4, 15, 10), (8, 29, 20), (12, 44, 30), (16, 47, 39), (0, 0, 0)];
 
-impl SliceDecoder<'_> {
+impl<S: crate::deblock::Lanes> SliceDecoder<'_, S> {
     /// Decode slice_data() with CABAC. `rbsp` is the whole slice RBSP.
     pub fn decode_cabac(&mut self, rbsp: &[u8]) -> Result<()> {
         let start = self.sh.header_bits.div_ceil(8) * 8;
@@ -525,12 +525,8 @@ impl SliceDecoder<'_> {
         if info.kind == MbKind::IPcm {
             // pcm alignment + samples, then re-initialise the arithmetic decoder
             let pos = c.bit_pos().div_ceil(8);
-            let data = c.data();
-            ensure!(data.len() >= pos + 384, "truncated I_PCM macroblock");
-            let Some(&samples) = data.get(pos..).and_then(|d| d.first_chunk::<384>()) else {
-                return invalid("truncated I_PCM macroblock");
-            };
-            c.set_bit_pos((pos + 384) * 8);
+            let (samples, bytes) = self.read_pcm(c.data(), pos)?;
+            c.set_bit_pos((pos + bytes) * 8);
             c.init_engine()?;
             self.finish_pcm();
             self.write_pcm(&samples);
