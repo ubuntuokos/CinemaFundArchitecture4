@@ -6,6 +6,7 @@ Szabályok: [`coordination.md`](coordination.md). Minden kör egy sor, a legúja
 
 | Dátum | Gazda | Mi történt |
 |---|---|---|
+| 2026-10-27 | Claude | A #134-et (DTS-dekóder) a tulajdonos olvasztotta be 10:28 UTC-kor; teljes CI nem futott rajta, a következő teljes CI-futás a `main`-en lefedi. Az ága automatikusan törlődött, a #256 alapága magától `main` lett. |
 | 2026-10-27 | Claude | Ágtakarítás: a tulajdonos törölte a gazda által ellenőrzött 54, teljesen a `main`-ben lévő ágat (`torles.sh`); utóellenőrzés: egy sem maradt, új beolvasztott ág nincs, 75 ág maradt. |
 | 2026-10-27 | Claude | 1. kör, felmérés (csak olvasás, `main` @ `48a4ab7`): 47 nyitott PR – 18 aktív, 14 beolvasztható, 14 ütközik vagy újraalapozás kell, 1 kiváltott (#46 → #206). A beolvasztás után 08:50 UTC óta törlődik az ág. Sorrendjavaslat a tulajdonosnál. |
 | 2026-10-27 | Claude | Gazda kijelölve; állapotfelmérés indul (csak olvasás), a sorrendjavaslat a tulajdonos jóváhagyására vár. |
