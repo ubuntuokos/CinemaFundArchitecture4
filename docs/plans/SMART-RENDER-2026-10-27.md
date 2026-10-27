@@ -1,7 +1,7 @@
 # CFA4 Smart Render – megvalósítási terv
 
 **Dátum:** 2026-10-27  
-**Státusz:** megvalósítási terv; a natív CFA4-integráció irányát a korábbi tulajdonosi döntés rögzíti  
+**Státusz:** a terv tulajdonos által jóváhagyva (2026-10-27); a natív CFA4-integráció irányát a korábbi tulajdonosi döntés rögzíti  
 **Kapcsolódó terv:** [GOP-alapú Smart Cut](GOP-SMART-CUT-2026-10-27.md)
 
 ## Cél
