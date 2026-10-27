@@ -555,6 +555,9 @@ impl Sps {
                 range_extension = bits != 0;
             }
         }
+        // 4:0:0 has no chroma: the synthesized chroma planes take the luma bit depth, so that
+        // their neutral value is mid-grey at the picture's bit depth whatever was coded
+        let bit_depth_chroma = if chroma_format_idc == 0 { bit_depth_luma } else { bit_depth_chroma };
         Ok(Sps {
             vps_id,
             max_sub_layers_minus1,
@@ -608,6 +611,15 @@ impl Sps {
     pub fn sub_height_c(&self) -> u32 {
         if self.chroma_format_idc == 1 { 2 } else { 1 }
     }
+    /// log2 of the chroma plane subsampling (x, y) as the decoder stores it: monochrome pictures
+    /// keep 4:2:0 geometry for their grey chroma planes.
+    pub fn chroma_shift(&self) -> (u32, u32) {
+        match self.chroma_format_idc {
+            2 => (1, 0),
+            3 => (0, 0),
+            _ => (1, 1),
+        }
+    }
     pub fn ctb_size(&self) -> u32 {
         1 << self.log2_ctb
     }
@@ -634,8 +646,8 @@ impl Sps {
 
     /// Features this decoder does not handle yet.
     pub fn check_supported(&self) -> Result<()> {
-        if self.chroma_format_idc != 1 {
-            return unsupported(format!("chroma_format_idc {} (only 4:2:0)", self.chroma_format_idc));
+        if self.separate_colour_plane {
+            return unsupported("separate_colour_plane (4:4:4 coded as three monochrome planes)");
         }
         if self.bit_depth_luma > 12 || self.bit_depth_chroma > 12 {
             return unsupported(format!("bit depth {}/{}", self.bit_depth_luma, self.bit_depth_chroma));
@@ -919,5 +931,62 @@ impl Layout {
     #[inline]
     pub fn tile_of_rs(&self, rs: u32) -> u32 {
         self.tile_id[self.rs_to_ts[rs as usize] as usize]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cfa4_bitstream::BitWriter;
+
+    /// A minimal SPS RBSP: 64x64, one sub-layer, no optional tools.
+    fn sps(chroma_format_idc: u32, bd_luma_minus8: u32, bd_chroma_minus8: u32) -> Vec<u8> {
+        let mut w = BitWriter::new();
+        w.write_bits(0, 4); // sps_video_parameter_set_id
+        w.write_bits(0, 3); // sps_max_sub_layers_minus1
+        w.write_bit(true); // temporal_id_nesting
+        w.write_bits(0, 2); // profile_space
+        w.write_bit(false); // tier
+        w.write_bits(2, 5); // Main 10
+        w.write_bits(0, 32);
+        w.write_bits(0, 32);
+        w.write_bits(0, 16);
+        w.write_bits(90, 8); // level 3
+        w.write_ue(0); // sps id
+        w.write_ue(chroma_format_idc);
+        w.write_ue(64);
+        w.write_ue(64);
+        w.write_bit(false); // conformance window
+        w.write_ue(bd_luma_minus8);
+        w.write_ue(bd_chroma_minus8);
+        w.write_ue(4); // log2_max_pic_order_cnt_lsb_minus4
+        w.write_bit(true); // ordering info for all sub-layers
+        for _ in 0..3 {
+            w.write_ue(0);
+        }
+        w.write_ue(0); // log2_min_luma_coding_block_size_minus3
+        w.write_ue(3); // CTB 64
+        w.write_ue(0); // log2_min_luma_transform_block_size_minus2
+        w.write_ue(3); // max transform 32
+        w.write_ue(0);
+        w.write_ue(0);
+        for _ in 0..4 {
+            w.write_bit(false); // scaling lists, AMP, SAO, PCM
+        }
+        w.write_ue(0); // short-term RPS sets
+        for _ in 0..5 {
+            w.write_bit(false); // long-term refs, TMVP, strong smoothing, VUI, extensions
+        }
+        w.rbsp_trailing();
+        w.finish()
+    }
+
+    #[test]
+    fn monochrome_chroma_takes_the_luma_bit_depth() {
+        let s = Sps::parse(&sps(0, 2, 0)).unwrap();
+        assert_eq!((s.bit_depth_luma, s.bit_depth_chroma), (10, 10));
+        s.check_supported().unwrap();
+        let s = Sps::parse(&sps(1, 2, 0)).unwrap();
+        assert_eq!((s.bit_depth_luma, s.bit_depth_chroma), (10, 8));
     }
 }
