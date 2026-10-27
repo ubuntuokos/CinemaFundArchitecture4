@@ -87,7 +87,7 @@ and `cfa4-cli`.
 | `gpu` | L3 | wgpu compositor (WGSL) |
 | `golden` | L3 | test-only: golden-image tests of the CPU renderer and GPU-vs-CPU parity; empty library, dev-dependencies only |
 | `scopes` | L3 | video scope maths: waveform, parade, histogram, YUV / HLS vectorscopes, numeric summaries ([crates/scopes/README.md](../crates/scopes/README.md)) |
-| `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
+| `qc` | L3 | media quality control: QC profiles (`cfa4-qc-profile/1`, TOML) with mandatory/optional checks and PASS/WARN/FAIL bounds, the versioned QC report (`cfa4-qc-report/1`, JSON) with SHA-256 file identities, tool versions and human review, input and integrity checks on a full decode, loudness / true peak / clipping / silence and black / luma-clipping / contact-sheet analysis, and a verdict that never passes a skipped or failed mandatory check ([media-qc.md](media-qc.md)) |
 | `export` | L3 | render → encode → mux pipeline, progress/cancel |
 | `smart-edit` | L3 | `cfa4-smart-edit`: Smart Cut / Smart Render planning: media capability registry (WP-01), later GOP index and render plans; decides, never executes ([plan](plans/CFA4-SMART-CUT-RENDER-R1.md), [baseline](audit/smart-edit-baseline.md), [README](../crates/smart-edit/README.md)) |
 | `engine` | L4 | `Session`, command registry, undo history, media pool, jobs, interchange glue |
