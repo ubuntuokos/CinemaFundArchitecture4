@@ -206,3 +206,24 @@ fn writer_round_trips_through_the_reader() {
     assert!(st.saw_eos);
     assert_eq!(st.last_granule, Some(pkts.len() as i64 * 960));
 }
+
+/// Regression: a packet completing on the 255th lacing value made the next page a continuation,
+/// and readers dropped its first packet (small 6 kbit/s Opus packets fill pages by lacing).
+#[test]
+fn writer_page_full_of_small_packets_starts_a_fresh_page() {
+    let mut w = OggWriter::new(Vec::new(), 5);
+    w.write_packet(&opus_head(0), 0).unwrap();
+    w.flush_page().unwrap();
+    w.write_packet(b"OpusTags\x00\x00\x00\x00\x00\x00\x00\x00", 0).unwrap();
+    w.flush_page().unwrap();
+    let pkts: Vec<Vec<u8>> = (0..600).map(|i| pkt(i, 15)).collect();
+    for (i, p) in pkts.iter().enumerate() {
+        w.write_packet(p, (i as u64 + 1) * 960).unwrap();
+    }
+    let f = w.finish().unwrap();
+    let o = open(&f).unwrap();
+    assert!(o.warnings.is_empty(), "{:?}", o.warnings);
+    let st = &o.streams[0];
+    let got: Vec<Vec<u8>> = (0..st.packets.len()).map(|i| o.read_packet(&f, 0, i).unwrap()).collect();
+    assert_eq!(got, pkts);
+}

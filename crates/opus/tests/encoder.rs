@@ -96,3 +96,26 @@ fn edge_inputs_and_rates() {
     assert!(Encoder::new(3, 64_000).is_err());
     assert!(Encoder::new(2, 1_000).is_err());
 }
+
+/// Regression: an all-zero frame after sound was coded as a silence frame, skipping the MDCT that
+/// completes the previous frame's overlap, so its last samples were lost.
+#[test]
+fn zero_frame_after_sound_finishes_the_overlap() {
+    let fs = Encoder::FRAME_SIZE;
+    let mut enc = Encoder::new(1, 128_000).unwrap();
+    let mut dec = StreamDecoder::new(48_000, 1).unwrap();
+    let tone: Vec<f32> = (0..fs).map(|i| 0.4 * (i as f32 * 0.031).sin()).collect();
+    let mut out = Vec::new();
+    for frame in [&tone[..], &vec![0.0; fs], &vec![0.0; fs]] {
+        let pkt = enc.encode(frame);
+        dec.decode_interleaved(Some(&pkt), &mut out).unwrap();
+    }
+    // The tone's last 120 samples come out in the second packet.
+    let (mut e, mut s) = (0f64, 0f64);
+    for i in fs - 120..fs {
+        e += ((tone[i] - out[i + Encoder::LOOKAHEAD]) as f64).powi(2);
+        s += (tone[i] as f64).powi(2);
+    }
+    let snr = 10.0 * (s / e.max(1e-20)).log10();
+    assert!(snr > 15.0, "tail SNR {snr:.1} dB");
+}

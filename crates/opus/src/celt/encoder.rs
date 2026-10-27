@@ -87,7 +87,6 @@ impl CeltEncoder {
         let mut buf = std::mem::take(&mut self.buf);
         buf.clear();
         buf.resize(c * len, 0.0);
-        let mut silent = true;
         for ch in 0..c {
             let b = &mut buf[ch * len..(ch + 1) * len];
             b[..OVERLAP].copy_from_slice(&self.in_mem[ch * OVERLAP..(ch + 1) * OVERLAP]);
@@ -95,13 +94,14 @@ impl CeltEncoder {
             for i in 0..n {
                 let s = pcm.get(i * c + ch).copied().unwrap_or(0.0);
                 let x = if s.is_finite() { s.clamp(-2.0, 2.0) * 32768.0 } else { 0.0 };
-                silent &= x == 0.0;
                 b[OVERLAP + i] = x - mem;
                 mem = PREEMPH * x;
             }
             self.preemph_mem[ch] = mem;
             self.in_mem[ch * OVERLAP..(ch + 1) * OVERLAP].copy_from_slice(&b[n..]);
         }
+        // Silent only when the overlap history is too: the frame also completes the previous one.
+        let silent = buf.iter().all(|v| *v == 0.0);
 
         let mut enc = RangeEncoder::new(bytes);
         enc.bit_logp(silent, 15);

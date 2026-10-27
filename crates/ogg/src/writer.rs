@@ -40,7 +40,8 @@ impl<W: Write> OggWriter<W> {
         for k in 0..=full {
             if self.lacing.len() == 255 {
                 self.write_page(false)?;
-                self.continued = true;
+                // the next page continues a packet only when this one is split across the break
+                self.continued = k > 0;
             }
             let v = if k < full { 255 } else { last };
             self.lacing.push(v);
