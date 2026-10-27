@@ -3609,3 +3609,13 @@
 	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段
+	DCP (Digital Cinema Package)	DCP（数字电影包）
+	Digital Cinema	数字电影
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 1998×1080（1.85:1），5.1 24 位 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 2048×858（2.39:1），5.1 24 位 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM

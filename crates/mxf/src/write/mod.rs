@@ -718,7 +718,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                 v.push(t.container);
             }
         }
-        if self.tracks.len() > 1 {
+        // D-Cinema track files list the multiple-mappings label too, as the reference
+        // implementation's do (readers that take single-container OP-Atom as clip-wrapped
+        // then read the frames, ffmpeg among them)
+        if self.tracks.len() > 1 || self.cfg.pattern == Pattern::DCinema {
             v.push(EC_MULTIPLE);
         }
         v
