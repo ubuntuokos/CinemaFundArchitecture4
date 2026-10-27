@@ -4671,7 +4671,7 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         json!({
             "id": t.id.0, "name": t.name, "locked": t.locked, "syncLock": t.sync_lock, "enabled": t.enabled, "muted": t.muted, "solo": t.solo,
             "label": t.label.map(|l| l.name()),
-            "items": t.items.iter().map(|i| json!({
+            "items": t.items.iter().map(|i| (i, json!({
                 "clip": i.id.0, "item": i.item.0, "name": i.name, "start": i.start.0, "duration": i.duration.0,
                 "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse, "frameHold": i.frame_hold.map(|t| t.0),
                 "end": i.end().0, "endFrame": rate.frame_at(i.end()), "sourceOut": i.source_out().0, "gainDb": i.gain_db, "audioStream": i.audio_stream,
@@ -4681,7 +4681,11 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
                 "multicam": i.multicam.map(|m| json!({"enabled": m.enabled, "angle": m.angle})),
                 "cameras": i.multicam.filter(|m| m.enabled).and_then(|_| s.project.sequence(i.item)).map(|q| q.cameras().video_angles().map(|(a, c)| json!({"angle": a, "name": c.name})).collect::<Vec<_>>()),
                 "effects": i.effects.iter().map(|e| json!({"effect": e.effect, "enabled": e.enabled, "masks": e.masks.len(), "params": e.params.iter().map(|(k, p)| (k.clone(), json!({"value": format!("{:?}", p.value), "keyframes": p.keyframes.len()}))).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
-            })).collect::<Vec<_>>(),
+            }))).map(|(i, mut v)| {
+                // the Timeline's Volume line (apart: one `json!` this deep overflows the macro)
+                v["volume"] = volume_line(i);
+                v
+            }).collect::<Vec<_>>(),
             "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "name": x.effect.def().map_or(x.effect.effect.as_str(), |d| d.name), "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
         })
     };
@@ -4699,7 +4703,12 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         "split": q.split,
         "markers": q.markers.iter().map(|m| json!({"id": m.id.0, "start": m.start.0, "duration": m.duration.0, "kind": format!("{:?}", m.kind), "name": m.name, "comment": m.comment, "color": m.color.name()})).collect::<Vec<_>>(),
         "video": q.video_tracks.iter().map(tr).collect::<Vec<_>>(),
-        "audio": q.audio_tracks.iter().map(tr).collect::<Vec<_>>(),
+        // an audio track's automation lanes too (the Timeline's track keyframes)
+        "audio": q.audio_tracks.iter().map(|t| {
+            let mut v = tr(t);
+            v["lanes"] = track_lanes(t);
+            v
+        }).collect::<Vec<_>>(),
         "selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>(),
         "transitionSelection": s.state.transition_selection.iter().map(|t| t.0).collect::<Vec<_>>(),
         "gapSelection": s.state.gap_selection.map(|g| json!({"track": g.track.0, "start": g.range.start.0, "end": g.range.end().0})),
@@ -4713,11 +4722,99 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         } else {
             Value::Null
         },
+        // the Mix (master) fader, shown on the Timeline's Mix row
+        "masterVolumeDb": q.master_volume_db,
         // the Timeline's tabs: the open sequences in tab order (`sequence.open` / `close` / `moveTab`)
         "openSequences": s.state.open_sequences.iter().filter_map(|i| s.project.sequence(*i).map(|_| json!({"id": i.0, "name": s.project.item(*i).map(|x| x.name.clone())}))).collect::<Vec<_>>(),
         // the timeline toolbar's toggles and Display Settings (session-wide)
         "toggles": {"snapping": s.state.snapping, "linkedSelection": s.state.linked_selection, "nest": !s.state.sequences_as_clips, "showThroughEdits": s.state.show_through_edits},
+        // the caption track rows above the video tracks and the selected captions
+        "captionTracks": caption_tracks(q),
+        "captionSelection": if s.state.active_sequence == Some(id) { s.state.caption_selection.iter().map(|c| c.0).collect::<Vec<_>>() } else { Vec::new() },
     })
+}
+
+/// The caption tracks the Timeline draws above the video tracks (egui's `timeline_captions`):
+/// header state and each caption's span and plain text.
+fn caption_tracks(q: &cfa4_project::Sequence) -> Value {
+    q.caption_tracks
+        .iter()
+        .enumerate()
+        .map(|(i, t)| {
+            json!({
+                "id": t.id.0,
+                "label": format!("C{}", i + 1),
+                "name": t.name,
+                "format": t.format.label(),
+                "enabled": t.enabled,
+                "locked": t.locked,
+                "captions": t.captions.iter().map(|c| json!({"id": c.id.0, "start": c.start.0, "end": c.end().0, "text": cfa4_project::plain_text(&c.text)})).collect::<Vec<_>>(),
+            })
+        })
+        .collect()
+}
+
+/// The automation lanes an audio track can show in the Timeline (egui's `lane_options`): each
+/// with its label parts, range, whether it holds between keyframes, whether it is on the fader
+/// scale, its static value and its keyframes `[time, value, hold]` in sequence time.
+fn track_lanes(t: &cfa4_project::Track) -> Value {
+    use cfa4_project::mixer::{LANE_MUTE, LANE_PAN, LANE_VOLUME, fx_lane, lane_info, send_lane};
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    let lane = |key: String, label: Value, (min, max, hold): (f64, f64, bool)| {
+        let keys: Vec<Value> = t
+            .lane_keyframes(&key)
+            .iter()
+            .map(|k| json!([k.time.0, num(k.value.as_f64().unwrap_or(0.0)), k.interp == cfa4_project::keyframe::Interpolation::Hold]))
+            .collect();
+        let fader = key == LANE_VOLUME || key.starts_with("send.");
+        json!({"key": key, "label": label, "min": num(min), "max": num(max), "hold": hold, "fader": fader, "static": num(t.lane_static(&key).unwrap_or(0.0)), "keys": keys})
+    };
+    let info = |key: &str| lane_info(key).map_or((0.0, 1.0, false), |i| (i.min, i.max, i.hold));
+    let mut out = vec![
+        lane(LANE_VOLUME.to_string(), json!({"text": "Volume"}), info(LANE_VOLUME)),
+        lane(LANE_PAN.to_string(), json!({"text": "Panner"}), info(LANE_PAN)),
+        lane(LANE_MUTE.to_string(), json!({"text": "Mute"}), info(LANE_MUTE)),
+    ];
+    for i in 0..t.mixer.sends.len() {
+        let k = send_lane(i);
+        let r = info(&k);
+        out.push(lane(k, json!({"send": i + 1}), r));
+    }
+    for (slot, e) in t.effects.iter().enumerate() {
+        let Some(def) = e.def() else { continue };
+        for p in def.params.iter().filter(|p| p.animatable) {
+            if let cfa4_project::ParamKind::Float { soft_min, soft_max, .. } = p.kind {
+                out.push(lane(fx_lane(slot, p.id), json!({"effect": def.name, "param": p.label}), (soft_min, soft_max, false)));
+            }
+        }
+    }
+    Value::Array(out)
+}
+
+/// An audio clip's Volume line for the Timeline: the level at the clip's head, whether it is
+/// keyframed, its keyframes (media and timeline time, dB) and, when keyframed, the level sampled
+/// evenly across the clip. `null` without a Volume effect.
+fn volume_line(it: &cfa4_project::TrackItem) -> Value {
+    const SAMPLES: usize = 128;
+    let Some(p) = it.effect("volume").and_then(|e| e.param("level")) else { return Value::Null };
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    let keys: Vec<Value> = p
+        .keyframes
+        .iter()
+        .map(|k| json!({"mediaTime": k.time.0, "time": timeline_time_of(it, k.time).map(|t| t.0), "db": num(k.value.as_f64().unwrap_or(0.0))}))
+        .collect();
+    let last = it.end().0.saturating_sub(1).max(it.start.0);
+    let curve: Vec<Value> = if p.is_animated() {
+        (0..=SAMPLES)
+            .map(|i| {
+                let offset = (i as f64 / SAMPLES as f64 * it.duration.0.max(0) as f64) as i64;
+                num(p.f64_at(it.source_time_at(Tick(it.start.0.saturating_add(offset).min(last)))))
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    json!({"db": num(p.f64_at(it.source_time_at(it.start))), "animated": p.is_animated(), "keys": keys, "curve": curve})
 }
 
 /// Seconds → ticks helper for callers.

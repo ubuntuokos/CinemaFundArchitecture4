@@ -396,6 +396,7 @@ class MainWindow(QMainWindow):
         self.voiceover.refresh.connect(self.schedule_refresh)
         self.timeline.canvas.voiceover.connect(self.voiceover.toggle)
         self.timeline.canvas.voiceover_settings.connect(self.open_voiceover_settings)
+        self.timeline.canvas.caption_opened.connect(self.open_captions_tab)
         # multi-camera: the Program monitor's Multi-Camera view, live switching and its dialogs
         self.multicam = MulticamController(engine, self.monitor)
         self.multicam.message.connect(self._voiceover_message)
@@ -1017,6 +1018,12 @@ class MainWindow(QMainWindow):
                 act.triggered.connect(lambda _c=False, name=k: self.set_theme(name))
         self.last_menu = menu
         return menu
+
+    def open_captions_tab(self) -> None:
+        """egui: a caption block double-clicked in the Timeline shows the Text panel's Captions tab."""
+        self.docks["Text"].show()
+        self.docks["Text"].raise_()
+        self.text_panel.set_tab("Captions")
 
     def open_voiceover_settings(self) -> VoiceOverSettingsDialog:
         """Voice-Over Record Settings (the microphone's menu, ``voiceover.settingsDialog``)."""

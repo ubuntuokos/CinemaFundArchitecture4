@@ -155,3 +155,85 @@ fn sequence_inspect_lists_the_open_sequences_in_tab_order() {
     s.execute("sequence.close", json!({"item": a.0})).unwrap();
     assert_eq!(names(&mut s), vec![b.0]);
 }
+
+#[test]
+fn sequence_inspect_reports_the_mix_fader() {
+    // the Qt Timeline's Mix row shows the master fader in dB
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    assert_eq!(s.execute("sequence.inspect", json!({})).unwrap()["masterVolumeDb"], json!(0.0));
+    s.execute("mixer.setStrip", json!({"strip": "Mix", "volumeDb": -3.5})).unwrap();
+    assert_eq!(s.execute("sequence.inspect", json!({})).unwrap()["masterVolumeDb"], json!(-3.5));
+}
+
+#[test]
+fn sequence_inspect_reports_the_volume_line_of_audio_clips() {
+    // the Qt Timeline's Volume line: the level, the keyframes in media and timeline time, the curve
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let (clip, start, dur, level) = {
+        let it = &s.active_sequence().unwrap().audio_tracks[0].items[0];
+        (it.id.0, it.start.0, it.duration.0, it.effect("volume").and_then(|e| e.param("level")).unwrap().f64_at(it.source_in))
+    };
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let vol = &js["audio"][0]["items"][0]["volume"];
+    assert_eq!((vol["db"].as_f64(), vol["animated"].as_bool()), (Some(level), Some(false)));
+    assert_eq!(vol["curve"], json!([]));
+    s.execute("effects.setParam", json!({"clip": clip, "effect": "volume", "param": "level", "value": -6.0})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["audio"][0]["items"][0]["volume"]["db"].as_f64(), Some(-6.0));
+    // two keyframes: a ramp, sampled across the clip
+    s.execute("effects.addKeyframe", json!({"clip": clip, "effect": "volume", "param": "level", "time": start})).unwrap();
+    s.execute("effects.addKeyframe", json!({"clip": clip, "effect": "volume", "param": "level", "time": start + dur / 2})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let vol = &js["audio"][0]["items"][0]["volume"];
+    assert_eq!(vol["animated"], json!(true));
+    let keys = vol["keys"].as_array().unwrap();
+    assert_eq!(keys.len(), 2);
+    assert_eq!(keys[0]["time"].as_i64(), Some(start));
+    assert_eq!(keys[1]["time"].as_i64(), Some(start + dur / 2));
+    assert_eq!(vol["curve"].as_array().unwrap().len(), 129);
+    // video clips have no Volume line
+    assert_eq!(js["video"][0]["items"][0]["volume"], json!(null));
+}
+
+#[test]
+fn sequence_inspect_lists_an_audio_tracks_automation_lanes() {
+    // the Qt Timeline's track keyframes: the lanes a track can show, their range and keyframes
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let a1 = s.active_sequence().unwrap().audio_tracks[0].id.0;
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let lanes = js["audio"][0]["lanes"].as_array().unwrap();
+    let keys: Vec<&str> = lanes.iter().map(|l| l["key"].as_str().unwrap()).collect();
+    assert_eq!(&keys[..3], &["volume", "pan", "mute"]);
+    assert_eq!((lanes[0]["fader"].as_bool(), lanes[2]["hold"].as_bool()), (Some(true), Some(true)));
+    assert_eq!((lanes[1]["min"].as_f64(), lanes[1]["max"].as_f64()), (Some(-100.0), Some(100.0)));
+    assert_eq!(lanes[0]["keys"], json!([]));
+    s.execute("mixer.setKeyframe", json!({"strip": a1, "lane": "volume", "time": 1000, "value": -6.0})).unwrap();
+    s.execute("mixer.setKeyframe", json!({"strip": a1, "lane": "volume", "time": 9000, "value": -12.0})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["audio"][0]["lanes"][0]["keys"], json!([[1000, -6.0, false], [9000, -12.0, false]]));
+    assert!(js["video"][0].get("lanes").is_none(), "video tracks have no automation lanes");
+}
+
+#[test]
+fn sequence_inspect_reports_the_caption_tracks() {
+    // the Qt Timeline's caption rows: header state, each caption's span and plain text, selection
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!((js["captionTracks"].clone(), js["captionSelection"].clone()), (json!([]), json!([])));
+    let id = s.execute("captions.add", json!({"text": "<b>Hello</b>", "time": 0})).unwrap()["caption"].as_u64().unwrap();
+    s.execute("captions.setTrack", json!({"track": "C1", "locked": true})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let t = &js["captionTracks"][0];
+    assert_eq!(
+        (t["label"].as_str(), t["format"].as_str(), t["locked"].as_bool(), t["enabled"].as_bool()),
+        (Some("C1"), Some("Subtitle"), Some(true), Some(true))
+    );
+    let c = &t["captions"][0];
+    assert_eq!((c["id"].as_u64(), c["start"].as_i64(), c["text"].as_str()), (Some(id), Some(0), Some("Hello")));
+    assert!(c["end"].as_i64().unwrap() > 0);
+    assert_eq!(js["captionSelection"], json!([id]));
+}

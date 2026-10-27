@@ -3867,6 +3867,341 @@ def test_real_engine_timeline_sequence_tabs_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
+    """egui's Mix row: under the audio tracks, the master track's name and its fader in dB; the
+    tracks scroll above it and a press there hits no track."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        mix = canvas.mix_rect()
+        assert mix.bottom() == canvas.height() - 1 and mix.height() == tl.MASTER_H
+        assert canvas.row_at(mix.center().y()) is None
+        # the tracks fit above the Mix row: the scroll range leaves it out
+        canvas.set_scroll_y(canvas.max_scroll_y())
+        last = canvas.rows[-1]
+        assert last.top + last.height <= mix.top() + 8
+        # the fader in dB, hot text, right-aligned in the header column
+        win.execute("mixer.setStrip", {"strip": "Mix", "volumeDb": -3.5})
+        assert wait_until(app, lambda: canvas.sequence.get("masterVolumeDb") == -3.5, 10_000)
+        img = canvas.grab().toImage()
+        header = img.pixelColor(10, mix.center().y())
+        assert header == QtGui.QColor(tl.theme.current().tl_header_bg), header.name()
+        hot = QtGui.QColor(tl.theme.current().hot_text)
+        row = [img.pixelColor(x, mix.center().y()) for x in range(tl.HEADER_W - 60, tl.HEADER_W - 10)]
+        assert any(abs(c.red() - hot.red()) + abs(c.green() - hot.green()) + abs(c.blue() - hot.blue()) < 120 for c in row)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
+    """egui's Volume line on audio clips: drawn on the fader scale, dragging it changes the level,
+    Ctrl-click adds a keyframe, a keyframe drags in time and level, right-click deletes it."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def a1():
+        return next(r for r in canvas.rows if r.short == "A1")
+
+    def clip():
+        return next(c for c in a1().track["items"] if c["clip"] == cid)
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint) -> None:
+        QtTest.QTest.mousePress(canvas, btn, pos=a)
+        QtTest.QTest.mouseMove(canvas, b)
+        QtTest.QTest.mouseRelease(canvas, btn, pos=b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        cid = a1().track["items"][0]["clip"]
+        c = clip()
+        level = c["volume"]["db"]  # the demo's own mix level
+        assert isinstance(level, float) and c["volume"]["animated"] is False
+        r = canvas.clip_rect(a1(), c)
+        x = int(r.left() + r.width() * 0.5)
+        y = canvas.volume_line_y(c, r, x)
+        assert abs(y - canvas.volume_y(r, level)) < 1e-6
+        on = QtCore.QPoint(x, round(y))
+        assert canvas.volume_line_at(on) is not None
+        assert canvas.volume_line_at(on + QtCore.QPoint(0, 8)) is None
+        # drawn: white over the clip
+        img = canvas.grab().toImage()
+        col = [img.pixelColor(x, yy) for yy in range(int(y) - 2, int(y) + 3)]
+        assert any(c.red() > 230 and c.green() > 230 and c.blue() > 230 for c in col), [c.name() for c in col]
+        # dragging the line up raises the level (one undo step)
+        drag(on, on - QtCore.QPoint(0, 10))
+        assert wait_until(app, lambda: clip()["volume"]["db"] > level + 0.5, 10_000)
+        raised = clip()["volume"]["db"]
+        # Ctrl-click: keyframes at the click
+        r = canvas.clip_rect(a1(), clip())
+        for f in (0.3, 0.7):
+            px_x = int(r.left() + r.width() * f)
+            at = QtCore.QPoint(px_x, round(canvas.volume_line_y(clip(), r, px_x)))
+            QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.ControlModifier, at)
+        assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 2, 10_000)
+        assert clip()["volume"]["animated"] is True
+        # a keyframe drags in time and level
+        r = canvas.clip_rect(a1(), clip())
+        (m0, k0, db0), (m1, _k1, _db1) = canvas.volume_keys(clip(), r)
+        assert abs(db0 - raised) < 0.01
+        start = QtCore.QPoint(round(k0.x()), round(k0.y()))
+        assert canvas.volume_key_at(start) is not None
+        drag(start, start + QtCore.QPoint(-20, 12))
+        assert wait_until(app, lambda: clip()["volume"]["keys"][0]["mediaTime"] < m0, 10_000)
+        assert clip()["volume"]["keys"][0]["db"] < db0
+        assert clip()["volume"]["keys"][1]["mediaTime"] == m1
+        # the line now ramps between them
+        r = canvas.clip_rect(a1(), clip())
+        (_m, k0, _d), (_m1, k1, _d1) = canvas.volume_keys(clip(), r)
+        mid = (k0.x() + k1.x()) / 2
+        assert min(k0.y(), k1.y()) - 1 <= canvas.volume_line_y(clip(), r, mid) <= max(k0.y(), k1.y()) + 1
+        # right-click a keyframe: Delete
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(round(k1.x()), round(k1.y())))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.volumeKeyMenu", 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.volumeKeyMenu.delete").trigger()
+        menu.close()
+        assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 1, 10_000)
+        # a locked track's line does not take presses
+        win.execute("timeline.setTrack", {"track": a1().track["id"], "locked": True})
+        assert wait_until(app, lambda: a1().track.get("locked") is True, 10_000)
+        r = canvas.clip_rect(a1(), clip())
+        x = int(r.left() + r.width() * 0.9)
+        assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip(), r, x)))) is None
+        assert tl.volume_level({"volume": {"db": float("nan"), "animated": True, "curve": [None, 1e300]}}, 0.5) == 0.0
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_track_keyframe_lane_as_egui(app, tmp_path: Path):
+    """egui's track keyframes: the audio header's diamond picks Clip Keyframes or a lane (Volume,
+    Panner, Mute, …); the lane is drawn across the track and hides the clips' Volume lines;
+    Ctrl-click adds a keyframe, a diamond drags in time and value, right-click deletes it."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def a1():
+        return next(r for r in canvas.rows if r.short == "A1")
+
+    def volume_lane():
+        return next(ln for ln in a1().track["lanes"] if ln["key"] == "volume")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        cell = next(c for c in canvas.header_cells(a1()) if c.key == "keyframes")
+        assert not cell.on
+        QtTest.QTest.mouseClick(canvas, btn, pos=cell.rect.center())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        assert menu.objectName() == "timeline.track.A1.keyframes"
+        acts = {a.objectName(): a for a in menu.actions() if a.objectName()}
+        assert list(acts)[:4] == ["timeline.track.A1.keyframes.clip", "timeline.track.A1.keyframes.volume",
+                                  "timeline.track.A1.keyframes.pan", "timeline.track.A1.keyframes.mute"]
+        assert acts["timeline.track.A1.keyframes.clip"].isChecked()
+        acts["timeline.track.A1.keyframes.volume"].trigger()
+        menu.close()
+        assert canvas.track_lanes == {a1().track_id: "volume"}
+        assert next(c for c in canvas.header_cells(a1()) if c.key == "keyframes").on
+        # the lane replaces the clips' Volume lines on this track
+        clip = a1().track["items"][0]
+        r = canvas.clip_rect(a1(), clip)
+        x = int(r.left() + r.width() / 2)
+        assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip, r, x)))) is None
+        # flat at the track's fader level, in the lane colour
+        lane = volume_lane()
+        y = canvas.lane_y(a1(), lane, tl.lane_value(lane, canvas.time_at(x + 40)))
+        img = canvas.grab().toImage()
+        col = [img.pixelColor(x + 40, yy) for yy in range(int(y) - 2, int(y) + 3)]
+        assert any(abs(c.red() - 0xE8) + abs(c.green() - 0xC5) + abs(c.blue() - 0x47) < 90 for c in col), [c.name() for c in col]
+        # Ctrl-click adds keyframes where clicked
+        band = canvas.lane_band(a1())
+        for fx, fy in ((0.3, 0.3), (0.6, 0.7)):
+            at = QtCore.QPoint(int(band.left() + band.width() * fx), int(band.top() + band.height() * fy))
+            QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.ControlModifier, at)
+        assert wait_until(app, lambda: len(volume_lane()["keys"]) == 2, 10_000)
+        (t0, v0, _h0), (_t1, v1, _h1) = tl.lane_keys(volume_lane())
+        assert v0 > v1  # the higher click is the higher level
+        # a diamond drags in time and value (one change, on release)
+        (_t, c0, _v), _second = canvas.lane_points(a1(), volume_lane())
+        start = QtCore.QPoint(round(c0.x()), round(c0.y()))
+        assert canvas.lane_key_at(start) is not None
+        QtTest.QTest.mousePress(canvas, btn, pos=start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(30, -6))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=start + QtCore.QPoint(30, -6))
+        assert wait_until(app, lambda: tl.lane_keys(volume_lane())[0][0] > t0, 10_000)
+        assert tl.lane_keys(volume_lane())[0][1] > v0
+        # right-click a diamond: Delete
+        (_t, c0, _v), _second = canvas.lane_points(a1(), volume_lane())
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(round(c0.x()), round(c0.y())))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.laneKeyMenu", 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.laneKeyMenu.delete").trigger()
+        menu.close()
+        assert wait_until(app, lambda: len(volume_lane()["keys"]) == 1, 10_000)
+        # back to Clip Keyframes: the Volume lines are there again
+        canvas.show_lane(a1().track_id, None)
+        clip = a1().track["items"][0]
+        r = canvas.clip_rect(a1(), clip)
+        assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip, r, x)))) is not None
+        # damaged lane data reads as harmless values
+        assert tl.lane_value({"keys": [[1, float("nan")], ["x", 1], [2**70, 1]], "static": 0.0}, 5) == 0.0
+        assert tl.lane_norm({"min": float("inf"), "max": None}, 0.5) == 0.5
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
+    """egui's caption rows above the video tracks: C1 header with lock and output eye, purple
+    blocks with their text; a click selects, the body drags (captions.move), an edge trims
+    (captions.trim), a double-click opens the Text panel's Captions tab, the header's menu
+    deletes the track."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def captions():
+        tracks = canvas.caption_tracks()
+        return tracks[0]["captions"] if tracks else []
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        assert canvas.caption_tracks() == [] and canvas.tracks_top() == tl.RULER_H
+        top_video = canvas.rows[0].top
+        canvas.command.emit("captions.add", {"text": "Hello there", "time": 0, "durationSeconds": 4})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # the caption row pushes the tracks down
+        assert canvas.tracks_top() == tl.RULER_H + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
+        assert canvas.rows[0].top == top_video + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
+        assert canvas.row_at(tl.RULER_H + 5) is None
+        cap = captions()[0]
+        r = canvas.caption_block_rect(0, cap)
+        img = canvas.grab().toImage()
+        c = img.pixelColor(int(r.left()) + 2, int(r.bottom()) - 2)
+        assert abs(c.red() - 0x8C) + abs(c.green() - 0x6C) + abs(c.blue() - 0xB4) < 40, c.name()  # added: selected
+        # a click elsewhere then on the block selects it alone
+        QtTest.QTest.mouseClick(canvas, btn, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.caption_selection == [cap["id"]], 10_000)
+        # dragging the body moves it by whole frames
+        start = r.center().toPoint()
+        QtTest.QTest.mousePress(canvas, btn, pos=start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(60, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=start + QtCore.QPoint(60, 0))
+        assert wait_until(app, lambda: captions()[0]["start"] > 0, 10_000)
+        moved = captions()[0]
+        assert moved["end"] - moved["start"] == cap["end"] - cap["start"]
+        assert moved["start"] % canvas.frame_ticks() == 0
+        # dragging the out edge trims it
+        r = canvas.caption_block_rect(0, moved)
+        edge = QtCore.QPoint(int(r.right()) - 1, int(r.center().y()))
+        assert canvas.caption_at(edge)[3] == "out"
+        QtTest.QTest.mousePress(canvas, btn, pos=edge)
+        QtTest.QTest.mouseMove(canvas, edge + QtCore.QPoint(-40, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=edge + QtCore.QPoint(-40, 0))
+        assert wait_until(app, lambda: captions()[0]["end"] < moved["end"], 10_000)
+        assert captions()[0]["start"] == moved["start"]
+        # the header's lock and eye
+        cells = canvas.caption_cells(0)
+        QtTest.QTest.mouseClick(canvas, btn, pos=cells["locked"].center())
+        assert wait_until(app, lambda: canvas.caption_tracks()[0]["locked"] is True, 10_000)
+        r = canvas.caption_block_rect(0, captions()[0])
+        before = captions()[0]["start"]
+        QtTest.QTest.mousePress(canvas, btn, pos=r.center().toPoint())
+        QtTest.QTest.mouseMove(canvas, r.center().toPoint() + QtCore.QPoint(50, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=r.center().toPoint() + QtCore.QPoint(50, 0))
+        wait_until(app, lambda: False, 300)
+        assert captions()[0]["start"] == before  # locked: no move
+        QtTest.QTest.mouseClick(canvas, btn, pos=cells["enabled"].center())
+        assert wait_until(app, lambda: canvas.caption_tracks()[0]["enabled"] is False, 10_000)
+        # a double-click opens the Text panel's Captions tab at the caption
+        canvas.command.emit("playhead.set", {"time": 0})
+        r = canvas.caption_block_rect(0, captions()[0])
+        QtTest.QTest.mouseDClick(canvas, btn, pos=r.center().toPoint())
+        assert wait_until(app, lambda: win.text_panel.tab() == "Captions", 10_000)
+        assert wait_until(app, lambda: canvas.playhead == captions()[0]["start"], 10_000)
+        # right-click the header: Delete Caption Track
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(150, canvas.caption_row(0).center().y()))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.captionTrack.C1.menu", 10_000)
+        menu = canvas.last_menu
+        acts = {a.objectName(): a for a in menu.actions()}
+        assert not acts["timeline.captionTrack.C1.menu.deleteEmpty"].isEnabled()
+        acts["timeline.captionTrack.C1.menu.delete"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: canvas.caption_tracks() == [], 10_000)
+        assert canvas.tracks_top() == tl.RULER_H
+        # damaged caption data reads as nothing
+        assert tl.is_rtl("שלום") and not tl.is_rtl("Hello") and not tl.is_rtl("")
+        canvas.set_sequence({**(canvas.sequence or {}), "captionTracks": "x", "captionSelection": 5})
+        assert canvas.caption_tracks() == [] and canvas.caption_selection == []
+        canvas.set_sequence({**(canvas.sequence or {}), "captionTracks": [{"captions": [{"start": "x", "end": None}, 7]}]})
+        canvas.grab()
+        canvas.caption_at(QtCore.QPoint(tl.HEADER_W + 2, tl.RULER_H + 10))  # no crash
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_thumbnail_tiles_as_egui():
     """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
     continuous tiles on a grid from the head, only the visible ones; source_time_at follows the

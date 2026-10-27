@@ -1745,3 +1745,11 @@
 	Caption track options	Feliratsáv beállításai
 	Insert and overwrite sequences as nests or individual clips	Szekvenciák beszúrása és felülírása beágyazva vagy külön klipekként
 	Close Other Timeline Panels	Többi idővonalpanel bezárása
+	Show Keyframes	Kulcskockák megjelenítése
+	Clip Keyframes	Klip-kulcskockák
+	Track Keyframes	Sáv-kulcskockák
+	Send {n} Level	{n}. küldés szintje
+	Delete Caption Track	Feliratsáv törlése
+	Delete Empty Caption Tracks	Üres feliratsávok törlése
+	Toggle Caption Track Lock	Feliratsáv zárolásának váltása
+	Toggle Caption Track Output	Feliratsáv kimenetének váltása
