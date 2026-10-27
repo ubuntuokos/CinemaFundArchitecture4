@@ -1753,3 +1753,6 @@
 	Delete Empty Caption Tracks	Üres feliratsávok törlése
 	Toggle Caption Track Lock	Feliratsáv zárolásának váltása
 	Toggle Caption Track Output	Feliratsáv kimenetének váltása
+	Drag In point	Kezdőpont húzása
+	Drag Out point	Végpont húzása
+	Move marked range	Jelölt tartomány mozgatása

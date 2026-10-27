@@ -2324,6 +2324,106 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_monitor_time_bar_and_zoom_bar_as_egui(app, tmp_path: Path):
+    """egui's mini timeline and time zoom bar: markers in their colours, the marked range's band
+    drags In, Out or the whole range on whole frames (one project.setMarks), the zoom bar's handle
+    zooms the bar, its middle scrolls it, a click beside it jumps there, a zoomed bar follows the
+    playhead while playing."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import time_bar as tb
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    bar = win.monitor.scrub
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+
+    def send(kind, at: QtCore.QPointF, button, buttons) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(bar, QtGui.QMouseEvent(kind, p, p, bar.mapToGlobal(p), button, buttons,
+                                                                QtCore.Qt.KeyboardModifier.NoModifier))
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        for i in range(1, 5):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none)
+
+    def marks():
+        return win.sequence.get("in"), win.sequence.get("out")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        ft = bar.frame
+        # the sequence's markers, in their label colours
+        assert len(bar.markers) == len(win.sequence["markers"]) > 0
+        # mark 2 s to 6 s: In's and Out's handles drag them on whole frames
+        sid = win.sequence["id"]
+        win.execute("project.setMarks", {"item": sid, "in": 48 * ft, "out": 144 * ft})
+        assert wait_until(app, lambda: marks() == (48 * ft, 144 * ft), 10_000)
+        y = tb.BAR_H - 4
+        a = QtCore.QPointF(bar._x(48 * ft) + 1, y)
+        assert bar.range_part(a.x(), a.y()) == "in"
+        drag(a, a + QtCore.QPointF(40, 0))
+        assert wait_until(app, lambda: marks()[0] > 48 * ft, 10_000)
+        assert marks()[1] == 144 * ft and marks()[0] % ft == 0
+        # the band's middle moves the range, keeping its length
+        i0, o0 = marks()
+        mid = QtCore.QPointF((bar._x(i0) + bar._x(o0 + ft)) / 2, y)
+        assert bar.range_part(mid.x(), mid.y()) == "move"
+        drag(mid, mid + QtCore.QPointF(30, 0))
+        assert wait_until(app, lambda: marks()[0] > i0, 10_000)
+        assert marks()[1] - marks()[0] == o0 - i0
+        # the zoom bar: drag the thumb's end handle left to zoom in, the middle scrolls
+        assert bar.zoom is None
+        thumb = bar.thumb()[0]
+        h = QtCore.QPointF(thumb.right() - 3, thumb.center().y())
+        drag(h, h - QtCore.QPointF(thumb.width() / 2, 0))
+        assert bar.zoom is not None and 0.4 < bar.zoom[1] < 0.6 and bar.zoom[0] == 0.0
+        assert bar.shown()[1] < bar.end
+        thumb = bar.thumb()[0]
+        drag(thumb.center(), thumb.center() + QtCore.QPointF(60, 0))
+        assert bar.zoom[0] > 0.0 and abs((bar.zoom[1] - bar.zoom[0]) - 0.5) < 0.1
+        # a click on the timeline seeks inside the shown part
+        got = []
+        bar.seek.connect(got.append)
+        send(QtCore.QEvent.Type.MouseButtonPress, QtCore.QPointF(bar.bar_rect().left() + 2, 4), left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, QtCore.QPointF(bar.bar_rect().left() + 2, 4), left, none)
+        assert got and bar.shown()[0] <= got[0] <= bar.shown()[0] + 3 * ft
+        bar.seek.disconnect(got.append)
+        # a click beside the thumb jumps there; a whole-width thumb shows everything
+        bar.set_zoom((0.0, 0.25))
+        z = bar.zoom_rect()
+        send(QtCore.QEvent.Type.MouseButtonPress, QtCore.QPointF(z.right() - 2, z.center().y()), left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, QtCore.QPointF(z.right() - 2, z.center().y()), left, none)
+        assert abs(bar.zoom[1] - 1.0) < 1e-6
+        # playing: a zoomed bar follows the playhead off its right edge
+        bar.set_zoom((0.0, 0.25))
+        bar.follow(bar.start + int((bar.end - bar.start) * 0.5))
+        assert 0.4 < bar.zoom[0] < 0.5
+        bar.set_zoom((0.0, 1.0))
+        assert bar.zoom is None
+        bar.grab()
+        # damaged values read as harmless ones
+        assert tb.zoom_range(("x", None)) == (0.0, 1.0) and tb.zoom_range([0.8, 0.2]) == (0.0, 1.0)
+        assert tb.zoom_range([float("nan"), 1]) == (0.0, 1.0) and tb.zoom_range([-5, 0.5]) == (0.0, 0.5)
+        assert tb.tick_steps(0, 0, 0)[1] > 0
+        bar.set_markers([5, {"start": "x"}, {"start": True}, {"start": 10, "color": None}])
+        assert len(bar.markers) == 1
+        # the Source monitor: a subclip's range is its own (no handles)
+        src = win.source_monitor
+        src.source = {**(src.source or {}), "item": 1, "start": 0, "end": 100 * ft, "subclip": {"start": 0, "end": 10}}
+        assert not src.range_editable()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path):
     """egui's graphics tools on the Program monitor: the Rectangle and Ellipse tools drag out
     shapes (into the selected graphic), the Pen clicks a path and Enter / the first point closes

@@ -74,6 +74,7 @@ from .monitor_view import (
     MonitorView,
     res_label,
 )
+from .time_bar import ScrubBar
 from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
@@ -445,69 +446,6 @@ class TimecodeField(QLineEdit):
         self.setText(self.shown_text)
 
 
-class ScrubBar(QWidget):
-    """The monitor's time bar: range, In/Out shading, playhead. Click or drag to seek."""
-
-    seek = Signal(object)  # ticks; object, not a 32-bit int
-
-    def __init__(self, name: str, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setObjectName(f"{name}.scrub")
-        self.setFixedHeight(18)
-        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
-        self.start = 0
-        self.end = 0
-        self.playhead = 0
-        self.mark_in: int | None = None
-        self.mark_out: int | None = None
-        self.frame = 1
-
-    def set_range(self, start: int, end: int, mark_in: int | None, mark_out: int | None, frame: int) -> None:
-        self.start, self.end = int(start), max(int(start), int(end))
-        self.mark_in, self.mark_out = mark_in, mark_out
-        self.frame = max(1, int(frame))
-        self.update()
-
-    def set_playhead(self, t: int) -> None:
-        self.playhead = int(t)
-        self.update()
-
-    def _x(self, t: int) -> float:
-        span = max(1, self.end - self.start)
-        return 4 + (self.width() - 8) * (t - self.start) / span
-
-    def time_at(self, x: float) -> int:
-        span = max(0, self.end - self.start)
-        frac = min(1.0, max(0.0, (x - 4) / max(1.0, self.width() - 8)))
-        t = self.start + int(span * frac)
-        # snap to the frame grid, never past the last frame
-        t = self.start + (t - self.start) // self.frame * self.frame
-        return min(t, max(self.start, self.end - self.frame))
-
-    def paintEvent(self, _e: QPaintEvent) -> None:
-        p = QPainter(self)
-        T = theme.current()
-        p.fillRect(self.rect(), T.c("panel_bg"))
-        if self.end <= self.start:
-            return
-        h = self.height()
-        p.fillRect(QRectF(4, h / 2 - 2, self.width() - 8, 4), T.c("separator"))
-        if self.mark_in is not None or self.mark_out is not None:
-            a = self._x(self.mark_in if self.mark_in is not None else self.start)
-            b = self._x(self.mark_out if self.mark_out is not None else self.end)
-            p.fillRect(QRectF(a, 2, max(1.0, b - a), h - 4), QColor(90, 140, 220, 110))
-        x = self._x(self.playhead)
-        p.fillRect(QRectF(x - 1, 0, 2, h), T.c("playhead"))
-
-    def mousePressEvent(self, e: QMouseEvent) -> None:
-        if e.button() == Qt.MouseButton.LeftButton:
-            self.seek.emit(self.time_at(e.position().x()))
-
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
-        if e.buttons() & Qt.MouseButton.LeftButton:
-            self.seek.emit(self.time_at(e.position().x()))
-
-
 class Monitor(QWidget):
     """Shared monitor: picture, controls row, time bar, transport, playback with sound."""
 
@@ -542,6 +480,9 @@ class Monitor(QWidget):
         self.last_dialog: QDialog | None = None
         self.scrub = ScrubBar(self.target, self)
         self.scrub.seek.connect(self.seek)
+        self.scrub.set_marks.connect(self._drag_marks)
+        self.scrub.range_drag_started.connect(lambda: self.playing and self.stop())
+        self.scrub.edges_need_marks = self.target == "program"  # egui: Program handles only where marked
         self.timecode = TimecodeField(self.target, self)
         self.timecode.submitted.connect(self._typed_time)
         self.duration_label = QLabel("", self)
@@ -643,6 +584,20 @@ class Monitor(QWidget):
 
     def marks(self) -> tuple[int | None, int | None]:
         return None, None
+
+    def bar_markers(self) -> list[Any]:
+        """The markers the time bar shows."""
+        return []
+
+    def range_editable(self) -> bool:
+        """Whether the time bar's marked range drags (a subclip's range is its own)."""
+        return True
+
+    def _drag_marks(self, params: dict[str, Any]) -> None:
+        """The time bar's marked range dragged: one ``project.setMarks`` on what is shown."""
+        item = self.content_key()
+        if item is not None and params:
+            self.command.emit("project.setMarks", {"item": item, **params})
 
     def frame(self) -> int:
         raise NotImplementedError
@@ -861,6 +816,8 @@ class Monitor(QWidget):
         lo, hi = self._range_marks()
         self.duration_label.setText(format_timecode(max(0, hi - lo), self.frame(), self.drop_frame()))
         self.scrub.set_range(start, end, mark_in, mark_out, self.frame())
+        self.scrub.set_markers(self.bar_markers())
+        self.scrub.range_editable = self.range_editable()
         self.scrub.set_playhead(self.playhead)
         self._update_timecode()
         self.request_frame()
@@ -1122,6 +1079,7 @@ class Monitor(QWidget):
                     self.view.update()
             self.playhead = frame_t
             self._update_timecode()
+            self.scrub.follow(frame_t)  # a zoomed time bar follows the playhead
             self.scrub.set_playhead(frame_t)
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
@@ -1489,6 +1447,9 @@ class ProgramMonitor(Monitor):
     def content_key(self) -> Any:
         return (self.sequence or {}).get("id")
 
+    def bar_markers(self) -> list[Any]:
+        return list((self.sequence or {}).get("markers") or [])
+
     def empty_message(self) -> str:
         return tr("No sequence")
 
@@ -1667,6 +1628,12 @@ class SourceMonitor(Monitor):
 
     def content_key(self) -> Any:
         return (self.source or {}).get("item")
+
+    def bar_markers(self) -> list[Any]:
+        return list((self.source or {}).get("markers") or [])
+
+    def range_editable(self) -> bool:
+        return (self.source or {}).get("subclip") is None
 
     def empty_message(self) -> str:
         return tr("Double-click a clip in the Project panel to open it here.")
