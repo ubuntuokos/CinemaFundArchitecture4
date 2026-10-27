@@ -8,6 +8,10 @@ use crate::{Error, Result, dlc, element};
 const MAX_DEPTH: usize = 8;
 /// Longest AudioDescriptionText / AuthoringToolURI read (Annex C caps descriptions at 64 bytes).
 const MAX_TEXT: usize = 1024;
+/// Audio data elements decoded per frame. Each one expands to a frame of samples (up to 4 000
+/// at 96 kHz), so a crafted frame of tiny silent payloads could otherwise allocate without
+/// bound; 1024 is eight times the 128 bed channels and objects of a cinema Atmos mix.
+const MAX_AUDIO_DATA: usize = 1024;
 
 /// IAFrame Rate (Table 18).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -565,6 +569,9 @@ fn iaframe(p: &[u8]) -> Result<Frame> {
             element::BED_DEFINITION => f.beds.push(bed(c, &ctx, 0)?),
             element::OBJECT_DEFINITION => f.objects.push(object(c, &ctx, 0)?),
             element::AUDIO_DATA_DLC => {
+                if f.audio.len() >= MAX_AUDIO_DATA {
+                    return Err(Error::Invalid("more than 1024 audio data elements in a frame"));
+                }
                 let mut r = BitReader::new(c);
                 let id = plex(&mut r, 8)?;
                 let _dlc_size = r.read_bits(16)?;
@@ -572,6 +579,9 @@ fn iaframe(p: &[u8]) -> Result<Frame> {
                 push_audio(&mut f.audio, AudioData { id, coding: Coding::Dlc, samples })?;
             }
             element::AUDIO_DATA_PCM => {
+                if f.audio.len() >= MAX_AUDIO_DATA {
+                    return Err(Error::Invalid("more than 1024 audio data elements in a frame"));
+                }
                 let mut r = BitReader::new(c);
                 let id = plex(&mut r, 8)?;
                 let samples = pcm(c.get(r.byte_pos()..).unwrap_or_default(), &ctx)?;

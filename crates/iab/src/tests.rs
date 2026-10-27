@@ -316,3 +316,16 @@ fn malformed_frames_are_errors_never_panics() {
     el.extend_from_slice(&frame);
     let _ = parse(&el);
 }
+
+/// Thousands of tiny silent DLC elements used to expand into unbounded sample buffers (Codex:
+/// 5 000 assets, 80 MB); past 1024 per frame the frame is refused before decoding them.
+#[test]
+fn too_many_audio_elements_are_refused() {
+    let mut f = sample_frame(FrameRate::R24, 96_000, Coding::Dlc);
+    let n = f.audio[0].samples.len();
+    let silent = |id| AudioData { id, coding: Coding::Dlc, samples: vec![0; n] };
+    f.audio = (1..=1024).map(silent).collect();
+    assert!(parse(&write(&f).unwrap()).is_ok());
+    f.audio.push(silent(1025));
+    assert!(matches!(parse(&write(&f).unwrap()), Err(Error::Invalid(_))));
+}
