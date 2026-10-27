@@ -1,6 +1,6 @@
 # Where CFA4 falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 decoder, G10) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 encoder, G10) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -230,7 +230,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 export (software or hardware), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
+- **Missing:** AV1 export (software or hardware), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; export wiring #115),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   interlaced encoding, smart render, HEVC software encoder (HEVC exists only where a hardware
   encoder does).

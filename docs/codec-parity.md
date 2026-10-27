@@ -1,6 +1,6 @@
 # Codec parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 speed) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
@@ -25,7 +25,7 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
 | MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT) | **none** | conformance fixtures | 60% | 20–35 h (encoder) |
 | Motion JPEG | decode + encode | yes | yes (MOV) | — | 90% | — |
-| JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); no HTJ2K; **not yet wired into MXF / DCP import**; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | none | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; damaged-stream fuzzing | 35% | 30–50 h (MXF / DCP wiring, speed, encoder) |
+| JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); HTJ2K (Part 15) decode, HT block decoder ported from OpenJPH (#80); **not yet wired into MXF / DCP import**; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | own Part 1 encoder (#81): lossless 5/3, rate-controlled 9/7, DCI 2K / 4K profiles (CPRL, tile-part per component, POC, TLM, DCI byte limits), ~0.75 s per 2K and ~3 s per 4K frame on 4 cores; **not yet wired into DCP / MXF export** (#115) | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; HTJ2K: 10 Grok streams bit-exact / ±1 of OpenJPEG, refinement passes on a local sample; damaged-stream fuzzing; encoder output read by OpenJPEG and ffmpeg (lossless exact, lossy / DCI ±1) | 45% | 30–50 h (MXF / DCP wiring, encoder speed #116, layers / HT encoding #117) |
 | JPEG XS | decode (`libjpegxs`) | none | none | — | 0% | 20–40 h |
 | DV / DVCPRO / DV100 | decode + encode | none | none | — | 0% | 15–25 h |
 | MPEG-4 Part 2 | decode | none | none | — | 0% | 10–20 h |
@@ -53,14 +53,16 @@ contents). Percent is ready-for-real-work for that codec: depth, profiles, speed
 - **Ahead of Premiere:** VP9, Opus, APV decode / encode; bit-exact software decoders everywhere,
   including Linux and FreeBSD, where Premiere does not run.
 - **Behind, by user impact:** 10-bit / 4:2:2 H.264 and HEVC in software ([G3](gaps.md#g3-10-bit-and-422-camera-media-needs-hardware)),
-  E-AC-3, camera RAW, HEVC and AV1 software encoding, MPEG-2 / JPEG 2000 encoding for broadcast
-  and DCP, DV, WMV.
+  E-AC-3, camera RAW, HEVC and AV1 software encoding, MPEG-2 encoding for broadcast, DCP / JPEG
+  2000 MXF export (the JPEG 2000 encoder exists, #115), DV, WMV.
 - **Codec dimension: ~60%, 150–250 h** ([target-app-parity.md](target-app-parity.md#by-dimension)).
 
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | JPEG 2000 encoder with the DCI 2K / 4K profiles (#81) |
+| 2026-10-26 | minor | HTJ2K (JPEG 2000 Part 15) decode (#80) |
 | 2026-10-26 | minor | JPEG 2000 decoder about 3× faster single-threaded, multi-threaded (#78) |
 | 2026-10-26 | minor | JPEG 2000 Part 1 decoder (`cfa4-j2k`) |
 | 2026-10-11 | minor | CinemaDNG / DNG decode (#1065) |
