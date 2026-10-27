@@ -3625,3 +3625,6 @@
 	Time Span (seconds)	Zeitspanne (Sekunden)
 	Current Frame At	Aktuelles Bild am
 	Blend Slices	Scheiben überblenden
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 mit 8 Mbit/s, AAC 160 kbit/s, 6-Sekunden-Segmente im fragmentierten MP4

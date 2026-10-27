@@ -240,6 +240,18 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.05, "{name}: {}", j["format"]["duration"]);
                 continue;
             }
+            "hls" => {
+                // HLS: the multivariant playlist plays as H.264 + AAC at the preset's size
+                assert_eq!(fmt_name, "hls", "{name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("h264"), Some(w), Some(h)), "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], "aac", "{name}");
+                let files = cfa4_export::hls_files(&out, h as u32);
+                for f in [&files.media, &files.init, &files.segment(0)] {
+                    assert!(Path::new(f).exists(), "{name}: {f}");
+                }
+                continue;
+            }
             "gif" => {
                 let v = stream(&j, "video").unwrap();
                 assert_eq!(v["codec_name"], "gif");

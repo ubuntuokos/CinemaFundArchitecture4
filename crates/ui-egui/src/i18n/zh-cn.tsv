@@ -3605,3 +3605,6 @@
 	Time Span (seconds)	时间跨度（秒）
 	Current Frame At	当前帧位置
 	Blend Slices	混合切片
+	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段

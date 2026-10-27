@@ -36,9 +36,14 @@ impl Drop for Scratch {
 
 /// A `w`×`h` 24 fps sequence: a colour matte (1 s) and optionally a 440 Hz tone at `tone_db`.
 fn matte(color: [f32; 4], w: u32, h: u32, tone_db: Option<f32>) -> (Arc<Project>, ItemId, SourceMap) {
+    matte_secs(color, w, h, tone_db, 1)
+}
+
+/// [`matte`] lasting `secs` seconds.
+fn matte_secs(color: [f32; 4], w: u32, h: u32, tone_db: Option<f32>, secs: i64) -> (Arc<Project>, ItemId, SourceMap) {
     let mut p = Project::new("m");
     let r = FrameRate::FPS_24;
-    let dur = Tick(2 * TICKS_PER_SECOND);
+    let dur = Tick((secs + 1) * TICKS_PER_SECOND);
     let mut m = SourceMap::default();
     let mut add = |p: &mut Project, g: GeneratorSource| {
         let info = g.info().clone();
@@ -64,10 +69,10 @@ fn matte(color: [f32; 4], w: u32, h: u32, tone_db: Option<f32>) -> (Arc<Project>
     let v = add(&mut p, GeneratorSource::new(Generator::ColorMatte { color }, w, h, r, dur));
     let a = tone_db.map(|db| add(&mut p, GeneratorSource::new(Generator::Tone { hz: 440.0, db }, w, h, r, dur)));
     let seq = p.new_sequence("s", SequenceSettings { width: w, height: h, frame_rate: r, ..Default::default() }, 1, 1, None);
-    let vi = p.make_track_item(v, TrackKind::Video, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(24)), r).unwrap();
+    let vi = p.make_track_item(v, TrackKind::Video, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(24 * secs)), r).unwrap();
     p.sequence_mut(seq).unwrap().video_tracks[0].items.push(vi);
     if let Some(a) = a {
-        let ai = p.make_track_item(a, TrackKind::Audio, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(24)), r).unwrap();
+        let ai = p.make_track_item(a, TrackKind::Audio, Tick::ZERO, TimeRange::new(Tick::ZERO, r.tick_of(24 * secs)), r).unwrap();
         p.sequence_mut(seq).unwrap().audio_tracks[0].items.push(ai);
     }
     (Arc::new(p), seq, m)
@@ -87,6 +92,82 @@ fn files_in(dir: &Path) -> Vec<String> {
     let mut v: Vec<String> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().to_string()).collect();
     v.sort();
     v
+}
+
+#[test]
+fn hls_writes_segments_and_playlists() {
+    let (p, seq, m) = matte_secs([0.2, 0.5, 0.8, 1.0], 64, 36, Some(-6.0), 13);
+    let dir = Scratch::new("hls");
+    let path = dir.path("Demo.m3u8");
+    // a key frame every two seconds: segments are cut at 6 and 12 s
+    let s = ExportSettings { format: Format::Hls, path: path.clone(), bitrate_kbps: 300, keyframe_distance: Some(48), ..Default::default() };
+    assert_eq!((s.video_format(), s.audio_codec(), s.extension()), (Format::H264, AudioCodec::Aac, "m3u8"));
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 13 * 24);
+    let files = hls_files(&path, 36);
+    let segs: Vec<String> = (0..3).map(|n| files.segment(n)).collect();
+    let mut want = vec![files.media.clone(), files.init.clone()];
+    want.extend(segs.clone());
+    assert_eq!(r.extra_files, want);
+    assert!(!Path::new(&files.segment(3)).exists());
+
+    let master = std::fs::read_to_string(&path).unwrap();
+    assert!(master.starts_with("#EXTM3U\n#EXT-X-VERSION:7\n"), "{master}");
+    assert!(master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000\nDemo_36p.m3u8\n"), "{master}");
+    let media = std::fs::read_to_string(&files.media).unwrap();
+    assert!(media.contains("#EXT-X-TARGETDURATION:6\n") && media.contains("#EXT-X-MAP:URI=\"Demo_36p_init.mp4\"\n"), "{media}");
+    assert!(media.ends_with("#EXT-X-ENDLIST\n"), "{media}");
+    let durations: Vec<f64> = media.lines().filter_map(|l| l.strip_prefix("#EXTINF:")).map(|l| l.trim_end_matches(',').parse().unwrap()).collect();
+    assert_eq!(durations, [6.0, 6.0, 1.0], "{media}");
+    assert!(media.contains("\nDemo_36p_00000.m4s\n") && media.contains("\nDemo_36p_00002.m4s\n"));
+
+    // the init segment and the segments together are one fragmented MP4
+    let init = std::fs::read(&files.init).unwrap();
+    let mut whole = init.clone();
+    let mut firsts = Vec::new();
+    for seg in &segs {
+        let b = std::fs::read(seg).unwrap();
+        assert_eq!(&b[4..8], b"moof", "{seg}");
+        let one: Vec<u8> = init.iter().chain(&b).copied().collect();
+        let f = cfa4_isobmff::open(one.as_slice()).unwrap();
+        firsts.push(f.tracks[0].samples[0].is_sync);
+        whole.extend(b);
+    }
+    assert_eq!(firsts, [true, true, true], "every segment starts at a key frame");
+    let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
+    assert!(f.fragmented);
+    assert_eq!(f.tracks.len(), 2);
+    assert_eq!(f.tracks[0].samples.len(), 13 * 24);
+    assert_eq!(f.tracks[0].samples[0].pts, 0, "the first picture at 0");
+    // the sound covers the picture: 13 s plus the AAC priming, in 1024-sample units
+    let audio_end: i64 = f.tracks[1].samples.iter().map(|s| i64::from(s.duration)).sum();
+    assert!((13 * 48_000 + 1024..13 * 48_000 + 3 * 1024).contains(&audio_end), "{audio_end}");
+
+    if let Some(j) = ffprobe_json(&["-show_streams", "-show_format"], &path) {
+        assert_eq!(j["format"]["format_name"], "hls");
+        let dur: f64 = j["format"]["duration"].as_str().unwrap().parse().unwrap();
+        assert!((dur - 13.0).abs() < 0.1, "duration {dur}");
+        let codecs: Vec<&str> = j["streams"].as_array().unwrap().iter().filter_map(|s| s["codec_name"].as_str()).collect();
+        assert!(codecs.contains(&"h264") && codecs.contains(&"aac"), "{codecs:?}");
+    }
+    if let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("HLS decode") {
+        let out = std::process::Command::new(&ffmpeg).args(["-v", "error", "-xerror", "-i", &path, "-f", "null", "-"]).output().unwrap();
+        assert!(out.status.success() && out.stderr.is_empty(), "{}", String::from_utf8_lossy(&out.stderr));
+        let out = std::process::Command::new(&ffmpeg).args(["-v", "error", "-i", &path, "-map", "0:v", "-f", "framecrc", "-"]).output().unwrap();
+        let frames = String::from_utf8_lossy(&out.stdout).lines().filter(|l| !l.starts_with('#')).count();
+        assert_eq!(frames, 13 * 24, "{}", String::from_utf8_lossy(&out.stderr));
+    }
+}
+
+#[test]
+fn hls_settings_round_trip_and_summary() {
+    let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "hls", "bitrateKbps": 5000})).unwrap();
+    assert_eq!((s.format, s.video_format(), s.audio_codec(), s.extension()), (Format::Hls, Format::H264, AudioCodec::Aac, "m3u8"));
+    assert_eq!((Format::from_name("m3u8"), Format::from_name("HLS"), Format::Hls.id()), (Some(Format::Hls), Some(Format::Hls), "hls"));
+    let sum = s.summary(1920, 1080, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND));
+    assert_eq!(sum.format, "HLS (HTTP Live Streaming) (fragmented MP4 segments)");
+    assert!(sum.video.contains("Target 5.00 Mbps"), "{}", sum.video);
+    assert!(sum.audio.starts_with("AAC, "), "{}", sum.audio);
 }
 
 #[test]
@@ -1148,7 +1229,7 @@ fn h265_is_a_format_with_a_built_in_encoder() {
     }
     assert_eq!(Format::from_name(Format::Hevc.id()), Some(Format::Hevc));
     assert_eq!((Format::Hevc.extension(), Format::Hevc.label()), ("mp4", "H.265 (HEVC)"));
-    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 24);
+    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 25);
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "hevc"})).unwrap();
     assert_eq!(s.format, Format::Hevc);
     assert_eq!(serde_json::to_value(&s).unwrap()["format"], "hevc");

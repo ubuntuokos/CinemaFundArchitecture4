@@ -18,6 +18,7 @@ use std::io::Write;
 mod aac_out;
 mod audio_out;
 mod deflate;
+mod hls_out;
 mod job;
 mod mxf_out;
 mod opus_out;
@@ -30,6 +31,7 @@ pub mod settings;
 pub mod still;
 mod webm_out;
 pub use audio_out::LoudnessReport;
+pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
 pub use mxf_out::opatom_audio_paths;
 pub use pcm::{image_sequence_path, write_aiff, write_wav};
@@ -82,6 +84,10 @@ pub enum Format {
     /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
     #[serde(rename = "webm", alias = "WebM")]
     WebM,
+    /// HTTP Live Streaming (RFC 8216): H.264 + AAC in CMAF fragmented-MP4 segments with a media
+    /// playlist and a multivariant playlist (the output path), see [`hls_files`].
+    #[serde(rename = "hls", alias = "Hls")]
+    Hls,
     /// QuickTime, Apple ProRes 422 (HQ unless the settings pick another flavour) + PCM.
     #[serde(rename = "prores", alias = "ProRes")]
     ProRes,
@@ -151,6 +157,7 @@ impl Format {
             "hevc" | "h265" | "hvc1" | "hev1" | "x265" => Format::Hevc,
             "av1" | "av01" => Format::Av1,
             "webm" | "vp9" | "vp09" => Format::WebM,
+            "hls" | "m3u8" | "httplivestreaming" => Format::Hls,
             "prores" | "mov" | "appleprores" => Format::ProRes,
             "dnxhr" | "dnxhd" | "dnx" | "avid" | "aviddnxhr" | "aviddnxhd" | "vc3" => Format::DnxHr,
             "apv" | "apv1" => Format::Apv,
@@ -182,6 +189,7 @@ impl Format {
             Format::Hevc => "hevc",
             Format::Av1 => "av1",
             Format::WebM => "webm",
+            Format::Hls => "hls",
             Format::ProRes => "prores",
             Format::DnxHr => "dnxhr",
             Format::Apv => "apv",
@@ -208,6 +216,7 @@ impl Format {
         match self {
             Format::H264 | Format::Hevc | Format::Av1 => "mp4",
             Format::WebM => "webm",
+            Format::Hls => "m3u8",
             Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg => "mov",
             Format::PngSequence => "png",
             Format::TiffSequence => "tif",
@@ -231,6 +240,7 @@ impl Format {
             Format::Hevc => "H.265 (HEVC)",
             Format::Av1 => "AV1",
             Format::WebM => "WebM",
+            Format::Hls => "HLS (HTTP Live Streaming)",
             Format::ProRes => "Apple ProRes",
             Format::DnxHr => "Avid DNxHR",
             Format::Apv => "APV",
@@ -292,11 +302,12 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 24] = [
+    pub const ALL: [Format; 25] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
         Format::WebM,
+        Format::Hls,
         Format::ProRes,
         Format::DnxHr,
         Format::Apv,
