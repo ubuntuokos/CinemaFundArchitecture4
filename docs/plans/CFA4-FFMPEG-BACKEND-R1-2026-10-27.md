@@ -10,11 +10,11 @@
 **Kapcsolódó tervek:** [ADR 0005](../adr/ADR-0005-media-backends.md), [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md), [GOP-alapú Smart Cut](GOP-SMART-CUT-2026-10-27.md), [Smart Render](SMART-RENDER-2026-10-27.md)
 
 > **Állapot-megjegyzés (2026-10-27, a repóba emeléskor):** a tulajdonos által megadott terv szövege
-> változatlan, két kivétellel: az upstream ős nevét a repository függetlenségi szabálya miatt
+> változatlan; e megjegyzésen kívül két módosítás történt: az upstream ős nevét a repository függetlenségi szabálya miatt
 > (`python/tests/test_independence.py`) általános megnevezés helyettesíti, és a 2. fejezet PR-táblázata
 > a #224 állapotát frissíti. A #224 2026-10-27-én egyesült (`85b4fc1`): az ADR 0005 a `main`-ben van,
-> és az `AGENTS.md`, a `CLAUDE.md` és a `VISION.md` már kiegészítő backendként engedi az FFmpeg ≥ 9.0.2-t
-> a `cfa4-ffmpeg` crate-en keresztül. Az FF-00-ból így a licencvizsgálat (WTFPL nincs a `deny.toml`
+> az `AGENTS.md` és a `CLAUDE.md` a tervezett `cfa4-ffmpeg` crate-en keresztül, a `VISION.md` kiegészítő
+> háttérmotorként engedi az FFmpeg ≥ 9.0.2-t. Az FF-00-ból így a licencvizsgálat (WTFPL nincs a `deny.toml`
 > listáján), a worker/FFI biztonsági határ dokumentálása és a Smart Cut különválasztásának rögzítése
 > marad. A CFA4-SCE-001 v1.5 „FFmpeg csak CI-orákulum” szabálya a Stream Copy, GOP Smart Cut, Smart
 > Render és a natív MPEG-TS muxer végrehajtására vonatkozik, összhangban e terv 9. fejezetével.
