@@ -78,7 +78,7 @@ carrier window one block wider on both sides, so random access is exact.
 - `cargo test -p cfa4-media auro`: the wrapped source on a synthetic carrier (layout, windows,
   resampling, hostile requests, plain and lossy audio left alone).
 - `CFA4_AURO_DIR=/path/to/samples/auro cargo test -p cfa4-codecs --test auro_oracle`: real carriers
-  (Amplitude16 DTS-HD MA 13.1 in Matroska, FLAC 8.0 / 9.1 / 11.1 / 13.1 at 48 and 96 kHz, FLAC in
+  (Amplitude16 DTS-HD MA 13.1 in Matroska, FLAC 8.0 / 9.1 / 11.1 / 13.1 at 48 and 96 kHz, Deus Ex Machina 13.1 FLAC, FLAC in
   MP4, and the 9.1 / 11.1 / 13.1 PCM channel tests). Each opens with its restored layout, every
   sample equals what `unfold` restores from ffmpeg's bit-exact decode of the carrier, also on
   random access, and in the channel tests the noise reaches each loudspeaker alone. The samples
