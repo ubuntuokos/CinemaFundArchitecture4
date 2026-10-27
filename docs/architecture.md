@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** trivial (status line, revision history and roadmap link added; content checked against the crate list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-27 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 only: VideoToolbox, Media Foundation and the macOS menu removed) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 CFA4 is a Cargo workspace of small crates with strictly enforced layering. The engine is
 headless: every feature can be reached without a window, and the egui UI is one client among the
@@ -86,8 +86,8 @@ and `cfa4-cli`.
 | `ui-egui` | L5 | the egui frontend: docking, panels, timeline, monitors, playback, control-channel handlers |
 | `gstreamer` | L5 | `cfa4-gstreamer`: optional GStreamer backend (feature `gstreamer`): installation probe with plugin licences, media discovery; supplements the Rust engine ([ADR 0002](adr/ADR-0002-gstreamer-backend.md), [README](../crates/gstreamer/README.md)) |
 | `automation` | L5 | MCP server (`rmcp`, stdio), headless or bridged to the running app |
-| `platform` | L5 | OS media FFI only: hardware video decoding (VideoToolbox H.264 / HEVC on macOS; Media Foundation / Direct3D 11 H.264 / HEVC / VP9 / AV1 on Windows; VA-API H.264 / HEVC on Linux, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and hardware H.264 encoding (VideoToolbox, opt-in) and H.265 encoding (VideoToolbox, the only H.265 encoder; the format exists only where a hardware encoder does) and NVIDIA NVENC H.264 (Windows and 64-bit Linux, opt-in) and H.265 (Windows, CFA4's only H.265 encoder there) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
-| `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, native macOS menu, TCP control server |
+| `platform` | L5 | OS media FFI only: hardware video decoding (NVDEC and VA-API H.264 / HEVC, with our own parsers and DPBs driving the stateless hardware; a no-op elsewhere) behind `codecs::VideoDecoder`, with transparent fallback to our decoders, and NVIDIA NVENC H.264 (opt-in) and H.265 (CFA4's only H.265 encoder; the format exists only where it does) encoding behind `export::VideoEncoder`; H.264 declines to the built-in encoder for what the hardware does not take. The one crate allowed `unsafe` ([ADR 0001](adr/0001-platform-ffi.md), [README](../crates/platform/README.md)) |
+| `cfa4` | L6 | desktop binary: eframe/wgpu window, cpal audio output, file dialogs, TCP control server |
 | `cfa4-cli` | L6 | headless CLI: `exec`, `run`, `inspect`, `describe`, `commands`, `import`, `export`, `render`, `probe`, `mcp`; `--bridge` targets the running app |
 
 ### What `cargo xtask layers` enforces
@@ -176,7 +176,7 @@ pub struct CommandSpec {
     pub id: &'static str,                 // "sequence.addEdit"
     pub label: &'static str,              // "Add Edit"
     pub menu: &'static [&'static str],    // ["Sequence"]; empty = not in menus
-    pub shortcut: Option<&'static str>,   // "Cmd+K" (Cmd = ⌘ on macOS, Ctrl elsewhere)
+    pub shortcut: Option<&'static str>,   // "Cmd+K" (Cmd = Ctrl on Linux)
     pub params: &'static str,             // r#"{"time":ticks?}"#, shown to agents
     pub enabled: fn(&Session) -> Result<(), String>,  // Err carries the reason
     pub run: fn(&mut Session, &Value) -> Result<Value>,
@@ -213,7 +213,7 @@ pub struct CommandSpec {
 ```text
 file ──► codecs (MP4/MOV, MKV, audio)        demux + decode, GOP-aware seek
           │   decoder registry: h264, hevc, vp9, av1, prores, dnx, mjpeg (+ any registered first:
-          │   platform's VideoToolbox (macOS) or Media Foundation (Windows) H.264 / HEVC, falling back to ours)
+          │   platform's NVDEC or VA-API H.264 / HEVC, falling back to ours)
           ▼
         media::MediaSource ──► frame cache (byte-budgeted LRU, shared)
           ▼
@@ -253,45 +253,34 @@ file ──► codecs (MP4/MOV, MKV, audio)        demux + decode, GOP-aware see
   `codecs::VideoDecoder`. `register_video_decoder` puts a factory in front of the built-in ones, so a
   hardware decoder can take precedence. The GOP cache never holds its lock while decoding.
 - **Hardware decoding.** The apps (desktop, CLI / headless MCP, bench) call
-  `cfa4_platform::register()` at startup, which on macOS registers a VideoToolbox factory for
-  `avcC` / `hvcC` streams (8 / 10-bit, 4:2:0 and 4:2:2; elsewhere it does nothing), and on Windows a
-  Media Foundation one (below). The factory
+  `cfa4_platform::register()` at startup, which asks the compute router (`cfa4-route`) for the
+  hardware decoder to put in front of ours: NVDEC on NVIDIA GPUs with the proprietary driver,
+  then VA-API (Intel, AMD), for `avcC` / `hvcC` streams; with neither it does nothing. The factory
   declines (our decoder is used) when Settings ▸ Playback ▸ Hardware decoding is Off
   (`codecs::hw::set_hardware_decoding`, applied by the engine whenever preferences change), for
-  formats it does not take, and when the OS cannot create a *hardware* session for the stream.
-  Its decoder is a `platform::HybridDecoder`: VideoToolbox decodes asynchronously (two access
-  units in flight), a reorder buffer of the stream's own depth (`max_num_reorder_frames` /
-  `sps_max_num_reorder_pics`, from `codecs::hw::NalStreamInfo`) restores presentation order, and
-  the decoded biplanar `CVPixelBuffer` is copied into planar `Yuv8` / `Yuv16`. Colour, pixel
-  aspect, random-access and disposable answers come from the same helpers as the software
-  decoders (`video::vui_color`, `sar_par`, `h264_disposable`, `hevc_disposable`), so the two are
-  interchangeable (bit-exact in the parity tests). If the hardware fails mid-stream (decode error,
-  session lost to a GPU change or sleep, changed in-band parameter sets), the hybrid builds
-  `codecs::software_video_decoder` (built-in factories only), replays the samples since the last
-  restart point and continues in software for that instance; it is logged and counted. A source
-  already open keeps its decoder when the setting changes, until it is reopened. `perf.stats`
-  `decode.hardware` reports hardware vs software frames, sessions, declines and fallbacks, and the
-  registered `backend`.
-  On Windows the decoder (`platform::media_foundation`) is a Direct3D-aware decoder MFT driven at
-  the level of single access units (no Source Reader: the demuxer above already delivers the
-  samples): the `avcC` / `hvcC` sample becomes Annex B, the MFT is given the process's Direct3D 11
-  video device through an `IMFDXGIDeviceManager` so it decodes with DXVA, and its NV12 (8-bit) /
-  P010 (10-bit) texture is read back through a staging texture (the one GPU to CPU copy) into
-  planar `Yuv8` / `Yuv16`. H.264 Baseline / Main / High, HEVC Main / Main 10, VP9 profiles 0 / 2 and AV1 main
-  (8- and 10-bit), 4:2:0, progressive (VP9 / AV1 samples go in as they are, not as Annex B);
-  everything else, and any stream the GPU's DXVA decoder does not list, is declined. A decoder that
-  would hand back system-memory pictures (Microsoft's decoder MFTs do that when DXVA is not
-  available) fails the stream, so the hybrid continues with our decoder and Windows' software
-  decoding is never used in its place. Zero-copy (the texture straight to wgpu) is not done yet.
+  formats it does not take, and when the driver cannot create a *hardware* session for the stream.
+  Its decoder is a `platform::HybridDecoder` around the VA-API or NVDEC decoder, which uses our own
+  parsers and DPBs to drive the stateless hardware; a reorder buffer of the stream's own depth
+  (`max_num_reorder_frames` / `sps_max_num_reorder_pics`, from `codecs::hw::NalStreamInfo`)
+  restores presentation order, and the decoded biplanar surface is copied into planar `Yuv8` /
+  `Yuv16`. Colour, pixel aspect, random-access and disposable answers come from the same helpers
+  as the software decoders (`video::vui_color`, `sar_par`, `h264_disposable`, `hevc_disposable`),
+  so the two are interchangeable. If the hardware fails mid-stream (decode error, session lost,
+  changed in-band parameter sets), the hybrid builds `codecs::software_video_decoder` (built-in
+  factories only), replays the samples since the last restart point and continues in software for
+  that instance; it is logged and counted. A source already open keeps its decoder when the
+  setting changes, until it is reopened. `perf.stats` `decode.hardware` reports hardware vs
+  software frames, sessions, declines and fallbacks, and the registered `backend`. Zero-copy (the
+  surface straight to wgpu) is not done yet.
   Decoders run slices on rayon, so an export worker waiting inside a decode can pick up another
   frame of the same source. A request that finds the shared decoder busy decodes with a private
   decoder.
-- **Hardware encoding.** On Windows and 64-bit Linux, `platform::nvenc::export::factory` is registered with
+- **Hardware encoding.** On 64-bit Linux, `platform::nvenc::export::factory` is registered with
   `cfa4_export::register_encoder` (`register()` does this once), in front of the software H.264
   encoder. It takes an export only when Export ▸ Hardware encoding (`ExportSettings.hardwareEncoding`,
   `HardwareEncoding::Auto`) is Auto, which is off by default: hardware streams differ from ours, and
   exports are otherwise byte-identical from run to run. NVENC (`platform::nvenc`, the driver's
-  `nvEncodeAPI64.dll` / `libnvidia-encode.so.1` loaded at run time) then takes RGBA frames, converted to 4:2:0 by the software
+  `libnvidia-encode.so.1` loaded at run time) then takes RGBA frames, converted to 4:2:0 by the software
   encoder's own conversion, and produces the H.264 samples and `avcC` of an MP4 / MOV. It declines
   (the software encoder runs, counted in `export.hardware.declined`) two-pass VBR, HDR, MXF,
   interlaced output, sizes outside NVENC's limits, and systems without an NVIDIA GPU or driver.
@@ -301,7 +290,7 @@ file ──► codecs (MP4/MOV, MKV, audio)        demux + decode, GOP-aware see
   buffers, with the HDR10 static metadata as SEI on every IDR for PQ; the `hvcC` is built from the SPS
   the encoder wrote). An HDR sequence exports as HDR H.265 only where a registered probe says so
   (`cfa4_export::register_hdr_probe`, `hdr_available`; NVENC with 10-bit support), otherwise it is
-  tone-mapped to SDR as on macOS: `register()` hands `platform::nvenc::hevc_available` to
+  tone-mapped to SDR: `register()` hands `platform::nvenc::hevc_available` to
   `cfa4_export::register_format_probe`, so the H.265 format exists where an HEVC encoder does,
   and choosing it is the opt-in (the Hardware encoding toggle governs H.264 only). With no software
   H.265 encoder, what NVENC declines is counted and ends the export with an error that says why.
@@ -596,9 +585,8 @@ frame (Y'CbCr/RGB + metadata) ─► source colour space: Interpret Footage over
   (MaxCLL/MaxFALL 0 = unknown, they are not measured) plus the matching H.264 SEI. `sdr: true`
   exports the tone-mapped SDR picture instead; render previews always do.
 - **Monitors / display colour management.** The monitors are SDR (sRGB-encoded RGBA8 textures):
-  HDR sequences are shown tone mapped. macOS EDR (extended-range `CAMetalLayer` output) is not
-  wired up: there is no `platform` crate yet and eframe/wgpu do not expose an EDR surface, so HDR
-  values above SDR white are never sent to the display. The scopes of an HDR sequence show the
+  HDR sequences are shown tone mapped. HDR display output is not wired up: eframe/wgpu do not
+  expose an HDR surface, so HDR values above SDR white are never sent to the display. The scopes of an HDR sequence show the
   working-space values (waveform in cd/m² on a PQ scale, BT.2020 vectorscope).
 - **LUTs.** Lumetri Input LUT and Creative Look reference `lib:<id>` (the project's LUT library,
   `Project::luts`, embedded `.cube`/`.3dl` text) or `builtin:<id>` (code-generated camera
@@ -778,4 +766,5 @@ native menus) in `apps/cfa4`. [roadmap.md](roadmap.md) has the milestone status 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-27 | minor | CFA4 targets Ubuntu 26.04 only: platform row, hardware decoding / encoding and monitor sections describe NVDEC, VA-API and NVENC; macOS / Windows backends removed |
 | 2026-10-10 | trivial | Status line and revision history added; milestone link points at docs/roadmap.md |

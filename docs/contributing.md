@@ -15,13 +15,11 @@ of the crate you will change.
 
 | OS | Extra |
 |---|---|
-| macOS | Xcode Command Line Tools. ffmpeg: `brew install ffmpeg` (includes libx264/libx265). |
-| Linux | C toolchain and the system headers cpal and rfd need: ALSA (`libasound2-dev`) and GTK 3 (`libgtk-3-dev`), plus the usual X11/Wayland development packages for winit. ffmpeg from your distribution, built with libx264 and libx265. |
-| Windows | MSVC build tools. The oracle tests look for ffmpeg only in `/opt/homebrew/bin`, `/usr/local/bin` and `/usr/bin`, so most of them skip on Windows. |
+| Ubuntu 26.04 | C toolchain and the system headers cpal and rfd need: ALSA (`libasound2-dev`) and GTK 3 (`libgtk-3-dev`), plus the usual X11/Wayland development packages for winit. ffmpeg from your distribution, built with libx264 and libx265. |
 
-The oracle tests find ffmpeg at `/opt/homebrew/bin`, `/usr/local/bin` or `/usr/bin`. H.264 and
-HEVC fixtures need an ffmpeg built with libx264 and libx265. The VideoToolbox fixtures run only on
-macOS.
+CFA4 is developed and tested on Ubuntu 26.04 only (every official flavour, Wayland and X11);
+macOS and Windows are not supported. The oracle tests find ffmpeg on `PATH` or in `/usr/local/bin`,
+`/usr/bin` or `/snap/bin`. H.264 and HEVC fixtures need an ffmpeg built with libx264 and libx265.
 
 ## 2. Build and run
 
@@ -53,9 +51,7 @@ playback and codec speed, use `--release`.
 ### Logs
 
 The desktop app writes its `log` records to standard error and to `Logs/cfa4.log` in the data
-directory (`~/.local/share/cfa4/Logs/` or `$XDG_DATA_HOME/cfa4/Logs/` on Linux,
-`~/Library/Application Support/CFA4/Logs/` on macOS, `%APPDATA%\CFA4\Logs\` on Windows,
-or under `--data-dir` / `CFA4_DATA_DIR`), next to the crash logs; Help ▸ Reveal Log Files opens
+directory (`~/.local/share/cfa4/Logs/` or `$XDG_DATA_HOME/cfa4/Logs/`, or under `--data-dir` / `CFA4_DATA_DIR`), next to the crash logs; Help ▸ Reveal Log Files opens
 the folder. A start from a desktop menu or the Dock has no terminal, so this file is what to attach
 to a bug report: GPU compositor fallbacks, audio output problems, panicked frame jobs and container
 warnings all land there. Each launch moves the previous log to `cfa4.1.log` (and that one to

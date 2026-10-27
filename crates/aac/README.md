@@ -101,8 +101,8 @@ checked: malformed access units return `Err`, never panic.
 
 ## Test results
 
-All produced by `cargo test -p cfa4-aac -- --nocapture` (ffmpeg 9.0 at `/opt/homebrew/bin` as
-oracle; tests skip when it is absent). Fixtures go to `target/fixtures/aac/`.
+All produced by `cargo test -p cfa4-aac -- --nocapture` (ffmpeg 9.0 as oracle, found by
+`cfa4-testkit`; tests skip when it is absent). Fixtures go to `target/fixtures/aac/`.
 
 ### Encoder quality / bitrate (2 s synthetic signals, decoded by ffmpeg)
 

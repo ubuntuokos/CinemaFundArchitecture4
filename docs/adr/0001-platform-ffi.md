@@ -3,6 +3,10 @@
 - **Status:** accepted (2026-10-05, approved by the project owner; recorded in
   [AGENTS.md](../../AGENTS.md) §0 item 3)
 - **Issue:** #30 (hardware acceleration)
+- **Update (2026-10-27):** CFA4 targets Ubuntu 26.04 only. The macOS (VideoToolbox) and Windows
+  (Media Foundation / Direct3D 11) backends have been removed; the decision applies unchanged to
+  the Linux FFI modules that remain (`vaapi::va`, `nvdec::cuvid`, `nvenc::ffi` / `nvenc::session`
+  / `nvenc::device`). Passages below that mention macOS or Windows record the original decision.
 
 ## Context
 
@@ -25,9 +29,9 @@ Containment rules:
 
 1. The crate does not use `lints.workspace = true`. Its own `[lints]` table copies the workspace
    lints except `unsafe_code = "deny"` (not `forbid`), and adds
-   `clippy::undocumented_unsafe_blocks = "deny"`. Only the FFI modules (`videotoolbox`, `media_foundation::gpu` / `media_foundation::mft`,
-   `nvenc::ffi` / `nvenc::session` / `nvenc::device` on Windows and 64-bit Linux, and `vaapi::va` on Linux) carry `#[allow(unsafe_code)]`; the rest of the crate
-   (the fallback logic in `hybrid`, the decoder logic in `media_foundation`, `annexb`, `biplanar`,
+   `clippy::undocumented_unsafe_blocks = "deny"`. Only the FFI modules (`vaapi::va`, `nvdec::cuvid`,
+   `nvenc::ffi` / `nvenc::session` / `nvenc::device`) carry `#[allow(unsafe_code)]`; the rest of the crate
+   (the fallback logic in `hybrid`, the decoder logic in `vaapi` and `nvdec`, `annexb`, `biplanar`,
    the encoder logic in `nvenc`, H.264 and H.265 alike) has no `unsafe`. NVENC's H.265 support
    added no `unsafe` module: it reuses `nvenc::ffi` and `nvenc::session` (new data declarations and
    a second codec-configuration member of an existing union).

@@ -2,9 +2,7 @@
 
 ## Desktop control channel
 `cfa4 --control 9876` (or `CFA4_CONTROL_PORT`) listens on `127.0.0.1:<port>` (loopback only).
-One JSON request per line → one JSON reply per line. The app opts out of macOS App Nap
-(`apps/cfa4/src/app_nap.rs`): a hidden window would otherwise drop the whole process to
-background priority, and on a busy machine it would stop answering.
+One JSON request per line → one JSON reply per line.
 
 **Only requests are read.** Every line must be a JSON object with a string `method` (`id` and `params`
 are optional; blank lines are skipped). Anything else gets one error reply
@@ -34,7 +32,7 @@ Methods (handlers in `crates/ui-egui/src/control.rs`):
 | `ui.click` / `ui.move` | `{id}` or `{x,y}`, `button`, `count`, `modifiers` | synthetic pointer input |
 | `ui.drag` | `{from, to, steps, modifiers}` | press–move–release |
 | `ui.scroll` | `{id|x,y, dx, dy, modifiers}` | wheel / trackpad |
-| `ui.key` / `ui.type` | `{key}` (`Cmd+K`, `Space`…; off macOS `Ctrl+K` is the same key) / `{text}` | keyboard |
+| `ui.key` / `ui.type` | `{key}` (`Cmd+K`, `Space`…; `Ctrl+K` is the same key) / `{text}` | keyboard |
 | `ui.timeline.hit` / `ui.timeline.locate` | `{x,y,modifiers?}` / `{clip, edge?}` | timeline hit-testing. `hit` reports a clip's `edge` (`In`/`Out`) within 7 px of it (a third of a narrow clip); just left of a cut that is the left clip's Out, from the cut rightwards the right clip's In. `kind` is the trim a press of the current tool with `modifiers` starts there (`trim`, `ripple`, `roll`, `rateStretch`, `remix`), `volume` on an audio clip's Volume line (Selection and Pen tools), or null |
 | `ui.playback` | `{action: play|stop|toggle, speed?}` | |
 | `ui.screenshot` | `{path?, panel?}` | PNG of the window or one panel; fails after 10 s when no frame is presented (window hidden, display asleep) |
@@ -53,7 +51,7 @@ still apply. `engine.commands` and the menus always show the selection's enablem
 
 **Focus.** Driving the app never steals the user's keyboard. Started with `--control`, the app opens
 without activating itself. UI requests and screenshots that need a rendered frame bring the window
-forward without making it key (macOS `orderFrontRegardless`), so the user's typing keeps going to
+forward without giving it keyboard focus, so the user's typing keeps going to
 the app they are in. Only an explicit `ui.focus {}` activates CFA4. Injected keys work on
 focused widgets even when the native window is in the background.
 
@@ -155,8 +153,9 @@ sequence as tone-mapped SDR.
 `shortcuts.get`, `shortcuts.set {command, keys, panel?, add?, keepConflicts?}`, `shortcuts.clear`,
 `shortcuts.undo` / `shortcuts.redo`, `shortcuts.conflicts {platform?}`, `shortcuts.forKey {key}`,
 `shortcuts.resolve {keys, panel?}`, `shortcuts.presets`, `shortcuts.loadPreset` / `savePreset` /
-`deletePreset {name}`, `shortcuts.export` / `import {path}`, `shortcuts.audit`. Keys use `Cmd` (⌘ /
-Ctrl), `Ctrl` (macOS ⌃), `Alt`, `Shift`. The dialog (Edit ▸ Keyboard Shortcuts…, ⌥⌘K) uses ids
+`deletePreset {name}`, `shortcuts.export` / `import {path}`, `shortcuts.audit`. Keys use `Cmd` (Ctrl on
+Linux), `Ctrl` (the separate Control key of Premiere's Mac presets), `Alt`, `Shift`. The dialog
+(Edit ▸ Keyboard Shortcuts…, Ctrl+Alt+K) uses ids
 `shortcuts.*` (`shortcuts.key.K`, `shortcuts.cell.<command>`, `shortcuts.ok`, …).
 
 ## MCP

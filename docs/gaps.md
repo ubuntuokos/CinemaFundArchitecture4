@@ -1,6 +1,6 @@
 # Where CFA4 falls short of Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 encoder, G10) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 only: G3, G4, G5, G9) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 Every known shortfall, one entry each, ranked by what most stops an editor using CFA4 for real
 work. This is the work list: agents should prefer it over adding checklist items. Numbers are in
@@ -17,12 +17,12 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G1 | Nothing compares our output with Premiere's | measurement | no, but every ready number depends on it | 40–70 h |
 | G2 | Premiere's `.prproj` cannot be opened | file format | **yes** | 60–120 h |
 | G3 | 10-bit and 4:2:2 camera media needs hardware | codec | yes | 30–50 h |
-| G4 | Crashes at start-up, and no test CI on pull requests | stability | yes | 40–80 h |
-| G5 | Hardware acceleration is partial | hardware | partly | 120–200 h |
+| G4 | Crashes at start-up, and no test CI on pull requests | stability | yes | 30–60 h |
+| G5 | Hardware acceleration is partial | hardware | partly | 100–170 h |
 | G6 | No real-world media corpus or workflow acceptance tests | measurement | yes | 40–70 h |
 | G7 | No measured parity tool in CI | measurement | no | 10–20 h |
 | G8 | UI fidelity: monitor handles, Effect Controls, docking | UI / UX | partly | 120–200 h |
-| G9 | Windows and Linux at run time | platforms | partly | 50–90 h |
+| G9 | Ubuntu 26.04 at run time (every flavour, Wayland and X11) | platforms | partly | 30–60 h |
 | G10 | Container and codec gaps on import | file format, codec | partly | 120–200 h |
 | G11 | No plugin hosting | ecosystem | no | 200–400 h |
 | G12 | AI features | AI | no | 150–300 h |
@@ -70,11 +70,10 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
-- **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). On macOS VideoToolbox decodes 10-bit
-  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them, and
-  there is no software fallback, so the clip fails. Premiere decodes them everywhere (and in
-  hardware on Apple silicon, Intel and NVIDIA Blackwell).
-- **Impact:** camera originals from most current cameras do not open on Windows or Linux.
+- **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). VA-API and NVDEC decline 10-bit
+  4:2:2 H.264 / HEVC, and there is no software fallback, so the clip fails. Premiere decodes them
+  everywhere (and in hardware on Intel and NVIDIA Blackwell).
+- **Impact:** camera originals from most current cameras do not open.
 - **Estimate:** H.264 High 4:2:2 (chroma geometry, deblocking, transforms) 10–20 h;
   HEVC Main 4:2:2 10 (RExt subset) 15–25 h. Doc: [codec-parity.md](codec-parity.md).
 
@@ -82,40 +81,30 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 - **Have:** a graphics start-up fallback (#820): after two starts in a row that died within 15 s
   of launch without painting (a driver crash in wgpu instance / device creation; hangs, later
-  crashes and concurrent instances don't count), the next launch moves on to DirectX 12 only
-  (Windows), then a software adapter (WARP, lavapipe, llvmpipe) with CPU compositing, and keeps
-  the mode that works; a start-up error wgpu reports moves on in the same process. A fallback mode
-  shows a notice with Use Default Graphics; `--graphics default|dx12|software` picks a mode by
-  hand. An explicit `WGPU_BACKEND` stays in charge. On Windows, a GPU that Vulkan lists through two
-  installed versions of one driver (GPUs on different driver packages) draws with the newer one
-  instead of dying inside the stale one (`cfa4_gpu::adapter`).
+  crashes and concurrent instances don't count), the next launch moves on to a software adapter
+  (lavapipe, llvmpipe) with CPU compositing, and keeps the mode that works; a start-up error wgpu
+  reports moves on in the same process. A fallback mode shows a notice with Use Default Graphics;
+  `--graphics default|software` picks a mode by hand. An explicit `WGPU_BACKEND` stays in charge.
 - **Missing:** a launch that never fails, and CI that runs the gates.
-- **Evidence:** open issues: macOS 12 Monterey aborts on a missing VideoToolbox symbol (#468,
-  #661, #655), Intel UHD graphics (`igvk64.dll`, #512), Windows 11 does not run or fails after setup
-  (#380, #582, #413, #477), crash on new project + import (#439), "it just keeps crashing" (#687).
-  `.github/workflows/` holds release, packaging lint, FreeBSD and Windows ARM64 builds; **none runs
-  `cargo test` or `cargo xtask ci` on a pull request**, so 243 PRs merged since 10-05 were gated by
-  contributors' local runs (main needed "green again after the batch merges" on 10-10).
+- **Evidence:** open upstream issues: crash on new project + import (#439), "it just keeps
+  crashing" (#687). Upstream's workflows ran no `cargo test` or `cargo xtask ci` on a
+  pull request, so 243 PRs merged since 10-05 were gated by contributors' local runs (main needed "green again after the batch merges" on 10-10).
 - **Impact:** a user who cannot start the app gets zero value; regressions land unnoticed.
-- **Done when:** weak-linked or runtime-loaded OS symbols on old macOS, ~~a software / safe-mode
-  start when the GPU adapter fails~~ (done, #820), a PR workflow running `cargo xtask ci`
-  on macOS, Windows and Linux, and a crash-report triage pass. **40–80 h.**
+- **Done when:** ~~a software / safe-mode start when the GPU adapter fails~~ (done, #820), a PR
+  workflow running `cargo xtask ci` on Ubuntu 26.04, and a crash-report triage pass. **30–60 h.**
 
 ## G5. Hardware acceleration is partial
 
-- **Have:** hardware decode on macOS (VideoToolbox H.264 / HEVC), Windows (Media Foundation /
-  D3D11: H.264, HEVC, VP9, AV1) and Linux (VA-API and NVDEC: H.264, HEVC); hardware encode
-  VideoToolbox H.264 / HEVC 8-bit, NVENC H.264 (Windows, Linux) and HEVC incl. Main 10 HDR
-  (Windows); GPU compositing, blend modes, 34 effect ids incl. Lumetri basic / creative / vignette,
+- **Have:** hardware decode through VA-API and NVDEC (H.264, HEVC); hardware encode NVENC H.264
+  and HEVC incl. Main 10 HDR; GPU compositing, blend modes, 34 effect ids incl. Lumetri basic / creative / vignette,
   GPU export rendering (#421).
 - **Missing:** zero-copy decoded frames into wgpu (every frame is read back to the CPU and
-  re-uploaded); VideoToolbox Main 10 / HDR HEVC encode and B-frames; ProRes hardware decode /
-  encode on Apple silicon; Intel Quick Sync and AMD AMF encoders (and their 4:2:2 decode);
-  VA-API VP9 / AV1 and VA-API encode; HEVC encode on Linux; AV1 hardware encode; ~48 of Premiere's
+  re-uploaded); VA-API VP9 / AV1 and VA-API encode (Intel and AMD encoders, and their 4:2:2
+  decode); AV1 hardware encode; ~48 of Premiere's
   ~82 accelerated effects (keys, masks, Lumetri curves / wheels / HSL, distortions, transitions);
   external video I/O (DeckLink / AJA, Mercury Transmit), control surfaces (EUCON / Mackie);
   a CPU fallback adapter renders everything on the CPU (#632).
-- **Estimate:** 120–200 h (hardware we don't own needs a human). Doc:
+- **Estimate:** 100–170 h (hardware we don't own needs a human). Doc:
   [hardware-parity.md](hardware-parity.md).
 
 ## G6. No real-world media corpus or workflow acceptance tests
@@ -162,19 +151,20 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   marquee selection in the Project panel (#578); Freeform bins and middle-mouse pan (#579);
   Program monitor Button Editor (+) (#431); keyframe curves for Position (#448); transition
   editing controls (#577: Effect Controls has the transition's own timeline, drag to slide or resize;
-  the A/B previews with Start / End sliders remain); track renaming (#654); window controls on macOS (#637); UI scale on
-  X11 (#457).
+  the A/B previews with Start / End sliders remain); track renaming (#654); UI scale on X11 (#457).
 - **Estimate:** 120–200 h. Doc: [ui-parity.md](ui-parity.md).
 
-## G9. Windows and Linux at run time
+## G9. Ubuntu 26.04 at run time (every flavour, Wayland and X11)
+
+CFA4 targets Ubuntu 26.04 only (every official flavour, Wayland and X11); macOS, Windows and RPM
+distributions are not targets.
 
 - **Have:** files given at launch (terminal, Open With, file associations) open whatever the case
-  of `.fcproj` and are made absolute, and arguments that are not Unicode no longer stop the start;
-  `cfa4-cli import` stores no Windows `\\?\` paths (#850).
-- **Missing:** routine runtime testing off macOS. Linux playback stutter (#617), Wayland title
-  bar (#433), case-sensitive extensions (#593), "Report an issue" link (#642), Windows bins cannot
-  be left (#587), Sequence Settings won't open on Windows (#586, #351), old hardware (#491).
-- **Estimate:** 50–90 h (overlaps G4's CI work).
+  of `.fcproj` and are made absolute, and arguments that are not Unicode no longer stop the start
+  (#850); case-insensitive file dialog filters (#593).
+- **Missing:** routine runtime testing on every flavour, under Wayland and X11. Playback stutter
+  (#617), Wayland title bar (#433), "Report an issue" link (#642), old hardware (#491).
+- **Estimate:** 30–60 h (overlaps G4's CI work).
 
 ## G10. Container and codec gaps on import
 
@@ -269,10 +259,10 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   CLI and MCP stay English. Apart from the German menus (#630), no language has a recorded
   native-speaker review.
 - **Done:** Indonesian (#867): `id.tsv` has every entry of the Spanish catalog (~100%), in Edit ▸
-  Language, Settings ▸ General and the native macOS menu; System Language picks it for `id-*` (and
+  Language and Settings ▸ General; System Language picks it for `id-*` (and
   legacy `in-*`) locales. Native-speaker review welcome.
 - **Done:** Italian: `it.tsv` has every entry of the Spanish catalog (~100%), in Edit ▸ Language,
-  Settings ▸ General and the native macOS menu; System Language picks it for `it-*` locales.
+  Settings ▸ General; System Language picks it for `it-*` locales.
   Native-speaker review welcome.
 - **Done:** German: `de.tsv` has every entry of the Spanish catalog (~100%), beyond the menus of
   #630 (panels, dialogs, effects and their parameters, settings, status messages). The menus are
@@ -284,7 +274,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Missing:** AAF and OMF exports have never been opened in Media Composer or Pro Tools; FCP7 XML
   / OTIO import of a Premiere sequence took 97 s / 66 s for three media files (#461); `file.import`
   merges into existing project content in headless round trips (#592).
-- **Estimate:** 20–40 h (needs a human with Avid / Pro Tools, both installed on the owner's Mac).
+- **Estimate:** 20–40 h (needs a human with Avid / Pro Tools installed).
 
 ## G16. Performance reports on 0.5.0
 
@@ -350,3 +340,4 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
 | 2026-10-25 | minor | G10: E-AC-3 7.1 (dependent substreams) |
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
+| 2026-10-27 | minor | Ubuntu 26.04 is the only target (macOS, Windows and RPM dropped): G3, G4, G5, G8 and G9 rewritten, G4 40–80 → 30–60 h, G5 120–200 → 100–170 h, G9 50–90 → 30–60 h |

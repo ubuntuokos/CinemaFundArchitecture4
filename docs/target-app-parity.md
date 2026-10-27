@@ -1,6 +1,6 @@
 # Parity with Adobe Premiere Pro
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** major (full re-measure against Premiere Pro 2026 26.5.2; replaces the scorecard and estimate that lived in ROADMAP.md) · **Target:** Adobe Premiere Pro 2026 (26.5.2, macOS)
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-27 · **Change:** minor (Ubuntu 26.04 is the only platform: macOS, Windows and RPM dropped) · **Target:** Adobe Premiere Pro 2026 (26.5.2, macOS)
 
 The authoritative assessment of how close CFA4 is to Premiere Pro, and how much work is left.
 [ROADMAP.md](../ROADMAP.md) summarizes it; [gaps.md](gaps.md) lists every shortfall one at a time.
@@ -16,9 +16,9 @@ The deep checklists are [file-format-parity.md](file-format-parity.md),
 | **Ready for real work** | **~56%** (range 51–61%) | Estimated depth per area, combined with written weights ([formula](#three-readiness-numbers)) |
 | **Mainstream practitioner** | **~55%** | Weekly editing areas only, with written discounts ([method](#mainstream-practitioner)) |
 | **Essentials user** | **~60%** | Core features at default settings, with written discounts ([method](#essentials-user)) |
-| **Stage** | **alpha** | ~19 points and ~400–700 h from beta, and beta also needs `.prproj` import ([why](#stage)) |
-| **Remaining to beta** | **~400–700 Opus 5.5 agent-hours** | Estimated, calibrated below |
-| **Remaining to full parity** | **~1,550–2,750 Opus 5.5 agent-hours** (to ~95%: ~1,450–2,600) | Estimated; ~70% parallelizes |
+| **Stage** | **alpha** | ~19 points and ~370–670 h from beta, and beta also needs `.prproj` import ([why](#stage)) |
+| **Remaining to beta** | **~370–670 Opus 5.5 agent-hours** | Estimated, calibrated below |
+| **Remaining to full parity** | **~1,500–2,670 Opus 5.5 agent-hours** (to ~95%: ~1,400–2,520) | Estimated; ~70% parallelizes |
 | Codebase (measured 2026-10-10) | 45 crates + 3 apps, ~343,000 lines of Rust, 2,520 `#[test]` functions, 1,098 commits, 268 merged PRs, 69 authors | `git`, `gh`, `grep` |
 
 The previous estimate (2026-10-05) was breadth ~87%, ready ~50–60%, and "~210–325 agent-hours to
@@ -112,7 +112,7 @@ agent-hours to close the area to Premiere, sequential.
 | Media import and codecs | 12% | ~75% | ~60% | 150–250 | Own bit-exact decoders for H.264, HEVC, VP9, AV1, ProRes, DNx, APV, MPEG-2, AAC, AC-3, Opus. But H.264 only 8-bit 4:2:0 and HEVC no 4:2:2 in software (most 10-bit cameras, #626); no camera RAW (R3D, ARRIRAW, BRAW, Sony RAW, Canon RAW, ProRes RAW, #345, #383); no E-AC-3 (#647), AVI (#598), WMV, DV, XAVC / P2 metadata; Sony start timecode (#460); WebM black (#432) | [codec-parity.md](codec-parity.md), [file-format-parity.md](file-format-parity.md) |
 | Audio | 10% | ~88% | ~65% | 50–90 | Mixer graph, automation, all 53 effects, Essential Sound, 5.1, voice-over, Remix, multi-stream container audio (#361). Device and playback reports: crackle / cut-outs (#336, #410, #602, #605, #617); Enhance Speech is DSP, not a model; ALSA fallback fixed (#254) | |
 | Panels and UI fidelity | 10% | ~88% | ~60% | 120–200 | All main panels. Missing: on-screen transform handles in the Program monitor (#639), Effect Controls keyframe zoom / divider / row lines (#640–#645), docking rearrangement (#493), multi-monitor windows (#466), filmstrip thumbnails (#614), marquee in Project panel (#578) | [ui-parity.md](ui-parity.md) |
-| Colour | 8% | ~90% | ~70% | 40–70 | Lumetri complete incl. scopes, LUTs, colour management, HDR export. Lumetri on the GPU covers basic, creative and vignette only; HDR-aware Lumetri maths, macOS EDR display, D-Log M; a Lumetri report (#628) | |
+| Colour | 8% | ~90% | ~70% | 40–70 | Lumetri complete incl. scopes, LUTs, colour management, HDR export. Lumetri on the GPU covers basic, creative and vignette only; HDR-aware Lumetri maths, D-Log M; a Lumetri report (#628) | |
 | Graphics, titles, captions | 8% | ~85% | ~65% | 50–90 | Text engine with shaping and bidi, shapes, gradients (#514), our `.fcgt` templates (`.mogrt` refused by design), rolls / crawls, all caption formats. Arabic titles reported broken (#395); no 608/708 embedding in the video stream; speech-to-text off in release builds | |
 | Export and delivery | 8% | ~80% | ~65% | 60–110 | H.264 (own encoder), HEVC (own encoder, hardware first), AV1 (own encoder, 8/10-bit HDR), ProRes, DNxHR, APV, MXF OP1a / OP-Atom, image sequences, GIF, WAV / AIFF, presets, queue, GPU export rendering (#421). Missing: AV1 hardware encode, MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 / XS MXF, AS-10 / AS-11, XDCAM HD, EXR / DPX / Targa sequences, MP3, AAC-only audio, ProRes 4444 in the UI (#342), interlaced, smart render; bitrate target missed (#371) | [file-format-parity.md](file-format-parity.md) |
 | Project files and interchange | 8% | ~70% | ~45% | 90–160 | `.fcproj` with migrations, auto-save, recovery; FCP7 XML, FCPXML, AAF, OMF, EDL, OTIO, ALE. **Premiere's own `.prproj` cannot be opened** (the main beta blocker); AAF / OMF never validated in Media Composer / Pro Tools; XML import of a Premiere sequence took 97 s (#461) | [file-format-parity.md](file-format-parity.md) |
@@ -127,37 +127,33 @@ agent-hours to close the area to Premiere, sequential.
 | UI / UX fidelity | ~60% | 120–200 | [ui-parity.md](ui-parity.md) |
 | File formats (containers, project, interchange, captions, stills) | ~60% | 140–240 | [file-format-parity.md](file-format-parity.md) |
 | Codecs (decode and encode, fidelity, camera media) | ~60% | 150–250 | [codec-parity.md](codec-parity.md) |
-| Hardware acceleration (decode, encode, GPU effects, I/O devices) | ~45% | 120–200 | [hardware-parity.md](hardware-parity.md) |
+| Hardware acceleration (decode, encode, GPU effects, I/O devices) | ~45% | 100–170 | [hardware-parity.md](hardware-parity.md) |
 | Localization (12 key languages) | ~35% of Premiere's set; 4 of 12 key languages near-complete | 150–230 | [localization-parity.md](localization-parity.md) |
 | Performance (beyond hardware) | ~55% | 60–120 | [performance.md](performance.md) |
-| Stability | ~45% | 60–120 | [gaps.md](gaps.md#g4-crashes-at-start-up-and-no-test-ci-on-pull-requests) |
-| Platforms | ~60% | 50–90 | [gaps.md](gaps.md#g9-windows-and-linux-at-run-time) |
+| Stability | ~45% | 50–100 | [gaps.md](gaps.md#g4-crashes-at-start-up-and-no-test-ci-on-pull-requests) |
+| Platform (Ubuntu 26.04) | ~60% | 30–60 | [gaps.md](gaps.md#g9-ubuntu-2604-at-run-time-every-flavour-wayland-and-x11) |
 | Plugins and ecosystem | ~5% | 200–400 | [gaps.md](gaps.md#g11-no-plugin-hosting) |
 | AI features | ~25% | 150–300 | [gaps.md](gaps.md#g12-ai-features) |
-| **Total** | **~56%** | **~1,550–2,750** | |
+| **Total** | **~56%** | **~1,500–2,670** | |
 
 Dimension hours are disjoint (the feature row excludes UI, formats and codecs), so they add up.
 Evidence for the cross-cutting rows:
 
-- **Hardware ~45%.** Hardware decode exists on all three desktop OSs (VideoToolbox; Media
-  Foundation / D3D11 incl. VP9 and AV1; VA-API and NVDEC for H.264 / HEVC on Linux). Hardware
-  encode: VideoToolbox H.264 / HEVC 8-bit; NVENC H.264 (Windows, Linux) and HEVC incl. Main 10 HDR
-  (Windows). Missing against Premiere: Intel Quick Sync and AMD encoders, 10-bit HEVC on macOS,
-  ProRes hardware, zero-copy upload, ~48 of Premiere's accelerated effects, external video I/O,
+- **Hardware ~45%.** Hardware decode through VA-API and NVDEC (H.264 / HEVC). Hardware encode:
+  NVENC H.264 and HEVC incl. Main 10 HDR. Missing against Premiere: Intel and AMD encoders (VA-API
+  encode), VP9 / AV1 hardware decode, zero-copy upload, ~48 of Premiere's accelerated effects, external video I/O,
   control surfaces. Detail: [hardware-parity.md](hardware-parity.md).
-- **Performance ~55%.** 4K H.264 / HEVC play with no dropped frames with hardware decoding (M4
-  Pro); GPU export is 2.4–3.2× faster on effects-heavy timelines; AV1 software decode is still
+- **Performance ~55%.** Hardware decoding cuts CPU per 4K H.264 / HEVC frame by ~20–35× (Intel
+  Iris Xe, VA-API); GPU export is 2.4–3.2× faster on effects-heavy timelines; AV1 software decode is still
   slow and 8K is not real time. Users on 0.5.0 report constant lag and ~100% CPU (#523, #525) and
   a CPU fallback adapter rendering everything in software (#632).
-- **Stability ~45%.** Never-crash rules enforced by lints; hostile-input fuzzing. But open
-  launch crashes on macOS 12 (missing VideoToolbox symbol, #468 / #661, #655), Intel UHD graphics
-  (#512), Windows 11 (#380, #582), a generic "keeps crashing" (#687), and **no workflow runs the
-  test suite on pull requests** (`.github/workflows` has release, packaging lint, FreeBSD and
-  Windows ARM64 builds only); `cargo xtask ci` runs locally only.
-- **Platforms ~60%.** Releases for macOS, Windows (x64, ARM64), Linux (AppImage, Flatpak, deb,
-  tar) and FreeBSD; Linux is something Premiere doesn't run on at all. Runtime testing is still
-  mostly macOS; Windows and Linux reports dominate the issue list. The web build runs but its shell
-  is incomplete. No mobile.
+- **Stability ~45%.** Never-crash rules enforced by lints; hostile-input fuzzing. But a generic
+  "keeps crashing" report (#687) is open, and the full test suite runs on a pull request only when
+  the `cfa4-full-validation` label is added.
+- **Platform ~60%.** CFA4 targets Ubuntu 26.04 AMD64 only, every official flavour, under Wayland
+  and X11 (packages: deb, AppImage, Flatpak, tar.gz; no RPM). Linux is something Premiere doesn't
+  run on at all. Routine runtime testing on every flavour is still missing (G9). macOS, Windows,
+  FreeBSD, web and mobile are not targets.
 - **Plugins ~5%.** No VST3 / Audio Units, no OpenFX, no Premiere / After Effects plug-in API, no
   UXP panels (#325). Needs an owner decision (FFI). MCP, CLI and the control channel are ahead of
   Premiere's scripting.
@@ -170,16 +166,16 @@ Evidence for the cross-cutting rows:
 
 | Audience | Ready % | Opus 5.5 agent wall-clock hours to ~95% | Work that dominates |
 |---|---|---|---|
-| Full target (ready for real work) | ~56% | ~1,450–2,600 (~70% parallelizes) | Plugin hosting, AI models, localization incl. RTL / Devanagari, camera RAW and delivery codecs, `.prproj`, hardware acceleration, UI fidelity |
-| Mainstream practitioner | ~55% | ~500–850 (~65% parallelizes) | `.prproj` import (60–120), UI fidelity (120–200), stability and PR CI (40–80), 10-bit / 4:2:2 camera decode (30–50), playback / hardware (60–100), import and export gaps (60–100) |
-| Essentials user | ~60% | ~180–350 (~60% parallelizes) | Launch crashes on Windows / Intel / older macOS (40–80), discoverability and timeline friction (60–110), playback lag (30–60), common import gaps (20–40), audio devices (15–30) |
+| Full target (ready for real work) | ~56% | ~1,400–2,520 (~70% parallelizes) | Plugin hosting, AI models, localization incl. RTL / Devanagari, camera RAW and delivery codecs, `.prproj`, hardware acceleration, UI fidelity |
+| Mainstream practitioner | ~55% | ~490–830 (~65% parallelizes) | `.prproj` import (60–120), UI fidelity (120–200), stability and PR CI (30–60), 10-bit / 4:2:2 camera decode (30–50), playback / hardware (60–100), import and export gaps (60–100) |
+| Essentials user | ~60% | ~170–330 (~60% parallelizes) | Launch crashes (30–60), discoverability and timeline friction (60–110), playback lag (30–60), common import gaps (20–40), audio devices (15–30) |
 
 Hours per audience are calibrated like the rest (one hardware backend ~3–5 h, one encoder ~4–8 h, a
 whole-interface language ~4–8 h, ~4–5 h per breadth point, depth work ~1.5–2× that). The
 audiences nest, so essentials ≤ mainstream ≤ full: the essentials work is a subset of the
 mainstream list, which is a subset of the full list. Needs a human: the plugin decision and AI
 models (full only), native-speaker review (full only), Avid / Pro Tools validation (mainstream
-and full), Windows / Intel test machines (all three).
+and full), test machines with Intel, AMD and NVIDIA GPUs on every Ubuntu flavour (all three).
 
 
 All three use the depth ("Ready") estimates of the [feature areas](#by-feature-area); they differ in
@@ -214,20 +210,19 @@ full-area depth (e.g. the ~20 common effects rather than all 93 and their approx
 | Importing everyday footage | 14% | 65% | Phone and 8-bit camera H.264 / HEVC, ProRes, DNx, MXF open; 10-bit / 4:2:2 H.264 (Sony XAVC S-I, Canon) does not (#626); E-AC-3, AVI missing |
 | Common effects and transitions | 9% | 75% | Lumetri, Transform, Crop, blurs, Cross Dissolve, keys exist; Warp Stabilizer is 2-D, Object Mask missing |
 | Colour (Lumetri, scopes, LUTs) | 9% | 80% | Complete, parity-tested CPU / GPU; curves / wheels on CPU |
-| Audio (levels, Essential Sound, loudness, ducking) | 11% | 75% | Complete; audio-device reports off macOS |
+| Audio (levels, Essential Sound, loudness, ducking) | 11% | 75% | Complete; audio-device reports (G17) |
 | Titles and captions | 7% | 75% | Text, shapes, templates, SRT / SCC / VTT; `.mogrt` not read by design |
 | Export with presets | 9% | 75% | H.264, HEVC (hardware), ProRes, DNxHR, presets, queue; bitrate miss (#371) |
 | Save, reopen, auto-save, relink, proxies | 4% | 80% | Atomic saves, migrations, recovery, Link Media |
-| Playback speed on their machine | 9% | 65% | 4K H.264 / HEVC real time with hardware decode on macOS; lag / CPU reports (#523, #525) |
+| Playback speed on their machine | 9% | 65% | 4K H.264 / HEVC with hardware decode through VA-API / NVDEC; lag / CPU reports (#523, #525) |
 | **Weighted depth** | 100% | **74.8%** | |
 
 Discounts for what still stops real work:
 
 - **Interaction fidelity ×0.90:** about 40 open UI issues; no transform handles in the Program
   monitor (#639); Effect Controls keyframe zoom / divider (#640–#645); docking (#493).
-- **Stability on real machines ×0.92:** current macOS on Apple silicon is solid, but launch
-  crashes on macOS 12, Intel UHD and Windows 11 (#468, #512, #380, #582, #687), and no CI runs the
-  tests on pull requests.
+- **Stability on real machines ×0.92:** a generic crash report is open (#687), runtime testing on
+  every Ubuntu flavour is missing, and the full tests run on a pull request only on request.
 - **File exchange with Premiere users ×0.88:** `.prproj` does not open (colleagues send
   projects, not XML); AAF / OMF never validated in Avid / Pro Tools; FCP7 XML / OTIO do work.
 
@@ -254,7 +249,7 @@ interchange and pro formats.
 | Undo / redo | 5% | 95% | Snapshot undo for every command |
 | Titles | 10% | 75% | Type tool, templates; Arabic text broken (#395) |
 | Transitions (cross dissolve) | 5% | 85% | Drag on, resize (#503) |
-| Music and volume | 10% | 75% | Clip volume, fades, meters; device issues off macOS |
+| Music and volume | 10% | 75% | Clip volume, fades, meters; audio device issues (G17) |
 | Playback | 10% | 70% | Smooth on current Macs; lag / CPU reports on 0.5.0 (#523, #525) |
 | Export MP4 with the default preset | 10% | 80% | Own H.264 + AAC, Quick Export |
 | Save and reopen | 5% | 85% | `.fcproj`, auto-save, recovery prompt |
@@ -262,9 +257,8 @@ interchange and pro formats.
 
 Discounts a beginner actually hits:
 
-- **Launch and stability ×0.88:** the beginner's machine is often a Windows laptop with Intel
-  graphics or an older Mac; open launch crashes there (#380, #413, #477, #512, #582, #655, #661,
-  #687).
+- **Launch and stability ×0.88:** the beginner's machine is often an older laptop with Intel
+  graphics; launch stability there is not routinely tested (#687).
 - **Discoverability and UI clarity ×0.90:** a dense Premiere-style interface with no guided start;
   reports about deselecting, deleting gaps and transitions controls (#683, #648, #577).
 - **Opening files people send them ×0.95:** phone and web video mostly opens; AVI, E-AC-3 audio
@@ -295,25 +289,25 @@ niche requests among the bug reports about two to one, and nobody reports having
 
 ## Stage
 
-**Alpha.** It passes the core-workflow gate ([roadmap.md](roadmap.md#alpha-gate): all six of Premiere's core daily workflows work end to end on macOS and the project saves and reopens). Core workflows run end to end (import, edit, trim, colour, mix, caption, deliver,
+**Alpha.** It passes the core-workflow gate ([roadmap.md](roadmap.md#alpha-gate): all six of Premiere's core daily workflows work end to end and the project saves and reopens). Core workflows run end to end (import, edit, trim, colour, mix, caption, deliver,
 round-trip through XML / AAF), but ready-for-real-work is ~56%, below the ~75% beta bar, and the
 standard's beta condition "opens and saves the target's main format reliably" fails outright:
 CFA4 cannot open a `.prproj` (it reads Premiere's FCP7 XML / AAF / OTIO exports instead).
-Distance to beta: ~19 points of ready-for-real-work plus `.prproj` import, ~400–700 agent-hours:
+Distance to beta: ~19 points of ready-for-real-work plus `.prproj` import, ~370–670 agent-hours:
 
 | To reach beta | Hours |
 |---|---|
 | `.prproj` import of mainstream projects (sequences, clips, effects' common parameters, markers) | 60–120 |
-| Stability: launch crashes, PR CI running `cargo xtask ci` on all three OSs, crash triage | 40–80 |
+| Stability: launch crashes, PR CI running `cargo xtask ci` on Ubuntu 26.04, crash triage | 30–60 |
 | H.264 High 10 / 4:2:2 and HEVC 4:2:2 software decoding (camera media) | 30–50 |
 | Real-world media corpus and scripted workflow acceptance tests | 40–70 |
 | UI fidelity top issues (Program monitor handles, Effect Controls, docking, deselect) | 60–100 |
-| Hardware: zero-copy, VideoToolbox Main 10, Quick Sync / AMF encode, more GPU effects | 60–100 |
-| Windows / Linux runtime fixes, audio device issues | 30–60 |
+| Hardware: zero-copy, VA-API encode (Intel / AMD), more GPU effects | 50–90 |
+| Ubuntu 26.04 runtime fixes (every flavour, Wayland and X11), audio device issues | 20–50 |
 | Container gaps users hit: E-AC-3, AVI, multi-track audio, still formats | 30–50 |
 | Interchange validation (AAF / OMF in Avid and Pro Tools, XML speed) | 20–40 |
 | Performance: lag / CPU reports, AV1 speed | 30–60 |
-| **Total** | **~400–730** |
+| **Total** | **~370–700** |
 
 ## Calibration
 
@@ -324,8 +318,7 @@ Hours are Opus 5.5 agent wall-clock hours, calibrated against this repo's histor
   (243 since 10-05, most from community contributors' agents) took breadth from 0 to ~86%. The
   2026-10-01/02 blocks measured **~4–5 agent-hours per checklist point** with five parallel
   agents (old ROADMAP).
-- **A hardware decode backend** (one OS API, H.264 + HEVC, with parity tests): VideoToolbox #33
-  (first commit 07:25, merged 11:26 the same day), VA-API #358 (+3,942 lines), NVDEC #549 (06:17 →
+- **A hardware decode backend** (one driver API, H.264 + HEVC, with parity tests): VA-API #358 (+3,942 lines), NVDEC #549 (06:17 →
   11:04): **~3–5 h each**.
 - **A hardware encoder per codec and OS:** NVENC HEVC #328 (+1,635 lines, 19:28 → 13:46 next day
   including review), Main 10 HDR #360 (02:38 → 14:05): **~4–8 h each**.
@@ -356,6 +349,7 @@ control surfaces), and validation in Avid Media Composer / Pro Tools.
 |---|---|---|
 | 2026-10-10 | minor | Readiness table: hours to ~95% for each audience (full ~1,450–2,600, mainstream ~500–850, essentials ~180–350); full number confirmed as an additive weighted sum (no change) |
 | 2026-10-10 | minor | Added the three readiness numbers: full ready-for-real-work formula written out (~55% -> ~56%, same inputs, now computed rather than rounded down), mainstream practitioner ~55% and essentials user ~60% with written weights and discounts, and counted user evidence (31 people praising, 0 switch reports, ~64 core-path vs ~29 niche open bugs) |
+| 2026-10-27 | minor | Ubuntu 26.04 is the only platform (macOS, Windows and RPM dropped): hardware, performance, stability and platform evidence rewritten for Linux; platform 50–90 → 30–60 h; beta ~400–700 → ~370–670 h (table ~400–730 → ~370–700), full parity ~1,550–2,750 → ~1,500–2,670 h |
 | 2026-10-10 | minor | Stage checked against the new core-workflow gate (docs/roadmap.md#alpha-gate): passes, stays alpha |
 | 2026-10-10 | major | Created from ROADMAP.md's scorecard and estimate; full re-measure against Premiere Pro 26.5.2 (menu label diff, installed-bundle listings, 188 open issues); breadth ~87 → ~86% (file formats counted), ready ~50–60% → ~55%, hours re-estimated to include plugins, AI, localization and `.prproj`; stage alpha |
 | 2026-10-05 | major | Honest assessment added in ROADMAP.md (checklist ~87% vs ready ~50–60%) |

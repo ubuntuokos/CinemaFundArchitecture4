@@ -39,7 +39,7 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
 
 Removed from the schema in phase 1 (keys still load from old files): `media.hardwareDecoding`
 (an unwired duplicate of `playback.hardwareDecoding`) and `media.proresHardwareEncoding`
-(macOS VideoToolbox only, not a Linux target).
+(a removed macOS-only option).
 
 ## Later phases
 

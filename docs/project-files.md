@@ -128,7 +128,7 @@ In the UI, Save / Save As / Save a Copy without a `path` show a file dialog.
 
 ## Auto Save
 
-Preferences ▸ Auto Save (Edit ▸ Preferences ▸ Auto Save…, ⌘,; CFA4 ▸ Settings… on macOS) works
+Preferences ▸ Auto Save (Edit ▸ Preferences ▸ Auto Save…, Ctrl+,) works
 like Premiere's:
 
 | Setting | Key | Default |
@@ -183,10 +183,8 @@ Premiere's auto-save can lose up to one interval of work. CFA4 also keeps a **re
 
 Desktop flags: `--recover` recovers the newest candidate without asking. `--no-recover` starts
 without asking; the changes stay available through File ▸ Recover Unsaved Changes…. `--data-dir
-<dir>` (or `CFA4_DATA_DIR`) moves the data directory. The default is `~/Library/Application
-Support/CFA4` on macOS, `%APPDATA%\CFA4` on Windows, and `$XDG_DATA_HOME/cfa4` or
-`~/.local/share/cfa4` elsewhere. A `portable.txt` file next to the executable (the Windows
-portable zip ships one) makes it `data` next to the executable instead.
+<dir>` (or `CFA4_DATA_DIR`) moves the data directory. The default is `$XDG_DATA_HOME/cfa4` or
+`~/.local/share/cfa4`. A `portable.txt` file next to the executable makes it `data` next to the executable instead.
 
 ### Cost
 
@@ -222,8 +220,7 @@ UI automation ids: `recovery.recover`, `recovery.later`, `recovery.discard`, `re
 
 ## Settings
 
-Premiere's Settings dialog (app menu ▸ Settings ▸ <category> on macOS, Edit ▸ Preferences
-elsewhere; General is Cmd+,; the window is titled "Preferences"). The values are user preferences,
+Premiere's Settings dialog (Edit ▸ Preferences ▸ <category>; General is Ctrl+,; the window is titled "Preferences"). The values are user preferences,
 not project data: they live in `preferences.json` in the per-user data directory (written
 atomically on every change) and never touch the `.fcproj` schema. The file carries a `version`
 (currently 2); older files are migrated on load, unknown dropdown values, bad colours and
