@@ -75,10 +75,13 @@ pub fn color(components: Components, width: u32, height: u32, hints: J2kHints) -
     }
 }
 
-/// The samples of `p` as unsigned values of `bits` bits, cut or padded (repeating the last
-/// column and row) to `w`×`h`. Colour samples shift by the precision difference; `alpha` samples
-/// scale across the full range instead, so a 1-bit opaque 1 becomes the `bits`-bit maximum.
-fn plane(p: &Plane, bits: u32, w: usize, h: usize, alpha: bool) -> Vec<u16> {
+/// The samples of `p` as unsigned values of `bits` bits on a `w`×`h` plane whose samples are
+/// `step` reference-grid positions apart: each output sample takes the component sample that
+/// covers its reference-grid position (nearest neighbour across the component's own `dx`×`dy`
+/// sub-sampling), repeating the last column and row past the component's edge. Colour samples
+/// shift by the precision difference; `alpha` samples scale across the full range instead, so a
+/// 1-bit opaque 1 becomes the `bits`-bit maximum.
+fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), alpha: bool) -> Vec<u16> {
     let prec = u32::from(p.precision).clamp(1, 16);
     let offset = if p.signed { 1i64 << (prec - 1) } else { 0 };
     let max = (1i64 << prec) - 1;
@@ -99,10 +102,12 @@ fn plane(p: &Plane, bits: u32, w: usize, h: usize, alpha: bool) -> Vec<u16> {
     if pw == 0 || ph == 0 || p.data.len() < pw.saturating_mul(ph) {
         return out;
     }
+    let (dx, dy) = (usize::from(p.dx.max(1)), usize::from(p.dy.max(1)));
     for (y, row) in out.chunks_exact_mut(w.max(1)).enumerate() {
-        let sy = y.min(ph - 1) * pw;
+        let sy = (y.saturating_mul(step.1) / dy).min(ph - 1) * pw;
         for (x, o) in row.iter_mut().enumerate() {
-            *o = p.data.get(sy + x.min(pw - 1)).map_or(0, |&v| level(v));
+            let sx = (x.saturating_mul(step.0) / dx).min(pw - 1);
+            *o = p.data.get(sy + sx).map_or(0, |&v| level(v));
         }
     }
     out
@@ -161,9 +166,12 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
     let (sx, sy) = chroma.shifts();
     let (cw, ch) = ((w + (1 << sx) - 1) >> sx, (h + (1 << sy) - 1) >> sy);
     let mid = 1u16 << (bits - 1);
+    let (full, sub) = ((1, 1), (1 << sx, 1 << sy));
     let (mut p0, mut p1, mut p2) = match c.get(1..3) {
-        Some([p1, p2]) if colour_planes == 3 => (plane(first, bits, w, h, false), plane(p1, bits, cw, ch, false), plane(p2, bits, cw, ch, false)),
-        _ => (plane(first, bits, w, h, false), vec![mid; cw * ch], vec![mid; cw * ch]),
+        Some([p1, p2]) if colour_planes == 3 => {
+            (plane(first, bits, w, h, full, false), plane(p1, bits, cw, ch, sub, false), plane(p2, bits, cw, ch, sub, false))
+        }
+        _ => (plane(first, bits, w, h, full, false), vec![mid; cw * ch], vec![mid; cw * ch]),
     };
     match components {
         Components::Rgb => rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits),
@@ -173,7 +181,7 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
         }
         Components::Ycbcr(_) | Components::Gray => {}
     }
-    let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h, true));
+    let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h, full, true));
     let data = if bits == 8 {
         let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
         PixelData::Yuv8 { planes: [to8(p0), to8(p1), to8(p2)], chroma, alpha: alpha.map(to8) }
@@ -319,6 +327,30 @@ mod tests {
             .unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { alpha: Some(a), .. } = &f.data else { panic!("8-bit with alpha expected") };
         assert!(a.iter().all(|&v| v == 255));
+    }
+
+    /// Sub-sampled gray, R'G'B' and alpha components are spread over the reference grid, not
+    /// squeezed into its top-left corner with repeated edges.
+    #[test]
+    fn sub_sampled_components_are_resampled_to_the_reference_grid() {
+        let gray = Plane { width: 2, height: 1, precision: 8, signed: false, dx: 2, dy: 1, data: vec![16, 235] };
+        let f = to_video_frame(&Image { width: 4, height: 1, components: vec![gray], mct: false }, Components::Gray, J2kHints::default())
+            .unwrap_or_else(|e| panic!("{e}"));
+        let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
+        assert_eq!(planes[0].as_slice(), &[16, 16, 235, 235]);
+
+        // 2×2 R'G'B' components (2×2 sub-sampled) and an alpha component (1×2) on a 4×4 grid
+        let rgb = |dx, dy, data: Vec<i32>| Plane { width: 4 / u32::from(dx), height: 4 / u32::from(dy), precision: 8, signed: false, dx, dy, data };
+        let quad = vec![0, 255, 255, 0];
+        let comps = vec![rgb(2, 2, quad.clone()), rgb(2, 2, quad.clone()), rgb(2, 2, quad), rgb(1, 2, vec![255, 255, 255, 255, 0, 0, 0, 0])];
+        let f = to_video_frame(&Image { width: 4, height: 4, components: comps, mct: false }, Components::Rgb, J2kHints::default())
+            .unwrap_or_else(|e| panic!("{e}"));
+        let PixelData::Yuv8 { planes, alpha: Some(a), .. } = &f.data else { panic!("8-bit with alpha expected") };
+        let (black, white) = (16, 235);
+        #[rustfmt::skip]
+        let want = [black, black, white, white, black, black, white, white, white, white, black, black, white, white, black, black];
+        assert_eq!(planes[0].as_slice(), &want);
+        assert_eq!(a.as_slice(), &[255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     /// A huge reference grid with tiny sub-sampled components is refused before the full-size
