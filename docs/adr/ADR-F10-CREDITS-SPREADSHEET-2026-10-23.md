@@ -49,7 +49,7 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | Pictures and logos (`{{Pic file [height]}}`): own clips that follow the roll exactly / fade with the card, placeholder layer in the page | done (2026-10-24) |
 | Inline letter styles and videos (`{{…}}`) | not yet: tags are removed with a warning |
 | Parallel / hooked spines, head/tail leaders, width harmonisation | not yet |
-| Scroll runtime by stretching gaps (instead of changing speed) | not yet: a runtime changes the speed |
+| Scroll runtime by stretching the gaps between blocks at constant speed (falls back to a speed change with a warning) | done (2026-10-24) |
 | Qt6 panel | pending: the F8 Qt bridge allowlists read-only commands; `graphics.credits.preview` can be allowlisted first, `…import` once mutating commands are allowed |
 
 ## Consequences

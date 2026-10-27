@@ -16,6 +16,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 | [ADR F8 – Qt6 / Rust motor](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) | A Qt6-felület architektúrája és 7 lépéses átállási terve |
 | [OpenTimelineIO integrációs terv](../plans/OTIO-INTEGRATION-2026-10-24.md) | Jóváhagyva: a meglévő Rust OTIO-kód fejlesztése 6 fázisban, a hivatalos `opentimelineio` csomag tesztorákulumként |
 | [ADR 0003 – ASWF és GPL-3-as források](../adr/ADR-0003-aswf-and-conversion-sources.md) | Jóváhagyott terv: ASWF-projektek, a HandBrake cseréje, zárt bővítmények, gyártónkénti kódolás, A0–A7 szakaszok |
+| [ADR F10 – stáblista táblázatból](../adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md) + [módosított stáblista-terv](../credits-plan.md) | A Cinecred-szerű stáblista-modul döntése és állapota; az FA3 Credits & Titles terv CFA4-re szabott változata (C1–C9, **javaslat**) |
 | [ADR 0002 – GStreamer](../adr/ADR-0002-gstreamer-backend.md) | GStreamer mint kiegészítő háttérmotor (a saját Rust motor marad az alap), 6 lépéses terv |
 | [Kdenlive-paritás](../kdenlive-parity.md) | A Kdenlive 26.08 képességei a CFA4-gyel összevetve, a Kdenlive-kód átvételének szabályai, K1–K35 teendők, MI-döntések és a 2026-10-25-i tulajdonosi döntések |
 
