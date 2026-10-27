@@ -118,6 +118,19 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             ExportSettings { bitrate_mode: BitrateMode::Vbr2Pass, ..h264(Some((3840, 2160)), 50_000, 65_000) },
         ),
         p("Social Vertical 1080×1920", web, "H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps", vertical),
+        p(
+            "WebM 1080p VP9",
+            web,
+            "WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo",
+            ExportSettings {
+                format: Format::WebM,
+                frame_size: Some((1920, 1080)),
+                bitrate_kbps: 8_000,
+                bitrate_mode: BitrateMode::Vbr1Pass,
+                audio: AudioSettings { codec: AudioCodec::Opus, sample_rate: Some(48_000), channels: 2, bitrate_kbps: 128, ..Default::default() },
+                ..Default::default()
+            },
+        ),
         p("Apple ProRes 422 HQ", bc, "QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM", mov(Format::ProRes, "hq")),
         p("Apple ProRes 422", bc, "QuickTime, ProRes 422, 24-bit 48 kHz PCM", mov(Format::ProRes, "standard")),
         p("Apple ProRes 422 LT", bc, "QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM", mov(Format::ProRes, "lt")),

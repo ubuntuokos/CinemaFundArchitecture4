@@ -201,8 +201,8 @@ impl ExrCompression {
 }
 
 /// Audio codec. `Auto` = AAC in MP4 and AAC Audio, PCM in QuickTime / WAV / AIFF, FLAC in FLAC,
-/// Opus in Opus Audio. MP4 and QuickTime can also carry FLAC; MXF is always PCM; Opus is only
-/// written as Opus Audio (Ogg).
+/// Opus in Opus Audio and WebM. MP4 and QuickTime can also carry FLAC; MXF is always PCM; Opus is
+/// only written as Opus Audio (Ogg) and in WebM.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AudioCodec {
@@ -561,13 +561,14 @@ impl ExportSettings {
             _ => self.max_bitrate_kbps.filter(|m| *m >= target).unwrap_or_else(|| (u64::from(target) * 3 / 2).min(u64::from(u32::MAX)) as u32),
         };
         let keyint = self.keyframe_distance.filter(|k| *k > 0).unwrap_or_else(|| (fps * 2.0).round().max(1.0) as u32);
+        // the Opus encoder codes 48 kHz mono or stereo only
+        let opus = self.audio_codec() == AudioCodec::Opus;
         let channels = match self.audio.channels {
             0 | 1 => 1,
-            6.. if self.format != Format::Opus => 6,
+            6.. if !opus => 6,
             _ => 2,
         };
-        // the Opus encoder codes 48 kHz only
-        let sample_rate = if self.format == Format::Opus { 48_000 } else { self.audio.sample_rate.unwrap_or(seq_sr) };
+        let sample_rate = if opus { 48_000 } else { self.audio.sample_rate.unwrap_or(seq_sr) };
         Resolved { width: w, height: h, rate, sample_rate, channels, target_kbps: target, max_kbps: max, keyint }
     }
 
@@ -583,11 +584,11 @@ impl ExportSettings {
 
     /// The audio codec actually used.
     pub fn audio_codec(&self) -> AudioCodec {
-        // Opus is written only as Opus Audio; elsewhere it means the format's default
+        // Opus is written only in Opus Audio and WebM; elsewhere it means the format's default
         let asked = if self.audio.codec == AudioCodec::Opus { AudioCodec::Auto } else { self.audio.codec };
         match (self.format, asked) {
             (Format::Flac, _) => AudioCodec::Flac,
-            (Format::Opus, _) => AudioCodec::Opus,
+            (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac, _) => AudioCodec::Aac,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
@@ -622,7 +623,7 @@ impl ExportSettings {
         let px = r.width as f64 * r.height as f64;
         let video_bps = match self.video_format() {
             Format::Aac => 0.0,
-            Format::H264 | Format::Hevc | Format::Av1 => r.target_kbps as f64 * 1000.0,
+            Format::H264 | Format::Hevc | Format::Av1 | Format::WebM => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
@@ -729,6 +730,14 @@ impl ExportSettings {
                     v += &match self.bitrate_mode {
                         BitrateMode::Cbr => format!(", {}", mbps(r.target_kbps)),
                         _ => format!(", Target {}, Max {}", mbps(r.target_kbps), mbps(r.max_kbps)),
+                    };
+                    v += &format!(", keyframe every {} frames", r.keyint);
+                }
+                Format::WebM => {
+                    v += ", VP9 Profile 0";
+                    v += &match self.bitrate_mode {
+                        BitrateMode::Crf => format!(", quantizer {}", crate::vp9_quantizer(self.crf)),
+                        _ => format!(", Target {}", mbps(r.target_kbps)),
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
                 }

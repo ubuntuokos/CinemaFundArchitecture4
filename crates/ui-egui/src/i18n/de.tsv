@@ -2999,6 +2999,9 @@
 	Opus Audio	Opus-Audio
 	Opus Audio 48 kHz 160 kbps	Opus-Audio 48 kHz 160 kbit/s
 	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), Stereo 48 kHz mit 160 kbit/s
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 mit 8 Mbit/s, Opus 128 kbit/s Stereo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4-Audio (.m4a), Stereo 48 kHz AAC-LC mit 320 kbit/s
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 Bit

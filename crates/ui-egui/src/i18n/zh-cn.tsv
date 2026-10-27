@@ -2967,6 +2967,9 @@
 	Opus Audio	Opus 音频
 	Opus Audio 48 kHz 160 kbps	Opus 音频 48 kHz 160 kbps
 	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus)，立体声 48 kHz，160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM，VP9 1920×1080，8 Mbps，Opus 128 kbps 立体声
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 音频 (.m4a)，立体声 48 kHz AAC-LC，320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 位

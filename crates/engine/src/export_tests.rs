@@ -230,6 +230,16 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
                 continue;
             }
+            "webm" => {
+                // WebM: VP9 picture at the preset's size, Opus sound
+                assert!(fmt_name.contains("webm"), "{name}: {fmt_name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("vp9"), Some(w), Some(h)), "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.05, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
             "gif" => {
                 let v = stream(&j, "video").unwrap();
                 assert_eq!(v["codec_name"], "gif");

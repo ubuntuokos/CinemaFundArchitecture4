@@ -72,6 +72,9 @@
 	Opus Audio	Opus 오디오
 	Opus Audio 48 kHz 160 kbps	Opus 오디오 48 kHz 160 kbps
 	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus(.opus), 스테레오 48 kHz 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 8Mbps, Opus 128kbps 스테레오
 	AAF Export Settings	AAF 내보내기 설정
 	AAF…	AAF…
 	About	정보

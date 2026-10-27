@@ -28,6 +28,7 @@ pub mod presets;
 mod raster;
 pub mod settings;
 pub mod still;
+mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use job::{Exporter, Step, stepped};
 pub use mxf_out::opatom_audio_paths;
@@ -78,6 +79,9 @@ pub enum Format {
     /// where a hardware encoder registers one.
     #[serde(rename = "av1", alias = "Av1")]
     Av1,
+    /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
+    #[serde(rename = "webm", alias = "WebM")]
+    WebM,
     /// QuickTime, Apple ProRes 422 (HQ unless the settings pick another flavour) + PCM.
     #[serde(rename = "prores", alias = "ProRes")]
     ProRes,
@@ -143,6 +147,7 @@ impl Format {
             "h264" | "mp4" | "avc" | "m4v" => Format::H264,
             "hevc" | "h265" | "hvc1" | "hev1" | "x265" => Format::Hevc,
             "av1" | "av01" => Format::Av1,
+            "webm" | "vp9" | "vp09" => Format::WebM,
             "prores" | "mov" | "appleprores" => Format::ProRes,
             "dnxhr" | "dnxhd" | "dnx" | "avid" | "aviddnxhr" | "aviddnxhd" | "vc3" => Format::DnxHr,
             "apv" | "apv1" => Format::Apv,
@@ -172,6 +177,7 @@ impl Format {
             Format::H264 => "h264",
             Format::Hevc => "hevc",
             Format::Av1 => "av1",
+            Format::WebM => "webm",
             Format::ProRes => "prores",
             Format::DnxHr => "dnxhr",
             Format::Apv => "apv",
@@ -196,6 +202,7 @@ impl Format {
     pub fn extension(self) -> &'static str {
         match self {
             Format::H264 | Format::Hevc | Format::Av1 => "mp4",
+            Format::WebM => "webm",
             Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg => "mov",
             Format::PngSequence => "png",
             Format::TiffSequence => "tif",
@@ -218,6 +225,7 @@ impl Format {
             Format::H264 => "H.264",
             Format::Hevc => "H.265 (HEVC)",
             Format::Av1 => "AV1",
+            Format::WebM => "WebM",
             Format::ProRes => "Apple ProRes",
             Format::DnxHr => "Avid DNxHR",
             Format::Apv => "APV",
@@ -277,10 +285,11 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 22] = [
+    pub const ALL: [Format; 23] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
+        Format::WebM,
         Format::ProRes,
         Format::DnxHr,
         Format::Apv,
@@ -789,7 +798,7 @@ pub type AudioEncoderFactory = fn(format: Format, sample_rate: u32, channels: u3
 
 fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
     static F: OnceLock<RwLock<Vec<EncoderFactory>>> = OnceLock::new();
-    F.get_or_init(|| RwLock::new(vec![h264_factory, prores_factory, dnx_factory, apv_factory, mjpeg_factory]))
+    F.get_or_init(|| RwLock::new(vec![h264_factory, vp9_factory, prores_factory, dnx_factory, apv_factory, mjpeg_factory]))
 }
 fn audio_factories() -> &'static RwLock<Vec<AudioEncoderFactory>> {
     static F: OnceLock<RwLock<Vec<AudioEncoderFactory>>> = OnceLock::new();
@@ -1552,6 +1561,73 @@ impl VideoEncoder for H264Encoder {
     fn pass_stats(&self) -> Option<cfa4_h264enc::PassStats> {
         self.enc.pass_stats()
     }
+}
+
+/// VP9 Profile 0 (our encoder): sRGB/709 RGBA8 → 8-bit limited-range BT.709 4:2:0 at the
+/// target bitrate (or a constant quantizer for CRF), for WebM.
+struct Vp9Encoder {
+    enc: cfa4_vp9::encode::Encoder,
+    w: u32,
+    h: u32,
+    rate: FrameRate,
+    y: Vec<u8>,
+    u: Vec<u8>,
+    v: Vec<u8>,
+}
+
+impl VideoEncoder for Vp9Encoder {
+    fn sample_entry(&self) -> SampleEntry {
+        // WebM needs no codec configuration; this is the ISO BMFF one, for completeness
+        let cfg = cfa4_isobmff::VpcConfig {
+            profile: 0,
+            level: 0,
+            bit_depth: 8,
+            chroma_subsampling: 0,
+            full_range: false,
+            colour_primaries: 1,
+            transfer_characteristics: 1,
+            matrix_coefficients: 1,
+            codec_init: Vec::new(),
+        };
+        SampleEntry::video(cfa4_isobmff::FourCc(*b"vp09"), cfa4_isobmff::CodecConfig::Vp9(cfg), self.w as u16, self.h as u16)
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        timed(Stage::Convert, || rgba_to_yuv420_8(f.rgba, f.width as usize, f.height as usize, &mut self.y, &mut self.u, &mut self.v));
+        let input = cfa4_vp9::encode::Input { y: &self.y, u: &self.u, v: &self.v, y_stride: f.width as usize, uv_stride: (f.width as usize).div_ceil(2) };
+        let p = self.enc.encode(&input, false).map_err(|e| ExportError::Encode(e.to_string()))?;
+        Ok(vec![EncodedPacket { data: p.data, key: p.key, duration: self.rate.den as u32, composition_offset: 0 }])
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        Ok(Vec::new())
+    }
+}
+
+/// The VP9 quantizer index (1..=255) standing in for an H.264-style CRF (0..=51).
+pub fn vp9_quantizer(crf: f32) -> u8 {
+    let crf = if crf.is_finite() { crf.clamp(0.0, 51.0) } else { DEFAULT_CRF };
+    (crf * 5.0).round().clamp(1.0, 255.0) as u8
+}
+
+fn vp9_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    (format == Format::WebM).then(|| {
+        let mut cfg = cfa4_vp9::encode::Config::new(w, h);
+        let (num, den) = (u32::try_from(rate.num).unwrap_or(0), u32::try_from(rate.den).unwrap_or(0));
+        if num == 0 || den == 0 {
+            return Err(ExportError::Unsupported(format!("VP9: frame rate {}/{}", rate.num, rate.den)));
+        }
+        cfg.rate = match s.bitrate_mode {
+            BitrateMode::Crf => cfa4_vp9::encode::Rate::Quantizer(vp9_quantizer(s.crf)),
+            _ => cfa4_vp9::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(1)) * 1000, fps_num: num, fps_den: den },
+        };
+        cfg.keyframe_interval = s.keyframe_distance.unwrap_or(0);
+        // the fastest search: at 1080p even this is about one frame a second (#151)
+        cfg.speed = 2;
+        let enc = cfa4_vp9::encode::Encoder::new(cfg).map_err(|e| ExportError::Encode(format!("VP9: {e}")))?;
+        Ok(Box::new(Vp9Encoder { enc, w, h, rate, y: Vec::new(), u: Vec::new(), v: Vec::new() }) as Box<dyn VideoEncoder>)
+    })
 }
 
 /// BT.709 limited-range 8-bit 4:2:0 from straight RGBA8 (2×2 chroma average).
