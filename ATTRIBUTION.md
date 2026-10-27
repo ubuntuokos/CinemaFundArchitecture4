@@ -19,7 +19,6 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | `assets/cfa4/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
-| `apps/cfa4-web/web/favicon.svg` | CFA4 project owner (István) | Copy of the CFA4 application icon (web favicon) | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `crates/ui-egui/src/i18n/it.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Italian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/id.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/ko.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Korean interface translations | MIT OR Apache-2.0 |
