@@ -28,6 +28,8 @@ cfa4-aac = { workspace = true }
 cfa4-flac = { workspace = true }
 cfa4-opus = { workspace = true }
 cfa4-ogg = { workspace = true }
+cfa4-matroska = { workspace = true }
+cfa4-vp9 = { workspace = true }
 cfa4-h264enc = { workspace = true }
 cfa4-hevc = { workspace = true }
 serde = { workspace = true }

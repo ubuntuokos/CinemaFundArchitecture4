@@ -605,6 +605,118 @@ fn opus_audio_writes_ogg_opus() {
 }
 
 #[test]
+fn webm_writes_vp9_and_opus() {
+    let color = [0.8, 0.4, 0.1, 1.0];
+    let (p, seq, m) = matte(color, 128, 72, Some(-6.0));
+    let dir = Scratch::new("webm");
+    let path = dir.path("v.webm");
+    // asked for 44.1 kHz 5.1 and AAC: WebM carries Opus, 48 kHz stereo
+    let mut s = ExportSettings { format: Format::WebM, path: path.clone(), bitrate_kbps: 500, ..Default::default() };
+    s.audio = AudioSettings { codec: AudioCodec::Aac, sample_rate: Some(44_100), channels: 6, bitrate_kbps: 96, ..Default::default() };
+    s.metadata.title = "WebM test".into();
+    assert!(s.has_video() && s.has_audio());
+    assert_eq!((s.audio_codec(), s.extension()), (AudioCodec::Opus, "webm"));
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.frames, 24);
+    let bytes = std::fs::read(&path).unwrap();
+    let mut d = cfa4_matroska::Demuxer::from_slice(&bytes).unwrap();
+    let f = d.file();
+    assert!(f.is_webm() && f.warnings.is_empty(), "{:?}", f.warnings);
+    let ids: Vec<&str> = f.tracks.iter().map(|t| t.codec_id.as_str()).collect();
+    assert_eq!(ids, ["V_VP9", "A_OPUS"]);
+    let opus = &f.tracks[1];
+    assert_eq!(opus.codec_delay_ns, 2_500_000);
+    let head = cfa4_opus::OpusHead::parse(&opus.codec_private).unwrap();
+    assert_eq!((head.channels, head.pre_skip), (2, cfa4_opus::Encoder::LOOKAHEAD as u16));
+    let packets: Vec<_> = d.by_ref().map(|p| p.unwrap()).collect();
+    // blocks interleave in time order
+    assert!(packets.windows(2).all(|w| w[0].pts_ns <= w[1].pts_ns), "interleaved by time");
+
+    // our own VP9 decoder: 24 frames of the matte colour, the first a key frame
+    let video: Vec<_> = packets.iter().filter(|p| p.track == 0).collect();
+    assert_eq!(video.len(), 24);
+    assert!(video[0].keyframe);
+    assert_eq!(video[23].pts_ns, 23 * 1_000_000_000 / 24 / 1_000_000 * 1_000_000, "frame times on the 1 ms grid");
+    let mut dec = cfa4_vp9::Decoder::new();
+    let mut pics = Vec::new();
+    for v in &video {
+        pics.extend(dec.decode(&v.data, v.pts).unwrap());
+    }
+    pics.extend(dec.flush());
+    assert_eq!(pics.len(), 24);
+    let rgb = color.map(|c| (c * 255.0).round());
+    let want = 16.0 + 219.0 * (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255.0;
+    for pic in &pics {
+        assert_eq!((pic.width, pic.height), (128, 72));
+        let y = f32::from(pic.y.get(36 * pic.y_stride + 64));
+        assert!((y - want).abs() < 4.0, "luma {y}, want {want}");
+    }
+
+    // our own Opus decoder: one second of the tone, trimmed by CodecDelay and DiscardPadding
+    let audio: Vec<_> = packets.iter().filter(|p| p.track == 1).collect();
+    let last = audio.last().unwrap();
+    let pad = last.discard_padding_ns.unwrap_or(0);
+    let coded = audio.len() as i64 * 960;
+    assert_eq!(coded - 120 - pad * 48 / 1_000_000, 48_000, "exact length: {} packets, padding {pad} ns", audio.len());
+    assert!(audio[..audio.len() - 1].iter().all(|p| p.discard_padding_ns.is_none()));
+    assert!(audio.iter().all(|p| p.data.len() == 240), "96 kbit/s CBR in 20 ms packets");
+    let mut dec = cfa4_opus::Decoder::from_head(head, 48_000).unwrap();
+    dec.set_trim_pre_skip(true);
+    let mut pcm = vec![Vec::new(); 2];
+    for a in &audio {
+        let out = dec.decode(Some(&a.data)).unwrap();
+        pcm.iter_mut().zip(out).for_each(|(a, b)| a.extend(b));
+    }
+    pcm.iter_mut().for_each(|c| c.truncate(48_000));
+    assert!((0.2..0.5).contains(&rms(&pcm)), "rms {}", rms(&pcm));
+    // A/V sync: picture and (once CodecDelay is trimmed) sound both start at 0
+    assert_eq!(video[0].pts_ns, 0);
+    assert_eq!(audio[0].pts_ns, -2_500_000, "the encoder delay before 0");
+
+    if let Some(j) = ffprobe_json(&["-show_streams", "-show_format"], &path) {
+        assert_eq!(j["format"]["format_name"], "matroska,webm");
+        let v = &j["streams"][0];
+        assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("vp9"), Some(128), Some(72)));
+        let a = &j["streams"][1];
+        assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)));
+        let dur: f64 = j["format"]["duration"].as_str().unwrap().parse().unwrap();
+        assert!((dur - 1.0).abs() < 0.03, "duration {dur}");
+    }
+    if let Some(ffmpeg) = cfa4_testkit::ffmpeg_or_skip("WebM decode") {
+        let out = std::process::Command::new(&ffmpeg).args(["-v", "error", "-xerror", "-i", &path, "-f", "null", "-"]).output().unwrap();
+        assert!(out.status.success() && out.stderr.is_empty(), "{}", String::from_utf8_lossy(&out.stderr));
+        // ffmpeg's decoded audio has exactly one second of samples
+        let out = std::process::Command::new(&ffmpeg).args(["-v", "error", "-i", &path, "-map", "0:a", "-f", "s16le", "-"]).output().unwrap();
+        assert_eq!(out.stdout.len(), 48_000 * 2 * 2, "{}", String::from_utf8_lossy(&out.stderr));
+    }
+}
+
+#[test]
+fn webm_settings_round_trip_and_summary() {
+    let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "webm", "bitrateKbps": 4000})).unwrap();
+    assert_eq!((s.format, s.audio_codec(), s.has_video(), s.extension()), (Format::WebM, AudioCodec::Opus, true, "webm"));
+    assert_eq!(
+        (Format::from_name("vp9"), Format::from_name("WebM"), Format::WebM.id(), Format::WebM.label()),
+        (Some(Format::WebM), Some(Format::WebM), "webm", "WebM")
+    );
+    let sum = s.summary(1920, 1080, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND));
+    assert_eq!(sum.format, "WebM");
+    assert!(sum.video.contains("VP9 Profile 0, Target 4.00 Mbps"), "{}", sum.video);
+    assert!(sum.audio.starts_with("Opus, ") && sum.audio.contains("48000 Hz"), "{}", sum.audio);
+    let crf = ExportSettings { bitrate_mode: BitrateMode::Crf, crf: 30.0, ..s.clone() };
+    assert!(crf.summary(1920, 1080, FrameRate::FPS_24, 48_000, Tick(TICKS_PER_SECOND)).video.contains("quantizer 150"));
+    assert_eq!((vp9_quantizer(0.0), vp9_quantizer(51.0), vp9_quantizer(f32::NAN), vp9_quantizer(-4.0)), (1, 255, 115, 1));
+    // mono stays mono, 5.1 and 44.1 kHz become 48 kHz stereo
+    let r = ExportSettings { audio: AudioSettings { channels: 6, sample_rate: Some(44_100), ..Default::default() }, ..s }.resolve(
+        1920,
+        1080,
+        FrameRate::FPS_24,
+        44_100,
+    );
+    assert_eq!((r.channels, r.sample_rate), (2, 48_000));
+}
+
+#[test]
 fn opus_settings_round_trip_and_summary() {
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "opus", "audio": {"bitrate_kbps": 96}})).unwrap();
     assert_eq!((s.format, s.audio_codec(), s.has_video()), (Format::Opus, AudioCodec::Opus, false));
@@ -1039,7 +1151,7 @@ fn h265_is_a_format_with_a_built_in_encoder() {
     }
     assert_eq!(Format::from_name(Format::Hevc.id()), Some(Format::Hevc));
     assert_eq!((Format::Hevc.extension(), Format::Hevc.label()), ("mp4", "H.265 (HEVC)"));
-    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 22);
+    assert!(Format::ALL.contains(&Format::Hevc) && Format::ALL.len() == 23);
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "hevc"})).unwrap();
     assert_eq!(s.format, Format::Hevc);
     assert_eq!(serde_json::to_value(&s).unwrap()["format"], "hevc");

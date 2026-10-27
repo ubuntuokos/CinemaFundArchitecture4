@@ -43,7 +43,7 @@ from ..i18n import N_, tr
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
-AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")))
+AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
 FINISHED = {"done", "failed", "cancelled"}
