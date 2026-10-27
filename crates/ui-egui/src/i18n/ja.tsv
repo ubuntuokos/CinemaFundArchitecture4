@@ -3451,7 +3451,7 @@
 	Main 10 (10-bit, HDR)	メイン 10 (10 ビット、HDR)
 	Main (8-bit; Main 10 for HDR sequences)	メイン (8 ビット、HDR シーケンスではメイン 10)
 	Encoder	エンコーダー
-	Hardware (H.265 has no software encoder)	ハードウェア (H.265 にはソフトウェアエンコーダーがありません)
+	Software, or hardware where available	ソフトウェア (利用可能な場合はハードウェア)
 	Hardware (AV1 has no software encoder)	ハードウェア (AV1 にはソフトウェアエンコーダーがありません)
 	Text Properties	テキストのプロパティ
 	Text Box Height	テキストボックスの高さ

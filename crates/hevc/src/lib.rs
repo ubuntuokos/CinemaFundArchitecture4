@@ -24,6 +24,7 @@
 mod cabac;
 mod decoder;
 pub mod dpb;
+pub mod encode;
 mod error;
 mod filter;
 mod inter;

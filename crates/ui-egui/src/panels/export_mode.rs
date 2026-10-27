@@ -691,21 +691,17 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
     }
     match s.video_format() {
         f @ (Format::H264 | Format::Hevc | Format::Av1) => {
-            // H.265 and AV1: hardware encoders only (one profile, level chosen by the encoder)
+            // H.265 and AV1: one profile, level chosen by the encoder
             let hevc = f != Format::H264;
             if hevc {
                 if f == Format::Av1 {
                     row(ui, t, tl!("Profile"), |ui| ui.label(tl!("Main (8-bit)")));
                     row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Hardware (AV1 has no software encoder)")));
                 } else {
-                    // the hardware encoder writes Main (8-bit 4:2:0), or Main 10 for HDR sequences where it can; level chosen by the encoder
-                    let label = match (cfa4_engine::export::hdr_available(Format::Hevc), seq_hdr && !s.sdr) {
-                        (true, true) => tl!("Main 10 (10-bit, HDR)"),
-                        (true, false) => tl!("Main (8-bit; Main 10 for HDR sequences)"),
-                        (false, _) => tl!("Main (8-bit)"),
-                    };
+                    // Main (8-bit 4:2:0), or Main 10 for HDR sequences; level chosen by the encoder
+                    let label = if seq_hdr && !s.sdr { tl!("Main 10 (10-bit, HDR)") } else { tl!("Main (8-bit; Main 10 for HDR sequences)") };
                     row(ui, t, tl!("Profile"), |ui| ui.label(label));
-                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Hardware (H.265 has no software encoder)")));
+                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Software, or hardware where available")));
                 }
             } else {
                 row(ui, t, tl!("Profile"), |ui| {
@@ -726,10 +722,10 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 });
             }
             row(ui, t, tl!("Bitrate Encoding"), |ui| {
-                // a hardware encoder has one pass and no constant-quality mode: H.265 offers neither
+                // H.265 has one pass (CRF runs on the software encoder); AV1 is hardware only: one pass, no CRF
                 let o = [BitrateMode::Cbr, BitrateMode::Vbr1Pass, BitrateMode::Vbr2Pass, BitrateMode::Crf];
-                let labels: Vec<(String, bool)> =
-                    o.iter().map(|m| (m.label().to_string(), !(hevc && matches!(m, BitrateMode::Vbr2Pass | BitrateMode::Crf)))).collect();
+                let off = |m: &BitrateMode| hevc && (*m == BitrateMode::Vbr2Pass || (f == Format::Av1 && *m == BitrateMode::Crf));
+                let labels: Vec<(String, bool)> = o.iter().map(|m| (m.label().to_string(), !off(m))).collect();
                 if let Some(i) = combo(ui, reg, "export.video.bitrateMode", s.bitrate_mode.label(), &labels, 140.0) {
                     s.bitrate_mode = o[i];
                 }

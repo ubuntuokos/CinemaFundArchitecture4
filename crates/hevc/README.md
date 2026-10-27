@@ -1,6 +1,6 @@
 # cfa4-hevc
 
-Clean-room, pure-Rust (no `unsafe`) H.265 / HEVC decoder, implemented from the public ITU-T
+Clean-room, pure-Rust (no `unsafe`) H.265 / HEVC decoder and encoder ([`encode`](#encoder)), implemented from the public ITU-T
 Rec. H.265 (ISO/IEC 23008-2) specification. It is an L0 crate: it depends only on
 `cfa4-bitstream`, `thiserror`, and optionally `rayon` (default feature `threads`), and builds
 for `wasm32-unknown-unknown`.
@@ -81,6 +81,41 @@ pictures.
 Modules: `params` (VPS/SPS/PPS/tile layout), `slice` (NAL + slice header), `dpb` (POC, RPS, lists,
 bumping), `cabac`, `slicedec` (CTU syntax + reconstruction), `mvpred` (merge / AMVP / TMVP),
 `intra`, `inter`, `transform`, `filter` (deblocking, SAO, row publication).
+
+## Encoder
+
+`cfa4_hevc::encode` writes Main (8-bit) and Main 10 4:2:0 streams, I and P pictures. It is built
+on the decoder: intra prediction, motion compensation, merge / AMVP / TMVP derivation, scaling
+and the inverse transforms are the decoder's own functions, and every coded access unit is decoded
+by an internal `Decoder` whose deblocked picture becomes the reference, so the encoder's
+reconstruction can never drift from a conforming decoder's.
+
+| Area | Status |
+|---|---|
+| Parameter sets | VPS / SPS / PPS, VUI (colour description, SAR, timing), level from size and rate; HDR10 SEI (mastering display 137, content light 144) on every IDR |
+| Structure | CTU 32x32, CU 32..8 by rate-distortion cost (CABAC bit estimator, J = SSE + λ·bits), TU = CU, IDR every `keyint`, up to 4 reference pictures, TMVP, deblocking |
+| Intra | 2Nx2N, 35 luma modes (coarse-to-fine SATD pre-selection, RD on the best few), DM chroma |
+| Inter | 2Nx2N skip / merge / AMVP; hexagon integer search, half / quarter sample SATD refinement |
+| Rate control | constant QP, CRF, 1-pass ABR with a VBV (CBR, VBR); half-resolution complexity lookahead |
+| Parallelism | slices of whole CTU rows coded in parallel (`EncoderConfig::slices`; output depends on the slice count only) |
+| Output | Annex B (parameter sets in-band) or length-prefixed samples with `Encoder::hvcc()` |
+| Not yet | B pictures (#171), SAO (#172), RDOQ and sign data hiding (#173), TU split / 4x4 / intra NxN (#174), rectangular and AMP partitions (#175), adaptive quantization (#176), 2-pass (#177), faster search / WPP (#178), chroma mode search (#179), 4:2:2 / 4:4:4 (#180) |
+
+```rust
+use cfa4_hevc::encode::{Encoder, EncoderConfig, RateControl, YuvFrame};
+
+let mut cfg = EncoderConfig::new(1920, 1080, 25, 1);
+cfg.rate = RateControl::Crf(26.0); // or Qp, Cbr { kbps }, Vbr { target_kbps, max_kbps }
+let mut enc = Encoder::new(cfg)?;
+let packets = enc.encode(&YuvFrame::U8 { y, u, v, y_stride, uv_stride }, pts)?;
+```
+
+Speed (one 4-core machine, `examples/hevcenc.rs`): CIF 31 fps with 4 slices, 1080p 2.3 fps; at
+equal QP on CIF (one slice) 7–10% larger than x265 medium with `bframes=0`, at -0.2 to +0.1 dB
+PSNR.
+Tests (`src/encode/tests.rs`): 8-bit and Main 10 HDR round trips through our decoder, bit-exact
+agreement of our decoder and ffmpeg on the encoder's output, slices / IDR intervals / cropping,
+CBR bitrate accuracy, length-prefixed samples with the `hvcC`.
 
 ## Tests
 
