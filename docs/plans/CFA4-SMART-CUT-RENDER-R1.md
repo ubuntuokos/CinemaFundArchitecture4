@@ -5,13 +5,41 @@
 **Cél repository:** `ubuntuokos/CinemaFundArchitecture4`
 **Specifikáció:** `CFA4-SMART-CUT-RENDER-R1`
 **Dátum:** 2026-10-27
-**Állapot:** Implementációra előkészített terv; még nem megvalósított funkciók
+**Állapot:** Implementációra előkészített terv; még nem megvalósított funkciók. 2026-10-27: a CFA4-SCE-001 v1.5 döntései szerint igazítva (0. fejezet).
 
 > A tulajdonos (ubuntuokos) által 2026-10-27-én megadott terv változatlan szövege. A kiindulási
 > audit (WP-00) eredménye és a terv és a repository szabályai közötti eltérések:
 > [`docs/audit/smart-edit-baseline.md`](../audit/smart-edit-baseline.md). Az upstream ős nevét a
 > repository függetlenségi szabálya miatt (AGENTS.md, `python/tests/test_independence.py`) általános
-> megnevezés helyettesíti.
+> megnevezés helyettesíti. A 2026-10-27-i, tulajdonos által véglegesített CFA4-SCE-001 v1.5 terv
+> döntései alapján a szöveg az alábbi pontokon módosult: FFmpeg-utalások (§1, §3, §12, §15, §19),
+> a „határ-újrakódolás” elnevezés (§5.3, §6, §8, §10, §17), az Auto mód (§14), a parancsnévtér (§11)
+> és a modulhely (§4). Az eredeti szöveg a git-előzményben elérhető.
+
+---
+
+## 0. Igazítás a CFA4-SCE-001 v1.5 döntéseihez (2026-10-27)
+
+A végleges, egyesített terv: `docs/plans/CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md` (main). Ahol
+ez a dokumentum eltér tőle, a v1.5 döntései érvényesek:
+
+1. **GOP Smart Cut** = a Smart Render egyklipes esete; ugyanaz a tervtípus és végrehajtó. A Qt6-ban a
+   forrásmonitor „Forrás vágása” művelete, nem külön exportüzemmód.
+2. **Auto mód** csak javasol (Strict Copy → Compatible Copy → Smart Render → Full Render); újrakódolás
+   csak kifejezett megerősítés után fut (§14).
+3. **Terminológia:** „Smart Render” = idővonal-hibrid. A `BoundaryReencode` szegmens neve
+   **határ-újrakódolás**; ebben a dokumentumban a korábbi „Smart Render” megnevezés, ahol a
+   határszakasz-újrakódolást jelentette, erre módosult.
+4. **Bitstream-adapterek** natív Rustban; az FFmpeg 9.0.2 kizárólag CI-teszt-orákulum, futásidejű
+   függőség nincs (lásd még `docs/audit/smart-edit-baseline.md` §3).
+5. **Rétegzett validáció:** a szerkezeti egyezés (`BITSTREAM_EQUIVALENT`) elég a PASS-hoz; dekódolásos
+   összevetés csak a saját dekóder által támogatott profilnál fut.
+6. **Atomikus írás:** közös segéd a `cfa4-export`-ban (ideiglenes fájl, fsync, átnevezés).
+7. **Határ-újrakódolás kodekjei:** az első kiadásban csak H.264. MPEG-2 (nincs natív kódoló), HEVC
+   (ma csak NVENC, gyártófüggő) és AV1 (nincs kódoló) forrásnál kulcskocka-kerekítés vagy teljes
+   újrakódolás, amíg nincs gyártófüggetlen kódoló.
+8. **Parancsnévtér:** egységes `export.analyze`, `export.plan`, `export.start`, `export.cancel`,
+   `export.validate` (§11).
 
 ---
 
@@ -23,7 +51,7 @@ A fejlesztés kizárólag a CFA4 downstream repositoryban történhet.
 - Architektúra: amd64.
 - Grafikus felület: Qt6, elsődlegesen KDE Plasma / Wayland.
 - Vezérlési és feldolgozási réteg: Rust/Cargo.
-- Natív multimédia-feldolgozás: FFmpeg 9, a telepített CFA4-kompatibilis libav API-kon keresztül.
+- Natív multimédia-feldolgozás: a CFA4 saját Rust crate-jei (demux, dekódolás, kódolás, mux). Az FFmpeg 9.0.2 kizárólag CI-teszt-orákulum, futásidejű függőség nincs (0. fejezet, 4. pont).
 - Megengedett kiegészítő nyelvek: C++, Python 3.14.
 - Terjesztés: DEB, Flatpak, AppImage.
 - Conda/Miniforge alkalmazása tilos.
@@ -109,23 +137,22 @@ Rust Smart Edit Controller
     +-- Validation Controller
     |
     v
-Native FFmpeg 9 Adapter
+CFA4 natív médiaréteg (cfa4-export)
     |
-    +-- libavformat
-    +-- libavcodec
-    +-- libavutil
-    +-- libswresample (ha szükséges)
-    +-- libavfilter (teljes renderhez)
+    +-- Konténerek: isobmff, matroska, mpegts
+    +-- Kodekek: saját dekóderek / kódolók
+    +-- Natív bitstream-adapterek
     |
     +-- Stream Copy Executor
-    +-- Boundary Re-encode Executor
+    +-- Boundary Re-encode Executor (határ-újrakódolás)
     +-- Full Render Executor
-    +-- Muxer / Output Writer
+    +-- Muxer / Output Writer (közös atomikus író)
     |
     v
 Export Validator
     |
-    +-- Decode / ffprobe
+    +-- Szerkezeti egyezés (BITSTREAM_EQUIVALENT)
+    +-- Decode (saját dekóder, ha a profil támogatott)
     +-- Frame Count / Duration
     +-- PTS / DTS / Timebase
     +-- A/V Synchronization
@@ -141,13 +168,17 @@ A Smart Cut és Smart Render ne hozzon létre párhuzamos, önálló exportszolg
 
 A tervező a meglévő CFA4 exportfolyamatába kapcsolódjon. A feladatütemezés, állapotkezelés, megszakítás, naplózás és hibajelentés a meglévő szolgáltatásokon keresztül működjön.
 
-MLT integráció esetén a Smart Render végrehajtás FFmpeg-alapú exportútja maradjon elkülönítve az MLT-s szerkesztési gráftól. A kép- és hangeffektusok leképezése egységes edit-leírásból történjen.
+MLT integráció esetén a Smart Render végrehajtás natív exportútja maradjon elkülönítve az MLT-s szerkesztési gráftól. A kép- és hangeffektusok leképezése egységes edit-leírásból történjen.
 
 ---
 
 ## 4. Javasolt Rust-modulok
 
 A végleges elérési útvonalat a repository auditja határozza meg. Az alábbiak logikai modulnevek.
+
+*v1.5:* a tervezés (capability, index, függőség, planner, `render_plan.rs` = közös `ExportExecutionPlan`)
+a `crates/smart-edit` (L3) crate-ben, a végrehajtás (`execution.rs`, copy- és határ-újrakódoló
+végrehajtó, validátor) a `crates/export`-ban (`copy/`, `smart_render/`) készül.
 
 ```text
 smart_edit/
@@ -181,7 +212,7 @@ smart_edit/
 
 **smart_cut.rs** – Packet-copy lehetőségek meghatározása.
 
-**smart_render.rs** – Határ-GOP újrakódolási terv és kompatibilitási feltételek.
+**smart_render.rs** – Idővonal-hibrid szakaszterv; a határ-újrakódolás (határ-GOP) terve és kompatibilitási feltételei.
 
 **render_plan.rs** – A teljes export végrehajtási gráfjának előállítása.
 
@@ -232,10 +263,14 @@ A példák interfészvázlatok. A kapcsolódó típusokat az implementáció sor
 ```rust
 pub enum RenderMode {
     StreamCopy,
-    BoundaryReencode,
+    BoundaryReencode, // határ-újrakódolás
     FullReencode,
 }
 ```
+
+*v1.5:* a megvalósításban ez a közös `ExportExecutionPlan` szegmensmódja: `StrictCopy`,
+`CompatibleCopy`, `BoundaryReencode` (határ-újrakódolás), `Render`. A `StreamCopy` a két külön
+választható copy-garanciára bomlik.
 
 ### 5.4 RenderSegment
 
@@ -277,12 +312,12 @@ pub struct RenderPlan {
 
 ### Első fejlesztési szint
 
-| Codec | GOP elemzés | Packet Copy | Smart Render |
+| Codec | GOP elemzés | Packet Copy | Határ-újrakódolás |
 |---|---|---|---|
-| MPEG-2 | Kötelező | Kötelező | Kötelező, validált konfigurációkra |
+| MPEG-2 | Kötelező | Kötelező | Nincs natív kódoló: kulcskocka-kerekítés vagy teljes újrakódolás (v1.5) |
 | H.264/AVC | Kötelező | Kötelező | Kötelező, validált konfigurációkra |
-| HEVC/H.265 | Kötelező | Kötelező | Képességvizsgálathoz kötött |
-| AV1 | Kötelező | Kötelező | Külön kompatibilitási kapu |
+| HEVC/H.265 | Kötelező | Kötelező | Csak gyártófüggetlen kódoló után (ma csak NVENC) |
+| AV1 | Kötelező | Kötelező | Nincs kódoló; külön kompatibilitási kapu |
 
 A táblázat célkövetelmény, nem jelenlegi támogatottsági állapot.
 
@@ -343,7 +378,7 @@ A négy codec sajátosságait nem szabad egyetlen egyszerű „keyframe = bizton
 5. A hangsávok és az időbélyegek ellenőrzése.
 6. A kimeneti muxer alkalmasságának vizsgálata.
 7. Packet-copy terv készítése.
-8. Ha a terv nem teljesíti a pontossági követelményt, Smart Renderre vagy Full Renderre váltás.
+8. Ha a terv nem teljesíti a pontossági követelményt, határ-újrakódolás vagy Full Render javaslata; újrakódolás csak kifejezett megerősítés után (v1.5).
 9. Export végrehajtása.
 10. Eredményvalidáció.
 
@@ -355,9 +390,12 @@ Ha a felhasználó veszteségmentes stream-copy módot kényszerít ki, és a ki
 
 ---
 
-## 8. Smart Render algoritmus
+## 8. Határ-újrakódolás algoritmusa
 
-A Smart Render célja a lehető legkisebb szükséges újrakódolási tartomány.
+*v1.5:* ez a fejezet a Smart Render (idővonal-hibrid) határ-újrakódolási szegmenstípusát írja le; a
+teljes idővonal-hibridet a `docs/plans/SMART-RENDER-2026-10-27.md` részletezi.
+
+A határ-újrakódolás célja a lehető legkisebb szükséges újrakódolási tartomány.
 
 ### Folyamat
 
@@ -398,7 +436,7 @@ Ilyenkor Full Renderre kell váltani, vagy felhasználói beállítás szerint l
 
 ## 9. Időbélyeg- és hangkezelés
 
-A Smart Render önálló A/V koordináció nélkül nem tekinthető késznek.
+A Smart Render és a határ-újrakódolás önálló A/V koordináció nélkül nem tekinthető késznek.
 
 ### Kötelező feladatok
 
@@ -441,10 +479,13 @@ Az új funkciók a meglévő CFA4 GUI-ba kerüljenek.
 
 Választható módok:
 
-- Automatikus optimalizált export.
-- Stream Copy, ahol lehetséges.
+- Automatikus (csak javasol; újrakódolás előtt megerősítést kér).
+- Stream Copy – Bitazonos.
+- Stream Copy – Kompatibilis.
 - Smart Render.
 - Full Render.
+
+*v1.5:* a GOP Smart Cut nem exportmód, hanem a forrásmonitor „Forrás vágása” művelete.
 
 ### 10.3 Render Plan előnézet
 
@@ -473,22 +514,19 @@ Példák:
 A Smart Edit Controllernek a következő logikai műveleteket kell nyújtania:
 
 ```text
-media.analyze_cut_points
-media.get_gop_index
-media.get_safe_access_points
-
-edit.plan_smart_cut
-edit.plan_smart_render
-edit.validate_render_plan
-
-export.execute_render_plan
-export.cancel_render_plan
-export.get_render_status
-
-export.validate_output
+export.analyze     # forrás, GOP-index, biztonságos hozzáférési pontok, képességek
+export.plan        # egyetlen ExportExecutionPlan; mód és hatókör (idővonal / forrástartomány) paraméter
+export.start       # végrehajtás, render-job azonosítóval és állapottal
+export.cancel
+export.validate    # terv és kimenet validációja
 ```
 
-Az API-nevek javaslatok, nem igazolt meglévő CFA4-végpontok.
+*v1.5 (8. döntés):* egységes `export.*` névtér. A korábbi javaslatok megfeleltetése:
+`media.analyze_cut_points`, `media.get_gop_index`, `media.get_safe_access_points` → `export.analyze`;
+`edit.plan_smart_cut`, `edit.plan_smart_render` → `export.plan`; `edit.validate_render_plan`,
+`export.validate_output` → `export.validate`; `export.execute_render_plan` → `export.start`;
+`export.cancel_render_plan` → `export.cancel`; `export.get_render_status` → az `export.queue.*`
+állapota. A meglévő `export.formats`, `export.resolve` és `export.queue.*` megmarad.
 
 ### API-követelmények
 
@@ -512,7 +550,7 @@ Az API-nevek javaslatok, nem igazolt meglévő CFA4-végpontok.
 
 1. Natív média- és exportmodulok feltérképezése.
 2. Aktuális Git commit és fejlesztési ág rögzítése.
-3. FFmpeg 9 runtime-linkage ellenőrzése.
+3. FFmpeg 9 runtime-linkage ellenőrzése (eredmény: nincs; az FFmpeg 9.0.2 csak CI-orákulum, lásd az audit §3-at).
 4. Meglévő stream-copy képességek felmérése.
 5. Keyframe-indexelés és navigáció ellenőrzése.
 6. Qt6 idővonal és exportpanel vizsgálata.
@@ -549,7 +587,7 @@ Stream-copy alkalmasság és pontos vágási pontok kezelése.
 
 ### WP-04 – Smart Cut Executor
 
-FFmpeg 9 packet-copy alapú végrehajtás a meglévő exportszolgáltatásban.
+Natív Rust packet-copy végrehajtás a meglévő exportszolgáltatásban (`cfa4-export`), a közös atomikus íróval.
 
 **Kimenet:** validált stream-copy export.
 
@@ -557,7 +595,7 @@ FFmpeg 9 packet-copy alapú végrehajtás a meglévő exportszolgáltatásban.
 
 ### WP-05 – Smart Render Planner
 
-Újrakódolandó határszakaszok és változatlanul másolható tartományok meghatározása.
+Idővonal-hibrid szakaszterv: újrakódolandó határszakaszok (határ-újrakódolás) és változatlanul másolható tartományok meghatározása.
 
 **Kimenet:** vegyes végrehajtási terv.
 
@@ -567,7 +605,7 @@ FFmpeg 9 packet-copy alapú végrehajtás a meglévő exportszolgáltatásban.
 
 Határszakaszok célzott újrakódolása és kompatibilis kimenet előállítása.
 
-**Kimenet:** MPEG-2/H.264 Smart Render implementáció.
+**Kimenet:** H.264 határ-újrakódolás és Smart Render végrehajtó; MPEG-2-nél kódoló hiányában kulcskocka-kerekítés vagy teljes újrakódolás (v1.5).
 
 **Kapufeltétel:** pontos vágás, dekódolható összefűzés és ellenőrzött időbélyegek.
 
@@ -702,7 +740,7 @@ Can fully render?
                +-- NO --> Error + explanation
 ```
 
-Automatikus mód esetén a fallback csak akkor történhet meg, ha az exportkimenet megfelel a felhasználó minőségi és codec-korlátozásainak.
+Automatikus mód esetén a döntési lánc csak javaslatot ad (v1.5): a felület megmutatja a választott módot, az indokot és szegmensenként a másolt és az újrakódolt részt. Újrakódolást tartalmazó javaslat csak a felhasználó kifejezett megerősítése után fut, és csak akkor, ha a kimenet megfelel a felhasználó minőségi és codec-korlátozásainak. A „Smart Render” ág itt a határ-újrakódolást jelenti.
 
 Kifejezetten kikényszerített Stream Copy módban a rendszer nem válthat észrevétlenül újrakódolásra.
 
@@ -720,7 +758,7 @@ A CI-kapuk tartalmazzák:
 - `cargo clippy`
 - Rust unit tesztek
 - Rust integration tesztek
-- FFmpeg 9 képességvizsgálat
+- FFmpeg 9.0.2 orákulum-összevetés (csak CI; ffprobe, dekódolhatóság, payload-összevetés)
 - Codec-fixture alapú vágási tesztek
 - Export/reimport E2E
 - Qt6 GUI smoke és állapotkonzisztencia tesztek
@@ -762,7 +800,7 @@ MPEG-2 és H.264 GOP/hozzáférésipont-indexelés, biztonságos packet-copy, ex
 
 ### R2 – Smart Render alap
 
-Határszakasz-újrakódolás MPEG-2 és H.264 codec-ekre, kompatibilitási és időbélyeg-validációval.
+Határ-újrakódolás H.264-re, kompatibilitási és időbélyeg-validációval; MPEG-2-nél natív kódoló hiányában kulcskocka-kerekítés vagy teljes újrakódolás (v1.5).
 
 ### R3 – Codec-bővítés
 
@@ -770,7 +808,7 @@ HEVC és AV1 támogatás ellenőrzött konfigurációkra; nem támogatott esetek
 
 ### R4 – Teljes GUI és csomagolás
 
-Qt6 GOP-megjelenítés, renderterv-előnézet, automatikus exportoptimalizálás és támogatott Linux-csomagformátumok.
+Qt6 GOP-megjelenítés, renderterv-előnézet, javasló Auto mód megerősítéssel és támogatott Linux-csomagformátumok.
 
 ---
 
@@ -799,7 +837,7 @@ A funkció akkor tekinthető késznek, ha:
 1. A CFA4 natív idővonalán GOP-határok és biztonságos vágási pontok megjeleníthetők.
 2. Az alkalmazás felismeri, mely szakaszok másolhatók újrakódolás nélkül.
 3. A rendszer képes tényleges veszteségmentes packet-copy exportálásra.
-4. Pontos vágásnál a támogatott codec-konfigurációkhoz Smart Render alkalmazható.
+4. Pontos vágásnál a támogatott codec-konfigurációkhoz határ-újrakódolás alkalmazható.
 5. A kimenet A/V szinkronja és timestampjei megfelelnek a validációs feltételeknek.
 6. A nem támogatott szerkesztési helyzetek biztonságos fallbacket kapnak.
 7. A funkció a CFA4 meglévő natív exportfolyamatában működik.
@@ -809,4 +847,4 @@ A funkció akkor tekinthető késznek, ha:
 11. A DEB, Flatpak és AppImage csomagokban működik.
 12. Az upstream (örökölt ős) repository változatlan marad.
 
-**Végleges architekturális döntés:** GOPchop működési elve → natív Rust GOP/bitstream elemzés → FFmpeg 9 Smart Cut / Smart Render → CFA4 Qt6 GUI → validált export.
+**Végleges architekturális döntés:** GOPchop működési elve → natív Rust GOP/bitstream elemzés → natív Rust Smart Cut / Smart Render végrehajtás → CFA4 Qt6 GUI → validált export (FFmpeg 9.0.2 csak CI-orákulum).
