@@ -593,6 +593,14 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
     if let Err(e) = &r {
         app.ui.status = e.clone();
     }
+    if let Ok(v) = &r
+        && id == "graphics.checkLegibility"
+    {
+        app.ui.status = match v.get("count").and_then(Value::as_u64).unwrap_or(0) {
+            0 => tl!("Text legibility: no problems found").into(),
+            c => tlf!("Text legibility: {count} problems marked on the timeline (orange markers)", count = c),
+        };
+    }
     if r.is_ok() && matches!(id, "playhead.start" | "playhead.end") {
         crate::panels::timeline::reveal_playhead(app, ctx);
     }

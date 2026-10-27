@@ -745,20 +745,38 @@ fn keyframe_menu(app: &mut Cfa4App, ui: &mut egui::Ui, target: KeyframeRef, acti
         (tl!("Ease In"), "easeIn"),
         (tl!("Ease Out"), "easeOut"),
     ] {
-        let response = ui.button(label);
-        app.auto.add(&format!("effectControls.keyframeMenu.{key}"), response.rect, label);
-        if response.clicked() {
-            let mut params = params.clone();
-            params["interpolation"] = json!(key);
-            actions.push(("effects.setInterpolation".into(), params));
-            ui.close();
-        }
+        interpolation_button(app, ui, &params, label, key, actions);
     }
+    // CFA4 easing presets: fixed curves for the segment after this keyframe.
+    let presets = ui.menu_button(tl!("Easing Presets"), |ui| {
+        for (label, key) in [
+            (tl!("Sine"), "sine"),
+            (tl!("Exponential"), "expo"),
+            (tl!("Circular"), "circ"),
+            (tl!("Overshoot"), "overshoot"),
+            (tl!("Elastic"), "elastic"),
+            (tl!("Bounce"), "bounce"),
+        ] {
+            interpolation_button(app, ui, &params, label, key, actions);
+        }
+    });
+    app.auto.add("effectControls.keyframeMenu.easingPresets", presets.response.rect, "Easing Presets");
     ui.separator();
     let response = ui.button(tl!("Clear"));
     app.auto.add("effectControls.keyframeMenu.clear", response.rect, "Clear");
     if response.clicked() {
         actions.push(("effects.deleteKeyframe".into(), params));
+        ui.close();
+    }
+}
+
+fn interpolation_button(app: &mut Cfa4App, ui: &mut egui::Ui, params: &Value, label: &str, key: &str, actions: &mut Vec<(String, Value)>) {
+    let response = ui.button(label);
+    app.auto.add(&format!("effectControls.keyframeMenu.{key}"), response.rect, label);
+    if response.clicked() {
+        let mut params = params.clone();
+        params["interpolation"] = json!(key);
+        actions.push(("effects.setInterpolation".into(), params));
         ui.close();
     }
 }
@@ -1191,8 +1209,10 @@ pub(crate) fn graph_rows(
         if !(-0.01..=1.01).contains(&f) {
             continue;
         }
-        let eases_out = !matches!(k.interp, cfa4_project::Interpolation::Linear | cfa4_project::Interpolation::Hold | cfa4_project::Interpolation::EaseIn);
-        let eases_in = !matches!(k.interp, cfa4_project::Interpolation::Linear | cfa4_project::Interpolation::Hold | cfa4_project::Interpolation::EaseOut);
+        let eases_out = !k.interp.is_preset()
+            && !matches!(k.interp, cfa4_project::Interpolation::Linear | cfa4_project::Interpolation::Hold | cfa4_project::Interpolation::EaseIn);
+        let eases_in = !k.interp.is_preset()
+            && !matches!(k.interp, cfa4_project::Interpolation::Linear | cfa4_project::Interpolation::Hold | cfa4_project::Interpolation::EaseOut);
         let comps = graph_components(&k.value);
         for (ci, &v) in comps.iter().enumerate() {
             if !v.is_finite() {

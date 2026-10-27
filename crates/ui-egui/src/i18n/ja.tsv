@@ -3628,3 +3628,27 @@
 	From North-East	右上から
 	From South-East	右下から
 	From South-West	左下から
+	Easing Presets	イージングプリセット
+	Sine	サイン
+	Exponential	指数
+	Circular	円形
+	Elastic	エラスティック
+	Film Gate	フィルムゲート
+	Gate Weave	ゲートウィーブ
+	Weave Rotation	ウィーブの回転
+	Particles	パーティクル
+	Emitter Position	エミッターの位置
+	Birth Rate	生成率
+	Lifetime (seconds)	寿命 (秒)
+	Velocity Random	速度のランダム
+	Gravity	重力
+	Particle Size	パーティクルのサイズ
+	Keyhole	鍵穴
+	Burn Away	焼け落ち
+	Burn Size	焼けのサイズ
+	Ember Width	残り火の幅
+	Ember Color	残り火の色
+	Check Text Legibility	テキストの読みやすさをチェック
+	Clear Legibility Markers	読みやすさマーカーを消去
+	Text legibility: no problems found	テキストの読みやすさ: 問題は見つかりませんでした
+	Text legibility: {count} problems marked on the timeline (orange markers)	テキストの読みやすさ: {count} 件の問題をタイムラインにマークしました（オレンジのマーカー）

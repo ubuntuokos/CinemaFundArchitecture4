@@ -3596,3 +3596,27 @@
 	From North-East	Depuis le nord-est
 	From South-East	Depuis le sud-est
 	From South-West	Depuis le sud-ouest
+	Easing Presets	Préréglages d'accélération
+	Sine	Sinusoïdale
+	Exponential	Exponentielle
+	Circular	Circulaire
+	Elastic	Élastique
+	Film Gate	Couloir de film
+	Gate Weave	Instabilité du couloir
+	Weave Rotation	Rotation de l'instabilité
+	Particles	Particules
+	Emitter Position	Position de l'émetteur
+	Birth Rate	Taux de naissance
+	Lifetime (seconds)	Durée de vie (secondes)
+	Velocity Random	Vitesse aléatoire
+	Gravity	Gravité
+	Particle Size	Taille des particules
+	Keyhole	Trou de serrure
+	Burn Away	Brûlure
+	Burn Size	Taille de la brûlure
+	Ember Width	Largeur de la braise
+	Ember Color	Couleur de la braise
+	Check Text Legibility	Vérifier la lisibilité du texte
+	Clear Legibility Markers	Effacer les marqueurs de lisibilité
+	Text legibility: no problems found	Lisibilité du texte : aucun problème trouvé
+	Text legibility: {count} problems marked on the timeline (orange markers)	Lisibilité du texte : {count} problèmes marqués dans la timeline (marqueurs orange)

@@ -3629,3 +3629,27 @@
 	From North-East	Desde el noreste
 	From South-East	Desde el sureste
 	From South-West	Desde el suroeste
+	Easing Presets	Ajustes de suavizado
+	Sine	Sinusoidal
+	Exponential	Exponencial
+	Circular	Circular
+	Elastic	Elástica
+	Film Gate	Ventanilla de película
+	Gate Weave	Vaivén de ventanilla
+	Weave Rotation	Rotación del vaivén
+	Particles	Partículas
+	Emitter Position	Posición del emisor
+	Birth Rate	Tasa de nacimiento
+	Lifetime (seconds)	Duración (segundos)
+	Velocity Random	Velocidad aleatoria
+	Gravity	Gravedad
+	Particle Size	Tamaño de partícula
+	Keyhole	Ojo de cerradura
+	Burn Away	Quemar
+	Burn Size	Tamaño de quemado
+	Ember Width	Ancho de la brasa
+	Ember Color	Color de la brasa
+	Check Text Legibility	Comprobar legibilidad del texto
+	Clear Legibility Markers	Borrar marcadores de legibilidad
+	Text legibility: no problems found	Legibilidad del texto: no se encontraron problemas
+	Text legibility: {count} problems marked on the timeline (orange markers)	Legibilidad del texto: {count} problemas marcados en la línea de tiempo (marcadores naranjas)

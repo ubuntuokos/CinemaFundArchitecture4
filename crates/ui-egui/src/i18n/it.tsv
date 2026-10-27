@@ -3620,3 +3620,27 @@
 	From North-East	Da nord-est
 	From South-East	Da sud-est
 	From South-West	Da sud-ovest
+	Easing Presets	Preset di andamento
+	Sine	Sinusoidale
+	Exponential	Esponenziale
+	Circular	Circolare
+	Elastic	Elastica
+	Film Gate	Finestrino pellicola
+	Gate Weave	Oscillazione del quadro
+	Weave Rotation	Rotazione dell'oscillazione
+	Particles	Particelle
+	Emitter Position	Posizione dell'emettitore
+	Birth Rate	Frequenza di nascita
+	Lifetime (seconds)	Durata (secondi)
+	Velocity Random	Velocità casuale
+	Gravity	Gravità
+	Particle Size	Dimensione particella
+	Keyhole	Buco della serratura
+	Burn Away	Bruciatura
+	Burn Size	Dimensione bruciatura
+	Ember Width	Larghezza della brace
+	Ember Color	Colore della brace
+	Check Text Legibility	Verifica leggibilità del testo
+	Clear Legibility Markers	Cancella marcatori di leggibilità
+	Text legibility: no problems found	Leggibilità del testo: nessun problema trovato
+	Text legibility: {count} problems marked on the timeline (orange markers)	Leggibilità del testo: {count} problemi segnati nella timeline (marcatori arancioni)

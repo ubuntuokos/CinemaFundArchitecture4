@@ -3624,3 +3624,27 @@
 	From North-East	Von Nordosten
 	From South-East	Von Südosten
 	From South-West	Von Südwesten
+	Easing Presets	Easing-Vorgaben
+	Sine	Sinus
+	Exponential	Exponentiell
+	Circular	Kreisförmig
+	Elastic	Elastisch
+	Film Gate	Filmfenster
+	Gate Weave	Bildstandsschwankung
+	Weave Rotation	Schwankungsdrehung
+	Particles	Partikel
+	Emitter Position	Emitterposition
+	Birth Rate	Geburtenrate
+	Lifetime (seconds)	Lebensdauer (Sekunden)
+	Velocity Random	Zufällige Geschwindigkeit
+	Gravity	Schwerkraft
+	Particle Size	Partikelgröße
+	Keyhole	Schlüsselloch
+	Burn Away	Wegbrennen
+	Burn Size	Brandgröße
+	Ember Width	Glutbreite
+	Ember Color	Glutfarbe
+	Check Text Legibility	Textlesbarkeit prüfen
+	Clear Legibility Markers	Lesbarkeitsmarken löschen
+	Text legibility: no problems found	Textlesbarkeit: keine Probleme gefunden
+	Text legibility: {count} problems marked on the timeline (orange markers)	Textlesbarkeit: {count} Probleme in der Zeitleiste markiert (orange Marken)

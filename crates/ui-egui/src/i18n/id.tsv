@@ -3594,3 +3594,27 @@
 	From North-East	Dari Timur Laut
 	From South-East	Dari Tenggara
 	From South-West	Dari Barat Daya
+	Easing Presets	Preset easing
+	Sine	Sinus
+	Exponential	Eksponensial
+	Circular	Melingkar
+	Elastic	Elastis
+	Film Gate	Gerbang film
+	Gate Weave	Goyangan gerbang
+	Weave Rotation	Rotasi goyangan
+	Particles	Partikel
+	Emitter Position	Posisi pemancar
+	Birth Rate	Laju kelahiran
+	Lifetime (seconds)	Masa hidup (detik)
+	Velocity Random	Kecepatan acak
+	Gravity	Gravitasi
+	Particle Size	Ukuran partikel
+	Keyhole	Lubang kunci
+	Burn Away	Terbakar
+	Burn Size	Ukuran bakaran
+	Ember Width	Lebar bara
+	Ember Color	Warna bara
+	Check Text Legibility	Periksa Keterbacaan Teks
+	Clear Legibility Markers	Hapus Penanda Keterbacaan
+	Text legibility: no problems found	Keterbacaan teks: tidak ada masalah
+	Text legibility: {count} problems marked on the timeline (orange markers)	Keterbacaan teks: {count} masalah ditandai di linimasa (penanda oranye)

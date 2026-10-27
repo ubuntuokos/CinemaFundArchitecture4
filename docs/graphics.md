@@ -267,6 +267,28 @@ screen; 0° runs left to right across the layer's own bounds, and the ramp turns
 as a solid; the rest of the text keeps the ramp. A singular layer transform falls back to the
 solid fill colour.
 
+## Text legibility check
+
+Graphics and Titles ▸ Check Text Legibility (`graphics.checkLegibility`, CFA4's own) checks every
+text layer of every graphic clip at the middle of the clip and marks problems with orange
+sequence markers (comment `Legibility check: <kind> …`); Markers ▸ Clear Legibility Markers
+(`markers.clearLegibility`) removes them, and running the check again replaces them.
+
+| kind | found when |
+|---|---|
+| `lowContrast` | the WCAG 2 contrast ratio between the text and the picture behind it is below `minContrast` (4.5:1), or `largeContrast` (3:1) for text at least 4 % of the frame height |
+| `smallText` | the font size (with the layer's Scale) is under `minSize` percent of the frame height (2.5 %) |
+| `titleSafe` | the text box reaches outside the project's title safe area (`titleSafe: false` skips it) |
+
+The background is the real frame: the sequence is rendered at a reduced size with the clip's text
+layers hidden, so shapes in the same graphic and clips below it count. The ratio is taken on the
+worst tenth of the pixels under the text box. A text background box is blended over the picture
+with its opacity; an opaque outer stroke at least 4 % of the font size wide lets the fill be
+measured against the stroke instead. Gradient fills are measured at both ends; drop shadows are not
+counted. The check works on the graphic's canvas before the clip's Motion. Result: `ok`,
+`checked` (text layers), `count`, `counts` per kind and `issues` (`kind`, `title`, `time`, `clip`,
+`layer`, `name`, `contrast`, `needed`); `markers: false` only reports.
+
 ## Not yet
 
 Mask-with-text, per-layer blend modes, Bézier curves in the pen tool (paths are polygons), media
