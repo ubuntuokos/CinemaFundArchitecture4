@@ -673,7 +673,7 @@ Az export csak az adott mód kötelező validációinak sikeres teljesítése es
 
 *\[v1.2\]* TS/M2TS kimenetnél a módspecifikus validáció mellett a 12.6/7 utóellenőrzés is kötelező, külön „muxolás sikerült” és „dekódolási próba sikerült” állapottal.
 
-*\[v1.5\]* A Compatible Validator a 10. fejezet rétegzett szabálya szerint fut: a szerkezeti réteg (`BITSTREAM_EQUIVALENT`) kötelező és elég a PASS-hoz, a dekódolási réteg csak támogatott profilnál fut. A Strict Validator változatlanul payload-egyezést kér. Smart Render és Smart Cut esetén a másolt szegmenseket a saját garanciájuk validátora ellenőrzi; az újrakódolt szegmenseknél a frame count, a frame time és a sample count pontos egyezése kötelező, a képtartalmat a forrás dekódolt képéhez kell mérni, dokumentált tűréssel.
+*\[v1.5\]* A Compatible Validator a 10. fejezet rétegzett szabálya szerint fut: a szerkezeti réteg (`BITSTREAM_EQUIVALENT`) kötelező és elég a PASS-hoz, a dekódolási réteg csak támogatott profilnál fut. A Strict Validator változatlanul payload-egyezést kér. Smart Render és Smart Cut esetén a másolt szegmenseket a saját garanciájuk validátora ellenőrzi; az újrakódolt szegmenseknél a frame count, a frame time és a sample count pontos egyezése kötelező, a képtartalmat dokumentált kódolási tűréssel kell mérni: képtranszformáció nélküli határ-újrakódolásnál a forrás dekódolt képéhez, Render szegmensnél (effekt, átmenet, overlay, kompozitálás) a megfelelő renderelt idővonal-képkockához.
 
 ## 19. Hibakezelés
 

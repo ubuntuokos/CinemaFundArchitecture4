@@ -13,7 +13,7 @@ A tulajdonos 2026-10-27-én véglegesítette a [CFA4-SCE-001 v1.5](CFA4-SCE-001-
 - **Auto mód.** Az Auto csak javasol (Strict Copy → Compatible Copy → Smart Render → Full Render). Újrakódolást tartalmazó javaslat csak a felhasználó kifejezett megerősítése után fut, és a jelentés szegmensenként mutatja a másolt és az újrakódolt részt. Így a „nincs silent fallback” elv megmarad; a 4. fázis „nincs auto copy” mondatát ez a szabály váltja ki.
 - **Parancsok:** egységes `export.analyze`, `export.plan`, `export.start`, `export.cancel`, `export.validate` névtér; a mód és a hatókör a terv paramétere. Az `export.smartRender.*` parancscsalád nem készül.
 - **Határ-újrakódolás csak H.264-re** az első kiadásban. MPEG-2, HEVC (ma csak NVENC) és AV1 forrásnál a határ kulcskockára kerekít vagy az érintett tartomány teljes újrakódolásra kerül, amíg nincs gyártófüggetlen kódoló.
-- **Referencia-összevetés.** A frame count, frame time és sample count pontosan egyezzen a teljes render referenciával; a képtartalmat a forrás dekódolt képéhez kell mérni, dokumentált tűréssel (a másolt szakasz bájtra nem egyezhet az újrakódolt referenciával).
+- **Referencia-összevetés.** A frame count, frame time és sample count pontosan egyezzen a teljes render referenciával; a képtartalmat dokumentált kódolási tűréssel kell mérni: képtranszformáció nélküli határ-újrakódolásnál a forrás dekódolt képéhez, Render szegmensnél a megfelelő renderelt idővonal-képkockához (a másolt szakasz bájtra nem egyezhet az újrakódolt referenciával).
 - **Validáció és írás:** rétegzett validáció (`BITSTREAM_EQUIVALENT` elég a PASS-hoz), és minden kimenet a `cfa4-export` közös atomikus író segédjén megy át.
 
 ## Cél
@@ -122,7 +122,7 @@ A felhasználó a copy-policyt külön választja. Nincs silent fallback és nin
 
 ## Elfogadási kritériumok
 
-- A Smart Render kimenet látható képkockái, frame countja, frame time-ja, audio sample countja és A/V szinkronja egyezik a teljes render referenciaexporttal; a képtartalom a forrás dekódolt képéhez mérve, dokumentált tűréssel (v1.5).
+- A Smart Render kimenet látható képkockái, frame countja, frame time-ja, audio sample countja és A/V szinkronja egyezik a teljes render referenciaexporttal; a képtartalom dokumentált tűréssel mérve: határ-újrakódolásnál a forrás dekódolt képéhez, Render szegmensnél a renderelt idővonal-képkockához (v1.5).
 - Minden másolt payload a Bitazonos módban bájtazonos; Kompatibilis módban bitstream-dekódolás után a dokumentált tartalmi egyenértékűséget teljesíti.
 - Effektes/összetett/nem kompatibilis szakasz renderelendőként szerepel, nem tűnik el, és nem másolódik változtatás nélkül.
 - Minden váltási pont seekelhető, decode-olható és időbélyeg szerint folytonos; eltérés esetén a teljes export a preflightban elutasít vagy a kérdéses tartományt rendereli.
