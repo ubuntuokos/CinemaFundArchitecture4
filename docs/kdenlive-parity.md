@@ -1,7 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
-> **Állapot:** a tulajdonos 2026-10-25-én jóváhagyta (K1–K30). · **Utolsó átnézés:** 2026-10-25 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
-> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1; K26–K30 felirat- és átiratlánc, 11.2; K31–K35 Whisper, 11.3; MI-döntések, 12.1) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
+> **Állapot:** a tulajdonos 2026-10-25-én jóváhagyta (K1–K35); a 2026-10-27-i újraelemzést is jóváhagyta. · **Utolsó átnézés:** 2026-10-27 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
+> elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1; K26–K30 felirat- és átiratlánc, 11.2; K31–K35 Whisper, 11.3; MI-döntések, 12.1; átfedések és szállítás, 11.4) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 
 Ez a lista a Kdenlive képességeit veti össze a CFA4 jelenlegi állapotával, és rangsorolja a
 hiányokat. A `docs/gaps.md` a Premiere-hez mér; ha egy hiány ott is szerepel, a G-számra
@@ -48,9 +48,10 @@ a CFA4 viszont Rust-motor + PySide6-felület. A haszna ezért részenként elté
 | ❌ | Hiányzik |
 | ❓ | Nincs ellenőrizve, kipróbálandó |
 
-**Fontos:** a ✅ a Rust-motorra és az egui-felületre vonatkozik. A **Qt6-felület** még csak
-fejlesztési prototípus (ADR F8 1. lépés kész, 2–7. nyitott), így a Qt6-ban ma ezek közül
-szinte egyik sem érhető el. A Qt6-paritás külön követendő.
+**Fontos:** a ✅ a Rust-motorra és az egui-felületre vonatkozik. Az egui be van fagyasztva, minden
+új felületi munka a **Qt6-felületen** készül. A Qt6 pontról pontra követett állapota a
+[`qt-parity.md`](qt-parity.md)-ben van (2026-10-27: 40 pont ✅, 19 🟡, 9 ❌; ADR F8 2–6. lépés
+folyamatban, 7. nyitott).
 
 ## 1. Projekt, fájlok, médiakezelés
 
@@ -148,18 +149,18 @@ szinte egyik sem érhető el. A Qt6-paritás külön követendő.
 | Render-sablonok, render-sor, zóna-render, előnézet-render | ✅ | `export.presets.*`, `export.queue.*`, `sequence.renderInToOut` |
 | Szüneteltetés és folytatás | 🟡 | Megszakítás van; szüneteltetés ❓ |
 | Alfa export | ✅ | ProRes 4444, PNG-sorozat |
-| Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. VA-API-kódolás a saját motorban vagy kiegészítő háttérből (FFmpeg `*_vaapi`, GStreamer `va*enc`), a `cfa4-route` útválasztó választ (ADR 0004 #55, ADR 0005 #62); gyártófüggetlen terv (#39) |
+| Hardveres kódolás AMD-n és Intelen (VA-API) | 🟡 | Az NVENC export és a Linux HW-dekódolás már a `cfa4-route`-on át megy (ADR 0004 1. fázis, részben kész). VA-API-kódolás a saját motorban vagy kiegészítő háttérből (FFmpeg `*_vaapi`, GStreamer `va*enc`); a kiadott csomagok GStreamerrel épülnek (ADR 0002, ADR 0005); gyártófüggetlen terv (#39) |
 | Szoftveres HEVC, jobb H.264, MP3 export | ❌ | x265, x264, LAME: ADR 0003 A5, előtte szabadalmi vizsgálat |
-| Széles formátumlefedettség | 🟡 | A saját Rust-motor az alap; kiegészítő hátterek: FFmpeg ≥ 9.0.2 (tervezett `cfa4-ffmpeg`) és a GStreamer (alapból az Ubuntué, újabb verzióhoz elkülönített CFA4-futtatókörnyezet; `crates/gstreamer`, #40), köztük az automatikus útválasztó (`cfa4-route`) dönt (ADR 0005, #62). Az FFmpeg 9.0.2 szállítása nyitott döntés |
+| Széles formátumlefedettség | 🟡 | A saját Rust-motor az alap; kiegészítő hátterek: FFmpeg ≥ 9.0.2 (tervezett `cfa4-ffmpeg`) és a GStreamer (alapból az Ubuntué, újabb verzióhoz elkülönített CFA4-futtatókörnyezet; `crates/gstreamer`, #40), köztük az automatikus útválasztó (`cfa4-route`) dönt (ADR 0005, elfogadva). Az FFmpeg ≥ 9.0.2 (csak GPL-3-as build) a `/opt/cfa4`-ben szállítva; a `cfa4-ffmpeg` háttér a #249-ben, a sorrendező a #263-ban készül |
 
 ## 8. Platform és felület
 
 | Kdenlive-képesség | CFA4 | Megjegyzés, bizonyíték |
 |---|:-:|---|
 | Linux, deb, AppImage, Flatpak | 🟡 | Csak Ubuntu 26.04 AMD64; mind a négy formátum tervezett, a kiadás HOLD (F9) |
-| Qt-felület | 🟡 | Qt6 Widgets + PySide6 prototípus; egui a működő felület a pontos paritásig (#48) |
+| Qt-felület | 🟡 | Qt6 Widgets + PySide6; az egui befagyasztva, a pontos paritásig marad (#48); állapot: [`qt-parity.md`](qt-parity.md) |
 | Wayland és X11 | ❓ | VISION.md 3. pont: minden 26.04-es változaton tesztelendő |
-| Munkaterületek, billentyűparancsok, témák | ✅ | Motorban és egui-ban; Qt6-ban ❌ |
+| Munkaterületek, billentyűparancsok, témák | ✅ | Motorban és egui-ban; Qt6-ban 🟡 (dokkolás kész, billentyűparancs-szerkesztő a #214-ben) |
 
 ## 9. Teendők rangsora
 
@@ -217,7 +218,7 @@ mérés nélkül.
 
 | # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
 |---|---|---|---|---|---|
-| **K10** | Külön folyamatban futó render és feladatkezelő a Qt6-ból (`cfa4-cli render`, JSON-sorok) | P1 | 25–45 | ADR F8 2. lépés | `kdenlive_render` + `QLocalSocket`, `TaskManager` |
+| **K10** | Render saját folyamatban, hogy egy kódoló összeomlása ne vigye magával a szerkesztőmotort (`cfa4-cli render`, JSON-sorok). A Qt6 motorja már külön folyamat (`cfa4-cli serve`), exportsor és Progress panel van (`qt-parity.md` 3.25, 4.2) | P1 | 10–20 | ADR F8 2. lépés | `kdenlive_render` + `QLocalSocket`, `TaskManager` |
 | **K11** | Platform-előbeállítások (YouTube, Instagram, TikTok, AV1, VP9, archív, hardveres) | P1 | 15–25 | `cfa4-route` (#55) a hardveres sorokhoz | `kdenlive-export-profiles` (CC0) |
 | **K12** | Kamerák saját proxyfájljainak felismerése (GoPro LRV, DJI LRF, Sony, Insta360) | P1 | 8–15 | megvan (`media.createProxies`) | `data/externalproxies.rc`, `camcorderfilters.rc` |
 | **K13** | Giroszkópos stabilizálás `gyroflow-core`-ral, opcionális funkcióként | P1 | 35–55 | függőség-audit | `gyroflow-frei0r` |
@@ -231,7 +232,7 @@ mérés nélkül.
 A K1–K19 együtt kb. 400–700 óra; a K10–K19 kb. 255–430 óra. A 11.1 pont K20–K25 teendőivel
 együtt (kb. 66–107 óra) a K1–K25 kb. 470–810 óra; a 11.2 pont K26–K30 teendőivel (kb. 74–120 óra)
 a K1–K30 kb. 545–930 óra; a 11.3 pont K31–K35 teendőivel (kb. 78–130 óra) a teljes terv
-kb. 625–1060 óra.
+kb. 625–1060 óra volt. A K10 szűkítése (2026-10-27, 11.4) után kb. 610–1035 óra.
 
 ### Részletek
 
@@ -367,13 +368,32 @@ regisztrált parancsokat hívhat, shellt nem. Az ötletek közül ezek hiányozn
 - **K35.** Az ADR 0004 szerint a valós idejű MI-előnézet az egyetlen kivétel a CPU-tartalék alól:
   GPU nélkül kikapcsol. Csak az élő adás ütemezési döntése után.
 
+### 11.4 Átfedések más tervekkel és a szállítás módja (2026-10-27)
+
+A 2026-10-27-i újraelemzés szerint a K-lista nem változik, de néhány pontot azóta egy jóváhagyott
+terv vagy nyitott PR részben lefed. Ezeket nem írjuk meg újra:
+
+| K-pont | Átfedés | Teendő |
+|---|---|---|
+| K10 | A Qt6 motorja külön folyamat, van exportsor és Progress panel | Csak a render saját folyamata marad (lásd a K10 sort) |
+| K14 | [Smart Render](plans/SMART-RENDER-2026-10-27.md) és [GOP Smart Cut](plans/GOP-SMART-CUT-2026-10-27.md) terv; nyitott Smart Edit PR-ok (#215, #216, #219, #228, #229) | A szakaszolás és a vegyes copy/render összefűzés a Smart Renderből jön; a K14 erre épül |
+| K15, K23, K29 | Nyitott QC-sorozat (`cfa4-qc`, `cfa4-cli qc`, Qt6 Quality Check ablak: #255, #302, #305, #306, #317, #319) | A K23 és a K15 ellenőrző lépése új `cfa4-qc`-szabály; a K29 feliratszabályai QC-profil |
+| K25 | [OTIO-integrációs terv](plans/OTIO-INTEGRATION-2026-10-24.md) 4. fázisa (interop-mátrix), nyitott #44 (OTIO tesztorákulum) | A Kdenlive OTIO-része oda tartozik; a `melt`-összevetés csak a `.kdenlive` részre kell |
+| K19, K11, K16 | Nyitott #182 (easing presetek), #188 (közösségimédia-export, kötegelt változatok) | Bekerülésük után a K19 valószínűleg kész, a K11 és a K16 kisebb |
+
+**Szállítás** ([`coordination.md`](coordination.md), tulajdonosi döntés 2026-10-27): ág mindig
+friss `main`-ből, egy PR egy K-pont (vagy annak egy lépése); csak a kijelölt beolvasztási gazda
+olvaszt be; ebben a közös fájlban csak a saját sor módosítható; ha 20-nál több PR nyitott, új
+K-pont csak a tulajdonos kérésére indul.
+
 ## 12. Tulajdonosi döntések (2026-10-25)
 
 | Téma | Döntés |
 |---|---|
 | `.kdenlive`-import (K1) | kötelező; Kdenlive-be exportálás nem lesz |
 | MLT (`melt`) | csak teszt-orákulum, a termékbe nem kerül; az FFmpeg 9 + MLT 7 motorjavaslat elvetve |
-| FFmpeg | az ADR 0005 (#62) szerint: kiegészítő háttér a `cfa4-route` mögött; a CI FFmpeg 9.0.2-je külön orákulum. **Feltételes:** amíg a #62 (és vele az `AGENTS.md` §2 és az ADR 0003 §10 módosítása) nincs a `main`-ben, az `AGENTS.md` §2 érvényes (FFmpeg csak teszt-orákulum), és az FFmpeg-háttérre épülő K-teendők nem kezdhetők el |
+| FFmpeg | ADR 0005 (elfogadva, a `main`-ben): FFmpeg ≥ 9.0.2 szállított kiegészítő háttér (`cfa4-ffmpeg`, csak GPL-3-as build) a `cfa4-route` mögött; a CI FFmpeg 9.0.2-je külön orákulum |
+| GStreamer | a kiadott csomagok GStreamerrel épülnek (alapból az Ubuntu rendszercsomagja); elkülönített `cfa4-gstreamer-runtime` csak akkor, ha egy funkció újabb verziót kér (ADR 0002, ADR 0005) |
 | `gyroflow-core` (K13) | kell |
 | Hálózati render (K14) | több gép és több GPU engedélyezett; csak renderelő kliens is készül |
 | Fordítómodell (K6) | a csomagba egy nyitott, kereskedelmi használatot is engedő modell (jelölt: Opus-MT/Marian magyar–angol, licencellenőrzés után); a felhasználó opcionálisan cserélheti. SeamlessM4T és NLLB nem (CC-BY-NC) |
@@ -434,3 +454,4 @@ kivételesen, kifejezett engedéllyel felhős MI-szolgáltatást használni. A K
 | 2026-10-25 | minor | A tulajdonos jóváhagyta a tervet (K1–K30) |
 | 2026-10-25 | minor | K1 első lépése kész: a Kdenlive CC0 OTIO-tesztkészlete a CFA4 OTIO-importjával tesztelve, három javítással |
 | 2026-10-25 | minor | 11.3: K31–K35 Whisper-bővítések; 12.1: a CFA4 MI-döntéseinek ellenőrzése (VISION.md, ADR 0004, tulajdonosi döntések) |
+| 2026-10-27 | minor | Újraelemzés a `main` (16debf92) és a nyitott PR-ok alapján, a tulajdonos jóváhagyásával: ADR 0005 elfogadva (FFmpeg-feltétel törölve), kiadás GStreamerrel, Qt6-állapot a `qt-parity.md`-ből, K10 szűkítve, 11.4 átfedések és szállítási szabályok |
