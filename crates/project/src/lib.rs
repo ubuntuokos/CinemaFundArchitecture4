@@ -1262,6 +1262,10 @@ pub struct Project {
     /// instructions for whoever opens it next, frame numbers and the like. Schema v15.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub notes: String,
+    /// Credits templates kept with the project (Graphics and Titles ▸ credits; the JSON text of
+    /// each `.cfa4credtpl`, owned by `cfa4-credits`). Optional: older projects have none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub credits_templates: Vec<String>,
 }
 
 /// How a sequence is shown in the Timeline panel: its zoom, scroll position and track heights.
@@ -1358,6 +1362,7 @@ impl Project {
             source_graphics: BTreeMap::new(),
             narrations: BTreeMap::new(),
             notes: String::new(),
+            credits_templates: Vec::new(),
         }
     }
 

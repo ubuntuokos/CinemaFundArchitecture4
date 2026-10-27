@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QDialog,
     QDockWidget,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -1345,6 +1346,9 @@ class MainWindow(QMainWindow):
         if cmd.id == "graphics.credits.fit":
             self.open_credits_fit()
             return
+        if cmd.id == "graphics.credits.template.apply":
+            self.choose_credits_template()
+            return
         if self.active_monitor == "source" and cmd.id in SOURCE_STEPS and self.source_monitor.has_content():
             step = SOURCE_STEPS[cmd.id]
             start, end = self.source_monitor.range()
@@ -1805,6 +1809,22 @@ class MainWindow(QMainWindow):
             self.credits_refresh = CreditsRefreshDialog(self.engine, self)
             self.credits_refresh.refreshed.connect(lambda _r: self.schedule_refresh())
         self.credits_refresh.open_for(clip)
+
+    def choose_credits_template(self) -> None:
+        """Graphics and Titles ▸ Apply Credits Template…: pick a template for the selected
+        credits; the engine replaces their pages in one undo step."""
+
+        def chosen(result: Any, _b: bytes | None) -> None:
+            items = [t for t in (result or {}).get("templates") or [] if isinstance(t, dict)] if isinstance(result, dict) else []
+            if not items:
+                return
+            names = [str(t.get("name")) for t in items]
+            name, ok = QInputDialog.getItem(self, tr("Apply Credits Template…"), tr("Template:"), names, 0, False)
+            if ok and name in names:
+                tid = items[names.index(name)].get("id")
+                self.execute("graphics.credits.template.apply", {"id": tid})
+
+        self.engine.execute("graphics.credits.templates", {}, on_reply=chosen, on_error=lambda m: self.statusBar().showMessage(m, 6000))
 
     def open_credits_fit(self) -> None:
         """Graphics and Titles ▸ Fit Credits to Music…: lengths from the music, then fit."""

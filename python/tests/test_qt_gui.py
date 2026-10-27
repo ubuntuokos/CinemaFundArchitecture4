@@ -5624,3 +5624,37 @@ def test_real_engine_fit_credits_to_music(app, tmp_path: Path):
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_credits_templates(app, tmp_path: Path, monkeypatch):
+    """Credits window: a built-in template gives a new spreadsheet and its look; the look is
+    saved as the user's template; Apply Credits Template… restyles placed credits."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and "graphics.credits.template.apply" in win.registry.commands, 60_000)
+        win.invoke("graphics.credits.import")
+        dlg = win.credits_dialog
+        assert wait_until(app, lambda: dlg.template.count() > 4, 30_000)
+        dlg.template.setCurrentIndex(dlg.template.findData("cfa4-cards-and-roll"))
+        sheet = tmp_path / "uj.csv"
+        dlg.new_sheet_to(str(sheet))
+        assert wait_until(app, lambda: sheet.is_file() and dlg.path.text() == str(sheet), 30_000)
+        assert wait_until(app, lambda: dlg.pages.rowCount() == 3 and dlg.pages.item(0, 2) is not None and dlg.pages.item(0, 2).text(), 30_000), dlg.status.text()
+        dlg.save_template("Fesztivál")
+        assert wait_until(app, lambda: dlg.template.currentData() == "fesztivál", 30_000), dlg.status.text()
+        dlg.place()
+        assert wait_until(app, lambda: win.registry.commands["graphics.credits.template.apply"].enabled, 30_000)
+        undo = win.history.list.count()
+        monkeypatch.setattr(QtWidgets.QInputDialog, "getItem", staticmethod(lambda *a, **k: ("Classic Roll", True)))
+        win.invoke("graphics.credits.template.apply")
+        assert wait_until(app, lambda: win.history.list.count() == undo + 1, 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()

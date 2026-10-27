@@ -156,7 +156,7 @@ Az eredeti terv §6, §7, §10 pontjaiból:
 - ✅ mozgás-előbeállítások kártyákra: beúszás oldalról / alulról / felülről, lépcsőzetes
   (stagger) megjelenés.
 
-### C6 – Stáblista-sablonok (K+)
+### C6 – Stáblista-sablonok (K+) – **KÉSZ (2026-10-27)**
 
 Az eredeti terv §13-a, a meglévő `.fcgt` sablonrendszer mintájára.
 
@@ -164,6 +164,9 @@ Az eredeti terv §13-a, a meglévő `.fcgt` sablonrendszer mintájára.
   felhasználói, projekt.
 - Verziózott, azonosított, a forrását és a licencét tárolja.
 - A beépített sablonok saját tervezésűek, és a tulajdonos döntése szerint MIT/Apache licencűek maradnak.
+- Megvalósítva: `.cfa4credtpl` (stílus + mintatáblázat + időzítés), négy beépített sablon,
+  saját és projekt-sablonok; a Stáblista ablakban sablonválasztó, „Új táblázat a sablonból…”,
+  „Mentés sablonként…”; Grafika és címek ▸ Stáblista-sablon alkalmazása… (egy visszavonási lépés).
 
 ### C7 – Cinecred-import (K+)
 

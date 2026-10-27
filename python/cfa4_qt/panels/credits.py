@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -189,10 +190,28 @@ class CreditsDialog(QDialog):
         sty_row.addWidget(self.styling, 1)
         sty_row.addWidget(sty_browse)
 
+        # ----- template -----
+        self.template = QComboBox(self)
+        self.template.setObjectName("credits.template")
+        self.template.setToolTip(tr("A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins."))
+        self.template.addItem(tr("(none)"), None)
+        self.new_sheet_button = QPushButton(tr("New Spreadsheet from Template…"), self)
+        self.new_sheet_button.setObjectName("credits.template.newSheet")
+        self.new_sheet_button.clicked.connect(self._new_sheet)
+        self.save_template_button = QPushButton(tr("Save as Template…"), self)
+        self.save_template_button.setObjectName("credits.template.save")
+        self.save_template_button.clicked.connect(self._save_template)
+        tpl_row = QHBoxLayout()
+        tpl_row.addWidget(self.template, 1)
+        tpl_row.addWidget(self.new_sheet_button)
+        tpl_row.addWidget(self.save_template_button)
+        self.templates: list[dict[str, Any]] = []
+
         form = QFormLayout()
         form.addRow(tr("Spreadsheet"), path_row)
         form.addRow(tr("Sheet"), self.sheet)
         form.addRow(tr("Pictures"), pic_row)
+        form.addRow(tr("Template"), tpl_row)
         form.addRow(tr("Styling"), sty_row)
 
         # ----- pages and warnings -----
@@ -297,7 +316,9 @@ class CreditsDialog(QDialog):
         for field in (self.path, self.pictures, self.styling):
             field.textChanged.connect(self._changed)
         self.sheet.currentIndexChanged.connect(self._sheet_changed)
+        self.template.currentIndexChanged.connect(self._template_changed)
         self._show(None, "")
+        self.load_templates()
 
     # ----- parameters -----
     def params(self) -> dict[str, Any]:
@@ -309,9 +330,80 @@ class CreditsDialog(QDialog):
             p["pictureDir"] = self.pictures.text().strip()
         if self.styling.text().strip():
             p["styling"] = self.styling.text().strip()
+        elif self.template.currentData():
+            p["template"] = self.template.currentData()
         return p
 
+    # ----- templates -----
+    def load_templates(self, select: str | None = None) -> None:
+        """Ask the engine for the templates (built in, the user's, the project's)."""
+
+        def done(result: Any, _b: bytes | None) -> None:
+            items = result.get("templates") if isinstance(result, dict) else None
+            if not isinstance(items, list):
+                return
+            self.templates = [t for t in items if isinstance(t, dict) and t.get("id")]
+            current = select or self.template.currentData()
+            self._loading = True
+            try:
+                self.template.clear()
+                self.template.addItem(tr("(none)"), None)
+                for t in self.templates:
+                    kind = {"builtin": tr("built in"), "user": tr("mine"), "project": tr("this project")}.get(str(t.get("category")), "")
+                    self.template.addItem(f"{t.get('name')} ({kind})" if kind else str(t.get("name")), t.get("id"))
+                    tip = "\n".join(x for x in (str(t.get("description") or ""), str(t.get("license") or "")) if x)
+                    self.template.setItemData(self.template.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
+                idx = self.template.findData(current) if current else 0
+                self.template.setCurrentIndex(max(0, idx))
+            finally:
+                self._loading = False
+
+        self.engine.execute("graphics.credits.templates", {}, on_reply=done, on_error=lambda _m: None)
+
+    def _template_changed(self, _i: int) -> None:
+        if not self._loading:
+            self.refresh()
+
+    def _new_sheet(self) -> None:
+        tid = self.template.currentData()
+        if not tid:
+            self.status.setText(tr("Choose a template first."))
+            return
+        path, _ = QFileDialog.getSaveFileName(self, tr("New Spreadsheet from Template…"), str(Path(self._start_dir()) / "credits.csv"), tr("CSV (*.csv)"))
+        if path:
+            self.new_sheet_to(path)
+
+    def new_sheet_to(self, path: str) -> None:
+        """Write the chosen template's sample sheet and open it here."""
+        self.engine.execute(
+            "graphics.credits.template.newSheet",
+            {"id": self.template.currentData(), "to": path},
+            on_reply=lambda _r, _b: self.path.setText(path),
+            on_error=lambda m: self.status.setText(m),
+        )
+
+    def _save_template(self) -> None:
+        name, ok = QInputDialog.getText(self, tr("Save as Template…"), tr("Name of the template:"))
+        if ok and name.strip():
+            self.save_template(name.strip())
+
+    def save_template(self, name: str, where: str = "user") -> None:
+        """Save the spreadsheet's look (its styling or template, and its rows as the sample)."""
+
+        def done(result: Any, _b: bytes | None) -> None:
+            self.status.setText(tr("Template saved: {name}").replace("{name}", name))
+            self.load_templates(select=(result or {}).get("id") if isinstance(result, dict) else None)
+
+        self.engine.execute(
+            "graphics.credits.template.save",
+            {"name": name, "where": where, "from": self.params()},
+            on_reply=done,
+            on_error=lambda m: self.status.setText(m),
+        )
+
     def open_with(self, path: str | None = None) -> None:
+        # the project may have changed since: its templates with it
+        self.load_templates()
         if path:
             self.path.setText(path)
         self.show()

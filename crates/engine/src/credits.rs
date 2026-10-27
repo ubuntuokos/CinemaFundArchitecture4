@@ -166,8 +166,13 @@ type SheetInfo = cfa4_credits::office::Sheet;
 /// The credits document a command names: a `.cfa4credits` file, a spreadsheet (`path`, read
 /// now) or inline CSV text (`csv`). `styling` and `pictureDir` override the document's.
 /// Returns the document, the worksheet information and the folder pictures are read from.
-fn doc_p(cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
-    let styling = if p.get("styling").is_some_and(|v| !v.is_null()) { Some(styling_p(cmd, p)?) } else { None };
+fn doc_p(s: &Session, cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::path::PathBuf>)> {
+    // `styling` wins over `template`; a template brings its styling (and its fitting, below)
+    let template = match str_p(p, "template") {
+        Some(id) if p.get("styling").is_none_or(Value::is_null) => Some(find_template(s, cmd, id)?),
+        _ => None,
+    };
+    let styling = if p.get("styling").is_some_and(|v| !v.is_null()) { Some(styling_p(cmd, p)?) } else { template.as_ref().map(|t| t.styling.clone()) };
     let (mut doc, info, file_dir) = match (str_p(p, "csv"), str_p(p, "path")) {
         (Some(text), _) => {
             let mut info = cfa4_credits::read_rows(text.as_bytes(), None).map_err(|e| bad(cmd, e.to_string()))?;
@@ -209,6 +214,9 @@ fn doc_p(cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::pat
     }
     if let Some(d) = str_p(p, "pictureDir") {
         doc.picture_dir = Some(d.to_string());
+    }
+    if let Some(f) = template.and_then(|t| t.fit).filter(|_| doc.fit.is_none()) {
+        doc.fit = Some(f);
     }
     match p.get("fit") {
         None => {}
@@ -273,7 +281,7 @@ fn look_json(pg: &cfa4_credits::PageOut) -> (Value, Value) {
 
 fn preview(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.preview";
-    let (doc, sheet, base) = doc_p(CMD, p)?;
+    let (doc, sheet, base) = doc_p(s, CMD, p)?;
     let l = lay_doc(s, CMD, &doc, base.clone())?;
     let issues = issues_json(s, CMD, &doc, base, &l)?;
     let total: i64 = l.pages.iter().fold(0i64, |a, pg| a.saturating_add(pg.duration.0).saturating_add(pg.gap_after.0));
@@ -303,7 +311,7 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
 fn validate_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.validate";
     let (doc, base) = if p.get("path").is_some() || p.get("csv").is_some() {
-        let (d, _, b) = doc_p(CMD, p)?;
+        let (d, _, b) = doc_p(s, CMD, p)?;
         (d, b)
     } else {
         let d = group_doc(CMD, &group_p(s, CMD, p)?)?;
@@ -639,7 +647,7 @@ fn background_layer(bg: &cfa4_credits::Background, (fw, fh): (f64, f64)) -> Effe
 
 fn import(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.import";
-    let (doc, info, base) = doc_p(CMD, p)?;
+    let (doc, info, base) = doc_p(s, CMD, p)?;
     let l = lay_doc(s, CMD, &doc, base.clone())?;
     let warnings = warnings_json(&l);
     let t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
@@ -702,7 +710,7 @@ fn save(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.save";
     let out = str_p(p, "to").or_else(|| str_p(p, "file")).ok_or_else(|| bad(CMD, "need `to` (the .cfa4credits file to write)"))?.to_string();
     let doc = match p.get("from") {
-        Some(from) if from.is_object() => doc_p(CMD, from)?.0,
+        Some(from) if from.is_object() => doc_p(s, CMD, from)?.0,
         _ => group_doc(CMD, &group_p(s, CMD, p)?)?,
     };
     let out = if std::path::Path::new(&out).extension().is_some() { out } else { format!("{out}.{}", cfa4_credits::doc::EXTENSION) };
@@ -1012,7 +1020,7 @@ fn place_picture(
 /// and the page's spines; `grid` the baseline grid (one gap unit apart, moving with the page).
 fn thumbnail(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.thumbnail";
-    let (doc, _, base) = doc_p(CMD, p)?;
+    let (doc, _, base) = doc_p(s, CMD, p)?;
     let l = lay_doc(s, CMD, &doc, base)?;
     let index = u64_p(p, "page").unwrap_or(0) as usize;
     let pages = l.pages.len();
@@ -1426,8 +1434,252 @@ fn styles(_: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
+// ------------------------------------------------------------------------------------------------
+// Templates
+// ------------------------------------------------------------------------------------------------
+
+use cfa4_credits::template::{Category, CreditsTemplate};
+
+/// Where user credits templates live: `<data dir>/Credits Templates` (the data directory of the
+/// app's settings, or the headless engine's `--data-dir`).
+fn user_templates_dir(s: &Session) -> Option<std::path::PathBuf> {
+    s.prefs_path.as_ref().and_then(|p| p.parent()).or_else(|| s.export_presets.dir()).map(|d| d.join("Credits Templates"))
+}
+
+/// Every template: built in, the user's (files that fail to read are skipped) and the project's.
+/// With the file each user template was read from.
+fn template_library(s: &Session) -> Vec<(CreditsTemplate, Option<String>)> {
+    let mut v: Vec<(CreditsTemplate, Option<String>)> = cfa4_credits::template::builtin_templates().into_iter().map(|t| (t, None)).collect();
+    if let Some(dir) = user_templates_dir(s)
+        && let Some(Ok(mut names)) = s.services.list_dir(&dir.to_string_lossy())
+    {
+        names.sort();
+        let ext = format!(".{}", cfa4_credits::template::EXTENSION);
+        for n in names.into_iter().filter(|n| n.to_lowercase().ends_with(&ext)).take(1_000) {
+            let path = dir.join(&n).to_string_lossy().into_owned();
+            // a file too large to be a template is skipped without reading it
+            if s.services.file_size(&path).map_or(true, |n| n > cfa4_credits::template::MAX_TEMPLATE_BYTES as u64) {
+                continue;
+            }
+            if let Ok(b) = s.services.read_file(&path)
+                && let Ok(mut t) = CreditsTemplate::from_bytes(&b)
+            {
+                t.category = Category::User;
+                v.push((t, Some(path)));
+            }
+        }
+    }
+    for text in &s.project.credits_templates {
+        if let Ok(mut t) = CreditsTemplate::from_bytes(text.as_bytes()) {
+            t.category = Category::Project;
+            v.push((t, None));
+        }
+    }
+    v
+}
+
+/// A template by id or name (case-insensitive), or a `.cfa4credtpl` path. The project's and the
+/// user's come before the built-in ones of the same id.
+fn find_template(s: &Session, cmd: &str, id: &str) -> Result<CreditsTemplate> {
+    if id.to_lowercase().ends_with(&format!(".{}", cfa4_credits::template::EXTENSION)) {
+        let b = read_file_max(cmd, id, cfa4_credits::template::MAX_TEMPLATE_BYTES as u64)?;
+        return CreditsTemplate::from_bytes(&b).map_err(|e| bad(cmd, e.to_string()));
+    }
+    let lib = template_library(s);
+    let want = id.trim().to_lowercase();
+    lib.iter()
+        .rev()
+        .find(|(t, _)| t.id.to_lowercase() == want)
+        .or_else(|| lib.iter().rev().find(|(t, _)| t.name.trim().to_lowercase() == want))
+        .map(|(t, _)| t.clone())
+        .ok_or_else(|| bad(cmd, format!("there is no credits template `{id}`")))
+}
+
+fn template_json(t: &CreditsTemplate, path: Option<&String>) -> Value {
+    json!({
+        "id": t.id,
+        "name": t.name,
+        "description": t.description,
+        "category": t.category,
+        "source": t.source,
+        "license": t.license,
+        "path": path,
+        "pages": t.styling.page_styles.iter().map(|p| p.name.clone()).collect::<Vec<_>>(),
+        "fit": t.fit,
+    })
+}
+
+fn templates_cmd(s: &mut Session, _p: &Value) -> Result<Value> {
+    Ok(json!({"templates": template_library(s).iter().map(|(t, p)| template_json(t, p.as_ref())).collect::<Vec<_>>()}))
+}
+
+/// One template in full, with its sample sheet as CSV.
+fn template_get(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.get";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?;
+    let t = find_template(s, CMD, id)?;
+    Ok(json!({"template": serde_json::to_value(&t).unwrap_or(Value::Null), "sampleCsv": t.sample_csv()}))
+}
+
+/// Save a template: from placed credits (`clip` or the selection: their styling, table and
+/// fitting) or from `styling` (and an optional `sample` table) – to the user's templates
+/// (`where: "user"`, the default), the project (`"project"`, one undo step) or a file (`to`).
+fn template_save(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.save";
+    let name = str_p(p, "name").map(str::trim).filter(|n| !n.is_empty()).ok_or_else(|| bad(CMD, "need `name`"))?.to_string();
+    let mut t = CreditsTemplate {
+        id: cfa4_credits::template::slug(&name),
+        name: name.clone(),
+        description: str_p(p, "description").unwrap_or("").to_string(),
+        source: str_p(p, "source").unwrap_or("").to_string(),
+        license: str_p(p, "license").unwrap_or("").to_string(),
+        ..Default::default()
+    };
+    let mut base: Option<std::path::PathBuf> = None;
+    if let Some(from) = p.get("from").filter(|f| f.is_object()) {
+        // a spreadsheet with its styling or template, as the Credits window has them
+        let (doc, _, b) = doc_p(s, CMD, from)?;
+        base = b;
+        t.styling = doc.styling;
+        t.sample = doc.table.into_iter().take(200).collect();
+        t.fit = doc.fit;
+    } else if p.get("styling").is_some_and(|v| !v.is_null()) {
+        t.styling = styling_p(CMD, p)?;
+        if let Some(rows) = p.get("sample").and_then(Value::as_array) {
+            t.sample = rows
+                .iter()
+                .take(1_000)
+                .filter_map(Value::as_array)
+                .map(|r| r.iter().take(256).map(|c| c.as_str().unwrap_or("").to_string()).collect())
+                .collect();
+        }
+    } else {
+        let doc = group_doc(CMD, &group_p(s, CMD, p)?)?;
+        base = doc_base(&doc);
+        t.styling = doc.styling;
+        // the first rows show the structure; a long sheet is not a template
+        t.sample = doc.table.into_iter().take(200).collect();
+        t.fit = doc.fit;
+    }
+    if t.id.starts_with("cfa4-") {
+        t.id = format!("user-{}", t.id);
+    }
+    // a background picture or video is named where it was found, so the template finds it from
+    // any spreadsheet
+    absolute_backgrounds(&mut t.styling, base.as_deref());
+    let place = str_p(p, "where").unwrap_or(if p.get("to").is_some() { "file" } else { "user" });
+    match place {
+        "project" => {
+            t.category = Category::Project;
+            let text = t.to_json();
+            let id = t.id.clone();
+            s.edit("Save Credits Template", move |pr, _| {
+                pr.credits_templates.retain(|x| CreditsTemplate::from_bytes(x.as_bytes()).map(|o| o.id != id).unwrap_or(true));
+                pr.credits_templates.push(text);
+                Ok(())
+            })?;
+            Ok(json!({"id": t.id, "category": "project"}))
+        }
+        "user" | "file" => {
+            let path = match str_p(p, "to") {
+                Some(to) => to.to_string(),
+                None => {
+                    let dir = user_templates_dir(s).ok_or_else(|| bad(CMD, "there is no data directory for user templates (give `to`)"))?;
+                    std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("{}: {e}", dir.display())))?;
+                    dir.join(format!("{}.{}", t.id, cfa4_credits::template::EXTENSION)).to_string_lossy().into_owned()
+                }
+            };
+            s.services.write_file(&path, t.to_json().as_bytes()).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+            Ok(json!({"id": t.id, "category": "user", "path": path}))
+        }
+        other => Err(bad(CMD, format!("`where` is user, project or file, not `{other}`"))),
+    }
+}
+
+/// Background files of `styling` named relative to `base` become absolute where they exist.
+fn absolute_backgrounds(styling: &mut Styling, base: Option<&std::path::Path>) {
+    for ps in &mut styling.page_styles {
+        let bg = &mut ps.background;
+        if matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video)
+            && !std::path::Path::new(bg.file.trim()).is_absolute()
+            && let Some(p) = picture_path(base, &bg.file)
+        {
+            bg.file = std::fs::canonicalize(&p).unwrap_or(p).to_string_lossy().into_owned();
+        }
+    }
+}
+
+/// Delete a user or project template (built-in ones stay).
+fn template_delete(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.delete";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?.to_string();
+    let lib = template_library(s);
+    let (t, path) = lib.iter().rev().find(|(t, _)| t.id == id).ok_or_else(|| bad(CMD, format!("there is no credits template `{id}`")))?;
+    match t.category {
+        Category::Builtin => Err(bad(CMD, "built-in templates cannot be deleted")),
+        Category::User => {
+            let path = path.clone().ok_or_else(|| bad(CMD, "the template has no file"))?;
+            std::fs::remove_file(&path).map_err(|e| EngineError::Other(format!("{path}: {e}")))?;
+            Ok(json!({"deleted": id}))
+        }
+        Category::Project => {
+            s.edit("Delete Credits Template", move |pr, _| {
+                pr.credits_templates.retain(|x| CreditsTemplate::from_bytes(x.as_bytes()).map(|o| o.id != id).unwrap_or(true));
+                Ok(())
+            })?;
+            Ok(json!({"deleted": str_p(p, "id")}))
+        }
+    }
+}
+
+/// Give placed credits a template's look: its styling (and fitting, unless they are fitted
+/// already), keeping their rows and hand edits; one undo step.
+fn template_apply(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.apply";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?;
+    let t = find_template(s, CMD, id)?;
+    let group = group_p(s, CMD, p)?;
+    let old = group_doc(CMD, &group)?;
+    let mut doc = old.clone();
+    doc.styling = t.styling.clone();
+    if doc.fit.is_none() {
+        doc.fit = t.fit.clone();
+    }
+    let laid = lay_doc(s, CMD, &doc, doc_base(&doc))?;
+    let warnings = warnings_json(&laid);
+    let manual = manual_edits(s, &group)?;
+    let mut overrides = baselined(s, CMD, &old, &manual);
+    // a template can change the blocks' (default) style, and with it their keys: follow each
+    // block by its place in the sheet, which a new look does not change
+    if let (Ok(a), Ok(b)) = (old.credits(), doc.credits()) {
+        let (from, to) = (cfa4_credits::layout::block_prefixes(&a), cfa4_credits::layout::block_prefixes(&b));
+        if from.len() == to.len() {
+            for (k, _, _) in &mut overrides {
+                let (prefix, rest) = k.split_once('/').unwrap_or((k.as_str(), ""));
+                if let Some(i) = from.iter().position(|x| x == prefix)
+                    && let Some(new) = to.get(i)
+                {
+                    *k = format!("{new}/{rest}");
+                }
+            }
+        }
+    }
+    let out = replace_group(s, CMD, "Apply Credits Template", &group, &doc, laid, &overrides, None)?;
+    Ok(json!({"clips": out.0, "end": out.1.0, "template": t.id, "warnings": warnings}))
+}
+
+/// Write a template's sample sheet as a CSV file to start new credits from.
+fn template_sheet(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "graphics.credits.template.newSheet";
+    let id = str_p(p, "id").ok_or_else(|| bad(CMD, "need `id`"))?;
+    let to = str_p(p, "to").ok_or_else(|| bad(CMD, "need `to` (the .csv file to write)"))?.to_string();
+    let t = find_template(s, CMD, id)?;
+    s.services.write_file(&to, t.sample_csv().as_bytes()).map_err(|e| EngineError::Other(format!("{to}: {e}")))?;
+    Ok(json!({"path": to, "rows": t.sample.len()}))
+}
+
 pub fn commands() -> Vec<CommandSpec> {
-    const P: &str = r#"{"path":str (.csv, .tsv, .xlsx, .ods, .cfa4credits)?,"sheet":name|number (a worksheet of an .xlsx / .ods; default the first)?,"pictureDir":str (folder of {{Pic file}} pictures; default the spreadsheet's folder)?,"csv":str (the table as text)?,"styling":object|JSON text|path of a .json?,"time":ticks?,"track":index?}"#;
+    const P: &str = r#"{"path":str (.csv, .tsv, .xlsx, .ods, .cfa4credits)?,"sheet":name|number (a worksheet of an .xlsx / .ods; default the first)?,"pictureDir":str (folder of {{Pic file}} pictures; default the spreadsheet's folder)?,"csv":str (the table as text)?,"styling":object|JSON text|path of a .json?,"template":id|name|path (its styling and fitting; `styling` wins)?,"time":ticks?,"track":index?}"#;
     vec![
         CommandSpec {
             id: "graphics.credits.import",
@@ -1518,6 +1770,66 @@ pub fn commands() -> Vec<CommandSpec> {
             enabled: has_credits_selection,
             run: refresh,
             journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.templates",
+            label: "Credits Templates",
+            menu: &[],
+            shortcut: None,
+            params: "{}",
+            enabled: always,
+            run: templates_cmd,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.get",
+            label: "Credits Template",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"id":id|name|.cfa4credtpl path}"#,
+            enabled: always,
+            run: template_get,
+            journal: false,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.save",
+            label: "Save Credits Template…",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"name":str,"description":str?,"license":str?,"source":str?,"where":"user"|"project"|"file"?,"to":path?,"clip":id? (placed credits; default the selection),"from":{import parameters}? (a spreadsheet with its styling or template),"styling":object|JSON|path? (instead of placed credits),"sample":[[str]]?}"#,
+            enabled: always,
+            run: template_save,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.delete",
+            label: "Delete Credits Template",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"id":id}"#,
+            enabled: always,
+            run: template_delete,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.apply",
+            label: "Apply Credits Template…",
+            menu: &["Graphics and Titles"],
+            shortcut: None,
+            params: r#"{"id":id|name|path,"clip":id? (default the selection)}"#,
+            enabled: has_credits_selection,
+            run: template_apply,
+            journal: true,
+        },
+        CommandSpec {
+            id: "graphics.credits.template.newSheet",
+            label: "New Credits Spreadsheet from Template",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"id":id|name|path,"to":path (.csv)}"#,
+            enabled: always,
+            run: template_sheet,
+            journal: false,
         },
         CommandSpec {
             id: "graphics.credits.styles",

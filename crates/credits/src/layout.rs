@@ -653,6 +653,20 @@ fn piece_key(bk: u64, nth: usize, k: usize, name: &str) -> String {
     if nth == 0 { format!("{bk:016x}/{k}/{name}") } else { format!("{bk:016x}#{nth}/{k}/{name}") }
 }
 
+/// Every block's key prefix (the part of its layers' keys before the first `/`), in sheet order.
+pub fn block_prefixes(credits: &Credits) -> Vec<String> {
+    let occ = occurrences(credits);
+    let mut v = Vec::new();
+    for (pi, p) in credits.pages.iter().enumerate() {
+        for (bi, b) in p.blocks.iter().enumerate() {
+            let nth = occ.get(pi).and_then(|x| x.get(bi)).copied().unwrap_or(0);
+            let key = piece_key(block_key(b), nth, 0, "");
+            v.push(key.split_once('/').map(|x| x.0.to_string()).unwrap_or(key));
+        }
+    }
+    v
+}
+
 /// For each page and block: how many identical blocks come before it.
 fn occurrences(credits: &Credits) -> Vec<Vec<usize>> {
     let mut seen: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
