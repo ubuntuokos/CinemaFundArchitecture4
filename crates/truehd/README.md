@@ -35,14 +35,20 @@ allows.
 - `cfa4.rs` (new) is the interface the rest of CFA4 uses: [`cfa4::Decoder`] takes container
   packets and gives planar `f32` channels in CFA4's WAV / SMPTE order, plus the helpers the
   Matroska / MP4 sources use for packet timing and seek pre-roll.
+- `render.rs` (new) renders the Atmos object presentation to loudspeakers.
 - Formatted with the workspace's `rustfmt` settings; doc examples name `cfa4_truehd`.
 
 ## What it decodes
 
 - FBA (TrueHD) and FBB (MLP) streams, 44.1–192 kHz, up to 24 bits.
 - The 2-, 6- and 8-channel presentations; `cfa4::Decoder` picks the largest of them. Dolby Atmos
-  streams carry a 7.1 (or 5.1) bed presentation, which is decoded; the 16-channel object
-  presentation needs an object renderer and is not (the Atmos object metadata, OAMD, is parsed).
+  streams carry a 7.1 (or 5.1) bed presentation, which is decoded.
+- Dolby Atmos objects: `cfa4::Decoder::with_objects(layout)` decodes the 16-channel object
+  presentation and renders its beds and dynamic objects with the Object Audio Metadata (OAMD) to
+  2.0, 5.1, 7.1 or 7.1.4 (`render.rs`, new for CFA4; the module notes list its rendering choices).
+  Programs with intermediate spatial format objects fall back to the bed presentation. Checked on
+  synthetic OAMD only: no real Atmos stream has been tried yet (#124). Not rendered: binaural
+  (#125), screen reference, divergence and trims (#127). E-AC-3 JOC is not decoded (#126).
 
 ## Tests
 
@@ -52,6 +58,10 @@ allows.
   scrambled bytes) never panic.
 - `crates/codecs/tests/truehd_oracle.rs`: TrueHD in Matroska and MP4, bit-exact, also on random
   access.
+- `src/render/tests.rs`: the panner (each loudspeaker, constant power, zones, snap, elevation,
+  beds), ramps across calls, OAMD payloads written bit by bit and parsed back, mangled payloads.
+- `tests/oracle.rs` `a_real_atmos_stream_renders_like_its_bed_presentation`: runs on a real Atmos
+  `.thd` named by `CFA4_ATMOS_SAMPLE` (skipped without one).
 - The upstream unit tests.
 
 No free encoder writes 7.1 TrueHD, so 8-channel presentations are covered only by the upstream
