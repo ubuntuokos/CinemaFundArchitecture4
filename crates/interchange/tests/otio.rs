@@ -360,3 +360,104 @@ proptest! {
         prop_assert_eq!(links(&imp.project, si), links(&p, s));
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-1.1: fixtures for the external OpenTimelineIO test oracle
+// (`python -m cfa4_devtools.otio_oracle`, docs/plans/OTIO-INTEGRATION-2026-10-24.md).
+//
+// `oracle_fixtures` exports every sequence these tests build to OTIO and writes, next to the
+// files, a `manifest.json` with what the project holds: per track (in export order: video, then
+// audio) every clip's name, timeline start and duration in exact ticks, and its marker count. The
+// official `opentimelineio` package then reads the files and checks them against the manifest with
+// its own timing rules. Files are only written when `CFA4_OTIO_ORACLE_DIR` is set; without it the
+// test still exports everything and checks the manifest is consistent.
+// ---------------------------------------------------------------------------------------------
+
+/// A fixed sequence that uses every timing feature the exporter writes: gaps, all three transition
+/// alignments, a lone fade-in, speed changes, reverse, a frame hold, a disabled clip and linked
+/// audio at a sub-frame (sample) position.
+fn mixed(rate: FrameRate) -> (Project, cfa4_project::ItemId) {
+    let mut p = Project::new("P");
+    let m = [media(&mut p, "/x/one.mov", true, true, rate), media(&mut p, "/x/two.mov", true, true, rate)];
+    let s = sequence(&mut p, "Mixed", rate, rate == FrameRate::FPS_29_97);
+    let fade = clip(&mut p, s, TrackKind::Video, 0, m[0], 10, 40, 100);
+    transition(&mut p, s, TrackKind::Video, 0, "cross_dissolve", None, Some(fade), 10, 8, TransitionAlign::StartAtCut);
+    let fast = clip(&mut p, s, TrackKind::Video, 0, m[1], 50, 30, 7);
+    transition(&mut p, s, TrackKind::Video, 0, "cross_dissolve", Some(fade), Some(fast), 46, 8, TransitionAlign::CenterAtCut);
+    let rev = clip(&mut p, s, TrackKind::Video, 0, m[0], 80, 25, 300);
+    transition(&mut p, s, TrackKind::Video, 0, "dip_to_white", Some(fast), Some(rev), 80, 6, TransitionAlign::StartAtCut);
+    let hold = clip(&mut p, s, TrackKind::Video, 0, m[1], 105, 20, 40);
+    transition(&mut p, s, TrackKind::Video, 0, "push", Some(rev), Some(hold), 101, 4, TransitionAlign::EndAtCut);
+    let off = clip(&mut p, s, TrackKind::Video, 1, m[1], 33, 17, 0);
+    let a = clip(&mut p, s, TrackKind::Audio, 0, m[0], 10, 40, 100);
+    link(&mut p, s, &[fade, a]);
+    let q = p.sequence_mut(s).unwrap();
+    q.find_item_mut(fast).unwrap().1.speed = 2.0;
+    q.find_item_mut(rev).unwrap().1.reverse = true;
+    q.find_item_mut(hold).unwrap().1.frame_hold = Some(rate.tick_of(45));
+    q.find_item_mut(off).unwrap().1.enabled = false;
+    let ai = q.find_item_mut(a).unwrap().1;
+    ai.start = rate.tick_of(10) + Tick(TICKS_PER_SECOND / 48_000 * 13);
+    (p, s)
+}
+
+/// What the oracle expects to find in the exported file of sequence `s`.
+fn oracle_expectation(p: &Project, s: cfa4_project::ItemId, file: &str) -> serde_json::Value {
+    let seq = p.sequence(s).unwrap();
+    let tracks: Vec<serde_json::Value> = [TrackKind::Video, TrackKind::Audio]
+        .into_iter()
+        .flat_map(|kind| seq.tracks(kind).iter().map(move |t| (kind, t)))
+        .map(|(kind, t)| {
+            let items: Vec<serde_json::Value> = t
+                .items
+                .iter()
+                .map(|it| serde_json::json!({"name": it.name, "start_ticks": it.start.0, "duration_ticks": it.duration.0, "markers": it.markers.len()}))
+                .collect();
+            serde_json::json!({"kind": if kind == TrackKind::Video { "Video" } else { "Audio" }, "name": t.name, "items": items})
+        })
+        .collect();
+    serde_json::json!({"file": file, "name": p.item(s).unwrap().name, "markers": seq.markers.len(), "tracks": tracks})
+}
+
+#[test]
+fn oracle_fixtures() {
+    let mut cases: Vec<(String, Project, cfa4_project::ItemId, ExportOptions)> = Vec::new();
+    let (p, s) = project();
+    cases.push(("outer.otio".into(), p.clone(), s, ExportOptions::default()));
+    cases.push(("outer_relative.otio".into(), p, s, ExportOptions { relative_to: Some("/m/otio".into()), ..Default::default() }));
+    let (imp, _) = import(doc().as_bytes(), Format::Otio, Some("/proj")).unwrap();
+    let sid = only_seq(&imp);
+    cases.push(("river_story.otio".into(), imp.project, sid, ExportOptions::default()));
+    for (tag, rate) in [
+        ("23976", FrameRate::FPS_23_976),
+        ("24", FrameRate::FPS_24),
+        ("25", FrameRate::FPS_25),
+        ("2997df", FrameRate::FPS_29_97),
+        ("5994", FrameRate::FPS_59_94),
+    ] {
+        let (p, s) = mixed(rate);
+        cases.push((format!("mixed_{tag}.otio"), p, s, ExportOptions::default()));
+    }
+
+    let out = std::env::var_os("CFA4_OTIO_ORACLE_DIR").map(std::path::PathBuf::from);
+    if let Some(dir) = &out {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    let mut fixtures = Vec::new();
+    for (file, p, s, opts) in &cases {
+        let (bytes, rep) = cfa4_interchange::export(p, *s, Format::Otio, opts).unwrap();
+        assert!(!rep.has_warnings(), "{file}: {rep}");
+        let exp = oracle_expectation(p, *s, file);
+        // the manifest must describe what was exported: as many items per track as the project has
+        let n: usize = exp["tracks"].as_array().unwrap().iter().map(|t| t["items"].as_array().unwrap().len()).sum();
+        assert!(n > 0, "{file}: empty fixture");
+        if let Some(dir) = &out {
+            std::fs::write(dir.join(file), &bytes).unwrap();
+        }
+        fixtures.push(exp);
+    }
+    if let Some(dir) = &out {
+        let manifest = serde_json::json!({"version": 1, "ticks_per_second": TICKS_PER_SECOND, "fixtures": fixtures});
+        std::fs::write(dir.join("manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
+    }
+}
