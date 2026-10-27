@@ -102,7 +102,8 @@ impl Plane {
     }
 }
 
-/// A decoded, cropped picture in planar 4:2:0.
+/// A decoded, cropped planar picture: 4:2:0 (also for monochrome streams, with grey chroma),
+/// 4:2:2 or 4:4:4 as [`Picture::chroma_format`] says.
 #[derive(Clone, Debug)]
 pub struct Picture {
     /// Cropped luma width.
@@ -111,6 +112,8 @@ pub struct Picture {
     pub height: u32,
     pub chroma_width: u32,
     pub chroma_height: u32,
+    /// Geometry of the chroma planes as `chroma_format_idc`: 1 = 4:2:0, 2 = 4:2:2, 3 = 4:4:4.
+    pub chroma_format: u32,
     /// Luma bit depth (chroma uses the same storage type).
     pub bit_depth: u32,
     pub y: Plane,
