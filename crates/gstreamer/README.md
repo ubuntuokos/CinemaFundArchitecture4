@@ -8,7 +8,8 @@ Decision and rules: [ADR 0002](../../docs/adr/ADR-0002-gstreamer-backend.md).
 
 - `probe()`: GStreamer version and whether each element of `CATALOGUE` is installed, with the
   plugin, package and licence the plugin declares. The catalogue covers the planned areas:
-  vendor-neutral hardware decoding and encoding (VA-API, Vulkan Video), Qt6 preview
+  vendor-neutral hardware decoding and encoding (VA-API, Vulkan Video), OpenMAX IL elements from
+  `gst-omx` where a vendor ships OpenMAX components ([cinema-codecs.md](../../docs/cinema-codecs.md)), Qt6 preview
   (`qml6glsink`), capture (PipeWire, V4L2) and general pipeline elements.
 - `discover(path, timeout)`: container, duration (exact `Tick`s), seekability and the video,
   audio and subtitle streams of a file, through GStreamer's `Discoverer`.

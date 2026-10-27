@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-24 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-10-25 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -30,10 +30,17 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
 1. **Qt6-felület az első prioritás.** A célfelület Qt6 (Qt6 Widgets + PySide6). A meglévő Rust
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
-   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
-   A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
-   VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
-   tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.
+   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat **pontról pontra**
+   nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
+   befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
+   (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
+   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább 9.0.2)
+   és a **GStreamer** (hardveres kódolás nem NVIDIA GPU-n, VP9/AV1 hardveres dekódolás,
+   Qt6-előnézet, felvétel, egyéb formátumok), később további motorok is. Alapértelmezés az Ubuntu
+   tárolóiból telepített rendszer-GStreamer; elkülönített, CFA4 saját futtatókörnyezete csak akkor
+   kell, ha egy funkcióhoz újabb verzió szükséges. Hogy melyik feladatot melyik végzi, azt egy
+   **automatikus útválasztó** dönti el; a saját motor mindig tartalék. Részletek:
+   `docs/adr/ADR-0005-media-backends.md`, `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
@@ -90,6 +97,12 @@ További, eddig hiányzó területek:
 - **Publikálás:** kész videó előkészítése és feltöltése videómegosztókra, platformonkénti előbeállításokkal.
 - **Szinkronizálás:** átirat → fordítás → helyi gépi hang vagy saját felvétel → időzítés az eredeti szájmozgáshoz és vágáshoz.
 - **3D animáció:** 3D-s jelenetek, címek és animáció (a pontos mélység külön döntés).
+- **Élő adás (tervezet):** a CFA4 grafikái (stáblista, alsó harmad, címek, szponzorkártya) élő
+  műsorban is használhatók: előnézet és program, előre felkészített elemek (cue-k) betöltése,
+  indítása (TAKE), léptetése (NEXT) és levétele (OUT), élő adatfrissítés. Az OBS külső
+  adáskezelőként kapcsolódik (Browser Source, obs-websocket), nem ő irányítja a CFA4-et.
+  Tulajdonosi döntés (2026-10-25): **kell**, de egyelőre **tervezet** – a megvalósítás
+  ütemezése és mélysége külön döntés.
 
 ## 5. MI-funkciók (alapvetően helyi)
 
@@ -115,7 +128,8 @@ rögzíteni kell a licencét és a forrását, a modellek nem töltődnek le a f
 2. **Futás minden grafikus Ubuntu-változaton** (3. pont): Wayland és X11 teszt.
 3. A meglévő vágóképességek átemelése a Qt6-felületre, Premiere-paritás folytatása.
 4. Új területek fokozatosan: konvertálás → feliratozás → hangszerkesztés → szinkron → publikálás
-   → 2D animáció → 3D/VFX.
+   → 2D animáció → 3D/VFX. Az élő adás tervezet (4. pont); a helyét ebben a sorban külön döntés
+   jelöli ki.
 5. MI-funkciók mindegyik területhez, helyben.
 
 ## 7. Kapcsolódó dokumentumok
@@ -136,5 +150,7 @@ A dokumentumok és a hozzájuk tartozó kód a `main`-ben vannak (#35, 2026-10-2
 
 - A 3D animáció és VFX mélysége (egyszerű 3D címek vagy teljes 3D jelenetszerkesztés).
 - Mely videómegosztókra lehessen publikálni.
+- Az élő adás ütemezése és mélysége: csak OBS-kapcsolat, vagy saját élő grafikai futtató és
+  műsorterv (rundown) is; mikor kerüljön sorra a 6. pont sorrendjében.
 - Mennyi MI-modell kerüljön a csomagba, és melyik legyen külön letölthető (a felhasználó jóváhagyásával).
 - Az „alapvetően helyi” MI mellett megengedett-e kivételesen, kifejezett felhasználói engedéllyel felhős szolgáltatás.

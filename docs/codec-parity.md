@@ -9,7 +9,8 @@ pure Rust from public specifications ([AGENTS.md](../AGENTS.md) §2); ffmpeg is 
 
 Premiere's list comes from Adobe's published supported-formats pages and the names of the
 installed bundle's `MediaIO/systempresets` and `Frameworks` entries (listings only, never their
-contents). Percent is ready-for-real-work for that codec: depth, profiles, speed.
+contents). Percent is ready-for-real-work for that codec: depth, profiles, speed. The plan for
+Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.md).
 
 ## Video
 
