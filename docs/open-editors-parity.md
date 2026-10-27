@@ -1,6 +1,6 @@
 # Hét nyílt vágóprogram: mit vehet át belőlük a CFA4
 
-> **Állapot:** a tulajdonos 2026-10-27-én döntött (6. pont) · **Készült:** 2026-10-27 ·
+> **Állapot:** a tulajdonos 2026-10-27-én jóváhagyta (döntések: 6. pont; a források a [`VISION.md` 4. pontjában](../VISION.md#4-egyesítendő-programok-és-képességeik)) · **Készült:** 2026-10-27 ·
 > **CFA4:** `main` @ `16debf9` · **Kapcsolódik:** [`kdenlive-parity.md`](kdenlive-parity.md)
 > (K1–K35, PR #325), [`venturi-parity.md`](venturi-parity.md) (V1–V10, PR #326),
 > [`gaps.md`](gaps.md) (G-számok), [`licensing.md`](licensing.md), [ADR 0004](adr/ADR-0004-compute-routing.md)
@@ -354,3 +354,4 @@ nyilvántartásban. A Concat kódját továbbra se nézd (AGPL).
 
 - 2026-10-27: első változat (E1–E15).
 - 2026-10-27: a tulajdonos döntött; minden MI-tétel az MI-réteg mögé került, E9 előkészítéssel.
+- 2026-10-27: a tulajdonos jóváhagyta a tervet; a hét program bekerült a `VISION.md` 4. pontjába.
