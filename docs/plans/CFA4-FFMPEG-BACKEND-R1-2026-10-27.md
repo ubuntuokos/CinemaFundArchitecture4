@@ -635,7 +635,7 @@ Feladatok:
 Feladatok:
 1. FFmpeg encoder és mux adapter.
 2. Egységes CFA4 exportjob-kezelés.
-3. Atomic writer.
+3. A közös `cfa4-export` atomikus író használata (CFA4-SCE-001 v1.5, 6. döntés; nem készül második író).
 4. Filter- és resample-illesztés.
 5. Cancel/progress.
 6. Kimeneti visszaellenőrzés.
