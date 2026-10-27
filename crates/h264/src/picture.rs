@@ -77,7 +77,40 @@ impl Sample for u16 {
     }
 }
 
-/// Planar 4:2:0 sample buffers (MB-aligned dimensions, stride == width).
+/// Chroma sampling of a picture: ChromaArrayType (6.2) 0 = monochrome (stored as neutral 4:2:0
+/// planes), 1 = 4:2:0, 2 = 4:2:2, 3 = 4:4:4.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Chroma(pub u8);
+
+impl Chroma {
+    /// log2(SubWidthC) of the stored chroma planes.
+    #[inline(always)]
+    pub fn sx(self) -> usize {
+        (self.0 != 3) as usize
+    }
+    /// log2(SubHeightC) of the stored chroma planes.
+    #[inline(always)]
+    pub fn sy(self) -> usize {
+        (self.0 < 2) as usize
+    }
+    /// MbWidthC.
+    #[inline(always)]
+    pub fn mb_w(self) -> usize {
+        16 >> self.sx()
+    }
+    /// MbHeightC.
+    #[inline(always)]
+    pub fn mb_h(self) -> usize {
+        16 >> self.sy()
+    }
+    /// Chroma is coded (not monochrome).
+    #[inline(always)]
+    pub fn coded(self) -> bool {
+        self.0 != 0
+    }
+}
+
+/// Planar sample buffers (MB-aligned dimensions, stride == width).
 #[derive(Clone)]
 pub struct Planes<S> {
     pub y: Vec<S>,
@@ -86,18 +119,19 @@ pub struct Planes<S> {
     pub width: usize,
     pub height: usize,
     pub cwidth: usize,
+    pub chroma: Chroma,
 }
 
 impl<S: Sample> Planes<S> {
     /// Buffers for a `width × height` picture of `bit_depth` bits: luma black, chroma neutral.
-    pub fn new(width: usize, height: usize, bit_depth: u32) -> Self {
-        let (cw, ch) = (width / 2, height / 2);
+    pub fn new(width: usize, height: usize, bit_depth: u32, chroma: Chroma) -> Self {
+        let (cw, ch) = (width >> chroma.sx(), height >> chroma.sy());
         let mid = S::from_i32(1 << bit_depth.saturating_sub(1));
-        Planes { y: vec![S::default(); width * height], cb: vec![mid; cw * ch], cr: vec![mid; cw * ch], width, height, cwidth: cw }
+        Planes { y: vec![S::default(); width * height], cb: vec![mid; cw * ch], cr: vec![mid; cw * ch], width, height, cwidth: cw, chroma }
     }
     /// Every plane neutral (a picture that could not be decoded).
-    pub fn gray(width: usize, height: usize, bit_depth: u32) -> Self {
-        let mut p = Self::new(width, height, bit_depth);
+    pub fn gray(width: usize, height: usize, bit_depth: u32, chroma: Chroma) -> Self {
+        let mut p = Self::new(width, height, bit_depth, chroma);
         p.y.fill(S::from_i32(1 << bit_depth.saturating_sub(1)));
         p
     }
@@ -144,8 +178,9 @@ pub struct MbState {
     pub intra_modes: [u8; 16],
     /// CAVLC: TotalCoeff per luma 4x4 block (raster). CABAC: coded_block_flag.
     pub nnz: [u8; 16],
-    /// Same for chroma AC blocks [Cb, Cr][raster 2x2].
-    pub nnz_c: [[u8; 4]; 2],
+    /// Same for the chroma blocks [Cb, Cr][raster 4x4 index (row * 4 + column) of the MbWidthC / 4 x
+    /// MbHeightC / 4 grid]: AC blocks, or every block in 4:4:4.
+    pub nnz_c: [[u8; 16]; 2],
     /// CABAC coded_block_flag of DC blocks: bit0 luma (I16x16), bit1 Cb, bit2 Cr.
     pub cbf_dc: u8,
     /// Luma 4x4 blocks (raster bit) with non-zero coefficients, for deblocking bS = 2.
@@ -178,7 +213,7 @@ impl Default for MbState {
             intra_chroma_mode: 0,
             intra_modes: [2; 16],
             nnz: [0; 16],
-            nnz_c: [[0; 4]; 2],
+            nnz_c: [[0; 16]; 2],
             cbf_dc: 0,
             nz_mask: 0,
             ref_idx: [[-1; 4]; 2],
@@ -194,7 +229,7 @@ impl Default for MbState {
 pub struct FrameRow<S> {
     /// 16 luma lines.
     pub y: Box<[S]>,
-    /// 8 lines per chroma component.
+    /// MbHeightC lines per chroma component.
     pub cb: Box<[S]>,
     pub cr: Box<[S]>,
     /// Per 4x4 block: index mb_x * 16 + raster.
@@ -217,6 +252,7 @@ pub struct Frame {
     pub height: usize,
     pub cwidth: usize,
     pub cheight: usize,
+    pub chroma: Chroma,
     pub mb_w: usize,
     /// Bits per sample of both luma and chroma (8 for 8-bit storage, 9..=14 for 16-bit).
     pub bit_depth: u32,
@@ -239,9 +275,9 @@ impl Rows {
 }
 
 impl Frame {
-    pub fn new(id: u32, poc: i32, mb_w: usize, mb_h: usize, bit_depth: u32) -> Self {
+    pub fn new(id: u32, poc: i32, mb_w: usize, mb_h: usize, bit_depth: u32, chroma: Chroma) -> Self {
         let rows = if bit_depth > 8 { Rows::U16((0..mb_h).map(|_| OnceLock::new()).collect()) } else { Rows::U8((0..mb_h).map(|_| OnceLock::new()).collect()) };
-        Frame { id, poc, width: mb_w * 16, height: mb_h * 16, cwidth: mb_w * 8, cheight: mb_h * 8, mb_w, bit_depth, rows }
+        Frame { id, poc, width: mb_w * 16, height: mb_h * 16, cwidth: mb_w * chroma.mb_w(), cheight: mb_h * chroma.mb_h(), chroma, mb_w, bit_depth, rows }
     }
 
     pub fn mb_h(&self) -> usize {
@@ -294,10 +330,11 @@ impl Frame {
     pub fn make_row<S: Sample>(planes: &Planes<S>, r: usize, mbs: &[MbState], ref_ids: &dyn Fn(&MbState, usize, i8) -> u32) -> FrameRow<S> {
         let w = planes.width;
         let cw = planes.cwidth;
+        let mbh = planes.chroma.mb_h();
         let mb_w = w / 16;
         let y = planes.y.get(r * 16 * w..(r + 1) * 16 * w).unwrap_or(&[]).into();
-        let cb = planes.cb.get(r * 8 * cw..(r + 1) * 8 * cw).unwrap_or(&[]).into();
-        let cr = planes.cr.get(r * 8 * cw..(r + 1) * 8 * cw).unwrap_or(&[]).into();
+        let cb = planes.cb.get(r * mbh * cw..(r + 1) * mbh * cw).unwrap_or(&[]).into();
+        let cr = planes.cr.get(r * mbh * cw..(r + 1) * mbh * cw).unwrap_or(&[]).into();
         let row_mbs = mbs.get(r * mb_w..(r + 1) * mb_w).unwrap_or(&[]);
         let mut mv = [vec![[0i16; 2]; mb_w * 16], vec![[0i16; 2]; mb_w * 16]];
         let mut ref_idx = [vec![-1i8; mb_w * 4], vec![-1i8; mb_w * 4]];
@@ -329,7 +366,7 @@ impl Frame {
     /// frames inferred for frame_num gaps.
     pub fn from_planes<S: Sample>(id: u32, poc: i32, planes: &Planes<S>, bit_depth: u32) -> Self {
         let (mb_w, mb_h) = (planes.width / 16, planes.height / 16);
-        let f = Frame::new(id, poc, mb_w, mb_h, bit_depth);
+        let f = Frame::new(id, poc, mb_w, mb_h, bit_depth, planes.chroma);
         let blank = vec![MbState::default(); mb_w * mb_h];
         for r in 0..mb_h {
             f.publish(r, Frame::make_row(planes, r, &blank, &|_, _, _| u32::MAX));
@@ -351,17 +388,20 @@ impl Frame {
         }
     }
 
-    /// Copy the w x h window of chroma component `c` at (x0, y0) (clamped) into `out`.
+    /// Copy the w x h window of chroma component `c` at (x0, y0) (clamped) into `out`. When `w`
+    /// is at most `N`, `out` must have room for `N` samples after the start of each line. `SHIFT`
+    /// is log2(MbHeightC): 3 for 4:2:0, 4 for 4:2:2 and 4:4:4.
     #[inline]
-    pub fn chroma_window<S: Sample>(&self, c: usize, x0: i32, y0: i32, w: usize, h: usize, out: &mut [S], os: usize) {
+    pub fn chroma_window<S: Sample, const N: usize, const SHIFT: u32>(&self, c: usize, x0: i32, y0: i32, w: usize, h: usize, out: &mut [S], os: usize) {
         let (cw, ch) = (self.cwidth, self.cheight);
+        let (shift, mask) = (SHIFT, (1usize << SHIFT) - 1);
         for r in 0..h {
             let yy = (y0 + r as i32).clamp(0, ch as i32 - 1) as usize;
-            let Some(row) = self.row::<S>(yy >> 3) else { return };
+            let Some(row) = self.row::<S>(yy >> shift) else { return };
             let plane = if c == 0 { &row.cb } else { &row.cr };
-            let Some(line) = plane.get((yy & 7) * cw..(yy & 7) * cw + cw) else { return };
+            let Some(line) = plane.get((yy & mask) * cw..(yy & mask) * cw + cw) else { return };
             if let Some(dst) = out.get_mut(r * os..) {
-                copy_line::<S, 16>(line, x0, dst, w);
+                copy_line::<S, N>(line, x0, dst, w);
             }
         }
     }
@@ -374,6 +414,13 @@ impl Frame {
         }
     }
 
+    /// The chroma rectangle (x, y, width, height) of the luma crop rectangle `crop`.
+    pub fn chroma_crop(&self, crop: (usize, usize, usize, usize)) -> (usize, usize, usize, usize) {
+        let (cx, cy, cw, ch) = crop;
+        let (sx, sy) = (self.chroma.sx(), self.chroma.sy());
+        (cx >> sx, cy >> sy, (cw + (1 << sx) - 1) >> sx, (ch + (1 << sy) - 1) >> sy)
+    }
+
     fn copy_cropped_as<S: Sample>(&self, crop: (usize, usize, usize, usize)) -> (crate::Plane, crate::Plane, crate::Plane) {
         let (cx, cy, cw, ch) = crop;
         let mut y = S::plane_buffer(cw * ch);
@@ -381,12 +428,14 @@ impl Frame {
             let Some(row) = self.row::<S>(r >> 4) else { break };
             y.extend_from_slice(row.y.get((r & 15) * self.width + cx..(r & 15) * self.width + cx + cw).unwrap_or(&[]));
         }
-        let (ccx, ccy, ccw, cch) = (cx / 2, cy / 2, cw.div_ceil(2), ch.div_ceil(2));
+        let (ccx, ccy, ccw, cch) = self.chroma_crop(crop);
+        let shift = 4 - self.chroma.sy();
+        let mask = (1 << shift) - 1;
         let mut u = S::plane_buffer(ccw * cch);
         let mut v = S::plane_buffer(ccw * cch);
         for r in ccy..ccy + cch {
-            let Some(row) = self.row::<S>(r >> 3) else { break };
-            let o = (r & 7) * self.cwidth + ccx;
+            let Some(row) = self.row::<S>(r >> shift) else { break };
+            let o = (r & mask) * self.cwidth + ccx;
             u.extend_from_slice(row.cb.get(o..o + ccw).unwrap_or(&[]));
             v.extend_from_slice(row.cr.get(o..o + ccw).unwrap_or(&[]));
         }
