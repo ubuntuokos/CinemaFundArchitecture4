@@ -3957,6 +3957,12 @@ fn interpolation_id(i: cfa4_project::Interpolation) -> &'static str {
         I::ContinuousBezier => "continuousBezier",
         I::EaseIn => "easeIn",
         I::EaseOut => "easeOut",
+        I::Sine => "sine",
+        I::Expo => "expo",
+        I::Circ => "circ",
+        I::Overshoot => "overshoot",
+        I::Elastic => "elastic",
+        I::Bounce => "bounce",
     }
 }
 
