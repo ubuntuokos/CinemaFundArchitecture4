@@ -12,7 +12,7 @@
 > **Állapot-megjegyzés (2026-10-27, a repóba emeléskor):** a tulajdonos által megadott terv szövege
 > változatlan; e megjegyzésen kívül két módosítás történt: az upstream ős nevét a repository függetlenségi szabálya miatt
 > (`python/tests/test_independence.py`) általános megnevezés helyettesíti, és a 2. fejezet PR-táblázata
-> a #224 állapotát frissíti. A #224 2026-10-27-én egyesült (`85b4fc1`): az ADR 0005 a `main`-ben van,
+> a #224 állapotát frissíti. A 3. fejezet wrapper-jelöltjét a tulajdonos 2026-10-27-i döntése semlegesítette. A #224 2026-10-27-én egyesült (`85b4fc1`): az ADR 0005 a `main`-ben van,
 > az `AGENTS.md` és a `CLAUDE.md` a tervezett `cfa4-ffmpeg` crate-en keresztül, a `VISION.md` kiegészítő
 > háttérmotorként engedi az FFmpeg ≥ 9.0.2-t. Az FF-00-ból így a licencvizsgálat (WTFPL nincs a `deny.toml`
 > listáján), a worker/FFI biztonsági határ dokumentálása és a Smart Cut különválasztásának rögzítése
@@ -146,13 +146,13 @@ A vizsgálat összehasonlítja:
 9. Futásidejű hibák kezelését.
 10. A szükséges CFA4-specifikus adapterkód mennyiségét.
 
-**Elsődleges jelölt: `ffmpeg-next`, feltételesen.**
+**Tulajdonosi döntés (2026-10-27): nincs előre kijelölt elsődleges jelölt; az FF-01 mérése dönt.**
 
-Ennek közvetlenebb API-ja jobban illeszkedik a CFA4 saját médiamotorjához. A kiválasztás azonban csak a licenc- és fordítási kapu teljesülése után véglegesíthető.
+Az eredeti javaslat az `ffmpeg-next`-et nevezte meg elsődlegesnek a közvetlenebb API miatt, az elfogadott ADR 0005 viszont az rsmediát rögzíti („az FFmpeg-háttér (rsmedia) a kiadott csomagokba is bekerül”). A két jelöltet az FF-01 azonos feltételekkel hasonlítja össze; az ADR 0005-öt csak az FF-01 eredménye után kell igazítani, ha a mérés az `ffmpeg-next`-et választja. A kiválasztás csak a licenc- és fordítási kapu teljesülése után véglegesíthető.
 
 A `ffmpeg-next` és `ffmpeg-sys-next` WTFPL licencű. A WTFPL nincs a jelenlegi `deny.toml` engedélyezési listájában. Az átvétel előtt külön licencellenőrzés és dokumentált policy-módosítás szükséges. Ezt nem szabad automatikusan átírni.
 
-Ha a licenc nem fogadható el, vagy a tesztek más műszaki eredményt adnak, az `rsmedia/rsmpeg` útvonalat kell választani, rögzített és auditált függőségekkel.
+Ha az `ffmpeg-next` licence nem fogadható el, az `rsmedia/rsmpeg` útvonalat kell választani, rögzített és auditált függőségekkel.
 
 **Egyetlen FFmpeg-kötés kerülhet a végleges CFA4-adapterbe.** Párhuzamos wrapper-rendszer nem épülhet.
 
@@ -799,7 +799,7 @@ A CFA4-be **egyetlen FFmpeg 9.0.2 backend** kerüljön, `cfa4-ffmpeg` néven.
 Ennek részei:
 
 1. Az elsődleges saját CFA4 médiamotor megtartása.
-2. FFmpeg-kötés kiválasztása `ffmpeg-next` és `rsmedia/rsmpeg` összehasonlításával.
+2. FFmpeg-kötés kiválasztása `ffmpeg-next` és `rsmedia/rsmpeg` összehasonlításával; előre kijelölt elsődleges jelölt nélkül (tulajdonosi döntés, 2026-10-27).
 3. FFmpeg C-könyvtárak elkülönített, biztonságos végrehajtási környezete.
 4. Beillesztés a meglévő `cfa4-route` rendszerbe.
 5. A natív médiaképességek hiányainak célzott kiegészítése.
