@@ -18,6 +18,7 @@ ellentmond neki, a `VISION.md` az irányadó.
 | [ADR 0003 – ASWF és GPL-3-as források](../adr/ADR-0003-aswf-and-conversion-sources.md) | Jóváhagyott terv: ASWF-projektek, a HandBrake cseréje, zárt bővítmények, gyártónkénti kódolás, A0–A7 szakaszok |
 | [ADR 0005 – Médiahátterek](../adr/ADR-0005-media-backends.md) | A saját Rust-motor az alap; FFmpeg (≥ 9.0.2) és a GStreamer (alapból az Ubuntué, újabb verzióhoz elkülönített CFA4-futtatókörnyezet) kiegészítő háttér, automatikus útválasztóval (ADR 0004, `cfa4-route`); később további motorok |
 | [ADR 0002 – GStreamer](../adr/ADR-0002-gstreamer-backend.md) | GStreamer mint kiegészítő háttérmotor (a saját Rust motor marad az alap), 6 lépéses terv |
+| [Smart Cut / Smart Render terv](../plans/CFA4-SMART-CUT-RENDER-R1.md) + [WP-00 kiindulási audit](smart-edit-baseline.md) | `CFA4-SMART-CUT-RENDER-R1`: GOP-tudatos veszteségmentes vágás és határszakasz-újrakódolás; a meglévő és hiányzó képességek, döntés: saját Rust végrehajtás, FFmpeg 9 csak validációs orákulum |
 | [Kdenlive-paritás](../kdenlive-parity.md) | A Kdenlive 26.08 képességei a CFA4-gyel összevetve, a Kdenlive-kód átvételének szabályai, K1–K35 teendők, MI-döntések és a 2026-10-25-i tulajdonosi döntések |
 | [ADR F10 – stáblista táblázatból](../adr/ADR-F10-CREDITS-SPREADSHEET-2026-10-23.md) + [módosított stáblista-terv](../credits-plan.md) | A Cinecred-szerű stáblista-modul döntése és állapota; az FA3 Credits & Titles terv CFA4-re szabott változata (C1–C9, **javaslat**) |
 
