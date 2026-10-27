@@ -70,6 +70,7 @@ use cfa4_time::FrameRate;
 use rayon::prelude::*;
 
 use crate::audio_out::AudioOut;
+use crate::hls_out::{HlsMux, HlsSetup};
 use crate::mxf_out::{MxfMux, MxfSetup};
 use crate::pipeline::Pipeline;
 use crate::settings::{AudioCodec, BitrateMode};
@@ -177,6 +178,8 @@ pub struct Exporter {
     mux: Option<Mp4Writer<Out>>,
     /// MXF exports write through this instead of `mux`.
     mxf: Option<MxfMux>,
+    /// HLS exports write through this instead of `mux`.
+    hls: Option<HlsMux>,
     seq: ItemId,
     project: Arc<Project>,
     vt: usize,
@@ -188,7 +191,16 @@ pub struct Exporter {
 pub fn stepped(format: Format) -> bool {
     matches!(
         format,
-        Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg | Format::MxfOp1a | Format::MxfOpAtom
+        Format::H264
+            | Format::Hevc
+            | Format::Av1
+            | Format::Hls
+            | Format::ProRes
+            | Format::DnxHr
+            | Format::Apv
+            | Format::Mjpeg
+            | Format::MxfOp1a
+            | Format::MxfOpAtom
     )
 }
 
@@ -283,6 +295,7 @@ impl Exporter {
             queued: Vec::new(),
             mux: None,
             mxf: None,
+            hls: None,
             seq,
             project: project.clone(),
             vt: 0,
@@ -351,6 +364,14 @@ impl Exporter {
                 None => Ok(()),
             };
         }
+        if let Some(m) = self.hls.as_mut() {
+            let (Some(a), Some(buf)) = (self.aenc.as_mut(), planar) else { return Ok(()) };
+            if buf.first().is_none_or(Vec::is_empty) {
+                return Ok(());
+            }
+            let n = a.frame_size();
+            return m.write_audio(a.encode(&buf)?.into_iter().map(|au| (au, n)).collect());
+        }
         let (Some(at), Some(buf)) = (self.at, planar) else { return Ok(()) };
         let n = buf.first().map_or(0, Vec::len);
         if n == 0 {
@@ -379,6 +400,9 @@ impl Exporter {
         if let Some(m) = self.mxf.as_mut() {
             return m.write_video(packets);
         }
+        if let Some(m) = self.hls.as_mut() {
+            return m.write_video(packets);
+        }
         let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
         for p in packets {
             mux.write_sample(self.vt, WriteSample { data: &p.data, duration: p.duration, composition_offset: p.composition_offset, is_sync: p.key })
@@ -389,6 +413,22 @@ impl Exporter {
 
     /// Create the muxer and its tracks (after the first batch was encoded).
     fn open_mux(&mut self) -> Result<()> {
+        if self.settings.format == Format::Hls {
+            self.hls = Some(HlsMux::new(HlsSetup {
+                settings: &self.settings,
+                width: self.pipe.w,
+                height: self.pipe.h,
+                rate: self.pipe.rate,
+                video: self.venc.sample_entry(),
+                video_timescale: self.venc.timescale(),
+                video_delay: self.venc.media_start().unwrap_or(0),
+                audio: match (&self.audio, &self.aenc) {
+                    (Some(a), Some(enc)) => Some((enc.sample_entry(), a.sr, enc.priming())),
+                    _ => None,
+                },
+            })?);
+            return Ok(());
+        }
         if self.settings.format.is_mxf() {
             let q = self.project.sequence(self.seq).ok_or(ExportError::NoSequence)?;
             // start timecode of the first exported frame, at the output rate
@@ -480,13 +520,16 @@ impl Exporter {
         if cfa4_media::pending::take() {
             return Ok(Step::Pending);
         }
-        if self.mux.is_none() && self.mxf.is_none() {
+        if self.mux.is_none() && self.mxf.is_none() && self.hls.is_none() {
             self.open_mux()?;
         }
         let mut tail = std::mem::take(&mut self.queued);
         tail.extend(self.venc.flush()?);
         self.write_video(tail)?;
         self.write_audio(mixed)?;
+        if let (Some(m), Some(a)) = (self.hls.as_mut(), self.aenc.as_mut()) {
+            m.write_audio(a.flush_timed()?)?;
+        }
         if let (Some(at), Some(a)) = (self.at, self.aenc.as_mut()) {
             let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
             for (au, duration) in a.flush_timed()? {
@@ -496,9 +539,10 @@ impl Exporter {
                 mux.set_sample_entry(at, entry).map_err(|e| ExportError::Io(e.to_string()))?;
             }
         }
-        let (bytes, extra_files) = match self.mxf.take() {
-            Some(m) => m.finish(&self.settings)?,
-            None => {
+        let (bytes, extra_files) = match (self.mxf.take(), self.hls.take()) {
+            (Some(m), _) => m.finish(&self.settings)?,
+            (None, Some(m)) => m.finish()?,
+            (None, None) => {
                 let w = self
                     .mux
                     .take()
@@ -621,7 +665,7 @@ impl Exporter {
             self.queued.extend(packets);
             if cuts.contains(&(fi + 1)) {
                 timed(Stage::Mux, || -> Result<()> {
-                    if self.mux.is_none() && self.mxf.is_none() {
+                    if self.mux.is_none() && self.mxf.is_none() && self.hls.is_none() {
                         self.open_mux()?;
                     }
                     let packets = std::mem::take(&mut self.queued);

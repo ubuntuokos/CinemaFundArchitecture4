@@ -499,9 +499,14 @@ pub struct Resolved {
 }
 
 impl ExportSettings {
-    /// The format whose video encoder runs: the MXF video codec for MXF exports, else the format.
+    /// The format whose video encoder runs: the MXF video codec for MXF exports, H.264 for HLS,
+    /// else the format.
     pub fn video_format(&self) -> Format {
-        if self.format.is_mxf() { self.mxf_video_codec.encoder_format() } else { self.format }
+        match self.format {
+            f if f.is_mxf() => self.mxf_video_codec.encoder_format(),
+            Format::Hls => Format::H264,
+            f => f,
+        }
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
@@ -569,7 +574,7 @@ impl ExportSettings {
         match (self.format, self.audio.codec) {
             (Format::Flac, _) => AudioCodec::Flac,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
-            (Format::Aac, _) => AudioCodec::Aac,
+            (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -602,7 +607,7 @@ impl ExportSettings {
         let px = r.width as f64 * r.height as f64;
         let video_bps = match self.video_format() {
             Format::Aac => 0.0,
-            Format::H264 | Format::Hevc | Format::Av1 => r.target_kbps as f64 * 1000.0,
+            Format::H264 | Format::Hevc | Format::Av1 | Format::Hls => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
@@ -754,6 +759,7 @@ impl ExportSettings {
         let container = match self.format {
             Format::H264 | Format::Hevc if self.multiplexer == Multiplexer::Mov => "QuickTime",
             Format::H264 | Format::Hevc | Format::Av1 => "MP4",
+            Format::Hls => "fragmented MP4 segments",
             Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg => "QuickTime",
             Format::MxfOp1a | Format::MxfOpAtom => self.mxf_video_codec.label(),
             f if f.is_image_sequence() => "Image sequence",
