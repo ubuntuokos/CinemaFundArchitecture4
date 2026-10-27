@@ -35,6 +35,7 @@ from PySide6.QtGui import QColor, QKeyEvent, QMouseEvent, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
 
 from .. import theme
+from .guides import SNAP_COLOR, snap_move
 
 MASK_COLOR = QColor(0x5A, 0xB4, 0xFF)
 # how close (points) the pointer must be to a handle or the anchor point to grab it
@@ -152,6 +153,8 @@ class ProgramOverlay(QObject):
         self.enabled = True  # the Selection tool (egui draws the overlay only with it)
         self.pen: dict[str, Any] | None = None
         self.drag: dict[str, Any] | None = None
+        # Snap in Program Monitor: the lines a moved object snapped to (vertical?, screen coordinate)
+        self.snap_lines: list[tuple[bool, float]] = []
         self.gesture = 0
         self.selected_vertex: int | None = None
         self.round_radius: float | None = None
@@ -327,6 +330,14 @@ class ProgramOverlay(QObject):
             pl = self.placement()
             if pl is not None:
                 self._paint_transform(p, pl)
+            if self.drag is not None and self.snap_lines and hasattr(self.view, "picture_rect"):
+                pic = self.view.picture_rect()
+                p.setPen(QPen(SNAP_COLOR, 1.0))
+                for vertical, at in self.snap_lines:
+                    if vertical:
+                        p.drawLine(QPointF(at, pic.top()), QPointF(at, pic.bottom()))
+                    else:
+                        p.drawLine(QPointF(pic.left(), at), QPointF(pic.right(), at))
             g = self.mask_geometry()
             if g is not None:
                 self._paint_mask(p, g)
@@ -668,6 +679,7 @@ class ProgramOverlay(QObject):
             self.drag = None
             return True
         d, self.drag = self.drag, None
+        self.snap_lines = []
         if d is None:
             return False
         moved = length(e.position() - d.get("press", d.get("start", e.position()))) >= 3
@@ -803,6 +815,7 @@ class ProgramOverlay(QObject):
         height = "scale_height" if t.get("effectId") == "transform" else "scale"
         grab = d["grab"]
         if grab == "move":
+            moved, self.snap_lines = self._snap(pl, moved)
             changes = [("position", pt(pl["position"] + unscale(pl["outer"], moved)))]
         elif grab == "anchor":
             changes = [("anchor", pt(pl["anchor"] + unscale(pl["toScreen"], moved))),
@@ -824,6 +837,17 @@ class ProgramOverlay(QObject):
             self.send("effects.setParam", {"clip": t.get("clip"), "effect": t.get("effect"), "param": param, "value": value,
                                            "merge": TRANSFORM_MERGE, "begin": d["begin"]})
             d["begin"] = False
+
+    def _snap(self, pl: dict[str, Any], moved: QPointF) -> tuple[QPointF, list[tuple[bool, float]]]:
+        """Snap in Program Monitor: the move adjusted so the object's edges or centre meet the
+        frame's edges / centre or a guide (egui's)."""
+        mv = getattr(self.view, "mv", None)
+        quad = pl.get("quad") or []
+        full = getattr(self.view, "full", (0, 0))
+        if mv is None or len(quad) < 3 or not hasattr(self.view, "picture_rect") or full[0] <= 0 or full[1] <= 0:
+            return moved, []
+        box = QPolygonF(quad).boundingRect()
+        return snap_move(mv, self.view.picture_rect(), full, box, moved)
 
     def _hover_cursor(self, at: QPointF) -> None:
         pl = self.placement()

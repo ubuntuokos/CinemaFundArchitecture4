@@ -715,7 +715,7 @@ class Monitor(QWidget):
         (self.program_peer or self).set_view(**changes)
 
     def add_guide(self, vertical: bool, position: float) -> None:
-        if len(self.mv.guides) < 256 and math.isfinite(position):
+        if len(self.mv.guides) < 256 and abs(position) <= 1e6 and math.isfinite(position):
             self.mv.guides.append({"vertical": bool(vertical), "position": float(position)})
             self.mv.show_guides = True
             self._guides_changed()

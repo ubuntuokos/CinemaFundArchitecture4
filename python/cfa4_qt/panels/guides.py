@@ -55,7 +55,7 @@ def guide(raw: Any) -> dict[str, Any] | None:
     if not isinstance(raw, dict):
         return None
     pos = raw.get("position")
-    if isinstance(pos, bool) or not isinstance(pos, (int, float)) or not math.isfinite(pos) or abs(pos) > MAX_POS:
+    if isinstance(pos, bool) or not isinstance(pos, (int, float)) or abs(pos) > MAX_POS or not math.isfinite(pos):
         return None
     return {"vertical": raw.get("vertical") is True, "position": float(pos)}
 

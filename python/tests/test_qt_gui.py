@@ -3237,6 +3237,19 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         # back into a tab with Markers, then split to the left of Effect Controls
         win.run_preset("window.dockPanel", {"panel": "History", "anchor": "Markers"})
         assert not hist.isFloating() and hist in win.tabifiedDockWidgets(markers)
+        notes = win.docks["Project Notes"]
+
+        def notes_group() -> set[str]:
+            # where the closed Project Notes reopens (Window ▸ Project Notes)
+            notes.show()
+            app.processEvents()
+            group = {d.windowTitle() for d in win.tabifiedDockWidgets(notes)} - {"History"}
+            notes.close()
+            app.processEvents()
+            return group
+
+        before = notes_group()
+        assert before
         win.run_preset("window.dockPanel", {"panel": "History", "zone": "left", "anchor": "EffectControls"})
         wait_until(app, lambda: False, 200)
         assert hist not in win.tabifiedDockWidgets(markers)
@@ -3249,6 +3262,8 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         wait_until(app, lambda: False, 300)
         # AnimatedDocks: the docks slide into place
         assert wait_until(app, lambda: 0 <= here(hist).x() and here(hist).x() + hist.width() <= here(fx).x() + 8, 3_000), (here(hist), here(fx))
+        # a closed panel of another group keeps its place (Codex review on #214)
+        assert notes_group() == before
         # beside the central Program monitor, at an edge
         win.run_preset("window.dockPanel", {"panel": "History", "zone": "bottom", "anchor": "Program"})
         assert win.dockWidgetArea(hist) == Qt.DockWidgetArea.BottomDockWidgetArea
@@ -3690,6 +3705,125 @@ def test_audio_meters_show_what_plays(app, tmp_path: Path, monkeypatch):
     finally:
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_clip_and_gap_menus_as_egui(app, tmp_path: Path):
+    """egui's timeline context menus: right-clicking a clip selects it and opens the clip menu
+    (CLIP_MENU's groups, Enable checked, Link / Unlink, the Label and Multi-Camera submenus, the
+    engine's enabled states); right-clicking empty time selects the gap and opens Ripple Delete."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline_menus
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        items = [c for c in v1.track.get("items") or []]
+        assert items
+        first = items[0]
+        r = canvas.clip_rect(v1, first)
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        assert menu.objectName() == "timeline.clipMenu"
+        assert wait_until(app, lambda: first["clip"] in canvas.selection, 10_000)
+        names = [a.objectName() or (a.menu().objectName() if a.menu() else "") for a in menu.actions() if not a.isSeparator()]
+        expected = [cid for g in timeline_menus.CLIP_MENU for _l, cid in g]
+        assert names == [f"timeline.clipMenu.{c}" for c in expected], names
+        assert len([a for a in menu.actions() if a.isSeparator()]) == len(timeline_menus.CLIP_MENU) - 1
+        act = {a.objectName(): a for a in menu.actions()}
+        assert act["timeline.clipMenu.clip.enable"].isChecked()
+        assert act["timeline.clipMenu.edit.cut"].isEnabled() and act["timeline.clipMenu.clip.speedDuration"].isEnabled()
+        # a linked A/V clip offers Unlink
+        linked = first.get("link") is not None
+        assert act["timeline.clipMenu.clip.link"].text() == ("Unlink" if linked else "Link")
+        # not a nested sequence: Multi-Camera is greyed out
+        mc = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.clip.multicam")
+        assert not mc.isEnabled()
+        labels = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.edit.label")
+        next(a for a in labels.actions() if a.objectName() == "timeline.clipMenu.label.Mango").trigger()
+        menu.close()
+        assert wait_until(app, lambda: next(c for c in next(r for r in canvas.rows if r.short == "V1").track["items"] if c["clip"] == first["clip"]).get("label") == "Mango", 10_000)
+        # Enable unchecks: the clip is disabled (one command, undoable)
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.clipMenu.clip.enable").trigger()
+        menu.close()
+        assert wait_until(app, lambda: next(c for c in next(r for r in canvas.rows if r.short == "V1").track["items"] if c["clip"] == first["clip"]).get("enabled") is False, 10_000)
+        # a gap: delete the second clip, then right-click where it was
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        items = v1.track["items"]
+        assert len(items) >= 3
+        gap_clip = items[1]
+        for t in ("V2", "V3", "A1", "A2", "A3"):  # the other tracks' clips would block the ripple
+            win.execute("timeline.setTrack", {"track": t, "syncLock": False})
+        win.execute("timeline.select", {"clips": [gap_clip["clip"]], "linked": False})
+        win.execute("edit.clear", {})
+        assert wait_until(app, lambda: all(c["clip"] != gap_clip["clip"] for c in next(r for r in canvas.rows if r.short == "V1").track["items"]), 10_000)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        x = (canvas.x_of(gap_clip["start"]) + canvas.x_of(gap_clip["end"])) / 2
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(int(x), int(v1.top + v1.height / 2)))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.gapMenu" and canvas.last_menu.isVisible(), 10_000)
+        gap = canvas.last_menu
+        rd = gap.actions()[0]
+        assert rd.objectName() == "timeline.gapMenu.edit.rippleDelete" and rd.isEnabled()
+        end_before = v1.track["items"][-1]["end"]
+        rd.trigger()
+        gap.close()
+        assert wait_until(app, lambda: next(r for r in canvas.rows if r.short == "V1").track["items"][-1]["end"] < end_before, 10_000)
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_timeline_multicam_submenu_as_egui(app):
+    """The clip menu's Multi-Camera submenu: Enable (checked when on), Flatten and the cameras of
+    the first selected nested sequence, the shown angle checked; a camera switches the clips."""
+    from cfa4_qt.panels import timeline_menus
+
+    ran: list = []
+
+    class Host:
+        def command_enabled(self, cid):
+            return True
+
+        def run_menu_command(self, cid, params):
+            ran.append((cid, params))
+
+        def menu_request(self, cid, params, then):
+            then(True)
+
+    parent = QtWidgets.QWidget()
+    nest = {"clip": 7, "nested": True, "multicam": {"enabled": True, "angle": 1}, "cameras": [{"angle": 0, "name": "Cam A"}, {"angle": 1, "name": "Cam B"}]}
+    menu = timeline_menus.clip_menu(parent, Host(), [nest, {"clip": 8}], {"mango": "#ff8800"})
+    sub = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.clip.multicam")
+    assert sub.isEnabled()
+    acts = {a.objectName(): a for a in sub.actions() if not a.isSeparator()}
+    assert list(acts) == ["timeline.clipMenu.clip.multicamEnable", "timeline.clipMenu.clip.multicamFlatten", "timeline.clipMenu.multicam.camera.0", "timeline.clipMenu.multicam.camera.1"]
+    assert acts["timeline.clipMenu.clip.multicamEnable"].isChecked()
+    assert acts["timeline.clipMenu.multicam.camera.1"].isChecked() and acts["timeline.clipMenu.multicam.camera.0"].text() == "Cam A"
+    acts["timeline.clipMenu.multicam.camera.0"].trigger()
+    assert ran[-1] == ("multicam.switchAngle", {"angle": 0, "clips": [7]})
+    # off: no cameras
+    nest["multicam"] = {"enabled": False, "angle": 1}
+    menu2 = timeline_menus.clip_menu(parent, Host(), [nest], {})
+    sub = next(a.menu() for a in menu2.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.clip.multicam")
+    assert [a.objectName() for a in sub.actions()] == ["timeline.clipMenu.clip.multicamEnable", "timeline.clipMenu.clip.multicamFlatten"]
+    assert not sub.actions()[0].isChecked()
+    parent.deleteLater()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -5691,3 +5825,88 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
         else:
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
+
+
+def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
+    """Snap in Program Monitor: moving an object on the Program monitor snaps its edges or
+    centre to the frame's edges / centre and the shown guides (Codex review on #214)."""
+    from cfa4_qt.panels.monitor_view import MonitorView
+    from cfa4_qt.panels.program_overlay import ProgramOverlay
+
+    P = QtCore.QPointF
+
+    class View(QtWidgets.QWidget):
+        def __init__(self):
+            super().__init__()
+            self.mv = MonitorView()
+            self.full = (1000, 500)
+
+        def picture_rect(self):
+            return QtCore.QRectF(0, 0, 1000, 500)
+
+    view = View()
+    sent: list = []
+    overlay = ProgramOverlay(view, None, lambda c, p: sent.append((c, p)))
+    # a 100 px box 3 px from the frame's left and top edges, moved 1 px right
+    quad = [P(3, 3), P(103, 3), P(103, 103), P(3, 103)]
+    pl = {"t": {"clip": 1, "effect": 0, "effectId": "motion"}, "anchorAt": P(53, 53), "position": P(53, 53), "outer": QtGui.QTransform(),
+          "quad": quad, "anchor": P(), "height": 100.0, "width": 100.0, "rotation": 0.0, "uniform": True}
+
+    def move(dx: float, dy: float):
+        sent.clear()
+        overlay._transform_move({"pl": pl, "grab": "move", "start": P(50, 50), "begin": True, "turned": 0.0, "angle": 0.0}, P(50 + dx, 50 + dy))
+        return next(p["value"] for c, p in sent if p["param"] == "position")
+
+    assert view.mv.snap
+    assert move(1, 0) == [50.0, 50.0], "the box's left and top edges meet the frame's"
+    assert len(overlay.snap_lines) == 2
+    view.mv.snap = False
+    assert move(1, 0) == [54.0, 53.0]
+    assert overlay.snap_lines == []
+    # a guide at x = 300 catches the box's right edge
+    view.mv.snap = True
+    view.mv.guides = [{"vertical": True, "position": 300.0}]
+    assert move(195, 40)[0] == 250.0
+    view.deleteLater()
+
+
+def test_keys_given_to_qt_run_commands_run_them(app, fake_engine: Path, tmp_path: Path):
+    """Keyboard Shortcuts can give a key to any Qt-run command (docking, guides, the comparison
+    reference …), application-wide or in one panel, and the key runs it (Codex review on #214)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.registry.commands), 10_000)
+        win.local_keys = {"view.showGuides": ["Cmd+Shift+F11"]}
+        win.local_panel_keys = {"view.lockGuides": [("Shift+F11", "Program")]}
+        win._build_menus()
+        show = win.registry.local_actions["view.showGuides"]
+        assert show.objectName() == "shortcut.view.showGuides" and show in win.actions()
+        assert [s.toString() for s in show.shortcuts()] == ["Ctrl+Shift+F11"]
+        assert win.registry.local_actions["playback.toggle"] is win.play_action
+        was = win.monitor.mv.show_guides
+        win.monitor.setFocus()
+        show.trigger()
+        assert win.monitor.mv.show_guides is not was
+        # the panel-scoped key goes through the registry's dispatcher for the focused panel
+        dispatcher = next(a for a in win.actions() if a.objectName() == "shortcut.Shift+F11")
+        win.monitor.view.setFocus()
+        app.processEvents()
+        locked = win.monitor.mv.lock_guides
+        dispatcher.trigger()
+        assert win.monitor.mv.lock_guides is not locked
+        # elsewhere the key does nothing
+        win.timeline.canvas.setFocus()
+        app.processEvents()
+        dispatcher.trigger()
+        assert win.monitor.mv.lock_guides is not locked
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

@@ -46,6 +46,7 @@ from .. import theme
 from ..calc import evaluate
 from ..i18n import N_, tr
 from ..timecode import TICKS_PER_SECOND, drop_frame, format_timecode, frame_ticks, parse_timecode
+from . import timeline_menus
 from .effects import EFFECT_MIME, dropped_effect
 from .essential_graphics import TEMPLATE_MIME, dropped_template
 from .media_browser import FILES_MIME, dropped_files
@@ -223,6 +224,9 @@ class TimelineCanvas(QWidget):
         self._drop_preview: tuple[int, Row] | None = None
         self._effect_target: tuple[Row, dict[str, Any], str] | None = None  # an effect dragged over a clip
         self.last_dialog: QDialog | None = None
+        # the main window: runs the context menus' commands, knows which are enabled
+        self.menu_host: timeline_menus.MenuHost | None = None
+        self.last_menu: QMenu | None = None
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
 
@@ -749,6 +753,8 @@ class TimelineCanvas(QWidget):
             if row is not None and cell is not None and cell.key == "voiceover":
                 self.voiceover_menu(row).popup(e.globalPosition().toPoint())
                 return
+            self.context_menu(e.position().toPoint(), e.globalPosition().toPoint())
+            return
         if not self.sequence or e.button() != Qt.MouseButton.LeftButton:
             return
         pos = e.position().toPoint()
@@ -833,6 +839,55 @@ class TimelineCanvas(QWidget):
             self._drag = Drag("trim", clip, pos, origin, edge=edge)
         else:
             self._drag = Drag("move", clip, pos, int(clip.get("start") or 0))
+
+    def context_menu(self, pos: QPoint, global_pos: QPoint) -> None:
+        """egui's right-click on the tracks: a clip selects it (unless it is selected) and opens
+        the clip menu; empty time between clips selects the gap and opens its menu."""
+        host = self.menu_host
+        if host is None or self.sequence is None or pos.x() < HEADER_W or pos.y() < RULER_H:
+            return
+        row, clip, _edge = self.hit(pos)
+        if row is None:
+            return
+        if clip is None:
+            params = {"track": row.track.get("id"), "time": max(0, self.time_at(pos.x()))}
+
+            def gap(ok: bool) -> None:
+                if ok:
+                    self._popup(timeline_menus.gap_menu(self, host), global_pos)
+
+            host.menu_request("timeline.selectGap", params, gap)
+            return
+        cid = clip.get("clip")
+        select = None
+        chosen = set(self.selection)
+        if cid not in chosen:
+            select = {"clips": [cid]}
+            chosen = {cid}
+            self.sequence["selection"] = [cid]  # local echo until the engine's reply
+
+        def clips(_ok: bool) -> None:
+            # the selection as the engine made it (linked partners too), else what was clicked
+            sel = set(self.selection) if cid in self.selection else chosen
+            picked = [c for r in self.rows for c in r.track.get("items") or [] if isinstance(c, dict) and c.get("clip") in sel]
+
+            def unlinked() -> None:
+                # egui: only the right-clicked clip stays selected, to drag it away from the others
+                self.command.emit("timeline.select", {"clips": [cid], "linked": False})
+
+            self._popup(timeline_menus.clip_menu(self, host, picked, LABEL_COLORS, unlinked), global_pos)
+
+        host.menu_request("timeline.select" if select else "", select or {}, clips)
+
+    def _popup(self, menu: QMenu, global_pos: QPoint) -> None:
+        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_menu = menu
+        menu.destroyed.connect(lambda _o=None, m=menu: self._menu_gone(m))
+        menu.popup(global_pos)
+
+    def _menu_gone(self, menu: QMenu) -> None:
+        if self.last_menu is menu:
+            self.last_menu = None
 
     def _press_transition(self, hit: tuple[Row, dict[str, Any], str], shift: bool, pos: QPoint) -> None:
         """Select it (Shift adds or removes; a selected one is chosen on release, so dragging a

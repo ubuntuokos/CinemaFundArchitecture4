@@ -87,7 +87,7 @@ def _rect(value: Any) -> tuple[int, int, int, int]:
         raise DockError("rect must contain four finite numbers")
     out = []
     for v in value:
-        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or abs(v) > 1e6:
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or abs(v) > 1e6 or not math.isfinite(v):
             raise DockError("rect must contain four finite numbers")
         out.append(round(v))
     x, y, w, h = out
@@ -169,8 +169,16 @@ def _split(mw: QMainWindow, other: QDockWidget, dock: QDockWidget, zone: str) ->
     size = other.width() if o == Qt.Orientation.Horizontal else other.height()
     area = mw.dockWidgetArea(other)
     spare = Qt.DockWidgetArea.RightDockWidgetArea if area != Qt.DockWidgetArea.RightDockWidgetArea else Qt.DockWidgetArea.LeftDockWidgetArea
-    # closed panels keep a placeholder in their old group, which keeps it a tab group too
-    closed = [d for d in mw.findChildren(QDockWidget) if d.isHidden() and d is not dock and mw.dockWidgetArea(d) == area]
+    # closed panels keep a placeholder in their old group, which keeps it a tab group too: those
+    # of the anchor's group (shown for a moment in this hidden window to find out) step out too
+    # and go back into it closed, so they reopen where they were
+    closed = []
+    for d in mw.findChildren(QDockWidget):
+        if d.isHidden() and d is not dock and mw.dockWidgetArea(d) == area:
+            d.show()
+            if d in mw.tabifiedDockWidgets(other):
+                closed.append(d)
+            d.hide()
     for d in [*mates, *closed]:
         mw.addDockWidget(spare, d)
     for d in closed:
@@ -183,9 +191,9 @@ def _split(mw: QMainWindow, other: QDockWidget, dock: QDockWidget, zone: str) ->
         mw.splitDockWidget(dock, other, o)  # the anchor goes after: the panel lands before it
     half = max(1, size // 2)  # egui splits the space in two
     mw.resizeDocks([dock, other], [half, half], o)
-    for d in mates:
+    for d in [*mates, *closed]:
         mw.tabifyDockWidget(other, d)
-        d.show()
+        d.setVisible(d not in closed)
     other.raise_()
 
 

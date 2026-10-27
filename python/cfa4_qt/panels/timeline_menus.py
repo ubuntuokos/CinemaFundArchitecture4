@@ -1,0 +1,170 @@
+"""The timeline's context menus, as egui's (``crates/ui-egui/src/panels/timeline.rs``): the clip
+menu (``CLIP_MENU``, with the Label and Multi-Camera submenus) and the menu of a right-clicked
+gap (Ripple Delete). Object names are egui's automation ids: ``timeline.clipMenu.<command>``,
+``timeline.clipMenu.label.<Label>``, ``timeline.clipMenu.multicam.camera.<angle>`` and
+``timeline.gapMenu.edit.rippleDelete``.
+
+The canvas asks its :class:`MenuHost` (the main window) whether a command is enabled and runs
+the chosen one through it, so the menu's commands open the same dialogs as the menu bar's.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any, Protocol
+
+from PySide6.QtGui import QColor, QIcon, QPixmap
+from PySide6.QtWidgets import QMenu, QWidget
+
+from ..i18n import N_, tr
+
+# egui's CLIP_MENU: groups of (label, command), a separator between groups
+CLIP_MENU: tuple[tuple[tuple[str, str], ...], ...] = (
+    (
+        (N_("Cut"), "edit.cut"),
+        (N_("Copy"), "edit.copy"),
+        (N_("Paste Attributes…"), "edit.pasteAttributes"),
+        (N_("Remove Attributes…"), "edit.removeAttributes"),
+        (N_("Clear"), "edit.clear"),
+        (N_("Ripple Delete"), "edit.rippleDelete"),
+    ),
+    ((N_("Edit Original"), "edit.editOriginal"), (N_("Replace With Clip From Source Monitor"), "clip.replaceFromSource")),
+    (
+        (N_("Enable"), "clip.enable"),
+        (N_("Link"), "clip.link"),
+        (N_("Group"), "clip.group"),
+        (N_("Ungroup"), "clip.ungroup"),
+        (N_("Synchronize…"), "clip.synchronize"),
+        (N_("Merge Clips…"), "clip.mergeClips"),
+        (N_("Nest…"), "clip.nest"),
+        (N_("Make Subsequence"), "sequence.makeSubsequence"),
+        (N_("Reveal Nested Sequence"), "sequence.revealNested"),
+        (N_("Multi-Camera"), "clip.multicam"),
+    ),
+    ((N_("Label"), "edit.label"),),
+    ((N_("Add Marker"), "markers.add"),),
+    ((N_("Speed/Duration…"), "clip.speedDuration"), (N_("Scene Edit Detection…"), "clip.sceneEditDetection")),
+    (
+        (N_("Frame Hold Options…"), "clip.frameHoldOptions"),
+        (N_("Add Frame Hold"), "clip.frameHold"),
+        (N_("Insert Frame Hold Segment"), "clip.insertFrameHoldSegment"),
+        (N_("Field Options…"), "clip.fieldOptions"),
+        (N_("Scale to Frame Size"), "clip.scaleToFrameSize"),
+        (N_("Fit to frame"), "clip.fitToFrame"),
+        (N_("Fill frame"), "clip.fillFrame"),
+    ),
+    ((N_("Reveal in Project"), "clip.revealInProject"), (N_("Join Through Edits"), "sequence.joinThroughEdits")),
+)
+
+
+class MenuHost(Protocol):
+    def command_enabled(self, cid: str) -> bool: ...
+
+    def run_menu_command(self, cid: str, params: dict[str, Any]) -> None: ...
+
+    def menu_request(self, cid: str, params: dict[str, Any], then: Callable[[bool], None]) -> None:
+        """Run ``cid`` (None: nothing), bring the commands' enabled states up to date, then call
+        ``then(ok)``: the menu opens on the state the right-click made."""
+        ...
+
+
+def swatch(color: str) -> QIcon:
+    pm = QPixmap(12, 12)
+    pm.fill(QColor(color))
+    return QIcon(pm)
+
+
+def clip_menu(
+    parent: QWidget,
+    host: MenuHost,
+    picked: list[dict[str, Any]],
+    labels: dict[str, str],
+    on_unlinked: Any = None,
+) -> QMenu:
+    """egui's clip menu for the selected clips ``picked`` (sequence.inspect items).
+    ``labels``: label name -> colour. ``on_unlinked``: called after Unlink (egui keeps only the
+    right-clicked clip selected, so it can be dragged away from the others)."""
+    menu = QMenu(parent)
+    menu.setObjectName("timeline.clipMenu")
+    some = bool(picked)
+    all_enabled = some and all(bool(c.get("enabled", True)) for c in picked)
+    linked = any(c.get("link") is not None for c in picked)
+    for i, group in enumerate(CLIP_MENU):
+        if i:
+            menu.addSeparator()
+        for label, cid in group:
+            if cid == "edit.label":
+                sub = menu.addMenu(tr(label))
+                sub.setObjectName("timeline.clipMenu.edit.label")
+                sub.setEnabled(some)
+                for name, color in labels.items():
+                    title = name.capitalize()
+                    a = sub.addAction(swatch(color), tr(title))
+                    a.setObjectName(f"timeline.clipMenu.label.{title}")
+                    a.triggered.connect(lambda _c=False, t=title: host.run_menu_command("edit.label", {"label": t}))
+                continue
+            if cid == "clip.multicam":
+                multicam_menu(menu, host, picked)
+                continue
+            text = tr(label)
+            if cid == "clip.link" and linked:
+                text = tr("Unlink")
+            a = menu.addAction(text)
+            a.setObjectName(f"timeline.clipMenu.{cid}")
+            if cid == "clip.enable":
+                a.setCheckable(True)
+                a.setChecked(all_enabled)
+            a.setEnabled(some and host.command_enabled(cid))
+
+            def run(_c: bool = False, c: str = cid, unlink: bool = cid == "clip.link" and linked) -> None:
+                host.run_menu_command(c, {})
+                if unlink and on_unlinked is not None:
+                    on_unlinked()
+
+            a.triggered.connect(run)
+    return menu
+
+
+def multicam_menu(menu: QMenu, host: MenuHost, picked: list[dict[str, Any]]) -> QMenu:
+    """The Multi-Camera submenu: Enable, Flatten, and the cameras of the selected nested sequence
+    clips (greyed out when none of them is a nested sequence)."""
+    nests = [c for c in picked if c.get("nested")]
+    enabled = bool(nests) and all(isinstance(c.get("multicam"), dict) and c["multicam"].get("enabled") for c in nests)
+    sub = menu.addMenu(tr("Multi-Camera"))
+    sub.setObjectName("timeline.clipMenu.clip.multicam")
+    sub.setEnabled(bool(nests))
+    a = sub.addAction(tr("Enable"))
+    a.setObjectName("timeline.clipMenu.clip.multicamEnable")
+    a.setCheckable(True)
+    a.setChecked(enabled)
+    a.setEnabled(host.command_enabled("clip.multicamEnable"))
+    a.triggered.connect(lambda _c=False: host.run_menu_command("clip.multicamEnable", {}))
+    a = sub.addAction(tr("Flatten"))
+    a.setObjectName("timeline.clipMenu.clip.multicamFlatten")
+    a.setEnabled(host.command_enabled("clip.multicamFlatten"))
+    a.triggered.connect(lambda _c=False: host.run_menu_command("clip.multicamFlatten", {}))
+    first = nests[0] if nests else {}
+    cameras = [c for c in first.get("cameras") or [] if isinstance(c, dict) and isinstance(c.get("angle"), int)]
+    if enabled and cameras:
+        sub.addSeparator()
+        mc = first.get("multicam") if isinstance(first.get("multicam"), dict) else {}
+        clips = [c.get("clip") for c in nests]
+        for cam in cameras:
+            angle = cam["angle"]
+            a = sub.addAction(str(cam.get("name") or ""))
+            a.setObjectName(f"timeline.clipMenu.multicam.camera.{angle}")
+            a.setCheckable(True)
+            a.setChecked(mc.get("angle") == angle)
+            a.triggered.connect(lambda _c=False, n=angle: host.run_menu_command("multicam.switchAngle", {"angle": n, "clips": clips}))
+    return sub
+
+
+def gap_menu(parent: QWidget, host: MenuHost) -> QMenu:
+    """The menu of a right-clicked gap: Ripple Delete closes it."""
+    menu = QMenu(parent)
+    menu.setObjectName("timeline.gapMenu")
+    a = menu.addAction(tr("Ripple Delete"))
+    a.setObjectName("timeline.gapMenu.edit.rippleDelete")
+    a.setEnabled(host.command_enabled("edit.rippleDelete"))
+    a.triggered.connect(lambda _c=False: host.run_menu_command("edit.rippleDelete", {}))
+    return menu

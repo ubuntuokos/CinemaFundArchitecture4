@@ -209,6 +209,8 @@ class MainWindow(QMainWindow):
         self.registry = CommandRegistry(self.run_command)
         # the engine's application-wide keys of the Qt-run commands (None: their defaults)
         self.local_keys: dict[str, list[str]] | None = None
+        # their panel-scoped keys (keys, panel), dispatched by the focused panel as the engine's
+        self.local_panel_keys: dict[str, list[tuple[str, str]]] = {}
         self.shortcuts_dialog: ShortcutsDialog | None = None
         self.project: dict[str, Any] | None = None
         self.sequence: dict[str, Any] | None = None
@@ -374,6 +376,7 @@ class MainWindow(QMainWindow):
         self.media_browser.attach_settings(self.settings)
         self.media_browser.invoke.connect(self.invoke)
         self.timeline.canvas.files_dropped.connect(self.place_files)
+        self.timeline.canvas.menu_host = self
         # voice-over recording: the audio track headers' microphones and the mixer's record button
         self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
         self.voiceover_dialog: VoiceOverSettingsDialog | None = None
@@ -801,9 +804,9 @@ class MainWindow(QMainWindow):
         keys = self.local_keys.get(cid, []) if self.local_keys is not None else ([default] if default else [])
         return [q for k in keys if (q := qt_shortcut(k))]
 
-    def _bind_local_shortcuts(self, bound_keys: set[str]) -> list[QAction]:
-        """Playback, multi-camera and other Qt-run keys, unless an engine command claims them."""
-        pairs = [
+    def local_action_pairs(self) -> list[tuple[QAction, str, str]]:
+        """(action, command id, default key) of the Qt-run commands with an action of their own."""
+        return [
             (self.play_action, "playback.toggle", "Space"),
             (self.export_action, "mode.export", "Cmd+M"),
             (self.quit_action, "app.quit", "Cmd+Q"),
@@ -811,6 +814,10 @@ class MainWindow(QMainWindow):
             *((a, f"playback.{a.objectName().rsplit('.', 1)[-1]}", k) for a, k in self.shuttle_actions),
             *((a, a.objectName(), k) for a, k in self.multicam_actions),
         ]
+
+    def _bind_local_shortcuts(self, bound_keys: set[str]) -> list[QAction]:
+        """Playback, multi-camera and other Qt-run keys, unless an engine command claims them."""
+        pairs = self.local_action_pairs()
         added = bind_free(self, [(a, self._local_keys(cid, k)) for a, cid, k in pairs], bound_keys)
         for a, _cid, _k in pairs:
             if a not in added:
@@ -825,8 +832,11 @@ class MainWindow(QMainWindow):
                 "Edit": [self.shortcuts_action],
                 "View": [self.fit_action, self.multicam_actions[0][0]],
                 "Help": [self.about_action],
-            }
+            },
+            self.local_panel_keys,
+            self.local_keys or {},
         )
+        local: dict[str, QAction] = {}
         menus = {a.menu().objectName(): a for a in self.menuBar().actions() if a.menu()}
         view = menus.get("menu.View")
         if view is not None:
@@ -853,6 +863,7 @@ class MainWindow(QMainWindow):
                 keys = [QKeySequence(q) for q in self._local_keys(a.objectName(), "Cmd+," if page == "general" else "")]
                 a.setShortcuts([k for k in keys if k.toString() not in self.registry.claimed_keys])
                 a.triggered.connect(lambda _c=False, pg=page: self.open_settings(pg))
+                local[a.objectName()] = a
         self._build_appearance_button()
         # Window, before Help as in the egui editor; the previous build's actions go first
         for action in getattr(self, "_window_actions", []):
@@ -882,6 +893,27 @@ class MainWindow(QMainWindow):
         self._window_actions = bind_free(self, [(a, self._local_keys(cid, k)) for a, cid, k in window_shortcuts], keys) + [
             a for a in window_menu.actions() if a not in {p[0] for p in window_shortcuts}
         ]
+        for a in self._window_actions:
+            keys |= {s.toString() for s in a.shortcuts()}
+        for a, cid, _k in [*self.local_action_pairs(), *self.tools.shortcut_pairs(), *window_shortcuts]:
+            local.setdefault(cid, a)
+        # the other Qt-run commands (docking, guides, the comparison reference …): an action each,
+        # so a key given to them in Keyboard Shortcuts runs them
+        for old in getattr(self, "_command_actions", []):
+            self.removeAction(old)
+            old.deleteLater()
+        extra = []
+        for cid, label, _menu, default in self.local_commands():
+            if cid in local:
+                continue
+            a = QAction(tr(label), self)
+            a.setObjectName(f"shortcut.{cid}")
+            a.triggered.connect(lambda _c=False, c=cid: self.ui_command(c))
+            local[cid] = a
+            extra.append((a, self._local_keys(cid, default)))
+        self._command_actions = [a for a, _k in extra]
+        bind_free(self, extra, keys)
+        self.registry.local_actions = local
 
     def rebuild_window_menu(self) -> None:
         """A workspace was added: rebuild the menus (the engine's part comes from the registry)."""
@@ -1163,13 +1195,20 @@ class MainWindow(QMainWindow):
     def _on_local_keys(self, rows: Any) -> None:
         ids = {c[0] for c in self.local_commands()}
         keys: dict[str, list[str]] = {}
+        panel_keys: dict[str, list[tuple[str, str]]] = {}
         for row in rows if isinstance(rows, list) else []:
             if not isinstance(row, dict) or row.get("id") not in ids:
                 continue
-            keys[row["id"]] = [
-                b["keys"] for b in row.get("shortcuts") or [] if isinstance(b, dict) and isinstance(b.get("keys"), str) and not b.get("panel")
+            binds = [b for b in row.get("shortcuts") or [] if isinstance(b, dict) and isinstance(b.get("keys"), str)]
+            keys[row["id"]] = [b["keys"] for b in binds if not b.get("panel")]
+            # a panel binding of the command's own application-wide key adds nothing
+            scoped = [
+                (b["keys"], b["panel"]) for b in binds if isinstance(b.get("panel"), str) and b["panel"] and b["keys"] not in keys[row["id"]]
             ]
+            if scoped:
+                panel_keys[row["id"]] = scoped
         self.local_keys = keys
+        self.local_panel_keys = panel_keys
         if self.registry.commands:
             self._build_menus()
 
@@ -1393,9 +1432,9 @@ class MainWindow(QMainWindow):
             p = params or {}
             t = p.get("time")
             secs = p.get("seconds")
-            if isinstance(t, int) and not isinstance(t, bool):
+            if isinstance(t, int) and not isinstance(t, bool) and 0 <= t < 2**62:
                 self.monitor.set_reference(t)
-            elif isinstance(secs, (int, float)) and not isinstance(secs, bool) and math.isfinite(secs) and 0 <= secs < 1e7:
+            elif isinstance(secs, (int, float)) and not isinstance(secs, bool) and 0 <= secs < 1e7 and math.isfinite(secs):
                 self.monitor.set_reference(round(secs * TICKS_PER_SECOND))
             else:
                 self.monitor.set_reference(self.monitor.playhead)
@@ -1448,7 +1487,7 @@ class MainWindow(QMainWindow):
             if pos is None:
                 mon.open_add_guide()
                 return {"dialog": "addGuide"}
-            if isinstance(pos, bool) or not isinstance(pos, (int, float)) or not math.isfinite(pos) or abs(pos) > 1e6:
+            if isinstance(pos, bool) or not isinstance(pos, (int, float)) or abs(pos) > 1e6 or not math.isfinite(pos):
                 raise ValueError("`position` must be a number of frame pixels")
             mon.add_guide(params.get("orientation") != "horizontal", float(pos))
             return {"monitor": mon.target, "guides": len(v.guides)}
@@ -1473,6 +1512,33 @@ class MainWindow(QMainWindow):
             self.run_command(cmd)
         else:
             self.execute(cid, {})
+
+    # ----- the timeline's context menus (panels/timeline_menus.py) -----
+    def command_enabled(self, cid: str) -> bool:
+        cmd = self.registry.commands.get(cid)
+        return cmd is not None and cmd.enabled
+
+    def run_menu_command(self, cid: str, params: dict[str, Any]) -> None:
+        if params:
+            self.run_preset(cid, params)
+        else:
+            self.invoke(cid)
+
+    def menu_request(self, cid: str, params: dict[str, Any], then: Any) -> None:
+        ok = [True]
+
+        def failed(_m: str) -> None:
+            ok[0] = False
+
+        if cid:
+            self.engine.execute(cid, params, on_reply=lambda _r, _b: None, on_error=failed)
+        # replies come in request order: these enabled states follow the command above
+        self.engine.call(
+            "engine.commands",
+            on_reply=lambda r, _b: (self.registry.update_enabled(r), then(ok[0])),
+            on_error=lambda _m: then(ok[0]),
+        )
+        self.schedule_refresh()
 
     def run_preset(self, cid: str, params: dict[str, Any]) -> None:
         """A panel runs ``cid`` with ``params`` already known (the monitor's Export Frame knows
