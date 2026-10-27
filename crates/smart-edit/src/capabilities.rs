@@ -135,8 +135,9 @@ pub enum Backend {
     Platform,
     /// The optional GStreamer backend (ADR 0002).
     Gstreamer,
-    /// An FFmpeg backend. Not registered: AGENTS.md §2 allows ffmpeg only as an external test
-    /// oracle until an ADR says otherwise (ADR 0004, smart-edit-baseline §3).
+    /// An FFmpeg backend. Never registered: Smart Edit runs on CFA4's own Rust code and ffmpeg is
+    /// only an external validation oracle (owner decision 2026-10-27, smart-edit-baseline §3;
+    /// AGENTS.md §2).
     Ffmpeg,
 }
 
