@@ -18,6 +18,7 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
     QComboBox,
     QDialog,
     QFileDialog,
@@ -45,7 +46,9 @@ from ..timecode import TICKS_PER_SECOND
 SHEET_FILTER = N_("Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)")
 CREDITS_FILE_FILTER = N_("CFA4 credits file (*.cfa4credits)")
 STYLING_FILTER = N_("Credits styling (*.json)")
-BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card")}
+BEHAVIOURS = {"scroll": N_("Roll"), "card": N_("Card"), "crawl": N_("Crawl")}
+BACKGROUNDS = {"color": N_("Color"), "gradient": N_("Gradient"), "image": N_("Picture: {file}"), "video": N_("Video: {file}")}
+TRANSITIONS = {"cross_dissolve": N_("Dissolve"), "push": N_("Push"), "slide": N_("Slide"), "wipe": N_("Wipe"), "dip_to_black": N_("Dip to Black")}
 PREVIEW_WIDTH = 480
 # The engine's checks (crates/credits/src/validate.rs), worded from their code and values.
 ISSUE_TEXT = {
@@ -55,8 +58,10 @@ ISSUE_TEXT = {
     "missing-glyphs": N_("The font “{font}” has no “{chars}”; another font draws them"),
     "outside-title-safe": N_("“{text}” is outside the title-safe area"),
     "low-contrast": N_("“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)"),
+    "low-contrast/background": N_("“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)"),
+    "contrast-unchecked": N_("A picture or video is behind the text: check the contrast by eye"),
     "small-text": N_("“{text}” is {px} px high; 24 px or more reads well"),
-    "uneven-scroll": N_("The roll moves {speed} px per frame; a whole number does not shimmer"),
+    "uneven-scroll": N_("The text moves {speed} px per frame; a whole number does not shimmer"),
     "fast-scroll": N_("A line crosses the frame in {seconds} s; at least 6 s reads well"),
     "short-card": N_("The card holds for only {seconds} s after its fades"),
     "overlap": N_("This page starts {seconds} s before the previous one ends"),
@@ -81,8 +86,9 @@ def local_number(value: Any) -> str:
 def issue_text(issue: dict[str, Any]) -> str:
     """An engine check in the user's language: its template filled with its values, after its
     place (row or page). Unknown codes fall back to the engine's English message."""
-    template = ISSUE_TEXT.get(str(issue.get("code")))
     values = issue.get("values") if isinstance(issue.get("values"), dict) else {}
+    code = str(issue.get("code"))
+    template = ISSUE_TEXT.get(f"{code}/{values.get('against')}") or ISSUE_TEXT.get(code)
     if template:
         text = tr(template)
         for k, v in values.items():
@@ -95,6 +101,27 @@ def issue_text(issue: dict[str, Any]) -> str:
     if isinstance(page, int):
         return tr("Page {page}: {message}").replace("{page}", str(page + 1)).replace("{message}", text)
     return text
+def background_text(bg: Any) -> str:
+    """A page's background in a word or two (the engine's ``background`` of a preview page)."""
+    if not isinstance(bg, dict) or bg.get("kind") not in BACKGROUNDS:
+        return ""
+    name = Path(str(bg.get("file") or "")).name
+    text = tr(BACKGROUNDS[bg["kind"]]).replace("{file}", name)
+    opacity = bg.get("opacity")
+    if isinstance(opacity, (int, float)) and 0 <= opacity < 100:
+        text += f" ({local_number(f'{float(opacity):g}')} %)"
+    return text
+
+
+def transition_text(tr_: Any) -> str:
+    """The transition into the next page with its length (the engine's ``transition``)."""
+    if not isinstance(tr_, dict):
+        return ""
+    effect = str(tr_.get("effect") or "")
+    name = tr(TRANSITIONS[effect]) if effect in TRANSITIONS else effect.replace("_", " ")
+    return f"{name}, {format_seconds(tr_.get('duration'))}"
+
+
 # typing in a path field waits this long before asking the engine again
 DEBOUNCE_MS = 400
 
@@ -169,16 +196,16 @@ class CreditsDialog(QDialog):
         form.addRow(tr("Styling"), sty_row)
 
         # ----- pages and warnings -----
-        self.pages = QTableWidget(0, 3, self)
+        self.pages = QTableWidget(0, 5, self)
         self.pages.setObjectName("credits.pages")
-        self.pages.setHorizontalHeaderLabels([tr("Page"), tr("Type"), tr("Duration")])
+        self.pages.setHorizontalHeaderLabels([tr("Page"), tr("Type"), tr("Background"), tr("Into the next"), tr("Duration")])
         self.pages.verticalHeader().setVisible(False)
         self.pages.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.pages.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.pages.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         header = self.pages.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        for col in (1, 2):
+        for col in (1, 2, 3, 4):
             header.setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
         self.pages.itemSelectionChanged.connect(self._request_thumbnail)
         self.total = QLabel(self)
@@ -211,11 +238,24 @@ class CreditsDialog(QDialog):
         self.position.setValue(50)
         self.position.setToolTip(tr("Moment in the page"))
         self.position.valueChanged.connect(self._request_thumbnail)
+        self.guides = QCheckBox(tr("Safe areas and spines"), self)
+        self.guides.setObjectName("credits.guides")
+        self.guides.setToolTip(tr("Action safe (93 %), title safe (90 %), the centre and the page's spines"))
+        self.guides.toggled.connect(self._request_thumbnail)
+        self.grid = QCheckBox(tr("Baseline grid"), self)
+        self.grid.setObjectName("credits.grid")
+        self.grid.setToolTip(tr("Lines one gap unit apart, moving with the page"))
+        self.grid.toggled.connect(self._request_thumbnail)
+        guide_row = QHBoxLayout()
+        guide_row.addWidget(self.guides)
+        guide_row.addWidget(self.grid)
+        guide_row.addStretch(1)
         right = QWidget(self)
         rv = QVBoxLayout(right)
         rv.setContentsMargins(0, 0, 0, 0)
         rv.addWidget(self.picture, 1)
         rv.addWidget(self.position)
+        rv.addLayout(guide_row)
 
         split = QSplitter(Qt.Orientation.Horizontal, self)
         split.addWidget(left)
@@ -359,11 +399,13 @@ class CreditsDialog(QDialog):
             cells = (
                 str(page.get("name") or ""),
                 tr(BEHAVIOURS.get(page.get("behaviour"), "")) if page.get("behaviour") in BEHAVIOURS else "",
+                background_text(page.get("background")),
+                transition_text(page.get("transition")),
                 format_seconds(page.get("duration")),
             )
             for col, text in enumerate(cells):
                 item = QTableWidgetItem(text)
-                if col == 2:
+                if col == 4:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.pages.setItem(row, col, item)
         if pages:
@@ -411,7 +453,14 @@ class CreditsDialog(QDialog):
         page = max(0, self.pages.currentRow())
         self._thumb_generation += 1
         gen = self._thumb_generation
-        p = {**self.params(), "page": page, "at": self.position.value() / 100.0, "width": PREVIEW_WIDTH}
+        p = {
+            **self.params(),
+            "page": page,
+            "at": self.position.value() / 100.0,
+            "width": PREVIEW_WIDTH,
+            "guides": self.guides.isChecked(),
+            "grid": self.grid.isChecked(),
+        }
         self.engine.execute(
             "graphics.credits.thumbnail",
             p,

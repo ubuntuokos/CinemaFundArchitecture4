@@ -2,8 +2,8 @@
 //!
 //! Every piece of text is an ordinary CFA4 text layer (`graphic_text`), so a laid-out page
 //! can be edited afterwards in Essential Graphics like any title. Scroll pages use the graphic's
-//! Roll (start and end off screen); card pages are centred vertically and fade with opacity
-//! keyframes. Text sizes come from the caller's [`Measure`] (the engine uses the real text
+//! Roll (start and end off screen); crawl pages put their blocks side by side on one line and
+//! use Crawl Left; card pages are centred vertically and fade with opacity keyframes. Text sizes come from the caller's [`Measure`] (the engine uses the real text
 //! engine), so this crate stays free of fonts and rendering.
 
 use cfa4_geom::Vec2;
@@ -28,6 +28,11 @@ pub trait Measure {
     /// found or read.
     fn picture_size(&self, _file: &str) -> Option<(f64, f64)> {
         None
+    }
+
+    /// Whether a background's picture or video file can be found (default: assume it can).
+    fn file_exists(&self, _file: &str) -> bool {
+        true
     }
 }
 
@@ -71,9 +76,22 @@ pub struct PageOut {
     pub content_height: f64,
     /// Pictures that go with this page.
     pub pictures: Vec<PicturePlace>,
-    /// Card fades actually used (zero for scroll pages).
+    /// Card fades actually used (zero for scroll pages, and at a cut with a transition).
     pub fade_in: Tick,
     pub fade_out: Tick,
+    /// Crawl: length of the line (frame pixels; zero for other pages).
+    pub content_width: f64,
+    /// Where the content's top is on the frame before any roll (cards: centred).
+    pub content_top: f64,
+    /// The spines of the page's blocks (frame x, left to right; none on a crawl).
+    pub spines: Vec<f64>,
+    /// What is behind the page, if anything.
+    pub background: Option<crate::style::Background>,
+    /// The transition into the next page (video transition id and length), when it has one
+    /// and the pages touch.
+    pub transition: Option<(String, Tick)>,
+    /// Length of the transition from the previous page into this one (zero for none).
+    pub transition_in: Tick,
 }
 
 /// Laid-out credits.
@@ -510,16 +528,8 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
         prev_margin = margin;
         let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
         let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y)?;
-        let bk = block_key(b);
         let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
-        for (k, p) in ps_.iter_mut().enumerate() {
-            let name = match p.layer.params.get("name").map(|x| &x.value) {
-                Some(ParamValue::Text(t)) => t.clone(),
-                _ => String::new(),
-            };
-            p.key = piece_key(bk, nth, k, &name);
-            p.row = b.row;
-        }
+        key_pieces(b, nth, &mut ps_);
         y += bh;
         pieces.extend(ps_);
         if pieces.len() > MAX_LAYERS_PER_PAGE {
@@ -529,7 +539,74 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
     Ok((pieces, y.max(0.0), elastic))
 }
 
-fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: usize) -> Result<PageOut, CreditsError> {
+/// Lay a crawl page's blocks side by side on one line centred at `line_y` (frame pixels), from
+/// x = 0. Returns the pieces (tops in frame pixels) and the line's length.
+fn line(ctx: &mut Ctx, styling: &Styling, page: &Page, index: usize, line_y: f64, crawl_gap: f64) -> Result<(Vec<Piece>, f64), CreditsError> {
+    let s = ctx.s;
+    let unit = finite_or(styling.unit_px, 32.0).clamp(0.0, 10_000.0) * s;
+    let fallback = styling.content_style(&styling.default_content_style).unwrap_or_default();
+    let mut missing: Vec<String> = Vec::new();
+    let mut pieces: Vec<Piece> = Vec::new();
+    let mut x = 0.0f64;
+    for (k, b) in page.blocks.iter().enumerate() {
+        let cs = match styling.content_style(&b.style) {
+            Some(c) => c,
+            None => {
+                if !missing.contains(&b.style) {
+                    missing.push(b.style.clone());
+                    ctx.warn(b.row, format!("content style `{}` does not exist; `{}` is used", b.style, fallback.name));
+                }
+                fallback.clone()
+            }
+        };
+        let (mut ps_, bh) = lay_block(ctx, b, &cs, 0.0, 0.0)?;
+        if ps_.is_empty() {
+            continue;
+        }
+        let x0 = ps_.iter().map(|p| p.x + p.b[0]).fold(f64::INFINITY, f64::min);
+        let x1 = ps_.iter().map(|p| p.right()).fold(f64::NEG_INFINITY, f64::max);
+        if !(x0.is_finite() && x1.is_finite()) {
+            continue;
+        }
+        if k > 0 && !pieces.is_empty() {
+            let gap = match b.gap_before {
+                Gap::Units(u) => finite_or(u, 0.0).max(0.0) * unit,
+                Gap::Px(p) => finite_or(p, 0.0).max(0.0) * s,
+            };
+            x += gap + finite_or(crawl_gap, 0.0).clamp(0.0, 100_000.0) * s;
+        }
+        let (dx, dy) = (x - x0, line_y - bh / 2.0);
+        let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
+        key_pieces(b, nth, &mut ps_);
+        for p in &mut ps_ {
+            p.x += dx;
+            p.top += dy;
+        }
+        x += x1 - x0;
+        pieces.extend(ps_);
+        if pieces.len() > MAX_LAYERS_PER_PAGE {
+            return Err(CreditsError::TooLarge(format!("page {} needs more than {MAX_LAYERS_PER_PAGE} text layers", index + 1)));
+        }
+    }
+    Ok((pieces, x.max(0.0)))
+}
+
+/// Give a block's pieces their stable keys and row; `nth`: which repetition of an identical
+/// block it is.
+fn key_pieces(b: &Block, nth: usize, pieces: &mut [Piece]) {
+    let bk = block_key(b);
+    for (k, p) in pieces.iter_mut().enumerate() {
+        let name = match p.layer.params.get("name").map(|x| &x.value) {
+            Some(ParamValue::Text(t)) => t.clone(),
+            _ => String::new(),
+        };
+        p.key = piece_key(bk, nth, k, &name);
+        p.row = b.row;
+    }
+}
+
+/// `last`: no page follows; `cut_in`: the previous page has a transition into this one.
+fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: usize, last: bool, cut_in: bool) -> Result<PageOut, CreditsError> {
     let s = ctx.s;
     let (w, h) = (f64::from(frame.width), f64::from(frame.height));
     let ps = match styling.page_style(&page.style) {
@@ -539,7 +616,17 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
             crate::style::PageStyle::default()
         }
     };
-    let (mut pieces, mut content_h, elastic) = stack(ctx, styling, page, w, index, 1.0)?;
+    let crawl = ps.behaviour == Behaviour::Crawl;
+    let line_y = finite_or(ps.crawl_line, 0.85).clamp(0.0, 1.0) * h;
+    let (mut pieces, mut content_h, elastic, content_w) = if crawl {
+        let (p, cw) = line(ctx, styling, page, index, line_y, ps.crawl_gap)?;
+        let top = p.iter().map(|x| x.top).fold(f64::INFINITY, f64::min);
+        let bot = bottom(&p).unwrap_or(0.0);
+        (p, if top.is_finite() { (bot - top).max(0.0) } else { 0.0 }, 0.0, cw)
+    } else {
+        let (p, ch, el) = stack(ctx, styling, page, w, index, 1.0)?;
+        (p, ch, el, 0.0)
+    };
     let rate = frame.rate;
     let fd = rate.frame_duration();
     let runtime = match &page.runtime {
@@ -596,6 +683,13 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
                 }
             }
         }
+        Behaviour::Crawl => {
+            let speed = finite_or(ps.scroll_px_per_frame, 4.0).clamp(0.1, 10_000.0) * s;
+            meta.roll = Roll { mode: RollMode::CrawlLeft, start_off_screen: true, end_off_screen: true, ..Default::default() };
+            // a runtime changes the speed: a ticker has no gaps worth stretching
+            let n = ((w + content_w) / speed).ceil().clamp(1.0, 86_400.0 * 240.0) as i64;
+            (0.0, runtime.unwrap_or_else(|| frames(rate, n)))
+        }
         Behaviour::Card => {
             if content_h > h {
                 ctx.warn(page.row, format!("card page {} is taller than the frame; use a Scroll page", index + 1));
@@ -604,6 +698,23 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
         }
     };
     let duration = rate.snap_nearest(duration).max(fd);
+    let known = |id: &str| cfa4_project::vtransition::find_transition(id, cfa4_project::EffectKind::VideoTransition).map(|d| d.id.to_string());
+    let transition = match crate::style::transition_id(&ps.transition) {
+        Some(id) if known(&id).is_none() => {
+            ctx.warn(page.row, format!("page {}: there is no transition `{}`; the pages cut", index + 1, ps.transition.trim()));
+            None
+        }
+        Some(id) if !last && gap_after.0 == 0 => {
+            let id = known(&id).unwrap_or(id);
+            let d = frames(rate, i64::from(ps.transition_frames.max(1))).min(duration);
+            Some((id, d))
+        }
+        Some(_) if !last => {
+            ctx.warn(page.row, format!("page {}: the transition needs the pages to touch (page gap 0); it is left out", index + 1));
+            None
+        }
+        _ => None,
+    };
     let (fade_in, fade_out) = if ps.behaviour == Behaviour::Card {
         let (mut fin, mut fout) = (frames(rate, i64::from(ps.fade_in_frames)), frames(rate, i64::from(ps.fade_out_frames)));
         let both = fin.0.saturating_add(fout.0);
@@ -611,7 +722,8 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
             fin = Tick((fin.0 as i128 * duration.0 as i128 / both as i128) as i64);
             fout = Tick(duration.0 - fin.0);
         }
-        (fin, fout)
+        // a transition takes the place of the fade at its cut
+        (if cut_in { Tick::ZERO } else { fin }, if transition.is_some() { Tick::ZERO } else { fout })
     } else {
         (Tick::ZERO, Tick::ZERO)
     };
@@ -639,7 +751,59 @@ fn lay_page(ctx: &mut Ctx, styling: &Styling, page: &Page, frame: Frame, index: 
     let name = page.blocks.iter().find_map(|b| b.head.clone().or_else(|| b.body.first().cloned())).unwrap_or_default();
     let name = name.lines().next().unwrap_or("").chars().take(40).collect::<String>();
     let name = if name.trim().is_empty() { format!("Credits {}", index + 1) } else { format!("Credits {}: {}", index + 1, name.trim()) };
-    Ok(PageOut { name, behaviour: ps.behaviour, layers, keys, layer_rows, meta, duration, gap_after, content_height: content_h, pictures, fade_in, fade_out })
+    let mut spines: Vec<f64> = Vec::new();
+    if !crawl {
+        for b in &page.blocks {
+            let x = w / 2.0 + finite_or(b.spine, 0.0) * s;
+            if !spines.iter().any(|v| (v - x).abs() < 0.5) {
+                spines.push(x);
+            }
+        }
+        spines.sort_by(f64::total_cmp);
+    }
+    let background = (!ps.background.is_none()).then(|| ps.background.clone());
+    if let Some(bg) = &background {
+        use crate::style::BackgroundKind as K;
+        let colours: &[&str] = match bg.kind {
+            K::Color => &[&bg.color],
+            K::Gradient => &[&bg.color, &bg.color2],
+            _ => &[],
+        };
+        for c in colours {
+            if parse_color(c).is_none() && !ctx.bad_colors.iter().any(|b| b == c) {
+                ctx.bad_colors.push((*c).to_string());
+                ctx.warn(page.row, format!("colour `{c}` is not #rrggbb; black is used"));
+            }
+        }
+        if matches!(bg.kind, K::Image | K::Video) {
+            if bg.file.trim().is_empty() {
+                ctx.warn(page.row, format!("page {}: the background names no file; it is left out", index + 1));
+            } else if !ctx.measure.file_exists(&bg.file) && !ctx.missing_pics.contains(&bg.file) {
+                ctx.missing_pics.push(bg.file.clone());
+                ctx.warn(page.row, format!("background `{}` was not found; it is left out", bg.file));
+            }
+        }
+    }
+    Ok(PageOut {
+        name,
+        behaviour: ps.behaviour,
+        layers,
+        keys,
+        layer_rows,
+        meta,
+        duration,
+        gap_after,
+        content_height: content_h,
+        pictures,
+        fade_in,
+        fade_out,
+        content_width: content_w,
+        content_top: dy,
+        spines,
+        background,
+        transition,
+        transition_in: Tick::ZERO,
+    })
 }
 
 /// Lay out `credits` for `frame` with `styling`.
@@ -659,9 +823,13 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
         bad_colors: vec![],
         occurrences: occurrences(credits),
     };
-    let mut pages = Vec::with_capacity(credits.pages.len());
+    let n = credits.pages.len();
+    let mut pages: Vec<PageOut> = Vec::with_capacity(n);
     for (i, p) in credits.pages.iter().enumerate() {
-        pages.push(lay_page(&mut ctx, styling, p, frame, i)?);
+        let incoming = pages.last().and_then(|x| x.transition.as_ref().map(|(_, d)| *d));
+        let mut page = lay_page(&mut ctx, styling, p, frame, i, i + 1 == n, incoming.is_some())?;
+        page.transition_in = incoming.unwrap_or(Tick::ZERO);
+        pages.push(page);
     }
     Ok(Laid { pages, warnings: ctx.warnings })
 }

@@ -77,7 +77,7 @@ The Qt Inspector is named Properties, as in egui (3.22).
 | 3.26 | Reference Monitor | ❌ | |
 | 3.27 | Timecode | ❌ | |
 | 3.28 | Project Notes | ❌ | |
-| 3.29 | Credits from a spreadsheet (Graphics and Titles ▸ Import Credits Spreadsheet…) | ✅ | Credits window: spreadsheet (CSV/TSV/.xlsx/.ods), worksheet, picture folder, styling, pages with type and length, warnings by row, page picture at a chosen moment, place at playhead in one undo step (`test_real_engine_credits_window`); `.cfa4credits` files and Refresh Credits from Spreadsheet with a row-by-row change list (`test_real_engine_credits_save_and_refresh`, Qt only); checks with icons in Hungarian; Fit Credits to Music (`test_real_engine_fit_credits_to_music`, Qt only); egui had only a file dialog. Further credits work is Qt6-only (owner, 2026-10-25) |
+| 3.29 | Credits from a spreadsheet (Graphics and Titles ▸ Import Credits Spreadsheet…) | ✅ | Credits window: spreadsheet (CSV/TSV/.xlsx/.ods), worksheet, picture folder, styling, pages with type and length, warnings by row, page picture at a chosen moment, place at playhead in one undo step (`test_real_engine_credits_window`); `.cfa4credits` files and Refresh Credits from Spreadsheet with a row-by-row change list (`test_real_engine_credits_save_and_refresh`, Qt only); checks with icons in Hungarian; Fit Credits to Music (`test_real_engine_fit_credits_to_music`, Qt only); pages table with background and transition, safe-area / spine / baseline-grid guides on the page picture (Qt only); egui had only a file dialog. Further credits work is Qt6-only (owner, 2026-10-25) |
 
 ## 4. Modes and dialogs
 
