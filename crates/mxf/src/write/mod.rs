@@ -22,7 +22,14 @@
 //!
 //! Essence mappings: VC-3 / DNxHD / DNxHR (ST 2019-4), Apple ProRes (RDD 44), AVC byte stream
 //! (ST 381-3; Annex B access units with in-band SPS / PPS) with long-GOP index entries (temporal
-//! offsets, key-frame offsets, prediction flags), and Broadcast Wave PCM (ST 382, 8–32 bit).
+//! offsets, key-frame offsets, prediction flags), JPEG 2000 (ST 422, RGBA descriptor with the
+//! JPEG 2000 picture sub-descriptor) and Broadcast Wave PCM (ST 382, 8–32 bit).
+//!
+//! [`Pattern::DCinema`] writes D-Cinema track files (ST 429-3): OP-Atom with one frame-wrapped
+//! essence track, the file package as the primary package, the closed and complete header
+//! metadata only in the header partition and the index only in the footer; with
+//! [`PictureCoding::J2k`] and [`ColorSpace::DcdmXyz`] the picture track file of ST 429-4, with
+//! 24-bit PCM and [`WriterConfig::channel_assignment`] the sound track file of ST 429-2.
 
 mod labels;
 #[cfg(test)]
@@ -48,6 +55,14 @@ impl std::fmt::Debug for Umid {
 }
 
 impl Umid {
+    /// The package UID of a D-Cinema track file (ST 429-3 9.3.2): a basic UMID of unidentified
+    /// material type whose material number is the track file's UUID.
+    pub fn dcinema(uuid: [u8; 16]) -> Umid {
+        let mut u = [0u8; 32];
+        u[..16].copy_from_slice(&[0x06, 0x0A, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x01, 0x01, 0x0F, 0x20, 0x13, 0x00, 0x00, 0x00]);
+        u[16..].copy_from_slice(&uuid);
+        Umid(u)
+    }
     /// A basic UMID (universal label `06 0A 2B 34 01 01 01 05 01 01 0D 20`, length 0x13, instance
     /// 0) whose 16-byte material number is a hash of `seed` (callers pass something unique: path,
     /// time, track). The same seed always gives the same UMID.
@@ -92,6 +107,9 @@ pub enum Pattern {
     Op1a,
     /// OP-Atom: exactly one essence track (a picture or one sound track), clip-wrapped.
     OpAtom,
+    /// D-Cinema track file (ST 429-3): OP-Atom with exactly one frame-wrapped essence track, the
+    /// file package as the primary package, header metadata in the header partition only.
+    DCinema,
 }
 
 /// Picture essence coding.
@@ -104,6 +122,10 @@ pub enum PictureCoding {
     ProRes { profile: u8 },
     /// H.264 / AVC Annex B byte stream; `profile_idc` from the SPS (66, 77, 100, …).
     Avc { profile_idc: u8, intra: bool },
+    /// JPEG 2000 codestreams (ISO/IEC 15444-1); `rsiz` is the codestream's Rsiz: 3 / 4 for the
+    /// 2K / 4K Digital Cinema profiles (ST 429-4 coding labels), anything else is written as an
+    /// unconstrained Part 1 codestream.
+    J2k { rsiz: u16 },
 }
 
 impl PictureCoding {
@@ -142,6 +164,14 @@ impl PictureCoding {
                 };
                 [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0A, 0x04, 0x01, 0x02, 0x02, 0x01, b13, b14, 0x01]
             }
+            PictureCoding::J2k { rsiz } => {
+                // ST 422 Table 3: Part 1 codestreams, byte 16 the D-Cinema restrictions (ST 429-4)
+                let (version, last) = match rsiz {
+                    3 | 4 => (0x09, rsiz as u8),
+                    _ => (0x07, 0x7F),
+                };
+                [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, version, 0x04, 0x01, 0x02, 0x02, 0x03, 0x01, 0x01, last]
+            }
         }
     }
     /// (essence container label, element type) for frame or clip wrapping.
@@ -151,6 +181,8 @@ impl PictureCoding {
             PictureCoding::Vc3 { .. } => (essence_container(0x0A, 0x11, w, 0x00), if clip { 0x0D } else { 0x0C }),
             PictureCoding::ProRes { .. } => (essence_container(0x0D, 0x1C, w, 0x00), if clip { 0x18 } else { 0x17 }),
             PictureCoding::Avc { .. } => (essence_container(0x0A, 0x10, 0x60, w), if clip { 0x16 } else { 0x15 }),
+            // ST 422 Table 2 ("FU" frame wrapping / "Cn" clip wrapping) and Table 1
+            PictureCoding::J2k { .. } => (essence_container(0x07, 0x0C, w, 0x00), if clip { 0x09 } else { 0x08 }),
         }
     }
 }
@@ -164,6 +196,45 @@ pub enum ColorSpace {
     Rec2020Pq,
     /// BT.2020 primaries and matrix, ARIB STD-B67 (HLG) transfer.
     Rec2020Hlg,
+    /// D-Cinema X'Y'Z' (ST 428-1: 12-bit, gamma 2.6): an RGBA descriptor with the DCDM pixel
+    /// layout (ST 429-4).
+    DcdmXyz,
+}
+
+/// The JPEG 2000 picture sub-descriptor (ST 422 Table 7): the SIZ values shared by every
+/// codestream of the track.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct J2kSubDescriptor {
+    pub rsiz: u16,
+    pub xsiz: u32,
+    pub ysiz: u32,
+    pub xosiz: u32,
+    pub yosiz: u32,
+    pub xtsiz: u32,
+    pub ytsiz: u32,
+    pub xtosiz: u32,
+    pub ytosiz: u32,
+    /// (Ssiz, XRsiz, YRsiz) per component.
+    pub components: Vec<(u8, u8, u8)>,
+}
+
+impl J2kSubDescriptor {
+    /// One tile covering a `width`×`height` image of `components` components of `depth` bits,
+    /// unsigned and not subsampled (the D-Cinema profiles: 3 components of 12 bits).
+    pub fn single_tile(rsiz: u16, width: u32, height: u32, components: usize, depth: u8) -> Self {
+        J2kSubDescriptor {
+            rsiz,
+            xsiz: width,
+            ysiz: height,
+            xosiz: 0,
+            yosiz: 0,
+            xtsiz: width,
+            ytsiz: height,
+            xtosiz: 0,
+            ytosiz: 0,
+            components: vec![(depth.saturating_sub(1), 1, 1); components],
+        }
+    }
 }
 
 /// The picture track.
@@ -179,6 +250,8 @@ pub struct PictureDesc {
     /// Chroma subsampling: (2, 1) 4:2:2, (2, 2) 4:2:0, (1, 1) 4:4:4.
     pub subsampling: (u32, u32),
     pub color: ColorSpace,
+    /// JPEG 2000 only: the picture sub-descriptor.
+    pub j2k: Option<J2kSubDescriptor>,
 }
 
 impl PictureDesc {
@@ -192,6 +265,7 @@ impl PictureDesc {
             PictureCoding::Vc3 { cid } => {
                 (if matches!(cid, 1235 | 1241 | 1250 | 1256 | 1270 | 1271) { 10 } else { 8 }, if matches!(cid, 1256 | 1270) { (1, 1) } else { (2, 1) })
             }
+            PictureCoding::J2k { .. } => (12, (1, 1)),
         };
         PictureDesc {
             coding,
@@ -201,7 +275,17 @@ impl PictureDesc {
             depth,
             subsampling,
             color: ColorSpace::Rec709,
+            j2k: None,
         }
+    }
+
+    /// A D-Cinema picture track (ST 429-4): JPEG 2000 of the 2K (`rsiz` 3) or 4K (4) profile,
+    /// 12-bit X'Y'Z' in one tile.
+    pub fn dcinema(rsiz: u16, width: u32, height: u32) -> Self {
+        let mut d = PictureDesc::new(PictureCoding::J2k { rsiz }, width, height);
+        d.color = ColorSpace::DcdmXyz;
+        d.j2k = Some(J2kSubDescriptor::single_tile(rsiz, width, height, 3, 12));
+        d
     }
 }
 
@@ -326,6 +410,8 @@ pub struct WriterConfig {
     pub product: String,
     pub version: String,
     pub modified: Timestamp,
+    /// Sound tracks: the Wave descriptor's channel assignment label (ST 429-2 Annex A).
+    pub channel_assignment: Option<[u8; 16]>,
 }
 
 impl WriterConfig {
@@ -342,6 +428,7 @@ impl WriterConfig {
             product: "CFA4".into(),
             version: env!("CARGO_PKG_VERSION").into(),
             modified: Timestamp::default(),
+            channel_assignment: None,
         }
     }
 }
@@ -533,7 +620,7 @@ impl<W: Write + Seek> MxfWriter<W> {
         if n_essence == 0 {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "MXF file without essence tracks"));
         }
-        if cfg.pattern == Pattern::OpAtom && n_essence != 1 {
+        if matches!(cfg.pattern, Pattern::OpAtom | Pattern::DCinema) && n_essence != 1 {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "OP-Atom files hold exactly one essence track"));
         }
         if cfg.sound.iter().any(|s| s.sample_rate == 0 || s.channels == 0 || !(1..=32).contains(&s.bits)) {
@@ -620,7 +707,7 @@ impl<W: Write + Seek> MxfWriter<W> {
     fn op_label(&self) -> [u8; 16] {
         match self.cfg.pattern {
             Pattern::Op1a => op1a(self.tracks.len() > 1),
-            Pattern::OpAtom => OP_ATOM,
+            Pattern::OpAtom | Pattern::DCinema => OP_ATOM,
         }
     }
 
@@ -691,7 +778,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "this MXF file has no picture track"));
         }
         match self.cfg.pattern {
-            Pattern::Op1a => {
+            Pattern::Op1a | Pattern::DCinema => {
                 self.pending.push_back((data.to_vec(), info));
                 self.emit(false)
             }
@@ -714,7 +801,7 @@ impl<W: Write + Seek> MxfWriter<W> {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "PCM data is not a whole number of sample frames"));
         }
         match self.cfg.pattern {
-            Pattern::Op1a => {
+            Pattern::Op1a | Pattern::DCinema => {
                 self.sound_buf[track].extend_from_slice(pcm);
                 self.emit(false)
             }
@@ -785,6 +872,10 @@ impl<W: Write + Seek> MxfWriter<W> {
         // Preface
         let mut s = Set::new(0x2F, self.uid(1));
         s.p(0x3B02, &ts).u16(0x3B05, 0x0103).u32(0x3B07, 1).refs(0x3B06, &[self.uid(2)]).p(0x3B03, &self.uid(3)).p(0x3B09, &self.op_label());
+        if cfg.pattern == Pattern::DCinema {
+            // ST 429-3 6.2: the top-level file package is the output timeline
+            s.p(0x3B08, &self.uid(2000));
+        }
         let ec: Vec<&[u8]> = containers.iter().map(|c| &c[..]).collect();
         s.p(0x3B0A, &batch(&ec, 16)).p(0x3B0B, &batch(&[], 16));
         s.write(&mut out);
@@ -866,6 +957,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                 TrackKind::Picture => {
                     // Picture tracks exist only with a picture configuration.
                     let Some(p) = cfg.picture.as_ref() else { continue };
+                    if p.color == ColorSpace::DcdmXyz {
+                        self.rgba_descriptor(&mut out, uid, t, p, d);
+                        continue;
+                    }
                     let mut s = Set::new(0x28, uid);
                     if multiple {
                         s.u32(0x3006, t.id);
@@ -875,7 +970,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                         s.i64(0x3002, d.essence);
                     }
                     let (tcl, ce, cp) = match p.color {
-                        ColorSpace::Rec709 => (TC_709, CE_709, CP_709),
+                        ColorSpace::Rec709 | ColorSpace::DcdmXyz => (TC_709, CE_709, CP_709),
                         ColorSpace::Rec2020Pq => (TC_PQ, CE_2020, CP_2020),
                         ColorSpace::Rec2020Hlg => (TC_HLG, CE_2020, CP_2020),
                     };
@@ -908,7 +1003,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                 TrackKind::Sound(i) => {
                     let sd = cfg.sound[i];
                     let mut s = Set::new(0x48, uid);
-                    if multiple {
+                    if multiple || cfg.pattern == Pattern::DCinema {
                         s.u32(0x3006, t.id);
                     }
                     s.rat(0x3001, cfg.edit_rate);
@@ -922,6 +1017,9 @@ impl<W: Write + Seek> MxfWriter<W> {
                         .u32(0x3D01, sd.bits)
                         .u16(0x3D0A, sd.block_align() as u16)
                         .u32(0x3D09, sd.block_align() * sd.sample_rate);
+                    if let Some(ca) = cfg.channel_assignment {
+                        s.p(0x3D32, &ca);
+                    }
                     s.write(&mut out);
                 }
             }
@@ -936,6 +1034,50 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.write(&mut out);
         }
         out
+    }
+
+    /// The RGBA picture essence descriptor of a D-Cinema X'Y'Z' track (ST 429-4 Table 4) and its
+    /// JPEG 2000 picture sub-descriptor (ST 422 Table 7).
+    fn rgba_descriptor(&self, out: &mut Vec<u8>, uid: [u8; 16], t: &TrackW, p: &PictureDesc, d: Durations) {
+        let sub_uid = self.uid(3100);
+        let mut s = Set::new(0x29, uid);
+        s.u32(0x3006, t.id).rat(0x3001, self.cfg.edit_rate);
+        if d.essence >= 0 {
+            s.i64(0x3002, d.essence);
+        }
+        let max = (1u32 << p.depth.clamp(1, 16)) - 1;
+        s.p(0x3004, &t.container)
+            .u8(0x320C, 0)
+            .u32(0x3203, p.width)
+            .u32(0x3202, p.height)
+            .rat(0x320E, p.aspect)
+            .p(0x320D, &batch(&[&0u32.to_be_bytes(), &0u32.to_be_bytes()], 4))
+            .p(0x3201, &p.coding.coding_label())
+            .p(0x3210, &TC_DCDM)
+            .u32(0x3406, max)
+            .u32(0x3407, 0)
+            // X', Y', Z' (D8h, D9h, DAh) of `depth` bits each
+            .p(0x3401, &[0xD8, p.depth as u8, 0xD9, p.depth as u8, 0xDA, p.depth as u8, 0, 0]);
+        if p.j2k.is_some() {
+            s.refs(TAG_SUB_DESCRIPTORS, &[sub_uid]);
+        }
+        s.write(out);
+        let Some(j) = &p.j2k else { return };
+        let mut s = Set::new(0x5A, sub_uid);
+        let sizing: Vec<[u8; 3]> = j.components.iter().map(|&(a, b, c)| [a, b, c]).collect();
+        let items: Vec<&[u8]> = sizing.iter().map(|c| &c[..]).collect();
+        s.u16(TAG_J2K_RSIZ, j.rsiz)
+            .u32(TAG_J2K_RSIZ + 1, j.xsiz)
+            .u32(TAG_J2K_RSIZ + 2, j.ysiz)
+            .u32(TAG_J2K_RSIZ + 3, j.xosiz)
+            .u32(TAG_J2K_RSIZ + 4, j.yosiz)
+            .u32(TAG_J2K_RSIZ + 5, j.xtsiz)
+            .u32(TAG_J2K_RSIZ + 6, j.ytsiz)
+            .u32(TAG_J2K_RSIZ + 7, j.xtosiz)
+            .u32(TAG_J2K_RSIZ + 8, j.ytosiz)
+            .u16(TAG_J2K_RSIZ + 9, j.components.len() as u16)
+            .p(TAG_J2K_RSIZ + 10, &batch(&items, 3));
+        s.write(out);
     }
 
     /// A track, its sequence and its one component (`component` adds the component-specific
@@ -1082,7 +1224,7 @@ impl<W: Write + Seek> MxfWriter<W> {
     /// Finish the file: footer partition with the final header metadata and the index, random
     /// index pack, and the closed header. Returns the sink (positioned at the end).
     pub fn finish(mut self) -> io::Result<W> {
-        if self.cfg.pattern == Pattern::Op1a {
+        if matches!(self.cfg.pattern, Pattern::Op1a | Pattern::DCinema) {
             self.emit(true)?;
         } else {
             // patch the clip element length
@@ -1097,9 +1239,11 @@ impl<W: Write + Seek> MxfWriter<W> {
         let meta = self.metadata(d);
         let index = self.index();
         let footer = self.pos;
-        let pack = self.partition_pack(4, 4, footer, self.body_partition, footer, meta.len() as u64, index.len() as u64, INDEX_SID, 0);
+        // D-Cinema: header metadata in the header partition only (ST 429-3 9.1)
+        let footer_meta: &[u8] = if self.cfg.pattern == Pattern::DCinema { &[] } else { &meta };
+        let pack = self.partition_pack(4, 4, footer, self.body_partition, footer, footer_meta.len() as u64, index.len() as u64, INDEX_SID, 0);
         let mut out = pack;
-        out.extend_from_slice(&meta);
+        out.extend_from_slice(footer_meta);
         out.extend_from_slice(&index);
         // random index pack: (BodySID, offset) per partition, then the pack's length
         let mut rip = Vec::new();
