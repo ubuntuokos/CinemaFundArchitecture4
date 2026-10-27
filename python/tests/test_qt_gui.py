@@ -1830,6 +1830,98 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.close()
 
 
+def test_qc_window_helpers():
+    from cfa4_qt.panels.qc import bounds_text, frame_rate_of, parse_position, value_text
+
+    assert value_text({"value": -14.25, "unit": "LUFS"}) == "-14.25 LUFS"
+    assert value_text({"value": True}) == "" and value_text({}) == ""
+    assert bounds_text({"pass": {"min": -15.0, "max": -13.0}, "accept": {"min": -16.0, "max": -12.0}}).startswith("-15…-13 (")
+    assert bounds_text({"pass": {"max": 0.0}}) == "≤ 0"
+    report = {"checks": [{"id": "probe.video", "detail": {"frameRate": "25/1"}}]}
+    assert frame_rate_of(report) == (25, 1)
+    assert frame_rate_of({"checks": [{"id": "probe.video", "detail": {"frameRate": "0/0"}}]}) is None
+    pos = parse_position("00:00:01:05", (25, 1))
+    assert pos == {"timecode": "00:00:01:05", "frame": 30, "tick": 30 * TICKS_PER_SECOND // 25}
+    assert parse_position("00:00:01:05", None) == {"timecode": "00:00:01:05"}
+    for bad in ("", "1:2", "aa:bb:cc:dd", "-1:00:00:00"):
+        assert parse_position(bad, (25, 1)) is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path):
+    """Media QC stage E: export with "Check quality after export", read the report in the QC
+    window, add a time-coded finding and save it into the report next to the export."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(160)
+        dlg.height_spin.setValue(90)
+        out = tmp_path / "qc" / "cut.mp4"
+        dlg.path.setText(str(out))
+        dlg.qc_after.setChecked(True)
+        assert dlg.params()["qc"] == "delivery-web"
+        assert wait_until(app, lambda: "160×90" in dlg.summary.text(), 10_000), dlg.summary.text()
+        dlg.export_button.click()
+
+        def qc_state() -> str:
+            cell = dlg.table.item(0, 6)
+            return str(cell.data(QtCore.Qt.ItemDataRole.UserRole)) if cell is not None else ""
+
+        assert wait_until(app, lambda: qc_state() not in ("", "notChecked", "running"), 240_000), qc_state()
+        report_file = Path(str(out) + ".cfa4qc.json")
+        assert report_file.is_file() and Path(str(out) + ".cfa4qc.png").is_file()
+        # render and QC state stay apart: the render is done whatever QC says
+        assert dlg.table.item(0, 3).data(QtCore.Qt.ItemDataRole.UserRole) == "done"
+
+        dlg.table.selectRow(0)
+        dlg.open_quality_check()
+        qc = dlg.qc_dialog
+        assert qc is not None and qc.isVisible()
+        assert wait_until(app, lambda: qc.checks.rowCount() > 10, 30_000), qc.message.text()
+        assert qc.verdict.text()
+        assert not qc.sheet.pixmap().isNull(), "the contact sheet is shown"
+        assert len(qc.answers) == 4
+        combo, _note = qc.answers["picture.defect"]
+        combo.setCurrentIndex(combo.findData("no"))
+        row = qc.add_finding("flash frame", "major", "00:00:00:12", "check the source")
+        assert row == 0
+        qc.reviewer.setText("QC tester")
+        qc.review_done.setChecked(True)
+        saved: list[str] = []
+        qc.review_saved.connect(lambda _p, v: saved.append(v))
+        qc.save_button.click()
+        assert wait_until(app, lambda: bool(saved), 30_000), qc.message.text()
+        report = json.loads(report_file.read_text(encoding="utf-8"))
+        human = report["human"]
+        assert human["state"] == "done" and human["reviewer"] == "QC tester"
+        assert human["findings"][0]["at"]["timecode"] == "00:00:00:12"
+        assert human["findings"][0]["severity"] == "major"
+        assert human["answers"] == [{"question": "picture.defect", "answer": "no"}]
+        # a major finding never leaves a PASS
+        assert report["summary"]["verdict"] in ("WARN", "FAIL")
+        assert wait_until(app, lambda: qc.findings.rowCount() == 1, 10_000), "the saved review is read back"
+    finally:
+        if win.export_dialog is not None:
+            if win.export_dialog.qc_dialog is not None:
+                win.export_dialog.qc_dialog.hide()
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_tick_signals_carry_64_bit_times(app):
     """Regression: Signal(int) is a 32-bit C int in PySide6, so a playhead past 8.5 ms (ticks are
     254 016 000 000 per second) wrapped to a wrong, often negative time while scrubbing the

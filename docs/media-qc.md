@@ -8,10 +8,10 @@ settings, needs no cloud service, and runs on the CPU (a GPU path is optional). 
 use CFA4's own demuxers and decoders; an FFmpeg cross-check stays `NOT_RUN` until the
 `cfa4-ffmpeg` backend exists ([ADR 0005](adr/ADR-0005-media-backends.md)).
 
-Status: stages B–E1 (report schema, profiles, input, integrity, audio and picture checks,
-`cfa4-cli qc`, the engine's `qc.*` commands and the export queue's QC state).
-`video.referenceSsim` reports NOT_RUN until the engine supplies preview references; the Qt 6
-review window follows in stage E2.
+Status: stages B–E (report schema, profiles, input, integrity, audio and picture checks,
+`cfa4-cli qc`, the engine's `qc.*` commands, the export queue's QC state and the Qt 6 Quality
+Check window, [qt-gui.md](qt-gui.md#export-window)). `video.referenceSsim` reports NOT_RUN until
+the engine supplies preview references.
 
 ## Command line
 

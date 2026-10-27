@@ -144,7 +144,8 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 |---|---|
 | `apps/cfa4-cli/src/serve.rs` | engine server (protocol, frame/audio rendering, upkeep loop) |
 | `python/cfa4_qt/panels/effect_controls.py` | Effect Controls: parameters, stopwatch, keyframes (`effects.inspect` + `effects.*` commands) |
-| `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress |
+| `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress and QC state |
+| `python/cfa4_qt/panels/qc.py` | Quality Check window: QC report, contact sheet, guided human review (`qc.*` commands) |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
 | `python/cfa4_qt/main_window.py` | docks, refresh cycle, command routing, close/recovery prompts |
@@ -165,3 +166,16 @@ are not sent until touched, so a preset's own choices are never silently replace
 is always sent when set (the fields show the preset's size; 0 × 0 is the preset's or the
 sequence's). `test_real_engine_export_through_the_dialog_and_reimport` exports through the
 window, checks the file with ffprobe (H.264 + AAC, the asked size) and imports it back.
+
+**Quality check** ([media-qc.md](media-qc.md)). "Check quality after export" sends
+`"qc": "delivery-web"` with the export; the queue's Quality column shows each item's QC state
+(from `export.queue.list`), apart from its render status. Quality Check… (or a double-click on a
+finished item) opens the Quality Check window: it runs `qc.run` when the item was not checked
+(followed in `jobs.list`), then shows the engine's verified report (`qc.report.get`): verdict,
+reasons, every check with status, value and bounds, the time-coded events, and the contact
+sheet. Human Review asks the engine's guided questions and takes findings (description,
+severity, time code, note); an automatic event can be copied into a finding with its time code.
+Save Review stores the review in the report (`qc.review.save`), and the engine recomputes the
+verdict. The window measures nothing itself and never changes the project. Playing the export at
+a flagged time code needs a preview that does not import the file into the project; it is not
+there yet. `test_real_engine_quality_check_through_the_export_window` covers the round trip.
