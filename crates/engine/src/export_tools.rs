@@ -8,7 +8,7 @@
 //!   same name. Names compare case- and punctuation-insensitively.
 //! - **Settings.** Every export command takes `preset` (a name), `settings` (an
 //!   [`ExportSettings`] JSON object in camelCase, merged over the preset) and a few flat
-//!   overrides (`format`, `width`/`height`, `fps`, `bitrateKbps`, …), plus `path`, `sequence` and
+//!   overrides (`format`, `width`/`height`, `fps`, `bitrateKbps`, `audioBitrateKbps`, …), plus `path`, `sequence` and
 //!   `range` (`entire` | `inOut` | `workArea` | `custom` with `start…` / `end…` times).
 //! - **Queue** (session state, not saved with the project). `export.queue.add` snapshots the
 //!   project and resolves the settings; `export.queue.start` encodes the ready items one after
@@ -291,14 +291,41 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "apvProfile") {
         settings.apv_profile = v.to_string();
     }
+    if let Some(v) = str_p(p, "cineformProfile") {
+        settings.cineform_profile = v.to_string();
+    }
+    if let Some(v) = str_p(p, "cineformQuality") {
+        settings.cineform_quality = v.to_string();
+    }
     if let Some(v) = str_p(p, "audioCodec") {
-        settings.audio.codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "audioCodec: auto | aac | pcm | flac"))?;
+        settings.audio.codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "audioCodec: auto | aac | pcm | flac | opus"))?;
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "audioBitrateKbps", cmd)? {
+        settings.audio.bitrate_kbps = v;
     }
     if let Some(v) = u64_p(p, "flacLevel") {
         settings.audio.flac_level = v.min(8) as u8;
     }
     if let Some(v) = str_p(p, "mxfVideoCodec") {
         settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264"))?;
+    }
+    if let Some(v) = str_p(p, "mpeg2Container") {
+        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
+        settings.mpeg2_container = c.id().to_string();
+    }
+    if let Some(v) = str_p(p, "mpeg2Chroma") {
+        settings.mpeg2_422 = match v {
+            "420" | "4:2:0" => false,
+            "422" | "4:2:2" => true,
+            _ => return Err(bad(cmd, "mpeg2Chroma: 420 | 422")),
+        };
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
+        settings.mpeg2_quantizer = match v {
+            0 => None,
+            1..=31 => Some(v as u8),
+            _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
+        };
     }
     if let Some(v) = bool_p(p, "sdr") {
         settings.sdr = v;
@@ -404,11 +431,16 @@ fn with_extension(path: &str, settings: &ExportSettings) -> String {
             if e.eq_ignore_ascii_case(ext)
                 || (settings.format == Format::TiffSequence && e.eq_ignore_ascii_case("tiff"))
                 || (settings.format == Format::JpegSequence && e.eq_ignore_ascii_case("jpeg"))
-                || (settings.format == Format::Aac && e.eq_ignore_ascii_case("aac")) =>
+                || (settings.format == Format::Aac && e.eq_ignore_ascii_case("aac"))
+                || (settings.format == Format::Opus && e.eq_ignore_ascii_case("ogg")) =>
         {
             path.to_string()
         }
         Some(_) if settings.is_image_sequence() || matches!(settings.format, Format::Aiff) => format!("{}.{ext}", path.rsplit_once('.').map_or(path, |x| x.0)),
+        // another MPEG-2 container's extension: the chosen container's replaces it
+        Some(e) if settings.format == Format::Mpeg2 && cfa4_export::Mpeg2Container::from_name(e).is_some() => {
+            format!("{}.{ext}", path.rsplit_once('.').map_or(path, |x| x.0))
+        }
         _ => format!("{path}.{ext}"),
     }
 }
@@ -960,6 +992,7 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "formatLabel": pr.settings.format.label(),
         "extension": pr.settings.extension(),
         "frameSize": pr.settings.frame_size,
+        "mpeg2Container": pr.settings.mpeg2_container,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();

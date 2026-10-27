@@ -2,6 +2,7 @@
 //! and find_warp_samples.
 
 use crate::spec_tables::*;
+use crate::symbol::SymbolIo;
 use crate::tile::TileDecoder;
 
 pub(crate) type MvP = [i32; 2];
@@ -51,7 +52,7 @@ pub(crate) fn has_newmv(mode: usize) -> bool {
     matches!(mode, NEWMV | NEW_NEWMV | NEAR_NEWMV | NEW_NEARMV | NEAREST_NEWMV | NEW_NEARESTMV)
 }
 
-impl TileDecoder<'_, '_> {
+impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     /// lower_mv_precision( candMv ) (7.10.2.10)
     pub(crate) fn lower_mv_precision(&self, mv: &mut MvP) {
         let fh = &self.fs.fh;

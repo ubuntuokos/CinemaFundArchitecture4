@@ -60,9 +60,43 @@ fn mov(format: Format, profile: &str) -> ExportSettings {
     match format {
         Format::ProRes => s.prores_profile = profile.into(),
         Format::Apv => s.apv_profile = profile.into(),
+        Format::Cineform => s.cineform_profile = profile.into(),
         _ => s.dnx_profile = profile.into(),
     }
     s
+}
+
+/// MPEG-2 in `container`: `kbps` average (0: 0.4 bits per pixel), AAC at `audio_kbps` in
+/// transport streams, 16-bit LPCM in program streams.
+fn mpeg2(container: &str, size: Option<(u32, u32)>, kbps: u32, audio_kbps: u32) -> ExportSettings {
+    ExportSettings {
+        format: Format::Mpeg2,
+        mpeg2_container: container.into(),
+        frame_size: size,
+        bitrate_kbps: if kbps == 0 { 10_000 } else { kbps },
+        adaptive_bitrate: (kbps == 0).then_some(0.4),
+        bitrate_mode: BitrateMode::Vbr1Pass,
+        audio: AudioSettings {
+            codec: AudioCodec::Auto,
+            sample_rate: Some(48_000),
+            channels: 2,
+            bitrate_kbps: audio_kbps.max(32),
+            bits: 16,
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+/// A DVD-sized MPEG-2 program stream: `size` at `rate`, pixel aspect `par`, `gop` pictures per GOP.
+fn dvd(size: (u32, u32), rate: FrameRate, par: (u32, u32), gop: u32) -> ExportSettings {
+    ExportSettings {
+        frame_rate: Some(rate),
+        pixel_aspect: Some(par),
+        keyframe_distance: Some(gop),
+        max_bitrate_kbps: Some(8_000),
+        ..mpeg2("ps", Some(size), 6_000, 0)
+    }
 }
 
 fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
@@ -118,6 +152,29 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             ExportSettings { bitrate_mode: BitrateMode::Vbr2Pass, ..h264(Some((3840, 2160)), 50_000, 65_000) },
         ),
         p("Social Vertical 1080×1920", web, "H.264 9:16 portrait for short-form social video, scaled to fill, 12 Mbps", vertical),
+        p(
+            "WebM 1080p VP9",
+            web,
+            "WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo",
+            ExportSettings {
+                format: Format::WebM,
+                frame_size: Some((1920, 1080)),
+                bitrate_kbps: 8_000,
+                bitrate_mode: BitrateMode::Vbr1Pass,
+                audio: AudioSettings { codec: AudioCodec::Opus, sample_rate: Some(48_000), channels: 2, bitrate_kbps: 128, ..Default::default() },
+                ..Default::default()
+            },
+        ),
+        p(
+            "HLS 1080p",
+            web,
+            "HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments",
+            ExportSettings {
+                format: Format::Hls,
+                audio: AudioSettings { codec: AudioCodec::Aac, sample_rate: Some(48_000), channels: 2, bitrate_kbps: 160, bits: 16, ..Default::default() },
+                ..h264(Some((1920, 1080)), 8_000, 10_000)
+            },
+        ),
         p("Apple ProRes 422 HQ", bc, "QuickTime, ProRes 422 HQ, 24-bit 48 kHz PCM", mov(Format::ProRes, "hq")),
         p("Apple ProRes 422", bc, "QuickTime, ProRes 422, 24-bit 48 kHz PCM", mov(Format::ProRes, "standard")),
         p("Apple ProRes 422 LT", bc, "QuickTime, ProRes 422 LT, 24-bit 48 kHz PCM", mov(Format::ProRes, "lt")),
@@ -135,6 +192,14 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
         p("Avid DNxHR LB", bc, "QuickTime, DNxHR LB (8-bit 4:2:2), 24-bit 48 kHz PCM", mov(Format::DnxHr, "lb")),
         p("APV 422-10", bc, "QuickTime, APV 422-10 (10-bit 4:2:2), 24-bit 48 kHz PCM", mov(Format::Apv, "422-10")),
         p("APV 422-12", bc, "QuickTime, APV 422-12 (12-bit 4:2:2), 24-bit 48 kHz PCM", mov(Format::Apv, "422-12")),
+        p("GoPro CineForm YUV 10-bit", bc, "QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM", mov(Format::Cineform, "422")),
+        p("GoPro CineForm RGB 12-bit", bc, "QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM", mov(Format::Cineform, "444")),
+        p(
+            "GoPro CineForm RGB 12-bit with Alpha",
+            bc,
+            "QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM",
+            ExportSettings { alpha: true, ..mov(Format::Cineform, "4444") },
+        ),
         p("MXF OP1a DNxHR HQ", bc, "MXF OP1a, DNxHR HQ (8-bit 4:2:2), 24-bit 48 kHz PCM, start timecode", mxf(Format::MxfOp1a, MxfVideoCodec::Dnxhr, "hq")),
         p("MXF OP1a ProRes 422 HQ", bc, "MXF OP1a, ProRes 422 HQ, 24-bit 48 kHz PCM, start timecode", mxf(Format::MxfOp1a, MxfVideoCodec::ProRes, "hq")),
         p("MXF OP1a H.264", bc, "MXF OP1a, H.264 High long GOP (0.3 bits per pixel), 24-bit 48 kHz PCM", mxf(Format::MxfOp1a, MxfVideoCodec::H264, "")),
@@ -144,6 +209,25 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             "Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)",
             mxf(Format::MxfOpAtom, MxfVideoCodec::Dnxhr, "hq"),
         ),
+        p(
+            "MPEG-2 Program Stream",
+            bc,
+            "MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg",
+            mpeg2("ps", None, 0, 16),
+        ),
+        p(
+            "MPEG-2 DVD PAL 16:9",
+            bc,
+            "MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)",
+            dvd((720, 576), FrameRate::new(25, 1), (64, 45), 15),
+        ),
+        p(
+            "MPEG-2 DVD NTSC 16:9",
+            bc,
+            "MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)",
+            dvd((720, 480), FrameRate::new(30000, 1001), (32, 27), 18),
+        ),
+        p("MPEG-2 Transport Stream HD 1080", bc, "MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts", mpeg2("ts", Some((1920, 1080)), 18_000, 192)),
         p(
             "PNG Sequence",
             "Image Sequence",
@@ -186,6 +270,16 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             },
         ),
         p("FLAC 48 kHz 24-bit", "Audio Only", "FLAC, stereo 48 kHz 24-bit, lossless", audio_only(Format::Flac, 24)),
+        p(
+            "Opus Audio 48 kHz 160 kbps",
+            "Audio Only",
+            "Ogg Opus (.opus), stereo 48 kHz at 160 kbps",
+            ExportSettings {
+                format: Format::Opus,
+                audio: AudioSettings { codec: AudioCodec::Opus, sample_rate: Some(48_000), channels: 2, bitrate_kbps: 160, ..Default::default() },
+                ..Default::default()
+            },
+        ),
     ]
 }
 

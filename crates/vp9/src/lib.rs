@@ -1,5 +1,5 @@
-//! Clean-room pure-Rust VP9 decoder, implemented from the public VP9 Bitstream & Decoding Process
-//! Specification (v0.6, WebM project).
+//! Clean-room pure-Rust VP9 decoder and encoder ([`encode`]), implemented from the public VP9
+//! Bitstream & Decoding Process Specification (v0.6, WebM project).
 //!
 //! Supported: profiles 0-3 (8 / 10 / 12-bit; 4:2:0, 4:2:2, 4:4:0, 4:4:4), all coding tools:
 //! boolean decoder, forward and backward probability adaptation, segmentation, loop filter with
@@ -32,6 +32,7 @@ mod probs;
 #[rustfmt::skip]
 #[allow(dead_code)]
 mod spec_tables;
+pub mod encode;
 mod tables;
 mod tile;
 mod transform;
