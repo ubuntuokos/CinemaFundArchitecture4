@@ -192,6 +192,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
+  Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** DTS:X heights / objects on their own speakers (#130), DTS Express, 14-bit DTS,
   DTS-ES XCh and raw `.dts` import (#132), E-AC-3 JOC Atmos (#126), Atmos on real streams / in the app / binaural (#124, #123,
   #125), free-format MPEG audio, E-AC-3 adaptive hybrid
