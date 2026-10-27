@@ -46,6 +46,13 @@ DTS has no other open implementation to build on. No FFmpeg library is linked or
     it (`prescale_down_mix`); a third set's downmix came out with slightly wrong coefficients.
   - The XCH rear centre of DTS-ES core streams (`parse_xch_frame`), lossy and as the XLL residual
     base, with the surround downmix taken back out of the lossy output (`dmix_sub_xch`).
+  - 192 kHz XLL (#253): the second frequency band with its decimator history, joined to the
+    first by `assemble_freq_bands` (`chs_assemble_freq_bands`); embedded downmixes are undone in
+    both bands. Sets that differ in bands or rate are refused, as in FFmpeg.
+  - DTS-HD Master Audio without a core (#254): extension substreams that no core frame precedes
+    are decoded on their own when their lossless channels need no core (`decode_exss_into`), in
+    raw streams and container packets; `packet_samples` counts their lossless frames. A substream
+    that needs a core (a raw stream entered between a core frame and its substream) is skipped.
 
 ## What it decodes
 
@@ -56,15 +63,15 @@ DTS has no other open implementation to build on. No FFmpeg library is linked or
 
 - DTS core: mono to 5.1, and 6.1 with the DTS-ES rear centre (XCH), 32–48 kHz, bit-exact
   against FFmpeg.
-- DTS-HD Master Audio (XLL), lossless up to 7.1 (and 6.1 over a DTS-ES core) at 48 / 96 kHz.
+- DTS-HD Master Audio (XLL), lossless up to 7.1 (and 6.1 over a DTS-ES core) at 48 / 96 /
+  192 kHz, also without a core.
 - DTS-HD High Resolution: the core plus its XXCH channels. XBR-only streams play their core.
 - DTS:X: the backward-compatible bed. The encoder has folded the heights and objects into it.
   Placing them on their own loudspeakers is #130.
 - A frame that does not decode gives silence of its length, so timing holds.
 
-Not decoded: DTS Express (LBR), 14-bit and little-endian DTS (DTS-CD, DTS in WAV), 192 kHz XLL
-(two frequency bands, #253), DTS-HD Master Audio without a core (#254), and raw `.dts` file import
-(#132).
+Not decoded: DTS Express (LBR), 14-bit and little-endian DTS (DTS-CD, DTS in WAV), and raw `.dts`
+file import (#132).
 
 ## Tests
 
@@ -77,8 +84,9 @@ Not decoded: DTS Express (LBR), 14-bit and little-endian DTS (DTS-CD, DTS in WAV
   Audio stream (raw `.dts`, or a `.dtshd` file, whose `STRMDATA` chunk is read), it must be
   lossless and bit-exact against ffmpeg. No free encoder writes one, and none is committed. FFmpeg's
   FATE samples `dts/master_audio_7.1_24bit.dts`, `dts/dtsx_7.1.4_24bit.dts` and the
-  `dts/dcadec-suite/xll_*` streams at 48 and 96 kHz (5.1, 6.1 over DTS-ES, 7.1 in two and three
-  channel sets) all pass (#131).
+  `dts/dcadec-suite/xll_*` streams at 48, 96 and 192 kHz (5.1, 6.1 over DTS-ES, 7.1 in two and
+  three channel sets, and `xll_51_24_48_none` without a core) all pass, decoded as a raw stream and
+  frame by frame as container packets (#131, #253, #254).
 - `crates/codecs/tests/dts_oracle.rs`: DTS in Matroska, MP4 and MPEG-TS, bit-exact, also on
   random access.
 - The harletty-bridge unit tests. Those that need its private corpora skip without them.

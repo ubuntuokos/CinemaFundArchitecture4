@@ -81,7 +81,9 @@ fn a_real_dts_hd_track_in_a_container() {
     let ch = a.channels as usize;
     let rate = a.sample_rate;
     // a cut file ends inside a frame ffmpeg may still decode in part: compare what both have
-    let n = want.len() / ch - 4096;
+    // (a quarter of a short sample, such as FATE's 64 ms streams, is held back instead)
+    let total = want.len() / ch;
+    let n = total - 4096.min(total / 4);
     let start = match name.ends_with(".m2ts") || name.ends_with(".ts") {
         true => cfa4_codecs::MpegSource::open(&name, data.clone()).unwrap().audio_extent().map_or(0, |e| e.0),
         false => 0,
@@ -96,10 +98,11 @@ fn a_real_dts_hd_track_in_a_container() {
     }
     let fresh = cfa4_codecs::open_bytes(&name, data).unwrap();
     let at = n / 3;
-    let win = fresh.audio(start + at as i64, 4800, rate).unwrap().channels;
+    let len = 4800.min(n - at);
+    let win = fresh.audio(start + at as i64, len, rate).unwrap().channels;
     let mut seek_err = 0f32;
     for c in 0..ch {
-        for (k, v) in win[c].iter().enumerate().skip(2048) {
+        for (k, v) in win[c].iter().enumerate().skip(2048.min(len / 2)) {
             seek_err = seek_err.max((v - ours[c][at + k]).abs());
         }
     }
