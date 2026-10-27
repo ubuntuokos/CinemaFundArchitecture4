@@ -8,10 +8,10 @@
 // (harletty-bridge: SPDX-License-Identifier: Apache-2.0)
 //
 // DTS-HD Master Audio lossless (XLL) decoder. Ported from ffmpeg's dca_xll.c.
-// Supports the single-frequency-band path (freq <= 96 kHz, the common BluRay
-// 7.1 case) with residual-coded channels combined against
-// the fixed-point core output. Two frequency bands and embedded hierarchical
-// downmix are not supported (rejected) — they don't occur in 48 kHz 7.1 MA.
+// Residual-coded channels are combined against the fixed-point core output.
+// Modified for CFA4: two frequency bands (192 kHz) are decoded and joined as
+// ffmpeg does (decimator history, `assemble_freq_bands`), and embedded
+// hierarchical downmixes are undone.
 
 use super::buffers::BufferPool;
 use super::core::DCA_SPEAKER_L;
@@ -26,6 +26,15 @@ use crate::bitstream::BitReader;
 const DCA_XLL_CHANNELS_MAX: usize = 8;
 const DCA_XLL_CHSETS_MAX: usize = 3;
 const DCA_XLL_PRED_ORDER_MAX: usize = 16;
+const DCA_XLL_BANDS_MAX: usize = 2;
+/// Decimator history samples per channel of frequency band 1.
+const DCA_XLL_DECI_HISTORY_MAX: usize = 8;
+/// `ff_dca_xll_band_coeff`: the synthesis filter that joins the two frequency bands of a
+/// 192 kHz stream.
+const XLL_BAND_COEFF: [i32; 20] = [
+    868669, -5931642, -1228483, 4194304, -20577, 122631, -393647, 904476, -1696305, 2825313, -4430736, 6791313, 41153, -245210, 785564, -1788164, 3259333,
+    -5074941, 6928550, -8204883,
+];
 /// Most bytes the peak bit rate smoothing buffer holds (`DCA_XLL_PBR_BUFFER_MAX`).
 const DCA_XLL_PBR_BUFFER_MAX: usize = 240 << 10;
 /// XLL-X (DTS:X spatial extension) end-of-frame syncword.
@@ -408,6 +417,14 @@ sample_loop! {
     }
 }
 
+/// A signed `n`-bit two's complement field, `1 <= n <= 32`.
+#[inline]
+fn get_sbits(gb: &mut BitReader, n: usize) -> R<i32> {
+    let v = rb(gb, n)?;
+    let unused = 32 - n as u32;
+    Ok(((v << unused) as i32) >> unused)
+}
+
 #[inline]
 fn get_linear(gb: &mut BitReader, n: usize) -> R<i32> {
     if n == 0 {
@@ -532,7 +549,9 @@ struct XllChSet {
     ch_remap: [usize; DCA_XLL_CHANNELS_MAX],
     nfreqbands: usize,
     nabits: usize,
-    band: XllBand,
+    bands: [XllBand; DCA_XLL_BANDS_MAX],
+    /// Decimator history of frequency band 1, per channel in coded order (entry 0 is unused).
+    deci_history: [[i32; DCA_XLL_DECI_HISTORY_MAX]; DCA_XLL_CHANNELS_MAX],
     // band coding params (reused per segment)
     seg_common: bool,
     rice_code_flag: [bool; DCA_XLL_CHANNELS_MAX],
@@ -547,10 +566,11 @@ impl XllChSet {
     /// Back to the default state for the next frame's header, handing the
     /// sample buffers to `pool` and keeping the capacity of its own vectors.
     fn reset(&mut self, pool: &mut BufferPool) {
-        pool.give_all(&mut self.band.msb);
-        pool.give_all(&mut self.band.lsb);
-        let msb = std::mem::take(&mut self.band.msb);
-        let lsb = std::mem::take(&mut self.band.lsb);
+        let buffers = self.bands.each_mut().map(|b| {
+            pool.give_all(&mut b.msb);
+            pool.give_all(&mut b.lsb);
+            (std::mem::take(&mut b.msb), std::mem::take(&mut b.lsb))
+        });
         let mut dmix_coeff = std::mem::take(&mut self.dmix_coeff);
         let mut dmix_scale = std::mem::take(&mut self.dmix_scale);
         let mut dmix_scale_inv = std::mem::take(&mut self.dmix_scale_inv);
@@ -558,21 +578,29 @@ impl XllChSet {
         dmix_scale.clear();
         dmix_scale_inv.clear();
         *self = XllChSet { dmix_coeff, dmix_scale, dmix_scale_inv, ..XllChSet::default() };
-        self.band.msb = msb;
-        self.band.lsb = lsb;
+        for (b, (msb, lsb)) in self.bands.iter_mut().zip(buffers) {
+            b.msb = msb;
+            b.lsb = lsb;
+        }
     }
 
-    /// One zeroed MSB buffer of `nsamples` per channel, and as many LSB ones
-    /// when the band has an LSB section, drawn from `pool`.
+    /// For each frequency band, one zeroed MSB buffer of `nsamples` per channel, and as many LSB
+    /// ones when the band has an LSB section, drawn from `pool`.
     fn alloc_band(&mut self, pool: &mut BufferPool, nsamples: usize) {
-        pool.give_all(&mut self.band.msb);
-        pool.give_all(&mut self.band.lsb);
-        for _ in 0..self.nchannels {
-            self.band.msb.push(pool.zeroed(nsamples));
-        }
-        if self.band.lsb_section_size != 0 {
+        let nbands = self.nfreqbands.clamp(1, DCA_XLL_BANDS_MAX);
+        for (i, b) in self.bands.iter_mut().enumerate() {
+            pool.give_all(&mut b.msb);
+            pool.give_all(&mut b.lsb);
+            if i >= nbands {
+                continue;
+            }
             for _ in 0..self.nchannels {
-                self.band.lsb.push(pool.zeroed(nsamples));
+                b.msb.push(pool.zeroed(nsamples));
+            }
+            if b.lsb_section_size != 0 {
+                for _ in 0..self.nchannels {
+                    b.lsb.push(pool.zeroed(nsamples));
+                }
             }
         }
     }
@@ -649,10 +677,11 @@ pub(crate) struct XllDecoder {
 }
 
 /// A channel waiting for its adaptive prediction: channel `ch` of set
-/// `chs`, with the prediction coefficients derived from its reflection
+/// `chs` in frequency band `band`, with the prediction coefficients derived from its reflection
 /// coefficients.
 struct Adaptive {
     chs: usize,
+    band: usize,
     ch: usize,
     order: usize,
     coeff: [i32; DCA_XLL_PRED_ORDER_MAX],
@@ -781,11 +810,14 @@ impl XllDecoder {
         let active = self.nactivechsets;
         for (i, c) in self.chset.iter_mut().take(self.nchsets).enumerate() {
             if i < active {
-                for buf in c.band.msb.iter_mut().chain(c.band.lsb.iter_mut()) {
-                    buf.fill(0);
+                for b in &mut c.bands {
+                    for buf in b.msb.iter_mut().chain(b.lsb.iter_mut()) {
+                        buf.fill(0);
+                    }
+                    b.nscalablelsbs = [0; DCA_XLL_CHANNELS_MAX];
+                    b.bit_width_adjust = [0; DCA_XLL_CHANNELS_MAX];
                 }
-                c.band.nscalablelsbs = [0; DCA_XLL_CHANNELS_MAX];
-                c.band.bit_width_adjust = [0; DCA_XLL_CHANNELS_MAX];
+                c.deci_history = [[0; DCA_XLL_DECI_HISTORY_MAX]; DCA_XLL_CHANNELS_MAX];
                 for ch in 0..c.nchannels.min(DCA_XLL_CHANNELS_MAX) {
                     if c.residual_encode & (1 << ch) != 0 && map_core_spkr(core_mask, c.ch_remap[ch]).is_some() {
                         c.residual_encode &= !(1 << ch);
@@ -976,6 +1008,9 @@ impl XllDecoder {
         }
         let mut gb = BitReader::with_offset(payload, X_CHSET_OFFSET * 8);
         self.chs_parse_header(&mut gb, chset, true, true)?;
+        if self.nfreqbands != 1 || chset.nfreqbands != 1 {
+            return Err(XllError::Unsupported("XLL-X with 2 frequency bands"));
+        }
         if chset.nchannels != X_CHANNELS {
             return Err(XllError::Invalid("unexpected XLL-X channel count"));
         }
@@ -1020,12 +1055,12 @@ impl XllDecoder {
             let mut band_end = gb.position();
             for (segment, &segment_bytes) in navi.iter().enumerate() {
                 band_end += segment_bytes * 8;
-                self.chs_parse_band_data(&mut gb, chset_index, segment, band_end)?;
+                self.chs_parse_band_data(&mut gb, chset_index, 0, segment, band_end)?;
                 seek(&mut gb, band_end)?;
             }
-            self.chs_filter_band_data(chset_index);
+            self.chs_filter_band_data(chset_index, 0);
             if self.scalable_lsbs {
-                self.chs_assemble_msbs_lsbs(chset_index);
+                self.chs_assemble_msbs_lsbs(chset_index, 0);
             }
             Ok(())
         })();
@@ -1034,7 +1069,7 @@ impl XllDecoder {
 
         let shift = 24usize.checked_sub(chset.pcm_bit_res).ok_or(XllError::Invalid("XLL-X PCM resolution"))?;
         self.pool.give_all(&mut self.x_output);
-        for mut samples in chset.band.msb.drain(..) {
+        for mut samples in chset.bands[0].msb.drain(..) {
             for sample in &mut samples {
                 *sample = clip23(sample.wrapping_mul(1 << shift));
             }
@@ -1082,8 +1117,8 @@ impl XllDecoder {
 
         self.pool.give_all(&mut self.x_output);
         self.x_output.reserve(first.nchannels + second_channels);
-        let second_samples = if second_bits.is_some() { &mut second.band.msb } else { &mut Vec::new() };
-        for mut samples in first.band.msb.drain(..).chain(second_samples.drain(..)) {
+        let second_samples = if second_bits.is_some() { &mut second.bands[0].msb } else { &mut Vec::new() };
+        for mut samples in first.bands[0].msb.drain(..).chain(second_samples.drain(..)) {
             for sample in &mut samples {
                 *sample = clip23(sample.wrapping_mul(scale));
             }
@@ -1151,7 +1186,11 @@ impl XllDecoder {
         let mut bits = BitReader::with_offset(payload, header.offset * 8);
         self.chs_parse_header_with_mapping(&mut bits, channel_set, ChsMappingSyntax::AlternatePrefix(2))?;
         let navi_start = header.offset.checked_add(header.size).ok_or(XllError::Invalid("alternate XLL NAVI offset overflow"))?;
-        if bits.position() != navi_start * 8 || channel_set.nchannels != header.channels || channel_set.residual_encode != (1u32 << header.channels) - 1 {
+        if bits.position() != navi_start * 8
+            || channel_set.nfreqbands != 1
+            || channel_set.nchannels != header.channels
+            || channel_set.residual_encode != (1u32 << header.channels) - 1
+        {
             return Err(XllError::Invalid("alternate XLL channel-set header"));
         }
 
@@ -1185,13 +1224,13 @@ impl XllDecoder {
                     .checked_add(segment_bytes.checked_mul(8).ok_or(XllError::Invalid("alternate XLL band size overflow"))?)
                     .filter(|&end| end <= boundary_bits)
                     .ok_or(XllError::Invalid("alternate XLL band exceeds boundary"))?;
-                self.chs_parse_band_data(&mut bits, channel_set_index, segment, band_end)?;
+                self.chs_parse_band_data(&mut bits, channel_set_index, 0, segment, band_end)?;
                 if bits.position() > band_end || band_end - bits.position() > 32 {
                     return Err(XllError::Invalid("alternate XLL band trailing bits"));
                 }
                 seek(&mut bits, band_end)?;
             }
-            self.chs_filter_band_data(channel_set_index);
+            self.chs_filter_band_data(channel_set_index, 0);
             Ok(())
         })();
         *channel_set = self.chset.pop().ok_or(XllError::Invalid("missing alternate XLL channel set"))?;
@@ -1251,6 +1290,12 @@ impl XllDecoder {
             let mut c = std::mem::take(&mut self.chset[i]);
             c.hier_ofs = hier_ofs;
             self.chs_parse_header(gb, &mut c, i == 0, false)?;
+            // every set shares the first one's frequency bands and rate
+            if let Some(p) = self.chset.first().filter(|_| i > 0)
+                && (c.nfreqbands != p.nfreqbands || c.freq != p.freq)
+            {
+                return Err(XllError::Unsupported("different XLL audio characteristics"));
+            }
             if c.nfreqbands > self.nfreqbands {
                 self.nfreqbands = c.nfreqbands;
             }
@@ -1258,9 +1303,6 @@ impl XllDecoder {
                 self.nchannels += c.nchannels;
             }
             self.chset[i] = c;
-        }
-        if self.nfreqbands > 1 {
-            return Err(XllError::Unsupported("XLL with 2 frequency bands"));
         }
         // Modified for CFA4: pre-scale the downmix coefficients of every non-primary set by the
         // next set that downmixes into it, from the last set back (ffmpeg's
@@ -1300,9 +1342,6 @@ impl XllDecoder {
             return Err(XllError::Invalid("XLL pcm > storage bit res"));
         }
         c.freq = sampling_freq(rb(gb, 4)? as usize);
-        if c.freq > 96000 {
-            return Err(XllError::Unsupported("XLL > 96 kHz"));
-        }
         if rb(gb, 2)? != 0 {
             return Err(XllError::Unsupported("XLL sampling freq modifier"));
         }
@@ -1389,9 +1428,16 @@ impl XllDecoder {
         }
 
         if c.freq > 96000 {
-            return Err(XllError::Unsupported("XLL extra freq bands"));
+            // extra frequency bands flag
+            if rb1(gb)? {
+                return Err(XllError::Unsupported("extra XLL frequency bands"));
+            }
+            c.nfreqbands = 2;
+        } else {
+            c.nfreqbands = 1;
         }
-        c.nfreqbands = 1;
+        // The sampling frequency of the first band: assembling the bands doubles it again.
+        c.freq >>= c.nfreqbands - 1;
 
         c.nabits = if c.storage_bit_res > 16 {
             5
@@ -1400,18 +1446,35 @@ impl XllDecoder {
         } else {
             3
         };
+        // embedded downmix and decimator saturation
         if (self.nchsets > 1 || c.nfreqbands > 1) && c.nabits < 5 {
             c.nabits += 1;
         }
 
-        let b = &mut c.band;
+        for band in 0..c.nfreqbands {
+            self.chs_parse_band_header(gb, c, band)?;
+        }
+
+        let header_end = header_pos + header_size * 8;
+        if gb.position() > header_end {
+            return Err(XllError::Invalid("XLL channel-set fields exceed header"));
+        }
+        c.header_tail_bits = header_end - gb.position();
+        seek(gb, header_end)
+    }
+
+    /// The coding parameters of frequency band `band` in a channel set header.
+    fn chs_parse_band_header(&self, gb: &mut BitReader, c: &mut XllChSet, band: usize) -> R<()> {
+        let nchannels = c.nchannels;
+        let dmix_embedded = c.dmix_embedded;
+        let b = c.bands.get_mut(band).ok_or(XllError::Invalid("XLL frequency band"))?;
         b.decor_enabled = rb1(gb)?;
-        if b.decor_enabled && c.nchannels > 1 {
-            let ch_nbits = ceil_log2(c.nchannels);
+        if b.decor_enabled && nchannels > 1 {
+            let ch_nbits = ceil_log2(nchannels);
             let mut order_mask = 0u32;
-            for i in 0..c.nchannels {
+            for i in 0..nchannels {
                 b.orig_order[i] = rb(gb, ch_nbits)? as usize;
-                if b.orig_order[i] >= c.nchannels {
+                if b.orig_order[i] >= nchannels {
                     return Err(XllError::Invalid("XLL original channel order"));
                 }
                 let order_bit = 1u32 << b.orig_order[i];
@@ -1420,30 +1483,30 @@ impl XllDecoder {
                 }
                 order_mask |= order_bit;
             }
-            for i in 0..c.nchannels / 2 {
+            for i in 0..nchannels / 2 {
                 b.decor_coeff[i] = if rb1(gb)? { get_linear(gb, 7)? } else { 0 };
             }
         } else {
-            for i in 0..c.nchannels {
+            for i in 0..nchannels {
                 b.orig_order[i] = i;
             }
-            for i in 0..c.nchannels / 2 {
+            for i in 0..nchannels / 2 {
                 b.decor_coeff[i] = 0;
             }
         }
 
         b.highest_pred_order = 0;
-        for i in 0..c.nchannels {
+        for i in 0..nchannels {
             b.adapt_pred_order[i] = rb(gb, 4)? as usize;
             b.highest_pred_order = b.highest_pred_order.max(b.adapt_pred_order[i]);
         }
         if b.highest_pred_order > self.nsegsamples {
             return Err(XllError::Invalid("XLL adaptive prediction order"));
         }
-        for i in 0..c.nchannels {
+        for i in 0..nchannels {
             b.fixed_pred_order[i] = if b.adapt_pred_order[i] != 0 { 0 } else { rb(gb, 2)? as usize };
         }
-        for i in 0..c.nchannels {
+        for i in 0..nchannels {
             for jj in 0..b.adapt_pred_order[i] {
                 let k = get_linear(gb, 8)?;
                 if k == -128 {
@@ -1453,16 +1516,20 @@ impl XllDecoder {
             }
         }
 
-        b.dmix_embedded = false; // band 0, dmix_embedded already rejected
-        if self.scalable_lsbs {
+        // downmix performed by the encoder in the extension band
+        b.dmix_embedded = dmix_embedded && (band == 0 || rb1(gb)?);
+
+        // MSB/LSB split flag in the extension band
+        if (band == 0 && self.scalable_lsbs) || (band != 0 && rb1(gb)?) {
             b.lsb_section_size = rb(gb, self.seg_size_nbits)? as usize;
             if b.lsb_section_size > self.frame_size {
                 return Err(XllError::Invalid("XLL LSB section size"));
             }
-            if b.lsb_section_size != 0 && self.band_crc_present > 1 {
+            // optional CRC bytes after the LSB section
+            if b.lsb_section_size != 0 && (self.band_crc_present > 2 || (band == 0 && self.band_crc_present > 1)) {
                 b.lsb_section_size += 2;
             }
-            for i in 0..c.nchannels {
+            for i in 0..nchannels {
                 b.nscalablelsbs[i] = rb(gb, 4)? as usize;
                 if b.nscalablelsbs[i] != 0 && b.lsb_section_size == 0 {
                     return Err(XllError::Invalid("XLL LSB width without section"));
@@ -1470,26 +1537,21 @@ impl XllDecoder {
             }
         } else {
             b.lsb_section_size = 0;
-            for i in 0..c.nchannels {
+            for i in 0..nchannels {
                 b.nscalablelsbs[i] = 0;
             }
         }
-        if self.scalable_lsbs {
-            for i in 0..c.nchannels {
+        // scalable resolution flag in the extension band
+        if (band == 0 && self.scalable_lsbs) || (band != 0 && rb1(gb)?) {
+            for i in 0..nchannels {
                 b.bit_width_adjust[i] = rb(gb, 4)? as usize;
             }
         } else {
-            for i in 0..c.nchannels {
+            for i in 0..nchannels {
                 b.bit_width_adjust[i] = 0;
             }
         }
-
-        let header_end = header_pos + header_size * 8;
-        if gb.position() > header_end {
-            return Err(XllError::Invalid("XLL channel-set fields exceed header"));
-        }
-        c.header_tail_bits = header_end - gb.position();
-        seek(gb, header_end)
+        Ok(())
     }
 
     fn parse_dmix_coeffs(&mut self, gb: &mut BitReader, c: &mut XllChSet) -> R<()> {
@@ -1573,7 +1635,7 @@ impl XllDecoder {
                             return Err(XllError::Invalid("NAVI position"));
                         }
                         if chs < self.nactivechsets {
-                            self.chs_parse_band_data(gb, chs, seg, navi_pos)?;
+                            self.chs_parse_band_data(gb, chs, band, seg, navi_pos)?;
                         }
                         seek(gb, navi_pos)?;
                     }
@@ -1584,9 +1646,12 @@ impl XllDecoder {
         Ok(())
     }
 
-    fn chs_parse_band_data(&mut self, gb: &mut BitReader, chs: usize, seg: usize, band_data_end: usize) -> R<()> {
+    fn chs_parse_band_data(&mut self, gb: &mut BitReader, chs: usize, band: usize, seg: usize, band_data_end: usize) -> R<()> {
         let nsegsamples = self.nsegsamples;
         let nsegsamples_log2 = self.nsegsamples_log2;
+        if band >= DCA_XLL_BANDS_MAX {
+            return Err(XllError::Invalid("XLL frequency band"));
+        }
         let c = &mut self.chset[chs];
         let nchannels = c.nchannels;
 
@@ -1608,7 +1673,7 @@ impl XllDecoder {
                     if !c.rice_code_flag[i] && c.bitalloc_part_a[i] != 0 {
                         c.bitalloc_part_a[i] += 1;
                     }
-                    c.nsamples_part_a[i] = if !c.seg_common { c.band.adapt_pred_order[i] } else { c.band.highest_pred_order };
+                    c.nsamples_part_a[i] = if !c.seg_common { c.bands[band].adapt_pred_order[i] } else { c.bands[band].highest_pred_order };
                 } else {
                     c.bitalloc_part_a[i] = 0;
                     c.nsamples_part_a[i] = 0;
@@ -1626,7 +1691,7 @@ impl XllDecoder {
             let seg_base = seg * nsegsamples;
             let na = c.nsamples_part_a[k];
             let nb = nsegsamples - na;
-            let buf = &mut c.band.msb[i];
+            let buf = &mut c.bands[band].msb[i];
 
             if !c.rice_code_flag[k] {
                 let (part_a, part_b) = buf[seg_base..seg_base + nsegsamples].split_at_mut(na);
@@ -1660,16 +1725,29 @@ impl XllDecoder {
             }
         }
 
+        // Decimator history of frequency band 1.
+        if seg == 0 && band == 1 {
+            let nbits = rb(gb, 5)? as usize + 1;
+            for history in c.deci_history.iter_mut().take(nchannels) {
+                for h in history.iter_mut().skip(1) {
+                    *h = get_sbits(gb, nbits)?;
+                }
+            }
+        }
+
         // LSB portion.
-        if c.band.lsb_section_size != 0 {
-            let lsb_bits =
-                c.band.lsb_section_size.checked_mul(8).filter(|&bits| bits <= band_data_end).ok_or(XllError::Invalid("lsb section exceeds band data"))?;
+        if c.bands[band].lsb_section_size != 0 {
+            let lsb_bits = c.bands[band]
+                .lsb_section_size
+                .checked_mul(8)
+                .filter(|&bits| bits <= band_data_end)
+                .ok_or(XllError::Invalid("lsb section exceeds band data"))?;
             seek(gb, band_data_end - lsb_bits)?;
             for i in 0..nchannels {
-                let w = c.band.nscalablelsbs[i];
+                let w = c.bands[band].nscalablelsbs[i];
                 if w != 0 {
                     let seg_base = seg * nsegsamples;
-                    let lbuf = &mut c.band.lsb[i];
+                    let lbuf = &mut c.bands[band].lsb[i];
                     get_bits_run(gb, w, &mut lbuf[seg_base..seg_base + nsegsamples])?;
                 }
             }
@@ -1679,20 +1757,20 @@ impl XllDecoder {
 
     /// The prediction, then the pairwise decorrelation, of one channel set
     /// on its own.
-    fn chs_filter_band_data(&mut self, chs: usize) {
-        self.chs_queue_prediction(chs);
+    fn chs_filter_band_data(&mut self, chs: usize, band: usize) {
+        self.chs_queue_prediction(chs, band);
         self.predict_queued();
-        self.chs_undo_decorrelation(chs);
+        self.chs_undo_decorrelation(chs, band);
     }
 
     /// The prediction of a channel set's channels: the fixed one is run
     /// here, the adaptive ones get their coefficients and wait on
     /// `self.adaptive` for `predict_queued`, which runs them as many at a
     /// time as the CPU allows, whichever set they belong to.
-    fn chs_queue_prediction(&mut self, chs: usize) {
+    fn chs_queue_prediction(&mut self, chs: usize, band: usize) {
         let nsamples = self.nframesamples;
         let c = &mut self.chset[chs];
-        let b = &mut c.band;
+        let b = &mut c.bands[band];
         for ch in 0..c.nchannels {
             let order = b.adapt_pred_order[ch];
             if order > 0 {
@@ -1707,7 +1785,7 @@ impl XllDecoder {
                     }
                     coeff[j] = rc;
                 }
-                self.adaptive.push(Adaptive { chs, ch, order, coeff });
+                self.adaptive.push(Adaptive { chs, band, ch, order, coeff });
             } else {
                 let buf = &mut b.msb[ch];
                 for _ in 0..b.fixed_pred_order[ch] {
@@ -1724,7 +1802,7 @@ impl XllDecoder {
         let nsamples = self.nframesamples;
         let pending = self.adaptive.len();
         for a in &self.adaptive[..pending] {
-            let buf = &mut self.chset[a.chs].band.msb[a.ch][..nsamples];
+            let buf = &mut self.chset[a.chs].bands[a.band].msb[a.ch][..nsamples];
             inverse_adaptive_prediction(buf, &a.coeff, a.order);
         }
         self.adaptive.clear();
@@ -1732,10 +1810,10 @@ impl XllDecoder {
 
     /// Undo a channel set's pairwise decorrelation and put its channels
     /// back in their original order.
-    fn chs_undo_decorrelation(&mut self, chs: usize) {
+    fn chs_undo_decorrelation(&mut self, chs: usize, band: usize) {
         let nsamples = self.nframesamples;
         let c = &mut self.chset[chs];
-        let b = &mut c.band;
+        let b = &mut c.bands[band];
         // Inverse pairwise channel decorrelation + reorder to original order.
         if b.decor_enabled {
             for i in 0..c.nchannels / 2 {
@@ -1766,10 +1844,10 @@ impl XllDecoder {
         }
     }
 
-    fn chs_get_lsb_width(&self, chs: usize, ch: usize) -> usize {
+    fn chs_get_lsb_width(&self, chs: usize, band: usize, ch: usize) -> usize {
         let c = &self.chset[chs];
-        let adj = c.band.bit_width_adjust[ch];
-        let mut shift = c.band.nscalablelsbs[ch];
+        let adj = c.bands[band].bit_width_adjust[ch];
+        let mut shift = c.bands[band].nscalablelsbs[ch];
         if self.fixed_lsb_width != 0 {
             shift = self.fixed_lsb_width;
         } else if shift != 0 && adj != 0 {
@@ -1780,19 +1858,19 @@ impl XllDecoder {
         shift
     }
 
-    fn chs_assemble_msbs_lsbs(&mut self, chs: usize) {
+    fn chs_assemble_msbs_lsbs(&mut self, chs: usize, band: usize) {
         let nsamples = self.nframesamples;
         for ch in 0..self.chset[chs].nchannels {
-            let shift = self.chs_get_lsb_width(chs, ch);
+            let shift = self.chs_get_lsb_width(chs, band, ch);
             if shift == 0 {
                 continue;
             }
             let c = &mut self.chset[chs];
-            let has_lsb = c.band.nscalablelsbs[ch] != 0;
-            let adj = c.band.bit_width_adjust[ch];
-            let msb = &mut c.band.msb[ch][..nsamples];
+            let has_lsb = c.bands[band].nscalablelsbs[ch] != 0;
+            let adj = c.bands[band].bit_width_adjust[ch];
+            let msb = &mut c.bands[band].msb[ch][..nsamples];
             if has_lsb {
-                join_lsb(msb, &c.band.lsb[ch][..nsamples], shift, adj);
+                join_lsb(msb, &c.bands[band].lsb[ch][..nsamples], shift, adj);
             } else {
                 shift_up(msb, shift);
             }
@@ -1809,8 +1887,9 @@ impl XllDecoder {
     }
 
     /// `undo_down_mix`: subtract channel set `o`'s embedded downmix contribution
-    /// from the preceding hierarchy channel sets (band 0 only here).
-    fn undo_down_mix(&mut self, o_idx: usize) {
+    /// from the preceding hierarchy channel sets in frequency band `band` (and, in band 1, from
+    /// their decimator history).
+    fn undo_down_mix(&mut self, o_idx: usize, band: usize) {
         let nsamples = self.nframesamples;
         let o_nch = self.chset[o_idx].nchannels;
         let o_hier_ofs = self.chset[o_idx].hier_ofs;
@@ -1818,6 +1897,7 @@ impl XllDecoder {
         // malformed stream): `o` then subtracts from itself, and from there on
         // its contribution is read from a snapshot taken before.
         let mut o_snapshot: Option<Vec<Vec<i32>>> = None;
+        let o_history = self.chset[o_idx].deci_history;
 
         let mut coeff_idx = 0usize;
         let mut nchannels = 0usize;
@@ -1834,28 +1914,48 @@ impl XllDecoder {
                         continue;
                     }
                     if c_idx == o_idx && o_snapshot.is_none() {
-                        o_snapshot = Some(self.chset[o_idx].band.msb.clone());
+                        o_snapshot = Some(self.chset[o_idx].bands[band].msb.clone());
                     }
                     let (dst, src): (&mut Vec<i32>, &Vec<i32>) = match &o_snapshot {
                         // `o` has started subtracting from itself: read what
                         // it held before, as every later set must too.
-                        Some(snapshot) => (&mut self.chset[c_idx].band.msb[j], &snapshot[k]),
+                        Some(snapshot) => (&mut self.chset[c_idx].bands[band].msb[j], &snapshot[k]),
                         None if c_idx < o_idx => {
                             let (head, tail) = self.chset.split_at_mut(o_idx);
-                            (&mut head[c_idx].band.msb[j], &tail[0].band.msb[k])
+                            (&mut head[c_idx].bands[band].msb[j], &tail[0].bands[band].msb[k])
                         }
                         None => {
                             let (head, tail) = self.chset.split_at_mut(c_idx);
-                            (&mut tail[0].band.msb[j], &head[o_idx].band.msb[k])
+                            (&mut tail[0].bands[band].msb[j], &head[o_idx].bands[band].msb[k])
                         }
                     };
                     sub_scaled(&mut dst[..nsamples], &src[..nsamples], cf);
+                    if band > 0 {
+                        sub_scaled(&mut self.chset[c_idx].deci_history[j], &o_history[k], cf);
+                    }
                 }
             }
             nchannels += c_nch;
             if nchannels >= o_hier_ofs {
                 break;
             }
+        }
+    }
+
+    /// `chs_assemble_freq_bands`: joins frequency bands 0 and 1 of a channel set into band 0's
+    /// buffers, at twice the samples, with the decimator history in front of band 0.
+    fn chs_assemble_freq_bands(&mut self, chs: usize) {
+        let nsamples = self.nframesamples;
+        let c = &mut self.chset[chs];
+        let [b0, b1] = &mut c.bands;
+        for ((low, high), history) in b0.msb.iter_mut().zip(b1.msb.iter_mut()).zip(&c.deci_history) {
+            let mut src0 = self.pool.zeroed(DCA_XLL_DECI_HISTORY_MAX + nsamples);
+            src0[..DCA_XLL_DECI_HISTORY_MAX].copy_from_slice(history);
+            src0[DCA_XLL_DECI_HISTORY_MAX..].copy_from_slice(&low[..nsamples]);
+            let mut out = self.pool.zeroed(2 * nsamples);
+            assemble_freq_bands(&mut out, &mut src0, &mut high[..nsamples], nsamples);
+            self.pool.give(src0);
+            self.pool.give(std::mem::replace(low, out));
         }
     }
 
@@ -1880,7 +1980,7 @@ impl XllDecoder {
                 continue;
             }
             let spkr = map_core_spkr(core.ch_mask, self.chset[chs].ch_remap[ch]).ok_or(XllError::Invalid("residual references missing core channel"))?;
-            let shift = 24 - self.chset[chs].pcm_bit_res + self.chs_get_lsb_width(chs, ch);
+            let shift = 24 - self.chset[chs].pcm_bit_res + self.chs_get_lsb_width(chs, 0, ch);
             if shift > 24 {
                 return Err(XllError::Invalid("invalid core shift"));
             }
@@ -1889,10 +1989,10 @@ impl XllDecoder {
             let src = &src[..nsamples];
             if let Some(o) = o_idx {
                 let si = self.chset[o].dmix_scale_inv[hier_ofs + ch];
-                let dst = &mut self.chset[chs].band.msb[ch][..nsamples];
+                let dst = &mut self.chset[chs].bands[0].msb[ch][..nsamples];
                 add_scaled_core(dst, src, si, round, shift);
             } else {
-                let dst = &mut self.chset[chs].band.msb[ch][..nsamples];
+                let dst = &mut self.chset[chs].bands[0].msb[ch][..nsamples];
                 add_core(dst, src, round, shift);
             }
         }
@@ -1910,11 +2010,13 @@ impl XllDecoder {
         // The sets' channels are predicted together: a set's prediction
         // depends on nothing outside the set.
         for chs in 0..self.nactivechsets {
-            self.chs_queue_prediction(chs);
+            for band in 0..self.chset[chs].nfreqbands.min(DCA_XLL_BANDS_MAX) {
+                self.chs_queue_prediction(chs, band);
+            }
         }
         self.predict_queued();
         for chs in 0..self.nactivechsets {
-            self.chs_undo_decorrelation(chs);
+            self.chs_undo_decorrelation(chs, 0);
 
             let full = (1u32 << self.chset[chs].nchannels) - 1;
             if self.chset[chs].residual_encode != full {
@@ -1922,7 +2024,11 @@ impl XllDecoder {
                 self.combine_residual_frame(chs, core)?;
             }
             if self.scalable_lsbs {
-                self.chs_assemble_msbs_lsbs(chs);
+                self.chs_assemble_msbs_lsbs(chs, 0);
+            }
+            if self.chset[chs].nfreqbands > 1 {
+                self.chs_undo_decorrelation(chs, 1);
+                self.chs_assemble_msbs_lsbs(chs, 1);
             }
             self.output_mask |= self.chset[chs].ch_mask;
         }
@@ -1934,7 +2040,18 @@ impl XllDecoder {
                 break;
             }
             if is_hier_dmix_chset(&self.chset[o_idx]) {
-                self.undo_down_mix(o_idx);
+                for band in 0..self.chset[o_idx].nfreqbands.min(DCA_XLL_BANDS_MAX) {
+                    if self.chset[o_idx].bands[band].dmix_embedded {
+                        self.undo_down_mix(o_idx, band);
+                    }
+                }
+            }
+        }
+
+        // Join the two frequency bands of a 192 kHz stream.
+        if self.nfreqbands > 1 {
+            for chs in 0..self.nactivechsets {
+                self.chs_assemble_freq_bands(chs);
             }
         }
 
@@ -1956,7 +2073,7 @@ impl XllDecoder {
                 let spkr = self.chset[chs].ch_remap[ch];
                 // Scaled in place and handed out: the next frame draws its
                 // buffers back from the pool.
-                let mut buf = std::mem::take(&mut self.chset[chs].band.msb[ch]);
+                let mut buf = std::mem::take(&mut self.chset[chs].bands[0].msb[ch]);
                 shift_clip(&mut buf, shift);
                 if let Some(old) = self.output[spkr].replace(buf) {
                     self.pool.give(old);
@@ -1966,7 +2083,7 @@ impl XllDecoder {
         self.coded_mask = self.output_mask;
         self.normalize_side_surrounds();
 
-        self.sample_rate = p_freq;
+        self.sample_rate = p_freq << (self.nfreqbands.clamp(1, DCA_XLL_BANDS_MAX) - 1);
         self.pcm_bit_res = p_pcm_bit_res;
         Ok(())
     }
@@ -1988,6 +2105,34 @@ impl XllDecoder {
             }
             self.output_mask = (self.output_mask & !(1 << side)) | (1 << to);
         }
+    }
+}
+
+/// `assemble_freq_bands` (dcadsp.c): the synthesis filter joining band 0 (`src0`, the decimator
+/// history then `len` samples) and band 1 (`src1`, `len` samples) into `dst` (`2 * len`).
+fn assemble_freq_bands(dst: &mut [i32], src0: &mut [i32], src1: &mut [i32], len: usize) {
+    const H: usize = DCA_XLL_DECI_HISTORY_MAX;
+    let (Some(s1), Some(_)) = (src1.get_mut(..len), src0.get(..H + len)) else { return };
+    // `dst[i] -= mul(src[i], coeff)` over `len` samples, `dst` and `src` each from its own offset
+    fn filter(dst: &mut [i32], src: &[i32], coeff: i32, bits: u32) {
+        for (d, &s) in dst.iter_mut().zip(src) {
+            *d = d.wrapping_sub(((i64::from(s) * i64::from(coeff) + (1 << (bits - 1))) >> bits) as i32);
+        }
+    }
+    let c = &XLL_BAND_COEFF;
+    filter(&mut src0[H..H + len], s1, c[0], 22);
+    filter(s1, &src0[H..H + len], c[1], 22);
+    filter(&mut src0[H..H + len], s1, c[2], 22);
+    filter(s1, &src0[H..H + len], c[3], 22);
+    for i in 0..H {
+        let o = H - i;
+        filter(&mut src0[o..o + len], s1, c[i + 4], 23);
+        filter(s1, &src0[o..o + len], c[i + 12], 23);
+        filter(&mut src0[o..o + len], s1, c[i + 4], 23);
+    }
+    for (i, pair) in dst.chunks_exact_mut(2).take(len).enumerate() {
+        pair[0] = s1[i];
+        pair[1] = src0[i + 1];
     }
 }
 
@@ -2064,6 +2209,35 @@ mod surround_tests {
         assert!(refused && x.pbr_buffer.is_empty() && x.pbr_delay == 0);
     }
     use crate::dcadec::core::{DCA_SPEAKER_LS, DCA_SPEAKER_RS};
+
+    /// Decimator history words are signed: `get_sbits` sign-extends from any width.
+    #[test]
+    fn signed_fields_sign_extend() {
+        let data = [0b1011_0000, 0xFF, 0xFF, 0xFF, 0xFF];
+        let mut gb = BitReader::new(&data);
+        assert_eq!(get_sbits(&mut gb, 1), Ok(-1));
+        assert_eq!(get_sbits(&mut gb, 3), Ok(3));
+        assert_eq!(get_sbits(&mut gb, 4), Ok(0));
+        assert_eq!(get_sbits(&mut gb, 32), Ok(-1));
+        assert_eq!(get_sbits(&mut gb, 1), Err(XllError::Bitstream));
+    }
+
+    /// Silent bands with silent history join to silence at twice the samples, and a DC band 0
+    /// comes out as DC on every output sample once the filter settles.
+    #[test]
+    fn frequency_bands_join_at_twice_the_rate() {
+        let n = 64;
+        let mut out = vec![1; 2 * n];
+        assemble_freq_bands(&mut out, &mut vec![0; DCA_XLL_DECI_HISTORY_MAX + n], &mut vec![0; n], n);
+        assert!(out.iter().all(|&v| v == 0));
+        let mut low = vec![1 << 16; DCA_XLL_DECI_HISTORY_MAX + n];
+        assemble_freq_bands(&mut out, &mut low, &mut vec![0; n], n);
+        let settled = &out[32..];
+        let (lo, hi) = (settled.iter().min().copied().unwrap_or(0), settled.iter().max().copied().unwrap_or(0));
+        assert!(lo > 0 && hi - lo <= hi / 64, "{settled:?}");
+        // short buffers are refused, not indexed
+        assemble_freq_bands(&mut out, &mut [0; 4], &mut [0; 4], n);
+    }
 
     /// Lss/Rss replaced Ls/Rs even when the layout had both, losing two lossless channels.
     #[test]
@@ -2412,11 +2586,11 @@ mod alt_extension_tests {
                         if decoder.chs_parse_header(&mut bits, &mut channel_set, true, true).is_err() || channel_set.nchannels != expected_channels {
                             continue;
                         }
-                        channel_set.band.msb = vec![vec![0i32; decoder.nframesamples]; expected_channels];
-                        channel_set.band.lsb =
-                            if channel_set.band.lsb_section_size != 0 { vec![vec![0i32; decoder.nframesamples]; expected_channels] } else { Vec::new() };
+                        channel_set.bands[0].msb = vec![vec![0i32; decoder.nframesamples]; expected_channels];
+                        channel_set.bands[0].lsb =
+                            if channel_set.bands[0].lsb_section_size != 0 { vec![vec![0i32; decoder.nframesamples]; expected_channels] } else { Vec::new() };
                         decoder.chset.push(channel_set);
-                        if decoder.chs_parse_band_data(&mut bits, 0, 0, band_end * 8).is_err() || bits.position() > band_end * 8 {
+                        if decoder.chs_parse_band_data(&mut bits, 0, 0, 0, band_end * 8).is_err() || bits.position() > band_end * 8 {
                             continue;
                         }
                         let trailing_bits = band_end * 8 - bits.position();
@@ -2568,9 +2742,9 @@ mod alt_extension_tests {
                             {
                                 continue;
                             }
-                            channel_set.band.msb = vec![vec![0i32; frame_samples]; expected_channels];
-                            channel_set.band.lsb =
-                                if channel_set.band.lsb_section_size != 0 { vec![vec![0i32; frame_samples]; expected_channels] } else { Vec::new() };
+                            channel_set.bands[0].msb = vec![vec![0i32; frame_samples]; expected_channels];
+                            channel_set.bands[0].lsb =
+                                if channel_set.bands[0].lsb_section_size != 0 { vec![vec![0i32; frame_samples]; expected_channels] } else { Vec::new() };
                             let channel_mask = channel_set.ch_mask;
                             let pcm_bit_res = channel_set.pcm_bit_res;
                             let header_tail_bits = channel_set.header_tail_bits;
@@ -2587,7 +2761,7 @@ mod alt_extension_tests {
                                     valid = false;
                                     break;
                                 };
-                                if decoder.chs_parse_band_data(&mut bits, 0, segment, next_band_end).is_err() || bits.position() > next_band_end {
+                                if decoder.chs_parse_band_data(&mut bits, 0, 0, segment, next_band_end).is_err() || bits.position() > next_band_end {
                                     valid = false;
                                     break;
                                 }
@@ -2603,17 +2777,16 @@ mod alt_extension_tests {
                                 continue;
                             }
 
-                            decoder.chs_filter_band_data(0);
+                            decoder.chs_filter_band_data(0, 0);
                             if scalable_lsbs {
-                                decoder.chs_assemble_msbs_lsbs(0);
+                                decoder.chs_assemble_msbs_lsbs(0, 0);
                             }
-                            let peaks = decoder.chset[0]
-                                .band
+                            let peaks = decoder.chset[0].bands[0]
                                 .msb
                                 .iter()
                                 .map(|channel| channel.iter().map(|&sample| sample.saturating_abs()).max().unwrap_or_default())
                                 .collect();
-                            let checksums = decoder.chset[0].band.msb.iter().map(|channel| channel.iter().map(|&sample| sample as i64).sum()).collect();
+                            let checksums = decoder.chset[0].bands[0].msb.iter().map(|channel| channel.iter().map(|&sample| sample as i64).sum()).collect();
                             candidates.push(DecodedChannelSetCandidate {
                                 segments,
                                 navigation_size_bits,
