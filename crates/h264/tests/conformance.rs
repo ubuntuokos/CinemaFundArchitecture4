@@ -97,6 +97,9 @@ fixture_tests!(
     lossless_444_10,
     lossless_420_10,
     lossless_mbaff,
+    lossless_420_clean,
+    lossless_444_10_clean,
+    lossless_420_10_clean,
 );
 
 /// Draft mode (reduced-resolution playback) skips deblocking of non-reference pictures only:
