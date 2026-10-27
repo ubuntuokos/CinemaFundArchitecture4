@@ -377,9 +377,40 @@ fn h264_recovery_point_with_a_broken_link_or_a_count_is_not_clean() {
     assert_eq!(ix.frames[3].random_access, RandomAccessKind::IntraOnly);
 }
 
+fn sps_with_id(level: u8, id: u32) -> Vec<u8> {
+    let mut w = BitWriter::new();
+    w.write_bits(100, 8);
+    w.write_bits(0, 8);
+    w.write_bits(u32::from(level), 8);
+    w.write_ue(id);
+    w.write_bits(0xABCD, 16);
+    w.rbsp_trailing();
+    nal(0x67, &w.finish())
+}
+
+fn pps(id: u32, sps_id: u32) -> Vec<u8> {
+    let mut w = BitWriter::new();
+    w.write_ue(id);
+    w.write_ue(sps_id);
+    w.write_bits(0x5A, 8);
+    w.rbsp_trailing();
+    nal(0x68, &w.finish())
+}
+
+fn slice_with_pps(header: u8, slice_type: u32, pps_id: u32) -> Vec<u8> {
+    let mut w = BitWriter::new();
+    w.write_ue(0);
+    w.write_ue(slice_type);
+    w.write_ue(pps_id);
+    w.write_bits(0xF0F0, 16);
+    w.rbsp_trailing();
+    nal(header, &w.finish())
+}
+
 #[test]
 fn h264_parameter_set_changes() {
-    let units = [[sps(40), slice(0x65, 7)].concat(), slice(0x61, 5), [sps(40), slice(0x65, 7)].concat(), [sps(41), slice(0x65, 7)].concat(), slice(0x61, 5)];
+    let units =
+        [[sps(40), pps(0, 0), slice(0x65, 7)].concat(), slice(0x61, 5), [sps(40), slice(0x65, 7)].concat(), [sps(41), slice(0x65, 7)].concat(), slice(0x61, 5)];
     let first_sps = sps(40);
     let seed = [&first_sps[4..]];
     let ix =
@@ -388,6 +419,53 @@ fn h264_parameter_set_changes() {
     assert_eq!(ix.frames.iter().map(|f| f.config_id).collect::<Vec<_>>(), vec![0, 0, 0, 1, 1]);
     // without timestamps H.264 has no presentation order here
     assert!(ix.frames.iter().all(|f| f.presentation_index.is_none() && f.pts.is_none()));
+}
+
+#[test]
+fn h264_switching_parameter_set_ids_is_a_configuration_change() {
+    // both configurations come with the codec configuration; the slices switch between them
+    let (s0, s1, p0, p1) = (sps_with_id(40, 0), sps_with_id(51, 1), pps(0, 0), pps(1, 1));
+    let seed = [&s0[4..], &s1[4..], &p0[4..], &p1[4..]];
+    let units = [slice_with_pps(0x65, 7, 0), slice_with_pps(0x61, 5, 0), slice_with_pps(0x65, 7, 1), slice_with_pps(0x61, 5, 1), slice_with_pps(0x65, 7, 0)];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &seed, units.iter().map(|d| Packet { data: d, pts: None, dts: None, keyframe: false })).unwrap();
+    assert_eq!(ix.config_changes, vec![2, 4]);
+    assert_eq!(ix.frames.iter().map(|f| f.config_id).collect::<Vec<_>>(), vec![0, 0, 1, 1, 2]);
+    // a new SPS id introduced in-band
+    let units = [[sps_with_id(40, 0), pps(0, 0), slice_with_pps(0x65, 7, 0)].concat(), [sps_with_id(51, 3), pps(2, 3), slice_with_pps(0x65, 7, 2)].concat()];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &[], units.iter().map(|d| Packet { data: d, pts: None, dts: None, keyframe: false })).unwrap();
+    assert_eq!(ix.config_changes, vec![1]);
+}
+
+#[test]
+fn h264_recovery_point_without_timestamps_leaves_dependencies_unknown() {
+    let units = [[sps(40), slice(0x65, 7)].concat(), [recovery_sei(0, true, false), slice(0x61, 7)].concat(), slice(0x01, 6), slice(0x61, 5)];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &[], units.iter().map(|d| Packet { data: d, pts: None, dts: None, keyframe: false })).unwrap();
+    use DependencyStatus::*;
+    let deps: Vec<DependencyStatus> = ix.frames.iter().map(|f| f.dependency_status).collect();
+    assert_eq!(deps, vec![Independent, Independent, Unknown, Unknown], "not WithinGop: whether they lead the recovery point is unknown");
+}
+
+#[test]
+fn h264_truncated_idr_is_no_clean_access_point() {
+    let units = [vec![0, 0, 1, 0x65], [sps(40), slice(0x65, 7)].concat()];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &[], units.iter().map(|d| Packet { data: d, pts: None, dts: None, keyframe: true })).unwrap();
+    assert_eq!(ix.frames[0].picture_type, PictureType::Unknown);
+    assert_eq!(ix.frames[0].random_access, RandomAccessKind::None);
+    assert_eq!(ix.clean_access_points(), vec![1]);
+}
+
+#[test]
+fn h264_invalid_nal_length_sizes_are_refused() {
+    // a zero-byte length prefix never advanced the NAL splitter
+    let data = [0u8, 0, 0, 1, 0x65];
+    for n in [0u8, 5, 8, 255] {
+        let r = index_h264(0, Rational::MPEG_90K, NalFormat::LengthPrefixed(n), &[], [Packet { data: &data, pts: None, dts: None, keyframe: false }]);
+        assert_eq!(r, Err(IndexError::InvalidNalLengthSize(n)));
+    }
 }
 
 #[test]
@@ -404,6 +482,21 @@ fn timestamp_problems_are_reported() {
     )
     .unwrap();
     assert_eq!(ix.timestamp_problems, vec![2, 3]);
+}
+
+#[test]
+fn mpeg2_gop_flags_count_without_a_repeated_sequence_header() {
+    use DependencyStatus::*;
+    for (closed, broken, expected) in [(false, true, [Undecodable, Undecodable]), (true, false, [WithinGop, WithinGop])] {
+        let mut units = gop(true, false, Some((720, 576)));
+        units.extend(gop(closed, broken, None));
+        let ix = mpeg2(&units);
+        assert_eq!(ix.frames[6].random_access, RandomAccessKind::IntraOnly);
+        let deps: Vec<DependencyStatus> = ix.frames.iter().map(|f| f.dependency_status).collect();
+        assert_eq!(deps[7..9], expected, "closed {closed} broken {broken}");
+        let refs: Vec<Vec<u64>> = ix.frames.iter().map(|f| f.references.clone().unwrap()).collect();
+        assert_eq!(refs[7], vec![6], "no reference into the previous GOP");
+    }
 }
 
 // ---------------------------------------------------------------------------------------------

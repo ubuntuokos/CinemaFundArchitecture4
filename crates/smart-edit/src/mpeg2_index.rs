@@ -92,7 +92,8 @@ pub fn index_mpeg2<'a>(stream_id: u32, timebase: Rational, packets: impl IntoIte
     // (decode index, status) of the two latest anchors
     let mut last: Option<(u64, DependencyStatus)> = None;
     let mut prev: Option<(u64, DependencyStatus)> = None;
-    // the latest access point: (decode index, closed or no leading pictures, broken link)
+    // the latest access point, or GOP header with closed_gop / broken_link: (decode index, closed
+    // or no leading pictures, broken link)
     let mut ap: Option<(u64, bool, bool)> = None;
     let mut since_ap_anchor = false;
 
@@ -157,6 +158,11 @@ pub fn index_mpeg2<'a>(stream_id: u32, timebase: Rational, packets: impl IntoIte
         let reference = matches!(s.ptype, PictureType::I | PictureType::P);
         if random_access.is_access_point() {
             ap = Some((di, random_access.is_clean(), matches!(random_access, RandomAccessKind::OpenGop { broken_link: true })));
+            since_ap_anchor = false;
+        } else if s.ptype.is_intra() && (closed || broken) {
+            // a GOP header without a repeated sequence header: no access point, but its flags
+            // still say what the leading B pictures predict from
+            ap = Some((di, closed, broken));
             since_ap_anchor = false;
         } else if reference {
             since_ap_anchor = true;

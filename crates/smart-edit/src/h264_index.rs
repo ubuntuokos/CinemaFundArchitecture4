@@ -49,6 +49,9 @@ struct Recovery {
     broken_link: bool,
 }
 
+/// The SPS and PPS payloads a picture is coded with.
+type Config = (Vec<u8>, Vec<u8>);
+
 #[derive(Default)]
 struct Picture {
     /// Worst slice type: 0 none, 1 I, 2 P, 3 B.
@@ -57,55 +60,64 @@ struct Picture {
     reference: bool,
     recovery: Option<Recovery>,
     slices: usize,
+    /// Parameter sets selected by the first slice's `pic_parameter_set_id`; `None` when they are
+    /// unknown.
+    config: Option<Config>,
 }
 
-/// Parameter sets by id; a changed payload for a known id is a configuration change.
+/// Parameter sets by id (PPS with the id of the SPS it refers to).
 #[derive(Default)]
 struct Params {
     sps: BTreeMap<u32, Vec<u8>>,
-    pps: BTreeMap<u32, Vec<u8>>,
+    pps: BTreeMap<u32, (u32, Vec<u8>)>,
 }
 
 impl Params {
-    /// Record a parameter set; true when it replaces a different one with the same id.
-    fn record(&mut self, nal_type: u8, nal: &[u8]) -> bool {
+    fn record(&mut self, nal_type: u8, nal: &[u8]) {
         let rbsp = unescape_rbsp(nal.get(1..).unwrap_or(&[]));
         let mut r = BitReader::new(&rbsp);
-        let id = if nal_type == NAL_SPS {
+        // trailing zero bytes do not change the parameter set
+        let trimmed = |mut body: Vec<u8>| {
+            while body.last() == Some(&0) {
+                body.pop();
+            }
+            body
+        };
+        if nal_type == NAL_SPS {
             // profile_idc, constraint flags, level_idc
             if r.skip(24).is_err() {
-                return false;
+                return;
             }
-            r.read_ue()
+            let Ok(id) = r.read_ue() else { return };
+            self.sps.insert(id, trimmed(rbsp));
         } else {
-            r.read_ue()
-        };
-        let Ok(id) = id else { return false };
-        let map = if nal_type == NAL_SPS { &mut self.sps } else { &mut self.pps };
-        // trailing zero bytes do not change the parameter set
-        let mut body = rbsp;
-        while body.last() == Some(&0) {
-            body.pop();
+            let (Ok(id), Ok(sps_id)) = (r.read_ue(), r.read_ue()) else { return };
+            self.pps.insert(id, (sps_id, trimmed(rbsp)));
         }
-        match map.insert(id, body.clone()) {
-            Some(old) => old != body,
-            None => false,
-        }
+    }
+
+    /// The configuration a slice with this PPS id is decoded with.
+    fn active(&self, pps_id: u32) -> Option<Config> {
+        let (sps_id, pps) = self.pps.get(&pps_id)?;
+        Some((self.sps.get(sps_id)?.clone(), pps.clone()))
     }
 }
 
-fn slice_rank(nal: &[u8]) -> Option<u8> {
+/// Slice rank (see [`Picture::rank`]) and `pic_parameter_set_id` of a slice header.
+fn slice_header(nal: &[u8]) -> Option<(u8, Option<u32>)> {
     let head = nal.get(1..nal.len().min(1 + SLICE_HEAD))?;
     let rbsp = unescape_rbsp(head);
     let mut r = BitReader::new(&rbsp);
     let _first_mb = r.read_ue().ok()?;
     let slice_type = r.read_ue().ok()?;
+    let pps_id = r.read_ue().ok();
     // 0 P, 1 B, 2 I, 3 SP, 4 SI (+5 when every slice of the picture has the same type)
-    Some(match slice_type % 5 {
+    let rank = match slice_type % 5 {
         2 | 4 => 1,
         0 | 3 => 2,
         _ => 3,
-    })
+    };
+    Some((rank, pps_id))
 }
 
 fn recovery_point(nal: &[u8]) -> Option<Recovery> {
@@ -143,13 +155,12 @@ fn recovery_point(nal: &[u8]) -> Option<Recovery> {
     None
 }
 
-fn analyse(data: &[u8], format: NalFormat, params: &mut Params) -> (Picture, bool) {
+fn analyse(data: &[u8], format: NalFormat, params: &mut Params) -> Picture {
     let nals = match format {
         NalFormat::AnnexB => annexb_nals(data),
         NalFormat::LengthPrefixed(n) => length_prefixed_nals(data, usize::from(n)).unwrap_or_default(),
     };
     let mut pic = Picture::default();
-    let mut changed = false;
     for nal in nals {
         let Some(&h) = nal.first() else { continue };
         let ty = h & 0x1F;
@@ -159,8 +170,11 @@ fn analyse(data: &[u8], format: NalFormat, params: &mut Params) -> (Picture, boo
                 pic.slices += 1;
                 pic.idr |= ty == NAL_IDR;
                 pic.reference |= ref_idc != 0;
-                if let Some(rank) = slice_rank(nal) {
+                if let Some((rank, pps_id)) = slice_header(nal) {
                     pic.rank = pic.rank.max(rank);
+                    if pic.slices == 1 {
+                        pic.config = pps_id.and_then(|id| params.active(id));
+                    }
                 }
             }
             NAL_SEI => {
@@ -168,15 +182,18 @@ fn analyse(data: &[u8], format: NalFormat, params: &mut Params) -> (Picture, boo
                     pic.recovery = recovery_point(nal);
                 }
             }
-            NAL_SPS | NAL_PPS => changed |= params.record(ty, nal),
+            NAL_SPS | NAL_PPS => params.record(ty, nal),
             _ => {}
         }
     }
-    (pic, changed)
+    pic
 }
 
 /// Index an H.264 stream from its access units in decode order. `parameter_sets` are the SPS /
 /// PPS NAL units of the container's codec configuration (`avcC`), if any.
+///
+/// A configuration change is a picture coded with other SPS / PPS payloads than the picture
+/// before it, whether a parameter set was replaced or the slices switched to another id.
 pub fn index_h264<'a>(
     stream_id: u32,
     timebase: Rational,
@@ -187,6 +204,11 @@ pub fn index_h264<'a>(
     if !timebase.is_valid() {
         return Err(IndexError::InvalidTimebase(timebase));
     }
+    if let NalFormat::LengthPrefixed(n) = format
+        && !(1..=4).contains(&n)
+    {
+        return Err(IndexError::InvalidNalLengthSize(n));
+    }
     let mut params = Params::default();
     for ps in parameter_sets {
         if let Some(&h) = ps.first() {
@@ -196,6 +218,7 @@ pub fn index_h264<'a>(
     let mut frames: Vec<FrameIndexEntry> = Vec::new();
     let mut config_id = 0u32;
     let mut config_changes = Vec::new();
+    let mut config: Option<Config> = None;
     // latest access point: (pts, kind)
     let mut ap: Option<(Option<i64>, RandomAccessKind)> = None;
     for (i, p) in packets.into_iter().enumerate() {
@@ -204,10 +227,13 @@ pub fn index_h264<'a>(
         }
         let di = i as u64;
         let size = u32::try_from(p.data.len()).map_err(|_| IndexError::PacketTooLarge { decode_index: di })?;
-        let (pic, changed) = analyse(p.data, format, &mut params);
-        if changed {
-            config_id = config_id.saturating_add(1);
-            config_changes.push(di);
+        let pic = analyse(p.data, format, &mut params);
+        if let Some(active) = pic.config {
+            if config.as_ref().is_some_and(|c| *c != active) {
+                config_id = config_id.saturating_add(1);
+                config_changes.push(di);
+            }
+            config = Some(active);
         }
         let picture_type = match pic.rank {
             1 => PictureType::I,
@@ -215,7 +241,8 @@ pub fn index_h264<'a>(
             3 => PictureType::B,
             _ => PictureType::Unknown,
         };
-        let random_access = if pic.idr {
+        // an IDR picture whose slice header cannot be read is no proven cut point
+        let random_access = if pic.idr && picture_type == PictureType::I {
             RandomAccessKind::Idr
         } else if picture_type == PictureType::I {
             match pic.recovery {
@@ -234,7 +261,11 @@ pub fn index_h264<'a>(
                 None => DependencyStatus::Undecodable,
                 Some((ap_pts, kind)) => {
                     let leading = matches!((p.pts, ap_pts), (Some(a), Some(b)) if a < b);
+                    let unordered = p.pts.is_none() || ap_pts.is_none();
                     match kind {
+                        // leading pictures are found from the PTS (picture order counts are not
+                        // derived): without them it stays open whether a picture crosses
+                        RandomAccessKind::RecoveryPoint { .. } if unordered => DependencyStatus::Unknown,
                         RandomAccessKind::RecoveryPoint { broken_link: true, .. } if leading => DependencyStatus::Undecodable,
                         RandomAccessKind::RecoveryPoint { .. } if leading => DependencyStatus::CrossesAccessPoint,
                         _ => DependencyStatus::WithinGop,

@@ -55,12 +55,16 @@ The index comes from the bitstream, not from the container's keyframe flag:
 
 - **MPEG-2:** sequence header + I picture = access point; `closed_gop` (or no leading B
   pictures) makes it clean, otherwise it is an open GOP whose leading B pictures refer to the
-  previous GOP (or cannot be decoded at all after a `broken_link`). References are exact (latest
+  previous GOP (or cannot be decoded at all after a `broken_link`). The GOP header flags count
+  even when the sequence header is not repeated. References are exact (latest
   one or two anchors); presentation order comes from the PTS, or from `temporal_reference`.
 - **H.264:** IDR = clean access point; a non-IDR I picture is an access point only with a
   recovery point SEI (`recovery_frame_cnt` 0), and its leading pictures cross it; an I picture
-  without one is `IntraOnly`, not a cut point. SPS / PPS payload changes per id are configuration
-  changes. Reference lists are not resolved (`references` is `None`).
+  without one is `IntraOnly`, not a cut point; an IDR whose slice header cannot be read is none
+  either. A picture coded with other SPS / PPS payloads than the one before it (a replaced
+  parameter set or a switch to another `pic_parameter_set_id`) is a configuration change.
+  Leading pictures are found from the PTS; without timestamps the pictures after a recovery point
+  stay `Unknown`. Reference lists are not resolved (`references` is `None`).
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 

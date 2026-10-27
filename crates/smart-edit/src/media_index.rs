@@ -269,6 +269,8 @@ pub enum IndexError {
     PacketTooLarge {
         decode_index: u64,
     },
+    /// NAL length prefixes are 1, 2 or 4 bytes (`avcC` `lengthSizeMinusOne`); 3 is accepted too.
+    InvalidNalLengthSize(u8),
 }
 
 impl std::fmt::Display for IndexError {
@@ -277,6 +279,7 @@ impl std::fmt::Display for IndexError {
             IndexError::InvalidTimebase(r) => write!(f, "invalid timebase {}/{}", r.num, r.den),
             IndexError::TooManyFrames => write!(f, "more than {MAX_FRAMES} pictures in one stream"),
             IndexError::PacketTooLarge { decode_index } => write!(f, "packet {decode_index} is larger than 4 GiB"),
+            IndexError::InvalidNalLengthSize(n) => write!(f, "NAL length prefix of {n} bytes"),
         }
     }
 }
