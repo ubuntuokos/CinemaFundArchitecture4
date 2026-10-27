@@ -806,12 +806,19 @@ fn audio_clip(s: &Session, cmd: &str, p: &Value, group: Option<&Group>) -> Resul
 fn music_info(s: &Session, cmd: &str, clip: ClipId) -> Result<(String, Tick, cfa4_credits::fit::Music, f64)> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     let (_, it) = q.find_item(clip).ok_or_else(|| bad(cmd, "no such clip"))?;
-    let (item, source_in, dur, start, name) = (it.item, it.source_in, it.duration, it.start, it.name.clone());
+    let it = it.clone();
+    let (dur, start, name) = (it.duration, it.start, it.name.clone());
     let sr = q.settings.sample_rate.max(1);
     let provider = s.media.provider(s.project.clone(), s.services.clone());
-    let src = cfa4_render::SourceProvider::source(&provider, item).ok_or_else(|| bad(cmd, "the music's media is offline"))?;
-    let m0 = source_in.to_units_floor(i64::from(sr));
+    if cfa4_render::SourceProvider::source(&provider, it.item).is_none() {
+        return Err(bad(cmd, "the music's media is offline"));
+    }
+    // the music as it plays on the timeline: speed, reverse, Remix and clip effects applied
+    let x0 = start.to_units_floor(i64::from(sr));
     let len = dur.to_units_floor(i64::from(sr)).max(0);
+    let read = |off: i64, n: i64| -> Result<[Vec<f32>; 2]> {
+        cfa4_render::audio::clip_signal(&it, x0 + off, n.max(0) as usize, sr, &provider).ok_or_else(|| bad(cmd, "the music clip has no sound"))
+    };
     // where the sound ends: RMS over 50 ms windows, read in 10-second pieces
     let win = (sr / 20).max(1) as i64;
     let chunk = i64::from(sr) * 10;
@@ -819,13 +826,13 @@ fn music_info(s: &Session, cmd: &str, clip: ClipId) -> Result<(String, Tick, cfa
     let mut off = 0i64;
     while off < len {
         let n = chunk.min(len - off);
-        let buf = src.audio(m0 + off, n as usize, sr).map_err(|e| bad(cmd, format!("reading the music: {e}")))?;
+        let buf = read(off, n)?;
         let mut w0 = 0i64;
         while w0 < n {
             let w1 = (w0 + win).min(n);
             let mut sum = 0f64;
             let mut cnt = 0usize;
-            for ch in &buf.channels {
+            for ch in &buf {
                 for v in ch.get(w0 as usize..w1 as usize).unwrap_or(&[]) {
                     sum += f64::from(*v) * f64::from(*v);
                     cnt += 1;
@@ -845,9 +852,9 @@ fn music_info(s: &Session, cmd: &str, clip: ClipId) -> Result<(String, Tick, cfa
     let mut bpm = 0.0;
     if len > 0
         && len <= MAX_BEAT_SECONDS * i64::from(sr)
-        && let Ok(buf) = src.audio(m0, len as usize, sr)
+        && let Ok(buf) = read(0, len)
     {
-        let refs: Vec<&[f32]> = buf.channels.iter().map(Vec::as_slice).collect();
+        let refs: Vec<&[f32]> = buf.iter().map(Vec::as_slice).collect();
         if let Ok(a) = cfa4_audio_dsp::remix::analyze(&refs, sr) {
             beats = a.beats.iter().map(|b| to_tick(*b)).collect();
             bpm = a.bpm;
@@ -870,8 +877,29 @@ fn group_or_none(s: &Session, cmd: &str, p: &Value) -> Option<Group> {
 fn music(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "graphics.credits.music";
     let group = group_or_none(s, CMD, p);
-    let audio = audio_clip(s, CMD, p, group.as_ref())?;
-    let (name, start, m, bpm) = music_info(s, CMD, audio)?;
+    // without usable music the credits can still be fitted to a typed length: say so, and what
+    // the credits are, instead of failing
+    let found = audio_clip(s, CMD, p, group.as_ref()).and_then(|a| music_info(s, CMD, a).map(|m| (a, m)));
+    let (audio, (name, start, m, bpm)) = match found {
+        Ok(x) => x,
+        Err(e) if group.is_some() && p.get("audio").is_none() => {
+            let g = group.as_ref();
+            let natural = g.and_then(|g| group_doc(CMD, g).ok()).and_then(|mut d| {
+                d.fit = None;
+                lay_doc(s, CMD, &d, doc_base(&d)).ok().map(|l| cfa4_credits::fit::total_length(&l).0)
+            });
+            let fit = g.and_then(|g| group_doc(CMD, g).ok()).and_then(|d| d.fit);
+            return Ok(json!({
+                "audio": Value::Null,
+                "problem": e.to_string(),
+                "suggestions": [],
+                "credits": g.and_then(|g| g.pages.first()).map(|x| x.0.0),
+                "natural": natural,
+                "fit": fit,
+            }));
+        }
+        Err(e) => return Err(e),
+    };
     let suggestions = cfa4_credits::fit::suggestions(&m);
     let beat = cfa4_credits::fit::beat_period(&m.beats).map(|t| t.0);
     let (natural, fit) = match &group {
@@ -893,7 +921,7 @@ fn music(s: &mut Session, p: &Value) -> Result<Value> {
         "beat": beat,
         "beats": m.beats.len(),
         "suggestions": suggestions,
-        "credits": group.as_ref().map(|g| g.id),
+        "credits": group.as_ref().and_then(|g| g.pages.first()).map(|x| x.0.0),
         "natural": natural,
         "fit": fit,
     }))
@@ -950,8 +978,16 @@ fn fit_cmd(s: &mut Session, p: &Value) -> Result<Value> {
         {
             start = Some(*st);
         }
+        // where the beats fall, counted from where the credits will start
+        let credits_start = start.or_else(|| group.pages.first().map(|x| x.2)).unwrap_or_default();
+        let beat_offset = match (&music, card_beat) {
+            (Some((_, music_start, m, _)), period) if period > 0 => {
+                m.beats.first().map(|b| (music_start.0.saturating_add(b.0).saturating_sub(credits_start.0)).rem_euclid(period)).unwrap_or(0)
+            }
+            _ => 0,
+        };
         let name = music.as_ref().map(|m| m.0.clone()).unwrap_or_default();
-        doc.fit = Some(cfa4_credits::fit::Fit { total: total.0, card_beat, music: name });
+        doc.fit = Some(cfa4_credits::fit::Fit { total: total.0, card_beat, music: name, beat_offset });
     }
     let (laid, report) = lay_doc_report(s, CMD, &doc, doc_base(&doc))?;
     let warnings = warnings_json(&laid);

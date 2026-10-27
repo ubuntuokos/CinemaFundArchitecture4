@@ -5514,6 +5514,25 @@ def test_credits_fit_helpers():
     assert audio_clips(None) == [] and audio_clips({"audio": None}) == []
 
 
+def test_credits_fit_window_keeps_the_typed_length_choice(app, fake_engine: Path):
+    """Regression: a second analysis deleted the "this length" choice (RuntimeError after); and
+    without music a typed length is offered."""
+    from cfa4_qt.panels.credits_fit import CreditsFitDialog
+
+    engine = EngineClient(str(fake_engine), [])
+    dlg = CreditsFitDialog(engine)
+    music = {"audio": 7, "credits": 3, "duration": 30 * TICKS_PER_SECOND, "suggestions": [{"id": "musicLength", "total": 30 * TICKS_PER_SECOND}]}
+    dlg._show(music)
+    dlg._show(music)
+    app.processEvents()
+    assert dlg.custom in dlg.choices.buttons() and dlg.custom.text()
+    dlg._show({"audio": None, "credits": 3, "natural": 20 * TICKS_PER_SECOND, "suggestions": [], "problem": "no music"})
+    app.processEvents()
+    assert dlg.custom.isChecked() and dlg.apply_button.isEnabled() and not dlg.align.isEnabled()
+    assert dlg.fit_params() == {"cardsOnBeat": False, "alignToAudio": False, "clip": 3, "seconds": 20.0}
+    dlg.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_fit_credits_to_music(app, tmp_path: Path):
     """Place credits and music, open Fit Credits to Music, see the offered lengths, fit to where

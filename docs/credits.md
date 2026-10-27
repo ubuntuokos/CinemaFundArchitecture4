@@ -107,13 +107,17 @@ More than 50 of one kind are counted in one line. Codes, severities and values a
 With a credits page selected, **Graphics and Titles ▸ Fit Credits to Music…** picks the music –
 the selected audio clip, else the audio clip that overlaps the credits most – and shows what the
 engine found in it: its length, where the sound ends, its tempo, and the credits' length without
-fitting. It offers lengths, and changes nothing until you choose:
+fitting. The music is heard as the timeline plays it: with its speed, reverse, Remix edits and
+clip effects. Without usable music (none under the credits, or offline) the window still fits to
+a typed length. It offers lengths, and changes nothing until you choose:
 
 - **the whole music**; **until the sound ends** (when it ends more than half a second before the
   clip); **to the last bar line** before the sound ends (bars of four beats; the beats come from
   the same analysis as Clip ▸ Remix); or a length you type;
 - **Cards last whole beats** – cards without their own `Page Runtime` last a whole number of
-  beats, so their cuts fall on the beat;
+  beats and start on a beat (the scroll page before a card gives or takes up to half a beat; the
+  last scroll page evens it out), so their cuts fall on the beat; cards after the last scroll page
+  are on the beat when the length is (the last bar line, for example);
 - **Start the credits where the music starts**.
 
 *Fit to This Length* replaces the pages in place, as one undo step, keeping hand edits: cards,
