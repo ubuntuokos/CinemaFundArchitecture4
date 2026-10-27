@@ -1,8 +1,10 @@
 //! Motion vector prediction: merge candidates (8.5.3.2.2 - 8.5.3.2.5), AMVP (8.5.3.2.6, 8.5.3.2.7)
 //! and temporal motion vector prediction (8.5.3.2.8, 8.5.3.2.9).
 
+use crate::params::{Pps, Sps};
 use crate::picture::RefPic;
-use crate::slicedec::{F_INTRA, MvField, PartMode, SliceDecoder};
+use crate::slice::SliceHeader;
+use crate::slicedec::{F_INTRA, MvField, PartMode, PicState};
 
 /// l0CandIdx / l1CandIdx of Table 8-7.
 const COMB: [(usize, usize); 12] = [(0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1), (0, 3), (3, 0), (1, 3), (3, 1), (2, 3), (3, 2)];
@@ -36,7 +38,22 @@ fn same_motion(a: &MvField, b: &MvField) -> bool {
     true
 }
 
-impl<'a, S: crate::picture::Sample> SliceDecoder<'a, S> {
+/// What motion vector prediction reads: the current picture's block state and the slice's reference
+/// lists. The decoder builds one per prediction unit; the encoder builds the same from its own state.
+pub struct MvCtx<'a, S> {
+    pub pic: &'a PicState<S>,
+    pub sh: &'a SliceHeader,
+    pub pps: &'a Pps,
+    pub sps: &'a Sps,
+    pub refs: &'a [Vec<RefPic>; 2],
+    /// Collocated picture for TMVP.
+    pub col: Option<&'a RefPic>,
+    /// NoBackwardPredFlag.
+    pub no_backward_pred: bool,
+    pub slice_addr: u32,
+}
+
+impl<'a, S: crate::picture::Sample> MvCtx<'a, S> {
     /// Prediction block availability (6.4.2).
     fn pb_avail(&self, xc: i32, yc: i32, ncb: i32, xp: i32, yp: i32, w: i32, h: i32, part_idx: usize, xn: i32, yn: i32) -> bool {
         let same_cb = xc <= xn && yc <= yn && xc + ncb > xn && yc + ncb > yn;
@@ -192,7 +209,7 @@ impl<'a, S: crate::picture::Sample> SliceDecoder<'a, S> {
 
     /// Temporal luma motion vector prediction (8.5.3.2.8).
     pub fn temporal(&self, xp: i32, yp: i32, w: i32, h: i32, l: usize, ref_idx: usize) -> Option<[i16; 2]> {
-        let col = self.col.as_ref()?;
+        let col = self.col?;
         let s = self.sps.log2_ctb;
         let (xbr, ybr) = (xp + w, yp + h);
         if (yp >> s) == (ybr >> s) && ybr < self.pic.height as i32 && xbr < self.pic.width as i32 {

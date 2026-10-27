@@ -527,14 +527,14 @@ impl MkvSource {
                     st.decoder = Some(self.audio_decoder(c, ainfo.sample_rate)?);
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
-                // one packet, or `SeekPreRoll` worth for Opus).
+                // a packet, more for DTS, or `SeekPreRoll` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
                     d.reset();
                     let from = if a.preroll > 0 {
                         a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
                     } else {
-                        i.saturating_sub(1)
+                        i.saturating_sub(d.pre_roll_packets())
                     };
                     for j in from..i {
                         if let Ok(prev) = self.read(ti, j) {

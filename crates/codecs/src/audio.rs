@@ -39,6 +39,11 @@ enum Inner {
 /// Opus always decodes at 48 kHz (RFC 7845 §5.1: the input rate in the header is informational).
 pub const OPUS_RATE: u32 = 48_000;
 
+/// DTS frames decoded before a random-access target. DTS-HD Master Audio may smooth its peak bit
+/// rate by delaying lossless frames (`xll_delay_nframes`) behind a sync point: from one packet
+/// back the decoder would still be buffering at the target and give silence there.
+pub const DTS_PRE_ROLL_PACKETS: usize = 16;
+
 /// Opus pre-roll decoded before a random-access target, in 48 kHz frames: 320 ms.
 ///
 /// The containers' 80 ms (RFC 7845 §4.6, Matroska `SeekPreRoll`) is enough to sound right, but the
@@ -172,6 +177,14 @@ impl PacketDecoder {
     /// DTS (core, DTS-HD High Resolution, DTS-HD Master Audio). Packets hold whole frames.
     pub fn dts() -> Self {
         Self { inner: Inner::Dts(Box::default()), channels: 0 }
+    }
+    /// Packets to decode before a random-access target when the codec has no pre-roll of its
+    /// own: one, or [`DTS_PRE_ROLL_PACKETS`] for DTS.
+    pub fn pre_roll_packets(&self) -> usize {
+        match self.inner {
+            Inner::Dts(_) => DTS_PRE_ROLL_PACKETS,
+            _ => 1,
+        }
     }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
@@ -1376,5 +1389,18 @@ mod gapless_tests {
     fn mp3_encoder_delay_is_trimmed() {
         let src = AudioFileSource::decode("tagged.mp3", Arc::from(tagged_mp3())).unwrap();
         assert_eq!(src.samples[0].len(), AUDIO_FRAMES * 1152 - (576 + 529));
+    }
+}
+
+#[cfg(test)]
+mod pre_roll_tests {
+    use super::*;
+
+    /// DTS-HD smoothing delays lossless frames behind a sync point: one packet of pre-roll left a
+    /// seek inside the delay silent.
+    #[test]
+    fn dts_primes_more_than_one_packet() {
+        assert_eq!(PacketDecoder::dts().pre_roll_packets(), DTS_PRE_ROLL_PACKETS);
+        assert_eq!(PacketDecoder::lazy_aac().pre_roll_packets(), 1);
     }
 }
