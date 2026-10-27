@@ -1403,7 +1403,7 @@ pub fn system_report() -> Value {
         "family": std::env::consts::FAMILY,
         "arch": std::env::consts::ARCH,
         "cpuThreads": cpus,
-        "decoders": ["H.264 (AVC)", "H.265 (HEVC) Main / Main 10", "VP8", "VP9", "AV1 Main", "Apple ProRes", "Avid DNxHD / DNxHR", "Motion JPEG", "AAC-LC", "Opus", "PCM"],
+        "decoders": ["H.264 (AVC)", "H.265 (HEVC) Main / Main 10", "VP8", "VP9", "AV1 Main", "Apple ProRes", "Avid DNxHD / DNxHR", "Motion JPEG", "AAC-LC", "xHE-AAC (USAC)", "Opus", "PCM"],
         "containers": ["MP4 / MOV (ISO BMFF)", "Matroska / WebM", "WAV", "PNG / JPEG stills"],
         "exportFormats": formats,
         "speechToText": crate::transcript::speech_available(),

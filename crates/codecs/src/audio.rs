@@ -20,6 +20,9 @@ enum Inner {
     Aac { dec: Box<cfa4_aac::Decoder>, asc: Vec<u8>, up: Option<Box<Upsample2x>> },
     /// AAC whose configuration arrives with the first frame (ADTS / LATM).
     AacPending,
+    /// xHE-AAC (USAC, audio object type 42), decoded at the stream's own level: DRC and loudness
+    /// normalization ([`cfa4_aac::drc`]) are a playback-side choice, not applied on import.
+    Usac { dec: Box<cfa4_aac::usac::UsacDecoder>, asc: Vec<u8> },
     /// MPEG audio at this rate whose layer arrives with the first frame (MP4 / QuickTime name the
     /// codec, not the layer; layers I / II go to our decoder, layer III to symphonia's).
     MpegPending(u32),
@@ -131,6 +134,9 @@ impl PacketDecoder {
             let up = upsamples_core(dec.sample_rate(), sample_rate).then(|| Box::new(Upsample2x::new(dec.channels())));
             return Ok(Self { inner: Inner::Aac { dec: Box::new(dec), asc: asc.to_vec(), up }, channels: 0 });
         }
+        if let Ok(dec) = cfa4_aac::usac::UsacDecoder::new(asc) {
+            return Ok(Self { inner: Inner::Usac { dec: Box::new(dec), asc: asc.to_vec() }, channels: 0 });
+        }
         Self::new(CODEC_TYPE_AAC, sample_rate, Some(asc.to_vec()))
     }
     /// Opus from an `OpusHead` (Matroska `CodecPrivate`, Ogg) or a `dOps` box payload. Output is
@@ -225,6 +231,12 @@ impl PacketDecoder {
                     out = up.process(out);
                 }
                 let out = reorder(out, aac_to_wav_order(dec.config().channel_config));
+                self.channels = out.len();
+                return Ok(out);
+            }
+            Inner::Usac { dec, .. } => {
+                let out = dec.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
+                let out = reorder(out, aac_to_wav_order(dec.config().channel_configuration_index));
                 self.channels = out.len();
                 return Ok(out);
             }
@@ -327,6 +339,11 @@ impl PacketDecoder {
                     up.reset();
                 }
             }
+            Inner::Usac { dec, asc } => {
+                if let Ok(d) = cfa4_aac::usac::UsacDecoder::new(asc) {
+                    **dec = d;
+                }
+            }
             Inner::Mpa(d) => d.reset(),
             Inner::Opus { dec, .. } => dec.reset(),
             Inner::Symphonia(d) => d.reset(),
@@ -353,7 +370,9 @@ pub fn mpeg_audio_layer(frame: &[u8]) -> Option<u8> {
 /// AAC-LC config at 24 kHz or less) SBR is only visible as fill-element data in the access units,
 /// so the first ones are decoded to look for it. `None` if `asc` is not one our decoder reads.
 pub fn aac_output_rate<'a>(asc: &[u8], first_units: impl IntoIterator<Item = &'a [u8]>) -> Option<u32> {
-    let mut dec = cfa4_aac::Decoder::new(asc).ok()?;
+    let Ok(mut dec) = cfa4_aac::Decoder::new(asc) else {
+        return cfa4_aac::usac::UsacDecoder::new(asc).ok().map(|d| d.sample_rate());
+    };
     let core = dec.sample_rate();
     if let Some(ext) = dec.config().extension_sample_rate {
         return Some(ext);
@@ -405,7 +424,11 @@ pub enum FixedFrames<'a> {
 pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Option<i64> {
     let mpegts = match codec {
         FixedFrames::Aac(asc) => {
-            let core = cfa4_aac::Decoder::new(asc).ok()?.sample_rate();
+            let Ok(dec) = cfa4_aac::Decoder::new(asc) else {
+                let usac = cfa4_aac::usac::UsacDecoder::new(asc).ok()?;
+                return (usac.sample_rate() == rate).then_some(usac.frame_length() as i64);
+            };
+            let core = dec.sample_rate();
             return Some(if upsamples_core(core, rate) { 2048 } else { 1024 });
         }
         FixedFrames::Eac3 => {
