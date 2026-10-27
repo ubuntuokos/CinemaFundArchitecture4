@@ -1983,3 +1983,54 @@
 	Auto tone map media (HDR and log into SDR)	Automatikus tónusleképezés (HDR és log SDR-re)
 	Sequence Color Management	Szekvencia színkezelése
 	Working Color Space	Munka-színtér
+# media dialogs (4.10)
+	Align Timecode	Időkód igazítása
+	All media is online.	Minden média elérhető.
+	Calculate	Számítás
+	Clip ID (fingerprint)	Klipazonosító (ujjlenyomat)
+	Clip Name	Klipnév
+	Collect Files and Copy to New Location	Fájlok összegyűjtése és másolása új helyre
+	Consolidate and Transcode	Összevonás és átkódolás
+	Creating {n} proxy file(s)…	{n} proxyfájl készül…
+	Destination	Cél
+	Destination Path	Célútvonal
+	Disk space: original {original} · resulting {result} ({n} files)	Lemezterület: eredeti {original} · eredmény {result} ({n} fájl)
+	Disk space: —	Lemezterület: —
+	Exact name matches only	Csak pontos névegyezés
+	Exclude Unused Clips	Nem használt klipek kihagyása
+	File Name	Fájlnév
+	Folder	Mappa
+	Format and size	Formátum és méret
+	Frame Size / Rate	Képméret / képkockasebesség
+	Include Handles:	Ráhagyás:
+	Include Preview Files	Előnézeti fájlokkal együtt
+	Include Proxies	Proxykkal együtt
+	Link Media	Média csatolása
+	Linked {n} clip(s)	{n} klip csatolva
+	Locate…	Megkeresés…
+	Make Offline	Offline állapotba
+	Make {n} selected clip(s) offline. Their clips show the offline slate until you link them again.	{n} kijelölt klip offline állapotba kerül. A klipjeik az offline táblát mutatják, amíg újra nem csatolja őket.
+	Match file properties:	Egyező fájltulajdonságok:
+	Media files are deleted	A médiafájlok törlődnek
+	Media files remain on disk	A médiafájlok a lemezen maradnak
+	Missing	Hiányzik
+	Next to the original media, in a Proxies folder	Az eredeti média mellett, egy Proxies mappában
+	No candidates yet — Search a folder or Locate the file.	Még nincs találat — keressen egy mappában, vagy keresse meg a fájlt.
+	Nothing found with that name.	Nincs ilyen nevű fájl.
+	Offline	Offline
+	Offline All	Mind offline
+	Options	Beállítások
+	Project Manager	Projektkezelő
+	Project Manager: writing {path}	Projektkezelő: írás ide: {path}
+	Proxies are made in the background and attached when done. Export always uses full-resolution media.	A proxyk a háttérben készülnek, és elkészültük után csatolódnak. Az export mindig a teljes felbontású médiát használja.
+	Relink others automatically	A többi automatikus újracsatolása
+	Resulting Project	Eredményprojekt
+	Search in:	Keresés itt:
+	Sequences	Szekvenciák
+	select a clip in the Project panel	jelöljön ki egy klipet a Projekt panelen
+	{name} (copy)	{name} (másolat)
+	{n} clip(s) can't find their media. Locate them, search a folder, or leave them offline.	{n} klip nem találja a médiáját. Keresse meg őket, keressen egy mappában, vagy hagyja őket offline.
+	{n} clip(s) selected.	{n} klip kijelölve.
+	✔ matches	✔ egyezik
+	✔ same file	✔ ugyanaz a fájl
+	✖ different file	✖ másik fájl

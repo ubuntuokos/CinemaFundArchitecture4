@@ -51,6 +51,13 @@ from .panels.fx_editor import FxEditor, target_key
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
+from .panels.media_dialogs import (
+    CreateProxiesDialog,
+    LinkMediaDialog,
+    MakeOfflineDialog,
+    ProjectManagerDialog,
+    sequences_of,
+)
 from .panels.menu_dialogs import MENU_COMMANDS, MenuDialog
 from .panels.meters import AudioMetersPanel
 from .panels.mixer import ClipMixerPanel, TrackMixerPanel
@@ -1206,6 +1213,74 @@ class MainWindow(QMainWindow):
 
         self.engine.execute(cid, {**params, "path": path}, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
 
+    # ----- media management dialogs (egui's media_dialogs) -----
+    def _link_media_open(self) -> bool:
+        return getattr(self, "link_media", None) is not None
+
+    def open_link_media(self, menu: bool = False) -> None:
+        """Link Media: the clips whose media is missing (File ▸ Link Media…, or a project opened
+        with missing media); from the menu with everything online it only says so."""
+        if self._link_media_open():
+            return
+
+        def got(r: Any, _b: bytes | None) -> None:
+            missing = r.get("missing") if isinstance(r, dict) else None
+            if not missing:
+                if menu:
+                    self.statusBar().showMessage(tr("All media is online."), 6000)
+                return
+            if self._link_media_open():
+                return
+            d = LinkMediaDialog(self, self.engine, status=self._media_status, changed=self._media_changed)
+            d.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            d.finished.connect(lambda _r: setattr(self, "link_media", None))
+            self.link_media = d
+            self.last_dialog = d
+            d.open()
+
+        self.engine.execute("media.linkMedia", {}, on_reply=got, on_error=lambda m: self._command_failed("media.linkMedia", m))
+
+    def _media_status(self, text: str) -> None:
+        self.statusBar().showMessage(text, 6000)
+
+    def _media_changed(self) -> None:
+        self.clear_media_caches()  # relinked or offline items show other pictures now
+        self.schedule_refresh()
+
+    def open_media_dialog(self, cid: str) -> None:
+        """Make Offline…, Create Proxies…, Project Manager…: the command's own refusal (nothing
+        selected) comes first, as egui's."""
+        cmd = self.registry.commands.get(cid)
+        if cmd is not None and not cmd.enabled:
+            self._command_failed(cid, tr("not available now"))
+            return
+        items = self.project_panel.selected_items()
+        if cid == "media.makeOffline":
+            d: QDialog = MakeOfflineDialog(self, self.engine, len(items), status=self._media_status, changed=self._media_changed)
+        elif cid == "media.createProxies":
+            d = CreateProxiesDialog(self, self.engine, items, status=self._media_status, changed=self._media_changed)
+        else:
+            project = self.project or {}
+            path = project.get("path")
+            name = str(project.get("name") or tr("Untitled"))
+            dest = str(Path(path).parent / fmt("{name} (copy)", name=name)) if isinstance(path, str) and path else ""
+            seq = (self.sequence or {}).get("id")
+            d = ProjectManagerDialog(self, self.engine, sequences_of(project.get("root")), [seq] if isinstance(seq, int) else [], dest, status=self._media_status, changed=self._media_changed)
+        d.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = d
+        d.open()
+
+    def pick_proxy_file(self, cid: str) -> None:
+        """Attach Proxies… / Reconnect Full Resolution Media…: a file for the Project panel's
+        first selected clip."""
+        items = self.project_panel.selected_items()
+        if not items:
+            self._command_failed(cid, tr("select a clip in the Project panel"))
+            return
+        path, _f = QFileDialog.getOpenFileName(self, tr("Media"), "", tr("All files") + " (*)")
+        if path:
+            self.engine.execute(cid, {"item": items[0], "path": path}, on_reply=lambda _r, _b: self._media_changed(), on_error=lambda m: self._command_failed(cid, m))
+
     def _show_menu_dialog(self, state: dict[str, Any]) -> None:
         dialog = MenuDialog(self, state, lambda _c, _p, then: then(None, None))
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -1553,6 +1628,9 @@ class MainWindow(QMainWindow):
         self.state = result if isinstance(result, dict) else {}
         self.revision = int(self.state.get("revision") or 0)
         self._update_title()
+        if self.state.get("linkMediaPrompt") is True and not self._link_media_open():
+            # a project opened with missing media (egui's): Link Media asks what to do
+            self.open_link_media()
 
     def _on_project(self, result: Any, _b: bytes | None) -> None:
         old = self.project or {}
@@ -1692,6 +1770,12 @@ class MainWindow(QMainWindow):
             self.generate_waveforms(dict(params or {}))
         elif cid in ("file.exportSelectionProject", "file.exportAle", "file.mediaPropertiesFile") and not (params or {}).get("path"):
             self.pick_and_run(cid, dict(params or {}))
+        elif cid == "media.linkMedia" and not params:
+            self.open_link_media(menu=True)
+        elif cid in ("media.makeOffline", "media.createProxies", "file.projectManager") and not params:
+            self.open_media_dialog(cid)
+        elif cid in ("media.attachProxies", "media.reconnectFullRes") and not params:
+            self.pick_proxy_file(cid)
         elif cid in ("sequence.settings", "file.newSequence") and not params:
             # egui's: from the menu the dialog; with parameters the engine command applies them
             self.open_sequence_settings(new=cid == "file.newSequence")

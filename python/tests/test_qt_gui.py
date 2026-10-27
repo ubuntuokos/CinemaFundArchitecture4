@@ -5383,6 +5383,144 @@ def test_real_engine_menu_frontend_items_as_egui(app, tmp_path: Path, monkeypatc
         engine.stop()
 
 
+def test_media_dialog_helpers():
+    """media_dialogs' readers of the engine's answers: damaged entries read as nothing."""
+    from cfa4_qt.panels.media_dialogs import candidates_of, mb, missing_rows, sequences_of
+
+    assert mb(0) == "0.0 MB" and mb(3 << 30) == "3.00 GB" and mb(-5) == "0.0 MB"
+    assert missing_rows({"missing": [{"item": 3, "name": "a"}, {"item": "x"}, 5]}) == [{"item": 3, "name": "a"}]
+    assert missing_rows(None) == [] and missing_rows({"missing": 4}) == []
+    found = candidates_of({"results": [{"candidates": [{"path": "/a.wav", "ok": True, "identityMatch": True}, {"path": 3}, {"path": "/b.wav", "ok": False, "problems": ["duration", 4]}]}]})
+    assert found == [("/a.wav", True, True, ""), ("/b.wav", False, None, "duration")]
+    assert candidates_of({"results": []}) == [] and candidates_of("x") == []
+    tree = {"children": [{"item": 1, "type": "Sequence", "name": "S1"}, {"children": [{"item": 2, "type": "sequence", "name": "S2"}, {"item": 3, "type": "video"}]}, 7]}
+    assert sequences_of(tree) == [(1, "S1"), (2, "S2")] and sequences_of(None) == []
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_media_dialogs_as_egui(app, tmp_path: Path):
+    """egui's media dialogs: a project opened with missing media opens Link Media, whose folder
+    search finds the moved file and Link relinks it; Make Offline… makes the selected clip
+    offline; Create Proxies… offers the proxy presets; Project Manager… estimates and collects."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.media_dialogs import (
+        CreateProxiesDialog,
+        LinkMediaDialog,
+        MakeOfflineDialog,
+        ProjectManagerDialog,
+    )
+
+    media = tmp_path / "media"
+    media.mkdir()
+    music = media / "music.wav"
+    _test_music(music, bars=2)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def status(item: int) -> str:
+        out: list = []
+        engine.execute("media.status", {"item": item}, on_reply=lambda r, _b: out.append(r), on_error=lambda m: out.append(m))
+        assert wait_until(app, lambda: bool(out), 10_000)
+        return str((out[0][0] if isinstance(out[0], list) and out[0] else {}).get("status"))
+
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        win.execute("file.newSequence", {"name": "Edit"})
+        win.execute("file.import", {"paths": [str(music)]})
+        assert wait_until(app, lambda: any(i.get("name") == "music.wav" for i in _items(win.project)), 20_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        project = tmp_path / "p.fcproj"
+        win.execute("file.saveAs", {"path": str(project)})
+        assert wait_until(app, lambda: project.is_file(), 10_000)
+        # the media moves away: opening the project asks to link it
+        moved = tmp_path / "moved"
+        moved.mkdir()
+        music.rename(moved / "music.wav")
+        win.execute("file.open", {"path": str(project)})
+        assert wait_until(app, lambda: isinstance(win.last_dialog, LinkMediaDialog) and win.last_dialog.isVisible(), 20_000)
+        d = win.last_dialog
+        assert wait_until(app, lambda: d.table.rowCount() == 1, 10_000)
+        assert d.table.item(0, 0).text() == "music.wav" and d.table.item(0, 3).text() == "Missing"
+        assert child(d, "linkMedia.match.fileName", QtWidgets.QCheckBox).isChecked() and not child(d, "linkMedia.match.mediaStart", QtWidgets.QCheckBox).isChecked()
+        assert not child(d, "linkMedia.link", QtWidgets.QPushButton).isEnabled()
+        child(d, "linkMedia.folder", QtWidgets.QLineEdit).setText(str(moved))
+        child(d, "linkMedia.search", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: d.list.count() == 1, 10_000), d.message.text()
+        assert d.list.item(0).text().startswith("✔") and d.list.item(0).text().endswith(str(moved / "music.wav"))
+        assert child(d, "linkMedia.link", QtWidgets.QPushButton).isEnabled()
+        child(d, "linkMedia.link", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        assert wait_until(app, lambda: status(item) == "online", 10_000)
+        wait_until(app, lambda: False, 300)
+        assert not isinstance(win.last_dialog, LinkMediaDialog) or closed(win.last_dialog), "Link Media does not come back"
+        # File ▸ Link Media… with everything online only says so
+        last = win.last_dialog
+        win.invoke("media.linkMedia")
+        assert wait_until(app, lambda: win.statusBar().currentMessage() == "All media is online.", 10_000)
+        assert win.last_dialog is last
+        # Make Offline… of the Project panel's selection
+        win.execute("project.select", {"items": [item]})
+        action = win.registry.actions["media.makeOffline"]
+        assert wait_until(app, action.isEnabled, 10_000)
+        action.trigger()
+        d = win.last_dialog
+        assert isinstance(d, MakeOfflineDialog) and child(d, "makeOffline.keep", QtWidgets.QRadioButton).isChecked()
+        child(d, "makeOffline.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d) and status(item) == "offline", 10_000)
+        assert (moved / "music.wav").is_file(), "the media file stays on disk"
+        # Link Media… lists it as Offline; Offline All leaves it so
+        win.invoke("media.linkMedia")
+        assert wait_until(app, lambda: isinstance(win.last_dialog, LinkMediaDialog) and win.last_dialog.table.rowCount() == 1, 10_000)
+        d = win.last_dialog
+        assert d.table.item(0, 3).text() == "Offline"
+        child(d, "linkMedia.offlineAll", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # Create Proxies…: the proxy presets, the default chosen
+        win.execute("project.select", {"items": [item]})
+        wait_until(app, lambda: False, 300)
+        win.open_media_dialog("media.createProxies")
+        d = win.last_dialog
+        assert isinstance(d, CreateProxiesDialog) and d.items == [item]
+        assert wait_until(app, lambda: child(d, "proxies.preset.prores_proxy_quarter", QtWidgets.QRadioButton) is not None, 10_000)
+        assert child(d, "proxies.preset.prores_proxy_quarter", QtWidgets.QRadioButton).isChecked()
+        child(d, "proxies.cancel", QtWidgets.QPushButton).click()
+        # Project Manager…: the open sequence chosen, Calculate, OK collects into the destination
+        win.registry.actions["file.projectManager"].trigger()
+        d = win.last_dialog
+        assert isinstance(d, ProjectManagerDialog)
+        assert [sid for sid, b in d.seqs.items() if b.isChecked()] == [win.sequence["id"]]
+        assert child(d, "pm.destination", QtWidgets.QLineEdit).text() == str(tmp_path / "p (copy)")
+        assert not child(d, "pm.handles", QtWidgets.QSpinBox).isEnabled()
+        child(d, "pm.mode.consolidate", QtWidgets.QRadioButton).setChecked(True)
+        assert child(d, "pm.handles", QtWidgets.QSpinBox).isEnabled() and not child(d, "pm.includeProxies", QtWidgets.QCheckBox).isEnabled()
+        assert wait_until(app, lambda: child(d, "pm.preset.prores_lt", QtWidgets.QRadioButton) is not None, 10_000)
+        child(d, "pm.mode.collect", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "pm.calculate", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: child(d, "pm.sizes", QtWidgets.QLabel).text().startswith("Disk space: original"), 10_000), d.message.text()
+        child(d, "pm.excludeUnused", QtWidgets.QCheckBox).setChecked(False)
+        assert child(d, "pm.sizes", QtWidgets.QLabel).text() == "Disk space: —", "a change makes the estimate stale"
+        child(d, "pm.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 20_000), d.message.text()
+        assert wait_until(app, lambda: any((tmp_path / "p (copy)").glob("*.fcproj")), 20_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_thumbnail_tiles_as_egui():
     """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
     continuous tiles on a grid from the head, only the visible ones; source_time_at follows the
