@@ -36,6 +36,7 @@ mod serve;
 mod serve_graphics;
 mod serve_lumetri;
 mod serve_media_browser;
+mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
 mod serve_text;

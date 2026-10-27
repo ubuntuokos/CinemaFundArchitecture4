@@ -694,6 +694,15 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
             Err(e) => Reply::err(id, e),
         },
+        "multicam.frame" => match time_param(s, &params).and_then(|t| crate::serve_multicam::frame(s, &params, t)) {
+            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
+        "multicam.angleFrame" => match crate::serve_multicam::angle_frame(s, &params) {
+            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Err(e) => Reply::err(id, e),
+        },
+        "multicam.selection" => Reply::ok(id, crate::serve_multicam::selection(s)),
         "text.inspect" => match crate::serve_text::inspect(s, &params) {
             Ok(v) => Reply::ok(id, v),
             Err(e) => Reply::err(id, e),

@@ -476,6 +476,7 @@ class Monitor(QWidget):
     # ticks exceed 32 bits after 8.5 ms, and an int-typed signal is a 32-bit C int: use object
     playhead_moved = Signal(object)  # local playhead during playback, ticks
     playback_stopped = Signal()  # stop(): a voice-over take ends with playback
+    playback_started = Signal()  # play(): a multi-camera recording pass starts with playback
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -925,6 +926,7 @@ class Monitor(QWidget):
                 self._automation_pass = True
                 self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
         self._timer.start()
+        self.playback_started.emit()
 
     def shuttle(self, direction: int) -> None:
         """J / L: play backwards / forwards; again in the same direction doubles the speed, up
@@ -1133,6 +1135,8 @@ class ProgramMonitor(Monitor):
     """The active sequence at the sequence playhead."""
 
     target = "program"
+    multicam_command = Signal(str, dict)  # a Multi-Camera view setting (the grid asks again)
+    multicam_record = Signal(bool)  # the wrench's Multi-Camera Record
 
     def __init__(self, engine: EngineClient, parent: QWidget | None = None) -> None:
         super().__init__(engine, parent)
@@ -1143,6 +1147,101 @@ class ProgramMonitor(Monitor):
         self.overlay = ProgramOverlay(self.view, engine, lambda c, p: self.command.emit(c, p))
         self.overlay.monitor = self
         self.view.overlay = self.overlay
+        from .multicam import MulticamGrid
+
+        # the Multi-Camera view: the angle grid left of the program (egui's monitor.rs)
+        self.grid = MulticamGrid(engine, self)
+        lay = self.layout()
+        lay.removeWidget(self.view)
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(4)
+        row.addWidget(self.grid, 1)
+        row.addWidget(self.view, 1)
+        lay.insertLayout(0, row, 1)
+        self.grid.info_changed.connect(self._grid_info)
+        self._apply_view(request=False)
+
+    def set_view(self, **changes: Any) -> None:
+        # another display mode leaves the Multi-Camera view (egui's set_display)
+        if "display" in changes and "multicam" not in changes:
+            changes["multicam"] = False
+        super().set_view(**changes)
+
+    def _apply_view(self, request: bool = True) -> None:
+        grid = getattr(self, "grid", None)
+        if grid is not None:
+            on = bool(self.mv.multicam)
+            grid.setVisible(on)
+            # without Show Multi-Camera Preview Monitor the grid takes the whole picture area
+            self.view.setHidden(on and grid.view_settings().get("showPreview") is False)
+            if on:
+                grid.invalidate()
+        super()._apply_view(request)
+
+    def request_frame(self, at: int | None = None) -> None:
+        if not self.view.isHidden():
+            super().request_frame(at)
+        grid = getattr(self, "grid", None)
+        if grid is not None and self.mv.multicam and self.has_content():
+            grid.request(self.playhead if at is None else at, self.playing, self.mv.scale(self.playing), self.revision)
+
+    def _grid_info(self) -> None:
+        """Show Multi-Camera Preview Monitor off: the grid takes the whole picture area."""
+        hide = bool(self.mv.multicam) and self.grid.view_settings().get("showPreview") is False
+        if hide != self.view.isHidden():
+            self.view.setHidden(hide)
+            if not hide:
+                super().request_frame()
+
+    def _fill_wrench_menu(self) -> None:
+        super()._fill_wrench_menu()
+        m = self.wrench.menu()
+        # egui's Display Mode ▸ Multi-Camera, and the Multi-Camera settings below Loop
+        first = m.actions()[1] if len(m.actions()) > 1 else None
+        mc = QAction(tr("Multi-Camera"), m)
+        mc.setObjectName("program.settings.display.multicam")
+        mc.setCheckable(True)
+        mc.setChecked(bool(self.mv.multicam))
+        mc.triggered.connect(lambda on: self.set_view(multicam=bool(on)))
+        m.insertAction(first, mc)
+        for a in m.actions():
+            if a.objectName() == "program.settings.display.composite" and self.mv.multicam:
+                a.setChecked(False)
+        m.addSeparator()
+        info = self.grid.info
+        view = self.grid.view_settings()
+
+        def toggle(name: str, label: str, on: bool, run: Any) -> None:
+            a = m.addAction(tr(label))
+            a.setObjectName(f"program.settings.{name}")
+            a.setCheckable(True)
+            a.setChecked(on)
+            a.triggered.connect(lambda checked: run(bool(checked)))
+
+        toggle("multicam.audioFollowsVideo", N_("Multi-Camera Audio Follows Video"), info.get("audioFollowsVideo") is True,
+               lambda on: self.multicam_command.emit("multicam.audioFollowsVideo", {"enabled": on}))
+        toggle("multicam.record", N_("Multi-Camera Record"), self.grid.record_on, lambda on: self.multicam_record.emit(on))
+        for cmd, label, key in (
+            ("multicam.selectionTopDown", N_("Multi-Camera Selection Top Down"), "topDown"),
+            ("multicam.showPreviewMonitor", N_("Show Multi-Camera Preview Monitor"), "showPreview"),
+            ("multicam.autoAdjustQuality", N_("Auto-Adjust Multi-Camera Playback Quality"), "autoQuality"),
+            ("multicam.transmitView", N_("Transmit Multi-Camera View"), "transmit"),
+        ):
+            default = key == "showPreview"
+            toggle(cmd, label, bool(view.get(key, default)), lambda on, c=cmd: self.multicam_command.emit(c, {"enabled": on}))
+        layout = m.addMenu(tr("Multi-Camera Layout"))
+        layout.setObjectName("program.settings.multicam.layout")
+        current = str(info.get("layout") or ("auto" if not isinstance(view.get("layout"), int) else f"{view['layout']}x{view['layout']}"))
+        for key, label in (("auto", N_("Automatic")), ("2x2", "2 × 2"), ("3x3", "3 × 3"), ("4x4", "4 × 4")):
+            a = layout.addAction(tr(label))
+            a.setObjectName(f"program.settings.multicam.layout.{key}")
+            a.setCheckable(True)
+            a.setChecked(current == key)
+            a.triggered.connect(lambda _c=False, k=key: self.multicam_command.emit("multicam.gridLayout", {"layout": k}))
+        edit = m.addAction(tr("Edit Cameras…"))
+        edit.setObjectName("program.settings.multicam.editCameras")
+        edit.triggered.connect(lambda: self.run.emit("multicam.editCamerasDialog", {}))
 
     def set_sequence(self, seq: dict[str, Any] | None, revision: int) -> None:
         self.sequence = seq

@@ -114,6 +114,7 @@ class MonitorView:
     show_transport: bool = True
     hidden: list[str] = field(default_factory=lambda: list(DEFAULT_HIDDEN))
     looping: bool = False
+    multicam: bool = False  # Program monitor: the Multi-Camera view (egui's MonitorView::multicam)
 
     def scale(self, playing: bool) -> float:
         """egui's effective_res: Playback Resolution while playing (or the paused one with High

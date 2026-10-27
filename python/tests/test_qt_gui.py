@@ -1279,6 +1279,143 @@ def test_real_engine_voiceover_records_the_microphone_on_a_track_as_egui(app, tm
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_multicam_dialogs_view_and_live_switching_as_egui(app, tmp_path: Path):
+    """Multi-camera as egui's: Clip ▸ Create Multi-Camera Source Sequence / Merge Clips /
+    Synchronize open their dialogs, the Program monitor's Multi-Camera view shows the angle grid
+    beside the program, a click on an angle (or key 2) switches the clip at the playhead, Edit
+    Cameras renames and hides cameras, and playing with Multi-Camera Record on records the cuts
+    clicked at the shown frame as one undo step."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.multicam import EditCamerasDialog, SyncDialog
+    from PySide6.QtTest import QTest
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    messages: list[tuple[str, bool]] = []
+    win.multicam.message.connect(lambda text, error: messages.append((text, error)))
+
+    def ask(cmd: str, params: dict) -> dict:
+        got: list = []
+        engine.execute(cmd, params, on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+        assert wait_until(app, lambda: bool(got), 10_000)
+        return got[0]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        cams = [i["item"] for i in _items(win.project) if i.get("type") == "Movie"][:2]
+        assert len(cams) == 2, _items(win.project)
+        win.execute("project.select", {"items": cams})
+        # Merge Clips and Synchronize open their dialogs (Cancel leaves the project alone)
+        win.run_command(win.registry.commands["clip.mergeClips"])
+        merge = win.last_dialog
+        assert isinstance(merge, SyncDialog) and merge.objectName() == "merge"
+        assert wait_until(app, lambda: merge.ready, 10_000)
+        assert merge.findChild(QtWidgets.QLineEdit, "merge.name").text().endswith(" - Merged")
+        assert merge.findChild(QtWidgets.QCheckBox, "merge.removeVideoAudio") is not None
+        merge.findChild(QtWidgets.QPushButton, "merge.cancel").click()
+        win.run_command(win.registry.commands["clip.synchronize"])
+        sync = win.last_dialog
+        assert sync.objectName() == "sync" and wait_until(app, lambda: sync.ready, 10_000)
+        for name in ("sync.method.in", "sync.method.out", "sync.method.timecode", "sync.method.marker", "sync.method.audio"):
+            assert sync.findChild(QtWidgets.QRadioButton, name) is not None, name
+        assert not sync.findChild(QtWidgets.QCheckBox, "sync.ignoreHours").isEnabled()
+        sync.findChild(QtWidgets.QRadioButton, "sync.method.timecode").setChecked(True)
+        assert sync.findChild(QtWidgets.QCheckBox, "sync.ignoreHours").isEnabled()
+        sync.findChild(QtWidgets.QPushButton, "sync.cancel").click()
+        # Create Multi-Camera Source Sequence: name, In points, cameras named Camera 1, 2
+        win.run_command(win.registry.commands["clip.createMulticam"])
+        d = win.last_dialog
+        assert d.objectName() == "mcam" and wait_until(app, lambda: d.ready, 10_000)
+        assert d.items == cams and d.findChild(QtWidgets.QLineEdit, "mcam.name").text().endswith(" Multicam")
+        d.findChild(QtWidgets.QLineEdit, "mcam.name").setText("Cams")
+        d.findChild(QtWidgets.QRadioButton, "mcam.cameraNames.track").setChecked(True)
+        d.findChild(QtWidgets.QPushButton, "mcam.ok").click()
+        assert wait_until(app, lambda: any(c.get("name") == "Cams" for c in _items(win.project)), 10_000)
+        assert "Multi-camera source sequence with 2 camera(s)" in win.statusBar().currentMessage()
+        src = next(c["item"] for c in _items(win.project) if c.get("name") == "Cams")
+        # cut it into the sequence at 0 and show the Multi-Camera view (Shift+0's command)
+        win._seek_program(0)
+        win.execute("source.open", {"item": src})
+        win.execute("source.overwrite", {})
+        win._seek_program(0)
+        assert wait_until(app, lambda: ask("multicam.inspect", {"time": 0}).get("source") == src, 10_000)
+        mon, grid = win.monitor, win.monitor.grid
+        assert not grid.isVisible()
+        win.invoke("multicam.toggleView")
+        assert mon.mv.multicam and grid.isVisible() and mon.view.isVisible()
+        assert wait_until(app, lambda: grid.has_clip and grid.image is not None, 15_000), grid.info
+        assert [c.objectName() for c in grid.cells] == ["program.multicam.angle.1", "program.multicam.angle.2"]
+        assert grid.record_button.objectName() == "program.multicam.record" and grid.record_on
+        names = [c.get("name") for c in grid.info["cells"]]
+        assert names == ["Camera 1", "Camera 2"], names
+        active = lambda: [c.get("active") for c in grid.info.get("cells") or []]
+        assert active() == [True, False]
+        # stopped: a click on camera 2 switches the clip at the playhead; key 1 switches back
+        QTest.mouseClick(grid.cells[1], QtCore.Qt.MouseButton.LeftButton)
+        assert wait_until(app, lambda: active() == [False, True], 10_000), grid.info
+        win.run_command(win.registry.commands["multicam.selectCamera1"])
+        assert wait_until(app, lambda: active() == [True, False], 10_000), grid.info
+        # the wrench: Show Multi-Camera Preview Monitor off gives the grid the whole picture
+        mon._fill_wrench_menu()
+        wrench = {a.objectName(): a for a in mon.wrench.menu().actions()}
+        assert wrench["program.settings.display.multicam"].isChecked()
+        assert wrench["program.settings.multicam.record"].isChecked()
+        wrench["program.settings.multicam.showPreviewMonitor"].trigger()
+        assert wait_until(app, lambda: mon.view.isHidden(), 10_000)
+        mon._fill_wrench_menu()
+        {a.objectName(): a for a in mon.wrench.menu().actions()}["program.settings.multicam.showPreviewMonitor"].trigger()
+        assert wait_until(app, lambda: not mon.view.isHidden(), 10_000)
+        # Edit Cameras: thumbnails, rename camera 1
+        win.invoke("multicam.editCamerasDialog")
+        assert wait_until(app, lambda: isinstance(win.last_dialog, EditCamerasDialog), 10_000)
+        ec = win.last_dialog
+        assert ec.objectName() == "editCameras"
+        thumb = ec.findChild(QtWidgets.QLabel, "editCameras.thumb.0")
+        assert wait_until(app, lambda: thumb.pixmap() is not None and not thumb.pixmap().isNull(), 10_000)
+        assert ec.findChild(QtWidgets.QCheckBox, "editCameras.enabled.1").isChecked()
+        ec.findChild(QtWidgets.QLineEdit, "editCameras.name.0").setText("Wide")
+        ec.findChild(QtWidgets.QPushButton, "editCameras.ok").click()
+        assert wait_until(app, lambda: [c.get("name") for c in grid.info.get("cells") or []] == ["Wide", "Camera 2"], 10_000), grid.info
+        # live switching: play (Multi-Camera Record is on), cut to camera 2 at the shown frame, stop
+        mon.play()
+        assert wait_until(app, lambda: win.multicam.recording and grid.recording, 10_000)
+        assert grid.record_button.text() == "REC"
+        assert wait_until(app, lambda: mon.playhead > TICKS_PER_SECOND // 2, 10_000)
+        QTest.mouseClick(grid.cells[1], QtCore.Qt.MouseButton.LeftButton)
+        cut_at = mon.playhead
+        assert wait_until(app, lambda: active() == [False, True], 10_000), grid.info
+        wait_until(app, lambda: False, 300)
+        mon.stop()
+        assert wait_until(app, lambda: ("Recorded 1 multi-camera cut(s)", False) in messages, 10_000), messages
+        assert wait_until(app, lambda: not grid.recording, 10_000)
+        before = ask("multicam.inspect", {"time": max(0, cut_at - TICKS_PER_SECOND // 4)})
+        after = ask("multicam.inspect", {"time": cut_at + TICKS_PER_SECOND // 10})
+        assert (before.get("angle"), after.get("angle")) == (0, 1), (before, after)
+        # one undo step takes the pass back
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: ask("multicam.inspect", {"time": cut_at + TICKS_PER_SECOND // 10}).get("angle") == 0, 10_000)
+        # Multi-Camera Record off (key 0's command): playing records nothing
+        win.invoke("multicam.recordToggle")
+        assert not grid.record_on and ("Multi-Camera Record off", False) in messages
+        mon.play()
+        wait_until(app, lambda: False, 300)
+        assert not win.multicam.recording
+        mon.stop()
+        # another display mode leaves the Multi-Camera view
+        mon.set_view(display="red")
+        assert not mon.mv.multicam and not grid.isVisible()
+        mon.set_view(display="composite")
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes(app, tmp_path: Path):
     """An engine that stops unexpectedly is restarted at once (on the project that was open); the
     new one offers the dead one's unsaved changes from the recovery journal, and recovering brings
@@ -2422,6 +2559,51 @@ def format_tc(ticks: int, frame: int) -> str:
     from cfa4_qt.timecode import format_timecode
 
     return format_timecode(ticks, frame)
+
+
+def test_fx_editor_follows_its_effect_and_edits_at_the_playing_frame(app):
+    """An Fx Editor is bound to an effect index: when an effect before it is removed (another EQ
+    slides into the index) it closes instead of editing that one; while the Program monitor plays,
+    its curves and edits use the shown time, not where playback started."""
+    from cfa4_qt.panels.fx_editor import FxEditor
+
+    asked: list[dict] = []
+    reply = {"effect": "parametric_eq", "kind": "clip", "params": {}, "stack": ["volume", "parametric_eq", "parametric_eq"]}
+
+    def query(params, on_reply, _on_error):
+        asked.append(dict(params))
+        on_reply(dict(reply))
+
+    ed = FxEditor({"clip": 7, "effect": 2}, query)
+    sent: list[tuple[str, dict]] = []
+    ed.command.connect(lambda c, p: sent.append((c, p)))
+    closed: list = []
+    ed.closed.connect(closed.append)
+    ed.show()
+    ed.refresh()
+    assert "time" not in asked[-1] and ed.isVisible()
+    playing_at = 5 * TICKS_PER_SECOND
+    ed.now = lambda: playing_at
+    ed.commit("high_gain", 3.0)
+    assert sent[-1][0] == "effects.setParam" and sent[-1][1]["time"] == playing_at
+    assert asked[-1]["time"] == playing_at
+    # an effect added after it changes nothing
+    reply["stack"] = ["volume", "parametric_eq", "parametric_eq", "dynamics_rack", "parametric_eq"]
+    ed.refresh()
+    assert ed.isVisible() and not closed
+    # the edited EQ removed: the one after it slides into index 2 with the same name, yet this
+    # window's effect is gone
+    reply["stack"] = ["volume", "parametric_eq", "parametric_eq"]
+    ed.refresh()
+    assert not ed.isVisible() and closed
+    # one removed (or moved) before it closes it too
+    ed2 = FxEditor({"clip": 7, "effect": 2}, query)
+    reply["stack"] = ["volume", "parametric_eq", "parametric_eq"]
+    ed2.show()
+    ed2.refresh()
+    reply["stack"] = ["parametric_eq", "volume", "parametric_eq"]
+    ed2.refresh()
+    assert not ed2.isVisible()
 
 
 def test_properties_keep_an_automatic_coordinate_when_the_other_is_edited(app):

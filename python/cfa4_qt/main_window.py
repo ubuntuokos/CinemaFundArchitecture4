@@ -49,6 +49,7 @@ from .panels.meters import AudioMetersPanel
 from .panels.mixer import ClipMixerPanel, TrackMixerPanel
 from .panels.monitor import Monitor, ProgramMonitor, SourceMonitor
 from .panels.monitor_view import build_view_menu
+from .panels.multicam import EditCamerasDialog, MulticamController, SyncDialog
 from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
@@ -180,6 +181,8 @@ def recovery_text(cand: dict[str, Any]) -> str:
 
 # what the monitors run at the sequence playhead: placement edits from their buttons, and the
 # Program monitor's eyedropper (it samples the frame there and keys an animated colour there)
+# commands that open their dialog when run without parameters (egui's multicam::route)
+SYNC_DIALOGS = {"clip.synchronize": "synchronize", "clip.mergeClips": "merge", "clip.createMulticam": "multicam"}
 EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper"})
 
 class MainWindow(QMainWindow):
@@ -357,6 +360,12 @@ class MainWindow(QMainWindow):
         self.voiceover.refresh.connect(self.schedule_refresh)
         self.timeline.canvas.voiceover.connect(self.voiceover.toggle)
         self.timeline.canvas.voiceover_settings.connect(self.open_voiceover_settings)
+        # multi-camera: the Program monitor's Multi-Camera view, live switching and its dialogs
+        self.multicam = MulticamController(engine, self.monitor)
+        self.multicam.message.connect(self._voiceover_message)
+        self.multicam.refresh.connect(self.schedule_refresh)
+        self.monitor.multicam_command.connect(self.multicam.view_command)
+        self.monitor.multicam_record.connect(self.multicam.toggle_record)
         self.markers.command.connect(lambda c, p: self._seek_program(p["time"]) if c == "playhead.set" else self.execute(c, p))
         self.effect_controls.seek.connect(self._seek_program)
         self.monitor.overlay.pen_finished.connect(self.effect_controls.pen_done)
@@ -692,6 +701,17 @@ class MainWindow(QMainWindow):
             a.setObjectName(f"qt.playback.{name}")
             a.triggered.connect(slot)
             self.shuttle_actions.append((a, keys))
+        # egui's multi-camera UI commands (menus.rs): Multi-Camera View, Record On/Off, Edit Cameras
+        self.multicam_actions: list[tuple[QAction, list[str]]] = []
+        for cid, label, keys in (
+            ("multicam.toggleView", N_("Multi-Camera View"), ["Shift+0"]),
+            ("multicam.recordToggle", N_("Multi-Camera Record On/Off Toggle"), ["0"]),
+            ("multicam.editCamerasDialog", N_("Edit Cameras…"), []),
+        ):
+            a = QAction(tr(label), self)
+            a.setObjectName(cid)
+            a.triggered.connect(lambda _c=False, c=cid: self.invoke(c))
+            self.multicam_actions.append((a, keys))
         self.theme_actions = QActionGroup(self)
         for name, label in theme.THEMES:
             a = QAction(tr(label), self, checkable=True)
@@ -718,6 +738,7 @@ class MainWindow(QMainWindow):
             (self.export_action, ["Ctrl+M"]),
             (self.quit_action, ["Ctrl+Q"]),
             *self.shuttle_actions,
+            *self.multicam_actions,
         ):
             free = [QKeySequence(k) for k in keys if k not in bound_keys]
             action.setShortcuts(free)
@@ -728,7 +749,7 @@ class MainWindow(QMainWindow):
             self.menuBar(), self, {
                 "File": [self.quit_action],
                 "Sequence": [self.play_action, *(a for a, _k in self.shuttle_actions)],
-                "View": [self.fit_action],
+                "View": [self.fit_action, self.multicam_actions[0][0]],
                 "Help": [self.about_action],
             }
         )
@@ -883,6 +904,33 @@ class MainWindow(QMainWindow):
         self.last_dialog = dialog
         dialog.open()
         return dialog
+
+    def open_sync_dialog(self, kind: str) -> SyncDialog:
+        """Synchronize Clips / Merge Clips / Create Multi-Camera Source Sequence (egui's)."""
+
+        def done(text: str) -> None:
+            self.statusBar().showMessage(text, 6000)
+            self.schedule_refresh()
+
+        dialog = SyncDialog(self, self.engine, kind, done)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.last_dialog = dialog
+        dialog.open()
+        return dialog
+
+    def open_edit_cameras(self) -> None:
+        """Edit Cameras for the multi-camera clip at the shown playhead."""
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if not isinstance(result, dict) or not isinstance(result.get("source"), int):
+                self._command_failed("multicam.editCamerasDialog", tr("no multi-camera clip at the playhead"))
+                return
+            dialog = EditCamerasDialog(self, self.engine, result, self.multicam._changed)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.last_dialog = dialog
+            dialog.open()
+
+        self.engine.execute("multicam.inspect", {"time": int(self.monitor.playhead)}, on_reply=got, on_error=lambda m: self._command_failed("multicam.inspect", m))
 
     def _voiceover_changed(self, track: Any) -> None:
         self.timeline.canvas.voiceover_track = track
@@ -1180,13 +1228,24 @@ class MainWindow(QMainWindow):
         self.events.log(text, error=True)
         self.statusBar().showMessage(text, 6000)
 
-    def invoke(self, cid: str) -> None:
-        # egui's UI commands for voice-over recording
+    def ui_command(self, cid: str) -> bool:
+        """egui's UI commands (voice-over, multi-camera): True when ``cid`` was one."""
         if cid == "voiceover.recordToggle":
             self.voiceover.toggle()
-            return
-        if cid == "voiceover.settingsDialog":
+        elif cid == "voiceover.settingsDialog":
             self.open_voiceover_settings()
+        elif cid == "multicam.toggleView":
+            self.monitor.set_view(multicam=not self.monitor.mv.multicam)
+        elif cid == "multicam.recordToggle":
+            self.multicam.toggle_record()
+        elif cid == "multicam.editCamerasDialog":
+            self.open_edit_cameras()
+        else:
+            return False
+        return True
+
+    def invoke(self, cid: str) -> None:
+        if self.ui_command(cid):
             return
         cmd = self.registry.commands.get(cid)
         if cmd is not None:
@@ -1197,6 +1256,8 @@ class MainWindow(QMainWindow):
     def run_preset(self, cid: str, params: dict[str, Any]) -> None:
         """A panel runs ``cid`` with ``params`` already known (the monitor's Export Frame knows
         its monitor and time): ask only for what is still missing, such as the file."""
+        if self.ui_command(cid):
+            return
         cmd = self.registry.commands.get(cid)
         if cmd is None:
             self.execute(cid, params)
@@ -1279,6 +1340,9 @@ class MainWindow(QMainWindow):
             self.export_dialog.hide()
         if self.interpret_footage(cmd.id, {}):
             return
+        if cmd.id in SYNC_DIALOGS:
+            self.open_sync_dialog(SYNC_DIALOGS[cmd.id])
+            return
         project_path = (self.project or {}).get("path")
         params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
         if params is not None:
@@ -1294,6 +1358,11 @@ class MainWindow(QMainWindow):
         auto = self.targeted(cmd, {})
         if self.missing_params(cmd, auto):
             self._ask_params(cmd, values=auto)
+            return
+        if cmd.id.startswith("multicam."):
+            # keys 1–9 cut at the shown frame while playing (a recording pass) and the grid shows it
+            auto = self.multicam.timed(auto)
+            self.engine.execute(cmd.id, auto, on_reply=lambda _r, _b: self.multicam._changed(), on_error=lambda m: self._command_failed(cmd.id, m))
             return
 
         def failed(message: str) -> None:
@@ -1413,6 +1482,7 @@ class MainWindow(QMainWindow):
                 self.engine.execute("audio.fxEditor", params, on_reply=lambda r, _b: on_reply(r), on_error=on_error)
 
             editor = FxEditor(target, query, self)
+            editor.now = lambda: int(self.monitor.playhead) if self.monitor.playing else None
             editor.command.connect(self.execute)
             editor.closed.connect(lambda ed: self.fx_editors.pop(ed.key, None) if self.fx_editors.get(ed.key) is ed else None)
             self.fx_editors[key] = editor

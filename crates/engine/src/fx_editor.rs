@@ -8,7 +8,7 @@ use cfa4_project::{EffectInstance, ParamKind, ParamValue, TrackId};
 use cfa4_time::Tick;
 use serde_json::{Map, Value, json};
 
-use crate::commands::{CommandSpec, always, bad, clip_p, u64_p};
+use crate::commands::{CommandSpec, always, bad, clip_p, time_p, u64_p};
 use crate::{EngineError, Result, Session};
 
 const CMD: &str = "audio.fxEditor";
@@ -26,7 +26,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         label: "Fx Editor Curves",
         menu: &[],
         shortcut: None,
-        params: r#"{"clip":id,"effect":index | "strip":id|"A1"|"Mix","slot":index, "overrides":{param:number}? (uncommitted values to preview)}"#,
+        params: r#"{"clip":id,"effect":index | "strip":id|"A1"|"Mix","slot":index, "overrides":{param:number}? (uncommitted values to preview), "time":ticks? (the shown time while playing)}"#,
         enabled: always,
         run: inspect,
         journal: false,
@@ -48,8 +48,9 @@ fn inspect(s: &mut Session, p: &Value) -> Result<Value> {
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     // the rate the programme is rendered at: filter designs (and so the curves) depend on it
     let rate = q.settings.sample_rate.clamp(8_000, 384_000);
-    let ph = s.playhead();
-    let (inst, mt, kind, track, clip_name) = if p.get("clip").is_some() {
+    // the frame shown (a front end playing ahead of the engine's playhead sends it)
+    let ph = time_p(s, p, "").unwrap_or(s.playhead());
+    let (inst, mt, kind, track, clip_name, stack) = if p.get("clip").is_some() {
         let clip = clip_p(p, "clip").ok_or_else(|| bad(CMD, "`clip` is an id"))?;
         let index = u64_p(p, "effect").and_then(|i| usize::try_from(i).ok()).ok_or_else(|| bad(CMD, "need `effect` (an index)"))?;
         let (tid, it) = q.find_item(clip).ok_or_else(|| bad(CMD, "no such clip in the active sequence"))?;
@@ -57,14 +58,16 @@ fn inspect(s: &mut Session, p: &Value) -> Result<Value> {
         let track = q.track(tid).map(|t| t.name.clone()).unwrap_or_default();
         // as the audio render evaluates clip effects
         let last = Tick(it.end().0.saturating_sub(1)).max(it.start);
-        (e, it.source_time_at(ph.clamp(it.start, last)), "clip", track, Some(it.name.clone()))
+        let stack: Vec<String> = it.effects.iter().map(|e| e.effect.clone()).collect();
+        (e, it.source_time_at(ph.clamp(it.start, last)), "clip", track, Some(it.name.clone()), stack)
     } else {
         let v = p.get("strip").ok_or_else(|| bad(CMD, "need `clip`+`effect` or `strip`+`slot`"))?;
         let id: TrackId = crate::mixer::strip_ref(q, v).ok_or_else(|| bad(CMD, format!("no strip {v}")))?;
         let slot = u64_p(p, "slot").and_then(|i| usize::try_from(i).ok()).ok_or_else(|| bad(CMD, "need `slot` (0-based)"))?;
         let tr = q.strip(id).ok_or_else(|| bad(CMD, "no such strip"))?;
         let e = tr.effects.get(slot).ok_or_else(|| bad(CMD, "no effect in that slot"))?.clone();
-        (e, ph, "insert", tr.name.clone(), None)
+        let stack: Vec<String> = tr.effects.iter().map(|e| e.effect.clone()).collect();
+        (e, ph, "insert", tr.name.clone(), None, stack)
     };
     let editor = editor_of(&inst.effect).ok_or_else(|| bad(CMD, format!("`{}` has no graphical editor", inst.effect)))?;
     let def = inst.def().ok_or_else(|| bad(CMD, "unknown effect"))?;
@@ -130,6 +133,9 @@ fn inspect(s: &mut Session, p: &Value) -> Result<Value> {
         "response": response,
         "transfer": transfer,
         "labels": labels,
+        // the clip's effects / the strip's inserts in order: a window bound to an index closes
+        // when the effects up to it change (one removed or moved before it)
+        "stack": stack,
     }))
 }
 

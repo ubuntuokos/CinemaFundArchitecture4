@@ -197,3 +197,32 @@ fn fx_editor_curves_use_the_sequence_sample_rate() {
     assert_ne!(a["sampleRate"], b["sampleRate"]);
     assert_ne!(a["response"], b["response"], "the filter design follows the rate the programme plays at");
 }
+
+#[test]
+fn fx_editor_reads_the_shown_time_and_lists_the_effect_stack() {
+    let mut s = demo();
+    let clip = a1_clip(&s);
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
+    let idx = it.effects.len() - 1;
+    let (t0, t1) = (it.start, it.start + Tick(it.duration.0 / 2));
+    for (t, v) in [(t0, -6.0), (t1, 6.0)] {
+        s.execute("effects.setParam", json!({"clip": clip, "effect": idx, "param": "high_gain", "value": v, "keyframe": true, "time": t.0})).unwrap();
+    }
+    s.set_playhead(t0);
+    let at = |s: &mut Session, t: Option<Tick>| {
+        let mut p = json!({"clip": clip, "effect": idx});
+        if let Some(t) = t {
+            p["time"] = json!(t.0);
+        }
+        s.execute("audio.fxEditor", p).unwrap()
+    };
+    assert_eq!(at(&mut s, None)["params"]["high_gain"]["value"], json!(-6.0));
+    // a front end playing ahead of the engine's playhead asks for the frame it shows
+    assert_eq!(at(&mut s, Some(t1))["params"]["high_gain"]["value"], json!(6.0));
+    let stack = at(&mut s, None)["stack"].clone();
+    let names: Vec<&str> = stack.as_array().unwrap().iter().filter_map(serde_json::Value::as_str).collect();
+    assert_eq!(names.len(), it.effects.len());
+    assert_eq!(&names[names.len() - 2..], ["parametric_eq", "parametric_eq"]);
+}

@@ -1587,3 +1587,59 @@
 	Voice-over recording stopped (nothing recorded)	A hangalámondás felvétele leállt (nem készült felvétel)
 	Voice-over take discarded	Hangalámondás-felvétel elvetve
 	● Recording	● Felvétel
+# Multi-camera (panels/multicam.py)
+	 frames	 képkocka
+	All Cameras	Minden kamera
+	Auto-Adjust Multi-Camera Playback Quality	Többkamerás lejátszási minőség automatikus igazítása
+	Camera 1	1. kamera
+	Camera Angle Metadata	Kameraállás-metaadat
+	Camera Names	Kameranevek
+	Camera {n} — {name}	{n}. kamera — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	A többkamerás nézetben látható kamerák (a jelölés törlése elrejti).
+	Clip Marker	Klipjelölő
+	Clip Name:	Klip neve:
+	Clip Names	Klipnevek
+	Create Multi-Camera Source Sequence	Többkamerás forrásszekvencia létrehozása
+	Edit Cameras	Kamerák szerkesztése
+	Edit Cameras…	Kamerák szerkesztése…
+	Enumerate Cameras	Kamerák számozása
+	Ignore Hours	Órák figyelmen kívül hagyása
+	In Points	Kezdőpontok
+	Merge Clips	Klipek egyesítése
+	Merged clip created	Az egyesített klip elkészült
+	Move source clips to Processed Clips bin	A forrásklipek áthelyezése a Feldolgozott klipek mappába
+	Multi-Camera Audio Follows Video	Többkamerás hang követi a videót
+	Multi-Camera Layout	Többkamerás elrendezés
+	Multi-Camera Record	Többkamerás felvétel
+	Multi-Camera Record On/Off (0)	Többkamerás felvétel be/ki (0)
+	Multi-Camera Record On/Off Toggle	Többkamerás felvétel be/ki kapcsolása
+	Multi-Camera Record off	Többkamerás felvétel kikapcsolva
+	Multi-Camera Record on	Többkamerás felvétel bekapcsolva
+	Multi-Camera Selection Top Down	Többkamerás kijelölés felülről lefelé
+	Multi-Camera View	Többkamerás nézet
+	Multi-camera source sequence with {n} camera(s)	Többkamerás forrásszekvencia {n} kamerával
+	Next page	Következő oldal
+	No multi-camera clip at the playhead	Nincs többkamerás klip a lejátszófejnél
+	Offset Audio by:	Hang eltolása:
+	Offset:	Eltolás:
+	Out Points	Végpontok
+	Page {page} of {pages}	{page}. oldal / {pages}
+	Previous page	Előző oldal
+	Record	Felvétel
+	Recorded {n} multi-camera cut(s)	{n} többkamerás vágás rögzítve
+	Reference track:	Referenciasáv:
+	Remove Audio from AV Clip	Hang eltávolítása az AV-klipből
+	Sequence Name:	Szekvencia neve:
+	Show Multi-Camera Preview Monitor	Többkamerás előnézeti monitor megjelenítése
+	Switch Audio	Hang váltása
+	Synchronize Clips	Klipek szinkronizálása
+	Synchronize Point	Szinkronizálási pont
+	Synchronized {n} clip group(s)	{n} klipcsoport szinkronizálva
+	Transmit Multi-Camera View	Többkamerás nézet továbbítása
+	first marker	első jelölő
+	lowest (V1…)	legalsó (V1…)
+	no multi-camera clip at the playhead	nincs többkamerás klip a lejátszófejnél
+	{first} - Merged	{first} – egyesített
+	{first} Multicam	{first} többkamerás
+	{n} clip(s) selected; the clip on the reference track stays put.	{n} klip kijelölve; a referenciasáv klipje a helyén marad.
+	{n} clip(s): {names}	{n} klip: {names}

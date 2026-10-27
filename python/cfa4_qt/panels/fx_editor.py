@@ -129,6 +129,9 @@ class FxEditor(QDialog):
         # committed values shown until an answer asked after their edit arrives
         self.settling: dict[str, float] = {}
         self.gesture = 0  # numbers the merge keys of grouped clip edits
+        # the time shown while the Program monitor plays (None: the engine's playhead is it)
+        self.now: Callable[[], int | None] = lambda: None
+        self.stack: list[str] | None = None  # the clip's effects (the strip's inserts) last seen
         self.syncs: list[Any] = []
         self.plots: list[QWidget] = []
         self._busy = False
@@ -168,6 +171,9 @@ class FxEditor(QDialog):
         params = dict(self.target)
         if self.drafts:
             params["overrides"] = dict(self.drafts)
+        now = self.now()
+        if now is not None:
+            params["time"] = now
         sent = dict(self.settling)
         self.query(params, lambda r: self._done(r, sent), self._failed)
 
@@ -188,11 +194,27 @@ class FxEditor(QDialog):
         self._again = False
         self.close()
 
+    def index(self) -> int:
+        i = self.target.get("effect", self.target.get("slot"))
+        return i if isinstance(i, int) and not isinstance(i, bool) and i >= 0 else 0
+
     def set_state(self, data: dict[str, Any]) -> None:
         fx = str(data.get("effect") or "")
         if fx not in HAS_EDITOR:
             self.close()
             return
+        # the window is bound to an index: an effect removed or moved before it (another instance
+        # of the same effect would slide into the index) closes it, as the edited effect is gone
+        # (the same effect removed from the index lets the next one slide in with the same names:
+        # any removal closes it, effects added after it don't)
+        raw = data.get("stack")
+        if isinstance(raw, list):
+            stack = [str(x) for x in raw]
+            n = self.index() + 1
+            if self.stack is not None and (stack[:n] != self.stack[:n] or len(stack) < len(self.stack)):
+                self.close()
+                return
+            self.stack = stack
         self.data = data
         if fx != self.fx:
             self.fx = fx
@@ -246,11 +268,16 @@ class FxEditor(QDialog):
         if "clip" in self.target:
             # a shared merge key makes the clip's parameter edits one history entry
             self.gesture += 1
+            # an animated parameter is keyed at the frame heard, not where playback started
+            now = self.now()
             key = f"fxEditor:{self.target['effect']}:{self.gesture}"
             for i, (pid, val) in enumerate(out.items()):
                 self.command.emit(
                     "effects.setParam",
-                    {"clip": self.target["clip"], "effect": self.target["effect"], "param": pid, "value": val, "merge": key, "begin": i == 0},
+                    {
+                        "clip": self.target["clip"], "effect": self.target["effect"], "param": pid, "value": val, "merge": key, "begin": i == 0,
+                        **({} if now is None else {"time": now}),
+                    },
                 )
         else:
             self.command.emit("mixer.setInsert", {"strip": self.target["strip"], "slot": self.target["slot"], "params": out})
