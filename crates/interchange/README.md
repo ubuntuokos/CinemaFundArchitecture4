@@ -121,6 +121,9 @@ CFA4_OTIO_ORACLE_DIR=target/fixtures/otio-oracle cargo test -p cfa4-interchange 
 python -m cfa4_devtools.otio_oracle target/fixtures/otio-oracle    # exit 0 PASS, 1 FAIL, 2 cannot run
 ```
 
+A relative `CFA4_OTIO_ORACLE_DIR` is taken from the workspace root (Cargo runs the test from
+`crates/interchange`), so both commands above use the same directory.
+
 For each file it reads the document with OTIO, re-serialises it, and compares tracks, clip names,
 marker counts and every clip's position and length, as OTIO's own `range_in_parent` computes
 them, with `manifest.json` (exact ticks, 1 µs tolerance for OTIO's floating-point times).

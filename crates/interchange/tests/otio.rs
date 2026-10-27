@@ -439,7 +439,12 @@ fn oracle_fixtures() {
         cases.push((format!("mixed_{tag}.otio"), p, s, ExportOptions::default()));
     }
 
-    let out = std::env::var_os("CFA4_OTIO_ORACLE_DIR").map(std::path::PathBuf::from);
+    // Cargo runs integration tests from the package directory, so a relative path is taken from the
+    // workspace root, where the documented `python -m cfa4_devtools.otio_oracle` command looks.
+    let out = std::env::var_os("CFA4_OTIO_ORACLE_DIR").map(|d| {
+        let d = std::path::PathBuf::from(d);
+        if d.is_absolute() { d } else { std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(d) }
+    });
     if let Some(dir) = &out {
         std::fs::create_dir_all(dir).unwrap();
     }
