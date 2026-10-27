@@ -655,7 +655,7 @@ impl MpegSource {
     }
 
     /// Decoded samples of audio unit `i` (cached; non-sequential access primes the decoder with
-    /// the previous unit).
+    /// the previous unit, or more for DTS).
     fn audio_unit(&self, a: &AudioTrack, st: &mut AudioState, i: usize) -> crate::Result<Arc<Vec<Vec<f32>>>> {
         if let Some(p) = st.cache.get(&i) {
             return Ok(p.clone());
@@ -668,10 +668,10 @@ impl MpegSource {
         let dec = st.dec.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
         if st.last.is_none_or(|l| l + 1 != i) {
             dec.reset();
-            if i > 0
-                && let Ok(prev) = read(i - 1)
-            {
-                let _ = dec.decode(&prev);
+            for k in i.saturating_sub(dec.pre_roll_packets())..i {
+                if let Ok(prev) = read(k) {
+                    let _ = dec.decode(&prev);
+                }
             }
         }
         let data = match a.codec {
@@ -741,6 +741,13 @@ impl AudioDecoder {
     fn reset(&mut self) {
         if let AudioDecoder::Packet { dec, .. } = self {
             dec.reset();
+        }
+    }
+    /// Units decoded before a random-access target (see [`crate::audio::PacketDecoder::pre_roll_packets`]).
+    fn pre_roll_packets(&self) -> usize {
+        match self {
+            AudioDecoder::Packet { dec, .. } => dec.pre_roll_packets(),
+            AudioDecoder::Pcm { .. } => 1,
         }
     }
     fn decode(&mut self, data: &[u8]) -> crate::Result<Vec<Vec<f32>>> {

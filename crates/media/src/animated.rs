@@ -1,17 +1,20 @@
-//! Animated images (APNG and animated GIF) as movie clips (#402).
+//! Animated images (APNG, animated GIF and animated WebP) as movie clips (#402, #87).
 //!
 //! The still decoders read only the first picture of these files. [`open`] decodes every frame
 //! instead, composited onto the full canvas by the `image` crate (APNG blend and dispose operations,
 //! GIF disposal methods), and keeps them with their timing:
 //!
-//! - each frame lasts its own delay; GIF delays of 10 ms or less play as 100 ms and APNG delays
-//!   under 10 ms as 10 ms, as browsers do, so a zero delay never makes a zero-length frame;
+//! - each frame lasts its own delay; GIF and WebP delays of 10 ms or less play as 100 ms and APNG
+//!   delays under 10 ms as 10 ms, as browsers do, so a zero delay never makes a zero-length frame;
+//! - WebP frames are drawn on the canvas by `animated_webp.rs`, pixel for pixel like
+//!   libwebp's animation decoder;
 //! - consecutive identical frames are merged (one picture, the sum of their delays);
 //! - the clip is one pass through the animation (the file's loop count is not applied);
 //! - transparency is kept: the source reports alpha when any frame has a pixel that is not fully
 //!   opaque.
 //!
-//! The file is hostile: decoding stops at [`MAX_FRAMES`] frames or [`MAX_DECODED_BYTES`] of
+//! The file is hostile: a WebP canvas larger than 256 MiB is refused before any picture is
+//! allocated, decoding stops at [`MAX_FRAMES`] frames or [`MAX_DECODED_BYTES`] of
 //! pictures (the clip then ends there), and a frame that fails to decode ends the animation at the
 //! frames decoded before it. A file that turns out not to be animated (one frame, or no frame that
 //! decodes) is left to the still decoders, which is what happened to every animated image before.
@@ -37,6 +40,7 @@ pub const MAX_DECODED_BYTES: usize = 1 << 30;
 pub enum Format {
     Apng,
     Gif,
+    WebP,
 }
 
 impl Format {
@@ -45,6 +49,8 @@ impl Format {
             Some(Format::Apng)
         } else if b.starts_with(b"GIF87a") || b.starts_with(b"GIF89a") {
             Some(Format::Gif)
+        } else if b.get(0..4) == Some(b"RIFF") && b.get(8..12) == Some(b"WEBP") {
+            Some(Format::WebP)
         } else {
             None
         }
@@ -54,6 +60,7 @@ impl Format {
         match self {
             Format::Apng => "APNG",
             Format::Gif => "GIF",
+            Format::WebP => "WebP",
         }
     }
 
@@ -64,7 +71,7 @@ impl Format {
         // whole milliseconds, rounded down, decide the minimum (GIF delays are 10 ms steps)
         let ms = numer / denom;
         let (numer, denom) = match self {
-            Format::Gif if ms <= 10 => (100, 1),
+            Format::Gif | Format::WebP if ms <= 10 => (100, 1),
             Format::Apng if ms < 10 => (10, 1),
             _ => (numer, denom),
         };
@@ -81,7 +88,7 @@ pub struct AnimatedSource {
     starts: Vec<Tick>,
 }
 
-/// Decode `bytes` as an animated image. `None` when it is not an APNG or GIF with at least two
+/// Decode `bytes` as an animated image. `None` when it is not an APNG, GIF or WebP with at least two
 /// frames that decode (the caller then opens it as a still).
 pub fn open(name: &str, bytes: &[u8]) -> Option<Result<AnimatedSource>> {
     let format = Format::sniff(bytes)?;
@@ -98,6 +105,13 @@ pub fn open(name: &str, bytes: &[u8]) -> Option<Result<AnimatedSource>> {
             let mut d = GifDecoder::new(Cursor::new(bytes)).ok()?;
             d.set_limits(Limits::default()).ok()?;
             d.into_frames()
+        }
+        Format::WebP => {
+            let anim = crate::animated_webp::parse(bytes)?;
+            if !anim.fits() {
+                return Some(Err(MediaError::Decode(format!("{name}: WebP canvas {}×{} is too large", anim.width, anim.height))));
+            }
+            Frames::new(Box::new(anim.frames()))
         }
     };
     AnimatedSource::from_frames(name, format, frames, bytes.len() as u64).map(Ok)

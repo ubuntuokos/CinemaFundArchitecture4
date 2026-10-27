@@ -53,7 +53,7 @@ only). "Tested" names the evidence.
 | Format | Premiere | Read | Write (frame / sequence) | % |
 |---|---|---|---|---|
 | PNG, JPEG, TIFF, BMP, GIF | read + write | yes | PNG / TIFF / BMP / JPEG sequences, GIF | 90% |
-| WebP | — | yes | no | ahead |
+| WebP | — | yes: lossy, lossless, alpha; animated WebP as a clip (#87); bit-exact against libwebp | no | ahead |
 | **PSD** (layers as sequence) | read (layered) | no | — | 0% |
 | **OpenEXR** | read + write | stills and sequences: scan-line, none / RLE / ZIPS / ZIP / PXR24, half / float / uint, RGB(A) or Y, kept as linear float (#828); no PIZ, B44, DWA, tiled, multi-part or deep | sequences (half float, linear RGB / premultiplied RGBA; uncompressed, RLE, ZIPS or ZIP; #806, #874) | 70% |
 | **DPX** | read + write | yes: luma / RGB / RGBA, 8–16-bit, filled 10/12-bit, either byte order (#821); packed 10/12-bit, Y'CbCr 4:2:2 / 4:4:4 with or without alpha (#841); no RLE | sequences (10-bit RGB, BT.709; #779) | 90% |

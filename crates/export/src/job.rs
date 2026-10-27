@@ -193,15 +193,9 @@ pub fn stepped(format: Format) -> bool {
 }
 
 /// Whether an export is HDR: an HDR working space, SDR not asked for, and a format whose encoder
-/// writes HDR (`hdr_available` says so for H.265, which has no built-in encoder).
-pub(crate) fn hdr_output(working_hdr: bool, sdr: bool, format: Format, hdr_available: impl Fn(Format) -> bool) -> bool {
-    working_hdr
-        && !sdr
-        && match format {
-            Format::H264 | Format::ProRes | Format::DnxHr | Format::Apv => true,
-            Format::Hevc => hdr_available(Format::Hevc),
-            _ => false,
-        }
+/// writes HDR.
+pub(crate) fn hdr_output(working_hdr: bool, sdr: bool, format: Format) -> bool {
+    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::ProRes | Format::DnxHr | Format::Apv)
 }
 
 fn make_venc(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Result<Box<dyn VideoEncoder>> {
@@ -225,10 +219,9 @@ impl Exporter {
         }
         settings.validate()?;
         let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
-        // HDR sequences export HDR (H.264 / ProRes / DNxHR / APV, and H.265 where a registered encoder
-        // writes Main 10) unless SDR is asked for; elsewhere H.265 is tone-mapped 8-bit SDR
+        // HDR sequences export HDR (H.264 / H.265 Main 10 / ProRes / DNxHR / APV) unless SDR is asked for
         let pipe = q.settings.color;
-        let hdr_out = hdr_output(pipe.working.is_hdr(), settings.sdr, settings.video_format(), crate::hdr_available);
+        let hdr_out = hdr_output(pipe.working.is_hdr(), settings.sdr, settings.video_format());
         let mut settings = settings.clone();
         settings.signal = match (hdr_out, pipe.working) {
             (true, cfa4_color::WorkingSpace::Rec2100Pq) => ColorSignal::PQ,
