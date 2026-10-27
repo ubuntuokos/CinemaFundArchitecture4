@@ -4,17 +4,21 @@
 //! / `.mlp` stream in pieces) and gives planar `f32` channels in the WAV / SMPTE order used across
 //! CFA4 (L R C LFE back-L back-R side-L side-R, then any further channels). The largest
 //! channel-based presentation of at most eight channels is decoded: 7.1 (or 5.1.2 …) when the
-//! stream has one, else 5.1, else stereo. The 16-channel object presentation of Dolby Atmos needs
-//! an object renderer and is not decoded; Atmos streams carry a 7.1 (or 5.1) bed presentation
-//! that is.
+//! stream has one, else 5.1, else stereo. Atmos streams carry such a bed presentation (7.1 or 5.1)
+//! beside their 16-channel object presentation.
+//!
+//! [`Decoder::with_objects`] decodes the object presentation instead and renders its objects to a
+//! loudspeaker [`Layout`] (up to 7.1.4) with [`crate::render`]. A stream without an object
+//! presentation, or with objects the renderer cannot place, gives its channel presentation then.
 
 use crate::process::decode::Decoder as AuDecoder;
 use crate::process::extract::Extractor;
 use crate::process::parse::Parser;
 use crate::process::{PresentationMap, PresentationType};
+use crate::render::{Layout, Renderer};
 use crate::structs::channel::ChannelLabel;
 
-/// Most channels of a decoded presentation.
+/// Most channels of a decoded channel presentation.
 pub const MAX_CHANNELS: usize = 8;
 
 /// Decoder errors. Malformed input gives an error, never a panic.
@@ -78,7 +82,18 @@ pub struct Decoder {
     decoder: AuDecoder,
     /// Presentation decoded, chosen at each major sync.
     presentation: Option<usize>,
+    /// The object renderer, when objects are wanted.
+    renderer: Option<Renderer>,
+    /// Whether the object presentation is decoded (chosen at each major sync).
+    objects: bool,
+    /// The stream's objects could not be placed: its channel presentation is decoded instead.
+    refused: bool,
+    /// Samples rendered from the object presentation: the clock object metadata is timed by.
+    position: u64,
 }
+
+/// The object presentation of an Atmos stream.
+const OBJECT_PRESENTATION: usize = 3;
 
 /// The presentation to decode: the largest channel-based one (2, 6 or 8 channels) the stream
 /// declares.
@@ -93,6 +108,12 @@ fn pick(map: &PresentationMap) -> Option<usize> {
 impl Decoder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// A decoder that renders the object presentation of Dolby Atmos streams to `layout`; other
+    /// streams decode as with [`Decoder::new`].
+    pub fn with_objects(layout: Layout) -> Self {
+        Self { renderer: Some(Renderer::new(layout)), ..Self::default() }
     }
 
     /// Decodes the access units in `data`. Bytes of an access unit split across calls are kept
@@ -113,8 +134,11 @@ impl Decoder {
             if let Some(ms) = &au.major_sync_info {
                 let map = PresentationMap::for_format_sync(ms.format_sync, ms.substream_info, ms.extended_substream_info);
                 self.presentation = pick(&map);
+                self.objects =
+                    self.renderer.is_some() && !self.refused && matches!(map.presentation_type_by_index(OBJECT_PRESENTATION), PresentationType::Independent);
             }
             let Some(presentation) = self.presentation else { continue };
+            let presentation = if self.objects { OBJECT_PRESENTATION } else { presentation };
             let d = match self.decoder.decode_presentation(&au, presentation) {
                 Ok(d) => d,
                 Err(e) => {
@@ -122,6 +146,40 @@ impl Decoder {
                     return Err(Error::Decode(e.to_string()));
                 }
             };
+            let samples = d.pcm_data.get(..d.sample_length).unwrap_or_default();
+            if self.objects {
+                let Some(renderer) = self.renderer.as_mut() else { continue };
+                let mut events = Vec::new();
+                for p in &d.oamd {
+                    match crate::render::events(p, d.channel_count) {
+                        Some(e) => events.extend(e),
+                        None => self.refused = true,
+                    }
+                }
+                if self.refused {
+                    // the channel presentation takes over at the next major sync
+                    renderer.reset();
+                    self.objects = false;
+                    self.presentation = None;
+                    self.parser.reset_for_next_major_sync();
+                    self.decoder.reset_for_next_major_sync();
+                    continue;
+                }
+                for e in events {
+                    renderer.schedule(self.position.saturating_add(e.offset), e.object, &e.state, e.ramp);
+                }
+                let labels: Vec<Option<ChannelLabel>> = renderer.layout().labels().into_iter().map(Some).collect();
+                if out.channels.is_empty() || out.labels != labels || out.sample_rate != d.sampling_frequency {
+                    out = Decoded { sample_rate: d.sampling_frequency, channels: vec![Vec::new(); labels.len()], labels };
+                }
+                let objects: Vec<Vec<f32>> = (0..d.channel_count.min(crate::render::MAX_OBJECTS))
+                    .map(|c| samples.iter().map(|s| s.get(c).copied().unwrap_or(0) as f32 * SCALE).collect())
+                    .collect();
+                let objects: Vec<&[f32]> = objects.iter().map(Vec::as_slice).collect();
+                renderer.render(self.position, &objects, &mut out.channels);
+                self.position = self.position.saturating_add(samples.len() as u64);
+                continue;
+            }
             let channels = d.channel_count.min(MAX_CHANNELS);
             let mut sorted: Vec<usize> = (0..channels).collect();
             sorted.sort_by_key(|&c| d.channel_labels.get(c).map_or(u8::MAX, |&l| rank(l)));
@@ -131,7 +189,6 @@ impl Decoder {
                 order = sorted;
                 out = Decoded { sample_rate: d.sampling_frequency, channels: vec![Vec::new(); channels], labels };
             }
-            let samples = d.pcm_data.get(..d.sample_length).unwrap_or_default();
             for (o, &c) in out.channels.iter_mut().zip(&order) {
                 o.extend(samples.iter().map(|s| s.get(c).copied().unwrap_or(0) as f32 * SCALE));
             }
@@ -141,7 +198,8 @@ impl Decoder {
 
     /// Drops all stream state (after a seek); decoding resumes at the next major sync.
     pub fn reset(&mut self) {
-        *self = Self::default();
+        let renderer = self.renderer.take().map(|r| Renderer::new(r.layout().clone()));
+        *self = Self { renderer, ..Self::default() };
     }
 
     /// After a bad access unit: the rest of the failed call's bytes are dropped too, so they
@@ -151,6 +209,9 @@ impl Decoder {
         self.parser.reset_for_next_major_sync();
         self.decoder.reset_for_next_major_sync();
         self.presentation = None;
+        if let Some(r) = self.renderer.as_mut() {
+            r.reset();
+        }
     }
 }
 
@@ -222,5 +283,17 @@ mod tests {
         assert!(!d.channels.is_empty());
         assert_eq!(d.labels.len(), d.channels.len());
         assert!(d.channels.iter().all(|c| c.len() == d.channels[0].len()));
+    }
+
+    /// A stream without an object presentation decodes the same with an object renderer, and a
+    /// reset keeps the renderer's layout.
+    #[test]
+    fn a_stream_without_objects_decodes_its_channels_with_a_renderer() {
+        let plain = Decoder::new().decode(crate::process::EXAMPLE_DATA).unwrap();
+        let mut dec = Decoder::with_objects(Layout::surround_7_1_4());
+        assert_eq!(dec.decode(crate::process::EXAMPLE_DATA).unwrap(), plain);
+        dec.reset();
+        assert_eq!(dec.renderer.as_ref().map(|r| r.layout().name), Some("7.1.4"));
+        assert_eq!(dec.decode(crate::process::EXAMPLE_DATA).unwrap(), plain);
     }
 }

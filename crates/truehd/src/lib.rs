@@ -82,6 +82,8 @@
 /// 3. **Decoding** ([`process::decode`]): Audio decoding using MLP algorithm.
 pub mod process;
 
+pub mod render;
+
 /// CFA4: replacement for the `anyhow` crate.
 pub mod anyhow;
 

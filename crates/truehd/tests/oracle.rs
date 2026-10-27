@@ -282,3 +282,29 @@ fn generate_fixtures() {
         cfa4_testkit::fixtures::generate_and_report(&format!("truehd/{}", s.name), &[out], || make(&ff, s));
     }
 }
+
+/// A real Dolby Atmos TrueHD stream, when `CFA4_ATMOS_SAMPLE` names one (a raw `.thd`; none is
+/// committed and ffmpeg cannot write one): the objects rendered to 7.1.4 carry about the energy of
+/// the stream's own 7.1 / 5.1 bed presentation, and nothing is NaN.
+#[test]
+fn a_real_atmos_stream_renders_like_its_bed_presentation() {
+    let Some(path) = std::env::var_os("CFA4_ATMOS_SAMPLE") else {
+        eprintln!("skipped: set CFA4_ATMOS_SAMPLE to a Dolby Atmos .thd stream");
+        return;
+    };
+    let data = std::fs::read(path).unwrap();
+    let bed = decode_all(&data, 4096);
+    let mut dec = Decoder::with_objects(cfa4_truehd::render::Layout::surround_7_1_4());
+    let mut rendered = vec![Vec::new(); 12];
+    for piece in data.chunks(4096) {
+        let d = dec.decode(piece).unwrap();
+        for (a, c) in rendered.iter_mut().zip(d.channels) {
+            a.extend(c);
+        }
+    }
+    let energy = |chs: &[Vec<f32>]| chs.iter().flatten().map(|v| f64::from(*v) * f64::from(*v)).sum::<f64>();
+    assert!(rendered.iter().flatten().all(|v| v.is_finite()));
+    let (e_obj, e_bed) = (energy(&rendered), energy(&bed.channels));
+    eprintln!("bed {} channels, energy {e_bed:.1}; rendered 7.1.4 energy {e_obj:.1}", bed.channels.len());
+    assert!(e_bed > 0.0 && e_obj > e_bed / 4.0 && e_obj < e_bed * 4.0, "rendered {e_obj} vs bed {e_bed}");
+}
