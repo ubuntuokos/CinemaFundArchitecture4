@@ -76,6 +76,22 @@ Status: ✅ done · 🟡 in progress · ⬜ not started. Estimates are remaining
 | HW | Hardware acceleration (#30) | 🟡 | Blend modes and 34 effect ids on the GPU incl. Lumetri basic / creative / vignette (#32, GPU2–GPU7); GPU export rendering (#421); decode: VideoToolbox (#33, #41), Media Foundation / D3D11 H.264 / HEVC / VP9 / AV1 (HW2, HW3), VA-API H.264 / HEVC (#358), NVDEC H.264 / HEVC (#549); encode: VideoToolbox H.264 / HEVC, NVENC H.264 (Windows, Linux) and HEVC incl. Main 10 HDR (#328, #360) | Zero-copy, remaining GPU effects, VideoToolbox Main 10, Quick Sync / AMF, VA-API VP9 / AV1 and encode | 120–200 |
 | L10N | Localization | 🟡 | Spanish, Japanese, Simplified Chinese whole interface; Portuguese (Brazil), Ukrainian menus | Hindi, Arabic (RTL), French, Indonesian, German, Korean, Vietnamese, Italian, Russian; native review | 150–230 |
 
+## Scheduled after the Qt 6 GUI is complete
+
+Owner decision (2026-10-27): the plans below are final and are **executed only after the Qt 6 GUI
+is complete**, meaning every row of [qt-parity.md](qt-parity.md) is ✅ (the ADR F8 gate). Until
+then they are not started; the Smart Edit work already open (WP-00–WP-02, #215/#216/#219) may
+finish but does not expand. The UI for all of them is built in the Qt 6 GUI only, never in egui.
+
+| Order | Plan | Phases | Gate |
+|---|---|---|---|
+| 1 | [CFA4-SCE-001 v1.5](plans/CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md): Strict / Compatible Stream Copy, native MPEG-TS/M2TS muxer, GOP Smart Cut, Smart Render | P0–P7 (§22), mapped to WP-00–WP-10 of the R1 plan | qt-parity.md all ✅ |
+| 2 | [CFA4-FFMPEG-BACKEND-R1](plans/CFA4-FFMPEG-BACKEND-R1-2026-10-27.md): optional `cfa4-ffmpeg` backend (ADR 0005) | FF-00–FF-09 (§14); FF-00/FF-01 first; the binding is chosen by FF-01 | qt-parity.md all ✅; never blocks or replaces the native Smart Edit path |
+
+Detailed phase plans: [GOP Smart Cut](plans/GOP-SMART-CUT-2026-10-27.md),
+[Smart Render](plans/SMART-RENDER-2026-10-27.md), and the R1 work-package plan
+`CFA4-SMART-CUT-RENDER-R1.md` (branch `feature/native-smart-cut-render`).
+
 ## After beta
 
 Plugin hosting (VST3 / AU, then OpenFX; owner decision, [G11](gaps.md#g11-no-plugin-hosting)),
@@ -87,5 +103,6 @@ the web app shell ([G20](gaps.md#g20-the-web-app-shell)).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-27 | minor | Scheduled CFA4-SCE-001 v1.5 and CFA4-FFMPEG-BACKEND-R1 to start after the Qt 6 GUI is complete (qt-parity.md all ✅) |
 | 2026-10-10 | minor | Alpha gate table added: six core workflows, all pass on macOS; stage stays alpha |
 | 2026-10-10 | major | Created: milestone table moved from ROADMAP.md (M5 and M9 remaining work updated), HW and L10N rows, beta milestones B1–B7, Current focus from the re-measure |
