@@ -179,3 +179,30 @@ fn opus_toc_durations() {
     assert_eq!(opus_packet_samples([0xF8 | 3, 7], 10), None); // 140 ms: invalid
     assert_eq!(opus_packet_samples([0xF8, 0], 0), None);
 }
+
+#[test]
+fn writer_round_trips_through_the_reader() {
+    let mut w = OggWriter::new(Vec::new(), 77);
+    w.write_packet(&opus_head(312), 0).unwrap();
+    w.flush_page().unwrap();
+    w.write_packet(b"OpusTags\x00\x00\x00\x00\x00\x00\x00\x00", 0).unwrap();
+    w.flush_page().unwrap();
+    // Sizes around the lacing edge cases, plus packets that span several pages.
+    let sizes = [1usize, 254, 255, 256, 510, 0, 3000, 70_000, 65_025, 12, 255 * 255 + 1];
+    let pkts: Vec<Vec<u8>> = sizes.iter().enumerate().map(|(i, &n)| pkt(i, n)).collect();
+    for (i, p) in pkts.iter().enumerate() {
+        w.write_packet(p, (i as u64 + 1) * 960).unwrap();
+    }
+    let f = w.finish().unwrap();
+    let o = open(&f).unwrap();
+    assert!(o.warnings.is_empty(), "{:?}", o.warnings);
+    let s = o.stream_of(Codec::Opus).unwrap();
+    let st = &o.streams[s];
+    assert_eq!(st.headers.len(), 2);
+    assert_eq!(st.packets.len(), pkts.len());
+    for (i, p) in pkts.iter().enumerate() {
+        assert_eq!(&o.read_packet(&f, s, i).unwrap(), p, "packet {i}");
+    }
+    assert!(st.saw_eos);
+    assert_eq!(st.last_granule, Some(pkts.len() as i64 * 960));
+}

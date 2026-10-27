@@ -870,6 +870,7 @@ fn audio_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
         let cur = match s.audio_codec() {
             AudioCodec::Aac => "AAC",
             AudioCodec::Flac => tl!("FLAC (lossless)"),
+            AudioCodec::Opus => "Opus",
             _ => tl!("Uncompressed (PCM)"),
         };
         // MP4 takes AAC or FLAC; QuickTime any of the three
@@ -884,7 +885,13 @@ fn audio_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
             s.audio.codec = [AudioCodec::Aac, AudioCodec::Pcm, AudioCodec::Flac][i.min(2)];
         }
     });
+    let opus = s.audio_codec() == AudioCodec::Opus;
     row(ui, t, tl!("Sample Rate"), |ui| {
+        if opus {
+            // the Opus encoder codes 48 kHz only
+            ui.label("48000 Hz");
+            return;
+        }
         let rates: [Option<u32>; 5] = [None, Some(32_000), Some(44_100), Some(48_000), Some(96_000)];
         let lab = |r: &Option<u32>| r.map(|r| format!("{r} Hz")).unwrap_or_else(|| tlf!("Match Source ({seq_sr} Hz)", seq_sr));
         let labels: Vec<(String, bool)> = rates.iter().map(|r| (lab(r), true)).collect();
@@ -896,16 +903,18 @@ fn audio_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
         let names = [tl!("Mono"), tl!("Stereo"), "5.1"];
         let cur = match s.audio.channels {
             1 => names[0],
-            6 => names[2],
+            6 if !opus => names[2],
             _ => names[1],
         };
-        if let Some(i) = combo(ui, reg, "export.audio.channels", cur, &opts(&names), 120.0) {
+        // Opus Audio is mono or stereo
+        let labels: Vec<(String, bool)> = names.iter().enumerate().map(|(i, l)| (l.to_string(), !(opus && i == 2))).collect();
+        if let Some(i) = combo(ui, reg, "export.audio.channels", cur, &labels, 120.0) {
             s.audio.channels = [1, 2, 6][i.min(2)];
         }
     });
-    if s.audio_codec() == AudioCodec::Aac {
+    if matches!(s.audio_codec(), AudioCodec::Aac | AudioCodec::Opus) {
         row(ui, t, tl!("Audio Bitrate"), |ui| {
-            let rates = [128u32, 160, 192, 256, 320];
+            let rates: &[u32] = if opus { &[64, 96, 128, 160, 192, 256, 320] } else { &[128, 160, 192, 256, 320] };
             let labels: Vec<(String, bool)> = rates.iter().map(|r| (format!("{r} kbps"), true)).collect();
             if let Some(i) = combo(ui, reg, "export.audio.bitrate", &format!("{} kbps", s.audio.bitrate_kbps), &labels, 120.0) {
                 s.audio.bitrate_kbps = rates[i];

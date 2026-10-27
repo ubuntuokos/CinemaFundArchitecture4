@@ -349,6 +349,25 @@ fn aac_audio_keeps_a_dot_aac_path_as_adts_and_adds_m4a_otherwise() {
 }
 
 #[test]
+fn opus_audio_keeps_a_dot_ogg_path_and_adds_opus_otherwise() {
+    let mut s = demo();
+    let dir = Scratch::new("opus-audio");
+    let range = json!({"range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true, "format": "opus"});
+    let run = |s: &mut Session, path: String| {
+        let mut p = range.clone();
+        p["path"] = json!(path);
+        s.execute("file.exportMedia", p).unwrap()["path"].as_str().unwrap().to_string()
+    };
+    for (asked, want) in [("Mix.ogg", "Mix.ogg"), ("Mix", "Mix.opus")] {
+        let path = run(&mut s, dir.path(asked));
+        assert!(path.ends_with(want), "{path}");
+        let b = std::fs::read(&path).unwrap();
+        assert_eq!(&b[..4], b"OggS");
+        assert_eq!(&b[28..36], b"OpusHead");
+    }
+}
+
+#[test]
 fn h264_presets_hit_their_bitrates() {
     let mut s = demo();
     let dir = Scratch::new("bitrate");

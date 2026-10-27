@@ -69,6 +69,9 @@
 	A title on a rounded card with a soft shadow.	부드러운 그림자가 있는 둥근 카드 위 제목.
 	AAC Audio	AAC 오디오
 	AAC Audio 48 kHz 320 kbps	AAC 오디오 48 kHz 320 kbps
+	Opus Audio	Opus 오디오
+	Opus Audio 48 kHz 160 kbps	Opus 오디오 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus(.opus), 스테레오 48 kHz 160 kbps
 	AAF Export Settings	AAF 내보내기 설정
 	AAF…	AAF…
 	About	정보

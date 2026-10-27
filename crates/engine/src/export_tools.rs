@@ -404,7 +404,8 @@ fn with_extension(path: &str, settings: &ExportSettings) -> String {
             if e.eq_ignore_ascii_case(ext)
                 || (settings.format == Format::TiffSequence && e.eq_ignore_ascii_case("tiff"))
                 || (settings.format == Format::JpegSequence && e.eq_ignore_ascii_case("jpeg"))
-                || (settings.format == Format::Aac && e.eq_ignore_ascii_case("aac")) =>
+                || (settings.format == Format::Aac && e.eq_ignore_ascii_case("aac"))
+                || (settings.format == Format::Opus && e.eq_ignore_ascii_case("ogg")) =>
         {
             path.to_string()
         }

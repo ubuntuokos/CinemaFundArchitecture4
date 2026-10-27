@@ -131,7 +131,7 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/opus/src/celt/encoder.rs`, encoder parts of `crates/opus/src/celt/{bands,energy,mdct}.rs` | RFC 6716 reference implementation (libopus `celt/`): algorithm structure and tuning constants of the encoder analysis (transient detector, stereo / intensity decisions, PVQ search, coarse / fine energy quantisation, forward MDCT folding), reimplemented in Rust; no files copied | IETF Trust and the RFC 6716 authors (Xiph.Org Foundation, Skype Limited, Octasic, J.-M. Valin, T. B. Terriberry, and others) | BSD-3-Clause |
 
 ## 6. Dependency checks
 

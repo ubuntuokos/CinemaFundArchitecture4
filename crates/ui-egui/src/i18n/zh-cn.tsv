@@ -2964,6 +2964,9 @@
 	Gang to Program	联动到节目
 	AAC Audio	AAC 音频
 	AAC Audio 48 kHz 320 kbps	AAC 音频 48 kHz 320 kbps
+	Opus Audio	Opus 音频
+	Opus Audio 48 kHz 160 kbps	Opus 音频 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus)，立体声 48 kHz，160 kbps
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 音频 (.m4a)，立体声 48 kHz AAC-LC，320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 位

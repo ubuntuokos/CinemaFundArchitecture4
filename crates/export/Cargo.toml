@@ -26,6 +26,8 @@ cfa4-apv = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-flac = { workspace = true }
+cfa4-opus = { workspace = true }
+cfa4-ogg = { workspace = true }
 cfa4-h264enc = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
