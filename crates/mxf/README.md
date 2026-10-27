@@ -19,6 +19,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 381-3 | 2013 | AVC byte-stream mapping and AVC sub-descriptor |
 | SMPTE ST 382 | 2007 | AES3 and Broadcast Wave audio mapping (wave / AES3 descriptors) |
 | SMPTE ST 331 | 2011 | element data of 8-channel AES3 sound (D-10) |
+| SMPTE ST 2067-201 | 2019 | IAB track files: IAB essence descriptor (set 0x7B), clip-wrapped container, element type 0x0D (labels from the SMPTE registers) |
 | SMPTE ST 386 | 2004 | D-10 (IMX) mapping: container label, sound element type |
 | SMPTE ST 2019-4 | 2009 | VC-3 (DNxHD / DNxHR) mapping |
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
@@ -66,6 +67,9 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
+  Immersive Audio (IAB, `Codec::Iab`): one `Sample` per IABitstream frame, from frame-wrapped
+  elements, the index of a clip-wrapped element, or, without an index, the frames' own
+  tag-length framing; decoded by `cfa4-iab`.
 - **Timecode.** The material package timecode component (start frame count, rounded base,
   drop frame), falling back to the file package's; `Timecode::format` gives `HH:MM:SS:FF` /
   `HH:MM:SS;FF`.

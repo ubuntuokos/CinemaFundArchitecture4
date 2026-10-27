@@ -51,6 +51,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("mjpeg", 0),
     ("dnx", 0),
     ("j2k", 0),
+    ("iab", 0),
     ("apv", 0),
     ("dng", 0),
     ("av1", 0),

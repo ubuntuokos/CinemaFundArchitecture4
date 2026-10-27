@@ -8,10 +8,12 @@
 //! - Presentation order: the index table's temporal offsets; for AVC whose index marks B pictures
 //!   but carries no temporal offsets, the picture order counts of the slice headers (8.2.1).
 //! - Audio: every PCM sound track (Broadcast Wave / AES3, ST 382; ST 331 AES3 elements in D-10)
-//!   is presented as one multichannel stream, sample-exact.
+//!   is presented as one multichannel stream, sample-exact. Without PCM, an Immersive Audio
+//!   (IAB, ST 2098-2) track of a DCP or IMF package is decoded with `cfa4-iab` and rendered to
+//!   7.1 (L R C LFE Lrs Rrs Lss Rss).
 //! - Start timecode: the material package's timecode track.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use cfa4_frame::{AudioBuffer, VideoFrame};
 use cfa4_isobmff::{FourCc, SampleEntry};
@@ -60,6 +62,83 @@ pub struct MxfSource {
     atracks: Vec<(usize, u64)>,
     /// Presented sample frames.
     aframes: u64,
+    /// An IAB track rendered to loudspeakers, when there is no PCM.
+    iab: Option<IabAudio>,
+}
+
+/// An Immersive Audio Bitstream track, rendered frame by frame.
+struct IabAudio {
+    track: usize,
+    rate: cfa4_iab::FrameRate,
+    rate96: bool,
+    /// FrameIndex of stored frame 0 (the five-frame sample cadence of the 1001 rates).
+    index0: u8,
+    /// First presented stored frame and the number presented.
+    first: usize,
+    count: usize,
+    layout: cfa4_iab::Layout,
+    /// The last rendered frame (stored index).
+    cache: Mutex<Option<(usize, Arc<Vec<Vec<f32>>>)>>,
+}
+
+impl IabAudio {
+    /// Samples of stored frame `j`.
+    fn frame_samples(&self, j: usize) -> u64 {
+        self.rate.samples(self.rate96, ((usize::from(self.index0) + j) % 5) as u8) as u64
+    }
+    /// Samples before presented frame `k`.
+    fn start_of(&self, k: usize) -> u64 {
+        let cycle: u64 = (0..5).map(|i| self.frame_samples(self.first + i)).sum();
+        let rest: u64 = (0..k % 5).map(|i| self.frame_samples(self.first + i)).sum();
+        (k / 5) as u64 * cycle + rest
+    }
+    /// The presented frame holding sample `s`.
+    fn frame_of(&self, s: u64) -> usize {
+        let cycle = self.start_of(5).max(1);
+        let mut k = (s / cycle) as usize * 5;
+        while k < self.count && self.start_of(k + 1) <= s {
+            k += 1;
+        }
+        k
+    }
+    /// Loudspeaker feeds of presented frame `k`; silence (and a warning) for a damaged frame.
+    fn rendered(&self, file: &MxfFile, bytes: &crate::Src, k: usize) -> Arc<Vec<Vec<f32>>> {
+        let j = self.first + k;
+        let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some((at, out)) = cache.as_ref()
+            && *at == j
+        {
+            return out.clone();
+        }
+        let n = self.frame_samples(j) as usize;
+        let out = file
+            .read_sample(bytes, self.track, j)
+            .map_err(|e| e.to_string())
+            .and_then(|b| cfa4_iab::parse(&b).map_err(|e| e.to_string()))
+            .and_then(|f| {
+                // a frame whose rate disagrees with the track would shift every later frame:
+                // it plays as silence of the track's cadence instead
+                if f.frame_rate != self.rate || f.rate96() != self.rate96 {
+                    return Err(format!("frame rate {:?} differs from the track's {:?}", f.frame_rate, self.rate));
+                }
+                cfa4_iab::render(&f, &self.layout).map_err(|e| e.to_string())
+            })
+            .unwrap_or_else(|e| {
+                log::warn!("IAB frame {j}: {e}");
+                vec![vec![0.0; n]; self.layout.channels()]
+            });
+        // every frame is exactly its cadence length, whatever the payload held
+        let out: Vec<Vec<f32>> = out
+            .into_iter()
+            .map(|mut c| {
+                c.resize(n, 0.0);
+                c
+            })
+            .collect();
+        let out = Arc::new(out);
+        *cache = Some((j, out.clone()));
+        out
+    }
 }
 
 /// Picture order counts of AVC access units (Annex B), in stored order, as presentation
@@ -217,7 +296,29 @@ impl MxfSource {
             .filter(|(_, t)| t.kind == TrackKind::Sound && !t.chunks.is_empty() && t.sound_format != cfa4_mxf::SoundFormat::Other)
             .map(|(i, _)| i)
             .collect();
-        if vtrack.is_none() && atracks.is_empty() {
+        // IAB, when there is no PCM: its first frame gives the rates
+        let iab = if atracks.is_empty() {
+            file.tracks.iter().enumerate().filter(|(_, t)| t.codec == Codec::Iab && !t.samples.is_empty()).find_map(|(i, t)| {
+                let head = file.read_sample(&bytes, i, 0).ok()?;
+                let f = cfa4_iab::parse(&head).map_err(|e| log::warn!("{name}: IAB track {}: {e}", t.track_id)).ok()?;
+                let first = usize::try_from(t.first_edit_unit()).unwrap_or(0).min(t.samples.len());
+                let avail = t.samples.len() - first;
+                let count = t.duration.and_then(|d| usize::try_from(d).ok()).map_or(avail, |d| d.min(avail));
+                Some(IabAudio {
+                    track: i,
+                    rate: f.frame_rate,
+                    rate96: f.rate96(),
+                    index0: f.frame_index,
+                    first,
+                    count,
+                    layout: cfa4_iab::Layout::surround_7_1(),
+                    cache: Mutex::new(None),
+                })
+            })
+        } else {
+            None
+        };
+        if vtrack.is_none() && atracks.is_empty() && iab.is_none() {
             return Err(CodecError::Unsupported("MXF: no playable picture or PCM sound tracks".into()));
         }
         // Video
@@ -382,6 +483,11 @@ impl MxfSource {
             let sr = if rate.is_valid() { (rate.num as f64 / rate.den as f64).round() as u32 } else { 48_000 };
             audio = Some(AudioStreamInfo { sample_rate: sr.max(1), channels, codec: file.tracks[a0].codec.name().into(), bits_per_sample: Some(si0.bits) });
         }
+        if let Some(ia) = &iab {
+            aframes = ia.start_of(ia.count);
+            let sr = if ia.rate96 { 96_000 } else { 48_000 };
+            audio = Some(AudioStreamInfo { sample_rate: sr, channels: ia.layout.channels() as u32, codec: "IAB".into(), bits_per_sample: Some(24) });
+        }
         if aframes == u64::MAX {
             aframes = 0;
         }
@@ -415,6 +521,7 @@ impl MxfSource {
             j2k_hints,
             atracks: combined,
             aframes,
+            iab,
             file,
         })
     }
@@ -505,7 +612,25 @@ impl MediaSource for MxfSource {
         let a = s0.max(0);
         let b = (s0 + need).min(self.aframes as i64);
         let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
-        if b > a {
+        if let (Some(ia), true) = (&self.iab, b > a) {
+            let mut k = ia.frame_of(a as u64);
+            let mut at = ia.start_of(k) as i64;
+            while at < b && k < ia.count {
+                let out = ia.rendered(&self.file, &self.bytes, k);
+                // advance by the track's cadence, as `frame_of` locates frames
+                let len = (ia.start_of(k + 1) as i64).saturating_sub(at);
+                // the overlap of this frame [at, at + len) with the request [a, b)
+                let (lo, hi) = (a.max(at), b.min(at + len));
+                for (c, ch) in out.iter().enumerate() {
+                    let (Some(dst), Some(s)) = (src.get_mut(c), ch.get((lo - at) as usize..(hi - at).max(lo - at) as usize)) else { continue };
+                    if let Some(d) = dst.get_mut((lo - s0) as usize..(lo - s0) as usize + s.len()) {
+                        d.copy_from_slice(s);
+                    }
+                }
+                at += len.max(1);
+                k += 1;
+            }
+        } else if b > a {
             let mut c0 = 0;
             for &(ti, first) in &self.atracks {
                 let pcm = self.file.read_pcm(&self.bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
@@ -551,6 +676,9 @@ pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader)
     }
     Some(MxfSource::open_reader(name, reader.clone()).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
 }
+
+#[cfg(test)]
+mod iab_tests;
 
 #[cfg(test)]
 mod tests {

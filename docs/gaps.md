@@ -191,6 +191,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   sequences (#828): scan-line, uncompressed / RLE / ZIPS / ZIP, half / float / uint, RGB(A) or
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
+  IAB immersive audio (SMPTE ST 2098-2) in DCP / IMF MXF (#82): PCM and DLC lossless assets,
+  Beds, remaps and Objects, rendered to 7.1 for playback.
 - **Missing:** free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling, Dolby Atmos objects (E-AC-3 JOC; the bed plays), AVI (#598; listed as an extension but no
 - **Missing:** Dolby Atmos object rendering (TrueHD's 16-channel presentation, E-AC-3 JOC),
