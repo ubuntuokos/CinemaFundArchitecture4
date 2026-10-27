@@ -242,7 +242,8 @@ fn h265_shows_the_h264_family_controls_without_the_h264_only_ones() {
     ] {
         assert!(d.has(id), "H.265: {id}");
     }
-    // Main is its only profile, the level is the encoder's choice, and hardware is the only encoder
+    // Main (Main 10 for HDR) is its only profile, the level is the encoder's choice, and a hardware
+    // encoder, where there is one, goes first without a toggle
     for id in ["export.video.profile", "export.video.level", "export.video.hardwareEncoding"] {
         assert!(!d.has(id), "H.265 has no {id}");
     }
