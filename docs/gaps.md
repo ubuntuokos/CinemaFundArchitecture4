@@ -230,7 +230,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 export (software or hardware), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
+- **Missing:** AV1 export (software or hardware), MPEG-2 export / DVD / Blu-ray (the MPEG-2
+  video encoder exists in `cfa4-mpeg2v`, #98), DCP, JPEG 2000 MXF,
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   interlaced encoding, smart render, HEVC software encoder (HEVC exists only where a hardware
   encoder does).
