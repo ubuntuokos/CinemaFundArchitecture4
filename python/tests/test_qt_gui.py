@@ -1891,6 +1891,11 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.b_frames.setValue(0)
         assert dlg.params()["mpeg2BFrames"] == 0
         dlg.b_frames.setValue(2)
+        # progressive unless an interlaced field order is chosen
+        assert dlg.field_order.isEnabled() and dlg.field_order.currentData() == "progressive" and "fieldOrder" not in p
+        dlg.field_order.setCurrentIndex(dlg.field_order.findData("lowerFirst"))
+        assert dlg.params()["fieldOrder"] == "lowerFirst"
+        dlg.field_order.setCurrentIndex(dlg.field_order.findData("progressive"))
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))

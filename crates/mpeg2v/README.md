@@ -75,7 +75,7 @@ let end = enc.finish();                                  // sequence_end_code
   and bitrate (Main, High-1440, High; 4:2:2 Main, High); beyond High Level the stream still
   decodes and is signalled as High Level. The eight MPEG-2 frame rates; any size up to
   16383×16383 (odd sizes are edge-padded to whole macroblocks and cropped by the decoder).
-- Progressive frame pictures: I and P pictures (`low_delay` set when there are no B
+- Frame pictures: I and P pictures (`low_delay` set when there are no B
   pictures), and 0-7 B pictures between anchors (`b_frames`). An anchor every `b_frames + 1`
   pictures within each GOP; the B pictures before an I picture belong to its GOP. Packets come
   in decode order with the display number (`index`) and a decode time (`dts`, one frame
@@ -85,6 +85,13 @@ let end = enc.finish();                                  // sequence_end_code
   open GOPs predict them from both sides. The sequence header (and a sequence display
   extension with the colour description) comes before every I picture. One slice per
   macroblock row.
+- Progressive (the default) or interlaced (`interlaced: Some(FieldOrder)`): interlaced
+  sequences set `top_field_first` as asked, use the alternate scan and choose per macroblock
+  between frame and field prediction (each field of the macroblock from the better reference
+  field, with its `motion_vertical_field_select`) and between frame and field DCT (whichever
+  transforms the luma error into the smaller coefficient magnitudes). Skipped and "MC not
+  coded" macroblocks stay frame-predicted. On combed moving content this saves about 10 % at
+  the same quantiser.
 - Motion search on luma at whole samples (left, temporal and zero predictors, then large and
   small diamonds), then half-sample refinement, ±32 samples (`f_code` 3); vectors whose
   luma or chroma prediction would leave the picture are never chosen. B pictures search both
@@ -108,7 +115,8 @@ let end = enc.finish();                                  // sequence_end_code
 - Macroblock rows are analysed (motion search, prediction, DCT) in parallel on rayon; coding
   is sequential (rate control).
 
-Not yet, each tracked: interlaced coding (#241), CBR with VBV compliance (#242), DVD-Video
+Not yet, each tracked: field pictures, dual-prime and 16x8 prediction (#274), CBR with VBV
+compliance (#242), DVD-Video
 (#244) and Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices
 (#246).
 

@@ -109,6 +109,14 @@ fn mpeg2_b_pictures_are_a_parameter() {
 }
 
 #[test]
+fn interlaced_mpeg2_is_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"upperFirst"})).unwrap();
+    assert_eq!(r["settings"]["fieldOrder"], "upperFirst");
+    assert!(s.execute("export.resolve", json!({"format":"mpeg2", "fieldOrder":"sideways"})).is_err());
+}
+
+#[test]
 fn wav_resolve_honours_explicit_sample_rates() {
     let mut s = demo();
     for rate in [4000, 192_000, 192_001, 200_000, 352_800, 384_000] {

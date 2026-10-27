@@ -216,7 +216,12 @@ class ExportDialog(QDialog):
         self.chroma.setObjectName("export.mpeg2Chroma")
         self.chroma.addItem(tr("4:2:0 (Main Profile)"), "420")
         self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
-        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
+        self.field_order = QComboBox(self)
+        self.field_order.setObjectName("export.fieldOrder")
+        self.field_order.addItem(tr("Progressive"), "progressive")
+        self.field_order.addItem(tr("Interlaced, upper field first"), "upperFirst")
+        self.field_order.addItem(tr("Interlaced, lower field first"), "lowerFirst")
+        for w in (self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(False)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
         self.hardware.setObjectName("export.hardwareEncoding")
@@ -253,6 +258,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
+        fv.addRow(tr("Field order"), self.field_order)
         fv.addRow(self.hardware)
         fv.addRow(self.burn)
         audio = QGroupBox(tr("Audio"), self)
@@ -336,7 +342,7 @@ class ExportDialog(QDialog):
             w.valueChanged.connect(self._changed)
         for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("bFrames", self.b_frames), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
-        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
+        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma), ("fieldOrder", self.field_order)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
@@ -429,6 +435,7 @@ class ExportDialog(QDialog):
         self.b_frames.setValue(2)
         self.quantizer.setValue(0)
         self.chroma.setCurrentIndex(0)
+        self.field_order.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
         self.container.setCurrentIndex(max(0, index))
         self.touched.clear()
@@ -444,7 +451,8 @@ class ExportDialog(QDialog):
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
-        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
+        # only MPEG-2 export codes interlaced video
+        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(mpeg2)
         self._container_changed()
 
@@ -542,6 +550,8 @@ class ExportDialog(QDialog):
                 p["mpeg2Quantizer"] = self.quantizer.value()
             if "chroma" in self.touched:
                 p["mpeg2Chroma"] = self.chroma.currentData()
+            if "fieldOrder" in self.touched:
+                p["fieldOrder"] = self.field_order.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p
