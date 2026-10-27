@@ -47,7 +47,7 @@ Rétegek: `docs/architecture.md` §1, ellenőrzi a `cargo xtask layers` (`xtask/
 | Szerkesztési algebra | `edit` (L2) | insert, overwrite, razor, ripple, roll, slip, slide, rate stretch, lift, extract. |
 | Export | `export` (L3) | `Format` enum (`lib.rs:64`; H.264, HEVC, AV1, ProRes, DNxHR, APV, MJPEG, képsorozatok, GIF, WAV, AIFF, AAC, FLAC, MXF), `VideoEncoder` trait (`lib.rs:737`), `register_encoder`, `register_format_probe` + `available(format)` (futásidejű elérhetőség, `lib.rs:1009–1046`), `hdr_available`, `Exporter` / `Step` léptetett job (`job.rs`), progress és cancel atomikus jelzőkkel, `ExportError::{Unsupported, Cancelled, …}`. |
 | Motor | `engine` (L4) | `Session`, parancsregiszter, `jobs` (háttérfeladatok), `export_tools.rs`: `export.resolve`, `export.presets.*`, `export.queue.*`, `export.formats`. |
-| Hardver | `platform` (L5) | NVENC H.264/H.265, VA-API dekódolás; HEVC/AV1 exportot csak hardveres encoder regisztrál. |
+| Hardver | `platform` (L5) | NVENC H.264/H.265, VA-API dekódolás; HEVC exportot csak hardveres encoder regisztrál. AV1 encodert semmi nem regisztrál (`export/src/settings_tests.rs`: `Format::Av1` nem elérhető). |
 | Útválasztó | `route` (L1) | ADR 0004 számítási útválasztó; az `ffmpeg` háttér a táblában `NotRegistered`. |
 | Qt6 felület | `python/cfa4_qt` | PySide6 kliens; a `cfa4-cli serve` Rust motorral stdin/stdout JSON-sorokon beszél (`engine.py`, protokoll: `docs/qt-gui.md`). |
 
@@ -105,8 +105,9 @@ határszakasz-újrakódolás a CFA4 saját crate-jeivel készül; az FFmpeg 9 ki
 orákulum (ffprobe, dekódolhatóság, payload-összevetés). Az AGENTS.md és a CLAUDE.md FFmpeg-szabálya
 változatlan; a terv §3 „Native FFmpeg 9 Adapter” rétegét a meglévő `export` pipeline és a saját
 muxerek töltik be. Ehhez hiányzik és külön munkacsomagban pótlandó: MPEG TS/PS muxer, MPEG-2
-encoder (az MPEG-2 Smart Renderhez), MP4 MPEG-2 mintabejegyzés, szoftveres HEVC/AV1 encoder (a
-HEVC/AV1 Smart Render addig csak hardveres encoderrel, képességvizsgálat után).
+encoder (az MPEG-2 Smart Renderhez), MP4 MPEG-2 mintabejegyzés, szoftveres HEVC encoder (a
+HEVC Smart Render addig csak hardveres encoderrel, képességvizsgálat után), és AV1 encoder
+(se szoftveres, se hardveres integráció nincs; az AV1 Smart Render addig nem lehetséges).
 
 ## 4. Meglévő stream-copy képességek
 
@@ -173,13 +174,13 @@ Jelölés: ✅ megvan, 🟡 részben / csak építőkő, ❌ nincs.
 
 | Képesség | MPEG-2 | H.264 | HEVC | AV1 |
 |---|---|---|---|---|
-| Demux (konténerek) | ✅ PS/TS, MXF | ✅ MP4/MOV/MKV/TS/MXF | ✅ MP4/MOV/MKV/TS | ✅ MP4/MKV/WebM |
+| Demux (konténerek) | ✅ PS/TS, MXF, MP4/MOV/MKV | ✅ MP4/MOV/MKV/TS/MXF | ✅ MP4/MOV/MKV/TS | ✅ MP4/MKV/WebM |
 | Dekódolás (saját) | ✅ | ✅ | ✅ Main/Main 10 | ✅ Main |
 | Paraméter-/fejlécelemzés | ✅ sequence/GOP header | ✅ SPS/PPS, IDR | ✅ VPS/SPS/PPS | ✅ sequence/frame header |
 | Nyitott/zárt GOP, RA-típus index | 🟡 GOP header | 🟡 IDR, recovery point ❌ | 🟡 dekóderben (CRA/RASL) | 🟡 `is_key_frame_unit` |
 | Referenciafüggőség-gráf | ❌ | ❌ | ❌ | ❌ |
 | Packet-copy export | ❌ (muxer sincs) | 🟡 MP4/MOV muxer kész | 🟡 MP4/MOV muxer kész | 🟡 MP4 muxer kész |
-| Encoder határszakaszhoz | ❌ | ✅ `h264enc` (4:2:0 8 bit) | 🟡 csak hardveres | 🟡 csak hardveres |
+| Encoder határszakaszhoz | ❌ | ✅ `h264enc` (4:2:0 8 bit) | 🟡 csak hardveres | ❌ nincs (hardveres sem) |
 | Smart Render | ❌ | ❌ | ❌ | ❌ |
 
 ## 10. Kapufeltétel és következő lépések
