@@ -81,6 +81,10 @@ pub enum DecodeError {
     // Modified for CFA4: the decode buffers hold one access unit of 16 channels.
     #[error("Block of {block_size} samples at {offset} or {channels} matrix channels exceeds the decode buffers")]
     BlockExceedsBuffers { offset: usize, block_size: usize, channels: usize },
+
+    // Modified for CFA4: interpolating a matrix coefficient by its delta must stay in i32.
+    #[error("Matrix {matrix} coefficient for channel {channel} overflows when its delta is added")]
+    MatrixCoefficientOverflow { matrix: usize, channel: usize },
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -310,12 +314,21 @@ pub enum MatrixError {
     #[error("frac_bits must be <= 14. Read {0}")]
     FracBitsTooHigh(u8),
 
+    // Modified for CFA4: frac_bits, cf_shift_code and delta_precision that shift by a negative
+    // or oversized amount.
+    #[error("matrix coefficient shift {0} out of range")]
+    CoefficientShiftOutOfRange(i32),
+
     #[error("Cannot use lsb_bypass in substream 0 when substream_info = {info:#02X} or sampling frequency is 192kHz or 176.4kHz")]
     InvalidLsbBypass { info: u8 },
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum RestartHeaderError {
+    // Modified for CFA4: a reversed channel range would slice backwards.
+    #[error("min_chan {min} must not exceed max_chan {max}")]
+    ChannelRangeReversed { min: u8, max: u8 },
+
     // Modified for CFA4: restart A rematrixes two dither channels after the matrix channels.
     #[error("max_matrix_chan {0} leaves no room for the two dither channels of restart sync word 0x31EA")]
     MatrixChannelsTooMany(u8),

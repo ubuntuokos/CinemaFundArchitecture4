@@ -357,6 +357,11 @@ impl RestartHeader {
             reader.skip_n(12)?;
         }
 
+        // Modified for CFA4: the channel loops slice min_chan..=max_chan.
+        if rh.min_chan > rh.max_chan {
+            bail!(RestartHeaderError::ChannelRangeReversed { min: rh.min_chan, max: rh.max_chan })
+        }
+
         // The two dither channels of restart A follow the matrix channels in 16-wide buffers.
         if rh.restart_sync_word == RestartSyncWord::A && rh.max_matrix_chan > 13 {
             bail!(RestartHeaderError::MatrixChannelsTooMany(rh.max_matrix_chan))
@@ -599,12 +604,17 @@ mod tests {
 
     /// The same with `max_matrix_chan` matrix channels, assigned in order.
     fn crafted_restart_header_with(max_matrix_chan: u32, heavy_drc_present: u32, heavy_drc_fields: usize) -> Vec<u8> {
+        crafted_restart_header_channels(0, 0, max_matrix_chan, heavy_drc_present, heavy_drc_fields)
+    }
+
+    /// The same with channels `min_chan..=max_chan`.
+    fn crafted_restart_header_channels(min_chan: u32, max_chan: u32, max_matrix_chan: u32, heavy_drc_present: u32, heavy_drc_fields: usize) -> Vec<u8> {
         let mut bits = Bits::default();
 
         bits.push(14, 0x31EA); // restart_sync_word
         bits.push(16, 0); // output_timing
-        bits.push(4, 0); // min_chan
-        bits.push(4, 0); // max_chan
+        bits.push(4, min_chan); // min_chan
+        bits.push(4, max_chan); // max_chan
         bits.push(4, max_matrix_chan); // max_matrix_chan
         bits.push(4, 0); // dither_shift
         bits.push(23, 0); // dither_seed
@@ -725,5 +735,17 @@ mod tests {
         assert!(matches!(RestartSyncWord::try_from(0x31EC), Ok(RestartSyncWord::C)));
         // Corrupt value observed in the wild (issue #15, Cavern #322)
         assert!(RestartSyncWord::try_from(0x20DA).is_err());
+    }
+
+    /// A CRC-valid header with min_chan above max_chan used to reach a reversed slice
+    /// (`2..1`) when the block's channels were copied.
+    #[test]
+    fn a_reversed_channel_range_is_an_error() {
+        let mut state = ParserState { format_sync: MAJOR_SYNC_FBA, substreams: Some(1), ..Default::default() };
+        let data = crafted_restart_header_channels(2, 0, 2, 0, 12);
+        assert!(RestartHeader::read(&mut state, &mut BsIoSliceReader::from_slice(&data)).is_err());
+        let mut state = ParserState { format_sync: MAJOR_SYNC_FBA, substreams: Some(1), ..Default::default() };
+        let data = crafted_restart_header_channels(0, 2, 2, 0, 12);
+        assert!(RestartHeader::read(&mut state, &mut BsIoSliceReader::from_slice(&data)).is_ok());
     }
 }
