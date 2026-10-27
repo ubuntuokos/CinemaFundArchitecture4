@@ -26,6 +26,7 @@ cfa4-engine = { workspace = true }
 cfa4-export = { workspace = true }
 cfa4-project = { workspace = true }
 cfa4-render = { workspace = true }
+cfa4-audio-dsp = { workspace = true }
 cfa4-time = { workspace = true }
 cfa4-gpu = { workspace = true }
 cfa4-media = { workspace = true }

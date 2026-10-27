@@ -36,7 +36,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 
 | # | Point | egui | Qt 6 | Evidence / missing |
 |---|---|---|---|---|
-| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user |
+| 2.1 | Dockable, tabbable, floating panels | ✅ | ✅ QDockWidget | layout saved per user; Qt 6.10–6.12 tab-bar bugs worked around (`test_layout_has_no_orphaned_tab_bars`, docs/qt-gui.md) |
 | 2.2 | Named workspaces (save, switch, reset) | ✅ | 🟡 | only "Reset Panel Layout" |
 | 2.3 | Themes (light/dark, favourites) | ✅ | 🟡 | follows the desktop's Qt/KDE theme; no in-app theme switch |
 | 2.4 | Panel docking commands (`window.floatPanel`, `window.dockPanel`, …) | ✅ | ❌ | |
@@ -52,11 +52,11 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 3.5 | Effects | 🟡 | browse, search, apply effect / default-transition; favourites, badges, presets missing |
 | 3.6 | Markers | ❌ | markers drawn on the ruler only |
 | 3.7 | History | 🟡 | list shown; click-to-step missing |
-| 3.8 | Source monitor | ❌ | engine opens the source; no Qt source monitor yet |
+| 3.8 | Source monitor | 🟡 | picture and sound of the opened clip from the engine (`target: "source"`), time bar with In/Out, step/start/end, Mark In/Out, Insert/Overwrite; keys with a `target` follow the focused monitor (`test_real_engine_source_monitor`); drag to the timeline, zoom, safe margins, J/K/L, audio-only waveform view, recent-clips menu missing |
 | 3.9 | Effect Controls (keyframes, masks, transform handles) | ❌ | Inspector shows effects read-only and can remove one |
 | 3.10 | Audio Clip Mixer | ❌ | |
 | 3.11 | Metadata | ❌ | |
-| 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |
+| 3.12 | Program monitor | 🟡 | frames from the engine, transport, timecode, time bar with In/Out, Mark In/Out; zoom, safe margins, guides, rulers, comparison view, playback resolution menu missing |
 | 3.13 | Timeline | 🟡 | tracks, clips, ruler, markers, in/out, playhead, select, move (snap, insert, copy), trim (regular/ripple), razor, drop from Project, zoom, horizontal and vertical scrolling (`test_every_track_is_reachable_in_a_short_timeline`), whole-timecode ruler; track header buttons, waveforms, thumbnails, keyframe lanes, transitions drawing, captions track, roll/slip/slide tools, sequence tabs missing |
 | 3.14 | Tools | 🟡 | Selection and Razor only |
 | 3.15 | Audio Meters | ❌ | |
@@ -69,7 +69,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | 3.22 | Properties | 🟡 | Inspector shows the selected clip's timing, speed, gain |
 | 3.23 | Text (transcript, captions) | ❌ | |
 | 3.24 | Events | ✅ | engine toasts and errors logged |
-| 3.25 | Progress (export/render jobs) | ❌ | |
+| 3.25 | Progress (export/render jobs) | 🟡 | export queue with status, progress bar and remaining time in the Export window; a dockable Progress panel and render-job progress missing |
 | 3.26 | Reference Monitor | ❌ | |
 | 3.27 | Timecode | ❌ | |
 | 3.28 | Project Notes | ❌ | |
@@ -79,7 +79,7 @@ instead of egui's purpose-built dialog — usable, but **not** parity.
 | # | Point | Qt 6 | Evidence / missing |
 |---|---|---|---|
 | 4.1 | Import mode | ❌ | File ▸ Import (native file dialog) works |
-| 4.2 | Export mode (presets, settings, queue, progress) | ❌ | `file.exportMedia` reachable through the generic form only |
+| 4.2 | Export mode (presets, settings, queue, progress) | 🟡 | Export window: presets, formats, output file, range (entire, In/Out, work area, custom), frame size, bitrate mode/target, hardware encoding, caption burn-in, sound and audio codec, resolved summary, queue with progress/cancel/retry (`test_real_engine_export_through_the_dialog_and_reimport`: H.264 + AAC checked with ffprobe, re-imported); preset manager (save/delete/favourites/import), per-format panels (ProRes/DNx/APV profiles, EXR, loudness, captions sidecar), preview pane, Quick Export missing |
 | 4.3 | Open / Save / Save As / Save a Copy | ✅ | native dialogs |
 | 4.4 | Sequence settings, new sequence | 🟡 | generic form |
 | 4.5 | Preferences (`settings.rs`) | ❌ | |
