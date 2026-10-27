@@ -582,6 +582,8 @@ pub fn copy_items(seq: &mut Sequence, moves: &[(ClipId, TrackId, Tick)], insert_
             it.link = None;
         }
     }
+    // copied credits pages form a credits group of their own
+    cfa4_project::graphic_design::remap_copied_credits(placed.iter_mut().map(|(_, it)| it), &ids, || ctx.alloc());
     let out = if insert_mode { insert(&mut work, placed, ctx)? } else { overwrite(&mut work, placed, ctx)? };
     for (dest, mut tr) in carried {
         tr.id = TransitionId(ctx.alloc());

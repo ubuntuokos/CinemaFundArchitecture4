@@ -3696,17 +3696,21 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
     let end = s.edit_sequence(if insert { "Paste Insert" } else { "Paste" }, |q, ctx, st| {
         let mut placements = Vec::new();
         let mut links = std::collections::HashMap::new();
+        let mut ids = std::collections::HashMap::new();
         for (kind, ti, item) in clip {
             let tracks = q.tracks(kind);
             let Some(t) = tracks.get(ti).or(tracks.last()) else { continue };
             let mut it = item.clone();
             it.id = ClipId(ctx.alloc());
+            ids.insert(item.id, it.id);
             it.start += at;
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
             }
             placements.push((t.id, it));
         }
+        // pasted credits pages form a credits group of their own
+        cfa4_project::graphic_design::remap_copied_credits(placements.iter_mut().map(|(_, it)| it), &ids, || ctx.alloc());
         let end = placements.iter().map(|p| p.1.end()).max().unwrap_or(at);
         let ids = if insert { edit::insert(q, placements, ctx)? } else { edit::overwrite(q, placements, ctx)? };
         if insert && st.ripple_sequence_markers {
