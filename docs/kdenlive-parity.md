@@ -169,15 +169,15 @@ közvetlenül Qt6-ban készül, nem egui-ban.
 
 | # | Feladat | Kapcsolódó lépés | Átvehető forrás |
 |---|---|---|---|
-| **K2** | Whisper bekapcsolása a kiadott buildekben | független, most indítható (G19) | — (kész kód) |
+| **K2** | Whisper bekapcsolása a kiadott buildekben | az MI-réteg üzembe helyezése után (G19; 12.1) | — (kész kód) |
 | **K1** | `.kdenlive` (MLT XML) projektimport | motor most; Qt6-menü az ADR F8 3. lépésénél | Kdenlive és MLT olvasó logikája, fájlonként |
 | **K3** | Linux-stabilitás, Wayland és X11 minden változaton | ADR F8 5–7. lépés, VISION.md 3. pont | — |
 | **K7** | Matematikai kifejezés a számmezőkben | ADR F8 4. lépés (közös Qt6-spinbox) | Kdenlive spinbox-logikája, ha a fejléce engedi |
 | **K8** | Hangspektrum- és spektrogram-panel | ADR F8 5. lépés | Kdenlive vagy Audacity-kód, fájlonként |
 | **K9** | ASS / SSA felirat | bármikor (`crates/captions`) | Subtitle Edit (GPL-3.0) vagy Kdenlive |
-| **K4** | AI háttéreltávolítás (SAM2-szerű) | MI-szakasz | SAM2 (Apache-2.0), helyben, nem csak NVIDIA-n |
+| **K4** | AI háttéreltávolítás (SAM2-szerű) | az MI-réteg üzembe helyezése után | SAM2 (Apache-2.0), helyben, nem csak NVIDIA-n |
 | **K5** | frei0r és LV2 effektek külön folyamatban | ADR 0003 A6–A7 | frei0r, lilv |
-| **K6** | Feliratfordítás szállítható licencű modellel | MI-szakasz | modellválasztás kell (licenc és helyi futás) |
+| **K6** | Feliratfordítás szállítható licencű modellel | az MI-réteg üzembe helyezése után | modellválasztás kell (licenc és helyi futás) |
 
 ### K1 részletesen: `.kdenlive` import
 
@@ -323,9 +323,9 @@ jóváhagyással kerül be. A CFA4-ben ma megvan a Whisper (`transcript.generate
 
 | # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
 |---|---|---|---|---|---|
-| **K26** | Hangleválasztás (beszéd és zene szétválasztása) opcionális előfeldolgozásként a felismerés előtt | P2 | 25–40 | K2, K18 | Demucs (MIT) |
-| **K27** | Szóidők ellenőrzése és kényszerített igazítás (forced alignment), ha a natív időzítés pontatlan | P2 | 25–40 | K2 | CTC-alapú igazítás (modell licencellenőrzéssel) |
-| **K28** | Fordítás nyomkövetéssel: forrás- és célnyelv, modell, verzió a feliratsáv mellett | P2 (a K6 része) | 6–10 | K6 | FA3 `TranslationArtifact` |
+| **K26** | Hangleválasztás (beszéd és zene szétválasztása) opcionális előfeldolgozásként a felismerés előtt | P2 | 25–40 | MI-réteg, K2, K18 | Demucs (MIT) |
+| **K27** | Szóidők ellenőrzése és kényszerített igazítás (forced alignment), ha a natív időzítés pontatlan | P2 | 25–40 | MI-réteg, K2 | CTC-alapú igazítás (modell licencellenőrzéssel) |
+| **K28** | Fordítás nyomkövetéssel: forrás- és célnyelv, modell, verzió a feliratsáv mellett | P2 (a K6 része) | 6–10 | MI-réteg, K6 | FA3 `TranslationArtifact` |
 | **K29** | Feliratminőség-ellenőrzés az idővonalra kerülés előtt: olvasási sebesség, sorhossz, sorok száma, legrövidebb és leghosszabb időtartam, átfedés, rés | P1 | 15–25 | – | FA3 `CaptionQualityEvidence` |
 | **K30** | SBV (YouTube) felirat import és export | P3 | 3–5 | – | Kdenlive feliratimport |
 
@@ -351,11 +351,11 @@ regisztrált parancsokat hívhat, shellt nem. Az ötletek közül ezek hiányozn
 
 | # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
 |---|---|---|---|---|---|
-| **K31** | Nagyobb Whisper-modellek a katalógusban: `medium`, `large-v3`, `large-v3-turbo` (MIT) | P1 | 6–10 | K2, K18 | OpenAI Whisper (Hugging Face) |
-| **K32** | Whisper (és Kokoro) GPU-n, gyártófüggetlenül, CPU-tartalékkal | P2 | 30–50 | ADR 0004 (#55) 2. fázis | Burn: Vulkan, CUDA, ROCm; Intel NPU: OpenVINO (4. fázis) |
-| **K33** | Magyar pontosságmérés (WER) modellenként, mérési jegyzőkönyvvel | P1 | 4–8 | K2 | `crates/speech/tests/whisper_model.rs` |
-| **K34** | Figyelt mappa: a bedobott médiából átirat és felirat automatikusan, jóváhagyott beállításokkal | P2 (a K16 része) | 8–12 | K10, K16 | – |
-| **K35** | Élő felirat mikrofonról vagy élő bemenetről | P3 | 30–50 | K32, élő adás (VISION, #60) | – |
+| **K31** | Nagyobb Whisper-modellek a katalógusban: `medium`, `large-v3`, `large-v3-turbo` (MIT) | P1 | 6–10 | MI-réteg, K2, K18 | OpenAI Whisper (Hugging Face) |
+| **K32** | Whisper (és Kokoro) GPU-n, gyártófüggetlenül, CPU-tartalékkal | P2 | 30–50 | MI-réteg, ADR 0004 (#55) 2. fázis | Burn: Vulkan, CUDA, ROCm; Intel NPU: OpenVINO (4. fázis) |
+| **K33** | Magyar pontosságmérés (WER) modellenként, mérési jegyzőkönyvvel | P1 | 4–8 | MI-réteg, K2 | `crates/speech/tests/whisper_model.rs` |
+| **K34** | Figyelt mappa: a bedobott médiából átirat és felirat automatikusan, jóváhagyott beállításokkal | P2 (a K16 része) | 8–12 | MI-réteg, K10, K16 | – |
+| **K35** | Élő felirat mikrofonról vagy élő bemenetről | P3 | 30–50 | MI-réteg, K32, élő adás (VISION, #60) | – |
 
 - **K31.** A modellek nincsenek a csomagban; a K18 letöltője tölti le őket jóváhagyással,
   SHA-256-tal rögzítve, mint a mai `whisper-tiny/base/small`. A `large-v3-turbo` a gyors
@@ -386,6 +386,10 @@ friss `main`-ből, egy PR egy K-pont (vagy annak egy lépése); csak a kijelölt
 olvaszt be; ebben a közös fájlban csak a saját sor módosítható; ha 20-nál több PR nyitott, új
 K-pont csak a tulajdonos kérésére indul.
 
+**MI-pontok** (tulajdonosi szabály, 2026-10-27; 12.1): a K2, K4, K6, K26–K28 és K31–K35 csak az
+MI-réteg üzembe helyezése után kezdhető. A K29 (feliratminőség-ellenőrzés) szabályalapú, nem MI,
+így marad.
+
 ## 12. Tulajdonosi döntések (2026-10-25)
 
 | Téma | Döntés |
@@ -406,6 +410,7 @@ K-pont csak a tulajdonos kérésére indul.
 
 | Döntés | Forrás | Hol van a tervben |
 |---|---|---|
+| **Minden MI-funkció, minden alkalmazásban, csak az MI-réteg üzembe helyezése után kerül be**; az MI-rétegről külön terv készül | tulajdonos, 2026-10-27 | K2, K4, K6, K26–K28, K31–K35 függősége: „MI-réteg” |
 | Az MI alapvetően helyi, a felhasználó adatai nem hagyják el a gépet | VISION.md 2.3 | minden MI-teendő (K2, K4, K6, K26–K35) helyben fut |
 | Modell CPU-n, bármely gyártó GPU-ján vagy NPU-n; NVIDIA-út csak gyártófüggetlen párral | VISION.md 2.4, 5. | K4, K13, K32 |
 | Minden modell licence és forrása rögzítve; letöltés csak a felhasználó tudtával | VISION.md 5. | K18 (jóváhagyás, licenc, hash), K31 |
@@ -414,7 +419,7 @@ K-pont csak a tulajdonos kérésére indul.
 | A csomagban egy nyílt, kereskedelmi használatot engedő fordítómodell; a felhasználó cserélheti, a betöltött modell licence látszik, nem kereskedelmi licencre figyelmeztet | tulajdonos, 2026-10-25 | K6, K28 |
 | SeamlessM4T, NLLB, MMS-súlyok kizárva (CC-BY-NC) | licencellenőrzés, 2026-10-25 | K6, K27 |
 | Az MI ugyanazokat a parancsokat hívja, mint az ember, előnézettel és visszavonhatóan; idővonal-módosítás csak emberi jóváhagyással | 11.1, 11.2 (FA3-tervekből) | K2, K4, K6, K26–K35 |
-| Előbb stabil kézi szerkesztés, csak utána MI | VISION.md 6.; FA3-terv | sorrend: K1–K3 a K4, K6 előtt |
+| Előbb stabil kézi szerkesztés, csak utána MI | VISION.md 6.; FA3-terv | sorrend: K1, K3 és a nem MI-s pontok az MI-réteg és az MI-pontok előtt |
 | Whisper a kiadott buildekben (ma ki van kapcsolva) | `docs/gaps.md` G19 | K2 |
 
 A VISION.md 5. pontjának MI-irányai közül ezek **nem Kdenlive-eredetűek**, ezért ebben a tervben
@@ -455,3 +460,4 @@ kivételesen, kifejezett engedéllyel felhős MI-szolgáltatást használni. A K
 | 2026-10-25 | minor | K1 első lépése kész: a Kdenlive CC0 OTIO-tesztkészlete a CFA4 OTIO-importjával tesztelve, három javítással |
 | 2026-10-25 | minor | 11.3: K31–K35 Whisper-bővítések; 12.1: a CFA4 MI-döntéseinek ellenőrzése (VISION.md, ADR 0004, tulajdonosi döntések) |
 | 2026-10-27 | minor | Újraelemzés a `main` (16debf92) és a nyitott PR-ok alapján, a tulajdonos jóváhagyásával: ADR 0005 elfogadva (FFmpeg-feltétel törölve), kiadás GStreamerrel, Qt6-állapot a `qt-parity.md`-ből, K10 szűkítve, 11.4 átfedések és szállítási szabályok |
+| 2026-10-27 | minor | Tulajdonosi szabály: minden MI-funkció csak az MI-réteg üzembe helyezése után; a K2, K4, K6, K26–K28, K31–K35 függősége „MI-réteg” (12.1, 11.4) |
