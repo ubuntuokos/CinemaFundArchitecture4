@@ -8,12 +8,13 @@ exclude = ["vendor/cfa4-libs/*"]
 version = "0.10.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
-rust-version = "1.95"
+rust-version = "1.97"
 repository = "https://github.com/ubuntuokos/CinemaFundArchitecture4"
 
 [workspace.dependencies]
 # internal
 cfa4-time = { path = "crates/time" }
+cfa4-route = { path = "crates/route" }
 cfa4-geom = { path = "crates/geom" }
 cfa4-color = { path = "crates/color" }
 cfa4-bitstream = { path = "crates/bitstream" }
@@ -63,7 +64,6 @@ cfa4-engine = { path = "crates/engine" }
 cfa4-ui-egui = { path = "crates/ui-egui" }
 cfa4-automation = { path = "crates/automation" }
 cfa4-platform = { path = "crates/platform" }
-cfa4-accel = { path = "crates/accel" }
 cfa4-testkit = { path = "crates/testkit" }
 cfa4-gstreamer = { path = "crates/gstreamer" }
 

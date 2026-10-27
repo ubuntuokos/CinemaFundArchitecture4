@@ -1,0 +1,28 @@
+name: CFA4 Qt6 Settings window backend
+
+on:
+  pull_request:
+    paths:
+      - 'python/cfa4_devtools/settings_backend.py'
+      - 'python/cfa4_devtools/qt_settings.py'
+      - 'python/cfa4_devtools/qt_app.py'
+      - 'python/tests/test_settings_backend.py'
+      - '.github/workflows/cfa4-qt-settings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  settings-backend:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout CFA4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Settings backend contract (no Qt, no Rust build, no network)
+        env:
+          PYTHONPATH: python
+        run: |
+          python3 -m py_compile python/cfa4_devtools/settings_backend.py python/cfa4_devtools/qt_settings.py python/cfa4_devtools/qt_app.py
+          python3 -m unittest discover -s python/tests -p test_settings_backend.py -v

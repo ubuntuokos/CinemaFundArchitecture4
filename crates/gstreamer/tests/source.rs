@@ -21,7 +21,9 @@ fn fixture(name: &str, args: &str) -> Option<PathBuf> {
     if path.exists() {
         return Some(path);
     }
-    let tmp = dir.join(format!("{name}.part"));
+    // Tests run in parallel and several share a fixture: each encodes into its own part file, so
+    // none renames another's half-written file into place (that read as "unrecognised format").
+    let tmp = dir.join(format!("{name}.{}.{:?}.part", std::process::id(), std::thread::current().id()).replace(['(', ')'], ""));
     let args = args.replace("OUT", &tmp.display().to_string());
     match std::process::Command::new("gst-launch-1.0").arg("-q").args(args.split(' ')).output() {
         Ok(o) if o.status.success() && tmp.exists() => {
