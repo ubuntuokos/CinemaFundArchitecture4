@@ -768,7 +768,8 @@ impl ExportSettings {
                     v += if self.mpeg2_422 { ", MPEG-2 4:2:2 Profile" } else { ", MPEG-2 Main Profile 4:2:0" };
                     v += &match self.mpeg2_quantizer {
                         Some(q) => format!(", constant quantiser {q}"),
-                        None => format!(", average {}", mbps(r.target_kbps)),
+                        None if self.bitrate_mode == BitrateMode::Cbr => format!(", CBR {}", mbps(r.target_kbps)),
+                        None => format!(", VBR Target {}, Max {}", mbps(r.target_kbps), mbps(r.max_kbps)),
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
                     v += &match self.mpeg2_b_frames.unwrap_or(2) {
