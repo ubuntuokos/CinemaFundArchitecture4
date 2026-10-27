@@ -1,0 +1,306 @@
+// Ported from jxl-oxide <https://github.com/tirr-c/jxl-oxide>, crate jxl-bitstream 1.1.0.
+// Copyright (c) Wonwoo Choi and the jxl-oxide contributors; MIT OR Apache-2.0 (see
+// LICENSE-MIT, LICENSE-APACHE). CFA4 changes (no unsafe, errors instead of panics, safe
+// subgrids) are GPL-3.0-or-later.
+
+use super::box_header::*;
+use super::{BitstreamKind, ContainerParser, DetectState, JxlpIndexState};
+use crate::bitstream::consts;
+use crate::bitstream::error::{BitstreamResult, Error};
+
+/// Iterator that reads over a buffer and emits parser events.
+pub struct ParseEvents<'inner, 'buf> {
+    inner: &'inner mut ContainerParser,
+    remaining_input: &'buf [u8],
+    finished: bool,
+}
+
+impl<'inner, 'buf> ParseEvents<'inner, 'buf> {
+    pub(super) fn new(parser: &'inner mut ContainerParser, input: &'buf [u8]) -> Self {
+        parser.previous_consumed_bytes = 0;
+        Self { inner: parser, remaining_input: input, finished: false }
+    }
+
+    fn emit_single(&mut self) -> BitstreamResult<Option<ParseEvent<'buf>>> {
+        let state = &mut self.inner.state;
+        let jxlp_index_state = &mut self.inner.jxlp_index_state;
+        let buf = &mut self.remaining_input;
+
+        loop {
+            if buf.is_empty() {
+                self.finished = true;
+                return Ok(None);
+            }
+
+            match state {
+                DetectState::WaitingSignature => {
+                    if buf.starts_with(&consts::CODESTREAM_SIG) {
+                        crate::tracing::trace!("Codestream signature found");
+                        *state = DetectState::InCodestream { kind: BitstreamKind::BareCodestream, bytes_left: None, pending_no_more_aux_box: true };
+                        return Ok(Some(ParseEvent::BitstreamKind(BitstreamKind::BareCodestream)));
+                    } else if buf.starts_with(&consts::CONTAINER_SIG) {
+                        crate::tracing::trace!("Container signature found");
+                        *state = DetectState::WaitingBoxHeader;
+                        *buf = &buf[consts::CONTAINER_SIG.len()..];
+                        return Ok(Some(ParseEvent::BitstreamKind(BitstreamKind::Container)));
+                    } else if !consts::CODESTREAM_SIG.starts_with(buf) && !consts::CONTAINER_SIG.starts_with(buf) {
+                        crate::tracing::debug!(?buf, "Invalid signature");
+                        *state = DetectState::InCodestream { kind: BitstreamKind::Invalid, bytes_left: None, pending_no_more_aux_box: true };
+                        return Ok(Some(ParseEvent::BitstreamKind(BitstreamKind::Invalid)));
+                    } else {
+                        return Ok(None);
+                    }
+                }
+
+                DetectState::WaitingBoxHeader => match ContainerBoxHeader::parse(buf)? {
+                    HeaderParseResult::Done { header, header_size } => {
+                        *buf = &buf[header_size..];
+                        let tbox = header.box_type();
+                        if tbox == ContainerBoxType::CODESTREAM {
+                            match jxlp_index_state {
+                                JxlpIndexState::Initial => {
+                                    *jxlp_index_state = JxlpIndexState::SingleJxlc;
+                                }
+                                JxlpIndexState::SingleJxlc => {
+                                    crate::tracing::debug!("Duplicate jxlc box found");
+                                    return Err(Error::InvalidBox);
+                                }
+                                JxlpIndexState::Jxlp(_) | JxlpIndexState::JxlpFinished => {
+                                    crate::tracing::debug!("Found jxlc box instead of jxlp box");
+                                    return Err(Error::InvalidBox);
+                                }
+                            }
+
+                            let bytes_left = header.box_size().map(|x| x as usize);
+                            *state = DetectState::InCodestream { kind: BitstreamKind::Container, bytes_left, pending_no_more_aux_box: bytes_left.is_none() };
+                        } else if tbox == ContainerBoxType::PARTIAL_CODESTREAM {
+                            if let Some(box_size) = header.box_size()
+                                && box_size < 4
+                            {
+                                return Err(Error::InvalidBox);
+                            }
+
+                            match jxlp_index_state {
+                                JxlpIndexState::Initial => {
+                                    *jxlp_index_state = JxlpIndexState::Jxlp(0);
+                                }
+                                JxlpIndexState::Jxlp(index) => {
+                                    *index += 1;
+                                }
+                                JxlpIndexState::SingleJxlc => {
+                                    crate::tracing::debug!("jxlp box found after jxlc box");
+                                    return Err(Error::InvalidBox);
+                                }
+                                JxlpIndexState::JxlpFinished => {
+                                    crate::tracing::debug!("found another jxlp box after the final one");
+                                    return Err(Error::InvalidBox);
+                                }
+                            }
+
+                            *state = DetectState::WaitingJxlpIndex(header);
+                        } else {
+                            let bytes_left = header.box_size().map(|x| x as usize);
+                            let ty = header.box_type();
+                            let mut brotli_compressed = ty == ContainerBoxType::BROTLI_COMPRESSED;
+                            if brotli_compressed {
+                                if let Some(0..=3) = bytes_left {
+                                    crate::tracing::error!(bytes_left = bytes_left.unwrap(), "Brotli-compressed box is too small");
+                                    return Err(Error::InvalidBox);
+                                }
+                                brotli_compressed = true;
+                            }
+
+                            *state = DetectState::InAuxBox { header, brotli_box_type: None, bytes_left };
+
+                            if !brotli_compressed {
+                                return Ok(Some(ParseEvent::AuxBoxStart { ty, brotli_compressed: false, last_box: bytes_left.is_none() }));
+                            }
+                        }
+                    }
+                    HeaderParseResult::NeedMoreData => return Ok(None),
+                },
+
+                DetectState::WaitingJxlpIndex(header) => {
+                    let &[b0, b1, b2, b3, ..] = &**buf else {
+                        return Ok(None);
+                    };
+
+                    let index = u32::from_be_bytes([b0, b1, b2, b3]);
+                    *buf = &buf[4..];
+                    let is_last = index & 0x80000000 != 0;
+                    let index = index & 0x7fffffff;
+
+                    match *jxlp_index_state {
+                        JxlpIndexState::Jxlp(expected_index) if expected_index == index => {
+                            if is_last {
+                                *jxlp_index_state = JxlpIndexState::JxlpFinished;
+                            }
+                        }
+                        JxlpIndexState::Jxlp(_expected_index) => {
+                            crate::tracing::debug!(expected_index, actual_index = index, "Out-of-order jxlp box found",);
+                            return Err(Error::InvalidBox);
+                        }
+                        _ => return Err(Error::InvalidBox),
+                    }
+
+                    let bytes_left = header.box_size().map(|x| x as usize - 4);
+                    *state = DetectState::InCodestream { kind: BitstreamKind::Container, bytes_left, pending_no_more_aux_box: bytes_left.is_none() };
+                }
+
+                // JXL codestream box is the last box; emit "no more aux box" event.
+                DetectState::InCodestream { pending_no_more_aux_box: pending @ true, .. } => {
+                    *pending = false;
+                    return Ok(Some(ParseEvent::NoMoreAuxBox));
+                }
+
+                DetectState::InCodestream { bytes_left: None, .. } => {
+                    let payload = *buf;
+                    *buf = &[];
+                    return Ok(Some(ParseEvent::Codestream(payload)));
+                }
+                DetectState::InCodestream { bytes_left: Some(bytes_left), .. } => {
+                    let payload = if buf.len() >= *bytes_left {
+                        let (payload, remaining) = buf.split_at(*bytes_left);
+                        *state = DetectState::WaitingBoxHeader;
+                        *buf = remaining;
+                        payload
+                    } else {
+                        let payload = *buf;
+                        *bytes_left -= buf.len();
+                        *buf = &[];
+                        payload
+                    };
+                    return Ok(Some(ParseEvent::Codestream(payload)));
+                }
+
+                // Read brob payload box type.
+                DetectState::InAuxBox {
+                    header: ContainerBoxHeader { ty: ContainerBoxType::BROTLI_COMPRESSED, .. },
+                    brotli_box_type: brotli_box_type @ None,
+                    bytes_left,
+                } => {
+                    if buf.len() < 4 {
+                        return Ok(None);
+                    }
+
+                    let (ty_slice, remaining) = buf.split_at(4);
+                    *buf = remaining;
+                    if let Some(bytes_left) = bytes_left {
+                        *bytes_left -= 4;
+                    }
+
+                    let mut ty = [0u8; 4];
+                    ty.copy_from_slice(ty_slice);
+                    let is_reserved_box_type = &ty[..3] == b"jxl" || &ty == b"brob" || &ty == b"jbrd";
+                    if is_reserved_box_type {
+                        return Err(Error::ValidationFailed("brob box, jxl boxes and jbrd box cannot be Brotli-compressed"));
+                    }
+
+                    let ty = ContainerBoxType(ty);
+                    *brotli_box_type = Some(ty);
+
+                    return Ok(Some(ParseEvent::AuxBoxStart { ty, brotli_compressed: true, last_box: bytes_left.is_none() }));
+                }
+
+                DetectState::InAuxBox { header: ContainerBoxHeader { ty, .. }, brotli_box_type, bytes_left } => {
+                    let ty = if let Some(ty) = brotli_box_type { *ty } else { *ty };
+
+                    let payload = match bytes_left {
+                        Some(0) => {
+                            *state = DetectState::WaitingBoxHeader;
+                            return Ok(Some(ParseEvent::AuxBoxEnd(ty)));
+                        }
+                        Some(bytes_left) => {
+                            let num_bytes_to_read = (*bytes_left).min(buf.len());
+                            let (payload, remaining) = buf.split_at(num_bytes_to_read);
+                            *bytes_left -= num_bytes_to_read;
+                            *buf = remaining;
+                            payload
+                        }
+                        None => {
+                            let payload = *buf;
+                            *buf = &[];
+                            payload
+                        }
+                    };
+
+                    return Ok(Some(ParseEvent::AuxBoxData(ty, payload)));
+                }
+            }
+        }
+    }
+}
+
+impl std::fmt::Debug for ParseEvents<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ParseEvents")
+            .field("inner", &self.inner)
+            .field("remaining_input", &format_args!("({} byte(s))", self.remaining_input.len()))
+            .field("finished", &self.finished)
+            .finish()
+    }
+}
+
+impl<'buf> Iterator for ParseEvents<'_, 'buf> {
+    type Item = BitstreamResult<ParseEvent<'buf>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+
+        let initial_buf = self.remaining_input;
+        let event = self.emit_single();
+
+        if event.is_err() {
+            self.finished = true;
+        }
+
+        self.inner.previous_consumed_bytes += initial_buf.len() - self.remaining_input.len();
+        event.transpose()
+    }
+}
+
+/// Parser event emitted by [`ParseEvents`].
+pub enum ParseEvent<'buf> {
+    /// Bitstream structure is detected.
+    BitstreamKind(BitstreamKind),
+    /// Codestream data is read.
+    ///
+    /// Returned data may be partial. Complete codestream can be obtained by concatenating all data
+    /// of `Codestream` events.
+    Codestream(&'buf [u8]),
+    /// No more auxiliary box will come after this event.
+    NoMoreAuxBox,
+    /// New auxiliary box starts.
+    AuxBoxStart {
+        /// Type of this box.
+        ty: ContainerBoxType,
+        /// Indicates whether the payload is Brotli-compressed.
+        brotli_compressed: bool,
+        /// Indicates whether this box is the last box of the bitstream.
+        last_box: bool,
+    },
+    /// Auxiliary box data is read.
+    ///
+    /// Returned data may be partial. Complete box payload can be obtained by concatenating all
+    /// data between corresponding `AuxBoxStart` and `AuxBoxEnd` events.
+    AuxBoxData(ContainerBoxType, &'buf [u8]),
+    /// Current auxiliary box has ended.
+    AuxBoxEnd(ContainerBoxType),
+}
+
+impl std::fmt::Debug for ParseEvent<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BitstreamKind(kind) => f.debug_tuple("BitstreamKind").field(kind).finish(),
+            Self::Codestream(buf) => f.debug_tuple("Codestream").field(&format_args!("{} byte(s)", buf.len())).finish(),
+            Self::NoMoreAuxBox => write!(f, "NoMoreAuxBox"),
+            Self::AuxBoxStart { ty, brotli_compressed, last_box } => {
+                f.debug_struct("AuxBoxStart").field("ty", ty).field("brotli_compressed", brotli_compressed).field("last_box", last_box).finish()
+            }
+            Self::AuxBoxData(ty, buf) => f.debug_tuple("AuxBoxData").field(ty).field(&format_args!("{} byte(s)", buf.len())).finish(),
+            Self::AuxBoxEnd(ty) => f.debug_tuple("AuxBoxEnd").field(&ty).finish(),
+        }
+    }
+}

@@ -43,7 +43,7 @@ from ..i18n import N_, tr
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
-AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")))
+AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
 FINISHED = {"done", "failed", "cancelled"}
@@ -196,6 +196,12 @@ class ExportDialog(QDialog):
         self.audio_codec.setObjectName("export.audioCodec")
         for key, label in AUDIO_CODECS:
             self.audio_codec.addItem(tr(label), key)
+        # AAC and Opus: the engine clamps Opus to 6..510 kbps
+        self.audio_bitrate = QSpinBox(self)
+        self.audio_bitrate.setObjectName("export.audioBitrateKbps")
+        self.audio_bitrate.setRange(0, 1_000)
+        self.audio_bitrate.setSuffix(" kbps")
+        self.audio_bitrate.setSpecialValueText(tr("From the preset"))
 
         out = QGroupBox(tr("Output"), self)
         f = QFormLayout(out)
@@ -215,6 +221,7 @@ class ExportDialog(QDialog):
         fa = QFormLayout(audio)
         fa.addRow(self.audio)
         fa.addRow(tr("Audio codec"), self.audio_codec)
+        fa.addRow(tr("Audio bitrate"), self.audio_bitrate)
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -288,7 +295,7 @@ class ExportDialog(QDialog):
         self.range.currentIndexChanged.connect(self._range_changed)
         for w in (self.start, self.end):
             w.valueChanged.connect(self._changed)
-        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate)):
+        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
@@ -378,6 +385,7 @@ class ExportDialog(QDialog):
             self.width_spin.setValue(0)
             self.height_spin.setValue(0)
         self.bitrate.setValue(0)
+        self.audio_bitrate.setValue(0)
         self.touched.clear()
         self._loading = False
         self._default_path()
@@ -387,6 +395,7 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         self.audio.setEnabled(bool(fmt.get("audio", True)))
         self.audio_codec.setEnabled(bool(fmt.get("audio", True)))
+        self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         if self.path.text():
@@ -458,6 +467,8 @@ class ExportDialog(QDialog):
                 p["audio"] = self.audio.isChecked()
             if "audioCodec" in self.touched:
                 p["audioCodec"] = self.audio_codec.currentData()
+            if self.audio_bitrate.value():
+                p["audioBitrateKbps"] = self.audio_bitrate.value()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p

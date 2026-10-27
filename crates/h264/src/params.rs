@@ -522,8 +522,11 @@ impl Sps {
         if self.chroma_array_type() != 1 {
             return unsupported(format!("chroma_format_idc {} (only 4:2:0 is implemented)", self.chroma_format_idc));
         }
-        if self.bit_depth_luma != 8 || self.bit_depth_chroma != 8 {
-            return unsupported(format!("bit depth luma {} chroma {} (only 8-bit is implemented)", self.bit_depth_luma, self.bit_depth_chroma));
+        if self.bit_depth_luma != self.bit_depth_chroma {
+            return unsupported(format!("bit depth luma {} chroma {} (they must match)", self.bit_depth_luma, self.bit_depth_chroma));
+        }
+        if !(8..=14).contains(&self.bit_depth_luma) {
+            return unsupported(format!("bit depth {}", self.bit_depth_luma));
         }
         if self.qpprime_y_zero_transform_bypass {
             return unsupported("qpprime_y_zero_transform_bypass (lossless)");
