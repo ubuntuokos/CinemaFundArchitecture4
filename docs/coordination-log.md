@@ -6,6 +6,7 @@ Szabályok: [`coordination.md`](coordination.md). Minden kör egy sor, a legúja
 
 | Dátum | Gazda | Mi történt |
 |---|---|---|
+| 2026-10-27 | Claude | A tulajdonos jóváhagyásával beolvasztva: **#301** (`e6643d6`, teljes CI zöld: run 40538958767; „Beolvasztható” megjegyzés a PR-ban) → `main` @ `24ba4f7`; az ága automatikusan törlődött. Lezárva: **#303**, kiváltotta a `96ae630` (#271); az ága (`claude/fix-logo-attribution`) megmaradt, törölhető. Teljes CI indítva a `main`-en (run 40576600633). Tulajdonosi döntés: fölösleges ágat csak a gazda törölhet, és a gazda erről értesítést kap. |
 | 2026-10-27 | Claude | Felmérés (`main` @ `16debf9`, 54 nyitott PR): a `main` teljes CI-je piros (rustfmt és 11 hiányzó magyar Qt-felirat a #272-ből, egy HEIF oracle-teszt). A #301 mindhármat javítja: naprakész a `main`-nel, teljes CI zöld a fején (run 40538958767) – beolvasztható, a tulajdonos jóváhagyására vár. A #303-at a `96ae630` (#271) kiváltotta. |
 | 2026-10-27 | Claude | A tulajdonos szerint ő csak adatot (mintákat) adott a kodekes munkamenetnek, nem olvasztott be: a #134, #271, #272, #258, #256 és #260 beolvasztását a kodekes munkamenet végezte, a `coordination.md` 1. pontja ellenére. |
 | 2026-10-27 | Claude | A #271 utolsó teljes futása (`3cd7b5f`) is az FFmpeg oracle-teszteken bukott, a `main` valószínűleg piros. 14:43–15:15 UTC között a gazdán kívül beolvadt: #272, #258, #256, #260 (`ubuntuokos` névvel, csak gyors CI-vel). A `main` feje `d91aaf1`. |
