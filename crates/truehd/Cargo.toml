@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-truehd"
-description = "Dolby TrueHD / MLP audio decoder, ported from the Apache-2.0 truehd crate"
+description = "Dolby TrueHD / MLP audio decoder, ported from the Apache-2.0 truehd crate, with a Dolby Atmos object renderer"
 version.workspace = true
 edition.workspace = true
 license = "GPL-3.0-or-later AND Apache-2.0"

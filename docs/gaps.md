@@ -182,7 +182,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   dependent substreams with custom channel maps. MP1 / MP2 (MPEG audio Layer I / II):
   substream, 1–6 blocks per syncframe, spectral extension. Dolby TrueHD and MLP in raw files,
   Matroska, MP4 and Blu-ray MPEG-TS (AC-3 core left out, #85) (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate): lossless,
-  bit-exact against ffmpeg, the 7.1 / 5.1 bed of Atmos streams. MP1 / MP2 (MPEG audio Layer I / II):
+  bit-exact against ffmpeg, the 7.1 / 5.1 bed of Atmos streams, and their objects rendered to
+  2.0–7.1.4 by `cfa4-truehd` (#84; not yet in the app, #123). MP1 / MP2 (MPEG audio Layer I / II):
   own decoder (#809) in raw files, MP4 and MOV (#800), MPEG-TS / PS and Matroska (`A_MPEG/L1` and `L2`, #1402), including the
   bit rate / mode combinations ISO/IEC 11172-3 disallows but ffmpeg writes (its mono default is
   384 kbit/s). Radiance HDR (`.hdr`) stills and image sequences (#1407): RGBE as linear float, flat
@@ -193,6 +194,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Missing:** free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling, Dolby Atmos objects (E-AC-3 JOC; the bed plays), AVI (#598; listed as an extension but no
 - **Missing:** Dolby Atmos object rendering (TrueHD's 16-channel presentation, E-AC-3 JOC),
+- **Missing:** E-AC-3 JOC Atmos (#126), Atmos on real streams / in the app / binaural (#124, #123,
+  #125),
   free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling and the extra channels of 7.1 dependent substreams (played as the
   5.1 core), AVI (#598; listed as an extension but no
