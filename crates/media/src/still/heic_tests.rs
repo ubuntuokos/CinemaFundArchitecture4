@@ -69,6 +69,7 @@ fn colour_follows_colr_then_the_vui_then_libheif_defaults() {
         height: 2,
         chroma_width: 1,
         chroma_height: 1,
+        chroma_format: 1,
         bit_depth: 8,
         y: cfa4_hevc::Plane::U8(vec![0; 4]),
         u: cfa4_hevc::Plane::U8(vec![0]),
