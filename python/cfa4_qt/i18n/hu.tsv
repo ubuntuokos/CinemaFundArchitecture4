@@ -1724,3 +1724,26 @@
 	Checks and warnings	Ellenőrzés és figyelmeztetések
 	Checks: {errors} errors, {warnings} warnings	Ellenőrzés: {errors} hiba, {warnings} figyelmeztetés
 	Check Credits	Stáblista ellenőrzése
+	The whole music ({time})	A teljes zene ({time})
+	Until the sound ends ({time})	Ameddig a hang tart ({time})
+	To the last bar line ({time})	Az utolsó ütemhatárig ({time})
+	Fit Credits to Music	Stáblista igazítása a zenéhez
+	Fit Credits to Music…	Stáblista igazítása a zenéhez…
+	Analyse Music for Credits	Zene elemzése a stáblistához
+	Length:	Hossz:
+	Cards last whole beats (cuts on the beat)	A kártyák egész ütemig tartanak (vágás ütemre)
+	Start the credits where the music starts	A stáblista a zene kezdetén induljon
+	Music	Zene
+	Length of the credits	A stáblista hossza
+	Remove Fitting	Igazítás megszüntetése
+	Listening to the music…	A zene elemzése…
+	Length: {time}	Hossz: {time}
+	the sound ends at {time}	a hang {time}-kor ér véget
+	tempo {bpm} BPM	tempó {bpm} BPM
+	the credits without fitting: {time}	a stáblista igazítás nélkül: {time}
+	Select a credits page on the timeline.	Jelölj ki egy stáblista-oldalt az idővonalon.
+	Fitting…	Igazítás…
+	The credits now last {time}.	A stáblista most {time} hosszú.
+	Fitting removed.	Az igazítás megszűnt.
+	Fit to This Length	Igazítás erre a hosszra
+	No music to measure ({problem}); type the length.	Nincs mérhető zene ({problem}); add meg a hosszt.

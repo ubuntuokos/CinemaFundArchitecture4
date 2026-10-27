@@ -100,16 +100,16 @@ DEBOUNCE_MS = 400
 
 
 def format_seconds(ticks: Any) -> str:
-    """Engine ticks as m:ss.f (or h:mm:ss.f)."""
+    """Engine ticks as m:ss.f (or h:mm:ss.f), to the nearest tenth of a second."""
     try:
-        s = max(0.0, float(ticks) / TICKS_PER_SECOND)
+        tenths_total = max(0, round(float(ticks) / TICKS_PER_SECOND * 10))
     except (TypeError, ValueError, OverflowError):
         return ""
-    whole = int(s)
-    tenth = int((s - whole) * 10)
+    whole, tenth = divmod(tenths_total, 10)
+    sep = "," if TR.language in COMMA_DECIMAL else "."
     if whole >= 3600:
-        return f"{whole // 3600}:{whole // 60 % 60:02d}:{whole % 60:02d}.{tenth}"
-    return f"{whole // 60}:{whole % 60:02d}.{tenth}"
+        return f"{whole // 3600}:{whole // 60 % 60:02d}:{whole % 60:02d}{sep}{tenth}"
+    return f"{whole // 60}:{whole % 60:02d}{sep}{tenth}"
 
 
 class CreditsDialog(QDialog):

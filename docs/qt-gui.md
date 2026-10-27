@@ -146,6 +146,7 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 | `python/cfa4_qt/panels/effect_controls.py` | Effect Controls: parameters, stopwatch, keyframes (`effects.inspect` + `effects.*` commands) |
 | `python/cfa4_qt/panels/export.py` | Export window: presets, formats, range, overrides, queue with progress |
 | `python/cfa4_qt/panels/credits.py` | Credits window: spreadsheet or `.cfa4credits` file, worksheet, pictures, styling, pages, warnings, page picture, save as credits file, place at playhead (`graphics.credits.*`, [credits.md](credits.md)) |
+| `python/cfa4_qt/panels/credits_fit.py` | Fit Credits to Music window: music, its length / sound end / tempo, offered lengths, cards on the beat, align to the music (`graphics.credits.music` / `.fit`) |
 | `python/cfa4_qt/panels/credits_refresh.py` | Refresh Credits window: changes in the spreadsheet row by row with ticks, hand edits, locate a moved sheet, apply (`graphics.credits.diff` / `.refresh`) |
 | `python/cfa4_qt/engine.py` | process, framing, request/reply/event plumbing |
 | `python/cfa4_qt/commands.py` | registry → menus, actions, shortcuts; parameter specs |
