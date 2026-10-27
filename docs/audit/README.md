@@ -21,6 +21,7 @@ PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordinatio
 | [ADR 0005 – Médiahátterek](../adr/ADR-0005-media-backends.md) | A saját Rust-motor az alap; FFmpeg (≥ 9.0.2) és a GStreamer (alapból az Ubuntué, újabb verzióhoz elkülönített CFA4-futtatókörnyezet) kiegészítő háttér, automatikus útválasztóval (ADR 0004, `cfa4-route`); később további motorok |
 | [ADR 0002 – GStreamer](../adr/ADR-0002-gstreamer-backend.md) | GStreamer mint kiegészítő háttérmotor (a saját Rust motor marad az alap), 6 lépéses terv |
 | [Kdenlive-paritás](../kdenlive-parity.md) | A Kdenlive 26.08 képességei a CFA4-gyel összevetve, a Kdenlive-kód átvételének szabályai, K1–K35 teendők, MI-döntések és a 2026-10-25-i tulajdonosi döntések |
+| [DCP-validációs terv](../plans/DCP-VALIDATION-2026-10-27.md), [DCP-00 képességaudit](DCP-00-CAPABILITY-AUDIT-2026-10-27.md), [DCP-01 forrás- és licencaudit](DCP-01-SOURCE-LICENSE-AUDIT-2026-10-27.md) | CFA4-DCP-VALIDATION-001: a terv (még nem jóváhagyott), a meglévő CFA4-modulok leltára, crate-javaslat (D1–D7) és a dcp_inspect licenc- és függőségi jegyzéke (L1–L7); tulajdonosi jóváhagyásra vár |
 
 ## Fázisok
 
