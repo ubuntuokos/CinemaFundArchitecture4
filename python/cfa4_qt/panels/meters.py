@@ -139,7 +139,7 @@ def parts(rect: QRectF, names: tuple[str, ...]) -> Parts:
             return label + 6.0 + _size(value, readout_font(True)).width() <= room
 
         readout = True if fits("-88.8 dBTP") else (False if fits("-88.8") else None)
-    lufs_h = 64.0 if readout is not None else 0.0
+    lufs_h = 4.0 * _row_pitch() + 8.0 if readout is not None else 0.0
     feet = rect.height() >= 90.0
     top = rect.top() + 8.0
     bottom = max(top, rect.bottom() - lufs_h - (30.0 if feet else 8.0))
@@ -174,9 +174,17 @@ def parts(rect: QRectF, names: tuple[str, ...]) -> Parts:
     return Parts(area, scale, unit, name_rects, ro)
 
 
+def _row_pitch() -> float:
+    """egui's 14 px readout rows, or the readout font's line height where that is taller (e.g.
+    Noto Sans, Kubuntu's UI font), so the rows stay inside the readout and apart."""
+    return max(14.0, _size("TP", readout_font()).height(), _size("-88.8", readout_font(True)).height())
+
+
 def readout_rows(r: QRectF, units: bool) -> list[tuple[str, QPointF, QPointF]]:
     """The four readout rows: label and where its left text and right value sit."""
-    return [(label, QPointF(r.left() + 6.0, r.top() + 8.0 + k * 14.0), QPointF(r.right() - 6.0, r.top() + 8.0 + k * 14.0)) for k, label in enumerate(("M", "S", "I", "TP"))]
+    pitch = _row_pitch()
+    ys = [r.top() + pitch / 2.0 + 1.0 + k * pitch for k in range(4)]
+    return [(label, QPointF(r.left() + 6.0, y), QPointF(r.right() - 6.0, y)) for label, y in zip(("M", "S", "I", "TP"), ys)]
 
 
 class AudioMetersPanel(QWidget):

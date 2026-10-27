@@ -3438,7 +3438,8 @@ def test_audio_meter_layout_never_overlaps(app):
     def at(w: float, h: float) -> QtCore.QRectF:
         return QtCore.QRectF(100, 50, w, h)
 
-    roomy = parts(at(116, 400), ("L", "R"))
+    # 600 px tall: room for every 3 dB step with any UI font (Noto Sans 11 px is ~15 px high; at 400 px the scale thins to 6 dB)
+    roomy = parts(at(116, 600), ("L", "R"))
     assert [db for db, _ in roomy.scale] == [-3 * k for k in range(20)]
     assert roomy.unit is not None and len(roomy.names) == 2 and roomy.readout and roomy.readout[1]
     assert not parts(at(116, 80), ("L", "R")).names
