@@ -9,7 +9,9 @@
 
 > A tulajdonos (ubuntuokos) által 2026-10-27-én megadott terv változatlan szövege. A kiindulási
 > audit (WP-00) eredménye és a terv és a repository szabályai közötti eltérések:
-> [`docs/audit/smart-edit-baseline.md`](../audit/smart-edit-baseline.md).
+> [`docs/audit/smart-edit-baseline.md`](../audit/smart-edit-baseline.md). Az upstream ős nevét a
+> repository függetlenségi szabálya miatt (AGENTS.md, `python/tests/test_independence.py`) általános
+> megnevezés helyettesíti.
 
 ---
 
@@ -27,7 +29,7 @@ A fejlesztés kizárólag a CFA4 downstream repositoryban történhet.
 - Conda/Miniforge alkalmazása tilos.
 - A rendszernek offline környezetben is működnie kell.
 - A GOPchop külön alkalmazásként, futásidejű függőségként vagy külön GUI-ként nem kerülhet beépítésre.
-- A FilmCraft upstream repository nem módosítható.
+- Az upstream (örökölt ős) repository nem módosítható.
 
 ### Kötelező kompatibilitási elv
 
@@ -779,7 +781,7 @@ Az implementáció nem tartalmazhatja:
 - A GOPchop önálló GUI-ját.
 - GTK-alapú párhuzamos felület kialakítását.
 - GOPchop kötelező telepítését.
-- A FilmCraft upstream módosítását.
+- Az upstream (örökölt ős) repository módosítását.
 - Új, független, a CFA4 exportmotorját megkerülő renderarchitektúrát.
 - Conda-alapú függőségkezelést.
 - Cloudszolgáltatást.
@@ -805,6 +807,6 @@ A funkció akkor tekinthető késznek, ha:
 9. A célzott codec-tesztmátrix és regressziós tesztek sikeresek.
 10. A funkció nem igényli a GOPchop alkalmazás külön telepítését.
 11. A DEB, Flatpak és AppImage csomagokban működik.
-12. A FilmCraft upstream változatlan marad.
+12. Az upstream (örökölt ős) repository változatlan marad.
 
 **Végleges architekturális döntés:** GOPchop működési elve → natív Rust GOP/bitstream elemzés → FFmpeg 9 Smart Cut / Smart Render → CFA4 Qt6 GUI → validált export.
