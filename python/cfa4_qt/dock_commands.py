@@ -17,9 +17,8 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPoint, QRect, Qt
-from PySide6.QtWidgets import QDockWidget, QMainWindow, QMenu, QTabBar, QWidget
+from PySide6.QtWidgets import QApplication, QDockWidget, QMainWindow, QMenu, QTabBar, QWidget
 
-from .commands import focused_panel
 from .i18n import N_, tr
 
 if TYPE_CHECKING:
@@ -66,13 +65,27 @@ def panel_id(title: str) -> str:
     return title.replace(" ", "")
 
 
+def focused_dock(win: MainWindow) -> str | None:
+    """The dock title holding keyboard focus (``Program`` for the central monitor): the dock that
+    contains the focused widget, as panels can sit inside another dock (Properties shows an
+    Essential Graphics editor) or be named otherwise than their dock (``panel.Inspector``)."""
+    w = QApplication.focusWidget()
+    while w is not None:
+        if isinstance(w, QDockWidget):
+            return next((t for t, d in win.docks.items() if d is w), None)
+        if w is win.monitor:
+            return PROGRAM
+        w = w.parentWidget()
+    return None
+
+
 def _target(win: MainWindow, params: dict[str, Any]) -> str:
     if "panel" in params:
         return panel_title(win, params["panel"])
-    focused = focused_panel()
+    focused = focused_dock(win)
     if focused is None:
         raise DockError("no panel has focus: name one with `panel`")
-    return panel_title(win, focused)
+    return focused
 
 
 def _dock(win: MainWindow, title: str) -> QDockWidget:

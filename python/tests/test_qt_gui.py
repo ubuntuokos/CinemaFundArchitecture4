@@ -3279,6 +3279,22 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         win.run_preset("window.dockAction", {"action": {"Activate": {"panel": "History"}}})
         assert not hist.isHidden()
         assert errors == []
+        # without `panel`: the dock holding the focus (Properties' widgets are panel.Inspector)
+        props = win.docks["Properties"]
+        props.show()
+        props.raise_()
+        win.activateWindow()
+        assert wait_until(app, lambda: props.widget().isVisible() and not props.visibleRegion().isEmpty(), 3_000)
+        inner = props.widget()
+        assert inner.objectName() == "panel.Inspector"
+        inner.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        inner.setFocus()
+        assert wait_until(app, lambda: QtWidgets.QApplication.focusWidget() is inner, 3_000), QtWidgets.QApplication.focusWidget()
+        assert dock_commands.focused_dock(win) == "Properties"
+        win.run_preset("window.closePanel", {})
+        assert props.isHidden()
+        props.show()
+        assert errors == []
         # refused: unknown panel, zone, the Program monitor moving itself, a broken action
         win.run_preset("window.closePanel", {"panel": "Nope"})
         win.run_preset("window.dockPanel", {"panel": "History", "zone": "diagonal"})
@@ -3789,6 +3805,72 @@ def test_real_engine_timeline_clip_and_gap_menus_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_edit_point_menu_as_egui(app, tmp_path: Path):
+    """egui's edit point menu: right-clicking a clip's edge selects that edit point (Roll with the
+    Rolling Edit tool) and opens the trim types (the selected one checked), Apply Default
+    Transitions and Join Through Edits, which joins a through edit."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        first = v1().track["items"][0]
+        mid = (first["start"] + first["end"]) // 2
+        win.execute("timeline.razor", {"time": mid, "clip": first["clip"]})
+        assert wait_until(app, lambda: any(t.get("left") == first["clip"] for t in (win.sequence or {}).get("throughEdits") or []), 10_000)
+        left = v1().track["items"][0]
+        right = v1().track["items"][1]
+        canvas.tool = "rolling"
+        x = int(canvas.x_of(left["end"])) - 2
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(x, int(v1().top + v1().height / 2)))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.editPointMenu" and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        acts = {a.objectName(): a for a in menu.actions() if not a.isSeparator()}
+        assert list(acts) == [f"timeline.editPointMenu.{n}" for n in ("rippleIn", "rippleOut", "roll", "trimIn", "trimOut", "applyDefaultTransitions", "joinThroughEdits")]
+        assert acts["timeline.editPointMenu.roll"].isChecked() and not acts["timeline.editPointMenu.trimOut"].isChecked()
+        assert all(a.isEnabled() for a in acts.values())
+        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": left["clip"], "out": True, "kind": "roll"}], 10_000)
+        # the roll's yellow brackets on both sides of the cut
+        img = canvas.grab().toImage()
+        cut = canvas.x_of(left["end"])
+        y = int(v1().top + v1().height / 2)
+        for px in (int(cut - 1.5), int(cut + 1.5)):
+            c = img.pixelColor(px, y)
+            assert (c.red(), c.green(), c.blue()) == (0xF2, 0xC4, 0x3D), (px, c.name())
+        # another trim type selects that side of the cut
+        acts["timeline.editPointMenu.trimIn"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": right["clip"], "out": False, "kind": "trim"}], 10_000)
+        # the menu again (the cut's edit point stays selected), then Join Through Edits
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(x, int(v1().top + v1().height / 2)))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        acts = {a.objectName(): a for a in menu.actions() if not a.isSeparator()}
+        assert acts["timeline.editPointMenu.trimIn"].isChecked()
+        acts["timeline.editPointMenu.joinThroughEdits"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: v1().track["items"][0]["end"] == first["end"], 10_000)
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_multicam_submenu_as_egui(app):
     """The clip menu's Multi-Camera submenu: Enable (checked when on), Flatten and the cameras of
     the first selected nested sequence, the shown angle checked; a camera switches the clips."""
@@ -3817,6 +3899,13 @@ def test_timeline_multicam_submenu_as_egui(app):
     assert acts["timeline.clipMenu.multicam.camera.1"].isChecked() and acts["timeline.clipMenu.multicam.camera.0"].text() == "Cam A"
     acts["timeline.clipMenu.multicam.camera.0"].trigger()
     assert ran[-1] == ("multicam.switchAngle", {"angle": 0, "clips": [7]})
+    # Link / Unlink as the engine decides: Unlink only when every selected clip is linked
+    def link_text(clips):
+        m = timeline_menus.clip_menu(parent, Host(), clips, {})
+        return next(a.text() for a in m.actions() if a.objectName() == "timeline.clipMenu.clip.link")
+
+    assert link_text([{"clip": 1, "link": 5}, {"clip": 2, "link": None}]) == "Link"
+    assert link_text([{"clip": 1, "link": 5}, {"clip": 2, "link": 5}]) == "Unlink"
     # off: no cameras
     nest["multicam"] = {"enabled": False, "angle": 1}
     menu2 = timeline_menus.clip_menu(parent, Host(), [nest], {})
@@ -5910,3 +5999,14 @@ def test_keys_given_to_qt_run_commands_run_them(app, fake_engine: Path, tmp_path
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_shortcut_recorder_refuses_the_meta_key():
+    """A chord with Meta (Super / Windows) can't be saved: the engine's chords don't have it, and
+    saving it without would bind the bare key (Codex review on #214)."""
+    from cfa4_qt.panels.shortcuts import chord_of
+
+    m = QtCore.Qt.KeyboardModifier
+    assert chord_of(QtCore.Qt.Key.Key_S, m.ControlModifier | m.ShiftModifier) == "Cmd+Shift+S"
+    assert chord_of(QtCore.Qt.Key.Key_S, m.MetaModifier) is None
+    assert chord_of(QtCore.Qt.Key.Key_S, m.MetaModifier | m.ControlModifier) is None

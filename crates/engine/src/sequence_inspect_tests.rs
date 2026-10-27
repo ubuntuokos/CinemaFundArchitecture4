@@ -87,3 +87,24 @@ fn sequence_inspect_reports_a_reversed_clip() {
     let js = s.execute("sequence.inspect", json!({})).unwrap();
     assert!(all(&js).iter().all(|(_, reversed)| !reversed));
 }
+
+#[test]
+fn sequence_inspect_reports_edit_points_and_through_edits() {
+    // the Qt timeline's edit point menu: the selected edit point and whether a cut is a through edit
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    s.execute("sequence.linkedSelection", json!({"on": false})).unwrap();
+    let (clip, mid) = {
+        let q = s.active_sequence().unwrap();
+        let it = &q.video_tracks[0].items[0];
+        (it.id, crate::Tick(it.start.0 + it.duration.0 / 2))
+    };
+    s.execute("timeline.razor", json!({"time": mid.0, "clip": clip.0})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let right = js["video"][0]["items"][1]["clip"].clone();
+    assert_eq!(js["editPoints"], json!([]));
+    assert!(js["throughEdits"].as_array().unwrap().contains(&json!({"left": clip.0, "right": right})));
+    s.execute("trim.selectEditPoint", json!({"clip": clip.0, "edge": "out", "kind": "roll"})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["editPoints"], json!([{"clip": clip.0, "out": true, "kind": "roll"}]));
+}

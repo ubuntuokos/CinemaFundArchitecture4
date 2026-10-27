@@ -54,6 +54,9 @@ from .monitor_view import SOURCE_MIME, source_payload
 from .timeline_media import TimelineMedia
 
 ITEM_MIME = "application/x-cfa4-item"
+# egui's trim bracket colours (trim_monitor.rs)
+RIPPLE_RED = QColor(0xE5, 0x3E, 0x3E)
+ROLL_YELLOW = QColor(0xF2, 0xC4, 0x3D)
 
 HEADER_W = 200
 RULER_H = 26
@@ -469,6 +472,7 @@ class TimelineCanvas(QWidget):
                     r = self.transition_rect(row, x)
                     if r.right() >= HEADER_W and r.left() <= self.width():
                         self._paint_transition(p, r, x, row.kind == "audio", x.get("id") in chosen)
+        self._paint_edit_points(p)
         if self._effect_target:  # egui's: the clip outlined, a transition's edge marked
             row, clip, edge = self._effect_target
             r = self.clip_rect(row, clip)
@@ -498,6 +502,36 @@ class TimelineCanvas(QWidget):
             p.drawLine(int(x), 0, int(x), self.height())
             p.setBrush(T.c("playhead"))
             p.drawPolygon([QPoint(int(x) - 6, 0), QPoint(int(x) + 6, 0), QPoint(int(x), 9)])
+
+    def _paint_edit_points(self, p: QPainter) -> None:
+        """egui's trim brackets on the selected edit points: red for a ripple, yellow otherwise; a
+        roll marks both sides of the cut."""
+        for ep in (self.sequence or {}).get("editPoints") or []:
+            if not isinstance(ep, dict):
+                continue
+            col = RIPPLE_RED if ep.get("kind") == "ripple" else ROLL_YELLOW
+            for row in self.rows:
+                clip = next((c for c in row.track.get("items") or [] if isinstance(c, dict) and c.get("clip") == ep.get("clip")), None)
+                if clip is None:
+                    continue
+                out = ep.get("out") is True
+                marks = [(clip, out)]
+                partner = self.neighbour(row, clip, "out" if out else "in") if ep.get("kind") == "roll" else None
+                if partner is not None:
+                    marks.append((partner, not out))
+                for c, o in marks:
+                    self._paint_bracket(p, self.x_of(as_int(c.get("end") if o else c.get("start"))), row, o, col)
+
+    @staticmethod
+    def _paint_bracket(p: QPainter, x: float, row: Row, out: bool, col: QColor) -> None:
+        """A trim bracket at ``x``, its arms pointing into the clip (left for an Out edge)."""
+        y0, y1 = row.top + 2.0, row.top + row.height - 2.0
+        d = -1.0 if out else 1.0
+        xi = x + d * 1.5
+        p.setPen(QPen(col, 3.0))
+        p.drawLine(QPointF(xi, y0), QPointF(xi, y1))
+        p.drawLine(QPointF(xi, y0 + 1.0), QPointF(xi + 6.0 * d, y0 + 1.0))
+        p.drawLine(QPointF(xi, y1 - 1.0), QPointF(xi + 6.0 * d, y1 - 1.0))
 
     def _paint_transition(self, p: QPainter, r: QRectF, x: dict[str, Any], audio: bool, selected: bool) -> None:
         """egui's: darkened and hatched, crossing fade curves on an audio one, the name on a video
@@ -846,8 +880,11 @@ class TimelineCanvas(QWidget):
         host = self.menu_host
         if host is None or self.sequence is None or pos.x() < HEADER_W or pos.y() < RULER_H:
             return
-        row, clip, _edge = self.hit(pos)
+        row, clip, edge = self.hit(pos)
         if row is None:
+            return
+        if clip is not None and edge:
+            self._edit_point_menu(row, clip, edge, pos, global_pos)
             return
         if clip is None:
             params = {"track": row.track.get("id"), "time": max(0, self.time_at(pos.x()))}
@@ -878,6 +915,40 @@ class TimelineCanvas(QWidget):
             self._popup(timeline_menus.clip_menu(self, host, picked, LABEL_COLORS, unlinked), global_pos)
 
         host.menu_request("timeline.select" if select else "", select or {}, clips)
+
+    def _edit_point_menu(self, row: Row, clip: dict[str, Any], edge: str, pos: QPoint, global_pos: QPoint) -> None:
+        """egui's right-click on a clip's edge: select that edit point (unless one of the cut's is
+        selected) with the tool's trim type, then the edit point menu."""
+        host = self.menu_host
+        if host is None or self.sequence is None:
+            return
+        other = self.neighbour(row, clip, edge)
+        cid = clip.get("clip")
+        oid = other.get("clip") if other else None
+        left, right = (cid, oid) if edge == "out" else (oid, cid)
+        eps = [e for e in self.sequence.get("editPoints") or [] if isinstance(e, dict)]
+        on_it = any((e.get("out") is True and e.get("clip") == left) or (e.get("out") is False and e.get("clip") == right) for e in eps)
+        through = any(isinstance(t, dict) and t.get("left") == left and t.get("right") == right for t in self.sequence.get("throughEdits") or [])
+        chosen: list[dict[str, Any] | None] = [eps[0] if eps else None]
+
+        def show(_ok: bool) -> None:
+            self._popup(timeline_menus.edit_point_menu(self, host, left, right, chosen[0], through), global_pos)
+
+        if on_it:
+            host.menu_request("", {}, show)
+            return
+
+        def select(kind: str) -> None:
+            chosen[0] = {"clip": cid, "out": edge == "out", "kind": kind}
+            host.menu_request("trim.selectEditPoint", {"clip": cid, "edge": edge, "kind": kind}, show)
+
+        if self.tool == "rolling":
+            select("roll")
+        elif self.tool == "ripple":
+            select("ripple")
+        else:
+            cut = int(clip.get("end") if edge == "out" else clip.get("start") or 0)
+            host.edit_point_kind(abs(self.x_of(cut) - pos.x()), other is not None, select)
 
     def _popup(self, menu: QMenu, global_pos: QPoint) -> None:
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)

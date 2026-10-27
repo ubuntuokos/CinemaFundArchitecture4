@@ -168,11 +168,12 @@ def key_legend(name: str) -> str:
 
 def chord_of(key: Any, mods: Qt.KeyboardModifier) -> str | None:
     """The engine's chord text for a key press (Ctrl is the primary modifier, egui's ``Cmd``);
-    None for a key that can't be a shortcut."""
+    None for a key that can't be a shortcut, or a press with the Meta (Super / Windows) key, which
+    the engine's chords don't have: saving it without would bind the bare key."""
     name = QT_KEYS.get(key)
-    if name is None:
-        return None
     m = Qt.KeyboardModifier
+    if name is None or mods & m.MetaModifier:
+        return None
     prefix = "".join(p for on, p in ((mods & m.ControlModifier, "Cmd+"), (mods & m.AltModifier, "Alt+"), (mods & m.ShiftModifier, "Shift+")) if on)
     return prefix + name
 

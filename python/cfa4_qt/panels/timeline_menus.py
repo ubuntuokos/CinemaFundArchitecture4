@@ -1,8 +1,8 @@
 """The timeline's context menus, as egui's (``crates/ui-egui/src/panels/timeline.rs``): the clip
-menu (``CLIP_MENU``, with the Label and Multi-Camera submenus) and the menu of a right-clicked
-gap (Ripple Delete). Object names are egui's automation ids: ``timeline.clipMenu.<command>``,
+menu (``CLIP_MENU``, with the Label and Multi-Camera submenus), the edit point menu of a
+right-clicked cut and the menu of a right-clicked gap (Ripple Delete). Object names are egui's automation ids: ``timeline.clipMenu.<command>``,
 ``timeline.clipMenu.label.<Label>``, ``timeline.clipMenu.multicam.camera.<angle>`` and
-``timeline.gapMenu.edit.rippleDelete``.
+``timeline.editPointMenu.<id>`` and ``timeline.gapMenu.edit.rippleDelete``.
 
 The canvas asks its :class:`MenuHost` (the main window) whether a command is enabled and runs
 the chosen one through it, so the menu's commands open the same dialogs as the menu bar's.
@@ -67,6 +67,10 @@ class MenuHost(Protocol):
         ``then(ok)``: the menu opens on the state the right-click made."""
         ...
 
+    def edit_point_kind(self, dist_px: float, neighbour: bool, then: Callable[[str], None]) -> None:
+        """The trim type the Selection tool picks at a cut (egui's ``selection_trim_kind``)."""
+        ...
+
 
 def swatch(color: str) -> QIcon:
     pm = QPixmap(12, 12)
@@ -88,7 +92,8 @@ def clip_menu(
     menu.setObjectName("timeline.clipMenu")
     some = bool(picked)
     all_enabled = some and all(bool(c.get("enabled", True)) for c in picked)
-    linked = any(c.get("link") is not None for c in picked)
+    # the engine's clip.link unlinks only when every selected clip is linked, else it links them
+    linked = some and all(c.get("link") is not None for c in picked)
     for i, group in enumerate(CLIP_MENU):
         if i:
             menu.addSeparator()
@@ -157,6 +162,52 @@ def multicam_menu(menu: QMenu, host: MenuHost, picked: list[dict[str, Any]]) -> 
             a.setChecked(mc.get("angle") == angle)
             a.triggered.connect(lambda _c=False, n=angle: host.run_menu_command("multicam.switchAngle", {"angle": n, "clips": clips}))
     return sub
+
+
+# egui's EDIT_POINT_TYPES: label, id (``timeline.editPointMenu.<id>``), trim kind, and the side of
+# the cut it selects ("in": the incoming clip's In, "out": the outgoing clip's Out)
+EDIT_POINT_TYPES: tuple[tuple[str, str, str, str], ...] = (
+    (N_("Ripple Trim In"), "rippleIn", "ripple", "in"),
+    (N_("Ripple Trim Out"), "rippleOut", "ripple", "out"),
+    (N_("Roll Edit"), "roll", "roll", "out"),
+    (N_("Trim In"), "trimIn", "trim", "in"),
+    (N_("Trim Out"), "trimOut", "trim", "out"),
+)
+
+
+def edit_point_menu(
+    parent: QWidget, host: MenuHost, left: Any, right: Any, selected: dict[str, Any] | None, through: bool
+) -> QMenu:
+    """egui's edit point menu on a right-clicked cut (``left`` ends there, ``right`` starts there,
+    either None at a gap): the trim types (the selected one checked), Apply Default Transitions and
+    Join Through Edits (only for a through edit)."""
+    menu = QMenu(parent)
+    menu.setObjectName("timeline.editPointMenu")
+    for label, mid, kind, edge in EDIT_POINT_TYPES:
+        clip = right if edge == "in" else left
+        if kind == "roll" and (left is None or right is None):
+            clip = None  # a roll needs a clip on both sides of the cut
+        a = menu.addAction(tr(label))
+        a.setObjectName(f"timeline.editPointMenu.{mid}")
+        a.setCheckable(True)
+        a.setChecked(
+            clip is not None and isinstance(selected, dict) and selected.get("clip") == clip
+            and selected.get("out") is (edge == "out") and selected.get("kind") == kind
+        )
+        a.setEnabled(clip is not None)
+        a.triggered.connect(
+            lambda _c=False, c=clip, e=edge, k=kind: host.run_menu_command("trim.selectEditPoint", {"clip": c, "edge": e, "kind": k})
+        )
+    menu.addSeparator()
+    a = menu.addAction(tr("Apply Default Transitions"))
+    a.setObjectName("timeline.editPointMenu.applyDefaultTransitions")
+    a.setEnabled(host.command_enabled("trim.applyDefaultTransition"))
+    a.triggered.connect(lambda _c=False: host.run_menu_command("trim.applyDefaultTransition", {}))
+    a = menu.addAction(tr("Join Through Edits"))
+    a.setObjectName("timeline.editPointMenu.joinThroughEdits")
+    a.setEnabled(through and left is not None and right is not None)
+    a.triggered.connect(lambda _c=False: host.run_menu_command("sequence.joinThroughEdits", {"cut": [left, right]}))
+    return menu
 
 
 def gap_menu(parent: QWidget, host: MenuHost) -> QMenu:

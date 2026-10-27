@@ -70,6 +70,8 @@ from .timecode import TICKS_PER_SECOND
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
 # egui's rulers and guides UI commands (menus.rs), run on the focused monitor
+# egui's ROLL_PX: a right-click this close to a cut picks Roll (timeline_hit.rs)
+ROLL_PX = 2.5
 GUIDE_COMMANDS = {
     "view.showRulers": N_("Show Rulers"),
     "view.showGuides": N_("Show Guides"),
@@ -1539,6 +1541,14 @@ class MainWindow(QMainWindow):
             on_error=lambda _m: then(ok[0]),
         )
         self.schedule_refresh()
+
+    def edit_point_kind(self, dist_px: float, neighbour: bool, then: Any) -> None:
+        def got(on: Any) -> None:
+            # egui's selection_trim_kind with no modifier: Roll on the cut, else Ripple, when the
+            # Trim preference lets the Selection tool choose; a plain trim otherwise
+            then(("roll" if neighbour and dist_px <= ROLL_PX else "ripple") if on is True else "trim")
+
+        self.engine.execute("prefs.get", {"key": "trim.selectionToolRollRipple"}, on_reply=lambda r, _b: got(r), on_error=lambda _m: got(False))
 
     def run_preset(self, cid: str, params: dict[str, Any]) -> None:
         """A panel runs ``cid`` with ``params`` already known (the monitor's Export Frame knows
