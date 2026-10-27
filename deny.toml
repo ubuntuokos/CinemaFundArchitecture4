@@ -1,5 +1,5 @@
 # cargo-deny configuration: licence policy for CFA4 (GPL-3.0-or-later).
-# Run: cargo deny check licenses
+# Run: cargo deny check licenses sources advisories
 # Policy and reasons: docs/licensing.md §6.
 
 [graph]
@@ -54,8 +54,23 @@ ignore = true
 multiple-versions = "allow"
 
 [advisories]
-# Licence policy only; security advisories are handled by Dependabot.
-ignore = []
+# Checked in CI (`cargo deny check advisories`). Every ignore needs a reason and a way out;
+# inventory and reachability notes: docs/audit/F1-01-SBOM-2026-10-25.md §3. Dependabot still
+# opens update PRs. Remove an entry as soon as the dependency moves.
+ignore = [
+    # Default build: zbus/accesskit (egui, frozen until the Qt6 GUI reaches parity) pull these.
+    # Unmaintained only, no known vulnerability; they leave with the egui frontend.
+    { id = "RUSTSEC-2026-0370", reason = "zvariant unmaintained; via zbus/accesskit, leaves with egui" },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names unmaintained; via zbus/accesskit, leaves with egui" },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive unmaintained; via zbus/accesskit, leaves with egui" },
+    # Optional `whisper` / `neural-voices` only. CFA4 opens archives read-only (ZipArchive::new)
+    # and never calls extract(); the fix is in zip 9.x, which candle-core has not adopted yet.
+    { id = "RUSTSEC-2026-0367", reason = "zip extract() SUID bits; extract() is never called" },
+    { id = "RUSTSEC-2026-0368", reason = "zip extract() symlink escape; extract() is never called" },
+    { id = "RUSTSEC-2026-0369", reason = "zip extract() permissions via symlink; extract() is never called" },
+    # Optional `whisper` / `neural-voices` only (candle-core); unmaintained, no known vulnerability.
+    { id = "RUSTSEC-2024-0436", reason = "paste unmaintained; via candle-core, upstream-dependent" },
+]
 
 [sources]
 unknown-registry = "deny"

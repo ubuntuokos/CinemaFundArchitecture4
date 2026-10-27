@@ -178,7 +178,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 ## G10. Container and codec gaps on import
 
 - **Have:** E-AC-3 (Dolby Digital Plus) in MP4, MOV, Matroska and MPEG-TS (#647): independent
-  substream, 1–6 blocks per syncframe, spectral extension. Dolby TrueHD and MLP in raw files,
+  substream, 1–6 blocks per syncframe, spectral extension; 7.1 and other layouts beyond 5.1 from
+  dependent substreams with custom channel maps. Dolby TrueHD and MLP in raw files,
   Matroska, MP4 and Blu-ray MPEG-TS (AC-3 core left out, #85) (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate): lossless,
   bit-exact against ffmpeg, the 7.1 / 5.1 bed of Atmos streams, and their objects rendered to
   2.0–7.1.4 by `cfa4-truehd` (#84; not yet in the app, #123). MP1 / MP2 (MPEG audio Layer I / II):
@@ -190,10 +191,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   luminance, decoded to linear float frames and bit-exact against ffmpeg; PXR24 (lossy 24-bit
   float, 16 lines per chunk) decodes too, bit-exact against OpenEXR (via OpenImageIO, #828).
 - **Missing:** E-AC-3 JOC Atmos (#126), Atmos on real streams / in the app / binaural (#124, #123,
-  #125),
-  free-format MPEG audio, E-AC-3 adaptive hybrid
-  transform, enhanced coupling and the extra channels of 7.1 dependent substreams (played as the
-  5.1 core), AVI (#598; listed as an extension but no
+  #125), free-format MPEG audio, E-AC-3 adaptive hybrid
+  transform, enhanced coupling, AVI (#598; listed as an extension but no
   demuxer), WMV / ASF, DV / DVCPRO / DV100, MPEG-4 Part 2, FLAC in MP4 (#603), camera RAW (R3D
   incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), JPEG 2000 in
   MXF / DCP import (the `cfa4-j2k` codestream decoder exists, not yet wired in), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
@@ -339,4 +338,5 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-10 | major | Created from ROADMAP.md's "Where we are lacking" (2026-10-05); re-ranked against Premiere 26.5.2 and the 188 open issues; added `.prproj`, 10-bit / 4:2:2 camera decode, launch crashes and missing PR CI, localization, delivery formats |
 | 2026-10-12 | minor | G10: MP1 (`A_MPEG/L1`) in Matroska imports (#1402) |
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
+| 2026-10-25 | minor | G10: E-AC-3 7.1 (dependent substreams) |
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |

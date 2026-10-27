@@ -533,7 +533,13 @@ impl MpegSource {
                     Codec::AacAdts => ACodec::Adts,
                     _ => ACodec::Ac3,
                 };
-                (c, fi.sample_rate, fi.channels as usize, Some(fi.samples), None)
+                // E-AC-3: the access unit carries the dependent substreams too (7.1 and other
+                // layouts beyond 5.1), which the decoder adds to the program
+                let channels = match cfa4_ac3::program_locations(&first) {
+                    Ok(locs) if matches!(c, ACodec::Ac3) && !locs.is_empty() => locs.len(),
+                    _ => fi.channels as usize,
+                };
+                (c, fi.sample_rate, channels, Some(fi.samples), None)
             }
             Codec::TrueHd => match truehd_format(file, &self.bytes, ai) {
                 Some((rate, channels, per_au)) => (ACodec::TrueHd, rate, channels, Some(per_au), None),

@@ -126,3 +126,103 @@ fn audio_effect_on_video_clip_applies_to_linked_audio() {
     assert_eq!(a.effects.last().unwrap().effect, "parametric_eq");
     assert!(v.effects.iter().all(|e| e.effect != "parametric_eq"), "EQ stays off the picture clip");
 }
+
+#[test]
+fn fx_editor_reports_the_dsp_curves_and_previews_overrides() {
+    let mut s = demo();
+    let clip = a1_clip(&s);
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    let idx = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effects.len() - 1;
+    let v = s.execute("audio.fxEditor", json!({"clip": clip, "effect": idx})).unwrap();
+    assert_eq!(v["editor"], "parametric");
+    assert_eq!(v["kind"], "clip");
+    assert_eq!(v["params"]["mid_gain"]["min"], -30.0);
+    let resp = v["response"].as_array().unwrap();
+    assert_eq!(resp.len(), 241);
+    let at = |v: &Value, f: f64| {
+        v["response"].as_array().unwrap().iter().min_by(|a, b| (a[0].as_f64().unwrap() - f).abs().total_cmp(&(b[0].as_f64().unwrap() - f).abs())).unwrap()[1]
+            .as_f64()
+            .unwrap()
+    };
+    // a +12 dB bell at 1 kHz, previewed without touching the project (no undo step)
+    let undo = s.history.undo.len();
+    let o = s
+        .execute(
+            "audio.fxEditor",
+            json!({"clip": clip, "effect": idx, "overrides": {"mid_on": true, "mid_freq": 1000.0, "mid_gain": 12.0, "b1_gain": "x", "nope": 3}}),
+        )
+        .unwrap();
+    assert!((at(&o, 1000.0) - 12.0).abs() < 1.0, "{}", at(&o, 1000.0));
+    assert_eq!(o["params"]["mid_gain"]["value"], 12.0);
+    assert_eq!(s.history.undo.len(), undo);
+    // out-of-range overrides are clamped to the parameter's range
+    let o = s.execute("audio.fxEditor", json!({"clip": clip, "effect": idx, "overrides": {"mid_gain": 1e308}})).unwrap();
+    assert_eq!(o["params"]["mid_gain"]["value"], 30.0);
+    // graphic EQ band labels, multiband and dynamics transfer curves, on mixer inserts
+    s.execute("mixer.addInsert", json!({"strip": "A1", "effect": "graphic_eq_20"})).unwrap();
+    s.execute("mixer.addInsert", json!({"strip": "A1", "effect": "multiband_compressor"})).unwrap();
+    s.execute("mixer.addInsert", json!({"strip": "A1", "effect": "dynamics_rack"})).unwrap();
+    s.execute("mixer.addInsert", json!({"strip": "A1", "effect": "delay"})).unwrap();
+    let g = s.execute("audio.fxEditor", json!({"strip": "A1", "slot": 0})).unwrap();
+    assert_eq!((g["editor"].as_str(), g["kind"].as_str(), g["labels"].as_array().unwrap().len()), (Some("graphic"), Some("insert"), 20));
+    let m = s.execute("audio.fxEditor", json!({"strip": "A1", "slot": 1})).unwrap();
+    let t = m["transfer"].as_array().unwrap();
+    assert_eq!(t.len(), 4);
+    assert!(t.iter().all(|b| b.as_array().unwrap().len() == 121));
+    let d = s.execute("audio.fxEditor", json!({"strip": "A1", "slot": 2})).unwrap();
+    assert_eq!(d["transfer"].as_array().unwrap().len(), 1);
+    // hostile or wrong targets are errors, never panics
+    assert!(s.execute("audio.fxEditor", json!({"strip": "A1", "slot": 3})).is_err(), "delay has no editor");
+    assert!(s.execute("audio.fxEditor", json!({"strip": "A1", "slot": u64::MAX})).is_err());
+    assert!(s.execute("audio.fxEditor", json!({"strip": "Z9", "slot": 0})).is_err());
+    assert!(s.execute("audio.fxEditor", json!({"clip": clip, "effect": 999})).is_err());
+    assert!(s.execute("audio.fxEditor", json!({"clip": -1, "effect": 0})).is_err());
+    assert!(s.execute("audio.fxEditor", json!({})).is_err());
+}
+
+#[test]
+fn fx_editor_curves_use_the_sequence_sample_rate() {
+    let mut s = demo();
+    let clip = a1_clip(&s);
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    let idx = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.effects.len() - 1;
+    let ask =
+        |s: &mut Session| s.execute("audio.fxEditor", json!({"clip": clip, "effect": idx, "overrides": {"high_gain": 12.0, "high_freq": 15000.0}})).unwrap();
+    let rate = s.active_sequence().unwrap().settings.sample_rate;
+    let a = ask(&mut s);
+    assert_eq!(a["sampleRate"], rate);
+    let seq = s.state.active_sequence.unwrap();
+    std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap().settings.sample_rate = if rate == 44_100 { 48_000 } else { 44_100 };
+    let b = ask(&mut s);
+    assert_ne!(a["sampleRate"], b["sampleRate"]);
+    assert_ne!(a["response"], b["response"], "the filter design follows the rate the programme plays at");
+}
+
+#[test]
+fn fx_editor_reads_the_shown_time_and_lists_the_effect_stack() {
+    let mut s = demo();
+    let clip = a1_clip(&s);
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "parametric_eq"})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
+    let idx = it.effects.len() - 1;
+    let (t0, t1) = (it.start, it.start + Tick(it.duration.0 / 2));
+    for (t, v) in [(t0, -6.0), (t1, 6.0)] {
+        s.execute("effects.setParam", json!({"clip": clip, "effect": idx, "param": "high_gain", "value": v, "keyframe": true, "time": t.0})).unwrap();
+    }
+    s.set_playhead(t0);
+    let at = |s: &mut Session, t: Option<Tick>| {
+        let mut p = json!({"clip": clip, "effect": idx});
+        if let Some(t) = t {
+            p["time"] = json!(t.0);
+        }
+        s.execute("audio.fxEditor", p).unwrap()
+    };
+    assert_eq!(at(&mut s, None)["params"]["high_gain"]["value"], json!(-6.0));
+    // a front end playing ahead of the engine's playhead asks for the frame it shows
+    assert_eq!(at(&mut s, Some(t1))["params"]["high_gain"]["value"], json!(6.0));
+    let stack = at(&mut s, None)["stack"].clone();
+    let names: Vec<&str> = stack.as_array().unwrap().iter().filter_map(serde_json::Value::as_str).collect();
+    assert_eq!(names.len(), it.effects.len());
+    assert_eq!(&names[names.len() - 2..], ["parametric_eq", "parametric_eq"]);
+}

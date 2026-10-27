@@ -291,6 +291,10 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             }
             "apv" => {
                 assert!(fmt_name.contains("mov"), "{name}: {fmt_name}");
+                // an ffprobe older than 8.0 has no APV decoder and leaves codec_name unset
+                if cfa4_testkit::ffmpeg_with_format_or_skip(name, "apv", "8.0").is_none() {
+                    continue;
+                }
                 assert_eq!(v["codec_name"], "apv", "{name}");
                 let p = settings["apvProfile"].as_str().unwrap();
                 let idc = match p {
