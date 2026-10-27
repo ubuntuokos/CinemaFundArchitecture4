@@ -1643,3 +1643,12 @@
 	{first} Multicam	{first} többkamerás
 	{n} clip(s) selected; the clip on the reference track stays put.	{n} klip kijelölve; a referenciasáv klipje a helyén marad.
 	{n} clip(s): {names}	{n} klip: {names}
+# Remix (panels/remix.py)
+	Current duration {seconds} s	Jelenlegi hossz: {seconds} mp
+	Fewer · More	Kevesebb · Több
+	Remix Properties	Remix tulajdonságai
+	Remixed to {seconds} s	Remixelve {seconds} mp-re
+	Segments:	Szakaszok:
+	Target Duration:	Célhossz:
+	Variations:	Változatok:
+	the selected clip is not remixed	a kijelölt klip nincs remixelve

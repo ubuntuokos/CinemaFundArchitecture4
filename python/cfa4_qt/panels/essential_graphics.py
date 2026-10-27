@@ -1121,8 +1121,15 @@ class GraphicEditor(QWidget):
         note.setEnabled(False)
         self.lay.addWidget(note)
 
-        def setter(cid: Any) -> Callable[[Any], None]:
-            return lambda v: self.panel.send("graphics.template.set", {"clip": clip, "control": cid, "value": v})
+        def setter(cid: Any) -> Callable[..., None]:
+            # merge: the values of one drag are one undo step; begin starts the next one
+            def send(v: Any, merge: bool = False, begin: bool = False) -> None:
+                params = {"clip": clip, "control": cid, "value": v}
+                if merge:
+                    params.update({"merge": True, "begin": begin})
+                self.panel.send("graphics.template.set", params)
+
+            return send
 
         def value_of(d: dict[str, Any], cid: Any) -> Any:
             return next((c.get("value") for c in (d.get("template") or {}).get("controls") or [] if c.get("id") == cid), None)
@@ -1179,9 +1186,21 @@ class GraphicEditor(QWidget):
                 spin = HotSpin(self.body, lo, hi, 1, max(0.1, (hi - lo) / 200), "")
                 spin.setObjectName(f"{oid}.value")
                 to_pos = lambda v, a=lo, b=hi: round((float(v) - a) / (b - a) * 1000) if b > a else 0
-                slider.valueChanged.connect(lambda p, f=set_, a=lo, b=hi, s=slider: s.isSliderDown() and f(round(a + p / 1000 * (b - a), 3)))
-                slider.sliderReleased.connect(lambda f=set_, a=lo, b=hi, s=slider: f(round(a + s.value() / 1000 * (b - a), 3)))
-                spin.edited.connect(lambda v, _b, f=set_: f(v))
+                pressed = [False]  # the next value starts the drag's undo step
+                slider.sliderPressed.connect(lambda fl=pressed: fl.__setitem__(0, True))
+
+                def dragged(pos: int, f: Any = set_, a: float = lo, b: float = hi, s: QSlider = slider, fl: list[bool] = pressed) -> None:
+                    if s.isSliderDown():
+                        f(round(a + pos / 1000 * (b - a), 3), merge=True, begin=fl[0])
+                        fl[0] = False
+
+                def released(f: Any = set_, a: float = lo, b: float = hi, s: QSlider = slider, fl: list[bool] = pressed) -> None:
+                    f(round(a + s.value() / 1000 * (b - a), 3), merge=True, begin=fl[0])
+                    fl[0] = False
+
+                slider.valueChanged.connect(dragged)
+                slider.sliderReleased.connect(released)
+                spin.edited.connect(lambda v, begin, f=set_: f(v, merge=True, begin=bool(begin)))
                 row.addWidget(slider, 1)
                 row.addWidget(spin)
 

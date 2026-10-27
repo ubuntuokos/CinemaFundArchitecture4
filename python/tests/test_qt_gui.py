@@ -336,6 +336,28 @@ def test_main_window_with_fake_engine(app, fake_engine: Path, tmp_path: Path):
     assert not engine.running
 
 
+def test_closing_while_playing_stops_playback_before_the_unsaved_check(app, fake_engine: Path, tmp_path: Path):
+    """A mixer automation pass (and a multi-camera recording) is written when playback stops:
+    closing while playing stops first, so the unsaved-changes check, asked after it, includes the
+    pass."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    order: list[str] = []
+    try:
+        assert wait_until(app, lambda: "file.save" in win.registry.actions)
+        win.monitor.stop = lambda notify=True: order.append("stop")  # type: ignore[method-assign]
+        win.confirm_unsaved = lambda *a, **k: order.append("confirm")  # type: ignore[method-assign]
+        win.close()
+        assert order[:2] == ["stop", "confirm"], order
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_engine_stop_fails_pending_requests(app, fake_engine: Path):
     engine = EngineClient(fake_engine)
     engine.start()
@@ -1409,6 +1431,121 @@ def test_real_engine_multicam_dialogs_view_and_live_switching_as_egui(app, tmp_p
         mon.set_view(display="red")
         assert not mon.mv.multicam and not grid.isVisible()
         mon.set_view(display="composite")
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def _test_music(path: Path, sr: int = 22_050, bpm: float = 120.0, bars: int = 12) -> None:
+    """A mono WAV of music with a clear beat (chords, kick, snare, bass, hats), as the engine's
+    ``dsp::test_music``, for Remix."""
+    import math
+    import random
+    from array import array
+
+    beat = sr * 60.0 / bpm
+    n = round(bars * 4 * beat)
+    out = array("f", bytes(4 * n))
+    rnd = random.Random(3)
+    tau = math.tau
+    form = [[3, 0, 8, 10], [3, 0, 8, 10], [5, 10, 7, 0]]
+    for bar in range(bars):
+        root = form[(bar // 4) % len(form)][bar % 4]
+        fs = [220.0 * 2 ** (nt / 12) for nt in (root, root + (3 if root in (0, 5, 7) else 4), root + 7)]
+        b0, b1 = round(bar * 4 * beat), min(n, round((bar + 1) * 4 * beat))
+        for i in range(b0, b1):
+            t = (i - b0) / sr
+            env = (1 - math.exp(-t * 30)) * 0.9**t
+            out[i] += 0.06 * env * sum(math.sin(tau * f * i / sr) + 0.3 * math.sin(2 * tau * f * i / sr) for f in fs)
+        for q in range(4):
+            start = round((bar * 4 + q) * beat)
+            bass = 110.0 * 2 ** (root / 12) / (1.0 if q % 2 == 0 else 2 ** (-7 / 12))
+            for k in range(min(int(beat * 0.9), n - start)):
+                t = k / sr
+                v = 0.15 * math.exp(-t * 3) * math.sin(tau * bass * t)
+                if q % 2 == 0:
+                    v += 0.8 * math.exp(-t * 9) * math.sin(tau * (50 + 90 * math.exp(-t * 25)) * t)
+                elif t < 0.2:
+                    v += 0.35 * math.exp(-t * 22) * rnd.uniform(-1, 1)
+                out[start + k] += v
+            for h in range(2):
+                hs = start + int(h * beat / 2)
+                for k in range(min(sr // 25, n - hs)):
+                    out[hs + k] += 0.08 * math.exp(-k / sr * 120) * rnd.uniform(-1, 1)
+    data = array("h", (max(-32767, min(32767, int(v * 20000))) for v in out)).tobytes()
+    header = b"RIFF" + struct.pack("<I", 36 + len(data)) + b"WAVEfmt " + struct.pack("<IHHIIHH", 16, 1, 1, sr, sr * 2, 2, 16)
+    path.write_bytes(header + b"data" + struct.pack("<I", len(data)) + data)
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_remix_tool_and_properties_as_egui(app, tmp_path: Path):
+    """Remix as egui's: the Remix tool drags a music clip's Out edge and re-plans it to the new
+    length on release (`clip.remix`); Clip ▸ Remix ▸ Remix Properties… opens its dialog (target
+    duration, segments, variations) and OK remixes as one undo step."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.remix import RemixPropertiesDialog
+
+    music = tmp_path / "music.wav"
+    _test_music(music)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 900)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    T = TICKS_PER_SECOND
+    Qt = QtCore.Qt
+    a1 = lambda: list((win.sequence or {}).get("audio", [{}])[0].get("items") or [])
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        win.execute("file.newSequence", {"name": "remix", "audio": 2, "video": 1})
+        assert wait_until(app, lambda: win.sequence is not None, 10_000)
+        win.execute("file.import", {"paths": [str(music)]})
+        assert wait_until(app, lambda: any(i.get("name") == "music.wav" for i in _items(win.project)), 20_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        win.execute("timeline.place", {"item": item, "audioTrack": "A1", "seconds": 0.0})
+        assert wait_until(app, lambda: len(a1()) == 1, 10_000)
+        clip = a1()[0]
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        canvas.pps = 30.0
+        canvas.scroll_ticks = 0
+        canvas.update()
+        # the Remix tool: the Out edge dragged 4 s in, the music re-planned to that length
+        win.tools.select("remix")
+        assert win.tools.current == "remix" and canvas.tool == "remix"
+        row = next(r for r in canvas.rows if r.short == "A1")
+        r = canvas.clip_rect(row, clip)
+        a = QtCore.QPoint(int(r.right() - 2), int(r.top() + 8))
+        b = a - QtCore.QPoint(round(4 * canvas.pps), 0)
+        QtTest.QTest.mousePress(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, a)
+        for i in range(1, 6):
+            QtTest.QTest.mouseMove(canvas, a + (b - a) * i / 5)
+        QtTest.QTest.mouseRelease(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, b)
+        assert wait_until(app, lambda: a1() and a1()[0]["duration"] < clip["duration"] - 3 * T, 20_000), win.events.text.toPlainText()[-400:]
+        remixed = a1()[0]["duration"]
+        assert abs(remixed - (clip["duration"] - 4 * T)) < T, "the remix hits the target within a beat or so"
+        # Remix Properties…: the dialog with the clip's settings; OK re-plans to 20 s
+        win.run_command(win.registry.commands["clip.remix.properties"])
+        assert wait_until(app, lambda: isinstance(win.last_dialog, RemixPropertiesDialog), 10_000), win.events.text.toPlainText()[-300:]
+        d = win.last_dialog
+        assert d.objectName() == "remixProperties"
+        dur = d.findChild(QtWidgets.QDoubleSpinBox, "remixProperties.duration")
+        assert abs(dur.value() - (clip["duration"] / T - 4)) < 0.5
+        assert d.findChild(QtWidgets.QSlider, "remixProperties.segments").value() == 50
+        assert d.findChild(QtWidgets.QSlider, "remixProperties.variations").value() == 50
+        assert "Current duration" in d.findChild(QtWidgets.QLabel, "remixProperties.info").text()
+        dur.setValue(20.0)
+        shown: list[str] = []
+        win.statusBar().messageChanged.connect(shown.append)
+        d.findChild(QtWidgets.QSlider, "remixProperties.segments").setValue(80)
+        d.findChild(QtWidgets.QPushButton, "remixProperties.ok").click()
+        assert wait_until(app, lambda: abs(a1()[0]["duration"] - 20 * T) < T, 20_000), (a1(), win.events.text.toPlainText()[-300:])
+        assert wait_until(app, lambda: any(m.startswith("Remixed to ") for m in shown), 10_000), shown
+        # one undo step each
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: a1()[0]["duration"] == remixed, 10_000)
     finally:
         win._quit_confirmed = True
         win.close()
@@ -2604,6 +2741,9 @@ def test_fx_editor_follows_its_effect_and_edits_at_the_playing_frame(app):
     reply["stack"] = ["parametric_eq", "volume", "parametric_eq"]
     ed2.refresh()
     assert not ed2.isVisible()
+    for w in (ed, ed2):
+        w.deleteLater()
+    app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
 
 
 def test_properties_keep_an_automatic_coordinate_when_the_other_is_edited(app):
@@ -2624,6 +2764,34 @@ def test_properties_keep_an_automatic_coordinate_when_the_other_is_edited(app):
     panel.command.connect(lambda c, p: sent.append((c, p)))
     panel.flush()  # what the window does before any command, Save or Undo (flush_editors)
     assert not panel._pending and sent and sent[-1][1]["value"] == [900.0, 540.0]
+
+
+def test_properties_keyframe_button_keys_the_playing_frame(app):
+    """Properties' keyframe diamond during Program playback toggled the keyframe at the engine's
+    playhead (where playback started); it acts at the frame shown, as value edits do."""
+    from cfa4_qt.panels.properties import PropertiesPanel
+
+    class Monitor:
+        playing = True
+        playhead = 6000
+
+    host = QtWidgets.QMainWindow()
+    host.monitor = Monitor()  # type: ignore[attr-defined]
+    panel = PropertiesPanel(host)
+    host.setCentralWidget(panel)
+    panel.clip = {"clip": 7, "effects": [{"effect": "motion", "index": 0, "params": [
+        {"id": "position", "type": "point", "value": [960.0, 540.0], "valueAtPlayhead": [960.0, 540.0], "keyframes": []}]}]}
+    sent: list[tuple[str, dict]] = []
+    panel.command.connect(lambda c, p: sent.append((c, p)))
+    row = next(r for r in panel.rows if (r.effect, r.param) == ("motion", "position"))
+    row._add_remove()
+    assert sent[-1] == ("effects.addKeyframe", {"clip": 7, "effect": "motion", "param": "position", "time": 6000})
+    host.monitor.playing = False  # type: ignore[attr-defined]
+    row._add_remove()
+    assert sent[-1] == ("effects.addKeyframe", {"clip": 7, "effect": "motion", "param": "position"})
+    host.close()
+    host.deleteLater()
+    app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
 
 
 def test_the_window_flushes_editors_and_forgets_stale_media_pictures(app, fake_engine: Path, tmp_path: Path):

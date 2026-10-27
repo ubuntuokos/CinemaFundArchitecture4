@@ -54,6 +54,7 @@ from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
+from .panels.remix import RemixPropertiesDialog
 from .panels.scopes import ScopesPanel
 from .panels.settings import MENU as SETTINGS_MENU
 from .panels.settings import PreferencesDialog
@@ -918,6 +919,26 @@ class MainWindow(QMainWindow):
         dialog.open()
         return dialog
 
+    def open_remix_properties(self) -> None:
+        """Remix Properties… of the selected remixed clip (egui's: the menu entry opens the
+        dialog; with parameters the command applies directly)."""
+
+        def got(result: Any, _b: bytes | None) -> None:
+            if not isinstance(result, dict) or not result.get("remixed"):
+                self._command_failed("clip.remix.properties", tr("the selected clip is not remixed"))
+                return
+
+            def done(text: str) -> None:
+                self.statusBar().showMessage(text, 6000)
+                self.schedule_refresh()
+
+            dialog = RemixPropertiesDialog(self, self.engine, result, done)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.last_dialog = dialog
+            dialog.open()
+
+        self.engine.execute("clip.remix.properties", {}, on_reply=got, on_error=lambda m: self._command_failed("clip.remix.properties", m))
+
     def open_edit_cameras(self) -> None:
         """Edit Cameras for the multi-camera clip at the shown playhead."""
 
@@ -1323,6 +1344,9 @@ class MainWindow(QMainWindow):
             # a take is placed in the project it was recorded for, before that project goes
             self.voiceover.finish_then(lambda: self.run_command(cmd, unsaved_ok))
             return
+        if cmd.id in REPLACES_PROJECT or cmd.id in ("file.closeProject", "file.revert"):
+            # the pass recorded while playing (mixer automation, multi-camera cuts) belongs to this project
+            self.monitor.stop()
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
             self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
             return
@@ -1342,6 +1366,9 @@ class MainWindow(QMainWindow):
             return
         if cmd.id in SYNC_DIALOGS:
             self.open_sync_dialog(SYNC_DIALOGS[cmd.id])
+            return
+        if cmd.id == "clip.remix.properties":
+            self.open_remix_properties()
             return
         project_path = (self.project or {}).get("path")
         params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
@@ -1855,6 +1882,10 @@ class MainWindow(QMainWindow):
             return
         if self.engine.running and not self._quit_confirmed:
             e.ignore()
+            # a mixer automation (or multi-camera) pass is written when playback stops: stop first,
+            # so the unsaved-changes check (asked after it) includes the pass
+            self.monitor.stop()
+            self.source_monitor.stop()
 
             def close_now() -> None:
                 self._quit_confirmed = True

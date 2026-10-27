@@ -132,7 +132,7 @@ VOICEOVER_RED = "#d8503f"
 
 @dataclass
 class Drag:
-    kind: str  # "move" | "trim" | "scrub" | "roll" | "stretch" | "slip" | "slide" | "hand"
+    kind: str  # "move" | "trim" | "scrub" | "roll" | "stretch" | "remix" | "slip" | "slide" | "hand"
     clip: dict[str, Any] | None
     origin: QPoint
     origin_time: int
@@ -479,7 +479,7 @@ class TimelineCanvas(QWidget):
             t, row = self._drop_preview
             x = self.x_of(t)
             p.fillRect(QRectF(x, row.top, 3, row.height), QColor("#ffd54a"))
-        if self._drag and self._drag.kind in ("trim", "roll", "stretch") and self._drag.clip is not None:
+        if self._drag and self._drag.kind in ("trim", "roll", "stretch", "remix") and self._drag.clip is not None:
             x = self.x_of(self._drag.origin_time + self._drag.delta)
             p.setPen(QPen(QColor("#ffd54a"), 2))
             p.drawLine(int(x), RULER_H, int(x), self.height())
@@ -793,6 +793,13 @@ class TimelineCanvas(QWidget):
             self.command.emit("timeline.select", {"clips": [cid]})
             self._drag = Drag(self.tool, clip, pos, int(clip.get("start") or 0))
             return
+        if self.tool == "remix":
+            # egui's Remix tool: a clip's Out edge re-plans the music to the new length on release
+            if edge != "out":
+                self.command.emit("timeline.select", {"clips": [cid]})
+                return
+            self._drag = Drag("remix", clip, pos, int(clip.get("end") or 0), edge=edge)
+            return
         if self.tool in ("ripple", "rolling", "rateStretch"):
             if not edge:  # these tools work on edges; a click on the body selects
                 self.command.emit("timeline.select", {"clips": [cid]})
@@ -864,7 +871,7 @@ class TimelineCanvas(QWidget):
                 self.setCursor(Qt.CursorShape.IBeamCursor)
             elif self.tool in ("slip", "slide") and clip is not None:
                 self.setCursor(Qt.CursorShape.SizeHorCursor)
-            elif edge and self.tool in ("selection", "ripple", "rolling", "rateStretch"):
+            elif (edge and self.tool in ("selection", "ripple", "rolling", "rateStretch")) or (edge == "out" and self.tool == "remix"):
                 self.setCursor(Qt.CursorShape.SplitHCursor if self.tool == "rolling" else Qt.CursorShape.SizeHorCursor)
             else:
                 self.unsetCursor()
@@ -898,6 +905,10 @@ class TimelineCanvas(QWidget):
                 end_snap = self.snap(target + length, exclude) - length
                 if abs(end_snap - (d.origin_time + raw)) < abs(target - (d.origin_time + raw)):
                     target = end_snap
+        if d.kind == "remix" and d.clip is not None:
+            # whole frames, at least one frame long
+            ft = self.frame_ticks()
+            target = max(int(d.clip.get("start") or 0) + ft, round(target / ft) * ft)
         if d.kind == "move":
             target = max(0, target)
             start_row = self.row_at(d.origin.y())
@@ -955,6 +966,10 @@ class TimelineCanvas(QWidget):
         if d.kind == "roll" and d.partner is not None:
             left, right = (d.clip, d.partner) if d.edge == "out" else (d.partner, d.clip)
             self.command.emit("timeline.roll", {"left": left.get("clip"), "right": right.get("clip"), "delta": d.delta})
+            return
+        if d.kind == "remix":
+            length = int(d.clip.get("end") or 0) - int(d.clip.get("start") or 0) + d.delta
+            self.command.emit("clip.remix", {"clip": d.clip.get("clip"), "duration": length})
             return
         if d.kind == "stretch":
             self.command.emit("timeline.rateStretch", {"clip": d.clip.get("clip"), "edge": d.edge, "delta": d.delta})

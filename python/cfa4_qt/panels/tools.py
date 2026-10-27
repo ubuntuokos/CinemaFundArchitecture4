@@ -3,7 +3,7 @@
 A group shows its current tool; the others of the group are in a flyout (right-click, or hold
 the button). The tool decides what a drag on the timeline does; every edit it makes is an
 engine command (see ``TimelineCanvas``). Tools that draw on the Program monitor or edit
-keyframes there (Pen, Rectangle, Ellipse, Type) and Remix are not in the Qt GUI yet: they are
+keyframes there (Pen, Rectangle, Ellipse, Type) are not in the Qt GUI yet: they are
 listed disabled, so the gap shows (docs/qt-parity.md).
 """
 
@@ -34,7 +34,7 @@ GROUPS: tuple[tuple[ToolDef, ...], ...] = (
         ToolDef("ripple", N_("Ripple Edit Tool"), "B"),
         ToolDef("rolling", N_("Rolling Edit Tool"), "N"),
         ToolDef("rateStretch", N_("Rate Stretch Tool"), "R"),
-        ToolDef("remix", N_("Remix Tool"), "", available=False),
+        ToolDef("remix", N_("Remix Tool"), ""),
     ),
     (ToolDef("razor", N_("Razor Tool"), "C"),),
     (ToolDef("slip", N_("Slip Tool"), "Y"), ToolDef("slide", N_("Slide Tool"), "U")),

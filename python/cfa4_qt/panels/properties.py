@@ -167,7 +167,11 @@ class PropRow:
         if clip is None:
             return
         self.panel.ensure_effect(clip, self.effect)
-        self.panel.send("effects.addKeyframe", {"clip": clip["clip"], "effect": self.effect, "param": self.param})
+        params = {"clip": clip["clip"], "effect": self.effect, "param": self.param}
+        at = self.panel.playing_at()
+        if at is not None:
+            params["time"] = at  # the frame shown, not where playback started
+        self.panel.send("effects.addKeyframe", params)
 
     def _edited(self, i: int, value: float, begin: bool) -> None:
         clip = self.clip()
@@ -415,13 +419,17 @@ class PropertiesPanel(QWidget):
         if clip is not None and e is not None:
             self.send("effects.reset", {"clip": clip["clip"], "index": e.get("index")})
 
+    def playing_at(self) -> int | None:
+        """While the Program monitor plays, the frame it shows (the engine's playhead stays where
+        playback started); None when stopped."""
+        monitor = getattr(self.window(), "monitor", None)
+        if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
+            return int(monitor.playhead)
+        return None
+
     def set_param(self, clip: dict[str, Any], effect: str, param: str, value: Any) -> None:
         self.ensure_effect(clip, effect)
-        monitor = getattr(self.window(), "monitor", None)
-        at = None  # while playing, the shown frame: the engine's playhead stays where playback started
-        if monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
-            at = monitor.playhead
-        self._pending[(int(clip["clip"]), effect, param, at)] = value
+        self._pending[(int(clip["clip"]), effect, param, self.playing_at())] = value
         self._send_timer.start()
 
     def new_gesture(self) -> None:
