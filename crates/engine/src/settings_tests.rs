@@ -283,6 +283,22 @@ fn schema_command_describes_every_category() {
     assert_eq!(focus["value"], true);
     assert_eq!(focus["wired"], false);
 
+    // the page layout: groups, notes, buttons and frontend-drawn sections, in dialog order
+    let auto_save = updated_category(&mut s, "autoSave");
+    let rows = auto_save["rows"].as_array().unwrap();
+    assert_eq!((rows[0]["type"].clone(), rows[0]["title"].clone()), (json!("group"), json!("Local Projects")));
+    let inner = rows[0]["rows"].as_array().unwrap();
+    assert_eq!(inner[1]["field"]["key"], "autoSave.intervalMinutes");
+    assert_eq!((inner[1]["field"]["indent"].clone(), inner[1]["field"]["enabledBy"].clone()), (json!(true), json!("autoSave.enabled")));
+    let crash = rows[1]["rows"].as_array().unwrap();
+    assert!(crash.iter().any(|r| r["type"] == "note") && crash.iter().any(|r| r["type"] == "custom" && r["id"] == "autoSaveStatus"));
+    let cache = updated_category(&mut s, "mediaCache");
+    let files = cache["rows"][0]["rows"].as_array().unwrap();
+    assert!(files.iter().any(|r| r["type"] == "button" && r["command"] == "mediaCache.clean"));
+    assert_eq!(updated_category(&mut s, "appearance")["rows"][0], json!({"type": "custom", "id": "appearanceModes"}));
+    // Reset… puts the category's defaults back
+    assert_eq!(updated_category(&mut s, "timeline")["defaults"]["focusTimelineOnEdit"], false);
+
     let one = s.execute("prefs.schema", json!({"category": "trim"})).unwrap();
     assert_eq!(one["categories"].as_array().unwrap().len(), 1);
     assert!(s.execute("prefs.schema", json!({"category": "nope"})).is_err());
@@ -850,4 +866,52 @@ fn builtin_label_presets_are_complete_and_distinct() {
         assert_eq!(labels.name(label), role);
     }
     assert!(!settings::is_builtin_label_preset("Team"));
+}
+
+#[test]
+fn every_category_is_listed_under_a_known_group() {
+    let groups: Vec<&str> = settings::groups().iter().map(|g| g.id).collect();
+    let mut seen = std::collections::HashSet::new();
+    assert!(groups.iter().all(|g| seen.insert(*g)), "duplicate group ids: {groups:?}");
+    for c in settings::categories() {
+        assert!(groups.contains(&c.group), "{} is in unknown group {}", c.id, c.group);
+    }
+    // every group lists at least one page (Hardware & Devices: Memory, Audio Hardware)
+    for g in &groups {
+        assert!(settings::categories().iter().any(|c| c.group == *g), "empty group {g}");
+    }
+    assert_eq!(settings::category("memory").map(|c| c.group), Some("hardware"));
+    assert_eq!(settings::category("audioHardware").map(|c| c.group), Some("hardware"));
+}
+
+#[test]
+fn schema_reports_groups_and_hides_the_unwired_duplicate_hardware_fields() {
+    let mut s = Session::default();
+    let r = s.execute("prefs.schema", json!({})).unwrap();
+    assert_eq!(r["groups"].as_array().unwrap().len(), settings::groups().len());
+    assert!(r["categories"].as_array().unwrap().iter().all(|c| c["group"].is_string()));
+    // hardware decoding has one control (Playback, wired); the Media page copy and the
+    // macOS-only ProRes hardware encoding switch are gone from the schema
+    for gone in ["media.hardwareDecoding", "media.proresHardwareEncoding"] {
+        assert!(settings::field(gone).is_none(), "{gone}");
+    }
+    assert!(settings::field("playback.hardwareDecoding").is_some_and(|f| f.wired));
+    // old preference files keep loading, and the keys stay settable for older clients
+    set(&mut s, "media.hardwareDecoding", json!(true));
+    assert_eq!(s.prefs.get("media.hardwareDecoding"), Some(json!(true)));
+}
+
+#[test]
+fn a_batch_applies_duration_units_before_their_values() {
+    // `timeline.videoTransitionDuration` sorts before its unit key; 0.5 must be read as seconds,
+    // not rounded to whole frames under the old unit.
+    let mut s = Session::default();
+    s.execute("prefs.set", json!({"values": {"timeline.videoTransitionUnit": "frames"}})).unwrap();
+    let r = s.execute("prefs.set", json!({"values": {"timeline.videoTransitionDuration": 0.5, "timeline.videoTransitionUnit": "seconds"}})).unwrap();
+    assert_eq!(r["timeline"]["videoTransitionUnit"], "seconds");
+    assert_eq!(r["timeline"]["videoTransitionDuration"], 0.5);
+}
+
+fn updated_category(s: &mut Session, id: &str) -> Value {
+    s.execute("prefs.schema", json!({"category": id})).unwrap()["categories"][0].clone()
 }

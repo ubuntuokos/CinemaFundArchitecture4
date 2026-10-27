@@ -22,6 +22,7 @@ window (α = 5) and checked against Table 7.33 to 6·10⁻⁶. E-AC-3: Annex E �
 let mut dec = cfa4_ac3::Decoder::new();
 let h = cfa4_ac3::parse_header(frame)?;   // rate, channels, frame size
 let out = dec.decode(frame)?;                  // h.samples() per channel, WAV channel order
+let (prog, used) = dec.decode_program(data)?;  // E-AC-3: substream 0 + its dependent substreams
 dec.reset();                                    // before decoding from another position
 
 let mut enc = cfa4_ac3::Encoder::new(48_000, 6, 448)?;   // or Encoder::new_eac3(rate, ch, kb/s)
@@ -52,9 +53,22 @@ let tail = enc.flush()?;                               // pads; output lags inpu
 
 ## E-AC-3 (bsid 11-16)
 
-- Independent substream 0 is decoded (stream types 0 and 2); dependent substreams (the channels
-  beyond 5.1 of a 7.1 program) and further independent programs decode to no channels, so a 7.1
-  stream plays as its 5.1 core. `Header::is_primary` tells them apart.
+- Independent substream 0 is decoded (stream types 0 and 2); further independent programs decode
+  to no channels. `Header::is_primary` tells them apart.
+- Programs beyond 5.1 (§E2.3.1, 7.1 and others): `Decoder::decode_program` decodes independent
+  substream 0 together with the dependent substreams (stream type 1, substream ids 0-7) that
+  follow it in the buffer, as an MP4 or Matroska access unit holds them. Each dependent channel
+  takes a location from the custom channel map (`chanmap`, Table E2.5; bit 0 the MSB, pair bits
+  take two channels) or, without one, from its acmod; it replaces the program's channel at that
+  location (a 7.1 core's downmixed surrounds) or adds one. `Decoded::locations` names every
+  channel; the output is in `Location` order, which keeps the WAV order for 5.1 and gives
+  L R C LFE Lrs Rrs Ls Rs for 7.1 (the WAV / SMPTE order of 7.1, back pair before side pair, as
+  the AAC and Opus paths of `cfa4-codecs` give it). A dependent substream that fails to decode (an unsupported
+  tool, damage) or disagrees with its program's rate or length keeps the core's channels and
+  silences its new locations, so the layout does not change mid-stream. Each dependent substream
+  keeps its own overlap and exponent state. `decode` alone still returns the 5.1 core.
+  `program_locations` gives the program's layout from the headers alone (the channel count an
+  MPEG-TS stream decodes to).
 - 1, 2, 3 or 6 blocks per syncframe (`Header::samples`), 32 / 44.1 / 48 kHz and the reduced rates
   16 / 22.05 / 24 kHz, every acmod with or without LFE.
 - The whole bsi (mixing and informational metadata, custom channel maps, addbsi) is parsed and
@@ -124,6 +138,14 @@ stereo 96 kb/s at 44.1 kHz: 61.6 vs 65.5 dB, where ffmpeg couples). Speed
 one thread. Not written yet (#120): coupling, block switching, spectral extension, 7.1, DRC
 words, 1+1; export wiring is #119.
 
+No free encoder writes dependent substreams, so the 7.1 tests make them: FFmpeg encodes a 5.1 and
+a 2/2 stream, and `make_dependent_substream` (feature `test-util`) turns each 2/2 syncframe into a
+dependent substream with a custom channel map (Ls, Rs, Lrs / Rrs): decoding the syncframe records
+the bit ranges of the fields only independent substreams carry, which are removed, and crc2 is
+recomputed. FFmpeg decodes the result as 7.1 and is the oracle: 72-86 dB per channel in the raw
+stream (`src/dependent_tests.rs`), 75.6 dB worst channel in MP4 and Matroska through
+`cfa4-codecs`.
+
 ## Gaps
 
 - FFmpeg's AC-3 encoder never block-switches, so the 256-sample transforms are implemented from
@@ -135,5 +157,10 @@ words, 1+1; export wiring is #119.
   extension (no free encoder writes it), fewer blocks per syncframe, the reduced rates and the
   per-block syntax (shared with AC-3) are implemented from the standard and covered by unit tests
   on synthetic data, not by an oracle.
-- E-AC-3: no adaptive hybrid transform, enhanced coupling, transient pre-noise processing, or
-  channels from dependent substreams (7.1 plays as 5.1).
+- E-AC-3: no adaptive hybrid transform, enhanced coupling or transient pre-noise processing;
+  Dolby Atmos object audio (JOC, ETSI TS 103 420) is not decoded, its 5.1 / 7.1 bed plays.
+- Dependent substreams are joined only when they follow their independent substream in the same
+  buffer (MP4, Matroska, MPEG-TS access units, raw streams).
+- The chanmap location table and the dependent-substream bsi differences follow A/52:2012
+  Annex E; FFmpeg's decode agrees on the synthetic 7.1 stream, but no Dolby-encoded 7.1 file has
+  been tested.

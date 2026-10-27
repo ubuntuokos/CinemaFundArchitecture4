@@ -1,0 +1,89 @@
+CFA4 logó – licenc / CFA4 logo – licence
+SPDX azonosító / identifier: LicenseRef-CFA4-Logo
+
+========================================================================================
+MAGYARUL
+========================================================================================
+
+A CFA4 neve, emblémája (az „A” betű filmszalaggal), a „CFA4” szóvédjegy, a „Cinema Fund
+Architectura 4” felirat, valamint a belőlük készült minden változat (a továbbiakban: CFA4-jelek)
+István, a CFA4 projekt tulajdonosa saját alkotása és tulajdona. Ide tartozik minden fájl, amely a
+CFA4-jeleket ábrázolja, különösen:
+
+  - assets/cfa4/cfa4-official-logo.png (a hiteles mesterváltozat),
+  - assets/cfa4/hicolor/**/io.github.ubuntuokos.cfa4.* (alkalmazásikonok),
+  - apps/cfa4-web/web/favicon.svg,
+
+minden méretben, színben és formátumban.
+
+A CFA4-jelek NEM tartoznak a CFA4 programkódjára vonatkozó GPL-3.0-or-later licenc alá, és sem a
+GPL, sem a LICENSE-MIT / LICENSE-APACHE fájl, sem a tároló bármely más fájlja nem ad rájuk jogot.
+A CFA4 programkódja ettől függetlenül GPL-3.0-or-later marad.
+
+Engedély
+
+A tulajdonos díjmentes, nem kizárólagos, nem átruházható, visszavonható engedélyt ad arra, hogy a
+CFA4-jeleket változtatás nélkül
+
+  1. a tároló másolataiban és a CFA4 forráskódjának terjesztésében megtartsák;
+  2. a hivatalos CFA4-buildekben, a CFA4 dokumentációjában és a CFA4 hivatalos weboldalain
+     használják;
+  3. a CFA4 VÁLTOZTATÁS NÉLKÜLI csomagjaiban (például Linux-disztribúciók csomagjaiban)
+     terjesszék, a CFA4 azonosítására;
+  4. cikkekben, ismertetőkben és oktatóanyagokban a CFA4 megnevezésére használják.
+
+Feltételek
+
+  - A CFA4-jeleket csak a jóváhagyott formában szabad használni: nem szabad átrajzolni,
+    átszínezni, torzítani, részeire bontani, animálni, vagy más névvel, jellel, képpel egyesíteni.
+    Kicsinyítés, nagyítás és formátumváltás (például PNG, SVG, ICO) megengedett.
+  - A használat nem keltheti azt a látszatot, hogy a tulajdonos vagy a CFA4 projekt más terméket,
+    szolgáltatást, szervezetet vagy személyt készített, támogat vagy jóváhagyott.
+
+Leágazások (forkok) és módosított változatok
+
+Aki a CFA4 módosított változatát vagy abból készült művet terjeszt, annak el kell távolítania belőle
+a CFA4-jeleket (vagy saját jelekre kell cserélnie), és nem nevezheti CFA4-nek. Sima szövegben
+megírhatja, hogy műve a CFA4-en alapul. Ez a kötelezettség csak a jelekre vonatkozik; a kód
+GPL-3.0-or-later szerinti felhasználását nem korlátozza. Kivétel: az olyan leágazás, amely csak
+módosítások visszajavaslására szolgál a CFA4 tárolóba, a jeleket változatlanul megtarthatja.
+
+Minden más felhasználáshoz a tulajdonos előzetes írásos engedélye kell
+(https://github.com/ubuntuokos/CinemaFundArchitecture4). Az engedély megszűnik annál, aki e
+feltételeket megszegi. Minden más jog fenntartva.
+
+========================================================================================
+ENGLISH (translation; the Hungarian text above prevails)
+========================================================================================
+
+The CFA4 name, emblem (the letter "A" with a film strip), the "CFA4" wordmark, the "Cinema Fund
+Architectura 4" lettering and every variant made from them (the "CFA4 Marks") are the own work and
+property of István, owner of the CFA4 project. This covers every file depicting the CFA4 Marks, in
+particular assets/cfa4/cfa4-official-logo.png (the canonical master),
+assets/cfa4/hicolor/**/io.github.ubuntuokos.cfa4.* (application icons) and
+apps/cfa4-web/web/favicon.svg, in every size, colour and format.
+
+The CFA4 Marks are NOT covered by the GPL-3.0-or-later licence of the CFA4 program code, and
+neither the GPL, LICENSE-MIT / LICENSE-APACHE nor any other file in this repository grants any
+right to them. The CFA4 program code remains GPL-3.0-or-later regardless.
+
+Permission. The owner grants a royalty-free, non-exclusive, non-transferable, revocable permission
+to use the CFA4 Marks unmodified (1) in copies of this repository and in distributions of the CFA4
+source code; (2) in official CFA4 builds, CFA4 documentation and official CFA4 websites; (3) in
+UNMODIFIED packages of CFA4 (for example Linux distribution packages), to identify CFA4; and (4) in
+articles, reviews and tutorials, to refer to CFA4.
+
+Conditions. Use the CFA4 Marks only in their approved form: do not redraw, recolour, distort,
+take apart or animate them, or combine them with any other name, mark or artwork. Scaling and
+format conversion (for example PNG, SVG, ICO) are allowed. No use may suggest that the owner or the
+CFA4 project made, sponsors or endorses any other product, service, organisation or person.
+
+Forks and modified versions. Whoever distributes a modified version of CFA4, or a work derived from
+it, must remove the CFA4 Marks from it (or replace them with their own) and must not call it CFA4.
+They may state in plain text that their work is based on CFA4. This applies to the marks only and
+does not restrict any use of the code under GPL-3.0-or-later. A fork kept only to propose changes
+back to the CFA4 repository may keep the marks unchanged.
+
+Any other use needs the owner's prior written permission
+(https://github.com/ubuntuokos/CinemaFundArchitecture4). The permission ends automatically for
+anyone who breaks these terms. All other rights are reserved.

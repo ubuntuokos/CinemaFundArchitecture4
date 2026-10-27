@@ -19,10 +19,8 @@
 //!
 //! `log` records go to standard error and `<data dir>/Logs/cfa4.log` (`RUST_LOG` sets the
 //! levels); see [`logging`].
-#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
-mod app_nap;
 mod appearance;
 mod args;
 mod audio;
@@ -33,9 +31,6 @@ mod dev_icon;
 mod file_filters;
 mod graphics;
 mod logging;
-#[cfg(target_os = "macos")]
-mod native_menu;
-mod window_raise;
 
 use args::{Cli, Launch};
 use cfa4_engine::Session;
@@ -73,19 +68,12 @@ fn app_icon() -> egui::IconData {
     egui::IconData { rgba, width: WIDTH, height: HEIGHT }
 }
 
-/// Print `text` (stdout, or stderr for an error). A Windows release build has no console
-/// (`windows_subsystem = "windows"`), so there it is also shown in a message box: otherwise `--help`
-/// would print nothing and a bad option would quit without a word.
+/// Print `text` (stdout, or stderr for an error).
 fn tell(text: &str, error: bool) {
     if error {
         eprint!("{text}");
     } else {
         print!("{text}");
-    }
-    #[cfg(all(target_os = "windows", not(debug_assertions)))]
-    {
-        let level = if error { rfd::MessageLevel::Error } else { rfd::MessageLevel::Info };
-        let _ = rfd::MessageDialog::new().set_level(level).set_title("CFA4").set_description(text).show();
     }
 }
 
@@ -124,7 +112,6 @@ fn main() -> eframe::Result {
             }
         }
     }
-    app_nap::disable();
     #[cfg(target_os = "linux")]
     dev_icon::ensure_dev_desktop_entry();
     // Panics anywhere go to <data dir>/Logs/crash-<day>.log with a backtrace; the UI pass and
@@ -273,7 +260,7 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         if recover == Some(false) {
             app.dialog = None;
         }
-        app.integrated_titlebar = cfg!(target_os = "macos");
+        app.integrated_titlebar = false;
         if let Some(rs) = cc.wgpu_render_state.clone()
             && std::env::var_os("CFA4_CPU_COMPOSITE").is_none()
         {
@@ -340,9 +327,8 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         // Settings ▸ Appearance ▸ Appearance Mode ▸ Sync with system on Linux desktops whose
         // compositor reports no theme to winit (no polling: see appearance.rs).
         app.hooks.system_theme = appearance::service();
-        app.hooks.raise_without_focus = Some(Box::new(|| {
-            window_raise::raise_without_focus();
-        }));
+        // Linux: nothing to order to the front; the caller only requests a repaint.
+        app.hooks.raise_without_focus = Some(Box::new(|| {}));
         app.hooks.pick_open_file = Some(Box::new(|filter: &str, exts: &[&str]| {
             rfd::FileDialog::new()
                 .add_filter(cfa4_ui_egui::i18n::t(filter), &file_filters::extensions(exts))
@@ -355,13 +341,6 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
                 .pick_file()
                 .map(|p| p.to_string_lossy().to_string())
         }));
-        #[cfg(target_os = "macos")]
-        {
-            let (rx, update) = native_menu::install(&app, cc.egui_ctx.clone());
-            app.command_inbox = Some(rx);
-            app.hooks.menu_changed = Some(update);
-            app.ui.show_menu_bar = false;
-        }
         if let Some(port) = control_port {
             log::info!("startup stage: starting control server on 127.0.0.1:{port}");
             let rx = control_server::start(port, cc.egui_ctx.clone());
@@ -387,22 +366,7 @@ fn clipboard_media() -> Option<cfa4_ui_egui::ClipboardMedia> {
 /// Open a file in its default application, or reveal it in the file manager (Edit Original,
 /// Reveal Log Files).
 fn open_path(path: &str, reveal: bool) -> Result<(), String> {
-    let mut cmd = if cfg!(target_os = "macos") {
-        let mut c = std::process::Command::new("open");
-        if reveal {
-            c.arg("-R");
-        }
-        c.arg(path);
-        c
-    } else if cfg!(target_os = "windows") {
-        let mut c = std::process::Command::new("explorer");
-        if reveal {
-            c.arg(format!("/select,{path}"));
-        } else {
-            c.arg(path);
-        }
-        c
-    } else {
+    let mut cmd = {
         // Linux file managers have no select-file flag: open the parent folder instead.
         let mut c = std::process::Command::new("xdg-open");
         let p = std::path::Path::new(path);
@@ -457,15 +421,8 @@ fn local_offset(unix: i64) -> i32 {
 }
 
 /// Driven by an agent (`--control`): don't activate the app on launch, so the user's keyboard
-/// focus stays where it is (macOS; winit activates ignoring other apps by default).
+/// focus stays where it is. Linux needs no event-loop hook for that.
 fn agent_event_loop(agent: bool) -> Option<eframe::EventLoopBuilderHook> {
-    #[cfg(target_os = "macos")]
-    if agent {
-        return Some(Box::new(|b| {
-            use winit::platform::macos::EventLoopBuilderExtMacOS;
-            b.with_activate_ignoring_other_apps(false);
-        }));
-    }
     let _ = agent;
     None
 }
