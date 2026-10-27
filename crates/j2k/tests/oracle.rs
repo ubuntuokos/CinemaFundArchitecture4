@@ -220,11 +220,12 @@ fn ppm(data: &[u8]) -> Vec<Vec<i32>> {
     (0..3).map(|c| (0..n).map(|i| i32::from(px[3 * i + c])).collect()).collect()
 }
 
-/// Every code-block style but the bypass (RESET, TERMALL, VSC, predictable termination,
-/// segmentation symbols, and all of them together), written by OpenJPEG: 5/3 bit-exact to the
-/// input, 9/7 within ±1 of OpenJPEG's own decode. Skipped without `opj_compress`.
+/// What OpenJPEG writes and ffmpeg cannot: every code-block style (selective arithmetic coding
+/// bypass, RESET, TERMALL, VSC, predictable termination, segmentation symbols, and combinations),
+/// progression order changes and regions of interest. 5/3 bit-exact to the input, 9/7 within ±1
+/// of OpenJPEG's own decode. Skipped without `opj_compress`.
 #[test]
-fn openjpeg_code_block_styles() {
+fn openjpeg_codestreams() {
     let ff = cfa4_testkit::require_ffmpeg!();
     let (Some(enc), Some(dec)) = (opj("opj_compress"), opj("opj_decompress")) else {
         eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
@@ -237,30 +238,149 @@ fn openjpeg_code_block_styles() {
         Command::new(&ff).args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=203x117", "-frames:v", "1", "-pix_fmt", "rgb24"]).arg(&input).status();
     assert!(matches!(st, Ok(s) if s.success()));
     let src = ppm(&std::fs::read(&input).unwrap());
-    // RESET 2, TERMALL 4, VSC 8, predictable termination 16, segmentation symbols 32
-    for mode in [2, 4, 8, 16, 32, 62] {
-        for lossy in [false, true] {
-            let name = format!("m{mode}{}", if lossy { "_97" } else { "" });
-            let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
-            let mut c = Command::new(&enc);
-            c.arg("-i").arg(&input).arg("-o").arg(&cs).args(["-M", &mode.to_string(), "-b", "32,32"]);
-            if lossy {
-                c.args(["-I", "-r", "20"]);
-            }
-            assert!(c.stdout(Stdio::null()).status().is_ok_and(|s| s.success()), "{name}: opj_compress");
-            let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
-            let want = if lossy {
-                let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
-                assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
-                ppm(&std::fs::read(&out).unwrap())
-            } else {
-                src.clone()
-            };
-            for (c, p) in img.components.iter().enumerate() {
-                let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
-                assert!(worst <= i32::from(lossy), "{name}: component {c} differs by {worst}");
-            }
+    // bypass 1, RESET 2, TERMALL 4, VSC 8, predictable termination 16, segmentation symbols 32
+    // (name, options, compared with: None the input exactly, Some(tolerance) OpenJPEG's decode)
+    let mut cases: Vec<(String, Vec<String>, Option<i32>)> = Vec::new();
+    for mode in [1, 2, 4, 8, 16, 32, 62, 5, 9, 63] {
+        cases.push((format!("m{mode}"), vec!["-M".into(), mode.to_string(), "-b".into(), "32,32".into()], None));
+        cases.push((format!("m{mode}_97"), vec!["-M".into(), mode.to_string(), "-b".into(), "32,32".into(), "-I".into(), "-r".into(), "20".into()], Some(1)));
+    }
+    let args = |a: &str| a.split(' ').map(String::from).collect::<Vec<_>>();
+    // progression order changes (POC), in the main header and per tile with tile-parts
+    cases.push(("poc".into(), args("-r 20,10,1 -POC T0=0,0,2,3,3,RLCP/T0=0,0,3,6,3,CPRL"), None));
+    // OpenJPEG writes this one with packets missing (its own decode is not lossless either), so
+    // it is compared with OpenJPEG's decode
+    cases.push(("poc_tiles".into(), args("-r 20,10,1 -t 64,64 -POC T0=0,0,1,6,3,LRCP/T1=0,0,2,4,2,PCRL/T1=0,0,3,6,3,RLCP"), Some(0)));
+    // region of interest (RGN Maxshift on one component)
+    cases.push(("roi".into(), args("-ROI c=0,U=4"), None));
+    cases.push(("roi_97".into(), args("-ROI c=1,U=6 -I -r 15"), Some(1)));
+    for (name, opts, against) in cases {
+        let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
+        let st = Command::new(&enc).arg("-i").arg(&input).arg("-o").arg(&cs).args(&opts).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_compress");
+        let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let want = if against.is_some() {
+            let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+            assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+            ppm(&std::fs::read(&out).unwrap())
+        } else {
+            src.clone()
+        };
+        for (c, p) in img.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= against.unwrap_or(0), "{name}: component {c} differs by {worst}");
         }
+    }
+}
+
+/// HTJ2K (T.814) codestreams written by Grok (`grokj2k-tools`, HT code-block style `-M 64`):
+/// 5/3 bit-exact to the input, 9/7 within ±1 of OpenJPEG's decode (OpenJPEG 2.5 decodes HT).
+/// Skipped without `grk_compress` / `opj_decompress`.
+#[test]
+fn htj2k_codestreams() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let (Some(enc), Some(dec)) = (opj("grk_compress"), opj("opj_decompress")) else {
+        eprintln!("skipped: Grok (grokj2k-tools) or OpenJPEG (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("ht");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.ppm");
+    let st =
+        Command::new(&ff).args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=203x117", "-frames:v", "1", "-pix_fmt", "rgb24"]).arg(&input).status();
+    assert!(matches!(st, Ok(s) if s.success()));
+    let src = ppm(&std::fs::read(&input).unwrap());
+    let args = |a: &str| a.split(' ').map(String::from).collect::<Vec<_>>();
+    // (name, options, compared with: None the input exactly, Some(tolerance) OpenJPEG's decode)
+    let cases: Vec<(&str, Vec<String>, Option<i32>)> = vec![
+        ("ht", args("-M 64"), None),
+        ("ht_cb32x16", args("-M 64 -b 32,16"), None),
+        ("ht_cb4x4", args("-M 64 -b 4,4 -n 3"), None),
+        ("ht_tiles_rpcl", args("-M 64 -t 64,48 -p RPCL"), None),
+        ("ht_precincts", args("-M 64 -c [64,64],[32,32] -b 16,16"), None),
+        ("ht_vsc", args("-M 72"), None),
+        ("ht_97", args("-M 64 -I"), Some(1)),
+        ("ht_97_r20", args("-M 64 -I -r 20"), Some(1)),
+        ("ht_97_r60", args("-M 64 -I -r 60 -b 32,32"), Some(1)),
+        ("ht_53_r10", args("-M 64 -r 10"), Some(0)),
+    ];
+    for (name, opts, against) in cases {
+        let (cs, out) = (dir.join(format!("{name}.j2k")), dir.join(format!("{name}.ppm")));
+        let st = Command::new(&enc).arg("-i").arg(&input).arg("-o").arg(&cs).args(&opts).stdout(Stdio::null()).stderr(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: grk_compress");
+        let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let want = if against.is_some() {
+            let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+            assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+            ppm(&std::fs::read(&out).unwrap())
+        } else {
+            src.clone()
+        };
+        for (c, p) in img.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= against.unwrap_or(0), "{name}: component {c} differs by {worst}");
+        }
+        // damaged HT code-blocks give errors or a picture, never a panic
+        let data = std::fs::read(&cs).unwrap();
+        let mut x = 0x5EED_0042u32 ^ data.len() as u32;
+        for k in 0..FUZZ {
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            let mut m = data.clone();
+            if k % 2 == 0 {
+                let bit = x as usize % (m.len() * 8);
+                m[bit / 8] ^= 0x80 >> (bit % 8);
+            } else {
+                let at = x as usize % m.len();
+                for (i, b) in m.iter_mut().skip(at).take(1 + (x >> 24) as usize % 32).enumerate() {
+                    *b = (x >> (i % 24)) as u8;
+                }
+            }
+            let _ = cfa4_j2k::decode(&m);
+        }
+        println!("{name}: ok");
+    }
+}
+
+/// HTJ2K codestreams from other encoders, dropped into `target/fixtures/j2k/ht-samples/` (never
+/// committed): Grok writes cleanup passes only, so the significance propagation and magnitude
+/// refinement passes and placeholder passes are checked here, against OpenJPEG's decode (±1).
+/// OpenJPH's `subprojects/js/html/test.j2c` (Kakadu-style, with refinement passes) is one such
+/// stream. 8-bit RGB streams only; skipped without samples or `opj_decompress`.
+#[test]
+fn htj2k_sample_codestreams() {
+    let Some(dec) = opj("opj_decompress") else {
+        eprintln!("skipped: OpenJPEG (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("ht-samples");
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        eprintln!("skipped: no HTJ2K samples in {}", dir.display());
+        return;
+    };
+    let out_dir = cfa4_testkit::fixtures_dir("j2k").join("ht-samples-out");
+    std::fs::create_dir_all(&out_dir).unwrap();
+    for e in entries.flatten() {
+        let cs = e.path();
+        if !matches!(cs.extension().and_then(|x| x.to_str()), Some("j2c" | "j2k" | "jph" | "jhc")) {
+            continue;
+        }
+        let name = cs.file_name().unwrap().to_string_lossy().to_string();
+        let img = cfa4_j2k::decode(&std::fs::read(&cs).unwrap()).unwrap_or_else(|e| panic!("{name}: {e}"));
+        if img.components.len() != 3 || img.components.iter().any(|p| p.precision != 8) {
+            eprintln!("{name}: skipped (not 8-bit RGB)");
+            continue;
+        }
+        let out = out_dir.join(format!("{name}.ppm"));
+        let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+        let want = ppm(&std::fs::read(&out).unwrap());
+        for (c, p) in img.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&want[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= 1, "{name}: component {c} differs by {worst}");
+        }
+        println!("{name}: ok");
     }
 }
 
@@ -311,5 +431,108 @@ fn generate_fixtures() {
     for s in SPECS {
         let out = cfa4_testkit::fixtures_dir("j2k").join(format!("{}.{}", s.name, s.ext));
         cfa4_testkit::fixtures::generate_and_report(&format!("j2k/{}", s.name), &[out], || make(&ff, s));
+    }
+}
+
+/// Planes of an `opj_decompress -o x.rawl` file: each component in turn, little-endian, one byte
+/// per sample up to 8 bits and two above.
+fn rawl(data: &[u8], planes: &[(usize, u8, bool)]) -> Vec<Vec<i32>> {
+    let mut at = 0;
+    planes
+        .iter()
+        .map(|&(n, precision, signed)| {
+            let size = if precision > 8 { 2 } else { 1 };
+            let bytes = &data[at..at + n * size];
+            at += n * size;
+            bytes
+                .chunks(size)
+                .map(|b| match (size, signed) {
+                    (1, false) => i32::from(b[0]),
+                    (1, true) => i32::from(b[0] as i8),
+                    (_, false) => i32::from(u16::from_le_bytes([b[0], b[1]])),
+                    _ => i32::from(i16::from_le_bytes([b[0], b[1]])),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// Our encoder's codestreams in OpenJPEG and ffmpeg: lossless ones decode to the input exactly
+/// there too, lossy ones (rate controlled, DCI 2K / 4K) within ±1 of our own decode. Skipped
+/// without the tools.
+#[test]
+fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
+    use cfa4_j2k::{EncodeOptions, Image, Plane, Progression};
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let Some(dec) = opj("opj_decompress") else {
+        eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("encoder");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.ppm");
+    let st = Command::new(&ff)
+        .args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=206x118", "-frames:v", "1", "-vf", "format=rgb24,crop=203:117:0:0", "-pix_fmt", "rgb24"])
+        .arg(&input)
+        .status();
+    assert!(matches!(st, Ok(s) if s.success()));
+    let rgb = ppm(&std::fs::read(&input).unwrap());
+    let plane = |data: Vec<i32>, precision: u8| Plane { width: 203, height: 117, precision, signed: false, dx: 1, dy: 1, data };
+    let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect() };
+    // 12-bit for the cinema profiles (the 8-bit pattern scaled up, plus a ramp)
+    let rgb12 = Image {
+        width: 203,
+        height: 117,
+        components: rgb.iter().enumerate().map(|(c, d)| plane(d.iter().enumerate().map(|(i, &v)| v * 16 + ((i + c) % 16) as i32).collect(), 12)).collect(),
+    };
+    let cases: Vec<(&str, &Image, EncodeOptions, bool)> = vec![
+        ("lossless", &rgb8, EncodeOptions::lossless(), true),
+        (
+            "lossless_cprl",
+            &rgb8,
+            EncodeOptions {
+                progression: Progression::Cprl,
+                precincts: vec![(5, 5), (6, 6)],
+                code_block: (5, 5),
+                tile_part_per_component: true,
+                tlm: true,
+                ..EncodeOptions::lossless()
+            },
+            true,
+        ),
+        ("lossless_rpcl_nomct", &rgb8, EncodeOptions { progression: Progression::Rpcl, mct: false, levels: 3, ..EncodeOptions::lossless() }, true),
+        ("lossy", &rgb8, EncodeOptions::lossy(2.0), false),
+        ("lossy_budget", &rgb8, EncodeOptions { max_bytes: Some(6_000), ..EncodeOptions::lossy(0.5) }, false),
+        ("lossless_budget", &rgb8, EncodeOptions { max_bytes: Some(9_000), ..EncodeOptions::lossless() }, false),
+        ("dci2k", &rgb12, EncodeOptions::cinema_2k(24), false),
+        ("dci2k_budget", &rgb12, EncodeOptions { max_bytes: Some(12_000), max_component_bytes: Some(5_000), ..EncodeOptions::cinema_2k(24) }, false),
+        ("dci4k", &rgb12, EncodeOptions::cinema_4k(24), false),
+    ];
+    for (name, img, opts, lossless) in cases {
+        let data = cfa4_j2k::encode(img, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let ours = cfa4_j2k::decode(&data).unwrap();
+        if lossless {
+            assert_eq!(&ours, img, "{name}: our decode");
+        }
+        let (cs, out) = (dir.join(format!("{name}.j2c")), dir.join(format!("{name}.rawl")));
+        std::fs::write(&cs, &data).unwrap();
+        let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+        let shape: Vec<_> = img.components.iter().map(|p| (p.data.len(), p.precision, p.signed)).collect();
+        let theirs = rawl(&std::fs::read(&out).unwrap(), &shape);
+        for (c, p) in ours.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&theirs[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= i32::from(!lossless), "{name}: OpenJPEG component {c} differs by {worst}");
+        }
+        // ffmpeg's own decoder, for the 8-bit ones
+        if img.components[0].precision == 8 {
+            let o =
+                Command::new(&ff).args(["-v", "error", "-c:v", "jpeg2000", "-i"]).arg(&cs).args(["-pix_fmt", "rgb24", "-f", "rawvideo", "-"]).output().unwrap();
+            assert!(o.status.success(), "{name}: ffmpeg");
+            for (c, p) in ours.components.iter().enumerate() {
+                let worst = p.data.iter().enumerate().map(|(i, &a)| (a - i32::from(o.stdout[3 * i + c])).abs()).max().unwrap_or(0);
+                assert!(worst <= i32::from(!lossless), "{name}: ffmpeg component {c} differs by {worst}");
+            }
+        }
     }
 }
