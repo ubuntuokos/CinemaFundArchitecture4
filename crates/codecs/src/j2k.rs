@@ -78,17 +78,17 @@ pub fn color(components: Components, width: u32, height: u32, hints: J2kHints) -
 /// The samples of `p` as unsigned values of `bits` bits on a `w`×`h` plane whose samples are
 /// `step` reference-grid positions apart: each output sample takes the component sample that
 /// covers its reference-grid position (nearest neighbour across the component's own `dx`×`dy`
-/// sub-sampling), repeating the last column and row past the component's edge. Colour samples
-/// shift by the precision difference; `alpha` samples scale across the full range instead, so a
-/// 1-bit opaque 1 becomes the `bits`-bit maximum.
-fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), alpha: bool) -> Vec<u16> {
+/// sub-sampling), repeating the last column and row past the component's edge. Y'CbCr samples
+/// shift by the precision difference (video levels scale that way); `full_range` samples (R'G'B',
+/// X'Y'Z', alpha) scale across the full range instead, so a 1-bit 1 becomes the `bits`-bit maximum.
+fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), full_range: bool) -> Vec<u16> {
     let prec = u32::from(p.precision).clamp(1, 16);
     let offset = if p.signed { 1i64 << (prec - 1) } else { 0 };
     let max = (1i64 << prec) - 1;
     let out_max = (1i64 << bits) - 1;
     let level = |v: i32| -> u16 {
         let v = (i64::from(v) + offset).clamp(0, max);
-        let v = if alpha {
+        let v = if full_range {
             (v * out_max + max / 2) / max
         } else if bits >= prec {
             v << (bits - prec)
@@ -167,11 +167,10 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
     let (cw, ch) = ((w + (1 << sx) - 1) >> sx, (h + (1 << sy) - 1) >> sy);
     let mid = 1u16 << (bits - 1);
     let (full, sub) = ((1, 1), (1 << sx, 1 << sy));
+    let rgb = matches!(components, Components::Rgb | Components::Xyz);
     let (mut p0, mut p1, mut p2) = match c.get(1..3) {
-        Some([p1, p2]) if colour_planes == 3 => {
-            (plane(first, bits, w, h, full, false), plane(p1, bits, cw, ch, sub, false), plane(p2, bits, cw, ch, sub, false))
-        }
-        _ => (plane(first, bits, w, h, full, false), vec![mid; cw * ch], vec![mid; cw * ch]),
+        Some([p1, p2]) if colour_planes == 3 => (plane(first, bits, w, h, full, rgb), plane(p1, bits, cw, ch, sub, rgb), plane(p2, bits, cw, ch, sub, rgb)),
+        _ => (plane(first, bits, w, h, full, rgb), vec![mid; cw * ch], vec![mid; cw * ch]),
     };
     match components {
         Components::Rgb => rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits),
@@ -351,6 +350,18 @@ mod tests {
         let want = [black, black, white, white, black, black, white, white, white, white, black, black, white, white, black, black];
         assert_eq!(planes[0].as_slice(), &want);
         assert_eq!(a.as_slice(), &[255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    /// R'G'B' components below 8 bits scale to the full 8-bit range before the matrix: 1-bit
+    /// white is video white (235), not the 126 a bit shift to 128 gave.
+    #[test]
+    fn low_precision_rgb_scales_to_the_full_range() {
+        for (prec, white) in [(1u8, 1), (4, 15)] {
+            let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, prec, false, white); 3], mct: false };
+            let f = to_video_frame(&image, Components::Rgb, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
+            let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
+            assert!(planes[0].iter().all(|&v| v == 235), "{prec}-bit white gives Y {:?}", planes[0].first());
+        }
     }
 
     /// A huge reference grid with tiny sub-sampled components is refused before the full-size
