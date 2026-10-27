@@ -174,3 +174,9 @@ Current classification:
 
 A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides
 otherwise; record each decision in the table above.
+
+**Patent review** (ADR 0003 §13, owner decision 2026-10-27): every format CFA4 handles – its own
+codecs and containers, the hardware paths, the FFmpeg and GStreamer backends and the components of
+`cfa4-restricted-extras` – is reviewed, and each result is recorded in
+[`patent-review.md`](patent-review.md) with its date, reviewer and source. A public release needs a
+recorded result for every format of the base package (release gate `patent_review_recorded`).
