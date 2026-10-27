@@ -63,13 +63,14 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use cfa4_isobmff::{Brand, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+use cfa4_isobmff::{Brand, CodecConfig, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use cfa4_project::{ItemId, Project};
 use cfa4_render::SourceProvider;
 use cfa4_time::FrameRate;
 use rayon::prelude::*;
 
 use crate::audio_out::AudioOut;
+use crate::mpeg_out::{MpegAudio, MpegMux};
 use crate::mxf_out::{MxfMux, MxfSetup};
 use crate::pipeline::Pipeline;
 use crate::settings::{AudioCodec, BitrateMode};
@@ -177,6 +178,8 @@ pub struct Exporter {
     mux: Option<Mp4Writer<Out>>,
     /// MXF exports write through this instead of `mux`.
     mxf: Option<MxfMux>,
+    /// MPEG-2 exports write through this.
+    mpeg: Option<MpegMux>,
     seq: ItemId,
     project: Arc<Project>,
     vt: usize,
@@ -188,7 +191,16 @@ pub struct Exporter {
 pub fn stepped(format: Format) -> bool {
     matches!(
         format,
-        Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg | Format::MxfOp1a | Format::MxfOpAtom
+        Format::H264
+            | Format::Hevc
+            | Format::Av1
+            | Format::ProRes
+            | Format::DnxHr
+            | Format::Apv
+            | Format::Mjpeg
+            | Format::MxfOp1a
+            | Format::MxfOpAtom
+            | Format::Mpeg2
     )
 }
 
@@ -276,6 +288,7 @@ impl Exporter {
             queued: Vec::new(),
             mux: None,
             mxf: None,
+            mpeg: None,
             seq,
             project: project.clone(),
             vt: 0,
@@ -337,7 +350,19 @@ impl Exporter {
         self.pipe.rate.tick_of(f).to_units_floor(sr as i64)
     }
 
+    /// Whether the container writer exists (it is created after the first group is encoded).
+    fn mux_open(&self) -> bool {
+        self.mux.is_some() || self.mxf.is_some() || self.mpeg.is_some()
+    }
+
     fn write_audio(&mut self, planar: Option<Vec<Vec<f32>>>) -> Result<()> {
+        if let Some(m) = self.mpeg.as_mut() {
+            let Some(buf) = planar else { return Ok(()) };
+            return match self.aenc.as_mut() {
+                Some(a) => m.write_aac(a.encode(&buf)?, a.frame_size()),
+                None => m.write_pcm(&buf),
+            };
+        }
         if let Some(m) = self.mxf.as_mut() {
             return match planar {
                 Some(buf) => m.write_audio(&buf),
@@ -372,6 +397,9 @@ impl Exporter {
         if let Some(m) = self.mxf.as_mut() {
             return m.write_video(packets);
         }
+        if let Some(m) = self.mpeg.as_mut() {
+            return m.write_video(packets);
+        }
         let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
         for p in packets {
             mux.write_sample(self.vt, WriteSample { data: &p.data, duration: p.duration, composition_offset: p.composition_offset, is_sync: p.key })
@@ -382,6 +410,27 @@ impl Exporter {
 
     /// Create the muxer and its tracks (after the first batch was encoded).
     fn open_mux(&mut self) -> Result<()> {
+        if self.settings.format == Format::Mpeg2 {
+            let audio = match (&self.audio, &self.aenc) {
+                (None, _) => None,
+                (Some(a), Some(enc)) => {
+                    let SampleEntry { codec: CodecConfig::Aac(cfg), .. } = enc.sample_entry() else {
+                        return Err(ExportError::Encode("internal: MPEG-2 transport streams carry AAC".into()));
+                    };
+                    let header = crate::aac_out::AdtsHeader::from_asc(&cfg.asc)?;
+                    Some(MpegAudio::Aac { header, sample_rate: a.sr, priming: enc.priming() })
+                }
+                (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32 }),
+            };
+            let audio_bps = match (&self.audio, &self.aenc) {
+                (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(a), None) => u64::from(a.sr) * a.channels as u64 * 16,
+                _ => 0,
+            };
+            let peak = self.settings.max_bitrate_kbps.unwrap_or(self.settings.bitrate_kbps);
+            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps))?);
+            return Ok(());
+        }
         if self.settings.format.is_mxf() {
             let q = self.project.sequence(self.seq).ok_or(ExportError::NoSequence)?;
             // start timecode of the first exported frame, at the output rate
@@ -473,13 +522,16 @@ impl Exporter {
         if cfa4_media::pending::take() {
             return Ok(Step::Pending);
         }
-        if self.mux.is_none() && self.mxf.is_none() {
+        if !self.mux_open() {
             self.open_mux()?;
         }
         let mut tail = std::mem::take(&mut self.queued);
         tail.extend(self.venc.flush()?);
         self.write_video(tail)?;
         self.write_audio(mixed)?;
+        if let (Some(m), Some(a)) = (self.mpeg.as_mut(), self.aenc.as_mut()) {
+            m.write_aac(a.flush()?, a.frame_size())?;
+        }
         if let (Some(at), Some(a)) = (self.at, self.aenc.as_mut()) {
             let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
             for (au, duration) in a.flush_timed()? {
@@ -489,9 +541,10 @@ impl Exporter {
                 mux.set_sample_entry(at, entry).map_err(|e| ExportError::Io(e.to_string()))?;
             }
         }
-        let (bytes, extra_files) = match self.mxf.take() {
-            Some(m) => m.finish(&self.settings)?,
-            None => {
+        let (bytes, extra_files) = match (self.mxf.take(), self.mpeg.take()) {
+            (Some(m), _) => m.finish(&self.settings)?,
+            (None, Some(m)) => (m.finish(&self.settings)?, Vec::new()),
+            (None, None) => {
                 let w = self
                     .mux
                     .take()
@@ -614,7 +667,7 @@ impl Exporter {
             self.queued.extend(packets);
             if cuts.contains(&(fi + 1)) {
                 timed(Stage::Mux, || -> Result<()> {
-                    if self.mux.is_none() && self.mxf.is_none() {
+                    if !self.mux_open() {
                         self.open_mux()?;
                     }
                     let packets = std::mem::take(&mut self.queued);

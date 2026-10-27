@@ -230,13 +230,14 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 export (software or hardware), MPEG-2 export / DVD / Blu-ray (the MPEG-2
-  video encoder exists in `cfa4-mpeg2v`, #98), DCP, JPEG 2000 MXF,
+- **Missing:** AV1 export (software or hardware), DVD / Blu-ray (#244, #245), MPEG-2 B pictures,
+  CBR / VBV and interlace (#240-#242), MP2 audio, DCP, JPEG 2000 MXF,
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).
-- **Have:** PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
+- **Have:** MPEG-2 export (#243: program stream with DVD LPCM, transport stream / BDAV `.m2ts`
+  with AAC, `.m2v` elementary stream); PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); ProRes 4444 / 4444 XQ in the export UI (#342);
   H.265 software encoder (Main / Main 10 HDR, CRF / CBR / VBR, parallel slices; hardware

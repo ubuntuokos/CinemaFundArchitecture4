@@ -43,6 +43,13 @@ from ..i18n import N_, tr
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
+# MPEG-2 containers (`Mpeg2Container` in crates/export): id, label, file extension
+MPEG2_CONTAINERS = (
+    ("ps", N_("Program Stream (.mpg, LPCM audio)"), "mpg"),
+    ("ts", N_("Transport Stream (.ts, AAC audio)"), "ts"),
+    ("m2ts", N_("BDAV Transport Stream (.m2ts, AAC audio)"), "m2ts"),
+    ("es", N_("Elementary Stream (.m2v, no audio)"), "m2v"),
+)
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
@@ -140,6 +147,11 @@ class ExportDialog(QDialog):
         self.preset.setObjectName("export.preset")
         self.format = QComboBox(self)
         self.format.setObjectName("export.format")
+        self.container = QComboBox(self)
+        self.container.setObjectName("export.mpeg2Container")
+        for key, label, _ext in MPEG2_CONTAINERS:
+            self.container.addItem(tr(label), key)
+        self.container.setEnabled(False)  # MPEG-2 only
         self.path = QLineEdit(self)
         self.path.setObjectName("export.path")
         browse = QPushButton(tr("Browse…"), self)
@@ -185,6 +197,22 @@ class ExportDialog(QDialog):
         self.bitrate.setRange(0, 1_000_000)
         self.bitrate.setSuffix(" kbps")
         self.bitrate.setSpecialValueText(tr("From the preset"))
+        # MPEG-2 only: GOP length, constant quantiser, 4:2:2 Profile
+        self.gop = QSpinBox(self)
+        self.gop.setObjectName("export.keyframeDistance")
+        self.gop.setRange(0, 1000)
+        self.gop.setSpecialValueText(tr("From the preset"))
+        self.gop.setSuffix(" " + tr("frames"))
+        self.quantizer = QSpinBox(self)
+        self.quantizer.setObjectName("export.mpeg2Quantizer")
+        self.quantizer.setRange(0, 31)
+        self.quantizer.setSpecialValueText(tr("Off (target bitrate)"))
+        self.chroma = QComboBox(self)
+        self.chroma.setObjectName("export.mpeg2Chroma")
+        self.chroma.addItem(tr("4:2:0 (Main Profile)"), "420")
+        self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
+        for w in (self.gop, self.quantizer, self.chroma):
+            w.setEnabled(False)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
         self.hardware.setObjectName("export.hardwareEncoding")
         self.burn = QCheckBox(tr("Burn in captions"), self)
@@ -202,6 +230,7 @@ class ExportDialog(QDialog):
         f.addRow(tr("Sequence"), self.sequence_label)
         f.addRow(tr("Preset"), self.preset)
         f.addRow(tr("Format"), self.format)
+        f.addRow(tr("Container"), self.container)
         f.addRow(tr("Output file"), path_row)
         f.addRow(tr("Range"), range_row)
         video = QGroupBox(tr("Video"), self)
@@ -209,6 +238,9 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Frame size"), size_row)
         fv.addRow(tr("Bitrate mode"), self.bitrate_mode)
         fv.addRow(tr("Target bitrate"), self.bitrate)
+        fv.addRow(tr("Keyframe distance"), self.gop)
+        fv.addRow(tr("Constant quantiser"), self.quantizer)
+        fv.addRow(tr("Chroma"), self.chroma)
         fv.addRow(self.hardware)
         fv.addRow(self.burn)
         audio = QGroupBox(tr("Audio"), self)
@@ -285,12 +317,13 @@ class ExportDialog(QDialog):
         self._poll.timeout.connect(self.refresh_queue)
         self.preset.currentIndexChanged.connect(self._preset_changed)
         self.format.currentIndexChanged.connect(self._format_changed)
+        self.container.currentIndexChanged.connect(self._container_changed)
         self.range.currentIndexChanged.connect(self._range_changed)
         for w in (self.start, self.end):
             w.valueChanged.connect(self._changed)
-        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate)):
+        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("gop", self.gop), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
-        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec)):
+        for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
@@ -378,6 +411,11 @@ class ExportDialog(QDialog):
             self.width_spin.setValue(0)
             self.height_spin.setValue(0)
         self.bitrate.setValue(0)
+        self.gop.setValue(0)
+        self.quantizer.setValue(0)
+        self.chroma.setCurrentIndex(0)
+        index = self.container.findData(preset.get("mpeg2Container") or "ps")
+        self.container.setCurrentIndex(max(0, index))
         self.touched.clear()
         self._loading = False
         self._default_path()
@@ -389,8 +427,26 @@ class ExportDialog(QDialog):
         self.audio_codec.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
+        mpeg2 = self.format.currentData() == "mpeg2"
+        for w in (self.container, self.gop, self.quantizer, self.chroma):
+            w.setEnabled(mpeg2)
+        self._container_changed()
+
+    def _extension(self) -> str:
+        """The output file's extension: the MPEG-2 container's, else the format's."""
+        if self.container.isEnabled():
+            return next(ext for key, _label, ext in MPEG2_CONTAINERS if key == self.container.currentData())
+        return str(self.formats.get(str(self.format.currentData() or ""), {}).get("extension") or "")
+
+    def _container_changed(self) -> None:
+        mpeg2 = self.container.isEnabled()
+        if mpeg2:
+            # the elementary stream has no audio
+            has_audio = self.container.currentData() != "es"
+            self.audio.setEnabled(has_audio)
+            self.audio_codec.setEnabled(False)  # LPCM in program streams, AAC in transport streams
         if self.path.text():
-            self.path.setText(with_extension(self.path.text(), str(fmt.get("extension") or "")))
+            self.path.setText(with_extension(self.path.text(), self._extension()))
         self._changed()
 
     def _range_changed(self) -> None:
@@ -405,11 +461,11 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
         base = default_output_dir(self.project_path) / name
-        self.path.setText(with_extension(str(base), str(fmt.get("extension") or "mp4")))
+        self.path.setText(with_extension(str(base), self._extension() or str(fmt.get("extension") or "mp4")))
 
     def _browse(self) -> None:
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
-        ext = str(fmt.get("extension") or "")
+        ext = self._extension()
         pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
         path, _ = QFileDialog.getSaveFileName(self, tr("Output file"), self.path.text(), pattern)
         if path:
@@ -458,6 +514,14 @@ class ExportDialog(QDialog):
                 p["audio"] = self.audio.isChecked()
             if "audioCodec" in self.touched:
                 p["audioCodec"] = self.audio_codec.currentData()
+        if self.container.isEnabled():
+            p["mpeg2Container"] = self.container.currentData()
+            if self.gop.value():
+                p["keyframeDistance"] = self.gop.value()
+            if "quantizer" in self.touched:
+                p["mpeg2Quantizer"] = self.quantizer.value()
+            if "chroma" in self.touched:
+                p["mpeg2Chroma"] = self.chroma.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p

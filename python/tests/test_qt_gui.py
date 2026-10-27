@@ -1830,6 +1830,76 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
+    """MPEG-2: the Container choice sets the file extension and the audio, and the engine writes
+    that container (#243)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.container.isEnabled()
+        assert "mpeg2Container" not in dlg.params()
+        # the built-in transport stream preset picks MPEG-2 and its container
+        dlg.preset.setCurrentIndex(dlg.preset.findData("MPEG-2 Transport Stream HD 1080"))
+        assert dlg.format.currentData() == "mpeg2" and dlg.container.isEnabled()
+        assert dlg.container.currentData() == "ts"
+        dlg.container.setCurrentIndex(dlg.container.findData("es"))
+        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled()
+        dlg.container.setCurrentIndex(dlg.container.findData("ts"))
+        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled()
+        assert dlg.params()["mpeg2Container"] == "ts"
+        # GOP, quantiser and chroma go to the engine once chosen
+        dlg.gop.setValue(12)
+        dlg.chroma.setCurrentIndex(dlg.chroma.findData("422"))
+        p = dlg.params()
+        assert (p["keyframeDistance"], p["mpeg2Chroma"]) == (12, "422") and "mpeg2Quantizer" not in p
+        dlg.quantizer.setValue(4)
+        assert dlg.params()["mpeg2Quantizer"] == 4
+        dlg.quantizer.setValue(0)
+        dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(320)
+        dlg.height_spin.setValue(180)
+        out = tmp_path / "out" / "cut.ts"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "320×180" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        assert out.read_bytes()[:1] == b"\x47"
+        if shutil.which("ffprobe"):
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=format_name:stream=codec_name,width,height", "-of", "json", str(out)],
+                capture_output=True, check=True, timeout=60,
+            )
+            info = json.loads(probe.stdout)
+            assert info["format"]["format_name"] == "mpegts"
+            assert sorted(s["codec_name"] for s in info["streams"]) == ["aac", "mpeg2video"], info
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_tick_signals_carry_64_bit_times(app):
     """Regression: Signal(int) is a 32-bit C int in PySide6, so a playhead past 8.5 ms (ticks are
     254 016 000 000 per second) wrapped to a wrong, often negative time while scrubbing the

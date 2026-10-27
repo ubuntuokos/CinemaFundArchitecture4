@@ -967,6 +967,8 @@ dependencies = [
  "cfa4-hevc",
  "cfa4-isobmff",
  "cfa4-media",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
  "cfa4-mxf",
  "cfa4-project",
  "cfa4-prores",

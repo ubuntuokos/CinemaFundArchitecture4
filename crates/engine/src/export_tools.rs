@@ -300,6 +300,24 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "mxfVideoCodec") {
         settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264"))?;
     }
+    if let Some(v) = str_p(p, "mpeg2Container") {
+        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
+        settings.mpeg2_container = c.id().to_string();
+    }
+    if let Some(v) = str_p(p, "mpeg2Chroma") {
+        settings.mpeg2_422 = match v {
+            "420" | "4:2:0" => false,
+            "422" | "4:2:2" => true,
+            _ => return Err(bad(cmd, "mpeg2Chroma: 420 | 422")),
+        };
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
+        settings.mpeg2_quantizer = match v {
+            0 => None,
+            1..=31 => Some(v as u8),
+            _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
+        };
+    }
     if let Some(v) = bool_p(p, "sdr") {
         settings.sdr = v;
     }
@@ -409,6 +427,10 @@ fn with_extension(path: &str, settings: &ExportSettings) -> String {
             path.to_string()
         }
         Some(_) if settings.is_image_sequence() || matches!(settings.format, Format::Aiff) => format!("{}.{ext}", path.rsplit_once('.').map_or(path, |x| x.0)),
+        // another MPEG-2 container's extension: the chosen container's replaces it
+        Some(e) if settings.format == Format::Mpeg2 && cfa4_export::Mpeg2Container::from_name(e).is_some() => {
+            format!("{}.{ext}", path.rsplit_once('.').map_or(path, |x| x.0))
+        }
         _ => format!("{path}.{ext}"),
     }
 }
@@ -960,6 +982,7 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "formatLabel": pr.settings.format.label(),
         "extension": pr.settings.extension(),
         "frameSize": pr.settings.frame_size,
+        "mpeg2Container": pr.settings.mpeg2_container,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
