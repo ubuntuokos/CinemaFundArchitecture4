@@ -131,7 +131,7 @@ that adds them names the source and revision.
 
 | CFA4 path | Origin (project, URL, revision, path) | Copyright holders | Licence |
 |---|---|---|---|
-| *(none yet)* | | | |
+| `crates/dts/src/` (except `cfa4.rs`) | `dca` crate 0.9.0 of harletty-bridge, <https://github.com/harletty/harletty-bridge>, commit `74cf6edaef6742777d3eb4da35387fd370f2e9f3`, `dca/src/`; itself a port of FFmpeg `libavcodec/dca*.c`, `dcadsp.c`, `dcadct.c`, `synth_filter.c` | foo86 and the FFmpeg developers; the harletty-bridge contributors | LGPL-2.1-or-later (`crates/dts/COPYING.LGPL-2.1`; published by harletty-bridge as Apache-2.0, `crates/dts/LICENSE.harletty-bridge`). FFmpeg-derived code, an owner-approved exception to the FFmpeg-only-in-tests rule (#83) |
 
 ## 6. Dependency checks
 
