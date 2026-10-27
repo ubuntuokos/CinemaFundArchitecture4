@@ -76,12 +76,13 @@ pub fn color(components: Components, width: u32, height: u32, hints: J2kHints) -
 }
 
 /// The samples of `p` as unsigned values of `bits` bits on a `w`×`h` plane whose samples are
-/// `step` reference-grid positions apart: each output sample takes the component sample that
-/// covers its reference-grid position (nearest neighbour across the component's own `dx`×`dy`
-/// sub-sampling), repeating the last column and row past the component's edge. Y'CbCr samples
+/// `step` reference-grid positions apart, starting at the image `origin` (XOsiz, YOsiz): each
+/// output sample takes the component sample that covers its reference-grid position (nearest
+/// neighbour across the component's own `dx`×`dy` sub-sampling; the component's first sample is
+/// the one at `ceil(origin / d)`), repeating the edge samples past the component's edges. Y'CbCr samples
 /// shift by the precision difference (video levels scale that way); `full_range` samples (R'G'B',
 /// X'Y'Z', alpha) scale across the full range instead, so a 1-bit 1 becomes the `bits`-bit maximum.
-fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), full_range: bool) -> Vec<u16> {
+fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), origin: (u32, u32), full_range: bool) -> Vec<u16> {
     let prec = u32::from(p.precision).clamp(1, 16);
     let offset = if p.signed { 1i64 << (prec - 1) } else { 0 };
     let max = (1i64 << prec) - 1;
@@ -103,10 +104,13 @@ fn plane(p: &Plane, bits: u32, w: usize, h: usize, step: (usize, usize), full_ra
         return out;
     }
     let (dx, dy) = (usize::from(p.dx.max(1)), usize::from(p.dy.max(1)));
+    let (ox, oy) = (origin.0 as usize, origin.1 as usize);
+    // the component sample covering reference position `o + i·step`, from the component's first
+    let index = |i: usize, step: usize, o: usize, d: usize| (o.saturating_add(i.saturating_mul(step)) / d).saturating_sub(o.div_ceil(d));
     for (y, row) in out.chunks_exact_mut(w.max(1)).enumerate() {
-        let sy = (y.saturating_mul(step.1) / dy).min(ph - 1) * pw;
+        let sy = index(y, step.1, oy, dy).min(ph - 1) * pw;
         for (x, o) in row.iter_mut().enumerate() {
-            let sx = (x.saturating_mul(step.0) / dx).min(pw - 1);
+            let sx = index(x, step.0, ox, dx).min(pw - 1);
             *o = p.data.get(sy + sx).map_or(0, |&v| level(v));
         }
     }
@@ -147,7 +151,10 @@ fn xyz_to_rgb(x: &mut [u16], y: &mut [u16], z: &mut [u16], bits: u32) {
 }
 
 /// A decoded JPEG 2000 image as a [`VideoFrame`] (see the module documentation).
-pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) -> Result<VideoFrame> {
+///
+/// `origin` is the image area's top-left corner on the reference grid (XOsiz, YOsiz from the
+/// [`Header`]): sub-sampled components start at `ceil(origin / d)`.
+pub fn to_video_frame(image: &Image, origin: (u32, u32), components: Components, hints: J2kHints) -> Result<VideoFrame> {
     // the output planes are full-size even when the components are sub-sampled, so the codestream's
     // own sample limit does not bound them
     let samples = u64::from(image.width).saturating_mul(u64::from(image.height)).saturating_mul(4);
@@ -173,9 +180,9 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
     let luma_full = rgb || hints.full_range;
     let (mut p0, mut p1, mut p2) = match c.get(1..3) {
         Some([p1, p2]) if colour_planes == 3 => {
-            (plane(first, bits, w, h, full, luma_full), plane(p1, bits, cw, ch, sub, rgb), plane(p2, bits, cw, ch, sub, rgb))
+            (plane(first, bits, w, h, full, origin, luma_full), plane(p1, bits, cw, ch, sub, origin, rgb), plane(p2, bits, cw, ch, sub, origin, rgb))
         }
-        _ => (plane(first, bits, w, h, full, luma_full), vec![mid; cw * ch], vec![mid; cw * ch]),
+        _ => (plane(first, bits, w, h, full, origin, luma_full), vec![mid; cw * ch], vec![mid; cw * ch]),
     };
     match components {
         Components::Rgb => rgb_to_ycbcr(&mut p0, &mut p1, &mut p2, bits),
@@ -185,7 +192,7 @@ pub fn to_video_frame(image: &Image, components: Components, hints: J2kHints) ->
         }
         Components::Ycbcr(_) | Components::Gray => {}
     }
-    let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h, full, true));
+    let alpha = c.get(colour_planes).map(|a| plane(a, bits, w, h, full, origin, true));
     let data = if bits == 8 {
         let to8 = |p: Vec<u16>| Arc::new(p.into_iter().map(|v| v as u8).collect::<Vec<u8>>());
         PixelData::Yuv8 { planes: [to8(p0), to8(p1), to8(p2)], chroma, alpha: alpha.map(to8) }
@@ -225,7 +232,7 @@ impl VideoDecoder for J2kDecoder {
         let header = cfa4_j2k::parse_header(cs).map_err(err)?;
         let image = cfa4_j2k::decode(cs).map_err(err)?;
         let components = after_decode(components(&header, self.hints)?, &image);
-        Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, components, self.hints)?, draft: false }])
+        Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, (header.x0, header.y0), components, self.hints)?, draft: false }])
     }
     fn flush(&mut self) -> Vec<DecodedFrame> {
         Vec::new()
@@ -292,7 +299,7 @@ mod tests {
         let white = [code(0.3127 / 0.3290), code(1.0), code((1.0 - 0.3127 - 0.3290) / 0.3290)];
         for (xyz, y, c) in [(white, 235 * 16, 128 * 16), ([0; 3], 16 * 16, 128 * 16)] {
             let image = Image { width: 8, height: 4, components: xyz.iter().map(|&v| plane_of(8, 4, 12, false, v)).collect(), mct: false };
-            let f = to_video_frame(&image, Components::Xyz, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
+            let f = to_video_frame(&image, (0, 0), Components::Xyz, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
             assert_eq!(f.color.primaries, Primaries::P3D65);
             let PixelData::Yuv16 { planes, bits: 12, .. } = &f.data else { panic!("12-bit Y'CbCr expected") };
             assert!(planes[0].iter().all(|&v| v.abs_diff(y) <= 2), "Y {:?} for {xyz:?}", planes[0].first());
@@ -304,12 +311,12 @@ mod tests {
     fn signed_components_are_offset_and_small_planes_are_padded() {
         // a signed 8-bit gray component of 2×2 in a 4×3 image: 0 is mid-grey, edges repeat
         let image = Image { width: 4, height: 3, components: vec![plane_of(2, 2, 8, true, -128)], mct: false };
-        let f = to_video_frame(&image, Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
+        let f = to_video_frame(&image, (0, 0), Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         assert_eq!(planes[0].len(), 12);
         assert!(planes[0].iter().all(|&v| v == 0));
         let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 8, true, 0)], mct: false };
-        let f = to_video_frame(&image, Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
+        let f = to_video_frame(&image, (0, 0), Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         assert!(planes[0].iter().all(|&v| v == 128));
     }
@@ -327,7 +334,7 @@ mod tests {
     #[test]
     fn low_precision_alpha_scales_to_the_full_range() {
         let comps = vec![plane_of(2, 2, 8, false, 7), plane_of(2, 2, 8, false, 7), plane_of(2, 2, 8, false, 7), plane_of(2, 2, 1, false, 1)];
-        let f = to_video_frame(&Image { width: 2, height: 2, components: comps, mct: false }, Components::Ycbcr(Chroma::C444), J2kHints::default())
+        let f = to_video_frame(&Image { width: 2, height: 2, components: comps, mct: false }, (0, 0), Components::Ycbcr(Chroma::C444), J2kHints::default())
             .unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { alpha: Some(a), .. } = &f.data else { panic!("8-bit with alpha expected") };
         assert!(a.iter().all(|&v| v == 255));
@@ -338,16 +345,24 @@ mod tests {
     #[test]
     fn sub_sampled_components_are_resampled_to_the_reference_grid() {
         let gray = Plane { width: 2, height: 1, precision: 8, signed: false, dx: 2, dy: 1, data: vec![16, 235] };
-        let f = to_video_frame(&Image { width: 4, height: 1, components: vec![gray], mct: false }, Components::Gray, J2kHints::default())
+        let f = to_video_frame(&Image { width: 4, height: 1, components: vec![gray], mct: false }, (0, 0), Components::Gray, J2kHints::default())
             .unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         assert_eq!(planes[0].as_slice(), &[16, 16, 235, 235]);
+
+        // XOsiz 1: the component's samples cover reference x 2-3 and 4-5, so pixels at x 1 (past
+        // the edge), 2 and 3 take the first; the old mapping shifted the plane a pixel left
+        let gray = Plane { width: 2, height: 1, precision: 8, signed: false, dx: 2, dy: 1, data: vec![16, 235] };
+        let f = to_video_frame(&Image { width: 4, height: 1, components: vec![gray], mct: false }, (1, 0), Components::Gray, J2kHints::default())
+            .unwrap_or_else(|e| panic!("{e}"));
+        let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
+        assert_eq!(planes[0].as_slice(), &[16, 16, 16, 235]);
 
         // 2×2 R'G'B' components (2×2 sub-sampled) and an alpha component (1×2) on a 4×4 grid
         let rgb = |dx, dy, data: Vec<i32>| Plane { width: 4 / u32::from(dx), height: 4 / u32::from(dy), precision: 8, signed: false, dx, dy, data };
         let quad = vec![0, 255, 255, 0];
         let comps = vec![rgb(2, 2, quad.clone()), rgb(2, 2, quad.clone()), rgb(2, 2, quad), rgb(1, 2, vec![255, 255, 255, 255, 0, 0, 0, 0])];
-        let f = to_video_frame(&Image { width: 4, height: 4, components: comps, mct: false }, Components::Rgb, J2kHints::default())
+        let f = to_video_frame(&Image { width: 4, height: 4, components: comps, mct: false }, (0, 0), Components::Rgb, J2kHints::default())
             .unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, alpha: Some(a), .. } = &f.data else { panic!("8-bit with alpha expected") };
         let (black, white) = (16, 235);
@@ -363,7 +378,7 @@ mod tests {
     fn low_precision_rgb_scales_to_the_full_range() {
         for (prec, white) in [(1u8, 1), (4, 15)] {
             let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, prec, false, white); 3], mct: false };
-            let f = to_video_frame(&image, Components::Rgb, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
+            let f = to_video_frame(&image, (0, 0), Components::Rgb, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
             let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
             assert!(planes[0].iter().all(|&v| v == 235), "{prec}-bit white gives Y {:?}", planes[0].first());
         }
@@ -375,7 +390,7 @@ mod tests {
     fn low_precision_full_range_gray_keeps_its_white() {
         let image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 1, false, 1)], mct: false };
         for (full_range, want) in [(true, 255), (false, 128)] {
-            let f = to_video_frame(&image, Components::Gray, J2kHints { full_range, ..J2kHints::default() }).unwrap_or_else(|e| panic!("{e}"));
+            let f = to_video_frame(&image, (0, 0), Components::Gray, J2kHints { full_range, ..J2kHints::default() }).unwrap_or_else(|e| panic!("{e}"));
             let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
             assert!(planes[0].iter().all(|&v| v == want), "full range {full_range}: {:?}", planes[0].first());
         }
@@ -386,7 +401,7 @@ mod tests {
     #[test]
     fn huge_output_frames_are_refused() {
         let image = Image { width: 1_000_000, height: 1_000_000, components: vec![plane_of(4, 4, 8, false, 0)], mct: false };
-        assert!(to_video_frame(&image, Components::Gray, J2kHints::default()).is_err());
+        assert!(to_video_frame(&image, (0, 0), Components::Gray, J2kHints::default()).is_err());
     }
 
     /// Images whose planes disagree with their size (hostile input) give a frame, never a panic.
@@ -401,8 +416,8 @@ mod tests {
             mct: false,
         };
         for c in [Components::Xyz, Components::Rgb, Components::Ycbcr(Chroma::C420), Components::Gray] {
-            assert!(to_video_frame(&image, c, J2kHints::default()).is_ok());
+            assert!(to_video_frame(&image, (0, 0), c, J2kHints::default()).is_ok());
         }
-        assert!(to_video_frame(&Image { width: 0, height: 0, components: vec![], mct: false }, Components::Gray, J2kHints::default()).is_err());
+        assert!(to_video_frame(&Image { width: 0, height: 0, components: vec![], mct: false }, (0, 0), Components::Gray, J2kHints::default()).is_err());
     }
 }
