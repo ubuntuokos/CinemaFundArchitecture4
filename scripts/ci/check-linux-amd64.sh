@@ -19,6 +19,7 @@ for script in \
   scripts/dev/audit-ffmpeg-hwaccel.sh \
   scripts/dev/recheck-libplacebo.sh \
   scripts/dev/audit-native-media-e2e.sh \
+  scripts/dev/setup-dcp-inspect.sh \
   scripts/ci/read-ffmpeg-audit-sha256.sh \
   scripts/ci/test-ffmpeg-audit-sha256.sh \
   scripts/ci/test-gpu-hardware-log.sh \
