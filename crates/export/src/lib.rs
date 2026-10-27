@@ -694,10 +694,8 @@ impl ExportSettings {
         if self.format == Format::Av1 && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
         }
-        if self.bitrate_mode == BitrateMode::Crf {
-            if !self.crf.is_finite() || !(0.0..=51.0).contains(&self.crf) {
-                return Err(ExportError::Unsupported("CRF must be between 0 and 51".into()));
-            }
+        if self.bitrate_mode == BitrateMode::Crf && (!self.crf.is_finite() || !(0.0..=51.0).contains(&self.crf)) {
+            return Err(ExportError::Unsupported("CRF must be between 0 and 51".into()));
         }
         Ok(())
     }
