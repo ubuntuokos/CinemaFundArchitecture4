@@ -122,6 +122,9 @@ struct Ctx<'a> {
     measure: &'a dyn Measure,
     warnings: Vec<Warning>,
     bad_colors: Vec<String>,
+    /// For each page, for each block: how many identical blocks come before it in the credits
+    /// (repeated blocks get keys of their own).
+    occurrences: Vec<Vec<usize>>,
 }
 
 impl Ctx<'_> {
@@ -433,6 +436,32 @@ pub fn block_key(b: &Block) -> u64 {
     crate::doc::fnv1a(&refs)
 }
 
+/// A layer's key: its block, which repetition of that block it is (the first has none, so keys
+/// stay as they were before repetitions were counted), its place in the block and its name.
+fn piece_key(bk: u64, nth: usize, k: usize, name: &str) -> String {
+    if nth == 0 { format!("{bk:016x}/{k}/{name}") } else { format!("{bk:016x}#{nth}/{k}/{name}") }
+}
+
+/// For each page and block: how many identical blocks come before it.
+fn occurrences(credits: &Credits) -> Vec<Vec<usize>> {
+    let mut seen: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+    credits
+        .pages
+        .iter()
+        .map(|p| {
+            p.blocks
+                .iter()
+                .map(|b| {
+                    let n = seen.entry(block_key(b)).or_insert(0);
+                    let nth = *n;
+                    *n += 1;
+                    nth
+                })
+                .collect()
+        })
+        .collect()
+}
+
 /// Stack a page's blocks from the top; the gaps between blocks are multiplied by `gap_scale`.
 /// Returns the pieces, the content height and the total of those (elastic) gaps.
 fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, gap_scale: f64) -> Result<(Vec<Piece>, f64, f64), CreditsError> {
@@ -469,12 +498,13 @@ fn stack(ctx: &mut Ctx, styling: &Styling, page: &Page, w: f64, index: usize, ga
         let spine_x = w / 2.0 + finite_or(b.spine, 0.0) * s;
         let (mut ps_, bh) = lay_block(ctx, b, &cs, spine_x, y)?;
         let bk = block_key(b);
+        let nth = ctx.occurrences.get(index).and_then(|v| v.get(k)).copied().unwrap_or(0);
         for (k, p) in ps_.iter_mut().enumerate() {
             let name = match p.layer.params.get("name").map(|x| &x.value) {
                 Some(ParamValue::Text(t)) => t.clone(),
                 _ => String::new(),
             };
-            p.key = format!("{bk:016x}/{k}/{name}");
+            p.key = piece_key(bk, nth, k, &name);
         }
         y += bh;
         pieces.extend(ps_);
@@ -611,6 +641,7 @@ pub fn layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &dyn 
         measure,
         warnings: credits.warnings.clone(),
         bad_colors: vec![],
+        occurrences: occurrences(credits),
     };
     let mut pages = Vec::with_capacity(credits.pages.len());
     for (i, p) in credits.pages.iter().enumerate() {

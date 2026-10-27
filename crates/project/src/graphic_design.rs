@@ -427,6 +427,36 @@ pub struct CreditsLink {
     pub layers: Vec<LayerStamp>,
 }
 
+impl CreditsLink {
+    /// After clips are copied: a copy is a credits group of its own. `ids` maps original clip ids
+    /// to their copies; `groups` keeps one new group id per original group across the copies
+    /// (`alloc` makes one). Pictures that were not copied are dropped from the copy.
+    pub fn remap_copy(
+        &mut self,
+        ids: &std::collections::HashMap<crate::ClipId, crate::ClipId>,
+        groups: &mut std::collections::HashMap<u64, u64>,
+        mut alloc: impl FnMut() -> u64,
+    ) {
+        let g = self.group;
+        self.group = *groups.entry(g).or_insert_with(|| ids.get(&crate::ClipId(g)).map(|c| c.0).unwrap_or_else(&mut alloc));
+        self.pictures = self.pictures.iter().filter_map(|p| ids.get(&crate::ClipId(*p)).map(|c| c.0)).collect();
+    }
+}
+
+/// Make copied clips' credits links their own (see [`CreditsLink::remap_copy`]).
+pub fn remap_copied_credits<'a>(
+    items: impl IntoIterator<Item = &'a mut crate::TrackItem>,
+    ids: &std::collections::HashMap<crate::ClipId, crate::ClipId>,
+    mut alloc: impl FnMut() -> u64,
+) {
+    let mut groups = std::collections::HashMap::new();
+    for it in items {
+        if let Some(l) = it.graphic.as_mut().and_then(|g| g.credits.as_mut()) {
+            l.remap_copy(ids, &mut groups, &mut alloc);
+        }
+    }
+}
+
 /// A generated layer: its key (stable across refreshes while its block is unchanged), the
 /// layer's uid in the clip, and the fingerprint of its parameters as generated.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

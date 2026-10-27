@@ -170,6 +170,9 @@ class CreditsRefreshDialog(QDialog):
         if not isinstance(result, dict):
             return
         self.result = result
+        # from now on Apply works on the credits shown here, whatever is selected meanwhile
+        if isinstance(result.get("clip"), int):
+            self.clip = result["clip"]
         self.locate.hide()
         changes = result.get("changes") or []
         manual = result.get("manual") or []

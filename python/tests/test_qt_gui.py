@@ -5430,6 +5430,9 @@ def test_real_engine_credits_save_and_refresh(app, tmp_path: Path):
         assert ref is not None and ref.isVisible()
         assert wait_until(app, lambda: ref.changes.rowCount() == 2, 30_000), ref.status.text()
         assert "Kiss Anna Mária" in ref.changes.item(0, 3).text()
+        # the window is tied to the credits it compared, whatever is selected afterwards
+        assert isinstance(ref.clip, int)
+        win.execute("timeline.select", {"clips": []})
         # apply only the first change
         ref.changes.cellWidget(1, 0).findChild(QtWidgets.QCheckBox).setChecked(False)
         assert ref.accepted_ids() == [0]

@@ -303,3 +303,130 @@ fn credits_file_saves_reopens_without_the_sheet_and_reports_a_missing_source() {
     // diff and refresh need a credits page
     assert!(s.execute("graphics.credits.diff", json!({"clip": 999_999})).is_err());
 }
+
+// ----- review fixes (C1) -----
+
+fn layer_with_text(s: &Session, clip: ClipId, text: &str) -> cfa4_project::EffectInstance {
+    item(s, clip).effects.into_iter().find(|e| matches!(e.params.get("text").map(|p| &p.value), Some(ParamValue::Text(t)) if t == text)).unwrap()
+}
+
+fn position(e: &cfa4_project::EffectInstance) -> (f64, f64) {
+    match e.params.get("position").map(|p| &p.value) {
+        Some(ParamValue::Vec2(v)) => (v.x, v.y),
+        _ => (f64::NAN, f64::NAN),
+    }
+}
+
+#[test]
+fn a_full_undo_history_still_makes_import_and_refresh_one_step() {
+    let mut s = demo("credits-undo-limit");
+    let dir = tmp_dir("credits-undo-limit");
+    let sheet = dir.join("credits.csv");
+    std::fs::write(&sheet, SHEET).unwrap();
+    // the history is at its limit: every new step pushes the oldest out
+    s.history.limit = s.history.undo.len().max(1);
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let first = clips(&v)[0];
+    s.execute("edit.undo", json!({})).unwrap();
+    assert!(s.active_sequence().unwrap().find_item(first).is_none(), "one undo removes every page");
+    s.execute("edit.redo", json!({})).unwrap();
+    std::fs::write(&sheet, SHEET.replace("Jordan Lee", "Jordan Lee-Park")).unwrap();
+    let r = s.execute("graphics.credits.refresh", json!({"clip": first.0})).unwrap();
+    assert!(s.active_sequence().unwrap().find_item(first).is_none());
+    s.execute("edit.undo", json!({})).unwrap();
+    assert!(s.active_sequence().unwrap().find_item(first).is_some(), "one undo brings the old pages back");
+    assert!(s.active_sequence().unwrap().find_item(clips(&r)[0]).is_none());
+    // a refresh that cannot read its spreadsheet changes nothing
+    std::fs::remove_file(&sheet).unwrap();
+    let n = s.active_sequence().unwrap().video_tracks.iter().map(|t| t.items.len()).sum::<usize>();
+    assert!(s.execute("graphics.credits.refresh", json!({"clip": first.0})).is_err());
+    assert_eq!(s.active_sequence().unwrap().video_tracks.iter().map(|t| t.items.len()).sum::<usize>(), n);
+}
+
+#[test]
+fn a_hand_edit_moves_with_the_new_layout() {
+    let mut s = demo("credits-rebase");
+    let dir = tmp_dir("credits-rebase");
+    let sheet = dir.join("credits.csv");
+    std::fs::write(&sheet, SHEET).unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let roll = clips(&v)[1];
+    hand_edit(&mut s, roll, "Cast", "Szereplők");
+    let before = position(&layer_with_text(&s, roll, "Szereplők"));
+    // a new block above the Cast block pushes it down
+    std::fs::write(&sheet, SHEET.replace(",,,,,\n", ",,,,,\nProduced by,Pat Doe,,Centered,,\n,,,,,\n")).unwrap();
+    let r = s.execute("graphics.credits.refresh", json!({"clip": roll.0})).unwrap();
+    assert_eq!(r["keptEdits"].as_u64(), Some(1), "{r}");
+    let new_roll = clips(&r)[1];
+    let after = position(&layer_with_text(&s, new_roll, "Szereplők"));
+    assert!(after.1 > before.1 + 10.0, "the edited head moved down with its block: {before:?} → {after:?}");
+    // the names next to it moved by as much
+    let names = position(&layer_with_text(&s, new_roll, "Ann Smith\nBob Jones"));
+    let old_names = {
+        let e = s.execute("edit.undo", json!({})).map(|_| layer_with_text(&s, roll, "Ann Smith\nBob Jones")).unwrap();
+        position(&e)
+    };
+    assert!(((after.1 - before.1) - (names.1 - old_names.1)).abs() < 1e-6);
+}
+
+#[test]
+fn repeated_blocks_and_pasted_copies_are_their_own() {
+    let mut s = demo("credits-repeat");
+    let dir = tmp_dir("credits-repeat");
+    let sheet = dir.join("credits.csv");
+    std::fs::write(&sheet, "Body,Page Style\nTHANK YOU,Card\nTHANK YOU,Card\n").unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let (a, b) = (clips(&v)[0], clips(&v)[1]);
+    hand_edit(&mut s, a, "THANK YOU", "KÖSZÖNJÜK");
+    let r = s.execute("graphics.credits.refresh", json!({"clip": a.0})).unwrap();
+    let t: Vec<Vec<String>> = clips(&r).into_iter().map(|c| texts(&s, c)).collect();
+    assert_eq!(t, vec![vec!["KÖSZÖNJÜK".to_string()], vec!["THANK YOU".to_string()]], "only the edited occurrence changed");
+    let _ = b;
+
+    // copy the pages and paste them later: refreshing the copy leaves the original alone
+    let pages: Vec<u64> = clips(&r).iter().map(|c| c.0).collect();
+    s.execute("timeline.select", json!({"clips": pages})).unwrap();
+    s.execute("edit.copy", json!({})).unwrap();
+    s.execute("playhead.set", json!({"seconds": 1200})).unwrap();
+    s.execute("edit.paste", json!({})).unwrap();
+    let pasted: Vec<ClipId> = s.state.selection.clone();
+    assert_eq!(pasted.len(), 2);
+    let link = |c: ClipId| item(&s, c).graphic.unwrap().credits.unwrap();
+    assert_ne!(link(pasted[0]).group, link(clips(&r)[0]).group);
+    assert_eq!(link(pasted[0]).group, link(pasted[1]).group);
+    s.execute("graphics.credits.refresh", json!({"clip": pasted[0].0})).unwrap();
+    for c in clips(&r) {
+        assert!(s.active_sequence().unwrap().find_item(c).is_some(), "the original pages stay");
+    }
+}
+
+#[test]
+fn a_credits_file_elsewhere_keeps_its_picture_folder_and_big_sheets_save() {
+    let mut s = demo("credits-docdir");
+    let dir = tmp_dir("credits-docdir");
+    let (sheets, docs) = (dir.join("sheets"), dir.join("docs"));
+    std::fs::create_dir_all(&sheets).unwrap();
+    std::fs::create_dir_all(&docs).unwrap();
+    image::RgbaImage::from_pixel(40, 20, image::Rgba([1, 2, 3, 255])).save(docs.join("logo.png")).unwrap();
+    let sheet = sheets.join("credits.csv");
+    std::fs::write(&sheet, "Body\n{{Pic logo.png}}\nAnna\n").unwrap();
+    let doc = docs.join("credits.cfa4credits");
+    s.execute("graphics.credits.save", json!({"to": doc, "from": {"path": sheet}})).unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": doc})).unwrap();
+    assert_eq!(v["clips"][0]["pictures"].as_array().unwrap().len(), 1, "{v}");
+    let r = s.execute("graphics.credits.refresh", json!({"clip": v["clips"][0]["clip"]})).unwrap();
+    assert_eq!(r["clips"][0]["pictures"].as_array().unwrap().len(), 1, "the refresh finds the pictures too: {r}");
+
+    // a sheet with many empty columns saves small enough to open again
+    let mut wide = String::from("Body");
+    wide.push_str(&",".repeat(250));
+    wide.push('\n');
+    for i in 0..2000 {
+        wide.push_str(&format!("Name {i}{}\n", ",".repeat(250)));
+    }
+    std::fs::write(&sheet, wide).unwrap();
+    let big = dir.join("big.cfa4credits");
+    s.execute("graphics.credits.save", json!({"to": big, "from": {"path": sheet}})).unwrap();
+    assert!(std::fs::metadata(&big).unwrap().len() < 1 << 20);
+    assert!(s.execute("graphics.credits.preview", json!({"path": big})).is_ok());
+}
