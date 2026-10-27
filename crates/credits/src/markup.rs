@@ -81,6 +81,9 @@ impl InlineStyle {
 /// If `tag` (the inside of `{{…}}`) is a style tag, the style it names (`""` = back to normal).
 pub fn style_tag(tag: &str) -> Option<&str> {
     let t = tag.trim();
+    if let Some(rest) = crate::cinecred::multiword_style(t) {
+        return Some(rest);
+    }
     let (word, rest) = t.split_once(char::is_whitespace).unwrap_or((t, ""));
     let w = word.to_lowercase();
     (w == "style" || w == "stílus" || crate::cinecred::is_style_word(&w)).then_some(rest.trim())

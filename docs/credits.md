@@ -169,7 +169,9 @@ What carries over: page styles (card / scroll, card length and fades, scroll spe
 content styles (orientation, grid / flow / paragraphs, columns, gaps, wrap widths, head
 alignment, head-width harmonisation, head leaders), letter styles (font and weight, size and
 leading, tracking, capitals, the colour of the first coloured layer), the unit gap; sizes are
-scaled from the project's resolution to a 1080-line frame. What does not – each is listed among
+scaled from the project's resolution to a 1080-line frame, and so are the pixel values written
+in its sheet (spine positions, gaps in px, picture heights; the credits file keeps the factor as
+`pixelScale`, so refreshing scales them too). What does not – each is listed among
 the warnings: further letter layers (outlines, shadows, stripes), transition, picture and video
 (tape) styles, sorting, and the whole-credits runtime (use *Fit Credits to Music*). The
 spreadsheet stays the source: *Refresh Credits from Spreadsheet* works as for any sheet.
