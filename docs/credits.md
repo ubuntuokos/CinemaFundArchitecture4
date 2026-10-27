@@ -109,6 +109,13 @@ pages in place with the ticked changes, as one undo step:
 
 Trailing empty rows are not changes; empty rows inside the sheet are (they are gaps).
 
+Hand edits are carried over as what you changed: a layer whose text or colour you edited keeps
+your text or colour, but moves to where the new layout puts it, unless you moved it yourself. A
+block that appears twice (e.g. the same heading on two pages) is two blocks: editing one does
+not change the other. Copied or pasted credits pages are credits of their own: refreshing the
+copy leaves the original alone. Import and refresh are each one undo step, and a refresh that
+fails leaves the old pages as they were.
+
 ## Commands
 
 | Command | Menu | Params |
@@ -117,7 +124,7 @@ Trailing empty rows are not changes; empty rows inside the sheet are (they are g
 | `graphics.credits.preview` | (query) | as above → `{pages: [{name, behaviour, duration, seconds, layers, contentHeight}], duration, sheets, sheet, warnings}` |
 | `graphics.credits.thumbnail` | (query) | as preview, plus `page`, `at` (0–1, moment in the page), `width` → `{width, height, page, pages, time, pngBase64}`: the page's text with the roll or fades applied, pictures outlined |
 | `graphics.credits.save` | Credits window: *Save as Credits File…* | `to` (.cfa4credits), and `clip` (placed credits; default the selection) or `from` {import parameters} → `{path, rows}` |
-| `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
+| `graphics.credits.diff` | (query) | `clip`?, `source`? (the spreadsheet's new place) → `{group, clip (a page of the group), source, changes: [{id, kind: added/removed/changed, oldRows, newRows (1-based), before, after}], manual: [{key, page, layer, text, survivesAll}]}` |
 | `graphics.credits.refresh` | Graphics and Titles ▸ Refresh Credits from Spreadsheet… | `clip`?, `source`?, `accept` ("all" / "none" / [ids], default all), `keepManual` (default true), `styling`? → `{clips, accepted, changes, keptEdits, lostEdits, warnings}`; one undo step |
 | `graphics.credits.styles` | (query) | `styling` → style names, column names and a starter styling |
 

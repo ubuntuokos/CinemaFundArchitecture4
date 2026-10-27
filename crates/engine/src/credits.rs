@@ -82,11 +82,21 @@ impl Measure for EngineMeasure {
 }
 
 fn read_file(cmd: &str, path: &str) -> Result<Vec<u8>> {
+    read_file_max(cmd, path, MAX_FILE)
+}
+
+fn read_file_max(cmd: &str, path: &str, max: u64) -> Result<Vec<u8>> {
     let meta = std::fs::metadata(path).map_err(|e| bad(cmd, format!("{path}: {e}")))?;
-    if meta.len() > MAX_FILE {
-        return Err(bad(cmd, format!("{path} is larger than {} MiB", MAX_FILE >> 20)));
+    if meta.len() > max {
+        return Err(bad(cmd, format!("{path} is larger than {} MiB", max >> 20)));
     }
     std::fs::read(path).map_err(|e| bad(cmd, format!("{path}: {e}")))
+}
+
+/// The largest file a credits command reads: a spreadsheet, or a credits document (which may be
+/// larger, up to the document limit).
+fn max_read() -> u64 {
+    MAX_FILE.max(cfa4_credits::doc::MAX_DOC_BYTES as u64)
 }
 
 fn styling_p(cmd: &str, p: &Value) -> Result<Styling> {
@@ -119,11 +129,21 @@ fn doc_p(cmd: &str, p: &Value) -> Result<(CreditsDoc, SheetInfo, Option<std::pat
             if path.to_lowercase().ends_with(".numbers") {
                 return Err(bad(cmd, "Apple Numbers files are not read; export the sheet as .xlsx or CSV"));
             }
-            let bytes = read_file(cmd, path)?;
+            let bytes = read_file_max(cmd, path, max_read())?;
             let dir = std::path::Path::new(path).parent().map(std::path::Path::to_path_buf);
             if cfa4_credits::doc::is_doc(&bytes) {
-                let d = CreditsDoc::from_bytes(&bytes).map_err(|e| bad(cmd, e.to_string()))?;
+                let mut d = CreditsDoc::from_bytes(&bytes).map_err(|e| bad(cmd, e.to_string()))?;
+                // pictures are next to the document unless it says otherwise: remember that
+                // folder, so a refresh (which starts from the spreadsheet) still finds them
+                if d.picture_dir.is_none()
+                    && let Some(dir) = &dir
+                {
+                    let abs = std::fs::canonicalize(dir).unwrap_or_else(|_| dir.clone());
+                    d.picture_dir = Some(abs.to_string_lossy().into_owned());
+                }
                 (d, SheetInfo::default(), dir)
+            } else if bytes.len() as u64 > MAX_FILE {
+                return Err(bad(cmd, format!("{path} is larger than {} MiB", MAX_FILE >> 20)));
             } else {
                 let mut info = cfa4_credits::read_rows(&bytes, str_p(p, "sheet")).map_err(|e| bad(cmd, e.to_string()))?;
                 let table = std::mem::take(&mut info.rows);
@@ -191,21 +211,31 @@ fn preview(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
-/// Keep only the first of the undo steps made since `before`, under `label`; on an error, undo it.
-fn fold_undo(s: &mut Session, before: usize, label: &str, result: &Result<()>) {
-    if s.history.undo.len() > before + 1 {
-        s.history.undo.truncate(before + 1);
-    }
-    if let Some(e) = s.history.undo.get_mut(before) {
-        e.0 = label.to_string();
-    }
-    if result.is_err() && s.history.undo.len() > before {
-        let _ = s.execute("edit.undo", json!({}));
-    }
-}
+/// Layers edited by hand, carried into a refresh: key → the layer as the user left it, and the
+/// layer as it was generated (when known), so only what the user changed is carried over.
+type Overrides = Vec<(String, EffectInstance, Option<EffectInstance>)>;
 
-/// Layers edited by hand, carried into a refresh: key → the layer as the user left it.
-type Overrides = Vec<(String, EffectInstance)>;
+/// The newly generated layer `new` with the user's changes to it: every parameter (and the
+/// per-character styles, and on/off) the user changed from `base` (the layer as generated before)
+/// is taken from `user`; the rest – where the layout put it, above all – stays new. Without
+/// `base`, the user's layer as a whole.
+fn rebase_edit(new: &EffectInstance, user: &EffectInstance, base: Option<&EffectInstance>) -> EffectInstance {
+    let Some(base) = base else { return user.clone() };
+    let mut out = new.clone();
+    for (k, v) in &user.params {
+        if base.params.get(k) != Some(v) {
+            out.params.insert(k.clone(), v.clone());
+        }
+    }
+    let runs = |e: &EffectInstance| e.layer.as_ref().map(|l| l.runs.clone()).unwrap_or_default();
+    if runs(user) != runs(base) {
+        out.layer.get_or_insert_with(Default::default).runs = runs(user);
+    }
+    if user.enabled != base.enabled {
+        out.enabled = user.enabled;
+    }
+    out
+}
 
 /// Place laid-out pages one after another from `t` (each with its pictures) and link them to
 /// `doc`. Returns the placed pages as JSON and the end time.
@@ -240,8 +270,8 @@ fn place_pages(
             let uid = cfa4_project::gtemplate::layer_uid(e);
             let key = pg.keys.iter().find(|(u, _)| *u == uid).map(|(_, k)| k.clone()).unwrap_or_default();
             stamps.push(LayerStamp { key: key.clone(), uid, fingerprint: cfa4_credits::doc::layer_fingerprint(e) });
-            if let Some((_, old)) = overrides.iter().find(|(k, _)| !key.is_empty() && *k == key) {
-                let mut o = old.clone();
+            if let Some((_, old, base)) = overrides.iter().find(|(k, _, _)| !key.is_empty() && *k == key) {
+                let mut o = rebase_edit(e, old, base.as_ref());
                 o.layer.get_or_insert_with(Default::default).uid = uid;
                 *e = o;
                 kept += 1;
@@ -284,11 +314,9 @@ fn import(s: &mut Session, p: &Value) -> Result<Value> {
     let l = lay_doc(s, CMD, &doc, base.clone())?;
     let warnings = warnings_json(&l);
     let t = crate::commands::time_p(s, p, "").unwrap_or_else(|| s.playhead());
-    let before = s.history.undo.len();
-    let mut out = (Vec::new(), t);
-    let result = place_pages(s, CMD, "Import Credits", l, &doc, base, t, u64_p(p, "track"), &Vec::new()).map(|r| out = r);
-    fold_undo(s, before, "Import Credits", &result);
-    result?;
+    // one undo step, and nothing left behind if a page cannot be placed
+    let track = u64_p(p, "track");
+    let out = s.edit_group("Import Credits", |s| place_pages(s, CMD, "Import Credits", l, &doc, base, t, track, &Vec::new()))?;
     s.state.graphic_layers.clear();
     let group = out.0.first().and_then(|v| v["clip"].as_u64());
     Ok(json!({"clips": out.0, "end": out.1.0, "group": group, "sheet": info.chosen, "warnings": warnings}))
@@ -349,7 +377,8 @@ fn save(s: &mut Session, p: &Value) -> Result<Value> {
         _ => group_doc(CMD, &group_p(s, CMD, p)?)?,
     };
     let out = if std::path::Path::new(&out).extension().is_some() { out } else { format!("{out}.{}", cfa4_credits::doc::EXTENSION) };
-    s.services.write_file(&out, doc.to_json().as_bytes()).map_err(|e| EngineError::Other(format!("{out}: {e}")))?;
+    let text = doc.to_file_text().map_err(|e| bad(CMD, e.to_string()))?;
+    s.services.write_file(&out, text.as_bytes()).map_err(|e| EngineError::Other(format!("{out}: {e}")))?;
     Ok(json!({"path": out, "rows": doc.table.len()}))
 }
 
@@ -408,6 +437,39 @@ fn pending(s: &Session, cmd: &str, p: &Value) -> Result<Pending> {
     Ok(Pending { group, doc, new_rows, changes, manual })
 }
 
+/// The folder a document's pictures are read from.
+fn doc_base(doc: &CreditsDoc) -> Option<std::path::PathBuf> {
+    doc.picture_dir
+        .as_ref()
+        .map(std::path::PathBuf::from)
+        .or_else(|| doc.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)))
+}
+
+/// Hand edits with the layer each was generated as: `doc` (as accepted before) laid out again.
+fn baselined(s: &Session, cmd: &str, doc: &CreditsDoc, manual: &[(String, u32, String, String, EffectInstance)]) -> Overrides {
+    let generated: Vec<(String, EffectInstance)> = lay_doc(s, cmd, doc, doc_base(doc))
+        .map(|l| {
+            l.pages
+                .into_iter()
+                .flat_map(|pg| {
+                    let keys = pg.keys;
+                    pg.layers.into_iter().filter_map(move |e| {
+                        let uid = cfa4_project::gtemplate::layer_uid(&e);
+                        keys.iter().find(|(u, _)| *u == uid).map(|(_, k)| (k.clone(), e))
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    manual
+        .iter()
+        .map(|(k, _, _, _, e)| {
+            let base = generated.iter().find(|(gk, _)| gk == k).map(|(_, g)| g.clone());
+            (k.clone(), e.clone(), base)
+        })
+        .collect()
+}
+
 fn rows_json(rows: &[Vec<String>]) -> Value {
     Value::Array(rows.iter().map(|r| json!(r)).collect())
 }
@@ -425,6 +487,8 @@ fn diff_cmd(s: &mut Session, p: &Value) -> Result<Value> {
     };
     Ok(json!({
         "group": pd.group.id,
+        // a page of the group, so a later refresh can name exactly these credits
+        "clip": pd.group.pages.first().map(|x| x.0.0),
         "source": pd.doc.source.as_ref().map(|x| x.path.clone()),
         "changes": pd.changes.iter().map(|c| json!({
             "id": c.id,
@@ -457,14 +521,10 @@ fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
     if let Some(st) = p.get("styling").filter(|v| !v.is_null()) {
         doc.styling = styling_p(CMD, &json!({"styling": st}))?;
     }
-    let base = doc
-        .picture_dir
-        .as_ref()
-        .map(std::path::PathBuf::from)
-        .or_else(|| doc.source.as_ref().and_then(|x| std::path::Path::new(&x.path).parent().map(std::path::Path::to_path_buf)));
+    let base = doc_base(&doc);
     let laid = lay_doc(s, CMD, &doc, base.clone())?;
     let warnings = warnings_json(&laid);
-    let overrides: Overrides = if keep_manual { pd.manual.iter().map(|(k, _, _, _, e)| (k.clone(), e.clone())).collect() } else { Vec::new() };
+    let overrides: Overrides = if keep_manual { baselined(s, CMD, &pd.doc, &pd.manual) } else { Vec::new() };
     let start = pd.group.pages.first().map(|x| x.2).unwrap_or_else(|| s.playhead());
     let track = pd.group.pages.first().map(|x| x.3 as u64);
     let mut old: Vec<u64> = Vec::new();
@@ -474,14 +534,11 @@ fn refresh(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
     old.retain(|c| q.find_item(ClipId(*c)).is_some());
-    let before = s.history.undo.len();
-    let mut out = (Vec::new(), start);
-    let result = s
-        .execute("edit.clear", json!({"clips": old}))
-        .map(|_| ())
-        .and_then(|_| place_pages(s, CMD, "Refresh Credits", laid, &doc, base, start, track, &overrides).map(|r| out = r));
-    fold_undo(s, before, "Refresh Credits", &result);
-    result?;
+    // one undo step; on any failure the old pages are back as they were
+    let out = s.edit_group("Refresh Credits", |s| {
+        s.execute("edit.clear", json!({"clips": old}))?;
+        place_pages(s, CMD, "Refresh Credits", laid, &doc, base, start, track, &overrides)
+    })?;
     s.state.graphic_layers.clear();
     let kept: u64 = out.0.iter().filter_map(|v| v["keptEdits"].as_u64()).sum();
     Ok(json!({

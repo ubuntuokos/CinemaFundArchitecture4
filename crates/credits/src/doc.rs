@@ -66,6 +66,24 @@ impl CreditsDoc {
         serde_json::to_string_pretty(self).unwrap_or_default()
     }
 
+    /// The text of a `.cfa4credits` file: readable JSON, or compact JSON when that is too large;
+    /// empty cells at the ends of rows are left out. An error if even that is larger than the
+    /// reader accepts, so a saved file always opens again.
+    pub fn to_file_text(&self) -> Result<String, CreditsError> {
+        let mut d = self.clone();
+        for r in &mut d.table {
+            while r.last().is_some_and(|c| c.is_empty()) {
+                r.pop();
+            }
+        }
+        let pretty = d.to_json();
+        let text = if pretty.len() <= MAX_DOC_BYTES { pretty } else { d.to_compact() };
+        if text.len() > MAX_DOC_BYTES {
+            return Err(CreditsError::TooLarge(format!("the credits document would be larger than {} MiB", MAX_DOC_BYTES >> 20)));
+        }
+        Ok(text)
+    }
+
     /// Compact JSON, as stored with the clips in a project.
     pub fn to_compact(&self) -> String {
         serde_json::to_string(self).unwrap_or_default()
