@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-10-26 · **Change:** minor (Media & Playback ▸ Media Backends page, Edit ▸ Media Backends…, Help ▸ Restricted Codecs…)
+> **Last updated:** 2026-10-27 · **Change:** minor (Media Backends page shows the router's order; a backend the routing table leaves out is shown as such)
 
 The Settings window of the Qt 6 shell (`python/cfa4_devtools/qt_settings.py`, Edit ▸ Settings…,
 Ctrl+,). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the

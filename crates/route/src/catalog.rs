@@ -72,14 +72,15 @@ pub const CATALOG: &[Entry] = &[
     entry(F::Display, "cpu-compositor", Done, &[C], None, "crates/render", "reference CPU renderer"),
     entry(F::CodecDecode, "nvdec", Done, &[G], NVIDIA, "crates/platform/src/nvdec", "H.264, HEVC Main / Main 10; proprietary driver only"),
     entry(F::CodecDecode, "vaapi", Done, &[G], None, "crates/platform/src/vaapi", "H.264, HEVC Main / Main 10 on AMD, Intel and nouveau; VP9 / AV1 not yet"),
-    entry(F::CodecDecode, "ffmpeg", Planned, &[G, C], None, "ADR 0005", "FFmpeg 9 supplementary backend"),
-    entry(F::CodecDecode, "gstreamer-vulkan-video", Planned, &[G], None, "crates/gstreamer", "Vulkan Video decode queues through GStreamer (ADR 0002)"),
     entry(F::CodecDecode, "software", Done, &[C], None, "crates/codecs", "pure-Rust decoders, bit-exact fallback (HybridDecoder)"),
+    entry(F::CodecDecode, "ffmpeg", Done, &[C], None, "crates/ffmpeg", "FFmpeg 9 supplementary backend: files the engine cannot open or decode (ADR 0005)"),
+    entry(F::CodecDecode, "gstreamer", Done, &[C], None, "crates/gstreamer", "the system's GStreamer: files neither the engine nor FFmpeg opens (ADR 0002)"),
+    entry(F::CodecDecode, "gstreamer-vulkan-video", Planned, &[G], None, "crates/gstreamer", "Vulkan Video decode queues through GStreamer (ADR 0002)"),
     entry(F::CodecEncode, "nvenc", Done, &[G], NVIDIA, "crates/platform/src/nvenc", "H.264 and HEVC; proprietary driver only"),
     entry(F::CodecEncode, "vaapi", Planned, &[G], None, "crates/platform/src/vaapi", "H.264 / HEVC on AMD and Intel (docs/gaps.md G5)"),
+    entry(F::CodecEncode, "software", Done, &[C], None, "crates/h264enc, crates/prores, crates/dnx, crates/apv", "built-in encoders"),
     entry(F::CodecEncode, "ffmpeg", Planned, &[G, C], None, "ADR 0005", "FFmpeg 9 supplementary backend"),
     entry(F::CodecEncode, "gstreamer-va", Planned, &[G], None, "crates/gstreamer", "VA encoders through GStreamer (ADR 0002)"),
-    entry(F::CodecEncode, "software", Done, &[C], None, "crates/h264enc, crates/prores, crates/dnx, crates/apv", "built-in encoders"),
     entry(F::Ai, "openvino-npu", Planned, &[N], INTEL, "crates/platform", "Intel NPU through OpenVINO (ADR 0004 phase 4)"),
     entry(F::Ai, "burn-cuda", Planned, &[G], NVIDIA, "crates/speech, crates/tts", "Burn on CUDA (ADR 0004 phase 2)"),
     entry(F::Ai, "burn-vulkan", Planned, &[G], None, "crates/speech, crates/tts", "Burn on Vulkan, any GPU vendor (ADR 0004 phase 2)"),
@@ -152,8 +153,9 @@ mod tests {
 
     #[test]
     fn every_family_ends_with_an_implemented_cpu_only_backend() {
+        // planned paths are passed over by the router, so the rule is about the implemented chain
         for f in Family::ALL {
-            let last = entries(f).last().unwrap();
+            let last = entries(f).filter(|e| e.maturity == Maturity::Implemented).last().unwrap();
             assert!(last.is_cpu_only() && last.maturity == Maturity::Implemented, "{f:?}: {last:?}");
             assert!(last.vendor_lock.is_none());
         }
@@ -185,7 +187,8 @@ mod tests {
 
         let decode = get(Family::CodecDecode);
         assert_eq!((decode.open.clone(), decode.locked.clone()), (vec!["vaapi"], vec!["nvdec"]));
-        assert_eq!(decode.planned_open, vec!["ffmpeg", "gstreamer-vulkan-video"]);
+        // FFmpeg and GStreamer decode on the CPU: not accelerators, so not in `open`
+        assert_eq!(decode.planned_open, vec!["gstreamer-vulkan-video"]);
 
         // hardware encoding is NVIDIA-only today: AMD and Intel encode on the CPU
         let encode = get(Family::CodecEncode);

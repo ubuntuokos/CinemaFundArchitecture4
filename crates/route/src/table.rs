@@ -182,12 +182,18 @@ mod tests {
 
     #[test]
     fn the_builtin_table_reads_and_ends_every_family_on_the_cpu() {
+        // The rule is about the chain the router can take: planned backends are passed over, so
+        // the last *implemented* route of every family must run on the CPU.
         let t = Table::builtin().unwrap();
         for f in Family::ALL {
             let order = t.family_order(f);
             assert!(!order.is_empty(), "{f:?} has an order");
-            let last = order.last().unwrap().as_str();
-            assert!(["cpu-compositor", "software", "candle-cpu", "cpu"].contains(&last), "{f:?} ends on a CPU path, not {last}");
+            let last = order
+                .iter()
+                .rev()
+                .find_map(|b| crate::catalog::lookup(f, b).filter(|e| e.maturity == crate::catalog::Maturity::Implemented))
+                .unwrap_or_else(|| panic!("{f:?} has an implemented route"));
+            assert!(last.is_cpu_only(), "{f:?} ends on a CPU path, not {}", last.backend);
         }
         let whisper = TaskId::new("ai.speech.whisper").unwrap();
         assert_eq!(t.order(&whisper, Family::Ai)[0], id("burn-cuda"));
@@ -201,9 +207,10 @@ mod tests {
             let order = t.family_order(f);
             let pos = |s: &str| order.iter().position(|b| b.as_str() == s).unwrap();
             let gst = order.iter().position(|b| b.as_str().starts_with("gstreamer")).unwrap();
-            assert!(pos("vaapi") < pos("ffmpeg"), "{f:?}: our VA-API path first");
+            // owner decision 2026-10-27: the engine, hardware and software, goes first
+            assert!(pos("vaapi") < pos("software"), "{f:?}: our VA-API path first");
+            assert!(pos("software") < pos("ffmpeg"), "{f:?}: our software codecs before the supplementary backends");
             assert!(pos("ffmpeg") < gst, "{f:?}: FFmpeg 9 before GStreamer");
-            assert!(gst < pos("software"), "{f:?}: our software codecs stay the last resort");
         }
     }
 

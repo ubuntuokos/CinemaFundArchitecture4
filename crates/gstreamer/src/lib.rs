@@ -274,6 +274,7 @@ pub fn register() -> Result<Status, Error> {
     {
         backend::require_element("playbin")?;
         cfa4_media::register_fallback(cfa4_media::Fallback {
+            id: BACKEND_ID,
             name: "GStreamer",
             video_extensions: EXTRA_VIDEO_EXTENSIONS,
             audio_extensions: EXTRA_AUDIO_EXTENSIONS,

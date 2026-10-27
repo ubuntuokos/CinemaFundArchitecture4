@@ -496,7 +496,7 @@ class SettingsDialog(QDialog):
             status = QTableWidgetItem(b.status)
             if b.problem and not b.available:
                 status.setToolTip(b.problem)
-            for col, item in enumerate([QTableWidgetItem(str(row + 1)), QTableWidgetItem(b.name), status,
+            for col, item in enumerate([QTableWidgetItem(b.order), QTableWidgetItem(b.name), status,
                                         QTableWidgetItem(b.version or "—"), QTableWidgetItem(b.license or "—")]):
                 item.setToolTip(item.toolTip() or b.role)
                 table.setItem(row, col, item)

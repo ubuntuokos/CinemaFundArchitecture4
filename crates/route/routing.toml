@@ -4,14 +4,18 @@
 # it family by family and task by task. Each list is tried in order. Vendor accelerators come
 # first, then the vendor-neutral GPU path, and the CPU path is always last.
 #
-# CFA4's own Rust engine stays primary: in the codec families our own NVDEC / VA-API / NVENC paths
-# and our software codecs come before and after the supplementary paths, FFmpeg 9 first, then
-# GStreamer (docs/adr/ADR-0002-gstreamer-backend.md, docs/adr/ADR-0004-compute-routing.md).
+# CFA4's own Rust engine stays primary (owner decision 2026-10-27): in the codec families our own
+# NVDEC / VA-API / NVENC paths and then our software codecs come first; the supplementary backends
+# follow, FFmpeg 9 first, then GStreamer, and take only what the engine cannot open or decode
+# (docs/adr/ADR-0005-media-backends.md, ADR-0002-gstreamer-backend.md, ADR-0004-compute-routing.md).
+# Leaving one of them out of a user table means it is not used. Planned GPU paths of a backend
+# (gstreamer-vulkan-video, gstreamer-va) stand after its implemented ones; the last implemented
+# route of every family runs on the CPU.
 
 [compute.default]
 display = ["wgpu", "cpu-compositor"]
-codec_decode = ["nvdec", "vaapi", "ffmpeg", "gstreamer-vulkan-video", "software"]
-codec_encode = ["nvenc", "vaapi", "ffmpeg", "gstreamer-va", "software"]
+codec_decode = ["nvdec", "vaapi", "software", "ffmpeg", "gstreamer", "gstreamer-vulkan-video"]
+codec_encode = ["nvenc", "vaapi", "software", "ffmpeg", "gstreamer-va"]
 ai = ["openvino-npu", "burn-cuda", "burn-vulkan", "candle-cpu"]
 compute = ["wgpu-compute", "cpu"]
 

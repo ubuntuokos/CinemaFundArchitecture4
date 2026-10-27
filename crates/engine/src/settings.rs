@@ -1589,6 +1589,11 @@ impl crate::autosave::Preferences {
     pub fn apply_media_backends(&self) {
         cfa4_media::set_backend_enabled("ffmpeg", self.media_backends.ffmpeg);
         cfa4_media::set_backend_enabled("gstreamer", self.media_backends.gstreamer);
+        // the router orders the fallbacks this build registered (ADR 0005 step 2); our engine
+        // always opens a file first
+        let registered = cfa4_media::registered_fallbacks();
+        let backends: Vec<(&str, bool)> = registered.iter().map(|f| (f.id, cfa4_media::backend_enabled(f.id))).collect();
+        crate::media_route::apply(&backends);
     }
 
     /// Values of one category as a JSON object.

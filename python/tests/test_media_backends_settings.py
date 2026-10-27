@@ -53,6 +53,23 @@ class Model(unittest.TestCase):
         self.assertEqual(m.backends[0].status, "Available, switched off")
         self.assertIsNone(m.install_command())  # all restricted codecs installed: no command
 
+    def test_router_order_and_left_out_backends(self):
+        # ADR 0005 step 2: the engine first, then the router's order; a backend the routing table
+        # leaves out has no place and says why
+        raw = {"route": {"task": "media.fallback", "routes": [], "declined": []}, "backends": [
+            {"id": "builtin", "compiledIn": True, "available": True, "enabled": True},
+            {"id": "gstreamer", "compiledIn": True, "available": True, "enabled": True, "tried": 1},
+            {"id": "ffmpeg", "compiledIn": True, "available": True, "enabled": True, "tried": None},
+        ]}
+        m = MediaBackends.parse(raw)
+        self.assertEqual([b.order for b in m.backends], ["1", "2", "—"])
+        self.assertEqual([b.status for b in m.backends], ["In use", "In use", "Left out by the routing table"])
+        # without a route (an older CLI) nothing is called left out
+        self.assertEqual(MediaBackends.parse(REPORT).backends[1].status, "In use")
+        for hostile in (True, -1, 0, 10**9, "2", 1.5):
+            raw["backends"][1]["tried"] = hostile
+            self.assertIsNone(MediaBackends.parse(raw).backends[1].tried, hostile)
+
     def test_hostile_reports(self):
         for raw in (None, [], {"backends": "x"}, {}):
             with self.assertRaises(SettingsBackendError):

@@ -1579,13 +1579,24 @@ fn build() -> Vec<CommandSpec> {
                 "canDisable": false,
                 "hardwareDecoding": cfa4_codecs::hw::hardware_decoding(),
             })];
-            for r in cfa4_media::backend_reports() {
-                let mut v = serde_json::to_value(&r).unwrap_or_else(|_| json!({}));
-                v["canDisable"] = json!(true);
-                v["preference"] = json!(format!("mediaBackends.{}", r.id));
-                list.push(v);
-            }
-            Ok(json!({"backends": list, "importable": cfa4_media::importable_extensions()}))
+            // the router's order (ADR 0005 step 2): `tried` is the place after the engine, `null`
+            // for a backend that is off, not in this build or left out of the routing table
+            let tried: Vec<&str> = cfa4_media::fallbacks().iter().map(|f| f.id).collect();
+            let mut supplementary: Vec<(usize, Value)> = cfa4_media::backend_reports()
+                .into_iter()
+                .map(|r| {
+                    let place = tried.iter().position(|id| *id == r.id);
+                    let mut v = serde_json::to_value(&r).unwrap_or_else(|_| json!({}));
+                    v["canDisable"] = json!(true);
+                    v["preference"] = json!(format!("mediaBackends.{}", r.id));
+                    v["tried"] = json!(place.map(|i| i.saturating_add(1)));
+                    (place.unwrap_or(usize::MAX), v)
+                })
+                .collect();
+            supplementary.sort_by_key(|(place, _)| *place);
+            list.extend(supplementary.into_iter().map(|(_, v)| v));
+            let route = cfa4_route::report::snapshot().chains.into_iter().find(|c| c.task.as_str() == crate::media_route::FALLBACK_TASK);
+            Ok(json!({"backends": list, "route": route, "importable": cfa4_media::importable_extensions()}))
         }),
         query!("prefs.get", "Get Preferences", r#"{"key":str?}"#, |s, p| match str_p(p, "key") {
             Some(k) => s.prefs.get(k).ok_or_else(|| bad("prefs.get", format!("unknown preference `{k}`"))),

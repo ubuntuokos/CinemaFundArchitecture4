@@ -1655,6 +1655,7 @@
 # Settings ▸ Media Backends and Help ▸ Restricted Codecs (ADR 0005, docs/licensing.md §7)
 	After installing, restart CFA4.	Telepítés után indítsa újra a CFA4-et.
 	Available, switched off	Elérhető, kikapcsolva
+	Left out by the routing table	Az útválasztási tábla kihagyta
 	CFA4 engine	CFA4-motor
 	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	A CFA4 saját motorja minden fájlt megnyit, amelyet tud. Az alábbi kiegészítő hátterek ebben a sorrendben, csak azoknál a fájloknál lépnek be, amelyeket a motor még nem tud megnyitni. Egy háttér kikapcsolása az ezután megnyitott fájlokra vonatkozik.
 	Capabilities	Képességek

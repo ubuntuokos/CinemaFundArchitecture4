@@ -183,7 +183,10 @@ pub const VIDEO_EXTENSIONS: &[&str] = &[
 ];
 
 pub use backends::{BackendEntry, BackendReport, RestrictedItem, backend_enabled, backend_reports, register_backend, set_backend_enabled};
-pub use fallback::{Fallback, audio_extensions, importable_extensions, open_with_fallback, register_fallback, video_extensions};
+pub use fallback::{
+    Fallback, audio_extensions, fallback_order, fallbacks, importable_extensions, open_with_fallback, register_fallback, registered_fallbacks,
+    set_fallback_order, video_extensions,
+};
 
 /// Whether `path` has an extension we import: the built-in lists plus those of registered
 /// [`fallback`] backends.

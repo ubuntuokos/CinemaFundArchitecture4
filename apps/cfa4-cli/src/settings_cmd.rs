@@ -252,6 +252,9 @@ mod tests {
         let list = v["backends"].as_array().unwrap();
         assert_eq!(list[0]["id"], "builtin");
         assert_eq!(list[0]["canDisable"], false);
+        // the router's chain of the fallbacks comes with the list (ADR 0005 step 2)
+        assert_eq!(v["route"]["task"], "media.fallback", "{v}");
+        assert_eq!(v["route"]["routes"][0]["backend"], "software", "our engine first: {v}");
         // the switch is read from the data directory, as the app does at startup
         assert!(!cfa4_media::backend_enabled("ffmpeg"));
         cfa4_media::set_backend_enabled("ffmpeg", true);
@@ -295,7 +298,8 @@ mod tests {
         let v = hardware_from(Inventory::new([gpu]), Table::builtin().map(|t| (t, None)));
         let decode = v["plans"].as_array().unwrap().iter().find(|p| p["workload"] == "codec_decode").unwrap();
         let chain: Vec<&str> = decode["chain"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
-        assert_eq!(chain, ["vaapi", "software"]);
+        // our engine (VA-API, then the software decoders) first, then the supplementary backends
+        assert_eq!(chain, ["vaapi", "software", "ffmpeg", "gstreamer"]);
         assert!(decode["skipped"].as_array().unwrap().iter().any(|s| s["backend"] == "nvdec"), "{decode}");
         assert_eq!(v["inventory"]["devices"][0]["driver"], "amdgpu");
         assert_eq!(v["inventory"]["devices"][0]["pci_vendor"], 0x1002);
