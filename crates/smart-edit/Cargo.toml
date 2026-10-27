@@ -10,7 +10,13 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+cfa4-bitstream = { workspace = true }
+cfa4-mpeg2v = { workspace = true }
+cfa4-time = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]
+cfa4-h264enc = { workspace = true }
+cfa4-mpegts = { workspace = true }
+cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

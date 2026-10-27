@@ -537,8 +537,8 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(ParseHeaders, Hevc), Native, Supported, "cfa4-hevc params (VPS/SPS/PPS) and slice headers"),
         row(c(ParseHeaders, Av1), Native, Supported, "cfa4-av1 sequence and frame headers"),
         // GOP index, packet copy and boundary re-encode are what this work adds
-        row(c(GopIndex, Mpeg2Video), Native, Unsupported, "not implemented yet (WP-02)"),
-        row(c(GopIndex, H264), Native, Unsupported, "not implemented yet (WP-02)"),
+        row(c(GopIndex, Mpeg2Video), Native, Supported, "cfa4-smart-edit mpeg2_index; crates/smart-edit/tests/index_oracle.rs (open / closed GOP, ffprobe)"),
+        row(c(GopIndex, H264), Native, Supported, "cfa4-smart-edit h264_index; crates/smart-edit/tests/index_oracle.rs (IDR / open GOP, ffprobe)"),
         row(c(GopIndex, Hevc), Native, Unsupported, "not implemented yet (WP-07)"),
         row(c(GopIndex, Av1), Native, Unsupported, "not implemented yet (WP-07)"),
         // encode
