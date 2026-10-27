@@ -585,6 +585,8 @@ impl ExportSettings {
         match self.audio_codec() {
             AudioCodec::Aac | AudioCodec::Opus => false,
             AudioCodec::Flac => !f.is_float(),
+            // DVD LPCM in MPEG-2 program streams: 16-bit
+            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => f == SampleFormat::Int16,
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),
         }
     }
@@ -598,6 +600,8 @@ impl ExportSettings {
             (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
+            (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
+            (Format::Mpeg2, _) => AudioCodec::Pcm,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -609,7 +613,10 @@ impl ExportSettings {
 
     /// Whether the format carries audio at all.
     pub fn has_audio(&self) -> bool {
-        self.include_audio && !self.is_image_sequence() && self.format != Format::Gif
+        self.include_audio
+            && !self.is_image_sequence()
+            && self.format != Format::Gif
+            && (self.format != Format::Mpeg2 || crate::Mpeg2Container::of(self).has_audio())
     }
 
     /// Whether the format carries video.
@@ -619,7 +626,13 @@ impl ExportSettings {
 
     /// File extension of the output.
     pub fn extension(&self) -> &'static str {
-        if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov { "mov" } else { self.format.extension() }
+        if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov {
+            "mov"
+        } else if self.format == Format::Mpeg2 {
+            crate::Mpeg2Container::of(self).extension()
+        } else {
+            self.format.extension()
+        }
     }
 
     /// Estimated output size in bytes for `duration` of a sequence (`seq_w`×`seq_h` at `seq_rate`).
@@ -630,7 +643,7 @@ impl ExportSettings {
         let px = r.width as f64 * r.height as f64;
         let video_bps = match self.video_format() {
             Format::Aac => 0.0,
-            Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls => r.target_kbps as f64 * 1000.0,
+            Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls | Format::Mpeg2 => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
@@ -750,6 +763,14 @@ impl ExportSettings {
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
                 }
+                Format::Mpeg2 => {
+                    v += if self.mpeg2_422 { ", MPEG-2 4:2:2 Profile" } else { ", MPEG-2 Main Profile 4:2:0" };
+                    v += &match self.mpeg2_quantizer {
+                        Some(q) => format!(", constant quantiser {q}"),
+                        None => format!(", average {}", mbps(r.target_kbps)),
+                    };
+                    v += &format!(", keyframe every {} frames", r.keyint);
+                }
                 Format::Av1 => {
                     v += &format!(", AV1 Main (10-bit for HDR), {}", self.bitrate_mode.label());
                     v += &match self.bitrate_mode {
@@ -826,6 +847,12 @@ impl ExportSettings {
             Format::Hls => "fragmented MP4 segments",
             Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg => "QuickTime",
             Format::MxfOp1a | Format::MxfOpAtom => self.mxf_video_codec.label(),
+            Format::Mpeg2 => match crate::Mpeg2Container::of(self) {
+                crate::Mpeg2Container::Ps => "Program Stream",
+                crate::Mpeg2Container::Ts => "Transport Stream",
+                crate::Mpeg2Container::M2ts => "BDAV Transport Stream",
+                crate::Mpeg2Container::Es => "Elementary Stream",
+            },
             f if f.is_image_sequence() => "Image sequence",
             _ => "",
         };
