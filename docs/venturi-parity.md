@@ -1,6 +1,6 @@
 # Venturi-paritás: mit vehet át a CFA4 a Venturiból
 
-> **Állapot:** javaslat, a tulajdonos jóváhagyására vár · **Készült:** 2026-10-27 ·
+> **Állapot:** a tulajdonos 2026-10-27-én jóváhagyta (V1–V10, a 5. pont javaslataival) · **Készült:** 2026-10-27 ·
 > **Forrás:** [VenturiVideo/Venturi](https://github.com/VenturiVideo/Venturi) `main` @ `cdc1c0f`
 > (2026-10-26, v0.8.1, alfa) · **CFA4:** `main` @ `16debf9` · **Kapcsolódik:**
 > [`kdenlive-parity.md`](kdenlive-parity.md) (K1–K35), [`gaps.md`](gaps.md) (G-számok),
@@ -212,12 +212,16 @@ audit, hogy a CFA4 klip-, sáv- és médiaazonosítói teljesítik-e ezt; ha nem
 Összesen kb. **170–290 óra**, ebből a P1 **47–80 óra**. A Kdenlive-terv (K1–K35) mellett ez
 kis többlet, mert a Venturi tudásának nagy része a CFA4-ben már megvan.
 
-## 5. Tulajdonosi döntések
+## 5. Tulajdonosi döntések (2026-10-27)
 
-1. **V6:** kell-e VST3 (G11), és ha igen, külön folyamatban? Javaslat: igen, LV2 után.
-2. **V7:** lehet-e felhős átirat kifejezett hozzájárulással? Javaslat: csak helyi szerver
-   alapból, felhős opt-in.
-3. **V8:** maradjon ötlet. Javaslat: igen, a K7 hálózati render után újranézni.
+A tulajdonos a tervet a javasolt döntésekkel együtt jóváhagyta:
+
+1. **V6:** VST3 kell, **külön folyamatban**, az LV2-hoszt (K5) után. Ezzel a G11 hangbővítmény-része eldőlt.
+2. **V7:** átirat Whisper-kompatibilis HTTP-n át: **alapból csak helyi szerver**; felhős szolgáltató
+   csak kifejezett, beállításonkénti hozzájárulással (opt-in), figyelmeztetéssel.
+3. **V8:** a hálózati kezelőfelület **ötlet marad**; a K7 hálózati render után újranézzük.
+
+A megvalósítás a meglévő szabály szerint csak a tulajdonos kérésére indul, teendőnként.
 
 ## 6. Hogyan frissítsd ezt a fájlt
 
@@ -235,3 +239,4 @@ kódrészhez sor a [`licensing.md` §5](licensing.md) nyilvántartásban.
 ## Változásnapló
 
 - 2026-10-27: első változat (V1–V10).
+- 2026-10-27: a tulajdonos jóváhagyta; 5. pont döntésekké alakítva.
