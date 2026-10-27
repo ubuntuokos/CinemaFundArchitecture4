@@ -1,6 +1,7 @@
 # cfa4-j2k
 
-Clean-room JPEG 2000 Part 1 and HTJ2K (Part 15) decoder in pure Rust: the picture codec of Digital Cinema Packages
+Clean-room JPEG 2000 Part 1 and HTJ2K (Part 15) decoder, and a Part 1 encoder with the Digital
+Cinema profiles, in pure Rust: the picture codec of Digital Cinema Packages
 (SMPTE ST 429-4) and of JPEG 2000 in MXF / IMF. Layer L0: depends only on `thiserror`. No
 `unsafe`, no panics on malformed input. No OpenJPEG, Kakadu or FFmpeg code was consulted for
 Part 1. The HT block decoder (`src/ht.rs`, `src/ht_tables.rs`) is ported from OpenJPH
@@ -26,6 +27,9 @@ for p in &img.components {
     // p.width × p.height samples in p.data, p.precision bits, sub-sampled by p.dx × p.dy
 }
 let h = cfa4_j2k::parse_header(cfa4_j2k::codestream(&bytes)?)?; // size, components, no decode
+
+let j2c = cfa4_j2k::encode(&img, &cfa4_j2k::EncodeOptions::lossless())?;   // 5/3, exact
+let dcp = cfa4_j2k::encode(&xyz12, &cfa4_j2k::EncodeOptions::cinema_2k(24))?; // DCI 2K frame
 ```
 
 ## Decoder
@@ -53,6 +57,37 @@ Not supported yet (`Error::Unsupported`): Part 2 extensions (other ROI styles, a
 kernels), mixed HT / Part 1 code-blocks (style 0x80) and HT code-blocks that receive passes in
 more than one quality layer.
 
+## Encoder
+
+`encode(&Image, &EncodeOptions)` writes a codestream (`.j2c`): one tile, one quality layer, Part 1
+code-blocks (style 0). Clean-room from T.800 and its DCI amendment; it reuses the decoder's
+geometry, packet order and step-size code by parsing the header it has just written, so encoder
+and decoder cannot disagree on them.
+
+- DC level shift, RCT / ICT, forward 5/3 (integer) and 9/7 (`f32`) lifting, the exact inverses
+  of the decoder's synthesis.
+- Reversible: no quantization, lossless. Irreversible: dead-zone scalar quantization with
+  expounded step sizes, the image step divided by each subband's synthesis norm (measured from
+  the decoder's own synthesis of an impulse).
+- Tier-1: the MQ encoder (C.2) and the three coding passes, with the exact truncation length of
+  every pass (the bits the decoder needs down to the interval's precision) and the distortion
+  it removes, measured at the decoder's midpoint reconstruction.
+- Rate control (PCRD): each code-block's passes on their convex hull; a slope threshold found by
+  binary search over the hull slopes against the frame limit, and first a per-component floor
+  against the component limit. Sizes are measured by writing the packet headers, not estimated.
+- Tier-2: tag trees, Lblock, Table B.4 pass counts, bit stuffing; any progression and precincts;
+  one tile-part per component (and per progression change); TLM.
+- Guard bits are chosen so that every subband's largest index fits; samples outside a
+  component's range are clamped.
+- `EncodeOptions::cinema_2k(fps)` / `cinema_4k(fps)`: Rsiz 3 / 4, 12-bit X'Y'Z' (the caller
+  converts), 9/7, 5 / 6 levels, 32×32 code-blocks, CPRL, precincts 128 at resolution 0 and 256
+  above, a tile-part per component (4K: the 4K resolution in its own progression by POC, so six
+  tile-parts), TLM; at most 250 Mbit/s per frame and 200 Mbit/s per component (1 302 083 and
+  1 041 666 bytes at 24 fps). The image and options are checked against the profile.
+
+Not yet (#117): several quality layers, tiles, HTJ2K encoding, other code-block styles, SOP /
+EPH / PLT, IMF and broadcast profiles. DCP / MXF export is #115, speed #116.
+
 ## Accuracy and tests
 
 `tests/oracle.rs` generates 17 codestreams with ffmpeg:
@@ -78,6 +113,13 @@ more than one quality layer.
 - **Packed headers:** an ffmpeg tiled, layered stream rewritten with its packet headers in PPM and
   in PPT markers decodes to the same picture; truncated and damaged copies never panic.
 
+- **Encoder (`src/encode/tests.rs`, `tests/oracle.rs`):** lossless round trips exact for 1-4
+  components, 1-16 bits, signed, 4:2:0 sub-sampling, 0-7 levels, all progressions and precincts;
+  every truncation point of every code-block decodes to the distortion the encoder counted;
+  byte limits per frame and per component hold; DCI 2K / 4K structure (Rsiz, POC, tile-parts,
+  TLM). OpenJPEG (`opj_decompress`) and ffmpeg's decoder read our streams: lossless ones exactly,
+  lossy, rate-limited and DCI ones within ±1 of our decode.
+
 ## Speed
 
 `cargo run --release -p cfa4-j2k --example j2k_bench -- FILE…` times decodes. On the 4-core
@@ -93,3 +135,7 @@ development machine, a 2K DCI frame (`dci_2k.j2k`, 586 kB) decodes in about 150 
   strips, and the output planes run in parallel.
 
 Players also decode several frames at once, since every picture is intra coded.
+
+`cargo run --release -p cfa4-j2k --example j2k_encode_bench -- 2k|4k` times the encoder on a
+synthetic 12-bit frame with grain: a DCI 2K frame takes about 0.75 s, a 4K frame about 3 s on
+the same machine, filled to the byte limit (most of it tier-1; #116).

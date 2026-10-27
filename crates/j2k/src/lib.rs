@@ -15,7 +15,10 @@
 //!   irreversible multiple-component transforms, scalar derived and expounded quantization.
 //!
 //! Not supported (an [`Error::Unsupported`]): the Part 2 extensions (other ROI styles, wavelet
-//! kernels) and HTJ2K (Part 15).
+//! kernels), mixed HT / Part 1 code-blocks.
+//!
+//! [`encode`] writes Part 1 codestreams: lossless 5/3 or rate-controlled 9/7, and the Digital
+//! Cinema 2K / 4K profiles ([`EncodeOptions::cinema_2k`], [`EncodeOptions::cinema_4k`]).
 //! See the crate README for the specification and accuracy.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
@@ -23,6 +26,7 @@
 mod codestream;
 mod decode;
 mod dwt;
+mod encode;
 mod ht;
 mod ht_tables;
 mod jp2;
@@ -32,6 +36,7 @@ mod t2;
 
 pub use codestream::{ComponentInfo, Header, parse_header};
 pub use decode::decode;
+pub use encode::{EncodeOptions, Profile, Progression, encode};
 
 /// Decoder errors. Malformed input gives an error, never a panic.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

@@ -433,3 +433,106 @@ fn generate_fixtures() {
         cfa4_testkit::fixtures::generate_and_report(&format!("j2k/{}", s.name), &[out], || make(&ff, s));
     }
 }
+
+/// Planes of an `opj_decompress -o x.rawl` file: each component in turn, little-endian, one byte
+/// per sample up to 8 bits and two above.
+fn rawl(data: &[u8], planes: &[(usize, u8, bool)]) -> Vec<Vec<i32>> {
+    let mut at = 0;
+    planes
+        .iter()
+        .map(|&(n, precision, signed)| {
+            let size = if precision > 8 { 2 } else { 1 };
+            let bytes = &data[at..at + n * size];
+            at += n * size;
+            bytes
+                .chunks(size)
+                .map(|b| match (size, signed) {
+                    (1, false) => i32::from(b[0]),
+                    (1, true) => i32::from(b[0] as i8),
+                    (_, false) => i32::from(u16::from_le_bytes([b[0], b[1]])),
+                    _ => i32::from(i16::from_le_bytes([b[0], b[1]])),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// Our encoder's codestreams in OpenJPEG and ffmpeg: lossless ones decode to the input exactly
+/// there too, lossy ones (rate controlled, DCI 2K / 4K) within ±1 of our own decode. Skipped
+/// without the tools.
+#[test]
+fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
+    use cfa4_j2k::{EncodeOptions, Image, Plane, Progression};
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let Some(dec) = opj("opj_decompress") else {
+        eprintln!("skipped: OpenJPEG tools (libopenjp2-tools) not installed");
+        return;
+    };
+    let dir = cfa4_testkit::fixtures_dir("j2k").join("encoder");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("in.ppm");
+    let st = Command::new(&ff)
+        .args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=206x118", "-frames:v", "1", "-vf", "format=rgb24,crop=203:117:0:0", "-pix_fmt", "rgb24"])
+        .arg(&input)
+        .status();
+    assert!(matches!(st, Ok(s) if s.success()));
+    let rgb = ppm(&std::fs::read(&input).unwrap());
+    let plane = |data: Vec<i32>, precision: u8| Plane { width: 203, height: 117, precision, signed: false, dx: 1, dy: 1, data };
+    let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect() };
+    // 12-bit for the cinema profiles (the 8-bit pattern scaled up, plus a ramp)
+    let rgb12 = Image {
+        width: 203,
+        height: 117,
+        components: rgb.iter().enumerate().map(|(c, d)| plane(d.iter().enumerate().map(|(i, &v)| v * 16 + ((i + c) % 16) as i32).collect(), 12)).collect(),
+    };
+    let cases: Vec<(&str, &Image, EncodeOptions, bool)> = vec![
+        ("lossless", &rgb8, EncodeOptions::lossless(), true),
+        (
+            "lossless_cprl",
+            &rgb8,
+            EncodeOptions {
+                progression: Progression::Cprl,
+                precincts: vec![(5, 5), (6, 6)],
+                code_block: (5, 5),
+                tile_part_per_component: true,
+                tlm: true,
+                ..EncodeOptions::lossless()
+            },
+            true,
+        ),
+        ("lossless_rpcl_nomct", &rgb8, EncodeOptions { progression: Progression::Rpcl, mct: false, levels: 3, ..EncodeOptions::lossless() }, true),
+        ("lossy", &rgb8, EncodeOptions::lossy(2.0), false),
+        ("lossy_budget", &rgb8, EncodeOptions { max_bytes: Some(6_000), ..EncodeOptions::lossy(0.5) }, false),
+        ("lossless_budget", &rgb8, EncodeOptions { max_bytes: Some(9_000), ..EncodeOptions::lossless() }, false),
+        ("dci2k", &rgb12, EncodeOptions::cinema_2k(24), false),
+        ("dci2k_budget", &rgb12, EncodeOptions { max_bytes: Some(12_000), max_component_bytes: Some(5_000), ..EncodeOptions::cinema_2k(24) }, false),
+        ("dci4k", &rgb12, EncodeOptions::cinema_4k(24), false),
+    ];
+    for (name, img, opts, lossless) in cases {
+        let data = cfa4_j2k::encode(img, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let ours = cfa4_j2k::decode(&data).unwrap();
+        if lossless {
+            assert_eq!(&ours, img, "{name}: our decode");
+        }
+        let (cs, out) = (dir.join(format!("{name}.j2c")), dir.join(format!("{name}.rawl")));
+        std::fs::write(&cs, &data).unwrap();
+        let st = Command::new(&dec).arg("-i").arg(&cs).arg("-o").arg(&out).stdout(Stdio::null()).status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: opj_decompress");
+        let shape: Vec<_> = img.components.iter().map(|p| (p.data.len(), p.precision, p.signed)).collect();
+        let theirs = rawl(&std::fs::read(&out).unwrap(), &shape);
+        for (c, p) in ours.components.iter().enumerate() {
+            let worst = p.data.iter().zip(&theirs[c]).map(|(&a, &b)| (a - b).abs()).max().unwrap_or(0);
+            assert!(worst <= i32::from(!lossless), "{name}: OpenJPEG component {c} differs by {worst}");
+        }
+        // ffmpeg's own decoder, for the 8-bit ones
+        if img.components[0].precision == 8 {
+            let o =
+                Command::new(&ff).args(["-v", "error", "-c:v", "jpeg2000", "-i"]).arg(&cs).args(["-pix_fmt", "rgb24", "-f", "rawvideo", "-"]).output().unwrap();
+            assert!(o.status.success(), "{name}: ffmpeg");
+            for (c, p) in ours.components.iter().enumerate() {
+                let worst = p.data.iter().enumerate().map(|(i, &a)| (a - i32::from(o.stdout[3 * i + c])).abs()).max().unwrap_or(0);
+                assert!(worst <= i32::from(!lossless), "{name}: ffmpeg component {c} differs by {worst}");
+            }
+        }
+    }
+}

@@ -21,24 +21,24 @@ pub(crate) const MAX_PLANES: u32 = 30;
 // Per-sample flags (u16, with a one-sample border): the sample's own state, then the
 // significance of its eight neighbours and the signs of the four it shares an edge with, kept up
 // to date as samples become significant so the contexts are table lookups.
-const SIG: u16 = 1;
-const VISIT: u16 = 2;
-const REFINED: u16 = 4;
-const NEG: u16 = 8;
-const SIG_N: u16 = 1 << 4;
-const SIG_S: u16 = 1 << 5;
-const SIG_W: u16 = 1 << 6;
-const SIG_E: u16 = 1 << 7;
-const SIG_NW: u16 = 1 << 8;
-const SIG_NE: u16 = 1 << 9;
-const SIG_SW: u16 = 1 << 10;
-const SIG_SE: u16 = 1 << 11;
-const NEG_N: u16 = 1 << 12;
-const NEG_S: u16 = 1 << 13;
-const NEG_W: u16 = 1 << 14;
-const NEG_E: u16 = 1 << 15;
+pub(crate) const SIG: u16 = 1;
+pub(crate) const VISIT: u16 = 2;
+pub(crate) const REFINED: u16 = 4;
+pub(crate) const NEG: u16 = 8;
+pub(crate) const SIG_N: u16 = 1 << 4;
+pub(crate) const SIG_S: u16 = 1 << 5;
+pub(crate) const SIG_W: u16 = 1 << 6;
+pub(crate) const SIG_E: u16 = 1 << 7;
+pub(crate) const SIG_NW: u16 = 1 << 8;
+pub(crate) const SIG_NE: u16 = 1 << 9;
+pub(crate) const SIG_SW: u16 = 1 << 10;
+pub(crate) const SIG_SE: u16 = 1 << 11;
+pub(crate) const NEG_N: u16 = 1 << 12;
+pub(crate) const NEG_S: u16 = 1 << 13;
+pub(crate) const NEG_W: u16 = 1 << 14;
+pub(crate) const NEG_E: u16 = 1 << 15;
 /// Any significant neighbour.
-const NEIGHBOURS: u16 = 0xFF0;
+pub(crate) const NEIGHBOURS: u16 = 0xFF0;
 /// The neighbours below, left out of the contexts of a stripe's last row in vertically causal
 /// mode (D.7).
 const BELOW: u16 = SIG_S | SIG_SW | SIG_SE | NEG_S;
@@ -161,7 +161,7 @@ const fn clamp1(v: i32) -> i32 {
 }
 
 /// [`zc`] for every orientation and neighbour significance pattern (flag bits 4-11).
-const ZC_LUT: [[u8; 256]; 4] = {
+pub(crate) const ZC_LUT: [[u8; 256]; 4] = {
     let mut t = [[0u8; 256]; 4];
     let mut o = 0;
     while o < 4 {
@@ -181,7 +181,7 @@ const ZC_LUT: [[u8; 256]; 4] = {
 
 /// Sign coding context and XOR bit (Tables D.2, D.3) for every pattern of the edge neighbours'
 /// significance (index bits 0-3: N, S, W, E) and signs (bits 4-7).
-const SC_LUT: [(u8, u8); 256] = {
+pub(crate) const SC_LUT: [(u8, u8); 256] = {
     let mut t = [(0u8, 0u8); 256];
     let mut n = 0;
     while n < 256 {
