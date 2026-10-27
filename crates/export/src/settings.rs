@@ -505,11 +505,13 @@ impl ExportSettings {
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
-    /// Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ QuickTime movies.
+    /// Targa and OpenEXR sequences, ProRes 4444 / 4444 XQ and GoPro CineForm RGBA QuickTime
+    /// movies.
     pub fn supports_alpha(&self) -> bool {
         match self.format {
             Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence => true,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == cfa4_prores::ChromaFormat::Yuv444,
+            Format::Cineform => crate::cineform_profile(&self.cineform_profile) == cfa4_cineform::EncodedFormat::Rgba4444,
             _ => false,
         }
     }
@@ -623,6 +625,25 @@ impl ExportSettings {
                 };
                 px * fps * bpp
             }
+            Format::Cineform => {
+                use cfa4_cineform::{EncodedFormat, Quality};
+                // bits per pixel of detailed 4:2:2 pictures at Film Scan 1, scaled by quality
+                let q = match crate::cineform_quality(&self.cineform_quality) {
+                    Quality::FilmScan3 => 1.5,
+                    Quality::FilmScan2 => 1.2,
+                    Quality::FilmScan1 => 1.0,
+                    Quality::High => 0.9,
+                    Quality::Medium => 0.8,
+                    Quality::Low => 0.7,
+                };
+                let f = match crate::cineform_profile(&self.cineform_profile) {
+                    EncodedFormat::Rgb444 => 1.5,
+                    EncodedFormat::Rgba4444 if self.keeps_alpha() => 2.0,
+                    EncodedFormat::Rgba4444 => 1.5,
+                    _ => 1.0,
+                };
+                px * fps * 2.0 * q * f
+            }
             Format::Mjpeg | Format::JpegSequence => px * 8.0 * (0.4 + self.quality as f64 / 100.0 * 2.0) * fps / 8.0,
             Format::PngSequence => px * 4.0 * 0.45 * 8.0 * fps,
             Format::BmpSequence => px * 3.0 * 8.0 * fps,
@@ -719,6 +740,13 @@ impl ExportSettings {
                 }
                 Format::DnxHr => v += &format!(", DNxHR {}", if self.dnx_profile.is_empty() { "HQ".into() } else { self.dnx_profile.to_ascii_uppercase() }),
                 Format::Apv => v += &format!(", {}", crate::apv_profile(&self.apv_profile).name()),
+                Format::Cineform => {
+                    let mut f = crate::cineform_profile(&self.cineform_profile);
+                    if f == cfa4_cineform::EncodedFormat::Rgba4444 && !self.keeps_alpha() {
+                        f = cfa4_cineform::EncodedFormat::Rgb444;
+                    }
+                    v += &format!(", {}", crate::cineform_label(f, crate::cineform_quality(&self.cineform_quality)))
+                }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
                 Format::DpxSequence => v += ", 10-bit RGB",
                 Format::ExrSequence => {
@@ -754,7 +782,7 @@ impl ExportSettings {
         let container = match self.format {
             Format::H264 | Format::Hevc if self.multiplexer == Multiplexer::Mov => "QuickTime",
             Format::H264 | Format::Hevc | Format::Av1 => "MP4",
-            Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg => "QuickTime",
+            Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg => "QuickTime",
             Format::MxfOp1a | Format::MxfOpAtom => self.mxf_video_codec.label(),
             f if f.is_image_sequence() => "Image sequence",
             _ => "",

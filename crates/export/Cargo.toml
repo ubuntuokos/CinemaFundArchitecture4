@@ -23,6 +23,7 @@ cfa4-isobmff = { workspace = true }
 cfa4-prores = { workspace = true }
 cfa4-dnx = { workspace = true }
 cfa4-apv = { workspace = true }
+cfa4-cineform = { workspace = true }
 cfa4-mxf = { workspace = true }
 cfa4-aac = { workspace = true }
 cfa4-flac = { workspace = true }

@@ -34,7 +34,7 @@ fn sat(v: i32) -> i16 {
 /// The lowpass part of the even and odd outputs at position `i` of `n`, from the lowpass
 /// values at `i - 1`, `i`, `i + 1` (borders use the one-sided filters of the SDK).
 #[inline]
-fn lowpass_pair(n: usize, i: usize, l: impl Fn(usize) -> i32) -> (i32, i32) {
+pub(crate) fn lowpass_pair(n: usize, i: usize, l: impl Fn(usize) -> i32) -> (i32, i32) {
     let last = n.saturating_sub(1);
     let at = |k: usize| l(k.min(last));
     if i == 0 {
@@ -167,6 +167,18 @@ pub(crate) fn inverse_final(w: &Wavelet, max: i32) -> Vec<u16> {
         });
     }
     out
+}
+
+#[cfg(test)]
+pub(crate) mod tests_support {
+    /// The decoder's horizontal synthesis with halving, for encoder tests.
+    pub(crate) fn horizontal_halve(low: &[i16], high: &[i16], out: &mut [i32]) {
+        super::horizontal(low, high, super::Post::Halve, |i, v| {
+            if let Some(d) = out.get_mut(i) {
+                *d = v;
+            }
+        });
+    }
 }
 
 #[cfg(test)]

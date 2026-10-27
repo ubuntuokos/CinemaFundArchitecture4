@@ -307,6 +307,19 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!(got_profile == p || got_profile == idc, "{name}: profile {got_profile} != {p} ({idc})");
                 assert_eq!(a["codec_name"], "pcm_s24le", "{name}");
             }
+            "cineform" => {
+                assert!(fmt_name.contains("mov"), "{name}: {fmt_name}");
+                assert_eq!(v["codec_name"], "cfhd", "{name}");
+                let pix = v["pix_fmt"].as_str().unwrap_or_default();
+                let want = match settings["cineformProfile"].as_str().unwrap_or("") {
+                    "444" => "gbrp12le",
+                    "4444" if settings["alpha"].as_bool().unwrap_or(false) => "gbrap12le",
+                    "4444" => "gbrp12le",
+                    _ => "yuv422p10le",
+                };
+                assert_eq!(pix, want, "{name}");
+                assert_eq!(a["codec_name"], "pcm_s24le", "{name}");
+            }
             "mxf-op1a" => {
                 assert_eq!(fmt_name, "mxf", "{name}");
                 let codec = match settings["mxfVideoCodec"].as_str().unwrap() {
@@ -845,5 +858,38 @@ fn caption_sidecars_keep_only_the_exported_interval() {
     for format in [Format::Srt, Format::WebVtt] {
         let doc = sidecar(&mut edge, &edge_files, format, json!({"range":"inOut"}), ticks(30));
         assert!(doc.cues.is_empty(), "half-open export excludes cues touching either boundary: {doc:?}");
+    }
+}
+
+/// The GoPro CineForm presets: our MOV opens with our own decoder at the exported size, and
+/// ffmpeg (an oracle only) reads the same pixels within rounding of the colour conversion.
+#[test]
+fn cineform_presets_export_and_read_back() {
+    let mut s = demo();
+    let dir = Scratch::new("cineform");
+    for (name, pix) in
+        [("GoPro CineForm YUV 10-bit", "yuv422p10le"), ("GoPro CineForm RGB 12-bit", "gbrp12le"), ("GoPro CineForm RGB 12-bit with Alpha", "gbrap12le")]
+    {
+        let path = dir.0.join(cfa4_export::presets::preset_key(name)).to_string_lossy().to_string();
+        let params = json!({"preset": name, "path": path, "range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true});
+        let out = s.execute("file.exportMedia", params).unwrap_or_else(|e| panic!("{name}: {e}"))["path"].as_str().unwrap().to_string();
+        let bytes: std::sync::Arc<[u8]> = std::fs::read(&out).unwrap().into();
+        let src = cfa4_codecs::open_bytes(&out, bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let info = src.info().video.clone().unwrap();
+        assert_eq!((info.codec.as_str(), info.width, info.height), ("GoPro CineForm", 1920, 1080), "{name}");
+        assert_eq!(info.has_alpha, pix == "gbrap12le", "{name}");
+        let ours = src.video_frame(cfa4_media::FrameRequest::full(cfa4_time::Tick(0))).unwrap().to_rgba8();
+        let Some(j) = probe(&out) else { continue };
+        let v = stream(&j, "video").unwrap();
+        assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("cfhd"), Some(pix)), "{name}");
+        let Some(ff) = cfa4_testkit::oracle::ffmpeg_or_skip("cineform read back") else { continue };
+        let rgba = std::process::Command::new(ff)
+            .args(["-v", "error", "-i", &out, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgba", "-"])
+            .output()
+            .unwrap()
+            .stdout;
+        assert_eq!(rgba.len(), ours.len(), "{name}");
+        let far = ours.iter().zip(&rgba).filter(|(a, b)| (i32::from(**a) - i32::from(**b)).abs() > 4).count();
+        assert!(far * 1000 < ours.len(), "{name}: {far} of {} samples differ by more than 4", ours.len());
     }
 }

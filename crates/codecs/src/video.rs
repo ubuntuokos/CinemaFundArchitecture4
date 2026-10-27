@@ -936,8 +936,9 @@ pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
 /// Our GoPro CineForm (CFHD) decoder (intra samples; channels reconstruct in parallel).
 pub struct CineformDecoder;
 
-/// Convert a decoded CineForm frame to a [`VideoFrame`]: 4:2:2 YUV as is (video range, BT.709),
-/// full-range RGB(A) as full-range BT.709 Y'CbCr 4:4:4 at the coded depth with straight alpha.
+/// Convert a decoded CineForm frame to a [`VideoFrame`]: 4:2:2 YUV as is (video range, BT.601
+/// for SD and BT.709 above), full-range RGB(A) as video-range BT.709 Y'CbCr 4:4:4 at the coded
+/// depth with straight alpha.
 pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
     use std::sync::Arc;
     let bits = u32::from(f.bit_depth);
@@ -954,21 +955,22 @@ pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
             ([a, b, c], cfa4_frame::Chroma::C422)
         }
         _ => {
-            // planes hold R, G, B (full range)
-            color.range = cfa4_color::Range::Full;
+            // planes hold full-range R, G, B: video-range Y'CbCr 4:4:4 at the coded depth, so
+            // a container colour description (which rarely signals full range) still applies
             let (kr, kb) = color.matrix.kr_kb();
             let kg = 1.0 - kr - kb;
             let max = ((1u32 << bits) - 1) as f32;
-            let half = (1u32 << (bits - 1)) as f32;
+            let s = (1u32 << bits.saturating_sub(8)) as f32;
+            let (ys, cs) = (219.0 * s / max, 224.0 * s / max);
             let n = a.len().min(b.len()).min(c.len());
             let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![0u16; n], vec![0u16; n]);
             let rgb = a.iter().zip(&b).zip(&c);
             for (((&r, &g), &bl), ((y, cb), cr)) in rgb.zip(y.iter_mut().zip(cb.iter_mut()).zip(cr.iter_mut())) {
                 let (r, g, bl) = (f32::from(r), f32::from(g), f32::from(bl));
                 let yy = kr * r + kg * g + kb * bl;
-                *y = (yy + 0.5).clamp(0.0, max) as u16;
-                *cb = ((bl - yy) / (2.0 * (1.0 - kb)) + half + 0.5).clamp(0.0, max) as u16;
-                *cr = ((r - yy) / (2.0 * (1.0 - kr)) + half + 0.5).clamp(0.0, max) as u16;
+                *y = (16.0 * s + yy * ys + 0.5).clamp(0.0, max) as u16;
+                *cb = (128.0 * s + (bl - yy) / (2.0 * (1.0 - kb)) * cs + 0.5).clamp(0.0, max) as u16;
+                *cr = (128.0 * s + (r - yy) / (2.0 * (1.0 - kr)) * cs + 0.5).clamp(0.0, max) as u16;
             }
             ([y, cb, cr], cfa4_frame::Chroma::C444)
         }

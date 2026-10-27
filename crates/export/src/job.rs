@@ -188,7 +188,16 @@ pub struct Exporter {
 pub fn stepped(format: Format) -> bool {
     matches!(
         format,
-        Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg | Format::MxfOp1a | Format::MxfOpAtom
+        Format::H264
+            | Format::Hevc
+            | Format::Av1
+            | Format::ProRes
+            | Format::DnxHr
+            | Format::Apv
+            | Format::Cineform
+            | Format::Mjpeg
+            | Format::MxfOp1a
+            | Format::MxfOpAtom
     )
 }
 
@@ -198,7 +207,7 @@ pub(crate) fn hdr_output(working_hdr: bool, sdr: bool, format: Format, hdr_avail
     working_hdr
         && !sdr
         && match format {
-            Format::H264 | Format::ProRes | Format::DnxHr | Format::Apv => true,
+            Format::H264 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform => true,
             Format::Hevc => hdr_available(Format::Hevc),
             _ => false,
         }
