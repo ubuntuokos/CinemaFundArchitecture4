@@ -89,13 +89,22 @@ class CaptionProperties(QWidget):
         return label
 
     def set_caption(self, track: dict[str, Any], caption: dict[str, Any]) -> None:
-        """Show ``caption`` of ``track`` (``captions.list`` rows); a field being edited keeps its text."""
+        """Show ``caption`` of ``track`` (``captions.list`` rows). A field being edited keeps its
+        text while the same caption is shown again; another caption first gets the edits made so
+        far sent to the caption they were made on, then every field shows the new one."""
+        same = self.caption is not None and self.caption.get("id") == caption.get("id")
+        if not same and self.caption is not None:
+            if self.text.hasFocus():
+                self._text_done()
+            for edge, key in ((e, k) for e, _l, k in EDGES):
+                if self.edges[edge].hasFocus():
+                    self._tc_done(edge, key)
         self.caption = caption
         self.header.setText(f"{track.get('label') or 'C1'} · {track.get('name') or ''}")
-        if not self.text.hasFocus():
+        if not same or not self.text.hasFocus():
             self.text.setPlainText(str(caption.get("text") or ""))
         for edge, field in self.edges.items():
-            if not field.hasFocus():
+            if not same or not field.hasFocus():
                 field.setText(str(caption.get(edge) or ""))
         self.duration.setText(str(caption.get("duration") or ""))
 

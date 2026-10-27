@@ -22,9 +22,9 @@
 //! leave their part out instead of drawing garbage.
 
 use cfa4_geom::{Affine, Vec2};
-use cfa4_project::graphic::{LayerContent, eval_layer, layer_display_name, layer_indices};
+use cfa4_project::graphic::{LayerContent, layer_display_name, layer_indices};
 use cfa4_project::{ClipId, EffectInstance, ItemKind, MaskPath, TrackItem};
-use cfa4_render::graphic_clip::{layer_local_bounds, layer_matrix, text_layout};
+use cfa4_render::graphic_clip::{item_layer_specs, layer_local_bounds, layer_matrix, text_layout};
 use cfa4_time::Tick;
 use serde_json::{Value, json};
 
@@ -150,9 +150,14 @@ fn graphics(s: &Session) -> Value {
         let base = cfa4_render::motion_matrix(seq, it, size, None, mt);
         let Some(canvas) = matrix(&base) else { continue };
         let idx = layer_indices(&it.effects);
-        for (li, &ei) in idx.iter().enumerate().rev() {
+        // the renderer's layers (responsive timing, pins, roll / crawl), so a box is where the
+        // layer is drawn
+        for (ei, spec) in item_layer_specs(it, mt, size).into_iter().rev() {
+            let Some(li) = idx.iter().position(|&x| x == ei) else { continue };
             let Some(e) = it.effects.get(ei) else { continue };
-            let Some(spec) = eval_layer(e, mt, size).filter(|l| l.enabled) else { continue };
+            if !spec.enabled {
+                continue;
+            }
             let m = base.then_apply(&layer_matrix(&spec));
             let Some(to_frame) = matrix(&m).filter(|_| m.inverse().is_some()) else { continue };
             let local = layer_local_bounds(&spec);

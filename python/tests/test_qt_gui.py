@@ -2474,6 +2474,16 @@ def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path)
         # Rectangle: a new graphic clip with the shape where it was dragged
         win.tools.select("rectangle")
         assert gt.tool == "rectangle" and not ov.enabled
+        # during playback a press first stops on the shown frame (regression: the shape went where
+        # playback started, the engine's playhead)
+        win.monitor.play()
+        assert wait_until(app, lambda: win.monitor.playing, 10_000)
+        drag(at(0.2, 0.2), at(0.6, 0.6))
+        assert not win.monitor.playing
+        wait_until(app, lambda: False, 300)
+        assert layers() == []
+        win._seek_program(0)
+        assert wait_until(app, lambda: ov.data is not None and win.monitor.playhead == 0, 10_000)
         drag(at(0.2, 0.2), at(0.6, 0.6))
         assert wait_until(app, lambda: len(layers()) == 1, 20_000)
         rect = layers()[0]
@@ -4268,6 +4278,24 @@ def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
         next(a for a in menu.actions() if a.objectName() == "timeline.volumeKeyMenu.delete").trigger()
         menu.close()
         assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 1, 10_000)
+        # a reversed clip: its keyframes come in media order, backwards in the timeline, and the
+        # middle one still drags between its neighbours (regression: the bounds came from list order)
+        win.execute("clip.speedDuration", {"clips": [cid], "reverse": True})
+        assert wait_until(app, lambda: clip().get("reverse") is True or clip().get("reversed") is True, 10_000), clip()
+        r = canvas.clip_rect(a1(), clip())
+        for f in (0.1, 0.45):
+            px_x = int(r.left() + r.width() * f)
+            QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.ControlModifier, QtCore.QPoint(px_x, round(canvas.volume_line_y(clip(), r, px_x))))
+        assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 3, 10_000)
+        r = canvas.clip_rect(a1(), clip())
+        keys = canvas.volume_keys(clip(), r)
+        xs = [k[1].x() for k in keys]
+        assert xs != sorted(xs), "media order runs backwards in the timeline"
+        m_mid, k_mid, _db = sorted(keys, key=lambda k: k[1].x())[1]
+        t_mid = next(k["time"] for k in clip()["volume"]["keys"] if k["mediaTime"] == m_mid)
+        start = QtCore.QPoint(round(k_mid.x()), round(k_mid.y()))
+        drag(start, start + QtCore.QPoint(-15, 0))
+        assert wait_until(app, lambda: all(k["time"] != t_mid for k in clip()["volume"]["keys"]), 10_000), clip()["volume"]["keys"]
         # a locked track's line does not take presses
         win.execute("timeline.setTrack", {"track": a1().track["id"], "locked": True})
         assert wait_until(app, lambda: a1().track.get("locked") is True, 10_000)
@@ -4543,6 +4571,22 @@ def test_real_engine_properties_caption_as_egui(app, tmp_path: Path):
         cap_panel._tc_done("out", "endTimecode")
         cap_panel._tc_done("in", "startTimecode")
         assert sent == []
+        # another caption selected while a field has focus: the edit so far goes to the caption it
+        # was made on, and the fields show the new one (regression: the old text went to the new one)
+        win.execute("captions.add", {"text": "Second", "time": 10 * TICKS_PER_SECOND, "durationSeconds": 2})
+        assert wait_until(app, lambda: len(win.timeline.canvas.caption_tracks()[0]["captions"]) == 2, 10_000)
+        first, second = win.timeline.canvas.caption_tracks()[0]["captions"]
+        win.execute("captions.select", {"captions": [first["id"]]})
+        assert wait_until(app, lambda: (cap_panel.caption or {}).get("id") == first["id"], 10_000)
+        text = field("text")
+        text.setFocus()
+        text.setPlainText("Edited first")
+        win.execute("captions.select", {"captions": [second["id"]]})
+        assert wait_until(app, lambda: (cap_panel.caption or {}).get("id") == second["id"], 10_000)
+        assert text.toPlainText() == "Second"
+        field("in").setFocus()
+        caps = lambda: {c["id"]: c["text"] for c in win.timeline.canvas.caption_tracks()[0]["captions"]}
+        assert wait_until(app, lambda: caps() == {first["id"]: "Edited first", second["id"]: "Second"}, 10_000), caps()
         # no caption selection: the clips' properties again
         win.execute("captions.select", {"captions": []})
         assert wait_until(app, lambda: not cap_panel.isVisible(), 10_000)
@@ -4722,6 +4766,185 @@ def test_real_engine_sequence_settings_dialog_as_egui(app, tmp_path: Path):
         QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
         assert wait_until(app, lambda: closed(d), 10_000)
         assert d.sent == []
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_clip_dialogs_as_egui(app):
+    """egui's clip_dialogs without an engine: each dialog's controls from ``dialog.defaults``, the
+    Audio Channels matrix following the format and clip count, Frame Hold's timecode only for
+    Source Timecode / Sequence Time, OK sending egui's ``finish`` and keeping a failure in red;
+    damaged defaults read as nothing."""
+    from cfa4_qt.panels.clip_dialogs import ClipDialog, channel_map, finish, timecode_of_frames
+
+    assert channel_map("mono", 3) == [[0], [1], [2]]
+    assert channel_map("stereo", 3) == [[0, 1], [2]]
+    assert channel_map("5.1", 6) == [[0, 1, 2, 3, 4, 5]] and channel_map("adaptive", 0) == [[0]]
+    assert len(channel_map("mono", 10**9)) == 64
+    assert timecode_of_frames(0, 24.0) == "00:00:00:00" and timecode_of_frames(24 * 61 + 5, 23.976) == "00:01:01:05"
+    assert timecode_of_frames(10**30, float("nan")).count(":") == 3
+    assert finish("file.newOfflineFile", {"name": "", "fileName": "a"}) == {"fileName": "a"}
+    assert finish("clip.modifyTimecode", {"timecode": "x", "reset": True}) == {"reset": True}
+    assert finish("clip.frameHoldOptions", {"holdOn": "in", "timecode": "x"}) == {"holdOn": "in"}
+    assert finish("clip.frameHoldOptions", {"holdOn": "sequenceTime", "timecode": "x"})["timecode"] == "x"
+
+    sent: list[tuple[str, dict]] = []
+    answer: list[str | None] = [None]
+
+    def run(cid, params, then):
+        sent.append((cid, params))
+        then(answer[0])
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, f"{d.pre}.{name}")
+
+    # Audio Channels of a 4-channel master clip
+    d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "stereo", "clips": [[0, 1], [2, 3]]}, "info": {"channels": 4, "items": True}}, run)
+    assert d.objectName() == "audioChannels" and d.windowTitle() == "Modify Clip: Audio Channels"
+    assert child(d, "format.stereo", QtWidgets.QRadioButton).isChecked()
+    assert child(d, "count", QtWidgets.QSpinBox).value() == 2
+    assert child(d, "clip.1.ch.3", QtWidgets.QCheckBox).isChecked() and not child(d, "clip.1.ch.0", QtWidgets.QCheckBox).isChecked()
+    child(d, "format.mono", QtWidgets.QRadioButton).setChecked(True)
+    assert d.params["format"] == "mono" and d.params["clips"] == [[0], [1], [2], [3]]
+    child(d, "count", QtWidgets.QSpinBox).setValue(2)
+    assert d.params["clips"] == [[0], [1]]
+    app.processEvents()
+    child(d, "clip.0.ch.2", QtWidgets.QCheckBox).setChecked(True)
+    assert d.params["clips"] == [[0, 2], [1]]
+    child(d, "ok", QtWidgets.QPushButton).click()
+    assert sent[-1] == ("clip.audioChannels", {"format": "mono", "clips": [[0, 2], [1]]})
+    # Frame Hold: the timecode field only for Source Timecode / Sequence Time; Hold On off greys the rest
+    d = ClipDialog(None, {"command": "clip.frameHoldOptions", "params": {"enabled": True, "holdOn": "in", "timecode": "00:00:01:00", "holdFilters": False}}, run)
+    d.show()
+    assert not child(d, "timecode").isVisible()
+    child(d, "holdOn.sequenceTime", QtWidgets.QRadioButton).setChecked(True)
+    assert child(d, "timecode").isVisible()
+    child(d, "enabled", QtWidgets.QCheckBox).setChecked(False)
+    assert not child(d, "holdOn.in").isEnabled() and not child(d, "holdFilters").isEnabled()
+    # a failure stays in the dialog, in red
+    answer[0] = "no clip selected"
+    child(d, "ok", QtWidgets.QPushButton).click()
+    assert d.isVisible() and child(d, "error", QtWidgets.QLabel).text() == "no clip selected"
+    assert sent[-1] == ("clip.frameHoldOptions", {"enabled": False, "holdOn": "sequenceTime", "timecode": "00:00:01:00", "holdFilters": False})
+    d.close()
+    answer[0] = None
+    # Paste Attributes: audio attributes greyed for video-only clips, the effects offered
+    d = ClipDialog(
+        None,
+        {"command": "edit.pasteAttributes", "params": {"motion": True, "volume": False, "effects": ["blur"], "scaleTimes": True}, "info": {"video": True, "audio": False, "effects": [["blur", "Gaussian Blur"], ["x"], 5]}},
+        run,
+    )
+    assert child(d, "motion").isEnabled() and not child(d, "volume").isEnabled()
+    assert child(d, "effect.blur", QtWidgets.QCheckBox).isChecked() and child(d, "scaleTimes", QtWidgets.QCheckBox).isChecked()
+    child(d, "effect.blur", QtWidgets.QCheckBox).setChecked(False)
+    assert d.params["effects"] == []
+    # Offline File: no video greys the frame size; an empty clip name is not sent
+    d = ClipDialog(None, {"command": "file.newOfflineFile", "params": {"fileName": "Offline.mov", "name": "", "video": True, "width": 1920, "height": 1080, "fps": 24.0, "seconds": 10.0}}, run)
+    child(d, "video", QtWidgets.QCheckBox).setChecked(False)
+    assert not child(d, "width").isEnabled()
+    child(d, "ok", QtWidgets.QPushButton).click()
+    assert "name" not in sent[-1][1] and sent[-1][1]["video"] is False
+    # damaged defaults: still a dialog, no crash
+    for state in ({}, {"command": "clip.audioChannels", "params": 5, "info": {"channels": -3, "items": True}}, {"command": "clip.speedDuration", "params": {"speed": "x"}, "info": {"duration": "y", "fpsNum": 0}}):
+        d = ClipDialog(None, state, run)
+        d.grab()
+        d.deleteLater()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_clip_dialogs_as_egui(app, tmp_path: Path):
+    """Clip ▸ Speed/Duration…, Nest…, Field Options… and Frame Hold Options… from the menu open
+    egui's dialogs from ``dialog.defaults``; OK runs the command; with nothing selected the
+    command's own error comes back and no dialog opens."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.clip_dialogs import ClipDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    import shiboken6
+
+    def closed(d):
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def opened(name, before):
+        def now():
+            d = win.last_dialog
+            return isinstance(d, ClipDialog) and d is not before and shiboken6.isValid(d) and d.objectName() == name
+
+        return wait_until(app, now, 10_000)
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, f"{d.pre}.{name}")
+
+    def first_clip():
+        return win.sequence["video"][0]["items"][0]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("sequence.linkedSelection", {"on": False})
+        clip = first_clip()["clip"]
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: win.sequence.get("selection") == [clip], 10_000)
+        win.invoke("clip.speedDuration")
+        assert opened("speedDuration", None)
+        d = win.last_dialog
+        assert d.windowTitle() == "Clip Speed / Duration"
+        speed = child(d, "speed", QtWidgets.QDoubleSpinBox)
+        assert speed.value() == 100.0
+        before = child(d, "duration", QtWidgets.QLabel).text()
+        speed.setValue(200.0)
+        after = child(d, "duration", QtWidgets.QLabel).text()
+        assert after != before and after < before
+        assert child(d, "interpolation.frameSampling", QtWidgets.QRadioButton).isChecked()
+        child(d, "interpolation.frameBlending", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert wait_until(app, lambda: abs(float(first_clip().get("speed") or 0) - 2.0) < 1e-6, 10_000), first_clip()
+        # Field Options: the defaults go through as they are
+        win.invoke("clip.fieldOptions")
+        assert opened("fieldOptions", d)
+        d = win.last_dialog
+        assert child(d, "processing.none", QtWidgets.QRadioButton).isChecked()
+        child(d, "processing.alwaysDeinterlace", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert d.sent[-1] == {"reverseFieldDominance": False, "processing": "alwaysDeinterlace"}
+        # Frame Hold Options
+        win.invoke("clip.frameHoldOptions")
+        assert opened("frameHold", d)
+        d = win.last_dialog
+        assert child(d, "holdOn.in", QtWidgets.QRadioButton).isChecked()
+        QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # Nest…: the next free name, Enter accepts it
+        win.invoke("clip.nest")
+        assert opened("nest", d)
+        d = win.last_dialog
+        name = child(d, "name", QtWidgets.QLineEdit)
+        assert name.text() == "Nested Sequence 01"
+        name.setText("My Nest")
+        QtTest.QTest.keyClick(name, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert wait_until(app, lambda: first_clip().get("name") == "My Nest" or any(i.get("name") == "My Nest" for t in win.sequence["video"] for i in t["items"]), 10_000)
+        # nothing selected: the command's error, no dialog
+        win.execute("timeline.select", {"clips": []})
+        assert wait_until(app, lambda: win.sequence.get("selection") == [], 10_000)
+        last = win.last_dialog
+        win.invoke("clip.speedDuration")
+        assert wait_until(app, lambda: "clip.speedDuration" in win.events.text.toPlainText(), 10_000)
+        assert win.last_dialog is last
+        # with parameters the command applies directly
+        win.execute("timeline.select", {"clips": [first_clip()["clip"]]})
+        win.run_preset("clip.fieldOptions", {"processing": "none"})
+        wait_until(app, lambda: False, 200)
+        assert win.last_dialog is last
     finally:
         win._quit_confirmed = True
         win.close()

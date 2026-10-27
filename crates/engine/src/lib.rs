@@ -18,6 +18,7 @@ pub mod color;
 pub mod commands;
 pub mod credits;
 pub mod demo;
+pub mod dialog_defaults;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;

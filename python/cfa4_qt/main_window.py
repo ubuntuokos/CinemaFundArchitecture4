@@ -38,6 +38,8 @@ from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_para
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, tr
 from .i18n import system_language as i18n_system_language
+from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
+from .panels.clip_dialogs import ClipDialog
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
@@ -1053,6 +1055,27 @@ class MainWindow(QMainWindow):
         dialog.open()
         return dialog
 
+    def open_clip_dialog(self, cid: str) -> None:
+        """An Edit / Clip / File menu command's dialog, from the engine's ``dialog.defaults``."""
+
+        def run(command: str, params: dict[str, Any], then: Any) -> None:
+            def ok(_r: Any, _b: bytes | None) -> None:
+                self.schedule_refresh()
+                then(None)
+
+            self.engine.execute(command, params, on_reply=ok, on_error=lambda m: then(str(m)))
+
+        def got(state: Any, _b: bytes | None) -> None:
+            if not isinstance(state, dict):
+                self._command_failed(cid, tr("no dialog"))
+                return
+            dialog = ClipDialog(self, state, run)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.last_dialog = dialog
+            dialog.open()
+
+        self.engine.execute("dialog.defaults", {"command": cid}, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
     def open_sequence_settings(self, new: bool = False) -> None:
         """Sequence Settings… of the active sequence, or New Sequence (egui's
         ``panels/sequence_settings.rs``)."""
@@ -1515,6 +1538,9 @@ class MainWindow(QMainWindow):
             self.open_edit_cameras()
         elif cid in ("app.keyboardShortcuts", "help.shortcuts"):
             self.open_shortcuts()
+        elif cid in CLIP_DIALOGS and not params:
+            # egui's clip_dialogs: from the menu the dialog; with parameters the command runs
+            self.open_clip_dialog(cid)
         elif cid in ("sequence.settings", "file.newSequence") and not params:
             # egui's: from the menu the dialog; with parameters the engine command applies them
             self.open_sequence_settings(new=cid == "file.newSequence")

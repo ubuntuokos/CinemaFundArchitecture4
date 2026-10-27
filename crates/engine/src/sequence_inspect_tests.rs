@@ -237,3 +237,33 @@ fn sequence_inspect_reports_the_caption_tracks() {
     assert!(c["end"].as_i64().unwrap() > 0);
     assert_eq!(js["captionSelection"], json!([id]));
 }
+
+/// `dialog.defaults` opens a menu command's dialog as egui's `clip_dialogs::defaults` does: the
+/// selected clip's speed, the next nested sequence name, Field Options' defaults; a command
+/// without a dialog, or one that can't run now, is an error.
+#[test]
+fn dialog_defaults_start_each_dialog_from_the_selection() {
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    s.execute("sequence.linkedSelection", json!({"on": false})).unwrap();
+    let clip = s.active_sequence().unwrap().video_tracks[0].items[0].id;
+    s.execute("timeline.select", json!({"clips": [clip.0]})).unwrap();
+    s.execute("clip.speedDuration", json!({"speed": 50, "reverse": true})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "clip.speedDuration"})).unwrap();
+    assert_eq!(d["params"]["speed"], 50.0, "{d}");
+    assert_eq!(d["params"]["reverse"], true, "a reversed clip opens with Reverse Speed on");
+    assert_eq!(d["params"]["interpolation"], "frameSampling");
+    let dur = s.active_sequence().unwrap().find_item(clip).unwrap().1.duration.0;
+    assert_eq!(d["info"]["duration"], dur);
+    assert!(d["info"]["fpsNum"].as_i64().is_some_and(|n| n > 0));
+    let d = s.execute("dialog.defaults", json!({"command": "clip.nest"})).unwrap();
+    assert_eq!(d["params"]["name"], "Nested Sequence 01");
+    let d = s.execute("dialog.defaults", json!({"command": "clip.fieldOptions"})).unwrap();
+    assert_eq!(d["params"], json!({"reverseFieldDominance": false, "processing": "none"}));
+    let d = s.execute("dialog.defaults", json!({"command": "edit.removeAttributes"})).unwrap();
+    assert_eq!((d["info"]["video"].as_bool(), d["info"]["audio"].as_bool()), (Some(true), Some(false)));
+    assert!(s.execute("dialog.defaults", json!({"command": "file.save"})).is_err());
+    assert!(s.execute("dialog.defaults", json!({})).is_err());
+    s.execute("timeline.select", json!({"clips": []})).unwrap();
+    assert!(s.execute("dialog.defaults", json!({"command": "clip.speedDuration"})).is_err(), "nothing selected: no dialog");
+}

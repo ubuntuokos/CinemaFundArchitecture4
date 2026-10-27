@@ -1802,3 +1802,51 @@
 	{rate} fps Non Drop-Frame Timecode	{rate} fps Non Drop-Frame időkód
 	{rate} fps Timecode	{rate} fps időkód
 	{rate} frames/second	{rate} képkocka/másodperc
+	Always Deinterlace	Mindig váltottsor-mentesítés
+	Audio Attributes	Hangattribútumok
+	Ch. {n}	{n}. csat.
+	Clip Channel Format:	Klip csatornaformátuma:
+	Clip Speed / Duration	Klip sebessége / időtartama
+	Clip {n}	{n}. klip
+	Contains:	Tartalmaz:
+	Edit Subclip	Alklip szerkesztése
+	End:	Vége:
+	Field Options	Félkép-beállítások
+	File Name:	Fájlnév:
+	Flicker Removal	Vibrálás eltávolítása
+	Frame Hold Options	Képkocka kitartásának beállításai
+	Frame Rate:	Képkockasebesség:
+	Hold Filters	Szűrők kitartása
+	Hold On	Kitartás
+	In Point	Kezdőpont
+	Make Subclip	Alklip készítése
+	Media Source Channels	Médiaforrás csatornái
+	Media Start:	Média kezdete:
+	Modify Clip: Audio Channels	Klip módosítása: hangcsatornák
+	Modify Clip: Timecode	Klip módosítása: időkód
+	Nested Sequence Name	Beágyazott szekvencia neve
+	New Offline File	Új offline fájl
+	No effects	Nincsenek effektusok
+	Number of Audio Clips:	Hangklipek száma:
+	Out Point	Végpont
+	Paste Attributes	Attribútumok beillesztése
+	Playhead	Lejátszófej
+	Processing Options	Feldolgozási beállítások
+	Remove Attributes	Attribútumok eltávolítása
+	Restrict Trims To Subclip Boundaries	Vágás korlátozása az alklip határaira
+	Reverse Field Dominance	Félkép-dominancia megfordítása
+	Reverse Speed	Fordított sebesség
+	Ripple Edit, Shifting Trailing Clips	Hullámszerkesztés, a későbbi klipek eltolásával
+	Scale Attribute Times	Attribútumidők méretezése
+	Sequence Time	Szekvenciaidő
+	Set Timecode:	Időkód beállítása:
+	Source Timecode	Forrás-időkód
+	Source channels the selected audio clips play:	A kijelölt hangklipek által lejátszott forráscsatornák:
+	Speed:	Sebesség:
+	Start:	Kezdet:
+	Subclip: {name}	Alklip: {name}
+	Tape Name:	Szalag neve:
+	Timecode:	Időkód:
+	Use the file's timecode	A fájl időkódjának használata
+	Video Attributes	Videoattribútumok
+	no dialog	nincs párbeszédablak

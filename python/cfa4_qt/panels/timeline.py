@@ -1423,13 +1423,21 @@ class TimelineCanvas(QWidget):
             frame = self.frame_ticks()
             start, end = as_int(clip.get("start")), as_int(clip.get("end"))
             keys = self.volume_keys(clip, r)
-            i = v["index"]
-            # on a frame, at least a frame away from the keyframes on either side
+            # the dragged keyframe by its media time (where the last move put it), else its index
+            i = next((n for n, k in enumerate(keys) if k[0] == v.get("mediaTime")), v["index"])
+            # on a frame, at least a frame away from the keyframes on either side; which side a
+            # keyframe is on goes by where it sits in the timeline (a reversed clip's keyframes
+            # come in media order, which runs backwards there)
             lo, hi = start, end - frame
-            if 0 <= i - 1 < len(keys):
-                lo = max(lo, self.time_at(keys[i - 1][1].x()) + frame)
-            if i + 1 < len(keys):
-                hi = min(hi, self.time_at(keys[i + 1][1].x()) - frame)
+            if 0 <= i < len(keys):
+                here = keys[i][1].x()
+                for j, k in enumerate(keys):
+                    if j == i:
+                        continue
+                    if k[1].x() <= here:
+                        lo = max(lo, self.time_at(k[1].x()) + frame)
+                    else:
+                        hi = min(hi, self.time_at(k[1].x()) - frame)
             t = (self.time_at(q.x()) + frame // 2) // frame * frame
             t = max(lo, min(hi, t)) if lo <= hi else self.time_at(keys[i][1].x()) if i < len(keys) else start
             db = pos_to_db((band.bottom() - q.y()) / max(1.0, band.height()))

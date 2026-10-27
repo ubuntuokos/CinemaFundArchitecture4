@@ -568,13 +568,16 @@ class ProgramOverlay(QObject):
             return self._pen_press(e)
         if e.button() != Qt.MouseButton.LeftButton:
             return False
-        if self.graphics.tool in DRAW_TOOLS:
-            return self.graphics.press(e)
-        if getattr(self.monitor, "playing", False) and (self.placement() is not None or self.mask_geometry() is not None):
-            # the box and the engine's playhead are where playback started: stop on the shown frame
-            # (the overlay follows it) so the next drag edits what is on screen
+        draw = self.graphics.tool in DRAW_TOOLS
+        if getattr(self.monitor, "playing", False) and (
+            draw or self.placement() is not None or self.mask_geometry() is not None or bool(self.graphics.layers())
+        ):
+            # the boxes and the engine's playhead are where playback started: stop on the shown frame
+            # (the overlay follows it) so the next press edits, or draws, what is on screen
             self.monitor.stop()
             return True
+        if draw:
+            return self.graphics.press(e)
         at = e.position()
         self.gesture += 1
         mods = e.modifiers()

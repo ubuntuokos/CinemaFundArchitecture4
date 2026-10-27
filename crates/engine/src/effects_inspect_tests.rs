@@ -368,4 +368,10 @@ fn program_overlay_reports_the_graphic_layers_at_the_playhead() {
     assert_eq!(layers[1]["local"].as_array().unwrap().len(), 4);
     assert_eq!((g["clip"].as_u64(), g["selectedLayers"].clone()), (Some(clip), json!([1])));
     assert_eq!(g["canvasTarget"]["clip"].as_u64(), Some(clip));
+    // a rolling graphic: the boxes move with the roll, as the renderer draws them
+    let before = layers[1]["toFrame"].clone();
+    s.execute("graphics.setRoll", json!({"clip": clip, "mode": "roll", "startOffScreen": true})).unwrap();
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let rolled = g["layers"].as_array().unwrap().iter().find(|l| l["layer"] == 0).unwrap();
+    assert_ne!(rolled["toFrame"], before, "the roll offset moves the box");
 }
