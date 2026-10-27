@@ -611,6 +611,15 @@ impl Sps {
     pub fn sub_height_c(&self) -> u32 {
         if self.chroma_format_idc == 1 { 2 } else { 1 }
     }
+    /// log2 of the chroma plane subsampling (x, y) as the decoder stores it: monochrome pictures
+    /// keep 4:2:0 geometry for their grey chroma planes.
+    pub fn chroma_shift(&self) -> (u32, u32) {
+        match self.chroma_format_idc {
+            2 => (1, 0),
+            3 => (0, 0),
+            _ => (1, 1),
+        }
+    }
     pub fn ctb_size(&self) -> u32 {
         1 << self.log2_ctb
     }
@@ -637,8 +646,8 @@ impl Sps {
 
     /// Features this decoder does not handle yet.
     pub fn check_supported(&self) -> Result<()> {
-        if self.chroma_format_idc > 1 {
-            return unsupported(format!("chroma_format_idc {} (only 4:0:0 and 4:2:0)", self.chroma_format_idc));
+        if self.separate_colour_plane {
+            return unsupported("separate_colour_plane (4:4:4 coded as three monochrome planes)");
         }
         if self.bit_depth_luma > 12 || self.bit_depth_chroma > 12 {
             return unsupported(format!("bit depth {}/{}", self.bit_depth_luma, self.bit_depth_chroma));
