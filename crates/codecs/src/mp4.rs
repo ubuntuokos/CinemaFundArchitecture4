@@ -83,6 +83,7 @@ fn audio_starts(file: &Mp4File, bytes: &crate::Src, ti: usize, rate: u32) -> Vec
         Some(CodecConfig::Mp3) => fixed_packet_samples(FixedFrames::MpegAudio, &first(), rate),
         Some(CodecConfig::Ac3 { .. }) => fixed_packet_samples(FixedFrames::Ac3, &first(), rate),
         Some(CodecConfig::Eac3 { .. }) => fixed_packet_samples(FixedFrames::Eac3, &first(), rate),
+        Some(CodecConfig::Dts { .. }) => fixed_packet_samples(FixedFrames::Dts, &first(), rate),
         _ => None,
     };
     let Some(frame) = frame else { return stamps };
@@ -378,14 +379,14 @@ impl Mp4Source {
                     st.decoder = Some(PacketDecoder::for_isobmff(c, ainfo.sample_rate)?);
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
-                // one packet, or `OPUS_PRE_ROLL` worth for Opus).
+                // a packet, more for DTS, or `OPUS_PRE_ROLL` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
                     d.reset();
                     let from = if a.preroll > 0 {
                         a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
                     } else {
-                        i.saturating_sub(1)
+                        i.saturating_sub(d.pre_roll_packets())
                     };
                     for j in from..i {
                         if let Ok(prev) = self.read(ti, j) {

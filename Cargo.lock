@@ -830,6 +830,7 @@ dependencies = [
  "cfa4-bitstream",
  "cfa4-color",
  "cfa4-dnx",
+ "cfa4-dts",
  "cfa4-frame",
  "cfa4-h264",
  "cfa4-hevc",
@@ -899,6 +900,15 @@ dependencies = [
 [[package]]
 name = "cfa4-docpath"
 version = "0.1.0"
+
+[[package]]
+name = "cfa4-dts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "log",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "cfa4-edit"

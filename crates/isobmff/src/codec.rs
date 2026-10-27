@@ -199,6 +199,11 @@ pub enum CodecConfig {
     Eac3 {
         dec3: Vec<u8>,
     },
+    /// DTS (`dtsc` core, `dtsh` / `dtsl` DTS-HD): the `ddts` payload (ETSI TS 102 114 Annex E),
+    /// empty when absent.
+    Dts {
+        ddts: Vec<u8>,
+    },
     Timecode(TimecodeConfig),
     /// Anything else; `raw` is the full sample entry payload (after the 8-byte box header).
     Unknown {
@@ -227,6 +232,7 @@ impl CodecConfig {
             CodecConfig::Flac(_) => "flac",
             CodecConfig::Ac3 { .. } => "ac3",
             CodecConfig::Eac3 { .. } => "eac3",
+            CodecConfig::Dts { .. } => "dts",
             CodecConfig::Timecode(_) => "timecode",
             CodecConfig::Unknown { .. } => "unknown",
         }
@@ -887,6 +893,9 @@ fn is_audio_fourcc(f: &[u8; 4]) -> bool {
             | b"fLaC"
             | b"ac-3"
             | b"ec-3"
+            | b"dtsc"
+            | b"dtsh"
+            | b"dtsl"
             | b".mp3"
             | b".mp2"
             | b"enca"
@@ -1049,6 +1058,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
             },
             b"ac-3" => CodecConfig::Ac3 { dac3: get(b"dac3").unwrap_or(&[]).to_vec() },
             b"ec-3" => CodecConfig::Eac3 { dec3: get(b"dec3").unwrap_or(&[]).to_vec() },
+            b"dtsc" | b"dtsh" | b"dtsl" => CodecConfig::Dts { ddts: get(b"ddts").unwrap_or(&[]).to_vec() },
             b"lpcm" | b"sowt" | b"twos" | b"in24" | b"in32" | b"fl32" | b"fl64" | b"raw " | b"NONE" => CodecConfig::Pcm(qt_pcm(f, &a)),
             b"ipcm" | b"fpcm" => {
                 let mut pcm =
@@ -1179,6 +1189,8 @@ fn parse_esds(p: &[u8]) -> Result<CodecConfig> {
         }
         return Ok(match oti {
             0x69 | 0x6B => CodecConfig::Mp3,
+            // DTS, DTS-HD High Resolution, DTS-HD Master Audio (as ffmpeg writes DTS in MP4)
+            0xA9..=0xAB => CodecConfig::Dts { ddts: Vec::new() },
             _ => {
                 let mut a = AacConfig::from_asc(asc);
                 a.max_bitrate = max_bitrate;
@@ -1541,6 +1553,10 @@ impl SampleEntry {
             }
             CodecConfig::Ac3 { dac3 } => b.leaf(b"dac3", dac3),
             CodecConfig::Eac3 { dec3 } => b.leaf(b"dec3", dec3),
+            CodecConfig::Dts { .. } if format == *b"mp4a" => {
+                b.leaf(b"esds", &esds_payload(0xA9, &[], 0, 0, 0));
+            }
+            CodecConfig::Dts { ddts } if !ddts.is_empty() => b.leaf(b"ddts", ddts),
             CodecConfig::Pcm(p) if !qt => {
                 let m = b.start_full(b"pcmC", 0, 0);
                 b.u8(if p.big_endian { 0 } else { 1 });
