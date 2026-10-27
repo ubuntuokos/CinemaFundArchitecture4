@@ -168,7 +168,7 @@ Az eredeti terv §13-a, a meglévő `.fcgt` sablonrendszer mintájára.
   saját és projekt-sablonok; a Stáblista ablakban sablonválasztó, „Új táblázat a sablonból…”,
   „Mentés sablonként…”; Grafika és címek ▸ Stáblista-sablon alkalmazása… (egy visszavonási lépés).
 
-### C7 – Cinecred-import (K+)
+### C7 – Cinecred-import (K+) – **KÉSZ (2026-10-27)**
 
 Az eredeti terv §4-éből („Cinecred-kompatibilis import”).
 
@@ -176,6 +176,10 @@ Az eredeti terv §4-éből („Cinecred-kompatibilis import”).
 - A Cinecred fájlformátumának leírását és szükség esetén kódját a licensing.md §5 szerint
   nyilvántartásba vesszük.
 - Export Cinecred-formátumba csak akkor, ha igény van rá.
+- Megvalósítva: a Stáblista ablak „Cinecred-projekt…” gombja (vagy `path` = a mappa / a
+  `Styling.toml`); oldal-, tartalom- és betűstílusok átvétele 1080 sorra skálázva, a nem átvihető
+  részek figyelmeztetésként; Cinecred oszlop- és címkenevei minden nyelvén; a táblázatból
+  frissítés ugyanúgy működik. A formátum forrása a `licensing.md` §5-ben nyilvántartva.
 
 ### C8 – Qt6 stáblista-munkaterület (N)
 

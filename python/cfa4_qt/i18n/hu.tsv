@@ -1680,7 +1680,7 @@
 	Credits Page Picture	Stáblista-oldal képe
 	Preview Credits	Stáblista előnézete
 	Credits Styles	Stáblista-stílusok
-	Spreadsheets and credits files (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)	Táblázatok és stáblista-fájlok (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits)
+	Spreadsheets, credits files and Cinecred projects (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)	Táblázatok, stáblista-fájlok és Cinecred-projektek (*.ods *.xlsx *.csv *.tsv *.txt *.cfa4credits Styling.toml)
 	CFA4 credits file (*.cfa4credits)	CFA4 stáblista-fájl (*.cfa4credits)
 	Save as Credits File…	Mentés stáblista-fájlként…
 	Spreadsheet, worksheet, styling and the table in one file, to open on any machine	A táblázat, a munkalap, a stílus és a sorok egy fájlban – bármelyik gépen megnyitható
@@ -1774,3 +1774,5 @@
 	Template:	Sablon:
 	Credits Templates	Stáblista-sablonok
 	CSV (*.csv)	CSV (*.csv)
+	Cinecred Project…	Cinecred-projekt…
+	Open a Cinecred project folder (Styling.toml and its credits spreadsheet)	Cinecred-projektmappa megnyitása (Styling.toml és a stáblista-táblázat)

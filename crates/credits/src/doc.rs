@@ -50,11 +50,29 @@ pub struct CreditsDoc {
     /// Fitted to a length (usually the music's), see [`crate::fit`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fit: Option<crate::fit::Fit>,
+    /// Pixel values written in the sheet (spine positions, gaps in px, picture heights) are
+    /// multiplied by this to be pixels of a 1080-line frame: a Cinecred project made for another
+    /// resolution. 1 (left out) for CFA4's own sheets.
+    #[serde(skip_serializing_if = "is_one")]
+    pub pixel_scale: f64,
+}
+
+fn is_one(v: &f64) -> bool {
+    *v == 1.0
 }
 
 impl Default for CreditsDoc {
     fn default() -> Self {
-        CreditsDoc { format: FORMAT.into(), version: VERSION, source: None, picture_dir: None, styling: Styling::default(), table: Vec::new(), fit: None }
+        CreditsDoc {
+            format: FORMAT.into(),
+            version: VERSION,
+            source: None,
+            picture_dir: None,
+            styling: Styling::default(),
+            table: Vec::new(),
+            fit: None,
+            pixel_scale: 1.0,
+        }
     }
 }
 
@@ -113,7 +131,22 @@ impl CreditsDoc {
 
     /// The credits the embedded table stands for.
     pub fn credits(&self) -> Result<Credits, CreditsError> {
-        read_sheet(&self.table, &self.styling.default_page_style, &self.styling.default_content_style)
+        let mut c = read_sheet(&self.table, &self.styling.default_page_style, &self.styling.default_content_style)?;
+        let k = if self.pixel_scale.is_finite() && self.pixel_scale > 0.0 { self.pixel_scale.clamp(0.001, 1_000.0) } else { 1.0 };
+        if k != 1.0 {
+            for b in c.pages.iter_mut().flat_map(|p| p.blocks.iter_mut()) {
+                b.spine *= k;
+                if let crate::Gap::Px(px) = &mut b.gap_before {
+                    *px *= k;
+                }
+                for pic in b.pictures.iter_mut().chain(b.portraits.iter_mut().flatten()) {
+                    if let Some(h) = &mut pic.height {
+                        *h *= k;
+                    }
+                }
+            }
+        }
+        Ok(c)
     }
 }
 

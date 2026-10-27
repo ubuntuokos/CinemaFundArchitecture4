@@ -17,3 +17,4 @@ cfa4-media = { workspace = true }
 roxmltree = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+toml = "1"

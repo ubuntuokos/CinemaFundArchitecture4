@@ -133,6 +133,13 @@ that adds them names the source and revision.
 |---|---|---|---|
 | *(none yet)* | | | |
 
+**File formats read, no code copied.** CFA4 code written independently to read another
+program's file format, from its documentation and published source:
+
+| CFA4 path | Format (project, URL, revision) | Licence of the source consulted |
+|---|---|---|
+| `crates/credits/src/cinecred.rs` | Cinecred project: `Styling.toml` keys and values, credits-sheet column and tag names in its languages ([LoadingByte/cinecred](https://github.com/LoadingByte/cinecred), 1.9.1, `24e5083`) | GPL-3.0-or-later |
+
 ## 6. Dependency checks
 
 - Rust dependencies: `deny.toml` lists the licences that are GPL-3.0 compatible. Run
