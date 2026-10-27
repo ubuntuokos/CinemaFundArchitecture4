@@ -411,9 +411,15 @@ fn raw_channels(item: &TrackItem, src: SourceAudio, x0: i64, len: usize, sr: u32
             b
         })
     };
-    let Some(buf) = buf else { return out };
+    let Some(mut buf) = buf else { return out };
     if buf.channels.is_empty() {
         return out;
+    }
+    // a 7.1 source without a channel pick plays as 5.1 (the tracks and the Mix stop at 5.1)
+    if item.source_channels.is_empty()
+        && let Some(six) = fold_71(&buf.channels)
+    {
+        buf.channels = six;
     }
     if w == 2 {
         // a 5.1 source (or a six-channel pick) folds down with ITU-R BS.775, as the Mix and the
@@ -445,6 +451,18 @@ fn raw_channels(item: &TrackItem, src: SourceAudio, x0: i64, len: usize, sr: u32
         dst[off..off + m].copy_from_slice(&ch[..m]);
     }
     out
+}
+
+/// A 7.1 source folded to 5.1. The decoders give 7.1 in the WAV / SMPTE order L, R, C, LFE, back
+/// (rear) left / right, side left / right (`aac_to_wav_order`, `vorbis_to_wav_order` in
+/// `cfa4-codecs`); each rear joins the side surround on its side at −3 dB, the ITU-R BS.775
+/// coefficient the stereo fold uses, so no channel is dropped. `None` unless there are eight
+/// channels.
+fn fold_71(ch: &[Vec<f32>]) -> Option<Vec<Vec<f32>>> {
+    let [l, r, c, lfe, lb, rb, ls, rs] = ch else { return None };
+    let k = std::f32::consts::FRAC_1_SQRT_2;
+    let side = |s: &[f32], b: &[f32]| s.iter().zip(b).map(|(s, b)| s + k * b).collect::<Vec<f32>>();
+    Some(vec![l.clone(), r.clone(), c.clone(), lfe.clone(), side(ls, lb), side(rs, rb)])
 }
 
 /// The source channels a clip on a 5.1 track plays: six picked channels (Modify ▸ Audio Channels),

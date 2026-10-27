@@ -222,12 +222,13 @@ impl PacketDecoder {
             Inner::MpegPending(_) => return Err(CodecError::Decode("MPEG audio: no frame header".into())),
             Inner::Ac3(d) => {
                 // a packet may hold several syncframes (MP4 / Matroska); E-AC-3 dependent
-                // substreams and further programs decode to no channels and are skipped
+                // substreams join their program (7.1), further programs decode to no channels and
+                // are skipped
                 let mut out: Vec<Vec<f32>> = Vec::new();
                 let mut p = 0;
                 while p < data.len() {
-                    let f = d.decode(&data[p..]).map_err(|e| CodecError::Decode(e.to_string()))?;
-                    p += f.header.frame_bytes;
+                    let (f, used) = d.decode_program(&data[p..]).map_err(|e| CodecError::Decode(e.to_string()))?;
+                    p += used;
                     if f.channels.is_empty() {
                         continue;
                     }

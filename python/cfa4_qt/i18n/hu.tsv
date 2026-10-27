@@ -1,0 +1,1654 @@
+# Hungarian (hu) catalog for the CFA4 Qt GUI. Same format as crates/ui-egui/src/i18n/es.tsv:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English label using ordinary
+# Hungarian video-editing vocabulary (idővonal, sáv, klip, szekvencia, tároló, lejátszófej, jelölő,
+# átmenet). No proprietary localisation resource, string table or product UI was consulted or
+# copied; add entries the same way. Product and format names (CFA4, AAF, EDL…) keep
+# their spelling.
+
+	'{name}' already exists. Replace it?	A(z) „{name}” már létezik. Lecseréli?
+	AAC	AAC
+	AAF…	AAF…
+	About CFA4	A CFA4 névjegye
+	Add Audio Submix Track	Hang-alkeverő sáv hozzáadása
+	Add Caption at Playhead	Felirat a lejátszófejnél
+	Add Chapter Marker…	Fejezetjelölő hozzáadása…
+	Add Edit	Vágás hozzáadása
+	Add Edit to All Tracks	Vágás hozzáadása minden sávhoz
+	Add Flash Cue Marker…	Flash jelzőpont hozzáadása…
+	Add Frame Hold	Kimerevítés hozzáadása
+	Add Marker	Jelölő hozzáadása
+	Add New Caption Track…	Új feliratsáv hozzáadása…
+	Add Range Marker	Tartományjelölő hozzáadása
+	Add Range Marker to In and Out	Tartományjelölő a kezdő- és végpont közé
+	Add Tracks…	Sávok hozzáadása…
+	Add to Queue	Hozzáadás a sorhoz
+	Add/Remove Keyframe	Kulcskocka hozzáadása/eltávolítása
+	Adjust	Beállítás
+	Adjustment Layer	Korrekciós réteg
+	Adjustment Layer…	Korrekciós réteg…
+	Align to Selection	Igazítás a kijelöléshez
+	Align to Video Frame	Igazítás a videókockához
+	Align to Video Frame as Group	Igazítás a videókockához csoportként
+	All Panels	Minden panel
+	All files	Minden fájl
+	Amplitude and Compression	Amplitúdó és tömörítés
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	A `serve` nélküli motor olyan ágról készült, amelyen nincs Qt-GUI: váltson a Qt-GUI ágára és fordítsa újra, vagy adja meg: --engine ÚTVONAL.
+	Anchor Point	Horgonypont
+	Animation	Animáció
+	Anti-flicker Filter	Villódzásgátló szűrő
+	Apply Audio Transition	Hangátmenet alkalmazása
+	Apply Default Transitions to Selection	Alapértelmezett átmenetek a kijelölésre
+	Apply Video Transition	Videóátmenet alkalmazása
+	Arrange	Elrendezés
+	Assembly	Összeállítás
+	Attach Proxies…	Proxyk csatolása…
+	Audio	Hang
+	Audio Channels…	Hangcsatornák…
+	Audio Clip Mixer	Hangklipkeverő
+	Audio Effects	Hangeffektek
+	Audio Gain…	Hangerősítés…
+	Audio In	Hang kezdőpont
+	Audio Meters	Hangszintmérők
+	Audio Options	Hangbeállítások
+	Audio Out	Hang végpont
+	Audio Track Mixer	Hangsávkeverő
+	Audio Transitions	Hangátmenetek
+	Audio codec	Hangkodek
+	Auto Bezier	Automatikus Bézier
+	Automate to Sequence…	Automatikus szekvenciába rendezés…
+	Automatic	Automatikus
+	Avid Log Exchange…	Avid Log Exchange…
+	Balance	Egyensúly
+	Bars and Tone…	Színsávok és hangjel…
+	Bezier	Bézier
+	Bin	Tároló
+	Bin From Selection	Tároló a kijelölésből
+	Bitrate mode	Bitrátamód
+	Black Video…	Fekete videó…
+	Blend Mode	Keverési mód
+	Blue	Kék
+	Blur & Sharpen	Elmosás és élesítés
+	Bottom	Alsó szélhez
+	Breakout to Mono	Szétbontás monóra
+	Bring Forward	Előrébb hozás
+	Bring to Front	Előtérbe
+	Brown	Barna
+	Browse…	Tallózás…
+	Burn in captions	Feliratok beégetése
+	Bypass	Megkerülés
+	CBR	CBR
+	CFA4	CFA4
+	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
+	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
+	Cancel Selected	Kijelöltek megszakítása
+	Cancelled	Megszakítva
+	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
+	Cannot check the output folder for files to replace: {error}	A kimeneti mappában nem ellenőrizhető, mi íródna felül: {error}
+	Captions	Feliratok
+	Captions and Graphics	Feliratok és grafika
+	Captions…	Feliratok…
+	Caribbean	Karibi
+	Center Horizontally	Vízszintesen középre
+	Center Vertically	Függőlegesen középre
+	Cerulean	Égszínkék
+	Channel Volume	Csatornahangerő
+	Checked:	Megvizsgálva:
+	Choose an output file.	Válasszon kimeneti fájlt.
+	Clear	Törlés
+	Clear Finished	Befejezettek törlése
+	Clear In	Kezdőpont törlése
+	Clear In and Out	Kezdő- és végpont törlése
+	Clear Markers	Jelölők törlése
+	Clear Out	Végpont törlése
+	Clear Selected Marker	Kijelölt jelölő törlése
+	Clip	Klip
+	Close	Bezárás
+	Close All Other Projects	Minden más projekt bezárása
+	Close All Projects	Minden projekt bezárása
+	Close Gap	Rés bezárása
+	Close Project	Projekt bezárása
+	Color	Szín
+	Color Burn	Színégetés
+	Color Correction	Színkorrekció
+	Color Dodge	Színfakítás
+	Color Management…	Színkezelés…
+	Color Matte…	Színes háttér…
+	Consolidate Duplicates	Ismétlődések összevonása
+	Constant quality (CRF)	Állandó minőség (CRF)
+	Continuous Bezier	Folytonos Bézier
+	Copy	Másolás
+	Copy Paste Includes Sequence Markers	Másolás-beillesztés a szekvenciajelölőkkel
+	Create Captions from Transcript…	Feliratok készítése az átiratból…
+	Create Multi-Camera Source Sequence…	Többkamerás forrásszekvencia létrehozása…
+	Create Proxies…	Proxyk létrehozása…
+	Crossfade	Áttűnés
+	Custom	Egyéni
+	Cut	Kivágás
+	Darken	Sötétítés
+	Darker Color	Sötétebb szín
+	Delay and Echo	Késleltetés és visszhang
+	Delete Keyframe	Kulcskocka törlése
+	Delete Render Files	Renderfájlok törlése
+	Delete Render Files In to Out	Renderfájlok törlése kezdőponttól végpontig
+	Delete Tracks…	Sávok törlése…
+	Delete Transcript	Átirat törlése
+	Demo Footage	Bemutató felvételek
+	Demo Project	Bemutató projekt
+	Deselect All	Kijelölés megszüntetése
+	Detach Proxies	Proxyk leválasztása
+	Difference	Különbség
+	Discard	Elvetés
+	Dissolve	Áttűnés
+	Distort	Torzítás
+	Distribute	Elosztás
+	Distribute Horizontally	Vízszintes elosztás
+	Distribute Space Horizontally	Vízszintes térköz elosztása
+	Distribute Space Vertically	Függőleges térköz elosztása
+	Distribute Vertically	Függőleges elosztás
+	Divide	Osztás
+	Done	Kész
+	Double-click a clip in the Project panel to open it here.	Kattintson duplán egy klipre a Projekt panelen, hogy itt megnyíljon.
+	Duplicate	Kettőzés
+	Duration	Időtartam
+	EDL…	EDL…
+	Ease In	Lassuló beérkezés
+	Ease Out	Lassú indulás
+	Edit	Szerkesztés
+	Edit Offline…	Offline szerkesztése…
+	Edit Original	Eredeti szerkesztése
+	Edit Subclip…	Alklip szerkesztése…
+	Edit Workspaces…	Munkaterületek szerkesztése…
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	A Lumetri- és maszkeszközökben szerkeszthető (a Qt-felületen még nem)
+	Editing	Vágás
+	Effect Controls	Effektvezérlők
+	Effects	Effektek
+	Ellipse	Ellipszis
+	Enable	Engedélyezés
+	Enable Remix	Remix bekapcsolása
+	Enabled	Engedélyezve
+	Encoding	Kódolás
+	End	Vége
+	Engine stopped	A motor leállt
+	Entire Sequence	Teljes szekvencia
+	Essential Graphics	Alapgrafika
+	Essential Sound	Alaphang
+	Events	Események
+	Exclusion	Kizárás
+	Export	Exportálás
+	Export As Motion Graphics Template…	Exportálás mozgógrafikai sablonként…
+	Export Markers as CSV…	Jelölők exportálása CSV-be…
+	Export Media	Média exportálása
+	Export Media…	Média exportálása…
+	Export Queue	Exportálási sor
+	Export audio	Hang exportálása
+	Export failed: {path}	Az exportálás nem sikerült: {path}
+	Export finished: {path}	Az exportálás elkészült: {path}
+	Extract	Kivonás
+	Extract Audio	Hang kinyerése
+	FCPXML…	FCPXML…
+	FLAC	FLAC
+	Failed	Sikertelen
+	Field Options…	Félkép-beállítások…
+	File	Fájl
+	File…	Fájl…
+	Fill frame	Képkocka kitöltése
+	Filter and EQ	Szűrő és EQ
+	Final Cut Pro XML…	Final Cut Pro XML…
+	Find Next	Következő találat
+	Find…	Keresés…
+	Fit	Illesztés
+	Fit to frame	Igazítás a képkockába
+	Flatten	Lapítás
+	Forest	Erdőzöld
+	Format	Formátum
+	Frame Blending	Kockamosás
+	Frame Hold Options…	Kimerevítés beállításai…
+	Frame Sampling	Kockamintavétel
+	Frame size	Képméret
+	From Bin	Tárolóból
+	From Source Monitor	A forrásmonitorról
+	From Source Monitor, Match Frame	A forrásmonitorról, egyező kockával
+	From file…	Fájlból…
+	From the preset	Az előbeállításból
+	Gain	Erősítés
+	General…	Általános…
+	Generate	Előállítás
+	Generate Audio Waveform	Hullámforma előállítása
+	Get Media File Properties for	Médiafájl tulajdonságai ehhez
+	Go to End	Ugrás a végére
+	Go to Gap	Ugrás réshez
+	Go to In	Ugrás a kezdőponthoz
+	Go to Next Caption Segment	Ugrás a következő feliratszakaszhoz
+	Go to Next Keyframe	Ugrás a következő kulcskockához
+	Go to Next Marker	Ugrás a következő jelölőhöz
+	Go to Out	Ugrás a végponthoz
+	Go to Previous Caption Segment	Ugrás az előző feliratszakaszhoz
+	Go to Previous Keyframe	Ugrás az előző kulcskockához
+	Go to Previous Marker	Ugrás az előző jelölőhöz
+	Go to Split	Ugrás osztott jelöléshez
+	Go to Start	Ugrás az elejére
+	Graphic	Grafika
+	Graphics and Titles	Grafika és címek
+	Green	Zöld
+	Group	Csoportosítás
+	Grunge & Distort	Koszolás és torzítás
+	Hard Light	Kemény fény
+	Hard Mix	Kemény keverés
+	Help	Súgó
+	Hide All Caption Tracks	Minden feliratsáv elrejtése
+	History	Előzmények
+	Hold	Tartás
+	Hue	Színárnyalat
+	Image Control	Képvezérlés
+	Image Sequence	Képsorozat
+	Immersive Video	Immerzív videó
+	Import Credits Spreadsheet…	Stáblista importálása táblázatból…
+	Import From	Importálás innen
+	Import Image Sequence…	Képsorozat importálása…
+	Import from Media Browser	Importálás a médiaböngészőből
+	Import…	Importálás…
+	Info	Információ
+	Ingest Settings…	Behúzási beállítások…
+	Insert	Beszúrás
+	Insert Frame Hold Segment	Kimerevített szakasz beszúrása
+	Inspector	Felügyelő
+	Install Motion Graphics Template…	Mozgógrafikai sablon telepítése…
+	Interpret Footage…	Felvétel értelmezése…
+	Iris	Írisz
+	Keying	Kulcsolás
+	Label	Címke
+	Language	Nyelv
+	Lavender	Levendula
+	Left	Bal
+	Legacy	Örökölt
+	Level	Szint
+	Libraries	Könyvtárak
+	Lift	Kiemelés
+	Lighten	Világosítás
+	Lighter Color	Világosabb szín
+	Lights & Blurs	Fények és elmosások
+	Lights & Glows	Fények és ragyogás
+	Linear	Lineáris
+	Linear Burn	Lineáris égetés
+	Linear Dodge (Add)	Lineáris fakítás (összeadás)
+	Linear Light	Lineáris fény
+	Link	Összekapcsolás
+	Link Media…	Média összekapcsolása…
+	Linked Selection	Összekapcsolt kijelölés
+	Lumetri Color	Lumetri szín
+	Lumetri Scopes	Lumetri mérőműszerek
+	Luminosity	Fényerő
+	Magenta	Bíbor
+	Make Offline…	Offline állapotba tétel…
+	Make Subclip…	Alklip készítése…
+	Make Subsequence	Alszekvencia készítése
+	Mango	Mangó
+	Mark Clip	Klip jelölése
+	Mark In	Kezdőpont jelölése
+	Mark Out	Végpont jelölése
+	Mark Selection	Kijelölés jelölése
+	Mark Split	Osztott jelölés
+	Markers	Jelölők
+	Match Frame	Egyező kocka
+	Match sequence	Mint a szekvencia
+	Media Browser	Médiaböngésző
+	Media offline	A média offline
+	Media…	Média…
+	Merge Clips…	Klipek egyesítése…
+	Merged Clip	Egyesített klip
+	Metadata	Metaadatok
+	Modify	Módosítás
+	Modulation	Moduláció
+	Motion	Mozgás
+	Motion Graphics Template…	Mozgógrafikai sablon…
+	Movie	Film
+	Multi-Camera	Többkamerás
+	Multiply	Szorzás
+	Mute Track	Sáv némítása
+	Name	Név
+	Nest…	Beágyazás…
+	New	Új
+	New Bin	Új tároló
+	New Layer	Új réteg
+	New Project Panel	Új projektpanel
+	New Sequence…	Új szekvencia…
+	Next in Sequence	Következő a szekvenciában
+	Next in Track	Következő a sávon
+	No	Nem
+	No sequence	Nincs szekvencia
+	No sequence open. Double-click a sequence in the Project panel.	Nincs megnyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
+	Noise & Grain	Zaj és szemcse
+	Noise Reduction	Zajcsökkentés
+	Normal	Normál
+	Normalize Mix Track…	Keveréksáv normalizálása…
+	Not Now	Most nem
+	Not yet in the Qt GUI (see docs/qt-parity.md)	A Qt-felületen még nincs meg (lásd: docs/qt-parity.md)
+	OMF…	OMF…
+	Obsolete	Elavult
+	Offline File…	Offline fájl…
+	Opacity	Átlátszatlanság
+	Open Project	Projekt megnyitása
+	Open Project…	Projekt megnyitása…
+	OpenTimelineIO…	OpenTimelineIO…
+	Optical Flow	Optikai áramlás
+	Output	Kimenet
+	Output file	Kimeneti fájl
+	Overlay	Átfedés
+	Overwrite	Felülírás
+	PCM (uncompressed)	PCM (tömörítetlen)
+	Panels	Panelek
+	Panner	Panoráma
+	Paste	Beillesztés
+	Paste Attributes…	Jellemzők beillesztése…
+	Paste Insert	Beillesztés beszúrással
+	Perspective	Perspektíva
+	Pin Light	Tűfény
+	Play/Stop	Lejátszás/Leállítás
+	Polygon	Sokszög
+	Position	Pozíció
+	Preset	Előbeállítás
+	Previous in Sequence	Előző a szekvenciában
+	Previous in Track	Előző a sávon
+	Program	Program
+	Progress	Haladás
+	Project	Projekt
+	Project Manager…	Projektkezelő…
+	Project Notes	Projektjegyzetek
+	Project Settings	Projektbeállítások
+	Project…	Projekt…
+	Properties	Tulajdonságok
+	Proxy	Proxy
+	Purple	Lila
+	Quit	Kilépés
+	Range	Tartomány
+	Razor Tool	Penge eszköz
+	Ready	Várakozik
+	Reconnect Full Resolution Media…	Teljes felbontású média újracsatolása…
+	Recover	Visszaállítás
+	Recover Unsaved Changes	Nem mentett változások visszaállítása
+	Recover Unsaved Changes…	Nem mentett változások visszaállítása…
+	Rectangle	Téglalap
+	Redo	Újra
+	Reference Monitor	Referenciamonitor
+	Remaining	Hátralévő idő
+	Remix	Remix
+	Remix Properties…	Remix tulajdonságai…
+	Remove	Eltávolítás
+	Remove Attributes…	Jellemzők eltávolítása…
+	Remove Effect	Effekt eltávolítása
+	Remove Filler Words	Töltelékszavak eltávolítása
+	Remove Pauses	Szünetek eltávolítása
+	Remove Unused	Nem használtak eltávolítása
+	Rename…	Átnevezés…
+	Render Audio	Hang renderelése
+	Render Effects In to Out	Effektek renderelése kezdőponttól végpontig
+	Render In to Out	Renderelés kezdőponttól végpontig
+	Render Selection	Kijelölés renderelése
+	Replace Fonts in Projects…	Betűtípusok cseréje a projektekben…
+	Replace With Clip	Csere klipre
+	Reset All Parameters	Minden paraméter visszaállítása
+	Reset Duration	Időtartam visszaállítása
+	Reset Effect	Effekt visszaállítása
+	Reset Panel Layout	Panelelrendezés visszaállítása
+	Reset Parameter	Paraméter visszaállítása
+	Reset to Saved Layout	Visszaállítás a mentett elrendezésre
+	Restoration	Helyreállítás
+	Restore Captions from Source Clip	Feliratok visszaállítása a forrásklipből
+	Retry	Újra
+	Reverb	Zengetés
+	Reverse Match Frame	Fordított egyező kocka
+	Revert	Visszaállítás
+	Revert Remix	Remix visszavonása
+	Right	Jobb
+	Ripple Delete	Hullámtörlés
+	Ripple Delete Head Frame	Első kocka hullámtörlése
+	Ripple Sequence Markers	Szekvenciajelölők hullámszerű eltolása
+	Rose	Rózsa
+	Rotation	Elforgatás
+	Saturation	Telítettség
+	Save	Mentés
+	Save All	Összes mentése
+	Save As…	Mentés másként…
+	Save Changes to this Workspace	Változások mentése ebbe a munkaterületbe
+	Save a Copy…	Másolat mentése…
+	Save as New Workspace	Mentés új munkaterületként
+	Save as New Workspace…	Mentés új munkaterületként…
+	Save as Template…	Mentés sablonként…
+	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
+	Save changes to '{name}' before continuing?	Menti a(z) „{name}” változásait a folytatás előtt?
+	Discard the unsaved changes to '{name}' and revert to the saved version?	Elveti a(z) „{name}” mentetlen változásait, és visszaáll a mentett változatra?
+	Scale	Méretezés
+	Scale Width	Szélesség méretezése
+	Scale to Frame Size	Méretezés a képkockához
+	Scene Edit Detection…	Jelenetváltás-felismerés…
+	Scratch Disks…	Munkalemezek…
+	Screen	Szita
+	Search	Keresés
+	Search Bin	Keresőtároló
+	Select	Kijelölés
+	Select All	Összes kijelölése
+	Select All Matching	Összes egyező kijelölése
+	Select Label Group	Címkecsoport kijelölése
+	Select Next Graphic	Következő grafika kijelölése
+	Select Next Layer	Következő réteg kijelölése
+	Select Previous Graphic	Előző grafika kijelölése
+	Select Previous Layer	Előző réteg kijelölése
+	Select a clip in the Timeline.	Jelöljön ki egy klipet az idővonalon.
+	Selected	Kijelölve
+	Selection Follows Playhead	A kijelölés követi a lejátszófejet
+	Selection Tool	Kijelölő eszköz
+	Selection as CFA4 Project…	Kijelölés CFA4-projektként…
+	Selection…	Kijelölés…
+	Send Backward	Hátrébb küldés
+	Send to Back	Háttérbe
+	Sequence	Szekvencia
+	Sequence From Clip	Szekvencia klipből
+	Sequence In/Out	Szekvencia kezdő-/végpontja
+	Sequence Settings…	Szekvencia beállításai…
+	Sequence…	Szekvencia…
+	Show Active Caption Tracks Only	Csak az aktív feliratsávok mutatása
+	Show All Caption Tracks	Minden feliratsáv mutatása
+	Show All Marker Colors	Minden jelölőszín mutatása
+	Show Through Edits	Átmenő vágások mutatása
+	Simplify Sequence…	Szekvencia egyszerűsítése…
+	Slide	Csúsztatás
+	Smart Tools	Okos eszközök
+	Snap in Timeline	Illesztés az idővonalon
+	Soft Light	Lágy fény
+	Solo Track	Sáv szólóban
+	Some panel labels change language after a restart.	Néhány panelfelirat csak újraindítás után vált nyelvet.
+	Source	Forrás
+	Source In	Forrás kezdőpontja
+	Source Settings…	Forrásbeállítások…
+	Source patch	Forrás-hozzárendelés
+	Special	Különleges
+	Speed	Sebesség
+	Speed/Duration…	Sebesség/időtartam…
+	Start	Kezdet
+	Start Queue	Sor indítása
+	Starting engine…	A motor indul…
+	Status	Állapot
+	Step Back 1 Frame	Egy kockát vissza
+	Step Forward 1 Frame	Egy kockát előre
+	Stereo Imagery	Sztereó kép
+	Still Image	Állókép
+	Stop Queue	Sor leállítása
+	Stylize	Stilizálás
+	Subclip	Alklip
+	Subtract	Kivonás
+	Synchronize…	Szinkronizálás…
+	Synthetic	Szintetikus
+	Tan	Homok
+	Target bitrate	Célbitráta
+	Teal	Kékeszöld
+	Text	Szöveg
+	Text to Speech	Szövegfelolvasás
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	A CFA4 motorja (cfa4-cli) nem található. Fordítsa le ezzel: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	A CFA4 motorja váratlanul leállt. A nem mentett változások a helyreállítási naplóban megmaradtak; indítsa újra a CFA4-et a visszaállításukhoz.
+	The engine stopped	A motor leállt
+	Time	Idő
+	Time Interpolation	Időinterpoláció
+	Time Remapping	Időleképezés
+	Time and Pitch	Idő és hangmagasság
+	Timecode	Időkód
+	Timecode…	Időkód…
+	Timeline	Idővonal
+	Toggle Animation	Animálás be/ki
+	Toggle Proxies	Proxyk be/ki
+	Toggle Sync Lock	Szinkronzár be/ki
+	Toggle Track Lock	Sávzár be/ki
+	Toggle Track Output	Sávkimenet be/ki
+	Toggle the effect on or off	Az effekt be- vagy kikapcsolása
+	Toggle track targeting	Sávcélzás be/ki
+	Tools	Eszközök
+	Top	Felső szélhez
+	Transcribe Sequence…	Szekvencia átiratának készítése…
+	Transcribe…	Átirat készítése…
+	Transcript	Átirat
+	Transform	Átalakítás
+	Transformers	Átalakítók
+	Transparent Video…	Átlátszó videó…
+	Trim Edit	Vágáspont igazítása
+	Type	Típus
+	Undo	Visszavonás
+	Ungroup	Csoport bontása
+	Uniform Scale	Egyenletes méretezés
+	Universal Counting Leader…	Visszaszámláló előtét…
+	Untitled	Névtelen
+	Update Metadata…	Metaadatok frissítése…
+	Upgrade Caption to Graphic	Felirat átalakítása grafikává
+	Upgrade to Source Graphic	Átalakítás forrásgrafikává
+	Use hardware encoding when available	Hardveres kódolás, ha elérhető
+	Utility	Segédeszközök
+	VBR, 1 pass	VBR, 1 menet
+	VBR, 2 pass	VBR, 2 menet
+	Vertical Text	Függőleges szöveg
+	Video	Videó
+	Video Effects	Videóeffektek
+	Video In	Videó kezdőpont
+	Video Options	Videóbeállítások
+	Video Out	Videó végpont
+	Video Transitions	Videóátmenetek
+	View	Nézet
+	Violet	Ibolya
+	Vivid Light	Élénk fény
+	Volume	Hangerő
+	Window	Ablak
+	Wipe	Söprés
+	Work Area	Munkaterület
+	Workspaces	Munkaterületek
+	Yellow	Sárga
+	Yes	Igen
+	Zoom to Sequence	Nagyítás a teljes szekvenciára
+	an unknown time	ismeretlen időpont
+	automatic	automatikus
+	frames	képkocka
+	not available	nem érhető el
+	off	ki
+	optional	elhagyható
+	…	…
+	Ellipse Tool	Ellipszis eszköz
+	Hand Tool	Kéz eszköz
+	Pen Tool	Toll eszköz
+	Rate Stretch Tool	Sebességnyújtó eszköz
+	Rectangle Tool	Téglalap eszköz
+	Remix Tool	Remix eszköz
+	Ripple Edit Tool	Hullámvágó eszköz
+	Rolling Edit Tool	Gördülő vágás eszköz
+	Slide Tool	Csúsztató eszköz
+	Slip Tool	Eltoló eszköz
+	Track Select Backward Tool	Sáv kijelölése visszafelé eszköz
+	Track Select Forward Tool	Sáv kijelölése előre eszköz
+	Type Tool	Szöveg eszköz
+	Vertical Type Tool	Függőleges szöveg eszköz
+	Zoom Tool	Nagyító eszköz
+	Add Marker (M)	Jelölő hozzáadása (M)
+	Alpha	Alfa
+	Button Editor	Gombszerkesztő
+	Composite Video	Kompozit videó
+	Display Mode	Megjelenítési mód
+	Export Frame	Képkocka exportálása
+	Extract (')	Kivonás (')
+	Full	Teljes
+	Go to In (Shift+I)	Ugrás a kezdőponthoz (Shift+I)
+	Go to Out (Shift+O)	Ugrás a végponthoz (Shift+O)
+	High Quality Playback	Kiváló minőségű lejátszás
+	Insert (,)	Beszúrás (,)
+	Lift (;)	Kiemelés (;)
+	Loop	Ismétlés
+	Loop marked range	A kijelölt tartomány ismétlése
+	Magnification	Nagyítás
+	Mark In (I)	Kezdőpont jelölése (I)
+	Mark Out (O)	Végpont jelölése (O)
+	More transport controls	További lejátszásvezérlők
+	Overwrite (.)	Felülírás (.)
+	Paused Resolution	Felbontás szünetben
+	Play In to Out	Lejátszás a kezdőponttól a végpontig
+	Play-Stop Toggle (Space)	Lejátszás/Leállítás (Szóköz)
+	Playback Resolution	Lejátszási felbontás
+	RGBA Channels	RGBA-csatornák
+	Red	Vörös
+	Reset	Visszaállítás
+	Safe Margins	Biztonsági keretek
+	Select Playback Resolution	Lejátszási felbontás kiválasztása
+	Select Zoom Level	Nagyítás kiválasztása
+	Settings	Beállítások
+	Show Transport Controls	Lejátszásvezérlők megjelenítése
+	Shuttle Left	Léptetés balra
+	Shuttle Right	Léptetés jobbra
+	Shuttle Stop	Léptetés leállítása
+	Step Back 1 Frame (Left)	Egy kockát vissza (Balra)
+	Step Forward 1 Frame (Right)	Egy kockát előre (Jobbra)
+	Appearance	Megjelenés
+	Dark	Sötét
+	Darkest	Legsötétebb
+	Light	Világos
+	Next Appearance Mode	Következő megjelenési mód
+	(no sequence)	(nincs szekvencia)
+	All markers are hidden by the colour filter.	A színszűrő minden jelölőt elrejt.
+	Audio {n}:	Hang {n}:
+	Audio:	Hang:
+	Clip: {name}	Klip: {name}
+	Codec:	Kodek:
+	Duration:	Időtartam:
+	Marker	Jelölő
+	No markers. Press M to add one.	Nincs jelölő. Az M billentyűvel adhatsz hozzá.
+	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Jegyzetek a projekthez: teendők, utasítások, képkockaszámok… A projekttel együtt mentődik.
+	Playhead:	Lejátszófej:
+	Select a clip to view its metadata.	Válassz ki egy klipet a metaadatai megtekintéséhez.
+	Settings:	Beállítások:
+	Show or hide {color} markers	A(z) {color} jelölők megjelenítése vagy elrejtése
+	Type:	Típus:
+	Video {n}:	Videó {n}:
+	Video:	Videó:
+	{tc}  Chapter	{tc}  Fejezet
+	Media Type	Médiatípus
+	Frame Rate	Képkockasebesség
+	Media Start	Média kezdete
+	Media End	Média vége
+	Media Duration	Média hossza
+	Video Info	Videóadatok
+	Video Codec	Videókodek
+	Color Space	Színtér
+	Audio Info	Hangadatok
+	Audio Codec	Hangkodek
+	Description	Leírás
+	Scene	Jelenet
+	Shot	Snitt
+	Log Note	Naplójegyzet
+	Comment	Megjegyzés
+	Tape Name	Szalagnév
+	Client	Ügyfél
+	Camera Angle	Kameraállás
+	File Path	Fájl elérési útja
+	 · {time} left	 · még {time}
+	Active Monitor	Aktív monitor
+	Add a timecode row	Időkódsor hozzáadása
+	Audio Samples	Hangminták
+	Cancel	Mégse
+	Current Time	Aktuális idő
+	Failed: {e}	Sikertelen: {e}
+	Feet + Frames 16mm	Láb + kocka 16 mm
+	Feet + Frames 35mm	Láb + kocka 35 mm
+	Frames	Képkockák
+	In/Out Duration	Kezdő- és végpont közti hossz
+	Media Time	Médiaidő
+	No background jobs.	Nincs háttérfeladat.
+	Remove Row	Sor eltávolítása
+	Seconds	Másodpercek
+	Show finished jobs	Befejezett feladatok megjelenítése
+	{mode} · no clip	{mode} · nincs klip
+	{mode} · no sequence	{mode} · nincs szekvencia
+	Render	Renderelés
+	Job	Feladat
+	Audio Track Mixer menu	Hangsávkeverő menü
+	Automation mode	Automatizálási mód
+	Enable track for recording	Sáv engedélyezése felvételre
+	Fill the slots above first	Előbb a fenti helyeket töltsd ki
+	Go to In Point	Ugrás a kezdőponthoz
+	Go to Out Point	Ugrás a végponthoz
+	Input channel mapping	Bemeneti csatornakiosztás
+	Meter Input(s) Only	Csak a bemenet(ek) mérése
+	Mix	Mix
+	Mute Send	Küldés némítása
+	New Submix	Új almix
+	Pan / balance (drag; double-click: centre)	Panoráma / balansz (húzás; dupla kattintás: középre)
+	Post-Fader	Fader után
+	Pre-Fader	Fader előtt
+	Remove Send	Küldés eltávolítása
+	Show All	Összes megjelenítése
+	Show/Hide Effects and Sends	Effektek és küldések megjelenítése/elrejtése
+	Show/Hide Tracks	Sávok megjelenítése/elrejtése
+	Solo safe	Szóló-védett
+	Track output assignment	Sáv kimenet-hozzárendelése
+	Voice-over recording is not in the Qt GUI yet	A narrációfelvétel a Qt-felületen még nincs meg
+	Volume (drag; double-click: 0 dB)	Hangerő (húzás; dupla kattintás: 0 dB)
+	pre 	előtte 
+	Off	Ki
+	Read	Olvasás
+	Latch	Rögzítés
+	Touch	Érintés
+	Write	Írás
+	Stereo	Sztereó
+	Swap	Csere
+	Mono	Monó
+	Write keyframes	Kulcskockák írása
+	Match Playhead	Lejátszófejhez igazítás
+	Gang to Program	Programhoz kötés
+	(no sequences)	(nincsenek szekvenciák)
+	8 Bit	8 bit
+	Auto	Automatikus
+	Bright	Világos
+	Brightness	Fényerő
+	Clamp Signal	Jel korlátozása
+	Colour Space	Színtér
+	Dimmed	Tompított
+	Float	Lebegőpontos
+	Four Scopes (RGB, 8 bit)	Négy szkóp (RGB, 8 bit)
+	Four Scopes (YUV, float, no clamp)	Négy szkóp (YUV, lebegőpontos, korlátozás nélkül)
+	HDR	HDR
+	HLS Vectorscope + Histogram	HLS vektorszkóp + hisztogram
+	Histogram	Hisztogram
+	Luma	Luma
+	Parade	Parádé
+	Parade (RGB)	Parádé (RGB)
+	Parade ({kind})	Parádé ({kind})
+	Parade Type	Parádé típusa
+	Presets	Előbeállítások
+	RGB	RGB
+	RGB-White	RGB-fehér
+	Rec. 2100	Rec. 2100
+	Rec. 601	Rec. 601
+	Rec. 709	Rec. 709
+	Scope settings	Szkópbeállítások
+	Signal Scale	Jelskála
+	Vectorscope (YUV)	Vektorszkóp (YUV)
+	Vectorscope + Waveform YC	Vektorszkóp + YC hullámforma
+	Vectorscope HLS	HLS vektorszkóp
+	Vectorscope Targets	Vektorszkóp célpontjai
+	Vectorscope YUV	YUV vektorszkóp
+	Waveform	Hullámforma
+	Waveform (Luma)	Hullámforma (Luma)
+	Waveform (RGB)	Hullámforma (RGB)
+	Waveform ({kind})	Hullámforma ({kind})
+	Waveform Type	Hullámforma típusa
+	YC	YC
+	YC no Chroma	YC króma nélkül
+	YUV	YUV
+	(no clip selected)	(nincs kijelölt klip)
+	Add Lumetri Color to clip	Lumetri szín hozzáadása a klipre
+	Adjustments	Beállítások
+	Amount	Mérték
+	Apply Match	Egyeztetés alkalmazása
+	Basic Correction	Alapkorrekció
+	Blacks	Feketék
+	Bleach Bypass	Fehérítés kihagyása
+	Blur	Elmosás
+	Color Match	Színegyeztetés
+	Color Wheels & Match	Színkorongok és egyeztetés
+	Color/Black	Szín/fekete
+	Color/Gray	Szín/szürke
+	Comparison View	Összehasonlító nézet
+	Contrast	Kontraszt
+	Cool Blue	Hideg kék
+	Correction	Korrekció
+	Creative	Kreatív
+	Curves	Görbék
+	Denoise	Zajszűrés
+	Exposure	Expozíció
+	Face Detection (protect skin tones)	Arcfelismerés (a bőrtónusok védelme)
+	Faded Film	Fakult film
+	Faded Matte	Fakult matt
+	Feather	Lágy szél
+	Golden Hour	Aranyóra
+	HDR Range	HDR-tartomány
+	HDR Specular	HDR csúcsfények
+	HDR White	HDR fehér
+	HSL Secondary	HSL másodlagos
+	Highlights	Csúcsfények
+	Hue Range	Színezettartomány
+	Hue Saturation Curves	Színezet- és telítettséggörbék
+	Hue Shift	Színezeteltolás
+	Hue vs Hue	Színezet–színezet
+	Hue vs Luma	Színezet–luma
+	Hue vs Sat	Színezet–telítettség
+	Input LUT	Bemeneti LUT
+	Intensity	Erősség
+	Key	Kulcs
+	LUT	LUT
+	Look	Hangulat
+	Look LUT	Hangulat-LUT
+	Luma Max	Luma max.
+	Luma Min	Luma min.
+	Luma vs Sat	Luma–telítettség
+	Master · {name}	Fő · {name}
+	Midpoint	Középpont
+	Midtones	Középtónusok
+	Monochrome	Fekete-fehér
+	Night	Éjszaka
+	None	Nincs
+	RGB Curves	RGB-görbék
+	Reference	Referencia
+	Refine	Finomítás
+	Roundness	Kerekség
+	Sat vs Sat	Telítettség–telítettség
+	Saturation Min	Telítettség min.
+	Shadows	Árnyékok
+	Sharpen	Élesítés
+	Show Mask	Maszk megjelenítése
+	Soften	Lágyítás
+	Teal & Orange	Kékeszöld és narancs
+	Temperature	Színhőmérséklet
+	Tint	Színárnyalat
+	Vibrance	Élénkség
+	Vignette	Vignetta
+	Warm Film	Meleg film
+	White/Black	Fehér/fekete
+	Whites	Fehérek
+	(none)	(nincs)
+	Add to Favorites	Hozzáadás a kedvencekhez
+	All Supported Files	Minden támogatott fájl
+	Allow Duplicate Media During Project Import	Ismétlődő média engedélyezése projekt importálásakor
+	Audio Files	Hangfájlok
+	Cannot open {dir}: {e}	Nem nyitható meg: {dir}: {e}
+	Clear Recent Directories	Legutóbbi mappák törlése
+	Create Folder For Imported Projects	Mappa létrehozása az importált projekteknek
+	Date Modified	Módosítás dátuma
+	Edit Columns	Oszlopok szerkesztése
+	Edit Columns…	Oszlopok szerkesztése…
+	Favorites	Kedvencek
+	File Extension	Fájlkiterjesztés
+	File Types Displayed	Megjelenített fájltípusok
+	Go Back	Vissza
+	Go Forward	Előre
+	Hover Scrub	Bélyegkép-léptetés rámutatással
+	Import	Importálás
+	Import as Image Sequence	Importálás képsorozatként
+	Ingest	Betöltés
+	List View	Listanézet
+	Local Drives	Helyi meghajtók
+	Network	Hálózat
+	New Media Browser Panel	Új Médiaböngésző panel
+	Open In Source Monitor	Megnyitás a Forrás monitorban
+	Open Ingest Settings	Betöltési beállítások megnyitása
+	Projects and Interchange	Projektek és cserefájlok
+	Recent Directories	Legutóbbi mappák
+	Refresh	Frissítés
+	Remove from Favorites	Eltávolítás a kedvencek közül
+	Show in File Manager	Megjelenítés a fájlkezelőben
+	Size	Méret
+	Still Images	Állóképek
+	Thumbnail View	Bélyegképnézet
+	Up One Level	Egy szinttel feljebb
+	Video Files	Videofájlok
+	{sel} of {total} items selected	{total} elemből {sel} kijelölve
+	{total} items	{total} elem
+	#	#
+	Add caption at playhead	Felirat hozzáadása a lejátszófejnél
+	Add captions	Feliratok hozzáadása
+	Align	Igazítás
+	Align center	Középre igazítás
+	Align left	Balra igazítás
+	Align right	Jobbra igazítás
+	Box	Háttérdoboz
+	CEA-608	CEA-608
+	CEA-708	CEA-708
+	Create a caption track or import a caption file.	Hozzon létre egy feliratsávot, vagy importáljon feliratfájlt.
+	Create captions	Feliratok létrehozása
+	Create new caption track	Új feliratsáv létrehozása
+	Delete selected captions	Kijelölt feliratok törlése
+	Export captions…	Feliratok exportálása…
+	Extract selected text	Kijelölt szöveg kivágása
+	Go to caption	Ugrás a felirathoz
+	Go to graphic	Ugrás a grafikához
+	Graphics	Grafika
+	Import captions file…	Feliratfájl importálása…
+	In	Be
+	Lift selected text	Kijelölt szöveg kiemelése
+	Merge selected captions	Kijelölt feliratok egyesítése
+	New {format} track	Új {format}-sáv
+	No captions on this track. Press + to add one at the playhead.	Ezen a sávon nincs felirat. A + gombbal adhat hozzá egyet a lejátszófejnél.
+	No matching captions.	Nincs egyező felirat.
+	No matching text.	Nincs egyező szöveg.
+	No text graphics in this sequence. Add text with the Type tool.	Ebben a szekvenciában nincs szöveges grafika. Szöveget a Szöveg eszközzel adhat hozzá.
+	Open a sequence to search its graphics	Nyisson meg egy szekvenciát a grafikái kereséséhez
+	Open a sequence to see its transcript	Nyisson meg egy szekvenciát az átirata megtekintéséhez
+	Open a sequence to work with captions	Nyisson meg egy szekvenciát a feliratok szerkesztéséhez
+	Out	Ki
+	Position: bottom	Helyzet: lent
+	Position: middle	Helyzet: középen
+	Position: top	Helyzet: fent
+	Remove filler words	Töltelékszavak eltávolítása
+	Speaker	Beszélő
+	Speech-to-text turns the dialogue into editable text.	A beszédfelismerés szerkeszthető szöveggé alakítja a párbeszédet.
+	Split caption at playhead	Felirat kettévágása a lejátszófejnél
+	Subtitle	Felirat
+	Teletext	Teletext
+	Text colour	Szövegszín
+	This build has no speech-to-text; import a transcript with transcript.set.	Ez a változat nem tartalmaz beszédfelismerést; átiratot a transcript.set paranccsal importálhat.
+	Track	Sáv
+	Transcribe	Átírás
+	Transcribe sequence	Szekvencia átírása
+	(Custom)	(Egyéni)
+	(Default)	(Alapértelmezett)
+	Ambience	Háttérzaj
+	Assign an audio type to the selection:	Rendeljen hangtípust a kijelöléshez:
+	Auto-Match	Automatikus illesztés
+	Balanced Voice	Kiegyensúlyozott hang
+	Bright Air	Fényes levegősség
+	Bright Studio	Világos stúdió
+	Browse	Böngészés
+	Clarity	Tisztaság
+	Clean Up Noisy Dialogue	Zajos párbeszéd tisztítása
+	Clear Audio Type	Hangtípus törlése
+	Clear Muddiness	Tompaság eltávolítása
+	Clip Volume	Klip hangereje
+	DeEss	Sziszegéscsökkentés
+	DeHum	Búgáscsökkentés
+	Delete Preset	Készlet törlése
+	Dialogue	Párbeszéd
+	Dry Up a Roomy Voice	Visszhangos hang szárazabbá tétele
+	Duck Deep Under Dialogue	Mély elhalkítás párbeszéd alatt
+	Duck Under Dialogue	Elhalkítás párbeszéd alatt
+	Duck Under Voice and Effects	Elhalkítás hang és effektek alatt
+	Duck against:	Elhalkítás ezekre:
+	Ducking	Elhalkítás
+	Dynamics	Dinamika
+	EQ	EQ
+	Enhance Speech	Beszéd kiemelése
+	Fades	Áttűnések
+	Far Away	Távoli
+	From the Left	Balról
+	From the Right	Jobbról
+	Generate Keyframes	Kulcskockák létrehozása
+	High Tone	Magas hangszín
+	In a Room	Szobában
+	Interior Room Tone	Beltéri szobazaj
+	Large Hall	Nagy terem
+	Loudness	Hangosság
+	Low Tone	Mély hangszín
+	Matches each of the {n} clips on its own.	A(z) {n} klip mindegyikét külön illeszti.
+	Medium Room	Közepes szoba
+	Multiple Clips Selected	Több klip kijelölve
+	Music	Zene
+	Mute	Némítás
+	Not matched yet	Még nincs illesztve
+	Open Air	Szabadtér
+	Pan	Panoráma
+	Phone Call	Telefonhívás
+	Podcast Voice	Podcasthang
+	Presence Lift	Jelenlét kiemelése
+	Preset name	Készlet neve
+	Preset:	Készlet:
+	Radio Announcer	Rádióbemondó
+	Radio Voice	Rádióhang
+	Reduce By	Csökkentés mértéke
+	Reduce Noise	Zajcsökkentés
+	Reduce Reverb	Visszhangcsökkentés
+	Reduce Rumble	Dübörgéscsökkentés
+	Remixing music to a target duration is not available yet. Trim the clip and add a crossfade instead.	A zene adott hosszra keverése még nem érhető el. Vágja meg a klipet, és tegyen rá áttűnést.
+	Repair	Javítás
+	SFX	Hangeffekt
+	Save Preset	Készlet mentése
+	Select audio clips to edit them here	Jelöljön ki hangklipeket a szerkesztésükhöz
+	Select audio clips, then click a preset to apply it.	Jelöljön ki hangklipeket, majd kattintson egy készletre az alkalmazásához.
+	Sensitivity	Érzékenység
+	Small Room	Kis szoba
+	Soften Harshness	Élesség lágyítása
+	Stereo Width	Sztereó szélesség
+	Stone Church	Kőtemplom
+	Telephone	Telefon
+	The selected clips have different audio types. Assign one type to edit them together.	A kijelölt klipek hangtípusa eltérő. Rendeljen hozzájuk egy típust az együttes szerkesztéshez.
+	Untagged	Címkézetlen
+	Voice in a Hall	Hang teremben
+	Warm Room	Meleg szoba
+	Warm Voice	Meleg hang
+	Wide Outdoor	Tág szabadtér
+	{name} (user)	{name} (saját)
+	Align Bottom	Igazítás alulra
+	Align Center Horizontally	Vízszintes középre igazítás
+	Align Center Vertically	Függőleges középre igazítás
+	Align Left	Igazítás balra
+	Align Right	Igazítás jobbra
+	Align Top	Igazítás felülre
+	Align and Transform	Igazítás és átalakítás
+	Alignment	Igazítás
+	All Caps	Csupa nagybetű
+	All Categories	Minden kategória
+	Anchor point	Horgonypont
+	Angle	Szög
+	Apply	Alkalmaz
+	Background	Háttér
+	Baseline Shift	Alapvonal-eltolás
+	Center	Közép
+	Center Align Text	Szöveg középre igazítása
+	Corner Radius	Saroksugár
+	Crawl Left	Balra úsztatás
+	Crawl Right	Jobbra úsztatás
+	Create new graphic	Új grafika létrehozása
+	Delete Layer	Réteg törlése
+	Distance	Távolság
+	End Off Screen	Képen kívül ér véget
+	Faux Bold	Ál-félkövér
+	Faux Italic	Ál-dőlt
+	Fill	Kitöltés
+	Font	Betűtípus
+	Font Size	Betűméret
+	Font Style	Betűstílus
+	Gradient	Színátmenet
+	Inner	Belső
+	Install Motion Graphics Template (.fcgt)	Mozgógrafikai sablon telepítése (.fcgt)
+	Install…	Telepítés…
+	Intro Duration	Bevezető hossza
+	Justify	Sorkizárt
+	Kerning	Alávágás
+	Layers	Rétegek
+	Leading	Sorköz
+	Left Align Text	Szöveg balra igazítása
+	Ligatures	Ligatúrák
+	Linear Gradient	Lineáris színátmenet
+	New Ellipse	Új ellipszis
+	New Rectangle	Új téglalap
+	New Text	Új szöveg
+	New Text Layer	Új szövegréteg
+	No templates match.	Nincs a keresésnek megfelelő sablon.
+	OK	OK
+	OpenType	OpenType
+	Orientation	Tájolás
+	Outer	Külső
+	Outro Duration	Lezárás hossza
+	Paragraph Text	Bekezdésszöveg
+	Path	Útvonal
+	Pin To	Rögzítés ehhez
+	Pinned Edges	Rögzített élek
+	Point Text	Pontszöveg
+	Polygon Sides	Sokszög oldalai
+	Postroll	Utófutás
+	Preroll	Előfutás
+	Responsive Design - Position	Rugalmas kialakítás – pozíció
+	Responsive Design - Time	Rugalmas kialakítás – idő
+	Right Align Text	Szöveg jobbra igazítása
+	Roll	Görgetés
+	Search templates	Sablonok keresése
+	Select a graphic clip, or use the Type tool (T) on the Program monitor	Jelölj ki egy grafikus klipet, vagy használd a Szöveg eszközt (T) a Program monitoron
+	Select a layer to edit its properties.	Jelölj ki egy réteget a tulajdonságai szerkesztéséhez.
+	Shadow	Árnyék
+	Shape	Alakzat
+	Small Caps	Kiskapitális
+	Solid	Egyszínű
+	Start Off Screen	Képen kívülről indul
+	Stroke	Körvonal
+	Stroke 2	Körvonal 2
+	Style	Stílus
+	Template Properties	Sablon tulajdonságai
+	Template: {name}	Sablon: {name}
+	Text Box Height	Szövegdoboz magassága
+	Text Box Width	Szövegdoboz szélessége
+	Text Layer Type	Szövegréteg típusa
+	Text Properties	Szöveg tulajdonságai
+	Text Styling	Szövegformázás
+	Toggle animation	Animáció be/ki
+	Toggle visibility	Láthatóság be/ki
+	Tracking	Betűköz
+	Underline	Aláhúzás
+	Video Frame	Videókép
+	{category} · My Template	{category} · Saját sablon
+	{n} editable properties	{n} szerkeszthető tulajdonság
+	Add pause	Szünet beszúrása
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	A Szünet beszúrása ezt illeszti be: [pause 1s]. A számot átírva hosszabb vagy rövidebb lesz a szünet, például [pause 500ms] vagy [pause 2s].
+	Add to timeline	Hozzáadás az idővonalhoz
+	Advanced	Speciális
+	Basic voices (built in)	Alaphangok (beépített)
+	Default	Alapértelmezett
+	Download	Letöltés
+	Download natural voices ({mb} MB)…	Természetes hangok letöltése ({mb} MB)…
+	Download of the natural voices failed: {e}	Nem sikerült letölteni a természetes hangokat: {e}
+	Download the natural voices? {mb} MB, once.	Letöltöd a természetes hangokat? {mb} MB, egyszeri letöltés.
+	Downloading…	Letöltés…
+	Editing the selected narration	A kijelölt narráció szerkesztése
+	Extra high	Nagyon magas
+	Extra low	Nagyon mély
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Forrás: {source} és github.com/cmusphinx/cmudict (kiejtések). Licenc: {license}. Minden fájlt rögzített SHA-256 ellenőrzőösszeggel vetünk össze.
+	Hear this voice	Hang meghallgatása
+	High	Magas
+	Low	Mély
+	Narration added on {track}	Narráció hozzáadva ide: {track}
+	Narration updated	Narráció frissítve
+	Natural voices	Természetes hangok
+	Natural voices installed	Természetes hangok telepítve
+	Natural voices need a one-time download.	A természetes hangokat egyszer le kell tölteni.
+	New narration	Új narráció
+	Pace	Tempó
+	Preview	Előnézet
+	Synthesizing narration…	Narráció előállítása…
+	Synthesizing…	Előállítás…
+	Text to Speech: {e}	Szövegfelolvasás: {e}
+	Type what you want the voice to say	Írd be, mit mondjon a hang
+	Vocal pitch	Hangmagasság
+	Voice	Hang
+	an audio track	egy hangsáv
+	no audio output (check Settings ▸ Audio Hardware)	nincs hangkimenet (lásd Beállítások ▸ Hanghardver)
+	the job disappeared	a feladat eltűnt
+	{name} (download)	{name} (letöltendő)
+	Open	Megnyitás
+	5.1 panner (drag the puck; double-click: front centre)	5.1-es panoráma (húzd a pöttyöt; dupla kattintás: elöl középre)
+	Add keyframe	Kulcskocka hozzáadása
+	Crop	Körbevágás
+	Go to next keyframe	Ugrás a következő kulcskockához
+	Go to previous keyframe	Ugrás az előző kulcskockához
+	Remove keyframe	Kulcskocka eltávolítása
+	Select a clip to see its properties	Jelöljön ki egy klipet a tulajdonságai megtekintéséhez
+	Speed {n}%	Sebesség: {n}%
+	Turn on animation and add keyframe	Animáció bekapcsolása és kulcskocka hozzáadása
+	Apply to Selected Clips	Alkalmazás a kijelölt klipekre
+	Export Preset…	Készlet exportálása…
+	Import Presets…	Készletek importálása…
+	Lumetri Presets	Lumetri-készletek
+	Search effects	Effektek keresése
+	Text to Speech: another sequence is open now; the narration was not placed	Szövegfelolvasás: közben másik szekvencia nyílt meg, a narráció nem került elhelyezésre
+	Effect presets	Effektkészletek
+	Automate to Sequence	Automatizálás szekvenciába
+	Bin: {name}	Tároló: {name}
+	Clear (Delete)	Törlés (Delete)
+	Convert to Master Clip	Átalakítás mesterklippé
+	Date Created	Létrehozás dátuma
+	Delete	Törlés
+	Descending	Csökkenő
+	Drag to reorder; tick the columns to show.	Húzással rendezheti át; jelölje be a megjelenítendő oszlopokat.
+	Extra Large	Nagyon nagy
+	Find	Keresés
+	Freeform	Szabad elrendezés
+	Freeform View Options…	Szabad nézet beállításai…
+	Icon	Ikon
+	Icon View	Ikonnézet
+	Large	Nagy
+	List	Lista
+	Manage Saved View Presets	Mentett nézetkészletek kezelése
+	Medium (default)	Közepes (alapértelmezett)
+	Metadata Display	Metaadat-megjelenítés
+	Metadata Display…	Metaadat-megjelenítés…
+	Name:	Név:
+	New Bin From Selection	Új tároló a kijelölésből
+	New Item	Új elem
+	New Project Shortcut	Új projekt-parancsikon
+	New Search Bin	Új keresőtároló
+	New Sequence From Clip	Új szekvencia a klipből
+	Open in New Tab	Megnyitás új lapon
+	Open in New Window	Megnyitás új ablakban
+	Open in Place	Megnyitás helyben
+	Open in Source Monitor	Megnyitás a forrásmonitoron
+	Open in Timeline	Megnyitás az idővonalon
+	Preview Area	Előnézeti terület
+	Project View Preset {n}	{n}. projektnézet-készlet
+	Project: {name}	Projekt: {name}
+	Refresh Project	Projekt frissítése
+	Refresh Sort Order	Rendezési sorrend frissítése
+	Rename	Átnevezés
+	Restore View Preset	Nézetkészlet visszaállítása
+	Reveal Project in Finder…	Projekt megjelenítése a fájlkezelőben…
+	Reveal in Finder	Megjelenítés a fájlkezelőben
+	Save As New View Preset	Mentés új nézetkészletként
+	Save Current View Preset	Jelenlegi nézetkészlet mentése
+	Save Project	Projekt mentése
+	Select an item to preview it	Válasszon ki egy elemet az előnézethez
+	Set Poster Frame	Plakátkocka beállítása
+	Small	Kicsi
+	Sort Icons	Ikonok rendezése
+	Thumbnail controls for all pointing devices	Bélyegkép-vezérlők minden mutatóeszközhöz
+	Thumbnails	Bélyegképek
+	Thumbnails show effects applied	A bélyegképek mutatják az alkalmazott effekteket
+	Up one level	Egy szinttel feljebb
+	User Order	Saját sorrend
+	Video Usage: {vu}  Audio Usage: {au}	Videóhasználat: {vu}  Hanghasználat: {au}
+	Zoom	Nagyítás
+	{n} items	{n} elem
+	Freeform View	Szabad nézet
+	Stack	Halmozás
+	Unstack	Halmozás bontása
+	Clip Size	Klipméret
+	Larger	Nagyobb
+	Smaller	Kisebb
+	Align to Grid	Igazítás a rácshoz
+	Reset to Grid	Visszaállítás rácsba
+	Save Arrangement…	Elrendezés mentése…
+	Save Arrangement	Elrendezés mentése
+	Restore Arrangement	Elrendezés visszaállítása
+	Delete Arrangement	Elrendezés törlése
+	Arrangement {n}	{n}. elrendezés
+	Freeform View Options	Szabad nézet beállításai
+	Snap to grid	Illesztés a rácshoz
+	Show clip names	Klipnevek megjelenítése
+	Show clip durations	Klipek hosszának megjelenítése
+	Grid spacing:	Rácstávolság:
+	Default clip size:	Alapértelmezett klipméret:
+	{panel} — coming in a later milestone	{panel} — egy későbbi mérföldkőben érkezik
+	Edit Workspaces	Munkaterületek szerkesztése
+	Restore Original	Eredeti visszaállítása
+	Drag Video Only	Csak a videó húzása
+	Drag Audio Only	Csak a hang húzása
+	Drag Video and Audio	Videó és hang húzása
+	Source clips	Forrásklipek
+	Close All	Összes bezárása
+	(no audio)	(nincs hang)
+	Generating waveform…	Hullámforma készül…
+	Audio Waveform	Hang hullámformája
+	Video and Audio Waveform Split	Videó és hullámforma osztva
+	Anchor to In Point	Rögzítés a kezdőponthoz
+	Anchor to Out Point	Rögzítés a végponthoz
+	Custom ({n} points)	Egyéni ({n} pont)
+	Description:	Leírás:
+	Save Preset…	Előbeállítás mentése…
+	Source · {name}	Forrás · {name}
+	Temporal Interpolation	Időbeli interpoláció
+	Twirl open or shut	Kinyitás vagy becsukás
+	Without keyframes	Kulcskockák nélkül
+	Add	Hozzáadás
+	Create 4-point polygon mask	4 pontos sokszögmaszk létrehozása
+	Create ellipse mask	Ellipszismaszk létrehozása
+	Delete Mask	Maszk törlése
+	Free draw bezier	Szabadkézi Bezier-rajz
+	Intersect	Metszet
+	Inverted	Invertálva
+	Position & Rotation	Pozíció és forgatás
+	Position, Scale & Rotation	Pozíció, méretezés és forgatás
+	Show graphs	Grafikonok megjelenítése
+	Stop tracking	Követés leállítása
+	Track selected mask backward	Kijelölt maszk követése visszafelé
+	Track selected mask backward 1 frame	Kijelölt maszk követése 1 képkockával vissza
+	Track selected mask forward	Kijelölt maszk követése előre
+	Track selected mask forward 1 frame	Kijelölt maszk követése 1 képkockával előre
+	Tracking method: {method}	Követési módszer: {method}
+	Value	Érték
+	Velocity	Sebesség
+	Set Transition Duration	Átmenet időtartamának beállítása
+	Reverse	Fordított
+	Center at Cut	Középre a vágáson
+	Start at Cut	Kezdés a vágásnál
+	End at Cut	Befejezés a vágásnál
+	Custom Start	Egyéni kezdés
+	Eyedropper (pick a color from the Program monitor)	Pipetta (szín a Program monitorról)
+	Interpret Footage	Felvétel értelmezése
+	Color Management · {n} item	Színkezelés · {n} elem
+	Color Management · {n} items	Színkezelés · {n} elem
+	Media colour space (from file metadata): {detected}	Média színtere (a fájl metaadataiból): {detected}
+	Override media colour space:	Média színterének felülírása:
+	Use file metadata	A fájl metaadatai szerint
+	Motion Graphics Templates	Mozgógrafikai sablonok
+	Clip Fx Editor	Klip effektszerkesztő
+	Track Fx Editor	Sáv effektszerkesztő
+	Custom Setup	Egyéni beállítás
+	Edit…	Szerkesztés…
+	Master Gain	Fő erősítés
+	Band {n}	{n}. sáv
+	Solo	Szóló
+	Thr	Küsz.
+	Ratio	Arány
+	Att	Felf.
+	Rel	Lecs.
+	Output Gain	Kimeneti erősítés
+	Limiter	Limiter
+	Link Channels	Csatornák összekapcsolása
+	Limiter Threshold	Limiter küszöbszint
+	Limiter Release	Limiter lecsengés
+	Auto Gate	Automatikus kapu
+	Threshold	Küszöbszint
+	Attack	Felfutás
+	Release	Lecsengés
+	Compressor	Kompresszor
+	Auto Makeup	Automatikus szintpótlás
+	Makeup	Szintpótlás
+	Expander	Expander
+	Soft Clip	Lágy vágás
+	out	ki
+	in	be
+	Parametric Equalizer	Parametrikus hangszínszabályzó
+	Graphic Equalizer (10 Bands)	Grafikus hangszínszabályzó (10 sáv)
+	Graphic Equalizer (20 Bands)	Grafikus hangszínszabályzó (20 sáv)
+	Graphic Equalizer (30 Bands)	Grafikus hangszínszabályzó (30 sáv)
+	Multiband Compressor	Többsávos kompresszor
+	CFA4 encountered an error	A CFA4 hibába ütközött
+	Something went wrong while drawing the window. Your project is still open; save it to be safe.	Hiba történt az ablak rajzolása közben. A projekt továbbra is nyitva van; a biztonság kedvéért mentse el.
+	Continue	Folytatás
+	Details: {path}	Részletek: {path}
+	Engine restarted	Motor újraindítva
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	A CFA4 motorja váratlanul leállt, és újraindult. A nem mentett változások a helyreállítási naplóban vannak; a motor felajánlja a visszaállításukat.
+	 ({ch} output channels)	 ({ch} kimeneti csatorna)
+	Active	Aktív
+	Add to favorites	Hozzáadás a kedvencekhez
+	Appearance Mode	Megjelenési mód
+	Appearance Settings…	Megjelenési beállítások…
+	Auto-saves go to: {dir}	Az automatikus mentések helye: {dir}
+	CFA4 keeps the rest of the RAM free for other applications.	A CFA4 a RAM többi részét szabadon hagyja más alkalmazásoknak.
+	Currently: {loc} — {files} file(s), {size}	Jelenleg: {loc} – {files} fájl, {size}
+	Decoded frames held for the monitors and thumbnails: {used} of {budget}.	A monitorok és bélyegképek dekódolt képkockái: {used} / {budget}.
+	Default location	Alapértelmezett hely
+	Delete this preset	A készlet törlése
+	Deleted preset “{active}”	A(z) „{active}” készlet törölve
+	Deleted {n} file(s), {size}.	{n} fájl törölve, {size}.
+	Export the labels to a preset file…	Címkék exportálása készletfájlba…
+	Exported to {path}	Exportálva ide: {path}
+	Font family	Betűcsalád
+	Import a preset file…	Készletfájl importálása…
+	Imported “{name}”	„{name}” importálva
+	Label Color Presets	Címkeszín-készletek
+	Label Colors	Címkeszínek
+	Last auto-save {a}	Utolsó automatikus mentés: {a}
+	Last auto-save {a} · last recovery copy {j}	Utolsó automatikus mentés: {a} · utolsó helyreállítási másolat: {j}
+	Last recovery copy {j}	Utolsó helyreállítási másolat: {j}
+	Preferences	Beállítások
+	Programme left → device output {l}, right → device output {r}{dev}. Outputs beyond the device's channels fall back to 1 and 2.	Műsor bal → eszközkimenet {l}, jobb → eszközkimenet {r}{dev}. Az eszköz csatornáin túli kimenetek helyett az 1. és 2. szól.
+	Recovery copy: {dir}	Helyreállítási másolat: {dir}
+	Remove from favorites	Eltávolítás a kedvencek közül
+	Reset…	Visszaállítás…
+	Revert to the preset's colors and names	Vissza a készlet színeihez és neveihez
+	Show the presets folder	A készletek mappájának megnyitása
+	Sync with system	Rendszerrel egyező
+	System Default	Rendszer alapértelmezése
+	not available in this session	ebben a munkamenetben nem érhető el
+	{name} (Modified)	{name} (módosítva)
+	+ Cmd	+ Cmd
+	+ Opt	+ Opt
+	Accessible color contrast	Akadálymentes színkontraszt
+	Adaptive	Adaptív
+	Add tracks automatically when editing source clips onto the Timeline	Sávok automatikus hozzáadása forrásklipek idővonalra szerkesztésekor
+	All lines	Minden sor
+	Allow Selection tool to choose Roll and Ripple trims without modifier key	A Kijelölő eszköz módosítóbillentyű nélkül is választhat görgető és hullámvágást
+	Allow current tool to change trim type of previously selected edit point	Az aktuális eszköz módosíthatja a korábban kijelölt vágáspont vágástípusát
+	Allow duplicate media during project import	Ismétlődő média engedélyezése projekt importálásakor
+	Always import embedded CEA-708 closed captions with wide aspect.	A beágyazott CEA-708 feliratok importálása mindig széles képaránnyal.
+	Always override audio tags	Hangcímkék felülírása mindig
+	Analyze all imported media to search for visuals or audio	Minden importált média elemzése kép- vagy hangkereséshez
+	Animate zoom, scrolling and menus	Nagyítás, görgetés és menük animálása
+	Appearance…	Megjelenés…
+	At Startup	Indításkor
+	At playback end, return to beginning when restarting playback	A lejátszás végén újraindításkor vissza az elejére
+	Attempt to force hardware to document sample rate	A hardver kényszerítése a dokumentum mintavételi frekvenciájára
+	Audio Hardware	Hanghardver
+	Audio Hardware…	Hanghardver…
+	Audio Time Units	Hang időegységei
+	Audio Transition Default Duration	Hangátmenet alapértelmezett hossza
+	Audio…	Hang…
+	Auto (system)	Automatikus (rendszer)
+	Auto Save	Automatikus mentés
+	Auto Save also saves the current project(s)	Az automatikus mentés az aktuális projekt(ek)et is menti
+	Auto Save…	Automatikus mentés…
+	Auto-tag audio types in the timeline	Hangtípusok automatikus címkézése az idővonalon
+	Auto-transcribe all imported clips	Minden importált klip automatikus átirata
+	Auto-transcribe only clips in sequences	Csak a szekvenciákban lévő klipek automatikus átirata
+	Automatch Time	Automatikus illesztési idő
+	Automatically Hide Dependent Clips	Függő klipek automatikus elrejtése
+	Automatically Save Every	Automatikus mentés gyakorisága
+	Automatically delete cache files older than	Ennél régebbi gyorsítótárfájlok automatikus törlése
+	Automatically delete oldest cache files when cache exceeds	A legrégebbi gyorsítótárfájlok automatikus törlése, ha a gyorsítótár meghaladja
+	Automatically refresh growing files	Növekvő fájlok automatikus frissítése
+	Automatically resume playback for growing files in Source Monitor	Növekvő fájlok lejátszásának automatikus folytatása a Forrásmonitorban
+	Automatically save projects	Projektek automatikus mentése
+	Automatically transcribe clips	Klipek automatikus átirata
+	Automation Keyframe Optimization	Automatizálási kulcskockák optimalizálása
+	Background fill	Háttérkitöltés
+	Bevel join	Tompa sarok
+	Bins	Tárolók
+	Butt cap	Egyenes végződés
+	Cache analysis results for re-use	Elemzési eredmények gyorsítótárazása újrafelhasználáshoz
+	Changes are copied in the background a moment after each edit. If CFA4 quits unexpectedly, they are offered the next time it starts.	A változások minden szerkesztés után a háttérben másolódnak. Ha a CFA4 váratlanul kilép, a következő indításkor felajánlja őket.
+	Chinese	Kínai
+	Closed Captions	Feliratok
+	Color Theme	Színtéma
+	Color…	Szín…
+	Crash Recovery	Összeomlás utáni helyreállítás
+	Create folder for imported projects	Mappa létrehozása az importált projekteknek
+	Dark Theme	Sötét téma
+	Default Audio Tracks	Alapértelmezett hangsávok
+	Default Emoji font	Alapértelmezett emojibetűtípus
+	Default Input	Alapértelmezett bemenet
+	Default Media Scaling	Média alapértelmezett méretezése
+	Default Output	Alapértelmezett kimenet
+	Default closed caption font	Feliratok alapértelmezett betűtípusa
+	Default language	Alapértelmezett nyelv
+	Default paragraph direction	Alapértelmezett bekezdésirány
+	Default subtitle and text font	Feliratok és szövegek alapértelmezett betűtípusa
+	Delete files older than	Ennél régebbi fájlok törlése
+	Delete oldest files when the cache exceeds	A legrégebbi fájlok törlése, ha a gyorsítótár meghaladja
+	Delete…	Törlés…
+	Device Class	Eszközosztály
+	Disable video output when in the background	Videokimenet letiltása háttérben
+	Display Color Management	Kijelző színkezelése
+	Display Color Settings	Kijelző színbeállításai
+	Display out of sync indicators for unlinked clips	Szinkronhiány-jelzők megjelenítése a nem csatolt klipeknél
+	Do not delete cache files automatically	Ne törölje automatikusan a gyorsítótárfájlokat
+	Don't label speakers	Ne címkézze a beszélőket
+	Double-click	Dupla kattintás
+	Draft decoding at reduced playback resolution (H.264: faster, some frames less filtered)	Vázlatdekódolás csökkentett lejátszási felbontásnál (H.264: gyorsabb, egyes kockák kevésbé szűrtek)
+	Dutch	Holland
+	Dynamic Link	Dinamikus csatolás
+	Enable Mercury Transmit	Mercury Transmit engedélyezése
+	Enable ProRes hardware accelerated encoding, if available	ProRes hardveres gyorsított kódolás engedélyezése, ha elérhető
+	Enable clip and XMP metadata linking	Klip- és XMP-metaadatok összekapcsolásának engedélyezése
+	Enable developer mode	Fejlesztői mód engedélyezése
+	Enable hardware accelerated decoding (requires restart)	Hardveres gyorsított dekódolás engedélyezése (újraindítást igényel)
+	Enable language auto-detection	Nyelv automatikus felismerésének engedélyezése
+	Enable proxies	Proxyk engedélyezése
+	English	Angol
+	Extended Dynamic Range Monitoring	Kiterjesztett dinamikatartományú megjelenítés
+	For color management parameters, go to the Settings tab in the Lumetri Color panel.	A színkezelési paramétereket a Lumetri Color panel Beállítások lapján találja.
+	Frame Count	Képkockaszám
+	Frame cache for monitors and thumbnails	Képkocka-gyorsítótár a monitoroknak és bélyegképeknek
+	French	Francia
+	Front + LFE	Első + LFE
+	Front + Rear	Első + hátsó
+	Front + Rear + LFE	Első + hátsó + LFE
+	Front Only	Csak első
+	General	Általános
+	Generate Timecode	Időkód előállítása
+	Generate waveforms and conform audio using multithreading	Hullámformák előállítása és hangillesztés több szálon
+	Generate waveforms automatically during import	Hullámformák automatikus előállítása importáláskor
+	German	Német
+	Graphics…	Grafika…
+	Growing Files	Növekvő fájlok
+	HDR Graphics White (Nits)	HDR grafikai fehér (nit)
+	Hardware decoding	Hardveres dekódolás
+	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Hardveres dekódolás: az Automatikus a rendszer videodekóderét használja (macOS-en VideoToolbox, Windowson Media Foundation, Linuxon VA-API vagy NVDEC H.264-hez és HEVC-hez) a támogatott adatfolyamokhoz, minden máshoz, vagy ha a hardver hibázik, a CFA4 saját dekóderét. A már megnyitott média az újranyitásig megtartja a dekóderét.
+	Highlight Color	Kiemelés színe
+	Hindi	Hindi
+	Hindi digits	Hindi számjegyek
+	Horizontal	Vízszintes
+	I/O Buffer Size	I/O pufferméret
+	Import numbered stills as image sequences	Számozott állóképek importálása képsorozatként
+	In the Media Cache	A média-gyorsítótárban
+	In the project	A projektben
+	Include captions on import	Feliratok importálása
+	Indeterminate Media Timebase	Határozatlan média-időalap
+	Interface Language	Felület nyelve
+	Italian	Olasz
+	Japanese	Japán
+	Keep a recovery copy of unsaved changes	Helyreállítási másolat a nem mentett változásokról
+	Korean	Koreai
+	Label Defaults	Alapértelmezett címkék
+	Label speakers	Beszélők címkézése
+	Labels	Címkék
+	Labels…	Címkék…
+	Large Trim Offset	Nagy vágási eltolás
+	Large Volume Adjustment	Nagy hangerő-módosítás
+	Left channel to device output	Bal csatorna eszközkimenete
+	Left to right	Balról jobbra
+	Light Theme	Világos téma
+	Linear keyframe thinning	Lineáris kulcskocka-ritkítás
+	Local Projects	Helyi projektek
+	Location	Hely
+	Maintain pitch while shuttling	Hangmagasság megtartása léptetéskor
+	Match frame sets in point	A képkocka-illesztés kezdőpontot állít
+	Maximum Project Versions	Projektverziók legnagyobb száma
+	Media	Média
+	Media Analysis	Médiaelemzés
+	Media Analysis & Transcription	Médiaelemzés és átirat
+	Media Analysis & Transcription…	Médiaelemzés és átirat…
+	Media Cache	Média-gyorsítótár
+	Media Cache Database	Média-gyorsítótár adatbázisa
+	Media Cache Files	Média-gyorsítótár fájljai
+	Media Cache Management	Média-gyorsítótár kezelése
+	Media Cache…	Média-gyorsítótár…
+	Media analysis and transcriptions will be cached in the Media Cache folder. Reanalysis won't be required if the media is imported into another project on this computer.	A médiaelemzések és átiratok a média-gyorsítótár mappájába kerülnek. Ha a médiát ezen a számítógépen másik projektbe importálja, nem kell újraelemezni.
+	Memory	Memória
+	Memory…	Memória…
+	Minimum time	Minimális idő
+	Minimum time interval thinning	Ritkítás minimális időköz szerint
+	Missing font replacement	Hiányzó betűtípus helyettesítése
+	Miter join	Hegyes sarok
+	Miter limit	Hegyes sarok határa
+	Mono Media	Monó média
+	Monospace only	Csak rögzített szélességű
+	Movie (audio and video)	Film (hang és kép)
+	Multichannel Mono Media	Többcsatornás monó média
+	Mute input during timeline recording	Bemenet némítása idővonalas felvétel közben
+	Next to original media files	Az eredeti médiafájlok mellett
+	No Scroll	Nincs görgetés
+	No plugins are installed. Changes will take effect the next time you start CFA4.	Nincs telepített bővítmény. A változások a CFA4 következő indításakor lépnek életbe.
+	Open Most Recent	Legutóbbi megnyitása
+	Open in new window	Megnyitás új ablakban
+	Open in place	Megnyitás helyben
+	Open new tab	Új lap megnyitása
+	Output Mapping	Kimenet-hozzárendelés
+	Page Scroll	Oldalankénti görgetés
+	Pause Media Encoder queue during playback	Kódolási sor szüneteltetése lejátszás közben
+	Per line	Soronként
+	Place files dropped onto the Timeline directly on the Timeline	Az idővonalra húzott fájlok közvetlenül az idővonalra kerülnek
+	Play after rendering previews	Lejátszás az előnézetek renderelése után
+	Play audio while scrubbing in Source and Program Monitors	Hang lejátszása léptetéskor a Forrás- és Műsormonitorban
+	Playback	Lejátszás
+	Playback…	Lejátszás…
+	Playhead position determines trim monitor loop playback	A lejátszófej helyzete határozza meg a vágómonitor ismétlő lejátszását
+	Plugins	Bővítmények
+	Plugins…	Bővítmények…
+	Policy	Szabály
+	Portuguese	Portugál
+	Projecting cap	Kiálló végződés
+	Projects	Projektek
+	RAM reserved for other applications	Más alkalmazásoknak fenntartott RAM
+	Refresh growing Files Every	Növekvő fájlok frissítési gyakorisága
+	Render Edit in Audition files to:	Az Edit in Audition fájlok renderelési helye:
+	Render audio when rendering video	Hang renderelése videó renderelésekor
+	Restore open sequences when opening projects	Nyitott szekvenciák visszaállítása projekt megnyitásakor
+	Right channel to device output	Jobb csatorna eszközkimenete
+	Right to left	Jobbról balra
+	Ripple trim adds edits to keep both sides of trim in sync	A hullámvágás vágásokat ad hozzá, hogy a vágás két oldala szinkronban maradjon
+	Round cap	Kerek végződés
+	Round join	Kerek sarok
+	Russian	Orosz
+	Sample Rate	Mintavételi frekvencia
+	Save .cfa and .pek media cache files next to original media files when possible	A .cfa és .pek gyorsítótárfájlok mentése az eredeti médiafájlok mellé, ha lehet
+	Scale to frame size	Méretezés a képkockamérethez
+	Scratch disk location for Captured Audio	Rögzített hang munkalemezének helye
+	Set focus on the Timeline when performing Insert/Overwrite edits	Fókusz az idővonalra Beszúrás/Felülírás szerkesztéskor
+	Set to frame size	Beállítás a képkockaméretre
+	Shapes	Alakzatok
+	Shift clips that overlap trim point during ripple trimming	A vágáspontot átfedő klipek eltolása hullámvágáskor
+	Show "Project:" and "Bin:" in Project panel tab	„Projekt:” és „Tároló:” megjelenítése a Projekt panel fülén
+	Show Clip Mismatch Warning dialog	Klipeltérési figyelmeztetés megjelenítése
+	Show Event Indicator	Eseményjelző megjelenítése
+	Show Home	Kezdőlap megjelenítése
+	Show Mask Tracker Preview	Maszkkövetési előnézet megjelenítése
+	Show Open Dialog	Megnyitási párbeszédablak megjelenítése
+	Show Project Load Error Dialog	Projektbetöltési hiba párbeszédablakának megjelenítése
+	Show Rich Tool Tips	Bővített elemleírások megjelenítése
+	Show Tool Tips	Elemleírások megjelenítése
+	Show Workspace Reset Warning dialog on double click	Munkaterület-visszaállítási figyelmeztetés dupla kattintáskor
+	Show system compatibility issues at startup	Rendszerkompatibilitási problémák megjelenítése indításkor
+	Smart quotes	Tipográfiai idézőjelek
+	Smooth Scroll	Folyamatos görgetés
+	Snap playhead in Timeline when Snap is enabled	A lejátszófej illesztése az idővonalon, ha az illesztés be van kapcsolva
+	Spanish	Spanyol
+	Speaker Labeling	Beszélők címkézése
+	Speech model	Beszédmodell
+	Start at 0	Kezdés 0-tól
+	Start at 1	Kezdés 1-től
+	Start with an Empty Project	Indítás üres projekttel
+	Step forward/back many	Sok lépés előre/hátra
+	Stereo Media	Sztereó média
+	Still	Állókép
+	Still Image Default Duration	Állókép alapértelmezett hossza
+	Stroke line cap	Körvonal végződése
+	Stroke line join	Körvonal sarka
+	Sum multichannel outputs to mono in Source Monitor	Többcsatornás kimenetek monóra összegzése a Forrásmonitorban
+	System Language	Rendszer nyelve
+	The media cache holds render previews of unsaved projects and other files CFA4 can recreate. Deleting them is always safe; CFA4 rebuilds them as needed.	A média-gyorsítótár a nem mentett projektek renderelt előnézeteit és más, a CFA4 által újra előállítható fájlokat tárol. Törlésük mindig biztonságos; a CFA4 szükség szerint újraépíti őket.
+	Timecode Conversion	Időkód-átváltás
+	Timeline Mouse Scrolling	Egérgörgetés az idővonalon
+	Timeline Playback Auto-Scrolling	Automatikus görgetés lejátszáskor
+	Timeline…	Idővonal…
+	Transcription	Átirat
+	Transcription preferences	Átirat beállításai
+	Trim	Vágás
+	Trim…	Vágás…
+	UI Scale	Felület mérete
+	Update it at least every	Frissítés legalább ennyi időnként
+	Update timeline dynamically during ripple edits.	Az idővonal folyamatos frissítése hullámszerkesztéskor.
+	Use File	Fájl szerint
+	Use Media Source	Médiaforrás szerint
+	Validate Content Credentials on import	Tartalomhitelesítés ellenőrzése importáláskor
+	Vertical	Függőleges
+	Video Transition Default Duration	Videoátmenet alapértelmezett hossza
+	When Opening a Project	Projekt megnyitásakor
+	Whisper base (balanced)	Whisper base (kiegyensúlyozott)
+	Whisper small (most accurate)	Whisper small (legpontosabb)
+	Whisper tiny (fastest)	Whisper tiny (leggyorsabb)
+	Write XMP ID to files on import	XMP-azonosító írása a fájlokba importáláskor
+	Write clip markers to XMP	Klipjelölők írása XMP-be
+	days	nap
+	milliseconds	ezredmásodperc
+	minute(s)	perc
+	second(s)	másodperc
+	seconds	másodperc
+	 seconds	 másodperc
+	Channel {n}	{n}. csatorna
+	Countdown Sound Cues	Visszaszámláló hangjelzések
+	Discard take	Felvétel elvetése
+	Discard the active take	Az aktuális felvétel elvetése
+	Input:	Bemenet:
+	Playback starts the pre-roll before the playhead (or the In point); with In/Out marked, recording punches in and out there.	A lejátszás az előfutással a lejátszófej (vagy a kezdőpont) előtt indul; kijelölt kezdő- és végpontnál a felvétel ott kezdődik és ott ér véget.
+	Post-roll	Utófutás
+	Post-roll:	Utófutás:
+	Pre-roll:	Előfutás:
+	Qt Multimedia is not available	A Qt Multimedia nem érhető el
+	Record (voice-over on the record-enabled track)	Felvétel (hangalámondás a felvételre kijelölt sávra)
+	Recording voice-over…	Hangalámondás felvétele…
+	Source:	Forrás:
+	Stop Voice-over Recording	Hangalámondás felvételének leállítása
+	The audio input could not be started	A hangbemenet nem indítható el
+	The audio input does not support a usable format	A hangbemenet nem támogat használható formátumot
+	The voice-over input buffer is full: the take ends here	A hangalámondás bemeneti puffere megtelt: a felvétel itt véget ér
+	There is no audio input device	Nincs hangbemeneti eszköz
+	Voice-Over Record Settings	Hangalámondás felvételi beállításai
+	Voice-Over Record Settings…	Hangalámondás felvételi beállításai…
+	Voice-over input: {error}	Hangalámondás bemenete: {error}
+	Voice-over record (right-click: Voice-Over Record Settings…)	Hangalámondás felvétele (jobb kattintás: felvételi beállítások…)
+	Voice-over recorded: {p}	Hangalámondás felvéve: {p}
+	Voice-over recording stopped (nothing recorded)	A hangalámondás felvétele leállt (nem készült felvétel)
+	Voice-over take discarded	Hangalámondás-felvétel elvetve
+	● Recording	● Felvétel
+# Multi-camera (panels/multicam.py)
+	 frames	 képkocka
+	All Cameras	Minden kamera
+	Auto-Adjust Multi-Camera Playback Quality	Többkamerás lejátszási minőség automatikus igazítása
+	Camera 1	1. kamera
+	Camera Angle Metadata	Kameraállás-metaadat
+	Camera Names	Kameranevek
+	Camera {n} — {name}	{n}. kamera — {name}
+	Cameras shown in the Multi-Camera view (uncheck to hide).	A többkamerás nézetben látható kamerák (a jelölés törlése elrejti).
+	Clip Marker	Klipjelölő
+	Clip Name:	Klip neve:
+	Clip Names	Klipnevek
+	Create Multi-Camera Source Sequence	Többkamerás forrásszekvencia létrehozása
+	Edit Cameras	Kamerák szerkesztése
+	Edit Cameras…	Kamerák szerkesztése…
+	Enumerate Cameras	Kamerák számozása
+	Ignore Hours	Órák figyelmen kívül hagyása
+	In Points	Kezdőpontok
+	Merge Clips	Klipek egyesítése
+	Merged clip created	Az egyesített klip elkészült
+	Move source clips to Processed Clips bin	A forrásklipek áthelyezése a Feldolgozott klipek mappába
+	Multi-Camera Audio Follows Video	Többkamerás hang követi a videót
+	Multi-Camera Layout	Többkamerás elrendezés
+	Multi-Camera Record	Többkamerás felvétel
+	Multi-Camera Record On/Off (0)	Többkamerás felvétel be/ki (0)
+	Multi-Camera Record On/Off Toggle	Többkamerás felvétel be/ki kapcsolása
+	Multi-Camera Record off	Többkamerás felvétel kikapcsolva
+	Multi-Camera Record on	Többkamerás felvétel bekapcsolva
+	Multi-Camera Selection Top Down	Többkamerás kijelölés felülről lefelé
+	Multi-Camera View	Többkamerás nézet
+	Multi-camera source sequence with {n} camera(s)	Többkamerás forrásszekvencia {n} kamerával
+	Next page	Következő oldal
+	No multi-camera clip at the playhead	Nincs többkamerás klip a lejátszófejnél
+	Offset Audio by:	Hang eltolása:
+	Offset:	Eltolás:
+	Out Points	Végpontok
+	Page {page} of {pages}	{page}. oldal / {pages}
+	Previous page	Előző oldal
+	Record	Felvétel
+	Recorded {n} multi-camera cut(s)	{n} többkamerás vágás rögzítve
+	Reference track:	Referenciasáv:
+	Remove Audio from AV Clip	Hang eltávolítása az AV-klipből
+	Sequence Name:	Szekvencia neve:
+	Show Multi-Camera Preview Monitor	Többkamerás előnézeti monitor megjelenítése
+	Switch Audio	Hang váltása
+	Synchronize Clips	Klipek szinkronizálása
+	Synchronize Point	Szinkronizálási pont
+	Synchronized {n} clip group(s)	{n} klipcsoport szinkronizálva
+	Transmit Multi-Camera View	Többkamerás nézet továbbítása
+	first marker	első jelölő
+	lowest (V1…)	legalsó (V1…)
+	no multi-camera clip at the playhead	nincs többkamerás klip a lejátszófejnél
+	{first} - Merged	{first} – egyesített
+	{first} Multicam	{first} többkamerás
+	{n} clip(s) selected; the clip on the reference track stays put.	{n} klip kijelölve; a referenciasáv klipje a helyén marad.
+	{n} clip(s): {names}	{n} klip: {names}
+# Remix (panels/remix.py)
+	Current duration {seconds} s	Jelenlegi hossz: {seconds} mp
+	Fewer · More	Kevesebb · Több
+	Remix Properties	Remix tulajdonságai
+	Remixed to {seconds} s	Remixelve {seconds} mp-re
+	Segments:	Szakaszok:
+	Target Duration:	Célhossz:
+	Variations:	Változatok:
+	the selected clip is not remixed	a kijelölt klip nincs remixelve

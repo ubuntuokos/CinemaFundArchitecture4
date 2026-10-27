@@ -1164,11 +1164,29 @@ fn view_flag(s: &mut Session, p: &Value, f: Flag) -> Result<Value> {
 /// view uses (Auto-Adjust Multi-Camera Playback Quality).
 fn grid_info(s: &mut Session, p: &Value) -> Result<Value> {
     let t = time_p(s, p, "").unwrap_or(s.playhead());
+    let mut out = grid_at(s, t);
+    if let (Some(px), Some(q)) = (p.get("cellPixels").and_then(Value::as_f64), out["source"].as_u64().and_then(|i| s.project.sequence(ItemId(i)))) {
+        let v = &s.state.multicam_view;
+        let l = v.page_layout(q.cameras().shown_angles().len());
+        let playing = bool_p(p, "playing").unwrap_or(false);
+        let pb = p.get("playbackScale").and_then(Value::as_f64).unwrap_or(1.0) as f32;
+        out["cellScale"] = json!(cfa4_render::multicam::grid_cell_scale(q.settings.width, px as f32, pb, playing, v.auto_quality, l.per_page));
+    }
+    Ok(out)
+}
+
+/// The grid page of the Multi-Camera view at `t`: layout, pages and cells (`multicam.grid`
+/// without the decode scale), plus the source time shown and whether a recording pass runs.
+pub fn grid_at(s: &Session, t: Tick) -> Value {
     let v = s.state.multicam_view.clone();
+    let recording = s.mcrec.active();
+    let follows = s.state.multicam_audio_follows_video;
     let Some((_, clip)) = multicam_clip_at(s, t) else {
-        return Ok(json!({"clip": null, "view": v}));
+        return json!({"clip": null, "view": v, "recording": recording, "audioFollowsVideo": follows});
     };
-    let q = s.project.sequence(clip.item).ok_or(EngineError::NoSequence)?;
+    let Some(q) = s.project.sequence(clip.item) else {
+        return json!({"clip": null, "view": v, "recording": recording, "audioFollowsVideo": follows});
+    };
     let cams = q.cameras();
     let shown = cams.shown_angles();
     let l = v.page_layout(shown.len());
@@ -1182,16 +1200,11 @@ fn grid_info(s: &mut Session, p: &Value) -> Result<Value> {
             json!({"cell": k - l.first, "camera": k + 1, "angle": a, "name": cams.cameras.get(a).map(|c| c.name.clone()), "active": active == Some(a)})
         })
         .collect();
-    let mut out = json!({
-        "clip": clip.id.0, "source": clip.item.0, "layout": v.layout_name(), "cols": l.cols, "rows": l.rows,
-        "page": l.page, "pages": l.pages, "angles": shown.len(), "cells": cells, "view": v,
-    });
-    if let Some(px) = p.get("cellPixels").and_then(Value::as_f64) {
-        let playing = bool_p(p, "playing").unwrap_or(false);
-        let pb = p.get("playbackScale").and_then(Value::as_f64).unwrap_or(1.0) as f32;
-        out["cellScale"] = json!(cfa4_render::multicam::grid_cell_scale(q.settings.width, px as f32, pb, playing, v.auto_quality, l.per_page));
-    }
-    Ok(out)
+    json!({
+        "clip": clip.id.0, "source": clip.item.0, "sourceTime": clip.source_time_at(t).0, "layout": v.layout_name(), "cols": l.cols,
+        "rows": l.rows, "page": l.page, "pages": l.pages, "angles": shown.len(), "cells": cells, "view": v, "recording": recording,
+        "audioFollowsVideo": follows,
+    })
 }
 
 fn inspect(s: &mut Session, p: &Value) -> Result<Value> {

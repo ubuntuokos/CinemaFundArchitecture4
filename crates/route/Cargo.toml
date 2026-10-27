@@ -1,0 +1,18 @@
+[package]
+name = "cfa4-route"
+description = "CFA4 compute router (layer L1): per-task choice of GPU, NPU or CPU backend from a routing table, the device inventory and user preferences, with recorded reasons and fallback order"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+toml = "1"
+
+[dev-dependencies]
+serde_json = { workspace = true }

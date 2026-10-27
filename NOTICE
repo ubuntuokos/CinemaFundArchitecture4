@@ -9,7 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 General Public License for more details.
 
-The licensing policy (what may be reused, how paid extras are kept separate) is in
+The licensing policy (what may be reused, how paid extras are licensed) is in
 docs/licensing.md.
 
 Upstream
@@ -27,6 +27,14 @@ whole, including all changes made after the relicensing, is distributed under GP
 
 CFA4 is not made, sponsored or endorsed by the upstream authors, and it uses none of their
 trademarks or logos.
+
+CFA4 logo
+
+The CFA4 name, emblem and wordmark, and every file depicting them (assets/cfa4/cfa4-official-logo.png,
+assets/cfa4/hicolor/, apps/cfa4-web/web/favicon.svg), are the own mark of István, owner of the CFA4
+project. They are not covered by the GPL nor by the MIT/Apache licences above; their terms are in
+assets/cfa4/LICENSE-logo.txt (LicenseRef-CFA4-Logo). Modified versions of CFA4 must remove or replace
+them.
 
 Third-party material
 
