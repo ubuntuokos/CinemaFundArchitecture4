@@ -92,7 +92,8 @@ repository; each screenshot's sidecar lists exactly which appear.
 
 ## Assets drawn or generated in code
 
-These are original work by the upstream and CFA4 contributors under the project licence (MIT OR Apache-2.0). None
+These are original work by the upstream contributors under the upstream licence (MIT OR Apache-2.0);
+new assets CFA4 contributors draw or generate in code are GPL-3.0-or-later (AGENTS.md §1). None
 is traced or derived from Adobe artwork.
 
 | Asset | Where |
