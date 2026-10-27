@@ -34,7 +34,8 @@ ez a dokumentum eltér tőle, a v1.5 döntései érvényesek:
    kizárólag CI-teszt-orákulum, futásidejű függőség nincs (lásd még `docs/audit/smart-edit-baseline.md`
    §3). Az ADR 0005 szerinti, opcionális `cfa4-ffmpeg` termékbackend (terve:
    `docs/plans/CFA4-FFMPEG-BACKEND-R1-2026-10-27.md`) ettől független: a Smart Edit nem függhet tőle,
-   legfeljebb a `cfa4-route` által választott, külön igazolt kódolási/dekódolási háttér lehet.
+   FFmpeg nélkül is teljes értékűen működik. Az FFmpeg-háttér kodekként való használata a
+   határ-újrakódolásban külön tulajdonosi döntést igényel (CFA4-SCE-001 v1.5, 7. döntés).
 5. **Rétegzett validáció:** a szerkezeti egyezés (`BITSTREAM_EQUIVALENT`) elég a PASS-hoz; dekódolásos
    összevetés csak a saját dekóder által támogatott profilnál fut.
 6. **Atomikus írás:** közös segéd a `cfa4-export`-ban (ideiglenes fájl, fsync, átnevezés).
