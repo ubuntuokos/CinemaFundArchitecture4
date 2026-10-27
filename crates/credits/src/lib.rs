@@ -31,6 +31,7 @@ pub mod office;
 pub mod sheet;
 pub mod style;
 pub mod table;
+pub mod template;
 pub mod validate;
 pub mod zip;
 
@@ -116,3 +117,6 @@ mod look_tests;
 
 #[cfg(test)]
 mod rich_tests;
+
+#[cfg(test)]
+mod template_tests;

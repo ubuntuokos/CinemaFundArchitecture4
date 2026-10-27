@@ -1761,3 +1761,16 @@
 	Lines one gap unit apart, moving with the page	Egy térköz-egységnyi vonalak, az oldallal együtt mozognak
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	„{text}” nem válik el a háttértől (kontraszt {ratio}:1; legalább 4,5:1 kell)
 	A picture or video is behind the text: check the contrast by eye	A szöveg mögött kép vagy videó van: a kontrasztot szemmel ellenőrizd
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Kész megjelenés: stílusok, hátterek, átmenetek és időzítés. Ha stílusfájlt is megadsz, az az erősebb.
+	New Spreadsheet from Template…	Új táblázat a sablonból…
+	built in	beépített
+	mine	saját
+	this project	ez a projekt
+	Template	Sablon
+	Choose a template first.	Előbb válassz sablont.
+	Name of the template:	A sablon neve:
+	Template saved: {name}	Sablon mentve: {name}
+	Apply Credits Template…	Stáblista-sablon alkalmazása…
+	Template:	Sablon:
+	Credits Templates	Stáblista-sablonok
+	CSV (*.csv)	CSV (*.csv)
