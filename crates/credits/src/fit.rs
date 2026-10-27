@@ -7,7 +7,10 @@
 //! speed (see the layout); only if that is impossible does its speed change, with a warning.
 //!
 //! With `card_beat`, cards without their own runtime last a whole number of beats (at least
-//! one), so their cuts fall on the music's beat; the scroll pages absorb the difference.
+//! one), and the scroll page before a card is lengthened or shortened by up to half a beat so the
+//! card starts on a beat (`beat_offset` says where the beats fall); the last scroll page takes
+//! back the difference. Cards after the last scroll page are on the beat when the length is (the
+//! last bar line, for example).
 //!
 //! The setting is part of the credits document ([`Fit`]), so a refresh from the spreadsheet keeps
 //! the credits fitted.
@@ -32,6 +35,10 @@ pub struct Fit {
     /// The music it was fitted to, for the user's information (clip name).
     #[serde(skip_serializing_if = "String::is_empty")]
     pub music: String,
+    /// Where the beats fall: the time from the credits' start to a beat (ticks, less than
+    /// `card_beat`). Cards then start and end on beats, not just last whole beats.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub beat_offset: i64,
 }
 
 fn is_zero(v: &i64) -> bool {
@@ -110,14 +117,25 @@ pub fn fit_layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &
             ),
         });
     } else if natural_flex > 0 {
-        // shares in whole frames; the last page takes the rounding
+        // shares in whole frames; every page keeps at least one, the last takes the rounding
         let frames_total = share / fd;
+        let n = flexible.len() as i64;
         let mut left = frames_total;
+        let mut alloc: Vec<(usize, i64)> = Vec::with_capacity(flexible.len());
         for (k, i) in flexible.iter().enumerate() {
             let Some(p) = staged.pages.get(*i) else { continue };
-            let frames = if k + 1 == flexible.len() { left } else { ((p.duration.0 as f64 / natural_flex as f64) * frames_total as f64).round() as i64 }.max(1);
+            let after = n - k as i64 - 1;
+            let want = if after == 0 { left } else { ((p.duration.0 as f64 / natural_flex as f64) * frames_total as f64).round() as i64 };
+            // leave a frame for each page still to come
+            let frames = want.min(left - after).max(1);
             left -= frames;
-            if let Some(page) = fitted.pages.get_mut(*i) {
+            alloc.push((*i, frames));
+        }
+        if fit.card_beat > 0 {
+            cards_on_beats(&staged, &flexible, &mut alloc, fit, fd);
+        }
+        for (i, frames) in alloc {
+            if let Some(page) = fitted.pages.get_mut(i) {
                 page.runtime = Some(TimeSpec::Frames(frames));
             }
         }
@@ -127,6 +145,44 @@ pub fn fit_layout(credits: &Credits, styling: &Styling, frame: Frame, measure: &
     let result = total_length(&out);
     let report = FitReport { natural: natural_total.0, target, result: result.0, scroll_pages: flexible.len() };
     Ok((fitted, out, report))
+}
+
+/// Move each card (laid out in `staged`) that a scroll page comes before onto a beat: the closest
+/// scroll page before it gets up to half a beat more or less; the last scroll page gives it back.
+fn cards_on_beats(staged: &Laid, flexible: &[usize], alloc: &mut [(usize, i64)], fit: &Fit, fd: i64) {
+    let period = fit.card_beat;
+    let Some(&last_flex) = flexible.last() else { return };
+    let dur = |i: usize, alloc: &[(usize, i64)]| -> i64 {
+        alloc.iter().find(|(k, _)| *k == i).map(|(_, f)| f.saturating_mul(fd)).unwrap_or_else(|| staged.pages.get(i).map(|p| p.duration.0).unwrap_or(0))
+    };
+    let mut t = 0i64;
+    for i in 0..staged.pages.len() {
+        let Some(p) = staged.pages.get(i) else { break };
+        if p.behaviour == Behaviour::Card && i < last_flex {
+            // the closest scroll page before the card
+            if let Some(&j) = flexible.iter().rev().find(|j| **j < i) {
+                let phase = (t - fit.beat_offset).rem_euclid(period);
+                let delta = if phase * 2 < period { -phase } else { period - phase };
+                let frames = (delta as f64 / fd as f64).round() as i64;
+                let (Some(aj), Some(al)) = (alloc.iter().position(|(k, _)| *k == j), alloc.iter().position(|(k, _)| *k == last_flex)) else { continue };
+                let fj = alloc.get(aj).map(|x| x.1).unwrap_or(1);
+                let fl = alloc.get(al).map(|x| x.1).unwrap_or(1);
+                // both pages keep at least a frame
+                let frames = frames.clamp(1 - fj, fl - 1);
+                if let Some(x) = alloc.get_mut(aj) {
+                    x.1 += frames;
+                }
+                if let Some(x) = alloc.get_mut(al) {
+                    x.1 -= frames;
+                }
+                t = t.saturating_add(frames.saturating_mul(fd));
+            }
+        }
+        t = t.saturating_add(dur(i, alloc));
+        if i + 1 < staged.pages.len() {
+            t = t.saturating_add(p.gap_after.0);
+        }
+    }
 }
 
 /// Candidate lengths offered for a piece of music. Nothing is applied: the user picks one.

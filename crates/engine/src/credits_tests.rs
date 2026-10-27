@@ -561,3 +561,26 @@ fn the_music_under_the_credits_is_found_even_a_frame_off() {
     assert_eq!(m["audio"].as_u64(), Some(music.0), "{m}");
     assert_eq!(m["credits"].as_u64(), Some(v["group"].as_u64().unwrap()));
 }
+
+#[test]
+fn music_is_heard_as_the_timeline_plays_it_and_fitting_works_without_music() {
+    let (mut s, audio) = with_music();
+    let v = s.execute("graphics.credits.import", json!({"csv": SHEET, "time": 0})).unwrap();
+    let credits = clips(&v)[0];
+    let normal = s.execute("graphics.credits.music", json!({"clip": credits.0, "audio": audio.0})).unwrap();
+    // twice as fast: the sound ends twice as early on the timeline
+    s.execute("timeline.select", json!({"clips": [audio.0]})).unwrap();
+    s.execute("clip.speedDuration", json!({"speed": 200.0})).unwrap();
+    let fast = s.execute("graphics.credits.music", json!({"clip": credits.0, "audio": audio.0})).unwrap();
+    let (a, b) = (normal["soundEnd"].as_i64().unwrap(), fast["soundEnd"].as_i64().unwrap());
+    assert!((b * 2 - a).abs() < cfa4_time::TICKS_PER_SECOND / 5, "{a} vs {b}");
+    // no music at all: the credits are still offered for a typed length
+    s.execute("edit.clear", json!({"clips": [audio.0]})).unwrap();
+    let none = s.execute("graphics.credits.music", json!({"clip": credits.0})).unwrap();
+    assert!(none["audio"].is_null() && none["natural"].as_i64().unwrap() > 0, "{none}");
+    s.execute("timeline.select", json!({"clips": [credits.0]})).unwrap();
+    let r = s.execute("graphics.credits.fit", json!({"clip": none["credits"], "seconds": 30.0})).unwrap();
+    // the asked length to the frame
+    assert_eq!(r["report"]["result"], r["report"]["target"], "{r}");
+    assert!((r["report"]["result"].as_i64().unwrap() - 30 * cfa4_time::TICKS_PER_SECOND).abs() < cfa4_time::TICKS_PER_SECOND / 20);
+}

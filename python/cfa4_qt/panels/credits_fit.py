@@ -180,6 +180,8 @@ class CreditsFitDialog(QDialog):
         self.facts.setText(" · ".join(facts))
         # one choice per offered length
         for b in self.choices.buttons():
+            if b is self.custom:
+                continue
             self.choices.removeButton(b)
             b.deleteLater()
         first = True
@@ -195,18 +197,30 @@ class CreditsFitDialog(QDialog):
             if first:
                 b.setChecked(True)
                 first = False
-        self.choices.addButton(self.custom)
-        dur = info.get("duration")
+        if self.custom not in self.choices.buttons():
+            self.choices.addButton(self.custom)
+        if first:
+            # no music to measure: a typed length is the only choice
+            self.custom.setChecked(True)
+        dur = info.get("duration") if info.get("duration") is not None else info.get("natural")
         if isinstance(dur, int):
             self.seconds.blockSignals(True)
             self.seconds.setValue(dur / TICKS_PER_SECOND)
             self.seconds.blockSignals(False)
         has_beat = bool(info.get("beat"))
+        self.align.setEnabled(info.get("audio") is not None)
+        if info.get("audio") is None:
+            self.align.setChecked(False)
         self.cards_on_beat.setEnabled(has_beat)
         if not has_beat:
             self.cards_on_beat.setChecked(False)
         self.off_button.setVisible(bool(info.get("fit")))
-        self.status.setText("" if self.credits is not None else tr("Select a credits page on the timeline."))
+        if self.credits is None:
+            self.status.setText(tr("Select a credits page on the timeline."))
+        elif info.get("audio") is None:
+            self.status.setText(tr("No music to measure ({problem}); type the length.").replace("{problem}", str(info.get("problem") or "")))
+        else:
+            self.status.setText("")
         self.apply_button.setEnabled(self.credits is not None)
 
     # ----- fit -----

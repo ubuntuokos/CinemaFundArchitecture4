@@ -91,3 +91,49 @@ fn hostile_fit_values_never_panic() {
         }
     }
 }
+
+#[test]
+fn short_fits_leave_a_frame_for_every_page() {
+    // three rolls of 80 %, 10 % and 10 % squeezed hard: the result is still the asked length
+    let sheet = "Body,Page Style,Page Runtime\nA,Scroll,8s\nB,Scroll,1s\nC,Scroll,1s\n";
+    let st = Styling::default();
+    let c = read(sheet.as_bytes(), &st).unwrap();
+    // the rows give the pages their natural proportions; fitting replaces their runtimes
+    let mut free = c.clone();
+    for p in &mut free.pages {
+        p.runtime = None;
+    }
+    let fd = FRAME.rate.frame_duration().0;
+    for frames in [3i64, 4, 5, 7] {
+        let (_, l, r) = fit_layout(&free, &st, FRAME, &M, &Fit { total: frames * fd, ..Default::default() }).unwrap();
+        assert_eq!(r.result, frames * fd, "{frames} frames");
+        assert!(l.pages.iter().all(|p| p.duration.0 >= fd));
+    }
+}
+
+#[test]
+fn cards_start_on_beats_not_only_last_whole_beats() {
+    let c = read(SHEET.as_bytes(), &Styling::default()).unwrap();
+    let beat = secs(0.5);
+    // the beats fall 0.2 s after the credits start
+    let fit = Fit { total: secs(30.0), card_beat: beat, beat_offset: secs(0.2), ..Default::default() };
+    let (_, l, r) = fit_layout(&c, &Styling::default(), FRAME, &M, &fit).unwrap();
+    assert_eq!(r.result, secs(30.0));
+    let fd = FRAME.rate.frame_duration().0;
+    let mut t = 0i64;
+    for (i, p) in l.pages.iter().enumerate() {
+        if p.behaviour == Behaviour::Card && i > 0 && i + 1 < l.pages.len() {
+            let phase = (t - secs(0.2)).rem_euclid(beat);
+            assert!(phase.min(beat - phase) <= fd, "card {i} starts {phase} off the beat");
+        }
+        t += p.duration.0 + if i + 1 < l.pages.len() { p.gap_after.0 } else { 0 };
+    }
+    // a middle card: title, roll, card, roll, end card
+    let sheet = "Body,Page Style,Vertical Gap\nTITLE,Card,\nA,Scroll,\nB,,4\nMID,Card,\nC,Scroll,\nD,,4\nEND,Card,\n";
+    let c = read(sheet.as_bytes(), &Styling::default()).unwrap();
+    let (_, l, r) = fit_layout(&c, &Styling::default(), FRAME, &M, &fit).unwrap();
+    assert_eq!(r.result, secs(30.0));
+    let start_of_mid: i64 = l.pages.iter().take(3).map(|p| p.duration.0 + p.gap_after.0).sum();
+    let phase = (start_of_mid - secs(0.2)).rem_euclid(beat);
+    assert!(phase.min(beat - phase) <= fd, "the middle card starts {phase} off the beat");
+}
