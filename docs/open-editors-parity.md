@@ -1,6 +1,6 @@
 # Hét nyílt vágóprogram: mit vehet át belőlük a CFA4
 
-> **Állapot:** javaslat, tulajdonosi döntésre vár (6. pont) · **Készült:** 2026-10-27 ·
+> **Állapot:** a tulajdonos 2026-10-27-én döntött (6. pont) · **Készült:** 2026-10-27 ·
 > **CFA4:** `main` @ `16debf9` · **Kapcsolódik:** [`kdenlive-parity.md`](kdenlive-parity.md)
 > (K1–K35, PR #325), [`venturi-parity.md`](venturi-parity.md) (V1–V10, PR #326),
 > [`gaps.md`](gaps.md) (G-számok), [`licensing.md`](licensing.md), [ADR 0004](adr/ADR-0004-compute-routing.md)
@@ -23,8 +23,11 @@ hivatkozik rájuk. Az új teendők **E1–E15** számot kapnak.
 - Az **opencut** (GPL-3.0-only) a projektformátum géppel olvasható sémáját és CLI-ellenőrzését adja.
 - A **Lumina** még csak váz, a **RueyMediaEditor** pedig a CFA4-ben már meglévő funkciókat tud.
   Ezekből nincs teendő.
-- Javasolt sorrend: **E1, E5, E7** (P1, együtt ~50–85 óra), utána a P2-k. Négy kérdés
-  tulajdonosi döntést kér (6. pont).
+- **Alapszabály (tulajdonosi döntés, 2026-10-27):** minden MI-funkció, minden CFA4-alkalmazásban,
+  csak az **MI-réteg üzembe helyezése után** készül (a rétegről külön terv készül). Ebben a tervben
+  MI-funkció: E3, E7, E8, E9, az E5 élő része és a külső generatív oda-vissza.
+- Javasolt sorrend: most **E1 és E5** (szkriptelt rész, modell nélkül), utána a nem MI-s P2-k;
+  az **E7, E3, E8, E9** az MI-réteg után. A négy döntés a 6. pontban.
 
 ## 1. A hét forrás
 
@@ -122,7 +125,7 @@ Az ág megőrzi, mit látott és mit javasolt az ügynök.
 kívül (mint a helyreállítási napló), a Qt6-ban egy összehasonlító nézet. Hosszú, több lépéses
 MI-munkához (K31–K35 automatikus vágások) ez adja a biztonságot.
 
-### E3 · Beépített MI-asszisztens panel a felhasználó saját ügynökével · P2 · 40–70 óra · **tulajdonosi döntés**
+### E3 · Beépített MI-asszisztens panel a felhasználó saját ügynökével · P2 · 40–70 óra · **jóváhagyva, MI-réteg után**
 
 **Mit tudnak:** a Kinewright a gépen **már telepített ügynök-CLI-t** indítja el (Claude Code, Codex,
 OpenCode, Qwen Code stb.) a saját helyi MCP-végpontjára kötve; kulcsot nem kér és nem tárol. A Cutlass
@@ -136,7 +139,8 @@ a kulcs a felhasználói beállításban vagy környezeti változóban van, a pr
 2. kifejezett bekapcsolás után egy telepített ügynök-CLI-t indít, amely a CFA4 MCP-jére csatlakozik.
 
 Minden módosítás az E1 tervén megy át (előnézet, egy visszavonási lépés). A felhős ügynök a projekt
-adatait a gépen kívülre küldheti, ezért ez ugyanaz a döntés, mint a V7-nél (6. pont, 1. kérdés).
+adatait a gépen kívülre küldheti, ezért ugyanaz a szabály, mint a V7-nél: felhős csak kifejezett
+bekapcsolással. **Döntés:** a panel kell; az MI-réteg üzembe helyezése után készül (6. pont).
 
 ### E4 · Típusos incidensek: hibaüzenet helyett biztonságos javítás · P2 · 25–40 óra
 
@@ -164,8 +168,8 @@ pontozott sora (pontos művelet-alapvonal, kész vágás renderelve és mérve) 
    `target/fixtures/`-ben generálva.
 2. Esetek: „vágd le az első 3 másodpercet”, „töröld a szüneteket”, „tegyél feliratot” stb.; az
    ellenőrzés a végső dokumentumon és az E1-tervek naplóján történik.
-3. Opcionális élő futás (`CFA4_EVAL=1`, helyi Ollama-modellel), JSONL-eredmény a `target/evals/`-be,
-   a CI-ban sosem.
+3. Opcionális élő futás (`CFA4_EVAL=1`, helyi modellel), JSONL-eredmény a `target/evals/`-be,
+   a CI-ban sosem. **Ez a rész MI-funkció: csak az MI-réteg után.** Az 1–2. pont modell nélküli, most mehet.
 4. A K33 magyar WER-mérése ugyanebbe a keretbe kerül.
 
 ### E6 · Kicsi, állandó MCP-felület, sémák igény szerint · P2 · 8–15 óra
@@ -178,7 +182,7 @@ mérik (bájtra rögzített méret, regressziós teszt).
 `command_describe {id}` (egy parancs teljes sémája), a `command_list` alapból csak id + címke,
 és teszt, amely rögzíti az MCP-eszközlista szerializált méretét (ne nőjön észrevétlenül).
 
-### E7 · Modelljegyzék rögzített SHA-256-tal és saját tükörrel · P1 · 10–20 óra
+### E7 · Modelljegyzék rögzített SHA-256-tal és saját tükörrel · P1 az MI-rétegen belül · 10–20 óra
 
 **Ötlet (Concat, csak az elv):** minden letölthető modell egy jegyzékben szerepel: fájlnév, méret,
 **SHA-256**, licenc, forrás. A Hugging Face-forrás **commitra rögzítve**, nem `main`-re; a program
@@ -188,6 +192,7 @@ modellt nem tölt le**. A tükröt egy CI-munka frissíti.
 **CFA4-ben:** a K18 (letöltéskezelő) és a K31 erre a jegyzékre épüljön: `models/manifest.toml`
 (saját formátum), `cargo xtask models --check`, a licenc a felületen látszik (K8/K6 döntés:
 nem kereskedelmi licencre figyelmeztet). **A Concat kódját nem nézzük**, a formátumot magunk írjuk.
+Az E7 az MI-réteg része: annak tervébe kerül bemenetként, és vele együtt készül.
 
 **Modelljelöltek** (a Concat jegyzékéből vett tények, mind a forrásnál ellenőrizendő):
 
@@ -201,17 +206,24 @@ nem kereskedelmi licencre figyelmeztet). **A Concat kódját nem nézzük**, a f
 | Felolvasás | Pocket-TTS | CC-BY-4.0 | csak forrásmegjelöléssel |
 | Hangklónozás | Chatterbox Turbo | MIT | E9, **döntés** |
 
-### E8 · MI-felskálázás (Real-ESRGAN) · P3 · 20–35 óra
+### E8 · MI-felskálázás (Real-ESRGAN) · P3 · 20–35 óra · MI-réteg után
 
 A G12 MI-listáján nincs felskálázás. Régi vagy kis felbontású anyaghoz hasznos. ONNX-modell
 `tract`-tal (mint a V1), a `cfa4-route` szerint CPU-n vagy GPU-n (ADR 0004: kötelező CPU-tartalék),
 háttérmunkaként, eredmény új médiafájlként (nem valós idejű effekt).
 
-### E9 · Hangklónozás · P3 · **tulajdonosi döntés** · javaslat: most nem
+### E9 · Hangklónozás · P3 · **jóváhagyva, MI-réteg után; most csak előkészítés**
 
 A Concat néhány másodperc felvételből bármilyen hangot utánoz (Chatterbox, MIT). Technikailag a
-Kokoro mellé illene, de visszaélésre alkalmas (más hangjának utánzása). Ha egyszer lesz: csak a
-beszélő rögzített hozzájárulásával és a kimenetben jelöléssel.
+Kokoro mellé illene, de visszaélésre alkalmas (más hangjának utánzása).
+
+**Döntés:** a hangklónozás az MI-réteg elkészülte után jön, de **legyen előkészítve**. Előkészítés
+most (modell nélkül, 4–8 óra):
+1. a `crates/tts` felolvasó-felületén a „hang” ne csak beépített hangazonosító lehessen, hanem
+   hivatkozás egy **hangprofilra** (mintafájl(ok) + metaadat), a projektfájlban opcionális mezőként;
+2. a hangprofil kötelező mezői: a beszélő neve, a **hozzájárulás** rögzítése (ki, mikor, mire),
+   és a kimenet jelölése (metaadat a generált hangsávon);
+3. a modelljegyzékben (E7) a `voice-clone` család helye, licencmezővel; a modell maga az MI-réteggel jön.
 
 ### E10 · Lottie-animációk (matricák, overlay-ek) tiszta Rustban · P2 · 20–35 óra
 
@@ -276,7 +288,7 @@ zenére vágás (K-terv, Automate to Sequence) és az E5-tesztsor is használja.
 - **Külső alkalmazás oda-vissza (Kinewright Blender-programja, Gausian ComfyUI):** az ügynök vagy
   a felhasználó egy külső programban (Blender, ComfyUI) készít elemet, a CFA4 a renderelt
   eredményt hivatkozott klipként importálja, és jelzi, ha a forrás megváltozott. Ez **generatív
-  tartalom**, ezért tulajdonosi döntés (6. pont, 3. kérdés).
+  tartalom. **Döntés:** csak az MI-réteg után.
 - **Effektkifejezés-nyelv shaderre fordítva (Lumina `luminafx`):** a Lumina csak a váz kész. A K7
   (matematikai kifejezés a számmezőkben) bővítéseként később érdekes lehet.
 - **Kutatói elrendezések címkével (Ruey):** a multicam rács + szöveg már tudja; legfeljebb egy preset.
@@ -287,7 +299,7 @@ zenére vágás (K-terv, Automate to Sequence) és az E5-tesztsor is használja.
 |---|---|:-:|---:|---|
 | E1 | Atomikus, revízióhoz kötött szerkesztési terv | P1 | 25–40 | V3, V10 |
 | E5 | MI-tesztsor (szkriptelt ügynök a CI-ban) | P1 | 15–25 | E1 |
-| E7 | Modelljegyzék SHA-256-tal, saját tükörrel | P1 | 10–20 | K18 előtt |
+| E7 | Modelljegyzék SHA-256-tal, saját tükörrel | P1 | 10–20 | **MI-réteg** (K18 előtt) |
 | E6 | Kicsi MCP-felület, sémák igény szerint | P2 | 8–15 | — |
 | E12 | Automatikus proxydöntés | P2 | 8–15 | `cfa4-route` |
 | E14 | Export utáni hang- és képellenőrzés | P2 | 8–15 | QC-sorozat |
@@ -296,29 +308,25 @@ zenére vágás (K-terv, Automate to Sequence) és az E5-tesztsor is használja.
 | E11 | Python-szkriptelés a CLI-hídon | P2 | 15–25 | ADR F8 CLI-híd |
 | E10 | Lottie-animációk | P2 | 20–35 | — |
 | E2 | Ügynökönkénti ág | P2 | 40–70 | E1 |
-| E3 | MI-asszisztens panel | P2 | 40–70 | E1, **döntés** |
+| E3 | MI-asszisztens panel | P2 | 40–70 | E1, **MI-réteg** |
 | E13 | Projektséma és `validate` | P3 | 6–10 | — |
-| E8 | MI-felskálázás | P3 | 20–35 | E7, ADR 0004 |
-| E9 | Hangklónozás | P3 | — | **döntés** |
+| E8 | MI-felskálázás | P3 | 20–35 | E7, **MI-réteg** |
+| E9 | Hangklónozás (most csak előkészítés) | P3 | 4–8 | modell: **MI-réteg** |
 
-Összesen kb. **255–440 óra**, ebből a P1 **50–85 óra**. A súlypont az **ügynöki szerkesztés
+Összesen kb. **260–450 óra**. Ebből most indítható (MI-réteg nélkül) az E1, az E5 szkriptelt része
+és a nem MI-s P2-k; az E3, E7, E8, E9 és az E5 élő része az MI-réteg után. A súlypont az **ügynöki szerkesztés
 biztonsága** (E1–E6), mert itt a Kinewright és a Cutlass messze előrébb jár, mint a CFA4; a
 vágás, hang és szín terén a CFA4 többet tud mindegyiknél.
 
-## 6. Tulajdonosi döntések (javaslattal)
+## 6. Tulajdonosi döntések (2026-10-27)
 
-1. **E3 MI-asszisztens panel:** legyen-e, és mehet-e a projekt adata felhős ügynökhöz?
-   **Javaslat:** igen; alapból csak helyi végpont (Ollama/llama.cpp); telepített felhős ügynök-CLI
-   (Claude Code, Codex …) csak kifejezett, projektenkénti bekapcsolással és figyelmeztetéssel,
-   ugyanúgy, mint a V7-nél eldöntött átiratnál.
-2. **E9 hangklónozás:** **Javaslat:** most ne. Ha később igen, csak a beszélő rögzített
-   hozzájárulásával és jelölt kimenettel.
-3. **Külső generatív oda-vissza (ComfyUI, Blender):** **Javaslat:** ötlet marad; a K14 hálózati
-   render és az E1–E2 után nézzük újra.
-4. **GPL-3.0-only kód (Kinewright, OpenCut):** a `licensing.md` megengedi, de a terjesztett egészet
-   gyakorlatilag GPL-3.0-only-vá teszi. **Javaslat:** az elveket írjuk újra a CFA4 szabályai szerint
-   (ezt az `unwrap`-ok és a képkocka-idő miatt amúgy is meg kell tenni); szó szerinti kódátvétel
-   csak kis, jól körülhatárolt részeknél, fájlfejléccel és §5-bejegyzéssel.
+1. **E3 MI-asszisztens panel:** kell. Alapból helyi végpont; felhős ügynök csak kifejezett bekapcsolással.
+2. **E9 hangklónozás:** az MI-réteg elkészülte után, de most előkészítjük (hangprofil, hozzájárulás, jelölés).
+3. **ComfyUI és Blender oda-vissza:** csak az MI-réteg után.
+4. **GPL-3.0-only kód (Kinewright, OpenCut):** az elveket írjuk újra a CFA4 szabályai szerint, szó szerinti átvétel nincs.
+5. **Általános szabály:** minden MI-funkció, minden CFA4-alkalmazásban, csak az MI-réteg üzembe
+   helyezése után készül. Az MI-rétegről külön terv készül; ez vonatkozik a Kdenlive (K) és a Venturi (V)
+   terv MI-tételeire is.
 
 A megvalósítás a meglévő szabály szerint csak a tulajdonos kérésére indul, teendőnként.
 
@@ -345,3 +353,4 @@ nyilvántartásban. A Concat kódját továbbra se nézd (AGPL).
 ## Változásnapló
 
 - 2026-10-27: első változat (E1–E15).
+- 2026-10-27: a tulajdonos döntött; minden MI-tétel az MI-réteg mögé került, E9 előkészítéssel.
