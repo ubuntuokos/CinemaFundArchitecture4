@@ -20,7 +20,7 @@ mod windows {
         let mut res = winresource::WindowsResource::new();
         res.set("ProductName", "CFA4")
             .set("FileDescription", "CFA4 video editor")
-            .set("LegalCopyright", "Copyright (c) the CFA4 and upstream contributors (see NOTICE). MIT OR Apache-2.0.")
+            .set("LegalCopyright", "Copyright (c) the CFA4 and upstream contributors (see NOTICE). GPL-3.0-or-later.")
             .set("OriginalFilename", "cfa4.exe")
             .set("InternalName", "cfa4");
         if let Err(e) = res.compile() {
