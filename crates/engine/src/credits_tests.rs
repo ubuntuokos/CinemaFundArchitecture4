@@ -746,3 +746,55 @@ fn transitions_join_pages_with_and_without_backgrounds_and_take_their_pictures_a
     assert_eq!(op.value_at(pic.duration), ParamValue::Float(0.0));
     assert_eq!(op.value_at(Tick(pic.duration.0 / 2)), ParamValue::Float(100.0));
 }
+
+// ----- C5: inline letter styles, leaders, parallel columns -----
+
+#[test]
+fn inline_styles_leaders_and_parallel_columns_with_the_real_text_engine() {
+    let mut s = demo("credits-rich");
+    let csv = "Head,Body,Content Style,Spine Position\n\
+               Director,{{Style Bold}}Kiss{{Style}} Anna,Leaders,\n\
+               Director of photography,Nagy Béla,,\n\
+               Camera,Tóth Cili,Centered,-450\n\
+               Sound,Szabó Dóra,,450 parallel\n";
+    let v = s.execute("graphics.credits.import", json!({"csv": csv})).unwrap();
+    assert_eq!(v["warnings"].as_array().unwrap().len(), 0, "{v}");
+    let page = item(&s, clips(&v)[0]);
+    let name = |e: &cfa4_project::EffectInstance| match e.params.get("name").map(|p| &p.value) {
+        Some(ParamValue::Text(t)) => t.clone(),
+        _ => String::new(),
+    };
+    let body = page.effects.iter().find(|e| matches!(e.params.get("text").map(|p| &p.value), Some(ParamValue::Text(t)) if t == "Kiss Anna")).unwrap();
+    let runs = &body.layer.as_ref().unwrap().runs;
+    assert_eq!((runs[0].start, runs[0].end, runs[0].style.font_style.as_deref()), (0, 4, Some("Bold")));
+    let leaders: Vec<usize> = page
+        .effects
+        .iter()
+        .filter(|e| name(e) == "Leader")
+        .filter_map(|e| match e.params.get("text").map(|p| &p.value) {
+            Some(ParamValue::Text(t)) => Some(t.len()),
+            _ => None,
+        })
+        .collect();
+    // both heads get dots across the gap; the short head's run on through its column
+    assert_eq!(leaders.len(), 2);
+    assert!(leaders[0] > leaders[1] * 3, "{leaders:?}");
+    let t = texts(&s, clips(&v)[0]);
+    assert!(t.iter().any(|x| x.contains(" . . .")), "{t:?}");
+    // the parallel heads stand at the same height
+    let y = |text: &str| {
+        page.effects
+            .iter()
+            .find(|e| matches!(e.params.get("text").map(|p| &p.value), Some(ParamValue::Text(t)) if t == text))
+            .and_then(|e| match e.params.get("position").map(|p| &p.value) {
+                Some(ParamValue::Vec2(v)) => Some(v.y),
+                _ => None,
+            })
+            .unwrap()
+    };
+    assert!((y("Camera") - y("Sound")).abs() < 1e-6);
+    // the styles command lists the inline styles
+    let st = s.execute("graphics.credits.styles", json!({})).unwrap();
+    assert!(st["inlineStyles"].as_array().unwrap().iter().any(|n| n == "Bold"));
+    assert!(st["contentStyles"].as_array().unwrap().iter().any(|n| n == "Leaders"));
+}

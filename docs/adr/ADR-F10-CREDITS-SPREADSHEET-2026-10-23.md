@@ -47,8 +47,9 @@ The owner chose a **clean-room CFA4 credits module** (2026-10-23):
 | `.xlsx` (ECMA-376) and `.ods` (OASIS ODF) from their specifications, sheet choice; own ZIP reader on CFA4's RFC 1951 inflater | done (2026-10-24) |
 | Online sheets, Apple Numbers | not yet: download / export as `.xlsx` (clear error) |
 | Pictures and logos (`{{Pic file [height]}}`): own clips that follow the roll exactly / fade with the card, placeholder layer in the page | done (2026-10-24) |
-| Inline letter styles and videos (`{{…}}`) | not yet: tags are removed with a warning |
-| Parallel / hooked spines, head/tail leaders, width harmonisation | not yet |
+| Inline letter styles (`{{Style …}}`, C5): character styles of the text layer, built-in and `inlineStyles` | done (2026-10-27) |
+| Videos inside a page (`{{…}}`) | not yet: tags are removed with a warning |
+| Parallel spines, head leaders, head-width harmonisation (C5) | done (2026-10-27); hooked spines and body-width harmonisation not yet |
 | Scroll runtime by stretching the gaps between blocks at constant speed (falls back to a speed change with a warning) | done (2026-10-24) |
 | Linked credits (C1): `.cfa4credits` file with the table embedded; pages remember their document and layer fingerprints; row-by-row diff, selective refresh in place keeping hand edits, one undo step; Qt6 Refresh window | done (2026-10-25) |
 | Checks (C2): names, fonts and missing letters, title safe, contrast, text size, roll speed and shimmer, card length, overlap, soft pictures; stable codes, Hungarian in Qt6 | done (2026-10-26) |
