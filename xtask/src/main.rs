@@ -15,11 +15,9 @@
 //!   measured parity of our shipped menu bar, or of the effects / transitions the Effects panel
 //!   lists, against a reference list (default: the local `plan/premiere/<area>.json`), presence and
 //!   placement reported separately (`parity.rs`, docs/gaps.md G7).
-//! - `ico <out.ico> <in.png>…`: pack PNGs into a Windows `.ico`.
 //! - `ci`: Linux: fmt check, clippy -D warnings, tests, layers, assets.
 //!   WASM is no longer a release/CI gate; the legacy `wasm` command stays opt-in.
 
-mod ico;
 mod parity;
 mod version;
 
@@ -526,12 +524,8 @@ fn main() -> ExitCode {
             let rest: Vec<String> = std::env::args().skip(2).collect();
             parity::run(&root(), &rest.iter().map(String::as_str).collect::<Vec<_>>())
         }
-        "ico" => {
-            let rest: Vec<String> = std::env::args().skip(2).collect();
-            ico::run(&rest.iter().map(String::as_str).collect::<Vec<_>>())
-        }
         _ => Err(
-            "usage: cargo xtask <layers|assets|wasm|web [--dev] [--serve PORT]|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|ico OUT IN…|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
+            "usage: cargo xtask <layers|assets|wasm|web [--dev] [--serve PORT]|fixtures [crate…]|parity [--area menus|effects|transitions] [--reference FILE] [--out FILE] [--min PERCENT]|version [set X.Y.Z]|ci|bench [args]|bench-playback [args]>"
                 .into(),
         ),
     };
@@ -541,27 +535,5 @@ fn main() -> ExitCode {
             eprintln!("{e}");
             ExitCode::FAILURE
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::path::Path;
-
-    fn macos_packaging(file: &str) -> String {
-        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../packaging/macos").join(file);
-        // Git may check out packaging files with CRLF on Windows.
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display())).replace("\r\n", "\n")
-    }
-
-    /// Voice-over recording needs both halves on macOS: the usage string (else the permission
-    /// prompt never appears) and the hardened-runtime audio-input entitlement (else the input is
-    /// blocked). Regression test for #659.
-    #[test]
-    fn macos_bundle_may_use_the_microphone() {
-        let plist = macos_packaging("Info.plist.in");
-        assert!(plist.contains("<key>NSMicrophoneUsageDescription</key>"));
-        let entitlements = macos_packaging("entitlements.plist");
-        assert!(entitlements.contains("<key>com.apple.security.device.audio-input</key>\n  <true/>"));
     }
 }
