@@ -335,7 +335,6 @@ fn av1_exports_with_the_software_encoder() {
     }
 }
 
-
 /// HDR sequences export PQ / HLG with colour signalling in the bitstream (VUI, ProRes header) and
 /// the container (`colr`, `mdcv`, `clli`); our demuxer and ffprobe both read it back, and the
 /// picture survives the round trip.
