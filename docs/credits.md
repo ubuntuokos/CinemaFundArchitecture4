@@ -163,8 +163,10 @@ transitions, entrances, inline styles), an optional fitting length and a sample 
 the pages it is made for. In the Credits window, *Template* picks one (a styling file, if given,
 wins); *New Spreadsheet from Template…* writes its sample as a CSV to start from; *Save as
 Template…* keeps the current look (styling or template, and the sheet's first rows as the sample)
-as your own. **Graphics and Titles ▸ Apply Credits Template…** gives placed credits another look,
-keeping their rows and hand edits, as one undo step.
+as your own (a background picture or video is then named by its full path, so the template finds
+it from any spreadsheet). **Graphics and Titles ▸ Apply Credits Template…** gives placed credits
+another look, keeping their rows and hand edits (even when the template changes the blocks'
+default style), as one undo step. Template files over 8 MiB are skipped.
 
 | Kind | Where | Licence |
 |---|---|---|

@@ -884,3 +884,36 @@ fn templates_list_save_apply_and_delete() {
     std::fs::write(&bad, b"{not json").unwrap();
     assert!(s.execute("graphics.credits.template.get", json!({"id": bad})).is_err());
 }
+
+#[test]
+fn template_review_fixes_big_files_style_changes_and_background_paths() {
+    let mut s = demo("credits-templates-fixes");
+    let dir = tmp_dir("credits-templates-fixes");
+    // a huge file in the user's templates is skipped without being read
+    let lib = s.prefs_path.as_ref().unwrap().parent().unwrap().join("Credits Templates");
+    std::fs::create_dir_all(&lib).unwrap();
+    let f = std::fs::File::create(lib.join("huge.cfa4credtpl")).unwrap();
+    f.set_len(64 << 20).unwrap();
+    let list = s.execute("graphics.credits.templates", json!({})).unwrap();
+    assert!(list["templates"].as_array().unwrap().iter().all(|t| t["path"].is_null()), "{list}");
+
+    // a template that changes the blocks' default style keeps the hand edits
+    let sheet = dir.join("plain.csv");
+    std::fs::write(&sheet, "Body,Page Style\nAnna Kiss,Card\n").unwrap();
+    let v = s.execute("graphics.credits.import", json!({"path": sheet})).unwrap();
+    let page = clips(&v)[0];
+    hand_edit(&mut s, page, "Anna Kiss", "Kiss Anna");
+    s.execute("timeline.select", json!({"clips": [page.0]})).unwrap();
+    let styling = r#"{"defaultContentStyle":"Centered","pageStyles":[{"name":"Card","behaviour":"card","cardFrames":90}]}"#;
+    s.execute("graphics.credits.template.save", json!({"name": "Other", "styling": styling})).unwrap();
+    let r = s.execute("graphics.credits.template.apply", json!({"id": "other"})).unwrap();
+    assert_eq!(texts(&s, clips(&r)[0]), vec!["Kiss Anna".to_string()], "{r}");
+
+    // a background picture is named where it was found
+    image::RgbaImage::from_pixel(16, 9, image::Rgba([1, 2, 3, 255])).save(dir.join("sky.png")).unwrap();
+    let st = r#"{"pageStyles":[{"name":"Card","behaviour":"card","background":{"kind":"image","file":"sky.png"}}]}"#;
+    s.execute("graphics.credits.template.save", json!({"name": "Sky", "from": {"path": sheet, "styling": st}})).unwrap();
+    let t = s.execute("graphics.credits.template.get", json!({"id": "sky"})).unwrap();
+    let file = t["template"]["styling"]["pageStyles"][0]["background"]["file"].as_str().unwrap().to_string();
+    assert!(std::path::Path::new(&file).is_absolute() && file.ends_with("sky.png"), "{file}");
+}

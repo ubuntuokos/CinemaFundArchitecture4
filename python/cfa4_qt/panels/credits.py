@@ -402,6 +402,8 @@ class CreditsDialog(QDialog):
         )
 
     def open_with(self, path: str | None = None) -> None:
+        # the project may have changed since: its templates with it
+        self.load_templates()
         if path:
             self.path.setText(path)
         self.show()

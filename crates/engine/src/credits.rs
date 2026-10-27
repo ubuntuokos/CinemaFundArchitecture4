@@ -1457,6 +1457,10 @@ fn template_library(s: &Session) -> Vec<(CreditsTemplate, Option<String>)> {
         let ext = format!(".{}", cfa4_credits::template::EXTENSION);
         for n in names.into_iter().filter(|n| n.to_lowercase().ends_with(&ext)).take(1_000) {
             let path = dir.join(&n).to_string_lossy().into_owned();
+            // a file too large to be a template is skipped without reading it
+            if s.services.file_size(&path).map_or(true, |n| n > cfa4_credits::template::MAX_TEMPLATE_BYTES as u64) {
+                continue;
+            }
             if let Ok(b) = s.services.read_file(&path)
                 && let Ok(mut t) = CreditsTemplate::from_bytes(&b)
             {
@@ -1531,9 +1535,11 @@ fn template_save(s: &mut Session, p: &Value) -> Result<Value> {
         license: str_p(p, "license").unwrap_or("").to_string(),
         ..Default::default()
     };
+    let mut base: Option<std::path::PathBuf> = None;
     if let Some(from) = p.get("from").filter(|f| f.is_object()) {
         // a spreadsheet with its styling or template, as the Credits window has them
-        let (doc, _, _) = doc_p(s, CMD, from)?;
+        let (doc, _, b) = doc_p(s, CMD, from)?;
+        base = b;
         t.styling = doc.styling;
         t.sample = doc.table.into_iter().take(200).collect();
         t.fit = doc.fit;
@@ -1549,6 +1555,7 @@ fn template_save(s: &mut Session, p: &Value) -> Result<Value> {
         }
     } else {
         let doc = group_doc(CMD, &group_p(s, CMD, p)?)?;
+        base = doc_base(&doc);
         t.styling = doc.styling;
         // the first rows show the structure; a long sheet is not a template
         t.sample = doc.table.into_iter().take(200).collect();
@@ -1557,6 +1564,9 @@ fn template_save(s: &mut Session, p: &Value) -> Result<Value> {
     if t.id.starts_with("cfa4-") {
         t.id = format!("user-{}", t.id);
     }
+    // a background picture or video is named where it was found, so the template finds it from
+    // any spreadsheet
+    absolute_backgrounds(&mut t.styling, base.as_deref());
     let place = str_p(p, "where").unwrap_or(if p.get("to").is_some() { "file" } else { "user" });
     match place {
         "project" => {
@@ -1583,6 +1593,19 @@ fn template_save(s: &mut Session, p: &Value) -> Result<Value> {
             Ok(json!({"id": t.id, "category": "user", "path": path}))
         }
         other => Err(bad(CMD, format!("`where` is user, project or file, not `{other}`"))),
+    }
+}
+
+/// Background files of `styling` named relative to `base` become absolute where they exist.
+fn absolute_backgrounds(styling: &mut Styling, base: Option<&std::path::Path>) {
+    for ps in &mut styling.page_styles {
+        let bg = &mut ps.background;
+        if matches!(bg.kind, cfa4_credits::BackgroundKind::Image | cfa4_credits::BackgroundKind::Video)
+            && !std::path::Path::new(bg.file.trim()).is_absolute()
+            && let Some(p) = picture_path(base, &bg.file)
+        {
+            bg.file = std::fs::canonicalize(&p).unwrap_or(p).to_string_lossy().into_owned();
+        }
     }
 }
 
@@ -1625,7 +1648,22 @@ fn template_apply(s: &mut Session, p: &Value) -> Result<Value> {
     let laid = lay_doc(s, CMD, &doc, doc_base(&doc))?;
     let warnings = warnings_json(&laid);
     let manual = manual_edits(s, &group)?;
-    let overrides = baselined(s, CMD, &old, &manual);
+    let mut overrides = baselined(s, CMD, &old, &manual);
+    // a template can change the blocks' (default) style, and with it their keys: follow each
+    // block by its place in the sheet, which a new look does not change
+    if let (Ok(a), Ok(b)) = (old.credits(), doc.credits()) {
+        let (from, to) = (cfa4_credits::layout::block_prefixes(&a), cfa4_credits::layout::block_prefixes(&b));
+        if from.len() == to.len() {
+            for (k, _, _) in &mut overrides {
+                let (prefix, rest) = k.split_once('/').unwrap_or((k.as_str(), ""));
+                if let Some(i) = from.iter().position(|x| x == prefix)
+                    && let Some(new) = to.get(i)
+                {
+                    *k = format!("{new}/{rest}");
+                }
+            }
+        }
+    }
     let out = replace_group(s, CMD, "Apply Credits Template", &group, &doc, laid, &overrides, None)?;
     Ok(json!({"clips": out.0, "end": out.1.0, "template": t.id, "warnings": warnings}))
 }
