@@ -148,6 +148,15 @@ pub fn contrast_on_black(rgb: [f32; 4]) -> f64 {
     (l + 0.05) / 0.05
 }
 
+/// A character's capital, when it is one character (as the text engine draws all caps).
+fn upper_single(c: char) -> char {
+    let mut u = c.to_uppercase();
+    match (u.next(), u.next()) {
+        (Some(x), None) => x,
+        _ => c,
+    }
+}
+
 fn secs(t: Tick) -> f64 {
     t.0 as f64 / cfa4_time::TICKS_PER_SECOND as f64
 }
@@ -166,16 +175,16 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
     let mut seen: BTreeMap<String, (String, usize)> = BTreeMap::new();
     for page in &credits.pages {
         for b in &page.blocks {
-            let mut in_block: Vec<String> = Vec::new();
+            let mut in_block: std::collections::HashSet<String> = std::collections::HashSet::new();
             for (ci, cell) in b.body.iter().enumerate() {
-                // body cells are consecutive rows from the block's first row
-                let cell_row = b.row.saturating_add(ci);
+                // the cell's own spreadsheet row
+                let cell_row = b.body_rows.get(ci).copied().unwrap_or_else(|| b.row.saturating_add(ci));
                 for line in cell.lines().map(str::trim).filter(|l| !l.is_empty()) {
                     let key = name_key(line);
                     if key.is_empty() {
                         continue;
                     }
-                    if in_block.contains(&key) {
+                    if !in_block.insert(key.clone()) {
                         out.add(
                             "duplicate-name",
                             Severity::Warning,
@@ -184,8 +193,6 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                             &[("name", line.to_string())],
                             format!("`{line}` appears twice in the same block"),
                         );
-                    } else {
-                        in_block.push(key.clone());
                     }
                     match seen.get(&key) {
                         Some((first, row)) if first != line => out.add(
@@ -321,7 +328,10 @@ pub fn validate(credits: &Credits, laid: &Laid, frame: Frame, measure: &dyn Meas
                 }
                 checked_fonts.push((family.clone(), style.clone()));
             }
-            let fc = fonts.check(&family, &style, &text);
+            // the letters actually drawn: all caps and small caps draw capitals
+            let caps = matches!(e.params.get("caps").map(|p| &p.value), Some(ParamValue::Choice(c)) if *c > 0);
+            let drawn: String = if caps { text.chars().map(upper_single).collect() } else { text.clone() };
+            let fc = fonts.check(&family, &style, &drawn);
             if !fc.missing && !fc.uncovered.is_empty() {
                 let chars: String = fc.uncovered.iter().take(12).collect();
                 out.add(

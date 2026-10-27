@@ -34,12 +34,17 @@ impl Measure for M {
     }
 }
 
-/// "Inter" has no ő/ű; "Nincs" is not installed.
+/// "Inter" has no ő/ű; "Kis" has no capital Ő; "Nincs" is not installed.
 struct F;
 impl FontInfo for F {
     fn check(&self, family: &str, _style: &str, text: &str) -> FontCheck {
         FontCheck {
-            missing: family == "Nincs", uncovered: if family == "Inter" { text.chars().filter(|c| matches!(c, 'ő' | 'ű')).collect() } else { vec![] }
+            missing: family == "Nincs",
+            uncovered: match family {
+                "Inter" => text.chars().filter(|c| matches!(c, 'ő' | 'ű')).collect(),
+                "Kis" => text.chars().filter(|c| *c == 'Ő').collect(),
+                _ => vec![],
+            },
         }
     }
 }
@@ -141,4 +146,29 @@ fn layer_issues_point_at_their_block_row() {
     let v = codes("Body,Style\nFine,Centered\n,\nToo dark,Dark\n", &st);
     let dark = v.iter().find(|(c, _, _)| *c == "low-contrast").unwrap();
     assert_eq!(dark.2, Some(4));
+}
+
+#[test]
+fn review_fixes_rows_caps_and_big_blocks() {
+    // a head alone on its row: the body cells are rows 3 and 4, not 2 and 3
+    let c = read("Head,Body\nCast,\n,Anna\n,Anna\n".as_bytes(), &Styling::default()).unwrap();
+    let l = layout(&c, &Styling::default(), FRAME, &M).unwrap();
+    let issues = validate(&c, &l, FRAME, &M, &F);
+    let dup = issues.iter().find(|i| i.code == "duplicate-name").unwrap();
+    assert_eq!(dup.row, Some(4));
+    // all caps draws capitals: a font without Ő warns for "ő" in caps, not in lower case
+    let caps = Styling::from_json(r#"{"contentStyles":[{"name":"Gutter","body":{"font":"Kis","allCaps":true}}]}"#).unwrap();
+    assert!(has(&codes("Body\nKőműves\n", &caps), "missing-glyphs"));
+    let lower = Styling::from_json(r#"{"contentStyles":[{"name":"Gutter","body":{"font":"Kis"}}]}"#).unwrap();
+    assert!(!has(&codes("Body\nKőműves\n", &lower), "missing-glyphs"));
+    // a big block of different names is checked quickly
+    let mut sheet = String::from("Head,Body\nCast,Name 0\n");
+    for i in 1..60_000 {
+        sheet.push_str(&format!(",Name {i}\n"));
+    }
+    let c = read(sheet.as_bytes(), &Styling::default()).unwrap();
+    let l = layout(&c, &Styling::default(), FRAME, &M).unwrap();
+    let t = std::time::Instant::now();
+    let _ = validate(&c, &l, FRAME, &M, &F);
+    assert!(t.elapsed().as_secs() < 5, "{:?}", t.elapsed());
 }
