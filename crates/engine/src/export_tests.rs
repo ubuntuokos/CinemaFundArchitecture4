@@ -221,6 +221,37 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
                 continue;
             }
+            "opus" => {
+                // Opus Audio: an Ogg file, sound only
+                assert!(fmt_name.contains("ogg"), "{name}: {fmt_name}");
+                assert_eq!(j["streams"].as_array().unwrap().len(), 1, "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
+            "webm" => {
+                // WebM: VP9 picture at the preset's size, Opus sound
+                assert!(fmt_name.contains("webm"), "{name}: {fmt_name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("vp9"), Some(w), Some(h)), "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.05, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
+            "hls" => {
+                // HLS: the multivariant playlist plays as H.264 + AAC at the preset's size
+                assert_eq!(fmt_name, "hls", "{name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("h264"), Some(w), Some(h)), "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], "aac", "{name}");
+                let files = cfa4_export::hls_files(&out, h as u32);
+                for f in [&files.media, &files.init, &files.segment(0)] {
+                    assert!(Path::new(f).exists(), "{name}: {f}");
+                }
+                continue;
+            }
             "mpeg2" => {
                 // program stream + LPCM, transport stream + AAC
                 let ts = settings["mpeg2Container"] == "ts";
@@ -320,6 +351,19 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!(got_profile == p || got_profile == idc, "{name}: profile {got_profile} != {p} ({idc})");
                 assert_eq!(a["codec_name"], "pcm_s24le", "{name}");
             }
+            "cineform" => {
+                assert!(fmt_name.contains("mov"), "{name}: {fmt_name}");
+                assert_eq!(v["codec_name"], "cfhd", "{name}");
+                let pix = v["pix_fmt"].as_str().unwrap_or_default();
+                let want = match settings["cineformProfile"].as_str().unwrap_or("") {
+                    "444" => "gbrp12le",
+                    "4444" if settings["alpha"].as_bool().unwrap_or(false) => "gbrap12le",
+                    "4444" => "gbrp12le",
+                    _ => "yuv422p10le",
+                };
+                assert_eq!(pix, want, "{name}");
+                assert_eq!(a["codec_name"], "pcm_s24le", "{name}");
+            }
             "mxf-op1a" => {
                 assert_eq!(fmt_name, "mxf", "{name}");
                 let codec = match settings["mxfVideoCodec"].as_str().unwrap() {
@@ -355,6 +399,25 @@ fn aac_audio_keeps_a_dot_aac_path_as_adts_and_adds_m4a_otherwise() {
     let m4a = run(&mut s, dir.path("Mix"));
     assert!(m4a.ends_with("Mix.m4a"), "{m4a}");
     assert_eq!(&std::fs::read(&m4a).unwrap()[4..8], b"ftyp");
+}
+
+#[test]
+fn opus_audio_keeps_a_dot_ogg_path_and_adds_opus_otherwise() {
+    let mut s = demo();
+    let dir = Scratch::new("opus-audio");
+    let range = json!({"range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true, "format": "opus"});
+    let run = |s: &mut Session, path: String| {
+        let mut p = range.clone();
+        p["path"] = json!(path);
+        s.execute("file.exportMedia", p).unwrap()["path"].as_str().unwrap().to_string()
+    };
+    for (asked, want) in [("Mix.ogg", "Mix.ogg"), ("Mix", "Mix.opus")] {
+        let path = run(&mut s, dir.path(asked));
+        assert!(path.ends_with(want), "{path}");
+        let b = std::fs::read(&path).unwrap();
+        assert_eq!(&b[..4], b"OggS");
+        assert_eq!(&b[28..36], b"OpusHead");
+    }
 }
 
 #[test]
@@ -858,5 +921,38 @@ fn caption_sidecars_keep_only_the_exported_interval() {
     for format in [Format::Srt, Format::WebVtt] {
         let doc = sidecar(&mut edge, &edge_files, format, json!({"range":"inOut"}), ticks(30));
         assert!(doc.cues.is_empty(), "half-open export excludes cues touching either boundary: {doc:?}");
+    }
+}
+
+/// The GoPro CineForm presets: our MOV opens with our own decoder at the exported size, and
+/// ffmpeg (an oracle only) reads the same pixels within rounding of the colour conversion.
+#[test]
+fn cineform_presets_export_and_read_back() {
+    let mut s = demo();
+    let dir = Scratch::new("cineform");
+    for (name, pix) in
+        [("GoPro CineForm YUV 10-bit", "yuv422p10le"), ("GoPro CineForm RGB 12-bit", "gbrp12le"), ("GoPro CineForm RGB 12-bit with Alpha", "gbrap12le")]
+    {
+        let path = dir.0.join(cfa4_export::presets::preset_key(name)).to_string_lossy().to_string();
+        let params = json!({"preset": name, "path": path, "range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true});
+        let out = s.execute("file.exportMedia", params).unwrap_or_else(|e| panic!("{name}: {e}"))["path"].as_str().unwrap().to_string();
+        let bytes: std::sync::Arc<[u8]> = std::fs::read(&out).unwrap().into();
+        let src = cfa4_codecs::open_bytes(&out, bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let info = src.info().video.clone().unwrap();
+        assert_eq!((info.codec.as_str(), info.width, info.height), ("GoPro CineForm", 1920, 1080), "{name}");
+        assert_eq!(info.has_alpha, pix == "gbrap12le", "{name}");
+        let ours = src.video_frame(cfa4_media::FrameRequest::full(cfa4_time::Tick(0))).unwrap().to_rgba8();
+        let Some(j) = probe(&out) else { continue };
+        let v = stream(&j, "video").unwrap();
+        assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("cfhd"), Some(pix)), "{name}");
+        let Some(ff) = cfa4_testkit::oracle::ffmpeg_or_skip("cineform read back") else { continue };
+        let rgba = std::process::Command::new(ff)
+            .args(["-v", "error", "-i", &out, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgba", "-"])
+            .output()
+            .unwrap()
+            .stdout;
+        assert_eq!(rgba.len(), ours.len(), "{name}");
+        let far = ours.iter().zip(&rgba).filter(|(a, b)| (i32::from(**a) - i32::from(**b)).abs() > 4).count();
+        assert!(far * 1000 < ours.len(), "{name}: {far} of {} samples differ by more than 4", ours.len());
     }
 }

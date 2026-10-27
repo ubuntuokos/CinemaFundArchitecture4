@@ -120,15 +120,14 @@ fn the_hdr_probe_registry_follows_its_probes() {
 #[test]
 fn which_exports_are_hdr() {
     use crate::job::hdr_output;
-    // H.264, H.265 (Main 10), ProRes, DNxHR and APV follow the working space
-    for f in [Format::H264, Format::Hevc, Format::ProRes, Format::DnxHr, Format::Apv] {
+    // H.264, H.265 (Main 10), AV1, ProRes, DNxHR and APV follow the working space
+    for f in [Format::H264, Format::Hevc, Format::Av1, Format::ProRes, Format::DnxHr, Format::Apv] {
         assert!(hdr_output(true, false, f), "{f:?}");
         assert!(!hdr_output(false, false, f), "{f:?}: SDR working space");
         assert!(!hdr_output(true, true, f), "{f:?}: SDR asked for");
     }
     // formats without HDR output
     assert!(!hdr_output(true, false, Format::Mjpeg));
-    assert!(!hdr_output(true, false, Format::Av1));
 }
 
 #[test]

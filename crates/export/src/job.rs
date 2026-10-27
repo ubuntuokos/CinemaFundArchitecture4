@@ -70,10 +70,12 @@ use cfa4_time::FrameRate;
 use rayon::prelude::*;
 
 use crate::audio_out::AudioOut;
+use crate::hls_out::{HlsMux, HlsSetup};
 use crate::mpeg_out::{MpegAudio, MpegMux};
 use crate::mxf_out::{MxfMux, MxfSetup};
 use crate::pipeline::Pipeline;
 use crate::settings::{AudioCodec, BitrateMode};
+use crate::webm_out::{WebmMux, WebmSetup};
 use crate::{
     AudioEncoder, ColorSignal, EncodedPacket, EncoderFrame, ExportError, ExportSettings, Format, H264Pass, Out, Progress, Report, Result, Stage, VideoEncoder,
     audio_factories, export_range, frame_span, note_stage, timed, video_factories,
@@ -178,6 +180,10 @@ pub struct Exporter {
     mux: Option<Mp4Writer<Out>>,
     /// MXF exports write through this instead of `mux`.
     mxf: Option<MxfMux>,
+    /// WebM exports write through this instead of `mux`.
+    webm: Option<WebmMux>,
+    /// HLS exports write through this instead of `mux`.
+    hls: Option<HlsMux>,
     /// MPEG-2 exports write through this.
     mpeg: Option<MpegMux>,
     seq: ItemId,
@@ -194,9 +200,12 @@ pub fn stepped(format: Format) -> bool {
         Format::H264
             | Format::Hevc
             | Format::Av1
+            | Format::WebM
+            | Format::Hls
             | Format::ProRes
             | Format::DnxHr
             | Format::Apv
+            | Format::Cineform
             | Format::Mjpeg
             | Format::MxfOp1a
             | Format::MxfOpAtom
@@ -207,7 +216,7 @@ pub fn stepped(format: Format) -> bool {
 /// Whether an export is HDR: an HDR working space, SDR not asked for, and a format whose encoder
 /// writes HDR.
 pub(crate) fn hdr_output(working_hdr: bool, sdr: bool, format: Format) -> bool {
-    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::ProRes | Format::DnxHr | Format::Apv)
+    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform)
 }
 
 fn make_venc(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Result<Box<dyn VideoEncoder>> {
@@ -231,7 +240,7 @@ impl Exporter {
         }
         settings.validate()?;
         let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
-        // HDR sequences export HDR (H.264 / H.265 Main 10 / ProRes / DNxHR / APV) unless SDR is asked for
+        // HDR sequences export HDR (H.264 / H.265 Main 10 / AV1 / ProRes / DNxHR / APV / CineForm) unless SDR is asked for
         let pipe = q.settings.color;
         let hdr_out = hdr_output(pipe.working.is_hdr(), settings.sdr, settings.video_format());
         let mut settings = settings.clone();
@@ -288,6 +297,8 @@ impl Exporter {
             queued: Vec::new(),
             mux: None,
             mxf: None,
+            webm: None,
+            hls: None,
             mpeg: None,
             seq,
             project: project.clone(),
@@ -352,7 +363,7 @@ impl Exporter {
 
     /// Whether the container writer exists (it is created after the first group is encoded).
     fn mux_open(&self) -> bool {
-        self.mux.is_some() || self.mxf.is_some() || self.mpeg.is_some()
+        self.mux.is_some() || self.mxf.is_some() || self.webm.is_some() || self.hls.is_some() || self.mpeg.is_some()
     }
 
     fn write_audio(&mut self, planar: Option<Vec<Vec<f32>>>) -> Result<()> {
@@ -368,6 +379,20 @@ impl Exporter {
                 Some(buf) => m.write_audio(&buf),
                 None => Ok(()),
             };
+        }
+        if let Some(m) = self.webm.as_mut() {
+            return match planar {
+                Some(buf) => m.write_audio(&buf),
+                None => Ok(()),
+            };
+        }
+        if let Some(m) = self.hls.as_mut() {
+            let (Some(a), Some(buf)) = (self.aenc.as_mut(), planar) else { return Ok(()) };
+            if buf.first().is_none_or(Vec::is_empty) {
+                return Ok(());
+            }
+            let n = a.frame_size();
+            return m.write_audio(a.encode(&buf)?.into_iter().map(|au| (au, n)).collect());
         }
         let (Some(at), Some(buf)) = (self.at, planar) else { return Ok(()) };
         let n = buf.first().map_or(0, Vec::len);
@@ -397,6 +422,12 @@ impl Exporter {
         if let Some(m) = self.mxf.as_mut() {
             return m.write_video(packets);
         }
+        if let Some(m) = self.webm.as_mut() {
+            return m.write_video(packets);
+        }
+        if let Some(m) = self.hls.as_mut() {
+            return m.write_video(packets);
+        }
         if let Some(m) = self.mpeg.as_mut() {
             return m.write_video(packets);
         }
@@ -410,6 +441,32 @@ impl Exporter {
 
     /// Create the muxer and its tracks (after the first batch was encoded).
     fn open_mux(&mut self) -> Result<()> {
+        if self.settings.format == Format::WebM {
+            self.webm = Some(WebmMux::new(WebmSetup {
+                settings: &self.settings,
+                width: self.pipe.w,
+                height: self.pipe.h,
+                rate: self.pipe.rate,
+                audio: self.audio.as_ref().map(|a| (a.sr, a.channels)),
+            })?);
+            return Ok(());
+        }
+        if self.settings.format == Format::Hls {
+            self.hls = Some(HlsMux::new(HlsSetup {
+                settings: &self.settings,
+                width: self.pipe.w,
+                height: self.pipe.h,
+                rate: self.pipe.rate,
+                video: self.venc.sample_entry(),
+                video_timescale: self.venc.timescale(),
+                video_delay: self.venc.media_start().unwrap_or(0),
+                audio: match (&self.audio, &self.aenc) {
+                    (Some(a), Some(enc)) => Some((enc.sample_entry(), a.sr, enc.priming())),
+                    _ => None,
+                },
+            })?);
+            return Ok(());
+        }
         if self.settings.format == Format::Mpeg2 {
             let audio = match (&self.audio, &self.aenc) {
                 (None, _) => None,
@@ -529,6 +586,9 @@ impl Exporter {
         tail.extend(self.venc.flush()?);
         self.write_video(tail)?;
         self.write_audio(mixed)?;
+        if let (Some(m), Some(a)) = (self.hls.as_mut(), self.aenc.as_mut()) {
+            m.write_audio(a.flush_timed()?)?;
+        }
         if let (Some(m), Some(a)) = (self.mpeg.as_mut(), self.aenc.as_mut()) {
             m.write_aac(a.flush()?, a.frame_size())?;
         }
@@ -541,10 +601,12 @@ impl Exporter {
                 mux.set_sample_entry(at, entry).map_err(|e| ExportError::Io(e.to_string()))?;
             }
         }
-        let (bytes, extra_files) = match (self.mxf.take(), self.mpeg.take()) {
-            (Some(m), _) => m.finish(&self.settings)?,
-            (None, Some(m)) => (m.finish(&self.settings)?, Vec::new()),
-            (None, None) => {
+        let (bytes, extra_files) = match (self.mxf.take(), self.webm.take(), self.hls.take(), self.mpeg.take()) {
+            (Some(m), _, _, _) => m.finish(&self.settings)?,
+            (None, Some(m), _, _) => (m.finish(&self.settings)?, Vec::new()),
+            (None, None, Some(m), _) => m.finish()?,
+            (None, None, None, Some(m)) => (m.finish(&self.settings)?, Vec::new()),
+            (None, None, None, None) => {
                 let w = self
                     .mux
                     .take()

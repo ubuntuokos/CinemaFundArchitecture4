@@ -18,9 +18,12 @@ cfa4-avi = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
+cfa4-iab = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
+cfa4-dts = { workspace = true }
+cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
 cfa4-ogg = { workspace = true }
 cfa4-bitstream = { workspace = true }
@@ -30,6 +33,7 @@ cfa4-vp8 = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-prores = { workspace = true }
 cfa4-dnx = { workspace = true }
+cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-aac = { workspace = true }

@@ -50,7 +50,7 @@ MPEG2_CONTAINERS = (
     ("m2ts", N_("BDAV Transport Stream (.m2ts, AAC audio)"), "m2ts"),
     ("es", N_("Elementary Stream (.m2v, no audio)"), "m2v"),
 )
-AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")))
+AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
 FINISHED = {"done", "failed", "cancelled"}
@@ -224,6 +224,12 @@ class ExportDialog(QDialog):
         self.audio_codec.setObjectName("export.audioCodec")
         for key, label in AUDIO_CODECS:
             self.audio_codec.addItem(tr(label), key)
+        # AAC and Opus: the engine clamps Opus to 6..510 kbps
+        self.audio_bitrate = QSpinBox(self)
+        self.audio_bitrate.setObjectName("export.audioBitrateKbps")
+        self.audio_bitrate.setRange(0, 1_000)
+        self.audio_bitrate.setSuffix(" kbps")
+        self.audio_bitrate.setSpecialValueText(tr("From the preset"))
 
         out = QGroupBox(tr("Output"), self)
         f = QFormLayout(out)
@@ -247,6 +253,7 @@ class ExportDialog(QDialog):
         fa = QFormLayout(audio)
         fa.addRow(self.audio)
         fa.addRow(tr("Audio codec"), self.audio_codec)
+        fa.addRow(tr("Audio bitrate"), self.audio_bitrate)
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -321,7 +328,7 @@ class ExportDialog(QDialog):
         self.range.currentIndexChanged.connect(self._range_changed)
         for w in (self.start, self.end):
             w.valueChanged.connect(self._changed)
-        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("gop", self.gop), ("quantizer", self.quantizer)):
+        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
@@ -411,6 +418,7 @@ class ExportDialog(QDialog):
             self.width_spin.setValue(0)
             self.height_spin.setValue(0)
         self.bitrate.setValue(0)
+        self.audio_bitrate.setValue(0)
         self.gop.setValue(0)
         self.quantizer.setValue(0)
         self.chroma.setCurrentIndex(0)
@@ -425,6 +433,7 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         self.audio.setEnabled(bool(fmt.get("audio", True)))
         self.audio_codec.setEnabled(bool(fmt.get("audio", True)))
+        self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
@@ -514,6 +523,8 @@ class ExportDialog(QDialog):
                 p["audio"] = self.audio.isChecked()
             if "audioCodec" in self.touched:
                 p["audioCodec"] = self.audio_codec.currentData()
+            if self.audio_bitrate.value():
+                p["audioBitrateKbps"] = self.audio_bitrate.value()
         if self.container.isEnabled():
             p["mpeg2Container"] = self.container.currentData()
             if self.gop.value():

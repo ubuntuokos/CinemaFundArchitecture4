@@ -49,6 +49,9 @@ let au: Vec<u8> = file.read_unit(&bytes, v, 0)?;      // the first access unit
   - Audio: one frame per unit from the frame headers (sync re-hunted after garbage; a header
     found while hunting is confirmed by the next one); a PTS belongs to the first frame starting
     in the PES.
+  - TrueHD (Blu-ray stream_type 0x83): one access unit per unit, chained by the length in each
+    one's header and picked up at a major sync; the AC-3 core frames Blu-ray interleaves on the
+    same PID end the access unit before them and are left out.
   - LPCM and everything else: one PES packet per unit.
 - **Timestamps**: 33-bit PTS/DTS unwrapped across the wrap (and back, for B pictures shown
   before a wrap that came earlier); PCR / SCR range.
