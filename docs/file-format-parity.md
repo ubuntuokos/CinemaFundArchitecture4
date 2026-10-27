@@ -59,7 +59,7 @@ only). "Tested" names the evidence.
 | **OpenEXR** | read + write | stills and sequences: scan-line, none / RLE / ZIPS / ZIP / PXR24, half / float / uint, RGB(A) or Y, kept as linear float (#828); no PIZ, B44, DWA, tiled, multi-part or deep | sequences (half float, linear RGB / premultiplied RGBA; uncompressed, RLE, ZIPS or ZIP; #806, #874) | 70% |
 | **DPX** | read + write | yes: luma / RGB / RGBA, 8–16-bit, filled 10/12-bit, either byte order (#821); packed 10/12-bit, Y'CbCr 4:2:2 / 4:4:4 with or without alpha (#841); no RLE | sequences (10-bit RGB, BT.709; #779) | 90% |
 | Targa | read + write | yes: every image type, RLE, colour maps, 15–32-bit (#821) | sequences (24-bit, 32-bit with alpha; #779) | 95% |
-| HEIF / HEIC | read | no | — | 0% |
+| HEIF / HEIC | read | yes (#88): CFA4's own container reader and HEVC decoder, Main / Main 10 4:2:0, grids, `iden`, clean aperture, rotation, mirroring, `colr` / VUI colour, alpha planes (monochrome HEVC, #136); bit-exact against libheif. Non-HEVC items (AVIF, JPEG) go to the libheif tools when installed | HEIC frame export through `heif-enc` | 80% |
 | **Radiance HDR** | read | yes: RGBE, flat, old and new run-length scan lines, every axis order, kept as linear float (#1407); no XYZE, EXPOSURE / PRIMARIES lines ignored | — | 70% |
 | AI / EPS, ICO, PTL | read | no | — | 0% |
 
@@ -94,4 +94,5 @@ validation in Avid and Pro Tools, DVD / Blu-ray / DCP / broadcast MXF delivery.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-26 | minor | JPEG 2000 MXF import, DCP picture tracks included (#77) |
+| 2026-10-26 | minor | Native HEIF / HEIC decode incl. alpha planes (#88, #136) |
 | 2026-10-10 | major | Created: format-by-format comparison with Premiere 26.5.2 from the import / export registries, crate READMEs, the installed bundle's exporter listings and open issues |

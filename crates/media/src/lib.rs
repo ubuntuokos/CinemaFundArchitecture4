@@ -199,8 +199,7 @@ pub type Opener = fn(name: &str, bytes: Arc<[u8]>) -> Option<Result<SharedSource
 pub fn open_bytes(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -> Result<SharedSource> {
     // HEIF shares ISO-BMFF boxes with MP4. Sniff its still-image brand before
     // the video-container openers, so .heic never becomes a broken MP4 clip.
-    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-    if still::heif::sniff(&bytes) {
+    if still::heic::sniff(&bytes) {
         return Ok(Arc::new(still::StillSource::decode(name, &bytes)?));
     }
     for o in extra {

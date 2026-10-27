@@ -31,6 +31,7 @@ cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }
 cfa4-hevc = { path = "crates/hevc" }
+cfa4-heif = { path = "crates/heif" }
 cfa4-vp8 = { path = "crates/vp8" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }

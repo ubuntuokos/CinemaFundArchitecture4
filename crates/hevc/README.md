@@ -31,7 +31,8 @@ and fixture generators.
 | Frame-level multithreading (CTB-row granularity dependencies) | done |
 | Draft mode (non-reference pictures skip deblocking / SAO; reduced-resolution playback only) | done |
 | Tiles / WPP | parsed and decoded sequentially within a picture (parallelism is across pictures) |
-| 4:2:2 / 4:4:4 / monochrome, range-extension tools (RExt), 12-bit+ with extended precision | not yet (`Error::Unsupported`) |
+| Monochrome (4:0:0, 8 / 10-bit; HEIF alpha and depth planes): no chroma syntax, chroma planes output mid-grey | done |
+| 4:2:2 / 4:4:4, range-extension tools (RExt), 12-bit+ with extended precision | not yet (`Error::Unsupported`) |
 | SCC, multilayer (SHVC / MV-HEVC), 3D extensions | not supported (layers > 0 are ignored) |
 
 ## API
