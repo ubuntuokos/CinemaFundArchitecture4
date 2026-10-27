@@ -132,3 +132,26 @@ fn sequence_inspect_reports_frame_holds_and_the_timeline_toggles() {
     assert_eq!(js["video"][0]["items"][0]["frameHold"], json!(source_in));
     assert_eq!(js["toggles"], json!({"snapping": !snapping, "linkedSelection": false, "nest": false, "showThroughEdits": true}));
 }
+
+#[test]
+fn sequence_inspect_lists_the_open_sequences_in_tab_order() {
+    // the Qt Timeline's sequence tabs: open, reorder, close
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let a = s.state.active_sequence.unwrap();
+    s.execute("file.newSequence", json!({"name": "Second"})).unwrap();
+    let b = s.state.active_sequence.unwrap();
+    assert_ne!(a, b);
+    s.execute("sequence.open", json!({"item": b.0})).unwrap();
+    let names = |s: &mut Session| -> Vec<u64> {
+        let js = s.execute("sequence.inspect", json!({})).unwrap();
+        js["openSequences"].as_array().unwrap().iter().map(|t| t["id"].as_u64().unwrap()).collect()
+    };
+    assert_eq!(names(&mut s), vec![a.0, b.0]);
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    assert_eq!(js["openSequences"][1]["name"], json!("Second"));
+    s.execute("sequence.moveTab", json!({"item": b.0, "index": 0})).unwrap();
+    assert_eq!(names(&mut s), vec![b.0, a.0]);
+    s.execute("sequence.close", json!({"item": a.0})).unwrap();
+    assert_eq!(names(&mut s), vec![b.0]);
+}

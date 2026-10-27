@@ -16,7 +16,7 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, QRect, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMenu,
     QScrollBar,
+    QTabBar,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -1584,6 +1585,25 @@ class TimelinePanel(QWidget):
         bar.setContentsMargins(4, 2, 4, 2)
         self.title = QLabel(tr("Timeline"))
         bar.addWidget(self.title)
+        # egui's Timeline tabs: one per open sequence (× on the shown one, drag to reorder,
+        # middle-click closes, right-click: Close Panel / Close Other Timeline Panels)
+        self.tabs = QTabBar(self)
+        self.tabs.setObjectName("timeline.tabs")
+        self.tabs.setTabsClosable(True)
+        self.tabs.setMovable(True)
+        self.tabs.setExpanding(False)
+        self.tabs.setUsesScrollButtons(True)
+        self.tabs.setDocumentMode(True)
+        self.tabs.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tabs.currentChanged.connect(self._tab_picked)
+        self.tabs.tabCloseRequested.connect(lambda i: self._close_tab(self.tab_id(i)))
+        self.tabs.tabMoved.connect(self._tab_moved)
+        self.tabs.customContextMenuRequested.connect(self._tab_menu)
+        self.tabs.installEventFilter(self)
+        self.tabs.hide()
+        self._tab_ids: list[int] = []
+        self.last_tab_menu: QMenu | None = None
+        bar.addWidget(self.tabs, 1)
         # egui's toolbar: Nest, Snap, Linked Selection (on: pressed), Captions, Add Marker, the
         # Timeline Display Settings menu
         self.toggles: dict[str, QToolButton] = {}
@@ -1637,6 +1657,86 @@ class TimelinePanel(QWidget):
             for key, icon, _tip, _cid in TOOLBAR:
                 self.toggles[key].setIcon(transport_icon(icon, icon_color(self)))
 
+    # ----- sequence tabs -----
+    def tab_id(self, i: int) -> int | None:
+        v = self.tabs.tabData(i)
+        return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+    def _set_tabs(self, seq: dict[str, Any] | None) -> None:
+        open_seqs = [t for t in (seq or {}).get("openSequences") or [] if isinstance(t, dict) and isinstance(t.get("id"), int)]
+        ids = [t["id"] for t in open_seqs]
+        active = (seq or {}).get("id")
+        self.tabs.blockSignals(True)
+        if ids != self._tab_ids or any(self.tabs.tabText(i) != str(t.get("name") or "") for i, t in enumerate(open_seqs)):
+            while self.tabs.count():
+                self.tabs.removeTab(0)
+            for t in open_seqs:
+                i = self.tabs.addTab(str(t.get("name") or ""))
+                self.tabs.setTabData(i, t["id"])
+                self.tabs.setTabToolTip(i, str(t.get("name") or ""))
+            self._tab_ids = ids
+        if active in ids:
+            self.tabs.setCurrentIndex(ids.index(active))
+        for i, sid in enumerate(ids):
+            close = self.tabs.tabButton(i, QTabBar.ButtonPosition.RightSide)
+            if close is not None:
+                close.setObjectName(f"timeline.tab.{sid}.close")
+                close.setVisible(sid == active)  # egui: × on the shown tab only
+        self.tabs.blockSignals(False)
+        self.tabs.setVisible(bool(ids))
+        self.title.setVisible(not ids)
+
+    def _tab_picked(self, i: int) -> None:
+        sid = self.tab_id(i)
+        if sid is not None and sid != (self.canvas.sequence or {}).get("id"):
+            self.canvas.command.emit("sequence.open", {"item": sid})
+
+    def _close_tab(self, sid: int | None) -> None:
+        if sid is not None:
+            self.canvas.command.emit("sequence.close", {"item": sid})
+
+    def _tab_moved(self, _from: int, to: int) -> None:
+        sid = self.tab_id(to)
+        self._tab_ids = [x for i in range(self.tabs.count()) if (x := self.tab_id(i)) is not None]
+        if sid is not None:
+            self.canvas.command.emit("sequence.moveTab", {"item": sid, "index": to})
+
+    def _tab_menu(self, pos: QPoint) -> None:
+        """egui's Timeline panel menu: a right-click shows the tab, then Close Panel (its
+        sequence) and Close Other Timeline Panels."""
+        i = self.tabs.tabAt(pos)
+        sid = self.tab_id(i) if i >= 0 else (self.canvas.sequence or {}).get("id")
+        if sid is None:
+            return
+        if i >= 0 and i != self.tabs.currentIndex():
+            self.tabs.setCurrentIndex(i)
+        menu = QMenu(self)
+        menu.setObjectName("panel.menu.Timeline")
+        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        a = menu.addAction(tr("Close Panel"))
+        a.setObjectName("panel.menu.Timeline.close")
+        a.triggered.connect(lambda _c=False: self._close_tab(sid))
+        a = menu.addAction(tr("Close Other Timeline Panels"))
+        a.setObjectName("panel.menu.Timeline.closeOthers")
+        a.setEnabled(self.tabs.count() > 1)
+        a.triggered.connect(lambda _c=False: self.canvas.command.emit("sequence.closeOthers", {"item": sid}))
+        self.last_tab_menu = menu
+        menu.destroyed.connect(lambda _o=None, m=menu: setattr(self, "last_tab_menu", None) if self.last_tab_menu is m else None)
+        menu.popup(self.tabs.mapToGlobal(pos))
+
+    def eventFilter(self, obj: QObject, e: QEvent) -> bool:
+        if (
+            obj is self.tabs
+            and e.type() == QEvent.Type.MouseButtonRelease
+            and isinstance(e, QMouseEvent)
+            and e.button() == Qt.MouseButton.MiddleButton  # a middle-click closes that sequence
+        ):
+            i = self.tabs.tabAt(e.position().toPoint())
+            if i >= 0:
+                self._close_tab(self.tab_id(i))
+                return True
+        return super().eventFilter(obj, e)
+
     def _show_display_menu(self, button: QToolButton) -> None:
         menu = self.canvas.display_menu()
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -1651,6 +1751,7 @@ class TimelinePanel(QWidget):
 
     def set_sequence(self, seq: dict[str, Any] | None) -> None:
         self.canvas.set_sequence(seq)
+        self._set_tabs(seq)
         toggles = (seq or {}).get("toggles") or {}
         for key, field in TOOLBAR_TOGGLES.items():
             b = self.toggles[key]

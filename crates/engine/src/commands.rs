@@ -4713,6 +4713,8 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         } else {
             Value::Null
         },
+        // the Timeline's tabs: the open sequences in tab order (`sequence.open` / `close` / `moveTab`)
+        "openSequences": s.state.open_sequences.iter().filter_map(|i| s.project.sequence(*i).map(|_| json!({"id": i.0, "name": s.project.item(*i).map(|x| x.name.clone())}))).collect::<Vec<_>>(),
         // the timeline toolbar's toggles and Display Settings (session-wide)
         "toggles": {"snapping": s.state.snapping, "linkedSelection": s.state.linked_selection, "nest": !s.state.sequences_as_clips, "showThroughEdits": s.state.show_through_edits},
     })

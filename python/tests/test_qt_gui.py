@@ -3805,6 +3805,68 @@ def test_real_engine_timeline_clip_and_gap_menus_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_sequence_tabs_as_egui(app, tmp_path: Path):
+    """egui's Timeline tabs: one per open sequence in the engine's order, a click shows that
+    sequence, × (on the shown tab only) or a middle-click closes it, dragging reorders
+    (sequence.moveTab), the right-click menu offers Close Panel / Close Other Timeline Panels."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel = win.timeline
+    tabs = panel.tabs
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        assert wait_until(app, lambda: tabs.count() == 1, 10_000)
+        assert tabs.isVisible() and not panel.title.isVisible()
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        assert [tabs.tabText(i) for i in range(2)][1] == "Second" and tabs.currentIndex() == 1
+        close = tabs.tabButton(1, QtWidgets.QTabBar.ButtonPosition.RightSide)
+        assert close.objectName() == f"timeline.tab.{second}.close" and close.isVisibleTo(tabs)
+        assert not tabs.tabButton(0, QtWidgets.QTabBar.ButtonPosition.RightSide).isVisibleTo(tabs)
+        # a click shows the other sequence
+        QtTest.QTest.mouseClick(tabs, QtCore.Qt.MouseButton.LeftButton, pos=tabs.tabRect(0).center())
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+        assert tabs.currentIndex() == 0
+        # reordering (as a drag ends): the engine's order follows
+        tabs.moveTab(0, 1)
+        assert wait_until(app, lambda: [t["id"] for t in win.sequence["openSequences"]] == [second, first], 10_000)
+        assert [panel.tab_id(i) for i in range(2)] == [second, first]
+        # the panel menu: Close Other Timeline Panels
+        tabs.customContextMenuRequested.emit(tabs.tabRect(1).center())
+        assert wait_until(app, lambda: panel.last_tab_menu is not None and panel.last_tab_menu.isVisible(), 10_000)
+        menu = panel.last_tab_menu
+        acts = {a.objectName(): a for a in menu.actions()}
+        assert list(acts) == ["panel.menu.Timeline.close", "panel.menu.Timeline.closeOthers"]
+        assert acts["panel.menu.Timeline.closeOthers"].isEnabled()
+        acts["panel.menu.Timeline.closeOthers"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: tabs.count() == 1 and panel.tab_id(0) == first, 10_000)
+        # reopen the second, then a middle-click closes it
+        win.execute("sequence.open", {"item": second})
+        assert wait_until(app, lambda: tabs.count() == 2 and win.sequence["id"] == second, 10_000)
+        QtTest.QTest.mouseClick(tabs, QtCore.Qt.MouseButton.MiddleButton, pos=tabs.tabRect(1).center())
+        assert wait_until(app, lambda: tabs.count() == 1 and win.sequence["id"] == first, 10_000)
+        # × on the last tab: no sequence open, the plain title again
+        tabs.tabButton(0, QtWidgets.QTabBar.ButtonPosition.RightSide).click()
+        assert wait_until(app, lambda: win.sequence is None, 10_000)
+        assert not tabs.isVisible() and panel.title.isVisible()
+    finally:
+        if panel.last_tab_menu is not None:
+            panel.last_tab_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_thumbnail_tiles_as_egui():
     """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
     continuous tiles on a grid from the head, only the visible ones; source_time_at follows the
