@@ -26,6 +26,8 @@ use crate::bitstream::BitReader;
 const DCA_XLL_CHANNELS_MAX: usize = 8;
 const DCA_XLL_CHSETS_MAX: usize = 3;
 const DCA_XLL_PRED_ORDER_MAX: usize = 16;
+/// Most bytes the peak bit rate smoothing buffer holds (`DCA_XLL_PBR_BUFFER_MAX`).
+const DCA_XLL_PBR_BUFFER_MAX: usize = 240 << 10;
 /// XLL-X (DTS:X spatial extension) end-of-frame syncword.
 pub(crate) const DCA_SYNCWORD_XLL_X: u32 = 0x0200_0850;
 pub(crate) const DCA_SYNCWORD_XLL_X_ALT_D0: u32 = 0xF140_00D0;
@@ -773,6 +775,10 @@ impl XllDecoder {
             Err(XllError::Eagain) if asset.xll_sync_present && asset.xll_sync_offset < data.len() => {
                 let d = &data[asset.xll_sync_offset..];
                 if asset.xll_delay_nframes > 0 {
+                    if d.len() > DCA_XLL_PBR_BUFFER_MAX {
+                        self.clear_pbr();
+                        return Err(XllError::Invalid("XLL smoothing buffer overflow"));
+                    }
                     self.pbr_buffer.clear();
                     self.pbr_buffer.extend_from_slice(d);
                     self.pbr_delay = asset.xll_delay_nframes;
@@ -786,6 +792,10 @@ impl XllDecoder {
             return Err(XllError::Invalid("xll frame larger than data"));
         }
         if self.frame_size < data.len() {
+            if data.len() - self.frame_size > DCA_XLL_PBR_BUFFER_MAX {
+                self.clear_pbr();
+                return Err(XllError::Invalid("XLL smoothing buffer overflow"));
+            }
             self.pbr_buffer.clear();
             self.pbr_buffer.extend_from_slice(&data[self.frame_size..]);
         }
@@ -793,6 +803,11 @@ impl XllDecoder {
     }
 
     fn parse_frame_pbr(&mut self, data: &[u8]) -> R<()> {
+        // a delay of up to 2^32 frames would otherwise let the buffer grow without bound
+        if data.len() > DCA_XLL_PBR_BUFFER_MAX.saturating_sub(self.pbr_buffer.len()) {
+            self.clear_pbr();
+            return Err(XllError::Invalid("XLL smoothing buffer overflow"));
+        }
         self.pbr_buffer.extend_from_slice(data);
         if self.pbr_delay > 0 {
             self.pbr_delay -= 1;
@@ -1154,6 +1169,9 @@ impl XllDecoder {
         let header_size = rb(gb, 8)? as usize + 1;
         let frame_size_nbits = rb(gb, 5)? as usize + 1;
         self.frame_size = rb(gb, frame_size_nbits)? as usize + 1;
+        if self.frame_size > DCA_XLL_PBR_BUFFER_MAX {
+            return Err(XllError::Invalid("XLL frame size"));
+        }
         self.nchsets = rb(gb, 4)? as usize + 1;
         if self.nchsets > DCA_XLL_CHSETS_MAX {
             return Err(XllError::Unsupported("too many XLL channel sets"));
@@ -1947,6 +1965,26 @@ fn ceil_log2(n: usize) -> usize {
 #[cfg(test)]
 mod surround_tests {
     use super::*;
+
+    /// A huge smoothing delay used to let every following asset pile up in the buffer.
+    #[test]
+    fn the_smoothing_buffer_is_bounded() {
+        let mut x = XllDecoder::new();
+        x.pbr_delay = u32::MAX;
+        let asset = vec![0u8; 64 << 10];
+        let mut refused = false;
+        for _ in 0..8 {
+            match x.parse_frame_pbr(&asset) {
+                Err(XllError::Eagain) => assert!(x.pbr_buffer.len() <= DCA_XLL_PBR_BUFFER_MAX),
+                Err(XllError::Invalid(_)) => {
+                    refused = true;
+                    break;
+                }
+                other => panic!("{other:?}"),
+            }
+        }
+        assert!(refused && x.pbr_buffer.is_empty() && x.pbr_delay == 0);
+    }
     use crate::dcadec::core::{DCA_SPEAKER_LS, DCA_SPEAKER_RS};
 
     /// Lss/Rss replaced Ls/Rs even when the layout had both, losing two lossless channels.

@@ -158,9 +158,15 @@ impl Decoded {
         }
     }
 
-    /// Appends `n` samples of silence in the current layout (a frame that failed to decode, so
-    /// that timing holds).
-    fn silence(&mut self, n: usize) {
+    /// Appends the silence of `n` samples at `rate` (a frame that failed to decode, so that timing
+    /// holds) in the current layout, at its rate: a 48 kHz core under a 96 kHz lossless stream
+    /// pads twice its own length.
+    fn silence(&mut self, n: usize, rate: u32) {
+        let n = if rate == 0 || self.sample_rate == 0 || rate == self.sample_rate {
+            n
+        } else {
+            usize::try_from((n as u64).saturating_mul(u64::from(self.sample_rate)) / u64::from(rate)).unwrap_or(usize::MAX)
+        };
         for c in &mut self.channels {
             c.resize(c.len().saturating_add(n), 0.0);
         }
@@ -304,7 +310,7 @@ impl Decoder {
             Ok(()) => {}
             Err(None) => {}
             Err(Some(e)) => {
-                out.silence(samples);
+                out.silence(samples, info.sample_rate);
                 *err = Some(e);
             }
         }
@@ -386,6 +392,17 @@ mod tests {
         assert_eq!(v, [L, R, C, LFE, Lb, Rb, Ls, Rs]);
         assert_eq!(dca_speaker(5), Some(LFE));
         assert_eq!(dca_speaker(28), None);
+    }
+
+    /// A damaged 48 kHz core frame under 96 kHz lossless output padded only half its length.
+    #[test]
+    fn padding_is_at_the_output_rate() {
+        let mut d = Decoded { sample_rate: 96_000, channels: vec![Vec::new(); 2], ..Decoded::default() };
+        d.silence(512, 48_000);
+        assert!(d.channels.iter().all(|c| c.len() == 1024));
+        d.silence(512, 96_000);
+        d.silence(512, 0);
+        assert!(d.channels.iter().all(|c| c.len() == 2048));
     }
 
     #[test]
