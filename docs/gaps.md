@@ -233,7 +233,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), MPEG-2 / DVD / Blu-ray, DCP, JPEG 2000 MXF,
+- **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), MPEG-2 export / DVD / Blu-ray (the MPEG-2
+  video encoder exists in `cfa4-mpeg2v`, #98), DCP, JPEG 2000 MXF,
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding

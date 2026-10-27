@@ -1,6 +1,6 @@
 # cfa4-mpeg2v
 
-Clean-room MPEG-2 video and MPEG-1 video decoder in pure Rust. Layer L0: depends only on
+Clean-room MPEG-2 video and MPEG-1 video decoder, and an MPEG-2 video encoder, in pure Rust. Layer L0: depends only on
 `thiserror` and (optional, feature `threads`, default on) `rayon`. Builds for
 `wasm32-unknown-unknown`; no `unsafe`. No GPL/LGPL code (FFmpeg, libmpeg2, libavcodec) was
 consulted; FFmpeg is used only as an external fixture generator and test oracle.
@@ -11,6 +11,7 @@ consulted; FFmpeg is used only as an external fixture generator and test oracle.
 |---|---|---|
 | ITU-T H.262 \| ISO/IEC 13818-2 | 02/2000 (second edition, with Amd. 1 and Cor. 1/2 as incorporated in the 2000 text) | sequence / GOP / picture headers and extensions, slices, macroblocks, VLC tables (Annex B), inverse quantisation and mismatch control (§7.4), IDCT (Annex A), motion vectors and prediction (§7.6) |
 | ISO/IEC 11172-2 | 1993 | MPEG-1 video: slices spanning rows, MPEG-1 escape codes, oddification, full-pel vectors, D pictures |
+| MPEG-2 Test Model 5 (ISO/IEC JTC1/SC29/WG11/N0400) | 1993 | encoder: picture bit allocation from I/P complexities, adaptive quantisation by spatial activity |
 | IEEE Std 1180 | 1990 | IDCT accuracy test procedure (run as a unit test) |
 | ISO/IEC TR 13818-5 (MPEG Software Simulation Group decoder behaviour) | 1997 | two decoder behaviours the normative text leaves open (see "Interpretations") |
 
@@ -56,6 +57,48 @@ parameters, so a random-access point without its own sequence header still decod
   of the frame); MPEG-1 slices, which may span rows, decode in order.
 - Corrupt slices are concealed (the rest of the picture still decodes) and counted
   (`Decoder::errors`, `last_error`); nothing panics on truncated or mutated input.
+
+## Encoder
+
+```rust
+use cfa4_mpeg2v::encode::{Config, Encoder, Input, Rate};
+let mut cfg = Config::new(1920, 1080, 25, 1);           // 4:2:0, quantiser 6, GOP 15
+cfg.rate = Rate::Bitrate { bits_per_second: 25_000_000 };
+let mut enc = Encoder::new(cfg)?;
+let packet = enc.encode(&Input { y, cb, cr, y_stride, c_stride })?;  // one picture
+let end = enc.finish();                                  // sequence_end_code
+```
+
+- Main Profile (4:2:0) and 4:2:2 Profile at the lowest level that holds the size, picture rate
+  and bitrate (Main, High-1440, High; 4:2:2 Main, High); beyond High Level the stream still
+  decodes and is signalled as High Level. The eight MPEG-2 frame rates; any size up to
+  16383×16383 (odd sizes are edge-padded to whole macroblocks and cropped by the decoder).
+- Progressive frame pictures, I and P pictures with `low_delay` set (decode order is display
+  order), a closed GOP with the sequence header (and a sequence display extension with the
+  colour description) before every I picture. One slice per macroblock row.
+- Motion search on luma at whole samples (left, temporal and zero predictors, then large and
+  small diamonds), then half-sample refinement, ±32 samples (`f_code` 3); vectors whose
+  luma or chroma prediction would leave the picture are never chosen. Intra / inter decision
+  by SAD against the deviation from the mean; skipped macroblocks and "MC not coded" when no
+  coefficient survives quantisation.
+- Forward DCT as the transpose of the decoder's IDCT basis; default matrices; non-linear
+  quantiser scale; intra levels rounded with offset 3/8, inter levels `floor(|F| / qs)` (the
+  reconstruction lands mid-step). The intra VLC table (B.14 or B.15) of each picture is the one
+  that would have coded the previous picture's intra blocks in fewer bits.
+- Rate control: constant quantiser, or an average bitrate: TM5 picture targets from the
+  I and P complexities (bits × quantiser), the picture quantiser from its type's complexity
+  (the first picture of each type is coded once as a trial to measure it), a gentle in-picture
+  correction against an expected bit profile (each macroblock's coefficient magnitude), and
+  optional TM5 adaptive quantisation (`adaptive_quantization`; looks better on flat areas,
+  measures about 2.5 dB lower PSNR). Signalled as variable bitrate (`vbv_delay` 0xFFFF).
+- The reconstruction of every picture is our own decoder's output for the coded bytes, so
+  encoder and decoder never drift apart; a picture the decoder rejects is an error.
+- Macroblock rows are analysed (motion search, prediction, DCT) in parallel on rayon; coding
+  is sequential (rate control).
+
+Not yet, each tracked: B pictures (#240), interlaced coding (#241), CBR with VBV compliance
+(#242), MPEG-2 export as elementary / program / transport stream (#243), DVD-Video (#244) and
+Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices (#246).
 
 ### Interpretations
 
@@ -116,6 +159,11 @@ FFmpeg's integer IDCT saturates differently from the exact one.
 **271 fps on one thread, 274 fps with slice rows on rayon** (runs under heavier momentary load
 fell to 77–150 fps). These are lower bounds.
 
+Encoding (`perf_1080p_encode_fps_and_psnr`, FFmpeg's `testsrc2` at 1920×1080, 50 frames,
+GOP 15 I/P, 15 Mb/s; same machine class, unloaded container): **18-21 fps**, 15.10 Mb/s at
+**48.5 dB** luma PSNR; FFmpeg's `mpeg2video` with the same GOP, no B frames: 15.16 Mb/s at
+48.8 dB.
+
 ## Tests
 
 - `src/vlc.rs`: every table builds without prefix clashes; Kraft sums equal 1 minus exactly the
@@ -128,3 +176,10 @@ fell to 77–150 fps). These are lower bounds.
   3000 random mutations never panic.
 - `src/synth_tests.rs`, `tests/oracle.rs`: see above (single-threaded decode identical to the
   threaded one).
+- `src/encode/`: bit writer and code tables (every value has a code, built from the decoder's
+  tables), FDCT against the decoder's IDCT, rate control; round trips through our decoder
+  (PSNR per picture, picture types, sequence information), 4:2:2 with 11-bit DC and colour
+  description, odd sizes, still and moving content, full-swing noise at the finest quantiser
+  (escapes), bitrates within 15 % of the target (within 1 % in practice), level selection,
+  rejected configurations, and FFmpeg decoding our 4:2:0 / 4:2:2 / rate-controlled streams
+  with `-xerror` to within 2 of our decoder.
