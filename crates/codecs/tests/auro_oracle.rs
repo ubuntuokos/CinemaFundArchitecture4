@@ -33,6 +33,7 @@ const CASES: &[(&str, &str, u32, usize)] = &[
     ("yandex/Fast_Channel_Identification-Auro13_1-96k-ACEnc-FHD-25fps-H264.mp4", "7.1_5H_1T", 14, 8),
     ("yandex/Day_6011 (Auro 11.1, 48 kHz).mp4", "5.1_5H_1T", 12, 6),
     ("yandex/Deus Ex Machina (Auro-3D 13.1).flac", "7.1_5H_1T", 14, 8),
+    ("yandex/[Anna Thorvaldsdottir] Luminance {FHD SDR & Auro-3D 9.1}.mkv", "5.1_4H", 10, 6),
 ];
 
 /// Seconds of each carrier compared.
