@@ -7591,8 +7591,10 @@ def test_project_panel(app, tmp_path: Path):
         drag(here, here + QtCore.QPoint(60, 8), escape=True)
         # a marquee selects the cards it touches; Stack groups them under a ×N badge
         drag(QtCore.QPoint(2, 2), QtCore.QPoint(canvas.width() - 2, canvas.height() - 2))
-        assert canvas.selected == {c["item"] for c in canvas.cards}, canvas.selected
-        app.processEvents()
+        everything = {c["item"] for c in canvas.cards}
+        assert canvas.selected == everything, canvas.selected
+        # an answer to an earlier refresh may still bring the old selection; the engine's follows
+        assert wait_until(app, lambda: set(main.data.get("selection") or []) == everything and canvas.selected == everything, 10_000), canvas.selected
         assert card(moved) == before, "Escape moved nothing"
         menu = pp.card_menu(main, moved, canvas.rows[moved])
         stack = next(a for a in menu.actions() if a.objectName() == "project.cardMenu.stack")

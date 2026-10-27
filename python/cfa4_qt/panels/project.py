@@ -910,6 +910,8 @@ class BinView(QWidget):
         self.own_mode = mode  # a tab's own view (None: the panel's View setting)
         self.own_size = icon_size
         self.data: dict[str, Any] = {}
+        self._held: Any = None  # project.panel data waiting for an in-place rename to finish
+        self._watched: list[QAbstractItemView] = []
         self.expanded: set[int] = set()
         self.selected_bin: int | None = None
         self.hover: tuple[Any, int] | None = None
@@ -1185,6 +1187,12 @@ class BinView(QWidget):
         )
 
     def set_data(self, data: Any) -> None:
+        if self._renaming():
+            # rebuilding the rows would drop the rename being typed (New Bin's name, another
+            # panel's edit arriving meanwhile): the latest data waits until the editor closes
+            self._held = data
+            return
+        self._held = None
         self.data = data if isinstance(data, dict) else {}
         rows = [r for r in self.data.get("rows") or [] if isinstance(r, dict)]
         selection = {i for i in self.data.get("selection") or [] if isinstance(i, int)}
@@ -1203,6 +1211,20 @@ class BinView(QWidget):
         self._update_head(selection)
         if self.top is not None:
             self.panel._update_tab_names()
+
+    def _renaming(self) -> bool:
+        view = self.icons if self.mode == "icon" else self.tree if self.mode == "list" else None
+        if view is None or view.state() != QAbstractItemView.State.EditingState:
+            return False
+        if view not in self._watched:
+            self._watched.append(view)
+            view.itemDelegate().closeEditor.connect(lambda *_a: QTimer.singleShot(0, self, self._release_held))
+        return True
+
+    def _release_held(self) -> None:
+        held = getattr(self, "_held", None)
+        if held is not None and not self._renaming():
+            self.set_data(held)
 
     def _load_arrangements(self) -> None:
         engine = self.panel.engine
