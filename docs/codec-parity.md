@@ -24,8 +24,8 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
 | DNxHD / DNxHR | decode + encode, MXF / MOV | own decode (all SMPTE ST 2019-1 CIDs, 8/10/12-bit, 4:2:2 / 4:4:4, interlaced, alpha) and encode LB / SQ / HQ / HQX / 444 | yes, MOV + MXF | within IDCT precision of ffmpeg on 22 fixtures | 90% | 2–4 h |
 | GoPro CineForm (CFHD) | decode + encode (GoPro CineForm in MOV / AVI) | own decode (`cfa4-cineform`): intra samples, YUV 4:2:2 10-bit, RGB 4:4:4 / RGBA 4:4:4:4 12-bit, all band codings, peak tables; MOV / AVI / MKV import. No temporal (GOP) samples (#154), Bayer, YUVA, 3D (#155) | own encode: YUV 4:2:2 10-bit, RGB / RGBA 12-bit, Film Scan 3 … Low, MOV export with three presets (width a multiple of 16) | decode bit-exact vs ffmpeg `cfhd` on 7 fixtures; ffmpeg decodes our samples exactly as we do (6 fixtures, every quality); fuzzed damaged streams; ~33 ms decode, ~45 ms encode per 1080p frame | 75% | 10–20 h (GOP, Bayer, SDK samples) |
-| AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors; hardware on Windows | none | slow in software (~4 fps 1080p single-thread) | 55% | 30–50 h (encoder + speed) |
 | VP9 | not a Premiere import format on all versions | own decoder profiles 0–3, 8/10/12-bit, bit-exact on 50+ fixtures, frame threading | own encoder, profile 0 (8-bit 4:2:0), key + inter frames, constant quantizer or bit rate (#89); WebM export (#149, about 1 fps at 1080p); about twice libvpx's size at equal PSNR (#151) | conformance; ffmpeg decodes our streams sample-exactly like we do | ahead | — |
+| AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors; hardware on Windows | own software encoder Main 8/10-bit (HDR), CRF / CBR / VBR, ~10% smaller than x265 medium (P-frames) | decode ~4 fps 1080p single-thread; encode ~0.5 fps 1080p per core | 75% | 20–40 h (encoder tools, references, speed) |
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
 | MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT) | **none** | conformance fixtures | 60% | 20–35 h (encoder) |
 | Motion JPEG | decode + encode | yes | yes (MOV) | — | 90% | — |
@@ -59,7 +59,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 - **Ahead of Premiere:** VP9, Opus, APV decode / encode; bit-exact software decoders everywhere,
   including Linux and FreeBSD, where Premiere does not run.
 - **Behind, by user impact:** 10-bit / 4:2:2 H.264 and HEVC in software ([G3](gaps.md#g3-10-bit-and-422-camera-media-needs-hardware)),
-  E-AC-3 decode tools, camera RAW, AV1 software encoding, HEVC B pictures and 4:2:2 encoding, MPEG-2 / JPEG 2000 encoding for broadcast
+  E-AC-3 decode tools, camera RAW, AV1 encoding speed, HEVC B pictures and 4:2:2 encoding, MPEG-2 / JPEG 2000 encoding for broadcast
   and DCP, DV, WMV.
 - **Codec dimension: ~60%, 150–250 h** ([target-app-parity.md](target-app-parity.md#by-dimension)).
 

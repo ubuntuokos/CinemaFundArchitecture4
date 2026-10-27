@@ -75,8 +75,8 @@ pub enum Format {
     /// ([`hdr_available`]); elsewhere they are tone-mapped to SDR.
     #[serde(rename = "hevc", alias = "Hevc")]
     Hevc,
-    /// MPEG-4, AV1 Main (8-bit) video + AAC audio. Like H.265 it has no built-in encoder: offered
-    /// where a hardware encoder registers one.
+    /// MPEG-4, AV1 Main video + AAC audio: 8-bit, or 10-bit PQ / HLG for HDR sequences (our software
+    /// encoder; a registered hardware encoder goes first).
     #[serde(rename = "av1", alias = "Av1")]
     Av1,
     /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
@@ -273,7 +273,8 @@ impl Format {
     /// Whether the crate carries an encoder for the format; the others need one registered at runtime
     /// ([`register_format_probe`]).
     pub fn has_builtin_encoder(self) -> bool {
-        self != Format::Av1
+        let _ = self;
+        true
     }
     /// Sound without picture: Waveform Audio, AIFF, AAC Audio, FLAC and Opus Audio.
     pub fn is_audio_only(self) -> bool {
@@ -683,9 +684,6 @@ impl ExportSettings {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
         }
         if self.bitrate_mode == BitrateMode::Crf {
-            if self.format == Format::Av1 {
-                return Err(ExportError::Unsupported("AV1 export has no CRF mode: choose CBR or VBR, 1 pass".into()));
-            }
             if !self.crf.is_finite() || !(0.0..=51.0).contains(&self.crf) {
                 return Err(ExportError::Unsupported("CRF must be between 0 and 51".into()));
             }
@@ -812,7 +810,7 @@ pub type AudioEncoderFactory = fn(format: Format, sample_rate: u32, channels: u3
 
 fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
     static F: OnceLock<RwLock<Vec<EncoderFactory>>> = OnceLock::new();
-    F.get_or_init(|| RwLock::new(vec![h264_factory, hevc_factory, vp9_factory, prores_factory, dnx_factory, apv_factory, cineform_factory, mjpeg_factory]))
+    F.get_or_init(|| RwLock::new(vec![h264_factory, hevc_factory, av1_factory, vp9_factory, prores_factory, dnx_factory, apv_factory, cineform_factory, mjpeg_factory]))
 }
 fn audio_factories() -> &'static RwLock<Vec<AudioEncoderFactory>> {
     static F: OnceLock<RwLock<Vec<AudioEncoderFactory>>> = OnceLock::new();
@@ -2063,6 +2061,136 @@ fn hevc_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSetti
                 }) as Box<dyn VideoEncoder>
             })
             .map_err(|e| ExportError::Encode(format!("H.265: {e}"))),
+    )
+}
+
+/// AV1 (our software encoder; a registered hardware encoder goes first): Main, 8-bit BT.709 4:2:0
+/// from RGBA8, or for HDR 10-bit 4:2:0 BT.2020 PQ / HLG from the HDR floats with the static
+/// metadata in metadata OBUs. Samples are temporal units without the temporal delimiter
+/// (AV1-ISOBMFF 2.4), with the sequence header in the `av1C`.
+struct Av1Encoder {
+    enc: cfa4_av1::encode::Encoder,
+    w: u32,
+    h: u32,
+    rate: FrameRate,
+    y: Vec<u8>,
+    u: Vec<u8>,
+    v: Vec<u8>,
+    y10: Vec<u16>,
+    u10: Vec<u16>,
+    v10: Vec<u16>,
+    signal: ColorSignal,
+}
+
+impl Av1Encoder {
+    fn packets(&self, ps: Vec<cfa4_av1::encode::Packet>) -> Vec<EncodedPacket> {
+        ps.into_iter()
+            .map(|p| {
+                // OBU_TEMPORAL_DELIMITER with obu_has_size_field and an empty payload
+                let data = match p.data.get(..2) {
+                    Some([0x12, 0]) => p.data.get(2..).unwrap_or_default().to_vec(),
+                    _ => p.data,
+                };
+                EncodedPacket { data, key: p.keyframe, duration: self.rate.den as u32, composition_offset: 0 }
+            })
+            .collect()
+    }
+}
+
+impl VideoEncoder for Av1Encoder {
+    fn sample_entry(&self) -> SampleEntry {
+        let cfg = cfa4_isobmff::Av1Config::parse(&self.enc.av1c()).unwrap_or_default();
+        let (w, h) = (u16::try_from(self.w).unwrap_or(u16::MAX), u16::try_from(self.h).unwrap_or(u16::MAX));
+        let mut e = SampleEntry::av1(cfg, w, h);
+        self.signal.apply_to(&mut e, false);
+        e
+    }
+    fn timescale(&self) -> u32 {
+        self.rate.num as u32
+    }
+    fn encode(&mut self, f: &EncoderFrame) -> Result<Vec<EncodedPacket>> {
+        let (w, h) = (f.width as usize, f.height as usize);
+        let cw = w.div_ceil(2);
+        let ten_bit = self.enc.config().bit_depth > 8;
+        let frame = match f.hdr {
+            Some(rgb) if ten_bit => {
+                let (kr, kb) = self.signal.kr_kb();
+                timed(Stage::Convert, || rgbf_to_yuv420_10(rgb, w, h, kr, kb, &mut self.y10, &mut self.u10, &mut self.v10))?;
+                cfa4_av1::encode::YuvFrame::U16 { y: &self.y10, u: &self.u10, v: &self.v10, y_stride: w, uv_stride: cw }
+            }
+            hdr => {
+                timed(Stage::Convert, || match hdr {
+                    Some(rgb) => {
+                        let (kr, kb) = self.signal.kr_kb();
+                        rgbf_to_yuv420_8(rgb, w, h, kr, kb, &mut self.y, &mut self.u, &mut self.v)
+                    }
+                    None => rgba_to_yuv420_8(f.rgba, w, h, &mut self.y, &mut self.u, &mut self.v),
+                });
+                cfa4_av1::encode::YuvFrame::U8 { y: &self.y, u: &self.u, v: &self.v, y_stride: w, uv_stride: cw }
+            }
+        };
+        let ps = self.enc.encode(&frame, (f.index as i64).saturating_mul(self.rate.den)).map_err(|e| ExportError::Encode(e.to_string()))?;
+        Ok(self.packets(ps))
+    }
+    fn flush(&mut self) -> Result<Vec<EncodedPacket>> {
+        let ps = self.enc.flush().map_err(|e| ExportError::Encode(e.to_string()))?;
+        Ok(self.packets(ps))
+    }
+}
+
+/// Tiles per AV1 frame: about one per 120 superblocks (1080p: 4, 2160p: 8), fixed by the picture size
+/// (not the core count) so the stream is the same on every machine.
+pub(crate) fn av1_tiles(width: u32, height: u32) -> u32 {
+    let sbs = u64::from(width.div_ceil(64)) * u64::from(height.div_ceil(64));
+    (sbs / 120).clamp(1, 8) as u32
+}
+
+fn av1_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
+    if format != Format::Av1 {
+        return None;
+    }
+    use cfa4_av1::encode as ae;
+    let (Ok(num), Ok(den)) = (u32::try_from(rate.num), u32::try_from(rate.den)) else {
+        return Some(Err(ExportError::Unsupported(format!("AV1 export: frame rate {}/{}", rate.num, rate.den))));
+    };
+    let mut cfg = ae::EncoderConfig::new(w, h, num, den);
+    cfg.keyint = s.keyframe_distance.filter(|k| *k > 0).unwrap_or_else(|| (rate.num as f64 / rate.den as f64 * 2.0).round().max(1.0) as u32);
+    cfg.tiles = av1_tiles(w, h);
+    let kbps = s.bitrate_kbps.max(100);
+    let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).unwrap_or_else(|| (u64::from(kbps) * 3 / 2).min(u64::from(u32::MAX)) as u32);
+    cfg.rate = match s.bitrate_mode {
+        BitrateMode::Cbr => ae::RateControl::Cbr { kbps },
+        BitrateMode::Crf => ae::RateControl::Crf(if s.crf.is_finite() { s.crf } else { DEFAULT_CRF }),
+        _ => ae::RateControl::Vbr { target_kbps: kbps, max_kbps: max },
+    };
+    if s.signal.is_hdr() {
+        cfg.bit_depth = 10;
+        cfg.color = ae::ColorConfig { primaries: s.signal.primaries, transfer: s.signal.transfer, matrix: s.signal.matrix, full_range: false };
+        if let Some((md, cll)) = s.signal.static_metadata() {
+            let mut b = [0u8; 24];
+            b.copy_from_slice(&md.to_bytes());
+            cfg.mastering_display = Some(b);
+            cfg.content_light = Some(cll);
+        }
+    }
+    Some(
+        ae::Encoder::new(cfg)
+            .map(|enc| {
+                Box::new(Av1Encoder {
+                    enc,
+                    w,
+                    h,
+                    rate,
+                    y: Vec::new(),
+                    u: Vec::new(),
+                    v: Vec::new(),
+                    y10: Vec::new(),
+                    u10: Vec::new(),
+                    v10: Vec::new(),
+                    signal: s.signal,
+                }) as Box<dyn VideoEncoder>
+            })
+            .map_err(|e| ExportError::Encode(format!("AV1: {e}"))),
     )
 }
 

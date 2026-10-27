@@ -3452,7 +3452,8 @@
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits ; Main 10 pour les séquences HDR)
 	Encoder	Encodeur
 	Software, or hardware where available	Logiciel, ou matériel si disponible
-	Hardware (AV1 has no software encoder)	Matériel (AV1 n'a pas d'encodeur logiciel)
+	Main (10-bit, HDR)	Main (10 bits, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bits ; 10 bits pour les séquences HDR)
 	Text Properties	Propriétés du texte
 	Text Box Height	Hauteur de la zone de texte
 	Paragraph Text	Texte de paragraphe

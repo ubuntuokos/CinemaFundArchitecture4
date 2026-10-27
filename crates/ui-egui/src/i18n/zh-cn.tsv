@@ -3452,7 +3452,8 @@
 	Main (8-bit; Main 10 for HDR sequences)	主要（8 位；HDR 序列使用主要 10）
 	Encoder	编码器
 	Software, or hardware where available	软件（可用时使用硬件）
-	Hardware (AV1 has no software encoder)	硬件（AV1 无软件编码器）
+	Main (10-bit, HDR)	Main（10 位，HDR）
+	Main (8-bit; 10-bit for HDR sequences)	Main（8 位；HDR 序列为 10 位）
 	Text Properties	文本属性
 	Text Box Height	文本框高度
 	Paragraph Text	段落文本

@@ -13,6 +13,36 @@ shape is checked against its declared dimensions; one missing comma in the spec'
 SVT-AV1 or any other implementation; ffmpeg (libsvtav1 to encode fixtures, libdav1d to decode the
 reference) is used only as an external test oracle.
 
+## Encoder
+
+`cfa4_av1::encode` is a software AV1 encoder (Main profile, 8- or 10-bit 4:2:0, any picture
+size up to 16384x8704) built on the decoder itself: the tile syntax code is generic over a
+symbol coder, and when it encodes, every symbol read becomes a policy question ("which
+partition, mode, motion vector, coefficient level here?") answered by the encoder and written by
+a range encoder (`symbol.rs`). Reconstruction, contexts, MV prediction and the loop filters are
+therefore the decoder's own, so the encoder's reference pictures match what any conforming
+decoder produces (checked against libdav1d by `tests/oracle_encoder.rs`). The decoding path is
+unchanged (the policy hooks compile away).
+
+| Part | What it does |
+|---|---|
+| Bitstream | temporal units with sequence header and HDR metadata OBUs (mastering display, content light) on key frames; `av1C` for ISOBMFF; uniform tiles coded in parallel (output depends on the tile count, never the thread count) |
+| Partition | 64x64 superblocks, square splits down to 8x8, decided from the source: intra predictors from neighbouring source samples and integer motion search, each costed as squared error plus estimated coefficient bits after quantization |
+| Modes | 13 intra modes (top candidates by SATD, then rate-distortion), chroma mode; inter: LAST_FRAME with NEAREST / NEAR (DRL) / GLOBAL / NEWMV (seeded integer search, sub-sample refinement on the real interpolation), skip when nothing survives quantization |
+| Transforms | forward transforms measured from the decoder's inverse ones (least-squares, every size and type), largest transform per block, DCT for luma and the mode's type for chroma |
+| Quantization | dead-zone rounding plus a rate-distortion pass (levels rounded down, trailing ones dropped) |
+| Filters | deblocking level searched on the frame, one CDEF strength per frame (luma and chroma searched separately) |
+| Rate control | CRF on the H.264 / HEVC QP scale, CBR, VBR (1-pass, VBV), constant qindex |
+| Presets | Speed / Balanced / Quality: search effort (modes tried, motion range, filter search) |
+
+On 20 CIF frames it is about 10% smaller than x265 `medium` without B-frames at the same PSNR;
+SVT-AV1 (hierarchical references) is still about 1.5-2x smaller. A 1080p frame takes about 2 s
+of one core at Balanced. `examples/av1enc.rs` encodes raw 4:2:0 to IVF. Not yet done: more references and
+an altref GOP (#193), compound / OBMC / warped motion (#194), transform size and type search
+(#195), CFL, angle deltas, palette and finer partitions (#196), per-superblock CDEF and loop
+restoration (#197), 4:2:2 / 4:4:4 / 12-bit (#198), adaptive quantization and two-pass (#199),
+speed (#200).
+
 ## Conformance status
 
 | Stage | Spec | Status |

@@ -208,7 +208,7 @@ pub fn stepped(format: Format) -> bool {
 /// Whether an export is HDR: an HDR working space, SDR not asked for, and a format whose encoder
 /// writes HDR.
 pub(crate) fn hdr_output(working_hdr: bool, sdr: bool, format: Format) -> bool {
-    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform)
+    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform)
 }
 
 fn make_venc(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Result<Box<dyn VideoEncoder>> {
@@ -232,7 +232,7 @@ impl Exporter {
         }
         settings.validate()?;
         let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
-        // HDR sequences export HDR (H.264 / H.265 Main 10 / ProRes / DNxHR / APV) unless SDR is asked for
+        // HDR sequences export HDR (H.264 / H.265 Main 10 / AV1 / ProRes / DNxHR / APV / CineForm) unless SDR is asked for
         let pipe = q.settings.color;
         let hdr_out = hdr_output(pipe.working.is_hdr(), settings.sdr, settings.video_format());
         let mut settings = settings.clone();

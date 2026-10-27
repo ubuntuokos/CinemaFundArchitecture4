@@ -695,8 +695,10 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
             let hevc = f != Format::H264;
             if hevc {
                 if f == Format::Av1 {
-                    row(ui, t, tl!("Profile"), |ui| ui.label(tl!("Main (8-bit)")));
-                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Hardware (AV1 has no software encoder)")));
+                    // Main: 8-bit 4:2:0, or 10-bit for HDR sequences
+                    let label = if seq_hdr && !s.sdr { tl!("Main (10-bit, HDR)") } else { tl!("Main (8-bit; 10-bit for HDR sequences)") };
+                    row(ui, t, tl!("Profile"), |ui| ui.label(label));
+                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Software, or hardware where available")));
                 } else {
                     // Main (8-bit 4:2:0), or Main 10 for HDR sequences; level chosen by the encoder
                     let label = if seq_hdr && !s.sdr { tl!("Main 10 (10-bit, HDR)") } else { tl!("Main (8-bit; Main 10 for HDR sequences)") };
@@ -722,9 +724,9 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 });
             }
             row(ui, t, tl!("Bitrate Encoding"), |ui| {
-                // H.265 has one pass (CRF runs on the software encoder); AV1 is hardware only: one pass, no CRF
+                // one pass for H.265 and AV1; both software encoders have a constant-quality mode
                 let o = [BitrateMode::Cbr, BitrateMode::Vbr1Pass, BitrateMode::Vbr2Pass, BitrateMode::Crf];
-                let off = |m: &BitrateMode| hevc && (*m == BitrateMode::Vbr2Pass || (f == Format::Av1 && *m == BitrateMode::Crf));
+                let off = |m: &BitrateMode| hevc && *m == BitrateMode::Vbr2Pass;
                 let labels: Vec<(String, bool)> = o.iter().map(|m| (m.label().to_string(), !off(m))).collect();
                 if let Some(i) = combo(ui, reg, "export.video.bitrateMode", s.bitrate_mode.label(), &labels, 140.0) {
                     s.bitrate_mode = o[i];
