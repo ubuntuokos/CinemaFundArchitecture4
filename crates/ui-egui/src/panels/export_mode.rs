@@ -544,7 +544,7 @@ fn settings_column(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect) {
         if (s.has_audio()
             || !s.has_video()
             || s.format.is_mp4_video()
-            || matches!(s.format, Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg)
+            || matches!(s.format, Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg)
             || s.format.is_mxf())
             && !s.is_image_sequence()
             && s.format != Format::Gif
@@ -591,7 +591,7 @@ fn settings_column(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect) {
         if section(ui, &mut reg, &mut ex.open_sections, "effects", tl!("Effects"), &t) {
             pick_overlay = effects_section(ui, &mut reg, s, &t);
         }
-        if matches!(s.format, Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg)
+        if matches!(s.format, Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg)
             && section(ui, &mut reg, &mut ex.open_sections, "metadata", tl!("Metadata"), &t)
         {
             let m = &mut s.metadata;
@@ -814,6 +814,24 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 let cur = keys.iter().position(|k| *k == s.apv_profile).unwrap_or(0);
                 if let Some(i) = combo(ui, reg, "export.video.apvProfile", labels[cur], &opts(&labels), 220.0) {
                     s.apv_profile = keys[i].into();
+                }
+            });
+        }
+        Format::Cineform => {
+            row(ui, t, tl!("Encoding"), |ui| {
+                let keys = ["422", "444", "4444"];
+                let labels = ["YUV 4:2:2 10-bit", "RGB 4:4:4 12-bit", "RGBA 4:4:4:4 12-bit"];
+                let cur = keys.iter().position(|k| *k == s.cineform_profile).unwrap_or(0);
+                if let Some(i) = combo(ui, reg, "export.video.cineformProfile", labels[cur], &opts(&labels), 220.0) {
+                    s.cineform_profile = keys[i].into();
+                }
+            });
+            row(ui, t, tl!("Quality"), |ui| {
+                let keys = ["filmscan3", "filmscan2", "filmscan1", "high", "medium", "low"];
+                let labels = ["Film Scan 3", "Film Scan 2", "Film Scan 1", "High", "Medium", "Low"];
+                let cur = keys.iter().position(|k| *k == s.cineform_quality).unwrap_or(2);
+                if let Some(i) = combo(ui, reg, "export.video.cineformQuality", labels[cur], &opts(&labels), 220.0) {
+                    s.cineform_quality = keys[i].into();
                 }
             });
         }

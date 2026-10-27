@@ -37,6 +37,7 @@ cfa4-vp8 = { path = "crates/vp8" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
+cfa4-cineform = { path = "crates/cineform" }
 cfa4-j2k = { path = "crates/j2k" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
@@ -118,6 +119,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-dnx]
+opt-level = 3
+
+[profile.dev.package.cfa4-cineform]
 opt-level = 3
 
 [profile.dev.package.cfa4-j2k]

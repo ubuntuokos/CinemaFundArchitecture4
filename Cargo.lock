@@ -791,6 +791,17 @@ name = "cfa4-cfb"
 version = "0.10.0"
 
 [[package]]
+name = "cfa4-cineform"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-isobmff",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
@@ -828,6 +839,7 @@ dependencies = [
  "cfa4-av1",
  "cfa4-avi",
  "cfa4-bitstream",
+ "cfa4-cineform",
  "cfa4-color",
  "cfa4-dnx",
  "cfa4-dts",
@@ -967,6 +979,7 @@ dependencies = [
  "cfa4-aac",
  "cfa4-apv",
  "cfa4-audio-dsp",
+ "cfa4-cineform",
  "cfa4-codecs",
  "cfa4-color",
  "cfa4-dnx",

@@ -288,6 +288,14 @@ impl Mp4Source {
                     info.has_alpha = h.alpha;
                 }
             }
+            if matches!(entry.codec, CodecConfig::Cineform) {
+                // format, depth and alpha are in the first sample's header
+                let s0 = &t.samples[0];
+                if let Some(h) = cfa4_media::reader::read_range(&*bytes.0, s0.offset, s0.size as usize).ok().and_then(|d| cfa4_cineform::probe(&d).ok()) {
+                    info.pixel_format = cineform_pixfmt_label(&h);
+                    info.has_alpha = h.format == cfa4_cineform::EncodedFormat::Rgba4444;
+                }
+            }
             if matches!(entry.codec, CodecConfig::ProRes { .. }) {
                 // a 4444 fourcc doesn't mean the frames carry alpha (alpha_channel_type does): read the first frame header
                 let s0 = &t.samples[0];
@@ -601,8 +609,21 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Opus(_) => "Opus".into(),
         CodecConfig::Dnx { fourcc } if fourcc.0 == *b"AVdh" => "Avid DNxHR".into(),
         CodecConfig::Dnx { .. } => "Avid DNxHD".into(),
+        CodecConfig::Cineform => "GoPro CineForm".into(),
         other => other.name().to_string(),
     }
+}
+
+/// "YUV 4:2:2 10-bit" / "RGBA 4:4:4:4 12-bit" from a CineForm sample header.
+pub(crate) fn cineform_pixfmt_label(h: &cfa4_cineform::Header) -> String {
+    let sub = match h.format {
+        cfa4_cineform::EncodedFormat::Yuv422 => "YUV 4:2:2",
+        cfa4_cineform::EncodedFormat::Rgb444 => "RGB 4:4:4",
+        cfa4_cineform::EncodedFormat::Rgba4444 => "RGBA 4:4:4:4",
+        cfa4_cineform::EncodedFormat::Yuva4444 => "YUVA 4:4:4:4",
+        cfa4_cineform::EncodedFormat::Bayer => "Bayer",
+    };
+    format!("{sub} {}-bit", h.precision)
 }
 
 /// "YUV 4:2:2 10-bit" from an H.264 / HEVC `chroma_format_idc` and bit depth.

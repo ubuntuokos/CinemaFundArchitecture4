@@ -1,6 +1,6 @@
 # Codec parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (AC-3 / E-AC-3 encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (CineForm decoder and encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
@@ -21,6 +21,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | ProRes 422 family / 4444 / XQ | decode + encode all | own decode + encode, all six profiles, alpha | yes (export UI exposes 422 flavours; 4444 / XQ request #342) | ±1 LSB, 318 fps | 85% | 3–6 h |
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
 | DNxHD / DNxHR | decode + encode, MXF / MOV | own decode (all SMPTE ST 2019-1 CIDs, 8/10/12-bit, 4:2:2 / 4:4:4, interlaced, alpha) and encode LB / SQ / HQ / HQX / 444 | yes, MOV + MXF | within IDCT precision of ffmpeg on 22 fixtures | 90% | 2–4 h |
+| GoPro CineForm (CFHD) | decode + encode (GoPro CineForm in MOV / AVI) | own decode (`cfa4-cineform`): intra samples, YUV 4:2:2 10-bit, RGB 4:4:4 / RGBA 4:4:4:4 12-bit, all band codings, peak tables; MOV / AVI / MKV import. No temporal (GOP) samples (#154), Bayer, YUVA, 3D (#155) | own encode: YUV 4:2:2 10-bit, RGB / RGBA 12-bit, Film Scan 3 … Low, MOV export with three presets (width a multiple of 16) | decode bit-exact vs ffmpeg `cfhd` on 7 fixtures; ffmpeg decodes our samples exactly as we do (6 fixtures, every quality); fuzzed damaged streams; ~33 ms decode, ~45 ms encode per 1080p frame | 75% | 10–20 h (GOP, Bayer, SDK samples) |
 | AV1 | decode (hardware on Windows); export through Media Encoder plug-ins / recent versions | own decoder Main 8/10-bit, all tools, film grain, bit-exact vs libdav1d on 41 vectors; hardware on Windows | none | slow in software (~4 fps 1080p single-thread) | 55% | 30–50 h (encoder + speed) |
 | VP9 | not a Premiere import format on all versions | own decoder profiles 0–3, 8/10/12-bit, bit-exact on 50+ fixtures, frame threading | own encoder, profile 0 (8-bit 4:2:0), key + inter frames, constant quantizer or bit rate (#89); WebM export (#149, about 1 fps at 1080p); about twice libvpx's size at equal PSNR (#151) | conformance; ffmpeg decodes our streams sample-exactly like we do | ahead | — |
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |

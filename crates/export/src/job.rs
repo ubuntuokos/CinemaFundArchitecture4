@@ -198,6 +198,7 @@ pub fn stepped(format: Format) -> bool {
             | Format::ProRes
             | Format::DnxHr
             | Format::Apv
+            | Format::Cineform
             | Format::Mjpeg
             | Format::MxfOp1a
             | Format::MxfOpAtom
@@ -207,7 +208,7 @@ pub fn stepped(format: Format) -> bool {
 /// Whether an export is HDR: an HDR working space, SDR not asked for, and a format whose encoder
 /// writes HDR.
 pub(crate) fn hdr_output(working_hdr: bool, sdr: bool, format: Format) -> bool {
-    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::ProRes | Format::DnxHr | Format::Apv)
+    working_hdr && !sdr && matches!(format, Format::H264 | Format::Hevc | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform)
 }
 
 fn make_venc(settings: &ExportSettings, w: u32, h: u32, rate: FrameRate) -> Result<Box<dyn VideoEncoder>> {

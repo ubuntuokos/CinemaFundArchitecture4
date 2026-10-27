@@ -178,6 +178,8 @@ pub enum CodecConfig {
     Dnx {
         fourcc: FourCc,
     },
+    /// GoPro CineForm (`CFHD`).
+    Cineform,
     /// Advanced Professional Video (`apv1` + `apvC`).
     Apv(ApvConfig),
     Aac(AacConfig),
@@ -223,6 +225,7 @@ impl CodecConfig {
             CodecConfig::ProRes { .. } => "prores",
             CodecConfig::Jpeg { .. } => "mjpeg",
             CodecConfig::Dnx { .. } => "dnxhd",
+            CodecConfig::Cineform => "cfhd",
             CodecConfig::Apv(_) => "apv",
             CodecConfig::Aac(_) => "aac",
             CodecConfig::Mp3 => "mp3",
@@ -991,6 +994,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"apch" | b"apcn" | b"apcs" | b"apco" | b"ap4h" | b"ap4x" => CodecConfig::ProRes { fourcc: format },
                 b"jpeg" | b"mjpa" | b"mjpb" => CodecConfig::Jpeg { fourcc: format },
                 b"AVdn" | b"AVdh" => CodecConfig::Dnx { fourcc: format },
+                b"CFHD" => CodecConfig::Cineform,
                 b"apv1" => CodecConfig::Apv(ApvConfig::default()),
                 _ => unknown(),
             },
@@ -1312,6 +1316,15 @@ impl SampleEntry {
         let mut e = Self::video(fourcc, CodecConfig::Dnx { fourcc }, width, height);
         if let Some(v) = e.video.as_mut() {
             v.depth = 24;
+        }
+        e
+    }
+    /// GoPro CineForm entry (`CFHD`).
+    pub fn cineform(width: u16, height: u16) -> Self {
+        let mut e = Self::video(FourCc(*b"CFHD"), CodecConfig::Cineform, width, height);
+        if let Some(v) = e.video.as_mut() {
+            v.depth = 24;
+            v.compressor_name = "GoPro CineForm".into();
         }
         e
     }
