@@ -3,7 +3,7 @@
 **Verzió:** 1.1 (a v1.0 javított változata a 2026-10-29-i review alapján)
 **Dátum:** 2026-10-29
 **Projekt:** CinemaFundArchitecture4 (CFA4)
-**Állapot:** tulajdonosi jóváhagyásra vár
+**Állapot:** a tulajdonos (`ubuntuokos`) jóváhagyta, 2026-10-29; a fejlesztés indítása külön döntéshez kötött
 **Végrehajtás:** jóváhagyás után, külön fejlesztésindítási döntéssel (lásd XII.)
 **Kapcsolódik:** [ADR 0001](../adr/0001-platform-ffi.md) (FFI), [ADR 0004](../adr/ADR-0004-compute-routing.md) (`cfa4-route`),
 [ADR 0005](../adr/ADR-0005-media-backends.md) (kiegészítő médiahátterek), [`docs/licensing.md`](../licensing.md),
