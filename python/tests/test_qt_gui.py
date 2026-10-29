@@ -5521,6 +5521,148 @@ def test_real_engine_media_dialogs_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+def test_export_dialog_helpers():
+    """export_dialogs' file name, as egui's: unsafe characters become ``_``, a still extension
+    the name already has gives way to the chosen format's."""
+    from cfa4_qt.panels.export_dialogs import clean_name, frame_path
+
+    assert clean_name(' a/b:c*?"<>| ') == "a_b_c______"
+    assert frame_path("/x", "Shot.PNG", "jpg") == "/x/Shot.jpg"
+    assert frame_path("/x", "Shot.jpg", "jpg") == "/x/Shot.jpg"
+    assert frame_path("/x", "Shot 1", "tiff") == "/x/Shot 1.tiff"
+    assert frame_path("~", "a", "png") == str(Path.home() / "a.png")
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
+    an existing file asks Replace / Keep existing file, the folder is kept for the next export;
+    File ▸ Export ▸ AAF… / OMF… settings (Link to Media turns trimming off) ask for the file."""
+    import shiboken6
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export_dialogs import ExportSettingsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def opened(cid: str, how) -> ExportSettingsDialog:
+        last = win.last_dialog
+        how()
+        assert wait_until(app, lambda: win.last_dialog is not last and isinstance(win.last_dialog, ExportSettingsDialog) and win.last_dialog.isVisible(), 10_000), cid
+        d = win.last_dialog
+        assert d.command == cid
+        return d
+
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        mon = win.monitor
+        ft = 10_594_584_000  # the demo's 23.976 fps frame
+        mon.seek(23 * ft)
+        d = opened("file.exportFrame", lambda: mon.buttons["exportFrame"].click())
+        assert child(d, "exportFrame.timecode", QtWidgets.QLabel).text().endswith("00:00:00:23")
+        name = child(d, "exportFrame.name", QtWidgets.QLineEdit)
+        assert name.text() and "/" not in name.text()
+        fmt_box = child(d, "exportFrame.format", QtWidgets.QComboBox)
+        depth = child(d, "exportFrame.depth", QtWidgets.QComboBox)
+        assert fmt_box.currentData() == "png" and depth.currentData() == 8
+        depth.setCurrentIndex(1)
+        assert d.params["depth"] == 16
+        fmt_box.setCurrentIndex(fmt_box.findData("jpg"))
+        assert depth.currentData() == 8 and not depth.model().item(1).isEnabled()
+        fmt_box.setCurrentIndex(fmt_box.findData("png"))
+        ok = child(d, "exportFrame.export", QtWidgets.QPushButton)
+        name.setText("")
+        assert not ok.isEnabled()
+        name.setText("frame")
+        out_dir = tmp_path / "stills"
+        out_dir.mkdir()
+        child(d, "exportFrame.path", QtWidgets.QLineEdit).setText(str(out_dir))
+        ok.click()
+        out = out_dir / "frame.png"
+        assert wait_until(app, lambda: closed(d), 30_000), d.error.text()
+        assert out.is_file() and out.stat().st_size > 0
+        assert d.sent[-1]["time"] == 23 * ft and d.sent[-1]["target"] == "program"
+        assert "frame.png" in win.statusBar().currentMessage()
+        # the folder is kept; the same name asks before replacing
+        d = opened("file.exportFrame", lambda: win.invoke("file.exportFrame"))
+        assert child(d, "exportFrame.path", QtWidgets.QLineEdit).text() == str(out_dir)
+        child(d, "exportFrame.name", QtWidgets.QLineEdit).setText("frame.png")
+        before = out.stat().st_mtime_ns
+        child(d, "exportFrame.export", QtWidgets.QPushButton).click()
+        replace = child(d, "exportFrame.replace", QtWidgets.QPushButton)
+        assert replace.isVisible() and not child(d, "exportFrame.export", QtWidgets.QPushButton).isVisible()
+        child(d, "exportFrame.keep", QtWidgets.QPushButton).click()
+        assert not replace.isVisible() and d.isVisible() and out.stat().st_mtime_ns == before
+        child(d, "exportFrame.export", QtWidgets.QPushButton).click()
+        replace.click()
+        assert wait_until(app, lambda: closed(d), 30_000)
+        assert out.stat().st_mtime_ns != before or len(list(out_dir.iterdir())) == 1
+        # AAF from the File ▸ Export menu
+        saved = tmp_path / "edit.aaf"
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: (str(tmp_path / "edit"), ""))
+        action = win.registry.actions["file.exportAaf"]
+        assert wait_until(app, action.isEnabled, 10_000)
+        d = opened("file.exportAaf", action.trigger)
+        assert child(d, "aafExport.audio.embedded", QtWidgets.QRadioButton).isChecked()
+        assert not child(d, "aafExport.audioFormat.wav", QtWidgets.QRadioButton).isEnabled()
+        child(d, "aafExport.audio.separate", QtWidgets.QRadioButton).setChecked(True)
+        assert child(d, "aafExport.audioFormat.mxf", QtWidgets.QRadioButton).isEnabled()
+        child(d, "aafExport.audio.linked", QtWidgets.QRadioButton).setChecked(True)
+        assert not child(d, "aafExport.trimAudio", QtWidgets.QCheckBox).isEnabled() and not child(d, "aafExport.renderAudioEffects", QtWidgets.QCheckBox).isEnabled()
+        child(d, "aafExport.audio.embedded", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "aafExport.trimAudio", QtWidgets.QCheckBox).setChecked(True)
+        handles = child(d, "aafExport.handles", QtWidgets.QSpinBox)
+        assert handles.isEnabled()
+        handles.setValue(12)
+        child(d, "aafExport.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 60_000), d.error.text()
+        assert saved.is_file() and saved.stat().st_size > 0
+        assert d.sent[-1]["path"] == str(saved) and d.sent[-1]["handles"] == 12 and d.sent[-1]["trimAudio"] is True
+        # OMF: trimmed with 30 handle frames by default, titled after the sequence
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: ("", ""))
+        d = opened("file.exportOmf", lambda: win.invoke("file.exportOmf"))
+        assert child(d, "omfExport.trimAudio", QtWidgets.QCheckBox).isChecked() and child(d, "omfExport.handles", QtWidgets.QSpinBox).value() == 30
+        assert child(d, "omfExport.title", QtWidgets.QLineEdit).text()
+        assert child(d, "omfExport.audioFormat.mxf") is None
+        child(d, "omfExport.ok", QtWidgets.QPushButton).click()
+        assert d.isVisible() and not d.sent, "a cancelled file picker keeps the dialog"
+        d.reject()
+        # EDL / Final Cut Pro XML / OpenTimelineIO ask where to save, named after the sequence
+        asked: list = []
+
+        def save_as(_parent, _title, start, filt):
+            asked.append((start, filt))
+            return str(tmp_path / Path(start).stem), filt
+
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", save_as)
+        for cid, ext in (("file.exportEdl", "edl"), ("file.exportFcp7Xml", "xml"), ("file.exportOtio", "otio")):
+            action = win.registry.actions[cid]
+            assert wait_until(app, action.isEnabled, 10_000), cid
+            action.trigger()
+            start, filt = asked[-1]
+            assert start == f"{win.sequence['name']}.{ext}" and filt.endswith(f"(*.{ext})"), (start, filt)
+            out = tmp_path / start
+            assert wait_until(app, lambda o=out: o.is_file() and o.stat().st_size > 0, 20_000), (cid, win.events.text.toPlainText())
+        # with a path the command runs directly
+        direct = tmp_path / "direct.png"
+        win.run_preset("file.exportFrame", {"path": str(direct), "target": "program", "time": 0})
+        assert wait_until(app, lambda: direct.is_file(), 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_timeline_thumbnail_tiles_as_egui():
     """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
     continuous tiles on a grid from the head, only the visible ones; source_time_at follows the
@@ -6229,10 +6371,16 @@ def test_program_monitor_controls_as_egui(app, tmp_path: Path, monkeypatch):
         assert mon.speed == -1.0
         mon.stop()
         assert not mon.playing and mon.speed == 1.0
-        # Export Frame asks for the file and writes it
+        # Export Frame opens its settings (egui's) and writes the frame
+        from cfa4_qt.panels.export_dialogs import ExportSettingsDialog
+
         out = tmp_path / "still.png"
-        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), "PNG (*.png)"))
         mon.buttons["exportFrame"].click()
+        assert wait_until(app, lambda: isinstance(win.last_dialog, ExportSettingsDialog) and win.last_dialog.isVisible(), 10_000)
+        d = win.last_dialog
+        d.findChild(QtWidgets.QLineEdit, "exportFrame.name").setText("still")
+        d.findChild(QtWidgets.QLineEdit, "exportFrame.path").setText(str(tmp_path))
+        d.findChild(QtWidgets.QPushButton, "exportFrame.export").click()
         assert wait_until(app, lambda: out.exists() and out.stat().st_size > 0, 30_000), win.events.text.toPlainText()
     finally:
         win._quit_confirmed = True

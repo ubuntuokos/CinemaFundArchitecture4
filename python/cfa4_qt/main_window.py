@@ -47,6 +47,7 @@ from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
 from .panels.essential_sound import EssentialSoundPanel
 from .panels.export import ExportDialog
+from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
@@ -84,6 +85,17 @@ from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
 from .timecode import TICKS_PER_SECOND
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
+
+# egui's EXPORT_SAVE_DIALOGS: exports that ask where to save (filter label, extension)
+EXPORT_SAVES = {
+    "markers.exportCsv": (N_("Marker report (CSV)"), "csv"),
+    "file.exportEdl": ("EDL", "edl"),
+    "file.exportFcp7Xml": ("Final Cut Pro XML", "xml"),
+    "file.exportFcpxml": ("FCPXML", "fcpxml"),
+    "file.exportOtio": ("OpenTimelineIO", "otio"),
+    "file.exportAle": (N_("Avid Log Exchange"), "ale"),
+    "file.exportSelectionProject": ("CFA4 Project", "fcproj"),
+}
 
 # egui's rulers and guides UI commands (menus.rs), run on the focused monitor
 # egui's ROLL_PX: a right-click this close to a cut picks Roll (timeline_hit.rs)
@@ -796,6 +808,7 @@ class MainWindow(QMainWindow):
             a.triggered.connect(lambda _c=False, c=cid: self.invoke(c))
             self.help_actions.append(a)
         self.opened: list[str] = []  # paths handed to the file manager (egui's extras.opened)
+        self.frame_folder = ""  # Export Frame's last folder (egui's frame-export-folder)
         self.open_path_hook: Callable[[str, bool], None] | None = None  # tests: instead of the OS
         self.shortcuts_action = QAction(tr("Keyboard Shortcuts…"), self)
         self.shortcuts_action.setObjectName("app.keyboardShortcuts")
@@ -1129,6 +1142,41 @@ class MainWindow(QMainWindow):
         query = {"command": cid, "timeline": self.inspector_source == "timeline", "searchText": self.project_panel.filter.text()}
         self.engine.execute("dialog.defaults", query, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
 
+    def open_export_dialog(self, cid: str, params: dict[str, Any]) -> None:
+        """Export Frame (egui's ``frame_export``: the frame of the monitor that asked, else the
+        focused one, captured now; the last export's folder) and AAF / OMF Export Settings."""
+        query: dict[str, Any] = {"command": cid}
+        if cid == "file.exportFrame":
+            mon = self.source_monitor if params.get("target") == "source" else self.monitor if params.get("target") == "program" else self.focused_monitor()
+            if mon.playing:
+                mon.stop()
+            query.update({"target": mon.target, "time": int(mon.playhead)})
+            query.update({k: v for k, v in params.items() if k in ("target", "time", "item", "sequence")})
+
+        def run(command: str, p: dict[str, Any], then: Any) -> None:
+            def ok(r: Any, _b: bytes | None) -> None:
+                self.schedule_refresh()
+                then(None, r)
+
+            self.engine.execute(command, p, on_reply=ok, on_error=lambda m: then(str(m), None))
+
+        def remember(folder: str) -> None:
+            self.frame_folder = folder
+
+        def got(state: Any, _b: bytes | None) -> None:
+            if not isinstance(state, dict):
+                self._command_failed(cid, tr("no dialog"))
+                return
+            p = state.get("params")
+            if cid == "file.exportFrame" and self.frame_folder and isinstance(p, dict):
+                p["folder"] = self.frame_folder
+            dialog = ExportSettingsDialog(self, state, run, status=lambda t: self.statusBar().showMessage(t, 6000), remember=remember)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.last_dialog = dialog
+            dialog.open()
+
+        self.engine.execute("dialog.defaults", query, on_reply=got, on_error=lambda m: self._command_failed(cid, m))
+
     # ----- the frontend side of the menu long tail (egui's menu_dialogs::route) -----
     def _set_dynamic_waveforms(self, on: bool) -> None:
         self.timeline.canvas.dynamic_waveforms = on
@@ -1186,8 +1234,9 @@ class MainWindow(QMainWindow):
         self.engine.execute("clip.generateAudioWaveform", params, on_reply=got, on_error=lambda m: self._command_failed("clip.generateAudioWaveform", m))
 
     def pick_and_run(self, cid: str, params: dict[str, Any]) -> None:
-        """Export Selection as Project / Avid Log Exchange ask where to save; Get Media File
-        Properties for ▸ File… asks for the file and shows its Properties."""
+        """egui's ``EXPORT_SAVE_DIALOGS`` (EDL, Final Cut Pro XML, FCPXML, OpenTimelineIO, the
+        marker CSV, Avid Log Exchange, Export Selection as Project) ask where to save; Get Media
+        File Properties for ▸ File… asks for the file and shows its Properties."""
         if cid == "file.mediaPropertiesFile":
             path, _f = QFileDialog.getOpenFileName(self, tr("Media"), "", tr("All files") + " (*)")
         else:
@@ -1196,10 +1245,15 @@ class MainWindow(QMainWindow):
                 self._command_failed(cid, tr("not available now"))
                 return
             name = str((self.project or {}).get("name") or tr("Untitled"))
+            label, suffix = EXPORT_SAVES.get(cid, ("CFA4 Project", "fcproj"))
+            filt, ext = f"{tr(label)} (*.{suffix})", f".{suffix}"
             if cid == "file.exportAle":
-                start, filt, ext = f"{name}.ale", tr("Avid Log Exchange") + " (*.ale)", ".ale"
-            else:
-                start, filt, ext = fmt("{name} Selection.fcproj", name=name), "CFA4 Project (*.fcproj)", ".fcproj"
+                start = f"{name}.ale"
+            elif cid == "file.exportSelectionProject":
+                start = fmt("{name} Selection.fcproj", name=name)
+            else:  # timelines are named after the sequence (egui's)
+                seq = str((self.sequence or {}).get("name") or "").strip() or name
+                start = "".join("-" if c in "/\\" or not c.isprintable() else c for c in seq) + ext
             path, _f = QFileDialog.getSaveFileName(self, tr(cmd.label if cmd is not None else cid), start, filt)
             if path and not path.endswith(ext):
                 path += ext
@@ -1755,6 +1809,8 @@ class MainWindow(QMainWindow):
         elif cid in CLIP_DIALOGS and not params:
             # egui's clip_dialogs: from the menu the dialog; with parameters the command runs
             self.open_clip_dialog(cid)
+        elif cid in EXPORT_DIALOGS and not (params or {}).get("path"):
+            self.open_export_dialog(cid, dict(params or {}))
         elif cid in MENU_COMMANDS and not params:
             self.open_menu_dialog(cid)
         elif cid == "view.dynamicAudioWaveforms":
@@ -1768,7 +1824,7 @@ class MainWindow(QMainWindow):
             self.open_originals(cid, dict(params or {}))
         elif cid == "clip.generateAudioWaveform":
             self.generate_waveforms(dict(params or {}))
-        elif cid in ("file.exportSelectionProject", "file.exportAle", "file.mediaPropertiesFile") and not (params or {}).get("path"):
+        elif (cid in EXPORT_SAVES or cid == "file.mediaPropertiesFile") and not (params or {}).get("path"):
             self.pick_and_run(cid, dict(params or {}))
         elif cid == "media.linkMedia" and not params:
             self.open_link_media(menu=True)
@@ -1882,7 +1938,8 @@ class MainWindow(QMainWindow):
         if self.interpret_footage(cid, params):
             return
         project_path = (self.project or {}).get("path")
-        asked = path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
+        # a panel that already knows the file (an export dialog, a script) is not asked again
+        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
         if asked.get("__cancel__"):
             return
         self.engine.execute(

@@ -2034,3 +2034,31 @@
 	✔ matches	✔ egyezik
 	✔ same file	✔ ugyanaz a fájl
 	✖ different file	✖ másik fájl
+	AAF Export Settings	AAF exportálási beállítások
+	Audio File Format:	Hangfájl formátuma:
+	Bits per Sample:	Bit/minta:
+	Breakout to mono	Szétbontás monóra
+	Depth:	Bitmélység:
+	Embed	Beágyazás
+	Encapsulate	Becsomagolás
+	Exported frame to {path}	Képkocka exportálva ide: {path}
+	Exported {path}	Exportálva: {path}
+	Format:	Formátum:
+	Frame time: {timecode}	Képkocka ideje: {timecode}
+	Handle Frames:	Ráhagyás (képkocka):
+	Import into project	Importálás a projektbe
+	Keep existing file	Meglévő fájl megtartása
+	Link to Media	Hivatkozás a médiára
+	Mixdown video	Videó lekeverése
+	OMF Export Settings	OMF exportálási beállítások
+	OMF Title:	OMF cím:
+	Path:	Útvonal:
+	Render audio clip effects	Hangklip-effektusok renderelése
+	Replace	Csere
+	Separate Audio	Külön hang
+	Separate Files	Külön fájlok
+	This file already exists: {path}	Ez a fájl már létezik: {path}
+	Trim audio files	Hangfájlok vágása
+	{bits} Bit	{bits} bit
+	{w} × {h}	{w} × {h}
+	Marker report (CSV)	Markerjelentés (CSV)

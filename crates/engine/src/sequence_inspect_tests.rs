@@ -302,3 +302,28 @@ fn dialog_defaults_start_color_management_from_the_sequence() {
     let d = s.execute("dialog.defaults", json!({"command": "sequence.colorSettings"})).unwrap();
     assert_eq!((d["params"]["workingSpace"].as_str(), d["params"]["wideGamut"].as_bool()), (Some("rec2100-pq"), Some(true)));
 }
+
+#[test]
+fn dialog_defaults_capture_the_export_frame_and_interchange_settings() {
+    let mut s = Session::default();
+    s.execute("file.openDemoProject", json!({})).unwrap();
+    let seq = s.state.active_sequence.unwrap().0;
+    let d = s.execute("dialog.defaults", json!({"command": "file.exportFrame", "target": "program", "time": 254_016_000_000i64})).unwrap();
+    assert_eq!(d["command"], "file.exportFrame");
+    let p = &d["params"];
+    // 23.976 fps: the frame shown at one second starts at frame 23
+    assert_eq!((p["target"].as_str(), p["sequence"].as_u64(), p["time"].as_i64()), (Some("program"), Some(seq), Some(23 * 10_594_584_000)), "{d}");
+    assert_eq!((p["format"].as_str(), p["depth"].as_u64(), p["import"].as_bool()), (Some("png"), Some(8), Some(false)));
+    assert!(!p["name"].as_str().unwrap().is_empty() && !p["name"].as_str().unwrap().contains('/'));
+    assert_eq!(d["info"]["timecode"], "00:00:00:23");
+    assert_eq!(d["info"]["formats"][0], json!(["png", "PNG", true]));
+    assert!(d["info"]["width"].as_u64().unwrap() > 0);
+    // a damaged target is the command's own error
+    assert!(s.execute("dialog.defaults", json!({"command": "file.exportFrame", "target": "nowhere"})).is_err());
+    let d = s.execute("dialog.defaults", json!({"command": "file.exportOmf"})).unwrap();
+    assert_eq!((d["params"]["trimAudio"].as_bool(), d["params"]["handles"].as_i64(), d["info"]["omf"].as_bool()), (Some(true), Some(30), Some(true)));
+    assert_eq!(d["params"]["sampleRate"], 48_000);
+    let d = s.execute("dialog.defaults", json!({"command": "file.exportAaf"})).unwrap();
+    assert_eq!((d["params"]["trimAudio"].as_bool(), d["params"]["handles"].as_i64()), (Some(false), Some(0)));
+    assert!(!d["params"]["title"].as_str().unwrap().is_empty());
+}

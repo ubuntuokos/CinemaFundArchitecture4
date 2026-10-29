@@ -43,9 +43,12 @@ pub const DIALOGS: [&str; 27] = [
     "markers.addFlashCue",
 ];
 
-/// Further menu dialogs (egui's `menu_dialogs`, Sequence ▸ Color Management… of `color_dialogs`)
-/// that run a command of their own.
-const MORE: [&str; 3] = ["file.newColorMatte", "project.matteColor", "sequence.colorSettings"];
+/// Further menu dialogs (egui's `menu_dialogs`, Sequence ▸ Color Management… of `color_dialogs`,
+/// Export Frame of `frame_export`, AAF / OMF of `interchange_export`) that run a command of their own.
+const MORE: [&str; 6] = ["file.newColorMatte", "project.matteColor", "sequence.colorSettings", "file.exportFrame", "file.exportAaf", "file.exportOmf"];
+
+/// The sample rates AAF / OMF offer (egui's `interchange_export::RATES`).
+const INTERCHANGE_RATES: [u32; 4] = [32_000, 44_100, 48_000, 96_000];
 
 /// The command a menu item's dialog runs: the Project Settings items share one.
 fn dialog_command(id: &str) -> &str {
@@ -196,8 +199,42 @@ fn menu_defaults(s: &mut Session, id: &str, p: &Value) -> Result<(Value, Value)>
             let spaces: Vec<Value> = cfa4_color::WorkingSpace::ALL.iter().map(|w| json!([w.id(), w.label()])).collect();
             (json!({"workingSpace": c.working.id(), "wideGamut": c.wide_gamut, "autoToneMap": c.auto_tone_map}), json!({"workingSpaces": spaces}))
         }
+        "file.exportFrame" => frame_export_defaults(s, p)?,
+        "file.exportAaf" | "file.exportOmf" => {
+            let omf = id == "file.exportOmf";
+            let title = s.state.active_sequence.and_then(|q| s.project.item(q)).map(|i| i.name.clone()).unwrap_or_default();
+            let rate = s.active_sequence().map(|q| q.settings.sample_rate).filter(|r| INTERCHANGE_RATES.contains(r)).unwrap_or(48_000);
+            (
+                json!({"title": title, "mixdownVideo": false, "breakoutToMono": false, "audio": "embedded", "audioFormat": "wav", "sampleRate": rate,
+                       "bitDepth": 16, "trimAudio": omf, "handles": if omf { 30 } else { 0 }, "renderAudioEffects": false}),
+                json!({"omf": omf, "sampleRates": INTERCHANGE_RATES}),
+            )
+        }
         _ => (json!({}), Value::Null),
     })
+}
+
+/// egui's `frame_export::open`: the monitor frame captured now (`target`, `item` / `sequence`,
+/// `time` as `file.exportFrame` takes them), a file name from it, PNG 8-bit into the project's
+/// folder; `info` has the frame's timecode and size and the still formats.
+fn frame_export_defaults(s: &Session, p: &Value) -> Result<(Value, Value)> {
+    let t = crate::keyboard::frame_export_target(s, p)?;
+    let (rate, drop_frame) = if t.source {
+        let v = crate::clip_ops::source_view(s, t.item).ok_or_else(|| bad("file.exportFrame", "Source clip is unavailable"))?;
+        (v.rate, false)
+    } else {
+        let q = s.project.sequence(t.item).ok_or(crate::EngineError::NoSequence)?;
+        (q.settings.frame_rate, q.settings.drop_frame)
+    };
+    let timecode = cfa4_time::format_time(t.time, rate, drop_frame, cfa4_time::TimeDisplay::Timecode, 48_000);
+    let stem = if t.source { std::path::Path::new(&t.name).file_stem().and_then(|x| x.to_str()).unwrap_or(&t.name) } else { &t.name };
+    let name: String = stem.trim().chars().map(|c| if matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|') { '_' } else { c }).collect();
+    let folder = s.path.as_deref().and_then(|x| std::path::Path::new(x).parent()).map(|x| x.to_string_lossy().into_owned()).unwrap_or_else(|| ".".into());
+    let formats: Vec<Value> = crate::keyboard::StillFormat::ALL.iter().map(|f| json!([f.extension(), f.label(), f.supports_16()])).collect();
+    let mut params = json!({"name": name, "format": "png", "depth": 8, "folder": folder, "import": false,
+                            "target": if t.source { "source" } else { "program" }, "time": t.time.0});
+    params[if t.source { "item" } else { "sequence" }] = json!(t.item.0);
+    Ok((params, json!({"timecode": timecode, "source": t.source, "itemName": t.name, "width": t.width, "height": t.height, "formats": formats})))
 }
 
 fn format_name(f: AudioChannels) -> &'static str {
