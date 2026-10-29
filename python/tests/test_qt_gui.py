@@ -5383,6 +5383,182 @@ def test_real_engine_menu_frontend_items_as_egui(app, tmp_path: Path, monkeypatc
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_closing_asks_save_dont_save_cancel(app, tmp_path: Path, monkeypatch):
+    """egui's close prompt: closing the window with unsaved changes asks Save / Don't Save /
+    Cancel. Cancel keeps the window and the engine; Save writes the project, then closes; Don't
+    Save closes without writing; a clean project closes without asking."""
+    from cfa4_qt.main_window import MainWindow
+
+    answers: list[QtWidgets.QMessageBox.StandardButton] = []
+    asked: list[tuple[str, QtWidgets.QMessageBox.StandardButtons]] = []
+
+    def answer(box):
+        asked.append((box.text(), box.standardButtons()))
+        return answers.pop(0)
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+
+    def opened(name: str) -> tuple[MainWindow, EngineClient, Path]:
+        settings = QtCore.QSettings(str(tmp_path / f"{name}.ini"), QtCore.QSettings.Format.IniFormat)
+        engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / f"data-{name}")])
+        win = MainWindow(engine, settings)
+        win.show()
+        engine.start()
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        project = tmp_path / f"{name}.fcproj"
+        win.execute("file.saveAs", {"path": str(project)})
+        assert wait_until(app, lambda: project.is_file() and not win.state.get("dirty", True), 10_000)
+        return win, engine, project
+
+    def edited(win: MainWindow) -> None:
+        win.execute("markers.add", {"name": "unsaved"})
+        assert wait_until(app, lambda: win.state.get("dirty") is True, 10_000)
+
+    win, engine, project = opened("a")
+    try:
+        saved = project.read_bytes()
+        edited(win)
+        # Cancel: nothing closes, nothing is written
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.close()
+        assert wait_until(app, lambda: bool(asked), 10_000)
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 100)
+        text, buttons = asked[-1]
+        assert "a" in text and "closing" in text, text
+        for b in ("Save", "Discard", "Cancel"):
+            assert buttons & getattr(QtWidgets.QMessageBox.StandardButton, b), b
+        assert win.isVisible() and engine.running and project.read_bytes() == saved
+        # Save: the project is written, then the window closes and the engine stops
+        answers.append(QtWidgets.QMessageBox.StandardButton.Save)
+        win.close()
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+        assert len(asked) == 2 and project.read_bytes() != saved and b"unsaved" in project.read_bytes()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+    win, engine, project = opened("b")
+    try:
+        saved = project.read_bytes()
+        edited(win)
+        # Don't Save: closes without writing
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.close()
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+        assert len(asked) == 3 and project.read_bytes() == saved
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+    win, engine, project = opened("c")
+    try:
+        # clean: no question
+        win.close()
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+        assert len(asked) == 3
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's recovery prompt: after CFA4 died with unsaved changes the next start asks
+    Recover / Not Now / Discard. Not Now keeps them for the next start, Recover brings them
+    back, Discard drops them so the next start asks nothing."""
+    from cfa4_qt.main_window import MainWindow
+
+    answers: list[str] = []
+    asked: list[str] = []
+
+    def answer(box):
+        if box.objectName() == "dialog.unsaved":
+            return QtWidgets.QMessageBox.StandardButton.Discard
+        asked.append(box.text())
+        want = answers.pop(0)
+        button = next(b for b in box.buttons() if b.text() == want)
+        button.click()
+        return 0
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+
+    def started(data: Path, demo: bool = False) -> tuple[MainWindow, EngineClient]:
+        settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+        engine = EngineClient(REAL, [*(["--demo"] if demo else []), "--data-dir", str(data), "--autosave"])
+        win = MainWindow(engine, settings)
+        win.show()
+        engine.start()
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        return win, engine
+
+    def stopped(win: MainWindow, engine: EngineClient) -> None:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+
+    def crashed(data: Path) -> None:
+        """CFA4 dies (window and engine) with an unsaved note in the recovery journal."""
+        win, engine = started(data, demo=True)
+        try:
+            assert wait_until(app, lambda: win.sequence is not None, 30_000)
+            win.execute("project.setNotes", {"text": "lost work"})
+            assert wait_until(app, lambda: any(data.rglob("snapshot.fcproj")), 20_000)
+            win._closing = True  # the whole app goes: nothing restarts the engine
+            engine._process.kill()
+            engine._process.wait(10)
+        finally:
+            stopped(win, engine)
+
+    def notes(engine: EngineClient) -> str:
+        out: list[str] = []
+        engine.execute("project.notes", {}, on_reply=lambda r, _b: out.append(str((r or {}).get("text"))), on_error=lambda m: out.append(""))
+        assert wait_until(app, lambda: bool(out), 10_000)
+        return out[-1]
+
+    keep = tmp_path / "keep"
+    crashed(keep)
+    # Not Now: asked, nothing recovered, asked again at the next start
+    answers.append("Not Now")
+    win, engine = started(keep)
+    try:
+        assert wait_until(app, lambda: len(asked) == 1, 20_000)
+        assert "quit unexpectedly" in asked[0] and "Recover unsaved changes" in asked[0], asked[0]
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 200)
+        assert notes(engine) != "lost work"
+    finally:
+        stopped(win, engine)
+    answers.append("Recover")
+    win, engine = started(keep)
+    try:
+        assert wait_until(app, lambda: len(asked) == 2, 20_000)
+        assert wait_until(app, lambda: notes(engine) == "lost work", 20_000)
+        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "lost work", 20_000)
+    finally:
+        stopped(win, engine)
+
+    drop = tmp_path / "drop"
+    crashed(drop)
+    answers.append("Discard")
+    win, engine = started(drop)
+    try:
+        assert wait_until(app, lambda: len(asked) == 3, 20_000)
+        assert wait_until(app, lambda: not any(drop.rglob("snapshot.fcproj")), 20_000)
+    finally:
+        stopped(win, engine)
+    win, engine = started(drop)
+    try:
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 500)
+        wait_until(app, lambda: False, 1000)
+        assert len(asked) == 3, "a discarded journal is not offered again"
+    finally:
+        stopped(win, engine)
+
+
 def test_media_dialog_helpers():
     """media_dialogs' readers of the engine's answers: damaged entries read as nothing."""
     from cfa4_qt.panels.media_dialogs import candidates_of, mb, missing_rows, sequences_of
