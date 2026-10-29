@@ -472,7 +472,7 @@ A munkacsomagok AV2-00–AV2-10 azonosítói nem GitHub issue- vagy PR-számok.
 |---|---|---|---|
 | 1 | AV2-00 auditjelentés | Verziók, commit SHA-k, licencjegyzőkönyv, konformanciamátrix, profil/IP/szint tábla | – |
 | 2 | ADR: AV2 külső dekóder bekötése | FFmpeg-út, `crates/platform` FFI vagy külön folyamat | 1 |
-| 3 | Orákulum-harness | `crates/testkit`: AVM build saját prefixbe, korpuszmanifest, nightly job | 1 |
+| 3 | Orákulum-harness | `crates/testkit`: AVM build saját prefixbe, korpuszmanifest; CI-futás csak `workflow_dispatch` vagy `cfa4-full-validation` címke esetén (AGENTS.md), ütemezett futás nélkül | 1 |
 | 4 | Kodekazonosító és felismerés | AV2 kodekazonosító, IVF/Annex B/MP4 `av02` sniffing, router `unsupported` válasz, regressziós tesztek | – |
 | 5 | `cfa4-av2` váz | OBU- és sequence header parser, operating point, fuzz target | 4 |
 | 6 | Korai dekóderadapter | Az ADR szerint, feature flag mögött, hash-egyezés az AVM-mel | 2, 3, 5 |
