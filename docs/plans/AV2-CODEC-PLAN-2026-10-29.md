@@ -44,6 +44,7 @@ Az AV2 elsődleges célja a CFA4 saját szerkesztő- és exportképességének b
 | AVM | v1.0.0 tag (AOMediaCodec/avm); `avmenc`/`avmdec`; IVF kimenet `AV02` fourcc-vel; nagyon lassú, egyszálú | Orákulumnak kötelező, exportbackendnek alkalmatlan |
 | dav2d (VideoLAN) | 0.0.1 preview (2026 május); „feature-complete AVM v15 decoder”, 8/10 bit, BSD-licenc, konformancia folyamatban; Ubuntu 26.04-ben nincs csomag | GPL-3-mal kompatibilis; v1.0.0-egyezés nincs igazolva |
 | Nem hivatalos dav2d fork (`afen261/vlc-av2`) | v1.0.0 CCSO-eltérések javítása; egy 10 bites MP4-en bitpontos az AVM-mel | Jel arra, hogy a upstream dav2d nem teljesen v1.0.0-konform |
+| rav2d (`stukenov/rav2d`) | Rust port a dav2d-ből, 0.3.0, BSD-2-Clause, 2026 júliusától fejlesztik; bitpontos a dav2d-vel a saját korpuszán, és külön kapu ellenőrzi az avmdec md5-ön (AVM `av2-normative` ágon, nem a v1.0.0 tagen); saját bevallása szerint hiányzik a 4:2:2/4:4:4, a resize, a tiles és az SEF film grain, egyszálú, a dav2d sebességének 0,14–0,44-szerese, `unsafe` kódot tartalmaz; nagyrészt MI-eszközökkel készült | Új FFI nélküli A-vonalas jelölt és B-vonalas összehasonlító referencia, de csak a II.3 szerinti v1.0.0-konformancia után |
 | SVT-AV2 | Intel bemutatta (IBC 2026); nyilvános kiadást, licencet nem találtunk | Feltételes, később értékelendő |
 | FFmpeg | A CFA4 rögzített minimuma 9.0.2 (ADR 0005); a 9.0 kiadásban AV2-dekóder/-enkóder nincs | Az FFmpeg AV2-útja csak futásidejű képességvizsgálattal regisztrálható |
 | GStreamer | AV2-elem (dav2d/AVM) nem ismert | Csak képességvizsgálat |
@@ -94,6 +95,7 @@ A specifikáció konténerleképezést és konformancia-tesztbitfolyamokat nem t
 1. **FFmpeg-en keresztül:** ha a CFA4 saját FFmpeg-buildje (`/opt/cfa4`) `libdav2d` wrappert kap, a dav2d az ADR 0005 keretében, új FFI nélkül érhető el. Ehhez az FFmpeg-be kerülő AV2-támogatás kell, ami ma nincs.
 2. **Saját FFI a `crates/platform`-ban** az ADR 0001 feltételeivel, vendorolt, commitra rögzített dav2d-vel, ASan/UBSan builddel.
 3. **Külön folyamat:** a dekóder önálló segédprogramként fut, a motor pipe-on kap képkockákat. A hibák elszigetelése a legjobb, a teljesítmény a leggyengébb. Fejlesztői AVM-útnak ez az alapértelmezés.
+4. **Rust crate-függőség (rav2d):** BSD-2-Clause, GPL-3-mal kompatibilis, C-FFI nem kell. Az `unsafe` kódja miatt a crate csak külső függőségként, `cargo deny` alatt jöhet szóba, a CFA4 saját crate-jeibe nem másolható `unsafe` résszel. Feltétel: a II.3 szerinti konformancia az AVM v1.0.0 tagen, rögzített commit, és fuzzing a CFA4 korpuszán. Ha ez teljesül, ez a legkisebb architekturális kockázatú A-vonalas út.
 
 Az ADR az AV2-00 kimenete; a XII. fejezet szerint jóváhagyandó.
 
@@ -114,7 +116,7 @@ Ha a dav2d nem felel meg, a tesztek kizárólag fejlesztői környezetben, az AV
 
 **Cél:** saját CFA4 AV2-dekóder és -enkóder az új `crates/av2/` (`cfa4-av2`) crate-ben, L0 rétegben (csak `cfa4-bitstream` függőség), `unsafe` nélkül.
 
-A fejlesztés alapja az AV2 v1.0.0 nyilvános szabványa. A `cfa4-av1`-ből elsősorban az infrastruktúra vehető át (bitolvasó, frame-pufferek, szálkezelés, tesztkeret); a normatív algoritmusokat a v1.0.0 szintaxisa és szemantikája szerint kell megvalósítani, mert az AV2 új eszközöket hoz (például CCSO). AGPL-licencű AV2-implementációból (például `framefinery-engine`) kód nem vehető át; ezek csak összehasonlító referenciaként használhatók, külső folyamatként.
+A fejlesztés alapja az AV2 v1.0.0 nyilvános szabványa. A `cfa4-av1`-ből elsősorban az infrastruktúra vehető át (bitolvasó, frame-pufferek, szálkezelés, tesztkeret); a normatív algoritmusokat a v1.0.0 szintaxisa és szemantikája szerint kell megvalósítani, mert az AV2 új eszközöket hoz (például CCSO). AGPL-licencű AV2-implementációból (például `framefinery-engine`) kód nem vehető át; ezek csak összehasonlító referenciaként használhatók, külső folyamatként. A BSD-2-Clause licencű rav2d kódja a `docs/licensing.md` szerint (fejléc és reused-code register) átvehető, de csak `unsafe` nélkül átírva, és minden átvett részt a v1.0.0 AVM-orákulummal újra kell ellenőrizni, mert a rav2d a dav2d-t és az `av2-normative` ágat követi.
 
 A B vonal nem függhet a dav2d elérhetőségétől. A két vonal közös CFA4-interfészeket, de önálló teszteket kap.
 
@@ -471,7 +473,7 @@ A munkacsomagok AV2-00–AV2-10 azonosítói nem GitHub issue- vagy PR-számok.
 | # | Téma | Tartalom | Előfeltétel |
 |---|---|---|---|
 | 1 | AV2-00 auditjelentés | Verziók, commit SHA-k, licencjegyzőkönyv, konformanciamátrix, profil/IP/szint tábla | – |
-| 2 | ADR: AV2 külső dekóder bekötése | FFmpeg-út, `crates/platform` FFI vagy külön folyamat | 1 |
+| 2 | ADR: AV2 külső dekóder bekötése | rav2d crate, FFmpeg-út, `crates/platform` FFI vagy külön folyamat | 1 |
 | 3 | Orákulum-harness | `crates/testkit`: AVM build saját prefixbe, korpuszmanifest; CI-futás csak `workflow_dispatch` vagy `cfa4-full-validation` címke esetén (AGENTS.md), ütemezett futás nélkül | 1 |
 | 4 | Kodekazonosító és felismerés | AV2 kodekazonosító, IVF/Annex B/MP4 `av02` sniffing, router `unsupported` válasz, regressziós tesztek | – |
 | 5 | `cfa4-av2` váz | OBU- és sequence header parser, operating point, fuzz target | 4 |
@@ -483,7 +485,7 @@ A munkacsomagok AV2-00–AV2-10 azonosítói nem GitHub issue- vagy PR-számok.
 | Kockázat | Kezelés |
 |---|---|
 | A dav2d nem felel meg a v1.0.0-nak | II.3 szerinti konformanciateszt; sikertelenség esetén nincs production backend, AV2-LAB marad, eltérések upstream jelentése |
-| A dav2d bekötése új FFI-t igényel | ADR az AV2-00-ban; előnyben az FFmpeg-út vagy a külön folyamat |
+| A dav2d bekötése új FFI-t igényel | ADR az AV2-00-ban; előnyben a rav2d (Rust crate), az FFmpeg-út vagy a külön folyamat |
 | A saját Rust-dekóder túl nagy ráfordítás | Alrendszeres megvalósítás, felülvizsgálati pont az intra-only után |
 | Nincs korai exportút | SVT-AV2 feltételes bevonása; addig csak natív enkóder |
 | Elégtelen dekódolási teljesítmény | Alapmérés a G1-ben, proxy, szál- és memóriaoptimalizálás |
@@ -548,7 +550,7 @@ Az AV2-STABLE kiadás ennél szűkebb, meghirdetett funkcióprofillal is megjele
 | Multistream | P3 | Az IP0-konformanciához P1; addig operating point kiválasztás vagy `unsupported` |
 | Film grain | „ahol a profil megköveteli” | Bitpontos összevetés a szintézissel, két hash |
 | Raw formátum | „raw bitstream” | Annex B normatív, IVF fejlesztői |
-| dav2d bekötése | „elkülönített natív illesztés” | ADR szükséges (FFmpeg-út, `crates/platform` FFI vagy külön folyamat) |
+| dav2d bekötése | „elkülönített natív illesztés” | ADR szükséges (FFmpeg-út, `crates/platform` FFI, külön folyamat vagy a Rust rav2d crate) |
 | Konténer | AV2-06 a két vonal után | MP4 olvasás előbb, kísérleti jelöléssel; írás a G6 mögött |
 | Export | Nem volt korai út | Kimondva: natív enkóder vagy igazolt SVT-AV2 |
 | Teljesítmény | Csak a G8-ban | Alapmérés már a G1-ben |
@@ -572,5 +574,6 @@ Az AV2-STABLE kiadás ennél szűkebb, meghirdetett funkcióprofillal is megjele
 - AOMedia sajtóközlemény (2026-10-22): <https://aomedia.org/press%20releases/AOMedia-Rapid-AV2-Adoption-Across-the-Video-Ecosystem/>
 - FFmpeg 9.0: <https://jbkempf.com/blog/2026/ffmpeg-9.0/>
 - AV2 az FFmpegben (2026-10-14-i állapot): <https://www.forasoft.com/learn/video-encoding/articles/future-codecs-av2-neural-end-to-end>
+- rav2d (Rust AV2-dekóder, BSD-2-Clause): <https://github.com/stukenov/rav2d>
 - Rust AV2-enkóder demók (csak referencia): <https://github.com/rafaelcaricio/av2_demo>, <https://github.com/framefinery/framefinery-engine> (AGPL-3.0)
 - Áttekintés: <https://en.wikipedia.org/wiki/AV2>
