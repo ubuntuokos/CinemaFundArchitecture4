@@ -1955,17 +1955,8 @@
 	Write the metadata of the selected clip(s) ({n}) to XMP files next to their media?	A kijelölt klip(ek) ({n}) metaadatainak írása a média melletti XMP-fájlokba?
 	{codec} · {rate} Hz · {n} channel(s)	{codec} · {rate} Hz · {n} csatorna
 # MPEG-2 export settings
-	4:2:0 (Main Profile)	4:2:0 (Main Profile)
-	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
-	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transport stream (.m2ts, AAC hang)
-	Chroma	Színkülönbség
 	Constant quantiser	Állandó kvantáló
 	Container	Konténer
-	Elementary Stream (.m2v, no audio)	Elemi adatfolyam (.m2v, hang nélkül)
-	Keyframe distance	Kulcsképkocka-távolság
-	Off (target bitrate)	Ki (cél-bitráta)
-	Program Stream (.mpg, LPCM audio)	Program stream (.mpg, LPCM hang)
-	Transport Stream (.ts, AAC audio)	Transport stream (.ts, AAC hang)
 # menu long tail, frontend side (4.8)
 	 (unavailable)	 (nem érhető el)
 	Avid Log Exchange	Avid Log Exchange
@@ -2062,3 +2053,12 @@
 	{bits} Bit	{bits} bit
 	{w} × {h}	{w} × {h}
 	Marker report (CSV)	Markerjelentés (CSV)
+	4:2:0 (Main Profile)	4:2:0 (Main profil)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
+	Chroma	Króma
+	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
+	Keyframe distance	Kulcskockák távolsága
+	Off (target bitrate)	Ki (célbitráta)
+	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
+	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)
