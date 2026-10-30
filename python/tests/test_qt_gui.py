@@ -670,6 +670,26 @@ def test_shortcuts_cleared_keys_and_engine_panel_names(app):
     win.close()
 
 
+def test_graphics_typing_session_starts_its_own_undo_step():
+    """Codex review regression: a new text-editing session's first change was sent with
+    ``merge: true``, so Undo after it also took back an earlier session's (or layer's) typing."""
+    from cfa4_qt.panels import program_graphics as pg
+
+    sent: list[dict] = []
+
+    class Overlay:
+        def send(self, command, params):
+            sent.append(params)
+
+    gt = pg.GraphicsTools.__new__(pg.GraphicsTools)
+    gt.overlay = Overlay()
+    for layer in (0, 1):
+        gt.edit = {"clip": 5, "layer": layer, "text": "", "caret": 0, "anchor": 0, "seen": False}
+        gt._set_text("a")
+        gt._set_text("ab")
+    assert [(p["layer"], p["merge"]) for p in sent] == [(0, False), (0, True), (1, False), (1, True)]
+
+
 def test_monitor_range_drag_survives_a_refresh_of_the_same_range(app):
     """Codex review regression: dragging the marked range while playing stops playback, whose
     refresh brought the same range back and ended the drag under the held mouse."""
@@ -5260,8 +5280,11 @@ def test_menu_dialogs_as_egui(app):
     d.show()
     assert d.windowTitle() == "Find" and child(d, "find.cancel", QtWidgets.QPushButton).text() == "Done"
     assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "neon" and not d.timeline_box.isVisible()
+    # editing the first Project row and then switching to Timeline shows what will be found
+    child(d, "find.row.0.text.project", QtWidgets.QLineEdit).setText("tree")
     child(d, "find.scope.timeline", QtWidgets.QRadioButton).setChecked(True)
     assert d.timeline_box.isVisible() and not d.project_box.isVisible()
+    assert child(d, "find.row.0.text", QtWidgets.QLineEdit).text() == "tree"
     child(d, "find.row.0.text", QtWidgets.QLineEdit).setText("sky")
     assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "sky"
     child(d, "find.in.markers", QtWidgets.QRadioButton).setChecked(True)
@@ -5911,6 +5934,7 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         assert c.call("ui.type", {"text": "zz"})["ok"]
         assert win.project_panel.filter.text() == "zz"
         assert c.call("ui.key", {"key": "Backspace"})["ok"] and win.project_panel.filter.text() == "z"
+        assert c.call("ui.type", {"text": "őű中"})["ok"] and win.project_panel.filter.text() == "zőű中", "Unicode text, not Latin-1"
         win.project_panel.filter.clear()
         assert stray.text() == ""
         stray.close()

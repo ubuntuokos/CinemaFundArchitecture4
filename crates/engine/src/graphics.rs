@@ -257,8 +257,45 @@ fn apply_props(e: &mut EffectInstance, props: &serde_json::Map<String, Value>, m
         {
             x.runs = cfa4_project::graphic_design::adjust_runs(a, b, &x.runs);
         }
+        // a pinned layer keeps following its target from its new place (as `move_layers`)
+        if let (Some(a), Some(b), "position") = (old.as_vec2(), pv.as_vec2(), id)
+            && let Some(pin) = e.layer.as_mut().and_then(|x| x.pin.as_mut())
+        {
+            let (dx, dy) = (b.x - a.x, b.y - a.y);
+            pin.offsets[0] += dx;
+            pin.offsets[2] += dx;
+            pin.offsets[1] += dy;
+            pin.offsets[3] += dy;
+        }
     }
     Ok(())
+}
+
+/// A pinned layer is shown where its pins put it, not at its authored Position: a `position` in
+/// `props` (where the GUI moved the shown layer to) becomes the authored Position moved by as
+/// much, so [`apply_props`] shifts the pin offsets by that and the layer stays where it was put.
+fn pinned_position(s: &Session, clip: ClipId, eidx: usize, props: &mut serde_json::Map<String, Value>, tl: Tick) {
+    let Some(key) = props.keys().find(|k| param_id(k) == "position").cloned() else { return };
+    let Some(seq) = s.active_sequence() else { return };
+    let Some((_, it)) = seq.find_item(clip) else { return };
+    let Some(e) = it.effects.get(eidx) else { return };
+    if !e.layer.as_ref().is_some_and(|x| x.pin.as_ref().is_some_and(|p| p.any())) {
+        return;
+    }
+    let size = match s.project.item(it.item).map(|p| &p.kind) {
+        Some(ItemKind::Graphic { width, height, .. }) => (*width, *height),
+        _ => (seq.settings.width, seq.settings.height),
+    };
+    let mt = it.source_time_at(tl.clamp(it.start, it.end() - Tick(1)));
+    let Some(authored) = e.params.get("position").and_then(|p| p.value_at(mt).as_vec2()) else { return };
+    let Some(shown) = item_layer_specs(it, mt, size).into_iter().find(|(x, _)| *x == eidx).map(|(_, sp)| sp.transform.position) else { return };
+    let (rx, ry) = cfa4_render::graphic_clip::item_roll_offset(it, mt, size);
+    let Some(want) = props.get(&key).and_then(Value::as_array) else { return };
+    let (Some(x), Some(y)) = (want.first().and_then(Value::as_f64), want.get(1).and_then(Value::as_f64)) else { return };
+    let (dx, dy) = (x - (shown.x - rx), y - (shown.y - ry));
+    if dx.is_finite() && dy.is_finite() {
+        props.insert(key, json!([authored.x + dx, authored.y + dy]));
+    }
 }
 
 /// Set properties `props` on a layer (keyframe-aware at time `tl`). Changing the text keeps
@@ -273,7 +310,8 @@ pub(crate) fn set_props(
     label: &str,
     merge: Option<&str>,
 ) -> Result<()> {
-    let props = props.clone();
+    let mut props = props.clone();
+    pinned_position(s, clip, eidx, &mut props, tl);
     s.edit_sequence_as(label, merge, |q, _, _| {
         let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
         let mt = it.source_time_at(tl.clamp(it.start, it.end() - Tick(1)));

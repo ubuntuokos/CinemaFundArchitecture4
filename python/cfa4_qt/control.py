@@ -29,7 +29,7 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QObject, QPoint, QPointF, Qt
-from PySide6.QtGui import QKeySequence, QWheelEvent
+from PySide6.QtGui import QKeyEvent, QKeySequence, QWheelEvent
 from PySide6.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import (
@@ -332,7 +332,7 @@ class ControlServer(QObject):
             text = p.get("text")
             if not isinstance(text, str) or len(text) > 100_000:
                 raise ControlError("text must be a string")
-            QTest.keyClicks(self._keyboard_target(), text)
+            self.type_text(self._keyboard_target(), text)
             reply(True, {})
         elif method == "ui.set":
             self.set(p)
@@ -523,6 +523,17 @@ class ControlServer(QObject):
             top = next((w for w in reversed(windows) if w.isModal()), self.window)
             focus = top.focusWidget()
         return focus if focus is not None else self.window
+
+    @staticmethod
+    def type_text(target: QWidget, text: str) -> None:
+        """Type ``text``: ASCII as key clicks (so keys mean what they mean there), any other
+        character as a key event carrying it (``QTest.keyClicks`` would pass it through Latin-1)."""
+        for ch in text:
+            if ord(ch) < 128:
+                QTest.keyClicks(target, ch)
+            else:
+                for kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease):
+                    QApplication.sendEvent(target, QKeyEvent(kind, 0, Qt.KeyboardModifier.NoModifier, ch))
 
     def key(self, p: dict[str, Any]) -> None:
         name = p.get("key")

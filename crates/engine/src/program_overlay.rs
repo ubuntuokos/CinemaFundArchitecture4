@@ -182,9 +182,7 @@ fn graphics(s: &Session) -> Value {
                 LayerContent::Text(tp) => {
                     let l = text_layout(tp);
                     // character (not byte) offsets: what a GUI's strings count
-                    let ch = |b: usize| {
-                        tp.text.get(..b.min(tp.text.len())).map_or_else(|| tp.text.char_indices().take_while(|(i, _)| *i < b).count(), |x| x.chars().count())
-                    };
+                    let ch = char_offsets(&tp.text);
                     let lines: Vec<Value> = l
                         .lines
                         .iter()
@@ -408,4 +406,34 @@ fn mask(s: &Session, frame: (u32, u32), round: Option<f64>) -> Option<Value> {
         "roundness": roundness,
         "roundedContour": rounded,
     }))
+}
+
+/// Byte → character offset lookup for `text`, built in one pass (a caret lookup must not count
+/// from the start of the text each time: long titles have thousands of carets). A byte inside a
+/// character maps to that character's index; past the end, to the character count.
+fn char_offsets(text: &str) -> impl Fn(usize) -> usize + '_ {
+    let starts: Vec<usize> = text.char_indices().map(|(i, _)| i).collect();
+    move |b: usize| starts.partition_point(|&i| i < b)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::char_offsets;
+
+    #[test]
+    fn char_offsets_match_counting_and_are_linear() {
+        let text = "aő中\nb";
+        let ch = char_offsets(text);
+        for b in 0..=text.len() + 3 {
+            let want = text.char_indices().take_while(|(i, _)| *i < b).count();
+            assert_eq!(ch(b), want, "byte {b}");
+        }
+        // 100 000 accented characters with a caret on each: the quadratic count took ~0.6 s
+        let long = "ő".repeat(100_000);
+        let ch = char_offsets(&long);
+        let t = web_time::Instant::now();
+        let sum: usize = (0..=long.len()).step_by(2).map(&ch).sum();
+        assert_eq!(sum, (0..=100_000).sum::<usize>());
+        assert!(t.elapsed().as_millis() < 1000, "{:?}", t.elapsed());
+    }
 }

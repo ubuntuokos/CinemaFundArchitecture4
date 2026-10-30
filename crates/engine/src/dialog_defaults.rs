@@ -335,11 +335,16 @@ fn defaults(s: &Session, id: &str) -> Option<(Value, Value)> {
             let tc = it
                 .as_ref()
                 .map(|i| {
-                    let rate = s.project.item(i.item).and_then(|p| p.as_media()).map(|m| m.frame_rate()).unwrap_or_default();
-                    cfa4_time::format_timecode_frames(rate.frame_at(i.frame_hold.unwrap_or(i.source_in)), rate, false)
+                    let m = s.project.item(i.item).and_then(|p| p.as_media());
+                    let rate = m.map(|m| m.frame_rate()).unwrap_or_default();
+                    // the source timecode `sourceTimecode` reads back: the media's start timecode on
+                    let start_tc = if i.frame_hold.is_some() { m.and_then(|m| m.info.start_timecode).unwrap_or(0) } else { 0 };
+                    cfa4_time::format_timecode_frames(rate.frame_at(i.frame_hold.unwrap_or(i.source_in)).saturating_add(start_tc), rate, false)
                 })
                 .unwrap_or_else(|| "00:00:00:00".into());
-            (json!({"enabled": enabled, "holdOn": "in", "timecode": tc, "holdFilters": hold_filters}), Value::Null)
+            // a clip already held keeps its frame: OK (or a Hold Filters change) holds the same one
+            let hold_on = if it.as_ref().is_some_and(|i| i.frame_hold.is_some()) { "sourceTimecode" } else { "in" };
+            (json!({"enabled": enabled, "holdOn": hold_on, "timecode": tc, "holdFilters": hold_filters}), Value::Null)
         }
         "clip.fieldOptions" => (json!({"reverseFieldDominance": false, "processing": "none"}), Value::Null),
         "clip.speedDuration" => {

@@ -518,7 +518,11 @@ class GraphicsTools:
             return
         e["text"] = text[:MAX_TEXT]
         e["caret"], e["anchor"] = min(e["caret"], len(e["text"])), min(e["anchor"], len(e["text"]))
-        self.overlay.send("graphics.setText", {"clip": e["clip"], "layer": e["layer"], "text": e["text"], "merge": True})
+        # one undo step per typing session: its first change starts it (the engine merges into any
+        # Edit Text before it, even another layer's or an earlier session's)
+        merge = e.get("sent") is True
+        e["sent"] = True
+        self.overlay.send("graphics.setText", {"clip": e["clip"], "layer": e["layer"], "text": e["text"], "merge": merge})
 
     def type_text(self, s: str) -> None:
         """Text from an input method (or an agent) typed at the caret."""

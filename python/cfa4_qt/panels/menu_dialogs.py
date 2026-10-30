@@ -265,6 +265,9 @@ class MenuDialog(ClipDialog):
             t = QLineEdit(_str(r.get("text")), self)
             t.setObjectName(f"find.row.{n}.text.project")
             t.textChanged.connect(lambda v, rr=r: rr.__setitem__("text", v))
+            if n == 0:
+                # the Timeline scope's field shows (and finds) the first row's text
+                t.textChanged.connect(self._project_text)
             line.addWidget(t, 1)
             self.row_texts.append(t)
             pl.addLayout(line)
@@ -296,6 +299,11 @@ class MenuDialog(ClipDialog):
             self.row_texts[0].blockSignals(True)
             self.row_texts[0].setText(t)
             self.row_texts[0].blockSignals(False)
+
+    def _project_text(self, t: str) -> None:
+        self.find_text.blockSignals(True)
+        self.find_text.setText(t)
+        self.find_text.blockSignals(False)
 
     def _search_bin(self) -> None:
         self.text("name", N_("Name:"), 220)
