@@ -1699,3 +1699,5 @@
 	accept	elfogadható
 	the engine did not start the check	a motor nem indította el az ellenőrzést
 	the engine sent no report	a motor nem küldött jelentést
+	The engine is not running.	A motor nem fut.
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).

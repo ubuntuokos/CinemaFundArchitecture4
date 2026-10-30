@@ -9,6 +9,7 @@ never changes the project.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -96,19 +97,46 @@ def frame_rate_of(report: dict[str, Any]) -> tuple[int, int] | None:
     return None
 
 
+def timecode_base(rate: tuple[int, int]) -> int:
+    """Frames counted per time-code second (the engine's ``FrameRate::timecode_base``)."""
+    num, den = rate
+    return max(1, -(-num // den)) if num > 0 and den > 0 else 1
+
+
+def supports_drop_frame(rate: tuple[int, int]) -> bool:
+    """29.97 / 59.94 / 119.88 (the engine's ``FrameRate::supports_drop_frame``)."""
+    return rate[1] == 1001 and timecode_base(rate) % 30 == 0
+
+
 def parse_position(text: str, rate: tuple[int, int] | None) -> dict[str, Any] | None:
-    """A typed ``HH:MM:SS:FF`` time code as a report position (frame and tick when the rate is
-    known). ``None`` for an empty or unreadable entry."""
-    parts = text.strip().replace(";", ":").split(":")
-    if len(parts) != 4 or not all(p.isascii() and p.isdecimal() for p in parts):
+    """A typed ``HH:MM:SS:FF`` time code (``HH;MM;SS;FF`` drop-frame) as a report position, with
+    frame and tick when the rate is known. Strict, unlike the editor's navigation field: ``None``
+    for an empty or unreadable entry and for a label no picture carries (minutes or seconds above
+    59, a frame at or past the frame base, drop-frame at a rate without it, or a label drop-frame
+    skips), so a finding is never filed at a time that does not exist."""
+    t = text.strip()
+    drop = ";" in t
+    parts = t.replace(";", ":").split(":")
+    if len(parts) != 4 or not all(p.isascii() and p.isdecimal() and 1 <= len(p) <= 3 for p in parts):
         return None
     h, m, s, f = (int(p) for p in parts)
-    pos: dict[str, Any] = {"timecode": text.strip()}
-    if rate:
-        fps = max(1, round(rate[0] / rate[1]))
-        frame = (h * 3600 + m * 60 + s) * fps + f
-        pos["frame"] = frame
-        pos["tick"] = frame * TICKS_PER_SECOND * rate[1] // rate[0]
+    if m > 59 or s > 59:
+        return None
+    pos: dict[str, Any] = {"timecode": t}
+    if rate is None:
+        return pos
+    base = timecode_base(rate)
+    if f >= base or (drop and not supports_drop_frame(rate)):
+        return None
+    frame = (h * 3600 + m * 60 + s) * base + f
+    if drop:
+        n_drop = base // 15
+        if s == 0 and m % 10 != 0 and f < n_drop:
+            return None
+        total_min = h * 60 + m
+        frame -= n_drop * (total_min - total_min // 10)
+    pos["frame"] = frame
+    pos["tick"] = frame * TICKS_PER_SECOND * rate[1] // rate[0]
     return pos
 
 
@@ -127,6 +155,9 @@ class QcDialog(QDialog):
         self.report: dict[str, Any] = {}
         self.events: list[dict[str, Any]] = []
         self._job: int | None = None
+        # Bumped whenever the window turns to another file: replies to requests sent for the
+        # previous one are dropped, so a slow answer never shows another export's report.
+        self._generation = 0
 
         self.file_label = QLabel(self)
         self.file_label.setObjectName("qc.file")
@@ -253,6 +284,10 @@ class QcDialog(QDialog):
     # ----- opening -----
     def open_for(self, media: str, queue_item: int | None = None, run: bool = False) -> None:
         """Show the report of ``media`` (an export); ``run``: check it first."""
+        self._generation += 1
+        self._poll.stop()
+        self._job = None
+        self.run_button.setEnabled(True)
         self.media = media
         self.queue_item = queue_item
         self.file_label.setText(media)
@@ -277,9 +312,28 @@ class QcDialog(QDialog):
         self.sheet_frames.setText("")
         self.message.setText("")
 
+    def _current(self, handler: Callable[..., None]) -> Callable[..., None]:
+        """``handler``, called only while the window still shows the file it was sent for."""
+        generation = self._generation
+
+        def call(*args: Any) -> None:
+            if generation == self._generation:
+                handler(*args)
+
+        return call
+
     def load(self) -> None:
-        if self.media and self.engine.running:
-            self.engine.execute("qc.report.get", {"path": self.media}, on_reply=self._on_report, on_error=self._no_report)
+        if not self.media:
+            return
+        if not self.engine.running:
+            self._no_report(tr("The engine is not running."))
+            return
+        self.engine.execute(
+            "qc.report.get",
+            {"path": self.media},
+            on_reply=self._current(self._on_report),
+            on_error=self._current(self._no_report),
+        )
 
     def _no_report(self, message: str) -> None:
         self._clear()
@@ -291,10 +345,13 @@ class QcDialog(QDialog):
     def run_check(self) -> None:
         if not self.media:
             return
+        if not self.engine.running:
+            self._run_failed(tr("The engine is not running."))
+            return
         params: dict[str, Any] = {"queueItem": self.queue_item} if self.queue_item is not None else {"path": self.media}
         self.run_button.setEnabled(False)
         self.verdict.setText(tr("Checking…"))
-        self.engine.execute("qc.run", params, on_reply=self._on_started, on_error=self._run_failed)
+        self.engine.execute("qc.run", params, on_reply=self._current(self._on_started), on_error=self._current(self._run_failed))
 
     def _on_started(self, result: Any, _b: bytes | None) -> None:
         job = result.get("job") if isinstance(result, dict) else None
@@ -315,7 +372,7 @@ class QcDialog(QDialog):
         if self._job is None or not self.engine.running:
             self._poll.stop()
             return
-        self.engine.execute("jobs.list", {}, on_reply=self._on_jobs, on_error=lambda _m: None)
+        self.engine.execute("jobs.list", {}, on_reply=self._current(self._on_jobs), on_error=lambda _m: None)
 
     def _on_jobs(self, result: Any, _b: bytes | None) -> None:
         jobs = result if isinstance(result, list) else (result.get("jobs") if isinstance(result, dict) else None)
@@ -482,21 +539,42 @@ class QcDialog(QDialog):
             out["reviewer"] = self.reviewer.text().strip()
         return out
 
+    def invalid_timecodes(self) -> list[int]:
+        """Rows (from 0) of findings whose typed time code is not a picture of this file."""
+        rate = frame_rate_of(self.report)
+        bad = []
+        for row in range(self.findings.rowCount()):
+            cell = self.findings.item(row, 2)
+            typed = cell.text().strip() if cell is not None else ""
+            if typed and parse_position(typed, rate) is None:
+                bad.append(row)
+        return bad
+
     def save_review(self) -> None:
         if not self.media:
             return
+        bad = self.invalid_timecodes()
+        if bad:
+            # Saved without it, the finding would lose its time silently.
+            self.message.setText(fmt("Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).", row=bad[0] + 1))
+            return
+        if not self.engine.running:
+            self._save_failed(tr("The engine is not running."))
+            return
         self.save_button.setEnabled(False)
+        media = self.media
         self.engine.execute(
             "qc.review.save",
-            {"path": self.media, "review": self.review()},
-            on_reply=self._on_saved,
-            on_error=self._save_failed,
+            {"path": media, "review": self.review()},
+            on_reply=lambda result, b: self._on_saved(media, result, b),
+            on_error=self._current(self._save_failed),
         )
 
-    def _on_saved(self, result: Any, _b: bytes | None) -> None:
+    def _on_saved(self, media: str, result: Any, _b: bytes | None) -> None:
         verdict = str(result.get("verdict") or "") if isinstance(result, dict) else ""
-        self.review_saved.emit(self.media, verdict)
-        self.load()
+        self.review_saved.emit(media, verdict)  # the queue updates even if the window moved on
+        if media == self.media:
+            self.load()
 
     def _save_failed(self, message: str) -> None:
         self.save_button.setEnabled(True)
