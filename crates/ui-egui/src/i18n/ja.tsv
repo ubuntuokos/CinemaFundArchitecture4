@@ -3655,3 +3655,6 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576、25 fps、16:9 アナモルフィック、6 Mbps、GOP 15、16 ビット 48 kHz LPCM、.mpg（DVD 用ストリーム。VIDEO_TS のオーサリングなし）
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2 ビデオ（Main Profile 4:2:0、1 ピクセルあたり 0.4 ビット）、シーケンスのフレームサイズとレート、16 ビット 48 kHz LPCM、.mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 ビデオ 1920×1080、平均 18 Mbps、AAC 192 kbps、.ts
+	Six-Point Pin	6点ピン
+	Upper Center	中央上
+	Lower Center	中央下

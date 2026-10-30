@@ -3656,3 +3656,6 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, LPCM de 16 bits a 48 kHz, .mpg (flujo listo para DVD; sin autoría VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vídeo MPEG-2 (Main Profile 4:2:0, 0,4 bits por píxel) con el tamaño de fotograma y la velocidad de la secuencia, LPCM de 16 bits a 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vídeo MPEG-2 1920×1080, 18 Mbps de media, AAC 192 kbps, .ts
+	Six-Point Pin	Anclaje de seis puntos
+	Upper Center	Arriba al centro
+	Lower Center	Abajo al centro
