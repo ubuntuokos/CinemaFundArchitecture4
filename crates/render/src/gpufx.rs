@@ -143,6 +143,18 @@ pub enum FxOp {
         shift: f32,
         repeat: bool,
     },
+    /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
+    /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
+    /// pixels; `seed` already folds in the frame when the grain is animated.
+    FilmGrain {
+        amount: f32,
+        inv_cell: f32,
+        shadows: f32,
+        midtones: f32,
+        highlights: f32,
+        color: f32,
+        seed: u32,
+    },
     Mirror {
         cx: f32,
         cy: f32,
@@ -248,6 +260,7 @@ pub const GPU_EFFECTS: &[&str] = &[
     "stereo_swap_eyes",
     "stereo_to_2d",
     "stereo_parallax",
+    "film_grain",
     "mirror",
     "offset",
     "asc_cdl",
@@ -258,6 +271,49 @@ pub const GPU_EFFECTS: &[&str] = &[
     "video_limiter",
     "lumetri",
 ];
+
+/// PCG3D (Jarzynski & Olano, "Hash Functions for GPU Rendering", JCGT 2020): three rounds of
+/// 32-bit multiply-xorshift mixing; the first lane is the hash. `fx.wgsl` (`pcg3d`) mirrors it
+/// bit for bit (u32 arithmetic wraps on both sides).
+pub fn pcg3d(x: u32, y: u32, z: u32) -> u32 {
+    let mut v = [x, y, z].map(|c| c.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
+    let mix = |v: &mut [u32; 3]| {
+        v[0] = v[0].wrapping_add(v[1].wrapping_mul(v[2]));
+        v[1] = v[1].wrapping_add(v[2].wrapping_mul(v[0]));
+        v[2] = v[2].wrapping_add(v[0].wrapping_mul(v[1]));
+    };
+    mix(&mut v);
+    for c in &mut v {
+        *c ^= *c >> 16;
+    }
+    mix(&mut v);
+    v[0]
+}
+
+/// A lattice value in [−0.5, 0.5) for cell (`ix`, `iy`) of noise layer `layer` (24 bits, exact
+/// in f32).
+fn lattice(ix: i32, iy: i32, seed: u32, layer: u32) -> f32 {
+    let h = pcg3d(ix as u32, iy as u32, seed ^ layer.wrapping_mul(0x9E37_79B9));
+    (h >> 8) as f32 / 16_777_216.0 - 0.5
+}
+
+/// Smooth value noise in [−0.5, 0.5] at pixel (`x`, `y`): lattice values on a grid of
+/// 1 / `inv_cell` pixels, blended with a smoothstep. `fx.wgsl` (`grain_noise`) mirrors this.
+pub fn grain_noise(x: usize, y: usize, inv_cell: f32, seed: u32, layer: u32) -> f32 {
+    let fx = (x as f32 + 0.5) * inv_cell;
+    let fy = (y as f32 + 0.5) * inv_cell;
+    let (x0, y0) = (fx.floor(), fy.floor());
+    let (tx, ty) = (fx - x0, fy - y0);
+    let (sx, sy) = (tx * tx * (3.0 - 2.0 * tx), ty * ty * (3.0 - 2.0 * ty));
+    let (ix, iy) = (x0 as i32, y0 as i32);
+    let a = lattice(ix, iy, seed, layer);
+    let b = lattice(ix.wrapping_add(1), iy, seed, layer);
+    let c = lattice(ix, iy.wrapping_add(1), seed, layer);
+    let d = lattice(ix.wrapping_add(1), iy.wrapping_add(1), seed, layer);
+    let top = a + (b - a) * sx;
+    let bot = c + (d - c) * sx;
+    top + (bot - top) * sy
+}
 
 /// The source pixel of output pixel (`x`, `y`) when the two views of a `w`×`h` stereo frame swap
 /// places. Each view is `w / 2` columns (side by side) or `h / 2` rows (over/under); with an odd
@@ -531,6 +587,28 @@ impl FxOp {
                 let vw = if sbs { w / 2 } else { w };
                 FxOp::StereoParallax { sbs, shift: pct / 100.0 * vw as f32 / 2.0, repeat: b(e, "repeat_edge") }
             }
+            "film_grain" => {
+                let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
+                // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
+                let cell = (f(e, "size", cx).clamp(0.5, 10.0) * cx.px_scale).max(0.25);
+                // (`as` saturates: NaN → 0)
+                let user = f(e, "seed", cx).round().clamp(0.0, 1e6) as u32;
+                let frame = if b(e, "animated") {
+                    let t = crate::effects::noise_frame_seed(cx);
+                    (t ^ (t >> 32)) as u32
+                } else {
+                    0
+                };
+                FxOp::FilmGrain {
+                    amount: pct("intensity").min(1.0),
+                    inv_cell: 1.0 / cell,
+                    shadows: pct("shadows"),
+                    midtones: pct("midtones"),
+                    highlights: pct("highlights"),
+                    color: pct("color").min(1.0),
+                    seed: pcg3d(user, frame, 0x6772_6169),
+                }
+            }
             "mirror" => {
                 let img = Image { w, h, px: Vec::new() };
                 let c = point(e, "center", cx, &img);
@@ -736,6 +814,9 @@ impl FxOp {
             FxOp::ColorReplace { sim, target, replace, replace_hsl, .. } => sim.is_finite() && fin(target) && fin(replace) && fin(replace_hsl),
             FxOp::AlphaAdjust { opacity, .. } => opacity.is_finite(),
             FxOp::Vignette { amount, midpoint, roundness, feather, target } => fin(&[*amount, *midpoint, *roundness, *feather]) && fin(target),
+            FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
+                fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
+            }
             FxOp::VideoLimiter { max, comp, axis, warning_color, .. } => *axis <= 3 && max.is_finite() && comp.is_finite() && fin(warning_color),
             FxOp::Lumetri { gains, exposure, contrast, hl, sh, wh, bl, sat, faded, vib, st, ht, va, vmid, vround, vfeather, aspect, gpu_capable, .. } => {
                 *gpu_capable
@@ -1039,6 +1120,26 @@ impl FxOp {
                     } else {
                         p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
+                });
+            }
+            FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
+                let (amt, inv, sh, md, hi, col, seed) = (*amount, *inv_cell, *shadows, *midtones, *highlights, *color, *seed);
+                if !amt.is_finite() || amt <= 0.0 || ![inv, sh, md, hi, col].iter().all(|v| v.is_finite()) {
+                    return;
+                }
+                img.map_rgb(|c, x, y| {
+                    let e = enc(c);
+                    let l = (0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2]).clamp(0.0, 1.0);
+                    let m = 1.0 - l;
+                    let k = amt * (sh * m * m + md * 2.0 * l * m + hi * l * l);
+                    let n0 = grain_noise(x, y, inv, seed, 0);
+                    let mut n = [n0; 3];
+                    if col > 0.0 {
+                        for (i, v) in n.iter_mut().enumerate() {
+                            *v = n0 + (grain_noise(x, y, inv, seed, i as u32 + 1) - n0) * col;
+                        }
+                    }
+                    dec([e[0] + n[0] * k, e[1] + n[1] * k, e[2] + n[2] * k])
                 });
             }
             FxOp::Vignette { amount, midpoint, roundness, feather, target } => {
