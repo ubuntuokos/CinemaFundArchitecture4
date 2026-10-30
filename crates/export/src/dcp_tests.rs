@@ -366,3 +366,260 @@ fn sink_receives_every_file() {
     assert_eq!(r.bytes, got.iter().map(|(_, n)| *n as u64).sum::<u64>());
     assert!(!Path::new("pkg").exists(), "nothing written to disk");
 }
+
+// ---------------------------------------------------------------------------------------------
+// Immersive audio (#343)
+
+/// Demodulate the 48 kHz FSK of ST 430-12: four samples a bit, a one changes sign in the symbol.
+fn fsk_bits(s: &[f32]) -> Vec<bool> {
+    s.chunks_exact(4).map(|c| (c[0] > 0.0) != (c[3] > 0.0)).collect()
+}
+
+fn bits_value(b: &[bool]) -> u64 {
+    b.iter().fold(0, |v, x| v << 1 | u64::from(*x))
+}
+
+/// The UUID in an asset `<Id>urn:uuid:…</Id>`.
+fn asset_uuid(xml: &str) -> [u8; 16] {
+    let id = element(xml, "Id").unwrap().trim_start_matches("urn:uuid:").replace('-', "");
+    let mut u = [0u8; 16];
+    for (i, b) in u.iter_mut().enumerate() {
+        *b = u8::from_str_radix(&id[2 * i..2 * i + 2], 16).unwrap();
+    }
+    u
+}
+
+/// The text between `<tag …>` and `</tag>` (a tag with attributes or a prefix).
+fn block<'a>(xml: &'a str, tag: &str) -> Option<&'a str> {
+    let start = xml.find(&format!("<{tag}"))?;
+    let end = xml[start..].find(&format!("</{tag}>"))? + start;
+    Some(&xml[start..end])
+}
+
+/// Checks shared by the immersive packages: the IAB track file, the 16-channel main sound with
+/// the FSK, the `AuxData` in the playlist and the packing list. Returns (IAB file bytes, main
+/// sound PCM).
+fn check_immersive_package(dir: &str, frames: usize, spu: usize) -> (Vec<u8>, Vec<Vec<f32>>) {
+    let iab_path = file(dir, "iab_");
+    let iab = std::fs::read(&iab_path).unwrap();
+    let m = cfa4_mxf::open(&iab).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, cfa4_mxf::OperationalPattern::Atom);
+    let t = &m.tracks[0];
+    assert_eq!(t.codec, cfa4_mxf::Codec::Iab);
+    assert_eq!(t.samples.len(), frames);
+    for i in 0..frames {
+        let f = cfa4_iab::parse(&m.read_sample(&iab, 0, i).unwrap()).unwrap();
+        // ST 429-18 7.2: DLC only, 24 bit, no UserData; Profile 1: no AuthoringToolInfo, 48 kHz
+        assert!(f.audio.iter().all(|a| a.coding == cfa4_iab::Coding::Dlc), "frame {i}");
+        assert_eq!((f.bit_depth, f.sample_rate), (24, 48_000));
+        assert!(f.user_data.is_empty() && f.authoring_tool.is_none());
+        assert_eq!(f.samples(), spu);
+    }
+
+    let cpl = std::fs::read_to_string(file(dir, "cpl_")).unwrap();
+    let aux = block(&cpl, "axd:AuxData").expect("an AuxData asset");
+    assert!(aux.contains("xmlns:axd=\"http://www.dolby.com/schemas/2012/AD\""));
+    assert_eq!(element(aux, "axd:DataType"), Some("urn:smpte:ul:060e2b34.04010105.0e090604.00000000"));
+    assert_eq!(element(aux, "Duration"), Some(frames.to_string().as_str()));
+    assert_eq!(element(aux, "IntrinsicDuration"), Some(frames.to_string().as_str()));
+    assert!(iab_path.ends_with(&format!("iab_{}.mxf", element(aux, "Id").unwrap().trim_start_matches("urn:uuid:"))));
+    let pkl = std::fs::read_to_string(file(dir, "pkl_")).unwrap();
+    assert_eq!(pkl.matches("<Asset>").count(), 4, "CPL, picture, sound, IAB");
+    let iab_asset = pkl.split("<Asset>").find(|a| a.contains(element(aux, "Id").unwrap())).unwrap();
+    assert_eq!(element(aux, "Hash"), element(iab_asset, "Hash"));
+    assert_eq!(element(iab_asset, "Hash").unwrap(), cfa4_project::gtemplate::base64_encode(&sha1(&iab)));
+    let am = std::fs::read_to_string(Path::new(dir).join("ASSETMAP.xml")).unwrap();
+    assert_eq!(am.matches("<Asset>").count(), 5);
+    if Command::new("xmllint").arg("--version").output().is_ok() {
+        let out = Command::new("xmllint").args(["--noout", &file(dir, "cpl_")]).output().unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    }
+
+    // main sound: 16 channels, Configuration 4, FSK sync in channel 14 naming the sound asset
+    let snd = std::fs::read(file(dir, "pcm_")).unwrap();
+    let ms = cfa4_mxf::open(&snd).unwrap();
+    let info = ms.tracks[0].sound.as_ref().unwrap();
+    assert_eq!((info.channels, info.bits), (16, 24));
+    assert!(snd.windows(16).any(|w| w == crate::dcp_iab::CHANNEL_CONFIG_4));
+    assert_eq!(ms.tracks[0].stored_sample_frames(), (frames * spu) as u64);
+    let pcm = ms.read_pcm(&snd, 0, 0, frames * spu).unwrap();
+    let sound_id = asset_uuid(block(&cpl, "MainSound").unwrap());
+    let bits = fsk_bits(&pcm[13]);
+    let per_unit = bits.len() / frames;
+    let packets = if spu >= 1600 { 4 } else { 2 };
+    for (p, pk) in bits.chunks_exact(per_unit / packets).enumerate() {
+        assert_eq!(bits_value(&pk[..16]), 0x4D56, "packet {p}");
+        let sub = bits_value(&pk[22..24]) as usize;
+        assert_eq!(sub, p % 4);
+        assert_eq!(bits_value(&pk[24..56]), u64::from(u32::from_be_bytes(sound_id[sub * 4..sub * 4 + 4].try_into().unwrap())));
+        assert_eq!(bits_value(&pk[56..80]), (p / packets) as u64);
+    }
+    for c in [6, 7, 8, 9, 10, 11, 12, 14, 15] {
+        assert!(pcm[c].iter().all(|v| *v == 0.0), "channel {}", c + 1);
+    }
+    (iab, pcm)
+}
+
+/// `bed`: the 5.1 mix as a 7.1 DS bed, sample for sample the 5.1 fallback in channels 1-6.
+#[test]
+fn immersive_bed_package() {
+    let (p, seq, m) = project();
+    let dir = tmp("iab-bed");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.clone(),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(6))),
+        dcp_immersive: "bed".into(),
+        ..Default::default()
+    };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    assert_eq!(r.extra_files.len(), 7, "{:?}", r.extra_files);
+    let (iab, pcm) = check_immersive_package(&dir, 6, 1920);
+    let mi = cfa4_mxf::open(&iab).unwrap();
+    for i in 0..6 {
+        let f = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+        assert_eq!(f.beds.len(), 1);
+        assert!(f.objects.is_empty());
+        let ids: Vec<u32> = f.beds[0].channels.iter().map(|c| c.id).collect();
+        assert_eq!(ids, [0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08], "7.1 DS");
+        // bed L and R are the main sound's L and R
+        for (asset, ch) in [(0, 0), (1, 1)] {
+            let bed: Vec<f32> = f.audio[asset].samples.iter().map(|v| *v as f32 / 2_147_483_648.0).collect();
+            assert_eq!(&bed[..], &pcm[ch][i * 1920..(i + 1) * 1920], "frame {i} channel {ch}");
+        }
+    }
+    let rms = |c: &[f32]| (c.iter().map(|v| v * v).sum::<f32>() / c.len() as f32).sqrt();
+    assert!(rms(&pcm[0]) > 0.05 && rms(&pcm[1]) > 0.05, "the tone is on L and R");
+    // the descriptor counts the bed's channels
+    let sub = [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x05, 0x0E, 0x09, 0x06, 0x06];
+    assert!(iab.windows(12).any(|w| w == sub));
+}
+
+/// A 7.1 DS bed frame at `rate` with PCM assets and an authoring tool, as a source file.
+fn source_frames(rate: cfa4_iab::FrameRate, n: usize) -> Vec<Vec<u8>> {
+    (0..n)
+        .map(|i| {
+            let spu = rate.samples(false, 0);
+            let planar: Vec<Vec<f32>> = (0..6).map(|c| (0..spu).map(|k| ((k + i * spu) as f32 * 0.02 * (c + 1) as f32).sin() * 0.3).collect()).collect();
+            let mut f = crate::dcp_iab::bed_frame(rate, &planar);
+            f.audio.iter_mut().for_each(|a| a.coding = cfa4_iab::Coding::Pcm);
+            f.authoring_tool = Some("https://example.org/tool".into());
+            cfa4_iab::write(&f).unwrap()
+        })
+        .collect()
+}
+
+/// `file`: a raw IABitstream with PCM assets is re-coded (DLC, no AuthoringToolInfo), padded
+/// with silence, and rendered to 5.1 for the fallback; a source already fit for a DCP (an IAB
+/// MXF) is copied byte for byte.
+#[test]
+fn immersive_file_package() {
+    let (p, seq, m) = project();
+    let src_dir = tmp("iab-src");
+    std::fs::create_dir_all(&src_dir).unwrap();
+    let raw = Path::new(&src_dir).join("three.iab");
+    let frames = source_frames(cfa4_iab::FrameRate::R25, 3);
+    std::fs::write(&raw, frames.concat()).unwrap();
+
+    let info = probe_iab_source(&raw.to_string_lossy()).unwrap();
+    assert_eq!((info.container.as_str(), info.frames, info.frame_rate, info.sample_rate), ("iab", 3, (25, 1), 48_000));
+    assert_eq!((info.max_bed_channels, info.max_objects, info.scanned), (8, 0, 3));
+    assert!(info.needs_conform && info.profile_notes.is_empty());
+
+    let dir = tmp("iab-file");
+    let mut s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.clone(),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(5))),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: raw.to_string_lossy().to_string(),
+        ..Default::default()
+    };
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (iab, pcm) = check_immersive_package(&dir, 5, 1920);
+    let mi = cfa4_mxf::open(&iab).unwrap();
+    for (i, src) in frames.iter().enumerate() {
+        let mut want = cfa4_iab::parse(src).unwrap();
+        want.audio.iter_mut().for_each(|a| a.coding = cfa4_iab::Coding::Dlc);
+        want.authoring_tool = None;
+        let got = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+        assert_eq!(got, want, "frame {i}: the same audio and metadata, re-coded");
+        // the fallback is the frame rendered to 5.1
+        let r = cfa4_iab::render(&want, &cfa4_iab::Layout::surround_5_1()).unwrap();
+        for c in 0..6 {
+            for k in (0..1920).step_by(97) {
+                assert!((pcm[c][i * 1920 + k] - r[c][k]).abs() < 2e-7, "frame {i} channel {c}");
+            }
+        }
+    }
+    for i in 3..5 {
+        let got = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+        assert!(got.audio.iter().all(|a| a.samples.iter().all(|v| *v == 0)), "padding frame {i} is silent");
+        assert!(pcm.iter().take(6).all(|c| c[i * 1920..(i + 1) * 1920].iter().all(|v| *v == 0.0)));
+    }
+
+    // the package's own IAB track file as the next source: frames copied byte for byte, no fallback
+    let src_mxf = Path::new(&src_dir).join("track.mxf");
+    std::fs::copy(file(&dir, "iab_"), &src_mxf).unwrap();
+    let dir2 = tmp("iab-file2");
+    s.path = dir2.clone();
+    s.dcp_iab_source = src_mxf.to_string_lossy().to_string();
+    s.dcp_iab_fallback = "none".into();
+    s.range = Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(4)));
+    export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (iab2, pcm2) = check_immersive_package(&dir2, 4, 1920);
+    let m2 = cfa4_mxf::open(&iab2).unwrap();
+    for i in 0..4 {
+        assert_eq!(m2.read_sample(&iab2, 0, i).unwrap(), mi.read_sample(&iab, 0, i).unwrap(), "frame {i}");
+    }
+    assert!(pcm2.iter().take(6).all(|c| c.iter().all(|v| *v == 0.0)), "fallback off: channels 1-6 silent");
+    let info = probe_iab_source(&src_mxf.to_string_lossy()).unwrap();
+    assert_eq!((info.container.as_str(), info.frames, info.needs_conform), ("mxf", 5, false));
+
+    // a source at another rate is refused
+    std::fs::write(&raw, source_frames(cfa4_iab::FrameRate::R24, 2).concat()).unwrap();
+    s.dcp_iab_source = raw.to_string_lossy().to_string();
+    s.path = tmp("iab-rate");
+    let e = export(&p, seq, &s, &m, &Progress::default()).unwrap_err();
+    assert!(e.to_string().contains("24 fps"), "{e}");
+}
+
+/// A real IAB source (`CFA4_IAB_SOURCE`: an IAB MXF such as samples/iab/mxf/sounds_imf_iab.mxf
+/// of the project samples, Dolby Atmos frames wrapped by the reference tool, or a raw
+/// IABitstream) re-wrapped into a 24 fps DCP.
+#[test]
+fn immersive_real_iab_source() {
+    let Ok(path) = std::env::var("CFA4_IAB_SOURCE") else { return };
+    let info = probe_iab_source(&path).unwrap();
+    assert_eq!(info.frame_rate, (24, 1));
+    assert!(info.profile_notes.is_empty(), "{info:?}");
+    let (p, seq, m) = project();
+    let dir = tmp("iab-real");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.clone(),
+        frame_rate: Some(FrameRate::new(24, 1)),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(12))),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: path.clone(),
+        ..Default::default()
+    };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (iab, pcm) = check_immersive_package(&dir, r.frames as usize, 2000);
+    let src = std::fs::read(&path).unwrap();
+    let source: Vec<Vec<u8>> = match cfa4_mxf::open(&src) {
+        Ok(ms) => (0..r.frames as usize).map(|i| ms.read_sample(&src, 0, i).unwrap()).collect(),
+        Err(_) => cfa4_iab::split(&src).into_iter().map(<[u8]>::to_vec).collect(),
+    };
+    let mi = cfa4_mxf::open(&iab).unwrap();
+    for i in 0..r.frames as usize {
+        let mut want = cfa4_iab::parse(&source[i]).unwrap();
+        want.audio.iter_mut().for_each(|a| a.coding = cfa4_iab::Coding::Dlc);
+        want.authoring_tool = None;
+        want.user_data.clear();
+        want.bit_depth = 24;
+        assert_eq!(cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap(), want, "frame {i}");
+    }
+    assert!(pcm.iter().take(6).any(|c| c.iter().any(|v| *v != 0.0)), "the rendered fallback is not silent");
+}

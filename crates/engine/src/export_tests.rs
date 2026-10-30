@@ -986,3 +986,55 @@ fn cineform_presets_export_and_read_back() {
         assert!(far * 1000 < ours.len(), "{name}: {far} of {} samples differ by more than 4", ours.len());
     }
 }
+
+/// #343: the DCP immersive audio params and `export.iabInfo`.
+#[test]
+fn dcp_immersive_params_and_iab_info() {
+    let mut s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "bed", "dcpIabFallback": "none"})).unwrap();
+    assert_eq!((st.dcp_immersive.as_str(), st.dcp_iab_fallback.as_str()), ("bed", "none"));
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": "/a/b.mxf"})).unwrap();
+    assert_eq!((st.dcp_immersive.as_str(), st.dcp_iab_source.as_str()), ("file", "/a/b.mxf"));
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "atmos"})).unwrap_err().to_string();
+    assert!(e.contains("off | bed | file"), "{e}");
+    assert!(setting(&s, json!({"path": "pkg", "format": "dcp", "dcpIabFallback": "7.1"})).is_err());
+    // a file without a source does not resolve
+    assert!(s.execute("export.resolve", json!({"format": "dcp", "dcpImmersive": "file"})).is_err());
+    assert!(s.execute("export.resolve", json!({"format": "dcp", "dcpImmersive": "bed"})).is_ok());
+
+    // a raw IABitstream of two 24 fps bed frames
+    let dir = Scratch::new("iab-info");
+    let rate = cfa4_iab::FrameRate::R24;
+    let one = cfa4_iab::write(&bed_frame(rate)).unwrap();
+    std::fs::write(dir.path("two.iab"), [one.clone(), one].concat()).unwrap();
+    let info = s.execute("export.iabInfo", json!({"path": dir.path("two.iab")})).unwrap();
+    assert_eq!(info["container"], "iab");
+    assert_eq!(info["frames"], 2);
+    assert_eq!(info["frameRate"], json!([24, 1]));
+    assert_eq!(info["maxBedChannels"], 2);
+    assert_eq!(info["needsConform"], false);
+    let e = s.execute("export.iabInfo", json!({"path": dir.path("missing.iab")})).unwrap_err().to_string();
+    assert!(e.contains("missing.iab"), "{e}");
+    assert!(s.execute("export.iabInfo", json!({})).is_err());
+}
+
+/// A two-channel DLC bed (L, R) of silence.
+fn bed_frame(rate: cfa4_iab::FrameRate) -> cfa4_iab::Frame {
+    use cfa4_iab::*;
+    let n = rate.samples(false, 0);
+    let channels = [0x00, 0x04].iter().enumerate().map(|(k, &id)| BedChannel { id, audio_id: k as u32 + 1, gain: Gain::Unity, decorrelation: None }).collect();
+    Frame {
+        version: 1,
+        sample_rate: 48_000,
+        bit_depth: 24,
+        frame_rate: rate,
+        frame_index: 0,
+        max_rendered: 2,
+        beds: vec![Bed { meta_id: 1, use_case: None, channels, description: Description::default(), beds: vec![], remaps: vec![] }],
+        objects: vec![],
+        audio: (1..=2).map(|id| AudioData { id, coding: Coding::Dlc, samples: vec![0; n] }).collect(),
+        authoring_tool: None,
+        user_data: vec![],
+    }
+}
