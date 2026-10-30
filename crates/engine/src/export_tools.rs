@@ -1030,7 +1030,7 @@ fn presets_list(s: &mut Session, p: &Value) -> Result<Value> {
         .filter(|x| fmt.is_none_or(|f| x.settings.format == f))
         .map(|x| preset_json(s, x, false))
         .collect();
-    Ok(json!({"presets": v, "default": DEFAULT_PRESET}))
+    Ok(json!({"presets": v, "default": DEFAULT_PRESET, "quickPreset": s.export_queue.quick_preset}))
 }
 
 fn presets_get(s: &mut Session, p: &Value) -> Result<Value> {
@@ -1174,7 +1174,14 @@ fn spec(
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
-        spec("export.presets.list", "List Export Presets", r#"{"query":str?,"category":str?,"format":str?,"favorites":bool?}"#, always, presets_list, false),
+        spec(
+            "export.presets.list",
+            "List Export Presets",
+            r#"{"query":str?,"category":str?,"format":str?,"favorites":bool?} → {presets, default, quickPreset (the last Quick Export's, or null)}"#,
+            always,
+            presets_list,
+            false,
+        ),
         spec("export.presets.get", "Get Export Preset", r#"{"name":str}"#, always, presets_get, false),
         spec(
             "export.presets.save",

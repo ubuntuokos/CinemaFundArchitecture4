@@ -2062,3 +2062,8 @@
 	Off (target bitrate)	Ki (célbitráta)
 	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
 	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)
+	Estimated file size: {size}	Becsült fájlméret: {size}
+	File Name & Location	Fájlnév és hely
+	Quick Export	Gyors exportálás
+	Quick Export: open a sequence first	Gyors exportálás: előbb nyiss meg egy szekvenciát
+	Quick Export: {path}	Gyors exportálás: {path}

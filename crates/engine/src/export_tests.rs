@@ -746,6 +746,8 @@ fn quick_export_uses_and_remembers_a_preset() {
     let r = s.execute("export.quick", json!({"path": dir.path("q3"), "range": "custom", "startSeconds": 0, "endSeconds": 0.1, "wait": true})).unwrap();
     assert_eq!(r["preset"], "Apple ProRes 422 LT", "the last preset is remembered");
     assert!(Path::new(&dir.path("q3.mov")).exists());
+    // the GUIs' Quick Export popup starts on it
+    assert_eq!(s.execute("export.presets.list", json!({})).unwrap()["quickPreset"], "Apple ProRes 422 LT");
 }
 
 #[test]

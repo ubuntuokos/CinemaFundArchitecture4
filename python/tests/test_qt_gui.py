@@ -1283,8 +1283,8 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         light.trigger()
         assert wait_until(app, lambda: theme.current().kind == "light", 10_000)
         # the header button goes to the next Appearance Mode
-        button = win.menuBar().cornerWidget(QtCore.Qt.Corner.TopRightCorner)
-        assert button.objectName() == "header.appearance" and button.isVisible()
+        button = win.menuBar().cornerWidget(QtCore.Qt.Corner.TopRightCorner).findChild(QtWidgets.QToolButton, "header.appearance")
+        assert button is win.appearance_button and button.isVisible()
         before = pref("appearance.appearanceMode")
         button.click()
         assert wait_until(app, lambda: pref("appearance.appearanceMode") != before, 10_000)
@@ -6301,6 +6301,88 @@ def test_export_dialog_helpers():
     assert frame_path("/x", "Shot.jpg", "jpg") == "/x/Shot.jpg"
     assert frame_path("/x", "Shot 1", "tiff") == "/x/Shot 1.tiff"
     assert frame_path("~", "a", "png") == str(Path.home() / "a.png")
+
+
+def test_quick_export_helpers():
+    """egui's ``quick_presets`` (favourites, then Match Source and Web & Social built-ins) and
+    ``quick_file`` (default folder, the sequence's name, the preset's extension swapped in)."""
+    from cfa4_qt.panels.quick_export import quick_file, quick_presets
+
+    presets = [
+        {"name": "Mine", "favorite": True, "builtin": False, "category": "Custom"},
+        {"name": "Match Source – Adaptive High Bitrate", "builtin": True, "category": "Match Source"},
+        {"name": "YouTube 1080p", "builtin": True, "category": "Web & Social", "favorite": True},
+        {"name": "Apple ProRes 422", "builtin": True, "category": "Broadcast"},
+        {"name": "Mine", "builtin": True, "category": "Match Source"},
+    ]
+    assert quick_presets(presets) == ["Mine", "YouTube 1080p", "Match Source – Adaptive High Bitrate"]
+    known = {"mp4", "mov", "mxf"}
+    assert quick_file("", "Seq 1", "mp4", known, "/out") == "/out/Seq 1.mp4"
+    assert quick_file("/d/", "Seq 1", "mov", known, "/out") == "/d/Seq 1.mov"
+    assert quick_file("/d/Cut.mp4", "Seq 1", "mp4", known, "/out") is None
+    assert quick_file("/d/Cut.mp4", "Seq 1", "mov", known, "/out") == "/d/Cut.mov"
+    assert quick_file("/d/Cut.v2", "Seq 1", "mov", known, "/out") == "/d/Cut.v2.mov"
+    assert quick_file("Cut", "Seq 1", "mp4", known, "/out") == "/out/Cut.mp4"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_quick_export_as_egui(app, tmp_path: Path):
+    """egui's header Quick Export: the popup under the button with the sequence's file name in the
+    default folder, the preset list with the size estimate, a typed name and a chosen folder,
+    Export starting ``export.quick`` (the preset remembered for next time), Close."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        button = win.findChild(QtWidgets.QToolButton, "header.quickExport")
+        assert button is not None and button.isVisible() and button.toolTip() == "Quick Export"
+        button.click()
+        q = win.quick_export
+        go = q.findChild(QtWidgets.QPushButton, "quickExport.go")
+        assert wait_until(app, lambda: q.isVisible() and q.rows and q.path and "–" not in q.size.text() and q.size.text(), 20_000), q.size.text()
+        seq = str(win.sequence.get("name"))
+        assert q.file.text() == f"{seq}.mp4" and q.location.text(), (q.file.text(), q.location.text())
+        assert q.rows["Match Source – Adaptive High Bitrate"].isChecked()
+        assert q.findChild(QtWidgets.QPushButton, "quickExport.preset.Match Source – Adaptive High Bitrate") is not None
+        # another preset: the extension follows, the estimate is asked again
+        mov = next(n for n, p in ((p["name"], p) for p in q.presets) if n in q.rows and p.get("extension") == "mov") if any(
+            p.get("extension") == "mov" and p["name"] in q.rows for p in q.presets) else None
+        if mov is not None:
+            q.rows[mov].click()
+            assert wait_until(app, lambda: q.file.text() == f"{seq}.mov", 10_000), q.file.text()
+            q.rows["Match Source – Adaptive High Bitrate"].click()
+            assert wait_until(app, lambda: q.file.text() == f"{seq}.mp4", 10_000)
+        # a typed name stays in the folder; the location link opens the save dialog
+        q.file.setText("Cut")
+        q.file.editingFinished.emit()
+        assert q.path.endswith(os.sep + "Cut.mp4")
+        q.pick_save = lambda title, filt, start: str(tmp_path / "Final")
+        q.findChild(QtWidgets.QPushButton, "quickExport.location").click()
+        assert q.path == str(tmp_path / "Final.mp4") and q.location.text() == str(tmp_path)
+        messages: list[str] = []
+        q.status.connect(messages.append)
+        go.click()
+        assert not q.isVisible()
+        assert wait_until(app, lambda: messages, 20_000) and messages[0] == f"Quick Export: {tmp_path / 'Final.mp4'}", messages
+        got: list = []
+        engine.execute("export.presets.list", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["quickPreset"] == "Match Source – Adaptive High Bitrate"
+        # Close, and the button toggles the popup
+        button.click()
+        assert wait_until(app, lambda: q.isVisible(), 5_000)
+        q.findChild(QtWidgets.QToolButton, "quickExport.close").click()
+        assert not q.isVisible()
+    finally:
+        engine.execute("export.queue.list", {})
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")

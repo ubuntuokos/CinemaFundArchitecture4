@@ -12,7 +12,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QSettings, Qt, QTimer, QUrl
+from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QPoint, QSettings, Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QDesktopServices, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDockWidget,
     QFileDialog,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -67,6 +68,7 @@ from .panels.monitor_view import build_view_menu
 from .panels.multicam import EditCamerasDialog, MulticamController, SyncDialog
 from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
+from .panels.quick_export import QuickExport
 from .panels.readouts import ProgressPanel, TimecodePanel
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
@@ -1026,17 +1028,45 @@ class MainWindow(QMainWindow):
         themes."""
         button = getattr(self, "appearance_button", None)
         if button is None:
-            button = QToolButton(self.menuBar())
+            # the header's right end: Quick Export, then Appearance Mode (as egui's header)
+            corner = QWidget(self.menuBar())
+            corner.setObjectName("header")
+            row = QHBoxLayout(corner)
+            row.setContentsMargins(0, 0, 4, 0)
+            row.setSpacing(2)
+            quick = QToolButton(corner)
+            quick.setObjectName("header.quickExport")
+            quick.setAutoRaise(True)
+            quick.setText("⇪")
+            quick.setToolTip(tr("Quick Export"))
+            quick.clicked.connect(self.toggle_quick_export)
+            row.addWidget(quick)
+            button = QToolButton(corner)
             button.setObjectName("header.appearance")
             button.setAutoRaise(True)
             button.clicked.connect(self.next_appearance_mode)
             button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             button.customContextMenuRequested.connect(lambda pos: self.appearance_menu().exec(button.mapToGlobal(pos)))
+            row.addWidget(button)
             self.appearance_button = button
-        if self.menuBar().cornerWidget(Qt.Corner.TopRightCorner) is not button:
-            self.menuBar().setCornerWidget(button, Qt.Corner.TopRightCorner)
-        button.show()
+            self.quick_export_button = quick
+            self.header_corner = corner
+        if self.menuBar().cornerWidget(Qt.Corner.TopRightCorner) is not self.header_corner:
+            self.menuBar().setCornerWidget(self.header_corner, Qt.Corner.TopRightCorner)
+        self.header_corner.show()
         self._update_appearance_button()
+
+    def toggle_quick_export(self) -> None:
+        """The header's Quick Export button: the popup below it, or closed when it is open."""
+        popup = getattr(self, "quick_export", None)
+        if popup is None:
+            popup = self.quick_export = QuickExport(self.engine, self)
+            popup.status.connect(lambda text: (self.events.log(text), self.statusBar().showMessage(text, 6000)))
+        if popup.isVisible():
+            popup.close()
+            return
+        b = self.quick_export_button
+        popup.open_at(b.mapToGlobal(b.rect().bottomRight()) + QPoint(0, 4), self.sequence)
 
     def _update_appearance_button(self) -> None:
         button = getattr(self, "appearance_button", None)
