@@ -49,7 +49,7 @@ Hash-ek és a tárolóbeli példányok változtatásai: `docs/development/ai-orc
 | Claude Code CLI | PENDING | futtatható (v1); bejelentkezés és integráció nem ellenőrzött |
 | ThinkRail, Pi | PENDING | a v1 szerint nincsenek a PATH-on |
 | Superpowers-előellenőrző 16 egységtesztje | VERIFIED **sandboxban** (16/16 OK), célgépen PENDING | Ubuntu 24.04.5, Python 3.13.18, x86_64; `PYTHONPATH=python python3 -m unittest discover -s python/tests -p test_superpowers_cost.py` |
-| Teljes CFA4 CI a `main`-en | futtatva (6. pont) | run 41081470525 |
+| Teljes CFA4 CI a `main`-en | 8/9 job zöld, „Python and Qt 6” piros (I-02, #344) | run 41081470525 |
 | `test_independence.py` a `main`-en | **FAIL** (sandbox) | 1 failed / 3 passed – lásd I-02 |
 | `scripts/ci/check-linux-amd64.sh` | NOT RUN helyben | a szkript Ubuntu 24.04-et elutasít (exit 2); a GitHub-on a CI futtatja |
 | Ruleset a `main`-en | VERIFIED (v1) | PR kötelező, `cargo-check` kötelező, **0 kötelező jóváhagyás**, a teljes CI nem kötelező check |
@@ -102,7 +102,7 @@ Hash-ek és a tárolóbeli példányok változtatásai: `docs/development/ai-orc
 | ID | Esemény | Bizonyíték | Állapot |
 |---|---|---|---|
 | I-01 | 2026-10-29/30 éjjel a tulajdonos fiókja nevén: #334, #335, #330 beolvasztása, #336 issue és F0 v1 hozzászólás. A tulajdonos szerint egy másik MI-eszköz (ChatGPT) járt el a nevében; **ismeretlen, melyik lépést ki végezte**. | GitHub-időbélyegek (00:32–01:01) | UNKNOWN szerzőség; javasolt intézkedés: a külső MI-eszközök írási jogának szűkítése, külön bot-fiók merge-jog nélkül |
-| I-02 | #335 beolvasztva a `b3d1980` fejen **teljes CI nélkül** (a 8 teljes job skipped; csak statikus + `cargo-check` zöld; 3 perccel később merge). Sérti a `coordination.md` §3.4-et. | run 40976153695 | Utólagos teljes CI a `main`-en (`973a73e`, tartalmazza a #335-öt): run [41081470525](https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/41081470525) – **eredmény a futás végén, a PR-ban kerül rögzítésre** |
+| I-02 | #335 beolvasztva a `b3d1980` fejen **teljes CI nélkül** (a 8 teljes job skipped; csak statikus + `cargo-check` zöld; 3 perccel később merge). Sérti a `coordination.md` §3.4-et. | run 40976153695 | Utólagos teljes CI a `main`-en (`973a73e`, tartalmazza a #335-öt): run [41081470525](https://github.com/ubuntuokos/CinemaFundArchitecture4/actions/runs/41081470525) – **eredmény: 8 job zöld (köztük az FFmpeg-oracle-os Rust-tesztek), 1 piros: „Python and Qt 6” / „Python static checks and tests”** → javítás: #344 |
 | I-03 | #330 (koordinációs szabály) idő előtt beolvasztva | merge `973a73e` | Visszavonó PR: #338 – a gazda olvasztja be |
 | F0-01 | rustup a v1 alatt letöltötte az 1.97.1 eszköztárat a célgépen | v1 | Lezárva: a tulajdonos döntése szerint marad |
 
@@ -110,7 +110,7 @@ Hash-ek és a tárolóbeli példányok változtatásai: `docs/development/ai-orc
 tesztet **elbuktatja**: a #335 két fájlja (`docs/plans/CFA4-SUPERPOWERS-COST-001.md` 20. sor,
 `docs/development/superpowers-policy.md` 14. sor) visszahozta az upstream márkanevet.
 Futtatás: `python3 -m pytest -q python/tests/test_independence.py` → 1 failed, 3 passed
-(Ubuntu 24.04.5, Python 3.13.18). Hatókörön kívüli hiba: **nem javítottam**, külön PR kell rá a tulajdonos döntése után.
+(Ubuntu 24.04.5, Python 3.13.18). A helyben, a CI-ben rögzített verziókkal (ruff 0.17.2) futtatott lépés ezen felül 2 ruff-hibát is mutat a #335 két Python-fájljában. A tulajdonos kérésére mindkettőt külön PR javítja: **#344**. Átadás a gazdának: **#346**. A Qt GUI-tesztek tulajdonosi döntés szerint (2026-10-30) nem beolvasztási feltételek, amíg a Qt6 GUI nincs kész.
 
 A #334 a beolvasztott `82c71de` fejen zöld teljes CI-vel ment be (run 40824027165) – megfelel a §3.4-nek.
 
@@ -144,6 +144,8 @@ A Qt6- és kodekfejlesztés ütemezése emiatt nem állhat le (FINAL 1.0, 6. pon
 
 - A gazda olvasztja be a #338-at.
 - A #335-re utólagos teljes CI fusson.
+- A Qt GUI-tesztek eredményét figyelmen kívül kell hagyni, amíg a Qt6 GUI nincs kész.
+- A szükséges feladatokat a gazda kapja meg (#346).
 - Az éjszakai lépések szerzősége ismeretlen.
 - Az 1.97.1 eszköztár marad.
 - Az AIQT-ből csak az kerül át, ami nem mond ellent a CFA4-szabályoknak.
