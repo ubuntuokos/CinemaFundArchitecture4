@@ -12,8 +12,11 @@
 //! | `audio.voiceover.start` | arm and start capturing; returns R, C, the punch-out and the countdown cue times |
 //! | `audio.voiceover.sync` | the host's playback actually started at `time`: restart the capture there |
 //! | `audio.voiceover.stop` | stop capturing; write, import and place the recording (one undo step) |
+//! | `audio.voiceover.hostInput` | the front end captures the input itself (the Qt GUI): use a [`HostInput`] |
+//! | `audio.voiceover.feed` | captured samples from the front end, for the [`HostInput`] |
 //!
-//! Input goes through the [`AudioInput`] trait. The desktop app installs a cpal input; headless
+//! Input goes through the [`AudioInput`] trait. The egui app installs a cpal input, the Qt GUI a
+//! [`HostInput`] it streams the microphone into (the engine is another process there); headless
 //! sessions (CLI, MCP, tests) use [`SyntheticInput`], a deterministic generated signal that produces
 //! exactly as many samples as the timeline asks for, so a recording lands sample-accurately.
 //!
@@ -61,6 +64,10 @@ pub trait AudioInput: Send {
     /// Drop everything captured so far: the next sample read is "now".
     fn discard(&mut self);
     fn stop(&mut self);
+    /// A [`HostInput`] (fed by `audio.voiceover.feed`).
+    fn as_host(&mut self) -> Option<&mut HostInput> {
+        None
+    }
 }
 
 /// The signal a [`SyntheticInput`] produces.
@@ -126,6 +133,69 @@ impl AudioInput for SyntheticInput {
     fn stop(&mut self) {}
 }
 
+/// Most samples a [`HostInput`] holds (64 Mi mono f32 = 256 MiB, over 23 minutes at 48 kHz);
+/// what arrives past it is dropped and `audio.voiceover.feed` reports the input as full.
+pub const HOST_INPUT_MAX_SAMPLES: usize = 1 << 26;
+
+/// An input whose samples the host front end captures and streams in (`audio.voiceover.feed`):
+/// the Qt GUI records the microphone with Qt Multimedia, as the engine runs in another process.
+/// It holds the chosen channel only (mono), at the rate the host captures.
+pub struct HostInput {
+    /// Devices the host can capture from: (name, input channels).
+    pub devices: Vec<(String, u16)>,
+    /// The host's default input device.
+    pub default_device: String,
+    pub rate: u32,
+    buf: std::collections::VecDeque<f32>,
+    full: bool,
+}
+
+impl HostInput {
+    pub fn new(devices: Vec<(String, u16)>, default_device: String, rate: u32) -> Self {
+        Self { devices, default_device, rate: rate.max(1), buf: std::collections::VecDeque::new(), full: false }
+    }
+    /// Append captured samples; false once the buffer is full (the rest is dropped).
+    pub fn push(&mut self, samples: &[f32]) -> bool {
+        let room = HOST_INPUT_MAX_SAMPLES.saturating_sub(self.buf.len());
+        if samples.len() > room {
+            self.full = true;
+        }
+        self.buf.extend(samples.iter().take(room).map(|x| if x.is_finite() { x.clamp(-1.0, 1.0) } else { 0.0 }));
+        !self.full
+    }
+    pub fn buffered(&self) -> usize {
+        self.buf.len()
+    }
+}
+
+impl AudioInput for HostInput {
+    fn devices(&self) -> Vec<String> {
+        self.devices.iter().map(|(n, _)| n.clone()).collect()
+    }
+    fn channels(&self, device: &str) -> u16 {
+        let device = if device.is_empty() { self.default_device.as_str() } else { device };
+        self.devices.iter().find(|(n, _)| n == device).or(self.devices.first()).map_or(1, |(_, c)| (*c).max(1))
+    }
+    fn start(&mut self, _device: &str, _sample_rate: u32) -> std::result::Result<InputFormat, String> {
+        self.buf.clear();
+        self.full = false;
+        // the host streams the chosen channel only
+        Ok(InputFormat { sample_rate: self.rate, channels: 1 })
+    }
+    fn read(&mut self, frames: usize) -> Vec<Vec<f32>> {
+        let n = frames.min(self.buf.len());
+        vec![self.buf.drain(..n).collect()]
+    }
+    fn discard(&mut self) {
+        self.buf.clear();
+        self.full = false;
+    }
+    fn stop(&mut self) {}
+    fn as_host(&mut self) -> Option<&mut HostInput> {
+        Some(self)
+    }
+}
+
 // ------------------------------------------------------------------------------------- settings
 
 /// Voice-Over Record Settings (persisted in the preferences as `voiceOver`).
@@ -186,6 +256,18 @@ impl VoiceOver {
     pub fn recording(&self) -> bool {
         self.rec.is_some()
     }
+    /// The project is being replaced: a take in progress (or one stopped but not saved) is
+    /// dropped, as its sequence and track ids mean other things, or nothing, in the next project.
+    pub fn abandon(&mut self) {
+        if self.rec.is_some() {
+            if let Some(input) = self.input.as_mut() {
+                input.stop();
+            }
+            self.rec = None;
+        }
+        self.pending_stop = None;
+        self.captured.clear();
+    }
     fn input(&mut self) -> &mut Box<dyn AudioInput> {
         self.input.get_or_insert_with(|| Box::new(SyntheticInput::clicks()))
     }
@@ -218,6 +300,30 @@ pub fn cue_times(capture_start: Tick, record_start: Tick) -> Vec<Tick> {
     v.reverse();
     v.push(record_start);
     v
+}
+
+/// Add the countdown cue beeps of the recording in progress (when Countdown Sound Cues is on) to
+/// `channels`, a block of the program mix at `sr` starting at sample `start` (what the Qt GUI
+/// hears through `audio.render`; egui mixes them into its own output).
+pub fn mix_cues(s: &Session, sr: u32, start: i64, channels: &mut [Vec<f32>]) {
+    let Some(rec) = s.voiceover.rec.as_ref() else { return };
+    if !s.prefs.voice_over.countdown_sound_cues || sr == 0 {
+        return;
+    }
+    let tone = cue_tone(sr);
+    for at in cue_times(rec.capture_start, rec.record_start) {
+        let c = at.to_units_floor(i64::from(sr));
+        for ch in channels.iter_mut() {
+            let end = start.saturating_add(ch.len() as i64);
+            let (a, b) = (c.max(start), c.saturating_add(tone.len() as i64).min(end));
+            for i in a..b {
+                let (Ok(ti), Ok(oi)) = (usize::try_from(i - c), usize::try_from(i - start)) else { continue };
+                if let (Some(x), Some(o)) = (tone.get(ti), ch.get_mut(oi)) {
+                    *o += x;
+                }
+            }
+        }
+    }
 }
 
 /// Mono 32-bit float WAV.
@@ -524,6 +630,51 @@ fn stop(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
+/// The host captures the input itself: use a [`HostInput`] with these devices and this rate.
+fn host_input(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "audio.voiceover.hostInput";
+    if s.voiceover.recording() {
+        return Err(bad(CMD, "a voice-over is recording"));
+    }
+    let rate = u64_p(p, "sampleRate")
+        .and_then(|r| u32::try_from(r).ok())
+        .filter(|r| (8_000..=384_000).contains(r))
+        .ok_or_else(|| bad(CMD, "`sampleRate` must be 8000..=384000"))?;
+    let devices: Vec<(String, u16)> = p
+        .get("devices")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .take(256)
+                .filter_map(|d| {
+                    let name = d.get("name")?.as_str()?.trim();
+                    let ch = d.get("channels").and_then(Value::as_u64).unwrap_or(1).clamp(1, 64) as u16;
+                    (!name.is_empty()).then(|| (name.to_string(), ch))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let default = str_p(p, "default").unwrap_or_default().to_string();
+    s.voiceover.input = Some(Box::new(HostInput::new(devices, default, rate)));
+    Ok(settings_json(s))
+}
+
+/// Captured samples from the host (the chosen channel, at the rate given to `hostInput`). Ignored
+/// when nothing is recording: a block can arrive just after the take stopped.
+fn feed(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "audio.voiceover.feed";
+    let data = str_p(p, "samples").ok_or_else(|| bad(CMD, "`samples` is base64 f32le"))?;
+    if data.len() > 64 << 20 {
+        return Err(bad(CMD, "block too large"));
+    }
+    let bytes = cfa4_project::gtemplate::base64_decode(data).ok_or_else(|| bad(CMD, "`samples` is not base64"))?;
+    let samples: Vec<f32> = bytes.chunks_exact(4).filter_map(|b| <[u8; 4]>::try_from(b).ok().map(f32::from_le_bytes)).collect();
+    let recording = s.voiceover.recording();
+    let Some(host) = s.voiceover.input.as_mut().and_then(|i| i.as_host()) else { return Err(bad(CMD, "the voice-over input is not the host's")) };
+    let ok = !recording || host.push(&samples);
+    Ok(json!({"buffered": host.buffered(), "full": !ok}))
+}
+
 fn spec(
     id: &'static str,
     label: &'static str,
@@ -548,5 +699,14 @@ pub fn commands() -> Vec<CommandSpec> {
         spec("audio.voiceover.start", "Start Voice-over Recording", r#"{"track":"A1"|id?,"time":ticks?,"preroll":seconds?}"#, can_start, start, true),
         spec("audio.voiceover.sync", "Sync Voice-over Capture", r#"{"time":ticks?}"#, is_recording, sync, true),
         spec("audio.voiceover.stop", "Stop Voice-over Recording", r#"{"time":ticks?,"dir":str?,"discard":bool?}"#, is_recording, stop, true),
+        spec(
+            "audio.voiceover.hostInput",
+            "Use the Host's Voice-over Input",
+            r#"{"devices":[{"name":str,"channels":n}],"default":str?,"sampleRate":n}"#,
+            crate::commands::always,
+            host_input,
+            false,
+        ),
+        spec("audio.voiceover.feed", "Feed Voice-over Input", r#"{"samples":base64 f32le mono}"#, crate::commands::always, feed, false),
     ]
 }

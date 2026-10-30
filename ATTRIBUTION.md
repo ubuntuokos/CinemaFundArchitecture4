@@ -9,17 +9,18 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 
 | Asset | Author | Source | Licence |
 |---|---|---|---|
-| `assets/cfa4/cfa4-official-logo.png` | CFA4 project owner (István) | Original CFA3 emblem supplied by the project owner, adapted and approved as the official CFA4 logo on 2026-10-23 | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/16x16/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/24x24/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/32x32/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/48x48/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/64x64/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/128x128/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | GPL-3.0-or-later |
-| `apps/cfa4-web/web/favicon.svg` | CFA4 project | Copy of the CFA4 development geometric icon (web favicon) | MIT OR Apache-2.0 |
+| `assets/cfa4/cfa4-official-logo.png` | CFA4 project owner (István) | Original CFA3 emblem supplied by the project owner, adapted and approved as the official CFA4 logo on 2026-10-23 | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/cfa4-emblem.png` | CFA4 project owner (István) | CFA4 logo emblem on a transparent background, derived from the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/16x16/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/22x22/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/24x24/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/32x32/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/48x48/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/64x64/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/128x128/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/256x256/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/512x512/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/hicolor/scalable/apps/io.github.ubuntuokos.cfa4.svg` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `crates/ui-egui/src/i18n/it.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Italian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/id.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Indonesian interface translations | MIT OR Apache-2.0 |
 | `crates/ui-egui/src/i18n/ko.tsv` | Upstream contributors (see NOTICE) | Original work: clean-room Korean interface translations | MIT OR Apache-2.0 |
@@ -92,7 +93,8 @@ repository; each screenshot's sidecar lists exactly which appear.
 
 ## Assets drawn or generated in code
 
-These are original work by the upstream and CFA4 contributors under the project licence (MIT OR Apache-2.0). None
+These are original work by the upstream contributors under the upstream licence (MIT OR Apache-2.0);
+new assets CFA4 contributors draw or generate in code are GPL-3.0-or-later (AGENTS.md §1). None
 is traced or derived from Adobe artwork.
 
 | Asset | Where |
@@ -105,6 +107,7 @@ is traced or derived from Adobe artwork.
 | Lumetri "Look" presets (Teal & Orange, Warm Film, …) | `crates/render/src/effects.rs` (`apply_look`): procedural colour transforms, not LUT files |
 | Lumetri Presets (Effects panel: Cinematic, Film Emulation, Monochrome, Technical) and their preview picture | `crates/render/src/lumetri_presets.rs`: Lumetri parameter values chosen by contributors, descriptive names, and a procedural preview picture (dusk sky, ridges, lake, grey ramp, colour chips) |
 | Colour palette and layout metrics | `crates/ui-egui/src/theme.rs`: colour values and sizes only; no artwork |
+| Qt GUI icons and glyphs: tools and transport icons, track-header padlock, eye, speaker and sync marks, Effects panel fx / transition / preset glyphs, align glyphs, Lumetri wheels and curves, Essential Sound and Effect Controls drawings | `python/cfa4_qt/panels/`: `tools.py`, `transport.py`, `timeline.py`, `effects.py`, `essential_graphics.py`, `lumetri.py`, `essential_sound.py`, `effect_controls.py`: original shapes drawn with QPainter by CFA4 contributors, GPL-3.0-or-later; no image files, no third-party artwork |
 
 ## Optional build input: extra-fonts
 

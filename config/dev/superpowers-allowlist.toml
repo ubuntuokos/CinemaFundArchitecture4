@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# CFA4 Superpowers v7.0.1: opt-in only; no automatic agent execution
+schema = 1
+
+[superpowers]
+enabled = false
+upstream_repository = "obra/superpowers"
+upstream_version = "v7.0.1"
+upstream_commit = "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b"
+telemetry_enabled = false
+automatic_bootstrap = false
+parallel_agents = false
+execution_mode = "inline"
+allowed_skills = [
+  "writing-plans",
+  "systematic-debugging",
+  "verification-before-completion",
+  "test-driven-development",
+  "executing-plans",
+  "requesting-code-review",
+  "diagnosing-superpowers",
+]
+
+[limits]
+# Baseline unknown: deny all until verified
+allow_paid_calls = false
+max_total_tokens = 0
+max_paid_usd = "0"
+max_parallel_paid_calls = 0

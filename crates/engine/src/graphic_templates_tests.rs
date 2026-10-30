@@ -98,6 +98,19 @@ fn template_export_install_apply_round_trip() {
     s2.execute("graphics.template.set", json!({"clip": c2.0, "control": "Show Subhead", "value": false})).unwrap();
     let ctl = s2.execute("graphics.template.controls", json!({"clip": c2.0})).unwrap();
     assert_eq!(ctl["controls"][4]["value"], false);
+    // a slider dragged (`merge`, the first value `begin`) is one undo step whatever its length
+    let steps = s2.history.undo.len();
+    for (i, v) in [60.0, 80.0, 100.0, 120.0].iter().enumerate() {
+        s2.execute("graphics.template.set", json!({"clip": c2.0, "control": "Headline Size", "value": v, "merge": true, "begin": i == 0})).unwrap();
+    }
+    assert_eq!(s2.history.undo.len(), steps + 1, "one undo step for the drag");
+    let ctl = s2.execute("graphics.template.controls", json!({"clip": c2.0})).unwrap();
+    assert_eq!(ctl["controls"][3]["value"], 120.0);
+    // the next drag is its own step
+    s2.execute("graphics.template.set", json!({"clip": c2.0, "control": "Headline Size", "value": 40.0, "merge": true, "begin": true})).unwrap();
+    assert_eq!(s2.history.undo.len(), steps + 2);
+    s2.execute("edit.undo", json!({})).unwrap();
+    s2.execute("edit.undo", json!({})).unwrap();
     s2.execute("edit.undo", json!({})).unwrap();
     s2.execute("edit.undo", json!({})).unwrap();
     assert!(s2.active_sequence().unwrap().find_item(c2).is_none(), "undo removes the applied template");

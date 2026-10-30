@@ -2,6 +2,7 @@ asset:        io.github.ubuntuokos.cfa4.png
 title:        CFA4 application icon (512 px), emblem of the official CFA4 logo
 author:       István, CFA4 project owner
 source:       Derived from assets/cfa4/cfa4-official-logo.png (emblem cropped, rounded square, resized)
-license:      GPL-3.0-or-later
+license:      LicenseRef-CFA4-Logo
+license-file: assets/cfa4/LICENSE-logo.txt
 added:        2026-10-25 for roadmap A1 (CFA4 identity)
-notes:        Replaces the rejected geometric development placeholder icon.
+notes:        Replaces the rejected geometric development placeholder icon. CFA4 mark owned by the project owner; not covered by the GPL.
