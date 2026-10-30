@@ -611,6 +611,36 @@ fn immersive_file_package() {
     assert!(e.to_string().contains("24 fps"), "{e}");
 }
 
+/// Cancelling while the IAB source is copied stops the export instead of finishing it.
+#[test]
+fn immersive_copy_honours_cancel() {
+    use crate::dcp_out::{DcpMux, DcpSetup};
+    let src_dir = tmp("iab-cancel-src");
+    std::fs::create_dir_all(&src_dir).unwrap();
+    let raw = Path::new(&src_dir).join("four.iab");
+    std::fs::write(&raw, source_frames(cfa4_iab::FrameRate::R25, 4).concat()).unwrap();
+    let settings = ExportSettings {
+        format: Format::Dcp,
+        path: tmp("iab-cancel"),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: raw.to_string_lossy().to_string(),
+        ..Default::default()
+    };
+    let setup = || DcpSetup { settings: &settings, title: "Cancel".into(), width: 1998, height: 1080, rate: FrameRate::new(25, 1), audio: false };
+    for after in [0, 2, 5] {
+        let mut mux = DcpMux::new(setup()).unwrap();
+        mux.set_frames(8);
+        let polls = std::cell::Cell::new(0);
+        let cancelled = || {
+            polls.set(polls.get() + 1);
+            polls.get() > after
+        };
+        // 4 source frames, then 4 silent ones up to the picture's 8
+        let e = mux.finish(&settings, &cancelled).unwrap_err();
+        assert!(matches!(e, ExportError::Cancelled), "after {after} polls: {e}");
+    }
+}
+
 /// A real IAB source (`CFA4_IAB_SOURCE`: an IAB MXF such as samples/iab/mxf/sounds_imf_iab.mxf
 /// of the project samples, Dolby Atmos frames wrapped by the reference tool, or a raw
 /// IABitstream) re-wrapped into a 24 fps DCP.

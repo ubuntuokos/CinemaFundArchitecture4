@@ -638,7 +638,8 @@ impl Exporter {
                 mux.set_sample_entry(at, entry).map_err(|e| ExportError::Io(e.to_string()))?;
             }
         }
-        let dcp = self.dcp.take().map(|m| m.finish(&self.settings)).transpose()?;
+        let cancelled = || progress.cancel.load(Ordering::Relaxed);
+        let dcp = self.dcp.take().map(|m| m.finish(&self.settings, &cancelled)).transpose()?;
         let (bytes, extra_files) = match (self.mxf.take(), self.webm.take(), self.hls.take(), self.mpeg.take()) {
             _ if dcp.is_some() => dcp.unwrap_or_default(),
             (Some(m), _, _, _) => m.finish(&self.settings)?,

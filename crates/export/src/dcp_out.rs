@@ -549,6 +549,12 @@ impl DcpMux {
         })
     }
 
+    /// The picture length, for tests that drive the sound tracks alone.
+    #[cfg(test)]
+    pub(crate) fn set_frames(&mut self, frames: u64) {
+        self.frames = frames;
+    }
+
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
         let (_, _, w) = self.picture.as_mut().ok_or_else(|| ExportError::Encode("internal: the DCP picture file is closed".into()))?;
         for p in packets {
@@ -570,14 +576,15 @@ impl DcpMux {
     }
 
     /// Finish the track files and write the composition playlist, packing list, asset map and
-    /// volume index; returns (total bytes, every file written).
-    pub fn finish(mut self, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
+    /// volume index; returns (total bytes, every file written). `cancelled` is polled while an
+    /// immersive source is copied.
+    pub fn finish(mut self, settings: &ExportSettings, cancelled: &dyn Fn() -> bool) -> Result<(u64, Vec<String>)> {
         let (pic, mut snd) = (self.picture.take(), self.sound.take());
         // the IAB and the main sound get their last edit units first
         let iab = match (self.immersive.take(), snd.as_mut()) {
             (Some(im), Some((_, _, sw))) => {
                 let (id, name) = (im.id, im.name.clone());
-                let (w, units) = im.finish(self.frames, sw)?;
+                let (w, units) = im.finish(self.frames, sw, cancelled)?;
                 Some((id, name, w, units))
             }
             _ => None,

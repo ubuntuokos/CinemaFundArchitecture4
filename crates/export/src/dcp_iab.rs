@@ -575,8 +575,8 @@ impl ImmersiveMux {
     }
 
     /// Complete both tracks to `frames` edit units (the picture's); returns the IAB writer and
-    /// its edit units.
-    pub fn finish(mut self, frames: u64, sound: &mut MxfWriter<Out>) -> Result<(MxfWriter<Out>, u64)> {
+    /// its edit units. `cancelled` is polled once per edit unit.
+    pub fn finish(mut self, frames: u64, sound: &mut MxfWriter<Out>, cancelled: &dyn Fn() -> bool) -> Result<(MxfWriter<Out>, u64)> {
         match self.mode {
             DcpImmersive::Bed | DcpImmersive::Off => {
                 if self.pending.iter().any(|p| !p.is_empty()) {
@@ -591,10 +591,13 @@ impl ImmersiveMux {
                 }
                 let silence = vec![vec![0.0f32; self.spu]; 6];
                 while self.units < frames {
+                    if cancelled() {
+                        return Err(ExportError::Cancelled);
+                    }
                     self.bed_unit(&silence, sound)?;
                 }
             }
-            DcpImmersive::File => self.copy_source(frames, sound)?,
+            DcpImmersive::File => self.copy_source(frames, sound, cancelled)?,
         }
         let desc = self.desc;
         self.iab.set_iab(desc).map_err(|e| ExportError::Io(e.to_string()))?;
@@ -603,13 +606,16 @@ impl ImmersiveMux {
     }
 
     /// `file`: the source's frames up to `frames`, then silent ones.
-    fn copy_source(&mut self, frames: u64, sound: &mut MxfWriter<Out>) -> Result<()> {
+    fn copy_source(&mut self, frames: u64, sound: &mut MxfWriter<Out>, cancelled: &dyn Fn() -> bool) -> Result<()> {
         let path = self.source.clone();
         let src = Source::open(&path)?;
         let layout = Layout::surround_5_1();
         let mut last: Option<Frame> = None;
         let want = self.rate.rational();
         for i in 0..src.len().min(usize::try_from(frames).unwrap_or(usize::MAX)) {
+            if cancelled() {
+                return Err(ExportError::Cancelled);
+            }
             let bytes = src.frame(i)?;
             let mut f = cfa4_iab::parse(&bytes).map_err(|e| iab_err(format!("{path}: frame {i}: {e}")))?;
             if f.frame_rate.rational() != want {
@@ -636,6 +642,9 @@ impl ImmersiveMux {
             };
             let bytes = cfa4_iab::write(&pad).map_err(iab_err)?;
             while self.units < frames {
+                if cancelled() {
+                    return Err(ExportError::Cancelled);
+                }
                 self.push(&bytes, &pad, None, sound)?;
             }
         }
