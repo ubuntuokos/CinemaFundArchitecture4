@@ -17,13 +17,13 @@ let s10 = ssim_u16(&ours_y10, &reference_y10, width, height, 10)?;
 
 | Function | What it computes |
 |---|---|
-| `ciede2000`, `ciede2000_with` | ΔE₀₀ between two CIELAB colours (CIE 142-2001), optional kL / kC / kH |
+| `ciede2000`, `ciede2000_with` | ΔE₀₀ between two CIELAB colours (CIE 142-2001); `ciede2000_with` takes kL / kC / kH and rejects non-positive or non-finite ones |
 | `delta_e_srgb8` | per-pixel ΔE₀₀ of two 8-bit sRGB images (RGB or RGBA, alpha ignored): mean, max, share of pixels above 1 |
 | `xyz_to_lab`, `linear_rgb_to_lab`, `srgb8_to_lab` | CIELAB (D65) from XYZ, from linear RGB in any `cfa4_color::Gamut`, from 8-bit sRGB |
 | `ssim`, `ssim_u8`, `ssim_u16` | mean SSIM of one plane: 11 × 11 Gaussian window (σ = 1.5), K1 = 0.01, K2 = 0.03, valid positions only |
 
 Inputs are checked: mismatched or wrong-length buffers, images smaller than the window, sizes
-above 16K × 16K and a non-positive data range return a `MetricError`.
+above 16K × 16K, a non-positive data range and invalid CIEDE2000 weights return a `MetricError`.
 
 ## Verification
 

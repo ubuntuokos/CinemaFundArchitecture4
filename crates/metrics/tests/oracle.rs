@@ -59,6 +59,21 @@ fn ciede2000_sharma_table() {
     }
 }
 
+#[test]
+fn ciede2000_rejects_bad_weights_and_keeps_nan() {
+    let (x, y) = (Lab::new(50.0, 0.0, 0.0), Lab::new(50.0, 20.0, 10.0));
+    let d = ciede2000(&x, &y);
+    assert_eq!(ciede2000_with(&x, &y, DeltaEParams::default()), Ok(d));
+    for k in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+        for p in [DeltaEParams { k_l: k, ..Default::default() }, DeltaEParams { k_c: k, ..Default::default() }, DeltaEParams { k_h: k, ..Default::default() }] {
+            assert_eq!(ciede2000_with(&x, &y, p), Err(MetricError::Weights), "{p:?}");
+        }
+    }
+    // textile weighting (kL = 2) is accepted and only scales the lightness term
+    assert!(ciede2000_with(&x, &y, DeltaEParams { k_l: 2.0, ..Default::default() }).is_ok());
+    assert!(ciede2000(&Lab::new(f64::NAN, 0.0, 0.0), &y).is_nan());
+}
+
 struct Lcg(u64);
 impl Lcg {
     fn next(&mut self) -> i64 {

@@ -27,11 +27,19 @@ const POW25_7: f64 = 6_103_515_625.0;
 
 /// ΔE₀₀ between two Lab colours under the reference conditions (kL = kC = kH = 1).
 pub fn ciede2000(x: &Lab, y: &Lab) -> f64 {
-    ciede2000_with(x, y, DeltaEParams::default())
+    delta_e(x, y, DeltaEParams::default())
 }
 
-/// ΔE₀₀ with explicit weighting factors. Symmetric and never negative; NaN only for NaN input.
-pub fn ciede2000_with(x: &Lab, y: &Lab, p: DeltaEParams) -> f64 {
+/// ΔE₀₀ with explicit weighting factors, which must be positive and finite
+/// ([`MetricError::Weights`] otherwise). Symmetric and never negative; NaN input gives NaN.
+pub fn ciede2000_with(x: &Lab, y: &Lab, p: DeltaEParams) -> Result<f64, MetricError> {
+    if ![p.k_l, p.k_c, p.k_h].iter().all(|k| k.is_finite() && *k > 0.0) {
+        return Err(MetricError::Weights);
+    }
+    Ok(delta_e(x, y, p))
+}
+
+fn delta_e(x: &Lab, y: &Lab, p: DeltaEParams) -> f64 {
     // Sharma et al. (2005) eqs. (2)–(7): C*, G, a', C', h'.
     let c_bar = (x.a.hypot(x.b) + y.a.hypot(y.b)) / 2.0;
     let c_bar7 = c_bar.powi(7);
@@ -79,7 +87,9 @@ pub fn ciede2000_with(x: &Lab, y: &Lab, p: DeltaEParams) -> f64 {
     let r_t = -(2.0 * d_theta).to_radians().sin() * r_c;
 
     let (tl, tc, th) = (dl / (p.k_l * s_l), dc / (p.k_c * s_c), d_big_h / (p.k_h * s_h));
-    (tl * tl + tc * tc + th * th + r_t * tc * th).max(0.0).sqrt()
+    // Rounding can push the sum a hair below zero; NaN must stay NaN (`f64::max` would hide it).
+    let sum = tl * tl + tc * tc + th * th + r_t * tc * th;
+    if sum < 0.0 { 0.0 } else { sum.sqrt() }
 }
 
 /// h' in degrees, 0..360; 0 when a' = b = 0 (Sharma eq. 7).

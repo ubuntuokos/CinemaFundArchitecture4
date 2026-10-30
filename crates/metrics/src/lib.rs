@@ -33,6 +33,8 @@ pub enum MetricError {
     TooLarge,
     /// `data_range` is not a positive finite number.
     DataRange,
+    /// A CIEDE2000 weighting factor (kL, kC, kH) is not a positive finite number.
+    Weights,
 }
 
 impl std::fmt::Display for MetricError {
@@ -46,6 +48,7 @@ impl std::fmt::Display for MetricError {
             MetricError::Channels(c) => write!(f, "{c} channels: expected 3 (RGB) or 4 (RGBA)"),
             MetricError::TooLarge => write!(f, "image too large"),
             MetricError::DataRange => write!(f, "data range must be a positive finite number"),
+            MetricError::Weights => write!(f, "CIEDE2000 weighting factors must be positive finite numbers"),
         }
     }
 }
