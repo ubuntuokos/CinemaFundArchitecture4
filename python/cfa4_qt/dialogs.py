@@ -129,6 +129,10 @@ def path_params(command: Command, parent: QWidget, project_path: str | None) -> 
         if not path:
             return {"__cancel__": True}
         return {"path": path if path.endswith(".json") else path + ".json"}
+    if cid == "export.batchVariants":  # the spreadsheet; one sequence and export per row
+        filt = tr("Spreadsheets") + " (*.csv *.tsv *.txt *.xlsx *.ods);;" + tr("All files") + " (*)"
+        path, _ = QFileDialog.getOpenFileName(parent, tr(command.label), "", filt)
+        return {"path": path} if path else {"__cancel__": True}
     if cid.startswith("file.import") and "paths" in names:
         paths, _ = QFileDialog.getOpenFileNames(parent, tr(command.label), "", tr("All files") + " (*)")
         return {"paths": paths} if paths else {"__cancel__": True}
