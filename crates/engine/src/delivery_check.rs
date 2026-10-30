@@ -123,7 +123,8 @@ fn check(s: &mut Session, p: &Value) -> Result<Value> {
             let frame_rect = [0.0, 0.0, w, h];
             let mut off = false;
             let mut unsafe_text = false;
-            for (_, spec) in cfa4_render::graphic_clip::item_layer_specs(it, mid, canvas) {
+            // hidden layers (and fully transparent ones) never reach the export
+            for (_, spec) in cfa4_render::graphic_clip::item_layer_specs(it, mid, canvas).into_iter().filter(|(_, l)| l.enabled && l.transform.opacity > 0.0) {
                 let b = cfa4_render::graphic_clip::layer_bounds(&spec);
                 if !b.iter().all(|v| v.is_finite()) || b[2] <= b[0] || b[3] <= b[1] {
                     continue;

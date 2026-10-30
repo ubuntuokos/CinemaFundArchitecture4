@@ -391,3 +391,58 @@ fn batch_variants_keep_names_unique_undo_whole_and_detach_source_graphics() {
     s.execute("edit.undo", json!({})).unwrap();
     assert!(seqs.iter().all(|q| s.project.sequence(*q).is_none()));
 }
+
+#[test]
+fn reframed_pictures_fill_the_new_frame() {
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "Small", "width": 192, "height": 108, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let r = s.execute("file.newColorMatte", json!({"color": "#ff0000", "width": 192, "height": 108, "seconds": 2.0})).unwrap();
+    s.execute("timeline.place", json!({"item": r["item"], "track": "V1", "seconds": 0.0})).unwrap();
+    for aspect in ["9:16", "1:1", "4:5"] {
+        let r = s.execute("sequence.autoReframe", json!({"aspect": aspect, "open": true})).unwrap();
+        let img = s.render_program(1.0).unwrap();
+        assert_eq!((img.w as u64, img.h as u64), (r["width"].as_u64().unwrap(), r["height"].as_u64().unwrap()));
+        // the corners and the middle of the top and bottom rows are covered
+        for (x, y) in [(0, 0), (img.w - 1, 0), (img.w / 2, 0), (0, img.h - 1), (img.w / 2, img.h - 1), (img.w - 1, img.h - 1)] {
+            assert!(img.get(x, y)[3] > 0.99, "{aspect}: ({x}, {y}) is uncovered");
+        }
+        let orig = s.project.items.values().find(|i| i.name == "Small").unwrap().id;
+        s.execute("sequence.open", json!({"item": orig.0})).unwrap();
+    }
+}
+
+#[test]
+fn deliverables_reuse_only_copies_of_the_same_sequence() {
+    let (mut s, _) = session(0.0, &[2.0]);
+    let a = s.state.active_sequence.unwrap();
+    let r = s.execute("export.socialDeliverables", json!({"aspects": ["9:16"]})).unwrap();
+    let first: Vec<u64> = r["reframed"].as_array().map(|v| v.iter().filter_map(Value::as_u64).collect()).unwrap_or_default();
+    // a second, unrelated sequence with the same name
+    s.execute("file.newSequence", json!({"name": "Promo", "width": 1920, "height": 1080, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let b = s.state.active_sequence.unwrap();
+    assert_ne!(a, b);
+    let r2 = s.execute("export.socialDeliverables", json!({"aspects": ["9:16"]})).unwrap();
+    let second: Vec<u64> = r2["reframed"].as_array().map(|v| v.iter().filter_map(Value::as_u64).collect()).unwrap_or_default();
+    assert_eq!(second.len(), 1, "a new copy for the other sequence: {r2:#}");
+    assert!(first.iter().all(|x| !second.contains(x)));
+    // the first sequence again: its own copy is reused
+    s.execute("sequence.open", json!({"item": a.0})).unwrap();
+    let r3 = s.execute("export.socialDeliverables", json!({"aspects": ["9:16"]})).unwrap();
+    assert_eq!(r3["reframed"].as_array().map(Vec::len).unwrap_or(0), 0, "{r3:#}");
+}
+
+#[test]
+fn hidden_layers_and_interior_styles() {
+    // a hidden layer far outside the frame is not a problem
+    let (mut s, _) = session(0.0, &[3.0]);
+    s.execute("playhead.set", json!({"seconds": 1.0})).unwrap();
+    let r = s.execute("graphics.newText", json!({"text": "Alt", "position": [5000, 540]})).unwrap();
+    let clip = r["clip"].as_u64().unwrap();
+    let layers = s.execute("graphics.list", json!({"clip": clip})).unwrap();
+    let layer = layers["layers"][0]["layer"].clone();
+    let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
+    assert_eq!(issues(&r, "offFrame"), 1, "{r:#}");
+    s.execute("graphics.set", json!({"clip": clip, "layer": layer, "props": {"enabled": false}})).unwrap();
+    let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
+    assert_eq!(issues(&r, "offFrame"), 0, "{r:#}");
+}

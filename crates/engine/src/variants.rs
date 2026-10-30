@@ -17,7 +17,7 @@
 //! `exportPath`. The whole batch is one undo step.
 
 use cfa4_project::graphic::TEXT_LAYER;
-use cfa4_project::graphic_design::adjust_runs;
+use cfa4_project::graphic_design::{StyleRun, adjust_runs};
 use cfa4_project::{ItemId, ParamValue, Project};
 use serde_json::{Value, json};
 
@@ -51,6 +51,29 @@ pub fn fill(text: &str, row: &[(String, String)], missing: &mut Vec<String>) -> 
     }
     out.push_str(rest);
     out
+}
+
+/// The style runs of `text` after [`fill`]: one placeholder at a time, so styled text between
+/// placeholders keeps its style.
+fn fill_runs(text: &str, row: &[(String, String)], runs: &[StyleRun]) -> Vec<StyleRun> {
+    let mut cur = text.to_string();
+    let mut runs = runs.to_vec();
+    let mut from = 0;
+    while let Some(a) = cur.get(from..).and_then(|r| r.find("{{")).map(|a| a + from) {
+        let Some(b) = cur.get(a + 2..).and_then(|r| r.find("}}")) else { break };
+        let end = a + 2 + b + 2;
+        let key = cur.get(a + 2..a + 2 + b).unwrap_or("").trim();
+        match row.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)) {
+            Some((_, v)) => {
+                let next = format!("{}{}{}", cur.get(..a).unwrap_or(""), v, cur.get(end..).unwrap_or(""));
+                runs = adjust_runs(&cur, &next, &runs);
+                from = a + v.len();
+                cur = next;
+            }
+            None => from = end,
+        }
+    }
+    runs
 }
 
 fn file_safe(s: &str) -> String {
@@ -101,7 +124,10 @@ fn apply_row(p: &mut Project, q: &mut cfa4_project::Sequence, row: &[(String, St
                 if new != old {
                     n += 1;
                     if let Some(x) = e.layer.as_mut() {
-                        x.runs = adjust_runs(&old, &new, &x.runs);
+                        x.runs = match &whole {
+                            Some(_) => adjust_runs(&old, &new, &x.runs),
+                            None => fill_runs(&old, row, &x.runs),
+                        };
                     }
                 }
             }
@@ -229,4 +255,26 @@ pub fn commands() -> Vec<CommandSpec> {
         run: batch,
         journal: true,
     }]
+}
+
+#[cfg(test)]
+mod tests {
+    use cfa4_project::graphic_design::{CharStyle, StyleRun};
+
+    use super::*;
+
+    #[test]
+    fn styles_between_placeholders_stay_on_their_characters() {
+        let bold = CharStyle { faux_bold: Some(true), ..CharStyle::default() };
+        // "{{Name}} SPECIAL {{Price}}": SPECIAL (chars 9..16) is bold
+        let runs = vec![StyleRun { start: 9, end: 16, style: bold.clone() }];
+        let row = vec![("Name".to_string(), "Alice".to_string()), ("Price".to_string(), "19".to_string())];
+        let text = "{{Name}} SPECIAL {{Price}}";
+        assert_eq!(fill(text, &row, &mut Vec::new()), "Alice SPECIAL 19");
+        assert_eq!(fill_runs(text, &row, &runs), vec![StyleRun { start: 6, end: 13, style: bold }]);
+        // unknown placeholders are skipped, hostile text does not panic
+        for t in ["{{", "}}{{", "{{x}", "{{Name}}{{Name}}", "日本{{Name}}語", "{{Missing}} {{Name}}"] {
+            let _ = fill_runs(t, &row, &runs);
+        }
+    }
 }

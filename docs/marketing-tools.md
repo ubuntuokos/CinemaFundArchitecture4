@@ -45,14 +45,15 @@ outline as a guide. Monitor state key: `social_zone` (`tiktok`, `reels`, `shorts
 
 Sequence ▸ Auto Reframe Sequence… copies the active sequence at 9:16, 1:1, 4:5 or 16:9: the short
 side of the frame stays, the long side follows the aspect. Every picture clip in the copy gets
-the Auto Reframe effect (Target Aspect: Sequence), which keeps the subject in frame. Motion
-positions (keyframes included) move with the frame's centre, so centred clips and titles stay
-centred; titles keep their size, and the check below reports layers that leave the new frame.
+the Auto Reframe effect (Target Aspect set to the new aspect), which keeps the subject in frame,
+and its Motion Scale grows so the picture covers the new frame. Motion positions (keyframes
+included) move with the frame's centre, so centred clips and titles stay centred; titles keep
+their size, and the check below reports layers that leave the new frame.
 
 File ▸ Export ▸ Social Deliverables… does that for every aspect (default 16:9, 9:16, 1:1, 4:5;
 the sequence itself stands for its own aspect) and adds one export per aspect to the export
 queue, loudness-normalised to −14 LUFS (`loudnessLufs`, `false` to skip). Reframed copies from an
-earlier run are reused, so after fixing a title in the 9:16 copy, running it again exports that
+earlier run of the same sequence (recorded in the copy's metadata, not matched by name) are reused, so after fixing a title in the 9:16 copy, running it again exports that
 copy. `start: true` starts the queue.
 
 ## Check Before Export

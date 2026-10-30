@@ -96,3 +96,20 @@ fn refuses_what_has_no_beats() {
     assert!(s.execute("markers.addBeats", json!({"clip": c})).is_err());
     assert!(s.active_sequence().unwrap().markers.is_empty());
 }
+
+#[test]
+fn short_music_too_short_to_remix_still_gets_beat_markers() {
+    // two bars at 120 BPM: 4 s, 8 beats; Remix needs at least 10
+    let (m, _) = dsp::test_music(SR, 120.0, 2, 3);
+    let refs: Vec<&[f32]> = m.iter().map(Vec::as_slice).collect();
+    assert_eq!(dsp::analyze(&refs, SR).map(|_| ()), Err(dsp::RemixError::TooShort));
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "short", "audio": 2, "video": 1})).unwrap();
+    let inter: Vec<f32> = (0..m[0].len()).flat_map(|i| [m[0][i], m[1][i]]).collect();
+    let bytes: Arc<[u8]> = crate::previews::write_wav_f32(&inter, SR).into();
+    let item = crate::commands::import_bytes(&mut s, "/short.wav", bytes, None).unwrap();
+    let r = s.execute("timeline.place", json!({"item": item.0, "audioTrack": "A1", "seconds": 0.0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [r["clips"][0]]})).unwrap();
+    s.execute("markers.addBeats", json!({})).unwrap();
+    assert!(marker_times(&s).len() >= 4, "{:?}", marker_times(&s));
+}

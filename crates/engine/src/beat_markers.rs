@@ -7,8 +7,9 @@
 //! | `markers.clearBeats` | Markers ▸ Clear Beat Markers | removes the markers `markers.addBeats` made |
 //!
 //! The beats come from the same deterministic tracker as Clip ▸ Remix
-//! ([`cfa4_audio_dsp::remix::analyze`], cached per media range), moved from the analysis' joint
-//! position onto the attack ([`cfa4_audio_dsp::remix::beat_lead`]). Speed-changed clips are
+//! ([`cfa4_audio_dsp::remix::detect_beats`], which needs only four beats, not the music Remix
+//! needs for its joints), moved from the joint position onto the attack
+//! ([`cfa4_audio_dsp::remix::beat_lead`]). Speed-changed clips are
 //! mapped through their speed, remixed clips through their pieces; reversed clips are refused.
 //! Beat markers carry a comment starting with [`BEAT_COMMENT`]; adding again replaces the beat
 //! markers inside the clip's span (one undo step), other markers are never touched.
@@ -84,10 +85,7 @@ fn add_beats(s: &mut Session, p: &Value) -> Result<Value> {
     let it = it.clone();
     let span = (it.start, it.start + it.duration);
     let original = Remix::of(&it).map(|r| r.original).unwrap_or(Tick((it.duration.0 as f64 * it.speed.abs().max(1e-6)).round() as i64));
-    let a = crate::remix::analysis(s, it.item, it.source_in, original).map_err(|e| match e {
-        EngineError::Other(m) => EngineError::Other(m.replace("cannot remix", "cannot find beats")),
-        e => e,
-    })?;
+    let a = crate::remix::beat_grid(s, it.item, it.source_in, original)?;
     let m0 = it.source_in.to_units_floor(sr);
     let lead = dsp::beat_lead(a.sample_rate);
     let mut times = Vec::new();

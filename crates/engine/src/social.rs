@@ -13,8 +13,13 @@
 //! check ([`crate::delivery_check`]) flags text inside them.
 //!
 //! The reframed copy keeps every clip, effect, keyframe and marker of the original; its clips get
-//! new ids. Graphics keep their pixel positions (as in Premiere), so a title made for 16:9 may
-//! need moving: the delivery check reports layers that leave the frame.
+//! new ids. Motion positions move with the frame's centre; pictures are scaled up to cover the
+//! new frame and Auto Reframe pans them to the subject. Titles keep their size, so a title made
+//! for 16:9 may need moving: the delivery check reports layers that leave the frame. The copy's
+//! metadata records its source sequence and aspect, so Social Deliverables reuses only its own
+//! copies.
+
+use std::sync::Arc;
 
 use cfa4_geom::Vec2;
 use cfa4_project::{ClipId, ItemId, ItemKind, Label, ParamValue, Sequence, TrackKind};
@@ -160,11 +165,25 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
     let def = cfa4_project::find_effect("auto_reframe").ok_or_else(|| EngineError::Other("Auto Reframe is not available".into()))?;
     let (w, h) = reframed_size(src.settings.width, src.settings.height, aw, ah);
     let new_name = new_name.unwrap_or_else(|| format!("{old_name} ({})", name.replace(':', "×")));
-    copy_sequence(s, seq, &new_name, "Auto Reframe Sequence", |p, q| {
+    let id = copy_sequence(s, seq, &new_name, "Auto Reframe Sequence", |p, q| {
         // Motion positions are in sequence pixels: move them with the frame's centre so every
         // clip keeps its place relative to the centre (keyframes included)
         let dx = (w as f64 - q.settings.width as f64) / 2.0;
         let dy = (h as f64 - q.settings.height as f64) / 2.0;
+        // a picture that filled the old frame must cover the new one: Auto Reframe pans its
+        // source-sized raster to the subject at the new aspect, and Motion scales it up by this
+        // (plus a pixel, so the resampled edge rows are not half transparent)
+        let cover = if (w, h) == (q.settings.width, q.settings.height) {
+            1.0
+        } else {
+            (w as f64 / q.settings.width.max(1) as f64).max(h as f64 / q.settings.height.max(1) as f64).max(1.0) * (1.0 + 2.0 / w.min(h).max(1) as f64)
+        };
+        let aspect = match name {
+            "9:16" => 1,
+            "1:1" => 2,
+            "4:5" => 3,
+            _ => 4,
+        };
         q.settings.width = w;
         q.settings.height = h;
         for t in q.video_tracks.iter_mut().filter(|t| t.kind == TrackKind::Video) {
@@ -179,12 +198,53 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
                 if !picture || it.effects.iter().any(|e| e.effect == "auto_reframe") {
                     continue;
                 }
+                if let Some(m) = it.effect_mut("motion") {
+                    for k in ["scale", "scale_width"] {
+                        if let Some(sc) = m.params.get_mut(k) {
+                            sc.map_values(|v| match v {
+                                ParamValue::Float(f) if f.is_finite() => ParamValue::Float(f * cover),
+                                v => v,
+                            });
+                        }
+                    }
+                }
+                let mut fx = def.instance();
+                if let Some(a) = fx.params.get_mut("aspect") {
+                    a.value = ParamValue::Choice(aspect);
+                }
                 let pos = it.effects.iter().position(|e| e.def().is_some_and(|d| d.intrinsic)).unwrap_or(it.effects.len());
-                it.effects.insert(pos, def.instance());
+                it.effects.insert(pos, fx);
             }
         }
         Ok(())
-    })
+    })?;
+    // where the copy came from, so Social Deliverables reuses only its own copies (part of the
+    // step just made: undo removes the copy with it)
+    if let Some(i) = Arc::make_mut(&mut s.project).items.get_mut(&id) {
+        i.metadata.insert(REFRAMED_FROM.into(), seq.0.to_string());
+        i.metadata.insert(REFRAMED_ASPECT.into(), name.to_string());
+    }
+    s.bump();
+    Ok(id)
+}
+
+/// Metadata of a reframed copy: the source sequence's id…
+const REFRAMED_FROM: &str = "Reframed From";
+/// …and the aspect it was reframed to.
+const REFRAMED_ASPECT: &str = "Reframed Aspect";
+
+/// The reframed copy of `seq` at aspect `name` an earlier run made, if it still exists.
+fn reframed_copy(s: &Session, seq: ItemId, name: &str) -> Option<ItemId> {
+    let from = seq.0.to_string();
+    s.project
+        .items
+        .values()
+        .find(|i| {
+            matches!(i.kind, ItemKind::Sequence(_))
+                && i.metadata.get(REFRAMED_FROM) == Some(&from)
+                && i.metadata.get(REFRAMED_ASPECT).map(String::as_str) == Some(name)
+        })
+        .map(|i| i.id)
 }
 
 fn auto_reframe(s: &mut Session, p: &Value) -> Result<Value> {
@@ -238,7 +298,7 @@ fn deliverables(s: &mut Session, p: &Value) -> Result<Value> {
             continue;
         }
         let name = format!("{base} ({})", x.0.replace(':', "×"));
-        let existing = s.project.items.values().find(|i| i.name == name && matches!(i.kind, ItemKind::Sequence(_))).map(|i| i.id);
+        let existing = reframed_copy(s, seq, x.0);
         let id = match existing {
             Some(id) if bool_p(p, "reuse").unwrap_or(true) => id,
             _ => {

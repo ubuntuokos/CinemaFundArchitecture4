@@ -119,6 +119,18 @@ pub(crate) fn analysis(s: &Session, item: ItemId, source_in: Tick, dur: Tick) ->
     Ok(a)
 }
 
+/// The beat grid of `dur` of `item`'s audio from `source_in` (beat markers: no remix minimum).
+pub(crate) fn beat_grid(s: &Session, item: ItemId, source_in: Tick, dur: Tick) -> Result<dsp::Beats> {
+    let sr = s.active_sequence().map(|q| q.settings.sample_rate).unwrap_or(48_000).max(1);
+    let m0 = source_in.to_units_floor(sr as i64);
+    let len = (source_in + dur).to_units_floor(sr as i64) - m0;
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    let src = cfa4_render::SourceProvider::source(&provider, item).ok_or_else(|| EngineError::Other("the clip's media is offline".into()))?;
+    let buf = src.audio(m0, len.max(0) as usize, sr).map_err(|e| EngineError::Other(format!("reading the clip's audio: {e}")))?;
+    let refs: Vec<&[f32]> = buf.channels.iter().map(Vec::as_slice).collect();
+    dsp::detect_beats(&refs, sr).map_err(|e| EngineError::Other(format!("cannot find beats: {e}")))
+}
+
 /// The remix of `c` to `target` with the given sliders: (new duration, state).
 fn make_plan(s: &Session, c: ClipId, target: Tick, segments: f64, variations: f64) -> Result<(Tick, Remix, Arc<Analysis>)> {
     let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
