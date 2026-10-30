@@ -318,6 +318,11 @@ impl Source {
         if frames.is_empty() {
             return Err(ExportError::Io(format!("{path}: neither an MXF file nor an IABitstream")));
         }
+        // a damaged or truncated frame stops the split; refuse it rather than pad the rest with silence
+        let end = frames.last().map_or(0, |f| f.1);
+        if end != data.len() {
+            return Err(ExportError::Io(format!("{path}: IABitstream is damaged or truncated after {} frames (byte {end} of {})", frames.len(), data.len())));
+        }
         Ok(Source::Raw { data, frames })
     }
 
@@ -654,6 +659,23 @@ mod tests {
         f.authoring_tool = Some("x".into());
         assert!(conform(&mut f));
         assert!(f.audio.iter().all(|a| a.coding == Coding::Dlc) && f.bit_depth == 24 && f.authoring_tool.is_none());
+    }
+
+    #[test]
+    fn raw_source_with_a_damaged_tail_is_refused() {
+        let frame = cfa4_iab::write(&bed_frame(FrameRate::R24, &[])).unwrap();
+        let dir = std::env::temp_dir().join(format!("cfa4-iab-raw-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("a.iab");
+        let p = path.to_str().unwrap();
+        let mut data = [frame.clone(), frame.clone()].concat();
+        std::fs::write(&path, &data).unwrap();
+        assert_eq!(Source::open(p).unwrap().len(), 2);
+        data.extend_from_slice(&frame[..frame.len() / 2]);
+        std::fs::write(&path, &data).unwrap();
+        let err = Source::open(p).err().unwrap().to_string();
+        assert!(err.contains("damaged or truncated after 2 frames"), "{err}");
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]
