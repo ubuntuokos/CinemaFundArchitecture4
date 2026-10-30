@@ -3601,3 +3601,32 @@
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming : H.264 1920×1080 à 8 Mbit/s, AAC 160 kbit/s, segments MP4 fragmentés de 6 secondes
+	Bit Crush	Réduction de bits
+	Bits per Channel	Bits par couche
+	Ordered Dither	Tramage ordonné
+	Dither Cell Size	Taille des cellules de tramage
+	Block Glitch	Glitch de blocs
+	Blocks Moved	Blocs déplacés
+	Max Distance	Distance maximale
+	Snap to Grid	Aligner sur la grille
+	Swap Blocks	Échanger les blocs
+	Changes per Second	Changements par seconde
+	Databend	Databending
+	Breaks	Cassures
+	Shift	Décalage
+	Color Damage	Dégâts de couleur
+	VHS	VHS
+	Color Bleed	Bavure des couleurs
+	Wobble	Oscillation
+	Snow	Neige
+	Tracking Bar	Barre de tracking
+	Head Switching	Commutation des têtes
+	Scan Line Jitter	Gigue des lignes
+	Jitter	Gigue
+	Interval	Intervalle
+	Infinite	Infini
+	Periodic	Périodique
+	Tile Jitter	Gigue des bandes
+	Tiles	Bandes
+	Band Direction	Orientation des bandes
+	Jitter Direction	Direction de la gigue

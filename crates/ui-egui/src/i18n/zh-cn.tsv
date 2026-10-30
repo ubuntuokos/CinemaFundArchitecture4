@@ -3609,3 +3609,32 @@
 	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段
+	Bit Crush	比特压缩
+	Bits per Channel	每通道位数
+	Ordered Dither	有序抖动
+	Dither Cell Size	抖动单元大小
+	Block Glitch	块状故障
+	Blocks Moved	移动的块数
+	Max Distance	最大距离
+	Snap to Grid	对齐网格
+	Swap Blocks	交换块
+	Changes per Second	每秒变化次数
+	Databend	数据弯曲
+	Breaks	损坏点
+	Shift	偏移
+	Color Damage	颜色损坏
+	VHS	VHS
+	Color Bleed	色彩渗出
+	Wobble	摇晃
+	Snow	雪花噪点
+	Tracking Bar	跟踪条
+	Head Switching	磁头切换
+	Scan Line Jitter	扫描线抖动
+	Jitter	抖动
+	Interval	间隔
+	Infinite	无限
+	Periodic	周期性
+	Tile Jitter	分块抖动
+	Tiles	分块数
+	Band Direction	条带方向
+	Jitter Direction	抖动方向

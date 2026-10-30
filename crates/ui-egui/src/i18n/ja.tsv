@@ -3649,3 +3649,32 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576、25 fps、16:9 アナモルフィック、6 Mbps、GOP 15、16 ビット 48 kHz LPCM、.mpg（DVD 用ストリーム。VIDEO_TS のオーサリングなし）
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2 ビデオ（Main Profile 4:2:0、1 ピクセルあたり 0.4 ビット）、シーケンスのフレームサイズとレート、16 ビット 48 kHz LPCM、.mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 ビデオ 1920×1080、平均 18 Mbps、AAC 192 kbps、.ts
+	Bit Crush	ビットクラッシュ
+	Bits per Channel	チャンネルあたりのビット数
+	Ordered Dither	組織的ディザ
+	Dither Cell Size	ディザのセルサイズ
+	Block Glitch	ブロックグリッチ
+	Blocks Moved	移動するブロック数
+	Max Distance	最大距離
+	Snap to Grid	グリッドにスナップ
+	Swap Blocks	ブロックを入れ替え
+	Changes per Second	1 秒あたりの変化数
+	Databend	データベンド
+	Breaks	破損箇所
+	Shift	ずれ
+	Color Damage	カラーの破損
+	VHS	VHS
+	Color Bleed	色にじみ
+	Wobble	揺れ
+	Snow	スノーノイズ
+	Tracking Bar	トラッキングバー
+	Head Switching	ヘッド切り替え
+	Scan Line Jitter	走査線のジッター
+	Jitter	ジッター
+	Interval	間隔
+	Infinite	無限
+	Periodic	周期的
+	Tile Jitter	タイルのジッター
+	Tiles	タイル数
+	Band Direction	帯の方向
+	Jitter Direction	ジッターの方向

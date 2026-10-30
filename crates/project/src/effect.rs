@@ -255,8 +255,10 @@ const STYLIZE: &[&str] = &["Video Effects", "Stylize"];
 const TRANSFORM: &[&str] = &["Video Effects", "Transform"];
 /// CFA4's own folder (not in Premiere's bin): effects on over/under or side-by-side stereo frames.
 pub const STEREO_3D: &[&str] = &["Video Effects", "Stereoscopic 3D"];
-/// CFA4's own effects that sit in one of Premiere's folders.
-pub const CFA4_OWN: &[&str] = &["slit_scan"];
+/// CFA4's own folder (not in Premiere's bin): digital and analogue damage looks.
+pub const GLITCH: &[&str] = &["Video Effects", "Glitch"];
+/// CFA4's own effects that sit in one of Premiere's folders or in the Glitch folder.
+pub const CFA4_OWN: &[&str] = &["slit_scan", "bit_crush", "block_glitch", "databend", "vhs", "scan_line_jitter", "tile_jitter"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
 const A_AMP: &[&str] = &["Audio Effects", "Amplitude and Compression"];
 const A_DELAY: &[&str] = &["Audio Effects", "Delay and Echo"];
