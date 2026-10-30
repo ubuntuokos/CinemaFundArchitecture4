@@ -20,6 +20,10 @@ class SkillSpectorIntegrationTests(unittest.TestCase):
         body = text.split("---", 2)[2]
 
         self.assertIn("name: cfa4-skill-review", frontmatter)
+        self.assertIn("Copyright 2026 NVIDIA CORPORATION & AFFILIATES", text)
+        self.assertIn("Adapted and modified for CFA4", text)
+        register = (ROOT / "docs/licensing.md").read_text(encoding="utf-8")
+        self.assertIn("NVIDIA CORPORATION & AFFILIATES (Copyright 2026)", register)
         self.assertIn("disable-model-invocation: true", frontmatter)
         self.assertIn("argument-hint:", frontmatter)
         self.assertNotIn("allowed-tools:", frontmatter)
@@ -94,3 +98,4 @@ class SkillSpectorIntegrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

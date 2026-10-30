@@ -5,6 +5,9 @@ argument-hint: <helyi SKILL.md vagy skillkönyvtár>
 disable-model-invocation: true
 ---
 
+> Copyright 2026 NVIDIA CORPORATION & AFFILIATES.
+> Adapted and modified for CFA4 from NVIDIA SkillSpector `skills/skill-inspector/SKILL.md` (commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`); translated into Hungarian and extended with CFA4-specific workflow and safety rules. Upstream material is Apache-2.0; CFA4 changes are GPL-3.0-or-later.
+
 # CFA4 agent-skill biztonsági áttekintés
 
 ## Cél és határok
@@ -52,3 +55,4 @@ A választ az alábbi mezőkkel készítsd el, üres szakaszokat kihagyva:
 - Telepítési javaslat és szükséges korlátozások
 
 Ha a CLI nem érhető el, végezz forrásalapú kézi áttekintést, és mondd ki, hogy a SkillSpector-vizsgálat nem futott le. Ilyen esetben a verdict legfeljebb CAUTION.
+
