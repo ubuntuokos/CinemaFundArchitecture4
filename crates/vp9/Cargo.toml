@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-vp9"
-description = "Clean-room pure-Rust VP9 decoder (VP9 Bitstream & Decoding Process Specification)"
+description = "Clean-room pure-Rust VP9 decoder and encoder (VP9 Bitstream & Decoding Process Specification)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

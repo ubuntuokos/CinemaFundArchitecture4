@@ -58,8 +58,16 @@ fn compare(ffprobe: &Path, path: &Path) -> (MkvFile, Vec<Packet>) {
             assert!((pts - p.pts).abs() <= p.lace as i64, "{ctx}: pts ffprobe {pts} vs {}", p.pts);
             pts_checked += 1;
         }
+        // The muxer stores the trimmed length of the last audio frame as BlockDuration (e.g. 8 ms
+        // when `-t 1` cuts a 32 ms AC-3 frame); RFC 9559 makes BlockDuration authoritative, but
+        // libavformat's AC-3/E-AC-3/DTS parsers (need_parsing) overwrite it with the full frame
+        // duration (1536 samples = 32 ms @ 48 kHz). Only that shorter, final-packet case is skipped.
+        let parsed_audio = matches!(file.tracks[p.track].codec_id.as_str(), "A_AC3" | "A_EAC3" | "A_DTS");
+        let last_of_track = !packets[i + 1..].iter().any(|q| q.track == p.track);
+        let trimmed_tail = parsed_audio && last_of_track && int(&f["duration"]).is_some_and(|d| (p.duration as i64) < d);
         if let Some(dur) = int(&f["duration"])
             && p.duration != 0
+            && !trimmed_tail
         {
             assert!((dur - p.duration as i64).abs() <= 1, "{ctx}: duration ffprobe {dur} vs {}", p.duration);
             dur_checked += 1;
@@ -255,6 +263,13 @@ fn prores_pcm() {
 #[test]
 fn mjpeg_ac3() {
     let Some((_, f, _)) = run("mjpeg_ac3.mkv") else { return };
+    // regression for #133: the final AC-3 block carries a BlockDuration trimmed by `-t 1` (8 ms
+    // from ffmpeg 6.1, 13 ms from 9.0 with its different priming); the demuxer must honour it
+    // instead of the nominal 32 ms frame duration, so the track ends at the 1 s cut
+    let a = f.track_of_kind(TrackKind::Audio).unwrap();
+    let last = f.tracks[a].samples.last().unwrap();
+    assert!(last.duration > 0 && last.duration < 32, "{last:?}");
+    assert!((990..=1005).contains(&(last.pts + last.duration as i64)), "{last:?}");
     assert_eq!(f.info.title.as_deref(), Some("CFA4 test"));
     assert!(f.info.muxing_app.starts_with("Lavf"));
     assert!(f.tags.iter().flat_map(|t| &t.simple).any(|s| s.name == "ENCODER"));

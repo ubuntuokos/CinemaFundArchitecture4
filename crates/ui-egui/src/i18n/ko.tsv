@@ -69,6 +69,12 @@
 	A title on a rounded card with a soft shadow.	부드러운 그림자가 있는 둥근 카드 위 제목.
 	AAC Audio	AAC 오디오
 	AAC Audio 48 kHz 320 kbps	AAC 오디오 48 kHz 320 kbps
+	Opus Audio	Opus 오디오
+	Opus Audio 48 kHz 160 kbps	Opus 오디오 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus(.opus), 스테레오 48 kHz 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 8Mbps, Opus 128kbps 스테레오
 	AAF Export Settings	AAF 내보내기 설정
 	AAF…	AAF…
 	About	정보
@@ -1031,6 +1037,7 @@
 	Enable track for recording	트랙 녹음 활성화
 	Encapsulate	캡슐화
 	Encoder	인코더
+	Encoding	인코딩
 	Encoding {n}%	인코딩 {n}%
 	End Color	끝 색상
 	End Credits	엔딩 크레딧
@@ -1393,8 +1400,9 @@
 	Hard Mix	하드 혼합
 	Hard Mono	강한 흑백
 	Hard Sun	강한 햇빛
-	Hardware (AV1 has no software encoder)	하드웨어 (AV1은 소프트웨어 인코더 없음)
-	Hardware (H.265 has no software encoder)	하드웨어 (H.265는 소프트웨어 인코더 없음)
+	Software, or hardware where available	소프트웨어 (가능한 경우 하드웨어)
+	Main (10-bit, HDR)	Main (10비트, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8비트, HDR 시퀀스는 10비트)
 	Hardware decoding	하드웨어 디코딩
 	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	하드웨어 디코딩: 자동은 지원 스트림에 시스템 비디오 디코더(macOS는 VideoToolbox, Windows는 Media Foundation, Linux는 H.264·HEVC용 VA-API 또는 NVDEC)를 쓰고, 그 외나 하드웨어 실패 시 CFA4 자체 디코더를 씁니다. 이미 열린 미디어는 다시 열 때까지 기존 디코더를 유지합니다.
 	HD Anamorphic 1080 (1.333)	HD 아나모픽 1080(1.333)
@@ -3613,3 +3621,6 @@
 	Film Grain	필름 그레인
 	Animated	애니메이션
 	Color Grain	컬러 그레인
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 라이브 스트리밍: H.264 1920×1080 8Mbps, AAC 160kbps, 6초 조각 MP4 세그먼트

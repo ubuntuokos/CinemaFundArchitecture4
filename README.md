@@ -19,8 +19,8 @@ combines **Rust / Cargo**, **Python**, and **Qt 6**.
 5. Create Python virtualenv: `python3 -m venv .venv`.
 6. Install developer tools: `.venv/bin/python -m pip install -e '.[dev,qt]'`.
 7. Check environment: `.venv/bin/cfa4-doctor --strict`.
-8. Run the Qt shell: `.venv/bin/cfa4-qt`.
-9. Build Rust CLI: `cargo build --release --locked -p cfa4-cli`.
+8. Build the Rust engine: `cargo build --release --locked -p cfa4-cli`.
+9. Run the Qt 6 GUI: `.venv/bin/cfa4-qt` (demo: `.venv/bin/cfa4-qt --demo --lang hu`; see [docs/qt-gui.md](docs/qt-gui.md)).
 10. Verify checks: `bash scripts/dev/verify-linux.sh`.
 
 ## Architecture and transition
@@ -42,7 +42,7 @@ its version; real editor operations require a future explicitly tested adapter.
 
 CFA4 is free software under the **GNU General Public License, version 3 or later**
 (`GPL-3.0-or-later`, see [LICENSE](LICENSE)). The core application is free to use, change and
-redistribute. Paid offerings (extended support, ready-made packages, separate-process extras,
+redistribute. Paid offerings (extended support, ready-made packages, GPL-licensed paid extras,
 content and services) are described in [docs/licensing.md](docs/licensing.md), which is also the
 policy for reusing code from other projects.
 
@@ -56,8 +56,16 @@ not made, sponsored or endorsed by the upstream authors.
 All upstream names, logos, icons and screenshots have been removed from the product, its
 crates, packaging and documentation; `python/tests/test_independence.py` keeps them out.
 
-GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
-and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+The **CFA4 logo and icons are the owner's own design and are not open source**: they are not
+covered by the GPL and may only be used unmodified to identify CFA4
+([assets/cfa4/LICENSE-logo.txt](assets/cfa4/LICENSE-logo.txt)); modified versions must use
+their own logo. The code is GPL-3.0-or-later.
+
+Media: CFA4's own Rust engine is the base; FFmpeg (≥ 9.0.2, GPL-3 build) and GStreamer
+(LGPL-2.1-or-later, dynamically linked) are supplementary backends picked by an automatic task
+router. The system GStreamer from Ubuntu's repositories is the default; an isolated CFA4-owned
+runtime is used only when a feature needs a newer version. See
+[ADR 0005](docs/adr/ADR-0005-media-backends.md) and [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
 
 PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
 with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
@@ -70,6 +78,6 @@ with its own licensing obligations. The Qt shell does not bundle Qt for distribu
 - [Known inherited gaps](docs/gaps.md)
 - [Licenses and attribution](ATTRIBUTION.md)
 
-The legacy `apps/cfa4-web`, Windows/macOS/FreeBSD packaging/source components
+The legacy Windows/macOS/FreeBSD packaging/source components
 are not removed in this preparation step to avoid breaking existing crate dependencies;
 none are supported CFA4 release targets.

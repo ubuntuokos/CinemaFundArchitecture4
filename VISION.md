@@ -5,7 +5,7 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-25 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-10-27 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
@@ -30,10 +30,17 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
 1. **Qt6-felület az első prioritás.** A célfelület Qt6 (Qt6 Widgets + PySide6). A meglévő Rust
    motor (projekt, idővonal, lejátszás, render, kodekek, GPU, export) marad alatta.
    Részletek: `docs/adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md`.
-   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat nem tud ugyanannyit.
-   A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
-   VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
-   tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.
+   Az örökölt egui-szerkesztő addig marad a működő program, amíg a Qt6-os változat **pontról pontra**
+   nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
+   befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
+   (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
+   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább 9.0.2)
+   és a **GStreamer** (hardveres kódolás nem NVIDIA GPU-n, VP9/AV1 hardveres dekódolás,
+   Qt6-előnézet, felvétel, egyéb formátumok), később további motorok is. Alapértelmezés az Ubuntu
+   tárolóiból telepített rendszer-GStreamer; elkülönített, CFA4 saját futtatókörnyezete csak akkor
+   kell, ha egy funkcióhoz újabb verzió szükséges. Hogy melyik feladatot melyik végzi, azt egy
+   **automatikus útválasztó** dönti el; a saját motor mindig tartalék. Részletek:
+   `docs/adr/ADR-0005-media-backends.md`, `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
@@ -72,7 +79,12 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 
 ## 4. Egyesítendő programok és képességeik
 
-A CFA4 ezeknek a programoknak a **képességeit** veszi át, nem a kódjukat, nevüket vagy védjegyeiket.
+A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
+Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (2. pont, Licenc).
+Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
+nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
+clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
+[`docs/licensing.md`](docs/licensing.md).
 
 | Program | Fő terület | Átveendő képességek |
 |---|---|---|

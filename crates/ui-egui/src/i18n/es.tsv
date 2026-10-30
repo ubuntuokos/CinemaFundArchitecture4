@@ -2985,6 +2985,12 @@
 	Gang to Program	Vincular al programa
 	AAC Audio	AAC Audio
 	AAC Audio 48 kHz 320 kbps	AAC Audio 48 kHz 320 kbps
+	Opus Audio	Audio Opus
+	Opus Audio 48 kHz 160 kbps	Audio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), estéreo de 48 kHz a 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 a 8 Mbps, Opus 128 kbps estéreo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Audio MPEG-4 (.m4a), estéreo, AAC-LC de 48 kHz a 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bits
@@ -3466,8 +3472,17 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 bits, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits; Main 10 para secuencias HDR)
 	Encoder	Codificador
-	Hardware (H.265 has no software encoder)	Hardware (H.265 no tiene codificador por software)
-	Hardware (AV1 has no software encoder)	Hardware (AV1 no tiene codificador por software)
+	Encoding	Codificación
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12 bits
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12 bits con alfa
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10 bits
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGB 4:4:4 12 bits, Film Scan 1, PCM de 24 bits y 48 kHz
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm RGBA 4:4:4:4 12 bits con canal alfa, Film Scan 1, PCM de 24 bits y 48 kHz
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime, GoPro CineForm YUV 4:2:2 10 bits, Film Scan 1, PCM de 24 bits y 48 kHz
+	Software, or hardware where available	Software, o hardware si está disponible
+	Main (10-bit, HDR)	Main (10 bits, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bits; 10 bits para secuencias HDR)
 	Text Properties	Propiedades de texto
 	Text Box Height	Altura del cuadro de texto
 	Paragraph Text	Texto de párrafo
@@ -3627,3 +3642,15 @@
 	Film Grain	Grano de película
 	Animated	Animado
 	Color Grain	Grano de color
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 a 8 Mbps, AAC 160 kbps, segmentos MP4 fragmentados de 6 segundos
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 Program Stream
+	MPEG-2 Transport Stream HD 1080	MPEG-2 Transport Stream HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480 a 29,97 fps, 16:9 anamórfico, 6 Mbps, GOP 18, LPCM de 16 bits a 48 kHz, .mpg (flujo listo para DVD; sin autoría VIDEO_TS)
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, LPCM de 16 bits a 48 kHz, .mpg (flujo listo para DVD; sin autoría VIDEO_TS)
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vídeo MPEG-2 (Main Profile 4:2:0, 0,4 bits por píxel) con el tamaño de fotograma y la velocidad de la secuencia, LPCM de 16 bits a 48 kHz, .mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vídeo MPEG-2 1920×1080, 18 Mbps de media, AAC 192 kbps, .ts
