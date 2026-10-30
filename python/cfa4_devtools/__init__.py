@@ -1,6 +1,7 @@
 """Linux-only CFA4 developer tooling.
 
-The existing Rust CFA4 engine and its licenses are unchanged.
+CFA4 is licensed under GPL-3.0-or-later (docs/licensing.md); the inherited upstream engine
+code keeps its MIT OR Apache-2.0 notices.
 """
 
 __version__ = "0.1.0"

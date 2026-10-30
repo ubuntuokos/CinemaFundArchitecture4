@@ -2987,6 +2987,12 @@
 	Gang to Program	Gabungkan ke Program
 	AAC Audio	Audio AAC
 	AAC Audio 48 kHz 320 kbps	Audio AAC 48 kHz 320 kbps
+	Opus Audio	Audio Opus
+	Opus Audio 48 kHz 160 kbps	Audio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stereo 48 kHz pada 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 pada 8 Mbps, Opus 128 kbps stereo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Audio MPEG-4 (.m4a), stereo 48 kHz AAC-LC pada 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-bit
@@ -3462,8 +3468,10 @@
 	Main 10 (10-bit, HDR)	Main 10 (10-bit, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8-bit; Main 10 untuk sekuens HDR)
 	Encoder	Enkoder
-	Hardware (H.265 has no software encoder)	Perangkat keras (H.265 tidak memiliki enkoder perangkat lunak)
-	Hardware (AV1 has no software encoder)	Perangkat keras (AV1 tidak memiliki enkoder perangkat lunak)
+	Encoding	Pengodean
+	Software, or hardware where available	Perangkat lunak, atau perangkat keras bila tersedia
+	Main (10-bit, HDR)	Main (10-bit, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8-bit; 10-bit untuk sekuens HDR)
 	Text Properties	Properti Teks
 	Text Box Height	Tinggi Kotak Teks
 	Paragraph Text	Teks Paragraf
@@ -3586,3 +3594,10 @@
 	Eye	Mata
 	Stereo Parallax	Paralaks Stereo
 	Horizontal Shift	Geser Horizontal
+	Slit Scan	Slit Scan
+	Time Span (seconds)	Rentang Waktu (detik)
+	Current Frame At	Bingkai Saat Ini di
+	Blend Slices	Campur Irisan
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 pada 8 Mbps, AAC 160 kbps, segmen MP4 terfragmentasi 6 detik

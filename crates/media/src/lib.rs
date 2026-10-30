@@ -10,6 +10,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod animated;
+mod animated_webp;
 pub mod cache;
 pub mod cancel;
 pub mod digits;
@@ -175,7 +176,8 @@ pub trait MediaSource: Send + Sync {
 pub type SharedSource = Arc<dyn MediaSource>;
 
 /// File extensions we recognise at import (the media browser filters on these).
-pub const STILL_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "dng"];
+pub const STILL_EXTENSIONS: &[&str] =
+    &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
 pub const AUDIO_EXTENSIONS: &[&str] = &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "flac", "ogg", "opus"];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
@@ -198,8 +200,7 @@ pub type Opener = fn(name: &str, bytes: Arc<[u8]>) -> Option<Result<SharedSource
 pub fn open_bytes(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -> Result<SharedSource> {
     // HEIF shares ISO-BMFF boxes with MP4. Sniff its still-image brand before
     // the video-container openers, so .heic never becomes a broken MP4 clip.
-    #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-    if still::heif::sniff(&bytes) {
+    if still::heic::sniff(&bytes) {
         return Ok(Arc::new(still::StillSource::decode(name, &bytes)?));
     }
     for o in extra {
@@ -213,10 +214,13 @@ pub fn open_bytes(name: &str, bytes: Arc<[u8]>, extra: &[Opener]) -> Result<Shar
     if still::hdr::sniff(&bytes) {
         return Ok(Arc::new(still::hdr::still(name, &bytes)?));
     }
+    if still::jxl::sniff(&bytes) {
+        return Ok(Arc::new(still::jxl::still(name, &bytes)?));
+    }
     if wav::sniff(&bytes) {
         return Ok(Arc::new(wav::WavSource::parse(name, bytes)?));
     }
-    // APNG and animated GIF play as movies (#402); single-frame files fall through to the stills
+    // APNG, animated GIF and animated WebP play as movies (#402, #87); single-frame files fall through to the stills
     if let Some(r) = animated::open(name, &bytes) {
         return Ok(Arc::new(r?));
     }

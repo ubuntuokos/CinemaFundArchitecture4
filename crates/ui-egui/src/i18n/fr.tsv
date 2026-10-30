@@ -2982,6 +2982,12 @@
 	Gang to Program	Coupler au moniteur programme
 	AAC Audio	AAC Audio
 	AAC Audio 48 kHz 320 kbps	AAC Audio 48 kHz 320 kbps
+	Opus Audio	Audio Opus
+	Opus Audio 48 kHz 160 kbps	Audio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), stéréo 48 kHz à 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 à 8 Mbit/s, Opus 128 kbit/s stéréo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Audio MPEG-4 (.m4a), AAC-LC stéréo 48 kHz à 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bits
@@ -3445,8 +3451,10 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 bits, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits ; Main 10 pour les séquences HDR)
 	Encoder	Encodeur
-	Hardware (H.265 has no software encoder)	Matériel (H.265 n'a pas d'encodeur logiciel)
-	Hardware (AV1 has no software encoder)	Matériel (AV1 n'a pas d'encodeur logiciel)
+	Encoding	Encodage
+	Software, or hardware where available	Logiciel, ou matériel si disponible
+	Main (10-bit, HDR)	Main (10 bits, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bits ; 10 bits pour les séquences HDR)
 	Text Properties	Propriétés du texte
 	Text Box Height	Hauteur de la zone de texte
 	Paragraph Text	Texte de paragraphe
@@ -3588,3 +3596,10 @@
 	Eye	Œil
 	Stereo Parallax	Parallaxe stéréo
 	Horizontal Shift	Décalage horizontal
+	Slit Scan	Slit-scan
+	Time Span (seconds)	Intervalle de temps (secondes)
+	Current Frame At	Image actuelle à
+	Blend Slices	Fondre les tranches
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming : H.264 1920×1080 à 8 Mbit/s, AAC 160 kbit/s, segments MP4 fragmentés de 6 secondes

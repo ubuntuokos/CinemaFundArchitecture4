@@ -827,6 +827,16 @@ fn build_track(
             t.picture = Some(pi);
             build_pictures(src, &mut t, elements, index, warnings)?;
         }
+        TrackKind::Sound if is_iab(desc, container, key4, src, elements) => {
+            t.codec = Codec::Iab;
+            t.sound_format = SoundFormat::Iab;
+            t.sound = Some(desc.map(sound_info).unwrap_or_default());
+            build_pictures(src, &mut t, elements, index, warnings)?;
+            // a clip-wrapped element without an index: the frames' own lengths split it
+            if elements.len() == 1 && t.samples.len() < 2 {
+                split_iab_clip(src, &mut t, elements)?;
+            }
+        }
         TrackKind::Sound => {
             let si = desc.map(sound_info).unwrap_or(SoundInfo { channels: 1, bits: 16, ..Default::default() });
             let d10 = container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x01]));
@@ -843,6 +853,7 @@ fn build_track(
             t.codec = match t.sound_format {
                 SoundFormat::Aes3Element => Codec::Aes3Element,
                 SoundFormat::Pcm => Codec::Pcm,
+                SoundFormat::Iab => Codec::Iab,
                 SoundFormat::Other => Codec::Unknown,
             };
             let fb = si.frame_bytes() as u64;
@@ -861,6 +872,65 @@ fn build_track(
         TrackKind::Data => {}
     }
     Ok(t)
+}
+
+/// An Immersive Audio track: the IAB descriptor, the IAB essence container or element key
+/// (ST 2067-201: item 0x16, element type 0x0D), or essence that starts as an IABitstream frame.
+fn is_iab(desc: Option<&Set>, container: Option<Ul>, key4: [u8; 4], src: &(impl ByteSource + ?Sized), elements: &[Element]) -> bool {
+    if desc.is_some_and(|d| d.kind() == Some(st::IAB_ESSENCE_DESCRIPTOR))
+        || container.is_some_and(|c| c.item_starts_with(&[0x0D, 0x01, 0x03, 0x01, 0x02, 0x1D]))
+        || key4[0] == 0x16 && key4[2] == 0x0D
+    {
+        return true;
+    }
+    // a generic sound descriptor without a PCM coding: an IABitstream frame header (preamble
+    // tag, IAFrame tag) at the start of the essence
+    let pcm_desc = desc.is_some_and(|d| matches!(d.kind(), Some(st::AES3_DESCRIPTOR) | Some(st::WAVE_DESCRIPTOR)));
+    let pcm_coding = desc.and_then(|d| d.ul(tag::SOUND_ESSENCE_CODING)).is_some_and(|c| c.item_starts_with(&[0x04, 0x02, 0x02, 0x01]));
+    if pcm_desc || pcm_coding {
+        return false;
+    }
+    let Some(first) = elements.first() else { return false };
+    let Ok(head) = read_upto(src, first.value_offset, 5) else { return false };
+    let [0x01, a, b, c, d] = head[..] else { return false };
+    let pre = u64::from(u32::from_be_bytes([a, b, c, d]));
+    pre < first.size && read_upto(src, first.value_offset + 5 + pre, 1).is_ok_and(|t| t == [0x02])
+}
+
+/// Splits a clip-wrapped IAB element without an index into its IABitstream frames (each a
+/// preamble and an IAFrame segment, tag-length-value).
+fn split_iab_clip(src: &(impl ByteSource + ?Sized), t: &mut EssenceTrack, elements: &[Element]) -> Result<()> {
+    let Some(e) = elements.first() else { return Ok(()) };
+    let end = e.value_offset.saturating_add(e.size).min(src.len());
+    let mut at = e.value_offset;
+    let mut samples = Vec::new();
+    let tlv = |at: u64, tag: u8| -> Result<Option<u64>> {
+        let h = read_upto(src, at, 5)?;
+        Ok(match h[..] {
+            [t, a, b, c, d] if t == tag => Some(u64::from(u32::from_be_bytes([a, b, c, d]))),
+            _ => None,
+        })
+    };
+    while at < end {
+        let Some(pre) = tlv(at, 0x01)? else { break };
+        let frame_at = at.saturating_add(5).saturating_add(pre);
+        let Some(len) = tlv(frame_at, 0x02)? else { break };
+        let next = frame_at.saturating_add(5).saturating_add(len);
+        let Ok(size) = u32::try_from(next - at) else { break };
+        if next > end {
+            break;
+        }
+        samples.push(Sample { offset: at, size, pts: samples.len() as i64, key: true, b_picture: false });
+        at = next;
+    }
+    if samples.len() > 1 {
+        t.wrapping = Wrapping::Clip;
+    }
+    if !samples.is_empty() {
+        t.display_order = (0..samples.len()).collect();
+        t.samples = samples;
+    }
+    Ok(())
 }
 
 fn build_pictures(
@@ -1005,6 +1075,9 @@ impl MxfFile {
     pub fn read_pcm(&self, src: &(impl ByteSource + ?Sized), track: usize, start: u64, frames: usize) -> Result<Vec<Vec<f32>>> {
         let t = self.tracks.get(track).ok_or_else(|| Error::Invalid(format!("no track {track}")))?;
         let si = t.sound.as_ref().ok_or_else(|| Error::Invalid("not a sound track".into()))?;
+        if t.sound_format == SoundFormat::Iab {
+            return Err(Error::Unsupported("IAB frames are read with read_sample".into()));
+        }
         let ch = si.channels.max(1) as usize;
         if ch > 256 {
             return Err(Error::Invalid("sound track declares more than 256 channels".into()));
@@ -1057,7 +1130,7 @@ impl MxfFile {
                         let s0 = (a - c.first_sample) as usize;
                         all.into_iter().map(|p| p.get(s0..).map(<[f32]>::to_vec).unwrap_or_default()).collect()
                     }
-                    SoundFormat::Other => return Err(Error::Unsupported("sound essence coding".into())),
+                    SoundFormat::Iab | SoundFormat::Other => return Err(Error::Unsupported("sound essence coding".into())),
                 };
                 let at = (a - start) as usize;
                 for (c, d) in decoded.iter().enumerate().take(ch) {

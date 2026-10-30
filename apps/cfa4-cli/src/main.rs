@@ -32,6 +32,16 @@ macro_rules! out {
 
 mod args;
 mod probe;
+mod serve;
+mod serve_graphics;
+mod serve_lumetri;
+mod serve_media_browser;
+mod serve_multicam;
+mod serve_project;
+mod serve_scopes;
+mod serve_text;
+mod serve_tts;
+mod settings_cmd;
 
 use args::{Args, parse_value};
 use cfa4_automation::BridgeClient;
@@ -79,7 +89,7 @@ SUBCOMMANDS
          [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
-                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|png|tiff|bmp|gif|wav|aiff|aac, guessed
+                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|png|tiff|bmp|gif|wav|aiff|aac, guessed
                                 from the extension); --range entire|inOut|workArea, or a custom
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
@@ -95,7 +105,15 @@ SUBCOMMANDS
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
   bench-decode <media> [--frames N]
+  settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
+  settings get [key]            the saved preferences of the data directory, or one key
+  settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
+  settings reset [category]     a category (or everything) back to its defaults
+  hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
+  serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
+                                stdin/stdout with binary frames (docs/qt-gui.md); --autosave
+                                starts auto-save and the crash-recovery journal in the data dir
   help                          this text
   --version                     print the version
 
@@ -214,6 +232,7 @@ fn format_for(path: &str) -> Option<&'static str> {
         "bmp" => "bmp",
         "aif" | "aiff" => "aiff",
         "m4a" | "aac" => "aac",
+        "mpg" | "mpeg" | "m2p" | "ts" | "m2ts" | "mts" | "m2v" => "mpeg2",
         _ => return None,
     })
 }
@@ -503,6 +522,32 @@ async fn cli() {
             check_offline(&a, &offline, &format!("render: {out}"));
             diag(format_args!("rendered {}x{} in {:.1} ms → {out}", img.w, img.h, dt.as_secs_f64() * 1000.0));
         }
+        "serve" => {
+            if let Some(opt) = a.unknown_opt(&["--project", "--demo", "--data-dir", "--autosave"]) {
+                usage(format!("unknown serve option `{opt}`"));
+            }
+            let Backend::Local(mut s) = Backend::open(&a) else { usage("serve is headless; it cannot use --bridge") };
+            if a.flag("--autosave") {
+                match a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir) {
+                    Some(dir) => {
+                        if let Err(e) = s.start_autosave(cfa4_engine::autosave::AutosaveConfig::new(dir)) {
+                            diag(format_args!("cfa4-cli serve: auto-save and crash recovery unavailable: {e}"));
+                        }
+                    }
+                    None => diag(format_args!("cfa4-cli serve: no data directory; auto-save is off")),
+                }
+            }
+            serve::run(*s);
+        }
+        "settings" => {
+            let action = a.pos(1).unwrap_or_else(|| usage("settings schema|get|set|reset [arg]"));
+            let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);
+            match settings_cmd::settings(action, a.pos(2), dir) {
+                Ok(v) => print(&a, &v),
+                Err(e) => fail(e),
+            }
+        }
+        "hardware" => print(&a, &settings_cmd::hardware()),
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
                 usage(format!("unknown mcp option `{opt}`"));
@@ -716,5 +761,7 @@ mod format_tests {
         assert_eq!(super::format_for("out/clip.MXF"), Some("mxf-op1a"));
         assert_eq!(super::format_for("a.mov"), Some("prores"));
         assert_eq!(super::format_for("noext"), None);
+        assert_eq!(super::format_for("disc.mpg"), Some("mpeg2"));
+        assert_eq!(super::format_for("broadcast.ts"), Some("mpeg2"));
     }
 }
