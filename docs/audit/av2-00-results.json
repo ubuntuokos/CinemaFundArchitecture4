@@ -1,0 +1,661 @@
+{
+  "audit": "AV2-00",
+  "generated_utc": "2026-10-30T15:25:33Z",
+  "host": {
+    "os": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "cpu_count": 4
+  },
+  "tools": {
+    "cmake": "cmake version 3.28.3",
+    "cc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+  },
+  "avm": {
+    "tag": "v1.0.0",
+    "commit": "966a7d7cd6fcf60360caf5dc413b2aeeb65e144d",
+    "build_dir": "$AVM_BUILD"
+  },
+  "candidates": {
+    "rav2d": {
+      "binary": "$RAV2D",
+      "version": "0.3.0",
+      "commit": "c3433024f54971db85f53d03a57135f8e00ed8d0",
+      "build": "cargo build --release -p rav2d-cli (rustc 1.97.1)"
+    },
+    "dav2d": {
+      "status": "BLOCKED",
+      "reason": "code.videolan.org and download mirrors refused by the session network policy"
+    }
+  },
+  "vectors": [
+    {
+      "vector": "420-8bit-default",
+      "purpose": "4:2:0 8 bit, default tools, inter",
+      "source": "cif8",
+      "frames": 10,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0"
+      ],
+      "encode_seconds": 56.989,
+      "bitstream_sha256": "dd7cc3e529f29917ccdb306a96e5deec9094b68d1a56581427f8c96938f8020c",
+      "bitstream_bytes": 10479,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-default.avmdec.y4m $WORK/vectors/420-8bit-default.obu",
+        "exit_code": 0,
+        "seconds": 0.086
+      },
+      "reference_frame_sha256": [
+        [
+          "471346b623966bc6ca9386ca299c7de95deaa64d249736f10b25527b04b5038f",
+          "f1ab5bf9e1189ed2ccd58d2d96babfb552e15700b8520ec669c11cc969ed7a98",
+          "25a29cba7f3b39cb6f06955a59498cc286c9a8f566e236878691ad22785b447f"
+        ],
+        [
+          "7010affb669e7360753dcd8479a59c167c7c2b186fcdf85df1ff1d820bd7c76d",
+          "9cec7aa8d3f40b8aad0b17ffa4cc3e5e6b3538089dc83b51d2e10db8ab64aff6",
+          "37e8a4541f4fdb064d311e55ea16debbdac71f96e9c45322adb5c95d8999c3fb"
+        ],
+        [
+          "20fa27a441b003ecde5cb6fee2558e002d5c4b03698cd8e79bcf039b0d0198ac",
+          "932bd4dbe0e3524e173b4945deec8fe1b0937efd8f0eb10f11b1334578ce8f8d",
+          "93451fa4954638695959f497bfac8f22c45862dcdf018aca370c5b3cfc342a23"
+        ],
+        [
+          "e63b4aa5078b4c706a9a233a91c7f365e5ba33f8263720cc4aa846e93c45b37d",
+          "f23819adfe87f42e079dd39707500870009d8c37f814d1f91d37f7a1f7f95192",
+          "ad9dcc40b774487de007446a593dde62e35e0f935a4b890ff203558f5ebf6a8e"
+        ],
+        [
+          "564dca34e8dac08b111f18c4c027480702a206242f27c8fe8b6b320ae507b7c7",
+          "365c18d6e27b5ab1c3b88206ec7df797016c9728b77701e1b9922586dd654523",
+          "579fbb1bd10e4ab398a2068479685a48559e14319bd7fad0ef7f9608338acf78"
+        ],
+        [
+          "de8c83bdefb05455e5104e18f9a2f47915675a39b4ca4311c3cb97d80c8848fe",
+          "fa31d1368f60e204755710e87b10a899e8b1b05344815ce4983ba83c09379c57",
+          "34449e19ea9378e8a57e9beb32e5eefaf8c9495e8983df5001eda633c0d9cc45"
+        ],
+        [
+          "3a6a9c76af5d9a3912adced54d3794bc16d7e3440cbf35169944ed7bf9f5adb7",
+          "c4ab9704e6d700e49c24e4bf711e42bce91d8c1ad64dba0c9d648016508d1ab4",
+          "11666b3b4600b060acfd1f15a575b7b0d54fbf6c1a2a86364308d6a519ee95c7"
+        ],
+        [
+          "c7d3fc9a1c45a8efdd9535705812f9bec2b4a204f2100f032a2c41aa5939bf25",
+          "56b2300bd379cfd4063c61f8273d347922d50634a32f9d873b334288fd99e083",
+          "aa8c3f84342a546c07ecc51708219fd5f6c135b619af035170b3cd0e454e817b"
+        ],
+        [
+          "809530d4db1d5afba069c6a63b571a44bae4f3ee3c7a30a0e1b6c9437bf72001",
+          "85fc21d4eb49ff6e1efb9c79162dff6b8ceb89198a5ba2abc0d9a013f9c20bc5",
+          "b69c6156b4ae373d491b36a531a84856f902b5710b3fb120fca081733a4b41dd"
+        ],
+        [
+          "6bc1ec7cd329fca00fdd5b9a7cc9371452729e628742aeb20e2a3c5d5eb73ab9",
+          "8e228455842a851be58df5f65447ed924683bfdbeae6a3b4dd6e407cdc48369b",
+          "84497ee0570545f5b591e5f6a16b347ce132b629644e0710448cf4d964a48758"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-default.rav2d.y4m $WORK/vectors/420-8bit-default.obu",
+          "exit_code": 0,
+          "seconds": 0.099,
+          "status": "PASS",
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "420-10bit-default",
+      "purpose": "4:2:0 10 bit",
+      "source": "cif10",
+      "frames": 10,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0",
+        "--input-bit-depth=10",
+        "--bit-depth=10"
+      ],
+      "encode_seconds": 114.587,
+      "bitstream_sha256": "695f06cdb2d3751a014292896a49d231f653b120990ad6dd2856461c9c9ece58",
+      "bitstream_bytes": 29618,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-10bit-default.avmdec.y4m $WORK/vectors/420-10bit-default.obu",
+        "exit_code": 0,
+        "seconds": 0.107
+      },
+      "reference_frame_sha256": [
+        [
+          "eafceaaefa481004e5164ed938899ea45660ef90dc30fa3bbd6e7512bf965da5",
+          "b314357a11afa937f4a72b6d44c8791650799d666f79f4ae92d9af60f1022058",
+          "b94fd9b102477a03c8f7bb5b829464e68082f2989414f9fd9231cb92c5072bba"
+        ],
+        [
+          "588bf09cc29d0df3baf00990369d5141f4653e8df39bdb80ddb9ae479540e6d8",
+          "07d823f6a9d982203b141b5f6ae818ecb47a88b706d75ccab7ac9ff9d29ba8b0",
+          "6b5034d894cce14eea67d939010a6fc1d4d4df95651a1d5e9efb962f3392e7cc"
+        ],
+        [
+          "e24fa6565250fdcf09fb9b84618711b033909820ec46fbca5d28cd65afabd52e",
+          "70fb2032635739db8fe1335db0ce416484f8c2bdea1c66cc054bc63a670b6241",
+          "6ed4a689ca700aa8c2cbf03e9fb4640a07d6c7196bae15057209792878059492"
+        ],
+        [
+          "35319ab381458dd94fa36366b42a3de405f4162f5c744a3a403acc0eedfca852",
+          "17ac6e981780eb2a396fcc315a66ca7ed5cb59f04e438c9c79f1bc7bbd026adb",
+          "4b72e4a5e3b5e47176c054ba344d43717fdfeddd87cd59cd5ef0ffdbe50c9333"
+        ],
+        [
+          "ecd5d1cbb80938520e9e3f940758df4ccad0ab930a9daf8036250d54f510c317",
+          "b9037bc9f3825f43ff9b15fa2cf7a756d08844f715dec9f7849da5c379c477fe",
+          "efc8501234d4fe46793c7192b3ab04b1fb16756ce31e04af47e13d58056ef5a6"
+        ],
+        [
+          "312d361f9a6825af163e63a271bcfc99e257d82adce997209b01eb6961d3f33a",
+          "460ee521b80e2b82e2d474007dc496e869917f8c1badfc40751f6fadf734ccdb",
+          "66fa630f8eb08f5ebaf40156b03a28a41583911954b5f41b69a8ca5ead286ffd"
+        ],
+        [
+          "fbc5ada2382305122b5a10c980586c43b29390d796d6142202f44401368313f9",
+          "8e51043a64a3b7e84f516115b409f85e985274d3c15b3c08b77d634d13e07d78",
+          "e73df283be06fb17b4b8b315ab0f456edc6eb67557abb2f993a74b382542b2fb"
+        ],
+        [
+          "9875587606f509c9d61881c69f81ca911bd88a46857edd2e766b2107debbe7e6",
+          "dd9b15ebf1eae8e8cdddeed0a435b12283179e2b975a50053cca0ff736f19063",
+          "6791a25c752bca3dcf9e1e1a335411412d9b67f0e8d15c98e9dd947f08597b89"
+        ],
+        [
+          "f900a28c017a118b8b42bb5c9dd76a7303ca836814aad1b16cff0d9295838799",
+          "f66aa20eefa1f09a48fc3746b361b8983f881fd7c11b4f15b6f7788a8bfd3bfa",
+          "35e7a3828aa1e09f46a99329fcacf2ee2a98da3445a1a0da90bfc1a7fa4f5deb"
+        ],
+        [
+          "72d3b7b2d99dde97fe550c47931724eb5e48a82f9c2f01da672cbd31b98e5760",
+          "9d42b81053a8a607ac5c7109e81880adf2efb058e6c1ed448a50c6a65c665e9a",
+          "d8b57faab1640fa38c18281c27a6ed1d0a5d2cb95fc76ea2ee7982ff4114e2a8"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/420-10bit-default.rav2d.y4m $WORK/vectors/420-10bit-default.obu",
+          "exit_code": 0,
+          "seconds": 0.145,
+          "status": "PASS",
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "420-8bit-intra-only",
+      "purpose": "every frame a key frame",
+      "source": "cif8",
+      "frames": 10,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0",
+        "--kf-max-dist=0"
+      ],
+      "encode_seconds": 83.086,
+      "bitstream_sha256": "f7a0105e496902bf2f6a6ed553c77dea9062ddc1b94e8483ddbbf645cb673d76",
+      "bitstream_bytes": 13566,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-intra-only.avmdec.y4m $WORK/vectors/420-8bit-intra-only.obu",
+        "exit_code": 0,
+        "seconds": 0.105
+      },
+      "reference_frame_sha256": [
+        [
+          "b9b797be59c2798518b386b45319114b0a6b15661e2f12f23e1581d6d10ce727",
+          "f7c665182ade4e3fa265583ccbd29ac4a92e9d70f7ac659bea564b2521de1310",
+          "3f7a1b95559986f1694eb7006febbf15a773967f9e2bee1fdbe3ce27c9be4fbc"
+        ],
+        [
+          "8177b61a01c769a5cc3b58535ae71ba7b4f401cf58c46630ab80e71e9fb3fdfe",
+          "3bc1cd37be65894c637254954c81aa5f688cbe358ff16c536ca5a6eecab6e8a5",
+          "baa335f83a4ca835863fa775b9192dccc0652446f3e0e2fccf5facc331e25dee"
+        ],
+        [
+          "3f2d7aaf95ead5623fc7c7380c7462b11ef42dfc5d039d7d27e504b9477cb69e",
+          "9c7159fd6c2989017779ee6f29dd8a50139dca203b1db9b2476f50d90c365608",
+          "f9121c1acb4d61dcd18ac43a2d7a1842d2cbbf0d1d30a749e0779a8a343ff8f2"
+        ],
+        [
+          "e7385941227bcf6c150c9b5efdc6f301e2d0d382ecd50c524734f48aea9cf587",
+          "cf3d3bb1430732d1ae6e333d9fc7754f8a6316a9e602ccd9576f449e67b08025",
+          "1b99f85b55638752082dd8b3ec493a67f5b668fe81d3eb4f7c818cd1361c665b"
+        ],
+        [
+          "ab25c93c18a13500d63b7640741597f8a1199b2c625b38344703cefda4e47bf9",
+          "4f8413fe82d16681dacad59aeb172e55062bb785a864f13f5708c7ea9e07fd03",
+          "0f11df6bf54fc6871d8e483b8526355f872d023edec737d996e10cbb91d4084f"
+        ],
+        [
+          "7cde544b6b385b5dcf09df198b6665bf0ecd495ba4133fad184e21d764efd0ed",
+          "bb37187f40ab036a526647012efe47895920f3ad4d7fca0a339d93340003d2a1",
+          "be832766db90b498099451d93d1944526468a305b92a3c4b12d97c47e5ae14a5"
+        ],
+        [
+          "b6a909475806e99f023869d6aecb9dd7b7179c9287cdc68477f5336fadfb8afb",
+          "20f2dcd88cca5f5a141d791b11112f77c99d89f6bfa43d94d3c1f1883c1bcf1d",
+          "c8c26c4b008d7d907fb07d25186f144784eb740163a2e4b3076a7b1fc558251e"
+        ],
+        [
+          "6e81233ad753ed0b572a193e53d1a5eda19df136fc23ad0fceb1be00b9d39987",
+          "c9ce710f17b4147361c0d7d92926064c3ff16a185e3289844e48a4e2e82c2ce5",
+          "ed6dce0dac0361e975c3351cb4d45c6cc0504c3204b463ffe58a238e9775e78d"
+        ],
+        [
+          "8487e3bb9137b4d1b4d753e9640711a3202c834e305d5e1ed431ee645a801664",
+          "924c26d988949492dc513122dc7dec990be3652734f134a474fc876601f2c11e",
+          "a21c8febd4ac9c60e837676444538cb312100a5acc848ceb44acce8344014dc4"
+        ],
+        [
+          "ea37e566f8240a3effe8dfb07be60b7b6f0df9f9688eaff96df23cde1db0eb7a",
+          "b548893b831822addd338b2c04942499f2b0c9dc19909a3f875bc989c1e47966",
+          "661a8c240fb92923f600e6f3deabeb144d5ce107ec976124145007d2d73213a3"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-intra-only.rav2d.y4m $WORK/vectors/420-8bit-intra-only.obu",
+          "exit_code": 1,
+          "seconds": 0.012,
+          "status": "FAIL",
+          "stderr_tail": "rav2d: raw OBU stream (13566 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "420-8bit-film-grain",
+      "purpose": "film grain synthesis",
+      "source": "cif8",
+      "frames": 10,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0",
+        "--denoise-noise-level=50"
+      ],
+      "encode_seconds": 77.693,
+      "bitstream_sha256": "cf7dc5953f6170b6cd600f26b1aefda2f56b9f9939ac9db0f1b9c909b6a9d08b",
+      "bitstream_bytes": 17901,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-film-grain.avmdec.y4m $WORK/vectors/420-8bit-film-grain.obu",
+        "exit_code": 0,
+        "seconds": 0.108
+      },
+      "reference_frame_sha256": [
+        [
+          "4c68ea448b13a90b2ae1d070918550f6a8b8c06c7d833d0ef038e9690919f1df",
+          "513df0106f62aa8f1dfbf05a1e3cd82a3b5b0021284f70773c970669da02bdfa",
+          "5f6096e85d33c7b4bcbdd730c937f802830a239f07cd217ef427a96eb7073806"
+        ],
+        [
+          "af826e3b76399953f230fc3fb88f1bafe262751a6c84364da981daef9cec26da",
+          "7170f604913be78177998708cf22e84ffdfead68271e4405ec2a84fb78e9792f",
+          "2d8eea202048502c359a3f1966dbf05a6cff2d0bc099d1c6f4426dfd253dd73b"
+        ],
+        [
+          "66ad5d3e18abb839a68f9db7ba3896547aa4187e4d99a82eb8c106bf5adabe56",
+          "bceb66c4f488c42dc332353e3c76fcd12862b5d23d15ccfbc87d4ccf8b3ae594",
+          "e338db15d56693257e802a48b8c05091d52701c93283ec53a2c2efcf9a1cad62"
+        ],
+        [
+          "2cc91038c4d3e21e5ea51cb2b4cab0f6aeabf523e12aecd93ce6c7c197da3ea9",
+          "2e990b9f7af90ce1f80d77e1f00726a1988b7af6892165650725819cf96ce778",
+          "68c722a492b8ad8303f7c3e9600550acac4f666e21a5efbf0301b3086e7d38c8"
+        ],
+        [
+          "1838ddd8c9d333bc1e1a8c5ab347dfce2990b643e5de9d0334b6f502143dbb48",
+          "f3ae0f2ebac0c4baeedb0c5a90af185e5bf6a41963df52420bce0b5d22ecad67",
+          "624d0a8a028665141ea3e6c81d38f9a66c4b87d96f05e3f907bcaeec6cafb98c"
+        ],
+        [
+          "bd6d8372857dd866f78e26df83ed1f5eb749ba3d135d443d1a48d282db3f5919",
+          "474d87fcc34e9aad2799796d577ad39735539499305a35644142984e77e3e5b3",
+          "91aca50a89190ba1d4cc4db4eade7d8365d406eec411f7128368939660d823d9"
+        ],
+        [
+          "4770a8b701b0f1bffdc6661d27c3eb99db3403af9685e5358f4a85dcb4179e6e",
+          "e108234c48bdb68b53c7dd18160ac39edb3859b3185eb2cca93de2514684e583",
+          "019994ce95c5abbef96613e87a98d6486988f1663349fb7c69ae28011fcefb8e"
+        ],
+        [
+          "4f1de1eb84ea3b583bf14de1813bec91b594369145c3f14fa47d5f81c13cdd71",
+          "be78943cd12653d6de50e40ba54d06c988760e798ad610e6e55764415f65b2be",
+          "ef4d47656ce510a64c90517c06923d1e173d9d37d93275029464d17e2a082bdd"
+        ],
+        [
+          "1f42ab93842f0f79c92728214f75c3214d26e2b53c8ae5d2e1c7045e9e532f36",
+          "46cb7134f16c04b7546f5e3be7206f834bf7199dee0beb12a1a92f54fe23e789",
+          "65a564aaa204b4afbb5b94752c8da6b5d647e0a80a395a262f858c025720ff88"
+        ],
+        [
+          "53910c2cf3ba6723984da63db4040db0e24ba0478511bd761099f2108833ca8b",
+          "5294e8c118e9bae6eb9bd900ce19ded47b3491988e2d41c615d15ed004a65eeb",
+          "a88e9ecb9c882783d8d7c49c6f463edc0906b3ce39562f9a2db528feb058ee1a"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-film-grain.rav2d.y4m $WORK/vectors/420-8bit-film-grain.obu",
+          "exit_code": 0,
+          "seconds": 0.161,
+          "status": "PASS",
+          "reference_frames": 10,
+          "candidate_frames": 10,
+          "mismatched_frames": []
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "420-8bit-tiles-2x2",
+      "purpose": "1080p, 2x2 tiles",
+      "source": "hd8",
+      "frames": 3,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0",
+        "--tile-columns=1",
+        "--tile-rows=1"
+      ],
+      "encode_seconds": 266.422,
+      "bitstream_sha256": "ed2af229c815390bc4feb5b5b542f340a169996024dcf46372f7ac011e1dd755",
+      "bitstream_bytes": 41476,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-tiles-2x2.avmdec.y4m $WORK/vectors/420-8bit-tiles-2x2.obu",
+        "exit_code": 0,
+        "seconds": 0.344
+      },
+      "reference_frame_sha256": [
+        [
+          "c5f0d09521f794673076fc5a7e97f5e815a93d143c49cf9224489cc593e05e4a",
+          "6775e43599958cd8aed12bedea449f24327c8e388d90e239016bc796cb6b9d66",
+          "17b80980c8ae179fbcf44df17547b2ef063090945eaf0694d0f8084b6fb4b9e0"
+        ],
+        [
+          "af84f070e231b350a3aab608395306a734dff04ee8bdf4d4d24fc1a8bd628cad",
+          "61ed1745ca10d77b5730c65c48b67a09fe8e7e3b8ffb4911661efc056a7699d7",
+          "cc8fbd349c522766e5defabbfc12d8b34c45838380c2facd1b58a3c765d17cac"
+        ],
+        [
+          "68c510c38bf31084bfcaab6d4276d98b5bea595473691c55d7318776859eaa40",
+          "01cbd1d88d8344b3cdf120a0615a08924667519ef347ed152dd412215d7875d3",
+          "a378620a218bf9879f82112b43817ca66189ac8a0ad1525b5b6a46388f644f2f"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-tiles-2x2.rav2d.y4m $WORK/vectors/420-8bit-tiles-2x2.obu",
+          "exit_code": 1,
+          "seconds": 0.558,
+          "status": "FAIL",
+          "stderr_tail": "rav2d: raw OBU stream (41476 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "420-8bit-odd-size",
+      "purpose": "66x50, non-multiple-of-8 size",
+      "source": "odd8",
+      "frames": 6,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0"
+      ],
+      "encode_seconds": 1.219,
+      "bitstream_sha256": "e51584f1448890bda922342cda526f94aad040c8ebc63fb6f70bc60ff607f6db",
+      "bitstream_bytes": 950,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/420-8bit-odd-size.avmdec.y4m $WORK/vectors/420-8bit-odd-size.obu",
+        "exit_code": 0,
+        "seconds": 0.053
+      },
+      "reference_frame_sha256": [
+        [
+          "d356ab12309ff61a388b5e4d706e75cb8bb6d689591e9921b6b64465dbf4d62b",
+          "b01861a0395f7ce28c20534c21d4b80407c60eb6492e9900376b743942e6f77f",
+          "5c543dd0b081657fe96b15707739b642747084ab023b5bb2c26b9b8e8dbeb1da"
+        ],
+        [
+          "d356ab12309ff61a388b5e4d706e75cb8bb6d689591e9921b6b64465dbf4d62b",
+          "b01861a0395f7ce28c20534c21d4b80407c60eb6492e9900376b743942e6f77f",
+          "5c543dd0b081657fe96b15707739b642747084ab023b5bb2c26b9b8e8dbeb1da"
+        ],
+        [
+          "d356ab12309ff61a388b5e4d706e75cb8bb6d689591e9921b6b64465dbf4d62b",
+          "b01861a0395f7ce28c20534c21d4b80407c60eb6492e9900376b743942e6f77f",
+          "5c543dd0b081657fe96b15707739b642747084ab023b5bb2c26b9b8e8dbeb1da"
+        ],
+        [
+          "fc652b0190e25a6f044a4de116749735e91631976744d52d57f63c2e4f3b3aec",
+          "bc21ee7c89192827b11e10231e30a39d8e29fbc6a51dad153fd5dbdc22f487f4",
+          "b311c3046664054d226f475e24140b233c3c315cb119a793a1dd0025f0673fa2"
+        ],
+        [
+          "db0bd1a633e615012c1af5e8f5ee68b3f502b99bde5f7154516367c0b6b39393",
+          "041d104e7ebc87668365b33dd895f7cdecba0f3829c2ce235031054afe046c22",
+          "0696c867d07f1ceed355be7d7d390455e94e7482821c4cb21cc84e18b4168613"
+        ],
+        [
+          "db0bd1a633e615012c1af5e8f5ee68b3f502b99bde5f7154516367c0b6b39393",
+          "041d104e7ebc87668365b33dd895f7cdecba0f3829c2ce235031054afe046c22",
+          "0696c867d07f1ceed355be7d7d390455e94e7482821c4cb21cc84e18b4168613"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/420-8bit-odd-size.rav2d.y4m $WORK/vectors/420-8bit-odd-size.obu",
+          "exit_code": 0,
+          "seconds": 0.023,
+          "status": "FAIL",
+          "reference_frames": 6,
+          "candidate_frames": 6,
+          "mismatched_frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "444-8bit",
+      "purpose": "4:4:4 (Main_444_10_IP1)",
+      "source": "cif444",
+      "frames": 6,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0",
+        "--profile=4"
+      ],
+      "encode_seconds": 67.759,
+      "bitstream_sha256": "337aaf90ae317373dd19d81bc26895ed5acfcc24fdfb766edfde6ca0391f02e4",
+      "bitstream_bytes": 18890,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/444-8bit.avmdec.y4m $WORK/vectors/444-8bit.obu",
+        "exit_code": 0,
+        "seconds": 0.091
+      },
+      "reference_frame_sha256": [
+        [
+          "1b373625b3036537ff075dadaea00cf82f35d115800debad175e328c849db974",
+          "b0b62b3fda8adf236abbb3684bed5c4f1aae23b105868e704122f3a7e8c003d9",
+          "a3776e3ff1e9f60c9237446a4225b9362c9a775fab7be22fd72616f70d2fc670"
+        ],
+        [
+          "eb094e83e5aec5d2f61ae5cf24153c8ae9caa3c100b6b14e062a1bbbbe0d7d9a",
+          "80bc8ab7d7d80332d718546ad9a8c10632580e7547aa73f49c7bdb55e303fa1f",
+          "d6c8155a5e461a23ffd4c2634e38f4f5e9360d553107930ac1dfd6439018951c"
+        ],
+        [
+          "d27ffc96b9dd8aa42cdb97acd6a965d9e9aad65eda00201e7cc01ab7bb1054fb",
+          "52b416ff8d5125328717a53b403a406c29088aea4f1efba52c5dc8b87feee975",
+          "77000f85913668c198520d77d771fd9f7fae1c9e14dc6325b0d649aaf4cc41ad"
+        ],
+        [
+          "c5b00e6d1009fa3b69a7dfb1056c12a8ffcdc13e3786bd723c6293b24835d0f7",
+          "a8340e952106a5abeb52e7cfdc7bd2c3dcb784810d7eb771023173a080404ee2",
+          "7e5589a8988c33ebb7c2b18048a16de3abf37e1a80785fd9487ef742ce950bc6"
+        ],
+        [
+          "0a04798fc2a9d29da0f087f4ba99e4f1506fcbdd71c48f842bcd9862d3006a1d",
+          "9b4ad4777352e93da84a1a1517ce881743d58954e7b3139a7329a261f712321a",
+          "276c62e92c1fd777dcc1753b211672ece772e1b263e887803751d9c6d27ae0ad"
+        ],
+        [
+          "9f583d04752c41e577105e0bce653e9099477e26bd5426a286c4e42e68094f85",
+          "e7ace8426e4f0838f580d59a0a7f5f1dc7b93a6808d65481160f10cc98a926eb",
+          "1dfd676d26d26c7ce57c807be04b061c8bf9667aaab6e5d9f67a515caafbca08"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/444-8bit.rav2d.y4m $WORK/vectors/444-8bit.obu",
+          "exit_code": 1,
+          "seconds": 0.007,
+          "status": "FAIL",
+          "stderr_tail": "rav2d: raw OBU stream (18890 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    },
+    {
+      "vector": "400-8bit",
+      "purpose": "4:0:0 monochrome",
+      "source": "cif400",
+      "frames": 6,
+      "encoder_args": [
+        "--good",
+        "--cpu-used=5",
+        "--end-usage=q",
+        "--qp=150",
+        "--lag-in-frames=0",
+        "--monochrome"
+      ],
+      "encode_seconds": 23.45,
+      "bitstream_sha256": "7f1e888da116b8de835ee2b3cc9e48621e5a0024f0b8061d3844027818679714",
+      "bitstream_bytes": 5025,
+      "reference": {
+        "decoder": "avmdec",
+        "command": "$AVM_BUILD/avmdec -o $WORK/decoded/400-8bit.avmdec.y4m $WORK/vectors/400-8bit.obu",
+        "exit_code": 0,
+        "seconds": 0.086
+      },
+      "reference_frame_sha256": [
+        [
+          "64b85a5d947ed15c6c4a894128cf2f5ee29cecb2fdf9176b1a34d808e6661a13"
+        ],
+        [
+          "d5aa90561aa1fdd773104480a5c7325fce580a4b338ff1ca66655f9523d8d042"
+        ],
+        [
+          "955fde0738ffdf55e7f9043ab11ed40cca9ed5ae35fe2ca181a5f98a7555a449"
+        ],
+        [
+          "8927866c80e4a69d5b0c0529e8dfada50082ea8b24a4fb60ada5592544a21f3c"
+        ],
+        [
+          "bf5629a1cac70a66d3a736bc3f1dc77c0744038f1a482886d756e4fb9f74bbc2"
+        ],
+        [
+          "518a89ccc612689f8191a6d6e7e4064d78770b1fe70dae6c87b3ec0d25a49973"
+        ]
+      ],
+      "candidates": {
+        "rav2d": {
+          "decoder": "rav2d",
+          "command": "$RAV2D -t 1 -o $WORK/decoded/400-8bit.rav2d.y4m $WORK/vectors/400-8bit.obu",
+          "exit_code": 1,
+          "seconds": 0.009,
+          "status": "FAIL",
+          "stderr_tail": "rav2d: raw OBU stream (5025 bytes)\nrav2d: error: invalid or corrupt bitstream data\n"
+        },
+        "dav2d": {
+          "status": "SKIPPED",
+          "reason": "binary not given"
+        }
+      },
+      "status": "OK"
+    }
+  ]
+}
