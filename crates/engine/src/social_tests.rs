@@ -185,14 +185,25 @@ fn a_vertical_deliverable_renders_at_its_own_size() {
 }
 
 #[test]
+fn batch_variants_refuse_text_that_would_blow_up() {
+    let (mut s, _) = session(0.0, &[3.0]);
+    s.execute("graphics.newText", json!({"text": "{{Headline}}".repeat(200)})).unwrap();
+    let cell = "x".repeat(20_000);
+    let r = s.execute("export.batchVariants", json!({"csv": format!("Headline\n{cell}\n"), "export": false}));
+    assert!(r.is_err(), "4 MB of text from one 20 000-character cell is refused");
+    let r = s.execute("export.batchVariants", json!({"csv": "Headline\nshort\n", "export": false})).unwrap();
+    assert_eq!(r["variants"].as_array().map(Vec::len), Some(1));
+}
+
+#[test]
 fn placeholders_fill_from_a_row() {
     let row = vec![("Name".to_string(), "Anna".to_string()), ("Price".to_string(), "9 €".to_string())];
     let mut miss = Vec::new();
-    assert_eq!(crate::variants::fill("Hi {{name}}, only {{ PRICE }}!", &row, &mut miss), "Hi Anna, only 9 €!");
+    assert_eq!(crate::variants::fill("Hi {{name}}, only {{ PRICE }}!", &row, &mut miss).as_deref(), Some("Hi Anna, only 9 €!"));
     assert!(miss.is_empty());
-    assert_eq!(crate::variants::fill("{{city}} {{ broken", &row, &mut miss), "{{city}} {{ broken");
+    assert_eq!(crate::variants::fill("{{city}} {{ broken", &row, &mut miss).as_deref(), Some("{{city}} {{ broken"));
     assert_eq!(miss, vec!["city".to_string()]);
-    assert_eq!(crate::variants::fill("{{}}x}}", &row, &mut miss), "{{}}x}}");
+    assert_eq!(crate::variants::fill("{{}}x}}", &row, &mut miss).as_deref(), Some("{{}}x}}"));
 }
 
 #[test]
@@ -461,6 +472,32 @@ fn scale_to_frame_pictures_also_fill_the_new_frame() {
     }
     assert!(s.active_sequence().unwrap().video_tracks[0].items[0].scale_to_frame);
     s.execute("sequence.autoReframe", json!({"aspect": "9:16"})).unwrap();
+    let img = s.render_program(1.0).unwrap();
+    for (x, y) in [(0, 0), (img.w / 2, 0), (img.w - 1, img.h - 1), (img.w / 2, img.h - 1)] {
+        assert!(img.get(x, y)[3] > 0.99, "({x}, {y}) is uncovered");
+    }
+}
+
+#[test]
+fn pictures_with_auto_reframe_already_are_reframed_too() {
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "Has", "width": 192, "height": 108, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let r = s.execute("file.newColorMatte", json!({"color": "#0000ff", "width": 192, "height": 108, "seconds": 2.0})).unwrap();
+    let r = s.execute("timeline.place", json!({"item": r["item"], "track": "V1", "seconds": 0.0})).unwrap();
+    s.execute("effects.apply", json!({"clips": [r["clips"][0]], "effect": "auto_reframe"})).unwrap();
+    // set to a fixed aspect (16:9) in the original
+    let seq = s.state.active_sequence.unwrap();
+    {
+        let p = std::sync::Arc::make_mut(&mut s.project);
+        let q = p.sequence_mut(seq).unwrap();
+        let fx = q.video_tracks[0].items[0].effects.iter_mut().find(|e| e.effect == "auto_reframe").unwrap();
+        fx.params.get_mut("aspect").unwrap().value = cfa4_project::ParamValue::Choice(4);
+    }
+    s.execute("sequence.autoReframe", json!({"aspect": "9:16"})).unwrap();
+    let it = s.active_sequence().unwrap().video_tracks[0].items[0].clone();
+    let fx: Vec<_> = it.effects.iter().filter(|e| e.effect == "auto_reframe").collect();
+    assert_eq!(fx.len(), 1, "the existing instance is reused");
+    assert_eq!(fx[0].params.get("aspect").map(|a| &a.value), Some(&cfa4_project::ParamValue::Choice(1)), "retargeted to 9:16");
     let img = s.render_program(1.0).unwrap();
     for (x, y) in [(0, 0), (img.w / 2, 0), (img.w - 1, img.h - 1), (img.w / 2, img.h - 1)] {
         assert!(img.get(x, y)[3] > 0.99, "({x}, {y}) is uncovered");

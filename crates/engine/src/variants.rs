@@ -28,18 +28,35 @@ use crate::{Result, Session};
 pub const MAX_ROWS: usize = 500;
 /// Largest spreadsheet read from disk.
 const MAX_FILE: u64 = 16 << 20;
+/// Longest text one layer may get after filling (a cell is pasted into every placeholder).
+pub const MAX_TEXT: usize = 1 << 20;
+/// Most placeholders filled in one text.
+pub const MAX_PLACEHOLDERS: usize = 1000;
+/// Most filled text one run may make, over all variants.
+const MAX_BATCH_TEXT: usize = 64 << 20;
 
 /// Replace `{{key}}` (case-insensitive, spaces around the key allowed) by its value; unknown
-/// keys stay and are collected in `missing`.
-pub fn fill(text: &str, row: &[(String, String)], missing: &mut Vec<String>) -> String {
+/// keys stay and are collected in `missing`. `None` when the result would be longer than
+/// [`MAX_TEXT`] or fill more than [`MAX_PLACEHOLDERS`] placeholders (checked before allocating).
+pub fn fill(text: &str, row: &[(String, String)], missing: &mut Vec<String>) -> Option<String> {
+    if text.len() > MAX_TEXT {
+        return None;
+    }
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
+    let mut filled = 0usize;
     while let Some(a) = rest.find("{{") {
         let Some(b) = rest[a + 2..].find("}}") else { break };
         let key = rest[a + 2..a + 2 + b].trim();
         out.push_str(&rest[..a]);
         match row.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)) {
-            Some((_, v)) => out.push_str(v),
+            Some((_, v)) => {
+                filled += 1;
+                if filled > MAX_PLACEHOLDERS || out.len().saturating_add(v.len()) > MAX_TEXT {
+                    return None;
+                }
+                out.push_str(v)
+            }
             None => {
                 if !missing.iter().any(|m| m.eq_ignore_ascii_case(key)) {
                     missing.push(key.to_string());
@@ -49,8 +66,11 @@ pub fn fill(text: &str, row: &[(String, String)], missing: &mut Vec<String>) -> 
         }
         rest = &rest[a + 2 + b + 2..];
     }
+    if out.len().saturating_add(rest.len()) > MAX_TEXT {
+        return None;
+    }
     out.push_str(rest);
-    out
+    Some(out)
 }
 
 /// The style runs of `text` after [`fill`]: one placeholder at a time, so styled text between
@@ -84,8 +104,17 @@ fn file_safe(s: &str) -> String {
 
 /// Put one row into the text layers of a sequence; returns how many layers changed. A changed
 /// instance of a source graphic gets its own project item, so the variant's text is not synced
-/// back to the template and the other variants.
-fn apply_row(p: &mut Project, q: &mut cfa4_project::Sequence, row: &[(String, String)], missing: &mut Vec<String>) -> usize {
+/// back to the template and the other variants. `total` counts the filled text of the whole run
+/// against [`MAX_BATCH_TEXT`].
+fn apply_row(
+    cmd: &str,
+    p: &mut Project,
+    q: &mut cfa4_project::Sequence,
+    row: &[(String, String)],
+    missing: &mut Vec<String>,
+    total: &mut usize,
+) -> Result<usize> {
+    let too_long = || bad(cmd, format!("a filled text would be longer than {} KiB or fill more than {MAX_PLACEHOLDERS} placeholders", MAX_TEXT >> 10));
     let mut n = 0;
     for t in &mut q.video_tracks {
         for it in &mut t.items {
@@ -101,16 +130,29 @@ fn apply_row(p: &mut Project, q: &mut cfa4_project::Sequence, row: &[(String, St
                     ParamValue::Text(s) => s.clone(),
                     _ => continue,
                 };
+                if whole.as_ref().is_some_and(|w| w.len() > MAX_TEXT) {
+                    return Err(too_long());
+                }
                 let mut miss = Vec::new();
+                if whole.is_none() {
+                    fill(&old, row, &mut miss).ok_or_else(too_long)?;
+                }
+                let over = std::cell::Cell::new(false);
                 param.map_values(|v| match v {
-                    ParamValue::Text(s) => ParamValue::Text(match &whole {
-                        Some(w) => w.clone(),
-                        None => fill(&s, row, &mut Vec::new()),
-                    }),
+                    ParamValue::Text(s) => match &whole {
+                        Some(w) => ParamValue::Text(w.clone()),
+                        None => match fill(&s, row, &mut Vec::new()) {
+                            Some(f) => ParamValue::Text(f),
+                            None => {
+                                over.set(true);
+                                ParamValue::Text(s)
+                            }
+                        },
+                    },
                     v => v,
                 });
-                if whole.is_none() {
-                    fill(&old, row, &mut miss);
+                if over.get() {
+                    return Err(too_long());
                 }
                 for m in miss {
                     if !missing.iter().any(|x| x.eq_ignore_ascii_case(&m)) {
@@ -122,6 +164,10 @@ fn apply_row(p: &mut Project, q: &mut cfa4_project::Sequence, row: &[(String, St
                     _ => continue,
                 };
                 if new != old {
+                    *total = total.saturating_add(new.len());
+                    if *total > MAX_BATCH_TEXT {
+                        return Err(bad(cmd, format!("the variants' text would be larger than {} MiB", MAX_BATCH_TEXT >> 20)));
+                    }
                     n += 1;
                     if let Some(x) = e.layer.as_mut() {
                         x.runs = match &whole {
@@ -139,7 +185,7 @@ fn apply_row(p: &mut Project, q: &mut cfa4_project::Sequence, row: &[(String, St
             }
         }
     }
-    n
+    Ok(n)
 }
 
 /// `label`, or `label (2)`, `label (3)`… when an earlier variant already took it (compared as
@@ -193,6 +239,7 @@ fn batch(s: &mut Session, p: &Value) -> Result<Value> {
     let mut missing: Vec<String> = Vec::new();
     let mut unchanged = 0usize;
     let mut taken = std::collections::HashSet::new();
+    let mut total = 0usize;
     // one undo step for the whole batch
     s.edit_group("Batch Variants", |s| {
         for (i, cells) in data.iter().enumerate() {
@@ -205,7 +252,7 @@ fn batch(s: &mut Session, p: &Value) -> Result<Value> {
             let mut changed = 0;
             let mut miss = Vec::new();
             let id = crate::social::copy_sequence(s, seq, &name, "Batch Variant", |p, q| {
-                changed = apply_row(p, q, &row, &mut miss);
+                changed = apply_row(CMD, p, q, &row, &mut miss, &mut total)?;
                 Ok(())
             })?;
             if changed == 0 {
@@ -270,11 +317,24 @@ mod tests {
         let runs = vec![StyleRun { start: 9, end: 16, style: bold.clone() }];
         let row = vec![("Name".to_string(), "Alice".to_string()), ("Price".to_string(), "19".to_string())];
         let text = "{{Name}} SPECIAL {{Price}}";
-        assert_eq!(fill(text, &row, &mut Vec::new()), "Alice SPECIAL 19");
+        assert_eq!(fill(text, &row, &mut Vec::new()).as_deref(), Some("Alice SPECIAL 19"));
         assert_eq!(fill_runs(text, &row, &runs), vec![StyleRun { start: 6, end: 13, style: bold }]);
         // unknown placeholders are skipped, hostile text does not panic
         for t in ["{{", "}}{{", "{{x}", "{{Name}}{{Name}}", "日本{{Name}}語", "{{Missing}} {{Name}}"] {
             let _ = fill_runs(t, &row, &runs);
         }
+    }
+
+    #[test]
+    fn repeated_placeholders_cannot_blow_up_the_text() {
+        let row = vec![("Headline".to_string(), "x".repeat(20_000))];
+        // 200 000 placeholders × 20 000 characters would be 4 GB
+        let template = "{{Headline}}".repeat(200_000);
+        assert_eq!(fill(&template, &row, &mut Vec::new()), None);
+        // 60 × 20 000 = 1.2 MB is over MAX_TEXT, 50 × 20 000 is not
+        assert_eq!(fill(&"{{Headline}}".repeat(60), &row, &mut Vec::new()), None);
+        assert!(fill(&"{{Headline}}".repeat(50), &row, &mut Vec::new()).is_some_and(|s| s.len() == 1_000_000));
+        let short = vec![("A".to_string(), "a".to_string())];
+        assert_eq!(fill(&"{{A}}".repeat(MAX_PLACEHOLDERS + 1), &short, &mut Vec::new()), None);
     }
 }

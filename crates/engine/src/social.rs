@@ -206,7 +206,7 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
                     });
                 }
                 let picture = p.item(it.item).is_some_and(|x| is_picture(&x.kind));
-                if !picture || it.effects.iter().any(|e| e.effect == "auto_reframe") {
+                if !picture {
                     continue;
                 }
                 // Scale to Frame Size refits the picture to the new frame itself: keep the old fit
@@ -231,6 +231,16 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
                             });
                         }
                     }
+                }
+                // a clip that already has Auto Reframe keeps its instance: one set to a fixed
+                // aspect is retargeted, one following the sequence (Sequence) follows the copy
+                if let Some(fx) = it.effects.iter_mut().find(|e| e.effect == "auto_reframe") {
+                    if let Some(a) = fx.params.get_mut("aspect")
+                        && !matches!(a.value, ParamValue::Choice(0))
+                    {
+                        a.value = ParamValue::Choice(aspect);
+                    }
+                    continue;
                 }
                 let mut fx = def.instance();
                 if let Some(a) = fx.params.get_mut("aspect") {

@@ -52,7 +52,8 @@ Sequence ▸ Auto Reframe Sequence… copies the active sequence at 9:16, 1:1, 4
 side of the frame stays, the long side follows the aspect. Every picture clip in the copy gets
 the Auto Reframe effect (Target Aspect set to the new aspect), which keeps the subject in frame,
 and its Motion Scale grows so the picture covers the new frame (Scale to Frame Size clips
-included). A sequence with non-square pixels is reframed by its displayed aspect, and the copy
+included). A clip that already has Auto Reframe keeps it (a fixed Target Aspect is retargeted).
+A sequence with non-square pixels is reframed by its displayed aspect, and the copy
 has square pixels. Motion positions (keyframes
 included) move with the frame's centre, so centred clips and titles stay centred; titles keep
 their size, and the check below reports layers that leave the new frame.
@@ -90,7 +91,8 @@ other row becomes a copy of the sequence with its values filled in, and each cop
 export. A `Name` (or `File`) column names the sequences and files; a name that repeats gets
 ` (2)`, ` (3)`…, so no export overwrites another. A changed source graphic gets its own project
 item in each variant, so variants never sync back to the template. Placeholders with no column
-are reported. Up to 500 rows; the whole batch is one undo step.
+are reported. Up to 500 rows; a filled text is at most 1 MiB and 1000 placeholders, and a run
+at most 64 MiB of text. The whole batch is one undo step.
 
 ```csv
 Name,Headline,Price
