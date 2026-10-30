@@ -61,7 +61,7 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    csomagjával együtt települ: külön kódbázis vagy külön motor nem készül. A munka egy lépésben
    átadható a külön indított rész és a CFA4 között, oda és vissza. Hogy a külön alkalmazás saját
    programfájl vagy a `cfa4` program saját indítási módja legyen, az adott terület terve dönti el.
-   Első alkalmazása: a feliratozó terve (`docs/plans/SUBTITLE-STUDIO-PLAN-001-1.2-FINAL-TERVEZET.md`, D1).
+   Első alkalmazása: a feliratozó terve (`docs/plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md`, D1).
 
 ## 3. Célplatform: minden grafikus Ubuntu-változat
 
