@@ -290,7 +290,7 @@ impl ByteSource for FileSrc {
     }
 }
 
-/// The largest IABitstream frame we read: far above any real frame (128 elements of 24-bit
+/// The largest IABitstream frame we read (raw or from an MXF index): far above any real frame (128 elements of 24-bit
 /// 48 kHz PCM at 23.976 fps are about 0.8 MB), and it keeps a damaged size field from
 /// allocating gigabytes.
 const MAX_RAW_FRAME: u64 = 64 << 20;
@@ -334,6 +334,16 @@ pub(crate) fn program(t: &EssenceTrack) -> std::result::Result<(usize, usize), S
             _ => Err(format!("the IAB track declares {d} frames but only {avail} are stored")),
         },
     }
+}
+
+/// Stored frame `at` of an IAB MXF track, refusing an index entry larger than any IAB frame
+/// before anything is allocated.
+pub(crate) fn read_frame_checked(file: &MxfFile, src: &(impl ByteSource + ?Sized), track: usize, at: usize) -> Result<Vec<u8>> {
+    let size = file.tracks.get(track).and_then(|t| t.samples.get(at)).map_or(0, |s| u64::from(s.size));
+    if size > MAX_RAW_FRAME {
+        return Err(ExportError::Io(format!("IAB frame {at} is {size} bytes, more than an IAB frame can be")));
+    }
+    file.read_sample(src, track, at).map_err(|e| ExportError::Io(format!("IAB frame {at}: {e}")))
 }
 
 /// The frames of an IAB source.
@@ -389,7 +399,7 @@ impl Source {
                 if i >= *count {
                     return Err(ExportError::Io(format!("no IAB frame {i}")));
                 }
-                file.read_sample(src, *track, first.saturating_add(i)).map_err(|e| ExportError::Io(format!("IAB frame {i}: {e}")))
+                read_frame_checked(file, src, *track, first.saturating_add(i))
             }
             Source::Raw { src, frames } => {
                 let &(a, b) = frames.get(i).ok_or_else(|| ExportError::Io(format!("no IAB frame {i}")))?;

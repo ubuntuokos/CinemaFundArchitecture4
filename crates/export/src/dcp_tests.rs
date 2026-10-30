@@ -587,6 +587,11 @@ fn immersive_file_package() {
     assert!(crate::dcp_iab::program(&t).unwrap_err().contains("declares 3 frames"));
     t.origin = 9;
     assert!(crate::dcp_iab::program(&t).is_err());
+    // an index claiming a huge frame is refused before anything is allocated
+    let mut big = m2.clone();
+    big.tracks[0].samples[1].size = u32::MAX;
+    let e = crate::dcp_iab::read_frame_checked(&big, &iab2, 0, 1).unwrap_err().to_string();
+    assert!(e.contains("more than an IAB frame"), "{e}");
     // a track file cut inside its essence is refused, not padded with silence
     let bytes = std::fs::read(&src_mxf).unwrap();
     let cut = Path::new(&src_dir).join("cut.mxf");
