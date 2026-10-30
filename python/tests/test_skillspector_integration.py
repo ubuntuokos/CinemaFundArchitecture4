@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 SKILL_PATH = ROOT / ".claude/skills/cfa4-skill-review/SKILL.md"
 INSTALLER_PATH = ROOT / "scripts/dev/install-skillspector.sh"
@@ -37,7 +36,10 @@ class SkillSpectorIntegrationTests(unittest.TestCase):
     def test_installer_pins_version_and_uses_a_venv(self) -> None:
         text = INSTALLER_PATH.read_text(encoding="utf-8")
 
-        self.assertIn("skillspector==2.13.2", text)
+        self.assertIn("version='2.13.2'", text)
+        self.assertIn("commit='abd82935b67f765a9541013c0866c6349251dcdf'", text)
+        self.assertIn("git+https://github.com/NVIDIA/SkillSpector.git@$commit", text)
+        self.assertNotIn("skillspector==", text)
         self.assertIn("-m venv", text)
         self.assertNotIn("sudo ", text)
         self.assertNotIn("uv tool install", text)

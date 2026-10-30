@@ -15,7 +15,7 @@ A skill nem telepíti és nem futtatja a célkódot, nem írja át a célkönyvt
 - SkillSpector 2.13.2, rögzített Python-csomagverzió.
 - Claude Code projekt-skill útvonala: `.claude/skills/cfa4-skill-review/SKILL.md`.
 
-A SkillSpector nem CFA4 futásidejű vagy kiadási függőség. Nincs telepítve rendszer-Pythonba, nem kerül a CFA4 .deb/Flatpak/AppImage/tar csomagokba, és nem változtatja meg a CFA4/FilmCraft upstream telepítéseit.
+A SkillSpector nem CFA4 futásidejű vagy kiadási függőség. Nincs telepítve rendszer-Pythonba, nem kerül a CFA4 .deb/Flatpak/AppImage/tar csomagokba, és nem változtatja meg a CFA4 vagy az upstream szülőprojekt telepítéseit.
 
 ## Kifejezett telepítés
 
@@ -23,13 +23,13 @@ A telepítés csak akkor történik meg, ha a fejlesztő külön elindítja a te
 
     bash scripts/dev/install-skillspector.sh
 
-A szkript egy elkülönített venv-be telepíti a skillspector==2.13.2 csomagot. Alapértelmezett helye:
+A SkillSpector **nincs fent a PyPI-n**. A szkript a GitHubon közzétett v2.13.2 címke commitját (`abd82935b67f765a9541013c0866c6349251dcdf`) telepíti egy elkülönített venv-be (`pip install "skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@<commit>"`); ehhez `git` kell. Ha a telepítés nem fejeződik be, a szkript csak az általa ebben a futásban létrehozott venv-et törli. Alapértelmezett helye:
 
     ${XDG_DATA_HOME:-~/.local/share}/cfa4/tools/skillspector/2.13.2/venv
 
 A CFA4_SKILLSPECTOR_HOME változóval a cfa4/tools gyökérkönyvtár külön megadható. A szkript nem használ sudo-t, nem aktiválja a venv-et a shellben, nem frissít meglévő telepítést, és a célkönyvtáron kívül nem ír.
 
-A verzió rögzített, de a PyPI-ről telepített tranzitív Python-függőségek nem mind verzió- és hash-rögzítettek ebben az első változatban. Ezért ez fejlesztői, egyedi használatú eszköz; nem szabad a CFA4 kiadási csomagjába vagy általános CI-kapujába tenni. Telepítés után a pip check lefut, majd a CLI verziója megjelenik.
+A SkillSpector commitra rögzített, de a PyPI-ről telepített tranzitív Python-függőségei nem mind verzió- és hash-rögzítettek ebben az első változatban. Ezért ez fejlesztői, egyedi használatú eszköz; nem szabad a CFA4 kiadási csomagjába vagy általános CI-kapujába tenni. Telepítés után a pip check lefut, majd a CLI verziója megjelenik.
 
 ## Kézi CLI-használat
 
@@ -58,6 +58,21 @@ A jelentést egyedi, védett ideiglenes fájlba kell írni, a felülvizsgálat v
 ## Telepítés frissítése
 
 A verzióváltás külön felülvizsgálatot igényel: ellenőrizni kell az új kiadást, Python-tartományt, licencet és függőségeket; módosítani kell a verziózott telepítési útvonalat, a tesztet és ezt a dokumentumot; majd Ubuntu 26.04/amd64-en validálni kell. Nincs automatikus frissítés.
+
+## Validációs feljegyzés (2026-10-30)
+
+Környezet: **sandbox, Ubuntu 24.04.5, Python 3.13.18, x86_64 – nem a célgép.** A célgépes (Ubuntu 26.04) futtatás és a Claude Code-skill felismerése: **PENDING**.
+
+| Ellenőrzés | Eredmény |
+|---|---|
+| Telepítés `pip install skillspector==2.13.2` (az első változat) | FAIL: a csomag nincs a PyPI-n |
+| Telepítés a rögzített GitHub-commitról | OK: `SkillSpector v2.13.2`, `pip check`: nincs hiba |
+| Ismételt futtatás | OK: a meglévő, egyező verziót nem módosítja |
+| Megszakadt telepítés (elérhetetlen csomagindex) | OK: kilépési kód 1, félkész venv nem marad |
+| `scan .claude/skills/cfa4-skill-review --no-llm --fail-on-incomplete` | kilépési kód 1; score 8, LOW, ajánlás CAUTION; lefedettség 100%, státusz `partial` (a skill a repó saját fájljaira hivatkozik, ezek nincsenek a skillkönyvtárban); 1 MEDIUM találat (AS3, 9. sor): a forrásmegjelölésben szereplő upstream útvonal – kézi felülvizsgálat szerint nem skill-felsorolás |
+| `scan .agents/skills/cfa4-elephant --no-llm --fail-on-incomplete` | kilépési kód 1; score 0, LOW, CAUTION; lefedettség 100%, státusz `partial` (ugyanezen okból); találat nincs |
+
+A `partial` státusz és a CAUTION a tervezett, biztonságos viselkedés: hiányos elemzésre a folyamat nem ad APPROVE-ot.
 
 ## Forrás és licenc
 
