@@ -142,8 +142,11 @@ def make_sources(work: Path) -> dict[str, Path]:
     return out
 
 
-def y4m_frames(path: Path) -> list[list[str]]:
-    """Return per-frame lists of per-plane sha256 digests from a Y4M file.
+def y4m_frames(path: Path) -> tuple[dict, list[list[str]]]:
+    """Return the image geometry and per-frame lists of per-plane sha256 digests of a Y4M file.
+
+    The geometry (width, height, chroma layout, bytes per sample) is normalised so that
+    equivalent Y4M colour-space tags (e.g. C420 and C420jpeg) compare equal.
 
     Raises ValueError on a malformed header, a truncated frame or trailing garbage.
     """
@@ -163,13 +166,17 @@ def y4m_frames(path: Path) -> list[list[str]]:
             chroma = p[1:].decode()
     bps = 2 if ("p10" in chroma or "p12" in chroma or "p16" in chroma) else 1
     if chroma.startswith("mono"):
+        layout = "400"
         planes = [width * height]
     elif chroma.startswith("444"):
+        layout = "444"
         planes = [width * height] * 3
     elif chroma.startswith("422"):
+        layout = "422"
         cw = (width + 1) // 2
         planes = [width * height, cw * height, cw * height]
     else:
+        layout = "420"
         cw, ch = (width + 1) // 2, (height + 1) // 2
         planes = [width * height, cw * ch, cw * ch]
     if width <= 0 or height <= 0:
@@ -189,12 +196,18 @@ def y4m_frames(path: Path) -> list[list[str]]:
             digests.append(hashlib.sha256(data[pos : pos + size]).hexdigest())
             pos += size
         frames.append(digests)
-    return frames
+    geometry = {"width": width, "height": height, "chroma": layout, "bytes_per_sample": bps}
+    return geometry, frames
 
 
 def decode(name: str, cmd: list[str], out: Path) -> dict:
+    # Never let a previous run's output stand in for this one.
+    out.unlink(missing_ok=True)
     t0 = time.monotonic()
-    r = run(cmd)
+    try:
+        r = run(cmd)
+    except OSError as err:
+        return {"decoder": name, "command": " ".join(cmd), "status": "FAIL", "stderr_tail": f"launch failed: {err}"}
     elapsed = round(time.monotonic() - t0, 3)
     result = {"decoder": name, "command": " ".join(cmd), "exit_code": r.returncode, "seconds": elapsed}
     if r.returncode != 0 or not out.exists():
@@ -202,18 +215,21 @@ def decode(name: str, cmd: list[str], out: Path) -> dict:
         result["stderr_tail"] = (r.stderr or "")[-800:]
         return result
     try:
-        result["frames"] = y4m_frames(out)
+        result["geometry"], result["frames"] = y4m_frames(out)
     except (ValueError, OSError) as err:
         result["status"] = "FAIL"
         result["stderr_tail"] = str(err)
     return result
 
 
-def compare(ref: list[list[str]], cand: list[list[str]]) -> dict:
+def compare(ref_geometry: dict, ref: list[list[str]], cand_geometry: dict, cand: list[list[str]]) -> dict:
     mismatched = [i for i, (a, b) in enumerate(zip(ref, cand)) if a != b]
-    status = "PASS" if ref and len(ref) == len(cand) and not mismatched else "FAIL"
+    geometry_ok = ref_geometry == cand_geometry
+    status = "PASS" if geometry_ok and ref and len(ref) == len(cand) and not mismatched else "FAIL"
     return {
         "status": status,
+        "geometry_match": geometry_ok,
+        "candidate_geometry": cand_geometry,
         "reference_frames": len(ref),
         "candidate_frames": len(cand),
         "mismatched_frames": mismatched[:20],
@@ -252,6 +268,7 @@ def main() -> int:
         _, _, frames = SOURCES[src]
         obu = vec_dir / f"{name}.obu"
         entry = {"vector": name, "purpose": purpose, "source": src, "frames": frames, "encoder_args": BASE_ENC + extra}
+        obu.unlink(missing_ok=True)
         t0 = time.monotonic()
         enc = run([str(avmenc), *BASE_ENC, *extra, f"--limit={frames}", "--obu", "-o", str(obu), str(sources[src])])
         entry["encode_seconds"] = round(time.monotonic() - t0, 3)
@@ -266,7 +283,7 @@ def main() -> int:
 
         ref_out = dec_dir / f"{name}.avmdec.y4m"
         ref = decode("avmdec", [str(avmdec), "-o", str(ref_out), str(obu)], ref_out)
-        entry["reference"] = {k: v for k, v in ref.items() if k != "frames"}
+        entry["reference"] = {k: v for k, v in ref.items() if k not in ("frames", "geometry")}
         if "frames" in ref and len(ref["frames"]) != frames:
             entry["reference"]["status"] = "FAIL"
             entry["reference"]["stderr_tail"] = f"expected {frames} frames, got {len(ref['frames'])}"
@@ -276,6 +293,7 @@ def main() -> int:
             results.append(entry)
             print(f"{name}: REFERENCE_FAIL", flush=True)
             continue
+        entry["reference_geometry"] = ref["geometry"]
         entry["reference_frame_sha256"] = ref["frames"]
 
         entry["candidates"] = {}
@@ -288,9 +306,9 @@ def main() -> int:
                 continue
             out = dec_dir / f"{name}.{cand_name}.y4m"
             res = decode(cand_name, mk(binary, str(out), str(obu)), out)
-            summary = {k: v for k, v in res.items() if k != "frames"}
+            summary = {k: v for k, v in res.items() if k not in ("frames", "geometry")}
             if "frames" in res:
-                summary.update(compare(ref["frames"], res["frames"]))
+                summary.update(compare(ref["geometry"], ref["frames"], res["geometry"], res["frames"]))
             entry["candidates"][cand_name] = summary
         entry["status"] = "OK"
         results.append(entry)
