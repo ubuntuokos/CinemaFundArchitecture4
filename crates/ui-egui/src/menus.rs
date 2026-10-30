@@ -92,10 +92,6 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("view.clearGuides", "Clear Guides", ["View"], None),
     uic!("view.snapInProgramMonitor", "Snap in Program Monitor", ["View"], None),
     uic!("view.safeMargins", "Safe Margins", ["View", "Guide Templates"], None),
-    uic!("view.socialSafeZone.off", "Off", ["View", "Social Safe Zones"], None),
-    uic!("view.socialSafeZone.tiktok", "TikTok", ["View", "Social Safe Zones"], None),
-    uic!("view.socialSafeZone.reels", "Instagram Reels", ["View", "Social Safe Zones"], None),
-    uic!("view.socialSafeZone.shorts", "YouTube Shorts", ["View", "Social Safe Zones"], None),
     uic!("view.guideTemplates.save", "Save Guides as Template…", ["View", "Guide Templates"], None),
     uic!("view.guideTemplates.manage", "Manage Guides…", ["View", "Guide Templates"], None),
     uic!("view.guideTemplates.apply", "Apply Guide Template", [], None),
@@ -589,7 +585,6 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
         || (matches!(id, "captions.import" | "captions.export") && params.get("path").is_none())
         || (id == "graphics.newFromFile" && params.get("path").is_none())
         || (id == "graphics.credits.import" && params.get("path").is_none() && params.get("csv").is_none())
-        || (id == "export.batchVariants" && params.get("path").is_none() && params.get("csv").is_none())
         || (crate::EXPORT_SAVE_DIALOGS.iter().any(|(c, ..)| *c == id) && params.get("path").is_none())
     {
         return app.file_dialog(id, &params);
@@ -597,11 +592,6 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
     let r = app.session.execute(id, params).map_err(|e| e.to_string());
     if let Err(e) = &r {
         app.ui.status = e.clone();
-    }
-    if let Ok(v) = &r
-        && let Some(msg) = result_status(id, v)
-    {
-        app.ui.status = msg;
     }
     if r.is_ok() && matches!(id, "playhead.start" | "playhead.end") {
         crate::panels::timeline::reveal_playhead(app, ctx);
@@ -611,32 +601,6 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
         put_clip_names_on_system_clipboard(app, ctx);
     }
     r
-}
-
-/// A status-bar line for commands whose result the user would otherwise not see.
-pub fn result_status(id: &str, v: &Value) -> Option<String> {
-    let n = |k: &str| v.get(k).and_then(Value::as_array).map_or(0, Vec::len);
-    match id {
-        "markers.addBeats" => Some(format!(
-            "{} beat markers added ({:.1} BPM)",
-            v.get("count").and_then(Value::as_u64).unwrap_or(0),
-            v.get("bpm").and_then(Value::as_f64).unwrap_or(0.0)
-        )),
-        "sequence.checkDelivery" => Some(match v.get("count").and_then(Value::as_u64).unwrap_or(0) {
-            0 => "Check Before Export: no problems found".to_string(),
-            c => format!("Check Before Export: {c} problem{} marked on the timeline (red markers)", if c == 1 { "" } else { "s" }),
-        }),
-        "export.socialDeliverables" => Some(format!("{} exports queued (File ▸ Export ▸ Export shows the queue)", n("queued"))),
-        "export.batchVariants" => {
-            let mut m = format!("{} variant sequences made, {} exports queued", n("variants"), n("queued"));
-            if let Some(miss) = v.get("missing").and_then(Value::as_array).filter(|a| !a.is_empty()) {
-                let names: Vec<&str> = miss.iter().filter_map(Value::as_str).collect();
-                m.push_str(&format!("; no column for {}", names.join(", ")));
-            }
-            Some(m)
-        }
-        _ => None,
-    }
 }
 
 /// Snapshot OS files/image present at Copy/Cut. Many platforms keep a previous file list after

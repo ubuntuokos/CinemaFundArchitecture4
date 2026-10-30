@@ -3602,6 +3602,8 @@
 	Side by Side	左右并排
 	Stereo to 2D	立体转 2D
 	Eye	眼
+	Stereo Parallax	立体视差
+	Horizontal Shift	水平偏移
 	Slit Scan	狭缝扫描
 	Time Span (seconds)	时间跨度（秒）
 	Current Frame At	当前帧位置
@@ -3613,15 +3615,15 @@
 	Batch Variants from Spreadsheet…	从电子表格批量生成变体…
 	Check Before Export…	导出前检查…
 	Social Deliverables…	社交媒体交付…
-	Social Safe Zones	社交媒体安全区
 	Counter	计数器
 	Word by Word	逐词
 	Animator	动画器
 	Animator Duration	动画器持续时间
 	Animator Delay	动画器延迟
-	TikTok	TikTok
-	Instagram Reels	Instagram Reels
-	YouTube Shorts	YouTube Shorts
+	Creative Looks	创意风格
+	Film Grain	胶片颗粒
+	Animated	动画
+	Color Grain	彩色颗粒
 	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段

@@ -3634,6 +3634,8 @@
 	Side by Side	Lado a lado
 	Stereo to 2D	Estéreo a 2D
 	Eye	Ojo
+	Stereo Parallax	Paralaje estéreo
+	Horizontal Shift	Desplazamiento horizontal
 	Slit Scan	Slit-scan
 	Time Span (seconds)	Intervalo de tiempo (segundos)
 	Current Frame At	Fotograma actual en
@@ -3645,15 +3647,15 @@
 	Batch Variants from Spreadsheet…	Variantes por lotes desde hoja de cálculo…
 	Check Before Export…	Comprobar antes de exportar…
 	Social Deliverables…	Entregables para redes sociales…
-	Social Safe Zones	Zonas seguras de redes sociales
 	Counter	Contador
 	Word by Word	Palabra por palabra
 	Animator	Animador
 	Animator Duration	Duración del animador
 	Animator Delay	Retardo del animador
-	TikTok	TikTok
-	Instagram Reels	Instagram Reels
-	YouTube Shorts	YouTube Shorts
+	Creative Looks	Looks creativos
+	Film Grain	Grano de película
+	Animated	Animado
+	Color Grain	Grano de color
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 a 8 Mbps, AAC 160 kbps, segmentos MP4 fragmentados de 6 segundos

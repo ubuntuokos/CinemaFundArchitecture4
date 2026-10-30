@@ -264,24 +264,6 @@ pub fn show(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect, which: Which) {
             ui.painter().line_segment([c - vec2(8.0, 0.0), c + vec2(8.0, 0.0)], Stroke::new(1.0, Color32::from_white_alpha(120)));
             ui.painter().line_segment([c - vec2(0.0, 8.0), c + vec2(0.0, 8.0)], Stroke::new(1.0, Color32::from_white_alpha(120)));
         }
-        if let Some(z) = cfa4_engine::social::SafeZone::from_id(&mv.social_zone) {
-            // covered margins shaded, the safe area outlined (fractions of the picture)
-            let [ft, fr, fb, fl] = z.insets().map(|v| v as f32);
-            let (w, h) = (pic.width(), pic.height());
-            let safe = Rect::from_min_max(pos2(pic.min.x + fl * w, pic.min.y + ft * h), pos2(pic.max.x - fr * w, pic.max.y - fb * h));
-            let shade = Color32::from_black_alpha(110);
-            for r in [
-                Rect::from_min_max(pic.min, pos2(pic.max.x, safe.min.y)),
-                Rect::from_min_max(pos2(pic.min.x, safe.max.y), pic.max),
-                Rect::from_min_max(pos2(pic.min.x, safe.min.y), pos2(safe.min.x, safe.max.y)),
-                Rect::from_min_max(pos2(safe.max.x, safe.min.y), pos2(pic.max.x, safe.max.y)),
-            ] {
-                ui.painter().rect_filled(r, 0.0, shade);
-            }
-            ui.painter().rect_stroke(safe, 0.0, Stroke::new(1.0, Color32::from_white_alpha(150)), StrokeKind::Middle);
-            ui.painter().text(pos2(safe.min.x + 4.0, safe.min.y + 4.0), Align2::LEFT_TOP, z.label(), Tokens::ui(10.0), Color32::from_white_alpha(170));
-            app.auto.add(&format!("{prefix}.socialSafeZone"), safe, z.label());
-        }
         if display != DisplayMode::Composite && !compare {
             let label = match display {
                 DisplayMode::Composite => tl!("Composite"),
