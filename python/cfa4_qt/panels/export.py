@@ -499,7 +499,9 @@ class ExportDialog(QDialog):
         self.dcp_resolution.setCurrentIndex(max(0, self.dcp_resolution.findData(preset.get("dcpResolution") or "2k")))
         self.dcp_aspect.setCurrentIndex(max(0, self.dcp_aspect.findData(preset.get("dcpAspect") or "flat")))
         self.dcp_kind.setCurrentIndex(0)
-        self.dcp_immersive.setCurrentIndex(0)
+        self.dcp_immersive.setCurrentIndex(max(0, self.dcp_immersive.findData(preset.get("dcpImmersive") or "off")))
+        self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
+        self.dcp_iab_fallback.setChecked(preset.get("dcpIabFallback") != "none")
         self.touched.clear()
         self._loading = False
         self._default_path()

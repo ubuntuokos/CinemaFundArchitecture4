@@ -290,12 +290,44 @@ impl ByteSource for FileSrc {
     }
 }
 
+/// The largest IABitstream frame we read: far above any real frame (128 elements of 24-bit
+/// 48 kHz PCM at 23.976 fps are about 0.8 MB), and it keeps a damaged size field from
+/// allocating gigabytes.
+const MAX_RAW_FRAME: u64 = 64 << 20;
+
+/// Indexes a raw IABitstream from its frame headers (ST 2098-2 preamble and IAFrame tags)
+/// without loading the file. Returns the frames and where the index stopped, which is the
+/// file's length unless a frame is damaged or truncated.
+fn index_raw(src: &FileSrc) -> (Vec<(u64, u64)>, u64) {
+    let be32 = |b: &[u8; 5]| u64::from(u32::from_be_bytes([b[1], b[2], b[3], b[4]]));
+    let mut frames = Vec::new();
+    let mut at = 0u64;
+    while at < src.len {
+        let mut head = [0u8; 5];
+        if src.read_at(at, &mut head).is_err() || head[0] != 0x01 {
+            break;
+        }
+        let tag = at.saturating_add(5).saturating_add(be32(&head));
+        let mut ia = [0u8; 5];
+        if src.read_at(tag, &mut ia).is_err() || ia[0] != 0x02 {
+            break;
+        }
+        let end = tag.saturating_add(5).saturating_add(be32(&ia));
+        if end > src.len || end - at > MAX_RAW_FRAME {
+            break;
+        }
+        frames.push((at, end));
+        at = end;
+    }
+    (frames, at)
+}
+
 /// The frames of an IAB source.
 enum Source {
     /// An IAB track file (IMF ST 2067-201 or DCP ST 429-18) and its IAB track.
     Mxf { src: FileSrc, file: Box<MxfFile>, track: usize },
-    /// A raw IABitstream: the frames' (start, end).
-    Raw { data: Vec<u8>, frames: Vec<(usize, usize)> },
+    /// A raw IABitstream, read frame by frame: the frames' (start, end).
+    Raw { src: FileSrc, frames: Vec<(u64, u64)> },
 }
 
 impl Source {
@@ -311,19 +343,15 @@ impl Source {
                 file.tracks.iter().position(|t| t.codec == Codec::Iab).ok_or_else(|| ExportError::Io(format!("{path}: no IAB track in this MXF file")))?;
             return Ok(Source::Mxf { src, file: Box::new(file), track });
         }
-        let data = std::fs::read(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
-        let base = data.as_ptr() as usize;
-        let frames: Vec<(usize, usize)> =
-            cfa4_iab::split(&data).iter().map(|f| (f.as_ptr() as usize - base, f.as_ptr() as usize - base + <[u8]>::len(f))).collect();
+        let (frames, end) = index_raw(&src);
         if frames.is_empty() {
             return Err(ExportError::Io(format!("{path}: neither an MXF file nor an IABitstream")));
         }
-        // a damaged or truncated frame stops the split; refuse it rather than pad the rest with silence
-        let end = frames.last().map_or(0, |f| f.1);
-        if end != data.len() {
-            return Err(ExportError::Io(format!("{path}: IABitstream is damaged or truncated after {} frames (byte {end} of {})", frames.len(), data.len())));
+        // a damaged or truncated frame stops the index; refuse it rather than pad the rest with silence
+        if end != len {
+            return Err(ExportError::Io(format!("{path}: IABitstream is damaged or truncated after {} frames (byte {end} of {len})", frames.len())));
         }
-        Ok(Source::Raw { data, frames })
+        Ok(Source::Raw { src, frames })
     }
 
     fn len(&self) -> usize {
@@ -336,8 +364,12 @@ impl Source {
     fn frame(&self, i: usize) -> Result<Vec<u8>> {
         match self {
             Source::Mxf { src, file, track } => file.read_sample(src, *track, i).map_err(|e| ExportError::Io(format!("IAB frame {i}: {e}"))),
-            Source::Raw { data, frames } => {
-                frames.get(i).and_then(|&(a, b)| data.get(a..b)).map(<[u8]>::to_vec).ok_or_else(|| ExportError::Io(format!("no IAB frame {i}")))
+            Source::Raw { src, frames } => {
+                let &(a, b) = frames.get(i).ok_or_else(|| ExportError::Io(format!("no IAB frame {i}")))?;
+                let n = usize::try_from(b.saturating_sub(a)).map_err(|_| ExportError::Io(format!("IAB frame {i} is too large")))?;
+                let mut buf = vec![0; n];
+                src.read_at(a, &mut buf).map_err(|e| ExportError::Io(format!("IAB frame {i}: {e}")))?;
+                Ok(buf)
             }
         }
     }
@@ -670,7 +702,10 @@ mod tests {
         let p = path.to_str().unwrap();
         let mut data = [frame.clone(), frame.clone()].concat();
         std::fs::write(&path, &data).unwrap();
-        assert_eq!(Source::open(p).unwrap().len(), 2);
+        let src = Source::open(p).unwrap();
+        assert_eq!(src.len(), 2);
+        assert_eq!(src.frame(1).unwrap(), frame);
+        assert!(src.frame(2).is_err());
         data.extend_from_slice(&frame[..frame.len() / 2]);
         std::fs::write(&path, &data).unwrap();
         let err = Source::open(p).err().unwrap().to_string();

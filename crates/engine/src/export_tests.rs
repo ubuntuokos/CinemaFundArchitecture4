@@ -490,6 +490,15 @@ fn user_presets_persist_with_favourites_import_and_export() {
     assert_eq!(got["settings"]["frameSize"], json!([1280, 720]));
     assert_eq!(got["settings"]["bitrateKbps"], 5000);
     assert!(s.execute("export.presets.save", json!({"name": "YouTube 1080p Full HD"})).is_err(), "built-in names are reserved");
+    // a DCP preset keeps its immersive audio, and the list shows it so the Qt dialog can load it
+    s.execute(
+        "export.presets.save",
+        json!({"name": "IAB DCP", "from": "DCP 2K Flat", "dcpImmersive": "file", "dcpIabSource": "/a/b.mxf", "dcpIabFallback": "none"}),
+    )
+    .unwrap();
+    let list = s.execute("export.presets.list", json!({"query": "iab dcp"})).unwrap();
+    let row = &list["presets"][0];
+    assert_eq!((&row["dcpImmersive"], &row["dcpIabSource"], &row["dcpIabFallback"]), (&json!("file"), &json!("/a/b.mxf"), &json!("none")));
     assert!(s.execute("export.presets.delete", json!({"name": "Apple ProRes 422 HQ"})).is_err(), "built-ins cannot be deleted");
     // favourites
     s.execute("export.presets.favorite", json!({"name": "Apple ProRes 422 HQ"})).unwrap();

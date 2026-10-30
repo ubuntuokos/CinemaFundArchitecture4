@@ -1027,6 +1027,9 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "mpeg2Container": pr.settings.mpeg2_container,
         "dcpResolution": pr.settings.dcp_resolution,
         "dcpAspect": pr.settings.dcp_aspect,
+        "dcpImmersive": pr.settings.dcp_immersive,
+        "dcpIabSource": pr.settings.dcp_iab_source,
+        "dcpIabFallback": pr.settings.dcp_iab_fallback,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();

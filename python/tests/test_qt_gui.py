@@ -2043,6 +2043,14 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg.dcp_iab_source.setText(str(bad))
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a saved preset brings its immersive audio back instead of resetting it to Off
+        dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "none"})
+        dlg.preset.addItem("IAB test", "IAB test")
+        dlg.preset.setCurrentIndex(dlg.preset.findData("IAB test"))
+        p = dlg.params()
+        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "none")
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Flat"))
+        assert dlg.dcp_immersive.currentData() == "off" and dlg.dcp_iab_fallback.isChecked()
         # another format turns the immersive choices off
         dlg.format.setCurrentIndex(dlg.format.findData("h264"))
         assert not dlg.dcp_immersive.isEnabled() and "dcpImmersive" not in dlg.params()
