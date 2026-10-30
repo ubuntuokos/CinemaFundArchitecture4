@@ -53,6 +53,7 @@ const OP_LUMETRI: u32 = 31u;
 const OP_SWAP_EYES: u32 = 32u;
 const OP_STEREO_TO_2D: u32 = 33u;
 const OP_FILM_GRAIN: u32 = 34u;
+const OP_STEREO_PARALLAX: u32 = 35u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -704,6 +705,29 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             } else {
                 a = ld(vec2(p.x, lo)); b = ld(vec2(p.x, hi));
             }
+            return a + (b - a) * t;
+        }
+        case OP_STEREO_PARALLAX: {
+            // `gpufx::stereo_parallax_sample`: i1.x = side by side, i1.y = repeat edge, p0.x = shift
+            var vw = s.x; var x0 = 0; var left = true;
+            if u.i1.x == 1u {
+                vw = s.x / 2;
+                if p.x < vw { left = true; } else if p.x < 2 * vw { left = false; x0 = vw; } else { return ld(p); }
+            } else {
+                let half = s.y / 2;
+                if p.y < half { left = true; } else if p.y < 2 * half { left = false; } else { return ld(p); }
+            }
+            var off = u.p0.x;
+            if !left { off = -off; }
+            var fx = f32(p.x - x0) - off;
+            if u.i1.y == 1u {
+                fx = clamp(fx, 0.0, f32(vw - 1));
+            }
+            let lo = floor(fx);
+            let t = fx - lo;
+            var a = vec4(0.0); var b = vec4(0.0);
+            if lo >= 0.0 && lo < f32(vw) { a = ld(vec2(x0 + i32(lo), p.y)); }
+            if lo + 1.0 >= 0.0 && lo + 1.0 < f32(vw) { b = ld(vec2(x0 + i32(lo + 1.0), p.y)); }
             return a + (b - a) * t;
         }
         case OP_MIRROR: {
