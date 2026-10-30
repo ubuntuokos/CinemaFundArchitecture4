@@ -153,14 +153,10 @@ pub enum Platform {
 }
 
 impl Platform {
+    /// The platform CFA4 runs on. `Mac` and `Windows` stay only to read and write shortcut
+    /// presets made in those notations (Premiere `.kys` files and the built-in sets).
     pub fn current() -> Self {
-        if cfg!(target_os = "macos") {
-            Platform::Mac
-        } else if cfg!(windows) {
-            Platform::Windows
-        } else {
-            Platform::Linux
-        }
+        Platform::Linux
     }
     pub fn from_name(s: &str) -> Option<Self> {
         match s.to_ascii_lowercase().as_str() {

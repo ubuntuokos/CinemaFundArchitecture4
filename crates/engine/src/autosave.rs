@@ -96,7 +96,7 @@ pub struct PlaybackPrefs {
     /// a paused frame. Off by default.
     pub draft_decode: bool,
     /// "Hardware decoding": `auto` (default: the system's hardware decoder for streams it
-    /// supports, e.g. VideoToolbox H.264 / HEVC on macOS, falling back to CFA4's own decoder)
+    /// supports, e.g. VA-API or NVDEC H.264 / HEVC, falling back to CFA4's own decoder)
     /// or `off` (always CFA4's own decoders). Media already open keeps its decoder until it
     /// is reopened.
     pub hardware_decoding: String,
@@ -491,7 +491,7 @@ impl Preferences {
 }
 
 /// A file with this name next to the executable makes the install portable: its data directory is
-/// `<exe dir>/data` instead of the per-user one (the Windows portable zip ships it).
+/// `<exe dir>/data` instead of the per-user one.
 pub const PORTABLE_MARKER: &str = "portable.txt";
 
 /// `<exe_dir>/data` when `exe_dir` holds [`PORTABLE_MARKER`], else `None`.
@@ -500,9 +500,8 @@ pub fn portable_data_dir(exe_dir: &Path) -> Option<PathBuf> {
 }
 
 /// The data directory. `CFA4_DATA_DIR` overrides; a portable install ([`PORTABLE_MARKER`] next
-/// to the executable) uses `<exe dir>/data`; otherwise the per-user directory:
-/// macOS `~/Library/Application Support/CFA4`, Windows `%APPDATA%\CFA4`,
-/// elsewhere `$XDG_DATA_HOME/cfa4` or `~/.local/share/cfa4`.
+/// to the executable) uses `<exe dir>/data`; otherwise the per-user directory
+/// `$XDG_DATA_HOME/cfa4` or `~/.local/share/cfa4`.
 pub fn default_data_dir() -> Option<PathBuf> {
     let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
     if let Some(d) = env("CFA4_DATA_DIR") {
@@ -510,12 +509,6 @@ pub fn default_data_dir() -> Option<PathBuf> {
     }
     if let Some(d) = std::env::current_exe().ok().and_then(|exe| exe.parent().and_then(portable_data_dir)) {
         return Some(d);
-    }
-    if cfg!(target_os = "macos") {
-        return env("HOME").map(|h| h.join("Library/Application Support/CFA4"));
-    }
-    if cfg!(windows) {
-        return env("APPDATA").map(|h| h.join("CFA4"));
     }
     env("XDG_DATA_HOME").map(|d| d.join("cfa4")).or_else(|| env("HOME").map(|h| h.join(".local/share/cfa4")))
 }

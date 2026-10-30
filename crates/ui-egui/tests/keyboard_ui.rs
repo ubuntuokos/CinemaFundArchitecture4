@@ -180,12 +180,11 @@ fn new_keys_work_in_the_app() {
     assert_eq!(d.app().ui.program.zoom, None);
 }
 
-/// Off macOS the menus show `Ctrl+…`, so that is what agents send: a `Ctrl` chord through
+/// The menus show `Ctrl+…`, so that is what agents send: a `Ctrl` chord through
 /// `ui.key` (and `ctrl` in `ui.click` modifiers) must act like the physical key, which egui-winit
 /// reports as `ctrl` + `command`. Bindings are written `Cmd+…`, so this failed to match (#245).
-#[cfg(not(target_os = "macos"))]
 #[test]
-fn ctrl_chords_fire_shortcuts_off_macos() {
+fn ctrl_chords_fire_shortcuts() {
     let mut d = Driver::new();
     let seq = d.exec("sequence.inspect", json!({}));
     let second = &seq["video"][0]["items"].as_array().unwrap()[1];
@@ -223,7 +222,7 @@ fn ctrl_chords_fire_shortcuts_off_macos() {
 
 #[test]
 fn delete_key_clears_the_selected_timeline_clip() {
-    // #243: on Windows and Linux keyboards Delete is the forward-delete key; with the Timeline
+    // #243: on PC keyboards Delete is the forward-delete key; with the Timeline
     // focused it ran Project ▸ Clear (nothing selected there), so the clip stayed.
     let mut d = Driver::new();
     let items = |d: &mut Driver| d.exec("sequence.inspect", json!({}))["video"][0]["items"].as_array().unwrap().clone();

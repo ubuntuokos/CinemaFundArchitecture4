@@ -88,18 +88,7 @@ impl DirectorySource {
     pub fn system() -> Self {
         let mut dirs: Vec<PathBuf> = Vec::new();
         let home = std::env::var_os("HOME").map(PathBuf::from);
-        if cfg!(target_os = "macos") {
-            dirs.extend(["/System/Library/Fonts", "/Library/Fonts"].map(PathBuf::from));
-            if let Some(h) = &home {
-                dirs.push(h.join("Library/Fonts"));
-            }
-        } else if cfg!(windows) {
-            let win = std::env::var_os("WINDIR").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("C:\\Windows"));
-            dirs.push(win.join("Fonts"));
-            if let Some(l) = std::env::var_os("LOCALAPPDATA") {
-                dirs.push(PathBuf::from(l).join("Microsoft\\Windows\\Fonts"));
-            }
-        } else if cfg!(unix) && !cfg!(target_arch = "wasm32") {
+        if cfg!(unix) && !cfg!(target_arch = "wasm32") {
             dirs.extend(["/usr/share/fonts", "/usr/local/share/fonts"].map(PathBuf::from));
             if let Some(h) = &home {
                 dirs.push(h.join(".local/share/fonts"));
@@ -530,13 +519,6 @@ mod tests {
         let n = all_faces().iter().filter(|f| f.info.origin == "system").count();
         eprintln!("system fonts: {n} faces in {:?}", t.elapsed());
         assert_eq!(scan_system(), 0, "scans once");
-        if cfg!(target_os = "macos") {
-            assert!(n > 20, "{n}");
-            let r = resolve("Helvetica", "Bold");
-            assert_eq!(face(r.face).info.family, "Helvetica");
-            let l = crate::layout("Helvetica", &crate::TextStyle { family: "Helvetica".into(), size: 30.0, ..Default::default() }, &Default::default());
-            assert!(!l.missing_font && l.glyphs.iter().all(|g| g.id != 0));
-        }
     }
 
     /// extra-fonts faces are registered after the bundled ones and serve Japanese characters the

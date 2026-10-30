@@ -445,14 +445,12 @@ fn with_extension(path: &str, settings: &ExportSettings) -> String {
     }
 }
 
-/// `~/` expanded to the home directory (`USERPROFILE` on Windows). On Windows `/` becomes `\`:
-/// after a `\\?\` prefix (what `canonicalize` returns) `/` is not a separator.
+/// `~/` expanded to the home directory.
 pub fn expand_home(p: &str) -> String {
-    let p = match (p.strip_prefix("~/"), crate::media_browser::std_home_dir()) {
+    match (p.strip_prefix("~/"), crate::media_browser::std_home_dir()) {
         (Some(rest), Some(h)) => format!("{h}/{rest}"),
         _ => p.to_string(),
-    };
-    if cfg!(windows) { p.replace('/', "\\") } else { p }
+    }
 }
 
 /// `x` names a folder: it ends in a separator or already exists as one.

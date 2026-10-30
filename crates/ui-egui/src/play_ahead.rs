@@ -2,7 +2,7 @@
 //! [`LEAD_S`] ahead of the device, and the device callback only copies samples out of it.
 //!
 //! Mixing (decoding AAC, effects, opening a clip's file at a cut) used to run inside the device
-//! callback, which has one I/O buffer (~10 ms) to return. On a busy Mac any stall there missed the
+//! callback, which has one I/O buffer (~10 ms) to return. On a busy machine any stall there missed the
 //! device's deadline, heard as static and dropouts that were different on every play. Now a stall
 //! only drains part of the lead; the callback never decodes, allocates or takes a lock.
 //!

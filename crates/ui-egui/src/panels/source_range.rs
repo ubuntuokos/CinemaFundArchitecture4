@@ -104,11 +104,7 @@ pub fn interact(app: &mut Cfa4App, ui: &mut egui::Ui, bar: Rect, which: Which, s
         app.auto.add(id, rect, label);
         let response =
             ui.add_enabled_ui(enabled && rect.width() > 0.0, |ui| ui.interact(rect, egui::Id::new(id), Sense::click_and_drag())).inner.on_hover_text(label);
-        let cursor = if edge == RangeEdge::Move {
-            if cfg!(windows) { egui::CursorIcon::PointingHand } else { egui::CursorIcon::Grab }
-        } else {
-            egui::CursorIcon::ResizeHorizontal
-        };
+        let cursor = if edge == RangeEdge::Move { egui::CursorIcon::Grab } else { egui::CursorIcon::ResizeHorizontal };
         let response = response.on_hover_cursor(cursor);
         result.handled |= response.hovered() || response.dragged() || response.clicked();
         if edge == RangeEdge::In {

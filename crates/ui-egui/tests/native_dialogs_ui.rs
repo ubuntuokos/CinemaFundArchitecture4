@@ -210,7 +210,7 @@ fn export_location_browse_works_with_the_runner_and_with_synchronous_pickers() {
     d.frames(2);
     assert_eq!(d.app().ui.export.location, "/tmp/exports-a");
 
-    // synchronous picker (no runner, as on macOS / Windows / other hosts): still filled in
+    // synchronous picker (no runner, as on other hosts): still filled in
     let mut d = Driver::new(false);
     d.app().hooks.pick_folder = Some(Box::new(|| Some("/tmp/exports-b".into())));
     d.ok("ui.set", json!({"mode": "export"}));

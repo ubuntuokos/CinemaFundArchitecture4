@@ -25,6 +25,6 @@ rayon = { workspace = true }
 pollster = "0.4"
 cfa4-export = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png"] }
-wgpu = { version = "30", features = ["wgsl", "metal", "vulkan", "dx12", "gles"] }
+wgpu = { version = "30", features = ["wgsl", "vulkan", "gles"] }
 cfa4-media = { workspace = true }
 cfa4-time = { workspace = true }

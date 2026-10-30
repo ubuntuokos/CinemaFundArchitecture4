@@ -5,8 +5,8 @@
 # Korean video-editing vocabulary (시퀀스, 타임라인, 트랙, 클립, 재생 헤드, 빈, 렌더, 내보내기…). No
 # proprietary localisation resource, string table or product UI was consulted or copied; add entries
 # the same way. Product and technology names (CFA4, Lumetri, ProRes, LUFS…) keep their
-# spelling. Hangul is drawn with an installed system font (Malgun Gothic, Apple SD Gothic Neo, Noto
-# Sans CJK KR…, see cjk.rs); native-speaker review welcome.
+# spelling. Hangul is drawn with an installed system font (Noto Sans CJK KR,
+# NanumGothic…, see cjk.rs); native-speaker review welcome.
 
 	   Angle	   각도
 	   Blur	   흐림
@@ -584,10 +584,8 @@
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	클릭하면 모든 트랙에서 왼쪽 클립 모두 선택. Shift-클릭은 단일 트랙.
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	클릭하면 모든 트랙에서 오른쪽 클립 모두 선택. Shift-클릭은 단일 트랙.
 	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	클릭하여 선택하거나 빈 곳을 드래그하여 영역 선택. Shift, Alt, Ctrl로 다른 옵션 사용.
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	클릭하여 선택하거나 빈 곳을 클릭 후 드래그하여 영역 선택. Shift, Opt, Cmd로 기타 옵션.
 	Click to split a clip. Shift-click to split all tracks.	클릭하여 클립 자르기. Shift-클릭은 모든 트랙 자르기.
 	Click to zoom in; Alt-click to zoom out.	클릭하면 확대, Alt-클릭하면 축소.
-	Click to zoom in; Opt-click to zoom out.	클릭하여 확대. Opt-클릭하여 축소.
 	Client	클라이언트
 	Clip	클립
 	Clip Channel Format:	클립 채널 형식:
@@ -950,7 +948,6 @@
 	Drag inward to round the corners	안쪽으로 드래그하여 모서리를 둥글게
 	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	음악 클립 가장자리를 드래그해 박자에 맞춰 새 길이로 리믹스.
 	Drag to scroll the timeline.	드래그하여 타임라인 스크롤.
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	드래그: 이동 · Alt-클릭: 부드럽게/모서리 · Cmd-클릭: 삭제
 	Drag: move · Alt-click: smooth/corner · Ctrl-click: delete	드래그: 이동 · Alt-클릭: 부드럽게/모서리 · Ctrl-클릭: 삭제
 	Drive	드라이브
 	Drop media here to create sequence.	미디어를 여기에 놓아 시퀀스를 만드세요.
@@ -1404,7 +1401,7 @@
 	Main (10-bit, HDR)	Main (10비트, HDR)
 	Main (8-bit; 10-bit for HDR sequences)	Main (8비트, HDR 시퀀스는 10비트)
 	Hardware decoding	하드웨어 디코딩
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	하드웨어 디코딩: 자동은 지원 스트림에 시스템 비디오 디코더(macOS는 VideoToolbox, Windows는 Media Foundation, Linux는 H.264·HEVC용 VA-API 또는 NVDEC)를 쓰고, 그 외나 하드웨어 실패 시 CFA4 자체 디코더를 씁니다. 이미 열린 미디어는 다시 열 때까지 기존 디코더를 유지합니다.
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	하드웨어 디코딩: 자동은 지원 스트림에 시스템 비디오 디코더(H.264·HEVC용 VA-API 또는 NVDEC)를 쓰고, 그 외나 하드웨어 실패 시 CFA4 자체 디코더를 씁니다. 이미 열린 미디어는 다시 열 때까지 기존 디코더를 유지합니다.
 	HD Anamorphic 1080 (1.333)	HD 아나모픽 1080(1.333)
 	HDR	HDR
 	HDR Graphics White (Nits)	HDR 그래픽 흰색(Nits)
@@ -1596,7 +1593,6 @@
 	Keyboard Shortcuts	키보드 단축키
 	Keyboard Shortcuts…	키보드 단축키…
 	Keyboard: US	키보드: 미국
-	Keyboard: US (macOS)	키보드: 미국(macOS)
 	Keying	키잉
 	Korean	한국어
 	Label	레이블
@@ -2782,7 +2778,6 @@
 	Set to frame size	프레임 크기로 설정
 	Set Transition Duration	전환 지속 시간 설정
 	Setting	설정
-	Settings	설정
 	Settings:	설정:
 	SFX	효과음
 	Shadow	그림자

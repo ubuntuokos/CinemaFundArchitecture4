@@ -4,8 +4,7 @@
 //! - H.264: it takes an export only when Export ▸ Hardware encoding is Auto and NVENC can do what
 //!   the settings ask; otherwise it returns `None` and the software encoder runs, exactly as before.
 //! - H.265 (HEVC Main 8-bit 4:2:0 SDR BT.709, or Main 10 HDR: 10-bit 4:2:0, BT.2020, PQ or HLG, limited
-//!   range; progressive): NVENC goes first whatever the Hardware encoding toggle says (as with
-//!   VideoToolbox). What it cannot do (interlaced, two-pass, CRF, non-square pixels, 10-bit on a GPU
+//!   range; progressive): NVENC goes first whatever the Hardware encoding toggle says. What it cannot do (interlaced, two-pass, CRF, non-square pixels, 10-bit on a GPU
 //!   without it, sizes outside its limits...) is counted as declined and the factory returns `None`:
 //!   CFA4's software HEVC encoder takes the export.
 //!
@@ -205,9 +204,8 @@ fn config(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -
 /// The Export encoder factory (see the module documentation).
 pub fn factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettings) -> Option<Result<Box<dyn VideoEncoder>>> {
     if format == Format::Hevc {
-        // The same CUDA-backed NVENC implementation supports Linux x86_64
-        // as well as the Windows D3D11 backend. Whether this GPU can actually
-        // encode HEVC is decided by the registered hardware format probe.
+        // The CUDA-backed NVENC implementation supports Linux x86_64. Whether this GPU can
+        // actually encode HEVC is decided by the registered hardware format probe.
         return hevc_factory(w, h, rate, s);
     }
     // the compute router decides whether NVENC is the H.264 route on this machine (ADR 0004); an

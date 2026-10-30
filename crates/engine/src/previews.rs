@@ -548,13 +548,13 @@ impl PreviewStore {
 /// Open a rendered preview file. Native builds read it in place (the container's index now,
 /// frames on demand): previews are full-resolution ProRes, gigabytes a minute, and reading each
 /// one whole filled memory during render and playback (#2185).
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 pub(crate) fn open_preview_file(_pool: &MediaPool, name: &str, path: &std::path::Path) -> Option<SharedSource> {
     let reader = cfa4_media::reader::FileReader::open(path).ok()?;
     cfa4_media::reader::open_reader_within(name, std::sync::Arc::new(reader), &cfa4_codecs::reader_openers(), &[], 0).ok()
 }
 
-#[cfg(not(any(unix, windows)))]
+#[cfg(not(unix))]
 pub(crate) fn open_preview_file(pool: &MediaPool, name: &str, path: &std::path::Path) -> Option<SharedSource> {
     let bytes = std::fs::read(path).ok()?;
     pool.open_bytes(name, bytes.into()).ok()

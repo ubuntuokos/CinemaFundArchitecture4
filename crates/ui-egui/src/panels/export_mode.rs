@@ -775,8 +775,8 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                     *k = v as u32;
                 }
             });
-            // The system's hardware encoder where there is one (VideoToolbox on macOS, NVENC on NVIDIA
-            // GPUs on Windows, VA-API on Linux); everything it does not take (two-pass, HDR, MXF) and
+            // The system's hardware encoder where there is one (NVENC on NVIDIA GPUs, VA-API);
+            // everything it does not take (two-pass, HDR, MXF) and
             // every machine without one keeps the built-in encoder.
             // H.265 and AV1 have only hardware encoders: choosing the format is the opt-in.
             if !hevc {

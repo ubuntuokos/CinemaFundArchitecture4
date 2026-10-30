@@ -237,7 +237,7 @@ fn format_for(path: &str) -> Option<&'static str> {
     })
 }
 
-/// OS hardware video decoders (VideoToolbox on macOS, Media Foundation on Windows) in front of our
+/// OS hardware video decoders (VA-API, NVDEC) in front of our
 /// own, as in the desktop app. Also what `mcp` and the headless commands decode with.
 /// The GPU export frame renderer (cfa4-gpu's off-screen compositor behind cfa4-export's
 /// frame-renderer hook): exports with GPU rendering Auto composite on the GPU and fall back to the
@@ -274,8 +274,7 @@ fn register_hardware_decoders() -> cfa4_platform::Availability {
 }
 
 /// `path` made absolute against the working directory, as the project stores it. Unlike
-/// `canonicalize`, `std::path::absolute` keeps symlinks and adds no Windows verbatim `\\?\`
-/// prefix (#850). A path it cannot resolve is kept as given.
+/// `canonicalize`, `std::path::absolute` keeps symlinks (#850). A path it cannot resolve is kept as given.
 fn absolute(path: &str) -> String {
     std::path::absolute(path).ok().and_then(|p| p.into_os_string().into_string().ok()).unwrap_or_else(|| path.to_string())
 }
@@ -671,9 +670,8 @@ mod format_tests {
     #[test]
     fn startup_registers_the_hardware_decoders() {
         let hardware = super::register_hardware_decoders();
-        // always on macOS and Windows; on Linux when a VA-API driver or NVIDIA's driver (NVDEC) is there
-        let expected = cfg!(any(target_os = "macos", target_os = "windows"))
-            || (cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_)));
+        // when a VA-API driver or NVIDIA's driver (NVDEC) is there
+        let expected = cfg!(target_os = "linux") && matches!(hardware, cfa4_platform::Availability::Available(_));
         assert_eq!(cfa4_platform::registered(), expected, "{hardware:?}");
     }
 
@@ -735,25 +733,20 @@ mod format_tests {
         assert!(p.get("range").is_none());
     }
 
-    /// `import` used `canonicalize`, which resolves symlinks and on Windows stores `\\?\C:\…`
-    /// verbatim paths in the project (#850).
+    /// `import` used `canonicalize`, which resolves symlinks (#850).
     #[test]
     fn imported_paths_are_absolute_without_resolving_links() {
         let cwd = std::env::current_dir().unwrap();
         assert_eq!(super::absolute("clip.mov"), cwd.join("clip.mov").to_string_lossy());
-        assert!(!super::absolute("clip.mov").starts_with(r"\\?\"));
         assert_eq!(super::absolute(""), "");
-        #[cfg(unix)]
-        {
-            let dir = std::env::temp_dir().join(format!("cfa4-cli-abs-{}", std::process::id()));
-            std::fs::create_dir_all(&dir).unwrap();
-            std::fs::write(dir.join("real.mov"), b"x").unwrap();
-            let link = dir.join("link.mov");
-            let _ = std::fs::remove_file(&link);
-            std::os::unix::fs::symlink(dir.join("real.mov"), &link).unwrap();
-            assert_eq!(super::absolute(&link.to_string_lossy()), link.to_string_lossy());
-            std::fs::remove_dir_all(&dir).unwrap();
-        }
+        let dir = std::env::temp_dir().join(format!("cfa4-cli-abs-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("real.mov"), b"x").unwrap();
+        let link = dir.join("link.mov");
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(dir.join("real.mov"), &link).unwrap();
+        assert_eq!(super::absolute(&link.to_string_lossy()), link.to_string_lossy());
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

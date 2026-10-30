@@ -1,16 +1,8 @@
 //! Graphics start-up: the wgpu backends and adapter the window is created with, and the fallback
 //! when a start fails (docs/gaps.md G4, #820).
 //!
-//! A graphics driver can crash inside wgpu instance or device creation (Intel's Vulkan driver
-//! `igvk64.dll`, #512 #413; AMD's OpenGL driver `atio6axx.dll`, #477), where no Rust error
+//! A graphics driver can crash inside wgpu instance or device creation, where no Rust error
 //! handling runs, so every launch died the same way until the user set `WGPU_BACKEND` by hand.
-//!
-//! # The adapter
-//! In the default mode on Windows the adapter is wgpu's own choice, except for a GPU that Vulkan
-//! lists through two installed versions of one driver: there the newer one draws, because a
-//! window drawn through the stale one dies inside the driver (`amdvlk64.dll`; see
-//! `cfa4_gpu::adapter`). That case is avoided up front instead of left to the fallback
-//! below, which would end in DirectX 12 only.
 //!
 //! # When a start counts as failed
 //! The data folder keeps the mode to start with and the failed starts in a row in it
@@ -29,7 +21,7 @@
 //! # Getting back
 //! A fallback mode shows a notice with a reset button in the window (`graphics.notice.reset`,
 //! [`GraphicsStart::reset_to_default`]); `--graphics default` does the same from the command
-//! line, and `--graphics dx12|software` picks a mode by hand. An explicit `WGPU_BACKEND` leaves
+//! line, and `--graphics software` picks a mode by hand. An explicit `WGPU_BACKEND` leaves
 //! the saved state alone: the user is in charge.
 //!
 //! All files are written beside and renamed into place, so a reader never sees half a file; two
@@ -65,12 +57,9 @@ const MAX_FILE: u64 = 4096;
 /// How the window's graphics device is created.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
-    /// The platform default: Vulkan or DirectX 12 on Windows (no OpenGL, see [`apply`]), Metal on
-    /// macOS, Vulkan or OpenGL elsewhere.
+    /// The platform default: Vulkan or OpenGL.
     Default,
-    /// DirectX 12 only (Windows), for Vulkan drivers that crash at start-up.
-    Dx12,
-    /// A software adapter (WARP on Windows, lavapipe / llvmpipe elsewhere); the preview then
+    /// A software adapter (lavapipe / llvmpipe); the preview then
     /// composites on the CPU (`Cfa4App::set_wgpu`).
     Software,
 }
@@ -80,7 +69,6 @@ impl Mode {
     pub fn name(self) -> &'static str {
         match self {
             Mode::Default => "default",
-            Mode::Dx12 => "dx12",
             Mode::Software => "software",
         }
     }
@@ -89,24 +77,17 @@ impl Mode {
     pub fn label(self) -> &'static str {
         match self {
             Mode::Default => "default graphics",
-            Mode::Dx12 => "DirectX 12 only",
             Mode::Software => "software rendering",
         }
     }
 
     pub fn parse(name: &str) -> Option<Mode> {
-        [Mode::Default, Mode::Dx12, Mode::Software].into_iter().find(|m| m.name() == name)
+        [Mode::Default, Mode::Software].into_iter().find(|m| m.name() == name)
     }
 }
 
-/// The modes tried in order on this platform. macOS has only Metal, and no software adapter.
-pub const LADDER: &[Mode] = if cfg!(target_os = "windows") {
-    &[Mode::Default, Mode::Dx12, Mode::Software]
-} else if cfg!(target_os = "macos") {
-    &[Mode::Default]
-} else {
-    &[Mode::Default, Mode::Software]
-};
+/// The modes tried in order.
+pub const LADDER: &[Mode] = &[Mode::Default, Mode::Software];
 
 /// The mode after `mode` in `ladder`, if any.
 fn next_in(ladder: &[Mode], mode: Mode) -> Option<Mode> {
@@ -424,54 +405,28 @@ fn expire_later(path: PathBuf) {
     }
 }
 
-/// Configure `options` for `mode`, before eframe creates the wgpu instance. `backend_override`
-/// is normally `Backends::from_env()`, i.e. `WGPU_BACKEND`.
-pub fn apply(options: &mut NativeOptions, mode: Mode, backend_override: Option<Backends>) {
-    apply_for(options, mode, backend_override, cfg!(target_os = "windows"));
-}
-
-fn apply_for(options: &mut NativeOptions, mode: Mode, backend_override: Option<Backends>, windows: bool) {
+/// Configure `options` for `mode`, before eframe creates the wgpu instance.
+pub fn apply(options: &mut NativeOptions, mode: Mode) {
     let WgpuSetup::CreateNew(create) = &mut options.wgpu_options.wgpu_setup else {
         return;
     };
     // Nothing draws or dispatches indirectly, so wgpu's check of indirect arguments only costs a
-    // compute shader when the device is created, one that Metal can't compile on an Intel Iris
-    // Pro: the device is lost and the window never opens. `WGPU_VALIDATION_INDIRECT_CALL=1` turns
+    // compute shader when the device is created, one that some drivers can't compile: the device
+    // is lost and the window never opens. `WGPU_VALIDATION_INDIRECT_CALL=1` turns
     // the check back on.
     create.instance_descriptor.flags = create.instance_descriptor.flags.difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL).with_env();
     match mode {
-        // eframe's default (`WGPU_BACKEND`, else PRIMARY | GL), except on Windows: there it
-        // includes GL. Creating that backend can crash inside AMD's atio6axx.dll before adapter
-        // selection or any Rust error handling runs, so the window never appears. Choosing an
-        // adapter afterwards is too late: only leaving GL out of the instance avoids it. Keep
-        // Vulkan and DX12 both: forcing DX12 alone sends shaders through FXC (which rejects
-        // fx.wgsl, silently falling back to the CPU) and leaves machines without DX12 with no
-        // backend at all.
-        Mode::Default if windows => {
-            create.instance_descriptor.backends = backend_override.unwrap_or(Backends::PRIMARY);
-            // wgpu's own choice of adapter, except for a GPU that Windows lists through two
-            // versions of one driver: the first entry can be a stale one that crashes inside the
-            // driver (`cfa4_gpu::adapter`). A selector replaces `power_preference`
-            // (`WGPU_POWER_PREF`), so it takes that along.
-            let power = create.power_preference;
-            create.native_adapter_selector =
-                Some(Arc::new(move |adapters: &[wgpu::Adapter], surface: Option<&wgpu::Surface<'_>>| cfa4_gpu::adapter::pick(adapters, surface, power)));
-        }
+        // eframe's default (`WGPU_BACKEND`, else PRIMARY | GL).
         Mode::Default => {}
-        // Without Vulkan, whose driver is what crashes; GPU effects may fall back to the CPU.
-        Mode::Dx12 => create.instance_descriptor.backends = Backends::DX12,
         Mode::Software => {
-            create.instance_descriptor.backends = software_backends(windows);
+            create.instance_descriptor.backends = SOFTWARE_BACKENDS;
             create.native_adapter_selector = Some(Arc::new(pick_software));
         }
     }
 }
 
-/// The backends a software adapter is looked for in: WARP is a DX12 adapter, and GL stays out on
-/// Windows for the reason in [`apply_for`].
-fn software_backends(windows: bool) -> Backends {
-    if windows { Backends::DX12 } else { Backends::VULKAN | Backends::GL }
-}
+/// The backends a software adapter is looked for in.
+const SOFTWARE_BACKENDS: Backends = Backends::VULKAN.union(Backends::GL);
 
 /// The first software adapter that can draw to the window's surface.
 fn pick_software(adapters: &[wgpu::Adapter], surface: Option<&wgpu::Surface<'_>>) -> Result<wgpu::Adapter, String> {
@@ -479,7 +434,7 @@ fn pick_software(adapters: &[wgpu::Adapter], surface: Option<&wgpu::Surface<'_>>
         .iter()
         .find(|a| cfa4_ui_egui::software_rasterizer(&a.get_info()).is_some() && surface.is_none_or(|s| a.is_surface_supported(s)))
         .cloned()
-        .ok_or_else(|| format!("no software graphics adapter (WARP, lavapipe, llvmpipe) among {} adapters", adapters.len()))
+        .ok_or_else(|| format!("no software graphics adapter (lavapipe, llvmpipe) among {} adapters", adapters.len()))
 }
 
 /// Whether `err` from `eframe::run_native` is a graphics start-up failure that another mode may
@@ -492,13 +447,12 @@ pub fn is_graphics_failure(err: &eframe::Error) -> bool {
 mod tests {
     use super::*;
 
-    const WINDOWS: &[Mode] = &[Mode::Default, Mode::Dx12, Mode::Software];
     const LINUX: &[Mode] = &[Mode::Default, Mode::Software];
-    const MACOS: &[Mode] = &[Mode::Default];
+    const ONE: &[Mode] = &[Mode::Default];
 
-    fn configured(mode: Mode, backend_override: Option<Backends>, windows: bool) -> (Backends, bool) {
+    fn configured(mode: Mode) -> (Backends, bool) {
         let mut options = NativeOptions::default();
-        apply_for(&mut options, mode, backend_override, windows);
+        apply(&mut options, mode);
         let WgpuSetup::CreateNew(create) = options.wgpu_options.wgpu_setup else {
             panic!("default native options must create a wgpu instance");
         };
@@ -510,62 +464,24 @@ mod tests {
         if std::env::var_os("WGPU_VALIDATION_INDIRECT_CALL").is_some() {
             return;
         }
-        for mode in [Mode::Default, Mode::Dx12, Mode::Software] {
+        for mode in [Mode::Default, Mode::Software] {
             let mut options = NativeOptions::default();
-            apply_for(&mut options, mode, None, false);
+            apply(&mut options, mode);
             let WgpuSetup::CreateNew(create) = options.wgpu_options.wgpu_setup else {
                 panic!("default native options must create a wgpu instance");
             };
-            // Intel Metal can't compile the validation's compute shader, and the device is lost.
+            // Some drivers can't compile the validation's compute shader, and the device is lost.
             assert!(!create.instance_descriptor.flags.contains(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL), "{mode:?}");
         }
     }
 
     #[test]
-    fn windows_default_leaves_out_gl() {
-        // eframe's own default (PRIMARY | GL) would initialize OpenGL as well.
+    fn default_is_eframes_own_and_software_picks_its_adapter() {
+        assert_eq!(configured(Mode::Software), (Backends::VULKAN | Backends::GL, true));
         let WgpuSetup::CreateNew(eframe_default) = NativeOptions::default().wgpu_options.wgpu_setup else {
             panic!("default native options must create a wgpu instance");
         };
-        assert!(eframe_default.instance_descriptor.backends.contains(Backends::GL));
-        let (backends, selector) = configured(Mode::Default, None, true);
-        assert_eq!(backends, Backends::PRIMARY);
-        assert!(!backends.contains(Backends::GL));
-        assert!(backends.contains(Backends::DX12) && backends.contains(Backends::VULKAN));
-        // and chooses the adapter itself: a GPU listed through two versions of one driver
-        assert!(selector);
-    }
-
-    #[test]
-    fn only_the_windows_default_and_software_modes_choose_the_adapter() {
-        for backend_override in [None, Some(Backends::VULKAN), Some(Backends::DX12)] {
-            assert!(configured(Mode::Default, backend_override, true).1);
-            // elsewhere, and in DirectX 12 only mode, the adapter is wgpu's own choice
-            assert!(!configured(Mode::Default, backend_override, false).1);
-            assert!(!configured(Mode::Dx12, backend_override, true).1);
-        }
-        assert!(configured(Mode::Software, None, true).1 && configured(Mode::Software, None, false).1);
-    }
-
-    #[test]
-    fn explicit_backend_override_is_preserved() {
-        for backends in [Backends::VULKAN, Backends::GL, Backends::DX12, Backends::VULKAN | Backends::DX12, Backends::empty()] {
-            assert_eq!(configured(Mode::Default, Some(backends), true).0, backends);
-        }
-    }
-
-    #[test]
-    fn fallback_modes_leave_out_the_crashing_backends() {
-        // DX12 only: Intel's and AMD's Vulkan drivers are what crashed (#512, #413).
-        assert_eq!(configured(Mode::Dx12, None, true), (Backends::DX12, false));
-        // Software on Windows is WARP (DX12), never GL (atio6axx.dll, #477).
-        assert_eq!(configured(Mode::Software, None, true), (Backends::DX12, true));
-        assert_eq!(configured(Mode::Software, None, false), (Backends::VULKAN | Backends::GL, true));
-        // Off Windows the default is eframe's own.
-        let WgpuSetup::CreateNew(eframe_default) = NativeOptions::default().wgpu_options.wgpu_setup else {
-            panic!("default native options must create a wgpu instance");
-        };
-        assert_eq!(configured(Mode::Default, None, false), (eframe_default.instance_descriptor.backends, false));
+        assert_eq!(configured(Mode::Default), (eframe_default.instance_descriptor.backends, false));
     }
 
     const W: u64 = 15;
@@ -588,27 +504,24 @@ mod tests {
     #[test]
     fn two_failed_starts_in_a_row_move_on_to_the_next_mode_and_keep_it() {
         // first launch
-        assert_eq!(mode_after(None, &[], WINDOWS), (Mode::Default, 0, false));
+        assert_eq!(mode_after(None, &[], LINUX), (Mode::Default, 0, false));
         // one start died: counted, but the same mode is tried again
-        assert_eq!(mode_after(None, &[dead(Mode::Default)], WINDOWS), (Mode::Default, 1, false));
-        // the second in a row moves on: DX12, then software
-        assert_eq!(mode_after(saved(Mode::Default, 1), &[dead(Mode::Default)], WINDOWS), (Mode::Dx12, 0, true));
-        assert_eq!(mode_after(saved(Mode::Dx12, 1), &[dead(Mode::Dx12)], WINDOWS), (Mode::Software, 0, true));
+        assert_eq!(mode_after(None, &[dead(Mode::Default)], LINUX), (Mode::Default, 1, false));
+        // the second in a row moves on to software
         assert_eq!(mode_after(saved(Mode::Default, 1), &[dead(Mode::Default)], LINUX), (Mode::Software, 0, true));
         // two dead instances found at once count as two
-        assert_eq!(mode_after(None, &[dead(Mode::Default), dead(Mode::Default)], WINDOWS), (Mode::Dx12, 0, true));
+        assert_eq!(mode_after(None, &[dead(Mode::Default), dead(Mode::Default)], LINUX), (Mode::Software, 0, true));
         // a saved mode is kept
-        assert_eq!(mode_after(saved(Mode::Dx12, 0), &[], WINDOWS), (Mode::Dx12, 0, false));
-        assert_eq!(mode_after(saved(Mode::Default, 1), &[], WINDOWS), (Mode::Default, 1, false));
+        assert_eq!(mode_after(saved(Mode::Software, 0), &[], LINUX), (Mode::Software, 0, false));
+        assert_eq!(mode_after(saved(Mode::Default, 1), &[], LINUX), (Mode::Default, 1, false));
         // nothing left to try: stay
-        assert_eq!(mode_after(saved(Mode::Software, 1), &[dead(Mode::Software)], WINDOWS), (Mode::Software, 0, false));
-        assert_eq!(mode_after(saved(Mode::Default, 5), &[dead(Mode::Default)], MACOS), (Mode::Default, 0, false));
-        // a mode this platform has not: start over
-        assert_eq!(mode_after(saved(Mode::Dx12, 1), &[dead(Mode::Dx12)], LINUX), (Mode::Default, 0, false));
-        assert_eq!(mode_after(saved(Mode::Software, 0), &[], MACOS), (Mode::Default, 0, false));
+        assert_eq!(mode_after(saved(Mode::Software, 1), &[dead(Mode::Software)], LINUX), (Mode::Software, 0, false));
+        assert_eq!(mode_after(saved(Mode::Default, 5), &[dead(Mode::Default)], ONE), (Mode::Default, 0, false));
+        // a mode the ladder has not: start over
+        assert_eq!(mode_after(saved(Mode::Software, 0), &[], ONE), (Mode::Default, 0, false));
         assert_eq!(mode_after(None, &[], &[]), (Mode::Default, 0, false));
         // a hostile count doesn't overflow
-        assert_eq!(mode_after(saved(Mode::Default, u32::MAX), &[dead(Mode::Default)], WINDOWS), (Mode::Dx12, 0, true));
+        assert_eq!(mode_after(saved(Mode::Default, u32::MAX), &[dead(Mode::Default)], LINUX), (Mode::Software, 0, true));
     }
 
     #[test]
@@ -616,28 +529,28 @@ mod tests {
         let starting = Attempt { pid: 2, mode: Mode::Default, started: NOW - 3 };
         let just_now = Attempt { pid: 3, mode: Mode::Default, started: NOW };
         let future = Attempt { pid: 4, mode: Mode::Default, started: NOW + 3600 };
-        let older_mode = dead(Mode::Dx12);
+        let older_mode = dead(Mode::Software);
         let mine = Attempt { pid: ME, mode: Mode::Default, started: NOW - 1 };
-        let d = decide(saved(Mode::Default, 0), &[starting, just_now, future, older_mode, mine], NOW, ME, W, WINDOWS);
+        let d = decide(saved(Mode::Default, 0), &[starting, just_now, future, older_mode, mine], NOW, ME, W, LINUX);
         // another instance still starting is left alone; one from the future is dropped; a
         // failure in another mode is history; our own process id can only be a dead process
         assert_eq!(d.delete, [false, false, true, true, true]);
         assert_eq!((d.saved, d.moved_on), (Saved { mode: Mode::Default, failures: 1 }, false));
         // the clock a little behind another instance's: still starting
         let ahead = Attempt { pid: 5, mode: Mode::Default, started: NOW + 2 };
-        assert_eq!(decide(None, &[ahead], NOW, ME, W, WINDOWS).delete, [false]);
+        assert_eq!(decide(None, &[ahead], NOW, ME, W, LINUX).delete, [false]);
     }
 
     #[test]
     fn the_files_round_trip_and_reject_anything_else() {
-        for mode in WINDOWS {
+        for mode in LINUX {
             for failures in [0, 1, 2, u32::MAX] {
                 assert_eq!(parse_state(&state_json(Saved { mode: *mode, failures })), saved(*mode, failures));
             }
             assert_eq!(parse_attempt("12-0.json", &attempt_json(*mode, NOW)), Some(Attempt { pid: 12, mode: *mode, started: NOW }));
         }
         // without a count (an earlier build of this change wrote `pending`): none
-        assert_eq!(parse_state(r#"{"mode":"dx12","pending":true}"#), saved(Mode::Dx12, 0));
+        assert_eq!(parse_state(r#"{"mode":"software","pending":true}"#), saved(Mode::Software, 0));
         for bad in [
             "",
             "{",
@@ -646,9 +559,10 @@ mod tests {
             r#"{"mode":"vulkan","failures":1}"#,
             r#"{"failures":1}"#,
             r#"{"mode":1,"failures":1}"#,
-            r#"{"mode":"dx12","failures":"one"}"#,
-            r#"{"mode":"dx12","failures":-1}"#,
-            r#"{"mode":"dx12","failures":4294967296}"#,
+            r#"{"mode":"dx12","failures":1}"#,
+            r#"{"mode":"software","failures":"one"}"#,
+            r#"{"mode":"software","failures":-1}"#,
+            r#"{"mode":"software","failures":4294967296}"#,
         ] {
             assert_eq!(parse_state(bad), None, "{bad}");
         }
@@ -809,10 +723,6 @@ mod tests {
         // `--graphics <the last mode>` is kept for the next launches
         GraphicsStart::begin_at(Some(&dir), false, Some(last), NOW + 180, 73).confirm();
         assert_eq!(launch(&dir, 74, NOW + 240).mode(), last);
-        // a mode this platform has not starts with the first one
-        if !LADDER.contains(&Mode::Dx12) {
-            assert_eq!(GraphicsStart::begin_at(Some(&dir), false, Some(Mode::Dx12), NOW + 300, 75).mode(), Mode::Default);
-        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -874,7 +784,7 @@ mod tests {
             return;
         }
         // only the backends software mode uses: no driver this test loads is one the app avoids
-        let backends = software_backends(cfg!(target_os = "windows"));
+        let backends = SOFTWARE_BACKENDS;
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends, ..wgpu::InstanceDescriptor::new_without_display_handle() });
         let adapters = pollster::block_on(instance.enumerate_adapters(backends));
         match pick_software(&adapters, None) {

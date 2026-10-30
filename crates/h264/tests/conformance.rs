@@ -56,10 +56,6 @@ fixture_tests!(
     high10_qp_low,
     high10_qp_high,
     high10_1080p,
-    vt_high,
-    vt_main,
-    vt_baseline,
-    vt_high_1080p,
 );
 
 /// Draft mode (reduced-resolution playback) skips deblocking of non-reference pictures only:
@@ -173,17 +169,7 @@ fn concurrent_fixture_publication_is_safe() {
         filter: "",
         args: &["-preset", "ultrafast", "-x264-params", "keyint=1"],
     };
-    let open_published = |path: &std::path::Path| {
-        let mut options = std::fs::OpenOptions::new();
-        options.read(true);
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::OpenOptionsExt;
-            // Like the external decoder, allow reads but deny replacement while open.
-            options.share_mode(1);
-        }
-        options.open(path).unwrap()
-    };
+    let open_published = |path: &std::path::Path| std::fs::File::open(path).unwrap();
     let start = std::sync::Barrier::new(4);
     let results = std::thread::scope(|scope| {
         let jobs: Vec<_> = (0..4)

@@ -8,7 +8,7 @@ use cfa4_media::FrameRequest;
 use cfa4_time::{TICKS_PER_SECOND, Tick};
 
 pub(crate) fn ffmpeg() -> Option<&'static str> {
-    ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists())
+    ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists())
 }
 
 fn fixture(name: &str, args: &[&str]) -> Option<Arc<[u8]>> {

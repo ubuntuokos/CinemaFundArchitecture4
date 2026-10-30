@@ -1,5 +1,7 @@
 # Kdenlive-paritás: mit tud a Kdenlive, és mit tud már a CFA4
 
+> **Nem cél / Non-goal (2026-10-30):** a Windows-, macOS- és Android-paritás nem cél. A CFA4 kizárólag Ubuntu/Kubuntu 26.04 AMD64-re készül; a célalkalmazás más platformokon elérhető funkciói csak a Linuxra átültethető részükben számítanak. Az Apple-formátumok (ProRes, Apple Log, QuickTime/MOV) támogatása formátum, nem platform, ezért marad. / Windows, macOS and Android parity is not a goal; CFA4 targets Ubuntu 26.04 AMD64 only. Apple formats stay supported.
+
 > **Állapot:** a tulajdonos 2026-10-25-én jóváhagyta (K1–K30). · **Utolsó átnézés:** 2026-10-25 · **Változás:** major (3. változat: a kiegészítő Kdenlive-repók
 > elemzése, K10–K19 új teendők, a tulajdonos 2026-10-25-i döntései, 12. pont; K20–K25 az FA3 elődtervből, 11.1; K26–K30 felirat- és átiratlánc, 11.2; K31–K35 Whisper, 11.3; MI-döntések, 12.1) · **Cél:** Kdenlive 26.08.2 (2026-10-13) · **CFA4:** `main` @ `bbbefc3`
 

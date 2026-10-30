@@ -880,8 +880,7 @@ pub fn route(app: &mut Cfa4App, ctx: &egui::Context, op: &str, params: &Value) -
             });
             // no `how`: as a double-click with these modifiers (Settings ▸ General ▸ Bins)
             let flag = |k: &str| params.get(k).and_then(Value::as_bool).unwrap_or(false);
-            let mods =
-                egui::Modifiers { command: flag("command"), mac_cmd: flag("command") && cfg!(target_os = "macos"), alt: flag("alt"), ..Default::default() };
+            let mods = egui::Modifiers { command: flag("command"), alt: flag("alt"), ..Default::default() };
             open_bin(app, inst, bin, how, mods)
         }
         "up" => {

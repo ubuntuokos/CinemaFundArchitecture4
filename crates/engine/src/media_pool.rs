@@ -697,7 +697,7 @@ mod tests {
     }
 
     /// The desktop host reads media in place instead of loading every clip into memory.
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     #[test]
     fn fs_services_open_media_through_a_file_reader() {
         let dir = std::env::temp_dir().join(format!("cfa4-pool-reader-{}", std::process::id()));

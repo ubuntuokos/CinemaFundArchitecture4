@@ -294,7 +294,7 @@ fn path_helpers() {
 /// #157: browsing a folder read every file no streaming reader takes (an AVI, a WAV) whole into
 /// memory, just to show its properties or to find out it isn't supported. Large ones are now
 /// refused after the head; small ones still show their properties; MP4 is read through its index.
-#[cfg(any(unix, windows))]
+#[cfg(unix)]
 #[test]
 fn probing_large_unstreamable_files_does_not_read_them_whole() {
     let dir = crate::media_test_util::tmp_dir("browser-probe-large");

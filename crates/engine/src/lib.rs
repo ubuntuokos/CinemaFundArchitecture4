@@ -175,7 +175,7 @@ impl Services for FsServices {
         Some(std::sync::Arc::new(|p: &str| std::fs::read(p)))
     }
     /// Media are read in place from the open file: a clip costs its index, not its size.
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     fn reader(&self, path: &str) -> Option<std::io::Result<cfa4_media::SharedReader>> {
         Some(cfa4_media::reader::FileReader::open(std::path::Path::new(path)).map(|r| std::sync::Arc::new(r) as cfa4_media::SharedReader))
     }

@@ -436,8 +436,7 @@ pub struct ExportSettings {
     /// 18 is visually near-lossless.
     #[serde(default = "default_crf")]
     pub crf: f32,
-    /// May H.264 be encoded by the system's hardware encoder (VideoToolbox on macOS, NVENC on
-    /// Windows)? Off unless asked for: hardware output depends on the machine, so it is not
+    /// May H.264 be encoded by the system's hardware encoder (NVENC)? Off unless asked for: hardware output depends on the machine, so it is not
     /// byte-reproducible like the built-in encoder's (`determinism_tests`).
     #[serde(default)]
     pub hardware_encoding: HardwareEncoding,

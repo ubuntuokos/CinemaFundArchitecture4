@@ -1,9 +1,7 @@
-//! NVIDIA NVENC hardware encoding: H.264 (Windows and 64-bit Linux) and H.265 (HEVC) Main / Main 10
-//! (Windows).
+//! NVIDIA NVENC hardware encoding (64-bit Linux): H.264 and H.265 (HEVC) Main / Main 10.
 //!
-//! The encoder runs on the GPU's NVENC engine through the driver's `nvEncodeAPI64.dll` on Windows
-//! (on a Direct3D 11 device) or `libnvidia-encode.so.1` on Linux (on the CUDA driver's primary
-//! context, `libcuda.so.1`) (API 12.1, [`ffi`]; no CUDA toolkit, no SDK to install): pictures go in as NV12 input buffers, the Annex B output
+//! The encoder runs on the GPU's NVENC engine through the driver's `libnvidia-encode.so.1` (on the
+//! CUDA driver's primary context, `libcuda.so.1`) (API 12.1, [`ffi`]; no CUDA toolkit, no SDK to install): pictures go in as NV12 input buffers, the Annex B output
 //! comes back as length-prefixed samples with the parameter sets split out for the `avcC` (H.264)
 //! or the `hvcC` (HEVC, see [`hevc`]). One session, ring and NV12 path serves both codecs; the
 //! codec only chooses the GUIDs, the codec configuration and how NAL units are told apart.
@@ -53,7 +51,7 @@ pub enum Profile {
     Baseline,
     Main,
     High,
-    /// H.265 Main: chooses the HEVC codec (like `VtProfile::HevcMain` for VideoToolbox).
+    /// H.265 Main: chooses the HEVC codec.
     HevcMain,
     /// H.265 Main 10: 10-bit 4:2:0 (P010 input), for HDR (PQ / HLG) and 10-bit SDR.
     HevcMain10,

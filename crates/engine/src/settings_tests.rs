@@ -891,7 +891,7 @@ fn schema_reports_groups_and_hides_the_unwired_duplicate_hardware_fields() {
     assert_eq!(r["groups"].as_array().unwrap().len(), settings::groups().len());
     assert!(r["categories"].as_array().unwrap().iter().all(|c| c["group"].is_string()));
     // hardware decoding has one control (Playback, wired); the Media page copy and the
-    // macOS-only ProRes hardware encoding switch are gone from the schema
+    // ProRes hardware encoding switch are gone from the schema
     for gone in ["media.hardwareDecoding", "media.proresHardwareEncoding"] {
         assert!(settings::field(gone).is_none(), "{gone}");
     }

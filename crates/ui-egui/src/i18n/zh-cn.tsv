@@ -936,7 +936,6 @@
 	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	在节目监视器中点击以放置蒙版点（拖动可绘制曲线）；点击第一个点或按 Enter 键闭合
 	Delete Mask	删除蒙版
 	Inverted	反相
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	拖动：移动 · Alt+点击：平滑/拐角 · Cmd+点击：删除
 	Track selected mask backward	向后跟踪所选蒙版
 	Track selected mask backward 1 frame	向后跟踪所选蒙版 1 帧
 	Track selected mask forward 1 frame	向前跟踪所选蒙版 1 帧
@@ -1814,7 +1813,7 @@
 	Hard Limiter	硬限制器
 	Hard Mix	硬混合
 	Hardware decoding	硬件解码
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	硬件解码：自动模式对支持的流使用系统视频解码器（macOS 上为 VideoToolbox，Windows 上为 Media Foundation，Linux 上对 H.264 和 HEVC 使用 VA-API），其余情况或硬件失败时回退到 CFA4 自带的解码器。已打开的媒体会保留其解码器，直到重新打开。
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	硬件解码：自动模式对支持的流使用系统视频解码器（对 H.264 和 HEVC 使用 VA-API 或 NVDEC），其余情况或硬件失败时回退到 CFA4 自带的解码器。已打开的媒体会保留其解码器，直到重新打开。
 	Head Size	头部大小
 	Heart	心形
 	Height	高度
@@ -2830,7 +2829,6 @@
 	Export: no file chosen (agents: shortcuts.export {path})	导出：未选择文件（agents：shortcuts.export {path}）
 	Imported “{name}”	已导入“{name}”
 	Import: no file chosen (agents: shortcuts.import {path})	导入：未选择文件（agents：shortcuts.import {path}）
-	Keyboard: US (macOS)	键盘：美式（macOS）
 	Keyboard: US	键盘：美式
 	Save preset as:	另存为预设：
 	Commands:	命令：
@@ -2942,7 +2940,6 @@
 	Quick Export: {path}	快速导出：{path}
 	Graphics problem: switched to software compositing	图形问题：已切换至软件合成
 	Exporting	正在导出
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	单击以选择，或在空白处单击并拖动以框选。使用 Shift、Opt 和 Cmd 进行其他操作。
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	单击以选择所有轨道中右侧的剪辑。Shift-单击选择单个轨道。
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	单击以选择所有轨道中左侧的剪辑。Shift-单击选择单个轨道。
 	Drag an edit point to ripple trim; later clips move to keep the gap closed.	拖动编辑点进行波纹修剪；后续剪辑移动以保持间隙闭合。
@@ -2953,7 +2950,6 @@
 	Drag a clip to slip its source in/out without moving it.	拖动剪辑以滑动其源入/出点而不移动它。
 	Drag a clip to slide it between its neighbours.	拖动剪辑以在其相邻剪辑之间滑动。
 	Drag to scroll the timeline.	拖动以滚动时间轴。
-	Click to zoom in; Opt-click to zoom out.	单击以放大；Opt-单击以缩小。
 	CFA4 hit an error	CFA4 遇到错误
 	Details: {path}	详细信息：{path}
 	Opened {url}	已打开 {url}

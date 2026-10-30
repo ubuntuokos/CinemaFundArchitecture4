@@ -33,7 +33,7 @@ pub fn hardware_decoding() -> bool {
 static BACKEND: std::sync::Mutex<Option<&'static str>> = std::sync::Mutex::new(None);
 
 /// Record the OS decoder backend `cfa4_platform::register` put in front of our decoders
-/// ("VideoToolbox", "Media Foundation"), for `perf.stats`.
+/// ("VA-API", "NVDEC"), for `perf.stats`.
 pub fn set_hw_backend(name: &'static str) {
     *BACKEND.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(name);
 }

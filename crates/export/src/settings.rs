@@ -62,7 +62,7 @@ impl H264Profile {
 }
 
 /// Export ▸ Hardware encoding: whether H.264 may be encoded by the system's hardware video encoder
-/// (VideoToolbox on macOS, NVENC on NVIDIA GPUs on Windows) instead of CFA4's own encoder. Off
+/// (NVENC on NVIDIA GPUs) instead of CFA4's own encoder. Off
 /// by default: hardware encoders make different streams, and exports are otherwise byte-identical
 /// from run to run and machine to machine.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -82,7 +82,7 @@ pub enum HardwareEncoding {
 /// clip takes the same time (`docs/performance.md`). The GPU matches the CPU within the
 /// compositor's parity tolerance, not bit for bit, so an export's bytes can depend on the
 /// machine's GPU. Off = the CPU reference renderer, byte-reproducible everywhere; Off is the
-/// default (opt-in per export) until GPU export has been measured on Windows and macOS.
+/// default (opt-in per export).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum GpuRendering {

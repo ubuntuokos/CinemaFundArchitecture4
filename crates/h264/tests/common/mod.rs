@@ -29,47 +29,6 @@ pub struct Fixture {
 const NOISE: &str = "noise=alls=12:allf=t+u";
 
 pub const FIXTURES: &[Fixture] = &[
-    // Apple VideoToolbox (hardware) encoder streams: different encoder design, generated on macOS only
-    Fixture {
-        name: "vt_high",
-        pix_fmt: "yuv420p",
-        source: "testsrc2",
-        width: 640,
-        height: 360,
-        frames: 30,
-        filter: NOISE,
-        args: &["-c:v", "h264_videotoolbox", "-profile:v", "high", "-b:v", "3M"],
-    },
-    Fixture {
-        name: "vt_main",
-        pix_fmt: "yuv420p",
-        source: "mandelbrot",
-        width: 640,
-        height: 360,
-        frames: 30,
-        filter: NOISE,
-        args: &["-c:v", "h264_videotoolbox", "-profile:v", "main", "-b:v", "2M"],
-    },
-    Fixture {
-        name: "vt_baseline",
-        pix_fmt: "yuv420p",
-        source: "testsrc2",
-        width: 320,
-        height: 240,
-        frames: 30,
-        filter: NOISE,
-        args: &["-c:v", "h264_videotoolbox", "-profile:v", "baseline", "-b:v", "1M"],
-    },
-    Fixture {
-        name: "vt_high_1080p",
-        pix_fmt: "yuv420p",
-        source: "testsrc2",
-        width: 1920,
-        height: 1080,
-        frames: 10,
-        filter: "",
-        args: &["-c:v", "h264_videotoolbox", "-profile:v", "high", "-b:v", "8M"],
-    },
     // performance reference stream (see tests/perf.rs)
     Fixture {
         name: "bench_1080p",
@@ -497,7 +456,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         c.args(f.args);
         c.args(["-f", "h264"]).arg(&tmp);
         if !run(&mut c) {
-            // Platform encoders (VideoToolbox) are optional; libx264 fixtures must generate.
+            // Fixtures that name their own encoder are optional; libx264 fixtures must generate.
             assert!(f.args.contains(&"-c:v"), "fixture generation failed for {}", f.name);
             eprintln!("SKIPPED ({}): encoder unavailable", f.name);
             return None;

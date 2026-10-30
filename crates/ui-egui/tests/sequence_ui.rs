@@ -453,7 +453,7 @@ fn later_clips_keep_the_zoom_once_the_sequence_has_content() {
 }
 
 impl Driver {
-    /// A clipboard shortcut as Windows and Linux deliver it: egui-winit sends Ctrl+C/X/V as
+    /// A clipboard shortcut as Linux delivers it: egui-winit sends Ctrl+C/X/V as
     /// `Event::Copy`/`Cut`/`Paste`, not as a key press (#199).
     fn clipboard_shortcut(&mut self, ev: egui::Event, modifiers: egui::Modifiers) {
         self.harness.input_mut().events.extend([egui::Event::ModifiersChanged(modifiers), ev]);

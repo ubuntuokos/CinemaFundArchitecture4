@@ -204,11 +204,11 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
         }
         // Chinese needs the Chinese fallback theme::install adds (extra-fonts or a system face)
         if id == "app.language.chinese" && !crate::i18n::chinese_font_available() {
-            return Err("no Chinese font is installed on this system (for example Noto Sans CJK SC or Microsoft YaHei); the interface stays in English".into());
+            return Err("no Chinese font is installed on this system (for example Noto Sans CJK SC); the interface stays in English".into());
         }
         // Korean needs an installed Hangul font (none is bundled; see cjk.rs)
         if id == "app.language.korean" && !crate::i18n::korean_font_available() {
-            return Err("no Korean font is installed on this system (for example Malgun Gothic or Noto Sans CJK KR); the interface stays in English".into());
+            return Err("no Korean font is installed on this system (for example Noto Sans CJK KR); the interface stays in English".into());
         }
         let language = match id {
             "app.language.japanese" => crate::i18n::Language::Ja,
@@ -623,7 +623,7 @@ fn clipboard_media_key(media: &crate::ClipboardMedia) -> String {
     }
 }
 
-/// Copied clips live in the session, but on Windows and Linux Ctrl+V only reaches the app when the
+/// Copied clips live in the session, but Ctrl+V only reaches the app when the
 /// system clipboard holds text (an empty clipboard sends no paste at all, #199). Put the copied
 /// clip names there, like other editors put their own data on the clipboard, so Ctrl+V pastes the
 /// clips right after a copy.
@@ -679,11 +679,6 @@ pub struct MenuItem {
 }
 
 pub const MENUS: [&str; 9] = ["File", "Edit", "Clip", "Sequence", "Markers", "Graphics and Titles", "View", "Window", "Help"];
-
-/// Labels only the native macOS app menu shows, with no command in the menu tree behind them: the
-/// Settings submenu and the predefined Hide, Hide Others and Quit items. They are translated through
-/// the catalogs like menu labels (`apps/cfa4/src/native_menu.rs`).
-pub const NATIVE_APP_MENU: [&str; 4] = ["Settings", "Hide CFA4", "Hide Others", "Quit CFA4"];
 
 pub fn menu_items(app: &Cfa4App) -> Vec<MenuItem> {
     let mut v = menu_items_for(&app.session);
@@ -793,29 +788,27 @@ pub fn menu_items_for(session: &cfa4_engine::Session) -> Vec<MenuItem> {
     out
 }
 
-/// Shortcut text for menus in this OS's notation (`⇧⌘K` on macOS, `Ctrl+Shift+K` elsewhere).
+/// Shortcut text for menus (`Ctrl+Shift+K`).
 pub fn shortcut_text(s: &str) -> String {
     use cfa4_engine::shortcuts::{Chord, Platform};
     Chord::parse(s).map(|c| c.display(Platform::current())).unwrap_or_else(|_| s.to_string())
 }
 
-/// Parse "Cmd+Shift+K" into the modifiers a chord requires + its key. Off macOS the Control key
-/// is the primary modifier, so `Ctrl` and `Cmd` are one key and both mean `command` (the engine's
-/// `Chord::effective` says the same): a physical Ctrl press carries `command` there, and egui's
+/// Parse "Cmd+Shift+K" into the modifiers a chord requires + its key. The Control key is the
+/// primary modifier, so `Ctrl` and `Cmd` are one key and both mean `command` (the engine's
+/// `Chord::effective` says the same): a physical Ctrl press carries `command`, and egui's
 /// matching asks only for what the pattern names, so a `Ctrl+…` chord matches a `Cmd+…` binding
-/// and the other way round (#245). On a Mac they stay two keys.
+/// and the other way round (#245).
 pub fn parse_shortcut(s: &str) -> Option<(egui::Modifiers, egui::Key)> {
     let mut m = egui::Modifiers::NONE;
     let mut key = None;
     let parts: Vec<&str> = if s == "+" { vec!["+"] } else { s.split('+').collect() };
-    let mac = cfg!(target_os = "macos");
     for p in parts {
         match p {
             "Cmd" => m.command = true,
             "Shift" => m.shift = true,
             "Alt" => m.alt = true,
-            "Ctrl" if !mac => m.command = true,
-            "Ctrl" => m.ctrl = true,
+            "Ctrl" => m.command = true,
             k => {
                 key = match k {
                     ";" => Some(egui::Key::Semicolon),
@@ -923,7 +916,7 @@ pub fn menu_bar(app: &mut Cfa4App, ui: &mut egui::Ui) {
     }
 }
 
-/// Like a native menu bar (Windows, macOS): while one top-level menu is open, hovering another
+/// Like a native menu bar: while one top-level menu is open, hovering another
 /// top-level title opens that menu instead (#1500). egui's `MenuBar` only switches on click.
 fn switch_on_hover(ctx: &egui::Context, titles: &[egui::Response]) {
     let ids: Vec<egui::Id> = titles.iter().map(egui::Popup::default_response_id).collect();
@@ -1051,25 +1044,19 @@ mod parse_shortcut_tests {
         assert_eq!(label_menu_swatch("edit.label.invalid", &labels), None);
     }
 
-    /// Off macOS `Ctrl` and `Cmd` are the same key, so either spelling parses to the modifiers a
+    /// `Ctrl` and `Cmd` are the same key, so either spelling parses to the modifiers a
     /// physical Ctrl press carries and matches a binding written the other way (#245).
     #[test]
-    fn ctrl_and_cmd_are_one_key_off_macos() {
+    fn ctrl_and_cmd_are_one_key() {
         let (ctrl, k) = parse_shortcut("Ctrl+Z").unwrap();
         let (cmd, k2) = parse_shortcut("Cmd+Z").unwrap();
         assert_eq!((k, k2), (egui::Key::Z, egui::Key::Z));
-        if cfg!(target_os = "macos") {
-            assert_eq!((ctrl.ctrl, ctrl.command), (true, false));
-            assert_eq!((cmd.ctrl, cmd.command), (false, true));
-            assert!(!ctrl.matches_logically(cmd) && !cmd.matches_logically(ctrl), "two different keys on a Mac");
-        } else {
-            assert_eq!((ctrl.ctrl, ctrl.command), (false, true));
-            assert_eq!(ctrl, cmd, "one key off a Mac");
-            // what egui-winit reports for the physical key, and a bare `command` as tests send it
-            let physical = egui::Modifiers { ctrl: true, command: true, ..Default::default() };
-            assert!(physical.matches_logically(cmd) && physical.matches_logically(ctrl));
-            assert!(egui::Modifiers::COMMAND.matches_logically(ctrl));
-        }
+        assert_eq!((ctrl.ctrl, ctrl.command), (false, true));
+        assert_eq!(ctrl, cmd, "one key");
+        // what egui-winit reports for the physical key, and a bare `command` as tests send it
+        let physical = egui::Modifiers { ctrl: true, command: true, ..Default::default() };
+        assert!(physical.matches_logically(cmd) && physical.matches_logically(ctrl));
+        assert!(egui::Modifiers::COMMAND.matches_logically(ctrl));
         assert!(!parse_shortcut("Z").unwrap().0.matches_logically(cmd), "a bare key never stands in for the chord");
         let (m, k) = parse_shortcut("Cmd+Shift+K").unwrap();
         assert!(m.command && m.shift && !m.alt && k == egui::Key::K);
