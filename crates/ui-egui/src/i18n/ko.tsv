@@ -3624,3 +3624,31 @@
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 라이브 스트리밍: H.264 1920×1080 8Mbps, AAC 160kbps, 6초 조각 MP4 세그먼트
+	Halftone	하프톤
+	Dither	디더
+	Pattern	패턴
+	Cell Size	셀 크기
+	Cyan Angle	시안 각도
+	Magenta Angle	마젠타 각도
+	Yellow Angle	노랑 각도
+	Black Angle	검정 각도
+	Monochrome Angle	단색 각도
+	Sharpness	선명도
+	Ink Color	잉크 색상
+	Paper Color	종이 색상
+	Color (CMYK)	컬러 (CMYK)
+	Dot	점
+	Line	선
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	픽셀 크기
+	Palette	팔레트
+	Input Colors	입력 색상
+	Green Phosphor	녹색 형광체
+	Amber Monitor	호박색 모니터
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

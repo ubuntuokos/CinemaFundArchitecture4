@@ -53,6 +53,8 @@ const OP_LUMETRI: u32 = 31u;
 const OP_SWAP_EYES: u32 = 32u;
 const OP_STEREO_TO_2D: u32 = 33u;
 const OP_FILM_GRAIN: u32 = 34u;
+const OP_HALFTONE: u32 = 35u;
+const OP_DITHER: u32 = 36u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -341,6 +343,86 @@ fn grain_noise(p: vec2<i32>, inv_cell: f32, seed: u32, layer: u32) -> f32 {
     let top = a + (b - a) * sm.x;
     let bot = c + (d - c) * sm.x;
     return top + (bot - top) * sm.y;
+}
+
+// ---- Halftone (`gpufx::halftone_ink`)
+
+fn halftone_ink(pc: vec2<f32>, sc: vec2<f32>, inv_cell: f32, soft: f32, lines: bool, v: f32) -> f32 {
+    if !(v > 0.0) {
+        return 0.0;
+    }
+    if v >= 1.0 {
+        return 1.0;
+    }
+    let u = (pc.x * sc.x + pc.y * sc.y) * inv_cell;
+    let w = (pc.y * sc.x - pc.x * sc.y) * inv_cell;
+    let fu = u - floor(u) - 0.5;
+    let fw = w - floor(w) - 0.5;
+    let tau = 6.2831855;
+    var spot: f32;
+    if lines {
+        spot = 1.0 - 4.0 * abs(fw);
+    } else {
+        spot = -(cos(tau * fu) + cos(tau * fw)) * 0.5;
+    }
+    let th = (1.0 - 2.0 * v) * (1.0 + soft);
+    return clamp((spot - th) / (2.0 * soft) + 0.5, 0.0, 1.0);
+}
+
+// ---- Dither (`gpufx::dither_threshold`, `gpufx::dither_px`, `gpufx::DITHER_PALETTES`)
+
+var<private> DITHER_COLORS: array<u32, 61> = array<u32, 61>(
+    0x000000u, 0xFFFFFFu, 0x000000u, 0x33FF33u, 0x000000u, 0xFFB000u, 0x0F380Fu, 0x306230u,
+    0x8BAC0Fu, 0x9BBC0Fu, 0x000000u, 0x55FFFFu, 0xFF55FFu, 0xFFFFFFu, 0x000000u, 0x0000AAu,
+    0x00AA00u, 0x00AAAAu, 0xAA0000u, 0xAA00AAu, 0xAA5500u, 0xAAAAAAu, 0x555555u, 0x5555FFu,
+    0x55FF55u, 0x55FFFFu, 0xFF5555u, 0xFF55FFu, 0xFFFF55u, 0xFFFFFFu, 0x000000u, 0x0000D7u,
+    0xD70000u, 0xD700D7u, 0x00D700u, 0x00D7D7u, 0xD7D700u, 0xD7D7D7u, 0x0000FFu, 0xFF0000u,
+    0xFF00FFu, 0x00FF00u, 0x00FFFFu, 0xFFFF00u, 0xFFFFFFu, 0x000000u, 0x1D2B53u, 0x7E2553u,
+    0x008751u, 0xAB5236u, 0x5F574Fu, 0xC2C3C7u, 0xFFF1E8u, 0xFF004Du, 0xFFA300u, 0xFFEC27u,
+    0x00E436u, 0x29ADFFu, 0x83769Cu, 0xFF77A8u, 0xFFCCAAu,
+);
+
+fn dither_color(i: u32) -> vec3<f32> {
+    let c = DITHER_COLORS[min(i, 60u)];
+    return vec3(f32((c >> 16u) & 0xFFu), f32((c >> 8u) & 0xFFu), f32(c & 0xFFu)) / 255.0;
+}
+
+fn dither_threshold(cx: u32, cy: u32, pattern: u32) -> f32 {
+    if pattern >= 3u {
+        return f32(pcg3d(cx, cy, 0x64697468u) >> 8u) / 16777216.0 - 0.5;
+    }
+    let n = pattern + 1u;
+    var v = 0u;
+    for (var i = i32(n) - 1; i >= 0; i--) {
+        let xb = (cx >> u32(i)) & 1u;
+        let yb = (cy >> u32(i)) & 1u;
+        v = (v << 2u) | (((xb ^ yb) << 1u) | yb);
+    }
+    return (f32(v) + 0.5) / f32(1u << (2u * n)) - 0.5;
+}
+
+fn dither_px(e: vec3<f32>, d: f32, off: u32, len: u32, levels: f32, spread: f32) -> vec3<f32> {
+    if len == 0u {
+        let n = levels - 1.0;
+        return clamp(floor(e * n + d + 0.5), vec3(0.0), vec3(n)) / n;
+    }
+    if len == 2u {
+        let l = 0.2126 * e.x + 0.7152 * e.y + 0.0722 * e.z;
+        return dither_color(off + select(0u, 1u, l + d > 0.5));
+    }
+    let t = e + d * spread;
+    var best = 3.0e38;
+    var out = e;
+    for (var k = 0u; k < len; k++) {
+        let c = dither_color(off + k);
+        let q = t - c;
+        let dd = q.x * q.x + q.y * q.y + q.z * q.z;
+        if dd < best {
+            best = dd;
+            out = c;
+        }
+    }
+    return out;
 }
 
 // ---- per-pixel colour effects on straight colour (`Image::map_rgb`)
@@ -726,6 +808,51 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             let q = sample_clamped(uu, vv);
             let o = ld(p);
             return q + (o - q) * u.p0.z;
+        }
+        case OP_HALFTONE: {
+            let o = ld(p);
+            let a = o.a;
+            if a <= 1e-6 {
+                return o;
+            }
+            let inv = u.p0.x;
+            let soft = u.p0.y;
+            let blend = u.p0.z;
+            let lines = u.i1.y != 0u;
+            let e = enc(o.rgb / a);
+            var out: vec3<f32>;
+            if u.i1.x != 0u {
+                let k = halftone_ink(pc, u.p2.zw, inv, soft, lines, 1.0 - (0.2126 * e.x + 0.7152 * e.y + 0.0722 * e.z));
+                out = u.p4.xyz + (u.p3.xyz - u.p4.xyz) * k;
+            } else {
+                let ec = clamp(e, vec3(0.0), vec3(1.0));
+                let k = 1.0 - max(max(ec.x, ec.y), ec.z);
+                var cmy = vec3(0.0);
+                if k < 1.0 {
+                    cmy = (vec3(1.0) - ec - vec3(k)) / (1.0 - k);
+                }
+                let ik = 1.0 - halftone_ink(pc, u.p2.zw, inv, soft, lines, k);
+                out = vec3(
+                    (1.0 - halftone_ink(pc, u.p1.xy, inv, soft, lines, cmy.x)) * ik,
+                    (1.0 - halftone_ink(pc, u.p1.zw, inv, soft, lines, cmy.y)) * ik,
+                    (1.0 - halftone_ink(pc, u.p2.xy, inv, soft, lines, cmy.z)) * ik,
+                );
+            }
+            return vec4(dec(out + (e - out) * blend) * a, a);
+        }
+        case OP_DITHER: {
+            let block = i32(max(u.i1.y, 1u));
+            let b = p / vec2(block);
+            let sp = min(b * block + vec2(block / 2), s - vec2(1));
+            let q = ld(sp);
+            let a = q.a;
+            if a <= 1e-6 {
+                return vec4(0.0);
+            }
+            let e = enc(q.rgb / a);
+            let d = dither_threshold(u32(b.x), u32(b.y), u.i1.x) + u.p0.x;
+            let o = dither_px(e, d, u.i1.z, u.i1.w, u.p0.y, u.p0.w);
+            return vec4(dec(o + (e - o) * u.p0.z) * a, a);
         }
         case OP_FILM_GRAIN: {
             let o = ld(p);

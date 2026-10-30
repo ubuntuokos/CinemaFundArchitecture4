@@ -3603,3 +3603,31 @@
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 pada 8 Mbps, AAC 160 kbps, segmen MP4 terfragmentasi 6 detik
+	Halftone	Halftone
+	Dither	Dither
+	Pattern	Pola
+	Cell Size	Ukuran Sel
+	Cyan Angle	Sudut Cyan
+	Magenta Angle	Sudut Magenta
+	Yellow Angle	Sudut Kuning
+	Black Angle	Sudut Hitam
+	Monochrome Angle	Sudut Monokrom
+	Sharpness	Ketajaman
+	Ink Color	Warna Tinta
+	Paper Color	Warna Kertas
+	Color (CMYK)	Warna (CMYK)
+	Dot	Titik
+	Line	Garis
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	Ukuran Piksel
+	Palette	Palet
+	Input Colors	Warna Masukan
+	Green Phosphor	Fosfor Hijau
+	Amber Monitor	Monitor Amber
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

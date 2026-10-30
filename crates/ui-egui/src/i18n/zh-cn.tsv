@@ -3613,3 +3613,31 @@
 	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段
+	Halftone	半色调
+	Dither	抖动
+	Pattern	图案
+	Cell Size	网格大小
+	Cyan Angle	青色角度
+	Magenta Angle	洋红角度
+	Yellow Angle	黄色角度
+	Black Angle	黑色角度
+	Monochrome Angle	单色角度
+	Sharpness	锐度
+	Ink Color	墨水颜色
+	Paper Color	纸张颜色
+	Color (CMYK)	彩色 (CMYK)
+	Dot	圆点
+	Line	线条
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	像素大小
+	Palette	调色板
+	Input Colors	输入颜色
+	Green Phosphor	绿色荧光
+	Amber Monitor	琥珀色显示器
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8
