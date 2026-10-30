@@ -393,9 +393,9 @@ fn dither_threshold(cx: u32, cy: u32, pattern: u32) -> f32 {
     }
     let n = pattern + 1u;
     var v = 0u;
-    for (var i = i32(n) - 1; i >= 0; i--) {
-        let xb = (cx >> u32(i)) & 1u;
-        let yb = (cy >> u32(i)) & 1u;
+    for (var i = 0u; i < n; i++) {
+        let xb = (cx >> i) & 1u;
+        let yb = (cy >> i) & 1u;
         v = (v << 2u) | (((xb ^ yb) << 1u) | yb);
     }
     return (f32(v) + 0.5) / f32(1u << (2u * n)) - 0.5;
@@ -845,14 +845,34 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             let b = p / vec2(block);
             let sp = min(b * block + vec2(block / 2), s - vec2(1));
             let q = ld(sp);
-            let a = q.a;
+            let r = ld(p);
+            let ab = q.a;
+            let ao = r.a;
+            let blend = u.p0.z;
+            let has_d = ab > 1e-6;
+            let has_o = ao > 1e-6;
+            var o = vec3(0.0);
+            if has_d {
+                let d = dither_threshold(u32(b.x), u32(b.y), u.i1.x) + u.p0.x;
+                o = dither_px(enc(q.rgb / ab), d, u.i1.z, u.i1.w, u.p0.y, u.p0.w);
+            }
+            var e = vec3(0.0);
+            if has_o {
+                e = enc(r.rgb / ao);
+            }
+            var c = vec3(0.0);
+            if has_d && has_o {
+                c = o + (e - o) * blend;
+            } else if has_d {
+                c = o;
+            } else if has_o {
+                c = e;
+            }
+            let a = ab + (ao - ab) * blend;
             if a <= 1e-6 {
                 return vec4(0.0);
             }
-            let e = enc(q.rgb / a);
-            let d = dither_threshold(u32(b.x), u32(b.y), u.i1.x) + u.p0.x;
-            let o = dither_px(e, d, u.i1.z, u.i1.w, u.p0.y, u.p0.w);
-            return vec4(dec(o + (e - o) * u.p0.z) * a, a);
+            return vec4(dec(c) * a, a);
         }
         case OP_FILM_GRAIN: {
             let o = ld(p);

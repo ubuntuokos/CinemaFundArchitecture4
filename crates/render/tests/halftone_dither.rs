@@ -118,6 +118,12 @@ fn bayer_matrices_are_the_classic_ones() {
     let m2: Vec<f32> = (0..2).flat_map(|y| (0..2).map(move |x| dither_threshold(x, y, 0))).collect();
     let want = [0.0, 2.0, 3.0, 1.0].map(|v| (v + 0.5) / 4.0 - 0.5);
     assert_eq!(m2, want);
+    // dispersed, not clustered: the classic first rows
+    let row = |pattern: u32, side: u32| -> Vec<u32> {
+        (0..side).map(|x| ((dither_threshold(x, 0, pattern) + 0.5) * (side * side) as f32 - 0.5).round() as u32).collect()
+    };
+    assert_eq!(row(1, 4), [0, 8, 2, 10]);
+    assert_eq!(row(2, 8), [0, 32, 8, 40, 2, 34, 10, 42]);
     for (pattern, side) in [(1u32, 4u32), (2, 8)] {
         let mut v: Vec<f32> = (0..side).flat_map(|y| (0..side).map(move |x| dither_threshold(x, y, pattern))).collect();
         v.sort_by(f32::total_cmp);
@@ -181,6 +187,24 @@ fn pixel_size_makes_uniform_blocks() {
                     assert_eq!(&out.px[i..i + 4], first, "block {bx},{by}");
                 }
             }
+        }
+    }
+}
+
+#[test]
+fn full_blend_returns_each_original_pixel_even_with_big_dither_pixels() {
+    let mut img = Image::new(16, 16);
+    for (i, p) in img.px.chunks_exact_mut(4).enumerate() {
+        // a transparent detail inside each 4×4 block, opaque elsewhere
+        let a = if i % 16 == 1 { 0.0 } else { 1.0 };
+        let v = (i % 7) as f32 / 6.0;
+        p.copy_from_slice(&[v * a, 0.3 * a, (1.0 - v) * a, a]);
+    }
+    let out = render(&effect("dither", &[("pixel_size", fl(4.0)), ("blend", fl(100.0)), ("palette", ch(4))]), &img);
+    for (o, i) in out.px.chunks_exact(4).zip(img.px.chunks_exact(4)) {
+        assert_eq!(o[3], i[3]);
+        for k in 0..3 {
+            assert!((o[k] - i[k]).abs() < 1e-4, "{o:?} vs {i:?}");
         }
     }
 }

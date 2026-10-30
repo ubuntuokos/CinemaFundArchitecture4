@@ -395,7 +395,9 @@ pub fn dither_threshold(cx: u32, cy: u32, pattern: u32) -> f32 {
     }
     let n = pattern + 1;
     let mut v = 0u32;
-    for i in (0..n).rev() {
+    // the lowest coordinate bit picks the most significant digit: neighbouring thresholds lie
+    // far apart (dispersed dots)
+    for i in 0..n {
         let (xb, yb) = ((cx >> i) & 1, (cy >> i) & 1);
         v = (v << 2) | (((xb ^ yb) << 1) | yb);
     }
@@ -1251,16 +1253,25 @@ impl FxOp {
                         let sy = (by * block + block / 2).min(h - 1);
                         let s = (sy * w + sx) * 4;
                         let Some(q) = src.px.get(s..s + 4) else { continue };
-                        let a = q[3];
+                        // the dithered block sample, mixed with this pixel's own original
+                        let (ab, ao) = (q[3], p[3]);
+                        let dithered = (ab > 1e-6).then(|| {
+                            let e = enc([q[0] / ab, q[1] / ab, q[2] / ab]);
+                            dither_px(e, dither_threshold(bx as u32, by as u32, pattern) + t, palette, levels)
+                        });
+                        let original = (ao > 1e-6).then(|| enc([p[0] / ao, p[1] / ao, p[2] / ao]));
+                        let c = match (dithered, original) {
+                            (Some(o), Some(e)) => [o[0] + (e[0] - o[0]) * blend, o[1] + (e[1] - o[1]) * blend, o[2] + (e[2] - o[2]) * blend],
+                            (Some(c), None) | (None, Some(c)) => c,
+                            (None, None) => [0.0; 3],
+                        };
+                        let a = ab + (ao - ab) * blend;
                         if a <= 1e-6 {
                             p.copy_from_slice(&[0.0; 4]);
                             continue;
                         }
-                        let e = enc([q[0] / a, q[1] / a, q[2] / a]);
-                        let d = dither_threshold(bx as u32, by as u32, pattern) + t;
-                        let o = dither_px(e, d, palette, levels);
-                        let o = dec([o[0] + (e[0] - o[0]) * blend, o[1] + (e[1] - o[1]) * blend, o[2] + (e[2] - o[2]) * blend]);
-                        p.copy_from_slice(&[o[0] * a, o[1] * a, o[2] * a, a]);
+                        let c = dec(c);
+                        p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
                 });
             }
