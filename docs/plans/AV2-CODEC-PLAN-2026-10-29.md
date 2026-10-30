@@ -93,7 +93,7 @@ A specifikáció konténerleképezést és konformancia-tesztbitfolyamokat nem t
 **A dav2d bekötési módja – architekturális döntés szükséges (ADR).** A dav2d C-könyvtár; a CFA4 szabályai szerint `unsafe` csak a `crates/platform`-ban megengedett (ADR 0001), kiegészítő háttér pedig csak az ADR 0005 szerint. A lehetőségek:
 
 1. **FFmpeg-en keresztül:** ha a CFA4 saját FFmpeg-buildje (`/opt/cfa4`) `libdav2d` wrappert kap, a dav2d az ADR 0005 keretében, új FFI nélkül érhető el. Ehhez az FFmpeg-be kerülő AV2-támogatás kell, ami ma nincs.
-2. **Saját FFI a `crates/platform`-ban** az ADR 0001 feltételeivel, vendorolt, commitra rögzített dav2d-vel, ASan/UBSan builddel.
+2. **Saját FFI a dav2d-hez:** az ADR 0001 kivétele csak az operációs rendszer hardveres médiaAPI-jaira szól, a szoftveres kodek FFI-je ezért **nem fér bele**. Ez az út csak az ADR 0001 tulajdonos által jóváhagyott módosításával vagy egy új ADR-rel engedélyezhető, vendorolt, commitra rögzített dav2d-vel és ASan/UBSan builddel; a többi lehetőség ezt a policyváltozást nem igényli.
 3. **Külön folyamat:** a dekóder önálló segédprogramként fut, a motor pipe-on kap képkockákat. A hibák elszigetelése a legjobb, a teljesítmény a leggyengébb. Fejlesztői AVM-útnak ez az alapértelmezés.
 4. **Rust crate-függőség (rav2d):** BSD-2-Clause, GPL-3-mal kompatibilis, C-FFI nem kell. Az `unsafe` kódja miatt a crate csak külső függőségként, `cargo deny` alatt jöhet szóba, a CFA4 saját crate-jeibe nem másolható `unsafe` résszel. Feltétel: a II.3 szerinti konformancia az AVM v1.0.0 tagen, rögzített commit, és fuzzing a CFA4 korpuszán. Ha ez teljesül, ez a legkisebb architekturális kockázatú A-vonalas út.
 
@@ -473,7 +473,7 @@ A munkacsomagok AV2-00–AV2-10 azonosítói nem GitHub issue- vagy PR-számok.
 | # | Téma | Tartalom | Előfeltétel |
 |---|---|---|---|
 | 1 | AV2-00 auditjelentés | Verziók, commit SHA-k, licencjegyzőkönyv, konformanciamátrix, profil/IP/szint tábla | – |
-| 2 | ADR: AV2 külső dekóder bekötése | rav2d crate, FFmpeg-út, `crates/platform` FFI vagy külön folyamat | 1 |
+| 2 | ADR: AV2 külső dekóder bekötése | rav2d crate, FFmpeg-út, külön folyamat, vagy (ADR 0001 módosításával) saját FFI | 1 |
 | 3 | Orákulum-harness | `crates/testkit`: AVM build saját prefixbe, korpuszmanifest; CI-futás csak `workflow_dispatch` vagy `cfa4-full-validation` címke esetén (AGENTS.md), ütemezett futás nélkül | 1 |
 | 4 | Kodekazonosító és felismerés | AV2 kodekazonosító, IVF/Annex B/MP4 `av02` sniffing, router `unsupported` válasz, regressziós tesztek | – |
 | 5 | `cfa4-av2` váz | OBU- és sequence header parser, operating point, fuzz target | 4 |
@@ -550,7 +550,7 @@ Az AV2-STABLE kiadás ennél szűkebb, meghirdetett funkcióprofillal is megjele
 | Multistream | P3 | Az IP0-konformanciához P1; addig operating point kiválasztás vagy `unsupported` |
 | Film grain | „ahol a profil megköveteli” | Bitpontos összevetés a szintézissel, két hash |
 | Raw formátum | „raw bitstream” | Annex B normatív, IVF fejlesztői |
-| dav2d bekötése | „elkülönített natív illesztés” | ADR szükséges (FFmpeg-út, `crates/platform` FFI, külön folyamat vagy a Rust rav2d crate) |
+| dav2d bekötése | „elkülönített natív illesztés” | ADR szükséges (FFmpeg-út, külön folyamat, ADR 0001 módosítását igénylő saját FFI vagy a Rust rav2d crate) |
 | Konténer | AV2-06 a két vonal után | MP4 olvasás előbb, kísérleti jelöléssel; írás a G6 mögött |
 | Export | Nem volt korai út | Kimondva: natív enkóder vagy igazolt SVT-AV2 |
 | Teljesítmény | Csak a G8-ban | Alapmérés már a G1-ben |
