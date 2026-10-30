@@ -2039,6 +2039,45 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
 
 
 
+def test_effect_controls_in_a_floating_dock_keeps_the_selected_clip(app):
+    """Regression (flaky ``test_real_engine_effect_controls_lane_as_egui`` under load): a refresh
+    asked while one was in flight re-read the selection from ``window()``, which for a floating
+    dock is the dock, so the panel emptied until the next edit."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply))
+            return 0
+
+    win = QtWidgets.QMainWindow()
+    dock = QtWidgets.QDockWidget("Effect Controls", win)
+    ec = EffectControlsPanel()
+    dock.setWidget(ec)
+    win.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+    dock.setFloating(True)
+    engine = Engine()
+    ec.attach(engine)
+    try:
+        assert ec.window() is dock and ec.main_window() is win
+        clip = {"clip": 5, "name": "A", "start": 0, "end": 1000, "playhead": 0, "frame": 100, "effects": []}
+        ec.refresh([5])
+        ec.refresh([5])  # the selection changed again while the first answer is on its way
+        command, _, reply = engine.pending.pop(0)
+        assert command == "effects.inspect"
+        reply(dict(clip), None)
+        assert [c for c, *_ in engine.pending] == ["effects.inspect"]  # asked again, for clip 5
+        engine.pending.pop(0)[2](dict(clip), None)
+        assert ec.clip_id == 5 and not engine.pending
+    finally:
+        win.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
     """egui's Effect Controls layout: the list with Video / Audio headings (the linked audio under
