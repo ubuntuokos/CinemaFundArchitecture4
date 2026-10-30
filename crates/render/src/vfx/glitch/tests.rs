@@ -108,6 +108,10 @@ fn block_glitch_only_moves_blocks() {
     // the same frame step renders the same; a later step re-rolls
     assert_eq!(run(&e, &img, 0.05).px, a.px, "8 changes a second: 0.05 s is the same step");
     assert_ne!(run(&e, &img, 0.5).px, a.px);
+    // Max Distance 0 leaves the picture alone even with Snap to Grid
+    setf(&mut e, "distance", 0.0);
+    assert_eq!(run(&e, &img, 0.0).px, img.px);
+    setf(&mut e, "distance", 20.0);
     // 0 changes per second freezes it, and the seed picks another pattern
     setf(&mut e, "rate", 0.0);
     assert_eq!(run(&e, &img, 7.0).px, run(&e, &img, 0.0).px);
@@ -170,6 +174,17 @@ fn vhs_bleeds_colour_and_darkens_alternate_rows() {
     let o = run(&e, &img, 0.0);
     assert_eq!(o.get(30, 0), [1.0; 4]);
     assert_eq!(o.get(30, 1), [0.75, 0.75, 0.75, 1.0]);
+    // a translucent pixel after an opaque white one keeps colour within its coverage
+    let mut edge = Image::new(4, 1);
+    edge.px[..4].copy_from_slice(&[1.0; 4]);
+    edge.px[4..8].copy_from_slice(&[0.0, 0.0, 0.0, 0.1]);
+    let mut e2 = inst("vhs");
+    for k in ["wobble", "snow", "tracking", "head", "scanlines"] {
+        setf(&mut e2, k, 0.0);
+    }
+    setf(&mut e2, "bleed", 10.0);
+    let p = run(&e2, &edge, 0.0).get(1, 0);
+    assert!(p[0] <= p[3] && p[2] <= p[3] && p[3] == 0.1, "{p:?}");
     // the full look moves from frame to frame
     let e = inst("vhs");
     let img = picture(72, 48);
@@ -227,7 +242,8 @@ fn tile_jitter_slides_every_other_band() {
 
 #[test]
 fn hostile_parameters_and_tiny_frames_stay_finite() {
-    let bad = [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0e300, 1.0e300, 0.0];
+    // 1e30 is finite as f32 (past every integer range); 1e300 is not
+    let bad = [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0e300, 1.0e300, 1.0e30, -1.0e30, 3.0e9, 0.0];
     for id in IDS {
         let d = find_effect(id).unwrap_or_else(|| panic!("{id}"));
         for (w, h) in [(1, 1), (1, 5), (5, 1), (3, 2), (33, 17)] {

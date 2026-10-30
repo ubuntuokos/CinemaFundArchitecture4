@@ -156,10 +156,16 @@ pub fn block_glitch(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
         let sy = rng.range(0, ymax);
         let mut dx = (sx + rng.range(-maxd, maxd)).clamp(0, xmax);
         let mut dy = (sy + rng.range(-maxd, maxd)).clamp(0, ymax);
-        // the draw happens either way, so Snap to Grid keeps the same blocks
+        // the draw happens either way, so Snap to Grid keeps the same blocks; a grid position
+        // further than Max Distance from the source is not taken
         if rng.f() < 0.7 && snap {
-            dx = (dx - dx % tw as i64).min(xmax);
-            dy = (dy - dy % th as i64).min(ymax);
+            let (gx, gy) = ((dx - dx % tw as i64).min(xmax), (dy - dy % th as i64).min(ymax));
+            if (gx - sx).abs() <= maxd {
+                dx = gx;
+            }
+            if (gy - sy).abs() <= maxd {
+                dy = gy;
+            }
         }
         let (sx, sy, dx, dy) = (sx as usize, sy as usize, dx as usize, dy as usize);
         if swap {
@@ -301,7 +307,8 @@ pub fn vhs(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
     let (w, h) = (img.w, img.h);
     let k = w as f32 / REF_W;
     let bleed = fin(fv(e, "bleed", cx), 0.0).max(0.0) * cx.px_scale;
-    let wobble = fin(fv(e, "wobble", cx), 0.0).max(0.0) * cx.px_scale;
+    // beyond the width every row is the clamped edge anyway; bounding it keeps the shifts in range
+    let wobble = (fin(fv(e, "wobble", cx), 0.0).max(0.0) * cx.px_scale).min(w as f32);
     let frac = |id: &str| (fin(fv(e, id, cx), 0.0) / 100.0).clamp(0.0, 1.0);
     let (snow, track, head, scan) = (frac("snow"), frac("tracking"), frac("head"), frac("scanlines"));
     // the picture changes every frame, like the tape running
@@ -340,17 +347,21 @@ pub fn vhs(img: &mut Image, e: &EffectInstance, cx: &FxCtx) {
             torn = true;
         }
         let at = |x: i64| {
-            let i = (x - shift).clamp(0, w as i64 - 1) as usize * 4;
+            let i = x.saturating_sub(shift).clamp(0, w as i64 - 1) as usize * 4;
             [srow[i], srow[i + 1], srow[i + 2], srow[i + 3]]
         };
-        let first = at(0);
+        // red and blue are filtered as straight colour and premultiplied by each pixel's own
+        // alpha, so a translucent edge never gets more colour than its coverage
+        let straight = |p: [f32; 4]| Image::unpremul(p);
+        let first = straight(at(0));
         let (mut r, mut b) = (first[0], first[2]);
         for (x, o) in row.chunks_exact_mut(4).enumerate() {
             let s = at(x as i64);
-            r += (s[0] - r) * alpha;
-            b += (s[2] - b) * alpha;
+            let c = straight(s);
+            r += (c[0] - r) * alpha;
+            b += (c[2] - b) * alpha;
             let d = if y & 1 == 1 { dim } else { 1.0 };
-            o.copy_from_slice(&[r * d, s[1] * d, b * d, s[3]]);
+            o.copy_from_slice(&[r * s[3] * d, s[1] * d, b * s[3] * d, s[3]]);
         }
         // snow: a few white dashes; torn rows get many
         let chance = snow * 0.08 + if torn { 0.6 } else { 0.0 };
