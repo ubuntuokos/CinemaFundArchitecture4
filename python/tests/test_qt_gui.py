@@ -6407,6 +6407,83 @@ def test_real_engine_quick_export_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
+    """egui's Preset Manager (Preset ▸ More presets…): search and Favorites only, the star adds a
+    favourite, Save current settings as… makes a User preset from the window's settings, Export…
+    and Import… a preset file, Delete only a user preset, OK (or a double click) applies the
+    selected preset in the Export window."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
+        m = dlg.preset_manager
+        assert m is not None and m.isVisible() and m.windowTitle() == "Preset Manager"
+        assert wait_until(app, lambda: len(m.rows) > 10, 10_000)
+        current = str(dlg.preset.currentData())
+        assert m.rows[current].isChecked() and m.description.text()
+        assert not m.delete.isEnabled(), "a built-in preset cannot be deleted"
+        # search, favourites
+        m.search.setText("prores")
+        assert m.rows and all("prores" in n.lower() or "prores" in str(next(p for p in m.presets if p["name"] == n).get("description", "")).lower()
+                              for n in m.rows), list(m.rows)
+        prores = next(iter(m.rows))
+        m.stars[prores].click()
+        assert wait_until(app, lambda: m.stars.get(prores) is not None and m.stars[prores].text() == "★", 10_000)
+        m.search.clear()
+        m.favorites_only.setChecked(True)
+        assert list(m.rows) == [prores]
+        m.favorites_only.setChecked(False)
+        # save the window's settings as a user preset (the format and the width chosen there)
+        dlg.width_spin.setValue(640)
+        dlg.height_spin.setValue(360)
+        dlg._touch("size")
+        m.save_name.setText("My Small")
+        m.findChild(QtWidgets.QPushButton, "presetManager.save").click()
+        assert wait_until(app, lambda: "My Small" in m.rows, 10_000)
+        assert m.findChild(QtWidgets.QLabel, "presetManager.user.My Small") is not None
+        got: list = []
+        engine.execute("export.presets.get", {"name": "My Small"}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000)
+        assert "640" in json.dumps(got[0]), got[0]
+        # export it, delete it, import it back
+        m.select("My Small")
+        assert m.delete.isEnabled()
+        m.pick_save = lambda t, f, start: str(tmp_path / "mine.json")
+        m.export.click()
+        assert wait_until(app, lambda: (tmp_path / "mine.json").exists(), 10_000)
+        m.delete.click()
+        assert wait_until(app, lambda: "My Small" not in m.rows, 10_000)
+        m.pick_open = lambda t, f, start: str(tmp_path / "mine.json")
+        m.import_.click()
+        assert wait_until(app, lambda: "My Small" in m.rows, 10_000)
+        # OK applies the selected preset in the Export window, which lists the new one
+        m.select(prores)
+        m.ok.click()
+        assert not m.isVisible()
+        assert wait_until(app, lambda: dlg.preset.currentData() == prores, 10_000), dlg.preset.currentData()
+        assert dlg.preset.findData("My Small") >= 0
+        # a double click applies too
+        dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
+        assert wait_until(app, lambda: "My Small" in m.rows, 10_000)
+        QtTest.QTest.mouseDClick(m.rows["My Small"], QtCore.Qt.MouseButton.LeftButton)
+        assert wait_until(app, lambda: dlg.preset.currentData() == "My Small", 10_000)
+        assert not m.isVisible()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
     """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
     an existing file asks Replace / Keep existing file, the folder is kept for the next export;

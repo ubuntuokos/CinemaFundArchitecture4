@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
+from .preset_manager import PresetManager
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
@@ -140,6 +141,9 @@ class ExportDialog(QDialog):
         self._known_status: dict[Any, str] = {}
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
+        self._want_preset: str | None = None
+        self._shown_preset: str | None = None
+        self.preset_manager: PresetManager | None = None
 
         # ----- settings -----
         self.sequence_label = QLabel(self)
@@ -234,7 +238,13 @@ class ExportDialog(QDialog):
         out = QGroupBox(tr("Output"), self)
         f = QFormLayout(out)
         f.addRow(tr("Sequence"), self.sequence_label)
-        f.addRow(tr("Preset"), self.preset)
+        preset_row = QHBoxLayout()
+        preset_row.addWidget(self.preset, 1)
+        more = QPushButton(tr("More presets…"), self)
+        more.setObjectName("export.preset.more")
+        more.clicked.connect(self.open_preset_manager)
+        preset_row.addWidget(more)
+        f.addRow(tr("Preset"), preset_row)
         f.addRow(tr("Format"), self.format)
         f.addRow(tr("Container"), self.container)
         f.addRow(tr("Output file"), path_row)
@@ -358,6 +368,23 @@ class ExportDialog(QDialog):
         self.refresh_queue()
         self._poll.start()
 
+    def open_preset_manager(self) -> None:
+        """Preset ▸ More presets…: the Preset Manager on the current preset; OK applies its choice."""
+        if self.preset_manager is None:
+            self.preset_manager = PresetManager(self.engine, self.params, self)
+            self.preset_manager.applied.connect(self._preset_chosen)
+            self.preset_manager.status.connect(self._error)
+            self.preset_manager.finished.connect(lambda _r: self._reload_presets())
+        self.preset_manager.open_on(str(self.preset.currentData() or ""))
+
+    def _preset_chosen(self, name: str) -> None:
+        self._want_preset = name
+        self._reload_presets()
+
+    def _reload_presets(self) -> None:
+        # saved, imported or deleted presets show in the menu; the choice is kept
+        self.engine.execute("export.presets.list", {}, on_reply=self._on_presets, on_error=self._error)
+
     def _load(self) -> None:
         self._loading = True
         self.engine.execute("export.formats", {}, on_reply=self._on_formats, on_error=self._error)
@@ -382,6 +409,7 @@ class ExportDialog(QDialog):
 
     def _on_presets(self, result: Any, _b: bytes | None) -> None:
         data = result if isinstance(result, dict) else {}
+        self._shown_preset = self.preset.currentData() if self.preset.count() else None
         self.presets = [p for p in data.get("presets") or [] if isinstance(p, dict) and p.get("name")]
         default = data.get("default")
         self.preset.blockSignals(True)
@@ -394,7 +422,12 @@ class ExportDialog(QDialog):
                     self.preset.insertSeparator(self.preset.count())
             self.preset.addItem(str(p["name"]), str(p["name"]))
             self.preset.setItemData(self.preset.count() - 1, str(p.get("description") or ""), Qt.ItemDataRole.ToolTipRole)
-        index = self.preset.findData(default)
+        # after the Preset Manager: the preset it chose, else the one shown before the reload
+        want = self._want_preset or self._shown_preset or default
+        self._want_preset = None
+        index = self.preset.findData(want)
+        if index < 0:
+            index = self.preset.findData(default)
         self.preset.setCurrentIndex(max(0, index))
         self.preset.blockSignals(False)
         self._loading = False

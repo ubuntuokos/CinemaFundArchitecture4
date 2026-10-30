@@ -176,7 +176,7 @@ class QuickExport(QFrame):
         self.rows = {}
         t = theme.current()
         # egui's list rows: the chosen one on the accent, the hovered one lighter
-        row_style = (f"QPushButton {{ text-align: left; padding: 2px 6px; border: none; border-radius: 3px; min-height: 18px; }}"
+        row_style = (f"QPushButton {{ text-align: left; padding: 2px 6px; border: none; border-radius: 3px; min-height: 18px; background: transparent; }}"
                      f"QPushButton:hover {{ background: {t.c('hover').name()}; }}"
                      f"QPushButton:checked {{ background: {t.c('accent').name()}; color: white; }}")
         names = quick_presets(self.presets)
