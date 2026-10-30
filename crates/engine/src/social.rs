@@ -103,6 +103,12 @@ pub fn reframed_size(w: u32, h: u32, aw: u32, ah: u32) -> (u32, u32) {
     if aw >= ah { (even(short * aw / ah), even(short)) } else { (even(short), even(short * ah / aw)) }
 }
 
+/// A sequence's frame width in square pixels (its width as displayed).
+pub(crate) fn display_width(q: &Sequence) -> u32 {
+    let w = q.settings.width as f64 * cfa4_project::par_ratio(cfa4_project::sane_par(q.settings.par));
+    if w.is_finite() { w.round().clamp(2.0, 16_384.0) as u32 } else { q.settings.width }
+}
+
 /// The aspect name of a frame size, when it is one of [`ASPECTS`] (within 1 %).
 pub fn aspect_of(w: u32, h: u32) -> Option<&'static str> {
     let r = w as f64 / h.max(1) as f64;
@@ -163,21 +169,24 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
     let src = s.project.sequence(seq).ok_or(EngineError::NoSequence)?;
     let old_name = s.project.item(seq).map(|i| i.name.clone()).unwrap_or_else(|| "Sequence".into());
     let def = cfa4_project::find_effect("auto_reframe").ok_or_else(|| EngineError::Other("Auto Reframe is not available".into()))?;
-    let (w, h) = reframed_size(src.settings.width, src.settings.height, aw, ah);
+    // the copy has square pixels: its aspect is that of the picture as displayed
+    let (w, h) = reframed_size(display_width(src), src.settings.height, aw, ah);
     let new_name = new_name.unwrap_or_else(|| format!("{old_name} ({})", name.replace(':', "×")));
     let id = copy_sequence(s, seq, &new_name, "Auto Reframe Sequence", |p, q| {
         // Motion positions are in sequence pixels: move them with the frame's centre so every
         // clip keeps its place relative to the centre (keyframes included)
-        let (ow, oh, seq_par) = (q.settings.width, q.settings.height, cfa4_project::sane_par(q.settings.par));
-        let dx = (w as f64 - q.settings.width as f64) / 2.0;
-        let dy = (h as f64 - q.settings.height as f64) / 2.0;
+        // (a non-square-pixel original is first seen as square pixels: x stretches by its ratio)
+        let pr = cfa4_project::par_ratio(cfa4_project::sane_par(q.settings.par));
+        let (ow, oh) = (display_width(q), q.settings.height);
+        let dx = (w as f64 - ow as f64) / 2.0;
+        let dy = (h as f64 - oh as f64) / 2.0;
         // a picture that filled the old frame must cover the new one: Auto Reframe pans its
         // source-sized raster to the subject at the new aspect, and Motion scales it up by this
         // (plus a pixel, so the resampled edge rows are not half transparent)
-        let cover = if (w, h) == (q.settings.width, q.settings.height) {
+        let cover = if (w, h) == (ow, oh) {
             1.0
         } else {
-            (w as f64 / q.settings.width.max(1) as f64).max(h as f64 / q.settings.height.max(1) as f64).max(1.0) * (1.0 + 2.0 / w.min(h).max(1) as f64)
+            (w as f64 / ow.max(1) as f64).max(h as f64 / oh.max(1) as f64).max(1.0) * (1.0 + 2.0 / w.min(h).max(1) as f64)
         };
         let aspect = match name {
             "9:16" => 1,
@@ -187,11 +196,12 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
         };
         q.settings.width = w;
         q.settings.height = h;
+        q.settings.par = (1, 1);
         for t in q.video_tracks.iter_mut().filter(|t| t.kind == TrackKind::Video) {
             for it in &mut t.items {
                 if let Some(pos) = it.effect_mut("motion").and_then(|m| m.params.get_mut("position")) {
                     pos.map_values(|v| match v {
-                        ParamValue::Vec2(v) if v.x.is_finite() && v.y.is_finite() => ParamValue::Vec2(Vec2::new(v.x + dx, v.y + dy)),
+                        ParamValue::Vec2(v) if v.x.is_finite() && v.y.is_finite() => ParamValue::Vec2(Vec2::new(v.x * pr + dx, v.y + dy)),
                         v => v,
                     });
                 }
@@ -204,8 +214,8 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
                 if it.scale_to_frame
                     && let Some((sw, sh)) = cfa4_render::source_size(p, it.item)
                 {
-                    let r = cfa4_project::par_ratio(cfa4_project::sane_par(cfa4_render::source_par(p, it.item).unwrap_or(seq_par)))
-                        / cfa4_project::par_ratio(seq_par);
+                    // the source's pixel ratio against the square pixels both frames are seen in
+                    let r = cfa4_render::source_par(p, it.item).map_or(pr, |sp| cfa4_project::par_ratio(cfa4_project::sane_par(sp)));
                     let fit = |fw: f64, fh: f64| (fw / (sw.max(1) as f64 * r)).min(fh / sh.max(1) as f64);
                     let (new_fit, old_fit) = (fit(w as f64, h as f64), fit(ow as f64, oh as f64));
                     if new_fit > 0.0 && old_fit.is_finite() {
@@ -278,8 +288,8 @@ fn deliverables(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "export.socialDeliverables";
     let seq = crate::export_tools::sequence_param(s, p, CMD)?;
     let q = s.project.sequence(seq).ok_or(EngineError::NoSequence)?;
-    let (w, h) = (q.settings.width, q.settings.height);
-    let own = aspect_of(w, h);
+    let h = q.settings.height;
+    let own = aspect_of(display_width(q), h);
     let asked: Vec<String> = match p.get("aspects").and_then(Value::as_array) {
         Some(a) => a.iter().filter_map(Value::as_str).map(str::to_string).collect(),
         None => ASPECTS.iter().map(|(n, _, _)| n.to_string()).collect(),

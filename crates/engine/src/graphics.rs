@@ -306,7 +306,8 @@ fn set_text_type(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let ph = s.playhead();
     let mt = it.source_time_at(ph.clamp(it.start, it.end() - Tick(1)));
-    let spec = it.effects.get(ei).and_then(|e| eval_layer(e, mt, size)).ok_or_else(|| bad(ID, "no such layer"))?;
+    // the Source Text, not what a text animator shows now: the conversion writes the text back
+    let spec = it.effects.get(ei).and_then(|e| graphic::eval_layer_source(e, mt, size)).ok_or_else(|| bad(ID, "no such layer"))?;
     let LayerContent::Text(tp) = &spec.content else { return Err(bad(ID, "not a text layer")) };
     if tp.vertical {
         return Err(bad(ID, "vertical text is always point text"));

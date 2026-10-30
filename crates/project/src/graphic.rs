@@ -303,12 +303,22 @@ fn vv(e: &EffectInstance, id: &str, t: Tick) -> Vec2 {
 /// Evaluate a layer at clip (media) time `t`. `frame` is the graphic's canvas size; a NaN position
 /// means the canvas centre.
 pub fn eval_layer(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<LayerSpec> {
+    eval(e, t, frame, true)
+}
+
+/// [`eval_layer`] with the whole Source Text, whatever a text animator shows at `t`: for editing
+/// the text (what is written back must never be the animator's partial text).
+pub fn eval_layer_source(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<LayerSpec> {
+    eval(e, t, frame, false)
+}
+
+fn eval(e: &EffectInstance, t: Tick, frame: (u32, u32), animate: bool) -> Option<LayerSpec> {
     let content = match e.effect.as_str() {
         TEXT_LAYER => LayerContent::Text({
             let source = ss(e, "text", t);
             let style_runs = e.layer.as_ref().map_or(&[][..], |x| &x.runs[..]);
             // a text animator changes what is shown, not the Source Text
-            let (text, runs) = match ch(e, "anim", t) {
+            let (text, runs) = match if animate { ch(e, "anim", t) } else { 0 } {
                 0 => {
                     let runs = byte_runs(&source, style_runs);
                     (source, runs)

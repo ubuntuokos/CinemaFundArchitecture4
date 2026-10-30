@@ -478,3 +478,51 @@ fn an_adjustment_layer_does_not_hide_a_black_gap() {
     let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
     assert_eq!(issues(&r, "blackGap"), 1, "{r:#}");
 }
+
+#[test]
+fn reframe_of_non_square_pixels_has_the_displayed_aspect() {
+    let mut s = Session::default();
+    // 144 × 108 with 4:3 pixels: displayed 192 × 108 (16:9)
+    s.execute("file.newSequence", json!({"name": "Ana", "width": 144, "height": 108, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let seq = s.state.active_sequence.unwrap();
+    std::sync::Arc::make_mut(&mut s.project).sequence_mut(seq).unwrap().settings.par = (4, 3);
+    let r = s.execute("file.newColorMatte", json!({"color": "#0000ff", "width": 144, "height": 108, "seconds": 2.0})).unwrap();
+    let item = ItemId(r["item"].as_u64().unwrap());
+    if let Some(cfa4_project::ItemKind::Media(m)) = std::sync::Arc::make_mut(&mut s.project).item_mut(item).map(|i| &mut i.kind) {
+        m.info.video.as_mut().unwrap().par = (4, 3);
+    }
+    s.execute("timeline.place", json!({"item": item.0, "track": "V1", "seconds": 0.0})).unwrap();
+    let r = s.execute("sequence.autoReframe", json!({"aspect": "9:16"})).unwrap();
+    assert_eq!((r["width"].as_u64(), r["height"].as_u64()), (Some(108), Some(192)), "{r}");
+    assert_eq!(s.active_sequence().unwrap().settings.par, (1, 1));
+    let img = s.render_program(1.0).unwrap();
+    for (x, y) in [(0, 0), (img.w - 1, 0), (img.w / 2, img.h - 1), (img.w - 1, img.h - 1)] {
+        assert!(img.get(x, y)[3] > 0.99, "({x}, {y}) is uncovered");
+    }
+    // Social Deliverables sees the original as 16:9
+    let q = s.project.sequence(seq).unwrap();
+    assert_eq!(crate::social::aspect_of(crate::social::display_width(q), q.settings.height), Some("16:9"));
+}
+
+#[test]
+fn converting_text_type_mid_animation_keeps_the_source_text() {
+    let (mut s, _) = session(0.0, &[3.0]);
+    let r = s.execute("graphics.newText", json!({"text": "one two three four", "box": [600, 200]})).unwrap();
+    let clip = r["clip"].as_u64().unwrap();
+    s.execute("graphics.textAnimator.typewriter", json!({"clip": clip, "duration": 2.0})).unwrap();
+    s.execute("playhead.set", json!({"seconds": 0.0})).unwrap();
+    s.execute("graphics.setTextType", json!({"clip": clip, "type": "point"})).unwrap();
+    let q = s.active_sequence().unwrap();
+    let (_, it) = q.find_item(ClipId(clip)).unwrap();
+    let e = it.effects.iter().find(|e| e.effect == cfa4_project::graphic::TEXT_LAYER).unwrap();
+    let cfa4_project::ParamValue::Text(t) = &e.params["text"].value else { panic!() };
+    assert_eq!(t.replace('\n', " "), "one two three four");
+}
+
+#[test]
+fn beat_detection_refuses_hours_of_audio_before_reading_it() {
+    let s = Session::default();
+    let long = cfa4_time::Tick::from_seconds_f64((crate::remix::MAX_BEAT_SECONDS + 1) as f64);
+    let e = crate::remix::beat_grid(&s, ItemId(424242), 0, cfa4_time::Tick::ZERO, long).unwrap_err();
+    assert!(e.to_string().contains("minutes"), "{e}");
+}
