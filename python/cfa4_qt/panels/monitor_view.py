@@ -143,12 +143,17 @@ class MonitorView:
     # ----- persistence -----
     @classmethod
     def load(cls, settings: QSettings | None, key: str) -> MonitorView:
-        v = cls()
         raw = settings.value(key) if settings is not None else None
         try:
             data = json.loads(raw) if isinstance(raw, str) else None
         except ValueError:
             data = None
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_dict(cls, data: Any) -> MonitorView:
+        """A view from saved (or a control request's) fields; damaged values are the defaults."""
+        v = cls()
         if isinstance(data, dict):
             for name, default in asdict(cls()).items():
                 value = data.get(name, default)

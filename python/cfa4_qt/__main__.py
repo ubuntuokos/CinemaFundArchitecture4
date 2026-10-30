@@ -29,6 +29,11 @@ def main(argv: list[str] | None = None) -> int:
         help="serve the JSON-lines control channel on 127.0.0.1:PORT for agents (docs/control-protocol.md; "
         "default: CFA4_CONTROL_PORT)",
     )
+    parser.add_argument(
+        "--control-input-only",
+        action="store_true",
+        help="with --control: only the control channel's input reaches the window (native keyboard, pointer and drops are ignored)",
+    )
     parser.add_argument("--smoke", action="store_true", help="start, wait for the engine, then quit (CI check)")
     parser.add_argument("--screenshot", help="with --smoke: save a PNG of the window before quitting")
     args = parser.parse_args(argv)
@@ -121,6 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         if not control.listen(port):
             print(f"cfa4-qt: cannot listen on 127.0.0.1:{port}: {control.server.errorString()}", file=sys.stderr)
             return 1
+        control.set_input_only(args.control_input_only)
         print(f"cfa4-qt: control channel on 127.0.0.1:{control.port()}", file=sys.stderr, flush=True)
         # driving the app never steals the user's keyboard (egui's): opened without activating it
         window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)

@@ -5800,6 +5800,27 @@ def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, t
         app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 100)
         r = many[-1].lines()
         assert r["ok"] is False and "too many connections" in r["error"]
+        # --control-input-only: the native input is ignored, the channel's own goes through
+        server.set_input_only(True)
+
+        class Native:
+            def __init__(self, kind, spontaneous):
+                self.kind, self.native = kind, spontaneous
+
+            def type(self):
+                return self.kind
+
+            def spontaneous(self):
+                return self.native
+
+        gate = server.input_gate
+        assert gate is not None and c.call("ui.inspect")["result"]["input"]["mode"] == "controlOnly"
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.KeyPress, True)) is True
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.MouseButtonPress, True)) is True
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.KeyPress, False)) is False
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.Close, True)) is False
+        server.set_input_only(False)
+        assert server.input_gate is None and c.call("ui.inspect")["result"]["input"]["mode"] == "native"
     finally:
         server.close()
         win._quit_confirmed = True
@@ -5862,9 +5883,21 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         dialog = c.call("ui.inspect")["result"]["dialog"]
         fields = c.call("ui.elements", {"prefix": dialog})["result"]
         assert any(e["id"].endswith(".ok") for e in fields), fields
+        # ui.set fills its fields as typing would
+        assert c.call("ui.set", {"menuDialog": {"name": "Cue from an agent"}})["ok"]
+        assert win.last_dialog.params["name"] == "Cue from an agent"
+        assert win.last_dialog.findChild(QtWidgets.QLineEdit, f"{dialog}.name").text() == "Cue from an agent"
+        assert c.call("ui.set", {"menuDialog": {"noSuchField": 1}})["ok"] is False
         cancel = next(e["id"] for e in fields if e["id"].endswith(".cancel"))
         assert c.call("ui.click", {"id": cancel})["ok"]
         assert wait_until(app, lambda: c.call("ui.inspect")["result"]["dialog"] is None, 10_000)
+        assert c.call("ui.set", {"clipDialog": {"name": "x"}})["ok"] is False, "no dialog is open"
+        # the monitors' view settings
+        assert c.call("ui.set", {"program": {"show_rulers": True, "zoom": 2.0}})["ok"]
+        assert win.monitor.mv.show_rulers is True and win.monitor.mv.zoom == 2.0
+        assert c.call("ui.set", {"program": {"zoom": "huge"}})["ok"] and win.monitor.mv.zoom is None, "a damaged value is the default (Fit)"
+        assert c.call("ui.set", {"source": {"nonsense": 1}})["ok"] is False
+        c.call("ui.set", {"program": {"show_rulers": False}})
         # keyboard: focus a field, type, and a key; another window of the process holding the
         # application's focus (the full suite leaves some) neither gets the keys nor the clicks
         stray = QtWidgets.QLineEdit()
@@ -5888,6 +5921,30 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         tx, ty, tw, th = tl["rect"]
         assert c.call("ui.scroll", {"x": tx + tw / 2, "y": ty + th / 2, "dy": -120})["ok"]
         assert c.call("ui.drag", {"from": {"x": tx + 300, "y": ty + 10}, "to": {"x": tx + 400, "y": ty + 10}, "steps": 4})["ok"]
+        # timeline hit-testing: a clip's middle and edge, the ruler, the trim each tool starts
+        c.call("ui.set", {"timeline": {"fit": True}})
+        clip = next(
+            i
+            for t in win.sequence["video"]
+            for i in t.get("items") or []
+            if i.get("end", 0) > i.get("start", 0)
+            and not any(x.get("start", 0) <= i["start"] <= x.get("start", 0) + x.get("duration", 0) for x in t.get("transitions") or [])
+        )
+        cid = clip["clip"]
+        mid = c.call("ui.timeline.locate", {"clip": cid})["result"]
+        h = c.call("ui.timeline.hit", mid)["result"]
+        assert (h["hit"], h["clip"], h["edge"], h["kind"]) == ("clip", cid, None, None), h
+        edge = c.call("ui.timeline.locate", {"clip": cid, "edge": "in"})["result"]
+        h = c.call("ui.timeline.hit", edge)["result"]
+        assert (h["clip"], h["edge"], h["kind"]) == (cid, "In", "trim"), h
+        assert c.call("ui.timeline.hit", {**edge, "modifiers": ["shift"]})["result"]["kind"] is None
+        c.call("ui.set", {"tool": "ripple"})
+        assert c.call("ui.timeline.hit", edge)["result"]["kind"] == "ripple"
+        c.call("ui.set", {"tool": "selection"})
+        canvas_at = next(e for e in c.call("ui.elements", {"prefix": "timeline.canvas"})["result"] if e["id"] == "timeline.canvas")["rect"]
+        h = c.call("ui.timeline.hit", {"x": canvas_at[0] + 400, "y": canvas_at[1] + 5})["result"]
+        assert h["hit"] == "ruler" and isinstance(h["time"], int), h
+        assert c.call("ui.timeline.locate", {"clip": 10**9})["ok"] is False
         # panels, playback, resize
         assert c.call("ui.panel.close", {"panel": "Events"})["ok"] and win.docks["Events"].isHidden()
         assert c.call("ui.panel.show", {"panel": "Events"})["ok"] and not win.docks["Events"].isHidden()

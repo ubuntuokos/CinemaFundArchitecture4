@@ -10,10 +10,13 @@ Methods: ``engine.execute`` (the command runs as given, a UI command in the wind
 automation id: id, label, rect in window coordinates, enabled), ``ui.click`` / ``ui.move``
 (``{id}`` or ``{x, y}``, ``button``, ``count``, ``modifiers``), ``ui.drag {from, to, steps,
 modifiers}``, ``ui.scroll {id|x,y, dx, dy, modifiers}``, ``ui.key {key}``, ``ui.type {text}``,
-``ui.set {tool, workspace, timeline: {pps, scroll}}``, ``ui.panel.show`` / ``ui.panel.close
+``ui.set {tool, workspace, timeline: {pps, scroll, fit}, program / source: {monitor view fields},
+clipDialog / menuDialog: {param: value}}``, ``ui.timeline.hit {x, y, modifiers?}`` /
+``ui.timeline.locate {clip, edge?}``, ``ui.panel.show`` / ``ui.panel.close
 {panel}``, ``ui.playback {action, speed?}``, ``ui.focus {id?}``, ``ui.screenshot {path?, panel?}``,
 ``ui.resize {width, height}``, ``app.quit`` (no save prompt: unsaved changes stay in the recovery
-journal) and ``perf.stats``.
+journal) and ``perf.stats``. ``--control-input-only`` (unattended validation) ignores the native
+keyboard, pointer and drops; ``ui.inspect.input.mode`` says which mode runs.
 """
 
 from __future__ import annotations
@@ -22,14 +25,29 @@ import base64
 import json
 import math
 from collections.abc import Callable
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QBuffer, QByteArray, QIODevice, QObject, QPoint, QPointF, Qt
+from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QObject, QPoint, QPointF, Qt
 from PySide6.QtGui import QKeySequence, QWheelEvent
 from PySide6.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QAbstractButton, QApplication, QComboBox, QDockWidget, QLabel, QLineEdit, QWidget
+from PySide6.QtWidgets import (
+    QAbstractButton,
+    QApplication,
+    QComboBox,
+    QDockWidget,
+    QDoubleSpinBox,
+    QLabel,
+    QLineEdit,
+    QPlainTextEdit,
+    QSpinBox,
+    QWidget,
+)
 
+from .panels.clip_dialogs import ClipDialog
+from .panels.monitor_view import MonitorView
+from .panels.timeline import HEADER_W, RULER_H
 from .panels.tools import TOOLS
 
 if TYPE_CHECKING:
@@ -50,6 +68,9 @@ MODIFIERS = {
     "alt": Qt.KeyboardModifier.AltModifier,
     "meta": Qt.KeyboardModifier.MetaModifier,
 }
+
+
+EDGE_NAMES = {"in": "In", "out": "Out"}  # egui's Edge names
 
 
 class ControlError(Exception):
@@ -94,6 +115,76 @@ def _number(p: dict[str, Any], key: str, lo: float, hi: float) -> float:
     return float(v)
 
 
+# what ``--control-input-only`` keeps from the user's own keyboard, pointer and drops
+NATIVE_INPUT = frozenset(
+    {
+        QEvent.Type.KeyPress,
+        QEvent.Type.KeyRelease,
+        QEvent.Type.ShortcutOverride,
+        QEvent.Type.MouseButtonPress,
+        QEvent.Type.MouseButtonRelease,
+        QEvent.Type.MouseButtonDblClick,
+        QEvent.Type.MouseMove,
+        QEvent.Type.Wheel,
+        QEvent.Type.ContextMenu,
+        QEvent.Type.DragEnter,
+        QEvent.Type.DragMove,
+        QEvent.Type.Drop,
+        QEvent.Type.TabletPress,
+        QEvent.Type.TouchBegin,
+    }
+)
+
+
+def set_dialog_field(dialog: Any, name: str, value: Any) -> None:
+    """egui's ``ui.set {clipDialog | menuDialog: {param: value}}`` on a Qt dialog: the control of
+    ``<prefix>.<param>`` is set as a user would (so the dialog's own follow-ups run), a radio
+    choice through ``<prefix>.<param>.<value>``; a parameter without a control is set directly."""
+    pre = dialog.pre
+    w = dialog.findChild(QWidget, f"{pre}.{name}")
+    if w is None:
+        radio = dialog.findChild(QAbstractButton, f"{pre}.{name}.{value}")
+        if radio is not None:
+            radio.setChecked(True)
+            return
+        if name not in dialog.params:
+            raise ControlError(f"{pre} has no field {name}")
+        dialog.params[name] = value
+        return
+    if isinstance(w, QAbstractButton) and w.isCheckable():
+        if not isinstance(value, bool):
+            raise ControlError(f"{name} takes true or false")
+        w.setChecked(value)
+    elif isinstance(w, QLineEdit):
+        w.setText(str(value))
+    elif isinstance(w, QPlainTextEdit):
+        w.setPlainText(str(value))
+    elif isinstance(w, QComboBox):
+        i = w.findData(value)
+        if i < 0:
+            i = w.findText(str(value))
+        if i < 0:
+            raise ControlError(f"{name} has no choice {value!r}")
+        w.setCurrentIndex(i)
+    elif isinstance(w, (QSpinBox, QDoubleSpinBox)):
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
+            raise ControlError(f"{name} takes a number")
+        w.setValue(int(value) if isinstance(w, QSpinBox) else float(value))
+    else:
+        raise ControlError(f"{name} cannot be set")
+
+
+class InputGate(QObject):
+    """egui's ``--control-input-only``: for unattended validation, only the control channel's
+    input reaches the widgets; the native keyboard, pointer, drops (and so the menus) are
+    ignored. Close and screenshots still work. Installed only in that opt-in mode (an app-wide
+    filter costs every event)."""
+
+    def eventFilter(self, _obj: Any, event: Any) -> bool:
+        # the control channel's events are posted by the app itself (not spontaneous)
+        return event.type() in NATIVE_INPUT and event.spontaneous()
+
+
 class ControlServer(QObject):
     """Serves the control channel for ``window`` from the Qt event loop (no threads)."""
 
@@ -103,6 +194,18 @@ class ControlServer(QObject):
         self.server = QTcpServer(self)
         self.server.newConnection.connect(self._accept)
         self.buffers: dict[QTcpSocket, bytearray] = {}
+        self.input_gate: InputGate | None = None
+
+    def set_input_only(self, on: bool) -> None:
+        """``--control-input-only``: ignore the native input (see :class:`InputGate`)."""
+        app = QApplication.instance()
+        if on and self.input_gate is None and app is not None:
+            self.input_gate = InputGate(self)
+            app.installEventFilter(self.input_gate)
+        elif not on and self.input_gate is not None:
+            if app is not None:
+                app.removeEventFilter(self.input_gate)
+            self.input_gate = None
 
     def listen(self, port: int) -> bool:
         """Listen on 127.0.0.1:``port`` (0: any free port, see :meth:`port`)."""
@@ -242,6 +345,10 @@ class ControlServer(QObject):
             else:
                 dock.close()
             reply(True, {})
+        elif method == "ui.timeline.hit":
+            reply(True, self.timeline_hit(p))
+        elif method == "ui.timeline.locate":
+            reply(True, self.timeline_locate(p))
         elif method == "ui.playback":
             self.playback(p)
             reply(True, {})
@@ -301,6 +408,7 @@ class ControlServer(QObject):
             "dialog": open_dialog,
             "keyboardFocus": self._keyboard_target().objectName(),
             "window": {"width": win.width(), "height": win.height(), "active": win.isActiveWindow()},
+            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": win.isActiveWindow()},
         }
 
     def _windows(self) -> list[QWidget]:
@@ -438,6 +546,30 @@ class ControlServer(QObject):
             if not isinstance(space, str) or space not in win.workspaces.all_names():
                 raise ControlError(f"unknown workspace {space!r}")
             win.workspaces.switch(space, win.restore_layout)
+        for name, mon in (("program", win.monitor), ("source", win.source_monitor)):
+            fields = p.get(name)
+            if fields is None:
+                continue
+            known = asdict(mon.mv)
+            if not isinstance(fields, dict) or any(k not in known for k in fields):
+                raise ControlError(f"{name} takes monitor view fields: {', '.join(known)}")
+            merged = MonitorView.from_dict({**known, **fields})
+            mon.set_view(**{k: getattr(merged, k) for k in fields})
+        for key in ("clipDialog", "menuDialog"):
+            fields = p.get(key)
+            if fields is None:
+                continue
+            dialog = win.last_dialog
+            try:
+                shown = dialog is not None and dialog.isVisible()
+            except RuntimeError:  # closed and deleted
+                shown = False
+            if not shown or not isinstance(dialog, ClipDialog):
+                raise ControlError(f"{key}: no dialog is open")
+            if not isinstance(fields, dict):
+                raise ControlError(f"{key} takes {{param: value}}")
+            for name, value in fields.items():
+                set_dialog_field(dialog, str(name), value)
         tl = p.get("timeline")
         if isinstance(tl, dict):
             canvas = win.timeline.canvas
@@ -448,6 +580,74 @@ class ControlServer(QObject):
             if tl.get("fit") is True:
                 canvas.zoom_to_fit()
             canvas.update()
+
+    # ----- timeline hit-testing (egui's ``timeline::hit_json`` / ``locate``) -----
+    def _canvas_point(self, p: dict[str, Any]) -> QPoint:
+        canvas = self.window.timeline.canvas
+        x, y = _number(p, "x", -1e5, 1e5), _number(p, "y", -1e5, 1e5)
+        return canvas.mapFromGlobal(self.window.mapToGlobal(QPoint(round(x), round(y))))
+
+    def timeline_hit(self, p: dict[str, Any]) -> dict[str, Any]:
+        """What the timeline shows at window point ``{x, y}`` and ``kind``, the trim a press of the
+        current tool with ``modifiers`` starts there (``trim``, ``ripple``, ``roll``,
+        ``rateStretch``, ``remix``, ``volume`` on an audio clip's Volume line, or null)."""
+        canvas = self.window.timeline.canvas
+        pos = self._canvas_point(p)
+        mods = modifiers_of(p.get("modifiers"))
+        if not canvas.sequence or not canvas.rect().contains(pos):
+            return {"hit": "none"}
+        t = canvas.time_at(pos.x())
+        if pos.y() < RULER_H and pos.x() >= HEADER_W:
+            return {"hit": "ruler", "time": t}
+        tool = canvas.tool
+        if tool in ("selection", "pen"):
+            line = canvas.volume_line_at(pos)
+            if line is not None:
+                row, clip, _r = line
+                return {"hit": "clip", "track": row.track_id, "clip": clip.get("clip"), "edge": None, "kind": "volume", "time": t}
+        th = canvas.transition_hit(pos)
+        if th is not None:
+            row, x, edge = th
+            return {"hit": "transition", "track": row.track_id, "transition": x.get("id"), "edge": EDGE_NAMES.get(edge)}
+        row, clip, edge = canvas.hit(pos)
+        if row is None:
+            return {"hit": "none"}
+        if clip is None:
+            return {"hit": "empty", "track": row.track_id, "time": t}
+        kind = None
+        if edge:
+            additive = bool(mods & (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier))
+            if tool == "selection" and not additive:
+                kind = "trim"
+            elif tool == "ripple":
+                kind = "ripple"
+            elif tool == "rolling":
+                kind = "roll" if canvas.neighbour(row, clip, edge) is not None else "trim"
+            elif tool == "rateStretch":
+                kind = "rateStretch"
+            elif tool == "remix" and edge == "out":
+                kind = "remix"
+        return {"hit": "clip", "track": row.track_id, "clip": clip.get("clip"), "edge": EDGE_NAMES.get(edge), "kind": kind, "time": t}
+
+    def timeline_locate(self, p: dict[str, Any]) -> dict[str, Any]:
+        """The window point of a clip's middle, or 2 px inside its ``edge`` ("in" / "out")."""
+        canvas = self.window.timeline.canvas
+        cid = p.get("clip")
+        edge = p.get("edge")
+        if not isinstance(cid, int) or isinstance(cid, bool):
+            raise ControlError("need `clip`")
+        if edge not in (None, "in", "out"):
+            raise ControlError("edge must be in or out")
+        for row in canvas.rows:
+            for clip in row.track.get("items") or []:
+                if isinstance(clip, dict) and clip.get("clip") == cid:
+                    r = canvas.clip_rect(row, clip)
+                    x = r.left() + 2 if edge == "in" else r.right() - 2 if edge == "out" else r.center().x()
+                    at = canvas.mapToGlobal(QPoint(round(x), round(row.top + row.height / 2))) - self.window.mapToGlobal(QPoint(0, 0))
+                    if not canvas.rect().contains(canvas.mapFromGlobal(self.window.mapToGlobal(at))):
+                        break
+                    return {"x": at.x(), "y": at.y()}
+        raise ControlError("clip not visible in the timeline")
 
     def playback(self, p: dict[str, Any]) -> None:
         mon = self.window.focused_monitor() if p.get("monitor") is None else self.window.source_monitor if p.get("monitor") == "source" else self.window.monitor
