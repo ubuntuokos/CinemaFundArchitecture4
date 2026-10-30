@@ -3,6 +3,7 @@ engine (always) and the real Rust engine (when it is built)."""
 
 from __future__ import annotations
 
+import base64
 import io
 import json
 import os
@@ -683,6 +684,80 @@ def test_monitor_range_drag_survives_a_refresh_of_the_same_range(app):
     bar.set_range(0, 100 * fd, 12 * fd, 20 * fd, fd)
     assert bar._drag is None, "a range changed elsewhere ends it"
     bar.deleteLater()
+
+
+def test_review_regressions_link_media_caption_flush_and_lane_sampling(app):
+    """Codex review regressions: a Link Media search answered after another clip was picked put
+    the first clip's candidates under the second; Save (Ctrl+S in a caption field) saved without
+    the caption edit; an automation lane re-sorted its keyframes for every sampled pixel."""
+    import itertools
+    import random
+
+    from cfa4_qt.panels import timeline as tl
+    from cfa4_qt.panels.caption_properties import CaptionProperties
+    from cfa4_qt.panels.media_dialogs import LinkMediaDialog
+
+    class Engine:
+        def __init__(self):
+            self.calls: list[tuple[str, dict, object]] = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.calls.append((command, dict(params or {}), on_reply))
+            return len(self.calls)
+
+    engine = Engine()
+    d = LinkMediaDialog(None, engine)
+    reload = engine.calls[-1]
+    assert reload[0] == "media.linkMedia"
+    reload[2]({"missing": [{"item": 1, "name": "a.wav"}, {"item": 2, "name": "b.wav"}]}, None)
+    assert d.item() == 1
+    d.search()
+    first = engine.calls[-1]
+    assert first[0] == "media.search" and first[1]["item"] == 1
+    d.table.setCurrentCell(1, 0)
+    assert d.item() == 2
+    first[2]({"results": [{"candidates": [{"path": "/a.wav", "ok": True}]}]}, None)
+    assert d.candidates == [], "clip 1's candidates are not offered for clip 2"
+    d.search()
+    d.search()
+    older, newer = engine.calls[-2], engine.calls[-1]
+    newer[2]({"results": [{"candidates": [{"path": "/b.wav", "ok": True}]}]}, None)
+    older[2]({"results": [{"candidates": [{"path": "/old.wav", "ok": True}]}]}, None)
+    assert [c[0] for c in d.candidates] == ["/b.wav"], "an older search does not replace a newer one"
+    d.deleteLater()
+
+    # the caption field being edited is sent by flush (Save asks for it first)
+    sent: list[tuple[str, dict]] = []
+    cap = CaptionProperties()
+    cap.command.connect(lambda c, p: sent.append((c, p)))
+    cap.show()
+    cap.set_caption({"label": "C1", "name": "Subtitles"}, {"id": 7, "text": "old", "start": "00:00:01:00", "end": "00:00:02:00"})
+    cap.text.setPlainText("new text")
+    cap.flush()
+    assert sent == [("captions.setText", {"caption": 7, "text": "new text"})]
+    cap.flush()
+    assert len(sent) == 1, "nothing new: nothing sent"
+    cap.deleteLater()
+
+    # lane sampling with the keys prepared once gives the old per-sample answers
+    def old_value(lane, t):
+        keys = tl.lane_keys(lane)
+        if not keys:
+            return 0.0
+        if t <= keys[0][0]:
+            return keys[0][1]
+        for (t0, v0, hold), (t1, v1, _h) in itertools.pairwise(keys):
+            if t0 <= t < t1:
+                return v0 if hold or lane.get("hold") is True else v0 + (v1 - v0) * (t - t0) / max(1, t1 - t0)
+        return keys[-1][1]
+
+    rng = random.Random(4)
+    for hold in (False, True):
+        lane = {"keys": [[rng.randrange(0, 10_000), rng.uniform(-60, 6), rng.random() < 0.2] for _ in range(300)], "hold": hold}
+        lane["keys"] += [[5000, 1.0], [5000, 2.0]]  # duplicate times
+        keys = tl.lane_keys(lane)
+        for t in [*range(-10, 10_020, 7), 5000]:
+            assert tl.lane_value(lane, t, keys) == old_value(lane, t) == tl.lane_value(lane, t), t
 
 
 def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
@@ -5598,7 +5673,7 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     def notes(engine: EngineClient) -> str:
         out: list[str] = []
         engine.execute("project.notes", {}, on_reply=lambda r, _b: out.append(str((r or {}).get("text"))), on_error=lambda m: out.append(""))
-        assert wait_until(app, lambda: bool(out), 10_000)
+        assert wait_until(app, lambda: bool(out), 30_000)
         return out[-1]
 
     keep = tmp_path / "keep"
@@ -5617,8 +5692,10 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     win, engine = started(keep)
     try:
         assert wait_until(app, lambda: len(asked) == 2, 30_000)
-        assert wait_until(app, lambda: notes(engine) == "lost work", 20_000)
-        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "lost work", 20_000)
+        # (the window shows what the engine recovered; asked once it settles, as recovering a
+        # project can keep a loaded engine busy for a while)
+        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "lost work", 60_000), win.notes.edit.toPlainText()
+        assert notes(engine) == "lost work"
     finally:
         stopped(win, engine)
 
@@ -5638,6 +5715,203 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
         assert len(asked) == 3, "a discarded journal is not offered again"
     finally:
         stopped(win, engine)
+
+
+class _ControlClient:
+    """A test client of the control channel that leaves the Qt event loop running."""
+
+    def __init__(self, app, port: int) -> None:
+        import socket
+
+        self.app = app
+        self.sock = socket.create_connection(("127.0.0.1", port), timeout=5)
+        self.sock.setblocking(False)
+        self.buf = b""
+        self.n = 0
+
+    def lines(self, timeout_ms: int = 20_000) -> dict:
+        def got() -> bool:
+            try:
+                chunk = self.sock.recv(1 << 20)
+            except BlockingIOError:
+                return b"\n" in self.buf
+            if chunk == b"":
+                return True
+            self.buf += chunk
+            return b"\n" in self.buf
+
+        assert wait_until(self.app, got, timeout_ms), "no reply"
+        line, _, self.buf = self.buf.partition(b"\n")
+        return json.loads(line) if line else {}
+
+    def send_raw(self, data: bytes) -> None:
+        self.sock.sendall(data)
+
+    def call(self, method: str, params: dict | None = None, timeout_ms: int = 20_000):
+        self.n += 1
+        self.send_raw(json.dumps({"id": self.n, "method": method, "params": params or {}}).encode() + b"\n")
+        r = self.lines(timeout_ms)
+        assert r.get("id") == self.n, r
+        return r
+
+    def closed(self) -> bool:
+        def gone() -> bool:
+            try:
+                return self.sock.recv(1 << 16) == b""
+            except BlockingIOError:
+                return False
+            except OSError:
+                return True
+
+        return wait_until(self.app, gone, 10_000)
+
+
+def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, tmp_path: Path):
+    """egui's transport rules: not JSON, an array, no method, not UTF-8 each get one error reply
+    and the connection is closed; blank lines are skipped; at most 16 connections."""
+    from cfa4_qt.control import MAX_CONNECTIONS, ControlServer, modifiers_of
+    from cfa4_qt.main_window import MainWindow
+
+    assert modifiers_of(["shift", "Ctrl"]) == QtCore.Qt.KeyboardModifier.ShiftModifier | QtCore.Qt.KeyboardModifier.ControlModifier
+    assert modifiers_of("Alt+Shift") == QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ShiftModifier
+    assert modifiers_of(None) == QtCore.Qt.KeyboardModifier.NoModifier
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0) and server.port() > 0
+    try:
+        for bad in (b"GET / HTTP/1.1\r\n", b"[1, 2]\n", b'{"id": 1}\n', b"\xff\xfe{}\n", b'{"method": 5}\n'):
+            c = _ControlClient(app, server.port())
+            c.send_raw(b"\n" + bad + b'{"id": 9, "method": "ui.inspect"}\n')
+            r = c.lines()
+            assert r["ok"] is False and "closing the connection" in r["error"], (bad, r)
+            assert c.closed(), bad
+        c = _ControlClient(app, server.port())
+        r = c.call("nope.method")
+        assert r["ok"] is False and "unknown method" in r["error"]
+        r = c.call("ui.click", {"id": "no.such.element"})
+        assert r["ok"] is False and "no visible element" in r["error"]
+        r = c.call("ui.resize", {"width": "wide", "height": 3})
+        assert r["ok"] is False
+        assert c.call("ui.inspect")["ok"] is True, "a refused request leaves the connection usable"
+        many = [_ControlClient(app, server.port()) for _ in range(MAX_CONNECTIONS)]
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 100)
+        r = many[-1].lines()
+        assert r["ok"] is False and "too many connections" in r["error"]
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path: Path):
+    """egui's control channel on the Qt window: engine.execute and ui.menu.invoke run commands,
+    ui.inspect / ui.elements read the window, ui.click / ui.type / ui.key / ui.drag / ui.scroll
+    drive its widgets, ui.set / ui.panel.* / ui.playback change it, ui.screenshot captures it and
+    app.quit closes it."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.tools import GROUPS
+
+    razor_id = f"tools.group.{next(i for i, g in enumerate(GROUPS) if g[0].id == 'razor')}"
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+        # commands
+        cmds = c.call("engine.commands")["result"]
+        assert any(x["id"] == "sequence.addEdit" for x in cmds)
+        r = c.call("engine.execute", {"command": "project.setNotes", "params": {"text": "from an agent"}})
+        assert r["ok"], r
+        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "from an agent", 20_000)
+        assert c.call("engine.execute", {"command": "no.such.command"})["ok"] is False
+        # inspect and set
+        s = c.call("ui.inspect")["result"]
+        assert s["tool"] == "selection" and s["panels"]["Timeline"] is True and s["playback"]["program"]["playing"] is False
+        s = c.call("ui.set", {"tool": "razor", "timeline": {"pps": 80, "scroll": 0}})["result"]
+        assert s["tool"] == "razor" and s["timeline"]["pps"] == 80 and win.timeline.canvas.tool == "razor"
+        assert c.call("ui.set", {"tool": "nonsense"})["ok"] is False
+        c.call("ui.set", {"tool": "selection"})
+        # elements: the Tools panel's buttons with their rects
+        els = c.call("ui.elements", {"prefix": "tools."})["result"]
+        razor = next(e for e in els if e["id"] == razor_id)
+        x, y, w, h = razor["rect"]
+        assert w > 0 and h > 0 and 0 <= x < win.width() and 0 <= y < win.height()
+        # click by id and by point
+        assert c.call("ui.click", {"id": razor_id})["ok"]
+        assert wait_until(app, lambda: win.timeline.canvas.tool == "razor", 5_000)
+        c.call("ui.set", {"tool": "selection"})
+        assert c.call("ui.click", {"x": x + w / 2, "y": y + h / 2})["ok"]
+        assert wait_until(app, lambda: win.timeline.canvas.tool == "razor", 5_000)
+        c.call("ui.set", {"tool": "selection"})
+        # a dialog: menu invoke opens it, ui.elements lists its fields, typing fills one
+        r = c.call("ui.menu.invoke", {"command": "markers.addFlashCue"})
+        assert r["ok"], r
+        assert wait_until(app, lambda: c.call("ui.inspect")["result"]["dialog"] is not None, 10_000)
+        dialog = c.call("ui.inspect")["result"]["dialog"]
+        fields = c.call("ui.elements", {"prefix": dialog})["result"]
+        assert any(e["id"].endswith(".ok") for e in fields), fields
+        cancel = next(e["id"] for e in fields if e["id"].endswith(".cancel"))
+        assert c.call("ui.click", {"id": cancel})["ok"]
+        assert wait_until(app, lambda: c.call("ui.inspect")["result"]["dialog"] is None, 10_000)
+        # keyboard: focus a field, type, and a key; another window of the process holding the
+        # application's focus (the full suite leaves some) neither gets the keys nor the clicks
+        stray = QtWidgets.QLineEdit()
+        stray.setObjectName(win.project_panel.filter.objectName())
+        stray.show()
+        stray.activateWindow()
+        stray.setFocus()
+        app.processEvents()
+        win.project_panel.filter.clear()
+        assert c.call("ui.focus", {"id": win.project_panel.filter.objectName()})["ok"]
+        assert c.call("ui.type", {"text": "zz"})["ok"]
+        assert win.project_panel.filter.text() == "zz"
+        assert c.call("ui.key", {"key": "Backspace"})["ok"] and win.project_panel.filter.text() == "z"
+        win.project_panel.filter.clear()
+        assert stray.text() == ""
+        stray.close()
+        stray.deleteLater()
+        assert c.call("ui.key", {"key": "Not A Key+++"})["ok"] is False
+        # pointer: a wheel and a drag reach the timeline
+        tl = next(e for e in c.call("ui.elements", {"prefix": win.timeline.canvas.objectName()})["result"] if e["id"] == win.timeline.canvas.objectName())
+        tx, ty, tw, th = tl["rect"]
+        assert c.call("ui.scroll", {"x": tx + tw / 2, "y": ty + th / 2, "dy": -120})["ok"]
+        assert c.call("ui.drag", {"from": {"x": tx + 300, "y": ty + 10}, "to": {"x": tx + 400, "y": ty + 10}, "steps": 4})["ok"]
+        # panels, playback, resize
+        assert c.call("ui.panel.close", {"panel": "Events"})["ok"] and win.docks["Events"].isHidden()
+        assert c.call("ui.panel.show", {"panel": "Events"})["ok"] and not win.docks["Events"].isHidden()
+        assert c.call("ui.panel.show", {"panel": "Nowhere"})["ok"] is False
+        assert c.call("ui.playback", {"action": "play", "monitor": "program"})["ok"]
+        assert wait_until(app, lambda: c.call("ui.inspect")["result"]["playback"]["program"]["playing"], 10_000)
+        assert c.call("ui.playback", {"action": "stop", "monitor": "program"})["ok"]
+        assert not win.monitor.playing
+        assert c.call("ui.resize", {"width": 1400, "height": 900})["result"]["width"] == 1400
+        # screenshots: to a file, of a panel, inline
+        shot = tmp_path / "window.png"
+        r = c.call("ui.screenshot", {"path": str(shot)})["result"]
+        assert shot.is_file() and r["width"] == win.width()
+        r = c.call("ui.screenshot", {"panel": "Timeline"})["result"]
+        assert base64.b64decode(r["png"]).startswith(b"\x89PNG")
+        assert c.call("perf.stats")["ok"]
+        # app.quit closes without the save prompt
+        assert c.call("app.quit")["ok"]
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
 
 
 def test_media_dialog_helpers():

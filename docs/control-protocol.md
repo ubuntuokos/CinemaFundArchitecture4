@@ -21,7 +21,9 @@ so only enable it while you use it. Transport: `apps/cfa4/src/control_server.rs`
 {"id": 1, "ok": true, "result": {"cuts": 2}}
 ```
 
-Methods (handlers in `crates/ui-egui/src/control.rs`):
+Methods (handlers in `crates/ui-egui/src/control.rs`; the Qt 6 GUI serves the same channel with
+`cfa4-qt --control <port>`, `python/cfa4_qt/control.py`, element ids being the widgets' object names —
+see `docs/qt-parity.md` 1.11 for the methods it has so far):
 
 | Method | Params | |
 |---|---|---|

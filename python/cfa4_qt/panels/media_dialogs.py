@@ -171,6 +171,7 @@ class LinkMediaDialog(_Dialog):
         self.rows: list[dict[str, Any]] = []
         self.skipped: set[int] = set()
         self.row = 0
+        self._searches = 0  # each media.search; a reply for an older one (or another clip) is dropped
         self.candidates: list[tuple[str, bool, bool | None, str]] = []
         self.intro = QLabel(self)
         self.intro.setWordWrap(True)
@@ -284,6 +285,7 @@ class LinkMediaDialog(_Dialog):
     def _pick_row(self, r: int) -> None:
         if 0 <= r < len(self.rows) and r != self.row:
             self.row = r
+            self._searches += 1  # a search still running was for the other clip
             self._set_candidates([])
 
     def item(self) -> int | None:
@@ -341,8 +343,12 @@ class LinkMediaDialog(_Dialog):
         if item is None:
             return
         p = {**self.match_params(), "folder": self.folder.text(), "item": item, "exactName": self.exact.isChecked()}
+        self._searches += 1
+        gen = self._searches
 
         def got(r: Any) -> None:
+            if gen != self._searches or self.item() != item:
+                return  # another clip was picked, or a newer search runs: its candidates are not these
             found = candidates_of(r)
             self._set_candidates(found)
             self.say("" if found else tr("Nothing found with that name."))

@@ -496,6 +496,7 @@ class PropertiesPanel(QWidget):
         self.command.emit(command, params)
 
     def flush(self) -> None:
+        self.caption.flush()
         self._send_timer.stop()
         if not self._pending:
             return

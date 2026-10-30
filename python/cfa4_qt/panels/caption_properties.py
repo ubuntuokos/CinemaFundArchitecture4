@@ -108,6 +108,14 @@ class CaptionProperties(QWidget):
                 field.setText(str(caption.get(edge) or ""))
         self.duration.setText(str(caption.get("duration") or ""))
 
+    def flush(self) -> None:
+        """Send what is being edited now (Save, or a check for unsaved changes, comes first)."""
+        if self.caption is None or not self.isVisible():
+            return
+        self._text_done()
+        for edge, _label, key in EDGES:
+            self._tc_done(edge, key)
+
     def _text_done(self) -> None:
         c = self.caption
         text = self.text.toPlainText()

@@ -12,7 +12,7 @@ Transition Duration.
 
 from __future__ import annotations
 
-import itertools
+import bisect
 import math
 import unicodedata
 from dataclasses import dataclass
@@ -297,20 +297,22 @@ def lane_keys(lane: dict[str, Any]) -> list[tuple[int, float, bool]]:
     return sorted(out, key=lambda k: k[0])
 
 
-def lane_value(lane: dict[str, Any], t: int) -> float:
-    """The stored automation at sequence time ``t`` (linear between keyframes, held for switches)."""
-    keys = lane_keys(lane)
+def lane_value(lane: dict[str, Any], t: int, keys: list[tuple[int, float, bool]] | None = None) -> float:
+    """The stored automation at sequence time ``t`` (linear between keyframes, held for switches).
+    ``keys``: ``lane_keys(lane)`` already prepared (a repaint samples one lane many times)."""
+    keys = lane_keys(lane) if keys is None else keys
     if not keys:
         v = finite_db(lane.get("static"))
         return 0.0 if v is None else v
     if t <= keys[0][0]:
         return keys[0][1]
-    for (t0, v0, hold), (t1, v1, _h) in itertools.pairwise(keys):
-        if t0 <= t < t1:
-            if hold or lane.get("hold") is True:
-                return v0
-            return v0 + (v1 - v0) * (t - t0) / max(1, t1 - t0)
-    return keys[-1][1]
+    i = bisect.bisect_right(keys, t, key=lambda k: k[0])  # keys[i - 1] <= t < keys[i]
+    if i >= len(keys):
+        return keys[-1][1]
+    (t0, v0, hold), (t1, v1, _h) = keys[i - 1], keys[i]
+    if hold or lane.get("hold") is True:
+        return v0
+    return v0 + (v1 - v0) * (t - t0) / max(1, t1 - t0)
 
 
 def source_time_at(clip: dict[str, Any], offset: int) -> int:
@@ -1536,7 +1538,8 @@ class TimelineCanvas(QWidget):
         p.setClipRect(vis.adjusted(0, -5, 0, 5).intersected(QRectF(HEADER_W, top, self.width(), max(0, self.height() - top - MASTER_H))))
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         n = max(1, min(4096, math.ceil(vis.width() / 2)))
-        pts = [QPointF(x, self.lane_y(row, lane, lane_value(lane, self.time_at(x)))) for x in (vis.left() + vis.width() * i / n for i in range(n + 1))]
+        keys = lane_keys(lane)
+        pts = [QPointF(x, self.lane_y(row, lane, lane_value(lane, self.time_at(x), keys))) for x in (vis.left() + vis.width() * i / n for i in range(n + 1))]
         p.setPen(QPen(QColor(0, 0, 0), 1))
         p.drawPolyline(QPolygonF([q + QPointF(0, 1) for q in pts]))
         p.setPen(QPen(LANE_COL, 1.5))

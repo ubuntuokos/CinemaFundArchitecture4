@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -20,6 +21,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="install a desktop entry and the CFA4 icons for this checkout into ~/.local/share "
         "(so the taskbar shows CFA4 and its logo), then exit",
+    )
+    parser.add_argument(
+        "--control",
+        type=int,
+        metavar="PORT",
+        help="serve the JSON-lines control channel on 127.0.0.1:PORT for agents (docs/control-protocol.md; "
+        "default: CFA4_CONTROL_PORT)",
     )
     parser.add_argument("--smoke", action="store_true", help="start, wait for the engine, then quit (CI check)")
     parser.add_argument("--screenshot", help="with --smoke: save a PNG of the window before quitting")
@@ -98,6 +106,24 @@ def main(argv: list[str] | None = None) -> int:
     except EngineError as exc:
         QMessageBox.critical(None, "CFA4", str(exc))
         return 1
+    port = args.control
+    if port is None and os.environ.get("CFA4_CONTROL_PORT", "").strip().isdigit():
+        port = int(os.environ["CFA4_CONTROL_PORT"])
+    control = None
+    if port is not None:
+        from PySide6.QtCore import Qt
+
+        from .control import ControlServer
+
+        if not 0 <= port <= 65535:
+            parser.error("--control PORT must be 0 to 65535")
+        control = ControlServer(window)
+        if not control.listen(port):
+            print(f"cfa4-qt: cannot listen on 127.0.0.1:{port}: {control.server.errorString()}", file=sys.stderr)
+            return 1
+        print(f"cfa4-qt: control channel on 127.0.0.1:{control.port()}", file=sys.stderr, flush=True)
+        # driving the app never steals the user's keyboard (egui's): opened without activating it
+        window.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
     window.show()
 
     if args.smoke:
