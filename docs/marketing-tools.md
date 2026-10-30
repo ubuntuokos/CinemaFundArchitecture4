@@ -8,11 +8,14 @@ implementations of the editing steps those workflows repeat. None of them uses a
 ideas from the same review are listed in [gaps.md](gaps.md) G12.
 
 Every tool is a command (UI, CLI, control channel and MCP dispatch by id) and sits in a menu.
+The engine commands appear in the Qt6 GUI's menus from the command registry; the Social Safe
+Zones overlay, the spreadsheet picker and the result messages are Qt6 features
+(`python/cfa4_qt`), since the egui editor is frozen ([VISION.md](../VISION.md) §2.1).
 
 | Tool | Menu | Command | Code |
 |---|---|---|---|
 | Beat markers | Markers ▸ Add Beat Markers, Clear Beat Markers | `markers.addBeats`, `markers.clearBeats` | `crates/engine/src/beat_markers.rs` |
-| Social safe zones | View ▸ Social Safe Zones ▸ Off / TikTok / Instagram Reels / YouTube Shorts | `view.socialSafeZone.*` | `crates/engine/src/social.rs` (`SafeZone`), Program monitor overlay |
+| Social safe zones | View ▸ Social Safe Zones ▸ Off / TikTok / Instagram Reels / YouTube Shorts | `view.socialSafeZone.*` (Qt6 action names) | `crates/engine/src/social.rs` (`SafeZone`), `python/cfa4_qt/panels/monitor_view.py` and `monitor.py` |
 | Auto Reframe Sequence | Sequence ▸ Auto Reframe Sequence… | `sequence.autoReframe` | `crates/engine/src/social.rs` |
 | Social deliverables | File ▸ Export ▸ Social Deliverables… | `export.socialDeliverables` | `crates/engine/src/social.rs` |
 | Check before export | File ▸ Export ▸ Check Before Export…, Markers ▸ Clear Check Markers | `sequence.checkDelivery`, `markers.clearChecks` | `crates/engine/src/delivery_check.rs` |
@@ -24,7 +27,8 @@ Every tool is a command (UI, CLI, control channel and MCP dispatch by id) and si
 Select a music clip on an audio track and choose Markers ▸ Add Beat Markers. A marker lands on
 the attack of every beat (`every`: 2, 4 or 8 for every 2nd beat, every bar of 4/4, every
 2 bars). The beats come from the deterministic tracker of Clip ▸ Remix (onset envelope, tempo by
-autocorrelation, dynamic-programming beat tracking), cached per media range. Speed-changed
+autocorrelation, dynamic-programming beat tracking), from the clip's own audio stream; it needs
+only four beats (less music than Remix), and refuses more than 30 minutes at once. Speed-changed
 clips map through their speed and remixed clips through their pieces; reversed clips are refused.
 Running it again replaces the beat markers inside the clip's span. Cuts snap to markers, so
 clips can be cut on the beat.
@@ -36,17 +40,20 @@ clips can be cut on the beat.
 ## Social safe zones
 
 TikTok, Instagram Reels and YouTube Shorts cover the edges of a vertical video with their own
-buttons, captions and account names. The overlay shades those parts of the Program monitor and
+buttons, captions and account names. The overlay shades those parts of the focused monitor and
 outlines the safe area. The insets are CFA4's own conservative approximations (as fractions of
 a 1080 × 1920 frame), not the platforms' graphics; platforms change their layouts, so treat the
-outline as a guide. Monitor state key: `social_zone` (`tiktok`, `reels`, `shorts`, empty = off).
+outline as a guide. Monitor view key: `social_zone` (`tiktok`, `reels`, `shorts`, empty = off),
+remembered per monitor.
 
 ## Auto Reframe Sequence and Social Deliverables
 
 Sequence ▸ Auto Reframe Sequence… copies the active sequence at 9:16, 1:1, 4:5 or 16:9: the short
 side of the frame stays, the long side follows the aspect. Every picture clip in the copy gets
 the Auto Reframe effect (Target Aspect set to the new aspect), which keeps the subject in frame,
-and its Motion Scale grows so the picture covers the new frame. Motion positions (keyframes
+and its Motion Scale grows so the picture covers the new frame (Scale to Frame Size clips
+included). A sequence with non-square pixels is reframed by its displayed aspect, and the copy
+has square pixels. Motion positions (keyframes
 included) move with the frame's centre, so centred clips and titles stay centred; titles keep
 their size, and the check below reports layers that leave the new frame.
 
