@@ -690,6 +690,66 @@ def test_graphics_typing_session_starts_its_own_undo_step():
     assert [(p["layer"], p["merge"]) for p in sent] == [(0, False), (0, True), (1, False), (1, True)]
 
 
+def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(app):
+    """Codex review regressions: typing right after a Type-tool click, before ``graphics.newText``
+    answered, was lost (and its letters ran shortcuts); a text changed in Properties while the
+    monitor's typing session was open was overwritten by the session's stale buffer."""
+    from types import SimpleNamespace
+
+    from cfa4_qt.panels import program_graphics as pg
+
+    sent: list[tuple[str, dict]] = []
+    replies: list = []
+
+    class Engine:
+        def execute(self, command, params, on_reply=None, on_error=None):
+            replies.append((on_reply, on_error))
+
+    view = QtWidgets.QWidget()
+    overlay = SimpleNamespace(send=lambda c, p: sent.append((c, p)), engine=Engine(), data={}, view=view)
+    gt = pg.GraphicsTools.__new__(pg.GraphicsTools)
+    gt.overlay, gt.tool, gt.edit, gt.drag = overlay, "type", None, None
+    gt.to_canvas = lambda at: (None, at)
+    shown: list = []
+    gt.layers = lambda: shown
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    assert gt.edit is not None and gt.claims_key(QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, QtCore.Qt.Key.Key_V, QtCore.Qt.KeyboardModifier.NoModifier, "v"))
+    gt._replace("Hello")
+    assert not [p for c, p in sent if c == "graphics.setText"], "nothing is sent before the layer exists"
+    replies[-1][0]({"clip": 5, "layer": 2}, None)
+    texts = [p for c, p in sent if c == "graphics.setText"]
+    assert [(p["clip"], p["layer"], p["text"], p["merge"]) for p in texts] == [(5, 2, "Hello", False)]
+    gt._replace("!")
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "Hello!"
+    # a failed creation ends the pending session
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    replies[-1][1]("no graphic clip")
+    assert gt.edit is None
+    # another editor's change is adopted; the overlay showing an older text of our own is not one
+    sent.clear()
+    layer = SimpleNamespace(clip=5, layer=2, text={"text": "Old"})
+    shown[:] = [layer]
+    gt.start_edit(layer, None)
+    gt._replace("!")
+    layer.text = {"text": "Old"}  # the reply to our own edit has not come back yet
+    assert gt.edit_view() is layer and gt.edit["text"] == "Old!"
+    layer.text = {"text": "New text"}  # Properties changed it
+    assert gt.edit_view() is layer and gt.edit["text"] == "New text"
+    gt.edit["caret"] = gt.edit["anchor"] = len("New text")
+    gt._replace("!")
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "New text!"
+    # the editor's own Ctrl shortcuts are claimed; Save and Undo reach the application
+    def key(k, mods=QtCore.Qt.KeyboardModifier.ControlModifier, text=""):
+        return QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, k, mods, text)
+
+    Key = QtCore.Qt.Key
+    assert all(gt.claims_key(key(k)) for k in (Key.Key_A, Key.Key_C, Key.Key_V, Key.Key_Left))
+    assert not gt.claims_key(key(Key.Key_S)) and not gt.claims_key(key(Key.Key_Z))
+    assert gt.key(key(Key.Key_S)) is False and gt.key(key(Key.Key_Z, QtCore.Qt.KeyboardModifier.ControlModifier | QtCore.Qt.KeyboardModifier.ShiftModifier)) is False
+    assert gt.claims_key(key(Key.Key_V, QtCore.Qt.KeyboardModifier.NoModifier, "v")), "a plain letter is typed"
+    view.deleteLater()
+
+
 def test_monitor_range_drag_survives_a_refresh_of_the_same_range(app):
     """Codex review regression: dragging the marked range while playing stops playback, whose
     refresh brought the same range back and ended the drag under the held mouse."""
@@ -4593,6 +4653,11 @@ def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
         x = int(r.left() + r.width() * 0.9)
         assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip(), r, x)))) is None
         assert tl.volume_level({"volume": {"db": float("nan"), "animated": True, "curve": [None, 1e300]}}, 0.5) == 0.0
+        # the engine samples the keys too: a dip shorter than the even spacing is on the line
+        dip = {"volume": {"db": 0.0, "animated": True, "curve": [[0.0, 0.0], [0.5, 0.0], [0.5001, -96.0], [0.5002, 0.0], [1.0, 0.0]]}}
+        assert tl.volume_level(dip, 0.5001) == -96.0 and abs(tl.volume_level(dip, 0.50005) + 48.0) < 1e-6
+        assert tl.volume_level(dip, 0.25) == 0.0 and tl.volume_level(dip, 2.0) == 0.0
+        assert tl.volume_level({"volume": {"db": -3.0, "animated": True, "curve": [[0.5, 1e300], "x", [2, 0]]}}, 0.5) == -3.0
     finally:
         if canvas.last_menu is not None:
             canvas.last_menu.close()

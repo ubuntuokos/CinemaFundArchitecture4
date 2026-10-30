@@ -450,9 +450,17 @@ class GraphicsTools:
         e = self.edit
         if e is None:
             return None
+        if e.get("clip") is None:  # the new layer is still being made
+            return None
         v = next((x for x in self.layers() if x.clip == e["clip"] and x.layer == e["layer"] and x.text is not None), None)
         if v is not None:
             e["seen"] = True
+            shown = str((v.text or {}).get("text") or "")[:MAX_TEXT]
+            mine = e.setdefault("mine", [e["text"]])
+            if shown != e["text"] and shown not in mine:
+                # another editor (Properties, Essential Graphics, undo) changed the text: type into that
+                e["text"], e["mine"] = shown, [shown]
+                e["caret"], e["anchor"] = min(e["caret"], len(shown)), min(e["anchor"], len(shown))
         elif e.get("seen"):
             self.edit = None  # the layer went (undo, deleted): the edit ends
         return v
@@ -464,7 +472,7 @@ class GraphicsTools:
         if q is not None:
             caret = min(caret_hit(text_lines(v.text), q.x(), q.y(), bool((v.text or {}).get("vertical"))), len(text))
         self.edit = {"clip": v.clip, "layer": v.layer, "text": text, "caret": caret, "anchor": 0 if select_all else caret,
-                     "seen": True}
+                     "seen": True, "mine": [text]}
         if select_all:
             self.edit["caret"] = len(text)
         self.overlay.send("graphics.selectLayer", {"clip": v.clip, "layers": [v.layer]})
@@ -504,13 +512,28 @@ class GraphicsTools:
         if engine is None:
             return
 
-        def made(r: Any, _b: Any) -> None:
-            if isinstance(r, dict) and r.get("clip") is not None and isinstance(r.get("layer"), int):
-                self.edit = {"clip": r["clip"], "layer": r["layer"], "text": "", "caret": 0, "anchor": 0, "seen": False}
-                self.overlay.send("graphics.selectLayer", {"clip": r["clip"], "layers": [r["layer"]]})
-                self._focus()
+        # typing starts now; what is typed before the layer exists goes into it once it does
+        pending: dict[str, Any] = {"clip": None, "layer": None, "text": "", "caret": 0, "anchor": 0, "seen": False, "mine": [""]}
+        self.edit = pending
+        self._focus()
 
-        engine.execute(command, params, on_reply=made, on_error=lambda _m: None)
+        def made(r: Any, _b: Any) -> None:
+            if self.edit is not pending:  # the edit ended meanwhile (another click, a tool)
+                return
+            if not (isinstance(r, dict) and r.get("clip") is not None and isinstance(r.get("layer"), int)):
+                self.end_edit()
+                return
+            pending["clip"], pending["layer"] = r["clip"], r["layer"]
+            self.overlay.send("graphics.selectLayer", {"clip": r["clip"], "layers": [r["layer"]]})
+            if pending["text"]:
+                self._send_text(pending)
+            self._focus()
+
+        def failed(_m: Any) -> None:
+            if self.edit is pending:
+                self.end_edit()
+
+        engine.execute(command, params, on_reply=made, on_error=failed)
 
     def _set_text(self, text: str) -> None:
         e = self.edit
@@ -518,6 +541,15 @@ class GraphicsTools:
             return
         e["text"] = text[:MAX_TEXT]
         e["caret"], e["anchor"] = min(e["caret"], len(e["text"])), min(e["anchor"], len(e["text"]))
+        if e.get("clip") is not None:
+            self._send_text(e)
+
+    def _send_text(self, e: dict[str, Any]) -> None:
+        # the overlay may show texts this session sent after a newer one is typed: they are not
+        # another editor's change
+        mine = e.setdefault("mine", [])
+        mine.append(e["text"])
+        del mine[:-64]
         # one undo step per typing session: its first change starts it (the engine merges into any
         # Edit Text before it, even another layer's or an earlier session's)
         merge = e.get("sent") is True
@@ -863,7 +895,7 @@ class GraphicsTools:
         send = self.overlay.send
         if kind == "move" and moved and v is not None:
             delta = _linear_inverse(v.canvas_to_screen, d.get("off", cur - d["start"]))
-            send("graphics.set", {"clip": v.clip, "layer": v.layer,
+            send("graphics.set", {"clip": v.clip, "layer": v.layer, "shown": True,
                                   "props": {"position": [v.position.x() + delta.x(), v.position.y() + delta.y()]}})
         elif kind == "move" and v is not None:
             send("graphics.selectLayer", {"clip": v.clip, "layers": [v.layer]})
@@ -874,7 +906,7 @@ class GraphicsTools:
             # the anchor point moves over the layer; Position follows it, so the layer stays
             canvas = _linear_inverse(v.canvas_to_screen, cur - d["start"])
             local = _linear_inverse(v.to_screen, cur - d["start"])
-            send("graphics.set", {"clip": v.clip, "layer": v.layer, "props": {
+            send("graphics.set", {"clip": v.clip, "layer": v.layer, "shown": True, "props": {
                 "position": [v.position.x() + canvas.x(), v.position.y() + canvas.y()],
                 "anchor": [v.anchor.x() + local.x(), v.anchor.y() + local.y()]}})
         elif kind == "corner" and moved and v is not None:
@@ -940,15 +972,26 @@ class GraphicsTools:
         self.start_edit(v, e.position(), select_all=True)
         return True
 
+    @staticmethod
+    def edits_with(e: QKeyEvent) -> bool:
+        """Whether text editing uses key ``e``: typing and moving the caret do; a Ctrl / Cmd
+        shortcut only when it is one of the editor's (select all, cut, copy, paste, word and line
+        moves), so Save, Undo and the rest still reach the application."""
+        mods = e.modifiers()
+        if not mods & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier):
+            return True
+        return e.key() in (Qt.Key.Key_A, Qt.Key.Key_C, Qt.Key.Key_X, Qt.Key.Key_V, Qt.Key.Key_Backspace, Qt.Key.Key_Delete,
+                           Qt.Key.Key_Left, Qt.Key.Key_Right, Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_Home, Qt.Key.Key_End)
+
     def claims_key(self, e: QKeyEvent) -> bool:
         if self.edit is not None:  # typing goes into the text, not to the app's shortcuts
-            return True
+            return self.edits_with(e)
         return self.tool == "pen" and bool(self.pen_points) and e.key() in (
             Qt.Key.Key_Escape, Qt.Key.Key_Return, Qt.Key.Key_Enter)
 
     def key(self, e: QKeyEvent) -> bool:
         if self.edit is not None:
-            return self.text_key(e)
+            return self.edits_with(e) and self.text_key(e)
         if self.tool != "pen" or not self.pen_points:
             return False
         if e.key() == Qt.Key.Key_Escape:

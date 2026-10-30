@@ -775,7 +775,7 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                         let p0 = v.spec.transform.position;
                         actions.push((
                             "graphics.set".into(),
-                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + delta.x, p0.y + delta.y]}}),
+                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + delta.x, p0.y + delta.y]}, "shown": true}),
                         ));
                     }
                 }
@@ -792,7 +792,7 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                         let (p0, a0) = (v.spec.transform.position, v.spec.transform.anchor);
                         actions.push((
                             "graphics.set".into(),
-                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + canvas.x, p0.y + canvas.y], "anchor": [a0.x + local.x, a0.y + local.y]}}),
+                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + canvas.x, p0.y + canvas.y], "anchor": [a0.x + local.x, a0.y + local.y]}, "shown": true}),
                         ));
                     }
                 }

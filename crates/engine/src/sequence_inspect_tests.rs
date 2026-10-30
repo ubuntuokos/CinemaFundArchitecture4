@@ -1,7 +1,7 @@
 //! `sequence.inspect` is how an agent checks its edits: it has to show where a clip ends in the
 //! sequence and in its media, the clip's audio gain, whether it plays backward and what a marker says.
 
-use serde_json::json;
+use serde_json::{Value, json};
 
 use crate::Session;
 
@@ -192,7 +192,20 @@ fn sequence_inspect_reports_the_volume_line_of_audio_clips() {
     assert_eq!(keys.len(), 2);
     assert_eq!(keys[0]["time"].as_i64(), Some(start));
     assert_eq!(keys[1]["time"].as_i64(), Some(start + dur / 2));
-    assert_eq!(vol["curve"].as_array().unwrap().len(), 129);
+    let curve = vol["curve"].as_array().unwrap();
+    assert!(curve.len() >= 129, "{}", curve.len());
+    let frac = |v: &Value| v[0].as_f64().unwrap();
+    assert!(curve.windows(2).all(|w| frac(&w[0]) < frac(&w[1])) && frac(&curve[0]) == 0.0 && frac(&curve[curve.len() - 1]) == 1.0);
+    // a dip far shorter than the spacing of the even samples is still on the line
+    let small = dur / 1000;
+    let d = start + dur * 3 / 4;
+    for (t, db) in [(d, 0.0), (d + small, -96.0), (d + 2 * small, 0.0)] {
+        s.execute("effects.setParam", json!({"clip": clip, "effect": "volume", "param": "level", "value": db, "time": t, "keyframe": true})).unwrap();
+    }
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let curve = js["audio"][0]["items"][0]["volume"]["curve"].as_array().unwrap().clone();
+    let low = curve.iter().find(|v| v[1].as_f64().is_some_and(|db| db < -90.0)).expect("the dip is sampled");
+    assert!((frac(low) - (d + small - start) as f64 / dur as f64).abs() < 1e-9, "{low}");
     // video clips have no Volume line
     assert_eq!(js["video"][0]["items"][0]["volume"], json!(null));
 }

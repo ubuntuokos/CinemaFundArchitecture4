@@ -238,21 +238,31 @@ def finite_db(v: Any) -> float | None:
 
 def volume_level(clip: dict[str, Any], f: float) -> float:
     """The clip's Volume (dB) ``f`` of the way across it (``sequence.inspect`` ``volume``: the
-    level, or the keyframed curve sampled evenly)."""
+    level, or the keyframed curve as ``[fraction, dB]`` points, sampled evenly and at its keys)."""
     vol = clip.get("volume")
     if not isinstance(vol, dict):
         return 0.0
     base = finite_db(vol.get("db"))
     base = 0.0 if base is None else base
     curve = vol.get("curve")
-    if vol.get("animated") is not True or not isinstance(curve, list) or len(curve) < 2 or len(curve) > 100_000:
+    if vol.get("animated") is not True or not isinstance(curve, list) or len(curve) > 100_000:
         return base
-    pos = max(0.0, min(1.0, f if math.isfinite(f) else 0.0)) * (len(curve) - 1)
-    i = min(len(curve) - 2, int(pos))
-    a, b = finite_db(curve[i]), finite_db(curve[i + 1])
-    a = base if a is None else a
-    b = a if b is None else b
-    return a + (b - a) * (pos - i)
+    pts: list[tuple[float, float]] = []
+    for p in curve:
+        x = finite_db(p[0]) if isinstance(p, list) and len(p) == 2 else None
+        db = finite_db(p[1]) if x is not None else None
+        if x is not None and db is not None and 0.0 <= x <= 1.0 and (not pts or x > pts[-1][0]):
+            pts.append((x, db))
+    if not pts:
+        return base
+    f = max(0.0, min(1.0, f if math.isfinite(f) else 0.0))
+    i = bisect.bisect_right([x for x, _ in pts], f)
+    if i == 0:
+        return pts[0][1]
+    if i == len(pts):
+        return pts[-1][1]
+    (x0, a), (x1, b) = pts[i - 1], pts[i]
+    return a + (b - a) * (f - x0) / (x1 - x0)
 
 
 LANE_COL = QColor(0xE8, 0xC5, 0x47)  # egui's track keyframe lane

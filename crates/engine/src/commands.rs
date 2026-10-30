@@ -4793,8 +4793,10 @@ fn track_lanes(t: &cfa4_project::Track) -> Value {
 }
 
 /// An audio clip's Volume line for the Timeline: the level at the clip's head, whether it is
-/// keyframed, its keyframes (media and timeline time, dB) and, when keyframed, the level sampled
-/// evenly across the clip. `null` without a Volume effect.
+/// keyframed, its keyframes (media and timeline time, dB) and, when keyframed, the level as
+/// `[fraction of the clip, dB]` points: sampled evenly across the clip and at every keyframe (and
+/// just before it, for a hold), so a short dip on a long clip is not lost between samples.
+/// `null` without a Volume effect.
 fn volume_line(it: &cfa4_project::TrackItem) -> Value {
     const SAMPLES: usize = 128;
     let Some(p) = it.effect("volume").and_then(|e| e.param("level")) else { return Value::Null };
@@ -4804,12 +4806,26 @@ fn volume_line(it: &cfa4_project::TrackItem) -> Value {
         .iter()
         .map(|k| json!({"mediaTime": k.time.0, "time": timeline_time_of(it, k.time).map(|t| t.0), "db": num(k.value.as_f64().unwrap_or(0.0))}))
         .collect();
+    const MAX_KEYS: usize = 10_000;
     let last = it.end().0.saturating_sub(1).max(it.start.0);
+    let dur = it.duration.0.max(0);
     let curve: Vec<Value> = if p.is_animated() {
-        (0..=SAMPLES)
-            .map(|i| {
-                let offset = (i as f64 / SAMPLES as f64 * it.duration.0.max(0) as f64) as i64;
-                num(p.f64_at(it.source_time_at(Tick(it.start.0.saturating_add(offset).min(last)))))
+        let mut offsets: Vec<i64> = (0..=SAMPLES).map(|i| (i as f64 / SAMPLES as f64 * dur as f64) as i64).collect();
+        for k in p.keyframes.iter().take(MAX_KEYS) {
+            let Some(t) = timeline_time_of(it, k.time) else { continue };
+            let off = t.0.saturating_sub(it.start.0);
+            if (0..=dur).contains(&off) {
+                offsets.push(off);
+                offsets.push(off.saturating_sub(1).max(0));
+            }
+        }
+        offsets.sort_unstable();
+        offsets.dedup();
+        offsets
+            .into_iter()
+            .map(|off| {
+                let f = if dur > 0 { off as f64 / dur as f64 } else { 0.0 };
+                json!([f, num(p.f64_at(it.source_time_at(Tick(it.start.0.saturating_add(off).min(last)))))])
             })
             .collect()
     } else {

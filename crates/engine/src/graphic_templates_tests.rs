@@ -270,12 +270,23 @@ fn pins_follow_text_growth() {
         [p[0].as_f64().unwrap_or(f64::NAN), p[1].as_f64().unwrap_or(f64::NAN)]
     };
     let p0 = pos(&mut s);
-    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [p0[0] + 40.0, p0[1] - 25.0]}})).unwrap();
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [p0[0] + 40.0, p0[1] - 25.0]}, "shown": true})).unwrap();
     let (b3, t3) = boxes(&mut s);
     assert!((b3[0] - b2[0] - 40.0).abs() < 1e-3 && (b3[1] - b2[1] + 25.0).abs() < 1e-3, "the box moved: {b2:?} -> {b3:?}");
     s.execute("graphics.set", json!({"clip": c.0, "layer": 1, "props": {"position": [150, 320]}})).unwrap();
     let (b4, t4) = boxes(&mut s);
     assert!((b4[0] - t4[0] - (b3[0] - t3[0])).abs() < 1e-3 && (b4[1] - t4[1] - (b3[1] - t3[1])).abs() < 1e-3, "it still follows");
+    // a panel edits the authored Position: changing X moves the shown layer by as much in X only
+    let authored = |s: &mut Session| {
+        let it = s.active_sequence().unwrap().find_item(c).unwrap().1.clone();
+        let e = it.effects.iter().find(|e| cfa4_project::graphic::is_layer(e)).unwrap().clone();
+        e.params["position"].value.as_vec2().unwrap()
+    };
+    let a0 = authored(&mut s);
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [a0.x + 30.0, a0.y]}})).unwrap();
+    let (b5, _) = boxes(&mut s);
+    assert!((b5[0] - b4[0] - 30.0).abs() < 1e-3 && (b5[1] - b4[1]).abs() < 1e-3, "{b4:?} -> {b5:?}");
+    assert!((authored(&mut s).y - a0.y).abs() < 1e-9, "Y is left as authored");
     s.execute("graphics.pin", json!({"clip": c.0, "layer": 0, "to": "none"})).unwrap();
     let list = s.execute("graphics.list", json!({"clip": c.0})).unwrap();
     assert!(list["layers"][0]["pin"].is_null());

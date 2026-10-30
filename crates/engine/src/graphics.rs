@@ -272,7 +272,7 @@ fn apply_props(e: &mut EffectInstance, props: &serde_json::Map<String, Value>, m
 }
 
 /// A pinned layer is shown where its pins put it, not at its authored Position: a `position` in
-/// `props` (where the GUI moved the shown layer to) becomes the authored Position moved by as
+/// `props` (where a monitor drag moved the shown layer to, `graphics.set {shown: true}`) becomes the authored Position moved by as
 /// much, so [`apply_props`] shifts the pin offsets by that and the layer stays where it was put.
 fn pinned_position(s: &Session, clip: ClipId, eidx: usize, props: &mut serde_json::Map<String, Value>, tl: Tick) {
     let Some(key) = props.keys().find(|k| param_id(k) == "position").cloned() else { return };
@@ -310,8 +310,7 @@ pub(crate) fn set_props(
     label: &str,
     merge: Option<&str>,
 ) -> Result<()> {
-    let mut props = props.clone();
-    pinned_position(s, clip, eidx, &mut props, tl);
+    let props = props.clone();
     s.edit_sequence_as(label, merge, |q, _, _| {
         let (_, it) = q.find_item_mut(clip).ok_or(cfa4_edit::EditError::NoItem(clip))?;
         let mt = it.source_time_at(tl.clamp(it.start, it.end() - Tick(1)));
@@ -1094,13 +1093,17 @@ pub fn commands() -> Vec<CommandSpec> {
             "Set Graphic Properties",
             &[],
             None,
-            r##"{"clip":id?,"layer":n|name?,"props":{"font":"Inter","font_style":"Bold","size":120,"align":"center","tracking":50,"leading":0,"fill_color":"#ffcc00","stroke":true,"stroke_width":6,"background":true,"shadow":true,"position":[x,y],"scale":100,"rotation":0,"opacity":100,…},"time":ticks?,"merge":bool?,"begin":bool?}"##,
+            r##"{"clip":id?,"layer":n|name?,"props":{"font":"Inter","font_style":"Bold","size":120,"align":"center","tracking":50,"leading":0,"fill_color":"#ffcc00","stroke":true,"stroke_width":6,"background":true,"shadow":true,"position":[x,y],"scale":100,"rotation":0,"opacity":100,…},"time":ticks?,"merge":bool?,"begin":bool?,"shown":bool? (true: `position` is where the layer is shown, after its pins: a monitor drag)}"##,
             has_graphic,
             |s, p| {
                 let clip = target_clip(s, p).ok_or_else(|| bad("graphics.set", "no graphic clip"))?;
                 let (_, ei) = layer_effect_index(s, clip, p)?;
-                let props = p.get("props").and_then(Value::as_object).ok_or_else(|| bad("graphics.set", "need `props`"))?.clone();
+                let mut props = p.get("props").and_then(Value::as_object).ok_or_else(|| bad("graphics.set", "need `props`"))?.clone();
                 let tl = time_p(s, p, "").unwrap_or_else(|| s.playhead());
+                // a monitor drag says where the layer is shown; panels edit the authored Position
+                if bool_p(p, "shown").unwrap_or(false) {
+                    pinned_position(s, clip, ei, &mut props, tl);
+                }
                 // `merge`: a drag of a property is one undo step; `begin` starts a new one (#201)
                 let merge = bool_p(p, "merge").unwrap_or(false).then(|| format!("graphics.set:{}:{ei}", clip.0));
                 if bool_p(p, "begin").unwrap_or(false) {
