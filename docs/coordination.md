@@ -30,6 +30,12 @@ első sora mondja meg. Gazdát csak a tulajdonos jelölhet ki vagy válthat le.
 6. **Új téma indítása előtt** nézd meg a nyitott PR-okat. Ha 20-nál több van, új munkát csak
    a tulajdonos kérésére kezdj.
 7. Munka végén **hagyd tisztán**: ne maradjon PR nélküli ág, ideiglenes (`tmp/`, `ci-debug/`) ág.
+8. **Projekthatár** (tulajdonosi döntés, 2026-10-31). A saját projekteden (a tulajdonos által
+   jóváhagyott terv, ADR vagy issue, amellyel a munkamenet indult) belül logikus sorrendben magad
+   választhatod a következő feladatot. **Másik projektből nem vehetsz át feladatot.** Ha átfedést
+   vagy ütközést találsz egy másik projekttel, jelezd a gazdának (PR-megjegyzésben vagy issue-ban),
+   és az érintett részen ne dolgozz tovább. A tulajdonos és a gazda együtt dönt; **a döntés
+   kötelező**, a munkamenetek nem nyitják újra.
 
 ## 3. A gazda munkamódja
 
@@ -45,6 +51,9 @@ első sora mondja meg. Gazdát csak a tulajdonos jelölhet ki vagy válthat le.
 6. Minden kör eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja
    a tulajdonosnak.
+8. **Átfedés vagy ütközés két projekt között** (§2.8): a tulajdonossal együtt dönt, a döntést
+   egy sorban a [`docs/coordination-log.md`](coordination-log.md)-be írja, és az érintett
+   munkameneteknek a PR-jukban vagy issue-jukban jelzi. A döntés ezután kötelező.
 
 ## 4. Ágak
 

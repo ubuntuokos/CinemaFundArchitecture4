@@ -276,17 +276,20 @@ everything you need to contribute is in the public docs above. Ask a maintainer 
 
 ## 5. Autonomous work loop
 
-1. **Orient.** Pick the next task: the next unchecked task in the maintainer status file, or an open
-   [gaps.md](gaps.md) entry. Prefer those gaps (stability, `.prproj`, camera media, measurement,
-   hardware, Windows/Linux) over adding more checklist items. Read the relevant
-   architecture section and crate README.
+1. **Orient.** Pick the next task **of your own project**: the owner-approved plan, ADR or issue
+   your session was started on (owner decision, 2026-10-31). Take its next open task in the order
+   the plan gives; where the plan leaves the order open, choose the most logical one (dependencies
+   first). A [gaps.md](gaps.md) entry or a maintainer status-file task counts only if it belongs to
+   your project. **Never take a task from another project.** Read the relevant architecture section
+   and crate README.
 2. **Plan tests first.** Write down the acceptance test before writing code.
 3. **Implement and test.**
 4. **Verify.** Run all gates (`cargo xtask ci`). For UI work, run the app with `--control`, drive it
    and look at the screenshots (§3).
 5. **Record.** Update the crate README (behaviour decisions, test results, limitations) and
    the progress docs when a milestone moves (ROADMAP.md, docs/roadmap.md, the relevant parity doc
-   and gaps.md, with their timestamps). Commit as `M<n>.<k>: …`, then move on to the next task.
+   and gaps.md, with their timestamps). Commit as `M<n>.<k>: …`, then move on to the next task of the same project. When your project
+   has no open task left, stop and report; do not start another project.
 
 For parallel agents, use one git worktree and one `CARGO_TARGET_DIR` per agent, and keep each crate
 with one owner ([contributing.md §5](contributing.md#5-parallel-work-several-agents-or-worktrees)).
@@ -306,6 +309,10 @@ Don't block on choices you can make yourself:
   - personal data;
   - destructive git operations;
   - anything AGENTS.md leaves unclear ("when in doubt, leave it out").
+- **Other projects.** Never take over a task from another project. If your work overlaps or
+  conflicts with another project (the same feature, shared files, contradicting plans), stop that
+  part and report it to the merge coordinator ([coordination.md](coordination.md) §2.8). The owner
+  and the coordinator decide together; **that decision is binding** and agents do not reopen it.
 
 ## 7. Definition of Done
 
