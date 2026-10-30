@@ -19,7 +19,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::sync::Mutex;
 
 use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Description, Frame, FrameRate, Gain, Layout};
-use cfa4_mxf::{ByteSource, Codec, IabDesc, MxfFile, MxfWriter};
+use cfa4_mxf::{ByteSource, Codec, EssenceTrack, IabDesc, MxfFile, MxfWriter};
 
 use crate::{ExportError, ExportSettings, Out, Result};
 
@@ -322,10 +322,26 @@ fn index_raw(src: &FileSrc) -> (Vec<(u64, u64)>, u64) {
     (frames, at)
 }
 
+/// The material package's program of an IAB track in stored frames: (first, count).
+pub(crate) fn program(t: &EssenceTrack) -> std::result::Result<(usize, usize), String> {
+    let stored = t.samples.len();
+    let first = usize::try_from(t.first_edit_unit()).unwrap_or(usize::MAX);
+    let avail = stored.checked_sub(first).ok_or_else(|| format!("the IAB program starts at frame {first} of {stored}"))?;
+    match t.duration {
+        None => Ok((first, avail)),
+        Some(d) => match usize::try_from(d) {
+            Ok(d) if d <= avail => Ok((first, d)),
+            _ => Err(format!("the IAB track declares {d} frames but only {avail} are stored")),
+        },
+    }
+}
+
 /// The frames of an IAB source.
 enum Source {
     /// An IAB track file (IMF ST 2067-201 or DCP ST 429-18) and its IAB track.
-    Mxf { src: FileSrc, file: Box<MxfFile>, track: usize },
+    /// `first` and `count` are the material package's program in stored frames (the origin and
+    /// source clip start skip pre-charge, the duration drops a trimmed tail).
+    Mxf { src: FileSrc, file: Box<MxfFile>, track: usize, first: usize, count: usize },
     /// A raw IABitstream, read frame by frame: the frames' (start, end).
     Raw { src: FileSrc, frames: Vec<(u64, u64)> },
 }
@@ -341,7 +357,13 @@ impl Source {
             let file = cfa4_mxf::open(&src).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
             let track =
                 file.tracks.iter().position(|t| t.codec == Codec::Iab).ok_or_else(|| ExportError::Io(format!("{path}: no IAB track in this MXF file")))?;
-            return Ok(Source::Mxf { src, file: Box::new(file), track });
+            // a damaged file keeps its whole frames; refuse it rather than pad the rest with silence
+            if let Some(w) = file.warnings.iter().find(|w| w.contains("truncated")) {
+                return Err(ExportError::Io(format!("{path}: IAB track file is damaged or truncated ({w})")));
+            }
+            let t = file.tracks.get(track).ok_or_else(|| ExportError::Io(format!("{path}: no IAB track in this MXF file")))?;
+            let (first, count) = program(t).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+            return Ok(Source::Mxf { src, file: Box::new(file), track, first, count });
         }
         let (frames, end) = index_raw(&src);
         if frames.is_empty() {
@@ -356,14 +378,19 @@ impl Source {
 
     fn len(&self) -> usize {
         match self {
-            Source::Mxf { file, track, .. } => file.tracks.get(*track).map_or(0, |t| t.samples.len()),
+            Source::Mxf { count, .. } => *count,
             Source::Raw { frames, .. } => frames.len(),
         }
     }
 
     fn frame(&self, i: usize) -> Result<Vec<u8>> {
         match self {
-            Source::Mxf { src, file, track } => file.read_sample(src, *track, i).map_err(|e| ExportError::Io(format!("IAB frame {i}: {e}"))),
+            Source::Mxf { src, file, track, first, count } => {
+                if i >= *count {
+                    return Err(ExportError::Io(format!("no IAB frame {i}")));
+                }
+                file.read_sample(src, *track, first.saturating_add(i)).map_err(|e| ExportError::Io(format!("IAB frame {i}: {e}")))
+            }
             Source::Raw { src, frames } => {
                 let &(a, b) = frames.get(i).ok_or_else(|| ExportError::Io(format!("no IAB frame {i}")))?;
                 let n = usize::try_from(b.saturating_sub(a)).map_err(|_| ExportError::Io(format!("IAB frame {i} is too large")))?;

@@ -577,6 +577,27 @@ fn immersive_file_package() {
     let info = probe_iab_source(&src_mxf.to_string_lossy()).unwrap();
     assert_eq!((info.container.as_str(), info.frames, info.needs_conform), ("mxf", 5, false));
 
+    // the material package's program: pre-charge skipped, a trimmed tail dropped, a duration
+    // longer than the stored frames refused
+    let mut t = m2.tracks[0].clone();
+    assert_eq!(crate::dcp_iab::program(&t), Ok((0, 4)));
+    (t.origin, t.start_position, t.duration) = (1, 1, Some(2));
+    assert_eq!(crate::dcp_iab::program(&t), Ok((2, 2)));
+    t.duration = Some(3);
+    assert!(crate::dcp_iab::program(&t).unwrap_err().contains("declares 3 frames"));
+    t.origin = 9;
+    assert!(crate::dcp_iab::program(&t).is_err());
+    // a track file cut inside its essence is refused, not padded with silence
+    let bytes = std::fs::read(&src_mxf).unwrap();
+    let cut = Path::new(&src_dir).join("cut.mxf");
+    let at = (0..bytes.len().saturating_sub(16))
+        .rev()
+        .find(|&i| bytes[i..i + 16] == [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x05, 0x0E, 0x09, 0x06, 0x01, 0x00, 0x00, 0x00, 0x01])
+        .unwrap();
+    std::fs::write(&cut, &bytes[..at + 40]).unwrap();
+    let e = probe_iab_source(&cut.to_string_lossy()).unwrap_err().to_string();
+    assert!(e.contains("cut.mxf") && e.contains("truncated"), "{e}");
+
     // a source at another rate is refused
     std::fs::write(&raw, source_frames(cfa4_iab::FrameRate::R24, 2).concat()).unwrap();
     s.dcp_iab_source = raw.to_string_lossy().to_string();
