@@ -4795,7 +4795,7 @@ fn track_lanes(t: &cfa4_project::Track) -> Value {
 /// An audio clip's Volume line for the Timeline: the level at the clip's head, whether it is
 /// keyframed, its keyframes (media and timeline time, dB) and, when keyframed, the level as
 /// `[fraction of the clip, dB]` points: sampled evenly across the clip and at every keyframe (and
-/// just before it, for a hold), so a short dip on a long clip is not lost between samples.
+/// just before and after it, for a hold), so a short dip on a long clip is not lost between samples.
 /// `null` without a Volume effect.
 fn volume_line(it: &cfa4_project::TrackItem) -> Value {
     const SAMPLES: usize = 128;
@@ -4815,8 +4815,10 @@ fn volume_line(it: &cfa4_project::TrackItem) -> Value {
             let Some(t) = timeline_time_of(it, k.time) else { continue };
             let off = t.0.saturating_sub(it.start.0);
             if (0..=dur).contains(&off) {
+                // both sides of a hold's step (after the key on a reversed clip)
                 offsets.push(off);
                 offsets.push(off.saturating_sub(1).max(0));
+                offsets.push(off.saturating_add(1).min(dur));
             }
         }
         offsets.sort_unstable();

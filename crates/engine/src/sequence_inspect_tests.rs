@@ -206,6 +206,11 @@ fn sequence_inspect_reports_the_volume_line_of_audio_clips() {
     let curve = js["audio"][0]["items"][0]["volume"]["curve"].as_array().unwrap().clone();
     let low = curve.iter().find(|v| v[1].as_f64().is_some_and(|db| db < -90.0)).expect("the dip is sampled");
     assert!((frac(low) - (d + small - start) as f64 / dur as f64).abs() < 1e-9, "{low}");
+    // a hold steps right after its key on a reversed clip: the tick after each key is sampled too
+    for off in [d + small - start - 1, d + small - start + 1] {
+        let want = off as f64 / dur as f64;
+        assert!(curve.iter().any(|v| (frac(v) - want).abs() < 1e-12), "no sample at {off}");
+    }
     // video clips have no Volume line
     assert_eq!(js["video"][0]["items"][0]["volume"], json!(null));
 }

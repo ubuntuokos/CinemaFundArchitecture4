@@ -4658,6 +4658,14 @@ def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
         assert tl.volume_level(dip, 0.5001) == -96.0 and abs(tl.volume_level(dip, 0.50005) + 48.0) < 1e-6
         assert tl.volume_level(dip, 0.25) == 0.0 and tl.volume_level(dip, 2.0) == 0.0
         assert tl.volume_level({"volume": {"db": -3.0, "animated": True, "curve": [[0.5, 1e300], "x", [2, 0]]}}, 0.5) == -3.0
+        # a long automation curve is parsed once, not for every pixel of a repaint
+        import time as _time
+
+        many = {"volume": {"db": 0.0, "animated": True, "curve": [[i / 2128, -(i % 7)] for i in range(2129)]}}
+        t0 = _time.perf_counter()
+        for i in range(1001):
+            tl.volume_level(many, i / 1000)
+        assert _time.perf_counter() - t0 < 0.3, _time.perf_counter() - t0
     finally:
         if canvas.last_menu is not None:
             canvas.last_menu.close()
@@ -5345,6 +5353,12 @@ def test_menu_dialogs_as_egui(app):
     d.show()
     assert d.windowTitle() == "Find" and child(d, "find.cancel", QtWidgets.QPushButton).text() == "Done"
     assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "neon" and not d.timeline_box.isVisible()
+    # the control channel's `ui.set {menuDialog}` sets a choice as a pick would: the parameter follows
+    from cfa4_qt.control import set_dialog_field
+
+    set_dialog_field(d, "row.0.column", "Label")
+    assert d.params["rows"][0]["column"] == "Label"
+    set_dialog_field(d, "row.0.column", "Name")
     # editing the first Project row and then switching to Timeline shows what will be found
     child(d, "find.row.0.text.project", QtWidgets.QLineEdit).setText("tree")
     child(d, "find.scope.timeline", QtWidgets.QRadioButton).setChecked(True)
@@ -5996,6 +6010,13 @@ def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, t
 
         gate = server.input_gate
         assert gate is not None and c.call("ui.inspect")["result"]["input"]["mode"] == "controlOnly"
+        # the channel's own typing goes through (QTest marks its events spontaneous as well)
+        win.show()
+        app.processEvents()
+        assert c.call("ui.focus", {"id": "project.search"})["ok"] is True
+        assert c.call("ui.type", {"text": "abc"})["ok"] is True
+        assert win.project_panel.filter.text() == "abc" and gate.own == 0
+        win.project_panel.filter.clear()
         assert gate.eventFilter(None, Native(QtCore.QEvent.Type.KeyPress, True)) is True
         assert gate.eventFilter(None, Native(QtCore.QEvent.Type.MouseButtonPress, True)) is True
         assert gate.eventFilter(None, Native(QtCore.QEvent.Type.KeyPress, False)) is False

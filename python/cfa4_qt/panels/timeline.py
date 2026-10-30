@@ -247,22 +247,41 @@ def volume_level(clip: dict[str, Any], f: float) -> float:
     curve = vol.get("curve")
     if vol.get("animated") is not True or not isinstance(curve, list) or len(curve) > 100_000:
         return base
-    pts: list[tuple[float, float]] = []
+    xs, dbs = _curve_points(curve)
+    if not xs:
+        return base
+    f = max(0.0, min(1.0, f if math.isfinite(f) else 0.0))
+    i = bisect.bisect_right(xs, f)
+    if i == 0:
+        return dbs[0]
+    if i == len(xs):
+        return dbs[-1]
+    x0, x1, a, b = xs[i - 1], xs[i], dbs[i - 1], dbs[i]
+    return a + (b - a) * (f - x0) / (x1 - x0)
+
+
+# the last curves validated, by identity: a repaint looks up every pixel of a clip's line
+_CURVES: dict[int, tuple[list[Any], list[float], list[float]]] = {}
+
+
+def _curve_points(curve: list[Any]) -> tuple[list[float], list[float]]:
+    """A Volume curve's valid ``[fraction, dB]`` points (rising fractions), parsed once per
+    curve list."""
+    hit = _CURVES.get(id(curve))
+    if hit is not None and hit[0] is curve:
+        return hit[1], hit[2]
+    xs: list[float] = []
+    dbs: list[float] = []
     for p in curve:
         x = finite_db(p[0]) if isinstance(p, list) and len(p) == 2 else None
         db = finite_db(p[1]) if x is not None else None
-        if x is not None and db is not None and 0.0 <= x <= 1.0 and (not pts or x > pts[-1][0]):
-            pts.append((x, db))
-    if not pts:
-        return base
-    f = max(0.0, min(1.0, f if math.isfinite(f) else 0.0))
-    i = bisect.bisect_right([x for x, _ in pts], f)
-    if i == 0:
-        return pts[0][1]
-    if i == len(pts):
-        return pts[-1][1]
-    (x0, a), (x1, b) = pts[i - 1], pts[i]
-    return a + (b - a) * (f - x0) / (x1 - x0)
+        if x is not None and db is not None and 0.0 <= x <= 1.0 and (not xs or x > xs[-1]):
+            xs.append(x)
+            dbs.append(db)
+    if len(_CURVES) >= 256:
+        _CURVES.clear()
+    _CURVES[id(curve)] = (curve, xs, dbs)
+    return xs, dbs
 
 
 LANE_COL = QColor(0xE8, 0xC5, 0x47)  # egui's track keyframe lane

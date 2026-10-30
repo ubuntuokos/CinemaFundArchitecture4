@@ -200,6 +200,8 @@ def set_dialog_field(dialog: Any, name: str, value: Any) -> None:
         if i < 0:
             raise ControlError(f"{name} has no choice {value!r}")
         w.setCurrentIndex(i)
+        # the dialogs take a choice on `activated` (a user's pick), which this does not emit
+        w.activated.emit(i)
     elif isinstance(w, (QSpinBox, QDoubleSpinBox)):
         if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
             raise ControlError(f"{name} takes a number")
@@ -214,9 +216,12 @@ class InputGate(QObject):
     ignored. Close and screenshots still work. Installed only in that opt-in mode (an app-wide
     filter costs every event)."""
 
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self.own = 0  # > 0 while the channel runs a request: QTest marks its events spontaneous too
+
     def eventFilter(self, _obj: Any, event: Any) -> bool:
-        # the control channel's events are posted by the app itself (not spontaneous)
-        return event.type() in NATIVE_INPUT and event.spontaneous()
+        return self.own == 0 and event.type() in NATIVE_INPUT and event.spontaneous()
 
 
 class ControlServer(QObject):
@@ -315,12 +320,18 @@ class ControlServer(QObject):
                 out["result" if ok else "error"] = value if ok else str(value)
                 self._write(s, out)
 
+            gate = self.input_gate
+            if gate is not None:
+                gate.own += 1
             try:
                 self.dispatch(req["method"], params if isinstance(params, dict) else {}, reply)
             except ControlError as e:
                 reply(False, str(e))
             except Exception as e:  # noqa: BLE001 - a request must never take the window down
                 reply(False, f"{type(e).__name__}: {e}")
+            finally:
+                if gate is not None:
+                    gate.own -= 1
 
     # ----- methods -----
     def dispatch(self, method: str, p: dict[str, Any], reply: Reply) -> None:
