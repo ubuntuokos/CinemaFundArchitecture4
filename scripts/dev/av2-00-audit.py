@@ -78,9 +78,7 @@ def build_avm(work: Path) -> Path:
         r = run(["git", "clone", "--depth", "1", "--branch", AVM_TAG, AVM_REPO, str(src)])
         if r.returncode != 0:
             sys.exit(f"AVM clone failed: {r.stderr}")
-    head = run(["git", "-C", str(src), "rev-parse", "HEAD"]).stdout.strip()
-    if head != AVM_COMMIT:
-        sys.exit(f"AVM {AVM_TAG} resolves to {head}, expected {AVM_COMMIT}")
+    verify_avm_source(src)
     build.mkdir(parents=True, exist_ok=True)
     for cmd in (
         ["cmake", str(src), "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", "-DENABLE_TESTS=0", "-DENABLE_DOCS=0"],
@@ -90,6 +88,26 @@ def build_avm(work: Path) -> Path:
         if r.returncode != 0:
             sys.exit(f"AVM build step {cmd[0]} failed:\n{r.stdout[-2000:]}\n{r.stderr[-2000:]}")
     return build
+
+
+def verify_avm_source(src: Path) -> None:
+    head = run(["git", "-C", str(src), "rev-parse", "HEAD"]).stdout.strip()
+    if head != AVM_COMMIT:
+        sys.exit(f"AVM source {src} is at {head or 'unknown'}, expected {AVM_TAG} = {AVM_COMMIT}")
+
+
+def avm_source_of(build: Path) -> Path:
+    """Return the source directory a CMake build of AVM was configured from."""
+    cache = build / "CMakeCache.txt"
+    try:
+        lines = cache.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        sys.exit(f"{cache} not found: cannot verify the AVM revision of --avm-build")
+    for line in lines:
+        key, _, value = line.partition("=")
+        if key.split(":")[0] == "CMAKE_HOME_DIRECTORY" and value:
+            return Path(value)
+    sys.exit(f"{cache} has no CMAKE_HOME_DIRECTORY: cannot verify the AVM revision of --avm-build")
 
 
 def make_sources(work: Path) -> dict[str, Path]:
@@ -125,7 +143,10 @@ def make_sources(work: Path) -> dict[str, Path]:
 
 
 def y4m_frames(path: Path) -> list[list[str]]:
-    """Return per-frame lists of per-plane sha256 digests from a Y4M file."""
+    """Return per-frame lists of per-plane sha256 digests from a Y4M file.
+
+    Raises ValueError on a malformed header, a truncated frame or trailing garbage.
+    """
     data = path.read_bytes()
     header_end = data.find(b"\n")
     if header_end < 0:
@@ -151,14 +172,18 @@ def y4m_frames(path: Path) -> list[list[str]]:
     else:
         cw, ch = (width + 1) // 2, (height + 1) // 2
         planes = [width * height, cw * ch, cw * ch]
+    if width <= 0 or height <= 0:
+        raise ValueError(f"{path}: missing or invalid W/H in Y4M header")
     planes = [n * bps for n in planes]
     frames = []
     pos = header_end + 1
     while pos < len(data):
         line_end = data.find(b"\n", pos)
         if line_end < 0 or not data[pos:line_end].startswith(b"FRAME"):
-            break
+            raise ValueError(f"{path}: bad frame header after {len(frames)} frames")
         pos = line_end + 1
+        if pos + sum(planes) > len(data):
+            raise ValueError(f"{path}: frame {len(frames)} truncated")
         digests = []
         for size in planes:
             digests.append(hashlib.sha256(data[pos : pos + size]).hexdigest())
@@ -186,7 +211,7 @@ def decode(name: str, cmd: list[str], out: Path) -> dict:
 
 def compare(ref: list[list[str]], cand: list[list[str]]) -> dict:
     mismatched = [i for i, (a, b) in enumerate(zip(ref, cand)) if a != b]
-    status = "PASS" if len(ref) == len(cand) and not mismatched else "FAIL"
+    status = "PASS" if ref and len(ref) == len(cand) and not mismatched else "FAIL"
     return {
         "status": status,
         "reference_frames": len(ref),
@@ -206,7 +231,11 @@ def main() -> int:
 
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
-    build = args.avm_build.resolve() if args.avm_build else build_avm(work)
+    if args.avm_build:
+        build = args.avm_build.resolve()
+        verify_avm_source(avm_source_of(build))
+    else:
+        build = build_avm(work)
     avmenc, avmdec = build / "avmenc", build / "avmdec"
     for exe in (avmenc, avmdec):
         if not os.access(exe, os.X_OK):
@@ -238,6 +267,10 @@ def main() -> int:
         ref_out = dec_dir / f"{name}.avmdec.y4m"
         ref = decode("avmdec", [str(avmdec), "-o", str(ref_out), str(obu)], ref_out)
         entry["reference"] = {k: v for k, v in ref.items() if k != "frames"}
+        if "frames" in ref and len(ref["frames"]) != frames:
+            entry["reference"]["status"] = "FAIL"
+            entry["reference"]["stderr_tail"] = f"expected {frames} frames, got {len(ref['frames'])}"
+            del ref["frames"]
         if "frames" not in ref:
             entry["status"] = "REFERENCE_FAIL"
             results.append(entry)
