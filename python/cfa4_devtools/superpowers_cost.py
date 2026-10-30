@@ -16,7 +16,7 @@ from typing import Any
 
 DEFAULT_POLICY = Path(__file__).resolve().parents[2] / "config/dev/superpowers-allowlist.toml"
 TOKEN_LIMIT = 1_000_000_000
-MONEY_LIMIT = Decimal("1000000000")
+MONEY_LIMIT = Decimal(1000000000)
 
 
 class CostGateError(ValueError):
