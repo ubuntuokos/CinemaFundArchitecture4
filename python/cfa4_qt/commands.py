@@ -308,6 +308,9 @@ class CommandRegistry:
                 else:
                     seqs.append(QKeySequence(q))
             if not seqs:
+                # a key cleared (or moved to a panel) in Keyboard Shortcuts must stop running it
+                if cid in self.actions:
+                    self.actions[cid].setShortcuts([])
                 continue
             action = self.action(cid, parent)
             if action is None:
@@ -355,12 +358,26 @@ class CommandRegistry:
             action.trigger()  # does nothing while the command is disabled
 
 
+# Qt panel object names whose engine (shortcut context) name differs (engine `shortcuts::PANELS`)
+PANEL_NAMES = {
+    "EffectControls": "Effect Controls",
+    "MediaBrowser": "Media Browser",
+    "AudioTrackMixer": "Audio Track Mixer",
+    "AudioClipMixer": "Audio Clip Mixer",
+    "EssentialGraphics": "Essential Graphics",
+    "LumetriColor": "Lumetri Color",
+    "Inspector": "Properties",
+}
+
+
 def focused_panel() -> str | None:
-    """The engine name of the panel holding keyboard focus (``panel.Timeline`` -> ``Timeline``)."""
+    """The engine name of the panel holding keyboard focus (``panel.Timeline`` -> ``Timeline``,
+    ``panel.EffectControls`` -> ``Effect Controls``)."""
     w = QApplication.focusWidget()
     while w is not None:
         name = w.objectName()
-        if name.startswith("panel."):
-            return name.removeprefix("panel.")
+        if name.startswith("panel.") and not name.startswith("panel.menu."):
+            short = name.removeprefix("panel.")
+            return PANEL_NAMES.get(short, short)
         w = w.parentWidget()
     return None

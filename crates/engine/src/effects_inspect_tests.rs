@@ -374,4 +374,6 @@ fn program_overlay_reports_the_graphic_layers_at_the_playhead() {
     let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
     let rolled = g["layers"].as_array().unwrap().iter().find(|l| l["layer"] == 0).unwrap();
     assert_ne!(rolled["toFrame"], before, "the roll offset moves the box");
+    // ...but Position stays the authored one, so a drag edits what the layer was given
+    assert_eq!(rolled["position"], json!([960.0, 540.0]), "{rolled}");
 }

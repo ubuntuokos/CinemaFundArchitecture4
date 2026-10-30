@@ -152,6 +152,8 @@ fn graphics(s: &Session) -> Value {
         let idx = layer_indices(&it.effects);
         // the renderer's layers (responsive timing, pins, roll / crawl), so a box is where the
         // layer is drawn
+        // the roll / crawl offset is drawn, not authored: edits start from the layer's own position
+        let (rx, ry) = cfa4_render::graphic_clip::item_roll_offset(it, mt, size);
         for (ei, spec) in item_layer_specs(it, mt, size).into_iter().rev() {
             let Some(li) = idx.iter().position(|&x| x == ei) else { continue };
             let Some(e) = it.effects.get(ei) else { continue };
@@ -172,7 +174,7 @@ fn graphics(s: &Session) -> Value {
                 "toFrame": to_frame,
                 "canvasToFrame": canvas,
                 "local": local,
-                "position": pt(tf.position),
+                "position": pt(Vec2::new(tf.position.x - rx, tf.position.y - ry)),
                 "anchor": pt(tf.anchor),
                 "scale": [num(tf.scale.x * 100.0), num(tf.scale.y * 100.0)],
             });

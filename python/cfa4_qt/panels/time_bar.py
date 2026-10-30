@@ -97,10 +97,14 @@ class ScrubBar(QWidget):
 
     # ----- model -----
     def set_range(self, start: int, end: int, mark_in: int | None, mark_out: int | None, frame: int) -> None:
+        was = (self.start, self.end, self.mark_in, self.mark_out, self.frame)
         self.start, self.end = int(start), max(int(start), int(end))
         self.mark_in, self.mark_out = mark_in, mark_out
         self.frame = max(1, int(frame))
-        self._drag = None if self._drag is not None and self._drag.get("kind") == "range" else self._drag
+        # a range drag ends only when the range itself changed under it: the refresh that stopping
+        # playback (at the drag's start) brings back the same range
+        if self._drag is not None and self._drag.get("kind") == "range" and was != (self.start, self.end, self.mark_in, self.mark_out, self.frame):
+            self._drag = None
         self.update()
 
     def set_markers(self, markers: Any) -> None:

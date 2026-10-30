@@ -614,6 +614,77 @@ def test_panel_only_shortcuts_follow_the_focused_panel(app):
     win.close()
 
 
+def test_shortcuts_cleared_keys_and_engine_panel_names(app):
+    """Codex review regressions: a key cleared in Keyboard Shortcuts kept running its command (the
+    old QAction kept the key); panel keys bound to "Effect Controls" or "Properties" never ran,
+    as the focused panel was named after its Qt object name (EffectControls, Inspector)."""
+    from cfa4_qt.commands import focused_panel
+
+    ran: list[str] = []
+    win = QtWidgets.QMainWindow()
+    central = QtWidgets.QWidget()
+    lay = QtWidgets.QVBoxLayout(central)
+    for name in ("EffectControls", "Inspector", "Timeline", None):
+        panel = QtWidgets.QWidget()
+        panel.setObjectName(f"panel.{name}" if name else "elsewhere")
+        field = QtWidgets.QLineEdit(panel)
+        field.setObjectName(f"focus.{name}" if name else "focus.none")
+        lay.addWidget(panel)
+    win.setCentralWidget(central)
+    reg = CommandRegistry(lambda c: ran.append(c.id))
+
+    def load(undo_keys: list[str]) -> None:
+        reg.load(
+            [
+                {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": undo_keys[0] if undo_keys else "",
+                 "shortcuts": undo_keys, "params": "{}", "enabled": True},
+                {"id": "fx.reset", "label": "Reset", "menu": [], "shortcut": "", "shortcuts": [],
+                 "panelShortcuts": [{"keys": "R", "panel": "Effect Controls"}, {"keys": "R", "panel": "Properties"}],
+                 "params": "{}", "enabled": True},
+                {"id": "tool.razor", "label": "Razor", "menu": [], "shortcut": "R", "shortcuts": ["R"],
+                 "params": "{}", "enabled": True},
+            ]
+        )
+        reg.build_menus(win.menuBar(), win)
+
+    load(["Cmd+Z"])
+    assert QtGui.QKeySequence("Ctrl+Z") in reg.actions["edit.undo"].shortcuts()
+    load([])  # Keyboard Shortcuts cleared Undo's key
+    assert reg.actions["edit.undo"].shortcuts() == []
+    win.show()
+    win.activateWindow()
+    for panel, engine_name in (("EffectControls", "Effect Controls"), ("Inspector", "Properties"), ("Timeline", "Timeline")):
+        _focus_panel(app, win, panel)
+        assert focused_panel() == engine_name
+
+    def press(panel: str | None) -> str | None:
+        _focus_panel(app, win, panel)
+        ran.clear()
+        win.findChild(QtGui.QAction, "shortcut.R").trigger()
+        return ran[0] if ran else None
+
+    assert press("EffectControls") == "fx.reset"
+    assert press("Inspector") == "fx.reset"
+    assert press("Timeline") == "tool.razor"
+    win.close()
+
+
+def test_monitor_range_drag_survives_a_refresh_of_the_same_range(app):
+    """Codex review regression: dragging the marked range while playing stops playback, whose
+    refresh brought the same range back and ended the drag under the held mouse."""
+    from cfa4_qt.panels.time_bar import ScrubBar
+
+    bar = ScrubBar("program")
+    fd = 1000
+    bar.set_range(0, 100 * fd, 10 * fd, 20 * fd, fd)
+    bar._drag = {"kind": "range", "part": "move", "x": 50.0, "original": (10 * fd, 20 * fd), "preview": (10 * fd, 20 * fd), "moved": False}
+    bar.set_range(0, 100 * fd, 10 * fd, 20 * fd, fd)
+    assert bar._drag is not None and bar._drag["kind"] == "range", "the same range keeps the drag"
+    bar.set_range(0, 100 * fd, 12 * fd, 20 * fd, fd)
+    assert bar._drag is None, "a range changed elsewhere ends it"
+    bar.deleteLater()
+
+
 def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
     """Regressions: Export silently truncated an existing output; an output folder that could not
     be created raised out of the slot and nothing was shown."""
@@ -5507,7 +5578,17 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
         try:
             assert wait_until(app, lambda: win.sequence is not None, 30_000)
             win.execute("project.setNotes", {"text": "lost work"})
-            assert wait_until(app, lambda: any(data.rglob("snapshot.fcproj")), 20_000)
+
+            def journaled() -> bool:
+                for f in data.rglob("snapshot.fcproj"):
+                    try:
+                        if b"lost work" in f.read_bytes():
+                            return True
+                    except OSError:
+                        pass  # being written
+                return False
+
+            assert wait_until(app, journaled, 30_000), "the note reaches the recovery journal"
             win._closing = True  # the whole app goes: nothing restarts the engine
             engine._process.kill()
             engine._process.wait(10)
@@ -5526,7 +5607,7 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers.append("Not Now")
     win, engine = started(keep)
     try:
-        assert wait_until(app, lambda: len(asked) == 1, 20_000)
+        assert wait_until(app, lambda: len(asked) == 1, 30_000)
         assert "quit unexpectedly" in asked[0] and "Recover unsaved changes" in asked[0], asked[0]
         app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 200)
         assert notes(engine) != "lost work"
@@ -5535,7 +5616,7 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers.append("Recover")
     win, engine = started(keep)
     try:
-        assert wait_until(app, lambda: len(asked) == 2, 20_000)
+        assert wait_until(app, lambda: len(asked) == 2, 30_000)
         assert wait_until(app, lambda: notes(engine) == "lost work", 20_000)
         assert wait_until(app, lambda: win.notes.edit.toPlainText() == "lost work", 20_000)
     finally:
@@ -5546,7 +5627,7 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers.append("Discard")
     win, engine = started(drop)
     try:
-        assert wait_until(app, lambda: len(asked) == 3, 20_000)
+        assert wait_until(app, lambda: len(asked) == 3, 30_000)
         assert wait_until(app, lambda: not any(drop.rglob("snapshot.fcproj")), 20_000)
     finally:
         stopped(win, engine)
