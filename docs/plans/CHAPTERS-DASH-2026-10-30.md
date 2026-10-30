@@ -65,11 +65,11 @@ A HLS export mellé egy `.mpd` fájl is készül, így ugyanaz a kimenet dash.js
 **Az MPD felépítése:**
 
 - `type="static"`, profil: `urn:mpeg:dash:profile:isoff-live:2011`.
-- `SegmentTemplate` + `SegmentTimeline`, mert a szegmensek kulcsképkockánál vágnak, így nem egyforma hosszúak. A `$Number$` sablon a meglévő `<n:05>.m4s` nevekre illeszkedik.
+- `SegmentTemplate` + `SegmentTimeline`, mert a szegmensek kulcsképkockánál vágnak, így nem egyforma hosszúak. A sablon `$Number%05d$` és `startNumber="0"`, így illeszkedik a meglévő, nullától számozott `<n:05>.m4s` nevekre (a puszta `$Number$` `0`-t adna `00000` helyett).
 - `codecs` a meglévő `video_codecs()` függvényből, valamint `bandwidth`, `width`, `height` és `frameRate`.
 - Az XML-be kerülő fájlneveket escape-eljük (`&`, `<`, `"`).
 
-**Döntés (B út):** a videó és a hang külön szegmensekbe kerül (két `FragmentedWriter`), és ezeket a HLS és a DASH is használja. A HLS média lejátszási lista `EXT-X-MEDIA` hangcsoportot kap. Ez a CMAF gyakorlat, és minden DASH-lejátszó támogatja.
+**Döntés (B út):** a videó és a hang külön szegmensekbe kerül (két `FragmentedWriter`), és ezeket a HLS és a DASH is használja. A hangcsoportot (`EXT-X-MEDIA:TYPE=AUDIO`) a multivariant lejátszási lista deklarálja, a változat `EXT-X-STREAM-INF` sora `AUDIO` attribútummal hivatkozik rá, és a hangszegmensek külön média lejátszási listát kapnak. Média lejátszási listába ez a tag nem kerülhet (RFC 8216 4.3.4). Ez a CMAF gyakorlat, és minden DASH-lejátszó támogatja.
 
 **Beállítás:** a `Format::Hls` kap egy „DASH manifest is” kapcsolót, új formátum helyett. A `hls_files()` mellé `dash_files()` kerül (`<stem>.mpd`). A CLI-ban az `export` ugyanezt a beállítást kapja meg.
 
@@ -108,7 +108,7 @@ A két rész egymástól független, így külön PR-ban mehetnek. Az 1. réssze
 
 **2. rész: DASH (kb. 2–3 nap)**
 
-- [ ] D1: külön videó- és hangszegmensek a HLS exportban, m3u8 `EXT-X-MEDIA` hangcsoporttal
+- [ ] D1: külön videó- és hangszegmensek a HLS exportban, külön hang média lejátszási listával, a hangcsoport (`EXT-X-MEDIA` + `AUDIO`) a multivariant listában
 - [ ] D2: `dash_out.rs`: MPD-író `SegmentTimeline`-nal, unit tesztek
 - [ ] D3: „DASH manifest is” kapcsoló, `dash_files()`, CLI
 - [ ] D4: export teszt (MPD ↔ m3u8 egyezés) és ffprobe-megnyitás
