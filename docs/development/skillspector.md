@@ -10,7 +10,8 @@ A skill nem telepíti és nem futtatja a célkódot, nem írja át a célkönyvt
 
 ## Támogatott környezet
 
-- Ubuntu 26.04 LTS és Ubuntu-változatai, amd64.
+- **A felhős Claude Code-munkamenetek** (tulajdonosi döntés, 2026-10-30): a SkillSpector ott fut, a fejlesztő gépére nem kell telepíteni. A munkakörnyezet jelenleg Ubuntu 24.04.5, x86_64.
+- Minden új felhős munkamenetben egyszer telepíteni kell (a venv nem marad meg a munkamenetek között); ehhez GitHub- és PyPI-elérés kell.
 - Python 3.12, 3.13 vagy 3.14, saját virtuális környezetben.
 - SkillSpector 2.13.2, rögzített Python-csomagverzió.
 - Claude Code projekt-skill útvonala: `.claude/skills/cfa4-skill-review/SKILL.md`.
@@ -57,11 +58,11 @@ A jelentést egyedi, védett ideiglenes fájlba kell írni, a felülvizsgálat v
 
 ## Telepítés frissítése
 
-A verzióváltás külön felülvizsgálatot igényel: ellenőrizni kell az új kiadást, Python-tartományt, licencet és függőségeket; módosítani kell a verziózott telepítési útvonalat, a tesztet és ezt a dokumentumot; majd Ubuntu 26.04/amd64-en validálni kell. Nincs automatikus frissítés.
+A verzióváltás külön felülvizsgálatot igényel: ellenőrizni kell az új kiadást, Python-tartományt, licencet és függőségeket; módosítani kell a verziózott telepítési útvonalat, a tesztet és ezt a dokumentumot; majd egy felhős Claude Code-munkamenetben validálni kell. Nincs automatikus frissítés.
 
 ## Validációs feljegyzés (2026-10-30)
 
-Környezet: **sandbox, Ubuntu 24.04.5, Python 3.13.18, x86_64 – nem a célgép.** A célgépes (Ubuntu 26.04) futtatás és a Claude Code-skill felismerése: **PENDING**.
+Környezet: **felhős Claude Code-munkamenet** (a célkörnyezet), Ubuntu 24.04.5, Python 3.13.18, x86_64.
 
 | Ellenőrzés | Eredmény |
 |---|---|
@@ -71,6 +72,7 @@ Környezet: **sandbox, Ubuntu 24.04.5, Python 3.13.18, x86_64 – nem a célgép
 | Megszakadt telepítés (elérhetetlen csomagindex) | OK: kilépési kód 1, félkész venv nem marad |
 | `scan .claude/skills/cfa4-skill-review --no-llm --fail-on-incomplete` | kilépési kód 1; score 8, LOW, ajánlás CAUTION; lefedettség 100%, státusz `partial` (a skill a repó saját fájljaira hivatkozik, ezek nincsenek a skillkönyvtárban); 1 MEDIUM találat (AS3, 9. sor): a forrásmegjelölésben szereplő upstream útvonal – kézi felülvizsgálat szerint nem skill-felsorolás |
 | `scan .agents/skills/cfa4-elephant --no-llm --fail-on-incomplete` | kilépési kód 1; score 0, LOW, CAUTION; lefedettség 100%, státusz `partial` (ugyanezen okból); találat nincs |
+| Claude Code 2.1.314: `/cfa4-skill-review .agents/skills/cfa4-elephant` | OK: a parancsot felismerte, a wrapperrel futtatta a vizsgálatot, a célt nem futtatta; magyar jelentés, Verdict: **CAUTION** (lefedettség hiányos a repóra mutató hivatkozások miatt, találat nincs) |
 
 A `partial` státusz és a CAUTION a tervezett, biztonságos viselkedés: hiányos elemzésre a folyamat nem ad APPROVE-ot.
 
