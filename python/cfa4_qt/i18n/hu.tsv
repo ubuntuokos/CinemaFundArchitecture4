@@ -55,6 +55,7 @@
 	Audio Out	Hang végpont
 	Audio Track Mixer	Hangsávkeverő
 	Audio Transitions	Hangátmenetek
+	Audio bitrate	Hang bitrátája
 	Audio codec	Hangkodek
 	Auto Bezier	Automatikus Bézier
 	Automate to Sequence…	Automatikus szekvenciába rendezés…
@@ -333,6 +334,7 @@
 	Open Project…	Projekt megnyitása…
 	OpenTimelineIO…	OpenTimelineIO…
 	Optical Flow	Optikai áramlás
+	Opus	Opus
 	Output	Kimenet
 	Output file	Kimeneti fájl
 	Overlay	Átfedés
@@ -1652,3 +1654,14 @@
 	Target Duration:	Célhossz:
 	Variations:	Változatok:
 	the selected clip is not remixed	a kijelölt klip nincs remixelve
+	4:2:0 (Main Profile)	4:2:0 (Main profil)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
+	Chroma	Króma
+	Constant quantiser	Állandó kvantáló
+	Container	Konténer
+	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
+	Keyframe distance	Kulcskockák távolsága
+	Off (target bitrate)	Ki (célbitráta)
+	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
+	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)

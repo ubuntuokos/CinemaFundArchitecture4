@@ -178,6 +178,8 @@ pub enum CodecConfig {
     Dnx {
         fourcc: FourCc,
     },
+    /// GoPro CineForm (`CFHD`).
+    Cineform,
     /// Advanced Professional Video (`apv1` + `apvC`).
     Apv(ApvConfig),
     Aac(AacConfig),
@@ -204,6 +206,10 @@ pub enum CodecConfig {
     Dts {
         ddts: Vec<u8>,
     },
+    /// Dolby TrueHD (`mlpa`); `dmlp` payload.
+    TrueHd {
+        dmlp: Vec<u8>,
+    },
     Timecode(TimecodeConfig),
     /// Anything else; `raw` is the full sample entry payload (after the 8-byte box header).
     Unknown {
@@ -223,6 +229,7 @@ impl CodecConfig {
             CodecConfig::ProRes { .. } => "prores",
             CodecConfig::Jpeg { .. } => "mjpeg",
             CodecConfig::Dnx { .. } => "dnxhd",
+            CodecConfig::Cineform => "cfhd",
             CodecConfig::Apv(_) => "apv",
             CodecConfig::Aac(_) => "aac",
             CodecConfig::Mp3 => "mp3",
@@ -233,6 +240,7 @@ impl CodecConfig {
             CodecConfig::Ac3 { .. } => "ac3",
             CodecConfig::Eac3 { .. } => "eac3",
             CodecConfig::Dts { .. } => "dts",
+            CodecConfig::TrueHd { .. } => "truehd",
             CodecConfig::Timecode(_) => "timecode",
             CodecConfig::Unknown { .. } => "unknown",
         }
@@ -896,6 +904,7 @@ fn is_audio_fourcc(f: &[u8; 4]) -> bool {
             | b"dtsc"
             | b"dtsh"
             | b"dtsl"
+            | b"mlpa"
             | b".mp3"
             | b".mp2"
             | b"enca"
@@ -991,6 +1000,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
                 b"apch" | b"apcn" | b"apcs" | b"apco" | b"ap4h" | b"ap4x" => CodecConfig::ProRes { fourcc: format },
                 b"jpeg" | b"mjpa" | b"mjpb" => CodecConfig::Jpeg { fourcc: format },
                 b"AVdn" | b"AVdh" => CodecConfig::Dnx { fourcc: format },
+                b"CFHD" => CodecConfig::Cineform,
                 b"apv1" => CodecConfig::Apv(ApvConfig::default()),
                 _ => unknown(),
             },
@@ -1005,7 +1015,9 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
         a.sample_size = c.u16()?;
         a.compression_id = c.i16()?;
         let _packet_size = c.u16()?;
-        a.sample_rate = c.u32()? as f64 / 65536.0;
+        let rate = c.u32()?;
+        // Dolby TrueHD stores the rate as a 32-bit integer (192 kHz does not fit 16.16)
+        a.sample_rate = if format.0 == *b"mlpa" { f64::from(rate) } else { f64::from(rate) / 65536.0 };
         if is_qt && a.qt_version == 1 {
             a.samples_per_packet = c.u32()?;
             a.bytes_per_packet = c.u32()?;
@@ -1059,6 +1071,7 @@ pub(crate) fn parse_sample_entry(format: FourCc, payload: &[u8], handler: FourCc
             b"ac-3" => CodecConfig::Ac3 { dac3: get(b"dac3").unwrap_or(&[]).to_vec() },
             b"ec-3" => CodecConfig::Eac3 { dec3: get(b"dec3").unwrap_or(&[]).to_vec() },
             b"dtsc" | b"dtsh" | b"dtsl" => CodecConfig::Dts { ddts: get(b"ddts").unwrap_or(&[]).to_vec() },
+            b"mlpa" => CodecConfig::TrueHd { dmlp: get(b"dmlp").unwrap_or(&[]).to_vec() },
             b"lpcm" | b"sowt" | b"twos" | b"in24" | b"in32" | b"fl32" | b"fl64" | b"raw " | b"NONE" => CodecConfig::Pcm(qt_pcm(f, &a)),
             b"ipcm" | b"fpcm" => {
                 let mut pcm =
@@ -1315,6 +1328,15 @@ impl SampleEntry {
         }
         e
     }
+    /// GoPro CineForm entry (`CFHD`).
+    pub fn cineform(width: u16, height: u16) -> Self {
+        let mut e = Self::video(FourCc(*b"CFHD"), CodecConfig::Cineform, width, height);
+        if let Some(v) = e.video.as_mut() {
+            v.depth = 24;
+            v.compressor_name = "GoPro CineForm".into();
+        }
+        e
+    }
     /// Advanced Professional Video entry (`apv1` + `apvC`).
     pub fn apv(cfg: ApvConfig, width: u16, height: u16) -> Self {
         let mut e = Self::video(FourCc(*b"apv1"), CodecConfig::Apv(cfg), width, height);
@@ -1524,7 +1546,14 @@ impl SampleEntry {
             });
             b.i16(if version == 1 { a.compression_id } else { 0 });
             b.u16(0);
-            let sr = if a.sample_rate < 65536.0 { (a.sample_rate * 65536.0).round() as u32 } else { 0 };
+            // `mlpa` stores the rate as a plain integer (Dolby TrueHD in ISOBMFF), not 16.16
+            let sr = if format == *b"mlpa" {
+                a.sample_rate.round().clamp(0.0, f64::from(u32::MAX)) as u32
+            } else if a.sample_rate < 65536.0 {
+                (a.sample_rate * 65536.0).round() as u32
+            } else {
+                0
+            };
             b.u32(sr);
             if version == 1 {
                 b.u32(a.samples_per_packet);
@@ -1557,6 +1586,7 @@ impl SampleEntry {
                 b.leaf(b"esds", &esds_payload(0xA9, &[], 0, 0, 0));
             }
             CodecConfig::Dts { ddts } if !ddts.is_empty() => b.leaf(b"ddts", ddts),
+            CodecConfig::TrueHd { dmlp } => b.leaf(b"dmlp", dmlp),
             CodecConfig::Pcm(p) if !qt => {
                 let m = b.start_full(b"pcmC", 0, 0);
                 b.u8(if p.big_endian { 0 } else { 1 });
@@ -1598,6 +1628,16 @@ mod tests {
         e.write(&mut b, qt).unwrap();
         let bx = crate::bytes::boxes(&b.buf).next().unwrap().unwrap();
         parse_sample_entry(bx.kind, bx.payload, FourCc(*handler), qt).unwrap()
+    }
+
+    #[test]
+    fn mlpa_rate_round_trips_as_an_integer() {
+        for rate in [48_000.0, 96_000.0, 192_000.0] {
+            let e = SampleEntry::audio(FourCc(*b"mlpa"), CodecConfig::TrueHd { dmlp: vec![1, 2, 3] }, 6, rate, 16);
+            let back = roundtrip(&e, false, b"soun");
+            assert_eq!(back.audio.unwrap().sample_rate, rate);
+            assert_eq!(back.codec, e.codec);
+        }
     }
 
     #[test]

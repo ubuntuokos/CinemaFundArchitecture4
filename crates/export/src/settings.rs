@@ -200,8 +200,9 @@ impl ExrCompression {
     }
 }
 
-/// Audio codec. `Auto` = AAC in MP4 and AAC Audio, PCM in QuickTime / WAV / AIFF, FLAC in FLAC.
-/// MP4 and QuickTime can also carry FLAC; MXF is always PCM.
+/// Audio codec. `Auto` = AAC in MP4 and AAC Audio, PCM in QuickTime / WAV / AIFF, FLAC in FLAC,
+/// Opus in Opus Audio and WebM. MP4 and QuickTime can also carry FLAC; MXF is always PCM; Opus is
+/// only written as Opus Audio (Ogg) and in WebM.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AudioCodec {
@@ -211,6 +212,8 @@ pub enum AudioCodec {
     Pcm,
     /// Lossless compression (the FLAC format).
     Flac,
+    /// Opus (CELT, 48 kHz) at `bitrate_kbps`.
+    Opus,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -221,7 +224,7 @@ pub struct AudioSettings {
     pub sample_rate: Option<u32>,
     /// 1 (mono), 2 (stereo) or 6 (5.1: L, R, C, LFE, Ls, Rs).
     pub channels: u32,
-    /// AAC bitrate.
+    /// AAC and Opus bitrate.
     pub bitrate_kbps: u32,
     /// PCM and FLAC sample size: 16, 24 or 32 (other values round down to one of them, 16 at least).
     pub bits: u16,
@@ -480,6 +483,18 @@ impl ExportMetadata {
         v.push(("©too".into(), format!("CFA4 {}", env!("CARGO_PKG_VERSION"))));
         v
     }
+
+    /// Vorbis comments (`FIELD=value`, Ogg Opus `OpusTags`) plus the encoder name.
+    pub fn vorbis_comments(&self) -> Vec<String> {
+        let mut v: Vec<String> =
+            [("TITLE", &self.title), ("ARTIST", &self.creator), ("COPYRIGHT", &self.copyright), ("DESCRIPTION", &self.description), ("COMMENT", &self.comment)]
+                .into_iter()
+                .filter(|(_, s)| !s.trim().is_empty())
+                .map(|(k, s)| format!("{k}={}", s.trim()))
+                .collect();
+        v.push(format!("ENCODER=CFA4 {}", env!("CARGO_PKG_VERSION")));
+        v
+    }
 }
 
 /// Values derived from settings + sequence at export time.
@@ -499,17 +514,24 @@ pub struct Resolved {
 }
 
 impl ExportSettings {
-    /// The format whose video encoder runs: the MXF video codec for MXF exports, else the format.
+    /// The format whose video encoder runs: the MXF video codec for MXF exports, H.264 for HLS,
+    /// else the format.
     pub fn video_format(&self) -> Format {
-        if self.format.is_mxf() { self.mxf_video_codec.encoder_format() } else { self.format }
+        match self.format {
+            f if f.is_mxf() => self.mxf_video_codec.encoder_format(),
+            Format::Hls => Format::H264,
+            f => f,
+        }
     }
 
     /// Whether the output can carry an alpha channel ([`ExportSettings::alpha`]): PNG, TIFF,
-    /// Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ QuickTime movies.
+    /// Targa and OpenEXR sequences, ProRes 4444 / 4444 XQ and GoPro CineForm RGBA QuickTime
+    /// movies.
     pub fn supports_alpha(&self) -> bool {
         match self.format {
             Format::PngSequence | Format::TiffSequence | Format::TgaSequence | Format::ExrSequence => true,
             Format::ProRes => crate::prores_profile(&self.prores_profile).chroma() == cfa4_prores::ChromaFormat::Yuv444,
+            Format::Cineform => crate::cineform_profile(&self.cineform_profile) == cfa4_cineform::EncodedFormat::Rgba4444,
             _ => false,
         }
     }
@@ -546,30 +568,40 @@ impl ExportSettings {
             _ => self.max_bitrate_kbps.filter(|m| *m >= target).unwrap_or_else(|| (u64::from(target) * 3 / 2).min(u64::from(u32::MAX)) as u32),
         };
         let keyint = self.keyframe_distance.filter(|k| *k > 0).unwrap_or_else(|| (fps * 2.0).round().max(1.0) as u32);
+        // the Opus encoder codes 48 kHz mono or stereo only
+        let opus = self.audio_codec() == AudioCodec::Opus;
         let channels = match self.audio.channels {
             0 | 1 => 1,
-            6.. => 6,
+            6.. if !opus => 6,
             _ => 2,
         };
-        Resolved { width: w, height: h, rate, sample_rate: self.audio.sample_rate.unwrap_or(seq_sr), channels, target_kbps: target, max_kbps: max, keyint }
+        let sample_rate = if opus { 48_000 } else { self.audio.sample_rate.unwrap_or(seq_sr) };
+        Resolved { width: w, height: h, rate, sample_rate, channels, target_kbps: target, max_kbps: max, keyint }
     }
 
     /// Whether the audio codec and container of this export store samples as `f`: PCM in WAV,
     /// AIFF and QuickTime takes all four, MXF integers only; FLAC integers only; AAC none.
     pub fn supports_sample_format(&self, f: SampleFormat) -> bool {
         match self.audio_codec() {
-            AudioCodec::Aac => false,
+            AudioCodec::Aac | AudioCodec::Opus => false,
             AudioCodec::Flac => !f.is_float(),
+            // DVD LPCM in MPEG-2 program streams: 16-bit
+            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => f == SampleFormat::Int16,
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),
         }
     }
 
     /// The audio codec actually used.
     pub fn audio_codec(&self) -> AudioCodec {
-        match (self.format, self.audio.codec) {
+        // Opus is written only in Opus Audio and WebM; elsewhere it means the format's default
+        let asked = if self.audio.codec == AudioCodec::Opus { AudioCodec::Auto } else { self.audio.codec };
+        match (self.format, asked) {
             (Format::Flac, _) => AudioCodec::Flac,
+            (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
-            (Format::Aac, _) => AudioCodec::Aac,
+            (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
+            (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
+            (Format::Mpeg2, _) => AudioCodec::Pcm,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -581,7 +613,10 @@ impl ExportSettings {
 
     /// Whether the format carries audio at all.
     pub fn has_audio(&self) -> bool {
-        self.include_audio && !self.is_image_sequence() && self.format != Format::Gif
+        self.include_audio
+            && !self.is_image_sequence()
+            && self.format != Format::Gif
+            && (self.format != Format::Mpeg2 || crate::Mpeg2Container::of(self).has_audio())
     }
 
     /// Whether the format carries video.
@@ -591,7 +626,13 @@ impl ExportSettings {
 
     /// File extension of the output.
     pub fn extension(&self) -> &'static str {
-        if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov { "mov" } else { self.format.extension() }
+        if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov {
+            "mov"
+        } else if self.format == Format::Mpeg2 {
+            crate::Mpeg2Container::of(self).extension()
+        } else {
+            self.format.extension()
+        }
     }
 
     /// Estimated output size in bytes for `duration` of a sequence (`seq_w`×`seq_h` at `seq_rate`).
@@ -602,7 +643,7 @@ impl ExportSettings {
         let px = r.width as f64 * r.height as f64;
         let video_bps = match self.video_format() {
             Format::Aac => 0.0,
-            Format::H264 | Format::Hevc | Format::Av1 => r.target_kbps as f64 * 1000.0,
+            Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls | Format::Mpeg2 => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
@@ -623,6 +664,25 @@ impl ExportSettings {
                 };
                 px * fps * bpp
             }
+            Format::Cineform => {
+                use cfa4_cineform::{EncodedFormat, Quality};
+                // bits per pixel of detailed 4:2:2 pictures at Film Scan 1, scaled by quality
+                let q = match crate::cineform_quality(&self.cineform_quality) {
+                    Quality::FilmScan3 => 1.5,
+                    Quality::FilmScan2 => 1.2,
+                    Quality::FilmScan1 => 1.0,
+                    Quality::High => 0.9,
+                    Quality::Medium => 0.8,
+                    Quality::Low => 0.7,
+                };
+                let f = match crate::cineform_profile(&self.cineform_profile) {
+                    EncodedFormat::Rgb444 => 1.5,
+                    EncodedFormat::Rgba4444 if self.keeps_alpha() => 2.0,
+                    EncodedFormat::Rgba4444 => 1.5,
+                    _ => 1.0,
+                };
+                px * fps * 2.0 * q * f
+            }
             Format::Mjpeg | Format::JpegSequence => px * 8.0 * (0.4 + self.quality as f64 / 100.0 * 2.0) * fps / 8.0,
             Format::PngSequence => px * 4.0 * 0.45 * 8.0 * fps,
             Format::BmpSequence => px * 3.0 * 8.0 * fps,
@@ -636,12 +696,13 @@ impl ExportSettings {
                 px * if self.keeps_alpha() { 8.0 } else { 6.0 } * 8.0 * fps * k
             }
             Format::Gif => px * 0.6 * 8.0 * fps,
-            Format::Wav | Format::Aiff | Format::Flac | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
+            Format::Wav | Format::Aiff | Format::Flac | Format::Opus | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
             match self.audio_codec() {
                 AudioCodec::Aac => self.audio.bitrate_kbps as f64 * 1000.0,
+                AudioCodec::Opus => f64::from(opus_bitrate_kbps(self.audio.bitrate_kbps)) * 1000.0,
                 // typical of music and dialogue; noise compresses less, silence far more
                 AudioCodec::Flac => pcm * 0.6,
                 _ => pcm,
@@ -651,6 +712,11 @@ impl ExportSettings {
         };
         ((video_bps + audio_bps) * secs / 8.0).round() as u64
     }
+}
+
+/// The Opus bit rate actually coded for `kbps` (Opus spans 6..=510 kbit/s).
+pub fn opus_bitrate_kbps(kbps: u32) -> u32 {
+    kbps.clamp(6, 510)
 }
 
 /// The Export-mode Summary panel: one line each for the output video, audio and format.
@@ -697,11 +763,28 @@ impl ExportSettings {
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
                 }
+                Format::Mpeg2 => {
+                    v += if self.mpeg2_422 { ", MPEG-2 4:2:2 Profile" } else { ", MPEG-2 Main Profile 4:2:0" };
+                    v += &match self.mpeg2_quantizer {
+                        Some(q) => format!(", constant quantiser {q}"),
+                        None => format!(", average {}", mbps(r.target_kbps)),
+                    };
+                    v += &format!(", keyframe every {} frames", r.keyint);
+                }
                 Format::Av1 => {
-                    v += &format!(", AV1 Main (hardware encoder), {}", self.bitrate_mode.label());
+                    v += &format!(", AV1 Main (10-bit for HDR), {}", self.bitrate_mode.label());
                     v += &match self.bitrate_mode {
                         BitrateMode::Cbr => format!(", {}", mbps(r.target_kbps)),
+                        BitrateMode::Crf => format!(" {}", self.crf),
                         _ => format!(", Target {}, Max {}", mbps(r.target_kbps), mbps(r.max_kbps)),
+                    };
+                    v += &format!(", keyframe every {} frames", r.keyint);
+                }
+                Format::WebM => {
+                    v += ", VP9 Profile 0";
+                    v += &match self.bitrate_mode {
+                        BitrateMode::Crf => format!(", quantizer {}", crate::vp9_quantizer(self.crf)),
+                        _ => format!(", Target {}", mbps(r.target_kbps)),
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
                 }
@@ -718,6 +801,13 @@ impl ExportSettings {
                 }
                 Format::DnxHr => v += &format!(", DNxHR {}", if self.dnx_profile.is_empty() { "HQ".into() } else { self.dnx_profile.to_ascii_uppercase() }),
                 Format::Apv => v += &format!(", {}", crate::apv_profile(&self.apv_profile).name()),
+                Format::Cineform => {
+                    let mut f = crate::cineform_profile(&self.cineform_profile);
+                    if f == cfa4_cineform::EncodedFormat::Rgba4444 && !self.keeps_alpha() {
+                        f = cfa4_cineform::EncodedFormat::Rgb444;
+                    }
+                    v += &format!(", {}", crate::cineform_label(f, crate::cineform_quality(&self.cineform_quality)))
+                }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
                 Format::DpxSequence => v += ", 10-bit RGB",
                 Format::ExrSequence => {
@@ -739,6 +829,7 @@ impl ExportSettings {
             };
             match self.audio_codec() {
                 AudioCodec::Aac => format!("AAC, {} kbps, {} Hz, {ch}", self.audio.bitrate_kbps, r.sample_rate),
+                AudioCodec::Opus => format!("Opus, {} kbps, {} Hz, {ch}", opus_bitrate_kbps(self.audio.bitrate_kbps), r.sample_rate),
                 AudioCodec::Flac => {
                     format!("FLAC (lossless) {}-bit, level {}, {} Hz, {ch}", self.audio.sample_format().bits(), self.audio.flac_level.min(8), r.sample_rate)
                 }
@@ -753,8 +844,15 @@ impl ExportSettings {
         let container = match self.format {
             Format::H264 | Format::Hevc if self.multiplexer == Multiplexer::Mov => "QuickTime",
             Format::H264 | Format::Hevc | Format::Av1 => "MP4",
-            Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg => "QuickTime",
+            Format::Hls => "fragmented MP4 segments",
+            Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg => "QuickTime",
             Format::MxfOp1a | Format::MxfOpAtom => self.mxf_video_codec.label(),
+            Format::Mpeg2 => match crate::Mpeg2Container::of(self) {
+                crate::Mpeg2Container::Ps => "Program Stream",
+                crate::Mpeg2Container::Ts => "Transport Stream",
+                crate::Mpeg2Container::M2ts => "BDAV Transport Stream",
+                crate::Mpeg2Container::Es => "Elementary Stream",
+            },
             f if f.is_image_sequence() => "Image sequence",
             _ => "",
         };

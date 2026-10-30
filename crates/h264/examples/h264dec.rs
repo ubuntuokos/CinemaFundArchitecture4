@@ -35,9 +35,9 @@ fn main() {
         for p in pics {
             n += 1;
             if let Some(o) = out.as_mut() {
-                o.write_all(&p.y).unwrap();
-                o.write_all(&p.u).unwrap();
-                o.write_all(&p.v).unwrap();
+                o.write_all(&p.y.to_bytes()).unwrap();
+                o.write_all(&p.u.to_bytes()).unwrap();
+                o.write_all(&p.v.to_bytes()).unwrap();
             }
         }
     };
