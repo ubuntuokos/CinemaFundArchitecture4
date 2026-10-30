@@ -21,8 +21,10 @@ class SkillSpectorIntegrationTests(unittest.TestCase):
 
         self.assertIn("name: cfa4-skill-review", frontmatter)
         self.assertIn("disable-model-invocation: true", frontmatter)
+        self.assertIn("argument-hint:", frontmatter)
         self.assertNotIn("allowed-tools:", frontmatter)
         self.assertIn("--no-llm", body)
+        self.assertIn("helyesen idézőjelezett shell-argumentumként", body)
         self.assertIn("APPROVE", body)
         self.assertIn("CAUTION", body)
         self.assertIn("REJECT", body)
