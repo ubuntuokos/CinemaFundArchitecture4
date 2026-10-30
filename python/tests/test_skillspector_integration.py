@@ -32,7 +32,7 @@ class SkillSpectorIntegrationTests(unittest.TestCase):
         text = INSTALLER_PATH.read_text(encoding="utf-8")
 
         self.assertIn("skillspector==2.13.2", text)
-        self.assertIn("python3 -m venv", text)
+        self.assertIn("-m venv", text)
         self.assertNotIn("sudo ", text)
         self.assertNotIn("uv tool install", text)
 

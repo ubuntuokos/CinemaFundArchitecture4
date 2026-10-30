@@ -138,6 +138,8 @@ that adds them names the source and revision.
 | `crates/j2k/src/ht.rs`, `crates/j2k/src/ht_tables.rs` (HTJ2K block decoder, ported) | OpenJPH, https://github.com/aous72/OpenJPH, 0.28.1 (Ubuntu `openjph_0.28.1.orig.tar.gz`), `src/core/coding/ojph_block_decoder32.cpp`, `ojph_block_common.cpp`, `table0.h`, `table1.h` | Aous Naman; Kakadu Software Pty Ltd; The University of New South Wales | BSD-2-Clause (`crates/j2k/src/LICENSE-OpenJPH`) |
 | `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
 
+| `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA contributors | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
+
 ## 6. Dependency checks
 
 - Rust dependencies: `deny.toml` lists the licences that are GPL-3.0 compatible. Run
