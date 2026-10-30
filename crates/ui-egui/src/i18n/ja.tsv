@@ -3633,10 +3633,16 @@
 	Side by Side	左右
 	Stereo to 2D	ステレオから 2D へ
 	Eye	目
+	Stereo Parallax	ステレオ視差
+	Horizontal Shift	水平シフト
 	Slit Scan	スリットスキャン
 	Time Span (seconds)	時間幅（秒）
 	Current Frame At	現在のフレームの位置
 	Blend Slices	スライスをブレンド
+	Creative Looks	クリエイティブルック
+	Film Grain	フィルムグレイン
+	Animated	アニメーション
+	Color Grain	カラーグレイン
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming：H.264 1920×1080 8 Mbps、AAC 160 kbps、6 秒のフラグメント MP4 セグメント
