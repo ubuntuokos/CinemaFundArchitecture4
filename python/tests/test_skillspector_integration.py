@@ -26,7 +26,7 @@ class SkillSpectorIntegrationTests(unittest.TestCase):
         self.assertIn("APPROVE", body)
         self.assertIn("CAUTION", body)
         self.assertIn("REJECT", body)
-        self.assertIn("do not execute", body.lower())
+        self.assertIn("ne futtasd", body.lower())
 
     def test_installer_pins_version_and_uses_a_venv(self) -> None:
         text = INSTALLER_PATH.read_text(encoding="utf-8")
