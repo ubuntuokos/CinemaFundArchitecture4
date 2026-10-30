@@ -85,7 +85,7 @@ fn add_beats(s: &mut Session, p: &Value) -> Result<Value> {
     let it = it.clone();
     let span = (it.start, it.start + it.duration);
     let original = Remix::of(&it).map(|r| r.original).unwrap_or(Tick((it.duration.0 as f64 * it.speed.abs().max(1e-6)).round() as i64));
-    let a = crate::remix::beat_grid(s, it.item, it.source_in, original)?;
+    let a = crate::remix::beat_grid(s, it.item, it.audio_stream, it.source_in, original)?;
     let m0 = it.source_in.to_units_floor(sr);
     let lead = dsp::beat_lead(a.sample_rate);
     let mut times = Vec::new();

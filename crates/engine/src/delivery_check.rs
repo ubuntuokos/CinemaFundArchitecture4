@@ -100,10 +100,12 @@ fn check(s: &mut Session, p: &Value) -> Result<Value> {
     let mut shown = Vec::new();
     for t in q.video_tracks.iter().filter(|t| t.kind == TrackKind::Video) {
         for it in &t.items {
-            if t.enabled && it.enabled {
+            let pi = s.project.item(it.item);
+            // an adjustment layer only changes the picture under it; it shows nothing itself
+            let adjustment = pi.is_some_and(|x| matches!(x.kind, ItemKind::AdjustmentLayer { .. }));
+            if t.enabled && it.enabled && !adjustment {
                 shown.push((it.start, it.end()));
             }
-            let pi = s.project.item(it.item);
             if it.duration <= Tick(frame.0.saturating_mul(flash_frames)) {
                 let n = rate.frame_at(it.duration).max(1);
                 issues.push(Issue {

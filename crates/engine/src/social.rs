@@ -168,6 +168,7 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
     let id = copy_sequence(s, seq, &new_name, "Auto Reframe Sequence", |p, q| {
         // Motion positions are in sequence pixels: move them with the frame's centre so every
         // clip keeps its place relative to the centre (keyframes included)
+        let (ow, oh, seq_par) = (q.settings.width, q.settings.height, cfa4_project::sane_par(q.settings.par));
         let dx = (w as f64 - q.settings.width as f64) / 2.0;
         let dy = (h as f64 - q.settings.height as f64) / 2.0;
         // a picture that filled the old frame must cover the new one: Auto Reframe pans its
@@ -197,6 +198,19 @@ pub fn reframe_sequence(s: &mut Session, seq: ItemId, (name, aw, ah): (&str, u32
                 let picture = p.item(it.item).is_some_and(|x| is_picture(&x.kind));
                 if !picture || it.effects.iter().any(|e| e.effect == "auto_reframe") {
                     continue;
+                }
+                // Scale to Frame Size refits the picture to the new frame itself: keep the old fit
+                let mut cover = cover;
+                if it.scale_to_frame
+                    && let Some((sw, sh)) = cfa4_render::source_size(p, it.item)
+                {
+                    let r = cfa4_project::par_ratio(cfa4_project::sane_par(cfa4_render::source_par(p, it.item).unwrap_or(seq_par)))
+                        / cfa4_project::par_ratio(seq_par);
+                    let fit = |fw: f64, fh: f64| (fw / (sw.max(1) as f64 * r)).min(fh / sh.max(1) as f64);
+                    let (new_fit, old_fit) = (fit(w as f64, h as f64), fit(ow as f64, oh as f64));
+                    if new_fit > 0.0 && old_fit.is_finite() {
+                        cover *= old_fit / new_fit;
+                    }
                 }
                 if let Some(m) = it.effect_mut("motion") {
                     for k in ["scale", "scale_width"] {

@@ -446,3 +446,35 @@ fn hidden_layers_and_interior_styles() {
     let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
     assert_eq!(issues(&r, "offFrame"), 0, "{r:#}");
 }
+
+#[test]
+fn scale_to_frame_pictures_also_fill_the_new_frame() {
+    let mut s = Session::default();
+    s.execute("file.newSequence", json!({"name": "Fit", "width": 192, "height": 108, "fps": 24, "video": 1, "audio": 1})).unwrap();
+    // a larger source, fitted by Scale to Frame Size
+    let r = s.execute("file.newColorMatte", json!({"color": "#00ff00", "width": 384, "height": 216, "seconds": 2.0})).unwrap();
+    let r = s.execute("timeline.place", json!({"item": r["item"], "track": "V1", "seconds": 0.0})).unwrap();
+    s.execute("timeline.select", json!({"clips": [r["clips"][0]]})).unwrap();
+    let it = s.active_sequence().unwrap().video_tracks[0].items[0].clone();
+    if !it.scale_to_frame {
+        s.execute("clip.scaleToFrameSize", json!({})).unwrap();
+    }
+    assert!(s.active_sequence().unwrap().video_tracks[0].items[0].scale_to_frame);
+    s.execute("sequence.autoReframe", json!({"aspect": "9:16"})).unwrap();
+    let img = s.render_program(1.0).unwrap();
+    for (x, y) in [(0, 0), (img.w / 2, 0), (img.w - 1, img.h - 1), (img.w / 2, img.h - 1)] {
+        assert!(img.get(x, y)[3] > 0.99, "({x}, {y}) is uncovered");
+    }
+}
+
+#[test]
+fn an_adjustment_layer_does_not_hide_a_black_gap() {
+    // clips at 0–2 s and 3–5 s; an adjustment layer over all of it on V2
+    let (mut s, _) = session(0.0, &[2.0]);
+    let r = s.execute("file.newColorMatte", json!({"color": "#ffffff", "seconds": 2.0})).unwrap();
+    s.execute("timeline.place", json!({"item": r["item"], "track": "V1", "seconds": 3.0})).unwrap();
+    let item = s.execute("file.newAdjustmentLayer", json!({"seconds": 5})).unwrap()["item"].clone();
+    s.execute("timeline.place", json!({"item": item, "track": "V2", "seconds": 0.0})).unwrap();
+    let r = s.execute("sequence.checkDelivery", json!({"markers": false})).unwrap();
+    assert_eq!(issues(&r, "blackGap"), 1, "{r:#}");
+}
