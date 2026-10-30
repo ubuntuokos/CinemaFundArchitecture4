@@ -1,10 +1,11 @@
-# CFA4-SUBTITLE-STUDIO-PLAN-001 — 1.2 FINAL (tervezet)
+# CFA4-SUBTITLE-STUDIO-PLAN-001 — FINAL 1.2
 
-## Professzionális feliratozó munkakörnyezet — egységes, végleges tervjavaslat
+## Professzionális feliratozó munkakörnyezet — egységes, végleges, jóváhagyott terv
 
 | Dokumentumadat | Érték |
 |---|---|
-| Verzió | 1.2 FINAL — **tervezet**; a D1–D4 tulajdonosi döntések beépítve (2026-10-30), a terv egészének jóváhagyása a beolvasztással |
+| Verzió | FINAL 1.2 |
+| Állapot | **Jóváhagyva** a tulajdonos által, 2026-10-30; a D1–D4 döntések beépítve. A FINAL 1.1-et e változat váltja fel |
 | Dátum | 2026. október 30. |
 | Projekt | CFA4 — CinemaFundArchitecture4 |
 | Tulajdonos, jóváhagyó | ubuntuokos (Horváth H. István) |
@@ -326,5 +327,7 @@ Az AC-01–AC-12 (1.1 §13) és az 1.2 AC-13–AC-22 feltételei érvényesek, a
 **Nem igazolt e dokumentummal:** a 3. fejezet állításai dokumentáció- és forrásolvasáson
 alapulnak; build vagy teszt nem futott. Implementáció nem indult.
 
-**Következő lépés:** a terv beolvasztása a `main`-be (a gazda feladata); a `VISION.md` 1. pontjának
-pontosítása a D1 szerint külön PR-ban; az F0 a Qt6-felület elkészülte után azonnal indul (D2).
+**Jóváhagyás:** a tulajdonos 2026-10-30-án jóváhagyta a tervet.
+
+**Következő lépés:** a terv beolvasztása a `main`-be (a gazda feladata); a `VISION.md` pontosítása
+a D1 szerint külön PR-ban (#362); az F0 a Qt6-felület elkészülte után azonnal indul (D2).
