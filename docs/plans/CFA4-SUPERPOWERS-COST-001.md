@@ -17,7 +17,7 @@ A Superpowers teljes automatikus telepítése, automatikus
 SessionStart/using-superpowers aktiválása, korlátlan újrapróbálkozás,
 duplikált review, új daemon és új kötelező fizetős szolgáltatás tiltott.
 A meglévő Rust médiamotor, Qt6-prioritás, FFmpeg 9.0.2 követelmény,
-FilmCraft-upstream szeparáció és szoftver-együttélési szabály megmarad.
+upstream-szeparáció (a szülőprojekt nem módosul) és szoftver-együttélési szabály megmarad.
 
 ## Költség- és minőségi követelmények
 
@@ -72,7 +72,7 @@ bizonyíték még hiányzik. Az SC-01–SC-16 részletes státusz:
 
 ## Biztonsági és kiadási határok
 
-Tilos automatikus push más munkamenet ágára, upstream FilmCraft
+Tilos automatikus push más munkamenet ágára, upstream szülőprojekt
 módosítás, merge, release, root hostváltoztatás, titkok naplózása
 vagy prompt injection által kiváltott jogosultságnövelés.
 Minden upstream képesség végrehajtása előtt a CFA4 engedélye és
