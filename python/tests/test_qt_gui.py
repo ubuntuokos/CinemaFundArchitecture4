@@ -3389,7 +3389,9 @@ def test_default_layout_follows_the_window_size(app, fake_engine: Path, tmp_path
         win.resize(*size)
         win.show()
         try:
-            wait_until(app, lambda: False, 400)
+            # the layout settles over a few deferred resizes; a fixed pause raced them under load
+            wait_until(app, lambda w=win: 0.33 <= w.docks["Timeline"].height() / max(1, w.height()) <= 0.48, 5_000)
+            wait_until(app, lambda: False, 100)
             share = win.docks["Timeline"].height() / win.height()
             assert 0.33 <= share <= 0.48, (size, share)
             left = win.docks["Source"].width() / win.width()
