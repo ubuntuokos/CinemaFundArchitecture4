@@ -77,6 +77,40 @@ class ControlError(Exception):
     pass
 
 
+
+def _camel(name: str) -> str:
+    head, *rest = name.split("_")
+    return head + "".join(w.title() for w in rest)
+
+
+def _snake(name: str) -> str:
+    return "".join(f"_{c.lower()}" if c.isupper() else c for c in name)
+
+
+def _same(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    """Panel settings equal up to the order of the scopes listed (the panels keep their own)."""
+    def norm(d: dict[str, Any]) -> dict[str, Any]:
+        return {k: sorted(map(str, v)) if k in ("shown", "scopes") and isinstance(v, list) else v for k, v in d.items()}
+
+    return norm(a) == norm(b)
+
+
+def keyframe_refs(value: Any) -> list[tuple[Any, ...]]:
+    """egui's ``KeyframeRef`` list ``[{clip, effect, param, mask?, time}]`` as the Effect Controls
+    panel's keyframe references (keys it does not show are dropped by the panel)."""
+    def whole(v: Any) -> bool:
+        return isinstance(v, int) and not isinstance(v, bool) and 0 <= v < 2**63
+
+    if not isinstance(value, list) or len(value) > 100_000:
+        raise ControlError("keyframeSelection takes a list of {clip, effect, param, mask?, time}")
+    out: list[tuple[Any, ...]] = []
+    for k in value:
+        if (not isinstance(k, dict) or not whole(k.get("clip")) or not whole(k.get("effect")) or not isinstance(k.get("param"), str)
+                or not whole(k.get("time")) or not (k.get("mask") is None or whole(k.get("mask")))):
+            raise ControlError("keyframeSelection: each key is {clip, effect, param, mask?, time}")
+        out.append((k["clip"], k["effect"], k["param"], k.get("mask"), k["time"]))
+    return out
+
 def modifiers_of(value: Any) -> Qt.KeyboardModifier:
     """``["shift", "ctrl"]``, ``"Shift+Ctrl"`` or ``{"shift": true}`` (egui's)."""
     out = Qt.KeyboardModifier.NoModifier
@@ -409,6 +443,7 @@ class ControlServer(QObject):
             "keyboardFocus": self._keyboard_target().objectName(),
             "window": {"width": win.width(), "height": win.height(), "active": win.isActiveWindow()},
             "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": win.isActiveWindow()},
+            "ui": self.ui_state(),
         }
 
     def _windows(self) -> list[QWidget]:
@@ -581,6 +616,21 @@ class ControlServer(QObject):
                 raise ControlError(f"{key} takes {{param: value}}")
             for name, value in fields.items():
                 set_dialog_field(dialog, str(name), value)
+        if "panels" in p:
+            self.set_panels(p["panels"])
+        for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser)):
+            if key not in p:
+                continue
+            if not isinstance(p[key], dict):
+                raise ControlError(f"{key} takes {{field: value}}")
+            try:
+                panel.set_ui_state(p[key])
+            except (ValueError, TypeError) as e:
+                raise ControlError(f"{key}: {e}") from None
+        if "keyframeSelection" in p:
+            win.effect_controls.set_keyframe_selection(keyframe_refs(p["keyframeSelection"]))
+        if "export" in p:
+            self.set_export(p["export"])
         tl = p.get("timeline")
         if isinstance(tl, dict):
             canvas = win.timeline.canvas
@@ -591,6 +641,129 @@ class ControlServer(QObject):
             if tl.get("fit") is True:
                 canvas.zoom_to_fit()
             canvas.update()
+
+    # ----- panel state (the serde parts of egui's ``UiState``) -----
+    def ui_state(self) -> dict[str, Any]:
+        win = self.window
+        keys = [{"clip": c, "effect": e, "param": prm, **({"mask": m} if m is not None else {}), "time": t}
+                for c, e, prm, m, t in win.effect_controls.keyframe_selection]
+        return {
+            "panels": self.panels_state(),
+            "projectPanel": win.project_panel.ui_state(),
+            "mediaBrowser": win.media_browser.ui_state(),
+            "keyframeSelection": keys,
+            "export": self.export_state(),
+        }
+
+    def panels_state(self) -> dict[str, Any]:
+        win = self.window
+        tc, ref = win.timecode_panel, win.reference
+        return {
+            "scopes": {_camel(k): v for k, v in asdict(win.scopes.view.st).items()},
+            "timecode": {"rows": [dict(r) for r in tc.rows], "showName": tc.show_name},
+            "reference": {"ganged": ref.ganged, "time": ref.time, "display": ref.display.currentData(), "scopes": list(ref.scope_kinds)},
+            "progress": {"showFinished": win.progress.finished.isChecked()},
+            "inspectorSource": win.inspector_source,
+        }
+
+    def set_panels(self, patch: Any) -> None:
+        """egui's ``ui.set {panels}``: Lumetri Scopes, Timecode, Reference Monitor and Progress
+        settings merged in, and which selection Info and Metadata follow. A value the panel would
+        not take is refused and changes nothing."""
+        win = self.window
+        if not isinstance(patch, dict):
+            raise ControlError("panels takes {scopes, timecode, reference, progress, inspectorSource}")
+        known = ("scopes", "timecode", "reference", "progress", "inspectorSource")
+        bad = [k for k in patch if k not in known]
+        if bad:
+            raise ControlError(f"panels: no {bad[0]!r} in the Qt panels (known: {', '.join(known)})")
+        for k in ("scopes", "timecode", "reference", "progress"):
+            if k in patch and not isinstance(patch[k], dict):
+                raise ControlError(f"panels.{k} takes {{field: value}}")
+        src = patch.get("inspectorSource")
+        if src is not None and src not in ("project", "timeline"):
+            raise ControlError("panels.inspectorSource is project or timeline")
+        show = patch.get("progress", {}).get("showFinished")
+        if show is not None and not isinstance(show, bool):
+            raise ControlError("panels.progress.showFinished takes true or false")
+        bad = [f for f in patch.get("progress", {}) if f != "showFinished"]
+        if bad:
+            raise ControlError(f"panels.progress: no field {bad[0]!r}")
+        cur = self.panels_state()
+        # the panels load their saved settings with validation: write the merged state, reload, and
+        # put the old one back when a value did not stick
+        stored = {"scopes": "panels/scopes", "timecode": "panels/timecode", "reference": "panels/reference"}
+        panels = {"scopes": win.scopes, "timecode": win.timecode_panel, "reference": win.reference}
+        settings = win.settings
+        for k, key in stored.items():
+            if k not in patch:
+                continue
+            unknown = [f for f in patch[k] if f not in cur[k]]
+            if unknown:
+                raise ControlError(f"panels.{k}: no field {unknown[0]!r} (known: {', '.join(cur[k])})")
+            merged = {**cur[k], **patch[k]}
+            saved = {_snake(f): v for f, v in merged.items()} if k == "scopes" else merged
+            old = settings.value(key)
+            settings.setValue(key, json.dumps(saved))
+            panels[k].attach_settings(settings)
+            if not _same(self.panels_state()[k], merged):
+                if old is None:
+                    settings.remove(key)
+                else:
+                    settings.setValue(key, old)
+                panels[k].attach_settings(settings)
+                raise ControlError(f"panels.{k}: a value is not one the panel takes")
+        if "timecode" in patch:
+            win.timecode_panel.changed()
+        if "reference" in patch:
+            win.reference.request()
+        if "scopes" in patch:
+            win.scopes.view.request()
+        if show is not None:
+            win.progress.finished.setChecked(show)
+        if src is not None:
+            win._follow(src)
+
+    def export_state(self) -> dict[str, Any] | None:
+        """The Export window's choices (null while it is closed)."""
+        d = getattr(self.window, "export_dialog", None)
+        try:
+            if d is None or not d.isVisible():
+                return None
+        except RuntimeError:
+            return None
+        return {"preset": d.preset.currentData(), "format": d.format.currentData(), "path": d.path.text(), "range": d.range.currentData(),
+                "customStart": d.start.value(), "customEnd": d.end.value()}
+
+    def set_export(self, patch: Any) -> None:
+        cur = self.export_state()
+        if cur is None:
+            raise ControlError("export: the Export window is not open")
+        if not isinstance(patch, dict):
+            raise ControlError("export takes {preset, format, path, range, customStart, customEnd}")
+        unknown = [f for f in patch if f not in cur]
+        if unknown:
+            raise ControlError(f"export: no field {unknown[0]!r} (known: {', '.join(cur)})")
+        d = self.window.export_dialog
+        combos = {"preset": d.preset, "format": d.format, "range": d.range}
+        for f, box in combos.items():
+            if f in patch and box.findData(patch[f]) < 0:
+                raise ControlError(f"export.{f}: no {patch[f]!r}")
+        for f in ("customStart", "customEnd"):
+            if f in patch and (isinstance(patch[f], bool) or not isinstance(patch[f], (int, float)) or not math.isfinite(patch[f])):
+                raise ControlError(f"export.{f} takes seconds")
+        if "path" in patch and not isinstance(patch["path"], str):
+            raise ControlError("export.path takes a file path")
+        # the preset first: it sets the format and the rest
+        for f in ("preset", "format", "range"):
+            if f in patch:
+                combos[f].setCurrentIndex(combos[f].findData(patch[f]))
+        if "path" in patch:
+            d.path.setText(patch["path"])
+        if "customStart" in patch:
+            d.start.setValue(float(patch["customStart"]))
+        if "customEnd" in patch:
+            d.end.setValue(float(patch["customEnd"]))
 
     # ----- timeline hit-testing (egui's ``timeline::hit_json`` / ``locate``) -----
     def _canvas_point(self, p: dict[str, Any]) -> QPoint:

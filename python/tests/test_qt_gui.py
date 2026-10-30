@@ -5789,6 +5789,99 @@ class _ControlClient:
         return wait_until(self.app, gone, 10_000)
 
 
+def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's ``ui.set`` keys of panel state (panels, projectPanel, mediaBrowser,
+    keyframeSelection, export) and ``ui.inspect``'s ``ui``: merged in, read back, a bad value
+    refused without a change."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        c = _ControlClient(app, server.port())
+
+        def ui():
+            r = c.call("ui.inspect")
+            assert r["ok"] is True, r
+            return r["result"]["ui"]
+
+        def ok(params):
+            r = c.call("ui.set", params)
+            assert r["ok"] is True, (params, r)
+            return r["result"]["ui"]
+
+        def refused(params, text):
+            before = ui()
+            r = c.call("ui.set", params)
+            assert r["ok"] is False and text in r["error"], (params, r)
+            assert ui() == before, f"{params} changed something"
+
+        first = ui()
+        assert set(first) == {"panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
+        assert first["export"] is None and first["keyframeSelection"] == []
+        # panels: merged per panel, saved as the panels save them
+        u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
+                           "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
+                                                 {"source": "source", "mode": "duration", "display": "Timecode"}], "showName": False},
+                           "reference": {"ganged": True, "display": "scopes"},
+                           "progress": {"showFinished": True}, "inspectorSource": "timeline"}})
+        p = u["panels"]
+        assert sorted(p["scopes"]["shown"]) == ["vectorscopeYuv", "waveform"] and p["scopes"]["waveformType"] == "luma"
+        assert p["scopes"]["paradeType"] == first["panels"]["scopes"]["paradeType"], "merged, not replaced"
+        assert len(win.timecode_panel.rows) == 2 and win.timecode_panel.show_name is False
+        assert win.reference.ganged is True and win.reference.display.currentData() == "scopes"
+        assert win.progress.finished.isChecked() and win.inspector_source == "timeline"
+        assert json.loads(settings.value("panels/scopes"))["waveform_type"] == "luma"
+        refused({"panels": {"scopes": {"waveformType": "sideways"}}}, "not one the panel takes")
+        refused({"panels": {"timecode": {"rows": [{"source": "moon"}]}}}, "not one the panel takes")
+        refused({"panels": {"events": {"level": "error"}}}, "no 'events'")
+        refused({"panels": {"progress": {"showFinished": "yes"}}}, "true or false")
+        refused({"panels": {"inspectorSource": "elsewhere"}}, "project or timeline")
+        # Project panel: bins in tabs and windows, the active tab, the selected bin
+        u = ok({"projectPanel": {"tabs": [{"bin": 7}, {"bin": 9, "floating": True, "view": "icon", "iconSize": 150}], "activeTab": 0, "selectedBin": 7}})
+        pp = u["projectPanel"]
+        assert [(t["bin"], t["floating"]) for t in pp["tabs"]] == [(7, False), (9, True)], pp
+        assert pp["tabs"][1]["view"] == "icon" and pp["tabs"][1]["iconSize"] == 150 and pp["activeTab"] == 0
+        assert len(win.project_panel.windows) == 1 and win.project_panel.tabs.count() == 2
+        u = ok({"projectPanel": {"tabs": [{"bin": 7}]}})
+        assert [t["bin"] for t in u["projectPanel"]["tabs"]] == [7] and not win.project_panel.windows
+        u = ok({"projectPanel": {"tabs": [], "activeTab": None}})
+        assert u["projectPanel"]["tabs"] == [] and u["projectPanel"]["activeTab"] is None
+        refused({"projectPanel": {"activeTab": 3}}, "bin tabs")
+        refused({"projectPanel": {"hover": 1}}, "unknown field")
+        # Media Browser: open folders, the path being typed, the tree's width
+        u = ok({"mediaBrowser": {"expanded": [str(tmp_path)], "treeWidth": 140}})
+        assert u["mediaBrowser"]["expanded"] == [str(tmp_path)] and settings.value("mediaBrowser/expanded") == str(tmp_path)
+        refused({"mediaBrowser": {"treeWidth": "wide"}}, "treeWidth")
+        refused({"mediaBrowser": {"expanded": "/"}}, "expanded")
+        # Effect Controls keyframe selection: replaced
+        keys = [{"clip": 3, "effect": 1, "param": "opacity", "time": 1000}, {"clip": 3, "effect": 0, "param": "mask", "mask": 0, "time": 0}]
+        assert ok({"keyframeSelection": keys})["keyframeSelection"] == keys
+        assert win.effect_controls.keyframe_selection[0] == (3, 1, "opacity", None, 1000)
+        refused({"keyframeSelection": [{"clip": 3}]}, "each key")
+        assert ok({"keyframeSelection": []})["keyframeSelection"] == []
+        # Export: the open Export window's choices
+        refused({"export": {"range": "custom"}}, "not open")
+        win.open_export()
+        app.processEvents()
+        u = ok({"export": {"range": "custom", "customStart": 2.0, "customEnd": 4.5, "path": str(tmp_path / "out.mp4")}})
+        e = u["export"]
+        assert e["range"] == "custom" and e["customStart"] == 2.0 and e["customEnd"] == 4.5 and e["path"].endswith("out.mp4")
+        assert win.export_dialog.params()["range"] == "custom" and win.export_dialog.params()["startSeconds"] == 2.0
+        refused({"export": {"range": "sideways"}}, "no 'sideways'")
+        win.export_dialog.close()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, tmp_path: Path):
     """egui's transport rules: not JSON, an array, no method, not UTF-8 each get one error reply
     and the connection is closed; blank lines are skipped; at most 16 connections."""
