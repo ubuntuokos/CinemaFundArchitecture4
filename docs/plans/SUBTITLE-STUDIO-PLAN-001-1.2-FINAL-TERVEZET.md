@@ -8,7 +8,7 @@
 | Dátum | 2026. október 30. |
 | Projekt | CFA4 — CinemaFundArchitecture4 |
 | Tulajdonos, jóváhagyó | ubuntuokos (Horváth H. István) |
-| Érvényes alap | [FINAL 1.1](SUBTITLE-STUDIO-PLAN-001-FINAL-1.1.md) (jóváhagyott, változatlanul megőrizve) |
+| Érvényes alap | [FINAL 1.1](SUBTITLE-STUDIO-PLAN-001-FINAL-1.1.md) (jóváhagyott; a tárolóba vételkor csak az upstream márkanév lett semleges „upstream” szóra cserélve, `AGENTS.md`) |
 | Beolvasztott javaslat | „1.2 JAVASLAT — CFA3–CFA4 összevetés és kiegészítési javaslat” (2026-10-30, nem jóváhagyott) |
 | Új ebben a változatban | Összevetés a CFA4 `main` tényleges kódjával (`a3886a4`, 2026-10-30) és a `VISION.md`-vel |
 | Végrehajtás | A fejlesztés nem indul el ezzel a dokumentummal; az F0 indítása külön tulajdonosi döntés |

@@ -35,7 +35,7 @@ Az OxiMedia-audit statikus forrásvizsgálatot ismertetett; annak build- és tes
 
 | Terület | Követelmény |
 |---|---|
-| Projekt | Minden fejlesztés a CFA4-be kerül; FilmCraft upstream módosítása nélkül |
+| Projekt | Minden fejlesztés a CFA4-be kerül; az upstream módosítása nélkül |
 | Platform | Ubuntu 26.04 LTS és variánsai, amd64 |
 | Felület | A CFA4 natív Qt6-felületébe illeszkedő feliratozó munkaterület |
 | Feldolgozás | Rust központi motor; indokolt, ellenőrzött natív háttérkönyvtárak megengedettek |
