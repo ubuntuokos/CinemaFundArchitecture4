@@ -2145,3 +2145,28 @@
 	Stretch To Fill	Kitöltés nyújtással
 	Summary	Összegzés
 	Quick Export cancelled	A gyors exportálás megszakítva
+	0 fastest, 8 smallest	0 a leggyorsabb, 8 a legkisebb
+	16 bit	16 bit
+	24 bit	24 bit
+	32 bit	32 bit
+	32 bit float	32 bites lebegőpontos
+	Anamorphic 2:1 (2.0)	Anamorf 2:1 (2,0)
+	Aspect	Képpontarány
+	Channels	Csatornák
+	Composite on the GPU when available	Kompozitálás a GPU-n, ha elérhető
+	Compression Level	Tömörítési szint
+	D1/DV NTSC (0.9091)	D1/DV NTSC (0,9091)
+	D1/DV PAL (1.0940)	D1/DV PAL (1,0940)
+	DVCPRO HD (1.5)	DVCPRO HD (1,5)
+	Field Order	Mezősorrend
+	GPU Rendering	GPU-s renderelés
+	HD Anamorphic 1080 (1.333)	HD anamorf 1080 (1,333)
+	Lower First	Alsó mező először
+	Match Source	Forráshoz igazítás
+	Maximum Bitrate	Maximális bitráta
+	Progressive	Progresszív
+	Quality (CRF)	Minőség (CRF)
+	Render at Maximum Depth	Renderelés maximális bitmélységgel
+	Sample Size	Mintaméret
+	Upper First	Felső mező először
+	Use Maximum Render Quality	Maximális renderelési minőség

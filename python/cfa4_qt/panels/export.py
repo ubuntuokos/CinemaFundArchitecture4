@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -32,6 +33,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -43,6 +45,7 @@ from ..engine import EngineClient
 from ..i18n import N_, tr
 from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, MetadataSection
 from .export_preview import PreviewColumn
+from .export_rows import ExportRows
 from .preset_manager import PresetManager
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
@@ -336,6 +339,7 @@ class ExportDialog(QDialog):
         fa.addRow(self.audio)
         fa.addRow(tr("Audio codec"), self.audio_codec)
         fa.addRow(tr("Audio bitrate"), self.audio_bitrate)
+        self.rows = ExportRows(self, fv, fa)
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -400,12 +404,20 @@ class ExportDialog(QDialog):
         right.addWidget(self.metadata)
         right.addStretch(1)
         top.addLayout(right, 1)
+        # the settings scroll (egui's settings column does); the queue stays in view
+        settings_page = QWidget(self)
+        settings_page.setLayout(top)
+        scroll = QScrollArea(self)
+        scroll.setObjectName("export.settingsScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(settings_page)
         layout = QVBoxLayout(self)
-        layout.addLayout(top)
+        layout.addWidget(scroll, 3)
         layout.addWidget(self.summary)
         layout.addLayout(buttons)
         layout.addWidget(queue_box, 1)
-        self.resize(1040, 900)
+        self.resize(1080, 860)
 
         self._resolve_timer = QTimer(self, singleShot=True, interval=150)
         self._resolve_timer.timeout.connect(self._resolve)
@@ -430,6 +442,10 @@ class ExportDialog(QDialog):
         self.effects.changed.connect(lambda: self._touch("effects"))
         self.metadata.changed.connect(lambda: self._touch("metadata"))
         self.preview.scaling.currentIndexChanged.connect(lambda _i: self._touch("scaling"))
+        self.rows.changed.connect(lambda k: (self._touch(k), self._sync_rows()))
+        self.bitrate_mode.currentIndexChanged.connect(lambda _i: self._sync_rows())
+        self.audio_codec.currentIndexChanged.connect(lambda _i: self._sync_rows())
+        self.audio.toggled.connect(lambda _on: self._sync_rows())
         self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
@@ -588,6 +604,7 @@ class ExportDialog(QDialog):
         self.captions.setVisible(video)
         self.metadata.setVisible(self.format.currentData() in METADATA_FORMATS)
         self.preview.set_video(video)
+        self._sync_rows()
         self.video_form.setRowVisible(self.multiplexer, self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         self._container_changed()
@@ -623,6 +640,15 @@ class ExportDialog(QDialog):
             self.alpha.blockSignals(True)
             self.alpha.setChecked(settings["alpha"])
             self.alpha.blockSignals(False)
+        self.rows.show_settings(settings, self.touched)
+        if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
+            # the preset's mode (CRF shows its Quality row)
+            i = self.bitrate_mode.findData(settings["bitrateMode"])
+            if i >= 0 and i != self.bitrate_mode.currentIndex():
+                self.bitrate_mode.blockSignals(True)
+                self.bitrate_mode.setCurrentIndex(i)
+                self.bitrate_mode.blockSignals(False)
+        self._sync_rows()
         if "captions" not in self.touched:
             self.captions.show_settings(settings)
         if "metadata" not in self.touched and isinstance(settings.get("metadata"), dict):
@@ -642,6 +668,17 @@ class ExportDialog(QDialog):
             self.quality.setValue(q)
             self.quality.blockSignals(False)
         self._sync_format_rows()
+
+    def _rows_shown(self) -> dict[str, bool]:
+        fmt = str(self.format.currentData() or "")
+        info = self.formats.get(fmt, {})
+        video = bool(info.get("video", True))
+        audio = bool(info.get("audio", True)) and (self.audio.isChecked() or not video)
+        return self.rows.visible_rows(fmt, encoder_format(fmt, self._choice("mxfVideoCodec")), video, audio,
+                                      str(self.bitrate_mode.currentData() or ""), str(self.audio_codec.currentData() or ""))
+
+    def _sync_rows(self) -> None:
+        self.rows.sync(self._rows_shown())
 
     def _muxed(self) -> bool:
         return self.format.currentData() in ("h264", "hevc")
@@ -732,6 +769,7 @@ class ExportDialog(QDialog):
             patch["effects"] = self.effects.values()
         if "metadata" in self.touched and self.format.currentData() in METADATA_FORMATS:
             patch["metadata"] = self.metadata.values()
+        patch.update(self.rows.patch(self.touched, self._rows_shown()))
         if "scaling" in self.touched:
             patch["scaling"] = self.preview.scaling.currentData()
         if "multiplexer" in self.touched and self._muxed():

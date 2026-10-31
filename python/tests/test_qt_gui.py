@@ -6809,6 +6809,93 @@ def test_real_engine_export_preview_column_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
+    """egui's Export Video and Audio rows: Frame Rate, Field Order (progressive only), Aspect,
+    H.264 Profile / Level, Quality (CRF) or Maximum Bitrate by the bitrate mode, GPU Rendering,
+    Render at Maximum Depth, Use Maximum Render Quality; Sample Rate, Channels, Sample Size
+    (PCM / FLAC) and the FLAC Compression Level. Each shows the preset's value and a change
+    reaches the engine."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        rows = dlg.rows
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]["settings"]
+
+        def pick(combo: QtWidgets.QComboBox, value) -> None:
+            i = combo.findData(value)
+            assert i >= 0, value
+            combo.setCurrentIndex(i)
+
+        def shown(w) -> bool:
+            form = rows.audio_form if w in (rows.sample_rate, rows.channels, rows.bits, rows.flac_level) else rows.video_form
+            return bool(form.isRowVisible(w))
+
+        pick(dlg.format, "h264")
+        assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
+        assert shown(rows.profile) and shown(rows.level) and shown(rows.fps) and not shown(rows.bits)
+        s0 = resolved()
+        assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
+        assert "settings" not in dlg.params(), "nothing changed yet"
+        # video rows
+        pick(rows.fps, {"num": 25, "den": 1})
+        pick(rows.aspect, [4, 3])
+        pick(rows.profile, "main")
+        pick(rows.level, 41)
+        rows.gpu.setChecked(not rows.gpu.isChecked())
+        rows.max_depth.setChecked(True)
+        rows.max_quality.setChecked(True)
+        assert not rows.field_order.model().item(1).isEnabled(), "progressive frames only"
+        assert rows.field_order.currentText() == "Progressive" and rows.field_order.currentData() == "progressive"
+        pick(dlg.bitrate_mode, "vbr2Pass")
+        assert shown(rows.max_bitrate) and not shown(rows.crf)
+        rows.max_bitrate.setValue(20_000)
+        s = resolved()
+        assert s["frameRate"] == {"num": 25, "den": 1} and s["pixelAspect"] == [4, 3]
+        assert (s["h264Profile"], s["h264Level"], s["maxBitrateKbps"]) == ("main", 41, 20_000)
+        assert s["renderAtMaxDepth"] is True and s["maxRenderQuality"] is True and s["gpuRendering"] in ("auto", "off")
+        pick(dlg.bitrate_mode, "crf")
+        assert shown(rows.crf) and not shown(rows.max_bitrate)
+        rows.crf.setValue(30)
+        s = resolved()
+        assert s["bitrateMode"] == "crf" and s["crf"] == 30
+        # audio rows: PCM shows Sample Size, FLAC its level
+        pick(rows.sample_rate, 44_100)
+        pick(rows.channels, 1)
+        pick(dlg.audio_codec, "pcm")
+        assert shown(rows.bits) and not shown(rows.flac_level)
+        pick(rows.bits, "24")
+        a = resolved()["audio"]
+        assert (a["sample_rate"], a["channels"], a["bits"], a["float"]) == (44_100, 1, 24, False), a
+        pick(dlg.format, "flac")
+        assert shown(rows.flac_level) and not shown(rows.profile) and not shown(rows.fps)
+        rows.flac_level.setValue(8)
+        assert resolved()["audio"]["flac_level"] == 8
+        # another preset: the rows show its values again
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        assert not dlg.touched
+        assert wait_until(app, lambda: rows.sample_rate.currentData() == resolved()["audio"]["sample_rate"], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
     """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
     an existing file asks Replace / Keep existing file, the folder is kept for the next export;
