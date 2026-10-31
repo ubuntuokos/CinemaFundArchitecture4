@@ -8,7 +8,8 @@
 //!
 //! Decisions are reproducible: the registry is ordered data ([`BTreeMap`]), probes are applied in
 //! a canonical order whatever order they arrive in, and when two probes disagree about the same
-//! capability the unavailable one wins. The same entries and probes therefore always give the same
+//! capability (and route) the unavailable one wins; separate concrete routes of one backend (`nvenc`,
+//! `vaapi`) keep separate rows. The same entries and probes therefore always give the same
 //! [`Decision`]s and the same [`Report`].
 //!
 //! A capability with no entry is unsupported. Only [`SupportLevel::Supported`] allows an
@@ -363,6 +364,13 @@ pub struct Policy {
     pub allow_experimental: bool,
 }
 
+impl Policy {
+    /// Whether an entry of this level allows the operation.
+    pub fn accepts(&self, level: SupportLevel) -> bool {
+        level == SupportLevel::Supported || (self.allow_experimental && level == SupportLevel::Experimental)
+    }
+}
+
 /// One answer of the registry.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Decision {
@@ -426,15 +434,29 @@ pub struct Report {
     pub probes: Vec<Probe>,
 }
 
+/// A row's identity: one capability on one backend, for all of its routes (no route named) or
+/// for the concrete routes named. Separate route sets of one backend (`nvenc`, `vaapi`) keep
+/// separate outcomes and limits.
+type EntryId = (Key, Backend, Vec<String>);
+
+/// Routes as a row stores them: sorted, without repeats.
+fn normalized(routes: &[String]) -> Vec<String> {
+    let mut r = routes.to_vec();
+    r.sort();
+    r.dedup();
+    r
+}
+
 /// The capability registry.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Registry {
-    /// Rows as inserted, before probes.
-    base: BTreeMap<(Key, Backend), Entry>,
+    /// Rows as inserted, before probes, by key, backend and their concrete routes (sorted; empty:
+    /// the whole backend).
+    base: BTreeMap<EntryId, Entry>,
     /// Every probe applied so far, in canonical order.
     probes: Vec<Probe>,
     /// `base` with `probes` applied: what decisions read.
-    entries: BTreeMap<(Key, Backend), Entry>,
+    entries: BTreeMap<EntryId, Entry>,
     /// Which backend is tried first.
     order: BackendOrder,
 }
@@ -466,21 +488,46 @@ impl Registry {
         &self.order
     }
 
-    /// The rows for `key`, in the backend order of its operation.
+    /// The rows of `key` on `backend`: the whole-backend row first, then those of concrete routes.
+    fn rows(&self, key: Key, backend: Backend) -> impl Iterator<Item = &Entry> {
+        self.entries.range((key, backend, Vec::new())..).take_while(move |((k, b, _), _)| *k == key && *b == backend).map(|(_, e)| e)
+    }
+
+    /// The rows for `key`, in the backend order of its operation. Through a route id, the rows
+    /// that name that route come before the whole-backend row, which is only taken when no row
+    /// names the route.
     fn candidates(&self, key: Key) -> Vec<&Entry> {
         let mut out: Vec<&Entry> = Vec::new();
         match self.order.for_key(key) {
             Candidates::Routed(ids) => {
                 for id in &ids {
-                    let Some(e) = self.entries.get(&(key, backend_of_route(id))) else { continue };
-                    if (e.routes.is_empty() || e.routes.iter().any(|r| r == id)) && !out.iter().any(|o| o.backend == e.backend) {
-                        out.push(e);
+                    let backend = backend_of_route(id);
+                    let named: Vec<&Entry> = self.rows(key, backend).filter(|e| e.routes.iter().any(|r| r == id)).collect();
+                    if named.is_empty() {
+                        if let Some(e) = self.rows(key, backend).find(|e| e.routes.is_empty()) {
+                            push_once(&mut out, e);
+                        }
+                    } else {
+                        for e in named {
+                            push_once(&mut out, e);
+                        }
                     }
                 }
             }
-            Candidates::Unrouted(backends) => out.extend(backends.iter().filter_map(|b| self.entries.get(&(key, *b)))),
+            Candidates::Unrouted(backends) => {
+                for b in backends {
+                    for e in self.rows(key, b) {
+                        push_once(&mut out, e);
+                    }
+                }
+            }
         }
         out
+    }
+
+    /// The row [`Registry::decide`] picks: the first candidate the policy accepts.
+    fn chosen(&self, key: Key, policy: Policy) -> Option<&Entry> {
+        self.candidates(key).into_iter().find(|e| policy.accepts(e.level))
     }
 
     /// Add or replace a row.
@@ -488,13 +535,23 @@ impl Registry {
         if !entry.key.is_valid() {
             return Err(RegistryError::InvalidKey(entry.key));
         }
-        self.base.insert((entry.key, entry.backend), entry);
+        let mut entry = entry;
+        entry.routes = normalized(&entry.routes);
+        self.base.insert((entry.key, entry.backend, entry.routes.clone()), entry);
         self.rebuild();
         Ok(())
     }
 
+    /// The row of `key` on `backend` for all of its routes, or else its first row for concrete
+    /// routes.
     pub fn get(&self, key: Key, backend: Backend) -> Option<&Entry> {
-        self.entries.get(&(key, backend))
+        self.rows(key, backend).next()
+    }
+
+    /// The row of `key` that names `route`, or else the whole-backend row of the route's backend.
+    pub fn get_route(&self, key: Key, route: &str) -> Option<&Entry> {
+        let backend = backend_of_route(route);
+        self.rows(key, backend).find(|e| e.routes.iter().any(|r| r == route)).or_else(|| self.rows(key, backend).find(|e| e.routes.is_empty()))
     }
 
     pub fn entries(&self) -> impl Iterator<Item = &Entry> {
@@ -503,31 +560,46 @@ impl Registry {
 
     /// Apply run-time probes. All probes applied so far, from this call and earlier ones, take
     /// effect in a canonical order (by key, backend, then outcome with every unavailable outcome
-    /// last), so an "unavailable" always overrides an "available" for the same capability whatever
-    /// order or batches the probes came in. The probes are kept for the [`Report`].
+    /// last), so an "unavailable" always overrides an "available" for the same capability and
+    /// route whatever order or batches the probes came in; one for the whole backend covers all of
+    /// its routes. The probes are kept for the [`Report`].
     pub fn apply_probes(&mut self, probes: impl IntoIterator<Item = Probe>) -> Result<(), RegistryError> {
         let probes: Vec<Probe> = probes.into_iter().collect();
         if let Some(p) = probes.iter().find(|p| !p.key.is_valid()) {
             return Err(RegistryError::InvalidKey(p.key));
         }
         self.probes.extend(probes);
-        self.probes.sort_by(|a, b| (a.key, a.backend, &a.outcome, &a.limits, &a.routes).cmp(&(b.key, b.backend, &b.outcome, &b.limits, &b.routes)));
+        self.probes.sort_by(|a, b| probe_order(a).cmp(&probe_order(b)));
         self.probes.dedup();
         self.rebuild();
         Ok(())
     }
 
+    /// Apply the probes (in canonical order) to the inserted rows. A probe that names routes sets
+    /// the row of exactly those routes; one that names none sets every row of its backend (or the
+    /// whole-backend row, when there is none yet).
     fn rebuild(&mut self) {
         let mut entries = self.base.clone();
         for p in &self.probes {
-            let previous = entries.get(&(p.key, p.backend)).and_then(|e| e.limits.clone());
             let (level, evidence) = match &p.outcome {
                 ProbeOutcome::Available { detail } => (SupportLevel::Supported, format!("run-time probe: {detail}")),
                 ProbeOutcome::Unavailable { reason } => (SupportLevel::Unsupported, format!("run-time probe: {reason}")),
             };
-            let limits = p.limits.clone().or(previous);
-            let routes = if p.routes.is_empty() { entries.get(&(p.key, p.backend)).map(|e| e.routes.clone()).unwrap_or_default() } else { p.routes.clone() };
-            entries.insert((p.key, p.backend), Entry { key: p.key, backend: p.backend, level, evidence, limits, routes });
+            let generic = (p.key, p.backend, Vec::new());
+            let targets: Vec<EntryId> = if p.routes.is_empty() {
+                let existing: Vec<EntryId> =
+                    entries.range(generic.clone()..).take_while(|((k, b, _), _)| *k == p.key && *b == p.backend).map(|(id, _)| id.clone()).collect();
+                if existing.is_empty() { vec![generic.clone()] } else { existing }
+            } else {
+                vec![(p.key, p.backend, normalized(&p.routes))]
+            };
+            for id in targets {
+                // limits the probe does not state stay those of the row, or of the whole backend
+                let previous = entries.get(&id).or_else(|| entries.get(&generic)).and_then(|e| e.limits.clone());
+                let limits = p.limits.clone().or(previous);
+                let routes = id.2.clone();
+                entries.insert(id, Entry { key: p.key, backend: p.backend, level, evidence: evidence.clone(), limits, routes });
+            }
         }
         self.entries = entries;
     }
@@ -542,18 +614,18 @@ impl Registry {
             reasons.push("invalid capability key".to_string());
             return Decision { key, allowed: false, backend: None, level: SupportLevel::Unsupported, reasons };
         }
-        for e in self.candidates(key) {
+        let candidates = self.candidates(key);
+        for e in &candidates {
             best = best.min(e.level);
-            let accepted = e.level == SupportLevel::Supported || (policy.allow_experimental && e.level == SupportLevel::Experimental);
-            reasons.push(format!("{:?}: {:?} ({})", e.backend, e.level, e.evidence));
+            let accepted = policy.accepts(e.level);
+            reasons.push(format!("{}: {:?} ({})", label(e), e.level, e.evidence));
             if accepted && chosen.is_none() {
                 chosen = Some(e.backend);
             }
         }
-        let considered: Vec<Backend> = self.candidates(key).iter().map(|e| e.backend).collect();
-        for e in self.entries.range((key, Backend::Native)..=(key, Backend::Ffmpeg)).map(|(_, e)| e) {
-            if !considered.contains(&e.backend) {
-                reasons.push(format!("{:?}: not in the routing order", e.backend));
+        for e in self.entries.values().filter(|e| e.key == key) {
+            if !candidates.iter().any(|c| std::ptr::eq(*c, e)) {
+                reasons.push(format!("{}: not in the routing order", label(e)));
             }
         }
         if reasons.is_empty() {
@@ -566,8 +638,7 @@ impl Registry {
     /// The encoder limits of the backend [`Registry::decide`] picks for encoding `codec`.
     pub fn encoder_limits(&self, codec: Codec, policy: Policy) -> Option<&EncoderLimits> {
         let key = Key::codec(Operation::Encode, codec);
-        let backend = self.decide(key, policy).backend?;
-        self.get(key, backend)?.limits.as_ref()
+        self.chosen(key, policy)?.limits.as_ref()
     }
 
     /// A lossless Smart Cut of `codec` from `source` into `output`: demux, GOP index, packet copy
@@ -606,16 +677,15 @@ impl Registry {
         let key = Key::codec(Operation::Encode, codec);
         let mut why = Vec::new();
         for e in self.candidates(key) {
-            let accepted = e.level == SupportLevel::Supported || (policy.allow_experimental && e.level == SupportLevel::Experimental);
-            if !accepted {
+            if !policy.accepts(e.level) {
                 continue;
             }
             match &e.limits {
                 Some(limits) => match limits.check(stream) {
                     Ok(()) => return (Some(e.backend), Vec::new()),
-                    Err(reasons) => why.extend(reasons.into_iter().map(|r| format!("{:?} encoder: {r}", e.backend))),
+                    Err(reasons) => why.extend(reasons.into_iter().map(|r| format!("{} encoder: {r}", label(e)))),
                 },
-                None => why.push(format!("{:?} encoder: no limits are known for {}, compatibility cannot be shown", e.backend, codec.label())),
+                None => why.push(format!("{} encoder: no limits are known for {}, compatibility cannot be shown", label(e), codec.label())),
             }
         }
         if why.is_empty() {
@@ -628,6 +698,24 @@ impl Registry {
     pub fn report(&self) -> Report {
         Report { registry_version: REGISTRY_VERSION, entries: self.entries.values().cloned().collect(), probes: self.probes.clone() }
     }
+}
+
+fn push_once<'a>(out: &mut Vec<&'a Entry>, e: &'a Entry) {
+    if !out.iter().any(|o| std::ptr::eq(*o, e)) {
+        out.push(e);
+    }
+}
+
+/// How decisions name a row: its backend, and its routes when it names any (`Platform [nvenc]`).
+fn label(e: &Entry) -> String {
+    if e.routes.is_empty() { format!("{:?}", e.backend) } else { format!("{:?} [{}]", e.backend, e.routes.join(", ")) }
+}
+
+/// The canonical probe order: per capability and backend, available outcomes before unavailable
+/// ones (so an unavailable one is applied last and wins), and within each, whole-backend probes
+/// before those of concrete routes.
+fn probe_order(p: &Probe) -> (Key, Backend, bool, bool, &ProbeOutcome, &Option<EncoderLimits>, &Vec<String>) {
+    (p.key, p.backend, matches!(p.outcome, ProbeOutcome::Unavailable { .. }), !p.routes.is_empty(), &p.outcome, &p.limits, &p.routes)
 }
 
 fn describe_op(op: Operation) -> &'static str {
