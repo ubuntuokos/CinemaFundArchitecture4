@@ -34,6 +34,8 @@ pub enum Gamut {
     Awg4,
     /// DJI D-Gamut.
     DGamut,
+    /// RED REDWideGamutRGB.
+    RedWideGamutRgb,
 }
 
 impl Gamut {
@@ -51,6 +53,7 @@ impl Gamut {
             Gamut::Awg3 => [[0.6840, 0.3130], [0.2210, 0.8480], [0.0861, -0.1020]],
             Gamut::Awg4 => [[0.7347, 0.2653], [0.1424, 0.8576], [0.0991, -0.0308]],
             Gamut::DGamut => [[0.71, 0.31], [0.21, 0.88], [0.09, -0.08]],
+            Gamut::RedWideGamutRgb => [[0.780_308, 0.304_253], [0.121_595, 1.493_994], [0.095_612, -0.084_589]],
         }
     }
 
@@ -165,12 +168,14 @@ pub enum ColorSpace {
     /// Apple Log (BT.2020 primaries).
     AppleLog,
     DLogDGamut,
+    /// RED Log3G10 / REDWideGamutRGB (REDCINE-X exports, #91).
+    Log3G10Rwg,
     /// Linear light with BT.709 primaries (EXR-style float sources).
     Linear709,
 }
 
 impl ColorSpace {
-    pub const ALL: [ColorSpace; 16] = [
+    pub const ALL: [ColorSpace; 17] = [
         ColorSpace::Rec709,
         ColorSpace::Srgb,
         ColorSpace::Rec2020,
@@ -186,6 +191,7 @@ impl ColorSpace {
         ColorSpace::LogC4Awg4,
         ColorSpace::AppleLog,
         ColorSpace::DLogDGamut,
+        ColorSpace::Log3G10Rwg,
         ColorSpace::Linear709,
     ];
 
@@ -207,6 +213,7 @@ impl ColorSpace {
             ColorSpace::LogC4Awg4 => "logc4-awg4",
             ColorSpace::AppleLog => "applelog",
             ColorSpace::DLogDGamut => "dlog-dgamut",
+            ColorSpace::Log3G10Rwg => "log3g10-rwg",
             ColorSpace::Linear709 => "linear709",
         }
     }
@@ -228,6 +235,7 @@ impl ColorSpace {
             ColorSpace::LogC4Awg4 => "ARRI LogC4 / ARRI Wide Gamut 4",
             ColorSpace::AppleLog => "Apple Log / Rec. 2020",
             ColorSpace::DLogDGamut => "DJI D-Log / D-Gamut",
+            ColorSpace::Log3G10Rwg => "RED Log3G10 / REDWideGamutRGB",
             ColorSpace::Linear709 => "Linear (Rec. 709 primaries)",
         }
     }
@@ -251,6 +259,7 @@ impl ColorSpace {
             ColorSpace::LogC3Awg3 => Gamut::Awg3,
             ColorSpace::LogC4Awg4 => Gamut::Awg4,
             ColorSpace::DLogDGamut => Gamut::DGamut,
+            ColorSpace::Log3G10Rwg => Gamut::RedWideGamutRgb,
         }
     }
 
@@ -269,6 +278,7 @@ impl ColorSpace {
             ColorSpace::LogC4Awg4 => Curve::Log(LogCurve::LogC4),
             ColorSpace::AppleLog => Curve::Log(LogCurve::AppleLog),
             ColorSpace::DLogDGamut => Curve::Log(LogCurve::DLog),
+            ColorSpace::Log3G10Rwg => Curve::Log(LogCurve::Log3G10),
         }
     }
 
@@ -392,7 +402,7 @@ mod tests {
             }
         }
         // white maps to white for every gamut pair
-        for a in [Gamut::SGamut3Cine, Gamut::Awg4, Gamut::CinemaGamut, Gamut::DGamut, Gamut::VGamut] {
+        for a in [Gamut::SGamut3Cine, Gamut::Awg4, Gamut::CinemaGamut, Gamut::DGamut, Gamut::VGamut, Gamut::RedWideGamutRgb] {
             let w = mul_vec(&gamut_matrix(a, Gamut::Bt709), [1.0, 1.0, 1.0]);
             assert!(w.iter().all(|v| (v - 1.0).abs() < 1e-9), "{a:?}: {w:?}");
             let back = mul(&gamut_matrix(Gamut::Bt709, a), &gamut_matrix(a, Gamut::Bt709));
@@ -402,6 +412,57 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// REDWideGamutRGB against RED's white paper: its RGB→XYZ matrix and the matrices to and from
+    /// Rec. 2020 to six places; Rec. 709 to 3e-4 (the paper's Rec. 709 matrix is derived from a
+    /// rounded Rec. 709 RGB→XYZ).
+    #[test]
+    fn red_wide_gamut_matches_the_white_paper() {
+        let check = |m: Mat3, want: Mat3, tol: f64, what: &str| {
+            for i in 0..3 {
+                for j in 0..3 {
+                    assert!((m[i][j] - want[i][j]).abs() <= tol, "{what} {i}{j}: {} vs {}", m[i][j], want[i][j]);
+                }
+            }
+        };
+        let rwg = Gamut::RedWideGamutRgb;
+        check(rwg.to_xyz(), [[0.735_275, 0.068_609, 0.146_571], [0.286_694, 0.842_979, -0.129_673], [-0.079_681, -0.347_343, 1.516_081]], 1.5e-6, "RWG→XYZ");
+        check(
+            inverse(&rwg.to_xyz()),
+            // the paper prints the first entry of the second row without its minus sign: with it
+            // the product with RWG→XYZ is the identity
+            [[1.412_807, -0.177_523, -0.151_771], [-0.486_203, 1.290_697, 0.157_401], [-0.037_139, 0.286_376, 0.687_680]],
+            1.5e-6,
+            "XYZ→RWG",
+        );
+        check(
+            gamut_matrix(rwg, Gamut::Bt2020),
+            [[1.180_431, -0.094_040, -0.086_391], [-0.028_017, 1.311_442, -0.283_425], [-0.074_360, -0.362_078, 1.436_437]],
+            1.5e-6,
+            "RWG→2020",
+        );
+        check(
+            gamut_matrix(Gamut::Bt2020, rwg),
+            [[0.853_263, 0.079_695, 0.067_042], [0.029_375, 0.809_195, 0.161_430], [0.051_575, 0.208_097, 0.740_329]],
+            1.5e-6,
+            "2020→RWG",
+        );
+        check(
+            gamut_matrix(rwg, Gamut::Bt709),
+            [[1.981_880, -0.900_388, -0.081_540], [-0.178_143, 1.500_467, -0.322_325], [-0.101_811, -0.535_343, 1.637_304]],
+            3e-4,
+            "RWG→709",
+        );
+        check(
+            gamut_matrix(Gamut::Bt709, rwg),
+            [[0.541_973, 0.360_148, 0.097_891], [0.076_993, 0.767_969, 0.155_019], [0.058_875, 0.273_495, 0.667_533]],
+            3e-4,
+            "709→RWG",
+        );
+        let cs = ColorSpace::Log3G10Rwg;
+        assert_eq!((cs.gamut(), cs.curve(), cs.is_log()), (rwg, Curve::Log(LogCurve::Log3G10), true));
+        assert_eq!(ColorSpace::parse("RED Log3G10 / REDWideGamutRGB"), Some(cs));
     }
 
     #[test]

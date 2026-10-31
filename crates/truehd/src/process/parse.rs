@@ -896,6 +896,32 @@ mod tests {
         Parser::default().parse(&frame).ok()
     }
 
+    /// A skipped substream whose directory end pointer lies before the end of the substream
+    /// parsed ahead of it made the skip offset underflow (a panic in debug builds).
+    #[test]
+    fn a_skipped_substream_ending_too_early_is_an_error() {
+        let mut extractor = crate::process::extract::Extractor::default();
+        extractor.push_bytes(crate::process::EXAMPLE_DATA_FBB);
+        let mut frame = extractor.by_ref().next().expect("a frame").expect("a frame");
+        let au = Parser::default().parse(&frame).expect("an access unit");
+        let mut data = frame.data.to_vec();
+        let sd = &au.substream_directory[1];
+        assert!(sd.substream_end_ptr > 0xF, "the example has a second substream");
+        let flags =
+            u16::from(sd.extra_substream_word) << 15 | u16::from(sd.restart_nonexistent) << 14 | u16::from(sd.crc_present) << 13 | u16::from(sd.reserved) << 12;
+        let word = (flags | sd.substream_end_ptr).to_be_bytes();
+        let at = (4..data.len() - 1).step_by(2).find(|&i| data[i..i + 2] == word).expect("the directory entry");
+        // an end pointer of nibble parity equal to the original keeps the check nibble valid
+        let p = sd.substream_end_ptr;
+        let small = (p >> 8 ^ p >> 4 ^ p) & 0xF;
+        data[at..at + 2].copy_from_slice(&(flags | small).to_be_bytes());
+        frame.data = data.into();
+
+        let mut parser = Parser::default();
+        parser.set_required_presentations(&[true, false, false, false]);
+        assert!(parser.parse(&frame).is_err());
+    }
+
     #[test]
     fn fbb_stream_parses() {
         let au = first_au(crate::process::EXAMPLE_DATA_FBB).expect("an access unit");

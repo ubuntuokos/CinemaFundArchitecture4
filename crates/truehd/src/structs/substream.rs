@@ -204,6 +204,7 @@ impl SubstreamSegment {
                         trace!("Termination word {:#08X} found for substream {}", 0xD234D234u32, state.substream_index)
                     }
                 }
+                ss.terminator = Some(tm);
             } else {
                 reader.seek(-18)?;
 

@@ -33,7 +33,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G17 | Audio device and playback reliability | stability | partly | 20–40 h |
 | G18 | Effects depth: approximations and missing behaviour | feature | no | 60–110 h |
 | G19 | Speech to text off in release builds | feature, AI | no | 5–10 h |
-| G20 | The web app shell | platforms | no | 40–80 h |
+| G20 | The web app shell (dropped: no web build) | platforms | n/a | — |
 
 ## G1. Nothing compares our output with Premiere's
 
@@ -65,18 +65,20 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G3. 10-bit and 4:2:2 camera media needs hardware
 
-- **Have:** our H.264 decoder does 4:2:0 at 8 to 14 bits (High 10 bit-exact with ffmpeg).
-- **Missing:** H.264 High 4:2:2 / 4:4:4 (#161), interlaced field / MBAFF (#162), lossless (#163)
+- **Have:** our H.264 decoder does 4:2:0, 4:2:2 and 4:4:4 at 8 to 14 bits (High 10, High 4:2:2 and
+  High 4:4:4 Predictive bit-exact with ffmpeg, #161).
+- **Missing:** H.264 interlaced field / MBAFF (#162), lossless (#163), monochrome (#279)
   (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
 - **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). On macOS VideoToolbox decodes 10-bit
-  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them, and
-  there is no software fallback, so the clip fails. Premiere decodes them everywhere (and in
+  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them. Our
+  software decoders now cover progressive 4:2:2 / 4:4:4 H.264 (#161) and HEVC (#93), so only
+  interlaced and lossless H.264 still fail. Premiere decodes them everywhere (and in
   hardware on Apple silicon, Intel and NVIDIA Blackwell).
 - **Impact:** camera originals from most current cameras do not open on Windows or Linux.
-- **Estimate:** H.264 High 4:2:2 (chroma geometry, deblocking, transforms) 10–20 h;
-  HEVC Main 4:2:2 10 (RExt subset) 15–25 h. Doc: [codec-parity.md](codec-parity.md).
+- **Estimate:** H.264 interlaced (#162) 20–30 h, lossless (#163) 4–8 h; HEVC RExt tools (#167)
+  10–20 h. Doc: [codec-parity.md](codec-parity.md).
 
 ## G4. Crashes at start-up, and no test CI on pull requests
 
@@ -236,6 +238,19 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
+- **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
+  non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):
+  - *Promo first cut from a brief or a website:* an agent writes the story and shot list and builds
+    the sequence through the control channel / MCP (beat markers, graphics, Text Animators, Batch
+    Variants are already drivable). Needs an LLM; CFA4 ships none.
+  - *AI review of a cut:* a vision model looks at one still per beat and reports weak openings,
+    unreadable text or off-brand colours, next to the deterministic Check Before Export.
+  - *Smart shot picking from phone footage:* rank clips by subject and composition and cut them
+    on the beat markers (exposure and shake scores alone are classical and can come first).
+  - *Generated B-roll, music and voices:* text/image-to-video, music generation, voice cloning.
+    Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
+    only openly licensed local models qualify. Kokoro TTS narration exists already.
+  - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
 
 ## G13. Delivery formats
 
@@ -338,9 +353,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G20. The web app shell
 
-- **Missing:** file access, WebCodecs decode, audio in the browser build beyond what exists;
-  image-sequence export downloads drop frames in Chrome (#378).
-- **Estimate:** 40–80 h. Doc: [web.md](web.md).
+- **Dropped (2026-10-27):** CFA4 is Linux-only and the browser app `apps/cfa4-web` was removed
+  (WASM is not a release target), so this gap no longer applies.
 
 ## Revision history
 

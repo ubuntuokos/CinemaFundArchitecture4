@@ -15,6 +15,29 @@ fn tool(name: &str) -> Option<PathBuf> {
     found
 }
 
+/// `args` for this `cjxl`: libjxl 0.8 renamed `--photon_noise ISO<n>` to `--photon_noise_iso=<n>`
+/// (Ubuntu 24.04 ships 0.7, newer releases the new spelling).
+fn cjxl_args(cjxl: &Path, args: &[&str]) -> Vec<String> {
+    let help = Command::new(cjxl)
+        .args(["-h", "-v", "-v", "-v", "-v"])
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned() + &String::from_utf8_lossy(&o.stderr))
+        .unwrap_or_default();
+    let renamed = help.contains("--photon_noise_iso");
+    let mut out = Vec::new();
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match (*a, renamed) {
+            ("--photon_noise", true) => {
+                let iso = it.next().map_or("", |v| v.trim_start_matches("ISO"));
+                out.push(format!("--photon_noise_iso={iso}"));
+            }
+            _ => out.push((*a).to_owned()),
+        }
+    }
+    out
+}
+
 fn run(cmd: &mut Command) {
     let out = cmd.output().unwrap();
     assert!(out.status.success(), "{cmd:?}: {}", String::from_utf8_lossy(&out.stderr));
@@ -128,7 +151,7 @@ fn decodes_like_djxl() {
         let out = dir.join(format!("{name}.djxl.png"));
         let src = source(*w, *h, *channels, *sixteen);
         src.save(&png).unwrap();
-        run(Command::new(&cjxl).arg(&png).arg(&jxl).args(*args).arg("--quiet"));
+        run(Command::new(&cjxl).arg(&png).arg(&jxl).args(cjxl_args(&cjxl, args)).arg("--quiet"));
         let (dw, dh, dc, want, bits) = djxl(&djxl_path, &jxl, &out);
         let got = match decode(&std::fs::read(&jxl).unwrap()) {
             Ok(p) => p,
