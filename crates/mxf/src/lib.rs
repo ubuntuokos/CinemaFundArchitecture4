@@ -34,7 +34,7 @@ pub use index::{IndexEntry, IndexSegment};
 pub use klv::{Rational, Ul};
 pub use source::ByteSource;
 pub use write::{
-    CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, SoundDesc,
+    CodedKind, ColorSpace, FrameInfo, IabDesc, J2kSubDescriptor, McaLabel, MxfWriter, OpAtomPcm, PackageIds, Pattern, PictureCoding, PictureDesc, SoundDesc,
     StartTimecode, Timestamp, Umid, WriterConfig, encode_pcm, write_opatom_pcm,
 };
 

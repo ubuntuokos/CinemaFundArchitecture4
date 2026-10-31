@@ -233,6 +233,21 @@ fn two_k_flat_package() {
     assert_eq!(element(&cpl, "Duration"), Some("10"));
     assert_eq!(element(&cpl, "ScreenAspectRatio"), Some("1998 1080"));
     assert!(cpl.contains("<MainSound>"));
+    // ST 429-16 composition metadata, no immersive application or MCA labels
+    let meta = block(&cpl, "meta:CompositionMetadataAsset").expect("composition metadata");
+    assert_eq!(element(meta, "meta:MainSoundConfiguration"), Some("51/L,R,C,LFE,Ls,Rs"));
+    assert_eq!(element(meta, "meta:MainSoundSampleRate"), Some("48000 1"));
+    assert_eq!(element(meta, "IntrinsicDuration"), Some("10"));
+    assert!(!meta.contains("ExtensionMetadata") && !meta.contains("MCASubDescriptors"));
+    // stored: the 2K Flat container; active: the 16:9 picture between the pillarbox bars
+    let area = |name| {
+        let a = block(meta, name).unwrap();
+        (element(a, "meta:Width").unwrap().to_string(), element(a, "meta:Height").unwrap().to_string())
+    };
+    assert_eq!(area("meta:MainPictureStoredArea"), ("1998".into(), "1080".into()));
+    assert_eq!(area("meta:MainPictureActiveArea"), ("1920".into(), "1080".into()));
+    assert_eq!(crate::dcp_out::active_area((1919, 1081), (1998, 1080)), (1918, 1080), "even, inside the container");
+    assert_eq!(crate::dcp_out::active_area((1, 0), (1998, 1080)), (1998, 1080), "nothing left: the whole container");
     // the asset ids are the UUIDs of the file packages
     let pic_id = element(element(&cpl, "MainPicture").unwrap(), "Id").unwrap().trim_start_matches("urn:uuid:").replace('-', "");
     let pic_uuid: Vec<u8> = (0..16).map(|i| u8::from_str_radix(&pic_id[2 * i..2 * i + 2], 16).unwrap()).collect();
@@ -436,8 +451,34 @@ fn check_immersive_package(dir: &str, frames: usize, spu: usize) -> (Vec<u8>, Ve
         assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     }
 
+    // composition metadata: ISDCF Doc 15 4.2 IAB Profile 1, FSKSync on channel 14 (ST 429-19
+    // 6.4), the main sound's MCA labels as the track file has them
+    let meta = block(&cpl, "meta:CompositionMetadataAsset").expect("composition metadata");
+    assert!(meta.contains("scope=\"http://isdcf.com/ns/cplmd/app\""));
+    assert_eq!(element(meta, "meta:Value"), Some("SMPTE-ST-2098-2:2019-P1"));
+    let config = element(meta, "meta:MainSoundConfiguration").unwrap();
+    assert_eq!(config.split(',').nth(13), Some("FSKSync"), "{config}");
+    let labels = meta.matches("<r1:InstanceID>").count();
+    assert!(meta.contains("<r1:MCATagSymbol>FSKSync</r1:MCATagSymbol>") && meta.contains("<r1:MCAChannelID>14</r1:MCAChannelID>"));
+    assert_eq!(labels, if config.starts_with("51/L,") { 8 } else { 1 });
+
     // main sound: 16 channels, Configuration 4, FSK sync in channel 14 naming the sound asset
     let snd = std::fs::read(file(dir, "pcm_")).unwrap();
+    for inst in meta.split("<r1:InstanceID>urn:uuid:").skip(1) {
+        let hex: String = inst.chars().take(36).filter(|c| *c != '-').collect();
+        let uid: Vec<u8> = (0..16).map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap()).collect();
+        assert!(snd.windows(16).any(|w| w == uid), "MCA label {hex} in the sound track file");
+    }
+    if let Ok(info) = std::env::var("CFA4_ASDCP_INFO") {
+        // the reference reader (cinecert asdcplib) on the sound track file: labels and channels
+        let out = Command::new(&info).args(["-H", &file(dir, "pcm_")]).output().unwrap();
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(out.status.success(), "{text}");
+        assert_eq!(text.matches("(AudioChannelLabelSubDescriptor)").count() + text.matches("(SoundfieldGroupLabelSubDescriptor)").count(), labels, "{text}");
+        assert!(text.contains("MCATagSymbol = FSKSync") && text.contains("MCAChannelID = 14"), "{text}");
+        let out = Command::new(&info).args(["-d", &iab_path]).output().unwrap();
+        assert!(out.status.success() && String::from_utf8_lossy(&out.stdout).contains("ContainerDuration: "));
+    }
     let ms = cfa4_mxf::open(&snd).unwrap();
     let info = ms.tracks[0].sound.as_ref().unwrap();
     assert_eq!((info.channels, info.bits), (16, 24));
@@ -471,6 +512,7 @@ fn immersive_bed_package() {
         path: dir.clone(),
         range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(6))),
         dcp_immersive: "bed".into(),
+        dcp_iab_fallback: "5.1".into(),
         ..Default::default()
     };
     let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
@@ -534,6 +576,7 @@ fn immersive_file_package() {
         range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(5))),
         dcp_immersive: "file".into(),
         dcp_iab_source: raw.to_string_lossy().to_string(),
+        dcp_iab_fallback: "5.1".into(),
         ..Default::default()
     };
     export(&p, seq, &s, &m, &Progress::default()).unwrap();
@@ -616,6 +659,43 @@ fn immersive_file_package() {
     assert!(e.to_string().contains("24 fps"), "{e}");
 }
 
+/// The main sound's channels 1-6: silent by default (ST 429-19:2023 7.1.2), the export's own
+/// 5.1 mix with `mix` (for a file source, made apart from the IAB), or the IAB rendered to 5.1.
+#[test]
+fn immersive_fallback_choices() {
+    let (p, seq, m) = project();
+    let src_dir = tmp("iab-fb-src");
+    std::fs::create_dir_all(&src_dir).unwrap();
+    let raw = Path::new(&src_dir).join("three.iab");
+    std::fs::write(&raw, source_frames(cfa4_iab::FrameRate::R25, 3).concat()).unwrap();
+    let run = |name: &str, mode: &str, fallback: &str| {
+        let dir = tmp(name);
+        let s = ExportSettings {
+            format: Format::Dcp,
+            path: dir.clone(),
+            range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(4))),
+            dcp_immersive: mode.into(),
+            dcp_iab_source: raw.to_string_lossy().to_string(),
+            dcp_iab_fallback: fallback.into(),
+            ..Default::default()
+        };
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        check_immersive_package(&dir, 4, 1920).1
+    };
+    let silent = |pcm: &[Vec<f32>]| pcm.iter().take(6).all(|c| c.iter().all(|v| *v == 0.0));
+    assert!(silent(&run("iab-fb-default", "bed", "")), "no fallback unless asked");
+    assert!(silent(&run("iab-fb-file", "file", "")));
+    let mix = run("iab-fb-bed", "bed", "5.1");
+    assert!(!silent(&mix));
+    // a file source with the timeline mix as fallback: the same channels as the bed's mix
+    let file_mix = run("iab-fb-file-mix", "file", "mix");
+    for c in 0..6 {
+        assert_eq!(file_mix[c], mix[c], "channel {c}");
+    }
+    let rendered = run("iab-fb-file-51", "file", "5.1");
+    assert_ne!(rendered[0], mix[0], "rendered from the IAB, not the mix");
+}
+
 /// Cancelling while the IAB source is copied stops the export instead of finishing it.
 #[test]
 fn immersive_copy_honours_cancel() {
@@ -631,7 +711,8 @@ fn immersive_copy_honours_cancel() {
         dcp_iab_source: raw.to_string_lossy().to_string(),
         ..Default::default()
     };
-    let setup = || DcpSetup { settings: &settings, title: "Cancel".into(), width: 1998, height: 1080, rate: FrameRate::new(25, 1), audio: false };
+    let setup =
+        || DcpSetup { settings: &settings, title: "Cancel".into(), width: 1998, height: 1080, rate: FrameRate::new(25, 1), audio: false, active: (1998, 1080) };
     for after in [0, 2, 5] {
         let mut mux = DcpMux::new(setup()).unwrap();
         mux.set_frames(8);
