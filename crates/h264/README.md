@@ -125,7 +125,14 @@ with ffmpeg + libx264; tests print a message and skip when `/opt/homebrew/bin/ff
 - Synthetic streams (`src/synth_tests.rs`): hand-built CAVLC and CABAC bitstreams covering what
   libx264 never produces — I_PCM, long-term references, MMCO 1-6, `frame_num` gaps, reference list
   modification (short- and long-term), explicit weighted prediction in P and B slices, B_Skip with
-  explicit bi-prediction. The expected output is known exactly and is also checked against ffmpeg.
+  explicit bi-prediction, I_PCM at 9, 12 and 14 bits. The expected output is known exactly and
+  is also checked against ffmpeg.
+- 9 / 12 / 14 bits (`tests/high_bit_depth.rs`): libx264 encodes only 8 and 10 bits, so 18
+  fixtures (CAVLC, CABAC, B-pyramid, weighted prediction, constrained intra, 4:2:2, 4:4:4, MBAFF,
+  QP 1 / 51, lossless) have their SPS rewritten to a deeper bit depth (`common::DepthVariant`)
+  and are compared with ffmpeg's decode at that depth. Lossless variants also lower
+  `pic_init_qp`, so `d14_lossless_420` decodes at SliceQPY = -36 (QpBdOffset 36). Their noise-free
+  base fixtures (`lossless_*_clean`) contain no I_PCM, whose sample size follows the bit depth.
 - Robustness: avcC input with pts round trip; randomly corrupted, truncated and garbage input never
   panics or deadlocks (single- and multi-threaded).
 - Conformance (`tests/conformance.rs`): every fixture is decoded single-threaded, with 3 threads
@@ -192,6 +199,7 @@ encoder is unavailable.
 | mbaff_cabac | testsrc2+noise 352x288 | Main, MBAFF, CABAC, bframes=3, ref=3 |
 | mbaff_high, mbaff_bff, mbaff_temporal, mbaff_weighted, mbaff_constrained_intra, mbaff_high10, mbaff_422 | 352x288 | High MBAFF variants: 8x8 transform, bottom field first, temporal direct, weighted prediction, constrained intra, 10 bits, 4:2:2 |
 | lossless_444_intra, lossless_444_cavlc, lossless_444_b, lossless_420, lossless_420_intra_cavlc, lossless_422, lossless_444_10, lossless_420_10, lossless_mbaff | 352x288 | `-qp 0` (High 4:4:4 Predictive): intra-only, CAVLC, B-frames, 4:2:0 / 4:2:2 / 4:4:4, 10 bits, MBAFF |
+| lossless_420_clean, lossless_444_10_clean, lossless_420_10_clean | testsrc2 352x288 | noise-free `-qp 0` (no I_PCM): bases of the lossless bit-depth variants |
 | fake_interlaced | testsrc2+noise 352x288 | `fake-interlaced`: frame pictures with `frame_mbs_only_flag = 0` |
 | vt_baseline | testsrc2+noise 320x240 | Apple VideoToolbox, Baseline (macOS only) |
 | vt_main | mandelbrot+noise 640x360 | VideoToolbox, Main |
@@ -238,8 +246,6 @@ file; `H264_BENCH_ITERS=n` (and `H264_THREADS=t`, `H264_DRAFT=1`) turns it into 
 - Luma and chroma bit depth must be equal. Monochrome 4:0:0 (the paths exist, no test stream yet:
   [#279](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/279)) and `separate_colour_plane_flag`
   ([#280](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/280)) return `Error::Unsupported`.
-- The ffmpeg oracle covers 10 bits only (libx264 encodes 8 and 10); 9 / 12 / 14 bits are untested
-  ([#164](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/164)).
 - FMO (slice groups), SP/SI slices, data partitioning (Extended profile), MVC/SVC NAL units.
 - Error concealment is minimal: undecodable slices leave the prediction/previous content; missing
   references are replaced by other references.
