@@ -614,3 +614,43 @@ fn cached_index_validity() {
     assert_eq!(back, ix);
     assert!(json.contains("\"random_access\":\"closed-gop\""));
 }
+
+#[test]
+fn nal_splitting_matches_the_bitstream_crate() {
+    let mut seed = 0x9E37_79B9_7F4A_7C15u64;
+    let mut rnd = || {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        seed
+    };
+    let mut samples: Vec<Vec<u8>> = encode_h264(4, 2, 1).into_iter().map(|p| p.data).collect();
+    samples.push(vec![0, 0, 1, 0, 0, 0, 1, 0x65, 0, 0, 0, 1, 0, 0, 1]);
+    samples.push(vec![0; 64]);
+    for _ in 0..200 {
+        // few distinct byte values, so start codes and zero runs are common
+        samples.push((0..rnd() % 300).map(|_| [0u8, 0, 0, 1, 0x65, 0xFF][rnd() as usize % 6]).collect());
+    }
+    for d in &samples {
+        assert_eq!(crate::h264_index::split_nal_units(d, NalFormat::AnnexB), cfa4_bitstream::annexb_nals(d));
+        for n in [1u8, 2, 4] {
+            let expected: Vec<&[u8]> =
+                cfa4_bitstream::length_prefixed_nals(d, usize::from(n)).unwrap_or_default().into_iter().filter(|nal| !nal.is_empty()).collect();
+            assert_eq!(crate::h264_index::split_nal_units(d, NalFormat::LengthPrefixed(n)), expected);
+        }
+    }
+}
+
+#[test]
+fn h264_packets_of_empty_nal_units_do_not_amplify_memory() {
+    // Each zero byte is an empty length-prefixed NAL unit, each `00 00 01` an empty Annex B one:
+    // the splitter must walk them without a descriptor per unit.
+    let zeros = vec![0u8; 16 << 20];
+    assert!(crate::h264_index::split_nal_units(&zeros, NalFormat::LengthPrefixed(1)).is_empty());
+    let start_codes: Vec<u8> = [0u8, 0, 1].repeat(4 << 20);
+    assert!(crate::h264_index::split_nal_units(&start_codes, NalFormat::AnnexB).is_empty());
+    for (data, format) in [(&zeros, NalFormat::LengthPrefixed(1)), (&start_codes, NalFormat::AnnexB)] {
+        let ix = index_h264(0, Rational::MPEG_90K, format, &[], [Packet { data, pts: None, dts: None, keyframe: false }]);
+        assert!(ix.is_ok());
+    }
+}

@@ -12,7 +12,7 @@
 
 use std::collections::BTreeMap;
 
-use cfa4_bitstream::{BitReader, annexb_nals, length_prefixed_nals, unescape_rbsp};
+use cfa4_bitstream::{BitReader, unescape_rbsp};
 
 use crate::capabilities::Codec;
 use crate::media_index::{
@@ -169,11 +169,103 @@ fn recovery_point(nal: &[u8]) -> Option<Recovery> {
     None
 }
 
+/// Annex B NAL units of one packet, found lazily (no allocation per NAL unit, so a hostile packet
+/// full of start codes cannot amplify memory). Trailing zero bytes (a 4-byte start code or
+/// `trailing_zero_8bits`) are trimmed and empty units skipped.
+struct AnnexBNals<'a> {
+    data: &'a [u8],
+    /// Start of the current NAL unit payload, `None` before the first start code is found.
+    pos: Option<usize>,
+}
+
+/// Position just after the next `00 00 01` at or after `from`.
+fn next_start_code(data: &[u8], from: usize) -> Option<usize> {
+    let rest = data.get(from..)?;
+    rest.windows(3).position(|w| w == [0, 0, 1]).and_then(|i| from.checked_add(i)?.checked_add(3))
+}
+
+impl<'a> Iterator for AnnexBNals<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<&'a [u8]> {
+        loop {
+            let start = match self.pos {
+                Some(p) => p,
+                None => next_start_code(self.data, 0)?,
+            };
+            let next = next_start_code(self.data, start);
+            let end = next.map_or(self.data.len(), |n| n.saturating_sub(3));
+            self.pos = Some(next.unwrap_or(self.data.len()));
+            let mut nal = self.data.get(start..end).unwrap_or_default();
+            while let [head @ .., 0] = nal {
+                nal = head;
+            }
+            if next.is_none() && nal.is_empty() {
+                return None;
+            }
+            if !nal.is_empty() {
+                return Some(nal);
+            }
+        }
+    }
+}
+
+/// Length-prefixed NAL units of one packet, read lazily. Empty units are skipped.
+struct LengthPrefixedNals<'a> {
+    data: &'a [u8],
+    size: usize,
+}
+
+impl<'a> Iterator for LengthPrefixedNals<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<&'a [u8]> {
+        loop {
+            let (len, rest) = split_length(self.data, self.size)?;
+            let nal = rest.get(..len)?;
+            self.data = rest.get(len..)?;
+            if !nal.is_empty() {
+                return Some(nal);
+            }
+        }
+    }
+}
+
+fn split_length(data: &[u8], size: usize) -> Option<(usize, &[u8])> {
+    let (prefix, rest) = (data.get(..size)?, data.get(size..)?);
+    let len = prefix.iter().try_fold(0usize, |acc, &b| acc.checked_mul(256)?.checked_add(usize::from(b)))?;
+    Some((len, rest))
+}
+
+/// Whether a length-prefixed packet is framed exactly (every length fits, nothing left over). A
+/// packet that is not is skipped whole, as a truncated one would be.
+fn length_prefixed_is_well_formed(mut data: &[u8], size: usize) -> bool {
+    while !data.is_empty() {
+        let Some((len, rest)) = split_length(data, size) else { return false };
+        let Some(tail) = rest.get(len..) else { return false };
+        data = tail;
+    }
+    true
+}
+
+fn nal_units(data: &[u8], format: NalFormat) -> Box<dyn Iterator<Item = &[u8]> + '_> {
+    match format {
+        NalFormat::AnnexB => Box::new(AnnexBNals { data, pos: None }),
+        NalFormat::LengthPrefixed(n) => {
+            let size = usize::from(n);
+            if size == 0 || !length_prefixed_is_well_formed(data, size) { Box::new(std::iter::empty()) } else { Box::new(LengthPrefixedNals { data, size }) }
+        }
+    }
+}
+
+/// The NAL units the analyser sees in one packet (tests compare them with `cfa4-bitstream`).
+#[cfg(test)]
+pub(crate) fn split_nal_units(data: &[u8], format: NalFormat) -> Vec<&[u8]> {
+    nal_units(data, format).collect()
+}
+
 fn analyse(data: &[u8], format: NalFormat, params: &mut Params) -> Picture {
-    let nals = match format {
-        NalFormat::AnnexB => annexb_nals(data),
-        NalFormat::LengthPrefixed(n) => length_prefixed_nals(data, usize::from(n)).unwrap_or_default(),
-    };
+    let nals = nal_units(data, format);
     let mut pic = Picture::default();
     for nal in nals {
         let Some(&h) = nal.first() else { continue };
