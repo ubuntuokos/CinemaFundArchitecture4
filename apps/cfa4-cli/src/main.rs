@@ -89,7 +89,7 @@ SUBCOMMANDS
          [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
-                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|png|tiff|bmp|gif|wav|aiff|aac, guessed
+                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
                                 from the extension); --range entire|inOut|workArea, or a custom
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
@@ -232,6 +232,7 @@ fn format_for(path: &str) -> Option<&'static str> {
         "bmp" => "bmp",
         "aif" | "aiff" => "aiff",
         "m4a" | "aac" => "aac",
+        "mpg" | "mpeg" | "m2p" | "ts" | "m2ts" | "mts" | "m2v" => "mpeg2",
         _ => return None,
     })
 }
@@ -760,5 +761,7 @@ mod format_tests {
         assert_eq!(super::format_for("out/clip.MXF"), Some("mxf-op1a"));
         assert_eq!(super::format_for("a.mov"), Some("prores"));
         assert_eq!(super::format_for("noext"), None);
+        assert_eq!(super::format_for("disc.mpg"), Some("mpeg2"));
+        assert_eq!(super::format_for("broadcast.ts"), Some("mpeg2"));
     }
 }

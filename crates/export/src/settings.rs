@@ -548,6 +548,9 @@ impl ExportSettings {
 
     /// Output size, rate, audio format and bitrate for a sequence of `seq_w`×`seq_h` at `seq_rate`.
     pub fn resolve(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32) -> Resolved {
+        if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
+            return crate::dcp_out::normalize(self, seq_rate).resolve(seq_w, seq_h, seq_rate, seq_sr);
+        }
         let (mut w, mut h) = match self.frame_size {
             Some((w, h)) => (w.max(2), h.max(2)),
             None => (((seq_w as f32 * self.scale).round() as u32).max(2), ((seq_h as f32 * self.scale).round() as u32).max(2)),
@@ -585,6 +588,10 @@ impl ExportSettings {
         match self.audio_codec() {
             AudioCodec::Aac | AudioCodec::Opus => false,
             AudioCodec::Flac => !f.is_float(),
+            // DVD LPCM in MPEG-2 program streams: 16-bit
+            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => f == SampleFormat::Int16,
+            // a DCP is always 24-bit (the export sets it)
+            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Dcp => !f.is_float(),
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),
         }
     }
@@ -598,6 +605,9 @@ impl ExportSettings {
             (Format::Opus | Format::WebM, _) => AudioCodec::Opus,
             (Format::Wav | Format::Aiff | Format::MxfOp1a | Format::MxfOpAtom, _) => AudioCodec::Pcm,
             (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
+            (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
+            (Format::Mpeg2, _) => AudioCodec::Pcm,
+            (Format::Dcp, _) => AudioCodec::Pcm,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -609,7 +619,10 @@ impl ExportSettings {
 
     /// Whether the format carries audio at all.
     pub fn has_audio(&self) -> bool {
-        self.include_audio && !self.is_image_sequence() && self.format != Format::Gif
+        self.include_audio
+            && !self.is_image_sequence()
+            && self.format != Format::Gif
+            && (self.format != Format::Mpeg2 || crate::Mpeg2Container::of(self).has_audio())
     }
 
     /// Whether the format carries video.
@@ -619,18 +632,27 @@ impl ExportSettings {
 
     /// File extension of the output.
     pub fn extension(&self) -> &'static str {
-        if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov { "mov" } else { self.format.extension() }
+        if self.format.is_h26x() && self.multiplexer == Multiplexer::Mov {
+            "mov"
+        } else if self.format == Format::Mpeg2 {
+            crate::Mpeg2Container::of(self).extension()
+        } else {
+            self.format.extension()
+        }
     }
 
     /// Estimated output size in bytes for `duration` of a sequence (`seq_w`×`seq_h` at `seq_rate`).
     pub fn estimate_bytes(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> u64 {
+        if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
+            return crate::dcp_out::normalize(self, seq_rate).estimate_bytes(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let secs = duration.seconds().max(0.0);
         let fps = r.rate.num as f64 / r.rate.den as f64;
         let px = r.width as f64 * r.height as f64;
         let video_bps = match self.video_format() {
             Format::Aac => 0.0,
-            Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls => r.target_kbps as f64 * 1000.0,
+            Format::H264 | Format::Hevc | Format::Av1 | Format::WebM | Format::Hls | Format::Mpeg2 => r.target_kbps as f64 * 1000.0,
             Format::ProRes => crate::prores_profile(&self.prores_profile).nominal_mbps_1080p30() * 1e6 * px / (1920.0 * 1080.0) * fps / 29.97,
             Format::DnxHr => {
                 // nominal 1080p29.97 data rates of the DNxHR profiles (Mb/s)
@@ -684,6 +706,8 @@ impl ExportSettings {
             }
             Format::Gif => px * 0.6 * 8.0 * fps,
             Format::Wav | Format::Aiff | Format::Flac | Format::Opus | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
+            // most frames of real pictures reach the DCI cap of 250 Mbit/s
+            Format::Dcp => 200e6,
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
@@ -719,6 +743,9 @@ pub struct Summary {
 impl ExportSettings {
     /// Summary lines for a sequence of `seq_w`×`seq_h` at `seq_rate` / `seq_sr` exporting `duration`.
     pub fn summary(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> Summary {
+        if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
+            return crate::dcp_out::normalize(self, seq_rate).summary(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let mbps = |k: u32| format!("{:.2} Mbps", k as f64 / 1000.0);
         let video = if !self.has_video() {
@@ -749,6 +776,19 @@ impl ExportSettings {
                         _ => format!(", Target {}, Max {}", mbps(r.target_kbps), mbps(r.max_kbps)),
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
+                }
+                Format::Mpeg2 => {
+                    v += if self.mpeg2_422 { ", MPEG-2 4:2:2 Profile" } else { ", MPEG-2 Main Profile 4:2:0" };
+                    v += &match self.mpeg2_quantizer {
+                        Some(q) => format!(", constant quantiser {q}"),
+                        None => format!(", average {}", mbps(r.target_kbps)),
+                    };
+                    v += &format!(", keyframe every {} frames", r.keyint);
+                    v += &match self.mpeg2_b_frames.unwrap_or(2) {
+                        0 => ", no B pictures".to_string(),
+                        1 => ", 1 B picture between anchors".to_string(),
+                        b => format!(", {b} B pictures between anchors"),
+                    };
                 }
                 Format::Av1 => {
                     v += &format!(", AV1 Main (10-bit for HDR), {}", self.bitrate_mode.label());
@@ -789,6 +829,10 @@ impl ExportSettings {
                 }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
                 Format::DpxSequence => v += ", 10-bit RGB",
+                Format::Dcp => {
+                    let res = if crate::DcpResolution::of(self) == crate::DcpResolution::FourK { "4K" } else { "2K" };
+                    v += &format!(", JPEG 2000 DCI {res}, 12-bit X'Y'Z'");
+                }
                 Format::ExrSequence => {
                     v += ", 16-bit half float, linear";
                     match self.exr_compression {
@@ -826,6 +870,17 @@ impl ExportSettings {
             Format::Hls => "fragmented MP4 segments",
             Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg => "QuickTime",
             Format::MxfOp1a | Format::MxfOpAtom => self.mxf_video_codec.label(),
+            Format::Mpeg2 => match crate::Mpeg2Container::of(self) {
+                crate::Mpeg2Container::Ps => "Program Stream",
+                crate::Mpeg2Container::Ts => "Transport Stream",
+                crate::Mpeg2Container::M2ts => "BDAV Transport Stream",
+                crate::Mpeg2Container::Es => "Elementary Stream",
+            },
+            Format::Dcp => match crate::DcpAspect::of(self) {
+                crate::DcpAspect::Flat => "SMPTE, Flat 1.85:1",
+                crate::DcpAspect::Scope => "SMPTE, Scope 2.39:1",
+                crate::DcpAspect::Full => "SMPTE, Full 1.90:1",
+            },
             f if f.is_image_sequence() => "Image sequence",
             _ => "",
         };

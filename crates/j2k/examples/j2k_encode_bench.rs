@@ -25,7 +25,7 @@ fn main() {
             Plane { width: w, height: h, precision: 12, signed: false, dx: 1, dy: 1, data }
         })
         .collect();
-    let img = Image { width: w, height: h, components };
+    let img = Image { width: w, height: h, components, mct: false };
     let opts = if four_k { EncodeOptions::cinema_4k(24) } else { EncodeOptions::cinema_2k(24) };
     let start = std::time::Instant::now();
     match cfa4_j2k::encode(&img, &opts) {

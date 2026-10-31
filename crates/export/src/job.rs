@@ -63,14 +63,16 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use cfa4_isobmff::{Brand, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
+use cfa4_isobmff::{Brand, CodecConfig, Mp4Writer, PcmConfig, SampleEntry, TrackConfig, WriteSample, WriterOptions};
 use cfa4_project::{ItemId, Project};
 use cfa4_render::SourceProvider;
 use cfa4_time::FrameRate;
 use rayon::prelude::*;
 
 use crate::audio_out::AudioOut;
+use crate::dcp_out::{DcpMux, DcpSetup};
 use crate::hls_out::{HlsMux, HlsSetup};
+use crate::mpeg_out::{MpegAudio, MpegMux};
 use crate::mxf_out::{MxfMux, MxfSetup};
 use crate::pipeline::Pipeline;
 use crate::settings::{AudioCodec, BitrateMode};
@@ -183,6 +185,10 @@ pub struct Exporter {
     webm: Option<WebmMux>,
     /// HLS exports write through this instead of `mux`.
     hls: Option<HlsMux>,
+    /// MPEG-2 exports write through this.
+    mpeg: Option<MpegMux>,
+    /// DCP exports write through this.
+    dcp: Option<DcpMux>,
     seq: ItemId,
     project: Arc<Project>,
     vt: usize,
@@ -206,6 +212,8 @@ pub fn stepped(format: Format) -> bool {
             | Format::Mjpeg
             | Format::MxfOp1a
             | Format::MxfOpAtom
+            | Format::Mpeg2
+            | Format::Dcp
     )
 }
 
@@ -234,8 +242,16 @@ impl Exporter {
         if !stepped(settings.format) {
             return Err(ExportError::Unsupported(format!("{} is not a stepped export", settings.format.label())));
         }
-        settings.validate()?;
         let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
+        // a DCP has a fixed container size, rate and sound format
+        let dcp;
+        let settings = if settings.format == Format::Dcp {
+            dcp = crate::dcp_out::normalize(settings, q.settings.frame_rate);
+            &dcp
+        } else {
+            settings
+        };
+        settings.validate()?;
         // HDR sequences export HDR (H.264 / H.265 Main 10 / AV1 / ProRes / DNxHR / APV / CineForm) unless SDR is asked for
         let pipe = q.settings.color;
         let hdr_out = hdr_output(pipe.working.is_hdr(), settings.sdr, settings.video_format());
@@ -295,6 +311,8 @@ impl Exporter {
             mxf: None,
             webm: None,
             hls: None,
+            mpeg: None,
+            dcp: None,
             seq,
             project: project.clone(),
             vt: 0,
@@ -356,7 +374,25 @@ impl Exporter {
         self.pipe.rate.tick_of(f).to_units_floor(sr as i64)
     }
 
+    /// Whether the container writer exists (it is created after the first group is encoded).
+    fn mux_open(&self) -> bool {
+        self.mux.is_some() || self.mxf.is_some() || self.webm.is_some() || self.hls.is_some() || self.mpeg.is_some() || self.dcp.is_some()
+    }
+
     fn write_audio(&mut self, planar: Option<Vec<Vec<f32>>>) -> Result<()> {
+        if let Some(m) = self.dcp.as_mut() {
+            return match planar {
+                Some(buf) => m.write_audio(&buf),
+                None => Ok(()),
+            };
+        }
+        if let Some(m) = self.mpeg.as_mut() {
+            let Some(buf) = planar else { return Ok(()) };
+            return match self.aenc.as_mut() {
+                Some(a) => m.write_aac(a.encode(&buf)?, a.frame_size()),
+                None => m.write_pcm(&buf),
+            };
+        }
         if let Some(m) = self.mxf.as_mut() {
             return match planar {
                 Some(buf) => m.write_audio(&buf),
@@ -402,6 +438,9 @@ impl Exporter {
     }
 
     fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
+        if let Some(m) = self.dcp.as_mut() {
+            return m.write_video(packets);
+        }
         if let Some(m) = self.mxf.as_mut() {
             return m.write_video(packets);
         }
@@ -409,6 +448,9 @@ impl Exporter {
             return m.write_video(packets);
         }
         if let Some(m) = self.hls.as_mut() {
+            return m.write_video(packets);
+        }
+        if let Some(m) = self.mpeg.as_mut() {
             return m.write_video(packets);
         }
         let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
@@ -421,6 +463,22 @@ impl Exporter {
 
     /// Create the muxer and its tracks (after the first batch was encoded).
     fn open_mux(&mut self) -> Result<()> {
+        if self.settings.format == Format::Dcp {
+            let title = match self.settings.metadata.title.trim() {
+                "" => self.project.item(self.seq).map(|i| i.name.clone()).unwrap_or_default(),
+                t => t.to_string(),
+            };
+            self.dcp = Some(DcpMux::new(DcpSetup {
+                settings: &self.settings,
+                title,
+                width: self.pipe.w,
+                height: self.pipe.h,
+                rate: self.pipe.rate,
+                audio: self.audio.is_some(),
+                active: self.pipe.content_size(),
+            })?);
+            return Ok(());
+        }
         if self.settings.format == Format::WebM {
             self.webm = Some(WebmMux::new(WebmSetup {
                 settings: &self.settings,
@@ -445,6 +503,27 @@ impl Exporter {
                     _ => None,
                 },
             })?);
+            return Ok(());
+        }
+        if self.settings.format == Format::Mpeg2 {
+            let audio = match (&self.audio, &self.aenc) {
+                (None, _) => None,
+                (Some(a), Some(enc)) => {
+                    let SampleEntry { codec: CodecConfig::Aac(cfg), .. } = enc.sample_entry() else {
+                        return Err(ExportError::Encode("internal: MPEG-2 transport streams carry AAC".into()));
+                    };
+                    let header = crate::aac_out::AdtsHeader::from_asc(&cfg.asc)?;
+                    Some(MpegAudio::Aac { header, sample_rate: a.sr, priming: enc.priming() })
+                }
+                (Some(a), None) => Some(MpegAudio::Lpcm { sample_rate: a.sr, channels: a.channels as u32 }),
+            };
+            let audio_bps = match (&self.audio, &self.aenc) {
+                (Some(_), Some(_)) => u64::from(self.settings.audio.bitrate_kbps) * 1000,
+                (Some(a), None) => u64::from(a.sr) * a.channels as u64 * 16,
+                _ => 0,
+            };
+            let peak = self.settings.max_bitrate_kbps.unwrap_or(self.settings.bitrate_kbps);
+            self.mpeg = Some(MpegMux::new(&self.settings, self.pipe.rate, audio, crate::mpeg_out::mux_rate(peak, audio_bps))?);
             return Ok(());
         }
         if self.settings.format.is_mxf() {
@@ -538,7 +617,7 @@ impl Exporter {
         if cfa4_media::pending::take() {
             return Ok(Step::Pending);
         }
-        if self.mux.is_none() && self.mxf.is_none() && self.webm.is_none() && self.hls.is_none() {
+        if !self.mux_open() {
             self.open_mux()?;
         }
         let mut tail = std::mem::take(&mut self.queued);
@@ -547,6 +626,9 @@ impl Exporter {
         self.write_audio(mixed)?;
         if let (Some(m), Some(a)) = (self.hls.as_mut(), self.aenc.as_mut()) {
             m.write_audio(a.flush_timed()?)?;
+        }
+        if let (Some(m), Some(a)) = (self.mpeg.as_mut(), self.aenc.as_mut()) {
+            m.write_aac(a.flush()?, a.frame_size())?;
         }
         if let (Some(at), Some(a)) = (self.at, self.aenc.as_mut()) {
             let mux = self.mux.as_mut().ok_or_else(|| ExportError::Encode("internal: the container writer was not created".into()))?;
@@ -557,11 +639,15 @@ impl Exporter {
                 mux.set_sample_entry(at, entry).map_err(|e| ExportError::Io(e.to_string()))?;
             }
         }
-        let (bytes, extra_files) = match (self.mxf.take(), self.webm.take(), self.hls.take()) {
-            (Some(m), _, _) => m.finish(&self.settings)?,
-            (None, Some(m), _) => (m.finish(&self.settings)?, Vec::new()),
-            (None, None, Some(m)) => m.finish()?,
-            (None, None, None) => {
+        let cancelled = || progress.cancel.load(Ordering::Relaxed);
+        let dcp = self.dcp.take().map(|m| m.finish(&self.settings, &cancelled)).transpose()?;
+        let (bytes, extra_files) = match (self.mxf.take(), self.webm.take(), self.hls.take(), self.mpeg.take()) {
+            _ if dcp.is_some() => dcp.unwrap_or_default(),
+            (Some(m), _, _, _) => m.finish(&self.settings)?,
+            (None, Some(m), _, _) => (m.finish(&self.settings)?, Vec::new()),
+            (None, None, Some(m), _) => m.finish()?,
+            (None, None, None, Some(m)) => (m.finish(&self.settings)?, Vec::new()),
+            (None, None, None, None) => {
                 let w = self
                     .mux
                     .take()
@@ -684,7 +770,7 @@ impl Exporter {
             self.queued.extend(packets);
             if cuts.contains(&(fi + 1)) {
                 timed(Stage::Mux, || -> Result<()> {
-                    if self.mux.is_none() && self.mxf.is_none() && self.webm.is_none() && self.hls.is_none() {
+                    if !self.mux_open() {
                         self.open_mux()?;
                     }
                     let packets = std::mem::take(&mut self.queued);
