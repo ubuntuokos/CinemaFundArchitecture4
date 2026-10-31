@@ -50,6 +50,8 @@ pub use error::{Error, Result};
 pub struct ColorInfo {
     /// `video_full_range_flag`.
     pub full_range: bool,
+    /// The VUI carried a video signal type, so `full_range` is the stream's, not a default.
+    pub range_signalled: bool,
     pub primaries: u8,
     pub transfer: u8,
     pub matrix: u8,

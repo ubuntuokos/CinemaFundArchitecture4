@@ -64,7 +64,7 @@ const LF_MARGIN: usize = 8;
 /// `LF_MARGIN` rows above it (the same work as the band above does on them), runs its top
 /// horizontal edges against that copy, and afterwards the samples those edges changed are
 /// written back; the band above never touches them.
-fn loop_filter(fs: &mut FrameState, pool: &crate::par::Pool) {
+pub(crate) fn loop_filter(fs: &mut FrameState, pool: &crate::par::Pool) {
     let luma = bands(pool, fs.fh.mi_rows as usize * 4);
     let planes: Vec<usize> = (0..fs.num_planes).filter(|&p| p == 0 || fs.fh.lf.level[1 + p] != 0).collect();
     let mut cur = std::mem::take(&mut fs.cur);

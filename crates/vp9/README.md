@@ -1,7 +1,7 @@
 # cfa4-vp9
 
-Clean-room, pure-Rust (no `unsafe`) VP9 decoder, implemented from the public *VP9 Bitstream &
-Decoding Process Specification* v0.6 (WebM project). It is an L0 crate: it depends only on
+Clean-room, pure-Rust (no `unsafe`) VP9 decoder and encoder, implemented from the public *VP9
+Bitstream & Decoding Process Specification* v0.6 (WebM project). It is an L0 crate: it depends only on
 `cfa4-bitstream`, `thiserror`, and optionally `rayon` (default feature `threads`), and builds
 for `wasm32-unknown-unknown` with and without `threads`.
 
@@ -29,6 +29,9 @@ is used only as an external fixture generator and test oracle.
 | Hidden frames, show_existing_frame, intra-only frames, resolution changes, error resilient / frame parallel modes | done |
 | Frame threading: references published per superblock row, the loop filter / output of a frame overlaps the next frames | done |
 | Draft mode (non-reference frames skip the loop filter; reduced-resolution playback only) | done |
+| Encoder: profile 0 (8-bit 4:2:0), key + inter frames (LAST), constant quantizer or average bit rate | done, ffmpeg decodes it sample-exactly like we do |
+| Encoder: probability updates, smaller transforms, GOLDEN / ALTREF, compound, 10 / 12-bit, parallel tiles | #151 |
+| VP8 encoder, WebM export | #150, #149 |
 
 ## API
 
@@ -54,6 +57,32 @@ let stats = dec.stats(); // what the stream exercised (frame kinds, tiles, compo
 let key: bool = cfa4_vp9::is_keyframe(chunk);
 let info: Option<cfa4_vp9::KeyframeInfo> = cfa4_vp9::keyframe_info(chunk);
 ```
+
+### Encoder
+
+```rust
+use cfa4_vp9::encode::{Config, Encoder, Input, Rate};
+
+let mut cfg = Config::new(1920, 1080);
+cfg.rate = Rate::Bitrate { bits_per_second: 8_000_000, fps_num: 25, fps_den: 1 }; // or Rate::Quantizer(1..=255)
+cfg.keyframe_interval = 120; // 0: only the first frame
+cfg.speed = 1;               // 0 (thorough) .. 2 (fast)
+let mut enc = Encoder::new(cfg)?;
+let input = Input { y, u, v, y_stride, uv_stride }; // 8-bit 4:2:0
+let packet = enc.encode(&input, false)?;            // true forces a key frame
+// packet.data: one VP9 frame (an IVF frame / WebM block), packet.key
+```
+
+The stream keeps to a subset of VP9 that every decoder handles the same way: default
+probabilities throughout (`refresh_frame_context` 0, `frame_parallel_decoding_mode` 1), the
+largest transform each block allows, 8×8 to 64×64 blocks (partition NONE / SPLIT), all ten
+intra modes, inter prediction from the previous frame with quarter-sample vectors (diamond
+search, then half / quarter refinement with the real 8-tap filter), and as few tile columns as
+the width allows. Modes and partitions are chosen by rate-distortion search (SATD + λ·bits). The
+forward transforms are measured from the decoder's own inverse transforms (projection onto
+their basis), so the encoder needs no second implementation of the DCT / ADST. Every frame is
+decoded by an internal `Decoder`, and the next frame predicts from that picture, so encoder and
+decoder cannot drift apart.
 
 `cfa4-codecs` wires the decoder into Matroska / WebM (`V_VP9`, profile / bit depth from
 `CodecPrivate`, colour from `Colour`) and MP4 (`vp09` + `vpcC`) import; its GOP cache asks

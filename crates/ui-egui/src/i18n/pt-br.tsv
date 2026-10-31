@@ -2984,6 +2984,12 @@
 	Gang to Program	Vincular ao programa
 	AAC Audio	Áudio AAC
 	AAC Audio 48 kHz 320 kbps	Áudio AAC 48 kHz 320 kbps
+	Opus Audio	Áudio Opus
+	Opus Audio 48 kHz 160 kbps	Áudio Opus 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus), estéreo, 48 kHz a 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM, VP9 1920×1080 a 8 Mbps, Opus 128 kbps estéreo
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	Áudio MPEG-4 (.m4a), estéreo, AAC-LC de 48 kHz a 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16 bits
@@ -3459,8 +3465,10 @@
 	Main 10 (10-bit, HDR)	Main 10 (10 bits, HDR)
 	Main (8-bit; Main 10 for HDR sequences)	Main (8 bits; Main 10 para sequências HDR)
 	Encoder	Codificador
+	Encoding	Codificação
 	Software, or hardware where available	Software, ou hardware quando disponível
-	Hardware (AV1 has no software encoder)	Hardware (o AV1 não tem codificador por software)
+	Main (10-bit, HDR)	Main (10 bits, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bits; 10 bits para sequências HDR)
 	Text Properties	Propriedades do texto
 	Text Box Height	Altura da caixa de texto
 	Paragraph Text	Texto de parágrafo
@@ -3587,7 +3595,38 @@
 	Side by Side	Lado a lado
 	Stereo to 2D	Estéreo para 2D
 	Eye	Olho
+	Stereo Parallax	Paralaxe estéreo
+	Horizontal Shift	Deslocamento horizontal
 	Slit Scan	Slit-scan
 	Time Span (seconds)	Intervalo de tempo (segundos)
 	Current Frame At	Quadro atual em
 	Blend Slices	Mesclar fatias
+	Add Beat Markers	Adicionar marcadores de batida
+	Clear Beat Markers	Limpar marcadores de batida
+	Clear Check Markers	Limpar marcadores de verificação
+	Auto Reframe Sequence…	Reenquadramento automático da sequência…
+	Batch Variants from Spreadsheet…	Variantes em lote de planilha…
+	Check Before Export…	Verificar antes de exportar…
+	Social Deliverables…	Entregas para redes sociais…
+	Counter	Contador
+	Word by Word	Palavra por palavra
+	Animator	Animador
+	Animator Duration	Duração do animador
+	Animator Delay	Atraso do animador
+	Creative Looks	Looks criativos
+	Film Grain	Granulação de filme
+	Animated	Animado
+	Color Grain	Granulação colorida
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 a 8 Mbps, AAC 160 kbps, segmentos MP4 fragmentados de 6 segundos
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Cinema digital
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 1998×1080 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 2048×858 (2.39:1), PCM 5.1 de 24 bits a 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 de 24 bits a 48 kHz

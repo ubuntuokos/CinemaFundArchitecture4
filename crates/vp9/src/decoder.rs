@@ -192,6 +192,12 @@ impl Decoder {
         self.pending.clear();
     }
 
+    /// The frame in reference slot 0 and the mode info of the last decoded frame: what the
+    /// encoder predicts its next inter frame from.
+    pub(crate) fn last_reference(&self) -> (Option<Arc<Frame>>, Option<Arc<MiGrid>>) {
+        (self.slots[0].clone(), self.prev_mi.clone())
+    }
+
     fn frame_threads(&self) -> bool {
         #[cfg(all(feature = "threads", not(target_arch = "wasm32")))]
         {
