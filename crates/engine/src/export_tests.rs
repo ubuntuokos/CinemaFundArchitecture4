@@ -97,6 +97,18 @@ fn export_integer_parameters_cannot_wrap_or_overflow() {
 }
 
 #[test]
+fn mpeg2_b_pictures_are_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":0})).unwrap();
+    assert_eq!(r["settings"]["mpeg2BFrames"], 0);
+    let r = s.execute("export.resolve", json!({"format":"mpeg2"})).unwrap();
+    assert!(r["settings"]["mpeg2BFrames"].is_null(), "the encoder's default (2)");
+    for bad in [json!(8), json!(-1), json!(1.5)] {
+        assert!(s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":bad})).is_err());
+    }
+}
+
+#[test]
 fn wav_resolve_honours_explicit_sample_rates() {
     let mut s = demo();
     for rate in [4000, 192_000, 192_001, 200_000, 352_800, 384_000] {
@@ -191,6 +203,36 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             }
             continue;
         }
+        if fmt == "dcp" {
+            // a folder: the track files, playlist, packing list, asset map and volume index
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(Path::new(&out));
+            assert_eq!(files.len(), 6, "{name}: {files:?}");
+            assert!(files.contains(&"ASSETMAP.xml".to_string()) && files.contains(&"VOLINDEX.xml".to_string()), "{name}: {files:?}");
+            let pic = files.iter().find(|f| f.starts_with("j2c_")).unwrap();
+            let snd = files.iter().find(|f| f.starts_with("pcm_")).unwrap();
+            let size = match (settings["dcpResolution"].as_str(), settings["dcpAspect"].as_str()) {
+                (Some("4k"), Some("scope")) => (4096, 1716),
+                (Some("4k"), _) => (3996, 2160),
+                (_, Some("scope")) => (2048, 858),
+                _ => (1998, 1080),
+            };
+            if let Some(j) = probe(&Path::new(&out).join(pic).to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("jpeg2000"), Some("xyz12le")), "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), size, "{name}");
+                assert_eq!(v["r_frame_rate"], "24/1", "{name}: 23.976 becomes 24");
+            }
+            if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!(
+                    (a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()),
+                    (Some("pcm_s24le"), Some("48000"), Some(6)),
+                    "{name}"
+                );
+            }
+            continue;
+        }
         assert!(Path::new(&out).exists(), "{name}: {out}");
         let Some(j) = probe(&out) else { continue };
         let fmt_name = j["format"]["format_name"].as_str().unwrap();
@@ -219,6 +261,46 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 let a = stream(&j, "audio").unwrap();
                 assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("aac"), Some("48000"), Some(2)), "{name}");
                 assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
+            "opus" => {
+                // Opus Audio: an Ogg file, sound only
+                assert!(fmt_name.contains("ogg"), "{name}: {fmt_name}");
+                assert_eq!(j["streams"].as_array().unwrap().len(), 1, "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.03, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
+            "webm" => {
+                // WebM: VP9 picture at the preset's size, Opus sound
+                assert!(fmt_name.contains("webm"), "{name}: {fmt_name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("vp9"), Some(w), Some(h)), "{name}");
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!((a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()), (Some("opus"), Some("48000"), Some(2)), "{name}");
+                assert!((num(&j["format"]["duration"]) - 0.25).abs() < 0.05, "{name}: {}", j["format"]["duration"]);
+                continue;
+            }
+            "hls" => {
+                // HLS: the multivariant playlist plays as H.264 + AAC at the preset's size
+                assert_eq!(fmt_name, "hls", "{name}");
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["width"].as_u64(), v["height"].as_u64()), (Some("h264"), Some(w), Some(h)), "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], "aac", "{name}");
+                let files = cfa4_export::hls_files(&out, h as u32);
+                for f in [&files.media, &files.init, &files.segment(0)] {
+                    assert!(Path::new(f).exists(), "{name}: {f}");
+                }
+                continue;
+            }
+            "mpeg2" => {
+                // program stream + LPCM, transport stream + AAC
+                let ts = settings["mpeg2Container"] == "ts";
+                assert!(out.ends_with(if ts { ".ts" } else { ".mpg" }), "{name}: {out}");
+                assert_eq!(fmt_name, if ts { "mpegts" } else { "mpeg" }, "{name}");
+                assert_eq!(stream(&j, "video").unwrap()["codec_name"], "mpeg2video", "{name}");
+                assert_eq!(stream(&j, "audio").unwrap()["codec_name"], if ts { "aac" } else { "pcm_dvd" }, "{name}");
                 continue;
             }
             "gif" => {
@@ -311,6 +393,19 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert!(got_profile == p || got_profile == idc, "{name}: profile {got_profile} != {p} ({idc})");
                 assert_eq!(a["codec_name"], "pcm_s24le", "{name}");
             }
+            "cineform" => {
+                assert!(fmt_name.contains("mov"), "{name}: {fmt_name}");
+                assert_eq!(v["codec_name"], "cfhd", "{name}");
+                let pix = v["pix_fmt"].as_str().unwrap_or_default();
+                let want = match settings["cineformProfile"].as_str().unwrap_or("") {
+                    "444" => "gbrp12le",
+                    "4444" if settings["alpha"].as_bool().unwrap_or(false) => "gbrap12le",
+                    "4444" => "gbrp12le",
+                    _ => "yuv422p10le",
+                };
+                assert_eq!(pix, want, "{name}");
+                assert_eq!(a["codec_name"], "pcm_s24le", "{name}");
+            }
             "mxf-op1a" => {
                 assert_eq!(fmt_name, "mxf", "{name}");
                 let codec = match settings["mxfVideoCodec"].as_str().unwrap() {
@@ -346,6 +441,25 @@ fn aac_audio_keeps_a_dot_aac_path_as_adts_and_adds_m4a_otherwise() {
     let m4a = run(&mut s, dir.path("Mix"));
     assert!(m4a.ends_with("Mix.m4a"), "{m4a}");
     assert_eq!(&std::fs::read(&m4a).unwrap()[4..8], b"ftyp");
+}
+
+#[test]
+fn opus_audio_keeps_a_dot_ogg_path_and_adds_opus_otherwise() {
+    let mut s = demo();
+    let dir = Scratch::new("opus-audio");
+    let range = json!({"range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true, "format": "opus"});
+    let run = |s: &mut Session, path: String| {
+        let mut p = range.clone();
+        p["path"] = json!(path);
+        s.execute("file.exportMedia", p).unwrap()["path"].as_str().unwrap().to_string()
+    };
+    for (asked, want) in [("Mix.ogg", "Mix.ogg"), ("Mix", "Mix.opus")] {
+        let path = run(&mut s, dir.path(asked));
+        assert!(path.ends_with(want), "{path}");
+        let b = std::fs::read(&path).unwrap();
+        assert_eq!(&b[..4], b"OggS");
+        assert_eq!(&b[28..36], b"OpusHead");
+    }
 }
 
 #[test]
@@ -388,6 +502,15 @@ fn user_presets_persist_with_favourites_import_and_export() {
     assert_eq!(got["settings"]["frameSize"], json!([1280, 720]));
     assert_eq!(got["settings"]["bitrateKbps"], 5000);
     assert!(s.execute("export.presets.save", json!({"name": "YouTube 1080p Full HD"})).is_err(), "built-in names are reserved");
+    // a DCP preset keeps its immersive audio, and the list shows it so the Qt dialog can load it
+    s.execute(
+        "export.presets.save",
+        json!({"name": "IAB DCP", "from": "DCP 2K Flat", "dcpImmersive": "file", "dcpIabSource": "/a/b.mxf", "dcpIabFallback": "none"}),
+    )
+    .unwrap();
+    let list = s.execute("export.presets.list", json!({"query": "iab dcp"})).unwrap();
+    let row = &list["presets"][0];
+    assert_eq!((&row["dcpImmersive"], &row["dcpIabSource"], &row["dcpIabFallback"]), (&json!("file"), &json!("/a/b.mxf"), &json!("none")));
     assert!(s.execute("export.presets.delete", json!({"name": "Apple ProRes 422 HQ"})).is_err(), "built-ins cannot be deleted");
     // favourites
     s.execute("export.presets.favorite", json!({"name": "Apple ProRes 422 HQ"})).unwrap();
@@ -849,5 +972,90 @@ fn caption_sidecars_keep_only_the_exported_interval() {
     for format in [Format::Srt, Format::WebVtt] {
         let doc = sidecar(&mut edge, &edge_files, format, json!({"range":"inOut"}), ticks(30));
         assert!(doc.cues.is_empty(), "half-open export excludes cues touching either boundary: {doc:?}");
+    }
+}
+
+/// The GoPro CineForm presets: our MOV opens with our own decoder at the exported size, and
+/// ffmpeg (an oracle only) reads the same pixels within rounding of the colour conversion.
+#[test]
+fn cineform_presets_export_and_read_back() {
+    let mut s = demo();
+    let dir = Scratch::new("cineform");
+    for (name, pix) in
+        [("GoPro CineForm YUV 10-bit", "yuv422p10le"), ("GoPro CineForm RGB 12-bit", "gbrp12le"), ("GoPro CineForm RGB 12-bit with Alpha", "gbrap12le")]
+    {
+        let path = dir.0.join(cfa4_export::presets::preset_key(name)).to_string_lossy().to_string();
+        let params = json!({"preset": name, "path": path, "range": "custom", "startSeconds": 1.0, "endSeconds": 1.25, "wait": true});
+        let out = s.execute("file.exportMedia", params).unwrap_or_else(|e| panic!("{name}: {e}"))["path"].as_str().unwrap().to_string();
+        let bytes: std::sync::Arc<[u8]> = std::fs::read(&out).unwrap().into();
+        let src = cfa4_codecs::open_bytes(&out, bytes).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let info = src.info().video.clone().unwrap();
+        assert_eq!((info.codec.as_str(), info.width, info.height), ("GoPro CineForm", 1920, 1080), "{name}");
+        assert_eq!(info.has_alpha, pix == "gbrap12le", "{name}");
+        let ours = src.video_frame(cfa4_media::FrameRequest::full(cfa4_time::Tick(0))).unwrap().to_rgba8();
+        let Some(j) = probe(&out) else { continue };
+        let v = stream(&j, "video").unwrap();
+        assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("cfhd"), Some(pix)), "{name}");
+        let Some(ff) = cfa4_testkit::oracle::ffmpeg_or_skip("cineform read back") else { continue };
+        let rgba = std::process::Command::new(ff)
+            .args(["-v", "error", "-i", &out, "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgba", "-"])
+            .output()
+            .unwrap()
+            .stdout;
+        assert_eq!(rgba.len(), ours.len(), "{name}");
+        let far = ours.iter().zip(&rgba).filter(|(a, b)| (i32::from(**a) - i32::from(**b)).abs() > 4).count();
+        assert!(far * 1000 < ours.len(), "{name}: {far} of {} samples differ by more than 4", ours.len());
+    }
+}
+
+/// #343: the DCP immersive audio params and `export.iabInfo`.
+#[test]
+fn dcp_immersive_params_and_iab_info() {
+    let mut s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "bed", "dcpIabFallback": "none"})).unwrap();
+    assert_eq!((st.dcp_immersive.as_str(), st.dcp_iab_fallback.as_str()), ("bed", "none"));
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": "/a/b.mxf"})).unwrap();
+    assert_eq!((st.dcp_immersive.as_str(), st.dcp_iab_source.as_str()), ("file", "/a/b.mxf"));
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "atmos"})).unwrap_err().to_string();
+    assert!(e.contains("off | bed | file"), "{e}");
+    assert!(setting(&s, json!({"path": "pkg", "format": "dcp", "dcpIabFallback": "7.1"})).is_err());
+    // a file without a source does not resolve
+    assert!(s.execute("export.resolve", json!({"format": "dcp", "dcpImmersive": "file"})).is_err());
+    assert!(s.execute("export.resolve", json!({"format": "dcp", "dcpImmersive": "bed"})).is_ok());
+
+    // a raw IABitstream of two 24 fps bed frames
+    let dir = Scratch::new("iab-info");
+    let rate = cfa4_iab::FrameRate::R24;
+    let one = cfa4_iab::write(&bed_frame(rate)).unwrap();
+    std::fs::write(dir.path("two.iab"), [one.clone(), one].concat()).unwrap();
+    let info = s.execute("export.iabInfo", json!({"path": dir.path("two.iab")})).unwrap();
+    assert_eq!(info["container"], "iab");
+    assert_eq!(info["frames"], 2);
+    assert_eq!(info["frameRate"], json!([24, 1]));
+    assert_eq!(info["maxBedChannels"], 2);
+    assert_eq!(info["needsConform"], false);
+    let e = s.execute("export.iabInfo", json!({"path": dir.path("missing.iab")})).unwrap_err().to_string();
+    assert!(e.contains("missing.iab"), "{e}");
+    assert!(s.execute("export.iabInfo", json!({})).is_err());
+}
+
+/// A two-channel DLC bed (L, R) of silence.
+fn bed_frame(rate: cfa4_iab::FrameRate) -> cfa4_iab::Frame {
+    use cfa4_iab::*;
+    let n = rate.samples(false, 0);
+    let channels = [0x00, 0x04].iter().enumerate().map(|(k, &id)| BedChannel { id, audio_id: k as u32 + 1, gain: Gain::Unity, decorrelation: None }).collect();
+    Frame {
+        version: 1,
+        sample_rate: 48_000,
+        bit_depth: 24,
+        frame_rate: rate,
+        frame_index: 0,
+        max_rendered: 2,
+        beds: vec![Bed { meta_id: 1, use_case: None, channels, description: Description::default(), beds: vec![], remaps: vec![] }],
+        objects: vec![],
+        audio: (1..=2).map(|id| AudioData { id, coding: Coding::Dlc, samples: vec![0; n] }).collect(),
+        authoring_tool: None,
+        user_data: vec![],
     }
 }

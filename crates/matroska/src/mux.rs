@@ -262,6 +262,16 @@ impl<W: Write + Seek> MkvWriter<W> {
     /// frames must be supplied in the desired file order. `duration_ns` forces a BlockGroup with a
     /// BlockDuration when it differs from the track's DefaultDuration.
     pub fn write_frame(&mut self, track: usize, pts_ns: i64, keyframe: bool, data: &[u8], duration_ns: Option<u64>) -> Result<()> {
+        self.write_block(track, pts_ns, keyframe, data, duration_ns, 0)
+    }
+
+    /// Add the last frame of an audio track whose final `discard_ns` of decoded sound is padding
+    /// (a BlockGroup with `DiscardPadding`, as WebM Opus trims its last frame).
+    pub fn write_frame_discarding(&mut self, track: usize, pts_ns: i64, data: &[u8], discard_ns: u64) -> Result<()> {
+        self.write_block(track, pts_ns, true, data, None, discard_ns)
+    }
+
+    fn write_block(&mut self, track: usize, pts_ns: i64, keyframe: bool, data: &[u8], duration_ns: Option<u64>, discard_ns: u64) -> Result<()> {
         let spec = self.tracks.get(track).ok_or(Error::NoSuchTrack(track))?;
         // the Matroska ProRes mapping stores frames without the 8-byte `size`+`icpf` header
         let data = if spec.codec_id == "V_PRORES" && data.get(4..8) == Some(b"icpf") { &data[8..] } else { data };
@@ -299,7 +309,7 @@ impl<W: Write + Seek> MkvWriter<W> {
                 self.cues.push((ts as u64, track as u64 + 1, pos));
             }
         }
-        if lacing && explicit_dur.is_none() {
+        if lacing && explicit_dur.is_none() && discard_ns == 0 {
             let same = self.pending.as_ref().is_some_and(|p| p.track == track && p.frames.len() < self.opts.max_lace_frames);
             if !same {
                 self.flush_pending();
@@ -314,12 +324,20 @@ impl<W: Write + Seek> MkvWriter<W> {
         let mut block = Vec::new();
         write_size(&mut block, track as u64 + 1, 1);
         block.extend_from_slice(&((ts - cts) as i16).to_be_bytes());
-        if let Some(d) = explicit_dur {
+        if explicit_dur.is_some() || discard_ns > 0 {
             block.push(0);
             block.extend_from_slice(data);
             let mut g = Vec::new();
             el(&mut g, BLOCK, &block);
-            el_uint(&mut g, BLOCK_DURATION, (d as i64 / scale) as u64);
+            if let Some(d) = explicit_dur {
+                el_uint(&mut g, BLOCK_DURATION, (d as i64 / scale) as u64);
+            }
+            if discard_ns > 0 {
+                // a signed integer: one more byte when the top bit of the shortest form is set
+                let v = discard_ns.min(i64::MAX as u64);
+                let n = ((64 - v.leading_zeros() as usize) / 8 + 1).min(8);
+                el(&mut g, DISCARD_PADDING, &v.to_be_bytes()[8 - n..]);
+            }
             if !keyframe {
                 el(&mut g, REFERENCE_BLOCK, &[0xFF]);
             }
@@ -535,5 +553,35 @@ mod tests {
     #[test]
     fn roundtrip_fixed() {
         roundtrip(LacingMode::FixedOrEbml);
+    }
+
+    #[test]
+    fn webm_opus_codec_delay_and_discard_padding() {
+        let mut v = TrackSpec::new(TrackKind::Video, "V_VP9");
+        v.video_size = Some((64, 36));
+        v.default_duration_ns = Some(40_000_000);
+        let mut a = TrackSpec::new(TrackKind::Audio, "A_OPUS");
+        a.audio = Some((48000.0, 2, None));
+        a.codec_delay_ns = 2_500_000;
+        a.seek_pre_roll_ns = 80_000_000;
+        let opts = MuxOptions { doc_type: "webm".into(), ..Default::default() };
+        let mut m = MkvWriter::new(Cursor::new(Vec::new()), vec![v, a], opts).unwrap();
+        m.write_frame(0, 0, true, &[1; 10], None).unwrap();
+        m.write_frame(1, -2_500_000, true, &[2; 20], None).unwrap();
+        m.write_frame(0, 40_000_000, false, &[3; 10], None).unwrap();
+        // 9 ms of padding: 0x0089_5440 has its top bit clear, 200 ms (0x0BEB_C200) too; 2^31 ns needs 5 bytes
+        m.write_frame_discarding(1, 17_500_000, &[4; 20], 9_000_000).unwrap();
+        m.write_frame_discarding(1, 37_500_000, &[5; 20], 1 << 31).unwrap();
+        let bytes = m.finish().unwrap().into_inner();
+        let mut d = Demuxer::from_slice(&bytes).unwrap();
+        assert!(d.file().is_webm());
+        assert!(d.file().warnings.is_empty(), "{:?}", d.file().warnings);
+        let got: Vec<_> = d.by_ref().map(|p| p.unwrap()).collect();
+        let audio: Vec<_> = got.iter().filter(|p| p.track == 1).collect();
+        assert_eq!(audio.len(), 3);
+        assert_eq!(audio[0].discard_padding_ns, None);
+        assert_eq!(audio[1].discard_padding_ns, Some(9_000_000));
+        assert_eq!(audio[2].discard_padding_ns, Some(1 << 31));
+        assert_eq!(audio[1].data, vec![4; 20]);
     }
 }

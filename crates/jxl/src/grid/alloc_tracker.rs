@@ -1,0 +1,84 @@
+// Ported from jxl-oxide <https://github.com/tirr-c/jxl-oxide>, crate jxl-grid 0.6.2.
+// Copyright (c) Wonwoo Choi and the jxl-oxide contributors; MIT OR Apache-2.0 (see
+// LICENSE-MIT, LICENSE-APACHE). CFA4 changes (no unsafe, errors instead of panics, safe
+// subgrids) are GPL-3.0-or-later.
+
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
+
+/// Allocation tracker with total memory limit.
+#[derive(Debug, Clone)]
+pub struct AllocTracker {
+    inner: Arc<AllocTrackerInner>,
+}
+
+#[derive(Debug)]
+struct AllocTrackerInner {
+    bytes_left: AtomicUsize,
+}
+
+impl AllocTracker {
+    /// Creates a memory allocation tracker with allowed allocation limit.
+    pub fn with_limit(bytes_left: usize) -> Self {
+        Self { inner: Arc::new(AllocTrackerInner { bytes_left: AtomicUsize::new(bytes_left) }) }
+    }
+
+    /// Records an allocation of `count` number of `T`, and returns handle of the record.
+    ///
+    /// Returns an error if the allocation exceeds the current limit.
+    pub fn alloc<T>(&self, count: usize) -> Result<AllocHandle, crate::grid::OutOfMemory> {
+        let bytes = count.saturating_mul(std::mem::size_of::<T>());
+        let result = self.inner.bytes_left.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |bytes_left| bytes_left.checked_sub(bytes));
+
+        match result {
+            Ok(_prev) => {
+                crate::tracing::trace!(bytes, left = prev - bytes, "Created allocation handle");
+                Ok(AllocHandle { bytes, inner: Arc::clone(&self.inner) })
+            }
+            Err(_left) => {
+                crate::tracing::trace!(bytes, left, "Allocation failed");
+                Err(crate::grid::OutOfMemory::new(bytes))
+            }
+        }
+    }
+
+    /// Expands the current limit by `by_bytes` bytes.
+    pub fn expand_limit(&self, by_bytes: usize) {
+        self.inner.bytes_left.fetch_add(by_bytes, Ordering::Relaxed);
+    }
+
+    /// Shrinks the current limit by `by_bytes` bytes.
+    ///
+    /// Returns an error if the total amount of current allocation doesn't allow shrinking the
+    /// limit.
+    pub fn shrink_limit(&self, by_bytes: usize) -> Result<(), crate::grid::OutOfMemory> {
+        let result = self.inner.bytes_left.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |bytes_left| bytes_left.checked_sub(by_bytes));
+
+        if result.is_ok() { Ok(()) } else { Err(crate::grid::OutOfMemory::new(by_bytes)) }
+    }
+}
+
+/// Allocation handle.
+#[derive(Debug)]
+pub struct AllocHandle {
+    bytes: usize,
+    inner: Arc<AllocTrackerInner>,
+}
+
+impl Drop for AllocHandle {
+    fn drop(&mut self) {
+        let bytes = self.bytes;
+        let _prev = self.inner.bytes_left.fetch_add(bytes, Ordering::Relaxed);
+        crate::tracing::trace!(bytes, left = prev + bytes, "Released allocation handle");
+        self.bytes = 0;
+    }
+}
+
+impl AllocHandle {
+    /// Returns the tracker the handle belongs to.
+    pub fn tracker(&self) -> AllocTracker {
+        AllocTracker { inner: Arc::clone(&self.inner) }
+    }
+}

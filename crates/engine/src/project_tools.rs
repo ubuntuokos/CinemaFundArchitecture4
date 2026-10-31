@@ -403,7 +403,7 @@ fn has_audio_selection(s: &Session) -> std::result::Result<(), String> {
         Err("select a clip with audio".into())
     }
 }
-fn is_offline(s: &Session, id: ItemId) -> bool {
+pub(crate) fn is_offline(s: &Session, id: ItemId) -> bool {
     media_of(&s.project, id).is_some_and(|(mid, m)| m.offline || s.media.offline_status(mid).is_some())
 }
 fn has_offline_selection(s: &Session) -> std::result::Result<(), String> {
@@ -679,6 +679,7 @@ fn new_from_template(s: &mut Session, p: &Value) -> Result<Value> {
     proj.root.name = name;
     s.project = std::sync::Arc::new(proj);
     s.history = Default::default();
+    s.voiceover.abandon();
     s.history.limit = 200;
     s.state = Session::default().state;
     s.state.active_sequence = s.project.sequences().next().map(|i| i.id);

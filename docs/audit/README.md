@@ -3,6 +3,8 @@
 A projekt célja és prioritásai: [`VISION.md`](../../VISION.md). Ha az alábbiak bármelyike
 ellentmond neki, a `VISION.md` az irányadó.
 
+PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordination.md).
+
 > **Fontos:** a dokumentumok és a hozzájuk tartozó kód (szkriptek, Qt6-héj, Qt6-híd, csomagolás,
 > tesztek) 2026-10-24 óta a `main`-ben vannak: a #3 … #33 PR-lánc a #35-tel került be
 > (merge commit `6889664`). A régi PR-ok lezárva, az águk megmaradt.
@@ -14,9 +16,13 @@ ellentmond neki, a `VISION.md` az irányadó.
 |---|---|
 | [F9 kiadási döntés](F9-RELEASE-DECISION-2026-10-23.md) + [`f9-release-readiness.json`](f9-release-readiness.json) | **Összesítő:** minden kapu állapota (PASS/OPEN), PR-onként. Kiadás: HOLD |
 | [ADR F8 – Qt6 / Rust motor](../adr/ADR-F8-QT6-RUST-ENGINE-2026-10-23.md) | A Qt6-felület architektúrája és 7 lépéses átállási terve |
+| [OpenTimelineIO integrációs terv](../plans/OTIO-INTEGRATION-2026-10-24.md) | Jóváhagyva: a meglévő Rust OTIO-kód fejlesztése 6 fázisban, a hivatalos `opentimelineio` csomag tesztorákulumként |
+| [Feliratozó terv FINAL 1.2](../plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md) | Jóváhagyva (2026-10-30): a [FINAL 1.1](../plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.1.md) és a CFA3-összevetés egyesítése a meglévő `cfa4-captions`/`cfa4-project` kódra építve; a D1–D4 tulajdonosi döntések (2026-10-30) beépítve |
 | [ADR 0003 – ASWF és GPL-3-as források](../adr/ADR-0003-aswf-and-conversion-sources.md) | Jóváhagyott terv: ASWF-projektek, a HandBrake cseréje, zárt bővítmények, gyártónkénti kódolás, A0–A7 szakaszok |
+| [ADR 0005 – Médiahátterek](../adr/ADR-0005-media-backends.md) | A saját Rust-motor az alap; FFmpeg (≥ 9.0.2) és a GStreamer (alapból az Ubuntué, újabb verzióhoz elkülönített CFA4-futtatókörnyezet) kiegészítő háttér, automatikus útválasztóval (ADR 0004, `cfa4-route`); később további motorok |
 | [ADR 0002 – GStreamer](../adr/ADR-0002-gstreamer-backend.md) | GStreamer mint kiegészítő háttérmotor (a saját Rust motor marad az alap), 6 lépéses terv |
 | [Kdenlive-paritás](../kdenlive-parity.md) | A Kdenlive 26.08 képességei a CFA4-gyel összevetve, a Kdenlive-kód átvételének szabályai, K1–K35 teendők, MI-döntések és a 2026-10-25-i tulajdonosi döntések |
+| [AI-fejlesztési infrastruktúra – F0-audit](AI-ORCHESTRATION-F0-2026-10-30.md) | CFA4-DEV-AI-ORCHESTRATION-001 (FINAL 1.0 + 1.1, [terv](../development/ai-orchestration/README.md)): baseline, gap-elemzés TC-01–15 / AC-01–14, AIQT 1.0.6-összevetés, incidensek. F1-től nincs engedélyezve |
 
 ## Fázisok
 

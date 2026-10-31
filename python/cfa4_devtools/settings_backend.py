@@ -250,6 +250,7 @@ class Device:
     pci_device: int
     driver: str
     node: str
+    name: str = ""
 
     @property
     def pci_id(self) -> str:
@@ -280,7 +281,8 @@ class Hardware:
 
         devices = tuple(
             Device(_str(d.get("kind"), "gpu"), _str(d.get("vendor"), "other"), ident(d.get("pci_vendor")),
-                   ident(d.get("pci_device")), _str(d.get("driver")), _str(d.get("node")))
+                   ident(d.get("pci_device")), _str(d.get("driver")), _str(d.get("node")),
+                   _str(d.get("name")))
             for d in inv.get("devices") or [] if isinstance(d, dict)
         )
         plans = []
@@ -373,7 +375,15 @@ def pci_name(vendor: int, device: int, paths: tuple[Path, ...] = PCI_IDS_PATHS) 
     return None
 
 
-SKIP_REASONS = {  # cfa4_accel::Skip
+SKIP_REASONS = {  # cfa4_route::Reason
+    "no_device": "no suitable device",
+    "not_implemented": "not implemented yet",
+    "not_registered": "not in this build",
+    "not_preferred": "left out by the preference",
+    "vendor_locked": "vendor-locked backends are switched off",
+    "disabled": "switched off in the settings",
+    "failed": "failed while running",
+    # the reports of the earlier cfa4_accel backend
     "noDevice": "no suitable device",
     "notImplemented": "not implemented yet",
     "excludedByPreference": "left out by the workload's preference",
@@ -381,6 +391,12 @@ SKIP_REASONS = {  # cfa4_accel::Skip
 }
 
 WORKLOAD_TITLES = {
+    # cfa4_route::Family
+    "display": "Preview, compositing and effects",
+    "codec_decode": "Video decoding",
+    "codec_encode": "Video encoding",
+    "ai": "Local AI (speech, voices)",
+    "compute": "General compute",
     "composite": "Compositing and effects",
     "videoDecode": "Video decoding",
     "videoEncode": "Video encoding",

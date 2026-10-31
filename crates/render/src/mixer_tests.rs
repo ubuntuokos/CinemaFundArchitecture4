@@ -563,6 +563,32 @@ fn a_51_source_on_a_stereo_track_folds_down_instead_of_dropping_centre_and_surro
 }
 
 #[test]
+fn a_71_source_folds_to_51_instead_of_dropping_centre_and_rear_surrounds() {
+    // L R C LFE Lb Rb Ls Rs (the decoders' WAV order: backs before sides) = 0.1 … 0.8; the backs
+    // join the side surrounds at -3 dB
+    let mut r = Rig::with_channels(&[chan_dc], 8);
+    let k = std::f32::consts::FRAC_1_SQRT_2;
+    let (ls, rs) = (0.7 + k * 0.5, 0.8 + k * 0.6);
+    // stereo track, stereo Mix: BS.775 fold of the 5.1
+    let st = mix_all(&r, 0, 256);
+    assert_eq!(st.len(), 2);
+    assert!(close(st[0][9], 0.1 + k * 0.3 + k * ls, 1e-6) && close(st[1][9], 0.2 + k * 0.3 + k * rs, 1e-6), "{} / {}", st[0][9], st[1][9]);
+    // 5.1 track, 5.1 Mix: the folded six channels
+    r.track(0).channels = AudioChannels::Surround51;
+    set_master_51(&mut r);
+    let m = mix_all(&r, 0, 256);
+    for (c, want) in [0.1, 0.2, 0.3, 0.4, ls, rs].into_iter().enumerate() {
+        assert!(close(m[c][17], want, 1e-6), "channel {c} = {}", m[c][17]);
+    }
+    // a channel pick still plays exactly the picked channels
+    r.track(0).channels = AudioChannels::Stereo;
+    r.p.sequence_mut(r.seq).unwrap().settings.audio_master = AudioChannels::Stereo;
+    r.track(0).items[0].source_channels = vec![6, 7];
+    let st = mix_all(&r, 0, 256);
+    assert!(close(st[0][9], 0.7, 1e-6) && close(st[1][9], 0.8, 1e-6));
+}
+
+#[test]
 fn stereo_track_through_a_51_submix_into_a_stereo_mix() {
     let mut r = Rig::new(&[chan_dc]);
     let sub = r.add_submix("5.1 bus");

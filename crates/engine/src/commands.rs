@@ -1140,6 +1140,7 @@ fn build() -> Vec<CommandSpec> {
             let name = str_p(p, "name").unwrap_or("Untitled").to_string();
             s.project = std::sync::Arc::new(cfa4_project::Project::new(&name));
             s.history = Default::default();
+            s.voiceover.abandon();
             s.history.limit = 200;
             s.state = crate::Session::default().state;
             if s.path.take().is_some() {
@@ -1154,6 +1155,7 @@ fn build() -> Vec<CommandSpec> {
             let (p, seq) = crate::demo::demo_project(&s.media);
             s.project = std::sync::Arc::new(p);
             s.history = Default::default();
+            s.voiceover.abandon();
             s.history.limit = 200;
             s.state = crate::Session::default().state;
             s.state.active_sequence = Some(seq);
@@ -1601,7 +1603,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -1741,6 +1743,7 @@ fn build() -> Vec<CommandSpec> {
         cmd!("edit.deselectAll", "Deselect All", ["Edit"], Some("Cmd+Shift+A"), "{}", always, |s, _| {
             s.state.selection.clear();
             s.state.caption_selection.clear();
+            s.state.transition_selection.clear();
             s.state.gap_selection = None;
             Ok(Value::Null)
         }),
@@ -2123,7 +2126,7 @@ fn build() -> Vec<CommandSpec> {
             "Edit Transition Settings",
             [],
             None,
-            r#"{"transition":id,"params":{param:value}?,"reverse":bool?,"reset":bool?,"duration":ticks?|"frames":n?,"align":"center"|"start"|"end"?|"start":ticks?,"merge":bool?,"begin":bool?}"#,
+            r#"{"transition":id,"params":{param:value}?,"reverse":bool?,"reset":bool?,"duration":ticks?|"frames":n?|"timecode":"hh:mm:ss:ff"?,"align":"center"|"start"|"end"?|"start":ticks?|"drag":{"edge":"in"|"out"|null,"delta":ticks,"start":ticks,"duration":ticks}?,"merge":bool?,"begin":bool?}"#,
             has_seq,
             set_transition
         ),
@@ -2570,9 +2573,22 @@ fn build() -> Vec<CommandSpec> {
             Ok(json!({"time": s.state.source_playhead.0}))
         }),
         query!("source.inspect", "Inspect Source Monitor", "{}", |s, _| {
-            let Some(item) = s.state.source_item else { return Ok(json!({"item": null})) };
+            // the Source panel menu's recently opened clips (#313)
+            let recent: Vec<Value> = s.state.source_history.iter().filter_map(|i| s.project.item(*i).map(|it| json!({"item": i.0, "name": it.name}))).collect();
+            let Some(item) = s.state.source_item else { return Ok(json!({"item": null, "recent": recent})) };
             let v = crate::clip_ops::source_view(s, item).ok_or_else(|| bad("source.inspect", "the source item is gone"))?;
-            Ok(v.to_json(s.state.source_playhead))
+            let mut out = v.to_json(s.state.source_playhead);
+            // what a drag from the picture or the waveform can carry to the Timeline
+            let media = s.project.item(v.media);
+            let range = v.selected_range();
+            if let Some(o) = out.as_object_mut() {
+                o.insert("name".into(), json!(s.project.item(item).map(|i| i.name.clone())));
+                o.insert("hasVideo".into(), json!(media.is_some_and(|m| m.has_video())));
+                o.insert("hasAudio".into(), json!(media.is_some_and(|m| m.has_audio())));
+                o.insert("selected".into(), json!({"start": range.start.0, "duration": range.duration.0}));
+                o.insert("recent".into(), json!(recent));
+            }
+            Ok(out)
         }),
         cmd!("source.insert", "Insert", ["Clip"], Some(","), "{}", has_source, |s, _| edit_at_source(s, true)),
         cmd!("source.overwrite", "Overwrite", ["Clip"], Some("."), "{}", has_source, |s, _| edit_at_source(s, false)),
@@ -3014,6 +3030,14 @@ fn build() -> Vec<CommandSpec> {
             run: select_effect,
             journal: false,
         },
+        query!("transitions.inspect", "Inspect Transition", r#"{"transition":id? (default: the first selected transition)}"#, |s, p| inspect_transition(s, p)),
+        query!("effects.inspect", "Inspect Clip Effects", r#"{"clip":id? (default: the first selected clip)}"#, |s, p| inspect_effects(s, p)),
+        query!(
+            "effects.graph",
+            "Graph Effect Parameter",
+            r#"{"clip":id,"effect":index|id,"param":str,"mask":n?,"samples":n? (8..2000, default 200)}"#,
+            |s, p| graph_param(s, p)
+        ),
         cmd!(
             "effects.setParam",
             "Set Effect Parameter",
@@ -3395,8 +3419,12 @@ fn build() -> Vec<CommandSpec> {
                 command_specs()
                     .iter()
                     .map(|c| {
-                        let all: Vec<&str> = s.shortcuts.for_command(c.id).iter().map(|b| b.keys.as_str()).collect();
-                        json!({"id": c.id, "label": c.label, "menu": c.menu, "shortcut": s.shortcuts.primary(c.id), "shortcuts": all, "defaultShortcut": c.shortcut, "params": c.params, "enabled": (c.enabled)(s).is_ok()})
+                        let bindings = s.shortcuts.for_command(c.id);
+                        let all: Vec<&str> = bindings.iter().map(|b| b.keys.as_str()).collect();
+                        // bindings that only apply with one panel focused (History ▸ Left = Undo):
+                        // a frontend without panel-scoped dispatch must not bind them window-wide
+                        let panel: Vec<Value> = bindings.iter().filter_map(|b| b.panel.as_ref().map(|p| json!({"keys": b.keys, "panel": p}))).collect();
+                        json!({"id": c.id, "label": c.label, "menu": c.menu, "shortcut": s.shortcuts.primary(c.id), "shortcuts": all, "panelShortcuts": panel, "defaultShortcut": c.shortcut, "params": c.params, "enabled": (c.enabled)(s).is_ok()})
                     })
                     .collect(),
             ))
@@ -3433,12 +3461,19 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::proxies::commands());
     v.extend(crate::project_manager::commands());
     v.extend(crate::masks::commands());
+    v.extend(crate::program_overlay::commands());
+    v.extend(crate::eyedropper::commands());
+    v.extend(crate::fx_editor::commands());
     v.extend(crate::presets::commands());
     v.extend(crate::export_tools::commands());
     v.extend(crate::transcript::commands());
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
+    v.extend(crate::beat_markers::commands());
+    v.extend(crate::social::commands());
+    v.extend(crate::delivery_check::commands());
+    v.extend(crate::variants::commands());
     v.extend(crate::voiceover::commands());
     v.extend(crate::narration::commands());
     v.extend(crate::keyboard::commands());
@@ -3892,6 +3927,273 @@ fn list_effects(p: &Value) -> Value {
     Value::Array(out)
 }
 
+/// A parameter value as the JSON `effects.setParam` takes back: numbers, `[x, y]` points (an
+/// automatic coordinate is `null`), `[r, g, b, a]` colours, booleans, choice indexes, text, curves.
+fn param_value_json(v: &ParamValue) -> Value {
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    match v {
+        ParamValue::Float(x) => num(*x),
+        ParamValue::Vec2(p) => json!([num(p.x), num(p.y)]),
+        ParamValue::Color(c) => json!(c),
+        ParamValue::Bool(b) => json!(b),
+        ParamValue::Choice(i) => json!(i),
+        ParamValue::Text(t) => json!(t),
+        ParamValue::Curve(c) => json!(c),
+        ParamValue::Path(_) => serde_json::to_value(v).unwrap_or_default(),
+    }
+}
+
+/// The interpolation name `effects.setInterpolation` takes.
+fn interpolation_id(i: cfa4_project::Interpolation) -> &'static str {
+    use cfa4_project::Interpolation as I;
+    match i {
+        I::Linear => "linear",
+        I::Hold => "hold",
+        I::Bezier => "bezier",
+        I::AutoBezier => "autoBezier",
+        I::ContinuousBezier => "continuousBezier",
+        I::EaseIn => "easeIn",
+        I::EaseOut => "easeOut",
+    }
+}
+
+/// Timeline time at which `it` shows media time `m` (the inverse of `moving_source_time_at`),
+/// for drawing keyframes; `None` for a frame hold or a zero speed.
+pub(crate) fn timeline_time_of(it: &cfa4_project::TrackItem, m: Tick) -> Option<Tick> {
+    let speed = it.speed.abs();
+    if it.frame_hold.is_some() || !speed.is_finite() || speed <= 0.0 {
+        return None;
+    }
+    let rel = if it.reverse {
+        let last = it.source_in.0 as f64 + (it.duration.0 as f64 * speed).round() - 1.0;
+        (last - m.0 as f64) / speed
+    } else {
+        m.0.saturating_sub(it.source_in.0) as f64 / speed
+    };
+    let t = it.start.0 as f64 + rel.round();
+    (t.is_finite() && t.abs() < i64::MAX as f64).then_some(Tick(t as i64))
+}
+
+/// `effects.inspect`: a clip's effects with their parameter definitions, static values, the value
+/// at the playhead and the keyframes, in the shapes `effects.setParam` / `effects.setKeyframe` take.
+fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let kind_of = |c: ClipId| q.find_item(c).and_then(|(tid, _)| q.track(tid)).map(|t| t.kind);
+    // as egui's panel: the first selected video clip, else the first selected clip
+    let c = match clip_p(p, "clip") {
+        Some(c) => c,
+        None => s
+            .state
+            .selection
+            .iter()
+            .copied()
+            .find(|c| kind_of(*c) == Some(TrackKind::Video))
+            .or_else(|| s.state.selection.first().copied())
+            .ok_or_else(|| bad("effects.inspect", "no clip selected"))?,
+    };
+    let (tid, it) = q.find_item(c).ok_or_else(|| bad("effects.inspect", "no such clip in the active sequence"))?;
+    let kind = q.track(tid).map_or(TrackKind::Video, |t| t.kind);
+    // the audio linked to a video clip, shown under it when that audio is selected too or linked
+    // selection is on (so clip audio effects stay in reach on A/V pairs)
+    let linked_audio = match (kind, it.link) {
+        (TrackKind::Video, Some(link)) => s
+            .state
+            .selection
+            .iter()
+            .copied()
+            .find(|a| kind_of(*a) == Some(TrackKind::Audio) && q.find_item(*a).is_some_and(|(_, ai)| ai.link == Some(link)))
+            .or_else(|| {
+                s.state.linked_selection.then(|| q.audio_tracks.iter().find_map(|t| t.items.iter().find(|i| i.link == Some(link)).map(|i| i.id))).flatten()
+            }),
+        _ => None,
+    };
+    let selected_effect = s.state.selected_effect.as_ref().filter(|e| e.clip == c).and_then(|e| e.index(&it.effects));
+    let ph = s.playhead();
+    let inside = ph >= it.start && ph < it.end();
+    let at = it.effect_time_at(ph.clamp(it.start, (it.end() - Tick(1)).max(it.start)));
+    let effects: Vec<Value> = it
+        .effects
+        .iter()
+        .enumerate()
+        .map(|(index, e)| {
+            let def = e.def();
+            let params: Vec<Value> = def.map(|d| d.params.iter().map(|pd| param_state_json(s, it, at, pd, e.params.get(pd.id), &e.effect)).collect()).unwrap_or_default();
+            // masks of a maskable effect (video effects and Opacity, not Motion or graphic layers)
+            let maskable = def
+                .is_some_and(|d| d.kind == cfa4_project::EffectKind::Video && (!d.intrinsic || e.effect == "opacity") && !cfa4_project::graphic::is_layer(e));
+            let mask_list: Vec<Value> = e
+                .masks
+                .iter()
+                .enumerate()
+                .map(|(k, m)| {
+                    let target = crate::masks::MaskSel { clip: c, effect: index, mask: k };
+                    let path = m.path_at(at);
+                    let shape = if path.vertices.iter().all(|v| v.is_corner()) {
+                        "polygon"
+                    } else if path.len() == 4 {
+                        "ellipse"
+                    } else {
+                        "bezier"
+                    };
+                    let job = s.mask_jobs.iter().find(|j| j.target == target).map(|j| j.job);
+                    let progress = job.and_then(|id| s.jobs.iter().find(|j| j.id == id)).map(|j| {
+                        use std::sync::atomic::Ordering::Relaxed;
+                        json!([j.progress.done.load(Relaxed), j.progress.total.load(Relaxed)])
+                    });
+                    json!({
+                        "mask": k,
+                        "name": m.name,
+                        "mode": m.mode.label(),
+                        "inverted": m.inverted,
+                        "trackMethod": m.track_method.label(),
+                        "shape": shape,
+                        "selected": s.state.selected_mask == Some(target),
+                        "trackJob": job,
+                        "trackProgress": progress,
+                        "params": cfa4_project::mask::mask_param_defs().iter().map(|pd| param_state_json(s, it, at, pd, m.param(pd.id), "mask")).collect::<Vec<_>>(),
+                    })
+                })
+                .collect();
+            json!({
+                "index": index,
+                "effect": e.effect,
+                "name": def.map(|d| d.name).unwrap_or(e.effect.as_str()),
+                "enabled": e.enabled,
+                "intrinsic": def.is_some_and(|d| d.intrinsic),
+                "selected": selected_effect == Some(index),
+                "masks": e.masks.len(),
+                "maskable": maskable,
+                "maskList": mask_list,
+                "params": params,
+            })
+        })
+        .collect();
+    Ok(json!({
+        "clip": c.0,
+        "name": it.name,
+        "kind": if kind == TrackKind::Audio { "audio" } else { "video" },
+        "linkedAudio": linked_audio.map(|a| a.0),
+        "sequenceName": s.state.active_sequence.and_then(|id| s.project.item(id)).map(|i| i.name.clone()).unwrap_or_default(),
+        "frame": q.settings.frame_rate.frame_duration().0,
+        "dropFrame": q.settings.drop_frame,
+        "start": it.start.0,
+        "end": it.end().0,
+        "sourceIn": it.source_in.0,
+        "speed": it.speed,
+        "reverse": it.reverse,
+        "playhead": ph.0,
+        "playheadInside": inside,
+        "mediaTimeAtPlayhead": at.0,
+        "effects": effects,
+    }))
+}
+
+/// `effects.graph`: an animated scalar or point parameter sampled evenly across its clip (`values`:
+/// one `[x]` or `[x, y]` per sample, `null` where a value is not finite), for Effect Controls'
+/// value and velocity graphs; `seconds` is the clip's media length the samples span.
+fn graph_param(s: &Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "effects.graph";
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let c = clip_p(p, "clip").ok_or_else(|| bad(CMD, "need `clip`"))?;
+    let (_, it) = q.find_item(c).ok_or_else(|| bad(CMD, "no such clip in the active sequence"))?;
+    let e = match p.get("effect") {
+        Some(Value::Number(n)) => n.as_u64().and_then(|i| usize::try_from(i).ok()).and_then(|i| it.effects.get(i)),
+        Some(Value::String(id)) => it.effects.iter().find(|e| &e.effect == id),
+        _ => None,
+    }
+    .ok_or_else(|| bad(CMD, "no such effect on clip"))?;
+    let pid = str_p(p, "param").ok_or_else(|| bad(CMD, "need `param`"))?;
+    let prm = match p.get("mask").and_then(Value::as_u64) {
+        Some(m) => usize::try_from(m).ok().and_then(|m| e.masks.get(m)).and_then(|m| m.param(pid)),
+        None => e.params.get(pid),
+    }
+    .ok_or_else(|| bad(CMD, "no such param"))?;
+    let n = p.get("samples").and_then(Value::as_u64).unwrap_or(200).clamp(8, 2000) as usize;
+    let speed = it.speed.abs();
+    let speed = if speed.is_finite() { speed.max(1e-6) } else { 1.0 };
+    let span = it.duration.0.max(1) as f64 * speed;
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    // evenly across the clip in timeline order, through the clip's own timeline-to-effect-time
+    // mapping (a reversed clip's curve runs backwards like its keyframes and its picture)
+    let last = it.end().0.saturating_sub(1).max(it.start.0);
+    let values: Vec<Value> = (0..=n)
+        .map(|i| {
+            let offset = (i as f64 / n as f64 * it.duration.0.max(0) as f64) as i64;
+            let t = Tick(it.start.0.saturating_add(offset).min(last));
+            match prm.value_at(it.effect_time_at(t)) {
+                ParamValue::Float(x) => json!([num(x)]),
+                ParamValue::Vec2(v) => json!([num(v.x), num(v.y)]),
+                _ => json!([]),
+            }
+        })
+        .collect();
+    Ok(json!({"values": values, "seconds": span / cfa4_time::TICKS_PER_SECOND as f64}))
+}
+
+/// One parameter as `effects.inspect` lists it: its definition, static value, the value at media
+/// time `at`, and the keyframes in media and timeline time. A parameter the effect has not stored
+/// yet reads as its default.
+fn param_state_json(
+    s: &Session,
+    it: &cfa4_project::TrackItem,
+    at: Tick,
+    pd: &cfa4_project::ParamDef,
+    prm: Option<&cfa4_project::Param>,
+    effect: &str,
+) -> Value {
+    let mut j = param_info(pd);
+    // where an automatic (null) coordinate of a point is, so an editor can show it and keep it
+    // when only the other coordinate is edited
+    if matches!(pd.kind, cfa4_project::ParamKind::Point) {
+        j["auto"] = auto_point_at(s, it, effect, pd.id).map_or(Value::Null, |(x, y)| json!([x, y]));
+    }
+    let fallback;
+    let prm = match prm {
+        Some(prm) => prm,
+        None => {
+            fallback = cfa4_project::Param::new(pd.default.clone());
+            &fallback
+        }
+    };
+    j["value"] = param_value_json(&prm.value);
+    j["valueAtPlayhead"] = param_value_json(&prm.value_at(at));
+    j["animated"] = json!(prm.is_animated());
+    // a LUT reference reads as the LUT's name
+    if let cfa4_project::ParamValue::Text(spec) = &prm.value
+        && pd.id.ends_with("_lut")
+    {
+        j["display"] = json!(cfa4_render::luts::label(Some(&s.project), spec));
+    }
+    j["keyframes"] = Value::Array(
+        prm.keyframes
+            .iter()
+            .map(|k| {
+                json!({
+                    "mediaTime": k.time.0,
+                    "time": timeline_time_of(it, k.time).map(|t| t.0),
+                    "value": param_value_json(&k.value),
+                    "interpolation": interpolation_id(k.interp),
+                    "inInfluence": k.in_influence,
+                    "outInfluence": k.out_influence,
+                })
+            })
+            .collect(),
+    );
+    j
+}
+
+/// Where the render puts an automatic point parameter: Motion's Position at the sequence frame's
+/// centre, other points at their effect's place in the clip's picture (its centre by default).
+fn auto_point_at(s: &Session, it: &cfa4_project::TrackItem, effect: &str, param: &str) -> Option<(f64, f64)> {
+    let q = s.active_sequence()?;
+    if effect == "motion" && param == "position" {
+        return Some((f64::from(q.settings.width) / 2.0, f64::from(q.settings.height) / 2.0));
+    }
+    let (w, h) = cfa4_render::source_size(&s.project, it.item).unwrap_or((q.settings.width, q.settings.height));
+    let (fx, fy) = cfa4_project::effect::auto_point(effect, param).unwrap_or((0.5, 0.5));
+    Some((f64::from(w) * fx, f64::from(h) * fy))
+}
+
 fn param_info(p: &cfa4_project::ParamDef) -> Value {
     use cfa4_project::ParamKind as K;
     let mut j = json!({"id": p.id, "label": p.label, "animatable": p.animatable, "default": serde_json::to_value(&p.default).unwrap_or_default()});
@@ -3900,9 +4202,12 @@ fn param_info(p: &cfa4_project::ParamDef) -> Value {
             j["options"] = json!(opts);
             "choice"
         }
-        K::Float { min, max, unit, .. } => {
+        K::Float { min, max, soft_min, soft_max, unit, decimals } => {
             j["min"] = json!(min);
             j["max"] = json!(max);
+            j["softMin"] = json!(soft_min);
+            j["softMax"] = json!(soft_max);
+            j["decimals"] = json!(decimals);
             j["unit"] = json!(unit);
             "float"
         }
@@ -4095,7 +4400,16 @@ fn set_transition(s: &mut Session, p: &Value) -> Result<Value> {
     let (lo, cut, hi) = edit::transitions::bounds(track, &cur).ok_or_else(|| bad(CMD, "the transition's clips are gone"))?;
     // times outside the clips it joins are refused before any frame arithmetic (hostile input)
     let room = Tick(hi.0.saturating_sub(lo.0));
-    let duration = match (p.get("frames").and_then(Value::as_i64), p.get("duration").and_then(Value::as_i64)) {
+    // a typed duration may be timecode (Effect Controls' field, Set Transition Duration)
+    let typed = match str_p(p, "timecode") {
+        Some(tc) => Some(parse_timecode(tc, rate, q.settings.drop_frame, 0).map_err(|e| bad(CMD, format!("timecode: {e:?}")))?),
+        None => None,
+    };
+    let frames = match (typed, p.get("frames").and_then(Value::as_i64)) {
+        (Some(_), Some(_)) => return Err(bad(CMD, "give `frames` or `timecode`, not both")),
+        (t, f) => t.or(f),
+    };
+    let duration = match (frames, p.get("duration").and_then(Value::as_i64)) {
         (Some(_), Some(_)) => return Err(bad(CMD, "give `duration` or `frames`, not both")),
         (Some(f), None) if (1..=10_000_000).contains(&f) && rate.tick_of(f) <= room => Some(rate.tick_of(f)),
         (None, Some(d)) if d > 0 && d <= room.0 => Some(rate.snap_nearest(Tick(d)).max(frame)),
@@ -4114,7 +4428,30 @@ fn set_transition(s: &mut Session, p: &Value) -> Result<Value> {
     if start.is_some() && align.is_some() {
         return Err(bad(CMD, "give `start` or `align`, not both"));
     }
-    let span = if duration.is_some() || align.is_some() || start.is_some() {
+    // a drag in a timeline: from where it began, by `delta`, as the Timeline's rules put it
+    let dragged = match p.get("drag") {
+        Some(d) => {
+            if duration.is_some() || align.is_some() || start.is_some() {
+                return Err(bad(CMD, "give `drag` alone, without `duration`, `frames`, `align` or `start`"));
+            }
+            let edge = match d.get("edge") {
+                None | Some(Value::Null) => None,
+                Some(Value::String(e)) if e == "in" => Some(Edge::In),
+                Some(Value::String(e)) if e == "out" => Some(Edge::Out),
+                Some(_) => return Err(bad(CMD, "`drag.edge` is \"in\", \"out\" or null (the middle)")),
+            };
+            let at = |k: &str| d.get(k).and_then(Value::as_i64);
+            let st = at("start").filter(|t| (lo.0..=hi.0).contains(t)).ok_or_else(|| bad(CMD, "`drag.start`: where the transition began, inside its clips"))?;
+            let du = at("duration").filter(|t| *t > 0 && *t <= room.0).ok_or_else(|| bad(CMD, "`drag.duration`: its duration when the drag began"))?;
+            let delta = Tick(at("delta").ok_or_else(|| bad(CMD, "need `drag.delta`"))?.clamp(-room.0, room.0));
+            let was = cfa4_project::Transition { start: Tick(st), duration: Tick(du), ..cur.clone() };
+            Some(edit::transitions::drag_span(track, &was, edge, rate.snap_nearest(delta), frame).ok_or_else(|| bad(CMD, "the transition's clips are gone"))?)
+        }
+        None => None,
+    };
+    let span = if let Some(span) = dragged {
+        Some(span)
+    } else if duration.is_some() || align.is_some() || start.is_some() {
         let d = duration.unwrap_or(cur.duration);
         let st = match start {
             Some(st) => st,
@@ -4165,6 +4502,64 @@ fn set_transition(s: &mut Session, p: &Value) -> Result<Value> {
         })
         .map(|(x, cut)| edit::transitions::alignment(&x, cut, frame).id());
     Ok(json!({"transition": id, "effect": cur.effect.effect, "reverse": cur.reverse, "start": st.0, "duration": d.0, "align": al}))
+}
+
+/// `transitions.inspect`: a transition for Effect Controls (egui's transition view): its settings
+/// with their definitions, Duration (`frames`, at most `maxFrames`), Alignment, Reverse, where it
+/// may be (`lo` .. `hi` over the `cut`) and the clips it joins (`a` outgoing, `b` incoming), for
+/// its own timeline.
+fn inspect_transition(s: &Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "transitions.inspect";
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let exists = |id: TransitionId| q.all_tracks().any(|t| t.transitions.iter().any(|x| x.id == id));
+    let id = match p.get("transition") {
+        Some(v) => TransitionId(v.as_u64().ok_or_else(|| bad(CMD, "`transition` is an id"))?),
+        None => s.state.transition_selection.iter().copied().find(|id| exists(*id)).ok_or_else(|| bad(CMD, "no transition selected"))?,
+    };
+    let (track, x) =
+        q.all_tracks().find_map(|tr| tr.transitions.iter().find(|x| x.id == id).map(|x| (tr, x))).ok_or_else(|| bad(CMD, format!("no transition {}", id.0)))?;
+    let (lo, cut, hi) = edit::transitions::bounds(track, x).ok_or_else(|| bad(CMD, "the transition's clips are gone"))?;
+    let rate = q.settings.frame_rate.sane();
+    let frame = rate.frame_duration();
+    let clip = |c: Option<ClipId>| c.and_then(|c| track.item(c)).map(|it| json!({"clip": it.id.0, "start": it.start.0, "end": it.end().0, "name": it.name}));
+    let def = x.effect.def();
+    let params: Vec<Value> = def
+        .map(|d| {
+            d.params
+                .iter()
+                .map(|pd| {
+                    let mut j = param_info(pd);
+                    j["value"] = param_value_json(x.effect.params.get(pd.id).map_or(&pd.default, |p| &p.value));
+                    j
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    Ok(json!({
+        "transition": id.0,
+        "effect": x.effect.effect,
+        "name": def.map_or(x.effect.effect.as_str(), |d| d.name),
+        "kind": if def.is_some_and(|d| d.kind == cfa4_project::EffectKind::AudioTransition) { "audio" } else { "video" },
+        "track": track.id.0,
+        "sequenceName": s.state.active_sequence.and_then(|i| s.project.item(i)).map(|i| i.name.clone()).unwrap_or_default(),
+        "frameSize": [q.settings.width, q.settings.height],
+        "frame": frame.0,
+        "dropFrame": q.settings.drop_frame,
+        "start": x.start.0,
+        "duration": x.duration.0,
+        "frames": rate.frame_at(x.duration).max(1),
+        "maxFrames": rate.frame_at(Tick(hi.0.saturating_sub(lo.0))).max(1),
+        "align": edit::transitions::alignment(x, cut, frame).id(),
+        "oneSided": x.from.is_none() || x.to.is_none(),
+        "reverse": x.reverse,
+        "lo": lo.0,
+        "cut": cut.0,
+        "hi": hi.0,
+        "a": clip(x.from),
+        "b": clip(x.to),
+        "playhead": s.playhead().0,
+        "params": params,
+    }))
 }
 
 fn apply_transition(s: &mut Session, p: &Value, kind: TrackKind) -> Result<Value> {
@@ -4283,11 +4678,11 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
             "items": t.items.iter().map(|i| json!({
                 "clip": i.id.0, "item": i.item.0, "name": i.name, "start": i.start.0, "duration": i.duration.0,
                 "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse,
-                "end": i.end().0, "endFrame": rate.frame_at(i.end()), "sourceOut": i.source_out().0, "gainDb": i.gain_db,
+                "end": i.end().0, "endFrame": rate.frame_at(i.end()), "sourceOut": i.source_out().0, "gainDb": i.gain_db, "audioStream": i.audio_stream,
                 "enabled": i.enabled, "link": i.link, "label": i.label.name(),
                 "effects": i.effects.iter().map(|e| json!({"effect": e.effect, "enabled": e.enabled, "masks": e.masks.len(), "params": e.params.iter().map(|(k, p)| (k.clone(), json!({"value": format!("{:?}", p.value), "keyframes": p.keyframes.len()}))).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
-            "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
+            "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "name": x.effect.def().map_or(x.effect.effect.as_str(), |d| d.name), "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
         })
     };
     // the frames export renders, a partial last frame included
@@ -4308,6 +4703,13 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         "selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>(),
         "transitionSelection": s.state.transition_selection.iter().map(|t| t.0).collect::<Vec<_>>(),
         "gapSelection": s.state.gap_selection.map(|g| json!({"track": g.track.0, "start": g.range.start.0, "end": g.range.end().0})),
+        // the active sequence's track targeting and source patching (the track header switches)
+        "targeting": if s.state.active_sequence == Some(id) {
+            let t = s.targeting();
+            json!({"targeted": t.targeted.iter().map(|x| x.0).collect::<Vec<_>>(), "videoDest": t.video_dest.map(|x| x.0), "audioDest": t.audio_dest.map(|x| x.0)})
+        } else {
+            Value::Null
+        },
     })
 }
 
@@ -4381,6 +4783,7 @@ fn install_project(s: &mut Session, proj: cfa4_project::Project, path: Option<St
     s.media.add_stored(&proj, path.as_deref());
     s.project = std::sync::Arc::new(proj);
     s.history = Default::default();
+    s.voiceover.abandon();
     s.history.limit = 200;
     s.state = crate::Session::default().state;
     s.state.active_sequence = first;

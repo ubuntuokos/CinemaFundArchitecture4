@@ -12,15 +12,19 @@
 
 pub mod aaf_omf;
 pub mod autosave;
+pub mod beat_markers;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
 pub mod credits;
+pub mod delivery_check;
 pub mod demo;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
+mod eyedropper;
+mod fx_editor;
 pub mod graphic_templates;
 pub mod graphics;
 pub mod interchange;
@@ -39,6 +43,7 @@ pub mod paste_media;
 pub mod perf;
 pub mod presets;
 pub mod previews;
+pub mod program_overlay;
 pub mod project_manager;
 pub mod project_panel;
 pub mod project_tools;
@@ -52,10 +57,12 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod social;
 pub mod source_monitor;
 pub mod sync;
 pub mod transcript;
 pub mod trim;
+pub mod variants;
 pub mod voiceover;
 
 use std::sync::Arc;
@@ -1222,9 +1229,13 @@ mod autosave_tests;
 #[cfg(test)]
 mod avi_import_tests;
 #[cfg(test)]
+mod beat_markers_tests;
+#[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
 mod color_tests;
+#[cfg(test)]
+mod effects_inspect_tests;
 #[cfg(test)]
 mod essential_sound_tests;
 #[cfg(test)]
@@ -1307,6 +1318,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod social_tests;
 #[cfg(test)]
 mod split_edit_ripple_trim_tests;
 #[cfg(test)]

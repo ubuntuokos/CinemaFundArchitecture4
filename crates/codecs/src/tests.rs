@@ -186,6 +186,35 @@ fn dnxhd_and_dnxhr_movs_decode() {
     }
 }
 
+/// GoPro CineForm in MOV, AVI and Matroska (ffmpeg's `cfhd` encoder): 4:2:2 10-bit, RGB and
+/// RGBA 12-bit decode to the source colour; RGBA keeps its alpha.
+#[test]
+fn cineform_in_mov_avi_and_mkv_decodes() {
+    for (name, pix, fmt) in [
+        ("orange_cfhd.mov", "yuv422p10le", "YUV 4:2:2 10-bit"),
+        ("orange_cfhd.avi", "yuv422p10le", "YUV 4:2:2 10-bit"),
+        ("orange_cfhd.mkv", "yuv422p10le", "YUV 4:2:2 10-bit"),
+        ("orange_cfhd_rgb.mov", "gbrp12le", "RGB 4:4:4 12-bit"),
+        ("orange_cfhd_rgba.mov", "gbrap12le", "RGBA 4:4:4:4 12-bit"),
+    ] {
+        let Some(b) = fixture(name, &["-f", "lavfi", "-i", "color=c=0xe08020:s=128x96:r=25:d=0.2", "-pix_fmt", pix, "-c:v", "cfhd"]) else { return };
+        let src = crate::open_bytes(name, b).unwrap();
+        let info = src.info().video.clone().unwrap();
+        assert_eq!(info.codec, "GoPro CineForm", "{name}");
+        if name.ends_with(".mov") {
+            assert_eq!(info.pixel_format, fmt, "{name}");
+            assert_eq!(info.has_alpha, pix.contains('a'), "{name}");
+        }
+        let f = src.video_frame(FrameRequest::full(Tick(TICKS_PER_SECOND / 10))).unwrap();
+        assert_eq!((f.width, f.height), (128, 96));
+        let px = f.to_rgba8();
+        let c = &px[(48 * 128 + 64) * 4..][..4];
+        for (got, want) in c.iter().zip([0xe0u8, 0x80, 0x20, 0xff]) {
+            assert!((*got as i32 - want as i32).abs() <= 3, "{name}: {c:?}");
+        }
+    }
+}
+
 /// Solid-colour Matroska fixtures: decoded frames must match the colour, audio must be a 1 kHz tone.
 fn check_mkv(name: &str, vcodec: &[&str], acodec: &[&str]) {
     let mut args: Vec<&str> =

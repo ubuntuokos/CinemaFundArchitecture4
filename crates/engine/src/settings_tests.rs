@@ -283,6 +283,22 @@ fn schema_command_describes_every_category() {
     assert_eq!(focus["value"], true);
     assert_eq!(focus["wired"], false);
 
+    // the page layout: groups, notes, buttons and frontend-drawn sections, in dialog order
+    let auto_save = updated_category(&mut s, "autoSave");
+    let rows = auto_save["rows"].as_array().unwrap();
+    assert_eq!((rows[0]["type"].clone(), rows[0]["title"].clone()), (json!("group"), json!("Local Projects")));
+    let inner = rows[0]["rows"].as_array().unwrap();
+    assert_eq!(inner[1]["field"]["key"], "autoSave.intervalMinutes");
+    assert_eq!((inner[1]["field"]["indent"].clone(), inner[1]["field"]["enabledBy"].clone()), (json!(true), json!("autoSave.enabled")));
+    let crash = rows[1]["rows"].as_array().unwrap();
+    assert!(crash.iter().any(|r| r["type"] == "note") && crash.iter().any(|r| r["type"] == "custom" && r["id"] == "autoSaveStatus"));
+    let cache = updated_category(&mut s, "mediaCache");
+    let files = cache["rows"][0]["rows"].as_array().unwrap();
+    assert!(files.iter().any(|r| r["type"] == "button" && r["command"] == "mediaCache.clean"));
+    assert_eq!(updated_category(&mut s, "appearance")["rows"][0], json!({"type": "custom", "id": "appearanceModes"}));
+    // Reset… puts the category's defaults back
+    assert_eq!(updated_category(&mut s, "timeline")["defaults"]["focusTimelineOnEdit"], false);
+
     let one = s.execute("prefs.schema", json!({"category": "trim"})).unwrap();
     assert_eq!(one["categories"].as_array().unwrap().len(), 1);
     assert!(s.execute("prefs.schema", json!({"category": "nope"})).is_err());
@@ -894,4 +910,8 @@ fn a_batch_applies_duration_units_before_their_values() {
     let r = s.execute("prefs.set", json!({"values": {"timeline.videoTransitionDuration": 0.5, "timeline.videoTransitionUnit": "seconds"}})).unwrap();
     assert_eq!(r["timeline"]["videoTransitionUnit"], "seconds");
     assert_eq!(r["timeline"]["videoTransitionDuration"], 0.5);
+}
+
+fn updated_category(s: &mut Session, id: &str) -> Value {
+    s.execute("prefs.schema", json!({"category": id})).unwrap()["categories"][0].clone()
 }

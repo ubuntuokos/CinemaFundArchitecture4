@@ -582,7 +582,7 @@ class SettingsDialog(QDialog):
         devices.setObjectName("settings.accelerators.devices")
         devices.setHorizontalHeaderLabels(["Type", "Device", "PCI ID", "Vendor", "Driver", "Node"])
         for row, d in enumerate(self.hardware.devices):
-            name = pci_name(d.pci_vendor, d.pci_device) or "Unknown device"
+            name = pci_name(d.pci_vendor, d.pci_device) or d.name or "Unknown device"
             for col, text in enumerate([d.kind.upper(), name, d.pci_id, d.vendor, d.driver or "—", d.node]):
                 devices.setItem(row, col, QTableWidgetItem(text))
         self._read_only(devices)
