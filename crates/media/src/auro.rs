@@ -140,14 +140,16 @@ impl AuroSource {
             let cs = at.div_euclid(CHUNK as i64) * CHUNK as i64;
             let chunk = self.chunk(c, k, cs)?;
             let from = usize::try_from(at - cs).unwrap_or(0);
-            let to = usize::try_from(end.min(cs + CHUNK as i64) - cs).unwrap_or(0);
+            // saturating: a request at the end of the i64 range ends there, never wraps
+            let ce = cs.saturating_add(CHUNK as i64);
+            let to = usize::try_from(end.min(ce) - cs).unwrap_or(0);
             for (o, ch) in restored.iter_mut().zip(chunk.iter()) {
                 // a short chunk (a damaged carrier) leaves silence, not a shift
                 let want = o.len() + to.saturating_sub(from);
                 o.extend(ch.iter().skip(from).take(to.saturating_sub(from)));
                 o.resize(want, 0);
             }
-            at = cs + CHUNK as i64;
+            at = ce;
         }
         let src: Vec<&[i32]> = restored.iter().map(Vec::as_slice).collect();
         let mut out = AudioBuffer::silence(sample_rate, out_ch, frames);
@@ -278,7 +280,7 @@ mod tests {
             let mut out = AudioBuffer::silence(sample_rate, self.planes.len(), frames);
             for (o, p) in out.channels.iter_mut().zip(&self.planes) {
                 for (k, v) in o.iter_mut().enumerate() {
-                    let at = ((start + k as i64) as f64 * ratio).round();
+                    let at = (start.saturating_add(k as i64) as f64 * ratio).round();
                     if at >= 0.0 {
                         *v = p.get(at as usize).copied().unwrap_or(0.0);
                     }
@@ -313,6 +315,19 @@ mod tests {
         }
         let reads = inner.reads.load(std::sync::atomic::Ordering::Relaxed) - before;
         assert!(reads <= 80 * 1024 / CHUNK + 1, "{reads} carrier reads for 81 requests");
+    }
+
+    /// Review of #324: requests at the ends of the sample range return silence, without
+    /// overflow and without looping back to the start.
+    #[test]
+    fn requests_at_the_ends_of_the_range_are_silence() {
+        let planes = carrier_51(4);
+        let src = wrap(Arc::new(Planes::new(planes.iter().map(|p| f32_from_pcm24(p)).collect(), "PCM")));
+        for (start, rate) in [(i64::MAX - 1, 48_000), (i64::MAX - CHUNK as i64, 48_000), (i64::MAX - 1, 44_100), (i64::MIN, 48_000), (i64::MIN, 96_000)] {
+            let buf = src.audio(start, 16, rate).unwrap();
+            assert_eq!((buf.channels.len(), buf.frames()), (10, 16), "{start} at {rate} Hz");
+            assert!(buf.channels.iter().flatten().all(|&v| v == 0.0), "{start} at {rate} Hz");
+        }
     }
 
     #[test]
