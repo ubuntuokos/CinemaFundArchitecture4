@@ -26,7 +26,7 @@ pub fn media_info(name: &str, video: bool, audio: bool, rate: FrameRate, secs: i
             hdr: None,
         }),
         audio_streams: audio
-            .then(|| cfa4_media::AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "aac".into(), bits_per_sample: None })
+            .then(|| cfa4_media::AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "aac".into(), bits_per_sample: None, speakers: Vec::new() })
             .into_iter()
             .collect(),
         container: "mp4".into(),

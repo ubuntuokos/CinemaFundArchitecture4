@@ -505,8 +505,13 @@ impl MpegSource {
             return None;
         }
         self.unsupported_audio = Some(why);
-        self.info.audio_streams =
-            vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: format!("{codec_name} (unsupported)"), bits_per_sample: None }];
+        self.info.audio_streams = vec![AudioStreamInfo {
+            sample_rate: 48_000,
+            channels: 2,
+            codec: format!("{codec_name} (unsupported)"),
+            bits_per_sample: None,
+            speakers: Vec::new(),
+        }];
         None
     }
 
@@ -647,7 +652,13 @@ impl MpegSource {
                 self.info.kind = MediaKind::AudioOnly;
             }
         }
-        self.info.audio_streams.push(AudioStreamInfo { sample_rate: rate.max(1), channels: channels.max(1) as u32, codec: codec_name, bits_per_sample: bits });
+        self.info.audio_streams.push(AudioStreamInfo {
+            sample_rate: rate.max(1),
+            channels: channels.max(1) as u32,
+            codec: codec_name,
+            bits_per_sample: bits,
+            speakers: Vec::new(),
+        });
         Some(AudioTrack {
             stream: ai,
             codec,

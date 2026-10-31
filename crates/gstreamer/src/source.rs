@@ -76,6 +76,7 @@ impl GstSource {
                         channels: if (1..=MAX_CHANNELS).contains(channels) { *channels } else { 2 },
                         codec: format!("{} (GStreamer)", s.codec.as_deref().unwrap_or("audio")),
                         bits_per_sample: None,
+                        speakers: Vec::new(),
                     });
                 }
                 _ => {}

@@ -565,7 +565,7 @@ fn audio_stream_info(t: &cfa4_isobmff::Track, bytes: &crate::Src) -> Option<Audi
         }
         c => codec_label(c),
     };
-    Some(AudioStreamInfo { sample_rate: rate.max(1), channels: ch.max(1), codec, bits_per_sample: bits })
+    Some(AudioStreamInfo { sample_rate: rate.max(1), channels: ch.max(1), codec, bits_per_sample: bits, speakers: Vec::new() })
 }
 
 fn codec_label(c: &CodecConfig) -> String {

@@ -1093,3 +1093,18 @@ fn toggle_animation_creates_a_parameter_missing_from_an_older_instance() {
     let rot = it.effect("motion").unwrap().param("rotation").unwrap();
     assert!(rot.is_animated(), "the stopwatch is on");
 }
+
+/// #323: Modify ▸ Audio Channels gets the loudspeaker of each channel when the media knows its
+/// layout (an Auro-3D carrier's restored one), and none otherwise.
+#[test]
+fn audio_channels_dialog_names_the_loudspeakers() {
+    let mut s = demo();
+    let ocean = item_named(&s, "Ocean_Sunset.mp4");
+    s.execute("project.select", json!({"items": [ocean.0]})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "clip.audioChannels"})).unwrap();
+    assert_eq!(d["info"]["speakers"], json!([]), "{d}");
+    let a = std::sync::Arc::make_mut(&mut s.project).item_mut(ocean).unwrap().as_media_mut().unwrap().info.audio_streams.first_mut().unwrap();
+    a.speakers = vec!["L".into(), "R".into()];
+    let d = s.execute("dialog.defaults", json!({"command": "clip.audioChannels"})).unwrap();
+    assert_eq!(d["info"]["speakers"], json!(["L", "R"]), "{d}");
+}
