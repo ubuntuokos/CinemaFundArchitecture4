@@ -65,18 +65,20 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G3. 10-bit and 4:2:2 camera media needs hardware
 
-- **Have:** our H.264 decoder does 4:2:0 at 8 to 14 bits (High 10 bit-exact with ffmpeg).
-- **Missing:** H.264 High 4:2:2 / 4:4:4 (#161), interlaced field / MBAFF (#162), lossless (#163)
+- **Have:** our H.264 decoder does 4:2:0, 4:2:2 and 4:4:4 at 8 to 14 bits (High 10, High 4:2:2 and
+  High 4:4:4 Predictive bit-exact with ffmpeg, #161).
+- **Missing:** H.264 interlaced field / MBAFF (#162), lossless (#163), monochrome (#279)
   (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
 - **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). On macOS VideoToolbox decodes 10-bit
-  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them, and
-  there is no software fallback, so the clip fails. Premiere decodes them everywhere (and in
+  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them. Our
+  software decoders now cover progressive 4:2:2 / 4:4:4 H.264 (#161) and HEVC (#93), so only
+  interlaced and lossless H.264 still fail. Premiere decodes them everywhere (and in
   hardware on Apple silicon, Intel and NVIDIA Blackwell).
 - **Impact:** camera originals from most current cameras do not open on Windows or Linux.
-- **Estimate:** H.264 High 4:2:2 (chroma geometry, deblocking, transforms) 10–20 h;
-  HEVC Main 4:2:2 10 (RExt subset) 15–25 h. Doc: [codec-parity.md](codec-parity.md).
+- **Estimate:** H.264 interlaced (#162) 20–30 h, lossless (#163) 4–8 h; HEVC RExt tools (#167)
+  10–20 h. Doc: [codec-parity.md](codec-parity.md).
 
 ## G4. Crashes at start-up, and no test CI on pull requests
 
