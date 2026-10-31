@@ -170,7 +170,82 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     if dcp_content_kind(s).is_none() {
         return Err(ExportError::Unsupported(format!("unknown DCP content kind {:?}: choose one of {}", s.dcp_content_kind, DCP_CONTENT_KINDS.join(", "))));
     }
+    if dcp_language(s).is_none() {
+        return Err(ExportError::Unsupported(format!("DCP language {:?} is not an RFC 5646 tag such as en-US or hu-HU", s.dcp_language)));
+    }
     crate::dcp_iab::validate(s)
+}
+
+/// The DCP spoken language: `Some("")` when none is set, the tag (`en-US`, `hu`, `zh-Hans-CN`)
+/// when it has the RFC 5646 shape (a 2-3 letter primary language subtag, then 1-8 character
+/// alphanumeric subtags, at most 35 characters), `None` otherwise.
+pub fn dcp_language(s: &ExportSettings) -> Option<&str> {
+    let tag = s.dcp_language.trim();
+    if tag.is_empty() {
+        return Some("");
+    }
+    let mut parts = tag.split('-');
+    let primary = parts.next()?;
+    let ok = tag.len() <= 35
+        && (2..=3).contains(&primary.len())
+        && primary.bytes().all(|b| b.is_ascii_alphabetic())
+        && parts.all(|p| (1..=8).contains(&p.len()) && p.bytes().all(|b| b.is_ascii_alphanumeric()));
+    ok.then_some(tag)
+}
+
+/// Today's date (UTC) as the DCNC date field, `yyyymmdd`.
+pub fn dcp_isdcf_date() -> String {
+    let secs = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+    let t = Timestamp::from_unix(i64::try_from(secs).unwrap_or(0));
+    format!("{:04}{:02}{:02}", t.year, t.month, t.day)
+}
+
+/// The ISDCF content type code of a content kind (DCNC field 2).
+fn isdcf_kind(kind: &str) -> &'static str {
+    match kind {
+        "trailer" => "TLR",
+        "teaser" => "TSR",
+        "short" => "SHR",
+        "advertisement" => "ADV",
+        "test" => "TST",
+        "transitional" => "XSN",
+        "rating" => "RTG",
+        "policy" => "POL",
+        "psa" => "PSA",
+        _ => "FTR",
+    }
+}
+
+/// A Digital Cinema Naming Convention name for the package (ISDCF), e.g.
+/// `MyFilm_FTR-1_F_EN-XX_51_2K_20261031_SMPTE_OV`: the title (CamelCase, at most 14 letters and
+/// digits), content type and version, container (F/S/C), language and subtitles (`XX` = none),
+/// audio (`51`, `IAB` for an immersive DCP), resolution, date (`yyyymmdd`), SMPTE, original
+/// version. The territory-rating, studio and facility fields are left out.
+pub fn dcp_isdcf_name(s: &ExportSettings, title: &str, date: &str) -> String {
+    let mut short = String::new();
+    for word in title.split(|c: char| !c.is_alphanumeric()) {
+        let mut chars = word.chars().filter(|c| c.is_ascii_alphanumeric());
+        if let Some(first) = chars.next() {
+            short.push(first.to_ascii_uppercase());
+            short.extend(chars);
+        }
+    }
+    let short: String = short.chars().take(14).collect();
+    let short = if short.is_empty() { "Untitled".to_string() } else { short };
+    let kind = isdcf_kind(dcp_content_kind(s).unwrap_or("feature"));
+    let aspect = match DcpAspect::of(s) {
+        DcpAspect::Flat => "F",
+        DcpAspect::Scope => "S",
+        DcpAspect::Full => "C",
+    };
+    let lang = match dcp_language(s).and_then(|t| t.split('-').next()).filter(|p| !p.is_empty()) {
+        Some(p) => p.to_ascii_uppercase(),
+        None => "XX".into(),
+    };
+    let audio = if DcpImmersive::of(s) == DcpImmersive::Off { "51" } else { "IAB" };
+    let res = if DcpResolution::of(s) == DcpResolution::FourK { "4K" } else { "2K" };
+    let date: String = date.chars().filter(char::is_ascii_digit).take(8).collect();
+    format!("{short}_{kind}-1_{aspect}_{lang}-XX_{audio}_{res}_{date}_SMPTE_OV")
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -474,6 +549,8 @@ pub(crate) struct DcpMux {
     size: (u32, u32),
     /// The ST 429-16 active picture area: the fitted picture inside `size`.
     active: (u32, u32),
+    /// The RFC 5646 spoken language ("" = none).
+    language: String,
     issued: String,
     picture: Option<([u8; 16], String, MxfWriter<Out>)>,
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
@@ -491,9 +568,6 @@ fn ul_urn(ul: &[u8; 16]) -> String {
     let hex: Vec<String> = ul.chunks(4).map(|c| c.iter().map(|b| format!("{b:02x}")).collect()).collect();
     format!("urn:smpte:ul:{}", hex.join("."))
 }
-
-/// ST 429-2 channel configuration 1: 5.1 with HI / VI-N (`L R C LFE Ls Rs`, 6 or 8 channels).
-const CHANNEL_CONFIG_1: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0B, 0x04, 0x02, 0x02, 0x10, 0x03, 0x01, 0x01, 0x00];
 
 /// The ST 429-16 active picture area for a picture of `content` inside a `stored` container:
 /// clipped to the container and made even (5.4.2.13), the whole container when nothing is left.
@@ -534,17 +608,21 @@ impl DcpMux {
         let pic_name = format!("j2c_{}.mxf", uuid_text(&pic_id));
         let picture = Some((pic_id, pic_name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &pic_name))?, pc).map_err(io)?));
         let immersive = DcpImmersive::of(settings) != DcpImmersive::Off;
+        let language = dcp_language(settings).unwrap_or_default().to_string();
         // immersive audio: the main sound is always there, 16 channels, Configuration 4
         let sound = if s.audio || immersive {
             let id = uuid(&format!("{seed}|sound"));
             let mut sc = config("sound", id);
             let channels = if immersive { crate::dcp_iab::MAIN_SOUND_CHANNELS } else { 6 };
             sc.sound = vec![SoundDesc { sample_rate: 48_000, channels, bits: 24 }];
-            sc.channel_assignment = Some(if immersive { crate::dcp_iab::CHANNEL_CONFIG_4 } else { CHANNEL_CONFIG_1 });
-            if immersive {
-                let label_id = |sym: &str| uuid(&format!("{seed}|mca|{sym}"));
-                sc.mca = crate::dcp_iab::main_sound_mca(crate::dcp_iab::IabFallback::of(settings), &label_id);
-            }
+            // ST 429-2 configuration 4: the channels are named by MCA labels (ST 377-4, RDD 52)
+            sc.channel_assignment = Some(crate::dcp_iab::CHANNEL_CONFIG_4);
+            let label_id = |sym: &str| uuid(&format!("{seed}|mca|{sym}"));
+            sc.mca = if immersive {
+                crate::dcp_iab::main_sound_mca(crate::dcp_iab::IabFallback::of(settings), &language, &label_id)
+            } else {
+                crate::dcp_iab::mca_51(&language, &label_id)
+            };
             let name = format!("pcm_{}.mxf", uuid_text(&id));
             Some((id, name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &name))?, sc).map_err(io)?))
         } else {
@@ -575,6 +653,7 @@ impl DcpMux {
             rate: s.rate,
             size: (s.width, s.height),
             active: active_area(s.active, (s.width, s.height)),
+            language,
             issued,
             picture,
             sound,
@@ -704,6 +783,18 @@ impl DcpMux {
             x.push_str(&format!("          <Duration>{}</Duration>\n", self.frames));
             x.push_str(&format!("          <Hash>{}</Hash>\n", base64(&a.hash)));
         };
+        // first and last frame of composition (RDD 52; offsets as DCP-o-matic writes them)
+        x.push_str("        <MainMarkers>\n");
+        x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|markers", self.seed)))));
+        x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{0}</IntrinsicDuration>\n", self.frames));
+        x.push_str(&format!("          <EntryPoint>0</EntryPoint>\n          <Duration>{}</Duration>\n", self.frames));
+        x.push_str("          <MarkerList>\n");
+        for (label, offset) in [("FFOC", 1), ("LFOC", self.frames.saturating_sub(1).max(1))] {
+            x.push_str(&format!(
+                "            <Marker>\n              <Label>{label}</Label>\n              <Offset>{offset}</Offset>\n            </Marker>\n"
+            ));
+        }
+        x.push_str("          </MarkerList>\n        </MainMarkers>\n");
         x.push_str("        <MainPicture>\n");
         track(&mut x, picture);
         x.push_str(&format!("          <FrameRate>{rate}</FrameRate>\n"));
@@ -733,7 +824,8 @@ impl DcpMux {
         x.push_str("        <meta:CompositionMetadataAsset xmlns:meta=\"http://www.smpte-ra.org/schemas/429-16/2014/CPL-Metadata\">\n");
         x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|metadata", self.seed)))));
         x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{}</IntrinsicDuration>\n", self.frames));
-        x.push_str(&format!("          <meta:FullContentTitleText>{}</meta:FullContentTitleText>\n", xml_text(&self.title)));
+        let lang = if self.language.is_empty() { String::new() } else { format!(" language=\"{}\"", xml_text(&self.language)) };
+        x.push_str(&format!("          <meta:FullContentTitleText{lang}>{}</meta:FullContentTitleText>\n", xml_text(&self.title)));
         x.push_str("          <meta:VersionNumber status=\"final\">1</meta:VersionNumber>\n");
         let config = match (self.fallback, sound) {
             (Some(f), _) => crate::dcp_iab::main_sound_configuration(f),
@@ -747,14 +839,15 @@ impl DcpMux {
                 "          <meta:{area}>\n            <meta:Width>{w}</meta:Width>\n            <meta:Height>{h}</meta:Height>\n          </meta:{area}>\n"
             ));
         }
-        if self.fallback.is_some() {
-            x.push_str("          <meta:ExtensionMetadataList>\n");
-            x.push_str("            <meta:ExtensionMetadata scope=\"http://isdcf.com/ns/cplmd/app\">\n");
-            x.push_str("              <meta:Name>Application</meta:Name>\n              <meta:PropertyList>\n                <meta:Property>\n");
-            x.push_str("                  <meta:Name>IAB Profile</meta:Name>\n                  <meta:Value>SMPTE-ST-2098-2:2019-P1</meta:Value>\n");
-            x.push_str("                </meta:Property>\n              </meta:PropertyList>\n            </meta:ExtensionMetadata>\n");
-            x.push_str("          </meta:ExtensionMetadataList>\n");
-        }
+        // the ISDCF application: IAB Profile 1 (Doc 15 4.2) or the RDD 52 DCP constraints profile
+        let (name, value) =
+            if self.fallback.is_some() { ("IAB Profile", "SMPTE-ST-2098-2:2019-P1") } else { ("DCP Constraints Profile", "SMPTE-RDD-52:2020-Bv2.1") };
+        x.push_str("          <meta:ExtensionMetadataList>\n");
+        x.push_str("            <meta:ExtensionMetadata scope=\"http://isdcf.com/ns/cplmd/app\">\n");
+        x.push_str("              <meta:Name>Application</meta:Name>\n              <meta:PropertyList>\n                <meta:Property>\n");
+        x.push_str(&format!("                  <meta:Name>{name}</meta:Name>\n                  <meta:Value>{value}</meta:Value>\n"));
+        x.push_str("                </meta:Property>\n              </meta:PropertyList>\n            </meta:ExtensionMetadata>\n");
+        x.push_str("          </meta:ExtensionMetadataList>\n");
         if !self.mca.is_empty() {
             x.push_str("          <mca:MCASubDescriptors xmlns:mca=\"http://isdcf.com/ns/cplmd/mca\" xmlns:r0=\"http://www.smpte-ra.org/reg/395/2014/13/1/aaf\" xmlns:r1=\"http://www.smpte-ra.org/reg/335/2012\">\n");
             for (m, instance) in &self.mca {
@@ -767,6 +860,9 @@ impl DcpMux {
                 x.push_str(&format!("              <r1:MCATagName>{}</r1:MCATagName>\n", xml_text(&m.name)));
                 if let Some(c) = m.channel {
                     x.push_str(&format!("              <r1:MCAChannelID>{c}</r1:MCAChannelID>\n"));
+                }
+                if let Some(l) = &m.language {
+                    x.push_str(&format!("              <r1:RFC5646SpokenLanguage>{}</r1:RFC5646SpokenLanguage>\n", xml_text(l)));
                 }
                 if let Some(g) = m.group {
                     x.push_str(&format!("              <r1:SoundfieldGroupLinkID>urn:uuid:{}</r1:SoundfieldGroupLinkID>\n", uuid_text(&g)));

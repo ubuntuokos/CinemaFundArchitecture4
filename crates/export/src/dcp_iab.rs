@@ -130,41 +130,48 @@ const MCA_51: [(u8, &str, &str); 6] = [
     (0x06, "chRs", "Right Surround"),
 ];
 
+/// The MCA labels (ST 377-4) of a 5.1 sound track: the `sg51` soundfield group and its channels
+/// `chL`…`chRs` on channels 1-6 (SMPTE RDD 52, as DCP-o-matic writes them). `language` is the
+/// RFC 5646 spoken language ("" = none); `id` makes each label's link id from its symbol.
+pub(crate) fn mca_51(language: &str, id: &dyn Fn(&str) -> [u8; 16]) -> Vec<McaLabel> {
+    let lang = (!language.is_empty()).then(|| language.to_string());
+    let group = id("sg51");
+    let mut v = vec![McaLabel {
+        dictionary: mca_dict(0x02, 0x01),
+        link: group,
+        symbol: "sg51".into(),
+        name: "5.1".into(),
+        channel: None,
+        language: lang.clone(),
+        group: None,
+    }];
+    for (k, (item, symbol, name)) in MCA_51.iter().enumerate() {
+        v.push(McaLabel {
+            dictionary: mca_dict(0x01, *item),
+            link: id(symbol),
+            symbol: (*symbol).into(),
+            name: (*name).into(),
+            channel: Some(k as u32 + 1),
+            language: lang.clone(),
+            group: Some(group),
+        });
+    }
+    v
+}
+
 /// The MCA labels (ST 377-4) of an immersive DCP's main sound: the 5.1 soundfield group and its
 /// channels when a fallback is carried, and the FSK sync channel 14 (ST 430-12 clauses 9-10).
-/// `id` makes each label's link id from its symbol.
-pub(crate) fn main_sound_mca(fallback: IabFallback, id: &dyn Fn(&str) -> [u8; 16]) -> Vec<McaLabel> {
-    let mut v = Vec::new();
-    if fallback != IabFallback::None {
-        let group = id("sg51");
-        v.push(McaLabel {
-            dictionary: mca_dict(0x02, 0x01),
-            link: group,
-            symbol: "sg51".into(),
-            name: "5.1".into(),
-            channel: None,
-            language: None,
-            group: None,
-        });
-        for (k, (item, symbol, name)) in MCA_51.iter().enumerate() {
-            v.push(McaLabel {
-                dictionary: mca_dict(0x01, *item),
-                link: id(symbol),
-                symbol: (*symbol).into(),
-                name: (*name).into(),
-                channel: Some(k as u32 + 1),
-                language: None,
-                group: Some(group),
-            });
-        }
-    }
+/// `language` is the RFC 5646 spoken language ("" = none); `id` makes each label's link id from
+/// its symbol.
+pub(crate) fn main_sound_mca(fallback: IabFallback, language: &str, id: &dyn Fn(&str) -> [u8; 16]) -> Vec<McaLabel> {
+    let mut v = if fallback != IabFallback::None { mca_51(language, id) } else { Vec::new() };
     v.push(McaLabel {
         dictionary: mca_dict(0x01, 0x10),
         link: id("FSKSync"),
         symbol: "FSKSync".into(),
         name: "FSK Sync".into(),
         channel: Some(FSK_CHANNEL as u32 + 1),
-        language: None,
+        language: (!language.is_empty()).then(|| language.to_string()),
         group: None,
     });
     v
@@ -911,15 +918,21 @@ mod tests {
     #[test]
     fn main_sound_labels_and_configuration() {
         let id = |s: &str| [s.len() as u8; 16];
-        let none = main_sound_mca(IabFallback::None, &id);
+        let none = main_sound_mca(IabFallback::None, "", &id);
         assert_eq!(none.len(), 1);
         assert_eq!((none[0].symbol.as_str(), none[0].channel), ("FSKSync", Some(14)));
         // ST 430-12 clause 9
         assert_eq!(none[0].dictionary, [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x01, 0x10, 0, 0, 0, 0]);
-        let with = main_sound_mca(IabFallback::Mix, &id);
+        assert_eq!(none[0].language, None);
+        let with = main_sound_mca(IabFallback::Mix, "hu-HU", &id);
         let syms: Vec<&str> = with.iter().map(|m| m.symbol.as_str()).collect();
         assert_eq!(syms, ["sg51", "chL", "chR", "chC", "chLFE", "chLs", "chRs", "FSKSync"]);
         assert!(with[1..7].iter().all(|m| m.group == Some(with[0].link)));
+        assert!(with.iter().all(|m| m.language.as_deref() == Some("hu-HU")), "every label carries the language");
+        // a plain 5.1 sound track: the group and its six channels, no FSK
+        let plain = mca_51("", &id);
+        assert_eq!(plain.len(), 7);
+        assert_eq!((plain[6].symbol.as_str(), plain[6].channel, plain[6].language.as_deref()), ("chRs", Some(6), None));
         assert_eq!(main_sound_configuration(IabFallback::None), "51/-,-,-,-,-,-,-,-,-,-,-,-,-,FSKSync,-,-");
         assert_eq!(main_sound_configuration(IabFallback::Rendered), "51/L,R,C,LFE,Ls,Rs,-,-,-,-,-,-,-,FSKSync,-,-");
         assert_eq!(IabFallback::from_name(""), Some(IabFallback::None), "ST 429-19:2023 7.1.2 by default");

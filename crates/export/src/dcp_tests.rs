@@ -104,6 +104,38 @@ fn rates_containers_and_names() {
 }
 
 /// 320×180 at 25 fps: a white matte over V1, a 440 Hz tone on A1.
+/// #309: the spoken language tag and the ISDCF (DCNC) package name.
+#[test]
+fn language_and_isdcf_name() {
+    let mut s = ExportSettings { format: Format::Dcp, ..Default::default() };
+    assert_eq!(crate::dcp_language(&s), Some(""));
+    for ok in ["en-US", "hu", "zh-Hans-CN", "es-419", " de-DE "] {
+        s.dcp_language = ok.into();
+        assert_eq!(crate::dcp_language(&s), Some(ok.trim()), "{ok}");
+        assert!(s.validate().is_ok());
+    }
+    for bad in ["english", "e", "en_US", "en-", "en--US", "1a", "en-abcdefghi", "hu-HU\"x"] {
+        s.dcp_language = bad.into();
+        assert_eq!(crate::dcp_language(&s), None, "{bad}");
+        assert!(s.validate().is_err(), "{bad}");
+    }
+    // as DCP-o-matic names the reference packages in samples/dcp/
+    s.dcp_language = "en-US".into();
+    s.dcp_content_kind = "trailer".into();
+    assert_eq!(crate::dcp_isdcf_name(&s, "Trinnov Mach1", "2024-03-22"), "TrinnovMach1_TLR-1_F_EN-XX_51_2K_20240322_SMPTE_OV");
+    s.dcp_language.clear();
+    s.dcp_aspect = "scope".into();
+    s.dcp_resolution = "4k".into();
+    assert_eq!(crate::dcp_isdcf_name(&s, "le repeater", "20240622"), "LeRepeater_TLR-1_S_XX-XX_51_4K_20240622_SMPTE_OV");
+    // immersive audio: the IAB audio type; a long title is cut to 14; no title at all
+    s.dcp_immersive = "bed".into();
+    s.dcp_aspect = "full".into();
+    s.dcp_content_kind.clear();
+    assert_eq!(crate::dcp_isdcf_name(&s, "The Extraordinarily Long Title", "20261031"), "TheExtraordina_FTR-1_C_XX-XX_IAB_4K_20261031_SMPTE_OV");
+    assert!(crate::dcp_isdcf_name(&s, "Árvíztűrő", "20261031").starts_with("Rvztr_"), "ASCII letters only");
+    assert!(crate::dcp_isdcf_name(&s, "", "20261031").starts_with("Untitled_FTR-1_"));
+}
+
 fn project() -> (Arc<Project>, ItemId, SourceMap) {
     let mut p = Project::new("dcp");
     let r = FrameRate::new(25, 1);
@@ -175,6 +207,7 @@ fn two_k_flat_package() {
         path: dir.clone(),
         range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(10))),
         dcp_content_kind: "test".into(),
+        dcp_language: "hu-HU".into(),
         ..Default::default()
     };
     let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
@@ -233,12 +266,38 @@ fn two_k_flat_package() {
     assert_eq!(element(&cpl, "Duration"), Some("10"));
     assert_eq!(element(&cpl, "ScreenAspectRatio"), Some("1998 1080"));
     assert!(cpl.contains("<MainSound>"));
-    // ST 429-16 composition metadata, no immersive application or MCA labels
+    // RDD 52: first and last frame of composition markers
+    let markers = block(&cpl, "MainMarkers").expect("MainMarkers");
+    assert!(cpl.find("<MainMarkers>") < cpl.find("<MainPicture>"));
+    assert!(markers.contains("<Label>FFOC</Label>\n              <Offset>1</Offset>"), "{markers}");
+    assert!(markers.contains("<Label>LFOC</Label>\n              <Offset>9</Offset>"), "{markers}");
+    // ST 429-16 composition metadata with the RDD 52 constraints profile and the 5.1 MCA labels
     let meta = block(&cpl, "meta:CompositionMetadataAsset").expect("composition metadata");
     assert_eq!(element(meta, "meta:MainSoundConfiguration"), Some("51/L,R,C,LFE,Ls,Rs"));
     assert_eq!(element(meta, "meta:MainSoundSampleRate"), Some("48000 1"));
     assert_eq!(element(meta, "IntrinsicDuration"), Some("10"));
-    assert!(!meta.contains("ExtensionMetadata") && !meta.contains("MCASubDescriptors"));
+    assert!(meta.contains("<meta:FullContentTitleText language=\"hu-HU\">DCP &lt;Test&gt; &amp; Co</meta:FullContentTitleText>"));
+    assert!(meta.contains("<meta:Name>DCP Constraints Profile</meta:Name>") && meta.contains("<meta:Value>SMPTE-RDD-52:2020-Bv2.1</meta:Value>"));
+    assert!(!meta.contains("IAB Profile"));
+    let labels = block(meta, "mca:MCASubDescriptors").expect("MCA labels");
+    let syms: Vec<&str> = labels.split("<r1:MCATagSymbol>").skip(1).filter_map(|t| t.split('<').next()).collect();
+    assert_eq!(syms, ["sg51", "chL", "chR", "chC", "chLFE", "chLs", "chRs"]);
+    assert_eq!(labels.matches("<r1:RFC5646SpokenLanguage>hu-HU</r1:RFC5646SpokenLanguage>").count(), 7);
+    assert!(labels.contains("<r1:MCAChannelID>6</r1:MCAChannelID>\n              <r1:RFC5646SpokenLanguage>"), "libdcp order");
+    // the labels are the sound track file's (instance ids), on ST 429-2 configuration 4
+    assert!(snd.windows(16).any(|w| w == crate::dcp_iab::CHANNEL_CONFIG_4));
+    for id in labels.split("<r1:InstanceID>urn:uuid:").skip(1).filter_map(|t| t.split('<').next()) {
+        let hex = id.replace('-', "");
+        let bytes: Vec<u8> = (0..16).map(|i| u8::from_str_radix(&hex[2 * i..2 * i + 2], 16).unwrap()).collect();
+        assert!(snd.windows(16).any(|w| w == bytes.as_slice()), "label {id} in the sound track file");
+    }
+    if let Ok(tool) = std::env::var("CFA4_ASDCP_INFO") {
+        let out = std::process::Command::new(&tool).args(["-H", &snd_path]).output().unwrap();
+        let text = String::from_utf8_lossy(&out.stdout);
+        assert!(text.contains("MCATagSymbol = sg51") && text.contains("MCATagSymbol = chRs"), "{text}");
+        assert!(text.contains("RFC5646SpokenLanguage = hu-HU"), "{text}");
+        assert!(text.contains("ChannelAssignment = 060e2b34.0401010b.04020210.03010400"), "{text}");
+    }
     // stored: the 2K Flat container; active: the 16:9 picture between the pillarbox bars
     let area = |name| {
         let a = block(meta, name).unwrap();
