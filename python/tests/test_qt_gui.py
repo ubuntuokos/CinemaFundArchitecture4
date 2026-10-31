@@ -786,6 +786,13 @@ def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(ap
     back = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, QtCore.Qt.Key.Key_Backspace, QtCore.Qt.KeyboardModifier.NoModifier)
     assert gt.text_key(back)
     assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "NeLong"
+    # an input method's commit after another editor's change goes into the new text too (Codex
+    # review regression: the commit sent the stale buffer, "Old漢")
+    layer.text = {"text": "Old"}
+    gt.start_edit(layer, None)
+    layer.text = {"text": "Replacement"}
+    gt.type_text("漢")
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "Rep漢lacement", "at the caret, as a key would"
     # the editor's own Ctrl shortcuts are claimed; Save and Undo reach the application
     def key(k, mods=QtCore.Qt.KeyboardModifier.ControlModifier, text=""):
         return QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, k, mods, text)
@@ -1894,6 +1901,15 @@ def test_real_engine_keyboard_shortcuts_editor_as_egui(app, tmp_path: Path, monk
         assert wait_until(app, lambda: d.keyboard.cap("K").app_cmd == "sequence.addEdit", 10_000)
         assert d.keyboard.findChild(QtWidgets.QAbstractButton, "shortcuts.mod.Cmd.right").on
         assert d.assign.isVisible() and d.assign.text() == "Assign Ctrl+K to Razor Tool"
+        # the Windows key takes no shortcuts, and a chord with the engine's Ctrl shows as Ctrl, the
+        # key it runs with here (Codex review regression: "Win+S" was Ctrl+S, so assigning it took Save's)
+        from cfa4_qt.panels.shortcuts import _display
+
+        win_key = d.keyboard.findChild(QtWidgets.QAbstractButton, "shortcuts.mod.Ctrl")
+        assert win_key is not None and not win_key.isEnabled()
+        win_key.click()
+        assert "Ctrl" not in d.mods and d.assign.text() == "Assign Ctrl+K to Razor Tool"
+        assert _display("Ctrl+S") == "Ctrl+S" and _display("Cmd+Alt+K") == "Ctrl+Alt+K"
         # the Timeline context: its panel keys
         d.context_box.setCurrentIndex(d.context_box.findData("Timeline"))
         d.context_box.activated.emit(d.context_box.currentIndex())

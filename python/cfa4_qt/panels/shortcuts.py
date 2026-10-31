@@ -277,7 +277,11 @@ class KeyboardView(QWidget):
 
     def _wire(self, cap: KeyCap) -> None:
         if cap.is_mod:
-            if cap.name != "#Caps":
+            if cap.name == "#Ctrl":
+                # the Windows key: the engine's Ctrl is the Control key here too (its chords run
+                # with Ctrl), so the Windows key takes no shortcuts
+                cap.setEnabled(False)
+            elif cap.name != "#Caps":
                 cap.clicked.connect(lambda _c=False, n=cap.name[1:]: self.mod_clicked.emit(n))
         else:
             cap.clicked.connect(lambda _c=False, n=cap.name: self.key_clicked.emit(n))
@@ -893,8 +897,9 @@ def _key_name(key: Any) -> str:
 
 
 def _display(keys: str) -> str:
-    """``Cmd+Alt+K`` as shown off macOS: ``Ctrl+Alt+K`` (the Control key of a macOS chord: Win)."""
-    names = {"Cmd": "Ctrl", "Ctrl": "Win"}
+    """``Cmd+Alt+K`` as shown off macOS: ``Ctrl+Alt+K``. A macOS chord's Control key is Ctrl here
+    too: the engine runs ``Ctrl`` and ``Cmd`` with the Control key off macOS."""
+    names = {"Cmd": "Ctrl"}
     if keys.endswith("++"):
         return "+".join(names.get(p, p) for p in keys[:-2].split("+")) + "++"
     return "+".join(names.get(p, p) for p in keys.split("+"))

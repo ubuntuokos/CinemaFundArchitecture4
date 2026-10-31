@@ -600,6 +600,9 @@ class GraphicsTools:
 
     def type_text(self, s: str) -> None:
         """Text from an input method (or an agent) typed at the caret."""
+        if self.edit is not None:
+            # another editor's change first, as for a key (a layer still being made keeps its typing)
+            self.edit_view()
         self._replace(s)
         self.overlay.view.update()
 
