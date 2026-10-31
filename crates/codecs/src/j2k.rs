@@ -202,13 +202,11 @@ pub fn to_video_frame(image: &Image, origin: (u32, u32), components: Components,
     Ok(VideoFrame { width: image.width, height: image.height, data, color: color(components, image.width, image.height, hints), par: (1, 1), pts: Tick::ZERO })
 }
 
-/// `components` (from the main header) corrected by what decoding found: a tile-part COD can
-/// switch the component transform on when the main one does not, and then the planes are R'G'B'.
-fn after_decode(components: Components, image: &Image) -> Components {
-    match components {
-        Components::Ycbcr(Chroma::C444) if image.mct => Components::Rgb,
-        c => c,
-    }
+/// [`components`] with the component transform decoding actually applied: tile-part CODs take
+/// precedence over the main one and can switch it on or off, which makes the planes R'G'B' or
+/// leaves them as coded (the container's R'G'B' and digital-cinema hints still hold).
+fn after_decode(header: &Header, hints: J2kHints, image: &Image) -> Result<Components> {
+    components(&Header { mct: image.mct, ..header.clone() }, hints)
 }
 
 /// Our JPEG 2000 decoder: every picture is a codestream of its own.
@@ -231,7 +229,7 @@ impl VideoDecoder for J2kDecoder {
         let cs = cfa4_j2k::codestream(sample).map_err(err)?;
         let header = cfa4_j2k::parse_header(cs).map_err(err)?;
         let image = cfa4_j2k::decode(cs).map_err(err)?;
-        let components = after_decode(components(&header, self.hints)?, &image);
+        let components = after_decode(&header, self.hints, &image)?;
         Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, (header.x0, header.y0), components, self.hints)?, draft: false }])
     }
     fn flush(&mut self) -> Vec<DecodedFrame> {
@@ -322,12 +320,23 @@ mod tests {
     }
 
     #[test]
-    fn a_tile_level_component_transform_makes_the_planes_rgb() {
+    fn the_component_transform_decoding_applied_decides_rgb() {
         let mut image = Image { width: 2, height: 2, components: vec![plane_of(2, 2, 8, false, 0); 3], mct: true };
-        assert_eq!(after_decode(Components::Ycbcr(Chroma::C444), &image), Components::Rgb);
-        assert_eq!(after_decode(Components::Xyz, &image), Components::Xyz);
+        let j2c = cfa4_j2k::encode(&Image { mct: false, ..image.clone() }, &cfa4_j2k::EncodeOptions { mct: false, ..cfa4_j2k::EncodeOptions::lossless() })
+            .unwrap_or_else(|e| panic!("{e}"));
+        let mut header = cfa4_j2k::parse_header(&j2c).unwrap_or_else(|e| panic!("{e}"));
+        let ycbcr = Components::Ycbcr(Chroma::C444);
+        let rgb_hint = J2kHints { rgb: true, ..J2kHints::default() };
+        // main COD off, a tile COD on: R'G'B'
+        header.mct = false;
+        assert_eq!(after_decode(&header, J2kHints::default(), &image).ok(), Some(Components::Rgb));
+        // main COD on, every tile COD off: the planes stay as coded
+        header.mct = true;
         image.mct = false;
-        assert_eq!(after_decode(Components::Ycbcr(Chroma::C444), &image), Components::Ycbcr(Chroma::C444));
+        assert_eq!(after_decode(&header, J2kHints::default(), &image).ok(), Some(ycbcr));
+        assert_eq!(after_decode(&header, rgb_hint, &image).ok(), Some(Components::Rgb));
+        header.mct = false;
+        assert_eq!(after_decode(&header, J2kHints::default(), &image).ok(), Some(ycbcr));
     }
 
     /// A 1-bit alpha component next to 8-bit colour: opaque is 255, not 128.
