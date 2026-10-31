@@ -10,8 +10,10 @@
 //!   ±32 samples (f_code 3); intra / inter / skip decisions per macroblock.
 //! - Intra VLC table one, the non-linear quantiser scale, intra DC precision 8-11 bits, the
 //!   default quantiser matrices.
-//! - Constant quantiser, or an average bitrate (picture targets after Test Model 5, an even
-//!   quantiser per picture, optional adaptive quantisation by spatial activity).
+//! - Constant quantiser, or a bitrate (picture targets after Test Model 5, an even quantiser
+//!   per picture, optional adaptive quantisation by spatial activity): an unconstrained
+//!   average, a variable bitrate within a VBV buffer, or a constant bitrate with real
+//!   vbv_delay values and stuffing (Annex C).
 //!
 //! Every coded picture is decoded by this crate's own decoder to form the next reference, so
 //! encoder and decoder reconstructions agree by construction.
@@ -36,6 +38,7 @@
 
 mod analyse;
 mod rate;
+mod vbv;
 mod write;
 
 #[cfg(test)]
@@ -58,8 +61,29 @@ pub enum Rate {
     /// A constant quantiser_scale_code 1..=31 on the non-linear scale (Table 7-6: 1-8 step 1,
     /// then up to 112). Lower is better quality.
     Quantizer(u8),
-    /// Average bitrate (VBR, vbv_delay 0xFFFF).
+    /// Average bitrate with no buffer model (VBR, vbv_delay 0xFFFF; the sequence header
+    /// signals the average).
     Bitrate { bits_per_second: u64 },
+    /// Variable bitrate within a decoder's buffer (Annex C.3, vbv_delay 0xFFFF): an average
+    /// of `bits_per_second`, with no picture larger than what `max_bits_per_second` fills into a
+    /// `buffer_bits` VBV (0: the level's buffer). DVD-Video and Blu-ray style.
+    ConstrainedVbr { bits_per_second: u64, max_bits_per_second: u64, buffer_bits: u64 },
+    /// Constant bitrate (Annex C): real vbv_delay values, every picture within the
+    /// `buffer_bits` VBV (0: the level's buffer), stuffing where pictures would leave it to
+    /// overflow. Broadcast, XDCAM / IMX style.
+    Cbr { bits_per_second: u64, buffer_bits: u64 },
+}
+
+impl Rate {
+    /// (average, signalled bitrate, buffer bits (0: the level's), constant).
+    fn bitrate(self) -> Option<(u64, u64, u64, bool)> {
+        match self {
+            Rate::Quantizer(_) => None,
+            Rate::Bitrate { bits_per_second } => Some((bits_per_second, bits_per_second, 0, false)),
+            Rate::ConstrainedVbr { bits_per_second, max_bits_per_second, buffer_bits } => Some((bits_per_second, max_bits_per_second, buffer_bits, false)),
+            Rate::Cbr { bits_per_second, buffer_bits } => Some((bits_per_second, bits_per_second, buffer_bits, true)),
+        }
+    }
 }
 
 /// aspect_ratio_information (Table 6-3).
@@ -231,6 +255,8 @@ pub struct Encoder {
     mv_span: u64,
     dec: Decoder,
     rc: Option<rate::Rc>,
+    /// The decoder's buffer (constrained bitrates).
+    vbv: Option<vbv::Vbv>,
     /// Average quantiser_scale of the last picture (motion search weight).
     last_scale: f64,
     /// intra_vlc_format of the next picture, and what the intra blocks of the current one cost
@@ -256,12 +282,20 @@ impl Encoder {
         if !(8..=max_dc).contains(&cfg.intra_dc_precision) {
             return Err(Error::Unsupported(format!("intra DC precision {} bits (8..={max_dc})", cfg.intra_dc_precision)));
         }
-        match cfg.rate {
-            Rate::Quantizer(q) if !(1..=31).contains(&q) => return Err(Error::Unsupported(format!("quantiser_scale_code {q} (1..=31)"))),
-            Rate::Bitrate { bits_per_second } if !(16_000..=1_000_000_000).contains(&bits_per_second) => {
-                return Err(Error::Unsupported(format!("bitrate {bits_per_second} bit/s")));
+        if let Rate::Quantizer(q) = cfg.rate
+            && !(1..=31).contains(&q)
+        {
+            return Err(Error::Unsupported(format!("quantiser_scale_code {q} (1..=31)")));
+        }
+        if let Some((avg, peak, _, _)) = cfg.rate.bitrate() {
+            for b in [avg, peak] {
+                if !(16_000..=1_000_000_000).contains(&b) {
+                    return Err(Error::Unsupported(format!("bitrate {b} bit/s")));
+                }
             }
-            _ => {}
+            if peak < avg {
+                return Err(Error::Unsupported(format!("maximum bitrate {peak} below the average {avg} bit/s")));
+            }
         }
         if cfg.gop == 0 {
             return Err(Error::Unsupported("a GOP of 0 pictures".into()));
@@ -270,16 +304,26 @@ impl Encoder {
             return Err(Error::Unsupported(format!("{} B pictures between anchors (0..=7)", cfg.b_frames)));
         }
         let fps = cfg.fps_num as f64 / cfg.fps_den as f64;
-        let bitrate = match cfg.rate {
-            Rate::Bitrate { bits_per_second } => Some(bits_per_second),
-            Rate::Quantizer(_) => None,
-        };
+        let rates = cfg.rate.bitrate();
+        let bitrate = rates.map(|r| r.1);
+        let buffer = rates.map_or(0, |r| r.2);
         let samples = (w as u64 * h as u64 * cfg.fps_num as u64).div_ceil(cfg.fps_den as u64);
-        let fitting = levels.iter().find(|l| w <= l.w && h <= l.h && samples <= l.samples && bitrate.is_none_or(|b| b <= l.rate));
+        let fitting = levels.iter().find(|l| w <= l.w && h <= l.h && samples <= l.samples && bitrate.is_none_or(|b| b <= l.rate) && buffer <= l.vbv);
         // beyond the highest level: still decodable, signalled as the highest level
         let level = fitting.or(levels.last()).ok_or_else(|| Error::Unsupported("no level".into()))?;
         let bit_rate_units = bitrate.unwrap_or(level.rate).div_ceil(400).clamp(1, (1 << 30) - 1) as u32;
-        let vbv_units = (level.vbv / 16384).clamp(1, (1 << 18) - 1) as u32;
+        let vbv_units = ((if buffer > 0 { buffer } else { level.vbv }) / 16384).clamp(1, (1 << 18) - 1) as u32;
+        let vbv = match rates {
+            Some((_, peak, _, cbr)) if !matches!(cfg.rate, Rate::Bitrate { .. }) => {
+                let v = vbv::Vbv::new(peak, u64::from(vbv_units) * 16384, cbr, cfg.fps_num, cfg.fps_den);
+                // room for at least two pictures' worth of input
+                if v.size() < 2 * v.per_picture() {
+                    return Err(Error::Unsupported(format!("a {}-bit VBV buffer at {peak} bit/s", v.size())));
+                }
+                Some(v)
+            }
+            _ => None,
+        };
         let mb_width = (w as usize).div_ceil(16);
         let mb_height = (h as usize).div_ceil(16);
         let cmbh = if cfg.chroma == ChromaFormat::Yuv420 { 8 } else { 16 };
@@ -303,7 +347,8 @@ impl Encoder {
             prev_mvs: vec![[0, 0]; mb_width * mb_height],
             mv_span: 1,
             dec,
-            rc: bitrate.map(|b| rate::Rc::new(b, fps, cfg.adaptive_quantization)),
+            rc: rates.map(|r| rate::Rc::new(r.0, fps, cfg.adaptive_quantization)),
+            vbv,
             last_scale: 8.0,
             intra_vlc: true,
             vlc_cost: [0; 2],
@@ -319,6 +364,17 @@ impl Encoder {
     /// The bitrate the sequence header signals (bit/s).
     pub fn signalled_bit_rate(&self) -> u64 {
         self.bit_rate_units as u64 * 400
+    }
+
+    /// The vbv_buffer_size the sequence header signals (bits).
+    pub fn signalled_buffer(&self) -> u64 {
+        self.vbv_units as u64 * 16384
+    }
+
+    /// Pictures that overflowed the VBV however coarsely they were quantised (0 in all but
+    /// pathological cases: tiny buffers at tiny bitrates).
+    pub fn vbv_underflows(&self) -> u64 {
+        self.vbv.as_ref().map_or(0, |v| v.underflows())
     }
 
     /// Encode the next picture (display order). Returns the pictures that can be coded now, in
@@ -393,7 +449,9 @@ impl Encoder {
                 rc.start_gop(np as u32, (n - 1 - np) as u32);
             }
         }
-        self.picture_header(&mut w, tref, ptype);
+        // the bits up to the end of the picture start code arrive before the vbv_delay starts
+        let delay = self.vbv.as_ref().map_or(0xFFFF, |v| v.delay(w.bits().div_ceil(8) * 8 + 32));
+        self.picture_header(&mut w, tref, ptype, delay);
         // analysis
         let lambda = (self.last_scale * 0.6).round().clamp(1.0, 64.0) as u32;
         let (preds_f, preds_b) = if ptype == PictureType::B {
@@ -425,6 +483,14 @@ impl Encoder {
         if let Some(rc) = self.rc.as_mut() {
             let weights: Vec<f64> = plans.iter().flatten().map(|p| p.weight as f64).collect();
             rc.start_picture(kind, &weights, avg_act);
+            if let Some(v) = &self.vbv {
+                // the picture must fit what has arrived, keeping a tenth of the buffer for the
+                // next ones; at a constant bitrate, bits it leaves unspent would be stuffed
+                let room = v.occupancy() as f64;
+                let hi = (room - v.size() as f64 / 10.0).max(room / 2.0);
+                let lo = if v.cbr() { (room + v.per_picture() as f64 - v.size() as f64).min(hi) } else { 0.0 };
+                rc.limit_target(lo, hi);
+            }
         }
         // the first picture of each type: a trial run measures its complexity
         if self.rc.as_ref().is_some_and(|rc| rc.needs_trial()) {
@@ -436,10 +502,21 @@ impl Encoder {
                 rc.calibrate(trial.bits());
             }
         }
-        let mut scale_sum = 0f64;
-        self.vlc_cost = [0; 2];
-        for (row, plans) in plans.iter().enumerate() {
-            scale_sum += self.slice(&mut w, row, plans, ptype, start);
+        let head = w;
+        let (mut w, mut scale_sum);
+        loop {
+            w = head.clone();
+            scale_sum = 0f64;
+            self.vlc_cost = [0; 2];
+            for (row, plans) in plans.iter().enumerate() {
+                scale_sum += self.slice(&mut w, row, plans, ptype, start);
+            }
+            // too large for the buffer: again, coarser
+            let (Some(v), Some(rc)) = (&self.vbv, self.rc.as_mut()) else { break };
+            let (size, room) = (w.bits().div_ceil(8) * 8, v.occupancy());
+            if size <= room || !rc.retry(size as f64 / (room as f64 * 0.95).max(1.0)) {
+                break;
+            }
         }
         if let Some(rc) = self.rc.as_mut() {
             rc.end_picture(w.bits() - start);
@@ -452,7 +529,7 @@ impl Encoder {
             self.intra_vlc = self.vlc_cost[1] < self.vlc_cost[0];
         }
         w.align();
-        let data = w.out;
+        let mut data = w.out;
         // reconstruction: decode the picture (B pictures too: the decoder checks every one)
         let errors = self.dec.errors();
         self.dec.decode(&data, index as i64)?;
@@ -469,6 +546,17 @@ impl Encoder {
                 self.mv_span = self.anchor_index[1].map_or(1, |a| index.saturating_sub(a).max(1));
             }
             _ => {}
+        }
+        // the picture leaves the buffer; zero bytes before the next start code keep a constant
+        // bitrate buffer from overflowing
+        if let Some(v) = self.vbv.as_mut() {
+            let stuffing = v.remove(data.len() as u64 * 8);
+            if stuffing > 0 {
+                data.resize(data.len() + stuffing as usize, 0);
+                if let Some(rc) = self.rc.as_mut() {
+                    rc.spend(stuffing * 8);
+                }
+            }
         }
         let dts = self.coded as i64 - i64::from(self.cfg.b_frames > 0);
         self.coded += 1;
@@ -573,7 +661,7 @@ impl Encoder {
         w.put(0, 1); // broken_link
     }
 
-    fn picture_header(&self, w: &mut BitWriter, tref: u32, ptype: PictureType) {
+    fn picture_header(&self, w: &mut BitWriter, tref: u32, ptype: PictureType, vbv_delay: u16) {
         w.start(crate::headers::PICTURE_START);
         w.put(tref & 1023, 10);
         w.put(
@@ -584,7 +672,7 @@ impl Encoder {
             },
             3,
         );
-        w.put(0xFFFF, 16); // vbv_delay: variable bitrate
+        w.put(vbv_delay as u32, 16); // 0xFFFF: variable bitrate
         if ptype != PictureType::I {
             w.put(0, 1); // full_pel_forward_vector
             w.put(7, 3); // forward_f_code (MPEG-2: in the extension)
