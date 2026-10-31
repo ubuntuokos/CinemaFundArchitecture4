@@ -50,6 +50,21 @@ MPEG2_CONTAINERS = (
     ("m2ts", N_("BDAV Transport Stream (.m2ts, AAC audio)"), "m2ts"),
     ("es", N_("Elementary Stream (.m2v, no audio)"), "m2v"),
 )
+# DCP choices (`DcpResolution`, `DcpAspect`, `DCP_CONTENT_KINDS` in crates/export): id, label
+DCP_RESOLUTIONS = (("2k", N_("2K")), ("4k", N_("4K")))
+DCP_ASPECTS = (("flat", N_("Flat (1.85:1)")), ("scope", N_("Scope (2.39:1)")), ("full", N_("Full container (1.90:1)")))
+DCP_KINDS = (
+    ("feature", N_("Feature")),
+    ("trailer", N_("Trailer")),
+    ("teaser", N_("Teaser")),
+    ("short", N_("Short")),
+    ("advertisement", N_("Advertisement")),
+    ("test", N_("Test")),
+    ("transitional", N_("Transitional")),
+    ("rating", N_("Rating")),
+    ("policy", N_("Policy")),
+    ("psa", N_("Public service announcement")),
+)
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
@@ -152,6 +167,21 @@ class ExportDialog(QDialog):
         for key, label, _ext in MPEG2_CONTAINERS:
             self.container.addItem(tr(label), key)
         self.container.setEnabled(False)  # MPEG-2 only
+        # DCP only: resolution, container and content kind (the package is a folder)
+        self.dcp_resolution = QComboBox(self)
+        self.dcp_resolution.setObjectName("export.dcpResolution")
+        for key, label in DCP_RESOLUTIONS:
+            self.dcp_resolution.addItem(tr(label), key)
+        self.dcp_aspect = QComboBox(self)
+        self.dcp_aspect.setObjectName("export.dcpAspect")
+        for key, label in DCP_ASPECTS:
+            self.dcp_aspect.addItem(tr(label), key)
+        self.dcp_kind = QComboBox(self)
+        self.dcp_kind.setObjectName("export.dcpContentKind")
+        for key, label in DCP_KINDS:
+            self.dcp_kind.addItem(tr(label), key)
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+            w.setEnabled(False)
         self.path = QLineEdit(self)
         self.path.setObjectName("export.path")
         browse = QPushButton(tr("Browse…"), self)
@@ -237,6 +267,9 @@ class ExportDialog(QDialog):
         f.addRow(tr("Preset"), self.preset)
         f.addRow(tr("Format"), self.format)
         f.addRow(tr("Container"), self.container)
+        f.addRow(tr("DCP resolution"), self.dcp_resolution)
+        f.addRow(tr("DCP container"), self.dcp_aspect)
+        f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Output file"), path_row)
         f.addRow(tr("Range"), range_row)
         video = QGroupBox(tr("Video"), self)
@@ -330,6 +363,8 @@ class ExportDialog(QDialog):
             w.valueChanged.connect(self._changed)
         for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
+        for c in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+            c.currentIndexChanged.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio)):
@@ -424,6 +459,9 @@ class ExportDialog(QDialog):
         self.chroma.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
         self.container.setCurrentIndex(max(0, index))
+        self.dcp_resolution.setCurrentIndex(max(0, self.dcp_resolution.findData(preset.get("dcpResolution") or "2k")))
+        self.dcp_aspect.setCurrentIndex(max(0, self.dcp_aspect.findData(preset.get("dcpAspect") or "flat")))
+        self.dcp_kind.setCurrentIndex(0)
         self.touched.clear()
         self._loading = False
         self._default_path()
@@ -439,7 +477,21 @@ class ExportDialog(QDialog):
         mpeg2 = self.format.currentData() == "mpeg2"
         for w in (self.container, self.gop, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
+        dcp = self._dcp()
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+            w.setEnabled(dcp)
+        if dcp:
+            # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
+            for w in (self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate, self.audio_codec, self.audio_bitrate):
+                w.setEnabled(False)
+        else:
+            self.width_spin.setEnabled(True)
+            self.height_spin.setEnabled(True)
         self._container_changed()
+
+    def _dcp(self) -> bool:
+        """A DCP: the output is a folder."""
+        return self.format.currentData() == "dcp"
 
     def _extension(self) -> str:
         """The output file's extension: the MPEG-2 container's, else the format's."""
@@ -455,7 +507,10 @@ class ExportDialog(QDialog):
             self.audio.setEnabled(has_audio)
             self.audio_codec.setEnabled(False)  # LPCM in program streams, AAC in transport streams
         if self.path.text():
-            self.path.setText(with_extension(self.path.text(), self._extension()))
+            if self._dcp():
+                self.path.setText(str(Path(self.path.text()).with_suffix("")))
+            else:
+                self.path.setText(with_extension(self.path.text(), self._extension()))
         self._changed()
 
     def _range_changed(self) -> None:
@@ -470,9 +525,19 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
         base = default_output_dir(self.project_path) / name
+        if self._dcp():
+            self.path.setText(str(base))
+            return
         self.path.setText(with_extension(str(base), self._extension() or str(fmt.get("extension") or "mp4")))
 
     def _browse(self) -> None:
+        if self._dcp():
+            # the package folder is made inside the chosen one
+            parent = QFileDialog.getExistingDirectory(self, tr("Output folder"), str(Path(self.path.text()).parent) if self.path.text() else "")
+            if parent:
+                name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
+                self.path.setText(str(Path(parent) / name))
+            return
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         ext = self._extension()
         pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
@@ -506,7 +571,7 @@ class ExportDialog(QDialog):
             p["startSeconds"] = self.start.value()
             p["endSeconds"] = self.end.value()
         # 0 × 0 = the preset's size (or the sequence's); the fields show the preset's own size
-        if self.width_spin.value() and self.height_spin.value():
+        if self.width_spin.isEnabled() and self.width_spin.value() and self.height_spin.value():
             p["width"] = self.width_spin.value()
             p["height"] = self.height_spin.value()
         if self.bitrate_mode.isEnabled():
@@ -533,6 +598,10 @@ class ExportDialog(QDialog):
                 p["mpeg2Quantizer"] = self.quantizer.value()
             if "chroma" in self.touched:
                 p["mpeg2Chroma"] = self.chroma.currentData()
+        if self.dcp_resolution.isEnabled():
+            p["dcpResolution"] = self.dcp_resolution.currentData()
+            p["dcpAspect"] = self.dcp_aspect.currentData()
+            p["dcpContentKind"] = self.dcp_kind.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p

@@ -1917,6 +1917,62 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
+    """DCP: the preset sets resolution and container, the output is a folder without an
+    extension, the fixed DCI settings are disabled, and the engine writes the package (#115)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.dcp_resolution.isEnabled()
+        assert "dcpResolution" not in dlg.params()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Scope"))
+        assert dlg.format.currentData() == "dcp" and dlg.dcp_resolution.isEnabled()
+        assert (dlg.dcp_resolution.currentData(), dlg.dcp_aspect.currentData()) == ("2k", "scope")
+        assert not dlg.width_spin.isEnabled() and not dlg.bitrate.isEnabled() and dlg.audio.isEnabled()
+        assert Path(dlg.path.text()).suffix == "", dlg.path.text()
+        dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("trailer"))
+        p = dlg.params()
+        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"]) == ("2k", "scope", "trailer")
+        assert "width" not in p and "bitrateKbps" not in p
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.25)
+        out = tmp_path / "out" / "Demo_TLR"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "2048×858" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        names = sorted(f.name for f in out.iterdir())
+        assert "ASSETMAP.xml" in names and "VOLINDEX.xml" in names, names
+        assert sum(n.startswith("j2c_") for n in names) == 1 and sum(n.startswith("pcm_") for n in names) == 1, names
+        cpl = next(out.glob("cpl_*.xml")).read_text()
+        assert "<ContentKind>trailer</ContentKind>" in cpl
+        assert "<ScreenAspectRatio>2048 858</ScreenAspectRatio>" in cpl
+        # another format brings the size fields back
+        dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+        assert dlg.width_spin.isEnabled() and not dlg.dcp_resolution.isEnabled()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_tick_signals_carry_64_bit_times(app):
     """Regression: Signal(int) is a 32-bit C int in PySide6, so a playhead past 8.5 ms (ticks are
     254 016 000 000 per second) wrapped to a wrong, often negative time while scrubbing the

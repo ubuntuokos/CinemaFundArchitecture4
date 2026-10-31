@@ -1654,6 +1654,34 @@
 	Target Duration:	Célhossz:
 	Variations:	Változatok:
 	the selected clip is not remixed	a kijelölt klip nincs remixelve
+	DCP (Digital Cinema Package)	DCP (digitális moziformátum)
+	Digital Cinema	Digitális mozi
+	DCP resolution	DCP-felbontás
+	DCP container	DCP-képarány
+	Content kind	Tartalomtípus
+	Output folder	Kimeneti mappa
+	2K	2K
+	4K	4K
+	Flat (1.85:1)	Flat (1,85:1)
+	Scope (2.39:1)	Scope (2,39:1)
+	Full container (1.90:1)	Teljes képkocka (1,90:1)
+	Feature	Játékfilm
+	Trailer	Előzetes
+	Teaser	Teaser
+	Short	Rövidfilm
+	Advertisement	Reklám
+	Test	Teszt
+	Transitional	Átvezető
+	Rating	Korhatár-besorolás
+	Public service announcement	Közérdekű közlemény
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 1998×1080 (1,85:1), 5.1 24 bites 48 kHz-es PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 2048×858 (2,39:1), 5.1 24 bites 48 kHz-es PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bites 48 kHz-es PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bites 48 kHz-es PCM
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
