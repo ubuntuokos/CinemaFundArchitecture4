@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -41,6 +42,7 @@ from PySide6.QtWidgets import (
 from ..engine import EngineClient
 from ..i18n import N_, tr
 from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, MetadataSection
+from .export_preview import PreviewColumn
 from .preset_manager import PresetManager
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
@@ -279,6 +281,8 @@ class ExportDialog(QDialog):
         self.captions = CaptionsSection(self)
         self.effects = EffectsSection(self)
         self.metadata = MetadataSection(self)
+        self.preview = PreviewColumn(self)
+        self._preview_busy = False
         # H.264 / H.265: MP4 or QuickTime (egui's Multiplexer section)
         self.multiplexer = QComboBox(self)
         self.multiplexer.setObjectName("export.multiplexer")
@@ -390,6 +394,7 @@ class ExportDialog(QDialog):
         left.addStretch(1)
         top.addLayout(left, 1)
         right = QVBoxLayout()
+        right.addWidget(self.preview)
         right.addWidget(self.captions)
         right.addWidget(self.effects)
         right.addWidget(self.metadata)
@@ -400,7 +405,7 @@ class ExportDialog(QDialog):
         layout.addWidget(self.summary)
         layout.addLayout(buttons)
         layout.addWidget(queue_box, 1)
-        self.resize(1040, 820)
+        self.resize(1040, 900)
 
         self._resolve_timer = QTimer(self, singleShot=True, interval=150)
         self._resolve_timer.timeout.connect(self._resolve)
@@ -424,6 +429,7 @@ class ExportDialog(QDialog):
         self.captions.changed.connect(lambda: self._touch("captions"))
         self.effects.changed.connect(lambda: self._touch("effects"))
         self.metadata.changed.connect(lambda: self._touch("metadata"))
+        self.preview.scaling.currentIndexChanged.connect(lambda _i: self._touch("scaling"))
         self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
@@ -448,6 +454,27 @@ class ExportDialog(QDialog):
         self.activateWindow()
         self.refresh_queue()
         self._poll.start()
+        self.refresh_preview()
+
+    def refresh_preview(self) -> None:
+        """The preview's frame: the sequence at the playhead (egui's export preview)."""
+        if self.sequence is None or self._preview_busy:
+            return
+        self._preview_busy = True
+
+        def got(result: Any, data: bytes | None) -> None:
+            self._preview_busy = False
+            if isinstance(result, dict) and data:
+                w, h = int(result.get("w") or 0), int(result.get("h") or 0)
+                if w > 0 and h > 0 and len(data) == w * h * 4:
+                    image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
+                    self.preview.set_frame(image, (int(result.get("fullW") or 0), int(result.get("fullH") or 0)))
+
+        def failed(_m: str) -> None:
+            self._preview_busy = False
+            self.preview.set_frame(None, (0, 0))
+
+        self.engine.call("frame.render", {"maxWidth": 500, "maxHeight": 500}, on_reply=got, on_error=failed)
 
     def open_preset_manager(self) -> None:
         """Preset ▸ More presets…: the Preset Manager on the current preset; OK applies its choice."""
@@ -560,6 +587,7 @@ class ExportDialog(QDialog):
         video = bool(fmt.get("video", True))
         self.captions.setVisible(video)
         self.metadata.setVisible(self.format.currentData() in METADATA_FORMATS)
+        self.preview.set_video(video)
         self.video_form.setRowVisible(self.multiplexer, self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         self._container_changed()
@@ -704,6 +732,8 @@ class ExportDialog(QDialog):
             patch["effects"] = self.effects.values()
         if "metadata" in self.touched and self.format.currentData() in METADATA_FORMATS:
             patch["metadata"] = self.metadata.values()
+        if "scaling" in self.touched:
+            patch["scaling"] = self.preview.scaling.currentData()
         if "multiplexer" in self.touched and self._muxed():
             patch["multiplexer"] = self.multiplexer.currentData()
         if patch:
@@ -746,6 +776,8 @@ class ExportDialog(QDialog):
         r = result if isinstance(result, dict) else {}
         if isinstance(r.get("settings"), dict):
             self._show_settings(r["settings"])
+        path = (r.get("settings") or {}).get("path") if isinstance(r.get("settings"), dict) else None
+        self.preview.show_resolved(r, str(path or self.path.text()), self.range.currentText(), "scaling" in self.touched)
         out = r.get("output") or {}
         rng = r.get("range") or {}
         parts = []

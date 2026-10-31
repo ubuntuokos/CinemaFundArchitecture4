@@ -6712,6 +6712,65 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+def test_export_preview_scaling_geometry():
+    """egui's export preview: the output frame fits the pane; Scale To Fit letterboxes, Scale To
+    Fill crops, Stretch To Fill fills the output frame."""
+    from cfa4_qt.panels.export_preview import fit, picture_rect
+
+    pic = fit(QtCore.QRectF(0, 0, 400, 400), 1080, 1920)  # a vertical output
+    assert (round(pic.width()), round(pic.height())) == (225, 400)
+    fitted = picture_rect(pic, 1920, 1080, "scaleToFit")
+    assert round(fitted.width()) == 225 and round(fitted.height()) < 400 and abs(fitted.center().y() - 200) < 1e-6
+    filled = picture_rect(pic, 1920, 1080, "scaleToFill")
+    assert round(filled.height()) == 400 and filled.width() > pic.width()
+    assert picture_rect(pic, 1920, 1080, "stretchToFill") == pic
+    assert picture_rect(pic, 0, 0, "scaleToFit") == pic, "no source size: the whole frame"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_preview_column_as_egui(app, tmp_path: Path):
+    """egui's Export preview column: the sequence frame at the playhead in the output's aspect,
+    Scaling (sent once changed), "Audio only" for sound, the Summary lines and the estimated size."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        col = dlg.preview
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and col.view.image is not None, 30_000)
+        assert col.view.source[0] > 0 and col.view.source[1] > 0
+        assert wait_until(app, lambda: col.estimate.text().startswith("Estimated file size:") and col.lines["video"].text(), 10_000)
+        assert col.lines["output"].text().endswith(Path(dlg.path.text()).name) and col.lines["source"].text().startswith("Sequence, ")
+        assert col.lines["range"].text().startswith(dlg.range.currentText())
+        # a vertical output frame: the preview takes its aspect
+        dlg.width_spin.setValue(1080)
+        dlg.height_spin.setValue(1920)
+        assert wait_until(app, lambda: col.view.output == (1080, 1920), 10_000)
+        pic = col.view.pic()
+        assert pic.height() > pic.width()
+        assert col.view.picture().width() <= pic.width() + 1e-6, "Scale To Fit: bars"
+        i = col.scaling.findData("scaleToFill")
+        col.scaling.setCurrentIndex(i)
+        assert col.view.picture().width() > pic.width() and dlg.params()["settings"]["scaling"] == "scaleToFill"
+        got: list = []
+        engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["settings"]["scaling"] == "scaleToFill"
+        # sound only: no picture, no Scaling
+        dlg.format.setCurrentIndex(dlg.format.findData("wav"))
+        assert col.view.audio_only and not col.form.isRowVisible(col.scaling)
+        col.view.grab()  # paints "Audio only"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
     """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
