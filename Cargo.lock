@@ -1370,6 +1370,7 @@ dependencies = [
 name = "cfa4-smart-edit"
 version = "0.10.0"
 dependencies = [
+ "cfa4-route",
  "serde",
  "serde_json",
 ]

@@ -227,16 +227,41 @@ fn probes_are_order_independent_and_unavailable_wins() {
 }
 
 #[test]
-fn the_native_backend_is_preferred() {
+fn backend_preference_comes_from_the_routing_table() {
     let mut r = Registry::empty();
-    let key = Key::codec(Operation::Encode, Codec::H264);
-    for backend in [Backend::Ffmpeg, Backend::Platform, Backend::Native] {
-        r.insert(Entry { key, backend, level: SupportLevel::Supported, evidence: format!("{backend:?}"), limits: None }).unwrap();
+    let encode = Key::codec(Operation::Encode, Codec::H264);
+    let demux = Key::in_container(Operation::Demux, Codec::H264, Container::Mp4);
+    for key in [encode, demux] {
+        for backend in [Backend::Ffmpeg, Backend::Gstreamer, Backend::Platform, Backend::Native] {
+            r.insert(Entry { key, backend, level: SupportLevel::Supported, evidence: format!("{backend:?}"), limits: None }).unwrap();
+        }
     }
-    let d = r.decide(key, STRICT);
+    let names = |d: &Decision| d.reasons.iter().map(|s| s.split(':').next().unwrap_or("").to_string()).collect::<Vec<_>>();
+    // shipped codec_encode order: nvenc, vaapi, ffmpeg, gstreamer-va, software
+    let d = r.decide(encode, STRICT);
+    assert_eq!(d.backend, Some(Backend::Platform), "a hardware encoder the table puts first wins over our software one");
+    assert_eq!(names(&d), vec!["Platform", "Ffmpeg", "Gstreamer", "Native"]);
+    // no routing family for demuxing: our own code first
+    assert_eq!(r.decide(demux, STRICT).backend, Some(Backend::Native));
+
+    // the user's routing file reorders the planner too
+    let user = cfa4_route::Table::parse("[compute.default]\ncodec_encode = [\"software\", \"gstreamer-va\"]\n").unwrap();
+    let table = cfa4_route::Table::builtin().unwrap().merged(user);
+    r.set_backend_order(BackendOrder::from_route(&table));
+    let d = r.decide(encode, STRICT);
     assert_eq!(d.backend, Some(Backend::Native));
-    let order: Vec<&str> = d.reasons.iter().map(|s| s.split(':').next().unwrap_or("")).collect();
-    assert_eq!(order, vec!["Native", "Platform", "Ffmpeg"]);
+    assert_eq!(names(&d), vec!["Native", "Gstreamer", "Platform", "Ffmpeg"], "backends the table omits come last");
+}
+
+#[test]
+fn an_available_hardware_encoder_is_preferred_as_the_router_says() {
+    let mut r = Registry::native();
+    let key = Key::codec(Operation::Encode, Codec::H264);
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Native), "nothing probed: our software encoder");
+    let limits = EncoderLimits { profiles: vec!["main".into(), "high".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    r.apply_probes(vec![Probe { key, backend: Backend::Platform, outcome: ProbeOutcome::Available { detail: "VA-API H.264".into() }, limits: Some(limits) }])
+        .unwrap();
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Platform));
 }
 
 #[test]
