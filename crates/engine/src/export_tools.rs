@@ -662,6 +662,9 @@ pub struct QueueItem {
     /// The background job while encoding / after it ran.
     pub job: Option<u64>,
     pub error: Option<String>,
+    /// Media QC of the output, kept apart from `status` (the render state).
+    #[serde(skip)]
+    pub qc: crate::qc::ItemQc,
     /// The project as it was when the item was queued.
     #[serde(skip)]
     pub project: Arc<Project>,
@@ -721,6 +724,7 @@ fn item_json(s: &Session, it: &QueueItem) -> Value {
         "job": it.job,
         "error": it.error,
         "offlineMedia": it.job.map_or_else(|| json!([]), |j| offline_media_json(s, j)),
+        "qc": crate::qc::item_json(&it.qc),
     })
 }
 
@@ -730,6 +734,7 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
     loop {
         // settle
         let mut finished_any = false;
+        let mut checked = Vec::new();
         for i in 0..s.export_queue.items.len() {
             let it = &s.export_queue.items[i];
             if it.status != QueueStatus::Encoding {
@@ -740,7 +745,12 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
             let Some(r) = res else { continue };
             let it = &mut s.export_queue.items[i];
             match r {
-                Ok(_) => it.status = QueueStatus::Done,
+                Ok(_) => {
+                    it.status = QueueStatus::Done;
+                    if it.qc.profile.is_some() {
+                        checked.push(it.id);
+                    }
+                }
                 Err(e) if e == "cancelled" => it.status = QueueStatus::Cancelled,
                 Err(e) => {
                     it.status = QueueStatus::Failed;
@@ -748,6 +758,10 @@ pub fn pump_queue(s: &mut Session, wait: bool) {
                 }
             }
             finished_any = true;
+        }
+        // automatic QC of finished outputs (`export.queue.add` with `qc`)
+        for id in checked {
+            crate::qc::after_export(s, id, wait);
         }
         if s.export_queue.items.iter().any(|i| i.status == QueueStatus::Encoding) || !s.export_queue.running {
             return;
@@ -806,6 +820,16 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
         Some(a) if !a.is_empty() => a.iter().map(Some).collect(),
         _ => vec![p.get("range")],
     };
+    // `qc`: check each output with this QC profile when it finishes (`true`: the default profile)
+    let qc_profile = match p.get("qc") {
+        None | Some(Value::Null) | Some(Value::Bool(false)) => None,
+        Some(Value::Bool(true)) => Some("delivery-web".to_string()),
+        Some(Value::String(id)) => {
+            cfa4_qc::QcProfile::builtin(id).map_err(|e| bad(cmd, format!("`qc`: {e}")))?;
+            Some(id.clone())
+        }
+        Some(_) => return Err(bad(cmd, "`qc` must be a QC profile id or a boolean")),
+    };
     let project = s.project.clone();
     let many = seqs.len() * ranges.len() > 1;
     let mut ids = Vec::new();
@@ -839,6 +863,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
             status: QueueStatus::Ready,
             job: None,
             error: None,
+            qc: crate::qc::ItemQc { profile: qc_profile.clone(), ..Default::default() },
             project: project.clone(),
         });
         ids.push(id);
@@ -922,6 +947,8 @@ fn queue_retry(s: &mut Session, p: &Value) -> Result<Value> {
     it.status = QueueStatus::Ready;
     it.error = None;
     it.job = None;
+    let id = it.id;
+    crate::qc::reset_for_retry(s, id);
     if bool_p(p, "start").unwrap_or(false) {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
@@ -1239,7 +1266,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "export.queue.add",
             "Send to Export Queue",
-            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"start":bool?,"wait":bool?}"#,
+            r#"{…settings params,"path":str|dir?,"sequences":[id]?,"ranges":[range]?,"qc":str|bool?,"start":bool?,"wait":bool?}"#,
             has_seq,
             queue_add,
             true,

@@ -962,6 +962,7 @@ dependencies = [
  "cfa4-media",
  "cfa4-mxf",
  "cfa4-project",
+ "cfa4-qc",
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",

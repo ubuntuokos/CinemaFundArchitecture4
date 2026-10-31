@@ -8,9 +8,10 @@ settings, needs no cloud service, and runs on the CPU (a GPU path is optional). 
 use CFA4's own demuxers and decoders; an FFmpeg cross-check stays `NOT_RUN` until the
 `cfa4-ffmpeg` backend exists ([ADR 0005](adr/ADR-0005-media-backends.md)).
 
-Status: stages B–D (report schema, profiles, input, integrity, audio and picture checks,
-`cfa4-cli qc`). `video.referenceSsim` reports NOT_RUN until the engine supplies preview
-references; the engine commands and the Qt 6 review window follow in stage E.
+Status: stages B–E1 (report schema, profiles, input, integrity, audio and picture checks,
+`cfa4-cli qc`, the engine's `qc.*` commands and the export queue's QC state).
+`video.referenceSsim` reports NOT_RUN until the engine supplies preview references; the Qt 6
+review window follows in stage E2.
 
 ## Command line
 
@@ -32,6 +33,29 @@ missing reports NOT_RUN ("no render plan given"):
  "height": 1080, "videoCodec": "H.264", "audioTracks": 1, "audioChannels": 2,
  "sampleRate": 48000, "audioCodec": "AAC", "subtitleStreams": 0}
 ```
+
+## Engine commands
+
+The engine runs QC as a background job (followed in `jobs.list`, cancelled with `jobs.cancel`),
+so every frontend, the control channel and MCP use the same commands:
+
+| Command | Does |
+|---|---|
+| `qc.run` `{"path"?, "queueItem"?, "profile"?, "expect"?, "wait"?}` | checks a file, or a finished queued export; for a queue item the render plan (frames rendered, rate, size, audio) and the links (project, sequence, export job, preset, render outcome) come from the item; `expect` refines the plan |
+| `qc.report.get` `{"path"}` | the verified report of a file (or its report path): verdict, summary, contact sheet path, the review questions and the full report |
+| `qc.review.save` `{"path", "review"}` | stores the human review (answers, findings with severity, time code and note) in the report and recomputes the verdict |
+| `qc.profiles.list` | the built-in profiles and their checks |
+| `qc.index` | the reports recorded for the saved project |
+
+`export.queue.add` takes `"qc": "<profile>"` (or `true` for `delivery-web`): each output is
+checked when it finishes. `export.queue.list` shows each item's `qc` state (`notChecked`,
+`running`, `passed`, `warned`, `failed`, `incomplete`, with the report path) next to its render
+`status`: a render that finished is `done` even when QC fails it.
+
+Storage: the report is `<export>.cfa4qc.json` and the contact sheet `<export>.cfa4qc.png`,
+written atomically next to the export; a saved project also gets
+`<project>.cfa4qc/index.json` (one entry per export, the latest check wins). QC never writes
+the project file.
 
 ## What the input and integrity checks look at
 
