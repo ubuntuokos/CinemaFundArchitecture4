@@ -1,6 +1,6 @@
 # Codec parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 in MXF) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
@@ -17,7 +17,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | Codec | Premiere | Our decode | Our encode | Fidelity and tests | % | Est. |
 |---|---|---|---|---|---|---|
 | HEVC / H.265 | decode Main, Main 10, 4:2:2 10 (XAVC HS); encode 8/10-bit, HDR | own decoder Main / Main 10 / Main 12 / Main Still Picture, monochrome 4:0:0, 4:2:2 and 4:4:4 up to 12-bit, bit-exact on 60 fixtures, ~225 fps 1080p; RExt coding tools not yet (#167) | own encoder Main / Main 10 4:2:0 (I / P, CRF / CBR / VBR, HDR10 SEI, parallel slices; no B pictures, SAO, 2-pass, 4:2:2 yet, #171–#180), 1080p ~2.3 fps on 4 cores; hardware first where present (VideoToolbox 8-bit; NVENC 8-bit and Main 10 HDR) | own encoder: round trips through our decoder, bit-exact agreement of our decoder and ffmpeg on its output, ffprobe HDR signalling; NVENC round trip 48.9 dB (8-bit), 71.1 dB (10-bit) | 70% | 25–50 h |
-| H.264 / AVC | decode all common profiles incl. High 10, 4:2:2 (XAVC S-I, AVC-Intra); encode 8/10-bit | own decoder, **4:2:0, 8 to 14 bits** (Baseline / Main / High / High 10, CABAC / CAVLC; High 10 bit-exact with ffmpeg on 6 fixtures); no 4:2:2 / 4:4:4 (#161), interlaced field / MBAFF (#162), lossless (#163) | own encoder (High / Main / Baseline, B-frames, CBR / VBR / 2-pass); 8-bit 4:2:0 only; hardware VideoToolbox / NVENC | decode bit-exact on 37+ conformance streams, 500–600 fps 1080p; encode ffprobe-checked, byte-identical across machines | 65% | 20–35 h |
+| H.264 / AVC | decode all common profiles incl. High 10, 4:2:2 (XAVC S-I, AVC-Intra); encode 8/10-bit | own decoder, **4:2:0 / 4:2:2 / 4:4:4, 8 to 14 bits** (Baseline / Main / High / High 10 / High 4:2:2 / High 4:4:4 Predictive, CABAC / CAVLC; bit-exact with ffmpeg, incl. 16 4:2:2 / 4:4:4 fixtures); no interlaced field / MBAFF (#162), lossless (#163), monochrome (#279) | own encoder (High / Main / Baseline, B-frames, CBR / VBR / 2-pass); 8-bit 4:2:0 only; hardware VideoToolbox / NVENC | decode bit-exact on 37+ conformance streams, 500–600 fps 1080p; encode ffprobe-checked, byte-identical across machines | 65% | 20–35 h |
 | ProRes 422 family / 4444 / XQ | decode + encode all | own decode + encode, all six profiles, alpha | yes (export UI exposes 422 flavours; 4444 / XQ request #342) | ±1 LSB, 318 fps | 85% | 3–6 h |
 | ProRes RAW | decode | none (#345) | — | — | 0% | 30–50 h (spec availability uncertain) |
 | DNxHD / DNxHR | decode + encode, MXF / MOV | own decode (all SMPTE ST 2019-1 CIDs, 8/10/12-bit, 4:2:2 / 4:4:4, interlaced, alpha) and encode LB / SQ / HQ / HQX / 444 | yes, MOV + MXF | within IDCT precision of ffmpeg on 22 fixtures | 90% | 2–4 h |
@@ -27,7 +27,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
 | MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT) | **none** | conformance fixtures | 60% | 20–35 h (encoder) |
 | Motion JPEG | decode + encode | yes | yes (MOV) | — | 90% | — |
-| JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); HTJ2K (Part 15) decode, HT block decoder ported from OpenJPH (#80); **not yet wired into MXF / DCP import**; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | own Part 1 encoder (#81): lossless 5/3, rate-controlled 9/7, DCI 2K / 4K profiles (CPRL, tile-part per component, POC, TLM, DCI byte limits), ~0.75 s per 2K and ~3 s per 4K frame on 4 cores; **not yet wired into DCP / MXF export** (#115) | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; HTJ2K: 10 Grok streams bit-exact / ±1 of OpenJPEG, refinement passes on a local sample; damaged-stream fuzzing; encoder output read by OpenJPEG and ffmpeg (lossless exact, lossy / DCI ±1) | 45% | 30–50 h (MXF / DCP wiring, encoder speed #116, layers / HT encoding #117) |
+| JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); HTJ2K (Part 15) decode, HT block decoder ported from OpenJPH (#80); MXF import (OP1a / OP-Atom, DCP picture tracks; Y'CbCr, R'G'B', gray and X'Y'Z' → P3-D65) since #77, DCP composition (CPL) import #101, interlaced / stereoscopic #102; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | own Part 1 encoder (#81): lossless 5/3, rate-controlled 9/7, DCI 2K / 4K profiles (CPRL, tile-part per component, POC, TLM, DCI byte limits), ~0.75 s per 2K and ~3 s per 4K frame on 4 cores; wired into SMPTE DCP export (#115), **not yet into MXF export** | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; HTJ2K: 10 Grok streams bit-exact / ±1 of OpenJPEG, refinement passes on a local sample; damaged-stream fuzzing; encoder output read by OpenJPEG and ffmpeg (lossless exact, lossy / DCI ±1) | 45% | 25–45 h (DCP composition #101, encoder speed #116, layers / HT encoding #117) |
 | JPEG XS | decode (`libjpegxs`) | none | none | — | 0% | 20–40 h |
 | DV / DVCPRO / DV100 | decode + encode | none | none | — | 0% | 15–25 h |
 | MPEG-4 Part 2 | decode | none | none | — | 0% | 10–20 h |
@@ -60,13 +60,14 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
   including Linux and FreeBSD, where Premiere does not run.
 - **Behind, by user impact:** 10-bit / 4:2:2 H.264 and HEVC in software ([G3](gaps.md#g3-10-bit-and-422-camera-media-needs-hardware)),
   E-AC-3 decode tools, camera RAW, AV1 encoding speed, HEVC B pictures and 4:2:2 encoding, MPEG-2 encoding for broadcast,
-  DCP / JPEG 2000 MXF export (the JPEG 2000 encoder exists, #115), DV, WMV.
+  JPEG 2000 MXF export (the JPEG 2000 encoder exists; DCP export is done, #115), DV, WMV.
 - **Codec dimension: ~60%, 150–250 h** ([target-app-parity.md](target-app-parity.md#by-dimension)).
 
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | JPEG 2000 in MXF import, DCP picture tracks included (#77) |
 | 2026-10-26 | minor | Dolby TrueHD / MLP decode (`cfa4-truehd`) |
 | 2026-10-26 | minor | JPEG 2000 encoder with the DCI 2K / 4K profiles (#81) |
 | 2026-10-26 | minor | HTJ2K (JPEG 2000 Part 15) decode (#80) |

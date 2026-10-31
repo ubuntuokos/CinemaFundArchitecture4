@@ -11,7 +11,7 @@ eredeti CFA4-fejlesztés GPL-3.0-or-later licenccel.
 `VISION.md`, `AGENTS.md`, `docs/coordination.md`, a CFA4 jóváhagyott
 AI-orkesztrációs szabályai és AIQT 1.0.6 elsőbbséget élveznek.
 Terv jóváhagyása nem jelent automatikus fejlesztés-, PR-, merge- vagy
-release-engedélyt. FilmCraft upstream nem módosítható. Célplatform kizárólag
+release-engedélyt. Az upstream szülőprojekt nem módosítható. Célplatform kizárólag
 Ubuntu 26.04 LTS amd64. A Qt6-felület marad a fejlesztés elsődleges feladata.
 
 ## Valóban rendelkezésre álló komponensek
@@ -89,7 +89,7 @@ költség-nem-növekedés **NEM IGAZOLT**.
 | SC-04 | PARTIAL | Hiányzó adat DENY |
 | SC-05 | BLOCKED | ThinkRail feladatdeduplikáció nem igazolt |
 | SC-06 | PARTIAL | Nincs globális bootstrap |
-| SC-07 | PASS-SCOPE | FilmCraft upstream változatlan |
+| SC-07 | PASS-SCOPE | Az upstream szülőprojekt változatlan |
 | SC-08 | BLOCKED | Éles koordinátori jogosultságkezelés nincs összekötve |
 | SC-09 | PENDING | CFA4 kötelező tesztjei változatlanok |
 | SC-10 | PARTIAL | Új modul csak vizsgált kimenet alapján értékelhető |
