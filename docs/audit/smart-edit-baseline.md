@@ -19,10 +19,11 @@ mér; minden állítás mellett ott a forrás, ahol ellenőrizhető.
 - Hiányzik: tartós, képkockaszintű GOP/hozzáférésipont-index, referenciafüggőség-gráf,
   packet-copy végrehajtás az exportban, MPEG-2 encoder, MPEG TS/PS muxer, MPEG-2 videó MP4-mintabejegyzés,
   szoftveres HEVC/AV1 encoder, a Qt6 idővonal GOP-overlay-e és az export módválasztója.
-- **Szabályütközés, eldöntve:** a terv „Native FFmpeg 9 Adapter”-t (libavformat, libavcodec, …) ír
-  elő, a repository kötelező szabályai szerint viszont az ffmpeg/ffprobe csak külső tesztorákulum,
-  soha nem linkelt és nem szállított. **Tulajdonosi döntés (2026-10-27): saját Rust végrehajtás**,
-  az FFmpeg 9 csak validációs orákulum (§3).
+- **FFmpeg, eldöntve:** a terv „Native FFmpeg 9 Adapter”-t (libavformat, libavcodec, …) ír elő.
+  **Tulajdonosi döntés (2026-10-27): a Smart Cut / Smart Render saját Rust végrehajtással készül**,
+  az FFmpeg 9 itt csak validációs orákulum (§3). Ez a funkció tervezési döntése, nem tárolószintű
+  tiltás: a repository szabályai (`AGENTS.md`, [ADR 0005](../adr/ADR-0005-media-backends.md))
+  az FFmpeg ≥ 9.0.2-t kiegészítő háttérként engedik a `cfa4-route` útválasztón át (§3, utóirat).
 - MLT-integráció nincs a kódban, így a terv MLT-re vonatkozó kikötése ma nem érint semmit (§8).
 
 ## 1. Natív média- és exportmodulok
@@ -71,7 +72,8 @@ venni a `LAYERS` táblába és a `docs/architecture.md` §1-be, és wasm-hordozh
 
 ## 3. FFmpeg 9 runtime-linkage
 
-**Eredmény: a CFA4 termék nem linkel FFmpeg-et, és a szabályok ezt ma tiltják.**
+**Eredmény: a CFA4 termék ma nem linkel FFmpeg-et.** Az alábbi felsorolás az audit idején
+olvasott szabályszöveget rögzíti; a jelenlegi szabályt lásd a szakasz végén, az utóiratban.
 
 - `AGENTS.md` §2: „ffmpeg/ffprobe may be used only as external test oracles and fixture
   generators. They are never linked, bundled or shipped.” Ugyanez a `CLAUDE.md` „Clean-room”
@@ -102,12 +104,22 @@ A WP-01 és WP-02 mindkét úton azonos (háttérfüggetlen nyilvántartás és 
 
 **Döntés (ubuntuokos, 2026-10-27): 1. út, saját Rust végrehajtás.** A packet-copy, a mux és a
 határszakasz-újrakódolás a CFA4 saját crate-jeivel készül; az FFmpeg 9 kizárólag validációs
-orákulum (ffprobe, dekódolhatóság, payload-összevetés). Az AGENTS.md és a CLAUDE.md FFmpeg-szabálya
-változatlan; a terv §3 „Native FFmpeg 9 Adapter” rétegét a meglévő `export` pipeline és a saját
+orákulum (ffprobe, dekódolhatóság, payload-összevetés). Ehhez szabálymódosítás nem kell; a terv §3 „Native FFmpeg 9 Adapter” rétegét a meglévő `export` pipeline és a saját
 muxerek töltik be. Ehhez hiányzik és külön munkacsomagban pótlandó: MPEG TS/PS muxer, MPEG-2
 encoder (az MPEG-2 Smart Renderhez), MP4 MPEG-2 mintabejegyzés, szoftveres HEVC encoder (a
 HEVC Smart Render addig csak hardveres encoderrel, képességvizsgálat után), és AV1 encoder
 (se szoftveres, se hardveres integráció nincs; az AV1 Smart Render addig nem lehetséges).
+
+**Utóirat (2026-10-31): a jelenlegi tárolószabály.** A `main` mostani `AGENTS.md`-je és az
+elfogadott [ADR 0005](../adr/ADR-0005-media-backends.md) szerint az FFmpeg ≥ 9.0.2 (GPL-3-as build,
+`nonfree` nélkül) a tervezett `cfa4-ffmpeg` crate-en át **engedélyezett kiegészítő háttér**. A
+hívó kód nem éri el közvetlenül, csak a `cfa4-route` útválasztón keresztül, és a saját motor mindig
+tartalék. A fenti, „tiltja” értelmű pontok (AGENTS.md §2, ADR 0003/0004 korábbi szövege) ezért ma
+nem tárolószintű akadályok, és új ADR sem kell hozzájuk. A Smart Cut / Smart Render végrehajtására
+ettől függetlenül a tulajdonos 2026-10-27-i döntése érvényes: saját Rust út, az FFmpeg 9 validációs
+orákulum. Az FFmpeg-háttér a capability registrybe (`Backend::Ffmpeg`) csak a tulajdonos újabb
+döntésével, a `cfa4-ffmpeg` elkészülte után, az ADR 0005 szerint kerülhet be; a registry ezt
+modellváltás nélkül befogadja.
 
 ## 4. Meglévő stream-copy képességek
 
@@ -190,7 +202,9 @@ pontokkal teljesül. A végrehajtás módjáról a tulajdonos döntött: saját 
 
 1. **WP-01 – Capability Registry** (`crates/smart-edit`, `capabilities`): háttérfüggetlen,
    determinisztikus nyilvántartás a fenti táblával mint kezdőállapottal; futásidejű probe-ok
-   (`export::available` mintájára); FFmpeg háttér nincs (tulajdonosi döntés, §3).
+   (`export::available` mintájára); FFmpeg-háttérsor nincs: a Smart Cut saját Rust úton fut
+   (tulajdonosi döntés, §3). Az ADR 0005 szerinti `cfa4-ffmpeg` elkészülte után, a tulajdonos
+   döntésével, sorként felvehető.
 2. **WP-02 – Media/GOP Indexer:** MPEG-2 és H.264 első körben, a meglévő `mpeg2v` és `h264`
    parserekre építve, a `codecs::VideoSamples` mintatábláiból.
 3. Projektséma-bővítés (Smart Export beállítás) csak `format` migrációval, visszafelé kompatibilisen.
