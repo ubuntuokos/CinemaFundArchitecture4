@@ -286,12 +286,14 @@ const MAX_PENDING: usize = 4096;
 pub struct Renderer {
     layout: Layout,
     tracks: Vec<Track>,
+    /// Whether each object has had a state since the start (or the last reset).
+    placed: Vec<bool>,
     pending: Vec<Pending>,
 }
 
 impl Renderer {
     pub fn new(layout: Layout) -> Self {
-        Self { layout, tracks: Vec::new(), pending: Vec::new() }
+        Self { layout, tracks: Vec::new(), placed: Vec::new(), pending: Vec::new() }
     }
 
     pub fn layout(&self) -> &Layout {
@@ -301,6 +303,7 @@ impl Renderer {
     /// Drops all object state (after a seek).
     pub fn reset(&mut self) {
         self.tracks.clear();
+        self.placed.clear();
         self.pending.clear();
     }
 
@@ -321,11 +324,18 @@ impl Renderer {
     fn apply(&mut self, p: Pending) {
         let n = self.layout.channels();
         if self.tracks.len() <= p.object {
-            self.tracks.resize(p.object + 1, Track { from: vec![0.0; n], to: vec![0.0; n], start: 0, len: 0 });
+            self.tracks.resize_with(p.object + 1, || Track { from: vec![0.0; n], to: vec![0.0; n], start: 0, len: 0 });
+            self.placed.resize(p.object + 1, false);
         }
+        let first = !self.placed.get(p.object).copied().unwrap_or(true);
         if let Some(t) = self.tracks.get_mut(p.object) {
-            let now = t.at(p.at);
-            *t = Track { from: now, to: p.gains, start: p.at, len: p.ramp };
+            // an object's first state (at the start of a stream or after a seek) applies at once:
+            // ramping it in from silence would fade in audio that was never silent
+            let (now, len) = if first { (p.gains.clone(), 0) } else { (t.at(p.at), p.ramp) };
+            *t = Track { from: now, to: p.gains, start: p.at, len };
+        }
+        if let Some(b) = self.placed.get_mut(p.object) {
+            *b = true;
         }
     }
 

@@ -84,6 +84,28 @@ pub fn chroma_dc_dequant_420(c: &mut [i32; 4], qp: i32, ls00: i32) {
     }
 }
 
+/// 4:2:2 chroma DC: 2x4 transform + scaling (8.5.11, 8-307, 8-329, 8-331..8-333). `c` holds
+/// ChromaDCLevel in parsing order; it is replaced by dcC in chroma4x4BlkIdx order (row * 2 + column).
+/// `qp_dc` is QP'C + 3 and `ls00` is LevelScale4x4(qp_dc % 6, 0, 0).
+pub fn chroma_dc_dequant_422(c: &mut [i32; 8], qp_dc: i32, ls00: i32) {
+    // inverse raster scan into rows (i) x columns (j)
+    let m = [[c[0], c[2]], [c[1], c[5]], [c[3], c[6]], [c[4], c[7]]];
+    // columns: B = [[1, 1], [1, -1]]
+    let t = m.map(|[a, b]| [a.wrapping_add(b), a.wrapping_sub(b)]);
+    for j in 0..2 {
+        let (r0, r1, r2, r3) = (t[0][j], t[1][j], t[2][j], t[3][j]);
+        let z0 = r0.wrapping_add(r2);
+        let z1 = r0.wrapping_sub(r2);
+        let z2 = r1.wrapping_sub(r3);
+        let z3 = r1.wrapping_add(r3);
+        let f = [z0.wrapping_add(z3), z1.wrapping_add(z2), z1.wrapping_sub(z2), z0.wrapping_sub(z3)];
+        for i in 0..4 {
+            let v = f[i].wrapping_mul(ls00);
+            c[i * 2 + j] = if qp_dc >= 36 { v << (qp_dc / 6 - 6).min(31) } else { v.wrapping_add(1 << (5 - qp_dc / 6)) >> (6 - qp_dc / 6) };
+        }
+    }
+}
+
 #[inline(always)]
 fn clip<S: Sample>(v: i32, max: i32) -> S {
     S::from_i32(v.clamp(0, max))

@@ -284,7 +284,8 @@ fn generate_fixtures() {
 }
 
 /// A real Dolby Atmos TrueHD stream, when `CFA4_ATMOS_SAMPLE` names one (a raw `.thd`; none is
-/// committed and ffmpeg cannot write one): the objects rendered to 7.1.4 carry about the energy of
+/// committed and ffmpeg cannot write one): its bed presentation decodes bit-exact to ffmpeg, and the
+/// objects rendered to 7.1.4 carry about the energy of
 /// the stream's own 7.1 / 5.1 bed presentation, and nothing is NaN.
 #[test]
 fn a_real_atmos_stream_renders_like_its_bed_presentation() {
@@ -292,8 +293,18 @@ fn a_real_atmos_stream_renders_like_its_bed_presentation() {
         eprintln!("skipped: set CFA4_ATMOS_SAMPLE to a Dolby Atmos .thd stream");
         return;
     };
-    let data = std::fs::read(path).unwrap();
+    let data = std::fs::read(&path).unwrap();
     let bed = decode_all(&data, 4096);
+    // the bed presentation decodes bit-exact to ffmpeg's
+    if let Some(ff) = cfa4_testkit::ffmpeg_or_skip("Atmos bed against ffmpeg") {
+        let want = s24(&ff, &["-i", path.to_str().unwrap()]);
+        let n = bed.channels.len();
+        assert_eq!(want.len(), bed.channels[0].len() * n, "bed length");
+        for (c, o) in bed.channels.iter().enumerate() {
+            let bad = o.iter().enumerate().filter(|&(i, &x)| (x * 8_388_608.0) as i32 != want[i * n + c]).count();
+            assert_eq!(bad, 0, "bed channel {c} differs from ffmpeg in {bad} samples");
+        }
+    }
     let mut dec = Decoder::with_objects(cfa4_truehd::render::Layout::surround_7_1_4());
     let mut rendered = vec![Vec::new(); 12];
     for piece in data.chunks(4096) {

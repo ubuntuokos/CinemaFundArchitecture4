@@ -549,6 +549,9 @@ impl ExportSettings {
 
     /// Output size, rate, audio format and bitrate for a sequence of `seq_w`×`seq_h` at `seq_rate`.
     pub fn resolve(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32) -> Resolved {
+        if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
+            return crate::dcp_out::normalize(self, seq_rate).resolve(seq_w, seq_h, seq_rate, seq_sr);
+        }
         let (mut w, mut h) = match self.frame_size {
             Some((w, h)) => (w.max(2), h.max(2)),
             None => (((seq_w as f32 * self.scale).round() as u32).max(2), ((seq_h as f32 * self.scale).round() as u32).max(2)),
@@ -588,6 +591,8 @@ impl ExportSettings {
             AudioCodec::Flac => !f.is_float(),
             // DVD LPCM in MPEG-2 program streams: 16-bit
             AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Mpeg2 => f == SampleFormat::Int16,
+            // a DCP is always 24-bit (the export sets it)
+            AudioCodec::Pcm | AudioCodec::Auto if self.format == Format::Dcp => !f.is_float(),
             AudioCodec::Pcm | AudioCodec::Auto => !(f.is_float() && self.format.is_mxf()),
         }
     }
@@ -603,6 +608,7 @@ impl ExportSettings {
             (Format::Aac | Format::Hls, _) => AudioCodec::Aac,
             (Format::Mpeg2, _) if crate::Mpeg2Container::of(self).is_transport() => AudioCodec::Aac,
             (Format::Mpeg2, _) => AudioCodec::Pcm,
+            (Format::Dcp, _) => AudioCodec::Pcm,
             // MP4 and QuickTime both carry FLAC (`fLaC` + `dfLa`)
             (_, AudioCodec::Flac) => AudioCodec::Flac,
             (f, _) if f.is_mp4_with(self.multiplexer) => AudioCodec::Aac,
@@ -638,6 +644,9 @@ impl ExportSettings {
 
     /// Estimated output size in bytes for `duration` of a sequence (`seq_w`×`seq_h` at `seq_rate`).
     pub fn estimate_bytes(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> u64 {
+        if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
+            return crate::dcp_out::normalize(self, seq_rate).estimate_bytes(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let secs = duration.seconds().max(0.0);
         let fps = r.rate.num as f64 / r.rate.den as f64;
@@ -698,6 +707,8 @@ impl ExportSettings {
             }
             Format::Gif => px * 0.6 * 8.0 * fps,
             Format::Wav | Format::Aiff | Format::Flac | Format::Opus | Format::MxfOp1a | Format::MxfOpAtom => 0.0,
+            // most frames of real pictures reach the DCI cap of 250 Mbit/s
+            Format::Dcp => 200e6,
         };
         let audio_bps = if self.has_audio() || self.format.is_audio_only() {
             let pcm = r.sample_rate as f64 * r.channels as f64 * f64::from(self.audio.sample_format().bits());
@@ -733,6 +744,9 @@ pub struct Summary {
 impl ExportSettings {
     /// Summary lines for a sequence of `seq_w`×`seq_h` at `seq_rate` / `seq_sr` exporting `duration`.
     pub fn summary(&self, seq_w: u32, seq_h: u32, seq_rate: FrameRate, seq_sr: u32, duration: Tick) -> Summary {
+        if self.format == Format::Dcp && !crate::dcp_out::is_normalized(self) {
+            return crate::dcp_out::normalize(self, seq_rate).summary(seq_w, seq_h, seq_rate, seq_sr, duration);
+        }
         let r = self.resolve(seq_w, seq_h, seq_rate, seq_sr);
         let mbps = |k: u32| format!("{:.2} Mbps", k as f64 / 1000.0);
         let video = if !self.has_video() {
@@ -816,6 +830,10 @@ impl ExportSettings {
                 }
                 Format::Mjpeg | Format::JpegSequence => v += &format!(", quality {}", self.quality),
                 Format::DpxSequence => v += ", 10-bit RGB",
+                Format::Dcp => {
+                    let res = if crate::DcpResolution::of(self) == crate::DcpResolution::FourK { "4K" } else { "2K" };
+                    v += &format!(", JPEG 2000 DCI {res}, 12-bit X'Y'Z'");
+                }
                 Format::ExrSequence => {
                     v += ", 16-bit half float, linear";
                     match self.exr_compression {
@@ -858,6 +876,11 @@ impl ExportSettings {
                 crate::Mpeg2Container::Ts => "Transport Stream",
                 crate::Mpeg2Container::M2ts => "BDAV Transport Stream",
                 crate::Mpeg2Container::Es => "Elementary Stream",
+            },
+            Format::Dcp => match crate::DcpAspect::of(self) {
+                crate::DcpAspect::Flat => "SMPTE, Flat 1.85:1",
+                crate::DcpAspect::Scope => "SMPTE, Scope 2.39:1",
+                crate::DcpAspect::Full => "SMPTE, Full 1.90:1",
             },
             f if f.is_image_sequence() => "Image sequence",
             _ => "",

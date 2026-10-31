@@ -89,10 +89,36 @@ fn decode_raw(data: &[u8], chunk: usize) -> Decoded {
     all
 }
 
-/// The stream's frames (a core frame and its extension substream), as a demuxer gives them.
+/// The audio of a DTS-HD file (`.dtshd`): its `STRMDATA` chunk. The chunks are an 8-byte id and
+/// a 64-bit big-endian size; others (a `BLACKOUT` chunk holds a silent frame) are not the stream,
+/// and ffmpeg's demuxer skips them. A raw `.dts` comes back whole.
+fn stream_data(data: &[u8]) -> &[u8] {
+    if !data.starts_with(b"DTSHDHDR") {
+        return data;
+    }
+    let mut p = 0;
+    while let Some(head) = data.get(p..p + 16) {
+        let size = usize::try_from(u64::from_be_bytes(head[8..16].try_into().unwrap())).unwrap();
+        let body = data.get(p + 16..).map_or(&[][..], |b| &b[..size.min(b.len())]);
+        if &head[..8] == b"STRMDATA" {
+            return body;
+        }
+        p += 16 + size;
+    }
+    &[]
+}
+
+/// The stream's frames (a core frame and its extension substream, or the substream alone of a
+/// stream without a core), as a demuxer gives them.
 fn frames(data: &[u8]) -> Vec<&[u8]> {
     let mut out = Vec::new();
     let mut p = 0;
+    let exss_sync = cfa4_dts::SYNCWORD_SUBSTREAM.to_be_bytes();
+    while let Some(rest) = data.get(p..).filter(|r| r.starts_with(&exss_sync)) {
+        let Some(n) = cfa4_dts::exss_substream_size(rest).filter(|&n| n <= rest.len()) else { break };
+        out.push(&rest[..n]);
+        p += n;
+    }
     while let Ok(h) = cfa4_dts::parse_header(&data[p..]) {
         let mut end = p + h.frame_size;
         if data.get(end..end + 4) == Some(&cfa4_dts::SYNCWORD_SUBSTREAM.to_be_bytes()[..]) {
@@ -226,10 +252,31 @@ fn a_real_dts_hd_stream_decodes_like_ffmpeg() {
     let ff = cfa4_testkit::require_ffmpeg!();
     let path = PathBuf::from(path);
     let data = std::fs::read(&path).unwrap();
-    let d = decode_raw(&data, 65_536);
+    let d = decode_raw(stream_data(&data), 65_536);
     eprintln!("{} Hz {:?} lossless {}", d.sample_rate, d.speakers, d.lossless);
     assert!(d.lossless);
-    assert_bit_exact("CFA4_DTSHD_SAMPLE", &d, &reference(&ff, &path));
+    let want = reference(&ff, &path);
+    assert_bit_exact("CFA4_DTSHD_SAMPLE", &d, &want);
+    // as container packets, one frame each
+    let fr = frames(stream_data(&data));
+    let mut dec = Decoder::new();
+    let mut packets = Decoded::default();
+    for f in &fr {
+        let o = dec.decode_packet(f).unwrap();
+        if packets.channels.is_empty() {
+            packets = o;
+        } else {
+            for (a, c) in packets.channels.iter_mut().zip(o.channels) {
+                a.extend(c);
+            }
+        }
+    }
+    assert_bit_exact("CFA4_DTSHD_SAMPLE packets", &packets, &want);
+    // a stream without a core counts its lossless frames
+    if stream_data(&data).starts_with(&cfa4_dts::SYNCWORD_SUBSTREAM.to_be_bytes()) {
+        let n: i64 = fr.iter().map(|f| cfa4_dts::cfa4::packet_samples(f).unwrap()).sum();
+        assert_eq!(n as usize, packets.channels[0].len());
+    }
 }
 
 /// An MSB-first bit writer.

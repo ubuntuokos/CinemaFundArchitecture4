@@ -182,12 +182,12 @@ impl EvoFrame {
         let frame_start = reader.position()?;
         let mut evo_frame = EvoFrame { evo_version: reader.get_n(2)?, ..Default::default() };
         if evo_frame.evo_version == 3 {
-            evo_frame.evo_version += reader.get_variable_bits_max(2, 16)?;
+            evo_frame.evo_version = evo_frame.evo_version.saturating_add(reader.get_variable_bits_max(2, 16)?);
         }
 
         evo_frame.key_id = reader.get_n(3)?;
         if evo_frame.key_id == 7 {
-            evo_frame.key_id += reader.get_variable_bits_max(3, 10)?;
+            evo_frame.key_id = evo_frame.key_id.saturating_add(reader.get_variable_bits_max(3, 10)?);
         }
 
         while let Ok(evo_payload) = EvoPayload::read(reader) {
@@ -203,5 +203,21 @@ impl EvoFrame {
         evo_frame.evo_protection = EvoProtection::read(reader)?;
 
         Ok(evo_frame)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// An escaped version or key id near `u32::MAX` overflowed the addition (a panic in debug
+    /// builds).
+    #[test]
+    fn huge_escaped_version_and_key_id_do_not_overflow() {
+        // version 3, then fifteen escape groups of 2 and a last 3: 3 + 0xFFFF_FFFF
+        let mut data = vec![0xED, 0xB6, 0xDB, 0x6D, 0xB6, 0xDB, 0x80];
+        data.resize(64, 0xFF);
+        let mut reader = BsIoSliceReader::from_slice(&data);
+        let _ = EvoFrame::read(&mut reader);
     }
 }

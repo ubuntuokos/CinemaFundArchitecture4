@@ -154,10 +154,25 @@ fn raw(ff: &Path, args: &[&str], pix_fmt: &str, comps: &[(usize, u8)]) -> Vec<Ve
     }
 }
 
+/// Whether `ff` has the encoder a spec names (the pinned CI ffmpeg is built without
+/// `libopenjpeg`, so the DCI cinema stream comes from a local ffmpeg only).
+fn has_encoder(ff: &Path, s: &Spec) -> bool {
+    let Some(name) = s.enc.iter().skip_while(|a| **a != "-c:v").nth(1) else { return true };
+    Command::new(ff)
+        .args(["-hide_banner", "-encoders"])
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).lines().any(|l| l.split_whitespace().nth(1) == Some(name)))
+        .unwrap_or(false)
+}
+
 #[test]
 fn ffmpeg_encoded_codestreams_decode() {
     let ff = cfa4_testkit::require_ffmpeg!();
     for s in SPECS {
+        if !has_encoder(&ff, s) {
+            eprintln!("{}: skipped, ffmpeg has no {:?} encoder", s.name, s.enc);
+            continue;
+        }
         let f = make(&ff, s).unwrap_or_else(|| panic!("could not generate {}", s.name));
         let data = std::fs::read(&f).unwrap();
         let img = cfa4_j2k::decode(&data).unwrap_or_else(|e| panic!("{}: {e}", s.name));
@@ -478,12 +493,13 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
     assert!(matches!(st, Ok(s) if s.success()));
     let rgb = ppm(&std::fs::read(&input).unwrap());
     let plane = |data: Vec<i32>, precision: u8| Plane { width: 203, height: 117, precision, signed: false, dx: 1, dy: 1, data };
-    let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect() };
+    let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect(), mct: false };
     // 12-bit for the cinema profiles (the 8-bit pattern scaled up, plus a ramp)
     let rgb12 = Image {
         width: 203,
         height: 117,
         components: rgb.iter().enumerate().map(|(c, d)| plane(d.iter().enumerate().map(|(i, &v)| v * 16 + ((i + c) % 16) as i32).collect(), 12)).collect(),
+        mct: false,
     };
     let cases: Vec<(&str, &Image, EncodeOptions, bool)> = vec![
         ("lossless", &rgb8, EncodeOptions::lossless(), true),
