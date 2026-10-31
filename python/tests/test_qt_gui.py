@@ -5458,6 +5458,14 @@ def test_clip_dialogs_as_egui(app):
     assert d.params["clips"] == [[0, 2], [1]]
     child(d, "ok", QtWidgets.QPushButton).click()
     assert sent[-1] == ("clip.audioChannels", {"format": "mono", "clips": [[0, 2], [1]]})
+    # an Auro-3D source names its restored loudspeakers under the channel numbers (#323)
+    speakers = ["L", "R", "C", "LFE", "Ls", "Rs", "HL", "HR", "HLs", "HRs"]
+    d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "adaptive", "clips": [list(range(10))]}, "info": {"channels": 10, "items": True, "speakers": speakers}}, run)
+    assert [child(d, f"ch.{c}", QtWidgets.QLabel).text().split("\n")[-1] for c in range(10)] == speakers
+    # no layout (or a damaged one): the numbers alone
+    for info in ({"channels": 2, "items": True}, {"channels": 2, "items": True, "speakers": [5, None]}, {"channels": 2, "items": True, "speakers": "L R"}):
+        d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "stereo", "clips": [[0, 1]]}, "info": info}, run)
+        assert child(d, "ch.1", QtWidgets.QLabel).text() == "Ch. 2"
     # Frame Hold: the timecode field only for Source Timecode / Sequence Time; Hold On off greys the rest
     d = ClipDialog(None, {"command": "clip.frameHoldOptions", "params": {"enabled": True, "holdOn": "in", "timecode": "00:00:01:00", "holdFilters": False}}, run)
     d.show()

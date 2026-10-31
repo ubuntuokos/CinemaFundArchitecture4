@@ -432,7 +432,13 @@ impl MkvSource {
                     rate = crate::audio::OPUS_RATE;
                     channels = h.channels as u32;
                 }
-                AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: a.bit_depth.map(|b| b as u32) }
+                AudioStreamInfo {
+                    sample_rate: rate,
+                    channels,
+                    codec: codec_label(&t.codec),
+                    bits_per_sample: a.bit_depth.map(|b| b as u32),
+                    speakers: Vec::new(),
+                }
             })
             .collect();
         let info = MediaInfo {

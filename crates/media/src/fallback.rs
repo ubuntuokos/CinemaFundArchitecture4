@@ -152,7 +152,7 @@ mod tests {
                 bitrate: None,
                 hdr: None,
             }),
-            audio_streams: vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "test".into(), bits_per_sample: None }],
+            audio_streams: vec![AudioStreamInfo { sample_rate: 48_000, channels: 2, codec: "test".into(), bits_per_sample: None, speakers: Vec::new() }],
             container: "test".into(),
             start_timecode: None,
             file_size: None,

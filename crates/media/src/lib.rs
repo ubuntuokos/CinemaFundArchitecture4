@@ -94,6 +94,10 @@ pub struct AudioStreamInfo {
     pub channels: u32,
     pub codec: String,
     pub bits_per_sample: Option<u32>,
+    /// The loudspeaker of each channel in order (`"L"`, `"HL"`, …), when the source knows its
+    /// layout: an Auro-3D carrier's restored layout (#323). Empty when unknown.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub speakers: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

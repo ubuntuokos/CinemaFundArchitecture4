@@ -527,12 +527,24 @@ impl MxfSource {
                 combined.push((ai, first));
             }
             let sr = if rate.is_valid() { (rate.num as f64 / rate.den as f64).round() as u32 } else { 48_000 };
-            audio = Some(AudioStreamInfo { sample_rate: sr.max(1), channels, codec: file.tracks[a0].codec.name().into(), bits_per_sample: Some(si0.bits) });
+            audio = Some(AudioStreamInfo {
+                sample_rate: sr.max(1),
+                channels,
+                codec: file.tracks[a0].codec.name().into(),
+                bits_per_sample: Some(si0.bits),
+                speakers: Vec::new(),
+            });
         }
         if let Some(ia) = &iab {
             aframes = ia.start_of(ia.count);
             let sr = if ia.rate96 { 96_000 } else { 48_000 };
-            audio = Some(AudioStreamInfo { sample_rate: sr, channels: ia.layout.channels() as u32, codec: "IAB".into(), bits_per_sample: Some(24) });
+            audio = Some(AudioStreamInfo {
+                sample_rate: sr,
+                channels: ia.layout.channels() as u32,
+                codec: "IAB".into(),
+                bits_per_sample: Some(24),
+                speakers: Vec::new(),
+            });
         }
         if aframes == u64::MAX {
             aframes = 0;
