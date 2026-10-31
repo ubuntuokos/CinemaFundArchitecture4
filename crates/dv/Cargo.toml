@@ -1,0 +1,21 @@
+[package]
+name = "cfa4-dv"
+description = "DV video decoder (IEC 61834-2 DV25, SMPTE 314M DVCPRO 25): DIF frames, 8-8 / 2-4-8 DCT, 4:1:1 and 4:2:0; tables ported from libdv"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND LGPL-2.1-or-later"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = ["threads"]
+threads = ["dep:rayon"]
+
+[dependencies]
+thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }
