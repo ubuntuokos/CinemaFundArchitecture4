@@ -333,6 +333,20 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         let kind = cfa4_export::dcp_content_kind(&probe).ok_or_else(|| bad(cmd, format!("dcpContentKind: {}", cfa4_export::DCP_CONTENT_KINDS.join(" | "))))?;
         settings.dcp_content_kind = kind.to_string();
     }
+    if let Some(v) = str_p(p, "dcpImmersive") {
+        let m = cfa4_export::DcpImmersive::from_name(v).ok_or_else(|| bad(cmd, "dcpImmersive: off | bed | file"))?;
+        settings.dcp_immersive = m.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpIabSource") {
+        settings.dcp_iab_source = v.to_string();
+    }
+    if let Some(v) = str_p(p, "dcpIabFallback") {
+        settings.dcp_iab_fallback = match v.trim().to_ascii_lowercase().as_str() {
+            "5.1" | "51" | "" => "5.1".to_string(),
+            "none" | "off" => "none".to_string(),
+            _ => return Err(bad(cmd, "dcpIabFallback: 5.1 | none")),
+        };
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
@@ -1013,6 +1027,9 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "mpeg2Container": pr.settings.mpeg2_container,
         "dcpResolution": pr.settings.dcp_resolution,
         "dcpAspect": pr.settings.dcp_aspect,
+        "dcpImmersive": pr.settings.dcp_immersive,
+        "dcpIabSource": pr.settings.dcp_iab_source,
+        "dcpIabFallback": pr.settings.dcp_iab_fallback,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
@@ -1179,6 +1196,14 @@ fn formats(_: &mut Session, _: &Value) -> Result<Value> {
     ))
 }
 
+/// What an IAB source holds, for the DCP export's immersive audio (#343).
+fn iab_info(_: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "export.iabInfo";
+    let path = str_p(p, "path").ok_or_else(|| bad(cmd, "need `path`"))?;
+    let info = cfa4_export::probe_iab_source(path).map_err(|e| bad(cmd, e.to_string()))?;
+    Ok(serde_json::to_value(info).unwrap_or_default())
+}
+
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 fn spec(
@@ -1209,6 +1234,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("export.presets.import", "Import Export Presets", r#"{"path":str}"#, always, presets_import, true),
         spec("export.presets.export", "Export Export Presets", r#"{"path":str,"names":[str]?}"#, always, presets_export, false),
         spec("export.formats", "List Export Formats", "{}", always, formats, false),
+        spec("export.iabInfo", "Inspect IAB Source", r#"{"path":str}"#, always, iab_info, false),
         spec("export.resolve", "Resolve Export Settings", "{…settings params, \"path\":str?}", has_seq, resolve, false),
         spec(
             "export.queue.add",

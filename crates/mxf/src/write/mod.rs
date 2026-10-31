@@ -29,7 +29,9 @@
 //! essence track, the file package as the primary package, the closed and complete header
 //! metadata only in the header partition and the index only in the footer; with
 //! [`PictureCoding::J2k`] and [`ColorSpace::DcdmXyz`] the picture track file of ST 429-4, with
-//! 24-bit PCM and [`WriterConfig::channel_assignment`] the sound track file of ST 429-2.
+//! 24-bit PCM and [`WriterConfig::channel_assignment`] the sound track file of ST 429-2, with
+//! [`WriterConfig::iab`] the immersive audio track file of ST 429-18 (one IABitstream frame per
+//! data element, [`MxfWriter::push_data`]).
 
 mod labels;
 #[cfg(test)]
@@ -392,6 +394,22 @@ impl PackageIds {
     }
 }
 
+/// The immersive audio data essence of a D-Cinema IAB track file (ST 429-18 Tables 3 and 5):
+/// values for the sub-descriptor, taken from the IAFrames.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct IabDesc {
+    /// IAFrame Version.
+    pub version: u8,
+    /// Most bed channels in a frame.
+    pub max_channels: u16,
+    /// Most objects in a frame.
+    pub max_objects: u16,
+    /// Edit unit aligned with the first frame of action of the picture.
+    pub first_frame: u32,
+    /// IAFrame SampleRate (48000 or 96000).
+    pub sample_rate: u32,
+}
+
 /// Everything the writer needs up front.
 #[derive(Clone, Debug, PartialEq)]
 pub struct WriterConfig {
@@ -412,6 +430,8 @@ pub struct WriterConfig {
     pub modified: Timestamp,
     /// Sound tracks: the Wave descriptor's channel assignment label (ST 429-2 Annex A).
     pub channel_assignment: Option<[u8; 16]>,
+    /// [`Pattern::DCinema`] only: an immersive audio track file (no picture, no sound).
+    pub iab: Option<IabDesc>,
 }
 
 impl WriterConfig {
@@ -429,6 +449,7 @@ impl WriterConfig {
             version: env!("CARGO_PKG_VERSION").into(),
             modified: Timestamp::default(),
             channel_assignment: None,
+            iab: None,
         }
     }
 }
@@ -475,6 +496,8 @@ struct Entry {
 enum TrackKind {
     Picture,
     Sound(usize),
+    /// Immersive audio data (ST 429-18).
+    Iab,
 }
 
 #[derive(Clone, Debug)]
@@ -616,7 +639,10 @@ impl<W: Write + Seek> MxfWriter<W> {
         if !cfg.edit_rate.is_valid() {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "MXF edit rate must be positive"));
         }
-        let n_essence = cfg.picture.is_some() as usize + cfg.sound.len();
+        let n_essence = cfg.picture.is_some() as usize + cfg.sound.len() + cfg.iab.is_some() as usize;
+        if cfg.iab.is_some() && cfg.pattern != Pattern::DCinema {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "immersive audio data is only written as a D-Cinema track file"));
+        }
         if n_essence == 0 {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "MXF file without essence tracks"));
         }
@@ -632,6 +658,10 @@ impl<W: Write + Seek> MxfWriter<W> {
         if let Some(p) = &cfg.picture {
             let (container, et) = p.coding.container(clip);
             tracks.push(TrackW { id, kind: TrackKind::Picture, element_key: element_key(0x15, 1, et, 1), container });
+            id += 1;
+        }
+        if cfg.iab.is_some() {
+            tracks.push(TrackW { id, kind: TrackKind::Iab, element_key: IAB_ELEMENT, container: EC_IAB });
             id += 1;
         }
         let ns = cfg.sound.len() as u8;
@@ -794,6 +824,30 @@ impl<W: Write + Seek> MxfWriter<W> {
         }
     }
 
+    /// Replace the immersive audio sub-descriptor values (known once every frame is written);
+    /// [`MxfWriter::finish`] writes them.
+    pub fn set_iab(&mut self, d: IabDesc) -> io::Result<()> {
+        if self.cfg.iab.is_none() {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "this MXF file has no immersive audio track"));
+        }
+        self.cfg.iab = Some(d);
+        Ok(())
+    }
+
+    /// Push one IABitstream frame (an immersive audio track file's edit unit).
+    pub fn push_data(&mut self, data: &[u8]) -> io::Result<()> {
+        if self.cfg.iab.is_none() {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "this MXF file has no immersive audio track"));
+        }
+        self.pending.push_back((data.to_vec(), FrameInfo::intra()));
+        self.emit(false)
+    }
+
+    /// Whether the edit units are pictures or IAB frames (one pushed element each).
+    fn framed(&self) -> bool {
+        self.cfg.picture.is_some() || self.cfg.iab.is_some()
+    }
+
     /// Push interleaved little-endian PCM of sound track `track` (whole sample frames).
     pub fn push_sound(&mut self, track: usize, pcm: &[u8]) -> io::Result<()> {
         let Some(sd) = self.cfg.sound.get(track).copied() else {
@@ -820,7 +874,7 @@ impl<W: Write + Seek> MxfWriter<W> {
     /// Write every complete OP1a content package (`flush`: pad the sound of the pending pictures
     /// with silence, or, without a picture track, write the remaining sound).
     fn emit(&mut self, flush: bool) -> io::Result<()> {
-        let has_pic = self.cfg.picture.is_some();
+        let has_pic = self.framed();
         loop {
             let i = self.entries.len() as u64;
             if has_pic && self.pending.is_empty() {
@@ -860,8 +914,10 @@ impl<W: Write + Seek> MxfWriter<W> {
     fn metadata(&self, d: Durations) -> Vec<u8> {
         let cfg = &self.cfg;
         let mut out = Vec::new();
+        let iab_primer = if cfg.iab.is_some() { IAB_PRIMER } else { &[] };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
+            .chain(iab_primer)
             .map(|(t, ul)| {
                 let mut e = t.to_be_bytes().to_vec();
                 e.extend_from_slice(ul);
@@ -941,6 +997,7 @@ impl<W: Write + Seek> MxfWriter<W> {
                         ai += 1;
                         (DEF_SOUND, format!("A{ai}"))
                     }
+                    TrackKind::Iab => (DEF_DATA, "D1".to_string()),
                 };
                 let number = if material { 0 } else { u32::from_be_bytes(t.element_key[12..16].try_into().unwrap_or([0; 4])) };
                 let file = cfg.ids.file;
@@ -1003,6 +1060,10 @@ impl<W: Write + Seek> MxfWriter<W> {
                         .u32(0x3306, range);
                     s.write(&mut out);
                 }
+                TrackKind::Iab => {
+                    let Some(ia) = cfg.iab else { continue };
+                    self.iab_descriptor(&mut out, uid, t, ia, d);
+                }
                 TrackKind::Sound(i) => {
                     let sd = cfg.sound[i];
                     let mut s = Set::new(0x48, uid);
@@ -1037,6 +1098,27 @@ impl<W: Write + Seek> MxfWriter<W> {
             s.write(&mut out);
         }
         out
+    }
+
+    /// The immersive audio data essence descriptor (ST 429-18 Table 3, a generic data essence
+    /// descriptor) and its sub-descriptor (Table 5).
+    fn iab_descriptor(&self, out: &mut Vec<u8>, uid: [u8; 16], t: &TrackW, ia: IabDesc, d: Durations) {
+        let sub_uid = self.uid(3100);
+        let mut s = Set { key: IAB_DESCRIPTOR, v: Vec::new() };
+        s.p(0x3C0A, &uid).refs(TAG_SUB_DESCRIPTORS, &[sub_uid]).u32(0x3006, t.id).rat(0x3001, self.cfg.edit_rate);
+        if d.essence >= 0 {
+            s.i64(0x3002, d.essence);
+        }
+        s.p(0x3004, &t.container).p(0x3E01, &IAB_CODING);
+        s.write(out);
+        let mut s = Set { key: IAB_SUB_DESCRIPTOR, v: Vec::new() };
+        s.p(0x3C0A, &sub_uid)
+            .u8(TAG_IAB_VERSION, ia.version)
+            .u16(TAG_IAB_VERSION + 1, ia.max_channels)
+            .u16(TAG_IAB_VERSION + 2, ia.max_objects)
+            .u32(TAG_IAB_VERSION + 3, ia.first_frame)
+            .rat(TAG_IAB_VERSION + 4, Rational::new(ia.sample_rate as i32, 1));
+        s.write(out);
     }
 
     /// The RGBA picture essence descriptor of a D-Cinema X'Y'Z' track (ST 429-4 Table 4) and its

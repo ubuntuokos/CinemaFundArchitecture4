@@ -17,6 +17,7 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+mod dcp_iab;
 mod dcp_out;
 mod deflate;
 mod hls_out;
@@ -33,6 +34,7 @@ pub mod settings;
 pub mod still;
 mod webm_out;
 pub use audio_out::LoudnessReport;
+pub use dcp_iab::{DcpImmersive, IabSourceInfo, fsk_sync, probe_iab_source};
 pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
@@ -425,6 +427,18 @@ pub struct ExportSettings {
     /// DCP content kind ([`DCP_CONTENT_KINDS`], empty = `feature`).
     #[serde(default)]
     pub dcp_content_kind: String,
+    /// DCP immersive audio ([`DcpImmersive`]): `off` (also empty), `bed` (the 5.1 mix as a 7.1 DS
+    /// IAB bed) or `file` (the IAB of [`ExportSettings::dcp_iab_source`]).
+    #[serde(default)]
+    pub dcp_immersive: String,
+    /// The IAB source of `dcp_immersive = file`: an IAB track file (IMF or DCP MXF) or a raw
+    /// IABitstream.
+    #[serde(default)]
+    pub dcp_iab_source: String,
+    /// Immersive audio DCPs: the 5.1 in the main sound track's channels 1-6 (`5.1`, also empty) or
+    /// silence there (`none`).
+    #[serde(default)]
+    pub dcp_iab_fallback: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -657,6 +671,9 @@ impl Default for ExportSettings {
             dcp_resolution: String::new(),
             dcp_aspect: String::new(),
             dcp_content_kind: String::new(),
+            dcp_immersive: String::new(),
+            dcp_iab_source: String::new(),
+            dcp_iab_fallback: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,

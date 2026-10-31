@@ -8,6 +8,10 @@
 //! - One reel; composition playlist (ST 429-7), packing list (ST 429-8), asset map (ST 429-9)
 //!   and volume index, with SHA-1 hashes and random (version 4) UUIDs.
 //!
+//! With immersive audio (#343, [`crate::dcp_iab`]) the reel also holds an IAB track file
+//! (ST 429-18, a CPL `AuxData` asset) and the main sound becomes 16 channels with the FSK
+//! synchronisation signal (ST 429-19).
+//!
 //! Unencrypted and unsigned (no KDM, no XML signature): a DCP that servers ingest as an OV.
 //! The composition edit rate is the DCI rate nearest the export's (24, 25, 30, 48, 50 or 60; 4K
 //! 24, 25 or 30).
@@ -18,6 +22,7 @@ use cfa4_mxf::{FrameInfo, MxfWriter, PackageIds, Pattern, PictureDesc, Rational,
 use cfa4_time::FrameRate;
 use rayon::prelude::*;
 
+use crate::dcp_iab::{DcpImmersive, ImmersiveMux};
 use crate::{AudioCodec, EncodedPacket, EncoderFrame, ExportError, ExportSettings, Format, Out, Result, SampleFormat, Scaling, Stage, VideoEncoder, timed};
 
 /// Image resolution of a DCP.
@@ -165,7 +170,7 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     if dcp_content_kind(s).is_none() {
         return Err(ExportError::Unsupported(format!("unknown DCP content kind {:?}: choose one of {}", s.dcp_content_kind, DCP_CONTENT_KINDS.join(", "))));
     }
-    Ok(())
+    crate::dcp_iab::validate(s)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -441,6 +446,8 @@ struct Asset {
     size: u64,
     hash: [u8; 20],
     mime: &'static str,
+    /// Edit units of a track file when they may differ from the picture's (the IAB track).
+    units: Option<u64>,
 }
 
 /// Everything the DCP muxer needs from the export.
@@ -466,6 +473,8 @@ pub(crate) struct DcpMux {
     issued: String,
     picture: Option<([u8; 16], String, MxfWriter<Out>)>,
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
+    /// The IAB track and the 16-channel main sound of an immersive audio DCP.
+    immersive: Option<ImmersiveMux>,
     frames: u64,
 }
 
@@ -500,15 +509,30 @@ impl DcpMux {
         pc.picture = Some(PictureDesc::dcinema(rsiz, s.width, s.height));
         let pic_name = format!("j2c_{}.mxf", uuid_text(&pic_id));
         let picture = Some((pic_id, pic_name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &pic_name))?, pc).map_err(io)?));
-        let sound = if s.audio {
+        let immersive = DcpImmersive::of(settings) != DcpImmersive::Off;
+        // immersive audio: the main sound is always there, 16 channels, Configuration 4
+        let sound = if s.audio || immersive {
             let id = uuid(&format!("{seed}|sound"));
             let mut sc = config("sound", id);
-            sc.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
-            sc.channel_assignment = Some(CHANNEL_CONFIG_1);
+            let channels = if immersive { crate::dcp_iab::MAIN_SOUND_CHANNELS } else { 6 };
+            sc.sound = vec![SoundDesc { sample_rate: 48_000, channels, bits: 24 }];
+            sc.channel_assignment = Some(if immersive { crate::dcp_iab::CHANNEL_CONFIG_4 } else { CHANNEL_CONFIG_1 });
             let name = format!("pcm_{}.mxf", uuid_text(&id));
             Some((id, name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &name))?, sc).map_err(io)?))
         } else {
             None
+        };
+        let immersive = match (&sound, immersive) {
+            (Some((sound_id, _, _)), true) => {
+                let id = uuid(&format!("{seed}|iab"));
+                let mut ic = config("immersive audio", id);
+                ic.iab = Some(crate::dcp_iab::initial_desc());
+                let name = format!("iab_{}.mxf", uuid_text(&id));
+                let w = MxfWriter::new(Out::create_path(settings, &join(&dir, &name))?, ic).map_err(io)?;
+                let fps = u32::try_from(s.rate.num).unwrap_or(24);
+                Some(ImmersiveMux::new(settings, fps, id, name, w, *sound_id)?)
+            }
+            _ => None,
         };
         Ok(DcpMux {
             dir,
@@ -520,8 +544,15 @@ impl DcpMux {
             issued,
             picture,
             sound,
+            immersive,
             frames: 0,
         })
+    }
+
+    /// The picture length, for tests that drive the sound tracks alone.
+    #[cfg(test)]
+    pub(crate) fn set_frames(&mut self, frames: u64) {
+        self.frames = frames;
     }
 
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
@@ -538,13 +569,26 @@ impl DcpMux {
         if planar.first().is_none_or(Vec::is_empty) {
             return Ok(());
         }
+        if let Some(im) = self.immersive.as_mut() {
+            return im.write_audio(planar, w);
+        }
         w.push_sound(0, &cfa4_mxf::encode_pcm(planar, 24)).map_err(io)
     }
 
     /// Finish the track files and write the composition playlist, packing list, asset map and
-    /// volume index; returns (total bytes, every file written).
-    pub fn finish(mut self, settings: &ExportSettings) -> Result<(u64, Vec<String>)> {
-        let (pic, snd) = (self.picture.take(), self.sound.take());
+    /// volume index; returns (total bytes, every file written). `cancelled` is polled while an
+    /// immersive source is copied.
+    pub fn finish(mut self, settings: &ExportSettings, cancelled: &dyn Fn() -> bool) -> Result<(u64, Vec<String>)> {
+        let (pic, mut snd) = (self.picture.take(), self.sound.take());
+        // the IAB and the main sound get their last edit units first
+        let iab = match (self.immersive.take(), snd.as_mut()) {
+            (Some(im), Some((_, _, sw))) => {
+                let (id, name) = (im.id, im.name.clone());
+                let (w, units) = im.finish(self.frames, sw, cancelled)?;
+                Some((id, name, w, units))
+            }
+            _ => None,
+        };
         let dir = self.dir.clone();
         let mut files = Vec::new();
         let mut total = 0u64;
@@ -553,12 +597,16 @@ impl DcpMux {
             let (size, hash) = finish_hashed(w.finish().map_err(io)?, settings, &path)?;
             total += size;
             files.push(path);
-            Ok(Asset { id, name, size, hash, mime: "application/mxf" })
+            Ok(Asset { id, name, size, hash, mime: "application/mxf", units: None })
         };
         let (pid, pname, pw) = pic.ok_or_else(|| ExportError::Encode("internal: the DCP picture file is closed".into()))?;
         let picture = track(pid, pname, pw)?;
         let sound = match snd {
             Some((id, name, w)) => Some(track(id, name, w)?),
+            None => None,
+        };
+        let aux = match iab {
+            Some((id, name, w, units)) => Some(Asset { units: Some(units), ..track(id, name, w)? }),
             None => None,
         };
         let mut write = |name: String, xml: String, id: [u8; 16]| -> Result<Asset> {
@@ -568,13 +616,14 @@ impl DcpMux {
             let size = crate::write_output(settings, &path, data)?;
             total += size;
             files.push(path);
-            Ok(Asset { id, name, size, hash, mime: "text/xml" })
+            Ok(Asset { id, name, size, hash, mime: "text/xml", units: None })
         };
         let cpl_id = uuid(&format!("{}|cpl", self.seed));
-        let cpl = write(format!("cpl_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref()), cpl_id)?;
+        let cpl = write(format!("cpl_{}.xml", uuid_text(&cpl_id)), self.cpl(cpl_id, &picture, sound.as_ref(), aux.as_ref()), cpl_id)?;
         let pkl_id = uuid(&format!("{}|pkl", self.seed));
         let mut assets = vec![&cpl, &picture];
         assets.extend(sound.as_ref());
+        assets.extend(aux.as_ref());
         let pkl = write(format!("pkl_{}.xml", uuid_text(&pkl_id)), self.pkl(pkl_id, &assets), pkl_id)?;
         assets.insert(0, &pkl);
         let am = self.assetmap(&assets, &pkl);
@@ -593,8 +642,9 @@ impl DcpMux {
         out.push_str(&format!("  <Creator>CFA4 {}</Creator>\n", env!("CARGO_PKG_VERSION")));
     }
 
-    /// Composition playlist (ST 429-7): one reel, main picture and main sound.
-    fn cpl(&self, id: [u8; 16], picture: &Asset, sound: Option<&Asset>) -> String {
+    /// Composition playlist (ST 429-7): one reel, main picture, main sound and the immersive
+    /// audio `AuxData` of ST 429-18 clause 14.
+    fn cpl(&self, id: [u8; 16], picture: &Asset, sound: Option<&Asset>, aux: Option<&Asset>) -> String {
         let rate = format!("{} {}", self.rate.num, self.rate.den);
         let mut x =
             String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompositionPlaylist xmlns=\"http://www.smpte-ra.org/schemas/429-7/2006/CPL\">\n");
@@ -612,7 +662,7 @@ impl DcpMux {
         let track = |x: &mut String, a: &Asset| {
             x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&a.id)));
             x.push_str(&format!("          <EditRate>{rate}</EditRate>\n"));
-            x.push_str(&format!("          <IntrinsicDuration>{}</IntrinsicDuration>\n", self.frames));
+            x.push_str(&format!("          <IntrinsicDuration>{}</IntrinsicDuration>\n", a.units.unwrap_or(self.frames).max(self.frames)));
             x.push_str("          <EntryPoint>0</EntryPoint>\n");
             x.push_str(&format!("          <Duration>{}</Duration>\n", self.frames));
             x.push_str(&format!("          <Hash>{}</Hash>\n", base64(&a.hash)));
@@ -626,6 +676,12 @@ impl DcpMux {
             x.push_str("        <MainSound>\n");
             track(&mut x, a);
             x.push_str("        </MainSound>\n");
+        }
+        if let Some(a) = aux {
+            x.push_str("        <axd:AuxData xmlns:axd=\"http://www.dolby.com/schemas/2012/AD\">\n");
+            track(&mut x, a);
+            x.push_str("          <axd:DataType>urn:smpte:ul:060e2b34.04010105.0e090604.00000000</axd:DataType>\n");
+            x.push_str("        </axd:AuxData>\n");
         }
         x.push_str("      </AssetList>\n    </Reel>\n  </ReelList>\n</CompositionPlaylist>\n");
         x
