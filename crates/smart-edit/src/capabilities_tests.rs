@@ -241,7 +241,7 @@ fn the_native_backend_is_preferred() {
 
 #[test]
 fn no_ffmpeg_backend_is_registered() {
-    // AGENTS.md §2: ffmpeg is only an external test oracle until an ADR says otherwise
+    // Smart Cut runs on CFA4's own code; ffmpeg is its validation oracle (owner decision 2026-10-27)
     assert!(Registry::native().entries().all(|e| e.backend != Backend::Ffmpeg));
 }
 
