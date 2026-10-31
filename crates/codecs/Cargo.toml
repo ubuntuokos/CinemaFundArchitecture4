@@ -18,9 +18,12 @@ cfa4-avi = { workspace = true }
 cfa4-isobmff = { workspace = true }
 cfa4-matroska = { workspace = true }
 cfa4-mxf = { workspace = true }
+cfa4-iab = { workspace = true }
 cfa4-mpegts = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
 cfa4-ac3 = { workspace = true }
+cfa4-dts = { workspace = true }
+cfa4-truehd = { workspace = true }
 cfa4-mpa = { workspace = true }
 cfa4-ogg = { workspace = true }
 cfa4-bitstream = { workspace = true }
@@ -30,6 +33,8 @@ cfa4-vp8 = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-prores = { workspace = true }
 cfa4-dnx = { workspace = true }
+cfa4-j2k = { workspace = true }
+cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
 cfa4-aac = { workspace = true }
@@ -44,5 +49,6 @@ image = { version = "0.25", default-features = false, features = ["jpeg"] }
 symphonia = { version = "0.5.5", default-features = false, features = ["aac", "mp1", "mp2", "mp3", "flac", "alac", "pcm", "wav", "aiff", "ogg", "vorbis", "isomp4"] }
 
 [dev-dependencies]
+cfa4-ac3 = { workspace = true, features = ["test-util"] }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

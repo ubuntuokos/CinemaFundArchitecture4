@@ -185,6 +185,14 @@ impl<A: Accel> Front<A> {
         .map_err(decode_err)?;
         let Some((pps, sps)) = found else { return Err(decode_err("slice without a PPS")) };
         sps.check_supported().map_err(decode_err)?;
+        if !sps.frame_mbs_only {
+            // interlaced coding runs on the software decoder
+            return Err(unsupported("interlaced (field / MBAFF) coding"));
+        }
+        if sps.qpprime_y_zero_transform_bypass {
+            // lossless coding runs on the software decoder
+            return Err(unsupported("qpprime_y_zero_transform_bypass (lossless)"));
+        }
         if pps.num_slice_groups > 1 {
             return Err(unsupported("slice groups (FMO)"));
         }
@@ -213,10 +221,7 @@ impl<A: Accel> Front<A> {
             return Err(unsupported("a picture whose slices use different PPSs"));
         }
         let surfaces = self.accel.surfaces();
-        let lists = self
-            .dpb
-            .build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e| (va_ref(e, surfaces), e.mark != RefMark::Unused))
-            .map_err(decode_err)?;
+        let lists = self.dpb.build_ref_lists(&sh, pending.poc.frame(), sps.max_frame_num(), |e, _| (va_ref(e, surfaces), e.is_ref())).map_err(decode_err)?;
         if !sh.slice_type.is_intra() && (lists[0].is_empty() || (sh.slice_type.is_b() && lists[1].is_empty())) {
             return Err(decode_err("no reference pictures available for an inter slice"));
         }
@@ -303,7 +308,7 @@ impl<A: Accel> Front<A> {
         }
         let surfaces = self.accel.surfaces();
         let target_id = surfaces.get(p.target).copied().ok_or_else(|| decode_err("surface out of range"))?;
-        if self.dpb.entries.iter().filter(|e| e.mark != RefMark::Unused).count() > 16 {
+        if self.dpb.entries.iter().filter(|e| e.is_ref()).count() > 16 {
             return Err(decode_err("more than 16 reference frames"));
         }
         let mut pic = picture_params(&p.sps, &p.pps, &p.first);
@@ -315,7 +320,7 @@ impl<A: Accel> Front<A> {
             BottomFieldOrderCnt: p.poc.bottom,
             va_reserved: [0; ffi::VA_PADDING_LOW],
         };
-        for (slot, e) in pic.ReferenceFrames.iter_mut().zip(self.dpb.entries.iter().filter(|e| e.mark != RefMark::Unused)) {
+        for (slot, e) in pic.ReferenceFrames.iter_mut().zip(self.dpb.entries.iter().filter(|e| e.is_ref())) {
             *slot = va_ref(e, surfaces);
         }
         let iq = iq_matrix(&p.pps);
@@ -333,14 +338,14 @@ impl<A: Accel> Front<A> {
         let fpoc = if mmco5 { 0 } else { p.poc.frame() };
         let meta = Arc::new(output_meta(&p.sps, p.pts, p.first.idr));
         let mut outs = Vec::new();
-        self.dpb.store_picture(&p.first, surface, fpoc, p.sps.max_frame_num(), p.sps.max_num_ref_frames as usize, meta, &mut outs);
+        self.dpb.store_picture(&p.first, surface, fpoc, [fpoc; 2], p.sps.max_frame_num(), p.sps.max_num_ref_frames as usize, meta, &mut outs);
         self.read_out(outs, frames)
     }
 }
 
 /// A DPB entry as a VA-API reference picture.
 fn va_ref(e: &DpbEntry<Surface>, surfaces: &[ffi::VASurfaceID]) -> VAPictureH264 {
-    let long = e.mark == RefMark::Long;
+    let long = e.mark() == RefMark::Long;
     VAPictureH264 {
         picture_id: surfaces.get(e.frame.index).copied().unwrap_or(ffi::VA_INVALID_SURFACE),
         frame_idx: if long { e.long_term_frame_idx } else { e.frame_num },
