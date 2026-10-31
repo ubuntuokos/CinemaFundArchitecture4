@@ -272,6 +272,12 @@ fn backend_preference_comes_from_the_routing_table() {
     let render =
         r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 }, LAX);
     assert!(render.steps.iter().any(|s| s.key == hevc && !s.allowed), "{render:?}");
+
+    // an explicitly empty order is no route at all, not a fallback to our own encoder
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.h264\"]\norder = []\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    let d = r.decide(encode, STRICT);
+    assert!(!d.allowed && d.reasons.iter().all(|l| l.contains("not in the routing order")), "{d:?}");
 }
 
 #[test]
