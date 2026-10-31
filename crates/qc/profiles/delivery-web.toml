@@ -1,0 +1,61 @@
+# CFA4 QC profile: web / streaming delivery (H.264 or HEVC with AAC, stereo).
+#
+# A starting point, not a standard: platforms normalise playback loudness to about -14 LUFS and
+# ask for true peaks at or below -1 dBTP. Copy the file, change the id and bounds, and raise
+# `version` whenever a bound changes: reports record id, version and the file's SHA-256.
+schema = "cfa4-qc-profile/1"
+id = "delivery-web"
+version = 1
+title = "Web delivery"
+description = "Online platforms: full decode, frame count and duration against the render plan, loudness around -14 LUFS, true peak at most -1 dBTP, and a human review."
+human_review = "mandatory"
+
+[checks."probe.open"]
+[checks."probe.video"]
+[checks."probe.color"]
+requirement = "optional"
+[checks."probe.audio"]
+[checks."probe.consistency"]
+
+[checks."integrity.decode"]
+[checks."integrity.frameCount"]
+pass = { min = 0.0, max = 0.0 }
+[checks."integrity.duration"]
+# one frame at 23.976 fps is ~41.7 ms
+pass = { min = -42.0, max = 42.0 }
+accept = { min = -84.0, max = 84.0 }
+[checks."integrity.frames"]
+[checks."integrity.avOffset"]
+pass = { min = -42.0, max = 42.0 }
+accept = { min = -100.0, max = 100.0 }
+[checks."integrity.streams"]
+
+[checks."audio.silence"]
+requirement = "optional"
+[checks."audio.clipping"]
+pass = { max = 0.0 }
+accept = { max = 10.0 }
+[checks."audio.truePeak"]
+pass = { max = -1.0 }
+accept = { max = 0.0 }
+[checks."audio.loudness"]
+pass = { min = -15.0, max = -13.0 }
+accept = { min = -16.0, max = -12.0 }
+[checks."audio.loudnessRange"]
+requirement = "optional"
+pass = { max = 15.0 }
+accept = { max = 20.0 }
+[checks."audio.layout"]
+
+[checks."video.contactSheet"]
+requirement = "optional"
+[checks."video.black"]
+requirement = "optional"
+[checks."video.clipBlack"]
+requirement = "optional"
+pass = { max = 1.0 }
+accept = { max = 5.0 }
+[checks."video.clipWhite"]
+requirement = "optional"
+pass = { max = 1.0 }
+accept = { max = 5.0 }

@@ -64,6 +64,7 @@ cfa4-tts-text = { path = "crates/tts-text" }
 cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
+cfa4-qc = { path = "crates/qc" }
 cfa4-export = { path = "crates/export" }
 cfa4-format = { path = "crates/format" }
 cfa4-engine = { path = "crates/engine" }
