@@ -65,6 +65,7 @@ class Tokens:
     in_out_shade: str
     clip_selected_border: str
     clip_bar_bg: str  # a clip's bar in Effect Controls' lane (egui's)
+    caption_track_bg: str  # the Timeline's caption rows (egui's)
     plot_bg: str  # Fx Editor plots (egui's)
     plot_grid: str
     plot_axis: str
@@ -129,6 +130,7 @@ DARKEST = Tokens(
     in_out_shade="#3f3f3f",
     clip_selected_border="#ebebeb",
     clip_bar_bg="#3a3a46",
+    caption_track_bg="#23202a",
     plot_bg="#181818",
     plot_grid="#2c2c2c",
     plot_axis="#444444",
@@ -166,6 +168,7 @@ LIGHT = replace(
     DARKEST,
     kind="light",
     clip_bar_bg="#becbe0",
+    caption_track_bg="#ded7e9",
     plot_bg="#f5f5f5",
     plot_grid="#d2d2d2",
     plot_axis="#aaaaaa",

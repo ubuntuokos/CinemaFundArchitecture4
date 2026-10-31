@@ -3,6 +3,7 @@ engine (always) and the real Rust engine (when it is built)."""
 
 from __future__ import annotations
 
+import base64
 import io
 import json
 import os
@@ -614,6 +615,286 @@ def test_panel_only_shortcuts_follow_the_focused_panel(app):
     win.close()
 
 
+def test_shortcuts_cleared_keys_and_engine_panel_names(app):
+    """Codex review regressions: a key cleared in Keyboard Shortcuts kept running its command (the
+    old QAction kept the key); panel keys bound to "Effect Controls" or "Properties" never ran,
+    as the focused panel was named after its Qt object name (EffectControls, Inspector)."""
+    from cfa4_qt.commands import focused_panel
+
+    ran: list[str] = []
+    win = QtWidgets.QMainWindow()
+    central = QtWidgets.QWidget()
+    lay = QtWidgets.QVBoxLayout(central)
+    for name in ("EffectControls", "Inspector", "Timeline", None):
+        panel = QtWidgets.QWidget()
+        panel.setObjectName(f"panel.{name}" if name else "elsewhere")
+        field = QtWidgets.QLineEdit(panel)
+        field.setObjectName(f"focus.{name}" if name else "focus.none")
+        lay.addWidget(panel)
+    win.setCentralWidget(central)
+    reg = CommandRegistry(lambda c: ran.append(c.id))
+
+    def load(undo_keys: list[str]) -> None:
+        reg.load(
+            [
+                {"id": "edit.undo", "label": "Undo", "menu": ["Edit"], "shortcut": undo_keys[0] if undo_keys else "",
+                 "shortcuts": undo_keys, "params": "{}", "enabled": True},
+                {"id": "fx.reset", "label": "Reset", "menu": [], "shortcut": "", "shortcuts": [],
+                 "panelShortcuts": [{"keys": "R", "panel": "Effect Controls"}, {"keys": "R", "panel": "Properties"}],
+                 "params": "{}", "enabled": True},
+                {"id": "tool.razor", "label": "Razor", "menu": [], "shortcut": "R", "shortcuts": ["R"],
+                 "params": "{}", "enabled": True},
+            ]
+        )
+        reg.build_menus(win.menuBar(), win)
+
+    load(["Cmd+Z"])
+    assert QtGui.QKeySequence("Ctrl+Z") in reg.actions["edit.undo"].shortcuts()
+    load([])  # Keyboard Shortcuts cleared Undo's key
+    assert reg.actions["edit.undo"].shortcuts() == []
+    win.show()
+    win.activateWindow()
+    for panel, engine_name in (("EffectControls", "Effect Controls"), ("Inspector", "Properties"), ("Timeline", "Timeline")):
+        _focus_panel(app, win, panel)
+        assert focused_panel() == engine_name
+
+    def press(panel: str | None) -> str | None:
+        _focus_panel(app, win, panel)
+        ran.clear()
+        win.findChild(QtGui.QAction, "shortcut.R").trigger()
+        return ran[0] if ran else None
+
+    assert press("EffectControls") == "fx.reset"
+    assert press("Inspector") == "fx.reset"
+    assert press("Timeline") == "tool.razor"
+    win.close()
+
+
+def test_graphics_typing_session_starts_its_own_undo_step():
+    """Codex review regression: a new text-editing session's first change was sent with
+    ``merge: true``, so Undo after it also took back an earlier session's (or layer's) typing."""
+    from cfa4_qt.panels import program_graphics as pg
+
+    sent: list[dict] = []
+
+    class Overlay:
+        def send(self, command, params):
+            sent.append(params)
+
+    gt = pg.GraphicsTools.__new__(pg.GraphicsTools)
+    gt.overlay = Overlay()
+    for layer in (0, 1):
+        gt.edit = {"clip": 5, "layer": layer, "text": "", "caret": 0, "anchor": 0, "seen": False}
+        gt._set_text("a")
+        gt._set_text("ab")
+    assert [(p["layer"], p["merge"]) for p in sent] == [(0, False), (0, True), (1, False), (1, True)]
+
+
+def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(app):
+    """Codex review regressions: typing right after a Type-tool click, before ``graphics.newText``
+    answered, was lost (and its letters ran shortcuts); a text changed in Properties while the
+    monitor's typing session was open was overwritten by the session's stale buffer."""
+    from types import SimpleNamespace
+
+    from cfa4_qt.panels import program_graphics as pg
+
+    sent: list[tuple[str, dict]] = []
+    replies: list = []
+
+    class Engine:
+        def execute(self, command, params, on_reply=None, on_error=None):
+            replies.append((on_reply, on_error))
+
+    view = QtWidgets.QWidget()
+    overlay = SimpleNamespace(send=lambda c, p: sent.append((c, p)), engine=Engine(), data={}, view=view)
+    gt = pg.GraphicsTools.__new__(pg.GraphicsTools)
+    gt.overlay, gt.tool, gt.edit, gt.drag = overlay, "type", None, None
+    gt.to_canvas = lambda at: (None, at)
+    shown: list = []
+    gt.layers = lambda: shown
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    assert gt.edit is not None and gt.claims_key(QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, QtCore.Qt.Key.Key_V, QtCore.Qt.KeyboardModifier.NoModifier, "v"))
+    gt._replace("Hello")
+    assert not [p for c, p in sent if c == "graphics.setText"], "nothing is sent before the layer exists"
+    replies[-1][0]({"clip": 5, "layer": 2}, None)
+    texts = [p for c, p in sent if c == "graphics.setText"]
+    assert [(p["clip"], p["layer"], p["text"], p["merge"]) for p in texts] == [(5, 2, "Hello", False)]
+    gt._replace("!")
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "Hello!"
+    # a failed creation ends the pending session
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    replies[-1][1]("no graphic clip")
+    assert gt.edit is None
+    # another editor's change is adopted; the overlay showing an older text of our own is not one
+    sent.clear()
+    layer = SimpleNamespace(clip=5, layer=2, text={"text": "Old"})
+    shown[:] = [layer]
+    gt.start_edit(layer, None)
+    gt._replace("!")
+    layer.text = {"text": "Old"}  # the reply to our own edit has not come back yet
+    assert gt.edit_view() is layer and gt.edit["text"] == "Old!"
+    layer.text = {"text": "New text"}  # Properties changed it
+    assert gt.edit_view() is layer and gt.edit["text"] == "New text"
+    gt.edit["caret"] = gt.edit["anchor"] = len("New text")
+    gt._replace("!")
+    last = [p for c, p in sent if c == "graphics.setText"][-1]
+    assert (last["text"], last["merge"]) == ("New text!", False), "typing after another editor's change starts its own undo step"
+    # Undo (all our changes came back): the undone text is typed into, not the session's older one
+    layer.text = {"text": "Old"}
+    gt.start_edit(layer, None)
+    gt._replace("!")
+    layer.text = {"text": "Old!"}
+    gt.edit_view()
+    layer.text = {"text": "Old"}  # Ctrl+Z
+    assert gt.edit_view() is layer and gt.edit["text"] == "Old"
+    gt.edit["caret"] = gt.edit["anchor"] = 3
+    gt._replace("x")
+    last = [p for c, p in sent if c == "graphics.setText"][-1]
+    assert (last["text"], last["merge"]) == ("Oldx", False), "typing after an Undo is not merged into an earlier Edit Text"
+    # typing ended (Esc) before the new layer existed: the typed text still goes into it
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    gt._replace("Late")
+    gt.end_edit()
+    replies[-1][0]({"clip": 7, "layer": 0}, None)
+    last = [p for c, p in sent if c == "graphics.setText"][-1]
+    assert (last["clip"], last["layer"], last["text"]) == (7, 0, "Late") and gt.edit is None
+    # Save (and the unsaved-changes check) wait for a new layer still being made, so the text typed
+    # into it is in what is saved (Codex review regression: newText, file.save, then setText)
+    from cfa4_qt.main_window import MainWindow
+
+    order: list[str] = []
+    overlay.send = lambda c, p: (sent.append((c, p)), order.append(c))
+    win = SimpleNamespace(monitor=SimpleNamespace(overlay=SimpleNamespace(graphics=gt)))
+    save = lambda: order.append("file.save")
+    assert not MainWindow.graphics_text_pending(win, save), "nothing pending: runs now"
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    gt._replace("Saved")
+    assert MainWindow.graphics_text_pending(win, save) and order == []
+    replies[-1][0]({"clip": 8, "layer": 1}, None)
+    assert order == ["graphics.selectLayer", "graphics.setText", "file.save"]
+    gt.end_edit()
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    assert MainWindow.graphics_text_pending(win, save)
+    replies[-1][1]("no graphic clip")  # a failed creation lets the save go on too
+    assert order[-1] == "file.save" and gt.creating == 0
+    overlay.send = lambda c, p: sent.append((c, p))
+    # a key after another editor's change (before a repaint) edits the new text, not the old one
+    layer.text = {"text": "Old"}
+    gt.start_edit(layer, None)
+    gt.edit["caret"] = gt.edit["anchor"] = 3
+    layer.text = {"text": "NewLong"}
+    back = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, QtCore.Qt.Key.Key_Backspace, QtCore.Qt.KeyboardModifier.NoModifier)
+    assert gt.text_key(back)
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "NeLong"
+    # an input method's commit after another editor's change goes into the new text too (Codex
+    # review regression: the commit sent the stale buffer, "Old漢")
+    layer.text = {"text": "Old"}
+    gt.start_edit(layer, None)
+    layer.text = {"text": "Replacement"}
+    gt.type_text("漢")
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "Rep漢lacement", "at the caret, as a key would"
+    # the editor's own Ctrl shortcuts are claimed; Save and Undo reach the application
+    def key(k, mods=QtCore.Qt.KeyboardModifier.ControlModifier, text=""):
+        return QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, k, mods, text)
+
+    Key = QtCore.Qt.Key
+    assert all(gt.claims_key(key(k)) for k in (Key.Key_A, Key.Key_C, Key.Key_V, Key.Key_Left))
+    assert not gt.claims_key(key(Key.Key_S)) and not gt.claims_key(key(Key.Key_Z))
+    assert gt.key(key(Key.Key_S)) is False and gt.key(key(Key.Key_Z, QtCore.Qt.KeyboardModifier.ControlModifier | QtCore.Qt.KeyboardModifier.ShiftModifier)) is False
+    assert gt.claims_key(key(Key.Key_V, QtCore.Qt.KeyboardModifier.NoModifier, "v")), "a plain letter is typed"
+    view.deleteLater()
+
+
+def test_monitor_range_drag_survives_a_refresh_of_the_same_range(app):
+    """Codex review regression: dragging the marked range while playing stops playback, whose
+    refresh brought the same range back and ended the drag under the held mouse."""
+    from cfa4_qt.panels.time_bar import ScrubBar
+
+    bar = ScrubBar("program")
+    fd = 1000
+    bar.set_range(0, 100 * fd, 10 * fd, 20 * fd, fd)
+    bar._drag = {"kind": "range", "part": "move", "x": 50.0, "original": (10 * fd, 20 * fd), "preview": (10 * fd, 20 * fd), "moved": False}
+    bar.set_range(0, 100 * fd, 10 * fd, 20 * fd, fd)
+    assert bar._drag is not None and bar._drag["kind"] == "range", "the same range keeps the drag"
+    bar.set_range(0, 100 * fd, 12 * fd, 20 * fd, fd)
+    assert bar._drag is None, "a range changed elsewhere ends it"
+    bar.deleteLater()
+
+
+def test_review_regressions_link_media_caption_flush_and_lane_sampling(app):
+    """Codex review regressions: a Link Media search answered after another clip was picked put
+    the first clip's candidates under the second; Save (Ctrl+S in a caption field) saved without
+    the caption edit; an automation lane re-sorted its keyframes for every sampled pixel."""
+    import itertools
+    import random
+
+    from cfa4_qt.panels import timeline as tl
+    from cfa4_qt.panels.caption_properties import CaptionProperties
+    from cfa4_qt.panels.media_dialogs import LinkMediaDialog
+
+    class Engine:
+        def __init__(self):
+            self.calls: list[tuple[str, dict, object]] = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.calls.append((command, dict(params or {}), on_reply))
+            return len(self.calls)
+
+    engine = Engine()
+    d = LinkMediaDialog(None, engine)
+    reload = engine.calls[-1]
+    assert reload[0] == "media.linkMedia"
+    reload[2]({"missing": [{"item": 1, "name": "a.wav"}, {"item": 2, "name": "b.wav"}]}, None)
+    assert d.item() == 1
+    d.search()
+    first = engine.calls[-1]
+    assert first[0] == "media.search" and first[1]["item"] == 1
+    d.table.setCurrentCell(1, 0)
+    assert d.item() == 2
+    first[2]({"results": [{"candidates": [{"path": "/a.wav", "ok": True}]}]}, None)
+    assert d.candidates == [], "clip 1's candidates are not offered for clip 2"
+    d.search()
+    d.search()
+    older, newer = engine.calls[-2], engine.calls[-1]
+    newer[2]({"results": [{"candidates": [{"path": "/b.wav", "ok": True}]}]}, None)
+    older[2]({"results": [{"candidates": [{"path": "/old.wav", "ok": True}]}]}, None)
+    assert [c[0] for c in d.candidates] == ["/b.wav"], "an older search does not replace a newer one"
+    d.deleteLater()
+
+    # the caption field being edited is sent by flush (Save asks for it first)
+    sent: list[tuple[str, dict]] = []
+    cap = CaptionProperties()
+    cap.command.connect(lambda c, p: sent.append((c, p)))
+    cap.show()
+    cap.set_caption({"label": "C1", "name": "Subtitles"}, {"id": 7, "text": "old", "start": "00:00:01:00", "end": "00:00:02:00"})
+    cap.text.setPlainText("new text")
+    cap.flush()
+    assert sent == [("captions.setText", {"caption": 7, "text": "new text"})]
+    cap.flush()
+    assert len(sent) == 1, "nothing new: nothing sent"
+    cap.deleteLater()
+
+    # lane sampling with the keys prepared once gives the old per-sample answers
+    def old_value(lane, t):
+        keys = tl.lane_keys(lane)
+        if not keys:
+            return 0.0
+        if t <= keys[0][0]:
+            return keys[0][1]
+        for (t0, v0, hold), (t1, v1, _h) in itertools.pairwise(keys):
+            if t0 <= t < t1:
+                return v0 if hold or lane.get("hold") is True else v0 + (v1 - v0) * (t - t0) / max(1, t1 - t0)
+        return keys[-1][1]
+
+    rng = random.Random(4)
+    for hold in (False, True):
+        lane = {"keys": [[rng.randrange(0, 10_000), rng.uniform(-60, 6), rng.random() < 0.2] for _ in range(300)], "hold": hold}
+        lane["keys"] += [[5000, 1.0], [5000, 2.0]]  # duplicate times
+        keys = tl.lane_keys(lane)
+        for t in [*range(-10, 10_020, 7), 5000]:
+            assert tl.lane_value(lane, t, keys) == old_value(lane, t) == tl.lane_value(lane, t), t
+
+
 def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: Path, monkeypatch):
     """Regressions: Export silently truncated an existing output; an output folder that could not
     be created raised out of the slot and nothing was shown."""
@@ -1057,8 +1338,8 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         light.trigger()
         assert wait_until(app, lambda: theme.current().kind == "light", 10_000)
         # the header button goes to the next Appearance Mode
-        button = win.menuBar().cornerWidget(QtCore.Qt.Corner.TopRightCorner)
-        assert button.objectName() == "header.appearance" and button.isVisible()
+        button = win.menuBar().cornerWidget(QtCore.Qt.Corner.TopRightCorner).findChild(QtWidgets.QToolButton, "header.appearance")
+        assert button is win.appearance_button and button.isVisible()
         before = pref("appearance.appearanceMode")
         button.click()
         assert wait_until(app, lambda: pref("appearance.appearanceMode") != before, 10_000)
@@ -1553,6 +1834,123 @@ def test_real_engine_remix_tool_and_properties_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_keyboard_shortcuts_editor_as_egui(app, tmp_path: Path, monkeypatch):
+    """Edit ▸ Keyboard Shortcuts… as egui's: the Qt-run commands (tools, playback, workspaces,
+    panels) are in the engine's shortcut set; the drawn keyboard colours assigned keys, the list
+    records a key into a Shortcut cell and the menus follow at once; Undo, Cancel (back to where
+    the dialog opened), the "Key:" list, panel context, preset Save As / Delete / Export / Import."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.shortcuts import ShortcutsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    Qt = QtCore.Qt
+    razor = lambda: [k.toString() for k in win.tools.actions["razor"].shortcuts()]
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100 and win.local_keys is not None, 60_000)
+        assert win.local_keys.get("tool.razor") == ["C"] and razor() == ["C"]
+        assert [k.toString() for k in win.play_action.shortcuts()] == ["Space"]
+        assert [k.toString() for k in win.shortcuts_action.shortcuts()] == ["Ctrl+Alt+K"]
+        win.invoke("app.keyboardShortcuts")
+        d = win.shortcuts_dialog
+        assert isinstance(d, ShortcutsDialog) and d.objectName() == "shortcuts"
+        assert wait_until(app, lambda: d.ready and d.keyboard.cap("C").app_cmd == "tool.razor", 10_000), d.message_label.text()
+        assert d.keyboard.cap("Space").app_cmd == "playback.toggle"
+        assert d.keyboard.cap("C").caption == "Razor Tool"
+        assert d.preset.currentText() == "CFA4 Default"
+        assert d.context_box.findData("Timeline") > 0
+        # search, then click the Shortcut cell and press Ctrl+Shift+9: the tool's key moves at once
+        d.search.setText("razor")
+        row = d.row("tool.razor")
+        assert row is not None and row.text(1) == "C"
+        assert d.row("sequence.addEdit") is None
+        d.list.itemClicked.emit(row, 1)
+        assert "Type a shortcut" in d.row("tool.razor").text(1)
+        QtTest.QTest.keyClick(d.recorder, Qt.Key.Key_9, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        assert wait_until(app, lambda: razor() == ["Ctrl+Shift+9"], 10_000), (razor(), d.message_label.text())
+        assert d.message_label.text().startswith("Ctrl+Shift+9 → Razor Tool")
+        assert wait_until(app, lambda: d.row("tool.razor") is not None and d.row("tool.razor").text(1) == "Ctrl+Shift+9", 10_000)
+        assert d.preset.currentText() == "CFA4 Default (modified)"
+        # Undo puts C back
+        assert wait_until(app, lambda: d.undo.isEnabled(), 10_000)
+        d.undo.click()
+        assert wait_until(app, lambda: razor() == ["C"], 10_000)
+        # "+" adds a second key; Esc while recording cancels
+        d.list.itemClicked.emit(d.row("tool.razor"), 2)
+        QtTest.QTest.keyClick(d.recorder, Qt.Key.Key_Escape)
+        assert d.message_label.text() == "Cancelled"
+        # recording over: the recorder lets keys through and the keyboard is back on the list
+        # (Codex review: Esc / Enter / Tab were swallowed until a click)
+        assert d.focusWidget() is d.list, d.focusWidget()
+        over = QtGui.QKeyEvent(QtCore.QEvent.Type.ShortcutOverride, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
+        over.ignore()
+        d.recorder.event(over)
+        assert not over.isAccepted(), "no shortcut override outside recording"
+        d.list.itemClicked.emit(d.row("tool.razor"), 2)
+        QtTest.QTest.keyClick(d.recorder, Qt.Key.Key_F7, Qt.KeyboardModifier.AltModifier)
+        assert wait_until(app, lambda: razor() == ["C", "Alt+F7"], 10_000), razor()
+        # the "Key:" list of a clicked key, the modifier filter and the Assign button
+        d.keyboard.cap("K").click()
+        assert wait_until(app, lambda: d.key_list.topLevelItemCount() >= 2, 10_000)
+        rows = {d.key_list.topLevelItem(i).text(1) for i in range(d.key_list.topLevelItemCount())}
+        assert "Shuttle Stop" in rows and "Add Edit" in rows, rows
+        d.keyboard.findChild(QtWidgets.QAbstractButton, "shortcuts.mod.Cmd").click()
+        assert wait_until(app, lambda: d.keyboard.cap("K").app_cmd == "sequence.addEdit", 10_000)
+        assert d.keyboard.findChild(QtWidgets.QAbstractButton, "shortcuts.mod.Cmd.right").on
+        assert d.assign.isVisible() and d.assign.text() == "Assign Ctrl+K to Razor Tool"
+        # the Windows key takes no shortcuts, and a chord with the engine's Ctrl shows as Ctrl, the
+        # key it runs with here (Codex review regression: "Win+S" was Ctrl+S, so assigning it took Save's)
+        from cfa4_qt.panels.shortcuts import _display
+
+        win_key = d.keyboard.findChild(QtWidgets.QAbstractButton, "shortcuts.mod.Ctrl")
+        assert win_key is not None and not win_key.isEnabled()
+        win_key.click()
+        assert "Ctrl" not in d.mods and d.assign.text() == "Assign Ctrl+K to Razor Tool"
+        assert _display("Ctrl+S") == "Ctrl+S" and _display("Cmd+Alt+K") == "Ctrl+Alt+K"
+        # the Timeline context: its panel keys
+        d.context_box.setCurrentIndex(d.context_box.findData("Timeline"))
+        d.context_box.activated.emit(d.context_box.currentIndex())
+        d.keyboard.findChild(QtWidgets.QAbstractButton, "shortcuts.mod.Cmd").click()
+        assert wait_until(app, lambda: d.keyboard.cap("Delete").panel_cmd == "edit.clear", 10_000)
+        # presets: Save As, Export, Delete, Import
+        d.save_as.click()
+        assert d.save_row.isVisible() and d.save_name.text() == "My Shortcuts"
+        d.save_ok.click()
+        assert wait_until(app, lambda: d.preset.currentText() == "My Shortcuts" and d.delete.isEnabled(), 10_000), d.message_label.text()
+        out = tmp_path / "keys.json"
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(out), ""))
+        d.export.click()
+        assert wait_until(app, lambda: out.exists(), 10_000), d.message_label.text()
+        d.delete.click()
+        assert wait_until(app, lambda: d.message_label.text() == "Deleted preset “My Shortcuts”", 10_000)
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", lambda *_a, **_k: (str(out), ""))
+        d.import_.click()
+        assert wait_until(app, lambda: d.message_label.text().startswith("Imported “"), 10_000), d.message_label.text()
+        assert razor() == ["C", "Alt+F7"]
+        # Cancel: the set the dialog opened with
+        d.cancel.click()
+        assert wait_until(app, lambda: win.shortcuts_dialog is None and razor() == ["C"], 10_000), razor()
+        # OK keeps an edit
+        d = win.open_shortcuts()
+        assert wait_until(app, lambda: d.ready, 10_000)
+        d.assign_keys("tool.razor", "Cmd+Shift+8")
+        assert wait_until(app, lambda: razor() == ["Ctrl+Shift+8"], 10_000)
+        d.ok.click()
+        assert wait_until(app, lambda: win.shortcuts_dialog is None, 10_000)
+        win.reload_shortcuts()
+        app.processEvents()
+        assert wait_until(app, lambda: razor() == ["Ctrl+Shift+8"], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes(app, tmp_path: Path):
     """An engine that stops unexpectedly is restarted at once (on the project that was open); the
     new one offers the dead one's unsaved changes from the recovery journal, and recovering brings
@@ -1886,6 +2284,11 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.quantizer.setValue(4)
         assert dlg.params()["mpeg2Quantizer"] == 4
         dlg.quantizer.setValue(0)
+        # IBBP unless chosen otherwise
+        assert dlg.b_frames.isEnabled() and dlg.b_frames.value() == 2 and "mpeg2BFrames" not in p
+        dlg.b_frames.setValue(0)
+        assert dlg.params()["mpeg2BFrames"] == 0
+        dlg.b_frames.setValue(2)
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
@@ -1910,6 +2313,153 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
             info = json.loads(probe.stdout)
             assert info["format"]["format_name"] == "mpegts"
             assert sorted(s["codec_name"] for s in info["streams"]) == ["aac", "mpeg2video"], info
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
+    """DCP: the preset sets resolution and container, the output is a folder without an
+    extension, the fixed DCI settings are disabled, and the engine writes the package (#115)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.dcp_resolution.isEnabled()
+        assert "dcpResolution" not in dlg.params()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Scope"))
+        assert dlg.format.currentData() == "dcp" and dlg.dcp_resolution.isEnabled()
+        assert (dlg.dcp_resolution.currentData(), dlg.dcp_aspect.currentData()) == ("2k", "scope")
+        assert not dlg.width_spin.isEnabled() and not dlg.bitrate.isEnabled() and dlg.audio.isEnabled()
+        assert Path(dlg.path.text()).suffix == "", dlg.path.text()
+        dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("trailer"))
+        p = dlg.params()
+        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"]) == ("2k", "scope", "trailer")
+        assert "width" not in p and "bitrateKbps" not in p
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.25)
+        out = tmp_path / "out" / "Demo_TLR"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "2048×858" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        names = sorted(f.name for f in out.iterdir())
+        assert "ASSETMAP.xml" in names and "VOLINDEX.xml" in names, names
+        assert sum(n.startswith("j2c_") for n in names) == 1 and sum(n.startswith("pcm_") for n in names) == 1, names
+        cpl = next(out.glob("cpl_*.xml")).read_text()
+        assert "<ContentKind>trailer</ContentKind>" in cpl
+        assert "<ScreenAspectRatio>2048 858</ScreenAspectRatio>" in cpl
+        # another format brings the size fields back
+        dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+        assert dlg.width_spin.isEnabled() and not dlg.dcp_resolution.isEnabled()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
+    """DCP immersive audio (#343): the IAB choice, the source row only for "from a file", the
+    engine's report on the source, and packages with an IAB track file and its CPL AuxData."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.dcp_immersive.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Flat"))
+        assert dlg.dcp_immersive.isEnabled() and dlg.dcp_immersive.currentData() == "off"
+        assert dlg.params()["dcpImmersive"] == "off" and "dcpIabFallback" not in dlg.params()
+        assert not dlg.dcp_iab_source.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
+
+        # a 7.1 DS bed from the 5.1 mix
+        dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("bed"))
+        assert dlg.dcp_iab_fallback.isEnabled() and not dlg.dcp_iab_source.isEnabled()
+        assert "7.1 DS" in dlg.dcp_iab_info.text()
+        p = dlg.params()
+        # ST 429-19:2023: no fallback unless asked (#348); here the 5.1 mix is asked for
+        assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "none") and "dcpIabSource" not in p
+        dlg.dcp_iab_fallback.setCurrentIndex(dlg.dcp_iab_fallback.findData("5.1"))
+        assert dlg.params()["dcpIabFallback"] == "5.1"
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.2)
+        out = tmp_path / "out" / "Demo_IAB"
+        dlg.path.setText(str(out))
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        iab = list(out.glob("iab_*.mxf"))
+        assert len(iab) == 1, sorted(f.name for f in out.iterdir())
+        cpl = next(out.glob("cpl_*.xml")).read_text()
+        assert "<axd:AuxData" in cpl and "urn:smpte:ul:060e2b34.04010105.0e090604.00000000" in cpl
+
+        # that IAB track file as the source of the next package: the engine reports what it holds
+        dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("file"))
+        assert dlg.dcp_iab_source.isEnabled()
+        src = tmp_path / "source.mxf"
+        src.write_bytes(iab[0].read_bytes())
+        dlg.dcp_iab_source.setText(str(src))
+        dlg._probe_iab()
+        assert wait_until(app, lambda: "frames" in dlg.dcp_iab_info.text() or "képkocka" in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        assert "8" in dlg.dcp_iab_info.text(), dlg.dcp_iab_info.text()
+        dlg.dcp_iab_fallback.setCurrentIndex(dlg.dcp_iab_fallback.findData("none"))
+        p = dlg.params()
+        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "none")
+        out2 = tmp_path / "out" / "Demo_IAB_2"
+        dlg.path.setText(str(out2))
+        done.clear()
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out2), True), dlg.summary.text()
+        assert len(list(out2.glob("iab_*.mxf"))) == 1
+
+        # a file that is not IAB is reported, not exported silently
+        bad = tmp_path / "not.iab"
+        bad.write_bytes(b"\0" * 64)
+        dlg.dcp_iab_source.setText(str(bad))
+        dlg._probe_iab()
+        assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a saved preset brings its immersive audio back instead of resetting it to Off
+        dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
+        dlg.preset.addItem("IAB test", "IAB test")
+        dlg.preset.setCurrentIndex(dlg.preset.findData("IAB test"))
+        p = dlg.params()
+        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "mix")
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Flat"))
+        assert dlg.dcp_immersive.currentData() == "off" and dlg.dcp_iab_fallback.currentData() == "none"
+        # another format turns the immersive choices off
+        dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+        assert not dlg.dcp_immersive.isEnabled() and "dcpImmersive" not in dlg.params()
     finally:
         if win.export_dialog is not None:
             win.export_dialog.hide()
@@ -2037,6 +2587,45 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
 
+
+
+def test_effect_controls_in_a_floating_dock_keeps_the_selected_clip(app):
+    """Regression (flaky ``test_real_engine_effect_controls_lane_as_egui`` under load): a refresh
+    asked while one was in flight re-read the selection from ``window()``, which for a floating
+    dock is the dock, so the panel emptied until the next edit."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply))
+            return 0
+
+    win = QtWidgets.QMainWindow()
+    dock = QtWidgets.QDockWidget("Effect Controls", win)
+    ec = EffectControlsPanel()
+    dock.setWidget(ec)
+    win.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+    dock.setFloating(True)
+    engine = Engine()
+    ec.attach(engine)
+    try:
+        assert ec.window() is dock and ec.main_window() is win
+        clip = {"clip": 5, "name": "A", "start": 0, "end": 1000, "playhead": 0, "frame": 100, "effects": []}
+        ec.refresh([5])
+        ec.refresh([5])  # the selection changed again while the first answer is on its way
+        command, _, reply = engine.pending.pop(0)
+        assert command == "effects.inspect"
+        reply(dict(clip), None)
+        assert [c for c, *_ in engine.pending] == ["effects.inspect"]  # asked again, for clip 5
+        engine.pending.pop(0)[2](dict(clip), None)
+        assert ec.clip_id == 5 and not engine.pending
+    finally:
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -2310,6 +2899,305 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_monitor_time_bar_and_zoom_bar_as_egui(app, tmp_path: Path):
+    """egui's mini timeline and time zoom bar: markers in their colours, the marked range's band
+    drags In, Out or the whole range on whole frames (one project.setMarks), the zoom bar's handle
+    zooms the bar, its middle scrolls it, a click beside it jumps there, a zoomed bar follows the
+    playhead while playing."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import time_bar as tb
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    bar = win.monitor.scrub
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+
+    def send(kind, at: QtCore.QPointF, button, buttons) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(bar, QtGui.QMouseEvent(kind, p, p, bar.mapToGlobal(p), button, buttons,
+                                                                QtCore.Qt.KeyboardModifier.NoModifier))
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        for i in range(1, 5):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none)
+
+    def marks():
+        return win.sequence.get("in"), win.sequence.get("out")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        ft = bar.frame
+        # the sequence's markers, in their label colours
+        assert len(bar.markers) == len(win.sequence["markers"]) > 0
+        # mark 2 s to 6 s: In's and Out's handles drag them on whole frames
+        sid = win.sequence["id"]
+        win.execute("project.setMarks", {"item": sid, "in": 48 * ft, "out": 144 * ft})
+        assert wait_until(app, lambda: marks() == (48 * ft, 144 * ft), 10_000)
+        y = tb.BAR_H - 4
+        a = QtCore.QPointF(bar._x(48 * ft) + 1, y)
+        assert bar.range_part(a.x(), a.y()) == "in"
+        drag(a, a + QtCore.QPointF(40, 0))
+        assert wait_until(app, lambda: marks()[0] > 48 * ft, 10_000)
+        assert marks()[1] == 144 * ft and marks()[0] % ft == 0
+        # the band's middle moves the range, keeping its length
+        i0, o0 = marks()
+        mid = QtCore.QPointF((bar._x(i0) + bar._x(o0 + ft)) / 2, y)
+        assert bar.range_part(mid.x(), mid.y()) == "move"
+        drag(mid, mid + QtCore.QPointF(30, 0))
+        assert wait_until(app, lambda: marks()[0] > i0, 10_000)
+        assert marks()[1] - marks()[0] == o0 - i0
+        # the zoom bar: drag the thumb's end handle left to zoom in, the middle scrolls
+        assert bar.zoom is None
+        thumb = bar.thumb()[0]
+        h = QtCore.QPointF(thumb.right() - 3, thumb.center().y())
+        drag(h, h - QtCore.QPointF(thumb.width() / 2, 0))
+        assert bar.zoom is not None and 0.4 < bar.zoom[1] < 0.6 and bar.zoom[0] == 0.0
+        assert bar.shown()[1] < bar.end
+        thumb = bar.thumb()[0]
+        drag(thumb.center(), thumb.center() + QtCore.QPointF(60, 0))
+        assert bar.zoom[0] > 0.0 and abs((bar.zoom[1] - bar.zoom[0]) - 0.5) < 0.1
+        # a click on the timeline seeks inside the shown part
+        got = []
+        bar.seek.connect(got.append)
+        send(QtCore.QEvent.Type.MouseButtonPress, QtCore.QPointF(bar.bar_rect().left() + 2, 4), left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, QtCore.QPointF(bar.bar_rect().left() + 2, 4), left, none)
+        assert got and bar.shown()[0] <= got[0] <= bar.shown()[0] + 3 * ft
+        bar.seek.disconnect(got.append)
+        # a click beside the thumb jumps there; a whole-width thumb shows everything
+        bar.set_zoom((0.0, 0.25))
+        z = bar.zoom_rect()
+        send(QtCore.QEvent.Type.MouseButtonPress, QtCore.QPointF(z.right() - 2, z.center().y()), left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, QtCore.QPointF(z.right() - 2, z.center().y()), left, none)
+        assert abs(bar.zoom[1] - 1.0) < 1e-6
+        # playing: a zoomed bar follows the playhead off its right edge
+        bar.set_zoom((0.0, 0.25))
+        bar.follow(bar.start + int((bar.end - bar.start) * 0.5))
+        assert 0.4 < bar.zoom[0] < 0.5
+        bar.set_zoom((0.0, 1.0))
+        assert bar.zoom is None
+        bar.grab()
+        # damaged values read as harmless ones
+        assert tb.zoom_range(("x", None)) == (0.0, 1.0) and tb.zoom_range([0.8, 0.2]) == (0.0, 1.0)
+        assert tb.zoom_range([float("nan"), 1]) == (0.0, 1.0) and tb.zoom_range([-5, 0.5]) == (0.0, 0.5)
+        assert tb.tick_steps(0, 0, 0)[1] > 0
+        bar.set_markers([5, {"start": "x"}, {"start": True}, {"start": 10, "color": None}])
+        assert len(bar.markers) == 1
+        # the Source monitor: a subclip's range is its own (no handles)
+        src = win.source_monitor
+        src.source = {**(src.source or {}), "item": 1, "start": 0, "end": 100 * ft, "subclip": {"start": 0, "end": 10}}
+        assert not src.range_editable()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path):
+    """egui's graphics tools on the Program monitor: the Rectangle and Ellipse tools drag out
+    shapes (into the selected graphic), the Pen clicks a path and Enter / the first point closes
+    it; with the Selection tool a click selects a layer (its box, handles, anchor point), dragging
+    moves it, a handle changes a shape's Size, the anchor point moves alone, a corner circle rounds
+    a rectangle, a click beside the layers lets go of them."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import program_graphics as pg
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    view = win.monitor.view
+    ov = win.monitor.overlay
+    gt = ov.graphics
+    left, none = QtCore.Qt.MouseButton.LeftButton, QtCore.Qt.MouseButton.NoButton
+    nomod = QtCore.Qt.KeyboardModifier.NoModifier
+
+    def send(kind, at: QtCore.QPointF, button, buttons, mods=nomod) -> None:
+        p = QtCore.QPointF(at)
+        QtWidgets.QApplication.sendEvent(view, QtGui.QMouseEvent(kind, p, p, view.mapToGlobal(p), button, buttons, mods))
+
+    def drag(a: QtCore.QPointF, b: QtCore.QPointF, mods=nomod) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left, mods)
+        for i in range(1, 5):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 4), none, left, mods)
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left, none, mods)
+
+    def click(a: QtCore.QPointF) -> None:
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, a, left, none)
+
+    def layers():
+        return [d for d in ((ov.data or {}).get("graphics") or {}).get("layers") or []]
+
+    def layer(n):
+        return next(d for d in layers() if d["layer"] == n)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win._seek_program(0)
+        assert wait_until(app, lambda: ov.data is not None and ov.frame_to_view() is not None, 20_000)
+        pic = view.picture_rect()
+        at = lambda fx, fy: QtCore.QPointF(pic.left() + pic.width() * fx, pic.top() + pic.height() * fy)
+        # Rectangle: a new graphic clip with the shape where it was dragged
+        win.tools.select("rectangle")
+        assert gt.tool == "rectangle" and not ov.enabled
+        # during playback a press first stops on the shown frame (regression: the shape went where
+        # playback started, the engine's playhead)
+        win.monitor.play()
+        assert wait_until(app, lambda: win.monitor.playing, 10_000)
+        drag(at(0.2, 0.2), at(0.6, 0.6))
+        assert not win.monitor.playing
+        wait_until(app, lambda: False, 300)
+        assert layers() == []
+        win._seek_program(0)
+        assert wait_until(app, lambda: ov.data is not None and win.monitor.playhead == 0, 10_000)
+        drag(at(0.2, 0.2), at(0.6, 0.6))
+        assert wait_until(app, lambda: len(layers()) == 1, 20_000)
+        rect = layers()[0]
+        assert rect["shape"]["shape"] == 0
+        w, h = rect["shape"]["size"]
+        assert abs(w - 0.4 * 1920) < 8 and abs(h - 0.4 * 1080) < 8, (w, h)
+        assert abs(rect["position"][0] - 0.4 * 1920) < 8
+        # the Selection tool: a click selects it, the box and handles come up
+        win.tools.select("selection")
+        assert ov.enabled
+        click(at(0.4, 0.4))
+        assert wait_until(app, lambda: [v.layer for v in gt.selected()] == [0], 10_000)
+        # dragging it moves it (Ctrl: no snapping)
+        before = layer(0)["position"]
+        drag(at(0.4, 0.4), at(0.45, 0.45), QtCore.Qt.KeyboardModifier.ControlModifier)
+        assert wait_until(app, lambda: layer(0)["position"][0] > before[0] + 50, 10_000)
+        assert layer(0)["position"][1] > before[1] + 30
+        # the bottom-right handle: Size grows, the top-left corner stays
+        assert wait_until(app, lambda: gt.hit(f"layer.{layer(0)['clip']}.0.handle.2") is not None, 10_000)
+        clip = layer(0)["clip"]
+        tl0 = gt.hit(f"layer.{clip}.0.handle.0")
+        h2 = gt.hit(f"layer.{clip}.0.handle.2")
+        sent: list = []
+        real_send = ov.send
+        ov.send = lambda cmd, p, *a, **k: (sent.append((cmd, p)), real_send(cmd, p, *a, **k))[1]
+        drag(h2, h2 + QtCore.QPointF(30, 20))
+        ov.send = real_send
+        # the handle sends the shown Position, as a body drag (regression: a pinned layer jumped)
+        assert [p.get("shown") for c, p in sent if c == "graphics.set"] == [True], sent
+        assert wait_until(app, lambda: layer(0)["shape"]["size"][0] > w + 20, 10_000)
+        assert wait_until(app, lambda: gt.hit(f"layer.{clip}.0.handle.0") is not None, 10_000)
+        tl1 = gt.hit(f"layer.{clip}.0.handle.0")
+        assert abs(tl1.x() - tl0.x()) < 2 and abs(tl1.y() - tl0.y()) < 2, (tl0, tl1)
+        # the anchor point moves alone: the box stays
+        a = gt.hit(f"layer.{clip}.0.anchor")
+        anchor0 = layer(0)["anchor"]
+        drag(a, a + QtCore.QPointF(20, 0))
+        assert wait_until(app, lambda: layer(0)["anchor"] != anchor0, 10_000)
+        wait_until(app, lambda: False, 300)
+        tl2 = gt.hit(f"layer.{clip}.0.handle.0")
+        assert abs(tl2.x() - tl1.x()) < 2 and abs(tl2.y() - tl1.y()) < 2
+        # a corner circle rounds the rectangle
+        c0 = gt.hit(f"layer.{clip}.0.corner.0")
+        assert c0 is not None
+        drag(c0, c0 + QtCore.QPointF(15, 15))
+        assert wait_until(app, lambda: layer(0)["shape"]["cornerRadius"] > 5, 10_000)
+        # Ellipse: into the selected graphic, as its second layer
+        win.tools.select("ellipse")
+        drag(at(0.65, 0.65), at(0.8, 0.8))
+        assert wait_until(app, lambda: len(layers()) == 2, 10_000)
+        assert layer(1)["shape"]["shape"] == 1 and layer(1)["clip"] == clip
+        # Pen: three clicks and Enter close a path
+        win.tools.select("pen")
+        for fx, fy in ((0.1, 0.7), (0.2, 0.9), (0.05, 0.9)):
+            click(at(fx, fy))
+        assert len(gt.pen_points) == 3
+        view.setFocus()
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: len(layers()) == 3, 10_000)
+        assert layer(2)["shape"]["shape"] == 3 and gt.pen_points == []
+        # Esc drops a path in progress; a click on the first point closes it
+        click(at(0.9, 0.1))
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.pen_points == []
+        for fx, fy in ((0.85, 0.1), (0.95, 0.1), (0.9, 0.3), (0.85, 0.1)):
+            click(at(fx, fy))
+        assert wait_until(app, lambda: len(layers()) == 4, 10_000)
+        # Type: a click starts point text with a caret; typing goes into it, not to the shortcuts
+        def texts():
+            return [d for d in layers() if d.get("text")]
+
+        win.tools.select("type")
+        click(at(0.5, 0.15))
+        assert wait_until(app, lambda: gt.edit is not None and len(texts()) == 1, 10_000)
+        QtTest.QTest.keyClicks(view, "Hic")
+        assert win.tools.current == "type", "C typed, not the Razor tool"
+        assert wait_until(app, lambda: texts()[0]["text"]["text"] == "Hic", 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Backspace)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Home)
+        QtTest.QTest.keyClicks(view, "O")
+        assert wait_until(app, lambda: texts()[0]["text"]["text"] == "OHi", 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_End, QtCore.Qt.KeyboardModifier.ShiftModifier)
+        assert (gt.edit["anchor"], gt.edit["caret"]) == (1, 3)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Return)
+        QtTest.QTest.keyClicks(view, "K")
+        assert wait_until(app, lambda: texts()[0]["text"]["text"] == "O\nK", 10_000)
+        assert wait_until(app, lambda: len(texts()[0]["text"]["lines"]) == 2, 10_000)
+        view.grab()  # the caret and the red box draw
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None
+        # a drag starts paragraph text in the dragged box
+        drag(at(0.3, 0.75), at(0.6, 0.9))
+        assert wait_until(app, lambda: len(texts()) == 2 and gt.edit is not None, 10_000)
+        para = next(d for d in texts() if d["text"]["paragraph"])
+        assert abs(para["text"]["boxWidth"] - 0.3 * 1920) < 8
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        # Vertical Type: point text
+        win.tools.select("verticalType")
+        click(at(0.7, 0.3))
+        assert wait_until(app, lambda: len(texts()) == 3 and gt.edit is not None, 10_000)
+        QtTest.QTest.keyClicks(view, "AB")
+        ime = QtGui.QInputMethodEvent()
+        ime.setCommitString("日本")
+        QtWidgets.QApplication.sendEvent(view, ime)  # an input method's finished text
+        assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本" for d in texts()), 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        # the Selection tool: a double-click edits a text layer with all of it selected
+        win.tools.select("selection")
+        first = next(d for d in texts() if d["text"]["text"] == "O\nK")
+        mid = gt.hit(f"layer.{first['clip']}.{first['layer']}")
+        send(QtCore.QEvent.Type.MouseButtonPress, mid, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, mid, left, none)
+        send(QtCore.QEvent.Type.MouseButtonDblClick, mid, left, left)
+        send(QtCore.QEvent.Type.MouseButtonRelease, mid, left, none)
+        assert gt.edit is not None and (gt.edit["anchor"], gt.edit["caret"]) == (0, 3)
+        QtTest.QTest.keyClicks(view, "Z")
+        assert wait_until(app, lambda: any(d["text"]["text"] == "Z" for d in texts()), 10_000)
+        QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None
+        # a click beside every layer lets go of them
+        win.tools.select("selection")
+        click(at(0.95, 0.95))
+        assert wait_until(app, lambda: gt.selected() == [], 10_000)
+        # damaged data draws nothing and hits nothing
+        assert pg.drag_sides([0, 0, 10, 10], 2, -50, -50, 1.0) == [0, 0, 1.0, 1.0]
+        assert pg.text_lines({"lines": [5, {"carets": [[True, 1], ["x", 2], [2**70, 1e300]], "start": "x"}]})[0]["carets"] == [(400_000, 0.0)]
+        assert pg.caret_hit([], 1, 1) == 0 and pg.caret_xy([], 3) == (0.0, 0.0, 0) and pg.selection_rects([], 0, 5) == []
+        assert (pg.word_left("ab cd", 5), pg.word_right("ab cd", 0), pg.word_left("", 9)) == (3, 2, 0)
+        ov.data = {**ov.data, "graphics": {"layers": [{"toFrame": [0, 0, 0, 0, 0, 0]}, 5, {"toFrame": "x"}],
+                                           "canvasTarget": None, "selectedLayers": "x"}}
+        assert gt.layers() == [] and gt.selected() == [] and gt.canvas_target() is None
+        view.grab()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: Path):
     """egui's on-monitor editing: Motion selected draws its box (drag inside: Position, a corner:
     Scale, one undo step each; a click beside it lets go); double-clicking a picture selects its
@@ -2474,6 +3362,39 @@ def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: 
         engine.execute("media.colorInfo", {"item": item}, on_reply=lambda r, _b: info.update(r))
         assert wait_until(app, lambda: info.get("override") == "log3g10-rwg", 10_000), info
         assert info.get("hdr") is True
+        # from the menu bar with only a Timeline clip selected: that clip's item, its override shown
+        clip = win.sequence["video"][0]["items"][1]["clip"]
+        win.execute("project.select", {"items": []})
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: clip in (win.sequence.get("selection") or []) and not win.project_panel.selected_items(), 10_000)
+        action = win.registry.actions["clip.interpretFootage"]
+        assert wait_until(app, action.isEnabled, 10_000)
+        action.trigger()
+        d = win.last_dialog
+        assert d is not dialog and d.objectName() == "interpretFootage" and d.items == [item]
+        assert wait_until(app, lambda: d.chosen() == "log3g10-rwg", 10_000)
+        d.reject()
+        # Sequence ▸ Color Management…: egui's dialog; OK is one undo step
+        before = win.last_dialog
+        win.registry.actions["sequence.colorSettings"].trigger()
+        assert wait_until(app, lambda: win.last_dialog is not before and win.last_dialog.objectName() == "colorDialog", 10_000)
+        d = win.last_dialog
+        assert d.windowTitle() == "Sequence Color Management"
+        assert d.findChild(QtWidgets.QRadioButton, "colorDialog.working.rec709").isChecked()
+        assert d.findChild(QtWidgets.QCheckBox, "colorDialog.autoToneMap").isChecked()
+        d.findChild(QtWidgets.QRadioButton, "colorDialog.working.rec2100-pq").setChecked(True)
+        d.findChild(QtWidgets.QCheckBox, "colorDialog.wideGamut").setChecked(True)
+        d.findChild(QtWidgets.QPushButton, "colorDialog.ok").click()
+
+        def color() -> dict:
+            out: dict = {}
+            engine.execute("dialog.defaults", {"command": "sequence.colorSettings"}, on_reply=lambda r, _b: out.update(r["params"]))
+            assert wait_until(app, lambda: bool(out), 10_000)
+            return out
+
+        assert wait_until(app, lambda: color() == {"workingSpace": "rec2100-pq", "wideGamut": True, "autoToneMap": True}, 10_000)
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: color() == {"workingSpace": "rec709", "wideGamut": False, "autoToneMap": True}, 10_000)
     finally:
         win._quit_confirmed = True
         win.close()
@@ -3199,6 +4120,123 @@ def test_window_menu_lists_every_egui_panel_with_its_shortcut(app, fake_engine: 
         win.close()
 
 
+def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's docking commands on the Qt docks: window.closePanel / floatPanel / dockPanel (beside
+    or in a tab with an anchor, at an edge, beside the central Program monitor) and
+    window.dockAction (the shared docking transaction); a panel's tab menu has Close Panel,
+    Undock Panel and Restore Workspace."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    win.resize(1400, 900)
+    win.show()
+    Qt = QtCore.Qt
+    errors: list[str] = []
+    win._command_failed = lambda cid, m: errors.append(f"{cid}: {m}")
+    try:
+        wait_until(app, lambda: False, 200)
+        hist, markers, fx = win.docks["History"], win.docks["Markers"], win.docks["Effect Controls"]
+        # names as egui's: EffectControls, effect_controls, Effect Controls
+        assert dock_commands.panel_title(win, "effect_controls") == "Effect Controls"
+        win.run_preset("window.closePanel", {"panel": "History"})
+        assert hist.isHidden()
+        win.run_preset("window.floatPanel", {"panel": "History", "rect": [100, 80, 300, 200]})
+        assert not hist.isHidden() and hist.isFloating()
+        assert hist.width() >= 300 and hist.height() >= 200
+        # back into a tab with Markers, then split to the left of Effect Controls
+        win.run_preset("window.dockPanel", {"panel": "History", "anchor": "Markers"})
+        assert not hist.isFloating() and hist in win.tabifiedDockWidgets(markers)
+        notes = win.docks["Project Notes"]
+
+        def notes_group() -> set[str]:
+            # where the closed Project Notes reopens (Window ▸ Project Notes)
+            notes.show()
+            app.processEvents()
+            group = {d.windowTitle() for d in win.tabifiedDockWidgets(notes)} - {"History"}
+            notes.close()
+            app.processEvents()
+            return group
+
+        before = notes_group()
+        assert before
+        win.run_preset("window.dockPanel", {"panel": "History", "zone": "left", "anchor": "EffectControls"})
+        wait_until(app, lambda: False, 200)
+        assert hist not in win.tabifiedDockWidgets(markers)
+        assert win.dockWidgetArea(hist) == win.dockWidgetArea(fx)
+        assert not fx.visibleRegion().isEmpty() or fx in win.tabifiedDockWidgets(win.docks["Source"])
+        source_tabs = win.tabifiedDockWidgets(fx)
+        assert hist not in source_tabs and win.docks["Source"] in source_tabs  # the group stays together
+        here = lambda d: d.mapTo(win, QtCore.QPoint(0, 0))
+        fx.raise_()
+        wait_until(app, lambda: False, 300)
+        # AnimatedDocks: the docks slide into place
+        assert wait_until(app, lambda: 0 <= here(hist).x() and here(hist).x() + hist.width() <= here(fx).x() + 8, 3_000), (here(hist), here(fx))
+        # a closed panel of another group keeps its place (Codex review on #214)
+        assert notes_group() == before
+        # beside the central Program monitor, at an edge
+        win.run_preset("window.dockPanel", {"panel": "History", "zone": "bottom", "anchor": "Program"})
+        assert win.dockWidgetArea(hist) == Qt.DockWidgetArea.BottomDockWidgetArea
+        win.run_preset("window.dockPanel", {"panel": "History", "zone": "right"})
+        assert win.dockWidgetArea(hist) == Qt.DockWidgetArea.RightDockWidgetArea
+        # the transaction form
+        win.run_preset("window.dockAction", {"action": {"Move": {"panel": "History", "anchor": "Markers", "placement": {"Tab": {"before": None}}}}})
+        assert hist in win.tabifiedDockWidgets(markers)
+        win.run_preset("window.dockAction", {"action": {"Float": {"panel": "History", "rect": [50, 50, 420, 320]}}})
+        assert hist.isFloating()
+        win.run_preset("window.dockAction", {"action": {"Close": {"panel": "History"}}})
+        assert hist.isHidden()
+        win.run_preset("window.dockAction", {"action": {"Activate": {"panel": "History"}}})
+        assert not hist.isHidden()
+        assert errors == []
+        # without `panel`: the dock holding the focus (Properties' widgets are panel.Inspector)
+        props = win.docks["Properties"]
+        props.show()
+        props.raise_()
+        win.activateWindow()
+        assert wait_until(app, lambda: props.widget().isVisible() and not props.visibleRegion().isEmpty(), 3_000)
+        inner = props.widget()
+        assert inner.objectName() == "panel.Inspector"
+        inner.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        inner.setFocus()
+        assert wait_until(app, lambda: QtWidgets.QApplication.focusWidget() is inner, 3_000), QtWidgets.QApplication.focusWidget()
+        assert dock_commands.focused_dock(win) == "Properties"
+        win.run_preset("window.closePanel", {})
+        assert props.isHidden()
+        props.show()
+        assert errors == []
+        # refused: unknown panel, zone, the Program monitor moving itself, a broken action
+        win.run_preset("window.closePanel", {"panel": "Nope"})
+        win.run_preset("window.dockPanel", {"panel": "History", "zone": "diagonal"})
+        win.run_preset("window.floatPanel", {"panel": "Program"})
+        win.run_preset("window.floatPanel", {"panel": "History", "rect": [0, 0, float("nan"), 1]})
+        win.run_preset("window.dockAction", {"action": {"ResizeSplit": {"path": [], "size": 1}}})
+        win.run_preset("window.dockAction", {})
+        assert len(errors) == 6, errors
+        assert "unknown panel" in errors[0] and "zone" in errors[1] and "central" in errors[2]
+        # the panel menu on a panel's tab
+        win.run_preset("window.dockPanel", {"panel": "History", "anchor": "Markers"})
+        wait_until(app, lambda: False, 100)
+        bar = next(b for b in win.findChildren(QtWidgets.QTabBar) if b.isVisible() and any(b.tabText(i) == hist.windowTitle() for i in range(b.count())))
+        i = next(i for i in range(bar.count()) if bar.tabText(i) == hist.windowTitle())
+        pos = bar.mapToGlobal(bar.tabRect(i).center())
+        assert dock_commands.dock_at(win, pos) == "History"
+        QtGui.QCursor.setPos(pos)
+        menu = dock_commands.panel_menu(win, "History")
+        assert [a.objectName() for a in menu.actions()] == ["panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace"]
+        menu.actions()[1].trigger()
+        assert hist.isFloating()
+        menu.actions()[0].trigger()
+        assert hist.isHidden()
+        menu.actions()[2].trigger()
+        assert wait_until(app, lambda: not hist.isHidden() and not hist.isFloating(), 2_000)
+        menu.deleteLater()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
     from cfa4_qt.window_menu import DEFAULT_WORKSPACE
@@ -3350,7 +4388,9 @@ def test_default_layout_follows_the_window_size(app, fake_engine: Path, tmp_path
         win.resize(*size)
         win.show()
         try:
-            wait_until(app, lambda: False, 400)
+            # the layout settles over a few deferred resizes; a fixed pause raced them under load
+            wait_until(app, lambda w=win: 0.33 <= w.docks["Timeline"].height() / max(1, w.height()) <= 0.48, 5_000)
+            wait_until(app, lambda: False, 100)
             share = win.docks["Timeline"].height() / win.height()
             assert 0.33 <= share <= 0.48, (size, share)
             left = win.docks["Source"].width() / win.width()
@@ -3438,9 +4478,9 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
         canvas.pps = 60.0
         canvas.scroll_ticks = 0
         wait_until(app, lambda: False, 300)
-        # the panel: egui's 8 groups; unsupported tools listed disabled
+        # the panel: egui's 8 groups
         assert len(win.tools.buttons) == len(GROUPS) == 8
-        assert not win.tools.actions["pen"].isEnabled() and win.tools.actions["slip"].isEnabled()
+        assert all(a.isEnabled() for a in win.tools.actions.values()), "every egui tool works in Qt"
         assert "Tools" in win.docks and not win.docks["Tools"].isHidden()
         # egui's keys pick the tools
         for key, tool in (("B", "ripple"), ("N", "rolling"), ("R", "rateStretch"), ("Y", "slip"), ("U", "slide"), ("A", "trackSelectForward"), ("H", "hand"), ("Z", "zoom"), ("C", "razor"), ("V", "selection")):
@@ -3513,9 +4553,6 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
         assert canvas.pps > pps
         QtTest.QTest.mouseClick(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.AltModifier, QtCore.QPoint(700, 200))
         assert abs(canvas.pps - pps) < 1e-6
-        # unsupported tools cannot be picked
-        win.tools.select("pen")
-        assert win.tools.current == "zoom" and canvas.tool == "zoom"
         assert all(TOOLS[t].available for g in GROUPS for t in (x.id for x in g) if win.tools.actions[t].isEnabled())
     finally:
         win._quit_confirmed = True
@@ -3594,6 +4631,3239 @@ def test_audio_meters_show_what_plays(app, tmp_path: Path, monkeypatch):
     finally:
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_clip_and_gap_menus_as_egui(app, tmp_path: Path):
+    """egui's timeline context menus: right-clicking a clip selects it and opens the clip menu
+    (CLIP_MENU's groups, Enable checked, Link / Unlink, the Label and Multi-Camera submenus, the
+    engine's enabled states); right-clicking empty time selects the gap and opens Ripple Delete."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline_menus
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        items = [c for c in v1.track.get("items") or []]
+        assert items
+        first = items[0]
+        r = canvas.clip_rect(v1, first)
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        assert menu.objectName() == "timeline.clipMenu"
+        assert wait_until(app, lambda: first["clip"] in canvas.selection, 10_000)
+        names = [a.objectName() or (a.menu().objectName() if a.menu() else "") for a in menu.actions() if not a.isSeparator()]
+        expected = [cid for g in timeline_menus.CLIP_MENU for _l, cid in g]
+        assert names == [f"timeline.clipMenu.{c}" for c in expected], names
+        assert len([a for a in menu.actions() if a.isSeparator()]) == len(timeline_menus.CLIP_MENU) - 1
+        act = {a.objectName(): a for a in menu.actions()}
+        assert act["timeline.clipMenu.clip.enable"].isChecked()
+        assert act["timeline.clipMenu.edit.cut"].isEnabled() and act["timeline.clipMenu.clip.speedDuration"].isEnabled()
+        # a linked A/V clip offers Unlink
+        linked = first.get("link") is not None
+        assert act["timeline.clipMenu.clip.link"].text() == ("Unlink" if linked else "Link")
+        # not a nested sequence: Multi-Camera is greyed out
+        mc = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.clip.multicam")
+        assert not mc.isEnabled()
+        labels = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.edit.label")
+        next(a for a in labels.actions() if a.objectName() == "timeline.clipMenu.label.Mango").trigger()
+        menu.close()
+        assert wait_until(app, lambda: next(c for c in next(r for r in canvas.rows if r.short == "V1").track["items"] if c["clip"] == first["clip"]).get("label") == "Mango", 10_000)
+        # Enable unchecks: the clip is disabled (one command, undoable)
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.clipMenu.clip.enable").trigger()
+        menu.close()
+        assert wait_until(app, lambda: next(c for c in next(r for r in canvas.rows if r.short == "V1").track["items"] if c["clip"] == first["clip"]).get("enabled") is False, 10_000)
+        # a gap: delete the second clip, then right-click where it was
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        items = v1.track["items"]
+        assert len(items) >= 3
+        gap_clip = items[1]
+        for t in ("V2", "V3", "A1", "A2", "A3"):  # the other tracks' clips would block the ripple
+            win.execute("timeline.setTrack", {"track": t, "syncLock": False})
+        win.execute("timeline.select", {"clips": [gap_clip["clip"]], "linked": False})
+        win.execute("edit.clear", {})
+        assert wait_until(app, lambda: all(c["clip"] != gap_clip["clip"] for c in next(r for r in canvas.rows if r.short == "V1").track["items"]), 10_000)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        x = (canvas.x_of(gap_clip["start"]) + canvas.x_of(gap_clip["end"])) / 2
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(int(x), int(v1.top + v1.height / 2)))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.gapMenu" and canvas.last_menu.isVisible(), 10_000)
+        gap = canvas.last_menu
+        rd = gap.actions()[0]
+        assert rd.objectName() == "timeline.gapMenu.edit.rippleDelete" and rd.isEnabled()
+        end_before = v1.track["items"][-1]["end"]
+        rd.trigger()
+        gap.close()
+        assert wait_until(app, lambda: next(r for r in canvas.rows if r.short == "V1").track["items"][-1]["end"] < end_before, 10_000)
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_sequence_tabs_as_egui(app, tmp_path: Path):
+    """egui's Timeline tabs: one per open sequence in the engine's order, a click shows that
+    sequence, × (on the shown tab only) or a middle-click closes it, dragging reorders
+    (sequence.moveTab), the right-click menu offers Close Panel / Close Other Timeline Panels."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel = win.timeline
+    tabs = panel.tabs
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        assert wait_until(app, lambda: tabs.count() == 1, 10_000)
+        assert tabs.isVisible() and not panel.title.isVisible()
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        assert [tabs.tabText(i) for i in range(2)][1] == "Second" and tabs.currentIndex() == 1
+        close = tabs.tabButton(1, QtWidgets.QTabBar.ButtonPosition.RightSide)
+        assert close.objectName() == f"timeline.tab.{second}.close" and close.isVisibleTo(tabs)
+        assert not tabs.tabButton(0, QtWidgets.QTabBar.ButtonPosition.RightSide).isVisibleTo(tabs)
+        # a click shows the other sequence
+        QtTest.QTest.mouseClick(tabs, QtCore.Qt.MouseButton.LeftButton, pos=tabs.tabRect(0).center())
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+        assert tabs.currentIndex() == 0
+        # reordering (as a drag ends): the engine's order follows
+        tabs.moveTab(0, 1)
+        assert wait_until(app, lambda: [t["id"] for t in win.sequence["openSequences"]] == [second, first], 10_000)
+        assert [panel.tab_id(i) for i in range(2)] == [second, first]
+        # the panel menu: Close Other Timeline Panels
+        tabs.customContextMenuRequested.emit(tabs.tabRect(1).center())
+        assert wait_until(app, lambda: panel.last_tab_menu is not None and panel.last_tab_menu.isVisible(), 10_000)
+        menu = panel.last_tab_menu
+        acts = {a.objectName(): a for a in menu.actions()}
+        assert list(acts) == ["panel.menu.Timeline.close", "panel.menu.Timeline.closeOthers"]
+        assert acts["panel.menu.Timeline.closeOthers"].isEnabled()
+        acts["panel.menu.Timeline.closeOthers"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: tabs.count() == 1 and panel.tab_id(0) == first, 10_000)
+        # reopen the second, then a middle-click closes it
+        win.execute("sequence.open", {"item": second})
+        assert wait_until(app, lambda: tabs.count() == 2 and win.sequence["id"] == second, 10_000)
+        QtTest.QTest.mouseClick(tabs, QtCore.Qt.MouseButton.MiddleButton, pos=tabs.tabRect(1).center())
+        assert wait_until(app, lambda: tabs.count() == 1 and win.sequence["id"] == first, 10_000)
+        # × on the last tab: no sequence open, the plain title again
+        tabs.tabButton(0, QtWidgets.QTabBar.ButtonPosition.RightSide).click()
+        assert wait_until(app, lambda: win.sequence is None, 10_000)
+        assert not tabs.isVisible() and panel.title.isVisible()
+    finally:
+        if panel.last_tab_menu is not None:
+            panel.last_tab_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
+    """egui's Mix row: under the audio tracks, the master track's name and its fader in dB; the
+    tracks scroll above it and a press there hits no track."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        mix = canvas.mix_rect()
+        assert mix.bottom() == canvas.height() - 1 and mix.height() == tl.MASTER_H
+        assert canvas.row_at(mix.center().y()) is None
+        # the tracks fit above the Mix row: the scroll range leaves it out
+        canvas.set_scroll_y(canvas.max_scroll_y())
+        last = canvas.rows[-1]
+        assert last.top + last.height <= mix.top() + 8
+        # the fader in dB, hot text, right-aligned in the header column
+        win.execute("mixer.setStrip", {"strip": "Mix", "volumeDb": -3.5})
+        assert wait_until(app, lambda: canvas.sequence.get("masterVolumeDb") == -3.5, 10_000)
+        img = canvas.grab().toImage()
+        header = img.pixelColor(10, mix.center().y())
+        assert header == QtGui.QColor(tl.theme.current().tl_header_bg), header.name()
+        hot = QtGui.QColor(tl.theme.current().hot_text)
+        row = [img.pixelColor(x, mix.center().y()) for x in range(tl.HEADER_W - 60, tl.HEADER_W - 10)]
+        assert any(abs(c.red() - hot.red()) + abs(c.green() - hot.green()) + abs(c.blue() - hot.blue()) < 120 for c in row)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
+    """egui's Volume line on audio clips: drawn on the fader scale, dragging it changes the level,
+    Ctrl-click adds a keyframe, a keyframe drags in time and level, right-click deletes it."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def a1():
+        return next(r for r in canvas.rows if r.short == "A1")
+
+    def clip():
+        return next(c for c in a1().track["items"] if c["clip"] == cid)
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint) -> None:
+        QtTest.QTest.mousePress(canvas, btn, pos=a)
+        QtTest.QTest.mouseMove(canvas, b)
+        QtTest.QTest.mouseRelease(canvas, btn, pos=b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        cid = a1().track["items"][0]["clip"]
+        c = clip()
+        level = c["volume"]["db"]  # the demo's own mix level
+        assert isinstance(level, float) and c["volume"]["animated"] is False
+        r = canvas.clip_rect(a1(), c)
+        x = int(r.left() + r.width() * 0.5)
+        y = canvas.volume_line_y(c, r, x)
+        assert abs(y - canvas.volume_y(r, level)) < 1e-6
+        on = QtCore.QPoint(x, round(y))
+        assert canvas.volume_line_at(on) is not None
+        assert canvas.volume_line_at(on + QtCore.QPoint(0, 8)) is None
+        # drawn: white over the clip
+        img = canvas.grab().toImage()
+        col = [img.pixelColor(x, yy) for yy in range(int(y) - 2, int(y) + 3)]
+        assert any(c.red() > 230 and c.green() > 230 and c.blue() > 230 for c in col), [c.name() for c in col]
+        # dragging the line up raises the level (one undo step)
+        drag(on, on - QtCore.QPoint(0, 10))
+        assert wait_until(app, lambda: clip()["volume"]["db"] > level + 0.5, 10_000)
+        raised = clip()["volume"]["db"]
+        # Ctrl-click: keyframes at the click
+        r = canvas.clip_rect(a1(), clip())
+        for f in (0.3, 0.7):
+            px_x = int(r.left() + r.width() * f)
+            at = QtCore.QPoint(px_x, round(canvas.volume_line_y(clip(), r, px_x)))
+            QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.ControlModifier, at)
+        assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 2, 10_000)
+        assert clip()["volume"]["animated"] is True
+        # a keyframe drags in time and level
+        r = canvas.clip_rect(a1(), clip())
+        (m0, k0, db0), (m1, _k1, _db1) = canvas.volume_keys(clip(), r)
+        assert abs(db0 - raised) < 0.01
+        start = QtCore.QPoint(round(k0.x()), round(k0.y()))
+        assert canvas.volume_key_at(start) is not None
+        drag(start, start + QtCore.QPoint(-20, 12))
+        assert wait_until(app, lambda: clip()["volume"]["keys"][0]["mediaTime"] < m0, 10_000)
+        assert clip()["volume"]["keys"][0]["db"] < db0
+        assert clip()["volume"]["keys"][1]["mediaTime"] == m1
+        # the line now ramps between them
+        r = canvas.clip_rect(a1(), clip())
+        (_m, k0, _d), (_m1, k1, _d1) = canvas.volume_keys(clip(), r)
+        mid = (k0.x() + k1.x()) / 2
+        assert min(k0.y(), k1.y()) - 1 <= canvas.volume_line_y(clip(), r, mid) <= max(k0.y(), k1.y()) + 1
+        # right-click a keyframe: Delete
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(round(k1.x()), round(k1.y())))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.volumeKeyMenu", 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.volumeKeyMenu.delete").trigger()
+        menu.close()
+        assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 1, 10_000)
+        # a reversed clip: its keyframes come in media order, backwards in the timeline, and the
+        # middle one still drags between its neighbours (regression: the bounds came from list order)
+        win.execute("clip.speedDuration", {"clips": [cid], "reverse": True})
+        assert wait_until(app, lambda: clip().get("reverse") is True or clip().get("reversed") is True, 10_000), clip()
+        r = canvas.clip_rect(a1(), clip())
+        for f in (0.1, 0.45):
+            px_x = int(r.left() + r.width() * f)
+            QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.ControlModifier, QtCore.QPoint(px_x, round(canvas.volume_line_y(clip(), r, px_x))))
+        assert wait_until(app, lambda: len(clip()["volume"]["keys"]) == 3, 10_000)
+        r = canvas.clip_rect(a1(), clip())
+        keys = canvas.volume_keys(clip(), r)
+        xs = [k[1].x() for k in keys]
+        assert xs != sorted(xs), "media order runs backwards in the timeline"
+        m_mid, k_mid, _db = sorted(keys, key=lambda k: k[1].x())[1]
+        t_mid = next(k["time"] for k in clip()["volume"]["keys"] if k["mediaTime"] == m_mid)
+        start = QtCore.QPoint(round(k_mid.x()), round(k_mid.y()))
+        drag(start, start + QtCore.QPoint(-15, 0))
+        assert wait_until(app, lambda: all(k["time"] != t_mid for k in clip()["volume"]["keys"]), 10_000), clip()["volume"]["keys"]
+        # a keyframe a trim left outside the clip is not drawn, and does not take a click meant for
+        # what is shown there (Codex review regression: the hidden key of the trimmed clip answered)
+        c = clip()
+        r = canvas.clip_rect(a1(), c)
+        out_t = c["start"] + c["duration"] + (c["duration"] // 4)
+        c["volume"]["keys"].append({"mediaTime": 10**12, "time": out_t, "db": 0.0})
+        hidden = next(k for m, k, _db in canvas.volume_keys(c, r) if m == 10**12)
+        assert hidden.x() > r.right()
+        assert canvas.volume_key_at(QtCore.QPoint(round(hidden.x()), round(hidden.y()))) is None
+        c["volume"]["keys"].pop()
+        # a locked track's line does not take presses
+        win.execute("timeline.setTrack", {"track": a1().track["id"], "locked": True})
+        assert wait_until(app, lambda: a1().track.get("locked") is True, 10_000)
+        r = canvas.clip_rect(a1(), clip())
+        x = int(r.left() + r.width() * 0.9)
+        assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip(), r, x)))) is None
+        assert tl.volume_level({"volume": {"db": float("nan"), "animated": True, "curve": [None, 1e300]}}, 0.5) == 0.0
+        # the engine samples the keys too: a dip shorter than the even spacing is on the line
+        dip = {"volume": {"db": 0.0, "animated": True, "curve": [[0.0, 0.0], [0.5, 0.0], [0.5001, -96.0], [0.5002, 0.0], [1.0, 0.0]]}}
+        assert tl.volume_level(dip, 0.5001) == -96.0 and abs(tl.volume_level(dip, 0.50005) + 48.0) < 1e-6
+        assert tl.volume_level(dip, 0.25) == 0.0 and tl.volume_level(dip, 2.0) == 0.0
+        assert tl.volume_level({"volume": {"db": -3.0, "animated": True, "curve": [[0.5, 1e300], "x", [2, 0]]}}, 0.5) == -3.0
+        # a long automation curve is parsed once, not for every pixel of a repaint
+        import time as _time
+
+        many = {"volume": {"db": 0.0, "animated": True, "curve": [[i / 2128, -(i % 7)] for i in range(2129)]}}
+        t0 = _time.perf_counter()
+        for i in range(1001):
+            tl.volume_level(many, i / 1000)
+        assert _time.perf_counter() - t0 < 0.3, _time.perf_counter() - t0
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_track_keyframe_lane_as_egui(app, tmp_path: Path):
+    """egui's track keyframes: the audio header's diamond picks Clip Keyframes or a lane (Volume,
+    Panner, Mute, …); the lane is drawn across the track and hides the clips' Volume lines;
+    Ctrl-click adds a keyframe, a diamond drags in time and value, right-click deletes it."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def a1():
+        return next(r for r in canvas.rows if r.short == "A1")
+
+    def volume_lane():
+        return next(ln for ln in a1().track["lanes"] if ln["key"] == "volume")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        cell = next(c for c in canvas.header_cells(a1()) if c.key == "keyframes")
+        assert not cell.on
+        QtTest.QTest.mouseClick(canvas, btn, pos=cell.rect.center())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        assert menu.objectName() == "timeline.track.A1.keyframes"
+        acts = {a.objectName(): a for a in menu.actions() if a.objectName()}
+        assert list(acts)[:4] == ["timeline.track.A1.keyframes.clip", "timeline.track.A1.keyframes.volume",
+                                  "timeline.track.A1.keyframes.pan", "timeline.track.A1.keyframes.mute"]
+        assert acts["timeline.track.A1.keyframes.clip"].isChecked()
+        acts["timeline.track.A1.keyframes.volume"].trigger()
+        menu.close()
+        assert canvas.track_lanes == {a1().track_id: "volume"}
+        assert next(c for c in canvas.header_cells(a1()) if c.key == "keyframes").on
+        # the lane replaces the clips' Volume lines on this track
+        clip = a1().track["items"][0]
+        r = canvas.clip_rect(a1(), clip)
+        x = int(r.left() + r.width() / 2)
+        assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip, r, x)))) is None
+        # flat at the track's fader level, in the lane colour
+        lane = volume_lane()
+        y = canvas.lane_y(a1(), lane, tl.lane_value(lane, canvas.time_at(x + 40)))
+        img = canvas.grab().toImage()
+        col = [img.pixelColor(x + 40, yy) for yy in range(int(y) - 2, int(y) + 3)]
+        assert any(abs(c.red() - 0xE8) + abs(c.green() - 0xC5) + abs(c.blue() - 0x47) < 90 for c in col), [c.name() for c in col]
+        # Ctrl-click adds keyframes where clicked
+        band = canvas.lane_band(a1())
+        for fx, fy in ((0.3, 0.3), (0.6, 0.7)):
+            at = QtCore.QPoint(int(band.left() + band.width() * fx), int(band.top() + band.height() * fy))
+            QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.ControlModifier, at)
+        assert wait_until(app, lambda: len(volume_lane()["keys"]) == 2, 10_000)
+        (t0, v0, _h0), (_t1, v1, _h1) = tl.lane_keys(volume_lane())
+        assert v0 > v1  # the higher click is the higher level
+        # a diamond drags in time and value (one change, on release)
+        (_t, c0, _v), _second = canvas.lane_points(a1(), volume_lane())
+        start = QtCore.QPoint(round(c0.x()), round(c0.y()))
+        assert canvas.lane_key_at(start) is not None
+        QtTest.QTest.mousePress(canvas, btn, pos=start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(30, -6))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=start + QtCore.QPoint(30, -6))
+        assert wait_until(app, lambda: tl.lane_keys(volume_lane())[0][0] > t0, 10_000)
+        assert tl.lane_keys(volume_lane())[0][1] > v0
+        # right-click a diamond: Delete
+        (_t, c0, _v), _second = canvas.lane_points(a1(), volume_lane())
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(round(c0.x()), round(c0.y())))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.laneKeyMenu", 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.laneKeyMenu.delete").trigger()
+        menu.close()
+        assert wait_until(app, lambda: len(volume_lane()["keys"]) == 1, 10_000)
+        # back to Clip Keyframes: the Volume lines are there again
+        canvas.show_lane(a1().track_id, None)
+        clip = a1().track["items"][0]
+        r = canvas.clip_rect(a1(), clip)
+        assert canvas.volume_line_at(QtCore.QPoint(x, round(canvas.volume_line_y(clip, r, x)))) is not None
+        # damaged lane data reads as harmless values
+        assert tl.lane_value({"keys": [[1, float("nan")], ["x", 1], [2**70, 1]], "static": 0.0}, 5) == 0.0
+        assert tl.lane_norm({"min": float("inf"), "max": None}, 0.5) == 0.5
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
+    """egui's caption rows above the video tracks: C1 header with lock and output eye, purple
+    blocks with their text; a click selects, the body drags (captions.move), an edge trims
+    (captions.trim), a double-click opens the Text panel's Captions tab, the header's menu
+    deletes the track."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def captions():
+        tracks = canvas.caption_tracks()
+        return tracks[0]["captions"] if tracks else []
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        assert canvas.caption_tracks() == [] and canvas.tracks_top() == tl.RULER_H
+        top_video = canvas.rows[0].top
+        canvas.command.emit("captions.add", {"text": "Hello there", "time": 0, "durationSeconds": 4})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # the caption row pushes the tracks down
+        assert canvas.tracks_top() == tl.RULER_H + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
+        assert canvas.rows[0].top == top_video + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
+        assert canvas.row_at(tl.RULER_H + 5) is None
+        cap = captions()[0]
+        r = canvas.caption_block_rect(0, cap)
+        img = canvas.grab().toImage()
+        c = img.pixelColor(int(r.left()) + 2, int(r.bottom()) - 2)
+        assert abs(c.red() - 0x8C) + abs(c.green() - 0x6C) + abs(c.blue() - 0xB4) < 40, c.name()  # added: selected
+        # a click elsewhere then on the block selects it alone
+        QtTest.QTest.mouseClick(canvas, btn, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.caption_selection == [cap["id"]], 10_000)
+        # dragging the body moves it by whole frames
+        start = r.center().toPoint()
+        QtTest.QTest.mousePress(canvas, btn, pos=start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(60, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=start + QtCore.QPoint(60, 0))
+        assert wait_until(app, lambda: captions()[0]["start"] > 0, 10_000)
+        moved = captions()[0]
+        assert moved["end"] - moved["start"] == cap["end"] - cap["start"]
+        assert moved["start"] % canvas.frame_ticks() == 0
+        # dragging the out edge trims it
+        r = canvas.caption_block_rect(0, moved)
+        edge = QtCore.QPoint(int(r.right()) - 1, int(r.center().y()))
+        assert canvas.caption_at(edge)[3] == "out"
+        QtTest.QTest.mousePress(canvas, btn, pos=edge)
+        QtTest.QTest.mouseMove(canvas, edge + QtCore.QPoint(-40, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=edge + QtCore.QPoint(-40, 0))
+        assert wait_until(app, lambda: captions()[0]["end"] < moved["end"], 10_000)
+        assert captions()[0]["start"] == moved["start"]
+        # the header's lock and eye
+        cells = canvas.caption_cells(0)
+        QtTest.QTest.mouseClick(canvas, btn, pos=cells["locked"].center())
+        assert wait_until(app, lambda: canvas.caption_tracks()[0]["locked"] is True, 10_000)
+        r = canvas.caption_block_rect(0, captions()[0])
+        before = captions()[0]["start"]
+        QtTest.QTest.mousePress(canvas, btn, pos=r.center().toPoint())
+        QtTest.QTest.mouseMove(canvas, r.center().toPoint() + QtCore.QPoint(50, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=r.center().toPoint() + QtCore.QPoint(50, 0))
+        wait_until(app, lambda: False, 300)
+        assert captions()[0]["start"] == before  # locked: no move
+        QtTest.QTest.mouseClick(canvas, btn, pos=cells["enabled"].center())
+        assert wait_until(app, lambda: canvas.caption_tracks()[0]["enabled"] is False, 10_000)
+        # a double-click opens the Text panel's Captions tab at the caption
+        canvas.command.emit("playhead.set", {"time": 0})
+        r = canvas.caption_block_rect(0, captions()[0])
+        QtTest.QTest.mouseDClick(canvas, btn, pos=r.center().toPoint())
+        assert wait_until(app, lambda: win.text_panel.tab() == "Captions", 10_000)
+        assert wait_until(app, lambda: canvas.playhead == captions()[0]["start"], 10_000)
+        # right-click the header: Delete Caption Track
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(150, canvas.caption_row(0).center().y()))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.captionTrack.C1.menu", 10_000)
+        menu = canvas.last_menu
+        acts = {a.objectName(): a for a in menu.actions()}
+        assert not acts["timeline.captionTrack.C1.menu.deleteEmpty"].isEnabled()
+        acts["timeline.captionTrack.C1.menu.delete"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: canvas.caption_tracks() == [], 10_000)
+        assert canvas.tracks_top() == tl.RULER_H
+        # damaged caption data reads as nothing
+        assert tl.is_rtl("שלום") and not tl.is_rtl("Hello") and not tl.is_rtl("")
+        canvas.set_sequence({**(canvas.sequence or {}), "captionTracks": "x", "captionSelection": 5})
+        assert canvas.caption_tracks() == [] and canvas.caption_selection == []
+        canvas.set_sequence({**(canvas.sequence or {}), "captionTracks": [{"captions": [{"start": "x", "end": None}, 7]}]})
+        canvas.grab()
+        canvas.caption_at(QtCore.QPoint(tl.HEADER_W + 2, tl.RULER_H + 10))  # no crash
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_properties_caption_as_egui(app, tmp_path: Path):
+    """egui's text::caption_properties: a selected caption (checked before the clips) shows
+    "C1 · track", its text and In / Out timecodes, each sent on focus loss (captions.setText,
+    captions.setTimes), and its duration; without a caption selection the clips come back."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    props = win.inspector
+    cap_panel = props.caption
+
+    def caption():
+        tracks = win.timeline.canvas.caption_tracks()
+        return tracks[0]["captions"][0] if tracks and tracks[0]["captions"] else None
+
+    def field(name):
+        return props.findChild(QtWidgets.QWidget, f"properties.caption.{name}")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        dock = props.parentWidget()
+        while dock is not None and not isinstance(dock, QtWidgets.QDockWidget):
+            dock = dock.parentWidget()
+        if dock is not None:
+            dock.show()
+            dock.raise_()
+        assert wait_until(app, props.isVisible, 10_000)
+        win.execute("captions.add", {"text": "Hello there", "time": 0, "durationSeconds": 4})
+        assert wait_until(app, lambda: caption() is not None, 10_000)
+        win.execute("captions.select", {"captions": [caption()["id"]]})
+        assert wait_until(app, cap_panel.isVisible, 10_000)
+        assert not props.empty.isVisible() and not props.scroll.isVisible() and not props.graphic.isVisible()
+        assert field("header").text().startswith("C1 · ")
+        assert field("text").toPlainText() == "Hello there"
+        assert field("in").text() == "00:00:00:00"
+        assert field("duration").text().startswith("00:00:04")
+        # the text goes to the engine when the field loses focus
+        text = field("text")
+        text.setFocus()
+        text.setPlainText("Goodbye")
+        field("in").setFocus()
+        assert wait_until(app, lambda: caption()["text"] == "Goodbye", 10_000)
+        # a new Out timecode trims it
+        out = field("out")
+        out.setFocus()
+        out.setText("00:00:02:00")
+        QtTest.QTest.keyClick(out, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: field("duration").text().startswith("00:00:02"), 10_000)
+        assert wait_until(app, lambda: caption()["end"] < caption()["start"] + 3 * TICKS_PER_SECOND, 10_000)
+        # an empty or unchanged timecode sends nothing
+        sent = []
+        cap_panel.command.connect(lambda c, p: sent.append(c))
+        out.setText("  ")
+        cap_panel._tc_done("out", "endTimecode")
+        cap_panel._tc_done("in", "startTimecode")
+        assert sent == []
+        # another caption selected while a field has focus: the edit so far goes to the caption it
+        # was made on, and the fields show the new one (regression: the old text went to the new one)
+        win.execute("captions.add", {"text": "Second", "time": 10 * TICKS_PER_SECOND, "durationSeconds": 2})
+        assert wait_until(app, lambda: len(win.timeline.canvas.caption_tracks()[0]["captions"]) == 2, 10_000)
+        first, second = win.timeline.canvas.caption_tracks()[0]["captions"]
+        win.execute("captions.select", {"captions": [first["id"]]})
+        assert wait_until(app, lambda: (cap_panel.caption or {}).get("id") == first["id"], 10_000)
+        text = field("text")
+        text.setFocus()
+        text.setPlainText("Edited first")
+        win.execute("captions.select", {"captions": [second["id"]]})
+        assert wait_until(app, lambda: (cap_panel.caption or {}).get("id") == second["id"], 10_000)
+        assert text.toPlainText() == "Second"
+        field("in").setFocus()
+        caps = lambda: {c["id"]: c["text"] for c in win.timeline.canvas.caption_tracks()[0]["captions"]}
+        assert wait_until(app, lambda: caps() == {first["id"]: "Edited first", second["id"]: "Second"}, 10_000), caps()
+        # no caption selection: the clips' properties again
+        win.execute("captions.select", {"captions": []})
+        assert wait_until(app, lambda: not cap_panel.isVisible(), 10_000)
+        # damaged data reads as nothing
+        props.set_sequence({**(win.sequence or {}), "captionTracks": 3, "captionSelection": "x"})
+        assert props.selected_captions() == []
+        props._caption_listed({"tracks": [7, {"captions": ["x"]}], "selection": [1]}, None)
+        assert not cap_panel.isVisible()
+        cap_panel.set_caption({}, {"text": None, "in": 5})
+        assert field("header").text() == "C1 · "
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_sequence_settings_draft_as_egui():
+    """egui's sequence_settings tests: only changed settings are sent, drop-frame only for a rate
+    that has it, New Sequence's parameters, the aspect label; damaged settings read as defaults."""
+    from dataclasses import replace
+
+    from cfa4_qt.panels.sequence_settings import (
+        Draft,
+        aspect,
+        changes,
+        count_sequences,
+        display_width,
+        draft_from,
+        new_sequence_params,
+        rate_label,
+        supports_drop_frame,
+    )
+
+    assert aspect(1920, 1080) == "16:9" and aspect(1080, 1920) == "9:16" and aspect(1440, 1080) == "4:3"
+    assert aspect(4096, 2160) == "1.90:1" and aspect(0, 0) == "0:0"
+    assert aspect(display_width(1440, 1080, (4, 3)), 1080) == "16:9"
+    assert display_width(1440, 1080, (0, 0)) == 1440
+    assert rate_label(24_000, 1001) == "23.976" and rate_label(30_000, 1001) == "29.97" and rate_label(25, 2) == "12.5"
+    assert rate_label(0, 0) == "23.976"
+    assert supports_drop_frame(30_000, 1001) and supports_drop_frame(60_000, 1001) and not supports_drop_frame(24_000, 1001)
+    cur = Draft()
+    assert changes(Draft(), cur, "") == {}
+    d = replace(Draft(), width=1280, height=720, max_render_quality=True)
+    assert changes(d, cur, "") == {"width": 1280, "height": 720, "scaleMotion": True, "maxRenderQuality": True}
+    d = replace(Draft(), drop_frame=True)
+    assert changes(d, cur, "") == {}
+    d.fps = (30_000, 1001)
+    assert changes(d, cur, "") == {"fps": 30_000 / 1001, "dropFrame": True}
+    d = replace(Draft(), name="  Rough Cut  ")
+    assert changes(d, cur, "Sequence 01") == {"name": "Rough Cut"}
+    assert changes(d, cur, "Rough Cut") == {}
+    assert changes(replace(Draft(), name="   "), cur, "Sequence 01") == {}
+    p, rest = new_sequence_params(replace(Draft(), new_sequence=True, name=" Shorts ", width=1080, height=1920, video_tracks=2, audio_tracks=4))
+    assert p == {"name": "Shorts", "width": 1080, "height": 1920, "fps": 24_000 / 1001, "sampleRate": 48_000, "mix": "Stereo", "video": 2, "audio": 4}
+    assert rest == {}
+    p, rest = new_sequence_params(replace(Draft(), new_sequence=True, name=" ", fps=(30_000, 1001), drop_frame=True, max_render_quality=True, video_tracks=9999))
+    assert "name" not in p and p["video"] == 256
+    assert rest == {"dropFrame": True, "maxRenderQuality": True}
+    # sequence.inspect's settings (serde SequenceSettings)
+    d = draft_from(
+        {
+            "width": 1280,
+            "height": 720,
+            "frame_rate": {"num": 30_000, "den": 1001},
+            "par": [4, 3],
+            "sample_rate": 44_100,
+            "drop_frame": True,
+            "audio_master": "Surround51",
+            "max_render_quality": True,
+            "color": {"working": "Rec2100Pq", "wide_gamut": True, "auto_tone_map": False},
+        },
+        "Seq",
+    )
+    assert (d.name, d.width, d.height, d.fps, d.par, d.sample_rate, d.drop_frame, d.mix) == ("Seq", 1280, 720, (30_000, 1001), (4, 3), 44_100, True, "5.1")
+    assert d.max_render_quality and d.working_space == "rec2100-pq" and d.wide_gamut and not d.auto_tone_map
+    for bad in (None, 5, "x", {"width": -1, "height": 10**9, "frame_rate": {"num": 0, "den": "x"}, "par": [1], "color": 3, "drop_frame": "yes"}):
+        d = draft_from(bad)
+        assert (d.width, d.height, d.fps, d.par, d.drop_frame) == (1920, 1080, (24_000, 1001), (1, 1), False)
+    tree = {"children": [{"item": 1, "type": "Sequence"}, {"id": 2, "children": [{"item": 3, "type": "sequence"}, {"item": 4, "type": "Video"}, 7]}, None]}
+    assert count_sequences(tree) == 2 and count_sequences(None) == 0 and count_sequences({"children": 5}) == 0
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_sequence_settings_dialog_as_egui(app, tmp_path: Path):
+    """Sequence ▸ Sequence Settings… and File ▸ New ▸ Sequence… open egui's dialog: General /
+    Color Management / VR Properties (General / Tracks for New Sequence), unsupported settings
+    greyed, a new timebase picks its usual timecode, OK sends what changed."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.sequence_settings import SequenceSettingsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def closed(d):
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def w(dialog, name, kind=QtWidgets.QWidget):
+        return dialog.findChild(kind, f"sequenceSettings.{name}")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.invoke("sequence.settings")
+        assert wait_until(app, lambda: isinstance(win.last_dialog, SequenceSettingsDialog) and win.last_dialog.isVisible(), 10_000)
+        d = win.last_dialog
+        assert d.windowTitle() == "Sequence Settings"
+        assert set(d.tabs) == {"general", "color", "vr"}
+        assert w(d, "name", QtWidgets.QLineEdit).text() == win.sequence["name"]
+        for fixed in ("editingMode", "par", "fields", "channels", "audioDisplay", "previewFormat", "previewCodec", "previewWidth", "maxBitDepth", "linearColor"):
+            assert not w(d, fixed).isEnabled(), fixed
+        assert w(d, "linearColor", QtWidgets.QCheckBox).isChecked()
+        # 29.97: drop-frame timecode first, then non-drop-frame
+        tb = w(d, "timebase", QtWidgets.QComboBox)
+        i = next(i for i in range(tb.count()) if tb.itemData(i) == (30_000, 1001))
+        tb.activated.emit(i)
+        vd = w(d, "videoDisplay", QtWidgets.QComboBox)
+        assert vd.currentData() == "df" and "Drop-Frame" in vd.currentText()
+        vd.activated.emit(1)
+        assert d.d.drop_frame is False
+        w(d, "width", QtWidgets.QSpinBox).setValue(1280)
+        w(d, "height", QtWidgets.QSpinBox).setValue(720)
+        assert w(d, "aspect", QtWidgets.QLabel).text() == "16:9" and w(d, "previewWidth").text() == "1280"
+        w(d, "maxRenderQuality", QtWidgets.QCheckBox).setChecked(True)
+        d.set_tab("color")
+        ws = w(d, "workingSpace", QtWidgets.QComboBox)
+        ws.activated.emit(1)
+        w(d, "wideGamut", QtWidgets.QCheckBox).setChecked(True)
+        d.set_tab("vr")
+        assert not w(d, "vr.projection").isEnabled()
+        w(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        st = lambda: (win.sequence or {}).get("settings") or {}
+        assert wait_until(app, lambda: st().get("width") == 1280 and st().get("height") == 720, 10_000)
+        assert st()["frame_rate"] == {"num": 30_000, "den": 1001} and st()["drop_frame"] is False
+        assert st()["max_render_quality"] is True and st()["color"]["working"] == "Rec2100Pq" and st()["color"]["wide_gamut"] is True
+        # OK with nothing changed adds no undo step
+        revision = win.revision
+        win.invoke("sequence.settings")
+        assert wait_until(app, lambda: win.last_dialog is not d and isinstance(win.last_dialog, SequenceSettingsDialog), 10_000)
+        d = win.last_dialog
+        w(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert d.sent == []
+        wait_until(app, lambda: False, 300)
+        assert win.revision == revision
+        # File ▸ New ▸ Sequence…: General and Tracks
+        win.invoke("file.newSequence")
+        assert wait_until(app, lambda: win.last_dialog is not d and isinstance(win.last_dialog, SequenceSettingsDialog), 10_000)
+        d = win.last_dialog
+        assert d.windowTitle() == "New Sequence" and set(d.tabs) == {"general", "tracks"}
+        assert w(d, "name", QtWidgets.QLineEdit).text().startswith("Sequence ")
+        name = w(d, "name", QtWidgets.QLineEdit)
+        name.setText("Shorts")
+        name.textEdited.emit("Shorts")
+        w(d, "width", QtWidgets.QSpinBox).setValue(1080)
+        w(d, "height", QtWidgets.QSpinBox).setValue(1920)
+        assert w(d, "aspect", QtWidgets.QLabel).text() == "9:16"
+        d.set_tab("tracks")
+        w(d, "tracks.video", QtWidgets.QSpinBox).setValue(2)
+        w(d, "tracks.audio", QtWidgets.QSpinBox).setValue(4)
+        w(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: (win.sequence or {}).get("name") == "Shorts", 10_000)
+        assert wait_until(app, lambda: len(win.sequence.get("video") or []) == 2 and len(win.sequence.get("audio") or []) == 4, 10_000)
+        assert st()["width"] == 1080 and st()["height"] == 1920
+        # with parameters the command applies directly (agents, presets)
+        win.run_preset("sequence.settings", {"width": 640, "height": 360})
+        assert wait_until(app, lambda: st().get("width") == 640, 10_000)
+        # Escape cancels
+        win.invoke("sequence.settings")
+        assert wait_until(app, lambda: win.last_dialog is not d and isinstance(win.last_dialog, SequenceSettingsDialog), 10_000)
+        d = win.last_dialog
+        QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert d.sent == []
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_clip_dialogs_as_egui(app):
+    """egui's clip_dialogs without an engine: each dialog's controls from ``dialog.defaults``, the
+    Audio Channels matrix following the format and clip count, Frame Hold's timecode only for
+    Source Timecode / Sequence Time, OK sending egui's ``finish`` and keeping a failure in red;
+    damaged defaults read as nothing."""
+    from cfa4_qt.panels.clip_dialogs import ClipDialog, channel_map, finish, timecode_of_frames
+
+    assert channel_map("mono", 3) == [[0], [1], [2]]
+    assert channel_map("stereo", 3) == [[0, 1], [2]]
+    assert channel_map("5.1", 6) == [[0, 1, 2, 3, 4, 5]] and channel_map("adaptive", 0) == [[0]]
+    assert len(channel_map("mono", 10**9)) == 64
+    assert timecode_of_frames(0, 24.0) == "00:00:00:00" and timecode_of_frames(24 * 61 + 5, 23.976) == "00:01:01:05"
+    assert timecode_of_frames(10**30, float("nan")).count(":") == 3
+    assert finish("file.newOfflineFile", {"name": "", "fileName": "a"}) == {"fileName": "a"}
+    assert finish("clip.modifyTimecode", {"timecode": "x", "reset": True}) == {"reset": True}
+    assert finish("clip.frameHoldOptions", {"holdOn": "in", "timecode": "x"}) == {"holdOn": "in"}
+    assert finish("clip.frameHoldOptions", {"holdOn": "sequenceTime", "timecode": "x"})["timecode"] == "x"
+
+    sent: list[tuple[str, dict]] = []
+    answer: list[str | None] = [None]
+
+    def run(cid, params, then):
+        sent.append((cid, params))
+        then(answer[0], None)
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, f"{d.pre}.{name}")
+
+    # Audio Channels of a 4-channel master clip
+    d = ClipDialog(None, {"command": "clip.audioChannels", "params": {"format": "stereo", "clips": [[0, 1], [2, 3]]}, "info": {"channels": 4, "items": True}}, run)
+    assert d.objectName() == "audioChannels" and d.windowTitle() == "Modify Clip: Audio Channels"
+    assert child(d, "format.stereo", QtWidgets.QRadioButton).isChecked()
+    assert child(d, "count", QtWidgets.QSpinBox).value() == 2
+    assert child(d, "clip.1.ch.3", QtWidgets.QCheckBox).isChecked() and not child(d, "clip.1.ch.0", QtWidgets.QCheckBox).isChecked()
+    child(d, "format.mono", QtWidgets.QRadioButton).setChecked(True)
+    assert d.params["format"] == "mono" and d.params["clips"] == [[0], [1], [2], [3]]
+    child(d, "count", QtWidgets.QSpinBox).setValue(2)
+    assert d.params["clips"] == [[0], [1]]
+    app.processEvents()
+    child(d, "clip.0.ch.2", QtWidgets.QCheckBox).setChecked(True)
+    assert d.params["clips"] == [[0, 2], [1]]
+    child(d, "ok", QtWidgets.QPushButton).click()
+    assert sent[-1] == ("clip.audioChannels", {"format": "mono", "clips": [[0, 2], [1]]})
+    # Frame Hold: the timecode field only for Source Timecode / Sequence Time; Hold On off greys the rest
+    d = ClipDialog(None, {"command": "clip.frameHoldOptions", "params": {"enabled": True, "holdOn": "in", "timecode": "00:00:01:00", "holdFilters": False}}, run)
+    d.show()
+    assert not child(d, "timecode").isVisible()
+    child(d, "holdOn.sequenceTime", QtWidgets.QRadioButton).setChecked(True)
+    assert child(d, "timecode").isVisible()
+    child(d, "enabled", QtWidgets.QCheckBox).setChecked(False)
+    assert not child(d, "holdOn.in").isEnabled() and not child(d, "holdFilters").isEnabled()
+    # a failure stays in the dialog, in red
+    answer[0] = "no clip selected"
+    child(d, "ok", QtWidgets.QPushButton).click()
+    assert d.isVisible() and child(d, "error", QtWidgets.QLabel).text() == "no clip selected"
+    assert sent[-1] == ("clip.frameHoldOptions", {"enabled": False, "holdOn": "sequenceTime", "timecode": "00:00:01:00", "holdFilters": False})
+    d.close()
+    answer[0] = None
+    # Paste Attributes: audio attributes greyed for video-only clips, the effects offered
+    d = ClipDialog(
+        None,
+        {"command": "edit.pasteAttributes", "params": {"motion": True, "volume": False, "effects": ["blur"], "scaleTimes": True}, "info": {"video": True, "audio": False, "effects": [["blur", "Gaussian Blur"], ["x"], 5]}},
+        run,
+    )
+    assert child(d, "motion").isEnabled() and not child(d, "volume").isEnabled()
+    assert child(d, "effect.blur", QtWidgets.QCheckBox).isChecked() and child(d, "scaleTimes", QtWidgets.QCheckBox).isChecked()
+    child(d, "effect.blur", QtWidgets.QCheckBox).setChecked(False)
+    assert d.params["effects"] == []
+    # Offline File: no video greys the frame size; an empty clip name is not sent
+    d = ClipDialog(None, {"command": "file.newOfflineFile", "params": {"fileName": "Offline.mov", "name": "", "video": True, "width": 1920, "height": 1080, "fps": 24.0, "seconds": 10.0}}, run)
+    child(d, "video", QtWidgets.QCheckBox).setChecked(False)
+    assert not child(d, "width").isEnabled()
+    child(d, "ok", QtWidgets.QPushButton).click()
+    assert "name" not in sent[-1][1] and sent[-1][1]["video"] is False
+    # damaged defaults: still a dialog, no crash
+    for state in ({}, {"command": "clip.audioChannels", "params": 5, "info": {"channels": -3, "items": True}}, {"command": "clip.speedDuration", "params": {"speed": "x"}, "info": {"duration": "y", "fpsNum": 0}}):
+        d = ClipDialog(None, state, run)
+        d.grab()
+        d.deleteLater()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_clip_dialogs_as_egui(app, tmp_path: Path):
+    """Clip ▸ Speed/Duration…, Nest…, Field Options… and Frame Hold Options… from the menu open
+    egui's dialogs from ``dialog.defaults``; OK runs the command; with nothing selected the
+    command's own error comes back and no dialog opens."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.clip_dialogs import ClipDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    import shiboken6
+
+    def closed(d):
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def opened(name, before):
+        def now():
+            d = win.last_dialog
+            return isinstance(d, ClipDialog) and d is not before and shiboken6.isValid(d) and d.objectName() == name
+
+        return wait_until(app, now, 10_000)
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, f"{d.pre}.{name}")
+
+    def first_clip():
+        return win.sequence["video"][0]["items"][0]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.execute("sequence.linkedSelection", {"on": False})
+        clip = first_clip()["clip"]
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: win.sequence.get("selection") == [clip], 10_000)
+        win.invoke("clip.speedDuration")
+        assert opened("speedDuration", None)
+        d = win.last_dialog
+        assert d.windowTitle() == "Clip Speed / Duration"
+        speed = child(d, "speed", QtWidgets.QDoubleSpinBox)
+        assert speed.value() == 100.0
+        before = child(d, "duration", QtWidgets.QLabel).text()
+        speed.setValue(200.0)
+        after = child(d, "duration", QtWidgets.QLabel).text()
+        assert after != before and after < before
+        assert child(d, "interpolation.frameSampling", QtWidgets.QRadioButton).isChecked()
+        child(d, "interpolation.frameBlending", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert wait_until(app, lambda: abs(float(first_clip().get("speed") or 0) - 2.0) < 1e-6, 10_000), first_clip()
+        # Field Options: the defaults go through as they are
+        win.invoke("clip.fieldOptions")
+        assert opened("fieldOptions", d)
+        d = win.last_dialog
+        assert child(d, "processing.none", QtWidgets.QRadioButton).isChecked()
+        child(d, "processing.alwaysDeinterlace", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert d.sent[-1] == {"reverseFieldDominance": False, "processing": "alwaysDeinterlace"}
+        # Frame Hold Options
+        win.invoke("clip.frameHoldOptions")
+        assert opened("frameHold", d)
+        d = win.last_dialog
+        assert child(d, "holdOn.in", QtWidgets.QRadioButton).isChecked()
+        QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # Nest…: the next free name, Enter accepts it
+        win.invoke("clip.nest")
+        assert opened("nest", d)
+        d = win.last_dialog
+        name = child(d, "name", QtWidgets.QLineEdit)
+        assert name.text() == "Nested Sequence 01"
+        name.setText("My Nest")
+        QtTest.QTest.keyClick(name, QtCore.Qt.Key.Key_Return)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert wait_until(app, lambda: first_clip().get("name") == "My Nest" or any(i.get("name") == "My Nest" for t in win.sequence["video"] for i in t["items"]), 10_000)
+        # nothing selected: the command's error, no dialog
+        win.execute("timeline.select", {"clips": []})
+        assert wait_until(app, lambda: win.sequence.get("selection") == [], 10_000)
+        last = win.last_dialog
+        win.invoke("clip.speedDuration")
+        assert wait_until(app, lambda: "clip.speedDuration" in win.events.text.toPlainText(), 10_000)
+        assert win.last_dialog is last
+        # with parameters the command applies directly
+        win.execute("timeline.select", {"clips": [first_clip()["clip"]]})
+        win.run_preset("clip.fieldOptions", {"processing": "none"})
+        wait_until(app, lambda: False, 200)
+        assert win.last_dialog is last
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_menu_dialogs_as_egui(app):
+    """egui's menu_dialogs without an engine: Find switching its boxes with the scope and staying
+    open with "Match n of total", Project Settings' tabs applying General then Scratch Disks then
+    (only when changed) Ingest, info-only Properties with one button, egui's ``finish``; damaged
+    defaults read as nothing."""
+    from cfa4_qt.panels.menu_dialogs import MENU_COMMANDS, MenuDialog, finish
+
+    assert "file.projectSettings.general" in MENU_COMMANDS and "project.settings" not in MENU_COMMANDS
+    assert finish("edit.find", {"scope": "timeline", "rows": [{"text": "a"}, {"text": "b"}]})["rows"] == [{"text": "a"}]
+    assert finish("edit.find", {"scope": "project", "rows": [1, 2]})["rows"] == [1, 2]
+    assert finish("markers.addFlashCue", {"name": "", "comment": "c"}) == {"comment": "c"}
+    assert finish("sequence.transcribe", {"language": "auto", "diarize": True}) == {"diarize": True}
+
+    sent: list[tuple[str, dict]] = []
+    answer: list = [None, {}]
+    status: list[str] = []
+
+    def run(cid, params, then):
+        sent.append((cid, params))
+        then(answer[0], answer[1])
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    # Find: Project rows or the Timeline's one field; OK keeps the dialog with the match count
+    state = {
+        "command": "edit.find",
+        "params": {"scope": "project", "in": "all", "rows": [{"column": "Name", "operator": "contains", "text": "neon"}], "matchAll": True, "caseSensitive": False},
+        "info": {"columns": [["Name", "Name"], ["Label", "Label"]], "operators": [["contains", "Contains"], ["beginsWith", "Begins With"]]},
+    }
+    d = MenuDialog(None, state, run)
+    d.show()
+    assert d.windowTitle() == "Find" and child(d, "find.cancel", QtWidgets.QPushButton).text() == "Done"
+    assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "neon" and not d.timeline_box.isVisible()
+    # the control channel's `ui.set {menuDialog}` sets a choice as a pick would: the parameter follows
+    from cfa4_qt.control import set_dialog_field
+
+    set_dialog_field(d, "row.0.column", "Label")
+    assert d.params["rows"][0]["column"] == "Label"
+    set_dialog_field(d, "row.0.column", "Name")
+    # editing the first Project row and then switching to Timeline shows what will be found
+    child(d, "find.row.0.text.project", QtWidgets.QLineEdit).setText("tree")
+    child(d, "find.scope.timeline", QtWidgets.QRadioButton).setChecked(True)
+    assert d.timeline_box.isVisible() and not d.project_box.isVisible()
+    assert child(d, "find.row.0.text", QtWidgets.QLineEdit).text() == "tree"
+    child(d, "find.row.0.text", QtWidgets.QLineEdit).setText("sky")
+    assert child(d, "find.row.0.text.project", QtWidgets.QLineEdit).text() == "sky"
+    child(d, "find.in.markers", QtWidgets.QRadioButton).setChecked(True)
+    answer[1] = {"matches": 3, "index": 1}
+    child(d, "find.ok", QtWidgets.QPushButton).click()
+    assert sent[-1][0] == "edit.find" and sent[-1][1]["scope"] == "timeline" and sent[-1][1]["in"] == "markers"
+    assert sent[-1][1]["rows"] == [{"column": "Name", "operator": "contains", "text": "sky"}]
+    assert d.isVisible() and child(d, "find.result", QtWidgets.QLabel).text() == "Match 2 of 3"
+    answer[0] = "no matches"
+    child(d, "find.ok", QtWidgets.QPushButton).click()
+    assert d.isVisible() and child(d, "find.error", QtWidgets.QLabel).text() == "no matches"
+    d.close()
+    answer[:] = [None, {}]
+    # Project Settings: the asked tab; General and Scratch Disks always, Ingest only when changed
+    ingest = {"enabled": False, "action": "copy", "destination": None}
+    state = {
+        "command": "project.settings",
+        "params": {"tab": "scratchDisks", "renderer": "R1", "videoDisplay": "Timecode", "audioDisplay": "Milliseconds", "captureFormat": "DV", "titleSafe": [20, 20], "actionSafe": [10, 10], "captured": None, "videoPreviews": "/v", "audioPreviews": None, "autoSave": None, "ingest": dict(ingest)},
+        "info": {"project": "Demo", "renderers": ["R1", "R2"], "videoDisplays": ["Timecode", "Frames"], "scratch": {"videoPreviews": {"path": "/v"}}, "ingest": dict(ingest)},
+    }
+    d = MenuDialog(None, state, run)
+    d.show()
+    assert d.windowTitle() == "Project Settings" and d.stack.currentIndex() == 1
+    assert child(d, "projectSettings.scratch.videoPreviews", QtWidgets.QLineEdit).text() == "/v"
+    child(d, "projectSettings.scratch.videoPreviews.same", QtWidgets.QPushButton).click()
+    child(d, "projectSettings.tab.general", QtWidgets.QToolButton).click()
+    assert d.stack.currentIndex() == 0
+    child(d, "projectSettings.titleSafe.horizontal", QtWidgets.QDoubleSpinBox).setValue(15.0)
+    child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+    assert [c for c, _p in sent[-2:]] == ["file.projectSettings.general", "file.projectSettings.scratchDisks"]
+    general, scratch = sent[-2][1], sent[-1][1]
+    assert general["titleSafe"] == [15.0, 20.0] and general["audioDisplay"] == "milliseconds" and general["renderer"] == "R1"
+    assert scratch["videoPreviews"] is None
+    assert wait_until(app, lambda: closed(d), 5000)
+    n = len(sent)
+    d = MenuDialog(None, state, run)
+    d.set_tab("ingest")
+    child(d, "projectSettings.ingest.enabled", QtWidgets.QCheckBox).setChecked(True)
+    answer[0] = "bad scratch disk"
+    child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+    # the first failure stops the chain and stays in red
+    assert len(sent) == n + 1 and child(d, "projectSettings.error", QtWidgets.QLabel).text() == "bad scratch disk"
+    answer[0] = None
+    child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+    assert [c for c, _p in sent[-3:]] == ["file.projectSettings.general", "file.projectSettings.scratchDisks", "project.ingestSettings"]
+    assert sent[-1][1]["enabled"] is True
+    # Properties: information only, one button
+    d = MenuDialog(None, {"command": "file.mediaProperties", "params": {}, "info": [{"name": "a.mov", "path": "/m/a.mov", "fileSize": 2_000_000, "video": {"codec": "h264"}}, 7]}, run)
+    d.show()
+    assert not child(d, "properties.cancel", QtWidgets.QPushButton).isVisible() and child(d, "properties.ok", QtWidgets.QPushButton).text() == "Close"
+    texts = [w.text() for w in d.findChildren(QtWidgets.QLabel)]
+    assert "a.mov" in texts and "File Size: 2.00 MB" in texts
+    n = len(sent)
+    child(d, "properties.ok", QtWidgets.QPushButton).click()
+    assert len(sent) == n and wait_until(app, lambda: closed(d), 5000)
+    # Save as Template says where it saved; Simplify sends its checkboxes and Keep
+    d = MenuDialog(None, {"command": "file.saveAsTemplate", "params": {"name": "Demo"}}, run, status=status.append)
+    answer[1] = {"path": "/t/Demo.cfa4template"}
+    child(d, "saveTemplate.ok", QtWidgets.QPushButton).click()
+    assert sent[-1] == ("file.saveAsTemplate", {"name": "Demo"}) and status[-1] == "Saved template /t/Demo.cfa4template"
+    d = MenuDialog(None, {"command": "sequence.simplify", "params": {"name": "S (Simplified)", "removeDisabled": True, "closeGaps": False, "keep": "both"}}, run)
+    child(d, "simplify.closeGaps", QtWidgets.QCheckBox).setChecked(True)
+    child(d, "simplify.keep.video", QtWidgets.QRadioButton).setChecked(True)
+    child(d, "simplify.ok", QtWidgets.QPushButton).click()
+    assert sent[-1] == ("sequence.simplify", {"name": "S (Simplified)", "removeDisabled": True, "closeGaps": True, "keep": "video"})
+    # damaged defaults: still a dialog, no crash
+    for state in (
+        {"command": "edit.find", "params": {"rows": [5, None]}, "info": {"columns": 3, "operators": [[1, 2]]}},
+        {"command": "project.settings", "params": {"titleSafe": "x", "ingest": 4, "tab": 9}, "info": {"scratch": [], "renderers": None}},
+        {"command": "file.mediaProperties", "params": None, "info": {"fileSize": "big", "dataRateKbps": float("nan"), "duration": 3}},
+        {"command": "sequence.transcribe", "params": {"language": 5}, "info": {"tracks": [1, "A1"]}},
+        {"command": "file.newColorMatte", "params": {"color": "nope", "width": -5}},
+    ):
+        d = MenuDialog(None, state, run)
+        d.grab()
+        d.deleteLater()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_menu_dialogs_as_egui(app, tmp_path: Path):
+    """Edit ▸ Find…, File ▸ Project Settings ▸ General…, Sequence ▸ Simplify Sequence… and Normalize
+    Mix Track… from the menu open egui's dialogs from ``dialog.defaults``: Find selects the match
+    and stays open, the Title Safe change reaches the project, Simplify makes the new sequence."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.menu_dialogs import MenuDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def opened(name, before):
+        return wait_until(app, lambda: isinstance(win.last_dialog, MenuDialog) and win.last_dialog is not before and win.last_dialog.objectName() == name, 10_000)
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def query(cid, params=None):
+        out: list = []
+        engine.execute(cid, params or {}, on_reply=lambda r, _b: out.append(r), on_error=lambda m: out.append(m))
+        assert wait_until(app, lambda: bool(out), 10_000)
+        return out[0]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        # Find in the timeline: the first clip's name selects it, the dialog stays with the count
+        name = win.sequence["video"][0]["items"][0]["name"]
+        win.inspector_source = "timeline"
+        win.invoke("edit.find")
+        assert opened("find", None)
+        d = win.last_dialog
+        assert child(d, "find.scope.timeline", QtWidgets.QRadioButton).isChecked()
+        child(d, "find.row.0.text", QtWidgets.QLineEdit).setText(name)
+        child(d, "find.in.clips", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "find.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: child(d, "find.result", QtWidgets.QLabel).isVisible(), 10_000)
+        assert child(d, "find.result", QtWidgets.QLabel).text().startswith("Match 1 of ") and d.isVisible()
+        assert wait_until(app, lambda: bool(win.sequence.get("selection")), 10_000)
+        child(d, "find.cancel", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # Project Settings ▸ General…: the General tab, a Title Safe change reaches the project
+        win.invoke("file.projectSettings.general")
+        assert opened("projectSettings", d)
+        d = win.last_dialog
+        assert d.stack.currentIndex() == 0
+        child(d, "projectSettings.titleSafe.horizontal", QtWidgets.QDoubleSpinBox).setValue(17.0)
+        child(d, "projectSettings.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert query("dialog.defaults", {"command": "file.projectSettings.general"})["params"]["titleSafe"][0] == 17.0
+        # Simplify Sequence…: a new sequence named as the dialog says (from the menu bar's action)
+        win.registry.actions["sequence.simplify"].trigger()
+        assert opened("simplify", d)
+        d = win.last_dialog
+        new_name = child(d, "simplify.name", QtWidgets.QLineEdit).text()
+        assert new_name.endswith("(Simplified)")
+        child(d, "simplify.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert wait_until(app, lambda: new_name in json.dumps(win.project), 10_000)
+        # Normalize Mix Track…: 0 dB
+        win.invoke("sequence.normalizeMixTrack")
+        assert opened("normalizeMix", d)
+        d = win.last_dialog
+        assert child(d, "normalizeMix.db", QtWidgets.QDoubleSpinBox).value() == 0.0
+        QtTest.QTest.keyClick(d, QtCore.Qt.Key.Key_Escape)
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # with parameters the command applies directly
+        last = win.last_dialog
+        win.run_preset("sequence.normalizeMixTrack", {"db": -3.0})
+        wait_until(app, lambda: False, 200)
+        assert win.last_dialog is last
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_menu_frontend_items_as_egui(app, tmp_path: Path, monkeypatch):
+    """The frontend side of egui's menu long tail: View ▸ Dynamic Audio Waveforms toggles the
+    Timeline's scale, Help ▸ System Compatibility Report… shows the engine's report, Reveal Log
+    Files… writes the session log and shows it, Edit Original / Reveal in Finder hand the media
+    file to the OS, Get Media File Properties for ▸ File… shows the picked file, Export Selection
+    as Project / Avid Log Exchange ask where to save; Clip ▸ Speed/Duration… from the menu bar opens
+    its dialog."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.clip_dialogs import ClipDialog
+    from cfa4_qt.panels.menu_dialogs import MenuDialog
+    from cfa4_qt.panels.timeline import waveform_level
+
+    assert waveform_level(1.0) == 1.0 and waveform_level(0.0) == 0.0 and waveform_level(-1.0) == 0.0
+    assert abs(waveform_level(10 ** (-24 / 20)) - 0.5) < 1e-9 and waveform_level(float("nan")) == 0.0
+    music = tmp_path / "music.wav"
+    _test_music(music, bars=2)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])  # as the app: the data dir holds Logs
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    opened: list[tuple[str, bool]] = []
+    win.open_path_hook = lambda path, reveal: opened.append((path, reveal))
+
+    def dialog(name, before):
+        return wait_until(app, lambda: win.last_dialog is not before and win.last_dialog is not None and win.last_dialog.objectName() == name, 10_000)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        # Dynamic Audio Waveforms: on by default, the menu item and the command toggle it
+        a = win.dynamic_waveforms_action
+        assert a.isChecked() and win.timeline.canvas.dynamic_waveforms
+        a.trigger()
+        assert not win.timeline.canvas.dynamic_waveforms
+        win.invoke("view.dynamicAudioWaveforms")
+        assert a.isChecked() and win.timeline.canvas.dynamic_waveforms
+        win.run_preset("view.dynamicAudioWaveforms", {"on": False})
+        assert not a.isChecked()
+        # System Compatibility Report… from the Help menu
+        next(x for x in win.help_actions if x.objectName() == "help.systemCompatibilityReport").trigger()
+        assert dialog("systemReport", None)
+        d = win.last_dialog
+        assert isinstance(d, MenuDialog) and d.windowTitle() == "System Compatibility Report"
+        assert d.findChild(QtWidgets.QLabel, "systemReport.check.CPU") is not None
+        assert "H.264" in d.findChild(QtWidgets.QLabel, "systemReport.decoders").text()
+        d.findChild(QtWidgets.QPushButton, "systemReport.ok").click()
+        # Reveal Log Files…: the session log, shown in the file manager
+        win.invoke("help.revealLogFiles")
+        assert wait_until(app, lambda: bool(opened), 10_000)
+        log, reveal = opened[-1]
+        assert reveal and Path(log).is_file() and Path(log).parent == tmp_path / "data" / "Logs"
+        assert json.loads(Path(log).read_text().splitlines()[0])["app"].startswith("CFA4")
+        # Edit Original / Reveal in Finder of an imported file
+        win.execute("file.import", {"paths": [str(music)]})
+        assert wait_until(app, lambda: any(i.get("name") == "music.wav" for i in _items(win.project)), 20_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        win.execute("project.select", {"items": [item]})
+        wait_until(app, lambda: False, 300)
+        win.invoke("edit.editOriginal")
+        assert wait_until(app, lambda: opened[-1] == (str(music), False), 10_000), opened
+        win.run_preset("file.reveal", {"items": [item]})
+        assert wait_until(app, lambda: opened[-1] == (str(music), True), 10_000), opened
+        # Generate Audio Waveform forgets the item's cached peaks
+        media = win.timeline.canvas.media
+        media.peaks[(item, 0, 1, 1, 1, 0)] = [(0.0, 0.0)]
+        win.run_preset("clip.generateAudioWaveform", {"items": [item]})
+        assert wait_until(app, lambda: (item, 0, 1, 1, 1, 0) not in media.peaks, 10_000)
+        # Get Media File Properties for ▸ File…: the picked file's Properties
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", lambda *_a, **_k: (str(music), ""))
+        last = win.last_dialog
+        win.invoke("file.mediaPropertiesFile")
+        assert dialog("properties", last)
+        d = win.last_dialog
+        assert "music.wav" in [w.text() for w in d.findChildren(QtWidgets.QLabel)]
+        d.findChild(QtWidgets.QPushButton, "properties.ok").click()
+        # Avid Log Exchange…: the save dialog starts at the project's name, .ale is added
+        asked: list[str] = []
+
+        def save(_parent, _title, start, _filter):
+            asked.append(start)
+            return (str(tmp_path / "log"), "")
+
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", save)
+        win.invoke("file.exportAle")
+        assert wait_until(app, lambda: (tmp_path / "log.ale").is_file(), 10_000)
+        assert asked[-1].endswith(".ale")
+        # Clip ▸ Speed/Duration… from the menu bar opens egui's dialog, not a parameter form
+        clip = win.sequence["video"][0]["items"][0]["clip"]
+        win.execute("timeline.select", {"clips": [clip]})
+        assert wait_until(app, lambda: clip in (win.sequence.get("selection") or []), 10_000)
+        last = win.last_dialog
+        speed = win.registry.actions["clip.speedDuration"]
+        assert wait_until(app, lambda: speed.isEnabled(), 10_000), win.events.text.toPlainText()[-500:]
+        speed.trigger()
+        assert wait_until(app, lambda: isinstance(win.last_dialog, ClipDialog) and win.last_dialog is not last and win.last_dialog.objectName() == "speedDuration", 10_000)
+        QtTest.QTest.keyClick(win.last_dialog, QtCore.Qt.Key.Key_Escape)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_closing_asks_save_dont_save_cancel(app, tmp_path: Path, monkeypatch):
+    """egui's close prompt: closing the window with unsaved changes asks Save / Don't Save /
+    Cancel. Cancel keeps the window and the engine; Save writes the project, then closes; Don't
+    Save closes without writing; a clean project closes without asking."""
+    from cfa4_qt.main_window import MainWindow
+
+    answers: list[QtWidgets.QMessageBox.StandardButton] = []
+    asked: list[tuple[str, QtWidgets.QMessageBox.StandardButtons]] = []
+
+    def answer(box):
+        asked.append((box.text(), box.standardButtons()))
+        return answers.pop(0)
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+
+    def opened(name: str) -> tuple[MainWindow, EngineClient, Path]:
+        settings = QtCore.QSettings(str(tmp_path / f"{name}.ini"), QtCore.QSettings.Format.IniFormat)
+        engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / f"data-{name}")])
+        win = MainWindow(engine, settings)
+        win.show()
+        engine.start()
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        project = tmp_path / f"{name}.fcproj"
+        win.execute("file.saveAs", {"path": str(project)})
+        assert wait_until(app, lambda: project.is_file() and not win.state.get("dirty", True), 10_000)
+        return win, engine, project
+
+    def edited(win: MainWindow) -> None:
+        win.execute("markers.add", {"name": "unsaved"})
+        assert wait_until(app, lambda: win.state.get("dirty") is True, 10_000)
+
+    win, engine, project = opened("a")
+    try:
+        saved = project.read_bytes()
+        edited(win)
+        # Cancel: nothing closes, nothing is written
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.close()
+        assert wait_until(app, lambda: bool(asked), 10_000)
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 100)
+        text, buttons = asked[-1]
+        assert "a" in text and "closing" in text, text
+        for b in ("Save", "Discard", "Cancel"):
+            assert buttons & getattr(QtWidgets.QMessageBox.StandardButton, b), b
+        assert win.isVisible() and engine.running and project.read_bytes() == saved
+        # Save: the project is written, then the window closes and the engine stops
+        answers.append(QtWidgets.QMessageBox.StandardButton.Save)
+        win.close()
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+        assert len(asked) == 2 and project.read_bytes() != saved and b"unsaved" in project.read_bytes()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+    win, engine, project = opened("b")
+    try:
+        saved = project.read_bytes()
+        edited(win)
+        # Don't Save: closes without writing
+        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        win.close()
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+        assert len(asked) == 3 and project.read_bytes() == saved
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+    win, engine, project = opened("c")
+    try:
+        # clean: no question
+        win.close()
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+        assert len(asked) == 3
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's recovery prompt: after CFA4 died with unsaved changes the next start asks
+    Recover / Not Now / Discard. Not Now keeps them for the next start, Recover brings them
+    back, Discard drops them so the next start asks nothing."""
+    from cfa4_qt.main_window import MainWindow
+
+    answers: list[str] = []
+    asked: list[str] = []
+
+    def answer(box):
+        if box.objectName() == "dialog.unsaved":
+            return QtWidgets.QMessageBox.StandardButton.Discard
+        asked.append(box.text())
+        want = answers.pop(0)
+        button = next(b for b in box.buttons() if b.text() == want)
+        button.click()
+        return 0
+
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+
+    def started(data: Path, demo: bool = False) -> tuple[MainWindow, EngineClient]:
+        settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+        engine = EngineClient(REAL, [*(["--demo"] if demo else []), "--data-dir", str(data), "--autosave"])
+        win = MainWindow(engine, settings)
+        win.show()
+        engine.start()
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        return win, engine
+
+    def stopped(win: MainWindow, engine: EngineClient) -> None:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+
+    def crashed(data: Path) -> None:
+        """CFA4 dies (window and engine) with an unsaved note in the recovery journal."""
+        win, engine = started(data, demo=True)
+        try:
+            assert wait_until(app, lambda: win.sequence is not None, 30_000)
+            win.execute("project.setNotes", {"text": "lost work"})
+
+            def journaled() -> bool:
+                for f in data.rglob("snapshot.fcproj"):
+                    try:
+                        if b"lost work" in f.read_bytes():
+                            return True
+                    except OSError:
+                        pass  # being written
+                return False
+
+            assert wait_until(app, journaled, 30_000), "the note reaches the recovery journal"
+            win._closing = True  # the whole app goes: nothing restarts the engine
+            engine._process.kill()
+            engine._process.wait(10)
+        finally:
+            stopped(win, engine)
+
+    def notes(engine: EngineClient) -> str:
+        out: list[str] = []
+        engine.execute("project.notes", {}, on_reply=lambda r, _b: out.append(str((r or {}).get("text"))), on_error=lambda m: out.append(""))
+        assert wait_until(app, lambda: bool(out), 30_000)
+        return out[-1]
+
+    keep = tmp_path / "keep"
+    crashed(keep)
+    # Not Now: asked, nothing recovered, asked again at the next start
+    answers.append("Not Now")
+    win, engine = started(keep)
+    try:
+        assert wait_until(app, lambda: len(asked) == 1, 30_000)
+        assert "quit unexpectedly" in asked[0] and "Recover unsaved changes" in asked[0], asked[0]
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 200)
+        assert notes(engine) != "lost work"
+    finally:
+        stopped(win, engine)
+    answers.append("Recover")
+    win, engine = started(keep)
+    try:
+        assert wait_until(app, lambda: len(asked) == 2, 30_000)
+        # (the window shows what the engine recovered; asked once it settles, as recovering a
+        # project can keep a loaded engine busy for a while)
+        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "lost work", 60_000), win.notes.edit.toPlainText()
+        assert notes(engine) == "lost work"
+    finally:
+        stopped(win, engine)
+
+    drop = tmp_path / "drop"
+    crashed(drop)
+    answers.append("Discard")
+    win, engine = started(drop)
+    try:
+        assert wait_until(app, lambda: len(asked) == 3, 30_000)
+        assert wait_until(app, lambda: not any(drop.rglob("snapshot.fcproj")), 20_000)
+    finally:
+        stopped(win, engine)
+    win, engine = started(drop)
+    try:
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 500)
+        wait_until(app, lambda: False, 1000)
+        assert len(asked) == 3, "a discarded journal is not offered again"
+    finally:
+        stopped(win, engine)
+
+
+class _ControlClient:
+    """A test client of the control channel that leaves the Qt event loop running."""
+
+    def __init__(self, app, port: int) -> None:
+        import socket
+
+        self.app = app
+        self.sock = socket.create_connection(("127.0.0.1", port), timeout=5)
+        self.sock.setblocking(False)
+        self.buf = b""
+        self.n = 0
+
+    def lines(self, timeout_ms: int = 20_000) -> dict:
+        def got() -> bool:
+            try:
+                chunk = self.sock.recv(1 << 20)
+            except BlockingIOError:
+                return b"\n" in self.buf
+            if chunk == b"":
+                return True
+            self.buf += chunk
+            return b"\n" in self.buf
+
+        assert wait_until(self.app, got, timeout_ms), "no reply"
+        line, _, self.buf = self.buf.partition(b"\n")
+        return json.loads(line) if line else {}
+
+    def send_raw(self, data: bytes) -> None:
+        self.sock.sendall(data)
+
+    def call(self, method: str, params: dict | None = None, timeout_ms: int = 20_000):
+        self.n += 1
+        self.send_raw(json.dumps({"id": self.n, "method": method, "params": params or {}}).encode() + b"\n")
+        r = self.lines(timeout_ms)
+        assert r.get("id") == self.n, r
+        return r
+
+    def closed(self) -> bool:
+        def gone() -> bool:
+            try:
+                return self.sock.recv(1 << 16) == b""
+            except BlockingIOError:
+                return False
+            except OSError:
+                return True
+
+        return wait_until(self.app, gone, 10_000)
+
+
+def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's ``ui.set`` keys of panel state (panels, projectPanel, mediaBrowser,
+    keyframeSelection, export) and ``ui.inspect``'s ``ui``: merged in, read back, a bad value
+    refused without a change."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        c = _ControlClient(app, server.port())
+
+        def ui():
+            r = c.call("ui.inspect")
+            assert r["ok"] is True, r
+            return r["result"]["ui"]
+
+        def ok(params):
+            r = c.call("ui.set", params)
+            assert r["ok"] is True, (params, r)
+            return r["result"]["ui"]
+
+        def refused(params, text):
+            before = ui()
+            r = c.call("ui.set", params)
+            assert r["ok"] is False and text in r["error"], (params, r)
+            assert ui() == before, f"{params} changed something"
+
+        first = ui()
+        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
+        assert first["export"] is None and first["keyframeSelection"] == []
+        # panels: merged per panel, saved as the panels save them
+        u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
+                           "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
+                                                 {"source": "source", "mode": "duration", "display": "Timecode"}], "showName": False},
+                           "reference": {"ganged": True, "display": "scopes"},
+                           "progress": {"showFinished": True}, "inspectorSource": "timeline"}})
+        p = u["panels"]
+        assert sorted(p["scopes"]["shown"]) == ["vectorscopeYuv", "waveform"] and p["scopes"]["waveformType"] == "luma"
+        assert p["scopes"]["paradeType"] == first["panels"]["scopes"]["paradeType"], "merged, not replaced"
+        assert len(win.timecode_panel.rows) == 2 and win.timecode_panel.show_name is False
+        assert win.reference.ganged is True and win.reference.display.currentData() == "scopes"
+        assert win.progress.finished.isChecked() and win.inspector_source == "timeline"
+        assert json.loads(settings.value("panels/scopes"))["waveform_type"] == "luma"
+        refused({"panels": {"scopes": {"waveformType": "sideways"}}}, "not one the panel takes")
+        refused({"panels": {"timecode": {"rows": [{"source": "moon"}]}}}, "not one the panel takes")
+        refused({"panels": {"events": {"level": "error"}}}, "no 'events'")
+        refused({"panels": {"progress": {"showFinished": "yes"}}}, "true or false")
+        refused({"panels": {"inspectorSource": "elsewhere"}}, "project or timeline")
+        # Project panel: bins in tabs and windows, the active tab, the selected bin
+        u = ok({"projectPanel": {"tabs": [{"bin": 7}, {"bin": 9, "floating": True, "view": "icon", "iconSize": 150}], "activeTab": 0, "selectedBin": 7}})
+        pp = u["projectPanel"]
+        assert [(t["bin"], t["floating"]) for t in pp["tabs"]] == [(7, False), (9, True)], pp
+        assert pp["tabs"][1]["view"] == "icon" and pp["tabs"][1]["iconSize"] == 150 and pp["activeTab"] == 0
+        assert len(win.project_panel.windows) == 1 and win.project_panel.tabs.count() == 2
+        u = ok({"projectPanel": {"tabs": [{"bin": 7}]}})
+        assert [t["bin"] for t in u["projectPanel"]["tabs"]] == [7] and not win.project_panel.windows
+        u = ok({"projectPanel": {"tabs": [], "activeTab": None}})
+        assert u["projectPanel"]["tabs"] == [] and u["projectPanel"]["activeTab"] is None
+        refused({"projectPanel": {"activeTab": 3}}, "bin tabs")
+        refused({"projectPanel": {"hover": 1}}, "unknown field")
+        # Media Browser: open folders, the path being typed, the tree's width
+        u = ok({"mediaBrowser": {"expanded": [str(tmp_path)], "treeWidth": 140}})
+        assert u["mediaBrowser"]["expanded"] == [str(tmp_path)] and settings.value("mediaBrowser/expanded") == str(tmp_path)
+        refused({"mediaBrowser": {"treeWidth": "wide"}}, "treeWidth")
+        refused({"mediaBrowser": {"expanded": "/"}}, "expanded")
+        # Effect Controls keyframe selection: replaced
+        keys = [{"clip": 3, "effect": 1, "param": "opacity", "time": 1000}, {"clip": 3, "effect": 0, "param": "mask", "mask": 0, "time": 0}]
+        assert ok({"keyframeSelection": keys})["keyframeSelection"] == keys
+        assert win.effect_controls.keyframe_selection[0] == (3, 1, "opacity", None, 1000)
+        refused({"keyframeSelection": [{"clip": 3}]}, "each key")
+        assert ok({"keyframeSelection": []})["keyframeSelection"] == []
+        # Export: the open Export window's choices
+        refused({"export": {"range": "custom"}}, "not open")
+        win.open_export()
+        app.processEvents()
+        u = ok({"export": {"range": "custom", "customStart": 2.0, "customEnd": 4.5, "path": str(tmp_path / "out.mp4")}})
+        e = u["export"]
+        assert e["range"] == "custom" and e["customStart"] == 2.0 and e["customEnd"] == 4.5 and e["path"].endswith("out.mp4")
+        assert win.export_dialog.params()["range"] == "custom" and win.export_dialog.params()["startSeconds"] == 2.0
+        refused({"export": {"range": "sideways"}}, "no 'sideways'")
+        win.export_dialog.close()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, tmp_path: Path):
+    """egui's transport rules: not JSON, an array, no method, not UTF-8 each get one error reply
+    and the connection is closed; blank lines are skipped; at most 16 connections."""
+    from cfa4_qt.control import MAX_CONNECTIONS, ControlServer, modifiers_of
+    from cfa4_qt.main_window import MainWindow
+
+    assert modifiers_of(["shift", "Ctrl"]) == QtCore.Qt.KeyboardModifier.ShiftModifier | QtCore.Qt.KeyboardModifier.ControlModifier
+    assert modifiers_of("Alt+Shift") == QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ShiftModifier
+    assert modifiers_of(None) == QtCore.Qt.KeyboardModifier.NoModifier
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0) and server.port() > 0
+    try:
+        for bad in (b"GET / HTTP/1.1\r\n", b"[1, 2]\n", b'{"id": 1}\n', b"\xff\xfe{}\n", b'{"method": 5}\n'):
+            c = _ControlClient(app, server.port())
+            c.send_raw(b"\n" + bad + b'{"id": 9, "method": "ui.inspect"}\n')
+            r = c.lines()
+            assert r["ok"] is False and "closing the connection" in r["error"], (bad, r)
+            assert c.closed(), bad
+        c = _ControlClient(app, server.port())
+        r = c.call("nope.method")
+        assert r["ok"] is False and "unknown method" in r["error"]
+        r = c.call("ui.click", {"id": "no.such.element"})
+        assert r["ok"] is False and "no visible element" in r["error"]
+        r = c.call("ui.resize", {"width": "wide", "height": 3})
+        assert r["ok"] is False
+        assert c.call("ui.inspect")["ok"] is True, "a refused request leaves the connection usable"
+        many = [_ControlClient(app, server.port()) for _ in range(MAX_CONNECTIONS)]
+        app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 100)
+        r = many[-1].lines()
+        assert r["ok"] is False and "too many connections" in r["error"]
+        # --control-input-only: the native input is ignored, the channel's own goes through
+        server.set_input_only(True)
+
+        class Native:
+            def __init__(self, kind, spontaneous):
+                self.kind, self.native = kind, spontaneous
+
+            def type(self):
+                return self.kind
+
+            def spontaneous(self):
+                return self.native
+
+        gate = server.input_gate
+        assert gate is not None and c.call("ui.inspect")["result"]["input"]["mode"] == "controlOnly"
+        # the channel's own typing goes through (QTest marks its events spontaneous as well)
+        win.show()
+        app.processEvents()
+        assert c.call("ui.focus", {"id": "project.search"})["ok"] is True
+        assert c.call("ui.type", {"text": "abc"})["ok"] is True
+        assert win.project_panel.filter.text() == "abc" and gate.own == 0
+        win.project_panel.filter.clear()
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.KeyPress, True)) is True
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.MouseButtonPress, True)) is True
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.KeyPress, False)) is False
+        assert gate.eventFilter(None, Native(QtCore.QEvent.Type.Close, True)) is False
+        server.set_input_only(False)
+        assert server.input_gate is None and c.call("ui.inspect")["result"]["input"]["mode"] == "native"
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path: Path):
+    """egui's control channel on the Qt window: engine.execute and ui.menu.invoke run commands,
+    ui.inspect / ui.elements read the window, ui.click / ui.type / ui.key / ui.drag / ui.scroll
+    drive its widgets, ui.set / ui.panel.* / ui.playback change it, ui.screenshot captures it and
+    app.quit closes it."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.tools import GROUPS
+
+    razor_id = f"tools.group.{next(i for i, g in enumerate(GROUPS) if g[0].id == 'razor')}"
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+        # commands
+        cmds = c.call("engine.commands")["result"]
+        assert any(x["id"] == "sequence.addEdit" for x in cmds)
+        r = c.call("engine.execute", {"command": "project.setNotes", "params": {"text": "from an agent"}})
+        assert r["ok"], r
+        assert wait_until(app, lambda: win.notes.edit.toPlainText() == "from an agent", 20_000)
+        assert c.call("engine.execute", {"command": "no.such.command"})["ok"] is False
+        # inspect and set
+        s = c.call("ui.inspect")["result"]
+        assert s["tool"] == "selection" and s["panels"]["Timeline"] is True and s["playback"]["program"]["playing"] is False
+        s = c.call("ui.set", {"tool": "razor", "timeline": {"pps": 80, "scroll": 0}})["result"]
+        assert s["tool"] == "razor" and s["timeline"]["pps"] == 80 and win.timeline.canvas.tool == "razor"
+        assert c.call("ui.set", {"tool": "nonsense"})["ok"] is False
+        c.call("ui.set", {"tool": "selection"})
+        # elements: the Tools panel's buttons with their rects
+        els = c.call("ui.elements", {"prefix": "tools."})["result"]
+        razor = next(e for e in els if e["id"] == razor_id)
+        x, y, w, h = razor["rect"]
+        assert w > 0 and h > 0 and 0 <= x < win.width() and 0 <= y < win.height()
+        # click by id and by point
+        assert c.call("ui.click", {"id": razor_id})["ok"]
+        assert wait_until(app, lambda: win.timeline.canvas.tool == "razor", 5_000)
+        c.call("ui.set", {"tool": "selection"})
+        assert c.call("ui.click", {"x": x + w / 2, "y": y + h / 2})["ok"]
+        assert wait_until(app, lambda: win.timeline.canvas.tool == "razor", 5_000)
+        c.call("ui.set", {"tool": "selection"})
+        # a dialog: menu invoke opens it, ui.elements lists its fields, typing fills one
+        r = c.call("ui.menu.invoke", {"command": "markers.addFlashCue"})
+        assert r["ok"], r
+        assert wait_until(app, lambda: c.call("ui.inspect")["result"]["dialog"] is not None, 10_000)
+        dialog = c.call("ui.inspect")["result"]["dialog"]
+        fields = c.call("ui.elements", {"prefix": dialog})["result"]
+        assert any(e["id"].endswith(".ok") for e in fields), fields
+        # ui.set fills its fields as typing would
+        assert c.call("ui.set", {"menuDialog": {"name": "Cue from an agent"}})["ok"]
+        assert win.last_dialog.params["name"] == "Cue from an agent"
+        assert win.last_dialog.findChild(QtWidgets.QLineEdit, f"{dialog}.name").text() == "Cue from an agent"
+        assert c.call("ui.set", {"menuDialog": {"noSuchField": 1}})["ok"] is False
+        cancel = next(e["id"] for e in fields if e["id"].endswith(".cancel"))
+        assert c.call("ui.click", {"id": cancel})["ok"]
+        assert wait_until(app, lambda: c.call("ui.inspect")["result"]["dialog"] is None, 10_000)
+        assert c.call("ui.set", {"clipDialog": {"name": "x"}})["ok"] is False, "no dialog is open"
+        # the monitors' view settings
+        assert c.call("ui.set", {"program": {"show_rulers": True, "zoom": 2.0}})["ok"]
+        assert win.monitor.mv.show_rulers is True and win.monitor.mv.zoom == 2.0
+        assert c.call("ui.set", {"program": {"zoom": "huge"}})["ok"] and win.monitor.mv.zoom is None, "a damaged value is the default (Fit)"
+        assert c.call("ui.set", {"source": {"nonsense": 1}})["ok"] is False
+        c.call("ui.set", {"program": {"show_rulers": False}})
+        # keyboard: focus a field, type, and a key; another window of the process holding the
+        # application's focus (the full suite leaves some) neither gets the keys nor the clicks
+        stray = QtWidgets.QLineEdit()
+        stray.setObjectName(win.project_panel.filter.objectName())
+        stray.show()
+        stray.activateWindow()
+        stray.setFocus()
+        app.processEvents()
+        win.project_panel.filter.clear()
+        assert c.call("ui.focus", {"id": win.project_panel.filter.objectName()})["ok"]
+        assert c.call("ui.type", {"text": "zz"})["ok"]
+        assert win.project_panel.filter.text() == "zz"
+        assert c.call("ui.key", {"key": "Backspace"})["ok"] and win.project_panel.filter.text() == "z"
+        assert c.call("ui.type", {"text": "őű中"})["ok"] and win.project_panel.filter.text() == "zőű中", "Unicode text, not Latin-1"
+        win.project_panel.filter.clear()
+        assert stray.text() == ""
+        stray.close()
+        stray.deleteLater()
+        assert c.call("ui.key", {"key": "Not A Key+++"})["ok"] is False
+        # pointer: a wheel and a drag reach the timeline
+        tl = next(e for e in c.call("ui.elements", {"prefix": win.timeline.canvas.objectName()})["result"] if e["id"] == win.timeline.canvas.objectName())
+        tx, ty, tw, th = tl["rect"]
+        assert c.call("ui.scroll", {"x": tx + tw / 2, "y": ty + th / 2, "dy": -120})["ok"]
+        assert c.call("ui.drag", {"from": {"x": tx + 300, "y": ty + 10}, "to": {"x": tx + 400, "y": ty + 10}, "steps": 4})["ok"]
+        # timeline hit-testing: a clip's middle and edge, the ruler, the trim each tool starts
+        c.call("ui.set", {"timeline": {"fit": True}})
+        clip = next(
+            i
+            for t in win.sequence["video"]
+            for i in t.get("items") or []
+            if i.get("end", 0) > i.get("start", 0)
+            and not any(x.get("start", 0) <= i["start"] <= x.get("start", 0) + x.get("duration", 0) for x in t.get("transitions") or [])
+        )
+        cid = clip["clip"]
+        mid = c.call("ui.timeline.locate", {"clip": cid})["result"]
+        h = c.call("ui.timeline.hit", mid)["result"]
+        assert (h["hit"], h["clip"], h["edge"], h["kind"]) == ("clip", cid, None, None), h
+        edge = c.call("ui.timeline.locate", {"clip": cid, "edge": "in"})["result"]
+        h = c.call("ui.timeline.hit", edge)["result"]
+        assert (h["clip"], h["edge"], h["kind"]) == (cid, "In", "trim"), h
+        assert c.call("ui.timeline.hit", {**edge, "modifiers": ["shift"]})["result"]["kind"] is None
+        c.call("ui.set", {"tool": "ripple"})
+        assert c.call("ui.timeline.hit", edge)["result"]["kind"] == "ripple"
+        c.call("ui.set", {"tool": "selection"})
+        canvas_at = next(e for e in c.call("ui.elements", {"prefix": "timeline.canvas"})["result"] if e["id"] == "timeline.canvas")["rect"]
+        h = c.call("ui.timeline.hit", {"x": canvas_at[0] + 400, "y": canvas_at[1] + 5})["result"]
+        assert h["hit"] == "ruler" and isinstance(h["time"], int), h
+        assert c.call("ui.timeline.locate", {"clip": 10**9})["ok"] is False
+        # panels, playback, resize
+        assert c.call("ui.panel.close", {"panel": "Events"})["ok"] and win.docks["Events"].isHidden()
+        assert c.call("ui.panel.show", {"panel": "Events"})["ok"] and not win.docks["Events"].isHidden()
+        assert c.call("ui.panel.show", {"panel": "Nowhere"})["ok"] is False
+        assert c.call("ui.playback", {"action": "play", "monitor": "program"})["ok"]
+        assert wait_until(app, lambda: c.call("ui.inspect")["result"]["playback"]["program"]["playing"], 10_000)
+        assert c.call("ui.playback", {"action": "stop", "monitor": "program"})["ok"]
+        assert not win.monitor.playing
+        assert c.call("ui.resize", {"width": 1400, "height": 900})["result"]["width"] == 1400
+        # screenshots: to a file, of a panel, inline
+        shot = tmp_path / "window.png"
+        r = c.call("ui.screenshot", {"path": str(shot)})["result"]
+        assert shot.is_file() and r["width"] == win.width()
+        r = c.call("ui.screenshot", {"panel": "Timeline"})["result"]
+        assert base64.b64decode(r["png"]).startswith(b"\x89PNG")
+        assert c.call("perf.stats")["ok"]
+        # app.quit closes without the save prompt
+        assert c.call("app.quit")["ok"]
+        assert wait_until(app, lambda: not win.isVisible() and not engine.running, 20_000)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_media_dialog_helpers():
+    """media_dialogs' readers of the engine's answers: damaged entries read as nothing."""
+    from cfa4_qt.panels.media_dialogs import candidates_of, mb, missing_rows, sequences_of
+
+    assert mb(0) == "0.0 MB" and mb(3 << 30) == "3.00 GB" and mb(-5) == "0.0 MB"
+    assert missing_rows({"missing": [{"item": 3, "name": "a"}, {"item": "x"}, 5]}) == [{"item": 3, "name": "a"}]
+    assert missing_rows(None) == [] and missing_rows({"missing": 4}) == []
+    found = candidates_of({"results": [{"candidates": [{"path": "/a.wav", "ok": True, "identityMatch": True}, {"path": 3}, {"path": "/b.wav", "ok": False, "problems": ["duration", 4]}]}]})
+    assert found == [("/a.wav", True, True, ""), ("/b.wav", False, None, "duration")]
+    assert candidates_of({"results": []}) == [] and candidates_of("x") == []
+    tree = {"children": [{"item": 1, "type": "Sequence", "name": "S1"}, {"children": [{"item": 2, "type": "sequence", "name": "S2"}, {"item": 3, "type": "video"}]}, 7]}
+    assert sequences_of(tree) == [(1, "S1"), (2, "S2")] and sequences_of(None) == []
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_media_dialogs_as_egui(app, tmp_path: Path):
+    """egui's media dialogs: a project opened with missing media opens Link Media, whose folder
+    search finds the moved file and Link relinks it; Make Offline… makes the selected clip
+    offline; Create Proxies… offers the proxy presets; Project Manager… estimates and collects."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.media_dialogs import (
+        CreateProxiesDialog,
+        LinkMediaDialog,
+        MakeOfflineDialog,
+        ProjectManagerDialog,
+    )
+
+    media = tmp_path / "media"
+    media.mkdir()
+    music = media / "music.wav"
+    _test_music(music, bars=2)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        import shiboken6
+
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def status(item: int) -> str:
+        out: list = []
+        engine.execute("media.status", {"item": item}, on_reply=lambda r, _b: out.append(r), on_error=lambda m: out.append(m))
+        assert wait_until(app, lambda: bool(out), 10_000)
+        return str((out[0][0] if isinstance(out[0], list) and out[0] else {}).get("status"))
+
+    try:
+        assert wait_until(app, lambda: len(win.registry.commands) > 100, 60_000)
+        win.execute("file.newSequence", {"name": "Edit"})
+        win.execute("file.import", {"paths": [str(music)]})
+        assert wait_until(app, lambda: any(i.get("name") == "music.wav" for i in _items(win.project)), 20_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        project = tmp_path / "p.fcproj"
+        win.execute("file.saveAs", {"path": str(project)})
+        assert wait_until(app, lambda: project.is_file(), 10_000)
+        # the media moves away: opening the project asks to link it
+        moved = tmp_path / "moved"
+        moved.mkdir()
+        music.rename(moved / "music.wav")
+        win.execute("file.open", {"path": str(project)})
+        assert wait_until(app, lambda: isinstance(win.last_dialog, LinkMediaDialog) and win.last_dialog.isVisible(), 20_000)
+        d = win.last_dialog
+        assert wait_until(app, lambda: d.table.rowCount() == 1, 10_000)
+        assert d.table.item(0, 0).text() == "music.wav" and d.table.item(0, 3).text() == "Missing"
+        assert child(d, "linkMedia.match.fileName", QtWidgets.QCheckBox).isChecked() and not child(d, "linkMedia.match.mediaStart", QtWidgets.QCheckBox).isChecked()
+        assert not child(d, "linkMedia.link", QtWidgets.QPushButton).isEnabled()
+        child(d, "linkMedia.folder", QtWidgets.QLineEdit).setText(str(moved))
+        child(d, "linkMedia.search", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: d.list.count() == 1, 10_000), d.message.text()
+        assert d.list.item(0).text().startswith("✔") and d.list.item(0).text().endswith(str(moved / "music.wav"))
+        assert child(d, "linkMedia.link", QtWidgets.QPushButton).isEnabled()
+        child(d, "linkMedia.link", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        item = next(i["item"] for i in _items(win.project) if i.get("name") == "music.wav")
+        assert wait_until(app, lambda: status(item) == "online", 10_000)
+        wait_until(app, lambda: False, 300)
+        assert not isinstance(win.last_dialog, LinkMediaDialog) or closed(win.last_dialog), "Link Media does not come back"
+        # File ▸ Link Media… with everything online only says so
+        last = win.last_dialog
+        win.invoke("media.linkMedia")
+        assert wait_until(app, lambda: win.statusBar().currentMessage() == "All media is online.", 10_000)
+        assert win.last_dialog is last
+        # Make Offline… of the Project panel's selection
+        win.execute("project.select", {"items": [item]})
+        action = win.registry.actions["media.makeOffline"]
+        assert wait_until(app, action.isEnabled, 10_000)
+        action.trigger()
+        d = win.last_dialog
+        assert isinstance(d, MakeOfflineDialog) and child(d, "makeOffline.keep", QtWidgets.QRadioButton).isChecked()
+        child(d, "makeOffline.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d) and status(item) == "offline", 10_000)
+        assert (moved / "music.wav").is_file(), "the media file stays on disk"
+        # Link Media… lists it as Offline; Offline All leaves it so
+        win.invoke("media.linkMedia")
+        assert wait_until(app, lambda: isinstance(win.last_dialog, LinkMediaDialog) and win.last_dialog.table.rowCount() == 1, 10_000)
+        d = win.last_dialog
+        assert d.table.item(0, 3).text() == "Offline"
+        child(d, "linkMedia.offlineAll", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        # Create Proxies…: the proxy presets, the default chosen
+        win.execute("project.select", {"items": [item]})
+        wait_until(app, lambda: False, 300)
+        win.open_media_dialog("media.createProxies")
+        d = win.last_dialog
+        assert isinstance(d, CreateProxiesDialog) and d.items == [item]
+        assert wait_until(app, lambda: child(d, "proxies.preset.prores_proxy_quarter", QtWidgets.QRadioButton) is not None, 10_000)
+        assert child(d, "proxies.preset.prores_proxy_quarter", QtWidgets.QRadioButton).isChecked()
+        child(d, "proxies.cancel", QtWidgets.QPushButton).click()
+        # Project Manager…: the open sequence chosen, Calculate, OK collects into the destination
+        win.registry.actions["file.projectManager"].trigger()
+        d = win.last_dialog
+        assert isinstance(d, ProjectManagerDialog)
+        assert [sid for sid, b in d.seqs.items() if b.isChecked()] == [win.sequence["id"]]
+        assert child(d, "pm.destination", QtWidgets.QLineEdit).text() == str(tmp_path / "p (copy)")
+        assert not child(d, "pm.handles", QtWidgets.QSpinBox).isEnabled()
+        child(d, "pm.mode.consolidate", QtWidgets.QRadioButton).setChecked(True)
+        assert child(d, "pm.handles", QtWidgets.QSpinBox).isEnabled() and not child(d, "pm.includeProxies", QtWidgets.QCheckBox).isEnabled()
+        assert wait_until(app, lambda: child(d, "pm.preset.prores_lt", QtWidgets.QRadioButton) is not None, 10_000)
+        child(d, "pm.mode.collect", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "pm.calculate", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: child(d, "pm.sizes", QtWidgets.QLabel).text().startswith("Disk space: original"), 10_000), d.message.text()
+        child(d, "pm.excludeUnused", QtWidgets.QCheckBox).setChecked(False)
+        assert child(d, "pm.sizes", QtWidgets.QLabel).text() == "Disk space: —", "a change makes the estimate stale"
+        child(d, "pm.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 20_000), d.message.text()
+        assert wait_until(app, lambda: any((tmp_path / "p (copy)").glob("*.fcproj")), 20_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_export_dialog_helpers():
+    """export_dialogs' file name, as egui's: unsafe characters become ``_``, a still extension
+    the name already has gives way to the chosen format's."""
+    from cfa4_qt.panels.export_dialogs import clean_name, frame_path
+
+    assert clean_name(' a/b:c*?"<>| ') == "a_b_c______"
+    assert frame_path("/x", "Shot.PNG", "jpg") == "/x/Shot.jpg"
+    assert frame_path("/x", "Shot.jpg", "jpg") == "/x/Shot.jpg"
+    assert frame_path("/x", "Shot 1", "tiff") == "/x/Shot 1.tiff"
+    assert frame_path("~", "a", "png") == str(Path.home() / "a.png")
+
+
+def test_quick_export_helpers():
+    """egui's ``quick_presets`` (favourites, then Match Source and Web & Social built-ins) and
+    ``quick_file`` (default folder, the sequence's name, the preset's extension swapped in)."""
+    from cfa4_qt.panels.quick_export import quick_file, quick_presets
+
+    presets = [
+        {"name": "Mine", "favorite": True, "builtin": False, "category": "Custom"},
+        {"name": "Match Source – Adaptive High Bitrate", "builtin": True, "category": "Match Source"},
+        {"name": "YouTube 1080p", "builtin": True, "category": "Web & Social", "favorite": True},
+        {"name": "Apple ProRes 422", "builtin": True, "category": "Broadcast"},
+        {"name": "Mine", "builtin": True, "category": "Match Source"},
+    ]
+    assert quick_presets(presets) == ["Mine", "YouTube 1080p", "Match Source – Adaptive High Bitrate"]
+    known = {"mp4", "mov", "mxf"}
+    assert quick_file("", "Seq 1", "mp4", known, "/out") == "/out/Seq 1.mp4"
+    assert quick_file("/d/", "Seq 1", "mov", known, "/out") == "/d/Seq 1.mov"
+    assert quick_file("/d/Cut.mp4", "Seq 1", "mp4", known, "/out") is None
+    assert quick_file("/d/Cut.mp4", "Seq 1", "mov", known, "/out") == "/d/Cut.mov"
+    assert quick_file("/d/Cut.v2", "Seq 1", "mov", known, "/out") == "/d/Cut.v2.mov"
+    assert quick_file("Cut", "Seq 1", "mp4", known, "/out") == "/out/Cut.mp4"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_quick_export_as_egui(app, tmp_path: Path):
+    """egui's header Quick Export: the popup under the button with the sequence's file name in the
+    default folder, the preset list with the size estimate, a typed name and a chosen folder,
+    Export starting ``export.quick`` (the preset remembered for next time), Close."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        button = win.findChild(QtWidgets.QToolButton, "header.quickExport")
+        assert button is not None and button.isVisible() and button.toolTip() == "Quick Export"
+        button.click()
+        q = win.quick_export
+        go = q.findChild(QtWidgets.QPushButton, "quickExport.go")
+        assert wait_until(app, lambda: q.isVisible() and q.rows and q.path and "–" not in q.size.text() and q.size.text(), 20_000), q.size.text()
+        seq = str(win.sequence.get("name"))
+        assert q.file.text() == f"{seq}.mp4" and q.location.text(), (q.file.text(), q.location.text())
+        assert q.rows["Match Source – Adaptive High Bitrate"].isChecked()
+        assert q.findChild(QtWidgets.QPushButton, "quickExport.preset.Match Source – Adaptive High Bitrate") is not None
+        # another preset: the extension follows, the estimate is asked again
+        mov = next(n for n, p in ((p["name"], p) for p in q.presets) if n in q.rows and p.get("extension") == "mov") if any(
+            p.get("extension") == "mov" and p["name"] in q.rows for p in q.presets) else None
+        if mov is not None:
+            q.rows[mov].click()
+            assert wait_until(app, lambda: q.file.text() == f"{seq}.mov", 10_000), q.file.text()
+            q.rows["Match Source – Adaptive High Bitrate"].click()
+            assert wait_until(app, lambda: q.file.text() == f"{seq}.mp4", 10_000)
+        # a typed name stays in the folder; the location link opens the save dialog
+        q.file.setText("Cut")
+        q.file.editingFinished.emit()
+        assert q.path.endswith(os.sep + "Cut.mp4")
+        q.pick_save = lambda title, filt, start: str(tmp_path / "Final")
+        q.findChild(QtWidgets.QPushButton, "quickExport.location").click()
+        assert q.path == str(tmp_path / "Final.mp4") and q.location.text() == str(tmp_path)
+        messages: list[str] = []
+        q.status.connect(messages.append)
+        # an existing file is replaced only once the user agrees (Codex review: it was overwritten)
+        (tmp_path / "Final.mp4").write_bytes(b"keep me")
+        asked: list = []
+        q.confirm_replace = lambda p: (asked.append(p), False)[1]
+        go.click()
+        assert not q.isVisible()
+        assert wait_until(app, lambda: messages, 20_000) and messages == ["Quick Export cancelled"], messages
+        assert asked == [tmp_path / "Final.mp4"] and (tmp_path / "Final.mp4").read_bytes() == b"keep me"
+        messages.clear()
+        q.confirm_replace = lambda p: (asked.append(p), True)[1]
+        button.click()
+        assert wait_until(app, lambda: q.isVisible(), 5_000)
+        q.findChild(QtWidgets.QPushButton, "quickExport.go").click()
+        assert wait_until(app, lambda: messages, 20_000) and messages[0] == f"Quick Export: {tmp_path / 'Final.mp4'}", messages
+        assert len(asked) == 2
+        got: list = []
+        engine.execute("export.presets.list", {}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["quickPreset"] == "Match Source – Adaptive High Bitrate"
+        # Close, and the button toggles the popup
+        button.click()
+        assert wait_until(app, lambda: q.isVisible(), 5_000)
+        q.findChild(QtWidgets.QToolButton, "quickExport.close").click()
+        assert not q.isVisible()
+    finally:
+        engine.execute("export.queue.list", {})
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
+    """egui's Preset Manager (Preset ▸ More presets…): search and Favorites only, the star adds a
+    favourite, Save current settings as… makes a User preset from the window's settings, Export…
+    and Import… a preset file, Delete only a user preset, OK (or a double click) applies the
+    selected preset in the Export window."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        # Cancel keeps the changes made in the Export window (regression: the reload reapplied the preset)
+        dlg.width_spin.setValue(640)
+        dlg.height_spin.setValue(360)
+        dlg.bitrate.setValue(4321)
+        dlg.effects.switches["loudness"].setChecked(True)
+        dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
+        m = dlg.preset_manager
+        assert m is not None and wait_until(app, lambda: len(m.rows) > 10, 10_000)
+        m.findChild(QtWidgets.QPushButton, "presetManager.cancel").click()
+        reloaded: list = []
+        engine.execute("export.presets.list", {}, on_reply=lambda r, _b: reloaded.append(r))
+        assert wait_until(app, lambda: reloaded, 10_000)
+        app.processEvents()
+        p = dlg.params()
+        assert (p.get("width"), p.get("height"), p.get("bitrateKbps")) == (640, 360, 4321), p
+        assert p["settings"]["effects"]["loudness"]["enabled"] is True and "effects" in dlg.touched
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() - 1) % dlg.preset.count())
+        assert not dlg.touched
+        dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
+        assert m.isVisible() and m.windowTitle() == "Preset Manager"
+        assert wait_until(app, lambda: len(m.rows) > 10, 10_000)
+        current = str(dlg.preset.currentData())
+        assert m.rows[current].isChecked() and m.description.text()
+        assert not m.delete.isEnabled(), "a built-in preset cannot be deleted"
+        # search, favourites
+        m.search.setText("prores")
+        assert m.rows and all("prores" in n.lower() or "prores" in str(next(p for p in m.presets if p["name"] == n).get("description", "")).lower()
+                              for n in m.rows), list(m.rows)
+        prores = next(iter(m.rows))
+        m.stars[prores].click()
+        assert wait_until(app, lambda: m.stars.get(prores) is not None and m.stars[prores].text() == "★", 10_000)
+        m.search.clear()
+        m.favorites_only.setChecked(True)
+        assert list(m.rows) == [prores]
+        m.favorites_only.setChecked(False)
+        # save the window's settings as a user preset (the format and the width chosen there)
+        dlg.width_spin.setValue(640)
+        dlg.height_spin.setValue(360)
+        dlg._touch("size")
+        m.save_name.setText("My Small")
+        m.findChild(QtWidgets.QPushButton, "presetManager.save").click()
+        assert wait_until(app, lambda: "My Small" in m.rows, 10_000)
+        assert m.findChild(QtWidgets.QLabel, "presetManager.user.My Small") is not None
+        got: list = []
+        engine.execute("export.presets.get", {"name": "My Small"}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000)
+        assert "640" in json.dumps(got[0]), got[0]
+        # export it, delete it, import it back
+        m.select("My Small")
+        assert m.delete.isEnabled()
+        m.pick_save = lambda t, f, start: str(tmp_path / "mine.json")
+        m.export.click()
+        assert wait_until(app, lambda: (tmp_path / "mine.json").exists(), 10_000)
+        m.delete.click()
+        assert wait_until(app, lambda: "My Small" not in m.rows, 10_000)
+        m.pick_open = lambda t, f, start: str(tmp_path / "mine.json")
+        m.import_.click()
+        assert wait_until(app, lambda: "My Small" in m.rows, 10_000)
+        # OK applies the selected preset in the Export window, which lists the new one
+        m.select(prores)
+        m.ok.click()
+        assert not m.isVisible()
+        assert wait_until(app, lambda: dlg.preset.currentData() == prores, 10_000), dlg.preset.currentData()
+        assert dlg.preset.findData("My Small") >= 0
+        # a double click applies too
+        dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
+        assert wait_until(app, lambda: "My Small" in m.rows, 10_000)
+        QtTest.QTest.mouseDClick(m.rows["My Small"], QtCore.Qt.MouseButton.LeftButton)
+        assert wait_until(app, lambda: dlg.preset.currentData() == "My Small", 10_000)
+        assert not m.isVisible()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
+    """egui's per-format Video rows in the Export window: the ProRes / DNxHR / APV / CineForm
+    profiles, the MXF video codec, OpenEXR compression, JPEG quality and Include Alpha Channel
+    (only where the output keeps alpha) show for the chosen format with the preset's values, and a
+    changed one is sent to the engine (and kept out when the format no longer shows it)."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export import encoder_format, supports_alpha
+
+    assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
+    assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
+    assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        form = dlg.video_form
+        c = dlg.format_choices
+
+        def shown(key: str) -> bool:
+            w = c.get(key) or {"alpha": dlg.alpha, "quality": dlg.quality}[key]
+            return bool(form.isRowVisible(w))
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]["settings"]
+
+        def pick(combo: QtWidgets.QComboBox, value: str) -> None:
+            i = combo.findData(value)
+            assert i >= 0, value
+            combo.setCurrentIndex(i)
+
+        # ProRes: its profile row with the engine's default, no other format's row
+        pick(dlg.format, "prores")
+        # an empty profile is the engine's default, ProRes 422 HQ
+        assert wait_until(app, lambda: shown("proresProfile") and c["proresProfile"].currentData() == (resolved()["proresProfile"] or "hq"), 10_000)
+        assert not any(shown(k) for k in ("dnxProfile", "apvProfile", "cineformProfile", "exrCompression", "mxfVideoCodec", "quality"))
+        assert c["proresProfile"].currentData() != "4444" and not shown("alpha"), "422 keeps no alpha"
+        pick(c["proresProfile"], "4444")
+        assert shown("alpha") and dlg.params()["proresProfile"] == "4444"
+        dlg.alpha.setChecked(True)
+        s = resolved()
+        assert s["proresProfile"] == "4444" and s["alpha"] is True
+        # OpenEXR: compression and alpha; the ProRes profile is not sent
+        pick(dlg.format, "exr")
+        assert shown("exrCompression") and shown("alpha") and not shown("proresProfile")
+        pick(c["exrCompression"], "zip")
+        p = dlg.params()
+        assert "proresProfile" not in p and p["exrCompression"] == "zip"
+        assert resolved()["exrCompression"] == "zip"
+        # MXF: the video codec picks the profile row; MXF keeps no alpha
+        pick(dlg.format, "mxf-op1a")
+        assert shown("mxfVideoCodec") and shown("dnxProfile") and not shown("alpha")
+        pick(c["mxfVideoCodec"], "proRes")
+        assert shown("proresProfile") and not shown("dnxProfile")
+        pick(c["dnxProfile"], "hqx")
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "proRes" and "dnxProfile" not in p
+        assert resolved()["mxfVideoCodec"] == "proRes"
+        # CineForm: encoding and quality; RGBA keeps alpha
+        pick(dlg.format, "cineform")
+        assert shown("cineformProfile") and shown("cineformQuality") and not shown("alpha")
+        pick(c["cineformProfile"], "4444")
+        pick(c["cineformQuality"], "filmscan3")
+        assert shown("alpha")
+        s = resolved()
+        assert (s["cineformProfile"], s["cineformQuality"]) == ("4444", "filmscan3")
+        # APV, DNxHR, JPEG quality
+        pick(dlg.format, "apv")
+        assert shown("apvProfile")
+        pick(c["apvProfile"], "444-12")
+        assert resolved()["apvProfile"] == "444-12"
+        pick(dlg.format, "dnxhr")
+        assert shown("dnxProfile") and dlg.params()["dnxProfile"] == "hqx"
+        pick(dlg.format, "jpg")
+        assert shown("quality") and not shown("alpha")
+        dlg.quality.setValue(42)
+        assert resolved()["quality"] == 42
+        # another preset: nothing is changed any more and the rows show the preset's values
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        assert not dlg.touched & {"proresProfile", "exrCompression", "quality", "alpha"}
+        assert wait_until(app, lambda: c["proresProfile"].currentData() == (resolved()["proresProfile"] or "hq"), 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
+    """egui's Export ▸ Captions (None / Burn Captions Into Video / Create Sidecar File, SubRip or
+    WebVTT), Multiplexer (MP4 / QuickTime for H.264 and H.265), Metadata and Effects (Image, Name and Timecode Overlay, Video Limiter, Loudness Normalization,
+    each one's settings shown while it is on; loudness alone for sound-only formats): the preset's
+    values are shown and a change is sent to the engine."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export_effects import caption_mode
+
+    assert caption_mode({"burnCaptions": True}) == ("burn", "srt")
+    assert caption_mode({"captionSidecar": "vtt"}) == ("sidecar", "vtt")
+    assert caption_mode({"captionSidecar": None}) == ("none", "srt")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        cap, fx = dlg.captions, dlg.effects
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]["settings"]
+
+        def pick(combo: QtWidgets.QComboBox, value: str) -> None:
+            i = combo.findData(value)
+            assert i >= 0, value
+            combo.setCurrentIndex(i)
+
+        pick(dlg.format, "h264")
+        assert wait_until(app, lambda: cap.mode.currentData() == "none" and not fx.switches["loudness"].isChecked(), 10_000)
+        assert "burnCaptions" not in dlg.params() and "settings" not in dlg.params(), "nothing changed yet"
+        # captions: a sidecar file shows its format
+        assert cap.form.isRowVisible(cap.format) is False
+        pick(cap.mode, "sidecar")
+        assert cap.form.isRowVisible(cap.format)
+        pick(cap.format, "vtt")
+        s = resolved()
+        assert s["captionSidecar"] == "vtt" and s["burnCaptions"] is False
+        pick(cap.mode, "burn")
+        s = resolved()
+        assert s["burnCaptions"] is True and s["captionSidecar"] is None
+        # effects: a switch shows its settings, the values go to the engine
+        assert fx.bodies["loudness"].isHidden()
+        fx.switches["loudness"].setChecked(True)
+        assert not fx.bodies["loudness"].isHidden()
+        dlg.findChild(QtWidgets.QDoubleSpinBox, "export.effects.loudness.target").setValue(-16.0)
+        fx.switches["name_overlay"].setChecked(True)
+        name = dlg.findChild(QtWidgets.QLineEdit, "export.effects.nameOverlay.text")
+        name.setText("CFA4")
+        name.textEdited.emit("CFA4")
+        pick(dlg.findChild(QtWidgets.QComboBox, "export.effects.nameOverlay.position"), "topLeft")
+        fx.switches["video_limiter"].setChecked(True)
+        dlg.findChild(QtWidgets.QDoubleSpinBox, "export.effects.videoLimiter.max").setValue(95.0)
+        fx.switches["image_overlay"].setChecked(True)
+        fx.pick_image = lambda t, f, start: str(tmp_path / "logo.png")
+        dlg.findChild(QtWidgets.QPushButton, "export.effects.imageOverlay.browse").click()
+        e = resolved()["effects"]
+        assert e["loudness"] == {"enabled": True, "target_lufs": -16.0, "true_peak_dbtp": -2.0}, e["loudness"]
+        assert (e["name_overlay"]["enabled"], e["name_overlay"]["text"], e["name_overlay"]["placement"]) == (True, "CFA4", "topLeft")
+        assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
+        assert e["timecode_overlay"]["enabled"] is False
+        # Multiplexer (H.264 / H.265): QuickTime makes a .mov file
+        assert dlg.video_form.isRowVisible(dlg.multiplexer) and dlg.multiplexer.currentData() == "mp4"
+        pick(dlg.multiplexer, "mov")
+        assert dlg.path.text().endswith(".mov"), dlg.path.text()
+        assert resolved()["multiplexer"] == "mov"
+        # Metadata goes into the file
+        meta = dlg.findChild(QtWidgets.QLineEdit, "export.metadata.title")
+        meta.setText("My Film")
+        meta.textEdited.emit("My Film")
+        assert resolved()["metadata"]["title"] == "My Film"
+        pick(dlg.format, "prores")
+        assert not dlg.video_form.isRowVisible(dlg.multiplexer) and not dlg.metadata.isHidden()
+        assert dlg.path.text().endswith(".mov") and "multiplexer" not in dlg.params().get("settings", {})
+        # a sound-only format: no captions, only loudness
+        pick(dlg.format, "wav")
+        assert dlg.metadata.isHidden() and "metadata" not in dlg.params()["settings"]
+        assert cap.isHidden() and not fx.switches["loudness"].isHidden()
+        assert all(fx.switches[k].isHidden() for k in ("image_overlay", "name_overlay", "timecode_overlay", "video_limiter"))
+        assert "burnCaptions" not in dlg.params()
+        assert resolved()["effects"]["loudness"]["target_lufs"] == -16.0
+        # another preset: the changes are dropped and its own values shown
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        assert not dlg.touched & {"captions", "effects"}
+        assert wait_until(app, lambda: fx.switches["loudness"].isChecked() == resolved()["effects"]["loudness"]["enabled"]
+                          and cap.mode.currentData() == caption_mode(resolved())[0], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_export_preview_scaling_geometry():
+    """egui's export preview: the output frame fits the pane; Scale To Fit letterboxes, Scale To
+    Fill crops, Stretch To Fill fills the output frame."""
+    from cfa4_qt.panels.export_preview import fit, picture_rect
+
+    pic = fit(QtCore.QRectF(0, 0, 400, 400), 1080, 1920)  # a vertical output
+    assert (round(pic.width()), round(pic.height())) == (225, 400)
+    fitted = picture_rect(pic, 1920, 1080, "scaleToFit")
+    assert round(fitted.width()) == 225 and round(fitted.height()) < 400 and abs(fitted.center().y() - 200) < 1e-6
+    filled = picture_rect(pic, 1920, 1080, "scaleToFill")
+    assert round(filled.height()) == 400 and filled.width() > pic.width()
+    assert picture_rect(pic, 1920, 1080, "stretchToFill") == pic
+    assert picture_rect(pic, 0, 0, "scaleToFit") == pic, "no source size: the whole frame"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_preview_column_as_egui(app, tmp_path: Path):
+    """egui's Export preview column: the sequence frame at the playhead in the output's aspect,
+    Scaling (sent once changed), "Audio only" for sound, the Summary lines and the estimated size."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        col = dlg.preview
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and col.view.image is not None, 30_000)
+        assert col.view.source[0] > 0 and col.view.source[1] > 0
+        assert wait_until(app, lambda: col.estimate.text().startswith("Estimated file size:") and col.lines["video"].text(), 10_000)
+        assert col.lines["output"].text().endswith(Path(dlg.path.text()).name) and col.lines["source"].text().startswith("Sequence, ")
+        assert col.lines["range"].text().startswith(dlg.range.currentText())
+        # a vertical output frame: the preview takes its aspect
+        dlg.width_spin.setValue(1080)
+        dlg.height_spin.setValue(1920)
+        assert wait_until(app, lambda: col.view.output == (1080, 1920), 10_000)
+        pic = col.view.pic()
+        assert pic.height() > pic.width()
+        assert col.view.picture().width() <= pic.width() + 1e-6, "Scale To Fit: bars"
+        i = col.scaling.findData("scaleToFill")
+        col.scaling.setCurrentIndex(i)
+        assert col.view.picture().width() > pic.width() and dlg.params()["settings"]["scaling"] == "scaleToFill"
+        got: list = []
+        engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000) and got[0]["settings"]["scaling"] == "scaleToFill"
+        # sound only: no picture, no Scaling
+        dlg.format.setCurrentIndex(dlg.format.findData("wav"))
+        assert col.view.audio_only and not col.form.isRowVisible(col.scaling)
+        col.view.grab()  # paints "Audio only"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
+    """egui's Export Video and Audio rows: Frame Rate, Field Order (progressive only), Aspect,
+    H.264 Profile / Level, Quality (CRF) or Maximum Bitrate by the bitrate mode, GPU Rendering,
+    Render at Maximum Depth, Use Maximum Render Quality; Sample Rate, Channels, Sample Size
+    (PCM / FLAC) and the FLAC Compression Level. Each shows the preset's value and a change
+    reaches the engine."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        rows = dlg.rows
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]["settings"]
+
+        def pick(combo: QtWidgets.QComboBox, value) -> None:
+            i = combo.findData(value)
+            assert i >= 0, value
+            combo.setCurrentIndex(i)
+
+        def shown(w) -> bool:
+            form = rows.audio_form if w in (rows.sample_rate, rows.channels, rows.bits, rows.flac_level) else rows.video_form
+            return bool(form.isRowVisible(w))
+
+        pick(dlg.format, "h264")
+        assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
+        assert shown(rows.profile) and shown(rows.level) and shown(rows.fps) and not shown(rows.bits)
+        s0 = resolved()
+        assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
+        assert "settings" not in dlg.params(), "nothing changed yet"
+        # video rows
+        pick(rows.fps, {"num": 25, "den": 1})
+        pick(rows.aspect, [4, 3])
+        pick(rows.profile, "main")
+        pick(rows.level, 41)
+        rows.gpu.setChecked(not rows.gpu.isChecked())
+        rows.max_depth.setChecked(True)
+        rows.max_quality.setChecked(True)
+        assert not rows.field_order.model().item(1).isEnabled(), "progressive frames only"
+        assert rows.field_order.currentText() == "Progressive" and rows.field_order.currentData() == "progressive"
+        pick(dlg.bitrate_mode, "vbr2Pass")
+        assert shown(rows.max_bitrate) and not shown(rows.crf)
+        rows.max_bitrate.setValue(20_000)
+        s = resolved()
+        assert s["frameRate"] == {"num": 25, "den": 1} and s["pixelAspect"] == [4, 3]
+        assert (s["h264Profile"], s["h264Level"], s["maxBitrateKbps"]) == ("main", 41, 20_000)
+        assert s["renderAtMaxDepth"] is True and s["maxRenderQuality"] is True and s["gpuRendering"] in ("auto", "off")
+        pick(dlg.bitrate_mode, "crf")
+        assert shown(rows.crf) and not shown(rows.max_bitrate)
+        rows.crf.setValue(30)
+        s = resolved()
+        assert s["bitrateMode"] == "crf" and s["crf"] == 30
+        # audio rows: PCM shows Sample Size, FLAC its level
+        pick(rows.sample_rate, 44_100)
+        pick(rows.channels, 1)
+        pick(dlg.audio_codec, "pcm")
+        assert shown(rows.bits) and not shown(rows.flac_level)
+        pick(rows.bits, "24")
+        a = resolved()["audio"]
+        assert (a["sample_rate"], a["channels"], a["bits"], a["float"]) == (44_100, 1, 24, False), a
+        pick(dlg.format, "flac")
+        assert shown(rows.flac_level) and not shown(rows.profile) and not shown(rows.fps)
+        rows.flac_level.setValue(8)
+        assert resolved()["audio"]["flac_level"] == 8
+        # another preset: the rows show its values again
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        assert not dlg.touched
+        assert wait_until(app, lambda: rows.sample_rate.currentData() == resolved()["audio"]["sample_rate"], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
+    an existing file asks Replace / Keep existing file, the folder is kept for the next export;
+    File ▸ Export ▸ AAF… / OMF… settings (Link to Media turns trimming off) ask for the file."""
+    import shiboken6
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export_dialogs import ExportSettingsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+
+    def child(d, name, kind=QtWidgets.QWidget):
+        return d.findChild(kind, name)
+
+    def closed(d) -> bool:
+        return not shiboken6.isValid(d) or not d.isVisible()
+
+    def opened(cid: str, how) -> ExportSettingsDialog:
+        last = win.last_dialog
+        how()
+        assert wait_until(app, lambda: win.last_dialog is not last and isinstance(win.last_dialog, ExportSettingsDialog) and win.last_dialog.isVisible(), 10_000), cid
+        d = win.last_dialog
+        assert d.command == cid
+        return d
+
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        mon = win.monitor
+        ft = 10_594_584_000  # the demo's 23.976 fps frame
+        mon.seek(23 * ft)
+        d = opened("file.exportFrame", lambda: mon.buttons["exportFrame"].click())
+        assert child(d, "exportFrame.timecode", QtWidgets.QLabel).text().endswith("00:00:00:23")
+        name = child(d, "exportFrame.name", QtWidgets.QLineEdit)
+        assert name.text() and "/" not in name.text()
+        fmt_box = child(d, "exportFrame.format", QtWidgets.QComboBox)
+        depth = child(d, "exportFrame.depth", QtWidgets.QComboBox)
+        assert fmt_box.currentData() == "png" and depth.currentData() == 8
+        depth.setCurrentIndex(1)
+        assert d.params["depth"] == 16
+        fmt_box.setCurrentIndex(fmt_box.findData("jpg"))
+        assert depth.currentData() == 8 and not depth.model().item(1).isEnabled()
+        fmt_box.setCurrentIndex(fmt_box.findData("png"))
+        ok = child(d, "exportFrame.export", QtWidgets.QPushButton)
+        name.setText("")
+        assert not ok.isEnabled()
+        name.setText("frame")
+        out_dir = tmp_path / "stills"
+        out_dir.mkdir()
+        child(d, "exportFrame.path", QtWidgets.QLineEdit).setText(str(out_dir))
+        ok.click()
+        out = out_dir / "frame.png"
+        assert wait_until(app, lambda: closed(d), 30_000), d.error.text()
+        assert out.is_file() and out.stat().st_size > 0
+        assert d.sent[-1]["time"] == 23 * ft and d.sent[-1]["target"] == "program"
+        assert "frame.png" in win.statusBar().currentMessage()
+        # the folder is kept; the same name asks before replacing
+        d = opened("file.exportFrame", lambda: win.invoke("file.exportFrame"))
+        assert child(d, "exportFrame.path", QtWidgets.QLineEdit).text() == str(out_dir)
+        child(d, "exportFrame.name", QtWidgets.QLineEdit).setText("frame.png")
+        before = out.stat().st_mtime_ns
+        child(d, "exportFrame.export", QtWidgets.QPushButton).click()
+        replace = child(d, "exportFrame.replace", QtWidgets.QPushButton)
+        assert replace.isVisible() and not child(d, "exportFrame.export", QtWidgets.QPushButton).isVisible()
+        child(d, "exportFrame.keep", QtWidgets.QPushButton).click()
+        assert not replace.isVisible() and d.isVisible() and out.stat().st_mtime_ns == before
+        child(d, "exportFrame.export", QtWidgets.QPushButton).click()
+        replace.click()
+        assert wait_until(app, lambda: closed(d), 30_000)
+        assert out.stat().st_mtime_ns != before or len(list(out_dir.iterdir())) == 1
+        # AAF from the File ▸ Export menu
+        saved = tmp_path / "edit.aaf"
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: (str(tmp_path / "edit"), ""))
+        action = win.registry.actions["file.exportAaf"]
+        assert wait_until(app, action.isEnabled, 10_000)
+        d = opened("file.exportAaf", action.trigger)
+        assert child(d, "aafExport.audio.embedded", QtWidgets.QRadioButton).isChecked()
+        assert not child(d, "aafExport.audioFormat.wav", QtWidgets.QRadioButton).isEnabled()
+        child(d, "aafExport.audio.separate", QtWidgets.QRadioButton).setChecked(True)
+        assert child(d, "aafExport.audioFormat.mxf", QtWidgets.QRadioButton).isEnabled()
+        child(d, "aafExport.audio.linked", QtWidgets.QRadioButton).setChecked(True)
+        assert not child(d, "aafExport.trimAudio", QtWidgets.QCheckBox).isEnabled() and not child(d, "aafExport.renderAudioEffects", QtWidgets.QCheckBox).isEnabled()
+        child(d, "aafExport.audio.embedded", QtWidgets.QRadioButton).setChecked(True)
+        child(d, "aafExport.trimAudio", QtWidgets.QCheckBox).setChecked(True)
+        handles = child(d, "aafExport.handles", QtWidgets.QSpinBox)
+        assert handles.isEnabled()
+        handles.setValue(12)
+        child(d, "aafExport.ok", QtWidgets.QPushButton).click()
+        assert wait_until(app, lambda: closed(d), 60_000), d.error.text()
+        assert saved.is_file() and saved.stat().st_size > 0
+        assert d.sent[-1]["path"] == str(saved) and d.sent[-1]["handles"] == 12 and d.sent[-1]["trimAudio"] is True
+        # OMF: trimmed with 30 handle frames by default, titled after the sequence
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: ("", ""))
+        d = opened("file.exportOmf", lambda: win.invoke("file.exportOmf"))
+        assert child(d, "omfExport.trimAudio", QtWidgets.QCheckBox).isChecked() and child(d, "omfExport.handles", QtWidgets.QSpinBox).value() == 30
+        assert child(d, "omfExport.title", QtWidgets.QLineEdit).text()
+        assert child(d, "omfExport.audioFormat.mxf") is None
+        child(d, "omfExport.ok", QtWidgets.QPushButton).click()
+        assert d.isVisible() and not d.sent, "a cancelled file picker keeps the dialog"
+        d.reject()
+        # EDL / Final Cut Pro XML / OpenTimelineIO ask where to save, named after the sequence
+        asked: list = []
+
+        def save_as(_parent, _title, start, filt):
+            asked.append((start, filt))
+            return str(tmp_path / Path(start).stem), filt
+
+        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", save_as)
+        for cid, ext in (("file.exportEdl", "edl"), ("file.exportFcp7Xml", "xml"), ("file.exportOtio", "otio")):
+            action = win.registry.actions[cid]
+            assert wait_until(app, action.isEnabled, 10_000), cid
+            action.trigger()
+            start, filt = asked[-1]
+            assert start == f"{win.sequence['name']}.{ext}" and filt.endswith(f"(*.{ext})"), (start, filt)
+            out = tmp_path / start
+            assert wait_until(app, lambda o=out: o.is_file() and o.stat().st_size > 0, 20_000), (cid, win.events.text.toPlainText())
+        # with a path the command runs directly
+        direct = tmp_path / "direct.png"
+        win.run_preset("file.exportFrame", {"path": str(direct), "target": "program", "time": 0})
+        assert wait_until(app, lambda: direct.is_file(), 30_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_timeline_thumbnail_tiles_as_egui():
+    """egui's thumbnail_tiles (timeline.rs tests): the head, head and tail when two fit, and
+    continuous tiles on a grid from the head, only the visible ones; source_time_at follows the
+    clip's speed, reverse and frame hold."""
+    from cfa4_qt.panels.timeline import MAX_THUMBNAIL_TILES, source_time_at, thumbnail_tiles
+
+    vis = (0.0, 1000.0)
+    assert thumbnail_tiles("head", 100, 400, 50, vis, 3000, 10) == [(100, 0)]
+    assert thumbnail_tiles("headAndTail", 100, 400, 50, vis, 3000, 10) == [(100, 0), (350, 2990)]
+    assert thumbnail_tiles("headAndTail", 100, 190, 50, vis, 3000, 10) == [(100, 0)]  # no room for two
+    tiles = thumbnail_tiles("continuous", 100, 400, 50, vis, 3000, 10)
+    assert [x for x, _ in tiles] == [100, 150, 200, 250, 300, 350]
+    assert [t for _, t in tiles] == [0, 500, 1000, 1500, 2000, 2500]
+    # scrolled: only the tiles in view, still on the head's grid
+    assert [x for x, _ in thumbnail_tiles("continuous", 100, 400, 50, (260.0, 330.0), 3000, 10)] == [250, 300]
+    assert len(thumbnail_tiles("continuous", 0, 1e9, 1, (0.0, 1e9), 10**9, 1)) == MAX_THUMBNAIL_TILES
+    for bad in (float("nan"), float("inf"), 1e300):
+        assert thumbnail_tiles("continuous", bad, 400, 50, vis, 3000, 10) == []
+        assert thumbnail_tiles("continuous", 0, 400, bad, vis, 3000, 10) == []
+    assert thumbnail_tiles("head", 100, 100, 50, vis, 3000, 10) == []
+    clip = {"sourceIn": 1000, "duration": 600, "speed": 2.0, "reverse": False}
+    assert source_time_at(clip, 100) == 1200
+    assert source_time_at({**clip, "reverse": True}, 100) == 1000 + 1200 - 200 - 1
+    assert source_time_at({**clip, "frameHold": 1500}, 100) == 1500
+    assert source_time_at({**clip, "speed": float("nan")}, 100) == 1100
+    assert source_time_at({**clip, "speed": 1e300}, 100) == 1100
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_toolbar_and_display_settings_as_egui(app, tmp_path: Path):
+    """egui's timeline toolbar: Nest, Snap and Linked Selection pressed as the engine has them
+    (a click toggles), Add Marker; the wrench's Display Settings: thumbnails (Head, Head and Tail,
+    Continuous), Show Audio Waveform, Show Through Edits (bow-ties on through edits), Expand /
+    Minimize All Tracks."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel, canvas = win.timeline, win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        names = [b.objectName() for b in panel.toggles.values()]
+        assert names == [f"timeline.toggle.{k}" for k in ("nest", "snap", "linked", "captions", "marker", "settings")]
+        toggles = canvas.sequence["toggles"]
+        assert panel.toggles["snap"].isChecked() is toggles["snapping"]
+        assert panel.toggles["linked"].isChecked() is toggles["linkedSelection"]
+        assert panel.toggles["nest"].isChecked() is toggles["nest"]
+        panel.toggles["snap"].click()
+        assert wait_until(app, lambda: canvas.sequence["toggles"]["snapping"] is not toggles["snapping"], 10_000)
+        assert wait_until(app, lambda: panel.toggles["snap"].isChecked() is not toggles["snapping"], 10_000)
+        markers = len(canvas.sequence["markers"])
+        panel.toggles["marker"].click()
+        assert wait_until(app, lambda: len(canvas.sequence["markers"]) == markers + 1, 10_000)
+
+        # thumbnails: record what the canvas asks for, at a zoom where clips are wide
+        asked: list[int] = []
+        img = QtGui.QImage(32, 18, QtGui.QImage.Format.Format_RGB32)
+        img.fill(QtGui.QColor("#3080c0"))
+        canvas.media.thumbnail = lambda item, t, h: (asked.append(t), img)[1]
+        canvas.zoom_to_fit()
+
+        def times(mode: str) -> set[int]:
+            canvas.thumbnail_mode = mode
+            asked.clear()
+            canvas.grab()
+            return set(asked)
+
+        def menu_action(name: str) -> QtGui.QAction:
+            panel.toggles["settings"].click()
+            assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+            return next(a for a in canvas.last_menu.actions() if a.objectName() == name)
+
+        head = times("head")
+        assert head and len(times("headAndTail")) > len(head)
+        assert len(times("continuous")) > len(times("headAndTail"))
+        canvas.thumbnail_mode = "head"
+        act = menu_action("timeline.settings.thumbnails.continuous")
+        assert act.isEnabled() and not act.isChecked()
+        act.trigger()
+        canvas.last_menu.close()
+        assert canvas.thumbnail_mode == "continuous"
+        act = menu_action("timeline.settings.showThumbnails")
+        act.trigger()
+        canvas.last_menu.close()
+        assert canvas.show_thumbnails is False and times("continuous") == set()
+        menu = menu_action("timeline.settings.showThumbnails").parent()
+        assert not next(a for a in menu.actions() if a.objectName() == "timeline.settings.thumbnails.head").isEnabled()
+        menu.close()
+        # waveforms off: no peaks asked for
+        peaks: list[tuple] = []
+        canvas.media.waveform = lambda *a: (peaks.append(a), None)[1]
+        canvas.grab()
+        assert peaks
+        act = menu_action("timeline.settings.showWaveforms")
+        act.trigger()
+        canvas.last_menu.close()
+        peaks.clear()
+        canvas.grab()
+        assert canvas.show_waveforms is False and not peaks
+        # Show Through Edits: razor a clip, the cut is marked once the engine says so
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        first = v1.track["items"][0]
+        mid = first["start"] + first["duration"] // 2
+        win.execute("timeline.razor", {"time": mid, "clip": first["clip"]})
+        assert wait_until(app, lambda: canvas.sequence.get("throughEdits"), 10_000)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        assert canvas.through_edit_times(v1) == []
+        act = menu_action("timeline.settings.showThroughEdits")
+        assert not act.isChecked()
+        act.trigger()
+        canvas.last_menu.close()
+        assert wait_until(app, lambda: canvas.sequence["toggles"]["showThroughEdits"] is True, 10_000)
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        cuts = canvas.through_edit_times(v1)
+        assert [t for t, _r in cuts] == [mid]
+        x = int(canvas.x_of(mid))
+        cy = int(max(v1.top + v1.height / 2, v1.top + 10))
+        px = canvas.grab().toImage().pixelColor(x - 2, cy)
+        assert px.red() > 200 and px.green() > 200 and px.blue() > 200, px.name()
+        # the wrench's own Expand / Minimize
+        menu_action("timeline.settings.expandAllTracks").trigger()
+        canvas.last_menu.close()
+        assert (canvas.video_h, canvas.audio_h) == (64, 64)
+        menu_action("timeline.settings.minimizeAllTracks").trigger()
+        canvas.last_menu.close()
+        assert (canvas.video_h, canvas.audio_h) == (26, 26) and tl.DRAG_MIN_H <= 26
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_track_heights_as_egui(app, tmp_path: Path):
+    """egui's track heights: dragging a header's bottom edge (or the top video track's top edge)
+    resizes that kind's tracks, a double-click on a header toggles tall / short, and the UI
+    commands Expand / Minimize All Tracks (again: back) and Increase / Decrease … Height."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def row(short: str):
+        return next(r for r in canvas.rows if r.short == short)
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint) -> None:
+        QtTest.QTest.mousePress(canvas, btn, pos=a)
+        QtTest.QTest.mouseMove(canvas, b)
+        QtTest.QTest.mouseRelease(canvas, btn, pos=b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(600)
+        wait_until(app, lambda: False, 200)
+        assert (row("V1").height, row("A1").height) == (tl.VIDEO_H, tl.AUDIO_H) == (60, 56)
+        a1 = row("A1")
+        edge = QtCore.QPoint(100, a1.top + a1.height - 1)
+        assert canvas.height_edge_at(edge) is a1
+        QtTest.QTest.mouseMove(canvas, edge)
+        assert canvas.cursor().shape() == QtCore.Qt.CursorShape.SizeVerCursor
+        # an audio edge down: taller audio tracks, every one of them
+        drag(edge, edge + QtCore.QPoint(0, 30))
+        assert canvas.audio_h == 86 and all(r.height == 86 for r in canvas.rows if r.kind == "audio")
+        assert row("A2").top == row("A1").top + 86
+        # the top video track's top edge up: taller video tracks
+        top = canvas.rows[0]
+        assert top.kind == "video"
+        drag(QtCore.QPoint(100, top.top), QtCore.QPoint(100, top.top - 20))
+        assert canvas.video_h == 80 and row("V1").height == 80
+        # clamped as egui's (22…220)
+        a1 = row("A1")
+        drag(QtCore.QPoint(100, a1.top + a1.height - 1), QtCore.QPoint(100, a1.top + a1.height - 300))
+        assert canvas.audio_h == tl.DRAG_MIN_H
+        # a double-click off the header's buttons: tall ↔ short
+        a1 = row("A1")
+        spot = QtCore.QPoint(tl.HEADER_W - 8, a1.top + a1.height // 2)
+        assert canvas.header_hit(spot)[1] is None and canvas.height_edge_at(spot) is None
+        QtTest.QTest.mouseDClick(canvas, btn, pos=spot)
+        assert canvas.audio_h == 64
+        a1 = row("A1")
+        QtTest.QTest.mouseDClick(canvas, btn, pos=QtCore.QPoint(tl.HEADER_W - 8, a1.top + a1.height // 2))
+        assert canvas.audio_h == 30
+        # the UI commands
+        win.invoke("timeline.expandAllTracks")
+        assert (canvas.video_h, canvas.audio_h) == (120, 120)
+        win.invoke("timeline.expandAllTracks")
+        assert (canvas.video_h, canvas.audio_h) == (80, 30)
+        win.invoke("timeline.minimizeAllTracks")
+        assert (canvas.video_h, canvas.audio_h) == (24, 24)
+        win.invoke("timeline.decreaseVideoHeight")
+        assert canvas.video_h == 24  # not below 24
+        win.invoke("timeline.increaseVideoHeight")
+        win.invoke("timeline.increaseAudioHeight")
+        win.invoke("timeline.increaseAudioHeight")
+        win.invoke("timeline.decreaseAudioHeight")
+        assert (canvas.video_h, canvas.audio_h) == (36, 36)
+        assert canvas.saved_heights == (80, 30)
+        # listed and bound as egui's: Expand All Tracks is Shift+=
+        assert "timeline.expandAllTracks" in win.registry.local_actions
+        assert any(c == "timeline.expandAllTracks" for c, _l, _m, _k in win.local_commands())
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_marker_menu_as_egui(app, tmp_path: Path):
+    """egui's ruler markers: drawn in their colour, right-click moves the playhead to the marker
+    and opens Label ▸ colours, Clear Selected Marker, Clear Markers."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.info import LABELS, marker_rgb
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        fr = canvas.frame_ticks()
+        t = fr * 48
+        before = len(win.sequence.get("markers") or [])  # the demo's own markers
+        win.execute("markers.add", {"target": "program", "time": t, "color": "Blue"})
+        win.execute("markers.add", {"target": "program", "time": fr * 200, "color": "Rose", "durationFrames": 24})
+        assert wait_until(app, lambda: len((canvas.sequence or {}).get("markers") or []) == before + 2, 10_000)
+        wait_until(app, lambda: False, 200)
+        marker = next(m for m in canvas.sequence["markers"] if m["start"] == t)
+        r = canvas.marker_rect(marker)
+        # painted in its colour
+        img = canvas.grab().toImage()
+        px = img.pixelColor(int(r.center().x()), int(r.top() + 3))
+        want = marker_rgb("Blue")
+        assert abs(px.red() - want.red()) + abs(px.green() - want.green()) + abs(px.blue() - want.blue()) < 40, px.name()
+        ranged = next(m for m in canvas.sequence["markers"] if m["duration"] > 0)
+        band = canvas.marker_band(ranged)
+        assert band is not None and band.width() > 1
+        assert canvas.marker_at(band.center().toPoint()) is ranged
+        assert canvas.marker_at(QtCore.QPoint(int(r.center().x()), canvas.height() - 5)) is None
+        # right-click: playhead to the marker, then the menu
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        assert menu.objectName() == "timeline.markerMenu"
+        assert canvas.playhead == t
+        names = [a.objectName() or (a.menu().objectName() if a.menu() else "") for a in menu.actions() if not a.isSeparator()]
+        assert names == ["timeline.markerMenu.label", "timeline.markerMenu.markers.clearCurrent", "timeline.markerMenu.markers.clearAll"], names
+        sub = next(a.menu() for a in menu.actions() if a.menu())
+        colors = {a.objectName(): a for a in sub.actions()}
+        assert list(colors) == [f"timeline.markerMenu.color.{n}" for n in LABELS]
+        assert colors["timeline.markerMenu.color.Blue"].isChecked()
+        colors["timeline.markerMenu.color.Mango"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: next(m for m in canvas.sequence["markers"] if m["id"] == marker["id"]).get("color") == "Mango", 10_000)
+        # Clear Selected Marker removes the marker under the playhead only
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=r.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.markerMenu.markers.clearCurrent").trigger()
+        menu.close()
+        assert wait_until(app, lambda: len(canvas.sequence["markers"]) == before + 1, 10_000)
+        assert all(m["id"] != marker["id"] for m in canvas.sequence["markers"])
+        # Clear Markers removes the rest
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=band.center().toPoint())
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        next(a for a in menu.actions() if a.objectName() == "timeline.markerMenu.markers.clearAll").trigger()
+        menu.close()
+        assert wait_until(app, lambda: not canvas.sequence["markers"], 10_000)
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_edit_point_menu_as_egui(app, tmp_path: Path):
+    """egui's edit point menu: right-clicking a clip's edge selects that edit point (Roll with the
+    Rolling Edit tool) and opens the trim types (the selected one checked), Apply Default
+    Transitions and Join Through Edits, which joins a through edit."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        first = v1().track["items"][0]
+        mid = (first["start"] + first["end"]) // 2
+        win.execute("timeline.razor", {"time": mid, "clip": first["clip"]})
+        assert wait_until(app, lambda: any(t.get("left") == first["clip"] for t in (win.sequence or {}).get("throughEdits") or []), 10_000)
+        left = v1().track["items"][0]
+        right = v1().track["items"][1]
+        canvas.tool = "rolling"
+        x = int(canvas.x_of(left["end"])) - 2
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(x, int(v1().top + v1().height / 2)))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu.objectName() == "timeline.editPointMenu" and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        acts = {a.objectName(): a for a in menu.actions() if not a.isSeparator()}
+        assert list(acts) == [f"timeline.editPointMenu.{n}" for n in ("rippleIn", "rippleOut", "roll", "trimIn", "trimOut", "applyDefaultTransitions", "joinThroughEdits")]
+        assert acts["timeline.editPointMenu.roll"].isChecked() and not acts["timeline.editPointMenu.trimOut"].isChecked()
+        assert all(a.isEnabled() for a in acts.values())
+        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": left["clip"], "out": True, "kind": "roll"}], 10_000)
+        # the roll's yellow brackets on both sides of the cut
+        img = canvas.grab().toImage()
+        cut = canvas.x_of(left["end"])
+        y = int(v1().top + v1().height / 2)
+        for px in (int(cut - 1.5), int(cut + 1.5)):
+            c = img.pixelColor(px, y)
+            assert (c.red(), c.green(), c.blue()) == (0xF2, 0xC4, 0x3D), (px, c.name())
+        # another trim type selects that side of the cut
+        acts["timeline.editPointMenu.trimIn"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": right["clip"], "out": False, "kind": "trim"}], 10_000)
+        # the menu again (the cut's edit point stays selected), then Join Through Edits
+        QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(x, int(v1().top + v1().height / 2)))
+        assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
+        menu = canvas.last_menu
+        acts = {a.objectName(): a for a in menu.actions() if not a.isSeparator()}
+        assert acts["timeline.editPointMenu.trimIn"].isChecked()
+        acts["timeline.editPointMenu.joinThroughEdits"].trigger()
+        menu.close()
+        assert wait_until(app, lambda: v1().track["items"][0]["end"] == first["end"], 10_000)
+    finally:
+        if canvas.last_menu is not None:
+            canvas.last_menu.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_timeline_multicam_submenu_as_egui(app):
+    """The clip menu's Multi-Camera submenu: Enable (checked when on), Flatten and the cameras of
+    the first selected nested sequence, the shown angle checked; a camera switches the clips."""
+    from cfa4_qt.panels import timeline_menus
+
+    ran: list = []
+
+    class Host:
+        def command_enabled(self, cid):
+            return True
+
+        def run_menu_command(self, cid, params):
+            ran.append((cid, params))
+
+        def menu_request(self, cid, params, then):
+            then(True)
+
+    parent = QtWidgets.QWidget()
+    nest = {"clip": 7, "nested": True, "multicam": {"enabled": True, "angle": 1}, "cameras": [{"angle": 0, "name": "Cam A"}, {"angle": 1, "name": "Cam B"}]}
+    menu = timeline_menus.clip_menu(parent, Host(), [nest, {"clip": 8}], {"mango": "#ff8800"})
+    sub = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.clip.multicam")
+    assert sub.isEnabled()
+    acts = {a.objectName(): a for a in sub.actions() if not a.isSeparator()}
+    assert list(acts) == ["timeline.clipMenu.clip.multicamEnable", "timeline.clipMenu.clip.multicamFlatten", "timeline.clipMenu.multicam.camera.0", "timeline.clipMenu.multicam.camera.1"]
+    assert acts["timeline.clipMenu.clip.multicamEnable"].isChecked()
+    assert acts["timeline.clipMenu.multicam.camera.1"].isChecked() and acts["timeline.clipMenu.multicam.camera.0"].text() == "Cam A"
+    acts["timeline.clipMenu.multicam.camera.0"].trigger()
+    assert ran[-1] == ("multicam.switchAngle", {"angle": 0, "clips": [7]})
+    # Link / Unlink as the engine decides: Unlink only when every selected clip is linked
+    def link_text(clips):
+        m = timeline_menus.clip_menu(parent, Host(), clips, {})
+        return next(a.text() for a in m.actions() if a.objectName() == "timeline.clipMenu.clip.link")
+
+    assert link_text([{"clip": 1, "link": 5}, {"clip": 2, "link": None}]) == "Link"
+    assert link_text([{"clip": 1, "link": 5}, {"clip": 2, "link": 5}]) == "Unlink"
+    # off: no cameras
+    nest["multicam"] = {"enabled": False, "angle": 1}
+    menu2 = timeline_menus.clip_menu(parent, Host(), [nest], {})
+    sub = next(a.menu() for a in menu2.actions() if a.menu() and a.menu().objectName() == "timeline.clipMenu.clip.multicam")
+    assert [a.objectName() for a in sub.actions()] == ["timeline.clipMenu.clip.multicamEnable", "timeline.clipMenu.clip.multicamFlatten"]
+    assert not sub.actions()[0].isChecked()
+    parent.deleteLater()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_program_comparison_view_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's Comparison View: the reference frame left of the current one with its bar (the
+    reference timecode, previous / next frame, Set to the playhead); View ▸ Display Mode, the
+    wrench menu and Lumetri Color's Comparison View button turn it on, and Apply Match then uses
+    the reference frame; `view.compare.setReference`."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", False)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    mon = win.monitor
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and mon.view.image is not None and len(win.registry.commands) > 100, 30_000)
+        assert mon.compare_box.isHidden()
+        win.execute("playhead.set", {"time": 0})  # the reference starts at the playhead
+        assert wait_until(app, lambda: mon.playhead == 0, 10_000)
+        view_menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.View")
+        action = next(a for a in view_menu.findChildren(QtGui.QAction) if a.objectName() == "view.display.comparison")
+        action.trigger()
+        assert mon.mv.display == "comparison" and mon.mv.compare_ref == 0 and not mon.compare_box.isHidden()
+        assert wait_until(app, lambda: mon.ref_view.image is not None, 20_000)
+        assert mon.compare_label.text() == "Reference  00:00:00:00"
+        assert win.lumetri.compare.isChecked() and win.lumetri.reference.text() == "00:00:00:00"
+        f = mon.frame()
+        mon.compare_box.findChild(QtWidgets.QToolButton, "program.compare.next").click()
+        mon.compare_box.findChild(QtWidgets.QToolButton, "program.compare.next").click()
+        assert mon.mv.compare_ref == 2 * f and mon.compare_label.text() == "Reference  00:00:00:02"
+        mon.compare_box.findChild(QtWidgets.QToolButton, "program.compare.prev").click()
+        assert mon.mv.compare_ref == f
+        win.execute("playhead.set", {"time": 50 * f})
+        assert wait_until(app, lambda: mon.playhead == 50 * f, 10_000)
+        mon.compare_box.findChild(QtWidgets.QToolButton, "program.compare.set").click()
+        assert mon.mv.compare_ref == 50 * f and win.lumetri.reference.text() == "00:00:02:02"  # 23.976 fps
+        assert wait_until(app, lambda: mon.ref_view.image is not None and mon._ref_shown and mon._ref_shown[0] == 50 * f, 20_000)
+        win.ui_command("view.compare.setReference", {"seconds": 1.0})
+        assert mon.mv.compare_ref == TICKS_PER_SECOND
+        # Apply Match uses the reference frame while comparing
+        sent: list[tuple[str, dict]] = []
+        win.lumetri.send = lambda cmd, params: sent.append((cmd, params))
+        win.lumetri.data = {"clip": 1}
+        win.lumetri._apply_match()
+        assert sent and sent[-1][1]["referenceTime"] == TICKS_PER_SECOND
+        # the wrench menu item, and Lumetri's button turning it off
+        mon._fill_wrench_menu()
+        item = next(a for a in mon.wrench.menu().actions() if a.objectName() == "program.settings.display.comparison")
+        assert item.isChecked()
+        win.lumetri.compare.click()
+        assert mon.mv.display == "composite" and mon.compare_box.isHidden() and not win.lumetri.compare.isChecked()
+        win.lumetri.compare.click()
+        assert mon.comparing() and mon.mv.compare_ref == TICKS_PER_SECOND, "the reference is kept"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_monitor_rulers_and_guides_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's rulers and guides: Show Rulers puts frame-pixel rulers along the picture; dragging out
+    of the top ruler adds a horizontal guide, out of the left one a vertical guide; an unlocked
+    guide drags (Esc puts it back), dropped on a ruler it goes; Lock Guides, Clear Guides, Add
+    Guide…, guide templates in the engine's preferences (Save as Template, Manage: Apply, Delete),
+    Snap in Program Monitor; the guides are remembered with the view."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+    from cfa4_qt.panels.guides import RULER, AddGuideDialog, ManageGuidesDialog, snap_move
+    from cfa4_qt.panels.monitor_view import MonitorView
+
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", False)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    mon, view = win.monitor, win.monitor.view
+    Qt = QtCore.Qt
+    L = Qt.MouseButton.LeftButton
+    N = Qt.KeyboardModifier.NoModifier
+    P = QtCore.QPointF
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and view.image is not None and len(win.registry.commands) > 100, 30_000)
+        assert not mon.mv.show_rulers and mon.mv.show_guides and mon.mv.snap
+        # Show Rulers: the picture moves in by the rulers
+        win.guide_command("view.showRulers", {})
+        assert mon.mv.show_rulers and view.guides.rulers_on()
+        pic = view.picture_rect()
+        assert pic.left() >= RULER - 0.5 and pic.top() >= RULER - 0.5
+        top = view.guides.ruler_rect("top")
+        assert top.height() == RULER and view.guides.hover_cursor(top.center()) == Qt.CursorShape.SizeVerCursor
+        # drag out of the top ruler: a horizontal guide where it is dropped (frame pixels)
+        start = top.center().toPoint()
+        drop = QtCore.QPoint(int(pic.center().x()), int(pic.top() + pic.height() / 4))
+        QtTest.QTest.mousePress(view, L, N, start)
+        QtTest.QTest.mouseMove(view, drop)
+        QtTest.QTest.mouseRelease(view, L, N, drop)
+        assert len(mon.mv.guides) == 1 and mon.mv.guides[0]["vertical"] is False
+        assert abs(mon.mv.guides[0]["position"] - 270) <= 3, mon.mv.guides
+        # out of the left ruler: a vertical guide at the middle
+        left = view.guides.ruler_rect("left").center().toPoint()
+        mid = pic.center().toPoint()
+        QtTest.QTest.mousePress(view, L, N, left)
+        QtTest.QTest.mouseMove(view, mid)
+        QtTest.QTest.mouseRelease(view, L, N, mid)
+        assert len(mon.mv.guides) == 2 and mon.mv.guides[1]["vertical"] is True
+        assert abs(mon.mv.guides[1]["position"] - 960) <= 3
+        # drag the vertical guide; Esc during a drag puts it back
+        g = view.guides.guide_rect(1).center().toPoint()
+        to = g + QtCore.QPoint(int(pic.width() / 8), 0)
+        QtTest.QTest.mousePress(view, L, N, g)
+        QtTest.QTest.mouseMove(view, to)
+        assert abs(mon.mv.guides[1]["position"] - 1200) <= 4
+        QtTest.QTest.keyClick(view, Qt.Key.Key_Escape)
+        QtTest.QTest.mouseRelease(view, L, N, to)
+        assert abs(mon.mv.guides[1]["position"] - 960) <= 3, "Esc put it back"
+        QtTest.QTest.mousePress(view, L, N, g)
+        QtTest.QTest.mouseMove(view, to)
+        QtTest.QTest.mouseRelease(view, L, N, to)
+        assert abs(mon.mv.guides[1]["position"] - 1200) <= 4
+        # dropped back on the left ruler: removed
+        g = view.guides.guide_rect(1).center().toPoint()
+        QtTest.QTest.mousePress(view, L, N, g)
+        QtTest.QTest.mouseMove(view, left)
+        QtTest.QTest.mouseRelease(view, L, N, left)
+        assert len(mon.mv.guides) == 1
+        # Lock Guides: a guide no longer drags
+        win.guide_command("view.lockGuides", {"enabled": True})
+        g = view.guides.guide_rect(0).center().toPoint()
+        QtTest.QTest.mousePress(view, L, N, g)
+        QtTest.QTest.mouseMove(view, g + QtCore.QPoint(0, 40))
+        QtTest.QTest.mouseRelease(view, L, N, g + QtCore.QPoint(0, 40))
+        assert abs(mon.mv.guides[0]["position"] - 270) <= 3
+        # the wrench menu and the View menu
+        mon._fill_wrench_menu()
+        names = [a.objectName() for a in mon.wrench.menu().actions()]
+        for n in ("showRulers", "showGuides", "lockGuides", "clearGuides", "snapInProgramMonitor"):
+            assert f"program.settings.{n}" in names, names
+        view_menu = next(a.menu() for a in win.menuBar().actions() if a.menu() and a.menu().objectName() == "menu.View")
+        ids = {a.objectName() for a in view_menu.findChildren(QtGui.QAction)}
+        assert {"view.showRulers", "view.addGuide", "view.clearGuides", "view.guideTemplates.save", "view.guideTemplates.manage"} <= ids
+        # Add Guide… (the dialog), and with a position directly
+        d = mon.open_add_guide()
+        assert isinstance(d, AddGuideDialog) and d.position.value() == 960
+        d.horizontal.setChecked(True)
+        d.position.setValue(540)
+        d.findChild(QtWidgets.QPushButton, "guides.add.ok").click()
+        assert mon.mv.guides[-1] == {"vertical": False, "position": 540.0}
+        win.guide_command("view.addGuide", {"position": 640, "orientation": "vertical"})
+        assert len(mon.mv.guides) == 3
+        errors: list[str] = []
+        win._command_failed = lambda cid, m: errors.append(m)
+        win.ui_command("view.addGuide", {"position": float("inf")})
+        assert errors and len(mon.mv.guides) == 3
+        # templates: saved in the engine's preferences, applied, deleted
+        win.guide_command("view.guideTemplates.save", {"name": "Thirds"})
+        prefs: list = []
+        assert wait_until(app, lambda: (engine.execute("prefs.get", {"key": "guides.templates"}, on_reply=lambda r, _b: prefs.append(r)), app.processEvents(), bool(prefs) and prefs[-1])[-1], 10_000)
+        assert prefs[-1][0]["name"] == "Thirds" and len(prefs[-1][0]["guides"]) == 3
+        assert win.guide_command("view.clearGuides", {}) == {"monitor": "program", "cleared": 3}
+        m = mon.open_manage_guides()
+        assert isinstance(m, ManageGuidesDialog)
+        assert wait_until(app, lambda: m.ready and m.list.count() == 1, 10_000)
+        m.select("Thirds")
+        m.findChild(QtWidgets.QPushButton, "guides.manage.apply").click()
+        assert len(mon.mv.guides) == 3 and mon.mv.show_guides
+        m = mon.open_manage_guides()
+        assert wait_until(app, lambda: m.ready and m.list.count() == 1, 10_000)
+        m.select("Thirds")
+        m.findChild(QtWidgets.QPushButton, "guides.manage.delete").click()
+        assert wait_until(app, lambda: m.list.count() == 0 and not m.empty.isHidden(), 10_000)
+        m.reject()
+        # Snap in Program Monitor: a box near a guide or the centre snaps onto it
+        frame = view.full
+        pic = view.picture_rect()
+        box = QtCore.QRectF(pic.left() + 4, pic.top() + 4, 50, 50)
+        off, lines = snap_move(mon.mv, pic, frame, box, P(0, 0))
+        assert (off.x(), off.y()) == (-4, -4) and len(lines) == 2, "the frame's corner"
+        win.guide_command("view.snapInProgramMonitor", {"enabled": False})
+        assert snap_move(mon.mv, pic, frame, box, P(0, 0)) == (P(0, 0), [])
+        # remembered with the view
+        again = MonitorView.load(settings, "monitor/program")
+        assert again.show_rulers and again.lock_guides and not again.snap and len(again.guides) == 3
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+        app.sendPostedEvents(None, QtCore.QEvent.Type.DeferredDelete)
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -3704,10 +7974,16 @@ def test_program_monitor_controls_as_egui(app, tmp_path: Path, monkeypatch):
         assert mon.speed == -1.0
         mon.stop()
         assert not mon.playing and mon.speed == 1.0
-        # Export Frame asks for the file and writes it
+        # Export Frame opens its settings (egui's) and writes the frame
+        from cfa4_qt.panels.export_dialogs import ExportSettingsDialog
+
         out = tmp_path / "still.png"
-        monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), "PNG (*.png)"))
         mon.buttons["exportFrame"].click()
+        assert wait_until(app, lambda: isinstance(win.last_dialog, ExportSettingsDialog) and win.last_dialog.isVisible(), 10_000)
+        d = win.last_dialog
+        d.findChild(QtWidgets.QLineEdit, "exportFrame.name").setText("still")
+        d.findChild(QtWidgets.QLineEdit, "exportFrame.path").setText(str(tmp_path))
+        d.findChild(QtWidgets.QPushButton, "exportFrame.export").click()
         assert wait_until(app, lambda: out.exists() and out.stat().st_size > 0, 30_000), win.events.text.toPlainText()
     finally:
         win._quit_confirmed = True
@@ -5341,8 +9617,10 @@ def test_project_panel(app, tmp_path: Path):
         drag(here, here + QtCore.QPoint(60, 8), escape=True)
         # a marquee selects the cards it touches; Stack groups them under a ×N badge
         drag(QtCore.QPoint(2, 2), QtCore.QPoint(canvas.width() - 2, canvas.height() - 2))
-        assert canvas.selected == {c["item"] for c in canvas.cards}, canvas.selected
-        app.processEvents()
+        everything = {c["item"] for c in canvas.cards}
+        assert canvas.selected == everything, canvas.selected
+        # an answer to an earlier refresh may still bring the old selection; the engine's follows
+        assert wait_until(app, lambda: set(main.data.get("selection") or []) == everything and canvas.selected == everything, 10_000), canvas.selected
         assert card(moved) == before, "Escape moved nothing"
         menu = pp.card_menu(main, moved, canvas.rows[moved])
         stack = next(a for a in menu.actions() if a.objectName() == "project.cardMenu.stack")
@@ -5399,6 +9677,102 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
         else:
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
+
+
+def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
+    """Snap in Program Monitor: moving an object on the Program monitor snaps its edges or
+    centre to the frame's edges / centre and the shown guides (Codex review on #214)."""
+    from cfa4_qt.panels.monitor_view import MonitorView
+    from cfa4_qt.panels.program_overlay import ProgramOverlay
+
+    P = QtCore.QPointF
+
+    class View(QtWidgets.QWidget):
+        def __init__(self):
+            super().__init__()
+            self.mv = MonitorView()
+            self.full = (1000, 500)
+
+        def picture_rect(self):
+            return QtCore.QRectF(0, 0, 1000, 500)
+
+    view = View()
+    sent: list = []
+    overlay = ProgramOverlay(view, None, lambda c, p: sent.append((c, p)))
+    # a 100 px box 3 px from the frame's left and top edges, moved 1 px right
+    quad = [P(3, 3), P(103, 3), P(103, 103), P(3, 103)]
+    pl = {"t": {"clip": 1, "effect": 0, "effectId": "motion"}, "anchorAt": P(53, 53), "position": P(53, 53), "outer": QtGui.QTransform(),
+          "quad": quad, "anchor": P(), "height": 100.0, "width": 100.0, "rotation": 0.0, "uniform": True}
+
+    def move(dx: float, dy: float):
+        sent.clear()
+        overlay._transform_move({"pl": pl, "grab": "move", "start": P(50, 50), "begin": True, "turned": 0.0, "angle": 0.0}, P(50 + dx, 50 + dy))
+        return next(p["value"] for c, p in sent if p["param"] == "position")
+
+    assert view.mv.snap
+    assert move(1, 0) == [50.0, 50.0], "the box's left and top edges meet the frame's"
+    assert len(overlay.snap_lines) == 2
+    view.mv.snap = False
+    assert move(1, 0) == [54.0, 53.0]
+    assert overlay.snap_lines == []
+    # a guide at x = 300 catches the box's right edge
+    view.mv.snap = True
+    view.mv.guides = [{"vertical": True, "position": 300.0}]
+    assert move(195, 40)[0] == 250.0
+    view.deleteLater()
+
+
+def test_keys_given_to_qt_run_commands_run_them(app, fake_engine: Path, tmp_path: Path):
+    """Keyboard Shortcuts can give a key to any Qt-run command (docking, guides, the comparison
+    reference …), application-wide or in one panel, and the key runs it (Codex review on #214)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: bool(win.registry.commands), 10_000)
+        win.local_keys = {"view.showGuides": ["Cmd+Shift+F11"]}
+        win.local_panel_keys = {"view.lockGuides": [("Shift+F11", "Program")]}
+        win._build_menus()
+        show = win.registry.local_actions["view.showGuides"]
+        assert show.objectName() == "shortcut.view.showGuides" and show in win.actions()
+        assert [s.toString() for s in show.shortcuts()] == ["Ctrl+Shift+F11"]
+        assert win.registry.local_actions["playback.toggle"] is win.play_action
+        was = win.monitor.mv.show_guides
+        win.monitor.setFocus()
+        show.trigger()
+        assert win.monitor.mv.show_guides is not was
+        # the panel-scoped key goes through the registry's dispatcher for the focused panel
+        dispatcher = next(a for a in win.actions() if a.objectName() == "shortcut.Shift+F11")
+        win.monitor.view.setFocus()
+        app.processEvents()
+        locked = win.monitor.mv.lock_guides
+        dispatcher.trigger()
+        assert win.monitor.mv.lock_guides is not locked
+        # elsewhere the key does nothing
+        win.timeline.canvas.setFocus()
+        app.processEvents()
+        dispatcher.trigger()
+        assert win.monitor.mv.lock_guides is not locked
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_shortcut_recorder_refuses_the_meta_key():
+    """A chord with Meta (Super / Windows) can't be saved: the engine's chords don't have it, and
+    saving it without would bind the bare key (Codex review on #214)."""
+    from cfa4_qt.panels.shortcuts import chord_of
+
+    m = QtCore.Qt.KeyboardModifier
+    assert chord_of(QtCore.Qt.Key.Key_S, m.ControlModifier | m.ShiftModifier) == "Cmd+Shift+S"
+    assert chord_of(QtCore.Qt.Key.Key_S, m.MetaModifier) is None
+    assert chord_of(QtCore.Qt.Key.Key_S, m.MetaModifier | m.ControlModifier) is None
 
 
 def test_social_safe_zones_in_the_view_menu_and_on_the_monitor(app, tmp_path: Path):
@@ -5488,3 +9862,73 @@ def test_marketing_commands_ask_for_their_spreadsheet_and_report_results(app, tm
     assert result_status("export.batchVariants", None) is None
     assert result_status("markers.addBeats", {"count": "x", "bpm": True}) == "0 beat markers added (0.0 BPM)"
     assert result_status("file.save", {}) is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's Import mode: the header's Home and Import / Edit / Export, the cards run their
+    commands and go back to Edit, Recent lists the saved projects (newest first) and opens one,
+    the project links open in the web browser; ``ui.set {mode}`` and ``ui.mode`` as egui's."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.home import GITHUB, ISSUES
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        home = win.home
+        tab = {m: win.findChild(QtWidgets.QToolButton, f"header.mode.{m}") for m in ("import", "edit", "export")}
+        assert all(tab.values()) and win.findChild(QtWidgets.QToolButton, "header.home") is not None
+        assert win.mode == "Edit" and home.isHidden() and tab["edit"].isChecked()
+        tab["import"].click()
+        assert win.mode == "Import" and home.isVisible() and tab["import"].isChecked() and not tab["edit"].isChecked()
+        # over the panels, under the menu bar
+        assert home.geometry().top() >= win.menuBar().geometry().bottom() and home.width() == win.width()
+        assert [b.objectName() for b in home.cards.values()] == [
+            "import.file.import", "import.file.importDemoFootage", "import.file.openDemoProject", "import.file.newBarsAndTone"]
+        assert home.cards["file.importDemoFootage"].text().startswith("Demo footage\n")
+        opened: list[str] = []
+        monkeypatch.setattr(QtGui.QDesktopServices, "openUrl", lambda u: opened.append(u.toString()) or True)
+        home.links["github"].click()
+        home.links["reportIssue"].click()
+        assert opened == [GITHUB, ISSUES]
+        # a card runs its command and goes back to Edit
+        n = len(_items(win.project or {}))
+        home.cards["file.importDemoFootage"].click()
+        assert win.mode == "Edit" and home.isHidden()
+        assert wait_until(app, lambda: len(_items(win.project or {})) > n, 60_000)
+        # Recent: the projects saved, newest first; nothing listed before the first
+        assert not home.recent and home.recent_heading.isHidden()
+        a, b = tmp_path / "a.fcproj", tmp_path / "b.fcproj"
+        for p in (a, b):
+            done: list = []
+            engine.execute("file.saveAs", {"path": str(p)}, on_reply=lambda r, _b, d=done: d.append(r))
+            assert wait_until(app, lambda d=done: d, 30_000)
+        win.findChild(QtWidgets.QToolButton, "header.home").click()
+        assert win.mode == "Import"
+        assert wait_until(app, lambda: home.recent_paths[:2] == [str(b), str(a)], 10_000)
+        assert home.recent[0].objectName() == "import.recent.0" and home.recent[0].text().startswith("b.fcproj")
+        assert home.recent[0].toolTip() == str(b) and str(tmp_path) in home.recent[0].text()
+        assert not home.recent_heading.isHidden()
+        # a click opens that project, back in Edit
+        home.recent[1].click()
+        assert wait_until(app, lambda: (win.project or {}).get("path") == str(a), 30_000)
+        assert win.mode == "Edit" and home.isHidden()
+        # Export opens the Export window; the page stays closed
+        tab["export"].click()
+        assert win.export_dialog is not None and win.export_dialog.isVisible() and home.isHidden()
+        win.export_dialog.hide()
+        # the control channel: ui.set {mode} and the mode in the UI state, as egui's
+        ctl = ControlServer(win)
+        ctl.set({"mode": "import"})
+        assert win.mode == "Import" and home.isVisible() and ctl.ui_state()["mode"] == "Import"
+        ctl.set({"mode": "Edit"})
+        assert win.mode == "Edit" and home.isHidden() and ctl.ui_state()["mode"] == "Edit"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

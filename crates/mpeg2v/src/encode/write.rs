@@ -66,6 +66,7 @@ pub(super) struct EncTables {
     /// macroblock_type by flag set (B.2, B.3).
     pub mbtype_i: [Code; 32],
     pub mbtype_p: [Code; 32],
+    pub mbtype_b: [Code; 32],
     /// coded_block_pattern (B.9) by value.
     pub cbp: [Code; 64],
     /// motion_code -16..=16 at index code + 16.
@@ -110,6 +111,7 @@ pub(super) fn tables() -> &'static EncTables {
             mba: fill(MBA, 0),
             mbtype_i: fill(MBTYPE_I, 0),
             mbtype_p: fill(MBTYPE_P, 0),
+            mbtype_b: fill(MBTYPE_B, 0),
             cbp: fill(CBP, 0),
             motion: fill(MOTION, 16),
             dc_luma: fill(DC_LUMA, 0),
