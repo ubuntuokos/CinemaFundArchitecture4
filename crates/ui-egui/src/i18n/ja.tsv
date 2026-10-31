@@ -2970,6 +2970,12 @@
 	Gang to Program	プログラムと連動
 	AAC Audio	AAC Audio
 	AAC Audio 48 kHz 320 kbps	AAC Audio 48 kHz 320 kbps
+	Opus Audio	Opus オーディオ
+	Opus Audio 48 kHz 160 kbps	Opus オーディオ 48 kHz 160 kbps
+	Ogg Opus (.opus), stereo 48 kHz at 160 kbps	Ogg Opus (.opus)、ステレオ 48 kHz 160 kbps
+	WebM	WebM
+	WebM 1080p VP9	WebM 1080p VP9
+	WebM, VP9 1920×1080 at 8 Mbps, Opus 128 kbps stereo	WebM、VP9 1920×1080 8 Mbps、Opus 128 kbps ステレオ
 	MPEG-4 audio (.m4a), stereo 48 kHz AAC-LC at 320 kbps	MPEG-4 オーディオ (.m4a)、ステレオ 48 kHz AAC-LC 320 kbps
 	AIFF	AIFF
 	AIFF 48 kHz 16-bit	AIFF 48 kHz 16-bit
@@ -3451,8 +3457,17 @@
 	Main 10 (10-bit, HDR)	メイン 10 (10 ビット、HDR)
 	Main (8-bit; Main 10 for HDR sequences)	メイン (8 ビット、HDR シーケンスではメイン 10)
 	Encoder	エンコーダー
-	Hardware (H.265 has no software encoder)	ハードウェア (H.265 にはソフトウェアエンコーダーがありません)
-	Hardware (AV1 has no software encoder)	ハードウェア (AV1 にはソフトウェアエンコーダーがありません)
+	Encoding	エンコード
+	GoPro CineForm	GoPro CineForm
+	GoPro CineForm RGB 12-bit	GoPro CineForm RGB 12-bit
+	GoPro CineForm RGB 12-bit with Alpha	GoPro CineForm RGB 12-bit (アルファ付き)
+	GoPro CineForm YUV 10-bit	GoPro CineForm YUV 10-bit
+	QuickTime, GoPro CineForm RGB 4:4:4 12-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime、GoPro CineForm RGB 4:4:4 12-bit、Film Scan 1、24-bit 48 kHz PCM
+	QuickTime, GoPro CineForm RGBA 4:4:4:4 12-bit with alpha channel, Film Scan 1, 24-bit 48 kHz PCM	QuickTime、GoPro CineForm RGBA 4:4:4:4 12-bit アルファチャンネル付き、Film Scan 1、24-bit 48 kHz PCM
+	QuickTime, GoPro CineForm YUV 4:2:2 10-bit, Film Scan 1, 24-bit 48 kHz PCM	QuickTime、GoPro CineForm YUV 4:2:2 10-bit、Film Scan 1、24-bit 48 kHz PCM
+	Software, or hardware where available	ソフトウェア (利用可能な場合はハードウェア)
+	Main (10-bit, HDR)	Main (10 ビット、HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 ビット、HDR シーケンスは 10 ビット)
 	Text Properties	テキストのプロパティ
 	Text Box Height	テキストボックスの高さ
 	Paragraph Text	段落テキスト
@@ -3618,7 +3633,47 @@
 	Side by Side	左右
 	Stereo to 2D	ステレオから 2D へ
 	Eye	目
+	Stereo Parallax	ステレオ視差
+	Horizontal Shift	水平シフト
 	Slit Scan	スリットスキャン
 	Time Span (seconds)	時間幅（秒）
 	Current Frame At	現在のフレームの位置
 	Blend Slices	スライスをブレンド
+	Add Beat Markers	ビートマーカーを追加
+	Clear Beat Markers	ビートマーカーを消去
+	Clear Check Markers	チェックマーカーを消去
+	Auto Reframe Sequence…	シーケンスのオートリフレーム…
+	Batch Variants from Spreadsheet…	スプレッドシートから一括バリエーション…
+	Check Before Export…	書き出し前のチェック…
+	Social Deliverables…	SNS 用書き出しセット…
+	Counter	カウンター
+	Word by Word	単語ごと
+	Animator	アニメーター
+	Animator Duration	アニメーターのデュレーション
+	Animator Delay	アニメーターの遅延
+	Creative Looks	クリエイティブルック
+	Film Grain	フィルムグレイン
+	Animated	アニメーション
+	Color Grain	カラーグレイン
+	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
+	HLS 1080p	HLS 1080p
+	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming：H.264 1920×1080 8 Mbps、AAC 160 kbps、6 秒のフラグメント MP4 セグメント
+	MPEG-2	MPEG-2
+	MPEG-2 DVD NTSC 16:9	MPEG-2 DVD NTSC 16:9
+	MPEG-2 DVD PAL 16:9	MPEG-2 DVD PAL 16:9
+	MPEG-2 Program Stream	MPEG-2 プログラムストリーム
+	MPEG-2 Transport Stream HD 1080	MPEG-2 トランスポートストリーム HD 1080
+	MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×480、29.97 fps、16:9 アナモルフィック、6 Mbps、GOP 18、16 ビット 48 kHz LPCM、.mpg（DVD 用ストリーム。VIDEO_TS のオーサリングなし）
+	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576、25 fps、16:9 アナモルフィック、6 Mbps、GOP 15、16 ビット 48 kHz LPCM、.mpg（DVD 用ストリーム。VIDEO_TS のオーサリングなし）
+	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	MPEG-2 ビデオ（Main Profile 4:2:0、1 ピクセルあたり 0.4 ビット）、シーケンスのフレームサイズとレート、16 ビット 48 kHz LPCM、.mpg
+	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	MPEG-2 ビデオ 1920×1080、平均 18 Mbps、AAC 192 kbps、.ts
+	DCP (Digital Cinema Package)	DCP（デジタルシネマパッケージ）
+	Digital Cinema	デジタルシネマ
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 1998×1080（1.85:1）、5.1 24 ビット 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 2048×858（2.39:1）、5.1 24 ビット 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 3996×2160（1.85:1）、5.1 24 ビット 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 4096×1716（2.39:1）、5.1 24 ビット 48 kHz PCM

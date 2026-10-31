@@ -42,7 +42,7 @@ its version; real editor operations require a future explicitly tested adapter.
 
 CFA4 is free software under the **GNU General Public License, version 3 or later**
 (`GPL-3.0-or-later`, see [LICENSE](LICENSE)). The core application is free to use, change and
-redistribute. Paid offerings (extended support, ready-made packages, separate-process extras,
+redistribute. Paid offerings (extended support, ready-made packages, GPL-licensed paid extras,
 content and services) are described in [docs/licensing.md](docs/licensing.md), which is also the
 policy for reusing code from other projects.
 
@@ -61,8 +61,11 @@ covered by the GPL and may only be used unmodified to identify CFA4
 ([assets/cfa4/LICENSE-logo.txt](assets/cfa4/LICENSE-logo.txt)); modified versions must use
 their own logo. The code is GPL-3.0-or-later.
 
-GStreamer is an optional, dynamically linked system dependency (LGPL-2.1-or-later) for development
-and experimental builds, see [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
+Media: CFA4's own Rust engine is the base; FFmpeg (≥ 9.0.2, GPL-3 build) and GStreamer
+(LGPL-2.1-or-later, dynamically linked) are supplementary backends picked by an automatic task
+router. The system GStreamer from Ubuntu's repositories is the default; an isolated CFA4-owned
+runtime is used only when a feature needs a newer version. See
+[ADR 0005](docs/adr/ADR-0005-media-backends.md) and [ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md).
 
 PySide6/Qt6 is an **optional** developer dependency under LGPLv3 (compatible with CFA4's GPL)
 with its own licensing obligations. The Qt shell does not bundle Qt for distribution.
@@ -75,6 +78,6 @@ with its own licensing obligations. The Qt shell does not bundle Qt for distribu
 - [Known inherited gaps](docs/gaps.md)
 - [Licenses and attribution](ATTRIBUTION.md)
 
-The legacy `apps/cfa4-web`, Windows/macOS/FreeBSD packaging/source components
+The legacy Windows/macOS/FreeBSD packaging/source components
 are not removed in this preparation step to avoid breaking existing crate dependencies;
 none are supported CFA4 release targets.

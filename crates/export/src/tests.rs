@@ -291,6 +291,50 @@ fn caption_burn_in_h264_ffmpeg_oracle() {
     assert!(left > 100 && right > 100, "{left} / {right}");
 }
 
+/// H.265 without a hardware encoder: the built-in software encoder writes an 8-bit Main `hvc1`
+/// MP4 (and QuickTime) that our demuxer and decoder read back with the picture intact.
+#[test]
+fn hevc_exports_with_the_software_encoder() {
+    for (mux, ext, mode) in [(Multiplexer::Mp4, "mp4", BitrateMode::Vbr1Pass), (Multiplexer::Mov, "mov", BitrateMode::Crf)] {
+        let (p, seq, m) = project();
+        let path = tmp(&format!("hevc-soft.{ext}"));
+        let s = ExportSettings { format: Format::Hevc, multiplexer: mux, bitrate_mode: mode, path: path.clone(), include_audio: false, ..Default::default() };
+        let report = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        assert_eq!(report.frames, 24, "{path}");
+        let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+        let src = cfa4_codecs::open_bytes(&path, bytes).unwrap();
+        let v = src.info().video.clone().unwrap();
+        assert_eq!((v.width, v.height), (320, 180), "{path}");
+        let f = src.video_frame(FrameRequest::full(Tick::ZERO)).unwrap();
+        let back = cfa4_render::colorman::decode(&Project::new("x"), ItemId(0), &f, 1, &cfa4_color::ColorPipeline::REC709);
+        let c = cfa4_render::Image::unpremul(back.get(160, 90));
+        assert!(c[0] > 0.6 && c[1] < 0.1 && c[2] < 0.1, "{path}: {c:?}");
+    }
+}
+
+/// AV1 with the built-in software encoder: an 8-bit Main `av01` MP4 that our demuxer and decoder
+/// read back with the picture intact, at a bitrate or a constant quality.
+#[test]
+fn av1_exports_with_the_software_encoder() {
+    for mode in [BitrateMode::Vbr1Pass, BitrateMode::Crf] {
+        let (p, seq, m) = project();
+        let path = tmp(&format!("av1-soft-{mode:?}.mp4"));
+        let s = ExportSettings { format: Format::Av1, bitrate_mode: mode, path: path.clone(), include_audio: false, ..Default::default() };
+        let report = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        assert_eq!(report.frames, 24, "{path}");
+        let bytes: Arc<[u8]> = std::fs::read(&path).unwrap().into();
+        let src = cfa4_codecs::open_bytes(&path, bytes).unwrap();
+        let v = src.info().video.clone().unwrap();
+        assert_eq!((v.width, v.height), (320, 180), "{path}");
+        for t in [Tick::ZERO, Tick(TICKS_PER_SECOND / 2)] {
+            let f = src.video_frame(FrameRequest::full(t)).unwrap();
+            let back = cfa4_render::colorman::decode(&Project::new("x"), ItemId(0), &f, 1, &cfa4_color::ColorPipeline::REC709);
+            let c = cfa4_render::Image::unpremul(back.get(160, 90));
+            assert!(c[0] > 0.6 && c[1] < 0.1 && c[2] < 0.1, "{path} at {t:?}: {c:?}");
+        }
+    }
+}
+
 /// HDR sequences export PQ / HLG with colour signalling in the bitstream (VUI, ProRes header) and
 /// the container (`colr`, `mdcv`, `clli`); our demuxer and ffprobe both read it back, and the
 /// picture survives the round trip.
@@ -302,6 +346,10 @@ fn hdr_exports_signal_pq_and_hlg() {
         (WorkingSpace::Rec2100Pq, Format::H264, "mp4", Transfer::Pq, "smpte2084"),
         (WorkingSpace::Rec2100Hlg, Format::ProRes, "mov", Transfer::Hlg, "arib-std-b67"),
         (WorkingSpace::Rec2100Hlg, Format::H264, "mp4", Transfer::Hlg, "arib-std-b67"),
+        (WorkingSpace::Rec2100Pq, Format::Hevc, "mp4", Transfer::Pq, "smpte2084"),
+        (WorkingSpace::Rec2100Hlg, Format::Hevc, "mp4", Transfer::Hlg, "arib-std-b67"),
+        (WorkingSpace::Rec2100Pq, Format::Av1, "mp4", Transfer::Pq, "smpte2084"),
+        (WorkingSpace::Rec2100Hlg, Format::Av1, "mp4", Transfer::Hlg, "arib-std-b67"),
     ] {
         let (p, seq, m) = project();
         let mut p = (*p).clone();

@@ -1,0 +1,29 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: CFA4 (CinemaFundArchitecture4)
+Upstream-Contact: https://github.com/ubuntuokos/CinemaFundArchitecture4
+Source: https://github.com/ubuntuokos/CinemaFundArchitecture4
+Comment: Third-party material and upstream attributions are listed in NOTICE and
+ ATTRIBUTION.md in this directory. Licences of the Rust dependencies are
+ recorded in the project's dependency audit (docs/audit/F1-01-SBOM-*.md).
+
+Files: *
+Copyright: CFA4 contributors
+License: GPL-3.0-or-later
+ See /usr/share/doc/cfa4/LICENSE (on Debian systems also
+ /usr/share/common-licenses/GPL-3).
+
+Files: usr/share/icons/hicolor/*
+Copyright: CFA4 project owner (István Horváth)
+License: LicenseRef-CFA4-Logo
+ See /usr/share/doc/cfa4/LICENSE-logo.txt.
+
+Files: fonts embedded in the cfa4 binaries (Inter, JetBrains Mono, Noto Serif)
+Copyright: The Inter Project Authors; The JetBrains Mono Project Authors;
+ Google LLC / The Noto Project Authors
+License: OFL-1.1
+ See /usr/share/doc/cfa4/OFL-Inter.txt, OFL-JetBrainsMono.txt and OFL-NotoSerif.txt.
+
+Files: code derived from upstream craft-libs (see NOTICE)
+Copyright: Upstream contributors
+License: MIT or Apache-2.0
+ See /usr/share/doc/cfa4/LICENSE-MIT and LICENSE-APACHE.

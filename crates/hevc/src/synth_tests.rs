@@ -104,19 +104,33 @@ struct Planes {
     y: Vec<u8>,
     u: Vec<u8>,
     v: Vec<u8>,
+    /// chroma subsampling shifts (horizontal, vertical)
+    sx: usize,
+    sy: usize,
 }
 
-fn content(pic: u32) -> Planes {
-    let mut p = Planes { y: vec![0; W * H], u: vec![0; W * H / 4], v: vec![0; W * H / 4] };
+/// Chroma subsampling shifts of chroma_format_idc 1 (4:2:0), 2 (4:2:2) and 3 (4:4:4).
+fn shifts(chroma_format: u32) -> (usize, usize) {
+    match chroma_format {
+        2 => (1, 0),
+        3 => (0, 0),
+        _ => (1, 1),
+    }
+}
+
+fn content(pic: u32, chroma_format: u32) -> Planes {
+    let (sx, sy) = shifts(chroma_format);
+    let (cw, ch) = (W >> sx, H >> sy);
+    let mut p = Planes { y: vec![0; W * H], u: vec![0; cw * ch], v: vec![0; cw * ch], sx, sy };
     for y in 0..H {
         for x in 0..W {
             p.y[y * W + x] = pattern(pic, 0, x, y);
         }
     }
-    for y in 0..H / 2 {
-        for x in 0..W / 2 {
-            p.u[y * W / 2 + x] = pattern(pic, 1, x, y);
-            p.v[y * W / 2 + x] = pattern(pic, 2, x, y);
+    for y in 0..ch {
+        for x in 0..cw {
+            p.u[y * cw + x] = pattern(pic, 1, x, y);
+            p.v[y * cw + x] = pattern(pic, 2, x, y);
         }
     }
     p
@@ -161,14 +175,17 @@ fn vps() -> Vec<u8> {
     nal(32, &w.finish())
 }
 
-fn sps(pcm_loop_filter_disabled: bool) -> Vec<u8> {
+fn sps(pcm_loop_filter_disabled: bool, chroma_format: u32) -> Vec<u8> {
     let mut w = BitWriter::new();
     w.write_bits(0, 4);
     w.write_bits(0, 3);
     w.write_bits(1, 1);
     ptl(&mut w);
     w.write_ue(0); // sps id
-    w.write_ue(1); // 4:2:0
+    w.write_ue(chroma_format);
+    if chroma_format == 3 {
+        w.write_bit(false); // separate_colour_plane_flag
+    }
     w.write_ue(W as u32);
     w.write_ue(H as u32);
     w.write_bits(0, 1); // conformance window
@@ -344,10 +361,12 @@ fn encode_picture(d: &PicDesc, tiles: &Tiles, pcm_content: &Planes, out: &mut Ve
                             e.w.write_bits(pcm_content.y[(ry * CTB + y) * W + rx * CTB + x] as u32, 8);
                         }
                     }
+                    let (sx, sy) = (pcm_content.sx, pcm_content.sy);
+                    let (cw, cb_w, cb_h) = (W >> sx, CTB >> sx, CTB >> sy);
                     for plane in [&pcm_content.u, &pcm_content.v] {
-                        for y in 0..CTB / 2 {
-                            for x in 0..CTB / 2 {
-                                e.w.write_bits(plane[(ry * CTB / 2 + y) * W / 2 + rx * CTB / 2 + x] as u32, 8);
+                        for y in 0..cb_h {
+                            for x in 0..cb_w {
+                                e.w.write_bits(plane[(ry * cb_h + y) * cw + rx * cb_w + x] as u32, 8);
                             }
                         }
                     }
@@ -459,16 +478,16 @@ fn whole(n: usize) -> Vec<Segment> {
 
 /// Encode the test sequence; returns the stream and the exact expected pictures (when the PCM samples
 /// are not filtered).
-fn sequence(tiles: &Tiles, pcm_lf_disabled: bool, segments: Vec<Segment>) -> (Vec<u8>, Vec<Planes>) {
+fn sequence(tiles: &Tiles, pcm_lf_disabled: bool, segments: Vec<Segment>, chroma_format: u32) -> (Vec<u8>, Vec<Planes>) {
     let mut s = Vec::new();
     s.extend(vps());
-    s.extend(sps(pcm_lf_disabled));
+    s.extend(sps(pcm_lf_disabled, chroma_format));
     s.extend(pps(0, tiles, false));
     s.extend(pps(1, &None, true));
     let n = WC * HC;
     let mut saved = None;
-    let c0 = content(0);
-    let c1 = content(1);
+    let c0 = content(0, chroma_format);
+    let c1 = content(1, chroma_format);
     // 0: IDR, PCM, tiles / slices / dependent segments
     let p0 = PicDesc { nal_type: 19, poc: 0, intra: true, cu: Cu::Pcm, pps_id: 0, st: vec![], lt: vec![], num_ref: 0, list_entry: None, segments };
     encode_picture(&p0, tiles, &c0, &mut s, &mut saved);
@@ -528,7 +547,7 @@ fn sequence(tiles: &Tiles, pcm_lf_disabled: bool, segments: Vec<Segment>) -> (Ve
         segments: whole(n),
     };
     encode_picture(&p4, &None, &c1, &mut s, &mut saved);
-    let expect = vec![content(0), content(1), content(0), content(0), content(0)];
+    let expect = [0, 1, 0, 0, 0].map(|k| content(k, chroma_format)).into();
     (s, expect)
 }
 
@@ -545,7 +564,7 @@ fn as_u8(p: &crate::Plane) -> &[u8] {
 }
 
 /// Compare with ffmpeg's decode of the same stream (skipped when ffmpeg is absent).
-fn check_ffmpeg(name: &str, stream: &[u8], pics: &[crate::Picture]) {
+fn check_ffmpeg(name: &str, stream: &[u8], pics: &[crate::Picture], chroma_format: u32) {
     let Some(ff) = cfa4_testkit::ffmpeg_or_skip(name) else { return };
     let dir = cfa4_testkit::fixtures_dir("hevc");
     let src = cfa4_testkit::temp_path(&dir.join(format!("synth_{name}.hevc")));
@@ -554,13 +573,14 @@ fn check_ffmpeg(name: &str, stream: &[u8], pics: &[crate::Picture]) {
     let st = std::process::Command::new(ff)
         .args(["-hide_banner", "-loglevel", "error", "-y", "-i"])
         .arg(&src)
-        .args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "yuv420p"])
+        .args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", ["yuv420p", "yuv422p", "yuv444p"][chroma_format as usize - 1]])
         .arg(&yuv)
         .status()
         .unwrap();
     assert!(st.success(), "ffmpeg failed on {name}");
     let r = std::fs::read(&yuv).unwrap();
-    let fs = W * H * 3 / 2;
+    let (sx, sy) = shifts(chroma_format);
+    let fs = W * H + 2 * (W >> sx) * (H >> sy);
     assert_eq!(r.len(), fs * pics.len(), "{name}: ffmpeg decoded {} frames", r.len() / fs);
     for (i, p) in pics.iter().enumerate() {
         let f = &r[i * fs..(i + 1) * fs];
@@ -577,7 +597,11 @@ fn check_ffmpeg(name: &str, stream: &[u8], pics: &[crate::Picture]) {
 }
 
 fn run(name: &str, tiles: Tiles, pcm_lf_disabled: bool, segments: Vec<Segment>) {
-    let (stream, expect) = sequence(&tiles, pcm_lf_disabled, segments);
+    run_format(name, tiles, pcm_lf_disabled, segments, 1);
+}
+
+fn run_format(name: &str, tiles: Tiles, pcm_lf_disabled: bool, segments: Vec<Segment>, chroma_format: u32) {
+    let (stream, expect) = sequence(&tiles, pcm_lf_disabled, segments, chroma_format);
     if let Ok(d) = std::env::var("HEVC_SYNTH_DUMP") {
         std::fs::write(format!("{d}/{name}.hevc"), &stream).unwrap();
     }
@@ -592,7 +616,7 @@ fn run(name: &str, tiles: Tiles, pcm_lf_disabled: bool, segments: Vec<Segment>) 
             }
         }
         if threads == 1 {
-            check_ffmpeg(name, &stream, &pics);
+            check_ffmpeg(name, &stream, &pics, chroma_format);
         }
     }
 }
@@ -605,6 +629,15 @@ fn pcm_long_term_refs_list_modification() {
 #[test]
 fn pcm_deblocked_single_tile() {
     run("pcm_dbk", None, false, whole(WC * HC));
+}
+
+#[test]
+fn pcm_422_and_444() {
+    // PCM chroma block sizes, chroma deblocking of PCM edges and zero-motion chroma copies in 4:2:2 / 4:4:4
+    for (fmt, name) in [(2, "pcm_422"), (3, "pcm_444")] {
+        run_format(&format!("{name}_lt"), None, true, whole(WC * HC), fmt);
+        run_format(&format!("{name}_dbk"), None, false, whole(WC * HC), fmt);
+    }
 }
 
 #[test]

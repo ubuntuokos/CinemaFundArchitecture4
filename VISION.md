@@ -5,14 +5,15 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-25 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-10-30 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
 A CFA4 (CinemaFundArchitecture4) egy **egyetlen, egységes, Qt6-os asztali alkalmazás Ubuntura**,
 amely több önálló média-program képességeit egyesíti: videóvágás, konvertálás, publikálás,
 feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és grafika,
-**helyben futó MI-funkciókkal** kiegészítve.
+**helyben futó MI-funkciókkal** kiegészítve. Egyes részei **külön alkalmazásként is
+indíthatók** (2. pont, 7. alapelv), de ugyanannak a CFA4-nek a részei maradnak.
 
 Kiindulópontja egy nyílt forráskódú (MIT OR Apache-2.0) nemlineáris videóvágó 0.10.0-s
 változata, amelynek Rust médiamotorja megmarad (az eredet és a szerzői jogi sorok: `NOTICE`).
@@ -34,9 +35,13 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    nem tudja ugyanazt, amit az egui (lista és bizonyítékok: `docs/qt-parity.md`). Addig az egui
    befagyasztva: csak hibajavítás kerülhet bele, új funkció csak a Qt6-os felületbe
    (tulajdonosi döntés, 2026-10-24). Törölni csak a tulajdonos kifejezett jóváhagyásával lehet.
-   A **GStreamer** kiegészítő háttérmotor a saját motor mellett (hardveres kódolás nem NVIDIA GPU-n,
-   VP9/AV1 hardveres dekódolás, Qt6-előnézet, felvétel, egyéb formátumok); a saját motor mindig
-   tartalék. Részletek: `docs/adr/ADR-0002-gstreamer-backend.md`.
+   A **saját Rust-motor az alap**. Mellette kiegészítő háttérmotorok: az **FFmpeg** (legalább 9.0.2)
+   és a **GStreamer** (hardveres kódolás nem NVIDIA GPU-n, VP9/AV1 hardveres dekódolás,
+   Qt6-előnézet, felvétel, egyéb formátumok), később további motorok is. Alapértelmezés az Ubuntu
+   tárolóiból telepített rendszer-GStreamer; elkülönített, CFA4 saját futtatókörnyezete csak akkor
+   kell, ha egy funkcióhoz újabb verzió szükséges. Hogy melyik feladatot melyik végzi, azt egy
+   **automatikus útválasztó** dönti el; a saját motor mindig tartalék. Részletek:
+   `docs/adr/ADR-0005-media-backends.md`, `docs/adr/ADR-0002-gstreamer-backend.md`.
 2. **Minden grafikus Ubuntu-változaton fusson** (lásd 3. pont), a mindenkori LTS-en.
    Jelenleg: **Ubuntu 26.04 LTS, AMD64**.
 3. **Az MI alapvetően helyi**: a felhasználó gépén fut, a felhasználó adatai nem hagyják el a gépet.
@@ -48,6 +53,15 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    igazolja. A már igazolt hardveres és kézi teszteket nem kell ok nélkül megismételni.
 6. **Minden terv a `main` ágon él.** Terv, cél és döntés nem maradhat csak mellékágon vagy
    piszkozat PR-ban, mert ott elveszik.
+7. **Külön is indítható részek, egy CFA4** (tulajdonosi döntés, 2026-10-30). Egy terület, például
+   a feliratozó, külön alkalmazásként is indítható: saját menübejegyzéssel, ikonnal, ablakkal és
+   fájltársítással, a teljes videószerkesztő-projekt megnyitása nélkül. Ugyanakkor a CFA4-en
+   belül is a megfelelő helyén elérhető (munkaterület, panel vagy ablak). A két belépés
+   ugyanazt a Rust-motort, adatmodellt, parancsokat és beállításokat használja, és a CFA4
+   csomagjával együtt települ: külön kódbázis vagy külön motor nem készül. A munka egy lépésben
+   átadható a külön indított rész és a CFA4 között, oda és vissza. Hogy a külön alkalmazás saját
+   programfájl vagy a `cfa4` program saját indítási módja legyen, az adott terület terve dönti el.
+   Első alkalmazása: a feliratozó terve (`docs/plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md`, D1).
 
 ## 3. Célplatform: minden grafikus Ubuntu-változat
 
@@ -75,7 +89,12 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 
 ## 4. Egyesítendő programok és képességeik
 
-A CFA4 ezeknek a programoknak a **képességeit** veszi át, nem a kódjukat, nevüket vagy védjegyeiket.
+A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
+Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (2. pont, Licenc).
+Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
+nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
+clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
+[`docs/licensing.md`](docs/licensing.md).
 
 | Program | Fő terület | Átveendő képességek |
 |---|---|---|

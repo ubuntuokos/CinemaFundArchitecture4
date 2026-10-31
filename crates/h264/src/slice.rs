@@ -304,7 +304,9 @@ impl SliceHeader {
         }
         let slice_qp_delta = r.read_se()?;
         let qp = pps.pic_init_qp + slice_qp_delta;
-        ensure!((0..=51).contains(&qp), "slice QP {qp} out of range");
+        // SliceQPY in -QpBdOffsetY..=51 (7.4.3)
+        let qp_min = -6 * (sps.bit_depth_luma as i32 - 8);
+        ensure!((qp_min..=51).contains(&qp), "slice QP {qp} out of range");
         let mut sp_for_switch = false;
         let mut slice_qs_delta = 0;
         if matches!(slice_type, SliceType::Sp | SliceType::Si) {
@@ -424,7 +426,8 @@ impl Poc {
 }
 
 impl PocState {
-    /// Compute TopFieldOrderCnt/BottomFieldOrderCnt of a frame (8.2.1.1-8.2.1.3).
+    /// Compute TopFieldOrderCnt/BottomFieldOrderCnt of a frame (8.2.1.1-8.2.1.3), or the POC of a
+    /// field picture (then both are set to it).
     pub fn compute(&self, sh: &SliceHeader, sps: &Sps) -> Poc {
         match sps.pic_order_cnt_type {
             0 => {
@@ -439,7 +442,8 @@ impl PocState {
                     prev_msb
                 };
                 let top = msb + lsb;
-                let bottom = top + sh.delta_pic_order_cnt_bottom;
+                // a field picture has only its own POC; both are set to it
+                let bottom = if sh.field_pic { top } else { top + sh.delta_pic_order_cnt_bottom };
                 Poc { top, bottom, msb, frame_num_offset: 0 }
             }
             1 => {
@@ -462,8 +466,17 @@ impl PocState {
                 if sh.nal_ref_idc == 0 {
                     expected += sps.offset_for_non_ref_pic;
                 }
-                let top = expected + sh.delta_pic_order_cnt[0];
-                let bottom = top + sps.offset_for_top_to_bottom_field + sh.delta_pic_order_cnt[1];
+                let (top, bottom) = match (sh.field_pic, sh.bottom_field) {
+                    (false, _) => {
+                        let top = expected + sh.delta_pic_order_cnt[0];
+                        (top, top + sps.offset_for_top_to_bottom_field + sh.delta_pic_order_cnt[1])
+                    }
+                    (true, false) => (expected + sh.delta_pic_order_cnt[0], expected + sh.delta_pic_order_cnt[0]),
+                    (true, true) => {
+                        let b = expected + sps.offset_for_top_to_bottom_field + sh.delta_pic_order_cnt[0];
+                        (b, b)
+                    }
+                };
                 Poc { top, bottom, msb: 0, frame_num_offset }
             }
             _ => {

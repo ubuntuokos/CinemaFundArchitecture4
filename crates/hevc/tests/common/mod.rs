@@ -16,17 +16,34 @@ pub struct Fixture {
     pub frames: u32,
     /// Extra video filter appended after the source (e.g. noise, fade).
     pub filter: &'static str,
-    /// 10 (yuv420p10le) or 8.
+    /// 8, 10 or 12.
     pub bit_depth: u32,
     /// Encoder arguments (libx265 unless `-c:v` is given).
     pub args: &'static [&'static str],
+    /// chroma_format_idc: 0 monochrome (gray / gray10le), 1 4:2:0, 2 4:2:2, 3 4:4:4.
+    pub chroma: u32,
+}
+
+impl Fixture {
+    pub fn mono(&self) -> bool {
+        self.chroma == 0
+    }
 }
 
 const NOISE: &str = "noise=alls=12:allf=t+u";
 
 macro_rules! fx {
     ($name:expr, $src:expr, $w:expr, $h:expr, $n:expr, $filter:expr, $bd:expr, [$($a:expr),* $(,)?]) => {
-        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, args: &[$($a),*] }
+        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, args: &[$($a),*], chroma: 1 }
+    };
+    (mono $name:expr, $src:expr, $w:expr, $h:expr, $n:expr, $filter:expr, $bd:expr, [$($a:expr),* $(,)?]) => {
+        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, args: &[$($a),*], chroma: 0 }
+    };
+    (c422 $name:expr, $src:expr, $w:expr, $h:expr, $n:expr, $filter:expr, $bd:expr, [$($a:expr),* $(,)?]) => {
+        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, args: &[$($a),*], chroma: 2 }
+    };
+    (c444 $name:expr, $src:expr, $w:expr, $h:expr, $n:expr, $filter:expr, $bd:expr, [$($a:expr),* $(,)?]) => {
+        Fixture { name: $name, source: $src, width: $w, height: $h, frames: $n, filter: $filter, bit_depth: $bd, args: &[$($a),*], chroma: 3 }
     };
 }
 
@@ -72,6 +89,23 @@ pub const FIXTURES: &[Fixture] = &[
     fx!("keyint5_idr", "testsrc2", 352, 288, 20, NOISE, 8, ["-x265-params", "keyint=5:no-open-gop=1:log-level=error"]),
     fx!("odd_1918x1078", "testsrc2", 1918, 1078, 3, NOISE, 8, ["-preset", "veryfast", "-x265-params", "log-level=error"]),
     fx!("hd_1080p", "testsrc2", 1920, 1080, 3, "", 8, ["-preset", "fast", "-x265-params", "log-level=error"]),
+    // monochrome (4:0:0): HEIF alpha and depth planes
+    fx!(mono "mono_intra", "testsrc2", 352, 288, 3, NOISE, 8, ["-x265-params", "keyint=1:log-level=error"]),
+    fx!(mono "mono_inter", "mandelbrot", 352, 288, 20, NOISE, 8, ["-x265-params", "bframes=3:weightp=1:log-level=error"]),
+    fx!(mono "mono_main10", "testsrc2", 352, 288, 12, NOISE, 10, ["-x265-params", "log-level=error"]),
+    fx!(mono "mono_lossless", "testsrc2", 176, 144, 4, NOISE, 8, ["-x265-params", "lossless=1:log-level=error"]),
+    // Range Extensions chroma formats and 12 bits (camera 4:2:2 10-bit, 4:4:4 / 12-bit masters)
+    fx!(c422 "c422_intra_main10", "testsrc2", 352, 288, 3, NOISE, 10, ["-x265-params", "keyint=1:log-level=error"]),
+    fx!(c422 "c422_main10", "mandelbrot", 352, 288, 20, NOISE, 10, ["-x265-params", "bframes=3:weightp=1:weightb=1:log-level=error"]),
+    fx!(c422 "c422_main", "testsrc2", 352, 288, 12, NOISE, 8, ["-preset", "slow", "-x265-params", "rect=1:amp=1:log-level=error"]),
+    fx!(c422 "c422_tu4", "testsrc2", 176, 144, 6, NOISE, 10, ["-x265-params", "ctu=32:tu-intra-depth=4:tu-inter-depth=4:max-tu-size=32:log-level=error"]),
+    fx!(c422 "c422_lossless", "testsrc2", 176, 144, 4, NOISE, 10, ["-x265-params", "lossless=1:log-level=error"]),
+    fx!(c444 "c444_intra", "testsrc2", 352, 288, 3, NOISE, 8, ["-x265-params", "keyint=1:log-level=error"]),
+    fx!(c444 "c444_main", "mandelbrot", 352, 288, 20, NOISE, 8, ["-x265-params", "bframes=3:weightp=1:weightb=1:log-level=error"]),
+    fx!(c444 "c444_main12", "testsrc2", 352, 288, 12, NOISE, 12, ["-preset", "slow", "-x265-params", "log-level=error"]),
+    fx!(c444 "c444_tu4", "testsrc2", 176, 144, 6, NOISE, 10, ["-x265-params", "ctu=32:tu-intra-depth=4:tu-inter-depth=4:max-tu-size=32:log-level=error"]),
+    fx!(c444 "c444_scaling_list", "testsrc2", 352, 288, 8, NOISE, 10, ["-x265-params", "scaling-list=default:log-level=error"]),
+    fx!("main12", "testsrc2", 352, 288, 12, NOISE, 12, ["-x265-params", "bframes=3:log-level=error"]),
     fx!("uhd_4k_main10", "testsrc2", 3840, 2160, 2, "", 10, ["-preset", "ultrafast", "-x265-params", "log-level=error"]),
     // performance reference streams (tests/perf.rs)
     fx!("bench_1080p", "testsrc2", 1920, 1080, 60, "noise=alls=3:allf=t", 8, ["-preset", "medium", "-crf", "24", "-x265-params", "log-level=error"]),
@@ -108,8 +142,21 @@ fn run(cmd: &mut Command) -> bool {
     }
 }
 
-pub fn pix_fmt(bd: u32) -> &'static str {
-    if bd > 8 { "yuv420p10le" } else { "yuv420p" }
+pub fn pix_fmt(f: &Fixture) -> &'static str {
+    match (f.chroma, f.bit_depth) {
+        (0, 8) => "gray",
+        (0, 10) => "gray10le",
+        (0, _) => "gray12le",
+        (2, 8) => "yuv422p",
+        (2, 10) => "yuv422p10le",
+        (2, _) => "yuv422p12le",
+        (3, 8) => "yuv444p",
+        (3, 10) => "yuv444p10le",
+        (3, _) => "yuv444p12le",
+        (_, 8) => "yuv420p",
+        (_, 10) => "yuv420p10le",
+        _ => "yuv420p12le",
+    }
 }
 
 /// Generate (if needed) the fixture stream and its ffmpeg reference decode.
@@ -121,7 +168,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
     let yuv = dir.join(format!("{}.yuv", f.name));
     if !hevc.exists() {
         let tmp = cfa4_testkit::temp_path(&hevc);
-        let mut vf = format!("{}=size={}x{}:rate=25,format={}", f.source, f.width, f.height, pix_fmt(f.bit_depth));
+        let mut vf = format!("{}=size={}x{}:rate=25,format={}", f.source, f.width, f.height, pix_fmt(f));
         if !f.filter.is_empty() {
             vf.push(',');
             vf.push_str(f.filter);
@@ -132,7 +179,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         if !f.args.contains(&"-c:v") {
             c.args(["-c:v", "libx265"]);
         }
-        c.args(["-pix_fmt", pix_fmt(f.bit_depth)]);
+        c.args(["-pix_fmt", pix_fmt(f)]);
         c.args(f.args);
         c.args(["-f", "hevc"]).arg(&tmp);
         if !run(&mut c) {
@@ -148,7 +195,7 @@ pub fn ensure(f: &Fixture) -> Option<(PathBuf, PathBuf)> {
         let tmp = cfa4_testkit::temp_path(&yuv);
         let mut c = Command::new(&ff);
         c.args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&hevc);
-        c.args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", pix_fmt(f.bit_depth)]).arg(&tmp);
+        c.args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", pix_fmt(f)]).arg(&tmp);
         assert!(run(&mut c), "reference decode failed for {}", f.name);
         std::fs::rename(&tmp, &yuv).unwrap();
     }
@@ -228,9 +275,21 @@ pub fn decode_file_opts(path: &Path, threads: usize, draft: bool) -> Result<Vec<
 /// Compare decoded pictures with a raw yuv420p / yuv420p10le reference; returns a diagnostic on the
 /// first mismatch (frame, plane, sample position, CTB (64x64) and 8x8 block).
 pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32) -> Result<(), String> {
+    compare_planes(pics, reference, w, h, bd, 1)
+}
+
+/// [`compare`] for chroma format `chroma` (chroma_format_idc); 0: the reference is a gray / grayNle
+/// luma plane, and the decoder's chroma planes must be mid-grey.
+pub fn compare_planes(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32, chroma: u32) -> Result<(), String> {
+    let mono = chroma == 0;
     let bps = if bd > 8 { 2 } else { 1 };
-    let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
-    let fsize = (w * h + 2 * cw * ch) * bps;
+    let (subx, suby) = match chroma {
+        3 => (1, 1),
+        2 => (2, 1),
+        _ => (2, 2),
+    };
+    let (cw, ch) = (w.div_ceil(subx), h.div_ceil(suby));
+    let fsize = if mono { w * h * bps } else { (w * h + 2 * cw * ch) * bps };
     let nref = reference.len() / fsize;
     for (i, p) in pics.iter().enumerate() {
         if i >= nref {
@@ -240,10 +299,25 @@ pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32) 
             return Err(format!("frame {i}: size {}x{} != {}x{}", p.width, p.height, w, h));
         }
         let f = &reference[i * fsize..(i + 1) * fsize];
+        if mono {
+            let grey = 1u16 << (bd - 1);
+            for (name, plane) in [("U", &p.u), ("V", &p.v)] {
+                if let Some(k) = (0..plane.len()).find(|&k| plane.get(k) != grey) {
+                    return Err(format!("frame {i}: monochrome {name} sample {k} is {} not {grey}", plane.get(k)));
+                }
+            }
+        }
         let sample = |buf: &[u8], k: usize| if bps == 2 { u16::from_le_bytes([buf[2 * k], buf[2 * k + 1]]) } else { buf[k] as u16 };
         let (ys, cs) = (w * h * bps, cw * ch * bps);
-        let planes = [("Y", &p.y, &f[..ys], w, h, 1), ("U", &p.u, &f[ys..ys + cs], cw, ch, 2), ("V", &p.v, &f[ys + cs..], cw, ch, 2)];
-        for (name, got, exp, pw, ph, sub) in planes {
+        let planes = [
+            ("Y", &p.y, &f[..ys], w, h, 1),
+            ("U", &p.u, f.get(ys..ys + cs).unwrap_or_default(), cw, ch, 2),
+            ("V", &p.v, f.get(ys + cs..).unwrap_or_default(), cw, ch, 2),
+        ];
+        if !mono && p.chroma_width as usize != cw {
+            return Err(format!("frame {i}: chroma width {} != {cw}", p.chroma_width));
+        }
+        for (name, got, exp, pw, ph, sub) in planes.into_iter().take(if mono { 1 } else { 3 }) {
             let mut first = None;
             let mut count = 0usize;
             let mut maxd = 0i32;
@@ -260,7 +334,7 @@ pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize, bd: u32) 
                 }
             }
             if let Some((x, y, a, b)) = first {
-                let (lx, ly) = (x * sub, y * sub);
+                let (lx, ly) = if sub == 1 { (x, y) } else { (x * subx, y * suby) };
                 return Err(format!(
                     "frame {i} (poc {}, pts {}) plane {name}: first mismatch at ({x},{y}) [luma ({lx},{ly}), CTB64 ({},{}), 8x8 ({},{})]: got {a} want {b}; {count} samples differ, max diff {maxd}",
                     p.poc,
@@ -289,11 +363,12 @@ pub fn check_fixture(name: &str) -> Result<bool, String> {
         let pics = match decode_file_threads(&hevc, threads) {
             Ok(p) => p,
             Err((au, e, partial)) => {
-                let cmp = compare(&partial, &reference, f.width as usize, f.height as usize, f.bit_depth).err().unwrap_or_default();
+                let cmp = compare_planes(&partial, &reference, f.width as usize, f.height as usize, f.bit_depth, f.chroma).err().unwrap_or_default();
                 return Err(format!("{name} (threads {threads}): decode error at access unit {au}: {e} (after {} pictures) {cmp}", partial.len()));
             }
         };
-        compare(&pics, &reference, f.width as usize, f.height as usize, f.bit_depth).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
+        compare_planes(&pics, &reference, f.width as usize, f.height as usize, f.bit_depth, f.chroma)
+            .map_err(|e| format!("{name} (threads {threads}): {e}"))?;
         check_pts(&pics).map_err(|e| format!("{name} (threads {threads}): {e}"))?;
         if pics.iter().any(|p| p.draft) {
             return Err(format!("{name} (threads {threads}): picture flagged draft without draft mode"));

@@ -150,7 +150,7 @@ szinte egyik sem érhető el. A Qt6-paritás külön követendő.
 | Alfa export | ✅ | ProRes 4444, PNG-sorozat |
 | Hardveres kódolás AMD-n és Intelen (VA-API) | ❌ | Ma csak NVENC. VA-API-kódolás a saját motorban vagy kiegészítő háttérből (FFmpeg `*_vaapi`, GStreamer `va*enc`), a `cfa4-route` útválasztó választ (ADR 0004 #55, ADR 0005 #62); gyártófüggetlen terv (#39) |
 | Szoftveres HEVC, jobb H.264, MP3 export | ❌ | x265, x264, LAME: ADR 0003 A5, előtte szabadalmi vizsgálat |
-| Széles formátumlefedettség | 🟡 | A saját Rust-motor az alap; kiegészítő hátterek: FFmpeg ≥ 9.0.2 (tervezett `cfa4-ffmpeg`) és az Ubuntu GStreamere (`crates/gstreamer`, #40), köztük az automatikus útválasztó (`cfa4-route`) dönt (ADR 0005, #62). Az FFmpeg 9.0.2 szállítása nyitott döntés |
+| Széles formátumlefedettség | 🟡 | A saját Rust-motor az alap; kiegészítő hátterek: FFmpeg ≥ 9.0.2 (tervezett `cfa4-ffmpeg`) és a GStreamer (alapból az Ubuntué, újabb verzióhoz elkülönített CFA4-futtatókörnyezet; `crates/gstreamer`, #40), köztük az automatikus útválasztó (`cfa4-route`) dönt (ADR 0005, #62). Az FFmpeg 9.0.2 szállítása nyitott döntés |
 
 ## 8. Platform és felület
 
