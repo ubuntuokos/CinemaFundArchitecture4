@@ -3613,10 +3613,28 @@
 	Side by Side	좌우
 	Stereo to 2D	스테레오를 2D로
 	Eye	눈
+	Stereo Parallax	스테레오 시차
+	Horizontal Shift	가로 이동
 	Slit Scan	슬릿 스캔
 	Time Span (seconds)	시간 범위(초)
 	Current Frame At	현재 프레임 위치
 	Blend Slices	슬라이스 혼합
+	Add Beat Markers	비트 마커 추가
+	Clear Beat Markers	비트 마커 지우기
+	Clear Check Markers	검사 마커 지우기
+	Auto Reframe Sequence…	시퀀스 자동 리프레임…
+	Batch Variants from Spreadsheet…	스프레드시트에서 일괄 변형…
+	Check Before Export…	내보내기 전 검사…
+	Social Deliverables…	소셜 미디어 출력…
+	Counter	카운터
+	Word by Word	단어별
+	Animator	애니메이터
+	Animator Duration	애니메이터 지속 시간
+	Animator Delay	애니메이터 지연
+	Creative Looks	크리에이티브 룩
+	Film Grain	필름 그레인
+	Animated	애니메이션
+	Color Grain	컬러 그레인
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 라이브 스트리밍: H.264 1920×1080 8Mbps, AAC 160kbps, 6초 조각 MP4 세그먼트
