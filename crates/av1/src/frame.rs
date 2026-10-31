@@ -12,20 +12,27 @@ const POOL_MIN_LEN: usize = 1 << 16;
 /// Samples kept at most (96 M samples = 192 MB, a few 4K frames).
 const POOL_MAX_SAMPLES: usize = 96 << 20;
 
+/// An empty recycled buffer with room for `len` samples (large buffers only).
+fn recycled(len: usize) -> Option<Vec<u16>> {
+    if len < POOL_MIN_LEN {
+        return None;
+    }
+    let mut pool = PLANE_POOL.lock().unwrap_or_else(|e| e.into_inner());
+    let i = pool.iter().position(|v| v.capacity() >= len && v.capacity() <= 2 * len)?;
+    let mut v = pool.swap_remove(i);
+    v.clear();
+    Some(v)
+}
+
 /// A zeroed buffer of `len` samples (recycled memory for large ones).
 fn zeroed(len: usize) -> Vec<u16> {
-    if len >= POOL_MIN_LEN {
-        let found = {
-            let mut pool = PLANE_POOL.lock().unwrap_or_else(|e| e.into_inner());
-            pool.iter().position(|v| v.capacity() >= len && v.capacity() <= 2 * len).map(|i| pool.swap_remove(i))
-        };
-        if let Some(mut v) = found {
-            v.clear();
+    match recycled(len) {
+        Some(mut v) => {
             v.resize(len, 0);
-            return v;
+            v
         }
+        None => vec![0; len],
     }
-    vec![0; len]
 }
 
 /// One plane of samples (u16 at every bit depth), or a rectangular region of one.
@@ -42,8 +49,9 @@ pub struct Plane {
 
 impl Clone for Plane {
     fn clone(&self) -> Plane {
-        let mut data = zeroed(self.data.len());
-        data.copy_from_slice(&self.data);
+        // a copy needs no zeroing first
+        let mut data = recycled(self.data.len()).unwrap_or_else(|| Vec::with_capacity(self.data.len()));
+        data.extend_from_slice(&self.data);
         Plane { data, stride: self.stride, rows: self.rows, ox: self.ox, oy: self.oy }
     }
 }

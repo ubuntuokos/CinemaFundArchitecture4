@@ -57,8 +57,12 @@ warn() {
 # extra-fonts fonts the build embedded (only when built with CFA4_FONTS_DIR).
 copy_docs() {
   local dest="$1" f
-  for f in README.md LICENSE LICENSE-MIT LICENSE-APACHE NOTICE COPYRIGHT; do
+  for f in README.md LICENSE LICENSE-MIT LICENSE-APACHE NOTICE COPYRIGHT ATTRIBUTION.md; do
     if [ -f "$ROOT/$f" ]; then cp "$ROOT/$f" "$dest/"; fi
+  done
+  # Licence texts of the fonts bundled from assets/fonts (OFL-1.1, see ATTRIBUTION.md).
+  for f in "$ROOT"/assets/fonts/OFL-*.txt; do
+    if [ -f "$f" ]; then cp "$f" "$dest/"; fi
   done
   # The CFA4 logo and icons ship with their own (non-GPL) terms.
   if [ -f "$ROOT/assets/cfa4/LICENSE-logo.txt" ]; then cp "$ROOT/assets/cfa4/LICENSE-logo.txt" "$dest/LICENSE-logo.txt"; fi
