@@ -144,6 +144,15 @@ impl EffectInstance {
 /// Frame layouts of the Stereoscopic 3D effects: the two views stacked (left eye on top) or side
 /// by side (left eye on the left).
 pub const STEREO_LAYOUTS: &[&str] = &["Over/Under", "Side by Side"];
+
+/// Halftone: four rotated CMYK screens, or one screen between paper and ink colours.
+pub const HALFTONE_MODES: &[&str] = &["Color (CMYK)", "Monochrome"];
+/// Halftone spot shapes.
+pub const HALFTONE_PATTERNS: &[&str] = &["Dot", "Line"];
+/// Dither threshold patterns.
+pub const DITHER_PATTERNS: &[&str] = &["Bayer 2×2", "Bayer 4×4", "Bayer 8×8", "Noise"];
+/// Dither palettes (`gpufx::DITHER_PALETTES`, in this order after "Input").
+pub const DITHER_PALETTES: &[&str] = &["Input Colors", "Black & White", "Green Phosphor", "Amber Monitor", "Game Boy", "CGA", "EGA", "ZX Spectrum", "PICO-8"];
 /// The view a Stereoscopic 3D effect keeps.
 pub const STEREO_EYES: &[&str] = &["Left", "Right"];
 
@@ -628,6 +637,38 @@ fn build_effects() -> Vec<EffectDef> {
                 ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0),
                 fs("shift", "Horizontal Shift", 0.0, (-10.0, 10.0), (-5.0, 5.0), "%", 2),
                 b("repeat_edge", "Repeat Edge Pixels", false),
+            ],
+        ),
+        video(
+            "halftone",
+            "Halftone",
+            CREATIVE_LOOKS,
+            vec![
+                ch("mode", "Mode", HALFTONE_MODES, 0),
+                ch("pattern", "Pattern", HALFTONE_PATTERNS, 0),
+                fs("cell_size", "Cell Size", 8.0, (2.0, 128.0), (2.0, 48.0), "px", 1),
+                ang("cyan_angle", "Cyan Angle", 15.0),
+                ang("magenta_angle", "Magenta Angle", 75.0),
+                ang("yellow_angle", "Yellow Angle", 0.0),
+                ang("black_angle", "Black Angle", 45.0),
+                ang("mono_angle", "Monochrome Angle", 45.0),
+                fs("sharpness", "Sharpness", 80.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                col("ink", "Ink Color", [0.05, 0.05, 0.05, 1.0]),
+                col("paper", "Paper Color", [0.98, 0.96, 0.9, 1.0]),
+                fs("blend", "Blend With Original", 0.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+            ],
+        ),
+        video(
+            "dither",
+            "Dither",
+            CREATIVE_LOOKS,
+            vec![
+                ch("pattern", "Pattern", DITHER_PATTERNS, 1),
+                fs("pixel_size", "Pixel Size", 1.0, (1.0, 16.0), (1.0, 8.0), "px", 0),
+                fs("threshold", "Threshold", 0.0, (-50.0, 50.0), (-50.0, 50.0), "%", 1),
+                ch("palette", "Palette", DITHER_PALETTES, 0),
+                fs("levels", "Levels", 4.0, (2.0, 16.0), (2.0, 16.0), "", 0),
+                fs("blend", "Blend With Original", 0.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
             ],
         ),
         video(

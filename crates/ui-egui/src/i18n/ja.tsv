@@ -3677,3 +3677,31 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 3996×2160（1.85:1）、5.1 24 ビット 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 4096×1716（2.39:1）、5.1 24 ビット 48 kHz PCM
+	Halftone	ハーフトーン
+	Dither	ディザ
+	Pattern	パターン
+	Cell Size	セルサイズ
+	Cyan Angle	シアンの角度
+	Magenta Angle	マゼンタの角度
+	Yellow Angle	イエローの角度
+	Black Angle	ブラックの角度
+	Monochrome Angle	モノクロの角度
+	Sharpness	シャープネス
+	Ink Color	インクの色
+	Paper Color	用紙の色
+	Color (CMYK)	カラー (CMYK)
+	Dot	ドット
+	Line	ライン
+	Bayer 2×2	Bayer 2×2
+	Bayer 4×4	Bayer 4×4
+	Bayer 8×8	Bayer 8×8
+	Pixel Size	ピクセルサイズ
+	Palette	パレット
+	Input Colors	入力の色
+	Green Phosphor	グリーン蛍光体
+	Amber Monitor	アンバーモニター
+	Game Boy	Game Boy
+	CGA	CGA
+	EGA	EGA
+	ZX Spectrum	ZX Spectrum
+	PICO-8	PICO-8

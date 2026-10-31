@@ -80,6 +80,8 @@ fn effects_list_reports_folders_and_badges() {
     // CFA4's own folders sit beside them
     assert_eq!(find("stereo_swap_eyes")["category"], json!(["Video Effects", "Stereoscopic 3D"]));
     assert_eq!(find("film_grain")["category"], json!(["Video Effects", "Creative Looks"]));
+    assert_eq!(find("halftone")["category"], json!(["Video Effects", "Creative Looks"]));
+    assert_eq!(find("dither")["category"], json!(["Video Effects", "Creative Looks"]));
     // and CFA4's own effects in Premiere's folders
     assert_eq!(find("slit_scan")["category"], json!(["Video Effects", "Time"]));
 }
