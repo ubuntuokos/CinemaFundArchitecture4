@@ -34,7 +34,7 @@ from .branding import logo_pixmap
 from .commands import Command, CommandRegistry
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient, EngineError
-from .i18n import LANGUAGES, N_, TR, tr
+from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
 from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
@@ -183,6 +183,38 @@ def recovery_text(cand: dict[str, Any]) -> str:
 # what the monitors run at the sequence playhead: placement edits from their buttons, and the
 # Program monitor's eyedropper (it samples the frame there and keys an animated colour there)
 # commands that open their dialog when run without parameters (egui's multicam::route)
+def result_status(command: str, result: Any) -> str | None:
+    """A status-bar line for commands whose result is not otherwise visible (beat markers,
+    Check Before Export, social deliverables, batch variants), as egui says it."""
+    if not isinstance(result, dict):
+        return None
+
+    def count(key: str) -> int:
+        v = result.get(key)
+        return len(v) if isinstance(v, list) else 0
+
+    def number(key: str) -> float:
+        v = result.get(key)
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
+
+    if command == "markers.addBeats":
+        return fmt("{n} beat markers added ({bpm} BPM)", n=int(number("count")), bpm=f"{number('bpm'):.1f}")
+    if command == "sequence.checkDelivery":
+        n = int(number("count"))
+        if n == 0:
+            return tr("Check Before Export: no problems found")
+        return fmt("Check Before Export: {n} problems marked on the timeline (red markers)", n=n)
+    if command == "export.socialDeliverables":
+        return fmt("{n} exports queued (the Export window shows the queue)", n=count("queued"))
+    if command == "export.batchVariants":
+        text = fmt("{n} variant sequences made, {q} exports queued", n=count("variants"), q=count("queued"))
+        missing = [str(m) for m in result.get("missing") or [] if isinstance(m, str)]
+        if missing:
+            text += "; " + fmt("no column for {names}", names=", ".join(missing))
+        return text
+    return None
+
+
 SYNC_DIALOGS = {"clip.synchronize": "synchronize", "clip.mergeClips": "merge", "clip.createMulticam": "multicam"}
 EDITS_AT_PLAYHEAD = frozenset({"source.insert", "source.overwrite", "sequence.lift", "sequence.extract", "effects.eyedropper"})
 
@@ -1378,7 +1410,7 @@ class MainWindow(QMainWindow):
             self.engine.execute(
                 cmd.id,
                 params,
-                on_reply=lambda _r, _b: self.schedule_refresh(),
+                on_reply=lambda r, _b: self._command_result(cmd.id, r),
                 on_error=lambda m: self._command_failed(cmd.id, m),
             )
             return
@@ -1399,7 +1431,15 @@ class MainWindow(QMainWindow):
             else:
                 self._command_failed(cmd.id, message)
 
-        self.engine.execute(cmd.id, auto, on_reply=lambda _r, _b: self.schedule_refresh(), on_error=failed)
+        self.engine.execute(cmd.id, auto, on_reply=lambda r, _b: self._command_result(cmd.id, r), on_error=failed)
+
+    def _command_result(self, command: str, result: Any) -> None:
+        """A menu command finished: refresh, and say what it did when nothing on screen shows it."""
+        text = result_status(command, result)
+        if text:
+            self.events.log(text)
+            self.statusBar().showMessage(text, 10_000)
+        self.schedule_refresh()
 
     def _ask_params(self, cmd: Command, error: str = "", values: dict[str, Any] | None = None) -> None:
         dlg = ParamDialog(cmd, self, error, values)
@@ -1409,7 +1449,7 @@ class MainWindow(QMainWindow):
         self.engine.execute(
             cmd.id,
             params,
-            on_reply=lambda _r, _b: self.schedule_refresh(),
+            on_reply=lambda r, _b, c=cmd.id: self._command_result(c, r),
             on_error=lambda m: self._ask_params(cmd, m, params),
         )
 

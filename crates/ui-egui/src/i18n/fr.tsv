@@ -3600,6 +3600,18 @@
 	Time Span (seconds)	Intervalle de temps (secondes)
 	Current Frame At	Image actuelle à
 	Blend Slices	Fondre les tranches
+	Add Beat Markers	Ajouter des marqueurs de temps
+	Clear Beat Markers	Effacer les marqueurs de temps
+	Clear Check Markers	Effacer les marqueurs de vérification
+	Auto Reframe Sequence…	Recadrage automatique de la séquence…
+	Batch Variants from Spreadsheet…	Variantes par lot depuis une feuille de calcul…
+	Check Before Export…	Vérifier avant l’exportation…
+	Social Deliverables…	Livrables pour les réseaux sociaux…
+	Counter	Compteur
+	Word by Word	Mot par mot
+	Animator	Animateur
+	Animator Duration	Durée de l’animateur
+	Animator Delay	Délai de l’animateur
 	Creative Looks	Looks créatifs
 	Film Grain	Grain de film
 	Animated	Animé
@@ -3610,3 +3622,13 @@
 	Six-Point Pin	Épinglage à six points
 	Upper Center	En haut au centre
 	Lower Center	En bas au centre
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Cinéma numérique
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 1998×1080 (1.85:1), PCM 5.1 24 bits 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 2048×858 (2.39:1), PCM 5.1 24 bits 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24 bits 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Dossier DCP SMPTE : JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24 bits 48 kHz

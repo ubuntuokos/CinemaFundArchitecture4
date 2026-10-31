@@ -110,15 +110,24 @@ fn program_stream_carries_mpeg2_video_and_lpcm() {
     assert_eq!(r.frames, 25);
     let (es, pts, f, data) = demux(&path);
     assert_eq!(f.format, cfa4_mpegts::Format::Ps { mpeg1: false });
-    assert_eq!(pts, (0..25).map(|k| 63_000 + k * 3600).collect::<Vec<_>>());
+    // IBBP in decode order: every picture shown once, frame by frame from 0, each decoded a
+    // frame before the one shown next
+    let mut shown = pts.clone();
+    shown.sort_unstable();
+    assert_eq!(shown, (0..25).map(|k| 63_000 + k * 3600).collect::<Vec<_>>());
+    let units = &f.streams.iter().find(|s| s.codec == cfa4_mpegts::Codec::Mpeg2Video).unwrap().units;
+    for (k, u) in units.iter().enumerate() {
+        assert_eq!(u.dts.or(u.pts), Some(63_000 + (k as i64 - 1) * 3600), "picture {k}");
+    }
     assert!(es.ends_with(&[0, 0, 1, 0xB7]));
     let pics = decode(&es);
     assert_eq!(pics.len(), 25);
     assert!(pics.iter().all(|p| p.width == 320 && p.height == 180));
+    let types: String = pics.iter().map(|p| format!("{:?}", p.picture_type)).collect();
+    assert_eq!(types, "IBBPBBPBBPBBIBBPBBPBBPBBI");
     // a sequence header (I picture) every 12 pictures
-    let keys: Vec<usize> =
-        f.streams.iter().find(|s| s.codec == cfa4_mpegts::Codec::Mpeg2Video).unwrap().units.iter().enumerate().filter(|(_, u)| u.key).map(|(k, _)| k).collect();
-    assert_eq!(keys, [0, 12, 24]);
+    let keys: Vec<i64> = units.iter().filter(|u| u.key).map(|u| u.pts.unwrap()).collect();
+    assert_eq!(keys, [63_000, 63_000 + 12 * 3600, 63_000 + 24 * 3600]);
     // the LPCM is the WAV export's 16-bit mix, byte-swapped
     let a = f.find(cfa4_mpegts::Kind::Audio, |c| *c == cfa4_mpegts::Codec::LpcmDvd).unwrap();
     assert_eq!(f.streams[a].lpcm, Some(cfa4_mpegts::LpcmFormat { sample_rate: 48_000, channels: 2, bits: 16 }));
@@ -168,11 +177,14 @@ fn elementary_stream_is_the_bare_video() {
 fn constant_quantiser_and_4_2_2() {
     let (p, seq, m) = project();
     let path = tmp("q422.m2v");
-    let s = ExportSettings { mpeg2_422: true, mpeg2_quantizer: Some(2), ..settings(&path) };
-    assert!(s.summary(320, 180, FrameRate::new(25, 1), 48_000, Tick(TICKS_PER_SECOND)).video.contains("4:2:2 Profile, constant quantiser 2"));
+    let s = ExportSettings { mpeg2_422: true, mpeg2_quantizer: Some(2), mpeg2_b_frames: Some(0), ..settings(&path) };
+    let video = s.summary(320, 180, FrameRate::new(25, 1), 48_000, Tick(TICKS_PER_SECOND)).video;
+    assert!(video.contains("4:2:2 Profile, constant quantiser 2") && video.ends_with("no B pictures"), "{video}");
     export(&p, seq, &s, &m, &Progress::default()).unwrap();
     let pics = decode(&std::fs::read(&path).unwrap());
     assert_eq!(pics.len(), 25);
+    // I and P pictures only, as asked
+    assert!(pics.iter().all(|p| p.picture_type != cfa4_mpeg2v::PictureType::B) && pics[0].info.low_delay);
     assert!(pics.iter().all(|p| p.chroma == cfa4_mpeg2v::ChromaFormat::Yuv422 && p.cb.len() == 160 * 180));
     // the 4:2:2 conversion: the first picture's luma and chroma are the 10-bit conversion rounded
     let pipe = pipeline::Pipeline::new(p.clone(), seq, &s, false).unwrap();
@@ -226,6 +238,11 @@ fn mpeg2_settings() {
     s.bitrate_mode = settings::BitrateMode::Vbr1Pass;
     s.mpeg2_container = "avi".into();
     assert!(s.validate().is_err());
+    s.mpeg2_container = String::new();
+    s.mpeg2_b_frames = Some(8);
+    assert!(s.validate().is_err());
+    s.mpeg2_b_frames = Some(7);
+    s.validate().unwrap();
     assert_eq!(Mpeg2Container::of(&settings("noext")), Mpeg2Container::Ps);
     for c in Mpeg2Container::ALL {
         assert_eq!(Mpeg2Container::from_name(c.id()), Some(c));

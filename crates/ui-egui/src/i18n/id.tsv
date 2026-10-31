@@ -3598,6 +3598,18 @@
 	Time Span (seconds)	Rentang Waktu (detik)
 	Current Frame At	Bingkai Saat Ini di
 	Blend Slices	Campur Irisan
+	Add Beat Markers	Tambah Penanda Ketukan
+	Clear Beat Markers	Hapus Penanda Ketukan
+	Clear Check Markers	Hapus Penanda Pemeriksaan
+	Auto Reframe Sequence…	Bingkai Ulang Otomatis Sekuens…
+	Batch Variants from Spreadsheet…	Varian Massal dari Spreadsheet…
+	Check Before Export…	Periksa Sebelum Ekspor…
+	Social Deliverables…	Hasil untuk Media Sosial…
+	Counter	Penghitung
+	Word by Word	Kata demi Kata
+	Animator	Animator
+	Animator Duration	Durasi Animator
+	Animator Delay	Tunda Animator
 	Creative Looks	Tampilan Kreatif
 	Film Grain	Butiran Film
 	Animated	Teranimasi
@@ -3608,3 +3620,13 @@
 	Six-Point Pin	Pin Enam Titik
 	Upper Center	Tengah Atas
 	Lower Center	Tengah Bawah
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Sinema Digital
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 1998×1080 (1.85:1), PCM 5.1 24-bit 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 2048×858 (2.39:1), PCM 5.1 24-bit 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 24-bit 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Folder DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 24-bit 48 kHz
