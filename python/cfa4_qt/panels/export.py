@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
+from .export_effects import CaptionsSection, EffectsSection
 from .preset_manager import PresetManager
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
@@ -275,8 +276,8 @@ class ExportDialog(QDialog):
         self.quality.setRange(1, 100)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
         self.hardware.setObjectName("export.hardwareEncoding")
-        self.burn = QCheckBox(tr("Burn in captions"), self)
-        self.burn.setObjectName("export.burnCaptions")
+        self.captions = CaptionsSection(self)
+        self.effects = EffectsSection(self)
         self.audio = QCheckBox(tr("Export audio"), self)
         self.audio.setObjectName("export.audio")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
@@ -319,7 +320,6 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
-        fv.addRow(self.burn)
         audio = QGroupBox(tr("Audio"), self)
         fa = QFormLayout(audio)
         fa.addRow(self.audio)
@@ -382,12 +382,17 @@ class ExportDialog(QDialog):
         left.addWidget(audio)
         left.addStretch(1)
         top.addLayout(left, 1)
+        right = QVBoxLayout()
+        right.addWidget(self.captions)
+        right.addWidget(self.effects)
+        right.addStretch(1)
+        top.addLayout(right, 1)
         layout = QVBoxLayout(self)
         layout.addLayout(top)
         layout.addWidget(self.summary)
         layout.addLayout(buttons)
         layout.addWidget(queue_box, 1)
-        self.resize(820, 760)
+        self.resize(1040, 820)
 
         self._resolve_timer = QTimer(self, singleShot=True, interval=150)
         self._resolve_timer.timeout.connect(self._resolve)
@@ -403,11 +408,13 @@ class ExportDialog(QDialog):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio), ("alpha", self.alpha)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
         for key, c in self.format_choices.items():
             c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
         self.quality.valueChanged.connect(lambda _v: self._touch("quality"))
+        self.captions.changed.connect(lambda: self._touch("captions"))
+        self.effects.changed.connect(lambda: self._touch("effects"))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
 
@@ -537,6 +544,9 @@ class ExportDialog(QDialog):
         for w in (self.container, self.gop, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
         self._sync_format_rows()
+        video = bool(fmt.get("video", True))
+        self.captions.setVisible(video)
+        self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         self._container_changed()
 
     def _choice(self, key: str) -> str:
@@ -570,6 +580,10 @@ class ExportDialog(QDialog):
             self.alpha.blockSignals(True)
             self.alpha.setChecked(settings["alpha"])
             self.alpha.blockSignals(False)
+        if "captions" not in self.touched:
+            self.captions.show_settings(settings)
+        if "effects" not in self.touched and isinstance(settings.get("effects"), dict):
+            self.effects.show_effects(settings["effects"])
         q = settings.get("quality")
         if "quality" not in self.touched and isinstance(q, int) and not isinstance(q, bool):
             self.quality.blockSignals(True)
@@ -652,8 +666,11 @@ class ExportDialog(QDialog):
                 p["bitrateKbps"] = self.bitrate.value()
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
-        if "burn" in self.touched:
-            p["burnCaptions"] = self.burn.isChecked()
+        fmt = self.formats.get(str(self.format.currentData() or ""), {})
+        if "captions" in self.touched and fmt.get("video", True):
+            p.update(self.captions.params())
+        if "effects" in self.touched:
+            p["settings"] = {"effects": self.effects.values()}
         if self.audio.isEnabled():
             if "audio" in self.touched:
                 p["audio"] = self.audio.isChecked()

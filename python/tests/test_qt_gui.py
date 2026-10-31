@@ -6581,6 +6581,92 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
+    """egui's Export ▸ Captions (None / Burn Captions Into Video / Create Sidecar File, SubRip or
+    WebVTT) and Effects (Image, Name and Timecode Overlay, Video Limiter, Loudness Normalization,
+    each one's settings shown while it is on; loudness alone for sound-only formats): the preset's
+    values are shown and a change is sent to the engine."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export_effects import caption_mode
+
+    assert caption_mode({"burnCaptions": True}) == ("burn", "srt")
+    assert caption_mode({"captionSidecar": "vtt"}) == ("sidecar", "vtt")
+    assert caption_mode({"captionSidecar": None}) == ("none", "srt")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        cap, fx = dlg.captions, dlg.effects
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]["settings"]
+
+        def pick(combo: QtWidgets.QComboBox, value: str) -> None:
+            i = combo.findData(value)
+            assert i >= 0, value
+            combo.setCurrentIndex(i)
+
+        pick(dlg.format, "h264")
+        assert wait_until(app, lambda: cap.mode.currentData() == "none" and not fx.switches["loudness"].isChecked(), 10_000)
+        assert "burnCaptions" not in dlg.params() and "settings" not in dlg.params(), "nothing changed yet"
+        # captions: a sidecar file shows its format
+        assert cap.form.isRowVisible(cap.format) is False
+        pick(cap.mode, "sidecar")
+        assert cap.form.isRowVisible(cap.format)
+        pick(cap.format, "vtt")
+        s = resolved()
+        assert s["captionSidecar"] == "vtt" and s["burnCaptions"] is False
+        pick(cap.mode, "burn")
+        s = resolved()
+        assert s["burnCaptions"] is True and s["captionSidecar"] is None
+        # effects: a switch shows its settings, the values go to the engine
+        assert fx.bodies["loudness"].isHidden()
+        fx.switches["loudness"].setChecked(True)
+        assert not fx.bodies["loudness"].isHidden()
+        dlg.findChild(QtWidgets.QDoubleSpinBox, "export.effects.loudness.target").setValue(-16.0)
+        fx.switches["name_overlay"].setChecked(True)
+        name = dlg.findChild(QtWidgets.QLineEdit, "export.effects.nameOverlay.text")
+        name.setText("CFA4")
+        name.textEdited.emit("CFA4")
+        pick(dlg.findChild(QtWidgets.QComboBox, "export.effects.nameOverlay.position"), "topLeft")
+        fx.switches["video_limiter"].setChecked(True)
+        dlg.findChild(QtWidgets.QDoubleSpinBox, "export.effects.videoLimiter.max").setValue(95.0)
+        fx.switches["image_overlay"].setChecked(True)
+        fx.pick_image = lambda t, f, start: str(tmp_path / "logo.png")
+        dlg.findChild(QtWidgets.QPushButton, "export.effects.imageOverlay.browse").click()
+        e = resolved()["effects"]
+        assert e["loudness"] == {"enabled": True, "target_lufs": -16.0, "true_peak_dbtp": -2.0}, e["loudness"]
+        assert (e["name_overlay"]["enabled"], e["name_overlay"]["text"], e["name_overlay"]["placement"]) == (True, "CFA4", "topLeft")
+        assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
+        assert e["timecode_overlay"]["enabled"] is False
+        # a sound-only format: no captions, only loudness
+        pick(dlg.format, "wav")
+        assert cap.isHidden() and not fx.switches["loudness"].isHidden()
+        assert all(fx.switches[k].isHidden() for k in ("image_overlay", "name_overlay", "timecode_overlay", "video_limiter"))
+        assert "burnCaptions" not in dlg.params()
+        assert resolved()["effects"]["loudness"]["target_lufs"] == -16.0
+        # another preset: the changes are dropped and its own values shown
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        assert not dlg.touched & {"captions", "effects"}
+        assert wait_until(app, lambda: fx.switches["loudness"].isChecked() == resolved()["effects"]["loudness"]["enabled"]
+                          and cap.mode.currentData() == caption_mode(resolved())[0], 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
     """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
     an existing file asks Replace / Keep existing file, the folder is kept for the next export;

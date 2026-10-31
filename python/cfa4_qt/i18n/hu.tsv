@@ -2107,3 +2107,30 @@
 	Quality	Minőség
 	ZIP (1 scan line)	ZIP (1 sor)
 	ZIP (16 scan lines)	ZIP (16 sor)
+	Bottom Center	Lent középen
+	Bottom Left	Lent balra
+	Bottom Right	Lent jobbra
+	Burn Captions Into Video	Feliratok beégetése a videóba
+	Center Left	Középen balra
+	Center Right	Középen jobbra
+	Create Sidecar File	Külön feliratfájl készítése
+	Export Options	Exportálási beállítások
+	File Format	Fájlformátum
+	Image	Kép
+	Image Overlay	Képátfedés
+	Images	Képek
+	Loudness Normalization	Hangosság-normalizálás
+	Luma Min / Max	Luma min. / max.
+	Name Overlay	Névátfedés
+	PNG or JPEG file	PNG- vagy JPEG-fájl
+	Prefix	Előtag
+	Size / Opacity	Méret / átlátszatlanság
+	SubRip Subtitle (.srt)	SubRip felirat (.srt)
+	Target Loudness	Célhangosság
+	Timecode Overlay	Időkód-átfedés
+	Top Center	Fent középen
+	Top Left	Fent balra
+	Top Right	Fent jobbra
+	True Peak Limit	Valódi csúcsérték-korlát
+	Video Limiter	Videókorlátozó
+	WebVTT (.vtt)	WebVTT (.vtt)
