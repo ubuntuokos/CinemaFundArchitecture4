@@ -18,13 +18,17 @@ use crate::media_index::{
 use crate::timestamp::Rational;
 
 const SEQUENCE_HEADER: u8 = 0xB3;
+/// A sequence header with its extensions takes about 150 bytes (quantiser matrices included); a
+/// longer one is malformed and does not count as one, so a hostile packet is never kept whole.
+const MAX_SEQUENCE_HEADER_BYTES: usize = 1024;
 const PICTURE_START: u8 = 0x00;
 const GROUP_START: u8 = 0xB8;
 
 /// What one access unit holds, from the headers alone.
 struct Scan {
     ptype: PictureType,
-    sequence_header: Option<Vec<u8>>,
+    /// A sequence header (with its extensions) of at most [`MAX_SEQUENCE_HEADER_BYTES`] bytes.
+    sequence_header: bool,
     gop: Option<(bool, bool)>,
     temporal_reference: Option<u16>,
 }
@@ -86,7 +90,7 @@ fn scan(data: &[u8]) -> Scan {
     };
     Scan {
         ptype,
-        sequence_header: sequence_header.then(|| sequence_header_bytes(data)).flatten(),
+        sequence_header: sequence_header && sequence_header_bytes(data).is_some(),
         gop: gop.map(|g| (g.closed_gop, g.broken_link)),
         temporal_reference: first_picture.map(|p| p.temporal_reference),
     }
@@ -100,7 +104,7 @@ pub(crate) fn scan_summary(data: &[u8]) -> (bool, Option<GopHeader>, Option<Pict
 
 /// The bytes of the first sequence header (start code to the next start code), which together
 /// with its extensions define the codec configuration.
-fn sequence_header_bytes(data: &[u8]) -> Option<Vec<u8>> {
+fn sequence_header_bytes(data: &[u8]) -> Option<&[u8]> {
     let start = data.windows(4).position(|w| w == [0, 0, 1, SEQUENCE_HEADER])?;
     let body = data.get(start + 4..)?;
     let end = body.windows(3).position(|w| w == [0, 0, 1]).map_or(body.len(), |e| e);
@@ -115,7 +119,7 @@ fn sequence_header_bytes(data: &[u8]) -> Option<Vec<u8>> {
             break;
         }
     }
-    data.get(start..stop).map(<[u8]>::to_vec)
+    data.get(start..stop).filter(|h| h.len() <= MAX_SEQUENCE_HEADER_BYTES)
 }
 
 /// Index an MPEG-1/2 video stream from its access units in decode order.
@@ -125,13 +129,30 @@ pub fn index_mpeg2<'a>(stream_id: u32, timebase: Rational, packets: impl IntoIte
     }
     let mut scans = Vec::new();
     let mut meta = Vec::new();
+    // the configuration is compared as the packets come: only the current sequence header is kept
+    let mut config: Option<Vec<u8>> = None;
+    let mut config_id = 0u32;
+    let mut config_changes = Vec::new();
     for (i, p) in packets.into_iter().enumerate() {
         if i >= MAX_FRAMES {
             return Err(IndexError::TooManyFrames);
         }
-        let size = u32::try_from(p.data.len()).map_err(|_| IndexError::PacketTooLarge { decode_index: i as u64 })?;
-        scans.push(scan(p.data));
-        meta.push((p.pts, p.dts, p.keyframe, size));
+        let di = i as u64;
+        let size = u32::try_from(p.data.len()).map_err(|_| IndexError::PacketTooLarge { decode_index: di })?;
+        let s = scan(p.data);
+        if let Some(sh) = s.sequence_header.then(|| sequence_header_bytes(p.data)).flatten() {
+            match &config {
+                Some(c) if c.as_slice() != sh => {
+                    config_id = config_id.saturating_add(1);
+                    config_changes.push(di);
+                    config = Some(sh.to_vec());
+                }
+                None => config = Some(sh.to_vec()),
+                _ => {}
+            }
+        }
+        scans.push(s);
+        meta.push((p.pts, p.dts, p.keyframe, size, config_id));
     }
     let n = scans.len();
 
@@ -140,9 +161,6 @@ pub fn index_mpeg2<'a>(stream_id: u32, timebase: Rational, packets: impl IntoIte
         (0..n).map(|i| scans.get(i).is_some_and(|s| s.ptype.is_intra()) && scans.get(i + 1).is_some_and(|s| s.ptype == PictureType::B)).collect();
 
     let mut frames: Vec<FrameIndexEntry> = Vec::with_capacity(n);
-    let mut config: Option<Vec<u8>> = None;
-    let mut config_id = 0u32;
-    let mut config_changes = Vec::new();
     // (decode index, status) of the two latest anchors
     let mut last: Option<(u64, DependencyStatus)> = None;
     let mut prev: Option<(u64, DependencyStatus)> = None;
@@ -151,22 +169,11 @@ pub fn index_mpeg2<'a>(stream_id: u32, timebase: Rational, packets: impl IntoIte
     let mut ap: Option<(u64, bool, bool)> = None;
     let mut since_ap_anchor = false;
 
-    for (i, (s, &(pts, dts, keyframe, size))) in scans.iter().zip(meta.iter()).enumerate() {
+    for (i, (s, &(pts, dts, keyframe, size, config_id))) in scans.iter().zip(meta.iter()).enumerate() {
         let di = i as u64;
-        if let Some(sh) = &s.sequence_header {
-            match &config {
-                Some(c) if c != sh => {
-                    config_id = config_id.saturating_add(1);
-                    config_changes.push(di);
-                    config = Some(sh.clone());
-                }
-                None => config = Some(sh.clone()),
-                _ => {}
-            }
-        }
         let (closed, broken) = s.gop.unwrap_or((false, false));
         let random_access = if s.ptype.is_intra() {
-            if s.sequence_header.is_some() {
+            if s.sequence_header {
                 if closed || !has_leading.get(i).copied().unwrap_or(false) {
                     RandomAccessKind::ClosedGop
                 } else {

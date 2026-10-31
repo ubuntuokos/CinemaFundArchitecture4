@@ -717,3 +717,17 @@ fn h264_an_unsignalled_intra_picture_counts_as_history_for_a_later_recovery_poin
     assert_eq!(ix.frames[2].random_access, RandomAccessKind::RecoveryPoint { exact_match: true, broken_link: false });
     assert_eq!(ix.frames[3].dependency_status, DependencyStatus::CrossesAccessPoint);
 }
+
+#[test]
+fn mpeg2_oversized_sequence_headers_are_not_kept() {
+    // a "sequence header" running to the end of a 1 MiB packet is malformed: it is neither a
+    // configuration nor an access point, and the indexer keeps no copy of it
+    let mut packet = vec![0u8, 0, 1, 0xB3];
+    packet.resize(1 << 20, 0x5A);
+    let ix = index_mpeg2(0, Rational::MPEG_90K, (0..64).map(|_| Packet { data: &packet, pts: None, dts: None, keyframe: false })).unwrap();
+    assert!(ix.config_changes.is_empty());
+    assert!(ix.frames.iter().all(|f| f.random_access == RandomAccessKind::None && f.config_id == 0));
+    // a real one still counts
+    let ok = mpeg2(&gop(true, false, Some((720, 576))));
+    assert_eq!(ok.frames[0].random_access, RandomAccessKind::ClosedGop);
+}
