@@ -26,6 +26,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE RP 224 / RP 210 | registers | labels: data definitions, picture coding, essence containers, operational patterns; property labels of the primer pack (writer) |
 | SMPTE ST 330 | 2011 | basic UMIDs of the written packages |
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
+| SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 
 ## Reading a file
@@ -120,7 +121,13 @@ w.finish()?;
   (`PictureCoding::J2k`, ST 422 container `02 0C 01`, the DCI 2K / 4K coding labels from Rsiz) in an
   RGBA descriptor (12-bit X'Y'Z', `PictureDesc::dcinema`, ST 428-1 transfer label) with a JPEG 2000
   sub-descriptor (`J2kSubDescriptor`: SIZ and component sizing). Sound: Broadcast Wave with the
-  ST 429-2 channel assignment label (`WriterConfig::channel_assignment`).
+  ST 429-2 channel assignment label (`WriterConfig::channel_assignment`). Immersive audio
+  (`WriterConfig::iab`, `MxfWriter::push_data`, ST 429-18, #343): one IABitstream frame per data
+  element under the class 14 key `0E 09 06 01`, a data track, the IAB data essence descriptor
+  (`0E 09 06 03`, data essence coding `0E 09 06 04`, the version 5 primer label of clause 10) and
+  its sub-descriptor (version, most channels and objects, first frame, IAB sample rate; laid out as
+  the descriptor values of a real Atmos DCP track file). The reader opens such files as an IAB
+  sound track.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the

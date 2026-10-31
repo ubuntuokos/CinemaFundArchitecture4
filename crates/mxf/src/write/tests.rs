@@ -444,3 +444,65 @@ fn dcinema_needs_one_essence_track() {
     cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
     assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
 }
+
+/// A fake IABitstream frame: preamble tag + length, IAFrame tag, then `i`-dependent bytes.
+fn iab_like(i: usize) -> Vec<u8> {
+    let mut v = vec![0x01, 0, 0, 0, 0, 0x02];
+    v.extend(std::iter::repeat_n(i as u8 ^ 0x5A, 300 + 7 * i));
+    v
+}
+
+/// #343: an immersive audio track file (ST 429-18): frame-wrapped data elements under the class
+/// 14 key, the IAB data essence descriptor and sub-descriptor, read back as an IAB sound track.
+#[test]
+fn dcinema_iab_track_file() {
+    let mut ids = PackageIds::from_seed("dcp-iab", "Reel 1");
+    ids.file = Umid::dcinema([0x33; 16]);
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg.iab = Some(IabDesc { version: 1, max_channels: 10, max_objects: 118, first_frame: 0, sample_rate: 48_000 });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..9 {
+        w.push_data(&iab_like(i)).unwrap();
+    }
+    assert!(w.push_picture(&[0; 4], FrameInfo::intra()).is_err());
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Atom);
+    assert_eq!(m.tracks.len(), 1);
+    let t = &m.tracks[0];
+    assert_eq!(t.kind, TrackKind::Sound);
+    assert_eq!(t.codec, Codec::Iab);
+    assert_eq!(t.duration, Some(9));
+    assert_eq!(t.edit_rate, Rational::new(24, 1));
+    assert_eq!(t.sound.as_ref().unwrap().sample_rate, Rational::new(48_000, 1));
+    for i in 0..9 {
+        assert_eq!(m.read_sample(&f, 0, i).unwrap(), iab_like(i));
+    }
+    // element key (6.1), essence container (Table 2), coding (Table 4), set keys (Tables 3, 5)
+    for ul in [labels::IAB_ELEMENT, labels::EC_IAB, labels::IAB_CODING, labels::IAB_DESCRIPTOR, labels::IAB_SUB_DESCRIPTOR] {
+        assert!(f.windows(16).any(|w| w == ul), "{ul:02x?}");
+    }
+    // clause 10: the primer maps 0x3E01 to the version 5 data essence coding item
+    let coding_item = [0x3E, 0x01, 0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x04, 0x03, 0x03, 0x02];
+    assert!(f.windows(coding_item.len()).any(|w| w == coding_item));
+    // the data track (data definition "data")
+    assert!(f.windows(16).any(|w| w == labels::DEF_DATA));
+    for cut in (0..f.len()).step_by(89) {
+        if let Ok(m) = open(&f[..cut]) {
+            for i in 0..m.tracks.first().map_or(0, |t| t.samples.len()) {
+                let _ = m.read_sample(&f[..cut], 0, i);
+            }
+        }
+    }
+}
+
+#[test]
+fn iab_is_only_a_dcinema_track_file() {
+    let mut cfg = WriterConfig::new(Pattern::Op1a, Rational::new(24, 1), PackageIds::from_seed("x", "x"));
+    cfg.iab = Some(IabDesc::default());
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).is_err());
+    cfg.pattern = Pattern::DCinema;
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+}
