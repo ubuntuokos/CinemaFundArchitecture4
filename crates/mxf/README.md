@@ -25,6 +25,10 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
 | SMPTE RP 224 / RP 210 | registers | labels: data definitions, picture coding, essence containers, operational patterns; property labels of the primer pack (writer) |
 | SMPTE ST 330 | 2011 | basic UMIDs of the written packages |
+| SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
+| SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
+| SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
+| SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
 
 ## Reading a file
 
@@ -63,7 +67,8 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   orders by the bitstream (`cfa4-codecs` uses the AVC picture order counts).
 - **Codecs.** From the picture essence coding label, then the essence container label, then the
   essence bytes: AVC / AVC-Intra, VC-3, ProRes (profile from the label), MPEG-2 (decoded in `cfa4-codecs`),
-  MPEG-4 visual, JPEG 2000, DV, uncompressed.
+  MPEG-4 visual, JPEG 2000 (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
+  `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
   Immersive Audio (IAB, `Codec::Iab`): one `Sample` per IABitstream frame, from frame-wrapped
@@ -109,6 +114,24 @@ w.finish()?;
   with a 9-byte BER length patched by `finish`). Several atom files of one clip can share the
   material package UMID with distinct track ids (`WriterConfig::first_track_id`). Sound files may
   use the sample rate as the edit rate (a constant-bytes index) or the frame rate (VBR entries).
+- **D-Cinema track files** (`Pattern::DCinema`, ST 429-3 / 429-4, used by the DCP export): one
+  essence track, frame-wrapped, OP-Atom label plus the multiple-mappings container label (as the
+  reference implementation writes; FFmpeg then reads the frames), the preface's primary package,
+  closed complete header metadata in the header partition only (the footer carries the index),
+  the file package UMID from the asset UUID (`Umid::dcinema`). Pictures: JPEG 2000
+  (`PictureCoding::J2k`, ST 422 container `02 0C 01`, the DCI 2K / 4K coding labels from Rsiz) in an
+  RGBA descriptor (12-bit X'Y'Z', `PictureDesc::dcinema`, ST 428-1 transfer label) with a JPEG 2000
+  sub-descriptor (`J2kSubDescriptor`: SIZ and component sizing). Sound: Broadcast Wave with the
+  ST 429-2 channel assignment label (`WriterConfig::channel_assignment`). Immersive audio
+  (`WriterConfig::iab`, `MxfWriter::push_data`, ST 429-18, #343): one IABitstream frame per data
+  element under the class 14 key `0E 09 06 01`, a data track, the IAB data essence descriptor
+  (`0E 09 06 03`, data essence coding `0E 09 06 04`, the version 5 primer label of clause 10) and
+  its sub-descriptor (version, most channels and objects, first frame, IAB sample rate; laid out as
+  the descriptor values of a real Atmos DCP track file). The reader opens such files as an IAB
+  sound track. Multichannel audio labels (`WriterConfig::mca`, `McaLabel`, ST 377-4, #348):
+  soundfield group (`6Ch`) and audio channel (`6Bh`) label sub-descriptors referenced from the
+  Wave descriptor, their items under dynamic tags named in the primer; cinecert `asdcp-info -H`
+  reads them back.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the

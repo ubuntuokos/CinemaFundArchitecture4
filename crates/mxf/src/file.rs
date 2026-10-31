@@ -414,7 +414,12 @@ fn walk(src: &(impl ByteSource + ?Sized)) -> Result<WalkResult> {
 
 /// Generic container picture / sound / data / compound items (not system items).
 fn is_essence_item(k: &Ul) -> bool {
-    matches!(k.0[12], 0x05 | 0x06 | 0x07 | 0x15 | 0x16 | 0x17 | 0x18)
+    matches!(k.0[12], 0x05 | 0x06 | 0x07 | 0x15 | 0x16 | 0x17 | 0x18) || crate::klv::is_dcp_iab_element(k)
+}
+
+/// The immersive audio data essence descriptor of D-Cinema track files (ST 429-18 Table 3).
+fn is_dcp_iab_descriptor(d: &Set) -> bool {
+    d.key.0[..12] == [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x05, 0x0E, 0x09, 0x06, 0x03]
 }
 
 /// The next partition pack key at or after `from` (scans at most 16 MiB).
@@ -617,16 +622,19 @@ fn resolve_tracks(md: &Metadata, warnings: &mut Vec<String>) -> (Vec<TrackRef>, 
             let Some(t) = md.get(&r) else { continue };
             let (seq, comps) = components(md, t);
             let Some((false, kind)) = track_kind_of(seq.and_then(|s| s.ul(tag::DATA_DEFINITION))) else { continue };
-            if kind == TrackKind::Data {
-                continue;
-            }
             let Some(clip) = comps.iter().find(|c| c.kind() == Some(st::SOURCE_CLIP)) else { continue };
             let Some(umid) = umid_of(clip, tag::SOURCE_PACKAGE_ID) else { continue };
             let Some(pkg) = file_pkg(&umid) else {
-                warnings.push(format!("material track {} refers to a package not in this file", t.u(tag::TRACK_ID).unwrap_or(0)));
+                if kind != TrackKind::Data {
+                    warnings.push(format!("material track {} refers to a package not in this file", t.u(tag::TRACK_ID).unwrap_or(0)));
+                }
                 continue;
             };
             let src_track = clip.u(tag::SOURCE_TRACK_ID).map(|v| v as u32);
+            // data tracks: only the immersive audio of a D-Cinema track file (ST 429-18)
+            if kind == TrackKind::Data && !descriptor_for(md, pkg, src_track.unwrap_or(0), kind).is_some_and(is_dcp_iab_descriptor) {
+                continue;
+            }
             let duration = clip.i(tag::DURATION).or_else(|| seq.and_then(|s| s.i(tag::DURATION))).filter(|d| *d >= 0);
             // durations are in the material track's edit rate; convert when the file track's differs
             let mrate = t.rational(tag::EDIT_RATE).unwrap_or_default();
@@ -825,6 +833,22 @@ fn build_track(
             }
             t.codec = codec;
             t.picture = Some(pi);
+            build_pictures(src, &mut t, elements, index, warnings)?;
+        }
+        TrackKind::Data if desc.is_some_and(is_dcp_iab_descriptor) || elements.first().is_some_and(|e| crate::klv::is_dcp_iab_element(&e.key)) => {
+            // a D-Cinema immersive audio track file: read as the IAB sound track of IMF
+            t.kind = TrackKind::Sound;
+            t.codec = Codec::Iab;
+            t.sound_format = SoundFormat::Iab;
+            // IAB Sample Rate of the sub-descriptor (a dynamic tag), else 48 kHz
+            let rate = r
+                .sub_descriptors
+                .iter()
+                .find_map(|s| s.dynamic_item(&[0x04, 0x02, 0x03, 0x01, 0x0F]))
+                .and_then(|v| Some(crate::Rational::new(i32::from_be_bytes(v.get(..4)?.try_into().ok()?), i32::from_be_bytes(v.get(4..8)?.try_into().ok()?))))
+                .filter(|r| r.is_valid())
+                .unwrap_or(crate::Rational::new(48_000, 1));
+            t.sound = Some(SoundInfo { sample_rate: rate, bits: 24, ..Default::default() });
             build_pictures(src, &mut t, elements, index, warnings)?;
         }
         TrackKind::Sound if is_iab(desc, container, key4, src, elements) => {
