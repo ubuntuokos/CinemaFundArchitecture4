@@ -320,12 +320,39 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
             _ => return Err(bad(cmd, "mpeg2Chroma: 420 | 422")),
         };
     }
+    if let Some(v) = str_p(p, "dcpResolution") {
+        let r = cfa4_export::DcpResolution::from_name(v).ok_or_else(|| bad(cmd, "dcpResolution: 2k | 4k"))?;
+        settings.dcp_resolution = r.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpAspect") {
+        let a = cfa4_export::DcpAspect::from_name(v).ok_or_else(|| bad(cmd, "dcpAspect: flat | scope | full"))?;
+        settings.dcp_aspect = a.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpContentKind") {
+        let probe = ExportSettings { dcp_content_kind: v.to_string(), ..Default::default() };
+        let kind = cfa4_export::dcp_content_kind(&probe).ok_or_else(|| bad(cmd, format!("dcpContentKind: {}", cfa4_export::DCP_CONTENT_KINDS.join(" | "))))?;
+        settings.dcp_content_kind = kind.to_string();
+    }
+    if let Some(v) = str_p(p, "dcpImmersive") {
+        let m = cfa4_export::DcpImmersive::from_name(v).ok_or_else(|| bad(cmd, "dcpImmersive: off | bed | file"))?;
+        settings.dcp_immersive = m.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpIabSource") {
+        settings.dcp_iab_source = v.to_string();
+    }
+    if let Some(v) = str_p(p, "dcpIabFallback") {
+        let f = cfa4_export::IabFallback::from_name(v).ok_or_else(|| bad(cmd, "dcpIabFallback: 5.1 | mix | none"))?;
+        settings.dcp_iab_fallback = f.id().to_string();
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
             1..=31 => Some(v as u8),
             _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
         };
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2BFrames", cmd)? {
+        settings.mpeg2_b_frames = Some(u8::try_from(v).ok().filter(|b| *b <= 7).ok_or_else(|| bad(cmd, "mpeg2BFrames: 0 to 7"))?);
     }
     if let Some(v) = bool_p(p, "sdr") {
         settings.sdr = v;
@@ -425,6 +452,10 @@ fn file_safe(n: &str) -> String {
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
+    // a DCP is a folder
+    if settings.format == Format::Dcp {
+        return path.to_string();
+    }
     let ext = settings.extension();
     match Path::new(path).extension().and_then(|e| e.to_str()) {
         Some(e)
@@ -471,6 +502,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
+        Some(n) if n > 0 && settings.format == Format::Dcp => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),
@@ -993,6 +1025,11 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "extension": pr.settings.extension(),
         "frameSize": pr.settings.frame_size,
         "mpeg2Container": pr.settings.mpeg2_container,
+        "dcpResolution": pr.settings.dcp_resolution,
+        "dcpAspect": pr.settings.dcp_aspect,
+        "dcpImmersive": pr.settings.dcp_immersive,
+        "dcpIabSource": pr.settings.dcp_iab_source,
+        "dcpIabFallback": pr.settings.dcp_iab_fallback,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
@@ -1159,6 +1196,14 @@ fn formats(_: &mut Session, _: &Value) -> Result<Value> {
     ))
 }
 
+/// What an IAB source holds, for the DCP export's immersive audio (#343).
+fn iab_info(_: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "export.iabInfo";
+    let path = str_p(p, "path").ok_or_else(|| bad(cmd, "need `path`"))?;
+    let info = cfa4_export::probe_iab_source(path).map_err(|e| bad(cmd, e.to_string()))?;
+    Ok(serde_json::to_value(info).unwrap_or_default())
+}
+
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 fn spec(
@@ -1196,6 +1241,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("export.presets.import", "Import Export Presets", r#"{"path":str}"#, always, presets_import, true),
         spec("export.presets.export", "Export Export Presets", r#"{"path":str,"names":[str]?}"#, always, presets_export, false),
         spec("export.formats", "List Export Formats", "{}", always, formats, false),
+        spec("export.iabInfo", "Inspect IAB Source", r#"{"path":str}"#, always, iab_info, false),
         spec("export.resolve", "Resolve Export Settings", "{…settings params, \"path\":str?}", has_seq, resolve, false),
         spec(
             "export.queue.add",

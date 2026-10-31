@@ -2284,6 +2284,11 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.quantizer.setValue(4)
         assert dlg.params()["mpeg2Quantizer"] == 4
         dlg.quantizer.setValue(0)
+        # IBBP unless chosen otherwise
+        assert dlg.b_frames.isEnabled() and dlg.b_frames.value() == 2 and "mpeg2BFrames" not in p
+        dlg.b_frames.setValue(0)
+        assert dlg.params()["mpeg2BFrames"] == 0
+        dlg.b_frames.setValue(2)
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
@@ -2308,6 +2313,153 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
             info = json.loads(probe.stdout)
             assert info["format"]["format_name"] == "mpegts"
             assert sorted(s["codec_name"] for s in info["streams"]) == ["aac", "mpeg2video"], info
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dcp_export_writes_a_package_folder(app, tmp_path: Path):
+    """DCP: the preset sets resolution and container, the output is a folder without an
+    extension, the fixed DCI settings are disabled, and the engine writes the package (#115)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.dcp_resolution.isEnabled()
+        assert "dcpResolution" not in dlg.params()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Scope"))
+        assert dlg.format.currentData() == "dcp" and dlg.dcp_resolution.isEnabled()
+        assert (dlg.dcp_resolution.currentData(), dlg.dcp_aspect.currentData()) == ("2k", "scope")
+        assert not dlg.width_spin.isEnabled() and not dlg.bitrate.isEnabled() and dlg.audio.isEnabled()
+        assert Path(dlg.path.text()).suffix == "", dlg.path.text()
+        dlg.dcp_kind.setCurrentIndex(dlg.dcp_kind.findData("trailer"))
+        p = dlg.params()
+        assert (p["dcpResolution"], p["dcpAspect"], p["dcpContentKind"]) == ("2k", "scope", "trailer")
+        assert "width" not in p and "bitrateKbps" not in p
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.25)
+        out = tmp_path / "out" / "Demo_TLR"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "2048×858" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        names = sorted(f.name for f in out.iterdir())
+        assert "ASSETMAP.xml" in names and "VOLINDEX.xml" in names, names
+        assert sum(n.startswith("j2c_") for n in names) == 1 and sum(n.startswith("pcm_") for n in names) == 1, names
+        cpl = next(out.glob("cpl_*.xml")).read_text()
+        assert "<ContentKind>trailer</ContentKind>" in cpl
+        assert "<ScreenAspectRatio>2048 858</ScreenAspectRatio>" in cpl
+        # another format brings the size fields back
+        dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+        assert dlg.width_spin.isEnabled() and not dlg.dcp_resolution.isEnabled()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
+    """DCP immersive audio (#343): the IAB choice, the source row only for "from a file", the
+    engine's report on the source, and packages with an IAB track file and its CPL AuxData."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.dcp_immersive.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Flat"))
+        assert dlg.dcp_immersive.isEnabled() and dlg.dcp_immersive.currentData() == "off"
+        assert dlg.params()["dcpImmersive"] == "off" and "dcpIabFallback" not in dlg.params()
+        assert not dlg.dcp_iab_source.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
+
+        # a 7.1 DS bed from the 5.1 mix
+        dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("bed"))
+        assert dlg.dcp_iab_fallback.isEnabled() and not dlg.dcp_iab_source.isEnabled()
+        assert "7.1 DS" in dlg.dcp_iab_info.text()
+        p = dlg.params()
+        # ST 429-19:2023: no fallback unless asked (#348); here the 5.1 mix is asked for
+        assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "none") and "dcpIabSource" not in p
+        dlg.dcp_iab_fallback.setCurrentIndex(dlg.dcp_iab_fallback.findData("5.1"))
+        assert dlg.params()["dcpIabFallback"] == "5.1"
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(0.2)
+        out = tmp_path / "out" / "Demo_IAB"
+        dlg.path.setText(str(out))
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        iab = list(out.glob("iab_*.mxf"))
+        assert len(iab) == 1, sorted(f.name for f in out.iterdir())
+        cpl = next(out.glob("cpl_*.xml")).read_text()
+        assert "<axd:AuxData" in cpl and "urn:smpte:ul:060e2b34.04010105.0e090604.00000000" in cpl
+
+        # that IAB track file as the source of the next package: the engine reports what it holds
+        dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("file"))
+        assert dlg.dcp_iab_source.isEnabled()
+        src = tmp_path / "source.mxf"
+        src.write_bytes(iab[0].read_bytes())
+        dlg.dcp_iab_source.setText(str(src))
+        dlg._probe_iab()
+        assert wait_until(app, lambda: "frames" in dlg.dcp_iab_info.text() or "képkocka" in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        assert "8" in dlg.dcp_iab_info.text(), dlg.dcp_iab_info.text()
+        dlg.dcp_iab_fallback.setCurrentIndex(dlg.dcp_iab_fallback.findData("none"))
+        p = dlg.params()
+        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "none")
+        out2 = tmp_path / "out" / "Demo_IAB_2"
+        dlg.path.setText(str(out2))
+        done.clear()
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out2), True), dlg.summary.text()
+        assert len(list(out2.glob("iab_*.mxf"))) == 1
+
+        # a file that is not IAB is reported, not exported silently
+        bad = tmp_path / "not.iab"
+        bad.write_bytes(b"\0" * 64)
+        dlg.dcp_iab_source.setText(str(bad))
+        dlg._probe_iab()
+        assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a saved preset brings its immersive audio back instead of resetting it to Off
+        dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
+        dlg.preset.addItem("IAB test", "IAB test")
+        dlg.preset.setCurrentIndex(dlg.preset.findData("IAB test"))
+        p = dlg.params()
+        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "mix")
+        dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Flat"))
+        assert dlg.dcp_immersive.currentData() == "off" and dlg.dcp_iab_fallback.currentData() == "none"
+        # another format turns the immersive choices off
+        dlg.format.setCurrentIndex(dlg.format.findData("h264"))
+        assert not dlg.dcp_immersive.isEnabled() and "dcpImmersive" not in dlg.params()
     finally:
         if win.export_dialog is not None:
             win.export_dialog.hide()
