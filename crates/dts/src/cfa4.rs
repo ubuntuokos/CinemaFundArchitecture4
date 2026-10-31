@@ -183,6 +183,19 @@ pub struct Decoder {
     hd_frame: HdFrame,
     /// Raw-stream bytes not yet decoded.
     buf: Vec<u8>,
+    /// Rate and loudspeakers of the last frame [`Decoder::push_frames`] gave: a frame that fails
+    /// after it becomes silence of its length in this layout.
+    layout: Option<(u32, Vec<Speaker>)>,
+}
+
+/// One frame of a raw stream from [`Decoder::push_frames`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct Frame {
+    /// The frame's audio: silence of its length when it failed to decode after a layout was
+    /// known, empty when it failed before.
+    pub audio: Decoded,
+    /// Why the frame did not decode.
+    pub error: Option<Error>,
 }
 
 /// What [`Decoder::frame`] found at the start of its input.
@@ -234,6 +247,55 @@ impl Decoder {
     /// Decodes the frame left at the end of a raw stream.
     pub fn flush(&mut self) -> Result<Decoded, Error> {
         self.drain(true)
+    }
+
+    /// Like [`Decoder::push`], one [`Frame`] per frame, so that a caller sees each frame's
+    /// layout and each error: [`Decoder::push`] gives the frames of a piece in the layout of
+    /// its last frame and only the error of a piece in which nothing decodes.
+    pub fn push_frames(&mut self, data: &[u8]) -> Vec<Frame> {
+        self.buf.extend_from_slice(data);
+        self.drain_frames(false)
+    }
+
+    /// Like [`Decoder::flush`], one [`Frame`] per frame.
+    pub fn flush_frames(&mut self) -> Vec<Frame> {
+        self.drain_frames(true)
+    }
+
+    fn drain_frames(&mut self, at_end: bool) -> Vec<Frame> {
+        let mut frames = Vec::new();
+        let mut p = 0;
+        let buf = std::mem::take(&mut self.buf);
+        while let Some(rest) = buf.get(p..).filter(|r| !r.is_empty()) {
+            let mut out = match &self.layout {
+                Some((rate, speakers)) => {
+                    Decoded { sample_rate: *rate, channels: vec![Vec::new(); speakers.len()], speakers: speakers.clone(), lossless: true }
+                }
+                None => Decoded::default(),
+            };
+            let mut err = None;
+            let step = self.frame(rest, at_end, &mut out, &mut err);
+            let has_audio = out.channels.first().is_some_and(|c| !c.is_empty());
+            if has_audio && err.is_none() {
+                self.layout = Some((out.sample_rate, out.speakers.clone()));
+            }
+            if has_audio || err.is_some() {
+                if !has_audio {
+                    out = Decoded::default();
+                }
+                frames.push(Frame { audio: out, error: err });
+            }
+            match step {
+                Step::Frame(n) | Step::Skip(n) => p += n.max(1),
+                Step::Short => break,
+            }
+        }
+        self.buf = buf;
+        self.buf.drain(..p.min(self.buf.len()));
+        if at_end || self.buf.len() > MAX_BUFFER {
+            self.buf.clear();
+        }
+        frames
     }
 
     fn drain(&mut self, at_end: bool) -> Result<Decoded, Error> {

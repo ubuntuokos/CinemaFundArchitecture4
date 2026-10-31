@@ -98,6 +98,52 @@ fn raw_dts_streams_open_as_audio() {
     assert!(cfa4_codecs::open_bytes("empty.dts", Vec::new().into()).is_err());
 }
 
+/// #321 review: a raw stream whose layout changes part way (5.1 then stereo) keeps the first
+/// layout bit-exact and the stereo part's duration as silence, rather than replacing the audio
+/// before the change; and a stream whose frames all fail to decode reports the decode error.
+#[test]
+fn raw_dts_layout_change_keeps_timing() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let surround = fixture(&ff, "dts_51_raw.dts", &["-f", "lavfi", "-i", SURROUND, "-t", "2", "-c:a", "dca", "-strict", "-2", "-f", "dts"])
+        .expect("could not write dts_51_raw.dts");
+    let stereo = fixture(
+        &ff,
+        "dts_20_raw.dts",
+        &["-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000", "-t", "1", "-ac", "2", "-c:a", "dca", "-strict", "-2", "-f", "dts"],
+    )
+    .expect("could not write dts_20_raw.dts");
+    let decode = |p: &std::path::Path, ch: usize| -> Vec<Vec<i32>> {
+        let raw = ffmpeg_out(&ff, &["-flags", "+bitexact", "-i", p.to_str().unwrap(), "-f", "s32le", "-"]);
+        let words: Vec<i32> = raw.as_chunks::<4>().0.iter().map(|b| i32::from_le_bytes(*b)).collect();
+        (0..ch).map(|c| words.iter().skip(c).step_by(ch).copied().collect()).collect()
+    };
+    let want = decode(&surround, 6);
+    let stereo_len = decode(&stereo, 2)[0].len();
+    let mut joined = std::fs::read(&surround).unwrap();
+    joined.extend(std::fs::read(&stereo).unwrap());
+    let src = cfa4_codecs::audio::AudioFileSource::decode("joined.dts", joined.into()).unwrap();
+    let a = src.info().audio().cloned().unwrap();
+    assert_eq!(a.channels, 6);
+    let n = want[0].len();
+    let ours = src.audio(0, n + stereo_len, a.sample_rate).unwrap().channels;
+    for c in 0..6 {
+        let bad = (0..n).find(|&i| (f64::from(ours[c][i]) * 2_147_483_648.0) as i64 != i64::from(want[c][i]));
+        assert!(bad.is_none(), "channel {c} differs from sample {bad:?}");
+        assert!(ours[c][n..].iter().all(|&v| v == 0.0), "channel {c}: the stereo part is not silence");
+    }
+    let expected = (n + stereo_len) as i64;
+    let got = (src.info().duration.seconds() * f64::from(a.sample_rate)).round() as i64;
+    assert!((got - expected).abs() <= 1, "duration {got} samples, want {expected}");
+
+    // core syncwords with headers that do not parse: an error, not an empty success
+    let mut broken = Vec::new();
+    for _ in 0..64 {
+        broken.extend([0x7F, 0xFE, 0x80, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+    }
+    let Err(e) = cfa4_codecs::audio::AudioFileSource::decode("broken.dts", broken.into()) else { panic!("broken.dts opened") };
+    println!("broken.dts: {e}");
+}
+
 /// A real DTS-HD Master Audio track in a container (`.m2ts` / `.mkv`), when
 /// `CFA4_DTSHD_CONTAINER_SAMPLE` names one (none is committed, #131): bit-exact against ffmpeg
 /// from the start, and a window read on a fresh source equals the straight decode.

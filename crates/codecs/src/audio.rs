@@ -997,34 +997,52 @@ fn adts_frame_len(b: &[u8]) -> Option<usize> {
 fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32>>)>> {
     let mut dec = cfa4_dts::cfa4::Decoder::new();
     let mut out = cfa4_dts::cfa4::Decoded::default();
+    let mut first_error = None;
     let mut total = 0usize;
     let pieces = bytes.chunks(1 << 20).map(Some).chain(std::iter::once(None));
     for piece in pieces {
-        let d = match piece {
-            Some(p) => dec.push(p),
-            None => dec.flush(),
+        let frames = match piece {
+            Some(p) => dec.push_frames(p),
+            None => dec.flush_frames(),
         };
-        let Ok(d) = d else { continue };
-        if d.channels.is_empty() {
-            continue;
-        }
-        if out.channels.is_empty() {
-            out = cfa4_dts::cfa4::Decoded { channels: vec![Vec::new(); d.channels.len()], ..d.clone() };
-        }
-        if d.sample_rate != out.sample_rate || d.speakers != out.speakers {
-            continue;
-        }
-        total = total.saturating_add(d.channels.iter().map(Vec::len).sum());
-        if total > MAX_ADTS_SAMPLES {
-            return Err(CodecError::Decode(format!("DTS stream longer than {MAX_ADTS_SAMPLES} samples")));
-        }
-        out.lossless &= d.lossless;
-        for (o, c) in out.channels.iter_mut().zip(d.channels) {
-            o.extend(c);
+        for f in frames {
+            let a = f.audio;
+            let Some(n) = a.channels.first().map(Vec::len).filter(|&n| n > 0) else {
+                // a frame that fails before any frame decoded: the stream may still start later
+                // on, but if nothing ever decodes the error is what the import reports
+                first_error = first_error.or(f.error);
+                continue;
+            };
+            if out.channels.is_empty() {
+                out = cfa4_dts::cfa4::Decoded { channels: vec![Vec::new(); a.channels.len()], lossless: true, ..a.clone() };
+            }
+            total = total.saturating_add(n.saturating_mul(out.channels.len()));
+            if total > MAX_ADTS_SAMPLES {
+                return Err(CodecError::Decode(format!("DTS stream longer than {MAX_ADTS_SAMPLES} samples")));
+            }
+            if a.sample_rate != out.sample_rate || a.speakers != out.speakers {
+                // one source plays one layout: a frame in another one keeps its duration as
+                // silence, so the audio after it stays in sync
+                let n = usize::try_from((n as u64).saturating_mul(u64::from(out.sample_rate)) / u64::from(a.sample_rate.max(1))).unwrap_or(0);
+                for o in &mut out.channels {
+                    o.resize(o.len().saturating_add(n), 0.0);
+                }
+                continue;
+            }
+            // a frame that failed after the layout was known comes as silence of its length
+            if f.error.is_none() {
+                out.lossless &= a.lossless;
+            }
+            for (o, c) in out.channels.iter_mut().zip(a.channels) {
+                o.extend(c);
+            }
         }
     }
     if out.channels.first().is_none_or(Vec::is_empty) || out.sample_rate == 0 {
-        return Ok(None);
+        return match first_error {
+            Some(e) => Err(CodecError::Decode(e.to_string())),
+            None => Ok(None),
+        };
     }
     Ok(Some((out.sample_rate, if out.lossless { "DTS-HD MA" } else { "DTS" }, out.channels)))
 }
