@@ -38,6 +38,12 @@ const NAL_PPS: u8 = 8;
 const SEI_RECOVERY_POINT: u32 = 6;
 /// Slice header bytes read for `first_mb_in_slice` and `slice_type`.
 const SLICE_HEAD: usize = 32;
+/// `seq_parameter_set_id` is 0..=31, `pic_parameter_set_id` 0..=255 (H.264 §7.4.2.1, §7.4.2.2).
+const MAX_SPS_ID: u32 = 31;
+const MAX_PPS_ID: u32 = 255;
+/// Largest parameter set kept. Real ones are a few hundred bytes; with the id ranges this bounds
+/// what hostile input can make the index hold to about 1 MiB.
+const MAX_PARAMETER_SET_BYTES: usize = 4096;
 /// SEI payloads per NAL unit looked at.
 const MAX_SEI_MESSAGES: usize = 64;
 
@@ -65,7 +71,8 @@ struct Picture {
     config: Option<Config>,
 }
 
-/// Parameter sets by id (PPS with the id of the SPS it refers to).
+/// Parameter sets by id (PPS with the id of the SPS it refers to). Ids out of range and oversized
+/// payloads are not kept: pictures using them have an unknown configuration.
 #[derive(Default)]
 struct Params {
     sps: BTreeMap<u32, Vec<u8>>,
@@ -74,6 +81,9 @@ struct Params {
 
 impl Params {
     fn record(&mut self, nal_type: u8, nal: &[u8]) {
+        if nal.len() > MAX_PARAMETER_SET_BYTES {
+            return;
+        }
         let rbsp = unescape_rbsp(nal.get(1..).unwrap_or(&[]));
         let mut r = BitReader::new(&rbsp);
         // trailing zero bytes do not change the parameter set
@@ -89,10 +99,14 @@ impl Params {
                 return;
             }
             let Ok(id) = r.read_ue() else { return };
-            self.sps.insert(id, trimmed(rbsp));
+            if id <= MAX_SPS_ID {
+                self.sps.insert(id, trimmed(rbsp));
+            }
         } else {
             let (Ok(id), Ok(sps_id)) = (r.read_ue(), r.read_ue()) else { return };
-            self.pps.insert(id, (sps_id, trimmed(rbsp)));
+            if id <= MAX_PPS_ID && sps_id <= MAX_SPS_ID {
+                self.pps.insert(id, (sps_id, trimmed(rbsp)));
+            }
         }
     }
 

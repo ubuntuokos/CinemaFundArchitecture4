@@ -459,6 +459,24 @@ fn h264_truncated_idr_is_no_clean_access_point() {
 }
 
 #[test]
+fn h264_parameter_sets_are_bounded() {
+    // many distinct, out-of-range and oversized parameter sets: none may grow the index unbounded
+    let mut sets: Vec<Vec<u8>> = (0..5000u32).map(|id| sps_with_id(40, id)[4..].to_vec()).collect();
+    sets.extend((0..5000u32).map(|id| pps(id, 0)[4..].to_vec()));
+    let mut big = sps_with_id(40, 1)[4..].to_vec();
+    big.resize(1 << 20, 0x55);
+    sets.push(big);
+    let refs: Vec<&[u8]> = sets.iter().map(Vec::as_slice).collect();
+    let units = [slice_with_pps(0x65, 7, 0), slice_with_pps(0x65, 7, 300), slice_with_pps(0x65, 7, 0)];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &refs, units.iter().map(|d| Packet { data: d, pts: None, dts: None, keyframe: false })).unwrap();
+    assert_eq!(ix.frames.len(), 3);
+    // PPS 300 is out of range and was not kept: that picture has no known configuration, so no
+    // change is claimed around it
+    assert!(ix.config_changes.is_empty(), "{:?}", ix.config_changes);
+}
+
+#[test]
 fn h264_invalid_nal_length_sizes_are_refused() {
     // a zero-byte length prefix never advanced the NAL splitter
     let data = [0u8, 0, 0, 1, 0x65];
