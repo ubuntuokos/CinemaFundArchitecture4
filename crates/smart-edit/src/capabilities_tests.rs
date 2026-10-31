@@ -348,7 +348,7 @@ fn a_probed_route_is_only_admitted_through_its_own_route_id() {
     r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
     let d = r.decide(key, STRICT);
     assert!(!d.allowed, "{d:?}");
-    assert!(d.reasons.iter().any(|l| l.starts_with("Platform: not in the routing order")), "{d:?}");
+    assert!(d.reasons.iter().any(|l| l.starts_with("Platform [nvenc]: not in the routing order")), "{d:?}");
 }
 
 #[test]
@@ -395,4 +395,55 @@ fn hostile_report_json_does_not_panic() {
         let r: Result<Report, _> = serde_json::from_str(text);
         assert!(r.is_err(), "{text:?}");
     }
+}
+
+#[test]
+fn probes_of_separate_hardware_routes_keep_separate_outcomes() {
+    let key = Key::codec(Operation::Encode, Codec::Hevc);
+    let main8 = EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    let main10 = EncoderLimits { profiles: vec!["main10".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![10] };
+    let probe = |route: &str, outcome: ProbeOutcome, limits: Option<EncoderLimits>| Probe {
+        key,
+        backend: Backend::Platform,
+        outcome,
+        limits,
+        routes: vec![route.to_string()],
+    };
+    let nvenc_ok = probe("nvenc", ProbeOutcome::Available { detail: "NVENC".into() }, Some(main10.clone()));
+    let vaapi_down = probe("vaapi", ProbeOutcome::Unavailable { reason: "no VA-API device".into() }, None);
+    let only = |routes: &str| {
+        let user = cfa4_route::Table::parse(&format!("[compute.task.\"video.encode.hevc\"]\norder = [{routes}]\n")).unwrap();
+        BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user))
+    };
+    // an unavailable VA-API probe does not hide the NVENC encoder, in either probe order
+    for probes in [vec![nvenc_ok.clone(), vaapi_down.clone()], vec![vaapi_down.clone(), nvenc_ok.clone()]] {
+        let mut r = Registry::native();
+        r.apply_probes(probes).unwrap();
+        assert!(r.decide(key, STRICT).allowed);
+        r.set_backend_order(only("\"nvenc\""));
+        let d = r.decide(key, STRICT);
+        assert_eq!(d.backend, Some(Backend::Platform), "{d:?}");
+        assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&main10));
+        r.set_backend_order(only("\"vaapi\""));
+        assert!(!r.decide(key, STRICT).allowed);
+        assert_eq!(r.get_route(key, "vaapi").map(|e| e.level), Some(SupportLevel::Unsupported));
+        assert_eq!(r.get_route(key, "nvenc").map(|e| e.level), Some(SupportLevel::Supported));
+    }
+    // two available routes keep their own limits; the routing order picks between them
+    let mut r = Registry::native();
+    r.apply_probes([nvenc_ok, probe("vaapi", ProbeOutcome::Available { detail: "VA-API".into() }, Some(main8.clone()))]).unwrap();
+    r.set_backend_order(only("\"vaapi\", \"nvenc\""));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&main8));
+    r.set_backend_order(only("\"nvenc\", \"vaapi\""));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&main10));
+    // a probe for the whole backend that finds it unavailable still wins over every route
+    r.apply_probes([Probe {
+        key,
+        backend: Backend::Platform,
+        outcome: ProbeOutcome::Unavailable { reason: "no GPU".into() },
+        limits: None,
+        routes: Vec::new(),
+    }])
+    .unwrap();
+    assert!(!r.decide(key, STRICT).allowed);
 }
