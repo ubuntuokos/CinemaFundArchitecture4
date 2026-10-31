@@ -1,4 +1,5 @@
-//! Deblocking filter (8.7) for progressive frames, 4:2:0, 8 to 14 bits.
+//! Deblocking filter (8.7) for frames, MBAFF frames and field pictures, 4:2:0 / 4:2:2 / 4:4:4,
+//! 8 to 14 bits.
 
 use crate::picture::{MbKind, MbState, Sample};
 use crate::slicedec::{PicState, SliceInfo};
@@ -13,11 +14,12 @@ struct Motion {
 }
 
 /// Referenced picture ids per 8x8 block and list (u32::MAX = list unused).
+#[inline]
 fn ref_ids8(st: &MbState, sl: &SliceInfo) -> [[u32; 2]; 4] {
     std::array::from_fn(|b8| {
         std::array::from_fn(|l| {
             let r = st.ref_idx[l][b8];
-            if r >= 0 { sl.ref_ids[l].get(r as usize).copied().unwrap_or(u32::MAX - 1) } else { u32::MAX }
+            if r >= 0 { sl.ref_key(st, l, r) } else { u32::MAX }
         })
     })
 }
@@ -31,12 +33,14 @@ fn block_motion(st: &MbState, ids8: &[[u32; 2]; 4], raster: usize) -> Motion {
 }
 
 #[inline(always)]
-fn mv_far(a: [i16; 2], b: [i16; 2]) -> bool {
-    (a[0] as i32 - b[0] as i32).abs() >= 4 || (a[1] as i32 - b[1] as i32).abs() >= 4
+fn mv_far(a: [i16; 2], b: [i16; 2], lim: i32) -> bool {
+    (a[0] as i32 - b[0] as i32).abs() >= 4 || (a[1] as i32 - b[1] as i32).abs() >= lim
 }
 
 #[inline]
-fn motion_bs(p: &Motion, q: &Motion) -> u8 {
+/// bS 0 or 1 from the motion of two blocks; `lim`: the vertical motion vector difference that
+/// counts (4 quarter frame samples, 2 in field units).
+fn motion_bs(p: &Motion, q: &Motion, lim: i32) -> u8 {
     if p.ids == q.ids && p.mv == q.mv {
         return 0;
     }
@@ -49,7 +53,7 @@ fn motion_bs(p: &Motion, q: &Motion) -> u8 {
         if pi != qi {
             return 1;
         }
-        return mv_far(pm, qm) as u8;
+        return mv_far(pm, qm, lim) as u8;
     }
     if p.count == 0 {
         return 0;
@@ -62,13 +66,13 @@ fn motion_bs(p: &Motion, q: &Motion) -> u8 {
     if p.ids[0] != p.ids[1] {
         // two different reference pictures: compare mvs referring to the same picture
         if p.ids[0] == q.ids[0] {
-            (mv_far(p.mv[0], q.mv[0]) || mv_far(p.mv[1], q.mv[1])) as u8
+            (mv_far(p.mv[0], q.mv[0], lim) || mv_far(p.mv[1], q.mv[1], lim)) as u8
         } else {
-            (mv_far(p.mv[0], q.mv[1]) || mv_far(p.mv[1], q.mv[0])) as u8
+            (mv_far(p.mv[0], q.mv[1], lim) || mv_far(p.mv[1], q.mv[0], lim)) as u8
         }
     } else {
         // both mvs refer to the same picture
-        ((mv_far(p.mv[0], q.mv[0]) || mv_far(p.mv[1], q.mv[1])) && (mv_far(p.mv[0], q.mv[1]) || mv_far(p.mv[1], q.mv[0]))) as u8
+        ((mv_far(p.mv[0], q.mv[0], lim) || mv_far(p.mv[1], q.mv[1], lim)) && (mv_far(p.mv[0], q.mv[1], lim) || mv_far(p.mv[1], q.mv[0], lim))) as u8
     }
 }
 
@@ -328,101 +332,192 @@ fn filter_horizontal<S: Lanes, const N: usize>(pix: &mut [S], stride: usize, x: 
     }
 }
 
-/// Deblock one macroblock (macroblocks must be processed in raster order).
+/// Where the samples of a macroblock are in a plane: `plane[off + (y0 + y) * stride + x0 + x]`
+/// (field macroblocks of MBAFF frames address their field's lines).
+#[derive(Clone, Copy)]
+struct View {
+    off: usize,
+    stride: usize,
+    x0: usize,
+    y0: usize,
+}
+
+/// The macroblock(s) across the left or top macroblock edge.
+#[derive(Clone, Copy)]
+enum Across {
+    None,
+    /// One macroblock; `mixed`: one of the two is a field and the other a frame macroblock
+    /// (mixedModeEdgeFlag).
+    One(usize, bool),
+    /// MBAFF left edge between a frame and a field macroblock pair (whose top macroblock is
+    /// given): each line has its own neighbour.
+    MixedLeft(usize),
+    /// MBAFF top edge of a frame macroblock under a field pair (whose top macroblock is given):
+    /// filtered once per field (8.7.1).
+    FieldPairAbove(usize),
+}
+
+/// Edge filter parameters (alpha, beta, tC0 per segment) of an edge between macroblocks with
+/// QPs `qpp` and `qpq` (8.7.2.2), scaled to the bit depth.
+#[inline]
+fn edge_params(qpp: i32, qpq: i32, b: [u8; 4], alpha_off: i32, beta_off: i32, scale: i32) -> EdgeParams {
+    let qpav = (qpp + qpq + 1) >> 1;
+    let index_a = (qpav + alpha_off).clamp(0, 51) as usize;
+    let index_b = (qpav + beta_off).clamp(0, 51) as usize;
+    let tc = |b: u8| if (1..4).contains(&b) { TC0[index_a][b as usize - 1] as i32 * scale } else { 0 };
+    EdgeParams { bs: b, tc0: [tc(b[0]), tc(b[1]), tc(b[2]), tc(b[3])], alpha: ALPHA[index_a] as i32 * scale, beta: BETA[index_b] as i32 * scale }
+}
+
+#[inline]
+fn qp_of(st: &MbState) -> i32 {
+    if st.kind == MbKind::IPcm { 0 } else { st.qp as i32 }
+}
+
+/// Deblock one macroblock (macroblocks must be processed in order of increasing addresses).
 #[allow(clippy::needless_range_loop)]
-pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
-    let q = &pic.mbs[addr];
+pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize) {
+    let mb_w = pic.mb_w.max(1);
+    let Some(q) = pic.mbs.get(addr) else { return };
     if q.slice_num == u32::MAX {
         return;
     }
-    let sq = &pic.slices[q.slice_num as usize];
+    let Some(sq) = pic.slices.get(q.slice_num as usize) else { return };
     if sq.disable_deblocking_filter_idc == 1 {
         return;
     }
-    let (mx, my) = (addr % mb_w, addr / mb_w);
-    let usable = |n: Option<usize>| -> Option<usize> {
-        let n = n?;
-        let st = &pic.mbs[n];
+    let usable = |n: usize| -> Option<usize> {
+        let st = pic.mbs.get(n)?;
         if st.slice_num == u32::MAX || (sq.disable_deblocking_filter_idc == 2 && st.slice_num != q.slice_num) {
             return None;
         }
         Some(n)
     };
-    let left = usable(if mx > 0 { Some(addr - 1) } else { None });
-    let top = usable(if my > 0 { Some(addr - mb_w) } else { None });
+    let (mbaff, field_pic) = (pic.mbaff, pic.field.is_some());
+    let (width, cwidth) = (pic.planes.width, pic.planes.cwidth);
+    let chroma = pic.planes.chroma;
+    let (cw, ch) = (chroma.mb_w(), chroma.mb_h());
+    let one = |n: Option<usize>, mixed: bool| n.map_or(Across::None, |n| Across::One(n, mixed));
+    let (yv, cv, left, top) = if mbaff {
+        let (pair, b) = (addr / 2, addr & 1);
+        let (mx, py) = (pair % mb_w, pair / mb_w);
+        let (yv, cv) = if q.field {
+            (View { off: b * width, stride: 2 * width, x0: mx * 16, y0: py * 16 }, View { off: b * cwidth, stride: 2 * cwidth, x0: mx * cw, y0: py * ch })
+        } else {
+            let r = 2 * py + b;
+            (View { off: 0, stride: width, x0: mx * 16, y0: r * 16 }, View { off: 0, stride: cwidth, x0: mx * cw, y0: r * ch })
+        };
+        let left = match (mx > 0).then(|| usable(2 * (pair - 1))).flatten() {
+            None => Across::None,
+            Some(lt) if pic.mbs[lt].field != q.field => Across::MixedLeft(lt),
+            Some(lt) => one(usable(lt + b), false),
+        };
+        let top = if !q.field && b == 1 {
+            one(usable(addr - 1), false)
+        } else if py == 0 {
+            Across::None
+        } else {
+            match usable(2 * (pair - mb_w)) {
+                None => Across::None,
+                Some(at) => match (q.field, pic.mbs[at].field) {
+                    (false, true) => Across::FieldPairAbove(at),
+                    (false, false) => one(usable(at + 1), false),
+                    (true, true) => one(usable(at + b), false),
+                    (true, false) => one(usable(at + 1), true),
+                },
+            }
+        };
+        (yv, cv, left, top)
+    } else {
+        let (mx, my) = (addr % mb_w, addr / mb_w);
+        (
+            View { off: 0, stride: width, x0: mx * 16, y0: my * 16 },
+            View { off: 0, stride: cwidth, x0: mx * cw, y0: my * ch },
+            one((mx > 0).then(|| usable(addr - 1)).flatten(), false),
+            one((my > 0).then(|| usable(addr - mb_w)).flatten(), false),
+        )
+    };
     let alpha_off = sq.alpha_offset;
     let beta_off = sq.beta_offset;
     let t8 = q.transform_8x8;
+    // vertical motion vector differences of field macroblocks count in field units (8.7.2.1)
+    let lim = if q.field { 2 } else { 4 };
     // bS[dir][edge][segment]; dir 0 = vertical edges (x), 1 = horizontal edges (y)
     let mut bs = [[[0u8; 4]; 4]; 2];
-    if q.kind.is_intra() {
-        for dir in 0..2 {
-            if (if dir == 0 { left } else { top }).is_some() {
-                bs[dir][0] = [4; 4];
-            }
-            for e in 1..4 {
-                if !(t8 && e % 2 == 1) {
-                    bs[dir][e] = [3; 4];
-                }
-            }
-        }
-    } else {
-        let qids = ref_ids8(q, sq);
-        let q_uniform = (0..2).all(|l| {
+    let qids = ref_ids8(q, sq);
+    let q_uniform = !q.kind.is_intra()
+        && (0..2).all(|l| {
             let r = q.ref_idx[l];
             r[1] == r[0] && r[2] == r[0] && r[3] == r[0] && q.mv[l].iter().all(|m| *m == q.mv[l][0])
         });
-        let qm: [Motion; 16] = std::array::from_fn(|r| block_motion(q, &qids, r));
-        for dir in 0..2 {
-            let neighbor = if dir == 0 { left } else { top };
-            if let Some(n) = neighbor {
-                let p = &pic.mbs[n];
-                if p.kind.is_intra() {
-                    bs[dir][0] = [4; 4];
-                } else {
-                    let pids = ref_ids8(p, &pic.slices[p.slice_num as usize]);
-                    for k in 0..4 {
-                        let (rq, rp) = if dir == 0 { (k * 4, k * 4 + 3) } else { (k, 12 + k) };
-                        bs[dir][0][k] =
-                            if (p.nz_mask >> rp) & 1 != 0 || (q.nz_mask >> rq) & 1 != 0 { 2 } else { motion_bs(&block_motion(p, &pids, rp), &qm[rq]) };
-                    }
-                }
-            }
-            if q_uniform && q.nz_mask == 0 {
-                // one motion for the whole MB and no coefficients: all internal edges have bS 0
-                continue;
-            }
-            for e in 1..4 {
-                if t8 && e % 2 == 1 {
-                    continue;
-                }
+    let qm: [Motion; 16] = std::array::from_fn(|r| block_motion(q, &qids, r));
+    for dir in 0..2 {
+        if let Across::One(n, mixed) = if dir == 0 { left } else { top } {
+            let p = &pic.mbs[n];
+            if p.kind.is_intra() || q.kind.is_intra() {
+                // bS 4 across macroblock edges between frame macroblocks, and across vertical
+                // edges of MBAFF frames and field pictures
+                let strong = (!p.field && !q.field) || ((mbaff || field_pic) && dir == 0);
+                bs[dir][0] = [if strong { 4 } else { 3 }; 4];
+            } else {
+                let pids = pic.slices.get(p.slice_num as usize).map_or([[u32::MAX - 1; 2]; 4], |s| ref_ids8(p, s));
                 for k in 0..4 {
-                    let (rq, rp) = if dir == 0 { (k * 4 + e, k * 4 + e - 1) } else { (e * 4 + k, e * 4 + k - 4) };
-                    bs[dir][e][k] = if (q.nz_mask >> rp) & 1 != 0 || (q.nz_mask >> rq) & 1 != 0 { 2 } else { motion_bs(&qm[rp], &qm[rq]) };
+                    let (rq, rp) = if dir == 0 { (k * 4, k * 4 + 3) } else { (k, 12 + k) };
+                    bs[dir][0][k] = if (p.nz_mask >> rp) & 1 != 0 || (q.nz_mask >> rq) & 1 != 0 {
+                        2
+                    } else if mixed {
+                        1
+                    } else {
+                        motion_bs(&block_motion(p, &pids, rp), &qm[rq], lim)
+                    };
                 }
             }
         }
+        if q.kind.is_intra() {
+            for e in 1..4 {
+                if !(t8 && e % 2 == 1) || chroma.0 == 2 {
+                    bs[dir][e] = [3; 4];
+                }
+            }
+            continue;
+        }
+        if q_uniform && q.nz_mask == 0 {
+            // one motion for the whole MB and no coefficients: all internal edges have bS 0
+            continue;
+        }
+        for e in 1..4 {
+            // edges inside an 8x8 transform block are only needed for 4:2:2 chroma
+            if t8 && e % 2 == 1 && chroma.0 != 2 {
+                continue;
+            }
+            for k in 0..4 {
+                let (rq, rp) = if dir == 0 { (k * 4 + e, k * 4 + e - 1) } else { (e * 4 + k, e * 4 + k - 4) };
+                bs[dir][e][k] = if (q.nz_mask >> rp) & 1 != 0 || (q.nz_mask >> rq) & 1 != 0 { 2 } else { motion_bs(&qm[rp], &qm[rq], lim) };
+            }
+        }
     }
-    let qp_of = |st: &MbState| if st.kind == MbKind::IPcm { 0 } else { st.qp as i32 };
     let q_qp = qp_of(q);
     let q_qpc = q.qpc;
-    let p_qp = [left.map(|n| (qp_of(&pic.mbs[n]), pic.mbs[n].qpc)), top.map(|n| (qp_of(&pic.mbs[n]), pic.mbs[n].qpc))];
+    let across_qp = |a: Across| if let Across::One(n, _) = a { Some((qp_of(&pic.mbs[n]), pic.mbs[n].qpc)) } else { None };
+    let p_qp = [across_qp(left), across_qp(top)];
     // alpha, beta and tC0 are the table values scaled by the bit depth (8.7.2.2)
     let scale = 1i32 << pic.bit_depth.saturating_sub(8);
     let max = (1i32 << pic.bit_depth) - 1;
-    let params = |qpp: i32, qpq: i32, b: [u8; 4]| {
-        let qpav = (qpp + qpq + 1) >> 1;
-        let index_a = (qpav + alpha_off).clamp(0, 51) as usize;
-        let index_b = (qpav + beta_off).clamp(0, 51) as usize;
-        let tc = |b: u8| if (1..4).contains(&b) { TC0[index_a][b as usize - 1] as i32 * scale } else { 0 };
-        EdgeParams { bs: b, tc0: [tc(b[0]), tc(b[1]), tc(b[2]), tc(b[3])], alpha: ALPHA[index_a] as i32 * scale, beta: BETA[index_b] as i32 * scale }
-    };
-    let width = pic.planes.width;
-    let cwidth = pic.planes.cwidth;
-    // luma
+    let params = |qpp: i32, qpq: i32, b: [u8; 4]| edge_params(qpp, qpq, b, alpha_off, beta_off, scale);
+    let q_copy = *q;
+    // the special macroblock edges of MBAFF frames first (8.7: left edge, then top edge)
+    if let Across::MixedLeft(lt) = left {
+        mixed_left_edge(pic, &q_copy, lt, addr & 1, yv, cv, (alpha_off, beta_off, scale, max));
+    }
+    // luma: the 8x8 transform leaves the edges inside its blocks unfiltered (the bS of those edges
+    // is still derived above: 4:2:2 chroma uses it)
     for dir in 0..2 {
+        if dir == 1
+            && let Across::FieldPairAbove(at) = top
+        {
+            field_pair_top_edge(pic, &q_copy, at, 0, yv, (alpha_off, beta_off, scale, max));
+        }
         for e in 0..4 {
-            if bs[dir][e] == [0; 4] {
+            if bs[dir][e] == [0; 4] || (t8 && e % 2 == 1) {
                 continue;
             }
             let qpp = if e == 0 { p_qp[dir].map(|p| p.0).unwrap_or(q_qp) } else { q_qp };
@@ -432,33 +527,178 @@ pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
                 // sample of the edge changes (low QPs)
                 continue;
             }
+            let Some(y) = pic.planes.y.get_mut(yv.off..) else { return };
             if dir == 0 {
-                filter_vertical::<S, 16>(&mut pic.planes.y, width, mx * 16 + e * 4, my * 16, &ep, false, max);
+                filter_vertical::<S, 16>(y, yv.stride, yv.x0 + e * 4, yv.y0, &ep, false, max);
             } else {
-                filter_horizontal::<S, 16>(&mut pic.planes.y, width, mx * 16, my * 16 + e * 4, &ep, false, max);
+                filter_horizontal::<S, 16>(y, yv.stride, yv.x0, yv.y0 + e * 4, &ep, false, max);
             }
         }
     }
-    // chroma (4:2:0): edges at chroma samples 0 and 4 use the bS of luma edges 0 and 2
+    // chroma: the bS of the luma edge through the luma sample at (SubWidthC * x, SubHeightC * y)
+    // (8.7.2). 4:4:4 filters the luma edges with the luma filter; 4:2:0 / 4:2:2 filter the edges
+    // every four chroma samples with the chroma filter.
+    if !chroma.coded() {
+        return;
+    }
+    let (sx, sy) = (chroma.sx(), chroma.sy());
     for c in 0..2 {
         for dir in 0..2 {
-            for ce in 0..2 {
-                let e = ce * 2;
-                if bs[dir][e] == [0; 4] {
+            if dir == 1
+                && let Across::FieldPairAbove(at) = top
+            {
+                field_pair_top_edge(pic, &q_copy, at, 1 + c, cv, (alpha_off, beta_off, scale, max));
+            }
+            let (shift, n) = if dir == 0 { (sx, cw / 4) } else { (sy, ch / 4) };
+            for ce in 0..n {
+                // luma edge index of chroma edge ce
+                let e = (ce << shift) & 3;
+                if bs[dir][e] == [0; 4] || (chroma.0 == 3 && t8 && e % 2 == 1) {
                     continue;
                 }
-                let qpp = if e == 0 { p_qp[dir].map(|p| p.1[c]).unwrap_or(q_qpc[c]) } else { q_qpc[c] } as i32;
+                let qpp = if ce == 0 { p_qp[dir].map(|p| p.1[c]).unwrap_or(q_qpc[c]) } else { q_qpc[c] } as i32;
                 let ep = params(qpp, q_qpc[c] as i32, bs[dir][e]);
                 if ep.alpha == 0 || ep.beta == 0 {
                     continue;
                 }
                 let plane = if c == 0 { &mut pic.planes.cb } else { &mut pic.planes.cr };
-                if dir == 0 {
-                    filter_vertical::<S, 8>(plane, cwidth, mx * 8 + ce * 4, my * 8, &ep, true, max);
-                } else {
-                    filter_horizontal::<S, 8>(plane, cwidth, mx * 8, my * 8 + ce * 4, &ep, true, max);
+                let Some(plane) = plane.get_mut(cv.off..) else { return };
+                let (cs, x0, y0) = (cv.stride, cv.x0, cv.y0);
+                let luma_style = chroma.0 == 3;
+                // the segments of a chroma edge follow the luma segments it spans
+                match (dir, luma_style, ch) {
+                    (_, true, _) => {
+                        if dir == 0 {
+                            filter_vertical::<S, 16>(plane, cs, x0 + ce * 4, y0, &ep, false, max);
+                        } else {
+                            filter_horizontal::<S, 16>(plane, cs, x0, y0 + ce * 4, &ep, false, max);
+                        }
+                    }
+                    (0, false, 16) => filter_vertical::<S, 16>(plane, cs, x0 + ce * 4, y0, &ep, true, max),
+                    (0, false, _) => filter_vertical::<S, 8>(plane, cs, x0 + ce * 4, y0, &ep, true, max),
+                    _ => filter_horizontal::<S, 8>(plane, cs, x0, y0 + ce * 4, &ep, true, max),
                 }
             }
+        }
+    }
+}
+
+/// (alpha offset, beta offset, bit depth scale, largest sample).
+type Tune = (i32, i32, i32, i32);
+
+/// The left macroblock edge of an MBAFF macroblock whose left pair (top macroblock `lt`) is of
+/// the other kind (frame / field). The edge is filtered in the current macroblock's lines; each
+/// line's left samples belong to one macroblock of the left pair, so the lines are filtered in
+/// two sets of eight, one per left macroblock, with its QP and per two lines its bS (vertical
+/// MBAFF edges: 4 for intra, else 2 with coefficients, else 1 as the edge is mixed).
+fn mixed_left_edge<S: Lanes>(pic: &mut PicState<S>, q: &MbState, lt: usize, bottom: usize, yv: View, cv: View, tune: Tune) {
+    let (alpha_off, beta_off, scale, max) = tune;
+    let chroma = pic.planes.chroma;
+    // the left macroblock and its line of current line y (in the current macroblock's lines)
+    let p_of = |y: usize| -> (usize, usize) {
+        if q.field {
+            let row = 2 * y + bottom;
+            (lt + (row >= 16) as usize, row % 16)
+        } else {
+            let row = 16 * bottom + y;
+            (lt + (row & 1), row >> 1)
+        }
+    };
+    let bs_line = |y: usize| -> u8 {
+        let (m, yw) = p_of(y);
+        let Some(p) = pic.mbs.get(m) else { return 0 };
+        if p.kind.is_intra() || q.kind.is_intra() {
+            4
+        } else if (p.nz_mask >> ((yw / 4) * 4 + 3)) & 1 != 0 || (q.nz_mask >> ((y / 4) * 4)) & 1 != 0 {
+            2
+        } else {
+            1
+        }
+    };
+    // set j: the current lines next to left macroblock lt + j
+    let line = |j: usize, k: usize| if q.field { 8 * j + k } else { j + 2 * k };
+    let set_stride = if q.field { 1 } else { 2 };
+    for j in 0..2 {
+        let Some(p) = pic.mbs.get(lt + j).copied() else { continue };
+        let b: [u8; 4] = std::array::from_fn(|i| bs_line(line(j, 2 * i)));
+        let ep = edge_params(qp_of(&p), qp_of(q), b, alpha_off, beta_off, scale);
+        if ep.alpha == 0 || ep.beta == 0 {
+            continue;
+        }
+        if let Some(y) = pic.planes.y.get_mut(yv.off + (yv.y0 + line(j, 0)) * yv.stride..) {
+            filter_vertical::<S, 8>(y, yv.stride * set_stride, yv.x0, 0, &ep, false, max);
+        }
+    }
+    if !chroma.coded() {
+        return;
+    }
+    let ch = chroma.mb_h();
+    let sub_h = 1 << chroma.sy();
+    // the luma line of chroma line yc in the same field
+    let luma_line = |yc: usize| if q.field { yc * sub_h } else { 2 * (yc >> 1) * sub_h + (yc & 1) };
+    let n = ch / 2;
+    let cline = |j: usize, k: usize| if q.field { n * j + k } else { j + 2 * k };
+    for c in 0..2 {
+        for j in 0..2 {
+            let Some(p) = pic.mbs.get(lt + j).copied() else { continue };
+            let per = (n / 4).max(1);
+            let b: [u8; 4] = std::array::from_fn(|i| bs_line(luma_line(cline(j, (i * per).min(n - 1)))));
+            let ep = edge_params(p.qpc[c] as i32, q.qpc[c] as i32, b, alpha_off, beta_off, scale);
+            if ep.alpha == 0 || ep.beta == 0 {
+                continue;
+            }
+            let plane = if c == 0 { &mut pic.planes.cb } else { &mut pic.planes.cr };
+            let Some(pl) = plane.get_mut(cv.off + (cv.y0 + cline(j, 0)) * cv.stride..) else { continue };
+            let stride = cv.stride * set_stride;
+            match (chroma.0, n) {
+                (3, _) => filter_vertical::<S, 8>(pl, stride, cv.x0, 0, &ep, false, max),
+                (_, 8) => filter_vertical::<S, 8>(pl, stride, cv.x0, 0, &ep, true, max),
+                _ => filter_vertical::<S, 4>(pl, stride, cv.x0, 0, &ep, true, max),
+            }
+        }
+    }
+}
+
+/// The top macroblock edge of an MBAFF frame macroblock (top of its pair) under a field
+/// macroblock pair (top macroblock `at`) in colour component `comp`: filtered in field mode, the
+/// current macroblock's lines of each parity against the field macroblock of that parity (8.7.1).
+/// The edge is mixed and horizontal: bS 3 for intra, else 2 with coefficients, else 1.
+fn field_pair_top_edge<S: Lanes>(pic: &mut PicState<S>, q: &MbState, at: usize, comp: usize, v: View, tune: Tune) {
+    let (alpha_off, beta_off, scale, max) = tune;
+    let chroma = pic.planes.chroma;
+    for f in 0..2 {
+        let Some(p) = pic.mbs.get(at + f).copied() else { continue };
+        if p.slice_num == u32::MAX {
+            continue;
+        }
+        let b: [u8; 4] = std::array::from_fn(|k| {
+            if p.kind.is_intra() || q.kind.is_intra() {
+                3
+            } else if (p.nz_mask >> (12 + k)) & 1 != 0 || (q.nz_mask >> k) & 1 != 0 {
+                2
+            } else {
+                1
+            }
+        });
+        let ep = if comp == 0 {
+            edge_params(qp_of(&p), qp_of(q), b, alpha_off, beta_off, scale)
+        } else {
+            edge_params(p.qpc[comp - 1] as i32, q.qpc[comp - 1] as i32, b, alpha_off, beta_off, scale)
+        };
+        if ep.alpha == 0 || ep.beta == 0 {
+            continue;
+        }
+        let (plane, w) = match comp {
+            0 => (&mut pic.planes.y, pic.planes.width),
+            1 => (&mut pic.planes.cb, pic.planes.cwidth),
+            _ => (&mut pic.planes.cr, pic.planes.cwidth),
+        };
+        // the field's lines: the current macroblock's first line of parity f is field line y0 / 2
+        let Some(pl) = plane.get_mut(f * w..) else { continue };
+        if comp == 0 || chroma.0 == 3 {
+            filter_horizontal::<S, 16>(pl, 2 * w, v.x0, v.y0 / 2, &ep, false, max);
+        } else {
+            filter_horizontal::<S, 8>(pl, 2 * w, v.x0, v.y0 / 2, &ep, true, max);
         }
     }
 }

@@ -3638,3 +3638,13 @@
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 라이브 스트리밍: H.264 1920×1080 8Mbps, AAC 160kbps, 6초 조각 MP4 세그먼트
+	DCP (Digital Cinema Package)	DCP(디지털 시네마 패키지)
+	Digital Cinema	디지털 시네마
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 1998×1080(1.85:1), 5.1 24비트 48kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 2048×858(2.39:1), 5.1 24비트 48kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 3996×2160(1.85:1), 5.1 24비트 48kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 폴더: JPEG 2000 4096×1716(2.39:1), 5.1 24비트 48kHz PCM

@@ -304,30 +304,41 @@ pub fn pred16x16<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize, 
     }
 }
 
-/// Chroma intra prediction for a 4:2:0 macroblock (8x8 block at chroma (x, y)), 8.3.4.
-/// Modes: 0 DC, 1 horizontal, 2 vertical, 3 plane.
-pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize, mode: u8, a: Avail, d: Depth) {
+/// Chroma intra prediction for a 4:2:0 (8x8 block at chroma (x, y)) or, with `h` = 16, a 4:2:2
+/// (8x16) macroblock, 8.3.4. Modes: 0 DC, 1 horizontal, 2 vertical, 3 plane. `a.left` is the
+/// availability of the upper half of the left column and `left_lower` that of the lower half
+/// (they differ only in MBAFF frames with constrained intra prediction).
+#[allow(clippy::too_many_arguments)]
+pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize, mode: u8, a: Avail, left_lower: bool, d: Depth, h: usize) {
     const W: usize = 8;
-    const H: usize = 8;
+    let h = if h == 16 { 16 } else { 8 };
+    let left_upper = a.left;
+    let a = Avail { left: a.left && left_lower, ..a };
     let mut top = [0i32; W];
-    let mut left = [0i32; H];
+    let mut left = [0i32; 16];
     if a.top {
-        for i in 0..W {
-            top[i] = plane[(y - 1) * stride + x + i].to_i32();
+        let Some(row) = (y.checked_sub(1)).and_then(|ty| plane.get(ty * stride + x..ty * stride + x + W)) else { return };
+        for (t, v) in top.iter_mut().zip(row) {
+            *t = v.to_i32();
         }
     }
-    if a.left {
-        for i in 0..H {
-            left[i] = plane[(y + i) * stride + x - 1].to_i32();
+    if left_upper || left_lower {
+        for (i, l) in left.iter_mut().enumerate().take(h) {
+            let Some(v) = x.checked_sub(1).and_then(|lx| plane.get((y + i) * stride + lx)) else { return };
+            *l = v.to_i32();
         }
     }
-    let base = y * stride + x;
+    // the prediction is built in `pred` (rows of W) and copied into the plane at the end
+    let mut pred = [S::default(); W * 16];
     match mode {
         0 => {
-            for by in 0..H / 4 {
+            for by in 0..h / 4 {
                 for bx in 0..W / 4 {
                     let st: i32 = top[bx * 4..bx * 4 + 4].iter().sum();
                     let sl: i32 = left[by * 4..by * 4 + 4].iter().sum();
+                    let a = Avail { left: if by * 4 < h / 2 { left_upper } else { left_lower }, ..a };
+                    // 8.3.4.1-3: blocks at (0, 0) or with xO, yO > 0 use both edges, the rest of the
+                    // top row prefers the top edge, the rest of the left column the left edge
                     let dc = if (bx == 0 && by == 0) || (bx > 0 && by > 0) {
                         match (a.top, a.left) {
                             (true, true) => (st + sl + 4) >> 3,
@@ -351,42 +362,55 @@ pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize
                         d.mid
                     };
                     for r in 0..4 {
-                        let o = base + (by * 4 + r) * stride + bx * 4;
-                        plane[o..o + 4].fill(S::from_i32(dc));
+                        let o = (by * 4 + r) * W + bx * 4;
+                        pred[o..o + 4].fill(S::from_i32(dc));
                     }
                 }
             }
         }
         1 => {
-            for r in 0..H {
-                plane[base + r * stride..base + r * stride + W].fill(S::from_i32(left[r]));
+            for (row, &l) in pred.chunks_exact_mut(W).zip(&left).take(h) {
+                row.fill(S::from_i32(l));
             }
         }
         2 => {
-            for r in 0..H {
-                for c in 0..W {
-                    plane[base + r * stride + c] = S::from_i32(top[c]);
-                }
+            let t: [S; W] = top.map(S::from_i32);
+            for row in pred.chunks_exact_mut(W).take(h) {
+                row.copy_from_slice(&t);
             }
         }
         _ => {
-            let tl = if a.top_left { plane[(y - 1) * stride + x - 1].to_i32() } else { d.mid };
+            let tl = if a.top_left {
+                y.checked_sub(1).zip(x.checked_sub(1)).and_then(|(ty, lx)| plane.get(ty * stride + lx)).map_or(d.mid, |v| v.to_i32())
+            } else {
+                d.mid
+            };
             let t = |i: i32| if i < 0 { tl } else { top[i as usize] };
             let l = |i: i32| if i < 0 { tl } else { left[i as usize] };
-            let mut h = 0;
+            // xCF = 0 (4:2:0 and 4:2:2), yCF = 4 for 4:2:2 (8-146 .. 8-151)
+            let ycf = (h as i32 - 8) / 2;
+            let mut hh = 0;
             let mut v = 0;
             for k in 0..4 {
-                h += (k + 1) * (t(4 + k) - t(2 - k));
-                v += (k + 1) * (l(4 + k) - l(2 - k));
+                hh += (k + 1) * (t(4 + k) - t(2 - k));
             }
-            let aa = 16 * (left[H - 1] + top[W - 1]);
-            let b = (34 * h + 32) >> 6;
-            let c = (34 * v + 32) >> 6;
-            for r in 0..H {
-                for cc in 0..W {
-                    plane[base + r * stride + cc] = clip((aa + b * (cc as i32 - 3) + c * (r as i32 - 3) + 16) >> 5, d.max);
+            for k in 0..4 + ycf {
+                v += (k + 1) * (l(4 + ycf + k) - l(2 + ycf - k));
+            }
+            let aa = 16 * (left[h - 1] + top[W - 1]);
+            let b = (34 * hh + 32) >> 6;
+            let c = ((34 - 29 * (h == 16) as i32) * v + 32) >> 6;
+            for (r, row) in pred.chunks_exact_mut(W).take(h).enumerate() {
+                for (cc, o) in row.iter_mut().enumerate() {
+                    *o = clip((aa + b * (cc as i32 - 3) + c * (r as i32 - 3 - ycf) + 16) >> 5, d.max);
                 }
             }
+        }
+    }
+    for (r, row) in pred.chunks_exact(W).take(h).enumerate() {
+        let o = (y + r) * stride + x;
+        if let Some(dst) = plane.get_mut(o..o + W) {
+            dst.copy_from_slice(row);
         }
     }
 }
@@ -471,7 +495,7 @@ mod tests {
             p[3 * s + 4 + i] = if i < 4 { 40 } else { 80 };
             p[(4 + i) * s + 3] = if i < 4 { 8 } else { 16 };
         }
-        pred_chroma(&mut p, s, 4, 4, 0, ALL, D8);
+        pred_chroma(&mut p, s, 4, 4, 0, ALL, true, D8, 8);
         assert_eq!(p[4 * s + 4], (160 + 32 + 4) >> 3); // top-left block: both
         assert_eq!(p[4 * s + 8], 80); // top-right block: top only
         assert_eq!(p[8 * s + 4], 16); // bottom-left: left only
