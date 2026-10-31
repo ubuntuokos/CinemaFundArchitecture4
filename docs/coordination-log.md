@@ -1,6 +1,6 @@
 # CFA4 – beolvasztási napló
 
-**Aktuális gazda:** Claude (claude.ai munkamenet, a tulajdonos indította 2026-10-27 11:21-kor).
+**Aktuális gazda:** Claude (claude.ai munkamenet, a tulajdonos indította 2026-10-31 14:21-kor). Az előző gazdát (2026-10-27 11:21) a tulajdonos 2026-10-31-én archiválta.
 
 Szabályok: [`coordination.md`](coordination.md). Minden kör egy sor, a legújabb felül.
 
