@@ -342,6 +342,17 @@ struct View {
     y0: usize,
 }
 
+/// Transform-bypass accumulation direction (8.5.15) after intra prediction mode `mode`
+/// (Intra4x4 / Intra8x8 / Intra16x16: 0 vertical, 1 horizontal).
+#[inline]
+fn bypass_dir(mode: u8) -> Option<bool> {
+    match mode {
+        0 => Some(false),
+        1 => Some(true),
+        _ => None,
+    }
+}
+
 /// 4x4 field scan (Table 8-13), as raster positions.
 pub const FIELD4: [u8; 16] = [0, 4, 1, 8, 12, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15];
 /// 8x8 field scan (Table 8-14), as raster positions.
@@ -1480,10 +1491,69 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         (plane.get_mut(v.off..).unwrap_or_default(), v.stride, v.x0, v.y0)
     }
 
+    /// TransformBypassModeFlag (8.5): lossless coding, residuals are the coefficient levels.
+    #[inline]
+    fn bypass(&self) -> bool {
+        self.sps.qpprime_y_zero_transform_bypass && self.qp + self.qp_bd_offset == 0
+    }
+
+    /// Transform-bypass reconstruction (8.5.15) of the `w` x `h` region at (x, y) of component
+    /// `p` of the current macroblock: the residual is the coefficients as stored (`t8`: in 8x8
+    /// blocks, else in 4x4 blocks of a 4-wide grid), accumulated down the columns (`hor` false)
+    /// or along the rows (`hor` true) after vertical / horizontal intra prediction.
+    fn add_bypass(&mut self, p: usize, (x, y): (usize, usize), (w, h): (usize, usize), t8: bool, hor: Option<bool>) {
+        let max = self.pic.max;
+        let v = self.view[(p > 0) as usize];
+        let at =
+            |xx: usize, yy: usize| if t8 { ((yy / 8) * 2 + xx / 8) * 64 + (yy % 8) * 8 + xx % 8 } else { ((yy / 4) * 4 + xx / 4) * 16 + (yy % 4) * 4 + xx % 4 };
+        let mut r = [0i32; 256];
+        let coef = &mut self.s.coef[p];
+        for j in 0..h {
+            for i in 0..w {
+                if let Some(c) = coef.get_mut(at(x + i, y + j)) {
+                    r[j * 16 + i] = std::mem::take(c);
+                }
+            }
+        }
+        match hor {
+            Some(false) => {
+                for j in 1..h {
+                    for i in 0..w {
+                        r[j * 16 + i] = r[j * 16 + i].wrapping_add(r[(j - 1) * 16 + i]);
+                    }
+                }
+            }
+            Some(true) => {
+                for j in 0..h {
+                    for i in 1..w {
+                        r[j * 16 + i] = r[j * 16 + i].wrapping_add(r[j * 16 + i - 1]);
+                    }
+                }
+            }
+            None => {}
+        }
+        let (plane, _) = plane_of(&mut self.pic.planes, p);
+        for j in 0..h {
+            let o = v.off + (v.y0 + y + j) * v.stride + v.x0 + x;
+            let Some(dst) = plane.get_mut(o..o + w) else { return };
+            for (i, d) in dst.iter_mut().enumerate() {
+                *d = S::from_i32((d.to_i32() + r[j * 16 + i]).clamp(0, max));
+            }
+        }
+    }
+
     /// Add the residual of 4x4 block `raster` of component `p` (raster index in a 4-wide grid).
     fn add_block4(&mut self, p: usize, raster: usize) {
+        self.add_block4_dir(p, raster, None);
+    }
+
+    /// [`Self::add_block4`]; `hor` is the transform-bypass accumulation direction (8.5.15).
+    fn add_block4_dir(&mut self, p: usize, raster: usize, hor: Option<bool>) {
         if self.s.blk_nz[p] & (1 << raster) == 0 {
             return;
+        }
+        if self.bypass() {
+            return self.add_bypass(p, ((raster & 3) * 4, (raster >> 2) * 4), (4, 4), false, hor);
         }
         let max = self.pic.max;
         let v = self.view[(p > 0) as usize];
@@ -1498,10 +1568,14 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         blk.fill(0);
     }
 
-    /// Add the residual of 8x8 block `b8` of component `p` (coded like luma).
-    fn add_block8(&mut self, p: usize, b8: usize) {
+    /// Add the residual of 8x8 block `b8` of component `p` (coded like luma); `hor` is the
+    /// transform-bypass accumulation direction (8.5.15).
+    fn add_block8(&mut self, p: usize, b8: usize, hor: Option<bool>) {
         if self.s.blk_nz[p] & (1 << b8) == 0 {
             return;
+        }
+        if self.bypass() {
+            return self.add_bypass(p, ((b8 & 1) * 8, (b8 >> 1) * 8), (8, 8), true, hor);
         }
         let max = self.pic.max;
         let v = self.view[(p > 0) as usize];
@@ -1516,8 +1590,19 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         blk.fill(0);
     }
 
-    /// Add the residual of the 4:2:0 / 4:2:2 chroma blocks.
-    fn add_chroma(&mut self) {
+    /// Add the residual of the 4:2:0 / 4:2:2 chroma blocks; `hor` is the transform-bypass
+    /// accumulation direction (8.5.15).
+    fn add_chroma(&mut self, hor: Option<bool>) {
+        if self.bypass() {
+            let (w, h) = (self.chroma.mb_w(), self.chroma.mb_h());
+            for p in 1..3 {
+                if self.s.blk_nz[p] != 0 {
+                    self.add_bypass(p, (0, 0), (w, h), false, hor);
+                }
+                self.s.blk_nz[p] = 0;
+            }
+            return;
+        }
         for p in 1..3 {
             let mut m = self.s.blk_nz[p];
             while m != 0 {
@@ -1586,7 +1671,12 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
                 let (plane, stride, cx, cy) = self.mb_plane(p);
                 intra::pred_chroma(plane, stride, cx, cy, mode, av, lower, depth, h);
             }
-            self.add_chroma();
+            // intra_chroma_pred_mode 1 is horizontal, 2 vertical
+            self.add_chroma(match mode {
+                1 => Some(true),
+                2 => Some(false),
+                _ => None,
+            });
         }
         self.s.blk_nz = [0; 3];
     }
@@ -1603,7 +1693,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
                     let mode = self.mb().intra_modes[by * 4 + bx];
                     let (plane, stride, x0, y0) = self.mb_plane(p);
                     intra::pred4x4(plane, stride, x0 + bx * 4, y0 + by * 4, mode, av, depth);
-                    self.add_block4(p, by * 4 + bx);
+                    self.add_block4_dir(p, by * 4 + bx, bypass_dir(mode));
                 }
             }
             MbKind::I8x8 => {
@@ -1616,7 +1706,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
                     let mode = self.mb().intra_modes[by * 4 + bx];
                     let (plane, stride, x0, y0) = self.mb_plane(p);
                     intra::pred8x8(plane, stride, x0 + bx * 4, y0 + by * 4, mode, av, depth);
-                    self.add_block8(p, b8);
+                    self.add_block8(p, b8, bypass_dir(mode));
                 }
             }
             MbKind::I16x16 => {
@@ -1624,8 +1714,16 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
                 let mode = self.cur.info.i16_mode;
                 let (plane, stride, x0, y0) = self.mb_plane(p);
                 intra::pred16x16(plane, stride, x0, y0, mode, Avail { top_right: false, ..av }, depth);
-                for r in 0..16 {
-                    self.add_block4(p, r);
+                if self.bypass() {
+                    // the accumulation runs across the whole macroblock (8.5.2)
+                    if self.s.blk_nz[p] != 0 {
+                        self.add_bypass(p, (0, 0), (16, 16), false, bypass_dir(mode));
+                    }
+                    self.s.blk_nz[p] = 0;
+                } else {
+                    for r in 0..16 {
+                        self.add_block4(p, r);
+                    }
                 }
             }
             _ => {}
@@ -1638,7 +1736,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         for p in 0..self.luma_like() {
             if t8 {
                 for b8 in 0..4 {
-                    self.add_block8(p, b8);
+                    self.add_block8(p, b8, None);
                 }
             } else if self.s.blk_nz[p] != 0 {
                 for r in 0..16 {
@@ -1647,7 +1745,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
             }
         }
         if matches!(self.chroma.0, 1 | 2) {
-            self.add_chroma();
+            self.add_chroma(None);
         }
         self.s.blk_nz = [0; 3];
     }
@@ -1723,7 +1821,8 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
     }
 
     pub fn store_qp(&mut self) {
-        let qp = self.qp;
+        // a transform-bypass macroblock filters with qPp = 0 like I_PCM (8.7.2.2)
+        let qp = if self.bypass() { 0 } else { self.qp };
         let qpc = [self.chroma_qp(qp, 0) as i8, self.chroma_qp(qp, 1) as i8];
         let st = self.mb_mut();
         st.qp = qp as i8;
@@ -1750,6 +1849,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
     /// `ac_only` skips position 0.
     pub fn put_luma4(&mut self, p: usize, raster: usize, levels: &[i32; 16], ac_only: bool) {
         let scan = self.scan4;
+        let bypass = self.bypass();
         let qp = self.qp_prime(p);
         // ScalingList4x4[iYCbCr + 3 * mbIsInterFlag] (8.5.9)
         let Some(ls) = self.ls.ls4.get(p + 3 * self.inter()).map(|l| &l[(qp % 6) as usize]) else { return };
@@ -1758,7 +1858,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         for (k, &lv) in levels.iter().enumerate().skip(ac_only as usize) {
             if lv != 0 {
                 let pos = scan[k] as usize;
-                blk[pos] = transform::scale4(lv, ls[pos], qp);
+                blk[pos] = if bypass { lv } else { transform::scale4(lv, ls[pos], qp) };
                 any = true;
             }
         }
@@ -1773,6 +1873,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
     /// Store an 8x8 block of component `p` given in scan order.
     pub fn put_luma8(&mut self, p: usize, b8: usize, levels: &[i32; 64]) {
         let scan = self.scan8;
+        let bypass = self.bypass();
         let qp = self.qp_prime(p);
         // ScalingList8x8[2 * iYCbCr + mbIsInterFlag]
         let Some(ls) = self.ls.ls8.get(2 * p + self.inter()).map(|l| &l[(qp % 6) as usize]) else { return };
@@ -1781,7 +1882,7 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         for (k, &lv) in levels.iter().enumerate() {
             if lv != 0 {
                 let pos = scan[k] as usize;
-                blk[pos] = transform::scale8(lv, ls[pos], qp);
+                blk[pos] = if bypass { lv } else { transform::scale8(lv, ls[pos], qp) };
                 any = true;
             }
         }
@@ -1804,7 +1905,9 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         }
         let qp = self.qp_prime(p);
         let Some(ls00) = self.ls.ls4.get(p).map(|l| l[(qp % 6) as usize][0]) else { return };
-        transform::luma_dc_dequant(&mut c, qp, ls00);
+        if !self.bypass() {
+            transform::luma_dc_dequant(&mut c, qp, ls00);
+        }
         for (r, &dc) in c.iter().enumerate() {
             if dc != 0 {
                 self.s.coef[p][r * 16] = dc;
@@ -1818,7 +1921,15 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         let qpc = self.qp_prime(1 + c);
         let list = 1 + c + 3 * self.inter();
         let mut dc = [0i32; 8];
-        let n = if let Ok(lv) = <&[i32; 8]>::try_from(levels) {
+        let n = if self.bypass() {
+            // dcC = c (8-327): the 4:2:2 levels are in the 2x4 DC scan order
+            match levels {
+                [c0, c1, c2, c3, c4, c5, c6, c7] => dc = [*c0, *c2, *c1, *c5, *c3, *c6, *c4, *c7],
+                [c0, c1, c2, c3] => dc[..4].copy_from_slice(&[*c0, *c1, *c2, *c3]),
+                _ => return,
+            }
+            levels.len()
+        } else if let Ok(lv) = <&[i32; 8]>::try_from(levels) {
             let mut v = *lv;
             let qp_dc = qpc + 3;
             transform::chroma_dc_dequant_422(&mut v, qp_dc, self.ls.ls4[list][(qp_dc % 6) as usize][0]);
@@ -1849,12 +1960,13 @@ impl<'a, S: deblock::Lanes> SliceDecoder<'a, S> {
         let qpc = self.qp_prime(1 + c);
         let list = 1 + c + 3 * self.inter();
         let ls = &self.ls.ls4[list][(qpc % 6) as usize];
+        let bypass = self.bypass();
         let Some(blk) = self.s.coef[1 + c].get_mut(raster * 16..raster * 16 + 16) else { return };
         let mut any = false;
         for (k, &lv) in levels.iter().enumerate().skip(1) {
             if lv != 0 {
                 let p = scan[k] as usize;
-                blk[p] = transform::scale4(lv, ls[p], qpc);
+                blk[p] = if bypass { lv } else { transform::scale4(lv, ls[p], qpc) };
                 any = true;
             }
         }

@@ -530,9 +530,6 @@ impl Sps {
         if !(8..=14).contains(&self.bit_depth_luma) {
             return unsupported(format!("bit depth {}", self.bit_depth_luma));
         }
-        if self.qpprime_y_zero_transform_bypass {
-            return unsupported("qpprime_y_zero_transform_bypass (lossless)");
-        }
         Ok(())
     }
 }
