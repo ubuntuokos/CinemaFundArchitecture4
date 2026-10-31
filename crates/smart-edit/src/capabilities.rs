@@ -283,7 +283,9 @@ pub struct Probe {
 /// no routing task: CFA4's own code comes first there (VISION.md 2.1), then every other backend.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BackendOrder {
-    table: cfa4_route::Table,
+    /// `None` only when the built-in table failed to load: then CFA4's own code is the one
+    /// candidate. A loaded table is followed as it is, an empty order included (no candidates).
+    table: Option<cfa4_route::Table>,
 }
 
 const ALL_BACKENDS: [Backend; 4] = [Backend::Native, Backend::Platform, Backend::Gstreamer, Backend::Ffmpeg];
@@ -291,22 +293,21 @@ const ALL_BACKENDS: [Backend; 4] = [Backend::Native, Backend::Platform, Backend:
 impl BackendOrder {
     /// The order a routing table gives (the shipped one, or with the user's file on top).
     pub fn from_route(table: &cfa4_route::Table) -> BackendOrder {
-        BackendOrder { table: table.clone() }
+        BackendOrder { table: Some(table.clone()) }
     }
 
     /// The table's order for `video.<job>.<codec>`, else `video.<job>`, else the family.
     fn routed(&self, job: &str, codec: Codec, family: cfa4_route::Family) -> Vec<Backend> {
+        let Some(table) = &self.table else {
+            return vec![Backend::Native];
+        };
         let task_order = |id: &str| {
             let task = cfa4_route::TaskId::new(id).ok()?;
-            self.table.rule(&task)?.order.clone()
+            table.rule(&task)?.order.clone()
         };
         let ids = task_order(&format!("video.{job}.{}", codec.task_name()))
             .or_else(|| task_order(&format!("video.{job}")))
-            .unwrap_or_else(|| self.table.family_order(family).to_vec());
-        if ids.is_empty() {
-            // no table at all (the built-in one failed to load): CFA4's own code only
-            return vec![Backend::Native];
-        }
+            .unwrap_or_else(|| table.family_order(family).to_vec());
         Self::dedup(ids.iter().map(|id| match id.as_str() {
             "software" => Backend::Native,
             "ffmpeg" => Backend::Ffmpeg,
@@ -338,9 +339,9 @@ impl BackendOrder {
 
 impl Default for BackendOrder {
     /// The shipped routing table's order. The table is built in and tested in `cfa4-route`; if it
-    /// ever failed to parse, an empty table leaves CFA4's own code first everywhere.
+    /// ever failed to parse, CFA4's own code is the only candidate.
     fn default() -> Self {
-        BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap_or_default())
+        BackendOrder { table: cfa4_route::Table::builtin().ok() }
     }
 }
 
