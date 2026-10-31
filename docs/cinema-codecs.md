@@ -23,7 +23,7 @@ reached only through the optional GStreamer backend
 | DTS (core, Coherent Acoustics) | none | decode | ETSI TS 102 114 | core patents expired | 25–40 h |
 | DTS-HD Master Audio (XLL) | none | lossless extension | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | 30–50 h |
 | JPEG 2000 (MXF, DCP) | none | decode + encode, Part 1 and the cinema profiles | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | 40–70 h |
-| DCP packaging | none | Interop / SMPTE DCP write (CPL, PKL, ASSETMAP, MXF essence) | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | 20–30 h after JPEG 2000 |
+| DCP packaging | SMPTE DCP write (#115): one reel, 2K / 4K, 5.1, unencrypted OV; IAB immersive audio (#343, ST 429-18 / 429-19, FSK sync ST 430-12) | Interop DCP, multiple reels, MCA labels, subtitles, 3D, KDM | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | 20–30 h after JPEG 2000 |
 | ProRes, DNxHD / DNxHR | decode + encode | ProRes RAW | — | — | see codec-parity.md |
 | OpenEXR, DPX | read + write | EXR PIZ / B44 / DWA, tiled, multi-part | OpenEXR file layout docs | BSD-3-Clause | 15–25 h |
 | OpenMAX IL hardware codecs | **probe only** (this change) | — | Khronos OpenMAX IL 1.1.2 | the API is open; components are vendor drivers | see below |

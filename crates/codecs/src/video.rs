@@ -340,8 +340,8 @@ impl H264Decoder {
     }
 }
 
-/// An H.264 decoder error as a [`CodecError`]: a feature the decoder does not implement (field
-/// pictures, lossless...) is [`CodecError::Unsupported`], so the media pool shows the
+/// An H.264 decoder error as a [`CodecError`]: a feature the decoder does not implement
+/// (monochrome, slice groups...) is [`CodecError::Unsupported`], so the media pool shows the
 /// unreadable slate instead of a black picture (#626); anything else is a decode error.
 fn h264_error(e: cfa4_h264::Error) -> CodecError {
     match e {

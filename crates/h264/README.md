@@ -50,6 +50,9 @@ oracles and fixture generators.
   pictures (PAFF: per-field POC, reference marking, field reference lists 8.2.4.2.2-8.2.4.2.5 and
   MMCOs in field units, complementary field pairs decoded into one frame, a non-paired field
   output with its missing field copied from it), and streams mixing both.
+- Lossless coding (High 4:4:4 Predictive, `qpprime_y_zero_transform_bypass_flag` with QP'Y = 0,
+  8.5.15): transform bypass for every residual block size, horizontal / vertical intra residual
+  DPCM for luma (4x4, 8x8, 16x16) and chroma, and deblocking with qPp = 0 for bypass macroblocks.
 - Frame-level multithreading (see below).
 - Draft mode for reduced-resolution playback (off by default): non-reference pictures skip the
   deblocking filter and are flagged `Picture::draft`; every other picture stays bit-exact.
@@ -188,6 +191,7 @@ encoder is unavailable.
 | mbaff_cavlc_b | mandelbrot+noise 352x288 | Main, MBAFF, CAVLC, bframes=3, ref=3 |
 | mbaff_cabac | testsrc2+noise 352x288 | Main, MBAFF, CABAC, bframes=3, ref=3 |
 | mbaff_high, mbaff_bff, mbaff_temporal, mbaff_weighted, mbaff_constrained_intra, mbaff_high10, mbaff_422 | 352x288 | High MBAFF variants: 8x8 transform, bottom field first, temporal direct, weighted prediction, constrained intra, 10 bits, 4:2:2 |
+| lossless_444_intra, lossless_444_cavlc, lossless_444_b, lossless_420, lossless_420_intra_cavlc, lossless_422, lossless_444_10, lossless_420_10, lossless_mbaff | 352x288 | `-qp 0` (High 4:4:4 Predictive): intra-only, CAVLC, B-frames, 4:2:0 / 4:2:2 / 4:4:4, 10 bits, MBAFF |
 | fake_interlaced | testsrc2+noise 352x288 | `fake-interlaced`: frame pictures with `frame_mbs_only_flag = 0` |
 | vt_baseline | testsrc2+noise 320x240 | Apple VideoToolbox, Baseline (macOS only) |
 | vt_main | mandelbrot+noise 640x360 | VideoToolbox, Main |
@@ -232,10 +236,8 @@ file; `H264_BENCH_ITERS=n` (and `H264_THREADS=t`, `H264_DRAFT=1`) turns it into 
 ## Known gaps
 
 - Luma and chroma bit depth must be equal. Monochrome 4:0:0 (the paths exist, no test stream yet:
-  [#279](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/279)), `separate_colour_plane_flag`
-  ([#280](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/280)) and lossless
-  (`qpprime_y_zero_transform_bypass`, [#163](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/163))
-  return `Error::Unsupported`.
+  [#279](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/279)) and `separate_colour_plane_flag`
+  ([#280](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/280)) return `Error::Unsupported`.
 - The ffmpeg oracle covers 10 bits only (libx264 encodes 8 and 10); 9 / 12 / 14 bits are untested
   ([#164](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/164)).
 - FMO (slice groups), SP/SI slices, data partitioning (Extended profile), MVC/SVC NAL units.
