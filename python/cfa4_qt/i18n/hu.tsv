@@ -2075,3 +2075,25 @@
 	Search presets	Előbeállítások keresése
 	Show in the Preset menu	Megjelenítés az Előbeállítás menüben
 	User	Felhasználói
+	Add Beat Markers	Ütemjelölők hozzáadása
+	Clear Beat Markers	Ütemjelölők törlése
+	Clear Check Markers	Ellenőrző jelölők törlése
+	Auto Reframe Sequence…	Szekvencia automatikus átkeretezése…
+	Batch Variants from Spreadsheet…	Változatok táblázatból…
+	Check Before Export…	Ellenőrzés exportálás előtt…
+	Social Deliverables…	Közösségimédia-csomag…
+	Social Safe Zones	Közösségi biztonsági zónák
+	Text Animator	Szöveganimátor
+	Counter	Számláló
+	Typewriter	Írógép
+	Word by Word	Szóról szóra
+	Animator	Animátor
+	Animator Duration	Animátor időtartama
+	Animator Delay	Animátor késleltetése
+	Spreadsheets	Táblázatok
+	{n} beat markers added ({bpm} BPM)	{n} ütemjelölő hozzáadva ({bpm} BPM)
+	Check Before Export: no problems found	Ellenőrzés exportálás előtt: nincs hiba
+	Check Before Export: {n} problems marked on the timeline (red markers)	Ellenőrzés exportálás előtt: {n} hiba megjelölve az idővonalon (piros jelölők)
+	{n} exports queued (the Export window shows the queue)	{n} export a sorban (az Exportálás ablak mutatja a sort)
+	{n} variant sequences made, {q} exports queued	{n} változatszekvencia elkészült, {q} export a sorban
+	no column for {names}	nincs oszlop ehhez: {names}

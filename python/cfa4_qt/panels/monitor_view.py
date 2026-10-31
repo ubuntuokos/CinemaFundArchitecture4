@@ -1,9 +1,9 @@
 """How a monitor shows its picture: playback and paused resolution, magnification and pan,
-display mode, safe margins and the transport buttons shown, as egui's ``MonitorView``
+display mode, safe margins, social safe zones and the transport buttons shown, as egui's ``MonitorView``
 (crates/ui-egui/src/state.rs). Kept per monitor and remembered between sessions.
 
 The View menu entries (Playback Resolution, Paused Resolution, Display Mode, Magnification,
-High Quality Playback, Safe Margins) act on the focused monitor, as in egui.
+High Quality Playback, Safe Margins, Social Safe Zones) act on the focused monitor, as in egui.
 """
 
 from __future__ import annotations
@@ -58,6 +58,23 @@ SOURCE_DISPLAYS: tuple[tuple[str, str], ...] = (
 # the Program monitor's Comparison View (egui's DisplayMode::Comparison)
 PROGRAM_DISPLAYS: tuple[tuple[str, str], ...] = (("comparison", N_("Comparison View")),)
 CHANNELS = ("alpha", "red", "green", "blue")
+# View ▸ Social Safe Zones: (id, label, covered margins top, right, bottom, left as pixels of a
+# 1080 × 1920 frame), the same values as the engine's ``cfa4_engine::social::SafeZone::insets``
+# (crates/engine/src/social.rs), which Check Before Export tests text against
+SOCIAL_ZONES: tuple[tuple[str, str, tuple[float, float, float, float]], ...] = (
+    ("tiktok", "TikTok", (160.0, 150.0, 480.0, 60.0)),
+    ("reels", "Instagram Reels", (220.0, 120.0, 420.0, 60.0)),
+    ("shorts", "YouTube Shorts", (180.0, 140.0, 400.0, 60.0)),
+)
+
+
+def social_safe_rect(zone: str, w: float, h: float) -> tuple[float, float, float, float] | None:
+    """The uncovered part (x0, y0, x1, y1) of a ``w`` × ``h`` picture for a platform, or None."""
+    found = next((ins for k, _l, ins in SOCIAL_ZONES if k == zone), None)
+    if found is None:
+        return None
+    t, r, b, left = found
+    return (left / 1080.0 * w, t / 1920.0 * h, w - r / 1080.0 * w, h - b / 1920.0 * h)
 # the marked span of the Source clip dragged to the Timeline: JSON {item, sourceIn, duration,
 # video, audio} (egui's SourceDrag)
 SOURCE_MIME = "application/x-cfa4-source"
@@ -113,6 +130,7 @@ class MonitorView:
     pan: list[float] = field(default_factory=lambda: [0.0, 0.0])  # from the centre, in pixels
     display: str = "composite"
     safe_margins: bool = False
+    social_zone: str = ""  # View ▸ Social Safe Zones: a SOCIAL_ZONES id, "" = off
     show_transport: bool = True
     hidden: list[str] = field(default_factory=lambda: list(DEFAULT_HIDDEN))
     looping: bool = False
@@ -171,6 +189,8 @@ class MonitorView:
                     from .guides import guides_of
 
                     v.guides = guides_of(value)
+                elif name == "social_zone":
+                    v.social_zone = value if any(value == k for k, _l, _i in SOCIAL_ZONES) else ""
                 elif name == "hidden":
                     v.hidden = [str(x) for x in value] if isinstance(value, list) else list(default)
                 elif name == "pan":
@@ -235,6 +255,14 @@ def build_view_menu(menu: QMenu, monitor: Callable[[], Any]) -> list[QAction]:
         zoom_items,
         lambda v: "fit" if v.zoom is None else next((k for k, z in ZOOMS if abs(z - v.zoom) < 1e-6), ""),
         lambda m, k: m.set_zoom(None if k == "fit" else dict(ZOOMS)[k]),
+    )
+    zone_items = (("off", N_("Off")), *((k, label) for k, label, _i in SOCIAL_ZONES))
+    radio(
+        N_("Social Safe Zones"),
+        "socialSafeZone",
+        zone_items,
+        lambda v: v.social_zone or "off",
+        lambda m, k: m.set_view(social_zone="" if k == "off" else k),
     )
     safe = QAction(tr("Safe Margins"), menu, checkable=True)
     safe.setObjectName("view.safeMargins")

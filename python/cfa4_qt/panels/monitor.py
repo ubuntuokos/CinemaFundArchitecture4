@@ -68,11 +68,13 @@ from .monitor_view import (
     MIN_ZOOM,
     PROGRAM_DISPLAYS,
     RESOLUTIONS,
+    SOCIAL_ZONES,
     SOURCE_DISPLAYS,
     SOURCE_MIME,
     ZOOMS,
     MonitorView,
     res_label,
+    social_safe_rect,
 )
 from .time_bar import ScrubBar
 from .timeline_media import TimelineMedia
@@ -367,6 +369,7 @@ class FrameView(QWidget):
                 p.setPen(QPen(QColor(255, 255, 255, 120), 1.0))
                 p.drawLine(QPointF(c.x() - 8, c.y()), QPointF(c.x() + 8, c.y()))
                 p.drawLine(QPointF(c.x(), c.y() - 8), QPointF(c.x(), c.y() + 8))
+            self._paint_social_zone(p, pic)
             if self.mv.display != "composite":
                 label = tr(dict(DISPLAYS).get(self.mv.display, ""))
                 p.setPen(QColor(0x8C, 0x8C, 0x8C))
@@ -386,6 +389,41 @@ class FrameView(QWidget):
         if self.message:
             p.setPen(T.c("text_dim"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
+
+
+    def social_zone_rect(self) -> QRectF | None:
+        """View ▸ Social Safe Zones: the platform's uncovered area on screen (automation:
+        ``<target>.socialSafeZone``), or None when off."""
+        img = self.shown
+        if img is None or img.isNull() or not self.mv.social_zone:
+            return None
+        pic = self.picture_rect()
+        r = social_safe_rect(self.mv.social_zone, pic.width(), pic.height())
+        if r is None:
+            return None
+        return QRectF(pic.left() + r[0], pic.top() + r[1], r[2] - r[0], r[3] - r[1])
+
+    def _paint_social_zone(self, p: QPainter, pic: QRectF) -> None:
+        """The platform's covered margins shaded and its safe area outlined, as egui draws them."""
+        safe = self.social_zone_rect()
+        if safe is None:
+            return
+        shade = QColor(0, 0, 0, 110)
+        for r in (
+            QRectF(QPointF(pic.left(), pic.top()), QPointF(pic.right(), safe.top())),
+            QRectF(QPointF(pic.left(), safe.bottom()), QPointF(pic.right(), pic.bottom())),
+            QRectF(QPointF(pic.left(), safe.top()), QPointF(safe.left(), safe.bottom())),
+            QRectF(QPointF(safe.right(), safe.top()), QPointF(pic.right(), safe.bottom())),
+        ):
+            p.fillRect(r, shade)
+        p.setPen(QPen(QColor(255, 255, 255, 150), 1.0))
+        p.drawRect(safe)
+        label = next((lab for k, lab, _i in SOCIAL_ZONES if k == self.mv.social_zone), "")
+        f = p.font()
+        f.setPixelSize(10)
+        p.setFont(f)
+        p.setPen(QColor(255, 255, 255, 170))
+        p.drawText(safe.adjusted(4, 4, -4, -4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, label)
 
 
 class TimecodeField(QLineEdit):
