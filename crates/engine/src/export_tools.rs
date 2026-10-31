@@ -947,6 +947,8 @@ fn queue_retry(s: &mut Session, p: &Value) -> Result<Value> {
     it.status = QueueStatus::Ready;
     it.error = None;
     it.job = None;
+    let id = it.id;
+    crate::qc::reset_for_retry(s, id);
     if bool_p(p, "start").unwrap_or(false) {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));

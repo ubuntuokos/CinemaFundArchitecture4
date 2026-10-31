@@ -77,6 +77,9 @@ pub struct PendingQc {
     pub job: u64,
     pub media: String,
     pub queue_item: Option<u64>,
+    /// The QC index of the project the check was started in: opening another project meanwhile
+    /// must not file the result there.
+    index: Option<String>,
     outcome: Arc<Mutex<Option<std::result::Result<Outcome, String>>>>,
 }
 
@@ -252,7 +255,8 @@ fn spawn(
     };
     let run = crate::export_tools::guard_job(job.progress.clone(), job.result.clone(), run);
     s.jobs.push(job);
-    s.qc.pending.push(PendingQc { job: id, media, queue_item, outcome });
+    let index = index_path(s);
+    s.qc.pending.push(PendingQc { job: id, media, queue_item, index, outcome });
     if let Some(i) = queue_item.and_then(|q| s.export_queue.items.iter_mut().find(|i| i.id == q)) {
         i.qc.status = QcStatus::Running;
         i.qc.error = None;
@@ -285,7 +289,7 @@ pub fn poll(s: &mut Session) {
                     it.qc.status = o.verdict.into();
                     it.qc.report = Some(o.report_path.clone());
                 }
-                if let Err(e) = update_index(s, &pj.media, &o) {
+                if let Err(e) = update_index(s, pj.index.as_deref(), &pj.media, &o) {
                     s.error_toast("qc.run", format!("QC index: {e}"));
                 }
                 let name = std::path::Path::new(&pj.media).file_name().map_or_else(|| pj.media.clone(), |n| n.to_string_lossy().into_owned());
@@ -327,8 +331,8 @@ fn read_index(s: &Session, path: &str) -> Vec<Value> {
 }
 
 /// Record a report in the project's QC index (one entry per export, the latest wins).
-fn update_index(s: &Session, media: &str, o: &Outcome) -> std::result::Result<(), String> {
-    let Some(path) = index_path(s) else { return Ok(()) };
+fn update_index(s: &Session, index: Option<&str>, media: &str, o: &Outcome) -> std::result::Result<(), String> {
+    let Some(path) = index.map(str::to_owned) else { return Ok(()) };
     let mut entries = read_index(s, &path);
     entries.retain(|e| e.get("media").and_then(Value::as_str) != Some(media));
     entries.push(json!({
@@ -406,6 +410,11 @@ fn run(s: &mut Session, p: &Value) -> Result<Value> {
     if render.as_ref().is_some_and(|r| r.status != RenderStatus::Done) && s.services.file_size(&media).is_err() {
         return Err(bad(cmd, format!("{media}: the render did not finish and left no file")));
     }
+    // Two checks of one file would write the same report; whichever finished last would win the
+    // report while the queue and the index showed the other. A cancelled check is on its way out.
+    if let Some(other) = s.qc.pending.iter().find(|pq| pq.media == media && !job_cancelled(s, pq.job)) {
+        return Err(bad(cmd, format!("{media} is already being checked (job {}); wait for it or cancel it with jobs.cancel", other.job)));
+    }
     let job = spawn(s, media.clone(), profile, expect, links, render, item_id, wait)?;
     let mut out = json!({"job": job, "path": media, "report": report_path(&media)});
     if wait {
@@ -423,6 +432,31 @@ fn run(s: &mut Session, p: &Value) -> Result<Value> {
         out["cancel"] = json!("jobs.cancel");
     }
     Ok(out)
+}
+
+fn job_cancelled(s: &Session, job: u64) -> bool {
+    s.jobs.iter().find(|j| j.id == job).is_some_and(|j| j.progress.cancel.load(Ordering::Relaxed))
+}
+
+/// A queued export is rendered again (`export.queue.retry`): its earlier check no longer describes
+/// the file. The result is cleared (the profile stays, so the new render is checked), and a check
+/// still running on the old file is cancelled and no longer reports to the item.
+pub(crate) fn reset_for_retry(s: &mut Session, item_id: u64) {
+    let jobs: Vec<u64> =
+        s.qc.pending
+            .iter_mut()
+            .filter(|pq| pq.queue_item == Some(item_id))
+            .map(|pq| {
+                pq.queue_item = None;
+                pq.job
+            })
+            .collect();
+    for j in s.jobs.iter().filter(|j| jobs.contains(&j.id)) {
+        j.progress.cancel.store(true, Ordering::Relaxed);
+    }
+    if let Some(it) = s.export_queue.items.iter_mut().find(|i| i.id == item_id) {
+        it.qc = ItemQc { profile: it.qc.profile.take(), ..ItemQc::default() };
+    }
 }
 
 fn lock_job_error(s: &Session, job: u64) -> Option<String> {
@@ -466,7 +500,7 @@ fn review_save(s: &mut Session, p: &Value) -> Result<Value> {
         profile_version: r.profile.version,
         finished_unix_ms: now_ms(),
     };
-    if let Err(e) = update_index(s, &media, &o) {
+    if let Err(e) = update_index(s, index_path(s).as_deref(), &media, &o) {
         s.error_toast(cmd, format!("QC index: {e}"));
     }
     Ok(summary_json(&rpath, &r))
