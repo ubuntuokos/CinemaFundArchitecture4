@@ -13,7 +13,7 @@
 //! (hostile) parameters. The three MIT notices are in `glitch/LICENSE-glitch-sources`; see also
 //! `docs/licensing.md` §5.
 //!
-//! Randomness is a pure function of (Random Seed, time step, salt, row or block), so a frame
+//! Randomness is a pure function of (Random Seed, time step, effect stream, row or block), so a frame
 //! renders the same on every core count and every re-render.
 
 use std::f32::consts::TAU;
@@ -62,9 +62,10 @@ fn hash32(mut x: u32) -> u32 {
 struct Rng(u32);
 
 impl Rng {
-    /// A generator for one row / band / tile of one time step.
-    fn at(seed: u32, frame: u32, salt: u32, index: u32) -> Self {
-        let s = hash32(seed ^ frame.wrapping_mul(0x9e37_79b9) ^ salt ^ index.wrapping_mul(0x85eb_ca6b));
+    /// A generator for one row / band / tile of one time step. `stream` keeps the effects'
+    /// sequences apart (not cryptographic: these are look-variation generators).
+    fn at(seed: u32, frame: u32, stream: u32, index: u32) -> Self {
+        let s = hash32(seed ^ frame.wrapping_mul(0x9e37_79b9) ^ stream ^ index.wrapping_mul(0x85eb_ca6b));
         Rng(if s == 0 { 0x0123_4567 } else { s })
     }
     fn u32(&mut self) -> u32 {
