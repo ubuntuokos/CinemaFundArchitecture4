@@ -189,6 +189,10 @@ impl<A: Accel> Front<A> {
             // interlaced coding runs on the software decoder
             return Err(unsupported("interlaced (field / MBAFF) coding"));
         }
+        if sps.qpprime_y_zero_transform_bypass {
+            // lossless coding runs on the software decoder
+            return Err(unsupported("qpprime_y_zero_transform_bypass (lossless)"));
+        }
         if pps.num_slice_groups > 1 {
             return Err(unsupported("slice groups (FMO)"));
         }
