@@ -229,7 +229,7 @@ impl DcpEncoder {
     fn code(&self, w: u32, h: u32, rgba: &[u8]) -> Result<Vec<u8>> {
         let [x, y, z] = timed(Stage::Convert, || rgba_to_xyz12(rgba, w as usize, h as usize));
         let plane = |data: Vec<i32>| cfa4_j2k::Plane { width: w, height: h, precision: 12, signed: false, dx: 1, dy: 1, data };
-        let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)] };
+        let image = cfa4_j2k::Image { width: w, height: h, components: vec![plane(x), plane(y), plane(z)], mct: false };
         cfa4_j2k::encode(&image, &self.opts).map_err(|e| ExportError::Encode(format!("JPEG 2000: {e}")))
     }
 
