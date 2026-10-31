@@ -67,7 +67,8 @@ let pcm = mxf.read_pcm(&file, a, 48_000, 1920)?;       // planar f32, sample-exa
   orders by the bitstream (`cfa4-codecs` uses the AVC picture order counts).
 - **Codecs.** From the picture essence coding label, then the essence container label, then the
   essence bytes: AVC / AVC-Intra, VC-3, ProRes (profile from the label), MPEG-2 (decoded in `cfa4-codecs`),
-  MPEG-4 visual, JPEG 2000, DV, uncompressed.
+  MPEG-4 visual, JPEG 2000 (decoded in `cfa4-codecs` with `cfa4-j2k`), DV, uncompressed.
+  `PictureInfo::rgb` tells R'G'B' components (RGBA descriptor or GBR coding equations).
 - **Sound.** PCM chunks (frame- or clip-wrapped) with sample counts; `read_pcm` decodes
   little-endian 8/16/24/32-bit PCM (wave / AES3 descriptors) and ST 331 AES3 elements (D-10).
   Immersive Audio (IAB, `Codec::Iab`): one `Sample` per IABitstream frame, from frame-wrapped
