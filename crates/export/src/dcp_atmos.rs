@@ -1,6 +1,9 @@
 //! Dolby Atmos TrueHD as the immersive audio of a DCP (#347): the object presentation of a `.thd`
 //! stream becomes IAB frames (SMPTE ST 2098-2) with the stream's objects kept as objects.
 //!
+//! - **Source.** A raw `.thd` / `.mlp` stream, or the TrueHD track of a Matroska, MP4 / MOV or
+//!   MPEG-TS / Blu-ray M2TS file (#411), read packet by packet through our demuxers. Of several
+//!   TrueHD tracks the first whose first major syncs declare an object presentation is used.
 //! - **Bed.** Bed objects labelled L R C LFE Lss Rss Lrs Rrs Lts Rts become the channels of one
 //!   bed: 9.1OH when the stream has a top surround, else 7.1 DS, the two layouts ISDCF Doc 15
 //!   (IAB Application Profile 1) allows. A bed without rear surrounds (Atmos 5.1) feeds each side
@@ -21,7 +24,7 @@
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
 use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Decorrelation, Description, Frame, FrameRate, Gain, Object, Pan, Snap, Spread};
-use cfa4_truehd::cfa4::{ObjectDecoder, samples_per_au};
+use cfa4_truehd::cfa4::{ObjectDecoder, packet_samples, samples_per_au};
 use cfa4_truehd::render::{Event, MAX_OBJECTS, ObjectState, Source};
 use cfa4_truehd::structs::oamd::SpeakerLabels;
 
@@ -29,6 +32,9 @@ use crate::{ExportError, Result};
 
 /// Bytes read from the stream at a time.
 const CHUNK: usize = 256 * 1024;
+
+/// Bytes read from the start of a source to tell its container.
+pub(crate) const HEAD: u64 = 65_536 + 16;
 
 /// ChannelIDs (ST 2098-2 Table 20) of the 7.1 DS bed: L R C LFE Lss Rss Lrs Rrs; 9.1OH adds the
 /// top surrounds Lts Rts.
@@ -144,10 +150,170 @@ impl Metadata {
     }
 }
 
+/// A file of random-access bytes for the MPEG-TS demuxer.
+struct TsSrc(std::fs::File);
+
+impl cfa4_mpegts::ByteSource for TsSrc {
+    fn len(&self) -> u64 {
+        self.0.metadata().map_or(0, |m| m.len())
+    }
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+        std::os::unix::fs::FileExt::read_exact_at(&self.0, buf, offset)
+    }
+}
+
+/// The container of a Dolby Atmos TrueHD source.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Container {
+    /// A raw `.thd` / `.mlp` stream.
+    Raw,
+    Matroska,
+    Mp4,
+    /// MPEG-TS, Blu-ray M2TS or MPEG-PS.
+    MpegTs,
+}
+
+impl Container {
+    /// The container `head` (the first bytes of a file) starts, when it can carry TrueHD.
+    pub(crate) fn sniff(head: &[u8]) -> Option<Container> {
+        if head.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
+            return Some(Container::Matroska);
+        }
+        if head.get(4..8).is_some_and(|b| matches!(b, b"ftyp" | b"moov" | b"mdat" | b"free" | b"skip" | b"wide")) {
+            return Some(Container::Mp4);
+        }
+        if cfa4_mpegts::sniff(head).is_some() {
+            return Some(Container::MpegTs);
+        }
+        AtmosSource::sniff(head).then_some(Container::Raw)
+    }
+}
+
+/// The access units of a TrueHD track in a container, read one packet at a time.
+enum Packets {
+    Mkv { src: std::fs::File, file: Box<cfa4_matroska::MkvFile>, track: usize },
+    Mp4 { src: std::fs::File, file: Box<cfa4_isobmff::Mp4File>, track: usize },
+    Ts { src: TsSrc, file: Box<cfa4_mpegts::File>, stream: usize },
+}
+
+impl Packets {
+    /// The TrueHD tracks of a container file, each ready to read from its first packet.
+    fn open(path: &str, container: Container) -> Result<Vec<Packets>> {
+        let io = |e: &dyn std::fmt::Display| ExportError::Io(format!("{path}: {e}"));
+        let open = || std::fs::File::open(path).map_err(|e| io(&e));
+        Ok(match container {
+            Container::Raw => Vec::new(),
+            Container::Matroska => {
+                let file = cfa4_matroska::open(&open()?).map_err(|e| io(&e))?;
+                let tracks: Vec<usize> = (0..file.tracks.len())
+                    .filter(|&i| file.tracks.get(i).is_some_and(|t| matches!(t.codec, cfa4_matroska::Codec::TrueHd) && !t.samples.is_empty()))
+                    .collect();
+                let mut out = Vec::new();
+                for track in tracks {
+                    out.push(Packets::Mkv { src: open()?, file: Box::new(file.clone()), track });
+                }
+                out
+            }
+            Container::Mp4 => {
+                let file = cfa4_isobmff::open(open()?).map_err(|e| io(&e))?;
+                let tracks: Vec<usize> = (0..file.tracks.len())
+                    .filter(|&i| {
+                        file.tracks.get(i).is_some_and(|t| matches!(t.codec(), Some(cfa4_isobmff::CodecConfig::TrueHd { .. })) && !t.samples.is_empty())
+                    })
+                    .collect();
+                let mut out = Vec::new();
+                for track in tracks {
+                    out.push(Packets::Mp4 { src: open()?, file: Box::new(file.clone()), track });
+                }
+                out
+            }
+            Container::MpegTs => {
+                let src = TsSrc(open()?);
+                let file = cfa4_mpegts::open(&src).map_err(|e| io(&e))?;
+                let streams: Vec<usize> = (0..file.streams.len())
+                    .filter(|&i| file.streams.get(i).is_some_and(|s| s.codec == cfa4_mpegts::Codec::TrueHd && !s.units.is_empty()))
+                    .collect();
+                let mut out = Vec::new();
+                for stream in streams {
+                    out.push(Packets::Ts { src: TsSrc(open()?), file: Box::new(file.clone()), stream });
+                }
+                out
+            }
+        })
+    }
+
+    /// Packets in the track.
+    fn len(&self) -> usize {
+        match self {
+            Packets::Mkv { file, track, .. } => file.tracks.get(*track).map_or(0, |t| t.samples.len()),
+            Packets::Mp4 { file, track, .. } => file.tracks.get(*track).map_or(0, |t| t.samples.len()),
+            Packets::Ts { file, stream, .. } => file.streams.get(*stream).map_or(0, |s| s.units.len()),
+        }
+    }
+
+    /// Packet `i`.
+    fn read(&self, i: usize) -> std::result::Result<Vec<u8>, String> {
+        match self {
+            Packets::Mkv { src, file, track } => file.read_sample(src, *track, i).map_err(|e| e.to_string()),
+            Packets::Mp4 { src, file, track } => file.read_sample(src, *track, i).map_err(|e| e.to_string()),
+            Packets::Ts { src, file, stream } => file.read_unit(src, *stream, i).map_err(|e| e.to_string()),
+        }
+    }
+}
+
+/// Packets looked at to tell a Dolby Atmos TrueHD track from a plain one: a few major syncs.
+const ATMOS_TEST_PACKETS: usize = 1024;
+
+/// Whether the TrueHD track's first packets decode to Dolby Atmos objects.
+fn is_atmos_track(p: &Packets) -> bool {
+    let mut dec = ObjectDecoder::new();
+    for i in 0..p.len().min(ATMOS_TEST_PACKETS) {
+        let Ok(data) = p.read(i) else { return false };
+        match dec.decode(&data) {
+            Ok(c) if !c.objects.is_empty() => return true,
+            Ok(_) => {}
+            Err(_) => return false,
+        }
+    }
+    false
+}
+
+/// Where the source's TrueHD access units come from.
+enum Input {
+    Raw(BufReader<std::fs::File>),
+    /// A container's Dolby Atmos TrueHD track and its next packet.
+    Packets {
+        packets: Packets,
+        next: usize,
+    },
+}
+
+impl Input {
+    /// The next piece of the stream; `None` at its end.
+    fn next_chunk(&mut self, chunk: &mut Vec<u8>) -> std::result::Result<bool, String> {
+        match self {
+            Input::Raw(r) => {
+                chunk.resize(CHUNK, 0);
+                let got = r.read(chunk).map_err(|e| e.to_string())?;
+                chunk.truncate(got);
+                Ok(got > 0)
+            }
+            Input::Packets { packets, next } => {
+                if *next >= packets.len() {
+                    return Ok(false);
+                }
+                *chunk = packets.read(*next)?;
+                *next += 1;
+                Ok(true)
+            }
+        }
+    }
+}
+
 /// A Dolby Atmos TrueHD stream read as IAB frames, one edit unit at a time.
 pub(crate) struct AtmosSource {
     path: String,
-    reader: BufReader<std::fs::File>,
+    input: Input,
     decoder: ObjectDecoder,
     rate: FrameRate,
     /// Decoded object samples not yet framed, from sample `base` of the stream.
@@ -159,17 +325,38 @@ pub(crate) struct AtmosSource {
 }
 
 impl AtmosSource {
-    /// Whether `head` (the first bytes of a file) is a TrueHD stream: a major sync (format sync
-    /// 0xF8726FBA, 4 bytes into an access unit) in it. A cut stream starts before one.
+    /// Whether `head` (the first bytes of a file) is a raw TrueHD stream: a major sync (format
+    /// sync 0xF8726FBA, 4 bytes into an access unit) in it. A cut stream starts before one.
     pub(crate) fn sniff(head: &[u8]) -> bool {
         head.windows(4).skip(4).any(|w| w == [0xF8, 0x72, 0x6F, 0xBA])
     }
 
+    /// Opens a raw TrueHD stream, or the Dolby Atmos TrueHD track of a Matroska, MP4 or MPEG-TS
+    /// / M2TS file (the first one, when there are several).
     pub(crate) fn open(path: &str, rate: FrameRate) -> Result<AtmosSource> {
-        let f = std::fs::File::open(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let io = |e: std::io::Error| ExportError::Io(format!("{path}: {e}"));
+        let mut f = std::fs::File::open(path).map_err(io)?;
+        let mut head = Vec::new();
+        (&f).take(HEAD).read_to_end(&mut head).map_err(io)?;
+        // a raw stream is read from its start
+        f.rewind().map_err(io)?;
+        let input = match Container::sniff(&head) {
+            None | Some(Container::Raw) => Input::Raw(BufReader::with_capacity(CHUNK, f)),
+            Some(c) => {
+                let tracks = Packets::open(path, c)?;
+                if tracks.is_empty() {
+                    return Err(ExportError::Unsupported(format!("{path}: no Dolby TrueHD track")));
+                }
+                let packets = tracks
+                    .into_iter()
+                    .find(is_atmos_track)
+                    .ok_or_else(|| ExportError::Unsupported(format!("{path}: no Dolby Atmos in its TrueHD tracks (no object presentation)")))?;
+                Input::Packets { packets, next: 0 }
+            }
+        };
         Ok(AtmosSource {
             path: path.to_string(),
-            reader: BufReader::with_capacity(CHUNK, f),
+            input,
             decoder: ObjectDecoder::new(),
             rate,
             buf: Vec::new(),
@@ -186,14 +373,13 @@ impl AtmosSource {
 
     /// Decodes until `n` samples are buffered or the stream ends.
     fn fill(&mut self, n: usize) -> Result<()> {
-        let mut chunk = vec![0u8; CHUNK];
+        let mut chunk = Vec::new();
         while !self.eof && self.buf.first().is_none_or(|b| b.len() < n) {
-            let got = self.reader.read(&mut chunk).map_err(|e| self.err(e))?;
-            if got == 0 {
+            if !self.input.next_chunk(&mut chunk).map_err(|e| self.err(e))? {
                 self.eof = true;
                 break;
             }
-            let d = self.decoder.decode(chunk.get(..got).unwrap_or_default()).map_err(|e| self.err(e))?;
+            let d = self.decoder.decode(&chunk).map_err(|e| self.err(e))?;
             if d.objects.is_empty() {
                 continue;
             }
@@ -399,9 +585,16 @@ pub(crate) fn probe(path: &str, rate: FrameRate, frames: usize) -> Result<(f64, 
         objects = objects.max(f.objects.len() as u32);
     }
     let rate_hz = src.sample_rate;
-    let per_au = samples_per_au(rate_hz).unwrap_or(40);
-    let aus = count_access_units(path)?;
-    let seconds = if rate_hz > 0 { (aus.saturating_mul(per_au.unsigned_abs())) as f64 / f64::from(rate_hz) } else { 0.0 };
+    let per_au = samples_per_au(rate_hz).unwrap_or(40).unsigned_abs();
+    let samples = match &src.input {
+        Input::Raw(_) => count_access_units(path)?.saturating_mul(per_au),
+        // a container packet holds whole access units, as many as its first one
+        Input::Packets { packets, .. } => {
+            let first = packets.read(0).ok().and_then(|p| packet_samples(&p, rate_hz)).map_or(per_au, i64::unsigned_abs);
+            (packets.len() as u64).saturating_mul(first)
+        }
+    };
+    let seconds = if rate_hz > 0 { samples as f64 / f64::from(rate_hz) } else { 0.0 };
     Ok((seconds, rate_hz, beds, objects))
 }
 
@@ -439,6 +632,105 @@ mod tests {
 
     fn point(x: f32, y: f32, z: f32, gain: f32) -> ObjectState {
         ObjectState { source: Source::Point { position: [x, y, z], size: 0.0, zone: 0, snap: false, elevation: true }, gain }
+    }
+
+    /// A Matroska file of the given tracks (codec id, packets), 40 samples per packet at 48 kHz.
+    fn mkv(path: &std::path::Path, tracks: &[(&str, Vec<Vec<u8>>)]) {
+        use cfa4_matroska::{MkvWriter, MuxOptions, TrackKind, TrackSpec};
+        let specs = tracks
+            .iter()
+            .map(|(id, _)| {
+                let mut t = TrackSpec::new(TrackKind::Audio, *id);
+                t.audio = Some((48_000.0, 2, None));
+                t
+            })
+            .collect();
+        let opts = MuxOptions { doc_type: "matroska".into(), ..Default::default() };
+        let mut w = MkvWriter::new(std::fs::File::create(path).unwrap(), specs, opts).unwrap();
+        let most = tracks.iter().map(|t| t.1.len()).max().unwrap_or(0);
+        for i in 0..most {
+            for (k, (_, packets)) in tracks.iter().enumerate() {
+                if let Some(p) = packets.get(i) {
+                    w.write_frame(k, i as i64 * 833_333, true, p, None).unwrap();
+                }
+            }
+        }
+        w.finish().unwrap();
+    }
+
+    /// The access units of a raw TrueHD stream from its first major sync, chained by the length
+    /// in their first bytes.
+    fn access_units(data: &[u8]) -> Vec<Vec<u8>> {
+        let start = data.windows(4).position(|w| w == [0xF8, 0x72, 0x6F, 0xBA]).map_or(data.len(), |i| i.saturating_sub(4));
+        let mut data = &data[start..];
+        let mut out = Vec::new();
+        while data.len() >= 4 {
+            let len = (((data[0] & 0x0F) as usize) << 8 | data[1] as usize) * 2;
+            if len < 4 || len > data.len() {
+                break;
+            }
+            out.push(data[..len].to_vec());
+            data = &data[len..];
+        }
+        out
+    }
+
+    #[test]
+    fn containers_are_told_apart_by_their_first_bytes() {
+        assert_eq!(Container::sniff(&[0x1A, 0x45, 0xDF, 0xA3, 0x01]), Some(Container::Matroska));
+        assert_eq!(Container::sniff(b"\0\0\0\x18ftypmp42"), Some(Container::Mp4));
+        let mut ts = vec![0u8; 188 * 8];
+        for p in ts.chunks_mut(188) {
+            p[0] = 0x47;
+        }
+        assert_eq!(Container::sniff(&ts), Some(Container::MpegTs));
+        assert_eq!(Container::sniff(cfa4_truehd::process::EXAMPLE_DATA), Some(Container::Raw));
+        assert_eq!(Container::sniff(&[0u8; 64]), None);
+    }
+
+    /// A Matroska file whose only TrueHD track is plain TrueHD, or that has no TrueHD track at
+    /// all, is not an Atmos source; each says which.
+    #[test]
+    fn a_container_without_an_atmos_truehd_track_is_refused() {
+        let dir = std::env::temp_dir().join(format!("cfa4-atmos-mkv-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let aus = access_units(cfa4_truehd::process::EXAMPLE_DATA);
+        assert!(!aus.is_empty());
+        let plain = dir.join("plain.mkv");
+        mkv(&plain, &[("A_PCM/INT/LIT", vec![vec![0u8; 160]; 4]), ("A_TRUEHD", aus)]);
+        let err = AtmosSource::open(&plain.to_string_lossy(), FrameRate::R24).err().unwrap().to_string();
+        assert!(err.contains("no Dolby Atmos in its TrueHD tracks"), "{err}");
+        let pcm = dir.join("pcm.mkv");
+        mkv(&pcm, &[("A_PCM/INT/LIT", vec![vec![0u8; 160]; 4])]);
+        let err = AtmosSource::open(&pcm.to_string_lossy(), FrameRate::R24).err().unwrap().to_string();
+        assert!(err.contains("no Dolby TrueHD track"), "{err}");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The Atmos TrueHD track of Matroska / MP4 / M2TS files (`CFA4_ATMOS_CONTAINERS`, paths
+    /// separated by `:`, each holding at least the first 10 s of the `CFA4_ATMOS_THD` stream, e.g. made with
+    /// `ffmpeg -i a.thd -t 12 -c copy -strict -2 a.mp4`; skipped when unset) gives the frames
+    /// the raw stream gives, and the probe its length.
+    #[test]
+    fn an_atmos_track_in_a_container_gives_the_raw_streams_frames() {
+        let (Ok(raw), Ok(list)) = (std::env::var("CFA4_ATMOS_THD"), std::env::var("CFA4_ATMOS_CONTAINERS")) else { return };
+        let mut want = Vec::new();
+        let mut src = AtmosSource::open(&raw, FrameRate::R24).unwrap();
+        for _ in 0..240 {
+            want.push(src.next_frame().unwrap().unwrap());
+        }
+        for path in list.split(':').filter(|p| !p.is_empty()) {
+            let mut src = AtmosSource::open(path, FrameRate::R24).unwrap();
+            assert!(matches!(src.input, Input::Packets { .. }), "{path}");
+            for (i, w) in want.iter().enumerate() {
+                let f = src.next_frame().unwrap().unwrap_or_else(|| panic!("{path}: ends at frame {i}"));
+                assert_eq!(&f, w, "{path}: frame {i}");
+            }
+            let (seconds, rate, beds, objects) = probe(path, FrameRate::R24, 48).unwrap();
+            assert_eq!(rate, 48_000);
+            assert!(seconds > 10.0, "{path}: {seconds} s");
+            assert!(beds >= 1 && objects > 0, "{path}: {beds} bed channels, {objects} objects");
+        }
     }
 
     /// A real Dolby Atmos TrueHD stream (`CFA4_ATMOS_THD`, e.g. the Altitude trailer; skipped
