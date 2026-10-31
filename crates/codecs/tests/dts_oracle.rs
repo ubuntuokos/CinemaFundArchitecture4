@@ -151,6 +151,34 @@ fn raw_dts_layout_change_keeps_timing() {
     println!("broken.dts: {e}");
 }
 
+/// #321 review: frames at a rate that does not divide the first one's (48 kHz after 44.1 kHz)
+/// pad silence of their exact total duration, not a sample short per frame.
+#[test]
+fn raw_dts_rate_change_pads_the_exact_duration() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let first = fixture(
+        &ff,
+        "dts_441_raw.dts",
+        &["-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100", "-t", "1", "-ac", "2", "-c:a", "dca", "-strict", "-2", "-f", "dts"],
+    )
+    .expect("could not write dts_441_raw.dts");
+    let second = fixture(
+        &ff,
+        "dts_48_raw_long.dts",
+        &["-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000", "-t", "4", "-ac", "2", "-c:a", "dca", "-strict", "-2", "-f", "dts"],
+    )
+    .expect("could not write dts_48_raw_long.dts");
+    let len = |p: &std::path::Path| cfa4_codecs::audio::AudioFileSource::decode("x.dts", std::fs::read(p).unwrap().into()).unwrap().info().duration;
+    let (a, b) = (len(&first), len(&second));
+    let mut joined = std::fs::read(&first).unwrap();
+    joined.extend(std::fs::read(&second).unwrap());
+    let src = cfa4_codecs::audio::AudioFileSource::decode("joined.dts", joined.into()).unwrap();
+    assert_eq!(src.info().audio().unwrap().sample_rate, 44_100);
+    let want = (a.seconds() + b.seconds()) * 44_100.0;
+    let got = src.info().duration.seconds() * 44_100.0;
+    assert!((got - want).abs() <= 1.0, "{got} samples, want {want}");
+}
+
 /// A real DTS-HD Master Audio track in a container (`.m2ts` / `.mkv`), when
 /// `CFA4_DTSHD_CONTAINER_SAMPLE` names one (none is committed, #131): bit-exact against ffmpeg
 /// from the start, and a window read on a fresh source equals the straight decode.

@@ -999,6 +999,8 @@ fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32
     let mut out = cfa4_dts::cfa4::Decoded::default();
     let mut first_error = None;
     let mut total = 0usize;
+    // duration of the frames in another layout (ticks) and the silence padded for them (samples)
+    let (mut foreign_ticks, mut padded) = (0u128, 0u128);
     let stream = cfa4_dts::cfa4::stream_data(bytes);
     let pieces = stream.chunks(1 << 20).map(Some).chain(std::iter::once(None));
     for piece in pieces {
@@ -1020,7 +1022,14 @@ fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32
             let other = a.sample_rate != out.sample_rate || a.speakers != out.speakers;
             // the samples this frame adds to the output, at its rate: counted before they are
             let added = if other {
-                usize::try_from((n as u64).saturating_mul(u64::from(out.sample_rate)) / u64::from(a.sample_rate.max(1))).unwrap_or(usize::MAX)
+                // the frames in other layouts add up in exact ticks, so many of them at a rate that
+                // does not divide the output's lose no fraction of a sample each
+                let ticks = u128::from(cfa4_time::TICKS_PER_SECOND.unsigned_abs());
+                foreign_ticks = foreign_ticks.saturating_add((n as u128).saturating_mul(ticks) / u128::from(a.sample_rate.max(1)));
+                let owed = foreign_ticks.saturating_mul(u128::from(out.sample_rate)) / ticks;
+                let add = owed.saturating_sub(padded);
+                padded = owed;
+                usize::try_from(add).unwrap_or(usize::MAX)
             } else {
                 n
             };
