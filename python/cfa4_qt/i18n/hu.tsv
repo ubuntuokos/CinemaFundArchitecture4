@@ -2097,3 +2097,13 @@
 	{n} exports queued (the Export window shows the queue)	{n} export a sorban (az Exportálás ablak mutatja a sort)
 	{n} variant sequences made, {q} exports queued	{n} változatszekvencia elkészült, {q} export a sorban
 	no column for {names}	nincs oszlop ehhez: {names}
+	Compression	Tömörítés
+	Film Scan 1	Filmszkennelés 1
+	Film Scan 2	Filmszkennelés 2
+	Film Scan 3	Filmszkennelés 3
+	Include Alpha Channel	Alfacsatorna megtartása
+	Medium	Közepes
+	Profile	Profil
+	Quality	Minőség
+	ZIP (1 scan line)	ZIP (1 sor)
+	ZIP (16 scan lines)	ZIP (16 sor)

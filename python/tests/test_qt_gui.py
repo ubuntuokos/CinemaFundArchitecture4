@@ -6484,6 +6484,103 @@ def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
+    """egui's per-format Video rows in the Export window: the ProRes / DNxHR / APV / CineForm
+    profiles, the MXF video codec, OpenEXR compression, JPEG quality and Include Alpha Channel
+    (only where the output keeps alpha) show for the chosen format with the preset's values, and a
+    changed one is sent to the engine (and kept out when the format no longer shows it)."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export import encoder_format, supports_alpha
+
+    assert encoder_format("mxf-op1a", "proRes") == "prores" and encoder_format("hls", "") == "h264"
+    assert supports_alpha("exr", "", "") and supports_alpha("prores", "4444xq", "") and not supports_alpha("prores", "hq", "")
+    assert supports_alpha("cineform", "", "4444") and not supports_alpha("mxf-op1a", "4444", "")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        form = dlg.video_form
+        c = dlg.format_choices
+
+        def shown(key: str) -> bool:
+            w = c.get(key) or {"alpha": dlg.alpha, "quality": dlg.quality}[key]
+            return bool(form.isRowVisible(w))
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]["settings"]
+
+        def pick(combo: QtWidgets.QComboBox, value: str) -> None:
+            i = combo.findData(value)
+            assert i >= 0, value
+            combo.setCurrentIndex(i)
+
+        # ProRes: its profile row with the engine's default, no other format's row
+        pick(dlg.format, "prores")
+        # an empty profile is the engine's default, ProRes 422 HQ
+        assert wait_until(app, lambda: shown("proresProfile") and c["proresProfile"].currentData() == (resolved()["proresProfile"] or "hq"), 10_000)
+        assert not any(shown(k) for k in ("dnxProfile", "apvProfile", "cineformProfile", "exrCompression", "mxfVideoCodec", "quality"))
+        assert c["proresProfile"].currentData() != "4444" and not shown("alpha"), "422 keeps no alpha"
+        pick(c["proresProfile"], "4444")
+        assert shown("alpha") and dlg.params()["proresProfile"] == "4444"
+        dlg.alpha.setChecked(True)
+        s = resolved()
+        assert s["proresProfile"] == "4444" and s["alpha"] is True
+        # OpenEXR: compression and alpha; the ProRes profile is not sent
+        pick(dlg.format, "exr")
+        assert shown("exrCompression") and shown("alpha") and not shown("proresProfile")
+        pick(c["exrCompression"], "zip")
+        p = dlg.params()
+        assert "proresProfile" not in p and p["exrCompression"] == "zip"
+        assert resolved()["exrCompression"] == "zip"
+        # MXF: the video codec picks the profile row; MXF keeps no alpha
+        pick(dlg.format, "mxf-op1a")
+        assert shown("mxfVideoCodec") and shown("dnxProfile") and not shown("alpha")
+        pick(c["mxfVideoCodec"], "proRes")
+        assert shown("proresProfile") and not shown("dnxProfile")
+        pick(c["dnxProfile"], "hqx")
+        p = dlg.params()
+        assert p["mxfVideoCodec"] == "proRes" and "dnxProfile" not in p
+        assert resolved()["mxfVideoCodec"] == "proRes"
+        # CineForm: encoding and quality; RGBA keeps alpha
+        pick(dlg.format, "cineform")
+        assert shown("cineformProfile") and shown("cineformQuality") and not shown("alpha")
+        pick(c["cineformProfile"], "4444")
+        pick(c["cineformQuality"], "filmscan3")
+        assert shown("alpha")
+        s = resolved()
+        assert (s["cineformProfile"], s["cineformQuality"]) == ("4444", "filmscan3")
+        # APV, DNxHR, JPEG quality
+        pick(dlg.format, "apv")
+        assert shown("apvProfile")
+        pick(c["apvProfile"], "444-12")
+        assert resolved()["apvProfile"] == "444-12"
+        pick(dlg.format, "dnxhr")
+        assert shown("dnxProfile") and dlg.params()["dnxProfile"] == "hqx"
+        pick(dlg.format, "jpg")
+        assert shown("quality") and not shown("alpha")
+        dlg.quality.setValue(42)
+        assert resolved()["quality"] == 42
+        # another preset: nothing is changed any more and the rows show the preset's values
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        assert not dlg.touched & {"proresProfile", "exrCompression", "quality", "alpha"}
+        assert wait_until(app, lambda: c["proresProfile"].currentData() == (resolved()["proresProfile"] or "hq"), 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_dialogs_as_egui(app, tmp_path: Path, monkeypatch):
     """egui's Export Frame: the Program frame captured with its timecode, JPEG allows only 8 bit,
     an existing file asks Replace / Keep existing file, the folder is kept for the next export;
