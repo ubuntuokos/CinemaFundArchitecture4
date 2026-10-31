@@ -33,6 +33,7 @@ cfa4-vp8 = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-prores = { workspace = true }
 cfa4-dnx = { workspace = true }
+cfa4-j2k = { workspace = true }
 cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
