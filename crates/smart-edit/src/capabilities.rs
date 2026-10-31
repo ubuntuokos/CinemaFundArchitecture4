@@ -276,10 +276,11 @@ pub struct Probe {
 /// the export and decode routes use (`cfa4-platform`), so a user's per-task override in
 /// `routing.toml` steers the planner the same way. Route backends map onto [`Backend`]s:
 /// `software` is [`Backend::Native`], `ffmpeg` is [`Backend::Ffmpeg`], `gstreamer-*` is
-/// [`Backend::Gstreamer`] and every other (hardware) path is [`Backend::Platform`]; backends the
-/// order does not name come last. The other operations (demux, header parsing, GOP index, packet
-/// copy, mux) have no routing task: CFA4's own code comes first there (VISION.md 2.1), then the
-/// decode order.
+/// [`Backend::Gstreamer`] and every other (hardware) path is [`Backend::Platform`]. A backend the
+/// order does not name is not a candidate at all, as in the router: an override such as
+/// `order = ["software"]` must not let the registry promise a hardware encoder the export route
+/// will never use. The other operations (demux, header parsing, GOP index, packet copy, mux) have
+/// no routing task: CFA4's own code comes first there (VISION.md 2.1), then every other backend.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BackendOrder {
     table: cfa4_route::Table,
@@ -302,7 +303,11 @@ impl BackendOrder {
         let ids = task_order(&format!("video.{job}.{}", codec.task_name()))
             .or_else(|| task_order(&format!("video.{job}")))
             .unwrap_or_else(|| self.table.family_order(family).to_vec());
-        Self::complete(ids.iter().map(|id| match id.as_str() {
+        if ids.is_empty() {
+            // no table at all (the built-in one failed to load): CFA4's own code only
+            return vec![Backend::Native];
+        }
+        Self::dedup(ids.iter().map(|id| match id.as_str() {
             "software" => Backend::Native,
             "ffmpeg" => Backend::Ffmpeg,
             s if s.starts_with("gstreamer") => Backend::Gstreamer,
@@ -310,10 +315,10 @@ impl BackendOrder {
         }))
     }
 
-    /// First occurrence of each backend, then the ones not named.
-    fn complete(named: impl Iterator<Item = Backend>) -> Vec<Backend> {
+    /// First occurrence of each backend.
+    fn dedup(named: impl Iterator<Item = Backend>) -> Vec<Backend> {
         let mut out: Vec<Backend> = Vec::with_capacity(ALL_BACKENDS.len());
-        for b in named.chain(ALL_BACKENDS) {
+        for b in named {
             if !out.contains(&b) {
                 out.push(b);
             }
@@ -326,7 +331,7 @@ impl BackendOrder {
         match key.operation {
             Operation::Decode => self.routed("decode", key.codec, cfa4_route::Family::CodecDecode),
             Operation::Encode | Operation::BoundaryReencode => self.routed("encode", key.codec, cfa4_route::Family::CodecEncode),
-            _ => Self::complete(std::iter::once(Backend::Native).chain(self.routed("decode", key.codec, cfa4_route::Family::CodecDecode))),
+            _ => Self::dedup(std::iter::once(Backend::Native).chain(ALL_BACKENDS)),
         }
     }
 }
@@ -518,6 +523,12 @@ impl Registry {
             reasons.push(format!("{:?}: {:?} ({})", e.backend, e.level, e.evidence));
             if accepted && chosen.is_none() {
                 chosen = Some(e.backend);
+            }
+        }
+        let order = self.order.for_key(key);
+        for e in self.entries.range((key, Backend::Native)..=(key, Backend::Ffmpeg)).map(|(_, e)| e) {
+            if !order.contains(&e.backend) {
+                reasons.push(format!("{:?}: not in the routing order", e.backend));
             }
         }
         if reasons.is_empty() {

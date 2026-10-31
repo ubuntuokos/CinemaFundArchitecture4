@@ -33,7 +33,8 @@ Rules:
   decoding `video.decode.<codec>` (then the generic `video.encode` / `video.decode` row, then the
   `codec_encode` / `codec_decode` family; shipped: hardware, FFmpeg, GStreamer, then `Native`,
   CFA4's own software codecs). The user's `routing.toml`, per-task rows included, reorders the
-  planner exactly as it reorders the export routes (`Registry::set_backend_order`). Demux, GOP index, packet copy and mux have no routing family:
+  planner exactly as it reorders the export routes (`Registry::set_backend_order`); a backend
+  the order leaves out is no candidate, as in the router. Demux, GOP index, packet copy and mux have no routing family:
   `Native` (CFA4's own Rust crates) comes first there. No FFmpeg entry is registered: Smart Cut / Smart Render runs on CFA4's
   own Rust code (owner decision 2026-10-27, `docs/audit/smart-edit-baseline.md` §3) and ffmpeg
   is its validation oracle. ADR 0005 allows an FFmpeg ≥ 9.0.2 backend (`cfa4-ffmpeg`, through

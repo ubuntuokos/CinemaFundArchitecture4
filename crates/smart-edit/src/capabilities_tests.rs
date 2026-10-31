@@ -252,7 +252,8 @@ fn backend_preference_comes_from_the_routing_table() {
     r.set_backend_order(BackendOrder::from_route(&table));
     let d = r.decide(encode, STRICT);
     assert_eq!(d.backend, Some(Backend::Native));
-    assert_eq!(names(&d), vec!["Native", "Gstreamer", "Platform", "Ffmpeg"], "backends the table omits come last");
+    assert_eq!(names(&d), vec!["Native", "Gstreamer", "Platform", "Ffmpeg"], "omitted backends are listed, but only as not routed");
+    assert!(d.reasons[2].contains("not in the routing order"), "{:?}", d.reasons);
 
     // a per-task row wins over the family, as it does for the export encoder route
     let user = cfa4_route::Table::parse("[compute.task.\"video.encode.h264\"]\norder = [\"software\"]\n").unwrap();
@@ -263,6 +264,16 @@ fn backend_preference_comes_from_the_routing_table() {
         r.insert(Entry { key: hevc, backend, level: SupportLevel::Supported, evidence: String::new(), limits: None }).unwrap();
     }
     assert_eq!(r.decide(hevc, STRICT).backend, Some(Backend::Platform), "an H.264 override leaves HEVC alone");
+
+    // a backend the override leaves out is no candidate, even when it is the only one available
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.hevc\"]\norder = [\"software\"]\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    r.insert(Entry { key: hevc, backend: Backend::Native, level: SupportLevel::Unsupported, evidence: String::new(), limits: None }).unwrap();
+    let d = r.decide(hevc, STRICT);
+    assert!(!d.allowed, "{d:?}");
+    let render =
+        r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 }, LAX);
+    assert!(render.steps.iter().any(|s| s.key == hevc && !s.allowed), "{render:?}");
 }
 
 #[test]
