@@ -133,6 +133,16 @@ fn clean_aperture(c: CleanAperture, (w, h): (u32, u32)) -> Option<Region> {
 /// unspecified, or all of it when there is none (ffmpeg writes MP4 without `colr` by default),
 /// comes from the stream's own description: `vpcC` / `apvC`, or the SPS VUI in `avcC` / `hvcC`
 /// and the sequence header in `av1C`. The rest defaults by frame size.
+/// The colour a track's `colr` box signals (resolved with the bitstream's, as playback applies
+/// it to decoded YUV frames), or `None` without one: then the decoder's own colour stands.
+pub fn container_color(entry: &cfa4_isobmff::SampleEntry, w: u32, h: u32) -> Option<ColorInfo> {
+    entry
+        .video
+        .as_ref()
+        .is_some_and(|v| matches!(v.color, Some(cfa4_isobmff::ColorInfo::Nclx { .. } | cfa4_isobmff::ColorInfo::Nclc { .. })))
+        .then(|| color_from(entry, w, h))
+}
+
 fn color_from(entry: &cfa4_isobmff::SampleEntry, w: u32, h: u32) -> ColorInfo {
     use crate::stream_color::ColorCodes;
     use cfa4_isobmff::ColorInfo as Colr;

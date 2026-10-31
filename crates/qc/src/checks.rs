@@ -550,8 +550,10 @@ fn audio_loudness(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
         }
         if a.integrated_lufs.is_finite() {
             Ok((a.integrated_lufs, None))
-        } else {
+        } else if a.integrated_lufs == f64::NEG_INFINITY {
             Ok((-70.0, Some("no signal above the −70 LUFS gate (reported as −70 LUFS)".into())))
+        } else {
+            Err(format!("loudness is not a number ({}): samples that are not finite", a.integrated_lufs))
         }
     })
 }
@@ -569,8 +571,11 @@ fn audio_true_peak(c: &Ctx, id: &str, spec: &CheckSpec) -> CheckResult {
     per_track(c, id, spec, |a| {
         if a.true_peak_dbtp.is_finite() {
             Ok((a.true_peak_dbtp.max(FLOOR_DB), None))
-        } else {
+        } else if a.true_peak_dbtp == f64::NEG_INFINITY {
             Ok((FLOOR_DB, Some(format!("digital silence (reported as {FLOOR_DB} dBTP)"))))
+        } else {
+            // +∞ or NaN: corrupt (infinite or NaN) samples, never a passing value
+            Err(format!("true peak is not a finite number ({}): samples that are not finite", a.true_peak_dbtp))
         }
     })
 }
@@ -819,6 +824,33 @@ mod tests {
         let get = |id: &str| rs.iter().find(|r| r.id == id).unwrap();
         assert_eq!(get("integrity.frameCount").status, Status::Fail);
         assert_eq!(get("integrity.frames").status, Status::Fail);
+    }
+
+    /// Review of #306: an infinite or NaN measurement (samples that are not finite) is never
+    /// turned into a passing value; only −∞ (digital silence) maps to the floor.
+    #[test]
+    fn non_finite_audio_measurements_do_not_pass() {
+        let p = QcProfile::builtin("delivery-web").unwrap();
+        let mut a = crate::audio::AudioAnalyzer::new(0, 48_000, 0, None, 0.0);
+        a.push(&[vec![0.1; 48_000], vec![0.1; 48_000]]);
+        let tone = a.finish();
+        for (peak, lufs, want) in
+            [(f64::INFINITY, f64::INFINITY, Status::NotRun), (f64::NAN, f64::NAN, Status::NotRun), (f64::NEG_INFINITY, f64::NEG_INFINITY, Status::Pass)]
+        {
+            let mut f = facts(None);
+            let mut t = tone.clone();
+            t.true_peak_dbtp = peak;
+            t.integrated_lufs = lufs;
+            if let Some(d) = f.decode.as_mut() {
+                d.audio = vec![StreamDecode { track: 1, samples: 47, decoded: 47, ..StreamDecode::default() }];
+                d.audio_facts = vec![t];
+            }
+            let rs = evaluate(&p, &f, &Expectation::default());
+            let r = rs.iter().find(|r| r.id == "audio.truePeak").unwrap();
+            assert_eq!(r.status, want, "{peak}: {r:?}");
+            let l = rs.iter().find(|r| r.id == "audio.loudness").unwrap();
+            assert_ne!(l.status, Status::Pass, "{lufs}: {l:?}");
+        }
     }
 
     #[test]
