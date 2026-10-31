@@ -125,3 +125,74 @@ fn qc_run_on_a_path_and_bad_input() {
     let p = result(s.execute("qc.profiles.list", json!({})).unwrap());
     assert_eq!(p["profiles"][0]["id"], "delivery-web");
 }
+
+fn settle(s: &mut Session) {
+    for _ in 0..4000 {
+        s.poll_persistence();
+        if s.qc.pending.is_empty() {
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    panic!("QC did not finish");
+}
+
+/// Review of #317: a check finishing after another project was opened is filed in the index of
+/// the project it was started in; a second check of the same file is refused while the first
+/// runs (both would write one report).
+#[test]
+fn a_running_check_keeps_its_project_and_its_file() {
+    let (mut s, files) = session();
+    s.execute(
+        "file.exportMedia",
+        json!({"format":"h264", "path":"/work/a.mp4", "range":"custom", "startTime":0, "endTime":cfa4_time::TICKS_PER_SECOND, "wait":true}),
+    )
+    .unwrap();
+    let first = result(s.execute("qc.run", json!({"path":"/work/a.mp4"})).unwrap());
+    let err = s.execute("qc.run", json!({"path":"/work/a.mp4.cfa4qc.json", "profile":"delivery-web"})).unwrap_err().to_string();
+    assert!(err.contains("already being checked"), "{err}");
+    s.path = Some("/work/other.fcproj".into());
+    settle(&mut s);
+    let fs = files.0.lock().unwrap();
+    assert!(fs.contains_key("/work/film.cfa4qc/index.json"), "filed where the check started");
+    assert!(!fs.contains_key("/work/other.cfa4qc/index.json"));
+    drop(fs);
+
+    // a cancelled check no longer blocks a new one
+    let job = first["job"].as_u64().unwrap();
+    assert!(s.qc.pending.is_empty() && s.jobs.iter().any(|j| j.id == job));
+    let again = result(s.execute("qc.run", json!({"path":"/work/a.mp4"})).unwrap());
+    let j = again["job"].as_u64().unwrap();
+    if let Some(job) = s.jobs.iter().find(|x| x.id == j) {
+        job.progress.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+    assert!(s.execute("qc.run", json!({"path":"/work/a.mp4", "wait":true})).is_ok());
+    settle(&mut s);
+}
+
+/// Review of #317: retrying a checked export clears its QC result (the profile stays) so the
+/// new render is checked again instead of showing the old file's verdict.
+#[test]
+fn retrying_an_export_checks_the_new_render() {
+    let (mut s, _files) = session();
+    let added = result(
+        s.execute(
+            "export.queue.add",
+            json!({"format":"h264", "path":"/work/r.mp4", "range":"custom", "startTime":0, "endTime":cfa4_time::TICKS_PER_SECOND, "qc":"delivery-web", "start":true, "wait":true}),
+        )
+        .unwrap(),
+    );
+    let id = added["items"][0]["id"].as_u64().unwrap();
+    let qc = |s: &mut Session| result(s.execute("export.queue.list", json!({})).unwrap())["items"][0]["qc"].clone();
+    assert_eq!(qc(&mut s)["status"], "failed");
+    s.execute("export.queue.retry", json!({"id": id})).unwrap();
+    let q = qc(&mut s);
+    assert_eq!(q["status"], "notChecked", "{q}");
+    assert_eq!(q["profile"], "delivery-web");
+    assert!(q["report"].is_null());
+    s.execute("export.queue.start", json!({"wait": true})).unwrap();
+    settle(&mut s);
+    let q = qc(&mut s);
+    assert_eq!(q["status"], "failed", "{q}");
+    assert_eq!(q["report"], "/work/r.mp4.cfa4qc.json");
+}
