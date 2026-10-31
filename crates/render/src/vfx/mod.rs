@@ -15,6 +15,7 @@ mod blur;
 mod color;
 pub(crate) use color::cdl;
 mod distort;
+mod glitch;
 mod immersive;
 mod lights;
 mod stylize;
@@ -518,6 +519,13 @@ pub fn apply(img: &mut Image, e: &EffectInstance, cx: &FxCtx) -> bool {
         "ellipse" => stylize::ellipse(img, e, cx),
         "paint_bucket" => stylize::paint_bucket(img, e, cx),
         "write_on" => stylize::write_on(img, e, cx),
+        // Glitch (CFA4's own folder)
+        "bit_crush" => glitch::bit_crush(img, e, cx),
+        "block_glitch" => glitch::block_glitch(img, e, cx),
+        "databend" => glitch::databend(img, e, cx),
+        "vhs" => glitch::vhs(img, e, cx),
+        "scan_line_jitter" => glitch::scan_line_jitter(img, e, cx),
+        "tile_jitter" => glitch::tile_jitter(img, e, cx),
         // Time / analysis
         "posterize_time" => temporal::posterize_time(img, e, cx),
         "echo" => temporal::echo(img, e, cx),
