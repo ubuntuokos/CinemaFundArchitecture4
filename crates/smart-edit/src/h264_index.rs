@@ -328,6 +328,9 @@ pub fn index_h264<'a>(
     // latest access point: (pts, kind, whether a decodable picture came before it, so that its
     // leading pictures have the references they predict from)
     let mut ap: Option<(Option<i64>, RandomAccessKind, bool)> = None;
+    // an intra picture was seen (an access point or not): pictures after it may have their
+    // references even without a signalled access point
+    let mut seen_intra = false;
     for (i, p) in packets.into_iter().enumerate() {
         if i >= MAX_FRAMES {
             return Err(IndexError::TooManyFrames);
@@ -365,6 +368,9 @@ pub fn index_h264<'a>(
             DependencyStatus::Independent
         } else {
             match ap {
+                // reference lists are not resolved: after an unsignalled intra picture it stays
+                // open whether a picture has its references; before any intra picture it has none
+                None if seen_intra => DependencyStatus::Unknown,
                 None => DependencyStatus::Undecodable,
                 Some((ap_pts, kind, history)) => {
                     let leading = matches!((p.pts, ap_pts), (Some(a), Some(b)) if a < b);
@@ -385,6 +391,7 @@ pub fn index_h264<'a>(
         if random_access.is_access_point() {
             ap = Some((p.pts, random_access, ap.is_some()));
         }
+        seen_intra |= picture_type == PictureType::I;
         frames.push(FrameIndexEntry {
             stream_id,
             decode_index: di,

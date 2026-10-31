@@ -74,7 +74,9 @@ The index comes from the bitstream, not from the container's keyframe flag:
   either. A picture coded with other SPS / PPS payloads than the one before it (a replaced
   parameter set or a switch to another `pic_parameter_set_id`) is a configuration change.
   Leading pictures are found from the PTS; without timestamps the pictures after a recovery point
-  stay `Unknown`. Reference lists are not resolved (`references` is `None`).
+  stay `Unknown`. Reference lists are not resolved (`references` is `None`): a picture after an
+  intra picture but before any signalled access point is `Unknown`; before any intra picture it is
+  `Undecodable`.
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 

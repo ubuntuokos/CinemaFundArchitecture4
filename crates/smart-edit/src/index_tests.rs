@@ -654,3 +654,19 @@ fn h264_packets_of_empty_nal_units_do_not_amplify_memory() {
         assert!(ix.is_ok());
     }
 }
+
+#[test]
+fn h264_pictures_after_an_unsignalled_intra_picture_are_not_called_undecodable() {
+    let units: Vec<Vec<u8>> = vec![
+        [sps(40), slice(0x41, 5)].concat(), // P before any intra picture: no references
+        slice(0x61, 7),                     // I without IDR or recovery point SEI
+        slice(0x41, 5),
+        slice(0x41, 5),
+    ];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &[], units.iter().map(|d| Packet { data: d, pts: None, dts: None, keyframe: false })).unwrap();
+    let status: Vec<DependencyStatus> = ix.frames.iter().map(|f| f.dependency_status).collect();
+    assert_eq!(status, [DependencyStatus::Undecodable, DependencyStatus::Independent, DependencyStatus::Unknown, DependencyStatus::Unknown]);
+    assert_eq!(ix.frames[1].random_access, RandomAccessKind::IntraOnly);
+    assert!(ix.clean_access_points().is_empty());
+}
