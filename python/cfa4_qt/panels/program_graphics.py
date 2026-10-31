@@ -464,7 +464,8 @@ class GraphicsTools:
                 pass  # still the text from before our first unanswered change
             elif shown != e["text"]:
                 # another editor (Properties, Essential Graphics, undo) changed the text: type into that
-                e["text"], e["mine"] = shown, []
+                # (and typing on starts its own undo step: the engine would merge it into any Edit Text before)
+                e["text"], e["mine"], e["sent"] = shown, [], False
                 e["caret"], e["anchor"] = min(e["caret"], len(shown)), min(e["anchor"], len(shown))
         elif e.get("seen"):
             self.edit = None  # the layer went (undo, deleted): the edit ends

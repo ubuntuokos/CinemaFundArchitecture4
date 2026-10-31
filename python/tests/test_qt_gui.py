@@ -737,7 +737,8 @@ def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(ap
     assert gt.edit_view() is layer and gt.edit["text"] == "New text"
     gt.edit["caret"] = gt.edit["anchor"] = len("New text")
     gt._replace("!")
-    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "New text!"
+    last = [p for c, p in sent if c == "graphics.setText"][-1]
+    assert (last["text"], last["merge"]) == ("New text!", False), "typing after another editor's change starts its own undo step"
     # Undo (all our changes came back): the undone text is typed into, not the session's older one
     layer.text = {"text": "Old"}
     gt.start_edit(layer, None)
@@ -748,7 +749,8 @@ def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(ap
     assert gt.edit_view() is layer and gt.edit["text"] == "Old"
     gt.edit["caret"] = gt.edit["anchor"] = 3
     gt._replace("x")
-    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "Oldx"
+    last = [p for c, p in sent if c == "graphics.setText"][-1]
+    assert (last["text"], last["merge"]) == ("Oldx", False), "typing after an Undo is not merged into an earlier Edit Text"
     # typing ended (Esc) before the new layer existed: the typed text still goes into it
     gt.new_text(QtCore.QPointF(10, 20), None)
     gt._replace("Late")
