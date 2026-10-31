@@ -2,9 +2,9 @@
 
 A group shows its current tool; the others of the group are in a flyout (right-click, or hold
 the button). The tool decides what a drag on the timeline does; every edit it makes is an
-engine command (see ``TimelineCanvas``). Tools that draw on the Program monitor or edit
-keyframes there (Pen, Rectangle, Ellipse, Type) are not in the Qt GUI yet: they are
-listed disabled, so the gap shows (docs/qt-parity.md).
+engine command (see ``TimelineCanvas``). Pen, Rectangle and Ellipse draw graphic layers on the
+Program monitor and the Type tools write text there (``program_graphics``); the Pen also adds
+keyframes on the timeline's Volume line and track lanes.
 """
 
 from __future__ import annotations
@@ -39,12 +39,12 @@ GROUPS: tuple[tuple[ToolDef, ...], ...] = (
     (ToolDef("razor", N_("Razor Tool"), "C"),),
     (ToolDef("slip", N_("Slip Tool"), "Y"), ToolDef("slide", N_("Slide Tool"), "U")),
     (
-        ToolDef("pen", N_("Pen Tool"), "P", available=False),
-        ToolDef("rectangle", N_("Rectangle Tool"), "", available=False),
-        ToolDef("ellipse", N_("Ellipse Tool"), "", available=False),
+        ToolDef("pen", N_("Pen Tool"), "P"),
+        ToolDef("rectangle", N_("Rectangle Tool"), ""),
+        ToolDef("ellipse", N_("Ellipse Tool"), ""),
     ),
     (ToolDef("hand", N_("Hand Tool"), "H"), ToolDef("zoom", N_("Zoom Tool"), "Z")),
-    (ToolDef("type", N_("Type Tool"), "T", available=False), ToolDef("verticalType", N_("Vertical Type Tool"), "", available=False)),
+    (ToolDef("type", N_("Type Tool"), "T"), ToolDef("verticalType", N_("Vertical Type Tool"), "")),
 )
 TOOLS = {t.id: t for g in GROUPS for t in g}
 NOT_YET = N_("Not yet in the Qt GUI (see docs/qt-parity.md)")
@@ -190,9 +190,11 @@ class ToolsPanel(QWidget):
         self.actions[t.id] = a
         return a
 
-    def shortcut_pairs(self) -> list[tuple[QAction, str]]:
-        """(action, key) for the window to bind where no engine command uses the key."""
-        return [(self.actions[t.id], t.key) for g in GROUPS for t in g if t.key and t.available]
+    def shortcut_pairs(self) -> list[tuple[QAction, str, str]]:
+        """(action, command id, default key) for the window to bind where no engine command uses
+        the key (the keys come from the engine's shortcut set: Keyboard Shortcuts edits them)."""
+        return [(self.actions[t.id], f"tool.{t.id}", t.key) for g in GROUPS for t in g if t.available]
+
 
     def select(self, tool: str) -> None:
         t = TOOLS.get(tool)
@@ -222,3 +224,8 @@ class ToolsPanel(QWidget):
             b.setEnabled(any(x.available for x in GROUPS[gi]))
         for tid, a in self.actions.items():
             a.setChecked(tid == self.current)
+
+
+def tool_commands() -> list[tuple[str, str, list[str], str]]:
+    """(id, label, menu, default key) of every tool, egui's ``tool.*`` commands."""
+    return [(f"tool.{t.id}", t.label, [], t.key) for g in GROUPS for t in g]
