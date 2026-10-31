@@ -135,11 +135,11 @@ fn transforms_grids_and_identity_items_match_libheif() {
         ("rot270", vec![writer::irot_box(3)]),
         ("mirror_top_bottom", vec![writer::imir_box(0)]),
         ("mirror_left_right", vec![writer::imir_box(1)]),
-        // left 14, top 13.75 rounded to 14: an even origin, because libheif upsamples 4:2:0 to
-        // 4:4:4 with its own filter before an odd crop (newer releases), which no longer
-        // matches its usual YCbCr to RGB path
+        // even crop origins (left 14, top 13.75 rounded to 14; left 14, top 4), because libheif
+        // upsamples 4:2:0 to 4:4:4 with its own filter before an odd crop (newer releases),
+        // which no longer matches its usual YCbCr to RGB path
         ("clap", vec![writer::clap_box((61, 1), (41, 1), (-7, 2), (9, 4))]),
-        ("clap_rot_mirror", vec![writer::clap_box((80, 1), (50, 1), (5, 1), (-3, 1)), writer::irot_box(1), writer::imir_box(0)]),
+        ("clap_rot_mirror", vec![writer::clap_box((80, 1), (50, 1), (6, 1), (-3, 1)), writer::irot_box(1), writer::imir_box(0)]),
     ] {
         o.check(name, &single(&hvcc, &data, &colour, w, h, extra), 2);
     }
