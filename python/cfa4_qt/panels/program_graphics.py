@@ -456,10 +456,15 @@ class GraphicsTools:
         if v is not None:
             e["seen"] = True
             shown = str((v.text or {}).get("text") or "")[:MAX_TEXT]
-            mine = e.setdefault("mine", [e["text"]])
-            if shown != e["text"] and shown not in mine:
+            # `mine`: texts this session sent that the overlay has not shown yet (in order)
+            mine = e.setdefault("mine", [])
+            if shown in mine:
+                del mine[: mine.index(shown) + 1]  # that one (and any older) came back
+            elif mine and shown == e.get("base"):
+                pass  # still the text from before our first unanswered change
+            elif shown != e["text"]:
                 # another editor (Properties, Essential Graphics, undo) changed the text: type into that
-                e["text"], e["mine"] = shown, [shown]
+                e["text"], e["mine"] = shown, []
                 e["caret"], e["anchor"] = min(e["caret"], len(shown)), min(e["anchor"], len(shown))
         elif e.get("seen"):
             self.edit = None  # the layer went (undo, deleted): the edit ends
@@ -472,7 +477,7 @@ class GraphicsTools:
         if q is not None:
             caret = min(caret_hit(text_lines(v.text), q.x(), q.y(), bool((v.text or {}).get("vertical"))), len(text))
         self.edit = {"clip": v.clip, "layer": v.layer, "text": text, "caret": caret, "anchor": 0 if select_all else caret,
-                     "seen": True, "mine": [text]}
+                     "seen": True, "mine": []}
         if select_all:
             self.edit["caret"] = len(text)
         self.overlay.send("graphics.selectLayer", {"clip": v.clip, "layers": [v.layer]})
@@ -518,9 +523,14 @@ class GraphicsTools:
         self._focus()
 
         def made(r: Any, _b: Any) -> None:
-            if self.edit is not pending:  # the edit ended meanwhile (another click, a tool)
+            ok = isinstance(r, dict) and r.get("clip") is not None and isinstance(r.get("layer"), int)
+            if self.edit is not pending:
+                # the edit ended meanwhile (Esc, another click, a tool): what was typed still goes in
+                if ok and pending["text"]:
+                    pending["clip"], pending["layer"] = r["clip"], r["layer"]
+                    self._send_text(pending)
                 return
-            if not (isinstance(r, dict) and r.get("clip") is not None and isinstance(r.get("layer"), int)):
+            if not ok:
                 self.end_edit()
                 return
             pending["clip"], pending["layer"] = r["clip"], r["layer"]
@@ -539,6 +549,8 @@ class GraphicsTools:
         e = self.edit
         if e is None or text == e["text"]:
             return
+        if not e.get("mine"):
+            e["base"] = e["text"]  # what the overlay shows until this change comes back
         e["text"] = text[:MAX_TEXT]
         e["caret"], e["anchor"] = min(e["caret"], len(e["text"])), min(e["anchor"], len(e["text"]))
         if e.get("clip") is not None:

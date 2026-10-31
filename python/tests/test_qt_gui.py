@@ -738,6 +738,24 @@ def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(ap
     gt.edit["caret"] = gt.edit["anchor"] = len("New text")
     gt._replace("!")
     assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "New text!"
+    # Undo (all our changes came back): the undone text is typed into, not the session's older one
+    layer.text = {"text": "Old"}
+    gt.start_edit(layer, None)
+    gt._replace("!")
+    layer.text = {"text": "Old!"}
+    gt.edit_view()
+    layer.text = {"text": "Old"}  # Ctrl+Z
+    assert gt.edit_view() is layer and gt.edit["text"] == "Old"
+    gt.edit["caret"] = gt.edit["anchor"] = 3
+    gt._replace("x")
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "Oldx"
+    # typing ended (Esc) before the new layer existed: the typed text still goes into it
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    gt._replace("Late")
+    gt.end_edit()
+    replies[-1][0]({"clip": 7, "layer": 0}, None)
+    last = [p for c, p in sent if c == "graphics.setText"][-1]
+    assert (last["clip"], last["layer"], last["text"]) == (7, 0, "Late") and gt.edit is None
     # a key after another editor's change (before a repaint) edits the new text, not the old one
     layer.text = {"text": "Old"}
     gt.start_edit(layer, None)
