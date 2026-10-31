@@ -636,6 +636,11 @@ fn immersive_file_package() {
     std::fs::write(&cut, &bytes[..at + 40]).unwrap();
     let e = probe_iab_source(&cut.to_string_lossy()).unwrap_err().to_string();
     assert!(e.contains("cut.mxf") && e.contains("truncated"), "{e}");
+    // a run-in before the header partition (ST 377-1 6.5) is still an MXF source
+    let run_in = Path::new(&src_dir).join("run_in.mxf");
+    std::fs::write(&run_in, [vec![0u8; 1000], bytes.clone()].concat()).unwrap();
+    let info = probe_iab_source(&run_in.to_string_lossy()).unwrap();
+    assert_eq!((info.container.as_str(), info.frames, info.needs_conform), ("mxf", 5, false));
 
     // a source at another rate is refused
     std::fs::write(&raw, source_frames(cfa4_iab::FrameRate::R24, 2).concat()).unwrap();
