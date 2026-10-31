@@ -6607,7 +6607,7 @@ def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
     """egui's Export ▸ Captions (None / Burn Captions Into Video / Create Sidecar File, SubRip or
-    WebVTT) and Effects (Image, Name and Timecode Overlay, Video Limiter, Loudness Normalization,
+    WebVTT), Multiplexer (MP4 / QuickTime for H.264 and H.265), Metadata and Effects (Image, Name and Timecode Overlay, Video Limiter, Loudness Normalization,
     each one's settings shown while it is on; loudness alone for sound-only formats): the preset's
     values are shown and a change is sent to the engine."""
     from cfa4_qt.main_window import MainWindow
@@ -6673,8 +6673,22 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         assert (e["name_overlay"]["enabled"], e["name_overlay"]["text"], e["name_overlay"]["placement"]) == (True, "CFA4", "topLeft")
         assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
         assert e["timecode_overlay"]["enabled"] is False
+        # Multiplexer (H.264 / H.265): QuickTime makes a .mov file
+        assert dlg.video_form.isRowVisible(dlg.multiplexer) and dlg.multiplexer.currentData() == "mp4"
+        pick(dlg.multiplexer, "mov")
+        assert dlg.path.text().endswith(".mov"), dlg.path.text()
+        assert resolved()["multiplexer"] == "mov"
+        # Metadata goes into the file
+        meta = dlg.findChild(QtWidgets.QLineEdit, "export.metadata.title")
+        meta.setText("My Film")
+        meta.textEdited.emit("My Film")
+        assert resolved()["metadata"]["title"] == "My Film"
+        pick(dlg.format, "prores")
+        assert not dlg.video_form.isRowVisible(dlg.multiplexer) and not dlg.metadata.isHidden()
+        assert dlg.path.text().endswith(".mov") and "multiplexer" not in dlg.params().get("settings", {})
         # a sound-only format: no captions, only loudness
         pick(dlg.format, "wav")
+        assert dlg.metadata.isHidden() and "metadata" not in dlg.params()["settings"]
         assert cap.isHidden() and not fx.switches["loudness"].isHidden()
         assert all(fx.switches[k].isHidden() for k in ("image_overlay", "name_overlay", "timecode_overlay", "video_limiter"))
         assert "burnCaptions" not in dlg.params()

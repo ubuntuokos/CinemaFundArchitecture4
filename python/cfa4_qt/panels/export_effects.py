@@ -259,3 +259,34 @@ class EffectsSection(QGroupBox):
                 out[key][field] = w.value()
         return out
 
+
+
+METADATA_FIELDS = (("title", N_("Title")), ("creator", N_("Creator")), ("copyright", N_("Copyright")),
+                   ("description", N_("Description")), ("comment", N_("Comment")))
+# formats whose files carry the metadata (egui's Metadata section)
+METADATA_FORMATS = {"h264", "hevc", "av1", "prores", "dnxhr", "apv", "cineform", "mjpeg"}
+
+
+class MetadataSection(QGroupBox):
+    """Export ▸ Metadata: title, creator, copyright, description and comment written into the file."""
+
+    changed = Signal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(tr("Metadata"), parent)
+        self.setObjectName("export.metadata")
+        f = QFormLayout(self)
+        self.fields: dict[str, QLineEdit] = {}
+        for key, label in METADATA_FIELDS:
+            e = QLineEdit(self)
+            e.setObjectName(f"export.metadata.{key}")
+            e.textEdited.connect(lambda _t: self.changed.emit())
+            f.addRow(tr(label), e)
+            self.fields[key] = e
+
+    def show_metadata(self, metadata: dict[str, Any]) -> None:
+        for key, e in self.fields.items():
+            _set(e, str(metadata.get(key) or ""))
+
+    def values(self) -> dict[str, str]:
+        return {key: e.text() for key, e in self.fields.items()}

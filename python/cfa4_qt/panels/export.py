@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
-from .export_effects import CaptionsSection, EffectsSection
+from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, MetadataSection
 from .preset_manager import PresetManager
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
@@ -278,6 +278,12 @@ class ExportDialog(QDialog):
         self.hardware.setObjectName("export.hardwareEncoding")
         self.captions = CaptionsSection(self)
         self.effects = EffectsSection(self)
+        self.metadata = MetadataSection(self)
+        # H.264 / H.265: MP4 or QuickTime (egui's Multiplexer section)
+        self.multiplexer = QComboBox(self)
+        self.multiplexer.setObjectName("export.multiplexer")
+        self.multiplexer.addItem("MP4", "mp4")
+        self.multiplexer.addItem("QuickTime", "mov")
         self.audio = QCheckBox(tr("Export audio"), self)
         self.audio.setObjectName("export.audio")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
@@ -316,6 +322,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Chroma"), self.chroma)
         for key, label, _name, _choices in FORMAT_CHOICES:
             fv.addRow(tr(label), self.format_choices[key])
+        fv.addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
@@ -385,6 +392,7 @@ class ExportDialog(QDialog):
         right = QVBoxLayout()
         right.addWidget(self.captions)
         right.addWidget(self.effects)
+        right.addWidget(self.metadata)
         right.addStretch(1)
         top.addLayout(right, 1)
         layout = QVBoxLayout(self)
@@ -415,6 +423,8 @@ class ExportDialog(QDialog):
         self.quality.valueChanged.connect(lambda _v: self._touch("quality"))
         self.captions.changed.connect(lambda: self._touch("captions"))
         self.effects.changed.connect(lambda: self._touch("effects"))
+        self.metadata.changed.connect(lambda: self._touch("metadata"))
+        self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
 
@@ -549,6 +559,8 @@ class ExportDialog(QDialog):
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
         self.captions.setVisible(video)
+        self.metadata.setVisible(self.format.currentData() in METADATA_FORMATS)
+        self.video_form.setRowVisible(self.multiplexer, self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         self._container_changed()
 
@@ -585,6 +597,15 @@ class ExportDialog(QDialog):
             self.alpha.blockSignals(False)
         if "captions" not in self.touched:
             self.captions.show_settings(settings)
+        if "metadata" not in self.touched and isinstance(settings.get("metadata"), dict):
+            self.metadata.show_metadata(settings["metadata"])
+        if "multiplexer" not in self.touched and settings.get("multiplexer") != self.multiplexer.currentData():
+            i = self.multiplexer.findData(settings.get("multiplexer"))
+            if i >= 0:
+                self.multiplexer.blockSignals(True)
+                self.multiplexer.setCurrentIndex(i)
+                self.multiplexer.blockSignals(False)
+                self._container_changed()
         if "effects" not in self.touched and isinstance(settings.get("effects"), dict):
             self.effects.show_effects(settings["effects"])
         q = settings.get("quality")
@@ -594,8 +615,14 @@ class ExportDialog(QDialog):
             self.quality.blockSignals(False)
         self._sync_format_rows()
 
+    def _muxed(self) -> bool:
+        return self.format.currentData() in ("h264", "hevc")
+
     def _extension(self) -> str:
-        """The output file's extension: the MPEG-2 container's, else the format's."""
+        """The output file's extension: the MPEG-2 container's, QuickTime's for H.264 / H.265 in
+        a QuickTime file, else the format's."""
+        if self._muxed() and self.multiplexer.currentData() == "mov":
+            return "mov"
         if self.container.isEnabled():
             return next(ext for key, _label, ext in MPEG2_CONTAINERS if key == self.container.currentData())
         return str(self.formats.get(str(self.format.currentData() or ""), {}).get("extension") or "")
@@ -672,8 +699,15 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         if "captions" in self.touched and fmt.get("video", True):
             p.update(self.captions.params())
+        patch: dict[str, Any] = {}
         if "effects" in self.touched:
-            p["settings"] = {"effects": self.effects.values()}
+            patch["effects"] = self.effects.values()
+        if "metadata" in self.touched and self.format.currentData() in METADATA_FORMATS:
+            patch["metadata"] = self.metadata.values()
+        if "multiplexer" in self.touched and self._muxed():
+            patch["multiplexer"] = self.multiplexer.currentData()
+        if patch:
+            p["settings"] = patch
         if self.audio.isEnabled():
             if "audio" in self.touched:
                 p["audio"] = self.audio.isChecked()
