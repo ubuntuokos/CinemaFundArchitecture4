@@ -14,6 +14,9 @@ cfa4-time = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
 cfa4-dng = { workspace = true }
+cfa4-heif = { workspace = true }
+cfa4-hevc = { workspace = true }
+cfa4-jxl = { workspace = true, features = ["threads"] }
 log = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
@@ -23,5 +26,6 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
+cfa4-heif = { workspace = true, features = ["writer"] }
 # APNG fixtures for the animated-image tests (the image crate does not encode APNG)
 png = "0.18"

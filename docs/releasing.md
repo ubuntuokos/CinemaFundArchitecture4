@@ -1,8 +1,7 @@
 # Releasing CFA4
 
 Every push to the `release` branch runs `.github/workflows/release.yml`. The workflow builds
-installers for macOS, Windows, Linux (AppImage, deb, rpm, tarball, Flatpak) and FreeBSD, plus
-the web build, and creates or updates a **draft**
+installers for macOS, Windows, Linux (AppImage, deb, rpm, tarball, Flatpak) and FreeBSD, and creates or updates a **draft**
 GitHub Release named `CFA4 v<version>`. Nobody sees a draft until a maintainer publishes it.
 
 User-facing names say **CFA4**. Files, binaries and ids stay lowercase
@@ -55,7 +54,7 @@ signing jobs are refused, and the draft-release job, which needs them, is skippe
 **Fonts.** Every build job checks out the external font directory at a
 pinned commit (the `ref:` of its extra-fonts checkout step, marked `# bump deliberately`) and builds
 with `CFA4_FONTS_DIR` and `CFA4_FONTS_REQUIRED=1`, so releases embed its Japanese fonts and fail
-rather than ship without them (the web build embeds only the UI font, to stay small). The packages
+rather than ship without them. The packages
 carry each embedded font's licence (`copy_font_licences` in `packaging/env.sh`). Bump the pins
 deliberately, in every job at once.
 

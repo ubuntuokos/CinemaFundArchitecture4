@@ -12,6 +12,8 @@
 //! TOC-derived durations, the pre-skip, and end trimming of the final page, so a player can seek
 //! to any 48 kHz sample.
 //!
+//! [`OggWriter`] does the reverse for one logical bitstream (lacing, continuation pages, CRC).
+//!
 //! Layer L0: no dependencies beyond `std`, no `unsafe`, builds for `wasm32-unknown-unknown`.
 
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
@@ -19,6 +21,9 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io;
+
+mod writer;
+pub use writer::OggWriter;
 
 /// Random-access, read-only byte source (same shape as the other CFA4 demuxers').
 pub trait ByteSource {

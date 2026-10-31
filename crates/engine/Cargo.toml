@@ -52,4 +52,5 @@ web-time = "1"
 cfa4-testkit = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
 cfa4-isobmff = { workspace = true }
+cfa4-iab = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png", "gif"] }
