@@ -311,7 +311,7 @@ A négy tulajdonosi döntést 2026-10-31-én elfogadták; a kivitelezés megkezd
 | --- | --- | --- | --- |
 | D1 | Az F0-audit 5.3/1.: autonóm munkahurok vagy előzetes jóváhagyás | Előzetes jóváhagyás | elfogadva (2026-10-31) |
 | D2 | AC-SK-01 futtatási helye | Self-hosted runner, csak CI-jobként, a gép kézi módosítása nélkül | elfogadva (2026-10-31) |
-| D3 | Rögzített Spec Kit verzió | Az SK-F1 indulásakor legfrissebb stabil tag (2026-10-31-én v1.0.9), utána csak külön döntéssel frissül | elfogadva (2026-10-31) |
+| D3 | Rögzített Spec Kit verzió | Az SK-F1 indulásakor legfrissebb stabil tag (2026-10-31-én v1.2.5; az 1.1 első változatában tévesen v1.0.9 szerepelt, lásd SK-F0 K4), utána csak külön döntéssel frissül | elfogadva (2026-10-31) |
 | D4 | Mely munkafolyamatok engedélyezhetők a pilotban | Új funkció tervezése; a bugfix és assess bundle csak az SK-F1 ellenőrzése után | elfogadva (2026-10-31) |
 
 Jóváhagyási csomag:
