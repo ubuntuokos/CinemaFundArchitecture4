@@ -110,11 +110,10 @@ fn spec(name: &str) -> Vec<String> {
         "mxf_j2k_420_97.mxf" => cat(&[V25, &["-t", "0.4", "-c:v", "jpeg2000", "-pred", "0", "-pix_fmt", "yuv420p"]]),
         "mxf_j2k_rgb.mxf" => cat(&[V25, &["-t", "0.2", "-c:v", "jpeg2000", "-pred", "1", "-pix_fmt", "rgb24"]]),
         "mxf_j2k_gray.mxf" => cat(&[V25, &["-t", "0.2", "-c:v", "jpeg2000", "-pred", "1", "-pix_fmt", "gray"]]),
-        // a DCP-style picture track: DCI 2K, 12-bit X'Y'Z', 9/7 (libopenjpeg's cinema profile)
-        "mxf_j2k_dci2k.mxf" => cat(&[
-            &["-f", "lavfi", "-i", "testsrc2=size=2048x1080:rate=24"],
-            &["-frames:v", "2", "-c:v", "libopenjpeg", "-profile:v", "cinema2k", "-pix_fmt", "xyz12le"],
-        ]),
+        // a DCP-style picture track: DCI 2K, 12-bit X'Y'Z', 9/7. The codestreams come from our
+        // cinema-profile encoder (`dci2k_codestreams`; ffmpeg builds without libopenjpeg have no
+        // cinema encoder), ffmpeg wraps them.
+        "mxf_j2k_dci2k.mxf" => cat(&[&["-framerate", "24", "-i", DCI2K_PATTERN.as_str()], &["-c:v", "copy"]]),
         other => panic!("unknown fixture {other}"),
     }
 }
@@ -136,7 +135,40 @@ pub const ALL: &[&str] = &[
     "mxf_j2k_dci2k.mxf",
 ];
 
+static DCI2K_PATTERN: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| dir().join("dci2k_j2c").join("f%d.j2c").to_string_lossy().into_owned());
+
+/// Two DCI 2K codestreams (`f1.j2c`, `f2.j2c`) of ffmpeg's test pattern, its 16-bit R'G'B'
+/// taken as 12-bit X'Y'Z' code values (the test only compares decoders).
+fn dci2k_codestreams(ff: &Path) -> Option<()> {
+    let (w, h) = (2048u32, 1080u32);
+    let d = dir().join("dci2k_j2c");
+    if (1..=2).all(|i| d.join(format!("f{i}.j2c")).exists()) {
+        return Some(());
+    }
+    std::fs::create_dir_all(&d).ok()?;
+    let raw = ffmpeg_out(ff, &["-f", "lavfi", "-i", "testsrc2=size=2048x1080:rate=24", "-frames:v", "2", "-f", "rawvideo", "-pix_fmt", "rgb48le", "-"]);
+    let size = (w * h * 6) as usize;
+    for (i, frame) in raw.chunks_exact(size).enumerate() {
+        let comp = |c: usize| cfa4_j2k::Plane {
+            width: w,
+            height: h,
+            precision: 12,
+            signed: false,
+            dx: 1,
+            dy: 1,
+            data: frame.as_chunks::<6>().0.iter().map(|px| i32::from(u16::from_le_bytes([px[2 * c], px[2 * c + 1]]) >> 4)).collect(),
+        };
+        let image = cfa4_j2k::Image { width: w, height: h, components: vec![comp(0), comp(1), comp(2)], mct: false };
+        let j2c = cfa4_j2k::encode(&image, &cfa4_j2k::EncodeOptions::cinema_2k(24)).ok()?;
+        std::fs::write(d.join(format!("f{}.j2c", i + 1)), j2c).ok()?;
+    }
+    Some(())
+}
+
 fn make(ff: &Path, name: &str) -> PathBuf {
+    if name == "mxf_j2k_dci2k.mxf" {
+        dci2k_codestreams(ff).unwrap_or_else(|| panic!("could not encode the codestreams of {name}"));
+    }
     let args = spec(name);
     let refs: Vec<&str> = args.iter().map(String::as_str).collect();
     fixture(ff, name, &refs).unwrap_or_else(|| panic!("could not generate {name}"))
@@ -526,6 +558,9 @@ fn generate_fixtures() {
     for n in ALL {
         let out = dir().join(n);
         cfa4_testkit::fixtures::generate_and_report(n, std::slice::from_ref(&out), || {
+            if *n == "mxf_j2k_dci2k.mxf" {
+                dci2k_codestreams(&ff)?;
+            }
             let args = spec(n);
             let refs: Vec<&str> = args.iter().map(String::as_str).collect();
             fixture(&ff, n, &refs)
