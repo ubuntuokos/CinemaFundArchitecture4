@@ -66,6 +66,39 @@ fn mov(format: Format, profile: &str) -> ExportSettings {
     s
 }
 
+/// MPEG-2 in `container`: `kbps` average (0: 0.4 bits per pixel), AAC at `audio_kbps` in
+/// transport streams, 16-bit LPCM in program streams.
+fn mpeg2(container: &str, size: Option<(u32, u32)>, kbps: u32, audio_kbps: u32) -> ExportSettings {
+    ExportSettings {
+        format: Format::Mpeg2,
+        mpeg2_container: container.into(),
+        frame_size: size,
+        bitrate_kbps: if kbps == 0 { 10_000 } else { kbps },
+        adaptive_bitrate: (kbps == 0).then_some(0.4),
+        bitrate_mode: BitrateMode::Vbr1Pass,
+        audio: AudioSettings {
+            codec: AudioCodec::Auto,
+            sample_rate: Some(48_000),
+            channels: 2,
+            bitrate_kbps: audio_kbps.max(32),
+            bits: 16,
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+/// A DVD-sized MPEG-2 program stream: `size` at `rate`, pixel aspect `par`, `gop` pictures per GOP.
+fn dvd(size: (u32, u32), rate: FrameRate, par: (u32, u32), gop: u32) -> ExportSettings {
+    ExportSettings {
+        frame_rate: Some(rate),
+        pixel_aspect: Some(par),
+        keyframe_distance: Some(gop),
+        max_bitrate_kbps: Some(8_000),
+        ..mpeg2("ps", Some(size), 6_000, 0)
+    }
+}
+
 fn mxf(format: Format, codec: MxfVideoCodec, profile: &str) -> ExportSettings {
     let mut s = ExportSettings { mxf_video_codec: codec, ..mov(format, profile) };
     match codec {
@@ -176,6 +209,25 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             "Avid-style OP-Atom: DNxHR HQ picture file plus one 24-bit 48 kHz PCM file per channel (_A1, _A2…)",
             mxf(Format::MxfOpAtom, MxfVideoCodec::Dnxhr, "hq"),
         ),
+        p(
+            "MPEG-2 Program Stream",
+            bc,
+            "MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg",
+            mpeg2("ps", None, 0, 16),
+        ),
+        p(
+            "MPEG-2 DVD PAL 16:9",
+            bc,
+            "MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)",
+            dvd((720, 576), FrameRate::new(25, 1), (64, 45), 15),
+        ),
+        p(
+            "MPEG-2 DVD NTSC 16:9",
+            bc,
+            "MPEG-2 720×480 at 29.97 fps, 16:9 anamorphic, 6 Mbps, GOP 18, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)",
+            dvd((720, 480), FrameRate::new(30000, 1001), (32, 27), 18),
+        ),
+        p("MPEG-2 Transport Stream HD 1080", bc, "MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts", mpeg2("ts", Some((1920, 1080)), 18_000, 192)),
         p(
             "PNG Sequence",
             "Image Sequence",

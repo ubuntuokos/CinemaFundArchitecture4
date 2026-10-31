@@ -46,8 +46,11 @@ allows.
 - Dolby Atmos objects: `cfa4::Decoder::with_objects(layout)` decodes the 16-channel object
   presentation and renders its beds and dynamic objects with the Object Audio Metadata (OAMD) to
   2.0, 5.1, 7.1 or 7.1.4 (`render.rs`, new for CFA4; the module notes list its rendering choices).
-  Programs with intermediate spatial format objects fall back to the bed presentation. Checked on
-  synthetic OAMD only: no real Atmos stream has been tried yet (#124). Not rendered: binaural
+  Programs with intermediate spatial format objects fall back to the bed presentation. An object's
+  first state applies at once (no ramp in from silence); until then it is silent (#257). Checked
+  on synthetic OAMD and one real Atmos stream of 0.1 s (bed bit-exact to ffmpeg, one OAMD
+  payload with a single update block, static objects); multi-block timing and moving objects
+  still need a longer real stream (#124). Not rendered: binaural
   (#125), screen reference, divergence and trims (#127). E-AC-3 JOC is not decoded (#126).
 
 ## Tests
@@ -61,7 +64,8 @@ allows.
 - `src/render/tests.rs`: the panner (each loudspeaker, constant power, zones, snap, elevation,
   beds), ramps across calls, OAMD payloads written bit by bit and parsed back, mangled payloads.
 - `tests/oracle.rs` `a_real_atmos_stream_renders_like_its_bed_presentation`: runs on a real Atmos
-  `.thd` named by `CFA4_ATMOS_SAMPLE` (skipped without one).
+  `.thd` named by `CFA4_ATMOS_SAMPLE` (skipped without one); its bed presentation is checked
+  bit-exact against ffmpeg.
 - The upstream unit tests.
 
 No free encoder writes 7.1 TrueHD, so 8-channel presentations are covered only by the upstream
