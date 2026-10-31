@@ -278,6 +278,15 @@ fn dialog_defaults_start_each_dialog_from_the_selection() {
     assert_eq!(d["params"]["name"], "Nested Sequence 01");
     let d = s.execute("dialog.defaults", json!({"command": "clip.fieldOptions"})).unwrap();
     assert_eq!(d["params"], json!({"reverseFieldDominance": false, "processing": "none"}));
+    // a clip with its own Field Options opens with them (Codex review regression: OK put them back
+    // to the defaults, an unrelated change dropped the deinterlacing)
+    s.execute("clip.fieldOptions", json!({"reverseFieldDominance": true, "processing": "alwaysDeinterlace"})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "clip.fieldOptions"})).unwrap();
+    assert_eq!(d["params"], json!({"reverseFieldDominance": true, "processing": "alwaysDeinterlace"}));
+    s.execute("clip.fieldOptions", json!({"processing": "flickerRemoval"})).unwrap();
+    let d = s.execute("dialog.defaults", json!({"command": "clip.fieldOptions"})).unwrap();
+    assert_eq!(d["params"], json!({"reverseFieldDominance": false, "processing": "flickerRemoval"}));
+    s.execute("clip.fieldOptions", json!({})).unwrap();
     let d = s.execute("dialog.defaults", json!({"command": "edit.removeAttributes"})).unwrap();
     assert_eq!((d["info"]["video"].as_bool(), d["info"]["audio"].as_bool()), (Some(true), Some(false)));
     assert!(s.execute("dialog.defaults", json!({"command": "file.save"})).is_err());

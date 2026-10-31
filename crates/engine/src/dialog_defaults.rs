@@ -346,7 +346,17 @@ fn defaults(s: &Session, id: &str) -> Option<(Value, Value)> {
             let hold_on = if it.as_ref().is_some_and(|i| i.frame_hold.is_some()) { "sourceTimecode" } else { "in" };
             (json!({"enabled": enabled, "holdOn": hold_on, "timecode": tc, "holdFilters": hold_filters}), Value::Null)
         }
-        "clip.fieldOptions" => (json!({"reverseFieldDominance": false, "processing": "none"}), Value::Null),
+        "clip.fieldOptions" => {
+            // the first selected clip's own settings: OK without a change keeps them
+            let fo =
+                s.active_sequence().and_then(|q| s.state.selection.iter().find_map(|c| q.find_item(*c).and_then(|x| x.1.field_options))).unwrap_or_default();
+            let processing = match fo.processing {
+                cfa4_project::FieldProcessing::None => "none",
+                cfa4_project::FieldProcessing::AlwaysDeinterlace => "alwaysDeinterlace",
+                cfa4_project::FieldProcessing::FlickerRemoval => "flickerRemoval",
+            };
+            (json!({"reverseFieldDominance": fo.reverse_field_dominance, "processing": processing}), Value::Null)
+        }
         "clip.speedDuration" => {
             // the first selected clip's current speed; its duration at that speed for the readout
             let q = s.active_sequence();
