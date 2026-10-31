@@ -97,6 +97,18 @@ fn export_integer_parameters_cannot_wrap_or_overflow() {
 }
 
 #[test]
+fn mpeg2_b_pictures_are_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":0})).unwrap();
+    assert_eq!(r["settings"]["mpeg2BFrames"], 0);
+    let r = s.execute("export.resolve", json!({"format":"mpeg2"})).unwrap();
+    assert!(r["settings"]["mpeg2BFrames"].is_null(), "the encoder's default (2)");
+    for bad in [json!(8), json!(-1), json!(1.5)] {
+        assert!(s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":bad})).is_err());
+    }
+}
+
+#[test]
 fn wav_resolve_honours_explicit_sample_rates() {
     let mut s = demo();
     for rate in [4000, 192_000, 192_001, 200_000, 352_800, 384_000] {

@@ -784,6 +784,11 @@ impl ExportSettings {
                         None => format!(", average {}", mbps(r.target_kbps)),
                     };
                     v += &format!(", keyframe every {} frames", r.keyint);
+                    v += &match self.mpeg2_b_frames.unwrap_or(2) {
+                        0 => ", no B pictures".to_string(),
+                        1 => ", 1 B picture between anchors".to_string(),
+                        b => format!(", {b} B pictures between anchors"),
+                    };
                 }
                 Format::Av1 => {
                     v += &format!(", AV1 Main (10-bit for HDR), {}", self.bitrate_mode.label());

@@ -1701,12 +1701,14 @@
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bites 48 kHz-es PCM
 	4:2:0 (Main Profile)	4:2:0 (Main profil)
 	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
+	B pictures	B-képek
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
 	Chroma	Króma
 	Constant quantiser	Állandó kvantáló
 	Container	Konténer
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
 	Keyframe distance	Kulcskockák távolsága
+	None (I and P only)	Nincs (csak I és P)
 	Off (target bitrate)	Ki (célbitráta)
 	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
 	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)

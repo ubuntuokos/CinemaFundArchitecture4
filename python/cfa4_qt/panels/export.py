@@ -263,12 +263,17 @@ class ExportDialog(QDialog):
         self.bitrate.setRange(0, 1_000_000)
         self.bitrate.setSuffix(" kbps")
         self.bitrate.setSpecialValueText(tr("From the preset"))
-        # MPEG-2 only: GOP length, constant quantiser, 4:2:2 Profile
+        # MPEG-2 only: GOP length, B pictures, constant quantiser, 4:2:2 Profile
         self.gop = QSpinBox(self)
         self.gop.setObjectName("export.keyframeDistance")
         self.gop.setRange(0, 1000)
         self.gop.setSpecialValueText(tr("From the preset"))
         self.gop.setSuffix(" " + tr("frames"))
+        self.b_frames = QSpinBox(self)
+        self.b_frames.setObjectName("export.mpeg2BFrames")
+        self.b_frames.setRange(0, 7)
+        self.b_frames.setValue(2)
+        self.b_frames.setSpecialValueText(tr("None (I and P only)"))
         self.quantizer = QSpinBox(self)
         self.quantizer.setObjectName("export.mpeg2Quantizer")
         self.quantizer.setRange(0, 31)
@@ -277,7 +282,7 @@ class ExportDialog(QDialog):
         self.chroma.setObjectName("export.mpeg2Chroma")
         self.chroma.addItem(tr("4:2:0 (Main Profile)"), "420")
         self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
-        for w in (self.gop, self.quantizer, self.chroma):
+        for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(False)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
         self.hardware.setObjectName("export.hardwareEncoding")
@@ -314,6 +319,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Bitrate mode"), self.bitrate_mode)
         fv.addRow(tr("Target bitrate"), self.bitrate)
         fv.addRow(tr("Keyframe distance"), self.gop)
+        fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
         fv.addRow(self.hardware)
@@ -401,7 +407,7 @@ class ExportDialog(QDialog):
         self.range.currentIndexChanged.connect(self._range_changed)
         for w in (self.start, self.end):
             w.valueChanged.connect(self._changed)
-        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("quantizer", self.quantizer)):
+        for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("bFrames", self.b_frames), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
         for c in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
             c.currentIndexChanged.connect(self._changed)
@@ -499,6 +505,7 @@ class ExportDialog(QDialog):
         self.bitrate.setValue(0)
         self.audio_bitrate.setValue(0)
         self.gop.setValue(0)
+        self.b_frames.setValue(2)
         self.quantizer.setValue(0)
         self.chroma.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
@@ -522,7 +529,7 @@ class ExportDialog(QDialog):
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
-        for w in (self.container, self.gop, self.quantizer, self.chroma):
+        for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
         dcp = self._dcp()
         for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive):
@@ -701,6 +708,8 @@ class ExportDialog(QDialog):
             p["mpeg2Container"] = self.container.currentData()
             if self.gop.value():
                 p["keyframeDistance"] = self.gop.value()
+            if "bFrames" in self.touched:
+                p["mpeg2BFrames"] = self.b_frames.value()
             if "quantizer" in self.touched:
                 p["mpeg2Quantizer"] = self.quantizer.value()
             if "chroma" in self.touched:

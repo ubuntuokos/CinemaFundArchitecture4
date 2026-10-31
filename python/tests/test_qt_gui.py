@@ -1886,6 +1886,11 @@ def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
         dlg.quantizer.setValue(4)
         assert dlg.params()["mpeg2Quantizer"] == 4
         dlg.quantizer.setValue(0)
+        # IBBP unless chosen otherwise
+        assert dlg.b_frames.isEnabled() and dlg.b_frames.value() == 2 and "mpeg2BFrames" not in p
+        dlg.b_frames.setValue(0)
+        assert dlg.params()["mpeg2BFrames"] == 0
+        dlg.b_frames.setValue(2)
         dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
 
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
