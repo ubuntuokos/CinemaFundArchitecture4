@@ -232,11 +232,33 @@ fn after_decode(header: &Header, hints: J2kHints, image: &Image) -> Result<Compo
     components(&Header { mct: image.mct, ..header.clone() }, hints)
 }
 
-/// The codestream after the first one in `data` (EOC then SOC and SIZ; coded data never holds an
-/// 0xFF followed by a marker code, so the pair is unambiguous).
+/// The codestream after the first one in `data`: the first is walked marker segment by marker
+/// segment and tile-part by tile-part (Psot) to its EOC, so bytes inside a COM or other segment
+/// are never taken for a boundary. A last tile-part of unknown length (Psot 0) runs to the EOC
+/// followed by SOC and SIZ (coded data never holds an 0xFF followed by a marker code).
 fn second_field(data: &[u8]) -> Option<&[u8]> {
-    let at = data.windows(6).position(|w| w == [0xFF, 0xD9, 0xFF, 0x4F, 0xFF, 0x51])?;
-    data.get(at + 2..)
+    let be16 = |at: usize| Some(usize::from(u16::from_be_bytes([*data.get(at)?, *data.get(at + 1)?])));
+    let mut pos = 2; // after SOC
+    loop {
+        match be16(pos)? {
+            0xFFD9 => return data.get(pos + 2..).filter(|rest| rest.starts_with(&[0xFF, 0x4F])),
+            0xFF90 => {
+                let psot = u32::from_be_bytes([*data.get(pos + 6)?, *data.get(pos + 7)?, *data.get(pos + 8)?, *data.get(pos + 9)?]) as usize;
+                if psot == 0 {
+                    let rest = data.get(pos..)?;
+                    let at = rest.windows(6).position(|w| w == [0xFF, 0xD9, 0xFF, 0x4F, 0xFF, 0x51])?;
+                    return rest.get(at + 2..);
+                }
+                // SOT, Lsot, Isot, Psot, TPsot, TNsot: 12 bytes before any data
+                if psot < 12 {
+                    return None;
+                }
+                pos = pos.checked_add(psot)?;
+            }
+            m if m >> 8 == 0xFF => pos = pos.checked_add(2 + be16(pos + 2)?)?,
+            _ => return None,
+        }
+    }
 }
 
 /// `p` of a field `height` rows high whose image starts at reference row `y0` (YOsiz), with
@@ -446,6 +468,15 @@ mod tests {
         assert_eq!(*chroma, Chroma::C422);
         let cb_rows: Vec<u8> = planes[1].chunks(2).map(|r| r[0]).collect();
         assert_eq!(cb_rows, [60, 200, 60, 200, 60, 200, 60, 200]);
+        // field boundaries come from the marker segments, not from bytes inside a COM segment
+        let mut first = cfa4_j2k::encode(&field(16), &opts).unwrap_or_else(|e| panic!("{e}"));
+        let com = [0xFF, 0x64, 0x00, 0x0A, 0x00, 0x00, 0xFF, 0xD9, 0xFF, 0x4F, 0xFF, 0x51];
+        let siz_end = 4 + usize::from(u16::from_be_bytes([first[4], first[5]]));
+        first.splice(siz_end..siz_end, com);
+        let second = cfa4_j2k::encode(&field(235), &opts).unwrap_or_else(|e| panic!("{e}"));
+        let mut sample = first.clone();
+        sample.extend_from_slice(&second);
+        assert_eq!(second_field(&sample), Some(&second[..]));
         // an unaligned field origin (YOsiz 1, dy 2): rows [A, B] cover field lines A A A B
         let p = Plane { dy: 2, data: vec![1, 2], ..plane_of(1, 2, 8, false, 0) };
         assert_eq!(unsubsample_rows(&p, 4, 1).data, [1, 1, 1, 2]);
