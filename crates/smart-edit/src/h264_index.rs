@@ -233,8 +233,9 @@ pub fn index_h264<'a>(
     let mut config_id = 0u32;
     let mut config_changes = Vec::new();
     let mut config: Option<Config> = None;
-    // latest access point: (pts, kind)
-    let mut ap: Option<(Option<i64>, RandomAccessKind)> = None;
+    // latest access point: (pts, kind, whether a decodable picture came before it, so that its
+    // leading pictures have the references they predict from)
+    let mut ap: Option<(Option<i64>, RandomAccessKind, bool)> = None;
     for (i, p) in packets.into_iter().enumerate() {
         if i >= MAX_FRAMES {
             return Err(IndexError::TooManyFrames);
@@ -273,7 +274,7 @@ pub fn index_h264<'a>(
         } else {
             match ap {
                 None => DependencyStatus::Undecodable,
-                Some((ap_pts, kind)) => {
+                Some((ap_pts, kind, history)) => {
                     let leading = matches!((p.pts, ap_pts), (Some(a), Some(b)) if a < b);
                     let unordered = p.pts.is_none() || ap_pts.is_none();
                     match kind {
@@ -281,6 +282,8 @@ pub fn index_h264<'a>(
                         // derived): without them it stays open whether a picture crosses
                         RandomAccessKind::RecoveryPoint { .. } if unordered => DependencyStatus::Unknown,
                         RandomAccessKind::RecoveryPoint { broken_link: true, .. } if leading => DependencyStatus::Undecodable,
+                        // the stream starts at the recovery point: the pictures before it are absent
+                        RandomAccessKind::RecoveryPoint { .. } if leading && !history => DependencyStatus::Undecodable,
                         RandomAccessKind::RecoveryPoint { .. } if leading => DependencyStatus::CrossesAccessPoint,
                         _ => DependencyStatus::WithinGop,
                     }
@@ -288,7 +291,7 @@ pub fn index_h264<'a>(
             }
         };
         if random_access.is_access_point() {
-            ap = Some((p.pts, random_access));
+            ap = Some((p.pts, random_access, ap.is_some()));
         }
         frames.push(FrameIndexEntry {
             stream_id,

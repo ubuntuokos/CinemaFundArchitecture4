@@ -439,6 +439,18 @@ fn h264_switching_parameter_set_ids_is_a_configuration_change() {
 }
 
 #[test]
+fn h264_stream_starting_at_a_recovery_point_has_undecodable_leading_pictures() {
+    let units: Vec<(Vec<u8>, i64)> =
+        vec![([sps(40), recovery_sei(0, true, false), slice(0x61, 7)].concat(), 2), (slice(0x01, 6), 0), (slice(0x01, 6), 1), (slice(0x61, 5), 5)];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &[], units.iter().map(|(d, t)| Packet { data: d, pts: Some(*t), dts: None, keyframe: false }))
+            .unwrap();
+    use DependencyStatus::*;
+    let deps: Vec<DependencyStatus> = ix.frames.iter().map(|f| f.dependency_status).collect();
+    assert_eq!(deps, vec![Independent, Undecodable, Undecodable, WithinGop], "their references were never in the source");
+}
+
+#[test]
 fn h264_recovery_point_without_timestamps_leaves_dependencies_unknown() {
     let units = [[sps(40), slice(0x65, 7)].concat(), [recovery_sei(0, true, false), slice(0x61, 7)].concat(), slice(0x01, 6), slice(0x61, 5)];
     let ix =
