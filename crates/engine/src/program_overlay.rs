@@ -146,7 +146,7 @@ fn graphics(s: &Session) -> Value {
     for tr in seq.video_tracks.iter().rev().filter(|t| t.enabled) {
         let Some(it) = tr.item_at(t).filter(|it| it.enabled) else { continue };
         let Some(size) = graphic_size(s, it) else { continue };
-        let mt = it.source_time_at(t);
+        let mt = it.effect_time_at(t);
         let base = cfa4_render::motion_matrix(seq, it, size, None, mt);
         let Some(canvas) = matrix(&base) else { continue };
         let idx = layer_indices(&it.effects);
@@ -219,7 +219,7 @@ fn graphics(s: &Session) -> Value {
     }
     let selected = s.state.selection.iter().find_map(|c| seq.find_item(*c).map(|(_, it)| it).filter(|it| graphic_size(s, it).is_some()));
     let target = selected.filter(|it| it.range().contains(t)).and_then(|it| {
-        let m = cfa4_render::motion_matrix(seq, it, graphic_size(s, it)?, None, it.source_time_at(t));
+        let m = cfa4_render::motion_matrix(seq, it, graphic_size(s, it)?, None, it.effect_time_at(t));
         Some(json!({"clip": it.id.0, "toFrame": matrix(&m).filter(|_| m.inverse().is_some())?}))
     });
     json!({

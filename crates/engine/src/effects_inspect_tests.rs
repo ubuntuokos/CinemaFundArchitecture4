@@ -377,3 +377,29 @@ fn program_overlay_reports_the_graphic_layers_at_the_playhead() {
     // ...but Position stays the authored one, so a drag edits what the layer was given
     assert_eq!(rolled["position"], json!([960.0, 540.0]), "{rolled}");
 }
+
+#[test]
+fn program_overlay_graphic_boxes_follow_motion_through_a_frame_hold() {
+    // Hold Filters off on a graphic: its Motion keeps animating as rendered, so the layer boxes
+    // and the canvas target follow the effect time, not the held media time
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let made = s.execute("graphics.newShape", json!({"shape": "rectangle", "position": [960, 540], "size": [400, 200], "time": 0})).unwrap();
+    let clip = made["clip"].as_u64().unwrap();
+    let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
+    for (t, val) in [(it.start, 50.0), (it.end() - Tick(1), 150.0)] {
+        s.execute("effects.setParam", json!({"clip": clip, "effect": "motion", "param": "scale", "value": val, "keyframe": true, "time": t.0})).unwrap();
+    }
+    s.execute("timeline.select", json!({"clips": [clip]})).unwrap();
+    s.execute("clip.frameHoldOptions", json!({"clips": [clip], "holdOn": "in", "holdFilters": false})).unwrap();
+    let scale = |s: &mut Session, t: Tick| {
+        s.execute("playhead.set", json!({"time": t.0})).unwrap();
+        let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+        let layer = g["layers"][0]["canvasToFrame"][0].as_f64().unwrap();
+        let target = g["canvasTarget"]["toFrame"][0].as_f64().unwrap();
+        (layer, target)
+    };
+    let (early, late) = (scale(&mut s, it.start + Tick(it.duration.0 / 10)), scale(&mut s, it.end() - Tick(it.duration.0 / 10)));
+    assert!(late.0 > early.0 * 1.5, "layer box: {early:?} → {late:?}");
+    assert!(late.1 > early.1 * 1.5, "canvas target: {early:?} → {late:?}");
+}

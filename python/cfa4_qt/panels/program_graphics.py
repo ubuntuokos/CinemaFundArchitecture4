@@ -901,7 +901,8 @@ class GraphicsTools:
             send("graphics.selectLayer", {"clip": v.clip, "layers": [v.layer]})
         elif kind == "handle" and moved and v is not None:
             props = handle_drag(v, d["n"], d["start"], cur, bool(e.modifiers() & Qt.KeyboardModifier.ShiftModifier))[1]
-            send("graphics.set", {"clip": v.clip, "layer": v.layer, "props": props})
+            # the handle's Position is the shown (pinned) one, as a body drag's
+            send("graphics.set", {"clip": v.clip, "layer": v.layer, "shown": True, "props": props})
         elif kind == "anchor" and moved and v is not None:
             # the anchor point moves over the layer; Position follows it, so the layer stays
             canvas = _linear_inverse(v.canvas_to_screen, cur - d["start"])

@@ -2819,7 +2819,13 @@ def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path)
         clip = layer(0)["clip"]
         tl0 = gt.hit(f"layer.{clip}.0.handle.0")
         h2 = gt.hit(f"layer.{clip}.0.handle.2")
+        sent: list = []
+        real_send = ov.send
+        ov.send = lambda cmd, p, *a, **k: (sent.append((cmd, p)), real_send(cmd, p, *a, **k))[1]
         drag(h2, h2 + QtCore.QPointF(30, 20))
+        ov.send = real_send
+        # the handle sends the shown Position, as a body drag (regression: a pinned layer jumped)
+        assert [p.get("shown") for c, p in sent if c == "graphics.set"] == [True], sent
         assert wait_until(app, lambda: layer(0)["shape"]["size"][0] > w + 20, 10_000)
         assert wait_until(app, lambda: gt.hit(f"layer.{clip}.0.handle.0") is not None, 10_000)
         tl1 = gt.hit(f"layer.{clip}.0.handle.0")
@@ -6424,9 +6430,27 @@ def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
         win.run_command(win.registry.commands["file.exportMedia"])
         dlg = win.export_dialog
         assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        # Cancel keeps the changes made in the Export window (regression: the reload reapplied the preset)
+        dlg.width_spin.setValue(640)
+        dlg.height_spin.setValue(360)
+        dlg.bitrate.setValue(4321)
+        dlg.effects.switches["loudness"].setChecked(True)
         dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
         m = dlg.preset_manager
-        assert m is not None and m.isVisible() and m.windowTitle() == "Preset Manager"
+        assert m is not None and wait_until(app, lambda: len(m.rows) > 10, 10_000)
+        m.findChild(QtWidgets.QPushButton, "presetManager.cancel").click()
+        reloaded: list = []
+        engine.execute("export.presets.list", {}, on_reply=lambda r, _b: reloaded.append(r))
+        assert wait_until(app, lambda: reloaded, 10_000)
+        app.processEvents()
+        p = dlg.params()
+        assert (p.get("width"), p.get("height"), p.get("bitrateKbps")) == (640, 360, 4321), p
+        assert p["settings"]["effects"]["loudness"]["enabled"] is True and "effects" in dlg.touched
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
+        dlg.preset.setCurrentIndex((dlg.preset.currentIndex() - 1) % dlg.preset.count())
+        assert not dlg.touched
+        dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
+        assert m.isVisible() and m.windowTitle() == "Preset Manager"
         assert wait_until(app, lambda: len(m.rows) > 10, 10_000)
         current = str(dlg.preset.currentData())
         assert m.rows[current].isChecked() and m.description.text()

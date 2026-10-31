@@ -494,6 +494,7 @@ class ExportDialog(QDialog):
             self.preset.addItem(str(p["name"]), str(p["name"]))
             self.preset.setItemData(self.preset.count() - 1, str(p.get("description") or ""), Qt.ItemDataRole.ToolTipRole)
         # after the Preset Manager: the preset it chose, else the one shown before the reload
+        applied = self._want_preset is not None
         want = self._want_preset or self._shown_preset or default
         self._want_preset = None
         index = self.preset.findData(want)
@@ -502,7 +503,9 @@ class ExportDialog(QDialog):
         self.preset.setCurrentIndex(max(0, index))
         self.preset.blockSignals(False)
         self._loading = False
-        self._preset_changed()
+        # a reload that keeps the shown preset (Preset Manager ▸ Cancel) keeps the changes made here
+        if applied or self.preset.currentData() != self._shown_preset:
+            self._preset_changed()
 
     # ----- choices -----
     def _preset_changed(self) -> None:

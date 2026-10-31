@@ -783,7 +783,8 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                 DragKind::Handle(n) if moved => {
                     if let Some(v) = v {
                         let props = HandleDrag::new(v, n, d.start, cur, ui.input(|i| i.modifiers.shift)).props(v);
-                        actions.push(("graphics.set".into(), json!({"clip": v.clip.0, "layer": v.layer, "props": props})));
+                        // the handle's Position is the shown (pinned) one, as a body drag's
+                        actions.push(("graphics.set".into(), json!({"clip": v.clip.0, "layer": v.layer, "props": props, "shown": true})));
                     }
                 }
                 DragKind::Anchor if moved => {
