@@ -76,6 +76,18 @@ fixture_tests!(
     vt_main,
     vt_baseline,
     vt_high_1080p,
+    mbaff_intra,
+    mbaff_cavlc,
+    mbaff_cavlc_b,
+    mbaff_cabac,
+    mbaff_high,
+    mbaff_bff,
+    mbaff_temporal,
+    mbaff_weighted,
+    mbaff_constrained_intra,
+    mbaff_high10,
+    mbaff_422,
+    fake_interlaced,
 );
 
 /// Draft mode (reduced-resolution playback) skips deblocking of non-reference pictures only:
