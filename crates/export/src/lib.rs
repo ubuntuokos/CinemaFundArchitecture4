@@ -35,7 +35,9 @@ pub mod still;
 mod webm_out;
 pub use audio_out::LoudnessReport;
 pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
-pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
+pub use dcp_out::{
+    DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_isdcf_date, dcp_isdcf_name, dcp_language, dcp_rate, rgba_to_xyz12,
+};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
@@ -442,6 +444,10 @@ pub struct ExportSettings {
     /// silence there (`none`).
     #[serde(default)]
     pub dcp_iab_fallback: String,
+    /// DCP spoken language, an RFC 5646 tag such as `en-US` or `hu-HU` (empty = none): the MCA
+    /// labels' `RFC5646SpokenLanguage`, the CPL title's language and the DCNC language field.
+    #[serde(default)]
+    pub dcp_language: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -678,6 +684,7 @@ impl Default for ExportSettings {
             dcp_immersive: String::new(),
             dcp_iab_source: String::new(),
             dcp_iab_fallback: String::new(),
+            dcp_language: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
