@@ -219,17 +219,20 @@ fn second_field(data: &[u8]) -> Option<&[u8]> {
     data.get(at + 2..)
 }
 
-/// `p` of a field `height` rows high with every row repeated over the field lines it covers
-/// (`dy` 1): field components sub-sampled vertically cannot be woven row by row.
-fn unsubsample_rows(p: &Plane, height: u32) -> Plane {
+/// `p` of a field `height` rows high whose image starts at reference row `y0` (YOsiz), with
+/// every row repeated over the field lines it covers (`dy` 1): field components sub-sampled
+/// vertically cannot be woven row by row. Line `r` takes the component row covering `y0 + r`,
+/// counted from the component's first row `ceil(y0 / dy)` (as [`plane`] maps them).
+fn unsubsample_rows(p: &Plane, height: u32, y0: u32) -> Plane {
     let dy = usize::from(p.dy.max(1));
     if dy == 1 {
         return p.clone();
     }
-    let (w, ph) = (p.width as usize, p.height as usize);
+    let (w, ph, y0) = (p.width as usize, p.height as usize, y0 as usize);
     let data = (0..height as usize)
         .flat_map(|r| {
-            let at = (r / dy).min(ph.saturating_sub(1)).saturating_mul(w);
+            let row = (y0.saturating_add(r) / dy).saturating_sub(y0.div_ceil(dy));
+            let at = row.min(ph.saturating_sub(1)).saturating_mul(w);
             p.data.get(at..at.saturating_add(w)).unwrap_or(&[]).iter().copied()
         })
         .collect();
@@ -237,8 +240,14 @@ fn unsubsample_rows(p: &Plane, height: u32) -> Plane {
 }
 
 /// The frame of two fields: `top`'s rows on the even lines, `bottom`'s on the odd ones. Vertically
-/// sub-sampled components are expanded first (4:2:0 fields give a 4:2:2 frame).
-fn weave(top: &Image, bottom: &Image) -> Result<Image> {
+/// sub-sampled components are expanded first (4:2:0 fields give a 4:2:2 frame); `y0` is the
+/// fields' YOsiz.
+fn weave(top: &Image, bottom: &Image, y0: u32) -> Result<Image> {
+    // the expanded planes are full width × field height each: cap them before allocating
+    let woven = u64::from(top.width).saturating_mul(u64::from(top.height)).saturating_mul(2).saturating_mul(top.components.len() as u64);
+    if woven > cfa4_j2k::MAX_SAMPLES {
+        return Err(CodecError::Unsupported(format!("JPEG 2000: woven {}x{} picture too large", top.width, u64::from(top.height) * 2)));
+    }
     let same = top.width == bottom.width
         && top.height == bottom.height
         && top.components.len() == bottom.components.len()
@@ -251,7 +260,7 @@ fn weave(top: &Image, bottom: &Image) -> Result<Image> {
         .iter()
         .zip(&bottom.components)
         .map(|(a, b)| {
-            let (a, b) = (unsubsample_rows(a, top.height), unsubsample_rows(b, bottom.height));
+            let (a, b) = (unsubsample_rows(a, top.height, y0), unsubsample_rows(b, bottom.height, y0));
             let w = (a.width as usize).max(1);
             let data = a.data.chunks(w).zip(b.data.chunks(w)).flat_map(|(ra, rb)| ra.iter().chain(rb).copied()).collect();
             Plane { height: a.height.saturating_mul(2), data, ..a }
@@ -284,7 +293,7 @@ impl VideoDecoder for J2kDecoder {
         if self.hints.separate_fields {
             // a missing or damaged second field repeats the first
             let second = second_field(cs).and_then(|f| cfa4_j2k::decode(f).ok()).unwrap_or_else(|| image.clone());
-            image = weave(&image, &second)?;
+            image = weave(&image, &second, header.y0)?;
             // the woven components have every line (see `weave`)
             header.components.iter_mut().for_each(|c| c.dy = 1);
             origin.1 = 0;
@@ -412,6 +421,13 @@ mod tests {
         assert_eq!(*chroma, Chroma::C422);
         let cb_rows: Vec<u8> = planes[1].chunks(2).map(|r| r[0]).collect();
         assert_eq!(cb_rows, [60, 200, 60, 200, 60, 200, 60, 200]);
+        // an unaligned field origin (YOsiz 1, dy 2): rows [A, B] cover field lines A A A B
+        let p = Plane { dy: 2, data: vec![1, 2], ..plane_of(1, 2, 8, false, 0) };
+        assert_eq!(unsubsample_rows(&p, 4, 1).data, [1, 1, 1, 2]);
+        assert_eq!(unsubsample_rows(&p, 4, 0).data, [1, 1, 2, 2]);
+        // huge woven pictures are refused before anything is expanded
+        let huge = Image { width: 1_000_000, height: 1_000_000, components: vec![Plane { dx: 255, dy: 255, ..plane_of(4, 4, 8, false, 0) }], mct: false };
+        assert!(weave(&huge, &huge, 0).is_err());
         // a lone field is line-doubled rather than refused
         let lone = cfa4_j2k::encode(&field(16), &opts).unwrap_or_else(|e| panic!("{e}"));
         let out = J2kDecoder::new(hints).decode(&lone, 0).unwrap_or_else(|e| panic!("{e}"));
