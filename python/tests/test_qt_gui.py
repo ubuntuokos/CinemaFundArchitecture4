@@ -5942,7 +5942,7 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
             assert ui() == before, f"{params} changed something"
 
         first = ui()
-        assert set(first) == {"panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
+        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
         assert first["export"] is None and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
@@ -9623,3 +9623,73 @@ def test_marketing_commands_ask_for_their_spreadsheet_and_report_results(app, tm
     assert result_status("export.batchVariants", None) is None
     assert result_status("markers.addBeats", {"count": "x", "bpm": True}) == "0 beat markers added (0.0 BPM)"
     assert result_status("file.save", {}) is None
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's Import mode: the header's Home and Import / Edit / Export, the cards run their
+    commands and go back to Edit, Recent lists the saved projects (newest first) and opens one,
+    the project links open in the web browser; ``ui.set {mode}`` and ``ui.mode`` as egui's."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.home import GITHUB, ISSUES
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        home = win.home
+        tab = {m: win.findChild(QtWidgets.QToolButton, f"header.mode.{m}") for m in ("import", "edit", "export")}
+        assert all(tab.values()) and win.findChild(QtWidgets.QToolButton, "header.home") is not None
+        assert win.mode == "Edit" and home.isHidden() and tab["edit"].isChecked()
+        tab["import"].click()
+        assert win.mode == "Import" and home.isVisible() and tab["import"].isChecked() and not tab["edit"].isChecked()
+        # over the panels, under the menu bar
+        assert home.geometry().top() >= win.menuBar().geometry().bottom() and home.width() == win.width()
+        assert [b.objectName() for b in home.cards.values()] == [
+            "import.file.import", "import.file.importDemoFootage", "import.file.openDemoProject", "import.file.newBarsAndTone"]
+        assert home.cards["file.importDemoFootage"].text().startswith("Demo footage\n")
+        opened: list[str] = []
+        monkeypatch.setattr(QtGui.QDesktopServices, "openUrl", lambda u: opened.append(u.toString()) or True)
+        home.links["github"].click()
+        home.links["reportIssue"].click()
+        assert opened == [GITHUB, ISSUES]
+        # a card runs its command and goes back to Edit
+        n = len(_items(win.project or {}))
+        home.cards["file.importDemoFootage"].click()
+        assert win.mode == "Edit" and home.isHidden()
+        assert wait_until(app, lambda: len(_items(win.project or {})) > n, 60_000)
+        # Recent: the projects saved, newest first; nothing listed before the first
+        assert not home.recent and home.recent_heading.isHidden()
+        a, b = tmp_path / "a.fcproj", tmp_path / "b.fcproj"
+        for p in (a, b):
+            done: list = []
+            engine.execute("file.saveAs", {"path": str(p)}, on_reply=lambda r, _b, d=done: d.append(r))
+            assert wait_until(app, lambda d=done: d, 30_000)
+        win.findChild(QtWidgets.QToolButton, "header.home").click()
+        assert win.mode == "Import"
+        assert wait_until(app, lambda: home.recent_paths[:2] == [str(b), str(a)], 10_000)
+        assert home.recent[0].objectName() == "import.recent.0" and home.recent[0].text().startswith("b.fcproj")
+        assert home.recent[0].toolTip() == str(b) and str(tmp_path) in home.recent[0].text()
+        assert not home.recent_heading.isHidden()
+        # a click opens that project, back in Edit
+        home.recent[1].click()
+        assert wait_until(app, lambda: (win.project or {}).get("path") == str(a), 30_000)
+        assert win.mode == "Edit" and home.isHidden()
+        # Export opens the Export window; the page stays closed
+        tab["export"].click()
+        assert win.export_dialog is not None and win.export_dialog.isVisible() and home.isHidden()
+        win.export_dialog.hide()
+        # the control channel: ui.set {mode} and the mode in the UI state, as egui's
+        ctl = ControlServer(win)
+        ctl.set({"mode": "import"})
+        assert win.mode == "Import" and home.isVisible() and ctl.ui_state()["mode"] == "Import"
+        ctl.set({"mode": "Edit"})
+        assert win.mode == "Edit" and home.isHidden() and ctl.ui_state()["mode"] == "Edit"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

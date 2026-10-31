@@ -50,6 +50,7 @@ from .panels.essential_sound import EssentialSoundPanel
 from .panels.export import ExportDialog
 from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
+from .panels.home import HomePage
 from .panels.info import InfoPanel, MarkersPanel, MetadataPanel, NotesPanel
 from .panels.lumetri import LumetriColorPanel
 from .panels.media_browser import MediaBrowserPanel
@@ -291,6 +292,8 @@ class MainWindow(QMainWindow):
         self.revision = -1
         self.source_state: dict[str, Any] | None = None
         self.export_dialog: ExportDialog | None = None
+        # the header mode (egui's ``ui.mode``): Import shows the Home page over the panels
+        self.mode = "Edit"
         # the monitor that keyboard commands with a `target` act on (the focused panel, as egui)
         self.active_monitor = "program"
         self._closing = False
@@ -376,6 +379,10 @@ class MainWindow(QMainWindow):
         self.events = EventsPanel(self)
 
         self.setCentralWidget(self.monitor)
+        self.home = HomePage(self)
+        self.home.hide()
+        self.home.command.connect(self._home_command)
+        self.home.open_recent.connect(self.open_recent_project)
         self.setDockOptions(
             QMainWindow.DockOption.AllowTabbedDocks
             | QMainWindow.DockOption.AllowNestedDocks
@@ -962,6 +969,7 @@ class MainWindow(QMainWindow):
                 a.triggered.connect(lambda _c=False, pg=page: self.open_settings(pg))
                 local[a.objectName()] = a
         self._build_appearance_button()
+        self._build_mode_tabs()
         # Window, before Help as in the egui editor; the previous build's actions go first
         for action in getattr(self, "_window_actions", []):
             self.removeAction(action)
@@ -1087,6 +1095,93 @@ class MainWindow(QMainWindow):
             self.menuBar().setCornerWidget(self.header_corner, Qt.Corner.TopRightCorner)
         self.header_corner.show()
         self._update_appearance_button()
+
+    def _build_mode_tabs(self) -> None:
+        """egui's header left end: Home, then the Import / Edit / Export mode tabs, at the menu
+        bar's left."""
+        corner = getattr(self, "mode_corner", None)
+        if corner is None:
+            corner = self.mode_corner = QWidget(self.menuBar())
+            corner.setObjectName("header.modes")
+            row = QHBoxLayout(corner)
+            row.setContentsMargins(4, 0, 8, 0)
+            row.setSpacing(2)
+            home = QToolButton(corner)
+            home.setObjectName("header.home")
+            home.setAutoRaise(True)
+            home.setText("⌂")
+            home.setToolTip(tr("Home"))
+            home.clicked.connect(lambda: self.set_mode("Import"))
+            row.addWidget(home)
+            self.mode_tabs: dict[str, QToolButton] = {}
+            for mode in ("Import", "Edit", "Export"):
+                b = QToolButton(corner)
+                b.setObjectName(f"header.mode.{mode.lower()}")
+                b.setAutoRaise(True)
+                b.setCheckable(True)
+                b.setText(tr(mode))
+                b.clicked.connect(lambda _c=False, m=mode: self.set_mode(m))
+                row.addWidget(b)
+                self.mode_tabs[mode] = b
+            self._show_mode()
+        if self.menuBar().cornerWidget(Qt.Corner.TopLeftCorner) is not corner:
+            self.menuBar().setCornerWidget(corner, Qt.Corner.TopLeftCorner)
+        corner.show()
+
+    def set_mode(self, mode: str) -> None:
+        """The header's Import / Edit / Export (egui's ``ui.mode``): Import shows the Home page
+        over the panels (with the recent projects read again), Export opens the Export window."""
+        mode = {"import": "Import", "export": "Export"}.get(mode.lower(), "Edit")
+        if mode == "Export":
+            self.mode = "Edit"
+            self._show_mode()
+            self.open_export()
+            return
+        self.mode = mode
+        if mode == "Import":
+            self.engine.execute(
+                "prefs.get",
+                {"key": "general.recentProjects"},
+                on_reply=lambda r, _b: self.home.set_recent(list(r) if isinstance(r, list) else []),
+                on_error=lambda _m: None,
+            )
+        self._show_mode()
+
+    def _show_mode(self) -> None:
+        for m, b in getattr(self, "mode_tabs", {}).items():
+            b.setChecked(m == self.mode)
+        if self.mode == "Import":
+            self._place_home()
+            self.home.show()
+            self.home.raise_()
+        else:
+            self.home.hide()
+
+    def _place_home(self) -> None:
+        top = self.menuBar().geometry().bottom() + 1
+        bottom = self.statusBar().geometry().top() if self.statusBar().isVisible() else self.height()
+        self.home.setGeometry(0, top, self.width(), max(0, bottom - top))
+
+    def resizeEvent(self, e) -> None:
+        super().resizeEvent(e)
+        if self.mode == "Import":
+            self._place_home()
+
+    def _home_command(self, cid: str) -> None:
+        """A Home card: back to Edit, then its command (as egui's: Demo footage imports all six
+        scenes without asking which)."""
+        self.set_mode("Edit")
+        cmd = self.registry.commands.get(cid)
+        if cmd is not None and cid == "file.importDemoFootage":
+            self.run_command(cmd, given={})
+        else:
+            self.invoke(cid)
+
+    def open_recent_project(self, path: str) -> None:
+        """A recent project on Home: back to Edit and open it (unsaved changes asked about first)."""
+        self.set_mode("Edit")
+        cmd = self.registry.commands.get("file.open") or Command("file.open", "Open Project", [], "", "{path:str}", True)
+        self.run_command(cmd, given={"path": path})
 
     def toggle_quick_export(self) -> None:
         """The header's Quick Export button: the popup below it, or closed when it is open."""
@@ -2043,8 +2138,9 @@ class MainWindow(QMainWindow):
         for panel in (self.effect_controls, self.inspector, self.lumetri, self.essential_sound, self.notes):
             panel.flush()
 
-    def run_command(self, cmd: Command, unsaved_ok: bool = False) -> None:
-        """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute."""
+    def run_command(self, cmd: Command, unsaved_ok: bool = False, given: dict[str, Any] | None = None) -> None:
+        """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute. ``given``:
+        params already known (Home's recent project), no file dialog then."""
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.flush_editors()
         if cmd.id in ("markers.markIn", "markers.markOut") and self.project_panel.hover_mark(cmd.id == "markers.markIn"):
@@ -2075,13 +2171,13 @@ class MainWindow(QMainWindow):
             return
         if cmd.id in REPLACES_PROJECT and self.voiceover.busy:
             # a take is placed in the project it was recorded for, before that project goes
-            self.voiceover.finish_then(lambda: self.run_command(cmd, unsaved_ok))
+            self.voiceover.finish_then(lambda: self.run_command(cmd, unsaved_ok, given))
             return
         if cmd.id in REPLACES_PROJECT or cmd.id in ("file.closeProject", "file.revert"):
             # the pass recorded while playing (mixer automation, multi-camera cuts) belongs to this project
             self.monitor.stop()
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
-            self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True))
+            self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True, given=given))
             return
         if cmd.id == "file.revert" and not unsaved_ok:
             # saving first would overwrite the version being reverted to: Revert or Cancel only
@@ -2104,7 +2200,7 @@ class MainWindow(QMainWindow):
             self.open_remix_properties()
             return
         project_path = (self.project or {}).get("path")
-        params = path_params(cmd, self, project_path if isinstance(project_path, str) else None)
+        params = given if given is not None else path_params(cmd, self, project_path if isinstance(project_path, str) else None)
         if params is not None:
             if params.get("__cancel__"):
                 return

@@ -598,6 +598,11 @@ class ControlServer(QObject):
             if not isinstance(tool, str) or tool not in TOOLS or not TOOLS[tool].available:
                 raise ControlError(f"unknown tool {tool!r}")
             win.tools.select(tool)
+        mode = p.get("mode")
+        if mode is not None:
+            if not isinstance(mode, str):
+                raise ControlError("mode is Import, Edit or Export")
+            win.set_mode(mode)  # egui's: anything but import/export is Edit
         space = p.get("workspace")
         if space is not None:
             if not isinstance(space, str) or space not in win.workspaces.all_names():
@@ -659,6 +664,7 @@ class ControlServer(QObject):
         keys = [{"clip": c, "effect": e, "param": prm, **({"mask": m} if m is not None else {}), "time": t}
                 for c, e, prm, m, t in win.effect_controls.keyframe_selection]
         return {
+            "mode": win.mode,
             "panels": self.panels_state(),
             "projectPanel": win.project_panel.ui_state(),
             "mediaBrowser": win.media_browser.ui_state(),
