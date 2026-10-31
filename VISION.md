@@ -106,6 +106,12 @@ clean-room megvalósításúak; külső kodek-crate függőségként használhat
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
+| **Kinewright** | ügynökvezérelt vágás (Rust) | Atomikus, revízióhoz kötött ügynöki szerkesztési terv egy visszavonási lépéssel; ügynökönkénti idővonal-ág; típusos incidensek biztonságos javítással; kis MCP-felület; mért ügynöki teljesítmény; export utáni hang- és képellenőrzés; storyboard és ütemelemzés. Csak az elveket írjuk újra (GPL-3.0-only) – [`docs/open-editors-parity.md`](docs/open-editors-parity.md) E1, E2, E4–E6, E14, E15 |
+| **Cutlass** | MI-asszisztenses vágás (Rust) | Próba homokozóban, élesítés egy lépésben; MI-asszisztens panel helyi végponttal; Lottie-animációk; Python-szkriptelés – E1, E3, E5, E10, E11 |
+| **Concat** | CapCut-szerű vágás (Rust) | Csak ötlet, kód nem (AGPL): modelljegyzék rögzített SHA-256-tal és saját tükörrel, modelljelöltek (kivágás, felskálázás, hangklónozás) – E7–E9 |
+| **Gausian Native Editor** | natív vágás (Rust) | Automatikus proxydöntés a média és a hardver alapján; SQLite-séma minta a nyilvántartáshoz – E12, K17 |
+| **OpenCut** | vágás (Rust, GPUI) | A projektformátum géppel olvasható sémája és CLI-ellenőrzése – E13 |
+| **Lumina**, **RueyMediaEditor** | vágás (Rust + Qt/QML, Tauri) | Csak referencia: képességeik a CFA4-ben már megvannak, vagy még csak tervek |
 
 További, eddig hiányzó területek:
 
