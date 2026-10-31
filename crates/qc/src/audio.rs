@@ -66,6 +66,8 @@ pub(crate) struct AudioAnalyzer {
     rate: u32,
     /// Sample frames still to drop before the presented range (encoder priming).
     skip: u64,
+    /// Where the presented range starts on the file's timeline, ms (leading empty edits).
+    start_ms: f64,
     /// Sample frames still to analyse (`None`: to the end).
     left: Option<u64>,
     meter: Option<LoudnessMeter>,
@@ -84,12 +86,14 @@ pub(crate) struct AudioAnalyzer {
 }
 
 impl AudioAnalyzer {
-    /// `skip` and `keep` are in sample frames: the edit list's presented range.
-    pub(crate) fn new(track: usize, rate: u32, skip: u64, keep: Option<u64>) -> Self {
+    /// `skip` and `keep` are in sample frames: the edit list's presented range, which starts at
+    /// `start_ms` on the file's timeline (event times are given there).
+    pub(crate) fn new(track: usize, rate: u32, skip: u64, keep: Option<u64>, start_ms: f64) -> Self {
         AudioAnalyzer {
             track,
             rate,
             skip,
+            start_ms: if start_ms.is_finite() { start_ms } else { 0.0 },
             left: keep,
             meter: None,
             channels: 0,
@@ -108,7 +112,7 @@ impl AudioAnalyzer {
     }
 
     fn ms(&self, frame: u64) -> Option<f64> {
-        (self.rate > 0).then(|| frame as f64 * 1000.0 / f64::from(self.rate))
+        (self.rate > 0).then(|| self.start_ms + frame as f64 * 1000.0 / f64::from(self.rate))
     }
 
     /// Feed one decoded packet (planar, one vector per channel).
@@ -255,7 +259,7 @@ mod tests {
     #[test]
     fn priming_is_cut_and_silence_found() {
         let rate = 48_000;
-        let mut a = AudioAnalyzer::new(0, rate, 1000, Some(48_000 * 5));
+        let mut a = AudioAnalyzer::new(0, rate, 1000, Some(48_000 * 5), 0.0);
         // 1000 priming frames of full-scale noise, then 1 s tone, 3 s silence, 1 s tone, then
         // more than the presented range
         let mut ch = vec![1.0f32; 1000];
@@ -275,9 +279,25 @@ mod tests {
         assert!((f.sample_peak_dbfs - db(0.5)).abs() < 0.01);
     }
 
+    /// Review of #306: audio delayed by leading empty edits reports its events on the file's
+    /// timeline, not from its first sample.
+    #[test]
+    fn event_times_include_the_presentation_start() {
+        let rate = 48_000;
+        let mut a = AudioAnalyzer::new(0, rate, 0, None, 5000.0);
+        let mut ch = tone(48_000, 0.5, rate);
+        ch.extend(vec![0.0; 48_000 * 3]);
+        ch.extend(tone(48_000, 0.5, rate));
+        a.push(&[ch]);
+        let f = a.finish();
+        let s = &f.silence.kept[0];
+        assert!((s.ms.unwrap() - 6000.0).abs() <= 10.0 && (s.end_ms.unwrap() - 9000.0).abs() <= 10.0, "{s:?}");
+        assert_eq!(AudioAnalyzer::new(0, rate, 0, None, f64::NAN).start_ms, 0.0);
+    }
+
     #[test]
     fn clipping_counts_samples_and_runs() {
-        let mut a = AudioAnalyzer::new(0, 48_000, 0, None);
+        let mut a = AudioAnalyzer::new(0, 48_000, 0, None, 0.0);
         let mut l = tone(4800, 0.25, 48_000);
         l[100..105].iter_mut().for_each(|x| *x = 1.0);
         l[200] = -1.0;
@@ -293,12 +313,12 @@ mod tests {
 
     #[test]
     fn hostile_samples_do_not_crash() {
-        let mut a = AudioAnalyzer::new(0, 48_000, 0, None);
+        let mut a = AudioAnalyzer::new(0, 48_000, 0, None, 0.0);
         a.push(&[vec![f32::NAN, f32::INFINITY, 0.0], vec![0.0]]);
         a.push(&[]);
         let f = a.finish();
         assert_eq!(f.frames, 1);
-        let mut z = AudioAnalyzer::new(0, 0, 0, None);
+        let mut z = AudioAnalyzer::new(0, 0, 0, None, 0.0);
         z.push(&[vec![0.5; 10]]);
         assert_eq!(z.finish().frames, 0);
     }

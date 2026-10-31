@@ -160,3 +160,31 @@ fn cancelled_run_reports_no_measurements() {
     assert!(c.contact_sheet.is_none());
     assert!(c.report.checks.iter().filter(|r| r.id.starts_with("audio.") || r.id.starts_with("video.")).all(|r| r.status == Status::NotRun));
 }
+
+/// Review of #306: the container's `colr` range is the picture's range (as playback applies it),
+/// so luma 250 in a full-range file is legal, and beyond legal white in a limited-range one.
+#[test]
+fn container_colour_range_sets_the_picture_limits() {
+    let spec = Spec { frames: 24, bright: (0..24).collect(), ..Spec::default() };
+    let limited = run(&Spec { colr_full_range: Some(false), ..spec.clone() }, &plan(24));
+    let full = run(&Spec { colr_full_range: Some(true), ..spec }, &plan(24));
+    let white = |c: &cfa4_qc::Checked| get(&c.report, "video.clipWhite").value.unwrap();
+    assert!(white(&limited) > 20.0, "{}", white(&limited));
+    assert_eq!(white(&full), 0.0, "full range: 250 is a legal code");
+}
+
+/// Review of #306: pictures the edit list does not show are decoded but not judged.
+#[test]
+fn pictures_hidden_by_the_edit_list_are_not_measured() {
+    let spec = Spec { frames: 24, white: vec![0, 1], ..Spec::default() };
+    let shown = run(&spec, &plan(24));
+    assert!(get(&shown.report, "video.clipWhite").value.unwrap() > 0.0);
+    let hidden = run(&Spec { video_media_start: Some(2), ..spec.clone() }, &plan(22));
+    let r = get(&hidden.report, "video.clipWhite");
+    assert_eq!(r.detail["pictures"], 22, "{r:?}");
+    // what is left is coding ripple (P pictures predicted from the hidden white ones), far below
+    // the white pictures' own share
+    let all = get(&shown.report, "video.clipWhite").value.unwrap();
+    assert!(r.value.unwrap() < all / 10.0, "{r:?} vs {all}");
+    assert!(r.events.iter().all(|e| e.at.frame.is_some_and(|f| f >= 2)), "{r:?}");
+}

@@ -31,6 +31,13 @@ pub struct Spec {
     /// Frames rendered black (luma 16) and frames with a white bar above legal white (luma 255).
     pub black: Vec<u32>,
     pub white: Vec<u32>,
+    /// Frames with the top quarter at luma 250: beyond legal white in limited range, legal in full.
+    pub bright: Vec<u32>,
+    /// The video track's `colr` box: `nclx` BT.709 with this full-range flag (the H.264 stream
+    /// itself signals no range, so limited).
+    pub colr_full_range: Option<bool>,
+    /// The video edit list starts this many frames in (those frames are decoded, never shown).
+    pub video_media_start: Option<i64>,
 }
 
 impl Default for Spec {
@@ -45,6 +52,9 @@ impl Default for Spec {
             mute_last_channel: false,
             black: Vec::new(),
             white: Vec::new(),
+            bright: Vec::new(),
+            colr_full_range: None,
+            video_media_start: None,
         }
     }
 }
@@ -61,6 +71,9 @@ fn picture(i: u32, spec: &Spec) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
         for x in bar..(bar + 4).min(w) {
             y[row * w + x] = 235;
         }
+    }
+    if spec.bright.contains(&i) {
+        y.iter_mut().take(w * h / 4).for_each(|v| *v = 250);
     }
     if spec.white.contains(&i) {
         // the top quarter of the picture at code 255
@@ -89,8 +102,14 @@ pub fn mp4(spec: &Spec) -> Vec<u8> {
     } else {
         SampleEntry::avc(avcc, W as u16, H as u16)
     };
+    let mut entry = entry;
+    if let (Some(full_range), Some(v)) = (spec.colr_full_range, entry.video.as_mut()) {
+        v.color = Some(cfa4_isobmff::ColorInfo::Nclx { primaries: 1, transfer: 1, matrix: 1, full_range });
+    }
     let mut mux = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
-    let vt = mux.add_track(TrackConfig::new(entry, FPS)).unwrap();
+    let mut vcfg = TrackConfig::new(entry, FPS);
+    vcfg.media_start = spec.video_media_start;
+    let vt = mux.add_track(vcfg).unwrap();
     for (k, p) in packets.iter().enumerate() {
         let mult = spec.stretch.iter().find(|(i, _)| *i as usize == k).map_or(1, |(_, m)| *m);
         mux.write_sample(vt, WriteSample { data: &p.data, duration: mult, composition_offset: (p.pts - p.dts) as i32, is_sync: p.keyframe }).unwrap();

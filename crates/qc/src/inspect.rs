@@ -271,11 +271,12 @@ impl Pictures {
         }
     }
 
-    /// A decoded picture shown at `ms`.
-    fn take_at(&mut self, f: &VideoFrame, ms: Option<f64>) {
+    /// A decoded picture shown at `ms`; `presented`: inside the edit list's range, so it is
+    /// measured (pictures the edit list hides are decoded and counted, never judged).
+    fn take_at(&mut self, f: &VideoFrame, ms: Option<f64>, presented: bool) {
         let index = self.decoded;
         self.take(f);
-        if let Some(a) = self.analyzer.as_mut() {
+        if presented && let Some(a) = self.analyzer.as_mut() {
             a.take(f, index, ms);
         }
     }
@@ -317,6 +318,22 @@ fn decode_video(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
         }
     };
     out.decoder = dec.name().to_string();
+    // the container's colour wins over the bitstream's for YUV pictures, as in playback
+    let (w, h) = entry.video.as_ref().map_or((0, 0), |v| (u32::from(v.width), u32::from(v.height)));
+    let color = cfa4_codecs::mp4::container_color(entry, w, h);
+    let range = presented_range(file, t);
+    let take = |pics: &mut Pictures, f: &VideoFrame, pts: i64| {
+        let shown = pts.saturating_add(t.edit_offset);
+        let presented = range.is_none_or(|(a, b)| shown >= a && shown < b);
+        match color {
+            Some(c) if c != f.color && !matches!(f.data, cfa4_frame::PixelData::Rgba8(_) | cfa4_frame::PixelData::RgbaF32(_)) => {
+                let mut g = f.clone();
+                g.color = c;
+                pics.take_at(&g, at_ms(pts), presented);
+            }
+            _ => pics.take_at(f, at_ms(pts), presented),
+        }
+    };
     // presentation index of every sample, for messages
     let mut order: Vec<(i64, usize)> = t.samples.iter().enumerate().map(|(i, s)| (s.pts, i)).collect();
     order.sort_unstable();
@@ -337,12 +354,12 @@ fn decode_video(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
             dec.decode(&data, s.pts).map_err(|e| format!("decode error: {e}"))
         });
         match r {
-            Ok(frames) => frames.iter().for_each(|f| pics.take_at(&f.frame, at_ms(f.pts))),
+            Ok(frames) => frames.iter().for_each(|f| take(&mut pics, &f.frame, f.pts)),
             Err(message) => out.errors.push(Found { index, ms: at, end_ms: None, message }),
         }
     }
     match guarded(|| Ok(dec.flush())) {
-        Ok(frames) => frames.iter().for_each(|f| pics.take_at(&f.frame, at_ms(f.pts))),
+        Ok(frames) => frames.iter().for_each(|f| take(&mut pics, &f.frame, f.pts)),
         Err(message) => out.errors.push(Found { index: t.samples.len() as u64, ms: None, end_ms: None, message }),
     }
     out.decoded = pics.decoded;
@@ -351,17 +368,35 @@ fn decode_video(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
     (out, pics, false)
 }
 
-/// The presented range of an audio track in sample frames at `rate`: frames to skip (encoder
-/// priming, the first edit's media time) and frames to keep (the edits' duration).
-fn presented_frames(file: &Mp4File, t: &cfa4_isobmff::Track, rate: u32) -> (u64, Option<u64>) {
-    let Some(first) = t.edits.iter().find(|e| e.media_time >= 0) else { return (0, None) };
+/// The presentation times (track timescale, edit list applied) a track shows: from the end of
+/// its leading empty edits for the edits' total duration. `None` without an edit list.
+fn presented_range(file: &Mp4File, t: &cfa4_isobmff::Track) -> Option<(i64, i64)> {
+    let first = t.edits.iter().find(|e| e.media_time >= 0)?;
     if t.timescale == 0 || file.timescale == 0 {
-        return (0, None);
+        return None;
     }
+    let start = first.media_time.saturating_add(t.edit_offset);
+    let presented = t.edits.iter().filter(|e| e.media_time >= 0).fold(0i128, |a, e| a.saturating_add(i128::from(e.segment_duration)));
+    // rounded up: the movie timescale is often coarser than the track's, and a duration rounded
+    // down there would hide the last picture
+    let fts = i128::from(file.timescale);
+    let len = presented.saturating_mul(i128::from(t.timescale)).saturating_add(fts - 1) / fts;
+    (len > 0).then(|| (start, start.saturating_add(i64::try_from(len).unwrap_or(i64::MAX))))
+}
+
+/// The presented range of an audio track in sample frames at `rate`: frames to skip (encoder
+/// priming, the first edit's media time), frames to keep (the edits' duration), and where the
+/// kept audio starts on the file's timeline, ms (after leading empty edits).
+fn presented_frames(file: &Mp4File, t: &cfa4_isobmff::Track, rate: u32) -> (u64, Option<u64>, f64) {
+    let Some(first) = t.edits.iter().find(|e| e.media_time >= 0) else { return (0, None, 0.0) };
+    if t.timescale == 0 || file.timescale == 0 {
+        return (0, None, 0.0);
+    }
+    let start_ms = ms(i128::from(first.media_time) + i128::from(t.edit_offset), t.timescale).max(0.0);
     let skip = u128::try_from(first.media_time).unwrap_or(0).saturating_mul(u128::from(rate)) / u128::from(t.timescale);
     let presented = t.edits.iter().filter(|e| e.media_time >= 0).fold(0u128, |a, e| a.saturating_add(u128::from(e.segment_duration)));
     let keep = presented.saturating_mul(u128::from(rate)) / u128::from(file.timescale);
-    (u64::try_from(skip).unwrap_or(u64::MAX), (presented > 0).then(|| u64::try_from(keep).unwrap_or(u64::MAX)))
+    (u64::try_from(skip).unwrap_or(u64::MAX), (presented > 0).then(|| u64::try_from(keep).unwrap_or(u64::MAX)), start_ms)
 }
 
 fn decode_audio(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (StreamDecode, Option<AudioFacts>, bool) {
@@ -386,8 +421,8 @@ fn decode_audio(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
         }
     };
     out.decoder = if pcm { "PCM".into() } else { codec.name().to_string() };
-    let (skip, keep) = presented_frames(file, t, rate);
-    let mut analyzer = AudioAnalyzer::new(ti, rate, skip, keep);
+    let (skip, keep, start_ms) = presented_frames(file, t, rate);
+    let mut analyzer = AudioAnalyzer::new(ti, rate, skip, keep, start_ms);
     let mut ts: u64 = 0;
     for (i, s) in t.samples.iter().enumerate() {
         if cancel.load(Ordering::Relaxed) {
