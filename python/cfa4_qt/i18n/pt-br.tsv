@@ -392,3 +392,4 @@
 	transitions	transições
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} quadros copiados, {reencoded} recodificados em cortes, {rendered} renderizados
 	{frames} frames are re-encoded or rendered. Continue?	{frames} quadros serão recodificados ou renderizados. Continuar?
+	Height	Altura

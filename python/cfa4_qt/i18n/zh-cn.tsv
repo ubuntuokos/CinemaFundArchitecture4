@@ -391,3 +391,4 @@
 	transitions	转场
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	已复制 {copied} 帧，在剪切处重新编码 {reencoded} 帧，渲染 {rendered} 帧
 	{frames} frames are re-encoded or rendered. Continue?	{frames} 帧将重新编码或渲染。是否继续？
+	Height	高度

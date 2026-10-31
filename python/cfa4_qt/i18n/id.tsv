@@ -391,3 +391,4 @@
 	transitions	transisi
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} bingkai disalin, {reencoded} dienkode ulang di potongan, {rendered} dirender
 	{frames} frames are re-encoded or rendered. Continue?	{frames} bingkai dienkode ulang atau dirender. Lanjutkan?
+	Height	Ketinggian

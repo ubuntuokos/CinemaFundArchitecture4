@@ -38,8 +38,11 @@ pub const LANE_PAN51_Y: &str = "pan51.y";
 pub const LANE_PAN51_CENTER: &str = "pan51.center";
 /// 5.1 panner LFE level (dB).
 pub const LANE_PAN51_LFE: &str = "pan51.lfe";
-/// The 5.1 panner lanes.
-pub const PAN51_LANES: [&str; 4] = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE];
+/// Surround panner height (0 … 100 %): how much of the source goes up to the top surrounds (Lts,
+/// Rts) of a 7.1.2 bus (#406); no effect on other buses.
+pub const LANE_PAN51_HEIGHT: &str = "pan51.height";
+/// The surround panner lanes.
+pub const PAN51_LANES: [&str; 5] = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE, LANE_PAN51_HEIGHT];
 
 /// Default value of a 5.1 panner lane for a strip of channel format `channels`: puck at front
 /// centre, Center 100 %, LFE 0 dB for surround strips (their LFE channel passes) and −∞ for mono /
@@ -50,6 +53,7 @@ pub fn pan51_default(key: &str, channels: crate::AudioChannels) -> Option<f64> {
         LANE_PAN51_Y => Some(100.0),
         LANE_PAN51_CENTER => Some(100.0),
         LANE_PAN51_LFE => Some(if channels.is_surround() { 0.0 } else { FADER_MIN_DB }),
+        LANE_PAN51_HEIGHT => Some(0.0),
         _ => None,
     }
 }
@@ -203,7 +207,7 @@ pub fn lane_info(key: &str) -> Option<LaneInfo> {
         LANE_PAN => Some(LaneInfo { min: -100.0, max: 100.0, hold: false, unit: "" }),
         LANE_MUTE => Some(LaneInfo { min: 0.0, max: 1.0, hold: true, unit: "" }),
         LANE_PAN51_X | LANE_PAN51_Y => Some(LaneInfo { min: -100.0, max: 100.0, hold: false, unit: "" }),
-        LANE_PAN51_CENTER => Some(LaneInfo { min: 0.0, max: 100.0, hold: false, unit: "%" }),
+        LANE_PAN51_CENTER | LANE_PAN51_HEIGHT => Some(LaneInfo { min: 0.0, max: 100.0, hold: false, unit: "%" }),
         LANE_PAN51_LFE => Some(LaneInfo { min: FADER_MIN_DB, max: FADER_MAX_DB, hold: false, unit: "dB" }),
         k if parse_send_lane(k).is_some() => Some(LaneInfo { min: FADER_MIN_DB, max: FADER_MAX_DB, hold: false, unit: "dB" }),
         _ => None,
