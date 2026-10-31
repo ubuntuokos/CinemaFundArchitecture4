@@ -244,6 +244,10 @@ pub struct Entry {
     pub evidence: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub limits: Option<EncoderLimits>,
+    /// The concrete `cfa4-route` routes behind the entry (`nvenc`, `vaapi`…). Empty: any route of
+    /// its backend. A routed operation only accepts the entry through a route its order lists.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub routes: Vec<String>,
 }
 
 /// The result of a run-time check.
@@ -264,20 +268,24 @@ pub struct Probe {
     /// Encoder limits the probe found (replaces the entry's).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub limits: Option<EncoderLimits>,
+    /// The concrete routes the probe checked (replaces the entry's). A hardware probe names its
+    /// route (`nvenc`, `vaapi`…), so a routing order without it does not admit it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub routes: Vec<String>,
 }
 
 /// The order backends are tried in, taken from the `cfa4-route` routing table so the planner never
 /// keeps a routing policy of its own (AGENTS.md, ADR 0004 / 0005).
 ///
 /// Encoding and the boundary re-encode of a codec follow the table's order for the task
-/// `video.encode.<codec>` (`h264`, `hevc`, `av1`, `mpeg2`…), decoding the one for
-/// `video.decode.<codec>`; without a row of their own, the generic `video.encode` /
-/// `video.decode` row, and then the `codec_encode` / `codec_decode` family. These are the task ids
-/// the export and decode routes use (`cfa4-platform`), so a user's per-task override in
-/// `routing.toml` steers the planner the same way. Route backends map onto [`Backend`]s:
+/// `video.encode.<codec>` (`h264`, `hevc`, `av1`, `mpeg2`…), decoding the one for `video.decode`,
+/// looked up as the router does (the task's own row, else its family). These are the task ids the
+/// export and decode routes use (`cfa4-platform`), so a user's override in `routing.toml` steers
+/// the planner the same way. Route backends map onto [`Backend`]s:
 /// `software` is [`Backend::Native`], `ffmpeg` is [`Backend::Ffmpeg`], `gstreamer-*` is
-/// [`Backend::Gstreamer`] and every other (hardware) path is [`Backend::Platform`]. A backend the
-/// order does not name is not a candidate at all, as in the router: an override such as
+/// [`Backend::Gstreamer`] and every other (hardware) path is [`Backend::Platform`]; an entry or
+/// probe that names its concrete routes ([`Entry::routes`]) is only admitted through one of them.
+/// A route the order does not name is not a candidate at all, as in the router: an override such as
 /// `order = ["software"]` must not let the registry promise a hardware encoder the export route
 /// will never use. The other operations (demux, header parsing, GOP index, packet copy, mux) have
 /// no routing task: CFA4's own code comes first there (VISION.md 2.1), then every other backend.
@@ -296,46 +304,49 @@ impl BackendOrder {
         BackendOrder { table: Some(table.clone()) }
     }
 
-    /// The table's order for `video.<job>.<codec>`, else `video.<job>`, else the family.
-    fn routed(&self, job: &str, codec: Codec, family: cfa4_route::Family) -> Vec<Backend> {
+    /// The table's order for one task, with the router's own lookup: the task's row, else its
+    /// family (`Table::order`).
+    fn routed(&self, task: &str, family: cfa4_route::Family) -> Candidates {
         let Some(table) = &self.table else {
-            return vec![Backend::Native];
+            return Candidates::Unrouted(vec![Backend::Native]);
         };
-        let task_order = |id: &str| {
-            let task = cfa4_route::TaskId::new(id).ok()?;
-            table.rule(&task)?.order.clone()
+        let Ok(task) = cfa4_route::TaskId::new(task) else {
+            return Candidates::Routed(Vec::new());
         };
-        let ids = task_order(&format!("video.{job}.{}", codec.task_name()))
-            .or_else(|| task_order(&format!("video.{job}")))
-            .unwrap_or_else(|| table.family_order(family).to_vec());
-        Self::dedup(ids.iter().map(|id| match id.as_str() {
-            "software" => Backend::Native,
-            "ffmpeg" => Backend::Ffmpeg,
-            s if s.starts_with("gstreamer") => Backend::Gstreamer,
-            _ => Backend::Platform,
-        }))
+        Candidates::Routed(table.order(&task, family).iter().map(|id| id.as_str().to_string()).collect())
     }
 
-    /// First occurrence of each backend.
-    fn dedup(named: impl Iterator<Item = Backend>) -> Vec<Backend> {
-        let mut out: Vec<Backend> = Vec::with_capacity(ALL_BACKENDS.len());
-        for b in named {
-            if !out.contains(&b) {
-                out.push(b);
-            }
-        }
-        out
-    }
-
-    /// The order for one capability.
-    pub fn for_key(&self, key: Key) -> Vec<Backend> {
+    /// The candidates for one capability.
+    pub fn for_key(&self, key: Key) -> Candidates {
         match key.operation {
-            Operation::Decode => self.routed("decode", key.codec, cfa4_route::Family::CodecDecode),
-            Operation::Encode | Operation::BoundaryReencode => self.routed("encode", key.codec, cfa4_route::Family::CodecEncode),
-            _ => Self::dedup(std::iter::once(Backend::Native).chain(ALL_BACKENDS)),
+            Operation::Decode => self.routed(DECODE_TASK, cfa4_route::Family::CodecDecode),
+            Operation::Encode | Operation::BoundaryReencode => self.routed(&format!("video.encode.{}", key.codec.task_name()), cfa4_route::Family::CodecEncode),
+            _ => Candidates::Unrouted(ALL_BACKENDS.to_vec()),
         }
     }
 }
+
+/// Who may do one capability, in preference order.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Candidates {
+    /// Route ids from the routing table (`nvenc`, `vaapi`, `ffmpeg`, `software`…).
+    Routed(Vec<String>),
+    /// No routing task: these backends, in this order.
+    Unrouted(Vec<Backend>),
+}
+
+/// The backend a `cfa4-route` route id belongs to.
+pub fn backend_of_route(id: &str) -> Backend {
+    match id {
+        "software" => Backend::Native,
+        "ffmpeg" => Backend::Ffmpeg,
+        s if s.starts_with("gstreamer") => Backend::Gstreamer,
+        _ => Backend::Platform,
+    }
+}
+
+/// The task the hardware decoder registration routes for every codec (`cfa4-platform`).
+const DECODE_TASK: &str = "video.decode";
 
 impl Default for BackendOrder {
     /// The shipped routing table's order. The table is built in and tested in `cfa4-route`; if it
@@ -456,8 +467,20 @@ impl Registry {
     }
 
     /// The rows for `key`, in the backend order of its operation.
-    fn candidates(&self, key: Key) -> impl Iterator<Item = &Entry> {
-        self.order.for_key(key).into_iter().filter_map(move |b| self.entries.get(&(key, b)))
+    fn candidates(&self, key: Key) -> Vec<&Entry> {
+        let mut out: Vec<&Entry> = Vec::new();
+        match self.order.for_key(key) {
+            Candidates::Routed(ids) => {
+                for id in &ids {
+                    let Some(e) = self.entries.get(&(key, backend_of_route(id))) else { continue };
+                    if (e.routes.is_empty() || e.routes.iter().any(|r| r == id)) && !out.iter().any(|o| o.backend == e.backend) {
+                        out.push(e);
+                    }
+                }
+            }
+            Candidates::Unrouted(backends) => out.extend(backends.iter().filter_map(|b| self.entries.get(&(key, *b)))),
+        }
+        out
     }
 
     /// Add or replace a row.
@@ -488,7 +511,7 @@ impl Registry {
             return Err(RegistryError::InvalidKey(p.key));
         }
         self.probes.extend(probes);
-        self.probes.sort_by(|a, b| (a.key, a.backend, &a.outcome, &a.limits).cmp(&(b.key, b.backend, &b.outcome, &b.limits)));
+        self.probes.sort_by(|a, b| (a.key, a.backend, &a.outcome, &a.limits, &a.routes).cmp(&(b.key, b.backend, &b.outcome, &b.limits, &b.routes)));
         self.probes.dedup();
         self.rebuild();
         Ok(())
@@ -503,7 +526,8 @@ impl Registry {
                 ProbeOutcome::Unavailable { reason } => (SupportLevel::Unsupported, format!("run-time probe: {reason}")),
             };
             let limits = p.limits.clone().or(previous);
-            entries.insert((p.key, p.backend), Entry { key: p.key, backend: p.backend, level, evidence, limits });
+            let routes = if p.routes.is_empty() { entries.get(&(p.key, p.backend)).map(|e| e.routes.clone()).unwrap_or_default() } else { p.routes.clone() };
+            entries.insert((p.key, p.backend), Entry { key: p.key, backend: p.backend, level, evidence, limits, routes });
         }
         self.entries = entries;
     }
@@ -526,9 +550,9 @@ impl Registry {
                 chosen = Some(e.backend);
             }
         }
-        let order = self.order.for_key(key);
+        let considered: Vec<Backend> = self.candidates(key).iter().map(|e| e.backend).collect();
         for e in self.entries.range((key, Backend::Native)..=(key, Backend::Ffmpeg)).map(|(_, e)| e) {
-            if !order.contains(&e.backend) {
+            if !considered.contains(&e.backend) {
                 reasons.push(format!("{:?}: not in the routing order", e.backend));
             }
         }
@@ -627,7 +651,7 @@ fn describe_target(key: Key) -> String {
 }
 
 fn row(key: Key, backend: Backend, level: SupportLevel, evidence: &str) -> Entry {
-    Entry { key, backend, level, evidence: evidence.to_string(), limits: None }
+    Entry { key, backend, level, evidence: evidence.to_string(), limits: None, routes: Vec::new() }
 }
 
 /// The built-in rows (baseline audit, 2026-10-27, `main` @ f49a5def).

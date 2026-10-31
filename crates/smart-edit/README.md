@@ -28,16 +28,18 @@ Rules:
 - A capability without an entry is unsupported. Only `Supported` (tested) entries allow an
   operation; `Experimental` ones only with `Policy { allow_experimental: true }`.
 - Which backend is tried first comes from the `cfa4-route` routing table (`BackendOrder`), not
-  from this crate: encoding and the boundary re-encode follow the task `video.encode.<codec>`,
-  decoding `video.decode.<codec>` (then the generic `video.encode` / `video.decode` row, then the
-  `codec_encode` / `codec_decode` family; shipped: hardware, FFmpeg, GStreamer, then `Native`,
-  CFA4's own software codecs). The user's `routing.toml`, per-task rows included, reorders the
-  planner exactly as it reorders the export routes (`Registry::set_backend_order`); a backend
-  the order leaves out is no candidate, as in the router. Demux, GOP index, packet copy and mux have no routing family:
-  `Native` (CFA4's own Rust crates) comes first there. No FFmpeg entry is registered: Smart Cut / Smart Render runs on CFA4's
-  own Rust code (owner decision 2026-10-27, `docs/audit/smart-edit-baseline.md` §3) and ffmpeg
-  is its validation oracle. ADR 0005 allows an FFmpeg ≥ 9.0.2 backend (`cfa4-ffmpeg`, through
-  `cfa4-route`); its rows can be added once that crate exists and the owner decides so.
+  from this crate, with the router's own lookup: encoding and the boundary re-encode use the
+  task `video.encode.<codec>`, decoding `video.decode` (the task ids `cfa4-platform` routes),
+  each with its own row or else its family (shipped: hardware, FFmpeg, GStreamer, then `Native`,
+  CFA4's own software codecs). The user's `routing.toml` steers the planner exactly as it steers
+  the export routes (`Registry::set_backend_order`): a route the order leaves out is no
+  candidate, and an entry or probe that names its concrete routes (`routes: ["nvenc"]`) is only
+  admitted through one of them. Demux, GOP index, packet copy and mux have no routing task:
+  `Native` (CFA4's own Rust crates) comes first there. No FFmpeg entry is registered: Smart Cut /
+  Smart Render runs on CFA4's own Rust code (owner decision 2026-10-27,
+  `docs/audit/smart-edit-baseline.md` §3) and ffmpeg is its validation oracle. ADR 0005 allows an
+  FFmpeg ≥ 9.0.2 backend (`cfa4-ffmpeg`, through `cfa4-route`); its rows can be added once that
+  crate exists and the owner decides so.
 - Probes are applied in a canonical order; when two disagree about one capability, the unavailable
   one wins. The same entries and probes always give the same decisions and the same report.
 - A Smart Render also needs an encoder whose limits (profile, chroma subsampling, bit depth) fit
