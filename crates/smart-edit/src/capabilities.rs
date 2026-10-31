@@ -58,6 +58,18 @@ impl Codec {
     pub fn is_video(self) -> bool {
         Codec::VIDEO.contains(&self)
     }
+
+    /// The codec's part of a `cfa4-route` task id (`video.encode.h264`).
+    pub fn task_name(self) -> &'static str {
+        match self {
+            Codec::Mpeg2Video => "mpeg2",
+            Codec::H264 => "h264",
+            Codec::Hevc => "hevc",
+            Codec::Av1 => "av1",
+            Codec::Aac => "aac",
+            Codec::Pcm => "pcm",
+        }
+    }
 }
 
 /// Container formats.
@@ -254,20 +266,23 @@ pub struct Probe {
     pub limits: Option<EncoderLimits>,
 }
 
-/// The order backends are tried in, per operation, taken from the `cfa4-route` routing table so
-/// the planner never keeps a routing policy of its own (AGENTS.md, ADR 0004 / 0005).
+/// The order backends are tried in, taken from the `cfa4-route` routing table so the planner never
+/// keeps a routing policy of its own (AGENTS.md, ADR 0004 / 0005).
 ///
-/// Decoding follows the table's `codec_decode` family, encoding and the boundary re-encode its
-/// `codec_encode` family. Route backends map onto [`Backend`]s: `software` is [`Backend::Native`],
-/// `ffmpeg` is [`Backend::Ffmpeg`], `gstreamer-*` is [`Backend::Gstreamer`] and every other
-/// (hardware) path is [`Backend::Platform`]; backends the table does not name come last. The
-/// other operations (demux, header parsing, GOP index, packet copy, mux) have no routing family:
-/// CFA4's own code comes first there (VISION.md 2.1), then the decode order.
+/// Encoding and the boundary re-encode of a codec follow the table's order for the task
+/// `video.encode.<codec>` (`h264`, `hevc`, `av1`, `mpeg2`…), decoding the one for
+/// `video.decode.<codec>`; without a row of their own, the generic `video.encode` /
+/// `video.decode` row, and then the `codec_encode` / `codec_decode` family. These are the task ids
+/// the export and decode routes use (`cfa4-platform`), so a user's per-task override in
+/// `routing.toml` steers the planner the same way. Route backends map onto [`Backend`]s:
+/// `software` is [`Backend::Native`], `ffmpeg` is [`Backend::Ffmpeg`], `gstreamer-*` is
+/// [`Backend::Gstreamer`] and every other (hardware) path is [`Backend::Platform`]; backends the
+/// order does not name come last. The other operations (demux, header parsing, GOP index, packet
+/// copy, mux) have no routing task: CFA4's own code comes first there (VISION.md 2.1), then the
+/// decode order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BackendOrder {
-    decode: Vec<Backend>,
-    encode: Vec<Backend>,
-    other: Vec<Backend>,
+    table: cfa4_route::Table,
 }
 
 const ALL_BACKENDS: [Backend; 4] = [Backend::Native, Backend::Platform, Backend::Gstreamer, Backend::Ffmpeg];
@@ -275,14 +290,19 @@ const ALL_BACKENDS: [Backend; 4] = [Backend::Native, Backend::Platform, Backend:
 impl BackendOrder {
     /// The order a routing table gives (the shipped one, or with the user's file on top).
     pub fn from_route(table: &cfa4_route::Table) -> BackendOrder {
-        let decode = Self::family(table, cfa4_route::Family::CodecDecode);
-        let encode = Self::family(table, cfa4_route::Family::CodecEncode);
-        let other = Self::complete(std::iter::once(Backend::Native).chain(decode.iter().copied()));
-        BackendOrder { decode, encode, other }
+        BackendOrder { table: table.clone() }
     }
 
-    fn family(table: &cfa4_route::Table, family: cfa4_route::Family) -> Vec<Backend> {
-        Self::complete(table.family_order(family).iter().map(|id| match id.as_str() {
+    /// The table's order for `video.<job>.<codec>`, else `video.<job>`, else the family.
+    fn routed(&self, job: &str, codec: Codec, family: cfa4_route::Family) -> Vec<Backend> {
+        let task_order = |id: &str| {
+            let task = cfa4_route::TaskId::new(id).ok()?;
+            self.table.rule(&task)?.order.clone()
+        };
+        let ids = task_order(&format!("video.{job}.{}", codec.task_name()))
+            .or_else(|| task_order(&format!("video.{job}")))
+            .unwrap_or_else(|| self.table.family_order(family).to_vec());
+        Self::complete(ids.iter().map(|id| match id.as_str() {
             "software" => Backend::Native,
             "ffmpeg" => Backend::Ffmpeg,
             s if s.starts_with("gstreamer") => Backend::Gstreamer,
@@ -301,12 +321,12 @@ impl BackendOrder {
         out
     }
 
-    /// The order for one operation.
-    pub fn for_operation(&self, op: Operation) -> &[Backend] {
-        match op {
-            Operation::Decode => &self.decode,
-            Operation::Encode | Operation::BoundaryReencode => &self.encode,
-            _ => &self.other,
+    /// The order for one capability.
+    pub fn for_key(&self, key: Key) -> Vec<Backend> {
+        match key.operation {
+            Operation::Decode => self.routed("decode", key.codec, cfa4_route::Family::CodecDecode),
+            Operation::Encode | Operation::BoundaryReencode => self.routed("encode", key.codec, cfa4_route::Family::CodecEncode),
+            _ => Self::complete(std::iter::once(Backend::Native).chain(self.routed("decode", key.codec, cfa4_route::Family::CodecDecode))),
         }
     }
 }
@@ -431,7 +451,7 @@ impl Registry {
 
     /// The rows for `key`, in the backend order of its operation.
     fn candidates(&self, key: Key) -> impl Iterator<Item = &Entry> {
-        self.order.for_operation(key.operation).iter().filter_map(move |b| self.entries.get(&(key, *b)))
+        self.order.for_key(key).into_iter().filter_map(move |b| self.entries.get(&(key, b)))
     }
 
     /// Add or replace a row.

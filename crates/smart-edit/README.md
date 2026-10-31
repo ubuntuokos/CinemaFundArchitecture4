@@ -28,10 +28,11 @@ Rules:
 - A capability without an entry is unsupported. Only `Supported` (tested) entries allow an
   operation; `Experimental` ones only with `Policy { allow_experimental: true }`.
 - Which backend is tried first comes from the `cfa4-route` routing table (`BackendOrder`), not
-  from this crate: decoding follows its `codec_decode` family, encoding and the boundary
-  re-encode its `codec_encode` family (shipped: hardware, FFmpeg, GStreamer, then `Native`, CFA4's
-  own software codecs), the user's `routing.toml` can reorder them
-  (`Registry::set_backend_order`). Demux, GOP index, packet copy and mux have no routing family:
+  from this crate: encoding and the boundary re-encode follow the task `video.encode.<codec>`,
+  decoding `video.decode.<codec>` (then the generic `video.encode` / `video.decode` row, then the
+  `codec_encode` / `codec_decode` family; shipped: hardware, FFmpeg, GStreamer, then `Native`,
+  CFA4's own software codecs). The user's `routing.toml`, per-task rows included, reorders the
+  planner exactly as it reorders the export routes (`Registry::set_backend_order`). Demux, GOP index, packet copy and mux have no routing family:
   `Native` (CFA4's own Rust crates) comes first there. No FFmpeg entry is registered: Smart Cut / Smart Render runs on CFA4's
   own Rust code (owner decision 2026-10-27, `docs/audit/smart-edit-baseline.md` §3) and ffmpeg
   is its validation oracle. ADR 0005 allows an FFmpeg ≥ 9.0.2 backend (`cfa4-ffmpeg`, through
