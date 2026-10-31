@@ -1,9 +1,11 @@
 //! Immersive audio in DCP exports (#343): an IAB track file (SMPTE ST 429-18) next to the
 //! picture and the main sound, as ST 429-19 packages it.
 //!
-//! - `bed`: the export's 5.1 mix becomes a 7.1 DS bed (L R C LFE, Ls and Rs each at -3 dB on the
-//!   side and the rear surrounds), the one bed layout besides 9.1OH that ISDCF Doc 15 (IAB
-//!   Application Profile 1) allows. No objects.
+//! - `bed`: the export's mix becomes a bed of one of the two layouts ISDCF Doc 15 (IAB
+//!   Application Profile 1) allows. A 7.1.2 Mix becomes a 9.1OH bed (7.1 DS plus the left and
+//!   right top surrounds), a 7.1 Mix a 7.1 DS bed channel for channel, and any other Mix the 5.1
+//!   mix as a 7.1 DS bed (L R C LFE, Ls and Rs each at -3 dB on the side and the rear surrounds).
+//!   No objects.
 //! - `file`: the frames of an existing IAB (an IMF or DCP IAB track file, or a raw
 //!   IABitstream) are re-wrapped, made fit for a DCP where needed (ST 429-18 7.2: DLC, 24 bit,
 //!   no UserData; Profile 1: no AuthoringToolInfo) and otherwise copied byte for byte. A shorter
@@ -13,11 +15,13 @@
 //!
 //! The main sound track becomes 16 channels, Configuration 4 (ST 429-19 7.1.3), with the FSK
 //! synchronisation signal of ST 430-12 in channel 14 (7.1.1) and, unless switched off, a 5.1
-//! fallback in channels 1-6: the 5.1 mix (`bed`) or the IAB rendered to 5.1 (`file`).
+//! fallback in channels 1-6: the 5.1 mix (`bed`; a 7.1 or 7.1.2 Mix folded to 5.1 with the
+//! ITU-R BS.775 matrices of the mixer) or the IAB rendered to 5.1 (`file`).
 
 use std::io::{Read, Seek, SeekFrom};
 use std::sync::Mutex;
 
+use cfa4_audio_dsp::channels as chans;
 use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Description, Frame, FrameRate, Gain, Layout};
 use cfa4_mxf::{ByteSource, Codec, EssenceTrack, IabDesc, McaLabel, MxfFile, MxfWriter};
 
@@ -311,14 +315,18 @@ pub fn fsk_sync(uuid: [u8; 16], fps: u32, units: u32) -> Option<Vec<f32>> {
 /// ChannelIDs (ST 2098-2 Table 20) of the 7.1 DS bed: L R C LFE Lss Rss Lrs Rrs.
 const BED_7_1_DS: [u32; 8] = [0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08];
 
+/// ChannelIDs of the 9.1OH bed: the 7.1 DS bed and the left and right top surrounds (Lts Rts).
+const BED_9_1_OH: [u32; 10] = [0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08, 0x0B, 0x0C];
+
 /// A left-justified 24-bit sample (ST 429-18 7.2.3).
 fn sample24(x: f32) -> i32 {
     let v = (x.clamp(-1.0, 1.0) * 8_388_607.0).round() as i32;
     v.saturating_mul(256)
 }
 
-/// One IAFrame with a single 7.1 DS bed carrying the 5.1 `planar` (L R C LFE Ls Rs; the
-/// surrounds split -3 dB to the side and the rear surrounds), DLC coded.
+/// One IAFrame with a single bed, DLC coded: ten `planar` channels (7.1.2: L R C LFE Lss Rss Lrs
+/// Rrs Lts Rts) as a 9.1OH bed, eight (7.1) as a 7.1 DS bed, otherwise the 5.1 `planar` (L R C LFE
+/// Ls Rs; the surrounds split -3 dB to the side and the rear surrounds) as a 7.1 DS bed.
 pub(crate) fn bed_frame(rate: FrameRate, planar: &[Vec<f32>]) -> Frame {
     let n = rate.samples(false, 0);
     let k = std::f32::consts::FRAC_1_SQRT_2;
@@ -326,16 +334,22 @@ pub(crate) fn bed_frame(rate: FrameRate, planar: &[Vec<f32>]) -> Frame {
         let src = planar.get(i).map(Vec::as_slice).unwrap_or_default();
         (0..n).map(|j| sample24(src.get(j).copied().unwrap_or(0.0) * g)).collect()
     };
-    let sources = [(0, 1.0), (1, 1.0), (2, 1.0), (3, 1.0), (4, k), (5, k), (4, k), (5, k)];
+    let split = [(0, 1.0), (1, 1.0), (2, 1.0), (3, 1.0), (4, k), (5, k), (4, k), (5, k)];
+    let direct: Vec<(usize, f32)> = (0..planar.len()).map(|i| (i, 1.0)).collect();
+    let (ids, sources): (&[u32], &[(usize, f32)]) = match planar.len() {
+        10 => (&BED_9_1_OH, &direct),
+        8 => (&BED_7_1_DS, &direct),
+        _ => (&BED_7_1_DS, &split),
+    };
     let audio: Vec<AudioData> = sources.iter().enumerate().map(|(a, &(i, g))| AudioData { id: a as u32 + 1, coding: Coding::Dlc, samples: ch(i, g) }).collect();
-    let channels = BED_7_1_DS.iter().enumerate().map(|(a, &id)| BedChannel { id, audio_id: a as u32 + 1, gain: Gain::Unity, decorrelation: None }).collect();
+    let channels = ids.iter().enumerate().map(|(a, &id)| BedChannel { id, audio_id: a as u32 + 1, gain: Gain::Unity, decorrelation: None }).collect();
     Frame {
         version: 1,
         sample_rate: 48_000,
         bit_depth: 24,
         frame_rate: rate,
         frame_index: 0,
-        max_rendered: BED_7_1_DS.len() as u32,
+        max_rendered: ids.len() as u32,
         beds: vec![Bed { meta_id: 1, use_case: None, channels, description: Description::default(), beds: Vec::new(), remaps: Vec::new() }],
         objects: Vec::new(),
         audio,
@@ -621,7 +635,8 @@ pub(crate) struct ImmersiveMux {
     pub name: String,
     iab: MxfWriter<Out>,
     fsk: FskSync,
-    /// 5.1 mix waiting for a whole edit unit (`bed`, or `file` with the mix as fallback).
+    /// Mix waiting for a whole edit unit (`bed`, or `file` with the mix as fallback): 5.1, or
+    /// 7.1 / 7.1.2 for a `bed` (sized by the first audio written).
     pending: Vec<Vec<f32>>,
     units: u64,
     desc: IabDesc,
@@ -645,7 +660,7 @@ impl ImmersiveMux {
             name,
             iab,
             fsk,
-            pending: vec![Vec::new(); 6],
+            pending: Vec::new(),
             units: 0,
             desc: initial_desc(),
             source: s.dcp_iab_source.clone(),
@@ -664,10 +679,15 @@ impl ImmersiveMux {
         if !self.uses_mix() {
             return Ok(());
         }
+        if self.pending.is_empty() {
+            // a bed keeps a 7.1 / 7.1.2 mix; everything else uses 5.1
+            let w = if self.mode == DcpImmersive::Bed && matches!(planar.len(), 8 | 10) { planar.len() } else { 6 };
+            self.pending = vec![Vec::new(); w];
+        }
         for (p, c) in self.pending.iter_mut().zip(planar) {
             p.extend_from_slice(c);
         }
-        while self.pending.iter().all(|p| p.len() >= self.spu) {
+        while !self.pending.is_empty() && self.pending.iter().all(|p| p.len() >= self.spu) {
             let unit: Vec<Vec<f32>> = self.pending.iter_mut().map(|p| p.drain(..self.spu).collect()).collect();
             self.mix_unit(&unit, sound)?;
         }
@@ -688,7 +708,8 @@ impl ImmersiveMux {
         self.push(&bytes, &f, Some(unit), sound)
     }
 
-    /// One edit unit: the IAB frame and the main sound (fallback in 1-6, FSK in 14).
+    /// One edit unit: the IAB frame and the main sound (fallback in 1-6, a wider mix folded to
+    /// 5.1; FSK in 14).
     fn push(&mut self, bytes: &[u8], f: &Frame, fallback: Option<&[Vec<f32>]>, sound: &mut MxfWriter<Out>) -> Result<()> {
         let (c, o) = counts(f);
         self.desc.version = f.version;
@@ -699,6 +720,14 @@ impl ImmersiveMux {
         if self.fallback != IabFallback::None
             && let Some(fb) = fallback
         {
+            let folded;
+            let fb = if fb.len() > 6 {
+                let refs: Vec<&[f32]> = fb.iter().map(Vec::as_slice).collect();
+                folded = chans::convert(&refs, chans::Layout::from_channels(fb.len()), chans::Layout::Surround51, chans::Mixdown::FrontRear);
+                &folded[..]
+            } else {
+                fb
+            };
             for (dst, src) in planar.iter_mut().zip(fb.iter().take(6)) {
                 for (d, s) in dst.iter_mut().zip(src) {
                     *d = *s;
@@ -721,6 +750,8 @@ impl ImmersiveMux {
         if self.mode == DcpImmersive::Off {
             return Err(ExportError::Encode("internal: immersive audio without a mode".into()));
         }
+        // silent bed frames keep the bed layout of the mix (5.1 → 7.1 DS when no audio came)
+        let width = if self.mode == DcpImmersive::Bed { self.pending.len().max(6) } else { 6 };
         // the mix's last partial edit unit, padded with silence
         if self.uses_mix() && self.pending.iter().any(|p| !p.is_empty()) && self.units < frames {
             let unit: Vec<Vec<f32>> = std::mem::take(&mut self.pending)
@@ -732,7 +763,7 @@ impl ImmersiveMux {
                 .collect();
             self.mix_unit(&unit, sound)?;
         }
-        let silence = vec![vec![0.0f32; self.spu]; 6];
+        let silence = vec![vec![0.0f32; self.spu]; width];
         while self.units < frames {
             if cancelled() {
                 return Err(ExportError::Cancelled);
@@ -867,6 +898,34 @@ mod tests {
         for c in 2..4 {
             assert!((out[c][100] - planar[c][100]).abs() < 1e-5, "channel {c}");
         }
+    }
+
+    #[test]
+    fn a_71_mix_is_a_7_1_ds_bed_and_a_712_mix_a_9_1_oh_bed() {
+        let n = 2000;
+        let wave = |c: usize| -> Vec<f32> { (0..n).map(|i| ((i * (c + 1)) as f32 * 0.007).sin() * 0.4).collect() };
+        for (w, ids) in [(8usize, &BED_7_1_DS[..]), (10, &BED_9_1_OH[..])] {
+            let planar: Vec<Vec<f32>> = (0..w).map(wave).collect();
+            let f = bed_frame(FrameRate::R24, &planar);
+            let back = cfa4_iab::parse(&cfa4_iab::write(&f).unwrap()).unwrap();
+            assert_eq!(back, f);
+            assert_eq!(back.max_rendered as usize, w);
+            assert_eq!(back.beds.len(), 1);
+            assert!(back.beds[0].use_case.is_none(), "an unconditional bed");
+            let got: Vec<u32> = back.beds[0].channels.iter().map(|c| c.id).collect();
+            assert_eq!(got, ids, "{w} channels");
+            // channel for channel, losslessly
+            for (c, a) in back.audio.iter().enumerate() {
+                assert_eq!(a.coding, Coding::Dlc);
+                assert_eq!(a.samples[333], sample24(planar[c][333]), "{w} channels, asset {c}");
+            }
+            let (beds, objects) = counts(&back);
+            assert_eq!((beds as usize, objects), (w, 0));
+        }
+        // ST 2098-2 Table 20: the 9.1OH heights are the left and right top surrounds
+        assert_eq!(&BED_9_1_OH[8..], &[0x0B, 0x0C]);
+        assert_eq!(cfa4_iab::channel_position(0x0B).map(|p| p.0), Some([0.0, 0.5, 1.0]));
+        assert_eq!(cfa4_iab::channel_position(0x0C).map(|p| p.0), Some([1.0, 0.5, 1.0]));
     }
 
     #[test]

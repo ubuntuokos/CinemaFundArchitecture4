@@ -172,11 +172,7 @@ fn render_clip(s: &Session, seq: ItemId, need: &AudioNeed, sample_rate: u32, bit
     c.speed = 1.0;
     c.reverse = false;
     c.link = None;
-    let channels = match track.channels {
-        cfa4_project::AudioChannels::Mono => 1,
-        cfa4_project::AudioChannels::Surround51 => 6,
-        _ => 2,
-    };
+    let channels = track.channels.fixed_channels().map_or(2, |n| n as u32);
     if let Some(t) = p.sequence_mut(rs).and_then(|r| r.audio_tracks.first_mut()) {
         t.channels = track.channels;
         t.items = vec![c];

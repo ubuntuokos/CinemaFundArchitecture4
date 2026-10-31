@@ -1675,7 +1675,7 @@
 	Rating	Korhatár-besorolás
 	Public service announcement	Közérdekű közlemény
 	Off (5.1 only)	Ki (csak 5.1)
-	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS ágy az 5.1-es keverésből
+	IAB bed from the mix (7.1 DS, 9.1OH from 7.1.2)	IAB ágy a keverésből (7.1 DS, 7.1.2-ből 9.1OH)
 	IAB from a file (IMF or DCP IAB MXF, .iab)	IAB fájlból (IMF vagy DCP IAB MXF, .iab)
 	IAB MXF or .iab file	IAB MXF vagy .iab fájl
 	None: FSK sync only (SMPTE ST 429-19)	Nincs: csak FSK-szinkron (SMPTE ST 429-19)
@@ -1684,7 +1684,7 @@
 	Main sound channels 1-6	Fő hang 1–6. csatorna
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
-	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
+	A 7.1.2 mix becomes a 9.1OH bed, a 7.1 mix a 7.1 DS bed, any other mix a 7.1 DS bed from its 5.1 (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	A 7.1.2-es keverésből 9.1OH ágy, a 7.1-esből 7.1 DS ágy, minden más keverésből az 5.1-es változatából 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
 	Choose an IAB track file (IMF or DCP) or a raw IAB stream.	Válassz IAB sávfájlt (IMF vagy DCP) vagy nyers IAB-folyamot.
 	Reading the IAB source…	Az IAB-forrás olvasása…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} képkocka, {fps} fps, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum

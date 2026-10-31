@@ -449,13 +449,25 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   Stereo sources sit at the puck ± 1 in x; 5.1 sources keep their layout moved by the puck's offset
   from front-centre (the default puck is the identity). LFE gets the source LFE (5.1) or the mean of
   the source channels (mono/stereo, default −∞) times the LFE level.
-- **Graph.** Buses are 2 or 6 channels wide (`render::mixer::width_of`); inserts are built for the
+- **Graph.** Buses are 2, 6, 8 or 10 channels wide (`render::mixer::width_of`); inserts are built for the
   strip's width; routes convert between widths (5.1 panner into 5.1 buses, BS.775 into stereo
   buses); meters have one value per channel. `mix_graph` returns the Mix's width;
   `audio::mix_sequence` always returns stereo, `mix_sequence_layout` any layout and mixdown. Clips
   on 5.1 tracks play the source's first six channels (or the six picked with Modify ▸ Audio
   Channels), mono/stereo sources upmixed; clip effects run on all six channels.
-- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels; on a stereo
+- **7.1 and 7.1.2** (#374). Tracks, submixes and the Mix can also be 7.1 (8 ch: L R C LFE Lss Rss
+  Lrs Rrs, the SMPTE / DCP order) or 7.1.2 (10 ch: … Lts Rts). The surround panner
+  (`channels::pan_matrix`) puts a point source on the front, side and rear rows of a 7.1 bus
+  (`point_gains_71`, Σg² = 1); a 5.1 source's surrounds sit between the side and the rear speakers
+  (each split −3 dB); a 7.1.2 strip's heights pass through unpanned (height panning is a
+  follow-up). Up- and downmixes go through 5.1 (`channels::matrix`): a 7.1 side and rear pair folds
+  into the 5.1 surround at −3 dB each, a 7.1.2 height folds into its side at −3 dB, the 5.1
+  surround splits −3 dB to side and rear. A 7.1 source plays as 7.1 on a 7.1 / 7.1.2 track (its
+  WAV-order back pair moved behind the sides). Exports stay mono / stereo / 5.1 except the DCP IAB
+  bed, which takes a 7.1 Mix as a 7.1 DS bed and a 7.1.2 Mix as a 9.1OH bed (the 5.1 fallback in
+  the main sound is the 5.1 fold).
+- **Playback.** On a device with ≥ 6 output channels a 5.1 Mix plays as six channels (a 7.1 / 7.1.2
+  Mix as its own channels on a device with as many, else as 5.1); on a stereo
   device it is folded with Preferences ▸ Audio ▸ 5.1 Mixdown Type (Front Only, Front + Rear
   Surround = BS.775, Front + LFE, Front + Rear Surround + LFE; `PreviewStore::mix_layout`).
 - **Export.** Audio Channels Mono / Stereo / 5.1: WAV writes `WAVE_FORMAT_EXTENSIBLE` with channel

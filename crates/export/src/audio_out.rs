@@ -51,9 +51,15 @@ impl AudioOut {
         let sr = r.sample_rate;
         let start = range.start.to_units_floor(sr as i64);
         let end = range.end().to_units_floor(sr as i64);
+        // a DCP's 7.1 DS / 9.1OH IAB bed takes a 7.1 / 7.1.2 Mix as it is (the 5.1 fallback in the
+        // main sound is folded from it); every other output is mono, stereo or 5.1
+        let channels = match (settings.format, crate::dcp_iab::DcpImmersive::of(settings), q.settings.audio_master.fixed_channels()) {
+            (crate::Format::Dcp, crate::dcp_iab::DcpImmersive::Bed, Some(n @ (8 | 10))) => n,
+            _ => r.channels as usize,
+        };
         let ln = &settings.effects.loudness;
         let limiter = ln.enabled.then(|| {
-            let mut l = Limiter::new(sr as f32, r.channels as usize);
+            let mut l = Limiter::new(sr as f32, channels);
             l.set_param("ceiling", ln.true_peak_dbtp.clamp(-24.0, 0.0) as f32);
             l.set_param("true_peak", 1.0);
             l.set_param("release", 80.0);
@@ -61,7 +67,7 @@ impl AudioOut {
             l
         });
         let latency = limiter.as_ref().map(|l| l.latency() as i64).unwrap_or(0);
-        Ok(AudioOut { project, seq, sr, channels: r.channels as usize, gain: 1.0, limiter, latency, next_in: start, out: start, end, loudness: None })
+        Ok(AudioOut { project, seq, sr, channels, gain: 1.0, limiter, latency, next_in: start, out: start, end, loudness: None })
     }
 
     /// The loudness pass: measure the integrated loudness of the whole range and set the gain
@@ -143,10 +149,11 @@ impl AudioOut {
 
     /// Mix `n` samples from `pos`, folded to the output channels (silence past the range end).
     /// Stereo output of a 5.1 Mix is the ITU-R BS.775 downmix; 5.1 output of a stereo Mix places it
-    /// on L and R; 5.1 is in L, R, C, LFE, Ls, Rs order.
+    /// on L and R; 5.1 is in L, R, C, LFE, Ls, Rs order, 7.1 / 7.1.2 (a DCP's IAB bed) in L, R, C,
+    /// LFE, Lss, Rss, Lrs, Rrs (, Lts, Rts) order.
     fn mix(&self, pos: i64, n: usize, sources: &dyn SourceProvider) -> Vec<Vec<f32>> {
         let real = (self.end - pos).clamp(0, n as i64) as usize;
-        let out_ch = if self.channels == 6 { 6 } else { 2 };
+        let out_ch = if matches!(self.channels, 6 | 8 | 10) { self.channels } else { 2 };
         let mut st = if real > 0 {
             let layout = cfa4_audio_dsp::channels::Layout::from_channels(out_ch);
             cfa4_render::audio::mix_sequence_layout(&self.project, &self.seq, pos, real, sources, layout, cfa4_audio_dsp::channels::Mixdown::FrontRear).channels

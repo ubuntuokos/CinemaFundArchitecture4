@@ -179,7 +179,7 @@ class Strip(QWidget):
         self.update()
 
     def channels(self) -> int:
-        return 6 if self.data.get("channels") == "5.1" else 2
+        return {"5.1": 6, "7.1": 8, "7.1.2": 10}.get(self.data.get("channels") or "", 2)
 
     # ----- layout -----
     def layout_regions(self) -> dict[str, QRectF]:

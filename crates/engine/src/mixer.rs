@@ -555,16 +555,21 @@ pub(crate) fn channels_name(c: AudioChannels) -> &'static str {
         AudioChannels::Mono => "Mono",
         AudioChannels::Stereo => "Stereo",
         AudioChannels::Surround51 => "5.1",
+        AudioChannels::Surround71 => "7.1",
+        AudioChannels::Surround712 => "7.1.2",
         AudioChannels::Adaptive => "Adaptive",
     }
 }
 
-/// Parse a channel format / track type name (`Mono`, `Stereo` or `Standard`, `5.1`, `Adaptive`).
+/// Parse a channel format / track type name (`Mono`, `Stereo` or `Standard`, `5.1`, `7.1`,
+/// `7.1.2`, `Adaptive`).
 pub(crate) fn channels_from(s: &str) -> Option<AudioChannels> {
     match s.to_ascii_lowercase().as_str() {
         "mono" => Some(AudioChannels::Mono),
         "stereo" | "standard" => Some(AudioChannels::Stereo),
         "5.1" | "surround51" => Some(AudioChannels::Surround51),
+        "7.1" | "surround71" => Some(AudioChannels::Surround71),
+        "7.1.2" | "surround712" => Some(AudioChannels::Surround712),
         "adaptive" => Some(AudioChannels::Adaptive),
         _ => None,
     }
@@ -1187,7 +1192,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "Track Mixer Settings",
             &[],
             None,
-            r#"{"strip":"A1"|"S1"|"Mix"|id,"name":str?,"volumeDb":f64?,"pan":f64?,"muted":bool?,"solo":bool?,"recordArm":bool?,"soloSafe":bool?,"mode":"Off|Read|Latch|Touch|Write"?,"output":"Mix"|"S1"?,"inputMap":"Stereo|Left|Right|Swap|Mono"?,"channels":"Mono|Stereo|5.1"?}"#,
+            r#"{"strip":"A1"|"S1"|"Mix"|id,"name":str?,"volumeDb":f64?,"pan":f64?,"muted":bool?,"solo":bool?,"recordArm":bool?,"soloSafe":bool?,"mode":"Off|Read|Latch|Touch|Write"?,"output":"Mix"|"S1"?,"inputMap":"Stereo|Left|Right|Swap|Mono"?,"channels":"Mono|Stereo|5.1|7.1|7.1.2"?}"#,
             has_seq,
             set_strip,
             true,
@@ -1336,7 +1341,16 @@ pub fn commands() -> Vec<CommandSpec> {
             set_default_transition,
             true,
         ),
-        spec("mixer.addSubmix", "Add Audio Submix Track", &["Sequence"], None, r#"{"name":str?,"channels":"Mono|Stereo|5.1"?}"#, has_seq, add_submix, true),
+        spec(
+            "mixer.addSubmix",
+            "Add Audio Submix Track",
+            &["Sequence"],
+            None,
+            r#"{"name":str?,"channels":"Mono|Stereo|5.1|7.1|7.1.2"?}"#,
+            has_seq,
+            add_submix,
+            true,
+        ),
         spec("mixer.deleteSubmix", "Delete Submix Track", &[], None, r#"{"strip":"S1"|id}"#, has_seq, delete_submix, true),
         spec(
             "mixer.addInsert",

@@ -538,6 +538,50 @@ fn immersive_bed_package() {
     assert!(iab.windows(12).any(|w| w == sub));
 }
 
+/// `bed` from a 7.1.2 Mix (#374): a 9.1OH bed channel for channel, the 5.1 fold of the Mix as the
+/// fallback; a 7.1 Mix gives a 7.1 DS bed channel for channel.
+#[test]
+fn immersive_bed_from_a_712_and_a_71_mix() {
+    for (master, ids) in [
+        (cfa4_project::AudioChannels::Surround712, vec![0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08, 0x0B, 0x0C]),
+        (cfa4_project::AudioChannels::Surround71, vec![0x00, 0x04, 0x02, 0x0D, 0x05, 0x09, 0x07, 0x08]),
+    ] {
+        let (p, seq, m) = project();
+        let mut p = (*p).clone();
+        p.sequence_mut(seq).unwrap().settings.audio_master = master;
+        let p = Arc::new(p);
+        let dir = tmp(&format!("iab-bed-{}", ids.len()));
+        let s = ExportSettings {
+            format: Format::Dcp,
+            path: dir.clone(),
+            range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(3))),
+            dcp_immersive: "bed".into(),
+            dcp_iab_fallback: "5.1".into(),
+            ..Default::default()
+        };
+        export(&p, seq, &s, &m, &Progress::default()).unwrap();
+        let (iab, pcm) = check_immersive_package(&dir, 3, 1920);
+        let mi = cfa4_mxf::open(&iab).unwrap();
+        for i in 0..3 {
+            let f = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+            assert_eq!(f.beds.len(), 1);
+            let got: Vec<u32> = f.beds[0].channels.iter().map(|c| c.id).collect();
+            assert_eq!(got, ids, "frame {i}");
+            assert_eq!(f.max_rendered as usize, ids.len());
+            // the stereo track sits on L and R of the Mix: bed L / R = fallback L / R, the rest silent
+            for (asset, ch) in [(0, 0), (1, 1)] {
+                let bed: Vec<f32> = f.audio[asset].samples.iter().map(|v| *v as f32 / 2_147_483_648.0).collect();
+                assert_eq!(&bed[..], &pcm[ch][i * 1920..(i + 1) * 1920], "frame {i} channel {ch}");
+            }
+            for a in &f.audio[2..] {
+                assert!(a.samples.iter().all(|v| *v == 0), "frame {i} asset {}", a.id);
+            }
+        }
+        let rms = |c: &[f32]| (c.iter().map(|v| v * v).sum::<f32>() / c.len() as f32).sqrt();
+        assert!(rms(&pcm[0]) > 0.05 && rms(&pcm[1]) > 0.05, "the tone is on L and R");
+    }
+}
+
 /// A 7.1 DS bed frame at `rate` with PCM assets and an authoring tool, as a source file.
 fn source_frames(rate: cfa4_iab::FrameRate, n: usize) -> Vec<Vec<u8>> {
     (0..n)

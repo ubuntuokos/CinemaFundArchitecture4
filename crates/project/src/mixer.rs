@@ -42,14 +42,14 @@ pub const LANE_PAN51_LFE: &str = "pan51.lfe";
 pub const PAN51_LANES: [&str; 4] = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE];
 
 /// Default value of a 5.1 panner lane for a strip of channel format `channels`: puck at front
-/// centre, Center 100 %, LFE 0 dB for 5.1 strips (their LFE channel passes) and −∞ for mono /
+/// centre, Center 100 %, LFE 0 dB for surround strips (their LFE channel passes) and −∞ for mono /
 /// stereo strips (nothing is sent to the subwoofer unless asked for).
 pub fn pan51_default(key: &str, channels: crate::AudioChannels) -> Option<f64> {
     match key {
         LANE_PAN51_X => Some(0.0),
         LANE_PAN51_Y => Some(100.0),
         LANE_PAN51_CENTER => Some(100.0),
-        LANE_PAN51_LFE => Some(if channels == crate::AudioChannels::Surround51 { 0.0 } else { FADER_MIN_DB }),
+        LANE_PAN51_LFE => Some(if channels.is_surround() { 0.0 } else { FADER_MIN_DB }),
         _ => None,
     }
 }
@@ -405,9 +405,10 @@ impl crate::Sequence {
             None => self.settings.audio_master,
         }
     }
-    /// Whether strip `id` pans with the 5.1 panner (it feeds a 5.1 submix or a 5.1 Mix).
+    /// Whether strip `id` pans with the surround panner (it feeds a 5.1, 7.1 or 7.1.2 submix or
+    /// Mix).
     pub fn pans_51(&self, id: TrackId) -> bool {
-        id != MASTER_STRIP && self.output_channels(id) == crate::AudioChannels::Surround51
+        id != MASTER_STRIP && self.output_channels(id).is_surround()
     }
     /// Mix track volume (dB) at sequence time `t` (automation unless the Mix is in Off mode).
     pub fn master_volume_at(&self, t: Tick) -> f64 {
