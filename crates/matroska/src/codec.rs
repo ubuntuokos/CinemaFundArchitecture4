@@ -148,6 +148,32 @@ fn split_xiph(p: &[u8]) -> Vec<Vec<u8>> {
     out
 }
 
+/// PCM described by the `WAVEFORMATEX` / `WAVEFORMATEXTENSIBLE` in an `A_MS/ACM` track's
+/// `CodecPrivate`: integer (`WAVE_FORMAT_PCM`) or float (`WAVE_FORMAT_IEEE_FLOAT`), little-endian,
+/// `bits` the container size of a sample. `None` for any other format or a damaged structure.
+fn wave_format_pcm(p: &[u8]) -> Option<Codec> {
+    let u16_at = |at: usize| p.get(at..at + 2).map(|b| u16::from_le_bytes([b[0], b[1]]));
+    let mut tag = u16_at(0)?;
+    let bits = u16_at(14)?;
+    if tag == 0xFFFE {
+        // WAVEFORMATEXTENSIBLE: cbSize >= 22, SubFormat GUID at 24; its first two bytes are the tag
+        if u16_at(16)? < 22 || p.get(26..40)? != KSDATAFORMAT_TAIL {
+            return None;
+        }
+        tag = u16_at(24)?;
+    }
+    let float = match tag {
+        1 => false,
+        3 => true,
+        _ => return None,
+    };
+    let ok = if float { matches!(bits, 32 | 64) } else { matches!(bits, 8 | 16 | 24 | 32) };
+    ok.then_some(Codec::Pcm { float, big_endian: false, bits })
+}
+
+/// Bytes 2..16 of the `KSDATAFORMAT_SUBTYPE_*` GUIDs (`xxxxxxxx-0000-0010-8000-00AA00389B71`).
+const KSDATAFORMAT_TAIL: [u8; 14] = [0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71];
+
 /// Map a CodecID + CodecPrivate (+ audio params for legacy AAC / PCM) to a [`Codec`].
 pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInfo>) -> Codec {
     let p = private.to_vec();
@@ -178,6 +204,7 @@ pub(crate) fn map_codec(id: &str, private: &[u8], audio: Option<&crate::AudioInf
             let bits = audio.and_then(|a| a.bit_depth).unwrap_or(if id == "A_PCM/FLOAT/IEEE" { 32 } else { 16 }) as u16;
             Codec::Pcm { float: id == "A_PCM/FLOAT/IEEE", big_endian: id == "A_PCM/INT/BIG", bits }
         }
+        "A_MS/ACM" => wave_format_pcm(private).unwrap_or(Codec::Other(id.to_string())),
         "A_AC3" | "A_AC3/BSID9" | "A_AC3/BSID10" => Codec::Ac3,
         "A_EAC3" => Codec::Eac3,
         "A_DTS" | "A_DTS/LOSSLESS" => Codec::Dts,
@@ -232,6 +259,48 @@ mod tests {
         assert_eq!(map_codec("A_AAC/MPEG4/LC", &[], Some(&a)), Codec::Aac { asc: vec![0x12, 0x10] });
         assert_eq!(map_codec("S_TEXT/UTF8", &[], None).name(), "subrip");
         assert_eq!(map_codec("X_WHATEVER", &[], None), Codec::Other("X_WHATEVER".into()));
+    }
+
+    fn wave_format(tag: u16, bits: u16, extensible_tag: Option<u16>) -> Vec<u8> {
+        let mut w = Vec::new();
+        w.extend_from_slice(&tag.to_le_bytes());
+        w.extend_from_slice(&6u16.to_le_bytes()); // channels
+        w.extend_from_slice(&48_000u32.to_le_bytes());
+        w.extend_from_slice(&(48_000 * 6 * u32::from(bits) / 8).to_le_bytes());
+        w.extend_from_slice(&(6 * bits / 8).to_le_bytes());
+        w.extend_from_slice(&bits.to_le_bytes());
+        if let Some(sub) = extensible_tag {
+            w.extend_from_slice(&22u16.to_le_bytes());
+            w.extend_from_slice(&bits.to_le_bytes()); // valid bits
+            w.extend_from_slice(&0x3Fu32.to_le_bytes()); // channel mask 5.1
+            w.extend_from_slice(&sub.to_le_bytes());
+            w.extend_from_slice(&KSDATAFORMAT_TAIL);
+        } else {
+            w.extend_from_slice(&0u16.to_le_bytes());
+        }
+        w
+    }
+
+    #[test]
+    fn ms_acm_pcm() {
+        let pcm = |float, bits| Codec::Pcm { float, big_endian: false, bits };
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(1, 24, None), None), pcm(false, 24));
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(3, 32, None), None), pcm(true, 32));
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(0xFFFE, 24, Some(1)), None), pcm(false, 24));
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(0xFFFE, 32, Some(3)), None), pcm(true, 32));
+        let other = Codec::Other("A_MS/ACM".into());
+        // compressed formats, odd sizes and damaged structures stay unsupported
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(0x55, 16, None), None), other);
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(1, 12, None), None), other);
+        assert_eq!(map_codec("A_MS/ACM", &wave_format(3, 16, None), None), other);
+        let mut bad_guid = wave_format(0xFFFE, 24, Some(1));
+        bad_guid[30] ^= 1;
+        assert_eq!(map_codec("A_MS/ACM", &bad_guid, None), other);
+        let whole = wave_format(0xFFFE, 24, Some(1));
+        for n in 0..whole.len() {
+            assert_eq!(map_codec("A_MS/ACM", &whole[..n], None), other, "cut at {n}");
+        }
+        assert_eq!(map_codec("A_MS/ACM", &[], None), other);
     }
 
     #[test]
