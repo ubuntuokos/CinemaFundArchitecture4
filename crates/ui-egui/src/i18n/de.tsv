@@ -3622,13 +3622,41 @@
 	Side by Side	Nebeneinander
 	Stereo to 2D	Stereo zu 2D
 	Eye	Auge
+	Stereo Parallax	Stereo-Parallaxe
+	Horizontal Shift	Horizontale Verschiebung
 	Slit Scan	Slit-Scan
 	Time Span (seconds)	Zeitspanne (Sekunden)
 	Current Frame At	Aktuelles Bild am
 	Blend Slices	Scheiben überblenden
+	Add Beat Markers	Beat-Marken hinzufügen
+	Clear Beat Markers	Beat-Marken löschen
+	Clear Check Markers	Prüfmarken löschen
+	Auto Reframe Sequence…	Sequenz automatisch neu ausrichten…
+	Batch Variants from Spreadsheet…	Stapelvarianten aus Tabelle…
+	Check Before Export…	Vor dem Export prüfen…
+	Social Deliverables…	Social-Media-Ausgaben…
+	Counter	Zähler
+	Word by Word	Wort für Wort
+	Animator	Animator
+	Animator Duration	Animator-Dauer
+	Animator Delay	Animator-Verzögerung
+	Creative Looks	Kreative Looks
+	Film Grain	Filmkorn
+	Animated	Animiert
+	Color Grain	Farbkorn
 	HLS (HTTP Live Streaming)	HLS (HTTP Live Streaming)
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP Live Streaming: H.264 1920×1080 mit 8 Mbit/s, AAC 160 kbit/s, 6-Sekunden-Segmente im fragmentierten MP4
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Digital Cinema
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE-DCP-Ordner: JPEG 2000 1998×1080 (1.85:1), 5.1 PCM 24 Bit 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE-DCP-Ordner: JPEG 2000 2048×858 (2.39:1), 5.1 PCM 24 Bit 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE-DCP-Ordner: JPEG 2000 3996×2160 (1.85:1), 5.1 PCM 24 Bit 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE-DCP-Ordner: JPEG 2000 4096×1716 (2.39:1), 5.1 PCM 24 Bit 48 kHz
 	Bit Crush	Bit-Crush
 	Bits per Channel	Bits pro Kanal
 	Ordered Dither	Geordnetes Dithering

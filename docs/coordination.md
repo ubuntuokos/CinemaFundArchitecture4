@@ -41,6 +41,9 @@ első sora mondja meg. Gazdát csak a tulajdonos jelölhet ki vagy válthat le.
    a jóváhagyott PR-okat olvasztja be, **egyenként**. Gyűjtő-PR-t nem nyit.
 4. Beolvasztás előtt: a PR ága friss a `main`-nel (`update-branch`), a teljes CI
    (`cfa4-full-validation`) zöld **azon a fejen**.
+   Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
+   döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
+   lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
 5. Ha egy PR-t egy másik kivált, a gazda lezárja, és a megjegyzésben megnevezi, melyik váltotta ki.
 6. Minden kör eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja

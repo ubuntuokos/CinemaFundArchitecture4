@@ -255,8 +255,12 @@ const STYLIZE: &[&str] = &["Video Effects", "Stylize"];
 const TRANSFORM: &[&str] = &["Video Effects", "Transform"];
 /// CFA4's own folder (not in Premiere's bin): effects on over/under or side-by-side stereo frames.
 pub const STEREO_3D: &[&str] = &["Video Effects", "Stereoscopic 3D"];
+/// CFA4's own folder (not in Premiere's bin): stylized looks (film grain, print and screen looks).
+pub const CREATIVE_LOOKS: &[&str] = &["Video Effects", "Creative Looks"];
 /// CFA4's own folder (not in Premiere's bin): digital and analogue damage looks.
 pub const GLITCH: &[&str] = &["Video Effects", "Glitch"];
+/// CFA4's own Video Effects folders, which Premiere's catalogue does not have.
+pub const CFA4_FOLDERS: &[&str] = &["Stereoscopic 3D", "Creative Looks", "Glitch"];
 /// CFA4's own effects that sit in one of Premiere's folders or in the Glitch folder.
 pub const CFA4_OWN: &[&str] = &["slit_scan", "bit_crush", "block_glitch", "databend", "vhs", "scan_line_jitter", "tile_jitter"];
 const VIDEO: &[&str] = &["Video Effects", "Video"];
@@ -618,6 +622,31 @@ fn build_effects() -> Vec<EffectDef> {
         video("vertical_flip", "Vertical Flip", TRANSFORM, vec![]),
         video("stereo_swap_eyes", "Swap Eyes", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0)]),
         video("stereo_to_2d", "Stereo to 2D", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0), ch("eye", "Eye", STEREO_EYES, 0)]),
+        video(
+            "stereo_parallax",
+            "Stereo Parallax",
+            STEREO_3D,
+            vec![
+                ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0),
+                fs("shift", "Horizontal Shift", 0.0, (-10.0, 10.0), (-5.0, 5.0), "%", 2),
+                b("repeat_edge", "Repeat Edge Pixels", false),
+            ],
+        ),
+        video(
+            "film_grain",
+            "Film Grain",
+            CREATIVE_LOOKS,
+            vec![
+                fs("intensity", "Intensity", 20.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                fs("size", "Grain Size", 1.5, (0.5, 10.0), (0.5, 6.0), "px", 2),
+                fs("shadows", "Shadows", 60.0, (0.0, 200.0), (0.0, 200.0), "%", 1),
+                fs("midtones", "Midtones", 100.0, (0.0, 200.0), (0.0, 200.0), "%", 1),
+                fs("highlights", "Highlights", 40.0, (0.0, 200.0), (0.0, 200.0), "%", 1),
+                fs("color", "Color Grain", 20.0, (0.0, 100.0), (0.0, 100.0), "%", 1),
+                b("animated", "Animated", true),
+                fs("seed", "Random Seed", 1.0, (1.0, 9999.0), (1.0, 100.0), "", 0),
+            ],
+        ),
         video("edge_feather", "Edge Feather", vfx::LEGACY, vec![fs("amount", "Amount", 0.0, (0.0, 100.0), (0.0, 100.0), "", 0)]),
         video(
             "transform",

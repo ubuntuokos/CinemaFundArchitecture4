@@ -1362,7 +1362,7 @@ mod tests {
         // nothing else sits in the current folders
         for d in effect_defs().iter().filter(|d| d.kind == EffectKind::Video && d.category.first() == Some(&"Video Effects")) {
             let f = d.category[1];
-            if f == "Obsolete" || d.category == crate::effect::STEREO_3D || crate::effect::CFA4_OWN.contains(&d.id) {
+            if f == "Obsolete" || crate::effect::CFA4_FOLDERS.contains(&f) || crate::effect::CFA4_OWN.contains(&d.id) {
                 continue;
             }
             let listed = CATALOGUE.iter().any(|(cf, names)| *cf == f && names.contains(&d.name));
