@@ -380,7 +380,8 @@ impl MediaPool {
     }
 
     fn proxy_source(&self, item: ItemId, path: &str, m: &MediaClip, services: &dyn Services) -> Option<SharedSource> {
-        let key = format!("proxy:{path}");
+        // Interpret Footage > Auro-3D off plays a proxy's carrier too (#323), so the setting is in the key
+        let key = if m.interpret.auro_as_carrier { format!("proxy-carrier:{path}") } else { format!("proxy:{path}") };
         if let Some((k, s)) = self.proxies.read().unwrap_or_else(|e| e.into_inner()).get(&item)
             && *k == key
         {
@@ -388,13 +389,16 @@ impl MediaPool {
         }
         match self.follow_media(path).and_then(|file| self.open_file(&file, services)) {
             Ok(s) => {
+                let s = interpreted(m, s);
                 // a proxy with fewer audio streams than the original (say one track of an OBS
                 // recording's seven) still stands in for the picture; the audio comes from the
                 // original, so every clip keeps the stream it plays
                 let audio_from = if s.info().audio_streams.len() < m.info.audio_streams.len() {
                     log::warn!("proxy has fewer audio streams than the original: {path}; audio from full-resolution media");
                     match &m.media {
-                        MediaRef::File { path: original } if !m.offline => self.follow_media(original).and_then(|file| self.open_file(&file, services)).ok(),
+                        MediaRef::File { path: original } if !m.offline => {
+                            self.follow_media(original).and_then(|file| self.open_file(&file, services)).ok().map(|o| interpreted(m, o))
+                        }
                         _ => None,
                     }
                 } else {

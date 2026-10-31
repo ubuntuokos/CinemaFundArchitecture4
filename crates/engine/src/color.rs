@@ -328,8 +328,11 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
             if m.offline || m.interpret.auro_as_carrier == !on {
                 continue;
             }
-            let Ok(file) = s.media.follow(path) else { continue };
-            let Ok(src) = s.media.open_file(&file, &*s.services) else { continue };
+            // the item's audio changes only if the file opens: an error names the item rather
+            // than leaving the setting unchanged without a word
+            let name = s.project.item(*i).map_or_else(String::new, |it| it.name.clone());
+            let file = s.media.follow(path).map_err(|e| bad(CMD, format!("{name}: {e}")))?;
+            let src = s.media.open_file(&file, &*s.services).map_err(|e| bad(CMD, format!("{name}: {e}")))?;
             // only a carrier changes: other footage keeps its audio and its setting
             if src.carrier().is_none() {
                 continue;
@@ -359,6 +362,25 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
                 }
             }
         }
+        // timeline clips of a toggled item (or of its subclips) that pick a channel the new
+        // layout lacks would play channel 0 in its place: they go back to the default pair
+        for (id, streams) in &audio {
+            let channels = streams.first().map_or(0, |a| a.channels);
+            let of_item: Vec<ItemId> =
+                pr.items.values().filter(|it| it.id == *id || matches!(it.kind, ItemKind::Subclip { parent, .. } if parent == *id)).map(|it| it.id).collect();
+            for it in pr.items.values_mut() {
+                let ItemKind::Sequence(q) = &mut it.kind else { continue };
+                let needs = q.audio_tracks.iter().flat_map(|t| &t.items).any(|c| out_of_range(c, &of_item, channels));
+                if !needs {
+                    continue;
+                }
+                for c in std::sync::Arc::make_mut(q).audio_tracks.iter_mut().flat_map(|t| &mut t.items) {
+                    if out_of_range(c, &of_item, channels) {
+                        c.source_channels.clear();
+                    }
+                }
+            }
+        }
         Ok(())
     })?;
     let first = items.first().and_then(|i| s.project.item(*i)).and_then(|i| i.as_media());
@@ -368,6 +390,12 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
         "pixelAspect": first.map(|m| m.pixel_aspect()),
         "auroDecoding": first.map(|m| !m.interpret.auro_as_carrier),
     }))
+}
+
+/// Whether timeline clip `c` plays stream 0 of one of `items` and picks a channel at or past
+/// `channels`.
+fn out_of_range(c: &cfa4_project::TrackItem, items: &[ItemId], channels: u32) -> bool {
+    c.audio_stream == 0 && items.contains(&c.item) && c.source_channels.iter().any(|&k| u32::from(k) >= channels)
 }
 
 /// `[num, den]` as a pixel aspect ratio CFA4 can use ([`cfa4_project::checked_par`]).
