@@ -1,4 +1,4 @@
-//! Deblocking filter (8.7) for progressive frames, 4:2:0, 8 to 14 bits.
+//! Deblocking filter (8.7) for progressive frames, 4:2:0 / 4:2:2 / 4:4:4, 8 to 14 bits.
 
 use crate::picture::{MbKind, MbState, Sample};
 use crate::slicedec::{PicState, SliceInfo};
@@ -13,6 +13,7 @@ struct Motion {
 }
 
 /// Referenced picture ids per 8x8 block and list (u32::MAX = list unused).
+#[inline]
 fn ref_ids8(st: &MbState, sl: &SliceInfo) -> [[u32; 2]; 4] {
     std::array::from_fn(|b8| {
         std::array::from_fn(|l| {
@@ -353,6 +354,7 @@ pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
     let alpha_off = sq.alpha_offset;
     let beta_off = sq.beta_offset;
     let t8 = q.transform_8x8;
+    let chroma = pic.planes.chroma;
     // bS[dir][edge][segment]; dir 0 = vertical edges (x), 1 = horizontal edges (y)
     let mut bs = [[[0u8; 4]; 4]; 2];
     if q.kind.is_intra() {
@@ -361,7 +363,7 @@ pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
                 bs[dir][0] = [4; 4];
             }
             for e in 1..4 {
-                if !(t8 && e % 2 == 1) {
+                if !(t8 && e % 2 == 1) || chroma.0 == 2 {
                     bs[dir][e] = [3; 4];
                 }
             }
@@ -393,7 +395,8 @@ pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
                 continue;
             }
             for e in 1..4 {
-                if t8 && e % 2 == 1 {
+                // edges inside an 8x8 transform block are only needed for 4:2:2 chroma
+                if t8 && e % 2 == 1 && chroma.0 != 2 {
                     continue;
                 }
                 for k in 0..4 {
@@ -419,10 +422,11 @@ pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
     };
     let width = pic.planes.width;
     let cwidth = pic.planes.cwidth;
-    // luma
+    // luma: the 8x8 transform leaves the edges inside its blocks unfiltered (the bS of those edges
+    // is still derived above: 4:2:2 chroma uses it)
     for dir in 0..2 {
         for e in 0..4 {
-            if bs[dir][e] == [0; 4] {
+            if bs[dir][e] == [0; 4] || (t8 && e % 2 == 1) {
                 continue;
             }
             let qpp = if e == 0 { p_qp[dir].map(|p| p.0).unwrap_or(q_qp) } else { q_qp };
@@ -439,24 +443,42 @@ pub fn deblock_mb<S: Lanes>(pic: &mut PicState<S>, addr: usize, mb_w: usize) {
             }
         }
     }
-    // chroma (4:2:0): edges at chroma samples 0 and 4 use the bS of luma edges 0 and 2
+    // chroma: the bS of the luma edge through the luma sample at (SubWidthC * x, SubHeightC * y)
+    // (8.7.2). 4:4:4 filters the luma edges with the luma filter; 4:2:0 / 4:2:2 filter the edges
+    // every four chroma samples with the chroma filter.
+    if !chroma.coded() {
+        return;
+    }
+    let (sx, sy) = (chroma.sx(), chroma.sy());
+    let (cw, ch) = (chroma.mb_w(), chroma.mb_h());
     for c in 0..2 {
         for dir in 0..2 {
-            for ce in 0..2 {
-                let e = ce * 2;
-                if bs[dir][e] == [0; 4] {
+            let (shift, n) = if dir == 0 { (sx, cw / 4) } else { (sy, ch / 4) };
+            for ce in 0..n {
+                // luma edge index of chroma edge ce
+                let e = (ce << shift) & 3;
+                if bs[dir][e] == [0; 4] || (chroma.0 == 3 && t8 && e % 2 == 1) {
                     continue;
                 }
-                let qpp = if e == 0 { p_qp[dir].map(|p| p.1[c]).unwrap_or(q_qpc[c]) } else { q_qpc[c] } as i32;
+                let qpp = if ce == 0 { p_qp[dir].map(|p| p.1[c]).unwrap_or(q_qpc[c]) } else { q_qpc[c] } as i32;
                 let ep = params(qpp, q_qpc[c] as i32, bs[dir][e]);
                 if ep.alpha == 0 || ep.beta == 0 {
                     continue;
                 }
                 let plane = if c == 0 { &mut pic.planes.cb } else { &mut pic.planes.cr };
-                if dir == 0 {
-                    filter_vertical::<S, 8>(plane, cwidth, mx * 8 + ce * 4, my * 8, &ep, true, max);
-                } else {
-                    filter_horizontal::<S, 8>(plane, cwidth, mx * 8, my * 8 + ce * 4, &ep, true, max);
+                let luma_style = chroma.0 == 3;
+                // the segments of a chroma edge follow the luma segments it spans
+                match (dir, luma_style, ch) {
+                    (_, true, _) => {
+                        if dir == 0 {
+                            filter_vertical::<S, 16>(plane, cwidth, mx * cw + ce * 4, my * ch, &ep, false, max);
+                        } else {
+                            filter_horizontal::<S, 16>(plane, cwidth, mx * cw, my * ch + ce * 4, &ep, false, max);
+                        }
+                    }
+                    (0, false, 16) => filter_vertical::<S, 16>(plane, cwidth, mx * cw + ce * 4, my * ch, &ep, true, max),
+                    (0, false, _) => filter_vertical::<S, 8>(plane, cwidth, mx * cw + ce * 4, my * ch, &ep, true, max),
+                    _ => filter_horizontal::<S, 8>(plane, cwidth, mx * cw, my * ch + ce * 4, &ep, true, max),
                 }
             }
         }

@@ -109,6 +109,7 @@ fn layer_def(id: &'static str, name: &'static str, mut params: Vec<ParamDef>) ->
 pub(crate) fn layer_defs() -> Vec<EffectDef> {
     const X: &str = "Text";
     const S: &str = "Shape";
+    const ANIM: &str = "Text Animator";
     vec![
         layer_def(
             TEXT_LAYER,
@@ -132,6 +133,23 @@ pub(crate) fn layer_defs() -> Vec<EffectDef> {
                 fl("box_width", "Text Box Width", 0.0, (0.0, 100_000.0), (0.0, 3840.0), "", X),
                 fl("box_height", "Text Box Height", 0.0, (0.0, 100_000.0), (0.0, 2160.0), "", X),
                 bo("vertical", "Vertical Text", false, X),
+                chc("anim", "Animator", crate::text_animator::ANIMATOR_OPTS, 0, ANIM),
+                p(
+                    "anim_duration",
+                    "Animator Duration",
+                    ParamKind::Float { min: 0.0, max: 600.0, soft_min: 0.0, soft_max: 10.0, unit: "s", decimals: 2 },
+                    ParamValue::Float(1.0),
+                    false,
+                    ANIM,
+                ),
+                p(
+                    "anim_delay",
+                    "Animator Delay",
+                    ParamKind::Float { min: 0.0, max: 600.0, soft_min: 0.0, soft_max: 10.0, unit: "s", decimals: 2 },
+                    ParamValue::Float(0.0),
+                    false,
+                    ANIM,
+                ),
             ],
         ),
         layer_def(
@@ -285,10 +303,33 @@ fn vv(e: &EffectInstance, id: &str, t: Tick) -> Vec2 {
 /// Evaluate a layer at clip (media) time `t`. `frame` is the graphic's canvas size; a NaN position
 /// means the canvas centre.
 pub fn eval_layer(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<LayerSpec> {
+    eval(e, t, frame, true)
+}
+
+/// [`eval_layer`] with the whole Source Text, whatever a text animator shows at `t`: for editing
+/// the text (what is written back must never be the animator's partial text).
+pub fn eval_layer_source(e: &EffectInstance, t: Tick, frame: (u32, u32)) -> Option<LayerSpec> {
+    eval(e, t, frame, false)
+}
+
+fn eval(e: &EffectInstance, t: Tick, frame: (u32, u32), animate: bool) -> Option<LayerSpec> {
     let content = match e.effect.as_str() {
         TEXT_LAYER => LayerContent::Text({
-            let text = ss(e, "text", t);
-            let runs = byte_runs(&text, e.layer.as_ref().map_or(&[][..], |x| &x.runs[..]));
+            let source = ss(e, "text", t);
+            let style_runs = e.layer.as_ref().map_or(&[][..], |x| &x.runs[..]);
+            // a text animator changes what is shown, not the Source Text
+            let (text, runs) = match if animate { ch(e, "anim", t) } else { 0 } {
+                0 => {
+                    let runs = byte_runs(&source, style_runs);
+                    (source, runs)
+                }
+                kind => {
+                    let pr = crate::text_animator::progress(t.seconds(), ff(e, "anim_delay", t) as f64, ff(e, "anim_duration", t) as f64);
+                    let shown = crate::text_animator::animate(kind, &source, pr);
+                    let runs = byte_runs(&shown, &crate::graphic_design::adjust_runs(&source, &shown, style_runs));
+                    (shown, runs)
+                }
+            };
             TextProps {
                 text,
                 runs,

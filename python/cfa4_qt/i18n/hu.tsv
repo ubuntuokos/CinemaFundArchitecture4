@@ -1696,14 +1696,36 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 3996×2160 (1,85:1), 5.1 24 bites 48 kHz-es PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP-mappa: JPEG 2000 4096×1716 (2,39:1), 5.1 24 bites 48 kHz-es PCM
-	4:2:0 (Main Profile)	4:2:0 (Main Profile)
-	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 Profile)
-	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transport stream (.m2ts, AAC hang)
-	Chroma	Színmintavétel
+	4:2:0 (Main Profile)	4:2:0 (Main profil)
+	4:2:2 (4:2:2 Profile)	4:2:2 (4:2:2 profil)
+	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
+	Chroma	Króma
 	Constant quantiser	Állandó kvantáló
 	Container	Konténer
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
-	Keyframe distance	Kulcskocka-távolság
+	Keyframe distance	Kulcskockák távolsága
 	Off (target bitrate)	Ki (célbitráta)
-	Program Stream (.mpg, LPCM audio)	Program stream (.mpg, LPCM hang)
-	Transport Stream (.ts, AAC audio)	Transport stream (.ts, AAC hang)
+	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
+	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)
+	Add Beat Markers	Ütemjelölők hozzáadása
+	Clear Beat Markers	Ütemjelölők törlése
+	Clear Check Markers	Ellenőrző jelölők törlése
+	Auto Reframe Sequence…	Szekvencia automatikus átkeretezése…
+	Batch Variants from Spreadsheet…	Változatok táblázatból…
+	Check Before Export…	Ellenőrzés exportálás előtt…
+	Social Deliverables…	Közösségimédia-csomag…
+	Social Safe Zones	Közösségi biztonsági zónák
+	Text Animator	Szöveganimátor
+	Counter	Számláló
+	Typewriter	Írógép
+	Word by Word	Szóról szóra
+	Animator	Animátor
+	Animator Duration	Animátor időtartama
+	Animator Delay	Animátor késleltetése
+	Spreadsheets	Táblázatok
+	{n} beat markers added ({bpm} BPM)	{n} ütemjelölő hozzáadva ({bpm} BPM)
+	Check Before Export: no problems found	Ellenőrzés exportálás előtt: nincs hiba
+	Check Before Export: {n} problems marked on the timeline (red markers)	Ellenőrzés exportálás előtt: {n} hiba megjelölve az idővonalon (piros jelölők)
+	{n} exports queued (the Export window shows the queue)	{n} export a sorban (az Exportálás ablak mutatja a sort)
+	{n} variant sequences made, {q} exports queued	{n} változatszekvencia elkészült, {q} export a sorban
+	no column for {names}	nincs oszlop ehhez: {names}

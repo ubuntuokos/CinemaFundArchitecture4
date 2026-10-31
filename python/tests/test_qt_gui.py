@@ -5543,3 +5543,92 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
         else:
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
+
+
+def test_social_safe_zones_in_the_view_menu_and_on_the_monitor(app, tmp_path: Path):
+    """View ▸ Social Safe Zones (Off / TikTok / Instagram Reels / YouTube Shorts): the focused
+    monitor shades the platform's covered margins and outlines its safe area, with the engine's
+    insets; the choice is remembered and a hostile saved value turns it off."""
+    from cfa4_qt.panels.monitor import FrameView
+    from cfa4_qt.panels.monitor_view import SOCIAL_ZONES, MonitorView, build_view_menu, social_safe_rect
+
+    # the engine's numbers (crates/engine/src/social.rs, SafeZone::insets)
+    assert social_safe_rect("tiktok", 1080, 1920) == (60.0, 160.0, 930.0, 1440.0)
+    assert social_safe_rect("reels", 540, 960) == (30.0, 110.0, 480.0, 750.0)
+    assert social_safe_rect("shorts", 1080, 1920) == (60.0, 180.0, 940.0, 1520.0)
+    assert social_safe_rect("myspace", 1080, 1920) is None
+    assert [k for k, _l, _i in SOCIAL_ZONES] == ["tiktok", "reels", "shorts"]
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    settings.setValue("monitor/program", '{"social_zone": "reels"}')
+    assert MonitorView.load(settings, "monitor/program").social_zone == "reels"
+    settings.setValue("monitor/program", '{"social_zone": "../../etc"}')
+    assert MonitorView.load(settings, "monitor/program").social_zone == ""
+
+    class Mon:
+        def __init__(self) -> None:
+            self.mv = MonitorView()
+
+        def set_view(self, **changes):
+            for k, v in changes.items():
+                setattr(self.mv, k, v)
+
+    mon = Mon()
+    menu = QtWidgets.QMenu()
+    build_view_menu(menu, lambda: mon)
+    sub = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "menu.View.socialSafeZone")
+    names = [a.objectName() for a in sub.actions()]
+    assert names == ["view.socialSafeZone.off", "view.socialSafeZone.tiktok", "view.socialSafeZone.reels", "view.socialSafeZone.shorts"]
+    next(a for a in sub.actions() if a.objectName() == "view.socialSafeZone.shorts").trigger()
+    assert mon.mv.social_zone == "shorts"
+    sub.aboutToShow.emit()
+    assert [a.isChecked() for a in sub.actions()] == [False, False, False, True]
+    next(a for a in sub.actions() if a.objectName() == "view.socialSafeZone.off").trigger()
+    assert mon.mv.social_zone == ""
+
+    # drawn on a vertical picture: the bottom (covered) is darker than the safe middle
+    view = FrameView("program", MonitorView(social_zone="tiktok"))
+    view.resize(270, 480)
+    img = QtGui.QImage(1080, 1920, QtGui.QImage.Format.Format_RGB32)
+    img.fill(QtGui.QColor("#ffffff"))
+    view.set_image(img)
+    safe = view.social_zone_rect()
+    pic = view.picture_rect()
+    assert safe is not None and pic.contains(safe) and safe.height() < pic.height() * 0.7
+    shot = view.grab().toImage()
+    middle = shot.pixelColor(int(safe.center().x()), int(safe.center().y()))
+    bottom = shot.pixelColor(int(pic.center().x()), int(pic.bottom()) - 3)
+    assert middle.lightness() > bottom.lightness() + 30, (middle.name(), bottom.name())
+    view.mv.social_zone = ""
+    assert view.social_zone_rect() is None
+
+
+def test_marketing_commands_ask_for_their_spreadsheet_and_report_results(app, tmp_path: Path, monkeypatch):
+    """File ▸ Export ▸ Batch Variants from Spreadsheet… asks for the table; the commands whose
+    result is otherwise invisible say what they did in the status bar (as egui)."""
+    from cfa4_qt.dialogs import path_params
+    from cfa4_qt.main_window import result_status
+
+    cmd = Command("export.batchVariants", "Batch Variants from Spreadsheet…", ["File", "Export"], "", '{"path":str|"csv":str,"sheet":str?}', True)
+    asked = []
+
+    def pick(*a, **_k):
+        asked.append(a)
+        return (str(tmp_path / "ads.xlsx"), "")
+
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", pick)
+    assert path_params(cmd, QtWidgets.QWidget(), None) == {"path": str(tmp_path / "ads.xlsx")}
+    assert "*.xlsx" in asked[0][3] and "*.csv" in asked[0][3]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", lambda *_a, **_k: ("", ""))
+    assert path_params(cmd, QtWidgets.QWidget(), None) == {"__cancel__": True}
+
+    assert result_status("markers.addBeats", {"count": 32, "bpm": 119.96}) == "32 beat markers added (120.0 BPM)"
+    assert result_status("sequence.checkDelivery", {"count": 0}) == "Check Before Export: no problems found"
+    assert "3 problems" in result_status("sequence.checkDelivery", {"count": 3})
+    assert result_status("export.socialDeliverables", {"queued": [1, 2, 3]}).startswith("3 exports queued")
+    text = result_status("export.batchVariants", {"variants": [{}, {}], "queued": [], "missing": ["Price"]})
+    assert text == "2 variant sequences made, 0 exports queued; no column for Price"
+    # hostile or foreign results say nothing rather than fail
+    assert result_status("export.batchVariants", None) is None
+    assert result_status("markers.addBeats", {"count": "x", "bpm": True}) == "0 beat markers added (0.0 BPM)"
+    assert result_status("file.save", {}) is None
