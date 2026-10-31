@@ -992,6 +992,7 @@ dependencies = [
  "cfa4-h264enc",
  "cfa4-hevc",
  "cfa4-isobmff",
+ "cfa4-j2k",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpeg2v",

@@ -25,6 +25,8 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE RDD 44 | 2017 | Apple ProRes mapping |
 | SMPTE RP 224 / RP 210 | registers | labels: data definitions, picture coding, essence containers, operational patterns; property labels of the primer pack (writer) |
 | SMPTE ST 330 | 2011 | basic UMIDs of the written packages |
+| SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
+| SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
 
 ## Reading a file
 
@@ -109,6 +111,15 @@ w.finish()?;
   with a 9-byte BER length patched by `finish`). Several atom files of one clip can share the
   material package UMID with distinct track ids (`WriterConfig::first_track_id`). Sound files may
   use the sample rate as the edit rate (a constant-bytes index) or the frame rate (VBR entries).
+- **D-Cinema track files** (`Pattern::DCinema`, ST 429-3 / 429-4, used by the DCP export): one
+  essence track, frame-wrapped, OP-Atom label plus the multiple-mappings container label (as the
+  reference implementation writes; FFmpeg then reads the frames), the preface's primary package,
+  closed complete header metadata in the header partition only (the footer carries the index),
+  the file package UMID from the asset UUID (`Umid::dcinema`). Pictures: JPEG 2000
+  (`PictureCoding::J2k`, ST 422 container `02 0C 01`, the DCI 2K / 4K coding labels from Rsiz) in an
+  RGBA descriptor (12-bit X'Y'Z', `PictureDesc::dcinema`, ST 428-1 transfer label) with a JPEG 2000
+  sub-descriptor (`J2kSubDescriptor`: SIZ and component sizing). Sound: Broadcast Wave with the
+  ST 429-2 channel assignment label (`WriterConfig::channel_assignment`).
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the

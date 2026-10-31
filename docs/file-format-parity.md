@@ -44,7 +44,7 @@ only). "Tested" names the evidence.
 | **AVI** | read + write | **no** (extension listed, no demuxer, #598) | no | — | 0% |
 | WMV / ASF | read; write on Windows | no | no | — | 0% |
 | FLV / F4V | read + write | no | no | — | 0% |
-| DCP | write (Wraptor) | no | no | — | 0% |
+| DCP | write (Wraptor) | no | SMPTE DCP (#115): JPEG 2000 X'Y'Z' 2K / 4K in Flat, Scope or Full, 5.1 24-bit PCM, one reel, CPL / PKL / ASSETMAP with SHA-1; no Interop, encryption, MCA labels, subtitles or 3D yet | our MXF reader and J2K decoder, PKL hashes, ffprobe / ffmpeg | 45% |
 | APV raw / Y4M | — | yes | APV in MOV | — | ahead |
 | Ogg (Opus / Vorbis) | — | yes | no | granule-seek tests | ahead |
 | Camera folder structures (XDCAM, P2, AVCHD, Canon XF, RED) | Media Browser reads them | AVCHD files yes; spanned clips and metadata no | — | — | 30% |

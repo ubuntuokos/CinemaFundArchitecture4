@@ -320,6 +320,19 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
             _ => return Err(bad(cmd, "mpeg2Chroma: 420 | 422")),
         };
     }
+    if let Some(v) = str_p(p, "dcpResolution") {
+        let r = cfa4_export::DcpResolution::from_name(v).ok_or_else(|| bad(cmd, "dcpResolution: 2k | 4k"))?;
+        settings.dcp_resolution = r.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpAspect") {
+        let a = cfa4_export::DcpAspect::from_name(v).ok_or_else(|| bad(cmd, "dcpAspect: flat | scope | full"))?;
+        settings.dcp_aspect = a.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpContentKind") {
+        let probe = ExportSettings { dcp_content_kind: v.to_string(), ..Default::default() };
+        let kind = cfa4_export::dcp_content_kind(&probe).ok_or_else(|| bad(cmd, format!("dcpContentKind: {}", cfa4_export::DCP_CONTENT_KINDS.join(" | "))))?;
+        settings.dcp_content_kind = kind.to_string();
+    }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {
             0 => None,
@@ -425,6 +438,10 @@ fn file_safe(n: &str) -> String {
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
+    // a DCP is a folder
+    if settings.format == Format::Dcp {
+        return path.to_string();
+    }
     let ext = settings.extension();
     match Path::new(path).extension().and_then(|e| e.to_str()) {
         Some(e)
@@ -471,6 +488,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
+        Some(n) if n > 0 && settings.format == Format::Dcp => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),
@@ -993,6 +1011,8 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "extension": pr.settings.extension(),
         "frameSize": pr.settings.frame_size,
         "mpeg2Container": pr.settings.mpeg2_container,
+        "dcpResolution": pr.settings.dcp_resolution,
+        "dcpAspect": pr.settings.dcp_aspect,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
