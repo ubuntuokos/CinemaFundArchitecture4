@@ -97,6 +97,18 @@ fn export_integer_parameters_cannot_wrap_or_overflow() {
 }
 
 #[test]
+fn mpeg2_b_pictures_are_a_parameter() {
+    let mut s = demo();
+    let r = s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":0})).unwrap();
+    assert_eq!(r["settings"]["mpeg2BFrames"], 0);
+    let r = s.execute("export.resolve", json!({"format":"mpeg2"})).unwrap();
+    assert!(r["settings"]["mpeg2BFrames"].is_null(), "the encoder's default (2)");
+    for bad in [json!(8), json!(-1), json!(1.5)] {
+        assert!(s.execute("export.resolve", json!({"format":"mpeg2", "mpeg2BFrames":bad})).is_err());
+    }
+}
+
+#[test]
 fn wav_resolve_honours_explicit_sample_rates() {
     let mut s = demo();
     for rate in [4000, 192_000, 192_001, 200_000, 352_800, 384_000] {
@@ -188,6 +200,36 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 };
                 assert_eq!(v["codec_name"], codec, "{name}");
                 assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
+            }
+            continue;
+        }
+        if fmt == "dcp" {
+            // a folder: the track files, playlist, packing list, asset map and volume index
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(Path::new(&out));
+            assert_eq!(files.len(), 6, "{name}: {files:?}");
+            assert!(files.contains(&"ASSETMAP.xml".to_string()) && files.contains(&"VOLINDEX.xml".to_string()), "{name}: {files:?}");
+            let pic = files.iter().find(|f| f.starts_with("j2c_")).unwrap();
+            let snd = files.iter().find(|f| f.starts_with("pcm_")).unwrap();
+            let size = match (settings["dcpResolution"].as_str(), settings["dcpAspect"].as_str()) {
+                (Some("4k"), Some("scope")) => (4096, 1716),
+                (Some("4k"), _) => (3996, 2160),
+                (_, Some("scope")) => (2048, 858),
+                _ => (1998, 1080),
+            };
+            if let Some(j) = probe(&Path::new(&out).join(pic).to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("jpeg2000"), Some("xyz12le")), "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), size, "{name}");
+                assert_eq!(v["r_frame_rate"], "24/1", "{name}: 23.976 becomes 24");
+            }
+            if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!(
+                    (a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()),
+                    (Some("pcm_s24le"), Some("48000"), Some(6)),
+                    "{name}"
+                );
             }
             continue;
         }
@@ -460,6 +502,15 @@ fn user_presets_persist_with_favourites_import_and_export() {
     assert_eq!(got["settings"]["frameSize"], json!([1280, 720]));
     assert_eq!(got["settings"]["bitrateKbps"], 5000);
     assert!(s.execute("export.presets.save", json!({"name": "YouTube 1080p Full HD"})).is_err(), "built-in names are reserved");
+    // a DCP preset keeps its immersive audio, and the list shows it so the Qt dialog can load it
+    s.execute(
+        "export.presets.save",
+        json!({"name": "IAB DCP", "from": "DCP 2K Flat", "dcpImmersive": "file", "dcpIabSource": "/a/b.mxf", "dcpIabFallback": "none"}),
+    )
+    .unwrap();
+    let list = s.execute("export.presets.list", json!({"query": "iab dcp"})).unwrap();
+    let row = &list["presets"][0];
+    assert_eq!((&row["dcpImmersive"], &row["dcpIabSource"], &row["dcpIabFallback"]), (&json!("file"), &json!("/a/b.mxf"), &json!("none")));
     assert!(s.execute("export.presets.delete", json!({"name": "Apple ProRes 422 HQ"})).is_err(), "built-ins cannot be deleted");
     // favourites
     s.execute("export.presets.favorite", json!({"name": "Apple ProRes 422 HQ"})).unwrap();
@@ -954,5 +1005,57 @@ fn cineform_presets_export_and_read_back() {
         assert_eq!(rgba.len(), ours.len(), "{name}");
         let far = ours.iter().zip(&rgba).filter(|(a, b)| (i32::from(**a) - i32::from(**b)).abs() > 4).count();
         assert!(far * 1000 < ours.len(), "{name}: {far} of {} samples differ by more than 4", ours.len());
+    }
+}
+
+/// #343: the DCP immersive audio params and `export.iabInfo`.
+#[test]
+fn dcp_immersive_params_and_iab_info() {
+    let mut s = demo();
+    let setting = |s: &Session, p: Value| crate::export_tools::settings_from_params(s, &p, "file.exportMedia").map(|(_, st)| st);
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "bed", "dcpIabFallback": "none"})).unwrap();
+    assert_eq!((st.dcp_immersive.as_str(), st.dcp_iab_fallback.as_str()), ("bed", "none"));
+    let st = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": "/a/b.mxf"})).unwrap();
+    assert_eq!((st.dcp_immersive.as_str(), st.dcp_iab_source.as_str()), ("file", "/a/b.mxf"));
+    let e = setting(&s, json!({"path": "pkg", "format": "dcp", "dcpImmersive": "atmos"})).unwrap_err().to_string();
+    assert!(e.contains("off | bed | file"), "{e}");
+    assert!(setting(&s, json!({"path": "pkg", "format": "dcp", "dcpIabFallback": "7.1"})).is_err());
+    // a file without a source does not resolve
+    assert!(s.execute("export.resolve", json!({"format": "dcp", "dcpImmersive": "file"})).is_err());
+    assert!(s.execute("export.resolve", json!({"format": "dcp", "dcpImmersive": "bed"})).is_ok());
+
+    // a raw IABitstream of two 24 fps bed frames
+    let dir = Scratch::new("iab-info");
+    let rate = cfa4_iab::FrameRate::R24;
+    let one = cfa4_iab::write(&bed_frame(rate)).unwrap();
+    std::fs::write(dir.path("two.iab"), [one.clone(), one].concat()).unwrap();
+    let info = s.execute("export.iabInfo", json!({"path": dir.path("two.iab")})).unwrap();
+    assert_eq!(info["container"], "iab");
+    assert_eq!(info["frames"], 2);
+    assert_eq!(info["frameRate"], json!([24, 1]));
+    assert_eq!(info["maxBedChannels"], 2);
+    assert_eq!(info["needsConform"], false);
+    let e = s.execute("export.iabInfo", json!({"path": dir.path("missing.iab")})).unwrap_err().to_string();
+    assert!(e.contains("missing.iab"), "{e}");
+    assert!(s.execute("export.iabInfo", json!({})).is_err());
+}
+
+/// A two-channel DLC bed (L, R) of silence.
+fn bed_frame(rate: cfa4_iab::FrameRate) -> cfa4_iab::Frame {
+    use cfa4_iab::*;
+    let n = rate.samples(false, 0);
+    let channels = [0x00, 0x04].iter().enumerate().map(|(k, &id)| BedChannel { id, audio_id: k as u32 + 1, gain: Gain::Unity, decorrelation: None }).collect();
+    Frame {
+        version: 1,
+        sample_rate: 48_000,
+        bit_depth: 24,
+        frame_rate: rate,
+        frame_index: 0,
+        max_rendered: 2,
+        beds: vec![Bed { meta_id: 1, use_case: None, channels, description: Description::default(), beds: vec![], remaps: vec![] }],
+        objects: vec![],
+        audio: (1..=2).map(|id| AudioData { id, coding: Coding::Dlc, samples: vec![0; n] }).collect(),
+        authoring_tool: None,
+        user_data: vec![],
     }
 }
