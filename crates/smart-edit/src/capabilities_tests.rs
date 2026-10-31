@@ -449,3 +449,49 @@ fn probes_of_separate_hardware_routes_keep_separate_outcomes() {
     .unwrap();
     assert!(!r.decide(key, STRICT).allowed);
 }
+
+#[test]
+fn an_unavailable_route_wins_over_a_probe_naming_several_routes() {
+    let key = Key::codec(Operation::Encode, Codec::Hevc);
+    let limits = EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    let mut r = Registry::native();
+    r.apply_probes([
+        Probe {
+            key,
+            backend: Backend::Platform,
+            outcome: ProbeOutcome::Available { detail: "GPU encoders".into() },
+            limits: Some(limits.clone()),
+            routes: vec!["vaapi".into(), "nvenc".into()],
+        },
+        Probe {
+            key,
+            backend: Backend::Platform,
+            outcome: ProbeOutcome::Unavailable { reason: "NVENC session limit".into() },
+            limits: None,
+            routes: vec!["nvenc".into()],
+        },
+    ])
+    .unwrap();
+    let only = |route: &str| {
+        let user = cfa4_route::Table::parse(&format!("[compute.task.\"video.encode.hevc\"]\norder = [\"{route}\"]\n")).unwrap();
+        BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user))
+    };
+    r.set_backend_order(only("nvenc"));
+    let d = r.decide(key, STRICT);
+    assert!(!d.allowed, "{d:?}");
+    r.set_backend_order(only("vaapi"));
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Platform));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&limits));
+    // an inserted row naming several routes is one row per route as well
+    let mut r = Registry::empty();
+    r.insert(Entry {
+        key,
+        backend: Backend::Platform,
+        level: SupportLevel::Supported,
+        evidence: "test".into(),
+        limits: None,
+        routes: vec!["nvenc".into(), "vaapi".into()],
+    })
+    .unwrap();
+    assert_eq!(r.entries().map(|e| e.routes.clone()).collect::<Vec<_>>(), [vec!["nvenc".to_string()], vec!["vaapi".to_string()]]);
+}

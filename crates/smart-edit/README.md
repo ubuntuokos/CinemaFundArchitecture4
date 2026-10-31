@@ -35,7 +35,7 @@ Rules:
   CFA4's own software codecs). The user's `routing.toml` steers the planner exactly as it steers
   the export routes (`Registry::set_backend_order`): a route the order leaves out is no
   candidate, and an entry or probe that names its concrete routes (`routes: ["nvenc"]`) is only
-  admitted through one of them. Each route set keeps its own row (outcome and limits), so an
+  admitted through one of them. Each route keeps its own row (outcome and limits), so an
   unavailable `vaapi` probe does not hide an available `nvenc` one. Demux, GOP index, packet copy and mux have no routing task:
   `Native` (CFA4's own Rust crates) comes first there. No FFmpeg entry is registered: Smart Cut /
   Smart Render runs on CFA4's own Rust code (owner decision 2026-10-27,
