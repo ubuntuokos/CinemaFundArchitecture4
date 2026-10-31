@@ -308,6 +308,12 @@ impl H264Decoder {
         let (w, h) = (p.width as usize, p.height as usize);
         let (cw, ch) = (p.chroma_width as usize, p.chroma_height as usize);
         let (ys, uvs) = (p.y_stride, p.uv_stride);
+        // monochrome pictures come with neutral 4:2:0 chroma planes
+        let chroma = match p.chroma_format {
+            3 => cfa4_frame::Chroma::C444,
+            2 => cfa4_frame::Chroma::C422,
+            _ => cfa4_frame::Chroma::C420,
+        };
         let wide = |pl: Plane| -> Vec<u16> {
             match pl {
                 Plane::U16(v) => v,
@@ -317,12 +323,12 @@ impl H264Decoder {
         let data = match (p.y, p.u, p.v) {
             (Plane::U8(y), Plane::U8(u), Plane::U8(v)) => cfa4_frame::PixelData::Yuv8 {
                 planes: [Arc::new(tight_plane(y, ys, w, h)), Arc::new(tight_plane(u, uvs, cw, ch)), Arc::new(tight_plane(v, uvs, cw, ch))],
-                chroma: cfa4_frame::Chroma::C420,
+                chroma,
                 alpha: None,
             },
             (y, u, v) => cfa4_frame::PixelData::Yuv16 {
                 planes: [Arc::new(tight_plane(wide(y), ys, w, h)), Arc::new(tight_plane(wide(u), uvs, cw, ch)), Arc::new(tight_plane(wide(v), uvs, cw, ch))],
-                chroma: cfa4_frame::Chroma::C420,
+                chroma,
                 bits: p.bit_depth as u32,
                 alpha: None,
             },
@@ -334,8 +340,8 @@ impl H264Decoder {
     }
 }
 
-/// An H.264 decoder error as a [`CodecError`]: a feature the decoder does not implement (High
-/// 4:2:2, field pictures...) is [`CodecError::Unsupported`], so the media pool shows the
+/// An H.264 decoder error as a [`CodecError`]: a feature the decoder does not implement (field
+/// pictures, lossless...) is [`CodecError::Unsupported`], so the media pool shows the
 /// unreadable slate instead of a black picture (#626); anything else is a decode error.
 fn h264_error(e: cfa4_h264::Error) -> CodecError {
     match e {
