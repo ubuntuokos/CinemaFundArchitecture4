@@ -38,16 +38,18 @@ const fn audio(codec: &'static str, decode: Decode, encode: Option<Format>) -> R
 use Decode::{None as No, Software as Sw};
 
 static ROWS: &[Row] = &[
-    video("H.264 / AVC", Sw("8-bit 4:2:0; 10-bit and 4:2:2 only in hardware"), true, Some(Format::H264)),
-    video("HEVC / H.265", Sw("Main, Main 10; no 4:2:2"), true, Some(Format::Hevc)),
-    video("AV1", Sw("Main 8/10-bit (slow in software)"), false, Some(Format::Av1)),
-    video("VP9", Sw("profiles 0-3, 8/10/12-bit"), false, None),
+    video("H.264 / AVC", Sw("4:2:0 / 4:2:2 / 4:4:4, 8-14 bit; no interlaced fields / MBAFF"), true, Some(Format::H264)),
+    video("HEVC / H.265", Sw("up to 12-bit 4:4:4; no RExt coding tools"), true, Some(Format::Hevc)),
+    video("AV1", Sw("Main 8/10-bit"), false, Some(Format::Av1)),
+    video("VP9", Sw("profiles 0-3, 8/10/12-bit"), false, Some(Format::WebM)),
     video("Apple ProRes", Sw("all six profiles, alpha"), false, Some(Format::ProRes)),
     video("Avid DNxHD / DNxHR", Sw("all CIDs, 8/10/12-bit"), false, Some(Format::DnxHr)),
+    video("GoPro CineForm", Sw("intra samples"), false, Some(Format::Cineform)),
     video("APV", Sw(""), false, Some(Format::Apv)),
-    video("MPEG-2 / MPEG-1", Sw("4:2:2, interlaced"), false, None),
+    video("MPEG-2 / MPEG-1", Sw("4:2:2, interlaced"), false, Some(Format::Mpeg2)),
     video("Motion JPEG", Sw(""), false, Some(Format::Mjpeg)),
-    video("JPEG 2000", Sw("Part 1; not yet in MXF / DCP import"), false, None),
+    video("JPEG 2000", Sw("Part 1 and HTJ2K"), false, Some(Format::Dcp)),
+    video("Animated GIF", Sw(""), false, Some(Format::Gif)),
     video("CinemaDNG / DNG", Sw("uncompressed and lossless JPEG raw"), false, None),
     video("DV / DVCPRO", No, false, None),
     video("MPEG-4 Part 2", No, false, None),
@@ -55,10 +57,11 @@ static ROWS: &[Row] = &[
     video("Camera RAW (R3D, ARRIRAW, BRAW…)", No, false, None),
     audio("PCM (WAV, AIFF, BWF)", Sw(""), Some(Format::Wav)),
     audio("AAC", Sw("LC, HE core, LATM"), Some(Format::Aac)),
-    audio("AC-3", Sw(""), None),
-    audio("E-AC-3", Sw("5.1 core"), None),
+    audio("AC-3 / E-AC-3", Sw(""), None),
+    audio("DTS, DTS-HD MA", Sw("core and lossless up to 7.1"), None),
+    audio("Dolby TrueHD", Sw("up to 7.1"), None),
     audio("MP3 / MP2", Sw(""), None),
-    audio("Opus", Sw(""), None),
+    audio("Opus", Sw(""), Some(Format::Opus)),
     audio("FLAC", Sw(""), Some(Format::Flac)),
     audio("ALAC, Vorbis", Sw(""), None),
     audio("WMA", No, None),
@@ -74,10 +77,11 @@ pub fn codecs() -> Value {
         Ok(status) => json!({ "compiledIn": true, "available": true, "version": status.version, "reason": Value::Null }),
         Err(e) => json!({ "compiledIn": cfa4_gstreamer::compiled_in(), "available": false, "version": Value::Null, "reason": e.to_string() }),
     };
-    report(hardware, gstreamer, cfa4_export::available)
+    report(hardware, gstreamer, Format::has_builtin_encoder, cfa4_export::available)
 }
 
-fn report(hardware: Value, gstreamer: Value, available: impl Fn(Format) -> bool) -> Value {
+/// `builtin`: CFA4 has its own encoder; `available`: a registered (hardware) encoder works here.
+fn report(hardware: Value, gstreamer: Value, builtin: impl Fn(Format) -> bool, available: impl Fn(Format) -> bool) -> Value {
     let hw_decoder = hardware["backend"].as_str().map(str::to_string);
     let rows: Vec<Value> = ROWS
         .iter()
@@ -87,7 +91,7 @@ fn report(hardware: Value, gstreamer: Value, available: impl Fn(Format) -> bool)
                 Decode::None => ("none", ""),
             };
             let encode = match r.encode {
-                Some(f) if f.has_builtin_encoder() => "software",
+                Some(f) if builtin(f) => "software",
                 Some(f) if available(f) => "hardware",
                 _ => "none",
             };
@@ -117,6 +121,7 @@ mod tests {
         report(
             json!({ "backend": null, "reason": "no driver" }),
             json!({ "compiledIn": false, "available": false, "version": null, "reason": "not built" }),
+            |f| f != Format::Hevc,
             |_| false,
         )
     }
@@ -131,8 +136,9 @@ mod tests {
         let h264 = row(&v, "H.264 / AVC");
         assert_eq!((h264["decode"].as_str(), h264["encode"].as_str()), (Some("software"), Some("software")));
         assert!(h264["hardwareDecode"].is_null());
-        // HEVC has no software encoder: without NVENC it cannot be exported
+        // a format without its own encoder and no hardware one cannot be exported
         assert_eq!(row(&v, "HEVC / H.265")["encode"], "none");
+        assert!(row(&v, "CinemaDNG / DNG")["exportFormat"].is_null());
         assert_eq!(row(&v, "DV / DVCPRO")["decode"], "none");
         assert_eq!(v["hardwareDecoder"]["reason"], "no driver");
         assert_eq!(v["gstreamer"]["available"], false);
@@ -140,7 +146,8 @@ mod tests {
 
     #[test]
     fn a_hardware_decoder_and_encoder_show_up_where_they_apply() {
-        let v = report(json!({ "backend": "NVDEC", "reason": null }), json!({}), |f| f == Format::Hevc);
+        let only_hardware = [Format::Hevc, Format::Av1];
+        let v = report(json!({ "backend": "NVDEC", "reason": null }), json!({}), |f| !only_hardware.contains(&f), |f| f == Format::Hevc);
         assert_eq!(row(&v, "H.264 / AVC")["hardwareDecode"], "NVDEC");
         assert_eq!(row(&v, "HEVC / H.265")["hardwareDecode"], "NVDEC");
         assert!(row(&v, "VP9")["hardwareDecode"].is_null());
