@@ -52,6 +52,8 @@ const OP_VIDEO_LIMITER: u32 = 30u;
 const OP_LUMETRI: u32 = 31u;
 const OP_SWAP_EYES: u32 = 32u;
 const OP_STEREO_TO_2D: u32 = 33u;
+const OP_FILM_GRAIN: u32 = 34u;
+const OP_STEREO_PARALLAX: u32 = 35u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -305,6 +307,41 @@ fn limit_video(v: vec3<f32>, max_val: f32, comp: f32, axis: u32) -> vec3<f32> {
 
     let out_rgb = to_rgb_709(y, cb, cr);
     return clamp(out_rgb, vec3(0.0), vec3(max_val));
+}
+
+// ---- Film Grain noise (`gpufx::pcg3d`, `gpufx::grain_noise`)
+
+// PCG3D (Jarzynski & Olano, JCGT 2020); u32 arithmetic wraps as `wrapping_*` does on the CPU.
+fn pcg3d(x: u32, y: u32, z: u32) -> u32 {
+    var v = vec3<u32>(x, y, z) * 1664525u + 1013904223u;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v ^= v >> vec3<u32>(16u);
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    return v.x;
+}
+
+fn grain_lattice(ix: i32, iy: i32, seed: u32, layer: u32) -> f32 {
+    let h = pcg3d(bitcast<u32>(ix), bitcast<u32>(iy), seed ^ (layer * 0x9E3779B9u));
+    return f32(h >> 8u) / 16777216.0 - 0.5;
+}
+
+fn grain_noise(p: vec2<i32>, inv_cell: f32, seed: u32, layer: u32) -> f32 {
+    let f = (vec2<f32>(p) + 0.5) * inv_cell;
+    let f0 = floor(f);
+    let t = f - f0;
+    let sm = t * t * (3.0 - 2.0 * t);
+    let i = vec2<i32>(f0);
+    let a = grain_lattice(i.x, i.y, seed, layer);
+    let b = grain_lattice(i.x + 1, i.y, seed, layer);
+    let c = grain_lattice(i.x, i.y + 1, seed, layer);
+    let d = grain_lattice(i.x + 1, i.y + 1, seed, layer);
+    let top = a + (b - a) * sm.x;
+    let bot = c + (d - c) * sm.x;
+    return top + (bot - top) * sm.y;
 }
 
 // ---- per-pixel colour effects on straight colour (`Image::map_rgb`)
@@ -670,6 +707,29 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             }
             return a + (b - a) * t;
         }
+        case OP_STEREO_PARALLAX: {
+            // `gpufx::stereo_parallax_sample`: i1.x = side by side, i1.y = repeat edge, p0.x = shift
+            var vw = s.x; var x0 = 0; var left = true;
+            if u.i1.x == 1u {
+                vw = s.x / 2;
+                if p.x < vw { left = true; } else if p.x < 2 * vw { left = false; x0 = vw; } else { return ld(p); }
+            } else {
+                let half = s.y / 2;
+                if p.y < half { left = true; } else if p.y < 2 * half { left = false; } else { return ld(p); }
+            }
+            var off = u.p0.x;
+            if !left { off = -off; }
+            var fx = f32(p.x - x0) - off;
+            if u.i1.y == 1u {
+                fx = clamp(fx, 0.0, f32(vw - 1));
+            }
+            let lo = floor(fx);
+            let t = fx - lo;
+            var a = vec4(0.0); var b = vec4(0.0);
+            if lo >= 0.0 && lo < f32(vw) { a = ld(vec2(x0 + i32(lo), p.y)); }
+            if lo + 1.0 >= 0.0 && lo + 1.0 < f32(vw) { b = ld(vec2(x0 + i32(lo + 1.0), p.y)); }
+            return a + (b - a) * t;
+        }
         case OP_MIRROR: {
             let c = u.p0.xy; let nrm = u.p0.zw;
             let d = (pc.x - c.x) * nrm.x + (pc.y - c.y) * nrm.y;
@@ -690,6 +750,34 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             let q = sample_clamped(uu, vv);
             let o = ld(p);
             return q + (o - q) * u.p0.z;
+        }
+        case OP_FILM_GRAIN: {
+            let o = ld(p);
+            let a = o.a;
+            if a <= 1e-6 {
+                return o;
+            }
+            let amt = u.p0.x;
+            let inv = u.p0.y;
+            let sh = u.p0.z;
+            let md = u.p0.w;
+            let hi = u.p1.x;
+            let col = u.p1.y;
+            let seed = u.i1.x;
+            let e = enc(o.rgb / a);
+            let l = clamp(0.2126 * e.x + 0.7152 * e.y + 0.0722 * e.z, 0.0, 1.0);
+            let m = 1.0 - l;
+            let k = amt * (sh * m * m + md * 2.0 * l * m + hi * l * l);
+            let n0 = grain_noise(p, inv, seed, 0u);
+            var n = vec3(n0);
+            if col > 0.0 {
+                n = vec3(
+                    n0 + (grain_noise(p, inv, seed, 1u) - n0) * col,
+                    n0 + (grain_noise(p, inv, seed, 2u) - n0) * col,
+                    n0 + (grain_noise(p, inv, seed, 3u) - n0) * col,
+                );
+            }
+            return vec4(dec(e + n * k) * a, a);
         }
         case OP_VIGNETTE: {
             let o = ld(p);
