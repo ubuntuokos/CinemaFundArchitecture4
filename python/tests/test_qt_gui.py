@@ -2051,6 +2051,12 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg.dcp_iab_source.setText(str(bad))
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a Dolby Atmos TrueHD source (#347) is described by its length and objects, not frames
+        dlg._iab_probed = "atmos.thd"
+        dlg._on_iab_info("atmos.thd", {"container": "truehd", "seconds": 61.04, "sampleRate": 48000, "maxBedChannels": 1, "maxObjects": 15, "profileNotes": []})
+        info = dlg.dcp_iab_info.text()
+        assert "Dolby Atmos TrueHD" in info and "61.0" in info and "15" in info, info
+        assert ".thd" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("file"))
         # a saved preset brings its immersive audio back instead of resetting it to Off
         dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
         dlg.preset.addItem("IAB test", "IAB test")

@@ -1676,8 +1676,8 @@
 	Public service announcement	Közérdekű közlemény
 	Off (5.1 only)	Ki (csak 5.1)
 	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS ágy az 5.1-es keverésből
-	IAB from a file (IMF or DCP IAB MXF, .iab)	IAB fájlból (IMF vagy DCP IAB MXF, .iab)
-	IAB MXF or .iab file	IAB MXF vagy .iab fájl
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos .thd)	IAB fájlból (IAB MXF, .iab vagy Dolby Atmos .thd)
+	IAB MXF, .iab or Dolby Atmos .thd file	IAB MXF, .iab vagy Dolby Atmos .thd fájl
 	None: FSK sync only (SMPTE ST 429-19)	Nincs: csak FSK-szinkron (SMPTE ST 429-19)
 	5.1: the IAB rendered (not ST 429-19)	5.1: a renderelt IAB (nem ST 429-19)
 	5.1: the timeline mix (not ST 429-19)	5.1: az idővonal keverése (nem ST 429-19)
@@ -1685,9 +1685,10 @@
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
 	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
-	Choose an IAB track file (IMF or DCP) or a raw IAB stream.	Válassz IAB sávfájlt (IMF vagy DCP) vagy nyers IAB-folyamot.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream or a Dolby Atmos TrueHD stream (.thd).	Válassz IAB sávfájlt (IMF vagy DCP), nyers IAB-folyamot vagy Dolby Atmos TrueHD-folyamot (.thd).
 	Reading the IAB source…	Az IAB-forrás olvasása…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} képkocka, {fps} fps, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} mp, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum, IAB-objektumok lesznek belőlük
 	Some frames are re-coded for the DCP (DLC, 24 bit).	Néhány képkockát a DCP-hez újrakódolunk (DLC, 24 bit).
 	Beyond IAB Profile 1: {notes}	Az IAB Profile 1-en túl: {notes}
 	Not a usable IAB source: {error}	Nem használható IAB-forrás: {error}
