@@ -1,7 +1,6 @@
 # Cinema-grade codecs: Dolby, DTS, OpenMAX, JPEG 2000 / DCP
 
-> **Last updated:** 2026-10-25 · **Change:** major (new file: plan for the Dolby, OpenMAX and other
-> cinema-grade codecs requested for CFA4)
+> **Last updated:** 2026-10-27 · **Change:** minor (Auro-3D row, #299)
 
 What CFA4 has, what is missing, which public specification each missing piece needs and which
 licence or patent constraint applies. Every row follows [AGENTS.md](../AGENTS.md) §2: codecs are
@@ -22,6 +21,7 @@ reached only through the optional GStreamer backend
 | Dolby AC-4 | none | decode | ETSI TS 103 190-1 / -2 | FRAND, patents active | 60–100 h |
 | DTS (core, Coherent Acoustics) | none | decode | ETSI TS 102 114 | core patents expired | 25–40 h |
 | DTS-HD Master Audio (XLL) | none | lossless extension | ETSI TS 102 114 v1.4+ (extension substream) | DTS trademark may not be used | 30–50 h |
+| Auro-3D (Auro-Codec in 24-bit PCM) | detection + height decoding, any bit-exact carrier: DTS-HD MA, FLAC, WAV, PCM in MKV/MP4/MXF ([crates/auro](../crates/auro/README.md), #299) | Auro-CX (#322) | **no public specification**; ported from harletty-bridge `auro` (Apache-2.0) | US 8,620,465 B2 in force (owner accepted the risk, #299) | done |
 | JPEG 2000 (MXF, DCP) | none | decode + encode, Part 1 and the cinema profiles | ITU-T T.800 / ISO/IEC 15444-1, SMPTE ST 422 (MXF), ST 429 (DCP) | royalty-free by design | 40–70 h |
 | DCP packaging | SMPTE DCP write (#115): one reel, 2K / 4K, 5.1, unencrypted OV; IAB immersive audio (#343, ST 429-18 / 429-19, FSK sync ST 430-12) with ST 429-16 composition metadata, ISDCF Doc 15 IAB Profile 1 and MCA labels (#348) | Interop DCP, multiple reels, MCA labels for plain 5.1 (#309), 9.1OH bed (#374), subtitles, 3D, KDM | SMPTE ST 429-2/-3/-7/-8/-9 | open; encryption (KDM) out of scope | 20–30 h after JPEG 2000 |
 | ProRes, DNxHD / DNxHR | decode + encode | ProRes RAW | — | — | see codec-parity.md |
