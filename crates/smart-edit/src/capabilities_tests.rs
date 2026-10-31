@@ -253,6 +253,16 @@ fn backend_preference_comes_from_the_routing_table() {
     let d = r.decide(encode, STRICT);
     assert_eq!(d.backend, Some(Backend::Native));
     assert_eq!(names(&d), vec!["Native", "Gstreamer", "Platform", "Ffmpeg"], "backends the table omits come last");
+
+    // a per-task row wins over the family, as it does for the export encoder route
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.h264\"]\norder = [\"software\"]\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    assert_eq!(r.decide(encode, STRICT).backend, Some(Backend::Native));
+    let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    for backend in [Backend::Native, Backend::Platform] {
+        r.insert(Entry { key: hevc, backend, level: SupportLevel::Supported, evidence: String::new(), limits: None }).unwrap();
+    }
+    assert_eq!(r.decide(hevc, STRICT).backend, Some(Backend::Platform), "an H.264 override leaves HEVC alone");
 }
 
 #[test]
