@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
+from .qc import QcDialog
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
@@ -82,6 +83,16 @@ QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
 FINISHED = {"done", "failed", "cancelled"}
 STATUS_LABELS = {"ready": N_("Ready"), "encoding": N_("Encoding"), "done": N_("Done"), "failed": N_("Failed"), "cancelled": N_("Cancelled")}
+# engine QcStatus (crates/engine/src/qc.rs), kept apart from the render status
+QC_LABELS = {
+    "notChecked": N_("Not checked"),
+    "running": N_("Checking…"),
+    "passed": N_("Passed"),
+    "warned": N_("Passed with warnings"),
+    "failed": N_("Failed"),
+    "incomplete": N_("Incomplete"),
+}
+QC_PROFILE = "delivery-web"
 
 
 def default_output_dir(project_path: str | None) -> Path:
@@ -333,6 +344,9 @@ class ExportDialog(QDialog):
         fa.addRow(tr("IAB source"), iab_row)
         fa.addRow("", self.dcp_iab_info)
         fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
+        self.qc_after = QCheckBox(tr("Check quality after export"), self)
+        self.qc_after.setObjectName("export.qcAfter")
+        self.qc_after.setToolTip(tr("Run the media quality check on the finished file (docs/media-qc.md)"))
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -349,21 +363,24 @@ class ExportDialog(QDialog):
         close = QPushButton(tr("Close"), self)
         close.clicked.connect(self.hide)
         buttons = QHBoxLayout()
+        buttons.addWidget(self.qc_after)
         buttons.addStretch(1)
         buttons.addWidget(self.queue_button)
         buttons.addWidget(self.export_button)
         buttons.addWidget(close)
 
         # ----- queue -----
-        self.table = QTableWidget(0, 6, self)
+        self.table = QTableWidget(0, 7, self)
         self.table.setObjectName("export.queue")
         self.table.setHorizontalHeaderLabels(
-            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining")]
+            [tr("Sequence"), tr("Output file"), tr("Format"), tr("Status"), tr("Progress"), tr("Remaining"), tr("Quality")]
         )
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.table.cellDoubleClicked.connect(lambda _r, _c: self.open_quality_check())
+        self.qc_dialog: QcDialog | None = None
         queue_buttons = QHBoxLayout()
         for name, text, slot in (
             ("startQueue", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
@@ -372,6 +389,7 @@ class ExportDialog(QDialog):
             ("retry", N_("Retry"), lambda: self._selected_command("export.queue.retry", {"start": True})),
             ("remove", N_("Remove"), lambda: self._selected_command("export.queue.remove")),
             ("clear", N_("Clear Finished"), lambda: self._queue_command("export.queue.clear", {})),
+            ("qc", N_("Quality Check…"), self.open_quality_check),
         ):
             b = QPushButton(tr(text), self)
             b.setObjectName(f"export.queue.{name}")
@@ -726,6 +744,8 @@ class ExportDialog(QDialog):
                 p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
+        if self.qc_after.isChecked():
+            p["qc"] = QC_PROFILE
         return p
 
     # ----- engine answers -----
@@ -845,6 +865,8 @@ class ExportDialog(QDialog):
         self.table.setRowCount(len(items))
         for row, it in enumerate(items):
             status = str(it.get("status") or "").lower()
+            qc = it.get("qc") if isinstance(it.get("qc"), dict) else {}
+            qc_status = str(qc.get("status") or "notChecked")
             texts = [
                 str(it.get("sequenceName") or ""),
                 str(it.get("path") or ""),
@@ -852,6 +874,7 @@ class ExportDialog(QDialog):
                 tr(STATUS_LABELS.get(status, status)) + (f" — {it['error']}" if it.get("error") else ""),
                 "",
                 format_eta(it.get("etaSeconds")) if status not in FINISHED else "",
+                tr(QC_LABELS.get(qc_status, qc_status)),
             ]
             for col, text in enumerate(texts):
                 cell = self.table.item(row, col)
@@ -863,6 +886,10 @@ class ExportDialog(QDialog):
                     cell.setData(Qt.ItemDataRole.UserRole, it.get("id"))
                 if col == 3:
                     cell.setToolTip(str(it.get("statusText") or ""))
+                    cell.setData(Qt.ItemDataRole.UserRole, status)
+                if col == 6:
+                    cell.setData(Qt.ItemDataRole.UserRole, qc_status)
+                    cell.setToolTip(str(qc.get("error") or qc.get("report") or ""))
             bar = self.table.cellWidget(row, 4)
             if not isinstance(bar, QProgressBar):
                 bar = QProgressBar(self.table)
@@ -879,9 +906,33 @@ class ExportDialog(QDialog):
                 # it finished while we watched it
                 self.finished_export.emit(str(it.get("path") or ""), status == "done")
             self._known_status[key] = status
-        running = bool(data.get("running")) or any(str(i.get("status") or "").lower() == "encoding" for i in items)
+        running = bool(data.get("running")) or any(
+            str(i.get("status") or "").lower() == "encoding" or (i.get("qc") or {}).get("status") == "running" for i in items
+        )
         if not running and not self.isVisible():
             self._poll.stop()
+
+    # ----- quality check -----
+    def open_quality_check(self) -> None:
+        """The QC window for the selected finished export: its report, or a check now."""
+        rows = sorted({i.row() for i in self.table.selectedIndexes()})
+        if not rows:
+            self._error(tr("Select a finished export in the queue"))
+            return
+        row = rows[0]
+        status_cell, path_cell, id_cell, qc_cell = (self.table.item(row, c) for c in (3, 1, 0, 6))
+        if path_cell is None or id_cell is None:
+            return
+        status = status_cell.data(Qt.ItemDataRole.UserRole) if status_cell is not None else ""
+        if status not in ("done", "failed"):
+            self._error(tr("Select a finished export in the queue"))
+            return
+        qc_status = qc_cell.data(Qt.ItemDataRole.UserRole) if qc_cell is not None else "notChecked"
+        if self.qc_dialog is None:
+            self.qc_dialog = QcDialog(self.engine, self)
+            self.qc_dialog.review_saved.connect(lambda _p, _v: self.refresh_queue())
+        self.qc_dialog.open_for(path_cell.text(), id_cell.data(Qt.ItemDataRole.UserRole), run=qc_status == "notChecked")
+        self._poll.start()
 
     def hideEvent(self, e) -> None:
         super().hideEvent(e)

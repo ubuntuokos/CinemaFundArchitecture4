@@ -1847,6 +1847,208 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.close()
 
 
+def test_qc_window_helpers():
+    from cfa4_qt.panels.qc import bounds_text, frame_rate_of, parse_position, value_text
+
+    assert value_text({"value": -14.25, "unit": "LUFS"}) == "-14.25 LUFS"
+    assert value_text({"value": True}) == "" and value_text({}) == ""
+    assert bounds_text({"pass": {"min": -15.0, "max": -13.0}, "accept": {"min": -16.0, "max": -12.0}}).startswith("-15…-13 (")
+    assert bounds_text({"pass": {"max": 0.0}}) == "≤ 0"
+    report = {"checks": [{"id": "probe.video", "detail": {"frameRate": "25/1"}}]}
+    assert frame_rate_of(report) == (25, 1)
+    assert frame_rate_of({"checks": [{"id": "probe.video", "detail": {"frameRate": "0/0"}}]}) is None
+    pos = parse_position("00:00:01:05", (25, 1))
+    assert pos == {"timecode": "00:00:01:05", "frame": 30, "tick": 30 * TICKS_PER_SECOND // 25}
+    assert parse_position("00:00:01:05", None) == {"timecode": "00:00:01:05"}
+    for bad in ("", "1:2", "aa:bb:cc:dd", "-1:00:00:00", "00:60:00:00", "00:00:60:00", "00:00:00:25",
+                "00:00:00:-1", "00:00;00;00", "1:2:3:4:5", "0000:00:00:00", "00:00:00:٣"):
+        assert parse_position(bad, (25, 1)) is None, bad
+    assert parse_position("00:60:00:00", None) is None  # range is checked without a rate too
+    # 23.976 counts 24 frames a second; drop-frame exists only at 29.97 / 59.94 / 119.88
+    assert parse_position("00:00:00:23", (24000, 1001)) is not None
+    assert parse_position("00:00:00:24", (24000, 1001)) is None
+    assert parse_position("00;00;01;00", (24000, 1001)) is None
+    ntsc = (30000, 1001)
+    assert parse_position("00;01;00;00", ntsc) is None and parse_position("00;01;00;01", ntsc) is None  # skipped
+    assert parse_position("00;01;00;02", ntsc)["frame"] == 1800  # the picture after 00;00;59;29
+    assert parse_position("00;00;59;29", ntsc)["frame"] == 1799
+    assert parse_position("00;10;00;00", ntsc)["frame"] == 17982  # every tenth minute keeps its labels
+    assert parse_position("01;00;00;00", ntsc)["frame"] == 107892
+    assert parse_position("00;01;00;04", (60000, 1001))["frame"] == 3600
+    assert parse_position("00:01:00:00", ntsc)["frame"] == 1800  # non-drop at 29.97 counts every label
+
+
+def test_qc_window_drops_stale_replies_and_reports_failures(app):
+    """Regressions from the stage E2 review: a reply for the file the window showed before must
+    not replace the current report; a failed run, a missing report, a failed save and a time code
+    that is no time in the file each leave the window usable with a message."""
+    from cfa4_qt.panels.qc import QcDialog
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply, on_error))
+            return 0
+
+        def take(self, command, path=None):
+            for i, (c, params, ok, err) in enumerate(self.pending):
+                if c == command and (path is None or params.get("path") == path):
+                    del self.pending[i]
+                    return ok, err
+            raise AssertionError(f"no pending {command} {path}")
+
+    def report(name, verdict):
+        full = {"profile": {"id": "delivery-web", "version": 1}, "output": {"path": name},
+                "checks": [{"id": "probe.video", "status": "PASS", "detail": {"frameRate": "25/1"}}]}
+        return {"full": full, "verdict": verdict, "summary": {"reasons": [name]}, "questions": [], "report": name + ".cfa4qc.json"}
+
+    engine = Engine()
+    dlg = QcDialog(engine)  # type: ignore[arg-type]
+    try:
+        dlg.open_for("a.mp4")
+        dlg.open_for("b.mp4")
+        ok_a, _ = engine.take("qc.report.get", "a.mp4")
+        ok_b, _ = engine.take("qc.report.get", "b.mp4")
+        ok_b(report("b.mp4", "PASS"), None)
+        ok_a(report("a.mp4", "FAIL"), None)  # late answer for the previous file
+        assert dlg.report["output"]["path"] == "b.mp4" and dlg.reasons.item(0).text() == "b.mp4"
+
+        # a check started for a, then the window turned to b: a's job is no longer followed
+        dlg.open_for("a.mp4", run=True)
+        started_a, _ = engine.take("qc.run")
+        dlg.open_for("b.mp4")
+        started_a({"job": 7}, None)
+        assert dlg._job is None and not dlg._poll.isActive() and dlg.run_button.isEnabled()
+        engine.take("qc.report.get", "b.mp4")[0](report("b.mp4", "PASS"), None)
+
+        # qc.run refused
+        dlg.run_check()
+        _, err = engine.take("qc.run")
+        err("no such file")
+        assert dlg.message.text() == "no such file" and dlg.run_button.isEnabled() and dlg._job is None
+        # the job finished with an error
+        dlg.run_check()
+        engine.take("qc.run")[0]({"job": 9}, None)
+        assert dlg._poll.isActive()
+        dlg._poll_job()
+        engine.take("jobs.list")[0]([{"id": 9, "finished": True, "result": {"error": "decode failed"}}], None)
+        assert dlg.message.text() == "decode failed" and dlg.run_button.isEnabled() and not dlg._poll.isActive()
+
+        # no report: nothing to save
+        dlg.load()
+        engine.take("qc.report.get", "b.mp4")[1]("no report next to b.mp4")
+        assert dlg.message.text() == "no report next to b.mp4" and not dlg.save_button.isEnabled()
+
+        dlg.load()
+        engine.take("qc.report.get", "b.mp4")[0](report("b.mp4", "PASS"), None)
+        # a time code that is no picture of this 25 fps file is refused before anything is sent
+        dlg.add_finding("flash", "major", "00:00:01:25")
+        dlg.save_review()
+        assert not engine.pending and "Finding 1" in dlg.message.text() and dlg.save_button.isEnabled()
+        dlg.findings.item(0, 2).setText("00:00:01:24")
+        dlg.save_review()
+        command, params, _, err = engine.pending[-1]
+        assert command == "qc.review.save" and params["review"]["findings"][0]["at"]["frame"] == 49
+        assert not dlg.save_button.isEnabled()
+        engine.take("qc.review.save")[1]("disk full")
+        assert dlg.message.text() == "disk full" and dlg.save_button.isEnabled()
+
+        # a save answered after the window moved on still reaches the queue, for its own file
+        saved = []
+        dlg.review_saved.connect(lambda media, verdict: saved.append((media, verdict)))
+        dlg.save_review()
+        dlg.open_for("c.mp4")
+        engine.take("qc.review.save")[0]({"verdict": "WARN"}, None)
+        assert saved == [("b.mp4", "WARN")]
+        assert [c for c, p, *_ in engine.pending] == ["qc.report.get"] and engine.pending[0][1]["path"] == "c.mp4"
+
+        engine.running = False
+        dlg.run_check()
+        assert dlg.message.text() == "The engine is not running." and dlg.run_button.isEnabled()
+    finally:
+        dlg._poll.stop()
+        dlg.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_quality_check_through_the_export_window(app, tmp_path: Path):
+    """Media QC stage E: export with "Check quality after export", read the report in the QC
+    window, add a time-coded finding and save it into the report next to the export."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(160)
+        dlg.height_spin.setValue(90)
+        out = tmp_path / "qc" / "cut.mp4"
+        dlg.path.setText(str(out))
+        dlg.qc_after.setChecked(True)
+        assert dlg.params()["qc"] == "delivery-web"
+        assert wait_until(app, lambda: "160×90" in dlg.summary.text(), 10_000), dlg.summary.text()
+        dlg.export_button.click()
+
+        def qc_state() -> str:
+            cell = dlg.table.item(0, 6)
+            return str(cell.data(QtCore.Qt.ItemDataRole.UserRole)) if cell is not None else ""
+
+        assert wait_until(app, lambda: qc_state() not in ("", "notChecked", "running"), 240_000), qc_state()
+        report_file = Path(str(out) + ".cfa4qc.json")
+        assert report_file.is_file() and Path(str(out) + ".cfa4qc.png").is_file()
+        # render and QC state stay apart: the render is done whatever QC says
+        assert dlg.table.item(0, 3).data(QtCore.Qt.ItemDataRole.UserRole) == "done"
+
+        dlg.table.selectRow(0)
+        dlg.open_quality_check()
+        qc = dlg.qc_dialog
+        assert qc is not None and qc.isVisible()
+        assert wait_until(app, lambda: qc.checks.rowCount() > 10, 30_000), qc.message.text()
+        assert qc.verdict.text()
+        assert not qc.sheet.pixmap().isNull(), "the contact sheet is shown"
+        assert len(qc.answers) == 4
+        combo, _note = qc.answers["picture.defect"]
+        combo.setCurrentIndex(combo.findData("no"))
+        row = qc.add_finding("flash frame", "major", "00:00:00:12", "check the source")
+        assert row == 0
+        qc.reviewer.setText("QC tester")
+        qc.review_done.setChecked(True)
+        saved: list[str] = []
+        qc.review_saved.connect(lambda _p, v: saved.append(v))
+        qc.save_button.click()
+        assert wait_until(app, lambda: bool(saved), 30_000), qc.message.text()
+        report = json.loads(report_file.read_text(encoding="utf-8"))
+        human = report["human"]
+        assert human["state"] == "done" and human["reviewer"] == "QC tester"
+        assert human["findings"][0]["at"]["timecode"] == "00:00:00:12"
+        assert human["findings"][0]["severity"] == "major"
+        assert human["answers"] == [{"question": "picture.defect", "answer": "no"}]
+        # a major finding never leaves a PASS
+        assert report["summary"]["verdict"] in ("WARN", "FAIL")
+        assert wait_until(app, lambda: qc.findings.rowCount() == 1, 10_000), "the saved review is read back"
+    finally:
+        if win.export_dialog is not None:
+            if win.export_dialog.qc_dialog is not None:
+                win.export_dialog.qc_dialog.hide()
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
     """MPEG-2: the Container choice sets the file extension and the audio, and the engine writes

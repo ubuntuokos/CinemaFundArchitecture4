@@ -1734,3 +1734,52 @@
 	{n} exports queued (the Export window shows the queue)	{n} export a sorban (az Exportálás ablak mutatja a sort)
 	{n} variant sequences made, {q} exports queued	{n} változatszekvencia elkészült, {q} export a sorban
 	no column for {names}	nincs oszlop ehhez: {names}
+	Add Finding	Észrevétel hozzáadása
+	Add as Finding	Felvétel észrevételként
+	Are colour and contrast acceptable?	Elfogadható a szín és a kontraszt?
+	Automatic Checks	Automatikus ellenőrzések
+	Bounds	Határok
+	Check	Ellenőrzés
+	Check Now	Ellenőrzés most
+	Check quality after export	Minőségellenőrzés exportálás után
+	Checking…	Ellenőrzés…
+	Contact Sheet	Kontaktlap
+	Critical	Kritikus
+	Fail	Hiba
+	Findings	Észrevételek
+	Human Review	Emberi ellenőrzés
+	Incomplete	Hiányos
+	Is there a visible picture defect?	Van látható képhiba?
+	Is there audible distortion?	Van hallható torzítás?
+	Is there unwanted noise?	Van nem kívánt zaj?
+	Major	Jelentős
+	Message	Üzenet
+	Minor	Kisebb
+	No contact sheet	Nincs kontaktlap
+	Not answered	Nincs válasz
+	Not checked	Nincs ellenőrizve
+	Not run	Nem futott
+	Note	Megjegyzés
+	Pass	Megfelelt
+	Passed	Megfelelt
+	Passed with warnings	Megfelelt, figyelmeztetésekkel
+	Profile: {id} v{version}	Profil: {id} v{version}
+	Quality	Minőség
+	Quality Check	Minőségellenőrzés
+	Quality Check…	Minőségellenőrzés…
+	Remove Finding	Észrevétel eltávolítása
+	Report: {path}	Jelentés: {path}
+	Review complete	Az ellenőrzés kész
+	Reviewer	Ellenőrző
+	Run the media quality check on the finished file (docs/media-qc.md)	A kész fájl médiaminőség-ellenőrzése (docs/media-qc.md)
+	Save Review	Ellenőrzés mentése
+	Select a finished export in the queue	Válasszon ki egy befejezett exportot a sorban
+	Severity	Súlyosság
+	Time code	Időkód
+	Unsure	Bizonytalan
+	Warning	Figyelmeztetés
+	accept	elfogadható
+	the engine did not start the check	a motor nem indította el az ellenőrzést
+	the engine sent no report	a motor nem küldött jelentést
+	The engine is not running.	A motor nem fut.
+	Finding {row}: the time code is not a time in this file (HH:MM:SS:FF).	Észrevétel {row}: az időkód nem létező időpont ebben a fájlban (ÓÓ:PP:MM:KK).
