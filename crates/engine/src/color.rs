@@ -365,17 +365,16 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
         // timeline clips of a toggled item (or of its subclips) that pick a channel the new
         // layout lacks would play channel 0 in its place: they go back to the default pair
         for (id, streams) in &audio {
-            let channels = streams.first().map_or(0, |a| a.channels);
             let of_item: Vec<ItemId> =
                 pr.items.values().filter(|it| it.id == *id || matches!(it.kind, ItemKind::Subclip { parent, .. } if parent == *id)).map(|it| it.id).collect();
             for it in pr.items.values_mut() {
                 let ItemKind::Sequence(q) = &mut it.kind else { continue };
-                let needs = q.audio_tracks.iter().flat_map(|t| &t.items).any(|c| out_of_range(c, &of_item, channels));
+                let needs = q.audio_tracks.iter().flat_map(|t| &t.items).any(|c| out_of_range(c, &of_item, streams));
                 if !needs {
                     continue;
                 }
                 for c in std::sync::Arc::make_mut(q).audio_tracks.iter_mut().flat_map(|t| &mut t.items) {
-                    if out_of_range(c, &of_item, channels) {
+                    if out_of_range(c, &of_item, streams) {
                         c.source_channels.clear();
                     }
                 }
@@ -392,10 +391,11 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
     }))
 }
 
-/// Whether timeline clip `c` plays stream 0 of one of `items` and picks a channel at or past
-/// `channels`.
-fn out_of_range(c: &cfa4_project::TrackItem, items: &[ItemId], channels: u32) -> bool {
-    c.audio_stream == 0 && items.contains(&c.item) && c.source_channels.iter().any(|&k| u32::from(k) >= channels)
+/// Whether timeline clip `c` plays one of `items` and picks a channel its audio stream (in
+/// `streams`, the item's new layout) lacks: an Auro-3D carrier can be any of a file's streams.
+pub(crate) fn out_of_range(c: &cfa4_project::TrackItem, items: &[ItemId], streams: &[cfa4_media::AudioStreamInfo]) -> bool {
+    let channels = streams.get(c.audio_stream).map_or(0, |a| a.channels);
+    items.contains(&c.item) && c.source_channels.iter().any(|&k| u32::from(k) >= channels)
 }
 
 /// `[num, den]` as a pixel aspect ratio CFA4 can use ([`cfa4_project::checked_par`]).

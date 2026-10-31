@@ -190,3 +190,27 @@ fn a_refreshed_carrier_is_not_reused_once_decoding_is_back_on() {
     s.execute("clip.interpretFootage", json!({"items": [item.0], "auroDecoding": true})).unwrap();
     assert_eq!(channels(&s, item), (10, 10));
 }
+
+/// Review of #323: a clip on another audio stream is checked against that stream's layout (an
+/// Auro-3D carrier can be any stream of a file).
+#[test]
+fn channel_picks_are_checked_against_the_clips_own_stream() {
+    let dir = tmp_dir("auro-toggle-streams");
+    let mut s = Session::default();
+    let wav = write_carrier(&dir.join("carrier.wav"));
+    let r = s.execute("file.import", json!({"paths": [wav]})).unwrap();
+    let item = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("file.newSequenceFromClip", json!({"items": [item.0]})).unwrap();
+    let mut clip = s.active_sequence().unwrap().audio_tracks.iter().flat_map(|t| &t.items).next().unwrap().clone();
+    let stream = |channels| cfa4_media::AudioStreamInfo { sample_rate: 48_000, channels, codec: "PCM".into(), bits_per_sample: Some(24) };
+    let streams = [stream(2), stream(6)];
+    clip.audio_stream = 1;
+    clip.source_channels = vec![4, 5];
+    assert!(!crate::color::out_of_range(&clip, &[item], &streams), "stream 1 has six channels");
+    clip.source_channels = vec![8, 9];
+    assert!(crate::color::out_of_range(&clip, &[item], &streams), "past stream 1's carrier");
+    clip.audio_stream = 0;
+    clip.source_channels = vec![4, 5];
+    assert!(crate::color::out_of_range(&clip, &[item], &streams), "stream 0 has two");
+    assert!(!crate::color::out_of_range(&clip, &[ItemId(item.0 + 1000)], &streams), "another item's clip");
+}
