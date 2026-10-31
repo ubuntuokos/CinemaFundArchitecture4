@@ -132,6 +132,24 @@ def _icon_path(name: str) -> tuple[QPainterPath, QPainterPath]:
     elif name == "wrench":
         line.addEllipse(QPointF(12, 6), 3.2, 3.2)
         poly((9.7, 8.3), (3, 15), closed=False)
+    elif name == "magnet":  # the timeline toolbar's (egui's icons.rs)
+        line.moveTo(14, 9)
+        line.arcTo(QRectF(4, 4, 10, 10), 0, -180)
+        poly((4, 9), (4, 3), closed=False)
+        poly((14, 9), (14, 3), closed=False)
+        fill.addRect(QRectF(3, 3, 2.5, 2.5))
+        fill.addRect(QRectF(12.5, 3, 2.5, 2.5))
+    elif name == "link":
+        line.addRect(QRectF(2, 7, 7, 4.5))
+        line.addRect(QRectF(9, 7, 7, 4.5))
+    elif name == "captions":
+        line.addRect(QRectF(2, 3.5, 14, 11))
+        poly((4.5, 10), (8, 10), closed=False)
+        poly((10, 10), (13.5, 10), closed=False)
+        poly((4.5, 12.5), (13.5, 12.5), closed=False)
+    elif name == "nest":
+        line.addRect(QRectF(2, 3, 14, 12))
+        line.addRect(QRectF(5, 6, 8, 6))
     elif name == "plus":
         poly((9, 3.5), (9, 14.5), closed=False)
         poly((3.5, 9), (14.5, 9), closed=False)
