@@ -5,14 +5,15 @@
 > Ha egy terv, PR vagy audit ellentmond ennek a dokumentumnak, ez a dokumentum az irányadó,
 > és az ellentmondást jelezni kell a tulajdonosnak (`ubuntuokos`), nem csendben feloldani.
 
-**Utolsó módosítás:** 2026-10-27 · **Tulajdonos:** ubuntuokos
+**Utolsó módosítás:** 2026-10-30 · **Tulajdonos:** ubuntuokos
 
 ## 1. Mi a CFA4?
 
 A CFA4 (CinemaFundArchitecture4) egy **egyetlen, egységes, Qt6-os asztali alkalmazás Ubuntura**,
 amely több önálló média-program képességeit egyesíti: videóvágás, konvertálás, publikálás,
 feliratozás, szinkronizálás, hangszerkesztés, valamint 2D/3D animáció és grafika,
-**helyben futó MI-funkciókkal** kiegészítve.
+**helyben futó MI-funkciókkal** kiegészítve. Egyes részei **külön alkalmazásként is
+indíthatók** (2. pont, 7. alapelv), de ugyanannak a CFA4-nek a részei maradnak.
 
 Kiindulópontja egy nyílt forráskódú (MIT OR Apache-2.0) nemlineáris videóvágó 0.10.0-s
 változata, amelynek Rust médiamotorja megmarad (az eredet és a szerzői jogi sorok: `NOTICE`).
@@ -52,6 +53,15 @@ hosszabb támogatási idő fizetős. A licencszabályok: [`docs/licensing.md`](d
    igazolja. A már igazolt hardveres és kézi teszteket nem kell ok nélkül megismételni.
 6. **Minden terv a `main` ágon él.** Terv, cél és döntés nem maradhat csak mellékágon vagy
    piszkozat PR-ban, mert ott elveszik.
+7. **Külön is indítható részek, egy CFA4** (tulajdonosi döntés, 2026-10-30). Egy terület, például
+   a feliratozó, külön alkalmazásként is indítható: saját menübejegyzéssel, ikonnal, ablakkal és
+   fájltársítással, a teljes videószerkesztő-projekt megnyitása nélkül. Ugyanakkor a CFA4-en
+   belül is a megfelelő helyén elérhető (munkaterület, panel vagy ablak). A két belépés
+   ugyanazt a Rust-motort, adatmodellt, parancsokat és beállításokat használja, és a CFA4
+   csomagjával együtt települ: külön kódbázis vagy külön motor nem készül. A munka egy lépésben
+   átadható a külön indított rész és a CFA4 között, oda és vissza. Hogy a külön alkalmazás saját
+   programfájl vagy a `cfa4` program saját indítási módja legyen, az adott terület terve dönti el.
+   Első alkalmazása: a feliratozó terve (`docs/plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md`, D1).
 
 ## 3. Célplatform: minden grafikus Ubuntu-változat
 
