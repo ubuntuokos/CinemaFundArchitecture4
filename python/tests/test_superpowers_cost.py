@@ -2,8 +2,8 @@
 """Offline tests; no API calls, models or expensive CI runs."""
 from __future__ import annotations
 
-import unittest
 import tomllib
+import unittest
 
 from cfa4_devtools.superpowers_cost import DEFAULT_POLICY, evaluate, main
 

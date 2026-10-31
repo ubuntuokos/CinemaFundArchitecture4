@@ -68,18 +68,20 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G3. 10-bit and 4:2:2 camera media needs hardware
 
-- **Have:** our H.264 decoder does 4:2:0 at 8 to 14 bits (High 10 bit-exact with ffmpeg).
-- **Missing:** H.264 High 4:2:2 / 4:4:4 (#161), interlaced field / MBAFF (#162), lossless (#163)
+- **Have:** our H.264 decoder does 4:2:0, 4:2:2 and 4:4:4 at 8 to 14 bits (High 10, High 4:2:2 and
+  High 4:4:4 Predictive bit-exact with ffmpeg, #161).
+- **Missing:** H.264 interlaced field / MBAFF (#162), lossless (#163), monochrome (#279)
   (`crates/h264/README.md`); HEVC now decodes 4:2:2 / 4:4:4 up to 12-bit (#93); its RExt coding tools are #167. Most mirrorless and
   cinema cameras record exactly these (Sony XAVC S-I / XAVC HS 4:2:2 10-bit, Panasonic, Canon
   XF-AVC, Fujifilm).
 - **Evidence:** #626 (Panasonic Lumix 4K 10-bit 4:2:2 MOV). On macOS VideoToolbox decodes 10-bit
-  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them, and
-  there is no software fallback, so the clip fails. Premiere decodes them everywhere (and in
+  4:2:2 H.264 / HEVC on chips that support it; Windows Media Foundation and Linux decline them. Our
+  software decoders now cover progressive 4:2:2 / 4:4:4 H.264 (#161) and HEVC (#93), so only
+  interlaced and lossless H.264 still fail. Premiere decodes them everywhere (and in
   hardware on Apple silicon, Intel and NVIDIA Blackwell).
 - **Impact:** camera originals from most current cameras do not open on Windows or Linux.
-- **Estimate:** H.264 High 4:2:2 (chroma geometry, deblocking, transforms) 10–20 h;
-  HEVC Main 4:2:2 10 (RExt subset) 15–25 h. Doc: [codec-parity.md](codec-parity.md).
+- **Estimate:** H.264 interlaced (#162) 20–30 h, lossless (#163) 4–8 h; HEVC RExt tools (#167)
+  10–20 h. Doc: [codec-parity.md](codec-parity.md).
 
 ## G4. Crashes at start-up, and no test CI on pull requests
 
@@ -202,8 +204,9 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   #125), free-format MPEG audio, E-AC-3 adaptive hybrid
   transform, enhanced coupling, AVI (#598; listed as an extension but no
   demuxer), WMV / ASF, DV / DVCPRO / DV100, MPEG-4 Part 2, FLAC in MP4 (#603), camera RAW (R3D
-  incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), JPEG 2000 in
-  MXF / DCP import (the `cfa4-j2k` codestream decoder exists, not yet wired in), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
+  incl. R3D NE, ARRIRAW, Sony RAW / X-OCN, Canon RAW, BRAW, ProRes RAW; #345, #383), DCP
+  composition (CPL) import (#101; JPEG 2000 MXF picture tracks import since #77), interlaced and
+  stereoscopic JPEG 2000 MXF (#102), JPEG XS MXF, the rest of CinemaDNG (lossy / JPEG XL DNG, MXF-wrapped, opcode lists, Raw
   settings; DNG frames and folders import since #1065); stills: PSD, EXR beyond scan-line RLE / ZIP / PXR24 (PIZ, B44, DWA,
   tiled, multi-part, deep), AVIF / JPEG items inside HEIF,
   AI / EPS, and the rarer DPX layout, run-length encoding (Targa and DPX stills and sequences import
@@ -239,18 +242,31 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
+- **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
+  non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):
+  - *Promo first cut from a brief or a website:* an agent writes the story and shot list and builds
+    the sequence through the control channel / MCP (beat markers, graphics, Text Animators, Batch
+    Variants are already drivable). Needs an LLM; CFA4 ships none.
+  - *AI review of a cut:* a vision model looks at one still per beat and reports weak openings,
+    unreadable text or off-brand colours, next to the deterministic Check Before Export.
+  - *Smart shot picking from phone footage:* rank clips by subject and composition and cut them
+    on the beat markers (exposure and shake scores alone are classical and can come first).
+  - *Generated B-roll, music and voices:* text/image-to-video, music generation, voice cloning.
+    Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
+    only openly licensed local models qualify. Kokoro TTS narration exists already.
+  - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
 
 ## G13. Delivery formats
 
 - **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
-  B pictures, CBR / VBV and interlace (#240-#242), MP2 audio (#267), DCP, JPEG 2000 MXF
-  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; export wiring #115),
+  CBR / VBV and interlace (#241, #242), MP2 audio (#267), JPEG 2000 MXF
+  (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; SMPTE DCP export is done, #115),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).
 - **Have:** MPEG-2 export (#243: program stream with DVD LPCM, transport stream / BDAV `.m2ts`
-  with AAC, `.m2v` elementary stream); AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
+  with AAC, `.m2v` elementary stream; IBBP with closed GOPs by default, #240); AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
   metadata, MP4 `av01`; #95); PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); WebM (VP9 + Opus, own encoders, #149); ProRes 4444 / 4444 XQ in the export UI (#342);
@@ -353,4 +369,5 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | 2026-10-12 | minor | G10: OpenEXR PXR24 import |
 | 2026-10-25 | minor | G10: E-AC-3 7.1 (dependent substreams) |
 | 2026-10-24 | minor | G10, G11, G13, G18: CFA4 candidates after the GPL-3.0-or-later switch and the closed plug-in decision (ADR 0003) |
+| 2026-10-26 | minor | G10: JPEG 2000 MXF import, DCP picture tracks included (#77) |
 | 2026-10-30 | minor | G1: `cfa4-metrics` (CIEDE2000 ΔE, SSIM) as the harness's scoring layer |
