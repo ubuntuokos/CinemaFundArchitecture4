@@ -66,7 +66,7 @@ fn raw_dts_streams_open_as_audio() {
     let f = fixture(&ff, "dts_51_raw.dts", &["-f", "lavfi", "-i", SURROUND, "-t", "2", "-c:a", "dca", "-strict", "-2", "-f", "dts"])
         .expect("could not write dts_51_raw.dts");
     let mut paths = vec![f];
-    if let Some(p) = std::env::var_os("CFA4_DTSHD_SAMPLE").map(std::path::PathBuf::from).filter(|p| p.extension().is_some_and(|e| e == "dts")) {
+    if let Some(p) = std::env::var_os("CFA4_DTSHD_SAMPLE").map(std::path::PathBuf::from).filter(|p| p.extension().is_some_and(|e| e == "dts" || e == "dtshd")) {
         paths.push(p);
     }
     for f in paths {
@@ -134,6 +134,13 @@ fn raw_dts_layout_change_keeps_timing() {
     let expected = (n + stereo_len) as i64;
     let got = (src.info().duration.seconds() * f64::from(a.sample_rate)).round() as i64;
     assert!((got - expected).abs() <= 1, "duration {got} samples, want {expected}");
+
+    // a DTS-HD file wrapper: only its STRMDATA chunk is the stream, not the frame in BLACKOUT
+    let plain = std::fs::read(&surround).unwrap();
+    let chunk = |id: &[u8; 8], body: &[u8]| [&id[..], &(body.len() as u64).to_be_bytes(), body].concat();
+    let wrapped = [chunk(b"DTSHDHDR", &[0; 8]), chunk(b"BLACKOUT", &plain[..2048]), chunk(b"STRMDATA", &plain), chunk(b"TIMECODE", &[0; 4])].concat();
+    let w = cfa4_codecs::audio::AudioFileSource::decode("wrapped.dtshd", wrapped.into()).unwrap();
+    assert_eq!(w.info().duration, cfa4_codecs::audio::AudioFileSource::decode("plain.dts", plain.into()).unwrap().info().duration);
 
     // core syncwords with headers that do not parse: an error, not an empty success
     let mut broken = Vec::new();

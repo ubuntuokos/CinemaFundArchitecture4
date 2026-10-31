@@ -999,7 +999,8 @@ fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32
     let mut out = cfa4_dts::cfa4::Decoded::default();
     let mut first_error = None;
     let mut total = 0usize;
-    let pieces = bytes.chunks(1 << 20).map(Some).chain(std::iter::once(None));
+    let stream = cfa4_dts::cfa4::stream_data(bytes);
+    let pieces = stream.chunks(1 << 20).map(Some).chain(std::iter::once(None));
     for piece in pieces {
         let frames = match piece {
             Some(p) => dec.push_frames(p),
@@ -1016,14 +1017,21 @@ fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32
             if out.channels.is_empty() {
                 out = cfa4_dts::cfa4::Decoded { channels: vec![Vec::new(); a.channels.len()], lossless: true, ..a.clone() };
             }
-            total = total.saturating_add(n.saturating_mul(out.channels.len()));
+            let other = a.sample_rate != out.sample_rate || a.speakers != out.speakers;
+            // the samples this frame adds to the output, at its rate: counted before they are
+            let added = if other {
+                usize::try_from((n as u64).saturating_mul(u64::from(out.sample_rate)) / u64::from(a.sample_rate.max(1))).unwrap_or(usize::MAX)
+            } else {
+                n
+            };
+            total = total.saturating_add(added.saturating_mul(out.channels.len()));
             if total > MAX_ADTS_SAMPLES {
                 return Err(CodecError::Decode(format!("DTS stream longer than {MAX_ADTS_SAMPLES} samples")));
             }
-            if a.sample_rate != out.sample_rate || a.speakers != out.speakers {
+            if other {
                 // one source plays one layout: a frame in another one keeps its duration as
                 // silence, so the audio after it stays in sync
-                let n = usize::try_from((n as u64).saturating_mul(u64::from(out.sample_rate)) / u64::from(a.sample_rate.max(1))).unwrap_or(0);
+                let n = added;
                 for o in &mut out.channels {
                     o.resize(o.len().saturating_add(n), 0.0);
                 }

@@ -448,6 +448,28 @@ impl Decoder {
     }
 }
 
+/// The audio stream of a raw DTS file: a DTS-HD file (`.dtshd`, chunks of an 8-byte id and a
+/// 64-bit big-endian size starting with `DTSHDHDR`) gives its `STRMDATA` chunk only, since other
+/// chunks (a `BLACKOUT` chunk holds a silent frame) are not the stream; an elementary stream
+/// (`.dts`) comes back whole. A chunk whose size runs past the end gives what is there.
+pub fn stream_data(data: &[u8]) -> &[u8] {
+    if !data.starts_with(b"DTSHDHDR") {
+        return data;
+    }
+    let mut p = 0usize;
+    while let Some(head) = data.get(p..p.saturating_add(16)) {
+        let (Some(id), Some(size)) = (head.get(..8), head.get(8..16).and_then(|b| <[u8; 8]>::try_from(b).ok())) else { break };
+        let size = usize::try_from(u64::from_be_bytes(size)).unwrap_or(usize::MAX);
+        let body_start = p.saturating_add(16);
+        let body = data.get(body_start..).map_or(&[][..], |b| b.get(..size).unwrap_or(b));
+        if id == b"STRMDATA" {
+            return body;
+        }
+        p = body_start.saturating_add(size);
+    }
+    &[]
+}
+
 /// Samples a packet of whole DTS frames decodes to: the sum of its core frames' lengths, or for a
 /// stream without a core its lossless frames' lengths. `None` when the packet starts with
 /// neither.
@@ -493,6 +515,20 @@ pub fn stream_layout(data: &[u8]) -> Result<(u32, Vec<Speaker>), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stream_data_takes_strmdata_and_survives_damage() {
+        let chunk = |id: &[u8; 8], size: u64, body: &[u8]| [&id[..], &size.to_be_bytes(), body].concat();
+        let f = [chunk(b"DTSHDHDR", 2, &[1, 2]), chunk(b"BLACKOUT", 1, &[9]), chunk(b"STRMDATA", 3, &[7, 7, 7])].concat();
+        assert_eq!(stream_data(&f), &[7, 7, 7]);
+        assert_eq!(stream_data(b"\x7F\xFE\x80\x01"), b"\x7F\xFE\x80\x01", "an elementary stream comes back whole");
+        // a size past the end, a huge size and a cut-off chunk header: no panic
+        let f = [chunk(b"DTSHDHDR", 0, &[]), chunk(b"STRMDATA", 99, &[5, 6])].concat();
+        assert_eq!(stream_data(&f), &[5, 6]);
+        let f = [chunk(b"DTSHDHDR", u64::MAX, &[]), chunk(b"STRMDATA", 1, &[5])].concat();
+        assert!(stream_data(&f).is_empty());
+        assert!(stream_data(b"DTSHDHDR\0\0").is_empty());
+    }
 
     #[test]
     fn speakers_rank_in_wav_order() {
