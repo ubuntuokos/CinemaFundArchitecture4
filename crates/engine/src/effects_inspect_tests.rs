@@ -422,3 +422,39 @@ fn program_overlay_text_is_the_source_text_while_an_animator_shows_part_of_it() 
     let last = text["lines"][0]["carets"].as_array().unwrap().last().unwrap()[0].as_u64();
     assert_eq!(last, Some(5), "caret stops over the whole text: {text}");
 }
+
+#[test]
+fn program_overlay_text_is_read_at_the_responsive_design_time() {
+    // Codex review regression: with Responsive Design – Time the picture reads the layer at the
+    // remapped time, so the editor's text and font size must come from that time too
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let made = s.execute("graphics.newText", json!({"text": "A", "position": [960, 540], "time": 0, "seconds": 5})).unwrap();
+    let clip = ClipId(made["clip"].as_u64().unwrap());
+    let sec = Tick::from_seconds_f64;
+    // Font Size 100 → 500 over the designed five seconds
+    s.edit_sequence("kf", |q, _, _| {
+        let (_, it) = q.find_item_mut(clip).ok_or_else(|| EngineError::Other("no clip".into()))?;
+        let si = it.source_in;
+        let e = it.effects.iter_mut().find(|e| e.effect == cfa4_project::graphic::TEXT_LAYER).ok_or_else(|| EngineError::Other("no text".into()))?;
+        let p = e.params.get_mut("size").ok_or_else(|| EngineError::Other("no size".into()))?;
+        p.toggle_animation(si);
+        p.set_at(si, cfa4_project::ParamValue::Float(100.0));
+        p.set_at(si + sec(5.0), cfa4_project::ParamValue::Float(500.0));
+        Ok(())
+    })
+    .unwrap();
+    s.execute("graphics.setResponsiveTime", json!({"clip": clip.0, "introSeconds": 1, "outroSeconds": 1})).unwrap();
+    // ten seconds long: the middle is stretched, so five seconds in is earlier in the design
+    let rate = s.sequence_rate();
+    let frames = rate.frame_at(sec(5.0));
+    s.execute("timeline.trim", json!({"clip": clip.0, "edge": "out", "deltaFrames": frames})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(clip).unwrap().1.clone();
+    s.execute("playhead.set", json!({"time": (it.start + sec(5.0)).0})).unwrap();
+    let drawn = cfa4_render::graphic_clip::item_layer_specs(&it, it.effect_time_at(s.playhead()), (1920, 1080));
+    let cfa4_project::graphic::LayerContent::Text(tp) = &drawn[0].1.content else { panic!("a text layer") };
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let size = g["layers"][0]["text"]["size"].as_f64().unwrap();
+    assert!((size - f64::from(tp.size)).abs() < 0.01, "editor {size} vs drawn {}", tp.size);
+    assert!(size < 450.0, "the design time runs behind the clip time (500 at five seconds): {size}");
+}

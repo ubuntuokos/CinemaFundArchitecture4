@@ -154,6 +154,7 @@ fn graphics(s: &Session) -> Value {
         // layer is drawn
         // the roll / crawl offset is drawn, not authored: edits start from the layer's own position
         let (rx, ry) = cfa4_render::graphic_clip::item_roll_offset(it, mt, size);
+        let (design_t, _, _) = cfa4_render::graphic_clip::graphic_time(it, mt);
         for (ei, spec) in item_layer_specs(it, mt, size).into_iter().rev() {
             let Some(li) = idx.iter().position(|&x| x == ei) else { continue };
             let Some(e) = it.effects.get(ei) else { continue };
@@ -180,7 +181,8 @@ fn graphics(s: &Session) -> Value {
             });
             // the whole Source Text (a text animator may show only part of it): the text is edited
             // from here and written back, so it must never be the animator's partial text
-            let source = graphic::eval_layer_source(e, mt, size).map(|x| x.content);
+            // read at the time the layers are drawn at (Responsive Design – Time remaps it)
+            let source = graphic::eval_layer_source(e, design_t, size).map(|x| x.content);
             let content = match (&spec.content, &source) {
                 (LayerContent::Text(_), Some(c @ LayerContent::Text(_))) => c,
                 (c, _) => c,

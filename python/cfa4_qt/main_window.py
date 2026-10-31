@@ -2132,6 +2132,13 @@ class MainWindow(QMainWindow):
                         out.append(item)
         return out
 
+    def graphics_text_pending(self, then: Callable[[], None]) -> bool:
+        """Text typed into a new layer on the Program monitor before the engine made it is sent
+        once the layer is there: ``then`` (a save, the unsaved-changes check) waits for that.
+        True when it was put off."""
+        graphics = getattr(getattr(self.monitor, "overlay", None), "graphics", None)
+        return graphics is not None and graphics.when_created(then)
+
     def flush_editors(self) -> None:
         """Send every value still in a panel's send delay (before a command, Save or a check of
         whether the project needs saving)."""
@@ -2141,6 +2148,8 @@ class MainWindow(QMainWindow):
     def run_command(self, cmd: Command, unsaved_ok: bool = False, given: dict[str, Any] | None = None) -> None:
         """A menu, button or shortcut ran ``cmd``: ask for what it needs, then execute. ``given``:
         params already known (Home's recent project), no file dialog then."""
+        if self.graphics_text_pending(lambda: self.run_command(cmd, unsaved_ok, given)):
+            return
         # an Effect Controls value still in its send delay goes first (Save must write it)
         self.flush_editors()
         if cmd.id in ("markers.markIn", "markers.markOut") and self.project_panel.hover_mark(cmd.id == "markers.markIn"):
@@ -2693,6 +2702,8 @@ class MainWindow(QMainWindow):
         def unanswered(_message: str = "") -> None:
             decide(dict(self.state), None)
 
+        if self.graphics_text_pending(lambda: self.confirm_unsaved(proceed, discard, question, can_save)):
+            return
         # an edit still in Effect Controls' send delay reaches the engine before it is asked
         self.flush_editors()
         self.engine.call("session.state", on_reply=decide, on_error=unanswered)

@@ -1396,8 +1396,10 @@ class TimelineCanvas(QWidget):
             r = self.clip_rect(row, clip)
             if volume_band(r).height() < 6:
                 continue
+            if not r.adjusted(-5.5, 0, 5.5, 0).contains(at):
+                continue  # another clip or a gap: a key a trim left outside this clip is not shown there
             for i, (m, c, _db) in enumerate(self.volume_keys(clip, r)):
-                if QRectF(c.x() - 5.5, c.y() - 5.5, 11, 11).contains(at):
+                if r.left() - 0.5 <= c.x() <= r.right() + 0.5 and QRectF(c.x() - 5.5, c.y() - 5.5, 11, 11).contains(at):
                     return row, clip, r, i, m
         return None
 

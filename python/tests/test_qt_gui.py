@@ -758,6 +758,26 @@ def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(ap
     replies[-1][0]({"clip": 7, "layer": 0}, None)
     last = [p for c, p in sent if c == "graphics.setText"][-1]
     assert (last["clip"], last["layer"], last["text"]) == (7, 0, "Late") and gt.edit is None
+    # Save (and the unsaved-changes check) wait for a new layer still being made, so the text typed
+    # into it is in what is saved (Codex review regression: newText, file.save, then setText)
+    from cfa4_qt.main_window import MainWindow
+
+    order: list[str] = []
+    overlay.send = lambda c, p: (sent.append((c, p)), order.append(c))
+    win = SimpleNamespace(monitor=SimpleNamespace(overlay=SimpleNamespace(graphics=gt)))
+    save = lambda: order.append("file.save")
+    assert not MainWindow.graphics_text_pending(win, save), "nothing pending: runs now"
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    gt._replace("Saved")
+    assert MainWindow.graphics_text_pending(win, save) and order == []
+    replies[-1][0]({"clip": 8, "layer": 1}, None)
+    assert order == ["graphics.selectLayer", "graphics.setText", "file.save"]
+    gt.end_edit()
+    gt.new_text(QtCore.QPointF(10, 20), None)
+    assert MainWindow.graphics_text_pending(win, save)
+    replies[-1][1]("no graphic clip")  # a failed creation lets the save go on too
+    assert order[-1] == "file.save" and gt.creating == 0
+    overlay.send = lambda c, p: sent.append((c, p))
     # a key after another editor's change (before a repaint) edits the new text, not the old one
     layer.text = {"text": "Old"}
     gt.start_edit(layer, None)
@@ -4687,6 +4707,16 @@ def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
         start = QtCore.QPoint(round(k_mid.x()), round(k_mid.y()))
         drag(start, start + QtCore.QPoint(-15, 0))
         assert wait_until(app, lambda: all(k["time"] != t_mid for k in clip()["volume"]["keys"]), 10_000), clip()["volume"]["keys"]
+        # a keyframe a trim left outside the clip is not drawn, and does not take a click meant for
+        # what is shown there (Codex review regression: the hidden key of the trimmed clip answered)
+        c = clip()
+        r = canvas.clip_rect(a1(), c)
+        out_t = c["start"] + c["duration"] + (c["duration"] // 4)
+        c["volume"]["keys"].append({"mediaTime": 10**12, "time": out_t, "db": 0.0})
+        hidden = next(k for m, k, _db in canvas.volume_keys(c, r) if m == 10**12)
+        assert hidden.x() > r.right()
+        assert canvas.volume_key_at(QtCore.QPoint(round(hidden.x()), round(hidden.y()))) is None
+        c["volume"]["keys"].pop()
         # a locked track's line does not take presses
         win.execute("timeline.setTrack", {"track": a1().track["id"], "locked": True})
         assert wait_until(app, lambda: a1().track.get("locked") is True, 10_000)

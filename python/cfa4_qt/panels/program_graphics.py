@@ -22,6 +22,7 @@ graphic canvas → frame, each layer's box); every edit is one ``graphics.*`` co
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -390,6 +391,24 @@ class GraphicsTools:
         # the text being typed into: clip, layer, its text, caret and anchor (character offsets);
         # "seen": the layer has been in the picture (a new one is on its way until then)
         self.edit: dict[str, Any] | None = None
+        self.creating = 0  # new text layers the engine has not answered yet
+        self.after_created: list[Callable[[], None]] = []
+
+    def when_created(self, then: Callable[[], None]) -> bool:
+        """While a new text layer is still being made, run ``then`` once it is there and the text
+        typed meanwhile has been sent (Save and the unsaved-changes check wait for it). True when
+        ``then`` was put off."""
+        if getattr(self, "creating", 0) <= 0:
+            return False
+        self.after_created.append(then)
+        return True
+
+    def _created(self) -> None:
+        self.creating = max(0, getattr(self, "creating", 1) - 1)
+        if self.creating == 0:
+            waiting, self.after_created = getattr(self, "after_created", []), []
+            for then in waiting:
+                then()
 
     # ----- data -----
     def data(self) -> dict[str, Any]:
@@ -524,6 +543,12 @@ class GraphicsTools:
         self._focus()
 
         def made(r: Any, _b: Any) -> None:
+            try:
+                fill(r)
+            finally:
+                self._created()
+
+        def fill(r: Any) -> None:
             ok = isinstance(r, dict) and r.get("clip") is not None and isinstance(r.get("layer"), int)
             if self.edit is not pending:
                 # the edit ended meanwhile (Esc, another click, a tool): what was typed still goes in
@@ -541,9 +566,13 @@ class GraphicsTools:
             self._focus()
 
         def failed(_m: Any) -> None:
-            if self.edit is pending:
-                self.end_edit()
+            try:
+                if self.edit is pending:
+                    self.end_edit()
+            finally:
+                self._created()
 
+        self.creating = getattr(self, "creating", 0) + 1
         engine.execute(command, params, on_reply=made, on_error=failed)
 
     def _set_text(self, text: str) -> None:
