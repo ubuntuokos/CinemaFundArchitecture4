@@ -525,6 +525,19 @@ fn surround_sequence_settings_and_panner_lanes() {
     let r = s.execute("mixer.addSubmix", json!({"channels": "7.1.2"})).unwrap();
     let sub = s.execute("mixer.inspect", json!({})).unwrap();
     assert!(sub.to_string().contains("\"7.1.2\""), "{r} {sub}");
+    // #406: a strip feeding the 7.1.2 Mix has the height control, and a Write pass records it
+    let a1 = s.execute("mixer.inspect", json!({})).unwrap()["strips"][0].clone();
+    assert_eq!((a1["panHeight"].as_bool(), a1["pan51"]["height"].as_f64()), (Some(true), Some(0.0)), "{a1}");
+    s.execute("mixer.setValue", json!({"strip": "A1", "lane": "pan51.height", "value": 60})).unwrap();
+    let a1 = s.execute("mixer.inspect", json!({})).unwrap()["strips"][0].clone();
+    assert_eq!(a1["pan51"]["height"].as_f64(), Some(60.0));
+    assert!(s.execute("mixer.setValue", json!({"strip": "A1", "lane": "pan51.height", "value": 400})).is_ok());
+    let a1 = s.execute("mixer.inspect", json!({})).unwrap()["strips"][0].clone();
+    assert_eq!(a1["pan51"]["height"].as_f64(), Some(100.0), "clamped to 100 %");
+    set_mode(&mut s, "A1", "Write");
+    let r = s.execute("mixer.recordStart", json!({"time": 0})).unwrap();
+    assert_eq!(r["writing"], 5, "volume, puck x / y, height, mute");
+    s.execute("mixer.recordStop", json!({"time": sec(1.0)})).unwrap();
     assert!(s.execute("file.newSequence", json!({"mix": "9.1"})).is_err());
     s.execute("file.newSequence", json!({"trackType": "Standard"})).unwrap();
 }
