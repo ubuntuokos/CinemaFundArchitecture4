@@ -670,3 +670,50 @@ fn h264_pictures_after_an_unsignalled_intra_picture_are_not_called_undecodable()
     assert_eq!(ix.frames[1].random_access, RandomAccessKind::IntraOnly);
     assert!(ix.clean_access_points().is_empty());
 }
+
+#[test]
+fn mpeg2_header_scan_matches_the_decoder_crate() {
+    let mut seed = 0x2545_F491_4F6C_DD1Du64;
+    let mut rnd = || {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        seed
+    };
+    let mut samples: Vec<Vec<u8>> = gop(false, false, Some((720, 576)));
+    samples.extend(gop(true, true, None));
+    for _ in 0..300 {
+        samples.push((0..rnd() % 200).map(|_| [0u8, 0, 0, 1, 0xB3, 0xB8, 0xB5, 0x10, 0xFF][rnd() as usize % 9]).collect());
+    }
+    for d in &samples {
+        let info = cfa4_mpeg2v::scan_access_unit(d);
+        let (sequence_header, gop, picture) = crate::mpeg2_index::scan_summary(d);
+        assert_eq!(sequence_header, info.sequence_header);
+        assert_eq!(gop.map(|g| (g.closed_gop, g.broken_link)), info.gop.map(|g| (g.closed_gop, g.broken_link)));
+        assert_eq!(picture.map(|p| (p.coding_type, p.temporal_reference)), info.pictures.first().map(|p| (p.0.coding_type, p.0.temporal_reference)));
+    }
+}
+
+#[test]
+fn mpeg2_packets_of_start_codes_do_not_amplify_memory() {
+    // one user-data start code per four bytes: the scanner keeps nothing per code
+    let data: Vec<u8> = [0u8, 0, 1, 0xB2].repeat(4 << 20);
+    assert_eq!(crate::mpeg2_index::scan_summary(&data), (false, None, None));
+    let ix = index_mpeg2(0, Rational::MPEG_90K, [Packet { data: &data, pts: None, dts: None, keyframe: false }]).unwrap();
+    assert_eq!(ix.frames[0].picture_type, PictureType::Unknown);
+}
+
+#[test]
+fn h264_an_unsignalled_intra_picture_counts_as_history_for_a_later_recovery_point() {
+    let units: Vec<(Vec<u8>, i64)> = vec![
+        ([sps(40), slice(0x61, 7)].concat(), 0), // I without IDR or recovery point SEI
+        (slice(0x41, 5), 1),
+        ([recovery_sei(0, true, false), slice(0x61, 7)].concat(), 3),
+        (slice(0x01, 6), 2), // leading B picture of the recovery point
+    ];
+    let ix =
+        index_h264(0, Rational::new(1, 25), NalFormat::AnnexB, &[], units.iter().map(|(d, t)| Packet { data: d, pts: Some(*t), dts: None, keyframe: false }))
+            .unwrap();
+    assert_eq!(ix.frames[2].random_access, RandomAccessKind::RecoveryPoint { exact_match: true, broken_link: false });
+    assert_eq!(ix.frames[3].dependency_status, DependencyStatus::CrossesAccessPoint);
+}

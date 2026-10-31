@@ -389,7 +389,8 @@ pub fn index_h264<'a>(
             }
         };
         if random_access.is_access_point() {
-            ap = Some((p.pts, random_access, ap.is_some()));
+            // pictures before it, signalled as an access point or not, can provide references
+            ap = Some((p.pts, random_access, ap.is_some() || seen_intra));
         }
         seen_intra |= picture_type == PictureType::I;
         frames.push(FrameIndexEntry {

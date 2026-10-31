@@ -8,7 +8,7 @@
 //! in decode order, a B picture from the two latest ones, and a leading B picture of a closed GOP
 //! (or of a broken link) only from the anchor after it.
 
-use cfa4_mpeg2v::{AccessUnitInfo, PictureType as Mpeg2Type, scan_access_unit};
+use cfa4_mpeg2v::{GopHeader, PictureHeader, PictureType as Mpeg2Type};
 
 use crate::capabilities::Codec;
 use crate::media_index::{
@@ -18,6 +18,8 @@ use crate::media_index::{
 use crate::timestamp::Rational;
 
 const SEQUENCE_HEADER: u8 = 0xB3;
+const PICTURE_START: u8 = 0x00;
+const GROUP_START: u8 = 0xB8;
 
 /// What one access unit holds, from the headers alone.
 struct Scan {
@@ -27,9 +29,55 @@ struct Scan {
     temporal_reference: Option<u16>,
 }
 
+/// Start codes (`00 00 01 xx`: position, code) of one packet, found lazily with the rules of
+/// `cfa4_mpeg2v::start_codes`, so a packet full of start codes costs no memory per code.
+struct StartCodes<'a> {
+    data: &'a [u8],
+    i: usize,
+}
+
+impl Iterator for StartCodes<'_> {
+    type Item = (usize, u8);
+
+    fn next(&mut self) -> Option<(usize, u8)> {
+        loop {
+            let i = self.i;
+            let w = self.data.get(i..i.checked_add(4)?)?;
+            if w.get(2).is_some_and(|&b| b > 1) {
+                self.i = i.checked_add(3)?;
+            } else if let [0, 0, 1, code] = *w {
+                self.i = i.checked_add(4)?;
+                return Some((i, code));
+            } else {
+                self.i = i.checked_add(1)?;
+            }
+        }
+    }
+}
+
+/// The headers of one access unit (what `cfa4_mpeg2v::scan_access_unit` reads, without keeping
+/// every picture header: only the first picture counts here).
+fn scan_headers(data: &[u8]) -> (bool, Option<GopHeader>, Option<PictureHeader>) {
+    let mut codes = StartCodes { data, i: 0 }.peekable();
+    let mut sequence_header = false;
+    let mut gop = None;
+    let mut first_picture: Option<PictureHeader> = None;
+    while let Some((pos, code)) = codes.next() {
+        let end = codes.peek().map_or(data.len(), |c| c.0);
+        let payload = data.get(pos.saturating_add(4).min(end)..end).unwrap_or_default();
+        match code {
+            SEQUENCE_HEADER => sequence_header = true,
+            GROUP_START => gop = GopHeader::parse(payload).ok(),
+            PICTURE_START if first_picture.is_none() => first_picture = PictureHeader::parse(payload).ok(),
+            _ => {}
+        }
+    }
+    (sequence_header, gop, first_picture)
+}
+
 fn scan(data: &[u8]) -> Scan {
-    let info: AccessUnitInfo = scan_access_unit(data);
-    let ptype = match info.pictures.first().map(|p| p.0.coding_type) {
+    let (sequence_header, gop, first_picture) = scan_headers(data);
+    let ptype = match first_picture.as_ref().map(|p| p.coding_type) {
         Some(Mpeg2Type::I) => PictureType::I,
         Some(Mpeg2Type::P) => PictureType::P,
         Some(Mpeg2Type::B) => PictureType::B,
@@ -38,10 +86,16 @@ fn scan(data: &[u8]) -> Scan {
     };
     Scan {
         ptype,
-        sequence_header: info.sequence_header.then(|| sequence_header_bytes(data)).flatten(),
-        gop: info.gop.map(|g| (g.closed_gop, g.broken_link)),
-        temporal_reference: info.pictures.first().map(|p| p.0.temporal_reference),
+        sequence_header: sequence_header.then(|| sequence_header_bytes(data)).flatten(),
+        gop: gop.map(|g| (g.closed_gop, g.broken_link)),
+        temporal_reference: first_picture.map(|p| p.temporal_reference),
     }
+}
+
+/// What the scanner reads from one packet (tests compare it with `cfa4_mpeg2v::scan_access_unit`).
+#[cfg(test)]
+pub(crate) fn scan_summary(data: &[u8]) -> (bool, Option<GopHeader>, Option<PictureHeader>) {
+    scan_headers(data)
 }
 
 /// The bytes of the first sequence header (start code to the next start code), which together
