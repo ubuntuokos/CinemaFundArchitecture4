@@ -401,7 +401,7 @@ impl MxfSource {
                 .flatten()
                 .and_then(|s| Some((cfa4_mpeg2v::probe(&s)?, cfa4_mpeg2v::scan_access_unit(&s), crate::video::mpeg2_sequence_header(&s)?)));
             // JPEG 2000: the main header of the first picture
-            j2k_hints = crate::j2k::J2kHints { rgb: p.rgb(), full_range: p.full_range() };
+            j2k_hints = crate::j2k::J2kHints { rgb: p.rgb(), full_range: p.full_range(), separate_fields: p.frame_layout == 1 };
             let j2k = (t.codec == Codec::Jpeg2000)
                 .then(|| file.read_sample(&bytes, vi, 0).ok())
                 .flatten()
@@ -409,7 +409,7 @@ impl MxfSource {
                 .map(|h| (crate::j2k::components(&h, j2k_hints), h));
             let (w, h) = match (&mpeg, &j2k) {
                 (Some((info, _, _)), _) => (info.width, info.height),
-                (_, Some((_, hd))) => (hd.width(), hd.height()),
+                (_, Some((_, hd))) => (hd.width(), if j2k_hints.separate_fields { hd.height().saturating_mul(2) } else { hd.height() }),
                 _ => (p.frame_width(), p.frame_height()),
             };
             let par = if p.aspect_ratio.is_valid() && w > 0 && h > 0 {

@@ -28,6 +28,9 @@ pub struct J2kHints {
     pub rgb: bool,
     /// Y'CbCr components use the full code range.
     pub full_range: bool,
+    /// Each picture is two field codestreams, first field on top (an MXF frame layout of
+    /// separate fields): they are woven into one frame.
+    pub separate_fields: bool,
 }
 
 /// How the components of a codestream are read.
@@ -209,6 +212,35 @@ fn after_decode(header: &Header, hints: J2kHints, image: &Image) -> Result<Compo
     components(&Header { mct: image.mct, ..header.clone() }, hints)
 }
 
+/// The codestream after the first one in `data` (EOC then SOC and SIZ; coded data never holds an
+/// 0xFF followed by a marker code, so the pair is unambiguous).
+fn second_field(data: &[u8]) -> Option<&[u8]> {
+    let at = data.windows(6).position(|w| w == [0xFF, 0xD9, 0xFF, 0x4F, 0xFF, 0x51])?;
+    data.get(at + 2..)
+}
+
+/// The frame of two fields: `top`'s rows on the even lines, `bottom`'s on the odd ones.
+fn weave(top: &Image, bottom: &Image) -> Result<Image> {
+    let same = top.width == bottom.width
+        && top.height == bottom.height
+        && top.components.len() == bottom.components.len()
+        && top.components.iter().zip(&bottom.components).all(|(a, b)| (a.width, a.height, a.precision, a.signed) == (b.width, b.height, b.precision, b.signed));
+    if !same {
+        return Err(CodecError::Unsupported("JPEG 2000: the two fields of a picture differ in size or components".into()));
+    }
+    let components = top
+        .components
+        .iter()
+        .zip(&bottom.components)
+        .map(|(a, b)| {
+            let w = (a.width as usize).max(1);
+            let data = a.data.chunks(w).zip(b.data.chunks(w)).flat_map(|(ra, rb)| ra.iter().chain(rb).copied()).collect();
+            Plane { height: a.height.saturating_mul(2), data, ..a.clone() }
+        })
+        .collect();
+    Ok(Image { width: top.width, height: top.height.saturating_mul(2), components, mct: top.mct || bottom.mct })
+}
+
 /// Our JPEG 2000 decoder: every picture is a codestream of its own.
 pub struct J2kDecoder {
     hints: J2kHints,
@@ -228,9 +260,16 @@ impl VideoDecoder for J2kDecoder {
         };
         let cs = cfa4_j2k::codestream(sample).map_err(err)?;
         let header = cfa4_j2k::parse_header(cs).map_err(err)?;
-        let image = cfa4_j2k::decode(cs).map_err(err)?;
+        let mut image = cfa4_j2k::decode(cs).map_err(err)?;
+        let mut origin = (header.x0, header.y0);
+        if self.hints.separate_fields {
+            // a missing or damaged second field repeats the first
+            let second = second_field(cs).and_then(|f| cfa4_j2k::decode(f).ok()).unwrap_or_else(|| image.clone());
+            image = weave(&image, &second)?;
+            origin.1 = origin.1.saturating_mul(2);
+        }
         let components = after_decode(&header, self.hints, &image)?;
-        Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, (header.x0, header.y0), components, self.hints)?, draft: false }])
+        Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, origin, components, self.hints)?, draft: false }])
     }
     fn flush(&mut self) -> Vec<DecodedFrame> {
         Vec::new()
@@ -317,6 +356,26 @@ mod tests {
         let f = to_video_frame(&image, (0, 0), Components::Gray, J2kHints::default()).unwrap_or_else(|e| panic!("{e}"));
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         assert!(planes[0].iter().all(|&v| v == 128));
+    }
+
+    /// Separate-field pictures: the two codestreams of one sample are woven, first field on top.
+    #[test]
+    fn separate_fields_are_woven_into_one_frame() {
+        let field = |v: i32| Image { width: 4, height: 2, components: vec![plane_of(4, 2, 8, false, v)], mct: false };
+        let opts = cfa4_j2k::EncodeOptions::lossless();
+        let mut sample = cfa4_j2k::encode(&field(16), &opts).unwrap_or_else(|e| panic!("{e}"));
+        sample.extend(cfa4_j2k::encode(&field(235), &opts).unwrap_or_else(|e| panic!("{e}")));
+        let hints = J2kHints { separate_fields: true, ..J2kHints::default() };
+        let out = J2kDecoder::new(hints).decode(&sample, 0).unwrap_or_else(|e| panic!("{e}"));
+        let f = &out[0].frame;
+        assert_eq!((f.width, f.height), (4, 4));
+        let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
+        let rows: Vec<u8> = planes[0].chunks(4).map(|r| r[0]).collect();
+        assert_eq!(rows, [16, 235, 16, 235]);
+        // a lone field is line-doubled rather than refused
+        let lone = cfa4_j2k::encode(&field(16), &opts).unwrap_or_else(|e| panic!("{e}"));
+        let out = J2kDecoder::new(hints).decode(&lone, 0).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(out[0].frame.height, 4);
     }
 
     #[test]
