@@ -1,11 +1,12 @@
 # CFA4 – beolvasztási napló
 
-**Aktuális gazda:** Claude (claude.ai munkamenet, a tulajdonos indította 2026-10-27 11:21-kor).
+**Aktuális gazda:** Claude (új claude.ai beszélgetés, nem projekt; a tulajdonos kijelölte 2026-10-31-én). A korábbi gazda (claude.ai munkamenet, 2026-10-27 11:21) archiválva van, nem aktív.
 
 Szabályok: [`coordination.md`](coordination.md). Minden kör egy sor, a legújabb felül.
 
 | Dátum | Gazda | Mi történt |
 |---|---|---|
+| 2026-10-31 | – | Gazdaváltás a tulajdonos kérésére: az új gazda egy claude.ai beszélgetés (nem projekt). A korábbi gazda munkamenete archiválva van. Az új gazdának a beszélgetésben még nincs írási hozzáférése a tárolóhoz (403 „Resource not accessible by integration”; a tároló nincs a munkamenet forrásai között; nincs bekötött GitHub-fiók), ezért ezt a sort a tulajdonos kérésére Jamie (a tulajdonos asszisztense) írta át. A hozzáférés rendezéséig a beolvasztást a tulajdonos végzi. |
 | 2026-10-30 | Claude | A #346 átadása szerint, a tulajdonos kérésére egyenként beolvasztva, mindegyik zöld teljes CI-vel a beolvasztott fejen és „Beolvasztható” megjegyzéssel: **#344** (`b715c5d`, run 41093466803) → **#338** (`0541a4a`, run 41097629670) → **#342** (`854277d`, run 41103823324). A `main` feje `f8d0f77`; a #344 előtti `main` teljes CI-je (run 41081470525) csak a #344 által javított Python-jobon bukott. Mindhárom ág automatikusan törlődött. |
 | 2026-10-30 | Claude | **#334** (EGM tervezési-átnézési leírás, csak dokumentáció): teljes CI zöld a `82c71de` fejen, mind a 9 job (run 40824027165). 2026-10-29 23:52 UTC-kor `ubuntuokos` névvel beolvadt ezen a fejen, nem a gazda által; az ága törlődött. Utána beolvadt még a #335 és a #330; a `main` feje `973a73e`. |
 | 2026-10-27 | Claude | A `main` @ `24ba4f7` teljes CI-je zöld, mind a 9 job (run 40576600633). Esti ágellenőrzés beállítva (ütemezett feladat, naponta 20:40, csak olvas). |
