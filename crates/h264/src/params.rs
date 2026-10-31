@@ -516,9 +516,6 @@ impl Sps {
     }
 
     pub fn check_supported(&self) -> Result<()> {
-        if !self.frame_mbs_only {
-            return unsupported("interlaced (field / MBAFF) coding");
-        }
         if self.chroma_format_idc == 0 {
             // the decoding paths exist (chroma is skipped) but no 4:0:0 test stream is available yet (#279)
             return unsupported("chroma_format_idc 0 (monochrome)");
