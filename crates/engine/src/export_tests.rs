@@ -191,6 +191,36 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
             }
             continue;
         }
+        if fmt == "dcp" {
+            // a folder: the track files, playlist, packing list, asset map and volume index
+            assert_eq!(out, path, "{name}: the folder keeps its name");
+            let files = files_in(Path::new(&out));
+            assert_eq!(files.len(), 6, "{name}: {files:?}");
+            assert!(files.contains(&"ASSETMAP.xml".to_string()) && files.contains(&"VOLINDEX.xml".to_string()), "{name}: {files:?}");
+            let pic = files.iter().find(|f| f.starts_with("j2c_")).unwrap();
+            let snd = files.iter().find(|f| f.starts_with("pcm_")).unwrap();
+            let size = match (settings["dcpResolution"].as_str(), settings["dcpAspect"].as_str()) {
+                (Some("4k"), Some("scope")) => (4096, 1716),
+                (Some("4k"), _) => (3996, 2160),
+                (_, Some("scope")) => (2048, 858),
+                _ => (1998, 1080),
+            };
+            if let Some(j) = probe(&Path::new(&out).join(pic).to_string_lossy()) {
+                let v = stream(&j, "video").unwrap();
+                assert_eq!((v["codec_name"].as_str(), v["pix_fmt"].as_str()), (Some("jpeg2000"), Some("xyz12le")), "{name}");
+                assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), size, "{name}");
+                assert_eq!(v["r_frame_rate"], "24/1", "{name}: 23.976 becomes 24");
+            }
+            if let Some(j) = probe(&Path::new(&out).join(snd).to_string_lossy()) {
+                let a = stream(&j, "audio").unwrap();
+                assert_eq!(
+                    (a["codec_name"].as_str(), a["sample_rate"].as_str(), a["channels"].as_u64()),
+                    (Some("pcm_s24le"), Some("48000"), Some(6)),
+                    "{name}"
+                );
+            }
+            continue;
+        }
         assert!(Path::new(&out).exists(), "{name}: {out}");
         let Some(j) = probe(&out) else { continue };
         let fmt_name = j["format"]["format_name"].as_str().unwrap();
