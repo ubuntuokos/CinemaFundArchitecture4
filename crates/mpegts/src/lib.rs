@@ -22,7 +22,9 @@
 
 mod es;
 pub use es::{FrameInfo, frame_bytes, frame_info};
+mod mux;
 mod pes;
+pub use mux::{MuxCodec, MuxError, MuxFormat, MuxResult, Muxer};
 mod ps;
 mod ts;
 
@@ -354,6 +356,8 @@ impl Unwrap {
     }
 }
 
+#[cfg(test)]
+mod mux_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
