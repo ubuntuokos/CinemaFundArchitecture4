@@ -305,10 +305,15 @@ pub fn pred16x16<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize, 
 }
 
 /// Chroma intra prediction for a 4:2:0 (8x8 block at chroma (x, y)) or, with `h` = 16, a 4:2:2
-/// (8x16) macroblock, 8.3.4. Modes: 0 DC, 1 horizontal, 2 vertical, 3 plane.
-pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize, mode: u8, a: Avail, d: Depth, h: usize) {
+/// (8x16) macroblock, 8.3.4. Modes: 0 DC, 1 horizontal, 2 vertical, 3 plane. `a.left` is the
+/// availability of the upper half of the left column and `left_lower` that of the lower half
+/// (they differ only in MBAFF frames with constrained intra prediction).
+#[allow(clippy::too_many_arguments)]
+pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize, mode: u8, a: Avail, left_lower: bool, d: Depth, h: usize) {
     const W: usize = 8;
     let h = if h == 16 { 16 } else { 8 };
+    let left_upper = a.left;
+    let a = Avail { left: a.left && left_lower, ..a };
     let mut top = [0i32; W];
     let mut left = [0i32; 16];
     if a.top {
@@ -317,7 +322,7 @@ pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize
             *t = v.to_i32();
         }
     }
-    if a.left {
+    if left_upper || left_lower {
         for (i, l) in left.iter_mut().enumerate().take(h) {
             let Some(v) = x.checked_sub(1).and_then(|lx| plane.get((y + i) * stride + lx)) else { return };
             *l = v.to_i32();
@@ -331,6 +336,7 @@ pub fn pred_chroma<S: Sample>(plane: &mut [S], stride: usize, x: usize, y: usize
                 for bx in 0..W / 4 {
                     let st: i32 = top[bx * 4..bx * 4 + 4].iter().sum();
                     let sl: i32 = left[by * 4..by * 4 + 4].iter().sum();
+                    let a = Avail { left: if by * 4 < h / 2 { left_upper } else { left_lower }, ..a };
                     // 8.3.4.1-3: blocks at (0, 0) or with xO, yO > 0 use both edges, the rest of the
                     // top row prefers the top edge, the rest of the left column the left edge
                     let dc = if (bx == 0 && by == 0) || (bx > 0 && by > 0) {
@@ -489,7 +495,7 @@ mod tests {
             p[3 * s + 4 + i] = if i < 4 { 40 } else { 80 };
             p[(4 + i) * s + 3] = if i < 4 { 8 } else { 16 };
         }
-        pred_chroma(&mut p, s, 4, 4, 0, ALL, D8, 8);
+        pred_chroma(&mut p, s, 4, 4, 0, ALL, true, D8, 8);
         assert_eq!(p[4 * s + 4], (160 + 32 + 4) >> 3); // top-left block: both
         assert_eq!(p[4 * s + 8], 80); // top-right block: top only
         assert_eq!(p[8 * s + 4], 16); // bottom-left: left only
