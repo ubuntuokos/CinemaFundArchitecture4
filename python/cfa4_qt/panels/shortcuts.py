@@ -326,6 +326,8 @@ class Recorder(QWidget):
         self.setFixedSize(1, 1)
 
     def event(self, e: QEvent) -> bool:
+        if not getattr(self.parent(), "recording", None):
+            return super().event(e)  # only while a Shortcut cell records
         if e.type() == QEvent.Type.ShortcutOverride:
             e.accept()
             return True
@@ -731,6 +733,8 @@ class ShortcutsDialog(QDialog):
         if rec is None:
             return
         self.recording = None
+        # recording is over: the keyboard goes back to the dialog (Esc, Enter, Tab work again)
+        self.list.setFocus(Qt.FocusReason.OtherFocusReason)
         if key == Qt.Key.Key_Escape and not (mods & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier | Qt.KeyboardModifier.ShiftModifier)):
             self.message = tr("Cancelled")
             self._show_message()

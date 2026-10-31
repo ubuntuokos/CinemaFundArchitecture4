@@ -1835,6 +1835,13 @@ def test_real_engine_keyboard_shortcuts_editor_as_egui(app, tmp_path: Path, monk
         d.list.itemClicked.emit(d.row("tool.razor"), 2)
         QtTest.QTest.keyClick(d.recorder, Qt.Key.Key_Escape)
         assert d.message_label.text() == "Cancelled"
+        # recording over: the recorder lets keys through and the keyboard is back on the list
+        # (Codex review: Esc / Enter / Tab were swallowed until a click)
+        assert d.focusWidget() is d.list, d.focusWidget()
+        over = QtGui.QKeyEvent(QtCore.QEvent.Type.ShortcutOverride, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
+        over.ignore()
+        d.recorder.event(over)
+        assert not over.isAccepted(), "no shortcut override outside recording"
         d.list.itemClicked.emit(d.row("tool.razor"), 2)
         QtTest.QTest.keyClick(d.recorder, Qt.Key.Key_F7, Qt.KeyboardModifier.AltModifier)
         assert wait_until(app, lambda: razor() == ["C", "Alt+F7"], 10_000), razor()
@@ -6402,9 +6409,21 @@ def test_real_engine_quick_export_as_egui(app, tmp_path: Path):
         assert q.path == str(tmp_path / "Final.mp4") and q.location.text() == str(tmp_path)
         messages: list[str] = []
         q.status.connect(messages.append)
+        # an existing file is replaced only once the user agrees (Codex review: it was overwritten)
+        (tmp_path / "Final.mp4").write_bytes(b"keep me")
+        asked: list = []
+        q.confirm_replace = lambda p: (asked.append(p), False)[1]
         go.click()
         assert not q.isVisible()
+        assert wait_until(app, lambda: messages, 20_000) and messages == ["Quick Export cancelled"], messages
+        assert asked == [tmp_path / "Final.mp4"] and (tmp_path / "Final.mp4").read_bytes() == b"keep me"
+        messages.clear()
+        q.confirm_replace = lambda p: (asked.append(p), True)[1]
+        button.click()
+        assert wait_until(app, lambda: q.isVisible(), 5_000)
+        q.findChild(QtWidgets.QPushButton, "quickExport.go").click()
         assert wait_until(app, lambda: messages, 20_000) and messages[0] == f"Quick Export: {tmp_path / 'Final.mp4'}", messages
+        assert len(asked) == 2
         got: list = []
         engine.execute("export.presets.list", {}, on_reply=lambda r, _b: got.append(r))
         assert wait_until(app, lambda: got, 10_000) and got[0]["quickPreset"] == "Match Source – Adaptive High Bitrate"

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QPoint, Qt, Signal
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QToolButton,
@@ -29,6 +31,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..i18n import fmt, tr
+from .export import existing_outputs, sidecar_output
 
 DEFAULT_PRESET = "Match Source – Adaptive High Bitrate"  # the engine names its default in `export.presets.list`
 QUICK_CATEGORIES = ("Match Source", "Web & Social")
@@ -84,6 +87,8 @@ class QuickExport(QFrame):
         self.default_dir = ""
         # the save dialog (tests replace it): (title, filter, start path) -> chosen path or ""
         self.pick_save: Callable[[str, str, str], str] = lambda title, filt, start: QFileDialog.getSaveFileName(self, title, start, filt)[0]
+        # asks before replacing an existing file (tests replace it): (the first existing file) -> replace?
+        self.confirm_replace: Callable[[Path], bool] = self._ask_replace
         self.setFixedWidth(340)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(10, 8, 10, 10)
@@ -257,12 +262,43 @@ class QuickExport(QFrame):
             self.show()
 
     def export(self) -> None:
+        """Export: the engine names the files it would write; existing ones are replaced only
+        once the user agrees (the export truncates them when it starts)."""
         self._typed()
         params = {"preset": self.preset, "path": self.path, "sequence": self.sequence.get("id")}
-        if self.engine is not None:
-            def done(result: Any, _b: Any = None) -> None:
-                path = result.get("path") if isinstance(result, dict) else None
-                self.status.emit(fmt("Quick Export: {path}", path=str(path or self.path)))
-
-            self.engine.execute("export.quick", params, on_reply=done, on_error=lambda m: self.status.emit(str(m)))
         self.close()
+        if self.engine is not None:
+            self.engine.execute("export.resolve", params, on_reply=lambda r, _b: self._start(params, r),
+                                on_error=lambda m: self.status.emit(str(m)))
+
+    def _start(self, params: dict[str, Any], resolved: Any) -> None:
+        settings = resolved.get("settings") if isinstance(resolved, dict) else None
+        settings = settings if isinstance(settings, dict) else {}
+        target = settings.get("path") if isinstance(settings.get("path"), str) and settings.get("path") else str(params["path"])
+        out = Path(target).expanduser()
+        try:
+            existing = existing_outputs(out, str(settings.get("format") or ""))
+            sidecar = sidecar_output(target, settings.get("captionSidecar"))
+            if sidecar is not None and sidecar.exists() and sidecar not in existing:
+                existing.append(sidecar)
+        except OSError as e:
+            # files there could still be overwritten without asking
+            self.status.emit(fmt("Cannot check the output folder for files to replace: {error}", error=str(e)))
+            return
+        if existing and not self.confirm_replace(existing[0]):
+            self.status.emit(tr("Quick Export cancelled"))
+            return
+
+        def done(result: Any, _b: Any = None) -> None:
+            path = result.get("path") if isinstance(result, dict) else None
+            self.status.emit(fmt("Quick Export: {path}", path=str(path or self.path)))
+
+        self.engine.execute("export.quick", params, on_reply=done, on_error=lambda m: self.status.emit(str(m)))
+
+    def _ask_replace(self, existing: Path) -> bool:
+        box = QMessageBox(QMessageBox.Icon.Warning, tr("Quick Export"), fmt("'{name}' already exists. Replace it?", name=existing.name),
+                          parent=self.parentWidget())
+        box.setObjectName("quickExport.replace")
+        box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        return box.exec() == QMessageBox.StandardButton.Yes
