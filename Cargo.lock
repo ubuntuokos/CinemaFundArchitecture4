@@ -1009,6 +1009,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-vp9",
  "image",
  "rayon",
