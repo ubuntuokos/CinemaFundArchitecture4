@@ -435,16 +435,20 @@ pub struct Report {
 }
 
 /// A row's identity: one capability on one backend, for all of its routes (no route named) or
-/// for the concrete routes named. Separate route sets of one backend (`nvenc`, `vaapi`) keep
-/// separate outcomes and limits.
+/// for one concrete route. Separate routes of one backend (`nvenc`, `vaapi`) keep separate
+/// outcomes and limits; an entry or probe naming several routes stands for one row per route.
 type EntryId = (Key, Backend, Vec<String>);
 
-/// Routes as a row stores them: sorted, without repeats.
-fn normalized(routes: &[String]) -> Vec<String> {
+/// The row identities an entry or probe naming `routes` covers: one per route, or the
+/// whole-backend row when it names none.
+fn route_ids(key: Key, backend: Backend, routes: &[String]) -> Vec<EntryId> {
+    if routes.is_empty() {
+        return vec![(key, backend, Vec::new())];
+    }
     let mut r = routes.to_vec();
     r.sort();
     r.dedup();
-    r
+    r.into_iter().map(|route| (key, backend, vec![route])).collect()
 }
 
 /// The capability registry.
@@ -535,9 +539,10 @@ impl Registry {
         if !entry.key.is_valid() {
             return Err(RegistryError::InvalidKey(entry.key));
         }
-        let mut entry = entry;
-        entry.routes = normalized(&entry.routes);
-        self.base.insert((entry.key, entry.backend, entry.routes.clone()), entry);
+        for id in route_ids(entry.key, entry.backend, &entry.routes) {
+            let routes = id.2.clone();
+            self.base.insert(id, Entry { routes, ..entry.clone() });
+        }
         self.rebuild();
         Ok(())
     }
@@ -576,7 +581,7 @@ impl Registry {
     }
 
     /// Apply the probes (in canonical order) to the inserted rows. A probe that names routes sets
-    /// the row of exactly those routes; one that names none sets every row of its backend (or the
+    /// the row of each of them; one that names none sets every row of its backend (or the
     /// whole-backend row, when there is none yet).
     fn rebuild(&mut self) {
         let mut entries = self.base.clone();
@@ -591,7 +596,7 @@ impl Registry {
                     entries.range(generic.clone()..).take_while(|((k, b, _), _)| *k == p.key && *b == p.backend).map(|(id, _)| id.clone()).collect();
                 if existing.is_empty() { vec![generic.clone()] } else { existing }
             } else {
-                vec![(p.key, p.backend, normalized(&p.routes))]
+                route_ids(p.key, p.backend, &p.routes)
             };
             for id in targets {
                 // limits the probe does not state stay those of the row, or of the whole backend
