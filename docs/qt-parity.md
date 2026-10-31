@@ -102,6 +102,6 @@ The Qt Inspector is named Properties, as in egui (3.22).
 | 5.1 | Play/stop, step, start/end | ✅ | transport + Space |
 | 5.2 | Sound during playback | 🟡 | `audio.render` → QAudioSink; A/V sync not yet measured |
 | 5.3 | J/K/L shuttle, play around, loop in/out | 🟡 | J/K/L on the focused monitor (again in the same direction doubles the speed, up to 8×; sound at 1× only), Play In to Out (Alt+K, rests at Out), Loop (the marked range, or all) (`test_program_monitor_controls_as_egui`); Play Around (trim mode) and sound while shuttling missing |
-| 5.4 | Playback resolution, draft decoding, dropped-frame stats | ❌ | |
+| 5.4 | Playback resolution, draft decoding, dropped-frame stats | 🟡 | Playback and Paused Resolution (Full … 1/16), High Quality Playback, the dropped-frame light; draft decoding as egui's (Settings ▸ Playback ▸ Draft decoding: `frame.render {draft}` while playing at 1/2 or lower, never paused or at Full; `test_real_engine_draft_decoding_while_playing_at_reduced_resolution`); the shown / dropped counts in `perf.stats` missing |
 | 5.5 | GPU frame path (no RGBA copy per frame) | ❌ | frames travel as RGBA8 over a pipe; shared memory/dmabuf later |
 | 5.6 | Trim monitor, dynamic trimming | ❌ | |
