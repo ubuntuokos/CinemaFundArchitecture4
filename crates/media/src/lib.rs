@@ -179,7 +179,7 @@ pub type SharedSource = Arc<dyn MediaSource>;
 /// File extensions we recognise at import (the media browser filters on these).
 pub const STILL_EXTENSIONS: &[&str] =
     &["png", "jpg", "jpeg", "gif", "webp", "heic", "heif", "hif", "tif", "tiff", "bmp", "tga", "dpx", "exr", "hdr", "jxl", "dng"];
-pub const AUDIO_EXTENSIONS: &[&str] = &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "flac", "ogg", "opus"];
+pub const AUDIO_EXTENSIONS: &[&str] = &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "dts", "dtshd", "flac", "ogg", "opus"];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
 ];

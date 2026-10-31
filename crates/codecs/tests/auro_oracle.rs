@@ -4,8 +4,7 @@
 //!
 //! The PCM channel tests are Matroska files with `A_MS/ACM` audio, which CFA4's Matroska reader
 //! does not take yet (#320); ffmpeg copies their PCM into a WAV first, so they test the WAV
-//! path. A raw `.dts` file does not open either (#321); the Amplitude16 track is tested in
-//! its Matroska file.
+//! path. The Amplitude16 track is tested in its Matroska file and as a raw `.dts` stream (#321).
 //!
 //! The carriers are not in the repository. Point `CFA4_AURO_DIR` at the project's
 //! `samples/auro/` folder (Amplitude16 DTS-HD Master Audio, and in `yandex/` the FLAC, PCM and
@@ -24,6 +23,7 @@ use cfa4_media::SharedSource;
 /// (file under `CFA4_AURO_DIR`, restored layout, restored channels, carrier channels)
 const CASES: &[(&str, &str, u32, usize)] = &[
     ("Amplitude16_Auro-3D_2.35.mkv", "7.1_5H_1T", 14, 8),
+    ("Amplitude16_Auro-3D_dtshdma_7.1.dts", "7.1_5H_1T", 14, 8),
     ("yandex/[Auro-3D] Channel Test - Noise {FHD SDR & Auro-3D PCM 9.1}.mkv", "5.1_4H", 10, 6),
     ("yandex/[Auro-3D] Channel Test - Noise {FHD SDR & Auro-3D PCM 11.1}.mkv", "5.1_5H_1T", 12, 6),
     ("yandex/[Auro-3D] Channel Test - Noise {FHD SDR & Auro-3D PCM 13.1}.mkv", "7.1_5H_1T", 14, 8),
