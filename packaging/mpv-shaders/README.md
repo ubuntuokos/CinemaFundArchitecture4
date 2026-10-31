@@ -22,19 +22,24 @@ GPL-3.0-or-later like the rest of CFA4.
 ## Use
 
 ```sh
-mpv --glsl-shader=/path/to/cfa4-black-bar-filler.glsl \
+mpv --vo=gpu-next --glsl-shader=/path/to/cfa4-black-bar-filler.glsl \
     --glsl-shader-opts=content_aspect=2.39,warp=1 film.mkv
 ```
 
-Several shaders can be chained with `--glsl-shaders-append=…`. The parameters (`//!PARAM` blocks
-at the top of each file, with their ranges and defaults) are set with `--glsl-shader-opts` (mpv
-0.35 or newer), or by editing the default value under the block. Positions are fractions of the
+The shaders need mpv's **`gpu-next`** video output (mpv 0.35 or newer; libplacebo): their
+parameters are `//!PARAM` blocks, which the older `--vo=gpu` does not understand, so editing the
+defaults does not make them work there. Several shaders can be chained with
+`--glsl-shaders-append=…`. The parameters (at the top of each file, with their ranges and
+defaults) are set with `--glsl-shader-opts`, or by editing the default value under the block. Positions are fractions of the
 frame (0 to 1, origin at the top left) unless the description says otherwise.
 
 - **Dual projector convergence:** `layout` 0 = over/under, 1 = side by side; `shift_x`, `shift_y`
   in % of the view, `scale` in %. The first view (top or left) is the reference.
 - **Black bar filler:** `content_aspect` is the picture's own aspect ratio inside the bars (2.39
   for scope in a 16:9 frame); `warp` 0 is a uniform stretch, 1 keeps the middle at its own scale.
+  The shader sees stored pixels, so for anamorphic video (non-square pixels, e.g. a 720×576 16:9
+  DVD) set `frame_aspect` to the displayed aspect of the whole frame (1.7778); 0 takes it from the
+  pixel size.
 - **Spot correction:** `center_x`, `center_y`, `radius_x`, `radius_y`, `feather`, then
   `gain_r/g/b` (multipliers) and `offset_r/g/b` (added after the gain). The values act on the
   video signal as decoded, before mpv's colour management.

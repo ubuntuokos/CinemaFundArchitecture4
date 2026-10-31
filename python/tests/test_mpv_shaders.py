@@ -8,10 +8,12 @@ filter or a Vulkan device (lavapipe is enough) is missing.
 
 from __future__ import annotations
 
+import functools
 import math
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -82,17 +84,17 @@ def with_params(name: str, values: dict[str, float], out: Path) -> Path:
     return out
 
 
-def render(shader: Path, w: int, h: int, blue: float = 0.5) -> list[list[tuple[float, float, float]]] | None:
-    """The coordinate ramp through `shader`, or None when the GPU path is unavailable."""
-    ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None:
-        return None
+def ramp_frame(w: int, h: int, blue: float) -> bytes:
     src = bytearray()
     for y in range(h):
         for x in range(w):
             src += bytes((round(255 * x / (w - 1)), round(255 * y / (h - 1)), round(255 * blue), 255))
+    return bytes(src)
+
+
+def run_ffmpeg(shader: Path, w: int, h: int, frame: bytes) -> subprocess.CompletedProcess[bytes]:
     cmd = [
-        ffmpeg,
+        str(shutil.which("ffmpeg")),
         "-hide_banner",
         "-loglevel",
         "error",
@@ -112,15 +114,38 @@ def render(shader: Path, w: int, h: int, blue: float = 0.5) -> list[list[tuple[f
         "rawvideo",
         "pipe:1",
     ]
-    try:
-        # three frames, the last one is read: on lavapipe the first downloaded frame can start with
-        # a few stale bytes
-        r = subprocess.run(cmd, input=bytes(src) * 3, capture_output=True, timeout=120, check=False)
-    except (OSError, subprocess.TimeoutExpired):
-        return None
+    # three frames, the last one is read: on lavapipe the first downloaded frame can start with
+    # a few stale bytes
+    return subprocess.run(cmd, input=frame * 3, capture_output=True, timeout=120, check=False)
+
+
+@functools.cache
+def backend() -> bool:
+    """Whether FFmpeg, its libplacebo filter and a Vulkan device run a pass-through user shader."""
+    if shutil.which("ffmpeg") is None:
+        return False
+    with tempfile.TemporaryDirectory() as d:
+        probe = Path(d) / "probe.glsl"
+        probe.write_text(
+            "//!HOOK MAIN\n//!BIND HOOKED\nvec4 hook() { return HOOKED_tex(HOOKED_pos); }\n", encoding="utf-8"
+        )
+        try:
+            r = run_ffmpeg(probe, 8, 8, ramp_frame(8, 8, 0.5))
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+    return r.returncode == 0 and len(r.stdout) == 3 * 8 * 8 * 4
+
+
+def render(shader: Path, w: int, h: int, blue: float = 0.5) -> list[list[tuple[float, float, float]]]:
+    """The coordinate ramp through `shader`. Once the backend works, any failure is the shader's."""
+    r = run_ffmpeg(shader, w, h, ramp_frame(w, h, blue))
     size = w * h * 4
-    if r.returncode != 0 or len(r.stdout) != 3 * size:
-        return None
+    assert r.returncode == 0 and len(r.stdout) == 3 * size, (
+        shader.name,
+        r.returncode,
+        len(r.stdout),
+        r.stderr.decode(errors="replace"),
+    )
     px = r.stdout[2 * size :]
     return [[tuple(px[(y * w + x) * 4 + k] / 255.0 for k in range(3)) for x in range(w)] for y in range(h)]
 
@@ -131,10 +156,9 @@ def ramp(u: float, n: int) -> float:
 
 
 def gpu(name: str, values: dict[str, float], w: int, h: int, tmp: Path, blue: float = 0.5):
-    out = render(with_params(name, values, tmp / name), w, h, blue)
-    if out is None:
+    if not backend():
         pytest.skip("FFmpeg with libplacebo and a Vulkan device is needed")
-    return out
+    return render(with_params(name, values, tmp / name), w, h, blue)
 
 
 def compare(out, expect, skip=lambda x, y: False) -> None:
@@ -208,6 +232,21 @@ def test_black_bar_filler_stretches_scope_over_the_bars(tmp_path: Path, warp: fl
         # the middle keeps its 1:1 scale: one row on from the centre, one row on in the picture
         mid = bar_profile(2 / h, c, warp) * h / 2
         assert abs(mid - 1.0) < 1e-3
+
+
+def test_black_bar_filler_uses_the_displayed_aspect_of_anamorphic_frames(tmp_path: Path) -> None:
+    # 120x96 stored pixels shown at 16:9 (non-square pixels, as on a 16:9 PAL DVD)
+    w, h = 120, 96
+    out = gpu("cfa4-black-bar-filler.glsl", {"content_aspect": 2.39, "frame_aspect": 16 / 9}, w, h, tmp_path)
+    c = (16 / 9) / 2.39
+
+    def expect(x, y):
+        v = 0.5 + 0.5 * bar_profile(2 * (y + 0.5) / h - 1, c, 1.0)
+        return (ramp((x + 0.5) / w, w), ramp(v, h), 0.5)
+
+    compare(out, expect)
+    # the top row shows the picture's top edge, not a row from inside it
+    assert out[0][0][1] < 0.5 - c / 2 + 3 / h
 
 
 def test_black_bar_filler_leaves_pillarbox_free_frames_alone(tmp_path: Path) -> None:

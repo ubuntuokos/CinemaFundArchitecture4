@@ -6,7 +6,8 @@
 // A picture of aspect `content_aspect` letterboxed (or pillarboxed) in the frame is stretched over
 // the black bars. The stretch follows a sine profile, as if the picture were wrapped on a cylinder:
 // the middle keeps its proportions as far as possible and the edges are stretched the most.
-// `warp` = 0 is a plain uniform stretch, 1 is the strongest edge-weighted stretch.
+// `warp` = 0 is a plain uniform stretch, 1 is the strongest edge-weighted stretch. The frame's
+// aspect comes from its pixel size unless `frame_aspect` gives the displayed one (anamorphic video).
 // Clean-room CFA4 code, see README.md.
 
 //!PARAM content_aspect
@@ -15,6 +16,13 @@
 //!MINIMUM 0.5
 //!MAXIMUM 4.0
 2.39
+
+//!PARAM frame_aspect
+//!DESC Displayed aspect ratio of the whole frame; 0 = from the pixel size (set it for anamorphic video, e.g. 1.7778 for 16:9 DVD)
+//!TYPE float
+//!MINIMUM 0.0
+//!MAXIMUM 4.0
+0.0
 
 //!PARAM warp
 //!DESC 0 = uniform stretch, 1 = keep the middle, stretch the edges
@@ -59,11 +67,12 @@ float profile(float t, float c, float a) {
 
 vec4 hook() {
     vec2 pos = HOOKED_pos;
-    float frame_aspect = HOOKED_size.x / max(HOOKED_size.y, 1.0);
+    // the texture size is in stored pixels, which are not square in anamorphic video
+    float fa = frame_aspect > 0.0 ? frame_aspect : HOOKED_size.x / max(HOOKED_size.y, 1.0);
     float ca = max(content_aspect, 0.01);
-    bool letterbox = ca >= frame_aspect;
+    bool letterbox = ca >= fa;
     // the share of the frame the picture covers along the barred axis
-    float c = letterbox ? frame_aspect / ca : ca / frame_aspect;
+    float c = letterbox ? fa / ca : ca / fa;
     if (c >= 1.0) {
         return HOOKED_tex(pos);
     }
