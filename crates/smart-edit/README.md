@@ -28,9 +28,10 @@ Rules:
 - A capability without an entry is unsupported. Only `Supported` (tested) entries allow an
   operation; `Experimental` ones only with `Policy { allow_experimental: true }`.
 - Backends are tried in a fixed order: `Native` (CFA4's own Rust crates), `Platform` (hardware),
-  `Gstreamer`, `Ffmpeg`. No FFmpeg entry is registered: execution is CFA4's own Rust code
-  (owner decision 2026-10-27, `docs/audit/smart-edit-baseline.md` §3) and ffmpeg stays an
-  external validation oracle (AGENTS.md §2).
+  `Gstreamer`, `Ffmpeg`. No FFmpeg entry is registered: Smart Cut / Smart Render runs on CFA4's
+  own Rust code (owner decision 2026-10-27, `docs/audit/smart-edit-baseline.md` §3) and ffmpeg
+  is its validation oracle. ADR 0005 allows an FFmpeg ≥ 9.0.2 backend (`cfa4-ffmpeg`, through
+  `cfa4-route`); its rows can be added once that crate exists and the owner decides so.
 - Probes are applied in a canonical order; when two disagree about one capability, the unavailable
   one wins. The same entries and probes always give the same decisions and the same report.
 - A Smart Render also needs an encoder whose limits (profile, chroma subsampling, bit depth) fit
