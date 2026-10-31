@@ -253,35 +253,33 @@ fn colorimetry_item(ul: Option<cfa4_mxf::Ul>, group: u8) -> Option<u8> {
         .flatten()
 }
 
-/// `base` with the transfer, primaries and (unless `keep_matrix`) Y'CbCr matrix the picture
-/// descriptor signals; labels CFA4 has no curve or gamut for leave `base`'s.
-fn descriptor_color(p: &cfa4_mxf::PictureInfo, mut base: cfa4_color::ColorInfo, keep_matrix: bool) -> cfa4_color::ColorInfo {
+/// The colorimetry the picture descriptor signals that CFA4 has a curve, gamut or matrix for.
+fn descriptor_colorimetry(p: &cfa4_mxf::PictureInfo) -> crate::j2k::Signalled {
     use cfa4_color::{Matrix, Primaries, Transfer};
-    match colorimetry_item(p.transfer_characteristic, 1) {
-        Some(1..=5 | 9) => base.transfer = Transfer::Bt709,
-        Some(6) => base.transfer = Transfer::Linear,
-        Some(8) => base.transfer = Transfer::Srgb,
-        Some(0x0A) => base.transfer = Transfer::Pq,
-        Some(0x0B) => base.transfer = Transfer::Hlg,
-        _ => {}
+    crate::j2k::Signalled {
+        transfer: match colorimetry_item(p.transfer_characteristic, 1) {
+            Some(1..=5 | 9) => Some(Transfer::Bt709),
+            Some(6) => Some(Transfer::Linear),
+            Some(8) => Some(Transfer::Srgb),
+            Some(0x0A) => Some(Transfer::Pq),
+            Some(0x0B) => Some(Transfer::Hlg),
+            _ => None,
+        },
+        primaries: match colorimetry_item(p.color_primaries, 3) {
+            Some(1) => Some(Primaries::Bt601_525),
+            Some(2) => Some(Primaries::Bt601_625),
+            Some(3) => Some(Primaries::Bt709),
+            Some(4) => Some(Primaries::Bt2020),
+            Some(6) => Some(Primaries::P3D65),
+            _ => None,
+        },
+        matrix: match colorimetry_item(p.coding_equations, 2) {
+            Some(1) => Some(Matrix::Bt601),
+            Some(2) => Some(Matrix::Bt709),
+            Some(6) => Some(Matrix::Bt2020Ncl),
+            _ => None,
+        },
     }
-    match colorimetry_item(p.color_primaries, 3) {
-        Some(1) => base.primaries = Primaries::Bt601_525,
-        Some(2) => base.primaries = Primaries::Bt601_625,
-        Some(3) => base.primaries = Primaries::Bt709,
-        Some(4) => base.primaries = Primaries::Bt2020,
-        Some(6) => base.primaries = Primaries::P3D65,
-        _ => {}
-    }
-    if !keep_matrix {
-        match colorimetry_item(p.coding_equations, 2) {
-            Some(1) => base.matrix = Matrix::Bt601,
-            Some(2) => base.matrix = Matrix::Bt709,
-            Some(6) => base.matrix = Matrix::Bt2020Ncl,
-            _ => {}
-        }
-    }
-    base
 }
 
 fn prores_name(profile: Option<u8>) -> &'static str {
@@ -401,7 +399,8 @@ impl MxfSource {
                 .flatten()
                 .and_then(|s| Some((cfa4_mpeg2v::probe(&s)?, cfa4_mpeg2v::scan_access_unit(&s), crate::video::mpeg2_sequence_header(&s)?)));
             // JPEG 2000: the main header of the first picture
-            j2k_hints = crate::j2k::J2kHints { rgb: p.rgb(), full_range: p.full_range(), separate_fields: p.frame_layout == 1 };
+            j2k_hints =
+                crate::j2k::J2kHints { rgb: p.rgb(), full_range: p.full_range(), separate_fields: p.frame_layout == 1, signalled: descriptor_colorimetry(&p) };
             let j2k = (t.codec == Codec::Jpeg2000)
                 .then(|| file.read_sample(&bytes, vi, 0).ok())
                 .flatten()
@@ -476,17 +475,9 @@ impl MxfSource {
             }
             let mut color = cfa4_color::ColorInfo { matrix: cfa4_frame::default_matrix(w, h), ..cfa4_color::ColorInfo::REC709 };
             if let Some((Ok(c), hd)) = &j2k {
-                // the decoder sets each frame's colour (R'G'B' and X'Y'Z' become Y'CbCr); the
-                // codestream has none, so the descriptor's colorimetry holds for the samples it
-                // passes through (R'G'B' keeps its transfer and primaries but gets our matrix)
+                // the decoder sets each frame's colour from what it decoded (R'G'B' and X'Y'Z'
+                // become Y'CbCr) and the descriptor's colorimetry in the hints
                 color = crate::j2k::color(*c, w, h, j2k_hints);
-                if *c != crate::j2k::Components::Xyz {
-                    let signalled = descriptor_color(&p, color, *c == crate::j2k::Components::Rgb);
-                    if signalled != color {
-                        color = signalled;
-                        explicit_color = Some(color);
-                    }
-                }
                 let depth = hd.components.first().map_or(8, |c| c.precision);
                 pixel_format = match c {
                     crate::j2k::Components::Ycbcr(ch) => format!("YUV {} {depth}-bit", ch.label()),
@@ -754,11 +745,10 @@ mod tests {
         assert!((secs - 107_892.0 * 1001.0 / 30000.0).abs() < 0.05, "{secs}");
     }
 
-    /// SMPTE RP 224 colorimetry labels: a BT.2020 / PQ descriptor overrides the defaults; R'G'B'
-    /// keeps the matrix it is converted with.
+    /// SMPTE RP 224 colorimetry labels: BT.2020 / PQ is read, unknown labels are not.
     #[test]
-    fn descriptor_colorimetry_overrides_the_defaults() {
-        use cfa4_color::{ColorInfo, Matrix, Primaries, Transfer};
+    fn descriptor_colorimetry_is_read() {
+        use cfa4_color::{Matrix, Primaries, Transfer};
         let label = |v: u8, group: u8, item: u8| Some(cfa4_mxf::Ul([0x06, 0x0E, 0x2B, 0x34, 4, 1, 1, v, 4, 1, 1, 1, group, item, 0, 0]));
         let p = cfa4_mxf::PictureInfo {
             transfer_characteristic: label(0x0D, 1, 0x0A),
@@ -766,12 +756,9 @@ mod tests {
             color_primaries: label(0x0D, 3, 4),
             ..Default::default()
         };
-        let c = descriptor_color(&p, ColorInfo::REC709, false);
-        assert_eq!((c.transfer, c.primaries, c.matrix), (Transfer::Pq, Primaries::Bt2020, Matrix::Bt2020Ncl));
-        let c = descriptor_color(&p, ColorInfo::REC709, true);
-        assert_eq!((c.transfer, c.primaries, c.matrix), (Transfer::Pq, Primaries::Bt2020, Matrix::Bt709));
-        // unknown or missing labels leave the base
+        let s = descriptor_colorimetry(&p);
+        assert_eq!((s.transfer, s.primaries, s.matrix), (Some(Transfer::Pq), Some(Primaries::Bt2020), Some(Matrix::Bt2020Ncl)));
         let p = cfa4_mxf::PictureInfo { transfer_characteristic: label(1, 1, 0x7F), ..Default::default() };
-        assert_eq!(descriptor_color(&p, ColorInfo::REC709, false), ColorInfo::REC709);
+        assert_eq!(descriptor_colorimetry(&p), crate::j2k::Signalled::default());
     }
 }

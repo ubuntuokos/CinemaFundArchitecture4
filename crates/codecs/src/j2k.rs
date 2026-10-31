@@ -11,7 +11,7 @@
 
 use std::sync::Arc;
 
-use cfa4_color::{ColorInfo, Gamut, Matrix, Primaries, Range, spaces};
+use cfa4_color::{ColorInfo, Gamut, Matrix, Primaries, Range, Transfer, spaces};
 use cfa4_frame::{Chroma, PixelData, VideoFrame};
 use cfa4_j2k::{Header, Image, Plane};
 use cfa4_time::Tick;
@@ -31,6 +31,16 @@ pub struct J2kHints {
     /// Each picture is two field codestreams, first field on top (an MXF frame layout of
     /// separate fields): they are woven into one frame.
     pub separate_fields: bool,
+    /// The container's colorimetry (a codestream carries none).
+    pub signalled: Signalled,
+}
+
+/// Colorimetry a container signals; `None` keeps the default.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Signalled {
+    pub transfer: Option<Transfer>,
+    pub primaries: Option<Primaries>,
+    pub matrix: Option<Matrix>,
 }
 
 /// How the components of a codestream are read.
@@ -66,14 +76,24 @@ pub fn components(header: &Header, hints: J2kHints) -> Result<Components> {
 }
 
 /// The colour of the frames [`to_video_frame`] gives for `components`.
+/// The container's signalled colorimetry holds for the samples passed through: Y'CbCr and gray
+/// take all of it, R'G'B' its transfer and primaries (the matrix is the one it is converted
+/// with), X'Y'Z' none (its conversion output is fixed).
 pub fn color(components: Components, width: u32, height: u32, hints: J2kHints) -> ColorInfo {
+    let s = hints.signalled;
     match components {
         Components::Ycbcr(_) | Components::Gray => ColorInfo {
-            matrix: cfa4_frame::default_matrix(width, height),
+            matrix: s.matrix.unwrap_or_else(|| cfa4_frame::default_matrix(width, height)),
+            transfer: s.transfer.unwrap_or(ColorInfo::REC709.transfer),
+            primaries: s.primaries.unwrap_or(ColorInfo::REC709.primaries),
             range: if hints.full_range { Range::Full } else { Range::Limited },
+        },
+        Components::Rgb => ColorInfo {
+            matrix: Matrix::Bt709,
+            transfer: s.transfer.unwrap_or(ColorInfo::REC709.transfer),
+            primaries: s.primaries.unwrap_or(ColorInfo::REC709.primaries),
             ..ColorInfo::REC709
         },
-        Components::Rgb => ColorInfo { matrix: Matrix::Bt709, ..ColorInfo::REC709 },
         Components::Xyz => ColorInfo { matrix: Matrix::Bt709, primaries: Primaries::P3D65, ..ColorInfo::REC709 },
     }
 }
@@ -291,8 +311,13 @@ impl VideoDecoder for J2kDecoder {
         let mut image = cfa4_j2k::decode(cs).map_err(err)?;
         let mut origin = (header.x0, header.y0);
         if self.hints.separate_fields {
-            // a missing or damaged second field repeats the first
-            let second = second_field(cs).and_then(|f| cfa4_j2k::decode(f).ok()).unwrap_or_else(|| image.clone());
+            // a missing or damaged second field repeats the first; one we cannot decode is
+            // refused like any unsupported picture
+            let second = match second_field(cs).map(cfa4_j2k::decode) {
+                Some(Ok(f)) => f,
+                Some(Err(e @ cfa4_j2k::Error::Unsupported(_))) => return Err(err(e)),
+                Some(Err(_)) | None => image.clone(),
+            };
             image = weave(&image, &second, header.y0)?;
             // the woven components have every line (see `weave`)
             header.components.iter_mut().for_each(|c| c.dy = 1);
@@ -432,6 +457,19 @@ mod tests {
         let lone = cfa4_j2k::encode(&field(16), &opts).unwrap_or_else(|e| panic!("{e}"));
         let out = J2kDecoder::new(hints).decode(&lone, 0).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(out[0].frame.height, 4);
+    }
+
+    /// Signalled colorimetry follows what was decoded: all of it for Y'CbCr, transfer and
+    /// primaries for R'G'B', nothing for X'Y'Z'.
+    #[test]
+    fn signalled_colorimetry_follows_the_decoded_components() {
+        let s = Signalled { transfer: Some(Transfer::Pq), primaries: Some(Primaries::Bt2020), matrix: Some(Matrix::Bt2020Ncl) };
+        let hints = J2kHints { signalled: s, ..J2kHints::default() };
+        let c = color(Components::Ycbcr(Chroma::C444), 3840, 2160, hints);
+        assert_eq!((c.transfer, c.primaries, c.matrix), (Transfer::Pq, Primaries::Bt2020, Matrix::Bt2020Ncl));
+        let c = color(Components::Rgb, 3840, 2160, hints);
+        assert_eq!((c.transfer, c.primaries, c.matrix), (Transfer::Pq, Primaries::Bt2020, Matrix::Bt709));
+        assert_eq!(color(Components::Xyz, 3840, 2160, hints).primaries, Primaries::P3D65);
     }
 
     #[test]
