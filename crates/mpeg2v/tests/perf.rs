@@ -77,7 +77,7 @@ fn perf_1080p_encode_fps_and_psnr() {
     for f in raw.chunks(fs) {
         let (y, c) = f.split_at(w * h);
         let (cb, cr) = c.split_at(w * h / 4);
-        es.extend(enc.encode(&Input { y, cb, cr, y_stride: w, c_stride: w / 2 }).unwrap().data);
+        es.extend(enc.encode(&Input { y, cb, cr, y_stride: w, c_stride: w / 2 }).unwrap().into_iter().flat_map(|p| p.data));
     }
     let secs = t0.elapsed().as_secs_f64();
     let ours = (es.len() as f64 * 8.0 * 25.0 / frames as f64, psnr_of(&es));

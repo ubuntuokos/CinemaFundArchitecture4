@@ -3634,10 +3634,24 @@
 	Side by Side	Lado a lado
 	Stereo to 2D	Estéreo a 2D
 	Eye	Ojo
+	Stereo Parallax	Paralaje estéreo
+	Horizontal Shift	Desplazamiento horizontal
 	Slit Scan	Slit-scan
 	Time Span (seconds)	Intervalo de tiempo (segundos)
 	Current Frame At	Fotograma actual en
 	Blend Slices	Fundir franjas
+	Add Beat Markers	Añadir marcadores de ritmo
+	Clear Beat Markers	Borrar marcadores de ritmo
+	Clear Check Markers	Borrar marcadores de comprobación
+	Auto Reframe Sequence…	Reencuadre automático de secuencia…
+	Batch Variants from Spreadsheet…	Variantes por lotes desde hoja de cálculo…
+	Check Before Export…	Comprobar antes de exportar…
+	Social Deliverables…	Entregables para redes sociales…
+	Counter	Contador
+	Word by Word	Palabra por palabra
+	Animator	Animador
+	Animator Duration	Duración del animador
+	Animator Delay	Retardo del animador
 	Creative Looks	Looks creativos
 	Film Grain	Grano de película
 	Animated	Animado
@@ -3654,6 +3668,16 @@
 	MPEG-2 720×576 at 25 fps, 16:9 anamorphic, 6 Mbps, GOP 15, 16-bit 48 kHz LPCM, .mpg (DVD-ready stream; no VIDEO_TS authoring)	MPEG-2 720×576 a 25 fps, 16:9 anamórfico, 6 Mbps, GOP 15, LPCM de 16 bits a 48 kHz, .mpg (flujo listo para DVD; sin autoría VIDEO_TS)
 	MPEG-2 video (Main Profile 4:2:0, 0.4 bits per pixel) at the sequence's frame size and rate, 16-bit 48 kHz LPCM, .mpg	Vídeo MPEG-2 (Main Profile 4:2:0, 0,4 bits por píxel) con el tamaño de fotograma y la velocidad de la secuencia, LPCM de 16 bits a 48 kHz, .mpg
 	MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts	Vídeo MPEG-2 1920×1080, 18 Mbps de media, AAC 192 kbps, .ts
+	DCP (Digital Cinema Package)	DCP (Digital Cinema Package)
+	Digital Cinema	Cine digital
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	Carpeta DCP SMPTE: JPEG 2000 1998×1080 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	Carpeta DCP SMPTE: JPEG 2000 2048×858 (2.39:1), PCM 5.1 de 24 bits a 48 kHz
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Carpeta DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Carpeta DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 de 24 bits a 48 kHz
 	Halftone	Semitono
 	Dither	Tramado
 	Pattern	Patrón

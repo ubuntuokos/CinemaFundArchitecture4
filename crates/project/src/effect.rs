@@ -630,6 +630,16 @@ fn build_effects() -> Vec<EffectDef> {
         video("stereo_swap_eyes", "Swap Eyes", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0)]),
         video("stereo_to_2d", "Stereo to 2D", STEREO_3D, vec![ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0), ch("eye", "Eye", STEREO_EYES, 0)]),
         video(
+            "stereo_parallax",
+            "Stereo Parallax",
+            STEREO_3D,
+            vec![
+                ch("frame_layout", "Frame Layout", STEREO_LAYOUTS, 0),
+                fs("shift", "Horizontal Shift", 0.0, (-10.0, 10.0), (-5.0, 5.0), "%", 2),
+                b("repeat_edge", "Repeat Edge Pixels", false),
+            ],
+        ),
+        video(
             "halftone",
             "Halftone",
             CREATIVE_LOOKS,

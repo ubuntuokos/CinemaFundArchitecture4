@@ -118,6 +118,8 @@ pub(crate) struct MpegMux {
     /// Pictures and audio samples written so far.
     pictures: i64,
     samples: i64,
+    /// Decode time of the first picture in frames: before 0 when B pictures delay the display.
+    dts_base: i64,
 }
 
 fn mux_err(e: cfa4_mpegts::MuxError) -> ExportError {
@@ -155,7 +157,7 @@ impl MpegMux {
             }
         };
         let audio = if container.has_audio() { audio } else { None };
-        Ok(MpegMux { sink, rate, audio, pictures: 0, samples: 0 })
+        Ok(MpegMux { sink, rate, audio, pictures: 0, samples: 0, dts_base: 0 })
     }
 
     pub fn write_video(&mut self, packets: Vec<EncodedPacket>) -> Result<()> {
@@ -163,9 +165,15 @@ impl MpegMux {
             match &mut self.sink {
                 Sink::Es(out) => out.write_all(&p.data).map_err(|e| ExportError::Io(e.to_string()))?,
                 Sink::Mux(m) => {
-                    // I and P pictures only: decode order is display order
-                    let pts = to_90k(self.pictures, self.rate.num, self.rate.den);
-                    m.write(0, &p.data, pts, None, p.key).map_err(mux_err)?;
+                    // decode order; the composition offset (in 1/num s) is how much later the
+                    // picture is shown, and the first one is shown at 0
+                    let offset = i64::from(p.composition_offset) / self.rate.den.max(1);
+                    if self.pictures == 0 {
+                        self.dts_base = -offset;
+                    }
+                    let dts = self.pictures + self.dts_base;
+                    let (num, den) = (self.rate.num, self.rate.den);
+                    m.write(0, &p.data, to_90k(dts + offset, num, den), Some(to_90k(dts, num, den)), p.key).map_err(mux_err)?;
                 }
             }
             self.pictures += 1;

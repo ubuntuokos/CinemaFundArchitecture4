@@ -3602,10 +3602,24 @@
 	Side by Side	左右并排
 	Stereo to 2D	立体转 2D
 	Eye	眼
+	Stereo Parallax	立体视差
+	Horizontal Shift	水平偏移
 	Slit Scan	狭缝扫描
 	Time Span (seconds)	时间跨度（秒）
 	Current Frame At	当前帧位置
 	Blend Slices	混合切片
+	Add Beat Markers	添加节拍标记
+	Clear Beat Markers	清除节拍标记
+	Clear Check Markers	清除检查标记
+	Auto Reframe Sequence…	自动重构序列…
+	Batch Variants from Spreadsheet…	从电子表格批量生成变体…
+	Check Before Export…	导出前检查…
+	Social Deliverables…	社交媒体交付…
+	Counter	计数器
+	Word by Word	逐词
+	Animator	动画器
+	Animator Duration	动画器持续时间
+	Animator Delay	动画器延迟
 	Creative Looks	创意风格
 	Film Grain	胶片颗粒
 	Animated	动画
@@ -3613,6 +3627,16 @@
 	HLS (HTTP Live Streaming)	HLS（HTTP 直播流）
 	HLS 1080p	HLS 1080p
 	HTTP Live Streaming: H.264 1920×1080 at 8 Mbps, AAC 160 kbps, 6-second fragmented MP4 segments	HTTP 直播流：H.264 1920×1080，8 Mbps，AAC 160 kbps，6 秒分片 MP4 片段
+	DCP (Digital Cinema Package)	DCP（数字电影包）
+	Digital Cinema	数字电影
+	DCP 2K Flat	DCP 2K Flat
+	SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 1998×1080（1.85:1），5.1 24 位 48 kHz PCM
+	DCP 2K Scope	DCP 2K Scope
+	SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 2048×858（2.39:1），5.1 24 位 48 kHz PCM
+	DCP 4K Flat	DCP 4K Flat
+	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 3996×2160（1.85:1），5.1 24 位 48 kHz PCM
+	DCP 4K Scope	DCP 4K Scope
+	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP 文件夹：JPEG 2000 4096×1716（2.39:1），5.1 24 位 48 kHz PCM
 	Halftone	半色调
 	Dither	抖动
 	Pattern	图案

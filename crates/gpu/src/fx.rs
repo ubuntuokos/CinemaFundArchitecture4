@@ -55,8 +55,9 @@ const OP_LUMETRI: u32 = 31;
 const OP_SWAP_EYES: u32 = 32;
 const OP_STEREO_TO_2D: u32 = 33;
 const OP_FILM_GRAIN: u32 = 34;
-const OP_HALFTONE: u32 = 35;
-const OP_DITHER: u32 = 36;
+const OP_STEREO_PARALLAX: u32 = 35;
+const OP_HALFTONE: u32 = 36;
+const OP_DITHER: u32 = 37;
 
 type Target = (wgpu::Texture, wgpu::TextureView);
 
@@ -170,6 +171,7 @@ fn steps(op: &FxOp) -> Vec<Step> {
         FxOp::VFlip => out.push(step(OP_VFLIP, [0; 4], &[])),
         FxOp::SwapEyes { sbs } => out.push(step(OP_SWAP_EYES, [*sbs as u32, 0, 0, 0], &[])),
         FxOp::StereoTo2d { sbs, right } => out.push(step(OP_STEREO_TO_2D, [*sbs as u32, *right as u32, 0, 0], &[])),
+        FxOp::StereoParallax { sbs, shift, repeat } => out.push(step(OP_STEREO_PARALLAX, [*sbs as u32, *repeat as u32, 0, 0], &[*shift])),
         FxOp::Halftone { mono, lines, inv_cell, soft, screens: sc, ink, paper, blend } => out.push(step(
             OP_HALFTONE,
             [*mono as u32, *lines as u32, 0, 0],
