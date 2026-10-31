@@ -88,6 +88,15 @@ fixture_tests!(
     mbaff_high10,
     mbaff_422,
     fake_interlaced,
+    lossless_444_intra,
+    lossless_444_cavlc,
+    lossless_444_b,
+    lossless_420,
+    lossless_420_intra_cavlc,
+    lossless_422,
+    lossless_444_10,
+    lossless_420_10,
+    lossless_mbaff,
 );
 
 /// Draft mode (reduced-resolution playback) skips deblocking of non-reference pictures only:
