@@ -755,8 +755,11 @@ impl ExportSettings {
             let codec = if self.audio_codec() == AudioCodec::Flac { "FLAC" } else { self.format.label() };
             return Err(ExportError::Unsupported(format!("{codec} audio has no {} samples: choose 16, 24 or 32 bit", sample_format.label())));
         }
-        if self.field_order != FieldOrder::Progressive && self.has_video() {
-            return Err(ExportError::Unsupported(format!("{} field order: CFA4's encoders write progressive frames", self.field_order.label())));
+        if self.field_order != FieldOrder::Progressive && self.has_video() && self.format != Format::Mpeg2 {
+            return Err(ExportError::Unsupported(format!(
+                "{} field order: only MPEG-2 export codes interlaced video; the other encoders write progressive frames",
+                self.field_order.label()
+            )));
         }
         if self.effects.image_overlay.enabled && self.effects.image_overlay.path.trim().is_empty() {
             return Err(ExportError::Unsupported("image overlay: no image file chosen".into()));
@@ -1313,6 +1316,11 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         }
         cfg.gop = s.keyframe_distance.filter(|k| *k > 0).unwrap_or(15).min(1000);
         cfg.b_frames = u32::from(s.mpeg2_b_frames.unwrap_or(2).min(7));
+        cfg.interlaced = match s.field_order {
+            FieldOrder::Progressive => None,
+            FieldOrder::UpperFirst => Some(cfa4_mpeg2v::FieldOrder::TopFirst),
+            FieldOrder::LowerFirst => Some(cfa4_mpeg2v::FieldOrder::BottomFirst),
+        };
         cfg.aspect = mpeg2_aspect(w, h, s.pixel_aspect);
         // BT.709 primaries, transfer and matrix, as `rgba_to_yuv420_8` converts
         cfg.colour = Some((1, 1, 1));
