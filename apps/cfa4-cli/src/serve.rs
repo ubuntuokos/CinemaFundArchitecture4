@@ -239,7 +239,21 @@ fn frame_bytes(img: &cfa4_render::Image, p: &Value) -> Vec<u8> {
     bytes
 }
 
+/// `draft`: decode for reduced-resolution playback (Settings ▸ Playback ▸ Draft decoding), as
+/// egui's monitors do while playing at 1/2 or lower. The engine keeps draft pictures apart, so a
+/// paused frame, an export or a render never gets one.
 fn render_frame(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
+    let draft = match p.get("draft") {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(_) => return Err("`draft` must be true or false".into()),
+    };
+    let (mut info, bytes) = cfa4_media::cancel::with_draft(draft, || render_frame_at(s, p))?;
+    info["draft"] = json!(draft);
+    Ok((info, bytes))
+}
+
+fn render_frame_at(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     if wants_source(p)? {
         let item = source_item(s, p)?;
         let (w, h) = item_size(s, item);
@@ -889,6 +903,13 @@ mod tests {
         assert!(w > 0 && w <= 64 && h > 0);
         assert_eq!(frame.binary.as_ref().map(Vec::len), Some((w * h * 4) as usize));
         assert_eq!(frame.json["binary"], json!(w * h * 4));
+        assert_eq!(frame.json["result"]["draft"], json!(false), "not draft unless asked");
+        // draft decoding for reduced-resolution playback: the same picture size, marked draft
+        let draft = handle(&mut s, json!(51), "frame.render", json!({"maxWidth": 64, "seconds": 1.0, "draft": true})).expect("reply");
+        assert_eq!(draft.json["ok"], json!(true), "{}", draft.json);
+        assert_eq!((draft.json["result"]["w"].as_u64(), draft.json["result"]["draft"].as_bool()), (Some(w), Some(true)));
+        let bad = handle(&mut s, json!(52), "frame.render", json!({"maxWidth": 64, "draft": "yes"})).expect("reply");
+        assert_eq!(bad.json["ok"], json!(false), "{}", bad.json);
         let audio = handle(&mut s, json!(6), "audio.render", json!({"start": 0, "frames": 480})).expect("reply");
         assert_eq!(audio.json["ok"], json!(true), "{}", audio.json);
         let ch = audio.json["result"]["channels"].as_u64().unwrap_or(0) as usize;
