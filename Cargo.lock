@@ -791,6 +791,17 @@ name = "cfa4-cfb"
 version = "0.10.0"
 
 [[package]]
+name = "cfa4-cineform"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-isobmff",
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-cli"
 version = "0.10.0"
 dependencies = [
@@ -830,12 +841,16 @@ dependencies = [
  "cfa4-av1",
  "cfa4-avi",
  "cfa4-bitstream",
+ "cfa4-cineform",
  "cfa4-color",
  "cfa4-dnx",
+ "cfa4-dts",
  "cfa4-frame",
  "cfa4-h264",
  "cfa4-hevc",
+ "cfa4-iab",
  "cfa4-isobmff",
+ "cfa4-j2k",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",
@@ -847,6 +862,7 @@ dependencies = [
  "cfa4-prores",
  "cfa4-testkit",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-vp8",
  "cfa4-vp9",
  "image",
@@ -903,6 +919,15 @@ name = "cfa4-docpath"
 version = "0.1.0"
 
 [[package]]
+name = "cfa4-dts"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "log",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-edit"
 version = "0.10.0"
 dependencies = [
@@ -931,6 +956,7 @@ dependencies = [
  "cfa4-format",
  "cfa4-frame",
  "cfa4-geom",
+ "cfa4-iab",
  "cfa4-interchange",
  "cfa4-isobmff",
  "cfa4-media",
@@ -959,6 +985,8 @@ dependencies = [
  "cfa4-aac",
  "cfa4-apv",
  "cfa4-audio-dsp",
+ "cfa4-av1",
+ "cfa4-cineform",
  "cfa4-codecs",
  "cfa4-color",
  "cfa4-dnx",
@@ -967,15 +995,23 @@ dependencies = [
  "cfa4-geom",
  "cfa4-h264enc",
  "cfa4-hevc",
+ "cfa4-iab",
  "cfa4-isobmff",
+ "cfa4-j2k",
+ "cfa4-matroska",
  "cfa4-media",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
  "cfa4-mxf",
+ "cfa4-ogg",
+ "cfa4-opus",
  "cfa4-project",
  "cfa4-prores",
  "cfa4-render",
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",
+ "cfa4-vp9",
  "image",
  "rayon",
  "serde",
@@ -1099,12 +1135,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-heif"
+version = "0.10.0"
+dependencies = [
+ "cfa4-heif",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-hevc"
 version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
  "cfa4-testkit",
  "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-iab"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
  "thiserror 2.0.21",
 ]
 
@@ -1141,6 +1193,17 @@ name = "cfa4-j2k"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cfa4-jxl"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "image",
+ "rayon",
  "thiserror 2.0.21",
 ]
 
@@ -1159,6 +1222,9 @@ dependencies = [
  "cfa4-color",
  "cfa4-dng",
  "cfa4-frame",
+ "cfa4-heif",
+ "cfa4-hevc",
+ "cfa4-jxl",
  "cfa4-testkit",
  "cfa4-time",
  "image",
@@ -1213,6 +1279,7 @@ dependencies = [
 name = "cfa4-opus"
 version = "0.10.0"
 dependencies = [
+ "cfa4-ogg",
  "cfa4-testkit",
 ]
 
@@ -1364,6 +1431,15 @@ version = "0.10.0"
 dependencies = [
  "proptest",
  "serde",
+]
+
+[[package]]
+name = "cfa4-truehd"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "log",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

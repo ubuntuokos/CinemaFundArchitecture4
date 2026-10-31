@@ -263,12 +263,13 @@ fn prores_pcm() {
 #[test]
 fn mjpeg_ac3() {
     let Some((_, f, _)) = run("mjpeg_ac3.mkv") else { return };
-    // regression for #133: the final AC-3 block carries BlockDuration 8 ms (trimmed by `-t 1`);
-    // the demuxer must honour it instead of the nominal 32 ms frame duration
+    // regression for #133: the final AC-3 block carries a BlockDuration trimmed by `-t 1` (8 ms
+    // from ffmpeg 6.1, 13 ms from 9.0 with its different priming); the demuxer must honour it
+    // instead of the nominal 32 ms frame duration, so the track ends at the 1 s cut
     let a = f.track_of_kind(TrackKind::Audio).unwrap();
     let last = f.tracks[a].samples.last().unwrap();
-    assert_eq!(last.duration, 8);
-    assert_eq!(last.pts + last.duration as i64, 995);
+    assert!(last.duration > 0 && last.duration < 32, "{last:?}");
+    assert!((990..=1005).contains(&(last.pts + last.duration as i64)), "{last:?}");
     assert_eq!(f.info.title.as_deref(), Some("CFA4 test"));
     assert!(f.info.muxing_app.starts_with("Lavf"));
     assert!(f.tags.iter().flat_map(|t| &t.simple).any(|s| s.name == "ENCODER"));
