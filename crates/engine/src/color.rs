@@ -342,46 +342,54 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
             audio.push((*i, crate::media_pool::interpreted(&m, src).info().audio_streams.clone()));
         }
     }
-    s.edit("Interpret Footage", |pr, _| {
-        for i in &items {
-            if let Some(ItemKind::Media(m)) = pr.item_mut(*i).map(|it| &mut it.kind) {
-                if let Some(cs) = cs {
-                    m.interpret.color_space = cs;
-                }
-                if let Some(par) = par {
-                    m.interpret.par = par;
-                }
-                if let Some((_, streams)) = audio.iter().find(|(id, _)| id == i) {
-                    m.interpret.auro_as_carrier = auro == Some(false);
-                    // a channel map made for the other layout would name channels it lacks
-                    let channels = streams.first().map_or(0, |a| a.channels);
-                    if m.interpret.audio_channels.as_ref().is_some_and(|c| c.clips.iter().flatten().any(|&k| u32::from(k) >= channels)) {
-                        m.interpret.audio_channels = None;
+    // only the Auro-3D setting, and no selected item is a carrier it changes: no undo step
+    let unchanged = cs.is_none() && par.is_none() && audio.is_empty();
+    if !unchanged {
+        s.edit("Interpret Footage", |pr, _| {
+            for i in &items {
+                if let Some(ItemKind::Media(m)) = pr.item_mut(*i).map(|it| &mut it.kind) {
+                    if let Some(cs) = cs {
+                        m.interpret.color_space = cs;
                     }
-                    m.info.audio_streams = streams.clone();
-                }
-            }
-        }
-        // timeline clips of a toggled item (or of its subclips) that pick a channel the new
-        // layout lacks would play channel 0 in its place: they go back to the default pair
-        for (id, streams) in &audio {
-            let of_item: Vec<ItemId> =
-                pr.items.values().filter(|it| it.id == *id || matches!(it.kind, ItemKind::Subclip { parent, .. } if parent == *id)).map(|it| it.id).collect();
-            for it in pr.items.values_mut() {
-                let ItemKind::Sequence(q) = &mut it.kind else { continue };
-                let needs = q.audio_tracks.iter().flat_map(|t| &t.items).any(|c| out_of_range(c, &of_item, streams));
-                if !needs {
-                    continue;
-                }
-                for c in std::sync::Arc::make_mut(q).audio_tracks.iter_mut().flat_map(|t| &mut t.items) {
-                    if out_of_range(c, &of_item, streams) {
-                        c.source_channels.clear();
+                    if let Some(par) = par {
+                        m.interpret.par = par;
+                    }
+                    if let Some((_, streams)) = audio.iter().find(|(id, _)| id == i) {
+                        m.interpret.auro_as_carrier = auro == Some(false);
+                        // a channel map made for the other layout would name channels it lacks
+                        let channels = streams.first().map_or(0, |a| a.channels);
+                        if m.interpret.audio_channels.as_ref().is_some_and(|c| c.clips.iter().flatten().any(|&k| u32::from(k) >= channels)) {
+                            m.interpret.audio_channels = None;
+                        }
+                        m.info.audio_streams = streams.clone();
                     }
                 }
             }
-        }
-        Ok(())
-    })?;
+            // timeline clips of a toggled item (or of its subclips) that pick a channel the new
+            // layout lacks would play channel 0 in its place: they go back to the default pair
+            for (id, streams) in &audio {
+                let of_item: Vec<ItemId> = pr
+                    .items
+                    .values()
+                    .filter(|it| it.id == *id || matches!(it.kind, ItemKind::Subclip { parent, .. } if parent == *id))
+                    .map(|it| it.id)
+                    .collect();
+                for it in pr.items.values_mut() {
+                    let ItemKind::Sequence(q) = &mut it.kind else { continue };
+                    let needs = q.audio_tracks.iter().flat_map(|t| &t.items).any(|c| out_of_range(c, &of_item, streams));
+                    if !needs {
+                        continue;
+                    }
+                    for c in std::sync::Arc::make_mut(q).audio_tracks.iter_mut().flat_map(|t| &mut t.items) {
+                        if out_of_range(c, &of_item, streams) {
+                            c.source_channels.clear();
+                        }
+                    }
+                }
+            }
+            Ok(())
+        })?;
+    }
     let first = items.first().and_then(|i| s.project.item(*i)).and_then(|i| i.as_media());
     Ok(json!({
         "items": items.iter().map(|i| i.0).collect::<Vec<_>>(),
