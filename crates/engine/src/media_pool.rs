@@ -86,9 +86,16 @@ pub const PROBE_WHOLE_FILE_MAX: u64 = 64 * 1024 * 1024;
 pub fn media_key(m: &MediaClip) -> String {
     match &m.media {
         MediaRef::File { path } if m.offline => format!("offline:{path}"),
+        MediaRef::File { path } if m.interpret.auro_as_carrier => format!("carrier:{path}"),
         MediaRef::File { path } => format!("file:{path}"),
         MediaRef::Generator(g) => format!("generator:{g:?}"),
     }
+}
+
+/// `src` as `m` interprets it: an Auro-3D carrier played as its own channels when Interpret
+/// Footage turned Auro-3D off (#323).
+pub fn interpreted(m: &MediaClip, src: SharedSource) -> SharedSource {
+    if m.interpret.auro_as_carrier { src.carrier().unwrap_or(src) } else { src }
 }
 
 /// Open the image sequence that `first` (a numbered still) starts: its frames from that number to
@@ -350,7 +357,7 @@ impl MediaPool {
             }) {
                 Ok(s) => {
                     self.offline.write().unwrap_or_else(|e| e.into_inner()).remove(&item);
-                    self.unsupported_as_slate(item, path, s)
+                    self.unsupported_as_slate(item, path, interpreted(m, s))
                 }
                 Err(_) if cfa4_media::pending::is_set() => {
                     // the host is still fetching the file's bytes: show the slate for now, retry later
@@ -542,6 +549,9 @@ impl MediaSource for UnsupportedAsSlate {
     }
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         self.inner.audio_stream(stream, start, frames, sample_rate)
+    }
+    fn carrier(&self) -> Option<SharedSource> {
+        self.inner.carrier()
     }
 }
 

@@ -3334,6 +3334,29 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         win.close()
 
 
+def test_interpret_footage_turns_auro_decoding_off(app):
+    """Interpret Footage shows the Auro-3D switch for a carrier only (#323); OK sends it only
+    when it changed."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    assert box is not None and box.isHidden()
+    for answer in (None, {"carrier": False, "decoding": True}, "x"):
+        d._auro_info(answer)
+        assert box.isHidden()
+    d._auro_info({"carrier": True, "decoding": True})
+    assert not box.isHidden() and box.isChecked()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._auro_info({"carrier": True, "decoding": True})
+    d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro").setChecked(False)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": False, "items": [7]})
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: Path):
     """Interpret Footage… (the Project item menu, or the menu with items selected) opens egui's

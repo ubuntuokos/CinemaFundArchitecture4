@@ -128,7 +128,8 @@ impl Session {
             }
             let Ok(file) = self.media.follow(path) else { continue };
             // Opened the way import opens it, so the info is what a new import would get.
-            match self.media.open_file(&file, &*self.services) {
+            // (an Auro-3D carrier played as its own channels stays one, #323)
+            match self.media.open_file(&file, &*self.services).map(|src| crate::media_pool::interpreted(m, src)) {
                 Ok(src) => {
                     let mut info = src.info().clone();
                     if info.kind == cfa4_media::MediaKind::Still

@@ -10,6 +10,7 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -187,6 +188,15 @@ class InterpretFootageDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setMaximumHeight(300)
         layout.addWidget(scroll)
+        # Auro-3D (#323): shown for a carrier only, on = the restored layout, off = its own channels
+        self.auro = QCheckBox(tr("Decode Auro-3D height channels"), self)
+        self.auro.setObjectName("interpretFootage.auro")
+        self.auro_hint = QLabel(tr("Off: the file plays its own channels, as without an Auro-3D decoder."), self)
+        self.auro_hint.setWordWrap(True)
+        for w in (self.auro, self.auro_hint):
+            w.setVisible(False)
+            layout.addWidget(w)
+        self._auro_was: bool | None = None
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("interpretFootage.ok")
         buttons.button(QDialogButtonBox.StandardButton.Cancel).setObjectName("interpretFootage.cancel")
@@ -197,6 +207,7 @@ class InterpretFootageDialog(QDialog):
             engine.execute("color.spaces", {}, on_reply=lambda r, _b: self._spaces(r))
             if items:
                 engine.execute("media.colorInfo", {"item": items[0]}, on_reply=lambda r, _b: self._info(r))
+                engine.execute("media.auroInfo", {"item": items[0]}, on_reply=lambda r, _b: self._auro_info(r))
 
     def _add_choice(self, cid: str, label: str) -> None:
         b = QRadioButton(label, self)
@@ -221,6 +232,14 @@ class InterpretFootageDialog(QDialog):
         self._override = result.get("override") if isinstance(result.get("override"), str) else None
         self._select(self._override)
 
+    def _auro_info(self, result: Any) -> None:
+        if not isinstance(result, dict) or result.get("carrier") is not True:
+            return
+        self._auro_was = result.get("decoding") is not False
+        self.auro.setChecked(self._auro_was)
+        for w in (self.auro, self.auro_hint):
+            w.setVisible(True)
+
     def _select(self, cid: str | None) -> None:
         if cid is not None and cid in self.choices:
             self.choices[cid].setChecked(True)
@@ -230,6 +249,8 @@ class InterpretFootageDialog(QDialog):
 
     def accept(self) -> None:
         params: dict[str, Any] = {"colorSpace": self.chosen()}
+        if self._auro_was is not None and self.auro.isChecked() != self._auro_was:
+            params["auroDecoding"] = self.auro.isChecked()
         if self.items:
             params["items"] = self.items
         self.send("clip.interpretFootage", params)

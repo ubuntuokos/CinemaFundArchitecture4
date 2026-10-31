@@ -1,5 +1,5 @@
 //! Colour commands: colour management (`sequence.colorSettings`, `clip.interpretFootage`,
-//! `color.spaces`, `media.colorInfo`), the project LUT library (`lut.*`), Lumetri LUT slots and
+//! `color.spaces`, `media.colorInfo`, `media.auroInfo`), the project LUT library (`lut.*`), Lumetri LUT slots and
 //! section switches (`lumetri.*`).
 //!
 //! Lumetri commands address a clip by `clip` (default: the first selected video clip with
@@ -40,7 +40,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             "clip.interpretFootage",
             "Interpret Footage…",
             &["Clip", "Modify"],
-            r#"{"items":[id]?,"colorSpace":"auto"|"<color space id>"?,"pixelAspect":[num,den]|"file"?}"#,
+            r#"{"items":[id]?,"colorSpace":"auto"|"<color space id>"?,"pixelAspect":[num,den]|"file"?,"auroDecoding":bool?}"#,
             has_footage,
             interpret,
         ),
@@ -54,6 +54,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
             preset_thumbnails,
         ),
         query("media.colorInfo", "Media Colour Info", r#"{"item":id}"#, color_info),
+        query("media.auroInfo", "Media Auro-3D Info", r#"{"item":id}"#, auro_info),
         spec("lut.import", "Import LUT…", &[], r#"{"path":str,"name":str?}"#, always, import),
         query("lut.list", "List LUTs", "{}", list),
         spec("lut.remove", "Remove LUT", &[], r#"{"id":str}"#, always, remove),
@@ -314,8 +315,29 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
                 .ok_or_else(|| bad(CMD, format!("pixelAspect must be [num, den] between 1:{0} and {0}:1, or \"file\"", cfa4_project::MAX_PIXEL_ASPECT)))?,
         )),
     };
-    if cs.is_none() && par.is_none() {
-        return Err(bad(CMD, "need `colorSpace` (auto or a colour space id) or `pixelAspect`"));
+    // Auro-3D on / off (#323): the audio the item then plays, from the file opened afresh
+    let auro = bool_p(p, "auroDecoding");
+    if cs.is_none() && par.is_none() && auro.is_none() {
+        return Err(bad(CMD, "need `colorSpace` (auto or a colour space id), `pixelAspect` or `auroDecoding`"));
+    }
+    let mut audio: Vec<(ItemId, Vec<cfa4_media::AudioStreamInfo>)> = Vec::new();
+    if let Some(on) = auro {
+        for i in &items {
+            let Some(m) = s.project.item(*i).and_then(|it| it.as_media()) else { continue };
+            let cfa4_project::MediaRef::File { path } = &m.media else { continue };
+            if m.offline || m.interpret.auro_as_carrier == !on {
+                continue;
+            }
+            let Ok(file) = s.media.follow(path) else { continue };
+            let Ok(src) = s.media.open_file(&file, &*s.services) else { continue };
+            // only a carrier changes: other footage keeps its audio and its setting
+            if src.carrier().is_none() {
+                continue;
+            }
+            let mut m = m.clone();
+            m.interpret.auro_as_carrier = !on;
+            audio.push((*i, crate::media_pool::interpreted(&m, src).info().audio_streams.clone()));
+        }
     }
     s.edit("Interpret Footage", |pr, _| {
         for i in &items {
@@ -326,6 +348,15 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
                 if let Some(par) = par {
                     m.interpret.par = par;
                 }
+                if let Some((_, streams)) = audio.iter().find(|(id, _)| id == i) {
+                    m.interpret.auro_as_carrier = auro == Some(false);
+                    // a channel map made for the other layout would name channels it lacks
+                    let channels = streams.first().map_or(0, |a| a.channels);
+                    if m.interpret.audio_channels.as_ref().is_some_and(|c| c.clips.iter().flatten().any(|&k| u32::from(k) >= channels)) {
+                        m.interpret.audio_channels = None;
+                    }
+                    m.info.audio_streams = streams.clone();
+                }
             }
         }
         Ok(())
@@ -335,6 +366,7 @@ fn interpret(s: &mut Session, p: &Value) -> Result<Value> {
         "items": items.iter().map(|i| i.0).collect::<Vec<_>>(),
         "colorSpace": first.and_then(|m| m.interpret.color_space).map(|c| c.id()).unwrap_or("auto"),
         "pixelAspect": first.map(|m| m.pixel_aspect()),
+        "auroDecoding": first.map(|m| !m.interpret.auro_as_carrier),
     }))
 }
 
@@ -352,6 +384,18 @@ fn spaces(_: &mut Session, _: &Value) -> Result<Value> {
         .collect();
     let ws: Vec<Value> = WorkingSpace::ALL.iter().map(|w| json!({"id": w.id(), "label": w.label(), "hdr": w.is_hdr()})).collect();
     Ok(json!({"colorSpaces": cs, "workingSpaces": ws}))
+}
+
+/// `media.auroInfo`: whether the item's audio is an Auro-3D carrier (#299), and whether it plays
+/// decoded (the restored layout) or as the carrier's own channels (Interpret Footage, #323).
+fn auro_info(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "media.auroInfo";
+    let id = item_p(p, "item").ok_or_else(|| bad(CMD, "need `item`"))?;
+    let Some(ItemKind::Media(m)) = s.project.item(id).map(|i| &i.kind) else { return Err(bad(CMD, "not a media item")) };
+    let decoding = !m.interpret.auro_as_carrier;
+    // as carrier the item's source is the plain file: only the setting says it is one
+    let carrier = !decoding || s.media.full_res_source(&s.project, id, &*s.services).and_then(|src| src.carrier()).is_some();
+    Ok(json!({"carrier": carrier, "decoding": decoding, "audio": m.info.audio().map(|a| a.codec.clone())}))
 }
 
 fn color_info(s: &mut Session, p: &Value) -> Result<Value> {
