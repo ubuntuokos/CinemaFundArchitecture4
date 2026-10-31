@@ -17,6 +17,8 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+mod dcp_iab;
+mod dcp_out;
 mod deflate;
 mod hls_out;
 mod job;
@@ -32,6 +34,8 @@ pub mod settings;
 pub mod still;
 mod webm_out;
 pub use audio_out::LoudnessReport;
+pub use dcp_iab::{DcpImmersive, IabFallback, IabSourceInfo, fsk_sync, probe_iab_source};
+pub use dcp_out::{DCP_CONTENT_KINDS, DcpAspect, DcpResolution, dcdm_code, dcp_content_kind, dcp_rate, rgba_to_xyz12};
 pub use hls_out::{HlsFiles, SEGMENT_SECONDS as HLS_SEGMENT_SECONDS, hls_files};
 pub use job::{Exporter, Step, stepped};
 pub use mpeg_out::Mpeg2Container;
@@ -155,6 +159,10 @@ pub enum Format {
     /// elementary stream without audio (`.m2v`): [`Mpeg2Container`].
     #[serde(rename = "mpeg2", alias = "Mpeg2")]
     Mpeg2,
+    /// SMPTE Digital Cinema Package (ST 429-2) in a folder (the output path): JPEG 2000 X'Y'Z'
+    /// in a DCI 2K or 4K container + 5.1 24-bit PCM, see [`DcpResolution`] and [`DcpAspect`].
+    #[serde(rename = "dcp", alias = "Dcp")]
+    Dcp,
 }
 
 impl Format {
@@ -187,6 +195,7 @@ impl Format {
             "flac" | "fla" => Format::Flac,
             "opus" | "opusaudio" | "ogg" | "oggopus" => Format::Opus,
             "mpeg2" | "mpeg2video" | "h262" | "mpg" | "mpeg" | "m2v" | "m2p" | "ts" | "m2ts" | "mts" | "mpegts" | "mpegps" => Format::Mpeg2,
+            "dcp" | "digitalcinema" | "digitalcinemapackage" | "smptedcp" => Format::Dcp,
             _ => return None,
         })
     }
@@ -219,6 +228,7 @@ impl Format {
             Format::MxfOp1a => "mxf-op1a",
             Format::MxfOpAtom => "mxf-opatom",
             Format::Mpeg2 => "mpeg2",
+            Format::Dcp => "dcp",
         }
     }
     pub fn extension(self) -> &'static str {
@@ -242,6 +252,8 @@ impl Format {
             Format::Opus => "opus",
             Format::MxfOp1a | Format::MxfOpAtom => "mxf",
             Format::Mpeg2 => "mpg",
+            // a folder
+            Format::Dcp => "",
         }
     }
     pub fn label(self) -> &'static str {
@@ -272,6 +284,7 @@ impl Format {
             Format::MxfOp1a => "MXF OP1a",
             Format::MxfOpAtom => "MXF OP-Atom",
             Format::Mpeg2 => "MPEG-2",
+            Format::Dcp => "DCP (Digital Cinema Package)",
         }
     }
     /// Numbered stills, one per frame ([`image_sequence_path`]).
@@ -313,7 +326,7 @@ impl Format {
     pub fn is_mp4_with(self, mux: Multiplexer) -> bool {
         self == Format::Av1 || (self.is_h26x() && mux == Multiplexer::Mp4)
     }
-    pub const ALL: [Format; 26] = [
+    pub const ALL: [Format; 27] = [
         Format::H264,
         Format::Hevc,
         Format::Av1,
@@ -340,6 +353,7 @@ impl Format {
         Format::MxfOp1a,
         Format::MxfOpAtom,
         Format::Mpeg2,
+        Format::Dcp,
     ];
 }
 
@@ -407,6 +421,27 @@ pub struct ExportSettings {
     /// MPEG-2 B pictures between anchor pictures, 0-7 (`None`: 2, the usual IBBP).
     #[serde(default)]
     pub mpeg2_b_frames: Option<u8>,
+    /// DCP resolution: `2k` or `4k` (empty = 2K).
+    #[serde(default)]
+    pub dcp_resolution: String,
+    /// DCP container: `flat` (1.85:1), `scope` (2.39:1) or `full` (1.90:1) (empty = Flat).
+    #[serde(default)]
+    pub dcp_aspect: String,
+    /// DCP content kind ([`DCP_CONTENT_KINDS`], empty = `feature`).
+    #[serde(default)]
+    pub dcp_content_kind: String,
+    /// DCP immersive audio ([`DcpImmersive`]): `off` (also empty), `bed` (the 5.1 mix as a 7.1 DS
+    /// IAB bed) or `file` (the IAB of [`ExportSettings::dcp_iab_source`]).
+    #[serde(default)]
+    pub dcp_immersive: String,
+    /// The IAB source of `dcp_immersive = file`: an IAB track file (IMF or DCP MXF) or a raw
+    /// IABitstream.
+    #[serde(default)]
+    pub dcp_iab_source: String,
+    /// Immersive audio DCPs: the 5.1 in the main sound track's channels 1-6 (`5.1`, also empty) or
+    /// silence there (`none`).
+    #[serde(default)]
+    pub dcp_iab_fallback: String,
     /// Encode display-referred SDR (Rec. 709, tone mapped) even when the sequence works in
     /// Rec. 2100 PQ/HLG. Otherwise H.264 and ProRes exports of an HDR sequence are encoded in the
     /// sequence's HDR space and signal it (VUI / `colr` / `mdcv` / `clli` / SEI).
@@ -637,6 +672,12 @@ impl Default for ExportSettings {
             mpeg2_422: false,
             mpeg2_quantizer: None,
             mpeg2_b_frames: None,
+            dcp_resolution: String::new(),
+            dcp_aspect: String::new(),
+            dcp_content_kind: String::new(),
+            dcp_immersive: String::new(),
+            dcp_iab_source: String::new(),
+            dcp_iab_fallback: String::new(),
             sdr: false,
             alpha: false,
             exr_compression: ExrCompression::None,
@@ -745,6 +786,9 @@ impl ExportSettings {
             {
                 return Err(ExportError::Unsupported("MPEG-2 program streams carry LPCM at 48, 96, 44.1 or 32 kHz".into()));
             }
+        }
+        if self.format == Format::Dcp {
+            dcp_out::validate(self)?;
         }
         if self.format == Format::Av1 && self.bitrate_mode == BitrateMode::Vbr2Pass {
             return Err(ExportError::Unsupported("AV1 export has no two-pass mode: choose CBR or VBR, 1 pass".into()));
@@ -886,6 +930,7 @@ fn video_factories() -> &'static RwLock<Vec<EncoderFactory>> {
             cineform_factory,
             mjpeg_factory,
             mpeg2_factory,
+            dcp_out::dcp_factory,
         ])
     })
 }
@@ -2684,6 +2729,8 @@ mod settings_tests;
 #[cfg(test)]
 mod surround_tests;
 
+#[cfg(test)]
+mod dcp_tests;
 #[cfg(test)]
 mod mpeg2_tests;
 #[cfg(test)]

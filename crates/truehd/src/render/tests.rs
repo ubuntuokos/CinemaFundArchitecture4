@@ -119,6 +119,8 @@ fn updates_ramp_linearly_from_their_sample_across_calls() {
     let l = Layout::stereo();
     let mut r = Renderer::new(l);
     let left = ObjectState { source: Source::Bed(SpeakerLabels::L), gain: 1.0 };
+    // a silent first state, so the update at 10 ramps up from silence
+    r.schedule(0, 0, &ObjectState { gain: 0.0, ..left }, 0);
     r.schedule(10, 0, &left, 20);
     let ones = vec![1.0f32; 40];
     let mut out = vec![Vec::new(), Vec::new()];
@@ -147,6 +149,24 @@ fn updates_ramp_linearly_from_their_sample_across_calls() {
     let mut out = vec![Vec::new(), Vec::new()];
     r.render(120, &[&ones], &mut out);
     assert!(out.iter().flatten().all(|v| *v == 0.0));
+}
+
+/// An object's first state applies at once, whatever its ramp: ramping in from silence would fade
+/// in the start of the stream (a real Atmos stream's first OAMD, 1000 samples in, asks for 1536).
+#[test]
+fn an_objects_first_state_is_not_ramped_in() {
+    let mut r = Renderer::new(Layout::stereo());
+    let left = ObjectState { source: Source::Bed(SpeakerLabels::L), gain: 1.0 };
+    r.schedule(10, 0, &left, 1536);
+    let ones = vec![1.0f32; 40];
+    let mut out = vec![Vec::new(), Vec::new()];
+    r.render(0, &[&ones], &mut out);
+    assert!(out[0][..10].iter().all(|v| *v == 0.0) && out[0][10..].iter().all(|v| *v == 1.0), "{:?}", out[0]);
+    // after a reset the next state is a first state again
+    r.reset();
+    r.schedule(45, 0, &left, 1536);
+    r.render(40, &[&ones], &mut out);
+    assert!(out[0][45..].iter().all(|v| *v == 1.0));
 }
 
 /// An MSB-first bit writer for building OAMD payloads.

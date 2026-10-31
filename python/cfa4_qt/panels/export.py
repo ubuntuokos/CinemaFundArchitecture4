@@ -50,6 +50,33 @@ MPEG2_CONTAINERS = (
     ("m2ts", N_("BDAV Transport Stream (.m2ts, AAC audio)"), "m2ts"),
     ("es", N_("Elementary Stream (.m2v, no audio)"), "m2v"),
 )
+# DCP choices (`DcpResolution`, `DcpAspect`, `DCP_CONTENT_KINDS` in crates/export): id, label
+DCP_RESOLUTIONS = (("2k", N_("2K")), ("4k", N_("4K")))
+DCP_ASPECTS = (("flat", N_("Flat (1.85:1)")), ("scope", N_("Scope (2.39:1)")), ("full", N_("Full container (1.90:1)")))
+DCP_KINDS = (
+    ("feature", N_("Feature")),
+    ("trailer", N_("Trailer")),
+    ("teaser", N_("Teaser")),
+    ("short", N_("Short")),
+    ("advertisement", N_("Advertisement")),
+    ("test", N_("Test")),
+    ("transitional", N_("Transitional")),
+    ("rating", N_("Rating")),
+    ("policy", N_("Policy")),
+    ("psa", N_("Public service announcement")),
+)
+# DCP immersive audio (`DcpImmersive` in crates/export): id, label
+DCP_IMMERSIVE = (
+    ("off", N_("Off (5.1 only)")),
+    ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
+    ("file", N_("IAB from a file (IMF or DCP IAB MXF, .iab)")),
+)
+# what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
+DCP_IAB_FALLBACK = (
+    ("none", N_("None: FSK sync only (SMPTE ST 429-19)")),
+    ("5.1", N_("5.1: the IAB rendered (not ST 429-19)")),
+    ("mix", N_("5.1: the timeline mix (not ST 429-19)")),
+)
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
@@ -152,6 +179,45 @@ class ExportDialog(QDialog):
         for key, label, _ext in MPEG2_CONTAINERS:
             self.container.addItem(tr(label), key)
         self.container.setEnabled(False)  # MPEG-2 only
+        # DCP only: resolution, container and content kind (the package is a folder)
+        self.dcp_resolution = QComboBox(self)
+        self.dcp_resolution.setObjectName("export.dcpResolution")
+        for key, label in DCP_RESOLUTIONS:
+            self.dcp_resolution.addItem(tr(label), key)
+        self.dcp_aspect = QComboBox(self)
+        self.dcp_aspect.setObjectName("export.dcpAspect")
+        for key, label in DCP_ASPECTS:
+            self.dcp_aspect.addItem(tr(label), key)
+        self.dcp_kind = QComboBox(self)
+        self.dcp_kind.setObjectName("export.dcpContentKind")
+        for key, label in DCP_KINDS:
+            self.dcp_kind.addItem(tr(label), key)
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+            w.setEnabled(False)
+        # DCP only: immersive audio, an IAB track file beside the 16-channel main sound (#343)
+        self.dcp_immersive = QComboBox(self)
+        self.dcp_immersive.setObjectName("export.dcpImmersive")
+        for key, label in DCP_IMMERSIVE:
+            self.dcp_immersive.addItem(tr(label), key)
+        self.dcp_iab_source = QLineEdit(self)
+        self.dcp_iab_source.setObjectName("export.dcpIabSource")
+        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF or .iab file"))
+        self.dcp_iab_browse = QPushButton(tr("Browse…"), self)
+        self.dcp_iab_browse.setObjectName("export.dcpIabBrowse")
+        self.dcp_iab_browse.clicked.connect(self._browse_iab)
+        iab_row = QHBoxLayout()
+        iab_row.addWidget(self.dcp_iab_source, 1)
+        iab_row.addWidget(self.dcp_iab_browse)
+        self.dcp_iab_info = QLabel(self)
+        self.dcp_iab_info.setObjectName("export.dcpIabInfo")
+        self.dcp_iab_info.setWordWrap(True)
+        self.dcp_iab_fallback = QComboBox(self)
+        self.dcp_iab_fallback.setObjectName("export.dcpIabFallback")
+        for key, label in DCP_IAB_FALLBACK:
+            self.dcp_iab_fallback.addItem(tr(label), key)
+        self._iab_probed = ""
+        for w in (self.dcp_immersive, self.dcp_iab_source, self.dcp_iab_browse, self.dcp_iab_fallback):
+            w.setEnabled(False)
         self.path = QLineEdit(self)
         self.path.setObjectName("export.path")
         browse = QPushButton(tr("Browse…"), self)
@@ -247,6 +313,9 @@ class ExportDialog(QDialog):
         f.addRow(tr("Preset"), self.preset)
         f.addRow(tr("Format"), self.format)
         f.addRow(tr("Container"), self.container)
+        f.addRow(tr("DCP resolution"), self.dcp_resolution)
+        f.addRow(tr("DCP container"), self.dcp_aspect)
+        f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Output file"), path_row)
         f.addRow(tr("Range"), range_row)
         video = QGroupBox(tr("Video"), self)
@@ -266,6 +335,10 @@ class ExportDialog(QDialog):
         fa.addRow(self.audio)
         fa.addRow(tr("Audio codec"), self.audio_codec)
         fa.addRow(tr("Audio bitrate"), self.audio_bitrate)
+        fa.addRow(tr("Immersive audio"), self.dcp_immersive)
+        fa.addRow(tr("IAB source"), iab_row)
+        fa.addRow("", self.dcp_iab_info)
+        fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -342,6 +415,12 @@ class ExportDialog(QDialog):
             w.valueChanged.connect(self._changed)
         for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("bFrames", self.b_frames), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
+        for c in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
+            c.currentIndexChanged.connect(self._changed)
+        self.dcp_immersive.currentIndexChanged.connect(self._immersive_changed)
+        self.dcp_iab_source.editingFinished.connect(self._probe_iab)
+        self.dcp_iab_source.textChanged.connect(self._changed)
+        self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma), ("fieldOrder", self.field_order)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio)):
@@ -438,6 +517,12 @@ class ExportDialog(QDialog):
         self.field_order.setCurrentIndex(0)
         index = self.container.findData(preset.get("mpeg2Container") or "ps")
         self.container.setCurrentIndex(max(0, index))
+        self.dcp_resolution.setCurrentIndex(max(0, self.dcp_resolution.findData(preset.get("dcpResolution") or "2k")))
+        self.dcp_aspect.setCurrentIndex(max(0, self.dcp_aspect.findData(preset.get("dcpAspect") or "flat")))
+        self.dcp_kind.setCurrentIndex(0)
+        self.dcp_immersive.setCurrentIndex(max(0, self.dcp_immersive.findData(preset.get("dcpImmersive") or "off")))
+        self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
+        self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
         self.touched.clear()
         self._loading = False
         self._default_path()
@@ -454,7 +539,81 @@ class ExportDialog(QDialog):
         # only MPEG-2 export codes interlaced video
         for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma, self.field_order):
             w.setEnabled(mpeg2)
+        dcp = self._dcp()
+        for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive):
+            w.setEnabled(dcp)
+        self._immersive_changed()
+        if dcp:
+            # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
+            for w in (self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate, self.audio_codec, self.audio_bitrate):
+                w.setEnabled(False)
+        else:
+            self.width_spin.setEnabled(True)
+            self.height_spin.setEnabled(True)
         self._container_changed()
+
+    def _immersive_changed(self) -> None:
+        """The IAB source row is for ``file`` only; the fallback for any immersive DCP."""
+        mode = self.dcp_immersive.currentData() if self.dcp_immersive.isEnabled() else "off"
+        for w in (self.dcp_iab_source, self.dcp_iab_browse):
+            w.setEnabled(mode == "file")
+        self.dcp_iab_fallback.setEnabled(mode in ("bed", "file"))
+        if mode == "bed":
+            self.dcp_iab_info.setText(tr("The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal."))
+        elif mode == "file":
+            self._probe_iab()
+        else:
+            self.dcp_iab_info.setText("")
+        self._changed()
+
+    def _browse_iab(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab);;" + tr("All files") + " (*)"
+        )
+        if path:
+            self.dcp_iab_source.setText(path)
+            self._probe_iab()
+
+    def _probe_iab(self) -> None:
+        """Ask the engine what the IAB source holds (``export.iabInfo``)."""
+        path = os.path.expanduser(self.dcp_iab_source.text().strip())
+        if not path:
+            self._iab_probed = ""
+            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP) or a raw IAB stream."))
+            return
+        if path == self._iab_probed:
+            return
+        self._iab_probed = path
+        self.dcp_iab_info.setText(tr("Reading the IAB source…"))
+        self.engine.execute(
+            "export.iabInfo", {"path": path},
+            on_reply=lambda r, _b, p=path: self._on_iab_info(p, r),
+            on_error=lambda m, p=path: self._on_iab_error(p, m),
+        )
+
+    def _on_iab_info(self, path: str, result: Any) -> None:
+        if path != self._iab_probed:
+            return
+        r = result if isinstance(result, dict) else {}
+        rate = r.get("frameRate") or [0, 1]
+        fps = f"{rate[0]}" if len(rate) == 2 and rate[1] == 1 else f"{rate[0]}/{rate[1] if len(rate) == 2 else 1}"
+        text = tr("{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects").format(
+            frames=r.get("frames", 0), fps=fps, rate=r.get("sampleRate", 0), beds=r.get("maxBedChannels", 0), objects=r.get("maxObjects", 0)
+        )
+        if r.get("needsConform"):
+            text += "\n" + tr("Some frames are re-coded for the DCP (DLC, 24 bit).")
+        notes = [str(n) for n in r.get("profileNotes") or []]
+        if notes:
+            text += "\n" + tr("Beyond IAB Profile 1: {notes}").format(notes="; ".join(notes))
+        self.dcp_iab_info.setText(text)
+
+    def _on_iab_error(self, path: str, message: Any) -> None:
+        if path == self._iab_probed:
+            self.dcp_iab_info.setText(tr("Not a usable IAB source: {error}").format(error=message))
+
+    def _dcp(self) -> bool:
+        """A DCP: the output is a folder."""
+        return self.format.currentData() == "dcp"
 
     def _extension(self) -> str:
         """The output file's extension: the MPEG-2 container's, else the format's."""
@@ -470,7 +629,10 @@ class ExportDialog(QDialog):
             self.audio.setEnabled(has_audio)
             self.audio_codec.setEnabled(False)  # LPCM in program streams, AAC in transport streams
         if self.path.text():
-            self.path.setText(with_extension(self.path.text(), self._extension()))
+            if self._dcp():
+                self.path.setText(str(Path(self.path.text()).with_suffix("")))
+            else:
+                self.path.setText(with_extension(self.path.text(), self._extension()))
         self._changed()
 
     def _range_changed(self) -> None:
@@ -485,9 +647,19 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
         base = default_output_dir(self.project_path) / name
+        if self._dcp():
+            self.path.setText(str(base))
+            return
         self.path.setText(with_extension(str(base), self._extension() or str(fmt.get("extension") or "mp4")))
 
     def _browse(self) -> None:
+        if self._dcp():
+            # the package folder is made inside the chosen one
+            parent = QFileDialog.getExistingDirectory(self, tr("Output folder"), str(Path(self.path.text()).parent) if self.path.text() else "")
+            if parent:
+                name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
+                self.path.setText(str(Path(parent) / name))
+            return
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         ext = self._extension()
         pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
@@ -521,7 +693,7 @@ class ExportDialog(QDialog):
             p["startSeconds"] = self.start.value()
             p["endSeconds"] = self.end.value()
         # 0 × 0 = the preset's size (or the sequence's); the fields show the preset's own size
-        if self.width_spin.value() and self.height_spin.value():
+        if self.width_spin.isEnabled() and self.width_spin.value() and self.height_spin.value():
             p["width"] = self.width_spin.value()
             p["height"] = self.height_spin.value()
         if self.bitrate_mode.isEnabled():
@@ -552,6 +724,16 @@ class ExportDialog(QDialog):
                 p["mpeg2Chroma"] = self.chroma.currentData()
             if "fieldOrder" in self.touched:
                 p["fieldOrder"] = self.field_order.currentData()
+        if self.dcp_resolution.isEnabled():
+            p["dcpResolution"] = self.dcp_resolution.currentData()
+            p["dcpAspect"] = self.dcp_aspect.currentData()
+            p["dcpContentKind"] = self.dcp_kind.currentData()
+            mode = self.dcp_immersive.currentData()
+            p["dcpImmersive"] = mode
+            if mode == "file":
+                p["dcpIabSource"] = os.path.expanduser(self.dcp_iab_source.text().strip())
+            if mode != "off":
+                p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p

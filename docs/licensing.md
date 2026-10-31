@@ -137,6 +137,7 @@ that adds them names the source and revision.
 | `crates/cineform/src/tables.rs` (codebooks), and the tag syntax, companding and inverse 2/6 wavelet re-expressed in `crates/cineform/src/{decode,vlc,wavelet}.rs` | GoPro CineForm SDK, https://github.com/gopro/cineform-sdk, rev. `11574d0295771edccadd17af14af74a539f924c7`, `Common/table9.inc`, `Common/table17.inc`, `Codec/codec.h`, `Codec/spatial.c`, `Codec/InvertHorizontalStrip16s.c`, `Codec/vlc.c` | (C) 2017 GoPro, Inc. | Apache-2.0 OR MIT (MIT used) |
 | `crates/j2k/src/ht.rs`, `crates/j2k/src/ht_tables.rs` (HTJ2K block decoder, ported) | OpenJPH, https://github.com/aous72/OpenJPH, 0.28.1 (Ubuntu `openjph_0.28.1.orig.tar.gz`), `src/core/coding/ojph_block_decoder32.cpp`, `ojph_block_common.cpp`, `table0.h`, `table1.h` | Aous Naman; Kakadu Software Pty Ltd; The University of New South Wales | BSD-2-Clause (`crates/j2k/src/LICENSE-OpenJPH`) |
 | `crates/truehd/src/` (except `cfa4.rs`, `anyhow.rs`) | `truehd` crate 0.7.2, <https://github.com/truehdd/truehdd>, crates.io release 0.7.2, `truehd/src/` | Rainbaby | Apache-2.0 (`crates/truehd/LICENSE`) |
+| `.claude/skills/cfa4-skill-review/SKILL.md` | NVIDIA SkillSpector, <https://github.com/NVIDIA/SkillSpector>, commit `54921c8c7c23008c8af2328d5ab492a904b6ece4`, `skills/skill-inspector/SKILL.md`; CFA4 Hungarian adaptation | NVIDIA CORPORATION & AFFILIATES (Copyright 2026) | Apache-2.0 upstream; CFA4 adaptation GPL-3.0-or-later (`LICENSE-APACHE`) |
 
 ## 6. Dependency checks
 

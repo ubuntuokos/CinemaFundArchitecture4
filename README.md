@@ -78,6 +78,6 @@ with its own licensing obligations. The Qt shell does not bundle Qt for distribu
 - [Known inherited gaps](docs/gaps.md)
 - [Licenses and attribution](ATTRIBUTION.md)
 
-The legacy `apps/cfa4-web`, Windows/macOS/FreeBSD packaging/source components
+The legacy Windows/macOS/FreeBSD packaging/source components
 are not removed in this preparation step to avoid breaking existing crate dependencies;
 none are supported CFA4 release targets.

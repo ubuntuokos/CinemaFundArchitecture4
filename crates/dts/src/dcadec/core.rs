@@ -12,7 +12,8 @@
 // dcaadpcm.h. Handles the primary channel set (the 5.1 lossy bed), the XXCH
 // extension set a DTS-HD stream adds to it (the 7.1 rears), and a bare
 // extension set coded in the same syntax without a frame header of its own
-// (the DTS:X heights of a lossy carrier). Not handled: XCH, XBR, X96. The
+// (the DTS:X heights of a lossy carrier), and the XCH rear-centre channel of
+// the core sub-stream (DTS-ES, Modified for CFA4). Not handled: XBR, X96. The
 // subband samples produced here are fed to the QMF synthesis in `synth.rs`.
 
 use super::huffman::core_vlcs;
@@ -39,6 +40,13 @@ const DCA_XXCH_CHANNELS_MAX: usize = 2;
 /// `DCA_CORE_CHANNELS_MAX`: bounds the XXCH downmix coefficient list.
 const DCA_CORE_CHANNELS_MAX: usize = 6;
 const DCA_SYNCWORD_XXCH: u32 = 0x4700_4A03;
+// Modified for CFA4: the XCH extension of the core sub-stream (`parse_xch_frame`).
+const DCA_SYNCWORD_XCH: u32 = 0x5A5A_5A5A;
+/// `DCA_EXT_AUDIO_XCH`: the core header's extension type naming an XCH frame.
+const DCA_EXT_AUDIO_XCH: u32 = 0;
+/// `M_SQRT1_2 * (1 << 23)`, the gain a DTS-ES encoder folds the rear centre into the surrounds
+/// with (`dmix_sub_xch`).
+const XCH_DMIX_GAIN: i32 = 5_931_520;
 
 const BLOCK_CODE_NBITS: [u8; 7] = [7, 10, 12, 13, 15, 17, 19];
 
@@ -128,6 +136,14 @@ sample_loop! {
     }
 }
 
+/// `dmix_sub_xch`: `dst -= cs / sqrt(2)` in 23-bit fixed point, clipped to 24 bits as ffmpeg's
+/// output (`clip23`) clips it.
+fn sub_xch(dst: &mut [i32], cs: &[i32]) {
+    for (d, &c) in dst.iter_mut().zip(cs) {
+        *d = clip23(d.saturating_sub(mul(c, XCH_DMIX_GAIN, 23)));
+    }
+}
+
 /// `ff_dcaadpcm_predict`.
 #[inline(always)]
 fn adpcm_predict(pred_vq_index: usize, input: &[i32]) -> i32 {
@@ -168,6 +184,9 @@ enum Header {
     /// An XXCH set (`HEADER_XXCH`): channels beyond the core's, with the
     /// downmix the encoder folded into the core.
     Xxch,
+    /// The XCH rear centre (`HEADER_XCH`): one channel after the core's, coded
+    /// with the core's syntax.
+    Xch,
     /// A bare set coded in the core syntax without a frame header of its
     /// own: the DTS:X extension of a lossy carrier.
     Extension,
@@ -215,6 +234,12 @@ pub(crate) struct CoreDecoder {
     nchannels_core: usize,
     /// First channel of the bare extension set (`nchannels` when none).
     extension_base: usize,
+
+    // The core header's extension audio fields, and whether an XCH channel
+    // decoded for this frame (Modified for CFA4).
+    ext_audio_type: u32,
+    ext_audio_present: bool,
+    xch_present: bool,
 
     // XXCH set of the frame (`parse_xxch_frame`); reset per core frame.
     xxch_present: bool,
@@ -336,6 +361,7 @@ impl CoreDecoder {
         self.bit_rate_lossless = false;
         // A new access unit: any extension set is decoded after it.
         self.xxch_present = false;
+        self.xch_present = false;
         self.nchannels = 0;
         self.nchannels_core = 0;
         self.extension_base = 0;
@@ -350,7 +376,64 @@ impl CoreDecoder {
         self.parse_frame_data(&mut gb, data, Header::Core, 0)?;
         self.nchannels_core = self.nchannels;
         self.extension_base = self.nchannels;
+        if self.ext_audio_present && self.ext_audio_type == DCA_EXT_AUDIO_XCH {
+            // a damaged XCH frame leaves the core alone, as in ffmpeg
+            let _ = self.decode_xch(data.get(..info.frame_size).unwrap_or(data), gb.position());
+        }
         Ok(())
+    }
+
+    /// The XCH frame at the end of the core frame `data`, found by a backward search for its
+    /// sync word from the end (`parse_optional_info`) and decoded after the core's channels
+    /// (`parse_xch_frame`). `from` is the bit position the core's audio ended at. On error the
+    /// core keeps its own channels.
+    fn decode_xch(&mut self, data: &[u8], from: usize) -> R<()> {
+        let word = |i: usize| -> u32 { data.get(i * 4..i * 4 + 4).map_or(0, |b| u32::from_be_bytes([b[0], b[1], b[2], b[3]])) };
+        let last = from / 32;
+        let mut pos = None;
+        let mut next = 0u32;
+        // The sync word must sit at the XCH frame's size from the end (one byte less for legacy
+        // streams), the frame is at least 96 bytes and its AMODE field is 8: this rules out
+        // aliases of the sync word in the audio data.
+        let mut i = (data.len() / 4).checked_sub(1);
+        while let Some(at) = i.filter(|&at| at >= last) {
+            let w = word(at);
+            if w == DCA_SYNCWORD_XCH {
+                let size = (next >> 22) as usize + 1;
+                let dist = data.len() - at * 4;
+                if size >= 96 && (size == dist || size - 1 == dist) && (next >> 15) & 0x7F == 0x08 {
+                    pos = Some(at * 32 + 49);
+                    break;
+                }
+            }
+            next = w;
+            i = at.checked_sub(1);
+        }
+        let pos = pos.ok_or(CoreError::Invalid("xch sync word"))?;
+        if self.core_ch_mask() & (1 << DCA_SPEAKER_CS) != 0 {
+            return Err(CoreError::Invalid("xch with a rear centre in the core"));
+        }
+        let mut gb = BitReader::new(data);
+        if !gb.seek(pos) {
+            return Err(CoreError::Invalid("xch position"));
+        }
+        let base = self.nchannels;
+        match self.parse_frame_data(&mut gb, data, Header::Xch, base) {
+            // the frame must end within the core frame
+            Ok(()) if gb.position() <= data.len() * 8 => {
+                self.xch_present = true;
+                self.extension_base = self.nchannels;
+                Ok(())
+            }
+            Ok(()) => {
+                self.drop_extension_sets();
+                Err(CoreError::Invalid("xch frame past the core frame"))
+            }
+            Err(e) => {
+                self.drop_extension_sets();
+                Err(e)
+            }
+        }
     }
 
     /// Advance `gb` past the core frame header to the coding header. Mirrors the
@@ -374,8 +457,8 @@ impl CoreDecoder {
         let _ts = rb1(gb)?;
         let _aux = rb1(gb)?;
         rb1(gb)?; // hdcd
-        rb(gb, 3)?; // ext_audio_type
-        rb1(gb)?; // ext_audio_present
+        self.ext_audio_type = rb(gb, 3)?;
+        self.ext_audio_present = rb1(gb)?;
         self.sync_ssf = rb1(gb)?; // sync_ssf
         rb(gb, 2)?; // lfe
         rb1(gb)?; // predictor_history
@@ -403,6 +486,12 @@ impl CoreDecoder {
                 let expect = self.audio_mode.channel_count();
                 if self.nchannels != expect {
                     return Err(CoreError::Invalid("nchannels mismatch"));
+                }
+            }
+            Header::Xch => {
+                self.nchannels = self.audio_mode.channel_count() + 1;
+                if self.nchannels > DCA_CHANNELS {
+                    return Err(CoreError::Invalid("xch channel count"));
                 }
             }
             Header::Xxch => {
@@ -508,7 +597,7 @@ impl CoreDecoder {
         for ch in xch_base..self.nchannels {
             let mut n = rb(gb, 3)? as usize;
             match header {
-                Header::Core => {}
+                Header::Core | Header::Xch => {}
                 // An XXCH set's joint index counts from its own first
                 // channel (`n += xch_base - 1` in ffmpeg).
                 Header::Xxch if n != 0 => n += xch_base - 1,
@@ -553,7 +642,7 @@ impl CoreDecoder {
             }
         }
         match header {
-            Header::Core => {
+            Header::Core | Header::Xch => {
                 if self.crc_present {
                     rb(gb, 16)?;
                 }
@@ -899,6 +988,10 @@ impl CoreDecoder {
     /// access unit, whose subframe layout the set shares. On error the
     /// decoder falls back to the primary set alone.
     pub(crate) fn decode_xxch(&mut self, data: &[u8]) -> R<()> {
+        // an XXCH set in the extension sub-stream takes the place of the core's XCH, as in ffmpeg
+        if self.xch_present {
+            self.drop_extension_sets();
+        }
         let result = self.parse_xxch_frame(data);
         if result.is_err() {
             self.drop_extension_sets();
@@ -976,6 +1069,49 @@ impl CoreDecoder {
         self.nchannels = self.nchannels_core;
         self.extension_base = self.nchannels_core;
         self.xxch_present = false;
+        self.xch_present = false;
+    }
+
+    /// The core's surrounds carry the XCH rear centre a DTS-ES encoder folded in, which the
+    /// lossy output takes back out (`dmix_sub_xch`; the residual base for XLL keeps it).
+    pub(crate) fn xch_downmixed(&self) -> bool {
+        self.xch_present && self.es_format && matches!(self.audio_mode, AudioMode::TwoF2R | AudioMode::ThreeF2R)
+    }
+
+    /// [`Self::undo_xch_dmix`] on the channel-indexed output of the core path.
+    pub(crate) fn undo_xch_dmix_channels(&self, chans: &mut [Vec<i32>]) {
+        if !self.xch_downmixed() {
+            return;
+        }
+        let cs = self.nchannels_core;
+        for spkr in [DCA_SPEAKER_LS, DCA_SPEAKER_RS] {
+            let Some(ch) = (0..self.nchannels_core).find(|&ch| self.speaker_for(ch) == Some(spkr)) else {
+                continue;
+            };
+            let (head, tail) = chans.split_at_mut(cs);
+            if let (Some(out), Some(src)) = (head.get_mut(ch), tail.first()) {
+                sub_xch(out, src);
+            }
+        }
+    }
+
+    /// The channel layout of the core path's channels: the primary set's, then the XCH rear
+    /// centre when one decoded.
+    pub(crate) fn xch_decoded(&self) -> bool {
+        self.xch_present
+    }
+
+    /// Take the XCH rear centre back out of the surrounds of the speaker-indexed output.
+    pub(crate) fn undo_xch_dmix(&self, samples: &mut [Option<Vec<i32>>]) {
+        if !self.xch_downmixed() {
+            return;
+        }
+        for dst in [DCA_SPEAKER_LS, DCA_SPEAKER_RS] {
+            let (Some(cs), Some(out)) = two_slots(samples, DCA_SPEAKER_CS, dst) else {
+                continue;
+            };
+            sub_xch(out, cs);
+        }
     }
 
     /// Undo the downmix an XXCH encoder folded into the core's channels, in
@@ -1042,6 +1178,9 @@ impl CoreDecoder {
         if ch < self.nchannels_core {
             return prm_ch_to_spkr(self.audio_mode, ch);
         }
+        if self.xch_present && ch == self.nchannels_core {
+            return Some(DCA_SPEAKER_CS);
+        }
         if ch >= self.extension_base {
             return None;
         }
@@ -1096,6 +1235,9 @@ impl CoreDecoder {
         if self.xxch_present {
             mask |= self.xxch_spkr_mask;
         }
+        if self.xch_present {
+            mask |= 1 << DCA_SPEAKER_CS;
+        }
         mask
     }
 
@@ -1112,6 +1254,9 @@ impl CoreDecoder {
                 mask = (mask & !(1 << DCA_SPEAKER_RS)) | (1 << DCA_SPEAKER_RSS);
             }
             mask |= self.xxch_spkr_mask;
+        }
+        if self.xch_present {
+            mask |= 1 << DCA_SPEAKER_CS;
         }
         mask
     }
