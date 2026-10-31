@@ -738,6 +738,14 @@ def test_graphics_typing_before_the_new_layer_exists_and_after_another_editor(ap
     gt.edit["caret"] = gt.edit["anchor"] = len("New text")
     gt._replace("!")
     assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "New text!"
+    # a key after another editor's change (before a repaint) edits the new text, not the old one
+    layer.text = {"text": "Old"}
+    gt.start_edit(layer, None)
+    gt.edit["caret"] = gt.edit["anchor"] = 3
+    layer.text = {"text": "NewLong"}
+    back = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, QtCore.Qt.Key.Key_Backspace, QtCore.Qt.KeyboardModifier.NoModifier)
+    assert gt.text_key(back)
+    assert [p for c, p in sent if c == "graphics.setText"][-1]["text"] == "NeLong"
     # the editor's own Ctrl shortcuts are claimed; Save and Undo reach the application
     def key(k, mods=QtCore.Qt.KeyboardModifier.ControlModifier, text=""):
         return QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress, k, mods, text)

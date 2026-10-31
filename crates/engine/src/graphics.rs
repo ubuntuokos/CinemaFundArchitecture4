@@ -288,10 +288,13 @@ fn pinned_position(s: &Session, clip: ClipId, eidx: usize, props: &mut serde_jso
         Some(ItemKind::Graphic { width, height, .. }) => (*width, *height),
         _ => (seq.settings.width, seq.settings.height),
     };
-    let mt = it.source_time_at(tl.clamp(it.start, it.end() - Tick(1)));
+    let at = tl.clamp(it.start, it.end() - Tick(1));
+    // the Position is written at the media time (as `set_props`); the layer is shown, as the
+    // Program overlay reports it, at the effect time (a frame hold without Hold Filters animates on)
+    let (mt, et) = (it.source_time_at(at), it.effect_time_at(at));
     let Some(authored) = e.params.get("position").and_then(|p| p.value_at(mt).as_vec2()) else { return };
-    let Some(shown) = item_layer_specs(it, mt, size).into_iter().find(|(x, _)| *x == eidx).map(|(_, sp)| sp.transform.position) else { return };
-    let (rx, ry) = cfa4_render::graphic_clip::item_roll_offset(it, mt, size);
+    let Some(shown) = item_layer_specs(it, et, size).into_iter().find(|(x, _)| *x == eidx).map(|(_, sp)| sp.transform.position) else { return };
+    let (rx, ry) = cfa4_render::graphic_clip::item_roll_offset(it, et, size);
     let Some(want) = props.get(&key).and_then(Value::as_array) else { return };
     let (Some(x), Some(y)) = (want.first().and_then(Value::as_f64), want.get(1).and_then(Value::as_f64)) else { return };
     let (dx, dy) = (x - (shown.x - rx), y - (shown.y - ry));

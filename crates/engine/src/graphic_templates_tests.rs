@@ -466,3 +466,39 @@ fn character_style_merge_preserves_default_calls_and_separate_clips() {
     }
     assert_eq!(s.history.undo.len(), n + 2, "distinct layers do not merge");
 }
+
+#[test]
+fn dragging_a_pinned_layer_of_a_held_graphic_moves_it_where_it_is_shown() {
+    // Frame Hold without Hold Filters: the pin target animates on, so the layer is shown (and
+    // dragged) at the effect time; the drag must not add the target's movement since the held frame
+    let mut s = demo("gt-pin-hold");
+    let c = clip_of(&s.execute("graphics.newText", json!({"text": "Hi", "position": [300, 300], "size": 80, "seconds": 5})).unwrap());
+    s.execute("graphics.newShape", json!({"shape": "rectangle", "clip": c.0, "position": [330, 270], "size": [200, 120]})).unwrap();
+    s.execute("graphics.arrangeLayer", json!({"clip": c.0, "layer": 1, "to": "back"})).unwrap();
+    s.execute("graphics.pin", json!({"clip": c.0, "layer": 0, "to": 1})).unwrap();
+    s.edit_sequence("kf", |q, _, _| {
+        let (_, it) = q.find_item_mut(c).unwrap();
+        let (si, d) = (it.source_in, it.duration);
+        let e = it.effects.iter_mut().find(|e| e.effect == "graphic_text").unwrap();
+        let p = e.params.get_mut("position").unwrap();
+        p.toggle_animation(si);
+        p.set_at(si, ParamValue::Vec2(cfa4_geom::Vec2::new(300.0, 300.0)));
+        p.set_at(si + d, ParamValue::Vec2(cfa4_geom::Vec2::new(300.0, 800.0)));
+        Ok(())
+    })
+    .unwrap();
+    s.execute("timeline.select", json!({"clips": [c.0]})).unwrap();
+    s.execute("clip.frameHoldOptions", json!({"clips": [c.0], "holdOn": "in", "holdFilters": false})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(c).unwrap().1.clone();
+    assert!(it.frame_hold.is_some() && !it.hold_filters);
+    s.execute("playhead.set", json!({"time": (it.start + Tick(it.duration.0 * 4 / 5)).0})).unwrap();
+    let shown = |s: &mut Session| {
+        let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+        let l = g["layers"].as_array().unwrap().iter().find(|l| l["clip"] == json!(c.0) && l["layer"] == json!(0)).unwrap().clone();
+        (l["position"][0].as_f64().unwrap(), l["position"][1].as_f64().unwrap())
+    };
+    let (x0, y0) = shown(&mut s);
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [x0 + 40.0, y0]}, "shown": true})).unwrap();
+    let (x1, y1) = shown(&mut s);
+    assert!((x1 - x0 - 40.0).abs() < 1e-3 && (y1 - y0).abs() < 1e-3, "({x0}, {y0}) -> ({x1}, {y1})");
+}

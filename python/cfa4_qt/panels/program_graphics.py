@@ -576,16 +576,19 @@ class GraphicsTools:
 
     def text_key(self, ev: QKeyEvent) -> bool:
         """A key while text is edited (egui's ``text_edit``)."""
+        if self.edit is None:
+            return False
+        # take in another editor's change first: the key edits the text as it is now
+        v = self.edit_view()
         e = self.edit
         if e is None:
-            return False
+            return True  # the layer went: the key ends the edit
         k, mods = ev.key(), ev.modifiers()
         ctrl = bool(mods & Qt.KeyboardModifier.ControlModifier)
         alt = bool(mods & Qt.KeyboardModifier.AltModifier)
         shift = bool(mods & Qt.KeyboardModifier.ShiftModifier)
         text = e["text"]
         a, b = sorted((e["caret"], e["anchor"]))
-        v = self.edit_view()
         lines = text_lines(v.text) if v is not None else []
         moved: int | None = None
         if k == Qt.Key.Key_Escape:
