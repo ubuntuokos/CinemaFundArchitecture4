@@ -459,6 +459,8 @@ pub(crate) struct DcpSetup<'a> {
     pub rate: FrameRate,
     /// Whether the export has sound (always 5.1 24-bit 48 kHz).
     pub audio: bool,
+    /// The picture inside the container (black bars excluded), for the ST 429-16 active area.
+    pub active: (u32, u32),
 }
 
 /// A DCP export in progress: the two track files are written as the export runs; the XML at the
@@ -470,6 +472,8 @@ pub(crate) struct DcpMux {
     kind: &'static str,
     rate: FrameRate,
     size: (u32, u32),
+    /// The ST 429-16 active picture area: the fitted picture inside `size`.
+    active: (u32, u32),
     issued: String,
     picture: Option<([u8; 16], String, MxfWriter<Out>)>,
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
@@ -490,6 +494,16 @@ fn ul_urn(ul: &[u8; 16]) -> String {
 
 /// ST 429-2 channel configuration 1: 5.1 with HI / VI-N (`L R C LFE Ls Rs`, 6 or 8 channels).
 const CHANNEL_CONFIG_1: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0B, 0x04, 0x02, 0x02, 0x10, 0x03, 0x01, 0x01, 0x00];
+
+/// The ST 429-16 active picture area for a picture of `content` inside a `stored` container:
+/// clipped to the container and made even (5.4.2.13), the whole container when nothing is left.
+pub(crate) fn active_area(content: (u32, u32), stored: (u32, u32)) -> (u32, u32) {
+    let fit = |c: u32, s: u32| match c.min(s) & !1 {
+        0 => s,
+        v => v,
+    };
+    (fit(content.0, stored.0), fit(content.1, stored.1))
+}
 
 impl DcpMux {
     pub fn new(s: DcpSetup) -> Result<Self> {
@@ -560,6 +574,7 @@ impl DcpMux {
             kind: dcp_content_kind(settings).unwrap_or("feature"),
             rate: s.rate,
             size: (s.width, s.height),
+            active: active_area(s.active, (s.width, s.height)),
             issued,
             picture,
             sound,
@@ -727,10 +742,9 @@ impl DcpMux {
         };
         x.push_str(&format!("          <meta:MainSoundConfiguration>{config}</meta:MainSoundConfiguration>\n"));
         x.push_str("          <meta:MainSoundSampleRate>48000 1</meta:MainSoundSampleRate>\n");
-        for area in ["MainPictureStoredArea", "MainPictureActiveArea"] {
+        for (area, (w, h)) in [("MainPictureStoredArea", self.size), ("MainPictureActiveArea", self.active)] {
             x.push_str(&format!(
-                "          <meta:{area}>\n            <meta:Width>{}</meta:Width>\n            <meta:Height>{}</meta:Height>\n          </meta:{area}>\n",
-                self.size.0, self.size.1
+                "          <meta:{area}>\n            <meta:Width>{w}</meta:Width>\n            <meta:Height>{h}</meta:Height>\n          </meta:{area}>\n"
             ));
         }
         if self.fallback.is_some() {

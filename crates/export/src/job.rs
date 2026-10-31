@@ -475,6 +475,7 @@ impl Exporter {
                 height: self.pipe.h,
                 rate: self.pipe.rate,
                 audio: self.audio.is_some(),
+                active: self.pipe.content_size(),
             })?);
             return Ok(());
         }

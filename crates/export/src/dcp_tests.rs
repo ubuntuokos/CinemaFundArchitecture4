@@ -238,7 +238,16 @@ fn two_k_flat_package() {
     assert_eq!(element(meta, "meta:MainSoundConfiguration"), Some("51/L,R,C,LFE,Ls,Rs"));
     assert_eq!(element(meta, "meta:MainSoundSampleRate"), Some("48000 1"));
     assert_eq!(element(meta, "IntrinsicDuration"), Some("10"));
-    assert!(meta.contains("<meta:Width>1998</meta:Width>") && !meta.contains("ExtensionMetadata") && !meta.contains("MCASubDescriptors"));
+    assert!(!meta.contains("ExtensionMetadata") && !meta.contains("MCASubDescriptors"));
+    // stored: the 2K Flat container; active: the 16:9 picture between the pillarbox bars
+    let area = |name| {
+        let a = block(meta, name).unwrap();
+        (element(a, "meta:Width").unwrap().to_string(), element(a, "meta:Height").unwrap().to_string())
+    };
+    assert_eq!(area("meta:MainPictureStoredArea"), ("1998".into(), "1080".into()));
+    assert_eq!(area("meta:MainPictureActiveArea"), ("1920".into(), "1080".into()));
+    assert_eq!(crate::dcp_out::active_area((1919, 1081), (1998, 1080)), (1918, 1080), "even, inside the container");
+    assert_eq!(crate::dcp_out::active_area((1, 0), (1998, 1080)), (1998, 1080), "nothing left: the whole container");
     // the asset ids are the UUIDs of the file packages
     let pic_id = element(element(&cpl, "MainPicture").unwrap(), "Id").unwrap().trim_start_matches("urn:uuid:").replace('-', "");
     let pic_uuid: Vec<u8> = (0..16).map(|i| u8::from_str_radix(&pic_id[2 * i..2 * i + 2], 16).unwrap()).collect();
@@ -702,7 +711,8 @@ fn immersive_copy_honours_cancel() {
         dcp_iab_source: raw.to_string_lossy().to_string(),
         ..Default::default()
     };
-    let setup = || DcpSetup { settings: &settings, title: "Cancel".into(), width: 1998, height: 1080, rate: FrameRate::new(25, 1), audio: false };
+    let setup =
+        || DcpSetup { settings: &settings, title: "Cancel".into(), width: 1998, height: 1080, rate: FrameRate::new(25, 1), audio: false, active: (1998, 1080) };
     for after in [0, 2, 5] {
         let mut mux = DcpMux::new(setup()).unwrap();
         mux.set_frames(8);
