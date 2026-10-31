@@ -1,0 +1,20 @@
+[package]
+name = "cfa4-heif"
+description = "Clean-room HEIF / HEIC still-image container reader (ISO/IEC 23008-12 items on ISO BMFF)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+
+[features]
+# A minimal HEIF writer for tests (building files with chosen items, properties and references).
+writer = []
+
+[dev-dependencies]
+cfa4-heif = { path = ".", features = ["writer"] }
