@@ -2001,10 +2001,11 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         assert dlg.params()["dcpImmersive"] == "off" and "dcpIabFallback" not in dlg.params()
         assert not dlg.dcp_iab_source.isEnabled() and not dlg.dcp_iab_fallback.isEnabled()
 
-        # a 7.1 DS bed from the 5.1 mix
+        # a bed from the mix: 7.1 DS, or 9.1OH from a 7.1.2 Mix (#374)
         dlg.dcp_immersive.setCurrentIndex(dlg.dcp_immersive.findData("bed"))
         assert dlg.dcp_iab_fallback.isEnabled() and not dlg.dcp_iab_source.isEnabled()
-        assert "7.1 DS" in dlg.dcp_iab_info.text()
+        assert "7.1 DS" in dlg.dcp_iab_info.text() and "9.1OH" in dlg.dcp_iab_info.text()
+        assert "9.1OH" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("bed"))
         p = dlg.params()
         # ST 429-19:2023: no fallback unless asked (#348); here the 5.1 mix is asked for
         assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "none") and "dcpIabSource" not in p
@@ -4079,6 +4080,12 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
         win.docks["Audio Track Mixer"].raise_()
         assert wait_until(app, lambda: [s.ref for s in mixer.strips if s.isVisible()] == ["A1", "A2", "A3", "Mix"], 10_000)
         a1 = mixer.strips[0]
+        # meter bars per channel format, 7.1 and 7.1.2 included (#374)
+        saved = a1.data
+        for fmt, n in (("Stereo", 2), ("5.1", 6), ("7.1", 8), ("7.1.2", 10), ("Adaptive", 2)):
+            a1.data = {**saved, "channels": fmt}
+            assert a1.channels() == n, fmt
+        a1.data = saved
 
         def strip(ref: str) -> dict:
             return next(s for s in mixer.strips_data if s.get("ref") == ref)

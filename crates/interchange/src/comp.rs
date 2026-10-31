@@ -278,11 +278,7 @@ impl Exporter<'_> {
         }
         let mut n = 0;
         for t in &seq.audio_tracks {
-            let ch = match t.channels {
-                AudioChannels::Mono => 1,
-                AudioChannels::Surround51 => 6,
-                AudioChannels::Stereo | AudioChannels::Adaptive => 2,
-            };
+            let ch = t.channels.fixed_channels().map_or(2, |n| n as u32);
             if media.breakout_to_mono {
                 for c in 0..ch {
                     n += 1;
@@ -807,6 +803,8 @@ fn build_sequence(
             track.channels = match t.channels {
                 1 => AudioChannels::Mono,
                 6 => AudioChannels::Surround51,
+                8 => AudioChannels::Surround71,
+                10 => AudioChannels::Surround712,
                 _ => AudioChannels::Stereo,
             };
         }

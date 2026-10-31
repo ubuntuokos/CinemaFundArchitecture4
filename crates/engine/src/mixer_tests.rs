@@ -517,7 +517,15 @@ fn surround_sequence_settings_and_panner_lanes() {
     let q = s.active_sequence().unwrap();
     assert_eq!(q.settings.audio_master, cfa4_project::AudioChannels::Surround51);
     assert!(q.audio_tracks.iter().all(|t| t.channels == cfa4_project::AudioChannels::Surround51));
-    assert!(s.execute("file.newSequence", json!({"mix": "7.1"})).is_err());
+    // 7.1 and 7.1.2 (#374): the Mix, the tracks and a submix
+    s.execute("file.newSequence", json!({"name": "atmos bed", "mix": "7.1.2", "trackType": "7.1", "audio": 1})).unwrap();
+    let q = s.active_sequence().unwrap();
+    assert_eq!(q.settings.audio_master, cfa4_project::AudioChannels::Surround712);
+    assert!(q.audio_tracks.iter().all(|t| t.channels == cfa4_project::AudioChannels::Surround71));
+    let r = s.execute("mixer.addSubmix", json!({"channels": "7.1.2"})).unwrap();
+    let sub = s.execute("mixer.inspect", json!({})).unwrap();
+    assert!(sub.to_string().contains("\"7.1.2\""), "{r} {sub}");
+    assert!(s.execute("file.newSequence", json!({"mix": "9.1"})).is_err());
     s.execute("file.newSequence", json!({"trackType": "Standard"})).unwrap();
 }
 

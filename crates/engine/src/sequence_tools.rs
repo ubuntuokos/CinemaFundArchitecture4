@@ -698,7 +698,8 @@ pub(crate) fn add_tracks(s: &mut Session, p: &Value) -> Result<Value> {
     );
     let channels = |key: &str, default: AudioChannels| match p.get(key).and_then(Value::as_str) {
         None => Ok(default),
-        Some(x) => crate::mixer::channels_from(x).ok_or_else(|| bad(cmd, format!("`{key}`: unknown track type {x:?} (standard, stereo, 5.1, adaptive, mono)"))),
+        Some(x) => crate::mixer::channels_from(x)
+            .ok_or_else(|| bad(cmd, format!("`{key}`: unknown track type {x:?} (standard, stereo, 5.1, 7.1, 7.1.2, adaptive, mono)"))),
     };
     let (audio_type, submix_type) = (channels("audioType", AudioChannels::Stereo)?, channels("submixType", AudioChannels::Stereo)?);
     if nv + na + ns == 0 {
