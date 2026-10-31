@@ -237,6 +237,19 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
+- **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
+  non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):
+  - *Promo first cut from a brief or a website:* an agent writes the story and shot list and builds
+    the sequence through the control channel / MCP (beat markers, graphics, Text Animators, Batch
+    Variants are already drivable). Needs an LLM; CFA4 ships none.
+  - *AI review of a cut:* a vision model looks at one still per beat and reports weak openings,
+    unreadable text or off-brand colours, next to the deterministic Check Before Export.
+  - *Smart shot picking from phone footage:* rank clips by subject and composition and cut them
+    on the beat markers (exposure and shake scores alone are classical and can come first).
+  - *Generated B-roll, music and voices:* text/image-to-video, music generation, voice cloning.
+    Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
+    only openly licensed local models qualify. Kokoro TTS narration exists already.
+  - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
 
 ## G13. Delivery formats
 
