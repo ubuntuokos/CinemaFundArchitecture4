@@ -150,3 +150,43 @@ fn proxy_audio_follows_auro_decoding() {
     s.execute("edit.undo", json!({})).unwrap();
     assert_eq!(played(&s), 10);
 }
+
+/// Review of #323: Link Media compares a carrier played as its own channels as one, and keeps
+/// playing it that way.
+#[test]
+fn relinking_a_carrier_keeps_auro_decoding_off() {
+    let dir = tmp_dir("auro-toggle-relink");
+    let mut s = Session::default();
+    let wav = write_carrier(&dir.join("carrier.wav"));
+    let r = s.execute("file.import", json!({"paths": [wav]})).unwrap();
+    let item = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("clip.interpretFootage", json!({"items": [item.0], "auroDecoding": false})).unwrap();
+    let moved = dir.join("moved");
+    std::fs::create_dir_all(&moved).unwrap();
+    std::fs::copy(dir.join("carrier.wav"), moved.join("carrier.wav")).unwrap();
+    s.execute("media.relink", json!({"item": item.0, "path": moved.join("carrier.wav").to_string_lossy()})).unwrap();
+    assert_eq!(channels(&s, item), (6, 6));
+}
+
+/// Review of #323: a carrier read again after it changed on disk is cached as what the item
+/// plays, so turning decoding back on gives the decoded layout, not the cached carrier.
+#[test]
+fn a_refreshed_carrier_is_not_reused_once_decoding_is_back_on() {
+    let dir = tmp_dir("auro-toggle-refresh");
+    let mut s = Session::default();
+    let path = dir.join("carrier.wav");
+    let wav = write_carrier(&path);
+    let r = s.execute("file.import", json!({"paths": [wav]})).unwrap();
+    let item = ItemId(r["items"][0].as_u64().unwrap());
+    s.execute("clip.interpretFootage", json!({"items": [item.0], "auroDecoding": false})).unwrap();
+    s.execute("media.refreshChanged", json!({})).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    let mut bytes = std::fs::read(&path).unwrap();
+    bytes.extend_from_slice(&[0; 18]);
+    std::fs::write(&path, bytes).unwrap();
+    let r = s.execute("media.refreshChanged", json!({})).unwrap();
+    assert_eq!(r["refreshed"], json!([item.0]), "{r}");
+    // no lookup in between: the refreshed carrier is what the cache holds
+    s.execute("clip.interpretFootage", json!({"items": [item.0], "auroDecoding": true})).unwrap();
+    assert_eq!(channels(&s, item), (10, 10));
+}

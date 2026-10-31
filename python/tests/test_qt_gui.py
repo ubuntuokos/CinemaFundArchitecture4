@@ -3355,6 +3355,22 @@ def test_interpret_footage_turns_auro_decoding_off(app):
     d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro").setChecked(False)
     d.accept()
     assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": False, "items": [7]})
+    # carriers with mixed settings: partly checked and left alone, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    assert box.checkState() == QtCore.Qt.CheckState.PartiallyChecked
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    box.click()
+    assert box.checkState() == QtCore.Qt.CheckState.Checked and not box.isTristate()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": True, "items": [7, 8]})
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")

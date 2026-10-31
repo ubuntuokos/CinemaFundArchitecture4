@@ -169,9 +169,17 @@ impl MediaPool {
 
     /// Cache a source opened from `path` for an item.
     pub fn insert_file(&self, item: ItemId, path: &str, src: SharedSource) {
+        self.insert_file_as(item, path, src, false);
+    }
+
+    /// [`insert_file`](Self::insert_file) for a source opened for an item that plays its
+    /// Auro-3D carrier (`carrier`, #323): cached under the key [`media_key`] gives that item, so
+    /// turning decoding back on opens the decoded source rather than reusing this one.
+    pub fn insert_file_as(&self, item: ItemId, path: &str, src: SharedSource, carrier: bool) {
         self.offline.write().unwrap_or_else(|e| e.into_inner()).remove(&item);
         let src = self.unsupported_as_slate(item, path, src);
-        self.sources.write().unwrap_or_else(|e| e.into_inner()).insert(item, (format!("file:{path}"), src));
+        let key = if carrier { format!("carrier:{path}") } else { format!("file:{path}") };
+        self.sources.write().unwrap_or_else(|e| e.into_inner()).insert(item, (key, src));
     }
 
     /// `src` (opened from `path` for `item`) showing the unreadable slate for the frames it
