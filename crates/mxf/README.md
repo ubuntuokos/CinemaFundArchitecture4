@@ -28,6 +28,7 @@ Implemented from the SMPTE documents (editions used):
 | SMPTE ST 429-3 / 429-4 | 2023 | D-Cinema track files (writer): OP-Atom frame wrapping, header metadata only in the header partition, UUID-based package UMIDs, channel assignment; JPEG 2000 picture mapping |
 | SMPTE ST 429-18 | 2023 | Immersive audio track files (writer and reader): data element key, essence container, IAB data essence descriptor and sub-descriptor |
 | SMPTE ST 422 | 2022 | JPEG 2000 container label and JPEG 2000 picture sub-descriptor (writer) |
+| SMPTE ST 377-4 | (via asdcplib's dictionary and real DCP-o-matic files) | MCA labels (writer): soundfield group and audio channel label sub-descriptors on the sound descriptor |
 
 ## Reading a file
 
@@ -127,7 +128,10 @@ w.finish()?;
   (`0E 09 06 03`, data essence coding `0E 09 06 04`, the version 5 primer label of clause 10) and
   its sub-descriptor (version, most channels and objects, first frame, IAB sample rate; laid out as
   the descriptor values of a real Atmos DCP track file). The reader opens such files as an IAB
-  sound track.
+  sound track. Multichannel audio labels (`WriterConfig::mca`, `McaLabel`, ST 377-4, #348):
+  soundfield group (`6Ch`) and audio channel (`6Bh`) label sub-descriptors referenced from the
+  Wave descriptor, their items under dynamic tags named in the primer; cinecert `asdcp-info -H`
+  reads them back.
 - **Index tables** (ST 377-1 §11): VBR entries per edit unit — stream offset (from the first
   essence byte; clip-wrapped: from the element value), key-frame offset, flags (`0x80` random
   access, `0xC0` AVC IDR with its parameter sets, `0x22` P, `0x33` B) and temporal offsets from the

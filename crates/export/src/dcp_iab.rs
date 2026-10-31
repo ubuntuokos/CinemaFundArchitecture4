@@ -19,7 +19,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::sync::Mutex;
 
 use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Description, Frame, FrameRate, Gain, Layout};
-use cfa4_mxf::{ByteSource, Codec, EssenceTrack, IabDesc, MxfFile, MxfWriter};
+use cfa4_mxf::{ByteSource, Codec, EssenceTrack, IabDesc, McaLabel, MxfFile, MxfWriter};
 
 use crate::{ExportError, ExportSettings, Out, Result};
 
@@ -58,12 +58,43 @@ impl DcpImmersive {
     }
 }
 
-/// Whether the main sound carries the 5.1 fallback (`5.1`, also empty) or silence (`none`).
-fn fallback_name(s: &str) -> Option<bool> {
-    match s.trim().to_ascii_lowercase().as_str() {
-        "" | "5.1" | "51" | "on" => Some(true),
-        "none" | "off" => Some(false),
-        _ => None,
+/// What channels 1-6 of the main sound carry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IabFallback {
+    /// Silence (only the FSK sync on channel 14), as ST 429-19:2023 7.1.2 asks: the main sound
+    /// carries nothing of the immersive program.
+    None,
+    /// The IAB rendered to 5.1 (`file`) or the export's 5.1 mix (`bed`).
+    Rendered,
+    /// The export's own 5.1 timeline mix (for `file`, a mix made apart from the IAB source).
+    Mix,
+}
+
+impl IabFallback {
+    /// The default when nothing is chosen: ST 429-19:2023 7.1.2.
+    pub const DEFAULT: IabFallback = IabFallback::None;
+
+    pub fn from_name(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "" => Some(Self::DEFAULT),
+            "5.1" | "51" | "on" | "rendered" => Some(IabFallback::Rendered),
+            "mix" | "timeline" => Some(IabFallback::Mix),
+            "none" | "off" => Some(IabFallback::None),
+            _ => None,
+        }
+    }
+
+    pub fn id(self) -> &'static str {
+        match self {
+            IabFallback::None => "none",
+            IabFallback::Rendered => "5.1",
+            IabFallback::Mix => "mix",
+        }
+    }
+
+    /// What an export asks for.
+    pub fn of(s: &ExportSettings) -> Self {
+        IabFallback::from_name(&s.dcp_iab_fallback).unwrap_or(Self::DEFAULT)
     }
 }
 
@@ -72,8 +103,8 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
     let Some(mode) = DcpImmersive::from_name(&s.dcp_immersive) else {
         return Err(ExportError::Unsupported(format!("unknown DCP immersive audio {:?}: choose off, bed or file", s.dcp_immersive)));
     };
-    if fallback_name(&s.dcp_iab_fallback).is_none() {
-        return Err(ExportError::Unsupported(format!("unknown IAB fallback {:?}: choose 5.1 or none", s.dcp_iab_fallback)));
+    if IabFallback::from_name(&s.dcp_iab_fallback).is_none() {
+        return Err(ExportError::Unsupported(format!("unknown IAB fallback {:?}: choose 5.1, mix or none", s.dcp_iab_fallback)));
     }
     if mode == DcpImmersive::File && s.dcp_iab_source.trim().is_empty() {
         return Err(ExportError::Unsupported("immersive audio from a file needs an IAB source (an IAB MXF or .iab file)".into()));
@@ -84,6 +115,94 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
 /// ST 429-2 Configuration 4 (Table A.6, no configuration specified: CH01-CH16), the channel
 /// assignment ST 429-19 7.1.3 asks of the main sound of an immersive audio composition.
 pub(crate) const CHANNEL_CONFIG_4: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0B, 0x04, 0x02, 0x02, 0x10, 0x03, 0x01, 0x04, 0x00];
+/// ST 428-12 / ST 430-12 MCA label dictionary ids (class 13 labels 060e2b34.0401010d.0302…).
+const fn mca_dict(group: u8, item: u8) -> [u8; 16] {
+    [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, group, item, 0, 0, 0, 0]
+}
+
+/// The 5.1 channels of the fallback: (dictionary item, tag symbol, tag name), channels 1-6.
+const MCA_51: [(u8, &str, &str); 6] = [
+    (0x01, "chL", "Left"),
+    (0x02, "chR", "Right"),
+    (0x03, "chC", "Center"),
+    (0x04, "chLFE", "LFE"),
+    (0x05, "chLs", "Left Surround"),
+    (0x06, "chRs", "Right Surround"),
+];
+
+/// The MCA labels (ST 377-4) of an immersive DCP's main sound: the 5.1 soundfield group and its
+/// channels when a fallback is carried, and the FSK sync channel 14 (ST 430-12 clauses 9-10).
+/// `id` makes each label's link id from its symbol.
+pub(crate) fn main_sound_mca(fallback: IabFallback, id: &dyn Fn(&str) -> [u8; 16]) -> Vec<McaLabel> {
+    let mut v = Vec::new();
+    if fallback != IabFallback::None {
+        let group = id("sg51");
+        v.push(McaLabel {
+            dictionary: mca_dict(0x02, 0x01),
+            link: group,
+            symbol: "sg51".into(),
+            name: "5.1".into(),
+            channel: None,
+            language: None,
+            group: None,
+        });
+        for (k, (item, symbol, name)) in MCA_51.iter().enumerate() {
+            v.push(McaLabel {
+                dictionary: mca_dict(0x01, *item),
+                link: id(symbol),
+                symbol: (*symbol).into(),
+                name: (*name).into(),
+                channel: Some(k as u32 + 1),
+                language: None,
+                group: Some(group),
+            });
+        }
+    }
+    v.push(McaLabel {
+        dictionary: mca_dict(0x01, 0x10),
+        link: id("FSKSync"),
+        symbol: "FSKSync".into(),
+        name: "FSK Sync".into(),
+        channel: Some(FSK_CHANNEL as u32 + 1),
+        language: None,
+        group: None,
+    });
+    v
+}
+
+/// The CPL `MainSoundConfiguration` (ST 429-16 5.4.2.10) of an immersive DCP's main sound:
+/// FSKSync on channel 14 (ST 429-19 6.4), the 5.1 fallback or silence ("-") on 1-6.
+pub(crate) fn main_sound_configuration(fallback: IabFallback) -> String {
+    let mut ch: Vec<&str> = vec!["-"; MAIN_SOUND_CHANNELS as usize];
+    if fallback != IabFallback::None {
+        for (c, s) in ch.iter_mut().zip(["L", "R", "C", "LFE", "Ls", "Rs"]) {
+            *c = s;
+        }
+    }
+    if let Some(c) = ch.get_mut(FSK_CHANNEL) {
+        *c = "FSKSync";
+    }
+    format!("51/{}", ch.join(","))
+}
+
+/// The Digital Cinema Naming Convention title with its audio type field set to `IAB`, as
+/// ISDCF Doc 15 4.1 asks; a title that is not a DCNC name stays as it is. The audio type is the
+/// field before the resolution (`2K`/`4K`), after at least title, type, aspect and language
+/// (the territory-rating field is often left out).
+pub(crate) fn dcnc_iab_title(title: &str) -> String {
+    let mut fields: Vec<&str> = title.split('_').collect();
+    let Some(res) = fields.iter().skip(5).position(|f| matches!(*f, "2K" | "4K" | "8K")).map(|p| p + 5) else {
+        return title.to_string();
+    };
+    if fields.len() < res + 3 {
+        return title.to_string();
+    }
+    if let Some(a) = fields.get_mut(res - 1) {
+        *a = "IAB";
+    }
+    fields.join("_")
+}
+
 /// Main sound channels of an immersive audio DCP.
 pub(crate) const MAIN_SOUND_CHANNELS: u32 = 16;
 /// Container channel 14 (ST 429-19 7.1.1), zero-based.
@@ -494,7 +613,7 @@ pub(crate) fn initial_desc() -> IabDesc {
 /// sound (fallback + FSK), written one edit unit at a time.
 pub(crate) struct ImmersiveMux {
     mode: DcpImmersive,
-    fallback: bool,
+    fallback: IabFallback,
     rate: FrameRate,
     /// Samples per edit unit at 48 kHz.
     spu: usize,
@@ -502,11 +621,14 @@ pub(crate) struct ImmersiveMux {
     pub name: String,
     iab: MxfWriter<Out>,
     fsk: FskSync,
-    /// 5.1 mix waiting for a whole edit unit (`bed`).
+    /// 5.1 mix waiting for a whole edit unit (`bed`, or `file` with the mix as fallback).
     pending: Vec<Vec<f32>>,
     units: u64,
     desc: IabDesc,
     source: String,
+    /// `file`: the opened source and the last frame copied (the metadata of the silent padding).
+    src: Option<Source>,
+    last: Option<Frame>,
 }
 
 impl ImmersiveMux {
@@ -516,7 +638,7 @@ impl ImmersiveMux {
         let fsk = FskSync::new(sound_id, fps).ok_or_else(|| ExportError::Unsupported(format!("no FSK sync signal at {fps} fps")))?;
         Ok(ImmersiveMux {
             mode: DcpImmersive::of(s),
-            fallback: fallback_name(&s.dcp_iab_fallback).unwrap_or(true),
+            fallback: IabFallback::of(s),
             rate,
             spu: rate.samples(false, 0),
             id,
@@ -527,12 +649,19 @@ impl ImmersiveMux {
             units: 0,
             desc: initial_desc(),
             source: s.dcp_iab_source.clone(),
+            src: None,
+            last: None,
         })
     }
 
-    /// The export's 5.1 mix (`bed`; ignored for `file`, whose sound comes from the source).
+    /// Whether the export's 5.1 mix is used: the bed, or the `file` fallback chosen as `mix`.
+    fn uses_mix(&self) -> bool {
+        self.mode == DcpImmersive::Bed || (self.mode == DcpImmersive::File && self.fallback == IabFallback::Mix)
+    }
+
+    /// The export's 5.1 mix, an edit unit at a time (ignored when nothing uses it).
     pub fn write_audio(&mut self, planar: &[Vec<f32>], sound: &mut MxfWriter<Out>) -> Result<()> {
-        if self.mode != DcpImmersive::Bed {
+        if !self.uses_mix() {
             return Ok(());
         }
         for (p, c) in self.pending.iter_mut().zip(planar) {
@@ -540,9 +669,17 @@ impl ImmersiveMux {
         }
         while self.pending.iter().all(|p| p.len() >= self.spu) {
             let unit: Vec<Vec<f32>> = self.pending.iter_mut().map(|p| p.drain(..self.spu).collect()).collect();
-            self.bed_unit(&unit, sound)?;
+            self.mix_unit(&unit, sound)?;
         }
         Ok(())
+    }
+
+    /// One edit unit of the mix: a bed frame, or the next source frame with the mix as fallback.
+    fn mix_unit(&mut self, unit: &[Vec<f32>], sound: &mut MxfWriter<Out>) -> Result<()> {
+        match self.mode {
+            DcpImmersive::File => self.source_unit(Some(unit), sound),
+            _ => self.bed_unit(unit, sound),
+        }
     }
 
     fn bed_unit(&mut self, unit: &[Vec<f32>], sound: &mut MxfWriter<Out>) -> Result<()> {
@@ -559,7 +696,7 @@ impl ImmersiveMux {
         self.desc.max_objects = self.desc.max_objects.max(o.min(u32::from(u16::MAX)) as u16);
         self.iab.push_data(bytes).map_err(|e| ExportError::Io(e.to_string()))?;
         let mut planar = vec![vec![0.0f32; self.spu]; MAIN_SOUND_CHANNELS as usize];
-        if self.fallback
+        if self.fallback != IabFallback::None
             && let Some(fb) = fallback
         {
             for (dst, src) in planar.iter_mut().zip(fb.iter().take(6)) {
@@ -581,27 +718,29 @@ impl ImmersiveMux {
     /// Complete both tracks to `frames` edit units (the picture's); returns the IAB writer and
     /// its edit units. `cancelled` is polled once per edit unit.
     pub fn finish(mut self, frames: u64, sound: &mut MxfWriter<Out>, cancelled: &dyn Fn() -> bool) -> Result<(MxfWriter<Out>, u64)> {
-        match self.mode {
-            DcpImmersive::Bed | DcpImmersive::Off => {
-                if self.pending.iter().any(|p| !p.is_empty()) {
-                    let unit: Vec<Vec<f32>> = std::mem::take(&mut self.pending)
-                        .into_iter()
-                        .map(|mut p| {
-                            p.resize(self.spu, 0.0);
-                            p
-                        })
-                        .collect();
-                    self.bed_unit(&unit, sound)?;
-                }
-                let silence = vec![vec![0.0f32; self.spu]; 6];
-                while self.units < frames {
-                    if cancelled() {
-                        return Err(ExportError::Cancelled);
-                    }
-                    self.bed_unit(&silence, sound)?;
-                }
+        if self.mode == DcpImmersive::Off {
+            return Err(ExportError::Encode("internal: immersive audio without a mode".into()));
+        }
+        // the mix's last partial edit unit, padded with silence
+        if self.uses_mix() && self.pending.iter().any(|p| !p.is_empty()) && self.units < frames {
+            let unit: Vec<Vec<f32>> = std::mem::take(&mut self.pending)
+                .into_iter()
+                .map(|mut p| {
+                    p.resize(self.spu, 0.0);
+                    p
+                })
+                .collect();
+            self.mix_unit(&unit, sound)?;
+        }
+        let silence = vec![vec![0.0f32; self.spu]; 6];
+        while self.units < frames {
+            if cancelled() {
+                return Err(ExportError::Cancelled);
             }
-            DcpImmersive::File => self.copy_source(frames, sound, cancelled)?,
+            match self.mode {
+                DcpImmersive::File => self.source_unit(self.uses_mix().then_some(&silence[..]), sound)?,
+                _ => self.bed_unit(&silence, sound)?,
+            }
         }
         let desc = self.desc;
         self.iab.set_iab(desc).map_err(|e| ExportError::Io(e.to_string()))?;
@@ -609,49 +748,47 @@ impl ImmersiveMux {
         Ok((self.iab, units))
     }
 
-    /// `file`: the source's frames up to `frames`, then silent ones.
-    fn copy_source(&mut self, frames: u64, sound: &mut MxfWriter<Out>, cancelled: &dyn Fn() -> bool) -> Result<()> {
-        let path = self.source.clone();
-        let src = Source::open(&path)?;
-        let layout = Layout::surround_5_1();
-        let mut last: Option<Frame> = None;
-        let want = self.rate.rational();
-        for i in 0..src.len().min(usize::try_from(frames).unwrap_or(usize::MAX)) {
-            if cancelled() {
-                return Err(ExportError::Cancelled);
-            }
-            let bytes = src.frame(i)?;
-            let mut f = cfa4_iab::parse(&bytes).map_err(|e| iab_err(format!("{path}: frame {i}: {e}")))?;
-            if f.frame_rate.rational() != want {
-                let (n, d) = f.frame_rate.rational();
-                return Err(ExportError::Unsupported(format!(
-                    "the IAB source runs at {} fps, the DCP at {} fps",
-                    if d == 1 { n.to_string() } else { format!("{n}/{d}") },
-                    want.0
-                )));
-            }
-            if f.sample_rate != 48_000 {
-                return Err(ExportError::Unsupported(format!("the IAB source is {} Hz; DCP immersive audio is 48 kHz", f.sample_rate)));
-            }
-            let fb = if self.fallback { Some(cfa4_iab::render(&f, &layout).map_err(iab_err)?) } else { None };
-            let out = if conform(&mut f) { cfa4_iab::write(&f).map_err(iab_err)? } else { bytes };
-            self.push(&out, &f, fb.as_deref(), sound)?;
-            last = Some(f);
+    /// `file`: the next edit unit, the source's frame (re-coded when it must be) or, past its end,
+    /// a silent frame with the last frame's metadata. `mix` is the fallback when the export's mix
+    /// is chosen; otherwise the frame is rendered to 5.1 (unless there is no fallback).
+    fn source_unit(&mut self, mix: Option<&[Vec<f32>]>, sound: &mut MxfWriter<Out>) -> Result<()> {
+        if self.src.is_none() {
+            self.src = Some(Source::open(&self.source)?);
         }
-        if self.units < frames {
+        let i = usize::try_from(self.units).unwrap_or(usize::MAX);
+        let src = self.src.as_ref().ok_or_else(|| ExportError::Encode("internal: the IAB source is closed".into()))?;
+        if i >= src.len() {
             // a short source: silent frames with the last frame's metadata (or an empty bed)
-            let pad = match &last {
+            let pad = match &self.last {
                 Some(f) => silenced(f),
                 None => bed_frame(self.rate, &[]),
             };
             let bytes = cfa4_iab::write(&pad).map_err(iab_err)?;
-            while self.units < frames {
-                if cancelled() {
-                    return Err(ExportError::Cancelled);
-                }
-                self.push(&bytes, &pad, None, sound)?;
-            }
+            return self.push(&bytes, &pad, mix, sound);
         }
+        let path = &self.source;
+        let bytes = src.frame(i)?;
+        let mut f = cfa4_iab::parse(&bytes).map_err(|e| iab_err(format!("{path}: frame {i}: {e}")))?;
+        let want = self.rate.rational();
+        if f.frame_rate.rational() != want {
+            let (n, d) = f.frame_rate.rational();
+            return Err(ExportError::Unsupported(format!(
+                "the IAB source runs at {} fps, the DCP at {} fps",
+                if d == 1 { n.to_string() } else { format!("{n}/{d}") },
+                want.0
+            )));
+        }
+        if f.sample_rate != 48_000 {
+            return Err(ExportError::Unsupported(format!("the IAB source is {} Hz; DCP immersive audio is 48 kHz", f.sample_rate)));
+        }
+        let rendered = match (self.fallback, mix) {
+            (IabFallback::Rendered, _) => Some(cfa4_iab::render(&f, &Layout::surround_5_1()).map_err(iab_err)?),
+            _ => None,
+        };
+        let fb = rendered.as_deref().or(mix);
+        let out = if conform(&mut f) { cfa4_iab::write(&f).map_err(iab_err)? } else { bytes };
+        self.push(&out, &f, fb, sound)?;
+        self.last = Some(f);
         Ok(())
     }
 }
@@ -761,6 +898,31 @@ mod tests {
         let err = Source::open(p).err().unwrap().to_string();
         assert!(err.contains("damaged or truncated after 2 frames"), "{err}");
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn dcnc_title_gets_the_iab_audio_type() {
+        assert_eq!(dcnc_iab_title("Demo_TST-1_F_EN-XX_51_2K_20261031_SMPTE_OV"), "Demo_TST-1_F_EN-XX_IAB_2K_20261031_SMPTE_OV");
+        assert_eq!(dcnc_iab_title("Film_FTR-1_S_EN-XX_US-13_71-HI-VI_4K_ST_20261031_FAC_SMPTE_OV"), "Film_FTR-1_S_EN-XX_US-13_IAB_4K_ST_20261031_FAC_SMPTE_OV");
+        assert_eq!(dcnc_iab_title("My film"), "My film");
+        assert_eq!(dcnc_iab_title("A_2K_b"), "A_2K_b");
+    }
+
+    #[test]
+    fn main_sound_labels_and_configuration() {
+        let id = |s: &str| [s.len() as u8; 16];
+        let none = main_sound_mca(IabFallback::None, &id);
+        assert_eq!(none.len(), 1);
+        assert_eq!((none[0].symbol.as_str(), none[0].channel), ("FSKSync", Some(14)));
+        // ST 430-12 clause 9
+        assert_eq!(none[0].dictionary, [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, 0x01, 0x10, 0, 0, 0, 0]);
+        let with = main_sound_mca(IabFallback::Mix, &id);
+        let syms: Vec<&str> = with.iter().map(|m| m.symbol.as_str()).collect();
+        assert_eq!(syms, ["sg51", "chL", "chR", "chC", "chLFE", "chLs", "chRs", "FSKSync"]);
+        assert!(with[1..7].iter().all(|m| m.group == Some(with[0].link)));
+        assert_eq!(main_sound_configuration(IabFallback::None), "51/-,-,-,-,-,-,-,-,-,-,-,-,-,FSKSync,-,-");
+        assert_eq!(main_sound_configuration(IabFallback::Rendered), "51/L,R,C,LFE,Ls,Rs,-,-,-,-,-,-,-,FSKSync,-,-");
+        assert_eq!(IabFallback::from_name(""), Some(IabFallback::None), "ST 429-19:2023 7.1.2 by default");
     }
 
     #[test]
