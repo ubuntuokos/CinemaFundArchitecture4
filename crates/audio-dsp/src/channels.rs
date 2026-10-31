@@ -1,8 +1,11 @@
-//! Channel layouts, format conversion (up/downmix) and the 5.1 surround panner.
+//! Channel layouts, format conversion (up/downmix) and the surround panner.
 //!
 //! **Channel order.** 5.1 audio is always in the SMPTE / WAVE order **L, R, C, LFE, Ls, Rs**
 //! ([`L`], [`R`], [`C`], [`LFE`], [`LS`], [`RS`]); stereo is L, R; mono is one channel. Codecs with a
 //! different native order (AAC: C, L, R, Ls, Rs, LFE) reorder at the codec boundary.
+//! 7.1 (DS, the cinema 7.1 of SMPTE ST 428-12) is **L, R, C, LFE, Lss, Rss, Lrs, Rrs** (the side
+//! surrounds in the 5.1 surround slots, [`LSS`], [`RSS`], [`LRS`], [`RRS`]); 7.1.2 (9.1OH, the
+//! ISDCF Doc 15 IAB bed) adds the overhead **Lts, Rts** ([`LTS`], [`RTS`]).
 //!
 //! **Downmix** follows ITU-R BS.775 (Table 2, "3/2 source" rows), with `k = 1/√2` (−3 dB):
 //!
@@ -19,6 +22,12 @@
 //! **Upmix** places the source on the front speakers without inventing content: mono → C (5.1) or
 //! both sides at unity (2.0, as mono clips are played everywhere else in CFA4); stereo → L, R.
 //!
+//! **7.1 and 7.1.2** are reached through 5.1: 5.1 → 7.1 splits each surround to the side and
+//! the rear surround at −3 dB (`Lss = Lrs = k·Ls`, as a 5.1 mix plays on a 7.1 DS cinema
+//! system); 7.1 → 5.1 is the reverse, `Ls = k·Lss + k·Lrs`, so 5.1 → 7.1 → 5.1 is exact. The
+//! overheads fold into the side surrounds at −3 dB (`Lss += k·Lts`); 7.1 → 7.1.2 leaves them
+//! silent. Stereo and mono of 7.1 / 7.1.2 are the 5.1 downmix of their 5.1 downmix.
+//!
 //! **5.1 panner** ([`Pan51`]): a puck at `(x, y)` in the listening square (x −1 left … +1 right,
 //! y −1 rear … +1 front). A point source at `(x, y)` is split front/rear and left/right with the
 //! sine/cosine constant-power law, and the front image is shared between the phantom L/R pair and
@@ -28,6 +37,14 @@
 //! puck's offset from front-centre (so the default puck (0, 1) at 100 % centre maps 5.1 to itself
 //! exactly). Stereo sources sit at the puck ± 1 in x. The LFE output is the source LFE (5.1) or
 //! the mean of the source channels (mono/stereo) times the **LFE** gain.
+//!
+//! **7.1 / 7.1.2 panner** ([`pan_matrix`]): the same puck over three rows of loudspeakers, front
+//! (y = 1), side (y = 0) and rear (y = −1), constant power between the two nearest rows; Center %
+//! applies to the front row as in 5.1. A 5.1 source's surrounds sit between the side and rear rows
+//! (so the default puck splits them −3 dB, as the upmix does), a 7.1 source's at its own rows (the
+//! default puck is the identity). The panner is two-dimensional: a 7.1.2 source's overhead
+//! channels go to the overheads of a 7.1.2 bus unpanned, and fold into the side surrounds of
+//! anything narrower. A source wider than the bus is downmixed to the bus layout first.
 
 use std::f32::consts::{FRAC_1_SQRT_2, FRAC_PI_2, FRAC_PI_4};
 
@@ -42,8 +59,21 @@ pub const LFE: usize = 3;
 pub const LS: usize = 4;
 pub const RS: usize = 5;
 
+/// 7.1 / 7.1.2 channel indices: the side surrounds share the 5.1 surround slots.
+pub const LSS: usize = 4;
+pub const RSS: usize = 5;
+pub const LRS: usize = 6;
+pub const RRS: usize = 7;
+/// 7.1.2 overhead (top surround) channels.
+pub const LTS: usize = 8;
+pub const RTS: usize = 9;
+
 /// Short names of the 5.1 channels in order.
 pub const NAMES_51: [&str; 6] = ["L", "R", "C", "LFE", "Ls", "Rs"];
+/// Short names of the 7.1 (DS) channels in order.
+pub const NAMES_71: [&str; 8] = ["L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs"];
+/// Short names of the 7.1.2 (9.1OH) channels in order.
+pub const NAMES_712: [&str; 10] = ["L", "R", "C", "LFE", "Lss", "Rss", "Lrs", "Rrs", "Lts", "Rts"];
 
 /// A channel layout.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -53,6 +83,10 @@ pub enum Layout {
     Stereo,
     /// 5.1 in L, R, C, LFE, Ls, Rs order.
     Surround51,
+    /// 7.1 DS in L, R, C, LFE, Lss, Rss, Lrs, Rrs order.
+    Surround71,
+    /// 7.1.2 (9.1OH): 7.1 DS and the overhead Lts, Rts.
+    Surround712,
 }
 
 impl Layout {
@@ -61,15 +95,23 @@ impl Layout {
             Layout::Mono => 1,
             Layout::Stereo => 2,
             Layout::Surround51 => 6,
+            Layout::Surround71 => 8,
+            Layout::Surround712 => 10,
         }
     }
-    /// The layout of a plain channel count (1, 2 or 6; anything else is treated as stereo).
+    /// The layout of a plain channel count (1, 2, 6, 8 or 10; anything else is treated as stereo).
     pub fn from_channels(n: usize) -> Layout {
         match n {
             1 => Layout::Mono,
             6 => Layout::Surround51,
+            8 => Layout::Surround71,
+            10 => Layout::Surround712,
             _ => Layout::Stereo,
         }
+    }
+    /// Whether this is a surround layout (5.1, 7.1 or 7.1.2), panned with the surround panner.
+    pub fn is_surround(self) -> bool {
+        self.channels() >= 6
     }
     /// Channel names for display ("L", "R" …).
     pub fn names(self) -> &'static [&'static str] {
@@ -77,6 +119,8 @@ impl Layout {
             Layout::Mono => &["M"],
             Layout::Stereo => &["L", "R"],
             Layout::Surround51 => &NAMES_51,
+            Layout::Surround71 => &NAMES_71,
+            Layout::Surround712 => &NAMES_712,
         }
     }
 }
@@ -121,6 +165,49 @@ impl Mixdown {
 /// ([`Mixdown::FrontRear`] is BS.775).
 pub fn matrix(from: Layout, to: Layout, mixdown: Mixdown) -> Vec<Vec<f32>> {
     let (ni, no) = (from.channels(), to.channels());
+    if from == to {
+        return (0..no).map(|o| (0..ni).map(|i| if i == o { 1.0 } else { 0.0 }).collect()).collect();
+    }
+    // 7.1 and 7.1.2 go through 5.1 (see the module documentation)
+    match (from, to) {
+        (Layout::Surround71, Layout::Surround712) => {
+            return (0..no).map(|o| (0..ni).map(|i| if i == o { 1.0 } else { 0.0 }).collect()).collect();
+        }
+        (Layout::Surround712, Layout::Surround71) => {
+            let mut m: Vec<Vec<f32>> = (0..no).map(|o| (0..ni).map(|i| if i == o { 1.0 } else { 0.0 }).collect()).collect();
+            m[LSS][LTS] = K;
+            m[RSS][RTS] = K;
+            return m;
+        }
+        (Layout::Surround71 | Layout::Surround712, _) => {
+            let mut down = vec![vec![0.0f32; ni]; 6];
+            for c in [L, R, C, LFE] {
+                down[c][c] = 1.0;
+            }
+            down[LS][LSS] = K;
+            down[LS][LRS] = K;
+            down[RS][RSS] = K;
+            down[RS][RRS] = K;
+            if from == Layout::Surround712 {
+                // the overheads fold into the side surrounds (k), which reach Ls / Rs at k
+                down[LS][LTS] = 0.5;
+                down[RS][RTS] = 0.5;
+            }
+            return compose(&matrix(Layout::Surround51, to, mixdown), &down);
+        }
+        (_, Layout::Surround71 | Layout::Surround712) => {
+            let mut up = vec![vec![0.0f32; 6]; no];
+            for c in [L, R, C, LFE] {
+                up[c][c] = 1.0;
+            }
+            up[LSS][LS] = K;
+            up[LRS][LS] = K;
+            up[RSS][RS] = K;
+            up[RRS][RS] = K;
+            return compose(&up, &matrix(from, Layout::Surround51, mixdown));
+        }
+        _ => {}
+    }
     let mut m = vec![vec![0.0f32; ni]; no];
     match (from, to) {
         (Layout::Mono, Layout::Mono) | (Layout::Stereo, Layout::Stereo) | (Layout::Surround51, Layout::Surround51) => {
@@ -159,8 +246,31 @@ pub fn matrix(from: Layout, to: Layout, mixdown: Mixdown) -> Vec<Vec<f32>> {
                 m[1][LFE] = K;
             }
         }
+        // 7.1 and 7.1.2 returned above
+        _ => {}
     }
     m
+}
+
+/// The matrix product `a · b` (`a[out][mid]`, `b[mid][in]`).
+pub fn compose(a: &[Vec<f32>], b: &[Vec<f32>]) -> Vec<Vec<f32>> {
+    let ni = b.first().map_or(0, Vec::len);
+    a.iter()
+        .map(|row| {
+            (0..ni)
+                .map(|i| {
+                    let v: f32 = row.iter().zip(b).map(|(g, brow)| g * brow.get(i).copied().unwrap_or(0.0)).sum();
+                    if v.abs() < 1e-6 {
+                        0.0
+                    } else if (v - 1.0).abs() < 1e-6 {
+                        1.0
+                    } else {
+                        v
+                    }
+                })
+                .collect()
+        })
+        .collect()
 }
 
 /// Apply a matrix `m[out][in]` to planar `input` (all channels the same length).
@@ -257,21 +367,104 @@ pub fn point_gains(x: f32, y: f32, center: f32) -> [f32; 6] {
     g
 }
 
-/// Nominal source-channel positions relative to the puck's offset from front-centre.
-fn offsets(from: Layout) -> &'static [(f32, f32)] {
-    match from {
-        Layout::Mono => &[(0.0, 0.0)],
-        Layout::Stereo => &[(-1.0, 0.0), (1.0, 0.0)],
+/// Nominal source-channel positions relative to the puck's offset from front-centre, on a 5.1
+/// bus (`rows3` false: the surrounds are the rear) or a 7.1 / 7.1.2 bus (`rows3`: front, side and
+/// rear rows, a 5.1 surround between the side and the rear). Sources wider than the bus are
+/// downmixed before panning, so 7.1 appears only with `rows3`; overheads are not positioned.
+fn offsets(from: Layout, rows3: bool) -> &'static [(f32, f32)] {
+    match (from, rows3) {
+        (Layout::Mono, _) => &[(0.0, 0.0)],
+        (Layout::Stereo, _) => &[(-1.0, 0.0), (1.0, 0.0)],
         // L, R, C, LFE (not positioned), Ls, Rs
-        Layout::Surround51 => &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -2.0), (1.0, -2.0)],
+        (Layout::Surround51, false) => &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -2.0), (1.0, -2.0)],
+        (Layout::Surround51, true) => &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -1.5), (1.0, -1.5)],
+        // L, R, C, LFE, Lss, Rss, Lrs, Rrs (and Lts, Rts, not positioned)
+        (Layout::Surround71 | Layout::Surround712, _) => {
+            &[(-1.0, 0.0), (1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (-1.0, -1.0), (1.0, -1.0), (-1.0, -2.0), (1.0, -2.0), (0.0, 0.0), (0.0, 0.0)]
+        }
     }
+}
+
+/// Gains of a point source at `(x, y)` to the eight 7.1 outputs (LFE is 0): front (y = 1), side
+/// (y = 0) and rear (y = −1) rows, constant power between neighbouring rows. `Σ g² = 1`.
+pub fn point_gains_71(x: f32, y: f32, center: f32) -> [f32; 8] {
+    let x = x.clamp(-1.0, 1.0);
+    let y = y.clamp(-1.0, 1.0);
+    let (f, sd, b) = if y >= 0.0 {
+        let t = (1.0 - y) * FRAC_PI_2;
+        (t.cos(), t.sin(), 0.0)
+    } else {
+        let t = -y * FRAC_PI_2;
+        (0.0, t.cos(), t.sin())
+    };
+    let lr = (x + 1.0) * FRAC_PI_4;
+    let (gl, gr) = (lr.cos(), lr.sin());
+    let kc = (center.clamp(0.0, 1.0) * (1.0 - x.abs())).clamp(0.0, 1.0);
+    let ph = (1.0 - kc).sqrt();
+    let mut g = [0.0f32; 8];
+    g[L] = f * ph * gl;
+    g[R] = f * ph * gr;
+    g[C] = f * kc.sqrt();
+    g[LSS] = sd * gl;
+    g[RSS] = sd * gr;
+    g[LRS] = b * gl;
+    g[RRS] = b * gr;
+    for v in g.iter_mut() {
+        if v.abs() < 1e-6 {
+            *v = 0.0;
+        } else if (*v - 1.0).abs() < 1e-6 {
+            *v = 1.0;
+        }
+    }
+    g
+}
+
+/// Panning matrix `m[out][in]` of a `from` source through the surround panner of a `bus` layout
+/// (5.1, 7.1 or 7.1.2; a non-surround bus is treated as 5.1). A 5.1 bus is [`pan51_matrix`];
+/// a source wider than the bus is downmixed to it first.
+pub fn pan_matrix(from: Layout, bus: Layout, p: Pan51) -> Vec<Vec<f32>> {
+    let bus = if bus.is_surround() { bus } else { Layout::Surround51 };
+    if bus == Layout::Surround51 {
+        if from.channels() > 6 {
+            return compose(&pan51_matrix(Layout::Surround51, p), &matrix(from, Layout::Surround51, Mixdown::FrontRear));
+        }
+        return pan51_matrix(from, p);
+    }
+    if bus == Layout::Surround71 && from == Layout::Surround712 {
+        return compose(&pan_matrix(Layout::Surround71, bus, p), &matrix(from, Layout::Surround71, Mixdown::FrontRear));
+    }
+    let (ni, no) = (from.channels(), bus.channels());
+    let mut m = vec![vec![0.0f32; ni]; no];
+    let multichannel = from.is_surround();
+    for (i, (ox, oy)) in offsets(from, true).iter().enumerate().take(ni) {
+        if multichannel && i == LFE {
+            m[LFE][i] = p.lfe;
+            continue;
+        }
+        if from == Layout::Surround712 && (i == LTS || i == RTS) {
+            // overheads are not panned (the bus is 7.1.2 here)
+            m[i][i] = 1.0;
+            continue;
+        }
+        let g = point_gains_71(p.x + ox, p.y + oy, p.center);
+        for (o, gain) in g.iter().enumerate() {
+            m[o][i] = *gain;
+        }
+        if !multichannel {
+            m[LFE][i] = p.lfe / ni as f32;
+        }
+    }
+    m
 }
 
 /// Panning matrix `m[out][in]` (6 outputs) of a `from` source through the 5.1 panner.
 pub fn pan51_matrix(from: Layout, p: Pan51) -> Vec<Vec<f32>> {
+    if from.channels() > 6 {
+        return pan_matrix(from, Layout::Surround51, p);
+    }
     let ni = from.channels();
     let mut m = vec![vec![0.0f32; ni]; 6];
-    for (i, (ox, oy)) in offsets(from).iter().enumerate() {
+    for (i, (ox, oy)) in offsets(from, false).iter().enumerate() {
         if from == Layout::Surround51 && i == LFE {
             m[LFE][i] = p.lfe;
             continue;
@@ -388,6 +581,112 @@ mod tests {
         // 50 % centre at front centre: half the power to C
         let g = at(0.0, 1.0, 0.5);
         assert!(close(g[C] * g[C], 0.5) && close(g[L] * g[L] + g[R] * g[R], 0.5));
+    }
+
+    fn assert_identity(m: &[Vec<f32>]) {
+        for (o, row) in m.iter().enumerate() {
+            for (i, g) in row.iter().enumerate() {
+                assert!(close(*g, if o == i { 1.0 } else { 0.0 }), "out {o} in {i} = {g}");
+            }
+        }
+    }
+
+    #[test]
+    fn seven_one_layouts_up_and_downmix_through_5_1() {
+        let k = K;
+        assert_eq!((Layout::Surround71.channels(), Layout::Surround712.channels()), (8, 10));
+        assert_eq!(Layout::from_channels(8), Layout::Surround71);
+        assert_eq!(Layout::from_channels(10), Layout::Surround712);
+        assert_eq!(Layout::Surround712.names()[LTS], "Lts");
+        assert!(Layout::Surround71.is_surround() && !Layout::Stereo.is_surround());
+        // 5.1 → 7.1: each surround split −3 dB to the side and the rear
+        let up = matrix(Layout::Surround51, Layout::Surround71, Mixdown::FrontRear);
+        assert_eq!(up.len(), 8);
+        assert!(close(up[LSS][LS], k) && close(up[LRS][LS], k) && close(up[RSS][RS], k) && close(up[RRS][RS], k));
+        assert!(close(up[L][L], 1.0) && close(up[LFE][LFE], 1.0) && up[LSS][RS] == 0.0);
+        // 7.1 → 5.1 → back is exact
+        let down = matrix(Layout::Surround71, Layout::Surround51, Mixdown::FrontRear);
+        assert!(close(down[LS][LSS], k) && close(down[LS][LRS], k) && down[LS][RSS] == 0.0);
+        assert_identity(&compose(&down, &up));
+        // 7.1.2: the overheads fold into the side surrounds; 7.1 → 7.1.2 leaves them silent
+        let fold = matrix(Layout::Surround712, Layout::Surround71, Mixdown::FrontRear);
+        assert!(close(fold[LSS][LTS], k) && close(fold[RSS][RTS], k) && close(fold[LSS][LSS], 1.0) && fold[LSS][RTS] == 0.0);
+        let rise = matrix(Layout::Surround71, Layout::Surround712, Mixdown::FrontRear);
+        assert!(rise[LTS].iter().all(|g| *g == 0.0) && close(rise[RRS][RRS], 1.0));
+        let d51 = matrix(Layout::Surround712, Layout::Surround51, Mixdown::FrontRear);
+        assert!(close(d51[LS][LTS], 0.5) && close(d51[RS][RTS], 0.5));
+        // stereo of 7.1 is BS.775 of its 5.1 downmix; stereo → 7.1 is L, R
+        let st = matrix(Layout::Surround71, Layout::Stereo, Mixdown::FrontRear);
+        assert_eq!(st[0].len(), 8);
+        assert!(close(st[0][L], 1.0) && close(st[0][C], k) && close(st[0][LSS], 0.5) && close(st[0][LRS], 0.5) && st[0][RSS] == 0.0);
+        let s71 = matrix(Layout::Stereo, Layout::Surround71, Mixdown::FrontRear);
+        assert!(close(s71[L][0], 1.0) && close(s71[R][1], 1.0) && s71[C..].iter().all(|r| r.iter().all(|g| *g == 0.0)));
+        assert_eq!(matrix(Layout::Mono, Layout::Surround712, Mixdown::FrontRear)[C], vec![1.0]);
+        for l in [Layout::Surround71, Layout::Surround712] {
+            assert_identity(&matrix(l, l, Mixdown::Front));
+        }
+        // convert_owned picks the layout from the channel count
+        let ten = convert_owned(vec![vec![0.25; 2]; 10], Layout::Surround51, Mixdown::FrontRear);
+        assert_eq!(ten.len(), 6);
+        assert!(close(ten[LS][0], 0.25 * (2.0 * k + 0.5)));
+    }
+
+    #[test]
+    fn seven_one_panner() {
+        for xi in -10..=10 {
+            for yi in -10..=10 {
+                let g = point_gains_71(xi as f32 / 10.0, yi as f32 / 10.0, 0.4);
+                let p: f32 = g.iter().map(|v| v * v).sum();
+                assert!((p - 1.0).abs() < 1e-5, "({xi}, {yi}) power {p}");
+                assert_eq!(g[LFE], 0.0);
+            }
+        }
+        // the three rows
+        assert!(close(point_gains_71(-1.0, 0.0, 1.0)[LSS], 1.0));
+        assert!(close(point_gains_71(1.0, -1.0, 1.0)[RRS], 1.0));
+        assert!(close(point_gains_71(0.0, 1.0, 1.0)[C], 1.0));
+        let g = point_gains_71(-1.0, -0.5, 1.0);
+        assert!(close(g[LSS], K) && close(g[LRS], K));
+        // 7.1 and 7.1.2 through the default panner of their own bus are the identity
+        assert_identity(&pan_matrix(Layout::Surround71, Layout::Surround71, Pan51::default()));
+        assert_identity(&pan_matrix(Layout::Surround712, Layout::Surround712, Pan51::default()));
+        // a 5.1 source on a 7.1 bus: the upmix (surrounds −3 dB to side and rear)
+        let m = pan_matrix(Layout::Surround51, Layout::Surround71, Pan51::default());
+        let up = matrix(Layout::Surround51, Layout::Surround71, Mixdown::FrontRear);
+        for o in 0..8 {
+            for i in 0..6 {
+                assert!(close(m[o][i], up[o][i]), "out {o} in {i}: {} vs {}", m[o][i], up[o][i]);
+            }
+        }
+        // a 5.1 bus is the 5.1 panner; a 7.1 source on it is downmixed first
+        assert_eq!(pan_matrix(Layout::Stereo, Layout::Surround51, Pan51::default()), pan51_matrix(Layout::Stereo, Pan51::default()));
+        let m = pan_matrix(Layout::Surround71, Layout::Surround51, Pan51::default());
+        let down = matrix(Layout::Surround71, Layout::Surround51, Mixdown::FrontRear);
+        assert_eq!(m.len(), 6);
+        for o in 0..6 {
+            for i in 0..8 {
+                assert!(close(m[o][i], down[o][i]));
+            }
+        }
+        assert_eq!(pan51_matrix(Layout::Surround71, Pan51::default()), m);
+        // 7.1.2 on a 7.1 bus: the overheads fold into the sides
+        let m = pan_matrix(Layout::Surround712, Layout::Surround71, Pan51::default());
+        assert!(close(m[LSS][LTS], K) && m.len() == 8);
+        // mono on a 7.1.2 bus: point source and LFE share, nothing overhead
+        let m = pan_matrix(Layout::Mono, Layout::Surround712, Pan51 { lfe: 0.5, ..Pan51::default() });
+        assert!(close(m[C][0], 1.0) && close(m[LFE][0], 0.5) && m[LTS][0] == 0.0);
+        // every source channel keeps unit power (LFE and overheads aside)
+        let p = Pan51 { x: -0.3, y: -0.6, center: 0.5, lfe: 0.0 };
+        for l in [Layout::Mono, Layout::Stereo, Layout::Surround51, Layout::Surround71, Layout::Surround712] {
+            let m = pan_matrix(l, Layout::Surround712, p);
+            for i in 0..l.channels() {
+                if l.is_surround() && i == LFE {
+                    continue;
+                }
+                let pw: f32 = m.iter().map(|row| row[i] * row[i]).sum();
+                assert!((pw - 1.0).abs() < 1e-5, "{l:?} channel {i}: {pw}");
+            }
+        }
     }
 
     #[test]

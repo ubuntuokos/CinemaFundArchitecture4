@@ -58,7 +58,7 @@ DIALOGS: dict[str, tuple[str, str]] = {
 }
 INTRINSIC_VIDEO = [("motion", N_("Motion")), ("opacity", N_("Opacity")), ("timeRemapping", N_("Time Remapping"))]
 INTRINSIC_AUDIO = [("volume", N_("Volume")), ("channelVolume", N_("Channel Volume")), ("panner", N_("Panner"))]
-FORMATS = [("mono", N_("Mono")), ("stereo", N_("Stereo")), ("5.1", "5.1"), ("adaptive", N_("Adaptive"))]
+FORMATS = [("mono", N_("Mono")), ("stereo", N_("Stereo")), ("5.1", "5.1"), ("7.1", "7.1"), ("7.1.2", "7.1.2"), ("adaptive", N_("Adaptive"))]
 HOLD_ON = [
     ("in", N_("In Point")),
     ("out", N_("Out Point")),
