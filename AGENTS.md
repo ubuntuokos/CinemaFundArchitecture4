@@ -14,7 +14,9 @@ attribution and original copyright/licence requirements remain in force.
   Windows, macOS, FreeBSD or WebAssembly build/release workflows.
   Historical source and cross-platform Cargo.lock entries can remain until
   an audited refactor; do not manually delete transitive lockfile dependencies.
-- CI: automatic PR/push checks must stay quick and non-compiling. Full Rust,
+- CI: automatic PR/push checks must stay quick. The only automatic compile step
+  is the required `cargo-check` gate (`.github/workflows/pr-check.yml`: type-check
+  of libraries and binaries, no tests; owner decision 2026-10-31). Full Rust,
   Python, Qt6, vendored-library and FFmpeg tests require an explicit GitHub
   Actions workflow_dispatch or PR `cfa4-full-validation` label event (remove
   then re-add the label for a repeat). Verify all jobs before merge.
