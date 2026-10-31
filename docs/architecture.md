@@ -438,7 +438,8 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   `SequenceSettings::audio_master` (the Mix: Stereo, Mono, 5.1, Adaptive) existed already;
   `file.newSequence {mix, trackType}` and `sequence.settings {mix}` set them, `mixer.setStrip
   {channels}` / `mixer.addSubmix {channels}` per strip. The 5.1 panner is four lanes in
-  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB): a
+  `MixerStrip::lanes` (`pan51.x`, `pan51.y` −100…100, `pan51.center` 0…100 %, `pan51.lfe` dB,
+  `pan51.height` 0…100 %): a
   lane without keyframes stores the static value, so no new project fields were needed and the
   puck is automatable like any lane.
 - **Maths** (`audio_dsp::channels`). 5.1 order is L, R, C, LFE, Ls, Rs everywhere inside CFA4.
@@ -459,8 +460,10 @@ stereo / mono track ──5.1 panner───┼─► 5.1 submix / 5.1 Mix ─�
   Lrs Rrs, the SMPTE / DCP order) or 7.1.2 (10 ch: … Lts Rts). The surround panner
   (`channels::pan_matrix`) puts a point source on the front, side and rear rows of a 7.1 bus
   (`point_gains_71`, Σg² = 1); a 5.1 source's surrounds sit between the side and the rear speakers
-  (each split −3 dB); a 7.1.2 strip's heights pass through unpanned (height panning is a
-  follow-up). Up- and downmixes go through 5.1 (`channels::matrix`): a 7.1 side and rear pair folds
+  (each split −3 dB); a 7.1.2 strip's heights pass through unpanned. On a 7.1.2 bus the lane
+  `pan51.height` (0…100 %, #406) lifts each floor source to Lts / Rts with constant power
+  (floor × cos(h·π/2), top × sin(h·π/2), left / right as on the floor); it is ignored on other
+  buses and recorded by a Write pass. Up- and downmixes go through 5.1 (`channels::matrix`): a 7.1 side and rear pair folds
   into the 5.1 surround at −3 dB each, a 7.1.2 height folds into its side at −3 dB, the 5.1
   surround splits −3 dB to side and rear. A 7.1 source plays as 7.1 on a 7.1 / 7.1.2 track (its
   WAV-order back pair moved behind the sides). Exports stay mono / stereo / 5.1 except the DCP IAB

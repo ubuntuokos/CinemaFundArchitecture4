@@ -128,6 +128,9 @@ class Strip(QWidget):
         self.hot_center.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.center", "value": v, "time": self.panel.now}))
         self.hot_lfe = hot(self, FADER_MIN_DB, FADER_MAX_DB, 0.5)
         self.hot_lfe.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.lfe", "value": v, "time": self.panel.now}))
+        # the height to the top surrounds, on a strip feeding a 7.1.2 bus (#406)
+        self.hot_height = hot(self, 0.0, 100.0, 1.0, decimals=0, suffix="%")
+        self.hot_height.edited.connect(lambda v, _b: self.command.emit("mixer.setValue", {"strip": self.sid(), "lane": "pan51.height", "value": v, "time": self.panel.now}))
         self._puck = (0.0, 0.0)  # the dragged 5.1 puck
 
     # ----- data -----
@@ -157,7 +160,7 @@ class Strip(QWidget):
         return self._value if self._drag == "pan" else self.at("pan")
 
     def pan51(self) -> dict[str, float]:
-        """The 5.1 panner's puck (x left … right, y rear … front), Center % and LFE dB."""
+        """The surround panner's puck (x left … right, y rear … front), Center %, LFE dB and Height %."""
         d = self.data.get("pan51") or {}
 
         def num(k: str, default: float) -> float:
@@ -167,7 +170,7 @@ class Strip(QWidget):
                 return default
 
         x, y = self._puck if self._drag == "pan51" else (num("x", 0.0), num("y", 100.0))
-        return {"x": x, "y": y, "center": num("center", 100.0), "lfeDb": num("lfeDb", FADER_MIN_DB)}
+        return {"x": x, "y": y, "center": num("center", 100.0), "lfeDb": num("lfeDb", FADER_MIN_DB), "height": num("height", 0.0)}
 
     def set_data(self, data: dict[str, Any]) -> None:
         self.data = data
@@ -176,6 +179,7 @@ class Strip(QWidget):
         self.hot_pan.setObjectName(f"mixer.{self.ref}.panValue")
         self.hot_center.setObjectName(f"mixer.{self.ref}.pan51.center")
         self.hot_lfe.setObjectName(f"mixer.{self.ref}.pan51.lfe")
+        self.hot_height.setObjectName(f"mixer.{self.ref}.pan51.height")
         self.update()
 
     def channels(self) -> int:
@@ -206,12 +210,14 @@ class Strip(QWidget):
                 r["pan51"] = QRectF(4, y, 46, 46)
                 r["pan51.center"] = QRectF(54, y + 12, w - 58, 14)
                 r["pan51.lfe"] = QRectF(54, y + 38, w - 58, 14)
+                if self.data.get("panHeight"):
+                    r["pan51.height"] = QRectF(54, y + 56, w - 58, 14)
             else:
                 r["pan"] = QRectF(w / 2 - 19, y + 1, 38, 38)
                 r["panValue"] = QRectF(w / 2 - 28, y + 40, 56, 16)
-            y += 62
+            y += 76
         else:
-            y += 112
+            y += 126
         r["mode"] = QRectF(4, y, w - 8, 20)
         y += 26
         if not self.is_master:
@@ -230,7 +236,7 @@ class Strip(QWidget):
         return r
 
     def needed_height(self) -> float:
-        return 4 + (10 * SLOT_H + 10 if self.panel.fx_open else 0) + 112 + 26 + 24 + 6 + 170 + 42
+        return 4 + (10 * SLOT_H + 10 if self.panel.fx_open else 0) + 126 + 26 + 24 + 6 + 170 + 42
 
     def fader_y(self, db: float) -> float:
         t = self.regions["track"]
@@ -249,6 +255,7 @@ class Strip(QWidget):
         p51 = self.pan51()
         place(self.hot_center, r.get("pan51.center"), p51["center"])
         place(self.hot_lfe, r.get("pan51.lfe"), p51["lfeDb"])
+        place(self.hot_height, r.get("pan51.height"), p51["height"])
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         T = theme.current()
@@ -304,6 +311,8 @@ class Strip(QWidget):
                 p.setPen(T.c("text_dim"))
                 p.drawText(QRectF(r["pan51.center"].left() + 2, sq.top(), 60, 12), Qt.AlignmentFlag.AlignVCenter, tr("Center"))
                 p.drawText(QRectF(r["pan51.lfe"].left() + 2, sq.top() + 26, 60, 12), Qt.AlignmentFlag.AlignVCenter, "LFE")
+                if "pan51.height" in r:
+                    p.drawText(QRectF(4, r["pan51.height"].top(), 48, 14), Qt.AlignmentFlag.AlignVCenter, tr("Height"))
                 p.setFont(small)
             else:
                 kc = r["pan"].center()

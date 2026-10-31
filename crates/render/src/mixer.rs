@@ -48,7 +48,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 use cfa4_audio_dsp::AudioEffect;
 use cfa4_audio_dsp::channels::{self as chans, Layout, Mixdown, Pan51};
 use cfa4_frame::AudioBuffer;
-use cfa4_project::mixer::{LANE_MUTE, LANE_PAN, LANE_PAN51_CENTER, LANE_PAN51_LFE, LANE_PAN51_X, LANE_PAN51_Y, LANE_VOLUME, fx_lane, send_lane};
+use cfa4_project::mixer::{
+    LANE_MUTE, LANE_PAN, LANE_PAN51_CENTER, LANE_PAN51_HEIGHT, LANE_PAN51_LFE, LANE_PAN51_X, LANE_PAN51_Y, LANE_VOLUME, fx_lane, send_lane,
+};
 use cfa4_project::{AudioChannels, EffectInstance, InputMap, Param, ParamValue, Project, Sequence, Track, TrackId};
 use cfa4_time::Tick;
 use rayon::prelude::*;
@@ -717,18 +719,24 @@ struct StripOut {
 fn pan_surround(buf: &Bus, layout: Layout, out_w: usize, tr: &Track, id: TrackId, ovs: &HashMap<(TrackId, String), Override>, c0: i64, sr: u32) -> Bus {
     let n = buf.first().map_or(0, Vec::len);
     let bus = Layout::from_channels(out_w);
-    let lanes = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE].map(|k| Lane::new(tr, id, k, ovs));
+    let lanes = [LANE_PAN51_X, LANE_PAN51_Y, LANE_PAN51_CENTER, LANE_PAN51_LFE, LANE_PAN51_HEIGHT].map(|k| Lane::new(tr, id, k, ovs));
     let input: Vec<&[f32]> = if layout == Layout::Mono { vec![buf[0].as_slice()] } else { buf.iter().map(Vec::as_slice).collect() };
-    let pan = |v: [f64; 4]| Pan51 { x: (v[0] / 100.0) as f32, y: (v[1] / 100.0) as f32, center: (v[2] / 100.0) as f32, lfe: db_gain(v[3]) };
+    let pan = |v: [f64; 5]| Pan51 {
+        x: (v[0] / 100.0) as f32,
+        y: (v[1] / 100.0) as f32,
+        center: (v[2] / 100.0) as f32,
+        lfe: db_gain(v[3]),
+        height: (v[4] / 100.0) as f32,
+    };
     let consts: Vec<Option<f64>> = lanes.iter().map(Lane::constant).collect();
     if consts.iter().all(Option::is_some) {
-        let m = chans::pan_matrix(layout, bus, pan([0, 1, 2, 3].map(|i| consts[i].unwrap_or(0.0))));
+        let m = chans::pan_matrix(layout, bus, pan([0, 1, 2, 3, 4].map(|i| consts[i].unwrap_or(0.0))));
         return chans::apply_matrix(&m, &input);
     }
     let mut out = silent(out_w, n);
     for i in 0..n {
         let t = Tick::from_units(c0 + i as i64, sr as i64);
-        let m = chans::pan_matrix(layout, bus, pan([0, 1, 2, 3].map(|k| consts[k].unwrap_or_else(|| lanes[k].at(t)))));
+        let m = chans::pan_matrix(layout, bus, pan([0, 1, 2, 3, 4].map(|k| consts[k].unwrap_or_else(|| lanes[k].at(t)))));
         for (o, row) in m.iter().enumerate() {
             let mut acc = 0.0f32;
             for (g, x) in row.iter().zip(&input) {

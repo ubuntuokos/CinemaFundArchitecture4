@@ -1734,3 +1734,4 @@
 	{n} exports queued (the Export window shows the queue)	{n} export a sorban (az Exportálás ablak mutatja a sort)
 	{n} variant sequences made, {q} exports queued	{n} változatszekvencia elkészült, {q} export a sorban
 	no column for {names}	nincs oszlop ehhez: {names}
+	Height	Magasság

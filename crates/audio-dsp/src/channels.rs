@@ -330,12 +330,16 @@ pub struct Pan51 {
     pub center: f32,
     /// LFE gain (linear).
     pub lfe: f32,
+    /// Height 0 … 1: the share of each floor source sent up to the top surrounds (Lts, Rts) of a
+    /// 7.1.2 bus, constant power (floor gains × cos(h·π/2), top gains × sin(h·π/2)); ignored on
+    /// other buses (#406).
+    pub height: f32,
 }
 
 impl Default for Pan51 {
     /// Front centre, 100 % centre, LFE at unity.
     fn default() -> Self {
-        Pan51 { x: 0.0, y: 1.0, center: 1.0, lfe: 1.0 }
+        Pan51 { x: 0.0, y: 1.0, center: 1.0, lfe: 1.0, height: 0.0 }
     }
 }
 
@@ -419,6 +423,24 @@ pub fn point_gains_71(x: f32, y: f32, center: f32) -> [f32; 8] {
     g
 }
 
+/// Floor and top shares of a height 0 … 1 (constant power), snapped at the ends.
+fn height_split(h: f32) -> (f32, f32) {
+    let h = if h.is_finite() { h.clamp(0.0, 1.0) } else { 0.0 };
+    let t = h * FRAC_PI_2;
+    (snap(t.cos()), snap(t.sin()))
+}
+
+/// f32 sin/cos near 0 or 1 snapped, so loudspeaker positions route bit-exactly.
+fn snap(v: f32) -> f32 {
+    if v.abs() < 1e-6 {
+        0.0
+    } else if (v - 1.0).abs() < 1e-6 {
+        1.0
+    } else {
+        v
+    }
+}
+
 /// Panning matrix `m[out][in]` of a `from` source through the surround panner of a `bus` layout
 /// (5.1, 7.1 or 7.1.2; a non-surround bus is treated as 5.1). A 5.1 bus is [`pan51_matrix`];
 /// a source wider than the bus is downmixed to it first.
@@ -447,8 +469,15 @@ pub fn pan_matrix(from: Layout, bus: Layout, p: Pan51) -> Vec<Vec<f32>> {
             continue;
         }
         let g = point_gains_71(p.x + ox, p.y + oy, p.center);
+        // a 7.1.2 bus: the height lifts the source to the top surrounds, left / right as on the floor
+        let (floor, up) = if bus == Layout::Surround712 { height_split(p.height) } else { (1.0, 0.0) };
         for (o, gain) in g.iter().enumerate() {
-            m[o][i] = *gain;
+            m[o][i] = *gain * floor;
+        }
+        if up > 0.0 {
+            let lr = ((p.x + ox).clamp(-1.0, 1.0) + 1.0) * FRAC_PI_4;
+            m[LTS][i] = snap(up * lr.cos());
+            m[RTS][i] = snap(up * lr.sin());
         }
         if !multichannel {
             m[LFE][i] = p.lfe / ni as f32;
@@ -631,6 +660,44 @@ mod tests {
         assert!(close(ten[LS][0], 0.25 * (2.0 * k + 0.5)));
     }
 
+    /// #406: the height lifts a floor source to the top surrounds of a 7.1.2 bus, constant power.
+    #[test]
+    fn height_pans_to_the_top_surrounds_of_a_712_bus() {
+        for hi in 0..=10 {
+            for xi in -10..=10 {
+                for yi in [-10, -3, 0, 6, 10] {
+                    let p = Pan51 { x: xi as f32 / 10.0, y: yi as f32 / 10.0, center: 0.7, lfe: 0.0, height: hi as f32 / 10.0 };
+                    let m = pan_matrix(Layout::Mono, Layout::Surround712, p);
+                    let power: f32 = m.iter().map(|r| r[0] * r[0]).sum();
+                    assert!((power - 1.0).abs() < 1e-5, "x {xi} y {yi} h {hi}: {power}");
+                }
+            }
+        }
+        // fully up, hard left: Lts only; centred: Lts and Rts at -3 dB each
+        let up = |x: f32| pan_matrix(Layout::Mono, Layout::Surround712, Pan51 { x, height: 1.0, lfe: 0.0, ..Pan51::default() });
+        let m = up(-1.0);
+        assert_eq!(m[LTS][0], 1.0);
+        assert!(m.iter().enumerate().all(|(o, r)| o == LTS || r[0] == 0.0), "{m:?}");
+        let m = up(0.0);
+        assert!(close(m[LTS][0], K) && close(m[RTS][0], K) && m[C][0] == 0.0);
+        // half way: -3 dB on the floor position, -3 dB up
+        let m = pan_matrix(Layout::Mono, Layout::Surround712, Pan51 { height: 0.5, lfe: 0.0, ..Pan51::default() });
+        assert!(close(m[C][0], K) && close(m[LTS][0], 0.5) && close(m[RTS][0], 0.5));
+        // a stereo source keeps its sides when lifted
+        let m = pan_matrix(Layout::Stereo, Layout::Surround712, Pan51 { height: 1.0, lfe: 0.0, ..Pan51::default() });
+        assert!(close(m[LTS][0], 1.0) && close(m[RTS][1], 1.0) && m[RTS][0] == 0.0);
+        // a 7.1.2 source keeps its own heights; its floor channels go up with the height
+        let m = pan_matrix(Layout::Surround712, Layout::Surround712, Pan51 { height: 1.0, ..Pan51::default() });
+        assert_eq!((m[LTS][LTS], m[RTS][RTS]), (1.0, 1.0));
+        assert!(close(m[LTS][L], 1.0) && m[L][L] == 0.0);
+        // other buses ignore the height
+        let p = Pan51 { height: 1.0, ..Pan51::default() };
+        assert_eq!(pan_matrix(Layout::Stereo, Layout::Surround71, p), pan_matrix(Layout::Stereo, Layout::Surround71, Pan51::default()));
+        assert_eq!(pan_matrix(Layout::Mono, Layout::Surround51, p), pan_matrix(Layout::Mono, Layout::Surround51, Pan51::default()));
+        // the default height (0) leaves the 7.1.2 identity alone
+        assert_identity(&pan_matrix(Layout::Surround712, Layout::Surround712, Pan51 { height: f32::NAN, ..Pan51::default() }));
+    }
+
     #[test]
     fn seven_one_panner() {
         for xi in -10..=10 {
@@ -676,7 +743,7 @@ mod tests {
         let m = pan_matrix(Layout::Mono, Layout::Surround712, Pan51 { lfe: 0.5, ..Pan51::default() });
         assert!(close(m[C][0], 1.0) && close(m[LFE][0], 0.5) && m[LTS][0] == 0.0);
         // every source channel keeps unit power (LFE and overheads aside)
-        let p = Pan51 { x: -0.3, y: -0.6, center: 0.5, lfe: 0.0 };
+        let p = Pan51 { x: -0.3, y: -0.6, center: 0.5, lfe: 0.0, height: 0.0 };
         for l in [Layout::Mono, Layout::Stereo, Layout::Surround51, Layout::Surround71, Layout::Surround712] {
             let m = pan_matrix(l, Layout::Surround712, p);
             for i in 0..l.channels() {
@@ -708,7 +775,7 @@ mod tests {
         assert!(close(m[LFE][0], 0.25) && close(m[LFE][1], 0.25));
         // every source channel keeps unit power (LFE aside)
         for l in [Layout::Mono, Layout::Stereo, Layout::Surround51] {
-            let p = Pan51 { x: 0.37, y: -0.21, center: 0.6, lfe: 0.0 };
+            let p = Pan51 { x: 0.37, y: -0.21, center: 0.6, lfe: 0.0, height: 0.0 };
             let m = pan51_matrix(l, p);
             for i in 0..l.channels() {
                 if l == Layout::Surround51 && i == LFE {
@@ -719,7 +786,7 @@ mod tests {
             }
         }
         // puck hard rear-left: 5.1 front channels collapse towards the rear left
-        let m = pan51_matrix(Layout::Surround51, Pan51 { x: -1.0, y: -1.0, center: 1.0, lfe: 1.0 });
+        let m = pan51_matrix(Layout::Surround51, Pan51 { x: -1.0, y: -1.0, center: 1.0, lfe: 1.0, height: 0.0 });
         assert!(close(m[LS][L], 1.0) && close(m[LS][C], 1.0) && close(m[LS][LS], 1.0));
     }
 }

@@ -4086,6 +4086,13 @@ def test_audio_track_mixer(app, tmp_path: Path, monkeypatch):
             a1.data = {**saved, "channels": fmt}
             assert a1.channels() == n, fmt
         a1.data = saved
+        # a strip feeding a 7.1.2 bus has a Height control (#406); others do not
+        a1.data = {**saved, "pans51": True, "panHeight": True, "pan51": {"x": 0, "y": 100, "center": 100, "lfeDb": -96, "height": 40}}
+        regions = a1.layout_regions()
+        assert "pan51.height" in regions and regions["pan51.height"].bottom() <= regions["mode"].top(), regions
+        a1.data = {**saved, "pans51": True}
+        assert "pan51.height" not in a1.layout_regions()
+        a1.data = saved
 
         def strip(ref: str) -> dict:
             return next(s for s in mixer.strips_data if s.get("ref") == ref)
