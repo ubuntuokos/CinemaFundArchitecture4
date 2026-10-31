@@ -6,6 +6,7 @@ Szabályok: [`coordination.md`](coordination.md). Minden kör egy sor, a legúja
 
 | Dátum | Gazda | Mi történt |
 |---|---|---|
+| 2026-10-31 | Claude | Új gazda, 1. kör, felmérés (csak olvasás, `main` @ `f15b7b4`): 52 nyitott PR – 16 aktív (3 órán belüli commit), 3 beolvasztásra kész vagy frissítés után az (#376, #290 – teljes CI fut, #327), 13 tiszta, de régi alapú, 19 ütközik, 1 kiváltott (#46 → #206). A gazda GitHub-kapcsolata PR-t nem tud nyitni és beolvasztani (403), csak git push működik; sorrendjavaslat a tulajdonosnál. |
 | 2026-10-30 | Claude | A #346 átadása szerint, a tulajdonos kérésére egyenként beolvasztva, mindegyik zöld teljes CI-vel a beolvasztott fejen és „Beolvasztható” megjegyzéssel: **#344** (`b715c5d`, run 41093466803) → **#338** (`0541a4a`, run 41097629670) → **#342** (`854277d`, run 41103823324). A `main` feje `f8d0f77`; a #344 előtti `main` teljes CI-je (run 41081470525) csak a #344 által javított Python-jobon bukott. Mindhárom ág automatikusan törlődött. |
 | 2026-10-30 | Claude | **#334** (EGM tervezési-átnézési leírás, csak dokumentáció): teljes CI zöld a `82c71de` fejen, mind a 9 job (run 40824027165). 2026-10-29 23:52 UTC-kor `ubuntuokos` névvel beolvadt ezen a fejen, nem a gazda által; az ága törlődött. Utána beolvadt még a #335 és a #330; a `main` feje `973a73e`. |
 | 2026-10-27 | Claude | A `main` @ `24ba4f7` teljes CI-je zöld, mind a 9 job (run 40576600633). Esti ágellenőrzés beállítva (ütemezett feladat, naponta 20:40, csak olvas). |
