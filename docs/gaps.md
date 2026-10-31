@@ -33,7 +33,7 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 | G17 | Audio device and playback reliability | stability | partly | 20–40 h |
 | G18 | Effects depth: approximations and missing behaviour | feature | no | 60–110 h |
 | G19 | Speech to text off in release builds | feature, AI | no | 5–10 h |
-| G20 | The web app shell | platforms | no | 40–80 h |
+| G20 | The web app shell (dropped: no web build) | platforms | n/a | — |
 
 ## G1. Nothing compares our output with Premiere's
 
@@ -238,17 +238,31 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
+- **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
+  non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):
+  - *Promo first cut from a brief or a website:* an agent writes the story and shot list and builds
+    the sequence through the control channel / MCP (beat markers, graphics, Text Animators, Batch
+    Variants are already drivable). Needs an LLM; CFA4 ships none.
+  - *AI review of a cut:* a vision model looks at one still per beat and reports weak openings,
+    unreadable text or off-brand colours, next to the deterministic Check Before Export.
+  - *Smart shot picking from phone footage:* rank clips by subject and composition and cut them
+    on the beat markers (exposure and shake scores alone are classical and can come first).
+  - *Generated B-roll, music and voices:* text/image-to-video, music generation, voice cloning.
+    Hosted services (Veo, Kling, Seedance, Suno, ElevenLabs) are out (local-first, licences);
+    only openly licensed local models qualify. Kokoro TTS narration exists already.
+  - *Poster or still to motion:* animate a single image into a short promo (image-to-video).
 
 ## G13. Delivery formats
 
-- **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), MPEG-2 export / DVD / Blu-ray (the MPEG-2
-  video encoder exists in `cfa4-mpeg2v`, #98), DCP, JPEG 2000 MXF
+- **Missing:** AV1 hardware export (software AV1 export exists, 8-bit and 10-bit HDR, #95), DVD / Blu-ray (#244, #245), MPEG-2
+  B pictures, CBR / VBV and interlace (#240-#242), MP2 audio (#267), DCP, JPEG 2000 MXF
   (the `cfa4-j2k` encoder with the DCI 2K / 4K profiles exists, #81; export wiring #115),
   AS-10 / AS-11, XDCAM HD MXF, P2, PIZ / PXR24 / B44 / DWA OpenEXR compression, MP3 audio,
   AC-3 / E-AC-3 audio (the `cfa4-ac3` encoder exists, #86; export wiring #119),
   interlaced encoding, smart render; HEVC B pictures, SAO, 2-pass and 4:2:2 / 4:4:4 encoding
   (#171–#180).
-- **Have:** AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
+- **Have:** MPEG-2 export (#243: program stream with DVD LPCM, transport stream / BDAV `.m2ts`
+  with AAC, `.m2v` elementary stream); AV1 export with the own software encoder (CRF / CBR / VBR, HDR PQ / HLG with
   metadata, MP4 `av01`; #95); PNG, TIFF, BMP, JPEG, Targa and DPX (10-bit) image sequences (#779); OpenEXR
   sequences (half float, linear; uncompressed, RLE, ZIPS or ZIP; #806, #874); AAC Audio
   (audio-only `.m4a`, or ADTS `.aac`; #814); Opus Audio (`.opus`, own CELT encoder, #99); WebM (VP9 + Opus, own encoders, #149); ProRes 4444 / 4444 XQ in the export UI (#342);
@@ -339,9 +353,8 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
 
 ## G20. The web app shell
 
-- **Missing:** file access, WebCodecs decode, audio in the browser build beyond what exists;
-  image-sequence export downloads drop frames in Chrome (#378).
-- **Estimate:** 40–80 h. Doc: [web.md](web.md).
+- **Dropped (2026-10-27):** CFA4 is Linux-only and the browser app `apps/cfa4-web` was removed
+  (WASM is not a release target), so this gap no longer applies.
 
 ## Revision history
 

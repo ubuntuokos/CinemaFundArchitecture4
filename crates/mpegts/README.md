@@ -1,6 +1,6 @@
 # cfa4-mpegts
 
-Clean-room MPEG-2 Systems demuxer: transport streams and program streams. Layer L0: depends only
+Clean-room MPEG-2 Systems demuxer and muxer: transport streams and program streams. Layer L0: depends only
 on `thiserror`. Builds for `wasm32-unknown-unknown`; no `unsafe`. No GPL/LGPL code (FFmpeg,
 libavformat) was consulted; FFmpeg is used only as an external fixture generator and test
 oracle.
@@ -58,6 +58,36 @@ let au: Vec<u8> = file.read_unit(&bytes, v, 0)?;      // the first access unit
 - **Reading**: a unit records only the position of its first packet and its offset in that
   packet's payload; `read_unit` re-reads from there (the index costs a few dozen bytes per
   unit, not per packet).
+
+## Muxer
+
+`Muxer` writes what the MPEG-2 export needs (`crates/export/src/mpeg_out.rs`):
+
+```rust
+let mut m = Muxer::new(file, MuxFormat::Ts, &[MuxCodec::Mpeg2Video, MuxCodec::AacAdts], 20_000_000)?;
+m.write(0, &picture, pts_90k, None, keyframe)?;   // units of one stream in decode order
+m.write(1, &adts_frame, audio_pts_90k, None, true)?;
+let file = m.finish()?;
+```
+
+- **Interleave**: units are queued and written in decode-time order across the streams (a stream
+  that has nothing queued yet holds the others back; 64 MiB at most), so a caller may hand over
+  a group of pictures and then the audio of the same span. The last unit of each stream stays
+  queued until `finish`, so `append_to_last` can add a sequence end code.
+- **Clock**: a system clock at the multiplex rate; a unit goes out as early as the rate allows
+  but not more than `Muxer::DELAY` (0.7 s) before its decode time. Timestamps are offset by the
+  same 0.7 s, so the first SCR / PCR is zero and an AAC stream starting before zero (encoder
+  priming) stays positive.
+- **Transport streams** (188-byte, or 192-byte BDAV with a 30-bit arrival timestamp): PAT and
+  PMT (program 1, PMT PID 0x1000, elementary PIDs from 0x100) at the start, at every video random
+  access point and every 100 ms; PCR on the first stream's PID at its PES starts and every 30 ms;
+  random-access indicators; continuity counters; adaptation-field stuffing. Stream types 0x02
+  (MPEG-2 video) and 0x0F (AAC ADTS).
+- **Program streams**: MPEG-2 pack headers (SCR, program_mux_rate) before every PES packet, packs
+  of 2048 bytes at most, the system header (rate bound, P-STD buffer bounds) in the first pack,
+  the program end code last. Video on stream id 0xE0; 16-bit DVD LPCM in private stream 1
+  (sub-stream 0xA0, the 6-byte LPCM header: rate 48 / 96 / 44.1 / 32 kHz, 1-8 channels), each
+  packet whole sample frames.
 
 ## Tests
 

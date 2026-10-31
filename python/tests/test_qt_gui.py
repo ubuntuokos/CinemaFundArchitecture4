@@ -1847,6 +1847,76 @@ def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path)
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_mpeg2_export_picks_the_container(app, tmp_path: Path):
+    """MPEG-2: the Container choice sets the file extension and the audio, and the engine writes
+    that container (#243)."""
+    import shutil
+    import subprocess
+
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        assert not dlg.container.isEnabled()
+        assert "mpeg2Container" not in dlg.params()
+        # the built-in transport stream preset picks MPEG-2 and its container
+        dlg.preset.setCurrentIndex(dlg.preset.findData("MPEG-2 Transport Stream HD 1080"))
+        assert dlg.format.currentData() == "mpeg2" and dlg.container.isEnabled()
+        assert dlg.container.currentData() == "ts"
+        dlg.container.setCurrentIndex(dlg.container.findData("es"))
+        assert dlg.path.text().endswith(".m2v") and not dlg.audio.isEnabled()
+        dlg.container.setCurrentIndex(dlg.container.findData("ts"))
+        assert dlg.path.text().endswith(".ts") and dlg.audio.isEnabled()
+        assert dlg.params()["mpeg2Container"] == "ts"
+        # GOP, quantiser and chroma go to the engine once chosen
+        dlg.gop.setValue(12)
+        dlg.chroma.setCurrentIndex(dlg.chroma.findData("422"))
+        p = dlg.params()
+        assert (p["keyframeDistance"], p["mpeg2Chroma"]) == (12, "422") and "mpeg2Quantizer" not in p
+        dlg.quantizer.setValue(4)
+        assert dlg.params()["mpeg2Quantizer"] == 4
+        dlg.quantizer.setValue(0)
+        dlg.chroma.setCurrentIndex(dlg.chroma.findData("420"))
+
+        dlg.range.setCurrentIndex(dlg.range.findData("custom"))
+        dlg.start.setValue(0.0)
+        dlg.end.setValue(1.0)
+        dlg.width_spin.setValue(320)
+        dlg.height_spin.setValue(180)
+        out = tmp_path / "out" / "cut.ts"
+        dlg.path.setText(str(out))
+        assert wait_until(app, lambda: "320×180" in dlg.summary.text(), 10_000), dlg.summary.text()
+        done: list[tuple[str, bool]] = []
+        dlg.finished_export.connect(lambda p, ok: done.append((p, ok)))
+        dlg.export_button.click()
+        assert wait_until(app, lambda: bool(done), 240_000), dlg.summary.text()
+        assert done[0] == (str(out), True), dlg.summary.text()
+        assert out.read_bytes()[:1] == b"\x47"
+        if shutil.which("ffprobe"):
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=format_name:stream=codec_name,width,height", "-of", "json", str(out)],
+                capture_output=True, check=True, timeout=60,
+            )
+            info = json.loads(probe.stdout)
+            assert info["format"]["format_name"] == "mpegts"
+            assert sorted(s["codec_name"] for s in info["streams"]) == ["aac", "mpeg2video"], info
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_tick_signals_carry_64_bit_times(app):
     """Regression: Signal(int) is a 32-bit C int in PySide6, so a playhead past 8.5 ms (ticks are
     254 016 000 000 per second) wrapped to a wrong, often negative time while scrubbing the
@@ -2395,11 +2465,15 @@ def test_real_engine_interpret_footage_asks_for_the_colour_space(app, tmp_path: 
         assert dialog is not None and dialog.objectName() == "interpretFootage"
         assert wait_until(app, lambda: "rec709" in dialog.choices and "—" not in dialog.detected.text(), 10_000), dialog.detected.text()
         assert dialog.chosen() == "auto"
-        dialog.choices["rec709"].setChecked(True)
+        # RED Log3G10 / REDWideGamutRGB is offered (REDCINE-X exports, #252)
+        red = dialog.choices.get("log3g10-rwg")
+        assert red is not None and red.text() == "RED Log3G10 / REDWideGamutRGB"
+        red.setChecked(True)
         dialog.findChild(QtWidgets.QPushButton, "interpretFootage.ok").click()
         info = {}
         engine.execute("media.colorInfo", {"item": item}, on_reply=lambda r, _b: info.update(r))
-        assert wait_until(app, lambda: info.get("override") == "rec709", 10_000), info
+        assert wait_until(app, lambda: info.get("override") == "log3g10-rwg", 10_000), info
+        assert info.get("hdr") is True
     finally:
         win._quit_confirmed = True
         win.close()
@@ -5325,3 +5399,92 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
         else:
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
+
+
+def test_social_safe_zones_in_the_view_menu_and_on_the_monitor(app, tmp_path: Path):
+    """View ▸ Social Safe Zones (Off / TikTok / Instagram Reels / YouTube Shorts): the focused
+    monitor shades the platform's covered margins and outlines its safe area, with the engine's
+    insets; the choice is remembered and a hostile saved value turns it off."""
+    from cfa4_qt.panels.monitor import FrameView
+    from cfa4_qt.panels.monitor_view import SOCIAL_ZONES, MonitorView, build_view_menu, social_safe_rect
+
+    # the engine's numbers (crates/engine/src/social.rs, SafeZone::insets)
+    assert social_safe_rect("tiktok", 1080, 1920) == (60.0, 160.0, 930.0, 1440.0)
+    assert social_safe_rect("reels", 540, 960) == (30.0, 110.0, 480.0, 750.0)
+    assert social_safe_rect("shorts", 1080, 1920) == (60.0, 180.0, 940.0, 1520.0)
+    assert social_safe_rect("myspace", 1080, 1920) is None
+    assert [k for k, _l, _i in SOCIAL_ZONES] == ["tiktok", "reels", "shorts"]
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    settings.setValue("monitor/program", '{"social_zone": "reels"}')
+    assert MonitorView.load(settings, "monitor/program").social_zone == "reels"
+    settings.setValue("monitor/program", '{"social_zone": "../../etc"}')
+    assert MonitorView.load(settings, "monitor/program").social_zone == ""
+
+    class Mon:
+        def __init__(self) -> None:
+            self.mv = MonitorView()
+
+        def set_view(self, **changes):
+            for k, v in changes.items():
+                setattr(self.mv, k, v)
+
+    mon = Mon()
+    menu = QtWidgets.QMenu()
+    build_view_menu(menu, lambda: mon)
+    sub = next(a.menu() for a in menu.actions() if a.menu() and a.menu().objectName() == "menu.View.socialSafeZone")
+    names = [a.objectName() for a in sub.actions()]
+    assert names == ["view.socialSafeZone.off", "view.socialSafeZone.tiktok", "view.socialSafeZone.reels", "view.socialSafeZone.shorts"]
+    next(a for a in sub.actions() if a.objectName() == "view.socialSafeZone.shorts").trigger()
+    assert mon.mv.social_zone == "shorts"
+    sub.aboutToShow.emit()
+    assert [a.isChecked() for a in sub.actions()] == [False, False, False, True]
+    next(a for a in sub.actions() if a.objectName() == "view.socialSafeZone.off").trigger()
+    assert mon.mv.social_zone == ""
+
+    # drawn on a vertical picture: the bottom (covered) is darker than the safe middle
+    view = FrameView("program", MonitorView(social_zone="tiktok"))
+    view.resize(270, 480)
+    img = QtGui.QImage(1080, 1920, QtGui.QImage.Format.Format_RGB32)
+    img.fill(QtGui.QColor("#ffffff"))
+    view.set_image(img)
+    safe = view.social_zone_rect()
+    pic = view.picture_rect()
+    assert safe is not None and pic.contains(safe) and safe.height() < pic.height() * 0.7
+    shot = view.grab().toImage()
+    middle = shot.pixelColor(int(safe.center().x()), int(safe.center().y()))
+    bottom = shot.pixelColor(int(pic.center().x()), int(pic.bottom()) - 3)
+    assert middle.lightness() > bottom.lightness() + 30, (middle.name(), bottom.name())
+    view.mv.social_zone = ""
+    assert view.social_zone_rect() is None
+
+
+def test_marketing_commands_ask_for_their_spreadsheet_and_report_results(app, tmp_path: Path, monkeypatch):
+    """File ▸ Export ▸ Batch Variants from Spreadsheet… asks for the table; the commands whose
+    result is otherwise invisible say what they did in the status bar (as egui)."""
+    from cfa4_qt.dialogs import path_params
+    from cfa4_qt.main_window import result_status
+
+    cmd = Command("export.batchVariants", "Batch Variants from Spreadsheet…", ["File", "Export"], "", '{"path":str|"csv":str,"sheet":str?}', True)
+    asked = []
+
+    def pick(*a, **_k):
+        asked.append(a)
+        return (str(tmp_path / "ads.xlsx"), "")
+
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", pick)
+    assert path_params(cmd, QtWidgets.QWidget(), None) == {"path": str(tmp_path / "ads.xlsx")}
+    assert "*.xlsx" in asked[0][3] and "*.csv" in asked[0][3]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getOpenFileName", lambda *_a, **_k: ("", ""))
+    assert path_params(cmd, QtWidgets.QWidget(), None) == {"__cancel__": True}
+
+    assert result_status("markers.addBeats", {"count": 32, "bpm": 119.96}) == "32 beat markers added (120.0 BPM)"
+    assert result_status("sequence.checkDelivery", {"count": 0}) == "Check Before Export: no problems found"
+    assert "3 problems" in result_status("sequence.checkDelivery", {"count": 3})
+    assert result_status("export.socialDeliverables", {"queued": [1, 2, 3]}).startswith("3 exports queued")
+    text = result_status("export.batchVariants", {"variants": [{}, {}], "queued": [], "missing": ["Price"]})
+    assert text == "2 variant sequences made, 0 exports queued; no column for Price"
+    # hostile or foreign results say nothing rather than fail
+    assert result_status("export.batchVariants", None) is None
+    assert result_status("markers.addBeats", {"count": "x", "bpm": True}) == "0 beat markers added (0.0 BPM)"
+    assert result_status("file.save", {}) is None
