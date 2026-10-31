@@ -15,6 +15,9 @@ use cfa4_frame::{PixelData, VideoFrame};
 use cfa4_isobmff::{CodecConfig, Mp4File, TrackKind};
 use cfa4_media::{MediaInfo, SharedReader};
 
+use crate::audio::{AudioAnalyzer, AudioFacts};
+use crate::picture::{PictureAnalyzer, PictureFacts};
+
 /// Most decode errors and timing anomalies kept per stream (the rest are counted).
 pub const MAX_KEPT: usize = 200;
 
@@ -36,6 +39,8 @@ pub struct Found {
     pub index: u64,
     /// Media time of the frame / packet, in milliseconds (when known).
     pub ms: Option<f64>,
+    /// Where it ends (a run of samples or pictures), in milliseconds.
+    pub end_ms: Option<f64>,
     pub message: String,
 }
 
@@ -47,7 +52,7 @@ pub struct Findings {
 }
 
 impl Findings {
-    fn push(&mut self, f: Found) {
+    pub(crate) fn push(&mut self, f: Found) {
         self.total = self.total.saturating_add(1);
         if self.kept.len() < MAX_KEPT {
             self.kept.push(f);
@@ -116,6 +121,10 @@ pub struct DecodeFacts {
     pub repeated: u64,
     pub decoded_size: Option<(u32, u32)>,
     pub size_changes: u64,
+    /// Picture analysis of the decoded video (black, clipping, contact sheet).
+    pub picture: Option<PictureFacts>,
+    /// Audio analysis of every decoded audio track, in track order.
+    pub audio_facts: Vec<AudioFacts>,
 }
 
 /// Everything known about the file.
@@ -165,6 +174,7 @@ fn track_facts(file: &Mp4File, ti: usize) -> Option<TrackFacts> {
             f.dts_backwards.push(Found {
                 index: i as u64 + 1,
                 ms: Some(ms(i128::from(b.dts), t.timescale)),
+                end_ms: None,
                 message: "decode timestamp goes backwards".into(),
             });
         }
@@ -176,7 +186,7 @@ fn track_facts(file: &Mp4File, ti: usize) -> Option<TrackFacts> {
         let [(pa, _), (pb, _)] = w else { continue };
         let at = Some(ms(i128::from(*pb) + i128::from(t.edit_offset), t.timescale));
         if pa == pb {
-            f.duplicate_pts.push(Found { index: k as u64 + 1, ms: at, message: "two pictures share a presentation time".into() });
+            f.duplicate_pts.push(Found { index: k as u64 + 1, ms: at, end_ms: None, message: "two pictures share a presentation time".into() });
             continue;
         }
         // against the nominal frame duration: a picture held for several frame periods leaves the
@@ -184,7 +194,7 @@ fn track_facts(file: &Mp4File, ti: usize) -> Option<TrackFacts> {
         let step = i128::from(*pb) - i128::from(*pa);
         if t.kind == TrackKind::Video && nominal > 0 && step * 2 > i128::from(nominal) * 3 {
             let missing = (step as f64 / nominal as f64) - 1.0;
-            f.gaps.push(Found { index: k as u64 + 1, ms: at, message: format!("gap of {missing:.1} frame(s) before this picture") });
+            f.gaps.push(Found { index: k as u64 + 1, ms: at, end_ms: None, message: format!("gap of {missing:.1} frame(s) before this picture") });
         }
     }
     let first_pts = order.first().map_or(0, |(p, _)| *p);
@@ -242,9 +252,35 @@ struct Pictures {
     repeated: u64,
     size: Option<(u32, u32)>,
     size_changes: u64,
+    analyzer: Option<PictureAnalyzer>,
+    analysis: Option<PictureFacts>,
 }
 
 impl Pictures {
+    fn new(expected: usize) -> Self {
+        Pictures {
+            decoded: 0,
+            last: None,
+            run: 0,
+            longest: 0,
+            repeated: 0,
+            size: None,
+            size_changes: 0,
+            analyzer: Some(PictureAnalyzer::new(expected)),
+            analysis: None,
+        }
+    }
+
+    /// A decoded picture shown at `ms`; `presented`: inside the edit list's range, so it is
+    /// measured (pictures the edit list hides are decoded and counted, never judged).
+    fn take_at(&mut self, f: &VideoFrame, ms: Option<f64>, presented: bool) {
+        let index = self.decoded;
+        self.take(f);
+        if presented && let Some(a) = self.analyzer.as_mut() {
+            a.take(f, index, ms);
+        }
+    }
+
     fn take(&mut self, f: &VideoFrame) {
         self.decoded = self.decoded.saturating_add(1);
         let h = frame_hash(f);
@@ -265,9 +301,10 @@ impl Pictures {
 }
 
 fn decode_video(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (StreamDecode, Pictures, bool) {
-    let mut pics = Pictures { decoded: 0, last: None, run: 0, longest: 0, repeated: 0, size: None, size_changes: 0 };
+    let mut pics = Pictures::new(file.tracks.get(ti).map_or(0, |t| t.samples.len()));
     let mut out = StreamDecode { track: ti, ..StreamDecode::default() };
     let Some(t) = file.tracks.get(ti) else { return (out, pics, false) };
+    let at_ms = |pts: i64| Some(ms(i128::from(pts) + i128::from(t.edit_offset), t.timescale));
     out.samples = t.samples.len();
     let Some(entry) = t.entries.first() else {
         out.unsupported = Some("the video track has no sample description".into());
@@ -281,6 +318,22 @@ fn decode_video(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
         }
     };
     out.decoder = dec.name().to_string();
+    // the container's colour wins over the bitstream's for YUV pictures, as in playback
+    let (w, h) = entry.video.as_ref().map_or((0, 0), |v| (u32::from(v.width), u32::from(v.height)));
+    let color = cfa4_codecs::mp4::container_color(entry, w, h);
+    let range = presented_range(file, t);
+    let take = |pics: &mut Pictures, f: &VideoFrame, pts: i64| {
+        let shown = pts.saturating_add(t.edit_offset);
+        let presented = range.is_none_or(|(a, b)| shown >= a && shown < b);
+        match color {
+            Some(c) if c != f.color && !matches!(f.data, cfa4_frame::PixelData::Rgba8(_) | cfa4_frame::PixelData::RgbaF32(_)) => {
+                let mut g = f.clone();
+                g.color = c;
+                pics.take_at(&g, at_ms(pts), presented);
+            }
+            _ => pics.take_at(f, at_ms(pts), presented),
+        }
+    };
     // presentation index of every sample, for messages
     let mut order: Vec<(i64, usize)> = t.samples.iter().enumerate().map(|(i, s)| (s.pts, i)).collect();
     order.sort_unstable();
@@ -301,25 +354,58 @@ fn decode_video(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
             dec.decode(&data, s.pts).map_err(|e| format!("decode error: {e}"))
         });
         match r {
-            Ok(frames) => frames.iter().for_each(|f| pics.take(&f.frame)),
-            Err(message) => out.errors.push(Found { index, ms: at, message }),
+            Ok(frames) => frames.iter().for_each(|f| take(&mut pics, &f.frame, f.pts)),
+            Err(message) => out.errors.push(Found { index, ms: at, end_ms: None, message }),
         }
     }
     match guarded(|| Ok(dec.flush())) {
-        Ok(frames) => frames.iter().for_each(|f| pics.take(&f.frame)),
-        Err(message) => out.errors.push(Found { index: t.samples.len() as u64, ms: None, message }),
+        Ok(frames) => frames.iter().for_each(|f| take(&mut pics, &f.frame, f.pts)),
+        Err(message) => out.errors.push(Found { index: t.samples.len() as u64, ms: None, end_ms: None, message }),
     }
     out.decoded = pics.decoded;
+    let end = track_facts(file, ti).map(|f| f.end_ms);
+    pics.analysis = pics.analyzer.take().map(|a| a.finish(end));
     (out, pics, false)
 }
 
-fn decode_audio(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (StreamDecode, bool) {
+/// The presentation times (track timescale, edit list applied) a track shows: from the end of
+/// its leading empty edits for the edits' total duration. `None` without an edit list.
+fn presented_range(file: &Mp4File, t: &cfa4_isobmff::Track) -> Option<(i64, i64)> {
+    let first = t.edits.iter().find(|e| e.media_time >= 0)?;
+    if t.timescale == 0 || file.timescale == 0 {
+        return None;
+    }
+    let start = first.media_time.saturating_add(t.edit_offset);
+    let presented = t.edits.iter().filter(|e| e.media_time >= 0).fold(0i128, |a, e| a.saturating_add(i128::from(e.segment_duration)));
+    // rounded up: the movie timescale is often coarser than the track's, and a duration rounded
+    // down there would hide the last picture
+    let fts = i128::from(file.timescale);
+    let len = presented.saturating_mul(i128::from(t.timescale)).saturating_add(fts - 1) / fts;
+    (len > 0).then(|| (start, start.saturating_add(i64::try_from(len).unwrap_or(i64::MAX))))
+}
+
+/// The presented range of an audio track in sample frames at `rate`: frames to skip (encoder
+/// priming, the first edit's media time), frames to keep (the edits' duration), and where the
+/// kept audio starts on the file's timeline, ms (after leading empty edits).
+fn presented_frames(file: &Mp4File, t: &cfa4_isobmff::Track, rate: u32) -> (u64, Option<u64>, f64) {
+    let Some(first) = t.edits.iter().find(|e| e.media_time >= 0) else { return (0, None, 0.0) };
+    if t.timescale == 0 || file.timescale == 0 {
+        return (0, None, 0.0);
+    }
+    let start_ms = ms(i128::from(first.media_time) + i128::from(t.edit_offset), t.timescale).max(0.0);
+    let skip = u128::try_from(first.media_time).unwrap_or(0).saturating_mul(u128::from(rate)) / u128::from(t.timescale);
+    let presented = t.edits.iter().filter(|e| e.media_time >= 0).fold(0u128, |a, e| a.saturating_add(u128::from(e.segment_duration)));
+    let keep = presented.saturating_mul(u128::from(rate)) / u128::from(file.timescale);
+    (u64::try_from(skip).unwrap_or(u64::MAX), (presented > 0).then(|| u64::try_from(keep).unwrap_or(u64::MAX)), start_ms)
+}
+
+fn decode_audio(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (StreamDecode, Option<AudioFacts>, bool) {
     let mut out = StreamDecode { track: ti, ..StreamDecode::default() };
-    let Some(t) = file.tracks.get(ti) else { return (out, false) };
+    let Some(t) = file.tracks.get(ti) else { return (out, None, false) };
     out.samples = t.samples.len();
     let Some(codec) = t.codec() else {
         out.unsupported = Some("the audio track has no sample description".into());
-        return (out, false);
+        return (out, None, false);
     };
     let rate = t.audio().map_or(0, |a| a.sample_rate as u32);
     let pcm = matches!(codec, CodecConfig::Pcm(_));
@@ -330,31 +416,37 @@ fn decode_audio(file: &Mp4File, src: &Src, ti: usize, cancel: &AtomicBool) -> (S
             Ok(d) => Some(d),
             Err(e) => {
                 out.unsupported = Some(e.to_string());
-                return (out, false);
+                return (out, None, false);
             }
         }
     };
     out.decoder = if pcm { "PCM".into() } else { codec.name().to_string() };
+    let (skip, keep, start_ms) = presented_frames(file, t, rate);
+    let mut analyzer = AudioAnalyzer::new(ti, rate, skip, keep, start_ms);
     let mut ts: u64 = 0;
     for (i, s) in t.samples.iter().enumerate() {
         if cancel.load(Ordering::Relaxed) {
-            return (out, true);
+            return (out, None, true);
         }
         let at = Some(ms(i128::from(s.pts) + i128::from(t.edit_offset), t.timescale));
         let r = guarded(|| {
             let data = file.read_sample(src, ti, i).map_err(|e| format!("unreadable packet: {e}"))?;
-            match dec.as_mut() {
-                Some(d) => d.decode(&data, ts).map(|_| ()).map_err(|e| format!("decode error: {e}")),
-                None => Ok(()),
+            match (dec.as_mut(), codec) {
+                (Some(d), _) => d.decode(&data, ts).map_err(|e| format!("decode error: {e}")),
+                (None, CodecConfig::Pcm(cfg)) => Ok(cfa4_codecs::audio::decode_pcm(&data, cfg)),
+                (None, _) => Ok(Vec::new()),
             }
         });
         match r {
-            Ok(()) => out.decoded = out.decoded.saturating_add(1),
-            Err(message) => out.errors.push(Found { index: i as u64, ms: at, message }),
+            Ok(planes) => {
+                out.decoded = out.decoded.saturating_add(1);
+                analyzer.push(&planes);
+            }
+            Err(message) => out.errors.push(Found { index: i as u64, ms: at, end_ms: None, message }),
         }
         ts = ts.saturating_add(u64::from(s.duration));
     }
-    (out, false)
+    (out, Some(analyzer.finish()), false)
 }
 
 /// Gather the facts. `decode`: also decode every sample (the expensive part).
@@ -396,6 +488,7 @@ pub fn inspect(name: &str, reader: SharedReader, decode: bool, cancel: &AtomicBo
         d.repeated = pics.repeated;
         d.decoded_size = pics.size;
         d.size_changes = pics.size_changes;
+        d.picture = pics.analysis;
         if cancelled {
             facts.cancelled = true;
             facts.decode = Some(d);
@@ -406,8 +499,9 @@ pub fn inspect(name: &str, reader: SharedReader, decode: bool, cancel: &AtomicBo
         if t.kind != TrackKind::Audio {
             continue;
         }
-        let (a, cancelled) = decode_audio(&file, &src, ai, cancel);
+        let (a, analysis, cancelled) = decode_audio(&file, &src, ai, cancel);
         d.audio.push(a);
+        d.audio_facts.extend(analysis);
         if cancelled {
             facts.cancelled = true;
             break;

@@ -1334,6 +1334,7 @@ name = "cfa4-qc"
 version = "0.10.0"
 dependencies = [
  "cfa4-aac",
+ "cfa4-audio-dsp",
  "cfa4-codecs",
  "cfa4-color",
  "cfa4-frame",
@@ -1341,6 +1342,7 @@ dependencies = [
  "cfa4-isobmff",
  "cfa4-media",
  "cfa4-time",
+ "png",
  "serde",
  "serde_json",
  "sha2",
