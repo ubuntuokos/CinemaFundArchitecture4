@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 cfa4-bitstream = { workspace = true }
 cfa4-mpeg2v = { workspace = true }
+cfa4-route = { workspace = true }
 cfa4-time = { workspace = true }
 serde = { workspace = true }
 

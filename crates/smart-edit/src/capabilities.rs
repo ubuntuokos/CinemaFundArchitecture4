@@ -124,8 +124,8 @@ impl Operation {
     }
 }
 
-/// Who implements a capability. The order is the order [`Registry::decide`] tries them in: CFA4's
-/// own Rust engine first, always the fallback the others supplement.
+/// Who implements a capability. Which one [`Registry::decide`] tries first is not fixed here: it
+/// comes from the `cfa4-route` routing table ([`BackendOrder`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Backend {
@@ -254,6 +254,71 @@ pub struct Probe {
     pub limits: Option<EncoderLimits>,
 }
 
+/// The order backends are tried in, per operation, taken from the `cfa4-route` routing table so
+/// the planner never keeps a routing policy of its own (AGENTS.md, ADR 0004 / 0005).
+///
+/// Decoding follows the table's `codec_decode` family, encoding and the boundary re-encode its
+/// `codec_encode` family. Route backends map onto [`Backend`]s: `software` is [`Backend::Native`],
+/// `ffmpeg` is [`Backend::Ffmpeg`], `gstreamer-*` is [`Backend::Gstreamer`] and every other
+/// (hardware) path is [`Backend::Platform`]; backends the table does not name come last. The
+/// other operations (demux, header parsing, GOP index, packet copy, mux) have no routing family:
+/// CFA4's own code comes first there (VISION.md 2.1), then the decode order.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BackendOrder {
+    decode: Vec<Backend>,
+    encode: Vec<Backend>,
+    other: Vec<Backend>,
+}
+
+const ALL_BACKENDS: [Backend; 4] = [Backend::Native, Backend::Platform, Backend::Gstreamer, Backend::Ffmpeg];
+
+impl BackendOrder {
+    /// The order a routing table gives (the shipped one, or with the user's file on top).
+    pub fn from_route(table: &cfa4_route::Table) -> BackendOrder {
+        let decode = Self::family(table, cfa4_route::Family::CodecDecode);
+        let encode = Self::family(table, cfa4_route::Family::CodecEncode);
+        let other = Self::complete(std::iter::once(Backend::Native).chain(decode.iter().copied()));
+        BackendOrder { decode, encode, other }
+    }
+
+    fn family(table: &cfa4_route::Table, family: cfa4_route::Family) -> Vec<Backend> {
+        Self::complete(table.family_order(family).iter().map(|id| match id.as_str() {
+            "software" => Backend::Native,
+            "ffmpeg" => Backend::Ffmpeg,
+            s if s.starts_with("gstreamer") => Backend::Gstreamer,
+            _ => Backend::Platform,
+        }))
+    }
+
+    /// First occurrence of each backend, then the ones not named.
+    fn complete(named: impl Iterator<Item = Backend>) -> Vec<Backend> {
+        let mut out: Vec<Backend> = Vec::with_capacity(ALL_BACKENDS.len());
+        for b in named.chain(ALL_BACKENDS) {
+            if !out.contains(&b) {
+                out.push(b);
+            }
+        }
+        out
+    }
+
+    /// The order for one operation.
+    pub fn for_operation(&self, op: Operation) -> &[Backend] {
+        match op {
+            Operation::Decode => &self.decode,
+            Operation::Encode | Operation::BoundaryReencode => &self.encode,
+            _ => &self.other,
+        }
+    }
+}
+
+impl Default for BackendOrder {
+    /// The shipped routing table's order. The table is built in and tested in `cfa4-route`; if it
+    /// ever failed to parse, an empty table leaves CFA4's own code first everywhere.
+    fn default() -> Self {
+        BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap_or_default())
+    }
+}
+
 /// What a decision may accept.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Policy {
@@ -271,7 +336,7 @@ pub struct Decision {
     pub backend: Option<Backend>,
     /// The best level any backend reached.
     pub level: SupportLevel,
-    /// One line per backend considered, in [`Backend`] order.
+    /// One line per backend considered, in [`BackendOrder`].
     pub reasons: Vec<String>,
 }
 
@@ -333,6 +398,8 @@ pub struct Registry {
     probes: Vec<Probe>,
     /// `base` with `probes` applied: what decisions read.
     entries: BTreeMap<(Key, Backend), Entry>,
+    /// Which backend is tried first.
+    order: BackendOrder,
 }
 
 impl Registry {
@@ -350,6 +417,21 @@ impl Registry {
             let _ = r.insert(e);
         }
         r
+    }
+
+    /// Use the backend order of another routing table (for example the shipped table with the
+    /// user's `routing.toml` on top).
+    pub fn set_backend_order(&mut self, order: BackendOrder) {
+        self.order = order;
+    }
+
+    pub fn backend_order(&self) -> &BackendOrder {
+        &self.order
+    }
+
+    /// The rows for `key`, in the backend order of its operation.
+    fn candidates(&self, key: Key) -> impl Iterator<Item = &Entry> {
+        self.order.for_operation(key.operation).iter().filter_map(move |b| self.entries.get(&(key, *b)))
     }
 
     /// Add or replace a row.
@@ -400,8 +482,8 @@ impl Registry {
         self.entries = entries;
     }
 
-    /// Whether `key` can be done, and by which backend: the first backend (in [`Backend`] order)
-    /// whose entry the policy accepts.
+    /// Whether `key` can be done, and by which backend: the first backend (in the
+    /// [`BackendOrder`] of the routing table) whose entry the policy accepts.
     pub fn decide(&self, key: Key, policy: Policy) -> Decision {
         let mut reasons = Vec::new();
         let mut best = SupportLevel::NotRegistered;
@@ -410,7 +492,7 @@ impl Registry {
             reasons.push("invalid capability key".to_string());
             return Decision { key, allowed: false, backend: None, level: SupportLevel::Unsupported, reasons };
         }
-        for e in self.entries.range((key, Backend::Native)..=(key, Backend::Ffmpeg)).map(|(_, e)| e) {
+        for e in self.candidates(key) {
             best = best.min(e.level);
             let accepted = e.level == SupportLevel::Supported || (policy.allow_experimental && e.level == SupportLevel::Experimental);
             reasons.push(format!("{:?}: {:?} ({})", e.backend, e.level, e.evidence));
@@ -462,12 +544,12 @@ impl Registry {
         CompositeDecision::new(steps, conditions)
     }
 
-    /// The first allowed encoder backend (in [`Backend`] order) whose limits fit `stream`; when
+    /// The first allowed encoder backend (in [`BackendOrder`]) whose limits fit `stream`; when
     /// none does, why not, one line per allowed backend.
     fn encoder_for(&self, codec: Codec, stream: &StreamFormat, policy: Policy) -> (Option<Backend>, Vec<String>) {
         let key = Key::codec(Operation::Encode, codec);
         let mut why = Vec::new();
-        for e in self.entries.range((key, Backend::Native)..=(key, Backend::Ffmpeg)).map(|(_, e)| e) {
+        for e in self.candidates(key) {
             let accepted = e.level == SupportLevel::Supported || (policy.allow_experimental && e.level == SupportLevel::Experimental);
             if !accepted {
                 continue;

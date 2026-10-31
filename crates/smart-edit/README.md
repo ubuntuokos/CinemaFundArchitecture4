@@ -7,7 +7,8 @@ Smart Cut / Smart Render planning for CFA4 (layer L3). Specification:
 The crate decides, it never executes: it says which parts of an export may be copied packet for
 packet, which need their boundaries re-encoded and which must be fully rendered. Execution stays in
 the existing export pipeline (`cfa4-export`, driven by `cfa4-engine`). No `unsafe`, no
-dependencies beyond `serde` and the L0 crates `cfa4-time`, `cfa4-bitstream` and `cfa4-mpeg2v`; builds for `wasm32-unknown-unknown`.
+dependencies beyond `serde`, `cfa4-route` (L1, for the backend order) and the L0 crates `cfa4-time`,
+`cfa4-bitstream` and `cfa4-mpeg2v`; builds for `wasm32-unknown-unknown`.
 
 ## Capability registry (WP-01)
 
@@ -27,8 +28,12 @@ Rules:
 
 - A capability without an entry is unsupported. Only `Supported` (tested) entries allow an
   operation; `Experimental` ones only with `Policy { allow_experimental: true }`.
-- Backends are tried in a fixed order: `Native` (CFA4's own Rust crates), `Platform` (hardware),
-  `Gstreamer`, `Ffmpeg`. No FFmpeg entry is registered: Smart Cut / Smart Render runs on CFA4's
+- Which backend is tried first comes from the `cfa4-route` routing table (`BackendOrder`), not
+  from this crate: decoding follows its `codec_decode` family, encoding and the boundary
+  re-encode its `codec_encode` family (shipped: hardware, FFmpeg, GStreamer, then `Native`, CFA4's
+  own software codecs), the user's `routing.toml` can reorder them
+  (`Registry::set_backend_order`). Demux, GOP index, packet copy and mux have no routing family:
+  `Native` (CFA4's own Rust crates) comes first there. No FFmpeg entry is registered: Smart Cut / Smart Render runs on CFA4's
   own Rust code (owner decision 2026-10-27, `docs/audit/smart-edit-baseline.md` §3) and ffmpeg
   is its validation oracle. ADR 0005 allows an FFmpeg ≥ 9.0.2 backend (`cfa4-ffmpeg`, through
   `cfa4-route`); its rows can be added once that crate exists and the owner decides so.
@@ -78,4 +83,4 @@ mutation fuzzing of both analysers, cache validity; `tests/index_oracle.rs` inde
 MPEG-TS references (MPEG-2 open / closed GOP, x264 closed / open GOP) and checks every picture
 type and the presentation order against ffprobe. Capability registry: built-in table validity, the WP-03 gate (no Smart Cut allowed
 before it is implemented, for every codec and container pair), composite decisions, encoder
-limits, probe order independence, backend order, report round trip and hostile JSON.
+limits, probe order independence, backend order from the routing table, report round trip and hostile JSON.
