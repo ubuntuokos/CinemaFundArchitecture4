@@ -32,6 +32,7 @@ macro_rules! out {
 
 mod args;
 mod probe;
+mod qc;
 mod serve;
 mod serve_graphics;
 mod serve_lumetri;
@@ -104,6 +105,11 @@ SUBCOMMANDS
   probe <media> [--image-sequence]
                                 media info as JSON, with MXF / Ogg / BWF details; with
                                 --image-sequence <media> is the first numbered still of a sequence
+  qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--no-decode]
+                                media QC (docs/media-qc.md): input and integrity checks with a QC
+                                profile (default delivery-web) against an optional render plan;
+                                prints the cfa4-qc-report/1 JSON, or saves it with --out. Exit
+                                code: 0 PASS, 3 WARN, 4 FAIL, 5 INCOMPLETE
   bench-decode <media> [--frames N]
   settings schema [category]    the Settings schema (groups, categories, fields, values) as JSON
   settings get [key]            the saved preferences of the data directory, or one key
@@ -324,6 +330,19 @@ async fn cli() {
                 Ok(v) => print(&a, &v),
                 Err(e) => fail(e),
             }
+        }
+        "qc" => {
+            let path = a.pos(1).unwrap_or_else(|| usage("qc <media> [--profile ID|file.toml] [--expect plan.json] [--out report.json] [--no-decode]"));
+            let report = qc::run(path, a.opt("--profile"), a.opt("--expect"), !a.flag("--no-decode")).unwrap_or_else(|e| fail(e));
+            match a.opt("--out") {
+                Some(out) => {
+                    qc::save(&report, out).unwrap_or_else(|e| fail(e));
+                    outln!("{}: {:?} ({out})", path, report.summary.verdict);
+                }
+                None => print(&a, &serde_json::to_value(&report).unwrap_or_default()),
+            }
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            std::process::exit(qc::exit_code(report.summary.verdict));
         }
         "bench-decode" => {
             let path = a.pos(1).unwrap_or_else(|| usage("bench-decode <media>"));

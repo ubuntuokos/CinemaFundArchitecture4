@@ -810,6 +810,7 @@ dependencies = [
  "cfa4-codecs",
  "cfa4-engine",
  "cfa4-export",
+ "cfa4-format",
  "cfa4-gpu",
  "cfa4-gstreamer",
  "cfa4-media",
@@ -818,6 +819,7 @@ dependencies = [
  "cfa4-ogg",
  "cfa4-platform",
  "cfa4-project",
+ "cfa4-qc",
  "cfa4-render",
  "cfa4-route",
  "cfa4-scopes",
@@ -1331,6 +1333,14 @@ dependencies = [
 name = "cfa4-qc"
 version = "0.10.0"
 dependencies = [
+ "cfa4-aac",
+ "cfa4-codecs",
+ "cfa4-color",
+ "cfa4-frame",
+ "cfa4-h264enc",
+ "cfa4-isobmff",
+ "cfa4-media",
+ "cfa4-time",
  "serde",
  "serde_json",
  "sha2",
