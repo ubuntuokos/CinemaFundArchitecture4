@@ -22,7 +22,7 @@
 //! leave their part out instead of drawing garbage.
 
 use cfa4_geom::{Affine, Vec2};
-use cfa4_project::graphic::{LayerContent, layer_display_name, layer_indices};
+use cfa4_project::graphic::{self, LayerContent, layer_display_name, layer_indices};
 use cfa4_project::{ClipId, EffectInstance, ItemKind, MaskPath, TrackItem};
 use cfa4_render::graphic_clip::{item_layer_specs, layer_local_bounds, layer_matrix, text_layout};
 use cfa4_time::Tick;
@@ -178,7 +178,14 @@ fn graphics(s: &Session) -> Value {
                 "anchor": pt(tf.anchor),
                 "scale": [num(tf.scale.x * 100.0), num(tf.scale.y * 100.0)],
             });
-            match &spec.content {
+            // the whole Source Text (a text animator may show only part of it): the text is edited
+            // from here and written back, so it must never be the animator's partial text
+            let source = graphic::eval_layer_source(e, mt, size).map(|x| x.content);
+            let content = match (&spec.content, &source) {
+                (LayerContent::Text(_), Some(c @ LayerContent::Text(_))) => c,
+                (c, _) => c,
+            };
+            match content {
                 LayerContent::Text(tp) => {
                     let l = text_layout(tp);
                     // character (not byte) offsets: what a GUI's strings count

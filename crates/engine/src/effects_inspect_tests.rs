@@ -403,3 +403,22 @@ fn program_overlay_graphic_boxes_follow_motion_through_a_frame_hold() {
     assert!(late.0 > early.0 * 1.5, "layer box: {early:?} → {late:?}");
     assert!(late.1 > early.1 * 1.5, "canvas target: {early:?} → {late:?}");
 }
+
+#[test]
+fn program_overlay_text_is_the_source_text_while_an_animator_shows_part_of_it() {
+    // a typewriter shows "HE" of "HELLO": the monitor's text editor starts from the overlay's
+    // text and writes it back, so it must be the whole Source Text
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let made = s.execute("graphics.newText", json!({"text": "HELLO", "position": [960, 540], "time": 0})).unwrap();
+    let clip = made["clip"].as_u64().unwrap();
+    s.execute("graphics.selectLayer", json!({"clip": clip, "layers": [0]})).unwrap();
+    s.execute("graphics.textAnimator.typewriter", json!({"clip": clip, "duration": 2.0})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
+    s.execute("playhead.set", json!({"time": (it.start + Tick::from_seconds_f64(0.8)).0})).unwrap();
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let text = &g["layers"][0]["text"];
+    assert_eq!(text["text"], json!("HELLO"), "{text}");
+    let last = text["lines"][0]["carets"].as_array().unwrap().last().unwrap()[0].as_u64();
+    assert_eq!(last, Some(5), "caret stops over the whole text: {text}");
+}
