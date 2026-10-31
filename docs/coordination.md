@@ -8,11 +8,10 @@ soha be nem olvasztott PR-ok és ágak.
 
 | Szerep | Ki | Mit tehet |
 |---|---|---|
-| **Tulajdonos** | ubuntuokos | Dönt a sorrendről, jóváhagyja a beolvasztásokat, maga is beolvaszthat, ágat töröl a GitHubon. |
-| **Beolvasztási gazda** | egyetlen, erre kijelölt munkamenet | A beolvaszthatóság felelőse: minden PR-t ő ellenőriz (3.4), mielőtt a `main`-be kerül. Rajta kívül csak a tulajdonos olvaszt be. Sorrendet javasol, ütközést old fel, lezár, ha valamit egy másik PR kivált. |
+| **Tulajdonos** | ubuntuokos | Dönt a sorrendről, jóváhagyja a beolvasztásokat, ágat töröl a GitHubon. |
+| **Beolvasztási gazda** | egyetlen, erre kijelölt munkamenet | Egyedül ő olvaszt be a `main`-be. Sorrendet javasol, ütközést old fel, lezár, ha valamit egy másik PR kivált. |
 | **Fejlesztő munkamenet** | minden más | Egy témán dolgozik, egy PR-ban. **Nem olvaszt be**, más PR-jához és ágához nem nyúl. |
 
-A `main`-be **csak a gazda és a tulajdonos** olvaszt be (tulajdonosi döntés, 2026-10-27).
 Egyszerre **egy** gazda van. Az aktuális gazdát a [`docs/coordination-log.md`](coordination-log.md)
 első sora mondja meg. Gazdát csak a tulajdonos jelölhet ki vagy válthat le.
 
@@ -22,7 +21,7 @@ első sora mondja meg. Gazdát csak a tulajdonos jelölhet ki vagy válthat le.
    PR-tól függ, várd meg, amíg az bekerül, vagy szólj a gazdának.
 2. **Egy PR = egy téma.** Ne csomagolj össze független változtatásokat.
 3. **Kész PR-t ne olvassz be magad.** Jelöld „Ready for review”-nak, és írd a leírásába, hogy kész.
-   A beolvasztás a gazda (vagy a tulajdonos) dolga.
+   A beolvasztás a gazda dolga.
 4. **Más PR-jához, ágához ne nyúlj** (push, rebase, lezárás, gyűjtő-PR), akkor sem, ha ütközik
    a tieddel. Az ütközést a gazda oldja fel.
 5. **Közös fájlok** (kodek-regiszter, `crates/codecs`, `crates/export/src/lib.rs`, effektlisták,
@@ -40,11 +39,11 @@ első sora mondja meg. Gazdát csak a tulajdonos jelölhet ki vagy válthat le.
    folyik a munka, kihagyja.
 3. **Sorrendet javasol** a tulajdonosnak (`VISION.md` prioritása szerint: Qt6 először), és csak
    a jóváhagyott PR-okat olvasztja be, **egyenként**. Gyűjtő-PR-t nem nyit.
-4. **Beolvaszthatósági ellenőrzés** minden beolvasztás előtt, a tulajdonosé előtt is: a PR ága
-   friss a `main`-nel (`update-branch`), nincs ütközés, a teljes CI (`cfa4-full-validation` vagy
-   `workflow_dispatch`) zöld **azon a fejen**; a ~10 mp-es policy-futás zöldje ehhez nem elég.
-   Az eredményt a gazda egy PR-megjegyzésben rögzíti („Beolvasztható”, a fej SHA-ja és a teljes
-   CI futás linkje), és csak ezután olvaszt be ő vagy a tulajdonos.
+4. Beolvasztás előtt: a PR ága friss a `main`-nel (`update-branch`), a teljes CI
+   (`cfa4-full-validation`) zöld **azon a fejen**.
+   Ezt a kötelező `full-validation-gate` ellenőrzés technikailag is kikényszeríti (tulajdonosi
+   döntés, 2026-10-31): csak akkor zöld, ha minden blokkoló teljes job azon a fejen ténylegesen
+   lefutott és zöld. A Qt6 GUI-tesztek a GUI elkészültéig futnak, de nem blokkolnak.
 5. Ha egy PR-t egy másik kivált, a gazda lezárja, és a megjegyzésben megnevezi, melyik váltotta ki.
 6. Minden kör eredményét egy sorban beírja a [`docs/coordination-log.md`](coordination-log.md)-be.
 7. Ágat nem töröl (a munkamenetek nem kapnak rá engedélyt): a törölhető ágak listáját átadja
