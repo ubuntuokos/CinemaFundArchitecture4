@@ -219,7 +219,25 @@ fn second_field(data: &[u8]) -> Option<&[u8]> {
     data.get(at + 2..)
 }
 
-/// The frame of two fields: `top`'s rows on the even lines, `bottom`'s on the odd ones.
+/// `p` of a field `height` rows high with every row repeated over the field lines it covers
+/// (`dy` 1): field components sub-sampled vertically cannot be woven row by row.
+fn unsubsample_rows(p: &Plane, height: u32) -> Plane {
+    let dy = usize::from(p.dy.max(1));
+    if dy == 1 {
+        return p.clone();
+    }
+    let (w, ph) = (p.width as usize, p.height as usize);
+    let data = (0..height as usize)
+        .flat_map(|r| {
+            let at = (r / dy).min(ph.saturating_sub(1)).saturating_mul(w);
+            p.data.get(at..at.saturating_add(w)).unwrap_or(&[]).iter().copied()
+        })
+        .collect();
+    Plane { height, dy: 1, data, ..p.clone() }
+}
+
+/// The frame of two fields: `top`'s rows on the even lines, `bottom`'s on the odd ones. Vertically
+/// sub-sampled components are expanded first (4:2:0 fields give a 4:2:2 frame).
 fn weave(top: &Image, bottom: &Image) -> Result<Image> {
     let same = top.width == bottom.width
         && top.height == bottom.height
@@ -233,9 +251,10 @@ fn weave(top: &Image, bottom: &Image) -> Result<Image> {
         .iter()
         .zip(&bottom.components)
         .map(|(a, b)| {
+            let (a, b) = (unsubsample_rows(a, top.height), unsubsample_rows(b, bottom.height));
             let w = (a.width as usize).max(1);
             let data = a.data.chunks(w).zip(b.data.chunks(w)).flat_map(|(ra, rb)| ra.iter().chain(rb).copied()).collect();
-            Plane { height: a.height.saturating_mul(2), data, ..a.clone() }
+            Plane { height: a.height.saturating_mul(2), data, ..a }
         })
         .collect();
     Ok(Image { width: top.width, height: top.height.saturating_mul(2), components, mct: top.mct || bottom.mct })
@@ -259,14 +278,16 @@ impl VideoDecoder for J2kDecoder {
             e => CodecError::Decode(e.to_string()),
         };
         let cs = cfa4_j2k::codestream(sample).map_err(err)?;
-        let header = cfa4_j2k::parse_header(cs).map_err(err)?;
+        let mut header = cfa4_j2k::parse_header(cs).map_err(err)?;
         let mut image = cfa4_j2k::decode(cs).map_err(err)?;
         let mut origin = (header.x0, header.y0);
         if self.hints.separate_fields {
             // a missing or damaged second field repeats the first
             let second = second_field(cs).and_then(|f| cfa4_j2k::decode(f).ok()).unwrap_or_else(|| image.clone());
             image = weave(&image, &second)?;
-            origin.1 = origin.1.saturating_mul(2);
+            // the woven components have every line (see `weave`)
+            header.components.iter_mut().for_each(|c| c.dy = 1);
+            origin.1 = 0;
         }
         let components = after_decode(&header, self.hints, &image)?;
         Ok(vec![DecodedFrame { pts, frame: to_video_frame(&image, origin, components, self.hints)?, draft: false }])
@@ -372,6 +393,25 @@ mod tests {
         let PixelData::Yuv8 { planes, .. } = &f.data else { panic!("8-bit expected") };
         let rows: Vec<u8> = planes[0].chunks(4).map(|r| r[0]).collect();
         assert_eq!(rows, [16, 235, 16, 235]);
+        // 4:2:0 fields: each field's chroma rows stay on that field's lines (a 4:2:2 frame)
+        let yuv420 = |y: i32, c: i32| Image {
+            width: 4,
+            height: 4,
+            components: vec![
+                plane_of(4, 4, 8, false, y),
+                Plane { dx: 2, dy: 2, ..plane_of(2, 2, 8, false, c) },
+                Plane { dx: 2, dy: 2, ..plane_of(2, 2, 8, false, c) },
+            ],
+            mct: false,
+        };
+        let opts420 = cfa4_j2k::EncodeOptions { mct: false, ..cfa4_j2k::EncodeOptions::lossless() };
+        let mut sample = cfa4_j2k::encode(&yuv420(100, 60), &opts420).unwrap_or_else(|e| panic!("{e}"));
+        sample.extend(cfa4_j2k::encode(&yuv420(100, 200), &opts420).unwrap_or_else(|e| panic!("{e}")));
+        let out = J2kDecoder::new(hints).decode(&sample, 0).unwrap_or_else(|e| panic!("{e}"));
+        let PixelData::Yuv8 { planes, chroma, .. } = &out[0].frame.data else { panic!("8-bit expected") };
+        assert_eq!(*chroma, Chroma::C422);
+        let cb_rows: Vec<u8> = planes[1].chunks(2).map(|r| r[0]).collect();
+        assert_eq!(cb_rows, [60, 200, 60, 200, 60, 200, 60, 200]);
         // a lone field is line-doubled rather than refused
         let lone = cfa4_j2k::encode(&field(16), &opts).unwrap_or_else(|e| panic!("{e}"));
         let out = J2kDecoder::new(hints).decode(&lone, 0).unwrap_or_else(|e| panic!("{e}"));

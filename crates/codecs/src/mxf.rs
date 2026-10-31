@@ -406,7 +406,13 @@ impl MxfSource {
                 .then(|| file.read_sample(&bytes, vi, 0).ok())
                 .flatten()
                 .and_then(|s| cfa4_j2k::parse_header(cfa4_j2k::codestream(&s).ok()?).ok())
-                .map(|h| (crate::j2k::components(&h, j2k_hints), h));
+                .map(|mut h| {
+                    if j2k_hints.separate_fields {
+                        // woven fields have every chroma line (4:2:0 fields make a 4:2:2 frame)
+                        h.components.iter_mut().for_each(|c| c.dy = 1);
+                    }
+                    (crate::j2k::components(&h, j2k_hints), h)
+                });
             let (w, h) = match (&mpeg, &j2k) {
                 (Some((info, _, _)), _) => (info.width, info.height),
                 (_, Some((_, hd))) => (hd.width(), if j2k_hints.separate_fields { hd.height().saturating_mul(2) } else { hd.height() }),
