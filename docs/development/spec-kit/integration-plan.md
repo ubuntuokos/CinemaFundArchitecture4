@@ -305,14 +305,14 @@ Az integráció csak a CFA4 fejlesztői környezetére vonatkozik; a Spec Kit ne
 
 ## 10. Tulajdonosi döntések és jóváhagyás
 
-A kivitelezés megkezdése az alábbi döntésektől külön, későbbi döntés.
+A négy tulajdonosi döntést 2026-10-31-én elfogadták; a kivitelezés megkezdése ezektől külön, későbbi döntés.
 
-| # | Döntendő kérdés | Javaslat | Állapot |
+| # | Döntendő kérdés | Döntés | Állapot |
 | --- | --- | --- | --- |
-| D1 | Az F0-audit 5.3/1.: autonóm munkahurok vagy előzetes jóváhagyás | Előzetes jóváhagyás; addig SK-F3 nem indul | nyitott |
-| D2 | AC-SK-01 futtatási helye | Self-hosted runner, csak CI-jobként, a gép kézi módosítása nélkül | nyitott |
-| D3 | Rögzített Spec Kit verzió | Az SK-F1 indulásakor legfrissebb stabil tag (2026-10-31-én v1.0.9), utána csak külön döntéssel frissül | nyitott |
-| D4 | Mely munkafolyamatok engedélyezhetők a pilotban | Új funkció tervezése; a bugfix és assess bundle csak az SK-F1 ellenőrzése után | nyitott |
+| D1 | Az F0-audit 5.3/1.: autonóm munkahurok vagy előzetes jóváhagyás | Előzetes jóváhagyás | elfogadva (2026-10-31) |
+| D2 | AC-SK-01 futtatási helye | Self-hosted runner, csak CI-jobként, a gép kézi módosítása nélkül | elfogadva (2026-10-31) |
+| D3 | Rögzített Spec Kit verzió | Az SK-F1 indulásakor legfrissebb stabil tag (2026-10-31-én v1.0.9), utána csak külön döntéssel frissül | elfogadva (2026-10-31) |
+| D4 | Mely munkafolyamatok engedélyezhetők a pilotban | Új funkció tervezése; a bugfix és assess bundle csak az SK-F1 ellenőrzése után | elfogadva (2026-10-31) |
 
 Jóváhagyási csomag:
 
@@ -323,7 +323,7 @@ Jóváhagyási csomag:
 - [x] Először izolált pilot, majd külön élesítési döntés
 - [x] A CFA4-DEV-SPEC-KIT-001 1.1 tervet jóváhagyom; a kivitelezés megkezdésére még nem adok engedélyt
 
-**Jóváhagyva:** 2026-10-31, tulajdonos (ubuntuokos). A D1–D4 döntések nyitottak; a kivitelezés (SK-F0-tól) külön engedélyt igényel. A jóváhagyás nem indít telepítést, CI-t vagy GitHub-módosítást.
+**Jóváhagyva:** 2026-10-31, tulajdonos (ubuntuokos). A D1–D4 javaslatokat a tulajdonos 2026-10-31-én elfogadta; a kivitelezés (SK-F0-tól) továbbra is külön engedélyt igényel. A jóváhagyás nem indít telepítést, CI-t vagy GitHub-módosítást.
 
 ## 11. Végső javaslat
 
