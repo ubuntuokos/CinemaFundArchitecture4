@@ -121,6 +121,14 @@ orákulum. Az FFmpeg-háttér a capability registrybe (`Backend::Ffmpeg`) csak a
 döntésével, a `cfa4-ffmpeg` elkészülte után, az ADR 0005 szerint kerülhet be; a registry ezt
 modellváltás nélkül befogadja.
 
+**Utóirat (2026-10-31): azóta a `main`-be került képességek.** Az audit óta a `main`-be bekerült
+egy saját MPEG-2 videóencoder (`cfa4_mpeg2v::encode`: Main profil 4:2:0, 4:2:2 profil, 8 bit) és
+egy MPEG program- és transport stream muxer (`cfa4_mpegts::Muxer`, az exportban
+`crates/export/src/mpeg_out.rs`; ffmpeg-orákulum: `crates/export/src/mpeg2_tests.rs`). A fenti
+hiánylistából ezért az „MPEG TS/PS muxer” és az „MPEG-2 encoder” már nem hiányzik. Az MP4 MPEG-2
+mintabejegyzés továbbra is hiányzik. A capability registry (WP-01) ennek megfelelően
+regisztrálja őket.
+
 ## 4. Meglévő stream-copy képességek
 
 | Képesség | Állapot | Bizonyíték |

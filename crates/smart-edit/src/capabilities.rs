@@ -654,7 +654,8 @@ fn row(key: Key, backend: Backend, level: SupportLevel, evidence: &str) -> Entry
     Entry { key, backend, level, evidence: evidence.to_string(), limits: None, routes: Vec::new() }
 }
 
-/// The built-in rows (baseline audit, 2026-10-27, `main` @ f49a5def).
+/// The built-in rows (baseline audit, 2026-10-27, `main` @ f49a5def; updated 2026-10-31 with the
+/// MPEG-2 encoder and the program / transport stream muxer that `main` has gained since).
 pub(crate) fn native_entries() -> Vec<Entry> {
     use Backend::{Native, Platform};
     use Codec::*;
@@ -706,7 +707,6 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(c(GopIndex, Hevc), Native, Unsupported, "not implemented yet (WP-07)"),
         row(c(GopIndex, Av1), Native, Unsupported, "not implemented yet (WP-07)"),
         // encode
-        row(c(Encode, Mpeg2Video), Native, Unsupported, "CFA4 has no MPEG-2 video encoder"),
         row(c(Encode, Hevc), Native, Unsupported, "CFA4 has no software HEVC encoder"),
         row(c(Encode, Hevc), Platform, NeedsProbe, "hardware encoder registered by cfa4-platform (NVENC); export::available(Format::Hevc)"),
         row(c(Encode, Av1), Native, Unsupported, "CFA4 has no software AV1 encoder"),
@@ -727,8 +727,8 @@ pub(crate) fn native_entries() -> Vec<Entry> {
         row(k(Mux, Hevc, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
         row(k(Mux, Av1, Mp4), Native, Supported, "cfa4-isobmff Mp4Writer; crates/isobmff/tests/oracle_mux.rs (remux_av1.mp4)"),
         row(k(Mux, Av1, Matroska), Native, Experimental, "cfa4-matroska MkvWriter exists; not reachable from export"),
-        row(k(Mux, Mpeg2Video, MpegPs), Native, Unsupported, "cfa4-mpegts has no muxer"),
-        row(k(Mux, Mpeg2Video, MpegTs), Native, Unsupported, "cfa4-mpegts has no muxer"),
+        row(k(Mux, Mpeg2Video, MpegPs), Native, Supported, "cfa4-mpegts muxer; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
+        row(k(Mux, Mpeg2Video, MpegTs), Native, Supported, "cfa4-mpegts muxer; crates/export/src/mpeg2_tests.rs (ffmpeg_oracle_reads_every_container)"),
         row(k(Mux, Mpeg2Video, Mp4), Native, Unsupported, "cfa4-isobmff has no MPEG-2 video sample entry"),
         row(k(Mux, Aac, Mp4), Native, Supported, "cfa4-isobmff; crates/isobmff/tests/oracle_mux.rs (remux_aac.m4a)"),
         row(k(Mux, Aac, Mov), Native, Supported, "cfa4-isobmff; crates/isobmff/tests/oracle_mux.rs"),
@@ -738,6 +738,10 @@ pub(crate) fn native_entries() -> Vec<Entry> {
     let mut h264 = row(c(Encode, H264), Native, Supported, "cfa4-h264enc; crates/export/src/tests.rs, ffmpeg oracle");
     h264.limits = Some(EncoderLimits { profiles: vec!["baseline".into(), "main".into(), "high".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] });
     v.push(h264);
+    // Main profile (4:2:0) and the 4:2:2 profile, 8 bits (cfa4_mpeg2v::encode, export `mpeg2_422`)
+    let mut mpeg2 = row(c(Encode, Mpeg2Video), Native, Supported, "cfa4-mpeg2v encoder; crates/export/src/mpeg2_tests.rs, crates/mpeg2v/src/encode/tests.rs");
+    mpeg2.limits = Some(EncoderLimits { profiles: vec!["main".into(), "422".into()], chroma: vec!["4:2:0".into(), "4:2:2".into()], bit_depths: vec![8] });
+    v.push(mpeg2);
     // packet copy and boundary re-encode: not implemented for any codec or container yet
     for codec in Codec::ALL {
         for container in Container::ALL {

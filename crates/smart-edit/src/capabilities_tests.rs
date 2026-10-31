@@ -93,13 +93,13 @@ fn smart_cut_needs_every_step() {
     // every step counts: without the GOP index there is no Smart Cut
     r.insert(Entry { level: SupportLevel::Unsupported, ..ok(index) }).unwrap();
     assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
-    // MPEG-2 in a program stream cannot be written back: no muxer
+    // MPEG-2 from a program stream cannot be written into MP4: no MPEG-2 sample entry
     let mut m = Registry::native();
     m.insert(ok(Key::codec(Operation::GopIndex, Codec::Mpeg2Video))).unwrap();
-    m.insert(ok(Key::in_container(Operation::PacketCopy, Codec::Mpeg2Video, Container::MpegPs))).unwrap();
-    let d = m.smart_cut(Codec::Mpeg2Video, Container::MpegPs, Container::MpegPs, STRICT);
+    m.insert(ok(Key::in_container(Operation::PacketCopy, Codec::Mpeg2Video, Container::Mp4))).unwrap();
+    let d = m.smart_cut(Codec::Mpeg2Video, Container::MpegPs, Container::Mp4, STRICT);
     assert!(!d.allowed);
-    assert!(d.blockers().iter().any(|b| b.contains("no muxer")), "{:?}", d.blockers());
+    assert!(d.blockers().iter().any(|b| b.contains("sample entry")), "{:?}", d.blockers());
 }
 
 #[test]
@@ -124,11 +124,27 @@ fn smart_render_checks_encoder_limits() {
 
 #[test]
 fn smart_render_without_known_limits_is_refused() {
-    let r = Registry::native();
-    let d = r.smart_render(Codec::Mpeg2Video, Container::MpegPs, Container::MpegPs, &h264_high_420_8(), LAX);
+    let mut r = Registry::native();
+    let av1 = Key::codec(Operation::Encode, Codec::Av1);
+    r.insert(Entry { key: av1, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() }).unwrap();
+    let main8 = StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 };
+    let d = r.smart_render(Codec::Av1, Container::Mp4, Container::Mp4, &main8, LAX);
     assert!(!d.allowed);
-    assert!(d.conditions.iter().any(|c| c.contains("cannot be shown")));
-    assert!(d.blockers().iter().any(|b| b.contains("no MPEG-2 video encoder")));
+    assert!(d.conditions.iter().any(|c| c.contains("cannot be shown")), "{:?}", d.conditions);
+    assert!(d.steps.iter().any(|s| s.key == av1 && !s.allowed));
+}
+
+#[test]
+fn the_mpeg2_encoder_and_program_and_transport_stream_muxers_are_registered() {
+    let r = Registry::native();
+    assert!(r.decide(Key::codec(Operation::Encode, Codec::Mpeg2Video), STRICT).allowed);
+    for c in [Container::MpegPs, Container::MpegTs] {
+        assert!(r.decide(Key::in_container(Operation::Mux, Codec::Mpeg2Video, c), STRICT).allowed, "{c:?}");
+    }
+    assert!(!r.decide(Key::in_container(Operation::Mux, Codec::Mpeg2Video, Container::Mp4), LAX).allowed);
+    let limits = r.encoder_limits(Codec::Mpeg2Video, STRICT).unwrap();
+    assert!(limits.check(&StreamFormat { profile: "422".into(), chroma: "4:2:2".into(), bit_depth: 8 }).is_ok());
+    assert!(limits.check(&StreamFormat { profile: "high".into(), chroma: "4:2:0".into(), bit_depth: 10 }).is_err());
 }
 
 #[test]
