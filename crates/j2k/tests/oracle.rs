@@ -493,12 +493,13 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
     assert!(matches!(st, Ok(s) if s.success()));
     let rgb = ppm(&std::fs::read(&input).unwrap());
     let plane = |data: Vec<i32>, precision: u8| Plane { width: 203, height: 117, precision, signed: false, dx: 1, dy: 1, data };
-    let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect() };
+    let rgb8 = Image { width: 203, height: 117, components: rgb.iter().cloned().map(|d| plane(d, 8)).collect(), mct: false };
     // 12-bit for the cinema profiles (the 8-bit pattern scaled up, plus a ramp)
     let rgb12 = Image {
         width: 203,
         height: 117,
         components: rgb.iter().enumerate().map(|(c, d)| plane(d.iter().enumerate().map(|(i, &v)| v * 16 + ((i + c) % 16) as i32).collect(), 12)).collect(),
+        mct: false,
     };
     let cases: Vec<(&str, &Image, EncodeOptions, bool)> = vec![
         ("lossless", &rgb8, EncodeOptions::lossless(), true),
