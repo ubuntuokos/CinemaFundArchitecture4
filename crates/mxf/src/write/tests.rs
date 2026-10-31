@@ -436,6 +436,48 @@ fn dcinema_sound_track_file() {
     assert!(f.windows(16).any(|w| w == CFG1));
 }
 
+/// #348: MCA labels (ST 377-4) on a D-Cinema sound track file: a soundfield group and two
+/// channels, referenced from the Wave descriptor and named in the primer.
+#[test]
+fn dcinema_sound_mca_labels() {
+    let mut ids = PackageIds::from_seed("dcp-mca", "Reel 1");
+    ids.file = Umid::dcinema([0x23; 16]);
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 16, bits: 24 }];
+    let group = [0x51; 16];
+    let label = |dict: u8, sym: &str, name: &str, channel: Option<u32>, group: Option<[u8; 16]>| McaLabel {
+        dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, dict, 0x01, 0, 0, 0, 0],
+        link: [channel.unwrap_or(0) as u8 + 0x60; 16],
+        symbol: sym.into(),
+        name: name.into(),
+        channel,
+        language: Some("en-US".into()),
+        group,
+    };
+    cfg.mca = vec![label(2, "sg51", "5.1", None, None), label(1, "chL", "Left", Some(1), Some(group)), label(1, "chC", "Center", Some(3), Some(group))];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    w.push_sound(0, &vec![0u8; 2000 * 16 * 3]).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.tracks[0].stored_sample_frames(), 2000);
+    let key = |b: u8| [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x01, 0x01, 0x01, 0x01, b, 0x00];
+    let count = |k: &[u8]| f.windows(k.len()).filter(|w| w == &k).count();
+    assert_eq!(count(&key(0x6C)), 1, "one soundfield group label");
+    assert_eq!(count(&key(0x6B)), 2, "two audio channel labels");
+    // the primer names the MCA items (MCATagSymbol 0e.01.03.07.01.02 at the dynamic tag)
+    let mut primer = labels::TAG_MCA.wrapping_add(2).to_be_bytes().to_vec();
+    primer.extend_from_slice(&[0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x07, 0x01, 0x02]);
+    assert_eq!(count(&primer), 1);
+    // symbols in UTF-16, the channel id, the group link
+    let sym: Vec<u8> = "chC".encode_utf16().flat_map(|u| u.to_be_bytes()).collect();
+    assert_eq!(count(&sym), 1);
+    let mut chan = (labels::TAG_MCA + 4).to_be_bytes().to_vec();
+    chan.extend_from_slice(&[0, 4, 0, 0, 0, 3]);
+    assert_eq!(count(&chan), 1);
+    assert_eq!(count(&group), 2);
+}
+
 #[test]
 fn dcinema_needs_one_essence_track() {
     let ids = PackageIds::from_seed("x", "x");

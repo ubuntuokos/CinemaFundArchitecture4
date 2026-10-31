@@ -848,6 +848,7 @@ dependencies = [
  "cfa4-hevc",
  "cfa4-iab",
  "cfa4-isobmff",
+ "cfa4-j2k",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",

@@ -555,13 +555,15 @@ pub fn decode(data: &[u8]) -> Result<Image> {
             Plane { width: w, height: hh, precision: c.precision, signed: c.signed, dx: c.dx, dy: c.dy, data: vec![0; w as usize * hh as usize] }
         })
         .collect();
+    let mut mct = false;
     for tile in &cs.tiles {
-        decode_tile(h, tile, &mut planes)?;
+        mct |= decode_tile(h, tile, &mut planes)?;
     }
-    Ok(Image { width: h.width(), height: h.height(), components: planes })
+    Ok(Image { width: h.width(), height: h.height(), components: planes, mct })
 }
 
-fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
+/// Decodes one tile into `planes`; `true` when it applied the inverse component transform.
+fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<bool> {
     let (trect, mut comps) = build(h, &tile.params, tile.index)?;
     let order = packets(h, trect, &comps, &tile.params)?;
     let (mut pos, mut hpos) = (0, 0);
@@ -647,5 +649,5 @@ fn decode_tile(h: &Header, tile: &Tile, planes: &mut [Plane]) -> Result<()> {
     }
     #[cfg(not(feature = "threads"))]
     planes.iter_mut().zip(samples.iter().zip(comps.iter())).for_each(put);
-    Ok(())
+    Ok(mct)
 }

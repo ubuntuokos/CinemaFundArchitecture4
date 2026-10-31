@@ -2006,7 +2006,10 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         assert dlg.dcp_iab_fallback.isEnabled() and not dlg.dcp_iab_source.isEnabled()
         assert "7.1 DS" in dlg.dcp_iab_info.text()
         p = dlg.params()
-        assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "5.1") and "dcpIabSource" not in p
+        # ST 429-19:2023: no fallback unless asked (#348); here the 5.1 mix is asked for
+        assert (p["dcpImmersive"], p["dcpIabFallback"]) == ("bed", "none") and "dcpIabSource" not in p
+        dlg.dcp_iab_fallback.setCurrentIndex(dlg.dcp_iab_fallback.findData("5.1"))
+        assert dlg.params()["dcpIabFallback"] == "5.1"
         dlg.range.setCurrentIndex(dlg.range.findData("custom"))
         dlg.start.setValue(0.0)
         dlg.end.setValue(0.2)
@@ -2031,7 +2034,7 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg._probe_iab()
         assert wait_until(app, lambda: "frames" in dlg.dcp_iab_info.text() or "képkocka" in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
         assert "8" in dlg.dcp_iab_info.text(), dlg.dcp_iab_info.text()
-        dlg.dcp_iab_fallback.setChecked(False)
+        dlg.dcp_iab_fallback.setCurrentIndex(dlg.dcp_iab_fallback.findData("none"))
         p = dlg.params()
         assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "none")
         out2 = tmp_path / "out" / "Demo_IAB_2"
@@ -2049,13 +2052,13 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
         # a saved preset brings its immersive audio back instead of resetting it to Off
-        dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "none"})
+        dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
         dlg.preset.addItem("IAB test", "IAB test")
         dlg.preset.setCurrentIndex(dlg.preset.findData("IAB test"))
         p = dlg.params()
-        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "none")
+        assert (p["dcpImmersive"], p["dcpIabSource"], p["dcpIabFallback"]) == ("file", str(src), "mix")
         dlg.preset.setCurrentIndex(dlg.preset.findData("DCP 2K Flat"))
-        assert dlg.dcp_immersive.currentData() == "off" and dlg.dcp_iab_fallback.isChecked()
+        assert dlg.dcp_immersive.currentData() == "off" and dlg.dcp_iab_fallback.currentData() == "none"
         # another format turns the immersive choices off
         dlg.format.setCurrentIndex(dlg.format.findData("h264"))
         assert not dlg.dcp_immersive.isEnabled() and "dcpImmersive" not in dlg.params()

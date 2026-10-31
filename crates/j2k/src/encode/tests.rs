@@ -30,7 +30,7 @@ fn picture(w: u32, h: u32, comps: &[(u8, bool, u8, u8)], seed: u32) -> Image {
             Plane { width: pw, height: ph, precision, signed, dx, dy, data }
         })
         .collect();
-    Image { width: w, height: h, components }
+    Image { width: w, height: h, components, mct: false }
 }
 
 /// Peak signal-to-noise ratio of `b` against `a`, over all components.
@@ -80,7 +80,8 @@ fn lossless_round_trips_are_exact() {
     for (k, (w, h, comps, opts)) in cases.into_iter().enumerate() {
         let img = picture(w, h, &comps, k as u32 + 3);
         let cs = encode(&img, &opts).unwrap();
-        assert_eq!(decode(&cs).unwrap(), img, "case {k}: {w}x{h}");
+        // `mct` records how the stream was coded; the samples are what must round-trip
+        assert_eq!(decode(&cs).unwrap().components, img.components, "case {k}: {w}x{h}");
     }
     // the reported case: [0, 65535, 0] in 1-, 16- and 16-bit components
     let mut img = picture(1, 1, &[(1, false, 1, 1), (16, false, 1, 1), (16, false, 1, 1)], 1);
@@ -88,7 +89,7 @@ fn lossless_round_trips_are_exact() {
         p.data = vec![v];
     }
     let cs = encode(&img, &EncodeOptions { levels: 0, ..EncodeOptions::lossless() }).unwrap();
-    assert_eq!(decode(&cs).unwrap(), img);
+    assert_eq!(decode(&cs).unwrap().components, img.components);
 }
 
 #[test]
@@ -219,7 +220,7 @@ fn bad_input_is_an_error() {
     assert!(encode(&img, &EncodeOptions { code_block: (11, 1), ..EncodeOptions::lossless() }).is_err());
     assert!(encode(&img, &EncodeOptions { levels: 40, ..EncodeOptions::lossless() }).is_err());
     assert!(encode(&img, &EncodeOptions { precincts: vec![(5, 5), (0, 4)], ..EncodeOptions::lossless() }).is_err());
-    assert!(encode(&Image { width: 0, height: 0, components: Vec::new() }, &EncodeOptions::lossless()).is_err());
+    assert!(encode(&Image { width: 0, height: 0, components: Vec::new(), mct: false }, &EncodeOptions::lossless()).is_err());
     // out-of-range samples are clamped, not trusted
     let mut hot = img;
     hot.components[0].data[0] = i32::MAX;

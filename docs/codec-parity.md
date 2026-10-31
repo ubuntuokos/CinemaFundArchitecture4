@@ -1,6 +1,6 @@
 # Codec parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 encoder) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** minor (JPEG 2000 in MXF) · **Target:** Adobe Premiere Pro 2026 (26.5.2) and Media Encoder 2026
 
 Video and audio codecs, decode and encode, with fidelity and how each is tested. Containers,
 project and interchange files are in [file-format-parity.md](file-format-parity.md); hardware
@@ -27,7 +27,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 | APV (RFC 9924) | — (Samsung's pro codec; not in Premiere) | own decode | own encode | spec tests | ahead | — |
 | MPEG-2 / MPEG-1 | decode incl. 4:2:2 (IMX, XDCAM); encode DVD / Blu-ray / MXF | own decoder (4:2:2, interlaced, field pictures, IEEE 1180 IDCT) | **none** | conformance fixtures | 60% | 20–35 h (encoder) |
 | Motion JPEG | decode + encode | yes | yes (MOV) | — | 90% | — |
-| JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); HTJ2K (Part 15) decode, HT block decoder ported from OpenJPH (#80); **not yet wired into MXF / DCP import**; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | own Part 1 encoder (#81): lossless 5/3, rate-controlled 9/7, DCI 2K / 4K profiles (CPRL, tile-part per component, POC, TLM, DCI byte limits), ~0.75 s per 2K and ~3 s per 4K frame on 4 cores; wired into SMPTE DCP export (#115), **not yet into MXF export** | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; HTJ2K: 10 Grok streams bit-exact / ±1 of OpenJPEG, refinement passes on a local sample; damaged-stream fuzzing; encoder output read by OpenJPEG and ffmpeg (lossless exact, lossy / DCI ±1) | 45% | 30–50 h (MXF / DCP wiring, encoder speed #116, layers / HT encoding #117) |
+| JPEG 2000 (MXF, DCP) | decode + encode (Kakadu) | own Part 1 decoder (`cfa4-j2k`): codestreams and JP2, tiles, all progressions, layers, 5/3 and 9/7, RCT / ICT, DCI 2K / 4K X'Y'Z'; bypass style, POC, PPM / PPT, Maxshift ROI (#79); HTJ2K (Part 15) decode, HT block decoder ported from OpenJPH (#80); MXF import (OP1a / OP-Atom, DCP picture tracks; Y'CbCr, R'G'B', gray and X'Y'Z' → P3-D65) since #77, DCP composition (CPL) import #101, interlaced / stereoscopic #102; ~150 ms per 2K frame on 4 cores (~360 ms single-threaded, #78) | own Part 1 encoder (#81): lossless 5/3, rate-controlled 9/7, DCI 2K / 4K profiles (CPRL, tile-part per component, POC, TLM, DCI byte limits), ~0.75 s per 2K and ~3 s per 4K frame on 4 cores; wired into SMPTE DCP export (#115), **not yet into MXF export** | 5/3 bit-exact to the input, 9/7 and DCI 2K within ±1 of ffmpeg on 17 fixtures; HTJ2K: 10 Grok streams bit-exact / ±1 of OpenJPEG, refinement passes on a local sample; damaged-stream fuzzing; encoder output read by OpenJPEG and ffmpeg (lossless exact, lossy / DCI ±1) | 45% | 25–45 h (DCP composition #101, encoder speed #116, layers / HT encoding #117) |
 | JPEG XS | decode (`libjpegxs`) | none | none | — | 0% | 20–40 h |
 | DV / DVCPRO / DV100 | decode + encode | none | none | — | 0% | 15–25 h |
 | MPEG-4 Part 2 | decode | none | none | — | 0% | 10–20 h |
@@ -67,6 +67,7 @@ Dolby, DTS, JPEG 2000 / DCP and OpenMAX is in [cinema-codecs.md](cinema-codecs.m
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | JPEG 2000 in MXF import, DCP picture tracks included (#77) |
 | 2026-10-26 | minor | Dolby TrueHD / MLP decode (`cfa4-truehd`) |
 | 2026-10-26 | minor | JPEG 2000 encoder with the DCI 2K / 4K profiles (#81) |
 | 2026-10-26 | minor | HTJ2K (JPEG 2000 Part 15) decode (#80) |
