@@ -17,7 +17,8 @@ concurrency:
 # PRs and main pushes run only the fast, non-compiling platform/static gate.
 # Expensive Rust/Qt/FFmpeg jobs run ONLY on workflow_dispatch or an explicit
 # PR `cfa4-full-validation` label event (not on ordinary commits).
-# Full validation must pass before merging or releasing.
+# Full validation must pass before merging or releasing; the required
+# `full-validation-gate` job enforces this on pull requests.
 jobs:
   platform-scope:
     name: Linux AMD64 policy and static checks (no builds)
@@ -46,7 +47,7 @@ jobs:
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
             libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils \
-            libheif-examples libheif-plugin-libde265 libheif-plugin-x265
+            libheif-examples libheif-plugin-libde265 libheif-plugin-x265 libjxl-tools
       - name: Rust toolchain from rust-toolchain.toml
         run: |
           rustup show
@@ -183,8 +184,8 @@ jobs:
           # package in a single fast failure, not one by one across costly CI runs.
           oracle_dev_packages=(
             libdav1d-dev libsvtav1enc-dev libaom-dev
-            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev zlib1g-dev
-            libheif-examples libheif-plugin-libde265 libheif-plugin-x265
+            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
+            libheif-examples libheif-plugin-libde265 libheif-plugin-x265 libjxl-tools
             webp
           )
           missing_packages=()
@@ -204,13 +205,16 @@ jobs:
             build-essential pkg-config clang cmake ninja-build \
             libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
             libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils \
+            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils libjxl-tools \
             "${oracle_dev_packages[@]}"
+          # JPEG 2000 / HTJ2K oracles (the tests skip without them)
+          sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
+            || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
       - name: Cache FFmpeg 9.0.2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v6
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v6
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
       - name: Install verified FFmpeg 9.0.2
         run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 versions
@@ -272,8 +276,77 @@ jobs:
         run: |
           python -m compileall -q python
           python -m ruff check python
-          python -m pytest -q python/tests
+          python -m pytest -q python/tests --ignore=python/tests/test_qt_gui.py
           python -m unittest discover -s packaging/linux -p 'test_*.py' -v
           python -m cfa4_devtools.dependency_audit
+
+  # Owner decision 2026-10-30: the Qt6 GUI is not finished yet, so its tests run and are reported,
+  # but they do NOT block merging (this job is not part of full-validation-gate). Move it into the
+  # gate's `needs` once the Qt6 GUI is complete.
+  qt6-gui:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'cfa4-full-validation')
+    needs: platform-scope
+    name: Qt 6 GUI tests (non-blocking until the Qt6 GUI is complete)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Headless Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libegl1 libgl1 libopengl0 libxkbcommon0 libxcb-cursor0
+      - name: Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: Install Python development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --require-hashes -r requirements/linux-amd64.txt
+          python -m pip install --no-deps -e .
+      - name: Qt 6 GUI tests
+        run: python -m pytest -q python/tests/test_qt_gui.py
       - name: Qt 6 offscreen widget smoke
         run: python -m cfa4_devtools.qt_app --smoke
+
+  # Required status check for main (owner decision 2026-10-31, docs/coordination.md §3.4):
+  # green only if every blocking full-validation job really ran and succeeded on this head.
+  # A skipped job (no `cfa4-full-validation` label / no workflow_dispatch) fails the gate.
+  # Not run on pushes to main, which only carry the fast static gate.
+  full-validation-gate:
+    if: always() && github.event_name != 'push'
+    needs:
+      - platform-scope
+      - rust-linux
+      - rust-cli-smoke
+      - gstreamer-backend
+      - vendored-docpath
+      - vendored-ui
+      - rust-architecture-assets
+      - rust-release-tests
+      - python-qt6-linux
+    name: full-validation-gate
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Every blocking full-validation job succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["RESULTS"])
+          bad = {job: info.get("result") for job, info in needs.items() if info.get("result") != "success"}
+          for job, info in sorted(needs.items()):
+              print(f"{job}: {info.get('result')}")
+          if bad:
+              print("::error::Full validation did not pass on this head: "
+                    + ", ".join(f"{j}={r}" for j, r in sorted(bad.items()))
+                    + ". Add the 'cfa4-full-validation' label (remove and re-add to repeat) or run workflow_dispatch.")
+              sys.exit(1)
+          print("Full validation passed on this head.")
+          PY

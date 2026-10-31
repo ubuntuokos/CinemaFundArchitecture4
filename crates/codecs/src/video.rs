@@ -302,29 +302,46 @@ impl H264Decoder {
         Self { avcc: Vec::new(), dec: cfa4_h264::Decoder::with_threads(threads), length_size: 0, draft: false, threads }
     }
     fn convert(p: cfa4_h264::Picture) -> DecodedFrame {
+        use cfa4_h264::Plane;
         use std::sync::Arc;
         let draft = p.draft;
         let (w, h) = (p.width as usize, p.height as usize);
         let (cw, ch) = (p.chroma_width as usize, p.chroma_height as usize);
-        let y = tight_plane(p.y, p.y_stride, w, h);
-        let u = tight_plane(p.u, p.uv_stride, cw, ch);
-        let v = tight_plane(p.v, p.uv_stride, cw, ch);
+        let (ys, uvs) = (p.y_stride, p.uv_stride);
+        // monochrome pictures come with neutral 4:2:0 chroma planes
+        let chroma = match p.chroma_format {
+            3 => cfa4_frame::Chroma::C444,
+            2 => cfa4_frame::Chroma::C422,
+            _ => cfa4_frame::Chroma::C420,
+        };
+        let wide = |pl: Plane| -> Vec<u16> {
+            match pl {
+                Plane::U16(v) => v,
+                Plane::U8(v) => v.into_iter().map(u16::from).collect(),
+            }
+        };
+        let data = match (p.y, p.u, p.v) {
+            (Plane::U8(y), Plane::U8(u), Plane::U8(v)) => cfa4_frame::PixelData::Yuv8 {
+                planes: [Arc::new(tight_plane(y, ys, w, h)), Arc::new(tight_plane(u, uvs, cw, ch)), Arc::new(tight_plane(v, uvs, cw, ch))],
+                chroma,
+                alpha: None,
+            },
+            (y, u, v) => cfa4_frame::PixelData::Yuv16 {
+                planes: [Arc::new(tight_plane(wide(y), ys, w, h)), Arc::new(tight_plane(wide(u), uvs, cw, ch)), Arc::new(tight_plane(wide(v), uvs, cw, ch))],
+                chroma,
+                bits: p.bit_depth as u32,
+                alpha: None,
+            },
+        };
         let color = vui_color(p.width, p.height, p.color.primaries, p.color.matrix, p.color.transfer, p.color.full_range);
         let par = sar_par(p.sar);
-        let frame = VideoFrame {
-            width: p.width,
-            height: p.height,
-            data: cfa4_frame::PixelData::Yuv8 { planes: [Arc::new(y), Arc::new(u), Arc::new(v)], chroma: cfa4_frame::Chroma::C420, alpha: None },
-            color,
-            par,
-            pts: cfa4_time::Tick::ZERO,
-        };
+        let frame = VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO };
         DecodedFrame { pts: p.pts, frame, draft }
     }
 }
 
-/// An H.264 decoder error as a [`CodecError`]: a feature the decoder does not implement (High
-/// 4:2:2, field pictures...) is [`CodecError::Unsupported`], so the media pool shows the
+/// An H.264 decoder error as a [`CodecError`]: a feature the decoder does not implement
+/// (monochrome, slice groups...) is [`CodecError::Unsupported`], so the media pool shows the
 /// unreadable slate instead of a black picture (#626); anything else is a decode error.
 fn h264_error(e: cfa4_h264::Error) -> CodecError {
     match e {
@@ -936,6 +953,74 @@ impl VideoDecoder for DnxDecoder {
 
 pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder) as Box<dyn VideoDecoder>))
+}
+
+/// Our GoPro CineForm (CFHD) decoder (intra samples; channels reconstruct in parallel).
+pub struct CineformDecoder;
+
+/// Convert a decoded CineForm frame to a [`VideoFrame`]: 4:2:2 YUV as is (video range, BT.601
+/// for SD and BT.709 above), full-range RGB(A) as video-range BT.709 Y'CbCr 4:4:4 at the coded
+/// depth with straight alpha.
+pub fn cineform_to_video_frame(f: cfa4_cineform::Frame) -> Result<VideoFrame> {
+    use std::sync::Arc;
+    let bits = u32::from(f.bit_depth);
+    let mut planes = f.planes.into_iter().map(|p| p.data);
+    let (Some(a), Some(b), Some(c)) = (planes.next(), planes.next(), planes.next()) else {
+        return Err(CodecError::Decode("CineForm frame without three planes".into()));
+    };
+    let alpha = planes.next();
+    let mut color = cfa4_color::ColorInfo::REC709;
+    let (planes, chroma) = match f.format {
+        cfa4_cineform::EncodedFormat::Yuv422 => {
+            // the bitstream carries no matrix: BT.601 for SD, BT.709 for HD, as other decoders do
+            color.matrix = cfa4_frame::default_matrix(f.width, f.height);
+            ([a, b, c], cfa4_frame::Chroma::C422)
+        }
+        _ => {
+            // planes hold full-range R, G, B: video-range Y'CbCr 4:4:4 at the coded depth, so
+            // a container colour description (which rarely signals full range) still applies
+            let (kr, kb) = color.matrix.kr_kb();
+            let kg = 1.0 - kr - kb;
+            let max = ((1u32 << bits) - 1) as f32;
+            let s = (1u32 << bits.saturating_sub(8)) as f32;
+            let (ys, cs) = (219.0 * s / max, 224.0 * s / max);
+            let n = a.len().min(b.len()).min(c.len());
+            let (mut y, mut cb, mut cr) = (vec![0u16; n], vec![0u16; n], vec![0u16; n]);
+            let rgb = a.iter().zip(&b).zip(&c);
+            for (((&r, &g), &bl), ((y, cb), cr)) in rgb.zip(y.iter_mut().zip(cb.iter_mut()).zip(cr.iter_mut())) {
+                let (r, g, bl) = (f32::from(r), f32::from(g), f32::from(bl));
+                let yy = kr * r + kg * g + kb * bl;
+                *y = (16.0 * s + yy * ys + 0.5).clamp(0.0, max) as u16;
+                *cb = (128.0 * s + (bl - yy) / (2.0 * (1.0 - kb)) * cs + 0.5).clamp(0.0, max) as u16;
+                *cr = (128.0 * s + (r - yy) / (2.0 * (1.0 - kr)) * cs + 0.5).clamp(0.0, max) as u16;
+            }
+            ([y, cb, cr], cfa4_frame::Chroma::C444)
+        }
+    };
+    let [y, cb, cr] = planes;
+    let data = cfa4_frame::PixelData::Yuv16 { planes: [Arc::new(y), Arc::new(cb), Arc::new(cr)], chroma, bits, alpha: alpha.map(Arc::new) };
+    Ok(VideoFrame { width: f.width, height: f.height, data, color, par: (1, 1), pts: cfa4_time::Tick::ZERO })
+}
+
+impl VideoDecoder for CineformDecoder {
+    fn decode(&mut self, sample: &[u8], pts: i64) -> Result<Vec<DecodedFrame>> {
+        let f = cfa4_cineform::decode_frame(sample).map_err(|e| CodecError::Decode(e.to_string()))?;
+        Ok(vec![DecodedFrame { pts, frame: cineform_to_video_frame(f)?, draft: false }])
+    }
+    fn flush(&mut self) -> Vec<DecodedFrame> {
+        Vec::new()
+    }
+    fn reset(&mut self) {}
+    fn name(&self) -> &str {
+        "CFA4 CineForm"
+    }
+    fn intra_only(&self) -> bool {
+        true
+    }
+}
+
+pub fn cineform_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    matches!(e.codec, CodecConfig::Cineform).then(|| Ok(Box::new(CineformDecoder) as Box<dyn VideoDecoder>))
 }
 
 /// Our MPEG-1 / MPEG-2 video decoder (Main / 4:2:2 profile, field and frame pictures).

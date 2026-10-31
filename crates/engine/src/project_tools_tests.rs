@@ -534,6 +534,23 @@ fn system_report_lists_the_build() {
 }
 
 #[test]
+fn session_log_holds_the_report_and_the_journal() {
+    let mut s = demo();
+    let dir = crate::temp_dir().join(format!("cfa4-log-test-{}", std::process::id()));
+    s.prefs_path = Some(dir.join("prefs.json"));
+    s.execute("file.newBin", json!({"name": "Logged bin"})).unwrap();
+    let r = s.execute("help.writeSessionLog", json!({})).unwrap();
+    let path = std::path::PathBuf::from(r["path"].as_str().unwrap());
+    assert!(path.starts_with(dir.join("Logs")), "{path:?}");
+    let text = std::fs::read_to_string(&path).unwrap();
+    let first: serde_json::Value = serde_json::from_str(text.lines().next().unwrap()).unwrap();
+    assert_eq!(first["os"], std::env::consts::OS);
+    assert!(text.lines().any(|l| l.contains("file.newBin") && l.contains("Logged bin")), "{text}");
+    assert!(!text.contains("help.writeSessionLog"), "the query itself is not journaled");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn clear_deletes_a_bin_with_everything_in_it() {
     let mut s = demo();
     let before = s.project.items.len();

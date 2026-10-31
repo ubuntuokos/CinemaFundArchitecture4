@@ -23,7 +23,7 @@
 
 use crate::widgets::CenteredDialog as _;
 use cfa4_geom::{Affine, Vec2};
-use cfa4_project::graphic::{self, LayerContent, LayerSpec, eval_layer, layer_display_name, layer_indices};
+use cfa4_project::graphic::{self, LayerContent, LayerSpec, layer_display_name, layer_indices};
 use cfa4_project::{ClipId, EffectInstance, ItemKind, ParamValue, TrackItem};
 use cfa4_render::graphic_clip::{layer_local_bounds, layer_matrix, text_layout};
 use cfa4_time::Tick;
@@ -116,7 +116,8 @@ pub fn visible_layers(app: &Cfa4App, pic: Rect, frame: (u32, u32)) -> Vec<LayerV
         let base = screen.then_apply(&cfa4_render::motion_matrix(seq, it, size, None, mt));
         let idx = layer_indices(&it.effects);
         for (li, &ei) in idx.iter().enumerate().rev() {
-            if let Some(spec) = eval_layer(&it.effects[ei], mt, size).filter(|s| s.enabled) {
+            // the Source Text (a text animator may show only part of it): text is edited here
+            if let Some(spec) = graphic::eval_layer_source(&it.effects[ei], mt, size).filter(|s| s.enabled) {
                 let local = layer_local_bounds(&spec);
                 out.push(LayerView { clip: it.id, layer: li, to_screen: base.then_apply(&layer_matrix(&spec)), canvas_to_screen: base, spec, local });
             }
@@ -775,14 +776,15 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                         let p0 = v.spec.transform.position;
                         actions.push((
                             "graphics.set".into(),
-                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + delta.x, p0.y + delta.y]}}),
+                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + delta.x, p0.y + delta.y]}, "shown": true}),
                         ));
                     }
                 }
                 DragKind::Handle(n) if moved => {
                     if let Some(v) = v {
                         let props = HandleDrag::new(v, n, d.start, cur, ui.input(|i| i.modifiers.shift)).props(v);
-                        actions.push(("graphics.set".into(), json!({"clip": v.clip.0, "layer": v.layer, "props": props})));
+                        // the handle's Position is the shown (pinned) one, as a body drag's
+                        actions.push(("graphics.set".into(), json!({"clip": v.clip.0, "layer": v.layer, "props": props, "shown": true})));
                     }
                 }
                 DragKind::Anchor if moved => {
@@ -792,7 +794,7 @@ pub fn monitor_overlay(app: &mut Cfa4App, ui: &mut egui::Ui, pic: Rect, frame: (
                         let (p0, a0) = (v.spec.transform.position, v.spec.transform.anchor);
                         actions.push((
                             "graphics.set".into(),
-                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + canvas.x, p0.y + canvas.y], "anchor": [a0.x + local.x, a0.y + local.y]}}),
+                            json!({"clip": v.clip.0, "layer": v.layer, "props": {"position": [p0.x + canvas.x, p0.y + canvas.y], "anchor": [a0.x + local.x, a0.y + local.y]}, "shown": true}),
                         ));
                     }
                 }
@@ -1002,7 +1004,9 @@ pub(crate) fn select_all_edited_text(app: &mut Cfa4App) -> bool {
     let Some((_, it)) = app.session.active_sequence().and_then(|q| q.find_item(ClipId(clip))) else { return false };
     let Some(ItemKind::Graphic { width, height, .. }) = app.session.project.item(it.item).map(|p| &p.kind) else { return false };
     let Some(effect) = layer_indices(&it.effects).get(layer).and_then(|&i| it.effects.get(i)) else { return false };
-    let Some(len) = eval_layer(effect, it.source_time_at(t), (*width, *height)).as_ref().and_then(text_of).map(|tp| tp.text.len()) else { return false };
+    let Some(len) = graphic::eval_layer_source(effect, it.source_time_at(t), (*width, *height)).as_ref().and_then(text_of).map(|tp| tp.text.len()) else {
+        return false;
+    };
     let Some(ed) = app.ui.gfx_edit.as_mut() else { return false };
     (ed.anchor, ed.caret) = (0, len);
     true

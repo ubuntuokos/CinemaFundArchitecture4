@@ -38,6 +38,7 @@ for limited- and full-range files.
 | ARRI LogC4 | ARRI Wide Gamut 4 | ARRI, *ARRI LogC4 Logarithmic Color Space — Specification* (2022) | CV | a = (2¹⁸ − 16)/117.45, b = 928/1023, c = 95/1023, s = 7·ln2·2^(7 − 14c/b)/(a·b), t = (2^(6 − 14c/b) − 64)/a; y ≥ 0: x = (2^(14(y − c)/b + 6) − 64)/a; else x = y·s + t |
 | Apple Log | BT.2020 | Apple, *Apple Log Profile* white paper (2023) | IRE | R0 = −0.05641088, Rt = 0.01, c = 47.28711236, β = 0.00964052, γ = 0.08550479, δ = 0.69336945; P ≥ c(Rt − R0)²: x = 2^((P − δ)/γ) − β; else x = √(P/c) + R0 |
 | DJI D-Log | D-Gamut | DJI, *White Paper on D-Log and D-Gamut of DJI Cinema Color System* (2017) | CV | y ≤ 0.14: x = (y − 0.0929)/6.025; else x = (10^(3.89616y − 2.27752) − 0.0108)/0.9892 |
+| RED Log3G10 | REDWideGamutRGB | RED, *White Paper on REDWideGamutRGB and Log3G10* (Form 915-0187 Rev B, 2017) | CV (full scale 0..1) | a = 0.224282, b = 155.975327, c = 0.01, g = 15.1927; y < 0: x = y/g − c; else x = (10^(y/a) − 1)/b − c (18 % → 1/3, 184.32 → 1.0) |
 
 The encoders are the exact inverses given in the same documents. DJI **D-Log M** is not
 implemented: DJI has not published its formula (only conversion LUTs), and we do not derive curves
@@ -58,6 +59,7 @@ Gamut primaries (all D65 white, x/y):
 | ARRI Wide Gamut 3 | 0.6840, 0.3130 | 0.2210, 0.8480 | 0.0861, −0.1020 | ARRI Log C document |
 | ARRI Wide Gamut 4 | 0.7347, 0.2653 | 0.1424, 0.8576 | 0.0991, −0.0308 | ARRI LogC4 specification |
 | D-Gamut | 0.71, 0.31 | 0.21, 0.88 | 0.09, −0.08 | DJI white paper |
+| REDWideGamutRGB | 0.780308, 0.304253 | 0.121595, 1.493994 | 0.095612, −0.084589 | RED white paper (its RGB↔XYZ and Rec. 2020 matrices are checked to six places; the paper's XYZ→RWG matrix lacks the minus sign of entry (2,1)) |
 
 Matrices are derived from the chromaticities (SMPTE RP 177 normalised primary matrix); tests check
 the result against the published BT.709 RGB→XYZ and BT.2087 BT.709→BT.2020 matrices.
