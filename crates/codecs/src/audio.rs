@@ -870,6 +870,21 @@ impl AudioFileSource {
             };
             return Ok(Self { info, rate, samples });
         }
+        if matches!(ext.as_str(), "dts" | "dtshd") {
+            let (rate, codec, samples) = decode_raw_dts(&bytes)?.ok_or_else(|| CodecError::Decode(format!("{name}: no DTS frames")))?;
+            let frames = samples.first().map_or(0, Vec::len);
+            let info = MediaInfo {
+                name: name.to_string(),
+                kind: MediaKind::AudioOnly,
+                duration: Tick::from_units(frames as i64, rate as i64),
+                video: None,
+                audio_streams: vec![AudioStreamInfo { sample_rate: rate, channels: samples.len() as u32, codec: codec.into(), bits_per_sample: None }],
+                container: "DTS".into(),
+                start_timecode: None,
+                file_size: Some(bytes.len() as u64),
+            };
+            return Ok(Self { info, rate, samples });
+        }
         if ext == "aac" {
             let (rate, samples) = decode_adts(&bytes)?.ok_or_else(|| CodecError::Decode(format!("{name}: no ADTS AAC frames")))?;
             let frames = samples.first().map_or(0, Vec::len);
@@ -954,7 +969,7 @@ fn id3v2_len(bytes: &[u8]) -> usize {
     }
 }
 
-/// Most samples (all channels together) a standalone ADTS file decodes into memory: 4 GiB of f32,
+/// Most samples (all channels together) a standalone ADTS or DTS file decodes into memory: 4 GiB of f32,
 /// about three hours of 48 kHz stereo. Longer files are refused rather than allocated.
 const MAX_ADTS_SAMPLES: usize = 1 << 30;
 
@@ -975,6 +990,80 @@ fn adts_frame_len(b: &[u8]) -> Option<usize> {
 /// up to the next header, frames with another configuration than the first are skipped, and a
 /// frame that does not decode keeps its duration as silence. HE-AAC is upsampled to its output
 /// rate. `Ok(None)` when no frame decodes.
+/// A raw DTS elementary stream (`.dts`, `.dtshd`: core frames, extension substreams or both,
+/// #321) decoded whole: its sample rate, codec label and planar samples in CFA4's WAV order.
+/// Frames of another layout or rate than the first (a damaged or spliced stream) are left out.
+/// `None` when no frame decodes; an error past [`MAX_ADTS_SAMPLES`].
+fn decode_raw_dts(bytes: &[u8]) -> Result<Option<(u32, &'static str, Vec<Vec<f32>>)>> {
+    let mut dec = cfa4_dts::cfa4::Decoder::new();
+    let mut out = cfa4_dts::cfa4::Decoded::default();
+    let mut first_error = None;
+    let mut total = 0usize;
+    // duration of the frames in another layout (ticks) and the silence padded for them (samples)
+    let (mut foreign_ticks, mut padded) = (0u128, 0u128);
+    let stream = cfa4_dts::cfa4::stream_data(bytes);
+    let pieces = stream.chunks(1 << 20).map(Some).chain(std::iter::once(None));
+    for piece in pieces {
+        let frames = match piece {
+            Some(p) => dec.push_frames(p),
+            None => dec.flush_frames(),
+        };
+        for f in frames {
+            let a = f.audio;
+            let Some(n) = a.channels.first().map(Vec::len).filter(|&n| n > 0) else {
+                // a frame that fails before any frame decoded: the stream may still start later
+                // on, but if nothing ever decodes the error is what the import reports
+                first_error = first_error.or(f.error);
+                continue;
+            };
+            if out.channels.is_empty() {
+                out = cfa4_dts::cfa4::Decoded { channels: vec![Vec::new(); a.channels.len()], lossless: true, ..a.clone() };
+            }
+            let other = a.sample_rate != out.sample_rate || a.speakers != out.speakers;
+            // the samples this frame adds to the output, at its rate: counted before they are
+            let added = if other {
+                // the frames in other layouts add up in exact ticks, so many of them at a rate that
+                // does not divide the output's lose no fraction of a sample each
+                let ticks = u128::from(cfa4_time::TICKS_PER_SECOND.unsigned_abs());
+                foreign_ticks = foreign_ticks.saturating_add((n as u128).saturating_mul(ticks) / u128::from(a.sample_rate.max(1)));
+                let owed = foreign_ticks.saturating_mul(u128::from(out.sample_rate)) / ticks;
+                let add = owed.saturating_sub(padded);
+                padded = owed;
+                usize::try_from(add).unwrap_or(usize::MAX)
+            } else {
+                n
+            };
+            total = total.saturating_add(added.saturating_mul(out.channels.len()));
+            if total > MAX_ADTS_SAMPLES {
+                return Err(CodecError::Decode(format!("DTS stream longer than {MAX_ADTS_SAMPLES} samples")));
+            }
+            if other {
+                // one source plays one layout: a frame in another one keeps its duration as
+                // silence, so the audio after it stays in sync
+                let n = added;
+                for o in &mut out.channels {
+                    o.resize(o.len().saturating_add(n), 0.0);
+                }
+                continue;
+            }
+            // a frame that failed after the layout was known comes as silence of its length
+            if f.error.is_none() {
+                out.lossless &= a.lossless;
+            }
+            for (o, c) in out.channels.iter_mut().zip(a.channels) {
+                o.extend(c);
+            }
+        }
+    }
+    if out.channels.first().is_none_or(Vec::is_empty) || out.sample_rate == 0 {
+        return match first_error {
+            Some(e) => Err(CodecError::Decode(e.to_string())),
+            None => Ok(None),
+        };
+    }
+    Ok(Some((out.sample_rate, if out.lossless { "DTS-HD MA" } else { "DTS" }, out.channels)))
+}
+
 fn decode_adts(bytes: &[u8]) -> Result<Option<(u32, Vec<Vec<f32>>)>> {
     let mut frames: Vec<(Vec<u8>, &[u8])> = Vec::new();
     let mut p = id3v2_len(bytes);
@@ -1073,7 +1162,7 @@ impl MediaSource for AudioFileSource {
 
 pub fn opener(name: &str, bytes: Arc<[u8]>) -> Option<std::result::Result<SharedSource, MediaError>> {
     let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
-    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc") {
+    if !matches!(ext.as_str(), "mp3" | "mp2" | "aac" | "dts" | "dtshd" | "flac" | "ogg" | "oga" | "aif" | "aiff" | "aifc") {
         return None;
     }
     Some(AudioFileSource::decode(name, bytes).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
