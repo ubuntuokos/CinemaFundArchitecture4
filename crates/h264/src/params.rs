@@ -516,11 +516,13 @@ impl Sps {
     }
 
     pub fn check_supported(&self) -> Result<()> {
-        if !self.frame_mbs_only {
-            return unsupported("interlaced (field / MBAFF) coding");
+        if self.chroma_format_idc == 0 {
+            // the decoding paths exist (chroma is skipped) but no 4:0:0 test stream is available yet (#279)
+            return unsupported("chroma_format_idc 0 (monochrome)");
         }
-        if self.chroma_array_type() != 1 {
-            return unsupported(format!("chroma_format_idc {} (only 4:2:0 is implemented)", self.chroma_format_idc));
+        if self.separate_colour_plane {
+            // #280
+            return unsupported("separate_colour_plane_flag (4:4:4 coded as three monochrome pictures)");
         }
         if self.bit_depth_luma != self.bit_depth_chroma {
             return unsupported(format!("bit depth luma {} chroma {} (they must match)", self.bit_depth_luma, self.bit_depth_chroma));
