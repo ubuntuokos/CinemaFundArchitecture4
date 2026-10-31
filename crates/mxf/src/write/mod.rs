@@ -432,6 +432,26 @@ pub struct WriterConfig {
     pub channel_assignment: Option<[u8; 16]>,
     /// [`Pattern::DCinema`] only: an immersive audio track file (no picture, no sound).
     pub iab: Option<IabDesc>,
+    /// Sound tracks: multichannel audio labels (ST 377-4), the sound descriptor's sub-descriptors.
+    pub mca: Vec<McaLabel>,
+}
+
+/// One ST 377-4 multichannel audio label: a soundfield group (`channel` is `None`) or an audio
+/// channel, optionally linked to its group.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct McaLabel {
+    /// MCA label dictionary id (the label's UL, e.g. ST 428-12 `chL` or ST 430-12 `FSKSync`).
+    pub dictionary: [u8; 16],
+    /// MCA link id: this label's UUID.
+    pub link: [u8; 16],
+    pub symbol: String,
+    pub name: String,
+    /// 1-based channel in the track (audio channel labels only).
+    pub channel: Option<u32>,
+    /// RFC 5646 spoken language.
+    pub language: Option<String>,
+    /// The soundfield group's link id (audio channel labels in a group).
+    pub group: Option<[u8; 16]>,
 }
 
 impl WriterConfig {
@@ -450,6 +470,7 @@ impl WriterConfig {
             modified: Timestamp::default(),
             channel_assignment: None,
             iab: None,
+            mca: Vec::new(),
         }
     }
 }
@@ -626,6 +647,23 @@ impl Set {
     }
 }
 
+/// An MCA label sub-descriptor (ST 377-4): an audio channel label (6Bh) or a soundfield group
+/// label (6Ch).
+fn mca_label(out: &mut Vec<u8>, uid: [u8; 16], m: &McaLabel) {
+    let mut s = Set::new(if m.channel.is_some() { 0x6B } else { 0x6C }, uid);
+    s.p(TAG_MCA, &m.dictionary).p(TAG_MCA + 1, &m.link).p(TAG_MCA + 2, &utf16(&m.symbol)).p(TAG_MCA + 3, &utf16(&m.name));
+    if let Some(c) = m.channel {
+        s.u32(TAG_MCA + 4, c);
+    }
+    if let Some(l) = &m.language {
+        s.p(TAG_MCA + 5, l.as_bytes());
+    }
+    if let Some(g) = m.group {
+        s.p(TAG_MCA + 6, &g);
+    }
+    s.write(out);
+}
+
 /// Final (or provisional, -1 = unknown) durations for the metadata.
 #[derive(Clone, Copy, Debug)]
 struct Durations {
@@ -713,6 +751,12 @@ impl<W: Write + Seek> MxfWriter<W> {
     /// The configuration (package UMIDs and names included).
     pub fn config(&self) -> &WriterConfig {
         &self.cfg
+    }
+
+    /// The instance UIDs of the MCA label sub-descriptors, in [`WriterConfig::mca`] order (a CPL
+    /// repeats them in its MCA metadata).
+    pub fn mca_instance_ids(&self) -> Vec<[u8; 16]> {
+        (0..self.cfg.mca.len()).map(|k| self.uid(3200 + k as u32)).collect()
     }
 
     /// Edit units written so far (content packages, or OP-Atom pictures).
@@ -915,9 +959,11 @@ impl<W: Write + Seek> MxfWriter<W> {
         let cfg = &self.cfg;
         let mut out = Vec::new();
         let iab_primer = if cfg.iab.is_some() { IAB_PRIMER } else { &[] };
+        let mca_primer = if cfg.mca.is_empty() { &[] } else { MCA_PRIMER };
         let primer: Vec<Vec<u8>> = PRIMER
             .iter()
             .chain(iab_primer)
+            .chain(mca_primer)
             .map(|(t, ul)| {
                 let mut e = t.to_be_bytes().to_vec();
                 e.extend_from_slice(ul);
@@ -1084,7 +1130,14 @@ impl<W: Write + Seek> MxfWriter<W> {
                     if let Some(ca) = cfg.channel_assignment {
                         s.p(0x3D32, &ca);
                     }
+                    let mca_uids = self.mca_instance_ids();
+                    if !mca_uids.is_empty() {
+                        s.refs(TAG_SUB_DESCRIPTORS, &mca_uids);
+                    }
                     s.write(&mut out);
+                    for (m, uid) in cfg.mca.iter().zip(mca_uids) {
+                        mca_label(&mut out, uid, m);
+                    }
                 }
             }
         }

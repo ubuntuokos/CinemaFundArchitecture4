@@ -475,7 +475,17 @@ pub(crate) struct DcpMux {
     sound: Option<([u8; 16], String, MxfWriter<Out>)>,
     /// The IAB track and the 16-channel main sound of an immersive audio DCP.
     immersive: Option<ImmersiveMux>,
+    /// An immersive DCP's main sound fallback (channels 1-6), for the CPL metadata.
+    fallback: Option<crate::dcp_iab::IabFallback>,
+    /// The main sound's MCA labels and their sub-descriptor instance ids (the CPL repeats them).
+    mca: Vec<(cfa4_mxf::McaLabel, [u8; 16])>,
     frames: u64,
+}
+
+/// A SMPTE label as a URN: `urn:smpte:ul:060e2b34.0401010d.03020101.00000000`.
+fn ul_urn(ul: &[u8; 16]) -> String {
+    let hex: Vec<String> = ul.chunks(4).map(|c| c.iter().map(|b| format!("{b:02x}")).collect()).collect();
+    format!("urn:smpte:ul:{}", hex.join("."))
 }
 
 /// ST 429-2 channel configuration 1: 5.1 with HI / VI-N (`L R C LFE Ls Rs`, 6 or 8 channels).
@@ -517,11 +527,20 @@ impl DcpMux {
             let channels = if immersive { crate::dcp_iab::MAIN_SOUND_CHANNELS } else { 6 };
             sc.sound = vec![SoundDesc { sample_rate: 48_000, channels, bits: 24 }];
             sc.channel_assignment = Some(if immersive { crate::dcp_iab::CHANNEL_CONFIG_4 } else { CHANNEL_CONFIG_1 });
+            if immersive {
+                let label_id = |sym: &str| uuid(&format!("{seed}|mca|{sym}"));
+                sc.mca = crate::dcp_iab::main_sound_mca(crate::dcp_iab::IabFallback::of(settings), &label_id);
+            }
             let name = format!("pcm_{}.mxf", uuid_text(&id));
             Some((id, name.clone(), MxfWriter::new(Out::create_path(settings, &join(&dir, &name))?, sc).map_err(io)?))
         } else {
             None
         };
+        let mca = match &sound {
+            Some((_, _, w)) => w.config().mca.iter().cloned().zip(w.mca_instance_ids()).collect(),
+            None => Vec::new(),
+        };
+        let fallback = immersive.then(|| crate::dcp_iab::IabFallback::of(settings));
         let immersive = match (&sound, immersive) {
             (Some((sound_id, _, _)), true) => {
                 let id = uuid(&format!("{seed}|iab"));
@@ -545,6 +564,8 @@ impl DcpMux {
             picture,
             sound,
             immersive,
+            fallback,
+            mca,
             frames: 0,
         })
     }
@@ -649,7 +670,8 @@ impl DcpMux {
         let mut x =
             String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CompositionPlaylist xmlns=\"http://www.smpte-ra.org/schemas/429-7/2006/CPL\">\n");
         self.header(&mut x, id);
-        x.push_str(&format!("  <ContentTitleText>{}</ContentTitleText>\n", xml_text(&self.title)));
+        let title = if self.fallback.is_some() { crate::dcp_iab::dcnc_iab_title(&self.title) } else { self.title.clone() };
+        x.push_str(&format!("  <ContentTitleText>{}</ContentTitleText>\n", xml_text(&title)));
         x.push_str(&format!("  <ContentKind>{}</ContentKind>\n", self.kind));
         let version = uuid(&format!("{}|version", self.seed));
         x.push_str(&format!(
@@ -677,6 +699,7 @@ impl DcpMux {
             track(&mut x, a);
             x.push_str("        </MainSound>\n");
         }
+        self.composition_metadata(&mut x, sound.is_some());
         if let Some(a) = aux {
             x.push_str("        <axd:AuxData xmlns:axd=\"http://www.dolby.com/schemas/2012/AD\">\n");
             track(&mut x, a);
@@ -685,6 +708,60 @@ impl DcpMux {
         }
         x.push_str("      </AssetList>\n    </Reel>\n  </ReelList>\n</CompositionPlaylist>\n");
         x
+    }
+
+    /// The CompositionMetadataAsset of ST 429-16 (first reel): titles, the main sound and picture
+    /// areas; for an immersive DCP the IAB Profile 1 application of ISDCF Doc 15 4.2 and the
+    /// main sound's MCA labels (the ISDCF `cplmd/mca` extension, as the sound track file has them).
+    fn composition_metadata(&self, x: &mut String, sound: bool) {
+        let rate = format!("{} {}", self.rate.num, self.rate.den);
+        x.push_str("        <meta:CompositionMetadataAsset xmlns:meta=\"http://www.smpte-ra.org/schemas/429-16/2014/CPL-Metadata\">\n");
+        x.push_str(&format!("          <Id>urn:uuid:{}</Id>\n", uuid_text(&uuid(&format!("{}|metadata", self.seed)))));
+        x.push_str(&format!("          <EditRate>{rate}</EditRate>\n          <IntrinsicDuration>{}</IntrinsicDuration>\n", self.frames));
+        x.push_str(&format!("          <meta:FullContentTitleText>{}</meta:FullContentTitleText>\n", xml_text(&self.title)));
+        x.push_str("          <meta:VersionNumber status=\"final\">1</meta:VersionNumber>\n");
+        let config = match (self.fallback, sound) {
+            (Some(f), _) => crate::dcp_iab::main_sound_configuration(f),
+            (None, true) => "51/L,R,C,LFE,Ls,Rs".into(),
+            (None, false) => "51".into(),
+        };
+        x.push_str(&format!("          <meta:MainSoundConfiguration>{config}</meta:MainSoundConfiguration>\n"));
+        x.push_str("          <meta:MainSoundSampleRate>48000 1</meta:MainSoundSampleRate>\n");
+        for area in ["MainPictureStoredArea", "MainPictureActiveArea"] {
+            x.push_str(&format!(
+                "          <meta:{area}>\n            <meta:Width>{}</meta:Width>\n            <meta:Height>{}</meta:Height>\n          </meta:{area}>\n",
+                self.size.0, self.size.1
+            ));
+        }
+        if self.fallback.is_some() {
+            x.push_str("          <meta:ExtensionMetadataList>\n");
+            x.push_str("            <meta:ExtensionMetadata scope=\"http://isdcf.com/ns/cplmd/app\">\n");
+            x.push_str("              <meta:Name>Application</meta:Name>\n              <meta:PropertyList>\n                <meta:Property>\n");
+            x.push_str("                  <meta:Name>IAB Profile</meta:Name>\n                  <meta:Value>SMPTE-ST-2098-2:2019-P1</meta:Value>\n");
+            x.push_str("                </meta:Property>\n              </meta:PropertyList>\n            </meta:ExtensionMetadata>\n");
+            x.push_str("          </meta:ExtensionMetadataList>\n");
+        }
+        if !self.mca.is_empty() {
+            x.push_str("          <mca:MCASubDescriptors xmlns:mca=\"http://isdcf.com/ns/cplmd/mca\" xmlns:r0=\"http://www.smpte-ra.org/reg/395/2014/13/1/aaf\" xmlns:r1=\"http://www.smpte-ra.org/reg/335/2012\">\n");
+            for (m, instance) in &self.mca {
+                let set = if m.channel.is_some() { "AudioChannelLabelSubDescriptor" } else { "SoundfieldGroupLabelSubDescriptor" };
+                x.push_str(&format!("            <r0:{set}>\n"));
+                x.push_str(&format!("              <r1:InstanceID>urn:uuid:{}</r1:InstanceID>\n", uuid_text(instance)));
+                x.push_str(&format!("              <r1:MCALabelDictionaryID>{}</r1:MCALabelDictionaryID>\n", ul_urn(&m.dictionary)));
+                x.push_str(&format!("              <r1:MCALinkID>urn:uuid:{}</r1:MCALinkID>\n", uuid_text(&m.link)));
+                x.push_str(&format!("              <r1:MCATagSymbol>{}</r1:MCATagSymbol>\n", xml_text(&m.symbol)));
+                x.push_str(&format!("              <r1:MCATagName>{}</r1:MCATagName>\n", xml_text(&m.name)));
+                if let Some(c) = m.channel {
+                    x.push_str(&format!("              <r1:MCAChannelID>{c}</r1:MCAChannelID>\n"));
+                }
+                if let Some(g) = m.group {
+                    x.push_str(&format!("              <r1:SoundfieldGroupLinkID>urn:uuid:{}</r1:SoundfieldGroupLinkID>\n", uuid_text(&g)));
+                }
+                x.push_str(&format!("            </r0:{set}>\n"));
+            }
+            x.push_str("          </mca:MCASubDescriptors>\n");
+        }
+        x.push_str("        </meta:CompositionMetadataAsset>\n");
     }
 
     /// Packing list (ST 429-8).

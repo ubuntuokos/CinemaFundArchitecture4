@@ -341,11 +341,8 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
         settings.dcp_iab_source = v.to_string();
     }
     if let Some(v) = str_p(p, "dcpIabFallback") {
-        settings.dcp_iab_fallback = match v.trim().to_ascii_lowercase().as_str() {
-            "5.1" | "51" | "" => "5.1".to_string(),
-            "none" | "off" => "none".to_string(),
-            _ => return Err(bad(cmd, "dcpIabFallback: 5.1 | none")),
-        };
+        let f = cfa4_export::IabFallback::from_name(v).ok_or_else(|| bad(cmd, "dcpIabFallback: 5.1 | mix | none"))?;
+        settings.dcp_iab_fallback = f.id().to_string();
     }
     if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
         settings.mpeg2_quantizer = match v {

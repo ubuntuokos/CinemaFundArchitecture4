@@ -71,6 +71,12 @@ DCP_IMMERSIVE = (
     ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
     ("file", N_("IAB from a file (IMF or DCP IAB MXF, .iab)")),
 )
+# what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
+DCP_IAB_FALLBACK = (
+    ("none", N_("None: FSK sync only (SMPTE ST 429-19)")),
+    ("5.1", N_("5.1: the IAB rendered (not ST 429-19)")),
+    ("mix", N_("5.1: the timeline mix (not ST 429-19)")),
+)
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
@@ -205,9 +211,10 @@ class ExportDialog(QDialog):
         self.dcp_iab_info = QLabel(self)
         self.dcp_iab_info.setObjectName("export.dcpIabInfo")
         self.dcp_iab_info.setWordWrap(True)
-        self.dcp_iab_fallback = QCheckBox(tr("5.1 fallback in the main sound (channels 1-6)"), self)
+        self.dcp_iab_fallback = QComboBox(self)
         self.dcp_iab_fallback.setObjectName("export.dcpIabFallback")
-        self.dcp_iab_fallback.setChecked(True)
+        for key, label in DCP_IAB_FALLBACK:
+            self.dcp_iab_fallback.addItem(tr(label), key)
         self._iab_probed = ""
         for w in (self.dcp_immersive, self.dcp_iab_source, self.dcp_iab_browse, self.dcp_iab_fallback):
             w.setEnabled(False)
@@ -319,7 +326,7 @@ class ExportDialog(QDialog):
         fa.addRow(tr("Immersive audio"), self.dcp_immersive)
         fa.addRow(tr("IAB source"), iab_row)
         fa.addRow("", self.dcp_iab_info)
-        fa.addRow(self.dcp_iab_fallback)
+        fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -401,7 +408,7 @@ class ExportDialog(QDialog):
         self.dcp_immersive.currentIndexChanged.connect(self._immersive_changed)
         self.dcp_iab_source.editingFinished.connect(self._probe_iab)
         self.dcp_iab_source.textChanged.connect(self._changed)
-        self.dcp_iab_fallback.toggled.connect(self._changed)
+        self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
         for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio)):
@@ -501,7 +508,7 @@ class ExportDialog(QDialog):
         self.dcp_kind.setCurrentIndex(0)
         self.dcp_immersive.setCurrentIndex(max(0, self.dcp_immersive.findData(preset.get("dcpImmersive") or "off")))
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
-        self.dcp_iab_fallback.setChecked(preset.get("dcpIabFallback") != "none")
+        self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
         self.touched.clear()
         self._loading = False
         self._default_path()
@@ -707,7 +714,7 @@ class ExportDialog(QDialog):
             if mode == "file":
                 p["dcpIabSource"] = os.path.expanduser(self.dcp_iab_source.text().strip())
             if mode != "off":
-                p["dcpIabFallback"] = "5.1" if self.dcp_iab_fallback.isChecked() else "none"
+                p["dcpIabFallback"] = self.dcp_iab_fallback.currentData()
         if self.sequence is not None and self.sequence.get("id") is not None:
             p["sequence"] = self.sequence["id"]
         return p
