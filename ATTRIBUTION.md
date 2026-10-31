@@ -10,7 +10,7 @@ iconography, images or other Adobe assets; open licences only; every asset attri
 | Asset | Author | Source | Licence |
 |---|---|---|---|
 | `assets/cfa4/cfa4-official-logo.png` | CFA4 project owner (István) | Original CFA3 emblem supplied by the project owner, adapted and approved as the official CFA4 logo on 2026-10-23 | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
-| `assets/cfa4/cfa4-emblem.png` | CFA4 project owner (István) | CFA4 logo emblem on a transparent background, derived from the official CFA4 logo by `scripts/dev/cfa4_icons.py` | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
+| `assets/cfa4/cfa4-emblem.png` | CFA4 project owner (István) | CFA4 logo emblem on a transparent background, derived from the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/16x16/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/22x22/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |
 | `assets/cfa4/hicolor/24x24/apps/io.github.ubuntuokos.cfa4.png` | CFA4 project owner (István) | CFA4 application icon, emblem of the official CFA4 logo | CFA4 logo licence, not GPL (`LicenseRef-CFA4-Logo`, `assets/cfa4/LICENSE-logo.txt`) |

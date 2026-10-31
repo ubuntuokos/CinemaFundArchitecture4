@@ -1,10 +1,12 @@
 //! Inter prediction sample interpolation (8.4.2.2) and weighted sample prediction (8.4.2.3).
 
+use crate::picture::Sample;
+
 /// A reference plane (used by the plane-based helpers in tests).
 #[cfg(test)]
 #[derive(Clone, Copy)]
-pub struct PlaneRef<'a> {
-    pub data: &'a [u8],
+pub struct PlaneRef<'a, S> {
+    pub data: &'a [S],
     pub width: usize,
     pub height: usize,
     pub stride: usize,
@@ -16,7 +18,7 @@ const WIN: usize = 16 + 5;
 /// coordinates to the picture.
 #[cfg(test)]
 #[inline]
-fn fetch_window(p: PlaneRef, x: i32, y: i32, bw: usize, bh: usize, win: &mut [u8; WIN * WIN]) {
+fn fetch_window<S: Sample>(p: PlaneRef<S>, x: i32, y: i32, bw: usize, bh: usize, win: &mut [S; WIN * WIN]) {
     let x0 = x - 2;
     let y0 = y - 2;
     let ww = bw + 5;
@@ -46,47 +48,47 @@ fn tap6(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32) -> i32 {
 }
 
 #[inline(always)]
-fn clip1(v: i32) -> u8 {
-    v.clamp(0, 255) as u8
+fn clip1<S: Sample>(v: i32, max: i32) -> S {
+    S::from_i32(v.clamp(0, max))
 }
 
 /// Copy `n` bytes with a fixed-size move for the common block widths.
 #[inline(always)]
-fn copy_n(dst: &mut [u8], src: &[u8], n: usize) {
-    fn fixed<const N: usize>(dst: &mut [u8], src: &[u8]) {
+fn copy_n<S: Sample>(dst: &mut [S], src: &[S], n: usize) {
+    fn fixed<S: Sample, const N: usize>(dst: &mut [S], src: &[S]) {
         if let (Some(d), Some(s)) = (dst.first_chunk_mut::<N>(), src.first_chunk::<N>()) {
             *d = *s;
         }
     }
     match n {
-        16 => fixed::<16>(dst, src),
-        8 => fixed::<8>(dst, src),
-        4 => fixed::<4>(dst, src),
-        2 => fixed::<2>(dst, src),
+        16 => fixed::<S, 16>(dst, src),
+        8 => fixed::<S, 8>(dst, src),
+        4 => fixed::<S, 4>(dst, src),
+        2 => fixed::<S, 2>(dst, src),
         _ => dst[..n].copy_from_slice(&src[..n]),
     }
 }
 
 #[inline(always)]
-fn avg(a: u8, b: u8) -> u8 {
-    ((a as u16 + b as u16 + 1) >> 1) as u8
+fn avg<S: Sample>(a: S, b: S) -> S {
+    S::from_i32((a.to_i32() + b.to_i32() + 1) >> 1)
 }
 
 /// Horizontal 6-tap (unclipped) at every position of `row` for `n` outputs: out[c] uses row[c..c + 6].
 #[inline(always)]
-fn htap_row(row: &[u8], out: &mut [i32], n: usize) {
+fn htap_row<S: Sample>(row: &[S], out: &mut [i32], n: usize) {
     let row = &row[..n + 5];
     for (o, w) in out[..n].iter_mut().zip(row.windows(6)) {
-        *o = tap6(w[0] as i32, w[1] as i32, w[2] as i32, w[3] as i32, w[4] as i32, w[5] as i32);
+        *o = tap6(w[0].to_i32(), w[1].to_i32(), w[2].to_i32(), w[3].to_i32(), w[4].to_i32(), w[5].to_i32());
     }
 }
 
 /// Vertical 6-tap (unclipped) over six rows at columns 0..n.
 #[inline(always)]
-fn vtap_row(rows: [&[u8]; 6], out: &mut [i32], n: usize) {
+fn vtap_row<S: Sample>(rows: [&[S]; 6], out: &mut [i32], n: usize) {
     let [a, b, c, d, e, f] = rows.map(|r| &r[..n]);
     for i in 0..n {
-        out[i] = tap6(a[i] as i32, b[i] as i32, c[i] as i32, d[i] as i32, e[i] as i32, f[i] as i32);
+        out[i] = tap6(a[i].to_i32(), b[i].to_i32(), c[i].to_i32(), d[i].to_i32(), e[i].to_i32(), f[i].to_i32());
     }
 }
 
@@ -94,23 +96,23 @@ fn vtap_row(rows: [&[u8]; 6], out: &mut [i32], n: usize) {
 /// (block position + (mv >> 2)); (fx, fy) the quarter-sample fraction. Output stride is `os`.
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-pub fn mc_luma(p: PlaneRef, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
-    let mut win = [0u8; WIN * WIN];
+pub fn mc_luma<S: Sample>(p: PlaneRef<S>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize, max: i32) {
+    let mut win = [S::default(); WIN * WIN];
     let (x0, y0) = (x - 2, y - 2);
     let inside = x0 >= 0 && y0 >= 0 && x0 as usize + bw + 5 <= p.width && y0 as usize + bh + 5 <= p.height;
-    let (src, ss): (&[u8], usize) = if inside {
+    let (src, ss): (&[S], usize) = if inside {
         (&p.data[y0 as usize * p.stride + x0 as usize..], p.stride)
     } else {
         fetch_window(p, x, y, bw, bh, &mut win);
         (&win[..], WIN)
     };
-    mc_luma_win(src, ss, fx, fy, bw, bh, out, os);
+    mc_luma_win(src, ss, fx, fy, bw, bh, out, os, max);
 }
 
 /// Luma interpolation from a prepared window: `src[0]` is the sample at (x - 2, y - 2) and `ss` the
 /// window stride; the window covers (bw + 5) x (bh + 5) samples.
 #[allow(clippy::too_many_arguments)]
-pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
+pub fn mc_luma_win<S: Sample>(src: &[S], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize, max: i32) {
     // window row r (0..bh+5) starts at src[r * ss]; sample G of block (r, c) is at window (r + 2, c + 2)
     let wrow = |r: usize| &src[r * ss..r * ss + bw + 5];
     let mut t = [0i32; 16];
@@ -128,17 +130,17 @@ pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize
                 match fx {
                     1 => {
                         for c in 0..bw {
-                            o[c] = avg(row[c + 2], clip1((t[c] + 16) >> 5));
+                            o[c] = avg(row[c + 2], clip1((t[c] + 16) >> 5, max));
                         }
                     }
                     2 => {
                         for c in 0..bw {
-                            o[c] = clip1((t[c] + 16) >> 5);
+                            o[c] = clip1((t[c] + 16) >> 5, max);
                         }
                     }
                     _ => {
                         for c in 0..bw {
-                            o[c] = avg(row[c + 3], clip1((t[c] + 16) >> 5));
+                            o[c] = avg(row[c + 3], clip1((t[c] + 16) >> 5, max));
                         }
                     }
                 }
@@ -152,11 +154,11 @@ pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize
                 let o = &mut out[r * os..r * os + bw];
                 if fy == 2 {
                     for c in 0..bw {
-                        o[c] = clip1((t[c] + 16) >> 5);
+                        o[c] = clip1((t[c] + 16) >> 5, max);
                     }
                 } else {
                     for c in 0..bw {
-                        o[c] = avg(g[c], clip1((t[c] + 16) >> 5));
+                        o[c] = avg(g[c], clip1((t[c] + 16) >> 5, max));
                     }
                 }
             }
@@ -177,13 +179,13 @@ pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize
                 match (fx, fy) {
                     (2, 2) => {
                         for c in 0..bw {
-                            o[c] = clip1((t[c] + 512) >> 10);
+                            o[c] = clip1((t[c] + 512) >> 10, max);
                         }
                     }
                     (2, 1) | (2, 3) => {
                         let bh_ = if fy == 1 { b2 } else { b3 };
                         for c in 0..bw {
-                            o[c] = avg(clip1((bh_[c] + 16) >> 5), clip1((t[c] + 512) >> 10));
+                            o[c] = avg(clip1((bh_[c] + 16) >> 5, max), clip1((t[c] + 512) >> 10, max));
                         }
                     }
                     _ => {
@@ -191,7 +193,7 @@ pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize
                         let rows = [wrow(r), wrow(r + 1), wrow(r + 2), wrow(r + 3), wrow(r + 4), wrow(r + 5)].map(|x| &x[off..]);
                         vtap_row(rows, &mut v, bw);
                         for c in 0..bw {
-                            o[c] = avg(clip1((v[c] + 16) >> 5), clip1((t[c] + 512) >> 10));
+                            o[c] = avg(clip1((v[c] + 16) >> 5, max), clip1((t[c] + 512) >> 10, max));
                         }
                     }
                 }
@@ -208,7 +210,7 @@ pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize
                 vtap_row(rows, &mut v, bw);
                 let o = &mut out[r * os..r * os + bw];
                 for c in 0..bw {
-                    o[c] = avg(clip1((t[c] + 16) >> 5), clip1((v[c] + 16) >> 5));
+                    o[c] = avg(clip1((t[c] + 16) >> 5, max), clip1((v[c] + 16) >> 5, max));
                 }
             }
         }
@@ -219,13 +221,13 @@ pub fn mc_luma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize
 /// eighth-sample fraction (fx, fy).
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-pub fn mc_chroma(p: PlaneRef, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
+pub fn mc_chroma<S: Sample>(p: PlaneRef<S>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize) {
     let maxx = p.width as i32 - 1;
     let maxy = p.height as i32 - 1;
     let inside = x >= 0 && y >= 0 && x + bw as i32 <= maxx && y + bh as i32 <= maxy;
     // (bw+1) x (bh+1) source window; copied with edge clamping when it crosses the picture border
-    let mut win = [0u8; 9 * 9];
-    let (src, ss): (&[u8], usize) = if inside {
+    let mut win = [S::default(); 9 * 9];
+    let (src, ss): (&[S], usize) = if inside {
         (&p.data[y as usize * p.stride + x as usize..], p.stride)
     } else {
         for r in 0..=bh {
@@ -242,8 +244,8 @@ pub fn mc_chroma(p: PlaneRef, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: u
 /// Chroma interpolation from a prepared (bw + 1) x (bh + 1) window whose first sample is the integer
 /// position of the block.
 #[allow(clippy::too_many_arguments)]
-pub fn mc_chroma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
-    let (fx, fy) = (fx as u16, fy as u16);
+pub fn mc_chroma_win<S: Sample>(src: &[S], ss: usize, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [S], os: usize) {
+    let (fx, fy) = (fx as i32, fy as i32);
     let (w00, w10, w01, w11) = ((8 - fx) * (8 - fy), fx * (8 - fy), (8 - fx) * fy, fx * fy);
     if fx == 0 && fy == 0 {
         for r in 0..bh {
@@ -255,9 +257,18 @@ pub fn mc_chroma_win(src: &[u8], ss: usize, fx: u32, fy: u32, bw: usize, bh: usi
         let r0 = &src[r * ss..r * ss + bw + 1];
         let r1 = &src[(r + 1) * ss..(r + 1) * ss + bw + 1];
         let o = &mut out[r * os..r * os + bw];
-        for (c, o) in o.iter_mut().enumerate() {
-            let v = w00 * r0[c] as u16 + w10 * r0[c + 1] as u16 + w01 * r1[c] as u16 + w11 * r1[c + 1] as u16;
-            *o = ((v + 32) >> 6) as u8;
+        if S::WIDE {
+            for (c, o) in o.iter_mut().enumerate() {
+                let v = w00 * r0[c].to_i32() + w10 * r0[c + 1].to_i32() + w01 * r1[c].to_i32() + w11 * r1[c + 1].to_i32();
+                *o = S::from_i32((v + 32) >> 6);
+            }
+        } else {
+            // 8-bit: the weighted sum fits 16-bit lanes (64 * 255), twice as many per register
+            let (w00, w10, w01, w11) = (w00 as u16, w10 as u16, w01 as u16, w11 as u16);
+            for (c, o) in o.iter_mut().enumerate() {
+                let v = w00 * r0[c].to_i32() as u16 + w10 * r0[c + 1].to_i32() as u16 + w01 * r1[c].to_i32() as u16 + w11 * r1[c + 1].to_i32() as u16;
+                *o = S::from_i32(((v + 32) >> 6) as i32);
+            }
         }
     }
 }
@@ -273,7 +284,7 @@ pub enum Weight {
 
 /// Combine prediction(s) into `dst` (stride `ds`). `p0`/`p1` have stride `ps`.
 #[allow(clippy::too_many_arguments)]
-pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&[u8]>, ps: usize, bw: usize, bh: usize, w: Weight) {
+pub fn weighted_store<S: Sample>(dst: &mut [S], ds: usize, p0: Option<&[S]>, p1: Option<&[S]>, ps: usize, bw: usize, bh: usize, w: Weight, max: i32) {
     match (p0, p1, w) {
         (Some(a), Some(b), Weight::Default) => {
             for r in 0..bh {
@@ -281,7 +292,7 @@ pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&
                 let ra = &a[r * ps..r * ps + bw];
                 let rb = &b[r * ps..r * ps + bw];
                 for ((d, &x), &y) in d.iter_mut().zip(ra).zip(rb) {
-                    *d = ((x as u32 + y as u32 + 1) >> 1) as u8;
+                    *d = S::from_i32((x.to_i32() + y.to_i32() + 1) >> 1);
                 }
             }
         }
@@ -294,7 +305,7 @@ pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&
                 let ra = &a[r * ps..r * ps + bw];
                 let rb = &b[r * ps..r * ps + bw];
                 for ((d, &x), &y) in d.iter_mut().zip(ra).zip(rb) {
-                    *d = clip1(((x as i32 * w0 + y as i32 * w1 + round) >> sh) + off);
+                    *d = clip1(((x.to_i32() * w0 + y.to_i32() * w1 + round) >> sh) + off, max);
                 }
             }
         }
@@ -314,7 +325,7 @@ pub fn weighted_store(dst: &mut [u8], ds: usize, p0: Option<&[u8]>, p1: Option<&
                 let d = &mut dst[r * ds..r * ds + bw];
                 let ra = &a[r * ps..r * ps + bw];
                 for (d, &x) in d.iter_mut().zip(ra) {
-                    *d = clip1(((x as i32 * wt + round) >> log_wd) + o);
+                    *d = clip1(((x.to_i32() * wt + round) >> log_wd) + o, max);
                 }
             }
         }
@@ -329,7 +340,7 @@ mod reference {
     /// Luma sample interpolation for a bw x bh block. (x, y) is the integer sample position
     /// (block position + (mv >> 2)); (fx, fy) the quarter-sample fraction. Output stride is `os`.
     #[allow(clippy::too_many_arguments)]
-    pub fn mc_luma_ref(p: PlaneRef, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
+    pub fn mc_luma_ref(p: PlaneRef<u8>, x: i32, y: i32, fx: u32, fy: u32, bw: usize, bh: usize, out: &mut [u8], os: usize) {
         let mut win = [0u8; WIN * WIN];
         fetch_window(p, x, y, bw, bh, &mut win);
         // sample G at (r, c) in block coordinates is win[(r + 2) * WIN + c + 2]
@@ -360,7 +371,7 @@ mod reference {
                 // a, b, c
                 for r in 0..bh {
                     for c in 0..bw {
-                        let b = clip1((b1(r as isize, c) + 16) >> 5) as i32;
+                        let b = clip1::<u8>((b1(r as isize, c) + 16) >> 5, 255) as i32;
                         out[r * os + c] = match fx {
                             1 => ((g(r, c) + b + 1) >> 1) as u8,
                             2 => b as u8,
@@ -373,7 +384,7 @@ mod reference {
                 // d, h, n
                 for r in 0..bh {
                     for c in 0..bw {
-                        let h = clip1((h1(r, c as isize) + 16) >> 5) as i32;
+                        let h = clip1::<u8>((h1(r, c as isize) + 16) >> 5, 255) as i32;
                         out[r * os + c] = match fy {
                             1 => ((g(r, c) + h + 1) >> 1) as u8,
                             2 => h as u8,
@@ -400,13 +411,13 @@ mod reference {
                             bcol[(r + 4) * WIN + c],
                             bcol[(r + 5) * WIN + c],
                         );
-                        let j = clip1((j1 + 512) >> 10) as i32;
+                        let j = clip1::<u8>((j1 + 512) >> 10, 255) as i32;
                         let v = match (fx, fy) {
                             (2, 2) => j,
-                            (2, 1) => (clip1((bcol[(r + 2) * WIN + c] + 16) >> 5) as i32 + j + 1) >> 1, // f
-                            (2, 3) => (clip1((bcol[(r + 3) * WIN + c] + 16) >> 5) as i32 + j + 1) >> 1, // q
-                            (1, 2) => (clip1((h1(r, c as isize) + 16) >> 5) as i32 + j + 1) >> 1,       // i
-                            _ => (clip1((h1(r, c as isize + 1) + 16) >> 5) as i32 + j + 1) >> 1,        // k
+                            (2, 1) => (clip1::<u8>((bcol[(r + 2) * WIN + c] + 16) >> 5, 255) as i32 + j + 1) >> 1, // f
+                            (2, 3) => (clip1::<u8>((bcol[(r + 3) * WIN + c] + 16) >> 5, 255) as i32 + j + 1) >> 1, // q
+                            (1, 2) => (clip1::<u8>((h1(r, c as isize) + 16) >> 5, 255) as i32 + j + 1) >> 1,       // i
+                            _ => (clip1::<u8>((h1(r, c as isize + 1) + 16) >> 5, 255) as i32 + j + 1) >> 1,        // k
                         };
                         out[r * os + c] = v as u8;
                     }
@@ -418,8 +429,8 @@ mod reference {
                     for c in 0..bw {
                         let hr = if fy == 1 { r as isize } else { r as isize + 1 };
                         let vc = if fx == 1 { c as isize } else { c as isize + 1 };
-                        let bh_ = clip1((b1(hr, c) + 16) >> 5) as i32;
-                        let vv = clip1((h1(r, vc) + 16) >> 5) as i32;
+                        let bh_ = clip1::<u8>((b1(hr, c) + 16) >> 5, 255) as i32;
+                        let vv = clip1::<u8>((h1(r, vc) + 16) >> 5, 255) as i32;
                         out[r * os + c] = ((bh_ + vv + 1) >> 1) as u8;
                     }
                 }
@@ -441,10 +452,10 @@ mod tests {
         let d = plane(16, 16, |x, y| (x + 16 * y) as u8);
         let p = PlaneRef { data: &d, width: 16, height: 16, stride: 16 };
         let mut out = [0u8; 16];
-        mc_luma(p, 2, 3, 0, 0, 4, 4, &mut out, 4);
+        mc_luma(p, 2, 3, 0, 0, 4, 4, &mut out, 4, 255);
         assert_eq!(&out[..4], &[50, 51, 52, 53]);
         // clamped: far outside to the top-left gives sample (0,0)
-        mc_luma(p, -40, -40, 0, 0, 4, 4, &mut out, 4);
+        mc_luma(p, -40, -40, 0, 0, 4, 4, &mut out, 4, 255);
         assert!(out.iter().all(|&v| v == 0));
     }
 
@@ -455,7 +466,7 @@ mod tests {
         for fx in 0..4 {
             for fy in 0..4 {
                 let mut out = [0u8; 64];
-                mc_luma(p, 8, 8, fx, fy, 8, 8, &mut out, 8);
+                mc_luma(p, 8, 8, fx, fy, 8, 8, &mut out, 8, 255);
                 assert!(out.iter().all(|&v| v == 100), "{fx},{fy}");
                 mc_chroma(p, 8, 8, fx * 2, fy * 2, 8, 8, &mut out, 8);
                 assert!(out.iter().all(|&v| v == 100));
@@ -469,9 +480,9 @@ mod tests {
         let d = plane(32, 32, |x, _| (x * 4) as u8);
         let p = PlaneRef { data: &d, width: 32, height: 32, stride: 32 };
         let mut out = [0u8; 16];
-        mc_luma(p, 8, 8, 2, 0, 4, 4, &mut out, 4);
+        mc_luma(p, 8, 8, 2, 0, 4, 4, &mut out, 4, 255);
         assert_eq!(&out[..4], &[34, 38, 42, 46]);
-        mc_luma(p, 8, 8, 1, 0, 4, 4, &mut out, 4);
+        mc_luma(p, 8, 8, 1, 0, 4, 4, &mut out, 4, 255);
         assert_eq!(&out[..4], &[33, 37, 41, 45]);
     }
 
@@ -491,7 +502,7 @@ mod tests {
                     for &(x, y) in &[(10, 9), (-3, -5), (30, 30), (0, 0), (2, 2), (38, 1)] {
                         let mut a = [0u8; 256];
                         let mut b = [0u8; 256];
-                        mc_luma(p, x, y, fx, fy, bw, bh, &mut a, 16);
+                        mc_luma(p, x, y, fx, fy, bw, bh, &mut a, 16, 255);
                         reference::mc_luma_ref(p, x, y, fx, fy, bw, bh, &mut b, 16);
                         assert_eq!(a, b, "{bw}x{bh} frac {fx},{fy} at {x},{y}");
                     }
@@ -505,9 +516,9 @@ mod tests {
         let a = [100u8; 4];
         let b = [50u8; 4];
         let mut d = [0u8; 4];
-        weighted_store(&mut d, 4, Some(&a), Some(&b), 4, 4, 1, Weight::Default);
+        weighted_store(&mut d, 4, Some(&a), Some(&b), 4, 4, 1, Weight::Default, 255);
         assert_eq!(d, [75; 4]);
-        weighted_store(&mut d, 4, Some(&a), None, 4, 4, 1, Weight::Weighted { log_wd: 5, w0: 16, w1: 0, o0: 3, o1: 0 });
+        weighted_store(&mut d, 4, Some(&a), None, 4, 4, 1, Weight::Weighted { log_wd: 5, w0: 16, w1: 0, o0: 3, o1: 0 }, 255);
         assert_eq!(d, [53; 4]);
     }
 }

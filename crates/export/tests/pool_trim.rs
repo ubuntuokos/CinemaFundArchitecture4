@@ -75,9 +75,11 @@ fn the_float_shelf_is_empty_when_a_standalone_export_ends_however_it_ended() {
     assert!(export(&p, seq, &settings(Format::ProRes, "b.mov"), &sources, &cancelled).is_err());
     check("a cancelled video");
 
-    // an encoder that is not there: the pipeline was built, the export never started
+    // an encoder that refuses its setup (H.265 is at most 8192 wide): the pipeline was built, the
+    // export never started
     leave_something();
-    assert!(export(&p, seq, &settings(Format::Av1, "c.mp4"), &sources, &Progress::default()).is_err());
+    let odd = ExportSettings { frame_size: Some((8320, 180)), ..settings(Format::Hevc, "c.mp4") };
+    assert!(export(&p, seq, &odd, &sources, &Progress::default()).is_err());
     check("an export that could not start");
 
     // stepped by the host (the web build), dropped half way: 6 frames of 24
