@@ -346,6 +346,9 @@ pub(crate) fn read_frame_checked(file: &MxfFile, src: &(impl ByteSource + ?Sized
     file.read_sample(src, track, at).map_err(|e| ExportError::Io(format!("IAB frame {at}: {e}")))
 }
 
+/// How much of a source is read to find an MXF header partition: the longest run-in plus a key.
+const MXF_SNIFF: u64 = 65_536 + 16;
+
 /// The frames of an IAB source.
 enum Source {
     /// An IAB track file (IMF ST 2067-201 or DCP ST 429-18) and its IAB track.
@@ -361,8 +364,9 @@ impl Source {
         let f = std::fs::File::open(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         let len = f.metadata().map_err(|e| ExportError::Io(format!("{path}: {e}")))?.len();
         let src = FileSrc { f: Mutex::new(f), len };
-        let mut head = [0u8; 4];
-        let is_mxf = src.read_at(0, &mut head).is_ok() && head == [0x06, 0x0E, 0x2B, 0x34];
+        // the header partition may follow a run-in of up to 64 KiB (ST 377-1 6.5)
+        let mut head = vec![0u8; usize::try_from(len.min(MXF_SNIFF)).unwrap_or(0)];
+        let is_mxf = src.read_at(0, &mut head).is_ok() && cfa4_mxf::sniff(&head);
         if is_mxf {
             let file = cfa4_mxf::open(&src).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
             let track =
