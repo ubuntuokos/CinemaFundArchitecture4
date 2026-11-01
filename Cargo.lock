@@ -1501,6 +1501,7 @@ dependencies = [
 name = "cfa4-vp8"
 version = "0.10.0"
 dependencies = [
+ "cfa4-testkit",
  "thiserror 2.0.21",
 ]
 
@@ -1509,6 +1510,7 @@ name = "cfa4-vp9"
 version = "0.10.0"
 dependencies = [
  "cfa4-bitstream",
+ "cfa4-testkit",
  "rayon",
  "thiserror 2.0.21",
 ]
