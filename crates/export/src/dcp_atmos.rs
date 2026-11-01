@@ -12,8 +12,18 @@
 //! - **Objects.** Every dynamic object that has had a metadata update becomes an IAB object: its
 //!   position (the OAMD unit room cube is the IAB one: x left → right, y screen → back, z floor →
 //!   ceiling), gain (capped at unity, the most an IAB gain can be), size as a 1D spread, snap. A
-//!   ramp is followed sub-block by sub-block. Elevation off puts the object on the floor. OAMD
-//!   zone constraints are not carried (Profile 1 has no zone definitions).
+//!   ramp is followed sub-block by sub-block. Elevation off puts the object on the floor.
+//! - **Zones (#412).** The OAMD zone constraint becomes the nine zone gains of ObjectPanInfo
+//!   (ST 2098-2 Table 24), one of the sets ISDCF Doc 15 5.5 allows (it forbids only
+//!   ObjectZoneDefinition19 and gains other than 0 / 1): "no back" set 1, "no sides" set 2,
+//!   "centre back" set 3 (screen centre and rear wall), "screen only" set 4, "surround only"
+//!   set 5. Elevation off takes the "b" set (overhead zones off); an unconstrained object with
+//!   elevation off gets set 6. "Screen only" takes 4b, as our TrueHD renderer keeps such an
+//!   object off the overhead loudspeakers too.
+//! - **Not carried.** Screen-referenced scaling (`b_object_use_screen_ref`, screen / depth factor)
+//!   adapts a position to the playback screen's size; IAB positions are room positions with no
+//!   such scaling, so the authored position is kept. Divergence and trims are not decoded from
+//!   the OAMD, and IAB has no counterpart for either.
 //! - **Timing.** The stream's 48 kHz samples are cut into the composition's edit units from its
 //!   first sample; the last partial frame is padded with silence. Every asset is DLC coded,
 //!   24 bit.
@@ -23,7 +33,7 @@
 
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
-use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Decorrelation, Description, Frame, FrameRate, Gain, Object, Pan, Snap, Spread};
+use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Decorrelation, Description, Frame, FrameRate, Gain, Object, Pan, Snap, Spread, ZoneGain};
 use cfa4_truehd::cfa4::{ObjectDecoder, packet_samples, samples_per_au};
 use cfa4_truehd::render::{Event, MAX_OBJECTS, ObjectState, Source};
 use cfa4_truehd::structs::oamd::SpeakerLabels;
@@ -555,23 +565,48 @@ fn object_pan(st: Option<ObjectState>) -> Pan {
         decorrelation: Decorrelation::None,
     };
     let Some(st) = st else { return silent };
-    let (position, size, snap) = match st.source {
-        Source::Point { position, size, snap, elevation, .. } => {
+    let (position, size, snap, zones) = match st.source {
+        Source::Point { position, size, snap, elevation, zone } => {
             let z = if elevation { position[2] } else { 0.0 };
-            ([position[0], position[1], z], size, snap)
+            ([position[0], position[1], z], size, snap, zone_gains(zone, elevation))
         }
         // a bed loudspeaker no Profile 1 bed has: an object snapped to that loudspeaker
-        Source::Bed(l) => (speaker_position(l), 0.0, true),
+        Source::Bed(l) => (speaker_position(l), 0.0, true, None),
     };
     let size = if size.is_finite() { size.clamp(0.0, 1.0) } else { 0.0 };
     Pan {
         gain: iab_gain(st.gain),
         position: position_codes(position),
         snap: if snap { Snap::On(None) } else { Snap::Off },
-        zones: None,
+        zones,
         spread: Spread::OneD((size * 4095.0).round() as u16),
         decorrelation: Decorrelation::None,
     }
+}
+
+/// The IAB zone gains (ST 2098-2 Table 24: screen left, centre, right; left, right wall; rear
+/// left, right; overhead left, right) of an OAMD zone constraint, as an ISDCF Doc 15 5.5 set;
+/// `None` (every zone) for no constraint with elevation on.
+fn zone_gains(zone: u8, elevation: bool) -> Option<[ZoneGain; 9]> {
+    let (on, off) = (ZoneGain::Unity, ZoneGain::Zero);
+    let ear: [ZoneGain; 7] = match zone {
+        // no back: set 1
+        1 => [on, on, on, on, on, off, off],
+        // no sides: set 2
+        2 => [on, on, on, off, off, on, on],
+        // centre back: set 3
+        3 => [off, on, off, off, off, on, on],
+        // screen only: set 4b, never overhead
+        4 => return Some([on, on, on, off, off, off, off, off, off]),
+        // surround only: set 5
+        5 => [off, off, off, on, on, on, on],
+        // all loudspeakers (reserved values too): set 6 without elevation
+        _ if elevation => return None,
+        _ => return Some([on, on, on, on, on, on, on, off, off]),
+    };
+    let top = if elevation { on } else { off };
+    let [a, b, c, d, e, f, g] = ear;
+    Some([a, b, c, d, e, f, g, top, top])
 }
 
 /// What a TrueHD Atmos source holds: (seconds, sample rate, most bed channels, most objects),
@@ -632,6 +667,60 @@ mod tests {
 
     fn point(x: f32, y: f32, z: f32, gain: f32) -> ObjectState {
         ObjectState { source: Source::Point { position: [x, y, z], size: 0.0, zone: 0, snap: false, elevation: true }, gain }
+    }
+
+    #[test]
+    fn zone_constraints_become_iab_zone_gains() {
+        use ZoneGain::{Unity as I, Zero as O};
+        let st = |zone, elevation| ObjectState { source: Source::Point { position: [0.5, 0.5, 0.0], size: 0.0, zone, snap: false, elevation }, gain: 1.0 };
+        let z = |zone, elevation| object_pan(Some(st(zone, elevation))).zones;
+        // the ISDCF Doc 15 5.5 sets
+        assert_eq!(z(0, true), None);
+        assert_eq!(z(0, false), Some([I, I, I, I, I, I, I, O, O]));
+        assert_eq!(z(1, true), Some([I, I, I, I, I, O, O, I, I]));
+        assert_eq!(z(1, false), Some([I, I, I, I, I, O, O, O, O]));
+        assert_eq!(z(2, true), Some([I, I, I, O, O, I, I, I, I]));
+        assert_eq!(z(3, true), Some([O, I, O, O, O, I, I, I, I]));
+        assert_eq!(z(4, true), Some([I, I, I, O, O, O, O, O, O]));
+        assert_eq!(z(5, false), Some([O, O, O, I, I, I, I, O, O]));
+        assert_eq!(z(7, true), None);
+        // a bed loudspeaker as an object has no zones
+        assert_eq!(object_pan(Some(ObjectState { source: Source::Bed(SpeakerLabels::Lw), gain: 1.0 })).zones, None);
+    }
+
+    /// Rendered by our IAB renderer to 7.1.4, an object in the room's back half reaches the rear
+    /// loudspeakers without a constraint and never with "no back"; "screen only" keeps it on the
+    /// screen; "surround only" off it. The frames write and parse back unchanged.
+    #[test]
+    fn zone_constrained_objects_render_within_their_zones() {
+        let layout = cfa4_iab::Layout::surround_7_1_4();
+        let ids: Vec<u32> = layout.speakers.iter().map(|s| s.id).collect();
+        let rear = |g: &[f32]| ids.iter().zip(g).filter(|(id, _)| matches!(id, 0x07 | 0x08)).map(|(_, v)| v.abs()).sum::<f32>();
+        let screen = |g: &[f32]| ids.iter().zip(g).filter(|(id, _)| matches!(id, 0x00 | 0x02 | 0x04)).map(|(_, v)| v.abs()).sum::<f32>();
+        let all = |g: &[f32]| g.iter().map(|v| v.abs()).sum::<f32>();
+        let render = |zone: u8, position: [f32; 3]| -> Vec<f32> {
+            let mut meta = Metadata::default();
+            meta.push(vec![Event {
+                offset: 0,
+                object: 0,
+                state: ObjectState { source: Source::Point { position, size: 0.0, zone, snap: false, elevation: true }, gain: 1.0 },
+                ramp: 0,
+            }]);
+            let f = frame_of(FrameRate::R24, 0, &mut meta, &[vec![0.5; 2000]]);
+            let back = cfa4_iab::parse(&cfa4_iab::write(&f).unwrap()).unwrap();
+            assert_eq!(back, f);
+            let out = cfa4_iab::render(&f, &layout).unwrap();
+            out.iter().map(|c| c.get(1000).copied().unwrap_or(0.0)).collect()
+        };
+        let back_half = [0.3, 0.85, 0.0];
+        assert!(rear(&render(0, back_half)) > 0.05);
+        let g = render(1, back_half);
+        assert_eq!(rear(&g), 0.0);
+        assert!(all(&g) > 0.05);
+        let g = render(4, back_half);
+        assert!(screen(&g) > 0.05 && (all(&g) - screen(&g)).abs() < 1e-6, "{g:?}");
+        let g = render(5, [0.5, 0.0, 0.0]);
+        assert!(screen(&g) == 0.0 && all(&g) > 0.05, "{g:?}");
     }
 
     /// A Matroska file of the given tracks (codec id, packets), 40 samples per packet at 48 kHz.
