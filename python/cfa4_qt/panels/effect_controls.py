@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMainWindow,
     QMenu,
     QPlainTextEdit,
     QPushButton,
@@ -1594,6 +1595,7 @@ class EffectControlsPanel(QWidget):
         self._last_send = QElapsedTimer()
         self._busy = False
         self._again = False
+        self._wanted: tuple[list[Any] | None, list[Any] | None] = (None, None)  # the latest refresh's selection
 
         self.title = QLabel(tr("Select a clip in the Timeline."), self)
         self.title.setObjectName("effectControls.title")
@@ -1714,6 +1716,7 @@ class EffectControlsPanel(QWidget):
     def refresh(self, selection: list[Any] | None, transitions: list[Any] | None = None) -> None:
         """Ask the engine about the selected clip (a video one first, as egui) and the audio
         linked to it; with no clip selected, about the selected transition (or clear the panel)."""
+        self._wanted = (selection, transitions)
         clips = [c for c in selection or [] if isinstance(c, int)]
         transitions = [t for t in transitions or [] if isinstance(t, int)]
         if not (clips or transitions) or self.engine is None or not self.engine.running:
@@ -1754,9 +1757,7 @@ class EffectControlsPanel(QWidget):
             self.transition_view.show()
         if self._again:
             self._again = False
-            seq = getattr(self.window(), "sequence", None)
-            seq = seq if isinstance(seq, dict) else {}
-            self.refresh(seq.get("selection"), seq.get("transitionSelection"))
+            self.refresh(*self._wanted)
 
     def _show(self, clip: dict[str, Any] | None, audio: dict[str, Any] | None = None) -> None:
         self.flush()  # edits made on the clip shown so far go to that clip, at their own time
@@ -1976,9 +1977,17 @@ class EffectControlsPanel(QWidget):
         self.collapsed_masks ^= {(clip, index, mask)}
         self._apply_collapsed(clip, index)
 
+    def main_window(self) -> QWidget | None:
+        """The editor window. Not ``window()``: in a floating dock that is the dock itself, so the
+        Program monitor, the sequence and the refresh would not be found."""
+        w = self.parentWidget()
+        while w is not None and not isinstance(w, QMainWindow):
+            w = w.parentWidget()
+        return w
+
     def mask_pen(self, clip: int, effect: int, on: bool) -> None:
         """The pen: place a free-drawn Bezier mask's points on the Program monitor."""
-        monitor = getattr(self.window(), "monitor", None)
+        monitor = getattr(self.main_window(), "monitor", None)
         overlay = getattr(monitor, "overlay", None)
         if overlay is not None and hasattr(overlay, "start_pen"):
             if on:
@@ -2028,7 +2037,7 @@ class EffectControlsPanel(QWidget):
         if not refs or self.engine is None:
             return
         self.flush()
-        win = self.window()
+        win = self.main_window()
 
         def done(result: Any, _b: bytes | None) -> None:
             moved = result.get("keyframes") if isinstance(result, dict) else None
@@ -2073,7 +2082,7 @@ class EffectControlsPanel(QWidget):
         snapshot's playhead; pinned to the clip as the engine pins its own."""
         clip = clip or self.clip or {}
         ph, start, end = clip.get("playhead"), clip.get("start"), clip.get("end")
-        monitor = getattr(self.window(), "monitor", None)
+        monitor = getattr(self.main_window(), "monitor", None)
         if isinstance(playhead, int):
             ph = playhead
         elif monitor is not None and getattr(monitor, "playing", False) and isinstance(getattr(monitor, "playhead", None), int):
@@ -2094,7 +2103,7 @@ class EffectControlsPanel(QWidget):
         if command in AT_PLAYHEAD:
             # the engine acts at its playhead, which stays where playback started: stop on the
             # shown frame first (the stop seeks the engine there)
-            monitor = getattr(self.window(), "monitor", None)
+            monitor = getattr(self.main_window(), "monitor", None)
             if monitor is not None and getattr(monitor, "playing", False):
                 monitor.stop()
         self.command.emit(command, params)
