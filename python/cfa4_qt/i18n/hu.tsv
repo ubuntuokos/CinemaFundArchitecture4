@@ -2250,3 +2250,9 @@
 	Trim Forward	Igazítás előre
 	Trim Forward Many	Igazítás sok képkockával előre
 	Exit Trim Mode	Kilépés a vágásmódból
+	Restore	Visszaállítás
+	Overwrite with Current View	Felülírás a jelenlegi nézettel
+	Saves the view, columns, sort, thumbnail and font size.	Menti a nézetet, az oszlopokat, a rendezést, a bélyegképet és a betűméretet.
+	Search fields	Mezők keresése
+	Show:	Megjelenítés:
+	{n}. (empty)	{n}. (üres)
