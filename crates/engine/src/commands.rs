@@ -4689,6 +4689,8 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
             }))).map(|(i, mut v)| {
                 // the Timeline's Volume line (apart: one `json!` this deep overflows the macro)
                 v["volume"] = volume_line(i);
+                // a Text to Speech narration (the Qt GUI asks `tts.inspect` only for those)
+                v["narration"] = json!(s.project.narrations.contains_key(&i.item));
                 v
             }).collect::<Vec<_>>(),
             "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "name": x.effect.def().map_or(x.effect.effect.as_str(), |d| d.name), "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),

@@ -47,6 +47,7 @@ from .panels.effect_controls import EffectControlsPanel
 from .panels.effects import EffectsPanel
 from .panels.essential_graphics import EssentialGraphicsPanel
 from .panels.essential_sound import EssentialSoundPanel
+from .panels.events import EventsPanel
 from .panels.export import ExportDialog
 from .panels.export_dialogs import EXPORT_DIALOGS, ExportSettingsDialog
 from .panels.fx_editor import FxEditor, target_key
@@ -80,7 +81,7 @@ from .panels.sequence_settings import draft_from as seq_draft_from
 from .panels.settings import MENU as SETTINGS_MENU
 from .panels.settings import PreferencesDialog
 from .panels.shortcuts import ShortcutsDialog
-from .panels.side import EventsPanel, HistoryPanel, LibrariesPanel
+from .panels.side import HistoryPanel, LibrariesPanel
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel, tool_commands
@@ -377,6 +378,7 @@ class MainWindow(QMainWindow):
         self.hidden_markers: list[Any] = []
         self.target_item: int | None = None
         self.events = EventsPanel(self)
+        self.events.attach(engine)
 
         self.setCentralWidget(self.monitor)
         self.home = HomePage(self)
@@ -1806,7 +1808,7 @@ class MainWindow(QMainWindow):
             self.schedule_refresh()
         elif kind == "toast":
             msg = str(ev.get("message") or "")
-            self.events.log(msg, error=bool(ev.get("error")))
+            self.events.refresh()  # the engine logged it (Events)
             self.statusBar().showMessage(msg, 5000)
         elif kind == "openSequence":
             self.docks["Timeline"].raise_()
@@ -1833,6 +1835,7 @@ class MainWindow(QMainWindow):
             "sequence.inspect", {}, on_reply=self._on_sequence, on_error=lambda _m: self._on_sequence(None, None)
         )
         self.engine.execute("history.list", {}, on_reply=lambda r, _b: self.history.set_history(r))
+        self.events.refresh()
         self.engine.execute("source.inspect", {}, on_reply=self._on_source, on_error=lambda _m: self._on_source(None, None))
 
     def _on_state(self, result: Any, _b: bytes | None) -> None:
@@ -1871,7 +1874,7 @@ class MainWindow(QMainWindow):
         self.essential_graphics.refresh_library()
         self.effects.refresh()
         self.tts.has_sequence = self.sequence is not None
-        self.tts.follow_selection()  # also while hidden: a narration clip brings it forward
+        self.tts.follow_selection(self.sequence or {})  # also while hidden: a narration clip brings it forward
         self.media_browser.refresh()
         self.text_panel.set_sequence(self.sequence, self.monitor.playhead)
         self.update_inspectors()
@@ -1920,7 +1923,7 @@ class MainWindow(QMainWindow):
 
     def _command_failed(self, command: str, message: str) -> None:
         text = f"{command}: {message}"
-        self.events.log(text, error=True)
+        self.events.log(text, error=True, source=command)
         self.statusBar().showMessage(text, 6000)
 
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
