@@ -344,10 +344,10 @@ pub(crate) fn item_p(p: &Value, k: &str) -> Option<ItemId> {
 /// as `copied`.
 fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "timeline.move";
-    let mut listed: Vec<(ClipId, TrackId, Tick)> = Vec::new();
-    let mut new_moves = Vec::new();
+    let mut listed: Vec<(ClipId, TrackId, Tick, bool)> = Vec::new();
     for m in p.get("moves").and_then(Value::as_array).into_iter().flatten() {
-        let track = if str_p(m, "track").is_some_and(|t| t.eq_ignore_ascii_case("new")) {
+        let new_track = str_p(m, "track").is_some_and(|t| t.eq_ignore_ascii_case("new"));
+        let track = if new_track {
             let clip = clip_p(m, "clip").ok_or_else(|| bad(CMD, "new track needs a clip"))?;
             let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
             let (source, _) = q.find_item(clip).ok_or(edit::EditError::NoItem(clip))?;
@@ -357,13 +357,12 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
             if m.get("time").and_then(Value::as_i64).is_none() {
                 return Err(bad(CMD, "new track needs a time"));
             }
-            new_moves.push((clip, source));
             Some(source)
         } else {
             track_p(s, m, "track", CMD)?
         };
         if let (Some(clip), Some(track), Some(time)) = (clip_p(m, "clip"), track, m.get("time").and_then(Value::as_i64)) {
-            listed.push((clip, track, Tick(time)));
+            listed.push((clip, track, Tick(time), new_track));
         }
     }
     if listed.is_empty() {
@@ -371,32 +370,32 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let follow = bool_p(p, "linked").unwrap_or(s.state.linked_selection);
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    // (clip, destination track, new start, where a partner starts now). `time` is any i64: the
-    // sums are done in i128, where a few i64 values cannot overflow, and checked on the way back.
-    let mut plan: Vec<(ClipId, TrackId, i128, Option<i128>)> = Vec::new();
-    for &(clip, track, time) in &listed {
-        plan.push((clip, track, i128::from(time.0), None));
+    // (clip, destination track, new start, where a partner starts now, new track requested).
+    // `time` is any i64: sums use i128 and are checked on the way back.
+    let mut plan: Vec<(ClipId, TrackId, i128, Option<i128>, bool)> = Vec::new();
+    for &(clip, track, time, new_track) in &listed {
+        plan.push((clip, track, i128::from(time.0), None, new_track));
         let Some((_, it)) = q.find_item(clip) else { continue }; // `edit::move_items` reports it
         let Some(link) = it.link.filter(|_| follow) else { continue };
         let offset = i128::from(time.0) - i128::from(it.start.0);
         for t in q.all_tracks().filter(|t| !t.locked) {
             for partner in t.items.iter().filter(|i| i.link == Some(link)) {
                 if !listed.iter().any(|m| m.0 == partner.id) && !plan.iter().any(|m| m.0 == partner.id) {
-                    plan.push((partner.id, t.id, i128::from(partner.start.0) + offset, Some(i128::from(partner.start.0))));
+                    plan.push((partner.id, t.id, i128::from(partner.start.0) + offset, Some(i128::from(partner.start.0)), false));
                 }
             }
         }
     }
     let late = plan.iter().map(|m| -m.2).max().unwrap_or(0).max(0);
-    let mut moves: Vec<(ClipId, TrackId, Tick)> = Vec::with_capacity(plan.len());
-    for (clip, track, start, was) in plan {
+    let mut moves: Vec<(ClipId, TrackId, Tick, bool)> = Vec::with_capacity(plan.len());
+    for (clip, track, start, was, new_track) in plan {
         // a partner that ends up where it is does not move (its listed clip only changed track):
         // re-placing it would drop the transitions at its edges
         if was == Some(start + late) {
             continue;
         }
         let start = i64::try_from(start + late).ok().map(Tick).filter(|t| *t <= Tick::MAX).ok_or_else(|| bad(CMD, "`time` is out of range"))?;
-        moves.push((clip, track, start));
+        moves.push((clip, track, start, new_track));
     }
     let ins = bool_p(p, "insert").unwrap_or(false);
     let copy = bool_p(p, "copy").unwrap_or(false);
@@ -409,7 +408,7 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     // Allocate destinations in the same transaction as the move: an invalid edit leaves
     // neither empty tracks nor history entries. Each source track keeps its clips together.
     let prepare = |q: &mut cfa4_project::Sequence, ctx: &mut edit::EditCtx<'_>| -> Result<Vec<(ClipId, TrackId, Tick)>> {
-        let sources: Vec<_> = q.all_tracks().filter(|t| new_moves.iter().any(|m| m.1 == t.id)).map(|t| (t.id, t.kind, t.channels)).collect();
+        let sources: Vec<_> = q.all_tracks().filter(|t| moves.iter().any(|m| m.3 && m.1 == t.id)).map(|t| (t.id, t.kind, t.channels)).collect();
         for kind in [TrackKind::Video, TrackKind::Audio] {
             let added = sources.iter().filter(|s| s.1 == kind).count();
             if added > 0 && q.tracks(kind).len().saturating_add(added) > crate::sequence_tools::MAX_TRACKS {
@@ -428,8 +427,9 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
         }
         Ok(moves
             .iter()
-            .map(|&(clip, track, time)| {
-                let dest = new_moves.iter().find(|m| m.0 == clip).and_then(|m| destinations.iter().find(|d| d.0 == m.1)).map_or(track, |d| d.1);
+            .map(|&(clip, track, time, new_track)| {
+                // A copy can list the same source again with a different destination.
+                let dest = destinations.iter().find(|d| new_track && d.0 == track).map_or(track, |d| d.1);
                 (clip, dest, time)
             })
             .collect())
@@ -575,12 +575,17 @@ pub fn linked_roll_pairs(seq: &cfa4_project::Sequence, left: ClipId, right: Clip
     pairs
 }
 
-/// Expand a clip selection with linked partners (when linked selection is on).
+/// Keep each selected identity once, then expand linked partners when linked selection is on.
 pub fn with_links(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
-    let Some(seq) = s.active_sequence() else { return clips.to_vec() };
-    let mut out = clips.to_vec();
+    let mut out = Vec::new();
+    for c in clips {
+        if !out.contains(c) {
+            out.push(*c);
+        }
+    }
+    let Some(seq) = s.active_sequence() else { return out };
     if s.state.linked_selection {
-        let links: Vec<u64> = clips.iter().filter_map(|c| seq.find_item(*c).and_then(|(_, i)| i.link)).collect();
+        let links: Vec<u64> = out.iter().filter_map(|c| seq.find_item(*c).and_then(|(_, i)| i.link)).collect();
         for t in seq.all_tracks() {
             for i in &t.items {
                 if i.link.is_some_and(|l| links.contains(&l)) && !out.contains(&i.id) {
