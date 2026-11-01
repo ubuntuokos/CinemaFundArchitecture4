@@ -18,6 +18,11 @@ the desktop leaves the listener closed. Every raw JSON request must include the 
 `token` string; missing or incorrect credentials get an error and close the connection before any
 request is dispatched. Loopback alone does not restrict clients to the desktop owner's OS account.
 
+Socket reads and writes time out after two minutes without progress, releasing the connection slot.
+Expiration closes the connection without an unsolicited reply; reconnect before the next request
+(the CLI / MCP bridge does this automatically). Waiting for a UI reply has its separate 60-second
+limit. A partial request that times out is not dispatched.
+
 One JSON request per line → one JSON reply per line. The app opts out of macOS App Nap
 (`apps/cfa4/src/app_nap.rs`): a hidden window would otherwise drop the whole process to
 background priority, and on a busy machine it would stop answering.
