@@ -95,6 +95,20 @@ decodes them with `-xerror`, with no errors, and agrees with this decoder within
 69.9/69.2 dB (Y/C) on mandelbrot at 100% of the target rate. Busy content lands at 99.9–100.4%
 of the target.
 
+## Alpha bitstream conformance
+
+Every alpha difference is followed by a run code, including a final singleton
+(RDD 36:2022 §5.3.3, Tables 12–14). Omitting the final run produces a truncated
+alpha payload that a permissive decoder (ffmpeg) accepts but strict decoders reject.
+This affected both 4444 and 4444 XQ exports (fixed upstream, ported in CFA4-UPSTREAM-SYNC-001).
+
+The encoder tests check exact singleton codewords at 8 and 16 bits, run-length
+boundaries through 2048 and split runs, final-value bit alignments, and complete
+encoded slices for both profiles and all four slice widths. A separate,
+bounds-checked parser follows the published syntax and requires every run and
+zero alignment bit; round-tripping through a permissive decoder alone cannot
+catch this defect.
+
 ## Performance
 
 Measured with `cargo test --release -p cfa4-prores --test perf -- --ignored --nocapture` on
