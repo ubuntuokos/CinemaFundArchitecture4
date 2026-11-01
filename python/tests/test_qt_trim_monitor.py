@@ -171,7 +171,12 @@ def test_real_engine_trim_monitor_and_dynamic_trimming_as_egui(app, tmp_path: Pa
         engine.execute("history.list", {}, on_reply=lambda r, _b: labels.append(r))
         assert wait_until(app, lambda: labels, 10_000)
         assert "Dynamic Rolling Edit" in str(labels[0])
-        cut1 = v1()[0]["end"]
+        # the committed edit, as the engine has it (the window's copy may still be refreshing)
+        seq: list = []
+        engine.execute("sequence.inspect", {}, on_reply=lambda r, _b: seq.append(r))
+        assert wait_until(app, lambda: seq, 10_000)
+        cut1 = seq[0]["video"][0]["items"][0]["end"]
+        assert wait_until(app, lambda: v1()[0]["end"] == cut1, 10_000), "the window follows the commit"
         assert cut1 > cut0
         # …and Escape cancels one, restoring the edit
         win.transport("playback.reverse")
