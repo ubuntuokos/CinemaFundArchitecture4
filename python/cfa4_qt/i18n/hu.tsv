@@ -1712,6 +1712,10 @@
 	Off (target bitrate)	Ki (célbitráta)
 	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
 	Transport Stream (.ts, AAC audio)	Transzportfolyam (.ts, AAC hang)
+	Field order	Mezősorrend
+	Progressive	Progresszív
+	Interlaced, upper field first	Váltottsoros, felső mező először
+	Interlaced, lower field first	Váltottsoros, alsó mező először
 	Add Beat Markers	Ütemjelölők hozzáadása
 	Clear Beat Markers	Ütemjelölők törlése
 	Clear Check Markers	Ellenőrző jelölők törlése
