@@ -234,6 +234,34 @@ fn fades_follow_edges(track: &mut Track, clip: ClipId) {
     }
 }
 
+/// Keep each transition between `clip` and its neighbor within the two clips after a regular trim
+/// or a non-ripple speed change made `clip` shorter: the transition is shortened when the clips are
+/// now shorter than it, moved back inside them, and its stored alignment follows where that leaves it
+/// on the cut (as `transitions::set_span` stores it: Custom Start has no variant).
+fn transitions_stay_within_clips(track: &mut Track, clip: ClipId, frame: Tick) {
+    let spans: Vec<Option<(Tick, Tick, Tick)>> = track
+        .transitions
+        .iter()
+        .map(|tr| match (tr.from.and_then(|c| track.item(c)), tr.to.and_then(|c| track.item(c))) {
+            (Some(f), Some(t)) if (f.id == clip || t.id == clip) && f.start < t.end() => Some((f.start, t.start, t.end())),
+            _ => None,
+        })
+        .collect();
+    for (tr, span) in track.transitions.iter_mut().zip(spans) {
+        let Some((lo, cut, hi)) = span else { continue };
+        if tr.start >= lo && tr.end() <= hi {
+            continue;
+        }
+        tr.duration = tr.duration.min(hi - lo);
+        tr.start = tr.start.clamp(lo, hi - tr.duration);
+        tr.align = match transitions::alignment(tr, cut, frame) {
+            transitions::Alignment::Start => cfa4_project::TransitionAlign::StartAtCut,
+            transitions::Alignment::End => cfa4_project::TransitionAlign::EndAtCut,
+            transitions::Alignment::Center | transitions::Alignment::Custom => cfa4_project::TransitionAlign::CenterAtCut,
+        };
+    }
+}
+
 fn place(track: &mut Track, item: TrackItem) {
     let idx = track.items.partition_point(|i| i.start <= item.start);
     track.items.insert(idx, item);
@@ -765,8 +793,12 @@ pub fn trim(seq: &mut Sequence, clip: ClipId, edge: Edge, mode: TrimMode, delta:
             }
         }
         transitions_follow_cuts(seq, &mut work);
-    } else if let Ok(track) = track_mut(&mut work, tid) {
-        fades_follow_edges(track, clip);
+    } else {
+        let frame = work.settings.frame_rate.frame_duration();
+        if let Ok(track) = track_mut(&mut work, tid) {
+            fades_follow_edges(track, clip);
+            transitions_stay_within_clips(track, clip, frame);
+        }
     }
     work.check().map_err(EditError::Other)?;
     *seq = work;
@@ -1130,7 +1162,12 @@ pub fn set_speed_group(seq: &mut Sequence, clips: &[ClipId], speed: f64, reverse
         it.speed = speed;
         it.reverse = reverse;
         it.duration = new_dur;
-        fades_follow_edges(work.track_mut(tid).ok_or(EditError::NoTrack(tid))?, *clip);
+        let frame = work.settings.frame_rate.frame_duration();
+        let track = work.track_mut(tid).ok_or(EditError::NoTrack(tid))?;
+        fades_follow_edges(track, *clip);
+        if !ripple {
+            transitions_stay_within_clips(track, *clip, frame);
+        }
         origins.push((tid, old_end, delta));
     }
     let main_from = origins.first().map(|o| o.1).unwrap_or_default();

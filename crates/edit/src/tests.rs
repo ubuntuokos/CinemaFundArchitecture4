@@ -527,6 +527,69 @@ fn fades_follow_a_non_ripple_speed_change() {
     fx.seq.check().unwrap();
 }
 
+/// A regular trim or a non-ripple speed change that shortens one of the two clips of a transition
+/// keeps the transition within them, and its stored alignment follows where it now sits on the cut.
+#[test]
+fn a_transition_stays_within_its_clips_after_a_regular_trim_or_speed_change() {
+    for (case, expected) in [("Out trim of the second clip", 7), ("In trim of the first clip", 9), ("speed change of the second clip", 7)] {
+        let mut fx = Fx::new();
+        let v1 = fx.v(0);
+        let a = fx.put(v1, 0, 10, 10);
+        let b = fx.put(v1, 10, 10, 10);
+        fx.seq.track_mut(v1).unwrap().transitions = vec![Transition {
+            id: TransitionId(1),
+            effect: cfa4_project::find_effect("cross_dissolve").unwrap().instance(),
+            start: f(8),
+            duration: f(4),
+            from: Some(a),
+            to: Some(b),
+            align: cfa4_project::TransitionAlign::EndAtCut,
+            reverse: false,
+        }];
+        let mut n = fx.next;
+        match case {
+            "Out trim of the second clip" => {
+                trim(&mut fx.seq, b, Edge::Out, TrimMode::Regular, -f(9), &mut Fx::ctx(&mut n)).unwrap();
+            }
+            "In trim of the first clip" => {
+                trim(&mut fx.seq, a, Edge::In, TrimMode::Regular, f(9), &mut Fx::ctx(&mut n)).unwrap();
+            }
+            _ => set_speed(&mut fx.seq, b, 10.0, false, false, &mut Fx::ctx(&mut n)).unwrap(),
+        }
+        let tr = &fx.seq.track(v1).unwrap().transitions[0];
+        assert_eq!((tr.start, tr.duration), (f(expected), f(4)), "{case}");
+        assert_eq!(tr.align, cfa4_project::TransitionAlign::CenterAtCut, "{case}");
+        fx.seq.check().unwrap();
+    }
+}
+
+/// A regular trim that leaves the two clips of a transition shorter than it, together, shortens
+/// the transition to the clips.
+#[test]
+fn a_regular_trim_shortens_a_transition_longer_than_its_clips() {
+    let mut fx = Fx::new();
+    let v1 = fx.v(0);
+    let a = fx.put(v1, 0, 2, 10);
+    let b = fx.put(v1, 2, 10, 10);
+    fx.seq.track_mut(v1).unwrap().transitions = vec![Transition {
+        id: TransitionId(1),
+        effect: cfa4_project::find_effect("cross_dissolve").unwrap().instance(),
+        start: f(0),
+        duration: f(4),
+        from: Some(a),
+        to: Some(b),
+        align: cfa4_project::TransitionAlign::StartAtCut,
+        reverse: false,
+    }];
+    let mut n = fx.next;
+    trim(&mut fx.seq, b, Edge::Out, TrimMode::Regular, -f(9), &mut Fx::ctx(&mut n)).unwrap();
+    assert_eq!(fx.spans(v1), vec![(0, 2), (2, 1)]);
+    let tr = &fx.seq.track(v1).unwrap().transitions[0];
+    assert_eq!((tr.start, tr.duration), (f(0), f(3)), "the transition covers both clips and no more");
+    assert_eq!(tr.align, cfa4_project::TransitionAlign::CenterAtCut);
+    fx.seq.check().unwrap();
+}
+
 #[test]
 fn transitions_travel_with_moved_clips() {
     // V1: a [0,10) fading in, b [10,20), c [20,30); b→c crossfade, c fading out
