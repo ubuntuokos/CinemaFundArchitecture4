@@ -120,6 +120,11 @@ def test_real_engine_quick_export_through_the_control_channel(app, tmp_path: Pat
         assert wait_until(app, lambda: export().get("preset") is not None, 10_000)
         assert export()["quickPreset"] == other and export()["quickOpen"] is False
     finally:
+        # the windows this test opened (the Export window, the popup) must not stay up: a visible
+        # top-level window keeps later tests' window from being the active one (no tooltips)
+        for w in QtWidgets.QApplication.topLevelWidgets():
+            if w is not win and w.isVisible():
+                w.close()
         win._quit_confirmed = True
         win.close()
         engine.stop()
