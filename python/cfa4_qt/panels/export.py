@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -23,6 +24,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -31,6 +33,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
@@ -40,6 +43,10 @@ from PySide6.QtWidgets import (
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
+from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, MetadataSection
+from .export_preview import PreviewColumn
+from .export_rows import ExportRows
+from .preset_manager import PresetManager
 
 RANGES = (("entire", N_("Entire Sequence")), ("inOut", N_("Sequence In/Out")), ("workArea", N_("Work Area")), ("custom", N_("Custom")))
 BITRATE_MODES = (("vbr1Pass", N_("VBR, 1 pass")), ("vbr2Pass", N_("VBR, 2 pass")), ("cbr", N_("CBR")), ("crf", N_("Constant quality (CRF)")))
@@ -78,10 +85,52 @@ DCP_IAB_FALLBACK = (
     ("mix", N_("5.1: the timeline mix (not ST 429-19)")),
 )
 AUDIO_CODECS = (("auto", N_("Automatic")), ("aac", N_("AAC")), ("pcm", N_("PCM (uncompressed)")), ("flac", N_("FLAC")), ("opus", N_("Opus")))
+# per-format choices (egui's export_mode per-format rows): the engine's flat parameter (and
+# camelCase setting), the row label, the automation id and the choices (id, label)
+FORMAT_CHOICES: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
+    ("mxfVideoCodec", N_("Video Codec"), "export.video.mxfCodec", (("dnxhr", "Avid DNxHR"), ("proRes", "Apple ProRes"), ("h264", "H.264"))),
+    ("proresProfile", N_("Profile"), "export.video.proresProfile", (
+        ("proxy", "Apple ProRes 422 Proxy"), ("lt", "Apple ProRes 422 LT"), ("standard", "Apple ProRes 422"),
+        ("hq", "Apple ProRes 422 HQ"), ("4444", "Apple ProRes 4444"), ("4444xq", "Apple ProRes 4444 XQ"))),
+    ("dnxProfile", N_("Profile"), "export.video.dnxProfile", (("lb", "DNxHR LB"), ("sq", "DNxHR SQ"), ("hq", "DNxHR HQ"), ("hqx", "DNxHR HQX (10-bit)"))),
+    ("apvProfile", N_("Profile"), "export.video.apvProfile", (("422-10", "APV 422-10"), ("422-12", "APV 422-12"), ("444-10", "APV 444-10"), ("444-12", "APV 444-12"))),
+    ("cineformProfile", N_("Encoding"), "export.video.cineformProfile", (("422", "YUV 4:2:2 10-bit"), ("444", "RGB 4:4:4 12-bit"), ("4444", "RGBA 4:4:4:4 12-bit"))),
+    ("cineformQuality", N_("Quality"), "export.video.cineformQuality", (
+        ("filmscan3", N_("Film Scan 3")), ("filmscan2", N_("Film Scan 2")), ("filmscan1", N_("Film Scan 1")),
+        ("high", N_("High")), ("medium", N_("Medium")), ("low", N_("Low")))),
+    ("exrCompression", N_("Compression"), "export.video.exrCompression", (
+        ("none", N_("None")), ("rle", "RLE"), ("zips", N_("ZIP (1 scan line)")), ("zip", N_("ZIP (16 scan lines)")))),
+)
+# what the engine encodes with when the setting is empty or unknown (`prores_profile()` & co.)
+FORMAT_DEFAULTS = {"mxfVideoCodec": "dnxhr", "proresProfile": "hq", "dnxProfile": "hq", "apvProfile": "422-10", "cineformProfile": "422",
+                   "cineformQuality": "filmscan1", "exrCompression": "none"}
+MXF_FORMATS = {"mxf-op1a", "mxf-opatom"}
+MXF_ENCODERS = {"dnxhr": "dnxhr", "proRes": "prores", "h264": "h264"}
+# the encoder format each per-format row belongs to
+FORMAT_ROW_ENCODER = {"proresProfile": "prores", "dnxProfile": "dnxhr", "apvProfile": "apv", "cineformProfile": "cineform",
+                      "cineformQuality": "cineform", "exrCompression": "exr"}
+QUALITY_FORMATS = {"mjpeg", "jpg"}  # JPEG quality 1..100
 QUEUE_POLL_MS = 500
 # engine QueueStatus (crates/engine/src/export_tools.rs): ready, encoding, done, failed, cancelled
 FINISHED = {"done", "failed", "cancelled"}
 STATUS_LABELS = {"ready": N_("Ready"), "encoding": N_("Encoding"), "done": N_("Done"), "failed": N_("Failed"), "cancelled": N_("Cancelled")}
+
+
+def encoder_format(fmt: str, mxf_codec: str) -> str:
+    """The format whose encoder writes the video (the engine's ``ExportSettings::video_format``):
+    an MXF file's codec, HLS's H.264, else the format itself."""
+    if fmt in MXF_FORMATS:
+        return MXF_ENCODERS.get(mxf_codec, "dnxhr")
+    return "h264" if fmt == "hls" else fmt
+
+
+def supports_alpha(fmt: str, prores_profile: str, cineform_profile: str) -> bool:
+    """Whether the output can keep an alpha channel (the engine's ``ExportSettings::supports_alpha``)."""
+    if fmt in ("png", "tiff", "tga", "exr"):
+        return True
+    if fmt == "prores":
+        return prores_profile in ("4444", "4444xq")
+    return fmt == "cineform" and cineform_profile == "4444"
 
 
 def default_output_dir(project_path: str | None) -> Path:
@@ -167,6 +216,9 @@ class ExportDialog(QDialog):
         self._known_status: dict[Any, str] = {}
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
+        self._want_preset: str | None = None
+        self._shown_preset: str | None = None
+        self.preset_manager: PresetManager | None = None
 
         # ----- settings -----
         self.sequence_label = QLabel(self)
@@ -284,10 +336,32 @@ class ExportDialog(QDialog):
         self.chroma.addItem(tr("4:2:2 (4:2:2 Profile)"), "422")
         for w in (self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(False)
+        # per-format settings: shown for the chosen format, sent only once changed here
+        self.format_choices: dict[str, QComboBox] = {}
+        for key, _label, name, choices in FORMAT_CHOICES:
+            c = QComboBox(self)
+            c.setObjectName(name)
+            for value, text in choices:
+                c.addItem(tr(text), value)
+            c.setCurrentIndex(max(0, c.findData(FORMAT_DEFAULTS[key])))
+            self.format_choices[key] = c
+        self.alpha = QCheckBox(tr("Include Alpha Channel"), self)
+        self.alpha.setObjectName("export.video.alpha")
+        self.quality = QSpinBox(self)
+        self.quality.setObjectName("export.video.quality")
+        self.quality.setRange(1, 100)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
         self.hardware.setObjectName("export.hardwareEncoding")
-        self.burn = QCheckBox(tr("Burn in captions"), self)
-        self.burn.setObjectName("export.burnCaptions")
+        self.captions = CaptionsSection(self)
+        self.effects = EffectsSection(self)
+        self.metadata = MetadataSection(self)
+        self.preview = PreviewColumn(self)
+        self._preview_busy = False
+        # H.264 / H.265: MP4 or QuickTime (egui's Multiplexer section)
+        self.multiplexer = QComboBox(self)
+        self.multiplexer.setObjectName("export.multiplexer")
+        self.multiplexer.addItem("MP4", "mp4")
+        self.multiplexer.addItem("QuickTime", "mov")
         self.audio = QCheckBox(tr("Export audio"), self)
         self.audio.setObjectName("export.audio")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
@@ -305,7 +379,13 @@ class ExportDialog(QDialog):
         out = QGroupBox(tr("Output"), self)
         f = QFormLayout(out)
         f.addRow(tr("Sequence"), self.sequence_label)
-        f.addRow(tr("Preset"), self.preset)
+        preset_row = QHBoxLayout()
+        preset_row.addWidget(self.preset, 1)
+        more = QPushButton(tr("More presets…"), self)
+        more.setObjectName("export.preset.more")
+        more.clicked.connect(self.open_preset_manager)
+        preset_row.addWidget(more)
+        f.addRow(tr("Preset"), preset_row)
         f.addRow(tr("Format"), self.format)
         f.addRow(tr("Container"), self.container)
         f.addRow(tr("DCP resolution"), self.dcp_resolution)
@@ -322,8 +402,13 @@ class ExportDialog(QDialog):
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
+        for key, label, _name, _choices in FORMAT_CHOICES:
+            fv.addRow(tr(label), self.format_choices[key])
+        fv.addRow(tr("Multiplexer"), self.multiplexer)
+        fv.addRow(tr("Alpha"), self.alpha)
+        fv.addRow(tr("Quality"), self.quality)
+        self.video_form = fv
         fv.addRow(self.hardware)
-        fv.addRow(self.burn)
         audio = QGroupBox(tr("Audio"), self)
         fa = QFormLayout(audio)
         fa.addRow(self.audio)
@@ -333,6 +418,7 @@ class ExportDialog(QDialog):
         fa.addRow(tr("IAB source"), iab_row)
         fa.addRow("", self.dcp_iab_info)
         fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
+        self.rows = ExportRows(self, fv, fa)
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -390,12 +476,27 @@ class ExportDialog(QDialog):
         left.addWidget(audio)
         left.addStretch(1)
         top.addLayout(left, 1)
+        right = QVBoxLayout()
+        right.addWidget(self.preview)
+        right.addWidget(self.captions)
+        right.addWidget(self.effects)
+        right.addWidget(self.metadata)
+        right.addStretch(1)
+        top.addLayout(right, 1)
+        # the settings scroll (egui's settings column does); the queue stays in view
+        settings_page = QWidget(self)
+        settings_page.setLayout(top)
+        scroll = QScrollArea(self)
+        scroll.setObjectName("export.settingsScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(settings_page)
         layout = QVBoxLayout(self)
-        layout.addLayout(top)
+        layout.addWidget(scroll, 3)
         layout.addWidget(self.summary)
         layout.addLayout(buttons)
         layout.addWidget(queue_box, 1)
-        self.resize(820, 760)
+        self.resize(1080, 860)
 
         self._resolve_timer = QTimer(self, singleShot=True, interval=150)
         self._resolve_timer.timeout.connect(self._resolve)
@@ -417,8 +518,20 @@ class ExportDialog(QDialog):
         self.dcp_iab_fallback.currentIndexChanged.connect(self._changed)
         for key, c in (("bitrateMode", self.bitrate_mode), ("audioCodec", self.audio_codec), ("chroma", self.chroma)):
             c.currentIndexChanged.connect(lambda _i, k=key: self._touch(k))
-        for key, b in (("hardware", self.hardware), ("burn", self.burn), ("audio", self.audio)):
+        for key, b in (("hardware", self.hardware), ("audio", self.audio), ("alpha", self.alpha)):
             b.toggled.connect(lambda _on, k=key: self._touch(k))
+        for key, c in self.format_choices.items():
+            c.currentIndexChanged.connect(lambda _i, k=key: (self._touch(k), self._sync_format_rows()))
+        self.quality.valueChanged.connect(lambda _v: self._touch("quality"))
+        self.captions.changed.connect(lambda: self._touch("captions"))
+        self.effects.changed.connect(lambda: self._touch("effects"))
+        self.metadata.changed.connect(lambda: self._touch("metadata"))
+        self.preview.scaling.currentIndexChanged.connect(lambda _i: self._touch("scaling"))
+        self.rows.changed.connect(lambda k: (self._touch(k), self._sync_rows()))
+        self.bitrate_mode.currentIndexChanged.connect(lambda _i: self._sync_rows())
+        self.audio_codec.currentIndexChanged.connect(lambda _i: self._sync_rows())
+        self.audio.toggled.connect(lambda _on: self._sync_rows())
+        self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
 
@@ -442,6 +555,44 @@ class ExportDialog(QDialog):
         self.activateWindow()
         self.refresh_queue()
         self._poll.start()
+        self.refresh_preview()
+
+    def refresh_preview(self) -> None:
+        """The preview's frame: the sequence at the playhead (egui's export preview)."""
+        if self.sequence is None or self._preview_busy:
+            return
+        self._preview_busy = True
+
+        def got(result: Any, data: bytes | None) -> None:
+            self._preview_busy = False
+            if isinstance(result, dict) and data:
+                w, h = int(result.get("w") or 0), int(result.get("h") or 0)
+                if w > 0 and h > 0 and len(data) == w * h * 4:
+                    image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
+                    self.preview.set_frame(image, (int(result.get("fullW") or 0), int(result.get("fullH") or 0)))
+
+        def failed(_m: str) -> None:
+            self._preview_busy = False
+            self.preview.set_frame(None, (0, 0))
+
+        self.engine.call("frame.render", {"maxWidth": 500, "maxHeight": 500}, on_reply=got, on_error=failed)
+
+    def open_preset_manager(self) -> None:
+        """Preset ▸ More presets…: the Preset Manager on the current preset; OK applies its choice."""
+        if self.preset_manager is None:
+            self.preset_manager = PresetManager(self.engine, self.params, self)
+            self.preset_manager.applied.connect(self._preset_chosen)
+            self.preset_manager.status.connect(self._error)
+            self.preset_manager.finished.connect(lambda _r: self._reload_presets())
+        self.preset_manager.open_on(str(self.preset.currentData() or ""))
+
+    def _preset_chosen(self, name: str) -> None:
+        self._want_preset = name
+        self._reload_presets()
+
+    def _reload_presets(self) -> None:
+        # saved, imported or deleted presets show in the menu; the choice is kept
+        self.engine.execute("export.presets.list", {}, on_reply=self._on_presets, on_error=self._error)
 
     def _load(self) -> None:
         self._loading = True
@@ -467,6 +618,7 @@ class ExportDialog(QDialog):
 
     def _on_presets(self, result: Any, _b: bytes | None) -> None:
         data = result if isinstance(result, dict) else {}
+        self._shown_preset = self.preset.currentData() if self.preset.count() else None
         self.presets = [p for p in data.get("presets") or [] if isinstance(p, dict) and p.get("name")]
         default = data.get("default")
         self.preset.blockSignals(True)
@@ -479,11 +631,19 @@ class ExportDialog(QDialog):
                     self.preset.insertSeparator(self.preset.count())
             self.preset.addItem(str(p["name"]), str(p["name"]))
             self.preset.setItemData(self.preset.count() - 1, str(p.get("description") or ""), Qt.ItemDataRole.ToolTipRole)
-        index = self.preset.findData(default)
+        # after the Preset Manager: the preset it chose, else the one shown before the reload
+        applied = self._want_preset is not None
+        want = self._want_preset or self._shown_preset or default
+        self._want_preset = None
+        index = self.preset.findData(want)
+        if index < 0:
+            index = self.preset.findData(default)
         self.preset.setCurrentIndex(max(0, index))
         self.preset.blockSignals(False)
         self._loading = False
-        self._preset_changed()
+        # a reload that keeps the shown preset (Preset Manager ▸ Cancel) keeps the changes made here
+        if applied or self.preset.currentData() != self._shown_preset:
+            self._preset_changed()
 
     # ----- choices -----
     def _preset_changed(self) -> None:
@@ -531,6 +691,14 @@ class ExportDialog(QDialog):
         mpeg2 = self.format.currentData() == "mpeg2"
         for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
+        self._sync_format_rows()
+        video = bool(fmt.get("video", True))
+        self.captions.setVisible(video)
+        self.metadata.setVisible(self.format.currentData() in METADATA_FORMATS)
+        self.preview.set_video(video)
+        self._sync_rows()
+        self.video_form.setRowVisible(self.multiplexer, self._muxed())
+        self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         dcp = self._dcp()
         for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive):
             w.setEnabled(dcp)
@@ -543,6 +711,85 @@ class ExportDialog(QDialog):
             self.width_spin.setEnabled(True)
             self.height_spin.setEnabled(True)
         self._container_changed()
+
+    def _choice(self, key: str) -> str:
+        return str(self.format_choices[key].currentData() or "")
+
+    def _format_rows(self) -> dict[str, bool]:
+        """Which per-format rows the chosen format shows (egui's ``export_mode`` rows)."""
+        fmt = str(self.format.currentData() or "")
+        enc = encoder_format(fmt, self._choice("mxfVideoCodec"))
+        rows = {key: enc == FORMAT_ROW_ENCODER.get(key) for key in self.format_choices}
+        rows["mxfVideoCodec"] = fmt in MXF_FORMATS
+        rows["alpha"] = supports_alpha(fmt, self._choice("proresProfile"), self._choice("cineformProfile"))
+        rows["quality"] = enc in QUALITY_FORMATS
+        return rows
+
+    def _sync_format_rows(self) -> None:
+        widgets: dict[str, QWidget] = {**self.format_choices, "alpha": self.alpha, "quality": self.quality}
+        for key, shown in self._format_rows().items():
+            self.video_form.setRowVisible(widgets[key], shown)
+
+    def _show_settings(self, settings: dict[str, Any]) -> None:
+        """Show the resolved settings in the per-format rows the user has not changed here."""
+        for key, c in self.format_choices.items():
+            i = c.findData(settings.get(key))
+            i = i if i >= 0 else c.findData(FORMAT_DEFAULTS[key])  # "" = the engine's default
+            if key not in self.touched and i >= 0 and i != c.currentIndex():
+                c.blockSignals(True)
+                c.setCurrentIndex(i)
+                c.blockSignals(False)
+        if "alpha" not in self.touched and isinstance(settings.get("alpha"), bool):
+            self.alpha.blockSignals(True)
+            self.alpha.setChecked(settings["alpha"])
+            self.alpha.blockSignals(False)
+        self.rows.show_settings(settings, self.touched)
+        if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
+            # the preset's mode (CRF shows its Quality row)
+            i = self.bitrate_mode.findData(settings["bitrateMode"])
+            if i >= 0 and i != self.bitrate_mode.currentIndex():
+                self.bitrate_mode.blockSignals(True)
+                self.bitrate_mode.setCurrentIndex(i)
+                self.bitrate_mode.blockSignals(False)
+        self._sync_rows()
+        if "captions" not in self.touched:
+            self.captions.show_settings(settings)
+        if "metadata" not in self.touched and isinstance(settings.get("metadata"), dict):
+            self.metadata.show_metadata(settings["metadata"])
+        if "multiplexer" not in self.touched and settings.get("multiplexer") != self.multiplexer.currentData():
+            i = self.multiplexer.findData(settings.get("multiplexer"))
+            if i >= 0:
+                self.multiplexer.blockSignals(True)
+                self.multiplexer.setCurrentIndex(i)
+                self.multiplexer.blockSignals(False)
+                self._container_changed()
+        if "effects" not in self.touched and isinstance(settings.get("effects"), dict):
+            self.effects.show_effects(settings["effects"])
+        q = settings.get("quality")
+        if "quality" not in self.touched and isinstance(q, int) and not isinstance(q, bool):
+            self.quality.blockSignals(True)
+            self.quality.setValue(q)
+            self.quality.blockSignals(False)
+        self._sync_format_rows()
+
+    def _rows_shown(self) -> dict[str, bool]:
+        fmt = str(self.format.currentData() or "")
+        info = self.formats.get(fmt, {})
+        video = bool(info.get("video", True))
+        audio = bool(info.get("audio", True)) and (self.audio.isChecked() or not video)
+        shown = self.rows.visible_rows(fmt, encoder_format(fmt, self._choice("mxfVideoCodec")), video, audio,
+                                       str(self.bitrate_mode.currentData() or ""), str(self.audio_codec.currentData() or ""))
+        if self._dcp():
+            # the DCI specifications fix the J2K data rate and the sound (5.1 24-bit 48 kHz PCM)
+            for key in ("crf", "maxBitrate", "sampleRate", "channels", "bits", "flacLevel"):
+                shown[key] = False
+        return shown
+
+    def _sync_rows(self) -> None:
+        self.rows.sync(self._rows_shown())
+
+    def _muxed(self) -> bool:
+        return self.format.currentData() in ("h264", "hevc")
 
     def _immersive_changed(self) -> None:
         """The IAB source row is for ``file`` only; the fallback for any immersive DCP."""
@@ -618,7 +865,10 @@ class ExportDialog(QDialog):
         return self.format.currentData() == "dcp"
 
     def _extension(self) -> str:
-        """The output file's extension: the MPEG-2 container's, else the format's."""
+        """The output file's extension: the MPEG-2 container's, QuickTime's for H.264 / H.265 in
+        a QuickTime file, else the format's."""
+        if self._muxed() and self.multiplexer.currentData() == "mov":
+            return "mov"
         if self.container.isEnabled():
             return next(ext for key, _label, ext in MPEG2_CONTAINERS if key == self.container.currentData())
         return str(self.formats.get(str(self.format.currentData() or ""), {}).get("extension") or "")
@@ -705,8 +955,21 @@ class ExportDialog(QDialog):
                 p["bitrateKbps"] = self.bitrate.value()
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
-        if "burn" in self.touched:
-            p["burnCaptions"] = self.burn.isChecked()
+        fmt = self.formats.get(str(self.format.currentData() or ""), {})
+        if "captions" in self.touched and fmt.get("video", True):
+            p.update(self.captions.params())
+        patch: dict[str, Any] = {}
+        if "effects" in self.touched:
+            patch["effects"] = self.effects.values()
+        if "metadata" in self.touched and self.format.currentData() in METADATA_FORMATS:
+            patch["metadata"] = self.metadata.values()
+        patch.update(self.rows.patch(self.touched, self._rows_shown()))
+        if "scaling" in self.touched:
+            patch["scaling"] = self.preview.scaling.currentData()
+        if "multiplexer" in self.touched and self._muxed():
+            patch["multiplexer"] = self.multiplexer.currentData()
+        if patch:
+            p["settings"] = patch
         if self.audio.isEnabled():
             if "audio" in self.touched:
                 p["audio"] = self.audio.isChecked()
@@ -714,6 +977,14 @@ class ExportDialog(QDialog):
                 p["audioCodec"] = self.audio_codec.currentData()
             if self.audio_bitrate.value():
                 p["audioBitrateKbps"] = self.audio_bitrate.value()
+        rows = self._format_rows()
+        for key in self.format_choices:
+            if rows[key] and key in self.touched:
+                p[key] = self._choice(key)
+        if rows["alpha"] and "alpha" in self.touched:
+            p["alpha"] = self.alpha.isChecked()
+        if rows["quality"] and "quality" in self.touched:
+            p["quality"] = self.quality.value()
         if self.container.isEnabled():
             p["mpeg2Container"] = self.container.currentData()
             if self.gop.value():
@@ -747,6 +1018,10 @@ class ExportDialog(QDialog):
 
     def _on_resolved(self, result: Any, _b: bytes | None) -> None:
         r = result if isinstance(result, dict) else {}
+        if isinstance(r.get("settings"), dict):
+            self._show_settings(r["settings"])
+        path = (r.get("settings") or {}).get("path") if isinstance(r.get("settings"), dict) else None
+        self.preview.show_resolved(r, str(path or self.path.text()), self.range.currentText(), "scaling" in self.touched)
         out = r.get("output") or {}
         rng = r.get("range") or {}
         parts = []
