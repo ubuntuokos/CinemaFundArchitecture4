@@ -253,7 +253,9 @@ impl Decoder {
             }
         }
         // The access unit is complete: hand its picture to a decoding job.
-        self.submit_pending();
+        if let Err(e) = self.submit_pending() {
+            result = result.and(Err(e));
+        }
         if let Some(e) = self.take_error() {
             result = result.and(Err(e));
         }
@@ -273,7 +275,7 @@ impl Decoder {
 
     /// Output all remaining pictures (end of stream).
     pub fn flush(&mut self) -> Vec<Picture> {
-        self.submit_pending();
+        let _ = self.submit_pending();
         self.finish_unpaired_field();
         let mut outs = Vec::new();
         self.dpb.flush(&mut outs);
@@ -324,7 +326,7 @@ impl Decoder {
             nal_type::SLICE_DPA | nal_type::SLICE_DPB | nal_type::SLICE_DPC => {
                 return unsupported("data partitioning (Extended profile)");
             }
-            nal_type::END_SEQ | nal_type::END_STREAM => self.submit_pending(),
+            nal_type::END_SEQ | nal_type::END_STREAM => self.submit_pending()?,
             // SEI, AUD, filler, SPS extension, prefix NAL, subset SPS, auxiliary and extension slices: skipped.
             _ => {}
         }
@@ -370,7 +372,7 @@ impl Decoder {
             Some(p) => is_new_picture(&p.first, &sh, &sps) || sh.first_mb_in_slice == 0 || !Arc::ptr_eq(&p.sps, &sps),
         };
         if new_pic {
-            self.submit_pending();
+            self.submit_pending()?;
             if sh.first_mb_in_slice != 0 && self.active_sps.is_none() {
                 return invalid("stream does not start with the first slice of a picture");
             }
@@ -532,8 +534,8 @@ impl Decoder {
     }
 
     /// Start decoding the pending picture and do its reference marking / DPB insertion.
-    fn submit_pending(&mut self) {
-        let Some(p) = self.pending.take() else { return };
+    fn submit_pending(&mut self) -> Result<()> {
+        let Some(p) = self.pending.take() else { return Ok(()) };
         let PendingPic { frame, sps, first, poc, pts, key, slices, field, second } = p;
         let draft = self.draft && first.nal_ref_idc == 0;
         self.dispatch(frame.clone(), slices, draft, field);
@@ -547,11 +549,11 @@ impl Decoder {
         match field {
             None => {
                 let (fpoc, field_poc) = (frame.poc, frame.field_poc());
-                self.dpb.store_picture(&first, frame, fpoc, field_poc, max_frame_num, max_refs, meta, &mut outs);
+                self.dpb.store_picture(&first, frame, fpoc, field_poc, max_frame_num, max_refs, meta, &mut outs)?;
             }
             Some(p) => {
                 let fpoc = frame.field_poc()[p as usize & 1];
-                self.dpb.store_field(&first, frame.clone(), p, fpoc, second, max_frame_num, max_refs, meta, &mut outs);
+                self.dpb.store_field(&first, frame.clone(), p, fpoc, second, max_frame_num, max_refs, meta, &mut outs)?;
                 if !second {
                     let frame_num = if first.has_mmco5() { 0 } else { first.frame_num };
                     self.first_field = Some(FirstField { frame, parity: p, frame_num, is_ref: first.nal_ref_idc != 0, sps });
@@ -559,6 +561,7 @@ impl Decoder {
             }
         }
         self.emit(outs);
+        Ok(())
     }
 
     fn dispatch(&mut self, frame: FrameRef, slices: Vec<SliceJob>, draft: bool, field: Option<u8>) {

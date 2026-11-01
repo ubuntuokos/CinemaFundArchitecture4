@@ -18,7 +18,7 @@ pub(crate) fn device() -> Option<(wgpu::Device, wgpu::Queue)> {
     let instance = if strict {
         wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN, ..wgpu::InstanceDescriptor::new_without_display_handle() })
     } else {
-        wgpu::Instance::default()
+        crate::adapter::native_instance()
     };
     let options = if strict {
         wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() }

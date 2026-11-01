@@ -480,7 +480,15 @@ pub fn parse_timecode(input: &str, rate: FrameRate, drop_frame: bool, current: i
     } else {
         parts
             .iter()
-            .map(|p| if p.is_empty() { Ok(0) } else { p.parse::<i64>().map_err(|_| ParseError(format!("bad field `{p}`"))) })
+            .map(|p| {
+                if p.is_empty() {
+                    Ok(0)
+                } else if !p.bytes().all(|b| b.is_ascii_digit()) {
+                    Err(ParseError(format!("bad field `{p}`")))
+                } else {
+                    p.parse::<i64>().map_err(|_| ParseError(format!("bad field `{p}`")))
+                }
+            })
             .collect::<Result<_, _>>()?
     };
     if nums.len() > 4 {
@@ -718,6 +726,14 @@ mod tests {
         assert_eq!(parse_timecode("-1.00", r, false, 100).unwrap(), 75);
         assert_eq!(parse_timecode("00;01;00;02", FrameRate::FPS_29_97, true, 0).unwrap(), 1800);
         assert!(parse_timecode("abc", r, false, 0).is_err());
+    }
+
+    #[test]
+    fn signed_field_rejected() {
+        let r = FrameRate::FPS_25;
+        assert!(parse_timecode("00:00:-5:00", r, false, 0).is_err());
+        assert!(parse_timecode("00:+1:00:00", r, false, 0).is_err());
+        assert_eq!(parse_timecode("00:00:10:00", r, false, 0).unwrap(), 250);
     }
 
     #[test]
