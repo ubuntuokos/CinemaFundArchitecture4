@@ -1,7 +1,7 @@
 # CFA4 – GitHub Spec Kit integrációs és fejlesztési terv
 
 **Azonosító:** CFA4-DEV-SPEC-KIT-001 · **Verzió:** TERV 1.2 · **Dátum:** 2026-11-01
-**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D8 döntéssel együtt; az 1.1-et ez váltja fel. **Kivitelezési engedélyt nem tartalmaz**: az SK-F1 külön engedélyhez kötött.
+**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D8 döntéssel együtt; az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok (SK-F2-től) külön engedélyhez kötöttek.
 **Kiinduló állapot:** `main` @ `64d8f86` (2026-11-01 04:19 UTC, #438 beolvasztása).
 
 ## Változások 1.1 → 1.2
@@ -169,12 +169,12 @@ A `specs/` könyvtárak neve a CFA4-feladatazonosító, nem a Spec Kit sorszáma
 
 ## 6. Fázisok
 
-Az SK-F0 elkészült és elfogadott (D5); az SK-F1 már csak a külön indítási engedélyre vár, a későbbi fázisok három külső feltételre. Minden fázis külön engedéllyel indul (D1′).
+Az SK-F0 elkészült és elfogadott (D5); az SK-F1 indítása engedélyezve (2026-11-01), a későbbi fázisok három külső feltételre várnak. Minden fázis külön engedéllyel indul (D1′).
 
 | Fázis | Tartalom | Elfogadási tesztek | Külső előfeltétel |
 | --- | --- | --- | --- |
 | SK-F0 · Állapotfelmérés | **kész, elfogadva** (#370, D5) | – | – |
-| SK-F1 · Izolált próba, v1.2.5 | telepítés eldobható worktree-ben; a `main` változatlan | AC-SK-04, -12, -13, -14, -15 | külön indítási engedély |
+| SK-F1 · Izolált próba, v1.2.5 | telepítés eldobható worktree-ben; a `main` változatlan | AC-SK-04, -12, -13, -14, -15 | **engedélyezve 2026-11-01**; a #450 beolvasztása után indul |
 | SK-F2 · Hivatkozó constitution, preset | SK-01, SK-02 | AC-SK-02, -03, -16 | **#449 a `main`-en** |
 | SK-F3 · Munkafolyamat-integráció | SK-03 | AC-SK-05, -06 | **#336 elfogadva** |
 | SK-F4 · Biztonsági kapuk | SK-04–SK-08 | AC-SK-07 | – |
@@ -276,9 +276,9 @@ Jóváhagyási csomag:
 
 - [x] A CFA4-DEV-SPEC-KIT-001 1.2 tervet jóváhagyom; az 1.1-et ez váltja fel
 - [x] D1′, D5, D6, D7, D8 a javaslat szerint
-- [ ] Az SK-F1 indításához külön engedélyt adok (nem része ennek a jóváhagyásnak)
+- [x] Az SK-F1 indításához engedélyt adok (2026-11-01)
 
-**Jóváhagyva:** 2026-11-01, tulajdonos (ubuntuokos). A jóváhagyás nem indít telepítést, CI-t vagy GitHub-módosítást.
+**Jóváhagyva:** 2026-11-01, tulajdonos (ubuntuokos): a terv, a D1′ és D5–D8, valamint az SK-F1 indítása. Az SK-F1-et a Spec Kit-projekt fejlesztő munkamenete végzi, nem a gazda; a `main`-re csak a jelentése kerül.
 
 ## 11. Végső javaslat
 
