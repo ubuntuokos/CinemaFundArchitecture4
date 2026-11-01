@@ -1,7 +1,7 @@
 # CFA4 – GitHub Spec Kit integrációs és fejlesztési terv
 
 **Azonosító:** CFA4-DEV-SPEC-KIT-001 · **Verzió:** TERV 1.2 · **Dátum:** 2026-11-01
-**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D8 döntéssel együtt; az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok (SK-F2-től) külön engedélyhez kötöttek.
+**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok (SK-F2-től) külön engedélyhez kötöttek.
 **Kiinduló állapot:** `main` @ `64d8f86` (2026-11-01 04:19 UTC, #438 beolvasztása).
 
 ## Változások 1.1 → 1.2
@@ -79,6 +79,7 @@ Tervezett logikai integráció, nem működő rendszer. A Spec Kit nem kap sajá
 │ [Hivatkozó constitution] [Specify/Clarify] [Plan/Tasks]              │
 │ [Analyze/Converge]                                                   │
 │ Tiltva: implement · taskstoissues · constitution-újraírás ·          │
+│         beépített workflow (specify workflow run) ·                  │
 │         git- és issue-extension · Claude-események                   │
 │ --integration claude · --script sh · --no-model-invocation ·         │
 │ --events false                                                       │
@@ -144,6 +145,7 @@ Forrásbeli korlát: a `preset add` és az `integration use` a skilleket az alap
 | `git` extension | – | Ágnyitás, auto-commit |
 | GitHub-issue extension | – | Issue-generálás |
 | Claude-események | `--events false` | Nincs automatikus indítás (`SessionStart` stb. a `.claude/settings.json`-ban) |
+| Beépített „Full SDD Cycle” workflow | `specify workflow run speckit` | A `tasks` után kapu nélkül futtatja az `implement`-et (SK-F1, 9.1). Az SK-F3-ban CFA4-overlay távolítja el az `implement` lépést, vagy teszi kapu mögé (D9) |
 
 Feloldás parancsonként, tulajdonosi döntéssel és negatív teszttel.
 
@@ -174,7 +176,7 @@ Az SK-F0 elkészült és elfogadott (D5); az SK-F1 indítása engedélyezve (202
 | Fázis | Tartalom | Elfogadási tesztek | Külső előfeltétel |
 | --- | --- | --- | --- |
 | SK-F0 · Állapotfelmérés | **kész, elfogadva** (#370, D5) | – | – |
-| SK-F1 · Izolált próba, v1.2.5 | telepítés eldobható worktree-ben; a `main` változatlan | AC-SK-04, -12, -13, -14, -15 | **engedélyezve 2026-11-01**; a #450 beolvasztása után indul |
+| SK-F1 · Izolált próba, v1.2.5 | **kész** (#451): AC-SK-04, -12, -13, -14, -15 PASS; kontextus-többlet 0 token | AC-SK-04, -12, -13, -14, -15 | – |
 | SK-F2 · Hivatkozó constitution, preset | SK-01, SK-02 | AC-SK-02, -03, -16 | **#449 a `main`-en** |
 | SK-F3 · Munkafolyamat-integráció | SK-03 | AC-SK-05, -06 | **#336 elfogadva** |
 | SK-F4 · Biztonsági kapuk | SK-04–SK-08 | AC-SK-07 | – |
@@ -187,7 +189,7 @@ Az SK-F0 elkészült és elfogadott (D5); az SK-F1 indítása engedélyezve (202
 1. Eldobható worktree a friss `main`-ből, saját `UV_TOOL_DIR`-rel, a felhős munkamenetben.
 2. `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.5` (vagy az akkor legfrissebb stabil tag, D3).
 3. A Spec Kit-skilleket telepítés előtt a `cfa4-skill-review` nézi át.
-4. `specify init --here --integration claude --script sh --integration-options="--no-model-invocation --events false"`, `--force` és `--extension` nélkül. A pontos kapcsolóformát a `specify init --help` alapján ellenőrzöm.
+4. `specify init --here --force --non-interactive --integration claude --script sh --integration-options="--no-model-invocation --events false"`, `--extension` nélkül. A `--force` csak eldobható worktree-ben használható, utána kötelező a teljes diff; meglévő fájl módosulása = leállás (D10; a v1.2.5 nem üres könyvtárban `--force` nélkül nem fut).
 5. Teljes diff a `main`-hez: meglévő fájl nem változhat; `.claude/settings.json` nem jöhet létre; ág és commit nem keletkezhet.
 6. AC-SK-15: a kontextus mérése két friss munkamenetben ugyanazon a fán, `.claude/skills/speckit-*`-szal és nélküle.
 7. `test_independence.py` a generált fájlokkal.
@@ -249,6 +251,8 @@ A Spec Kit Converge eredménye nem jelent kiadási készséget; az a CFA4 valid�
 | Az extension-skillekre a `--no-model-invocation` nem hat | Extension nem telepíthető (SK-07) |
 | Második szabályforrás keletkezik | Hivatkozó constitution, AC-SK-02 (W1) |
 | A Spec Kit ágat, commitot, issue-t vagy PR-t hoz létre | `git` és issue-extension tiltva, `/speckit-taskstoissues` tiltva, AC-SK-13 |
+| A beépített workflow kapu nélkül implementál | `specify workflow run speckit` tiltva; SK-F3-ban overlay (D9) |
+| A `--force` meglévő fájlt ír felül | Csak eldobható worktree-ben; kötelező diff, módosulás = leállás (D10) |
 | Autonóm végrehajtás egy jóváhagyott fázison kívül | `/speckit-implement` tiltva; minden fázis külön engedéllyel (D1′) |
 | Eseménykezelők a `.claude/settings.json`-ban | `--events false`; a fájl létrejötte = leállás |
 | A gazdakapacitást elviszi | Előtte csak doksi-PR, fázisonként legfeljebb egy; a Qt6 és az upstream-szinkron előbbre való |
@@ -271,6 +275,8 @@ Az integráció csak a fejlesztői környezetet érinti; a Spec Kit nem része a
 | D6 | Az SK-F1 függ az orkesztrációs F0-audit (#336) elfogadásától? | Nem: az SK-F1 eldobható worktree-ben fut, a `main`-re csak jelentés kerül. Az SK-F3-tól a #336 elfogadása feltétel marad | elfogadva 2026-11-01 |
 | D7 | Spec Kit-fájlok a `main`-en | Csak SK-F7-ben, külön jóváhagyással; a pilotág nem olvad be | elfogadva 2026-11-01 |
 | D8 | Pilotfeladat | Egy már jóváhagyott projekt (pl. Qt6-paritás) egy új funkciója, a projekt gazdájának tudtával; a választás az SK-F5 indításakor | elfogadva 2026-11-01 |
+| D9 | Beépített „Full SDD Cycle” workflow (SK-F1 9.1) | `specify workflow run speckit` tiltva; az SK-F3-ban CFA4-overlay veszi ki az `implement` lépést, vagy teszi kapu mögé | elfogadva 2026-11-01 |
+| D10 | `--force` a `specify init`-nél (SK-F1 E1) | A tiltás helyett: csak eldobható worktree-ben, utána kötelező teljes diff; meglévő fájl módosulása = leállás | elfogadva 2026-11-01 |
 
 Jóváhagyási csomag:
 
@@ -284,7 +290,7 @@ Jóváhagyási csomag:
 
 A Spec Kit akkor éri meg a CFA4-nek, ha egyetlen szabályt sem dupláz, egyetlen más munkamenetet sem terhel, és mérhetően nem drágítja a munkát. A sorrend:
 
-SK-F1 izolált próba (v1.2.5, AC-SK-04, -12, -13, -14, -15) → #449 a `main`-en → SK-F2 hivatkozó constitution és preset → #336 elfogadása → SK-F3 munkafolyamat → SK-F4 biztonsági kapuk → költségbaseline → SK-F5 pilot → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
+SK-F1 izolált próba – kész (#451) → #449 a `main`-en → SK-F2 hivatkozó constitution és preset → #336 elfogadása → SK-F3 munkafolyamat → SK-F4 biztonsági kapuk → költségbaseline → SK-F5 pilot → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
 
 Ha az AC-SK-15 nem teljesül, a Spec Kit csak a pilotban marad használható, a `main`-re nem kerül.
 
