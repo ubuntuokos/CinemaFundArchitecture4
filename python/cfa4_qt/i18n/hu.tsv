@@ -1236,6 +1236,8 @@
 	Color Management · {n} items	Színkezelés · {n} elem
 	Media colour space (from file metadata): {detected}	Média színtere (a fájl metaadataiból): {detected}
 	Override media colour space:	Média színterének felülírása:
+	Decode Auro-3D height channels	Auro-3D magassági csatornák dekódolása
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Kikapcsolva a fájl saját csatornái szólnak, mint Auro-3D dekóder nélkül.
 	Use file metadata	A fájl metaadatai szerint
 	Motion Graphics Templates	Mozgógrafikai sablonok
 	Clip Fx Editor	Klip effektszerkesztő
@@ -2075,8 +2077,8 @@
 	Public service announcement	Közérdekű közlemény
 	Off (5.1 only)	Ki (csak 5.1)
 	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS ágy az 5.1-es keverésből
-	IAB from a file (IMF or DCP IAB MXF, .iab)	IAB fájlból (IMF vagy DCP IAB MXF, .iab)
-	IAB MXF or .iab file	IAB MXF vagy .iab fájl
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos .thd)	IAB fájlból (IAB MXF, .iab vagy Dolby Atmos .thd)
+	IAB MXF, .iab or Dolby Atmos .thd file	IAB MXF, .iab vagy Dolby Atmos .thd fájl
 	None: FSK sync only (SMPTE ST 429-19)	Nincs: csak FSK-szinkron (SMPTE ST 429-19)
 	5.1: the IAB rendered (not ST 429-19)	5.1: a renderelt IAB (nem ST 429-19)
 	5.1: the timeline mix (not ST 429-19)	5.1: az idővonal keverése (nem ST 429-19)
@@ -2084,9 +2086,10 @@
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
 	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
-	Choose an IAB track file (IMF or DCP) or a raw IAB stream.	Válassz IAB sávfájlt (IMF vagy DCP) vagy nyers IAB-folyamot.
+	Choose an IAB track file (IMF or DCP), a raw IAB stream or a Dolby Atmos TrueHD stream (.thd).	Válassz IAB sávfájlt (IMF vagy DCP), nyers IAB-folyamot vagy Dolby Atmos TrueHD-folyamot (.thd).
 	Reading the IAB source…	Az IAB-forrás olvasása…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} képkocka, {fps} fps, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} mp, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum, IAB-objektumok lesznek belőlük
 	Some frames are re-coded for the DCP (DLC, 24 bit).	Néhány képkockát a DCP-hez újrakódolunk (DLC, 24 bit).
 	Beyond IAB Profile 1: {notes}	Az IAB Profile 1-en túl: {notes}
 	Not a usable IAB source: {error}	Nem használható IAB-forrás: {error}
@@ -2231,3 +2234,19 @@
 	Recent	Legutóbbiak
 	CFA4 project links	CFA4 projektlinkek
 	Add media to your project. Drop files anywhere in the window, or choose a source below.	Adj médiát a projekthez. Húzd a fájlokat bárhová az ablakba, vagy válassz forrást lent.
+	Shuttle Slow Left	Lassú léptetés balra
+	Shuttle Slow Right	Lassú léptetés jobbra
+	Play Around	Lejátszás a vágáspont körül
+	Out: {name}	Ki: {name}
+	In: {name}	Be: {name}
+	(gap)	(rés)
+	Outgoing clip (drag to trim the Out point)	Kimenő klip (húzással a végpontját igazítod)
+	Incoming clip (drag to trim the In point)	Bejövő klip (húzással a kezdőpontját igazítod)
+	Drag to roll the edit	Húzással gördíted a vágáspontot
+	Play Around Edit (Space loops, Shift+K once)	Lejátszás a vágáspont körül (Szóköz: ismétlés, Shift+K: egyszer)
+	Trim Backward Many	Igazítás sok képkockával vissza
+	Trim Backward	Igazítás vissza
+	Apply Default Transitions to Selection (Shift+D)	Alapértelmezett átmenetek a kijelölésre (Shift+D)
+	Trim Forward	Igazítás előre
+	Trim Forward Many	Igazítás sok képkockával előre
+	Exit Trim Mode	Kilépés a vágásmódból

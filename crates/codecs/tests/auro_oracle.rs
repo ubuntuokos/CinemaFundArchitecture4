@@ -156,3 +156,27 @@ fn channel_test_noise_reaches_each_loudspeaker_alone() {
         println!("Auro {n}: each of the {} channels heard alone", alone.len());
     }
 }
+
+/// Auro-CX (`a3ds`) is a codec of its own with no public specification (#322): its MP4s open,
+/// name the track and refuse to decode it with the reason, not "unknown" or silence.
+#[test]
+fn auro_cx_tracks_are_named_and_refused() {
+    let Some(dir) = samples_dir() else { return };
+    let files = [
+        "yandex/YamamotoTsuyoshiTrio_LastTangoInParis_excerpt_Auro13_1_48k_lossless (Auro CX).mp4",
+        "yandex/YamamotoTsuyoshiTrio_LastTangoInParis_excerpt_Auro13_1_48k_nearlossless_1664kbps (Auro CX).mp4",
+    ];
+    for file in files {
+        let path = dir.join(file);
+        if !path.is_file() {
+            eprintln!("skipped: {} is missing", path.display());
+            continue;
+        }
+        let src = open(&path);
+        let a = src.info().audio().cloned().unwrap();
+        assert_eq!((a.codec.as_str(), a.channels), ("Auro-CX (unsupported)", 14), "{file}");
+        let err = src.audio(0, 4800, a.sample_rate).unwrap_err().to_string();
+        assert!(err.contains("Auro-CX"), "{file}: {err}");
+        println!("{file}: {} -> {err}", a.codec);
+    }
+}

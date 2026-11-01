@@ -951,6 +951,7 @@ name = "cfa4-engine"
 version = "0.10.0"
 dependencies = [
  "cfa4-audio-dsp",
+ "cfa4-auro",
  "cfa4-captions",
  "cfa4-codecs",
  "cfa4-color",
@@ -1017,6 +1018,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-vp9",
  "image",
  "rayon",

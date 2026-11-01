@@ -765,3 +765,61 @@ fn immersive_real_iab_source() {
     }
     assert!(pcm.iter().take(6).any(|c| c.iter().any(|v| *v != 0.0)), "the rendered fallback is not silent");
 }
+
+/// `file` with a Dolby Atmos TrueHD source (#347; `CFA4_ATMOS_THD`, e.g. the Altitude trailer;
+/// skipped when unset): its objects become IAB objects in a 24 fps DCP, with the IAB rendered to
+/// 5.1 as the fallback.
+#[test]
+fn immersive_atmos_truehd_source() {
+    let Ok(path) = std::env::var("CFA4_ATMOS_THD") else { return };
+    let info = probe_iab_source(&path).unwrap();
+    assert_eq!((info.container.as_str(), info.sample_rate), ("truehd", 48_000), "{info:?}");
+    assert!(info.seconds > 1.0 && info.max_objects > 0 && info.max_bed_channels <= 10, "{info:?}");
+    let (p, seq, m) = project();
+    let dir = tmp("iab-atmos");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: dir.clone(),
+        frame_rate: Some(FrameRate::new(24, 1)),
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(48))),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: path.clone(),
+        dcp_iab_fallback: "5.1".into(),
+        ..Default::default()
+    };
+    let r = export(&p, seq, &s, &m, &Progress::default()).unwrap();
+    let (iab, _pcm) = check_immersive_package(&dir, r.frames as usize, 2000);
+    let mi = cfa4_mxf::open(&iab).unwrap();
+    let mut objects = 0;
+    for i in 0..r.frames as usize {
+        let f = cfa4_iab::parse(&mi.read_sample(&iab, 0, i).unwrap()).unwrap();
+        assert_eq!(f.beds.len(), 1);
+        assert!(matches!(f.beds[0].channels.len(), 8 | 10));
+        objects = objects.max(f.objects.len());
+    }
+    assert!(objects > 0, "the Atmos objects are IAB objects");
+}
+
+/// A TrueHD stream without an object presentation is refused as an Atmos source.
+#[test]
+fn a_truehd_stream_without_objects_is_not_an_atmos_source() {
+    let dir = tmp("iab-not-atmos");
+    std::fs::create_dir_all(&dir).unwrap();
+    let thd = Path::new(&dir).join("plain.thd");
+    std::fs::write(&thd, cfa4_truehd::process::EXAMPLE_DATA).unwrap();
+    let thd = thd.to_string_lossy().to_string();
+    let err = probe_iab_source(&thd).unwrap_err().to_string();
+    assert!(err.contains("not a Dolby Atmos stream"), "{err}");
+    let (p, seq, m) = project();
+    let out = tmp("iab-not-atmos-out");
+    let s = ExportSettings {
+        format: Format::Dcp,
+        path: out,
+        range: Some(TimeRange::new(Tick::ZERO, FrameRate::new(25, 1).tick_of(2))),
+        dcp_immersive: "file".into(),
+        dcp_iab_source: thd,
+        ..Default::default()
+    };
+    let err = export(&p, seq, &s, &m, &Progress::default()).unwrap_err().to_string();
+    assert!(err.contains("not a Dolby Atmos stream"), "{err}");
+}
