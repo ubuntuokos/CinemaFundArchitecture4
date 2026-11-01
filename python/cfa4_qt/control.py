@@ -680,6 +680,7 @@ class ControlServer(QObject):
             "timecode": {"rows": [dict(r) for r in tc.rows], "showName": tc.show_name},
             "reference": {"ganged": ref.ganged, "time": ref.time, "display": ref.display.currentData(), "scopes": list(ref.scope_kinds)},
             "progress": {"showFinished": win.progress.finished.isChecked()},
+            "events": win.events.state(),
             "inspectorSource": win.inspector_source,
         }
 
@@ -689,12 +690,12 @@ class ControlServer(QObject):
         not take is refused and changes nothing."""
         win = self.window
         if not isinstance(patch, dict):
-            raise ControlError("panels takes {scopes, timecode, reference, progress, inspectorSource}")
-        known = ("scopes", "timecode", "reference", "progress", "inspectorSource")
+            raise ControlError("panels takes {scopes, timecode, reference, progress, events, inspectorSource}")
+        known = ("scopes", "timecode", "reference", "progress", "events", "inspectorSource")
         bad = [k for k in patch if k not in known]
         if bad:
             raise ControlError(f"panels: no {bad[0]!r} in the Qt panels (known: {', '.join(known)})")
-        for k in ("scopes", "timecode", "reference", "progress"):
+        for k in ("scopes", "timecode", "reference", "progress", "events"):
             if k in patch and not isinstance(patch[k], dict):
                 raise ControlError(f"panels.{k} takes {{field: value}}")
         src = patch.get("inspectorSource")
@@ -706,6 +707,15 @@ class ControlServer(QObject):
         bad = [f for f in patch.get("progress", {}) if f != "showFinished"]
         if bad:
             raise ControlError(f"panels.progress: no field {bad[0]!r}")
+        events = patch.get("events", {})
+        bad = [f for f in events if f not in ("level", "selected")]
+        if bad:
+            raise ControlError(f"panels.events: no field {bad[0]!r} (known: level, selected)")
+        if "level" in events and events["level"] not in ("info", "warning", "error"):
+            raise ControlError("panels.events.level is info, warning or error")
+        sel = events.get("selected")
+        if sel is not None and (not isinstance(sel, int) or isinstance(sel, bool) or sel < 0):
+            raise ControlError("panels.events.selected takes an entry id or null")
         cur = self.panels_state()
         # the panels load their saved settings with validation: write the merged state, reload, and
         # put the old one back when a value did not stick
@@ -738,6 +748,8 @@ class ControlServer(QObject):
             win.scopes.view.request()
         if show is not None:
             win.progress.finished.setChecked(show)
+        if events:
+            win.events.set_state(events)
         if src is not None:
             win._follow(src)
 

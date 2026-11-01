@@ -6244,7 +6244,10 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         assert json.loads(settings.value("panels/scopes"))["waveform_type"] == "luma"
         refused({"panels": {"scopes": {"waveformType": "sideways"}}}, "not one the panel takes")
         refused({"panels": {"timecode": {"rows": [{"source": "moon"}]}}}, "not one the panel takes")
-        refused({"panels": {"events": {"level": "error"}}}, "no 'events'")
+        refused({"panels": {"events": {"level": "loud"}}}, "info, warning or error")
+        refused({"panels": {"events": {"seen": 3}}}, "no field 'seen'")
+        u = ok({"panels": {"events": {"level": "warning"}}})
+        assert u["panels"]["events"] == {"level": "warning", "selected": None} and win.events.filter.currentData() == "warning"
         refused({"panels": {"progress": {"showFinished": "yes"}}}, "true or false")
         refused({"panels": {"inspectorSource": "elsewhere"}}, "project or timeline")
         # Project panel: bins in tabs and windows, the active tab, the selected bin
