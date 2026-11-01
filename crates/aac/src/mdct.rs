@@ -160,7 +160,7 @@ impl WindowShape {
     }
 }
 
-fn sine_half(m: usize) -> Vec<f32> {
+pub(crate) fn sine_half(m: usize) -> Vec<f32> {
     let n = 2 * m;
     (0..m).map(|i| (PI / n as f64 * (i as f64 + 0.5)).sin() as f32).collect()
 }
@@ -179,7 +179,7 @@ fn bessel_i0(x: f64) -> f64 {
     sum
 }
 
-fn kbd_half(m: usize, alpha: f64) -> Vec<f32> {
+pub(crate) fn kbd_half(m: usize, alpha: f64) -> Vec<f32> {
     // w[n] = sqrt(Σ_{j<=n} W(j) / Σ_{j<=M} W(j)), W the Kaiser kernel of length M+1.
     let kernel: Vec<f64> = (0..=m)
         .map(|j| {

@@ -4,6 +4,8 @@
 //! - `bed`: the export's 5.1 mix becomes a 7.1 DS bed (L R C LFE, Ls and Rs each at -3 dB on the
 //!   side and the rear surrounds), the one bed layout besides 9.1OH that ISDCF Doc 15 (IAB
 //!   Application Profile 1) allows. No objects.
+//! - `file` with a Dolby Atmos TrueHD stream (`.thd`, #347): its objects and bed become IAB
+//!   frames ([`crate::dcp_atmos`]).
 //! - `file`: the frames of an existing IAB (an IMF or DCP IAB track file, or a raw
 //!   IABitstream) are re-wrapped, made fit for a DCP where needed (ST 429-18 7.2: DLC, 24 bit,
 //!   no UserData; Profile 1: no AuthoringToolInfo) and otherwise copied byte for byte. A shorter
@@ -21,6 +23,7 @@ use std::sync::Mutex;
 use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Description, Frame, FrameRate, Gain, Layout};
 use cfa4_mxf::{ByteSource, Codec, EssenceTrack, IabDesc, McaLabel, MxfFile, MxfWriter};
 
+use crate::dcp_atmos::AtmosSource;
 use crate::{ExportError, ExportSettings, Out, Result};
 
 /// Immersive audio of a DCP export.
@@ -107,7 +110,7 @@ pub(crate) fn validate(s: &ExportSettings) -> Result<()> {
         return Err(ExportError::Unsupported(format!("unknown IAB fallback {:?}: choose 5.1, mix or none", s.dcp_iab_fallback)));
     }
     if mode == DcpImmersive::File && s.dcp_iab_source.trim().is_empty() {
-        return Err(ExportError::Unsupported("immersive audio from a file needs an IAB source (an IAB MXF or .iab file)".into()));
+        return Err(ExportError::Unsupported("immersive audio from a file needs a source (an IAB MXF or .iab file, or a Dolby Atmos .thd)".into()));
     }
     Ok(())
 }
@@ -468,6 +471,17 @@ pub(crate) fn read_frame_checked(file: &MxfFile, src: &(impl ByteSource + ?Sized
 /// How much of a source is read to find an MXF header partition: the longest run-in plus a key.
 const MXF_SNIFF: u64 = 65_536 + 16;
 
+/// Whether the file at `path` is a Dolby Atmos source for `file`: a raw TrueHD stream, or a
+/// Matroska, MP4 or MPEG-TS / M2TS file (whose TrueHD track is looked for when it is opened).
+fn is_truehd(path: &str) -> bool {
+    let Ok(f) = std::fs::File::open(path) else { return false };
+    let mut head = Vec::new();
+    if f.take(MXF_SNIFF.max(crate::dcp_atmos::HEAD)).read_to_end(&mut head).is_err() {
+        return false;
+    }
+    !cfa4_mxf::sniff(&head) && crate::dcp_atmos::Container::sniff(&head).is_some()
+}
+
 /// The frames of an IAB source.
 enum Source {
     /// An IAB track file (IMF ST 2067-201 or DCP ST 429-18) and its IAB track.
@@ -539,7 +553,7 @@ impl Source {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IabSourceInfo {
-    /// `mxf` or `iab` (a raw IABitstream).
+    /// `mxf`, `iab` (a raw IABitstream) or `truehd` (Dolby Atmos TrueHD, made into IAB frames).
     pub container: String,
     pub frames: u64,
     /// Frames per second as (numerator, denominator).
@@ -550,6 +564,8 @@ pub struct IabSourceInfo {
     pub max_bed_channels: u32,
     pub max_objects: u32,
     pub max_rendered: u32,
+    /// Length in seconds (a TrueHD source, which has no frames of its own; 0 for IAB sources).
+    pub seconds: f64,
     /// Frames looked at (up to 240, spread over the source).
     pub scanned: u64,
     /// Some frames need re-coding (PCM assets, 16 bit, UserData or AuthoringToolInfo).
@@ -561,6 +577,26 @@ pub struct IabSourceInfo {
 /// Look at an IAB source: its frame count and rate, and the bed channels and objects of up to
 /// 240 frames spread over it.
 pub fn probe_iab_source(path: &str) -> Result<IabSourceInfo> {
+    if is_truehd(path) {
+        // a Dolby Atmos TrueHD stream: the first ten seconds looked at, the length from its
+        // access units; it is framed at the DCP's rate when exported
+        let (seconds, rate, beds, objects) = crate::dcp_atmos::probe(path, FrameRate::R24, 240)?;
+        let mut info = IabSourceInfo {
+            container: "truehd".into(),
+            seconds,
+            sample_rate: rate,
+            bit_depth: 24,
+            max_bed_channels: beds,
+            max_objects: objects,
+            max_rendered: beds.saturating_add(objects),
+            needs_conform: true,
+            ..Default::default()
+        };
+        if rate != 48_000 {
+            info.profile_notes.push(format!("sample rate {rate} Hz (Profile 1: 48 kHz)"));
+        }
+        return Ok(info);
+    }
     let src = Source::open(path)?;
     let n = src.len();
     let mut info = IabSourceInfo { container: if matches!(src, Source::Mxf { .. }) { "mxf" } else { "iab" }.into(), frames: n as u64, ..Default::default() };
@@ -628,6 +664,8 @@ pub(crate) struct ImmersiveMux {
     source: String,
     /// `file`: the opened source and the last frame copied (the metadata of the silent padding).
     src: Option<Source>,
+    /// `file` with a Dolby Atmos TrueHD source (#347): the stream read as IAB frames.
+    atmos: Option<Box<AtmosSource>>,
     last: Option<Frame>,
 }
 
@@ -650,6 +688,7 @@ impl ImmersiveMux {
             desc: initial_desc(),
             source: s.dcp_iab_source.clone(),
             src: None,
+            atmos: None,
             last: None,
         })
     }
@@ -752,8 +791,30 @@ impl ImmersiveMux {
     /// a silent frame with the last frame's metadata. `mix` is the fallback when the export's mix
     /// is chosen; otherwise the frame is rendered to 5.1 (unless there is no fallback).
     fn source_unit(&mut self, mix: Option<&[Vec<f32>]>, sound: &mut MxfWriter<Out>) -> Result<()> {
-        if self.src.is_none() {
-            self.src = Some(Source::open(&self.source)?);
+        if self.src.is_none() && self.atmos.is_none() {
+            if is_truehd(&self.source) {
+                self.atmos = Some(Box::new(AtmosSource::open(&self.source, self.rate)?));
+            } else {
+                self.src = Some(Source::open(&self.source)?);
+            }
+        }
+        if let Some(atmos) = self.atmos.as_mut() {
+            // a Dolby Atmos TrueHD stream: its objects made into IAB frames
+            let f = match atmos.next_frame()? {
+                Some(f) => f,
+                None => match &self.last {
+                    Some(f) => silenced(f),
+                    None => bed_frame(self.rate, &[]),
+                },
+            };
+            let bytes = cfa4_iab::write(&f).map_err(iab_err)?;
+            let rendered = match self.fallback {
+                IabFallback::Rendered => Some(cfa4_iab::render(&f, &Layout::surround_5_1()).map_err(iab_err)?),
+                _ => None,
+            };
+            self.push(&bytes, &f, rendered.as_deref().or(mix), sound)?;
+            self.last = Some(f);
+            return Ok(());
         }
         let i = usize::try_from(self.units).unwrap_or(usize::MAX);
         let src = self.src.as_ref().ok_or_else(|| ExportError::Encode("internal: the IAB source is closed".into()))?;

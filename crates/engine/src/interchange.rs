@@ -87,7 +87,13 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
                 continue;
             }
         };
-        match s.media.open_file(&file, &*s.services).ok() {
+        // as the item interprets it (a carrier played as its own channels stays one, #323)
+        let item_media = s.project.item(id).and_then(|i| i.as_media()).cloned();
+        let carrier = item_media.as_ref().is_some_and(|m| m.interpret.auro_as_carrier);
+        match s.media.open_file(&file, &*s.services).ok().map(|src| match &item_media {
+            Some(m) => crate::media_pool::interpreted(m, src),
+            None => src,
+        }) {
             Some(src) => {
                 let info = src.info().clone();
                 let identity = crate::relink::identity_of(&*s.services, &file).ok();
@@ -108,7 +114,7 @@ pub fn import(s: &mut Session, path: &str, bytes: &[u8], format: Format) -> Resu
                     proj.resolve_placed_auto_points(|seq| !before.contains(&seq), |source| source.id == id);
                     Ok(())
                 })?;
-                s.media.insert_file(id, &mpath, src);
+                s.media.insert_file_as(id, &mpath, src, carrier);
                 linked += 1;
             }
             None => offline.push(mpath),
