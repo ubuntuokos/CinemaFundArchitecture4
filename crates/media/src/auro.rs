@@ -14,7 +14,8 @@
 //! The restored channels are in [`cfa4_auro::cfa4::output_order`]: the bed in WAV order, then the
 //! heights (HL HR HC HLs HRs), then the top.
 
-use std::sync::Arc;
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use cfa4_auro::block::{MAX_BLOCK, SYNC_SAMPLES};
 use cfa4_auro::cfa4::{DETECT_FRAMES, MAX_CARRIERS, detect, output_order, pcm24_from_f32, unfold_with, wav_carrier_ids};
@@ -34,6 +35,17 @@ const PROBE_FRAMES: usize = 4 * MAX_BLOCK + SYNC_SAMPLES;
 /// Carrier samples read on each side of a request, so the blocks that touch it are whole.
 const MARGIN: i64 = MAX_BLOCK as i64;
 
+/// Carrier samples restored at once (0.68 s at 48 kHz): playback asks for a few hundred or
+/// thousand samples at a time, and each request used to decode a whole block on both sides of
+/// it again (#324). Requests are served from chunks aligned to this size.
+const CHUNK: usize = 1 << 15;
+
+/// Restored chunks a source keeps (about 7 MB for 13.1).
+const CACHE_CHUNKS: usize = 4;
+
+/// A restored chunk: stream, first carrier sample, the restored channels from there.
+type Chunk = (usize, i64, Arc<Vec<Vec<i32>>>);
+
 /// An Auro-3D carrier stream.
 #[derive(Debug, Clone)]
 struct Carrier {
@@ -48,6 +60,8 @@ pub struct AuroSource {
     info: MediaInfo,
     /// Index-aligned with `info.audio_streams`.
     carriers: Vec<Option<Carrier>>,
+    /// The most recently used restored chunks, newest last.
+    cache: Mutex<VecDeque<Chunk>>,
 }
 
 /// `src` itself, or `src` wrapped in an [`AuroSource`] when one of its audio streams is an
@@ -67,7 +81,7 @@ pub fn wrap(src: SharedSource) -> SharedSource {
         a.codec = format!("{} + Auro-3D {name}", a.codec);
         a.bits_per_sample = Some(24);
     }
-    Arc::new(AuroSource { inner: src, info, carriers })
+    Arc::new(AuroSource { inner: src, info, carriers, cache: Mutex::new(VecDeque::new()) })
 }
 
 /// Stream `k` of `src` as an Auro-3D carrier, when it is one.
@@ -114,24 +128,30 @@ impl AuroSource {
         if sample_rate == 0 {
             return Ok(AudioBuffer::silence(sample_rate, out_ch, frames));
         }
-        // The request in carrier samples, then one block more on both sides.
+        // The request in carrier samples, restored chunk by chunk.
         let ratio = f64::from(c.rate) / f64::from(sample_rate);
         let exact = c.rate == sample_rate;
         let s0 = if exact { start } else { (start as f64 * ratio).floor() as i64 };
         let need = if exact { frames } else { (frames as f64 * ratio).ceil() as usize + 2 };
-        let w0 = if s0 > MARGIN { s0 - MARGIN } else { s0.min(0) };
-        let lead = usize::try_from(s0 - w0).unwrap_or(0);
-        let wlen = lead.saturating_add(need).saturating_add(MAX_BLOCK);
-        let carrier = self.inner.audio_stream(k, w0, wlen, c.rate)?;
-        if carrier.channels.len() != c.channels {
-            return Err(MediaError::Decode(format!("Auro-3D: the carrier gave {} channels, not {}", carrier.channels.len(), c.channels)));
+        let mut restored: Vec<Vec<i32>> = vec![Vec::with_capacity(need); out_ch];
+        let end = s0.saturating_add(i64::try_from(need).unwrap_or(i64::MAX));
+        let mut at = s0;
+        while at < end {
+            let cs = at.div_euclid(CHUNK as i64) * CHUNK as i64;
+            let chunk = self.chunk(c, k, cs)?;
+            let from = usize::try_from(at - cs).unwrap_or(0);
+            // saturating: a request at the end of the i64 range ends there, never wraps
+            let ce = cs.saturating_add(CHUNK as i64);
+            let to = usize::try_from(end.min(ce) - cs).unwrap_or(0);
+            for (o, ch) in restored.iter_mut().zip(chunk.iter()) {
+                // a short chunk (a damaged carrier) leaves silence, not a shift
+                let want = o.len() + to.saturating_sub(from);
+                o.extend(ch.iter().skip(from).take(to.saturating_sub(from)));
+                o.resize(want, 0);
+            }
+            at = ce;
         }
-        let planes: Vec<Vec<i32>> = carrier.channels.iter().map(|ch| to_pcm24(ch)).collect();
-        let refs: Vec<&[i32]> = planes.iter().map(Vec::as_slice).collect();
-        let Some((_, restored, _)) = unfold_with(&c.detection, &refs) else {
-            return Err(MediaError::Decode("Auro-3D: unknown carrier layout".into()));
-        };
-        let src: Vec<&[i32]> = restored.iter().map(|ch| ch.get(lead..).unwrap_or_default()).collect();
+        let src: Vec<&[i32]> = restored.iter().map(Vec::as_slice).collect();
         let mut out = AudioBuffer::silence(sample_rate, out_ch, frames);
         let frac = s0 as f64 - start as f64 * ratio;
         for (o, s) in out.channels.iter_mut().zip(&src) {
@@ -149,6 +169,42 @@ impl AuroSource {
             }
         }
         Ok(out)
+    }
+
+    /// The restored chunk of stream `k` that starts at carrier sample `cs` (a multiple of
+    /// [`CHUNK`]), from the cache or restored from the carrier read one block wider on both sides
+    /// so the blocks that touch it are whole.
+    fn chunk(&self, c: &Carrier, k: usize, cs: i64) -> Result<Arc<Vec<Vec<i32>>>> {
+        {
+            let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+            if let Some(i) = cache.iter().position(|(ck, cstart, _)| *ck == k && *cstart == cs) {
+                let hit = cache.remove(i);
+                if let Some(hit) = hit {
+                    let planes = hit.2.clone();
+                    cache.push_back(hit);
+                    return Ok(planes);
+                }
+            }
+        }
+        let w0 = if cs > MARGIN { cs - MARGIN } else { cs.min(0) };
+        let lead = usize::try_from(cs - w0).unwrap_or(0);
+        let wlen = lead.saturating_add(CHUNK).saturating_add(MAX_BLOCK);
+        let carrier = self.inner.audio_stream(k, w0, wlen, c.rate)?;
+        if carrier.channels.len() != c.channels {
+            return Err(MediaError::Decode(format!("Auro-3D: the carrier gave {} channels, not {}", carrier.channels.len(), c.channels)));
+        }
+        let planes: Vec<Vec<i32>> = carrier.channels.iter().map(|ch| to_pcm24(ch)).collect();
+        let refs: Vec<&[i32]> = planes.iter().map(Vec::as_slice).collect();
+        let Some((_, restored, _)) = unfold_with(&c.detection, &refs) else {
+            return Err(MediaError::Decode("Auro-3D: unknown carrier layout".into()));
+        };
+        let chunk: Arc<Vec<Vec<i32>>> = Arc::new(restored.into_iter().map(|ch| ch.into_iter().skip(lead).take(CHUNK).collect()).collect());
+        let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+        if cache.len() >= CACHE_CHUNKS {
+            cache.pop_front();
+        }
+        cache.push_back((k, cs, chunk.clone()));
+        Ok(chunk)
     }
 
     /// The streams stream `k` restores, in channel order (`None` for a plain stream).
@@ -194,6 +250,8 @@ mod tests {
     struct Planes {
         info: MediaInfo,
         planes: Vec<Vec<f32>>,
+        /// Audio requests answered.
+        reads: std::sync::atomic::AtomicUsize,
     }
 
     impl Planes {
@@ -209,7 +267,7 @@ mod tests {
                 start_timecode: None,
                 file_size: None,
             };
-            Self { info, planes }
+            Self { info, planes, reads: Default::default() }
         }
     }
 
@@ -221,11 +279,12 @@ mod tests {
             Err(MediaError::NoStream("video"))
         }
         fn audio(&self, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer> {
+            self.reads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             let ratio = 48_000.0 / f64::from(sample_rate.max(1));
             let mut out = AudioBuffer::silence(sample_rate, self.planes.len(), frames);
             for (o, p) in out.channels.iter_mut().zip(&self.planes) {
                 for (k, v) in o.iter_mut().enumerate() {
-                    let at = ((start + k as i64) as f64 * ratio).round();
+                    let at = (start.saturating_add(k as i64) as f64 * ratio).round();
                     if at >= 0.0 {
                         *v = p.get(at as usize).copied().unwrap_or(0.0);
                     }
@@ -238,6 +297,41 @@ mod tests {
     fn carrier_51(blocks: usize) -> Vec<Vec<i32>> {
         let ids = wav_carrier_ids(6).unwrap();
         ids.iter().enumerate().map(|(c, id)| synth::channel(c as u32 + 11, blocks, 0.25, 30, id.0)).collect()
+    }
+
+    /// #324: playback's small consecutive requests are served from restored chunks: the
+    /// carrier is read about once per chunk, not twice a block per request, and the samples are
+    /// those of one large request, across chunk boundaries too.
+    #[test]
+    fn consecutive_requests_reuse_restored_chunks() {
+        let planes = carrier_51(80);
+        let inner = Arc::new(Planes::new(planes.iter().map(|p| f32_from_pcm24(p)).collect(), "PCM"));
+        let src = wrap(inner.clone());
+        let whole = wrap(Arc::new(Planes::new(planes.iter().map(|p| f32_from_pcm24(p)).collect(), "PCM"))).audio(0, 80 * 1024, 48_000).unwrap();
+        let before = inner.reads.load(std::sync::atomic::Ordering::Relaxed);
+        let mut at = 0;
+        while at + 1000 <= 80 * 1024 {
+            let buf = src.audio(at as i64, 1000, 48_000).unwrap();
+            for (c, ch) in buf.channels.iter().enumerate() {
+                assert_eq!(ch.as_slice(), &whole.channels[c][at..at + 1000], "channel {c} at {at}");
+            }
+            at += 1000;
+        }
+        let reads = inner.reads.load(std::sync::atomic::Ordering::Relaxed) - before;
+        assert!(reads <= 80 * 1024 / CHUNK + 1, "{reads} carrier reads for 81 requests");
+    }
+
+    /// Review of #324: requests at the ends of the sample range return silence, without
+    /// overflow and without looping back to the start.
+    #[test]
+    fn requests_at_the_ends_of_the_range_are_silence() {
+        let planes = carrier_51(4);
+        let src = wrap(Arc::new(Planes::new(planes.iter().map(|p| f32_from_pcm24(p)).collect(), "PCM")));
+        for (start, rate) in [(i64::MAX - 1, 48_000), (i64::MAX - CHUNK as i64, 48_000), (i64::MAX - 1, 44_100), (i64::MIN, 48_000), (i64::MIN, 96_000)] {
+            let buf = src.audio(start, 16, rate).unwrap();
+            assert_eq!((buf.channels.len(), buf.frames()), (10, 16), "{start} at {rate} Hz");
+            assert!(buf.channels.iter().flatten().all(|&v| v == 0.0), "{start} at {rate} Hz");
+        }
     }
 
     #[test]
