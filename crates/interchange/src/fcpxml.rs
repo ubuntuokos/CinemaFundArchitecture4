@@ -105,10 +105,11 @@ fn audio_rate_str(sr: u32) -> String {
 
 fn parse_audio_rate(s: &str) -> Option<u32> {
     let s = s.trim();
-    match s.strip_suffix('k') {
+    let r = match s.strip_suffix('k') {
         Some(k) => k.parse::<f64>().ok().map(|v| (v * 1000.0).round() as u32),
         None => s.parse().ok(),
-    }
+    };
+    r.filter(|&sr| sr > 0 && sr <= 384_000)
 }
 
 // ---------------------------------------------------------------------------------------------
