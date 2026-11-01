@@ -163,6 +163,16 @@ fn golden_connected_clips() {
     assert!(matches!(&m.media, MediaRef::File { path } if path == "/proj/boats.mov"));
 }
 
+#[test]
+fn hostile_lane_numbers_do_not_create_sparse_tracks() {
+    let d = doc().replace("lane=\"-1\"", "lane=\"-2147483648\"").replace("lane=\"1\"", "lane=\"2147483647\"");
+    let (imp, rep) = import(d.as_bytes(), Format::Fcpxml, Some("/proj")).unwrap();
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    assert!(s.video_tracks.len() <= 256);
+    assert!(s.audio_tracks.len() <= 256);
+    assert!(rep.has_warnings());
+}
+
 fn project() -> (Project, cfa4_project::ItemId) {
     let r = FrameRate::FPS_29_97;
     let mut p = Project::new("Lib");

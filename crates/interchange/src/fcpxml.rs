@@ -26,8 +26,8 @@ use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use roxmltree::Node;
 
 use crate::common::{
-    Builder, MediaSpec, base_item, db_to_gain, empty_sequence, file_name, gain_to_db, generator_of, item_media, item_path, kind_from_ext, param,
-    param_modified, path_to_file_url, resolve_path, scaled, set_param, settings_for, standard_effects, transition_effect, transition_name,
+    Builder, MAX_IMPORTED_TRACKS, MediaSpec, base_item, db_to_gain, empty_sequence, file_name, gain_to_db, generator_of, item_media, item_path, kind_from_ext,
+    param, param_modified, path_to_file_url, resolve_path, scaled, set_param, settings_for, standard_effects, transition_effect, transition_name,
 };
 use crate::xml::{child, children, elements, num};
 use crate::{Error, ExportOptions, Format, ImportOptions, Imported, Report, Result};
@@ -437,14 +437,17 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
                     TrackKind::Video => lane.max(0) as usize,
                     TrackKind::Audio => {
                         if lane < 0 {
-                            (-lane - 1) as usize
+                            lane.unsigned_abs() as usize - 1
                         } else {
                             lane as usize
                         }
                     }
                 };
                 let id = ti.id;
-                self.b.place(seq, kind, pref, ti);
+                if self.b.place(seq, kind, pref, ti).is_none() {
+                    self.report.warn(format!("FCPXML {kind:?} lane exceeds the {MAX_IMPORTED_TRACKS}-track import limit; clip was skipped"));
+                    continue;
+                }
                 placed.push((kind, id));
                 if kind == TrackKind::Video {
                     vclip = Some(id);
@@ -462,7 +465,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             let Some(l) = c.attribute("lane").and_then(|l| l.parse::<i32>().ok()) else { continue };
             let off = attr_time(c, "offset").unwrap_or(Tick::ZERO);
             let ct0 = t0 + (off - local_start);
-            let clane = if lane > 0 && l > 0 { lane + l } else { l };
+            let clane = if lane > 0 && l > 0 { lane.saturating_add(l) } else { l };
             if c.has_tag_name("spine") {
                 // Secondary storyline: children offsets are in the storyline's local time.
                 let first = elements(c).filter(|x| !x.has_tag_name("transition")).find_map(|x| attr_time(x, "offset")).unwrap_or(Tick::ZERO);
