@@ -17,6 +17,7 @@ use std::io::Write;
 
 mod aac_out;
 mod audio_out;
+mod dcp_atmos;
 mod dcp_iab;
 mod dcp_out;
 mod deflate;
@@ -434,8 +435,9 @@ pub struct ExportSettings {
     /// IAB bed) or `file` (the IAB of [`ExportSettings::dcp_iab_source`]).
     #[serde(default)]
     pub dcp_immersive: String,
-    /// The IAB source of `dcp_immersive = file`: an IAB track file (IMF or DCP MXF) or a raw
-    /// IABitstream.
+    /// The IAB source of `dcp_immersive = file`: an IAB track file (IMF or DCP MXF), a raw
+    /// IABitstream, or Dolby Atmos TrueHD (a `.thd` stream, or the Atmos TrueHD track of a
+    /// Matroska, MP4 or MPEG-TS / M2TS file) whose objects become IAB objects.
     #[serde(default)]
     pub dcp_iab_source: String,
     /// Immersive audio DCPs: the 5.1 in the main sound track's channels 1-6 (`5.1`, also empty) or

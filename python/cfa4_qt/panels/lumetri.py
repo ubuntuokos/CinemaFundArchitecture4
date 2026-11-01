@@ -562,6 +562,7 @@ class LumetriColorPanel(QWidget):
         self.open_sections: set[str] = {"Basic Correction"}
         self.channel = 0  # the RGB curve shown: luma, red, green, blue
         self.playhead: int | None = None
+        self.program: Any = None  # the Program monitor (Comparison View)
         self._shape: tuple[Any, ...] | None = None
         self._pending: dict[tuple[int, int, str, int | None], Any] = {}
         self._send_timer = QTimer(self, singleShot=True, interval=SEND_DELAY_MS)
@@ -758,10 +759,12 @@ class LumetriColorPanel(QWidget):
             self.wheels.append(w)
         v.addLayout(row)
         self._sub(v, N_("Color Match"))
+        # Comparison View on / off (the Program monitor's display mode); Apply Match then uses its
+        # reference frame, as egui's
         self.compare = QPushButton(tr("Comparison View"))
         self.compare.setObjectName("lumetri.match.comparisonView")
-        self.compare.setEnabled(False)  # the Program monitor has no Comparison View yet
-        self.compare.setToolTip(tr("Not yet in the Qt GUI (see docs/qt-parity.md)"))
+        self.compare.setCheckable(True)
+        self.compare.clicked.connect(self._toggle_compare)
         v.addWidget(self.compare, 0, Qt.AlignmentFlag.AlignLeft)
         ref_row = QHBoxLayout()
         ref_row.setContentsMargins(4, 2, 0, 2)
@@ -943,12 +946,31 @@ class LumetriColorPanel(QWidget):
         if isinstance(ref, str) and ref != str((self.params.get(key) or {}).get("value") or ""):
             self.send(cmd, {"clip": self.clip_id, "lut": ref})
 
+    def _toggle_compare(self, on: bool) -> None:
+        if self.program is not None:
+            self.program.set_view(display="comparison" if on else "composite")
+        self.show_comparison()
+
+    def show_comparison(self) -> None:
+        """The button follows the Program monitor; while comparing, Reference is its frame."""
+        p = self.program
+        on = p is not None and p.comparing()
+        self.compare.setChecked(on)
+        self.reference.setReadOnly(on)
+        if on:
+            from ..timecode import format_timecode
+
+            self.reference.setText(format_timecode(p.reference(), p.frame(), p.drop_frame()))
+
     def _apply_match(self) -> None:
-        if self.clip_id is not None:
-            self.send(
-                "lumetri.applyMatch",
-                {"clip": self.clip_id, "referenceTimecode": self.reference.text().strip(), "faceDetection": self.face.isChecked()},
-            )
+        if self.clip_id is None:
+            return
+        p = self.program
+        if p is not None and p.comparing():
+            ref: dict[str, Any] = {"referenceTime": p.reference()}
+        else:
+            ref = {"referenceTimecode": self.reference.text().strip()}
+        self.send("lumetri.applyMatch", {"clip": self.clip_id, **ref, "faceDetection": self.face.isChecked()})
 
     def _edit_time(self, pid: str) -> int | None:
         """Where an edit of an animated value is keyed: the shown playhead, pinned to the clip."""
