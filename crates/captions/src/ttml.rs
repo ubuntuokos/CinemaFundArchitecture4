@@ -131,7 +131,23 @@ fn time_expr(t: Tick, rate: Option<FrameRate>) -> String {
 /// Caption text (`\n` lines, `<i>`/`<b>`/`<u>` tags) → TTML inline content.
 fn inline(text: &str) -> String {
     let mut out = String::new();
-    let mut open: Vec<&str> = Vec::new();
+    // Keep the logical style state separate from what has been written. There are only three
+    // supported styles, so duplicate or crossing input tags cannot grow an unbounded span stack.
+    let mut active: Vec<&'static str> = Vec::new();
+    let mut emitted: Vec<&'static str> = Vec::new();
+    let sync = |out: &mut String, active: &[&'static str], emitted: &mut Vec<&'static str>| {
+        if *emitted != active {
+            for _ in emitted.drain(..) {
+                out.push_str("</span>");
+            }
+            for attr in active {
+                out.push_str("<span ");
+                out.push_str(attr);
+                out.push('>');
+                emitted.push(attr);
+            }
+        }
+    };
     let mut rest = text;
     while !rest.is_empty() {
         if let Some(after) = rest.strip_prefix('<')
@@ -150,26 +166,16 @@ fn inline(text: &str) -> String {
             };
             if let Some(a) = attr {
                 if closing {
-                    if let Some(pos) = open.iter().rposition(|x| *x == a) {
-                        // close spans opened after it, then it, then reopen the inner ones
-                        let inner: Vec<&str> = open.drain(pos..).skip(1).collect();
-                        for _ in 0..=inner.len() {
-                            out.push_str("</span>");
-                        }
-                        for x in inner {
-                            out.push_str(&format!("<span {x}>"));
-                            open.push(x);
-                        }
-                    }
-                } else {
-                    out.push_str(&format!("<span {a}>"));
-                    open.push(a);
+                    active.retain(|style| *style != a);
+                } else if !active.contains(&a) {
+                    active.push(a);
                 }
             }
             rest = &after[end + 1..];
             continue;
         }
         let Some(ch) = rest.chars().next() else { break };
+        sync(&mut out, &active, &mut emitted);
         if ch == '\n' {
             out.push_str("<br/>");
         } else {
@@ -177,7 +183,7 @@ fn inline(text: &str) -> String {
         }
         rest = &rest[ch.len_utf8()..];
     }
-    for _ in open {
+    for _ in emitted {
         out.push_str("</span>");
     }
     out
@@ -917,5 +923,12 @@ mod tests {
         assert_eq!(back.cues[0].speaker.as_deref(), Some("Ann Lee"));
         let d = write(&doc, Flavor::Dfxp, Some(r), "en");
         assert!(d.contains(DFXP_PROFILE) && d.contains("begin=\"00:00:01.001\""), "{d}");
+    }
+
+    #[test]
+    fn duplicate_and_crossing_spans_have_bounded_output() {
+        let text = format!("{}x{}", "<i>".repeat(1_000), "</i>".repeat(1_000));
+        let out = inline(&text);
+        assert_eq!(out, "<span tts:fontStyle=\"italic\">x</span>");
     }
 }
