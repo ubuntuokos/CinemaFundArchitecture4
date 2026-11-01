@@ -644,6 +644,8 @@ fn run_job_as<S: crate::deblock::Lanes>(
                 first_err.get_or_insert(e);
             }
         }
+        // counted before the rows are published: a caller that has the picture sees its stats
+        record_stats(shared, &pic, draft);
         pic.flush_rows(true);
         first_err
     }));
@@ -654,9 +656,22 @@ fn run_job_as<S: crate::deblock::Lanes>(
             let fallback = Planes::<S>::gray(frame.width, frame.height, frame.bit_depth, frame.chroma);
             frame.publish_units(&fallback, field);
             pic = PicState::new(frame.clone(), field, mbaff);
+            record_stats(shared, &pic, draft);
             Some(Error::Invalid("internal error while decoding a picture".into()))
         }
     };
+    if let (Some(e), Ok(mut slot)) = (err, shared.error.lock()) {
+        slot.get_or_insert(e);
+    }
+    if let Ok(mut p) = pool.lock()
+        && p.len() < 4
+    {
+        p.push(pic);
+    }
+}
+
+/// Adds a decoded picture to the decoder's statistics.
+fn record_stats<S: crate::deblock::Lanes>(shared: &Shared, pic: &PicState<S>, draft: bool) {
     if let Ok(mut s) = shared.stats.lock() {
         s.pictures += 1;
         s.draft_pictures += draft as u64;
@@ -676,14 +691,6 @@ fn run_job_as<S: crate::deblock::Lanes>(
                 s.mb_inter_8x8_transform += 1;
             }
         }
-    }
-    if let (Some(e), Ok(mut slot)) = (err, shared.error.lock()) {
-        slot.get_or_insert(e);
-    }
-    if let Ok(mut p) = pool.lock()
-        && p.len() < 4
-    {
-        p.push(pic);
     }
 }
 
