@@ -22,6 +22,7 @@ keyboard, pointer and drops; ``ui.inspect.input.mode`` says which mode runs.
 from __future__ import annotations
 
 import base64
+import copy
 import json
 import math
 from collections.abc import Callable
@@ -46,7 +47,9 @@ from PySide6.QtWidgets import (
 )
 
 from .panels.clip_dialogs import ClipDialog
+from .panels.export_effects import SECTION_KEYS
 from .panels.monitor_view import MonitorView
+from .panels.preset_manager import PresetManager
 from .panels.timeline import HEADER_W, RULER_H
 from .panels.tools import TOOLS
 
@@ -749,8 +752,14 @@ class ControlServer(QObject):
                 return None
         except RuntimeError:
             return None
+        manager = d.preset_manager
+        try:
+            shown = manager is not None and manager.isVisible()
+        except RuntimeError:
+            shown = False
         return {"preset": d.preset.currentData(), "format": d.format.currentData(), "path": d.path.text(), "range": d.range.currentData(),
-                "customStart": d.start.value(), "customEnd": d.end.value()}
+                "customStart": d.start.value(), "customEnd": d.end.value(), "settings": copy.deepcopy(d.resolved_settings),
+                "openSections": d.open_sections(), "manager": manager.state() if shown and manager is not None else None}
 
     def set_export(self, patch: Any) -> None:
         cur = self.export_state()
@@ -771,16 +780,61 @@ class ControlServer(QObject):
                 raise ControlError(f"export.{f} takes seconds")
         if "path" in patch and not isinstance(patch["path"], str):
             raise ControlError("export.path takes a file path")
+        settings = patch.get("settings")
+        if "settings" in patch:
+            if not isinstance(settings, dict):
+                raise ControlError("export.settings takes {field: value}, merged into the export settings")
+            have = set(d.resolved_settings)
+            unknown = [k for k in settings if have and k not in have and _snake(k) not in have and _camel(k) not in have]
+            if unknown:
+                raise ControlError(f"export.settings: no setting {unknown[0]!r}")
+        sections = patch.get("openSections")
+        if "openSections" in patch and (not isinstance(sections, list) or any(k not in SECTION_KEYS for k in sections)):
+            raise ControlError(f"export.openSections takes a list of {', '.join(SECTION_KEYS)}")
+        manager = patch.get("manager")
+        if manager is not None and not isinstance(manager, dict):
+            raise ControlError("export.manager takes {query, favoritesOnly, selected, saveName} or null")
+        if isinstance(manager, dict):
+            try:
+                PresetManager.check_state(manager, [str(p.get("name")) for p in d.presets if isinstance(p, dict)])
+            except ValueError as e:
+                raise ControlError(f"export.{e}") from None
         # the preset first: it sets the format and the rest
         for f in ("preset", "format", "range"):
             if f in patch:
-                combos[f].setCurrentIndex(combos[f].findData(patch[f]))
+                i = combos[f].findData(patch[f])
+                if f == "preset" and i == d.preset.currentIndex():
+                    d._preset_changed()  # egui's: naming the preset applies its settings again
+                combos[f].setCurrentIndex(i)
         if "path" in patch:
             d.path.setText(patch["path"])
         if "customStart" in patch:
             d.start.setValue(float(patch["customStart"]))
         if "customEnd" in patch:
             d.end.setValue(float(patch["customEnd"]))
+        if isinstance(sections, list):
+            d.set_open_sections(sections)
+        if isinstance(settings, dict) and settings:
+            d.set_agent_settings(settings)
+        if "manager" in patch:
+            self._set_manager(manager)
+
+    def _set_manager(self, fields: dict[str, Any] | None) -> None:
+        """The Preset Manager: null closes it, fields open it (on the current preset) and fill it."""
+        d = self.window.export_dialog
+        m = d.preset_manager
+        try:
+            shown = m is not None and m.isVisible()
+        except RuntimeError:
+            shown = False
+        if fields is None:
+            if shown and m is not None:
+                m.reject()
+            return
+        if not shown:
+            d.open_preset_manager()
+        names = [str(p.get("name")) for p in d.presets if isinstance(p, dict)]
+        d.preset_manager.set_state(fields, names)
 
     # ----- timeline hit-testing (egui's ``timeline::hit_json`` / ``locate``) -----
     def _canvas_point(self, p: dict[str, Any]) -> QPoint:

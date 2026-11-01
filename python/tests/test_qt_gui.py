@@ -7006,7 +7006,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
         assert e["timecode_overlay"]["enabled"] is False
         # Multiplexer (H.264 / H.265): QuickTime makes a .mov file
-        assert dlg.video_form.isRowVisible(dlg.multiplexer) and dlg.multiplexer.currentData() == "mp4"
+        assert not dlg.mux_section.isHidden() and dlg.multiplexer.currentData() == "mp4"
         pick(dlg.multiplexer, "mov")
         assert dlg.path.text().endswith(".mov"), dlg.path.text()
         assert resolved()["multiplexer"] == "mov"
@@ -7016,7 +7016,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         meta.textEdited.emit("My Film")
         assert resolved()["metadata"]["title"] == "My Film"
         pick(dlg.format, "prores")
-        assert not dlg.video_form.isRowVisible(dlg.multiplexer) and not dlg.metadata.isHidden()
+        assert dlg.mux_section.isHidden() and not dlg.metadata.isHidden()
         assert dlg.path.text().endswith(".mov") and "multiplexer" not in dlg.params().get("settings", {})
         # a sound-only format: no captions, only loudness
         pick(dlg.format, "wav")
