@@ -2449,6 +2449,12 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg.dcp_iab_source.setText(str(bad))
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a Dolby Atmos TrueHD source (#347) is described by its length and objects, not frames
+        dlg._iab_probed = "atmos.thd"
+        dlg._on_iab_info("atmos.thd", {"container": "truehd", "seconds": 61.04, "sampleRate": 48000, "maxBedChannels": 1, "maxObjects": 15, "profileNotes": []})
+        info = dlg.dcp_iab_info.text()
+        assert "Dolby Atmos TrueHD" in info and "61.0" in info and "15" in info, info
+        assert ".thd" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("file"))
         # a saved preset brings its immersive audio back instead of resetting it to Off
         dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
         dlg.preset.addItem("IAB test", "IAB test")
@@ -3332,6 +3338,45 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_interpret_footage_turns_auro_decoding_off(app):
+    """Interpret Footage shows the Auro-3D switch for a carrier only (#323); OK sends it only
+    when it changed."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    assert box is not None and box.isHidden()
+    for answer in (None, {"carrier": False, "decoding": True}, "x"):
+        d._auro_info(answer)
+        assert box.isHidden()
+    d._auro_info({"carrier": True, "decoding": True})
+    assert not box.isHidden() and box.isChecked()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._auro_info({"carrier": True, "decoding": True})
+    d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro").setChecked(False)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": False, "items": [7]})
+    # carriers with mixed settings: partly checked and left alone, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    assert box.checkState() == QtCore.Qt.CheckState.PartiallyChecked
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    box.click()
+    assert box.checkState() == QtCore.Qt.CheckState.Checked and not box.isTristate()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": True, "items": [7, 8]})
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
