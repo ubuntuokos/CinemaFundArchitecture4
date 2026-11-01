@@ -45,6 +45,9 @@ use headers::{EXTENSION, GROUP_START, PICTURE_START, SEQUENCE_END, SEQUENCE_HEAD
 use mc::Frame;
 use slice::{PicParams, Target, decode_slice, slice_row};
 
+/// One access unit must not retain an unbounded number of cropped decoded pictures.
+const MAX_OUTPUT_PICTURES_PER_ACCESS_UNIT: usize = 8;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("invalid MPEG video: {0}")]
@@ -419,6 +422,7 @@ pub struct Decoder {
     gray: Option<Arc<Frame>>,
     pending: Option<Pending>,
     out: Vec<Picture>,
+    output_overflow: bool,
     errors: usize,
     last_error: Option<&'static str>,
     threads: bool,
@@ -443,6 +447,7 @@ impl Decoder {
             gray: None,
             pending: None,
             out: Vec::new(),
+            output_overflow: false,
             errors: 0,
             last_error: None,
             threads: cfg!(feature = "threads"),
@@ -477,6 +482,7 @@ impl Decoder {
     /// Decode a chunk of the elementary stream holding whole pictures (an access unit) tagged
     /// with `pts`. Returns the pictures that became displayable, in display order.
     pub fn decode(&mut self, data: &[u8], pts: i64) -> Result<Vec<Picture>> {
+        self.output_overflow = false;
         let codes = start_codes(data);
         let mut err = None;
         for (k, &(pos, code)) in codes.iter().enumerate() {
@@ -555,6 +561,10 @@ impl Decoder {
         }
         self.apply_sequence();
         self.finish_picture(data, pts);
+        if self.output_overflow {
+            self.out.clear();
+            return Err(Error::Invalid("access unit produces too many decoded pictures".into()));
+        }
         let out = std::mem::take(&mut self.out);
         match err {
             Some(e) if out.is_empty() && self.seq.is_none() => Err(e),
@@ -572,7 +582,7 @@ impl Decoder {
         {
             a.shown = true;
             let p = to_picture(&a.frame, &a.meta);
-            self.out.push(p);
+            self.push_output(p);
         }
         std::mem::take(&mut self.out)
     }
@@ -585,6 +595,7 @@ impl Decoder {
         self.building = None;
         self.pending = None;
         self.out.clear();
+        self.output_overflow = false;
         self.closed_gop = false;
     }
 
@@ -608,6 +619,11 @@ impl Decoder {
 
     fn finish_picture(&mut self, data: &[u8], pts: i64) {
         let Some(pd) = self.pending.take() else { return };
+        if pd.slices.is_empty() {
+            self.errors += 1;
+            self.last_error = Some("picture has no slices");
+            return;
+        }
         let Some(seq) = self.seq.clone() else {
             self.errors += 1;
             return;
@@ -707,13 +723,21 @@ impl Decoder {
             if let Some(mut prev) = self.bwd.take() {
                 if !prev.shown {
                     prev.shown = true;
-                    self.out.push(to_picture(&prev.frame, &prev.meta));
+                    self.push_output(to_picture(&prev.frame, &prev.meta));
                 }
                 self.fwd = Some(prev);
             }
             self.bwd = Some(Anchor { frame: Arc::new(frame), meta, shown: false });
         } else {
-            self.out.push(to_picture(&frame, &meta));
+            self.push_output(to_picture(&frame, &meta));
+        }
+    }
+
+    fn push_output(&mut self, picture: Picture) {
+        if self.out.len() >= MAX_OUTPUT_PICTURES_PER_ACCESS_UNIT {
+            self.output_overflow = true;
+        } else {
+            self.out.push(picture);
         }
     }
 }
