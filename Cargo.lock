@@ -1244,6 +1244,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-metrics"
+version = "0.10.0"
+dependencies = [
+ "cfa4-color",
+]
+
+[[package]]
 name = "cfa4-mpa"
 version = "0.10.0"
 dependencies = [
