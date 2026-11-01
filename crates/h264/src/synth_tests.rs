@@ -571,12 +571,20 @@ fn poc_type1_reordering() {
 fn pcm_high_bit_depth() {
     for depth in [9u32, 12, 14] {
         for cabac in [false, true] {
-            pcm_depth_check(depth, cabac);
+            pcm_depth_check(depth, cabac, std::time::Duration::ZERO);
         }
     }
 }
 
-fn pcm_depth_check(depth: u32, cabac: bool) {
+/// `flush` returns once every picture's rows are out; the statistics and errors of those pictures
+/// are in by then too (a decoding job published its last rows before counting its picture, so on
+/// two threads `stats` could read 12 PCM macroblocks of 16).
+#[test]
+fn stats_include_every_picture_once_flush_returns() {
+    pcm_depth_check(9, false, std::time::Duration::from_millis(40));
+}
+
+fn pcm_depth_check(depth: u32, cabac: bool, stats_delay: std::time::Duration) {
     let max = (1u32 << depth) - 1;
     let mut seed = depth * 31 + cabac as u32;
     let sample = |seed: &mut u32| {
@@ -652,7 +660,7 @@ fn pcm_depth_check(depth: u32, cabac: bool) {
     let e1 = render(&p, &|i| i % 3 == 1, Some(&e0));
     let expected = [e0, e1];
 
-    if let Some(ff) = cfa4_testkit::ffmpeg_or_skip("synth_pcm_depth") {
+    if let Some(ff) = cfa4_testkit::ffmpeg_or_skip("synth_pcm_depth").filter(|_| stats_delay.is_zero()) {
         let dir = cfa4_testkit::fixtures_dir("h264");
         let name = format!("synth_pcm_{depth}_{}", if cabac { "cabac" } else { "cavlc" });
         let src = cfa4_testkit::temp_path(&dir.join(format!("{name}.h264")));
@@ -676,6 +684,7 @@ fn pcm_depth_check(depth: u32, cabac: bool) {
 
     for threads in [1, 2] {
         let mut dec = Decoder::with_threads(threads);
+        dec.set_stats_delay(stats_delay);
         let mut out = dec.decode(&stream, 0).unwrap();
         out.extend(dec.flush());
         assert!(dec.take_error().is_none());
