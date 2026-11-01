@@ -18,6 +18,10 @@ use cfa4_bitstream::{BitReader, annexb_nals, length_prefixed_nals, unescape_rbsp
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
+/// The decoder supports at most 16 reference pictures, so constructing more
+/// inferred gap pictures cannot improve a usable reference list.
+const MAX_INFERRED_GAP_FRAMES: u32 = 16;
+
 /// One slice of a picture job.
 struct SliceJob {
     sh: SliceHeader,
@@ -474,6 +478,10 @@ impl Decoder {
         } else {
             let max = sps.max_frame_num();
             if sh.frame_num != self.prev_ref_frame_num && sh.frame_num != (self.prev_ref_frame_num + 1) % max {
+                let gap = (sh.frame_num + max - self.prev_ref_frame_num - 1) % max;
+                if gap > MAX_INFERRED_GAP_FRAMES {
+                    return Err(Error::Invalid("frame number gap exceeds the supported reference limit".into()));
+                }
                 // frame_num gap (8.2.5.2): insert "non-existing" frames. Their samples are never used by
                 // conforming streams; copy the latest decoded frame for concealment.
                 let meta = Arc::new(output_meta(sps, pts, false));

@@ -166,6 +166,13 @@ Copies of recycled frame buffers are no longer zeroed first. On a 4-core x86-64 
 1 thread and ~20 on 4. What is left for real time on 4 cores (row-level frame threads,
 deblocking, DCT) is #183.
 
+## Limits
+
+Frames beyond the AV1 level 6.x limits (Annex A: at most 16384 wide, 8704 high and 35 651 584 luma samples
+in total, so 16384 x 2176 or 8192 x 4352 at most) are refused with `Error::Invalid("frame size")`. The sequence
+header can code up to 65536 x 65536, which would ask for gigabytes of buffers from a few bytes of hostile input;
+no real stream comes close to level 6.3, the highest defined level.
+
 ## API
 
 ```rust

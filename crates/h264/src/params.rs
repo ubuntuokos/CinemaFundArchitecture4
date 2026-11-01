@@ -4,6 +4,10 @@ use crate::error::{Result, ensure, unsupported};
 use crate::tables::*;
 use cfa4_bitstream::BitReader;
 
+/// Maximum supported reconstructed luma area. 8K UHD fits comfortably while
+/// hostile SPS dimensions cannot allocate full pictures and decoder work state.
+const MAX_LUMA_SAMPLES: u64 = 1 << 25;
+
 /// Scaling matrices after applying fall-back rules, stored in raster order (weightScale).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ScalingMatrices {
@@ -516,6 +520,9 @@ impl Sps {
     }
 
     pub fn check_supported(&self) -> Result<()> {
+        if u64::from(self.width()).saturating_mul(u64::from(self.height())) > MAX_LUMA_SAMPLES {
+            return unsupported("picture dimensions exceed the decoder memory limit");
+        }
         if self.chroma_format_idc == 0 {
             // the decoding paths exist (chroma is skipped) but no 4:0:0 test stream is available yet (#279)
             return unsupported("chroma_format_idc 0 (monochrome)");
