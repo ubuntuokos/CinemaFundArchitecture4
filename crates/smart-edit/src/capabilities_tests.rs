@@ -1,0 +1,497 @@
+use crate::capabilities::*;
+
+const STRICT: Policy = Policy { allow_experimental: false };
+const LAX: Policy = Policy { allow_experimental: true };
+
+fn h264_high_420_8() -> StreamFormat {
+    StreamFormat { profile: "high".into(), chroma: "4:2:0".into(), bit_depth: 8 }
+}
+
+#[test]
+fn builtin_table_has_only_valid_keys_and_no_duplicates() {
+    let r = Registry::native();
+    let mut n = 0;
+    for e in r.entries() {
+        assert!(e.key.is_valid(), "{:?}", e.key);
+        n += 1;
+    }
+    // every built-in row survived insertion: none was rejected or replaced by a later duplicate
+    assert_eq!(crate::capabilities::native_entries().len(), n);
+    assert!(n > 50, "{n}");
+}
+
+#[test]
+fn invalid_keys_are_rejected() {
+    let mut r = Registry::empty();
+    let bad = Key { operation: Operation::Decode, codec: Codec::H264, container: Some(Container::Mp4) };
+    let e = Entry { key: bad, backend: Backend::Native, level: SupportLevel::Supported, evidence: String::new(), limits: None, routes: Vec::new() };
+    assert_eq!(r.insert(e), Err(RegistryError::InvalidKey(bad)));
+    let missing = Key { operation: Operation::Mux, codec: Codec::H264, container: None };
+    let p = Probe { key: missing, backend: Backend::Platform, outcome: ProbeOutcome::Available { detail: "x".into() }, limits: None, routes: Vec::new() };
+    assert_eq!(r.apply_probes([p]), Err(RegistryError::InvalidKey(missing)));
+    let d = r.decide(bad, STRICT);
+    assert!(!d.allowed);
+    assert_eq!(d.level, SupportLevel::Unsupported);
+}
+
+#[test]
+fn unknown_capabilities_are_unsupported_with_a_reason() {
+    let r = Registry::empty();
+    let d = r.decide(Key::codec(Operation::Decode, Codec::Av1), STRICT);
+    assert!(!d.allowed);
+    assert_eq!(d.backend, None);
+    assert_eq!(d.level, SupportLevel::Unsupported);
+    assert_eq!(d.reasons, vec!["decoding AV1: no backend provides it".to_string()]);
+}
+
+#[test]
+fn baseline_decode_and_demux() {
+    let r = Registry::native();
+    for codec in Codec::VIDEO {
+        let d = r.decide(Key::codec(Operation::Decode, codec), STRICT);
+        assert!(d.allowed, "{codec:?}");
+        assert_eq!(d.backend, Some(Backend::Native));
+    }
+    assert!(r.decide(Key::in_container(Operation::Demux, Codec::Mpeg2Video, Container::MpegPs), STRICT).allowed);
+    assert!(r.decide(Key::in_container(Operation::Demux, Codec::H264, Container::Mp4), STRICT).allowed);
+    // implemented but without an oracle test: only for a lax policy
+    let mkv = Key::in_container(Operation::Demux, Codec::H264, Container::Matroska);
+    assert!(!r.decide(mkv, STRICT).allowed);
+    assert_eq!(r.decide(mkv, STRICT).level, SupportLevel::Experimental);
+    assert!(r.decide(mkv, LAX).allowed);
+}
+
+#[test]
+fn no_smart_cut_is_allowed_before_it_is_implemented() {
+    // WP-03 gate: an unproven cut must never count as lossless
+    let r = Registry::native();
+    for codec in Codec::VIDEO {
+        for source in Container::ALL {
+            for output in Container::ALL {
+                for policy in [STRICT, LAX] {
+                    let d = r.smart_cut(codec, source, output, policy);
+                    assert!(!d.allowed, "{codec:?} {source:?} → {output:?}");
+                    assert!(!d.blockers().is_empty());
+                }
+            }
+        }
+    }
+    let d = r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT);
+    let blocked: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
+    assert_eq!(blocked, vec![Operation::PacketCopy]);
+}
+
+#[test]
+fn smart_cut_needs_every_step() {
+    let mut r = Registry::native();
+    let index = Key::codec(Operation::GopIndex, Codec::H264);
+    let copy = Key::in_container(Operation::PacketCopy, Codec::H264, Container::Mp4);
+    let ok = |key| Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() };
+    assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
+    r.insert(ok(copy)).unwrap();
+    assert!(r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
+    // every step counts: without the GOP index there is no Smart Cut
+    r.insert(Entry { level: SupportLevel::Unsupported, ..ok(index) }).unwrap();
+    assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
+    // MPEG-2 from a program stream cannot be written into MP4: no MPEG-2 sample entry
+    let mut m = Registry::native();
+    m.insert(ok(Key::codec(Operation::GopIndex, Codec::Mpeg2Video))).unwrap();
+    m.insert(ok(Key::in_container(Operation::PacketCopy, Codec::Mpeg2Video, Container::Mp4))).unwrap();
+    let d = m.smart_cut(Codec::Mpeg2Video, Container::MpegPs, Container::Mp4, STRICT);
+    assert!(!d.allowed);
+    assert!(d.blockers().iter().any(|b| b.contains("sample entry")), "{:?}", d.blockers());
+}
+
+#[test]
+fn smart_render_checks_encoder_limits() {
+    let mut r = Registry::native();
+    for key in [
+        Key::codec(Operation::GopIndex, Codec::H264),
+        Key::in_container(Operation::PacketCopy, Codec::H264, Container::Mp4),
+        Key::in_container(Operation::BoundaryReencode, Codec::H264, Container::Mp4),
+    ] {
+        r.insert(Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() }).unwrap();
+    }
+    assert!(r.smart_render(Codec::H264, Container::Mp4, Container::Mp4, &h264_high_420_8(), STRICT).allowed);
+    let ten_bit_422 = StreamFormat { profile: "high-422".into(), chroma: "4:2:2".into(), bit_depth: 10 };
+    let d = r.smart_render(Codec::H264, Container::Mp4, Container::Mp4, &ten_bit_422, STRICT);
+    assert!(!d.allowed);
+    assert_eq!(d.conditions.len(), 3, "{:?}", d.conditions);
+    // only the encoder is refused: no allowed encoder fits the stream
+    let refused: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
+    assert_eq!(refused, vec![Operation::Encode]);
+}
+
+#[test]
+fn smart_render_without_known_limits_is_refused() {
+    let mut r = Registry::native();
+    let av1 = Key::codec(Operation::Encode, Codec::Av1);
+    r.insert(Entry { key: av1, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() }).unwrap();
+    let main8 = StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 };
+    let d = r.smart_render(Codec::Av1, Container::Mp4, Container::Mp4, &main8, LAX);
+    assert!(!d.allowed);
+    assert!(d.conditions.iter().any(|c| c.contains("cannot be shown")), "{:?}", d.conditions);
+    assert!(d.steps.iter().any(|s| s.key == av1 && !s.allowed));
+}
+
+#[test]
+fn the_mpeg2_encoder_and_program_and_transport_stream_muxers_are_registered() {
+    let r = Registry::native();
+    assert!(r.decide(Key::codec(Operation::Encode, Codec::Mpeg2Video), STRICT).allowed);
+    for c in [Container::MpegPs, Container::MpegTs] {
+        assert!(r.decide(Key::in_container(Operation::Mux, Codec::Mpeg2Video, c), STRICT).allowed, "{c:?}");
+    }
+    assert!(!r.decide(Key::in_container(Operation::Mux, Codec::Mpeg2Video, Container::Mp4), LAX).allowed);
+    let limits = r.encoder_limits(Codec::Mpeg2Video, STRICT).unwrap();
+    assert!(limits.check(&StreamFormat { profile: "422".into(), chroma: "4:2:2".into(), bit_depth: 8 }).is_ok());
+    assert!(limits.check(&StreamFormat { profile: "high".into(), chroma: "4:2:0".into(), bit_depth: 10 }).is_err());
+}
+
+#[test]
+fn smart_render_picks_the_encoder_that_fits_the_stream() {
+    let mut r = Registry::native();
+    let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    for key in [
+        Key::codec(Operation::GopIndex, Codec::Hevc),
+        Key::in_container(Operation::PacketCopy, Codec::Hevc, Container::Mp4),
+        Key::in_container(Operation::BoundaryReencode, Codec::Hevc, Container::Mp4),
+    ] {
+        r.insert(Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() }).unwrap();
+    }
+    let lim = |depth: u8, profile: &str| Some(EncoderLimits { profiles: vec![profile.into()], chroma: vec!["4:2:0".into()], bit_depths: vec![depth] });
+    r.insert(Entry {
+        key: hevc,
+        backend: Backend::Platform,
+        level: SupportLevel::Supported,
+        evidence: "test".into(),
+        limits: lim(8, "main"),
+        routes: Vec::new(),
+    })
+    .unwrap();
+    r.insert(Entry {
+        key: hevc,
+        backend: Backend::Gstreamer,
+        level: SupportLevel::Supported,
+        evidence: "test".into(),
+        limits: lim(10, "main10"),
+        routes: Vec::new(),
+    })
+    .unwrap();
+    let main10 = StreamFormat { profile: "main10".into(), chroma: "4:2:0".into(), bit_depth: 10 };
+    let d = r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &main10, STRICT);
+    assert!(d.allowed, "{:?}", d.blockers());
+    let enc = d.steps.iter().find(|s| s.key == hevc).unwrap();
+    assert_eq!(enc.backend, Some(Backend::Gstreamer));
+    let main = StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 };
+    let d = r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &main, STRICT);
+    assert_eq!(d.steps.iter().find(|s| s.key == hevc).unwrap().backend, Some(Backend::Platform));
+    // nothing fits 4:2:2: refused, with each backend's reason
+    let yuv422 = StreamFormat { profile: "main422-10".into(), chroma: "4:2:2".into(), bit_depth: 10 };
+    let d = r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &yuv422, STRICT);
+    assert!(!d.allowed);
+    assert!(!d.steps.iter().find(|s| s.key == hevc).unwrap().allowed);
+    assert!(
+        d.conditions.iter().any(|c| c.starts_with("Platform encoder")) && d.conditions.iter().any(|c| c.starts_with("Gstreamer encoder")),
+        "{:?}",
+        d.conditions
+    );
+}
+
+#[test]
+fn baseline_av1_has_no_encoder_and_mpeg2_demuxes_from_iso_and_matroska() {
+    let r = Registry::native();
+    let d = r.decide(Key::codec(Operation::Encode, Codec::Av1), LAX);
+    assert!(!d.allowed);
+    assert_eq!(d.level, SupportLevel::Unsupported);
+    for c in [Container::Mp4, Container::Mov, Container::Matroska, Container::MpegPs, Container::MpegTs, Container::Mxf] {
+        assert!(r.decide(Key::in_container(Operation::Demux, Codec::Mpeg2Video, c), STRICT).allowed, "{c:?}");
+    }
+}
+
+#[test]
+fn hardware_encoders_wait_for_a_probe() {
+    let mut r = Registry::native();
+    let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    let d = r.decide(hevc, STRICT);
+    assert!(!d.allowed);
+    assert_eq!(d.level, SupportLevel::NeedsProbe);
+    assert_eq!(d.reasons.len(), 2, "native and platform are both listed: {:?}", d.reasons);
+
+    let limits = EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    r.apply_probes([Probe {
+        key: hevc,
+        backend: Backend::Platform,
+        outcome: ProbeOutcome::Available { detail: "NVENC".into() },
+        limits: Some(limits.clone()),
+        routes: Vec::new(),
+    }])
+    .unwrap();
+    let d = r.decide(hevc, STRICT);
+    assert!(d.allowed);
+    assert_eq!(d.backend, Some(Backend::Platform));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&limits));
+}
+
+#[test]
+fn probes_are_order_independent_and_unavailable_wins() {
+    let key = Key::codec(Operation::Encode, Codec::Av1);
+    let yes = Probe { key, backend: Backend::Platform, outcome: ProbeOutcome::Available { detail: "found".into() }, limits: None, routes: Vec::new() };
+    let no =
+        Probe { key, backend: Backend::Platform, outcome: ProbeOutcome::Unavailable { reason: "driver too old".into() }, limits: None, routes: Vec::new() };
+    let other = Probe {
+        key: Key::codec(Operation::Encode, Codec::Hevc),
+        backend: Backend::Platform,
+        outcome: ProbeOutcome::Available { detail: "found".into() },
+        limits: None,
+        routes: Vec::new(),
+    };
+
+    let mut a = Registry::native();
+    a.apply_probes([yes.clone(), no.clone(), other.clone()]).unwrap();
+    let mut b = Registry::native();
+    b.apply_probes([other.clone(), no.clone(), yes.clone(), yes.clone()]).unwrap();
+    let mut c = Registry::native();
+    c.apply_probes([no.clone()]).unwrap();
+    c.apply_probes([yes.clone(), other.clone()]).unwrap();
+
+    assert_eq!(a, b);
+    assert_eq!(a, c);
+    let d = a.decide(key, STRICT);
+    assert!(!d.allowed);
+    assert!(d.reasons.iter().any(|r| r.contains("driver too old")), "{:?}", d.reasons);
+    assert!(a.decide(Key::codec(Operation::Encode, Codec::Hevc), STRICT).allowed);
+    assert_eq!(serde_json::to_string(&a.report()).unwrap(), serde_json::to_string(&b.report()).unwrap());
+}
+
+#[test]
+fn backend_preference_comes_from_the_routing_table() {
+    let mut r = Registry::empty();
+    let encode = Key::codec(Operation::Encode, Codec::H264);
+    let demux = Key::in_container(Operation::Demux, Codec::H264, Container::Mp4);
+    for key in [encode, demux] {
+        for backend in [Backend::Ffmpeg, Backend::Gstreamer, Backend::Platform, Backend::Native] {
+            r.insert(Entry { key, backend, level: SupportLevel::Supported, evidence: format!("{backend:?}"), limits: None, routes: Vec::new() }).unwrap();
+        }
+    }
+    let names = |d: &Decision| d.reasons.iter().map(|s| s.split(':').next().unwrap_or("").to_string()).collect::<Vec<_>>();
+    // shipped codec_encode order: nvenc, vaapi, ffmpeg, gstreamer-va, software
+    let d = r.decide(encode, STRICT);
+    assert_eq!(d.backend, Some(Backend::Platform), "a hardware encoder the table puts first wins over our software one");
+    assert_eq!(names(&d), vec!["Platform", "Ffmpeg", "Gstreamer", "Native"]);
+    // no routing family for demuxing: our own code first
+    assert_eq!(r.decide(demux, STRICT).backend, Some(Backend::Native));
+
+    // the user's routing file reorders the planner too
+    let user = cfa4_route::Table::parse("[compute.default]\ncodec_encode = [\"software\", \"gstreamer-va\"]\n").unwrap();
+    let table = cfa4_route::Table::builtin().unwrap().merged(user);
+    r.set_backend_order(BackendOrder::from_route(&table));
+    let d = r.decide(encode, STRICT);
+    assert_eq!(d.backend, Some(Backend::Native));
+    assert_eq!(names(&d), vec!["Native", "Gstreamer", "Platform", "Ffmpeg"], "omitted backends are listed, but only as not routed");
+    assert!(d.reasons[2].contains("not in the routing order"), "{:?}", d.reasons);
+
+    // a per-task row wins over the family, as it does for the export encoder route
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.h264\"]\norder = [\"software\"]\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    assert_eq!(r.decide(encode, STRICT).backend, Some(Backend::Native));
+    let hevc = Key::codec(Operation::Encode, Codec::Hevc);
+    for backend in [Backend::Native, Backend::Platform] {
+        r.insert(Entry { key: hevc, backend, level: SupportLevel::Supported, evidence: String::new(), limits: None, routes: Vec::new() }).unwrap();
+    }
+    assert_eq!(r.decide(hevc, STRICT).backend, Some(Backend::Platform), "an H.264 override leaves HEVC alone");
+
+    // a backend the override leaves out is no candidate, even when it is the only one available
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.hevc\"]\norder = [\"software\"]\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    r.insert(Entry { key: hevc, backend: Backend::Native, level: SupportLevel::Unsupported, evidence: String::new(), limits: None, routes: Vec::new() })
+        .unwrap();
+    let d = r.decide(hevc, STRICT);
+    assert!(!d.allowed, "{d:?}");
+    let render =
+        r.smart_render(Codec::Hevc, Container::Mp4, Container::Mp4, &StreamFormat { profile: "main".into(), chroma: "4:2:0".into(), bit_depth: 8 }, LAX);
+    assert!(render.steps.iter().any(|s| s.key == hevc && !s.allowed), "{render:?}");
+
+    // an explicitly empty order is no route at all, not a fallback to our own encoder
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.h264\"]\norder = []\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    let d = r.decide(encode, STRICT);
+    assert!(!d.allowed && d.reasons.iter().all(|l| l.contains("not in the routing order")), "{d:?}");
+
+    // the router's own lookup: the exact task row or the family, never a parent row
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode\"]\norder = []\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    assert_eq!(r.decide(encode, STRICT).backend, Some(Backend::Platform), "video.encode is not the H.264 export task");
+    // decoding is routed as video.decode for every codec, as cfa4-platform registers it
+    let decode = Key::codec(Operation::Decode, Codec::Hevc);
+    for backend in [Backend::Native, Backend::Platform] {
+        r.insert(Entry { key: decode, backend, level: SupportLevel::Supported, evidence: String::new(), limits: None, routes: Vec::new() }).unwrap();
+    }
+    let user = cfa4_route::Table::parse("[compute.task.\"video.decode\"]\norder = [\"software\"]\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    assert_eq!(r.decide(decode, STRICT).backend, Some(Backend::Native));
+}
+
+#[test]
+fn a_probed_route_is_only_admitted_through_its_own_route_id() {
+    let mut r = Registry::native();
+    let key = Key::codec(Operation::Encode, Codec::Hevc);
+    let limits = EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    r.apply_probes([Probe {
+        key,
+        backend: Backend::Platform,
+        outcome: ProbeOutcome::Available { detail: "NVENC".into() },
+        limits: Some(limits),
+        routes: vec!["nvenc".into()],
+    }])
+    .unwrap();
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Platform), "shipped order lists nvenc");
+    // VA-API only: the NVENC encoder the probe found is not a route the export would take
+    let user = cfa4_route::Table::parse("[compute.task.\"video.encode.hevc\"]\norder = [\"vaapi\"]\n").unwrap();
+    r.set_backend_order(BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user)));
+    let d = r.decide(key, STRICT);
+    assert!(!d.allowed, "{d:?}");
+    assert!(d.reasons.iter().any(|l| l.starts_with("Platform [nvenc]: not in the routing order")), "{d:?}");
+}
+
+#[test]
+fn an_available_hardware_encoder_is_preferred_as_the_router_says() {
+    let mut r = Registry::native();
+    let key = Key::codec(Operation::Encode, Codec::H264);
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Native), "nothing probed: our software encoder");
+    let limits = EncoderLimits { profiles: vec!["main".into(), "high".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    r.apply_probes(vec![Probe {
+        key,
+        backend: Backend::Platform,
+        outcome: ProbeOutcome::Available { detail: "NVENC H.264".into() },
+        limits: Some(limits),
+        routes: vec!["nvenc".into()],
+    }])
+    .unwrap();
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Platform));
+}
+
+#[test]
+fn no_ffmpeg_backend_is_registered() {
+    // Smart Cut runs on CFA4's own code; ffmpeg is its validation oracle (owner decision 2026-10-27)
+    assert!(Registry::native().entries().all(|e| e.backend != Backend::Ffmpeg));
+}
+
+#[test]
+fn report_round_trips_and_is_stable() {
+    let r = Registry::native();
+    let json = serde_json::to_string_pretty(&r.report()).unwrap();
+    assert_eq!(json, serde_json::to_string_pretty(&Registry::native().report()).unwrap());
+    let back: Report = serde_json::from_str(&json).unwrap();
+    assert_eq!(back, r.report());
+    assert_eq!(back.registry_version, REGISTRY_VERSION);
+    // the wire names are part of the control-API contract
+    assert!(json.contains("\"operation\": \"packet-copy\""));
+    assert!(json.contains("\"codec\": \"mpeg2-video\""));
+    assert!(json.contains("\"container\": \"mpeg-ps\""));
+    assert!(json.contains("\"level\": \"needs-probe\""));
+}
+
+#[test]
+fn hostile_report_json_does_not_panic() {
+    for text in ["", "{}", "[]", "{\"registry_version\": -1}", "{\"registry_version\":1,\"entries\":[{\"key\":{}}],\"probes\":[]}", "\u{0}"] {
+        let r: Result<Report, _> = serde_json::from_str(text);
+        assert!(r.is_err(), "{text:?}");
+    }
+}
+
+#[test]
+fn probes_of_separate_hardware_routes_keep_separate_outcomes() {
+    let key = Key::codec(Operation::Encode, Codec::Hevc);
+    let main8 = EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    let main10 = EncoderLimits { profiles: vec!["main10".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![10] };
+    let probe = |route: &str, outcome: ProbeOutcome, limits: Option<EncoderLimits>| Probe {
+        key,
+        backend: Backend::Platform,
+        outcome,
+        limits,
+        routes: vec![route.to_string()],
+    };
+    let nvenc_ok = probe("nvenc", ProbeOutcome::Available { detail: "NVENC".into() }, Some(main10.clone()));
+    let vaapi_down = probe("vaapi", ProbeOutcome::Unavailable { reason: "no VA-API device".into() }, None);
+    let only = |routes: &str| {
+        let user = cfa4_route::Table::parse(&format!("[compute.task.\"video.encode.hevc\"]\norder = [{routes}]\n")).unwrap();
+        BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user))
+    };
+    // an unavailable VA-API probe does not hide the NVENC encoder, in either probe order
+    for probes in [vec![nvenc_ok.clone(), vaapi_down.clone()], vec![vaapi_down.clone(), nvenc_ok.clone()]] {
+        let mut r = Registry::native();
+        r.apply_probes(probes).unwrap();
+        assert!(r.decide(key, STRICT).allowed);
+        r.set_backend_order(only("\"nvenc\""));
+        let d = r.decide(key, STRICT);
+        assert_eq!(d.backend, Some(Backend::Platform), "{d:?}");
+        assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&main10));
+        r.set_backend_order(only("\"vaapi\""));
+        assert!(!r.decide(key, STRICT).allowed);
+        assert_eq!(r.get_route(key, "vaapi").map(|e| e.level), Some(SupportLevel::Unsupported));
+        assert_eq!(r.get_route(key, "nvenc").map(|e| e.level), Some(SupportLevel::Supported));
+    }
+    // two available routes keep their own limits; the routing order picks between them
+    let mut r = Registry::native();
+    r.apply_probes([nvenc_ok, probe("vaapi", ProbeOutcome::Available { detail: "VA-API".into() }, Some(main8.clone()))]).unwrap();
+    r.set_backend_order(only("\"vaapi\", \"nvenc\""));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&main8));
+    r.set_backend_order(only("\"nvenc\", \"vaapi\""));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&main10));
+    // a probe for the whole backend that finds it unavailable still wins over every route
+    r.apply_probes([Probe {
+        key,
+        backend: Backend::Platform,
+        outcome: ProbeOutcome::Unavailable { reason: "no GPU".into() },
+        limits: None,
+        routes: Vec::new(),
+    }])
+    .unwrap();
+    assert!(!r.decide(key, STRICT).allowed);
+}
+
+#[test]
+fn an_unavailable_route_wins_over_a_probe_naming_several_routes() {
+    let key = Key::codec(Operation::Encode, Codec::Hevc);
+    let limits = EncoderLimits { profiles: vec!["main".into()], chroma: vec!["4:2:0".into()], bit_depths: vec![8] };
+    let mut r = Registry::native();
+    r.apply_probes([
+        Probe {
+            key,
+            backend: Backend::Platform,
+            outcome: ProbeOutcome::Available { detail: "GPU encoders".into() },
+            limits: Some(limits.clone()),
+            routes: vec!["vaapi".into(), "nvenc".into()],
+        },
+        Probe {
+            key,
+            backend: Backend::Platform,
+            outcome: ProbeOutcome::Unavailable { reason: "NVENC session limit".into() },
+            limits: None,
+            routes: vec!["nvenc".into()],
+        },
+    ])
+    .unwrap();
+    let only = |route: &str| {
+        let user = cfa4_route::Table::parse(&format!("[compute.task.\"video.encode.hevc\"]\norder = [\"{route}\"]\n")).unwrap();
+        BackendOrder::from_route(&cfa4_route::Table::builtin().unwrap().merged(user))
+    };
+    r.set_backend_order(only("nvenc"));
+    let d = r.decide(key, STRICT);
+    assert!(!d.allowed, "{d:?}");
+    r.set_backend_order(only("vaapi"));
+    assert_eq!(r.decide(key, STRICT).backend, Some(Backend::Platform));
+    assert_eq!(r.encoder_limits(Codec::Hevc, STRICT), Some(&limits));
+    // an inserted row naming several routes is one row per route as well
+    let mut r = Registry::empty();
+    r.insert(Entry {
+        key,
+        backend: Backend::Platform,
+        level: SupportLevel::Supported,
+        evidence: "test".into(),
+        limits: None,
+        routes: vec!["nvenc".into(), "vaapi".into()],
+    })
+    .unwrap();
+    assert_eq!(r.entries().map(|e| e.routes.clone()).collect::<Vec<_>>(), [vec!["nvenc".to_string()], vec!["vaapi".to_string()]]);
+}

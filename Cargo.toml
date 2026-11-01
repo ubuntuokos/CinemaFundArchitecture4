@@ -66,6 +66,7 @@ cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
 cfa4-export = { path = "crates/export" }
+cfa4-smart-edit = { path = "crates/smart-edit" }
 cfa4-format = { path = "crates/format" }
 cfa4-engine = { path = "crates/engine" }
 cfa4-ui-egui = { path = "crates/ui-egui" }
