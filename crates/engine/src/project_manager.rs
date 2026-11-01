@@ -286,7 +286,9 @@ fn execute(
                 proj.shift_media_time(w.item, r.start);
                 let b = std::fs::read(&w.out).map_err(|e| format!("{}: {e}", w.out))?;
                 let fname = Path::new(&w.out).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                let info = cfa4_media::open_bytes(&fname, b.into(), &openers).map_err(|e| format!("{}: {e}", w.out))?.info().clone();
+                // as the item interprets it: an Auro-3D carrier played as its own channels stays one (#323)
+                let opened = cfa4_media::open_bytes(&fname, b.into(), &openers).map_err(|e| format!("{}: {e}", w.out))?;
+                let info = crate::media_pool::interpreted(&m, opened).info().clone();
                 if let Some(mm) = proj.item_mut(w.item).and_then(|i| i.as_media_mut()) {
                     mm.info = info;
                     mm.proxy = None;
