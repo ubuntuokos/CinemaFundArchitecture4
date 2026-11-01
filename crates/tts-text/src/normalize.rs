@@ -431,6 +431,8 @@ fn parse_time(rest: &str) -> Option<(Vec<Token>, usize)> {
     for (lit, letter_pair) in [("am", ['a', 'm']), ("pm", ['p', 'm'])] {
         if after.get(..2).is_some_and(|s| s.eq_ignore_ascii_case(lit)) {
             for letter in letter_pair {
+                // Uppercase "A" so it is read as a letter name, not the article.
+                let letter = if letter == 'a' { 'A' } else { letter };
                 tokens.push(Token::Word(letter.into()));
             }
             used += 2;
@@ -962,7 +964,7 @@ fn parse_wordish(rest: &str, _lang: Lang) -> Option<(Vec<Token>, usize)> {
     if word.len() == 1 && matches!(lower.as_str(), "a" | "p") && peek(rest, used) == Some('.') && matches!(peek(rest, used + 1), Some('m') | Some('M')) {
         let after_m = used + 2;
         if peek(rest, after_m).is_none_or(|c| !c.is_alphanumeric()) {
-            let mut tokens = vec![Token::Word(word.to_ascii_lowercase())];
+            let mut tokens = vec![Token::Word(if lower == "a" { "A".into() } else { lower.clone() })];
             tokens.push(Token::Word("m".into()));
             let consumed = if peek(rest, after_m) == Some('.') { after_m + 1 } else { after_m };
             return Some((tokens, consumed));
@@ -1363,7 +1365,7 @@ mod tests {
         assert_eq!(words("23:59", Lang::EnUs), "twenty-three fifty-nine");
         assert_eq!(words("3:30pm", Lang::EnUs), "three thirty p m");
         assert_eq!(words("3:30 p.m.", Lang::EnUs), "three thirty p m");
-        assert_eq!(words("9:00 a.m.", Lang::EnUs), "nine zero a m");
+        assert_eq!(words("9:00 a.m.", Lang::EnUs), "nine zero A m");
     }
 
     #[test]
