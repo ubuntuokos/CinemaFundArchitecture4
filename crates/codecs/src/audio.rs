@@ -209,6 +209,7 @@ impl PacketDecoder {
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_TYPE_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
             C::Opus(o) => Self::opus(cfa4_opus::OpusHead::from_dops(&o.to_bytes()).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
+            C::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => Err(CodecError::Unsupported(AURO_CX_UNSUPPORTED.into())),
             other => Err(CodecError::Unsupported(format!("{} audio", other.name()))),
         }
     }
@@ -953,6 +954,11 @@ fn id3v2_len(bytes: &[u8]) -> usize {
         _ => 0,
     }
 }
+
+/// Why an Auro-CX track (MP4 sample entry `a3ds`, #322) does not play: Auro-CX is a codec of its
+/// own, not an Auro-Codec carrier in PCM (`cfa4-auro`), and has no public specification or
+/// open decoder.
+pub const AURO_CX_UNSUPPORTED: &str = "Auro-CX audio (a3ds): there is no public specification or open decoder, so CFA4 cannot decode it";
 
 /// Most samples (all channels together) a standalone ADTS file decodes into memory: 4 GiB of f32,
 /// about three hours of 48 kHz stereo. Longer files are refused rather than allocated.
