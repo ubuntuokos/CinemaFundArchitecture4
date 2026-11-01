@@ -25,6 +25,7 @@ cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
+cfa4-dv = { path = "crates/dv" }
 cfa4-ac3 = { path = "crates/ac3" }
 cfa4-dts = { path = "crates/dts" }
 cfa4-auro = { path = "crates/auro" }
