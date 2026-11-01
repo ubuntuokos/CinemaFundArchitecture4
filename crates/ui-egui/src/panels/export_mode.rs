@@ -1430,7 +1430,9 @@ fn quick_file(app: &Cfa4App, path: &str, seq_name: &str, ext: &str) -> Option<St
         return None;
     }
     let file = match name {
-        None => format!("{seq_name}.{ext}"),
+        // Sequence names come from the project, not from this Quick Export interaction. Keep
+        // metadata in one filename component before joining it to the selected/default folder.
+        None => format!("{}.{}", cfa4_engine::export_tools::file_safe(seq_name), ext),
         Some(n) if cur.eq_ignore_ascii_case(ext) => n.to_string(),
         Some(n) if !cur.is_empty() && app.session.export_presets.all().iter().any(|x| x.settings.extension().eq_ignore_ascii_case(cur)) => {
             std::path::Path::new(n).with_extension(ext).to_string_lossy().to_string()
