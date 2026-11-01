@@ -235,6 +235,59 @@ fn list_view_columns_sort_resize_and_rename() {
     assert_ne!(d.app().session.project.item(ItemId(items[0])).unwrap().name, "Hero shot");
 }
 
+// Regression test for #1295: in a narrow List-view column the sort arrow was painted over the end of
+// the (clipped) column name; the name must be clipped to the left of the arrow.
+#[test]
+fn sorted_column_header_name_is_clipped_clear_of_the_sort_arrow() {
+    fn collect<'a>(shapes: &'a [egui::Shape], clip: egui::Rect, out: &mut Vec<(&'a egui::Shape, egui::Rect)>) {
+        for s in shapes {
+            match s {
+                egui::Shape::Vec(v) => collect(v, clip, out),
+                other => out.push((other, clip)),
+            }
+        }
+    }
+    let mut d = project_driver();
+    d.exec("project.view.set", json!({"view": "list"}));
+    d.frames(2);
+    // the default sort is by Name; make that column narrow enough that its name is clipped
+    for c in &mut d.app().session.prefs.project_panel.view.columns {
+        if c.name == "Name" {
+            c.width = 40.0;
+        }
+    }
+    d.frames(3);
+    assert_eq!(d.app().session.prefs.project_panel.view.sort.column, "Name");
+    let [hx, hy, hw, hh] = d.rect("project.list.header.Name");
+    let header = egui::Rect::from_min_size(egui::pos2(hx, hy), egui::vec2(hw, hh));
+    let mut all = Vec::new();
+    let clipped: Vec<_> = d.harness.output().shapes.iter().map(|c| (c.shape.clone(), c.clip_rect)).collect();
+    for (shape, clip) in &clipped {
+        collect(std::slice::from_ref(shape), *clip, &mut all);
+    }
+    // the visible part of the name: the clip rect of the header's "Name" text
+    let name_clip = all
+        .iter()
+        .find_map(|(s, clip)| match s {
+            egui::Shape::Text(t) if t.galley.text() == "Name" && header.contains(t.pos) => Some(*clip),
+            _ => None,
+        })
+        .expect("the Name header text is drawn");
+    // the arrow: the 1.3 px strokes drawn inside the header
+    let arrow_x: Vec<f32> = all
+        .iter()
+        .filter_map(|(s, _)| match s {
+            egui::Shape::LineSegment { points, stroke } if (stroke.width - 1.3).abs() < 1e-3 && header.contains(points[0]) && header.contains(points[1]) => {
+                Some(points[0].x.min(points[1].x))
+            }
+            _ => None,
+        })
+        .collect();
+    assert!(!arrow_x.is_empty(), "the sort arrow is drawn in the sorted column's header");
+    let arrow_left = arrow_x.into_iter().fold(f32::MAX, f32::min);
+    assert!(name_clip.max.x <= arrow_left, "the name is visible up to x={} but the sort arrow starts at x={arrow_left}", name_clip.max.x);
+}
+
 #[test]
 fn icon_view_hover_scrub_sets_in_and_out() {
     let mut d = project_driver();

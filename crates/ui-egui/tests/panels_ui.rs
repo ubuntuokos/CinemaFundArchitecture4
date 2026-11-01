@@ -777,3 +777,74 @@ fn effects_are_indented_under_their_folders() {
         assert!(b >= a + 12.0, "`{inner}` ({b}) is not indented under `{outer}` ({a})");
     }
 }
+
+/// The font of the first run of every text shape drawn this frame, with the text, position and colour.
+fn painted_text(d: &Driver) -> Vec<(String, egui::Pos2, egui::FontId, egui::Color32)> {
+    fn walk(s: &egui::Shape, out: &mut Vec<(String, egui::Pos2, egui::FontId, egui::Color32)>) {
+        match s {
+            egui::Shape::Text(t) => {
+                if let Some(sec) = t.galley.job.sections.first() {
+                    out.push((t.galley.text().to_string(), t.pos, sec.format.font_id.clone(), sec.format.color));
+                }
+            }
+            egui::Shape::Vec(v) => v.iter().for_each(|s| walk(s, out)),
+            _ => {}
+        }
+    }
+    let mut out = Vec::new();
+    d.harness.output().shapes.iter().for_each(|c| walk(&c.shape, &mut out));
+    out
+}
+
+// Regression test for #130: the big blue timecodes over the timeline and under the monitors were
+// drawn in 15 pt semibold; Premiere's are regular weight, 16 pt, in the timecode colour.
+#[test]
+fn big_timecodes_are_regular_weight_16pt_in_the_timecode_colour() {
+    let mut d = Driver::demo();
+    d.ok("ui.panel.show", json!({"panel": "Program"}));
+    d.ok("ui.panel.show", json!({"panel": "ReferenceMonitor"}));
+    d.frames(3);
+    let timecode = d.app().tokens.timecode;
+    for id in ["timeline.timecode", "program.timecode", "reference.timecode"] {
+        let rect = {
+            let v = d.ok("ui.elements", json!({"prefix": id}));
+            let e = v.as_array().unwrap().iter().find(|e| e["id"] == json!(id)).unwrap_or_else(|| panic!("no element {id}")).clone();
+            let r = &e["rect"];
+            egui::Rect::from_min_size(
+                egui::pos2(r[0].as_f64().unwrap() as f32, r[1].as_f64().unwrap() as f32),
+                egui::vec2(r[2].as_f64().unwrap() as f32, r[3].as_f64().unwrap() as f32),
+            )
+        };
+        let shown = d.label(id);
+        let (_, _, font, color) = painted_text(&d)
+            .into_iter()
+            .find(|(text, pos, ..)| *text == shown && rect.expand(2.0).contains(*pos))
+            .unwrap_or_else(|| panic!("{id}: `{shown}` is not drawn in {rect:?}"));
+        assert_eq!(font, egui::FontId::new(16.0, egui::FontFamily::Proportional), "{id}: font");
+        assert_eq!(color, timecode, "{id}: colour");
+    }
+}
+
+// Regression test for #130: the menu bar's menus were drawn in egui's default body size; Premiere's
+// are the system's, larger (13 pt) and brighter than panel text.
+#[test]
+fn menu_bar_menus_use_the_13pt_menu_text() {
+    let mut d = Driver::demo();
+    d.click("menu.File");
+    d.frames(3);
+    for id in ["menu.File", "menu.file.open", "menu.file.save", "menu.file.saveAs"] {
+        let v = d.ok("ui.elements", json!({"prefix": id}));
+        let e = v.as_array().unwrap().iter().find(|e| e["id"] == json!(id)).unwrap_or_else(|| panic!("no menu item {id}")).clone();
+        let label = e["label"].as_str().unwrap().to_string();
+        let r = &e["rect"];
+        let rect = egui::Rect::from_min_size(
+            egui::pos2(r[0].as_f64().unwrap() as f32, r[1].as_f64().unwrap() as f32),
+            egui::vec2(r[2].as_f64().unwrap() as f32, r[3].as_f64().unwrap() as f32),
+        );
+        let (_, _, font, _) = painted_text(&d)
+            .into_iter()
+            .find(|(text, pos, ..)| *text == label && rect.contains(*pos))
+            .unwrap_or_else(|| panic!("`{label}` is not drawn in {rect:?}"));
+        assert_eq!(font.size, 13.0, "`{label}` in the File menu");
+    }
+}

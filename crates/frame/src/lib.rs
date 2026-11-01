@@ -248,17 +248,17 @@ impl VideoFrame {
             PixelData::Rgba8(d) => PixelData::Rgba8(Arc::new(rotate_plane(d, w, h, 4, q))),
             PixelData::RgbaF32(d) => PixelData::RgbaF32(Arc::new(rotate_plane(d, w, h, 4, q))),
             PixelData::Yuv8 { planes, chroma, alpha } => {
-                let (c, chroma) = rotate_chroma(planes, *chroma, w, h, q);
+                let ([cb, cr], chroma) = rotate_chroma(planes, *chroma, w, h, q);
                 PixelData::Yuv8 {
-                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(c[0].clone()), Arc::new(c[1].clone())],
+                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(cb), Arc::new(cr)],
                     chroma,
                     alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
                 }
             }
             PixelData::Yuv16 { planes, chroma, bits, alpha } => {
-                let (c, chroma) = rotate_chroma(planes, *chroma, w, h, q);
+                let ([cb, cr], chroma) = rotate_chroma(planes, *chroma, w, h, q);
                 PixelData::Yuv16 {
-                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(c[0].clone()), Arc::new(c[1].clone())],
+                    planes: [Arc::new(rotate_plane(&planes[0], w, h, 1, q)), Arc::new(cb), Arc::new(cr)],
                     chroma,
                     bits: *bits,
                     alpha: alpha.as_ref().map(|a| Arc::new(rotate_plane(a, w, h, 1, q))),
@@ -440,6 +440,13 @@ impl VideoFrame {
                 let cw = w.div_ceil(1 << sx);
                 let bits = *bits;
                 let amax = ((1u32 << bits) - 1) as f32;
+                // Per-code tables (exactly the values `normalize_*` returns) instead of two
+                // divisions per sample; a code past the table (a corrupt plane) is computed.
+                let codes = if bits <= 12 { 1usize << bits } else { 0 };
+                let ytab: Vec<f32> = (0..codes as u32).map(|v| normalize_y(v, bits, info.range)).collect();
+                let ctab: Vec<f32> = (0..codes as u32).map(|v| normalize_c(v, bits, info.range)).collect();
+                let ny = |v: u16| ytab.get(usize::from(v)).copied().unwrap_or_else(|| normalize_y(u32::from(v), bits, info.range));
+                let nc = |v: u16| ctab.get(usize::from(v)).copied().unwrap_or_else(|| normalize_c(u32::from(v), bits, info.range));
                 out.par_chunks_mut(r.w * 4).enumerate().for_each(|(ry, row)| {
                     let oy = r.y + ry;
                     for rx in 0..r.w {
@@ -451,9 +458,9 @@ impl VideoFrame {
                             for dx in 0..n {
                                 let x = (ox * n + dx).min(w - 1);
                                 let cx = x >> sx;
-                                let yy = normalize_y(planes[0][y * w + x] as u32, bits, info.range);
-                                let u = normalize_c(planes[1][cy * cw + cx] as u32, bits, info.range);
-                                let v = normalize_c(planes[2][cy * cw + cx] as u32, bits, info.range);
+                                let yy = ny(planes[0][y * w + x]);
+                                let u = nc(planes[1][cy * cw + cx]);
+                                let v = nc(planes[2][cy * cw + cx]);
                                 let rgb = ycbcr_to_rgb(yy, u, v, info.matrix);
                                 let a = alpha.as_ref().map_or(1.0, |al| al[y * w + x] as f32 / amax);
                                 acc[0] += q(rgb[0]) * a;
