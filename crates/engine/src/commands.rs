@@ -3658,12 +3658,19 @@ pub(crate) fn json_to_param(template: &ParamValue, v: &Value) -> Option<ParamVal
         }
         ParamValue::Color(_) => match v {
             Value::String(s) => ParamValue::Color(cfa4_color::parse_hex(s)?),
-            Value::Array(a) => ParamValue::Color([
-                a.first()?.as_f64()? as f32,
-                a.get(1)?.as_f64()? as f32,
-                a.get(2)?.as_f64()? as f32,
-                a.get(3).and_then(Value::as_f64).unwrap_or(1.0) as f32,
-            ]),
+            Value::Array(a) => {
+                let c = [
+                    a.first()?.as_f64()? as f32,
+                    a.get(1)?.as_f64()? as f32,
+                    a.get(2)?.as_f64()? as f32,
+                    a.get(3).and_then(Value::as_f64).unwrap_or(1.0) as f32,
+                ];
+                // a finite f64 such as 1e300 saturates to an infinite f32, which a saved project cannot reload
+                if !c.iter().all(|x| x.is_finite()) {
+                    return None;
+                }
+                ParamValue::Color(c)
+            }
             _ => return None,
         },
         ParamValue::Bool(_) => ParamValue::Bool(v.as_bool()?),
