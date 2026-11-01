@@ -214,6 +214,17 @@ pub fn decode(bytes: &[u8]) -> Result<Loaded, FormatError> {
 /// Refuse only values that would overflow or exhaust memory later (`Sequence::check_bounds`);
 /// structural rules such as overlaps are left to the editor, so projects that open today still open.
 fn validate_loaded(mut loaded: Loaded) -> Result<Loaded, FormatError> {
+    // Embedded LUT text is rendered on the hot path. Drop oversize entries at load time so a
+    // hostile project cannot retain an unrenderable multi-megabyte source or repeatedly offer it
+    // to renderers. Clips that refer to one simply have no LUT, like a deleted library entry.
+    let max_lut = cfa4_project::MAX_LUT_TEXT_BYTES;
+    loaded.project.luts.retain(|lut| {
+        let keep = lut.text.len() <= max_lut;
+        if !keep {
+            log::warn!("LUT `{}`: {} bytes, dropping entry above {max_lut} byte limit", lut.name, lut.text.len());
+        }
+        keep
+    });
     // Out-of-range audio stream data is repaired, not refused: failing the load would lose the
     // whole project over one bad index. A media item keeps its first `MAX_AUDIO_STREAMS` streams; a
     // clip pointing past that plays stream 0.
@@ -414,6 +425,20 @@ mod tests {
             assert!(!l.migrated());
             assert_eq!(l.generator.as_deref(), Some(generator().as_str()));
         }
+    }
+
+    #[test]
+    fn oversized_embedded_luts_are_dropped_on_load() {
+        let mut p = Project::new("LUT limit");
+        p.luts.push(cfa4_project::ProjectLut {
+            id: "huge".into(),
+            name: "huge".into(),
+            source_path: None,
+            format: "cube".into(),
+            text: "#".repeat(cfa4_project::MAX_LUT_TEXT_BYTES + 1).into(),
+        });
+        let loaded = decode(&encode(&p, false)).unwrap();
+        assert!(loaded.project.luts.is_empty());
     }
 
     /// What is open is stored beside the project. A file without it, or with one that cannot be
