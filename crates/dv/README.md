@@ -5,7 +5,7 @@ DV video decoder in pure Rust: consumer DV / DVCAM (IEC 61834-2, 25 Mbit/s) and 
 on) `rayon`. No `unsafe`, no panics on damaged input.
 
 This is step DV-1 of the DV/DVCPRO plan: the crate decodes DIF frames. Wiring into the
-importers (raw `.dv` / `.dif`, AVI, MOV, MXF; `Chroma::C411` in `cfa4-frame`) is DV-2, DVCPRO 50
+importers (raw `.dv` / `.dif`, AVI, MOV, MXF; 4:1:1 enters as 4:2:2) is DV-2, DVCPRO 50
 and DVCPRO HD are DV-3, DV audio is DV-4.
 
 ## Sources and licence
@@ -47,6 +47,9 @@ intra-only and independent.
 - 8-8 and 2-4-8 DCT, classes 0-3, QNO 0-15, the three-pass distribution of AC bits (block,
   macroblock, video segment).
 - IDCT in `f32`, rounded, +128 offset, saturated. Output has no setup removal or range change.
+- `Picture::chroma_422()` upsamples 4:1:1 chroma horizontally to 4:2:2 (even samples copied,
+  odd ones the rounded mean of their neighbours): CFA4 has no 4:1:1 frame type (owner decision,
+  2026-11-01), so DV-2 hands 4:1:1 pictures to the engine as 4:2:2.
 - Video segments decode in parallel on rayon (feature `threads`): about 10 ms per 625 frame
   single-threaded, 2.4 ms on 4 threads (release build).
 - A missing or wrong-type DIF video block conceals its macroblock with mid-grey

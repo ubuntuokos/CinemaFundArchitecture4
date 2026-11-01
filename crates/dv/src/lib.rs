@@ -67,6 +67,30 @@ impl Picture {
     pub fn chroma_height(&self) -> u32 {
         self.height >> self.profile.chroma.shifts().1
     }
+
+    /// 4:1:1 chroma upsampled horizontally to 4:2:2 (`width / 2` × `height` per plane), as
+    /// `(cb, cr)`; `None` for other chroma formats. CFA4 has no 4:1:1 frame type (owner
+    /// decision, 2026-11-01), so 4:1:1 pictures enter the engine as 4:2:2. Every other 4:2:2
+    /// sample is a 4:1:1 sample (both are co-sited with the even luma samples); the ones in
+    /// between are the rounded mean of their neighbours, the last one repeats its left neighbour.
+    pub fn chroma_422(&self) -> Option<(Vec<u8>, Vec<u8>)> {
+        if self.profile.chroma != ChromaFormat::Yuv411 {
+            return None;
+        }
+        let (src_w, h) = (self.chroma_width() as usize, self.chroma_height() as usize);
+        let up = |plane: &[u8]| -> Vec<u8> {
+            let mut out = Vec::with_capacity(src_w * 2 * h);
+            for row in plane.chunks_exact(src_w.max(1)).take(h) {
+                for (i, &a) in row.iter().enumerate() {
+                    let b = row.get(i + 1).copied().unwrap_or(a);
+                    out.push(a);
+                    out.push((u16::from(a) + u16::from(b)).div_ceil(2) as u8);
+                }
+            }
+            out
+        };
+        Some((up(&self.cb), up(&self.cr)))
+    }
 }
 
 /// Byte ranges of the whole frames in a raw DIF stream (`.dv`, `.dif`). The frame size comes
@@ -236,5 +260,29 @@ mod tests {
         let mut d = Decoder::new();
         assert!(matches!(d.decode(&[0u8; 100]), Err(Error::NotDv)));
         assert!(matches!(frames(b"RIFF...."), Err(Error::NotDv)));
+    }
+}
+
+#[cfg(test)]
+mod chroma_tests {
+    use super::*;
+
+    fn pic(chroma: ChromaFormat, cb: Vec<u8>, cr: Vec<u8>, w: u32, h: u32) -> Picture {
+        let mut head = dif::tests_support::head(0, 1, 0, 0);
+        head.resize(6 * 80, 0xff);
+        let mut profile = probe(&head).unwrap();
+        profile.chroma = chroma;
+        Picture { profile, width: w, height: h, y: vec![0; (w * h) as usize], cb, cr, concealed: 0, errors: 0 }
+    }
+
+    #[test]
+    fn upsample_411_to_422() {
+        // 8x2 luma, 2x2 chroma
+        let p = pic(ChromaFormat::Yuv411, vec![10, 20, 100, 101], vec![0, 255, 7, 7], 8, 2);
+        let (cb, cr) = p.chroma_422().unwrap();
+        assert_eq!(cb, vec![10, 15, 20, 20, 100, 101, 101, 101]);
+        assert_eq!(cr, vec![0, 128, 255, 255, 7, 7, 7, 7]);
+        let p = pic(ChromaFormat::Yuv420, vec![0; 4], vec![0; 4], 4, 4);
+        assert!(p.chroma_422().is_none());
     }
 }

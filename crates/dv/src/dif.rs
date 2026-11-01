@@ -198,7 +198,7 @@ pub fn probe(frame: &[u8]) -> Option<Profile> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests_support {
     use super::*;
 
     /// A minimal frame head: header block + 2 subcode + 3 VAUX blocks.
@@ -221,6 +221,12 @@ mod tests {
         f[v + 5..v + 10].copy_from_slice(&[0x61, 0x3f, 0xc8 | disp, 0xfc, 0xff]);
         f
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tests_support::head;
 
     #[test]
     fn formats() {
