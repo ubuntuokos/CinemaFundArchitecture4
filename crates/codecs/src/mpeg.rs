@@ -818,10 +818,15 @@ impl VideoSamples for MpegVideo<'_> {
     }
     fn sync_before(&self, i: usize) -> usize {
         let i = i.min(self.v.keys.len().saturating_sub(1));
-        let key = (0..=i).rev().find(|&k| self.v.keys[k]).unwrap_or(0);
+        let keys = &self.v.keys;
+        let pts = &self.v.pts;
         // a leading picture of an open GOP (shown before its random-access picture) needs the
         // previous GOP's pictures as references
-        if key > 0 && self.v.pts[i] < self.v.pts[key] { self.sync_before(key - 1) } else { key }
+        crate::gop::open_gop_sync(
+            i,
+            |i| (0..=i).rev().find(|&k| keys.get(k) == Some(&true)).unwrap_or(0),
+            |i, key| matches!((pts.get(i), pts.get(key)), (Some(a), Some(b)) if a < b),
+        )
     }
     fn sample_at(&self, t: i64) -> Option<usize> {
         usize::try_from(t).ok().and_then(|t| self.v.order.get(t).copied())
