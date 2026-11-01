@@ -160,6 +160,33 @@ fn program_monitor_follows_a_backward_scrub() {
     assert_eq!(d.settled().frame, before.frame);
 }
 
+/// Opening a project gives the app a new media pool and a new frame server. The old server's
+/// workers end, so the first project's media pool is released.
+#[test]
+fn opening_a_project_releases_the_previous_media_pool() {
+    let dir = std::env::temp_dir().join(format!("cfa4-perf-ui-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("reopen.fcproj").to_string_lossy().to_string();
+
+    let mut d = Driver::demo();
+    d.settled();
+    d.exec("file.saveAs", json!({"path": path}));
+    let first = std::sync::Arc::downgrade(&d.harness.state().session.media);
+    d.exec("file.open", json!({"path": path}));
+    d.frames(3);
+    let app = d.harness.state();
+    assert!(std::sync::Arc::ptr_eq(&app.frames.pool, &app.session.media), "the frame server serves the opened project's pool");
+    for _ in 0..2000 {
+        if first.strong_count() == 0 {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert_eq!(first.strong_count(), 0, "something still holds the first project's media pool");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// A frame being rendered is kept when the same frame is asked for at a newer revision: frames
 /// that take longer than a refresh (CPU effects) were each cancelled by the next step of a drag,
 /// so none was ever shown until the mouse rested.
