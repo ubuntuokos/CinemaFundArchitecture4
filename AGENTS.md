@@ -53,7 +53,7 @@ attribution and original copyright/licence requirements remain in force.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
   backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default in dev builds;
   release packages build with it and depend on Ubuntu's GStreamer packages: Depends for the core
-  libraries, Recommends for the plugins), dynamically
+  libraries, Recommends for the plugins; never bundled; ADR 0002 step 6), dynamically
   linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
   is always the fallback; GStreamer and FFmpeg (ADR 0005) are the exceptions to the inherited "pure
