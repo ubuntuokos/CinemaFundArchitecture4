@@ -2,7 +2,9 @@
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
-exclude = ["vendor/cfa4-libs/*"]
+# Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
+# build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
+exclude = ["vendor/cfa4-libs/docpath", "vendor/cfa4-libs/ui"]
 
 [workspace.package]
 version = "0.10.0"
