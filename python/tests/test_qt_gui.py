@@ -6228,7 +6228,7 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
 
         first = ui()
         assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
-        assert first["export"] is None and first["keyframeSelection"] == []
+        assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
                            "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
