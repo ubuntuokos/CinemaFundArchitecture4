@@ -193,6 +193,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         ),
         // ---------------- Help ----------------
         query("help.systemReport", "System Compatibility Report", &[], None, "{}", always, |_, _| Ok(system_report())),
+        query("help.writeSessionLog", "Write Session Log", &[], None, "{}", always, |s, _| write_session_log(s)),
     ]
 }
 
@@ -892,7 +893,7 @@ fn pair_p(p: &Value, k: &str) -> Option<(f64, f64)> {
 pub const RENDERER_GPU: &str = "CFA4 GPU Acceleration (wgpu)";
 pub const RENDERER_SOFTWARE: &str = "CFA4 Software Only (CPU)";
 
-fn general_json(st: &cfa4_project::ProjectSettings) -> Value {
+pub(crate) fn general_json(st: &cfa4_project::ProjectSettings) -> Value {
     json!({
         "renderer": st.renderer,
         "renderers": [RENDERER_GPU, RENDERER_SOFTWARE],
@@ -1412,6 +1413,26 @@ pub fn system_report() -> Value {
             {"name": "CPU", "ok": cpus >= 4, "detail": format!("{cpus} hardware threads{}", if cpus < 4 { " — 4 or more recommended for 1080p playback" } else { "" })},
         ],
     })
+}
+
+/// Where Reveal Log Files points: `<data dir>/Logs` (the temp folder without a data directory).
+pub fn logs_dir(s: &Session) -> std::path::PathBuf {
+    s.prefs_path.as_ref().and_then(|p| p.parent()).map(|d| d.join("Logs")).unwrap_or_else(|| crate::temp_dir().join("CFA4 Logs"))
+}
+
+/// Help ▸ Reveal Log Files: this session's log (the system report, then the last 2000 commands
+/// of the journal) written into [`logs_dir`]; answers `{"path"}` for the frontend to show.
+fn write_session_log(s: &mut Session) -> Result<Value> {
+    let dir = logs_dir(s);
+    std::fs::create_dir_all(&dir).map_err(|e| EngineError::Other(format!("{}: {e}", dir.display())))?;
+    let path = dir.join(format!("session-{}.log", std::process::id()));
+    let mut text = format!("{}\n", system_report());
+    let skip = s.journal.len().saturating_sub(2000);
+    for (id, p) in s.journal.iter().skip(skip) {
+        text.push_str(&format!("{}\n", json!({"command": id, "params": p})));
+    }
+    std::fs::write(&path, text).map_err(|e| EngineError::Other(format!("{}: {e}", path.display())))?;
+    Ok(json!({"path": path.to_string_lossy()}))
 }
 
 #[cfg(test)]

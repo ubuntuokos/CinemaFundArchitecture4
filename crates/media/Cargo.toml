@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 cfa4-time = { workspace = true }
+cfa4-auro = { workspace = true }
 cfa4-color = { workspace = true }
 cfa4-frame = { workspace = true }
 cfa4-dng = { workspace = true }
@@ -24,6 +25,7 @@ thiserror = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp", "tiff", "bmp"] }
 
 [dev-dependencies]
+cfa4-auro = { workspace = true, features = ["test-util"] }
 cfa4-testkit = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
 cfa4-heif = { workspace = true, features = ["writer"] }
