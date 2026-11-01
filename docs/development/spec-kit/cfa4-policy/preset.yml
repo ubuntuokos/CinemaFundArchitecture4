@@ -1,0 +1,31 @@
+schema_version: "1.0"
+
+preset:
+  id: "cfa4-policy"
+  name: "CFA4 policy"
+  version: "1.0.0"
+  description: "CFA4: reference-only constitution, SK-02 requirement block, specify wrap (CFA4-DEV-SPEC-KIT-001 SK-F2)"
+  author: "CFA4 (ubuntuokos)"
+  repository: "https://github.com/ubuntuokos/CinemaFundArchitecture4"
+  license: "GPL-3.0-or-later"
+
+requires:
+  speckit_version: ">=1.2.5"
+
+provides:
+  templates:
+    - type: "template"
+      name: "spec-template"
+      file: "templates/spec-template-cfa4.md"
+      description: "Append the mandatory CFA4 requirement block (SK-02)"
+      strategy: "append"
+
+    - type: "command"
+      name: "speckit.specify"
+      file: "commands/speckit.specify.md"
+      description: "Wrap specify with the CFA4 preconditions"
+      strategy: "wrap"
+
+tags:
+  - "cfa4"
+  - "policy"

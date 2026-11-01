@@ -25,6 +25,7 @@ PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordinatio
 | [AI-fejlesztési infrastruktúra – F0-audit](AI-ORCHESTRATION-F0-2026-10-30.md) | CFA4-DEV-AI-ORCHESTRATION-001 (FINAL 1.0 + 1.1, [terv](../development/ai-orchestration/README.md)): baseline, gap-elemzés TC-01–15 / AC-01–14, AIQT 1.0.6-összevetés, incidensek. F1-től nincs engedélyezve |
 | [Spec Kit – SK-F0 állapotfelmérés](spec-kit/SK-F0-2026-10-31.md) | CFA4-DEV-SPEC-KIT-001 1.1: verzió (v1.2.5), érvényes szabályok, ütközések K1–K4, meglévő integrációk, költségbaseline (BLOCKED). SK-F1 nincs engedélyezve |
 | [Spec Kit – SK-F1 izolált próba](spec-kit/SK-F1-2026-11-01.md) | CFA4-DEV-SPEC-KIT-001 1.2: v1.2.5 eldobható worktree-ben; AC-SK-04, -12, -13, -14, -15 PASS (kontextus-többlet 0 token); SkillSpector: csak téves riasztás; új: a beépített workflow kapu nélkül futtatja az implementet. SK-F2 nincs engedélyezve |
+| [Spec Kit – SK-F2 előkészítés](spec-kit/SK-F2-2026-11-01.md) | CFA4-DEV-SPEC-KIT-001 1.2: hivatkozó constitution és `cfa4-policy` preset (forrás: `docs/development/spec-kit/cfa4-policy/`); AC-SK-02, -03, -15 PASS; AC-SK-16 csak `init --preset`-tel PASS. Lezárás a #449 után |
 
 ## Fázisok
 
