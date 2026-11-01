@@ -505,6 +505,8 @@ class MainWindow(QMainWindow):
         self.project_panel.message.connect(lambda text: (self.events.log(text, error=True), self.statusBar().showMessage(text, 6000)))
         self.timeline.canvas.seek.connect(self._scrub)
         self.monitor.playhead_moved.connect(self._playback_moved)
+        self.monitor.trim.changed.connect(self.schedule_refresh)
+        self.monitor.trim.playhead.connect(self._trim_playhead)
         self.source_monitor.playhead_moved.connect(lambda _t: self.update_timecode())
         self.docks["Timecode"].visibilityChanged.connect(lambda shown: shown and self.update_timecode())
         self.docks["Progress"].visibilityChanged.connect(lambda shown: shown and self.update_jobs())
@@ -800,7 +802,7 @@ class MainWindow(QMainWindow):
     def _build_local_actions(self) -> None:
         self.play_action = QAction(tr("Play/Stop"), self)
         self.play_action.setObjectName("qt.playback.toggle")
-        self.play_action.triggered.connect(lambda: self.focused_monitor().toggle_playback())
+        self.play_action.triggered.connect(lambda: self.transport("playback.toggle"))
         self.export_action = QAction(tr("Export Media…"), self)
         self.export_action.setObjectName("qt.export")
         self.export_action.triggered.connect(self.open_export)
@@ -814,17 +816,21 @@ class MainWindow(QMainWindow):
         self.quit_action.triggered.connect(self.close)  # asks to save unsaved changes first
         self.about_action = QAction(tr("About CFA4"), self)
         self.about_action.triggered.connect(self._about)
-        # J / K / L shuttle and Play In to Out on the focused monitor (egui's playback.*)
+        # J / K / L shuttle, slow shuttle, Play Around and Play In to Out on the focused monitor,
+        # dynamic trimming in trim mode (egui's playback.*)
         self.shuttle_actions: list[tuple[QAction, str]] = []
-        for name, label, key, slot in (
-            ("reverse", N_("Shuttle Left"), "J", lambda: self.focused_monitor().shuttle(-1)),
-            ("stop", N_("Shuttle Stop"), "K", lambda: self.focused_monitor().stop()),
-            ("forward", N_("Shuttle Right"), "L", lambda: self.focused_monitor().shuttle(1)),
-            ("inToOut", N_("Play In to Out"), "Alt+K", lambda: self.focused_monitor().play_in_to_out()),
+        for name, label, key in (
+            ("reverse", N_("Shuttle Left"), "J"),
+            ("stop", N_("Shuttle Stop"), "K"),
+            ("forward", N_("Shuttle Right"), "L"),
+            ("slowReverse", N_("Shuttle Slow Left"), "Shift+J"),
+            ("slowForward", N_("Shuttle Slow Right"), "Shift+L"),
+            ("playAround", N_("Play Around"), "Shift+K"),
+            ("inToOut", N_("Play In to Out"), "Alt+K"),
         ):
             a = QAction(tr(label), self)
             a.setObjectName(f"qt.playback.{name}")
-            a.triggered.connect(slot)
+            a.triggered.connect(lambda _c=False, n=name: self.transport(f"playback.{n}"))
             self.shuttle_actions.append((a, key))
         # egui's multi-camera UI commands (menus.rs): Multi-Camera View, Record On/Off, Edit Cameras
         self.multicam_actions: list[tuple[QAction, str]] = []
@@ -884,6 +890,9 @@ class MainWindow(QMainWindow):
             ("playback.reverse", N_("Shuttle Left"), [], "J"),
             ("playback.stop", N_("Shuttle Stop"), [], "K"),
             ("playback.forward", N_("Shuttle Right"), [], "L"),
+            ("playback.slowReverse", N_("Shuttle Slow Left"), [], "Shift+J"),
+            ("playback.slowForward", N_("Shuttle Slow Right"), [], "Shift+L"),
+            ("playback.playAround", N_("Play Around"), [], "Shift+K"),
             ("playback.inToOut", N_("Play In to Out"), [], "Alt+K"),
             ("mode.export", N_("Export"), ["File", "Export"], "Cmd+M"),
             ("app.quit", N_("Quit"), [], "Cmd+Q"),
@@ -2275,6 +2284,31 @@ class MainWindow(QMainWindow):
         """Required parameters the GUI cannot fill in itself."""
         return [p.name for p in cmd.param_specs if not p.optional and p.name not in params]
 
+    def trim_mode(self) -> bool:
+        """J/K/L/Space drive trim mode: edit points are selected and the Source monitor is not
+        the focused one (egui's ``trim_monitor::trim_mode``)."""
+        eps = (self.sequence or {}).get("editPoints")
+        return bool(eps) and self.focused_monitor() is not self.source_monitor
+
+    def transport(self, cid: str) -> None:
+        """A playback command (egui's ``playback.*``): dynamic trimming / Play Around in trim mode,
+        otherwise on the focused monitor."""
+        mon = self.focused_monitor()
+        if mon is not self.source_monitor and self.monitor.trim.route(cid, self.trim_mode()):
+            self.monitor.stop()
+            return
+        if cid == "playback.toggle":
+            mon.toggle_playback()
+        elif cid in ("playback.forward", "playback.reverse"):
+            mon.shuttle(1 if cid == "playback.forward" else -1)
+        elif cid in ("playback.slowForward", "playback.slowReverse"):
+            mon.stop_at = mon.rest_at = None
+            mon.play(0.25 if cid == "playback.slowForward" else -0.25)
+        elif cid == "playback.stop":
+            mon.stop()
+        elif cid == "playback.inToOut":
+            mon.play_in_to_out()
+
     def focused_monitor(self) -> Monitor:
         if self.active_monitor == "source" and self.source_monitor.has_content():
             return self.source_monitor
@@ -2602,6 +2636,12 @@ class MainWindow(QMainWindow):
         ft = self.monitor.frame()
         # with the sequence: opening another one doesn't change the revision
         self.scopes.set_frame(t // ft * ft, (self.sequence.get("id"), self.revision))
+
+    def _trim_playhead(self, ticks: int) -> None:
+        """Playing around the edit / a dynamic trim moved the engine's playhead."""
+        if not self.monitor.playing:
+            self.monitor.playhead = ticks
+            self._playback_moved(ticks)
 
     def _playback_moved(self, ticks: int) -> None:
         self.update_scopes(ticks)
