@@ -238,6 +238,11 @@ platforms** G4, G9, G17; **performance** G16; **ecosystem** G11; **measurement**
   Enhance Speech, Auto Reframe beyond heuristics, auto colour, Auto-Tag Audio Types.
 - **Have:** local Whisper transcription (off in releases, G19), Kokoro-82M text-to-speech
   narration (#278), scene edit detection, colour match.
+- **Candidates from the glitch-effect review (2026-10-30):** a subject-masked glitch (Pixel Sort,
+  Block Glitch or Databend only on a person or object) needs the same segmentation model as Object
+  Mask; the reviewed example, h43lb1t0/PixelSorter, uses YOLOv8 (AGPL-3.0), which CFA4 cannot ship,
+  so it needs an openly licensed model. Beat-synced glitch bursts (keyframing the Glitch effects on
+  music onsets) need no model beyond beat detection.
 - **Needs:** openly licensed models we can ship. **150–300 h.**
 - **Candidates from the marketing-video review (2026-10-26)** (ideas only, for the AI plan; the
   non-AI parts of that review are implemented, see [marketing-tools.md](marketing-tools.md)):

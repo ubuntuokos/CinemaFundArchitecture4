@@ -3630,3 +3630,32 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 3996×2160 (1.85:1), PCM 5.1 de 24 bits a 48 kHz
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	Pasta DCP SMPTE: JPEG 2000 4096×1716 (2.39:1), PCM 5.1 de 24 bits a 48 kHz
+	Bit Crush	Redução de bits
+	Bits per Channel	Bits por canal
+	Ordered Dither	Pontilhamento ordenado
+	Dither Cell Size	Tamanho da célula do pontilhamento
+	Block Glitch	Glitch de blocos
+	Blocks Moved	Blocos movidos
+	Max Distance	Distância máxima
+	Snap to Grid	Ajustar à grade
+	Swap Blocks	Trocar blocos
+	Changes per Second	Mudanças por segundo
+	Databend	Databending
+	Breaks	Quebras
+	Shift	Deslocamento
+	Color Damage	Dano de cor
+	VHS	VHS
+	Color Bleed	Vazamento de cor
+	Wobble	Oscilação
+	Snow	Chuvisco
+	Tracking Bar	Barra de tracking
+	Head Switching	Troca de cabeçote
+	Scan Line Jitter	Tremor de linhas
+	Jitter	Tremor
+	Interval	Intervalo
+	Infinite	Infinito
+	Periodic	Periódico
+	Tile Jitter	Tremor de faixas
+	Tiles	Faixas
+	Band Direction	Direção das faixas
+	Jitter Direction	Direção do tremor

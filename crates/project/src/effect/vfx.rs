@@ -25,6 +25,10 @@ pub const FRAME_LAYOUTS: &[&str] = &["Monoscopic", "Stereoscopic - Over/Under", 
 pub const EASINGS: &[&str] = &["Linear", "Ease In", "Ease Out", "Ease In and Out"];
 /// Slit Scan: the edge that shows the current frame (the opposite edge is the most delayed).
 pub const SLIT_DIRECTIONS: &[&str] = &["Top", "Bottom", "Left", "Right"];
+/// Glitch effects: which way the picture is pushed (Scan Line Jitter, Tile Jitter).
+pub const GLITCH_AXES: &[&str] = &["Horizontal", "Vertical"];
+/// Glitch effects: always on, or pulsing on and off at the Frequency.
+pub const GLITCH_INTERVALS: &[&str] = &["Infinite", "Periodic"];
 pub const ECHO_OPERATORS: &[&str] = &["Add", "Maximum", "Minimum", "Screen", "Composite In Back", "Composite In Front", "Blend"];
 pub const SIMPLE_BLEND: &[&str] = &["Normal", "Add", "Screen", "Multiply", "Overlay"];
 
@@ -624,6 +628,86 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 fs("complexity", "Complexity", 2.0, (1.0, 10.0), (1.0, 10.0), "", 0),
                 ang("evolution", "Evolution", 0.0),
                 grp(seed(), "Evolution Options"),
+            ],
+        ),
+        // ---- Glitch (CFA4's own folder) ----
+        video(
+            "bit_crush",
+            "Bit Crush",
+            GLITCH,
+            vec![
+                fs("bits", "Bits per Channel", 3.0, (1.0, 16.0), (1.0, 8.0), "", 0),
+                b("dither", "Ordered Dither", true),
+                fs("cell", "Dither Cell Size", 1.0, (1.0, 64.0), (1.0, 8.0), "", 0),
+            ],
+        ),
+        video(
+            "block_glitch",
+            "Block Glitch",
+            GLITCH,
+            vec![
+                fs("count", "Blocks Moved", 40.0, (0.0, 400.0), (0.0, 200.0), "", 0),
+                px("size", "Block Size", 48.0, 1024.0, 256.0),
+                fs("aspect", "Block Width", 2.0, (0.25, 4.0), (0.25, 4.0), "", 2),
+                px("distance", "Max Distance", 200.0, 4096.0, 1280.0),
+                b("snap", "Snap to Grid", true),
+                b("swap", "Swap Blocks", false),
+                fs("rate", "Changes per Second", 8.0, (0.0, 60.0), (0.0, 30.0), "", 1),
+                seed(),
+            ],
+        ),
+        video(
+            "databend",
+            "Databend",
+            GLITCH,
+            vec![
+                fs("breaks", "Breaks", 10.0, (1.0, 40.0), (1.0, 40.0), "", 0),
+                pct("shift", "Shift", 50.0),
+                pct("color", "Color Damage", 50.0),
+                px("size", "Block Size", 16.0, 256.0, 64.0),
+                fs("rate", "Changes per Second", 4.0, (0.0, 60.0), (0.0, 30.0), "", 1),
+                seed(),
+            ],
+        ),
+        video(
+            "vhs",
+            "VHS",
+            GLITCH,
+            vec![
+                px("bleed", "Color Bleed", 10.0, 100.0, 40.0),
+                px("wobble", "Wobble", 3.0, 100.0, 24.0),
+                pct("snow", "Snow", 25.0),
+                pct("tracking", "Tracking Bar", 50.0),
+                pct("head", "Head Switching", 50.0),
+                pct("scanlines", "Scan Lines", 50.0),
+                seed(),
+            ],
+        ),
+        video(
+            "scan_line_jitter",
+            "Scan Line Jitter",
+            GLITCH,
+            vec![
+                pct("amount", "Jitter", 10.0),
+                ch("direction", "Direction", GLITCH_AXES, 0),
+                ch("interval", "Interval", GLITCH_INTERVALS, 0),
+                fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
+                fs("rate", "Changes per Second", 30.0, (0.0, 120.0), (0.0, 60.0), "", 1),
+                seed(),
+            ],
+        ),
+        video(
+            "tile_jitter",
+            "Tile Jitter",
+            GLITCH,
+            vec![
+                fs("tiles", "Tiles", 5.0, (1.0, 50.0), (1.0, 50.0), "", 0),
+                ch("bands", "Band Direction", GLITCH_AXES, 0),
+                ch("direction", "Jitter Direction", GLITCH_AXES, 0),
+                px("amount", "Amount", 10.0, 1000.0, 100.0),
+                pct("speed", "Speed", 35.0),
+                ch("interval", "Interval", GLITCH_INTERVALS, 0),
+                fs("frequency", "Frequency", 1.0, (0.0, 25.0), (0.0, 25.0), "", 2),
             ],
         ),
         // ---- Time ----

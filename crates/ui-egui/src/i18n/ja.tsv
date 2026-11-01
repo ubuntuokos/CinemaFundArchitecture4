@@ -3677,3 +3677,32 @@
 	SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 3996×2160（1.85:1）、5.1 24 ビット 48 kHz PCM
 	DCP 4K Scope	DCP 4K Scope
 	SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM	SMPTE DCP フォルダー：JPEG 2000 4096×1716（2.39:1）、5.1 24 ビット 48 kHz PCM
+	Bit Crush	ビットクラッシュ
+	Bits per Channel	チャンネルあたりのビット数
+	Ordered Dither	組織的ディザ
+	Dither Cell Size	ディザのセルサイズ
+	Block Glitch	ブロックグリッチ
+	Blocks Moved	移動するブロック数
+	Max Distance	最大距離
+	Snap to Grid	グリッドにスナップ
+	Swap Blocks	ブロックを入れ替え
+	Changes per Second	1 秒あたりの変化数
+	Databend	データベンド
+	Breaks	破損箇所
+	Shift	ずれ
+	Color Damage	カラーの破損
+	VHS	VHS
+	Color Bleed	色にじみ
+	Wobble	揺れ
+	Snow	スノーノイズ
+	Tracking Bar	トラッキングバー
+	Head Switching	ヘッド切り替え
+	Scan Line Jitter	走査線のジッター
+	Jitter	ジッター
+	Interval	間隔
+	Infinite	無限
+	Periodic	周期的
+	Tile Jitter	タイルのジッター
+	Tiles	タイル数
+	Band Direction	帯の方向
+	Jitter Direction	ジッターの方向
