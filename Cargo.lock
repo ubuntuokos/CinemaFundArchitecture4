@@ -1406,6 +1406,7 @@ dependencies = [
  "cfa4-color",
  "harfrust",
  "skrifa",
+ "tempfile",
  "unicode-bidi",
  "unicode-linebreak",
  "unicode-segmentation",
