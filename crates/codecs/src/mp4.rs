@@ -585,6 +585,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Hevc(_) => "HEVC".into(),
         CodecConfig::Vp9(c) => format!("VP9 (Profile {})", c.profile),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"vp08" => "VP8".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),
         CodecConfig::Apv(a) => match cfa4_apv::Profile::from_idc(a.profile_idc) {
             Some(p) => p.name().into(),
@@ -1334,5 +1335,19 @@ mod he_aac_tests {
             let buf = src.audio(0, 4800, 48_000).unwrap();
             assert!(buf.channels.iter().flatten().all(|v| v.is_finite() && v.abs() <= 1.0), "media_time {media_time}");
         }
+    }
+}
+
+#[cfg(test)]
+mod auro_cx_tests {
+    use cfa4_isobmff::{CodecConfig, FourCc};
+
+    /// #322: an Auro-CX track says what it is and why it does not play, instead of "unknown".
+    #[test]
+    fn auro_cx_tracks_are_named_and_refused_clearly() {
+        let c = CodecConfig::Unknown { fourcc: FourCc(*b"a3ds"), raw: vec![0; 8] };
+        assert_eq!(super::codec_label(&c), "Auro-CX (unsupported)");
+        let Err(crate::CodecError::Unsupported(why)) = crate::audio::PacketDecoder::for_isobmff(&c, 48_000) else { panic!("Auro-CX must be refused") };
+        assert_eq!(why, crate::audio::AURO_CX_UNSUPPORTED);
     }
 }
