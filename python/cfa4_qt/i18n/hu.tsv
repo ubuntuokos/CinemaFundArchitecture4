@@ -1236,6 +1236,8 @@
 	Color Management · {n} items	Színkezelés · {n} elem
 	Media colour space (from file metadata): {detected}	Média színtere (a fájl metaadataiból): {detected}
 	Override media colour space:	Média színterének felülírása:
+	Decode Auro-3D height channels	Auro-3D magassági csatornák dekódolása
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Kikapcsolva a fájl saját csatornái szólnak, mint Auro-3D dekóder nélkül.
 	Use file metadata	A fájl metaadatai szerint
 	Motion Graphics Templates	Mozgógrafikai sablonok
 	Clip Fx Editor	Klip effektszerkesztő
@@ -2231,3 +2233,19 @@
 	Recent	Legutóbbiak
 	CFA4 project links	CFA4 projektlinkek
 	Add media to your project. Drop files anywhere in the window, or choose a source below.	Adj médiát a projekthez. Húzd a fájlokat bárhová az ablakba, vagy válassz forrást lent.
+	Shuttle Slow Left	Lassú léptetés balra
+	Shuttle Slow Right	Lassú léptetés jobbra
+	Play Around	Lejátszás a vágáspont körül
+	Out: {name}	Ki: {name}
+	In: {name}	Be: {name}
+	(gap)	(rés)
+	Outgoing clip (drag to trim the Out point)	Kimenő klip (húzással a végpontját igazítod)
+	Incoming clip (drag to trim the In point)	Bejövő klip (húzással a kezdőpontját igazítod)
+	Drag to roll the edit	Húzással gördíted a vágáspontot
+	Play Around Edit (Space loops, Shift+K once)	Lejátszás a vágáspont körül (Szóköz: ismétlés, Shift+K: egyszer)
+	Trim Backward Many	Igazítás sok képkockával vissza
+	Trim Backward	Igazítás vissza
+	Apply Default Transitions to Selection (Shift+D)	Alapértelmezett átmenetek a kijelölésre (Shift+D)
+	Trim Forward	Igazítás előre
+	Trim Forward Many	Igazítás sok képkockával előre
+	Exit Trim Mode	Kilépés a vágásmódból
