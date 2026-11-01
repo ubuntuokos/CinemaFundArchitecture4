@@ -272,6 +272,26 @@ pub(crate) fn sequence_time_p(s: &Session, p: &Value, prefix: &str, cmd: &str) -
     Ok(Some(t))
 }
 
+/// A time stored under `key`: integer ticks, or an object in any of the formats [`time_p_at`]
+/// reads (`{"frame": n}`, `{"seconds": n}`, `{"timecode": "…"}`, `{"time": ticks}`), against
+/// `rate`. `Ok(None)` when the key is absent or null; a value in none of those forms is an error
+/// of `cmd`, never silently ignored.
+pub(crate) fn tick_or_time_p(p: &Value, key: &str, rate: FrameRate, drop_frame: bool, cmd: &str) -> Result<Option<Tick>> {
+    let wrong = || bad(cmd, format!("`{key}` must be ticks or a time object like {{\"seconds\": n}}, {{\"frame\": n}} or {{\"timecode\": \"…\"}}"));
+    match p.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(v) => {
+            if let Some(t) = v.as_i64() {
+                return Ok(Some(Tick(t)));
+            }
+            if !v.is_object() {
+                return Err(wrong());
+            }
+            time_p_at(v, "", rate, drop_frame, Tick::ZERO).map(Some).ok_or_else(wrong)
+        }
+    }
+}
+
 pub(crate) fn clip_p(p: &Value, k: &str) -> Option<ClipId> {
     u64_p(p, k).map(ClipId)
 }
@@ -841,9 +861,22 @@ pub(crate) fn ensure_audio_tracks(p: &mut Project, seq_id: ItemId, first: usize,
 
 /// `timeline.place` for one item (`item`).
 fn place_one(s: &mut Session, p: &Value) -> Result<Value> {
-    if crate::sequence_tools::wants_new_track(p) {
-        return crate::sequence_tools::place_on_new_tracks(s, p);
-    }
+    let item = item_p(p, "item").ok_or_else(|| bad("timeline.place", "need `item`"))?;
+    let pi = s.project.item(item).ok_or_else(|| bad("timeline.place", "no such item"))?;
+    // Everything that can be refused from the parameters alone is checked before the first change:
+    // `track`/`audioTrack` `"new"` adds tracks, and a refused call must leave the project, its
+    // revision and its redo history as they were.
+    let seq_rate = s.sequence_rate();
+    let seq_df = s.active_sequence().map(|q| q.settings.drop_frame).unwrap_or(false);
+    // a subclip's own frame_rate() is the default; its frames are the parent media's (as source_mark_time)
+    let src_rate = crate::clip_ops::source_view(s, item).map(|v| v.rate).unwrap_or_else(|| pi.frame_rate());
+    let src_df = s.project.sequence(item).map(|q| q.settings.drop_frame).unwrap_or(false);
+    let not_negative = |t: Option<Tick>, key: &str| match t {
+        Some(t) if t < Tick::ZERO => Err(bad("timeline.place", format!("`{key}` must not be negative"))),
+        t => Ok(t),
+    };
+    let sin_param = not_negative(tick_or_time_p(p, "sourceIn", src_rate, src_df, "timeline.place")?, "sourceIn")?;
+    let dur_param = not_negative(tick_or_time_p(p, "duration", seq_rate, seq_df, "timeline.place")?, "duration")?;
     let stream_flag = |key: &str| match p.get(key) {
         None => Ok(true),
         Some(Value::Bool(v)) => Ok(*v),
@@ -853,10 +886,17 @@ fn place_one(s: &mut Session, p: &Value) -> Result<Value> {
     if !video && !audio {
         return Err(bad("timeline.place", "enable video, audio, or both"));
     }
-    let item = item_p(p, "item").ok_or_else(|| bad("timeline.place", "need `item`"))?;
     let at = sequence_time_p(s, p, "", "timeline.place")?.unwrap_or(s.playhead());
+    if crate::sequence_tools::wants_new_track(p) {
+        // a track that is named (not `"new"`) has to exist
+        for key in ["track", "audioTrack"] {
+            if !p.get(key).and_then(Value::as_str).is_some_and(|v| v.eq_ignore_ascii_case("new")) {
+                track_p(s, p, key, "timeline.place")?;
+            }
+        }
+        return crate::sequence_tools::place_on_new_tracks(s, p);
+    }
     let tg = s.targeting();
-    let pi = s.project.item(item).ok_or_else(|| bad("timeline.place", "no such item"))?;
     let (has_video, has_audio) = s.project.source_streams(item);
     let is_audio = |t: TrackId| s.active_sequence().is_some_and(|q| q.audio_tracks.iter().any(|x| x.id == t));
     // `track` is where the picture goes and `audioTrack` where the sound goes. A caller that
@@ -889,8 +929,11 @@ fn place_one(s: &mut Session, p: &Value) -> Result<Value> {
         ItemKind::Subclip { range, .. } => (Some(range.start), Some(range.end())),
         _ => (None, None),
     };
-    let sin = p.get("sourceIn").and_then(Value::as_i64).map(Tick).or(mi).unwrap_or_default();
-    let dur = p.get("duration").and_then(Value::as_i64).map(Tick).unwrap_or_else(|| mo.unwrap_or(full) - sin);
+    let sin = sin_param.or(mi).unwrap_or_default();
+    let dur = match dur_param {
+        Some(d) => d,
+        None => mo.unwrap_or(full) - sin,
+    };
     // The clip goes on the frame grid: its start and its end (`time + duration`) each snap to the
     // nearest frame, so a sub-frame `time` never pushes the end past the one asked for and the
     // sequence never ends between frames (#1101).
@@ -2623,7 +2666,7 @@ fn build() -> Vec<CommandSpec> {
             "Place Clip",
             [],
             None,
-            r#"{"item":id|"items":[id] (back to back, one undo step),"track":"V1"|id|"A1" (sound only)|"new" (a video track after the last)?,"audioTrack":"A1"|id|"new"?,"time":ticks|"frame":i64|"seconds":f64,"insert":bool,"sourceIn":ticks?,"duration":ticks?,"video":bool=true,"audio":bool=true}"#,
+            r#"{"item":id|"items":[id] (back to back, one undo step),"track":"V1"|id|"A1" (sound only)|"new" (a video track after the last)?,"audioTrack":"A1"|id|"new"?,"time":ticks|"frame":i64|"seconds":f64,"insert":bool,"sourceIn":ticks|{"frame"|"seconds"|"timecode"}?,"duration":ticks|{"frame"|"seconds"|"timecode"}?,"video":bool=true,"audio":bool=true}"#,
             has_seq,
             |s, p| match p.get("items") {
                 Some(items) => place_items(s, p, items),
