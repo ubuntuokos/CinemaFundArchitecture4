@@ -15,6 +15,8 @@ pub enum BitError {
     Eof,
     /// An Exp-Golomb code longer than 32 leading zeros.
     InvalidExpGolomb,
+    /// An AVCC/HVCC NAL length prefix is not one of the supported widths.
+    InvalidNalLengthSize,
 }
 
 impl fmt::Display for BitError {
@@ -22,6 +24,7 @@ impl fmt::Display for BitError {
         match self {
             BitError::Eof => f.write_str("unexpected end of bitstream"),
             BitError::InvalidExpGolomb => f.write_str("invalid Exp-Golomb code"),
+            BitError::InvalidNalLengthSize => f.write_str("NAL length prefix must be 1 to 4 bytes"),
         }
     }
 }
@@ -315,8 +318,11 @@ pub fn annexb_nals(data: &[u8]) -> Vec<&[u8]> {
     out
 }
 
-/// Split a length-prefixed sample (AVCC/HVCC, `length_size` 1/2/4 bytes) into NAL units.
+/// Split a length-prefixed sample (AVCC/HVCC, `length_size` 1 to 4 bytes) into NAL units.
 pub fn length_prefixed_nals(data: &[u8], length_size: usize) -> Result<Vec<&[u8]>> {
+    if !matches!(length_size, 1..=4) {
+        return Err(BitError::InvalidNalLengthSize);
+    }
     let mut out = Vec::new();
     let mut i = 0;
     while i < data.len() {
@@ -438,6 +444,15 @@ mod tests {
         assert_eq!(n, vec![&[0x67, 1, 2][..], &[0x68, 3][..], &[0x65, 9, 9][..]]);
         let l = [0, 0, 0, 2, 0x67, 1, 0, 0, 0, 1, 0x68];
         assert_eq!(length_prefixed_nals(&l, 4).unwrap(), vec![&[0x67, 1][..], &[0x68][..]]);
+    }
+
+    #[test]
+    fn length_prefixed_nals_rejects_invalid_prefix_sizes() {
+        for size in [0, 5, usize::MAX] {
+            assert!(length_prefixed_nals(&[0], size).is_err(), "size {size}");
+        }
+        // `(lengthSizeMinusOne & 3) + 1` can be 3; such samples still split
+        assert_eq!(length_prefixed_nals(&[0, 0, 1, 0x65], 3).unwrap(), vec![&[0x65][..]]);
     }
 
     #[test]
