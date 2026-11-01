@@ -1309,7 +1309,18 @@ fn mpeg2_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSett
         let mut cfg = cfa4_mpeg2v::encode::Config::new(w, h, rate.num as u32, rate.den as u32);
         cfg.rate = match s.mpeg2_quantizer {
             Some(q) => cfa4_mpeg2v::encode::Rate::Quantizer(q.clamp(1, 31)),
-            None => cfa4_mpeg2v::encode::Rate::Bitrate { bits_per_second: u64::from(s.bitrate_kbps.max(100)) * 1000 },
+            None => {
+                let kbps = s.bitrate_kbps.max(100);
+                let bps = u64::from(kbps) * 1000;
+                match s.bitrate_mode {
+                    // the level's VBV buffer, constant bitrate with stuffing
+                    BitrateMode::Cbr => cfa4_mpeg2v::encode::Rate::Cbr { bits_per_second: bps, buffer_bits: 0 },
+                    _ => {
+                        let max = s.max_bitrate_kbps.filter(|m| *m >= kbps).map_or(bps * 3 / 2, |m| u64::from(m) * 1000);
+                        cfa4_mpeg2v::encode::Rate::ConstrainedVbr { bits_per_second: bps, max_bits_per_second: max, buffer_bits: 0 }
+                    }
+                }
+            }
         };
         if s.mpeg2_422 {
             cfg.chroma = cfa4_mpeg2v::ChromaFormat::Yuv422;

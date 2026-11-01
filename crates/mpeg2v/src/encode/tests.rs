@@ -450,6 +450,131 @@ fn field_tools_pay_on_interlaced_motion() {
     assert!(pf > pp - 1.0, "PSNR interlaced {pf:.2} vs progressive {pp:.2}");
 }
 
+/// An independent Annex C check of `es` (decode order) against a `buffer`-bit VBV filled at
+/// `rate`: at a constant bitrate (real vbv_delay values) every picture is removed one period
+/// after the one before, has wholly arrived by then and the buffer never holds more than its
+/// size; at a variable bitrate (vbv_delay 0xFFFF) the buffer fills at `rate` until full, and no
+/// picture is larger than what it holds. Returns the vbv_delay values.
+fn vbv_check(es: &[u8], rate: u64, buffer: u64, fps: f64) -> std::result::Result<Vec<u16>, String> {
+    let es = es.strip_suffix(&[0, 0, 1, 0xB7]).unwrap_or(es);
+    let (r, b, period) = (rate as f64, buffer as f64, 1.0 / fps);
+    let mut delays = Vec::new();
+    let aus = access_units(es);
+    for au in &aus {
+        let a = &es[au.clone()];
+        let p = a.windows(4).position(|w| w == [0, 0, 1, 0]).ok_or("no picture start code")?;
+        let x = |k: usize| a.get(p + k).copied().unwrap_or(0) as u16;
+        delays.push(((x(5) & 7) << 13) | (x(6) << 5) | (x(7) >> 3));
+    }
+    if delays.iter().all(|&d| d == 0xFFFF) {
+        let total = es.len() as f64 * 8.0;
+        let mut occ = b.min(total);
+        let mut arrived = occ;
+        for (n, au) in aus.iter().enumerate() {
+            let size = au.len() as f64 * 8.0;
+            if size > occ + 1.0 {
+                return Err(format!("picture {n}: {size} bits, {occ} in the buffer"));
+            }
+            occ -= size;
+            let inc = (r * period).min(b - occ).min(total - arrived);
+            occ += inc;
+            arrived += inc;
+        }
+        return Ok(delays);
+    }
+    let tick = 1.0 / 90_000.0;
+    let mut last: Option<f64> = None;
+    for (n, (au, &d)) in aus.iter().zip(&delays).enumerate() {
+        let a = &es[au.clone()];
+        let p = a.windows(4).position(|w| w == [0, 0, 1, 0]).ok_or("no picture start code")?;
+        let removed = au.start as f64 * 8.0;
+        let decode = (au.start + p + 4) as f64 * 8.0 / r + d as f64 * tick;
+        if let Some(prev) = last
+            && (decode - prev - period).abs() > 2.0 * tick
+        {
+            return Err(format!("picture {n} removed {:.6} s after the one before", decode - prev));
+        }
+        last = Some(decode);
+        if au.end as f64 * 8.0 / r > decode + tick {
+            return Err(format!("picture {n} has not arrived when it is removed (underflow)"));
+        }
+        let occ = r * decode - removed;
+        if occ > b + r * tick + 8.0 {
+            return Err(format!("picture {n}: {occ:.0} bits in a {b}-bit buffer (overflow)"));
+        }
+    }
+    Ok(delays)
+}
+
+fn encode_rate(rate: Rate, b_frames: u32, frames: usize, amp: u32) -> (Vec<u8>, Encoder) {
+    let mut cfg = Config::new(352, 288, 25, 1);
+    cfg.gop = 12;
+    cfg.b_frames = b_frames;
+    cfg.rate = rate;
+    let mut enc = Encoder::new(cfg).unwrap();
+    let mut es = Vec::new();
+    for t in 0..frames {
+        let c = textured(352, 288, ChromaFormat::Yuv420, t, amp);
+        es.extend(enc.encode(&input(&c)).unwrap().into_iter().flat_map(|p| p.data));
+    }
+    es.extend(enc.flush().unwrap().into_iter().flat_map(|p| p.data));
+    es.extend_from_slice(&enc.finish());
+    (es, enc)
+}
+
+/// Constant bitrate: real vbv_delay values, the buffer valid over the whole stream, the stream
+/// exactly at its rate.
+#[test]
+fn constant_bitrate_keeps_the_vbv() {
+    for (bps, buffer, b_frames, amp) in [(1_500_000, 0, 2, 4), (800_000, 120_000, 0, 4), (600_000, 80_000, 2, 30), (4_000_000, 600_000, 2, 30)] {
+        let (es, enc) = encode_rate(Rate::Cbr { bits_per_second: bps, buffer_bits: buffer }, b_frames, 36, amp);
+        let name = format!("CBR {bps} buffer {buffer} M={} amp {amp}", b_frames + 1);
+        assert_eq!(enc.signalled_bit_rate(), bps, "{name}");
+        let size = if buffer > 0 { buffer / 16384 * 16384 } else { 1_835_008 };
+        assert_eq!(enc.signalled_buffer(), size, "{name}");
+        assert_eq!(enc.vbv_underflows(), 0, "{name}");
+        let delays = vbv_check(&es, bps, size, 25.0).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(delays.iter().all(|&d| d < 0xFFFF), "{name}");
+        // 36 pictures at 25 fps: the stream is the bitrate's worth, give or take the buffer
+        let want = bps as f64 * 36.0 / 25.0 / 8.0;
+        let got = es.len() as f64;
+        assert!((got - want).abs() < size as f64 / 8.0, "{name}: {got} bytes, {want:.0} expected");
+        let pics = decode(&es);
+        assert_eq!(pics.len(), 36, "{name}");
+    }
+}
+
+/// Variable bitrate within a buffer: no picture larger than the buffer holds, the average
+/// near the target, vbv_delay 0xFFFF.
+#[test]
+fn constrained_vbr_keeps_the_vbv() {
+    for (avg, max, buffer, amp) in [(1_000_000, 1_500_000, 0, 4), (700_000, 1_000_000, 100_000, 30)] {
+        let rate = Rate::ConstrainedVbr { bits_per_second: avg, max_bits_per_second: max, buffer_bits: buffer };
+        let (es, enc) = encode_rate(rate, 2, 36, amp);
+        let name = format!("VBR {avg}/{max} buffer {buffer} amp {amp}");
+        assert_eq!(enc.signalled_bit_rate(), max, "{name}");
+        let size = enc.signalled_buffer();
+        assert_eq!(enc.vbv_underflows(), 0, "{name}");
+        let delays = vbv_check(&es, max, size, 25.0).unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(delays.iter().all(|&d| d == 0xFFFF), "{name}");
+        let bps = es.len() as f64 * 8.0 * 25.0 / 36.0;
+        assert!(bps < max as f64 && bps > avg as f64 * 0.6, "{name}: {bps:.0} bit/s");
+        assert_eq!(decode(&es).len(), 36, "{name}");
+    }
+}
+
+#[test]
+fn rejects_impossible_buffers() {
+    let mut cfg = Config::new(352, 288, 25, 1);
+    cfg.rate = Rate::Cbr { bits_per_second: 1_000_000, buffer_bits: 40_000 };
+    assert!(Encoder::new(cfg.clone()).is_err(), "less than two pictures' worth");
+    cfg.rate = Rate::ConstrainedVbr { bits_per_second: 2_000_000, max_bits_per_second: 1_000_000, buffer_bits: 0 };
+    assert!(Encoder::new(cfg.clone()).is_err(), "maximum below the average");
+    // a buffer beyond Main Level moves the stream to High-1440
+    cfg.rate = Rate::Cbr { bits_per_second: 8_000_000, buffer_bits: 4_000_000 };
+    assert_eq!(Encoder::new(cfg).unwrap().profile_and_level(), 0x46);
+}
+
 /// ffmpeg decodes our streams to the same pictures as our decoder (up to IDCT rounding).
 #[test]
 fn ffmpeg_decodes_our_streams() {
@@ -463,6 +588,8 @@ fn ffmpeg_decodes_our_streams() {
         ("enc_420_interlaced", ChromaFormat::Yuv420, Rate::Quantizer(4)),
         ("enc_420_interlaced_ibbp_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
         ("enc_422_interlaced_ibbp", ChromaFormat::Yuv422, Rate::Quantizer(3)),
+        ("enc_420_ibbp_cbr", ChromaFormat::Yuv420, Rate::Cbr { bits_per_second: 800_000, buffer_bits: 200_000 }),
+        ("enc_422_vbv", ChromaFormat::Yuv422, Rate::ConstrainedVbr { bits_per_second: 900_000, max_bits_per_second: 1_500_000, buffer_bits: 0 }),
     ] {
         let mut cfg = Config::new(160, 96, 25, 1);
         cfg.chroma = chroma;

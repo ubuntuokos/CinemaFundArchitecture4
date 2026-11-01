@@ -109,14 +109,23 @@ let end = enc.finish();                                  // sequence_end_code
   (the first picture of each type is coded once as a trial to measure it), a gentle in-picture
   correction against an expected bit profile (each macroblock's coefficient magnitude), and
   optional TM5 adaptive quantisation (`adaptive_quantization`; looks better on flat areas,
-  measures about 2.5 dB lower PSNR). Signalled as variable bitrate (`vbv_delay` 0xFFFF).
+  measures about 2.5 dB lower PSNR).
+- Buffer model (Annex C): `Rate::Bitrate` is an average with no buffer model (`vbv_delay`
+  0xFFFF). `Rate::ConstrainedVbr` (average, maximum, buffer) and `Rate::Cbr` (bitrate,
+  buffer) keep every picture within the VBV: the picture target stays below the buffer's
+  occupancy (a tenth kept in reserve), and a picture that still comes out too large is coded
+  again with a coarser quantiser. CBR writes real `vbv_delay` values, starts with a full
+  buffer and appends zero bytes (stuffing before the next start code) where small pictures
+  would let the buffer overflow; the buffer it fills is capped so the delay fits 16 bits.
+  The sequence header signals the maximum (VBR) or constant rate and the buffer (0: the
+  level's). A level is chosen whose buffer holds the requested one.
 - The reconstruction of every picture is our own decoder's output for the coded bytes, so
   encoder and decoder never drift apart; a picture the decoder rejects is an error.
 - Macroblock rows are analysed (motion search, prediction, DCT) in parallel on rayon; coding
   is sequential (rate control).
 
-Not yet, each tracked: field pictures, dual-prime and 16x8 prediction (#274), CBR with VBV
-compliance (#242), DVD-Video
+Not yet, each tracked: field pictures, dual-prime and 16x8 prediction (#274), P-STD / T-STD
+buffer models in the multiplexer (#277), DVD-Video
 (#244) and Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices
 (#246).
 
