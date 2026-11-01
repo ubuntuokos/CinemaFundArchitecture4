@@ -218,6 +218,10 @@ impl MediaSource for AuroSource {
         &self.info
     }
 
+    fn carrier(&self) -> Option<SharedSource> {
+        Some(self.inner.clone())
+    }
+
     fn video_frame(&self, req: FrameRequest) -> Result<Arc<VideoFrame>> {
         self.inner.video_frame(req)
     }
@@ -336,6 +340,10 @@ mod tests {
         let src = wrap(Arc::new(Planes::new(planes.iter().map(|p| f32_from_pcm24(p)).collect(), "PCM")));
         let a = src.info().audio().cloned().unwrap();
         assert_eq!((a.channels, a.codec.as_str()), (10, "PCM + Auro-3D 9.1"));
+        // the carrier itself, for playing it undecoded (#323)
+        let carrier = src.carrier().unwrap();
+        assert_eq!(carrier.info().audio().map(|a| a.channels), Some(6));
+        assert!(carrier.carrier().is_none());
         // Every window, wherever it starts, restores the bed (the carrier with its borrowed bits
         // cleared) and silent heights.
         for (start, frames) in [(0i64, 5000usize), (777, 300), (20_000, 4096), (39_000, 3000), (-500, 1000)] {

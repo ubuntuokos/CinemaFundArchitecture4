@@ -1236,6 +1236,8 @@
 	Color Management · {n} items	Színkezelés · {n} elem
 	Media colour space (from file metadata): {detected}	Média színtere (a fájl metaadataiból): {detected}
 	Override media colour space:	Média színterének felülírása:
+	Decode Auro-3D height channels	Auro-3D magassági csatornák dekódolása
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Kikapcsolva a fájl saját csatornái szólnak, mint Auro-3D dekóder nélkül.
 	Use file metadata	A fájl metaadatai szerint
 	Motion Graphics Templates	Mozgógrafikai sablonok
 	Clip Fx Editor	Klip effektszerkesztő
