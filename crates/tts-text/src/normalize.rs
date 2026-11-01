@@ -95,6 +95,24 @@ pub fn normalize(text: &str, lang: Lang) -> Result<Vec<Token>, NormalizeError> {
                     out.push(Token::Punct(c));
                 }
             }
+            '-' if matches!(peek(rest, 1), Some('$' | '€' | '£'))
+                && !text
+                    .get(..pos)
+                    .and_then(|before| before.chars().next_back())
+                    .is_some_and(|b| b.is_alphanumeric() || matches!(b, '$' | '€' | '£' | '-')) =>
+            {
+                // A negative amount ("-$5"): keep the sign so a loss is not read as a gain.
+                // A hyphen right after a word or amount ("$10-$20") is a range, not a sign.
+                pos += 1;
+                match parse_money(rest.get(1..).unwrap_or(""), lang) {
+                    Some((words, used)) => {
+                        pos += used;
+                        out.push(Token::Word("minus".into()));
+                        push_words(&mut out, &words);
+                    }
+                    None => out.push(Token::Punct(c)),
+                }
+            }
             _ if c.is_ascii_digit() => match parse_number_cluster(rest, lang) {
                 Some((tokens, used)) => {
                     pos += used;
@@ -1235,6 +1253,24 @@ mod tests {
         assert_eq!(words("£2.50", Lang::EnUs), "two pounds and fifty pence");
         assert_eq!(words("£1", Lang::EnUs), "one pound");
         assert_eq!(words("$0.50", Lang::EnUs), "zero dollars and fifty cents");
+    }
+
+    #[test]
+    fn negative_money_keeps_its_sign() {
+        for lang in [Lang::EnUs, Lang::EnGb] {
+            assert_eq!(words("-$5", lang), "minus five dollars");
+            assert_eq!(words("-€3.50", lang), "minus three euros and fifty cents");
+            assert_eq!(words("-£2", lang), "minus two pounds");
+            assert_eq!(words("a refund of -$1.05", lang), "a refund of minus one dollar and five cents");
+            assert_eq!(words("(-$5)", lang), "( minus five dollars )");
+            // A hyphen between two amounts is a range, not a sign.
+            assert_eq!(words("$10-$20", lang), "ten dollars - twenty dollars");
+            assert_eq!(words("€5-€8", lang), "five euros - eight euros");
+            assert_eq!(words("$10.50-$20", lang), "ten dollars and fifty cents - twenty dollars");
+            // A hyphen after a word or before a non-amount stays punctuation.
+            assert_eq!(words("a-$5", lang), "a - five dollars");
+            assert!(!words("-$x", lang).contains("minus"));
+        }
     }
 
     #[test]
