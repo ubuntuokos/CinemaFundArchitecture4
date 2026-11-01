@@ -14,7 +14,9 @@ attribution and original copyright/licence requirements remain in force.
   Windows, macOS, FreeBSD or WebAssembly build/release workflows.
   Historical source and cross-platform Cargo.lock entries can remain until
   an audited refactor; do not manually delete transitive lockfile dependencies.
-- CI: automatic PR/push checks must stay quick and non-compiling. Full Rust,
+- CI: automatic PR/push checks must stay quick. The only automatic compile step
+  is the required `cargo-check` gate (`.github/workflows/pr-check.yml`: type-check
+  of libraries and binaries, no tests; owner decision 2026-10-31). Full Rust,
   Python, Qt6, vendored-library and FFmpeg tests require an explicit GitHub
   Actions workflow_dispatch or PR `cfa4-full-validation` label event (remove
   then re-add the label for a repeat). Verify all jobs before merge.
@@ -45,8 +47,9 @@ attribution and original copyright/licence requirements remain in force.
   default order own paths → FFmpeg → GStreamer → own software codecs. Callers use only the engine's
   interfaces through the router, never a backend directly; order changes need tests and measurement.
 - **GStreamer** ([ADR 0002](docs/adr/ADR-0002-gstreamer-backend.md)) is an optional supplementary
-  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default), dynamically
-  linked from the system (LGPL-2.1-or-later) through the safe gstreamer-rs API: no `unsafe`, no
+  backend in `crates/gstreamer` (`cfa4-gstreamer`, feature `gstreamer`, off by default in the
+  workspace, on in release packages), dynamically linked from Ubuntu's GStreamer packages
+  (LGPL-2.1-or-later; package dependencies, never bundled; ADR 0002 step 6) through the safe gstreamer-rs API: no `unsafe`, no
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
   is always the fallback; GStreamer and FFmpeg (ADR 0005) are the exceptions to the inherited "pure
   Rust in the product" rule.

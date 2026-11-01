@@ -215,6 +215,9 @@ class RealEngine(unittest.TestCase):
             with self.assertRaises(SettingsBackendError):
                 run_save(cli, {"timeline.autoScroll": "sideways"}, Path(d))
             Hardware.parse(run_cli(cli, ["hardware"]))
+            from cfa4_devtools.settings_backend import run_codecs
+            codecs = run_codecs(cli)
+            self.assertIn("H.264 / AVC", [r.codec for r in codecs.rows])
 
 
 def qt_available():
@@ -282,6 +285,90 @@ class QtWindow(unittest.TestCase):
         self.assertEqual(dialog.result(), 0)
         dialog._busy(False)
         self.assertTrue(dialog.stack.isEnabled() and dialog.ok_button.isEnabled())
+        dialog.close()
+
+
+
+MEDIA_SCHEMA = {
+    "groups": [{"id": "media", "title": "Media & Playback"}],
+    "categories": [
+        {"id": "audio", "title": "Audio", "group": "media", "fields": []},
+        {"id": "media", "title": "Media", "group": "media", "fields": []},
+        {"id": "playback", "title": "Playback", "group": "media", "fields": [
+            {"key": "playback.draftDecode", "label": "Draft", "wired": True, "value": True, "kind": {"type": "bool"}},
+            {"key": "playback.preroll", "label": "Preroll", "wired": True, "value": 2, "kind": {"type": "int"}},
+            {"key": "playback.hardwareDecoding", "label": "Hardware decoding", "wired": True, "value": "auto",
+             "kind": {"type": "choice", "choices": [{"value": "auto", "label": "Auto"}, {"value": "off", "label": "Off"}]}},
+        ]},
+    ],
+}
+CODECS = {
+    "hardwareDecoder": {"backend": "VA-API", "reason": None},
+    "gstreamer": {"compiledIn": True, "available": False, "version": None, "reason": "no libs"},
+    "codecs": [
+        {"codec": "H.264 / AVC", "kind": "video", "decode": "software", "decodeNote": "8-bit",
+         "hardwareDecode": "VA-API", "encode": "software", "exportFormat": "H.264"},
+        {"codec": "WMA", "kind": "audio", "decode": "none", "hardwareDecode": 3, "encode": "none"},
+        {"kind": "video"}, "junk",
+    ],
+}
+
+
+class DecodingPage(unittest.TestCase):
+    def test_decoding_fields_move_from_playback(self):
+        from cfa4_devtools.settings_backend import DECODING_PAGE
+
+        schema = Schema.parse(MEDIA_SCHEMA)
+        self.assertEqual([p.id for p in schema.groups[0].pages], ["audio", "media", DECODING_PAGE, "playback"])
+        self.assertEqual([f.key for f in schema.page(DECODING_PAGE).fields],
+                         ["playback.hardwareDecoding", "playback.draftDecode"])
+        self.assertEqual([f.key for f in schema.page("playback").fields], ["playback.preroll"])
+        # the moved keys are still saved values of the window
+        self.assertIn("playback.hardwareDecoding", schema.values({}))
+
+    def test_codec_report(self):
+        from cfa4_devtools.settings_backend import Codecs
+
+        c = Codecs.parse(CODECS)
+        self.assertEqual([r.codec for r in c.rows], ["H.264 / AVC", "WMA"])
+        self.assertEqual(c.rows[0].hardware_decode, "VA-API")
+        self.assertIsNone(c.rows[1].hardware_decode)
+        self.assertEqual(c.hardware_decoder.name, "VA-API")
+        self.assertIsNone(c.gstreamer.name)
+        self.assertTrue(c.gstreamer_compiled_in)
+        for bad in (None, {}, {"codecs": {}}):
+            with self.subTest(bad=bad), self.assertRaises(SettingsBackendError):
+                Codecs.parse(bad)
+
+
+@unittest.skipUnless(qt_available(), "needs PySide6")
+class QtDecodingPage(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        from PySide6.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_page_shows_settings_and_the_codec_table(self):
+        from cfa4_devtools.qt_settings import SettingsDialog
+        from cfa4_devtools.settings_backend import Codecs
+        from PySide6.QtWidgets import QComboBox, QLabel, QTableWidget
+
+        dialog = SettingsDialog(None)
+        dialog._loaded((Schema.parse(MEDIA_SCHEMA), {}), page="decoding")
+        self.assertEqual(dialog.current_page(), "decoding")
+        self.assertFalse(dialog.reset_button.isEnabled())  # no engine category to reset
+        combo = dialog.findChild(QComboBox, "settings.playback.hardwareDecoding")
+        combo.setCurrentIndex(combo.findData("off"))
+        self.assertEqual(dialog.changes(), {"playback.hardwareDecoding": "off"})
+        dialog._codecs_loaded(Codecs.parse(CODECS))
+        self.app.processEvents()
+        table = dialog.findChild(QTableWidget, "settings.codecs.table")
+        self.assertEqual(table.rowCount(), 2)
+        self.assertEqual(table.item(0, 2).text(), "VA-API")
+        gst = dialog.findChild(QLabel, "settings.codecs.gstreamer")
+        self.assertIn("not available", gst.text())
+        dialog._codecs_failed("boom")
         dialog.close()
 
 
