@@ -20,6 +20,7 @@ pub mod commands;
 pub mod credits;
 pub mod delivery_check;
 pub mod demo;
+pub mod dialog_defaults;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;

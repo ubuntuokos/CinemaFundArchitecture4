@@ -60,6 +60,13 @@ class TimelineMedia(QObject):
     def attach(self, engine: Any) -> None:
         self.engine = engine
 
+    def forget_peaks(self, items: set[int]) -> None:
+        """Clip ▸ Generate Audio Waveform: these items' waveforms are read again."""
+        for key in [k for k in self.peaks if k[0] in items]:
+            del self.peaks[key]
+            self._used.pop(("peaks", key), None)
+        self.updated.emit()
+
     def clear(self) -> None:
         """Forget everything (another project was opened)."""
         self.thumbs.clear()
