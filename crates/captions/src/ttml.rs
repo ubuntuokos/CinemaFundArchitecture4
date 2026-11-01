@@ -338,8 +338,42 @@ fn speaker_names(root: roxmltree::Node) -> HashMap<String, String> {
 fn speaker(n: roxmltree::Node, names: &HashMap<String, String>) -> Option<String> {
     let refs = n.attributes().find(|a| a.name() == "agent" && metadata_namespace(a.namespace())).map(|a| a.value()).or_else(|| n.attribute("agent"));
     refs.map(|refs| {
-        // The project stores one speaker label; multiple agents become an ordered display label.
-        refs.split_whitespace().map(|id| names.get(id).cloned().unwrap_or_else(|| id.trim_start_matches('_').replace('_', " "))).collect::<Vec<_>>().join(", ")
+        // The project stores one speaker label. Keep document-defined long names and repeated
+        // references from multiplying into an unbounded per-cue allocation.
+        const MAX_REFS: usize = 64;
+        const MAX_LABEL_BYTES: usize = 4096;
+        let mut out = String::new();
+        for id in refs.split_whitespace().take(MAX_REFS) {
+            if !out.is_empty() {
+                if out.len() + 2 > MAX_LABEL_BYTES {
+                    break;
+                }
+                out.push_str(", ");
+            }
+            let name = names.get(id).map(String::as_str).unwrap_or(id);
+            if names.contains_key(id) {
+                let room = MAX_LABEL_BYTES.saturating_sub(out.len());
+                let mut end = 0;
+                for (i, ch) in name.char_indices() {
+                    if i + ch.len_utf8() > room {
+                        break;
+                    }
+                    end = i + ch.len_utf8();
+                }
+                out.push_str(&name[..end]);
+            } else {
+                for ch in id.trim_start_matches('_').chars() {
+                    if out.len() + ch.len_utf8() > MAX_LABEL_BYTES {
+                        break;
+                    }
+                    out.push(if ch == '_' { ' ' } else { ch });
+                }
+            }
+            if out.len() == MAX_LABEL_BYTES {
+                break;
+            }
+        }
+        out
     })
 }
 
