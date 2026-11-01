@@ -2,6 +2,27 @@
 
 ## Desktop control channel
 `cfa4 --control 9876` (or `CFA4_CONTROL_PORT`) listens on `127.0.0.1:<port>` (loopback only).
+The listener requires `CFA4_CONTROL_TOKEN`: 64 random hex characters shared with authorized
+clients through their inherited environment. Generate a fresh token for each desktop session, then
+start the desktop and bridge from that environment:
+
+```sh
+export CFA4_CONTROL_TOKEN="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+cfa4 --control 9876 &
+cfa4-cli mcp --bridge 127.0.0.1:9876
+```
+
+The CLI / MCP bridge reads this variable automatically. Keep it private: don't put the value in
+command-line arguments, logs, checked-in MCP configuration, or shared files. Without a valid value,
+the desktop leaves the listener closed. Every raw JSON request must include the same top-level
+`token` string; missing or incorrect credentials get an error and close the connection before any
+request is dispatched. Loopback alone does not restrict clients to the desktop owner's OS account.
+
+Socket reads and writes time out after two minutes without progress, releasing the connection slot.
+Expiration closes the connection without an unsolicited reply; reconnect before the next request
+(the CLI / MCP bridge does this automatically). Waiting for a UI reply has its separate 60-second
+limit. A partial request that times out is not dispatched.
+
 One JSON request per line → one JSON reply per line. The app opts out of macOS App Nap
 (`apps/cfa4/src/app_nap.rs`): a hidden window would otherwise drop the whole process to
 background priority, and on a busy machine it would stop answering.
@@ -13,11 +34,11 @@ nothing sent after it on that connection runs. That covers text that isn't JSON,
 an object without `method`, invalid UTF-8, and a line longer than 4 MiB. An HTTP request (for example a
 web page's cross-origin `fetch` to `127.0.0.1:<port>`) therefore can't smuggle a command in its body:
 its request line is rejected first. At most 16 connections are served at once; further ones get an error
-line and are closed. Clients that get an error reply should reconnect. The port has no authentication,
-so only enable it while you use it. Transport: `apps/cfa4/src/control_server.rs`.
+line and are closed. Clients that get an error reply should reconnect. Transport:
+`apps/cfa4/src/control_server.rs`.
 
 ```json
-{"id": 1, "method": "engine.execute", "params": {"command": "sequence.addEdit", "params": {"seconds": 3}}}
+{"id": 1, "token": "<CFA4_CONTROL_TOKEN>", "method": "engine.execute", "params": {"command": "sequence.addEdit", "params": {"seconds": 3}}}
 {"id": 1, "ok": true, "result": {"cuts": 2}}
 ```
 

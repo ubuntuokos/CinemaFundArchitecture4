@@ -14,7 +14,7 @@
 //!   clip markers. Transitions are supported on the primary storyline (and read from secondary
 //!   storylines); transitions elsewhere are reported.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use cfa4_geom::Vec2;
 use cfa4_media::MediaKind;
@@ -26,8 +26,8 @@ use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use roxmltree::Node;
 
 use crate::common::{
-    Builder, MediaSpec, base_item, db_to_gain, empty_sequence, file_name, gain_to_db, generator_of, item_media, item_path, kind_from_ext, param,
-    param_modified, path_to_file_url, resolve_path, scaled, set_param, settings_for, standard_effects, transition_effect, transition_name,
+    Builder, MAX_IMPORTED_TRACKS, MediaSpec, base_item, db_to_gain, empty_sequence, file_name, gain_to_db, generator_of, item_media, item_path, kind_from_ext,
+    param, param_modified, path_to_file_url, resolve_path, scaled, set_param, settings_for, standard_effects, transition_effect, transition_name,
 };
 use crate::xml::{child, children, elements, num};
 use crate::{Error, ExportOptions, Format, ImportOptions, Imported, Report, Result};
@@ -105,10 +105,11 @@ fn audio_rate_str(sr: u32) -> String {
 
 fn parse_audio_rate(s: &str) -> Option<u32> {
     let s = s.trim();
-    match s.strip_suffix('k') {
+    let r = match s.strip_suffix('k') {
         Some(k) => k.parse::<f64>().ok().map(|v| (v * 1000.0).round() as u32),
         None => s.parse().ok(),
-    }
+    };
+    r.filter(|&sr| sr > 0 && sr <= 384_000)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -132,6 +133,7 @@ struct Imp<'a, 'i, 'r> {
     assets: HashMap<String, Asset>,
     media_nodes: HashMap<String, Node<'a, 'i>>,
     media_items: HashMap<String, ItemId>,
+    media_active: HashSet<String>,
     effects: HashMap<String, String>,
 }
 
@@ -163,6 +165,7 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
         assets: HashMap::new(),
         media_nodes: HashMap::new(),
         media_items: HashMap::new(),
+        media_active: HashSet::new(),
         effects: HashMap::new(),
     };
     if let Some(res) = child(root, "resources") {
@@ -281,9 +284,15 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         }
         let n = *self.media_nodes.get(id)?;
         let s = child(n, "sequence")?;
-        // Reserve first so recursion terminates.
+        if !self.media_active.insert(id.into()) {
+            self.report.warn(format!("recursive FCPXML media resource {id:?} ignored"));
+            return None;
+        }
+        // Mark the resource before descending: a compound clip can reference itself through a
+        // ref-clip before a completed sequence is available to cache.
         let name = n.attribute("name").unwrap_or("Compound Clip").to_string();
         let item = self.sequence(s, &name, None);
+        self.media_active.remove(id);
         self.media_items.insert(id.into(), item);
         Some(item)
     }
@@ -437,14 +446,17 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
                     TrackKind::Video => lane.max(0) as usize,
                     TrackKind::Audio => {
                         if lane < 0 {
-                            (-lane - 1) as usize
+                            lane.unsigned_abs() as usize - 1
                         } else {
                             lane as usize
                         }
                     }
                 };
                 let id = ti.id;
-                self.b.place(seq, kind, pref, ti);
+                if self.b.place(seq, kind, pref, ti).is_none() {
+                    self.report.warn(format!("FCPXML {kind:?} lane exceeds the {MAX_IMPORTED_TRACKS}-track import limit; clip was skipped"));
+                    continue;
+                }
                 placed.push((kind, id));
                 if kind == TrackKind::Video {
                     vclip = Some(id);
@@ -462,7 +474,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             let Some(l) = c.attribute("lane").and_then(|l| l.parse::<i32>().ok()) else { continue };
             let off = attr_time(c, "offset").unwrap_or(Tick::ZERO);
             let ct0 = t0 + (off - local_start);
-            let clane = if lane > 0 && l > 0 { lane + l } else { l };
+            let clane = if lane > 0 && l > 0 { lane.saturating_add(l) } else { l };
             if c.has_tag_name("spine") {
                 // Secondary storyline: children offsets are in the storyline's local time.
                 let first = elements(c).filter(|x| !x.has_tag_name("transition")).find_map(|x| attr_time(x, "offset")).unwrap_or(Tick::ZERO);

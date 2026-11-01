@@ -693,6 +693,7 @@ dependencies = [
  "pollster 0.4.0",
  "rfd",
  "serde_json",
+ "subtle",
  "sys-locale",
  "zbus",
 ]
@@ -751,6 +752,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
  "tokio",
 ]
@@ -1388,6 +1390,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "tempfile",
  "thiserror 2.0.21",
  "ureq",
 ]
@@ -1406,6 +1409,7 @@ dependencies = [
  "cfa4-color",
  "harfrust",
  "skrifa",
+ "tempfile",
  "unicode-bidi",
  "unicode-linebreak",
  "unicode-segmentation",
@@ -1438,6 +1442,7 @@ dependencies = [
  "cfa4-tts-text",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 2.0.21",
  "zip",
 ]

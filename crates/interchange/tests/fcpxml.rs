@@ -99,6 +99,24 @@ fn doc() -> String {
 }
 
 #[test]
+fn self_referencing_compound_media_is_ignored_without_recursing() {
+    let xml = r#"<fcpxml version="1.10">
+      <resources>
+        <format id="r1" frameDuration="1/24s" width="1920" height="1080"/>
+        <media id="r2" name="Loop"><sequence format="r1"><spine>
+          <ref-clip ref="r2" offset="0s" start="0s" duration="1s"/>
+        </spine></sequence></media>
+      </resources>
+      <library><event><project name="P"><sequence format="r1"><spine>
+        <ref-clip ref="r2" offset="0s" start="0s" duration="1s"/>
+      </spine></sequence></project></event></library>
+    </fcpxml>"#;
+    let (imported, report) = import(xml.as_bytes(), Format::Fcpxml, None).unwrap();
+    assert!(!imported.sequences.is_empty());
+    assert!(report.mentions("recursive FCPXML media"), "{report:?}");
+}
+
+#[test]
 fn golden_connected_clips() {
     let d = doc();
     assert_eq!(detect(d.as_bytes(), Some("fcpxml")), Some(Format::Fcpxml));
@@ -161,6 +179,16 @@ fn golden_connected_clips() {
     assert!(!rep.has_warnings(), "{rep}");
     let m = p.items.values().find(|i| i.name == "Boats").unwrap().as_media().unwrap();
     assert!(matches!(&m.media, MediaRef::File { path } if path == "/proj/boats.mov"));
+}
+
+#[test]
+fn hostile_lane_numbers_do_not_create_sparse_tracks() {
+    let d = doc().replace("lane=\"-1\"", "lane=\"-2147483648\"").replace("lane=\"1\"", "lane=\"2147483647\"");
+    let (imp, rep) = import(d.as_bytes(), Format::Fcpxml, Some("/proj")).unwrap();
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    assert!(s.video_tracks.len() <= 256);
+    assert!(s.audio_tracks.len() <= 256);
+    assert!(rep.has_warnings());
 }
 
 fn project() -> (Project, cfa4_project::ItemId) {
