@@ -415,6 +415,13 @@ fn frame_hold_options_add_frame_hold_and_hold_segment() {
     assert_eq!(clip(&s, c.id.0).frame_hold, Some(rate.tick_of(72)));
     s.execute("clip.frameHoldOptions", json!({"holdOn": "sequenceTime", "time": (c.start + rate.tick_of(5)).0})).unwrap();
     assert_eq!(clip(&s, c.id.0).frame_hold, Some(rate.snap(c.source_in + rate.tick_of(5))));
+    // the dialog opened on a held clip keeps its frame: OK with only Hold Filters changed holds it still
+    let d = s.execute("dialog.defaults", json!({"command": "clip.frameHoldOptions"})).unwrap();
+    assert_eq!(d["params"]["holdOn"], "sourceTimecode", "{d}");
+    let mut p = d["params"].clone();
+    p["holdFilters"] = json!(false);
+    s.execute("clip.frameHoldOptions", p).unwrap();
+    assert_eq!(clip(&s, c.id.0).frame_hold, Some(rate.snap(c.source_in + rate.tick_of(5))));
     assert!(s.execute("clip.frameHoldOptions", json!({"holdOn": "nowhere"})).is_err());
     s.execute("clip.frameHoldOptions", json!({"enabled": false})).unwrap();
     assert_eq!(clip(&s, c.id.0).frame_hold, None);

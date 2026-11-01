@@ -40,6 +40,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("dv", 0),
     ("ac3", 0),
     ("dts", 0),
+    ("auro", 0),
     ("truehd", 0),
     ("mpa", 0),
     ("ogg", 0),

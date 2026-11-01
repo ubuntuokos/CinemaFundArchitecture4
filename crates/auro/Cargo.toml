@@ -1,0 +1,19 @@
+[package]
+name = "cfa4-auro"
+description = "Auro-3D (Auro-Codec) detector and height-channel decoder for 24-bit PCM carriers, from the harletty-bridge auro crate"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND Apache-2.0"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# Synthetic carriers for other crates' tests.
+test-util = []
+
+[dependencies]
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

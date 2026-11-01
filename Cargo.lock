@@ -733,6 +733,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-auro"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+]
+
+[[package]]
 name = "cfa4-automation"
 version = "0.10.0"
 dependencies = [
@@ -836,6 +843,7 @@ dependencies = [
  "cfa4-aac",
  "cfa4-ac3",
  "cfa4-apv",
+ "cfa4-auro",
  "cfa4-av1",
  "cfa4-avi",
  "cfa4-bitstream",
@@ -952,6 +960,7 @@ name = "cfa4-engine"
 version = "0.10.0"
 dependencies = [
  "cfa4-audio-dsp",
+ "cfa4-auro",
  "cfa4-captions",
  "cfa4-codecs",
  "cfa4-color",
@@ -1018,6 +1027,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-vp9",
  "image",
  "rayon",
@@ -1226,6 +1236,7 @@ dependencies = [
 name = "cfa4-media"
 version = "0.10.0"
 dependencies = [
+ "cfa4-auro",
  "cfa4-color",
  "cfa4-dng",
  "cfa4-frame",
