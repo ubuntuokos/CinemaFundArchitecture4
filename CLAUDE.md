@@ -34,5 +34,6 @@ override them (pure-Rust-only frontends, upstream release processes, macOS/Windo
 ## Running and looking at the app
 - `cargo run -p cfa4 -- --control 9876` opens the desktop app with the JSON-lines control server (see `docs/control-protocol.md`).
 - For UI work, **look at the result**: drive via the control channel and take `ui.screenshot`, compare with `plan/premiere/screenshots/` (maintainer-local; see [`docs/agents.md`](docs/agents.md) §3).
+- Usage budget (owner decision 2026-10-31, #367): the project model is `opusplan` (`.claude/settings.json`). Start any task larger than a small fix in plan mode, so planning runs on Opus and execution on Sonnet. Run quality gates through the `cfa4-ci-runner` subagent and branch inventories through `cfa4-branch-lister` (both Haiku, read-only, `.claude/agents/`). PR evidence stays the unfiltered gate log.
 - Parallel agents: separate git worktrees and `CARGO_TARGET_DIR=target/agent-<name>`; keep every `Cargo.toml` valid at all times (the `crates/*` glob means one broken manifest breaks everyone).
 - Test fixtures: generate with ffmpeg into `target/fixtures/` (never commit media). See [`docs/testing.md`](docs/testing.md).
