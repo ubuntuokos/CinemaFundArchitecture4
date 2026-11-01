@@ -1863,7 +1863,8 @@ fn build() -> Vec<CommandSpec> {
         // Each clip flips on its own, as in Premiere (#484): with one enabled and one disabled clip
         // selected, Enable swaps them rather than first making both the same.
         cmd!("clip.enable", "Enable", ["Clip"], Some("Shift+E"), r#"{"clips":[id]?}"#, has_selection, |s, p| {
-            let mut sel = with_links(s, &clips_p(s, p));
+            // An Alt selection is already exact (#3031); explicit targets keep the linked behavior.
+            let mut sel = if p.get("clips").is_some() || p.get("clip").is_some() { with_links(s, &clips_p(s, p)) } else { s.state.selection.clone() };
             // a clip named twice must still flip once
             sel.sort();
             sel.dedup();

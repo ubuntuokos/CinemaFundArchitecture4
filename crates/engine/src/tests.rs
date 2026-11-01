@@ -1087,6 +1087,31 @@ fn enable_flips_each_selected_clip() {
     assert_eq!((enabled(&s, a), enabled(&s, b)), (true, true));
 }
 
+/// #3031: with linked selection on, Enable on an Alt-selected audio clip flips only that clip,
+/// while a linked selection still flips both sides.
+#[test]
+fn enable_on_an_individual_selection_leaves_the_linked_partner() {
+    let mut s = demo();
+    assert!(s.state.linked_selection);
+    let enabled = |s: &Session, c: ClipId| s.active_sequence().unwrap().find_item(c).unwrap().1.enabled;
+    let video = ClipId(v1(&s)[0].0);
+    let audio = {
+        let q = s.active_sequence().unwrap();
+        let link = q.find_item(video).unwrap().1.link.unwrap();
+        q.all_tracks().flat_map(|t| t.items.iter()).find(|i| i.link == Some(link) && i.id != video).unwrap().id
+    };
+    s.execute("timeline.select", json!({"clips": [audio.0], "linked": false})).unwrap();
+    assert_eq!(s.state.selection, vec![audio]);
+    s.execute("clip.enable", json!({})).unwrap();
+    assert_eq!((enabled(&s, video), enabled(&s, audio)), (true, false), "only the selected audio is disabled");
+    s.execute("clip.enable", json!({})).unwrap();
+    assert_eq!((enabled(&s, video), enabled(&s, audio)), (true, true));
+    // a linked selection still flips both sides
+    s.execute("timeline.select", json!({"clips": [audio.0], "linked": true})).unwrap();
+    s.execute("clip.enable", json!({})).unwrap();
+    assert_eq!((enabled(&s, video), enabled(&s, audio)), (false, false));
+}
+
 /// #580: Escape takes back what a gesture changed, merged or not: the project returns to the mark,
 /// neither undo nor redo keeps the changes, and older steps stay.
 #[test]
