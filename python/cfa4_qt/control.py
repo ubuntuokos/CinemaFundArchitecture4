@@ -24,6 +24,7 @@ from __future__ import annotations
 import base64
 import json
 import math
+import os
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
@@ -47,6 +48,7 @@ from PySide6.QtWidgets import (
 
 from .panels.clip_dialogs import ClipDialog
 from .panels.monitor_view import MonitorView
+from .panels.quick_export import quick_presets
 from .panels.timeline import HEADER_W, RULER_H
 from .panels.tools import TOOLS
 
@@ -76,6 +78,9 @@ EDGE_NAMES = {"in": "In", "out": "Out"}  # egui's Edge names
 class ControlError(Exception):
     pass
 
+
+
+QUICK_FIELDS = ("quickOpen", "quickPath", "quickPreset")
 
 
 def _camel(name: str) -> str:
@@ -741,7 +746,58 @@ class ControlServer(QObject):
         if src is not None:
             win._follow(src)
 
-    def export_state(self) -> dict[str, Any] | None:
+    def export_state(self) -> dict[str, Any]:
+        """egui's ``ExportUi``: the header's Quick Export popup (``quickOpen``, ``quickPath``,
+        ``quickPreset``) and, while the Export window is open, its choices."""
+        return {**(self.export_window_state() or {}), **self.quick_export_state()}
+
+    def quick_export_state(self) -> dict[str, Any]:
+        q = getattr(self.window, "quick_export", None)
+        try:
+            shown = q is not None and q.isVisible()
+        except RuntimeError:
+            shown, q = False, None
+        return {"quickOpen": shown, "quickPath": q.path if q is not None else "", "quickPreset": q.preset if q is not None else ""}
+
+    def set_quick_export(self, patch: dict[str, Any]) -> None:
+        """``quickOpen`` opens (under the header button, as a click does) or closes the popup;
+        ``quickPreset`` picks a preset of its list; ``quickPath`` sets the file, fitted to the
+        preset's extension as typing it would be."""
+        self.check_quick_export(patch)
+        win = self.window
+        q = getattr(win, "quick_export", None)
+        name = patch.get("quickPreset")
+        if patch.get("quickOpen") is True and not self.quick_export_state()["quickOpen"]:
+            win.toggle_quick_export()
+            q = win.quick_export
+        elif patch.get("quickOpen") is False and q is not None and q.isVisible():
+            q.close()
+        if q is None:
+            return
+        if name is not None:
+            q.choose(name)
+        if "quickPath" in patch:
+            q.path = os.path.expanduser(patch["quickPath"])
+            q._fit_path()
+
+    def check_quick_export(self, patch: dict[str, Any]) -> None:
+        win = self.window
+        if "quickOpen" in patch and not isinstance(patch["quickOpen"], bool):
+            raise ControlError("export.quickOpen takes true or false")
+        for k in ("quickPath", "quickPreset"):
+            if k in patch and not isinstance(patch[k], str):
+                raise ControlError(f"export.{k} takes a string")
+        q = getattr(win, "quick_export", None)
+        name = patch.get("quickPreset")
+        if name is not None and q is not None and q.presets and name.lower() not in {n.lower() for n in quick_presets(q.presets)}:
+            raise ControlError(f"export.quickPreset: {name!r} is not in the Quick Export list")
+        opening = patch.get("quickOpen") is True and not self.quick_export_state()["quickOpen"]
+        if opening and (win.sequence or {}).get("id") is None:
+            raise ControlError("export.quickOpen: open a sequence first")
+        if q is None and not opening and patch.keys() - {"quickOpen"}:
+            raise ControlError("export: Quick Export has not been opened yet")
+
+    def export_window_state(self) -> dict[str, Any] | None:
         """The Export window's choices (null while it is closed)."""
         d = getattr(self.window, "export_dialog", None)
         try:
@@ -753,7 +809,19 @@ class ControlServer(QObject):
                 "customStart": d.start.value(), "customEnd": d.end.value()}
 
     def set_export(self, patch: Any) -> None:
-        cur = self.export_state()
+        if not isinstance(patch, dict):
+            raise ControlError("export takes {quickOpen, quickPath, quickPreset} and the open Export window's fields")
+        quick = {k: v for k, v in patch.items() if k in QUICK_FIELDS}
+        window = {k: v for k, v in patch.items() if k not in QUICK_FIELDS}
+        if quick and window and self.export_window_state() is None:
+            raise ControlError("export: the Export window is not open")
+        self.check_quick_export(quick)
+        if window:
+            self.set_export_window(window)
+        self.set_quick_export(quick)
+
+    def set_export_window(self, patch: Any) -> None:
+        cur = self.export_window_state()
         if cur is None:
             raise ControlError("export: the Export window is not open")
         if not isinstance(patch, dict):
