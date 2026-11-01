@@ -2077,8 +2077,8 @@
 	Public service announcement	Közérdekű közlemény
 	Off (5.1 only)	Ki (csak 5.1)
 	IAB 7.1 DS bed from the 5.1 mix	IAB 7.1 DS ágy az 5.1-es keverésből
-	IAB from a file (IAB MXF, .iab, or Dolby Atmos .thd)	IAB fájlból (IAB MXF, .iab vagy Dolby Atmos .thd)
-	IAB MXF, .iab or Dolby Atmos .thd file	IAB MXF, .iab vagy Dolby Atmos .thd fájl
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB fájlból (IAB MXF, .iab vagy Dolby Atmos TrueHD)
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab vagy Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
 	None: FSK sync only (SMPTE ST 429-19)	Nincs: csak FSK-szinkron (SMPTE ST 429-19)
 	5.1: the IAB rendered (not ST 429-19)	5.1: a renderelt IAB (nem ST 429-19)
 	5.1: the timeline mix (not ST 429-19)	5.1: az idővonal keverése (nem ST 429-19)
@@ -2086,7 +2086,7 @@
 	Immersive audio	Immerzív hang
 	IAB source	IAB-forrás
 	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	Az 5.1-es keverésből 7.1 DS ágy lesz (IAB Profile 1); a fő hangsáv 14. csatornája viszi az FSK szinkronjelet.
-	Choose an IAB track file (IMF or DCP), a raw IAB stream or a Dolby Atmos TrueHD stream (.thd).	Válassz IAB sávfájlt (IMF vagy DCP), nyers IAB-folyamot vagy Dolby Atmos TrueHD-folyamot (.thd).
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Válassz IAB sávfájlt (IMF vagy DCP), nyers IAB-folyamot vagy Dolby Atmos TrueHD-t: .thd folyamot, vagy Atmos sávot tartalmazó MKV, MP4 vagy M2TS fájlt.
 	Reading the IAB source…	Az IAB-forrás olvasása…
 	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} képkocka, {fps} fps, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum
 	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} mp, {rate} Hz; legfeljebb {beds} ágycsatorna és {objects} objektum, IAB-objektumok lesznek belőlük
