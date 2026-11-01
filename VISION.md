@@ -106,6 +106,7 @@ clean-room megvalósításúak; külső kodek-crate függőségként használhat
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
+| **Venturi** | vágás, hang (Rust, egui) | GPL-3.0-or-later, kódja átvehető forrásmegjelöléssel. Hardveres kódoló önellenőrzése próbakódolással; ügynökbiztos MCP (0600 Unix socket, visszatartás mozdulat alatt); inkrementális hangerőmérés; előre dekódoló puffer elvei; VST3 külön folyamatban; stabil azonosítók; felhasználói telepítő. Az MI-réteg után: Silero VAD szünettörlés, Whisper-kompatibilis átirat – [`docs/venturi-parity.md`](docs/venturi-parity.md) V1–V10 |
 
 További, eddig hiányzó területek:
 
