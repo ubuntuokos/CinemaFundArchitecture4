@@ -39,6 +39,67 @@ const NS_XML: &str = "http://www.w3.org/XML/1998/namespace";
 const IMSC1_TEXT: &str = "http://www.w3.org/ns/ttml/profile/imsc1/text";
 const DFXP_PROFILE: &str = "http://www.w3.org/ns/ttml/profile/dfxp-presentation";
 
+/// TTML is normally only a few containers deep. Keep the XML parser and our recursive content
+/// walkers safely below a native-stack-sized nesting level for untrusted caption files.
+const MAX_XML_DEPTH: usize = 128;
+
+/// Count XML element nesting without constructing an XML tree. This deliberately only decides
+/// where markup ends (respecting quoted attributes, comments, CDATA and processing instructions);
+/// `roxmltree` remains responsible for XML syntax and matching tags.
+fn check_xml_depth(text: &str) -> Result<()> {
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    let mut depth = 0usize;
+    while let Some(relative) = text[i..].find('<') {
+        let start = i + relative;
+        let rest = &text[start..];
+        if rest.starts_with("<!--") {
+            let Some(end) = text[start + 4..].find("-->") else { return Ok(()) };
+            i = start + 4 + end + 3;
+            continue;
+        }
+        if rest.starts_with("<![CDATA[") {
+            let Some(end) = text[start + 9..].find("]]>") else { return Ok(()) };
+            i = start + 9 + end + 3;
+            continue;
+        }
+        if rest.starts_with("<?") {
+            let Some(end) = text[start + 2..].find("?>") else { return Ok(()) };
+            i = start + 2 + end + 2;
+            continue;
+        }
+
+        let mut j = start + 1;
+        let mut quote = None;
+        while j < bytes.len() {
+            match (bytes[j], quote) {
+                (b'\'' | b'\"', None) => quote = Some(bytes[j]),
+                (b, Some(q)) if b == q => quote = None,
+                (b'>', None) => break,
+                _ => {}
+            }
+            j += 1;
+        }
+        if j == bytes.len() {
+            return Ok(());
+        }
+
+        if rest.starts_with("</") {
+            depth = depth.checked_sub(1).ok_or_else(|| Error::Syntax { line: 1, msg: "unexpected XML closing tag".into() })?;
+        } else if !rest.starts_with("<!") {
+            let self_closing = bytes[start + 1..j].iter().rev().find(|b| !b.is_ascii_whitespace()) == Some(&b'/');
+            if !self_closing {
+                depth += 1;
+                if depth > MAX_XML_DEPTH {
+                    return Err(Error::Syntax { line: 1, msg: format!("TTML XML nesting exceeds {MAX_XML_DEPTH} elements") });
+                }
+            }
+        }
+        i = j + 1;
+    }
+    Ok(())
+}
+
 fn esc(s: &str) -> String {
     let mut o = String::with_capacity(s.len());
     for c in s.chars() {
@@ -482,6 +543,7 @@ fn clean(s: &str) -> String {
 }
 
 pub fn parse(text: &str) -> Result<Document> {
+    check_xml_depth(text)?;
     let xml = roxmltree::Document::parse(text).map_err(|_| Error::NotFormat("TTML"))?;
     let root = xml.root_element();
     if root.tag_name().name() != "tt" {
@@ -647,6 +709,12 @@ mod tests {
             );
             assert!(crate::parse(xml.as_bytes(), crate::Format::Ttml).is_err(), "{params}");
         }
+    }
+
+    #[test]
+    fn deeply_nested_ttml_is_rejected_before_xml_parsing() {
+        let xml = format!("<tt>{}<p begin=\"0s\" end=\"1s\">caption</p>{}</tt>", "<div>".repeat(MAX_XML_DEPTH), "</div>".repeat(MAX_XML_DEPTH));
+        assert!(matches!(parse(&xml), Err(Error::Syntax { msg, .. }) if msg.contains("nesting exceeds")));
     }
 
     #[test]
