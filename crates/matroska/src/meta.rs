@@ -525,20 +525,41 @@ pub(crate) fn parse_tracks(d: &[u8], timestamp_scale: u64) -> Vec<Track> {
         if t.kind == TrackKind::Audio && t.audio.is_none() {
             t.audio = Some(AudioInfo::default());
         }
-        // CodecPrivate may itself be header-stripped (scope bit 2 = private data)
-        for enc in &t.encodings {
-            if let ContentEncoding::HeaderStripping { bytes, scope } = enc
-                && scope & 2 != 0
-            {
-                let mut p = bytes.clone();
-                p.extend_from_slice(&t.codec_private);
-                t.codec_private = p;
-            }
-        }
+        // CodecPrivate may itself be header-stripped (scope bit 2 = private data).
+        // Compose all applicable prefixes once: repeatedly cloning the complete
+        // private data lets many compact encoding entries multiply allocation.
+        restore_codec_private(&t.encodings, &mut t.codec_private);
         t.codec = map_codec(&t.codec_id, &t.codec_private, t.audio.as_ref());
         out.push(t);
     }
     out
+}
+
+fn restore_codec_private(encodings: &[ContentEncoding], codec_private: &mut Vec<u8>) {
+    let prefix_len = encodings
+        .iter()
+        .filter_map(|enc| match enc {
+            ContentEncoding::HeaderStripping { bytes, scope } if scope & 2 != 0 && !bytes.is_empty() => Some(bytes.len()),
+            _ => None,
+        })
+        .fold(0usize, usize::saturating_add);
+    if prefix_len == 0 {
+        return;
+    }
+    let Some(capacity) = prefix_len.checked_add(codec_private.len()) else { return };
+    let mut restored = Vec::with_capacity(capacity);
+    // Each successive stripping encoding prepends its bytes, so restore in
+    // reverse declaration order to preserve the prior result.
+    for enc in encodings.iter().rev() {
+        if let ContentEncoding::HeaderStripping { bytes, scope } = enc
+            && scope & 2 != 0
+            && !bytes.is_empty()
+        {
+            restored.extend_from_slice(bytes);
+        }
+    }
+    restored.extend_from_slice(codec_private);
+    *codec_private = restored;
 }
 
 #[cfg(test)]
@@ -556,6 +577,21 @@ mod metadata_depth_tests {
             current = &current.children[0];
         }
         assert!(current.children.is_empty());
+    }
+
+    #[test]
+    fn codec_private_header_stripping_is_composed_once_in_reverse_order() {
+        let encodings = vec![
+            ContentEncoding::HeaderStripping { bytes: b"first".to_vec(), scope: 2 },
+            ContentEncoding::HeaderStripping { bytes: Vec::new(), scope: 2 },
+            ContentEncoding::HeaderStripping { bytes: b"second".to_vec(), scope: 2 },
+            ContentEncoding::HeaderStripping { bytes: b"frame".to_vec(), scope: 1 },
+        ];
+        let mut private = b"private".to_vec();
+
+        restore_codec_private(&encodings, &mut private);
+
+        assert_eq!(private, b"secondfirstprivate");
     }
 
     #[test]
