@@ -146,6 +146,29 @@ pub enum FxOp {
     /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
     /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
     /// pixels; `seed` already folds in the frame when the grain is animated.
+    /// Halftone: `screens` hold (cos, sin) of the C, M, Y, K screen angles (monochrome uses the
+    /// last one); `inv_cell` is 1 / the cell in working pixels, `soft` the half width of the spot
+    /// edge in cell units ([`halftone_ink`]); colours are display-encoded.
+    Halftone {
+        mono: bool,
+        lines: bool,
+        inv_cell: f32,
+        soft: f32,
+        screens: [[f32; 2]; 4],
+        ink: [f32; 3],
+        paper: [f32; 3],
+        blend: f32,
+    },
+    /// Ordered dither ([`dither_px`]): `pattern` 0–2 Bayer 2^(n+1), 3 noise; `block` px per dither
+    /// pixel; `palette` 0 quantizes each channel to `levels`, else [`DITHER_PALETTES`] entry.
+    Dither {
+        pattern: u32,
+        block: u32,
+        threshold: f32,
+        palette: u32,
+        levels: f32,
+        blend: f32,
+    },
     FilmGrain {
         amount: f32,
         inv_cell: f32,
@@ -261,6 +284,8 @@ pub const GPU_EFFECTS: &[&str] = &[
     "stereo_to_2d",
     "stereo_parallax",
     "film_grain",
+    "halftone",
+    "dither",
     "mirror",
     "offset",
     "asc_cdl",
@@ -313,6 +338,105 @@ pub fn grain_noise(x: usize, y: usize, inv_cell: f32, seed: u32, layer: u32) -> 
     let top = a + (b - a) * sx;
     let bot = c + (d - c) * sx;
     top + (bot - top) * sy
+}
+
+/// Ink coverage (0–1) of a halftone screen at pixel centre (`px`, `py`) for tone `v` (0 = no
+/// ink, 1 = solid): the pixel rotated by (`cs`, `sn`) into cells of 1 / `inv_cell` pixels and
+/// thresholded against a spot function in [−1, 1] whose area above `1 − 2v` is about `v` — the
+/// cosine dot (dots that merge into a checkerboard at 50 % and into holes beyond) or a triangle
+/// across the cell for lines — with a linear edge `soft` (spot units) wide on each side.
+/// `fx.wgsl` (`halftone_ink`) mirrors this.
+pub fn halftone_ink(px: f32, py: f32, cs: f32, sn: f32, inv_cell: f32, soft: f32, lines: bool, v: f32) -> f32 {
+    if v.is_nan() || v <= 0.0 {
+        return 0.0;
+    }
+    if v >= 1.0 {
+        return 1.0;
+    }
+    let u = (px * cs + py * sn) * inv_cell;
+    let w = (py * cs - px * sn) * inv_cell;
+    let fu = u - u.floor() - 0.5;
+    let fw = w - w.floor() - 0.5;
+    let tau = std::f32::consts::TAU;
+    let spot = if lines { 1.0 - 4.0 * fw.abs() } else { -((tau * fu).cos() + (tau * fw).cos()) * 0.5 };
+    // the threshold reaches past the spot's range so 0 and 1 are exactly no ink and solid ink
+    let th = (1.0 - 2.0 * v) * (1.0 + soft);
+    ((spot - th) / (2.0 * soft) + 0.5).clamp(0.0, 1.0)
+}
+
+/// The fixed palettes of Dither (`cfa4_project::effect::DITHER_PALETTES` after "Input Colors"),
+/// 0xRRGGBB in display encoding. `fx.wgsl` (`DITHER_COLORS` / `dither_palette`) holds the same
+/// table.
+pub const DITHER_PALETTES: &[&[u32]] = &[
+    // Black & White
+    &[0x000000, 0xFFFFFF],
+    // Green Phosphor
+    &[0x000000, 0x33FF33],
+    // Amber Monitor
+    &[0x000000, 0xFFB000],
+    // Game Boy
+    &[0x0F380F, 0x306230, 0x8BAC0F, 0x9BBC0F],
+    // CGA (palette 1, high intensity)
+    &[0x000000, 0x55FFFF, 0xFF55FF, 0xFFFFFF],
+    // EGA
+    &[
+        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xAA5500, 0xAAAAAA, 0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55,
+        0xFFFFFF,
+    ],
+    // ZX Spectrum
+    &[0x000000, 0x0000D7, 0xD70000, 0xD700D7, 0x00D700, 0x00D7D7, 0xD7D700, 0xD7D7D7, 0x0000FF, 0xFF0000, 0xFF00FF, 0x00FF00, 0x00FFFF, 0xFFFF00, 0xFFFFFF],
+    // PICO-8
+    &[
+        0x000000, 0x1D2B53, 0x7E2553, 0x008751, 0xAB5236, 0x5F574F, 0xC2C3C7, 0xFFF1E8, 0xFF004D, 0xFFA300, 0xFFEC27, 0x00E436, 0x29ADFF, 0x83769C, 0xFF77A8,
+        0xFFCCAA,
+    ],
+];
+
+fn rgb_of(c: u32) -> [f32; 3] {
+    [((c >> 16) & 0xFF) as f32 / 255.0, ((c >> 8) & 0xFF) as f32 / 255.0, (c & 0xFF) as f32 / 255.0]
+}
+
+/// The dither threshold in (−0.5, 0.5) of dither cell (`cx`, `cy`): a Bayer matrix of side
+/// 2^(`pattern` + 1), or hashed noise for pattern 3.
+pub fn dither_threshold(cx: u32, cy: u32, pattern: u32) -> f32 {
+    if pattern >= 3 {
+        return (pcg3d(cx, cy, 0x6469_7468) >> 8) as f32 / 16_777_216.0 - 0.5;
+    }
+    let n = pattern + 1;
+    let mut v = 0u32;
+    // the lowest coordinate bit picks the most significant digit: neighbouring thresholds lie
+    // far apart (dispersed dots)
+    for i in 0..n {
+        let (xb, yb) = ((cx >> i) & 1, (cy >> i) & 1);
+        v = (v << 2) | (((xb ^ yb) << 1) | yb);
+    }
+    (v as f32 + 0.5) / (1u32 << (2 * n)) as f32 - 0.5
+}
+
+/// One dithered, display-encoded colour `e` with threshold offset `d` (already pattern +
+/// threshold): per-channel quantization to `levels`, or the nearest entry of palette `palette`
+/// (two-colour palettes split on luma). `fx.wgsl` (`dither_px`) mirrors this.
+pub fn dither_px(e: [f32; 3], d: f32, palette: u32, levels: f32) -> [f32; 3] {
+    let Some(pal) = palette.checked_sub(1).and_then(|i| DITHER_PALETTES.get(i as usize)) else {
+        let n = levels - 1.0;
+        return e.map(|v| ((v * n + d + 0.5).floor().clamp(0.0, n)) / n);
+    };
+    if pal.len() == 2 {
+        let l = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+        let i = usize::from(l + d > 0.5);
+        return pal.get(i).map_or(e, |c| rgb_of(*c));
+    }
+    // spread the threshold over the palette's mean step
+    let spread = 1.0 / (pal.len() as f32).cbrt();
+    let t = e.map(|v| v + d * spread);
+    let mut best = (f32::MAX, e);
+    for c in pal.iter().map(|c| rgb_of(*c)) {
+        let dd = (t[0] - c[0]) * (t[0] - c[0]) + (t[1] - c[1]) * (t[1] - c[1]) + (t[2] - c[2]) * (t[2] - c[2]);
+        if dd < best.0 {
+            best = (dd, c);
+        }
+    }
+    best.1
 }
 
 /// The source pixel of output pixel (`x`, `y`) when the two views of a `w`×`h` stereo frame swap
@@ -587,6 +711,43 @@ impl FxOp {
                 let vw = if sbs { w / 2 } else { w };
                 FxOp::StereoParallax { sbs, shift: pct / 100.0 * vw as f32 / 2.0, repeat: b(e, "repeat_edge") }
             }
+            "halftone" => {
+                let cell = (f(e, "cell_size", cx).clamp(2.0, 128.0) * cx.px_scale).max(1.0);
+                let sharp = (f(e, "sharpness", cx) / 100.0).clamp(0.0, 1.0);
+                let sc = |k: &str| {
+                    let a = f(e, k, cx) as f64;
+                    let a = if a.is_finite() { a.to_radians() } else { 0.0 };
+                    [a.cos() as f32, a.sin() as f32]
+                };
+                let mono = choice(e, "mode") == 1;
+                let (ink, paper) = (color(e, "ink", cx), color(e, "paper", cx));
+                FxOp::Halftone {
+                    mono,
+                    lines: choice(e, "pattern") == 1,
+                    inv_cell: 1.0 / cell,
+                    // plus about a pixel of edge (the spot changes by up to ~π per cell / px), so
+                    // the dots stay antialiased
+                    soft: (1.0 - sharp) * 0.5 + 3.0 / cell,
+                    screens: if mono {
+                        let m = sc("mono_angle");
+                        [m; 4]
+                    } else {
+                        [sc("cyan_angle"), sc("magenta_angle"), sc("yellow_angle"), sc("black_angle")]
+                    },
+                    ink: [ink[0], ink[1], ink[2]],
+                    paper: [paper[0], paper[1], paper[2]],
+                    blend: (f(e, "blend", cx) / 100.0).clamp(0.0, 1.0),
+                }
+            }
+            "dither" => FxOp::Dither {
+                pattern: choice(e, "pattern").min(3),
+                // (`as` saturates: NaN → 0, then at least 1)
+                block: ((f(e, "pixel_size", cx).clamp(1.0, 16.0) * cx.px_scale).round() as u32).max(1),
+                threshold: (f(e, "threshold", cx) / 100.0).clamp(-0.5, 0.5),
+                palette: choice(e, "palette").min(DITHER_PALETTES.len() as u32),
+                levels: f(e, "levels", cx).round().clamp(2.0, 16.0),
+                blend: (f(e, "blend", cx) / 100.0).clamp(0.0, 1.0),
+            },
             "film_grain" => {
                 let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
                 // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
@@ -814,6 +975,10 @@ impl FxOp {
             FxOp::ColorReplace { sim, target, replace, replace_hsl, .. } => sim.is_finite() && fin(target) && fin(replace) && fin(replace_hsl),
             FxOp::AlphaAdjust { opacity, .. } => opacity.is_finite(),
             FxOp::Vignette { amount, midpoint, roundness, feather, target } => fin(&[*amount, *midpoint, *roundness, *feather]) && fin(target),
+            FxOp::Halftone { inv_cell, soft, screens, ink, paper, blend, .. } => {
+                fin(&[*inv_cell, *soft, *blend]) && screens.iter().all(|s| fin(s)) && fin(ink) && fin(paper)
+            }
+            FxOp::Dither { threshold, levels, blend, .. } => fin(&[*threshold, *levels, *blend]),
             FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
                 fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
             }
@@ -1118,6 +1283,68 @@ impl FxOp {
                         let g = cfa4_color::srgb_to_linear(a);
                         p.copy_from_slice(&[g, g, g, 1.0]);
                     } else {
+                        p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
+                    }
+                });
+            }
+            FxOp::Halftone { mono, lines, inv_cell, soft, screens, ink, paper, blend } => {
+                let (mono, lines, inv, soft, sc, ink, paper, blend) = (*mono, *lines, *inv_cell, *soft, *screens, *ink, *paper, *blend);
+                if ![inv, soft, blend].iter().all(|v| v.is_finite()) || soft <= 0.0 {
+                    return;
+                }
+                img.map_rgb(|c, x, y| {
+                    let e = enc(c);
+                    let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+                    let cov = |s: [f32; 2], v: f32| halftone_ink(px, py, s[0], s[1], inv, soft, lines, v);
+                    let out = if mono {
+                        let k = cov(sc[3], 1.0 - (0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2]));
+                        [paper[0] + (ink[0] - paper[0]) * k, paper[1] + (ink[1] - paper[1]) * k, paper[2] + (ink[2] - paper[2]) * k]
+                    } else {
+                        // CMYK with full under-colour removal: neutral tones print with black only
+                        let e = e.map(|v| v.clamp(0.0, 1.0));
+                        let k = 1.0 - e[0].max(e[1]).max(e[2]);
+                        let ch = |v: f32| if k < 1.0 { (1.0 - v - k) / (1.0 - k) } else { 0.0 };
+                        let kk = cov(sc[3], k);
+                        let ik = 1.0 - kk;
+                        [(1.0 - cov(sc[0], ch(e[0]))) * ik, (1.0 - cov(sc[1], ch(e[1]))) * ik, (1.0 - cov(sc[2], ch(e[2]))) * ik]
+                    };
+                    dec([out[0] + (e[0] - out[0]) * blend, out[1] + (e[1] - out[1]) * blend, out[2] + (e[2] - out[2]) * blend])
+                });
+            }
+            FxOp::Dither { pattern, block, threshold, palette, levels, blend } => {
+                let (pattern, block, t, palette, levels, blend) = (*pattern, (*block).max(1) as usize, *threshold, *palette, *levels, *blend);
+                if ![t, levels, blend].iter().all(|v| v.is_finite()) || levels < 2.0 {
+                    return;
+                }
+                let src = img.clone();
+                let (w, h) = (img.w, img.h);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let Some(p) = row.get_mut(x * 4..x * 4 + 4) else { continue };
+                        // every pixel of a dither block takes the block's centre pixel
+                        let (bx, by) = (x / block, y / block);
+                        let sx = (bx * block + block / 2).min(w - 1);
+                        let sy = (by * block + block / 2).min(h - 1);
+                        let s = (sy * w + sx) * 4;
+                        let Some(q) = src.px.get(s..s + 4) else { continue };
+                        // the dithered block sample, mixed with this pixel's own original
+                        let (ab, ao) = (q[3], p[3]);
+                        let dithered = (ab > 1e-6).then(|| {
+                            let e = enc([q[0] / ab, q[1] / ab, q[2] / ab]);
+                            dither_px(e, dither_threshold(bx as u32, by as u32, pattern) + t, palette, levels)
+                        });
+                        let original = (ao > 1e-6).then(|| enc([p[0] / ao, p[1] / ao, p[2] / ao]));
+                        let c = match (dithered, original) {
+                            (Some(o), Some(e)) => [o[0] + (e[0] - o[0]) * blend, o[1] + (e[1] - o[1]) * blend, o[2] + (e[2] - o[2]) * blend],
+                            (Some(c), None) | (None, Some(c)) => c,
+                            (None, None) => [0.0; 3],
+                        };
+                        let a = ab + (ao - ab) * blend;
+                        if a <= 1e-6 {
+                            p.copy_from_slice(&[0.0; 4]);
+                            continue;
+                        }
+                        let c = dec(c);
                         p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
                 });

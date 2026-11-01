@@ -56,6 +56,8 @@ const OP_SWAP_EYES: u32 = 32;
 const OP_STEREO_TO_2D: u32 = 33;
 const OP_FILM_GRAIN: u32 = 34;
 const OP_STEREO_PARALLAX: u32 = 35;
+const OP_HALFTONE: u32 = 36;
+const OP_DITHER: u32 = 37;
 
 type Target = (wgpu::Texture, wgpu::TextureView);
 
@@ -170,6 +172,29 @@ fn steps(op: &FxOp) -> Vec<Step> {
         FxOp::SwapEyes { sbs } => out.push(step(OP_SWAP_EYES, [*sbs as u32, 0, 0, 0], &[])),
         FxOp::StereoTo2d { sbs, right } => out.push(step(OP_STEREO_TO_2D, [*sbs as u32, *right as u32, 0, 0], &[])),
         FxOp::StereoParallax { sbs, shift, repeat } => out.push(step(OP_STEREO_PARALLAX, [*sbs as u32, *repeat as u32, 0, 0], &[*shift])),
+        FxOp::Halftone { mono, lines, inv_cell, soft, screens: sc, ink, paper, blend } => out.push(step(
+            OP_HALFTONE,
+            [*mono as u32, *lines as u32, 0, 0],
+            &[
+                *inv_cell, *soft, *blend, 0.0, sc[0][0], sc[0][1], sc[1][0], sc[1][1], sc[2][0], sc[2][1], sc[3][0], sc[3][1], ink[0], ink[1], ink[2], 0.0,
+                paper[0], paper[1], paper[2],
+            ],
+        )),
+        FxOp::Dither { pattern, block, threshold, palette, levels, blend } => {
+            // the palette as (offset, length) into `fx.wgsl`'s DITHER_COLORS (length 0: Input Colors)
+            let (mut off, mut len) = (0u32, 0u32);
+            if let Some(i) = palette.checked_sub(1) {
+                for (k, p) in cfa4_render::gpufx::DITHER_PALETTES.iter().enumerate() {
+                    if k as u32 == i {
+                        len = p.len() as u32;
+                        break;
+                    }
+                    off += p.len() as u32;
+                }
+            }
+            let spread = if len > 0 { 1.0 / (len as f32).cbrt() } else { 0.0 };
+            out.push(step(OP_DITHER, [*pattern, (*block).max(1), off, len], &[*threshold, *levels, *blend, spread]));
+        }
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {
                 out.push(step(OP_FILM_GRAIN, [*seed, 0, 0, 0], &[*amount, *inv_cell, *shadows, *midtones, *highlights, *color]));
