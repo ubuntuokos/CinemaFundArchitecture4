@@ -1808,7 +1808,9 @@ class MainWindow(QMainWindow):
             self.schedule_refresh()
         elif kind == "toast":
             msg = str(ev.get("message") or "")
-            self.events.refresh()  # the engine logged it (Events)
+            # most toasts are in the engine's log too (shown once); some (an export queue's
+            # summary) are not
+            self.events.log(msg, error=bool(ev.get("error")), source="toast")
             self.statusBar().showMessage(msg, 5000)
         elif kind == "openSequence":
             self.docks["Timeline"].raise_()

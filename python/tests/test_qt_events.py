@@ -102,7 +102,7 @@ def test_real_engine_events_panel_as_egui(app, tmp_path: Path):
         # a failed command: the engine logs it and the GUI reports it, shown once
         win.execute("clip.rename", {})
         assert wait_until(app, lambda: len(rows()) == 1 and rows()[0][1] < LOCAL_IDS and counts() == ("1", "0", "0"), 10_000), (rows(), ev.local)
-        assert ev.local, "the GUI reported it too"
+        assert not ev.local, "the GUI's own report of it is retired"
         err_id = rows()[0][1]
         win.execute("clip.rename", {})
         assert wait_until(app, lambda: len(rows()) == 1 and rows()[0][0].endswith("(×2)"), 10_000), rows()
@@ -145,3 +145,66 @@ def test_real_engine_events_panel_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+class _SpyEngine:
+    running = True
+
+    def __init__(self) -> None:
+        self.asked: list[str] = []
+
+    def execute(self, cid, params=None, on_reply=None, on_error=None):
+        self.asked.append(cid)
+
+
+def _panel(app):
+    from cfa4_qt.panels.events import EventsPanel
+
+    ev = EventsPanel()
+    ev.attach(_SpyEngine())
+    return ev
+
+
+def test_toasts_the_engine_did_not_log_stay(app):
+    """Review fix: a toast the engine did not put in its log (an export queue's summary) stays in
+    Events; one it logged (under its own source) is shown once."""
+    from cfa4_qt.panels.events import Entry
+
+    ev = _panel(app)
+    ev.log("Export queue: 2 done, 1 failed", source="toast")
+    ev.log("Saved", source="toast")
+    now = ev.local[-1].time_ms
+    ev.engine_entries = [Entry(5, "info", "app", "Saved", 1, now)]
+    assert sorted((e.id < (1 << 40), e.message) for e in ev.entries()) == [(False, "Export queue: 2 done, 1 failed"), (True, "Saved")]
+
+
+def test_a_matched_gui_error_stays_retired_after_the_engine_repeats_it(app):
+    """Review fix: a failed command the engine logged hides the GUI's report for good; a later
+    repeat (which moves the engine entry's time on) does not bring the old report back."""
+    from cfa4_qt.panels.events import Entry
+
+    ev = _panel(app)
+    ev.log("clip.rename: need `name`", error=True, source="clip.rename")
+    t0 = ev.local[-1].time_ms
+    ev.engine_entries = [Entry(1, "error", "clip.rename", "need `name`", 1, t0)]
+    assert len(ev.entries()) == 1 and ev.count("error") == 1
+    ev.log("a GUI-only message")  # keeps the next report from coalescing with the first
+    ev.log("clip.rename: need `name`", error=True, source="clip.rename")
+    ev.engine_entries = [Entry(1, "error", "clip.rename", "need `name`", 2, t0 + 60_000)]
+    ev.local[-1].time_ms = t0 + 60_000
+    assert ev.count("error") == 1, [(e.source, e.message, e.time_ms) for e in ev.entries()]
+    assert [e.message for e in ev.entries() if e.level == "error"] == ["need `name`"]
+
+
+def test_the_open_panel_reads_the_engine_log_again(app):
+    """Review fix: while Events is shown its timer also reads the engine's log, so a background
+    job that finished (logged by the engine, no other refresh) shows up."""
+    ev = _panel(app)
+    ev.show()
+    assert "events.list" in ev.engine.asked, "read when shown"
+    ev.engine.asked.clear()
+    ev._busy = False
+    ev._ago.timeout.emit()
+    assert ev.engine.asked == ["events.list"]
+    ev.hide()
+    assert not ev._ago.isActive()

@@ -187,8 +187,13 @@ class EventsPanel(QWidget):
         # the "… ago" times move on while the panel is shown
         self._ago = QTimer(self)
         self._ago.setInterval(5000)
-        self._ago.timeout.connect(self._rebuild)
+        # …and the engine's log is read again, so finished background jobs show up
+        self._ago.timeout.connect(self._tick)
         self._rebuild()
+
+    def _tick(self) -> None:
+        self._rebuild()
+        self.refresh()
 
     # ----- data -----
     def attach(self, engine: Any) -> None:
@@ -236,18 +241,29 @@ class EventsPanel(QWidget):
         self.refresh()
 
     def _shown_local(self) -> list[Entry]:
-        """The GUI's entries the engine did not log too (a failed command is in both)."""
+        """The GUI's entries the engine did not log too (a failed command is in both; most toasts
+        are). An entry the engine's log matched is retired for good: the engine's entry counts it
+        from then on, also after a repeat moves that entry's time on."""
         seen = {(e.source, e.message): e.time_ms for e in self.engine_entries}
-        out = []
+        said = {}  # a toast is matched on its text (the engine logs it under its own source)
+        for e in self.engine_entries:
+            said[e.message] = max(said.get(e.message, 0), e.time_ms)
+        out, matched = [], set()
         for e in self.local:
-            t = seen.get((e.source, e.message))
-            if t is None:
-                # the GUI reports a failed command as "command: message"
-                cid, _, rest = e.message.partition(": ")
-                t = seen.get((cid, rest)) if rest else None
+            if e.source == "toast":
+                t = said.get(e.message)
+            else:
+                t = seen.get((e.source, e.message))
+                if t is None:
+                    # the GUI reports a failed command as "command: message"
+                    cid, _, rest = e.message.partition(": ")
+                    t = seen.get((cid, rest)) if rest else None
             if t is not None and abs(t - e.time_ms) <= MATCH_MS:
+                matched.add(e.id)
                 continue
             out.append(e)
+        if matched:
+            self.local = [e for e in self.local if e.id not in matched]
         return out
 
     def entries(self) -> list[Entry]:
@@ -302,6 +318,7 @@ class EventsPanel(QWidget):
         super().showEvent(e)
         self._ago.start()
         self._rebuild()
+        self.refresh()
 
     def hideEvent(self, e) -> None:
         super().hideEvent(e)
