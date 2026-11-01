@@ -112,6 +112,8 @@ struct Shared {
     workers: usize,
     /// Always-on counters for `perf.stats`.
     stats: Mutex<FrameStats>,
+    /// Set (under the queue lock) when the [`FrameServer`] is dropped: the workers return.
+    stop: AtomicBool,
 }
 
 /// Cumulative frame-job statistics (`perf.stats`): cheap enough to keep on all the time.
@@ -422,6 +424,7 @@ impl FrameServer {
             render_cost: Mutex::new(0.0),
             workers: workers.max(1),
             stats: Mutex::new(FrameStats::default()),
+            stop: AtomicBool::new(false),
         });
         let repaint: Arc<Mutex<Option<Box<dyn Fn() + Send + Sync>>>> = Arc::new(Mutex::new(None));
         #[cfg(not(target_arch = "wasm32"))]
@@ -693,6 +696,21 @@ impl FrameServer {
     }
 }
 
+impl Drop for FrameServer {
+    /// Stop the workers: queued jobs are dropped, running ones are cancelled, and each worker
+    /// returns once it has no job, releasing the frame cache, the media pool and the services.
+    fn drop(&mut self) {
+        let mut q = self.shared.queue.lock().unwrap_or_else(|e| e.into_inner());
+        self.shared.stop.store(true, Ordering::Relaxed);
+        q.clear();
+        drop(q);
+        for (_, c, _) in self.shared.in_flight.lock().unwrap_or_else(|e| e.into_inner()).iter() {
+            c.store(true, Ordering::Relaxed);
+        }
+        self.shared.cv.notify_all();
+    }
+}
+
 /// Counts shown and dropped frames while playing.
 ///
 /// A frame of the timeline is *shown* when its exact picture was on screen at some refresh while
@@ -775,6 +793,9 @@ fn worker(
         let job = {
             let mut q = sh.queue.lock().unwrap_or_else(|e| e.into_inner());
             loop {
+                if sh.stop.load(Ordering::Relaxed) {
+                    return;
+                }
                 if !q.is_empty() {
                     // highest priority (lowest number) first; FIFO among equals
                     let best = q.iter().enumerate().min_by_key(|(i, j)| (j.prio, *i)).map(|(i, _)| i).unwrap_or(0);
@@ -811,7 +832,15 @@ pub fn inject_job_panics(n: u32) {
 static INJECT_PANICS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 fn run_job(sh: &Shared, job: &Job, pool: &Arc<MediaPool>, services: &Arc<dyn Services>, previews: &PreviewStore) -> bool {
-    sh.in_flight.lock().unwrap_or_else(|e| e.into_inner()).push((job.key, job.cancel.clone(), job.prefetch));
+    {
+        let mut in_flight = sh.in_flight.lock().unwrap_or_else(|e| e.into_inner());
+        // A job taken from the queue just before the server was dropped is not in the list
+        // that `Drop` cancels.
+        if sh.stop.load(Ordering::Relaxed) {
+            job.cancel.store(true, Ordering::Relaxed);
+        }
+        in_flight.push((job.key, job.cancel.clone(), job.prefetch));
+    }
     if INJECT_PANICS.load(Ordering::Relaxed) > 0 && INJECT_PANICS.fetch_sub(1, Ordering::Relaxed) > 0 {
         crate::crash::injected_fault("injected frame-job fault");
     }
@@ -1050,5 +1079,57 @@ mod tests {
         }
         m.finish();
         assert_eq!((m.shown, m.dropped), (4, 0));
+    }
+
+    /// The workers of a dropped server return and release its state (the frame cache, the media
+    /// pool, the projects of queued jobs) instead of waiting for jobs for the rest of the process.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn dropping_the_server_ends_its_workers() {
+        use super::{FrameKey, FrameServer};
+        use std::sync::Arc;
+        use std::time::{Duration, Instant};
+
+        let s = cfa4_engine::Session::default();
+        let server = FrameServer::new(s.media.clone(), s.services.clone(), s.previews.clone(), 3);
+        let p = Arc::new(cfa4_project::Project::new("Frames"));
+        let key = FrameKey { target: Target::Item(ItemId(999)), frame: 0, size: 32, revision: 0, draft: false };
+        server.request(key, cfa4_time::Tick::ZERO, 0.1, &p, 0);
+        let (shared, project) = (Arc::downgrade(&server.shared), Arc::downgrade(&p));
+        drop(p);
+        drop(server);
+        let t0 = Instant::now();
+        while (shared.strong_count() > 0 || project.strong_count() > 0) && t0.elapsed() < Duration::from_secs(30) {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(shared.strong_count(), 0, "a worker still holds the dropped server's state");
+        assert_eq!(project.strong_count(), 0, "a queued job still holds its project");
+    }
+
+    /// A job a worker took from the queue before the server was dropped runs cancelled.
+    #[test]
+    fn a_job_started_after_the_drop_is_cancelled() {
+        use super::{FrameKey, FrameServer, Job, run_job};
+        use std::sync::Arc;
+        use std::sync::atomic::Ordering;
+
+        let s = cfa4_engine::Session::default();
+        let server = FrameServer::new(s.media.clone(), s.services.clone(), s.previews.clone(), 1);
+        let job = Job {
+            key: FrameKey { target: Target::Item(ItemId(999)), frame: 0, size: 32, revision: 0, draft: false },
+            queued: web_time::Instant::now(),
+            cancel: Default::default(),
+            prefetch: false,
+            catch_up: None,
+            time: cfa4_time::Tick::ZERO,
+            scale: 0.1,
+            project: Arc::new(cfa4_project::Project::new("Frames")),
+            prio: 0,
+        };
+        // what `Drop` sets before it cancels the jobs in flight
+        server.shared.stop.store(true, Ordering::Relaxed);
+        run_job(&server.shared, &job, &server.pool, &server.services, &server.previews);
+        assert!(job.cancel.load(Ordering::Relaxed), "the job ran without its cancel flag");
+        assert!(!server.is_ready(&job.key), "a cancelled job's frame is not cached");
     }
 }
