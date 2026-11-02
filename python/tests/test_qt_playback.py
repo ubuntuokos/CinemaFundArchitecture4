@@ -234,10 +234,17 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         ft = mon.frame()
         due = mon.meter.current[0] if mon.meter.current else mon.playhead // ft
         dropped = mon.meter.dropped
-        mon.stop_at = (due + 12) * ft
+        mon.stop_at = (due + 12) * ft + ft // 2  # between two ticks of the frame grid
         mon._play_from += 20 * ft  # the clock is past the stop point at the next tick
-        mon._tick()
+        refreshed: list[int] = []
+        refresh = mon._meter_refresh
+        mon._meter_refresh = lambda frame, exact: (refreshed.append(frame), refresh(frame, exact))  # type: ignore[method-assign]
+        try:
+            mon._tick()
+        finally:
+            del mon._meter_refresh
         assert not mon.playing
+        assert refreshed == [due + 12], ("the last frame due before the stop point", refreshed, due)
         assert mon.meter.dropped - dropped >= 10, (mon.meter.shown, mon.meter.dropped, dropped)
         # a hidden monitor: neither the hidden frames nor the one due when it shows again count
         mon.meter.start(1.0)

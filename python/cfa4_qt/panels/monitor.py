@@ -1215,8 +1215,10 @@ class Monitor(QWidget):
                 limit = 0  # a voice-over take keeps playing (and recording) into the empty timeline past the end
             if limit and t >= limit:
                 last = max(start, limit - ft)
-                # frames passed over during a stall up to the boundary still fell due
-                self._meter_refresh(last // ft, self._shows(last))
+                # frames passed over during a stall up to the boundary still fell due: through the
+                # last frame of the grid before the (exclusive) limit, which may fall between ticks
+                due = max(start, ((limit - 1) // ft) * ft)
+                self._meter_refresh(due // ft, self._shows(due))
                 if self.mv.looping and self.stop_at is None:
                     lo = self._range_marks()[0]
                     self._halt()
