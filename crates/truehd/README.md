@@ -52,6 +52,9 @@ allows.
   payload with a single update block, static objects); multi-block timing and moving objects
   still need a longer real stream (#124). Not rendered: binaural
   (#125), screen reference, divergence and trims (#127). E-AC-3 JOC is not decoded (#126).
+- `cfa4::ObjectDecoder` decodes the object presentation without rendering it: one mono signal per
+  object and the OAMD updates (`render::Event`) on the stream's sample clock. The DCP export uses
+  it to keep Atmos objects as IAB objects (#347, `crates/export/src/dcp_atmos.rs`).
 
 ## Tests
 

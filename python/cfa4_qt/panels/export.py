@@ -76,7 +76,7 @@ DCP_KINDS = (
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
     ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
-    ("file", N_("IAB from a file (IMF or DCP IAB MXF, .iab)")),
+    ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)")),
 )
 # what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
 DCP_IAB_FALLBACK = (
@@ -253,7 +253,7 @@ class ExportDialog(QDialog):
             self.dcp_immersive.addItem(tr(label), key)
         self.dcp_iab_source = QLineEdit(self)
         self.dcp_iab_source.setObjectName("export.dcpIabSource")
-        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF or .iab file"))
+        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)"))
         self.dcp_iab_browse = QPushButton(tr("Browse…"), self)
         self.dcp_iab_browse.setObjectName("export.dcpIabBrowse")
         self.dcp_iab_browse.clicked.connect(self._browse_iab)
@@ -807,7 +807,7 @@ class ExportDialog(QDialog):
 
     def _browse_iab(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab);;" + tr("All files") + " (*)"
+            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab *.thd *.mlp *.mkv *.mka *.mp4 *.m4a *.mov *.m2ts *.mts *.ts);;" + tr("All files") + " (*)"
         )
         if path:
             self.dcp_iab_source.setText(path)
@@ -818,7 +818,7 @@ class ExportDialog(QDialog):
         path = os.path.expanduser(self.dcp_iab_source.text().strip())
         if not path:
             self._iab_probed = ""
-            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP) or a raw IAB stream."))
+            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track."))
             return
         if path == self._iab_probed:
             return
@@ -834,6 +834,16 @@ class ExportDialog(QDialog):
         if path != self._iab_probed:
             return
         r = result if isinstance(result, dict) else {}
+        if r.get("container") == "truehd":
+            # a Dolby Atmos TrueHD stream: its objects become IAB objects at the DCP's frame rate (#347)
+            text = tr("Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects").format(
+                seconds=round(float(r.get("seconds") or 0.0), 1), rate=r.get("sampleRate", 0), beds=r.get("maxBedChannels", 0), objects=r.get("maxObjects", 0)
+            )
+            notes = [str(n) for n in r.get("profileNotes") or []]
+            if notes:
+                text += "\n" + tr("Beyond IAB Profile 1: {notes}").format(notes="; ".join(notes))
+            self.dcp_iab_info.setText(text)
+            return
         rate = r.get("frameRate") or [0, 1]
         fps = f"{rate[0]}" if len(rate) == 2 and rate[1] == 1 else f"{rate[0]}/{rate[1] if len(rate) == 2 else 1}"
         text = tr("{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects").format(

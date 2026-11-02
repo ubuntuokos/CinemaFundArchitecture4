@@ -180,6 +180,11 @@ pub struct Interpretation {
     /// is edited into a sequence. None = one stereo clip of the first two channels.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio_channels: Option<AudioChannelMap>,
+    /// Interpret Footage ▸ Auro-3D off: an Auro-3D carrier plays its own channels (a 7.1 bed
+    /// with the side channel in its low bits), as without a decoder, instead of the restored
+    /// layout (#323).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub auro_as_carrier: bool,
 }
 
 /// Modify ▸ Audio Channels: the clip channel format and, per audio clip, the source channels it
