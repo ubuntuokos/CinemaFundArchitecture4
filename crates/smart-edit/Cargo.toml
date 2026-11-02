@@ -1,0 +1,17 @@
+[package]
+name = "cfa4-smart-edit"
+description = "CFA4 Smart Cut / Smart Render planning (layer L3): media capability registry, GOP indexing and render plans for lossless packet-copy and boundary re-encode exports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfa4-route = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

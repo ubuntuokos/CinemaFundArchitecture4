@@ -603,6 +603,8 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Aac(a) => {
             if a.object_type == 5 || a.object_type == 29 {
                 "HE-AAC".into()
+            } else if a.object_type == 42 {
+                "xHE-AAC".into()
             } else {
                 "AAC".into()
             }

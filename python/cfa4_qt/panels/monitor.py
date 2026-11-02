@@ -511,6 +511,8 @@ class Monitor(QWidget):
         self._frame_busy = False
         self._frame_wanted: int | None = None
         self._shown: tuple[Any, ...] | None = None
+        # Settings ▸ Playback ▸ Draft decoding, read when playback starts
+        self.draft_decode = False
         self.view = FrameView(self.target, self.mv, self)
         self.view.view_changed.connect(self._view_changed)
         self.view.guides_changed.connect(self._guides_changed)
@@ -956,7 +958,8 @@ class Monitor(QWidget):
         t = self._frame_wanted
         width, height = self.view.wanted_size()
         scale = self.mv.scale(self.playing)
-        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key())
+        draft = self.draft_frames(scale)
+        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key(), draft)
         self._frame_wanted = None
         if key == self._shown:
             return
@@ -966,12 +969,27 @@ class Monitor(QWidget):
             params["target"] = self.target
         if self.mv.display == "alpha":
             params["alpha"] = True  # the frame's own alpha, not the opaque monitor picture
+        if draft:
+            params["draft"] = True
         self.engine.call(
             "frame.render",
             params,
             on_reply=lambda r, b, k=key: self._on_frame(k, r, b),
             on_error=self._on_frame_error,
         )
+
+    def draft_frames(self, scale: float) -> bool:
+        """egui's ``draft_playback``: draft decoding only while playing at 1/2 resolution or
+        lower, with the preference on (a paused frame is never a draft)."""
+        return self.draft_decode and self.playing and scale <= 0.5
+
+    def _read_draft_decode(self) -> None:
+        def got(on: Any) -> None:
+            if (on is True) != self.draft_decode:
+                self.draft_decode = on is True
+                self.request_frame()
+
+        self.engine.execute("prefs.get", {"key": "playback.draftDecode"}, on_reply=lambda r, _b: got(r), on_error=lambda _m: None)
 
     def _on_frame(self, key: tuple[Any, ...], result: Any, data: bytes | None) -> None:
         self._frame_busy = False
@@ -1016,6 +1034,7 @@ class Monitor(QWidget):
             return
         self.playing = True
         self.speed = float(speed)
+        self._read_draft_decode()
         self.dropped = 0
         self.view.dropped = 0
         self.transport.set_icon("toggle", "pause")
