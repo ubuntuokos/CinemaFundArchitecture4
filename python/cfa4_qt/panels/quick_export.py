@@ -157,8 +157,8 @@ class QuickExport(QFrame):
         if not sequence or sequence.get("id") is None:
             self.status.emit(tr("Quick Export: open a sequence first"))
             return False
-        if sequence.get("id") != self.sequence.get("id"):
-            self.path = ""  # another sequence: its own name
+        if self.sequence.get("id") is not None and sequence.get("id") != self.sequence.get("id"):
+            self.path = ""  # another sequence: its own name (a path set before the first opening stays)
         self.sequence = sequence
         self.move(at - QPoint(self.width(), 0))
         self.show()

@@ -1192,12 +1192,17 @@ class MainWindow(QMainWindow):
         cmd = self.registry.commands.get("file.open") or Command("file.open", "Open Project", [], "", "{path:str}", True)
         self.run_command(cmd, given={"path": path})
 
-    def toggle_quick_export(self) -> None:
-        """The header's Quick Export button: the popup below it, or closed when it is open."""
+    def quick_export_popup(self) -> QuickExport:
+        """The Quick Export popup, made (hidden) the first time it is needed."""
         popup = getattr(self, "quick_export", None)
         if popup is None:
             popup = self.quick_export = QuickExport(self.engine, self)
             popup.status.connect(lambda text: (self.events.log(text), self.statusBar().showMessage(text, 6000)))
+        return popup
+
+    def toggle_quick_export(self) -> None:
+        """The header's Quick Export button: the popup below it, or closed when it is open."""
+        popup = self.quick_export_popup()
         if popup.isVisible():
             popup.close()
             return

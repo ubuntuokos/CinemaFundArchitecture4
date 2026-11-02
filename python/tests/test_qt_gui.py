@@ -6282,6 +6282,12 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         u = ok({"export": {"fileName": "take 2", "location": str(tmp_path / "renders")}})
         assert u["export"]["path"] == str(tmp_path / "renders" / "take 2.mp4"), u["export"]
         refused({"export": {"fileName": "a/b"}}, "without a folder")
+        # Quick Export without a sequence: refused before anything is applied; its fields wait
+        seq, win.sequence = win.sequence, None
+        refused({"export": {"path": str(tmp_path / "other.mp4"), "quickOpen": True}}, "needs an open sequence")
+        win.sequence = seq
+        u = ok({"export": {"quickPath": str(tmp_path / "q.mp4")}})
+        assert u["export"]["quickPath"] == str(tmp_path / "q.mp4") and u["export"]["quickOpen"] is False
         refused({"export": {"manager": {"sort": 1}}}, "no field 'sort'")
         refused({"export": {"range": "sideways"}}, "no 'sideways'")
         win.export_dialog.close()
@@ -6309,10 +6315,12 @@ def test_real_engine_control_sets_preset_manager_and_quick_export_as_egui(app, t
     server = ControlServer(win)
     try:
         assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
-        # Quick Export: opened, a preset chosen, a path typed, closed
+        # Quick Export: a path set before it was ever opened stays; opened, a preset chosen, closed
+        server.set_export({"quickPath": str(tmp_path / "First.mp4")})
         server.set_export({"quickOpen": True})
         q = win.quick_export
         assert wait_until(app, lambda: q.isVisible() and q.rows and q.path, 20_000)
+        assert q.path == str(tmp_path / "First.mp4"), q.path
         mov = next((p["name"] for p in q.presets if p.get("extension") == "mov" and p["name"] in q.rows), None)
         if mov is not None:
             server.set_export({"quickPreset": mov})

@@ -801,6 +801,9 @@ class ControlServer(QObject):
             raise ControlError("export.fileName takes a file name without a folder")
         if "quickOpen" in patch and not isinstance(patch["quickOpen"], bool):
             raise ControlError("export.quickOpen takes true or false")
+        quick = getattr(self.window, "quick_export", None)
+        if patch.get("quickOpen") is True and not (quick is not None and quick.isVisible()) and (self.window.sequence or {}).get("id") is None:
+            raise ControlError("export.quickOpen: Quick Export needs an open sequence")
         if "settings" in patch and patch["settings"] != self.export_state().get("settings"):
             raise ControlError("export.settings: the Qt GUI reads the resolved settings; set the fields of the window instead")
         manager = patch.get("manager")
@@ -864,8 +867,8 @@ class ControlServer(QObject):
                 raise ControlError("export.quickOpen: Quick Export needs an open sequence")
         elif patch.get("quickOpen") is False and shown:
             quick.close()
-        if quick is None and ("quickPath" in patch or "quickPreset" in patch):
-            raise ControlError("export.quickPath / quickPreset: Quick Export has not been opened")
+        if quick is None:  # not opened yet: the fields wait in the hidden popup, as egui keeps them
+            quick = win.quick_export_popup()
         if "quickPreset" in patch:
             quick.choose(patch["quickPreset"])
         if "quickPath" in patch:
