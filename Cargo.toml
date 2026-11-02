@@ -88,9 +88,9 @@ cfa4-docpath = { version = "0.1.0", path = "vendor/cfa4-libs/docpath" }
 # ui
 # Shared frontend components; keep this dependency above the engine boundary.
 cfa4-ui = { version = "0.1.0", path = "vendor/cfa4-libs/ui", features = ["serde"] }
-egui = "0.36"
-eframe = { version = "0.36", default-features = false }
-egui_kittest = "0.36"
+egui = "0.37"
+eframe = { version = "0.37", default-features = false }
+egui_kittest = "0.37"
 rfd = "0.17"
 
 [workspace.lints.rust]
