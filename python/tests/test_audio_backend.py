@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from cfa4_qt.audio_backend import apply, choose, pipewire_config_dirs
+from cfa4_qt.audio_backend import apply, choose, pipewire_config_dirs, pulse_server_reachable
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,14 +24,28 @@ def test_config_dirs_follow_libpipewire(tmp_path: Path) -> None:
     assert pipewire_config_dirs({"XDG_CONFIG_HOME": "/x", "HOME": "/h"}) == [
         Path("/x/pipewire"), Path("/etc/pipewire"), Path("/usr/share/pipewire")]
     assert pipewire_config_dirs({"HOME": "/h"})[0] == Path("/h/.config/pipewire")
+    # PIPEWIRE_NO_CONFIG: libpipewire reads only its packaged files
+    assert pipewire_config_dirs({"PIPEWIRE_NO_CONFIG": "true", "PIPEWIRE_CONFIG_DIR": str(tmp_path)}) == [
+        Path("/usr/share/pipewire")]
+
+
+def test_pulse_server_reachable(tmp_path: Path) -> None:
+    assert pulse_server_reachable({"PULSE_SERVER": "tcp:host"})
+    assert not pulse_server_reachable({"XDG_RUNTIME_DIR": str(tmp_path)})
+    (tmp_path / "pulse").mkdir()
+    (tmp_path / "pulse" / "native").touch()
+    assert pulse_server_reachable({"XDG_RUNTIME_DIR": str(tmp_path)})
+    assert not pulse_server_reachable({"XDG_RUNTIME_DIR": str(tmp_path), "PULSE_RUNTIME_PATH": str(tmp_path / "x")})
+    assert not pulse_server_reachable({})
 
 
 def test_choose_forces_a_backend_only_for_pipewire_without_its_client_config(tmp_path: Path) -> None:
-    empty = {"PIPEWIRE_CONFIG_DIR": str(tmp_path)}
+    empty = {"PIPEWIRE_CONFIG_DIR": str(tmp_path), "PULSE_SERVER": "unix:/run/pulse"}
     # no libpipewire: Qt never picks PipeWire
     assert choose(dict(empty), libs("pulse")) is None
-    # libpipewire without client.conf: PulseAudio (pipewire-pulse), else ALSA
+    # libpipewire without client.conf: PulseAudio (pipewire-pulse) when its server answers, else ALSA
     assert choose(dict(empty), libs("pipewire-0.3", "pulse")) == "pulseaudio"
+    assert choose({"PIPEWIRE_CONFIG_DIR": str(tmp_path)}, libs("pipewire-0.3", "pulse")) == "alsa"
     assert choose(dict(empty), libs("pipewire-0.3")) == "alsa"
     # the user's own choice is kept
     assert choose({**empty, "QT_AUDIO_BACKEND": "pipewire"}, libs("pipewire-0.3")) is None
