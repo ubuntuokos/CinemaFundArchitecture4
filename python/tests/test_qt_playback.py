@@ -253,6 +253,17 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         mon._meter_refresh(81, True)
         mon.meter.finish()
         assert (mon.meter.shown, mon.meter.dropped) == (1, 1), (mon.meter.shown, mon.meter.dropped)
+        # stopped while hidden: the frame due then is neither shown nor dropped
+        mon.play()
+        mon.meter.start(1.0)
+        mon._meter_refresh(10, True)
+        mon.view.isVisible = lambda: False  # type: ignore[method-assign]
+        try:
+            mon._meter_refresh(40, False)
+            mon.stop()
+        finally:
+            del mon.view.isVisible
+        assert (mon.meter.shown, mon.meter.dropped) == (0, 0), (mon.meter.shown, mon.meter.dropped)
     finally:
         win._quit_confirmed = True
         win.close()

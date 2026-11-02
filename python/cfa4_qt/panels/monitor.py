@@ -1181,6 +1181,8 @@ class Monitor(QWidget):
         if not self.playing:
             return
         self._halt()
+        if self._meter_hidden:  # the frame due while hidden could not be shown: not a drop
+            self.meter.current = None
         self.meter.finish()
         self.speed = 1.0
         self.view.dropped = None
