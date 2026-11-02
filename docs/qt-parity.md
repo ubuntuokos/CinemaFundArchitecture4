@@ -100,7 +100,7 @@ The Qt Inspector is named Properties, as in egui (3.22).
 | # | Point | Qt 6 | Evidence / missing |
 |---|---|---|---|
 | 5.1 | Play/stop, step, start/end | ✅ | transport + Space |
-| 5.2 | Sound during playback | 🟡 | `audio.render` → QAudioSink; A/V sync not yet measured |
+| 5.2 | Sound during playback | ✅ | `audio.render` → QAudioSink; A/V sync as egui's: while the device plays, the samples it has played are the playback clock and the picture shows the frame holding the sample being heard (the picture waits for the first sound; measured offset under a frame, and the samples at the heard position are the engine's mix at the picture's time); a device that stops consuming samples for 1 s hands the clock to the wall clock where the sound got to, one that fails at the frame shown, with egui's status message; `ui.inspect` `playback.*.audioClock` / `avOffset` (`test_real_engine_picture_follows_the_sound_as_egui`) |
 | 5.3 | J/K/L shuttle, play around, loop in/out | 🟡 | J/K/L on the focused monitor (again in the same direction doubles the speed, up to 8×; sound at 1× only), Play In to Out (Alt+K, rests at Out), Loop (the marked range, or all) (`test_program_monitor_controls_as_egui`); Shift+J/L slow shuttle, Play Around (Shift+K once, Space loops in trim mode) (`test_real_engine_trim_monitor_and_dynamic_trimming_as_egui`); sound while shuttling missing |
 | 5.4 | Playback resolution, draft decoding, dropped-frame stats | ❌ | |
 | 5.5 | GPU frame path (no RGBA copy per frame) | ❌ | frames travel as RGBA8 over a pipe; shared memory/dmabuf later |

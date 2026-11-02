@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import math
 from collections import deque
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QElapsedTimer, QEvent, QMimeData, QPointF, QRect, QRectF, QSettings, Qt, QTimer, Signal
@@ -81,7 +82,7 @@ from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
 try:  # QtMultimedia is optional: without it playback is silent
-    from PySide6.QtMultimedia import QAudioFormat, QAudioSink, QMediaDevices
+    from PySide6.QtMultimedia import QAudio, QAudioFormat, QAudioSink, QMediaDevices
 
     HAVE_AUDIO = True
 except ImportError:  # pragma: no cover - depends on the PySide6 build
@@ -102,6 +103,12 @@ AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 MAX_SPEED = 8.0
+# the sink errors that end its clock (an underrun is not one)
+SINK_FAILURES: tuple[Any, ...] = (
+    (QAudio.Error.OpenError, QAudio.Error.IOError, QAudio.Error.FatalError) if HAVE_AUDIO else ()
+)
+# A device that consumes no samples for this long hands the clock back to the wall clock (egui's).
+AUDIO_STALL_S = 1.0
 GREEN = QColor(0x4C, 0xC0, 0x5A)
 YELLOW = QColor(0xF0, 0xC8, 0x40)
 
@@ -586,6 +593,13 @@ class Monitor(QWidget):
         self._timer.timeout.connect(self._tick)
         self._sink: Any = None
         self._sink_io: Any = None
+        # A/V sync as egui's: while the device plays, its played samples are the playback clock and
+        # the picture follows the sound; without a device (or after it fails or stalls) the wall clock
+        self.audio_clock = False
+        self._audio_seen = (0, 0)  # (µs the device had played, wall ns when that changed)
+        self._audio_given = False  # the device has been given sound since play()
+        # opens the output device for a sample rate (None: none); tests put a fake device here
+        self.make_sink: Callable[[int], Any] = self._open_sink
         self._audio_next = 0
         self._audio_busy = False
         self._audio_rate = 48000
@@ -1086,8 +1100,8 @@ class Monitor(QWidget):
     def _tick(self) -> None:
         if not self.playing or not self.has_content():
             return
-        elapsed = self._clock.nsecsElapsed()
-        t = self._play_from + int(elapsed * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+        self._check_audio_clock()
+        t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
         start, end = self.range()
         ft = self.frame()
         if self.speed > 0:
@@ -1128,7 +1142,7 @@ class Monitor(QWidget):
         """The sample being heard now (by the playback clock), at ``audio_rate``."""
         if not self.playing:
             return self.playhead * self._audio_rate // TICKS_PER_SECOND
-        t = self._play_from + self._clock.nsecsElapsed() * TICKS_PER_SECOND // 1_000_000_000
+        t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
         return t * self._audio_rate // TICKS_PER_SECOND
 
     @property
@@ -1147,32 +1161,95 @@ class Monitor(QWidget):
         self.meter_blocks.clear()
         self.strip_blocks.clear()
         self.audio_generation += 1
-        if HAVE_AUDIO:
-            self._open_sink(rate)
+        # the clock restarts with the sound, from the playhead (also when the output changes)
+        self._play_from = self.playhead
+        self._clock.restart()
+        self._sink = self.make_sink(rate)
+        self._sink_io = self._sink.start() if self._sink is not None else None
+        self.audio_clock = self._sink is not None
+        self._audio_seen = (0, 0)
+        self._audio_given = False
         self._feed_audio()
 
-    def _open_sink(self, rate: int) -> None:
+    def _elapsed_ns(self) -> int:
+        """Playback time since play() (before the speed): the samples the device has played while
+        it is the clock (the picture waits for the sound), else the wall clock."""
+        if self.audio_clock and self._sink is not None:
+            return int(self._sink.processedUSecs()) * 1000
+        return int(self._clock.nsecsElapsed())
+
+    def _check_audio_clock(self) -> None:
+        """egui's advance_playback: a device that fails gives the clock back at the frame shown; one
+        that stops consuming samples for AUDIO_STALL_S gives it back where the sound got to. Either
+        way playback goes on without sound."""
+        if not self.audio_clock:
+            return
+        sink = self._sink
+        now = int(self._clock.nsecsElapsed())
+        failed = sink is None or sink.error() in SINK_FAILURES
+        if failed:
+            self._wall_clock_from(self.playhead)
+            self.message.emit(tr("Audio output failed: playing without sound (check Settings ▸ Audio Hardware)"))
+            return
+        used = int(sink.processedUSecs())
+        # (the stall is timed from the first sound the device was given: the engine mixes the first
+        # blocks while the device waits, as egui's pre-roll)
+        if used != self._audio_seen[0] or not self._audio_given:
+            self._audio_seen = (used, now)
+        elif now - self._audio_seen[1] >= AUDIO_STALL_S * 1_000_000_000:
+            self._wall_clock_from(self._play_from + int(used * 1000 * TICKS_PER_SECOND * self.speed) // 1_000_000_000)
+            self.message.emit(tr("Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)"))
+
+    def _wall_clock_from(self, t: int) -> None:
+        self.audio_clock = False
+        self._play_from = int(t)
+        self._clock.restart()
+        self._stop_audio()
+
+    def av_offset(self) -> int | None:
+        """How far the picture shown is behind the sound heard, in ticks (None: not playing with
+        sound). With the device as the clock it is under a frame: the playhead is the frame
+        holding the sample being heard."""
+        if not self.playing or not self.audio_clock or self._audio_rate <= 0:
+            return None
+        heard = self.play_sample() * TICKS_PER_SECOND // self._audio_rate
+        return int(heard - self.playhead) if self.speed > 0 else int(self.playhead - heard)
+
+    def _open_sink(self, rate: int) -> Any:
+        """A QAudioSink on Settings ▸ Audio Hardware ▸ Default Output at ``rate`` (stereo float),
+        sized for the lead; None without QtMultimedia or a device that takes the format."""
+        if not HAVE_AUDIO:
+            return None
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
         fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
         device = output_device(self.audio_output)
         if device.isNull() or not device.isFormatSupported(fmt):
-            return  # silent: the meters still play
-        self._sink = QAudioSink(device, fmt, self)
-        self._sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
-        self._sink_io = self._sink.start()
+            return None  # silent: the meters still play
+        sink = QAudioSink(device, fmt, self)
+        sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
+        return sink
 
     def set_audio_output(self, name: str) -> None:
         """Play through another output; playback that is running moves to it at once."""
         if name == self.audio_output:
             return
         self.audio_output = name
-        if self.playing and self.speed == 1.0 and HAVE_AUDIO:
+        if self.playing and self.speed == 1.0:
             self._stop_audio()
             self._start_audio()
 
     def _stop_audio(self) -> None:
+        if self.audio_clock and self.playing:  # the wall clock takes over where the sound got to
+            self.audio_clock = False
+            if self._sink is not None:
+                played = int(self._sink.processedUSecs()) * 1000
+                self._play_from += int(played * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+            else:
+                self._play_from = self.playhead
+            self._clock.restart()
+        self.audio_clock = False
         if self._sink is not None:
             self._sink.stop()
             self._sink.deleteLater()
@@ -1187,6 +1264,7 @@ class Monitor(QWidget):
         if self._sink is not None and self._sink_io is not None:
             if self._audio_pending:
                 n = self._sink_io.write(self._audio_pending)
+                self._audio_given = self._audio_given or n > 0
                 self._audio_pending = self._audio_pending[max(0, n) :]
             frame_bytes = 4 * self._audio_channels
             queued = (self._sink.bufferSize() - self._sink.bytesFree()) // frame_bytes + len(

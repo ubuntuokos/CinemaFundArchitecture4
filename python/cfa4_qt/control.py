@@ -441,7 +441,15 @@ class ControlServer(QObject):
             open_dialog = None
 
         def monitor(m: Any) -> dict[str, Any]:
-            return {"playing": m.playing, "speed": m.speed, "playhead": int(m.playhead)}
+            # audioClock: the device's played samples drive the picture (egui's); avOffset: how far the
+            # frame shown is behind the sound heard, in ticks (under a frame), while playing with sound
+            return {
+                "playing": m.playing,
+                "speed": m.speed,
+                "playhead": int(m.playhead),
+                "audioClock": m.audio_clock,
+                "avOffset": m.av_offset(),
+            }
 
         return {
             "tool": canvas.tool,
