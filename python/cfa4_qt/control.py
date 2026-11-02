@@ -24,6 +24,7 @@ from __future__ import annotations
 import base64
 import json
 import math
+import warnings
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
@@ -589,7 +590,17 @@ class ControlServer(QObject):
         if seq.count() != 1 or not seq.toString() or seq[0].key() == Qt.Key.Key_unknown:
             raise ControlError(f"unknown key {name!r}")
         combo = seq[0]
-        QTest.keyClick(self._keyboard_target(), combo.key(), combo.keyboardModifiers())
+        target = self._keyboard_target()
+        if QApplication.activeWindow() is not target.window():
+            # as egui's, the channel's keys reach the window without the native keyboard focus (a
+            # window in the background, or Wayland, where a client cannot take the focus itself):
+            # Qt matches shortcuts only in its active window, so make it that inside Qt alone (the
+            # window system's focus is not asked for, and its next focus change takes it back).
+            # Deprecated in Qt 6 for apps, but the only way without asking the window system.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                QApplication.setActiveWindow(target.window())
+        QTest.keyClick(target, combo.key(), combo.keyboardModifiers())
 
     def set(self, p: dict[str, Any]) -> None:
         win = self.window
