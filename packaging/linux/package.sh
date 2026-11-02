@@ -124,6 +124,10 @@ fi
 if has appimage; then
   APPDIR="$WORK/CFA4.AppDir"
   cp -R "$STAGE" "$APPDIR"
+  # The AppImage stays the egui app: it cannot depend on the host's python3-pyside6 packages and
+  # does not bundle PySide6, so the Qt GUI (cfa4-qt and its Python package) ships only in .deb/tar.
+  rm -rf "$APPDIR/usr/bin/cfa4-qt" "$APPDIR/usr/lib/cfa4/python"
+  rmdir "$APPDIR/usr/lib/cfa4" "$APPDIR/usr/lib" 2>/dev/null || true
   # Keep usr/share/doc: licences, NOTICE and attributions must ship inside the AppImage too.
   ln -s usr/bin/cfa4 "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
