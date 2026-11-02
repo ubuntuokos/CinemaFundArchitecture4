@@ -40,6 +40,7 @@ mod serve_media_browser;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
+mod serve_shuttle;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;

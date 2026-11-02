@@ -293,6 +293,13 @@ fn interleave(channels: &[Vec<f32>], frames: usize) -> Vec<u8> {
 
 fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let frames = audio_frames(p)?;
+    let speed = match p.get("speed") {
+        None => 1.0,
+        Some(v) => v.as_f64().filter(|x| x.is_finite()).ok_or("`speed` must be a number")?,
+    };
+    if speed != 1.0 {
+        return render_shuttle(s, p, frames, speed);
+    }
     if wants_source(p)? {
         let item = source_item(s, p)?;
         let media = media_of(s, item);
@@ -357,6 +364,84 @@ fn render_audio(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
         meta["meter"]["strips"] = Value::Array(strips);
     }
     Ok((meta, bytes))
+}
+
+thread_local! {
+    /// Each target's shuttle stream (see `serve_shuttle`).
+    static SHUTTLES: std::cell::RefCell<Vec<crate::serve_shuttle::Shuttle>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// `audio.render {speed}`: the sound of J / L shuttling at 0.5–4× (`serve_shuttle`). `start` is a
+/// frame of the `mixRate` stream the reply names (device rate / speed); the reply plays at
+/// `sampleRate`, so consecutive blocks run `speed` times as fast as the timeline.
+fn render_shuttle(s: &Session, p: &Value, frames: usize, speed: f64) -> Result<(Value, Vec<u8>), String> {
+    use crate::serve_shuttle::{Shuttle, mix_rate};
+    let source = wants_source(p)?;
+    let (target, device) = if source {
+        let sr = p
+            .get("sampleRate")
+            .map(|v| v.as_u64().and_then(|x| u32::try_from(x).ok()).filter(|x| (8_000..=192_000).contains(x)).ok_or("`sampleRate` must be 8000..=192000"))
+            .transpose()?
+            .unwrap_or(48_000);
+        ("source", sr)
+    } else {
+        ("program", s.active_sequence().ok_or("no active sequence")?.settings.sample_rate.max(1))
+    };
+    let rate = mix_rate(device, speed).ok_or("`speed` must be 0.5..=4 (other speeds are silent)")?;
+    let start = match p.get("start") {
+        Some(v) => v.as_i64().ok_or("`start` must be a frame index at `mixRate`")?,
+        None => match p.get("time").or(p.get("seconds")).or(p.get("frame")) {
+            Some(_) => time_param(s, p)?.to_units_floor(i64::from(rate)),
+            None if source => s.state.source_playhead.to_units_floor(i64::from(rate)),
+            None => time_param(s, p)?.to_units_floor(i64::from(rate)),
+        },
+    };
+    let maintain = s.prefs.audio.maintain_pitch_shuttling;
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    let silent = |n: usize| vec![vec![0.0_f32; n]; 2];
+    let channels = SHUTTLES.with(|cell| -> Result<Vec<Vec<f32>>, String> {
+        let mut shuttles = cell.borrow_mut();
+        let i = match shuttles.iter().position(|sh| sh.matches(target, device, rate, maintain)) {
+            Some(i) => i,
+            None => {
+                shuttles.retain(|sh| !sh.is_for(target));
+                shuttles.push(Shuttle::new(target, device, rate, maintain).ok_or("`speed` cannot be played at this rate")?);
+                shuttles.len() - 1
+            }
+        };
+        let sh = shuttles.get_mut(i).ok_or("shuttle stream lost")?;
+        if source {
+            let media = media_of(s, source_item(s, p)?);
+            let has_audio = s.project.item(media).is_some_and(|i| i.has_audio());
+            let decoder = if has_audio { cfa4_render::SourceProvider::source(&provider, media) } else { None };
+            let mut raw = |s0: i64, m: usize, r: u32| match &decoder {
+                Some(d) if s0 >= 0 => match d.audio(s0, m, r) {
+                    Ok(sound) => {
+                        cfa4_render::audio::to_layout(sound, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::default()).channels
+                    }
+                    Err(_) => silent(m),
+                },
+                _ => silent(m),
+            };
+            Ok(sh.render(start, frames, None, &mut raw))
+        } else {
+            let seq = s.active_sequence().ok_or("no active sequence")?;
+            let seq_sr = seq.settings.sample_rate.max(1);
+            let live = &s.previews.live;
+            let mut raw = |s0: i64, m: usize, _r: u32| {
+                let graph = cfa4_render::mixer::mix_graph(&s.project, seq, s0, m, &provider, Some(live));
+                cfa4_render::audio::to_layout(graph, cfa4_audio_dsp::channels::Layout::Stereo, cfa4_audio_dsp::channels::Mixdown::FrontRear).channels
+            };
+            let out = sh.render(start, frames, Some(seq_sr), &mut raw);
+            let _ = live.take_meters(); // shuttling is not metered
+            Ok(out)
+        }
+    })?;
+    let bytes = interleave(&channels, frames);
+    Ok((
+        json!({"sampleRate": device, "mixRate": rate, "speed": speed, "channels": channels.len(), "frames": frames, "start": start, "format": "f32le", "target": target}),
+        bytes,
+    ))
 }
 
 fn wants_meter(p: &Value) -> bool {
@@ -1012,6 +1097,54 @@ mod tests {
         // without `meter`, no meter
         let plain = handle(&mut s, json!(4), "audio.render", json!({"start": 0, "frames": 480})).expect("reply");
         assert!(plain.json["result"].get("meter").is_none());
+    }
+
+    #[test]
+    fn audio_render_plays_shuttling_at_its_speed() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let sr = s.active_sequence().map(|q| q.settings.sample_rate).expect("demo sequence");
+        let samples =
+            |r: &Reply| -> Vec<f32> { r.binary.as_deref().unwrap_or(&[]).chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect() };
+        let ask = |s: &mut Session, id: i64, p: Value| handle(s, json!(id), "audio.render", p).expect("reply");
+        // 2× L: the timeline mixed at half the device rate, played at the device rate
+        let rate = i64::from(sr / 2);
+        let mut heard = Vec::new();
+        for (i, at) in [10 * rate, 10 * rate + 4800].into_iter().enumerate() {
+            let r = ask(&mut s, i as i64, json!({"start": at, "frames": 4800, "speed": 2.0, "meter": true}));
+            assert_eq!(r.json["ok"], json!(true), "{}", r.json);
+            let m = &r.json["result"];
+            assert_eq!((m["sampleRate"].as_u64(), m["mixRate"].as_u64(), m["channels"].as_u64()), (Some(u64::from(sr)), Some(rate as u64), Some(2)));
+            assert!(m.get("meter").is_none(), "shuttling is not metered");
+            let block = samples(&r);
+            assert_eq!(block.len(), 4800 * 2);
+            assert!(block.iter().all(|x| x.is_finite() && x.abs() <= 4.0));
+            heard.extend(block);
+        }
+        assert!(heard.iter().any(|x| x.abs() > 0.001), "the demo plays sound at 10 s");
+        // Preferences ▸ Audio ▸ Maintain pitch while shuttling changes what is heard
+        s.prefs.audio.maintain_pitch_shuttling = false;
+        let plain = samples(&ask(&mut s, 3, json!({"start": 10 * rate, "frames": 4800, "speed": 2.0})));
+        assert_eq!(plain.len(), 4800 * 2);
+        assert_ne!(plain[..], heard[..4800 * 2], "pitch correction off");
+        // a sequence block straight through the mix at 2× without correction is every other frame
+        // of 1× (as the device plays it) — same sound, so similar level
+        let level = |v: &[f32]| v.iter().map(|x| f64::from(*x).powi(2)).sum::<f64>() / v.len().max(1) as f64;
+        let normal = samples(&ask(&mut s, 4, json!({"start": 20 * rate, "frames": 9600})));
+        assert!(level(&plain) > level(&normal) * 0.1 && level(&plain) < level(&normal) * 10.0 + 1e-6, "{} vs {}", level(&plain), level(&normal));
+        // outside 0.5–4× (and backwards) there is no sound to give: a clear refusal
+        for (i, speed) in [8.0, 0.25, -2.0].into_iter().enumerate() {
+            let r = ask(&mut s, 10 + i as i64, json!({"start": 0, "frames": 480, "speed": speed}));
+            assert_eq!(r.json["ok"], json!(false), "{speed}×");
+        }
+        assert_eq!(ask(&mut s, 20, json!({"frames": 480, "speed": "fast"})).json["ok"], json!(false));
+        // the Source monitor shuttles too
+        let movie = s.project.items.values().find(|i| i.as_media().is_some_and(|m| !m.info.audio_streams.is_empty())).map(|i| i.id).expect("demo sound");
+        s.execute("source.open", json!({"item": movie.0})).expect("open source");
+        let src = ask(&mut s, 21, json!({"target": "source", "start": 0, "frames": 4800, "speed": 0.5}));
+        assert_eq!(src.json["ok"], json!(true), "{}", src.json);
+        assert_eq!(src.json["result"]["mixRate"], json!(96_000));
+        assert_eq!(samples(&src).len(), 4800 * 2);
     }
 
     #[test]
