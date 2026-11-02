@@ -178,8 +178,12 @@ def _drive(platform: str, env: dict[str, str], data_dir: Path) -> None:
         # a tool shortcut reaches the timeline without the window taking the keyboard from the
         # desktop (Wayland never lets a client take it itself)
         client.call("ui.focus", {"id": "timeline.canvas"})
+        focused = client.call("ui.inspect")["input"]["nativeWindowFocused"]
         client.call("ui.key", {"key": "C"})
-        assert client.call("ui.inspect")["tool"] == "razor"
+        state = client.call("ui.inspect")
+        assert state["tool"] == "razor"
+        # routing the key does not make the window claim the desktop's keyboard focus
+        assert state["input"]["nativeWindowFocused"] == focused
         shot = client.call("ui.screenshot")
         assert (shot["width"], shot["height"]) == (1280, 800)
         png = base64.b64decode(shot["png"])

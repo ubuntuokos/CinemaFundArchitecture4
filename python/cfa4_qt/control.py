@@ -444,6 +444,11 @@ class ControlServer(QObject):
         def monitor(m: Any) -> dict[str, Any]:
             return {"playing": m.playing, "speed": m.speed, "playhead": int(m.playhead)}
 
+        # the window system's focus (QWindow's), not Qt's active window, which ui.key may point at
+        # a background window to route its shortcuts
+        handle = win.windowHandle()
+        native_focus = bool(handle is not None and handle.isActive())
+
         return {
             "tool": canvas.tool,
             "workspace": win.workspaces.current,
@@ -453,8 +458,8 @@ class ControlServer(QObject):
             "playback": {"program": monitor(win.monitor), "source": monitor(win.source_monitor)},
             "dialog": open_dialog,
             "keyboardFocus": self._keyboard_target().objectName(),
-            "window": {"width": win.width(), "height": win.height(), "active": win.isActiveWindow()},
-            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": win.isActiveWindow()},
+            "window": {"width": win.width(), "height": win.height(), "active": native_focus},
+            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": native_focus},
             "ui": self.ui_state(),
         }
 
