@@ -226,6 +226,17 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         mon.revision += 1
         assert not mon._shows(mon.playhead), "a picture from an older edit is stale"
         mon.revision -= 1
+        # a stall up to the stop point: the frames passed over still fell due (dropped)
+        mon.play()
+        assert wait_until(app, lambda: mon.meter.counts()[0] >= 1, 30_000)
+        ft = mon.frame()
+        due = mon.meter.current[0] if mon.meter.current else mon.playhead // ft
+        dropped = mon.meter.dropped
+        mon.stop_at = (due + 12) * ft
+        mon._play_from += 20 * ft  # the clock is past the stop point at the next tick
+        mon._tick()
+        assert not mon.playing
+        assert mon.meter.dropped - dropped >= 10, (mon.meter.shown, mon.meter.dropped, dropped)
         # a hidden monitor: neither the hidden frames nor the one due when it shows again count
         mon.meter.start(1.0)
         mon._meter_hidden = False
