@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from PySide6.QtCore import Qt, Signal
@@ -10,7 +9,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
-    QPlainTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -59,23 +57,6 @@ class HistoryPanel(QWidget):
         steps = int(item.data(Qt.ItemDataRole.UserRole) or 0)
         for _ in range(abs(steps)):
             self.command.emit("edit.undo" if steps < 0 else "edit.redo", {})
-
-
-class EventsPanel(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setObjectName("panel.Events")
-        self.text = QPlainTextEdit(self)
-        self.text.setObjectName("events.log")
-        self.text.setReadOnly(True)
-        self.text.setMaximumBlockCount(2000)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
-        layout.addWidget(self.text)
-
-    def log(self, message: str, error: bool = False) -> None:
-        stamp = time.strftime("%H:%M:%S")
-        self.text.appendPlainText(f"{stamp}  {'⚠ ' if error else ''}{message}")
 
 
 class LibrariesPanel(QLabel):
