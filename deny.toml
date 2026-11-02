@@ -68,6 +68,7 @@ ignore = [
     { id = "RUSTSEC-2026-0367", reason = "zip extract() SUID bits; extract() is never called" },
     { id = "RUSTSEC-2026-0368", reason = "zip extract() symlink escape; extract() is never called" },
     { id = "RUSTSEC-2026-0369", reason = "zip extract() permissions via symlink; extract() is never called" },
+    { id = "RUSTSEC-2026-0429", reason = "zip extract() symlink-size abort; extract() is never called (CFA4 and candle-core only read)" },
     # Optional `whisper` / `neural-voices` only (candle-core); unmaintained, no known vulnerability.
     { id = "RUSTSEC-2024-0436", reason = "paste unmaintained; via candle-core, upstream-dependent" },
 ]
