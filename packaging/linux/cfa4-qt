@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+"""Start the installed CFA4 Qt 6 GUI (``cfa4-qt``).
+
+The GUI's Python package sits in ``<prefix>/lib/cfa4/python`` next to this launcher's
+``<prefix>/bin``, so the .deb (/usr) and the tarball installed with install.sh (~/.local or any
+prefix) both work. PySide6 comes from Ubuntu's archive (python3-pyside6.*), never bundled. The
+engine is the ``cfa4-cli`` installed beside this launcher unless CFA4_ENGINE or --engine names
+another one.
+"""
+
+import os
+import sys
+from pathlib import Path
+
+BIN = Path(__file__).resolve().parent
+sys.path.insert(0, str(BIN.parent / "lib" / "cfa4" / "python"))
+ENGINE = BIN / "cfa4-cli"
+if "CFA4_ENGINE" not in os.environ and ENGINE.is_file():
+    os.environ["CFA4_ENGINE"] = str(ENGINE)
+
+try:
+    from cfa4_qt.__main__ import main
+except ModuleNotFoundError as e:
+    if not (e.name or "").startswith("PySide6"):
+        raise
+    sys.stderr.write(
+        f"cfa4-qt: {e}\nThe Qt GUI needs Ubuntu's PySide6 packages: sudo apt install "
+        "python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets "
+        "python3-pyside6.qtnetwork python3-pyside6.qttest python3-pyside6.qtmultimedia\n"
+    )
+    sys.exit(1)
+
+sys.exit(main())
