@@ -214,6 +214,8 @@ class ExportDialog(QDialog):
         self.formats: dict[str, dict[str, Any]] = {}
         self._loading = False
         self._known_status: dict[Any, str] = {}
+        self._queue_items: list[dict[str, Any]] = []  # the queue as last listed, in order
+        self._follow: Any = None  # a moved item's id: the selection follows it
         # settings the user changed since the preset was chosen: only these override the preset
         self.touched: set[str] = set()
         self._want_preset: str | None = None
@@ -458,11 +460,17 @@ class ExportDialog(QDialog):
             ("retry", N_("Retry"), lambda: self._selected_command("export.queue.retry", {"start": True})),
             ("remove", N_("Remove"), lambda: self._selected_command("export.queue.remove")),
             ("clear", N_("Clear Finished"), lambda: self._queue_command("export.queue.clear", {})),
+            # egui's Up / Down: the order the queue encodes in (not past the export encoding now)
+            ("up", N_("Up"), lambda: self._move_selected(-1)),
+            ("down", N_("Down"), lambda: self._move_selected(1)),
         ):
             b = QPushButton(tr(text), self)
             b.setObjectName(f"export.queue.{name}")
             b.clicked.connect(slot)
             queue_buttons.addWidget(b)
+            if name in ("up", "down"):
+                setattr(self, f"queue_{name}", b)
+        self.table.itemSelectionChanged.connect(self._update_move_buttons)
         queue_buttons.addStretch(1)
         queue_box = QGroupBox(tr("Export Queue"), self)
         qv = QVBoxLayout(queue_box)
@@ -1120,6 +1128,30 @@ class ExportDialog(QDialog):
             if item is not None and item.data(Qt.ItemDataRole.UserRole) is not None:
                 self._queue_command(command, {"id": item.data(Qt.ItemDataRole.UserRole), **(extra or {})})
 
+    def _selected_row(self) -> int | None:
+        rows = sorted({i.row() for i in self.table.selectedIndexes()})
+        return rows[0] if len(rows) == 1 and rows[0] < len(self._queue_items) else None
+
+    def _move_selected(self, by: int) -> None:
+        """Move the selected export one place earlier (-1) or later (1) in the queue, as egui's
+        Up / Down (``export.queue.move``); the selection follows it."""
+        row = self._selected_row()
+        if row is None or not self._can_move(row, by):
+            return
+        self._follow = self._queue_items[row].get("id")
+        self._queue_command("export.queue.move", {"id": self._follow, "by": by})
+
+    def _can_move(self, row: int, by: int) -> bool:
+        items = self._queue_items
+        if by < 0:  # egui: not up from the top, nor an export that is encoding
+            return row > 0 and str(items[row].get("status") or "").lower() != "encoding"
+        return row + 1 < len(items)
+
+    def _update_move_buttons(self) -> None:
+        row = self._selected_row()
+        self.queue_up.setEnabled(row is not None and self._can_move(row, -1))
+        self.queue_down.setEnabled(row is not None and self._can_move(row, 1))
+
     def refresh_queue(self) -> None:
         if self.engine.running:
             self.engine.execute("export.queue.list", {}, on_reply=self._on_queue, on_error=lambda _m: None)
@@ -1127,6 +1159,7 @@ class ExportDialog(QDialog):
     def _on_queue(self, result: Any, _b: bytes | None) -> None:
         data = result if isinstance(result, dict) else {}
         items = [i for i in data.get("items") or [] if isinstance(i, dict)]
+        self._queue_items = items
         self.table.setRowCount(len(items))
         for row, it in enumerate(items):
             status = str(it.get("status") or "").lower()
@@ -1164,6 +1197,12 @@ class ExportDialog(QDialog):
                 # it finished while we watched it
                 self.finished_export.emit(str(it.get("path") or ""), status == "done")
             self._known_status[key] = status
+        if self._follow is not None:
+            row = next((r for r, it in enumerate(items) if it.get("id") == self._follow), None)
+            self._follow = None
+            if row is not None:
+                self.table.selectRow(row)
+        self._update_move_buttons()
         running = bool(data.get("running")) or any(str(i.get("status") or "").lower() == "encoding" for i in items)
         if not running and not self.isVisible():
             self._poll.stop()
