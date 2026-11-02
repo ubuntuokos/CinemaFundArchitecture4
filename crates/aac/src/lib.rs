@@ -1,10 +1,16 @@
-//! Clean-room AAC-LC encoder and decoder (ISO/IEC 14496-3, MPEG-4 Audio, Low Complexity profile).
+//! Clean-room AAC-LC encoder and decoder (ISO/IEC 14496-3, MPEG-4 Audio, Low Complexity profile),
+//! plus an xHE-AAC decoder.
 //!
 //! - [`Encoder`]: planar f32 → raw access units (+ [`Encoder::audio_specific_config`] for MP4 `esds`,
 //!   optional ADTS framing). Psychoacoustic model, window switching, M/S, TNS, bit reservoir, CBR/VBR,
 //!   1–8 channels.
 //! - [`Decoder`]: `AudioSpecificConfig` + raw access units → planar f32. Supports M/S, intensity
 //!   stereo, PNS, TNS, pulse data, both window shapes and every window sequence.
+//!
+//! - [`usac::UsacDecoder`]: xHE-AAC (USAC, ISO/IEC 23003-3, audio object type 42), FD core, mono
+//!   and stereo; [`drc::DrcProcessor`] applies its MPEG-D DRC (ISO/IEC 23003-4): DRC sets, loudness
+//!   normalization and the peak limiter. Both are ported from libxaac (Apache-2.0, see the module
+//!   docs).
 //!
 //! HE-AAC (SBR/PS), Main/SSR/LTP profiles, coupling channels and 960-sample frames are not supported;
 //! for explicitly signalled HE-AAC only the AAC-LC core is decoded (at the core rate).
@@ -35,6 +41,7 @@
 
 mod config;
 mod decoder;
+pub mod drc;
 mod encoder;
 mod huffman;
 mod huffman_tables;
@@ -42,6 +49,7 @@ mod ics;
 mod mdct;
 mod tables;
 mod tns;
+pub mod usac;
 
 pub use config::{AdtsHeader, AudioSpecificConfig, ElementType, ProgramConfig, config_layout, split_adts};
 pub use decoder::Decoder;

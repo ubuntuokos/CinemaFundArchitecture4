@@ -819,6 +819,38 @@ pub const FIXTURES: &[Fixture] = &[
         filter: NOISE,
         args: &["-profile:v", "main", "-qp", "1", "-x264-params", "cabac=0"],
     },
+    // Noise-free lossless streams: libx264 codes no I_PCM macroblocks in them, so their SPS can be
+    // rewritten to another bit depth (`DEPTH_VARIANTS`; PCM sample sizes follow the bit depth).
+    Fixture {
+        name: "lossless_420_clean",
+        pix_fmt: "yuv420p",
+        source: "testsrc2",
+        width: 352,
+        height: 288,
+        frames: 8,
+        filter: "",
+        args: &["-qp", "0", "-x264-params", "bframes=2"],
+    },
+    Fixture {
+        name: "lossless_444_10_clean",
+        pix_fmt: "yuv444p10le",
+        source: "testsrc2",
+        width: 352,
+        height: 288,
+        frames: 8,
+        filter: "",
+        args: &["-qp", "0", "-x264-params", "bframes=2"],
+    },
+    Fixture {
+        name: "lossless_420_10_clean",
+        pix_fmt: "yuv420p10le",
+        source: "testsrc2",
+        width: 352,
+        height: 288,
+        frames: 8,
+        filter: "",
+        args: &["-qp", "0", "-x264-params", "bframes=2"],
+    },
 ];
 
 pub fn fixture(name: &str) -> &'static Fixture {
@@ -1031,8 +1063,11 @@ pub fn compare(pics: &[Picture], reference: &[u8], w: usize, h: usize) -> Result
 
 /// Full check of one fixture: generate, decode, compare. Returns Ok(false) when skipped.
 pub fn check_fixture(name: &str) -> Result<bool, String> {
-    let f = fixture(name);
-    let Some((h264, yuv)) = ensure(f) else { return Ok(false) };
+    let (f, generated) = match depth_variant(name) {
+        Some(v) => (fixture(v.base), ensure_depth(v)),
+        None => (fixture(name), ensure(fixture(name))),
+    };
+    let Some((h264, yuv)) = generated else { return Ok(false) };
     let reference = std::fs::read(&yuv).unwrap();
     // single-threaded and frame-threaded decoding (an odd thread count and every core) must all
     // be bit-exact
@@ -1071,4 +1106,164 @@ pub fn check_pts(pics: &[Picture]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// A deeper-bit-depth variant of a libx264 fixture (#164): libx264 encodes only 8 and 10 bits, so
+/// the fixture's SPS is rewritten to `depth` bits (profile High 10 / High 4:2:2 / High 4:4:4
+/// Predictive) and its PPS `pic_init_qp` lowered by `qp_shift`. The slice data is unchanged and
+/// stays a valid stream at the new depth (QpBdOffset grows, so every coded QP is still in range);
+/// it decodes to different but well-defined samples, and ffmpeg's decoder is the reference.
+pub struct DepthVariant {
+    pub name: &'static str,
+    pub base: &'static str,
+    pub depth: u32,
+    /// Subtracted from `pic_init_qp_minus26`: 6 * (depth - base depth) keeps a lossless base lossless.
+    pub qp_shift: i32,
+}
+
+pub const DEPTH_VARIANTS: &[DepthVariant] = &[
+    // 9 bits from 8-bit High fixtures
+    DepthVariant { name: "d9_weightp2", base: "weightp2", depth: 9, qp_shift: 0 },
+    DepthVariant { name: "d9_constrained_intra", base: "constrained_intra", depth: 9, qp_shift: 0 },
+    DepthVariant { name: "d9_high422_cavlc", base: "high422_cavlc", depth: 9, qp_shift: 0 },
+    DepthVariant { name: "d9_high444_intra", base: "high444_intra", depth: 9, qp_shift: 0 },
+    DepthVariant { name: "d9_mbaff_cabac", base: "mbaff_high", depth: 9, qp_shift: 0 },
+    DepthVariant { name: "d9_lossless_420", base: "lossless_420_clean", depth: 9, qp_shift: 6 },
+    // 12 bits from 10-bit fixtures
+    DepthVariant { name: "d12_cabac_b", base: "high10_cabac_b", depth: 12, qp_shift: 0 },
+    DepthVariant { name: "d12_cavlc", base: "high10_cavlc", depth: 12, qp_shift: 0 },
+    DepthVariant { name: "d12_422", base: "high422_10", depth: 12, qp_shift: 0 },
+    DepthVariant { name: "d12_444_cavlc", base: "high444_10_cavlc", depth: 12, qp_shift: 0 },
+    DepthVariant { name: "d12_mbaff", base: "mbaff_high10", depth: 12, qp_shift: 0 },
+    DepthVariant { name: "d12_lossless_444", base: "lossless_444_10_clean", depth: 12, qp_shift: 12 },
+    // 14 bits (QpBdOffset 36)
+    DepthVariant { name: "d14_intra", base: "high10_intra", depth: 14, qp_shift: 0 },
+    DepthVariant { name: "d14_qp_low", base: "high10_qp_low", depth: 14, qp_shift: 0 },
+    DepthVariant { name: "d14_qp_high", base: "high10_qp_high", depth: 14, qp_shift: 0 },
+    DepthVariant { name: "d14_444", base: "high444_10", depth: 14, qp_shift: 0 },
+    DepthVariant { name: "d14_cabac_b", base: "high10_cabac_b", depth: 14, qp_shift: 0 },
+    // SliceQPY = -36: the lowest QP at 14 bits, lossless
+    DepthVariant { name: "d14_lossless_420", base: "lossless_420_10_clean", depth: 14, qp_shift: 24 },
+];
+
+/// Rewrite the SPS bit depths (and profile) and the PPS `pic_init_qp_minus26` of an Annex-B stream.
+pub fn rewrite_depth(data: &[u8], depth: u32, qp_shift: i32) -> Option<Vec<u8>> {
+    use cfa4_bitstream::{BitReader, BitWriter, escape_rbsp, unescape_rbsp};
+    // start code positions (including a leading zero_byte) and payload starts
+    let mut starts = Vec::new();
+    let mut i = 0;
+    while i + 3 <= data.len() {
+        if data[i] == 0 && data[i + 1] == 0 && data[i + 2] == 1 {
+            starts.push((if i > 0 && data[i - 1] == 0 { i - 1 } else { i }, i + 3));
+            i += 3;
+        } else {
+            i += 1;
+        }
+    }
+    let mut out = data.get(..starts.first()?.0)?.to_vec();
+    for (k, &(sc, payload)) in starts.iter().enumerate() {
+        let end = starts.get(k + 1).map_or(data.len(), |s| s.0);
+        let nal = data.get(payload..end)?;
+        out.extend_from_slice(data.get(sc..payload)?);
+        let t = nal.first()? & 0x1f;
+        if t != 7 && t != 8 {
+            out.extend_from_slice(nal);
+            continue;
+        }
+        let rbsp = unescape_rbsp(nal.get(1..)?);
+        // payload bits up to (not including) the rbsp_stop_one_bit
+        let last = rbsp.iter().rposition(|&b| b != 0)?;
+        let stop = last * 8 + 7 - rbsp[last].trailing_zeros() as usize;
+        let mut r = BitReader::new(&rbsp);
+        let mut w = BitWriter::new();
+        if t == 7 {
+            let profile = r.read_bits(8).ok()?;
+            r.read_bits(8).ok()?; // constraint flags
+            let level = r.read_bits(8).ok()?;
+            let id = r.read_ue().ok()?;
+            if !matches!(profile, 100 | 110 | 122 | 244) {
+                return None;
+            }
+            let chroma = r.read_ue().ok()?;
+            let separate = if chroma == 3 { Some(r.read_bit().ok()?) } else { None };
+            r.read_ue().ok()?;
+            r.read_ue().ok()?;
+            // High 4:4:4 Predictive stays (it alone allows transform bypass)
+            let profile = match chroma {
+                _ if profile == 244 => 244,
+                1 | 0 if depth <= 10 => 110,
+                2 if depth <= 10 => 122,
+                _ => 244,
+            };
+            w.write_bits(profile, 8);
+            w.write_bits(0, 8);
+            w.write_bits(level, 8);
+            w.write_ue(id);
+            w.write_ue(chroma);
+            if let Some(s) = separate {
+                w.write_bit(s);
+            }
+            w.write_ue(depth - 8);
+            w.write_ue(depth - 8);
+        } else {
+            let pps_id = r.read_ue().ok()?;
+            let sps_id = r.read_ue().ok()?;
+            let flags = r.read_bits(2).ok()?;
+            let groups = r.read_ue().ok()?;
+            if groups != 0 {
+                return None;
+            }
+            let (l0, l1) = (r.read_ue().ok()?, r.read_ue().ok()?);
+            let weighted = r.read_bits(3).ok()?;
+            let qp = r.read_se().ok()?;
+            w.write_ue(pps_id);
+            w.write_ue(sps_id);
+            w.write_bits(flags, 2);
+            w.write_ue(groups);
+            w.write_ue(l0);
+            w.write_ue(l1);
+            w.write_bits(weighted, 3);
+            w.write_se(qp - qp_shift);
+        }
+        while r.position() < stop {
+            w.write_bit(r.read_bit().ok()?);
+        }
+        w.rbsp_trailing();
+        out.push(nal[0]);
+        out.extend(escape_rbsp(&w.finish()));
+    }
+    Some(out)
+}
+
+pub fn depth_variant(name: &str) -> Option<&'static DepthVariant> {
+    DEPTH_VARIANTS.iter().find(|v| v.name == name)
+}
+
+/// Generate (if needed) a [`DepthVariant`] stream and its ffmpeg reference decode.
+pub fn ensure_depth(v: &DepthVariant) -> Option<(PathBuf, PathBuf)> {
+    let base = fixture(v.base);
+    let (base_h264, _) = ensure(base)?;
+    let ff = cfa4_testkit::ffmpeg_or_skip(v.name)?;
+    let _generation = FIXTURE_GENERATION.lock().unwrap_or_else(PoisonError::into_inner);
+    let dir = fixtures_dir();
+    let h264 = dir.join(format!("{}.h264", v.name));
+    let yuv = dir.join(format!("{}.yuv", v.name));
+    if !h264.exists() {
+        let data = std::fs::read(&base_h264).unwrap();
+        let stream = rewrite_depth(&data, v.depth, v.qp_shift).unwrap_or_else(|| panic!("{}: cannot rewrite {}", v.name, v.base));
+        let tmp = cfa4_testkit::temp_path(&h264);
+        std::fs::write(&tmp, stream).unwrap();
+        std::fs::rename(&tmp, &h264).unwrap();
+    }
+    if !yuv.exists() {
+        let layout = &base.pix_fmt[..7]; // yuv420p / yuv422p / yuv444p
+        let pix_fmt = format!("{layout}{}le", v.depth);
+        let tmp = cfa4_testkit::temp_path(&yuv);
+        let mut c = Command::new(&ff);
+        c.args(["-hide_banner", "-loglevel", "error", "-y", "-i"]).arg(&h264);
+        c.args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", &pix_fmt]).arg(&tmp);
+        assert!(run(&mut c), "reference decode failed for {}", v.name);
+        std::fs::rename(&tmp, &yuv).unwrap();
+    }
+    Some((h264, yuv))
 }

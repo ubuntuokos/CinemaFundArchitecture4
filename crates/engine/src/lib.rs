@@ -1226,6 +1226,8 @@ mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
 #[cfg(test)]
+mod auro_tests;
+#[cfg(test)]
 mod autosave_tests;
 #[cfg(test)]
 mod avi_import_tests;
