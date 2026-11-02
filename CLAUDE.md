@@ -2,7 +2,8 @@
 
 **CFA4 notice:** CFA4 is a Linux-only derivative of an upstream open-source video editor (see `NOTICE`).
 Platform, licence and backend rules are in the CFA4 section at the top of [`AGENTS.md`](AGENTS.md); setup is in
-[`docs/development/linux.md`](docs/development/linux.md). The inherited engineering context below does not
+[`docs/development/linux.md`](docs/development/linux.md); the owner's reference machine (hardware, OS, GPUs, measurement
+notes) is in [`docs/development/reference-machine.md`](docs/development/reference-machine.md): do not ask the owner for it again. The inherited engineering context below does not
 override them (pure-Rust-only frontends, upstream release processes, macOS/Windows/WASM targets).
 
 ## Start every session here
