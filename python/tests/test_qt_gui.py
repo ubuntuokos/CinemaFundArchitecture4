@@ -6228,7 +6228,7 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
 
         first = ui()
         assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
-        assert first["export"] is None and first["keyframeSelection"] == []
+        assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
                            "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
@@ -6278,10 +6278,79 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         e = u["export"]
         assert e["range"] == "custom" and e["customStart"] == 2.0 and e["customEnd"] == 4.5 and e["path"].endswith("out.mp4")
         assert win.export_dialog.params()["range"] == "custom" and win.export_dialog.params()["startSeconds"] == 2.0
+        assert e["fileName"] == "out" and e["location"] == str(tmp_path) and e["manager"] is None
+        u = ok({"export": {"fileName": "take 2", "location": str(tmp_path / "renders")}})
+        assert u["export"]["path"] == str(tmp_path / "renders" / "take 2.mp4"), u["export"]
+        refused({"export": {"fileName": "a/b"}}, "without a folder")
+        refused({"export": {"manager": {"sort": 1}}}, "no field 'sort'")
         refused({"export": {"range": "sideways"}}, "no 'sideways'")
         win.export_dialog.close()
     finally:
         server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_sets_preset_manager_and_quick_export_as_egui(app, tmp_path: Path):
+    """egui's ``ExportUi`` beyond the window's fields: the Preset Manager (``manager``: query,
+    favorites only, selected, save name; null closes it), the Quick Export popup (``quickOpen``,
+    ``quickPath``, ``quickPreset``) and the resolved ``settings``, read back by ``ui.inspect``."""
+    from cfa4_qt.control import ControlError, ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 60_000)
+        # Quick Export: opened, a preset chosen, a path typed, closed
+        server.set_export({"quickOpen": True})
+        q = win.quick_export
+        assert wait_until(app, lambda: q.isVisible() and q.rows and q.path, 20_000)
+        mov = next((p["name"] for p in q.presets if p.get("extension") == "mov" and p["name"] in q.rows), None)
+        if mov is not None:
+            server.set_export({"quickPreset": mov})
+            assert wait_until(app, lambda: q.path.endswith(".mov"), 10_000), q.path
+        server.set_export({"quickPath": str(tmp_path / "Cut.mp4")})
+        st = server.export_state()
+        assert st["quickOpen"] is True and st["quickPath"] == str(tmp_path / "Cut.mp4") and st["quickPreset"] == q.preset
+        assert q.file.text() == "Cut.mp4" and q.location.text() == str(tmp_path)
+        server.set_export({"quickOpen": False})
+        assert not q.isVisible() and server.export_state()["quickOpen"] is False
+        with pytest.raises(ControlError, match="takes true or false"):
+            server.set_export({"quickOpen": "yes"})
+        # the Export window: resolved settings, then the Preset Manager
+        with pytest.raises(ControlError, match="not open"):
+            server.set_export({"manager": {"query": "web"}})
+        win.open_export()
+        d = win.export_dialog
+        assert wait_until(app, lambda: server.export_state().get("settings") is not None, 30_000)
+        st = server.export_state()
+        assert isinstance(st["settings"], dict) and st["manager"] is None
+        server.set_export({"settings": st["settings"]})  # unchanged: accepted
+        with pytest.raises(ControlError, match="read"):
+            server.set_export({"settings": {"crf": 1}})
+        server.set_export({"manager": {"query": "H.264", "favoritesOnly": False, "saveName": "Mine"}})
+        m = d.preset_manager
+        assert wait_until(app, lambda: m.isVisible() and bool(m.rows), 20_000)
+        name = next(iter(m.rows))
+        server.set_export({"manager": {"selected": name}})
+        st = server.export_state()["manager"]
+        assert st == {"query": "H.264", "favoritesOnly": False, "selected": name, "saveName": "Mine"}, st
+        assert m.search.text() == "H.264" and m.rows[name].isChecked()
+        server.set_export({"manager": None})
+        assert not m.isVisible() and server.export_state()["manager"] is None
+        d.close()
+    finally:
+        q = getattr(win, "quick_export", None)
+        if q is not None:
+            q.close()
         win._quit_confirmed = True
         win.close()
         engine.stop()

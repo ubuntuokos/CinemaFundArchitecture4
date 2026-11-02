@@ -24,6 +24,7 @@ from __future__ import annotations
 import base64
 import json
 import math
+import os
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
@@ -741,46 +742,135 @@ class ControlServer(QObject):
         if src is not None:
             win._follow(src)
 
-    def export_state(self) -> dict[str, Any] | None:
-        """The Export window's choices (null while it is closed)."""
+    WINDOW_FIELDS = ("preset", "format", "path", "fileName", "location", "range", "customStart", "customEnd", "settings", "manager")
+    QUICK_FIELDS = ("quickOpen", "quickPath", "quickPreset")
+
+    def _export_dialog(self) -> Any:
         d = getattr(self.window, "export_dialog", None)
         try:
-            if d is None or not d.isVisible():
-                return None
-        except RuntimeError:
+            return d if d is not None and d.isVisible() else None
+        except RuntimeError:  # closed and deleted
             return None
-        return {"preset": d.preset.currentData(), "format": d.format.currentData(), "path": d.path.text(), "range": d.range.currentData(),
-                "customStart": d.start.value(), "customEnd": d.end.value()}
+
+    def export_state(self) -> dict[str, Any]:
+        """egui's ``ExportUi``: the Quick Export popup always, the Export window's choices while
+        it is open (``settings`` the resolved ExportSettings, ``manager`` the Preset Manager or
+        null)."""
+        quick = getattr(self.window, "quick_export", None)
+        out: dict[str, Any] = {
+            "quickOpen": bool(quick is not None and quick.isVisible()),
+            "quickPath": quick.path if quick is not None else "",
+            "quickPreset": quick.preset if quick is not None else "",
+        }
+        d = self._export_dialog()
+        if d is None:
+            return out
+        path = d.path.text()
+        head, tail = os.path.split(path)
+        m = d.preset_manager
+        manager = None
+        if m is not None and m.isVisible():
+            manager = {"query": m.search.text(), "favoritesOnly": m.favorites_only.isChecked(), "selected": m.selected, "saveName": m.save_name.text()}
+        out.update({"preset": d.preset.currentData(), "format": d.format.currentData(), "path": path,
+                    "fileName": os.path.splitext(tail)[0], "location": head, "range": d.range.currentData(),
+                    "customStart": d.start.value(), "customEnd": d.end.value(), "settings": d.resolved_settings, "manager": manager})
+        return out
 
     def set_export(self, patch: Any) -> None:
-        cur = self.export_state()
-        if cur is None:
-            raise ControlError("export: the Export window is not open")
         if not isinstance(patch, dict):
-            raise ControlError("export takes {preset, format, path, range, customStart, customEnd}")
-        unknown = [f for f in patch if f not in cur]
+            raise ControlError(f"export takes {{{', '.join((*self.WINDOW_FIELDS, *self.QUICK_FIELDS))}}}")
+        unknown = [f for f in patch if f not in self.WINDOW_FIELDS and f not in self.QUICK_FIELDS]
         if unknown:
-            raise ControlError(f"export: no field {unknown[0]!r} (known: {', '.join(cur)})")
-        d = self.window.export_dialog
-        combos = {"preset": d.preset, "format": d.format, "range": d.range}
+            raise ControlError(f"export: no field {unknown[0]!r} (known: {', '.join((*self.WINDOW_FIELDS, *self.QUICK_FIELDS))})")
+        d = self._export_dialog()
+        window = [f for f in patch if f in self.WINDOW_FIELDS]
+        if window and d is None:
+            raise ControlError(f"export.{window[0]}: the Export window is not open")
+        # check everything first: a refused field changes nothing
+        combos = {"preset": d.preset, "format": d.format, "range": d.range} if d is not None else {}
         for f, box in combos.items():
             if f in patch and box.findData(patch[f]) < 0:
                 raise ControlError(f"export.{f}: no {patch[f]!r}")
         for f in ("customStart", "customEnd"):
             if f in patch and (isinstance(patch[f], bool) or not isinstance(patch[f], (int, float)) or not math.isfinite(patch[f])):
                 raise ControlError(f"export.{f} takes seconds")
-        if "path" in patch and not isinstance(patch["path"], str):
-            raise ControlError("export.path takes a file path")
+        for f in ("path", "fileName", "location", "quickPath", "quickPreset"):
+            if f in patch and not isinstance(patch[f], str):
+                raise ControlError(f"export.{f} takes a string")
+        if "fileName" in patch and (not patch["fileName"].strip() or "/" in patch["fileName"]):
+            raise ControlError("export.fileName takes a file name without a folder")
+        if "quickOpen" in patch and not isinstance(patch["quickOpen"], bool):
+            raise ControlError("export.quickOpen takes true or false")
+        if "settings" in patch and patch["settings"] != self.export_state().get("settings"):
+            raise ControlError("export.settings: the Qt GUI reads the resolved settings; set the fields of the window instead")
+        manager = patch.get("manager")
+        if manager is not None:
+            if not isinstance(manager, dict):
+                raise ControlError("export.manager takes {query, favoritesOnly, selected, saveName} or null")
+            bad = [k for k in manager if k not in ("query", "favoritesOnly", "selected", "saveName")]
+            if bad:
+                raise ControlError(f"export.manager: no field {bad[0]!r} (known: query, favoritesOnly, selected, saveName)")
+            for k in ("query", "selected", "saveName"):
+                if k in manager and not isinstance(manager[k], str):
+                    raise ControlError(f"export.manager.{k} takes a string")
+            if "favoritesOnly" in manager and not isinstance(manager["favoritesOnly"], bool):
+                raise ControlError("export.manager.favoritesOnly takes true or false")
         # the preset first: it sets the format and the rest
         for f in ("preset", "format", "range"):
             if f in patch:
                 combos[f].setCurrentIndex(combos[f].findData(patch[f]))
-        if "path" in patch:
-            d.path.setText(patch["path"])
+        if d is not None and ("path" in patch or "fileName" in patch or "location" in patch):
+            path = patch.get("path", d.path.text())
+            head, tail = os.path.split(path)
+            stem, ext = os.path.splitext(tail)
+            if "fileName" in patch:
+                stem = patch["fileName"].strip()
+            if "location" in patch:
+                head = patch["location"]
+            d.path.setText(os.path.join(head, stem + ext) if head else stem + ext)
         if "customStart" in patch:
             d.start.setValue(float(patch["customStart"]))
         if "customEnd" in patch:
             d.end.setValue(float(patch["customEnd"]))
+        if "manager" in patch:
+            m = d.preset_manager
+            if manager is None:
+                if m is not None and m.isVisible():
+                    m.reject()
+            else:
+                if m is None or not m.isVisible():
+                    d.open_preset_manager()
+                    m = d.preset_manager
+                if "query" in manager:
+                    m.search.setText(manager["query"])
+                if "favoritesOnly" in manager:
+                    m.favorites_only.setChecked(manager["favoritesOnly"])
+                if "selected" in manager:
+                    m.select(manager["selected"])
+                if "saveName" in manager:
+                    m.save_name.setText(manager["saveName"])
+        self._set_quick(patch)
+
+    def _set_quick(self, patch: dict[str, Any]) -> None:
+        win = self.window
+        if not any(f in patch for f in self.QUICK_FIELDS):
+            return
+        quick = getattr(win, "quick_export", None)
+        shown = quick is not None and quick.isVisible()
+        if patch.get("quickOpen") is True and not shown:
+            win.toggle_quick_export()
+            quick = getattr(win, "quick_export", None)
+            if quick is None or not quick.isVisible():
+                raise ControlError("export.quickOpen: Quick Export needs an open sequence")
+        elif patch.get("quickOpen") is False and shown:
+            quick.close()
+        if quick is None and ("quickPath" in patch or "quickPreset" in patch):
+            raise ControlError("export.quickPath / quickPreset: Quick Export has not been opened")
+        if "quickPreset" in patch:
+            quick.choose(patch["quickPreset"])
+        if "quickPath" in patch:
+            quick.path = patch["quickPath"]
+            quick._show_path()
 
     # ----- timeline hit-testing (egui's ``timeline::hit_json`` / ``locate``) -----
     def _canvas_point(self, p: dict[str, Any]) -> QPoint:

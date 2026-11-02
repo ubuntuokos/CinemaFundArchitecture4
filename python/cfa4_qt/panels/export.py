@@ -219,6 +219,7 @@ class ExportDialog(QDialog):
         self._want_preset: str | None = None
         self._shown_preset: str | None = None
         self.preset_manager: PresetManager | None = None
+        self.resolved_settings: dict[str, Any] | None = None  # the last export.resolve answer's ExportSettings
 
         # ----- settings -----
         self.sequence_label = QLabel(self)
@@ -1019,6 +1020,7 @@ class ExportDialog(QDialog):
     def _on_resolved(self, result: Any, _b: bytes | None) -> None:
         r = result if isinstance(result, dict) else {}
         if isinstance(r.get("settings"), dict):
+            self.resolved_settings = r["settings"]
             self._show_settings(r["settings"])
         path = (r.get("settings") or {}).get("path") if isinstance(r.get("settings"), dict) else None
         self.preview.show_resolved(r, str(path or self.path.text()), self.range.currentText(), "scaling" in self.touched)
