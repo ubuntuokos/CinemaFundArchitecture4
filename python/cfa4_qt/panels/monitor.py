@@ -133,6 +133,54 @@ def channel_image(image: QImage, display: str) -> QImage:
     return QImage(plane, w, h, w, QImage.Format.Format_Grayscale8).copy()
 
 
+class PlaybackMeter:
+    """egui's ``PlaybackMeter`` (``frames.rs``): frames shown and dropped while playing. Each
+    frame that falls due is shown when its own picture reached the screen before the next one
+    fell due, else dropped; frames skipped between two refreshes are dropped too."""
+
+    def __init__(self) -> None:
+        self.start(1.0)
+
+    def start(self, speed: float) -> None:
+        self.shown = 0
+        self.dropped = 0
+        self.current: tuple[int, bool] | None = None  # the frame due and whether it was seen
+        self.step = max(1, int(abs(speed))) * (-1 if speed < 0 else 1)
+
+    def refresh(self, frame: int, exact: bool) -> None:
+        """``frame`` is due now; ``exact``: its picture is on screen."""
+        if self.current is None:
+            self.current = (frame, exact)
+            return
+        f, seen = self.current
+        if f == frame:
+            self.current = (f, seen or exact)
+            return
+        self._close(seen)
+        moved = (frame - f) // self.step
+        if 1 < moved < 1000:  # a jump back (a loop) or a huge one is not a drop
+            self.dropped += moved - 1
+        self.current = (frame, exact)
+
+    def _close(self, seen: bool) -> None:
+        if seen:
+            self.shown += 1
+        else:
+            self.dropped += 1
+
+    def finish(self) -> None:
+        """Playback stopped: account for the frame on screen."""
+        if self.current is not None:
+            self._close(self.current[1])
+            self.current = None
+
+    def counts(self) -> tuple[int, int]:
+        """Shown and dropped so far, the frame due counting as shown once it is."""
+        if self.current is not None and self.current[1]:
+            return self.shown + 1, self.dropped
+        return self.shown, self.dropped
+
+
 class FrameView(QWidget):
     """The picture: fitted or magnified and panned, with the display mode, safe margins and the
     dropped-frame light drawn over it."""
@@ -581,6 +629,7 @@ class Monitor(QWidget):
         self.stop_at: int | None = None  # Play In to Out: stop here…
         self.rest_at: int | None = None  # …and rest the playhead here
         self.dropped = 0
+        self.meter = PlaybackMeter()  # perf.stats' shown / dropped
         self._clock = QElapsedTimer()
         self._play_from = 0
         self._timer = QTimer(self)
@@ -1002,6 +1051,8 @@ class Monitor(QWidget):
                 par = result.get("pixelAspect")
                 self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
                 self._shown = key
+                if self.playing and key[0] == self.playhead:
+                    self.meter.refresh(self.playhead // self.frame(), True)
         self._pump_frame()
 
     def _on_frame_error(self, message: str) -> None:
@@ -1037,6 +1088,7 @@ class Monitor(QWidget):
         self._read_draft_decode()
         self.dropped = 0
         self.view.dropped = 0
+        self.meter.start(self.speed)
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
@@ -1072,6 +1124,20 @@ class Monitor(QWidget):
         self.stop_at = mark_out + self.frame() if mark_out is not None else None
         self.rest_at = mark_out
 
+    def playback_stats(self) -> dict[str, Any]:
+        """egui's ``perf.stats`` ``playback``: the playing state and the last (or current)
+        playback's shown and dropped frames."""
+        shown, dropped = self.meter.counts()
+        return {
+            "playing": self.playing,
+            "speed": self.speed,
+            "shown": shown,
+            "dropped": dropped,
+            "dropRate": dropped / (shown + dropped) if shown + dropped else 0.0,
+            "resolution": next((label for key, label, _s in RESOLUTIONS if key == self.mv.res), "1/2"),
+            "draftDecode": self.draft_decode,
+        }
+
     def _halt(self) -> None:
         self.playing = False
         self._timer.stop()
@@ -1084,6 +1150,7 @@ class Monitor(QWidget):
         if not self.playing:
             return
         self._halt()
+        self.meter.finish()
         self.speed = 1.0
         self.view.dropped = None
         self.view.update()
@@ -1140,6 +1207,7 @@ class Monitor(QWidget):
             self.scrub.set_playhead(frame_t)
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
+            self.meter.refresh(frame_t // ft, self._shown is not None and self._shown[0] == frame_t)
         self._feed_audio()
 
     # ----- audio -----

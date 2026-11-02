@@ -123,3 +123,84 @@ def test_real_engine_draft_decoding_while_playing_at_reduced_resolution(app, tmp
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_playback_meter_counts_as_egui():
+    """egui's ``meter_counts_frames_not_refreshes`` and ``…_but_not_speed_steps_or_loops``."""
+    from cfa4_qt.panels.monitor import PlaybackMeter
+
+    m = PlaybackMeter()
+    m.start(1.0)
+    for f, exact in ((0, True), (0, True), (0, True), (1, False), (1, True), (2, False), (2, False), (3, True)):
+        m.refresh(f, exact)
+    assert m.counts() == (3, 1), "the frame due counts as shown once it is on screen"
+    m.finish()
+    # frame 1 arrived late but was on screen while due: shown; frame 2 never: dropped
+    assert (m.shown, m.dropped) == (3, 1)
+    m.start(1.0)
+    m.refresh(10, True)
+    m.refresh(14, True)  # no refresh during 11..13
+    m.refresh(0, True)  # a loop restart is not a drop
+    m.finish()
+    assert (m.shown, m.dropped) == (3, 3)
+    m.start(2.0)  # 2× steps over every other frame on purpose
+    for f in (0, 2, 4, 6):
+        m.refresh(f, True)
+    m.finish()
+    assert (m.shown, m.dropped) == (4, 0)
+    m.start(-1.0)
+    for f in (9, 8, 6):
+        m.refresh(f, True)
+    m.finish()
+    assert (m.shown, m.dropped) == (3, 1), "backwards: the skipped frame 7 is dropped"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: Path):
+    """``perf.stats`` adds egui's ``playback``: playing, speed, shown, dropped, dropRate,
+    resolution and draft decoding of the Program monitor (and the Source monitor's under
+    ``source``); the counts cover the last playback."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    mon = win.monitor
+    replies: list[tuple[bool, Any]] = []
+
+    def stats() -> dict[str, Any]:
+        replies.clear()
+        server.dispatch("perf.stats", {}, lambda ok, r: replies.append((ok, r)))
+        assert wait_until(app, lambda: bool(replies), 20_000)
+        ok, r = replies[0]
+        assert ok is True, r
+        return r
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and mon.has_content(), 60_000)
+        before = stats()["playback"]
+        assert before["playing"] is False and before["shown"] == 0 and before["dropped"] == 0 and before["dropRate"] == 0.0
+        assert before["resolution"] in ("Full", "1/2", "1/4", "1/8", "1/16") and isinstance(before["draftDecode"], bool)
+        assert before["source"]["playing"] is False
+        mon.play()
+        assert wait_until(app, lambda: mon.meter.counts()[0] >= 5, 30_000), mon.meter.counts()
+        during = stats()["playback"]
+        assert during["playing"] is True and during["speed"] == 1.0 and during["shown"] >= 5
+        mon.stop()
+        after = stats()
+        p = after["playback"]
+        assert p["playing"] is False and p["shown"] >= during["shown"]
+        assert p["dropRate"] == pytest.approx(p["dropped"] / (p["shown"] + p["dropped"]))
+        assert "frames" in after or len(after) > 1, "the engine's own stats are kept"
+        # a new playback starts the counts again
+        mon.play()
+        assert mon.meter.counts() == (0, 0)
+        mon.stop()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

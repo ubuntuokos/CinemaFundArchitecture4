@@ -417,7 +417,13 @@ class ControlServer(QObject):
             win._quit_confirmed = True
             win.close()
         elif method == "perf.stats":
-            win.engine.execute("perf.stats", {}, on_reply=lambda r, _b: reply(True, r), on_error=lambda m: reply(False, m))
+            def stats(r: Any, _b: Any) -> None:
+                out = dict(r) if isinstance(r, dict) else {}
+                out["playback"] = win.monitor.playback_stats()  # the Program monitor's, as egui
+                out["playback"]["source"] = win.source_monitor.playback_stats()
+                reply(True, out)
+
+            win.engine.execute("perf.stats", {}, on_reply=stats, on_error=lambda m: reply(False, m))
         else:
             raise ControlError(f"unknown method {method}")
 
