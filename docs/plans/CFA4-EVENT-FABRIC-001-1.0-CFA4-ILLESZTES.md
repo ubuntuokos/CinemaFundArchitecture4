@@ -12,7 +12,7 @@ a terv új verziót kap (1.1).
 
 | # | Téma | A terv | A CFA4 mai állapota | Javaslat |
 |---|---|---|---|---|
-| E1 | HRB (13.1, 17.3, 27.2) | erőforrás-hatóság | **CFA3-elem.** A CFA4 nem függhet a CFA3 HRB-jétől ([`SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md`](SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md), 199. sor). CFA4-megfelelő: [ADR 0004](../adr/ADR-0004-compute-routing.md) útválasztó (`cfa4-route`), és a `CFA4-AI_modules` ADR-0006 erőforrás-kezelője (`cfa4-ai-jobs`) | A 13.1 és a 17.3 a CFA4-megfelelőkre hivatkozzon |
+| E1 | HRB (13.1, 17.3, 27.2) | erőforrás-hatóság | **CFA3-elem.** A CFA4 nem függhet a CFA3 HRB-jétől ([`SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md`](SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md), 199. sor). Általános hardvererőforrás-hatóság a CFA4-ben **nincs**: az [ADR 0004](../adr/ADR-0004-compute-routing.md) útválasztója (`cfa4-route`) csak feladatonként választ háttérmotort és eszközt, nem foglal; a `CFA4-AI_modules` ADR-0006 erőforrás-kezelője (`cfa4-ai-jobs`) csak az AI-feladatok befogadását és VRAM-foglalását kezeli | Nyitott előfeltétel: ki a CFA4 erőforrás-hatósága. Vagy a `cfa4-ai-jobs` erőforrás-kezelőjét kell általánossá tenni, vagy új terv kell; addig a 13.1 és a 17.3 nem teljesíthető |
 | E2 | Model Router (13.2) | AI-útválasztás | **Tervként megvan:** `CFA4-AI_modules` ADR-0006 `cfa4-ai-registry` („Előd: Model Router”) | A 13.2 a `cfa4-ai-registry`-re hivatkozzon |
 | E3 | Execution Fabric (13.4) | feladatvégrehajtás | Nincs a CFA4-ben. Részben: ADR-0006 `cfa4-ai-jobs` (jobállapotok, redb-jobtár) és a motor jobsora | Megfeleltetés kell; ahol nincs CFA4-elem, előbb terv |
 | E4 | Agent Coordination (13.3) | agentkoordináció | Nincs külön. CFA4-ben: MCP, vezérlőcsatorna ([`docs/agents.md`](../agents.md)), E1/E2 ügynöki terv ([`docs/open-editors-parity.md`](../open-editors-parity.md)) | Megfeleltetés kell |
@@ -32,7 +32,7 @@ a terv új verziót kap (1.1).
 
 | # | Kérdés | Javaslat |
 |---|---|---|
-| Q1 | Mely CFA4-elemek lépnek a HRB, Execution Fabric, Agent Coordination, Security Governance és Evidence Registry helyére (E1–E6)? | ADR 0004 / ADR-0006 szerinti megfeleltetés; ahol nincs CFA4-elem, előbb terv |
+| Q1 | Mely CFA4-elemek lépnek a HRB, Execution Fabric, Agent Coordination, Security Governance és Evidence Registry helyére (E1–E6)? | A Model Routernek van megfelelője (`cfa4-ai-registry`); a többinél, köztük az erőforrás-hatóságnál (E1), előbb terv kell, vagy egy meglévő elem (pl. `cfa4-ai-jobs`) általánosítása |
 | Q2 | Lehet-e részkiadás (E7), amelyre fogyasztó építhet? | Igen: EF-R1 = F1–F5 + Rust és Python SDK |
 | Q3 | Kell-e most a C++ és a TypeScript SDK (E8)? | Csak ha lesz fogyasztója |
 | Q4 | Egygépes módban is a teljes NATS + JetStream + Valkey fusson-e, és hogyan települjön (E9)? | Igen, felhasználói systemd-szolgáltatásként; előbb mérés a minimális kliensgépen |
