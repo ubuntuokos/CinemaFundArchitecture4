@@ -15,7 +15,8 @@ from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPaintEvent
 from PySide6.QtWidgets import QComboBox, QFormLayout, QGroupBox, QLabel, QSizePolicy, QWidget
 
-from ..i18n import N_, fmt, tr
+from .. import export_summary
+from ..i18n import N_, decimal, fmt, tr
 
 SCALINGS = (("scaleToFit", N_("Scale To Fit")), ("scaleToFill", N_("Scale To Fill")), ("stretchToFill", N_("Stretch To Fill")))
 
@@ -136,14 +137,16 @@ class PreviewColumn(QWidget):
             self.view.update()
         s = r.get("summary") if isinstance(r.get("summary"), dict) else {}
         self.lines["output"].setText(path)
-        for key in ("format", "video", "audio"):
-            self.lines[key].setText(str(s.get(key) or ""))
+        self.lines["format"].setText(export_summary.format_line(str(s.get("format") or "")))
+        for key in ("video", "audio"):
+            self.lines[key].setText(export_summary.line(str(s.get(key) or "")))
         self.lines["source"].setText(str(r.get("source") or ""))
         rng = r.get("range") if isinstance(r.get("range"), dict) else {}
         secs = rng.get("seconds")
-        self.lines["range"].setText(f"{range_label} ({float(secs):.2f} s)" if isinstance(secs, (int, float)) else range_label)
+        seconds = fmt("{seconds} s", seconds=decimal(f"{float(secs):.2f}")) if isinstance(secs, (int, float)) else ""
+        self.lines["range"].setText(f"{range_label} ({seconds})" if seconds else range_label)
         size = s.get("estimated_size")
-        self.estimate.setText(fmt("Estimated file size: {size}", size=size if isinstance(size, str) and size else "–"))
+        self.estimate.setText(fmt("Estimated file size: {size}", size=export_summary.size(size) if isinstance(size, str) and size else "–"))
         sc = (r.get("settings") or {}).get("scaling") if isinstance(r.get("settings"), dict) else None
         i = self.scaling.findData(sc)
         if i >= 0 and i != self.scaling.currentIndex() and not keep_scaling:
