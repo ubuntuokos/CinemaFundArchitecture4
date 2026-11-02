@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..engine import EngineClient
-from ..i18n import N_, tr
+from ..i18n import N_, decimal, fmt, tr
 from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, EffectsSection, MetadataSection, Section
 from .export_preview import PreviewColumn
 from .export_rows import ExportRows
@@ -1058,13 +1058,13 @@ class ExportDialog(QDialog):
         if out.get("width") and out.get("height"):
             parts.append(f"{out['width']}×{out['height']}")
         if out.get("fps"):
-            parts.append(f"{out['fps']} fps")
+            parts.append(fmt("{fps} fps", fps=decimal(str(out["fps"]))))
         if out.get("targetKbps"):
             parts.append(f"{out['targetKbps']} kbps")
         if out.get("sampleRate"):
-            parts.append(f"{out.get('channels', 2)} ch {out['sampleRate']} Hz")
-        if rng.get("seconds") is not None:
-            parts.append(f"{float(rng['seconds']):.2f} s")
+            parts.append(fmt("{n} ch {rate} Hz", n=out.get("channels", 2), rate=out["sampleRate"]))
+        if isinstance(rng.get("seconds"), (int, float)):
+            parts.append(fmt("{seconds} s", seconds=decimal(f"{float(rng['seconds']):.2f}")))
         if r.get("frames"):
             parts.append(f"{r['frames']} {tr('frames')}")
         self.summary.setText(" · ".join(parts))
