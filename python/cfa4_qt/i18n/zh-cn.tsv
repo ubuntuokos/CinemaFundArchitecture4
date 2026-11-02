@@ -282,3 +282,48 @@
 	{n} variant sequences made, {q} exports queued	已生成 {n} 个变体序列，{q} 个导出已加入队列
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	锚帧之间 1 个 B 帧
+	10-bit RGB	10 位 RGB
+	12-bit X'Y'Z'	12 位 X'Y'Z'
+	16-bit half float	16 位半精度浮点
+	AV1 Main (10-bit for HDR)	AV1 Main（HDR 用 10 位）
+	BDAV Transport Stream	BDAV 传输流
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF（恒定质量）{crf}
+	Elementary Stream	基本流
+	FLAC (lossless) {bits}-bit	FLAC（无损）{bits} 位
+	HEVC Main / Main 10 for HDR	HEVC Main / HDR 用 Main 10
+	Image sequence	图像序列
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 档次
+	MPEG-2 Main Profile 4:2:0	MPEG-2 主档次 4:2:0
+	Max {v} Mbps	最大 {v} Mbps
+	No audio	无音频
+	No video	无视频
+	Program Stream	节目流
+	Target {v} Mbps	目标 {v} Mbps
+	Transport Stream	传输流
+	Uncompressed {bits}-bit PCM	未压缩 {bits} 位 PCM
+	Uncompressed {bits}-bit float PCM	未压缩 {bits} 位浮点 PCM
+	VBR Target {v} Mbps	VBR 目标 {v} Mbps
+	average {v} Mbps	平均 {v} Mbps
+	constant quantiser {q}	恒定量化 {q}
+	fragmented MP4 segments	分片 MP4 片段
+	keyframe every {n} frames	每 {n} 帧一个关键帧
+	level {n}	级别 {n}
+	linear	线性
+	no B pictures	无 B 帧
+	quality {q}	质量 {q}
+	quantizer {q}	量化 {q}
+	uncompressed	未压缩
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	锚帧之间 {n} 个 B 帧
+	{n} ch {rate} Hz	{n} 声道 {rate} Hz
+	{n} pass	{n} 遍
+	{profile} auto level	{profile} 自动级别
+	{sampling} {bits}-bit	{sampling} {bits} 位
+	{seconds} s	{seconds} 秒
+	{v} Mbps	{v} Mbps
+	{word} compression	{word} 压缩
+	{w}x{h} ({par})	{w}×{h}（{par}）

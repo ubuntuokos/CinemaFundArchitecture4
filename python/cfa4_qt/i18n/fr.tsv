@@ -282,3 +282,48 @@
 	{n} variant sequences made, {q} exports queued	{n} séquences variantes créées, {q} exports en file d’attente
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	1 image B entre les images d'ancrage
+	10-bit RGB	RVB 10 bits
+	12-bit X'Y'Z'	X'Y'Z' 12 bits
+	16-bit half float	virgule flottante demi-précision 16 bits
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bits pour le HDR)
+	BDAV Transport Stream	flux de transport BDAV
+	CBR {v} Mbps	CBR {v} Mbit/s
+	CRF (constant quality) {crf}	CRF (qualité constante) {crf}
+	Elementary Stream	flux élémentaire
+	FLAC (lossless) {bits}-bit	FLAC (sans perte) {bits} bits
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 pour le HDR
+	Image sequence	séquence d'images
+	MPEG-2 4:2:2 Profile	profil MPEG-2 4:2:2
+	MPEG-2 Main Profile 4:2:0	profil principal MPEG-2 4:2:0
+	Max {v} Mbps	max. {v} Mbit/s
+	No audio	Pas d'audio
+	No video	Pas de vidéo
+	Program Stream	flux de programme
+	Target {v} Mbps	cible {v} Mbit/s
+	Transport Stream	flux de transport
+	Uncompressed {bits}-bit PCM	PCM non compressé {bits} bits
+	Uncompressed {bits}-bit float PCM	PCM virgule flottante non compressé {bits} bits
+	VBR Target {v} Mbps	VBR, cible {v} Mbit/s
+	average {v} Mbps	moyenne {v} Mbit/s
+	constant quantiser {q}	quantificateur constant {q}
+	fragmented MP4 segments	segments MP4 fragmentés
+	keyframe every {n} frames	image clé toutes les {n} images
+	level {n}	niveau {n}
+	linear	linéaire
+	no B pictures	sans images B
+	quality {q}	qualité {q}
+	quantizer {q}	quantificateur {q}
+	uncompressed	non compressé
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} i/s
+	{n} B pictures between anchors	{n} images B entre les images d'ancrage
+	{n} ch {rate} Hz	{n} canaux, {rate} Hz
+	{n} pass	{n} passe(s)
+	{profile} auto level	{profile}, niveau automatique
+	{sampling} {bits}-bit	{sampling} {bits} bits
+	{seconds} s	{seconds} s
+	{v} Mbps	{v} Mbit/s
+	{word} compression	compression {word}
+	{w}x{h} ({par})	{w}×{h} ({par})

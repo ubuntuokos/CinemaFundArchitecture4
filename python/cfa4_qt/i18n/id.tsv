@@ -282,3 +282,48 @@
 	{n} variant sequences made, {q} exports queued	{n} sekuens varian dibuat, {q} ekspor dalam antrean
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	1 gambar B di antara gambar jangkar
+	10-bit RGB	RGB 10-bit
+	12-bit X'Y'Z'	X'Y'Z' 12-bit
+	16-bit half float	floating point setengah presisi 16-bit
+	AV1 Main (10-bit for HDR)	AV1 Main (10-bit untuk HDR)
+	BDAV Transport Stream	aliran transport BDAV
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF (kualitas konstan) {crf}
+	Elementary Stream	aliran elementer
+	FLAC (lossless) {bits}-bit	FLAC (lossless) {bits}-bit
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 untuk HDR
+	Image sequence	urutan gambar
+	MPEG-2 4:2:2 Profile	profil MPEG-2 4:2:2
+	MPEG-2 Main Profile 4:2:0	profil Main MPEG-2 4:2:0
+	Max {v} Mbps	maks. {v} Mbps
+	No audio	Tanpa audio
+	No video	Tanpa video
+	Program Stream	aliran program
+	Target {v} Mbps	target {v} Mbps
+	Transport Stream	aliran transport
+	Uncompressed {bits}-bit PCM	PCM {bits}-bit tanpa kompresi
+	Uncompressed {bits}-bit float PCM	PCM floating point {bits}-bit tanpa kompresi
+	VBR Target {v} Mbps	VBR, target {v} Mbps
+	average {v} Mbps	rata-rata {v} Mbps
+	constant quantiser {q}	kuantiser konstan {q}
+	fragmented MP4 segments	segmen MP4 terfragmentasi
+	keyframe every {n} frames	keyframe setiap {n} frame
+	level {n}	level {n}
+	linear	linear
+	no B pictures	tanpa gambar B
+	quality {q}	kualitas {q}
+	quantizer {q}	kuantiser {q}
+	uncompressed	tanpa kompresi
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	{n} gambar B di antara gambar jangkar
+	{n} ch {rate} Hz	{n} kanal, {rate} Hz
+	{n} pass	{n} lintasan
+	{profile} auto level	{profile}, level otomatis
+	{sampling} {bits}-bit	{sampling} {bits}-bit
+	{seconds} s	{seconds} d
+	{v} Mbps	{v} Mbps
+	{word} compression	kompresi {word}
+	{w}x{h} ({par})	{w}×{h} ({par})

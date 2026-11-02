@@ -282,3 +282,48 @@
 	{n} variant sequences made, {q} exports queued	{n} sequenze varianti create, {q} esportazioni in coda
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	1 immagine B tra le immagini di ancoraggio
+	10-bit RGB	RGB a 10 bit
+	12-bit X'Y'Z'	X'Y'Z' a 12 bit
+	16-bit half float	virgola mobile a mezza precisione a 16 bit
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bit per HDR)
+	BDAV Transport Stream	flusso di trasporto BDAV
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF (qualità costante) {crf}
+	Elementary Stream	flusso elementare
+	FLAC (lossless) {bits}-bit	FLAC (senza perdita) a {bits} bit
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 per HDR
+	Image sequence	sequenza di immagini
+	MPEG-2 4:2:2 Profile	profilo MPEG-2 4:2:2
+	MPEG-2 Main Profile 4:2:0	profilo principale MPEG-2 4:2:0
+	Max {v} Mbps	max {v} Mbps
+	No audio	Nessun audio
+	No video	Nessun video
+	Program Stream	flusso di programma
+	Target {v} Mbps	obiettivo {v} Mbps
+	Transport Stream	flusso di trasporto
+	Uncompressed {bits}-bit PCM	PCM non compresso a {bits} bit
+	Uncompressed {bits}-bit float PCM	PCM in virgola mobile non compresso a {bits} bit
+	VBR Target {v} Mbps	VBR, obiettivo {v} Mbps
+	average {v} Mbps	media {v} Mbps
+	constant quantiser {q}	quantizzatore costante {q}
+	fragmented MP4 segments	segmenti MP4 frammentati
+	keyframe every {n} frames	fotogramma chiave ogni {n} fotogrammi
+	level {n}	livello {n}
+	linear	lineare
+	no B pictures	nessuna immagine B
+	quality {q}	qualità {q}
+	quantizer {q}	quantizzatore {q}
+	uncompressed	non compresso
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	{n} immagini B tra le immagini di ancoraggio
+	{n} ch {rate} Hz	{n} canali, {rate} Hz
+	{n} pass	{n} passaggi
+	{profile} auto level	{profile}, livello automatico
+	{sampling} {bits}-bit	{sampling} a {bits} bit
+	{seconds} s	{seconds} s
+	{v} Mbps	{v} Mbps
+	{word} compression	compressione {word}
+	{w}x{h} ({par})	{w}×{h} ({par})

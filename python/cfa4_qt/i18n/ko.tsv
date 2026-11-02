@@ -282,3 +282,48 @@
 	{n} variant sequences made, {q} exports queued	변형 시퀀스 {n}개 생성, 내보내기 {q}개 대기열에 추가됨
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	앵커 사이 B 픽처 1개
+	10-bit RGB	10비트 RGB
+	12-bit X'Y'Z'	12비트 X'Y'Z'
+	16-bit half float	16비트 반정밀도 부동소수점
+	AV1 Main (10-bit for HDR)	AV1 Main(HDR은 10비트)
+	BDAV Transport Stream	BDAV 전송 스트림
+	CBR {v} Mbps	CBR {v}Mbps
+	CRF (constant quality) {crf}	CRF(일정 품질) {crf}
+	Elementary Stream	기본 스트림
+	FLAC (lossless) {bits}-bit	FLAC(무손실) {bits}비트
+	HEVC Main / Main 10 for HDR	HEVC Main / HDR은 Main 10
+	Image sequence	이미지 시퀀스
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 프로필
+	MPEG-2 Main Profile 4:2:0	MPEG-2 메인 프로필 4:2:0
+	Max {v} Mbps	최대 {v}Mbps
+	No audio	오디오 없음
+	No video	비디오 없음
+	Program Stream	프로그램 스트림
+	Target {v} Mbps	목표 {v}Mbps
+	Transport Stream	전송 스트림
+	Uncompressed {bits}-bit PCM	비압축 {bits}비트 PCM
+	Uncompressed {bits}-bit float PCM	비압축 {bits}비트 부동소수점 PCM
+	VBR Target {v} Mbps	VBR 목표 {v}Mbps
+	average {v} Mbps	평균 {v}Mbps
+	constant quantiser {q}	고정 양자화 {q}
+	fragmented MP4 segments	조각화된 MP4 세그먼트
+	keyframe every {n} frames	{n}프레임마다 키프레임
+	level {n}	레벨 {n}
+	linear	선형
+	no B pictures	B 픽처 없음
+	quality {q}	품질 {q}
+	quantizer {q}	양자화 {q}
+	uncompressed	비압축
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps}fps
+	{n} B pictures between anchors	앵커 사이 B 픽처 {n}개
+	{n} ch {rate} Hz	{n}채널 {rate}Hz
+	{n} pass	{n}패스
+	{profile} auto level	{profile} 자동 레벨
+	{sampling} {bits}-bit	{sampling} {bits}비트
+	{seconds} s	{seconds}초
+	{v} Mbps	{v}Mbps
+	{word} compression	{word} 압축
+	{w}x{h} ({par})	{w}×{h}({par})

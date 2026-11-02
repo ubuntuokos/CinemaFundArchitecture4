@@ -282,3 +282,48 @@
 	{n} variant sequences made, {q} exports queued	{n} 個のバリアントシーケンスを作成し、{q} 件の書き出しをキューに追加しました
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	アンカー間の B ピクチャ 1 枚
+	10-bit RGB	10 ビット RGB
+	12-bit X'Y'Z'	12 ビット X'Y'Z'
+	16-bit half float	16 ビット半精度浮動小数点
+	AV1 Main (10-bit for HDR)	AV1 Main（HDR は 10 ビット）
+	BDAV Transport Stream	BDAV トランスポートストリーム
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF（固定品質）{crf}
+	Elementary Stream	エレメンタリーストリーム
+	FLAC (lossless) {bits}-bit	FLAC（ロスレス）{bits} ビット
+	HEVC Main / Main 10 for HDR	HEVC Main / HDR は Main 10
+	Image sequence	画像シーケンス
+	MPEG-2 4:2:2 Profile	MPEG-2 4:2:2 プロファイル
+	MPEG-2 Main Profile 4:2:0	MPEG-2 メインプロファイル 4:2:0
+	Max {v} Mbps	最大 {v} Mbps
+	No audio	オーディオなし
+	No video	ビデオなし
+	Program Stream	プログラムストリーム
+	Target {v} Mbps	ターゲット {v} Mbps
+	Transport Stream	トランスポートストリーム
+	Uncompressed {bits}-bit PCM	非圧縮 {bits} ビット PCM
+	Uncompressed {bits}-bit float PCM	非圧縮 {bits} ビット浮動小数点 PCM
+	VBR Target {v} Mbps	VBR ターゲット {v} Mbps
+	average {v} Mbps	平均 {v} Mbps
+	constant quantiser {q}	固定量子化 {q}
+	fragmented MP4 segments	断片化 MP4 セグメント
+	keyframe every {n} frames	{n} フレームごとにキーフレーム
+	level {n}	レベル {n}
+	linear	リニア
+	no B pictures	B ピクチャなし
+	quality {q}	品質 {q}
+	quantizer {q}	量子化 {q}
+	uncompressed	非圧縮
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	アンカー間の B ピクチャ {n} 枚
+	{n} ch {rate} Hz	{n} ch {rate} Hz
+	{n} pass	{n} パス
+	{profile} auto level	{profile} レベル自動
+	{sampling} {bits}-bit	{sampling} {bits} ビット
+	{seconds} s	{seconds} 秒
+	{v} Mbps	{v} Mbps
+	{word} compression	{word} 圧縮
+	{w}x{h} ({par})	{w}×{h}（{par}）

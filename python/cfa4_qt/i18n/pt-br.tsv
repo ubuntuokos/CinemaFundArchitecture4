@@ -283,3 +283,48 @@
 	{n} variant sequences made, {q} exports queued	{n} sequências variantes criadas, {q} exportações na fila
 	{w} × {h}	{w} × {h}
 	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	1 imagem B entre âncoras
+	10-bit RGB	RGB de 10 bits
+	12-bit X'Y'Z'	X'Y'Z' de 12 bits
+	16-bit half float	ponto flutuante de meia precisão de 16 bits
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bits para HDR)
+	BDAV Transport Stream	fluxo de transporte BDAV
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF (qualidade constante) {crf}
+	Elementary Stream	fluxo elementar
+	FLAC (lossless) {bits}-bit	FLAC (sem perdas) {bits} bits
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 para HDR
+	Image sequence	sequência de imagens
+	MPEG-2 4:2:2 Profile	perfil MPEG-2 4:2:2
+	MPEG-2 Main Profile 4:2:0	perfil principal MPEG-2 4:2:0
+	Max {v} Mbps	máx. {v} Mbps
+	No audio	Sem áudio
+	No video	Sem vídeo
+	Program Stream	fluxo de programa
+	Target {v} Mbps	alvo {v} Mbps
+	Transport Stream	fluxo de transporte
+	Uncompressed {bits}-bit PCM	PCM sem compactação de {bits} bits
+	Uncompressed {bits}-bit float PCM	PCM de ponto flutuante sem compactação de {bits} bits
+	VBR Target {v} Mbps	VBR, alvo {v} Mbps
+	average {v} Mbps	média {v} Mbps
+	constant quantiser {q}	quantizador constante {q}
+	fragmented MP4 segments	segmentos MP4 fragmentados
+	keyframe every {n} frames	quadro-chave a cada {n} quadros
+	level {n}	nível {n}
+	linear	linear
+	no B pictures	sem imagens B
+	quality {q}	qualidade {q}
+	quantizer {q}	quantizador {q}
+	uncompressed	sem compactação
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	{n} imagens B entre âncoras
+	{n} ch {rate} Hz	{n} canais, {rate} Hz
+	{n} pass	{n} passagem(ns)
+	{profile} auto level	{profile}, nível automático
+	{sampling} {bits}-bit	{sampling} {bits} bits
+	{seconds} s	{seconds} s
+	{v} Mbps	{v} Mbps
+	{word} compression	compactação {word}
+	{w}x{h} ({par})	{w}×{h} ({par})
