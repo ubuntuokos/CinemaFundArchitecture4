@@ -56,6 +56,7 @@ const OP_SWAP_EYES: u32 = 32;
 const OP_STEREO_TO_2D: u32 = 33;
 const OP_FILM_GRAIN: u32 = 34;
 const OP_STEREO_PARALLAX: u32 = 35;
+const OP_SIX_POINT_PIN: u32 = 36;
 
 type Target = (wgpu::Texture, wgpu::TextureView);
 
@@ -170,6 +171,12 @@ fn steps(op: &FxOp) -> Vec<Step> {
         FxOp::SwapEyes { sbs } => out.push(step(OP_SWAP_EYES, [*sbs as u32, 0, 0, 0], &[])),
         FxOp::StereoTo2d { sbs, right } => out.push(step(OP_STEREO_TO_2D, [*sbs as u32, *right as u32, 0, 0], &[])),
         FxOp::StereoParallax { sbs, shift, repeat } => out.push(step(OP_STEREO_PARALLAX, [*sbs as u32, *repeat as u32, 0, 0], &[*shift])),
+        FxOp::SixPointPin { edges, inv, identity } => {
+            if !*identity {
+                let p: Vec<f32> = edges.iter().chain(inv).copied().collect();
+                out.push(step(OP_SIX_POINT_PIN, [0; 4], &p));
+            }
+        }
         FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
             if *amount > 0.0 {
                 out.push(step(OP_FILM_GRAIN, [*seed, 0, 0, 0], &[*amount, *inv_cell, *shadows, *midtones, *highlights, *color]));

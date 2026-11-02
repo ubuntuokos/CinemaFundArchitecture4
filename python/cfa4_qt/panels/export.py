@@ -76,7 +76,7 @@ DCP_KINDS = (
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
     ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
-    ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos .thd)")),
+    ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)")),
 )
 # what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
 DCP_IAB_FALLBACK = (
@@ -253,7 +253,7 @@ class ExportDialog(QDialog):
             self.dcp_immersive.addItem(tr(label), key)
         self.dcp_iab_source = QLineEdit(self)
         self.dcp_iab_source.setObjectName("export.dcpIabSource")
-        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF, .iab or Dolby Atmos .thd file"))
+        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)"))
         self.dcp_iab_browse = QPushButton(tr("Browse…"), self)
         self.dcp_iab_browse.setObjectName("export.dcpIabBrowse")
         self.dcp_iab_browse.clicked.connect(self._browse_iab)
@@ -807,7 +807,7 @@ class ExportDialog(QDialog):
 
     def _browse_iab(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab *.thd *.mlp);;" + tr("All files") + " (*)"
+            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab *.thd *.mlp *.mkv *.mka *.mp4 *.m4a *.mov *.m2ts *.mts *.ts);;" + tr("All files") + " (*)"
         )
         if path:
             self.dcp_iab_source.setText(path)
@@ -818,7 +818,7 @@ class ExportDialog(QDialog):
         path = os.path.expanduser(self.dcp_iab_source.text().strip())
         if not path:
             self._iab_probed = ""
-            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP), a raw IAB stream or a Dolby Atmos TrueHD stream (.thd)."))
+            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track."))
             return
         if path == self._iab_probed:
             return

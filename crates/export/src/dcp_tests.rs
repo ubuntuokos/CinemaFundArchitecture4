@@ -801,6 +801,25 @@ fn immersive_atmos_truehd_source() {
 }
 
 /// A TrueHD stream without an object presentation is refused as an Atmos source.
+/// A Matroska file is taken as a Dolby Atmos source and looked into: one without a TrueHD
+/// track says so instead of failing as a broken IAB stream (#411).
+#[test]
+fn a_matroska_file_without_truehd_is_not_an_atmos_source() {
+    use cfa4_matroska::{MkvWriter, MuxOptions, TrackKind, TrackSpec};
+    let dir = tmp("iab-mkv-no-truehd");
+    std::fs::create_dir_all(&dir).unwrap();
+    let mkv = Path::new(&dir).join("pcm.mkv");
+    let mut t = TrackSpec::new(TrackKind::Audio, "A_PCM/INT/LIT");
+    t.audio = Some((48_000.0, 2, Some(16)));
+    let mut w = MkvWriter::new(std::fs::File::create(&mkv).unwrap(), vec![t], MuxOptions { doc_type: "matroska".into(), ..Default::default() }).unwrap();
+    for i in 0..4 {
+        w.write_frame(0, i * 20_000_000, true, &[0u8; 3840], None).unwrap();
+    }
+    w.finish().unwrap();
+    let err = probe_iab_source(&mkv.to_string_lossy()).unwrap_err().to_string();
+    assert!(err.contains("no Dolby TrueHD track"), "{err}");
+}
+
 #[test]
 fn a_truehd_stream_without_objects_is_not_an_atmos_source() {
     let dir = tmp("iab-not-atmos");
