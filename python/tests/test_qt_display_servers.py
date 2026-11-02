@@ -179,6 +179,9 @@ def _drive(platform: str, env: dict[str, str], data_dir: Path) -> None:
         # desktop (Wayland never lets a client take it itself)
         client.call("ui.focus", {"id": "timeline.canvas"})
         focused = client.call("ui.inspect")["input"]["nativeWindowFocused"]
+        # no window manager hands the window the focus on these servers, so Qt has no active
+        # window yet either: the key must take ``ui.key``'s background-window path to land
+        assert focused is False, "the window must start in the background for this case"
         client.call("ui.key", {"key": "C"})
         state = client.call("ui.inspect")
         assert state["tool"] == "razor"
