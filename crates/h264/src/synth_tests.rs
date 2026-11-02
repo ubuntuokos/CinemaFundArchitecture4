@@ -562,3 +562,131 @@ fn poc_type1_reordering() {
         }
     }
 }
+
+/// I_PCM at 9, 12 and 14 bits (#164): samples are `BitDepth` bits wide, so the macroblock is
+/// 48 * BitDepth bytes. An IDR of random PCM macroblocks is followed by a P picture mixing PCM and
+/// P_Skip (zero motion copy). PCM-to-skip edges have qPav 13 and are not filtered, so the expected
+/// output is exact.
+#[test]
+fn pcm_high_bit_depth() {
+    for depth in [9u32, 12, 14] {
+        for cabac in [false, true] {
+            pcm_depth_check(depth, cabac);
+        }
+    }
+}
+
+fn pcm_depth_check(depth: u32, cabac: bool) {
+    let max = (1u32 << depth) - 1;
+    let mut seed = depth * 31 + cabac as u32;
+    let sample = |seed: &mut u32| {
+        *seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+        // full range including both extremes
+        match *seed >> 28 {
+            0 => 0,
+            1 => max,
+            _ => (*seed >> 8) & max,
+        }
+    };
+    let planes = |seed: &mut u32| -> Vec<Vec<u16>> { (0..NMB).map(|_| (0..384).map(|_| sample(seed) as u16).collect()).collect() };
+    let idr = planes(&mut seed);
+    let p = planes(&mut seed);
+    let pack = |s: &[u16]| {
+        let mut w = BitWriter::new();
+        for &v in s {
+            w.write_bits(v as u32, depth);
+        }
+        w.finish()
+    };
+    let pics = [
+        Pic { idr: true, frame_num: 0, ref_idc: 3, mbs: idr.iter().map(|m| Some(pack(m))).collect(), ..Default::default() },
+        Pic { frame_num: 1, ref_idc: 2, mbs: p.iter().enumerate().map(|(i, m)| (i % 3 == 1).then(|| pack(m))).collect(), ..Default::default() },
+    ];
+
+    // High 4:4:4 Predictive SPS with the given bit depth (4:2:0)
+    let mut w = BitWriter::new();
+    w.write_bits(244, 8);
+    w.write_bits(0, 8);
+    w.write_bits(30, 8);
+    w.write_ue(0);
+    w.write_ue(1); // chroma_format_idc
+    w.write_ue(depth - 8);
+    w.write_ue(depth - 8);
+    w.write_bit(false); // qpprime_y_zero_transform_bypass
+    w.write_bit(false); // seq_scaling_matrix_present
+    w.write_ue(0); // log2_max_frame_num - 4
+    w.write_ue(2); // POC type 2
+    w.write_ue(1);
+    w.write_bit(false);
+    w.write_ue(MB_W as u32 - 1);
+    w.write_ue(MB_H as u32 - 1);
+    w.write_bit(true);
+    w.write_bit(true);
+    w.write_bit(false);
+    w.write_bit(false);
+    w.rbsp_trailing();
+    let mut stream = nal(3, 7, &w.finish());
+    stream.extend(pps(cabac, false));
+    for pic in &pics {
+        stream.extend(slice_nal(pic, cabac));
+    }
+
+    // expected planes
+    let (w, h) = (MB_W * 16, MB_H * 16);
+    let render = |mbs: &[Vec<u16>], keep: &dyn Fn(usize) -> bool, base: Option<&[Vec<u16>; 3]>| -> [Vec<u16>; 3] {
+        let mut out = base.cloned().unwrap_or_else(|| [vec![0; w * h], vec![0; w * h / 4], vec![0; w * h / 4]]);
+        for (i, s) in mbs.iter().enumerate().filter(|(i, _)| keep(*i)) {
+            let (x0, y0) = ((i % MB_W) * 16, (i / MB_W) * 16);
+            for r in 0..16 {
+                out[0][(y0 + r) * w + x0..][..16].copy_from_slice(&s[r * 16..][..16]);
+            }
+            for c in 0..2 {
+                for r in 0..8 {
+                    out[1 + c][(y0 / 2 + r) * (w / 2) + x0 / 2..][..8].copy_from_slice(&s[256 + c * 64 + r * 8..][..8]);
+                }
+            }
+        }
+        out
+    };
+    let e0 = render(&idr, &|_| true, None);
+    let e1 = render(&p, &|i| i % 3 == 1, Some(&e0));
+    let expected = [e0, e1];
+
+    if let Some(ff) = cfa4_testkit::ffmpeg_or_skip("synth_pcm_depth") {
+        let dir = cfa4_testkit::fixtures_dir("h264");
+        let name = format!("synth_pcm_{depth}_{}", if cabac { "cabac" } else { "cavlc" });
+        let src = cfa4_testkit::temp_path(&dir.join(format!("{name}.h264")));
+        let dst = cfa4_testkit::temp_path(&dir.join(format!("{name}.yuv")));
+        std::fs::write(&src, &stream).unwrap();
+        let ok = std::process::Command::new(&ff)
+            .args(["-hide_banner", "-loglevel", "error", "-y", "-i"])
+            .arg(&src)
+            .args(["-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", &format!("yuv420p{depth}le")])
+            .arg(&dst)
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+        assert!(ok, "ffmpeg failed to decode {name}");
+        let got = std::fs::read(&dst).unwrap();
+        let _ = std::fs::remove_file(&src);
+        let _ = std::fs::remove_file(&dst);
+        let want: Vec<u8> = expected.iter().flatten().flatten().flat_map(|v| v.to_le_bytes()).collect();
+        assert!(got == want, "ffmpeg output differs from the expected output of {name}");
+    }
+
+    for threads in [1, 2] {
+        let mut dec = Decoder::with_threads(threads);
+        let mut out = dec.decode(&stream, 0).unwrap();
+        out.extend(dec.flush());
+        assert!(dec.take_error().is_none());
+        assert_eq!(out.len(), 2);
+        for (k, (pic, e)) in out.iter().zip(&expected).enumerate() {
+            assert_eq!(u32::from(pic.bit_depth), depth);
+            assert!(
+                pic.y.as_u16() == Some(&e[0][..]) && pic.u.as_u16() == Some(&e[1][..]) && pic.v.as_u16() == Some(&e[2][..]),
+                "picture {k} differs (depth {depth}, cabac={cabac}, threads {threads})"
+            );
+        }
+        assert_eq!(dec.stats().mb_pcm as usize, NMB + NMB.div_ceil(3));
+    }
+}

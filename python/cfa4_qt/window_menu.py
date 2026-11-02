@@ -281,10 +281,12 @@ def build_window_menu(
     workspaces: Workspaces,
     restore: Callable[[QByteArray], None],
     reset_action: QAction,
-) -> list[tuple[QAction, str]]:
-    """Fill ``menu``; returns (action, shortcut) pairs for the caller to bind where free."""
+) -> list[tuple[QAction, str, str]]:
+    """Fill ``menu``; returns (action, command id, default shortcut) for the caller to bind where
+    free. The ids are egui's (``window.workspace.editing``, ``window.panel.Project``), so the
+    keys can be edited in Keyboard Shortcuts like egui's."""
     menu.setToolTipsVisible(True)
-    shortcuts: list[tuple[QAction, str]] = []
+    shortcuts: list[tuple[QAction, str, str]] = []
 
     ws = menu.addMenu(tr("Workspaces"))
     ws.setObjectName("menu.Window.Workspaces")
@@ -297,8 +299,7 @@ def build_window_menu(
         a.setChecked(workspaces.current == name)
         a.triggered.connect(lambda _c=False, n=name: workspaces.switch(n, restore))
         group.addAction(a)
-        if key:
-            shortcuts.append((a, key))
+        shortcuts.append((a, workspace_command(name), key))
         ws.addAction(a)
     own = workspaces.names()
     if own:
@@ -314,11 +315,12 @@ def build_window_menu(
     ws.addSeparator()
     reset_action.setText(tr("Reset to Saved Layout"))
     ws.addAction(reset_action)
-    shortcuts.append((reset_action, "Alt+Shift+0"))
+    shortcuts.append((reset_action, "window.workspace.reset", "Alt+Shift+0"))
     save = QAction(tr("Save Changes to this Workspace"), window)
     save.setObjectName("window.workspace.saveChanges")
     save.triggered.connect(workspaces.save_current)
     ws.addAction(save)
+    shortcuts.append((save, "window.workspace.saveChanges", ""))
     save_as = QAction(tr("Save as New Workspace…"), window)
     save_as.setObjectName("window.workspace.saveAs")
 
@@ -331,6 +333,7 @@ def build_window_menu(
 
     save_as.triggered.connect(ask_name)
     ws.addAction(save_as)
+    shortcuts.append((save_as, "window.workspace.saveAs", ""))
     edit = QAction(tr("Edit Workspaces…"), window)
     edit.setObjectName("window.workspace.edit")
 
@@ -340,6 +343,7 @@ def build_window_menu(
 
     edit.triggered.connect(edit_workspaces)
     ws.addAction(edit)
+    shortcuts.append((edit, "window.workspace.edit", ""))
 
     new_project = QAction(tr("New Project Panel"), window)
     new_project.setEnabled(False)
@@ -349,20 +353,48 @@ def build_window_menu(
         dock = docks.get(entry.title)
         a = panel_action(window, entry, dock, central if entry.title == "Program" else None)
         menu.addAction(a)
-        if entry.shortcut and a.isEnabled():
-            shortcuts.append((a, entry.shortcut))
+        if a.isEnabled():
+            shortcuts.append((a, a.objectName(), entry.shortcut))
     return shortcuts
 
 
-def bind_free(window: QMainWindow, pairs: list[tuple[QAction, str]], taken: set[str]) -> list[QAction]:
-    """Give each action its shortcut unless an engine command already uses the key. Returns the
-    actions added to ``window``, so a rebuild can remove them (two live actions with one key
-    would make the key ambiguous, and neither would fire)."""
+def workspace_command(name: str) -> str:
+    """egui's command id of a built-in workspace (``Captions and Graphics`` ->
+    ``window.workspace.captionsandgraphics``)."""
+    return "window.workspace." + name.lower().replace(" ", "")
+
+
+def window_commands() -> list[tuple[str, str, list[str], str]]:
+    """(id, label, menu, default key) of the Window-menu commands, for the engine's shortcut set."""
+    out: list[tuple[str, str, list[str], str]] = [
+        (workspace_command(name), name, ["Window", "Workspaces"], key) for name, key in (*EGUI_WORKSPACES, (ALL_PANELS, ""))
+    ]
+    out += [
+        ("window.workspace.reset", N_("Reset to Saved Layout"), ["Window", "Workspaces"], "Alt+Shift+0"),
+        ("window.workspace.saveChanges", N_("Save Changes to this Workspace"), ["Window", "Workspaces"], ""),
+        ("window.workspace.saveAs", N_("Save as New Workspace…"), ["Window", "Workspaces"], ""),
+        ("window.workspace.edit", N_("Edit Workspaces…"), ["Window", "Workspaces"], ""),
+    ]
+    out += [(f"window.panel.{e.title.replace(' ', '')}", e.title, ["Window"], e.shortcut) for e in PANELS]
+    return out
+
+
+def bind_free(window: QMainWindow, pairs: list[tuple[QAction, list[str]]], taken: set[str]) -> list[QAction]:
+    """Give each action its shortcuts (Qt key strings) whose keys no engine command or earlier
+    action uses. Returns the actions added to ``window``, so a rebuild can remove them (two live
+    actions with one key would make the key ambiguous, and neither would fire)."""
     added = []
-    for action, key in pairs:
-        seq = QKeySequence(key)
-        if seq.toString() not in taken:
-            action.setShortcut(seq)
+    used = set(taken)
+    for action, keys in pairs:
+        seqs = []
+        for key in keys:
+            seq = QKeySequence(key)
+            if seq.isEmpty() or seq.toString() in used:
+                continue
+            used.add(seq.toString())
+            seqs.append(seq)
+        action.setShortcuts(seqs)
+        if seqs:
             window.addAction(action)
             added.append(action)
     return added

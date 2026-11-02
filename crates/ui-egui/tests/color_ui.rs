@@ -183,6 +183,9 @@ fn interpret_footage_and_sequence_color_dialogs_and_hdr_scopes() {
     d.click("colorDialog.ok");
     let info = d.exec("media.colorInfo", json!({"item": item}));
     assert_eq!(info["override"], "slog3-sgamut3cine", "{info}");
+    // Auro-3D on / off alone (#323) applies directly, not as a request for the dialog
+    let r = d.exec("clip.interpretFootage", json!({"items": [item], "auroDecoding": false}));
+    assert!(r.get("dialog").is_none() && r.get("auroDecoding").is_some(), "{r}");
     // Sequence ▸ Color Management…: Rec. 2100 PQ
     let r = d.ok("ui.menu.invoke", json!({"id": "sequence.colorSettings"}));
     assert_eq!(r["dialog"], "sequenceColor");
