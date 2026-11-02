@@ -80,7 +80,18 @@ jönne létre, amelyeket a motorral párhuzamosan kellene karbantartani. A CFA4 
      Összeomlás és félbehagyott kimenet nincs; a proxy ideiglenes fájlba készül, és atomi átnevezéssel
      véglegesül.
    - A hibák angol hibakódok angol szöveggel; a felület fordít (BacklotHub I18N-döntés).
-10. **Licenc.** Új külső függőség nem kell; a meglévő médiahátterek szabályai (ADR 0002, 0004, 0005)
+10. **A motor fejlesztése nem áll meg, a szerződés véd.** A Rust-motor kiegészítései és javításai
+    tovább érkeznek (tulajdonosi megerősítés, 2026-11-02). Ezért:
+    - A `media.service.*` parancsokra **szerződéstesztek** kerülnek a CFA4 saját tesztkészletébe
+      (`cargo test --workspace`). Így a motoron dolgozó bármely projekt a saját PR-jában látja, ha a
+      BacklotHub által használt viselkedést eltöri.
+    - A tesztek a kötött viselkedést ellenőrzik: paraméterek, eredménymezők, hibakódok, `Tick`-
+      pontosság. A motor belsejét nem kötik.
+    - Nem visszafelé kompatibilis változásnál a `serve` protokollverzióját emelni kell. A BacklotHub
+      induláskor ellenőrzi a verziót, és eltérés esetén kezelhető hibát ad.
+    - Nagyobb dekódolási vagy lejátszási változás után a V1 CPU-only mérést újra le kell futtatni a
+      `CFA4-MIN` gépen. A REV-01…05 nem romolhat.
+11. **Licenc.** Új külső függőség nem kell; a meglévő médiahátterek szabályai (ADR 0002, 0004, 0005)
     érvényesek.
 
 ## Fázisok és kapuk
@@ -88,7 +99,7 @@ jönne létre, amelyeket a motorral párhuzamosan kellene karbantartani. A CFA4 
 | Fázis | Tartalom | Kell, mielőtt … |
 |---|---|---|
 | MS-0 | Ez az ADR | a BacklotHub Asset Management (8. lépcső) G2 kapuja (V0) |
-| MS-1 | Projekt nélküli parancsok (3. pont), jobállapot, hibakódok, mutációs fuzz a bemenetekre; CPU-only mérés (V1) | a BacklotHub Asset Management (8.) megvalósítása |
+| MS-1 | Projekt nélküli parancsok (3. pont), jobállapot, hibakódok, mutációs fuzz a bemenetekre, szerződéstesztek (10. pont); CPU-only mérés (V1) | a BacklotHub Asset Management (8.) megvalósítása |
 | MS-2 | Képkocka-kiszolgálás verziókhoz; két verzió szinkron léptetése (REV-07); `Tick`↔képkocka↔időkód property-tesztek minden fps-en (REV-03) | a Review és Approval (13.) megvalósítása |
 | MS-3 | Lejátszás a Review felületén az ADR F8 5. lépésére építve; A/V-szinkron mérés (REV-05) | a Review G5 kapuja (V2) |
 | MS-4 | Jobesemények az Event Fabricon | az EF-R1 után, a Notification Centerrel (12.) |
