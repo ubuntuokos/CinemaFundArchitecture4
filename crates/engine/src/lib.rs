@@ -20,6 +20,7 @@ pub mod commands;
 pub mod credits;
 pub mod delivery_check;
 pub mod demo;
+pub mod dialog_defaults;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
@@ -1224,6 +1225,8 @@ mod animated_image_tests;
 mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
+#[cfg(test)]
+mod auro_tests;
 #[cfg(test)]
 mod autosave_tests;
 #[cfg(test)]
