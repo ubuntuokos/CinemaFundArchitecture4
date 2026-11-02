@@ -15,19 +15,20 @@ from pathlib import Path
 BIN = Path(__file__).resolve().parent
 sys.path.insert(0, str(BIN.parent / "lib" / "cfa4" / "python"))
 ENGINE = BIN / "cfa4-cli"
-if "CFA4_ENGINE" not in os.environ and ENGINE.is_file():
+if not os.environ.get("CFA4_ENGINE") and ENGINE.is_file():  # an empty value names no engine
     os.environ["CFA4_ENGINE"] = str(ENGINE)
 
-try:
-    from cfa4_qt.__main__ import main
+QT_MODULES = ("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest")
+try:  # before the GUI starts: its own message would advise a pip install, not Ubuntu's packages
+    for module in QT_MODULES:
+        __import__(f"PySide6.{module}")
 except ModuleNotFoundError as e:
     if not (e.name or "").startswith("PySide6"):
         raise
-    sys.stderr.write(
-        f"cfa4-qt: {e}\nThe Qt GUI needs Ubuntu's PySide6 packages: sudo apt install "
-        "python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtwidgets "
-        "python3-pyside6.qtnetwork python3-pyside6.qttest python3-pyside6.qtmultimedia\n"
-    )
+    packages = " ".join(f"python3-pyside6.{m.lower()}" for m in (*QT_MODULES, "QtMultimedia"))
+    sys.stderr.write(f"cfa4-qt: {e}\nThe Qt GUI needs Ubuntu's PySide6 packages: sudo apt install {packages}\n")
     sys.exit(1)
+
+from cfa4_qt.__main__ import main  # noqa: E402
 
 sys.exit(main())

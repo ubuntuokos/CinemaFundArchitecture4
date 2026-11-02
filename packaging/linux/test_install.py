@@ -94,6 +94,15 @@ class InstallTests(unittest.TestCase):
         (package / "__init__.py").write_text("")
         (package / "__main__.py").write_text(main_body)
 
+    def fake_pyside6(self, prefix, modules=("QtCore", "QtGui", "QtWidgets", "QtNetwork", "QtTest")):
+        """A stand-in PySide6 with these modules, first on the installed launcher's path, so the
+        host's PySide6 (installed or not) does not matter."""
+        fake = prefix / "lib/cfa4/python/PySide6"
+        fake.mkdir()
+        (fake / "__init__.py").write_text("")
+        for module in modules:
+            (fake / f"{module}.py").write_text("")
+
     def run_qt(self, prefix, **env):
         clean = {k: v for k, v in os.environ.items() if k not in ("CFA4_ENGINE", "PYTHONPATH")}
         return subprocess.run(
@@ -114,6 +123,7 @@ class InstallTests(unittest.TestCase):
             result = self.install("--prefix", prefix)
             self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(os.access(prefix / "bin/cfa4-qt", os.X_OK))
+        self.fake_pyside6(prefix)
         started = self.run_qt(prefix)
         self.assertEqual(started.returncode, 0, started.stderr)
         seen = json.loads(started.stdout)
@@ -125,14 +135,21 @@ class InstallTests(unittest.TestCase):
         # an engine named by the user wins
         seen = json.loads(self.run_qt(prefix, CFA4_ENGINE="/opt/other/cfa4-cli").stdout)
         self.assertEqual(seen["engine"], "/opt/other/cfa4-cli")
+        # an empty CFA4_ENGINE names no engine: the one beside the launcher still serves
+        seen = json.loads(self.run_qt(prefix, CFA4_ENGINE="").stdout)
+        self.assertEqual(seen["engine"], str(prefix / "bin/cfa4-cli"))
 
     def test_qt_gui_without_pyside6_names_the_packages(self):
-        self.add_qt_gui("import PySide6.QtNotInstalledHere\n")
+        # the GUI imports Qt only inside main(): the launcher checks the modules before it
+        self.add_qt_gui("def main():\n    raise SystemExit('main() must not run')\n")
         prefix = self.root / "destination"
         self.assertEqual(self.install("--prefix", prefix).returncode, 0)
+        self.fake_pyside6(prefix, ("QtCore",))
         started = self.run_qt(prefix)
-        self.assertEqual(started.returncode, 1)
+        self.assertEqual(started.returncode, 1, started.stderr)
+        self.assertIn("PySide6.QtGui", started.stderr)
         self.assertIn("python3-pyside6.qtwidgets", started.stderr)
+        self.assertNotIn("main() must not run", started.stderr)
 
     def test_qt_launcher_without_its_package_does_not_install(self):
         shutil.copyfile(HERE / "cfa4-qt", self.bundle / "bin/cfa4-qt")
@@ -140,6 +157,7 @@ class InstallTests(unittest.TestCase):
         result = self.install("--prefix", prefix)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("extract the complete tarball", result.stderr)
+        self.assertFalse(prefix.exists(), "refused before anything is written")
 
     def test_invalid_arguments_fail_before_writing(self):
         for args in (("--prefix",), ("--prefix", "relative"), ("--prefix", "/"), ("--unknown",),
