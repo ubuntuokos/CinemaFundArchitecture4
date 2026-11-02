@@ -1,0 +1,65 @@
+"""The Qt GUI never crashes on a PipeWire library without its client configuration
+(``cfa4_qt.audio_backend``; AGENTS.md §0)."""
+
+from __future__ import annotations
+
+import ctypes.util
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+from cfa4_qt.audio_backend import apply, choose, pipewire_config_dirs
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def libs(*names: str):
+    return lambda name: f"lib{name}.so" if name in names else None
+
+
+def test_config_dirs_follow_libpipewire(tmp_path: Path) -> None:
+    assert pipewire_config_dirs({"PIPEWIRE_CONFIG_DIR": str(tmp_path), "XDG_CONFIG_HOME": "/x"}) == [tmp_path]
+    assert pipewire_config_dirs({"XDG_CONFIG_HOME": "/x", "HOME": "/h"}) == [
+        Path("/x/pipewire"), Path("/etc/pipewire"), Path("/usr/share/pipewire")]
+    assert pipewire_config_dirs({"HOME": "/h"})[0] == Path("/h/.config/pipewire")
+
+
+def test_choose_forces_a_backend_only_for_pipewire_without_its_client_config(tmp_path: Path) -> None:
+    empty = {"PIPEWIRE_CONFIG_DIR": str(tmp_path)}
+    # no libpipewire: Qt never picks PipeWire
+    assert choose(dict(empty), libs("pulse")) is None
+    # libpipewire without client.conf: PulseAudio (pipewire-pulse), else ALSA
+    assert choose(dict(empty), libs("pipewire-0.3", "pulse")) == "pulseaudio"
+    assert choose(dict(empty), libs("pipewire-0.3")) == "alsa"
+    # the user's own choice is kept
+    assert choose({**empty, "QT_AUDIO_BACKEND": "pipewire"}, libs("pipewire-0.3")) is None
+    # with its configuration PipeWire is safe
+    (tmp_path / "client.conf").write_text("context.properties = {}\n", encoding="utf-8")
+    assert choose(dict(empty), libs("pipewire-0.3", "pulse")) is None
+
+
+def test_apply_sets_the_variable_and_says_why(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(ctypes.util, "find_library", libs("pipewire-0.3"))
+    env = {"PIPEWIRE_CONFIG_DIR": str(tmp_path)}
+    said: list[str] = []
+    assert apply(env, said.append) == "alsa"
+    assert env["QT_AUDIO_BACKEND"] == "alsa" and "client.conf" in said[0]
+    assert apply(env, said.append) is None and len(said) == 1
+
+
+@pytest.mark.skipif(not ctypes.util.find_library("pipewire-0.3"), reason="libpipewire-0.3 is not installed")
+def test_qt_audio_query_survives_pipewire_without_config(tmp_path: Path) -> None:
+    """Regression: with libpipewire-0.3 but no client.conf, ``QMediaDevices.defaultAudioOutput()``
+    segfaulted in Qt's PipeWire backend."""
+    pytest.importorskip("PySide6.QtMultimedia")
+    code = (
+        "import sys; from cfa4_qt.audio_backend import apply; apply(log=print)\n"
+        "from PySide6.QtWidgets import QApplication; app = QApplication([])\n"
+        "from PySide6.QtMultimedia import QMediaDevices; QMediaDevices.defaultAudioOutput(); print('alive')\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "QT_AUDIO_BACKEND"}
+    env.update(PIPEWIRE_CONFIG_DIR=str(tmp_path / "none"), QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(ROOT / "python"))
+    run = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=120, check=False)
+    assert run.returncode == 0 and "alive" in run.stdout, run.stdout + run.stderr
