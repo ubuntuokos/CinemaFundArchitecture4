@@ -22,8 +22,10 @@ a terv új verziót kap (1.1).
 | E8 | C++ és TypeScript SDK (3.5, 19.) | kötelező | A CFA4 Rust + Python + Qt6, Linux-asztali alkalmazás; webes felület nem cél, C++-komponense ma nincs | Igény szerint; amíg nincs fogyasztója, ne legyen kiadási feltétel |
 | E9 | Telepítés (17.) | nats-server, valkey-server, Core, Schema Registry külön szolgáltatásként | Csomagok: `.deb`, AppImage, Flatpak, `tar.gz` ([`VISION.md`](../../VISION.md) 3.); egygépes indulás is cél | Ellenőrizni: Ubuntu 26.04 csomagok, Flatpak/AppImage-beágyazás, felhasználói systemd-szolgáltatás, erőforrás a minimális kliensgépen |
 | E10 | Folyamaton belüli események (1.1) | „a komponensek nem hozhatnak létre saját eseménybuszt” | A Rust-motorban vannak folyamaton belüli események (`ProjectChanged`, `Toast`…, [`docs/architecture.md`](../architecture.md) 4.) | Pontosítás: az Event Fabric az alkalmazások és folyamatok közötti kommunikációra vonatkozik; a motor belső eseményei maradnak |
-| E11 | Never crash ([`AGENTS.md`](../../AGENTS.md) §0) | fail-closed | hiba = kezelhető hibaüzenet, nincs összeomlás, nincs adatvesztés | Összhangban; a tesztekbe a boríték- és sémaolvasó mutációs fuzz-tesztje is kerüljön (§0.8) |
+| E11 | Never crash ([`AGENTS.md`](../../AGENTS.md) §0) | fail-closed; a 20. pont csak szokásos validációs teszteket és egy hibás sémát ír | hiba = kezelhető hibaüzenet, nincs összeomlás, nincs adatvesztés; olvasókra mutációs fuzz-teszt `catch_unwind` alatt kötelező (§0.8) | A boríték-, séma- és Protobuf-olvasók mutációs fuzz-tesztje kerüljön a 20. pontba és a 25. kiadási kapuba (EF-005–EF-007 mellé) |
 | E12 | Licenc ([`docs/licensing.md`](../licensing.md)) | NATS, Valkey | GPL-3.0-or-later; függőség csak GPL-3.0-kompatibilis | NATS-szerver: Apache-2.0, Valkey: BSD-3-Clause – kompatibilis; a kliens-crate-ek `cargo deny` ellenőrzése az F1 része |
+| E13 | Producer-azonosság (5.1, 12.1–12.2, 4.2) | a boríték `producer` mezőjét a kibocsátó tölti ki; hitelesített NATS-kapcsolat külön követelmény | – | A `producer` és a `producer_instance` a hitelesített kapcsolat identitásából származzon, vagy eltérésnél a Gateway utasítsa el (EF-1002/EF-2002) a routing előtt; különben a jogosultság és az audit hamisítható kibocsátóban bízhat |
+| E14 | Replay és idempotencia (9.1, 10.1–10.2) | idempotenciakulcs: `consumer_id + event_id`; replay projekció újraépítésére és új logika tesztjére | – | A visszajátszás külön Consumer-identitással vagy külön idempotencia-névtérrel (pl. `replay_id`) fusson, különben a korábban feldolgozott események duplikátumként kimaradnak; a 10.3 korlátozásai erre is vonatkoznak |
 
 ## 2. Nyitott kérdések
 
@@ -33,3 +35,6 @@ a terv új verziót kap (1.1).
 | Q2 | Lehet-e részkiadás (E7), amelyre fogyasztó építhet? | Igen: EF-R1 = F1–F5 + Rust és Python SDK |
 | Q3 | Kell-e most a C++ és a TypeScript SDK (E8)? | Csak ha lesz fogyasztója |
 | Q4 | Egygépes módban is a teljes NATS + JetStream + Valkey fusson-e, és hogyan települjön (E9)? | Igen, felhasználói systemd-szolgáltatásként; előbb mérés a minimális kliensgépen |
+| Q5 | Kötelező legyen-e a `producer` mező hitelesített identitáshoz kötése (E13)? | Igen; a Gateway a kapcsolat identitásából tölti ki, eltérésnél elutasít |
+| Q6 | Hogyan fusson a replay az idempotencia mellett (E14)? | Külön replay-Consumer-identitás vagy külön idempotencia-névtér |
+| Q7 | Bekerüljön-e a mutációs fuzz-teszt a 20. pontba és a 25. kapuba (E11)? | Igen (`AGENTS.md` §0.8) |
