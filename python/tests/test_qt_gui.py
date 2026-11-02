@@ -6282,6 +6282,17 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         assert e["range"] == "custom" and e["customStart"] == 2.0 and e["customEnd"] == 4.5 and e["path"].endswith("out.mp4")
         assert win.export_dialog.params()["range"] == "custom" and win.export_dialog.params()["startSeconds"] == 2.0
         refused({"export": {"range": "sideways"}}, "no 'sideways'")
+        # egui's open_sections: the settings sections fold; all open at first
+        assert e["openSections"] == ["video", "audio", "captions", "effects", "metadata"]
+        u = ok({"export": {"openSections": ["audio", "effects"]}})
+        assert u["export"]["openSections"] == ["audio", "effects"]
+        sections = win.export_dialog.sections
+        assert not sections["video"].body.isVisible() and sections["audio"].body.isVisible()
+        assert sections["video"].isVisible(), "a folded section keeps its header"
+        sections["video"].header.click()
+        assert ui()["export"]["openSections"] == ["video", "audio", "effects"]
+        refused({"export": {"openSections": ["multiplexer"]}}, "Multiplexer is a Video row")
+        refused({"export": {"openSections": "video"}}, "takes a list")
         win.export_dialog.close()
     finally:
         server.close()

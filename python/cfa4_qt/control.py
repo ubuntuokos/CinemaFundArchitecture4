@@ -762,7 +762,7 @@ class ControlServer(QObject):
         except RuntimeError:
             return None
         return {"preset": d.preset.currentData(), "format": d.format.currentData(), "path": d.path.text(), "range": d.range.currentData(),
-                "customStart": d.start.value(), "customEnd": d.end.value()}
+                "customStart": d.start.value(), "customEnd": d.end.value(), "openSections": d.open_sections()}
 
     def set_export(self, patch: Any) -> None:
         cur = self.export_state()
@@ -783,6 +783,13 @@ class ControlServer(QObject):
                 raise ControlError(f"export.{f} takes seconds")
         if "path" in patch and not isinstance(patch["path"], str):
             raise ControlError("export.path takes a file path")
+        sections = patch.get("openSections")
+        if "openSections" in patch:
+            if not isinstance(sections, list) or not all(isinstance(k, str) for k in sections):
+                raise ControlError(f"export.openSections takes a list of {', '.join(d.sections)}")
+            unknown = [k for k in sections if k not in d.sections]
+            if unknown:
+                raise ControlError(f"export.openSections: no section {unknown[0]!r} (sections: {', '.join(d.sections)}; the Multiplexer is a Video row)")
         # the preset first: it sets the format and the rest
         for f in ("preset", "format", "range"):
             if f in patch:
@@ -793,6 +800,8 @@ class ControlServer(QObject):
             d.start.setValue(float(patch["customStart"]))
         if "customEnd" in patch:
             d.end.setValue(float(patch["customEnd"]))
+        if "openSections" in patch:
+            d.set_open_sections(patch["openSections"])
 
     # ----- timeline hit-testing (egui's ``timeline::hit_json`` / ``locate``) -----
     def _canvas_point(self, p: dict[str, Any]) -> QPoint:

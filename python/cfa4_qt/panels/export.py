@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (
 
 from ..engine import EngineClient
 from ..i18n import N_, tr
-from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, MetadataSection
+from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, FoldBox, MetadataSection
 from .export_preview import PreviewColumn
 from .export_rows import ExportRows
 from .preset_manager import PresetManager
@@ -393,8 +393,10 @@ class ExportDialog(QDialog):
         f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Output file"), path_row)
         f.addRow(tr("Range"), range_row)
-        video = QGroupBox(tr("Video"), self)
-        fv = QFormLayout(video)
+        video = FoldBox("video", tr("Video"), self)
+        video.setObjectName("export.videoSection")
+        fv = QFormLayout(video.body)
+        fv.setContentsMargins(0, 0, 0, 0)
         fv.addRow(tr("Frame size"), size_row)
         fv.addRow(tr("Bitrate mode"), self.bitrate_mode)
         fv.addRow(tr("Target bitrate"), self.bitrate)
@@ -409,8 +411,10 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
-        audio = QGroupBox(tr("Audio"), self)
-        fa = QFormLayout(audio)
+        audio = FoldBox("audio", tr("Audio"), self)
+        audio.setObjectName("export.audioSection")
+        fa = QFormLayout(audio.body)
+        fa.setContentsMargins(0, 0, 0, 0)
         fa.addRow(self.audio)
         fa.addRow(tr("Audio codec"), self.audio_codec)
         fa.addRow(tr("Audio bitrate"), self.audio_bitrate)
@@ -419,6 +423,8 @@ class ExportDialog(QDialog):
         fa.addRow("", self.dcp_iab_info)
         fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
         self.rows = ExportRows(self, fv, fa)
+        # egui's ExportUi::open_sections (the Multiplexer is a Video row here)
+        self.sections: dict[str, FoldBox] = {"video": video, "audio": audio, "captions": self.captions, "effects": self.effects, "metadata": self.metadata}
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -930,6 +936,13 @@ class ExportDialog(QDialog):
         if not self._loading:
             self.touched.add(key)
         self._changed()
+
+    def open_sections(self) -> list[str]:
+        return [k for k, box in self.sections.items() if box.is_open()]
+
+    def set_open_sections(self, keys: list[str]) -> None:
+        for k, box in self.sections.items():
+            box.set_open(k in keys)
 
     def params(self) -> dict[str, Any]:
         """The export as engine parameters: the preset, overridden by the choices made here."""
