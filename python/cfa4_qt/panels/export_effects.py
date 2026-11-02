@@ -93,11 +93,12 @@ def _set(w: QWidget, value: Any) -> None:
 
 class FoldBox(QGroupBox):
     """An Export settings section that folds like egui's (``ExportUi::open_sections``): the
-    header button opens and closes it; the section's own layout goes on ``body``."""
+    header button opens and closes it; the section's own layout goes on ``body``. As in egui, only
+    Video and Audio start open."""
 
     toggled_open = Signal(bool)
 
-    def __init__(self, key: str, title: str, parent: QWidget | None = None) -> None:
+    def __init__(self, key: str, title: str, parent: QWidget | None = None, opened: bool = False) -> None:
         super().__init__(parent)
         self.key = key
         self.title_text = title
@@ -105,7 +106,7 @@ class FoldBox(QGroupBox):
         self.header.setObjectName(f"export.section.{key}")
         self.header.setAutoRaise(True)
         self.header.setCheckable(True)
-        self.header.setChecked(True)
+        self.header.setChecked(opened)
         self.header.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         f = self.header.font()
         f.setBold(True)
@@ -116,7 +117,7 @@ class FoldBox(QGroupBox):
         outer.addWidget(self.header)
         outer.addWidget(self.body)
         self.header.toggled.connect(self._toggled)
-        self._toggled(True)
+        self._toggled(opened)
 
     def _toggled(self, on: bool) -> None:
         self.header.setText(("▾ " if on else "▸ ") + self.title_text)

@@ -393,7 +393,7 @@ class ExportDialog(QDialog):
         f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Output file"), path_row)
         f.addRow(tr("Range"), range_row)
-        video = FoldBox("video", tr("Video"), self)
+        video = FoldBox("video", tr("Video"), self, opened=True)
         video.setObjectName("export.videoSection")
         fv = QFormLayout(video.body)
         fv.setContentsMargins(0, 0, 0, 0)
@@ -411,7 +411,7 @@ class ExportDialog(QDialog):
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
-        audio = FoldBox("audio", tr("Audio"), self)
+        audio = FoldBox("audio", tr("Audio"), self, opened=True)
         audio.setObjectName("export.audioSection")
         fa = QFormLayout(audio.body)
         fa.setContentsMargins(0, 0, 0, 0)

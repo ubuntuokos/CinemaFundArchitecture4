@@ -6282,8 +6282,8 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         assert e["range"] == "custom" and e["customStart"] == 2.0 and e["customEnd"] == 4.5 and e["path"].endswith("out.mp4")
         assert win.export_dialog.params()["range"] == "custom" and win.export_dialog.params()["startSeconds"] == 2.0
         refused({"export": {"range": "sideways"}}, "no 'sideways'")
-        # egui's open_sections: the settings sections fold; all open at first
-        assert e["openSections"] == ["video", "audio", "captions", "effects", "metadata"]
+        # egui's open_sections: the settings sections fold; Video and Audio open at first
+        assert e["openSections"] == ["video", "audio"]
         u = ok({"export": {"openSections": ["audio", "effects"]}})
         assert u["export"]["openSections"] == ["audio", "effects"]
         sections = win.export_dialog.sections
