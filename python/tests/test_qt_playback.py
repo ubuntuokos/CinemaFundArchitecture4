@@ -221,6 +221,11 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         mon.stop()
         p = stats()["playback"]
         assert p["playing"] is False and p["speed"] == 2.0, p
+        # the picture on screen counts as a frame only while it is that frame of the current edit
+        assert wait_until(app, lambda: mon._shows(mon.playhead), 20_000)
+        mon.revision += 1
+        assert not mon._shows(mon.playhead), "a picture from an older edit is stale"
+        mon.revision -= 1
     finally:
         win._quit_confirmed = True
         win.close()

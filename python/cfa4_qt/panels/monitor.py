@@ -1002,6 +1002,12 @@ class Monitor(QWidget):
             self.command.emit(command, {})
 
     # ----- frames -----
+
+    def _shows(self, t: int) -> bool:
+        """Whether the picture on screen is frame ``t`` of the current content: the same time,
+        edit revision, display mode and content, so stale pixels are not counted as shown."""
+        key = self._shown
+        return key is not None and key[0] == t and key[1] == self.revision and key[5] == self.mv.display and key[6] == self.content_key()
     def request_frame(self, at: int | None = None) -> None:
         if not self.has_content():
             return
@@ -1058,7 +1064,7 @@ class Monitor(QWidget):
                 par = result.get("pixelAspect")
                 self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
                 self._shown = key
-                if self.playing and key[0] == self.playhead:
+                if self.playing and self._shows(self.playhead):
                     self._meter_refresh(self.playhead // self.frame(), True)
         self._pump_frame()
 
@@ -1099,7 +1105,7 @@ class Monitor(QWidget):
             self.meter.start(self.speed)
             self._meter_speed = self.speed
             ft = self.frame()
-            self._meter_refresh(self.playhead // ft, self._shown is not None and self._shown[0] == self.playhead)
+            self._meter_refresh(self.playhead // ft, self._shows(self.playhead))
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
@@ -1229,7 +1235,7 @@ class Monitor(QWidget):
             self.scrub.set_playhead(frame_t)
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
-            self._meter_refresh(frame_t // ft, self._shown is not None and self._shown[0] == frame_t)
+            self._meter_refresh(frame_t // ft, self._shows(frame_t))
         self._feed_audio()
 
     # ----- audio -----
