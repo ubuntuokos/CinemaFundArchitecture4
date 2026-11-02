@@ -226,6 +226,20 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         mon.revision += 1
         assert not mon._shows(mon.playhead), "a picture from an older edit is stale"
         mon.revision -= 1
+        # a hidden monitor: neither the hidden frames nor the one due when it shows again count
+        mon.meter.start(1.0)
+        mon._meter_hidden = False
+        mon._meter_refresh(10, True)
+        mon.view.isVisible = lambda: False  # type: ignore[method-assign]
+        try:
+            mon._meter_refresh(40, False)
+            mon._meter_refresh(60, False)
+        finally:
+            del mon.view.isVisible
+        mon._meter_refresh(80, False)
+        mon._meter_refresh(81, True)
+        mon.meter.finish()
+        assert (mon.meter.shown, mon.meter.dropped) == (1, 1), (mon.meter.shown, mon.meter.dropped)
     finally:
         win._quit_confirmed = True
         win.close()

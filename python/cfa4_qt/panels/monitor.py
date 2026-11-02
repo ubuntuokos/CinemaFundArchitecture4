@@ -636,6 +636,7 @@ class Monitor(QWidget):
         self.dropped = 0
         self.meter = PlaybackMeter()  # perf.stats' shown / dropped
         self._meter_speed = 1.0  # the last playback's speed, for perf.stats after it stopped
+        self._meter_hidden = False  # the monitor was hidden at the last refresh (egui's clock.hidden)
         self._loop_restart = False  # a loop starts its range again: the same playback, counts kept
         self._clock = QElapsedTimer()
         self._play_from = 0
@@ -1104,6 +1105,7 @@ class Monitor(QWidget):
         if not self._loop_restart:
             self.meter.start(self.speed)
             self._meter_speed = self.speed
+            self._meter_hidden = False
             ft = self.frame()
             self._meter_refresh(self.playhead // ft, self._shows(self.playhead))
         self.transport.set_icon("toggle", "pause")
@@ -1142,11 +1144,16 @@ class Monitor(QWidget):
         self.rest_at = mark_out
 
     def _meter_refresh(self, frame: int, exact: bool) -> None:
-        # a hidden monitor shows nothing: go on from here without counting (egui's resync)
-        if self.view.isVisible():
-            self.meter.refresh(frame, exact)
-        else:
+        # a hidden monitor shows nothing: go on from here without counting (egui's resync), also
+        # at the first refresh once it is visible again, as egui's monitor does
+        if not self.view.isVisible():
+            self._meter_hidden = True
             self.meter.resync(frame, False)
+        elif self._meter_hidden:
+            self._meter_hidden = False
+            self.meter.resync(frame, exact)
+        else:
+            self.meter.refresh(frame, exact)
 
     def playback_stats(self) -> dict[str, Any]:
         """egui's ``perf.stats`` ``playback``: the playing state and the last (or current)
