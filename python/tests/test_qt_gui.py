@@ -6259,11 +6259,21 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         assert u["projectPanel"]["tabs"] == [] and u["projectPanel"]["activeTab"] is None
         refused({"projectPanel": {"activeTab": 3}}, "bin tabs")
         refused({"projectPanel": {"hover": 1}}, "unknown field")
+        # the open dialog (test_qt_control_panel_dialogs.py has each one)
+        u = ok({"projectPanel": {"dialog": {"savePresetAs": {"name": "Rough cut"}}}})
+        assert u["projectPanel"]["dialog"] == {"savePresetAs": {"name": "Rough cut"}} and win.project_panel.dialog[1].isVisible()
+        refused({"projectPanel": {"dialog": {"savePresetAs": {"title": "x"}}}}, "unknown field")
+        assert ok({"projectPanel": {"dialog": None}})["projectPanel"]["dialog"] is None
+        refused({"projectPanel": {"rename": {"item": 1, "bin": 2}}}, "an item or a bin")
         # Media Browser: open folders, the path being typed, the tree's width
         u = ok({"mediaBrowser": {"expanded": [str(tmp_path)], "treeWidth": 140}})
         assert u["mediaBrowser"]["expanded"] == [str(tmp_path)] and settings.value("mediaBrowser/expanded") == str(tmp_path)
         refused({"mediaBrowser": {"treeWidth": "wide"}}, "treeWidth")
         refused({"mediaBrowser": {"expanded": "/"}}, "expanded")
+        u = ok({"mediaBrowser": {"editColumns": ["Name", "Size"]}})
+        assert u["mediaBrowser"]["editColumns"] == ["Name", "Size"] and win.media_browser.columns_open()
+        refused({"mediaBrowser": {"editColumns": ["Mood"]}}, "no column")
+        assert ok({"mediaBrowser": {"editColumns": None}})["mediaBrowser"]["editColumns"] is None
         # Effect Controls keyframe selection: replaced
         keys = [{"clip": 3, "effect": 1, "param": "opacity", "time": 1000}, {"clip": 3, "effect": 0, "param": "mask", "mask": 0, "time": 0}]
         assert ok({"keyframeSelection": keys})["keyframeSelection"] == keys

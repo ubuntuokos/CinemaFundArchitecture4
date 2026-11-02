@@ -234,6 +234,7 @@ class MediaBrowserPanel(QWidget):
         self.data: dict[str, Any] = {}
         self.roots: dict[str, Any] = {}
         self.expanded: set[str] = set()
+        self.columns_dialog: EditColumnsDialog | None = None
         self.thumbs: OrderedDict[tuple[str, int, int], QPixmap] = OrderedDict()  # least recently used first
         self._thumbs_busy = 0
         self._wanted: list[tuple[str, float, int]] = []
@@ -651,13 +652,15 @@ class MediaBrowserPanel(QWidget):
         return {
             "expanded": sorted(self.expanded),
             "pathEdit": self.path.text() if self.path.hasFocus() else None,
+            "editColumns": list(self.columns_dialog.columns) if self.columns_dialog is not None and self.columns_open() else None,
             "treeWidth": sizes[0] if sizes else 0,
         }
 
     def set_ui_state(self, patch: dict[str, Any]) -> None:
-        """Merge ``patch`` ({expanded, pathEdit, treeWidth}) into the view state; ValueError names
-        a bad field (nothing is changed then)."""
-        known = ("expanded", "pathEdit", "treeWidth")
+        """Merge ``patch`` ({expanded, pathEdit, editColumns, treeWidth}) into the view state;
+        ``editColumns`` (the columns ticked in Edit Columns, in order, or null) opens, sets or
+        cancels that dialog. ValueError names a bad field (nothing is changed then)."""
+        known = ("expanded", "pathEdit", "editColumns", "treeWidth")
         bad = [k for k in patch if k not in known]
         if bad:
             raise ValueError(f"unknown field {bad[0]!r} (known: {', '.join(known)})")
@@ -670,6 +673,14 @@ class MediaBrowserPanel(QWidget):
         width = patch.get("treeWidth")
         if width is not None and (isinstance(width, bool) or not isinstance(width, (int, float)) or not 0 <= width <= 10_000):
             raise ValueError("treeWidth takes a width in pixels")
+        cols = patch.get("editColumns")
+        every = [str(c) for c in self.data.get("allColumns") or COLUMN_LABELS]
+        if cols is not None:
+            if not isinstance(cols, list) or not all(isinstance(c, str) for c in cols):
+                raise ValueError("editColumns takes a list of column names or null")
+            unknown = [c for c in cols if c not in every]
+            if unknown:
+                raise ValueError(f"editColumns: no column {unknown[0]!r} (columns: {', '.join(every)})")
         if "expanded" in patch:
             self.expanded = set(expanded)
             self._save_expanded()
@@ -682,6 +693,15 @@ class MediaBrowserPanel(QWidget):
             else:
                 self.path.setFocus()
                 self.path.setText(edit)
+        if "editColumns" in patch:
+            if cols is None:
+                if self.columns_dialog is not None and self.columns_open():
+                    self.columns_dialog.reject()
+            else:
+                self.edit_columns()
+                if self.columns_dialog is not None:
+                    self.columns_dialog.columns = list(dict.fromkeys(["Name", *cols] if "Name" in every else cols))
+                    self.columns_dialog._fill()
         if width is not None:
             sizes = self.split.sizes()
             total = sum(sizes)
@@ -896,10 +916,23 @@ class MediaBrowserPanel(QWidget):
         menu.exec(self.list.header().mapToGlobal(pos))
 
     def edit_columns(self) -> None:
+        """Open Edit Columns window-modal without a nested event loop, so the control channel
+        can read and set it (``ui.set {mediaBrowser: {editColumns}}``)."""
+        if self.columns_open():
+            return
         dialog = EditColumnsDialog([str(c) for c in self.data.get("columns") or []], [str(c) for c in self.data.get("allColumns") or COLUMN_LABELS], self)
         self.columns_dialog = dialog
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.settings_cmd({"columns": dialog.columns})
+        dialog.accepted.connect(lambda: self.settings_cmd({"columns": dialog.columns}))
+        dialog.finished.connect(lambda _r: self._columns_closed(dialog))
+        dialog.open()
+
+    def _columns_closed(self, dialog: EditColumnsDialog) -> None:
+        if self.columns_dialog is dialog:
+            self.columns_dialog = None
+        dialog.deleteLater()
+
+    def columns_open(self) -> bool:
+        return self.columns_dialog is not None and self.columns_dialog.isVisible()
 
     def _types_menu(self) -> None:
         menu = self.types.menu()
