@@ -168,6 +168,11 @@ class PlaybackMeter:
         else:
             self.dropped += 1
 
+    def resync(self, frame: int, exact: bool) -> None:
+        """Continue from ``frame`` without counting what happened since the last refresh (the
+        monitor was hidden, so nothing could be shown)."""
+        self.current = (frame, exact)
+
     def finish(self) -> None:
         """Playback stopped: account for the frame on screen."""
         if self.current is not None:
@@ -630,6 +635,8 @@ class Monitor(QWidget):
         self.rest_at: int | None = None  # …and rest the playhead here
         self.dropped = 0
         self.meter = PlaybackMeter()  # perf.stats' shown / dropped
+        self._meter_speed = 1.0  # the last playback's speed, for perf.stats after it stopped
+        self._loop_restart = False  # a loop starts its range again: the same playback, counts kept
         self._clock = QElapsedTimer()
         self._play_from = 0
         self._timer = QTimer(self)
@@ -1052,7 +1059,7 @@ class Monitor(QWidget):
                 self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
                 self._shown = key
                 if self.playing and key[0] == self.playhead:
-                    self.meter.refresh(self.playhead // self.frame(), True)
+                    self._meter_refresh(self.playhead // self.frame(), True)
         self._pump_frame()
 
     def _on_frame_error(self, message: str) -> None:
@@ -1088,7 +1095,11 @@ class Monitor(QWidget):
         self._read_draft_decode()
         self.dropped = 0
         self.view.dropped = 0
-        self.meter.start(self.speed)
+        if not self._loop_restart:
+            self.meter.start(self.speed)
+            self._meter_speed = self.speed
+            ft = self.frame()
+            self._meter_refresh(self.playhead // ft, self._shown is not None and self._shown[0] == self.playhead)
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
@@ -1124,13 +1135,20 @@ class Monitor(QWidget):
         self.stop_at = mark_out + self.frame() if mark_out is not None else None
         self.rest_at = mark_out
 
+    def _meter_refresh(self, frame: int, exact: bool) -> None:
+        # a hidden monitor shows nothing: go on from here without counting (egui's resync)
+        if self.view.isVisible():
+            self.meter.refresh(frame, exact)
+        else:
+            self.meter.resync(frame, False)
+
     def playback_stats(self) -> dict[str, Any]:
         """egui's ``perf.stats`` ``playback``: the playing state and the last (or current)
         playback's shown and dropped frames."""
         shown, dropped = self.meter.counts()
         return {
             "playing": self.playing,
-            "speed": self.speed,
+            "speed": self.speed if self.playing else self._meter_speed,
             "shown": shown,
             "dropped": dropped,
             "dropRate": dropped / (shown + dropped) if shown + dropped else 0.0,
@@ -1185,7 +1203,11 @@ class Monitor(QWidget):
                     lo = self._range_marks()[0]
                     self._halt()
                     self.playhead = lo
-                    self.play(self.speed)
+                    self._loop_restart = True
+                    try:
+                        self.play(self.speed)
+                    finally:
+                        self._loop_restart = False
                     return
                 self.playhead = max(start, limit - ft)
                 self.stop()
@@ -1207,7 +1229,7 @@ class Monitor(QWidget):
             self.scrub.set_playhead(frame_t)
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
-            self.meter.refresh(frame_t // ft, self._shown is not None and self._shown[0] == frame_t)
+            self._meter_refresh(frame_t // ft, self._shown is not None and self._shown[0] == frame_t)
         self._feed_audio()
 
     # ----- audio -----

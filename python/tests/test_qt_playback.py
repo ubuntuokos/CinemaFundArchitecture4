@@ -153,6 +153,13 @@ def test_playback_meter_counts_as_egui():
         m.refresh(f, True)
     m.finish()
     assert (m.shown, m.dropped) == (3, 1), "backwards: the skipped frame 7 is dropped"
+    m.start(1.0)  # egui's meter_resync_does_not_count_hidden_time
+    m.refresh(0, True)
+    m.resync(50, False)  # hidden from 1 to 49: neither shown nor dropped
+    m.refresh(50, True)
+    m.refresh(51, True)
+    m.finish()
+    assert (m.shown, m.dropped) == (2, 0)
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -196,10 +203,24 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         assert p["playing"] is False and p["shown"] >= during["shown"]
         assert p["dropRate"] == pytest.approx(p["dropped"] / (p["shown"] + p["dropped"]))
         assert "frames" in after or len(after) > 1, "the engine's own stats are kept"
-        # a new playback starts the counts again
+        # a loop starting its range again is the same playback: the counts go on
+        shown = mon.meter.counts()[0]
         mon.play()
-        assert mon.meter.counts() == (0, 0)
+        assert wait_until(app, lambda: mon.meter.counts()[0] >= 2, 30_000)
+        mon._halt()
+        mon._loop_restart = True
+        try:
+            mon.play()
+        finally:
+            mon._loop_restart = False
+        assert mon.meter.counts()[0] >= 2, "kept across the loop restart"
         mon.stop()
+        # a new playback starts the counts again (with the frame already on screen); the speed stays
+        mon.play(2.0)
+        assert mon.meter.counts()[0] + mon.meter.counts()[1] <= 1, (mon.meter.counts(), shown)
+        mon.stop()
+        p = stats()["playback"]
+        assert p["playing"] is False and p["speed"] == 2.0, p
     finally:
         win._quit_confirmed = True
         win.close()

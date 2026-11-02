@@ -421,7 +421,15 @@ class ControlServer(QObject):
                 out = dict(r) if isinstance(r, dict) else {}
                 out["playback"] = win.monitor.playback_stats()  # the Program monitor's, as egui
                 out["playback"]["source"] = win.source_monitor.playback_stats()
-                reply(True, out)
+
+                def draft(pref: Any, _b2: Any = None) -> None:
+                    # the preference itself: the monitors read it only when playback starts
+                    on = pref.get("value") if isinstance(pref, dict) else pref
+                    if isinstance(on, bool):
+                        out["playback"]["draftDecode"] = out["playback"]["source"]["draftDecode"] = on
+                    reply(True, out)
+
+                win.engine.execute("prefs.get", {"key": "playback.draftDecode"}, on_reply=draft, on_error=lambda _m: reply(True, out))
 
             win.engine.execute("perf.stats", {}, on_reply=stats, on_error=lambda m: reply(False, m))
         else:
