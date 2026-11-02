@@ -26,6 +26,7 @@ a terv új verziót kap (1.1).
 | E12 | Licenc ([`docs/licensing.md`](../licensing.md)) | NATS, Valkey | GPL-3.0-or-later; függőség csak GPL-3.0-kompatibilis | NATS-szerver: Apache-2.0, Valkey: BSD-3-Clause – kompatibilis; a kliens-crate-ek `cargo deny` ellenőrzése az F1 része |
 | E13 | Producer-azonosság (5.1, 12.1–12.2, 4.2) | a boríték `producer` mezőjét a kibocsátó tölti ki; hitelesített NATS-kapcsolat külön követelmény | – | A `producer` és a `producer_instance` a hitelesített kapcsolat identitásából származzon, vagy eltérésnél a Gateway utasítsa el (EF-1002/EF-2002) a routing előtt; különben a jogosultság és az audit hamisítható kibocsátóban bízhat |
 | E14 | Replay és idempotencia (9.1, 10.1–10.2) | idempotenciakulcs: `consumer_id + event_id`; replay projekció újraépítésére és új logika tesztjére | – | A visszajátszás külön Consumer-identitással vagy külön idempotencia-névtérrel (pl. `replay_id`) fusson, különben a korábban feldolgozott események duplikátumként kimaradnak; a 10.3 korlátozásai erre is vonatkoznak |
+| E15 | Eseményverzió jelölése (5.1, 6.2) | „a típus és a verzió külön mezőben szerepel”, de a 6.2 példái `.v1` utótagot írnak a típushoz, az 5.2 borítéka pedig `event_type: media.asset.ingested` + `event_version: 1` | – | Egy kanonikus alak: `event_type` verzió nélkül, a verzió csak az `event_version` mezőben; a `.vN` utótagos alak a `schema_id` (pl. `cfa4.media.asset.ingested.v1`). A katalógus, az ACL és a routing ugyanezt használja |
 
 ## 2. Nyitott kérdések
 
@@ -38,3 +39,4 @@ a terv új verziót kap (1.1).
 | Q5 | Kötelező legyen-e a `producer` mező hitelesített identitáshoz kötése (E13)? | Igen; a Gateway a kapcsolat identitásából tölti ki, eltérésnél elutasít |
 | Q6 | Hogyan fusson a replay az idempotencia mellett (E14)? | Külön replay-Consumer-identitás vagy külön idempotencia-névtér |
 | Q7 | Bekerüljön-e a mutációs fuzz-teszt a 20. pontba és a 25. kapuba (E11)? | Igen (`AGENTS.md` §0.8) |
+| Q8 | Melyik az eseménytípus kanonikus alakja (E15)? | `event_type` verzió nélkül; `.vN` csak a `schema_id`-ban |
