@@ -1297,6 +1297,11 @@ class ProgramMonitor(Monitor):
         self._ref_shown: tuple[Any, ...] | None = None
         self._ref_wanted = False
         self.grid.info_changed.connect(self._grid_info)
+        from .trim_monitor import TrimMonitor
+
+        # trim mode: the two-up Trim Monitor covers the Program monitor (egui's panels::show)
+        self.trim = TrimMonitor(engine, self)
+        self.trim.command.connect(self.command.emit)
         self._apply_view(request=False)
 
     def set_view(self, **changes: Any) -> None:
@@ -1464,6 +1469,11 @@ class ProgramMonitor(Monitor):
         if seq is not None and not self.playing and isinstance(seq.get("playhead"), int):
             self.playhead = seq["playhead"]
         self._content_changed()
+        self.trim.set_sequence(seq, revision)
+
+    def resizeEvent(self, e) -> None:
+        super().resizeEvent(e)
+        self.trim.setGeometry(self.rect())
 
     def has_content(self) -> bool:
         return self.sequence is not None

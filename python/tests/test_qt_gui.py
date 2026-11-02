@@ -2449,6 +2449,13 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg.dcp_iab_source.setText(str(bad))
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a Dolby Atmos TrueHD source (#347) is described by its length and objects, not frames
+        dlg._iab_probed = "atmos.thd"
+        dlg._on_iab_info("atmos.thd", {"container": "truehd", "seconds": 61.04, "sampleRate": 48000, "maxBedChannels": 1, "maxObjects": 15, "profileNotes": []})
+        info = dlg.dcp_iab_info.text()
+        assert "Dolby Atmos TrueHD" in info and "61.0" in info and "15" in info, info
+        assert "Dolby Atmos" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("file"))
+        assert ".mkv" in dlg.dcp_iab_source.placeholderText()
         # a saved preset brings its immersive audio back instead of resetting it to Off
         dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
         dlg.preset.addItem("IAB test", "IAB test")
@@ -2587,6 +2594,45 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
 
+
+
+def test_effect_controls_in_a_floating_dock_keeps_the_selected_clip(app):
+    """Regression (flaky ``test_real_engine_effect_controls_lane_as_egui`` under load): a refresh
+    asked while one was in flight re-read the selection from ``window()``, which for a floating
+    dock is the dock, so the panel emptied until the next edit."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply))
+            return 0
+
+    win = QtWidgets.QMainWindow()
+    dock = QtWidgets.QDockWidget("Effect Controls", win)
+    ec = EffectControlsPanel()
+    dock.setWidget(ec)
+    win.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+    dock.setFloating(True)
+    engine = Engine()
+    ec.attach(engine)
+    try:
+        assert ec.window() is dock and ec.main_window() is win
+        clip = {"clip": 5, "name": "A", "start": 0, "end": 1000, "playhead": 0, "frame": 100, "effects": []}
+        ec.refresh([5])
+        ec.refresh([5])  # the selection changed again while the first answer is on its way
+        command, _, reply = engine.pending.pop(0)
+        assert command == "effects.inspect"
+        reply(dict(clip), None)
+        assert [c for c, *_ in engine.pending] == ["effects.inspect"]  # asked again, for clip 5
+        engine.pending.pop(0)[2](dict(clip), None)
+        assert ec.clip_id == 5 and not engine.pending
+    finally:
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -3293,6 +3339,45 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_interpret_footage_turns_auro_decoding_off(app):
+    """Interpret Footage shows the Auro-3D switch for a carrier only (#323); OK sends it only
+    when it changed."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    assert box is not None and box.isHidden()
+    for answer in (None, {"carrier": False, "decoding": True}, "x"):
+        d._auro_info(answer)
+        assert box.isHidden()
+    d._auro_info({"carrier": True, "decoding": True})
+    assert not box.isHidden() and box.isChecked()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._auro_info({"carrier": True, "decoding": True})
+    d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro").setChecked(False)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": False, "items": [7]})
+    # carriers with mixed settings: partly checked and left alone, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    assert box.checkState() == QtCore.Qt.CheckState.PartiallyChecked
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    box.click()
+    assert box.checkState() == QtCore.Qt.CheckState.Checked and not box.isTristate()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": True, "items": [7, 8]})
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -4349,7 +4434,9 @@ def test_default_layout_follows_the_window_size(app, fake_engine: Path, tmp_path
         win.resize(*size)
         win.show()
         try:
-            wait_until(app, lambda: False, 400)
+            # the layout settles over a few deferred resizes; a fixed pause raced them under load
+            wait_until(app, lambda w=win: 0.33 <= w.docks["Timeline"].height() / max(1, w.height()) <= 0.48, 5_000)
+            wait_until(app, lambda: False, 100)
             share = win.docks["Timeline"].height() / win.height()
             assert 0.33 <= share <= 0.48, (size, share)
             left = win.docks["Source"].width() / win.width()

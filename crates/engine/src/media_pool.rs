@@ -86,9 +86,16 @@ pub const PROBE_WHOLE_FILE_MAX: u64 = 64 * 1024 * 1024;
 pub fn media_key(m: &MediaClip) -> String {
     match &m.media {
         MediaRef::File { path } if m.offline => format!("offline:{path}"),
+        MediaRef::File { path } if m.interpret.auro_as_carrier => format!("carrier:{path}"),
         MediaRef::File { path } => format!("file:{path}"),
         MediaRef::Generator(g) => format!("generator:{g:?}"),
     }
+}
+
+/// `src` as `m` interprets it: an Auro-3D carrier played as its own channels when Interpret
+/// Footage turned Auro-3D off (#323).
+pub fn interpreted(m: &MediaClip, src: SharedSource) -> SharedSource {
+    if m.interpret.auro_as_carrier { src.carrier().unwrap_or(src) } else { src }
 }
 
 /// Open the image sequence that `first` (a numbered still) starts: its frames from that number to
@@ -162,9 +169,17 @@ impl MediaPool {
 
     /// Cache a source opened from `path` for an item.
     pub fn insert_file(&self, item: ItemId, path: &str, src: SharedSource) {
+        self.insert_file_as(item, path, src, false);
+    }
+
+    /// [`insert_file`](Self::insert_file) for a source opened for an item that plays its
+    /// Auro-3D carrier (`carrier`, #323): cached under the key [`media_key`] gives that item, so
+    /// turning decoding back on opens the decoded source rather than reusing this one.
+    pub fn insert_file_as(&self, item: ItemId, path: &str, src: SharedSource, carrier: bool) {
         self.offline.write().unwrap_or_else(|e| e.into_inner()).remove(&item);
         let src = self.unsupported_as_slate(item, path, src);
-        self.sources.write().unwrap_or_else(|e| e.into_inner()).insert(item, (format!("file:{path}"), src));
+        let key = if carrier { format!("carrier:{path}") } else { format!("file:{path}") };
+        self.sources.write().unwrap_or_else(|e| e.into_inner()).insert(item, (key, src));
     }
 
     /// `src` (opened from `path` for `item`) showing the unreadable slate for the frames it
@@ -350,7 +365,7 @@ impl MediaPool {
             }) {
                 Ok(s) => {
                     self.offline.write().unwrap_or_else(|e| e.into_inner()).remove(&item);
-                    self.unsupported_as_slate(item, path, s)
+                    self.unsupported_as_slate(item, path, interpreted(m, s))
                 }
                 Err(_) if cfa4_media::pending::is_set() => {
                     // the host is still fetching the file's bytes: show the slate for now, retry later
@@ -373,7 +388,8 @@ impl MediaPool {
     }
 
     fn proxy_source(&self, item: ItemId, path: &str, m: &MediaClip, services: &dyn Services) -> Option<SharedSource> {
-        let key = format!("proxy:{path}");
+        // Interpret Footage > Auro-3D off plays a proxy's carrier too (#323), so the setting is in the key
+        let key = if m.interpret.auro_as_carrier { format!("proxy-carrier:{path}") } else { format!("proxy:{path}") };
         if let Some((k, s)) = self.proxies.read().unwrap_or_else(|e| e.into_inner()).get(&item)
             && *k == key
         {
@@ -381,13 +397,16 @@ impl MediaPool {
         }
         match self.follow_media(path).and_then(|file| self.open_file(&file, services)) {
             Ok(s) => {
+                let s = interpreted(m, s);
                 // a proxy with fewer audio streams than the original (say one track of an OBS
                 // recording's seven) still stands in for the picture; the audio comes from the
                 // original, so every clip keeps the stream it plays
                 let audio_from = if s.info().audio_streams.len() < m.info.audio_streams.len() {
                     log::warn!("proxy has fewer audio streams than the original: {path}; audio from full-resolution media");
                     match &m.media {
-                        MediaRef::File { path: original } if !m.offline => self.follow_media(original).and_then(|file| self.open_file(&file, services)).ok(),
+                        MediaRef::File { path: original } if !m.offline => {
+                            self.follow_media(original).and_then(|file| self.open_file(&file, services)).ok().map(|o| interpreted(m, o))
+                        }
                         _ => None,
                     }
                 } else {
@@ -542,6 +561,9 @@ impl MediaSource for UnsupportedAsSlate {
     }
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> cfa4_media::Result<AudioBuffer> {
         self.inner.audio_stream(stream, start, frames, sample_rate)
+    }
+    fn carrier(&self) -> Option<SharedSource> {
+        self.inner.carrier()
     }
 }
 
