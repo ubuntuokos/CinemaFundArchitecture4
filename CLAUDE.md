@@ -1,30 +1,34 @@
 # CFA4 — instructions for agents
 
-**CFA4 migration notice (overrides inherited platform/frontend instructions):** CFA4 is a
-Linux-only derivative of an upstream open-source video editor (see `NOTICE`). Rust/Cargo remain the media engine; Python and
-PySide6/Qt 6 are supported development components. Windows/macOS/FreeBSD/WASM release
-targets are excluded. See `docs/development/linux.md` and the CFA4-specific top
-section of `AGENTS.md`. The following instructions are inherited upstream
-engineering context; references to pure-Rust-only frontends, upstream release processes
-or macOS/Windows targets do not override this CFA4 direction.
+**CFA4 notice:** CFA4 is a Linux-only derivative of an upstream open-source video editor (see `NOTICE`).
+Platform, licence and backend rules are in the CFA4 section at the top of [`AGENTS.md`](AGENTS.md); setup is in
+[`docs/development/linux.md`](docs/development/linux.md). The inherited engineering context below does not
+override them (pure-Rust-only frontends, upstream release processes, macOS/Windows/WASM targets).
 
 ## Start every session here
 `plan/` is maintainer-local (gitignored, not in the repo). Each step names the public equivalent to use if you don't have it.
 1. Read `plan/STATUS.md` (current milestone, next unchecked task, blockers). Public: [`ROADMAP.md`](ROADMAP.md), then [`docs/gaps.md`](docs/gaps.md) (ranked shortfalls) and [`docs/roadmap.md`](docs/roadmap.md) (current focus).
 2. Read the task in `plan/execution-plan.md` §3, the relevant section of `plan/architecture.md`, and the README/docs of the crate you touch. Public: [`docs/architecture.md`](docs/architecture.md), [`docs/contributing.md`](docs/contributing.md), [`docs/testing.md`](docs/testing.md). Visual/behaviour reference: `plan/premiere/` (local only, never committed).
-3. Follow the autonomous operation protocol (`plan/execution-plan.md` §7; public summary: [`docs/agents.md`](docs/agents.md) §5–7). Don't stop to ask unless it lists the decision as the user's.
+3. Follow the autonomous operation protocol (`plan/execution-plan.md` §7; public summary: [`docs/agents.md`](docs/agents.md) §5–7) **inside your own project** (owner decision, 2026-10-31): the owner-approved plan, ADR or issue your session was started on. Within it, pick the next task yourself in a logical order; **never take a task from another project**. Report an overlap or conflict with another project to the merge coordinator ([`docs/coordination.md`](docs/coordination.md) §2.8); the owner and the coordinator decide together, and that decision stands. Otherwise don't stop to ask unless it lists the decision as the user's.
 
 ## Non-negotiables
 **Read [`AGENTS.md`](AGENTS.md) first; its rules override everything here.**
-- **Never crash** ([`AGENTS.md`](AGENTS.md) §0). People depend on CFA4; a crash loses their work, so this outranks feature work. No `unwrap`/`expect`/`panic!`/`unreachable!`/`todo!`/`unimplemented!` or `unsafe` outside tests: return `Result<T, E>` and propagate with `?` (`ok_or`, `let … else`, `if let`). Treat every number from media, project files, presets or CLI/MCP/control params as hostile: `get()` instead of `[i]`, checked/saturating math, no division by possibly-zero values, capped allocations, bounded recursion. `lock().unwrap_or_else(PoisonError::into_inner)`; background jobs run under `catch_unwind`. The panic hook + UI `catch_unwind` (`crates/ui-egui/src/crash.rs`) are the last-resort guard, not a licence. Every crash fix gets a regression test that panicked before. In particular (§1): never use Adobe iconography, images or any other Adobe asset. Every asset must be openly licensed (OSS / public domain / Creative Commons, or original work by a contributor) and must have a `<file>.attribution` sidecar plus an entry in `ATTRIBUTION.md`. `cargo xtask assets` enforces this.
-- **Fonts** live in an external font directory, never in this repo (no new font files here; [`AGENTS.md`](AGENTS.md) §1.9). Build with them: `CFA4_FONTS_DIR=/path/to/extra-fonts cargo run -p cfa4` (`crates/text/build.rs` embeds them as `cfa4_text::fonts::CFA4_FONTS`, used for Japanese in the UI and titles). Unset, `CFA4_FONTS` is empty and everything must still build, test and run; never add extra-fonts to a `Cargo.toml`. Tests on its glyphs skip when it is empty, so run the gates with and without `CFA4_FONTS_DIR` when you touch fonts.
-- **Clean-room.** Never read/disassemble anything inside Adobe app bundles (names/listings only). Never copy Adobe icons, presets, LUTs, fonts. CFA4 is GPL-3.0-or-later: GPL-3.0-compatible code may be reused with intact headers and a register entry (`docs/licensing.md` §3, §5); never GPL-2.0-only (HandBrake), AGPL or proprietary code; dependencies must pass `cargo deny check licenses`. FFmpeg (≥ 9.0.2) is linked or shipped only as a supplementary backend via the planned `cfa4-ffmpeg` crate under [`docs/adr/ADR-0005-media-backends.md`](docs/adr/ADR-0005-media-backends.md) (GPL-3 build, never `--enable-nonfree`, no copied FFmpeg source); the pinned ffmpeg/ffprobe 9.0.2 CLI stays an external test oracle / fixture generator.
-- **Pure Rust** in the product. OS media APIs only via Rust bindings in `crates/platform` (hardware decoding; the one crate allowed `unsafe`, see `AGENTS.md` §0.3 and `docs/adr/0001-platform-ffi.md`), optional, behind traits, with our decoders as the fallback. **CFA4 exceptions:** our own engine is the base; supplementary backends (FFmpeg ≥ 9.0.2, GStreamer: Ubuntu's by default, an isolated CFA4 runtime in `/opt/cfa4/gstreamer` only when a feature needs a newer version; later more engines) are chosen by the automatic task router `cfa4-route` (ADR 0004), never called directly ([ADR 0005](docs/adr/ADR-0005-media-backends.md)); the optional GStreamer backend `crates/gstreamer` (safe gstreamer-rs API, no `unsafe`, feature `gstreamer` off by default in dev builds; release packages build with it and depend on Ubuntu's GStreamer packages (Depends core libs, Recommends plugins); [`docs/adr/ADR-0002-gstreamer-backend.md`](docs/adr/ADR-0002-gstreamer-backend.md)). Build/test it with `cargo test -p cfa4-gstreamer --features gstreamer` (needs `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`).
+- **The rules in [`AGENTS.md`](AGENTS.md)**, each kept only there: never crash (§0; outranks feature work), assets
+  and attribution (§1; no Adobe assets, `cargo xtask assets`), fonts (§1.9), clean-room (§2), and licence, media
+  backends, GStreamer and GPU vendor neutrality (CFA4 section at the top).
+- **Fonts, in practice:** `CFA4_FONTS_DIR=/path/to/extra-fonts cargo run -p cfa4` (used for Japanese in the UI
+  and titles). Tests on its glyphs skip when it is empty, so run the gates with and without `CFA4_FONTS_DIR` when
+  you touch fonts.
+- **Pure Rust** in the product. OS media APIs only via Rust bindings in `crates/platform` (`AGENTS.md` §0.3,
+  `docs/adr/0001-platform-ffi.md`), optional, behind traits, with our decoders as the fallback. The exceptions
+  (FFmpeg, GStreamer via the `cfa4-route` router) are in the `AGENTS.md` CFA4 section. GStreamer build/test:
+  `cargo test -p cfa4-gstreamer --features gstreamer` (needs `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`).
 - **Layering** ([`docs/architecture.md`](docs/architecture.md) §1, enforced by `cargo xtask layers`): nothing below L5 depends on egui/eframe/winit/rfd/cpal. L0 codec/container crates depend only on `cfa4-bitstream`.
 - **Exact time:** all time is `cfa4_time::Tick` (254 016 000 000/s). Never use f64 seconds for edit math.
 - **Everything is a command** (`crates/engine`): id, label, menu path, shortcut, params, enabled(), run(). UI, CLI, control channel and MCP all dispatch by id.
 - **Everything is agent-drivable:** every interactive widget registers an automation id; UI state is serde so the control channel can read/set it.
-- **Quality gates** before every commit: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo xtask layers`, `cargo xtask assets`, `cargo xtask wasm` (checks L0–L4 crates). `cargo xtask ci` runs them all.
+- **Quality gates** before every commit: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo xtask layers`, `cargo xtask assets`. `cargo xtask ci` runs all of them except the tests (run `cargo test --workspace` separately). `cargo xtask wasm` is opt-in legacy, not a gate (WASM is not a CFA4 target; [`docs/development/linux.md`](docs/development/linux.md)).
+- **Python / Qt:** environment setup in [`docs/development/linux.md`](docs/development/linux.md) (`.venv`, `--require-hashes`). Checks as in CI: `.venv/bin/python -m ruff check python` and `.venv/bin/python -m pytest -q python/tests --ignore=python/tests/test_qt_gui.py`; the Qt GUI tests (`test_qt_gui.py`) run but don't block until the Qt6 GUI is finished ([`docs/coordination.md`](docs/coordination.md) §3.4).
 - **Commits:** one task id per commit (`M2.4: CABAC residual decoding`). Only green states. End messages with the attribution line required by the environment.
 
 ## Running and looking at the app

@@ -23,9 +23,10 @@ description: |-
   and export; GPU compositing (wgpu).
   Includes cfa4-cli, a headless command runner, MCP server and exporter.
 
-# The binaries link only glibc and libgcc_s directly. Windowing (X11/Wayland, xkbcommon) and the
-# GPU (Vulkan, EGL/GL) are loaded at runtime, so they are dependencies/recommendations here
-# rather than ELF NEEDED entries. Measured on Ubuntu 26.04: docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md.
+# The binaries link glibc, libgcc_s and, since ADR 0002 step 6 (owner decision 2026-10-25), the
+# system GStreamer libraries (LGPL-2.1-or-later, from Ubuntu's archive, never bundled). Windowing
+# (X11/Wayland, xkbcommon) and the GPU (Vulkan, EGL/GL) are loaded at runtime, so they are
+# dependencies/recommendations here rather than ELF NEEDED entries. Measured on Ubuntu 26.04: docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md.
 overrides:
   deb:
     depends:
@@ -34,6 +35,9 @@ overrides:
       - libxkbcommon0
       - libvulkan1 | libegl1
       - libasound2 | libasound2t64
+      # GStreamer supplementary backend (ADR 0002): linked by the release build, from Ubuntu.
+      - libgstreamer1.0-0
+      - libgstreamer-plugins-base1.0-0
     recommends:
       - libwayland-client0
       - libx11-6
@@ -54,6 +58,12 @@ overrides:
       - libheif-plugin-libde265
       - libheif-plugin-x265
       - xdg-desktop-portal
+      # GStreamer plugins (ADR 0002): demuxers/decoders for import, and the VA-API encoders
+      # (vah264enc, vah265enc, vaav1enc in plugins-bad) for AMD / Intel hardware export. Without
+      # them the router falls back to the next backend. No ugly / libav sets (AGENTS.md).
+      - gstreamer1.0-plugins-base
+      - gstreamer1.0-plugins-good
+      - gstreamer1.0-plugins-bad
 contents:
   - src: ${STAGE}/usr/bin/cfa4
     dst: /usr/bin/cfa4

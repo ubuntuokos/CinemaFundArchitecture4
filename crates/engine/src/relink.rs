@@ -238,7 +238,9 @@ pub fn check_candidate(s: &Session, item: ItemId, path: &str, o: &MatchOptions) 
         }
     }
     if c.problems.is_empty() {
-        match s.media.open_file(path, &*s.services) {
+        // opened as the item interprets it: a carrier played as its own channels is compared
+        // (and relinked) as one (#323)
+        match s.media.open_file(path, &*s.services).map(|src| crate::media_pool::interpreted(m, src)) {
             Ok(src) => {
                 let info = src.info().clone();
                 let fd = m.info.frame_rate().frame_duration();
@@ -323,8 +325,9 @@ struct Plan {
 /// Apply planned relinks as one undo step.
 fn apply(s: &mut Session, plans: Vec<Plan>, align_timecode: bool, label: &str) -> Result<Vec<Value>> {
     let rows: Vec<Value> = plans.iter().map(|p| json!({"item": p.item.0, "path": p.cand.path})).collect();
-    let sources: Vec<(ItemId, String, cfa4_media::SharedSource)> =
-        plans.iter().filter_map(|p| p.cand.source.clone().map(|src| (p.item, p.cand.path.clone(), src))).collect();
+    let carrier = |i: ItemId| s.project.item(i).and_then(|it| it.as_media()).is_some_and(|m| m.interpret.auro_as_carrier);
+    let sources: Vec<(ItemId, String, cfa4_media::SharedSource, bool)> =
+        plans.iter().filter_map(|p| p.cand.source.clone().map(|src| (p.item, p.cand.path.clone(), src, carrier(p.item)))).collect();
     s.edit(label, |proj, _| {
         for p in &plans {
             let Some(m) = proj.item_mut(p.item).and_then(|i| i.as_media_mut()) else { continue };
@@ -357,8 +360,8 @@ fn apply(s: &mut Session, plans: Vec<Plan>, align_timecode: bool, label: &str) -
     for p in &plans {
         s.media.allow(&p.cand.path);
     }
-    for (item, path, src) in sources {
-        s.media.insert_file(item, &path, src);
+    for (item, path, src, carrier) in sources {
+        s.media.insert_file_as(item, &path, src, carrier);
     }
     let gone: Vec<ItemId> = plans.iter().map(|p| p.item).collect();
     s.offline.missing.retain(|i| !gone.contains(i));
@@ -421,6 +424,10 @@ pub fn relink(s: &mut Session, p: &Value) -> Result<Value> {
         // and let the item take the new file's own info instead of keeping the old file's.
         let Ok(src) = s.media.open_file(&path, &*s.services) else {
             return Err(EngineError::Other(format!("{path} can't be opened")));
+        };
+        let src = match s.project.item(item).and_then(|i| i.as_media()) {
+            Some(m) => crate::media_pool::interpreted(m, src),
+            None => src,
         };
         c.info = Some(src.info().clone());
         c.source = Some(src);

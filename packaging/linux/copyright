@@ -23,7 +23,7 @@ Copyright: The Inter Project Authors; The JetBrains Mono Project Authors;
 License: OFL-1.1
  See /usr/share/doc/cfa4/OFL-Inter.txt, OFL-JetBrainsMono.txt and OFL-NotoSerif.txt.
 
-Files: code derived from upstream craft-libs (see NOTICE)
+Files: code derived from the upstream work (see NOTICE)
 Copyright: Upstream contributors
 License: MIT or Apache-2.0
  See /usr/share/doc/cfa4/LICENSE-MIT and LICENSE-APACHE.

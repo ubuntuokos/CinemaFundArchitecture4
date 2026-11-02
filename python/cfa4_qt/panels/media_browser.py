@@ -645,6 +645,50 @@ class MediaBrowserPanel(QWidget):
         if self.engine is not None and getattr(self.engine, "running", False):
             self.engine.execute("mediaBrowser.list", {"path": path, "fileTypes": "all"}, on_reply=got)
 
+    # ----- view state for the control channel (egui's ``MediaBrowserUi``) -----
+    def ui_state(self) -> dict[str, Any]:
+        sizes = self.split.sizes()
+        return {
+            "expanded": sorted(self.expanded),
+            "pathEdit": self.path.text() if self.path.hasFocus() else None,
+            "treeWidth": sizes[0] if sizes else 0,
+        }
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch`` ({expanded, pathEdit, treeWidth}) into the view state; ValueError names
+        a bad field (nothing is changed then)."""
+        known = ("expanded", "pathEdit", "treeWidth")
+        bad = [k for k in patch if k not in known]
+        if bad:
+            raise ValueError(f"unknown field {bad[0]!r} (known: {', '.join(known)})")
+        expanded = patch.get("expanded", sorted(self.expanded))
+        if not isinstance(expanded, list) or not all(isinstance(x, str) for x in expanded):
+            raise ValueError("expanded takes a list of folder paths")
+        edit = patch.get("pathEdit")
+        if edit is not None and not isinstance(edit, str):
+            raise ValueError("pathEdit takes a string or null")
+        width = patch.get("treeWidth")
+        if width is not None and (isinstance(width, bool) or not isinstance(width, (int, float)) or not 0 <= width <= 10_000):
+            raise ValueError("treeWidth takes a width in pixels")
+        if "expanded" in patch:
+            self.expanded = set(expanded)
+            self._save_expanded()
+            roots, self.roots = self.roots, {"": None}  # rebuild the tree with these folders open
+            self.set_roots(roots)
+        if "pathEdit" in patch:
+            if edit is None:
+                self.path.clearFocus()
+                self.path.setText(str(self.data.get("dir") or ""))
+            else:
+                self.path.setFocus()
+                self.path.setText(edit)
+        if width is not None:
+            sizes = self.split.sizes()
+            total = sum(sizes)
+            if len(sizes) == 2 and total > 0:
+                w = min(round(width), total)
+                self.split.setSizes([w, total - w])
+
     def _save_expanded(self) -> None:
         if self.settings is not None:
             self.settings.setValue("mediaBrowser/expanded", "\n".join(sorted(self.expanded)))
