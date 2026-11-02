@@ -7051,6 +7051,38 @@ def test_export_preview_scaling_geometry():
     assert picture_rect(pic, 0, 0, "scaleToFit") == pic, "no source size: the whole frame"
 
 
+def test_export_summary_box_in_hungarian(app):
+    """The Summary box shows the engine's English Summary translated, with decimal commas."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.export_preview import PreviewColumn
+
+    TR.set_language("hu")
+    try:
+        col = PreviewColumn()
+        answer = {
+            "output": {"width": 720, "height": 576},
+            "source": "Sequence, 720x576",
+            "range": {"seconds": 12.5},
+            "summary": {
+                "format": "MPEG-2 (Program Stream)",
+                "video": "720x576 (1.07), 25 fps, Upper First, MPEG-2 Main Profile 4:2:0, average 6.00 Mbps, keyframe every 12 frames, no B pictures",
+                "audio": "Uncompressed 16-bit PCM, 48000 Hz, Stereo",
+                "estimated_size": "1.2 GB",
+            },
+        }
+        col.show_resolved(answer, "/tmp/out.mpg", "Teljes szekvencia", False)
+        assert col.lines["format"].text() == "MPEG-2 (programfolyam)"
+        assert col.lines["video"].text() == (
+            "720×576 (1,07), 25 fps, Felső mező először, MPEG-2 Main profil, 4:2:0, átlag 6,00 Mbps, "
+            "kulcskocka 12 képkockánként, B-képek nélkül"
+        )
+        assert col.lines["audio"].text() == "tömörítetlen 16 bites PCM, 48000 Hz, Sztereó"
+        assert col.lines["range"].text() == "Teljes szekvencia (12,50 mp)"
+        assert col.estimate.text() == "Becsült fájlméret: 1,2 GB"
+    finally:
+        TR.set_language("en")
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_preview_column_as_egui(app, tmp_path: Path):
     """egui's Export preview column: the sequence frame at the playhead in the output's aspect,
