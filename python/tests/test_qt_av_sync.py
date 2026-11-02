@@ -15,7 +15,6 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 QtCore = pytest.importorskip("PySide6.QtCore")
 QtWidgets = pytest.importorskip("PySide6.QtWidgets")
-QtMultimedia = pytest.importorskip("PySide6.QtMultimedia")
 
 from cfa4_qt.engine import EngineClient, locate_engine
 
@@ -47,25 +46,16 @@ def wait_until(app, predicate, timeout_ms: int = 10_000) -> bool:
     return True
 
 
-class FakeDevice:
-    """An output that takes any format (the test machine has no sound server)."""
-
-    def isNull(self) -> bool:
-        return False
-
-    def isFormatSupported(self, _fmt: Any) -> bool:
-        return True
-
-
 class FakeSink:
-    """A QAudioSink whose played time the test sets: ``us`` is what the device has played."""
+    """A QAudioSink whose played time the test sets: ``us`` is what the device has played (the
+    test machine may have no sound server, nor QtMultimedia's PulseAudio library)."""
 
     made: list[FakeSink] = []  # noqa: RUF012 - the test reads the sinks the monitor opened
 
-    def __init__(self, _device: Any, fmt: Any, _parent: Any) -> None:
-        self.rate = fmt.sampleRate()
+    def __init__(self, rate: int) -> None:
+        self.rate = rate
         self.us = 0
-        self.size = 0
+        self.size = int(rate * 8 * 0.7)  # as the monitor sizes the real one
         self.written = bytearray()
         self.failed = False
         self.stopped = False
@@ -96,8 +86,7 @@ class FakeSink:
         return self.us
 
     def error(self) -> Any:
-        e = QtMultimedia.QAudio.Error
-        return e.FatalError if self.failed else e.NoError
+        return "fatal" if self.failed else "none"
 
     def stop(self) -> None:
         self.stopped = True
@@ -118,7 +107,7 @@ def test_real_engine_picture_follows_the_sound_as_egui(app, tmp_path: Path, monk
     from cfa4_qt.main_window import MainWindow
     from cfa4_qt.timecode import frame_ticks
 
-    monkeypatch.setattr(monitor_mod, "output_device", lambda _name: FakeDevice())
+    monkeypatch.setattr(monitor_mod, "SINK_FAILURES", ("fatal",))
     FakeSink.made.clear()
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
@@ -127,7 +116,7 @@ def test_real_engine_picture_follows_the_sound_as_egui(app, tmp_path: Path, monk
     win.show()
     engine.start()
     mon = win.monitor
-    mon.sink_factory = FakeSink
+    mon.make_sink = lambda rate: FakeSink(rate)
     server = ControlServer(win)
     notes: list[str] = []
     mon.message.connect(notes.append)

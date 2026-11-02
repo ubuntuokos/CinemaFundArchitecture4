@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import math
 from collections import deque
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QElapsedTimer, QEvent, QMimeData, QPointF, QRect, QRectF, QSettings, Qt, QTimer, Signal
@@ -102,6 +103,10 @@ AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 MAX_SPEED = 8.0
+# the sink errors that end its clock (an underrun is not one)
+SINK_FAILURES: tuple[Any, ...] = (
+    (QAudio.Error.OpenError, QAudio.Error.IOError, QAudio.Error.FatalError) if HAVE_AUDIO else ()
+)
 # A device that consumes no samples for this long hands the clock back to the wall clock (egui's).
 AUDIO_STALL_S = 1.0
 GREEN = QColor(0x4C, 0xC0, 0x5A)
@@ -593,7 +598,8 @@ class Monitor(QWidget):
         self.audio_clock = False
         self._audio_seen = (0, 0)  # (µs the device had played, wall ns when that changed)
         self._audio_given = False  # the device has been given sound since play()
-        self.sink_factory: Any = QAudioSink if HAVE_AUDIO else None  # (tests put a fake device here)
+        # opens the output device for a sample rate (None: none); tests put a fake device here
+        self.make_sink: Callable[[int], Any] = self._open_sink
         self._audio_next = 0
         self._audio_busy = False
         self._audio_rate = 48000
@@ -1158,8 +1164,8 @@ class Monitor(QWidget):
         # the clock restarts with the sound, from the playhead (also when the output changes)
         self._play_from = self.playhead
         self._clock.restart()
-        if HAVE_AUDIO:
-            self._open_sink(rate)
+        self._sink = self.make_sink(rate)
+        self._sink_io = self._sink.start() if self._sink is not None else None
         self.audio_clock = self._sink is not None
         self._audio_seen = (0, 0)
         self._audio_given = False
@@ -1180,7 +1186,7 @@ class Monitor(QWidget):
             return
         sink = self._sink
         now = int(self._clock.nsecsElapsed())
-        failed = sink is None or (HAVE_AUDIO and sink.error() in (QAudio.Error.OpenError, QAudio.Error.IOError, QAudio.Error.FatalError))
+        failed = sink is None or sink.error() in SINK_FAILURES
         if failed:
             self._wall_clock_from(self.playhead)
             self.message.emit(tr("Audio output failed: playing without sound (check Settings ▸ Audio Hardware)"))
@@ -1209,24 +1215,28 @@ class Monitor(QWidget):
         heard = self.play_sample() * TICKS_PER_SECOND // self._audio_rate
         return int(heard - self.playhead) if self.speed > 0 else int(self.playhead - heard)
 
-    def _open_sink(self, rate: int) -> None:
+    def _open_sink(self, rate: int) -> Any:
+        """A QAudioSink on Settings ▸ Audio Hardware ▸ Default Output at ``rate`` (stereo float),
+        sized for the lead; None without QtMultimedia or a device that takes the format."""
+        if not HAVE_AUDIO:
+            return None
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
         fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
         device = output_device(self.audio_output)
         if device.isNull() or not device.isFormatSupported(fmt):
-            return  # silent: the meters still play
-        self._sink = self.sink_factory(device, fmt, self)
-        self._sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
-        self._sink_io = self._sink.start()
+            return None  # silent: the meters still play
+        sink = QAudioSink(device, fmt, self)
+        sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
+        return sink
 
     def set_audio_output(self, name: str) -> None:
         """Play through another output; playback that is running moves to it at once."""
         if name == self.audio_output:
             return
         self.audio_output = name
-        if self.playing and self.speed == 1.0 and HAVE_AUDIO:
+        if self.playing and self.speed == 1.0:
             self._stop_audio()
             self._start_audio()
 
