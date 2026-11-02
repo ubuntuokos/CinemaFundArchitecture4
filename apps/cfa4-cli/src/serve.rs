@@ -679,7 +679,21 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
             Err(e) => Reply::err(id, e),
         },
         "frame.render" => match render_frame(s, &params) {
-            Ok((meta, bytes)) => Reply::with_binary(id, meta, bytes),
+            Ok((mut meta, bytes)) => match params.get("shm").and_then(Value::as_str) {
+                // through shared memory when the client asks; a frame that cannot go there is
+                // sent as usual (with the reason, so the client can stop asking)
+                Some(ring) => match crate::serve_shm::put(ring, &bytes) {
+                    Ok(shm) => {
+                        meta["shm"] = shm;
+                        Reply::ok(id, meta)
+                    }
+                    Err(e) => {
+                        meta["shmError"] = json!(e);
+                        Reply::with_binary(id, meta, bytes)
+                    }
+                },
+                None => Reply::with_binary(id, meta, bytes),
+            },
             Err(e) => Reply::err(id, e),
         },
         "scopes.image" => match time_param(s, &params).and_then(|t| crate::serve_scopes::image(s, &params, t)) {
@@ -827,6 +841,7 @@ pub fn run(mut s: Session) {
         }
     }
     s.shutdown();
+    crate::serve_shm::cleanup();
 }
 
 #[cfg(test)]
@@ -1012,6 +1027,31 @@ mod tests {
         // without `meter`, no meter
         let plain = handle(&mut s, json!(4), "audio.render", json!({"start": 0, "frames": 480})).expect("reply");
         assert!(plain.json["result"].get("meter").is_none());
+    }
+
+    #[test]
+    fn frames_go_through_shared_memory_when_asked() {
+        let mut s = Session::default();
+        let _ = s.execute("file.openDemoProject", json!({}));
+        let piped = handle(&mut s, json!(1), "frame.render", json!({"maxWidth": 96, "seconds": 1.0})).expect("reply");
+        let bytes = piped.binary.clone().expect("frame through the pipe");
+        let shared = handle(&mut s, json!(2), "frame.render", json!({"maxWidth": 96, "seconds": 1.0, "shm": "program"})).expect("reply");
+        assert_eq!(shared.json["ok"], json!(true), "{}", shared.json);
+        assert!(shared.binary.is_none() && shared.json.get("binary").is_none(), "no binary tail");
+        let info = &shared.json["result"]["shm"];
+        assert_eq!(
+            (shared.json["result"]["w"].clone(), shared.json["result"]["h"].clone()),
+            (piped.json["result"]["w"].clone(), piped.json["result"]["h"].clone())
+        );
+        let file = std::fs::read(info["path"].as_str().unwrap_or_default()).expect("the ring file");
+        let (o, n) = (info["offset"].as_u64().unwrap_or(0) as usize, info["len"].as_u64().unwrap_or(0) as usize);
+        assert_eq!(file.get(o..o + n), Some(&bytes[..]), "the same frame");
+        // a ring that cannot be: the frame comes through the pipe, with the reason
+        let bad = handle(&mut s, json!(3), "frame.render", json!({"maxWidth": 96, "seconds": 1.0, "shm": "../x"})).expect("reply");
+        assert_eq!(bad.binary.as_deref(), Some(&bytes[..]));
+        assert!(bad.json["result"]["shmError"].is_string());
+        crate::serve_shm::cleanup();
+        assert!(!std::path::Path::new(info["path"].as_str().unwrap_or_default()).exists());
     }
 
     #[test]
