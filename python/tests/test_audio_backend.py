@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from cfa4_qt.audio_backend import apply, choose, pipewire_config_dirs, pulse_server_reachable
+from cfa4_qt.audio_backend import apply, choose, pipewire_config_dirs
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,37 +29,30 @@ def test_config_dirs_follow_libpipewire(tmp_path: Path) -> None:
         Path("/usr/share/pipewire")]
 
 
-def test_pulse_server_reachable(tmp_path: Path) -> None:
-    assert pulse_server_reachable({"PULSE_SERVER": "tcp:host"})
-    assert not pulse_server_reachable({"XDG_RUNTIME_DIR": str(tmp_path)})
-    (tmp_path / "pulse").mkdir()
-    (tmp_path / "pulse" / "native").touch()
-    assert pulse_server_reachable({"XDG_RUNTIME_DIR": str(tmp_path)})
-    assert not pulse_server_reachable({"XDG_RUNTIME_DIR": str(tmp_path), "PULSE_RUNTIME_PATH": str(tmp_path / "x")})
-    assert not pulse_server_reachable({})
 
-
-def test_choose_forces_a_backend_only_for_pipewire_without_its_client_config(tmp_path: Path) -> None:
-    empty = {"PIPEWIRE_CONFIG_DIR": str(tmp_path), "PULSE_SERVER": "unix:/run/pulse"}
+def test_choose_moves_qt_off_pipewire_only_without_its_client_config(tmp_path: Path) -> None:
+    empty = {"PIPEWIRE_CONFIG_DIR": str(tmp_path)}
     # no libpipewire: Qt never picks PipeWire
     assert choose(dict(empty), libs("pulse")) is None
-    # libpipewire without client.conf: PulseAudio (pipewire-pulse) when its server answers, else ALSA
+    # libpipewire without client.conf: off PipeWire (Qt then tries PulseAudio, then ALSA)
     assert choose(dict(empty), libs("pipewire-0.3", "pulse")) == "pulseaudio"
-    assert choose({"PIPEWIRE_CONFIG_DIR": str(tmp_path)}, libs("pipewire-0.3", "pulse")) == "alsa"
-    assert choose(dict(empty), libs("pipewire-0.3")) == "alsa"
-    # the user's own choice is kept
-    assert choose({**empty, "QT_AUDIO_BACKEND": "pipewire"}, libs("pipewire-0.3")) is None
-    # with its configuration PipeWire is safe
+    assert choose(dict(empty), libs("pipewire-0.3")) == "pulseaudio"
+    # even when the user named PipeWire: it would crash (AGENTS §0)
+    assert choose({**empty, "QT_AUDIO_BACKEND": "pipewire"}, libs("pipewire-0.3")) == "pulseaudio"
+    # another backend the user chose is kept: Qt does not touch PipeWire then
+    assert choose({**empty, "QT_AUDIO_BACKEND": "alsa"}, libs("pipewire-0.3")) is None
+    # with its configuration PipeWire is safe, also when named
     (tmp_path / "client.conf").write_text("context.properties = {}\n", encoding="utf-8")
     assert choose(dict(empty), libs("pipewire-0.3", "pulse")) is None
+    assert choose({**empty, "QT_AUDIO_BACKEND": "pipewire"}, libs("pipewire-0.3")) is None
 
 
 def test_apply_sets_the_variable_and_says_why(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(ctypes.util, "find_library", libs("pipewire-0.3"))
     env = {"PIPEWIRE_CONFIG_DIR": str(tmp_path)}
     said: list[str] = []
-    assert apply(env, said.append) == "alsa"
-    assert env["QT_AUDIO_BACKEND"] == "alsa" and "client.conf" in said[0]
+    assert apply(env, said.append) == "pulseaudio"
+    assert env["QT_AUDIO_BACKEND"] == "pulseaudio" and "client.conf" in said[0]
     assert apply(env, said.append) is None and len(said) == 1
 
 
@@ -73,7 +66,10 @@ def test_qt_audio_query_survives_pipewire_without_config(tmp_path: Path) -> None
         "from PySide6.QtWidgets import QApplication; app = QApplication([])\n"
         "from PySide6.QtMultimedia import QMediaDevices; QMediaDevices.defaultAudioOutput(); print('alive')\n"
     )
-    env = {k: v for k, v in os.environ.items() if k != "QT_AUDIO_BACKEND"}
-    env.update(PIPEWIRE_CONFIG_DIR=str(tmp_path / "none"), QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(ROOT / "python"))
-    run = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=120, check=False)
-    assert run.returncode == 0 and "alive" in run.stdout, run.stdout + run.stderr
+    for named in (None, "pipewire"):  # Qt's own choice, and the user naming PipeWire
+        env = {k: v for k, v in os.environ.items() if k != "QT_AUDIO_BACKEND"}
+        env.update(PIPEWIRE_CONFIG_DIR=str(tmp_path / "none"), QT_QPA_PLATFORM="offscreen", PYTHONPATH=str(ROOT / "python"))
+        if named:
+            env["QT_AUDIO_BACKEND"] = named
+        run = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, timeout=120, check=False)
+        assert run.returncode == 0 and "alive" in run.stdout, (named, run.stdout + run.stderr)
