@@ -208,12 +208,14 @@ def test_real_engine_perf_stats_counts_shown_and_dropped_frames(app, tmp_path: P
         mon.play()
         assert wait_until(app, lambda: mon.meter.counts()[0] >= 2, 30_000)
         mon._halt()
+        mon.playhead = 0
         mon._loop_restart = True
         try:
             mon.play()
         finally:
             mon._loop_restart = False
         assert mon.meter.counts()[0] >= 2, "kept across the loop restart"
+        assert mon.meter.current is not None and mon.meter.current[0] == 0, "the loop's first frame falls due"
         mon.stop()
         # a new playback starts the counts again (with the frame already on screen); the speed stays
         mon.play(2.0)

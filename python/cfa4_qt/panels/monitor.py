@@ -1106,8 +1106,8 @@ class Monitor(QWidget):
             self.meter.start(self.speed)
             self._meter_speed = self.speed
             self._meter_hidden = False
-            ft = self.frame()
-            self._meter_refresh(self.playhead // ft, self._shows(self.playhead))
+        # the first frame due (a loop's start too: the jump back is not a drop, the frame counts)
+        self._meter_refresh(self.playhead // self.frame(), self._shows(self.playhead))
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
