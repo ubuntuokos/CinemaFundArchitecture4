@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
             mon.attach_settings(self.settings)
             self.tools.tool_selected.connect(lambda tool, m=mon: m.view.set_hand(tool == "hand"))
             mon.run.connect(self.run_preset)
-            mon.message.connect(lambda m: self.events.log(m, error=True))
+            mon.message.connect(lambda m: (self.events.log(m, error=True), self.statusBar().showMessage(m, 6000)))
             mon.status.connect(lambda m: self.statusBar().showMessage(m, 6000))
             mon.program_peer = self.monitor
         self.meters = AudioMetersPanel(self)
