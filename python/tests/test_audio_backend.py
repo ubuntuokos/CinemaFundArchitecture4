@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from cfa4_qt.audio_backend import apply, choose, pipewire_config_dirs
+from cfa4_qt.audio_backend import apply, choose, client_config_paths, pipewire_config_dirs
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -28,6 +28,18 @@ def test_config_dirs_follow_libpipewire(tmp_path: Path) -> None:
     assert pipewire_config_dirs({"PIPEWIRE_NO_CONFIG": "true", "PIPEWIRE_CONFIG_DIR": str(tmp_path)}) == [
         Path("/usr/share/pipewire")]
 
+
+
+def test_client_config_paths_follow_the_name_and_prefix_overrides(tmp_path: Path) -> None:
+    base = {"PIPEWIRE_CONFIG_DIR": str(tmp_path)}
+    assert client_config_paths(base) == [tmp_path / "client.conf"]
+    assert client_config_paths({**base, "PIPEWIRE_CONFIG_NAME": "cfa4.conf"}) == [tmp_path / "cfa4.conf"]
+    assert client_config_paths({**base, "PIPEWIRE_CONFIG_PREFIX": "p"}) == [tmp_path / "p" / "client.conf"]
+    assert client_config_paths({**base, "PIPEWIRE_CONFIG_NAME": "/x/y.conf"}) == [Path("/x/y.conf")]
+    # a valid custom configuration keeps PipeWire
+    (tmp_path / "cfa4.conf").write_text("context.properties = {}\n", encoding="utf-8")
+    assert choose({**base, "PIPEWIRE_CONFIG_NAME": "cfa4.conf"}, libs("pipewire-0.3")) is None
+    assert choose(dict(base), libs("pipewire-0.3")) == "pulseaudio"
 
 
 def test_choose_moves_qt_off_pipewire_only_without_its_client_config(tmp_path: Path) -> None:

@@ -43,6 +43,19 @@ def pipewire_config_dirs(environ: MutableMapping[str, str]) -> list[Path]:
     return [Path(config_home) / "pipewire", Path("/etc/pipewire"), DATA_DIR]
 
 
+def client_config_paths(environ: MutableMapping[str, str]) -> list[Path]:
+    """The client configuration files libpipewire would read: ``client.conf``, or the file that
+    ``PIPEWIRE_CONFIG_NAME`` names (an absolute path is taken as it is), under each directory's
+    ``PIPEWIRE_CONFIG_PREFIX`` subdirectory when one is set."""
+    name = environ.get("PIPEWIRE_CONFIG_NAME", "").strip() or CLIENT_CONF
+    if Path(name).is_absolute():
+        return [Path(name)]
+    prefix = environ.get("PIPEWIRE_CONFIG_PREFIX", "").strip()
+    if prefix and Path(prefix).is_absolute():
+        return [Path(prefix) / name]
+    return [(d / prefix / name) if prefix else (d / name) for d in pipewire_config_dirs(environ)]
+
+
 def choose(environ: MutableMapping[str, str], find_library: Callable[[str], str | None] | None = None) -> str | None:
     """The backend to force, or ``None`` when Qt's choice is safe (or the user chose another)."""
     find_library = find_library or ctypes.util.find_library
@@ -51,7 +64,7 @@ def choose(environ: MutableMapping[str, str], find_library: Callable[[str], str 
         return None  # Qt does not use PipeWire then
     if not find_library("pipewire-0.3"):
         return None
-    if any((d / CLIENT_CONF).is_file() for d in pipewire_config_dirs(environ)):
+    if any(path.is_file() for path in client_config_paths(environ)):
         return None
     return FALLBACK
 
@@ -68,4 +81,4 @@ def apply(environ: MutableMapping[str, str] | None = None, log: Callable[[str], 
     return backend
 
 
-__all__ = ["apply", "choose", "pipewire_config_dirs"]
+__all__ = ["apply", "choose", "client_config_paths", "pipewire_config_dirs"]
