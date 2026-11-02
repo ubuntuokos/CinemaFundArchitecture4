@@ -102,6 +102,16 @@ AUDIO_LEAD_SECONDS = 0.35
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 MAX_SPEED = 8.0
+# Shuttling forward at these speeds is heard (pitch-corrected by Preferences ▸ Audio ▸ Maintain
+# pitch while shuttling); faster, slower and backwards it is silent (egui's shuttle_mix_rate).
+SHUTTLE_SOUND = (0.5, 4.0)
+
+
+def shuttle_sounds(speed: float) -> bool:
+    """Whether playback at ``speed`` is heard (1×, or shuttling at 0.5–4× forward)."""
+    return SHUTTLE_SOUND[0] <= speed <= SHUTTLE_SOUND[1]
+
+
 GREEN = QColor(0x4C, 0xC0, 0x5A)
 YELLOW = QColor(0xF0, 0xC8, 0x40)
 
@@ -589,6 +599,10 @@ class Monitor(QWidget):
         self._audio_next = 0
         self._audio_busy = False
         self._audio_rate = 48000
+        # the rate the engine mixes the timeline at: the device rate, or device rate / speed while
+        # shuttling (J / L at 0.5–4×, egui's shuttle sound); the sink always plays at the device rate
+        self._mix_rate = 48000
+        self._audio_on = False
         self._audio_channels = 2
         self._audio_pending = b""
         self.audio_generation = 0  # bumped when the played blocks restart (a new pass, a loop)
@@ -1021,12 +1035,12 @@ class Monitor(QWidget):
         self.transport.set_icon("toggle", "pause")
         self._play_from = self.playhead
         self._clock.start()
-        if self.speed == 1.0:
+        if shuttle_sounds(self.speed):
             self._start_audio()
-            if self.target == "program" and not self._automation_pass:
-                # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)
-                self._automation_pass = True
-                self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
+        if self.speed == 1.0 and self.target == "program" and not self._automation_pass:
+            # Audio Track Mixer: an automation pass runs while playing forward in real time (egui's)
+            self._automation_pass = True
+            self.command.emit("mixer.recordStart", {"time": int(self.playhead)})
         self._timer.start()
         self.playback_started.emit()
 
@@ -1055,6 +1069,7 @@ class Monitor(QWidget):
 
     def _halt(self) -> None:
         self.playing = False
+        self._audio_on = False
         self._timer.stop()
         self._stop_audio()
         if self._automation_pass:  # writes the pass's fader moves (also on a loop or a speed change)
@@ -1140,8 +1155,10 @@ class Monitor(QWidget):
             return
         rate = self.sample_rate()
         self._audio_rate = rate
+        self._mix_rate = rate if self.speed == 1.0 else max(1, round(rate / self.speed))
+        self._audio_on = True
         self._audio_channels = 2
-        self._audio_next = self.playhead * rate // TICKS_PER_SECOND
+        self._audio_next = self.playhead * self._mix_rate // TICKS_PER_SECOND
         self._audio_pending = b""
         self._audio_busy = False
         self.meter_blocks.clear()
@@ -1168,7 +1185,7 @@ class Monitor(QWidget):
         if name == self.audio_output:
             return
         self.audio_output = name
-        if self.playing and self.speed == 1.0 and HAVE_AUDIO:
+        if self.playing and self._audio_on and HAVE_AUDIO:
             self._stop_audio()
             self._start_audio()
 
@@ -1181,8 +1198,9 @@ class Monitor(QWidget):
         self._audio_pending = b""
 
     def _feed_audio(self) -> None:
-        # Audio plays at normal speed only (play() starts it then); shuttle speeds stay silent.
-        if not self.playing or self.speed != 1.0 or not self.engine.running:
+        # Audio plays at 1× and while shuttling at 0.5–4× forward (play() starts it then); other
+        # speeds stay silent, as egui's. ``_audio_next`` counts frames at the mix rate.
+        if not self.playing or not self._audio_on or not self.engine.running:
             return
         if self._sink is not None and self._sink_io is not None:
             if self._audio_pending:
@@ -1193,16 +1211,20 @@ class Monitor(QWidget):
                 self._audio_pending
             ) // frame_bytes
         else:  # no device: keep just ahead of the clock, for the meters
-            queued = self._audio_next - self.play_sample()
+            t = self._play_from + int(self._clock.nsecsElapsed() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+            queued = self._audio_next - t * self._mix_rate // TICKS_PER_SECOND
         if self._audio_busy or queued > self._audio_rate * AUDIO_LEAD_SECONDS:
             return
         frames = int(self._audio_rate * AUDIO_CHUNK_SECONDS)
         self._audio_busy = True
         start = self._audio_next
         self._audio_next += frames
+        params = {**self.audio_params(start, frames), "meter": True}
+        if self.speed != 1.0:  # shuttling: no meters (egui's), the engine plays it faster
+            params = {**self.audio_params(start, frames), "speed": self.speed}
         self.engine.call(
             "audio.render",
-            {**self.audio_params(start, frames), "meter": True},
+            params,
             on_reply=self._on_audio,
             on_error=lambda _m: setattr(self, "_audio_busy", False),
         )
