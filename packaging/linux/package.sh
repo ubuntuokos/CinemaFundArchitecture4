@@ -183,7 +183,8 @@ if has appimage; then
 fi
 
 "$STAGE/usr/bin/cfa4-cli" --version
-PYTHONPATH="$QT_PY" python3 -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIRS[1].name == "shared"' \
+# -P: the staged package, never a checkout's python/ that the caller's directory would put first
+PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIRS[1].name == "shared"' \
   || { echo "error: the staged Qt GUI does not find its shared catalogs" >&2; exit 1; }
 echo "==> done"
 ls -lh "$DIST"
