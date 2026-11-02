@@ -756,6 +756,8 @@ pub fn handle(s: &mut Session, id: Value, method: &str, params: Value) -> Option
                 "canUndo": s.history.can_undo(),
                 "canRedo": s.history.can_redo(),
                 "playhead": s.playhead().0,
+                // a project opened with missing media: the frontend opens Link Media (egui's)
+                "linkMediaPrompt": s.offline.prompt,
             }),
         ),
         "app.quit" => return None,

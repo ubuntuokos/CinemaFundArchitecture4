@@ -910,6 +910,8 @@ class BinView(QWidget):
         self.own_mode = mode  # a tab's own view (None: the panel's View setting)
         self.own_size = icon_size
         self.data: dict[str, Any] = {}
+        self._held: Any = None  # project.panel data waiting for an in-place rename to finish
+        self._watched: list[QAbstractItemView] = []
         self.expanded: set[int] = set()
         self.selected_bin: int | None = None
         self.hover: tuple[Any, int] | None = None
@@ -1185,6 +1187,12 @@ class BinView(QWidget):
         )
 
     def set_data(self, data: Any) -> None:
+        if self._renaming():
+            # rebuilding the rows would drop the rename being typed (New Bin's name, another
+            # panel's edit arriving meanwhile): the latest data waits until the editor closes
+            self._held = data
+            return
+        self._held = None
         self.data = data if isinstance(data, dict) else {}
         rows = [r for r in self.data.get("rows") or [] if isinstance(r, dict)]
         selection = {i for i in self.data.get("selection") or [] if isinstance(i, int)}
@@ -1203,6 +1211,20 @@ class BinView(QWidget):
         self._update_head(selection)
         if self.top is not None:
             self.panel._update_tab_names()
+
+    def _renaming(self) -> bool:
+        view = self.icons if self.mode == "icon" else self.tree if self.mode == "list" else None
+        if view is None or view.state() != QAbstractItemView.State.EditingState:
+            return False
+        if view not in self._watched:
+            self._watched.append(view)
+            view.itemDelegate().closeEditor.connect(lambda *_a: QTimer.singleShot(0, self, self._release_held))
+        return True
+
+    def _release_held(self) -> None:
+        held = getattr(self, "_held", None)
+        if held is not None and not self._renaming():
+            self.set_data(held)
 
     def _load_arrangements(self) -> None:
         engine = self.panel.engine
@@ -1893,6 +1915,86 @@ class ProjectPanel(QWidget):
         bv.refresh()
         self._update_tab_names()
         self.tabs.setCurrentIndex(i)
+
+    # ----- view state for the control channel (egui's ``ProjectPanelUi``) -----
+    def _opened(self) -> list[tuple[BinView, bool, QWidget | None]]:
+        """Bins opened in tabs, then in windows: (view, floating, window)."""
+        out: list[tuple[BinView, bool, QWidget | None]] = []
+        for i in range(1, self.stack.count()):
+            v = self.stack.widget(i)
+            if isinstance(v, BinView):
+                out.append((v, False, None))
+        for w in self.windows:
+            v = w.findChild(BinView)
+            if isinstance(v, BinView):
+                out.append((v, True, w))
+        return out
+
+    def ui_state(self) -> dict[str, Any]:
+        tabs = [{"bin": v.top, "floating": floating, "view": v.mode, "iconSize": v.icon_size, "nav": v.bin if v.bin != v.top else None}
+                for v, floating, _w in self._opened()]
+        i = self.tabs.currentIndex()
+        return {"bin": self.main.bin, "tabs": tabs, "activeTab": i - 1 if i > 0 else None, "selectedBin": self.shown().selected_bin}
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch`` ({bin, tabs, activeTab, selectedBin}) into the view state: ``tabs``
+        opens and closes bin tabs and windows to match the list. ValueError names a bad field."""
+        def bin_id(v: Any) -> bool:
+            return v is None or (isinstance(v, int) and not isinstance(v, bool) and v >= 0)
+
+        known = ("bin", "tabs", "activeTab", "selectedBin")
+        bad = [k for k in patch if k not in known]
+        if bad:
+            raise ValueError(f"unknown field {bad[0]!r} (known: {', '.join(known)})")
+        for k in ("bin", "selectedBin", "activeTab"):
+            if not bin_id(patch.get(k)):
+                raise ValueError(f"{k} takes an id or null")
+        tabs = patch.get("tabs")
+        wanted: list[dict[str, Any]] = []
+        if tabs is not None:
+            if not isinstance(tabs, list) or len(tabs) > 64:
+                raise ValueError("tabs takes a list of {bin, floating, view, iconSize, nav}")
+            for t in tabs:
+                if not isinstance(t, dict) or not isinstance(t.get("bin"), int) or isinstance(t.get("bin"), bool) or not bin_id(t.get("nav")):
+                    raise ValueError("each tab needs a bin id")
+                if t.get("view", "list") not in ("list", "icon", "freeform"):
+                    raise ValueError("a tab's view is list, icon or freeform")
+                size = t.get("iconSize", 110)
+                if isinstance(size, bool) or not isinstance(size, (int, float)):
+                    raise TypeError("a tab's iconSize is a number")
+                wanted.append({"bin": t["bin"], "floating": t.get("floating") is True, "view": t.get("view", "list"),
+                               "iconSize": int(min(MAX_ICON, max(MIN_ICON, size))), "nav": t.get("nav")})
+        if "bin" in patch:
+            self.main.navigate(patch["bin"])
+        if tabs is not None:
+            have = self._opened()
+            keep = 0  # the opened bins that already match the list's start stay
+            while keep < min(len(have), len(wanted)) and (have[keep][0].top, have[keep][1]) == (wanted[keep]["bin"], wanted[keep]["floating"]):
+                keep += 1
+            for v, floating, w in reversed(have[keep:]):
+                if floating and w is not None:
+                    self.windows.remove(w)
+                    w.close()
+                else:
+                    self.close_tab(self.stack.indexOf(v))
+            for t in wanted[keep:]:
+                self.open_bin(self.main, t["bin"], "newWindow" if t["floating"] else "newTab")
+            for (v, _f, _w), t in zip(self._opened(), wanted):
+                if (v.own_mode, v.own_size) != (t["view"], t["iconSize"]):
+                    v.own_mode, v.own_size = t["view"], t["iconSize"]
+                    v.refresh()
+                if t["nav"] is not None and v.bin != t["nav"]:
+                    v.navigate(t["nav"])
+        if "activeTab" in patch:
+            a = patch["activeTab"]
+            count = self.stack.count() - 1
+            if a is not None and a >= count:
+                raise ValueError(f"activeTab: there are {count} bin tabs")
+            self.tabs.setCurrentIndex(0 if a is None else a + 1)
+        if "selectedBin" in patch:
+            v = self.shown()
+            v.selected_bin = patch["selectedBin"]
+            v.refresh()
 
     def close_tab(self, index: int) -> None:
         if index <= 0 or index >= self.stack.count():

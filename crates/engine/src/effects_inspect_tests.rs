@@ -336,3 +336,125 @@ fn inspect_reports_where_automatic_points_are() {
     assert_eq!(param(&v, "motion", "position")["auto"], json!([f64::from(w) / 2.0, f64::from(h) / 2.0]));
     assert!(param(&v, "motion", "scale").get("auto").is_none(), "points only");
 }
+
+#[test]
+fn program_overlay_reports_the_graphic_layers_at_the_playhead() {
+    // the Qt Program monitor's graphics tools: each layer's box and matrices, the selection and
+    // where a new layer goes
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let g = &s.execute("program.overlay", json!({})).unwrap()["graphics"];
+    assert_eq!(g["canvasTarget"]["clip"], json!(null));
+    assert_eq!(g["canvasTarget"]["toFrame"], json!([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]));
+    let made = s.execute("graphics.newShape", json!({"shape": "rectangle", "position": [960, 540], "size": [400, 200], "time": 0})).unwrap();
+    let clip = made["clip"].as_u64().unwrap();
+    s.execute("graphics.newText", json!({"clip": clip, "text": "Hi", "position": [100, 200]})).unwrap();
+    s.execute("graphics.selectLayer", json!({"clip": clip, "layers": [1]})).unwrap();
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let layers = g["layers"].as_array().unwrap();
+    assert_eq!(layers.len(), 2);
+    // front-most first: the text added last
+    assert_eq!((layers[0]["layer"].as_u64(), layers[0]["text"]["text"].as_str()), (Some(1), Some("Hi")));
+    assert_eq!(layers[0]["text"]["paragraph"], json!(false));
+    // its caret stops, in characters: before H, between, after i
+    let line = &layers[0]["text"]["lines"][0];
+    assert_eq!((line["start"].as_u64(), line["end"].as_u64()), (Some(0), Some(2)));
+    let stops: Vec<u64> = line["carets"].as_array().unwrap().iter().map(|c| c[0].as_u64().unwrap()).collect();
+    assert_eq!(stops, vec![0, 1, 2]);
+    assert_eq!(layers[1]["shape"]["shape"], json!(0));
+    assert_eq!(layers[1]["shape"]["size"], json!([400.0, 200.0]));
+    assert_eq!(layers[1]["position"], json!([960.0, 540.0]));
+    assert_eq!(layers[1]["toFrame"].as_array().unwrap().len(), 6);
+    assert_eq!(layers[1]["local"].as_array().unwrap().len(), 4);
+    assert_eq!((g["clip"].as_u64(), g["selectedLayers"].clone()), (Some(clip), json!([1])));
+    assert_eq!(g["canvasTarget"]["clip"].as_u64(), Some(clip));
+    // a rolling graphic: the boxes move with the roll, as the renderer draws them
+    let before = layers[1]["toFrame"].clone();
+    s.execute("graphics.setRoll", json!({"clip": clip, "mode": "roll", "startOffScreen": true})).unwrap();
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let rolled = g["layers"].as_array().unwrap().iter().find(|l| l["layer"] == 0).unwrap();
+    assert_ne!(rolled["toFrame"], before, "the roll offset moves the box");
+    // ...but Position stays the authored one, so a drag edits what the layer was given
+    assert_eq!(rolled["position"], json!([960.0, 540.0]), "{rolled}");
+}
+
+#[test]
+fn program_overlay_graphic_boxes_follow_motion_through_a_frame_hold() {
+    // Hold Filters off on a graphic: its Motion keeps animating as rendered, so the layer boxes
+    // and the canvas target follow the effect time, not the held media time
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let made = s.execute("graphics.newShape", json!({"shape": "rectangle", "position": [960, 540], "size": [400, 200], "time": 0})).unwrap();
+    let clip = made["clip"].as_u64().unwrap();
+    let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
+    for (t, val) in [(it.start, 50.0), (it.end() - Tick(1), 150.0)] {
+        s.execute("effects.setParam", json!({"clip": clip, "effect": "motion", "param": "scale", "value": val, "keyframe": true, "time": t.0})).unwrap();
+    }
+    s.execute("timeline.select", json!({"clips": [clip]})).unwrap();
+    s.execute("clip.frameHoldOptions", json!({"clips": [clip], "holdOn": "in", "holdFilters": false})).unwrap();
+    let scale = |s: &mut Session, t: Tick| {
+        s.execute("playhead.set", json!({"time": t.0})).unwrap();
+        let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+        let layer = g["layers"][0]["canvasToFrame"][0].as_f64().unwrap();
+        let target = g["canvasTarget"]["toFrame"][0].as_f64().unwrap();
+        (layer, target)
+    };
+    let (early, late) = (scale(&mut s, it.start + Tick(it.duration.0 / 10)), scale(&mut s, it.end() - Tick(it.duration.0 / 10)));
+    assert!(late.0 > early.0 * 1.5, "layer box: {early:?} → {late:?}");
+    assert!(late.1 > early.1 * 1.5, "canvas target: {early:?} → {late:?}");
+}
+
+#[test]
+fn program_overlay_text_is_the_source_text_while_an_animator_shows_part_of_it() {
+    // a typewriter shows "HE" of "HELLO": the monitor's text editor starts from the overlay's
+    // text and writes it back, so it must be the whole Source Text
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let made = s.execute("graphics.newText", json!({"text": "HELLO", "position": [960, 540], "time": 0})).unwrap();
+    let clip = made["clip"].as_u64().unwrap();
+    s.execute("graphics.selectLayer", json!({"clip": clip, "layers": [0]})).unwrap();
+    s.execute("graphics.textAnimator.typewriter", json!({"clip": clip, "duration": 2.0})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.clone();
+    s.execute("playhead.set", json!({"time": (it.start + Tick::from_seconds_f64(0.8)).0})).unwrap();
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let text = &g["layers"][0]["text"];
+    assert_eq!(text["text"], json!("HELLO"), "{text}");
+    let last = text["lines"][0]["carets"].as_array().unwrap().last().unwrap()[0].as_u64();
+    assert_eq!(last, Some(5), "caret stops over the whole text: {text}");
+}
+
+#[test]
+fn program_overlay_text_is_read_at_the_responsive_design_time() {
+    // Codex review regression: with Responsive Design – Time the picture reads the layer at the
+    // remapped time, so the editor's text and font size must come from that time too
+    let mut s = demo();
+    s.execute("playhead.set", json!({"time": 0})).unwrap();
+    let made = s.execute("graphics.newText", json!({"text": "A", "position": [960, 540], "time": 0, "seconds": 5})).unwrap();
+    let clip = ClipId(made["clip"].as_u64().unwrap());
+    let sec = Tick::from_seconds_f64;
+    // Font Size 100 → 500 over the designed five seconds
+    s.edit_sequence("kf", |q, _, _| {
+        let (_, it) = q.find_item_mut(clip).ok_or_else(|| EngineError::Other("no clip".into()))?;
+        let si = it.source_in;
+        let e = it.effects.iter_mut().find(|e| e.effect == cfa4_project::graphic::TEXT_LAYER).ok_or_else(|| EngineError::Other("no text".into()))?;
+        let p = e.params.get_mut("size").ok_or_else(|| EngineError::Other("no size".into()))?;
+        p.toggle_animation(si);
+        p.set_at(si, cfa4_project::ParamValue::Float(100.0));
+        p.set_at(si + sec(5.0), cfa4_project::ParamValue::Float(500.0));
+        Ok(())
+    })
+    .unwrap();
+    s.execute("graphics.setResponsiveTime", json!({"clip": clip.0, "introSeconds": 1, "outroSeconds": 1})).unwrap();
+    // ten seconds long: the middle is stretched, so five seconds in is earlier in the design
+    let rate = s.sequence_rate();
+    let frames = rate.frame_at(sec(5.0));
+    s.execute("timeline.trim", json!({"clip": clip.0, "edge": "out", "deltaFrames": frames})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(clip).unwrap().1.clone();
+    s.execute("playhead.set", json!({"time": (it.start + sec(5.0)).0})).unwrap();
+    let drawn = cfa4_render::graphic_clip::item_layer_specs(&it, it.effect_time_at(s.playhead()), (1920, 1080));
+    let cfa4_project::graphic::LayerContent::Text(tp) = &drawn[0].1.content else { panic!("a text layer") };
+    let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+    let size = g["layers"][0]["text"]["size"].as_f64().unwrap();
+    assert!((size - f64::from(tp.size)).abs() < 0.01, "editor {size} vs drawn {}", tp.size);
+    assert!(size < 450.0, "the design time runs behind the clip time (500 at five seconds): {size}");
+}
