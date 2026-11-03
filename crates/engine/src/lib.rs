@@ -54,6 +54,7 @@ pub mod remix;
 pub mod scene_detect;
 pub mod scopes;
 pub mod sequence_extras;
+pub mod sequence_profiles;
 pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
@@ -1313,6 +1314,8 @@ mod roll_linked_tests;
 mod scopes_tests;
 #[cfg(test)]
 mod sequence_inspect_tests;
+#[cfg(test)]
+mod sequence_profiles_tests;
 #[cfg(test)]
 mod sequence_tabs_tests;
 #[cfg(test)]
