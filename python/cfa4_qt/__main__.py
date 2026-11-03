@@ -44,6 +44,11 @@ def main(argv: list[str] | None = None) -> int:
         from .desktop_entry import install
 
         return 0 if install() else 1
+    # before anything loads Qt Multimedia: a PipeWire library without its client configuration
+    # would crash the first audio device query
+    from .audio_backend import apply as choose_audio_backend
+
+    choose_audio_backend(log=lambda line: print(line, file=sys.stderr))
     try:
         from PySide6.QtCore import QSettings, QTimer
         from PySide6.QtWidgets import QApplication, QMessageBox
