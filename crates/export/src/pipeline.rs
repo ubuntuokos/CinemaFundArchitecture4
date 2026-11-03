@@ -144,9 +144,15 @@ impl Drop for Pipeline {
     /// frames, which nothing else asks for, so free them instead of holding up to 320 MiB idle. A
     /// job still rendering at that moment allocates a few images again; the pool is only a cache.
     /// Parts of a larger job (render-preview segments, proxies) keep them for the next part.
+    /// The same goes for the decoded frames and decoders the sources' caches kept (up to 384 MiB
+    /// per source, never trimmed once the export stops asking) and the 8/16-bit plane shelves:
+    /// without this a long-lived process holds gigabytes after every export. Caches in use by
+    /// another thread (a monitor) are left alone.
     fn drop(&mut self) {
         if self.trim_pool {
             cfa4_frame::pool::trim_f32();
+            cfa4_codecs::release_idle();
+            cfa4_frame::pool::trim_planes();
         }
     }
 }

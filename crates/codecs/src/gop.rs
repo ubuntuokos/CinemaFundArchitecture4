@@ -391,6 +391,21 @@ impl Pool {
         released
     }
 
+    /// Empty every cache whose lock is free (see [`release_idle`]). Decoders are dropped with no
+    /// cache lock held, as for [`Self::trim_decoders`].
+    fn release_idle(&self) {
+        let all: Vec<Arc<Shared>> = self.caches.lock().unwrap_or_else(PoisonError::into_inner).iter().filter_map(Weak::upgrade).collect();
+        let mut released = Vec::new();
+        for c in &all {
+            // try-locked: a cache another thread holds is decoding, so it is in use
+            if let Some(mut st) = try_state(c) {
+                st.release_frames(self, || true);
+                released.extend(st.release_decoder(self));
+            }
+        }
+        drop(released);
+    }
+
     /// Evict the frames of caches idle for [`RECENT`], least recently used first, down to the
     /// budget. Caches in use keep theirs (each within its own budget): a frame evicted before it is shown costs a
     /// re-decode from the keyframe.
@@ -408,6 +423,17 @@ impl Pool {
             }
         }
     }
+}
+
+/// Free the decoded frames and the decoders of every cache that nobody is using right now,
+/// process-wide. The frame budget only trims caches that were idle for [`RECENT`] while another
+/// cache is asking for frames, so after a long job (an export) every source keeps up to
+/// [`FRAME_CACHE_CEILING`] of frames and its decoders until the session ends. Whoever finishes
+/// such a job calls this. A cache a thread is decoding on (its lock is held) is skipped, so
+/// concurrent users lose nothing; a cache emptied here only re-decodes from a sync sample when
+/// asked again.
+pub fn release_idle() {
+    Pool::global().release_idle();
 }
 
 /// Caches that hold a decoder right now, process-wide (`perf.stats`).
@@ -1618,5 +1644,40 @@ mod tests {
         assert_eq!(index_of(&c.frame(&s, 81_000).expect("frame")), 81);
         assert_eq!(s.resets.load(Ordering::Relaxed), resets);
         assert!(s.decodes.load(Ordering::Relaxed) - decodes <= 8 + 2);
+    }
+
+    #[test]
+    fn release_idle_empties_idle_caches_and_leaves_one_in_use_alone() {
+        let pool = Arc::new(Pool::new(MAX_LIVE_DECODERS, IDLE, FRAME_BUDGET).tiered(RECENT, HARD_DECODERS));
+        let s: Vec<Samples> = (0..3).map(|_| samples(300, 250, 3, false)).collect();
+        let c: Vec<GopCache> = (0..3).map(|_| GopCache::in_pool(None, pool.clone())).collect();
+        for k in 0..3 {
+            assert_eq!(index_of(&c[k].frame(&s[k], 10_000).expect("frame")), 10);
+        }
+        assert!(pool.bytes.load(Ordering::Relaxed) > 0);
+        assert_eq!(pool.decoders.load(Ordering::Relaxed), 3);
+
+        // a cache another thread holds (it is decoding) keeps its frames and decoder
+        let busy = c[2].shared.state.lock().unwrap();
+        let held_bytes = busy.bytes;
+        pool.release_idle();
+        assert_eq!(busy.bytes, held_bytes);
+        assert!(busy.decoder.is_some() && !busy.frames.is_empty());
+        drop(busy);
+        for k in 0..2 {
+            let st = c[k].shared.state.lock().unwrap();
+            assert!(st.frames.is_empty() && st.drafts.is_empty() && st.bytes == 0 && st.decoder.is_none() && st.spare.is_empty());
+        }
+        assert_eq!(pool.bytes.load(Ordering::Relaxed), held_bytes, "only the busy cache still counts");
+        assert_eq!(pool.decoders.load(Ordering::Relaxed), 1);
+
+        // an emptied cache decodes again from its sync sample, and a second release is harmless
+        assert_eq!(index_of(&c[0].frame(&s[0], 20_000).expect("frame")), 20);
+        assert_eq!(pool.bytes.load(Ordering::Relaxed), held_bytes + c[0].shared.state.lock().unwrap().bytes);
+        // the cache that was in use is idle now: nothing is left, and a second release is harmless
+        pool.release_idle();
+        pool.release_idle();
+        assert_eq!(pool.bytes.load(Ordering::Relaxed), 0);
+        assert_eq!(pool.decoders.load(Ordering::Relaxed), 0);
     }
 }
