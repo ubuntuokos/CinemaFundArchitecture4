@@ -2231,6 +2231,7 @@ def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_through_the_dialog_and_reimport(app, tmp_path: Path):
     """ADR F8 phase 6: export from the Qt GUI with sound, then import the file back."""
     import shutil
