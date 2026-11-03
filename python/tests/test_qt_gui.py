@@ -7170,6 +7170,23 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
         pick(dlg.format, "h264")
         assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
         assert shown(rows.profile) and shown(rows.level) and shown(rows.fps) and not shown(rows.bits)
+
+        def label(form: QtWidgets.QFormLayout, w) -> str | None:
+            lab = form.labelForField(w)
+            return lab.text() if isinstance(lab, QtWidgets.QLabel) else None
+
+        # the rows and buttons carry egui's names (and so its translations)
+        assert [label(dlg.video_form, w) for w in (dlg.bitrate_mode, dlg.bitrate, dlg.gop)] == [
+            "Bitrate Encoding", "Target Bitrate", "Key Frame Distance"]
+        assert [label(rows.audio_form, w) for w in (dlg.audio_codec, dlg.audio_bitrate)] == ["Audio Format", "Audio Bitrate"]
+        assert (dlg.audio.text(), dlg.queue_button.text()) == ("Export Audio", "Send to Queue")
+        form = dlg.video_form
+        field = QtWidgets.QFormLayout.ItemRole.FieldRole
+        size_row = next(form.itemAt(i, field).layout() for i in range(form.rowCount())
+                        if form.itemAt(i, field) is not None and form.itemAt(i, field).layout() is not None
+                        and form.itemAt(i, field).layout().indexOf(dlg.width_spin) >= 0)
+        size_label = label(form, size_row)
+        assert size_label == "Frame Size"
         s0 = resolved()
         assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
         assert "settings" not in dlg.params(), "nothing changed yet"
