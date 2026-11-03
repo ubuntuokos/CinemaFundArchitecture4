@@ -6843,6 +6843,72 @@ def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_profile_and_sample_size_rows_as_egui(app, tmp_path: Path):
+    """qt-parity 4.2: egui's H.265 / AV1 Profile and Encoder rows (text, HDR or not as the sequence
+    and the SDR choice say) and the Sample Size sizes the codec and container cannot store greyed
+    out with egui's reason, from ``export.resolve``."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        rows, form, audio_form = dlg.rows, dlg.video_form, dlg.rows.audio_form
+
+        def pick(value: str) -> None:
+            i = dlg.format.findData(value)
+            assert i >= 0, value
+            dlg.format.setCurrentIndex(i)
+            assert wait_until(app, lambda: rows.video_format and (dlg.resolved_settings or {}).get("format") == value, 15_000), value
+
+        def label(w: QtWidgets.QWidget, f: QtWidgets.QFormLayout = form) -> str:
+            return f.labelForField(w).text()
+
+        def sizes() -> dict[str, tuple[bool, str]]:
+            m = rows.bits.model()
+            return {rows.bits.itemData(i): (m.item(i).isEnabled(), m.item(i).toolTip()) for i in range(rows.bits.count())}
+
+        pick("hevc")
+        assert wait_until(app, lambda: form.isRowVisible(rows.profile_info), 10_000)
+        assert (label(rows.profile_info), rows.profile_info.text()) == ("Profile", "Main (8-bit; Main 10 for HDR sequences)")
+        assert (label(rows.encoder_info), rows.encoder_info.text()) == ("Encoder", "Software, or hardware where available")
+        assert form.isRowVisible(rows.encoder_info) and not form.isRowVisible(rows.profile)
+        pick("h264")
+        assert wait_until(app, lambda: form.isRowVisible(rows.profile), 10_000)
+        assert not form.isRowVisible(rows.profile_info) and not form.isRowVisible(rows.encoder_info)
+        if dlg.format.findData("av1") >= 0 and dlg.format.model().item(dlg.format.findData("av1")).isEnabled():
+            pick("av1")
+            assert wait_until(app, lambda: rows.profile_info.text() == "Main (8-bit; 10-bit for HDR sequences)", 10_000)
+        # an HDR sequence: the HDR profile
+        got: list = []
+        engine.execute("sequence.colorSettings", {"workingSpace": "Rec. 2100 PQ"}, on_reply=lambda r, _b: got.append(r))
+        assert wait_until(app, lambda: got, 10_000)
+        pick("hevc")
+        dlg.refresh_preview()
+        dlg._changed()
+        assert wait_until(app, lambda: rows.profile_info.text() == "Main 10 (10-bit, HDR)", 15_000), rows.profile_info.text()
+        # Sample Size: WAV stores every size; FLAC and MXF only whole numbers, each saying why
+        pick("wav")
+        assert wait_until(app, lambda: audio_form.isRowVisible(rows.bits) and all(ok for ok, _ in sizes().values()), 10_000), sizes()
+        pick("flac")
+        assert wait_until(app, lambda: sizes()["32f"] == (False, "FLAC stores whole-number samples only"), 10_000), sizes()
+        assert all(ok for k, (ok, _) in sizes().items() if k != "32f")
+        pick("mxf-op1a")
+        assert wait_until(app, lambda: sizes()["32f"] == (False, "MXF export writes integer PCM only"), 10_000), sizes()
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_per_format_settings_as_egui(app, tmp_path: Path):
     """egui's per-format Video rows in the Export window: the ProRes / DNxHR / APV / CineForm
     profiles, the MXF video codec, OpenEXR compression, JPEG quality and Include Alpha Channel

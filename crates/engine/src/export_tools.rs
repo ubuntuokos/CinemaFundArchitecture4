@@ -26,7 +26,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use cfa4_export::presets::{DEFAULT_PRESET, preset_key};
-use cfa4_export::{BitrateMode, ExportPreset, ExportSettings, Format, GpuRendering, HardwareEncoding};
+use cfa4_export::{BitrateMode, ExportPreset, ExportSettings, Format, GpuRendering, HardwareEncoding, SampleFormat};
 use cfa4_project::{ItemId, Project};
 use cfa4_time::{FrameRate, Tick, TimeRange};
 use serde::{Deserialize, Serialize};
@@ -1001,8 +1001,18 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
     let r = settings.resolve(w, h, rate, sr);
     let (f0, f1) = cfa4_export::frame_span(r.rate, range);
     let summary = settings.summary(w, h, rate, sr, range.duration);
+    // what Export mode's rows show beyond the settings: whether the video is HDR (an HDR sequence
+    // unless SDR is asked for), the encoder that writes it, the audio codec actually used and the
+    // sample sizes that codec and container can store
+    let hdr = q.settings.color.working.is_hdr() && !settings.sdr;
+    let sizes: Vec<Value> =
+        SampleFormat::ALL.iter().map(|&f| json!({"bits": f.bits(), "float": f.is_float(), "supported": settings.supports_sample_format(f)})).collect();
     Ok(json!({
         "preset": preset.map(|x| x.name),
+        "hdr": hdr,
+        "videoFormat": settings.video_format().id(),
+        "audioCodec": settings.audio_codec(),
+        "sampleSizes": sizes,
         "settings": settings,
         "range": {"start": range.start.0, "duration": range.duration.0, "seconds": range.duration.seconds()},
         "frames": f1 - f0,

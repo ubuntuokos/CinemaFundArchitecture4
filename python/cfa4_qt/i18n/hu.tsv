@@ -2251,6 +2251,15 @@
 	Trim Forward Many	Igazítás sok képkockával előre
 	Exit Trim Mode	Kilépés a vágásmódból
 	Settings not taken	A beállítás nem lett átvéve
+	Encoder	Kódoló
+	Software, or hardware where available	Szoftveres, vagy ahol elérhető, hardveres
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bites; HDR-szekvenciáknál Main 10)
+	Main 10 (10-bit, HDR)	Main 10 (10 bites, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bites; HDR-szekvenciáknál 10 bites)
+	Main (10-bit, HDR)	Main (10 bites, HDR)
+	FLAC stores whole-number samples only	A FLAC csak egész számú mintákat tárol
+	MXF export writes integer PCM only	Az MXF-exportálás csak egész számú PCM-et ír
+	Not supported by CFA4's encoders yet	A CFA4 kódolói még nem támogatják
 	Restore	Visszaállítás
 	Overwrite with Current View	Felülírás a jelenlegi nézettel
 	Saves the view, columns, sort, thumbnail and font size.	Menti a nézetet, az oszlopokat, a rendezést, a bélyegképet és a betűméretet.
