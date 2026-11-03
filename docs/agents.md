@@ -37,6 +37,16 @@ claude mcp add cfa4-headless -- /abs/path/cfa4/target/release/cfa4-cli mcp --dem
 { "mcpServers": { "cfa4": { "command": "/abs/path/cfa4-cli", "args": ["mcp", "--bridge", "127.0.0.1:9876"] } } }
 ```
 
+### Effect parameter replies
+
+`effects.setParam` returns `{"keyframes": n, "param": id, "value": value}` on success.
+The keyframe count is zero for a static parameter: this is a successful static edit,
+not a failure. `param` identifies the edited parameter and `value` reports the accepted
+value; a choice supplied by name is returned as its numeric option index. An animated
+edit reports the value written at the requested time, rather than the static fallback.
+For example, setting opacity `blend` to `"Screen"` returns
+`{"keyframes": 0, "param": "blend", "value": 8}`.
+
 ### From an installed release
 
 The release packages ship `cfa4-cli` alongside the desktop app, so no build is needed:

@@ -301,6 +301,31 @@ pub(crate) fn clips_p(s: &Session, p: &Value) -> Vec<ClipId> {
         None => clip_p(p, "clip").map(|c| vec![c]).unwrap_or_else(|| s.state.selection.clone()),
     }
 }
+
+/// The clips a destructive command was explicitly told to act on, strictly validated.
+/// `Ok(None)` only when NEITHER `clip` nor `clips` is present (the caller then falls back to the
+/// selection). A key that is present must be valid: `null`, a wrong type, an empty list,
+/// non-integer elements, ids of no clip in the active sequence, or both keys together are errors
+/// (bad parameters of `cmd`), so a malformed target never silently deletes the selection.
+pub(crate) fn target_clips_p(s: &Session, p: &Value, cmd: &str) -> Result<Option<Vec<ClipId>>> {
+    let ids: Vec<u64> = match (p.get("clip"), p.get("clips")) {
+        (None, None) => return Ok(None),
+        (Some(_), Some(_)) => return Err(bad(cmd, "give either `clip` or `clips`, not both")),
+        (Some(c), None) => vec![c.as_u64().ok_or_else(|| bad(cmd, "`clip` must be an integer clip id"))?],
+        (None, Some(clips)) => {
+            let arr = clips.as_array().ok_or_else(|| bad(cmd, "`clips` must be an array of clip ids"))?;
+            if arr.is_empty() {
+                return Err(bad(cmd, "`clips` must name at least one clip id"));
+            }
+            arr.iter().map(|v| v.as_u64().ok_or_else(|| bad(cmd, "`clips` elements must be integer clip ids"))).collect::<Result<_>>()?
+        }
+    };
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    if let Some(missing) = ids.iter().find(|id| seq.find_item(ClipId(**id)).is_none()) {
+        return Err(bad(cmd, format!("no clip {missing} in the active sequence (clip ids are the `clip` numbers of the items in sequence.inspect)")));
+    }
+    Ok(Some(ids.into_iter().map(ClipId).collect()))
+}
 /// The track parameter `k` names: a track id, or "V1" / "A2" (kind and 1-based number).
 /// `Ok(None)` when the parameter is absent. Naming a track the active sequence does not have is
 /// an error (bad parameters of `cmd`): callers fall back to a default track only when no track
@@ -1133,6 +1158,7 @@ fn marker_list_mut(s: &mut Session) -> Result<(ItemId, Tick)> {
     Ok((seq, s.playhead()))
 }
 
+/// Builds the command registry shared by the UI, CLI and control interfaces.
 fn build() -> Vec<CommandSpec> {
     let mut v = vec![
         // ================= File =================
@@ -1149,7 +1175,8 @@ fn build() -> Vec<CommandSpec> {
             s.revision += 1;
             s.saved_revision = s.revision;
             s.events.push(crate::Event::ProjectChanged { revision: s.revision });
-            Ok(Value::Null)
+            // the project as `project_inspect` names it (#1545: an agent needs no extra round trip)
+            Ok(json!({"name": name, "revision": s.revision}))
         }),
         cmd!("file.openDemoProject", "Demo Project", ["File", "New"], None, "{}", always, |s, _| {
             let (p, seq) = crate::demo::demo_project(&s.media);
@@ -1634,54 +1661,78 @@ fn build() -> Vec<CommandSpec> {
         }),
         cmd!("edit.paste", "Paste", ["Edit"], Some("Cmd+V"), "{}", has_clipboard, |s, _| paste(s, false)),
         cmd!("edit.pasteInsert", "Paste Insert", ["Edit"], Some("Cmd+Shift+V"), "{}", has_clipboard, |s, _| paste(s, true)),
-        cmd!("edit.clear", "Clear", ["Edit"], Some("Backspace"), r#"{"clips":[id]?}"#, has_any_selection, |s, p| {
-            if p.get("clips").is_none() && p.get("clip").is_none() && s.state.selection.is_empty() {
-                // a selected transition (clicked in the Timeline) goes, as a clip would
-                if !s.state.transition_selection.is_empty() {
-                    let ids = s.state.transition_selection.clone();
-                    return remove_transitions(s, &ids, "Clear");
-                }
-                // a selected gap closes, as in Premiere Pro (#648, #668)
-                if s.state.caption_selection.is_empty()
-                    && let Some(g) = s.state.gap_selection
-                {
-                    return ripple_delete_gap(s, g);
-                }
-                let caps = s.state.caption_selection.clone();
-                return crate::captions::delete(s, &caps, false);
-            }
-            // An Alt selection is already exact; explicit targets keep the command's linked behavior.
-            let sel = if p.get("clips").is_some() || p.get("clip").is_some() { with_links(s, &clips_p(s, p)) } else { s.state.selection.clone() };
-            s.edit_sequence("Clear", |q, _, st| {
-                edit::delete_items(q, &sel);
-                st.selection.clear();
-                Ok(())
-            })?;
-            Ok(Value::Null)
-        }),
-        cmd!("edit.rippleDelete", "Ripple Delete", ["Edit"], Some("Shift+Delete"), r#"{"clips":[id]?}"#, has_clip_or_caption_selection, |s, p| {
-            if p.get("clips").is_none() && p.get("clip").is_none() && s.state.selection.is_empty() {
-                if s.state.caption_selection.is_empty()
-                    && let Some(g) = s.state.gap_selection
-                {
-                    return ripple_delete_gap(s, g);
-                }
-                let caps = s.state.caption_selection.clone();
-                return crate::captions::delete(s, &caps, true);
-            }
-            let sel = if p.get("clips").is_some() || p.get("clip").is_some() { with_links(s, &clips_p(s, p)) } else { s.state.selection.clone() };
-            s.edit_sequence("Ripple Delete", |q, _, st| {
-                let spans = edit::ripple_delete_items(q, &sel)?;
-                if st.ripple_sequence_markers {
-                    for r in spans.iter().rev() {
-                        crate::sequence_tools::ripple_markers(&mut q.markers, r.end(), -r.duration);
+        cmd!(
+            "edit.clear",
+            "Clear",
+            ["Edit"],
+            Some("Backspace"),
+            r#"{"clips":[id]?,"clip":id?} (explicit clips work without a selection)"#,
+            has_any_selection,
+            |s, p| {
+                let target = target_clips_p(s, p, "edit.clear")?;
+                if target.is_none() && s.state.selection.is_empty() {
+                    // a selected transition (clicked in the Timeline) goes, as a clip would
+                    if !s.state.transition_selection.is_empty() {
+                        let ids = s.state.transition_selection.clone();
+                        return remove_transitions(s, &ids, "Clear");
                     }
+                    // a selected gap closes, as in Premiere Pro (#648, #668)
+                    if s.state.caption_selection.is_empty()
+                        && let Some(g) = s.state.gap_selection
+                    {
+                        return ripple_delete_gap(s, g);
+                    }
+                    let caps = s.state.caption_selection.clone();
+                    return crate::captions::delete(s, &caps, false);
                 }
-                st.selection.clear();
-                Ok(())
-            })?;
-            Ok(Value::Null)
-        }),
+                // An Alt selection is already exact; explicit targets keep the command's linked behavior.
+                let sel = match target {
+                    Some(clips) => with_links(s, &clips),
+                    None => s.state.selection.clone(),
+                };
+                s.edit_sequence("Clear", |q, _, st| {
+                    edit::delete_items(q, &sel);
+                    st.selection.clear();
+                    Ok(())
+                })?;
+                Ok(Value::Null)
+            }
+        ),
+        cmd!(
+            "edit.rippleDelete",
+            "Ripple Delete",
+            ["Edit"],
+            Some("Shift+Delete"),
+            r#"{"clips":[id]?,"clip":id?} (explicit clips work without a selection)"#,
+            has_clip_or_caption_selection,
+            |s, p| {
+                let target = target_clips_p(s, p, "edit.rippleDelete")?;
+                if target.is_none() && s.state.selection.is_empty() {
+                    if s.state.caption_selection.is_empty()
+                        && let Some(g) = s.state.gap_selection
+                    {
+                        return ripple_delete_gap(s, g);
+                    }
+                    let caps = s.state.caption_selection.clone();
+                    return crate::captions::delete(s, &caps, true);
+                }
+                let sel = match target {
+                    Some(clips) => with_links(s, &clips),
+                    None => s.state.selection.clone(),
+                };
+                s.edit_sequence("Ripple Delete", |q, _, st| {
+                    let spans = edit::ripple_delete_items(q, &sel)?;
+                    if st.ripple_sequence_markers {
+                        for r in spans.iter().rev() {
+                            crate::sequence_tools::ripple_markers(&mut q.markers, r.end(), -r.duration);
+                        }
+                    }
+                    st.selection.clear();
+                    Ok(())
+                })?;
+                Ok(Value::Null)
+            }
+        ),
         cmd!("edit.rippleDeleteHead", "Ripple Delete Head Frame", ["Edit"], None, r#"{"clips":[id]?,"clip":id?}"#, has_selection, |s, p| {
             // #1357: remove the head — from each selected clip's in point through the playhead —
             // and ripple the sequence closed. Linked clips ripple as one group (the engine's
@@ -2605,6 +2656,21 @@ fn build() -> Vec<CommandSpec> {
                 None => place_one(s, p),
             }
         ),
+        cmd!(
+            "timeline.delete",
+            "Delete Clips",
+            [],
+            None,
+            r#"{"clips":[id]?,"clip":id?,"ripple":bool?} (deletes the named clips, else the selection; ripple closes the gap)"#,
+            has_seq,
+            |s, p| {
+                let ripple = match p.get("ripple") {
+                    None | Some(Value::Null) => false,
+                    Some(v) => v.as_bool().ok_or_else(|| bad("timeline.delete", "`ripple` must be a boolean"))?,
+                };
+                s.execute(if ripple { "edit.rippleDelete" } else { "edit.clear" }, p.clone())
+            }
+        ),
         cmd!("timeline.select", "Select Clips", [], None, r#"{"clips":[id],"transitions":[id]?,"add":bool,"toggle":bool,"linked":bool?}"#, has_seq, |s, p| {
             if let Some(ids) = p.get("transitions") {
                 return select_transitions(s, ids, bool_p(p, "add").unwrap_or(false), bool_p(p, "toggle").unwrap_or(false));
@@ -2972,8 +3038,11 @@ fn build() -> Vec<CommandSpec> {
             }
             let (fw, fh) = s.active_sequence().map(|q| (q.settings.width, q.settings.height)).unwrap_or((1920, 1080));
             let label = format!("Apply {}", def.name);
-            s.edit_sequence(&label, |q, _, _| {
-                let mut n = 0;
+            // Answer `{"applied":[{"clip","index","effect"}]}`: where each instance landed, so an
+            // agent can address it (`effects.setParam`, `effects.remove`) without a `sequence_inspect`
+            // round trip, as `timeline.place` answers with its clips (#1545).
+            let applied = s.edit_sequence(&label, |q, _, _| {
+                let mut applied = Vec::new();
                 for t in q.all_tracks_mut() {
                     if (t.kind == TrackKind::Audio) != is_audio {
                         continue;
@@ -2985,12 +3054,12 @@ fn build() -> Vec<CommandSpec> {
                         let pos = i.effects.iter().position(|e| e.def().is_some_and(|d| d.intrinsic)).unwrap_or(i.effects.len());
                         let pos = if is_audio { i.effects.len() } else { pos };
                         i.effects.insert(pos, inst);
-                        n += 1;
+                        applied.push(json!({"clip": i.id.0, "index": pos, "effect": def.id}));
                     }
                 }
-                Ok(n)
+                Ok(applied)
             })?;
-            Ok(Value::Null)
+            Ok(json!({"applied": applied}))
         }),
         cmd!("effects.remove", "Remove Effect", [], None, r#"{"clip":id,"index":n}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("effects.remove", "need `clip`"))?;
@@ -3065,7 +3134,7 @@ fn build() -> Vec<CommandSpec> {
                 if bool_p(p, "begin").unwrap_or(false) {
                     s.history.merge_key = None;
                 }
-                let keyframes = s.edit_sequence_as("Change Effect Parameter", merge.as_deref(), |q, _, _| {
+                let (keyframes, value) = s.edit_sequence_as("Change Effect Parameter", merge.as_deref(), |q, _, _| {
                     let (_, it) = q.find_item_mut(c).ok_or(cfa4_edit::EditError::NoItem(c))?;
                     let mt = it.source_time_at(at.unwrap_or_else(|| ph.clamp(it.start, (it.end() - Tick(1)).max(it.start))));
                     let e = match &eff {
@@ -3112,6 +3181,8 @@ fn build() -> Vec<CommandSpec> {
                         };
                         (keyframes, v)
                     };
+                    let accepted_value = param_value_to_json(&v);
+
                     if e.effect == "ultra_key"
                         && pid == "setting"
                         && let ParamValue::Choice(setting) = v
@@ -3126,10 +3197,10 @@ fn build() -> Vec<CommandSpec> {
                             }
                         }
                     }
-                    Ok(keyframes)
+                    Ok((keyframes, accepted_value))
                 })?;
                 // 0 keyframes: the value is static (`time` was not used)
-                Ok(json!({"keyframes": keyframes}))
+                Ok(json!({"keyframes": keyframes, "param": pid, "value": value}))
             }
         ),
         cmd!("effects.toggleAnimation", "Toggle Animation", [], None, r#"{"clip":id,"effect":str|index,"param":str,"mask":n?}"#, has_seq, |s, p| {
@@ -3642,6 +3713,7 @@ fn mark(s: &mut Session, p: &Value, is_in: bool) -> Result<Value> {
     Ok(Value::Null)
 }
 
+/// Decodes caller JSON using the stored parameter as a type template.
 pub(crate) fn json_to_param(template: &ParamValue, v: &Value) -> Option<ParamValue> {
     Some(match template {
         ParamValue::Float(_) => ParamValue::Float(v.as_f64()?),
@@ -3660,13 +3732,27 @@ pub(crate) fn json_to_param(template: &ParamValue, v: &Value) -> Option<ParamVal
             _ => return None,
         },
         ParamValue::Bool(_) => ParamValue::Bool(v.as_bool()?),
-        ParamValue::Choice(_) => ParamValue::Choice(v.as_u64()? as u32),
+        ParamValue::Choice(_) => ParamValue::Choice(u32::try_from(v.as_u64()?).ok()?),
         ParamValue::Text(_) => ParamValue::Text(v.as_str()?.to_string()),
         ParamValue::Path(_) => ParamValue::Path(crate::masks::path_from_json(v)?),
         ParamValue::Curve(_) => {
             ParamValue::Curve(v.as_array()?.iter().filter_map(|p| Some([p.get(0)?.as_f64()? as f32, p.get(1)?.as_f64()? as f32])).collect())
         }
     })
+}
+
+/// Encode the accepted parameter value in the JSON shape returned to command callers.
+fn param_value_to_json(value: &ParamValue) -> Value {
+    match value {
+        ParamValue::Float(value) => json!(value),
+        ParamValue::Vec2(value) => json!([value.x, value.y]),
+        ParamValue::Color(value) => json!(value),
+        ParamValue::Bool(value) => json!(value),
+        ParamValue::Choice(value) => json!(value),
+        ParamValue::Text(value) => json!(value),
+        ParamValue::Curve(value) => json!(value),
+        ParamValue::Path(value) => crate::masks::path_to_json(value),
+    }
 }
 
 fn copy_selection(s: &mut Session) {
