@@ -2321,3 +2321,4 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
