@@ -135,6 +135,8 @@ impl Vps {
 pub struct Vui {
     pub sar: (u16, u16),
     pub full_range: bool,
+    /// `video_signal_type_present_flag`: `full_range` was signalled, not defaulted.
+    pub range_signalled: bool,
     pub colour_primaries: u8,
     pub transfer_characteristics: u8,
     pub matrix_coefficients: u8,
@@ -144,7 +146,16 @@ pub struct Vui {
 
 impl Default for Vui {
     fn default() -> Self {
-        Vui { sar: (0, 0), full_range: false, colour_primaries: 2, transfer_characteristics: 2, matrix_coefficients: 2, field_seq: false, timing: None }
+        Vui {
+            sar: (0, 0),
+            full_range: false,
+            range_signalled: false,
+            colour_primaries: 2,
+            transfer_characteristics: 2,
+            matrix_coefficients: 2,
+            field_seq: false,
+            timing: None,
+        }
     }
 }
 
@@ -184,6 +195,7 @@ fn parse_vui(r: &mut BitReader, max_sub_layers_minus1: u32) -> Result<Vui> {
     if r.read_flag()? {
         r.skip(3)?;
         v.full_range = r.read_flag()?;
+        v.range_signalled = true;
         if r.read_flag()? {
             v.colour_primaries = r.read_bits(8)? as u8;
             v.transfer_characteristics = r.read_bits(8)? as u8;

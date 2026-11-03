@@ -1,16 +1,19 @@
 //! MXF media source (`cfa4-mxf` demux, GOP-aware video via [`crate::gop`]).
 //!
 //! - Video: H.264 / AVC-Intra (Annex B byte stream, our decoder), MPEG-2 (D-10 / IMX, XDCAM HD /
-//!   HD422; our decoder), VC-3 (DNxHD/DNxHR) and ProRes through the decoder factories. Other
-//!   codings (JPEG 2000, DV, MPEG-4 visual…) are identified and reported as unsupported; the file
-//!   still opens so its audio can be used.
+//!   HD422; our decoder), VC-3 (DNxHD/DNxHR) and ProRes through the decoder factories, JPEG 2000
+//!   (broadcast and DCP picture tracks, X'Y'Z' included; [`crate::j2k`]). Other codings (DV,
+//!   MPEG-4 visual…) are identified and reported as unsupported; the file still opens so its audio
+//!   can be used.
 //! - Presentation order: the index table's temporal offsets; for AVC whose index marks B pictures
 //!   but carries no temporal offsets, the picture order counts of the slice headers (8.2.1).
 //! - Audio: every PCM sound track (Broadcast Wave / AES3, ST 382; ST 331 AES3 elements in D-10)
-//!   is presented as one multichannel stream, sample-exact.
+//!   is presented as one multichannel stream, sample-exact. Without PCM, an Immersive Audio
+//!   (IAB, ST 2098-2) track of a DCP or IMF package is decoded with `cfa4-iab` and rendered to
+//!   7.1 (L R C LFE Lrs Rrs Lss Rss).
 //! - Start timecode: the material package's timecode track.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use cfa4_frame::{AudioBuffer, VideoFrame};
 use cfa4_isobmff::{FourCc, SampleEntry};
@@ -53,10 +56,89 @@ pub struct MxfSource {
     unsupported: Option<String>,
     /// MPEG-2: the first sequence header (primes decoders that start without one).
     mpeg2_header: Vec<u8>,
+    /// How the JPEG 2000 picture track's components are read.
+    j2k_hints: crate::j2k::J2kHints,
     /// Sound tracks combined into one stream: (track, first stored sample frame).
     atracks: Vec<(usize, u64)>,
     /// Presented sample frames.
     aframes: u64,
+    /// An IAB track rendered to loudspeakers, when there is no PCM.
+    iab: Option<IabAudio>,
+}
+
+/// An Immersive Audio Bitstream track, rendered frame by frame.
+struct IabAudio {
+    track: usize,
+    rate: cfa4_iab::FrameRate,
+    rate96: bool,
+    /// FrameIndex of stored frame 0 (the five-frame sample cadence of the 1001 rates).
+    index0: u8,
+    /// First presented stored frame and the number presented.
+    first: usize,
+    count: usize,
+    layout: cfa4_iab::Layout,
+    /// The last rendered frame (stored index).
+    cache: Mutex<Option<(usize, Arc<Vec<Vec<f32>>>)>>,
+}
+
+impl IabAudio {
+    /// Samples of stored frame `j`.
+    fn frame_samples(&self, j: usize) -> u64 {
+        self.rate.samples(self.rate96, ((usize::from(self.index0) + j) % 5) as u8) as u64
+    }
+    /// Samples before presented frame `k`.
+    fn start_of(&self, k: usize) -> u64 {
+        let cycle: u64 = (0..5).map(|i| self.frame_samples(self.first + i)).sum();
+        let rest: u64 = (0..k % 5).map(|i| self.frame_samples(self.first + i)).sum();
+        (k / 5) as u64 * cycle + rest
+    }
+    /// The presented frame holding sample `s`.
+    fn frame_of(&self, s: u64) -> usize {
+        let cycle = self.start_of(5).max(1);
+        let mut k = (s / cycle) as usize * 5;
+        while k < self.count && self.start_of(k + 1) <= s {
+            k += 1;
+        }
+        k
+    }
+    /// Loudspeaker feeds of presented frame `k`; silence (and a warning) for a damaged frame.
+    fn rendered(&self, file: &MxfFile, bytes: &crate::Src, k: usize) -> Arc<Vec<Vec<f32>>> {
+        let j = self.first + k;
+        let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some((at, out)) = cache.as_ref()
+            && *at == j
+        {
+            return out.clone();
+        }
+        let n = self.frame_samples(j) as usize;
+        let out = file
+            .read_sample(bytes, self.track, j)
+            .map_err(|e| e.to_string())
+            .and_then(|b| cfa4_iab::parse(&b).map_err(|e| e.to_string()))
+            .and_then(|f| {
+                // a frame whose rate disagrees with the track would shift every later frame:
+                // it plays as silence of the track's cadence instead
+                if f.frame_rate != self.rate || f.rate96() != self.rate96 {
+                    return Err(format!("frame rate {:?} differs from the track's {:?}", f.frame_rate, self.rate));
+                }
+                cfa4_iab::render(&f, &self.layout).map_err(|e| e.to_string())
+            })
+            .unwrap_or_else(|e| {
+                log::warn!("IAB frame {j}: {e}");
+                vec![vec![0.0; n]; self.layout.channels()]
+            });
+        // every frame is exactly its cadence length, whatever the payload held
+        let out: Vec<Vec<f32>> = out
+            .into_iter()
+            .map(|mut c| {
+                c.resize(n, 0.0);
+                c
+            })
+            .collect();
+        let out = Arc::new(out);
+        *cache = Some((j, out.clone()));
+        out
+    }
 }
 
 /// Picture order counts of AVC access units (Annex B), in stored order, as presentation
@@ -162,6 +244,44 @@ fn prores_fourcc(profile: Option<u8>) -> FourCc {
     })
 }
 
+/// The item of a SMPTE RP 224 colorimetry label (06 0E 2B 34 04 01 01 vv 04 01 01 01 `group` `item`
+/// 00 00) of `group` (1 transfer characteristic, 2 coding equations, 3 colour primaries).
+fn colorimetry_item(ul: Option<cfa4_mxf::Ul>, group: u8) -> Option<u8> {
+    let ul = ul?;
+    (ul.0.get(..4) == Some(&[0x06, 0x0E, 0x2B, 0x34][..]) && ul.0.get(8..13) == Some(&[0x04, 0x01, 0x01, 0x01, group][..]))
+        .then(|| ul.0.get(13).copied())
+        .flatten()
+}
+
+/// The colorimetry the picture descriptor signals that CFA4 has a curve, gamut or matrix for.
+fn descriptor_colorimetry(p: &cfa4_mxf::PictureInfo) -> crate::j2k::Signalled {
+    use cfa4_color::{Matrix, Primaries, Transfer};
+    crate::j2k::Signalled {
+        transfer: match colorimetry_item(p.transfer_characteristic, 1) {
+            Some(1..=5 | 9) => Some(Transfer::Bt709),
+            Some(6) => Some(Transfer::Linear),
+            Some(8) => Some(Transfer::Srgb),
+            Some(0x0A) => Some(Transfer::Pq),
+            Some(0x0B) => Some(Transfer::Hlg),
+            _ => None,
+        },
+        primaries: match colorimetry_item(p.color_primaries, 3) {
+            Some(1) => Some(Primaries::Bt601_525),
+            Some(2) => Some(Primaries::Bt601_625),
+            Some(3) => Some(Primaries::Bt709),
+            Some(4) => Some(Primaries::Bt2020),
+            Some(6) => Some(Primaries::P3D65),
+            _ => None,
+        },
+        matrix: match colorimetry_item(p.coding_equations, 2) {
+            Some(1) => Some(Matrix::Bt601),
+            Some(2) => Some(Matrix::Bt709),
+            Some(6) => Some(Matrix::Bt2020Ncl),
+            _ => None,
+        },
+    }
+}
+
 fn prores_name(profile: Option<u8>) -> &'static str {
     match profile {
         Some(1) => "Apple ProRes 422 Proxy",
@@ -214,7 +334,29 @@ impl MxfSource {
             .filter(|(_, t)| t.kind == TrackKind::Sound && !t.chunks.is_empty() && t.sound_format != cfa4_mxf::SoundFormat::Other)
             .map(|(i, _)| i)
             .collect();
-        if vtrack.is_none() && atracks.is_empty() {
+        // IAB, when there is no PCM: its first frame gives the rates
+        let iab = if atracks.is_empty() {
+            file.tracks.iter().enumerate().filter(|(_, t)| t.codec == Codec::Iab && !t.samples.is_empty()).find_map(|(i, t)| {
+                let head = file.read_sample(&bytes, i, 0).ok()?;
+                let f = cfa4_iab::parse(&head).map_err(|e| log::warn!("{name}: IAB track {}: {e}", t.track_id)).ok()?;
+                let first = usize::try_from(t.first_edit_unit()).unwrap_or(0).min(t.samples.len());
+                let avail = t.samples.len() - first;
+                let count = t.duration.and_then(|d| usize::try_from(d).ok()).map_or(avail, |d| d.min(avail));
+                Some(IabAudio {
+                    track: i,
+                    rate: f.frame_rate,
+                    rate96: f.rate96(),
+                    index0: f.frame_index,
+                    first,
+                    count,
+                    layout: cfa4_iab::Layout::surround_7_1(),
+                    cache: Mutex::new(None),
+                })
+            })
+        } else {
+            None
+        };
+        if vtrack.is_none() && atracks.is_empty() && iab.is_none() {
             return Err(CodecError::Unsupported("MXF: no playable picture or PCM sound tracks".into()));
         }
         // Video
@@ -223,6 +365,7 @@ impl MxfSource {
         let (mut vpts, mut vorder, mut vfirst, mut vcount) = (Vec::new(), Vec::new(), 0, 0);
         let mut explicit_color = None;
         let mut mpeg2_header = Vec::new();
+        let mut j2k_hints = crate::j2k::J2kHints::default();
         if let Some(vi) = vtrack {
             let t = &file.tracks[vi];
             let p = t.picture.clone().unwrap_or_default();
@@ -255,9 +398,24 @@ impl MxfSource {
                 .then(|| file.read_sample(&bytes, vi, 0).ok())
                 .flatten()
                 .and_then(|s| Some((cfa4_mpeg2v::probe(&s)?, cfa4_mpeg2v::scan_access_unit(&s), crate::video::mpeg2_sequence_header(&s)?)));
-            let (w, h) = match &mpeg {
-                Some((info, _, _)) => (info.width, info.height),
-                None => (p.frame_width(), p.frame_height()),
+            // JPEG 2000: the main header of the first picture
+            j2k_hints =
+                crate::j2k::J2kHints { rgb: p.rgb(), full_range: p.full_range(), separate_fields: p.frame_layout == 1, signalled: descriptor_colorimetry(&p) };
+            let j2k = (t.codec == Codec::Jpeg2000)
+                .then(|| file.read_sample(&bytes, vi, 0).ok())
+                .flatten()
+                .and_then(|s| cfa4_j2k::parse_header(cfa4_j2k::codestream(&s).ok()?).ok())
+                .map(|mut h| {
+                    if j2k_hints.separate_fields {
+                        // woven fields have every chroma line (4:2:0 fields make a 4:2:2 frame)
+                        h.components.iter_mut().for_each(|c| c.dy = 1);
+                    }
+                    (crate::j2k::components(&h, j2k_hints), h)
+                });
+            let (w, h) = match (&mpeg, &j2k) {
+                (Some((info, _, _)), _) => (info.width, info.height),
+                (_, Some((_, hd))) => (hd.width(), if j2k_hints.separate_fields { hd.height().saturating_mul(2) } else { hd.height() }),
+                _ => (p.frame_width(), p.frame_height()),
             };
             let par = if p.aspect_ratio.is_valid() && w > 0 && h > 0 {
                 let n = p.aspect_ratio.num as u64 * h as u64;
@@ -277,6 +435,18 @@ impl MxfSource {
                 Codec::ProRes { profile } => prores_name(profile).into(),
                 c @ Codec::Avc { .. } => c.name().into(),
                 Codec::Mpeg2 if mpeg.is_some() => mpeg.as_ref().map(|m| m.0.codec_name()).unwrap_or_default(),
+                Codec::Jpeg2000 => match &j2k {
+                    Some((Ok(_), hd)) if hd.digital_cinema() => "JPEG 2000 (digital cinema)".into(),
+                    Some((Ok(_), _)) => "JPEG 2000".into(),
+                    Some((Err(e), _)) => {
+                        unsupported = Some(e.to_string());
+                        "JPEG 2000 (unsupported)".into()
+                    }
+                    None => {
+                        unsupported = Some("JPEG 2000: unreadable first picture".into());
+                        "JPEG 2000 (unreadable)".into()
+                    }
+                },
                 other => {
                     let why = format!("{} video in MXF (CFA4 has no {} decoder)", other.name(), other.name());
                     unsupported = Some(why);
@@ -304,7 +474,18 @@ impl MxfSource {
                 mpeg2_header = header.clone();
             }
             let mut color = cfa4_color::ColorInfo { matrix: cfa4_frame::default_matrix(w, h), ..cfa4_color::ColorInfo::REC709 };
-            if p.full_range() {
+            if let Some((Ok(c), hd)) = &j2k {
+                // the decoder sets each frame's colour from what it decoded (R'G'B' and X'Y'Z'
+                // become Y'CbCr) and the descriptor's colorimetry in the hints
+                color = crate::j2k::color(*c, w, h, j2k_hints);
+                let depth = hd.components.first().map_or(8, |c| c.precision);
+                pixel_format = match c {
+                    crate::j2k::Components::Ycbcr(ch) => format!("YUV {} {depth}-bit", ch.label()),
+                    crate::j2k::Components::Gray => format!("Gray {depth}-bit"),
+                    crate::j2k::Components::Rgb => format!("RGB {depth}-bit"),
+                    crate::j2k::Components::Xyz => format!("X'Y'Z' {depth}-bit"),
+                };
+            } else if p.full_range() {
                 color.range = cfa4_color::Range::Full;
                 explicit_color = Some(color);
             }
@@ -348,6 +529,11 @@ impl MxfSource {
             let sr = if rate.is_valid() { (rate.num as f64 / rate.den as f64).round() as u32 } else { 48_000 };
             audio = Some(AudioStreamInfo { sample_rate: sr.max(1), channels, codec: file.tracks[a0].codec.name().into(), bits_per_sample: Some(si0.bits) });
         }
+        if let Some(ia) = &iab {
+            aframes = ia.start_of(ia.count);
+            let sr = if ia.rate96 { 96_000 } else { 48_000 };
+            audio = Some(AudioStreamInfo { sample_rate: sr, channels: ia.layout.channels() as u32, codec: "IAB".into(), bits_per_sample: Some(24) });
+        }
         if aframes == u64::MAX {
             aframes = 0;
         }
@@ -378,8 +564,10 @@ impl MxfSource {
             video: GopCache::new(explicit_color),
             unsupported,
             mpeg2_header,
+            j2k_hints,
             atracks: combined,
             aframes,
+            iab,
             file,
         })
     }
@@ -431,6 +619,7 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::Mpeg2 => Ok(Box::new(crate::video::Mpeg2Decoder::new(self.src.mpeg2_header.clone()))),
             Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
+            Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
             other => Err(CodecError::Unsupported(format!("{} video in MXF", other.name()))),
         }
     }
@@ -469,7 +658,25 @@ impl MediaSource for MxfSource {
         let a = s0.max(0);
         let b = (s0 + need).min(self.aframes as i64);
         let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
-        if b > a {
+        if let (Some(ia), true) = (&self.iab, b > a) {
+            let mut k = ia.frame_of(a as u64);
+            let mut at = ia.start_of(k) as i64;
+            while at < b && k < ia.count {
+                let out = ia.rendered(&self.file, &self.bytes, k);
+                // advance by the track's cadence, as `frame_of` locates frames
+                let len = (ia.start_of(k + 1) as i64).saturating_sub(at);
+                // the overlap of this frame [at, at + len) with the request [a, b)
+                let (lo, hi) = (a.max(at), b.min(at + len));
+                for (c, ch) in out.iter().enumerate() {
+                    let (Some(dst), Some(s)) = (src.get_mut(c), ch.get((lo - at) as usize..(hi - at).max(lo - at) as usize)) else { continue };
+                    if let Some(d) = dst.get_mut((lo - s0) as usize..(lo - s0) as usize + s.len()) {
+                        d.copy_from_slice(s);
+                    }
+                }
+                at += len.max(1);
+                k += 1;
+            }
+        } else if b > a {
             let mut c0 = 0;
             for &(ti, first) in &self.atracks {
                 let pcm = self.file.read_pcm(&self.bytes, ti, first + a as u64, (b - a) as usize).map_err(|e| MediaError::Decode(e.to_string()))?;
@@ -517,6 +724,9 @@ pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader)
 }
 
 #[cfg(test)]
+mod iab_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -533,5 +743,22 @@ mod tests {
         let f = start_frames(&df, FrameRate::FPS_23_976);
         let secs = f as f64 * 1001.0 / 24000.0;
         assert!((secs - 107_892.0 * 1001.0 / 30000.0).abs() < 0.05, "{secs}");
+    }
+
+    /// SMPTE RP 224 colorimetry labels: BT.2020 / PQ is read, unknown labels are not.
+    #[test]
+    fn descriptor_colorimetry_is_read() {
+        use cfa4_color::{Matrix, Primaries, Transfer};
+        let label = |v: u8, group: u8, item: u8| Some(cfa4_mxf::Ul([0x06, 0x0E, 0x2B, 0x34, 4, 1, 1, v, 4, 1, 1, 1, group, item, 0, 0]));
+        let p = cfa4_mxf::PictureInfo {
+            transfer_characteristic: label(0x0D, 1, 0x0A),
+            coding_equations: label(0x0D, 2, 6),
+            color_primaries: label(0x0D, 3, 4),
+            ..Default::default()
+        };
+        let s = descriptor_colorimetry(&p);
+        assert_eq!((s.transfer, s.primaries, s.matrix), (Some(Transfer::Pq), Some(Primaries::Bt2020), Some(Matrix::Bt2020Ncl)));
+        let p = cfa4_mxf::PictureInfo { transfer_characteristic: label(1, 1, 0x7F), ..Default::default() };
+        assert_eq!(descriptor_colorimetry(&p), crate::j2k::Signalled::default());
     }
 }

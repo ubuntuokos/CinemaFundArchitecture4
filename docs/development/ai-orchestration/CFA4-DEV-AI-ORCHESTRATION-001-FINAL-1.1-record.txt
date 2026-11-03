@@ -1,0 +1,982 @@
+A tervet jóváhagyom. Véglegesitsd
+Jóváhagyva – végleges
+CFA4-DEV-AI-ORCHESTRATION-001
+FINAL 1.0 – Véglegesített integrációs terv
+
+Jóváhagyás dátuma: 2026. október 29.
+
+A jóváhagyásod alapján a CFA4 egységes AI-fejlesztési infrastruktúrájának terve véglegesítettnek tekintendő.
+
+1. Elfogadott rendszerarchitektúra
+A következő technológiák együttes alkalmazása jóváhagyott:
+
+JetBrains ThinkRail: központi fejlesztői környezet, munkaterületek és GitHub-integráció.
+
+Pi + Claude: követelményelemzés, tervezés és fejlesztési koordináció.
+
+Claude Code CLI: natív kódfejlesztés, tesztelés és hibajavítás.
+
+Google Elephant Goldfish Model: mély kontextusú tervezés, független ellenőrzés és specifikációparitás.
+
+CFA4 Integration & Governance Layer: jogosultságok, munkaterület-izoláció, bizonyítékkezelés és jóváhagyási kapuk.
+
+2. Véglegesített tervezési hatókör
+Tervrész
+
+Státusz
+
+Egységes architektúra
+
+Jóváhagyva
+
+TC-01–TC-10 integrációs komponensek
+
+Jóváhagyva
+
+F0–F9 fejlesztési fázisok
+
+Jóváhagyva
+
+E0–E6 EGM-integrációs fázisok
+
+Jóváhagyva
+
+AC-01–AC-07 elfogadási kapuk
+
+Kötelező
+
+Pi + Claude és Claude Code együttműködés
+
+Jóváhagyva
+
+EGM Goldfish független review
+
+Kötelező az előírt feladatoknál
+
+Hatékonyságmérés
+
+Kötelező
+
+Ubuntu 26.04 amd64 célplatform
+
+Változatlan
+
+CFA4 Qt6 és kodekvalidáció
+
+Változatlan
+
+3. Végrehajtási korlátozások
+A jóváhagyás a terv véglegesítésére vonatkozik, nem a fejlesztés elindítására.
+
+Fejlesztés: NOT STARTED
+
+Telepítés: NOT STARTED
+
+GitHub-módosítás: NOT STARTED
+
+CI- és integrációs tesztek: NOT RUN
+
+Végrehajtási engedély: NINCS KIADVA
+
+A megvalósításhoz külön utasítás szükséges.
+
+4. Verziókezelési döntés
+A CFA4-DEV-AI-ORCHESTRATION-001 FINAL 1.0 a jóváhagyott referencia az AI-fejlesztési infrastruktúrához.
+
+Felváltja a korábbi ThinkRail–Claude–EGM integrációs részterveket. A CFA4 egyéb, már jóváhagyott fejlesztési terveit nem módosítja.
+
+Végső állapot: APPROVED / FINAL / IMPLEMENTATION NOT STARTED.
+
+A jóváhagyást ebben a beszélgetésben véglegesítettük. GitHub-repozitóriumba vagy külső tervnyilvántartásba még nem került bejegyzés.
+
+
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+Dokumentum
+A mellékelt szabványokkal egészítsd kia CFA4-DEV-AI-ORCHESTRATION-001 FINAL 1.0 tervet!
+CFA4 – AI-fejlesztési rendszer: AIQT 1.0.6 szabványintegráció
+CFA4-DEV-AI-ORCHESTRATION-001 · FINAL 1.1 – Jóváhagyásra előterjesztett módosítás
+
+Kiegészítés jóváhagyásra vár
+A mellékelt AIQT™ 1.0.6 teljes szabvány alapján elkészítettem a korábban jóváhagyott CFA4-DEV-AI-ORCHESTRATION-001 FINAL 1.0 terv kiegészítését.
+
+A módosítás célja, hogy az AIQT követelményei a ThinkRail, a Pi + Claude, a Claude Code CLI és a Google Elephant Goldfish Model (EGM) közös fejlesztési működésében egységesen érvényesüljenek és ellenőrizhetők legyenek.
+
+A FINAL 1.0 eredeti technológiai architektúrája, TC-01–TC-10 komponensei, F0–F9 és E0–E6 fejlesztési szakaszai, valamint AC-01–AC-07 elfogadási kapui változatlanul megmaradnak.
+
+Az AIQT ezekhez kötelező minőségi, működési, bizonyítékkezelési és biztonsági követelményeket ad.
+
+1. A mellékelt szabvány azonosítása
+Tulajdonság
+
+Melléklet szerinti adat
+
+Szabvány
+
+AIQT™
+
+Verzió
+
+1.0.6
+
+Licenc
+
+Apache License 2.0
+
+Alap
+
+AIQT Guardrails
+
+Szerzői hivatkozás
+
+Jeff Posluns
+
+Dokumentumtípus
+
+Szöveges instrukció- és referenciaanyag
+
+Végrehajtható kód
+
+Nem tartalmaz
+
+Hálózati művelet
+
+Nem hajt végre
+
+A melléklet meghatározza az alapvető értékrendet, az öt működési szabályt, a bizonyítási és munkavégzési követelményeket, valamint a beszélgetés- és eszközbiztonsági előírásokat. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+Fontos hatókör: a csatolt változat az AI-asszisztensekre vonatkozó szabványt tartalmazza. Kifejezetten jelzi, hogy a fejlesztés közbeni Git-, branch-, review-, merge- és attribúciókezelés részletes védelmei a külön fejlesztői telepítéshez tartoznak. Ezért a jelen tervben az ilyen előírásokat az AIQT elveiből és a már jóváhagyott CFA4-követelményekből vezetjük le, nem tulajdonítunk a mellékletnek benne nem szereplő részletszabályokat. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+2. Az AIQT kötelező prioritási hierarchiája
+Accuracy = Integrity = Quality = Trust
+
+Pontosság · Integritás · Minőség · Bizalom
+
+Progress – Előrehaladás
+
+Speed – Sebesség
+
+Cost – Költség
+
+A négy felső érték egyenrangú. Egyik sem áldozható fel a gyorsabb végrehajtás, az előrehaladás vagy az alacsonyabb költség érdekében.
+
+Ez a CFA4 AI-fejlesztési rendszerében azt jelenti, hogy:
+
+A Claude Code nem zárhat le hibás fejlesztést azért, mert elérte az idő- vagy költségkeretet.
+
+A Pi + Claude nem állíthatja igazoltnak a követelmények teljesítését kizárólag az AI becslése alapján.
+
+A Goldfish nem adhat érvényes ellenőrzési eredményt, ha hiányzik a szükséges kontextusizoláció.
+
+A ThinkRail nem jeleníthet meg sikeres befejezést, ha a kötelező teszt valójában nem futott le.
+
+Az ügynökök nem gyengíthetik a teszteket egy sikeresebb CI-eredmény érdekében.
+
+Forrás: AIQT 1.0.6, prioritási hierarchia. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+3. Az AIQT öt szabályának kötelező bevezetése
+AIQT-szabály
+
+CFA4-ben előírt működés
+
+1. Védelmi események jelzése
+
+Minden blokkolásnál azonosítani kell az érintett szabályt és okot; a sikeres ellenőrzésekről nem szükséges zajos eseményfolyam
+
+2. Változtatások önellenőrzése
+
+Minden módosítás után legalább egy érdemi belső megfelelőségi önellenőrzés
+
+3. Hatókörön belüli hibák javítása
+
+A fejlesztés során észlelt, saját feladathoz tartozó hibát szállítás előtt rendezni kell
+
+4. Hatókörön kívüli hibák jelzése
+
+A talált problémát jelenteni kell, de külön engedély nélkül nem bővíthető a fejlesztési feladat
+
+5. Alapvető ok kezelése
+
+Ismétlődő vagy saját ellenőrzési hiányosság esetén megelőző védelmi szabályt kell javasolni
+
+A második szabály szerint az önellenőrzés belső munkafolyamat. A felhasználó felé a ténylegesen ellenőrizhető teszt- és megfelelőségi eredmények kerülnek, nem az ügynök privát gondolatmenete. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+Kötelező hibakezelési állapotok
+Az eredeti fejlesztési állapotgépet a következő szabályokkal kell kiegészíteni:
+
+Állapot
+
+Kötelező intézkedés
+
+IN_SCOPE_DEFECT
+
+Javítás és újratesztelés
+
+OUT_OF_SCOPE_FINDING
+
+Dokumentált jelzés, engedély nélkül nincs végrehajtás
+
+GUARDRAIL_BLOCKED
+
+Azonosított szabály és blokkolási ok
+
+VERIFICATION_PENDING
+
+Nincs sikeres lezárás
+
+ROOT_CAUSE_ACTION
+
+Megelőző szabály javaslata
+
+HUMAN_DECISION_REQUIRED
+
+Felhasználói döntésre vár
+
+A rendszer megkülönbözteti a felismert problémát, a tényleges hibajavítást és a sikeresen ellenőrzött eredményt.
+
+4. A meglévő TC-01–TC-10 komponensek kiegészítése
+A jelenlegi tíz integrációs komponenst megtartjuk, de mindegyikhez kötelező AIQT-feladatot rendelünk.
+
+ID
+
+Komponens
+
+Kötelező AIQT-kiegészítés
+
+TC-01
+
+Agent Policy Adapter
+
+Prioritási hierarchia, utasításkezelés, hatókörvédelem
+
+TC-02
+
+Workspace Coordinator
+
+Célrendszer-azonosítás, biztonságosan ismételhető műveletek
+
+TC-03
+
+Context/Spec Bridge
+
+Forrásazonosítás, eredetkövetés, kontextushatárok
+
+TC-04
+
+Evidence Collector
+
+Megfigyelt, következtetett és becsült eredmények szétválasztása
+
+TC-05
+
+Approval & Gate Controller
+
+Kötelező jóváhagyás, fail-closed viselkedés
+
+TC-06
+
+EGM Workflow Adapter
+
+Terv és végrehajtás elkülönítése, kontrollált review
+
+TC-07
+
+Fresh Context Validator
+
+Tényleges Goldfish-kontextusizoláció igazolása
+
+TC-08
+
+Design Review Registry
+
+Hiányok és megoldások forráshivatkozással
+
+TC-09
+
+Specification Drift Monitor
+
+Bizonyítható dokumentáció–kód eltérések
+
+TC-10
+
+Agent Efficiency Evaluator
+
+Mért és becsült teljesítményadatok elkülönítése
+
+Új kötelező komponensek: TC-11–TC-15
+Az AIQT teljes körű alkalmazásához öt további logikai komponenst javaslok.
+
+ID
+
+Komponens
+
+Feladat
+
+TC-11
+
+AIQT Compliance Validator
+
+Az AIQT-szabályok géppel ellenőrizhető részeinek validálása
+
+TC-12
+
+Source & Claim Provenance Registry
+
+Állítások, dokumentumok, commitok és bizonyítékok összerendelése
+
+TC-13
+
+Scope & Change Boundary Guard
+
+Engedélyezett feladat és módosítási hatókör védelme
+
+TC-14
+
+Security & Tool Execution Guard
+
+Eszközhívások, argumentumok, hozzáférések és külső kommunikáció ellenőrzése
+
+TC-15
+
+Recovery & Idempotency Controller
+
+Újrapróbálkozások, megszakadt műveletek és helyreállítás kezelése
+
+Ezek nem feltétlenül önálló szolgáltatások. A megvalósításkor összevonhatók a meglévő komponensekkel, amennyiben a funkcionális felelősségek és tesztelhetőségük nem sérülnek.
+
+TC-11 – AIQT Compliance Validator
+Feladata a fejlesztési folyamat során azonosított AIQT-követelmények ellenőrzése.
+
+Kötelezően felismerendő példák:
+
+A PR sikeresként szerepel, de a CI ellenőrzése hiányzik.
+
+Az AI azt jelenti, hogy minden teszt lefutott, de nincs hozzá futtatási bizonyíték.
+
+Az ügynök a feladat hatókörén kívül módosított fájlt.
+
+A jelentés mért értékként tüntet fel becslést.
+
+A Goldfish-vizsgálat kontextusizolációja nincs igazolva.
+
+A TC-11 nem bizonyíthat minden minőségi vagy igazságtartalmi állítást automatikusan. A nem automatizálható követelményeket ellenőrzési listához és emberi review-hoz kell rendelni.
+
+TC-12 – Source & Claim Provenance Registry
+Minden lényeges fejlesztési állításhoz meg kell őrizni annak igazolását.
+
+A tervezett bizonyítékrekord:
+
+claim_id: CFA4-CLAIM-0001
+task_id: CFA4-TASK-ID
+claim: "A megadott teszt sikeresen lefutott"
+claim_type: OBSERVED
+source_type: CI_TEST_RESULT
+source_reference: CI-RUN-ID
+source_commit: COMMIT-SHA
+verification_status: VERIFIED
+
+A példa mezőséma, nem ténylegesen lefutott teszt.
+
+Kötelező állítástípusok: OBSERVED, INFERRED, ESTIMATED, SELF_REPORTED, UNKNOWN.
+
+Az ellenőrzött forrás nélküli AI-kijelentés nem kaphat automatikusan VERIFIED státuszt.
+
+TC-13 – Scope & Change Boundary Guard
+A feladatindításkor rögzíteni kell:
+
+Az engedélyezett repositoryt, branchet és worktree-t.
+
+A módosítható modulokat és fájlterületeket.
+
+A tiltott rendszer- és upstream-műveleteket.
+
+Az elfogadási teszteket.
+
+Az engedélyezett eszközöket.
+
+A végrehajtás erőforrás- és költségkorlátait.
+
+A hatókörön kívül talált hibáról jelentés készül. Ez nem nyit automatikusan új fejlesztési feladatot, és nem ad végrehajtási engedélyt.
+
+TC-14 – Security & Tool Execution Guard
+Ez a komponens a Pi és Claude Code által végzett műveletek közös biztonsági kontrollját biztosítja.
+
+Tervezett funkciók:
+
+Eszközparaméterek és elérési utak validálása.
+
+Hálózati célpontok engedélyezési listája.
+
+Érzékeny adatok megjelenítésének korlátozása.
+
+Jogosultságok minimálisra szűkítése.
+
+Sikertelen jogosultsági ellenőrzés esetén műveletblokkolás.
+
+Folyamat- és időkorlátok.
+
+Prompt injection jellegű utasítások megkülönböztetése a tényleges feladatutasításoktól.
+
+TC-15 – Recovery & Idempotency Controller
+Az AI-ügynökök hosszabb Git-, CI- és shell-műveleteknél megszakadhatnak. Ilyenkor a rendszer nem tekintheti automatikusan sikertelennek a végrehajtott műveletet.
+
+Újrapróbálkozás előtt meg kell állapítani a tényleges állapotot, vagy idempotens műveleti azonosítót kell használni.
+
+Például egy PR létrehozására irányuló hívás időtúllépése után először ellenőrizni kell, hogy a PR már létezik-e. Csak ezután engedélyezhető az ismétlés.
+
+Forrás: AIQT, biztonságos ismétlés és célrendszer-azonosítás. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+5. Kötelező AIQT biztonsági előírások a CFA4-hez
+A melléklet biztonsági követelményeit az alábbi végrehajtási szabályrendszerré alakítjuk.
+
+AIQT-követelmény
+
+CFA4 megvalósítás
+
+Hálózati célpontok korlátozása
+
+Feladathoz kötött kimenő kommunikáció
+
+Titkok védelme
+
+Hitelesítő adatok kizárása a naplókból és AI-artefaktumokból
+
+Kontextushatárok
+
+Külön feladathoz tartozó adatok nem öröklődnek automatikusan
+
+Bizalmas instrukciók védelme
+
+Nem engedélyezett instrukció- és titokkiadás blokkolása
+
+Kompromittált titkok
+
+Incidensjelzés és visszavonási/rotációs eljárás
+
+Jogosultsági hierarchia
+
+A projektadat nem írhatja felül a magasabb szintű védelmeket
+
+Prompt injection
+
+Külső forrásból származó instrukció adatkén kezelendő
+
+Adatminimalizálás
+
+Csak a szükséges projektadat továbbítása
+
+Fail-closed
+
+Hibás biztonsági ellenőrzés esetén blokkolás
+
+Legkisebb jogosultság
+
+Feladatra korlátozott eszköz- és fájlelérés
+
+Read-only garantálása
+
+Tervezés, előnézet és audit nem módosíthat állapotot
+
+Argumentumvalidáció
+
+Shell-, fájl- és API-paraméterek ellenőrzése
+
+Erőforráskorlát
+
+Idő, memória, párhuzamosság és API-költség korlátozása
+
+Forrás: AIQT 1.0.6, Security. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+A szabályok mindkét Claude-útvonalra érvényesek. Nem elegendő, ha csak a Claude Code CLI alkalmazza őket, miközben a ThinkRail Pi munkamenetei megkerülik ugyanazokat a korlátokat.
+
+Különösen fontos: az EGM Goldfish izolációja
+Az EGM Goldfish új, korábbi tervezői beszélgetéstől elkülönített kontextust kap, de el kell érnie a review-hoz szükséges, kifejezetten megjelölt projektforrásokat.
+
+Az AIQT kontextushatár-szabályát ezért úgy alkalmazzuk, hogy:
+
+Az elkülönítés célja a korábbi ügynöki következtetések és elfogultságok kizárása, nem a szükséges bizonyítékok elrejtése.
+
+A reviewer hozzáférési jogosultságát külön kell ellenőrizni. A friss beszélgetés nem egyenlő a fájlrendszer biztonsági izolációjával.
+
+6. A fejlesztési folyamat AIQT-alapú kiegészítése
+A már jóváhagyott fejlesztési állapotgép minden szakaszára kötelező AIQT-feltételek kerülnek.
+
+Fázis
+
+Új AIQT-ellenőrzés
+
+PROPOSED
+
+Pontos feladat, hatókör, forrás és feltételezések
+
+DESIGN REVIEWED
+
+EGM-review eredmények és nyitott megállapítások
+
+APPROVED
+
+Egyértelmű, dokumentált felhasználói engedély
+
+ASSIGNED
+
+Célrepository, worktree, jogosultságok ellenőrzése
+
+IMPLEMENTED
+
+Hatókörvédelem és kötelező önellenőrzés
+
+VALIDATED
+
+Tényleges tesztfuttatási bizonyítékok
+
+REVIEWED
+
+Forrás- és bizonyítékalapú független ellenőrzés
+
+MERGE AUTHORIZED
+
+Minden kötelező kapu sikeres, külön engedély
+
+MERGED / VERIFIED
+
+Összevonás utáni tényleges állapot ellenőrizve
+
+Egy tervezésre kiadott jóváhagyás nem jogosít fel implementációra. Egy implementációs engedély nem jogosít fel automatikus merge-re.
+
+A rendszer semmilyen körülmények között nem tekintheti az UNKNOWN, SKIPPED, BLOCKED vagy NOT_RUN állapotot igazolt sikernek.
+
+Ez az AIQT által kifejezetten előírt, megfigyelésen és bizonyítékon alapuló állapotjelentés CFA4-specifikus alkalmazása. 
+01-AIQT-1.0.6-teljes-szabv-ny.txt
+
+7. Az F0–F9 és E0–E6 ütemezés módosítása
+A korábban jóváhagyott 17 fázis megmarad. Önálló, párhuzamos AIQT-bevezetési program helyett az egyes szakaszokba építjük az ellenőrzéseket, hogy elkerüljük a fejlesztési folyamat felesleges megkettőzését.
+
+Meglévő fázis
+
+AIQT-kiegészítés
+
+F0
+
+A jelenlegi szabályok és bizonyítékkezelés hiányelemzése
+
+F1
+
+ThinkRail, Pi és Claude biztonsági képességeinek felmérése
+
+F2
+
+AIQT Policy és forráskezelési szabályok beillesztése
+
+F3
+
+Hatókör-, jogosultság- és célrendszervédelem
+
+E0–E1
+
+EGM-plugin eredet, licenc és hozzáférések ellenőrzése
+
+E2–E3
+
+Forráskövetés és Goldfish-kontextusizoláció
+
+F4–F5
+
+Mindkét ügynökútvonal külön AIQT-megfelelőségi tesztje
+
+F6
+
+Biztonságos, bizonyítható feladatátadás
+
+F7
+
+Bizonyítékkezelés, fail-closed és CI-integráció
+
+E4–E5
+
+Pi–EGM megfelelőség és drift-ellenőrzések
+
+F8 + E6
+
+Integrált biztonsági és hatékonysági pilot
+
+F9
+
+Korlátozott üzemi bevezetés, végső jóváhagyással
+
+Kötelező végrehajtási sorrend
+A fejlesztés megkezdésekor először a meglévő CFA4-szabályokat kell összevetni az AIQT 1.0.6 követelményeivel.
+
+A felismert hiányokat konkrét TC-komponensekhez és tesztekhez kell rendelni. Ezt követheti a szabályok technikai kikényszerítése, majd az ügynökök pilotja.
+
+Az AIQT nem alkalmazható csupán egy promptfájl bemásolásával igazolt biztonsági rendszerként. Az instrukciók mellett ellenőrizhető jogosultsági korlátok, bizonyítékok és tesztkapuk szükségesek.
+
+8. Új elfogadási kapuk: AC-08–AC-14
+A korábbi AC-01–AC-07 kapuk változatlanul érvényesek. Az alábbi hét kötelező kapuval egészülnek ki.
+
+Kapu
+
+Ellenőrzési feltétel
+
+Elfogadás
+
+AC-08
+
+AIQT prioritási és minőségvédelmi szabályok
+
+PASS
+
+AC-09
+
+Állítások és források bizonyítékkapcsolata
+
+PASS
+
+AC-10
+
+Hatókör és jóváhagyás védelme
+
+PASS
+
+AC-11
+
+Titok-, jogosultság- és prompt injection védelem
+
+PASS
+
+AC-12
+
+Biztonságos újrapróbálkozás és helyreállítás
+
+PASS
+
+AC-13
+
+Pi, Claude Code és EGM szabályparitása
+
+PASS
+
+AC-14
+
+AIQT megfelelőségi és negatív tesztek
+
+PASS
+
+Kötelező negatív tesztek
+Az AC-14 nemcsak sikeres végrehajtásokat ellenőriz, hanem azt is, hogy a rendszer helyesen állítja meg a nem megengedett műveleteket.
+
+Teszteset
+
+Elvárt viselkedés
+
+Nem létező teszteredmény sikeresnek jelentése
+
+Elutasítás
+
+Engedély nélküli fájlmódosítás
+
+Blokkolás
+
+Hatókörön kívüli hiba automatikus javítása
+
+Blokkolás és jelentés
+
+Hiányzó felhasználói merge-engedély
+
+Blokkolás
+
+API-művelet időtúllépése után ismétlés
+
+Előzetes állapotegyeztetés
+
+Külső fájlban szereplő utasítás felülírási kísérlete
+
+Utasításként nem fogadható el
+
+Hiányzó Goldfish-review bizonyíték
+
+Nem VERIFIED
+
+Kihagyott kötelező CI-teszt
+
+Nem PASS
+
+Becsült adat mért eredményként közlése
+
+Elutasítás vagy javítás
+
+Biztonsági ellenőrzés hibája
+
+Fail-closed
+
+A kapukat a ténylegesen konfigurált ügynökrendszerekben, nem pusztán szimulált API-válaszokkal kell igazolni. A szimulált egységtesztek hasznosak lehetnek, de önmagukban nem bizonyítanak teljes rendszerszintű megfelelést.
+
+9. Dokumentációs és verziókezelési követelmények
+A terv következő verziója:
+
+CFA4-DEV-AI-ORCHESTRATION-001
+
+1.1
+Dokumentumtulajdonság
+
+Érték
+
+Kiindulási verzió
+
+FINAL 1.0 – APPROVED
+
+Új változat
+
+FINAL 1.1 – APPROVAL PENDING
+
+Szabványalap
+
+AIQT 1.0.6
+
+Új komponensek
+
+TC-11–TC-15
+
+Új elfogadási kapuk
+
+AC-08–AC-14
+
+Ütemezés
+
+F0–F9 és E0–E6 kiegészítve
+
+Fejlesztési engedély
+
+Nincs
+
+Az eredeti FINAL 1.0 nem törölhető és nem írható át nyomtalanul. Az 1.1-es változatot a korábbi jóváhagyott tervre épülő, követhető módosításként kell nyilvántartani.
+
+A mellékelt AIQT eredeti szabványanyagát változatlan referenciaként kell kezelni. A CFA4-ra jellemző szabályokat külön alkalmazási profilban célszerű definiálni:
+
+CFA4-AIQT-PROFILE-001
+
+Ez a profil rögzítené az AIQT 1.0.6 pontjai, a TC-komponensek és az AC-kapuk közötti megfeleltetést. A pontos tárolási útvonalat az F0 repository-audit határozza meg.
+
+10. Végleges jóváhagyási javaslat
+CFA4-DEV-AI-ORCHESTRATION-001 – FINAL 1.1
+Jóváhagyásra előterjesztett határozat
+
+A korábban jóváhagyott CFA4 AI-fejlesztési infrastruktúratervet az AIQT™ 1.0.6 szabvány alkalmazási követelményeivel egészítjük ki.
+
+A kiegészítés:
+
+Megőrzi a ThinkRail + Pi + Claude + Claude Code CLI + EGM architektúrát.
+
+Kötelezővé teszi az AIQT prioritási hierarchiájának alkalmazását.
+
+Bevezeti az öt AIQT működési szabály CFA4-specifikus ellenőrzését.
+
+Kiegészíti a TC-01–TC-10 komponenseket.
+
+Létrehozandó funkcióként meghatározza a TC-11–TC-15 komponenseket.
+
+Bevezeti az AC-08–AC-14 megfelelőségi kapukat.
+
+Kiterjeszti a biztonsági, forráskövetési, hibakezelési és helyreállítási szabályokat.
+
+Megtartja a CFA4 meglévő Qt6-, kodek-, hardver- és release-követelményeit.
+
+Az AIQT bevezetésének végső célja: minden AI-fejlesztési eredmény pontos, igazolható, teljes, ellenőrzött és visszakövethető legyen, még akkor is, ha ez többletidőt vagy költséget igényel.
+
+Végrehajtási korlátozás: a terv jóváhagyása nem jelent engedélyt telepítésre, kódmódosításra, PR-létrehozásra vagy a fejlesztés megkezdésére.
+
+11. Jelenlegi állapot
+Tétel
+
+Státusz
+
+Mellékelt AIQT 1.0.6 feldolgozása
+
+Elkészült
+
+CFA4 szabványmegfeleltetési javaslat
+
+Elkészült
+
+TC-01–TC-15 tervezési hatókör
+
+Meghatározva
+
+AC-01–AC-14 elfogadási rendszer
+
+Meghatározva
+
+F0–F9 / E0–E6 kiegészítése
+
+Megtervezve
+
+FINAL 1.1 jóváhagyása
+
+PENDING
+
+Fejlesztés
+
+NOT STARTED
+
+Telepítés
+
+NOT STARTED
+
+GitHub-módosítás
+
+NOT STARTED
+
+Valós megfelelőségi tesztek
+
+NOT RUN
+
+A CFA4-DEV-AI-ORCHESTRATION-001 FINAL 1.1 szabványokkal kiegészített terve jóváhagyásra kész.
+
+A korábban jóváhagyott FINAL 1.0 továbbra is érvényes, amíg az 1.1-es módosítást külön jóvá nem hagyod. A tervet ebben a beszélgetésben dolgoztam ki; külső dokumentumot vagy GitHub-állományt nem módosítottam.
+
+Jóváhagyom. Véglegesítsd
+Jóváhagyva – végleges
+CFA4-DEV-AI-ORCHESTRATION-001
+FINAL 1.1 – AIQT 1.0.6 szabványintegrációval
+
+A jóváhagyásod alapján a CFA4-DEV-AI-ORCHESTRATION-001 FINAL 1.1 tervet véglegesítettnek tekintjük.
+
+Tulajdonság
+
+Végleges érték
+
+Dokumentumazonosító
+
+CFA4-DEV-AI-ORCHESTRATION-001
+
+Verzió
+
+FINAL 1.1
+
+Állapot
+
+APPROVED / FINAL
+
+Jóváhagyás dátuma
+
+2026. október 29.
+
+Szabvány
+
+AIQT 1.0.6
+
+Korábbi változat
+
+FINAL 1.0 – felváltva
+
+Fejlesztés
+
+NOT STARTED
+
+1. Véglegesített technológiai rendszer
+A jóváhagyott architektúra öt összetevője:
+
+JetBrains ThinkRail: központi fejlesztői munkafelület és Git-integráció.
+
+Pi + Claude: követelményelemzés, fejlesztéstervezés és koordináció.
+
+Claude Code CLI: natív implementáció, tesztelés és hibajavítás.
+
+Google Elephant Goldfish Model: mély kontextusú tervezés, független review és specifikációeltérés-vizsgálat.
+
+AIQT 1.0.6: minőség-, biztonság-, integritás- és bizonyítékalapú működési követelmények.
+
+2. Elfogadott fejlesztési hatókör
+Tervrész
+
+Állapot
+
+TC-01–TC-15 komponensek
+
+Jóváhagyva
+
+F0–F9 fejlesztési fázisok
+
+Jóváhagyva
+
+E0–E6 EGM-integrációs fázisok
+
+Jóváhagyva
+
+AC-01–AC-14 elfogadási kapuk
+
+Kötelező
+
+CFA4-AIQT-PROFILE-001 alkalmazási profil
+
+Jóváhagyva
+
+AIQT prioritási hierarchia
+
+Kötelező
+
+Jogosultság- és hatókörvédelem
+
+Kötelező
+
+Bizonyítékalapú validáció
+
+Kötelező
+
+Független Goldfish-review
+
+Az előírt feladatoknál kötelező
+
+3. Változatlan CFA4-követelmények
+Az Ubuntu 26.04 LTS/amd64 célplatform, a natív Qt6 GUI, a Rust/Cargo fejlesztési lánc, az FFmpeg 9.0.2 baseline, a kodek- és GPU-validáció, valamint a korábbi jóváhagyási és release-kapuk változatlanul érvényesek.
+
+A [upstream] upstream nem módosítható a CFA4 fejlesztése során.
+
+4. Végrehajtási státusz
+A jóváhagyás kizárólag a terv véglegesítésére vonatkozik.
+
+Művelet
+
+Státusz
+
+Terv jóváhagyása
+
+APPROVED
+
+Terv véglegesítése a beszélgetésben
+
+FINAL
+
+Fejlesztés indítása
+
+NOT AUTHORIZED
+
+Telepítés
+
+NOT STARTED
+
+GitHub-repozitórium módosítása
+
+NOT STARTED
+
+Integrációs tesztek
+
+NOT RUN
+
+Kiadási műveletek
+
+NOT AUTHORIZED
+
+A végleges dokumentumot a CFA4 GitHub-repozitóriumába még nem írtam be.
+
+Végleges döntés:
+
+CFA4-DEV-AI-ORCHESTRATION-001 / FINAL 1.1 / APPROVED
+
+Ez a továbbiakban irányadó, jóváhagyott terv a CFA4 AI-fejlesztési infrastruktúrájához. A FINAL 1.0 változat történeti előzményként megmarad.
+
+A fejlesztés nem indul el külön, kifejezett utasítás nélkül.

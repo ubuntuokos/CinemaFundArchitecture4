@@ -33,7 +33,6 @@ cargo run --release -p cfa4 -- a.mp4 b.wav       # import media (or open a .fcpr
 cargo run --release -p cfa4-cli -- commands      # list engine commands
 cargo run --release -p cfa4-cli -- render --demo --seconds 3 --out frame.png
 cargo run --release -p cfa4-cli -- mcp --demo    # headless MCP server on stdio
-cargo xtask web --serve 8765                          # the web app on http://127.0.0.1:8765/ (docs/web.md)
 ```
 
 | Variable | Effect |
@@ -119,8 +118,9 @@ Every commit must pass all of these:
 | Tests | `cargo test --workspace` |
 | Layering | `cargo xtask layers` |
 | Assets | `cargo xtask assets` |
-| wasm | `cargo xtask wasm` (checks every L0–L4 crate, `cfa4-ui-egui` and `cfa4-web` for `wasm32-unknown-unknown`) |
-| All of the above | `cargo xtask ci` (runs clippy and tests with `--release`) |
+| All of the above except tests | `cargo xtask ci` (runs clippy with `--release`; run the tests separately) |
+
+`cargo xtask wasm` (checks every L0–L4 crate and `cfa4-ui-egui` for `wasm32-unknown-unknown`) is opt-in legacy, not a gate: WASM is not a CFA4 target.
 
 Run them with `CFA4_FONTS_DIR` set too when you change font code ([extra-fonts](#building-with-extra-fonts)).
 

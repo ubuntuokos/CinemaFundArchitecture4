@@ -7,7 +7,6 @@
 const SYM_BITS: u32 = 8;
 const CODE_BITS: u32 = 32;
 const SYM_MAX: u32 = (1 << SYM_BITS) - 1;
-#[cfg(test)]
 const CODE_SHIFT: u32 = CODE_BITS - SYM_BITS - 1;
 const CODE_TOP: u32 = 1 << (CODE_BITS - 1);
 const CODE_BOT: u32 = CODE_TOP >> SYM_BITS;
@@ -261,146 +260,344 @@ impl<'a> RangeDecoder<'a> {
     }
 }
 
-#[cfg(test)]
-pub(crate) mod enc {
-    //! Minimal range encoder (RFC 6716 §5.1), used only to build test streams.
-    use super::*;
+/// Range encoder (RFC 6716 §5.1): symbols from the front of the buffer, raw bits from the back.
+/// Running out of room sets [`RangeEncoder::error`] (never panics); the caller then codes the
+/// frame again with less.
+#[derive(Clone, Debug)]
+pub struct RangeEncoder {
+    out: Vec<u8>,
+    end: Vec<u8>,
+    end_window: u32,
+    nend_bits: i32,
+    nbits_total: i32,
+    rng: u32,
+    low: u32,
+    rem: i32,
+    ext: u32,
+    size: usize,
+    /// Set when the coded data no longer fits in `size` bytes.
+    pub error: bool,
+}
 
-    pub struct RangeEncoder {
-        out: Vec<u8>,
-        end: Vec<u8>,
-        end_window: u32,
-        nend_bits: i32,
-        rng: u32,
-        low: u32,
-        rem: i32,
-        ext: u32,
-        size: usize,
+impl RangeEncoder {
+    /// An encoder for a buffer of `size` bytes.
+    pub fn new(size: usize) -> Self {
+        RangeEncoder {
+            out: Vec::with_capacity(size),
+            end: Vec::new(),
+            end_window: 0,
+            nend_bits: 0,
+            nbits_total: CODE_BITS as i32 + 1,
+            rng: CODE_TOP,
+            low: 0,
+            rem: -1,
+            ext: 0,
+            size,
+            error: false,
+        }
     }
 
-    impl RangeEncoder {
-        pub fn new(size: usize) -> Self {
-            RangeEncoder { out: Vec::new(), end: Vec::new(), end_window: 0, nend_bits: 0, rng: CODE_TOP, low: 0, rem: -1, ext: 0, size }
-        }
-        fn carry_out(&mut self, c: u32) {
-            if c != SYM_MAX {
-                let carry = c >> SYM_BITS;
-                if self.rem >= 0 {
-                    self.out.push((self.rem as u32 + carry) as u8);
+    /// The buffer size in bytes.
+    pub fn storage(&self) -> usize {
+        self.size
+    }
+
+    /// The current range (the final range once [`Self::done`] ran).
+    pub fn rng(&self) -> u32 {
+        self.rng
+    }
+
+    fn carry_out(&mut self, c: u32) {
+        if c != SYM_MAX {
+            let carry = c >> SYM_BITS;
+            if self.rem >= 0 {
+                self.push((self.rem as u32).wrapping_add(carry) as u8);
+            }
+            if self.ext > 0 {
+                let sym = (SYM_MAX + carry) & SYM_MAX;
+                for _ in 0..self.ext {
+                    self.push(sym as u8);
                 }
-                if self.ext > 0 {
-                    let sym = (SYM_MAX + carry) & SYM_MAX;
-                    for _ in 0..self.ext {
-                        self.out.push(sym as u8);
-                    }
-                    self.ext = 0;
-                }
-                self.rem = (c & SYM_MAX) as i32;
-            } else {
-                self.ext += 1;
+                self.ext = 0;
             }
+            self.rem = (c & SYM_MAX) as i32;
+        } else {
+            self.ext += 1;
         }
-        fn normalize(&mut self) {
-            while self.rng <= CODE_BOT {
-                self.carry_out(self.low >> CODE_SHIFT);
-                self.low = (self.low << SYM_BITS) & (CODE_TOP - 1);
-                self.rng <<= SYM_BITS;
-            }
+    }
+
+    fn push(&mut self, b: u8) {
+        if self.out.len() + self.end.len() < self.size {
+            self.out.push(b);
+        } else {
+            self.error = true;
         }
-        pub fn encode(&mut self, fl: u32, fh: u32, ft: u32) {
-            let r = self.rng / ft;
-            if fl > 0 {
-                self.low += self.rng - r * (ft - fl);
-                self.rng = r * (fh - fl);
-            } else {
-                self.rng -= r * (ft - fh);
-            }
-            self.normalize();
+    }
+
+    fn normalize(&mut self) {
+        while self.rng <= CODE_BOT {
+            self.carry_out(self.low >> CODE_SHIFT);
+            self.low = (self.low << SYM_BITS) & (CODE_TOP - 1);
+            self.rng <<= SYM_BITS;
+            self.nbits_total += SYM_BITS as i32;
         }
-        pub fn bit_logp(&mut self, val: bool, logp: u32) {
-            let r = self.rng;
-            let s = r >> logp;
-            let r2 = r - s;
-            if val {
-                self.low += r2;
-                self.rng = s;
-            } else {
-                self.rng = r2;
-            }
-            self.normalize();
+    }
+
+    /// Codes the symbol with cumulative range `[fl, fh)` of total `ft`.
+    pub fn encode(&mut self, fl: u32, fh: u32, ft: u32) {
+        let ft = ft.max(1);
+        let r = self.rng / ft;
+        if fl > 0 {
+            self.low = self.low.wrapping_add(self.rng.wrapping_sub(r.wrapping_mul(ft - fl)));
+            self.rng = r.wrapping_mul(fh.wrapping_sub(fl));
+        } else {
+            self.rng = self.rng.wrapping_sub(r.wrapping_mul(ft.wrapping_sub(fh)));
         }
-        pub fn icdf(&mut self, s: usize, icdf: &[u8], ftb: u32) {
-            let r = self.rng >> ftb;
-            if s > 0 {
-                self.low += self.rng - r * icdf[s - 1] as u32;
-                self.rng = r * (icdf[s - 1] as u32 - icdf[s] as u32);
-            } else {
-                self.rng -= r * icdf[s] as u32;
-            }
-            self.normalize();
+        self.normalize();
+    }
+
+    /// Like [`Self::encode`] with `ft = 1 << bits`.
+    pub fn encode_bin(&mut self, fl: u32, fh: u32, bits: u32) {
+        self.encode(fl, fh, 1 << bits);
+    }
+
+    /// Codes a binary symbol whose probability of being 1 is `1/2^logp`.
+    pub fn bit_logp(&mut self, val: bool, logp: u32) {
+        let r = self.rng;
+        let s = r >> logp;
+        let r2 = r - s;
+        if val {
+            self.low = self.low.wrapping_add(r2);
+            self.rng = s;
+        } else {
+            self.rng = r2;
         }
-        pub fn uint(&mut self, fl: u32, ft: u32) {
-            let ft1 = ft - 1;
-            let ftb = ilog(ft1);
-            if ftb > 8 {
-                let ftb = (ftb - 8) as u32;
-                let top = (ft1 >> ftb) + 1;
-                let v = fl >> ftb;
-                self.encode(v, v + 1, top);
-                self.bits(fl & ((1 << ftb) - 1), ftb);
-            } else {
-                self.encode(fl, fl + 1, ft);
-            }
+        self.normalize();
+    }
+
+    /// Codes symbol `s` with an "inverse CDF" table (`ft = 1 << ftb`).
+    pub fn icdf(&mut self, s: usize, icdf: &[u8], ftb: u32) {
+        let r = self.rng >> ftb;
+        let at = |i: usize| icdf.get(i).copied().unwrap_or(0) as u32;
+        if s > 0 {
+            self.low = self.low.wrapping_add(self.rng.wrapping_sub(r.wrapping_mul(at(s - 1))));
+            self.rng = r.wrapping_mul(at(s - 1).wrapping_sub(at(s)));
+        } else {
+            self.rng = self.rng.wrapping_sub(r.wrapping_mul(at(s)));
         }
-        pub fn bits(&mut self, val: u32, bits: u32) {
-            let mut window = self.end_window;
-            let mut used = self.nend_bits;
-            if used as u32 + bits > CODE_BITS {
-                while used >= SYM_BITS as i32 {
+        self.normalize();
+    }
+
+    /// Codes `fl` uniformly distributed in `[0, ft)` (`ft >= 2`).
+    pub fn uint(&mut self, fl: u32, ft: u32) {
+        let ft1 = ft.saturating_sub(1);
+        let fl = fl.min(ft1);
+        let ftb = ilog(ft1);
+        if ftb > 8 {
+            let ftb = (ftb - 8) as u32;
+            let top = (ft1 >> ftb) + 1;
+            let v = fl >> ftb;
+            self.encode(v, v + 1, top);
+            self.bits(fl & ((1 << ftb) - 1), ftb);
+        } else {
+            self.encode(fl, fl + 1, ft.max(1));
+        }
+    }
+
+    /// Writes `bits` raw bits (0..=25) at the end of the buffer.
+    pub fn bits(&mut self, val: u32, bits: u32) {
+        if bits == 0 {
+            return;
+        }
+        let mut window = self.end_window;
+        let mut used = self.nend_bits;
+        if used as u32 + bits > CODE_BITS {
+            while used >= SYM_BITS as i32 {
+                if self.out.len() + self.end.len() < self.size {
                     self.end.push((window & SYM_MAX) as u8);
-                    window >>= SYM_BITS;
-                    used -= SYM_BITS as i32;
+                } else {
+                    self.error = true;
                 }
-            }
-            window |= val << used;
-            used += bits as i32;
-            self.end_window = window;
-            self.nend_bits = used;
-        }
-        /// Finalises and returns a buffer of exactly `size` bytes.
-        pub fn done(mut self) -> Vec<u8> {
-            let mut l = CODE_BITS as i32 - ilog(self.rng);
-            let mut msk = (CODE_TOP - 1) >> l;
-            let mut end = (self.low + msk) & !msk;
-            if (end | msk) >= self.low + self.rng {
-                l += 1;
-                msk >>= 1;
-                end = (self.low + msk) & !msk;
-            }
-            while l > 0 {
-                self.carry_out(end >> CODE_SHIFT);
-                end = (end << SYM_BITS) & (CODE_TOP - 1);
-                l -= SYM_BITS as i32;
-            }
-            if self.rem >= 0 || self.ext > 0 {
-                self.carry_out(0);
-            }
-            let mut window = self.end_window;
-            let mut used = self.nend_bits;
-            while used > 0 {
-                self.end.push((window & SYM_MAX) as u8);
                 window >>= SYM_BITS;
                 used -= SYM_BITS as i32;
             }
-            assert!(self.out.len() + self.end.len() <= self.size, "range encoder overflow");
-            let mut buf = self.out;
-            buf.resize(self.size - self.end.len(), 0);
-            for &b in self.end.iter().rev() {
-                buf.push(b);
-            }
-            buf
         }
+        window |= (val & ((1u32 << bits) - 1)) << used;
+        used += bits as i32;
+        self.end_window = window;
+        self.nend_bits = used;
+        self.nbits_total += bits as i32;
     }
+
+    /// Pretends the frame's remaining bits were used (CELT silence frames).
+    pub fn skip_to_end(&mut self, total: i32) {
+        let t = self.tell();
+        self.nbits_total += total - t;
+    }
+
+    /// Number of bits written so far (rounded up).
+    pub fn tell(&self) -> i32 {
+        self.nbits_total - ilog(self.rng)
+    }
+
+    /// Number of 1/8 bits written so far (rounded up).
+    pub fn tell_frac(&self) -> u32 {
+        let nbits = (self.nbits_total as u32) << BITRES;
+        let mut l = ilog(self.rng) as u32;
+        let mut r = self.rng >> (l.saturating_sub(16));
+        for _ in 0..BITRES {
+            r = (r * r) >> 15;
+            let b = r >> 16;
+            l = (l << 1) | b;
+            r >>= b;
+        }
+        nbits.wrapping_sub(l)
+    }
+
+    /// Finalises the stream: a buffer of exactly `size` bytes (zero-padded in the middle).
+    /// [`Self::error`] tells whether everything fitted.
+    pub fn done(mut self) -> Vec<u8> {
+        let mut l = CODE_BITS as i32 - ilog(self.rng);
+        let mut msk = (CODE_TOP - 1) >> l;
+        let mut end = self.low.wrapping_add(msk) & !msk;
+        if (end | msk) >= self.low.wrapping_add(self.rng) {
+            l += 1;
+            msk >>= 1;
+            end = self.low.wrapping_add(msk) & !msk;
+        }
+        while l > 0 {
+            self.carry_out(end >> CODE_SHIFT);
+            end = (end << SYM_BITS) & (CODE_TOP - 1);
+            l -= SYM_BITS as i32;
+        }
+        if self.rem >= 0 || self.ext > 0 {
+            self.carry_out(0);
+        }
+        let mut window = self.end_window;
+        let mut used = self.nend_bits;
+        while used >= SYM_BITS as i32 {
+            if self.out.len() + self.end.len() < self.size {
+                self.end.push((window & SYM_MAX) as u8);
+            } else {
+                self.error = true;
+            }
+            window >>= SYM_BITS;
+            used -= SYM_BITS as i32;
+        }
+        let full = self.out.len() + self.end.len() >= self.size;
+        let mut buf = self.out;
+        buf.resize(self.size.saturating_sub(self.end.len()), 0);
+        for &b in self.end.iter().rev() {
+            buf.push(b);
+        }
+        // Leftover raw bits share the byte just before the raw-bit region: padding, or the last
+        // range-coder byte, whose low `-l` bits are free.
+        if !self.error && used > 0 {
+            match self.size.checked_sub(self.end.len() + 1).and_then(|i| buf.get_mut(i)) {
+                None => self.error = true,
+                Some(byte) => {
+                    let free = -l;
+                    if full && free < used {
+                        window &= (1u32 << free.clamp(0, 31)) - 1;
+                        self.error = true;
+                    }
+                    *byte |= window as u8;
+                }
+            }
+        }
+        buf
+    }
+}
+
+/// What the CELT layer codes symbols through: the decoder reads them, the encoder writes the
+/// values it is given. The value arguments are ignored when decoding; the return value is the
+/// symbol (decoded, or the one written).
+pub(crate) trait Coder {
+    const ENCODE: bool;
+    fn tell(&self) -> i32;
+    fn tell_frac(&self) -> u32;
+    fn storage(&self) -> usize;
+    fn bit_logp(&mut self, val: bool, logp: u32) -> bool;
+    fn uint(&mut self, val: u32, ft: u32) -> u32;
+    fn bits(&mut self, val: u32, bits: u32) -> u32;
+    /// Decoding: the cumulative frequency of the next symbol. Encoding: 0.
+    fn decode(&mut self, ft: u32) -> u32;
+    /// Decoding: consumes the symbol `[fl, fh)`. Encoding: writes it.
+    fn update(&mut self, fl: u32, fh: u32, ft: u32);
+}
+
+impl Coder for RangeDecoder<'_> {
+    const ENCODE: bool = false;
+    #[inline]
+    fn tell(&self) -> i32 {
+        RangeDecoder::tell(self)
+    }
+    #[inline]
+    fn tell_frac(&self) -> u32 {
+        RangeDecoder::tell_frac(self)
+    }
+    #[inline]
+    fn storage(&self) -> usize {
+        RangeDecoder::storage(self)
+    }
+    #[inline]
+    fn bit_logp(&mut self, _: bool, logp: u32) -> bool {
+        RangeDecoder::bit_logp(self, logp)
+    }
+    #[inline]
+    fn uint(&mut self, _: u32, ft: u32) -> u32 {
+        RangeDecoder::uint(self, ft)
+    }
+    #[inline]
+    fn bits(&mut self, _: u32, bits: u32) -> u32 {
+        RangeDecoder::bits(self, bits)
+    }
+    #[inline]
+    fn decode(&mut self, ft: u32) -> u32 {
+        RangeDecoder::decode(self, ft)
+    }
+    #[inline]
+    fn update(&mut self, fl: u32, fh: u32, ft: u32) {
+        RangeDecoder::update(self, fl, fh, ft)
+    }
+}
+
+impl Coder for RangeEncoder {
+    const ENCODE: bool = true;
+    fn tell(&self) -> i32 {
+        RangeEncoder::tell(self)
+    }
+    fn tell_frac(&self) -> u32 {
+        RangeEncoder::tell_frac(self)
+    }
+    fn storage(&self) -> usize {
+        self.size
+    }
+    fn bit_logp(&mut self, val: bool, logp: u32) -> bool {
+        RangeEncoder::bit_logp(self, val, logp);
+        val
+    }
+    fn uint(&mut self, val: u32, ft: u32) -> u32 {
+        let v = val.min(ft.saturating_sub(1));
+        RangeEncoder::uint(self, v, ft);
+        v
+    }
+    fn bits(&mut self, val: u32, bits: u32) -> u32 {
+        let v = if bits >= 32 { val } else { val & ((1u32 << bits) - 1) };
+        RangeEncoder::bits(self, v, bits);
+        v
+    }
+    fn decode(&mut self, _: u32) -> u32 {
+        0
+    }
+    fn update(&mut self, fl: u32, fh: u32, ft: u32) {
+        self.encode(fl, fh, ft)
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod enc {
+    pub use super::RangeEncoder;
 }
 
 #[cfg(test)]

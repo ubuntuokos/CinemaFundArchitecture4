@@ -598,6 +598,7 @@ fn output_meta(sps: &Sps, pts: i64, key: bool, draft: bool) -> OutputMeta {
         key,
         crop: sps.crop_rect(),
         full_range: vui.full_range,
+        range_signalled: vui.range_signalled,
         colour_primaries: vui.colour_primaries,
         transfer_characteristics: vui.transfer_characteristics,
         matrix_coefficients: vui.matrix_coefficients,
@@ -635,6 +636,7 @@ fn make_picture(o: &Output<FrameRef>) -> Picture {
         key: o.meta.key,
         color: ColorInfo {
             full_range: o.meta.full_range,
+            range_signalled: o.meta.range_signalled,
             primaries: o.meta.colour_primaries,
             transfer: o.meta.transfer_characteristics,
             matrix: o.meta.matrix_coefficients,

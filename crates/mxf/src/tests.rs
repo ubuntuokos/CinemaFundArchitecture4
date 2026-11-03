@@ -387,3 +387,133 @@ fn a_corrupt_index_position_cannot_allocate_a_giant_sparse_table() {
     let file = open(&bytes).unwrap();
     assert_eq!(file.tracks[file.track_of_kind(TrackKind::Picture).unwrap()].samples.len(), 5);
 }
+
+const IAB_KEY: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x01, 0x0D, 0x01, 0x03, 0x01, 0x16, 0x01, 0x0D, 0x01];
+
+/// A fake IABitstream frame of `body` bytes (the demuxer only reads the segment framing).
+fn iab_frame(i: usize, body: usize) -> Vec<u8> {
+    let mut f = vec![0x01, 0, 0, 0, 2, 0xAB, i as u8, 0x02];
+    f.extend_from_slice(&(body as u32).to_be_bytes());
+    f.extend(std::iter::repeat_n(i as u8, body));
+    f
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum IabWrap {
+    Frame,
+    ClipIndexed,
+    ClipBare,
+}
+
+/// An OP1a file with one IAB sound track of `frames` at 24 fps; `iab_descriptor` false writes a
+/// generic sound descriptor (the essence bytes identify it) and a plain sound element key.
+fn build_iab(frames: &[Vec<u8>], wrap: IabWrap, iab_descriptor: bool) -> Vec<u8> {
+    let key = if iab_descriptor { IAB_KEY } else { SND_KEY };
+    let number = u32::from_be_bytes([key[12], key[13], key[14], key[15]]);
+    let mut md = Vec::new();
+    klv(&mut md, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x05, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x05, 0x01, 0x00]), &batch(&[]));
+    let mut pre = LocalSet::new(1);
+    pre.p(0x3B03, &uuid(2)).p(0x3B09, &OP1A);
+    klv(&mut md, set_key(0x2F), &pre.0);
+    let mut cs = LocalSet::new(2);
+    cs.p(0x1901, &batch(&[&uuid(3), &uuid(4)]));
+    klv(&mut md, set_key(0x18), &cs.0);
+    let d = frames.len() as i64;
+    let mut mp = LocalSet::new(3);
+    mp.p(0x4401, &umid(1)).p(0x4403, &batch(&[&uuid(12)]));
+    klv(&mut md, set_key(0x36), &mp.0);
+    klv(&mut md, set_key(0x3B), &track(12, 3, 0, 22));
+    klv(&mut md, set_key(0x0F), &sequence(22, SOUND_DEF, d, 32));
+    klv(&mut md, set_key(0x11), &source_clip(32, SOUND_DEF, d, umid(2), 3));
+    let mut fp = LocalSet::new(4);
+    fp.p(0x4401, &umid(2)).p(0x4403, &batch(&[&uuid(14)])).p(0x4701, &uuid(42));
+    klv(&mut md, set_key(0x37), &fp.0);
+    klv(&mut md, set_key(0x3B), &track(14, 3, number, 24));
+    klv(&mut md, set_key(0x0F), &sequence(24, SOUND_DEF, d, 34));
+    klv(&mut md, set_key(0x11), &source_clip(34, SOUND_DEF, d, [0; 32], 0));
+    let mut desc = LocalSet::new(42);
+    desc.p(0x3006, &3u32.to_be_bytes()).p(0x3D03, &[0, 0, 0xBB, 0x80, 0, 0, 0, 1]).p(0x3D07, &0u32.to_be_bytes()).p(0x3D01, &24u32.to_be_bytes());
+    klv(&mut md, set_key(if iab_descriptor { 0x7B } else { 0x42 }), &desc.0);
+    let mut ecd = LocalSet::new(5);
+    ecd.p(0x2701, &umid(2)).p(0x3F07, &1u32.to_be_bytes()).p(0x3F06, &2u32.to_be_bytes());
+    klv(&mut md, set_key(0x23), &ecd.0);
+
+    let mut f = partition(2, 0, 0, 0, md.len() as u64);
+    f.extend_from_slice(&md);
+    let body_at = f.len() as u64;
+    f.extend_from_slice(&partition(3, body_at, 1, 0, 0));
+    let mut offsets = Vec::new();
+    if wrap == IabWrap::Frame {
+        let base = f.len() as u64;
+        for fr in frames {
+            offsets.push(f.len() as u64 - base);
+            klv(&mut f, key, fr);
+        }
+    } else {
+        let mut all = Vec::new();
+        for fr in frames {
+            offsets.push(all.len() as u64);
+            all.extend_from_slice(fr);
+        }
+        klv(&mut f, key, &all);
+    }
+    let footer_at = f.len() as u64;
+    f.extend_from_slice(&partition(4, footer_at, 0, 2, 0));
+    if wrap != IabWrap::ClipBare {
+        let mut ix = LocalSet::new(6);
+        let entries: Vec<Vec<u8>> = offsets
+            .iter()
+            .map(|o| {
+                let mut e = vec![0, 0, 0x80];
+                e.extend_from_slice(&o.to_be_bytes());
+                e
+            })
+            .collect();
+        let refs: Vec<&[u8]> = entries.iter().map(Vec::as_slice).collect();
+        ix.p(0x3F0B, &[0, 0, 0, 24, 0, 0, 0, 1])
+            .p(0x3F0C, &0i64.to_be_bytes())
+            .p(0x3F0D, &d.to_be_bytes())
+            .p(0x3F06, &2u32.to_be_bytes())
+            .p(0x3F07, &1u32.to_be_bytes())
+            .p(0x3F0A, &batch(&refs));
+        klv(&mut f, ul(&[0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x02, 0x01, 0x01, 0x10, 0x01, 0x00]), &ix.0);
+    }
+    f
+}
+
+#[test]
+fn iab_tracks_give_one_sample_per_frame_however_wrapped() {
+    let frames: Vec<Vec<u8>> = (0..6).map(|i| iab_frame(i, 30 + 7 * i)).collect();
+    for wrap in [IabWrap::Frame, IabWrap::ClipIndexed, IabWrap::ClipBare] {
+        for desc in [true, false] {
+            let f = build_iab(&frames, wrap, desc);
+            let m = open(&f).unwrap();
+            let a = m.track_of_kind(TrackKind::Sound).unwrap();
+            let t = &m.tracks[a];
+            assert_eq!(t.codec, Codec::Iab, "wrap {} descriptor {desc}", wrap as u8);
+            assert_eq!(t.sound_format, SoundFormat::Iab);
+            assert_eq!(t.samples.len(), 6, "wrap {} descriptor {desc}", wrap as u8);
+            assert_eq!(t.wrapping, if wrap == IabWrap::Frame { Wrapping::Frame } else { Wrapping::Clip });
+            for (i, fr) in frames.iter().enumerate() {
+                assert_eq!(&m.read_sample(&f, a, i).unwrap(), fr);
+            }
+            assert!(m.read_pcm(&f, a, 0, 10).is_err(), "IAB is not PCM");
+        }
+    }
+    // a damaged frame length ends the split there, never past the element
+    let mut f = build_iab(&frames, IabWrap::ClipBare, true);
+    let at = f.windows(8).position(|w| w == [0x01, 0, 0, 0, 2, 0xAB, 3, 0x02]).unwrap();
+    f[at + 8] = 0x7F;
+    let m = open(&f).unwrap();
+    let a = m.track_of_kind(TrackKind::Sound).unwrap();
+    assert_eq!(m.tracks[a].samples.len(), 3);
+}
+
+#[test]
+fn pcm_that_happens_to_look_like_iab_stays_pcm() {
+    // a Broadcast Wave track whose first bytes read 01 00 00 00 00 02
+    let f = build(2, |i| vec![i as u8; 10], &[], &[]);
+    let m = open(&f).unwrap();
+    let a = m.track_of_kind(TrackKind::Sound).unwrap();
+    assert_eq!(m.tracks[a].codec, Codec::Pcm);
+}

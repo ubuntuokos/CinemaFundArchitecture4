@@ -1,6 +1,6 @@
 [package]
 name = "cfa4-j2k"
-description = "Clean-room JPEG 2000 (ITU-T T.800 | ISO/IEC 15444-1) decoder"
+description = "Clean-room JPEG 2000 (ITU-T T.800 | ISO/IEC 15444-1) decoder and encoder"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,8 +9,13 @@ rust-version.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["threads"]
+threads = ["dep:rayon"]
+
 [dependencies]
 thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
 
 [dev-dependencies]
 cfa4-testkit = { workspace = true }
