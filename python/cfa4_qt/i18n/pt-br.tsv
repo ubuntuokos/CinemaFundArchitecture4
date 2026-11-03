@@ -22,7 +22,6 @@
 	AAC	AAC
 	Add pause	Adicionar pausa
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	"Adicionar pausa" insere [pause 1s]. Mude o número para uma pausa mais longa ou mais curta, por exemplo [pause 500ms] ou [pause 2s].
-	Add to Queue	Adicionar à fila
 	Add to timeline	Adicionar à linha do tempo
 	Advertisement	Comercial
 	All Supported Files	Todos os arquivos compatíveis
@@ -30,14 +29,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Um mecanismo sem `serve` foi compilado a partir de um branch sem a interface Qt: mude para o branch com a interface Qt e compile de novo, ou informe --engine CAMINHO.
 	Arrangement {n}	Disposição {n}
 	Audio Files	Arquivos de áudio
-	Audio bitrate	Taxa de bits de áudio
-	Audio codec	Codec de áudio
 	Automation mode	Modo de automação
 	B pictures	Quadros B
 	BDAV Transport Stream (.m2ts, AAC audio)	Fluxo de transporte BDAV (.m2ts, áudio AAC)
 	Basic voices (built in)	Vozes básicas (integradas)
 	Beyond IAB Profile 1: {notes}	Além do perfil IAB 1: {notes}
-	Bitrate mode	Modo de taxa de bits
 	CFA4	CFA4
 	CFA4 encountered an error	O CFA4 encontrou um erro
 	CFA4 project links	Links do projeto CFA4
@@ -94,7 +90,6 @@
 	Export Media	Exportar mídia
 	Export Media…	Exportar mídia…
 	Export Queue	Fila de exportação
-	Export audio	Exportar áudio
 	Export captions…	Exportar legendas…
 	Export failed: {path}	Falha na exportação: {path}
 	Export finished: {path}	Exportação concluída: {path}
@@ -111,7 +106,6 @@
 	Film Scan 3	Digitalização de filme 3
 	Flat (1.85:1)	Flat (1,85:1)
 	Format:	Formato:
-	Frame size	Tamanho do quadro
 	Frame time: {timecode}	Tempo do quadro: {timecode}
 	From the preset	Da predefinição
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	De {source} e github.com/cmusphinx/cmudict (pronúncias). Licença: {license}. Cada arquivo é verificado com um SHA-256 fixado.
@@ -132,7 +126,6 @@
 	Incoming clip (drag to trim the In point)	Clipe de entrada (arraste para aparar o ponto de entrada)
 	Input channel mapping	Mapeamento dos canais de entrada
 	Keep existing file	Manter o arquivo existente
-	Keyframe distance	Distância entre quadros-chave
 	Label Color Presets	Predefinições de cores de rótulo
 	Large	Grande
 	Linear Gradient	Degradê linear
@@ -217,7 +210,6 @@
 	Stop Queue	Parar a fila
 	Synthesizing narration…	Sintetizando a narração…
 	Synthesizing…	Sintetizando…
-	Target bitrate	Taxa de bits alvo
 	Teaser	Teaser
 	Template: {name}	Modelo: {name}
 	Test	Teste

@@ -21,7 +21,6 @@
 	AAC	AAC
 	Add pause	Tambah jeda
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	Tambah jeda menyisipkan [pause 1s]. Ubah angkanya untuk jeda yang lebih panjang atau lebih pendek, mis. [pause 500ms] atau [pause 2s].
-	Add to Queue	Tambahkan ke antrean
 	Add to timeline	Tambahkan ke linimasa
 	Advertisement	Iklan
 	All Supported Files	Semua berkas yang didukung
@@ -29,14 +28,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Mesin tanpa `serve` dibuat dari cabang tanpa GUI Qt: pindah ke cabang GUI Qt lalu buat ulang, atau berikan --engine JALUR.
 	Arrangement {n}	Susunan {n}
 	Audio Files	Berkas audio
-	Audio bitrate	Laju bit audio
-	Audio codec	Kodek audio
 	Automation mode	Mode otomasi
 	B pictures	Gambar B
 	BDAV Transport Stream (.m2ts, AAC audio)	Aliran transpor BDAV (.m2ts, audio AAC)
 	Basic voices (built in)	Suara dasar (bawaan)
 	Beyond IAB Profile 1: {notes}	Di luar Profil IAB 1: {notes}
-	Bitrate mode	Mode laju bit
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 mengalami galat
 	CFA4 project links	Tautan proyek CFA4
@@ -93,7 +89,6 @@
 	Export Media	Ekspor media
 	Export Media…	Ekspor media…
 	Export Queue	Antrean ekspor
-	Export audio	Ekspor audio
 	Export captions…	Ekspor teks…
 	Export failed: {path}	Ekspor gagal: {path}
 	Export finished: {path}	Ekspor selesai: {path}
@@ -110,7 +105,6 @@
 	Film Scan 3	Pindaian film 3
 	Flat (1.85:1)	Flat (1,85:1)
 	Format:	Format:
-	Frame size	Ukuran bingkai
 	Frame time: {timecode}	Waktu bingkai: {timecode}
 	From the preset	Dari prasetel
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Dari {source} dan github.com/cmusphinx/cmudict (pelafalan). Lisensi: {license}. Setiap berkas diperiksa terhadap SHA-256 yang ditetapkan.
@@ -131,7 +125,6 @@
 	Incoming clip (drag to trim the In point)	Klip masuk (seret untuk memangkas titik masuk)
 	Input channel mapping	Pemetaan kanal masukan
 	Keep existing file	Simpan berkas yang ada
-	Keyframe distance	Jarak bingkai kunci
 	Label Color Presets	Prasetel warna label
 	Large	Besar
 	Linear Gradient	Gradien linear
@@ -216,7 +209,6 @@
 	Stop Queue	Hentikan antrean
 	Synthesizing narration…	Menyintesis narasi…
 	Synthesizing…	Menyintesis…
-	Target bitrate	Laju bit target
 	Teaser	Teaser
 	Template: {name}	Templat: {name}
 	Test	Uji
