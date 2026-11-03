@@ -26,7 +26,7 @@ kerning and ligatures, bidi, line breaking, all drawn as vectors in linear light
 
 | Group | Properties (parameter ids) |
 |---|---|
-| Text | `text` (Source Text), `font`, `font_style`, `size` (px), `align` (Left/Center/Right/Justify), `tracking` (1/1000 em), `kerning`, `ligatures`, `leading` (px added to the natural line height), `baseline_shift`, `faux_bold`, `faux_italic`, `caps` (Normal/All Caps/Small Caps), `underline`, `box_width` (0 = point text, else paragraph text wrapped at that width), `box_height` (paragraph text: lines that do not fit are not shown; 0 = as tall as the text) |
+| Text | `text` (Source Text), `font`, `font_style`, `size` (px), `align` (Left/Center/Right/Justify), `tracking` (1/1000 em), `kerning`, `ligatures`, `leading` (px added to the natural line height), `baseline_shift`, `faux_bold`, `faux_italic`, `caps` (Normal/All Caps/Small Caps), `underline`, `strikethrough`, `box_width` (0 = point text, else paragraph text wrapped at that width), `box_height` (paragraph text: lines that do not fit are not shown; 0 = as tall as the text) |
 | Text Animator | `anim` (None/Counter/Typewriter/Word by Word), `anim_duration` (s, default 1), `anim_delay` (s): changes the text shown over the first seconds of the clip without changing the Source Text; Graphics and Titles ▸ Text Animator (`graphics.textAnimator.*`). See [marketing-tools.md](marketing-tools.md) |
 | Shape | `shape` (Rectangle/Ellipse/Polygon/Path), `size` [w, h], `sides`, `corner_radius` (one radius for all four corners, at most half the shorter side; on the Program monitor, drag one of the four small circles just inside a selected rectangle's corners), `points` (path vertices relative to the layer origin) |
 | Appearance | `fill`, `fill_color`; `stroke`, `stroke_color`, `stroke_width`, `stroke_type` (Outer/Center/Inner) and the same for `stroke2`; `background`, `background_color`, `background_opacity`, `background_size` (padding), `background_radius`; `shadow`, `shadow_color`, `shadow_opacity`, `shadow_angle` (135° = down-right), `shadow_distance`, `shadow_size`, `shadow_blur` |
@@ -140,7 +140,7 @@ With a graphic clip selected, the Properties panel (and Essential Graphics) show
 **Align and Transform** (six align buttons, two distribute buttons, position, anchor, scale,
 rotation, opacity), **Text** (Source Text field, font family and style, size, paragraph alignment,
 tracking, leading, baseline shift, box width and height, faux bold / faux italic / all caps /
-small caps / underline, kerning and ligatures; the wrench in the section's header opens **Text
+small caps / underline / strikethrough, kerning and ligatures; the wrench in the section's header opens **Text
 Properties**: Text Layer Type and Ligatures), **Shape**, and **Appearance** (fill, two strokes, background,
 shadow). Automation ids: `graphics.layers.<n>`, `graphics.prop.<parameter id>`,
 `graphics.align.<how>`, `graphics.distribute.<axis>`, `graphics.sourceText`, `graphics.NewTextLayer`,
@@ -151,7 +151,7 @@ shadow). Automation ids: `graphics.layers.<n>`, `graphics.prop.<parameter id>`,
 ## Per-character styles
 
 Select characters with the Type tool and change font, style, size, colour, faux bold / italic,
-underline, tracking, baseline shift or caps in the Properties panel: the change applies to the
+underline, strikethrough, tracking, baseline shift or caps in the Properties panel: the change applies to the
 selection only (`graphics.setCharStyle`). Styles are stored on the layer as runs of characters
 (`EffectInstance::layer.runs`, character offsets, sorted and non-overlapping) and follow the text
 when it is edited (typed characters take the style of the character before them). The text engine
@@ -160,7 +160,7 @@ lines grow to fit the largest run, and each run can have its own fill colour.
 
 | Command | Params |
 |---|---|
-| `graphics.setCharStyle` | `clip`, `layer`, `start`, `end` (characters; default the whole text), `style` {`font`, `fontStyle`, `size`, `color`, `bold`, `italic`, `underline`, `tracking`, `baselineShift`, `caps`}, `clear` (remove styles from the range) |
+| `graphics.setCharStyle` | `clip`, `layer`, `start`, `end` (characters; default the whole text), `style` {`font`, `fontStyle`, `size`, `color`, `bold`, `italic`, `underline`, `strikethrough`, `tracking`, `baselineShift`, `caps`}, `clear` (remove styles from the range) |
 
 ## Responsive design
 

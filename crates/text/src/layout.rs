@@ -1,9 +1,10 @@
 //! Paragraph layout: font fallback, bidi (UAX #9), shaping (OpenType via harfrust: kerning,
 //! ligatures, mark positioning, complex scripts), line breaking (UAX #14), alignment, leading,
-//! tracking, baseline shift, all caps / small caps, underline. Results are cached.
+//! tracking, baseline shift, all caps / small caps, underline, strikethrough. Results are cached.
 //!
 //! **Per-character styles** ([`layout_rich`]): [`StyleRun`]s give byte ranges their own
-//! [`TextStyle`] (font, size, tracking, baseline shift, faux bold / italic, caps, underline).
+//! [`TextStyle`] (font, size, tracking, baseline shift, faux bold / italic, caps, underline,
+//! strikethrough).
 //! Runs split shaping items, lines grow to fit the largest run, and every [`Glyph`] carries the
 //! index of the style it was set in (`run`: 0 = the base style, `i + 1` = `runs[i]`), so renderers
 //! can colour runs.
@@ -60,6 +61,7 @@ pub struct TextStyle {
     pub faux_italic: bool,
     pub caps: Caps,
     pub underline: bool,
+    pub strikethrough: bool,
 }
 
 impl Default for TextStyle {
@@ -76,6 +78,7 @@ impl Default for TextStyle {
             faux_italic: false,
             caps: Caps::Normal,
             underline: false,
+            strikethrough: false,
         }
     }
 }
@@ -109,7 +112,7 @@ impl Hash for TextStyle {
         hf(h, self.size);
         hf(h, self.tracking);
         hf(h, self.baseline_shift);
-        (self.kerning, self.ligatures, self.faux_bold, self.faux_italic, self.caps, self.underline).hash(h);
+        (self.kerning, self.ligatures, self.faux_bold, self.faux_italic, self.caps, self.underline, self.strikethrough).hash(h);
     }
 }
 
@@ -208,9 +211,9 @@ pub struct Line {
 pub struct Layout {
     pub glyphs: Vec<Glyph>,
     pub lines: Vec<Line>,
-    /// Underline rectangles `[x0, y0, x1, y1]`.
+    /// Decoration rectangles `[x0, y0, x1, y1]`: per line its underlines, then its strikethroughs.
     pub underlines: Vec<[f32; 4]>,
-    /// Style index of each underline (parallel to `underlines`; see [`Glyph::run`]).
+    /// Style index of each decoration (parallel to `underlines`; see [`Glyph::run`]).
     pub underline_runs: Vec<u16>,
     /// Logical bounds `[x0, y0, x1, y1]` (line boxes; area text spans the box width).
     pub bounds: [f32; 4],
@@ -374,6 +377,8 @@ struct ParaLine {
     descent: f32,
     /// Underlined segments `(x0, x1, style)` in line coordinates (rich layouts only).
     underlines: Vec<(f32, f32, u16)>,
+    /// Struck-through segments, like `underlines`.
+    strikes: Vec<(f32, f32, u16)>,
 }
 
 /// Lay out one paragraph (no newlines) whose text starts at byte `base` of the whole string.
@@ -391,6 +396,7 @@ fn paragraph(text: &str, base: usize, sty: &Styles, para: &ParagraphStyle) -> Ve
             ascent: pm.ascent,
             descent: pm.descent,
             underlines: Vec::new(),
+            strikes: Vec::new(),
         }];
     }
     let default_level = para.rtl.map(|r| if r { Level::rtl() } else { Level::ltr() });
@@ -555,25 +561,30 @@ fn paragraph(text: &str, base: usize, sty: &Styles, para: &ParagraphStyle) -> Ve
                 carets.push((base + b, x));
             }
         }
-        // underlined segments of rich layouts: clusters set in an underlined style, merged
-        let mut underlines: Vec<(f32, f32, u16)> = Vec::new();
-        if sty.rich() {
-            let mut segs: Vec<(f32, f32, u16)> = cluster_starts
-                .iter()
-                .filter(|&&cs| cs < ce)
-                .filter_map(|&cs| {
-                    let si = sty.at(base + cs);
-                    sty.list[si].underline.then(|| (extents[&cs].0, extents[&cs].1, si as u16))
-                })
-                .collect();
-            segs.sort_by(|a, b| a.0.total_cmp(&b.0));
-            for sg in segs {
-                match underlines.last_mut() {
-                    Some(l) if l.2 == sg.2 && (sg.0 - l.1).abs() < 0.01 => l.1 = l.1.max(sg.1),
-                    _ => underlines.push(sg),
+        // decorated segments of rich layouts: clusters set in an underlined (struck-through) style, merged
+        let decoration = |on: fn(&TextStyle) -> bool| {
+            let mut merged: Vec<(f32, f32, u16)> = Vec::new();
+            if sty.rich() {
+                let mut segs: Vec<(f32, f32, u16)> = cluster_starts
+                    .iter()
+                    .filter(|&&cs| cs < ce)
+                    .filter_map(|&cs| {
+                        let si = sty.at(base + cs);
+                        on(sty.list[si]).then(|| (extents[&cs].0, extents[&cs].1, si as u16))
+                    })
+                    .collect();
+                segs.sort_by(|a, b| a.0.total_cmp(&b.0));
+                for sg in segs {
+                    match merged.last_mut() {
+                        Some(l) if l.2 == sg.2 && (sg.0 - l.1).abs() < 0.01 => l.1 = l.1.max(sg.1),
+                        _ => merged.push(sg),
+                    }
                 }
             }
-        }
+            merged
+        };
+        let underlines = decoration(|s| s.underline);
+        let strikes = decoration(|s| s.strikethrough);
         // end of line caret
         let end_x = match chars.iter().rev().find(|c| c.0 < r.end && c.0 >= r.start) {
             Some(c) => {
@@ -613,6 +624,7 @@ fn paragraph(text: &str, base: usize, sty: &Styles, para: &ParagraphStyle) -> Ve
             ascent: asc,
             descent: desc,
             underlines,
+            strikes,
         });
     }
     out
@@ -681,10 +693,24 @@ pub fn layout_rich_uncached(text: &str, style: &TextStyle, runs: &[StyleRun], pa
                 lay.underlines.push([x0 + shift, y, x1 + shift, y + um.underline_thickness]);
                 lay.underline_runs.push(*si);
             }
-        } else if style.underline && pl.content > 0.0 {
-            let y = baseline - style.baseline_shift + pm.underline_pos;
-            lay.underlines.push([x, y, x + pl.content, y + pm.underline_thickness]);
-            lay.underline_runs.push(0);
+            for (x0, x1, si) in &pl.strikes {
+                let st = sty.list[*si as usize];
+                let sm = fonts::face(sty.prim[*si as usize].face).metrics(st.size);
+                let y = baseline - st.baseline_shift + sm.strikethrough_pos;
+                lay.underlines.push([x0 + shift, y, x1 + shift, y + sm.strikethrough_thickness]);
+                lay.underline_runs.push(*si);
+            }
+        } else if pl.content > 0.0 {
+            if style.underline {
+                let y = baseline - style.baseline_shift + pm.underline_pos;
+                lay.underlines.push([x, y, x + pl.content, y + pm.underline_thickness]);
+                lay.underline_runs.push(0);
+            }
+            if style.strikethrough {
+                let y = baseline - style.baseline_shift + pm.strikethrough_pos;
+                lay.underlines.push([x, y, x + pl.content, y + pm.strikethrough_thickness]);
+                lay.underline_runs.push(0);
+            }
         }
         lay.lines.push(Line {
             range: pl.range,
@@ -763,7 +789,8 @@ fn layout_vertical(text: &str, sty: &Styles, para: &ParagraphStyle, col_w: f32, 
                 }
                 g
             }));
-            // Underline runs down the column, to the right of the cell (the "below" side of vertical-rl).
+            // Underline runs down the column, to the right of the cell (the "below" side of vertical-rl);
+            // strikethrough runs down the middle of the cell.
             let y_top = baseline - pl.ascent;
             if rich {
                 for (_x0, x1, si) in &pl.underlines {
@@ -773,10 +800,25 @@ fn layout_vertical(text: &str, sty: &Styles, para: &ParagraphStyle, col_w: f32, 
                     lay.underlines.push([x, y_top, x + um.underline_thickness, y_top + row]);
                     lay.underline_runs.push(*si);
                 }
-            } else if style.underline && pl.content > 0.0 {
-                let x = shift + pl.left_trim + pl.content + pm.underline_pos;
-                lay.underlines.push([x, y_top, x + pm.underline_thickness, y_top + row]);
-                lay.underline_runs.push(0);
+                for (x0, x1, si) in &pl.strikes {
+                    let st = sty.list[*si as usize];
+                    let t = fonts::face(sty.prim[*si as usize].face).metrics(st.size).strikethrough_thickness;
+                    let x = (x0 + x1 - t) / 2.0 + shift - st.baseline_shift;
+                    lay.underlines.push([x, y_top, x + t, y_top + row]);
+                    lay.underline_runs.push(*si);
+                }
+            } else if pl.content > 0.0 {
+                if style.underline {
+                    let x = shift + pl.left_trim + pl.content + pm.underline_pos;
+                    lay.underlines.push([x, y_top, x + pm.underline_thickness, y_top + row]);
+                    lay.underline_runs.push(0);
+                }
+                if style.strikethrough {
+                    let t = pm.strikethrough_thickness;
+                    let x = shift + pl.left_trim + (pl.content - t) / 2.0;
+                    lay.underlines.push([x, y_top, x + t, y_top + row]);
+                    lay.underline_runs.push(0);
+                }
             }
             lay.lines.push(Line {
                 range: pl.range,
@@ -1030,6 +1072,50 @@ mod tests {
         let rich = layout_rich("A", &st(60.0), &runs, &ParagraphStyle { vertical: true, ..Default::default() });
         assert_eq!(rich.underlines.len(), 1);
         assert_eq!(rich.underline_runs, vec![1]);
+    }
+
+    #[test]
+    fn strikethrough_crosses_the_glyphs() {
+        let s = TextStyle { strikethrough: true, ..st(60.0) };
+        let l = layout("Hx", &s, &ParagraphStyle::default());
+        assert_eq!(l.underlines.len(), 1);
+        let [x0, y0, x1, y1] = l.underlines[0];
+        let line = &l.lines[0];
+        assert!((x0 - line.x).abs() < 0.01 && (x1 - line.x - line.width).abs() < 0.01, "spans the line");
+        // above the baseline (y down) and below the x-height
+        let xh = fonts::face(fonts::resolve(&s.family, &s.style).face).metrics(60.0).x_height;
+        assert!(y1 < line.baseline && y0 > line.baseline - xh, "{y0} {y1} baseline {} x-height {xh}", line.baseline);
+        assert!(y1 - y0 > 0.5, "has a thickness");
+        // with underline: two strips, the underline below the baseline
+        let both = layout("Hx", &TextStyle { underline: true, ..s.clone() }, &ParagraphStyle::default());
+        assert_eq!(both.underlines.len(), 2);
+        assert!(both.underlines[0][1] > line.baseline && both.underlines[1][3] < line.baseline);
+        // vertical: a tall strip through the middle of the cell
+        let v = layout("A", &s, &ParagraphStyle { vertical: true, ..Default::default() });
+        let [vx0, vy0, vx1, vy1] = v.underlines[0];
+        let vl = &v.lines[0];
+        assert!(vy1 - vy0 > vx1 - vx0, "vertical strikethrough is a tall strip");
+        assert!(((vx0 + vx1) / 2.0 - (vl.x + vl.width / 2.0)).abs() < 0.5, "centred on the cell");
+    }
+
+    #[test]
+    fn style_runs_strike_through_only_their_range() {
+        let base = st(40.0);
+        let runs = [StyleRun { range: 3..5, style: TextStyle { strikethrough: true, ..base.clone() } }];
+        let l = layout_rich("ab cd ef", &base, &runs, &ParagraphStyle::default());
+        assert_eq!(l.underlines.len(), 1, "only the struck-through run");
+        assert_eq!(l.underline_runs, vec![1]);
+        let u = l.underlines[0];
+        assert!(u[0] >= l.caret(3).0 - 0.01 && u[2] <= l.caret(5).0 + 0.01, "{u:?}");
+        assert!(u[3] < l.lines[0].baseline, "above the baseline");
+        let v = layout_rich(
+            "ab",
+            &base,
+            &[StyleRun { range: 0..1, style: TextStyle { strikethrough: true, ..base.clone() } }],
+            &ParagraphStyle { vertical: true, ..Default::default() },
+        );
+        assert_eq!(v.underlines.len(), 1);
+        assert_eq!(v.underline_runs, vec![1]);
     }
 
     #[test]
