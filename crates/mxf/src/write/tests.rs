@@ -339,3 +339,212 @@ fn long_pcm_reads_backed_by_the_file_are_not_capped() {
     // a request that is mostly not backed by data is refused before allocating
     assert!(m.read_pcm(&f, 0, 0, frames + (1 << 24)).is_err());
 }
+
+/// A J2K-codestream-shaped frame (SOC, SIZ marker start, filler).
+fn j2k_like(i: usize) -> Vec<u8> {
+    let mut v = vec![0xFF, 0x4F, 0xFF, 0x51, 0x00, 0x2F];
+    v.extend(std::iter::repeat_n(i as u8 ^ 0x33, 900 + 11 * i));
+    v.extend_from_slice(&[0xFF, 0xD9]);
+    v
+}
+
+/// #115: a D-Cinema picture track file (ST 429-4): OP-Atom, frame-wrapped J2K, RGBA descriptor
+/// with a JPEG 2000 sub-descriptor, closed complete header and no metadata in the footer.
+#[test]
+fn dcinema_picture_track_file() {
+    let uuid = [0x11u8; 16];
+    let mut ids = PackageIds::from_seed("dcp-pic", "Reel 1");
+    ids.file = Umid::dcinema(uuid);
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids.clone());
+    cfg.picture = Some(PictureDesc::dcinema(3, 1998, 1080));
+    cfg.timecode = Some(StartTimecode { frames: 0, rate: Rational::new(24, 1), drop_frame: false });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..7 {
+        w.push_picture(&j2k_like(i), FrameInfo::intra()).unwrap();
+    }
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Atom);
+    let kinds: Vec<(PartitionKind, u8)> = m.partitions.iter().map(|p| (p.kind, p.status)).collect();
+    assert_eq!(kinds.first(), Some(&(PartitionKind::Header, 4)));
+    let footer = m.partitions.iter().find(|p| p.kind == PartitionKind::Footer).unwrap();
+    assert_eq!(footer.header_byte_count, 0, "ST 429-3: header metadata only in the header partition");
+    assert_eq!(m.tracks.len(), 1);
+    let t = &m.tracks[0];
+    assert_eq!(t.codec, Codec::Jpeg2000);
+    assert_eq!(t.wrapping, Wrapping::Frame);
+    assert_eq!(t.duration, Some(7));
+    let p = t.picture.as_ref().unwrap();
+    assert!(p.rgba);
+    assert_eq!((p.stored_width, p.stored_height), (1998, 1080));
+    assert_eq!(p.aspect_ratio, Rational::new(37, 20));
+    for i in 0..7 {
+        assert_eq!(m.read_sample(&f, 0, i).unwrap(), j2k_like(i));
+    }
+    // the file package UMID carries the asset UUID; the preface names it as primary package
+    assert!(f.windows(32).any(|w| w == ids.file.0));
+    assert!(f.windows(4).any(|w| w == [0x3B, 0x08, 0x00, 0x10]));
+    // the JPEG 2000 sub-descriptor (ST 422) is present: Rsiz 3, Xsiz 1998
+    assert!(f.windows(2).any(|w| w == [0x00, 0x03]));
+    for cut in (0..f.len()).step_by(97) {
+        if let Ok(m) = open(&f[..cut]) {
+            for i in 0..m.tracks.first().map_or(0, |t| t.samples.len()) {
+                let _ = m.read_sample(&f[..cut], 0, i);
+            }
+        }
+    }
+}
+
+/// #115: a D-Cinema sound track file (ST 429-3): 5.1 + HI/VI (8 channels), 24-bit 48 kHz,
+/// frame-wrapped, ChannelAssignment config 1.
+#[test]
+fn dcinema_sound_track_file() {
+    const CFG1: [u8; 16] = [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0B, 0x04, 0x02, 0x02, 0x10, 0x03, 0x01, 0x01, 0x00];
+    let mut ids = PackageIds::from_seed("dcp-snd", "Reel 1");
+    ids.file = Umid::dcinema([0x22; 16]);
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
+    cfg.channel_assignment = Some(CFG1);
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    let frames = 5 * 2000;
+    let mut pcm = Vec::new();
+    for k in 0..frames {
+        for c in 0..6i32 {
+            let s = (k as i32 * 3 + c * 100_000) % 8_000_000;
+            pcm.extend_from_slice(&s.to_le_bytes()[..3]);
+        }
+    }
+    w.push_sound(0, &pcm).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Atom);
+    let t = &m.tracks[0];
+    assert_eq!(t.kind, TrackKind::Sound);
+    assert_eq!(t.wrapping, Wrapping::Frame);
+    assert_eq!(t.duration, Some(5));
+    assert_eq!(t.stored_sample_frames(), frames as u64);
+    let got = m.read_pcm(&f, 0, 0, frames).unwrap();
+    assert_eq!(got.len(), 6);
+    for k in (0..frames).step_by(37) {
+        for c in 0..6 {
+            let want = (k as i32 * 3 + c as i32 * 100_000) % 8_000_000;
+            assert_eq!(got[c][k], want as f32 / 8_388_608.0);
+        }
+    }
+    assert!(f.windows(16).any(|w| w == CFG1));
+}
+
+/// #348: MCA labels (ST 377-4) on a D-Cinema sound track file: a soundfield group and two
+/// channels, referenced from the Wave descriptor and named in the primer.
+#[test]
+fn dcinema_sound_mca_labels() {
+    let mut ids = PackageIds::from_seed("dcp-mca", "Reel 1");
+    ids.file = Umid::dcinema([0x23; 16]);
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 16, bits: 24 }];
+    let group = [0x51; 16];
+    let label = |dict: u8, sym: &str, name: &str, channel: Option<u32>, group: Option<[u8; 16]>| McaLabel {
+        dictionary: [0x06, 0x0E, 0x2B, 0x34, 0x04, 0x01, 0x01, 0x0D, 0x03, 0x02, dict, 0x01, 0, 0, 0, 0],
+        link: [channel.unwrap_or(0) as u8 + 0x60; 16],
+        symbol: sym.into(),
+        name: name.into(),
+        channel,
+        language: Some("en-US".into()),
+        group,
+    };
+    cfg.mca = vec![label(2, "sg51", "5.1", None, None), label(1, "chL", "Left", Some(1), Some(group)), label(1, "chC", "Center", Some(3), Some(group))];
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    w.push_sound(0, &vec![0u8; 2000 * 16 * 3]).unwrap();
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.tracks[0].stored_sample_frames(), 2000);
+    let key = |b: u8| [0x06, 0x0E, 0x2B, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0D, 0x01, 0x01, 0x01, 0x01, 0x01, b, 0x00];
+    let count = |k: &[u8]| f.windows(k.len()).filter(|w| w == &k).count();
+    assert_eq!(count(&key(0x6C)), 1, "one soundfield group label");
+    assert_eq!(count(&key(0x6B)), 2, "two audio channel labels");
+    // the primer names the MCA items (MCATagSymbol 0e.01.03.07.01.02 at the dynamic tag)
+    let mut primer = labels::TAG_MCA.wrapping_add(2).to_be_bytes().to_vec();
+    primer.extend_from_slice(&[0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x07, 0x01, 0x02]);
+    assert_eq!(count(&primer), 1);
+    // symbols in UTF-16, the channel id, the group link
+    let sym: Vec<u8> = "chC".encode_utf16().flat_map(|u| u.to_be_bytes()).collect();
+    assert_eq!(count(&sym), 1);
+    let mut chan = (labels::TAG_MCA + 4).to_be_bytes().to_vec();
+    chan.extend_from_slice(&[0, 4, 0, 0, 0, 3]);
+    assert_eq!(count(&chan), 1);
+    assert_eq!(count(&group), 2);
+}
+
+#[test]
+fn dcinema_needs_one_essence_track() {
+    let ids = PackageIds::from_seed("x", "x");
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg.picture = Some(PictureDesc::dcinema(3, 2048, 1080));
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+}
+
+/// A fake IABitstream frame: preamble tag + length, IAFrame tag, then `i`-dependent bytes.
+fn iab_like(i: usize) -> Vec<u8> {
+    let mut v = vec![0x01, 0, 0, 0, 0, 0x02];
+    v.extend(std::iter::repeat_n(i as u8 ^ 0x5A, 300 + 7 * i));
+    v
+}
+
+/// #343: an immersive audio track file (ST 429-18): frame-wrapped data elements under the class
+/// 14 key, the IAB data essence descriptor and sub-descriptor, read back as an IAB sound track.
+#[test]
+fn dcinema_iab_track_file() {
+    let mut ids = PackageIds::from_seed("dcp-iab", "Reel 1");
+    ids.file = Umid::dcinema([0x33; 16]);
+    let mut cfg = WriterConfig::new(Pattern::DCinema, Rational::new(24, 1), ids);
+    cfg.iab = Some(IabDesc { version: 1, max_channels: 10, max_objects: 118, first_frame: 0, sample_rate: 48_000 });
+    let mut w = MxfWriter::new(Cursor::new(Vec::new()), cfg).unwrap();
+    for i in 0..9 {
+        w.push_data(&iab_like(i)).unwrap();
+    }
+    assert!(w.push_picture(&[0; 4], FrameInfo::intra()).is_err());
+    let f = w.finish().unwrap().into_inner();
+    let m = open(&f).unwrap();
+    assert!(m.warnings.is_empty(), "{:?}", m.warnings);
+    assert_eq!(m.operational_pattern, OperationalPattern::Atom);
+    assert_eq!(m.tracks.len(), 1);
+    let t = &m.tracks[0];
+    assert_eq!(t.kind, TrackKind::Sound);
+    assert_eq!(t.codec, Codec::Iab);
+    assert_eq!(t.duration, Some(9));
+    assert_eq!(t.edit_rate, Rational::new(24, 1));
+    assert_eq!(t.sound.as_ref().unwrap().sample_rate, Rational::new(48_000, 1));
+    for i in 0..9 {
+        assert_eq!(m.read_sample(&f, 0, i).unwrap(), iab_like(i));
+    }
+    // element key (6.1), essence container (Table 2), coding (Table 4), set keys (Tables 3, 5)
+    for ul in [labels::IAB_ELEMENT, labels::EC_IAB, labels::IAB_CODING, labels::IAB_DESCRIPTOR, labels::IAB_SUB_DESCRIPTOR] {
+        assert!(f.windows(16).any(|w| w == ul), "{ul:02x?}");
+    }
+    // clause 10: the primer maps 0x3E01 to the version 5 data essence coding item
+    let coding_item = [0x3E, 0x01, 0x06, 0x0E, 0x2B, 0x34, 0x01, 0x01, 0x01, 0x05, 0x04, 0x03, 0x03, 0x02];
+    assert!(f.windows(coding_item.len()).any(|w| w == coding_item));
+    // the data track (data definition "data")
+    assert!(f.windows(16).any(|w| w == labels::DEF_DATA));
+    for cut in (0..f.len()).step_by(89) {
+        if let Ok(m) = open(&f[..cut]) {
+            for i in 0..m.tracks.first().map_or(0, |t| t.samples.len()) {
+                let _ = m.read_sample(&f[..cut], 0, i);
+            }
+        }
+    }
+}
+
+#[test]
+fn iab_is_only_a_dcinema_track_file() {
+    let mut cfg = WriterConfig::new(Pattern::Op1a, Rational::new(24, 1), PackageIds::from_seed("x", "x"));
+    cfg.iab = Some(IabDesc::default());
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg.clone()).is_err());
+    cfg.pattern = Pattern::DCinema;
+    cfg.sound = vec![SoundDesc { sample_rate: 48_000, channels: 6, bits: 24 }];
+    assert!(MxfWriter::new(Cursor::new(Vec::new()), cfg).is_err());
+}

@@ -263,6 +263,30 @@ fn pins_follow_text_growth() {
     s.execute("graphics.set", json!({"clip": c.0, "layer": 1, "props": {"position": [100, 300]}})).unwrap();
     let (b2, t2) = boxes(&mut s);
     assert!((b2[0] - t2[0] - gap[0]).abs() < 1e-3);
+    // dragging the pinned box itself (a Position change) moves it and it keeps following from there
+    let pos = |s: &mut Session| {
+        let l = s.execute("graphics.list", json!({"clip": c.0})).unwrap();
+        let p = l["layers"][0]["position"].clone();
+        [p[0].as_f64().unwrap_or(f64::NAN), p[1].as_f64().unwrap_or(f64::NAN)]
+    };
+    let p0 = pos(&mut s);
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [p0[0] + 40.0, p0[1] - 25.0]}, "shown": true})).unwrap();
+    let (b3, t3) = boxes(&mut s);
+    assert!((b3[0] - b2[0] - 40.0).abs() < 1e-3 && (b3[1] - b2[1] + 25.0).abs() < 1e-3, "the box moved: {b2:?} -> {b3:?}");
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 1, "props": {"position": [150, 320]}})).unwrap();
+    let (b4, t4) = boxes(&mut s);
+    assert!((b4[0] - t4[0] - (b3[0] - t3[0])).abs() < 1e-3 && (b4[1] - t4[1] - (b3[1] - t3[1])).abs() < 1e-3, "it still follows");
+    // a panel edits the authored Position: changing X moves the shown layer by as much in X only
+    let authored = |s: &mut Session| {
+        let it = s.active_sequence().unwrap().find_item(c).unwrap().1.clone();
+        let e = it.effects.iter().find(|e| cfa4_project::graphic::is_layer(e)).unwrap().clone();
+        e.params["position"].value.as_vec2().unwrap()
+    };
+    let a0 = authored(&mut s);
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [a0.x + 30.0, a0.y]}})).unwrap();
+    let (b5, _) = boxes(&mut s);
+    assert!((b5[0] - b4[0] - 30.0).abs() < 1e-3 && (b5[1] - b4[1]).abs() < 1e-3, "{b4:?} -> {b5:?}");
+    assert!((authored(&mut s).y - a0.y).abs() < 1e-9, "Y is left as authored");
     s.execute("graphics.pin", json!({"clip": c.0, "layer": 0, "to": "none"})).unwrap();
     let list = s.execute("graphics.list", json!({"clip": c.0})).unwrap();
     assert!(list["layers"][0]["pin"].is_null());
@@ -441,4 +465,40 @@ fn character_style_merge_preserves_default_calls_and_separate_clips() {
         s.execute("graphics.setCharStyle", json!({"clip":b.0,"layer":layer,"start":0,"end":5,"style":{"size":150},"merge":true})).unwrap();
     }
     assert_eq!(s.history.undo.len(), n + 2, "distinct layers do not merge");
+}
+
+#[test]
+fn dragging_a_pinned_layer_of_a_held_graphic_moves_it_where_it_is_shown() {
+    // Frame Hold without Hold Filters: the pin target animates on, so the layer is shown (and
+    // dragged) at the effect time; the drag must not add the target's movement since the held frame
+    let mut s = demo("gt-pin-hold");
+    let c = clip_of(&s.execute("graphics.newText", json!({"text": "Hi", "position": [300, 300], "size": 80, "seconds": 5})).unwrap());
+    s.execute("graphics.newShape", json!({"shape": "rectangle", "clip": c.0, "position": [330, 270], "size": [200, 120]})).unwrap();
+    s.execute("graphics.arrangeLayer", json!({"clip": c.0, "layer": 1, "to": "back"})).unwrap();
+    s.execute("graphics.pin", json!({"clip": c.0, "layer": 0, "to": 1})).unwrap();
+    s.edit_sequence("kf", |q, _, _| {
+        let (_, it) = q.find_item_mut(c).unwrap();
+        let (si, d) = (it.source_in, it.duration);
+        let e = it.effects.iter_mut().find(|e| e.effect == "graphic_text").unwrap();
+        let p = e.params.get_mut("position").unwrap();
+        p.toggle_animation(si);
+        p.set_at(si, ParamValue::Vec2(cfa4_geom::Vec2::new(300.0, 300.0)));
+        p.set_at(si + d, ParamValue::Vec2(cfa4_geom::Vec2::new(300.0, 800.0)));
+        Ok(())
+    })
+    .unwrap();
+    s.execute("timeline.select", json!({"clips": [c.0]})).unwrap();
+    s.execute("clip.frameHoldOptions", json!({"clips": [c.0], "holdOn": "in", "holdFilters": false})).unwrap();
+    let it = s.active_sequence().unwrap().find_item(c).unwrap().1.clone();
+    assert!(it.frame_hold.is_some() && !it.hold_filters);
+    s.execute("playhead.set", json!({"time": (it.start + Tick(it.duration.0 * 4 / 5)).0})).unwrap();
+    let shown = |s: &mut Session| {
+        let g = s.execute("program.overlay", json!({})).unwrap()["graphics"].clone();
+        let l = g["layers"].as_array().unwrap().iter().find(|l| l["clip"] == json!(c.0) && l["layer"] == json!(0)).unwrap().clone();
+        (l["position"][0].as_f64().unwrap(), l["position"][1].as_f64().unwrap())
+    };
+    let (x0, y0) = shown(&mut s);
+    s.execute("graphics.set", json!({"clip": c.0, "layer": 0, "props": {"position": [x0 + 40.0, y0]}, "shown": true})).unwrap();
+    let (x1, y1) = shown(&mut s);
+    assert!((x1 - x0 - 40.0).abs() < 1e-3 && (y1 - y0).abs() < 1e-3, "({x0}, {y0}) -> ({x1}, {y1})");
 }

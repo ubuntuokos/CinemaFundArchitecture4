@@ -1,29 +1,53 @@
 version: 2
+
+# CFA4 Dependabot policy (merge-coordinator workflow, docs/coordination.md):
+# - Dependabot PRs are ordinary PRs: only the merge coordinator merges them into main,
+#   one at a time, with the owner's approval; no other session touches them.
+# - Version updates come weekly and grouped (one PR per ecosystem) so they do not flood
+#   the PR list or collide with the parallel AI-session branches.
+# - Security updates are grouped separately and are NOT held to the weekly schedule:
+#   GitHub opens them as soon as an advisory affects Cargo.lock.
+# - Times are Budapest local time, outside the 23:00-06:00 quiet window.
+# - open-pull-requests-limit keeps at most a few Dependabot PRs open at once.
+
 updates:
-  # Maintain Rust / Cargo dependencies
+  # Rust / Cargo dependencies (Cargo.lock is also checked by cargo-deny, see deny.toml)
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
-      interval: "daily"
-      time: "06:00"
-      timezone: "America/New_York"
-    # Consolidate updates into a single PR rather than one PR per crate
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 3
     groups:
+      cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       cargo-dependencies:
+        applies-to: version-updates
         patterns:
           - "*"
     commit-message:
       prefix: "chore(deps)"
 
-  # Maintain GitHub Actions workflows
+  # GitHub Actions workflows (actions are pinned by commit SHA; Dependabot updates the pins)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
-      time: "06:00"
-      timezone: "America/New_York"
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 2
     groups:
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       actions:
+        applies-to: version-updates
         patterns:
           - "*"
     commit-message:
@@ -34,8 +58,17 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 2
     groups:
+      python-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       python-devtools:
+        applies-to: version-updates
         patterns:
           - "*"
     commit-message:

@@ -7,10 +7,33 @@
 #![allow(dead_code)]
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
+/// `read_symbol` in the tile syntax: decodes, or codes the value the encoder's policy picks.
+macro_rules! sym {
+    ($s:ident, $e:expr, $cdf:expr) => {{
+        let w = $s.want($e);
+        $s.sd.symbol($cdf, w)
+    }};
+}
+/// `read_literal( n )` in the tile syntax.
+macro_rules! lit {
+    ($s:ident, $e:expr, $n:expr) => {{
+        let w = $s.want($e);
+        $s.sd.literal($n, w)
+    }};
+}
+/// NS( n ) in the tile syntax.
+macro_rules! ns {
+    ($s:ident, $e:expr, $n:expr) => {{
+        let w = $s.want($e);
+        $s.sd.ns($n, w)
+    }};
+}
+
 mod bits;
 mod cdef;
 mod cdf;
 mod decoder;
+pub mod encode;
 mod frame;
 mod grain;
 pub mod header;

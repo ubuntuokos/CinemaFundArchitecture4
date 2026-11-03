@@ -6,9 +6,10 @@ use std::sync::OnceLock;
 use crate::frame::Plane;
 use crate::mvpred::round2_signed64;
 use crate::spec_tables::*;
+use crate::symbol::SymbolIo;
 use crate::tile::TileDecoder;
 
-const PRED_STRIDE: usize = 128;
+pub(crate) const PRED_STRIDE: usize = 128;
 
 #[inline(always)]
 fn round2(x: i32, n: u32) -> i32 {
@@ -137,9 +138,9 @@ fn wedge_masks() -> &'static Vec<Vec<[Vec<u8>; 2]>> {
     })
 }
 
-impl TileDecoder<'_, '_> {
+impl<S: SymbolIo> TileDecoder<'_, '_, S> {
     /// Reference plane and its (lastX, lastY) for refIdx (-1: the current frame for intra BC).
-    fn ref_plane_dims(&self, ref_idx: i32, plane: usize) -> (i32, i32) {
+    pub(crate) fn ref_plane_dims(&self, ref_idx: i32, plane: usize) -> (i32, i32) {
         let (sx, sy) = if plane > 0 { (self.fs.ssx as i32, self.fs.ssy as i32) } else { (0, 0) };
         let (uw, fh) = if ref_idx < 0 {
             ((self.fs.fh.mi_cols * 4) as i32, (self.fs.fh.mi_rows * 4) as i32)
@@ -151,7 +152,7 @@ impl TileDecoder<'_, '_> {
     }
 
     /// Motion vector scaling process (7.11.3.3): (startX, startY, stepX, stepY).
-    fn mv_scaling(&self, plane: usize, ref_idx: i32, x: i32, y: i32, mv: [i32; 2]) -> (i32, i32, i32, i32) {
+    pub(crate) fn mv_scaling(&self, plane: usize, ref_idx: i32, x: i32, y: i32, mv: [i32; 2]) -> (i32, i32, i32, i32) {
         let fh = &self.fs.fh;
         let (ref_uw, ref_h) = if ref_idx < 0 {
             (fh.upscaled_width as i64, fh.frame_height as i64)
@@ -179,7 +180,7 @@ impl TileDecoder<'_, '_> {
         (start_x as i32, start_y as i32, step_x as i32, step_y as i32)
     }
 
-    fn ref_plane(&self, ref_idx: i32, plane: usize) -> &Plane {
+    pub(crate) fn ref_plane(&self, ref_idx: i32, plane: usize) -> &Plane {
         // A missing reference (rejected earlier for valid streams) predicts from the current frame.
         match usize::try_from(ref_idx).ok().and_then(|i| self.fs.refs.get(i)).and_then(|r| r.as_ref()) {
             Some(r) => &r.buf.planes[plane],
@@ -190,7 +191,7 @@ impl TileDecoder<'_, '_> {
     /// Block inter prediction process (7.11.3.4) into `pred` (stride PRED_STRIDE); `tmp` holds
     /// the intermediate (horizontally filtered) rows.
     #[allow(clippy::too_many_arguments)]
-    fn block_inter_prediction(
+    pub(crate) fn block_inter_prediction(
         &self,
         plane: usize,
         ref_idx: i32,

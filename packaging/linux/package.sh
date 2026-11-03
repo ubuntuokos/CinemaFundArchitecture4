@@ -58,7 +58,7 @@ BASENAME="cfa4-$VERSION-linux-$ARCH"
 echo "==> CFA4 $VERSION for Linux $ARCH ($FORMATS)"
 
 if [ "$SKIP_BUILD" = 0 ]; then
-  (cd "$ROOT" && cargo build --release --locked -p cfa4 -p cfa4-cli)
+  (cd "$ROOT" && cargo build --release --locked -p cfa4 -p cfa4-cli --features cfa4/gstreamer,cfa4-cli/gstreamer)
 fi
 BIN="$CARGO_TARGET_DIR/release"
 WORK="$CARGO_TARGET_DIR/linux-package"

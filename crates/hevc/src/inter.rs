@@ -245,11 +245,11 @@ pub fn mc_luma<S: Sample>(f: &Frame, x: i32, y: i32, mv: [i16; 2], w: usize, h: 
 /// Chroma prediction samples of a w x h chroma block at chroma position (x, y) with a 1/8-sample
 /// vector (4:2:0).
 #[allow(clippy::too_many_arguments)]
-pub fn mc_chroma<S: Sample>(f: &Frame, c: usize, x: i32, y: i32, mv: [i16; 2], w: usize, h: usize, out: &mut [i16], sc: &mut McScratch) {
+pub fn mc_chroma<S: Sample>(f: &Frame, c: usize, x: i32, y: i32, mv: [i32; 2], w: usize, h: usize, out: &mut [i16], sc: &mut McScratch) {
     let bd = f.bit_depth_c;
     let (fx, fy) = ((mv[0] & 7) as usize, (mv[1] & 7) as usize);
-    let xi = x + (mv[0] as i32 >> 3);
-    let yi = y + (mv[1] as i32 >> 3);
+    let xi = x + (mv[0] >> 3);
+    let yi = y + (mv[1] >> 3);
     let shift1 = bd.min(12) - 8;
     let shift3 = 14 - bd;
     predict_block::<S, 4>(f, c + 1, (xi - 1, yi - 1), (fx, fy), (&CHROMA_FILTER[fx], &CHROMA_FILTER[fy]), (w, h), (shift1, shift3), out, sc);
@@ -505,7 +505,7 @@ mod tests {
     }
 
     fn frame(rng: &mut Rng, w: usize, h: usize, bd: u32) -> Frame {
-        let like = Frame::new(0, 0, w, h, 4, bd, bd);
+        let like = Frame::new(0, 0, w, h, 4, bd, bd, (1, 1));
         let max = (1i32 << bd) - 1;
         let y: Vec<u16> = (0..w * h).map(|_| rng.range(0, max) as u16).collect();
         let c: Vec<u16> = (0..w * h / 4).map(|_| rng.range(0, max) as u16).collect();
@@ -554,7 +554,7 @@ mod tests {
                     mc_luma::<S>(&f, x, y, mv, w, h, &mut a, &mut sc);
                     interpolate::<i16, 8>(&wrows, &mut tmp, fx, fy, &LUMA_FILTER[fx], &LUMA_FILTER[fy], w, h, shift1, shift3, &mut b);
                 } else {
-                    mc_chroma::<S>(&f, c - 1, x, y, mv, w, h, &mut a, &mut sc);
+                    mc_chroma::<S>(&f, c - 1, x, y, [mv[0] as i32, mv[1] as i32], w, h, &mut a, &mut sc);
                     interpolate::<i16, 4>(&wrows, &mut tmp, fx, fy, &CHROMA_FILTER[fx], &CHROMA_FILTER[fy], w, h, shift1, shift3, &mut b);
                 }
                 assert_eq!(a, b, "plane {c} bd {bd} at ({x}, {y}) mv {mv:?} {w}x{h}");
@@ -587,7 +587,7 @@ mod tests {
                 assert!(a.iter().any(|&v| v != S::default()) || w * h < 8);
                 for c in 1..3 {
                     let (cw, ch) = (w / 2, h / 2);
-                    mc_chroma::<S>(&f, c - 1, 0, 0, [(x * 8) as i16, (y * 8) as i16], cw, ch, &mut pred, &mut sc);
+                    mc_chroma::<S>(&f, c - 1, 0, 0, [x * 8, y * 8], cw, ch, &mut pred, &mut sc);
                     let (mut a, mut b) = (vec![S::default(); cw * ch], vec![S::default(); cw * ch]);
                     put_uni(&pred, cw, ch, bd, &mut a, cw);
                     f.copy_block(c, x, y, cw, ch, &mut b, cw);

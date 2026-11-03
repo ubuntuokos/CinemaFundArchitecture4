@@ -396,8 +396,46 @@ fn local_max(env: &[f32], t: usize, r: usize) -> f32 {
     env[t.saturating_sub(r)..(t + r + 1).min(env.len())].iter().copied().fold(0.0, f32::max)
 }
 
+/// The beat grid of some music (no remix features): what beat markers need.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Beats {
+    pub sample_rate: u32,
+    /// Source length (samples).
+    pub len: i64,
+    /// Beat positions (samples), increasing; like [`Analysis::beats`] they sit
+    /// [`beat_lead`] before the attack.
+    pub beats: Vec<i64>,
+    /// Beat period (samples).
+    pub period: f64,
+    /// Tempo (beats per minute).
+    pub bpm: f64,
+}
+
+/// Find the beats of planar audio (channels are summed to mono). Unlike [`analyze`] this needs
+/// only four beats, not enough music for remix joints.
+pub fn detect_beats(channels: &[&[f32]], sample_rate: u32) -> Result<Beats, RemixError> {
+    detect(channels, sample_rate).map(|(b, _)| b)
+}
+
 /// Analyse planar audio (channels are summed to mono).
 pub fn analyze(channels: &[&[f32]], sample_rate: u32) -> Result<Analysis, RemixError> {
+    let (Beats { sample_rate, len, beats, period, bpm }, mono) = detect(channels, sample_rate)?;
+    if beats.len() < 2 * MIN_PIECE_BEATS + 2 {
+        return Err(RemixError::TooShort);
+    }
+    let (chroma, cep) = beat_features(&mono, sample_rate, &beats);
+    let m = beats.len();
+    let mut sim = vec![0f32; m * m];
+    for i in 0..m {
+        for j in 0..m {
+            sim[i * m + j] = 0.6 * cos(&chroma[i], &chroma[j]) + 0.4 * (1.0 + cos(&cep[i], &cep[j])) * 0.5;
+        }
+    }
+    Ok(Analysis { sample_rate, len, beats, period, bpm, sim })
+}
+
+/// The beat grid and the mono mix it was found in.
+fn detect(channels: &[&[f32]], sample_rate: u32) -> Result<(Beats, Vec<f32>), RemixError> {
     let len = channels.iter().map(|c| c.len()).max().unwrap_or(0);
     let k = 1.0 / channels.len().max(1) as f32;
     let mono: Vec<f32> = (0..len).map(|i| channels.iter().map(|c| c.get(i).copied().unwrap_or(0.0)).sum::<f32>() * k).collect();
@@ -429,19 +467,11 @@ pub fn analyze(channels: &[&[f32]], sample_rate: u32) -> Result<Analysis, RemixE
     let mut beats: Vec<i64> =
         frames.iter().map(|&t| (t * hop + n) as i64 - 3 * hop as i64 / 4 - beat_lead(sample_rate)).filter(|&b| b > 0 && b < len as i64).collect();
     beats.dedup();
-    if beats.len() < 2 * MIN_PIECE_BEATS + 2 {
-        return Err(if beats.len() < 4 { RemixError::NoBeat } else { RemixError::TooShort });
-    }
-    let (chroma, cep) = beat_features(&mono, sample_rate, &beats);
-    let m = beats.len();
-    let mut sim = vec![0f32; m * m];
-    for i in 0..m {
-        for j in 0..m {
-            sim[i * m + j] = 0.6 * cos(&chroma[i], &chroma[j]) + 0.4 * (1.0 + cos(&cep[i], &cep[j])) * 0.5;
-        }
+    if beats.len() < 4 {
+        return Err(RemixError::NoBeat);
     }
     let period_s = period * hop as f64;
-    Ok(Analysis { sample_rate, len: len as i64, beats, period: period_s, bpm: 60.0 * sample_rate as f64 / period_s, sim })
+    Ok((Beats { sample_rate, len: len as i64, beats, period: period_s, bpm: 60.0 * sample_rate as f64 / period_s }, mono))
 }
 
 // ------------------------------------------------------------------------------------- planning

@@ -28,39 +28,6 @@ fn api() -> Result<&'static Api, String> {
     API.get_or_init(load).as_ref().map_err(Clone::clone)
 }
 
-#[cfg(target_os = "windows")]
-fn load() -> Result<Api, String> {
-    use windows::Win32::Foundation::HMODULE;
-    use windows::Win32::System::LibraryLoader::{GetProcAddress, LOAD_LIBRARY_SEARCH_SYSTEM32, LoadLibraryExW};
-    use windows::core::{PCSTR, w};
-    // SAFETY: loads the driver's library from the system directory only.
-    let module: HMODULE =
-        unsafe { LoadLibraryExW(w!("nvEncodeAPI64.dll"), None, LOAD_LIBRARY_SEARCH_SYSTEM32) }.map_err(|_| "no NVIDIA encoder driver".to_string())?;
-    // SAFETY: both symbols are looked up with the signatures of nvEncodeAPI.h; the table is
-    // zero-initialised (all-zero is valid: null pointers) with its version set, as the API asks.
-    unsafe {
-        let version: MaxSupportedVersionFn = std::mem::transmute(
-            GetProcAddress(module, PCSTR(c"NvEncodeAPIGetMaxSupportedVersion".as_ptr().cast())).ok_or("driver lacks NvEncodeAPIGetMaxSupportedVersion")?,
-        );
-        let create: CreateInstanceFn =
-            std::mem::transmute(GetProcAddress(module, PCSTR(c"NvEncodeAPICreateInstance".as_ptr().cast())).ok_or("driver lacks NvEncodeAPICreateInstance")?);
-        let mut v = 0u32;
-        if version(&mut v) != NV_ENC_SUCCESS {
-            return Err("cannot query the NVENC version".into());
-        }
-        let ours = (NVENCAPI_VERSION & 0xf) << 4 | ((NVENCAPI_VERSION >> 24) & 0xf);
-        if v < ours {
-            return Err(format!("the NVIDIA driver's NVENC ({}.{}) is older than {}.{}", v >> 4, v & 0xf, ours >> 4, ours & 0xf));
-        }
-        let mut list: NV_ENCODE_API_FUNCTION_LIST = std::mem::zeroed();
-        list.version = NV_ENCODE_API_FUNCTION_LIST_VER;
-        if create(&mut list) != NV_ENC_SUCCESS {
-            return Err("NvEncodeAPICreateInstance failed".into());
-        }
-        Ok(Api { list })
-    }
-}
-
 #[cfg(target_os = "linux")]
 fn load() -> Result<Api, String> {
     // SAFETY: runtime-load NVIDIA's driver and use the signatures from nvEncodeAPI.h.

@@ -4,7 +4,8 @@
 //! scene-linear reflectance (18 % grey = 0.18) and *signal* is the curve's own normalised domain:
 //!
 //! * [`Domain::CodeValue`]: the specification is written in 10-bit code values / 1023 (full
-//!   scale). Sony, Panasonic, ARRI and DJI publish their curves this way (S-Log3 black = 95/1023).
+//!   scale). Sony, Panasonic, ARRI, DJI and RED publish their curves this way (S-Log3 black =
+//!   95/1023; RED's Log3G10 is written directly in full-scale 0..1).
 //! * [`Domain::Ire`]: the specification is written in "IRE" (video-range normalised: 0 = code 64,
 //!   1 = code 940). Canon publishes Canon Log 2/3 this way; Apple Log is treated the same.
 //!
@@ -42,11 +43,22 @@ pub enum LogCurve {
     AppleLog,
     /// DJI D-Log.
     DLog,
+    /// RED Log3G10.
+    Log3G10,
 }
 
 impl LogCurve {
-    pub const ALL: [LogCurve; 8] =
-        [LogCurve::SLog3, LogCurve::VLog, LogCurve::CLog2, LogCurve::CLog3, LogCurve::LogC3, LogCurve::LogC4, LogCurve::AppleLog, LogCurve::DLog];
+    pub const ALL: [LogCurve; 9] = [
+        LogCurve::SLog3,
+        LogCurve::VLog,
+        LogCurve::CLog2,
+        LogCurve::CLog3,
+        LogCurve::LogC3,
+        LogCurve::LogC4,
+        LogCurve::AppleLog,
+        LogCurve::DLog,
+        LogCurve::Log3G10,
+    ];
 
     pub fn domain(self) -> Domain {
         match self {
@@ -65,6 +77,7 @@ impl LogCurve {
             LogCurve::LogC4 => "ARRI LogC4",
             LogCurve::AppleLog => "Apple Log",
             LogCurve::DLog => "DJI D-Log",
+            LogCurve::Log3G10 => "RED Log3G10",
         }
     }
 
@@ -79,6 +92,7 @@ impl LogCurve {
             LogCurve::LogC4 => logc4_encode(x),
             LogCurve::AppleLog => apple_log_encode(x),
             LogCurve::DLog => dlog_encode(x),
+            LogCurve::Log3G10 => log3g10_encode(x),
         }
     }
 
@@ -93,6 +107,7 @@ impl LogCurve {
             LogCurve::LogC4 => logc4_decode(y),
             LogCurve::AppleLog => apple_log_decode(y),
             LogCurve::DLog => dlog_decode(y),
+            LogCurve::Log3G10 => log3g10_decode(y),
         }
     }
 
@@ -262,6 +277,22 @@ pub fn dlog_decode(y: f64) -> f64 {
     if y <= 0.14 { (y - 0.0929) / 6.025 } else { (10f64.powf(3.896_16 * y - 2.277_52) - 0.0108) / 0.9892 }
 }
 
+// ---------------------------------------------------------------- RED Log3G10
+// RED, "White Paper on REDWideGamutRGB and Log3G10" (Form 915-0187 Rev B, 2017): 18 % grey → 1/3,
+// 10 stops above it (184.32) → 1.0, a linear extension with the gradient at zero below −0.01.
+
+const LOG3G10: (f64, f64, f64, f64) = (0.224_282, 155.975_327, 0.01, 15.1927);
+
+pub fn log3g10_encode(x: f64) -> f64 {
+    let (a, b, c, g) = LOG3G10;
+    let x = x + c;
+    if x < 0.0 { x * g } else { a * (x * b + 1.0).log10() }
+}
+pub fn log3g10_decode(y: f64) -> f64 {
+    let (a, b, c, g) = LOG3G10;
+    if y < 0.0 { y / g - c } else { (10f64.powf(y / a) - 1.0) / b - c }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -317,6 +348,15 @@ mod tests {
         // DJI D-Log: 0 → 0.0929, 18 % → 0.398 (white paper).
         close(LogCurve::DLog.encode(0.0), 0.0929, 1e-9, "D-Log 0");
         close(LogCurve::DLog.encode(0.18), 0.398, 0.002, "D-Log 18%");
+        // RED Log3G10: the white paper's mapping table (six decimals).
+        for (x, y) in [(-0.01, 0.0), (0.0, 0.091_551), (0.18, 0.333_333), (1.0, 0.493_449), (184.322, 1.0)] {
+            close(LogCurve::Log3G10.encode(x), y, 6e-7, "Log3G10 table");
+        }
+        close(LogCurve::Log3G10.decode(1.0 / 3.0), 0.18, 1e-5, "Log3G10 mid grey");
+        close(LogCurve::Log3G10.peak_linear(), 184.32, 0.01, "Log3G10 peak");
+        // below −0.01 the line continues with the gradient at zero
+        close(LogCurve::Log3G10.encode(-0.11), -0.1 * 15.1927, 1e-12, "Log3G10 negative");
+        close(LogCurve::Log3G10.decode(-1.0), -1.0 / 15.1927 - 0.01, 1e-12, "Log3G10 negative decode");
     }
 
     #[test]

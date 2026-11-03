@@ -1,0 +1,23 @@
+[package]
+name = "cfa4-jxl"
+description = "JPEG XL still-image decoder, ported from jxl-oxide (MIT OR Apache-2.0)"
+version.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later AND (MIT OR Apache-2.0)"
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Decode groups in parallel with rayon.
+threads = ["dep:rayon"]
+
+[dependencies]
+thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png"] }

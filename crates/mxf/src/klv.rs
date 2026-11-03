@@ -82,6 +82,11 @@ pub enum KeyClass {
     Other,
 }
 
+/// The immersive audio data element key of ST 429-18 (6.1), a class 14 label.
+pub fn is_dcp_iab_element(k: &Ul) -> bool {
+    k.0[..12] == [0x06, 0x0E, 0x2B, 0x34, 0x01, 0x02, 0x01, 0x05, 0x0E, 0x09, 0x06, 0x01]
+}
+
 pub fn classify(k: &Ul) -> KeyClass {
     let b = &k.0;
     if !k.is_smpte() {
@@ -106,8 +111,9 @@ pub fn classify(k: &Ul) -> KeyClass {
     if b[4] == 0x01 && b[5] == 0x01 && b[8..12] == [0x03, 0x01, 0x02, 0x10] {
         return KeyClass::Fill;
     }
-    // Generic container content: 06 0E 2B 34 xx xx xx xx 0D 01 03 01 ...
-    if b[8..12] == [0x0D, 0x01, 0x03, 0x01] {
+    // Generic container content: 06 0E 2B 34 xx xx xx xx 0D 01 03 01 ..., or the immersive audio
+    // data element of D-Cinema track files (ST 429-18: 06 0E 2B 34 01 02 01 05 0E 09 06 01 ...)
+    if b[8..12] == [0x0D, 0x01, 0x03, 0x01] || is_dcp_iab_element(k) {
         return KeyClass::Essence;
     }
     // Header metadata sets: 06 0E 2B 34 02 53 ... (local sets with 2-byte tags and lengths)

@@ -195,6 +195,30 @@ fn interpret_footage_and_sequence_colour_settings() {
     assert!(s.execute("sequence.colorSettings", json!({"workingSpace": "xyz"})).is_err());
 }
 
+/// RED Log3G10 / REDWideGamutRGB (REDCINE-X exports, #252): offered in the colour space list,
+/// interpretable, rendered as tone-mapped log, and as a built-in camera conversion LUT.
+#[test]
+fn red_log3g10_interpretation() {
+    let mut s = demo();
+    let clip = pick_clip(&mut s);
+    let item = s.active_sequence().unwrap().find_item(clip).unwrap().1.item;
+    let spaces = s.execute("color.spaces", json!({})).unwrap();
+    let red = spaces["colorSpaces"].as_array().unwrap().iter().find(|c| c["id"] == "log3g10-rwg").cloned().unwrap();
+    assert_eq!(
+        (red["label"].as_str(), red["log"].as_bool(), red["gamut"].as_str()),
+        (Some("RED Log3G10 / REDWideGamutRGB"), Some(true), Some("RedWideGamutRgb"))
+    );
+    let sdr = mean(&s.render_program(0.125).unwrap());
+    s.execute("clip.interpretFootage", json!({"colorSpace": "RED Log3G10 / REDWideGamutRGB"})).unwrap();
+    let info = s.execute("media.colorInfo", json!({"item": item.0})).unwrap();
+    assert_eq!((info["effective"].as_str(), info["hdr"].as_bool()), (Some("log3g10-rwg"), Some(true)));
+    let log = mean(&s.render_program(0.125).unwrap());
+    assert!(log.iter().all(|v| v.is_finite() && *v <= 1.0 + 1e-3), "tone mapped into SDR: {log:?}");
+    assert!((log[0] - sdr[0]).abs() + (log[1] - sdr[1]).abs() > 0.02, "{sdr:?} vs {log:?}");
+    let lib = s.execute("lut.list", json!({})).unwrap();
+    assert!(lib["builtin"].as_array().unwrap().iter().any(|b| b["ref"] == "builtin:log3g10-rwg-to-rec709"));
+}
+
 #[test]
 fn lumetri_presets_list_apply_and_thumbnails() {
     let mut s = demo();

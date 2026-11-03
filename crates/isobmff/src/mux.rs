@@ -792,6 +792,20 @@ impl<W: Write> FragmentedWriter<W> {
         Ok(())
     }
 
+    /// Write the init segment now (otherwise the first fragment writes it), so that it can be
+    /// stored apart from the fragments (HLS / CMAF). No-op once written.
+    pub fn write_init_segment(&mut self) -> Result<()> {
+        if !self.init_written {
+            self.write_init()?;
+        }
+        Ok(())
+    }
+
+    /// The output, e.g. to take each segment out of an in-memory buffer as it is written.
+    pub fn get_mut(&mut self) -> &mut W {
+        &mut self.w
+    }
+
     /// Buffer a sample for the next fragment.
     pub fn write_sample(&mut self, track: usize, s: WriteSample) -> Result<()> {
         let p = self.pending.get_mut(track).ok_or(Error::NoSuchTrack(track))?;
@@ -959,5 +973,30 @@ mod tests {
             assert_eq!(f.read_sample(out.as_slice(), 0, i).unwrap(), vec![i as u8; 10]);
         }
         assert_eq!(t.sync_sample_before(5), 3);
+    }
+
+    #[test]
+    fn fragmented_init_segment_apart_from_fragments() {
+        let mut w = FragmentedWriter::new(Vec::new(), WriterOptions::new(Brand::Mp4));
+        let v = w.add_track(TrackConfig::new(avc_entry(), 1000)).unwrap();
+        w.write_init_segment().unwrap();
+        let init = std::mem::take(w.get_mut());
+        w.write_init_segment().unwrap();
+        assert!(w.get_mut().is_empty(), "written once");
+        let mut segments = Vec::new();
+        for i in 0..4u8 {
+            w.write_sample(v, WriteSample { data: &[i; 10], duration: 40, composition_offset: 0, is_sync: i % 2 == 0 }).unwrap();
+            if i % 2 == 1 {
+                w.flush_fragment().unwrap();
+                segments.push(std::mem::take(w.get_mut()));
+            }
+        }
+        assert_eq!(&init[4..8], b"ftyp");
+        assert!(segments.iter().all(|s| &s[4..8] == b"moof"));
+        // init + segments concatenated is the whole fragmented file
+        let whole: Vec<u8> = std::iter::once(&init).chain(&segments).flatten().copied().collect();
+        let f = crate::open(whole.as_slice()).unwrap();
+        assert_eq!((f.fragment_count, f.tracks[0].samples.len()), (2, 4));
+        assert_eq!(f.tracks[0].samples[3].dts, 120);
     }
 }

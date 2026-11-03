@@ -1,7 +1,7 @@
 //! Pulse cache and bit allocation (RFC 6716 §4.3.3, §4.3.4.1).
 
 use super::tables::*;
-use crate::range::{BITRES, RangeDecoder};
+use crate::range::{BITRES, Coder};
 
 const MAX_PSEUDO: i32 = 40;
 const LOG_MAX_PSEUDO: i32 = 6;
@@ -280,9 +280,21 @@ pub struct Allocation {
     pub fine_priority: [i32; NB_EBANDS],
 }
 
-/// `clt_compute_allocation` (decoder side).
+/// Encoder choices coded inside the allocation (ignored when decoding).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct AllocHints {
+    /// Coded bands of the previous frame (skip hysteresis).
+    pub prev_coded_bands: usize,
+    /// Highest band with signal worth coding.
+    pub signal_bandwidth: usize,
+    /// First intensity-stereo band.
+    pub intensity: usize,
+    pub dual_stereo: bool,
+}
+
+/// `clt_compute_allocation`.
 #[allow(clippy::too_many_arguments)]
-pub fn compute_allocation(
+pub fn compute_allocation<C: Coder>(
     m: &Mode,
     start: usize,
     end: usize,
@@ -292,7 +304,8 @@ pub fn compute_allocation(
     total: i32,
     c: usize,
     lm: usize,
-    dec: &mut RangeDecoder,
+    dec: &mut C,
+    hints: &AllocHints,
 ) -> Allocation {
     let ci = c as i32;
     let lmi = lm as i32;
@@ -377,11 +390,11 @@ pub fn compute_allocation(
         bits1[j] = bits1j;
         bits2[j] = bits2j;
     }
-    interp_bits2pulses(m, start, end, skip_start, &bits1, &bits2, &thresh, cap, total, skip_rsv, intensity_rsv, dual_stereo_rsv, c, lm, dec)
+    interp_bits2pulses(m, start, end, skip_start, &bits1, &bits2, &thresh, cap, total, skip_rsv, intensity_rsv, dual_stereo_rsv, c, lm, dec, hints)
 }
 
 #[allow(clippy::too_many_arguments)]
-fn interp_bits2pulses(
+fn interp_bits2pulses<C: Coder>(
     m: &Mode,
     start: usize,
     end: usize,
@@ -396,7 +409,8 @@ fn interp_bits2pulses(
     mut dual_stereo_rsv: i32,
     c: usize,
     lm: usize,
-    dec: &mut RangeDecoder,
+    dec: &mut C,
+    hints: &AllocHints,
 ) -> Allocation {
     let ci = c as i32;
     let alloc_floor = ci << BITRES;
@@ -453,7 +467,12 @@ fn interp_bits2pulses(
         let band_width = EBANDS[coded_bands] - EBANDS[j];
         let mut band_bits = bits[j] + percoeff * band_width + rem;
         if band_bits >= thresh[j].max(alloc_floor + (1 << BITRES)) {
-            if dec.bit_logp(1) {
+            // Only the encoder's choice to stop here is not normative (hysteresis on the depth).
+            let stop = C::ENCODE && {
+                let depth_threshold = if coded_bands > 17 { if j < hints.prev_coded_bands { 7 } else { 9 } } else { 0 };
+                coded_bands <= s + 2 || ((band_bits > (depth_threshold * band_width << lm << BITRES) >> 4) && j <= hints.signal_bandwidth)
+            };
+            if dec.bit_logp(stop, 1) {
                 break;
             }
             psum += 1 << BITRES;
@@ -472,12 +491,17 @@ fn interp_bits2pulses(
         }
         coded_bands -= 1;
     }
-    let intensity = if intensity_rsv > 0 { s + dec.uint((coded_bands + 1 - s) as u32) as usize } else { 0 };
+    let intensity = if intensity_rsv > 0 {
+        let want = hints.intensity.clamp(s, coded_bands) - s;
+        s + dec.uint(want as u32, (coded_bands + 1 - s) as u32) as usize
+    } else {
+        0
+    };
     if intensity <= s {
         total += dual_stereo_rsv;
         dual_stereo_rsv = 0;
     }
-    let dual_stereo = if dual_stereo_rsv > 0 { dec.bit_logp(1) } else { false };
+    let dual_stereo = if dual_stereo_rsv > 0 { dec.bit_logp(hints.dual_stereo, 1) } else { false };
     let mut left = total - psum;
     let span = EBANDS[coded_bands] - EBANDS[s];
     let percoeff = left / span;

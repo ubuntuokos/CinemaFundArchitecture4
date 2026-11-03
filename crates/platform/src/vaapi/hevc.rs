@@ -344,6 +344,7 @@ fn output_meta(sps: &Sps, pts: i64, key: bool) -> OutputMeta {
         key,
         crop: sps.crop_rect(),
         full_range: vui.full_range,
+        range_signalled: vui.range_signalled,
         colour_primaries: vui.colour_primaries,
         transfer_characteristics: vui.transfer_characteristics,
         matrix_coefficients: vui.matrix_coefficients,
