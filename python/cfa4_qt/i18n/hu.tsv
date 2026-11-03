@@ -23,7 +23,7 @@
 	Add Range Marker	Tartományjelölő hozzáadása
 	Add Range Marker to In and Out	Tartományjelölő a kezdő- és végpont közé
 	Add Tracks…	Sávok hozzáadása…
-	Add to Queue	Hozzáadás a sorhoz
+	Send to Queue	Küldés a sorba
 	Add/Remove Keyframe	Kulcskocka hozzáadása/eltávolítása
 	Adjust	Beállítás
 	Adjustment Layer	Korrekciós réteg
@@ -55,8 +55,8 @@
 	Audio Out	Hang végpont
 	Audio Track Mixer	Hangsávkeverő
 	Audio Transitions	Hangátmenetek
-	Audio bitrate	Hang bitrátája
-	Audio codec	Hangkodek
+	Audio Bitrate	Hang bitrátája
+	Audio Format	Hangformátum
 	Auto Bezier	Automatikus Bézier
 	Automate to Sequence…	Automatikus szekvenciába rendezés…
 	Automatic	Automatikus
@@ -66,7 +66,7 @@
 	Bezier	Bézier
 	Bin	Tároló
 	Bin From Selection	Tároló a kijelölésből
-	Bitrate mode	Bitrátamód
+	Bitrate Encoding	Bitráta-kódolás
 	Black Video…	Fekete videó…
 	Blend Mode	Keverési mód
 	Blue	Kék
@@ -183,7 +183,7 @@
 	Export Media	Média exportálása
 	Export Media…	Média exportálása…
 	Export Queue	Exportálási sor
-	Export audio	Hang exportálása
+	Export Audio	Hang exportálása
 	Export failed: {path}	Az exportálás nem sikerült: {path}
 	Export finished: {path}	Az exportálás elkészült: {path}
 	Extract	Kivonás
@@ -207,7 +207,7 @@
 	Frame Blending	Kockamosás
 	Frame Hold Options…	Kimerevítés beállításai…
 	Frame Sampling	Kockamintavétel
-	Frame size	Képméret
+	Frame Size	Képméret
 	From Bin	Tárolóból
 	From Source Monitor	A forrásmonitorról
 	From Source Monitor, Match Frame	A forrásmonitorról, egyező kockával
@@ -483,7 +483,7 @@
 	Synchronize…	Szinkronizálás…
 	Synthetic	Szintetikus
 	Tan	Homok
-	Target bitrate	Célbitráta
+	Target Bitrate	Célbitráta
 	Teal	Kékeszöld
 	Text	Szöveg
 	Text to Speech	Szövegfelolvasás
@@ -2107,7 +2107,7 @@
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV transzportfolyam (.m2ts, AAC hang)
 	Chroma	Króma
 	Elementary Stream (.m2v, no audio)	Elemi folyam (.m2v, hang nélkül)
-	Keyframe distance	Kulcskockák távolsága
+	Key Frame Distance	Kulcskockák távolsága
 	None (I and P only)	Nincs (csak I és P)
 	Off (target bitrate)	Ki (célbitráta)
 	Program Stream (.mpg, LPCM audio)	Programfolyam (.mpg, LPCM hang)
