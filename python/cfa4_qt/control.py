@@ -24,6 +24,8 @@ from __future__ import annotations
 import base64
 import json
 import math
+import os
+import warnings
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
@@ -47,6 +49,7 @@ from PySide6.QtWidgets import (
 
 from .panels.clip_dialogs import ClipDialog
 from .panels.monitor_view import MonitorView
+from .panels.quick_export import quick_presets
 from .panels.timeline import HEADER_W, RULER_H
 from .panels.tools import TOOLS
 
@@ -76,6 +79,9 @@ EDGE_NAMES = {"in": "In", "out": "Out"}  # egui's Edge names
 class ControlError(Exception):
     pass
 
+
+
+QUICK_FIELDS = ("quickOpen", "quickPath", "quickPreset")
 
 
 def _camel(name: str) -> str:
@@ -443,6 +449,11 @@ class ControlServer(QObject):
         def monitor(m: Any) -> dict[str, Any]:
             return {"playing": m.playing, "speed": m.speed, "playhead": int(m.playhead)}
 
+        # the window system's focus (QWindow's), not Qt's active window, which ui.key may point at
+        # a background window to route its shortcuts
+        handle = win.windowHandle()
+        native_focus = bool(handle is not None and handle.isActive())
+
         return {
             "tool": canvas.tool,
             "workspace": win.workspaces.current,
@@ -452,8 +463,8 @@ class ControlServer(QObject):
             "playback": {"program": monitor(win.monitor), "source": monitor(win.source_monitor)},
             "dialog": open_dialog,
             "keyboardFocus": self._keyboard_target().objectName(),
-            "window": {"width": win.width(), "height": win.height(), "active": win.isActiveWindow()},
-            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": win.isActiveWindow()},
+            "window": {"width": win.width(), "height": win.height(), "active": native_focus},
+            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": native_focus},
             "ui": self.ui_state(),
         }
 
@@ -589,7 +600,17 @@ class ControlServer(QObject):
         if seq.count() != 1 or not seq.toString() or seq[0].key() == Qt.Key.Key_unknown:
             raise ControlError(f"unknown key {name!r}")
         combo = seq[0]
-        QTest.keyClick(self._keyboard_target(), combo.key(), combo.keyboardModifiers())
+        target = self._keyboard_target()
+        if QApplication.activeWindow() is not target.window():
+            # as egui's, the channel's keys reach the window without the native keyboard focus (a
+            # window in the background, or Wayland, where a client cannot take the focus itself):
+            # Qt matches shortcuts only in its active window, so make it that inside Qt alone (the
+            # window system's focus is not asked for, and its next focus change takes it back).
+            # Deprecated in Qt 6 for apps, but the only way without asking the window system.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                QApplication.setActiveWindow(target.window())
+        QTest.keyClick(target, combo.key(), combo.keyboardModifiers())
 
     def set(self, p: dict[str, Any]) -> None:
         win = self.window
@@ -680,6 +701,7 @@ class ControlServer(QObject):
             "timecode": {"rows": [dict(r) for r in tc.rows], "showName": tc.show_name},
             "reference": {"ganged": ref.ganged, "time": ref.time, "display": ref.display.currentData(), "scopes": list(ref.scope_kinds)},
             "progress": {"showFinished": win.progress.finished.isChecked()},
+            "events": win.events.state(),
             "inspectorSource": win.inspector_source,
         }
 
@@ -689,12 +711,12 @@ class ControlServer(QObject):
         not take is refused and changes nothing."""
         win = self.window
         if not isinstance(patch, dict):
-            raise ControlError("panels takes {scopes, timecode, reference, progress, inspectorSource}")
-        known = ("scopes", "timecode", "reference", "progress", "inspectorSource")
+            raise ControlError("panels takes {scopes, timecode, reference, progress, events, inspectorSource}")
+        known = ("scopes", "timecode", "reference", "progress", "events", "inspectorSource")
         bad = [k for k in patch if k not in known]
         if bad:
             raise ControlError(f"panels: no {bad[0]!r} in the Qt panels (known: {', '.join(known)})")
-        for k in ("scopes", "timecode", "reference", "progress"):
+        for k in ("scopes", "timecode", "reference", "progress", "events"):
             if k in patch and not isinstance(patch[k], dict):
                 raise ControlError(f"panels.{k} takes {{field: value}}")
         src = patch.get("inspectorSource")
@@ -706,6 +728,15 @@ class ControlServer(QObject):
         bad = [f for f in patch.get("progress", {}) if f != "showFinished"]
         if bad:
             raise ControlError(f"panels.progress: no field {bad[0]!r}")
+        events = patch.get("events", {})
+        bad = [f for f in events if f not in ("level", "selected")]
+        if bad:
+            raise ControlError(f"panels.events: no field {bad[0]!r} (known: level, selected)")
+        if "level" in events and events["level"] not in ("info", "warning", "error"):
+            raise ControlError("panels.events.level is info, warning or error")
+        sel = events.get("selected")
+        if sel is not None and (not isinstance(sel, int) or isinstance(sel, bool) or sel < 0):
+            raise ControlError("panels.events.selected takes an entry id or null")
         cur = self.panels_state()
         # the panels load their saved settings with validation: write the merged state, reload, and
         # put the old one back when a value did not stick
@@ -738,10 +769,63 @@ class ControlServer(QObject):
             win.scopes.view.request()
         if show is not None:
             win.progress.finished.setChecked(show)
+        if events:
+            win.events.set_state(events)
         if src is not None:
             win._follow(src)
 
-    def export_state(self) -> dict[str, Any] | None:
+    def export_state(self) -> dict[str, Any]:
+        """egui's ``ExportUi``: the header's Quick Export popup (``quickOpen``, ``quickPath``,
+        ``quickPreset``) and, while the Export window is open, its choices."""
+        return {**(self.export_window_state() or {}), **self.quick_export_state()}
+
+    def quick_export_state(self) -> dict[str, Any]:
+        q = getattr(self.window, "quick_export", None)
+        try:
+            shown = q is not None and q.isVisible()
+        except RuntimeError:
+            shown, q = False, None
+        return {"quickOpen": shown, "quickPath": q.path if q is not None else "", "quickPreset": q.preset if q is not None else ""}
+
+    def set_quick_export(self, patch: dict[str, Any]) -> None:
+        """``quickOpen`` opens (under the header button, as a click does) or closes the popup;
+        ``quickPreset`` picks a preset of its list; ``quickPath`` sets the file, fitted to the
+        preset's extension as typing it would be."""
+        self.check_quick_export(patch)
+        win = self.window
+        q = getattr(win, "quick_export", None)
+        name = patch.get("quickPreset")
+        if patch.get("quickOpen") is True and not self.quick_export_state()["quickOpen"]:
+            win.toggle_quick_export()
+            q = win.quick_export
+        elif patch.get("quickOpen") is False and q is not None and q.isVisible():
+            q.close()
+        if q is None:
+            return
+        if name is not None:
+            q.choose(name)
+        if "quickPath" in patch:
+            q.path = os.path.expanduser(patch["quickPath"])
+            q._fit_path()
+
+    def check_quick_export(self, patch: dict[str, Any]) -> None:
+        win = self.window
+        if "quickOpen" in patch and not isinstance(patch["quickOpen"], bool):
+            raise ControlError("export.quickOpen takes true or false")
+        for k in ("quickPath", "quickPreset"):
+            if k in patch and not isinstance(patch[k], str):
+                raise ControlError(f"export.{k} takes a string")
+        q = getattr(win, "quick_export", None)
+        name = patch.get("quickPreset")
+        if name is not None and q is not None and q.presets and name.lower() not in {n.lower() for n in quick_presets(q.presets)}:
+            raise ControlError(f"export.quickPreset: {name!r} is not in the Quick Export list")
+        opening = patch.get("quickOpen") is True and not self.quick_export_state()["quickOpen"]
+        if opening and (win.sequence or {}).get("id") is None:
+            raise ControlError("export.quickOpen: open a sequence first")
+        if q is None and not opening and patch.keys() - {"quickOpen"}:
+            raise ControlError("export: Quick Export has not been opened yet")
+
+    def export_window_state(self) -> dict[str, Any] | None:
         """The Export window's choices (null while it is closed)."""
         d = getattr(self.window, "export_dialog", None)
         try:
@@ -753,7 +837,19 @@ class ControlServer(QObject):
                 "customStart": d.start.value(), "customEnd": d.end.value()}
 
     def set_export(self, patch: Any) -> None:
-        cur = self.export_state()
+        if not isinstance(patch, dict):
+            raise ControlError("export takes {quickOpen, quickPath, quickPreset} and the open Export window's fields")
+        quick = {k: v for k, v in patch.items() if k in QUICK_FIELDS}
+        window = {k: v for k, v in patch.items() if k not in QUICK_FIELDS}
+        if quick and window and self.export_window_state() is None:
+            raise ControlError("export: the Export window is not open")
+        self.check_quick_export(quick)
+        if window:
+            self.set_export_window(window)
+        self.set_quick_export(quick)
+
+    def set_export_window(self, patch: Any) -> None:
+        cur = self.export_window_state()
         if cur is None:
             raise ControlError("export: the Export window is not open")
         if not isinstance(patch, dict):
