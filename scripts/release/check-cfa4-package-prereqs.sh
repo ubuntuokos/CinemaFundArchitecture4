@@ -43,6 +43,17 @@ if has tar || has deb || has appimage; then
     check_command "$tool"
   done
 fi
+if has tar || has deb || has appimage; then
+  # The release build links the system GStreamer (ADR 0002 step 6): its development files.
+  check_command pkg-config
+  for module in gstreamer-1.0 gstreamer-base-1.0 gstreamer-app-1.0 gstreamer-video-1.0 gstreamer-pbutils-1.0; do
+    if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists "$module"; then
+      echo "OK: $module"
+    else
+      fail "$module development files are missing (apt: libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev)"
+    fi
+  done
+fi
 if has deb; then
   check_command nfpm
   check_command dpkg-deb

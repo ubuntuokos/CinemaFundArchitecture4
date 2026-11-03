@@ -31,6 +31,7 @@ macro_rules! out {
 }
 
 mod args;
+mod codecs_cmd;
 mod probe;
 mod serve;
 mod serve_graphics;
@@ -39,6 +40,8 @@ mod serve_media_browser;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
+mod serve_shm;
+mod serve_shuttle;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
@@ -110,6 +113,7 @@ SUBCOMMANDS
   settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
+  codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
                                 stdin/stdout with binary frames (docs/qt-gui.md); --autosave
@@ -548,6 +552,7 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" => print(&a, &codecs_cmd::codecs()),
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
                 usage(format!("unknown mcp option `{opt}`"));
