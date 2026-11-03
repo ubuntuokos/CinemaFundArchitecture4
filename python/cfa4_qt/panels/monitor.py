@@ -655,6 +655,7 @@ class Monitor(QWidget):
         self._timer.timeout.connect(self._tick)
         self._sink: Any = None
         self._sink_io: Any = None
+        self._frame_memory: memoryview | None = None  # the shared-memory frame shown
         self._audio_next = 0
         self._audio_busy = False
         self._audio_rate = 48000
@@ -1048,6 +1049,9 @@ class Monitor(QWidget):
             params["alpha"] = True  # the frame's own alpha, not the opaque monitor picture
         if draft:
             params["draft"] = True
+        if self.engine.frames.enabled:
+            # through shared memory, one ring per monitor: no copy per frame (qt-parity 5.5)
+            params["shm"] = self.target
         self.engine.call(
             "frame.render",
             params,
@@ -1070,17 +1074,35 @@ class Monitor(QWidget):
 
     def _on_frame(self, key: tuple[Any, ...], result: Any, data: bytes | None) -> None:
         self._frame_busy = False
-        if isinstance(result, dict) and data:
+        image: QImage | None = None
+        if isinstance(result, dict) and "shmError" in result:
+            self.engine.frames.enabled = False  # the engine cannot: frames come through the pipe
+        if isinstance(result, dict) and "shm" in result:
+            shared = self.engine.frames.view(result["shm"])
+            w, h = int(result.get("w") or 0), int(result.get("h") or 0)
+            if shared is None or not (w > 0 and h > 0 and len(shared) == w * h * 4):
+                # the mapping failed: ask again through the pipe
+                self.engine.frames.enabled = False
+                if self._frame_wanted is None:
+                    self._frame_wanted = key[0]
+                self._pump_frame()
+                return
+            # straight from the engine's ring slot (not overwritten while shown: the monitor asks
+            # for one frame at a time and the ring has more slots); the image keeps the mapping
+            self._frame_memory = shared
+            image = QImage(shared, w, h, w * 4, QImage.Format.Format_RGBA8888)
+        elif isinstance(result, dict) and data:
             w, h = int(result.get("w") or 0), int(result.get("h") or 0)
             if w > 0 and h > 0 and len(data) == w * h * 4:
                 image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
-                offline = result.get("offline") or []
-                full = (int(result.get("fullW") or 0), int(result.get("fullH") or 0))
-                par = result.get("pixelAspect")
-                self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
-                self._shown = key
-                if self.playing and self._shows(self.playhead):
-                    self._meter_refresh(self.playhead // self.frame(), True)
+        if image is not None and isinstance(result, dict):
+            offline = result.get("offline") or []
+            full = (int(result.get("fullW") or 0), int(result.get("fullH") or 0))
+            par = result.get("pixelAspect")
+            self.view.set_image(image, tr("Media offline") if offline else "", full, float(par) if isinstance(par, (int, float)) else None)
+            self._shown = key
+            if self.playing and self._shows(self.playhead):
+                self._meter_refresh(self.playhead // self.frame(), True)
         self._pump_frame()
 
     def _on_frame_error(self, message: str) -> None:

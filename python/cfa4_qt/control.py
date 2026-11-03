@@ -25,6 +25,7 @@ import base64
 import json
 import math
 import os
+import warnings
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
@@ -462,6 +463,11 @@ class ControlServer(QObject):
         def monitor(m: Any) -> dict[str, Any]:
             return {"playing": m.playing, "speed": m.speed, "playhead": int(m.playhead)}
 
+        # the window system's focus (QWindow's), not Qt's active window, which ui.key may point at
+        # a background window to route its shortcuts
+        handle = win.windowHandle()
+        native_focus = bool(handle is not None and handle.isActive())
+
         return {
             "tool": canvas.tool,
             "workspace": win.workspaces.current,
@@ -471,8 +477,8 @@ class ControlServer(QObject):
             "playback": {"program": monitor(win.monitor), "source": monitor(win.source_monitor)},
             "dialog": open_dialog,
             "keyboardFocus": self._keyboard_target().objectName(),
-            "window": {"width": win.width(), "height": win.height(), "active": win.isActiveWindow()},
-            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": win.isActiveWindow()},
+            "window": {"width": win.width(), "height": win.height(), "active": native_focus},
+            "input": {"mode": "controlOnly" if self.input_gate is not None else "native", "nativeWindowFocused": native_focus},
             "ui": self.ui_state(),
         }
 
@@ -608,7 +614,17 @@ class ControlServer(QObject):
         if seq.count() != 1 or not seq.toString() or seq[0].key() == Qt.Key.Key_unknown:
             raise ControlError(f"unknown key {name!r}")
         combo = seq[0]
-        QTest.keyClick(self._keyboard_target(), combo.key(), combo.keyboardModifiers())
+        target = self._keyboard_target()
+        if QApplication.activeWindow() is not target.window():
+            # as egui's, the channel's keys reach the window without the native keyboard focus (a
+            # window in the background, or Wayland, where a client cannot take the focus itself):
+            # Qt matches shortcuts only in its active window, so make it that inside Qt alone (the
+            # window system's focus is not asked for, and its next focus change takes it back).
+            # Deprecated in Qt 6 for apps, but the only way without asking the window system.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                QApplication.setActiveWindow(target.window())
+        QTest.keyClick(target, combo.key(), combo.keyboardModifiers())
 
     def set(self, p: dict[str, Any]) -> None:
         win = self.window
