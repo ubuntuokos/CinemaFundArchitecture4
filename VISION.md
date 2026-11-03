@@ -90,7 +90,7 @@ Csomagformátumok: `.deb`, AppImage, Flatpak, `tar.gz` (lásd F3–F6 auditok).
 ## 4. Egyesítendő programok és képességeik
 
 A CFA4 ezeknek a programoknak a **képességeit** veszi át; a nevüket, logóikat és védjegyeiket nem.
-Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (2. pont, Licenc).
+Kódot csak GPL-3.0-kompatibilis licencű projektből vehet át, forrásmegjelöléssel (1. pont, Licenc).
 Zárt programok (Adobe Premiere, DaVinci Resolve) és GPL-2.0-only projektek (pl. HandBrake) kódja
 nem vehető át: ezek képességét saját kóddal kell megvalósítani. A kodekek és konténerek saját,
 clean-room megvalósításúak; külső kodek-crate függőségként használható. A szabályok:
@@ -106,6 +106,7 @@ clean-room megvalósításúak; külső kodek-crate függőségként használhat
 | **Audacity** | hangszerkesztés | Hullámforma-szerkesztő, többsávos hang, zajcsökkentés, spektrális szerkesztés, effektek és bővítmények (LV2/VST3), címkék, sokféle hangformátum |
 | **Subtitle Edit** | feliratozás | Sok feliratformátum, vizuális és pontos időzítés hullámformán, beszédfelismerés, fordítás, képes feliratok OCR-je, helyesírás-ellenőrzés |
 | **Krita** | rajz, 2D animáció | Raszteres rajzolás és festés, ecsetek, kockánkénti 2D animáció hagymahéjjal (onion skin) és idővonallal |
+| **Venturi** | vágás, hang (Rust, egui) | GPL-3.0-or-later, kódja átvehető forrásmegjelöléssel. Hardveres kódoló önellenőrzése próbakódolással; ügynökbiztos MCP (0600 Unix socket, visszatartás mozdulat alatt); inkrementális hangerőmérés; előre dekódoló puffer elvei; VST3 külön folyamatban; stabil azonosítók; felhasználói telepítő. Az MI-réteg után: Silero VAD szünettörlés, Whisper-kompatibilis átirat – [`docs/venturi-parity.md`](docs/venturi-parity.md) V1–V10 |
 | **Kinewright** | ügynökvezérelt vágás (Rust) | Atomikus, revízióhoz kötött ügynöki szerkesztési terv egy visszavonási lépéssel; ügynökönkénti idővonal-ág; típusos incidensek biztonságos javítással; kis MCP-felület; mért ügynöki teljesítmény; export utáni hang- és képellenőrzés; storyboard és ütemelemzés. Csak az elveket írjuk újra (GPL-3.0-only) – [`docs/open-editors-parity.md`](docs/open-editors-parity.md) E1, E2, E4–E6, E14, E15 |
 | **Cutlass** | MI-asszisztenses vágás (Rust) | Próba homokozóban, élesítés egy lépésben; MI-asszisztens panel helyi végponttal; Lottie-animációk; Python-szkriptelés – E1, E3, E5, E10, E11 |
 | **Concat** | CapCut-szerű vágás (Rust) | Csak ötlet, kód nem (AGPL): modelljegyzék rögzített SHA-256-tal és saját tükörrel, modelljelöltek (kivágás, felskálázás, hangklónozás) – E7–E9 |
