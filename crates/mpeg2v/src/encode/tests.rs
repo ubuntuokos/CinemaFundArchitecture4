@@ -65,10 +65,12 @@ fn encode(cfg: Config, frames: usize) -> (Vec<u8>, Vec<Packet>, Vec<Clip>) {
     let mut clips = Vec::new();
     for t in 0..frames {
         let c = clip(cfg.width as usize, cfg.height as usize, cfg.chroma, t);
-        let p = enc.encode(&input(&c)).unwrap();
-        es.extend_from_slice(&p.data);
-        packets.push(p);
+        packets.extend(enc.encode(&input(&c)).unwrap());
         clips.push(c);
+    }
+    packets.extend(enc.flush().unwrap());
+    for p in &packets {
+        es.extend_from_slice(&p.data);
     }
     es.extend_from_slice(&enc.finish());
     (es, packets, clips)
@@ -113,11 +115,119 @@ fn round_trips_through_our_decoder() {
     }
 }
 
+/// IBBP: B pictures between the anchors, reordered into decode order, displayed in order.
+#[test]
+fn b_pictures_round_trip_in_display_order() {
+    for (b_frames, gop, closed, frames) in [(2, 12, true, 26), (2, 12, false, 26), (1, 7, false, 15), (3, 8, true, 11), (7, 16, false, 20)] {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.gop = gop;
+        cfg.b_frames = b_frames;
+        cfg.closed_gop = closed;
+        cfg.rate = Rate::Quantizer(3);
+        let (es, packets, clips) = encode(cfg, frames);
+        let name = format!("M={} N={gop} closed={closed}", b_frames + 1);
+        // decode order: every picture once, decode times rising and never after the display time
+        let mut shown: Vec<u64> = packets.iter().map(|p| p.index).collect();
+        shown.sort_unstable();
+        assert_eq!(shown, (0..frames as u64).collect::<Vec<_>>(), "{name}");
+        for (k, p) in packets.iter().enumerate() {
+            assert_eq!(p.dts, k as i64 - 1, "{name}");
+            assert!(p.dts <= p.index as i64, "{name}: picture {} decodes at {}", p.index, p.dts);
+        }
+        let pics = decode(&es);
+        assert_eq!(pics.len(), frames, "{name}");
+        assert!(!pics[0].info.low_delay);
+        let mut b = 0;
+        for (i, (p, c)) in pics.iter().zip(&clips).enumerate() {
+            let pos = i as u32 % gop;
+            let anchor = pos.is_multiple_of(b_frames + 1) || i + 1 == frames;
+            let want = if pos == 0 {
+                PictureType::I
+            } else if anchor {
+                PictureType::P
+            } else {
+                PictureType::B
+            };
+            assert_eq!(p.picture_type, want, "{name}: picture {i}");
+            b += (want == PictureType::B) as usize;
+            let (py, pc) = (psnr(&p.y, &c.y), psnr(&p.cb, &c.cb).min(psnr(&p.cr, &c.cr)));
+            assert!(py > 38.0 && pc > 38.0, "{name}: picture {i}: PSNR Y {py:.2} C {pc:.2}");
+        }
+        assert!(b > 0, "{name}");
+    }
+}
+
+/// Every closed GOP decodes on its own; the leading B pictures of an open one need the GOP
+/// before.
+#[test]
+fn closed_gops_decode_on_their_own() {
+    for closed in [true, false] {
+        let mut cfg = Config::new(176, 144, 25, 1);
+        cfg.gop = 6;
+        cfg.b_frames = 2;
+        cfg.closed_gop = closed;
+        cfg.rate = Rate::Quantizer(3);
+        let (_, packets, clips) = encode(cfg, 14);
+        // from the second I picture on (decode order), as after a cut or a seek
+        let second = packets.iter().skip(1).position(|p| p.keyframe).unwrap() + 1;
+        let es: Vec<u8> = packets[second..].iter().flat_map(|p| p.data.clone()).collect();
+        let mut d = Decoder::new();
+        let mut pics = Vec::new();
+        for (i, r) in access_units(&es).into_iter().enumerate() {
+            pics.extend(d.decode(&es[r], i as i64).unwrap());
+        }
+        pics.extend(d.flush());
+        // the GOP starts with the two B pictures shown before its I picture (pictures 4 and 5)
+        if closed {
+            assert_eq!(d.errors(), 0, "{:?}", d.last_error());
+            assert_eq!(pics.len(), 14 - 4);
+            for (p, c) in pics.iter().zip(&clips[4..]) {
+                assert!(psnr(&p.y, &c.y) > 38.0);
+            }
+        } else {
+            // without the forward anchor the decoder drops (or conceals) the leading pictures
+            assert!(pics.len() < 14 - 4 || pics.iter().zip(&clips[4..]).take(2).any(|(p, c)| psnr(&p.y, &c.y) < 38.0));
+        }
+        let gop = &packets[second].data;
+        let at = gop.windows(4).position(|w| w == [0, 0, 1, crate::headers::GROUP_START]).unwrap();
+        assert_eq!(gop[at + 7] >> 6 & 1, closed as u8, "closed_gop flag");
+    }
+}
+
+/// B pictures cost less than P pictures on moving content, and the bitrate holds with them.
+#[test]
+fn b_pictures_are_cheap_and_the_rate_holds() {
+    let (w, h) = (352usize, 288usize);
+    let mut cfg = Config::new(w as u32, h as u32, 25, 1);
+    cfg.gop = 12;
+    cfg.b_frames = 2;
+    let mut enc = Encoder::new(cfg.clone()).unwrap();
+    let mut packets = Vec::new();
+    for t in 0..24 {
+        packets.extend(enc.encode(&input(&textured(w, h, ChromaFormat::Yuv420, t, 2))).unwrap());
+    }
+    packets.extend(enc.flush().unwrap());
+    let avg = |ty| {
+        let s: Vec<usize> = packets.iter().filter(|p| p.picture_type == ty).map(|p| p.data.len()).collect();
+        s.iter().sum::<usize>() / s.len().max(1)
+    };
+    assert!(avg(PictureType::B) < avg(PictureType::P), "B {} P {}", avg(PictureType::B), avg(PictureType::P));
+
+    for bps in [1_500_000u64, 400_000] {
+        cfg.rate = Rate::Bitrate { bits_per_second: bps };
+        let frames = 48;
+        let (es, _, _) = encode(cfg.clone(), frames);
+        let actual = es.len() as f64 * 8.0 * 25.0 / frames as f64;
+        assert!((0.85..1.15).contains(&(actual / bps as f64)), "{bps}: {actual:.0} bit/s");
+        assert_eq!(decode(&es).len(), frames);
+    }
+}
+
 #[test]
 fn motion_compensation_predicts_moving_content() {
     let (w, h) = (256, 160);
     let mut enc = Encoder::new(Config::new(w as u32, h as u32, 25, 1)).unwrap();
-    let sizes: Vec<usize> = (0..5).map(|t| enc.encode(&input(&textured(w, h, ChromaFormat::Yuv420, t, 0))).unwrap().data.len()).collect();
+    let sizes: Vec<usize> = (0..5).map(|t| enc.encode(&input(&textured(w, h, ChromaFormat::Yuv420, t, 0))).unwrap()[0].data.len()).collect();
     let p = sizes[1..].iter().max().unwrap();
     assert!(p * 2 < sizes[0], "{sizes:?}");
 }
@@ -127,10 +237,10 @@ fn still_pictures_skip_almost_everything() {
     let cfg = Config::new(320, 240, 30000, 1001);
     let c = clip(320, 240, ChromaFormat::Yuv420, 0);
     let mut enc = Encoder::new(cfg).unwrap();
-    let i = enc.encode(&input(&c)).unwrap();
+    let i = enc.encode(&input(&c)).unwrap().remove(0);
     // the first P picture refines the I picture's quantisation error, then nothing is left
-    let p1 = enc.encode(&input(&c)).unwrap();
-    let p2 = enc.encode(&input(&c)).unwrap();
+    let p1 = enc.encode(&input(&c)).unwrap().remove(0);
+    let p2 = enc.encode(&input(&c)).unwrap().remove(0);
     assert!(p1.data.len() < i.data.len() && p2.data.len() * 8 < i.data.len(), "I {} P {} P {}", i.data.len(), p1.data.len(), p2.data.len());
 }
 
@@ -257,7 +367,7 @@ fn extreme_content_stays_decodable() {
         let y: Vec<u8> = (0..w * h).map(&mut px).collect();
         let cb: Vec<u8> = (0..w * h / 4).map(&mut px).collect();
         let cr: Vec<u8> = (0..w * h / 4).map(&mut px).collect();
-        es.extend(enc.encode(&Input { y: &y, cb: &cb, cr: &cr, y_stride: w, c_stride: w / 2 }).unwrap().data);
+        es.extend(enc.encode(&Input { y: &y, cb: &cb, cr: &cr, y_stride: w, c_stride: w / 2 }).unwrap().into_iter().flat_map(|p| p.data));
         clips.push(y);
     }
     let pics = decode(&es);
@@ -273,12 +383,20 @@ fn ffmpeg_decodes_our_streams() {
         ("enc_420_q", ChromaFormat::Yuv420, Rate::Quantizer(4)),
         ("enc_420_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
         ("enc_422_q", ChromaFormat::Yuv422, Rate::Quantizer(3)),
+        ("enc_420_ibbp", ChromaFormat::Yuv420, Rate::Quantizer(4)),
+        ("enc_420_ibbp_rate", ChromaFormat::Yuv420, Rate::Bitrate { bits_per_second: 800_000 }),
+        ("enc_422_ibbp", ChromaFormat::Yuv422, Rate::Quantizer(3)),
     ] {
         let mut cfg = Config::new(160, 96, 25, 1);
         cfg.chroma = chroma;
         cfg.rate = rate;
         cfg.gop = 5;
-        let (es, _, _) = encode(cfg, 8);
+        if name.contains("ibbp") {
+            cfg.gop = 6;
+            cfg.b_frames = 2;
+            cfg.closed_gop = name.ends_with("rate");
+        }
+        let (es, _, _) = encode(cfg, 14);
         let ours = decode(&es);
         let Some(ff) = cfa4_testkit::ffmpeg_or_skip(name) else { return };
         let path = cfa4_testkit::fixtures_dir("mpeg2v").join(format!("{name}.m2v"));

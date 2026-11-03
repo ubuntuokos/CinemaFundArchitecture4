@@ -77,7 +77,7 @@ fn xorshift(seed: &mut u64) -> u64 {
 /// Damaged streams must never panic or hang; errors are fine.
 #[test]
 fn corrupted_streams_do_not_panic() {
-    for name in ["main_cabac_b", "baseline_cif_noise", "cavlc_b", "bpyramid"] {
+    for name in ["main_cabac_b", "baseline_cif_noise", "cavlc_b", "bpyramid", "high422_cabac_b", "high422_10_cavlc", "high444_cabac_b", "high444_cavlc"] {
         let f = common::fixture(name);
         let Some((h264, _)) = common::ensure(f) else { return };
         let data = std::fs::read(h264).unwrap();

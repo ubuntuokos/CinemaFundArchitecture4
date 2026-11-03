@@ -320,3 +320,51 @@ fn command_list_marks_panel_only_shortcuts() {
     let step = rows.as_array().unwrap().iter().find(|r| r["id"] == "playhead.stepBack").unwrap();
     assert!(step["panelShortcuts"].as_array().unwrap().is_empty());
 }
+
+#[test]
+fn a_frontend_in_another_process_edits_over_commands() {
+    // The Qt GUI talks to the engine over `serve`: it registers its own commands, opens the
+    // editor (Cancel restores), and draws the keyboard from `shortcuts.keyboard`.
+    let mut s = Session::default();
+    let r = s
+        .execute(
+            "shortcuts.registerExternal",
+            json!({"commands": [
+                {"id": "playback.toggle", "label": "Play/Stop", "shortcut": "Space"},
+                {"id": "tool.razor", "label": "Razor Tool", "shortcut": "C"},
+                {"id": "app.keyboardShortcuts", "label": "Keyboard Shortcuts…", "menu": ["Edit"], "shortcut": "Cmd+Alt+K"}
+            ]}),
+        )
+        .unwrap();
+    assert_eq!(r["registered"], json!(3));
+    assert_eq!(s.shortcuts.primary("playback.toggle").as_deref(), Some("Space"));
+    assert!(s.execute("shortcuts.registerExternal", json!({"commands": [{"id": "x.y", "shortcut": "Hyper+K"}]})).is_err());
+    assert!(s.execute("shortcuts.registerExternal", json!({"commands": [{"label": "no id"}]})).is_err());
+    assert!(s.execute("shortcuts.registerExternal", json!({})).is_err());
+    assert_eq!(s.shortcuts.primary("tool.razor").as_deref(), Some("C"), "a refused registration keeps the old one");
+    // the keyboard: application and panel commands per key with exactly the modifiers given
+    let k = s.execute("shortcuts.keyboard", json!({})).unwrap();
+    assert_eq!(k["keys"]["Space"]["application"], json!("playback.toggle"));
+    assert_eq!(k["keys"]["C"]["application"], json!("tool.razor"));
+    let hist = s.execute("shortcuts.keyboard", json!({"panel": "History"})).unwrap();
+    assert_eq!(hist["keys"]["Left"]["panel"], json!("edit.undo"));
+    let cmd = s.execute("shortcuts.keyboard", json!({"mods": "Cmd"})).unwrap();
+    assert_eq!(cmd["keys"]["Z"]["application"], json!("edit.undo"));
+    assert_eq!(cmd["mods"], json!("Cmd"));
+    assert!(s.execute("shortcuts.keyboard", json!({"mods": "Hyper"})).is_err());
+    assert!(s.execute("shortcuts.keyboard", json!({"panel": "Nope"})).is_err());
+    // begin, edit, cancel: back to where the dialog opened
+    let p = s.execute("shortcuts.beginEditing", json!({})).unwrap();
+    assert_eq!(p["editing"], json!(true));
+    s.execute("shortcuts.set", json!({"command": "tool.razor", "keys": "Cmd+Shift+9"})).unwrap();
+    assert_eq!(s.shortcuts.primary("tool.razor").as_deref(), Some("Cmd+Shift+9"));
+    let p = s.execute("shortcuts.cancelEditing", json!({})).unwrap();
+    assert_eq!(p["editing"], json!(false));
+    assert_eq!(s.shortcuts.primary("tool.razor").as_deref(), Some("C"));
+    // begin, edit, OK: kept
+    s.execute("shortcuts.beginEditing", json!({})).unwrap();
+    s.execute("shortcuts.set", json!({"command": "tool.razor", "keys": "Cmd+Shift+9"})).unwrap();
+    s.execute("shortcuts.endEditing", json!({})).unwrap();
+    s.execute("shortcuts.cancelEditing", json!({})).unwrap();
+    assert_eq!(s.shortcuts.primary("tool.razor").as_deref(), Some("Cmd+Shift+9"));
+}

@@ -121,6 +121,11 @@ fn audio_only(format: Format, bits: u16) -> ExportSettings {
     }
 }
 
+/// A DCP of `resolution` (`2k` / `4k`) in the `aspect` container (`flat` / `scope`).
+fn dcp(resolution: &str, aspect: &str) -> ExportSettings {
+    ExportSettings { format: Format::Dcp, dcp_resolution: resolution.into(), dcp_aspect: aspect.into(), ..Default::default() }
+}
+
 fn p(name: &str, category: &str, description: &str, settings: ExportSettings) -> ExportPreset {
     ExportPreset { name: name.into(), category: category.into(), description: description.into(), settings, builtin: true }
 }
@@ -228,6 +233,10 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
             dvd((720, 480), FrameRate::new(30000, 1001), (32, 27), 18),
         ),
         p("MPEG-2 Transport Stream HD 1080", bc, "MPEG-2 video 1920×1080, 18 Mbps average, AAC 192 kbps, .ts", mpeg2("ts", Some((1920, 1080)), 18_000, 192)),
+        p("DCP 2K Flat", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 1998×1080 (1.85:1), 5.1 24-bit 48 kHz PCM", dcp("2k", "flat")),
+        p("DCP 2K Scope", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 2048×858 (2.39:1), 5.1 24-bit 48 kHz PCM", dcp("2k", "scope")),
+        p("DCP 4K Flat", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 3996×2160 (1.85:1), 5.1 24-bit 48 kHz PCM", dcp("4k", "flat")),
+        p("DCP 4K Scope", "Digital Cinema", "SMPTE DCP folder: JPEG 2000 4096×1716 (2.39:1), 5.1 24-bit 48 kHz PCM", dcp("4k", "scope")),
         p(
             "PNG Sequence",
             "Image Sequence",

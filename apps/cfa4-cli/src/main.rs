@@ -31,6 +31,7 @@ macro_rules! out {
 }
 
 mod args;
+mod codecs_cmd;
 mod probe;
 mod serve;
 mod serve_graphics;
@@ -39,6 +40,8 @@ mod serve_media_browser;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
+mod serve_shm;
+mod serve_shuttle;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
@@ -89,7 +92,7 @@ SUBCOMMANDS
          [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
-                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|png|tiff|bmp|gif|wav|aiff|aac, guessed
+                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
                                 from the extension); --range entire|inOut|workArea, or a custom
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
@@ -110,6 +113,7 @@ SUBCOMMANDS
   settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
+  codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
                                 stdin/stdout with binary frames (docs/qt-gui.md); --autosave
@@ -547,6 +551,7 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" => print(&a, &codecs_cmd::codecs()),
         "mcp" => {
             if let Some(opt) = a.unknown_opt(&["--bridge", "--project", "--demo", "--data-dir"]) {
                 usage(format!("unknown mcp option `{opt}`"));

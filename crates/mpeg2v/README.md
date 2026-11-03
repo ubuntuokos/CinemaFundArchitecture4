@@ -11,7 +11,7 @@ consulted; FFmpeg is used only as an external fixture generator and test oracle.
 |---|---|---|
 | ITU-T H.262 \| ISO/IEC 13818-2 | 02/2000 (second edition, with Amd. 1 and Cor. 1/2 as incorporated in the 2000 text) | sequence / GOP / picture headers and extensions, slices, macroblocks, VLC tables (Annex B), inverse quantisation and mismatch control (§7.4), IDCT (Annex A), motion vectors and prediction (§7.6) |
 | ISO/IEC 11172-2 | 1993 | MPEG-1 video: slices spanning rows, MPEG-1 escape codes, oddification, full-pel vectors, D pictures |
-| MPEG-2 Test Model 5 (ISO/IEC JTC1/SC29/WG11/N0400) | 1993 | encoder: picture bit allocation from I/P complexities, adaptive quantisation by spatial activity |
+| MPEG-2 Test Model 5 (ISO/IEC JTC1/SC29/WG11/N0400) | 1993 | encoder: picture bit allocation from I/P/B complexities (K_P 1, K_B 1.4), adaptive quantisation by spatial activity |
 | IEEE Std 1180 | 1990 | IDCT accuracy test procedure (run as a unit test) |
 | ISO/IEC TR 13818-5 (MPEG Software Simulation Group decoder behaviour) | 1997 | two decoder behaviours the normative text leaves open (see "Interpretations") |
 
@@ -62,10 +62,12 @@ parameters, so a random-access point without its own sequence header still decod
 
 ```rust
 use cfa4_mpeg2v::encode::{Config, Encoder, Input, Rate};
-let mut cfg = Config::new(1920, 1080, 25, 1);           // 4:2:0, quantiser 6, GOP 15
+let mut cfg = Config::new(1920, 1080, 25, 1);           // 4:2:0, quantiser 6, GOP 15, I/P
 cfg.rate = Rate::Bitrate { bits_per_second: 25_000_000 };
+cfg.b_frames = 2;                                        // IBBP; cfg.closed_gop (default true)
 let mut enc = Encoder::new(cfg)?;
-let packet = enc.encode(&Input { y, cb, cr, y_stride, c_stride })?;  // one picture
+let packets = enc.encode(&Input { y, cb, cr, y_stride, c_stride })?;  // decode order, 0 or more
+let rest = enc.flush()?;                                 // the pictures still held back
 let end = enc.finish();                                  // sequence_end_code
 ```
 
@@ -73,20 +75,30 @@ let end = enc.finish();                                  // sequence_end_code
   and bitrate (Main, High-1440, High; 4:2:2 Main, High); beyond High Level the stream still
   decodes and is signalled as High Level. The eight MPEG-2 frame rates; any size up to
   16383×16383 (odd sizes are edge-padded to whole macroblocks and cropped by the decoder).
-- Progressive frame pictures, I and P pictures with `low_delay` set (decode order is display
-  order), a closed GOP with the sequence header (and a sequence display extension with the
-  colour description) before every I picture. One slice per macroblock row.
+- Progressive frame pictures: I and P pictures (`low_delay` set when there are no B
+  pictures), and 0-7 B pictures between anchors (`b_frames`). An anchor every `b_frames + 1`
+  pictures within each GOP; the B pictures before an I picture belong to its GOP. Packets come
+  in decode order with the display number (`index`) and a decode time (`dts`, one frame
+  earlier with B pictures, so DTS ≤ PTS); `flush` codes the held-back pictures at the end (the
+  last becomes a P picture). Closed GOPs (`closed_gop`, the default) predict those leading B
+  pictures from the I picture alone and set `closed_gop`, so every GOP decodes on its own;
+  open GOPs predict them from both sides. The sequence header (and a sequence display
+  extension with the colour description) comes before every I picture. One slice per
+  macroblock row.
 - Motion search on luma at whole samples (left, temporal and zero predictors, then large and
   small diamonds), then half-sample refinement, ±32 samples (`f_code` 3); vectors whose
-  luma or chroma prediction would leave the picture are never chosen. Intra / inter decision
-  by SAD against the deviation from the mean; skipped macroblocks and "MC not coded" when no
-  coefficient survives quantisation.
+  luma or chroma prediction would leave the picture are never chosen. B pictures search both
+  anchors (temporal predictors: the last P picture's vectors scaled to the distance) and take
+  the cheapest of forward, backward and their average (SAD plus vector bits). Intra / inter
+  decision by SAD against the deviation from the mean; skipped macroblocks (in B pictures:
+  the same directions and vectors as the macroblock before, §7.6.6.4) and "MC not coded"
+  when no coefficient survives quantisation.
 - Forward DCT as the transpose of the decoder's IDCT basis; default matrices; non-linear
   quantiser scale; intra levels rounded with offset 3/8, inter levels `floor(|F| / qs)` (the
   reconstruction lands mid-step). The intra VLC table (B.14 or B.15) of each picture is the one
   that would have coded the previous picture's intra blocks in fewer bits.
 - Rate control: constant quantiser, or an average bitrate: TM5 picture targets from the
-  I and P complexities (bits × quantiser), the picture quantiser from its type's complexity
+  I, P and B complexities (bits × quantiser), the picture quantiser from its type's complexity
   (the first picture of each type is coded once as a trial to measure it), a gentle in-picture
   correction against an expected bit profile (each macroblock's coefficient magnitude), and
   optional TM5 adaptive quantisation (`adaptive_quantization`; looks better on flat areas,
@@ -96,9 +108,9 @@ let end = enc.finish();                                  // sequence_end_code
 - Macroblock rows are analysed (motion search, prediction, DCT) in parallel on rayon; coding
   is sequential (rate control).
 
-Not yet, each tracked: B pictures (#240), interlaced coding (#241), CBR with VBV compliance
-(#242), MPEG-2 export as elementary / program / transport stream (#243), DVD-Video (#244) and
-Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices (#246).
+Not yet, each tracked: interlaced coding (#241), CBR with VBV compliance (#242), DVD-Video
+(#244) and Blu-ray (#245) authoring, speed and RD quantisation, scene cuts, custom matrices
+(#246).
 
 ### Interpretations
 

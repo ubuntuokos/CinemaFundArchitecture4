@@ -4,7 +4,7 @@
 cargo test --workspace                          # everything; oracle tests skip without ffmpeg
 cargo test -p cfa4-h264                    # one crate
 cargo test --release -p cfa4-hevc          # codec tests are much faster in release
-cargo xtask ci                                  # all gates (fmt, clippy, tests, layers, assets, wasm)
+cargo xtask ci                                  # gates fmt, clippy, layers, assets (not tests, not wasm)
 cargo xtask fixtures                            # pre-generate the ffmpeg fixture matrix
 CFA4_REQUIRE_ORACLES=1 cargo test --workspace   # CI: missing ffmpeg fails instead of skipping
 ```

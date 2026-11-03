@@ -33,6 +33,7 @@ cfa4-vp8 = { workspace = true }
 cfa4-vp9 = { workspace = true }
 cfa4-prores = { workspace = true }
 cfa4-dnx = { workspace = true }
+cfa4-j2k = { workspace = true }
 cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
@@ -49,5 +50,6 @@ symphonia = { version = "0.5.5", default-features = false, features = ["aac", "m
 
 [dev-dependencies]
 cfa4-ac3 = { workspace = true, features = ["test-util"] }
+cfa4-auro = { workspace = true }
 cfa4-testkit = { workspace = true }
 serde_json = { workspace = true }

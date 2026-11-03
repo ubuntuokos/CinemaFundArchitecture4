@@ -915,3 +915,23 @@ fn multicam_menu_items_are_enabled_only_for_clips_they_work_on() {
     let q = s.active_sequence().unwrap();
     assert!(q.find_item(nest).is_none(), "flattened into the camera clips");
 }
+
+#[test]
+fn the_sequence_inspect_names_a_clips_cameras_for_the_clip_menu() {
+    let (mut s, _, _, _) = mc_session("camera1");
+    s.execute("multicam.switchAngle", json!({"camera": 2})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let clip = &js["video"][0]["items"][0];
+    assert_eq!(clip["nested"], true);
+    assert_eq!(clip["multicam"], json!({"enabled": true, "angle": 1}));
+    let names: Vec<&str> = clip["cameras"].as_array().unwrap().iter().filter_map(|c| c["name"].as_str()).collect();
+    assert_eq!(names, ["Camera 1", "Camera 2", "Camera 3"]);
+    assert_eq!(clip["cameras"][2]["angle"], 2);
+    // off: no cameras, the switch still there
+    s.execute("timeline.select", json!({"clips": [clip["clip"]]})).unwrap();
+    s.execute("clip.multicamEnable", json!({"enabled": false})).unwrap();
+    let js = s.execute("sequence.inspect", json!({})).unwrap();
+    let clip = &js["video"][0]["items"][0];
+    assert_eq!(clip["multicam"]["enabled"], false);
+    assert!(clip["cameras"].is_null());
+}

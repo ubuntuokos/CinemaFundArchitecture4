@@ -88,6 +88,10 @@ and decoder cannot disagree on them.
 Not yet (#117): several quality layers, tiles, HTJ2K encoding, other code-block styles, SOP /
 EPH / PLT, IMF and broadcast profiles. DCP / MXF export is #115, speed #116.
 
+In MXF the decoder runs through `cfa4-codecs` (`j2k.rs`): Y'CbCr, R'G'B' and gray components
+become video frames, and the X'Y'Z' of the digital cinema profiles (`Header::digital_cinema`)
+is converted to P3-D65 with the DCI transfer.
+
 ## Accuracy and tests
 
 `tests/oracle.rs` generates 17 codestreams with ffmpeg:

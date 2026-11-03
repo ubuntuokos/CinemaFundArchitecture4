@@ -1,6 +1,7 @@
 //! Clean-room pure-Rust H.264 / AVC decoder, implemented from ITU-T Rec. H.264 (ISO/IEC 14496-10).
 //!
-//! Supported: progressive (frame) coding, 8-bit 4:2:0, Baseline / Main / High profiles — CAVLC and CABAC,
+//! Supported: progressive (frame) coding, 8 to 14 bits, 4:2:0, 4:2:2 and 4:4:4: Baseline /
+//! Main / High / High 10 / High 4:2:2 / High 4:4:4 Predictive profiles — CAVLC and CABAC,
 //! I/P/B slices, 8x8 transform, custom scaling matrices, weighted prediction, spatial/temporal direct,
 //! multiple slices, long-term references and all MMCOs, deblocking.
 //!
@@ -106,7 +107,8 @@ impl Plane {
     }
 }
 
-/// A decoded, cropped picture in planar 4:2:0 of [`Picture::bit_depth`] bits.
+/// A decoded, cropped planar picture of [`Picture::bit_depth`] bits in the chroma sampling
+/// [`Picture::chroma_format`] says.
 #[derive(Clone, Debug)]
 pub struct Picture {
     /// Cropped luma width.
@@ -115,6 +117,9 @@ pub struct Picture {
     pub height: u32,
     pub chroma_width: u32,
     pub chroma_height: u32,
+    /// ChromaArrayType: 1 = 4:2:0, 2 = 4:2:2, 3 = 4:4:4; 0 = monochrome, output as neutral
+    /// 4:2:0 chroma planes.
+    pub chroma_format: u8,
     pub y: Plane,
     pub u: Plane,
     pub v: Plane,

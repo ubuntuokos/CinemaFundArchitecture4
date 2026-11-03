@@ -8,6 +8,11 @@ written from the standard and the public psychoacoustics literature. Layer L0: i
 No FFmpeg/FAAC/FDK-AAC/libfaad or other GPL/LGPL code was read or ported. ffmpeg is used only as an
 external **test oracle** (decoding our streams, producing reference streams).
 
+The **xHE-AAC** decoder (`src/usac/`, `src/drc/`) is different: it is a port of
+[libxaac](https://github.com/ittiam-systems/libxaac) (Apache-2.0, © The Android Open Source Project,
+originally by Ittiam Systems; `LICENSE.libxaac`, `NOTICE.libxaac`, register entry in
+`docs/licensing.md` §5), converted from fixed to floating point. See [xHE-AAC](#xhe-aac-usac).
+
 ## API
 
 ```rust
@@ -163,6 +168,43 @@ the standard specifies; ffmpeg produces independent noise there.
 buffers) over mono/stereo/5.1/7-channel streams, 20 000 random `AudioSpecificConfig`s and 2 000 random
 ADTS streams: no panics. The encoder accepts NaN/±inf/over-range input, any chunk size, and missing
 channels.
+
+## xHE-AAC (USAC)
+
+```rust
+use cfa4_aac::usac::UsacDecoder;
+use cfa4_aac::drc::{DrcProcessor, DrcSettings};
+
+let mut dec = UsacDecoder::new(&asc)?;                    // AudioSpecificConfig, object type 42
+let cfg = dec.config().clone();
+// optional: MPEG-D DRC + loudness normalization (DrcSettings::default(): -16 LKFS, DRC on, limiter)
+let mut drc = DrcProcessor::new(cfg.uni_drc_config(), cfg.loudness_info(), dec.channels(),
+                                dec.sample_rate(), dec.frame_length(), &DrcSettings::default())?;
+for au in &aus {
+    let mut pcm = dec.decode(au)?;                        // planar f32, frame_length() samples
+    for p in dec.preroll_drc_gain_payloads() { drc.skip(p.as_deref())?; }
+    drc.process(dec.drc_gain_payloads().first().map(Vec::as_slice), &mut pcm)?;
+}
+```
+
+- **Core**: frequency-domain coding (arithmetic-coded spectrum, noise filling, TNS, all window
+  sequences and shapes), M/S and complex-prediction stereo, `AudioPreRoll` (the pre-roll access
+  units of the first frame are decoded and dropped), extension elements (skipped; uniDrc payloads
+  are passed on). 48 kHz and the other USAC rates, 1024-sample frames, mono and stereo.
+- **MPEG-D DRC** (`drc`): `uniDrcConfig()` / `loudnessInfoSet()` v0 and v1, `uniDrcGain()` for all
+  gain coding profiles with node reservoir, linear and spline interpolation, gain scaling/offset,
+  DRC set selection (requested or default effect, target loudness, peak preselection), loudness
+  normalization (6 dB peak headroom, as ISO/IEC 23003-4 sets it when the limiter is on) and the
+  5 ms look-ahead peak limiter at -1 dBFS (which delays the output by `DrcProcessor::delay()`).
+- **Import** (`cfa4-codecs`): MP4 `mp4a` with object type 42 is labelled "xHE-AAC" and decoded at
+  the stream's own level; DRC and loudness normalization are left to the caller.
+- **Tests** (`tests/usac_samples.rs`, Fraunhofer IIS test streams, not in the repository; skipped
+  when absent): MPEG-D DRC references at -16 LKFS match with lag 0 at 72 dB (normalization),
+  55 dB (peak limiter), 52 dB (time-varying DRC; the first three frames after the pre-roll differ by
+  up to 0.4 dB, libxaac's start-up), 58 dB (gains alternating 0 / 19.9 dB every frame).
+- **Not supported yet** (`Err(Unsupported)`): eSBR (`coreSbrFrameLengthIndex` 2–4), MPEG Surround
+  2-1-2, the LPD core (ACELP/TCX), time-warped MDCT, 768-sample frames, more than two channels;
+  in DRC: multi-band and parametric DRC, ducking, EQ, downmix-specific sets.
 
 ## Clean-room notes
 

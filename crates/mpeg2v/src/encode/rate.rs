@@ -1,25 +1,34 @@
-//! Average-bitrate control. Picture targets come from the global complexities of I and P
+//! Average-bitrate control. Picture targets come from the global complexities of I, P and B
 //! pictures as in MPEG-2 Test Model 5 (ISO/IEC JTC1/SC29/WG11/N0400, §10 step 1); the picture
 //! quantiser follows from its type's complexity (bits × quantiser) and the target, and is only
 //! nudged within the picture when the bits so far drift from the target, so quality stays even
 //! across the picture. Optional adaptive quantisation by spatial activity (TM5 step 3).
 
 const KP: f64 = 1.0;
+const KB: f64 = 1.4;
+
+/// Picture coding type.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Kind {
+    I = 0,
+    P = 1,
+    B = 2,
+}
 
 pub(super) struct Rc {
     bit_rate: f64,
     pic_rate: f64,
     /// Bits left in the GOP.
     r: f64,
-    /// Global complexities (bits × average quantiser_scale).
-    xi: f64,
-    xp: f64,
-    /// P pictures still to code in this GOP.
+    /// Global complexities (bits × average quantiser_scale) of I, P and B pictures.
+    x: [f64; 3],
+    /// P and B pictures still to code in this GOP.
     np: u32,
-    /// Whether I / P complexities were measured (not TM5's initial guesses).
-    measured: [bool; 2],
+    nb: u32,
+    /// Whether the complexities were measured (not TM5's initial guesses).
+    measured: [bool; 3],
     // the picture being coded
-    intra: bool,
+    kind: Kind,
     target: f64,
     q_pic: f64,
     /// Expected share of the target spent before each macroblock (and 1 at the end).
@@ -39,11 +48,11 @@ impl Rc {
             pic_rate,
             r: 0.0,
             // TM5's initial complexities (in its linear quantiser units, ×2 for quantiser_scale)
-            xi: 2.0 * 160.0 * bit_rate / 115.0,
-            xp: 2.0 * 60.0 * bit_rate / 115.0,
+            x: [2.0 * 160.0 * bit_rate / 115.0, 2.0 * 60.0 * bit_rate / 115.0, 2.0 * 42.0 * bit_rate / 115.0],
             np: 0,
-            measured: [false; 2],
-            intra: true,
+            nb: 0,
+            measured: [false; 3],
+            kind: Kind::I,
             target: 1.0,
             q_pic: 8.0,
             profile: Vec::new(),
@@ -54,21 +63,27 @@ impl Rc {
         }
     }
 
-    /// A GOP of `n` pictures starts (one I, then P).
-    pub fn start_gop(&mut self, n: u32) {
-        self.r += self.bit_rate * n.max(1) as f64 / self.pic_rate;
-        self.np = n.saturating_sub(1);
+    /// A GOP starts: one I picture, then `np` P and `nb` B pictures.
+    pub fn start_gop(&mut self, np: u32, nb: u32) {
+        self.r += self.bit_rate * (1 + np + nb) as f64 / self.pic_rate;
+        self.np = np;
+        self.nb = nb;
     }
 
     /// A picture starts; `weights`: each macroblock's expected relative cost.
-    pub fn start_picture(&mut self, intra: bool, weights: &[f64], avg_act: f64) {
+    pub fn start_picture(&mut self, kind: Kind, weights: &[f64], avg_act: f64) {
         let floor = self.bit_rate / (8.0 * self.pic_rate);
-        let np = self.np as f64;
-        let t = if intra { self.r / (1.0 + np * self.xp / (self.xi * KP)) } else { self.r / np.max(1.0) };
+        let (np, nb) = (self.np as f64, self.nb as f64);
+        let [xi, xp, xb] = self.x.map(|x| x.max(1.0));
+        // TM5 step 1: the bits left shared by the pictures left, weighed by complexity
+        let t = match kind {
+            Kind::I => self.r / (1.0 + np * xp / (xi * KP) + nb * xb / (xi * KB)),
+            Kind::P => self.r / (np + nb * KP * xb / (KB * xp)).max(1.0),
+            Kind::B => self.r / (nb + np * KB * xp / (KP * xb)).max(1.0),
+        };
         self.target = t.max(floor);
-        self.intra = intra;
-        let x = if intra { self.xi } else { self.xp };
-        self.q_pic = (x / self.target).clamp(1.0, 112.0);
+        self.kind = kind;
+        self.q_pic = (self.x[kind as usize] / self.target).clamp(1.0, 112.0);
         let total = weights.iter().sum::<f64>();
         self.profile.clear();
         let mut acc = 0.0;
@@ -99,14 +114,14 @@ impl Rc {
 
     /// The complexity of this picture type is still a guess.
     pub fn needs_trial(&self) -> bool {
-        !self.measured[self.intra as usize]
+        !self.measured[self.kind as usize]
     }
 
     /// A trial run of this picture took `bits`: set the picture quantiser from them.
     pub fn calibrate(&mut self, bits: u64) {
         let x = (bits as f64 * self.average_scale()).max(1.0);
         self.q_pic = (x / self.target).clamp(1.0, 112.0);
-        self.measured[self.intra as usize] = true;
+        self.measured[self.kind as usize] = true;
         self.q_sum = 0.0;
         self.q_count = 0.0;
     }
@@ -116,12 +131,12 @@ impl Rc {
         let bits = bits as f64;
         self.r -= bits;
         let x = (bits * self.average_scale()).max(1.0);
-        self.measured[self.intra as usize] = true;
-        if self.intra {
-            self.xi = x;
-        } else {
-            self.xp = x;
-            self.np = self.np.saturating_sub(1);
+        self.measured[self.kind as usize] = true;
+        self.x[self.kind as usize] = x;
+        match self.kind {
+            Kind::I => {}
+            Kind::P => self.np = self.np.saturating_sub(1),
+            Kind::B => self.nb = self.nb.saturating_sub(1),
         }
     }
 
@@ -138,8 +153,8 @@ mod tests {
     #[test]
     fn overshoot_raises_the_quantiser_within_the_picture() {
         let mut rc = Rc::new(4_000_000, 25.0, false);
-        rc.start_gop(12);
-        rc.start_picture(true, &[1.0; 100], 10.0);
+        rc.start_gop(11, 0);
+        rc.start_picture(Kind::I, &[1.0; 100], 10.0);
         let q0 = rc.scale(0, 0, 10.0);
         let on_track = rc.scale(50, (rc.target / 2.0) as u64, 10.0);
         let over = rc.scale(50, rc.target as u64, 10.0);
@@ -148,8 +163,8 @@ mod tests {
         assert!(over > on_track * 1.5 && under < on_track / 1.5);
         // adaptive quantisation: busy macroblocks get coarser quantisers
         let mut rc = Rc::new(4_000_000, 25.0, true);
-        rc.start_gop(12);
-        rc.start_picture(true, &[1.0; 100], 10.0);
+        rc.start_gop(11, 0);
+        rc.start_picture(Kind::I, &[1.0; 100], 10.0);
         assert!(rc.scale(0, 0, 40.0) > rc.scale(0, 0, 10.0));
     }
 }
