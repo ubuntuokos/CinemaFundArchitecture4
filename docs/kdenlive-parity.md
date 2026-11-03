@@ -390,6 +390,80 @@ K-pont csak a tulajdonos kérésére indul.
 MI-réteg üzembe helyezése után kezdhető. A K29 (feliratminőség-ellenőrzés) szabályalapú, nem MI,
 így marad.
 
+### 11.5 Kdenlive-forkok és a hiányzó függőségek (CFA4-KDENLIVE-CAPABILITY-ADAPTATION-001, 2026-11-03)
+
+A CFA4-KDENLIVE-CAPABILITY-ADAPTATION-001 v1.0 terv (jóváhagyva 2026-11-03) a Kdenlive
+**forkjait** és az azokra épülő automatizálási és MI-projekteket vizsgálja. Ezek a fenti pontokban
+nem szerepelnek, mert a 11. pont a hivatalos Kdenlive-ot és tíz segédrepót elemezte. Ebből a
+tervből csak az új rész kerül ide; amit a CFA4 már tud, vagy amit a 12. pont döntései kizárnak,
+az nem.
+
+**Nem vesszük át a tervből:** az MLT-t mint termékbeli háttért (12. pont: csak teszt-orákulum), a
+Kdenlive-exportot (12. pont), az MI-ügynököt P0-ként (12.1: minden MI-funkció csak az MI-réteg
+után), a GPL-3.0-kód átvételének tiltását (0. pont: a CFA4 GPL-3.0-or-later), a saját
+„Universal Editing API”, „Editing Core” és headless motor építését (megvan: parancsregiszter,
+[`control-protocol.md`](control-protocol.md), `cfa4-cli mcp` fejetlen és híd módban,
+[`agents.md`](agents.md)), valamint az F0–F10 fázisszámokat (az F-jelölés az ADR-eké).
+
+**Vizsgálandó forkok:** [D-Ogi/kdenlive](https://github.com/D-Ogi/kdenlive),
+[D-Ogi/kdenlive-api](https://github.com/D-Ogi/kdenlive-api),
+[D-Ogi/mcp-kdenlive](https://github.com/D-Ogi/mcp-kdenlive),
+[DanEscher98/kdenlive](https://github.com/DanEscher98/kdenlive) (WebSocket, JSON-RPC),
+[IO-AtelierTech/kdenlive-automation](https://github.com/IO-AtelierTech/kdenlive-automation) (Python),
+[0xmeowmeow/vibecut](https://github.com/0xmeowmeow/vibecut),
+[hive-agi/hive-kdenlive](https://github.com/hive-agi/hive-kdenlive) és az Arynwood Cutroom
+(repója még azonosítandó). Létezésüket, licencüket és állapotukat a K36 ellenőrzi.
+
+#### Kapu: újraelemzés a kivitelezés előtt (tulajdonosi döntés, 2026-11-03)
+
+A K37–K41 egyike sem indulhat, amíg a **K36 le nem zárult** és a tulajdonos el nem fogadta.
+A K36 egyszerre elemzi újra a forkokat és a **CFA4 akkori állapotát** (`main` commit, nyitott
+PR-ok, az ADR 0006 és a V3, E1 állása). Ha a K36 szerint egy pont már kész, átfed vagy fölösleges,
+a pont kikerül vagy szűkül, és ez a táblázat a K36 eredményével frissül.
+
+#### Hiányzó függőségek (D1–D6) és hol valósulnak meg
+
+Az adaptációs terv hat olyan elemre hivatkozik, amely a CFA4 fő repójában nincs, vagy más néven
+van. Új infrastruktúrát egyikhez sem építünk; mindegyik egy meglévő tervhez vagy egy K-ponthoz
+kerül.
+
+| # | Függőség a tervben | CFA4 ma (2026-11-03) | Hol valósul meg | Teendő |
+|---|---|---|---|---|
+| **D1** | MI-réteg | ADR 0006 elfogadva (2026-10-30) a [CFA4-AI_modules](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0006-ai-processing-layer.md) repóban, kód még nincs; a fő repóban nincs ADR 0006. Az F0 kapuja a teljes Qt6-átállás | ADR 0006 F0–F6 | Az MI-t használó K41 csak az ADR 0006 F3 (első képesség, teljes Előnézet → Alkalmazás lánc) után indul |
+| **D2** | Model Router | Az ADR 0006 1. eleme: `cfa4-ai-registry` (a CFA3 Model Router utódja) | ADR 0006 F1 | Nincs külön teendő; a „Model Router” név helyett a `cfa4-ai-registry` |
+| **D3** | HRB (Host Resource Broker) | Az ADR 0006 4. eleme: erőforrás-kezelő a `cfa4-ai-jobs`-ban. A CFA3 HRB-jétől a CFA4 nem függhet ([Subtitle Studio-terv](plans/SUBTITLE-STUDIO-PLAN-001-FINAL-1.2.md)) | ADR 0006 F2 | Nincs külön teendő |
+| **D4** | Event Fabric (CFA4-EVENT-FABRIC-001) | Ilyen dokumentum vagy kód egyik CFA4-repóban sincs. A vezérlőcsatorna csak kérés–válasz; esemény ma csak az MCP `notifications/progress` és `notifications/cancelled` | **K39** | Eseményfeliratkozás a meglévő csatornákon; külön eseményinfrastruktúra nincs. Ha a CFA4-EVENT-FABRIC-001 máshol létezik, a K36 ahhoz igazítja |
+| **D5** | API-hitelesítés és jogosultsági szintek | A vezérlőcsatorna TCP-n, hitelesítés nélkül megy (`control-protocol.md`). A Unix socketet (0600) és a mozdulat alatti visszatartást a V3 tervezi | V3, utána **K38** | A V3 adja a szállítást; a K38 csak a jogosultsági szinteket |
+| **D6** | AI-jóváhagyás, egy lépésben visszavonható terv | Nincs; az [E1](open-editors-parity.md) tervezi (`plan.prepare` / `plan.commit`, revízióhoz kötve), MI-réteg nélkül indítható | E1 | Nincs külön teendő; a K41 előfeltétele |
+
+#### Teendők
+
+| # | Feladat | Prioritás | Óra | Előfeltétel | Minta |
+|---|---|---|---|---|---|
+| **K36** | **Kapu.** A forkok és a CFA4 aktuális állapotának újraelemzése: forkonként licenc (fájlszinten is), utolsó commit, ténylegesen működő funkciók, A–E átvételi kategória; a CFA4 `main`, a nyitott PR-ok és a D1–D6 állása; delta-tábla (megvan / részben / hiányzik) | P1 | 12–20 | – | a 11. pont elemzése |
+| **K37** | Hiányzó MCP-eszközök és parancsok a forkok eszközkészletéhez mérve | P1 | 10–20 | K36 | D-Ogi `kdenlive-api`, `mcp-kdenlive` |
+| **K38** | Jogosultsági szintek a vezérlőcsatornán és az MCP-n: olvasó, szerkesztő, romboló; az MCP-annotációkra (`readOnlyHint`, `destructiveHint`) építve | P1 | 10–20 | K36, V3 | DanEscher98 (JSON-RPC) |
+| **K39** | Eseményfeliratkozás (D4): projektrevízió, jobállapot, export-előrehaladás a vezérlőcsatornán és MCP-értesítésként | P2 | 15–30 | K36, V3 | DanEscher98 (WebSocket) |
+| **K40** | Python-automatizálási minták összevetése a CFA4 Python-klienseivel (`agents.md`, `python/`) | P2 | 6–12 | K36 | IO-AtelierTech |
+| **K41** | MI-szerkesztési munkafolyamatok (például csendvágás, előzetes, legjobb felvétel) a forkok mintái alapján | P2 | a K36 után | K36, E1, **MI-réteg** (ADR 0006 F3) | vibecut, hive-kdenlive, Cutroom |
+
+A K36–K40 együtt kb. 53–102 óra; a K41 becslése a K36 eredményéből készül. A K41 MI-pont
+(12.1), ezért a 11.4 MI-szabálya rá is vonatkozik.
+
+- **K36.** A README nem elég: belépési pontok, API és RPC, adatmodell, tesztek. A kísérleti
+  állapot önmagában nem kizáró ok. Kimenet: forrásonkénti jelentés és a K37–K41 frissített sorai
+  ebben a pontban, egy PR-ban. Kész, ha minden vizsgált funkcióhoz van forráshely, licenc és
+  döntés, és a tulajdonos elfogadta.
+- **K37.** A hiányzó eszköz új parancs a `crates/engine` regiszterében, így a felület, a CLI és az
+  MCP egyszerre kapja meg; külön MCP-logika nincs. Kész, ha a K36 listájának minden pontja
+  parancs, vagy indokolt elutasítás.
+- **K38.** A szint az eszköz annotációjából jön, nem külön listából. Kész, ha olvasó szinten egy
+  módosító hívás hibát ad, és ezt regressziós teszt igazolja (`crates/automation` vagy `python/tests/`).
+- **K39.** Az esemény csak jelez; a projektet továbbra is csak parancs módosíthatja. Kész, ha egy
+  feliratkozott kliens a felhasználó szerkesztése után megkapja az új revíziót.
+- **K41.** Az MI csak az E1 tervén át szerkeszt (előnézet, egy visszavonási lépés), a modellt a
+  `cfa4-ai-registry` választja, az erőforrást az ADR 0006 erőforrás-kezelője foglalja.
+
 ## 12. Tulajdonosi döntések (2026-10-25)
 
 | Téma | Döntés |
@@ -461,3 +535,4 @@ kivételesen, kifejezett engedéllyel felhős MI-szolgáltatást használni. A K
 | 2026-10-25 | minor | 11.3: K31–K35 Whisper-bővítések; 12.1: a CFA4 MI-döntéseinek ellenőrzése (VISION.md, ADR 0004, tulajdonosi döntések) |
 | 2026-10-27 | minor | Újraelemzés a `main` (16debf92) és a nyitott PR-ok alapján, a tulajdonos jóváhagyásával: ADR 0005 elfogadva (FFmpeg-feltétel törölve), kiadás GStreamerrel, Qt6-állapot a `qt-parity.md`-ből, K10 szűkítve, 11.4 átfedések és szállítási szabályok |
 | 2026-10-27 | minor | Tulajdonosi szabály: minden MI-funkció csak az MI-réteg üzembe helyezése után; a K2, K4, K6, K26–K28, K31–K35 függősége „MI-réteg” (12.1, 11.4) |
+| 2026-11-03 | minor | 11.5: a Kdenlive-forkok (CFA4-KDENLIVE-CAPABILITY-ADAPTATION-001) új teendői, K36–K41; a hiányzó függőségek (D1–D6) helye; K36 kapu: újraelemzés a kivitelezés előtt |
