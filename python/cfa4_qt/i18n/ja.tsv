@@ -50,7 +50,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	書き出し前チェック：{n} 件の問題をタイムラインにマークしました（赤いマーカー）
 	Checked:	確認済み：
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB トラックファイル（IMF または DCP）、生の IAB ストリーム、または Dolby Atmos TrueHD（.thd ストリーム、または Atmos トラックを含む MKV・MP4・M2TS ファイル）を選んでください。
-	Choose an output file.	出力ファイルを選んでください。
+	Choose a file name and location.	ファイル名と場所を選んでください。
+	Choose folder	フォルダーを選択
 	Click and press keys to assign	クリックしてから割り当てるキーを押してください
 	Compression	圧縮
 	Compression Level	圧縮レベル

@@ -50,7 +50,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	导出前检查：时间轴上标记了 {n} 个问题（红色标记）
 	Checked:	已检查：
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	请选择 IAB 轨道文件（IMF 或 DCP）、原始 IAB 流或 Dolby Atmos TrueHD：.thd 流，或带 Atmos 轨道的 MKV、MP4 或 M2TS 文件。
-	Choose an output file.	请选择输出文件。
+	Choose a file name and location.	请选择文件名和位置。
+	Choose folder	选择文件夹
 	Click and press keys to assign	单击后按下要分配的按键
 	Compression	压缩
 	Compression Level	压缩级别
