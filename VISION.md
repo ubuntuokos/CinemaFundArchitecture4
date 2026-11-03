@@ -71,8 +71,8 @@ a GNOME-os és a Budgie csak Waylandet használ, több másik pedig még X11-et 
 | Változat (26.04 LTS) | Asztali környezet | Megjegyzés |
 |---|---|---|
 | Ubuntu | GNOME 50 | csak Wayland |
-| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** (a referenciagép Kubuntu 26.04.1) |
-| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos |
+| Kubuntu | KDE Plasma | **elsődleges fejlesztői környezet** |
+| Ubuntu Studio | KDE Plasma | kreatív célközönség, kiemelten fontos; **a tulajdonos referenciagépe** ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)) |
 | Xubuntu | Xfce | |
 | Lubuntu | LXQt | Qt-alapú, könnyű |
 | Ubuntu Budgie | Budgie | csak Wayland |

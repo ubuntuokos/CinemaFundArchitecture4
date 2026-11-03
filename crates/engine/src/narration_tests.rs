@@ -165,6 +165,16 @@ fn editing_to_shorter_speech_pads_the_file_with_exact_silence() {
     let r = s.execute("tts.create", json!({"text": "This first version of the narration is fairly long, with several words.", "time": 0, "dir": dir})).unwrap();
     let id = r["clip"].as_u64().unwrap();
     let c0 = clip(&s, id);
+    // sequence.inspect marks narration clips (the Qt GUI asks tts.inspect only for those)
+    let q = s.execute("sequence.inspect", json!({})).unwrap();
+    let marks: Vec<(u64, bool)> = ["video", "audio"]
+        .iter()
+        .flat_map(|k| q[*k].as_array().cloned().unwrap_or_default())
+        .flat_map(|t| t["items"].as_array().cloned().unwrap_or_default())
+        .map(|i| (i["clip"].as_u64().unwrap(), i["narration"].as_bool().unwrap()))
+        .collect();
+    assert!(marks.contains(&(id, true)), "{marks:?}");
+    assert_eq!(marks.iter().filter(|m| m.1).count(), 1, "{marks:?}");
     let e = s.execute("tts.edit", json!({"clip": id, "text": "Short."})).unwrap();
     let c1 = clip(&s, id);
     assert_eq!((c1.start, c1.duration), (c0.start, c0.duration));
