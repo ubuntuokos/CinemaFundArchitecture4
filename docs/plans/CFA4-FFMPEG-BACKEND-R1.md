@@ -19,7 +19,7 @@
 7. **Natív Stream Copy, GOP Smart Cut, Smart Render:** végrehajtásuk a CFA4 saját Rust rendszerében marad; az FFmpeg nem válhat a két stream-copy garancia rejtett végrehajtójává, és nem hajthat végre észrevétlen újrakódolást.
 8. **GPU és fallback:** feladatonként a már meglévő `cfa4-route` választ; saját utak → FFmpeg → GStreamer → saját CPU/szoftveres végső út, a képesség- és profilmátrix szerint. Méréssel indokolt, feladatspecifikus felülírás megengedett; hardveres kódolás továbbra is kifejezett felhasználói választás.
 9. **Csomagolás:** a CFA4 FFmpeg 9.0.2 megosztott könyvtárai elkülönítve települnek; a rendszer FFmpeg-jét nem cseréljük le. GPLv3-kompatibilis build, `--enable-nonfree` nélkül. Az opcionális, szabadalmilag korlátozott komponensek a jóváhagyott `cfa4-restricted-extras` modellbe tartoznak.
-10. **Nincs upstream módosítás:** minden CFA4-bővítés downstream történik; a FilmCraft upstream változatlan.
+10. **Nincs upstream módosítás:** minden CFA4-bővítés downstream történik; az upstream projekt változatlan.
 
 ## 1. Kapcsolódó, már elfogadott architektúra
 
