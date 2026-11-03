@@ -4047,6 +4047,7 @@ fn inspect_effects(s: &Session, p: &Value) -> Result<Value> {
                         "mode": m.mode.label(),
                         "inverted": m.inverted,
                         "trackMethod": m.track_method.label(),
+                        "tracker": m.tracker.label(),
                         "shape": shape,
                         "selected": s.state.selected_mask == Some(target),
                         "trackJob": job,

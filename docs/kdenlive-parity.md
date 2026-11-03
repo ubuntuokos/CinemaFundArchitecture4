@@ -99,7 +99,7 @@ folyamatban, 7. nyitott).
 | LADSPA / LV2 hangeffektek | ❌ | lilv-alapú LV2-host külön folyamatban, ADR 0003 A6 |
 | Chroma key, LUT, görbék, színkerekek | ✅ | Ultra Key, `lut.import`, Lumetri |
 | Maszkok, kulcskockázható alfa-maszk | ✅ | `masks.*` |
-| Mozgáskövetés | 🟡 | `masks.track` maszkot követ; pontkövetés effektparaméterre a Natron openfx-misc-ből jöhet (ADR 0003 A4) |
+| Mozgáskövetés | 🟡 | `masks.track` maszkot követ (pontkövető, vagy opcionálisan korrelációs KCF/CSRT-szerű objektumkövető); pontkövetés effektparaméterre a Natron openfx-misc-ből jöhet (ADR 0003 A4) |
 | Képstabilizálás | 🟡 | Warp Stabilizer, csak 2-D (G18) |
 | AI háttéreltávolítás (SAM2) | ❌ | **K4**. Helyben, gyártófüggetlenül (CPU, bármely GPU, NPU) |
 | Transform forgatási középpont | ✅ | `motion.anchor` |

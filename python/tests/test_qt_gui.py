@@ -2892,6 +2892,10 @@ def test_real_engine_effect_controls_lane_as_egui(app, tmp_path: Path):
         method = next(a for a in tracking.method_menu.actions() if a.text() == "Position")
         method.trigger()
         assert wait_until(app, lambda: mask()["trackMethod"] == "Position", 10_000)
+        tracking = ec.rows[(opa, "mask0.path")].editor
+        corr = next(a for a in tracking.method_menu.actions() if a.text() == "Correlation tracker")
+        corr.trigger()
+        assert wait_until(app, lambda: mask()["tracker"] == "Correlation", 10_000)
         mh = ec.masks[(cid, opa, 0)][0]
         mh.twirl.click()
         assert not ec.rows[(opa, "mask0.feather")].isVisibleTo(ec)
