@@ -14,7 +14,7 @@
 //!   clip markers. Transitions are supported on the primary storyline (and read from secondary
 //!   storylines); transitions elsewhere are reported.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use cfa4_geom::Vec2;
 use cfa4_media::MediaKind;
@@ -26,8 +26,8 @@ use cfa4_time::{FrameRate, TICKS_PER_SECOND, Tick};
 use roxmltree::Node;
 
 use crate::common::{
-    Builder, MediaSpec, base_item, db_to_gain, empty_sequence, file_name, gain_to_db, generator_of, item_media, item_path, kind_from_ext, param,
-    param_modified, path_to_file_url, resolve_path, scaled, set_param, settings_for, standard_effects, transition_effect, transition_name,
+    Builder, MAX_IMPORTED_TRACKS, MediaSpec, base_item, db_to_gain, empty_sequence, file_name, gain_to_db, generator_of, item_media, item_path, kind_from_ext,
+    param, param_modified, path_to_file_url, resolve_path, scaled, set_param, settings_for, standard_effects, transition_effect, transition_name,
 };
 use crate::xml::{child, children, elements, num};
 use crate::{Error, ExportOptions, Format, ImportOptions, Imported, Report, Result};
@@ -105,10 +105,11 @@ fn audio_rate_str(sr: u32) -> String {
 
 fn parse_audio_rate(s: &str) -> Option<u32> {
     let s = s.trim();
-    match s.strip_suffix('k') {
+    let r = match s.strip_suffix('k') {
         Some(k) => k.parse::<f64>().ok().map(|v| (v * 1000.0).round() as u32),
         None => s.parse().ok(),
-    }
+    };
+    r.filter(|&sr| sr > 0 && sr <= 384_000)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -132,6 +133,7 @@ struct Imp<'a, 'i, 'r> {
     assets: HashMap<String, Asset>,
     media_nodes: HashMap<String, Node<'a, 'i>>,
     media_items: HashMap<String, ItemId>,
+    media_active: HashSet<String>,
     effects: HashMap<String, String>,
 }
 
@@ -163,6 +165,7 @@ pub(crate) fn import(text: &str, opts: &ImportOptions, report: &mut Report) -> R
         assets: HashMap::new(),
         media_nodes: HashMap::new(),
         media_items: HashMap::new(),
+        media_active: HashSet::new(),
         effects: HashMap::new(),
     };
     if let Some(res) = child(root, "resources") {
@@ -281,9 +284,15 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
         }
         let n = *self.media_nodes.get(id)?;
         let s = child(n, "sequence")?;
-        // Reserve first so recursion terminates.
+        if !self.media_active.insert(id.into()) {
+            self.report.warn(format!("recursive FCPXML media resource {id:?} ignored"));
+            return None;
+        }
+        // Mark the resource before descending: a compound clip can reference itself through a
+        // ref-clip before a completed sequence is available to cache.
         let name = n.attribute("name").unwrap_or("Compound Clip").to_string();
         let item = self.sequence(s, &name, None);
+        self.media_active.remove(id);
         self.media_items.insert(id.into(), item);
         Some(item)
     }
@@ -437,14 +446,17 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
                     TrackKind::Video => lane.max(0) as usize,
                     TrackKind::Audio => {
                         if lane < 0 {
-                            (-lane - 1) as usize
+                            lane.unsigned_abs() as usize - 1
                         } else {
                             lane as usize
                         }
                     }
                 };
                 let id = ti.id;
-                self.b.place(seq, kind, pref, ti);
+                if self.b.place(seq, kind, pref, ti).is_none() {
+                    self.report.warn(format!("FCPXML {kind:?} lane exceeds the {MAX_IMPORTED_TRACKS}-track import limit; clip was skipped"));
+                    continue;
+                }
                 placed.push((kind, id));
                 if kind == TrackKind::Video {
                     vclip = Some(id);
@@ -462,7 +474,7 @@ impl<'a, 'i> Imp<'a, 'i, '_> {
             let Some(l) = c.attribute("lane").and_then(|l| l.parse::<i32>().ok()) else { continue };
             let off = attr_time(c, "offset").unwrap_or(Tick::ZERO);
             let ct0 = t0 + (off - local_start);
-            let clane = if lane > 0 && l > 0 { lane + l } else { l };
+            let clane = if lane > 0 && l > 0 { lane.saturating_add(l) } else { l };
             if c.has_tag_name("spine") {
                 // Secondary storyline: children offsets are in the storyline's local time.
                 let first = elements(c).filter(|x| !x.has_tag_name("transition")).find_map(|x| attr_time(x, "offset")).unwrap_or(Tick::ZERO);
@@ -871,6 +883,10 @@ impl Exp<'_, '_> {
                     if merged_audio.contains(&it.id) {
                         continue;
                     }
+                    if let Some(what) = self.unsupported(it, rate) {
+                        self.report.warn(format!("{what}: it is left out and is not read back on import"));
+                        continue;
+                    }
                     let Some(pi) = els.iter().position(|e| e.start <= it.start && it.start < e.end) else {
                         self.report.warn("a connected clip could not be attached and was dropped");
                         continue;
@@ -938,30 +954,29 @@ impl Exp<'_, '_> {
         )
     }
 
+    /// How the report names a clip FCPXML cannot carry (a generator, a title, an adjustment layer); `None` for any
+    /// other clip. Such a clip has no asset to reference, and an empty `ref` is not a valid IDREF: Final Cut Pro
+    /// rejects the whole file. A `<gap>` exists only in a spine, so a connected one is left out instead.
+    fn unsupported(&self, it: &TrackItem, rate: FrameRate) -> Option<String> {
+        if let Some(g) = generator_of(self.p, base_item(self.p, it.item)) {
+            return Some(format!("generator \"{}\" is not supported in FCPXML", g.label()));
+        }
+        crate::common::uncarried_clip(self.p, it, rate).map(|clip| format!("{clip} is not supported in FCPXML"))
+    }
+
     /// A clip element at `offset` (in its parent's local time).
     #[allow(clippy::too_many_arguments)]
     fn clip_el(&mut self, it: &TrackItem, audio: Option<&TrackItem>, kind: TrackKind, offset: Tick, lane: Option<i32>, seq: &Sequence, primary: bool) -> El {
         let rate = seq.settings.frame_rate;
         let base = base_item(self.p, it.item);
         let is_seq = matches!(self.p.item(base).map(|i| &i.kind), Some(ItemKind::Sequence(_)));
-        let generator = generator_of(self.p, base).cloned();
         let lane_attr = lane.map(|l| format!(" lane=\"{l}\"")).unwrap_or_default();
         let name = crate::xml::escape(&it.name);
-        if let Some(g) = generator {
-            self.report.warn(format!("generator \"{}\" is not supported in FCPXML; written as a gap", g.label()));
-            return El {
-                start: it.start,
-                end: it.end(),
-                local: offset,
-                xml_open: format!(
-                    "<gap name=\"{name}\"{lane_attr} offset=\"{}\" start=\"{}\" duration=\"{}\"",
-                    fmt_time(offset, rate),
-                    fmt_time(offset, rate),
-                    fmt_time(it.duration, rate)
-                ),
-                children: vec![],
-                close: "gap".into(),
-            };
+        // In the primary storyline, a clip FCPXML cannot carry becomes a gap that keeps the timing
+        // (connected ones never get here: see `unsupported`).
+        if let Some(what) = self.unsupported(it, rate) {
+            self.report.warn(format!("{what}: it is written as a gap and is not read back on import"));
+            return gap_el(it, &name, offset, rate);
         }
         // Local timeline of the element: origin + source time (retimed clips use a timeMap).
         let (tag, r, origin) = if is_seq {
@@ -974,13 +989,7 @@ impl Exp<'_, '_> {
             let origin = self.p.sequence(base).map(|s| s.settings.frame_rate.tick_of(s.start_timecode)).unwrap_or(Tick::ZERO);
             ("ref-clip", r, origin)
         } else {
-            let r = match crate::common::uncarried_clip(self.p, it, rate) {
-                Some(clip) => {
-                    self.report.warn(format!("{clip} is not supported in FCPXML: it is written as a clip without media and is not read back on import"));
-                    String::new()
-                }
-                None => self.asset(base, rate),
-            };
+            let r = self.asset(base, rate);
             let m = item_media(self.p, base);
             let mrate = m.and_then(|m| m.info.video.as_ref().map(|v| v.frame_rate)).unwrap_or(rate);
             let st = m.and_then(|m| m.info.start_timecode).map(|f| mrate.tick_of(f)).unwrap_or(Tick::ZERO);
@@ -1135,6 +1144,23 @@ impl Exp<'_, '_> {
             self.report.warn("blend modes are not exported to FCPXML");
         }
         let _ = (db_to_gain(0.0), gain_to_db(1.0));
+    }
+}
+
+/// A primary-storyline `<gap>` standing in for a clip FCPXML cannot carry; it keeps the clip's place and length.
+fn gap_el(it: &TrackItem, name: &str, offset: Tick, rate: FrameRate) -> El {
+    El {
+        start: it.start,
+        end: it.end(),
+        local: offset,
+        xml_open: format!(
+            "<gap name=\"{name}\" offset=\"{}\" start=\"{}\" duration=\"{}\"",
+            fmt_time(offset, rate),
+            fmt_time(offset, rate),
+            fmt_time(it.duration, rate)
+        ),
+        children: vec![],
+        close: "gap".into(),
     }
 }
 

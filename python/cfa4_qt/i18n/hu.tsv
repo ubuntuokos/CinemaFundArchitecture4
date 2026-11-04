@@ -2252,6 +2252,8 @@
 	Exit Trim Mode	Kilépés a vágásmódból
 	Up	Fel
 	Down	Le
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet hibát jelzett: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet nem válaszol: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
 	Settings not taken	A beállítás nem lett átvéve
 	Restore	Visszaállítás
 	Overwrite with Current View	Felülírás a jelenlegi nézettel

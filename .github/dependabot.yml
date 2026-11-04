@@ -3,8 +3,8 @@ version: 2
 # CFA4 Dependabot policy (merge-coordinator workflow, docs/coordination.md):
 # - Dependabot PRs are ordinary PRs: only the merge coordinator merges them into main,
 #   one at a time, with the owner's approval; no other session touches them.
-# - Version updates come weekly and grouped (one PR per ecosystem) so they do not flood
-#   the PR list or collide with the parallel AI-session branches.
+# - Version updates come weekly. Cargo: patch updates in one group, minor/major one PR per
+#   crate (see below). Actions and pip: one group per ecosystem.
 # - Security updates are grouped separately and are NOT held to the weekly schedule:
 #   GitHub opens them as soon as an advisory affects Cargo.lock.
 # - Times are Budapest local time, outside the 23:00-06:00 quiet window.
@@ -19,16 +19,30 @@ updates:
       day: "monday"
       time: "06:30"
       timezone: "Europe/Budapest"
-    open-pull-requests-limit: 3
+    # Owner decision 2026-11-03 (issue #517): one all-in-one group (#498, 24 updates incl.
+    # several breaking 0.x/major bumps) cannot build. Only patch updates are grouped; every
+    # minor/major update (breaking for 0.x crates under Cargo semver) gets its own PR, so a
+    # failure is isolated to one crate and the rest can still be merged.
+    open-pull-requests-limit: 5
     groups:
       cargo-security:
         applies-to: security-updates
         patterns:
           - "*"
-      cargo-dependencies:
+      cargo-patch:
         applies-to: version-updates
         patterns:
           - "*"
+        update-types:
+          - "patch"
+    ignore:
+      # egui is frozen until the Qt6 GUI reaches parity (owner decision 2026-10-24; it leaves
+      # with the egui frontend). Patch releases are still allowed. Note: ignore rules also
+      # apply to security updates; `cargo deny check advisories` in CI still reports them.
+      - dependency-name: "egui*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "eframe"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 
