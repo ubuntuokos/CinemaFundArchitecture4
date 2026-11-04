@@ -934,6 +934,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-edit"
 version = "0.10.0"
 dependencies = [
@@ -1018,6 +1027,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-text",
  "cfa4-time",
+ "cfa4-truehd",
  "cfa4-vp9",
  "image",
  "rayon",
@@ -1373,6 +1383,21 @@ name = "cfa4-scopes"
 version = "0.10.0"
 dependencies = [
  "cfa4-color",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "cfa4-smart-edit"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-h264enc",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
+ "cfa4-route",
+ "cfa4-testkit",
+ "cfa4-time",
  "serde",
  "serde_json",
 ]
