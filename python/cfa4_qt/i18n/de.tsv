@@ -319,3 +319,7 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	{word}-Komprimierung
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Work Area Bar	Arbeitsbereichsleiste
+	Start: {tc}	Anfang: {tc}
+	End: {tc}	Ende: {tc}
+	Duration: {tc}	Dauer: {tc}

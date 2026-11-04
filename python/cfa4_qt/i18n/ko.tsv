@@ -319,3 +319,7 @@
 	{v} Mbps	{v}Mbps
 	{word} compression	{word} 압축
 	{w}x{h} ({par})	{w}×{h}({par})
+	Work Area Bar	작업 영역 막대
+	Start: {tc}	시작: {tc}
+	End: {tc}	끝: {tc}
+	Duration: {tc}	길이: {tc}
