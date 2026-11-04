@@ -183,6 +183,10 @@
 	Export Media	Média exportálása
 	Export Media…	Média exportálása…
 	Export Queue	Exportálási sor
+	Queue ({n})	Sor ({n})
+	Send exports here with Send to Queue, then start the queue.	A Küldés a sorba gombbal ide küldheti az exportokat, majd indítsa el a sort.
+	Open a sequence to export	Nyisson meg egy szekvenciát az exportáláshoz
+	The sequence has no caption track.	A szekvenciának nincs feliratsávja.
 	Export Audio	Hang exportálása
 	Export failed: {path}	Az exportálás nem sikerült: {path}
 	Export finished: {path}	Az exportálás elkészült: {path}

@@ -1870,6 +1870,10 @@ class MainWindow(QMainWindow):
 
     def _on_sequence(self, result: Any, _b: bytes | None) -> None:
         self.sequence = result if isinstance(result, dict) else None
+        if self.export_dialog is not None and self.export_dialog.isVisible() and self.export_dialog.sequence is not None:
+            same = self.sequence is not None and self.sequence.get("id") == self.export_dialog.sequence.get("id")
+            # a caption track added or removed while the Export window is open
+            self.export_dialog.sequence_updated(self.sequence if same else self.export_dialog.sequence)
         if self.monitor.playing and self.sequence is not None:
             self.sequence["playhead"] = self.monitor.playhead
         self.timeline.set_sequence(self.sequence)
