@@ -2,7 +2,7 @@
 name: gazda
 description: A CFA4 beolvasztási gazda szerepe. Csak akkor használd, ha a tulajdonos kifejezetten /gazda-val hív.
 disable-model-invocation: true
-argument-hint: "[utasítás, pl. mergeld a #123-at]"
+argument-hint: "[utasítás, pl. mergeld a #12, #15, #18-at ebben a sorrendben]"
 ---
 
 # Te vagy a CFA4 beolvasztási gazdája
@@ -17,20 +17,26 @@ ellentmond egymásnak, a `docs/coordination.md` az irányadó.
 - Másolatot, régi összefoglalót vagy a beszélgetés korábbi részét nem használod forrásként.
 
 ## Indulás (csak olvasás)
-Olvasd el a `main` aktuális állapotából: `VISION.md`, `docs/coordination.md`, `AGENTS.md`.
+Olvasd el a `main` aktuális állapotából: `docs/coordination.md`, `AGENTS.md`.
+A `VISION.md`-t csak utasítás nélküli felmérésnél olvasd el (a sorrendjavaslathoz kell).
 
 ## A tulajdonos utasítása
 $ARGUMENTS
 
-- **Ha nincs utasítás:** mérd fel a nyitott PR-okat (alapág, utolsó commit ideje,
-  beolvasztható-e a mostani `main`-re, ütközések, teljes CI a mostani fején, a PR leírásában
-  jelzett kérések). Sorold őket: (a) aktív, 3 órán belüli commit; (b) beolvasztható;
-  (c) ütközik vagy frissíteni kell; (d) egy másik PR kiváltotta; (e) tulajdonosi döntés kell.
+- **Ha nincs utasítás:** futtasd a `scripts/dev/gazda-pr-allapot.sh` szkriptet. Ez egy
+  lekérdezéssel, a GitHub aktuális állapotából adja meg minden nyitott PR alapágát, utolsó
+  commitjának korát, beolvaszthatóságát a mostani `main`-re és a `full-validation-gate`
+  állapotát a mostani fején, javasolt kategóriával. Ha sok PR „GitHub még számol”, futtasd
+  újra (a GitHub az első lekérdezéskor kezdi számolni). PR-onként külön csak azt kérdezd le,
+  amit a táblázat nem mond meg (a PR leírásában jelzett kérések, kiváltás). Sorold őket:
+  (a) aktív, 3 órán belüli commit; (b) beolvasztható; (c) ütközik vagy frissíteni kell;
+  (d) egy másik PR kiváltotta; (e) tulajdonosi döntés kell.
   Javasolj sorrendet a `VISION.md` szerint (Qt6 először), majd **állj meg**.
 - **Ha van utasítás:** csak azt hajtsd végre, semmi mást.
 
 ## Beolvasztás
-- Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott.
+- Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott. Egy
+  hívásban több PR is jóváhagyható; ilyenkor a megadott sorrendben, egymás után dolgozol.
 - Egyenként: ág frissítése a `main`-hez, zöld `full-validation-gate` azon a fejen, utána merge.
 - Gyűjtő- vagy integrációs PR-t nem nyitsz. Ágat nem törölsz; a törölhető ágakat felsorolod.
 - Kiváltott PR-t csak megjegyzéssel zársz le, megnevezve, mi váltotta ki.

@@ -21,7 +21,6 @@
 	AAC	AAC
 	Add pause	Aggiungi pausa
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	«Aggiungi pausa» inserisce [pause 1s]. Cambia il numero per una pausa più lunga o più corta, ad es. [pause 500ms] o [pause 2s].
-	Add to Queue	Aggiungi alla coda
 	Add to timeline	Aggiungi alla timeline
 	Advertisement	Pubblicità
 	All Supported Files	Tutti i file supportati
@@ -29,14 +28,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Un motore senza `serve` è stato compilato da un ramo senza l'interfaccia Qt: passa al ramo con l'interfaccia Qt e ricompila, oppure indica --engine PERCORSO.
 	Arrangement {n}	Disposizione {n}
 	Audio Files	File audio
-	Audio bitrate	Bitrate audio
-	Audio codec	Codec audio
 	Automation mode	Modalità di automazione
 	B pictures	Immagini B
 	BDAV Transport Stream (.m2ts, AAC audio)	Flusso di trasporto BDAV (.m2ts, audio AAC)
 	Basic voices (built in)	Voci di base (integrate)
 	Beyond IAB Profile 1: {notes}	Oltre il profilo IAB 1: {notes}
-	Bitrate mode	Modalità bitrate
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 ha riscontrato un errore
 	CFA4 project links	Collegamenti del progetto CFA4
@@ -50,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Controllo prima dell'esportazione: {n} problemi segnati nella timeline (marcatori rossi)
 	Checked:	Controllato:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Scegli un file di traccia IAB (IMF o DCP), un flusso IAB grezzo o Dolby Atmos TrueHD: un flusso .thd o un file MKV, MP4 o M2TS con una traccia Atmos.
-	Choose an output file.	Scegli un file di output.
+	Choose a file name and location.	Scegli un nome file e una posizione.
+	Choose folder	Scegli cartella
 	Click and press keys to assign	Fai clic e premi i tasti da assegnare
 	Compression	Compressione
 	Compression Level	Livello di compressione
@@ -92,7 +89,6 @@
 	Export Media	Esporta media
 	Export Media…	Esporta media…
 	Export Queue	Coda di esportazione
-	Export audio	Esporta audio
 	Export captions…	Esporta sottotitoli…
 	Export failed: {path}	Esportazione non riuscita: {path}
 	Export finished: {path}	Esportazione completata: {path}
@@ -109,7 +105,6 @@
 	Film Scan 3	Scansione pellicola 3
 	Flat (1.85:1)	Flat (1,85:1)
 	Format:	Formato:
-	Frame size	Dimensione fotogramma
 	Frame time: {timecode}	Tempo del fotogramma: {timecode}
 	From the preset	Dal predefinito
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Da {source} e github.com/cmusphinx/cmudict (pronunce). Licenza: {license}. Ogni file viene verificato con un SHA-256 fissato.
@@ -130,7 +125,6 @@
 	Incoming clip (drag to trim the In point)	Clip in entrata (trascina per rifilare il punto di attacco)
 	Input channel mapping	Mappatura dei canali di ingresso
 	Keep existing file	Mantieni il file esistente
-	Keyframe distance	Distanza fotogrammi chiave
 	Label Color Presets	Predefiniti colori etichetta
 	Large	Grande
 	Linear Gradient	Sfumatura lineare
@@ -215,7 +209,6 @@
 	Stop Queue	Ferma la coda
 	Synthesizing narration…	Sintesi della narrazione…
 	Synthesizing…	Sintesi in corso…
-	Target bitrate	Bitrate di destinazione
 	Teaser	Teaser
 	Template: {name}	Modello: {name}
 	Test	Prova
