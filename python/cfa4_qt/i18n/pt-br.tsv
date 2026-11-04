@@ -37,8 +37,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	O CFA4 encontrou um erro
 	CFA4 project links	Links do projeto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 fechou inesperadamente enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 foi fechado enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
 	Cancel Selected	Cancelar selecionados
 	Cannot check the output folder for files to replace: {error}	Não é possível verificar a pasta de saída em busca de arquivos a substituir: {error}
 	Cannot create the output folder: {error}	Não é possível criar a pasta de saída: {error}
