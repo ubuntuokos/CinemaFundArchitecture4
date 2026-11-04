@@ -35,12 +35,12 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, crash, dock_commands, theme
-from .branding import logo_pixmap
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
+from .panels.about import AboutDialog
 from .panels.clip_dialogs import DIALOGS as CLIP_DIALOGS
 from .panels.clip_dialogs import ClipDialog
 from .panels.effect_controls import EffectControlsPanel
@@ -2674,16 +2674,14 @@ class MainWindow(QMainWindow):
 
     # ----- misc -----
     def _about(self) -> None:
-        box = QMessageBox(self)
-        box.setObjectName("dialog.about")
-        box.setWindowTitle(tr("About CFA4"))
-        box.setIconPixmap(logo_pixmap(180))
-        box.setStyleSheet("QLabel#qt_msgbox_label { min-width: 280px; }")
-        box.setText(
-            f"<b>CFA4</b> — CinemaFundArchitecture4<br>Qt 6 GUI {__version__}<br>{self.engine.hello.get('engine', '')}<br><br>"
-            "GPL-3.0-or-later<br>Rust engine · Qt 6 / PySide6 · Ubuntu"
-        )
-        box.open()
+        """Help ▸ About CFA4: egui's window with the About, Contributors and Models tabs."""
+        dlg = getattr(self, "about_dialog", None)
+        if dlg is None:
+            engine_name = str(self.engine.hello.get("engine", "")) if isinstance(self.engine.hello, dict) else ""
+            dlg = self.about_dialog = AboutDialog(engine_name, __version__, self)
+        dlg.show()
+        dlg.raise_()
+        dlg.activateWindow()
 
     def confirm_unsaved(
         self,
