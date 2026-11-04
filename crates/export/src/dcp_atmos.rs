@@ -1,6 +1,9 @@
 //! Dolby Atmos TrueHD as the immersive audio of a DCP (#347): the object presentation of a `.thd`
 //! stream becomes IAB frames (SMPTE ST 2098-2) with the stream's objects kept as objects.
 //!
+//! - **Source.** A raw `.thd` / `.mlp` stream, or the TrueHD track of a Matroska, MP4 / MOV or
+//!   MPEG-TS / Blu-ray M2TS file (#411), read packet by packet through our demuxers. Of several
+//!   TrueHD tracks the first whose first major syncs declare an object presentation is used.
 //! - **Bed.** Bed objects labelled L R C LFE Lss Rss Lrs Rrs Lts Rts become the channels of one
 //!   bed: 9.1OH when the stream has a top surround, else 7.1 DS, the two layouts ISDCF Doc 15
 //!   (IAB Application Profile 1) allows. A bed without rear surrounds (Atmos 5.1) feeds each side
@@ -9,8 +12,18 @@
 //! - **Objects.** Every dynamic object that has had a metadata update becomes an IAB object: its
 //!   position (the OAMD unit room cube is the IAB one: x left → right, y screen → back, z floor →
 //!   ceiling), gain (capped at unity, the most an IAB gain can be), size as a 1D spread, snap. A
-//!   ramp is followed sub-block by sub-block. Elevation off puts the object on the floor. OAMD
-//!   zone constraints are not carried (Profile 1 has no zone definitions).
+//!   ramp is followed sub-block by sub-block. Elevation off puts the object on the floor.
+//! - **Zones (#412).** The OAMD zone constraint becomes the nine zone gains of ObjectPanInfo
+//!   (ST 2098-2 Table 24), one of the sets ISDCF Doc 15 5.5 allows (it forbids only
+//!   ObjectZoneDefinition19 and gains other than 0 / 1): "no back" set 1, "no sides" set 2,
+//!   "centre back" set 3 (screen centre and rear wall), "screen only" set 4, "surround only"
+//!   set 5. Elevation off takes the "b" set (overhead zones off); an unconstrained object with
+//!   elevation off gets set 6. "Screen only" takes 4b, as our TrueHD renderer keeps such an
+//!   object off the overhead loudspeakers too.
+//! - **Not carried.** Screen-referenced scaling (`b_object_use_screen_ref`, screen / depth factor)
+//!   adapts a position to the playback screen's size; IAB positions are room positions with no
+//!   such scaling, so the authored position is kept. Divergence and trims are not decoded from
+//!   the OAMD, and IAB has no counterpart for either.
 //! - **Timing.** The stream's 48 kHz samples are cut into the composition's edit units from its
 //!   first sample; the last partial frame is padded with silence. Every asset is DLC coded,
 //!   24 bit.
@@ -20,8 +33,8 @@
 
 use std::io::{BufReader, Read, Seek, SeekFrom};
 
-use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Decorrelation, Description, Frame, FrameRate, Gain, Object, Pan, Snap, Spread};
-use cfa4_truehd::cfa4::{ObjectDecoder, samples_per_au};
+use cfa4_iab::{AudioData, Bed, BedChannel, Coding, Decorrelation, Description, Frame, FrameRate, Gain, Object, Pan, Snap, Spread, ZoneGain};
+use cfa4_truehd::cfa4::{ObjectDecoder, packet_samples, samples_per_au};
 use cfa4_truehd::render::{Event, MAX_OBJECTS, ObjectState, Source};
 use cfa4_truehd::structs::oamd::SpeakerLabels;
 
@@ -29,6 +42,9 @@ use crate::{ExportError, Result};
 
 /// Bytes read from the stream at a time.
 const CHUNK: usize = 256 * 1024;
+
+/// Bytes read from the start of a source to tell its container.
+pub(crate) const HEAD: u64 = 65_536 + 16;
 
 /// ChannelIDs (ST 2098-2 Table 20) of the 7.1 DS bed: L R C LFE Lss Rss Lrs Rrs; 9.1OH adds the
 /// top surrounds Lts Rts.
@@ -144,10 +160,170 @@ impl Metadata {
     }
 }
 
+/// A file of random-access bytes for the MPEG-TS demuxer.
+struct TsSrc(std::fs::File);
+
+impl cfa4_mpegts::ByteSource for TsSrc {
+    fn len(&self) -> u64 {
+        self.0.metadata().map_or(0, |m| m.len())
+    }
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+        std::os::unix::fs::FileExt::read_exact_at(&self.0, buf, offset)
+    }
+}
+
+/// The container of a Dolby Atmos TrueHD source.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Container {
+    /// A raw `.thd` / `.mlp` stream.
+    Raw,
+    Matroska,
+    Mp4,
+    /// MPEG-TS, Blu-ray M2TS or MPEG-PS.
+    MpegTs,
+}
+
+impl Container {
+    /// The container `head` (the first bytes of a file) starts, when it can carry TrueHD.
+    pub(crate) fn sniff(head: &[u8]) -> Option<Container> {
+        if head.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
+            return Some(Container::Matroska);
+        }
+        if head.get(4..8).is_some_and(|b| matches!(b, b"ftyp" | b"moov" | b"mdat" | b"free" | b"skip" | b"wide")) {
+            return Some(Container::Mp4);
+        }
+        if cfa4_mpegts::sniff(head).is_some() {
+            return Some(Container::MpegTs);
+        }
+        AtmosSource::sniff(head).then_some(Container::Raw)
+    }
+}
+
+/// The access units of a TrueHD track in a container, read one packet at a time.
+enum Packets {
+    Mkv { src: std::fs::File, file: Box<cfa4_matroska::MkvFile>, track: usize },
+    Mp4 { src: std::fs::File, file: Box<cfa4_isobmff::Mp4File>, track: usize },
+    Ts { src: TsSrc, file: Box<cfa4_mpegts::File>, stream: usize },
+}
+
+impl Packets {
+    /// The TrueHD tracks of a container file, each ready to read from its first packet.
+    fn open(path: &str, container: Container) -> Result<Vec<Packets>> {
+        let io = |e: &dyn std::fmt::Display| ExportError::Io(format!("{path}: {e}"));
+        let open = || std::fs::File::open(path).map_err(|e| io(&e));
+        Ok(match container {
+            Container::Raw => Vec::new(),
+            Container::Matroska => {
+                let file = cfa4_matroska::open(&open()?).map_err(|e| io(&e))?;
+                let tracks: Vec<usize> = (0..file.tracks.len())
+                    .filter(|&i| file.tracks.get(i).is_some_and(|t| matches!(t.codec, cfa4_matroska::Codec::TrueHd) && !t.samples.is_empty()))
+                    .collect();
+                let mut out = Vec::new();
+                for track in tracks {
+                    out.push(Packets::Mkv { src: open()?, file: Box::new(file.clone()), track });
+                }
+                out
+            }
+            Container::Mp4 => {
+                let file = cfa4_isobmff::open(open()?).map_err(|e| io(&e))?;
+                let tracks: Vec<usize> = (0..file.tracks.len())
+                    .filter(|&i| {
+                        file.tracks.get(i).is_some_and(|t| matches!(t.codec(), Some(cfa4_isobmff::CodecConfig::TrueHd { .. })) && !t.samples.is_empty())
+                    })
+                    .collect();
+                let mut out = Vec::new();
+                for track in tracks {
+                    out.push(Packets::Mp4 { src: open()?, file: Box::new(file.clone()), track });
+                }
+                out
+            }
+            Container::MpegTs => {
+                let src = TsSrc(open()?);
+                let file = cfa4_mpegts::open(&src).map_err(|e| io(&e))?;
+                let streams: Vec<usize> = (0..file.streams.len())
+                    .filter(|&i| file.streams.get(i).is_some_and(|s| s.codec == cfa4_mpegts::Codec::TrueHd && !s.units.is_empty()))
+                    .collect();
+                let mut out = Vec::new();
+                for stream in streams {
+                    out.push(Packets::Ts { src: TsSrc(open()?), file: Box::new(file.clone()), stream });
+                }
+                out
+            }
+        })
+    }
+
+    /// Packets in the track.
+    fn len(&self) -> usize {
+        match self {
+            Packets::Mkv { file, track, .. } => file.tracks.get(*track).map_or(0, |t| t.samples.len()),
+            Packets::Mp4 { file, track, .. } => file.tracks.get(*track).map_or(0, |t| t.samples.len()),
+            Packets::Ts { file, stream, .. } => file.streams.get(*stream).map_or(0, |s| s.units.len()),
+        }
+    }
+
+    /// Packet `i`.
+    fn read(&self, i: usize) -> std::result::Result<Vec<u8>, String> {
+        match self {
+            Packets::Mkv { src, file, track } => file.read_sample(src, *track, i).map_err(|e| e.to_string()),
+            Packets::Mp4 { src, file, track } => file.read_sample(src, *track, i).map_err(|e| e.to_string()),
+            Packets::Ts { src, file, stream } => file.read_unit(src, *stream, i).map_err(|e| e.to_string()),
+        }
+    }
+}
+
+/// Packets looked at to tell a Dolby Atmos TrueHD track from a plain one: a few major syncs.
+const ATMOS_TEST_PACKETS: usize = 1024;
+
+/// Whether the TrueHD track's first packets decode to Dolby Atmos objects.
+fn is_atmos_track(p: &Packets) -> bool {
+    let mut dec = ObjectDecoder::new();
+    for i in 0..p.len().min(ATMOS_TEST_PACKETS) {
+        let Ok(data) = p.read(i) else { return false };
+        match dec.decode(&data) {
+            Ok(c) if !c.objects.is_empty() => return true,
+            Ok(_) => {}
+            Err(_) => return false,
+        }
+    }
+    false
+}
+
+/// Where the source's TrueHD access units come from.
+enum Input {
+    Raw(BufReader<std::fs::File>),
+    /// A container's Dolby Atmos TrueHD track and its next packet.
+    Packets {
+        packets: Packets,
+        next: usize,
+    },
+}
+
+impl Input {
+    /// The next piece of the stream; `None` at its end.
+    fn next_chunk(&mut self, chunk: &mut Vec<u8>) -> std::result::Result<bool, String> {
+        match self {
+            Input::Raw(r) => {
+                chunk.resize(CHUNK, 0);
+                let got = r.read(chunk).map_err(|e| e.to_string())?;
+                chunk.truncate(got);
+                Ok(got > 0)
+            }
+            Input::Packets { packets, next } => {
+                if *next >= packets.len() {
+                    return Ok(false);
+                }
+                *chunk = packets.read(*next)?;
+                *next += 1;
+                Ok(true)
+            }
+        }
+    }
+}
+
 /// A Dolby Atmos TrueHD stream read as IAB frames, one edit unit at a time.
 pub(crate) struct AtmosSource {
     path: String,
-    reader: BufReader<std::fs::File>,
+    input: Input,
     decoder: ObjectDecoder,
     rate: FrameRate,
     /// Decoded object samples not yet framed, from sample `base` of the stream.
@@ -159,17 +335,38 @@ pub(crate) struct AtmosSource {
 }
 
 impl AtmosSource {
-    /// Whether `head` (the first bytes of a file) is a TrueHD stream: a major sync (format sync
-    /// 0xF8726FBA, 4 bytes into an access unit) in it. A cut stream starts before one.
+    /// Whether `head` (the first bytes of a file) is a raw TrueHD stream: a major sync (format
+    /// sync 0xF8726FBA, 4 bytes into an access unit) in it. A cut stream starts before one.
     pub(crate) fn sniff(head: &[u8]) -> bool {
         head.windows(4).skip(4).any(|w| w == [0xF8, 0x72, 0x6F, 0xBA])
     }
 
+    /// Opens a raw TrueHD stream, or the Dolby Atmos TrueHD track of a Matroska, MP4 or MPEG-TS
+    /// / M2TS file (the first one, when there are several).
     pub(crate) fn open(path: &str, rate: FrameRate) -> Result<AtmosSource> {
-        let f = std::fs::File::open(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let io = |e: std::io::Error| ExportError::Io(format!("{path}: {e}"));
+        let mut f = std::fs::File::open(path).map_err(io)?;
+        let mut head = Vec::new();
+        (&f).take(HEAD).read_to_end(&mut head).map_err(io)?;
+        // a raw stream is read from its start
+        f.rewind().map_err(io)?;
+        let input = match Container::sniff(&head) {
+            None | Some(Container::Raw) => Input::Raw(BufReader::with_capacity(CHUNK, f)),
+            Some(c) => {
+                let tracks = Packets::open(path, c)?;
+                if tracks.is_empty() {
+                    return Err(ExportError::Unsupported(format!("{path}: no Dolby TrueHD track")));
+                }
+                let packets = tracks
+                    .into_iter()
+                    .find(is_atmos_track)
+                    .ok_or_else(|| ExportError::Unsupported(format!("{path}: no Dolby Atmos in its TrueHD tracks (no object presentation)")))?;
+                Input::Packets { packets, next: 0 }
+            }
+        };
         Ok(AtmosSource {
             path: path.to_string(),
-            reader: BufReader::with_capacity(CHUNK, f),
+            input,
             decoder: ObjectDecoder::new(),
             rate,
             buf: Vec::new(),
@@ -186,14 +383,13 @@ impl AtmosSource {
 
     /// Decodes until `n` samples are buffered or the stream ends.
     fn fill(&mut self, n: usize) -> Result<()> {
-        let mut chunk = vec![0u8; CHUNK];
+        let mut chunk = Vec::new();
         while !self.eof && self.buf.first().is_none_or(|b| b.len() < n) {
-            let got = self.reader.read(&mut chunk).map_err(|e| self.err(e))?;
-            if got == 0 {
+            if !self.input.next_chunk(&mut chunk).map_err(|e| self.err(e))? {
                 self.eof = true;
                 break;
             }
-            let d = self.decoder.decode(chunk.get(..got).unwrap_or_default()).map_err(|e| self.err(e))?;
+            let d = self.decoder.decode(&chunk).map_err(|e| self.err(e))?;
             if d.objects.is_empty() {
                 continue;
             }
@@ -369,23 +565,48 @@ fn object_pan(st: Option<ObjectState>) -> Pan {
         decorrelation: Decorrelation::None,
     };
     let Some(st) = st else { return silent };
-    let (position, size, snap) = match st.source {
-        Source::Point { position, size, snap, elevation, .. } => {
+    let (position, size, snap, zones) = match st.source {
+        Source::Point { position, size, snap, elevation, zone } => {
             let z = if elevation { position[2] } else { 0.0 };
-            ([position[0], position[1], z], size, snap)
+            ([position[0], position[1], z], size, snap, zone_gains(zone, elevation))
         }
         // a bed loudspeaker no Profile 1 bed has: an object snapped to that loudspeaker
-        Source::Bed(l) => (speaker_position(l), 0.0, true),
+        Source::Bed(l) => (speaker_position(l), 0.0, true, None),
     };
     let size = if size.is_finite() { size.clamp(0.0, 1.0) } else { 0.0 };
     Pan {
         gain: iab_gain(st.gain),
         position: position_codes(position),
         snap: if snap { Snap::On(None) } else { Snap::Off },
-        zones: None,
+        zones,
         spread: Spread::OneD((size * 4095.0).round() as u16),
         decorrelation: Decorrelation::None,
     }
+}
+
+/// The IAB zone gains (ST 2098-2 Table 24: screen left, centre, right; left, right wall; rear
+/// left, right; overhead left, right) of an OAMD zone constraint, as an ISDCF Doc 15 5.5 set;
+/// `None` (every zone) for no constraint with elevation on.
+fn zone_gains(zone: u8, elevation: bool) -> Option<[ZoneGain; 9]> {
+    let (on, off) = (ZoneGain::Unity, ZoneGain::Zero);
+    let ear: [ZoneGain; 7] = match zone {
+        // no back: set 1
+        1 => [on, on, on, on, on, off, off],
+        // no sides: set 2
+        2 => [on, on, on, off, off, on, on],
+        // centre back: set 3
+        3 => [off, on, off, off, off, on, on],
+        // screen only: set 4b, never overhead
+        4 => return Some([on, on, on, off, off, off, off, off, off]),
+        // surround only: set 5
+        5 => [off, off, off, on, on, on, on],
+        // all loudspeakers (reserved values too): set 6 without elevation
+        _ if elevation => return None,
+        _ => return Some([on, on, on, on, on, on, on, off, off]),
+    };
+    let top = if elevation { on } else { off };
+    let [a, b, c, d, e, f, g] = ear;
+    Some([a, b, c, d, e, f, g, top, top])
 }
 
 /// What a TrueHD Atmos source holds: (seconds, sample rate, most bed channels, most objects),
@@ -399,9 +620,16 @@ pub(crate) fn probe(path: &str, rate: FrameRate, frames: usize) -> Result<(f64, 
         objects = objects.max(f.objects.len() as u32);
     }
     let rate_hz = src.sample_rate;
-    let per_au = samples_per_au(rate_hz).unwrap_or(40);
-    let aus = count_access_units(path)?;
-    let seconds = if rate_hz > 0 { (aus.saturating_mul(per_au.unsigned_abs())) as f64 / f64::from(rate_hz) } else { 0.0 };
+    let per_au = samples_per_au(rate_hz).unwrap_or(40).unsigned_abs();
+    let samples = match &src.input {
+        Input::Raw(_) => count_access_units(path)?.saturating_mul(per_au),
+        // a container packet holds whole access units, as many as its first one
+        Input::Packets { packets, .. } => {
+            let first = packets.read(0).ok().and_then(|p| packet_samples(&p, rate_hz)).map_or(per_au, i64::unsigned_abs);
+            (packets.len() as u64).saturating_mul(first)
+        }
+    };
+    let seconds = if rate_hz > 0 { samples as f64 / f64::from(rate_hz) } else { 0.0 };
     Ok((seconds, rate_hz, beds, objects))
 }
 
@@ -439,6 +667,159 @@ mod tests {
 
     fn point(x: f32, y: f32, z: f32, gain: f32) -> ObjectState {
         ObjectState { source: Source::Point { position: [x, y, z], size: 0.0, zone: 0, snap: false, elevation: true }, gain }
+    }
+
+    #[test]
+    fn zone_constraints_become_iab_zone_gains() {
+        use ZoneGain::{Unity as I, Zero as O};
+        let st = |zone, elevation| ObjectState { source: Source::Point { position: [0.5, 0.5, 0.0], size: 0.0, zone, snap: false, elevation }, gain: 1.0 };
+        let z = |zone, elevation| object_pan(Some(st(zone, elevation))).zones;
+        // the ISDCF Doc 15 5.5 sets
+        assert_eq!(z(0, true), None);
+        assert_eq!(z(0, false), Some([I, I, I, I, I, I, I, O, O]));
+        assert_eq!(z(1, true), Some([I, I, I, I, I, O, O, I, I]));
+        assert_eq!(z(1, false), Some([I, I, I, I, I, O, O, O, O]));
+        assert_eq!(z(2, true), Some([I, I, I, O, O, I, I, I, I]));
+        assert_eq!(z(3, true), Some([O, I, O, O, O, I, I, I, I]));
+        assert_eq!(z(4, true), Some([I, I, I, O, O, O, O, O, O]));
+        assert_eq!(z(5, false), Some([O, O, O, I, I, I, I, O, O]));
+        assert_eq!(z(7, true), None);
+        // a bed loudspeaker as an object has no zones
+        assert_eq!(object_pan(Some(ObjectState { source: Source::Bed(SpeakerLabels::Lw), gain: 1.0 })).zones, None);
+    }
+
+    /// Rendered by our IAB renderer to 7.1.4, an object in the room's back half reaches the rear
+    /// loudspeakers without a constraint and never with "no back"; "screen only" keeps it on the
+    /// screen; "surround only" off it. The frames write and parse back unchanged.
+    #[test]
+    fn zone_constrained_objects_render_within_their_zones() {
+        let layout = cfa4_iab::Layout::surround_7_1_4();
+        let ids: Vec<u32> = layout.speakers.iter().map(|s| s.id).collect();
+        let rear = |g: &[f32]| ids.iter().zip(g).filter(|(id, _)| matches!(id, 0x07 | 0x08)).map(|(_, v)| v.abs()).sum::<f32>();
+        let screen = |g: &[f32]| ids.iter().zip(g).filter(|(id, _)| matches!(id, 0x00 | 0x02 | 0x04)).map(|(_, v)| v.abs()).sum::<f32>();
+        let all = |g: &[f32]| g.iter().map(|v| v.abs()).sum::<f32>();
+        let render = |zone: u8, position: [f32; 3]| -> Vec<f32> {
+            let mut meta = Metadata::default();
+            meta.push(vec![Event {
+                offset: 0,
+                object: 0,
+                state: ObjectState { source: Source::Point { position, size: 0.0, zone, snap: false, elevation: true }, gain: 1.0 },
+                ramp: 0,
+            }]);
+            let f = frame_of(FrameRate::R24, 0, &mut meta, &[vec![0.5; 2000]]);
+            let back = cfa4_iab::parse(&cfa4_iab::write(&f).unwrap()).unwrap();
+            assert_eq!(back, f);
+            let out = cfa4_iab::render(&f, &layout).unwrap();
+            out.iter().map(|c| c.get(1000).copied().unwrap_or(0.0)).collect()
+        };
+        let back_half = [0.3, 0.85, 0.0];
+        assert!(rear(&render(0, back_half)) > 0.05);
+        let g = render(1, back_half);
+        assert_eq!(rear(&g), 0.0);
+        assert!(all(&g) > 0.05);
+        let g = render(4, back_half);
+        assert!(screen(&g) > 0.05 && (all(&g) - screen(&g)).abs() < 1e-6, "{g:?}");
+        let g = render(5, [0.5, 0.0, 0.0]);
+        assert!(screen(&g) == 0.0 && all(&g) > 0.05, "{g:?}");
+    }
+
+    /// A Matroska file of the given tracks (codec id, packets), 40 samples per packet at 48 kHz.
+    fn mkv(path: &std::path::Path, tracks: &[(&str, Vec<Vec<u8>>)]) {
+        use cfa4_matroska::{MkvWriter, MuxOptions, TrackKind, TrackSpec};
+        let specs = tracks
+            .iter()
+            .map(|(id, _)| {
+                let mut t = TrackSpec::new(TrackKind::Audio, *id);
+                t.audio = Some((48_000.0, 2, None));
+                t
+            })
+            .collect();
+        let opts = MuxOptions { doc_type: "matroska".into(), ..Default::default() };
+        let mut w = MkvWriter::new(std::fs::File::create(path).unwrap(), specs, opts).unwrap();
+        let most = tracks.iter().map(|t| t.1.len()).max().unwrap_or(0);
+        for i in 0..most {
+            for (k, (_, packets)) in tracks.iter().enumerate() {
+                if let Some(p) = packets.get(i) {
+                    w.write_frame(k, i as i64 * 833_333, true, p, None).unwrap();
+                }
+            }
+        }
+        w.finish().unwrap();
+    }
+
+    /// The access units of a raw TrueHD stream from its first major sync, chained by the length
+    /// in their first bytes.
+    fn access_units(data: &[u8]) -> Vec<Vec<u8>> {
+        let start = data.windows(4).position(|w| w == [0xF8, 0x72, 0x6F, 0xBA]).map_or(data.len(), |i| i.saturating_sub(4));
+        let mut data = &data[start..];
+        let mut out = Vec::new();
+        while data.len() >= 4 {
+            let len = (((data[0] & 0x0F) as usize) << 8 | data[1] as usize) * 2;
+            if len < 4 || len > data.len() {
+                break;
+            }
+            out.push(data[..len].to_vec());
+            data = &data[len..];
+        }
+        out
+    }
+
+    #[test]
+    fn containers_are_told_apart_by_their_first_bytes() {
+        assert_eq!(Container::sniff(&[0x1A, 0x45, 0xDF, 0xA3, 0x01]), Some(Container::Matroska));
+        assert_eq!(Container::sniff(b"\0\0\0\x18ftypmp42"), Some(Container::Mp4));
+        let mut ts = vec![0u8; 188 * 8];
+        for p in ts.chunks_mut(188) {
+            p[0] = 0x47;
+        }
+        assert_eq!(Container::sniff(&ts), Some(Container::MpegTs));
+        assert_eq!(Container::sniff(cfa4_truehd::process::EXAMPLE_DATA), Some(Container::Raw));
+        assert_eq!(Container::sniff(&[0u8; 64]), None);
+    }
+
+    /// A Matroska file whose only TrueHD track is plain TrueHD, or that has no TrueHD track at
+    /// all, is not an Atmos source; each says which.
+    #[test]
+    fn a_container_without_an_atmos_truehd_track_is_refused() {
+        let dir = std::env::temp_dir().join(format!("cfa4-atmos-mkv-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let aus = access_units(cfa4_truehd::process::EXAMPLE_DATA);
+        assert!(!aus.is_empty());
+        let plain = dir.join("plain.mkv");
+        mkv(&plain, &[("A_PCM/INT/LIT", vec![vec![0u8; 160]; 4]), ("A_TRUEHD", aus)]);
+        let err = AtmosSource::open(&plain.to_string_lossy(), FrameRate::R24).err().unwrap().to_string();
+        assert!(err.contains("no Dolby Atmos in its TrueHD tracks"), "{err}");
+        let pcm = dir.join("pcm.mkv");
+        mkv(&pcm, &[("A_PCM/INT/LIT", vec![vec![0u8; 160]; 4])]);
+        let err = AtmosSource::open(&pcm.to_string_lossy(), FrameRate::R24).err().unwrap().to_string();
+        assert!(err.contains("no Dolby TrueHD track"), "{err}");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// The Atmos TrueHD track of Matroska / MP4 / M2TS files (`CFA4_ATMOS_CONTAINERS`, paths
+    /// separated by `:`, each holding at least the first 10 s of the `CFA4_ATMOS_THD` stream, e.g. made with
+    /// `ffmpeg -i a.thd -t 12 -c copy -strict -2 a.mp4`; skipped when unset) gives the frames
+    /// the raw stream gives, and the probe its length.
+    #[test]
+    fn an_atmos_track_in_a_container_gives_the_raw_streams_frames() {
+        let (Ok(raw), Ok(list)) = (std::env::var("CFA4_ATMOS_THD"), std::env::var("CFA4_ATMOS_CONTAINERS")) else { return };
+        let mut want = Vec::new();
+        let mut src = AtmosSource::open(&raw, FrameRate::R24).unwrap();
+        for _ in 0..240 {
+            want.push(src.next_frame().unwrap().unwrap());
+        }
+        for path in list.split(':').filter(|p| !p.is_empty()) {
+            let mut src = AtmosSource::open(path, FrameRate::R24).unwrap();
+            assert!(matches!(src.input, Input::Packets { .. }), "{path}");
+            for (i, w) in want.iter().enumerate() {
+                let f = src.next_frame().unwrap().unwrap_or_else(|| panic!("{path}: ends at frame {i}"));
+                assert_eq!(&f, w, "{path}: frame {i}");
+            }
+            let (seconds, rate, beds, objects) = probe(path, FrameRate::R24, 48).unwrap();
+            assert_eq!(rate, 48_000);
+            assert!(seconds > 10.0, "{path}: {seconds} s");
+            assert!(beds >= 1 && objects > 0, "{path}: {beds} bed channels, {objects} objects");
+        }
     }
 
     /// A real Dolby Atmos TrueHD stream (`CFA4_ATMOS_THD`, e.g. the Altitude trailer; skipped

@@ -471,14 +471,15 @@ pub(crate) fn read_frame_checked(file: &MxfFile, src: &(impl ByteSource + ?Sized
 /// How much of a source is read to find an MXF header partition: the longest run-in plus a key.
 const MXF_SNIFF: u64 = 65_536 + 16;
 
-/// Whether the file at `path` is a TrueHD stream (a Dolby Atmos source for `file`).
+/// Whether the file at `path` is a Dolby Atmos source for `file`: a raw TrueHD stream, or a
+/// Matroska, MP4 or MPEG-TS / M2TS file (whose TrueHD track is looked for when it is opened).
 fn is_truehd(path: &str) -> bool {
     let Ok(f) = std::fs::File::open(path) else { return false };
     let mut head = Vec::new();
-    if f.take(MXF_SNIFF).read_to_end(&mut head).is_err() {
+    if f.take(MXF_SNIFF.max(crate::dcp_atmos::HEAD)).read_to_end(&mut head).is_err() {
         return false;
     }
-    !cfa4_mxf::sniff(&head) && AtmosSource::sniff(&head)
+    !cfa4_mxf::sniff(&head) && crate::dcp_atmos::Container::sniff(&head).is_some()
 }
 
 /// The frames of an IAB source.

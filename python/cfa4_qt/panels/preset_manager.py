@@ -226,6 +226,39 @@ class PresetManager(QDialog):
         self.export.setEnabled(info is not None)
         self.delete.setEnabled(info is not None and info.get("builtin") is not True)
 
+    # ----- control channel (egui's ``ExportUi::manager``) -----
+    def state(self) -> dict[str, Any]:
+        return {"query": self.search.text(), "favoritesOnly": self.favorites_only.isChecked(), "selected": self.selected,
+                "saveName": self.save_name.text()}
+
+    def set_state(self, fields: dict[str, Any], names: list[str]) -> None:
+        """Merge egui's ``PresetManager`` fields; ``selected`` must name one of ``names`` (or be
+        empty). ValueError names a bad field, and nothing is changed then."""
+        self.check_state(fields, names)
+        if "query" in fields:
+            self.search.setText(fields["query"])
+        if "favoritesOnly" in fields:
+            self.favorites_only.setChecked(fields["favoritesOnly"])
+        if "saveName" in fields:
+            self.save_name.setText(fields["saveName"])
+        if isinstance(fields.get("selected"), str):
+            self.select(fields["selected"])
+
+    @staticmethod
+    def check_state(fields: dict[str, Any], names: list[str]) -> None:
+        known = ("query", "favoritesOnly", "selected", "saveName")
+        bad = [k for k in fields if k not in known]
+        if bad:
+            raise ValueError(f"manager: unknown field {bad[0]!r} (known: {', '.join(known)})")
+        for k in ("query", "selected", "saveName"):
+            if k in fields and not isinstance(fields[k], str):
+                raise ValueError(f"manager.{k} takes a string")
+        if "favoritesOnly" in fields and not isinstance(fields["favoritesOnly"], bool):
+            raise ValueError("manager.favoritesOnly takes true or false")
+        sel = fields.get("selected")
+        if sel and preset_key(sel) not in {preset_key(n) for n in names}:
+            raise ValueError(f"manager.selected: no preset named {sel!r}")
+
     # ----- actions -----
     def _run(self, command: str, params: dict[str, Any], then: Callable[[Any], None] | None = None) -> None:
         if self.engine is None:
