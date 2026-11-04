@@ -357,7 +357,7 @@ class MenuScrollStyle(QProxyStyle):
     def __init__(self) -> None:
         super().__init__("Fusion")
 
-    def styleHint(self, hint: QStyle.StyleHint, option: Any = None, widget: Any = None, data: Any = None) -> int:  # noqa: N802
+    def styleHint(self, hint: QStyle.StyleHint, option: Any = None, widget: Any = None, data: Any = None) -> int:
         if hint == QStyle.StyleHint.SH_Menu_Scrollable:
             return 1
         return super().styleHint(hint, option, widget, data)
