@@ -97,7 +97,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3327 | Project panel search finds names holding every typed word | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.15.0 | #3523 | Captions: File ▸ Export ▸ Captions… asks for the file format (#3365) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.15.0 | #3584 | Program Monitor: Snap in Program Monitor applies to video clip Motion drags | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
-| 0.15.0 | #3588 | Effect Controls: Font and Font Style of a text layer are picked from drop-downs | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.15.0 | #3588 | Effect Controls: Font and Font Style of a text layer are picked from drop-downs | D | átvesz (Qt6) | kézi port | U0-D | #550 | PR nyitva |
 | 0.15.0 | #3373 | Declare the UI languages to AppKit so the open and save panels are translated | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.15.0 | #3422 | web: Keep WebCodecs enabled after media read errors | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.15.0 | #3527 | Grant network access so update checks can reach GitHub | F | kihagy: önfrissítő (nem kell) | kézi port | – | – | lezárva |
