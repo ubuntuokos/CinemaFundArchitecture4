@@ -22,7 +22,10 @@ impl Rng {
 fn synthetic_files() -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     for brand in [Brand::Mp4, Brand::Mov] {
-        let mut w = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(brand)).unwrap();
+        let mut opts = WriterOptions::new(brand);
+        opts.metadata = vec![("©nam".into(), "fuzz".into())];
+        opts.chapters = vec![Chapter { start_100ns: 0, title: "Egy".into() }, Chapter { start_100ns: 5_000_000, title: "Kettő".into() }];
+        let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
         let v = w.add_track(TrackConfig::new(SampleEntry::avc(AvcConfig::new(vec![vec![0x67, 0x64, 0, 0x1F]], vec![vec![0x68]], 4), 64, 64), 25)).unwrap();
         let mut cfg = TrackConfig::new(SampleEntry::aac(vec![0x11, 0x90], 2, 48000), 48000);
         cfg.media_start = Some(1024);
