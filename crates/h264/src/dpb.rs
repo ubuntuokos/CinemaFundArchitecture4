@@ -193,8 +193,19 @@ impl<F: Clone> Dpb<F> {
         poc_state: &mut dyn FnMut(u32),
     ) {
         let mut unused = (prev_ref_frame_num + 1) % max_frame_num;
+        // Missing frames before the last `max_num_ref_frames` would be dropped by the sliding window
+        // (oldest FrameNumWrap first) before the gap ends, so only their POC / frame_num bookkeeping
+        // runs; building pictures for them would cost up to max_frame_num frames per access unit.
+        let gap = if frame_num >= unused { frame_num - unused } else { (frame_num % max_frame_num) + max_frame_num - unused };
+        let skip = gap.saturating_sub(max_num_ref_frames.max(1).try_into().unwrap_or(u32::MAX));
         let mut guard = 0;
         while unused != frame_num && guard < max_frame_num {
+            if guard < skip {
+                poc_state(unused);
+                unused = (unused + 1) % max_frame_num;
+                guard += 1;
+                continue;
+            }
             self.sliding_window(unused, max_frame_num, max_num_ref_frames, None);
             self.prune();
             let (frame, poc, meta) = make_frame(unused);
@@ -724,5 +735,42 @@ mod tests {
         let frames: Vec<&DpbEntry<u32>> = two.iter().collect();
         assert_eq!(ids(alternate_fields(&frames, 0, S)), [(0, 0), (0, 1), (1, 0), (2, 0)]);
         assert!(alternate_fields(&frames, 0, RefMark::Long).is_empty());
+    }
+
+    /// A huge frame_num jump must only materialise the frames the sliding window keeps (#2779).
+    #[test]
+    fn frame_num_gap_materialises_at_most_max_num_ref_frames() {
+        let mut dpb: Dpb<u32> = Dpb::new();
+        let m = entry(0, [RefMark::Unused; 2]).meta;
+        let mut made = 0u32;
+        let mut make = |f: u32| {
+            made += 1;
+            (f, 0, m.clone())
+        };
+        let mut updated = Vec::new();
+        let mut upd = |f: u32| updated.push(f);
+        dpb.fill_frame_num_gap(0, 32768, 1 << 16, 4, &mut make, &mut upd);
+        assert!(made <= 4, "gap fill materialised {made} frames, expected <= 4");
+        assert_eq!(updated, (1..32768).collect::<Vec<u32>>());
+        let mut refs: Vec<u32> = dpb.entries.iter().filter(|e| e.mark() == RefMark::Short).map(|e| e.frame_num).collect();
+        refs.sort_unstable();
+        assert_eq!(refs, vec![32764, 32765, 32766, 32767]);
+        assert!(dpb.entries.iter().all(|e| e.frame == e.frame_num));
+    }
+
+    /// Existing short-term references are still evicted by a gap no longer than the window.
+    #[test]
+    fn short_frame_num_gap_keeps_sliding_window_semantics() {
+        let mut dpb: Dpb<u32> = Dpb::new();
+        for f in 0..2 {
+            dpb.entries.push(entry(f, [RefMark::Short; 2]));
+        }
+        let m = entry(0, [RefMark::Unused; 2]).meta;
+        let mut make = |f: u32| (f, 0, m.clone());
+        let mut upd = |_f: u32| {};
+        dpb.fill_frame_num_gap(1, 5, 16, 4, &mut make, &mut upd);
+        let mut refs: Vec<u32> = dpb.entries.iter().filter(|e| e.mark() == RefMark::Short).map(|e| e.frame_num).collect();
+        refs.sort_unstable();
+        assert_eq!(refs, vec![1, 2, 3, 4]);
     }
 }
