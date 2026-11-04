@@ -111,8 +111,9 @@ def test_sizes_and_english():
 
 
 def test_language_without_the_templates_keeps_english_fragments():
-    """German has no Summary templates yet: the fragments stay English, numbers untouched."""
-    TR.set_language("de")
+    """Russian (partial, no Qt catalog) has no Summary templates: the fragments stay English,
+    numbers untouched."""
+    TR.set_language("ru")
     try:
         assert es.line("CBR 4.00 Mbps, keyframe every 50 frames") == "CBR 4.00 Mbps, keyframe every 50 frames"
     finally:

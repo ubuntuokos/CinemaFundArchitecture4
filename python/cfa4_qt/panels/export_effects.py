@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
     QPushButton,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -90,13 +91,55 @@ def _set(w: QWidget, value: Any) -> None:
     w.blockSignals(False)
 
 
-class CaptionsSection(QGroupBox):
+# egui's Export settings sections (`export_mode::section`), in their order; Video and Audio start open
+SECTION_KEYS = ("video", "audio", "multiplexer", "captions", "effects", "metadata")
+OPEN_SECTIONS = ("video", "audio")
+
+
+class Section(QGroupBox):
+    """A collapsible Export settings section as egui's: its title (``export.section.<key>``)
+    opens and closes the body below it. The box itself shows while the format has the section."""
+
+    opened = Signal(str, bool)
+
+    def __init__(self, key: str, title: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.key = key
+        self.head = QToolButton(self)
+        self.head.setObjectName(f"export.section.{key}")
+        self.head.setText(title)
+        self.head.setCheckable(True)
+        self.head.setAutoRaise(True)
+        self.head.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.body = QWidget(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(6, 2, 6, 6)
+        outer.setSpacing(2)
+        outer.addWidget(self.head)
+        outer.addWidget(self.body)
+        self.head.toggled.connect(self._toggled)
+        self.head.setChecked(key in OPEN_SECTIONS)
+        self._toggled(self.head.isChecked())
+
+    def _toggled(self, on: bool) -> None:
+        self.body.setVisible(on)
+        self.head.setArrowType(Qt.ArrowType.DownArrow if on else Qt.ArrowType.RightArrow)
+        self.opened.emit(self.key, on)
+
+    def is_open(self) -> bool:
+        return self.head.isChecked()
+
+    def set_open(self, on: bool) -> None:
+        self.head.setChecked(on)
+
+
+class CaptionsSection(Section):
     changed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(tr("Captions"), parent)
+        super().__init__("captions", tr("Captions"), parent)
         self.setObjectName("export.captions")
-        f = QFormLayout(self)
+        f = QFormLayout(self.body)
         self.mode = _combo(self, "export.captions.mode", CAPTION_MODES)
         self.format = _combo(self, "export.captions.format", CAPTION_FORMATS)
         f.addRow(tr("Export Options"), self.mode)
@@ -120,13 +163,13 @@ class CaptionsSection(QGroupBox):
         return {"burnCaptions": mode == "burn", "captionSidecar": self.format.currentData() if mode == "sidecar" else "none"}
 
 
-class EffectsSection(QGroupBox):
+class EffectsSection(Section):
     """Export ▸ Effects: each effect's switch, and its settings while it is on."""
 
     changed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(tr("Effects"), parent)
+        super().__init__("effects", tr("Effects"), parent)
         self.setObjectName("export.effects")
         self.seen: dict[str, Any] = copy.deepcopy(DEFAULT_EFFECTS)  # the last resolved effects (offsets kept)
         # (settings key, field) -> widget
@@ -134,7 +177,7 @@ class EffectsSection(QGroupBox):
         self.switches: dict[str, QCheckBox] = {}
         self.bodies: dict[str, QWidget] = {}
         self.kinds = (True, True)  # (video, audio) of the chosen format
-        lay = QVBoxLayout(self)
+        lay = QVBoxLayout(self.body)
         # pick the image overlay's file (tests replace it): (title, filter, start) -> path or ""
         self.pick_image = lambda t, f, s: QFileDialog.getOpenFileName(self, t, s, f)[0]
 
@@ -267,15 +310,15 @@ METADATA_FIELDS = (("title", N_("Title")), ("creator", N_("Creator")), ("copyrig
 METADATA_FORMATS = {"h264", "hevc", "av1", "prores", "dnxhr", "apv", "cineform", "mjpeg"}
 
 
-class MetadataSection(QGroupBox):
+class MetadataSection(Section):
     """Export ▸ Metadata: title, creator, copyright, description and comment written into the file."""
 
     changed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(tr("Metadata"), parent)
+        super().__init__("metadata", tr("Metadata"), parent)
         self.setObjectName("export.metadata")
-        f = QFormLayout(self)
+        f = QFormLayout(self.body)
         self.fields: dict[str, QLineEdit] = {}
         for key, label in METADATA_FIELDS:
             e = QLineEdit(self)
