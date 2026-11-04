@@ -162,6 +162,15 @@ fn main() -> eframe::Result {
     // The window could not be created (no usable GPU / graphics driver, no display): say so
     // instead of exiting silently, and keep the reason in the crash log.
     if let Err(e) = &started {
+        // `--control-input-only` without a control server: the session is unreachable by design,
+        // and an unattended launch cannot dismiss a dialog. Exit directly with the reason in the
+        // log (#3436); every other start failure keeps the window-failure dialog below.
+        if let eframe::Error::AppCreation(inner) = e
+            && inner.downcast_ref::<control_server::ControlServerRequired>().is_some()
+        {
+            log::error!("{inner}");
+            std::process::exit(1);
+        }
         let msg = format!("CFA4 could not start its window: {e}\n\nUpdating the graphics driver usually fixes this.");
         log::error!("{msg}");
         cfa4_ui_egui::crash::record(&msg);
@@ -198,6 +207,18 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
     Box::new(move |cc| {
         log::info!("startup stage: egui app creator entered");
         created.store(true, Ordering::Relaxed);
+        // Start the control server before anything touches recovery state: `file.recover`
+        // consumes its candidate, and an input-only session that must abort (no server) may not
+        // take that step first, or the recovered work is lost (#3436).
+        let control = control_port.map(|port| {
+            log::info!("startup stage: starting control server on 127.0.0.1:{port}");
+            let started = control_server::start(port, cc.egui_ctx.clone());
+            log::info!("startup stage: control server start returned");
+            started
+        });
+        if control_input_only && let Some((_, _, Some(why))) = &control {
+            return Err(Box::new(control_server::ControlServerRequired(why.reason())));
+        }
         // A fallback graphics mode says so in the window, with a button back to the default.
         let notice = graphics.degraded().then(|| {
             let start = graphics.clone();
@@ -342,11 +363,12 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
                 .pick_file()
                 .map(|p| p.to_string_lossy().to_string())
         }));
-        if let Some(port) = control_port {
-            log::info!("startup stage: starting control server on 127.0.0.1:{port}");
-            let rx = control_server::start(port, cc.egui_ctx.clone());
-            log::info!("startup stage: control server start returned");
+        if let Some((rx, ready, _disabled)) = control {
+            // Why a requested server is not serving is in cfa4.log (`DisabledWhy::reason`); the
+            // egui status bar notice of upstream #3535 is not ported (the egui UI is frozen).
             app = if control_input_only { app.with_control_input_only(rx) } else { app.with_control(rx) };
+            // From here the app drains the queue on its first pass: stop rejecting requests.
+            ready.store(true, Ordering::Relaxed);
         }
         Ok(Box::new(app))
     })
