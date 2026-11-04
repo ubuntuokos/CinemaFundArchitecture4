@@ -426,7 +426,21 @@ class ControlServer(QObject):
             win._quit_confirmed = True
             win.close()
         elif method == "perf.stats":
-            win.engine.execute("perf.stats", {}, on_reply=lambda r, _b: reply(True, r), on_error=lambda m: reply(False, m))
+            def stats(r: Any, _b: Any) -> None:
+                out = dict(r) if isinstance(r, dict) else {}
+                out["playback"] = win.monitor.playback_stats()  # the Program monitor's, as egui
+                out["playback"]["source"] = win.source_monitor.playback_stats()
+
+                def draft(pref: Any, _b2: Any = None) -> None:
+                    # the preference itself: the monitors read it only when playback starts
+                    on = pref.get("value") if isinstance(pref, dict) else pref
+                    if isinstance(on, bool):
+                        out["playback"]["draftDecode"] = out["playback"]["source"]["draftDecode"] = on
+                    reply(True, out)
+
+                win.engine.execute("prefs.get", {"key": "playback.draftDecode"}, on_reply=draft, on_error=lambda _m: reply(True, out))
+
+            win.engine.execute("perf.stats", {}, on_reply=stats, on_error=lambda m: reply(False, m))
         else:
             raise ControlError(f"unknown method {method}")
 
@@ -450,7 +464,15 @@ class ControlServer(QObject):
             open_dialog = None
 
         def monitor(m: Any) -> dict[str, Any]:
-            return {"playing": m.playing, "speed": m.speed, "playhead": int(m.playhead)}
+            # audioClock: the device's played samples drive the picture (egui's); avOffset: how far the
+            # frame shown is behind the sound heard, in ticks (under a frame), while playing with sound
+            return {
+                "playing": m.playing,
+                "speed": m.speed,
+                "playhead": int(m.playhead),
+                "audioClock": m.audio_clock,
+                "avOffset": m.av_offset(),
+            }
 
         # the window system's focus (QWindow's), not Qt's active window, which ui.key may point at
         # a background window to route its shortcuts

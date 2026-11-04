@@ -21,7 +21,6 @@
 	AAC	AAC
 	Add pause	ポーズを追加
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	「ポーズを追加」は [pause 1s] を挿入します。数値を変えるとポーズの長さが変わります（例：[pause 500ms]、[pause 2s]）。
-	Add to Queue	キューに追加
 	Add to timeline	タイムラインに追加
 	Advertisement	広告
 	All Supported Files	対応しているすべてのファイル
@@ -29,14 +28,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	`serve` のないエンジンは Qt GUI のないブランチからビルドされています。Qt GUI のブランチに切り替えて再ビルドするか、--engine パス を指定してください。
 	Arrangement {n}	配置 {n}
 	Audio Files	オーディオファイル
-	Audio bitrate	オーディオビットレート
-	Audio codec	オーディオコーデック
 	Automation mode	オートメーションモード
 	B pictures	B ピクチャ
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV トランスポートストリーム（.m2ts、AAC オーディオ）
 	Basic voices (built in)	基本音声（内蔵）
 	Beyond IAB Profile 1: {notes}	IAB プロファイル 1 の範囲外：{notes}
-	Bitrate mode	ビットレートモード
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 でエラーが発生しました
 	CFA4 project links	CFA4 プロジェクトのリンク
@@ -92,7 +88,6 @@
 	Export Media	メディアを書き出し
 	Export Media…	メディアを書き出し…
 	Export Queue	書き出しキュー
-	Export audio	オーディオを書き出す
 	Export captions…	キャプションを書き出し…
 	Export failed: {path}	書き出しに失敗しました：{path}
 	Export finished: {path}	書き出しが完了しました：{path}
@@ -109,7 +104,6 @@
 	Film Scan 3	フィルムスキャン 3
 	Flat (1.85:1)	フラット（1.85:1）
 	Format:	形式：
-	Frame size	フレームサイズ
 	Frame time: {timecode}	フレームの時間：{timecode}
 	From the preset	プリセットに従う
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	{source} と github.com/cmusphinx/cmudict（発音）から。ライセンス：{license}。各ファイルは固定された SHA-256 で検証されます。
@@ -130,7 +124,6 @@
 	Incoming clip (drag to trim the In point)	後続クリップ（ドラッグしてインポイントをトリム）
 	Input channel mapping	入力チャンネルの割り当て
 	Keep existing file	既存のファイルを残す
-	Keyframe distance	キーフレーム間隔
 	Label Color Presets	ラベルカラーのプリセット
 	Large	大
 	Linear Gradient	線形グラデーション
@@ -215,7 +208,6 @@
 	Stop Queue	キューを停止
 	Synthesizing narration…	ナレーションを合成中…
 	Synthesizing…	合成中…
-	Target bitrate	ターゲットビットレート
 	Teaser	ティーザー
 	Template: {name}	テンプレート：{name}
 	Test	テスト
