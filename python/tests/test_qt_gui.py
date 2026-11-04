@@ -5155,6 +5155,19 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         QtTest.QTest.mouseRelease(canvas, btn, pos=edge + QtCore.QPoint(-40, 0))
         assert wait_until(app, lambda: captions()[0]["end"] < moved["end"], 10_000)
         assert captions()[0]["start"] == moved["start"]
+        # upstream #3040: Alt held as the drag ends copies the caption there; the original stays
+        trimmed = captions()[0]
+        r = canvas.caption_block_rect(0, trimmed)
+        start = r.center().toPoint()
+        alt = QtCore.Qt.KeyboardModifier.AltModifier
+        QtTest.QTest.mousePress(canvas, btn, alt, start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(300, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, alt, start + QtCore.QPoint(300, 0))
+        assert wait_until(app, lambda: len(captions()) == 2, 10_000), captions()
+        assert captions()[0]["start"] == trimmed["start"] and captions()[0]["end"] == trimmed["end"]
+        assert captions()[1]["text"] == trimmed["text"] and captions()[1]["start"] > trimmed["end"]
+        canvas.command.emit("edit.undo", {})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
         # the header's lock and eye
         cells = canvas.caption_cells(0)
         QtTest.QTest.mouseClick(canvas, btn, pos=cells["locked"].center())

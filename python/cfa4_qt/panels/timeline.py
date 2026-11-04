@@ -1180,15 +1180,17 @@ class TimelineCanvas(QWidget):
         d.delta = round(raw / ft) * ft  # whole frames (egui's snap_nearest)
         self.update()
 
-    def _caption_release(self, d: Drag) -> None:
-        """The drag's one ``captions.*`` command: move (the selection, when the caption is in it)
-        or trim; a click without a drag selects only that caption."""
+    def _caption_release(self, d: Drag, copy: bool = False) -> None:
+        """The drag's one ``captions.*`` command: move (the selection, when the caption is in it;
+        ``copy``, Alt held: duplicate them there instead) or trim; a click without a drag selects
+        only that caption."""
         cid = (d.clip or {}).get("id")
         info = d.volume or {}
         if d.delta != 0 and not info.get("locked"):
             if d.edge == "move":
                 sel = self.caption_selection
-                self.command.emit("captions.move", {"captions": sel if cid in sel else [cid], "delta": d.delta})
+                # Alt held as the drag ends copies them (Premiere's Option-drag; upstream #3040)
+                self.command.emit("captions.duplicate" if copy else "captions.move", {"captions": sel if cid in sel else [cid], "delta": d.delta})
             else:
                 self.command.emit("captions.trim", {"caption": cid, "edge": d.edge, "delta": d.delta})
         elif not info.get("add") and self.caption_selection != [cid]:
@@ -2097,7 +2099,7 @@ class TimelineCanvas(QWidget):
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         d, self._drag = self._drag, None
         if d is not None and d.kind == "caption":
-            self._caption_release(d)
+            self._caption_release(d, copy=bool(e.modifiers() & Qt.KeyboardModifier.AltModifier))
             return
         if d is not None and d.kind == "laneKey" and d.volume is not None and d.volume.get("at") is not None:
             t, v = self._lane_value_at(d)
