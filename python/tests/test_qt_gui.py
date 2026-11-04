@@ -10030,3 +10030,25 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_mixer_meters_drop_quickly_after_stop(app):
+    """While playing the mixer's bars fall 20 dB/s and the peak holds 6 dB/s; once stopped both
+    drop to silence within a quarter second, so the meters do not read as audio still playing."""
+    from cfa4_qt.panels.mixer import TrackMixerPanel
+
+    mixer = TrackMixerPanel()
+    mixer.resize(600, 400)
+    mixer.show()
+    mixer.set_state({"strips": [{"id": 7, "ref": "A1", "kind": "audio", "name": "Audio 1", "channels": 2}]}, None, 0)
+    app.processEvents()
+    strip = mixer.strips[0]
+    mixer.set_levels({7: [0.5, 0.5]}, 0.05)
+    assert strip.levels[0] > -7.0 and strip.holds[0] > -7.0
+    for _ in range(5):
+        mixer.set_levels({}, 0.05, live=True)
+    assert -15.0 < strip.levels[0] < -10.0 and strip.holds[0] > -9.0  # easing down while live
+    for _ in range(5):
+        mixer.set_levels({}, 0.05, live=False)
+    assert strip.levels == [-90.0, -90.0] and strip.holds == [-90.0, -90.0]
+    mixer.close()
