@@ -671,7 +671,8 @@ mod tests {
             // the given UID is kept, the others get fresh ones that don't clash
             assert_eq!(got[1].uid, 7);
             let uids = [got[0].uid, got[1].uid, got[1].children[0].uid];
-            assert!(uids.iter().all(|&u| u != 0) && uids[0] != uids[2] && !uids[..2].contains(&uids[2]) && uids[0] != 7, "{uids:?}");
+            assert!(uids.iter().all(|&u| u != 0), "every chapter has a UID");
+            assert!(uids[0] != 7 && !uids[..2].contains(&uids[2]), "fresh UIDs don't clash");
             assert_eq!(got[1].end_ns, Some(1_800_000_000));
             assert_eq!(got[1].hidden, !webm, "{doc_type}: WebM has no hidden flag");
             assert_eq!(got[1].displays[0].languages, ["eng"]);
