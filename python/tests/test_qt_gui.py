@@ -3307,6 +3307,31 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         vert = ov.hit("mask.vertex.1")
         drag(vert, vert + QtCore.QPointF(0, 12))
         assert wait_until(app, lambda: mask()["vertices"][1]["p"][1] > v1[1] + 1, 10_000)
+        # upstream #3209: Shift-click adds a vertex to the selection; dragging one moves them all
+        shift = QtCore.Qt.KeyboardModifier.ShiftModifier
+        n = len(mask()["vertices"])
+        assert ov.vertex_selection(n) == [1]
+        v2 = ov.hit("mask.vertex.2")
+        send(QtCore.QEvent.Type.MouseButtonPress, v2, left, left, shift)
+        send(QtCore.QEvent.Type.MouseButtonRelease, v2, left, none, shift)
+        assert ov.vertex_selection(n) == [1, 2]
+        before = [list(mask()["vertices"][i]["p"]) for i in (1, 2, 3)]
+        drag(v2, v2 + QtCore.QPointF(0, 10))
+        assert wait_until(app, lambda: all(mask()["vertices"][i]["p"][1] > before[k][1] + 1 for k, i in enumerate((1, 2))), 10_000)
+        assert mask()["vertices"][3]["p"] == before[2], "an unselected vertex stays"
+        # a Shift-click on a selected vertex takes it out
+        v2 = ov.hit("mask.vertex.2")
+        send(QtCore.QEvent.Type.MouseButtonPress, v2, left, left, shift)
+        send(QtCore.QEvent.Type.MouseButtonRelease, v2, left, none, shift)
+        assert ov.vertex_selection(n) == [1]
+        # a marquee from outside the shape around it selects every vertex
+        pts = [v["p"] for v in ov.mask_geometry()["vertices"]]
+        # (from well beside the feather / expansion handles)
+        lo = QtCore.QPointF(min(p.x() for p in pts) - 60, min(p.y() for p in pts) - 60)
+        hi = QtCore.QPointF(max(p.x() for p in pts) + 15, max(p.y() for p in pts) + 15)
+        drag(lo, hi)
+        assert ov.vertex_selection(n) == list(range(n))
+        assert ov.mask_geometry() is not None, "a marquee keeps the mask"
         feather = mask()["feather"]
         h = ov.hit("mask.feather")
         normal = ov.mask_geometry()["handles"]["feather"]["pos"] - ov.mask_geometry()["handles"]["feather"]["base"]
