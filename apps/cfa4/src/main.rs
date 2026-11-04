@@ -8,6 +8,7 @@
 //! (the demo project), Open Most Recent, or an empty project.
 //!
 //! `--control <port>` (or `CFA4_CONTROL_PORT`) starts a localhost JSON-lines control server;
+//! `CFA4_CONTROL_TOKEN` is required (see `docs/control-protocol.md`).
 //! see `cfa4_ui_egui::control` for the methods. A port that is not a number is an error from
 //! either source.
 //!
