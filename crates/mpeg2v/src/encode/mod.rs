@@ -2,8 +2,10 @@
 //!
 //! - Main Profile (4:2:0) and 4:2:2 Profile at the lowest level that holds the picture size,
 //!   rate and bitrate (Main, High-1440, High; 4:2:2 Main and High).
-//! - Progressive frame pictures, I and P pictures (low delay: decode order is display order),
-//!   a closed GOP with a sequence header at every I picture.
+//! - Progressive frame pictures: I and P pictures, and up to 7 B pictures between anchors
+//!   (forward, backward or bi-directional prediction; reordered into decode order). Open GOPs,
+//!   or closed ones whose leading B pictures predict from the I picture alone; a sequence header
+//!   at every I picture.
 //! - Motion search at whole samples (predictors plus diamond search), half-sample refinement,
 //!   ±32 samples (f_code 3); intra / inter / skip decisions per macroblock.
 //! - Intra VLC table one, the non-linear quantiser scale, intra DC precision 8-11 bits, the
@@ -20,8 +22,14 @@
 //! cfg.rate = Rate::Bitrate { bits_per_second: 25_000_000 };
 //! let mut enc = Encoder::new(cfg)?;
 //! # let (y, cb, cr) = (vec![0u8; 1920 * 1080], vec![0u8; 960 * 540], vec![0u8; 960 * 540]);
-//! let packet = enc.encode(&Input { y: &y, cb: &cb, cr: &cr, y_stride: 1920, c_stride: 960 })?;
-//! let mut es = packet.data;
+//! let mut es = Vec::new();
+//! // packets come in decode order; with B pictures, a picture may be held until its anchor
+//! for p in enc.encode(&Input { y: &y, cb: &cb, cr: &cr, y_stride: 1920, c_stride: 960 })? {
+//!     es.extend_from_slice(&p.data);
+//! }
+//! for p in enc.flush()? {
+//!     es.extend_from_slice(&p.data);
+//! }
 //! es.extend_from_slice(&enc.finish());
 //! # Ok::<(), cfa4_mpeg2v::Error>(())
 //! ```
@@ -38,7 +46,7 @@ use std::sync::Arc;
 use crate::headers::{DEFAULT_INTRA, SCAN};
 use crate::mc::Frame;
 use crate::slice::NON_LINEAR_Q;
-use crate::vlc::{MB_FWD, MB_INTRA, MB_PATTERN, MB_QUANT, MBA_ESCAPE};
+use crate::vlc::{MB_BWD, MB_FWD, MB_INTRA, MB_PATTERN, MB_QUANT, MBA_ESCAPE};
 use crate::{ChromaFormat, Decoder, Error, PictureType, Result};
 
 use analyse::{Ctx, F_CODE, Plan, analyse_row};
@@ -79,6 +87,11 @@ pub struct Config {
     pub rate: Rate,
     /// Pictures per GOP (an I picture every `gop` pictures).
     pub gop: u32,
+    /// B pictures between anchor pictures, 0-7 (2 gives the usual IBBP).
+    pub b_frames: u32,
+    /// Closed GOPs: the B pictures before each I picture predict from it alone, so every GOP
+    /// decodes on its own (editing, chapter points). Open GOPs predict them from both sides.
+    pub closed_gop: bool,
     /// Intra DC precision in bits: 8-10 (Main Profile), 8-11 (4:2:2 Profile).
     pub intra_dc_precision: u8,
     pub aspect: AspectRatio,
@@ -93,7 +106,8 @@ pub struct Config {
 }
 
 impl Config {
-    /// 4:2:0, quantiser 6, a GOP of 15, 9-bit intra DC, square samples.
+    /// 4:2:0, quantiser 6, a closed GOP of 15 with I and P pictures only, 9-bit intra DC,
+    /// square samples.
     pub fn new(width: u32, height: u32, fps_num: u32, fps_den: u32) -> Config {
         Config {
             width,
@@ -103,6 +117,8 @@ impl Config {
             fps_den,
             rate: Rate::Quantizer(6),
             gop: 15,
+            b_frames: 0,
+            closed_gop: true,
             intra_dc_precision: 9,
             aspect: AspectRatio::Square,
             colour: None,
@@ -122,14 +138,23 @@ pub struct Input<'a> {
     pub c_stride: usize,
 }
 
-/// One coded picture (with the sequence and GOP headers before I pictures).
+/// One coded picture (with the sequence and GOP headers before I pictures), in decode order.
 #[derive(Clone, Debug)]
 pub struct Packet {
     pub data: Vec<u8>,
     pub keyframe: bool,
     pub picture_type: PictureType,
-    /// Picture number (decode order is display order).
+    /// Picture number in display order (the presentation time in frames).
     pub index: u64,
+    /// Decode time in frames: the decode-order position, one frame earlier with B pictures so
+    /// that every picture's decode time is at most its presentation time (-1 for the first).
+    pub dts: i64,
+}
+
+/// A picture waiting for the anchor after it (B pictures), in display order.
+struct Pending {
+    index: u64,
+    frame: Frame,
 }
 
 /// Level limits (Tables 8-8 to 8-13): profile_and_level_indication, maximum size, luma
@@ -186,10 +211,20 @@ pub struct Encoder {
     /// Chroma macroblock height (8 or 16).
     cmbh: usize,
     nblocks: usize,
+    /// Pictures received (display order) and coded (decode order).
     frames: u64,
-    /// The reconstructed previous picture.
-    reference: Option<Arc<Frame>>,
+    coded: u64,
+    /// The reconstructed anchors: the older and the newer one.
+    refs: [Option<Arc<Frame>>; 2],
+    /// Display numbers of those anchors.
+    anchor_index: [Option<u64>; 2],
+    /// Display number of the current GOP's first picture (temporal_reference 0).
+    gop_first: u64,
+    /// B pictures waiting for their backward anchor.
+    pending: Vec<Pending>,
+    /// The last P picture's vectors (temporal predictors), over `mv_span` pictures.
     prev_mvs: Vec<[i32; 2]>,
+    mv_span: u64,
     dec: Decoder,
     rc: Option<rate::Rc>,
     /// Average quantiser_scale of the last picture (motion search weight).
@@ -227,6 +262,9 @@ impl Encoder {
         if cfg.gop == 0 {
             return Err(Error::Unsupported("a GOP of 0 pictures".into()));
         }
+        if cfg.b_frames > 7 {
+            return Err(Error::Unsupported(format!("{} B pictures between anchors (0..=7)", cfg.b_frames)));
+        }
         let fps = cfg.fps_num as f64 / cfg.fps_den as f64;
         let bitrate = match cfg.rate {
             Rate::Bitrate { bits_per_second } => Some(bits_per_second),
@@ -253,8 +291,13 @@ impl Encoder {
             cmbh,
             nblocks: if cmbh == 8 { 6 } else { 8 },
             frames: 0,
-            reference: None,
+            coded: 0,
+            refs: [None, None],
+            anchor_index: [None, None],
+            gop_first: 0,
+            pending: Vec::new(),
             prev_mvs: vec![[0, 0]; mb_width * mb_height],
+            mv_span: 1,
             dec,
             rc: bitrate.map(|b| rate::Rc::new(b, fps, cfg.adaptive_quantization)),
             last_scale: 8.0,
@@ -274,40 +317,109 @@ impl Encoder {
         self.bit_rate_units as u64 * 400
     }
 
-    /// Encode the next picture.
-    pub fn encode(&mut self, input: &Input) -> Result<Packet> {
-        let cur = self.padded(input)?;
+    /// Encode the next picture (display order). Returns the pictures that can be coded now, in
+    /// decode order: none while B pictures wait for their anchor, then the anchor and those B
+    /// pictures.
+    pub fn encode(&mut self, input: &Input) -> Result<Vec<Packet>> {
+        let frame = self.padded(input)?;
         let index = self.frames;
-        let gop_pos = (index % self.cfg.gop as u64) as u32;
-        let reference = if gop_pos == 0 { None } else { self.reference.clone() };
-        let ptype = if reference.is_some() { PictureType::P } else { PictureType::I };
+        self.frames += 1;
+        let pos = index % u64::from(self.cfg.gop);
+        if pos != 0 && !pos.is_multiple_of(u64::from(self.cfg.b_frames) + 1) {
+            self.pending.push(Pending { index, frame });
+            return Ok(Vec::new());
+        }
+        self.code_anchor(frame, index, pos == 0)
+    }
+
+    /// Code the pictures still waiting at the end of the stream: the last one becomes a P
+    /// picture, the others B pictures before it.
+    pub fn flush(&mut self) -> Result<Vec<Packet>> {
+        let Some(last) = self.pending.pop() else { return Ok(Vec::new()) };
+        self.code_anchor(last.frame, last.index, false)
+    }
+
+    /// The sequence_end_code that closes the stream.
+    pub fn finish(&mut self) -> Vec<u8> {
+        vec![0, 0, 1, crate::headers::SEQUENCE_END]
+    }
+
+    /// Code an anchor (I or P) and then the B pictures waiting before it.
+    fn code_anchor(&mut self, frame: Frame, index: u64, intra: bool) -> Result<Vec<Packet>> {
+        let pending = std::mem::take(&mut self.pending);
+        let mut out = Vec::with_capacity(1 + pending.len());
+        if intra {
+            // the GOP starts with the B pictures displayed before its I picture
+            self.gop_first = pending.first().map_or(index, |p| p.index);
+        }
+        let ptype = if intra { PictureType::I } else { PictureType::P };
+        let past = self.refs[1].clone();
+        out.push(self.code_picture(&frame, index, ptype, if intra { None } else { past.as_ref() }, None)?);
+        // the anchors move on: the B pictures predict from the previous and this one
+        let anchor = self.dec.last_anchor().ok_or_else(|| Error::Invalid("no reconstructed picture".into()))?;
+        self.refs = [self.refs[1].take(), Some(anchor)];
+        self.anchor_index = [self.anchor_index[1], Some(index)];
+        let (fwd, bwd) = (if intra && self.cfg.closed_gop { None } else { self.refs[0].clone() }, self.refs[1].clone());
+        for p in pending {
+            out.push(self.code_picture(&p.frame, p.index, PictureType::B, fwd.as_ref(), bwd.as_ref())?);
+        }
+        Ok(out)
+    }
+
+    /// The temporal predictors of a picture at `index` towards an anchor at `anchor`: the last
+    /// P picture's vectors scaled to the distance.
+    fn scaled_mvs(&self, index: u64, anchor: Option<u64>) -> Vec<[i32; 2]> {
+        let d = anchor.map_or(0, |a| index as i64 - a as i64);
+        let span = self.mv_span.max(1) as i64;
+        self.prev_mvs.iter().map(|v| [(v[0] as i64 * d / span) as i32, (v[1] as i64 * d / span) as i32]).collect()
+    }
+
+    /// Code one picture predicted from `fwd` (the anchor before) and / or `bwd` (the anchor
+    /// after).
+    fn code_picture(&mut self, cur: &Frame, index: u64, ptype: PictureType, fwd: Option<&Arc<Frame>>, bwd: Option<&Arc<Frame>>) -> Result<Packet> {
+        let tref = index.saturating_sub(self.gop_first) as u32;
         let mut w = BitWriter::default();
         if ptype == PictureType::I {
             self.sequence_headers(&mut w);
-            self.gop_header(&mut w, index);
+            self.gop_header(&mut w, self.gop_first, self.cfg.closed_gop || self.gop_first == index);
             if let Some(rc) = self.rc.as_mut() {
-                rc.start_gop(self.cfg.gop);
+                let m = u64::from(self.cfg.b_frames) + 1;
+                let n = u64::from(self.cfg.gop);
+                let np = (n - 1) / m;
+                rc.start_gop(np as u32, (n - 1 - np) as u32);
             }
         }
-        self.picture_header(&mut w, gop_pos, ptype);
+        self.picture_header(&mut w, tref, ptype);
         // analysis
         let lambda = (self.last_scale * 0.6).round().clamp(1.0, 64.0) as u32;
+        let (preds_f, preds_b) = if ptype == PictureType::B {
+            (self.scaled_mvs(index, self.anchor_index[0]), self.scaled_mvs(index, self.anchor_index[1]))
+        } else {
+            (self.prev_mvs.clone(), Vec::new())
+        };
         let ctx = Ctx {
-            cur: &cur,
-            reference: reference.as_deref(),
+            cur,
+            fwd: fwd.map(|f| &**f),
+            bwd: bwd.map(|b| &**b),
             cmbh: self.cmbh,
             nblocks: self.nblocks,
             mb_width: self.mb_width,
-            prev_mvs: &self.prev_mvs,
+            preds_f: &preds_f,
+            preds_b: &preds_b,
             lambda,
         };
         let plans = self.analyse(&ctx);
         let avg_act = plans.iter().flatten().map(|p| p.act as f64).sum::<f64>() / (self.mb_width * self.mb_height).max(1) as f64;
         // slices
         let start = w.bits();
+        let kind = match ptype {
+            PictureType::I => rate::Kind::I,
+            PictureType::B => rate::Kind::B,
+            _ => rate::Kind::P,
+        };
         if let Some(rc) = self.rc.as_mut() {
             let weights: Vec<f64> = plans.iter().flatten().map(|p| p.weight as f64).collect();
-            rc.start_picture(ptype == PictureType::I, &weights, avg_act);
+            rc.start_picture(kind, &weights, avg_act);
         }
         // the first picture of each type: a trial run measures its complexity
         if self.rc.as_ref().is_some_and(|rc| rc.needs_trial()) {
@@ -336,21 +448,26 @@ impl Encoder {
         }
         w.align();
         let data = w.out;
-        // reconstruction: decode the picture
+        // reconstruction: decode the picture (B pictures too: the decoder checks every one)
         let errors = self.dec.errors();
         self.dec.decode(&data, index as i64)?;
         if self.dec.errors() != errors {
             return Err(Error::Invalid(format!("encoder produced an undecodable picture: {}", self.dec.last_error().unwrap_or("?"))));
         }
-        self.reference = Some(self.dec.last_anchor().ok_or_else(|| Error::Invalid("no reconstructed picture".into()))?);
-        self.prev_mvs = plans.iter().flatten().map(|p| if p.intra { [0, 0] } else { p.mv }).collect();
-        self.frames += 1;
-        Ok(Packet { data, keyframe: ptype == PictureType::I, picture_type: ptype, index })
-    }
-
-    /// The sequence_end_code that closes the stream.
-    pub fn finish(&mut self) -> Vec<u8> {
-        vec![0, 0, 1, crate::headers::SEQUENCE_END]
+        match ptype {
+            PictureType::I => {
+                self.prev_mvs.iter_mut().for_each(|v| *v = [0, 0]);
+                self.mv_span = 1;
+            }
+            PictureType::P => {
+                self.prev_mvs = plans.iter().flatten().map(|p| if p.intra { [0, 0] } else { p.mv }).collect();
+                self.mv_span = self.anchor_index[1].map_or(1, |a| index.saturating_sub(a).max(1));
+            }
+            _ => {}
+        }
+        let dts = self.coded as i64 - i64::from(self.cfg.b_frames > 0);
+        self.coded += 1;
+        Ok(Packet { data, keyframe: ptype == PictureType::I, picture_type: ptype, index, dts })
     }
 
     fn analyse(&self, ctx: &Ctx) -> Vec<Vec<Plan>> {
@@ -419,7 +536,7 @@ impl Encoder {
         w.put(self.bit_rate_units >> 18, 12);
         w.put(1, 1); // marker_bit
         w.put(self.vbv_units >> 10, 8);
-        w.put(1, 1); // low_delay
+        w.put((self.cfg.b_frames == 0) as u32, 1); // low_delay
         w.put(0, 2); // frame_rate_extension_n
         w.put(0, 5); // frame_rate_extension_d
         if let Some((p, t, m)) = c.colour {
@@ -436,7 +553,8 @@ impl Encoder {
         }
     }
 
-    fn gop_header(&self, w: &mut BitWriter, index: u64) {
+    /// A GOP header whose time code is that of picture `index`.
+    fn gop_header(&self, w: &mut BitWriter, index: u64, closed: bool) {
         let fps = (self.cfg.fps_num as u64).div_ceil(self.cfg.fps_den.max(1) as u64).max(1);
         let secs = index / fps;
         w.start(crate::headers::GROUP_START);
@@ -446,25 +564,37 @@ impl Encoder {
         w.put(1, 1); // marker_bit
         w.put((secs % 60) as u32, 6);
         w.put((index % fps) as u32, 6);
-        w.put(1, 1); // closed_gop
+        w.put(closed as u32, 1); // closed_gop
         w.put(0, 1); // broken_link
     }
 
     fn picture_header(&self, w: &mut BitWriter, tref: u32, ptype: PictureType) {
         w.start(crate::headers::PICTURE_START);
         w.put(tref & 1023, 10);
-        w.put(if ptype == PictureType::I { 1 } else { 2 }, 3);
+        w.put(
+            match ptype {
+                PictureType::I => 1,
+                PictureType::B => 3,
+                _ => 2,
+            },
+            3,
+        );
         w.put(0xFFFF, 16); // vbv_delay: variable bitrate
-        if ptype == PictureType::P {
+        if ptype != PictureType::I {
             w.put(0, 1); // full_pel_forward_vector
             w.put(7, 3); // forward_f_code (MPEG-2: in the extension)
+        }
+        if ptype == PictureType::B {
+            w.put(0, 1); // full_pel_backward_vector
+            w.put(7, 3); // backward_f_code
         }
         w.put(0, 1); // extra_bit_picture
         // picture coding extension
         w.start(crate::headers::EXTENSION);
         w.put(8, 4);
-        let f = if ptype == PictureType::P { F_CODE } else { 15 };
-        for v in [f, f, 15, 15] {
+        let f = if ptype == PictureType::I { 15 } else { F_CODE };
+        let b = if ptype == PictureType::B { F_CODE } else { 15 };
+        for v in [f, f, b, b] {
             w.put(v, 4);
         }
         w.put((self.cfg.intra_dc_precision - 8) as u32, 2);
@@ -503,7 +633,11 @@ impl Encoder {
         w.put(code as u32, 5);
         w.put(0, 1); // extra_bit_slice
         let mut dc = [dc_reset; 3];
+        // motion vector predictors (forward, backward) and the previous macroblock's prediction
+        // directions (B pictures skip by repeating them)
         let mut pmv = [0i32; 2];
+        let mut pmvb = [0i32; 2];
+        let mut prev_dir: Option<i16> = None;
         let mut skipped = 0usize;
         let mut scale_sum = 0f64;
         let mut levels = [[0i32; 64]; 8];
@@ -519,7 +653,11 @@ impl Encoder {
                 address_increment(w, t, skipped + 1);
                 skipped = 0;
                 let flags = MB_INTRA | if quant { MB_QUANT } else { 0 };
-                w.code(if ptype == PictureType::I { t.mbtype_i[flags as usize] } else { t.mbtype_p[flags as usize] });
+                w.code(match ptype {
+                    PictureType::I => t.mbtype_i[flags as usize],
+                    PictureType::B => t.mbtype_b[flags as usize],
+                    _ => t.mbtype_p[flags as usize],
+                });
                 if quant {
                     w.put(code as u32, 5);
                 }
@@ -533,6 +671,8 @@ impl Encoder {
                     write_coefficients(w, t, lv, true, self.intra_vlc, &mut self.vlc_cost);
                 }
                 pmv = [0, 0];
+                pmvb = [0, 0];
+                prev_dir = None;
                 scale_sum += qs as f64;
                 continue;
             }
@@ -543,6 +683,43 @@ impl Encoder {
                 }
             }
             dc = [dc_reset; 3];
+            if ptype == PictureType::B {
+                let dir = plan.dir;
+                // a skipped B macroblock repeats the previous one's prediction (§7.6.6.4)
+                let same = prev_dir == Some(dir) && (dir & MB_FWD == 0 || plan.mv == pmv) && (dir & MB_BWD == 0 || plan.mvb == pmvb);
+                if cbp == 0 && same && mbx > 0 && mbx + 1 < mbw {
+                    skipped += 1;
+                    scale_sum += NON_LINEAR_Q[code as usize] as f64;
+                    continue;
+                }
+                address_increment(w, t, skipped + 1);
+                skipped = 0;
+                let quant = cbp != 0 && want != code;
+                if cbp != 0 {
+                    code = want;
+                }
+                scale_sum += NON_LINEAR_Q[code as usize] as f64;
+                let flags = dir | if cbp != 0 { MB_PATTERN } else { 0 } | if quant { MB_QUANT } else { 0 };
+                w.code(t.mbtype_b[flags as usize]);
+                if quant {
+                    w.put(code as u32, 5);
+                }
+                if dir & MB_FWD != 0 {
+                    for c in 0..2 {
+                        write_motion(w, t, plan.mv[c] - pmv[c]);
+                    }
+                    pmv = plan.mv;
+                }
+                if dir & MB_BWD != 0 {
+                    for c in 0..2 {
+                        write_motion(w, t, plan.mvb[c] - pmvb[c]);
+                    }
+                    pmvb = plan.mvb;
+                }
+                prev_dir = Some(dir);
+                write_pattern(w, t, cbp, self.nblocks, &levels, &mut self.vlc_cost);
+                continue;
+            }
             let zero = plan.mv == [0, 0];
             if cbp == 0 && zero && mbx > 0 && mbx + 1 < mbw {
                 skipped += 1;
@@ -579,21 +756,27 @@ impl Encoder {
             } else {
                 pmv = [0, 0];
             }
-            if cbp != 0 {
-                if self.nblocks == 8 {
-                    w.code(t.cbp[(cbp >> 2) as usize]);
-                    w.put(cbp & 3, 2);
-                } else {
-                    w.code(t.cbp[cbp as usize]);
-                }
-                for (i, lv) in levels.iter().take(self.nblocks).enumerate() {
-                    if cbp & (1 << (self.nblocks - 1 - i)) != 0 {
-                        write_coefficients(w, t, lv, false, false, &mut self.vlc_cost);
-                    }
-                }
-            }
+            write_pattern(w, t, cbp, self.nblocks, &levels, &mut self.vlc_cost);
         }
         scale_sum
+    }
+}
+
+/// coded_block_pattern and the coded blocks of a non-intra macroblock (nothing when `cbp` is 0).
+fn write_pattern(w: &mut BitWriter, t: &EncTables, cbp: u32, nblocks: usize, levels: &[[i32; 64]; 8], cost: &mut [u64; 2]) {
+    if cbp == 0 {
+        return;
+    }
+    if nblocks == 8 {
+        w.code(t.cbp[(cbp >> 2) as usize]);
+        w.put(cbp & 3, 2);
+    } else {
+        w.code(t.cbp[cbp as usize]);
+    }
+    for (i, lv) in levels.iter().take(nblocks).enumerate() {
+        if cbp & (1 << (nblocks - 1 - i)) != 0 {
+            write_coefficients(w, t, lv, false, false, cost);
+        }
     }
 }
 

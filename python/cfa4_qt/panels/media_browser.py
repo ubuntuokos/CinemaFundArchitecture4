@@ -235,6 +235,7 @@ class MediaBrowserPanel(QWidget):
         self.roots: dict[str, Any] = {}
         self.expanded: set[str] = set()
         self.thumbs: OrderedDict[tuple[str, int, int], QPixmap] = OrderedDict()  # least recently used first
+        self.columns_dialog: EditColumnsDialog | None = None  # Edit Columns…, while it is open
         self._thumbs_busy = 0
         self._wanted: list[tuple[str, float, int]] = []
         self._busy = False
@@ -645,6 +646,69 @@ class MediaBrowserPanel(QWidget):
         if self.engine is not None and getattr(self.engine, "running", False):
             self.engine.execute("mediaBrowser.list", {"path": path, "fileTypes": "all"}, on_reply=got)
 
+    # ----- view state for the control channel (egui's ``MediaBrowserUi``) -----
+    def ui_state(self) -> dict[str, Any]:
+        sizes = self.split.sizes()
+        return {
+            "expanded": sorted(self.expanded),
+            "pathEdit": self.path.text() if self.path.hasFocus() else None,
+            "treeWidth": sizes[0] if sizes else 0,
+            "editColumns": list(self.columns_dialog.columns) if self.columns_dialog is not None else None,
+        }
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch`` ({expanded, pathEdit, treeWidth, editColumns}) into the view state;
+        ValueError names a bad field (nothing is changed then). ``editColumns``: the Edit Columns
+        draft (opening the dialog), null closes it."""
+        known = ("expanded", "pathEdit", "treeWidth", "editColumns")
+        bad = [k for k in patch if k not in known]
+        if bad:
+            raise ValueError(f"unknown field {bad[0]!r} (known: {', '.join(known)})")
+        expanded = patch.get("expanded", sorted(self.expanded))
+        if not isinstance(expanded, list) or not all(isinstance(x, str) for x in expanded):
+            raise ValueError("expanded takes a list of folder paths")
+        edit = patch.get("pathEdit")
+        if edit is not None and not isinstance(edit, str):
+            raise ValueError("pathEdit takes a string or null")
+        width = patch.get("treeWidth")
+        if width is not None and (isinstance(width, bool) or not isinstance(width, (int, float)) or not 0 <= width <= 10_000):
+            raise ValueError("treeWidth takes a width in pixels")
+        cols = patch.get("editColumns")
+        if cols is not None:
+            if not isinstance(cols, list) or not all(isinstance(c, str) for c in cols):
+                raise ValueError("editColumns takes a list of column names or null")
+            unknown = [c for c in cols if c not in self.all_columns()]
+            if unknown:
+                raise ValueError(f"editColumns: no column {unknown[0]!r}")
+        if "expanded" in patch:
+            self.expanded = set(expanded)
+            self._save_expanded()
+            roots, self.roots = self.roots, {"": None}  # rebuild the tree with these folders open
+            self.set_roots(roots)
+        if "pathEdit" in patch:
+            if edit is None:
+                self.path.clearFocus()
+                self.path.setText(str(self.data.get("dir") or ""))
+            else:
+                self.path.setFocus()
+                self.path.setText(edit)
+        if "editColumns" in patch:
+            if cols is None:
+                self.close_columns_dialog()
+            else:
+                draft = list(dict.fromkeys(["Name", *cols]))  # Name stays, first
+                if self.columns_dialog is None:
+                    self.edit_columns(draft)
+                else:
+                    self.columns_dialog.columns = draft
+                    self.columns_dialog._fill()
+        if width is not None:
+            sizes = self.split.sizes()
+            total = sum(sizes)
+            if len(sizes) == 2 and total > 0:
+                w = min(round(width), total)
+                self.split.setSizes([w, total - w])
+
     def _save_expanded(self) -> None:
         if self.settings is not None:
             self.settings.setValue("mediaBrowser/expanded", "\n".join(sorted(self.expanded)))
@@ -851,11 +915,29 @@ class MediaBrowserPanel(QWidget):
         menu.addAction(tr("Edit Columns…")).triggered.connect(self.edit_columns)
         menu.exec(self.list.header().mapToGlobal(pos))
 
-    def edit_columns(self) -> None:
-        dialog = EditColumnsDialog([str(c) for c in self.data.get("columns") or []], [str(c) for c in self.data.get("allColumns") or COLUMN_LABELS], self)
+    def edit_columns(self, columns: list[str] | None = None) -> None:
+        """Open Edit Columns (on the shown columns, or ``columns``) without blocking: the control
+        channel reads and sets its draft as egui's ``editColumns``; OK sets the columns."""
+        self.close_columns_dialog()
+        shown = [str(c) for c in self.data.get("columns") or []] if columns is None else columns
+        dialog = EditColumnsDialog(shown, self.all_columns(), self)
         self.columns_dialog = dialog
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.settings_cmd({"columns": dialog.columns})
+        dialog.accepted.connect(lambda: self.settings_cmd({"columns": dialog.columns}))
+        dialog.finished.connect(lambda _r: self._columns_closed(dialog))
+        dialog.open()
+
+    def all_columns(self) -> list[str]:
+        return [str(c) for c in self.data.get("allColumns") or COLUMN_LABELS]
+
+    def _columns_closed(self, dialog: EditColumnsDialog) -> None:
+        if self.columns_dialog is dialog:
+            self.columns_dialog = None
+        dialog.deleteLater()
+
+    def close_columns_dialog(self) -> None:
+        dialog, self.columns_dialog = self.columns_dialog, None
+        if dialog is not None:
+            dialog.reject()
 
     def _types_menu(self) -> None:
         menu = self.types.menu()

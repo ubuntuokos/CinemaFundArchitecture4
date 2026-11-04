@@ -157,6 +157,13 @@ impl Pipeline {
     /// With at most one active batch and no more tasks than the initial renderer capacity,
     /// every stolen frame can acquire a renderer without waiting for an ancestor to return it.
     /// Keep the immutable capacity even after a failed renderer retires the pool.
+    /// The picture's size inside the output frame (the frame itself when it fills it), clipped to
+    /// the frame: what is left after letterbox or pillarbox bars.
+    pub(crate) fn content_size(&self) -> (u32, u32) {
+        let (cw, ch) = self.geom.content.unwrap_or((self.w as usize, self.h as usize));
+        (u32::try_from(cw).unwrap_or(u32::MAX).min(self.w), u32::try_from(ch).unwrap_or(u32::MAX).min(self.h))
+    }
+
     pub(crate) fn render_batch_limit(&self, requested: i64) -> i64 {
         let requested = requested.max(1);
         self.renderer.as_ref().map_or(requested, |pool| requested.min(i64::try_from(pool.capacity).unwrap_or(i64::MAX)))

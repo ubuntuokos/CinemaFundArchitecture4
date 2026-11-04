@@ -4,6 +4,7 @@
 
 use crate::idct::basis;
 use crate::mc::{Frame, predict};
+use crate::vlc::{MB_BWD, MB_FWD};
 
 /// Motion vectors stay in [-RANGE, RANGE - 1] half samples (f_code 3).
 pub(super) const F_CODE: u32 = 3;
@@ -13,8 +14,11 @@ pub(super) const RANGE: i32 = 16 << (F_CODE - 1);
 #[derive(Clone)]
 pub(super) struct Plan {
     pub intra: bool,
-    /// Forward vector in half samples (P pictures, inter).
+    /// Prediction directions of an inter macroblock: `MB_FWD` and / or `MB_BWD`.
+    pub dir: i16,
+    /// Forward and backward vectors in half samples.
     pub mv: [i32; 2],
+    pub mvb: [i32; 2],
     /// Forward DCT of the samples (intra) or of the prediction error (inter), raster order.
     pub coef: [[i32; 64]; 8],
     /// Spatial activity (1 + the smallest luma block variance), for adaptive quantisation.
@@ -26,13 +30,17 @@ pub(super) struct Plan {
 /// Picture-wide analysis inputs.
 pub(super) struct Ctx<'a> {
     pub cur: &'a Frame,
-    pub reference: Option<&'a Frame>,
+    /// The anchor before (P and B pictures) and after (B pictures) the picture.
+    pub fwd: Option<&'a Frame>,
+    pub bwd: Option<&'a Frame>,
     /// Chroma MB height (8 for 4:2:0, 16 for 4:2:2).
     pub cmbh: usize,
     pub nblocks: usize,
     pub mb_width: usize,
-    /// The previous P picture's vectors (temporal predictors), one per macroblock.
-    pub prev_mvs: &'a [[i32; 2]],
+    /// Temporal vector predictors towards `fwd` and `bwd`, one per macroblock (from the last P
+    /// picture's vectors).
+    pub preds_f: &'a [[i32; 2]],
+    pub preds_b: &'a [[i32; 2]],
     /// Weight of vector bits against SAD.
     pub lambda: u32,
 }
@@ -107,15 +115,22 @@ fn chroma_mv(mv: [i32; 2], cmbh: usize) -> [i32; 2] {
     [mv[0] / 2, if cmbh == 8 { mv[1] / 2 } else { mv[1] }]
 }
 
-/// The decoder's frame prediction of a macroblock (luma 16×16, chroma 8×`cmbh`).
-pub(super) fn predict_mb(r: &Frame, mbx: usize, mby: usize, cmbh: usize, mv: [i32; 2], y: &mut [u8; 256], c: &mut [[u8; 128]; 2]) {
+/// The decoder's frame prediction of a macroblock (luma 16×16, chroma 8×`cmbh`); `avg` averages
+/// it into what the buffers hold (the second direction of a bi-directional prediction).
+#[allow(clippy::too_many_arguments)]
+pub(super) fn predict_mb(r: &Frame, mbx: usize, mby: usize, cmbh: usize, mv: [i32; 2], y: &mut [u8; 256], c: &mut [[u8; 128]; 2], avg: bool) {
     let (x0, y0) = ((mbx * 16) as i32 + (mv[0] >> 1), (mby * 16) as i32 + (mv[1] >> 1));
-    predict(y, 0, 16, r.plane(0, None), x0, y0, mv[0] & 1 != 0, mv[1] & 1 != 0, 16, 16, false);
+    predict(y, 0, 16, r.plane(0, None), x0, y0, mv[0] & 1 != 0, mv[1] & 1 != 0, 16, 16, avg);
     let cmv = chroma_mv(mv, cmbh);
     let (cx, cy) = ((mbx * 8) as i32 + (cmv[0] >> 1), (mby * cmbh) as i32 + (cmv[1] >> 1));
     for (k, plane) in c.iter_mut().enumerate() {
-        predict(plane, 0, 8, r.plane(1 + k, None), cx, cy, cmv[0] & 1 != 0, cmv[1] & 1 != 0, 8, cmbh, false);
+        predict(plane, 0, 8, r.plane(1 + k, None), cx, cy, cmv[0] & 1 != 0, cmv[1] & 1 != 0, 8, cmbh, avg);
     }
+}
+
+/// Luma SAD of a predicted macroblock against the source macroblock.
+fn sad_pred(src: &[u8; 256], pred: &[u8; 256]) -> u32 {
+    src.iter().zip(pred).map(|(&a, &b)| a.abs_diff(b) as u32).sum()
 }
 
 /// SAD of the half-sample prediction `mv` against the source macroblock.
@@ -255,19 +270,56 @@ pub(super) fn analyse_row(ctx: &Ctx, mby: usize) -> Vec<Plan> {
         }
         let mean16 = (sy.iter().map(|&p| p as u32).sum::<u32>() + 128) / 256;
         let intra_cost = sy.iter().map(|&p| (p as u32).abs_diff(mean16)).sum::<u32>();
-        let mut plan = Plan { intra: true, mv: [0, 0], coef: [[0; 64]; 8], act: 1.0 + min_var, weight: 1.0 };
-        if let Some(r) = ctx.reference {
+        let mut plan = Plan { intra: true, dir: 0, mv: [0, 0], mvb: [0, 0], coef: [[0; 64]; 8], act: 1.0 + min_var, weight: 1.0 };
+        let left = out.last().filter(|p| !p.intra);
+        let at = mby * ctx.mb_width + mbx;
+        let candidates = |left: Option<[i32; 2]>, temporal: Option<&[i32; 2]>| {
             let mut preds: Vec<[i32; 2]> = Vec::with_capacity(3);
-            preds.push(out.last().filter(|p| !p.intra).map_or([0, 0], |p| p.mv));
-            if let Some(&t) = ctx.prev_mvs.get(mby * ctx.mb_width + mbx) {
-                preds.push(t);
-            }
+            preds.push(left.unwrap_or([0, 0]));
+            preds.extend(temporal.copied());
             preds.push([0, 0]);
-            let (mv, sad) = search(ctx, r, mbx, mby, &preds);
-            if sad <= intra_cost.saturating_add(512) {
-                plan.intra = false;
+            preds
+        };
+        let f = ctx.fwd.map(|r| search(ctx, r, mbx, mby, &candidates(left.filter(|p| p.dir & MB_FWD != 0).map(|p| p.mv), ctx.preds_f.get(at))));
+        let b = ctx.bwd.map(|r| search(ctx, r, mbx, mby, &candidates(left.filter(|p| p.dir & MB_BWD != 0).map(|p| p.mvb), ctx.preds_b.get(at))));
+        // the cheapest of forward, backward and their average (vector bits weighed by lambda)
+        let bits = |v: [i32; 2]| ctx.lambda * (mv_bits(v[0]) + mv_bits(v[1])) / 2;
+        let mut best: Option<(u32, u32, i16)> = None;
+        let mut consider = |sad: u32, cost: u32, dir: i16| {
+            if best.is_none_or(|b| cost < b.1) {
+                best = Some((sad, cost, dir));
+            }
+        };
+        if let Some((mv, sad)) = f {
+            consider(sad, sad.saturating_add(bits(mv)), MB_FWD);
+        }
+        if let Some((mv, sad)) = b {
+            consider(sad, sad.saturating_add(bits(mv)), MB_BWD);
+        }
+        if let (Some((mvf, _)), Some((mvb, _)), Some(rf), Some(rb)) = (f, b, ctx.fwd, ctx.bwd) {
+            predict_mb(rf, mbx, mby, ctx.cmbh, mvf, &mut py, &mut pc, false);
+            predict_mb(rb, mbx, mby, ctx.cmbh, mvb, &mut py, &mut pc, true);
+            let sad = sad_pred(&sy, &py);
+            consider(sad, sad.saturating_add(bits(mvf)).saturating_add(bits(mvb)), MB_FWD | MB_BWD);
+        }
+        if let Some((sad, _, dir)) = best
+            && sad <= intra_cost.saturating_add(512)
+        {
+            plan.intra = false;
+            plan.dir = dir;
+            if let Some((mv, _)) = f.filter(|_| dir & MB_FWD != 0) {
                 plan.mv = mv;
-                predict_mb(r, mbx, mby, ctx.cmbh, mv, &mut py, &mut pc);
+            }
+            if let Some((mv, _)) = b.filter(|_| dir & MB_BWD != 0) {
+                plan.mvb = mv;
+            }
+            let mut avg = false;
+            if let (Some(r), true) = (ctx.fwd, dir & MB_FWD != 0) {
+                predict_mb(r, mbx, mby, ctx.cmbh, plan.mv, &mut py, &mut pc, false);
+                avg = true;
+            }
+            if let (Some(r), true) = (ctx.bwd, dir & MB_BWD != 0) {
+                predict_mb(r, mbx, mby, ctx.cmbh, plan.mvb, &mut py, &mut pc, avg);
             }
         }
         let mut pb = [0i32; 64];

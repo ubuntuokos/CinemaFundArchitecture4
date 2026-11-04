@@ -14,6 +14,9 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
 qt = ["PySide6>=6.10,<7"]
+# Test oracle only (Apache-2.0): never imported by the product or shipped in packages.
+# docs/plans/OTIO-INTEGRATION-2026-10-24.md, OTIO-1.1.
+otio = ["opentimelineio>=0.18,<0.19"]
 
 [project.scripts]
 cfa4-doctor = "cfa4_devtools.health:main"
