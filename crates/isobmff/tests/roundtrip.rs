@@ -221,3 +221,57 @@ fn all_empty_samples_roundtrip() {
         assert!(f.tracks[0].samples.iter().all(|s| s.size == 0));
     }
 }
+
+#[test]
+fn chapters_roundtrip_in_every_writer() {
+    let chapters = vec![
+        Chapter { start_100ns: 0, title: "Bevezető".into() },
+        Chapter { start_100ns: 12_345_678, title: String::new() },
+        Chapter { start_100ns: u64::MAX, title: "end".into() },
+    ];
+    for brand in [Brand::Mp4, Brand::Mov] {
+        for fast in [false, true] {
+            let mut opts = WriterOptions::new(brand);
+            opts.chapters = chapters.clone();
+            let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
+            w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+            w.write_sample(0, WriteSample { data: &[1, 2, 3], duration: 40, composition_offset: 0, is_sync: true }).unwrap();
+            let out = if fast { w.finish_faststart() } else { w.finish() }.unwrap().into_inner();
+            assert_eq!(open(out.as_slice()).unwrap().metadata.chapters, chapters, "{brand:?} faststart={fast}");
+        }
+    }
+    let mut opts = WriterOptions::new(Brand::Mp4);
+    opts.chapters = chapters.clone();
+    let mut w = FragmentedWriter::new(Vec::new(), opts);
+    w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+    w.write_sample(0, WriteSample { data: &[1, 2, 3], duration: 40, composition_offset: 0, is_sync: true }).unwrap();
+    let out = w.finish().unwrap();
+    assert_eq!(open(out.as_slice()).unwrap().metadata.chapters, chapters);
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(256))]
+
+    /// Any bytes in a `chpl` payload: no panic, and never more chapters than the count byte says.
+    #[test]
+    fn chpl_payload_never_panics(payload in proptest::collection::vec(any::<u8>(), 0..600)) {
+        let mut w = Mp4Writer::new(Cursor::new(Vec::new()), WriterOptions::new(Brand::Mp4)).unwrap();
+        w.add_track(TrackConfig::new(entry(0), 1000)).unwrap();
+        w.write_sample(0, WriteSample { data: &[0], duration: 1, composition_offset: 0, is_sync: true }).unwrap();
+        let mut out = w.finish().unwrap().into_inner();
+        // Append a moov-level udta/chpl with the arbitrary payload to the trailing moov.
+        let chpl_len = 8 + payload.len();
+        let udta_len = 8 + chpl_len;
+        let moov = out.windows(4).rposition(|x| x == b"moov").unwrap() - 4;
+        let moov_len = u32::from_be_bytes(out[moov..moov + 4].try_into().unwrap()) as usize + udta_len;
+        out[moov..moov + 4].copy_from_slice(&(moov_len as u32).to_be_bytes());
+        out.extend_from_slice(&(udta_len as u32).to_be_bytes());
+        out.extend_from_slice(b"udta");
+        out.extend_from_slice(&(chpl_len as u32).to_be_bytes());
+        out.extend_from_slice(b"chpl");
+        out.extend_from_slice(&payload);
+        let f = open(out.as_slice()).unwrap();
+        let count = usize::from(payload.get(if payload.first().copied().unwrap_or(0) >= 1 { 8 } else { 4 }).copied().unwrap_or(0));
+        prop_assert!(f.metadata.chapters.len() <= count);
+    }
+}

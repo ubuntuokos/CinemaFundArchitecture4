@@ -6228,7 +6228,7 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
 
         first = ui()
         assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
-        assert first["export"] is None and first["keyframeSelection"] == []
+        assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
                            "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
@@ -7009,7 +7009,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
         assert e["timecode_overlay"]["enabled"] is False
         # Multiplexer (H.264 / H.265): QuickTime makes a .mov file
-        assert dlg.video_form.isRowVisible(dlg.multiplexer) and dlg.multiplexer.currentData() == "mp4"
+        assert not dlg.mux_section.isHidden() and dlg.multiplexer.currentData() == "mp4"
         pick(dlg.multiplexer, "mov")
         assert dlg.path.text().endswith(".mov"), dlg.path.text()
         assert resolved()["multiplexer"] == "mov"
@@ -7019,7 +7019,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         meta.textEdited.emit("My Film")
         assert resolved()["metadata"]["title"] == "My Film"
         pick(dlg.format, "prores")
-        assert not dlg.video_form.isRowVisible(dlg.multiplexer) and not dlg.metadata.isHidden()
+        assert dlg.mux_section.isHidden() and not dlg.metadata.isHidden()
         assert dlg.path.text().endswith(".mov") and "multiplexer" not in dlg.params().get("settings", {})
         # a sound-only format: no captions, only loudness
         pick(dlg.format, "wav")
@@ -7170,6 +7170,23 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
         pick(dlg.format, "h264")
         assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
         assert shown(rows.profile) and shown(rows.level) and shown(rows.fps) and not shown(rows.bits)
+
+        def label(form: QtWidgets.QFormLayout, w) -> str | None:
+            lab = form.labelForField(w)
+            return lab.text() if isinstance(lab, QtWidgets.QLabel) else None
+
+        # the rows and buttons carry egui's names (and so its translations)
+        assert [label(dlg.video_form, w) for w in (dlg.bitrate_mode, dlg.bitrate, dlg.gop)] == [
+            "Bitrate Encoding", "Target Bitrate", "Key Frame Distance"]
+        assert [label(rows.audio_form, w) for w in (dlg.audio_codec, dlg.audio_bitrate)] == ["Audio Format", "Audio Bitrate"]
+        assert (dlg.audio.text(), dlg.queue_button.text()) == ("Export Audio", "Send to Queue")
+        form = dlg.video_form
+        field = QtWidgets.QFormLayout.ItemRole.FieldRole
+        size_row = next(form.itemAt(i, field).layout() for i in range(form.rowCount())
+                        if form.itemAt(i, field) is not None and form.itemAt(i, field).layout() is not None
+                        and form.itemAt(i, field).layout().indexOf(dlg.width_spin) >= 0)
+        size_label = label(form, size_row)
+        assert size_label == "Frame Size"
         s0 = resolved()
         assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
         assert "settings" not in dlg.params(), "nothing changed yet"
