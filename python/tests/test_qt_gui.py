@@ -2449,6 +2449,13 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg.dcp_iab_source.setText(str(bad))
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a Dolby Atmos TrueHD source (#347) is described by its length and objects, not frames
+        dlg._iab_probed = "atmos.thd"
+        dlg._on_iab_info("atmos.thd", {"container": "truehd", "seconds": 61.04, "sampleRate": 48000, "maxBedChannels": 1, "maxObjects": 15, "profileNotes": []})
+        info = dlg.dcp_iab_info.text()
+        assert "Dolby Atmos TrueHD" in info and "61.0" in info and "15" in info, info
+        assert "Dolby Atmos" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("file"))
+        assert ".mkv" in dlg.dcp_iab_source.placeholderText()
         # a saved preset brings its immersive audio back instead of resetting it to Off
         dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
         dlg.preset.addItem("IAB test", "IAB test")
@@ -3332,6 +3339,45 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_interpret_footage_turns_auro_decoding_off(app):
+    """Interpret Footage shows the Auro-3D switch for a carrier only (#323); OK sends it only
+    when it changed."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    assert box is not None and box.isHidden()
+    for answer in (None, {"carrier": False, "decoding": True}, "x"):
+        d._auro_info(answer)
+        assert box.isHidden()
+    d._auro_info({"carrier": True, "decoding": True})
+    assert not box.isHidden() and box.isChecked()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._auro_info({"carrier": True, "decoding": True})
+    d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro").setChecked(False)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": False, "items": [7]})
+    # carriers with mixed settings: partly checked and left alone, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    assert box.checkState() == QtCore.Qt.CheckState.PartiallyChecked
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    box.click()
+    assert box.checkState() == QtCore.Qt.CheckState.Checked and not box.isTristate()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": True, "items": [7, 8]})
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -6182,7 +6228,7 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
 
         first = ui()
         assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
-        assert first["export"] is None and first["keyframeSelection"] == []
+        assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
                            "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
@@ -6198,7 +6244,10 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         assert json.loads(settings.value("panels/scopes"))["waveform_type"] == "luma"
         refused({"panels": {"scopes": {"waveformType": "sideways"}}}, "not one the panel takes")
         refused({"panels": {"timecode": {"rows": [{"source": "moon"}]}}}, "not one the panel takes")
-        refused({"panels": {"events": {"level": "error"}}}, "no 'events'")
+        refused({"panels": {"events": {"level": "loud"}}}, "info, warning or error")
+        refused({"panels": {"events": {"seen": 3}}}, "no field 'seen'")
+        u = ok({"panels": {"events": {"level": "warning"}}})
+        assert u["panels"]["events"] == {"level": "warning", "selected": None} and win.events.filter.currentData() == "warning"
         refused({"panels": {"progress": {"showFinished": "yes"}}}, "true or false")
         refused({"panels": {"inspectorSource": "elsewhere"}}, "project or timeline")
         # Project panel: bins in tabs and windows, the active tab, the selected bin
@@ -6960,7 +7009,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
         assert e["timecode_overlay"]["enabled"] is False
         # Multiplexer (H.264 / H.265): QuickTime makes a .mov file
-        assert dlg.video_form.isRowVisible(dlg.multiplexer) and dlg.multiplexer.currentData() == "mp4"
+        assert not dlg.mux_section.isHidden() and dlg.multiplexer.currentData() == "mp4"
         pick(dlg.multiplexer, "mov")
         assert dlg.path.text().endswith(".mov"), dlg.path.text()
         assert resolved()["multiplexer"] == "mov"
@@ -6970,7 +7019,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         meta.textEdited.emit("My Film")
         assert resolved()["metadata"]["title"] == "My Film"
         pick(dlg.format, "prores")
-        assert not dlg.video_form.isRowVisible(dlg.multiplexer) and not dlg.metadata.isHidden()
+        assert dlg.mux_section.isHidden() and not dlg.metadata.isHidden()
         assert dlg.path.text().endswith(".mov") and "multiplexer" not in dlg.params().get("settings", {})
         # a sound-only format: no captions, only loudness
         pick(dlg.format, "wav")
@@ -7003,6 +7052,38 @@ def test_export_preview_scaling_geometry():
     assert round(filled.height()) == 400 and filled.width() > pic.width()
     assert picture_rect(pic, 1920, 1080, "stretchToFill") == pic
     assert picture_rect(pic, 0, 0, "scaleToFit") == pic, "no source size: the whole frame"
+
+
+def test_export_summary_box_in_hungarian(app):
+    """The Summary box shows the engine's English Summary translated, with decimal commas."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.export_preview import PreviewColumn
+
+    TR.set_language("hu")
+    try:
+        col = PreviewColumn()
+        answer = {
+            "output": {"width": 720, "height": 576},
+            "source": "Sequence, 720x576",
+            "range": {"seconds": 12.5},
+            "summary": {
+                "format": "MPEG-2 (Program Stream)",
+                "video": "720x576 (1.07), 25 fps, Upper First, MPEG-2 Main Profile 4:2:0, average 6.00 Mbps, keyframe every 12 frames, no B pictures",
+                "audio": "Uncompressed 16-bit PCM, 48000 Hz, Stereo",
+                "estimated_size": "1.2 GB",
+            },
+        }
+        col.show_resolved(answer, "/tmp/out.mpg", "Teljes szekvencia", False)
+        assert col.lines["format"].text() == "MPEG-2 (programfolyam)"
+        assert col.lines["video"].text() == (
+            "720×576 (1,07), 25 fps, Felső mező először, MPEG-2 Main profil, 4:2:0, átlag 6,00 Mbps, "
+            "kulcskocka 12 képkockánként, B-képek nélkül"
+        )
+        assert col.lines["audio"].text() == "tömörítetlen 16 bites PCM, 48000 Hz, Sztereó"
+        assert col.lines["range"].text() == "Teljes szekvencia (12,50 mp)"
+        assert col.estimate.text() == "Becsült fájlméret: 1,2 GB"
+    finally:
+        TR.set_language("en")
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -7089,6 +7170,23 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
         pick(dlg.format, "h264")
         assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
         assert shown(rows.profile) and shown(rows.level) and shown(rows.fps) and not shown(rows.bits)
+
+        def label(form: QtWidgets.QFormLayout, w) -> str | None:
+            lab = form.labelForField(w)
+            return lab.text() if isinstance(lab, QtWidgets.QLabel) else None
+
+        # the rows and buttons carry egui's names (and so its translations)
+        assert [label(dlg.video_form, w) for w in (dlg.bitrate_mode, dlg.bitrate, dlg.gop)] == [
+            "Bitrate Encoding", "Target Bitrate", "Key Frame Distance"]
+        assert [label(rows.audio_form, w) for w in (dlg.audio_codec, dlg.audio_bitrate)] == ["Audio Format", "Audio Bitrate"]
+        assert (dlg.audio.text(), dlg.queue_button.text()) == ("Export Audio", "Send to Queue")
+        form = dlg.video_form
+        field = QtWidgets.QFormLayout.ItemRole.FieldRole
+        size_row = next(form.itemAt(i, field).layout() for i in range(form.rowCount())
+                        if form.itemAt(i, field) is not None and form.itemAt(i, field).layout() is not None
+                        and form.itemAt(i, field).layout().indexOf(dlg.width_spin) >= 0)
+        size_label = label(form, size_row)
+        assert size_label == "Frame Size"
         s0 = resolved()
         assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
         assert "settings" not in dlg.params(), "nothing changed yet"

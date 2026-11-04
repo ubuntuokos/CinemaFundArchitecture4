@@ -172,6 +172,11 @@ pub trait MediaSource: Send + Sync {
     fn audio_stream(&self, stream: usize, start: i64, frames: usize, sample_rate: u32) -> Result<AudioBuffer> {
         if stream == 0 { self.audio(start, frames, sample_rate) } else { Err(MediaError::NoStream("audio")) }
     }
+    /// The source as its file stores it, when this one plays a layout decoded from it: an
+    /// Auro-3D carrier's own channels (#323), for "play as carrier". `None` for other sources.
+    fn carrier(&self) -> Option<SharedSource> {
+        None
+    }
 }
 
 pub type SharedSource = Arc<dyn MediaSource>;

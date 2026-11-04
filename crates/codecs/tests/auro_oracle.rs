@@ -2,9 +2,7 @@
 //! opens with the layout the side channel restores, and every sample of it equals what
 //! `cfa4_auro` restores from ffmpeg's bit-exact decode of the carrier, also on random access.
 //!
-//! The PCM channel tests are Matroska files with `A_MS/ACM` audio, which CFA4's Matroska reader
-//! does not take yet (#320); ffmpeg copies their PCM into a WAV first, so they test the WAV
-//! path. A raw `.dts` file does not open either (#321); the Amplitude16 track is tested in
+//! The PCM channel tests are Matroska files with `A_MS/ACM` audio (#320). A raw `.dts` file does not open either (#321); the Amplitude16 track is tested in
 //! its Matroska file.
 //!
 //! The carriers are not in the repository. Point `CFA4_AURO_DIR` at the project's
@@ -49,16 +47,6 @@ fn samples_dir() -> Option<PathBuf> {
     Some(dir)
 }
 
-/// The file to open for `path`: a WAV copy of the PCM of an `A_MS/ACM` Matroska file.
-fn openable(ff: &Path, path: &Path) -> PathBuf {
-    let name = path.file_name().unwrap().to_string_lossy().to_string();
-    if !name.contains("Channel Test - Noise") {
-        return path.to_path_buf();
-    }
-    let wav = format!("auro_{}.wav", name.chars().filter(char::is_ascii_alphanumeric).collect::<String>());
-    common::fixture(ff, &wav, &["-i", path.to_str().unwrap(), "-map", "0:a:0", "-c:a", "copy", "-f", "wav"]).unwrap()
-}
-
 fn open(path: &Path) -> SharedSource {
     let name = path.file_name().unwrap().to_string_lossy().to_string();
     let reader = Arc::new(cfa4_media::reader::FileReader::open(path).unwrap());
@@ -90,7 +78,6 @@ fn auro_carriers_open_as_their_restored_layout() {
             eprintln!("skipped: {} is missing", path.display());
             continue;
         }
-        let path = openable(&ff, &path);
         let src = open(&path);
         let a = src.info().audio().cloned().unwrap();
         assert_eq!(a.channels, channels, "{file}: {}", a.codec);
@@ -130,14 +117,13 @@ fn auro_carriers_open_as_their_restored_layout() {
 #[test]
 fn channel_test_noise_reaches_each_loudspeaker_alone() {
     let Some(dir) = samples_dir() else { return };
-    let ff = cfa4_testkit::require_ffmpeg!();
     for n in ["9.1", "11.1", "13.1"] {
         let path = dir.join(format!("yandex/[Auro-3D] Channel Test - Noise {{FHD SDR & Auro-3D PCM {n}}}.mkv"));
         if !path.is_file() {
             eprintln!("skipped: {} is missing", path.display());
             continue;
         }
-        let src = open(&openable(&ff, &path));
+        let src = open(&path);
         let a = src.info().audio().cloned().unwrap();
         let secs = (src.info().duration.seconds() as usize).min(75);
         let rate = a.sample_rate as usize;
@@ -154,5 +140,29 @@ fn channel_test_noise_reaches_each_loudspeaker_alone() {
         }
         assert!(alone.iter().all(|&x| x), "Auro {n}: channels heard alone: {alone:?}");
         println!("Auro {n}: each of the {} channels heard alone", alone.len());
+    }
+}
+
+/// Auro-CX (`a3ds`) is a codec of its own with no public specification (#322): its MP4s open,
+/// name the track and refuse to decode it with the reason, not "unknown" or silence.
+#[test]
+fn auro_cx_tracks_are_named_and_refused() {
+    let Some(dir) = samples_dir() else { return };
+    let files = [
+        "yandex/YamamotoTsuyoshiTrio_LastTangoInParis_excerpt_Auro13_1_48k_lossless (Auro CX).mp4",
+        "yandex/YamamotoTsuyoshiTrio_LastTangoInParis_excerpt_Auro13_1_48k_nearlossless_1664kbps (Auro CX).mp4",
+    ];
+    for file in files {
+        let path = dir.join(file);
+        if !path.is_file() {
+            eprintln!("skipped: {} is missing", path.display());
+            continue;
+        }
+        let src = open(&path);
+        let a = src.info().audio().cloned().unwrap();
+        assert_eq!((a.codec.as_str(), a.channels), ("Auro-CX (unsupported)", 14), "{file}");
+        let err = src.audio(0, 4800, a.sample_rate).unwrap_err().to_string();
+        assert!(err.contains("Auro-CX"), "{file}: {err}");
+        println!("{file}: {} -> {err}", a.codec);
     }
 }

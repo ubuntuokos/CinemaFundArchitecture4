@@ -123,6 +123,10 @@ fn run_ffmpeg(ff: &Path, args: &[&str], out: &Path) -> bool {
     }
 }
 
+/// Chapters of the `chapters.mp4` fixture (ffmpeg writes them as `chpl` and a QuickTime text track).
+pub const CHAPTERS_FFMETADATA: &str =
+    ";FFMETADATA1\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=0\nEND=1500\ntitle=Első\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=1500\nEND=2000\ntitle=Two\n";
+
 /// Path to a fixture, generating it with ffmpeg if needed. `None` if ffmpeg is missing or the
 /// encoder isn't available.
 pub fn fixture(name: &str) -> Option<PathBuf> {
@@ -136,6 +140,14 @@ pub fn fixture(name: &str) -> Option<PathBuf> {
         let s = src.to_str()?.to_string();
         return run_ffmpeg(&ff, &["-ss", "0.5", "-i", &s, "-c", "copy"], &path).then_some(path);
     }
+    if name == "chapters.mp4" {
+        let meta = fixture_dir().join("chapters.ffmetadata");
+        std::fs::write(&meta, CHAPTERS_FFMETADATA).ok()?;
+        let m = meta.to_str()?.to_string();
+        let args = ["-f", "lavfi", "-i", "testsrc2=size=160x120:rate=25", "-i", &m, "-map_metadata", "1", "-map_chapters", "1"];
+        let args = [&args[..], &["-t", "2", "-c:v", "libx264", "-pix_fmt", "yuv420p"]].concat();
+        return run_ffmpeg(&ff, &args, &path).then_some(path);
+    }
     let (_, args) = fixture_specs().into_iter().find(|(n, _)| *n == name)?;
     run_ffmpeg(&ff, &args, &path).then_some(path)
 }
@@ -143,6 +155,7 @@ pub fn fixture(name: &str) -> Option<PathBuf> {
 pub fn all_fixture_names() -> Vec<&'static str> {
     let mut v: Vec<&str> = fixture_specs().iter().map(|(n, _)| *n).collect();
     v.push("editlist_cut.mp4");
+    v.push("chapters.mp4");
     v
 }
 
