@@ -398,8 +398,11 @@ class FrameView(QWidget):
         """An input method's finished text (Chinese, Japanese, Korean) goes into the text being
         edited on the monitor."""
         if self.overlay is not None and self.overlay.graphics.edit is not None:
-            if e.commitString():
-                self.overlay.graphics.type_text(e.commitString())
+            g = self.overlay.graphics
+            if e.commitString() and g.take_commit(e.commitString()):
+                g.type_text(e.commitString())
+            # the marked text still being composed: typed if the edit ends first (upstream #2445)
+            g.preedit = e.preeditString()
             e.accept()
             return
         super().inputMethodEvent(e)
