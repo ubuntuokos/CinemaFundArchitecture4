@@ -573,7 +573,7 @@ impl Cfa4Mcp {
         if let Err(e) = b.call("ui.screenshot", json!({"path": path.to_string_lossy(), "panel": panel})).await {
             return Ok(fail(e));
         }
-        let bytes = match std::fs::read(&path) {
+        let bytes = match tokio::fs::read(&path).await {
             Ok(b) => b,
             Err(e) => return Ok(fail(format!("screenshot: {e}"))),
         };
