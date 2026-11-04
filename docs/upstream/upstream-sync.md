@@ -280,7 +280,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3011 | meters: drop to silence right after Stop | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3039 | Timeline: the Razor tool cuts captions | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3042 | Text panel: the Captions list follows the playhead | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
-| 0.13.0 | #3062 | Say why H.265 and AV1 are unavailable without a hardware encoder | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.13.0 | #3062 | Say why H.265 and AV1 are unavailable without a hardware encoder | D | kihagy: a CFA4-nek beépített H.265- és AV1-kódolója van (`Format::has_builtin_encoder`), a formátum sosem elérhetetlen | kézi port | – | – | lezárva |
 | 0.13.0 | #3243 | Follow-ups to #3240: alpha upload table, duplicate markers off the UI thread, cut drag over the clips | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3012 | i18n: missing translations never fail; xtask ci prints the missing list | E | átvesz | kézi port | U0-E | – | tervezett |
 | 0.13.0 | #2435 | Build: use craft-media for bitstream, isobmff and matroska | F | kihagy: külső könyvtárra átállás (D6: a javításait figyeljük) | kézi port | – | – | lezárva |
