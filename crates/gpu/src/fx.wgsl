@@ -54,6 +54,7 @@ const OP_SWAP_EYES: u32 = 32u;
 const OP_STEREO_TO_2D: u32 = 33u;
 const OP_FILM_GRAIN: u32 = 34u;
 const OP_STEREO_PARALLAX: u32 = 35u;
+const OP_SIX_POINT_PIN: u32 = 36u;
 
 fn size() -> vec2<i32> {
     return vec2<i32>(i32(u.i0.y), i32(u.i0.z));
@@ -345,6 +346,66 @@ fn grain_noise(p: vec2<i32>, inv_cell: f32, seed: u32, layer: u32) -> f32 {
 }
 
 // ---- per-pixel colour effects on straight colour (`Image::map_rgb`)
+
+// ---- Six-Point Pin (`gpufx::six_point_source`)
+
+const SIX_POINT_STEPS: i32 = 8;
+
+// A quadratic Bézier edge (start a, control c, end b) at t: xy = point, zw = derivative.
+fn bezier2(a: vec2<f32>, c: vec2<f32>, b: vec2<f32>, t: f32) -> vec4<f32> {
+    let s = 1.0 - t;
+    let m = 2.0 * t * (1.0 - t);
+    let d = t * t;
+    let p = vec2(a.x * s * s + c.x * m + b.x * d, a.y * s * s + c.y * m + b.y * d);
+    let dp = vec2(2.0 * s * (c.x - a.x) + 2.0 * t * (b.x - c.x), 2.0 * s * (c.y - a.y) + 2.0 * t * (b.y - c.y));
+    return vec4(p, dp);
+}
+
+// The residual P(u, v) - q and the Jacobian's columns d/du and d/dv.
+struct SixRes {
+    r: vec2<f32>,
+    ju: vec2<f32>,
+    jv: vec2<f32>,
+};
+
+fn six_residual(uv: vec2<f32>, q: vec2<f32>) -> SixRes {
+    let t = bezier2(u.p0.xy, u.p0.zw, u.p1.xy, uv.x);
+    let b = bezier2(u.p1.zw, u.p2.xy, u.p2.zw, uv.x);
+    var o: SixRes;
+    o.r = vec2(t.x + uv.y * (b.x - t.x) - q.x, t.y + uv.y * (b.y - t.y) - q.y);
+    o.ju = vec2(t.z + uv.y * (b.z - t.z), t.w + uv.y * (b.w - t.w));
+    o.jv = vec2(b.x - t.x, b.y - t.y);
+    return o;
+}
+
+// The source position in 0..1 of the frame, or (-9, -9) outside the warped frame.
+fn six_point_source(q: vec2<f32>) -> vec2<f32> {
+    // inverse homography, row-major: p3.xyzw, p4.xyzw, p5.x
+    let den = u.p4.z * q.x + u.p4.w * q.y + u.p5.x;
+    var uv = vec2(0.5, 0.5);
+    if abs(den) > 1e-12 {
+        let su = (u.p3.x * q.x + u.p3.y * q.y + u.p3.z) / den;
+        let sv = (u.p3.w * q.x + u.p4.x * q.y + u.p4.y) / den;
+        if abs(su) <= 3.0e38 && abs(sv) <= 3.0e38 {
+            uv = vec2(clamp(su, -1.0, 2.0), clamp(sv, -1.0, 2.0));
+        }
+    }
+    for (var i = 0; i < SIX_POINT_STEPS; i++) {
+        let k = six_residual(uv, q);
+        let det = k.ju.x * k.jv.y - k.jv.x * k.ju.y;
+        if !(abs(det) > 1e-12 && abs(det) <= 3.0e38) {
+            break;
+        }
+        uv.x = clamp(uv.x - (k.r.x * k.jv.y - k.jv.x * k.r.y) / det, -1.0, 2.0);
+        uv.y = clamp(uv.y - (k.ju.x * k.r.y - k.r.x * k.ju.y) / det, -1.0, 2.0);
+    }
+    let k = six_residual(uv, q);
+    let inside = uv.x >= -1e-3 && uv.x <= 1.0 + 1e-3 && uv.y >= -1e-3 && uv.y <= 1.0 + 1e-3;
+    if inside && k.r.x * k.r.x + k.r.y * k.r.y <= 0.01 {
+        return uv;
+    }
+    return vec2(-9.0, -9.0);
+}
 
 fn color_op(op: u32, c: vec3<f32>) -> vec3<f32> {
     switch op {
@@ -729,6 +790,13 @@ fn pixel(op: u32, p: vec2<i32>) -> vec4<f32> {
             if lo >= 0.0 && lo < f32(vw) { a = ld(vec2(x0 + i32(lo), p.y)); }
             if lo + 1.0 >= 0.0 && lo + 1.0 < f32(vw) { b = ld(vec2(x0 + i32(lo + 1.0), p.y)); }
             return a + (b - a) * t;
+        }
+        case OP_SIX_POINT_PIN: {
+            let uv = six_point_source(pc);
+            if uv.x < -1.0 {
+                return vec4(0.0);
+            }
+            return sample_bilinear(uv.x * f32(s.x), uv.y * f32(s.y));
         }
         case OP_MIRROR: {
             let c = u.p0.xy; let nrm = u.p0.zw;

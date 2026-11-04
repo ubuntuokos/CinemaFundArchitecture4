@@ -229,6 +229,33 @@ fn remove_unused_and_consolidate_duplicates() {
 }
 
 #[test]
+fn consolidate_keeps_counting_leaders_with_distinct_source_rates() {
+    let mut s = Session::default();
+    s.execute("file.newProject", json!({"name": "Leader rates"})).unwrap();
+    s.execute("file.newSequence", json!({"name": "24 fps", "fps": 24, "video": 1, "audio": 1})).unwrap();
+    let leader_24 = ItemId(s.execute("file.newCountingLeader", json!({"seconds": 3})).unwrap()["item"].as_u64().unwrap());
+    s.execute("file.newSequence", json!({"name": "60 fps", "fps": 60, "video": 1, "audio": 1})).unwrap();
+    let leader_60 = ItemId(s.execute("file.newCountingLeader", json!({"seconds": 3})).unwrap()["item"].as_u64().unwrap());
+    assert_ne!(leader_24, leader_60);
+    s.execute("timeline.place", json!({"item": leader_60.0, "track": "V1", "audioTrack": "A1", "seconds": 0.0})).unwrap();
+    let before = s.media.full_res_source(&s.project, leader_60, &*s.services).unwrap().audio(0, 2_010, 48_000).unwrap();
+    assert!(before.channels.iter().all(|channel| channel[800..].iter().all(|sample| *sample == 0.0)));
+
+    let result = s.execute("edit.consolidateDuplicates", json!({})).unwrap();
+    assert_eq!(result["removed"], json!([]), "leaders with different source rates are not duplicates");
+    assert!(s.project.item(leader_60).is_some());
+    let sequence = s.active_sequence().unwrap();
+    assert_eq!(sequence.audio_tracks[0].items[0].item, leader_60);
+    let after = s.media.full_res_source(&s.project, leader_60, &*s.services).unwrap().audio(0, 2_010, 48_000).unwrap();
+    assert_eq!(after.channels, before.channels);
+
+    s.execute("project.select", json!({"items": [leader_60.0]})).unwrap();
+    let duplicate = ItemId(s.execute("edit.duplicate", json!({})).unwrap()["items"][0].as_u64().unwrap());
+    let result = s.execute("edit.consolidateDuplicates", json!({})).unwrap();
+    assert_eq!(result["removed"], json!([duplicate.0]), "equal-rate copies should still consolidate");
+}
+
+#[test]
 fn new_sequence_from_clip_bin_from_selection_and_offline_file() {
     let mut s = demo();
     assert!(s.execute("file.newSequenceFromClip", json!({})).is_err(), "nothing selected in the Project panel");
@@ -377,6 +404,24 @@ fn modify_audio_channels_and_breakout_to_mono() {
         p
     });
     assert!(s.execute("clip.breakoutToMono", json!({})).is_err(), "no audio");
+}
+
+/// #1845: with no project item selected, a `channels`-less call (a stray `format` included)
+/// used to fall into the timeline-clip branch anyway and reset `source_channels` to `[]` via
+/// `unwrap_or_default()`, instead of being rejected. The map set by the previous `channels` call
+/// must survive a later `format`-only call under the same (empty) project selection.
+#[test]
+fn audio_channels_rejects_a_channel_less_call_with_no_item_selected() {
+    let mut s = demo();
+    s.state.project_selection.clear();
+    let a1 = s.active_sequence().unwrap().audio_tracks[0].items[0].id;
+    s.state.selection = vec![a1];
+    s.execute("clip.audioChannels", json!({"channels": [1]})).unwrap();
+    assert_eq!(clip(&s, a1.0).source_channels, vec![1]);
+    assert!(s.execute("clip.audioChannels", json!({"format": null})).is_err(), "nothing to do: no item selected and no `channels`");
+    assert_eq!(clip(&s, a1.0).source_channels, vec![1], "the existing map must survive a rejected call");
+    assert!(s.execute("clip.audioChannels", json!({})).is_err(), "same with no params at all");
+    assert_eq!(clip(&s, a1.0).source_channels, vec![1]);
 }
 
 #[test]

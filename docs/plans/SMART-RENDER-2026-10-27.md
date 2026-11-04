@@ -2,7 +2,19 @@
 
 **Dátum:** 2026-10-27  
 **Státusz:** a terv tulajdonos által jóváhagyva (2026-10-27); a natív CFA4-integráció irányát a korábbi tulajdonosi döntés rögzíti  
-**Kapcsolódó terv:** [GOP-alapú Smart Cut](GOP-SMART-CUT-2026-10-27.md)
+**Kapcsolódó tervek:** [GOP-alapú Smart Cut](GOP-SMART-CUT-2026-10-27.md), [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md) (a végleges, egyesített terv), `CFA4-SMART-CUT-RENDER-R1.md` munkacsomag-terv (ág: `feature/native-smart-cut-render`)
+
+## Igazítás a CFA4-SCE-001 v1.5 döntéseihez (2026-10-27)
+
+A tulajdonos 2026-10-27-én véglegesítette a [CFA4-SCE-001 v1.5](CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md) tervet. Ahol ez a dokumentum eltér tőle, a v1.5 döntései érvényesek:
+
+- **Terminológia.** A „Smart Render” mindig az idővonal-hibridet jelenti, ahogy ez a dokumentum írja. A Boundary-required szakasz neve „határ-újrakódolás”; az R1 terv `BoundaryReencode` módja ugyanezt jelenti.
+- **Egy tervtípus, egy végrehajtó.** A `SmartRenderPlan` logikai név: a megvalósításban a közös `ExportExecutionPlan`, amelynek szegmensmódjai `StrictCopy`, `CompatibleCopy`, `BoundaryReencode` és `Render`. A GOP Smart Cut ennek egyklipes esete, ugyanazzal a végrehajtóval. A tervezés a `cfa4-smart-edit` crate-ben, a végrehajtás a `cfa4-export`-ban (`smart_render/`) készül.
+- **Auto mód.** Az Auto csak javasol (Strict Copy → Compatible Copy → Smart Render → Full Render). Újrakódolást tartalmazó javaslat csak a felhasználó kifejezett megerősítése után fut, és a jelentés szegmensenként mutatja a másolt és az újrakódolt részt. Így a „nincs silent fallback” elv megmarad; a 4. fázis „nincs auto copy” mondatát ez a szabály váltja ki.
+- **Parancsok:** egységes `export.analyze`, `export.plan`, `export.start`, `export.cancel`, `export.validate` névtér; a mód és a hatókör a terv paramétere. Az `export.smartRender.*` parancscsalád nem készül.
+- **Határ-újrakódolás csak H.264-re** az első kiadásban. MPEG-2, HEVC (ma csak NVENC) és AV1 forrásnál a határ kulcskockára kerekít vagy az érintett tartomány teljes újrakódolásra kerül, amíg nincs gyártófüggetlen kódoló.
+- **Referencia-összevetés.** A frame count, frame time és sample count pontosan egyezzen a teljes render referenciával; a képtartalmat dokumentált kódolási tűréssel kell mérni: képtranszformáció nélküli határ-újrakódolásnál a forrás dekódolt képéhez, Render szegmensnél a megfelelő renderelt idővonal-képkockához (a másolt szakasz bájtra nem egyezhet az újrakódolt referenciával).
+- **Validáció és írás:** rétegzett validáció (`BITSTREAM_EQUIVALENT` elég a PASS-hoz), és minden kimenet a `cfa4-export` közös atomikus író segédjén megy át.
 
 ## Cél
 
@@ -54,7 +66,7 @@ A felhasználó a copy-policyt külön választja. Nincs silent fallback és nin
 
 ### 1. fázis – Szakaszbesorolás és előzetes becslés
 
-**Fájl:** új `crates/export/src/smart_render.rs`; integráció a `settings.rs`/export-entry pontba.
+**Fájl:** a `cfa4-smart-edit` planner moduljai (v1.5; korábban új `crates/export/src/smart_render.rs`); integráció a `settings.rs`/export-entry pontba.
 
 - Definiáld a szerializálható `SmartRenderOptions`, `CopyPolicy`, `RenderSegment`, `SegmentReason`, `SmartRenderPlan`, `SmartRenderReport` adatmodelleket.
 - Planner bemenete immutable `Project`/sequence snapshot és `ExportSettings`; kimenete a kimeneti frame/time intervallumok rendezett listája: Copy, Boundary, Render.
@@ -79,7 +91,7 @@ A felhasználó a copy-policyt külön választja. Nincs silent fallback és nin
 
 ### 3. fázis – Egy muxerbe író vegyes végrehajtó
 
-**Fájl:** új `crates/export/src/smart_render_job.rs`; integráció a `Exporter`/job lifecycle-ba.
+**Fájl:** `crates/export/src/smart_render/` (v1.5: közös végrehajtó; korábban új `crates/export/src/smart_render_job.rs`); integráció a `Exporter`/job lifecycle-ba.
 
 - A `SmartRenderPlan` szegmenseit időrendben fogyaszd; Copy szegmens packet/sample-okat ír, Boundary/Render szegmens a meglévő `Pipeline`-on, renderer poolon és encoder-regiszteren megy át.
 - Az encoder és a muxer egységes kimeneti `TrackConfig`/codec configot használ. Nem szabad menet közben olyan paramétert váltani, amelyet a célkonténer egy tracken belül nem támogat.
@@ -94,8 +106,8 @@ A felhasználó a copy-policyt külön választja. Nincs silent fallback és nin
 
 **Érintett területek:** `crates/engine` export parancsok; `python/cfa4_qt` exportpanel; CLI/control protocol.
 
-- Tegyél elérhetővé `export.smartRender.plan`, `export.smartRender.start`, `export.smartRender.cancel` parancsot; a meglévő sima export változatlanul elérhető.
-- Export UI-ban legyen explicit Smart Render be/ki kapcsoló, Bitazonos/Kompatibilis policy, preview table és okonkénti részletezés. Nincs „auto copy” választás, amely elfedné a tényleges működést.
+- Tegyél elérhetővé Smart Rendert az egységes `export.plan` / `export.start` / `export.cancel` parancsokon (v1.5; korábban `export.smartRender.plan/start/cancel`); a meglévő sima export változatlanul elérhető.
+- Export UI-ban legyen explicit Smart Render be/ki kapcsoló, Bitazonos/Kompatibilis policy, preview table és okonkénti részletezés. Nincs „auto copy” választás, amely elfedné a tényleges működést; az Auto mód csak javasol, és újrakódolás előtt megerősítést kér (v1.5).
 - Export preset csak akkor ajánlhat Smart Rendert, ha a célcodec/bitrate/profile és konténer capability átmegy a preflighton.
 - Az állapot és parancsok automatizálhatóak; UI, CLI és control/MCP azonos engine-kódot használ.
 - Qt6 UI pontosan mutassa, ha minden szakasz renderelendő; a felhasználó döntheti el, hogy így is folytatja-e normál exporttal.
@@ -110,7 +122,7 @@ A felhasználó a copy-policyt külön választja. Nincs silent fallback és nin
 
 ## Elfogadási kritériumok
 
-- A Smart Render kimenet látható képkockái, frame countja, frame time-ja, audio sample countja és A/V szinkronja egyezik a teljes render referenciaexporttal.
+- A Smart Render kimenet látható képkockái, frame countja, frame time-ja, audio sample countja és A/V szinkronja egyezik a teljes render referenciaexporttal; a képtartalom dokumentált tűréssel mérve: határ-újrakódolásnál a forrás dekódolt képéhez, Render szegmensnél a renderelt idővonal-képkockához (v1.5).
 - Minden másolt payload a Bitazonos módban bájtazonos; Kompatibilis módban bitstream-dekódolás után a dokumentált tartalmi egyenértékűséget teljesíti.
 - Effektes/összetett/nem kompatibilis szakasz renderelendőként szerepel, nem tűnik el, és nem másolódik változtatás nélkül.
 - Minden váltási pont seekelhető, decode-olható és időbélyeg szerint folytonos; eltérés esetén a teljes export a preflightban elutasít vagy a kérdéses tartományt rendereli.

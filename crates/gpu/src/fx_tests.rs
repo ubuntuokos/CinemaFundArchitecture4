@@ -220,6 +220,23 @@ fn cases() -> Vec<(&'static str, Vec<(&'static str, ParamValue)>, bool)> {
         ("stereo_parallax", vec![("frame_layout", ch(1)), ("shift", fl(6.0))], false),
         ("stereo_parallax", vec![("frame_layout", ch(1)), ("shift", fl(-2.2)), ("repeat_edge", ParamValue::Bool(true))], false),
         ("stereo_parallax", vec![("shift", fl(1e9))], false),
+        // a curved screen: the edges bend inwards, the corners inset
+        (
+            "six_point_pin",
+            vec![
+                ("upper_left", pt(3.0, 2.0)),
+                ("upper_center", pt(33.5, 7.0)),
+                ("upper_right", pt(64.0, 1.0)),
+                ("lower_left", pt(1.0, 39.0)),
+                ("lower_center", pt(33.5, 33.0)),
+                ("lower_right", pt(65.0, 40.0)),
+            ],
+            false,
+        ),
+        // only the corners move (the centres stay on the frame edge midpoints)
+        ("six_point_pin", vec![("upper_left", pt(6.0, 4.0)), ("upper_right", pt(58.0, 0.0)), ("lower_right", pt(66.0, 37.0))], false),
+        // outward bows past the frame and an off-centre middle point
+        ("six_point_pin", vec![("upper_center", pt(25.0, -6.0)), ("lower_center", pt(40.0, 47.0))], false),
         ("mirror", vec![("center", pt(20.0, 10.0)), ("angle", fl(30.0))], false),
         ("mirror", vec![("angle", fl(200.0))], false),
         ("offset", vec![("shift", pt(10.0, 30.0)), ("blend", fl(25.0))], false),
@@ -521,6 +538,8 @@ fn hostile_parameters_are_bounded() {
         effect("lumetri", &[("temperature", fl(f64::INFINITY))]),
         effect("lumetri", &[("contrast", fl(f64::NAN))]),
         effect("lumetri", &[("vignette_amount", fl(f64::NAN))]),
+        effect("six_point_pin", &[("upper_center", pt(f64::INFINITY, 0.0))]),
+        effect("six_point_pin", &[("lower_left", pt(1e300, -1e300))]),
     ];
     for e in &nan {
         let op = FxOp::eval(e, &cx(Tick::ZERO, 1.0), w, h);
