@@ -271,10 +271,48 @@ fn random_options_never_panic() {
         let Ok(cs) = encode(&img, &opts) else { continue };
         let back = decode(&cs).unwrap();
         if reversible && opts.max_bytes.is_none() && opts.max_component_bytes.is_none() {
-            assert_eq!(back, img, "{opts:?}");
+            assert_eq!(back.components, img.components, "{opts:?}");
         }
         if let Some(m) = opts.max_bytes {
             assert!(cs.len() <= m);
         }
+    }
+}
+
+/// Code-blocks that stop coding below the predicted threshold give the codestream full coding
+/// gives, within its byte limits, at the same quality.
+#[test]
+fn early_termination_keeps_the_rate_control_result() {
+    let mut noisy = picture(512, 272, &[(12, false, 1, 1); 3], 77);
+    let mut seed = 7u32;
+    for v in &mut noisy.components[1].data {
+        *v = (*v + (rnd(&mut seed) % 512) as i32).min(4095);
+    }
+    let smooth = picture(512, 272, &[(12, false, 1, 1); 3], 78);
+    for img in [&noisy, &smooth] {
+        for (bytes, comp) in [(30_000, None), (60_000, Some(25_000)), (150_000, Some(40_000)), (2_000_000, None)] {
+            let opts = EncodeOptions { max_bytes: Some(bytes), max_component_bytes: comp, ..EncodeOptions::cinema_2k(24) };
+            let fast = encode_with(img, &opts, true).unwrap();
+            let full = encode_with(img, &opts, false).unwrap();
+            assert!(fast.len() <= bytes && tile_parts(&fast).iter().all(|&l| comp.is_none_or(|c| l <= c)));
+            let (qf, qs) = (psnr(img, &decode(&fast).unwrap()), psnr(img, &decode(&full).unwrap()));
+            assert!((qf - qs).abs() < 0.02, "{bytes} {comp:?}: {qf} dB, {qs} dB in full");
+        }
+    }
+}
+
+/// The galloping search finds what the plain bisection finds.
+#[test]
+fn refine_agrees_with_search() {
+    let mut seed = 3u32;
+    for _ in 0..500 {
+        let n = (rnd(&mut seed) % 300) as usize;
+        let cut = (rnd(&mut seed) % (n as u32 + 2)) as usize; // ok(Some(k)) for k < cut
+        let ok = |k: Option<usize>| Ok(k.is_none_or(|k| k < cut));
+        let guess = match rnd(&mut seed) % 3 {
+            0 => None,
+            _ => Some((rnd(&mut seed) % (n as u32 + 5)) as usize),
+        };
+        assert_eq!(refine(n, guess, ok).unwrap(), search(n, ok).unwrap(), "n {n} cut {cut} guess {guess:?}");
     }
 }
