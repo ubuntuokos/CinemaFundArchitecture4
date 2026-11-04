@@ -188,7 +188,7 @@ class EngineClient(QObject):
     event = Signal(object)  # engine notifications (projectChanged, toast, openSequence, ...)
     stopped = Signal(str)  # the process ended; reason
     failure = Signal(str)  # any request error, for the Events panel
-    job = Signal(int)  # a reply named a background job (export, preview render): the status bar watches it
+    job = Signal(object)  # job id; a reply named a background job (export, preview render): the status bar watches it
     _message = Signal(object, object)  # reader thread -> GUI thread (object: ids like the Mix strip are u64)
 
     def __init__(self, engine: Path, args: list[str] | None = None, parent: QObject | None = None) -> None:

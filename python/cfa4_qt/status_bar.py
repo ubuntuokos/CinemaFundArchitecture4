@@ -58,7 +58,7 @@ def job_text(job: dict[str, Any]) -> str:
 class JobStatus(QWidget):
     """The running job at the status bar's right end; hidden while nothing runs."""
 
-    cancel = Signal(int)
+    cancel = Signal(object)  # job id (object: a Qt int is 32-bit)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
