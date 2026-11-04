@@ -61,6 +61,7 @@ from .. import theme
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
 from ..timecode import TICKS_PER_SECOND, format_timecode
+from .effects import dropped_effect
 from .fx_editor import HAS_EDITOR
 
 # a pause longer than this starts a new undo step for the next change of the same value
@@ -1597,6 +1598,12 @@ class EffectControlsPanel(QWidget):
         self._again = False
         self._wanted: tuple[list[Any] | None, list[Any] | None] = (None, None)  # the latest refresh's selection
 
+        self.setAcceptDrops(True)
+        # drawn over the panel while an effect it can take is dragged over it (egui's accent frame)
+        self.drop_target = QFrame(self)
+        self.drop_target.setObjectName("effectControls.dropTarget")
+        self.drop_target.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.drop_target.hide()
         self.title = QLabel(tr("Select a clip in the Timeline."), self)
         self.title.setObjectName("effectControls.title")
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1712,6 +1719,71 @@ class EffectControlsPanel(QWidget):
     # ----- loading -----
     def attach(self, engine: Any) -> None:
         self.engine = engine
+
+    # ----- an effect dropped on the panel (upstream #3587) -----
+    def _dropped_effect(self, mime: Any) -> str | None:
+        """The effect, preset or Lumetri look a drag carries, when it can go on the shown clip:
+        transitions need an edge, so they stay Timeline drops."""
+        effect = dropped_effect(mime)
+        if effect is None or not self.clips or self.engine is None or not self.engine.running:
+            return None
+        effects = getattr(getattr(self.main_window(), "effects", None), "effects", [])
+        kind = next((str(x.get("kind") or "") for x in effects if isinstance(x, dict) and x.get("id") == effect), "")
+        return None if kind.endswith("Transition") else effect
+
+    def _show_drop_target(self, on: bool) -> None:
+        if on:
+            self.drop_target.setGeometry(self.rect())
+            self.drop_target.setStyleSheet(f"border: 2px solid {theme.current().accent}; border-radius: 3px; background: transparent;")
+            self.drop_target.raise_()
+        self.drop_target.setVisible(on)
+
+    def dragEnterEvent(self, e: Any) -> None:
+        if self._dropped_effect(e.mimeData()) is None:
+            e.ignore()
+            return
+        self._show_drop_target(True)
+        e.acceptProposedAction()
+
+    def dragMoveEvent(self, e: Any) -> None:
+        if self._dropped_effect(e.mimeData()) is None:
+            e.ignore()
+        else:
+            e.acceptProposedAction()
+
+    def dragLeaveEvent(self, _e: Any) -> None:
+        self._show_drop_target(False)
+
+    def dropEvent(self, e: Any) -> None:
+        self._show_drop_target(False)
+        effect = self._dropped_effect(e.mimeData())
+        if effect is None:
+            return
+        e.acceptProposedAction()
+        self.flush()
+        # the video clip first; its linked audio clip takes audio effects the video clip refuses
+        self._apply_dropped(effect, [as_int(c.get("clip"), -1) for c in self.clips])
+
+    def _apply_dropped(self, effect: str, clips: list[int], error: str = "") -> None:
+        win = self.main_window()
+        if not clips:
+            if error and win is not None and hasattr(win, "_command_failed"):
+                win._command_failed("effects.apply", error)
+            return
+        cid, rest = clips[0], clips[1:]
+        if effect.startswith("preset:"):
+            command, params = "presets.apply", {"preset": effect[len("preset:"):], "clips": [cid]}
+        elif effect.startswith("lumetri:"):
+            command, params = "lumetri.applyPreset", {"name": effect[len("lumetri:"):], "clips": [cid]}
+        else:
+            command, params = "effects.apply", {"effect": effect, "clips": [cid]}
+        done = getattr(win, "_command_done", None)
+        self.engine.execute(
+            command,
+            params,
+            on_reply=lambda _r, _b, c=command: done(c) if done is not None else None,
+            on_error=lambda m: self._apply_dropped(effect, rest, m),
+        )
 
     def refresh(self, selection: list[Any] | None, transitions: list[Any] | None = None) -> None:
         """Ask the engine about the selected clip (a video one first, as egui) and the audio

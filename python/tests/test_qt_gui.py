@@ -2501,6 +2501,67 @@ def test_tick_signals_carry_64_bit_times(app):
 
 # ----- Effect Controls -----
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_effect_controls_takes_dropped_effects(app, tmp_path: Path):
+    """upstream #3587: an effect dropped on Effect Controls goes on the clip it shows; an audio
+    effect the video clip refuses goes on its linked audio clip; transitions stay Timeline drops."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.effects import effect_mime
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1440, 900)
+    win.show()
+    engine.start()
+    ec = win.effect_controls
+    Qt = QtCore.Qt
+    at = QtCore.QPointF(40, 40)
+
+    def drop(effect: str) -> None:
+        mime = effect_mime(effect)
+        ec.dragEnterEvent(QtGui.QDragEnterEvent(at.toPoint(), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        ec.dropEvent(QtGui.QDropEvent(at, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+
+    def effects_of(cid: int) -> list[str]:
+        for kind in ("video", "audio"):
+            for track in (win.sequence or {}).get(kind) or []:
+                for c in track.get("items") or []:
+                    if c.get("clip") == cid:
+                        return [str(e.get("effect")) for e in c.get("effects") or []]
+        return []
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert wait_until(app, lambda: len(getattr(win.effects, "effects", [])) > 10, 30_000)
+        clip = win.sequence["video"][0]["items"][1]
+        win.execute("timeline.select", {"clips": [clip["clip"]]})
+        assert wait_until(app, lambda: ec.clip_id == clip["clip"] and len(ec.clips) == 2, 30_000), ec.clips
+        audio = ec.clips[1]["clip"]
+
+        # an effect over the panel shows the accent frame; leaving hides it
+        mime = effect_mime("gaussian_blur")
+        ec.dragEnterEvent(QtGui.QDragEnterEvent(at.toPoint(), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert ec.drop_target.isVisible() and ec.drop_target.objectName() == "effectControls.dropTarget"
+        ec.dragLeaveEvent(QtGui.QDragLeaveEvent())
+        assert not ec.drop_target.isVisible()
+
+        # a video effect goes on the shown video clip
+        drop("gaussian_blur")
+        assert wait_until(app, lambda: "gaussian_blur" in effects_of(clip["clip"]), 10_000), effects_of(clip["clip"])
+        # an audio effect the video clip refuses goes on its linked audio clip
+        drop("parametric_eq")
+        assert wait_until(app, lambda: "parametric_eq" in effects_of(audio), 10_000), effects_of(audio)
+        assert "parametric_eq" not in effects_of(clip["clip"])
+        # a transition is not taken: it needs an edge in the Timeline
+        assert ec._dropped_effect(effect_mime("cross_dissolve")) is None
+        assert ec._dropped_effect(effect_mime("gaussian_blur")) == "gaussian_blur"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_effect_controls(app, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
