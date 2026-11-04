@@ -269,7 +269,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3040 | Timeline: Option-drag duplicates captions | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3041 | Edit: Copy, Cut and Paste work on captions selected in the Timeline | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3075 | History: the panel menu deletes redoable actions and clears the history | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
-| 0.13.0 | #3087 | Timeline: the work area bar, with Set Work Area Bar In and Out Point | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.13.0 | #3087 | Timeline: the work area bar, with Set Work Area Bar In and Out Point | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #563 | PR nyitva |
 | 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3155 | Timeline: a Rolling Edit drag stops at the roll's limits | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3212 | Timeline: Show Duplicate Frame Markers marks media frames used more than once | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
