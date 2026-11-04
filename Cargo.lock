@@ -988,6 +988,7 @@ dependencies = [
  "cfa4-text",
  "cfa4-time",
  "cfa4-tts",
+ "chrono",
  "image",
  "log",
  "serde",
@@ -1055,6 +1056,7 @@ dependencies = [
  "cfa4-media",
  "cfa4-project",
  "cfa4-time",
+ "chrono",
  "log",
  "serde",
  "serde_json",
@@ -1287,6 +1289,7 @@ name = "cfa4-mxf"
 version = "0.10.0"
 dependencies = [
  "cfa4-testkit",
+ "chrono",
 ]
 
 [[package]]
@@ -1426,6 +1429,7 @@ dependencies = [
 name = "cfa4-testkit"
 version = "0.10.0"
 dependencies = [
+ "chrono",
  "png",
 ]
 
