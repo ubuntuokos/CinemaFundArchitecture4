@@ -9817,6 +9817,23 @@ def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
     view.mv.snap = True
     view.mv.guides = [{"vertical": True, "position": 300.0}]
     assert move(195, 40)[0] == 250.0
+    # upstream #3584: Ctrl held moves freely; pressing or releasing it with the pointer still
+    # snaps again (or lets go) at once
+    view.mv.guides = []
+    sent.clear()
+    d = {"pl": pl, "grab": "move", "start": P(50, 50), "begin": True, "turned": 0.0, "angle": 0.0}
+    overlay.drag = {**d, "kind": "transform"}
+    overlay._transform_move(overlay.drag, P(51, 50), free=True)
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [54.0, 53.0] and overlay.snap_lines == []
+    ctrl = QtCore.Qt.KeyboardModifier.ControlModifier
+    overlay.modifiers_changed(QtCore.Qt.KeyboardModifier.NoModifier)  # Ctrl released: snaps
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [50.0, 50.0] and len(overlay.snap_lines) == 2
+    n = len(sent)
+    overlay.modifiers_changed(QtCore.Qt.KeyboardModifier.NoModifier)  # no change: nothing sent
+    assert len(sent) == n
+    overlay.modifiers_changed(ctrl)  # Ctrl pressed again: free
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [54.0, 53.0] and overlay.snap_lines == []
+    overlay.drag = None
     view.deleteLater()
 
 
