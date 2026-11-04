@@ -1260,6 +1260,8 @@ mod keyboard_tests;
 #[cfg(test)]
 mod linked_speed_tests;
 #[cfg(test)]
+mod linked_trim_tests;
+#[cfg(test)]
 mod locked_clip_edits_tests;
 #[cfg(test)]
 mod masks_tests;
