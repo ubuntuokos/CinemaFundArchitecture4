@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import theme
+from .. import export_summary, theme
 from ..i18n import fmt, tr
 from .export import existing_outputs, sidecar_output
 
@@ -218,7 +218,7 @@ class QuickExport(QFrame):
             self.default_dir = os.path.dirname(default)
         summary = result.get("summary") if isinstance(result.get("summary"), dict) else {}
         size = summary.get("estimated_size")
-        self.size.setText(fmt("Estimated file size: {size}", size=size if isinstance(size, str) and size else "–"))
+        self.size.setText(fmt("Estimated file size: {size}", size=export_summary.size(size) if isinstance(size, str) and size else "–"))
         self._fit_path()
 
     def _ext(self) -> str:
