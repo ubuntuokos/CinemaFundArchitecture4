@@ -51,6 +51,8 @@ pub mod set_type {
     pub const MPEG2_VIDEO_DESCRIPTOR: u8 = 0x51;
     pub const JPEG2000_SUBDESCRIPTOR: u8 = 0x5A;
     pub const AVC_SUBDESCRIPTOR: u8 = 0x6E;
+    /// IAB essence descriptor (ST 2067-201).
+    pub const IAB_ESSENCE_DESCRIPTOR: u8 = 0x7B;
 }
 
 /// One header metadata local set.

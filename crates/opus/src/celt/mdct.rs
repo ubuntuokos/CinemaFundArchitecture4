@@ -147,6 +147,53 @@ impl Imdct {
     }
 }
 
+impl Imdct {
+    /// Forward low-overlap MDCT (encoder side) of `n/2 + overlap` samples from `input`, writing
+    /// `n/2` coefficients to `out` at `stride`. Scaled so that [`Imdct::backward`] with TDAC
+    /// reconstructs the input.
+    #[allow(clippy::too_many_arguments)]
+    pub fn forward(&self, input: &[f32], out: &mut [f32], stride: usize, window: &[f32], overlap: usize, work: &mut ImdctScratch) {
+        let n2 = self.n >> 1;
+        let n4 = self.n >> 2;
+        let half = overlap >> 1;
+        let edge = (overlap + 3) >> 2;
+        if input.len() < n2 + overlap || window.len() < overlap || n4 < edge || out.len() + 2 * stride < stride * n2 + 2 {
+            return;
+        }
+        let t = &self.trig;
+        let w = |i: usize| window[i];
+        // Window, shuffle and fold the four quarter blocks into N/4 complex values.
+        let z = &mut work.z;
+        z.clear();
+        for i in 0..n4 {
+            let xp1 = half + 2 * i;
+            let xp2 = n2 - 1 + half - 2 * i;
+            let (re, im) = if i < edge {
+                let (wp1, wp2) = (half + 2 * i, half - 1 - 2 * i);
+                (w(wp2) * input[xp1 + n2] + w(wp1) * input[xp2], w(wp1) * input[xp1] - w(wp2) * input[xp2 - n2])
+            } else if i < n4 - edge {
+                (input[xp2], input[xp1])
+            } else {
+                let j = i - (n4 - edge);
+                let (wp1, wp2) = (2 * j, overlap - 1 - 2 * j);
+                (-w(wp1) * input[xp1 - n2] + w(wp2) * input[xp2], w(wp2) * input[xp1] + w(wp1) * input[xp2 + n2])
+            };
+            // Pre-rotation, with the 1/(N/4) scale of the forward transform.
+            let (t0, t1) = (t[i], t[n4 + i]);
+            let scale = 1.0 / n4 as f32;
+            z.push(Cpx { re: (re * t0 - im * t1) * scale, im: (im * t0 + re * t1) * scale });
+        }
+        self.fft.process(z, &mut work.scratch);
+        // Post-rotation.
+        for (i, f) in z.iter().enumerate() {
+            let yr = f.im * t[n4 + i] - f.re * t[i];
+            let yi = f.re * t[n4 + i] + f.im * t[i];
+            out[2 * i * stride] = yr;
+            out[stride * (n2 - 1 - 2 * i)] = yi;
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct ImdctScratch {
     z: Vec<Cpx>,
@@ -173,6 +220,34 @@ mod tests {
                 }
                 assert!((acc.0 - y[k].re as f64).abs() < 1e-2 && (acc.1 - y[k].im as f64).abs() < 1e-2, "n={n} k={k}");
             }
+        }
+    }
+
+    /// Forward MDCT of consecutive overlapping blocks, inverse with TDAC: reconstructs the input.
+    #[test]
+    fn forward_backward_reconstructs() {
+        let m = crate::celt::mode();
+        let ov = crate::celt::tables::OVERLAP;
+        for (shift, nb) in [(0usize, 960usize), (3, 120)] {
+            let mdct = &m.mdct[shift];
+            let frames = 5;
+            let sig: Vec<f32> = (0..frames * nb + ov).map(|i| ((i as f32 * 0.37).sin() * 1000.0) + ((i * 13 % 17) as f32 - 8.0) * 30.0).collect();
+            let mut out = vec![0f32; frames * nb + ov];
+            let mut coefs = vec![0f32; nb];
+            let mut work = ImdctScratch::default();
+            for f in 0..frames {
+                mdct.forward(&sig[f * nb..f * nb + nb + ov], &mut coefs, 1, &m.window, ov, &mut work);
+                // The backward transform overlap-adds in place against out[f*nb .. f*nb + ov/2].
+                mdct.backward(&coefs, 1, &mut out[f * nb..], &m.window, ov, &mut work);
+            }
+            // Samples fully covered by two blocks: [ov, frames*nb).
+            let mut err = 0f64;
+            let mut en = 0f64;
+            for i in ov..frames * nb {
+                err += ((out[i] - sig[i]) as f64).powi(2);
+                en += (sig[i] as f64).powi(2);
+            }
+            assert!(err / en < 1e-8, "shift {shift}: relative error {}", err / en);
         }
     }
 

@@ -16,6 +16,8 @@ pub struct OutputMeta {
     pub key: bool,
     pub crop: (u32, u32, u32, u32),
     pub full_range: bool,
+    /// The VUI signalled `full_range` (rather than it being the default).
+    pub range_signalled: bool,
     pub colour_primaries: u8,
     pub transfer_characteristics: u8,
     pub matrix_coefficients: u8,

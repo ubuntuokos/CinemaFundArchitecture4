@@ -211,6 +211,9 @@ pub(crate) fn codec_of(stream_type: u8, desc: &[u8], hdmv: bool) -> Codec {
         0x80 => Codec::Mpeg2Video,
         0x81 => Codec::Ac3,
         0x82 | 0x85 | 0x86 | 0xA2 if hdmv => Codec::Dts,
+        // outside Blu-ray: what ffmpeg writes (0x82) and reads (0x8A) for DTS. A stream that is
+        // something else (SCTE-27 subtitles also use 0x82) fails to decode as DTS and is dropped.
+        0x82 | 0x8A => Codec::Dts,
         0x83 if hdmv => Codec::TrueHd,
         0x84 | 0xA1 if hdmv => Codec::Eac3,
         0x87 => Codec::Eac3,

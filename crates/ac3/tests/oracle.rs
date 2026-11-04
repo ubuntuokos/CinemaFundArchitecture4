@@ -263,3 +263,139 @@ fn generate_fixtures() {
         cfa4_testkit::fixtures::generate_and_report(&format!("ac3/{}", s.name), &[out], || make(&ff, s));
     }
 }
+
+/// Interleaved f32 samples from ffmpeg's stdout, split per channel.
+fn planar(bytes: &[u8], ch: usize) -> Vec<Vec<f32>> {
+    let v: Vec<f32> = bytes.as_chunks::<4>().0.iter().map(|b| f32::from_le_bytes(*b)).collect();
+    (0..ch).map(|c| v.iter().skip(c).step_by(ch).copied().collect()).collect()
+}
+
+/// SNR (dB) of `got` against `want` over the middle of the signal, at the delay in `delays`
+/// that gives the best.
+fn aligned_snr(want: &[f32], got: &[f32], delays: std::ops::Range<usize>) -> f64 {
+    let n = want.len().saturating_sub(4096);
+    let mut best = f64::NEG_INFINITY;
+    for d in delays {
+        let (mut s, mut e) = (0f64, 0f64);
+        for i in 2048..n {
+            let (a, b) = (f64::from(want[i]), f64::from(got.get(i + d).copied().unwrap_or(0.0)));
+            s += a * a;
+            e += (a - b) * (a - b);
+        }
+        let snr = 10.0 * (s / e.max(1e-30)).log10();
+        best = best.max(snr);
+    }
+    best
+}
+
+/// Our encoder against ffmpeg's: the same input at the same bit rate, both decoded by ffmpeg
+/// with CRC checking on. Ours must decode in ffmpeg (CRCs valid), agree with our decoder, and
+/// come within a few dB of ffmpeg's own encoder in SNR.
+#[test]
+fn encoded_streams_decode_in_ffmpeg() {
+    let ff = cfa4_testkit::require_ffmpeg!();
+    let dir = cfa4_testkit::fixtures_dir("ac3").join("encoder");
+    std::fs::create_dir_all(&dir).unwrap();
+    // (name, lavfi input, rate, channels, kb/s, dB behind ffmpeg allowed, minimum SNR); names
+    // starting with "eac3" are E-AC-3
+    let cases: &[(&str, &str, u32, usize, u32, f64, f64)] = &[
+        (
+            "stereo_192k",
+            "aevalsrc=exprs=0.3*sin(2*PI*441*t)+0.1*sin(2*PI*3100*t)|0.25*sin(2*PI*660*t)+0.1*sin(2*PI*(500+4000*t)*t):s=48000",
+            48_000,
+            2,
+            192,
+            6.0,
+            30.0,
+        ),
+        ("mono_32k", "sine=frequency=1000:sample_rate=32000", 32_000, 1, 96, 6.0, 40.0),
+        (
+            "stereo_44k_96k",
+            "aevalsrc=exprs=0.3*sin(2*PI*441*t)+0.05*sin(2*PI*2100*t)|0.3*sin(2*PI*445*t)+0.05*sin(2*PI*3000*t):s=44100",
+            44_100,
+            2,
+            96,
+            8.0,
+            20.0,
+        ),
+        (
+            "51_448k",
+            "aevalsrc=exprs=0.3*sin(2*PI*300*t)|0.3*sin(2*PI*400*t)|0.3*sin(2*PI*500*t)|0.3*sin(2*PI*60*t)|0.2*sin(2*PI*700*t)|0.2*sin(2*PI*800*t):s=48000:c=5.1",
+            48_000,
+            6,
+            448,
+            6.0,
+            30.0,
+        ),
+        (
+            "eac3_stereo_192k",
+            "aevalsrc=exprs=0.3*sin(2*PI*441*t)+0.1*sin(2*PI*3100*t)|0.25*sin(2*PI*660*t)+0.1*sin(2*PI*(500+4000*t)*t):s=48000",
+            48_000,
+            2,
+            192,
+            6.0,
+            30.0,
+        ),
+        (
+            "eac3_51_384k",
+            "aevalsrc=exprs=0.3*sin(2*PI*300*t)|0.3*sin(2*PI*400*t)|0.3*sin(2*PI*500*t)|0.3*sin(2*PI*60*t)|0.2*sin(2*PI*700*t)|0.2*sin(2*PI*800*t):s=48000:c=5.1",
+            48_000,
+            6,
+            384,
+            6.0,
+            30.0,
+        ),
+        ("eac3_mono_44k_100k", "sine=frequency=1000:sample_rate=44100", 44_100, 1, 100, 6.0, 40.0),
+        ("pink_stereo_192k", "anoisesrc=color=pink:sample_rate=48000:amplitude=0.3:seed=3,pan=stereo|c0=c0|c1=-0.5*c0", 48_000, 2, 192, 6.0, 5.0),
+    ];
+    for &(name, input, rate, ch, kbps, behind, min) in cases {
+        let o = Command::new(&ff).args(["-v", "error", "-f", "lavfi", "-i", input, "-t", "2", "-f", "f32le", "-"]).output().unwrap();
+        assert!(o.status.success(), "{name}: input");
+        let pcm = planar(&o.stdout, ch);
+        // ours
+        let eac3 = name.starts_with("eac3");
+        let codec = if eac3 { "eac3" } else { "ac3" };
+        let mut enc = if eac3 { cfa4_ac3::Encoder::new_eac3(rate, ch, kbps) } else { cfa4_ac3::Encoder::new(rate, ch, kbps) }.unwrap();
+        let refs: Vec<&[f32]> = pcm.iter().map(Vec::as_slice).collect();
+        let mut stream: Vec<u8> = enc.encode(&refs).unwrap().concat();
+        stream.extend(enc.flush().unwrap().concat());
+        let ours = dir.join(format!("{name}.{codec}"));
+        std::fs::write(&ours, &stream).unwrap();
+        // ffmpeg's encoder on the same samples
+        let raw = dir.join(format!("{name}.f32"));
+        std::fs::write(&raw, &o.stdout).unwrap();
+        let theirs = dir.join(format!("{name}_ffmpeg.{codec}"));
+        let st = Command::new(&ff)
+            .args(["-v", "error", "-y", "-f", "f32le", "-ar", &rate.to_string(), "-ac", &ch.to_string(), "-i"])
+            .arg(&raw)
+            .args(["-c:a", codec, "-b:a", &format!("{kbps}k")])
+            .arg(&theirs)
+            .status();
+        assert!(st.is_ok_and(|s| s.success()), "{name}: ffmpeg encode");
+        let decode = |f: &Path| {
+            let o = Command::new(&ff).args(["-v", "error", "-err_detect", "crccheck+explode", "-i"]).arg(f).args(["-f", "f32le", "-"]).output().unwrap();
+            assert!(o.status.success(), "{name}: ffmpeg decode of {}: {}", f.display(), String::from_utf8_lossy(&o.stderr));
+            planar(&o.stdout, ch)
+        };
+        let (a, b) = (decode(&ours), decode(&theirs));
+        // our decoder on our stream agrees with ffmpeg's (up to dither)
+        let mut dec = cfa4_ac3::Decoder::new();
+        let mine: Vec<f32> = frames(&stream).iter().flat_map(|f| dec.decode(f).unwrap().channels.swap_remove(0)).collect();
+        let agree = aligned_snr(&a[0], &mine, 0..1);
+        let mut worst = (f64::INFINITY, f64::INFINITY);
+        for c in 0..ch {
+            // ours lags by the transform overlap; ffmpeg's encoder by its own priming
+            let s_ours = aligned_snr(&pcm[c], &a[c], 256..257);
+            let s_ff = aligned_snr(&pcm[c], &b[c], 0..1700);
+            worst = (worst.0.min(s_ours), worst.1.min(s_ff));
+        }
+        println!("{name}: SNR ours {:.1} dB, ffmpeg's encoder {:.1} dB; our decode vs ffmpeg's {agree:.1} dB", worst.0, worst.1);
+        // the two decoders differ by their dither, which fills the zero-bit mantissas of noise
+        let mut dec2 = cfa4_ac3::Decoder::new();
+        dec2.set_dither_seed(0xDEAD_BEEF);
+        let reseeded: Vec<f32> = frames(&stream).iter().flat_map(|f| dec2.decode(f).unwrap().channels.swap_remove(0)).collect();
+        let dither = aligned_snr(&mine, &reseeded, 0..1);
+        assert!(agree > dither.min(30.0) - 6.0, "{name}: decoders disagree ({agree:.1} dB, dither alone {dither:.1} dB)");
+        assert!(worst.0 >= min && worst.0 >= worst.1 - behind, "{name}: {:.1} dB, ffmpeg {:.1} dB", worst.0, worst.1);
+    }
+}

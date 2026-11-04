@@ -1,5 +1,5 @@
 //! Clean-room MPEG-2 video (ITU-T H.262 | ISO/IEC 13818-2) and MPEG-1 video (ISO/IEC 11172-2)
-//! decoder.
+//! decoder, and an MPEG-2 video encoder ([`encode`]).
 //!
 //! - Main Profile at Low/Main/High-1440/High Level, 4:2:2 Profile (XDCAM HD422, IMX / D-10),
 //!   Simple Profile, and MPEG-1 (including D pictures and constrained-parameters streams).
@@ -26,6 +26,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 mod bits;
+pub mod encode;
 pub mod headers;
 mod idct;
 mod mc;
@@ -456,6 +457,11 @@ impl Decoder {
     /// What the most recent slice error was.
     pub fn last_error(&self) -> Option<&'static str> {
         self.last_error
+    }
+
+    /// The most recently decoded anchor (I or P) frame: the encoder's reconstruction.
+    pub(crate) fn last_anchor(&self) -> Option<Arc<Frame>> {
+        self.bwd.as_ref().map(|a| a.frame.clone())
     }
 
     /// The active sequence.

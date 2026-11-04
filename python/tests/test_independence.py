@@ -31,6 +31,8 @@ LEGAL = {
     "LICENSE-APACHE",
     "NOTICE",
     "README.md",
+    # the Debian copyright file: the licence notice of the upstream-derived code
+    "packaging/linux/copyright",
     "python/cfa4_devtools/dependency_audit.py",
     # Read-only recognition of project/preset files saved by the upstream application (A1).
     "crates/project/src/legacy.rs",

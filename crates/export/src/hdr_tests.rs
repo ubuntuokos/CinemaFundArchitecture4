@@ -120,21 +120,14 @@ fn the_hdr_probe_registry_follows_its_probes() {
 #[test]
 fn which_exports_are_hdr() {
     use crate::job::hdr_output;
-    let never = |_: Format| false;
-    let hevc_only = |f: Format| f == Format::Hevc;
-    // H.264, ProRes, DNxHR and APV follow the working space, whatever the probes say
-    for f in [Format::H264, Format::ProRes, Format::DnxHr, Format::Apv] {
-        assert!(hdr_output(true, false, f, never), "{f:?}");
-        assert!(!hdr_output(false, false, f, hevc_only), "{f:?}: SDR working space");
-        assert!(!hdr_output(true, true, f, hevc_only), "{f:?}: SDR asked for");
+    // H.264, H.265 (Main 10), AV1, ProRes, DNxHR and APV follow the working space
+    for f in [Format::H264, Format::Hevc, Format::Av1, Format::ProRes, Format::DnxHr, Format::Apv] {
+        assert!(hdr_output(true, false, f), "{f:?}");
+        assert!(!hdr_output(false, false, f), "{f:?}: SDR working space");
+        assert!(!hdr_output(true, true, f), "{f:?}: SDR asked for");
     }
-    // H.265 only where a registered encoder writes HDR
-    assert!(!hdr_output(true, false, Format::Hevc, never), "no probe: tone-mapped SDR, as with VideoToolbox");
-    assert!(hdr_output(true, false, Format::Hevc, hevc_only));
-    assert!(!hdr_output(true, true, Format::Hevc, hevc_only), "settings.sdr forces SDR");
-    assert!(!hdr_output(false, false, Format::Hevc, hevc_only));
     // formats without HDR output
-    assert!(!hdr_output(true, false, Format::Mjpeg, |_| true));
+    assert!(!hdr_output(true, false, Format::Mjpeg));
 }
 
 #[test]
