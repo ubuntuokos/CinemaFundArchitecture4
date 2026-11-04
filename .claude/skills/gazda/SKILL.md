@@ -26,7 +26,8 @@ $ARGUMENTS
 - **Ha nincs utasítás:** futtasd a `scripts/dev/gazda-pr-allapot.sh` szkriptet. Ez egy
   lekérdezéssel, a GitHub aktuális állapotából adja meg minden nyitott PR alapágát, utolsó
   commitjának korát, beolvaszthatóságát a mostani `main`-re és a `full-validation-gate`
-  állapotát a mostani fején, javasolt kategóriával. PR-onként külön csak azt kérdezd le,
+  állapotát a mostani fején, javasolt kategóriával. Ha sok PR „GitHub még számol”, futtasd
+  újra (a GitHub az első lekérdezéskor kezdi számolni). PR-onként külön csak azt kérdezd le,
   amit a táblázat nem mond meg (a PR leírásában jelzett kérések, kiváltás). Sorold őket:
   (a) aktív, 3 órán belüli commit; (b) beolvasztható; (c) ütközik vagy frissíteni kell;
   (d) egy másik PR kiváltotta; (e) tulajdonosi döntés kell.
