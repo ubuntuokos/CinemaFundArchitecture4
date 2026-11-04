@@ -46,7 +46,8 @@ let bytes = mp4.read_sample(&file, v, key)?;    // raw sample (AVCC/HVCC length-
 codes), `hdlr` (ISO and Pascal names), `minf/stbl`: `stsd`, `stts`, `ctts` (v0/v1, read as signed), `stss`,
 `stsc`, `stsz`/`stz2` (4/8/16-bit), `stco`/`co64`, `sdtp`, `sbgp`/`sgpd`. Also `mvex/trex`, `moof/traf/tfhd/tfdt/trun`
 (every `tfhd` base-offset mode and multiple `moof`s), and `udta` metadata (QuickTime `©xxx` atoms,
-`meta/ilst`, and `meta/keys` (mdta)). `uuid`, `free`, `skip`, `wide`, `sidx` and `mfra` are skipped.
+`meta/ilst`, and `meta/keys` (mdta)), and Nero `chpl` chapters into `Metadata::chapters` (start in
+100 ns units + title; a truncated box keeps the chapters before the cut). `uuid`, `free`, `skip`, `wide`, `sidx` and `mfra` are skipped.
 Boxes with 64-bit sizes and with size 0 (runs to the end of the file) are supported.
 
 ### Sample entries → `CodecConfig`
@@ -110,7 +111,14 @@ let bytes = w.finish_faststart()?.into_inner(); // or finish() for moov-at-end
 - Edit lists: set `TrackConfig::edits` explicitly, or use `media_start` to get a single edit.
 - Timecode: `add_timecode_track(video, TimecodeConfig, start_frame)` adds a `tmcd` track (with `gmhd`)
   and a `tref/tmcd` link from the video track.
-- `WriterOptions::metadata` writes `©xxx` text atoms to `udta`.
+- `WriterOptions::metadata` writes `©xxx` text atoms to `udta` (values cut to 65 535 bytes at a
+  character boundary; keys outside Latin-1 are skipped).
+- `WriterOptions::chapters` writes a Nero `chpl` box to `moov/udta` (also in the fragmented init
+  segment): version 1, 4 reserved bytes, a one-byte count, then per chapter a u64 start in 100 ns
+  units, a one-byte title length and the UTF-8 title, the layout ffprobe reads. Chapters are sorted
+  by start; at most `MAX_CHAPTERS` (255) are written and titles are cut to
+  `MAX_CHAPTER_TITLE_BYTES` (255) at a character boundary. QuickTime players read only a chapter
+  text track, which this crate does not write yet.
 - `FragmentedWriter<W: Write>` writes fMP4. The init segment is `ftyp` + `moov` with `mvex/trex`. Each
   `flush_fragment()` then writes `moof` (`mfhd`, `traf` with default-base-is-moof `tfhd`, `tfdt` v1,
   `trun` with per-sample duration, size, flags and composition offset) followed by `mdat`.

@@ -936,6 +936,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-dv"
+version = "0.10.0"
+dependencies = [
+ "cfa4-testkit",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfa4-edit"
 version = "0.10.0"
 dependencies = [
@@ -1049,6 +1058,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.21",
 ]
 
@@ -1380,6 +1390,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfa4-smart-edit"
+version = "0.10.0"
+dependencies = [
+ "cfa4-bitstream",
+ "cfa4-h264enc",
+ "cfa4-mpeg2v",
+ "cfa4-mpegts",
+ "cfa4-route",
+ "cfa4-testkit",
+ "cfa4-time",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cfa4-speech"
 version = "0.10.0"
 dependencies = [
@@ -1499,6 +1524,7 @@ dependencies = [
  "rustix 1.1.5",
  "serde",
  "serde_json",
+ "tempfile",
  "toml",
  "unicode-bidi",
  "web-time",

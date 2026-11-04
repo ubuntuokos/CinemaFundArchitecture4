@@ -54,6 +54,13 @@ def says_something(text: str, max_bytes: int) -> bool:
     return len(text.encode()) <= max_bytes and any(ch.isalnum() for ch in PAUSE_RE.sub(" ", text))
 
 
+
+def selected_narration(sequence: dict[str, Any]) -> bool:
+    """A selected clip of ``sequence`` is a narration (``sequence.inspect``'s ``narration``)."""
+    sel = set(sequence.get("selection") or [])
+    tracks = [*(sequence.get("video") or []), *(sequence.get("audio") or [])]
+    return any(isinstance(it, dict) and it.get("narration") is True and it.get("clip") in sel for t in tracks if isinstance(t, dict) for it in t.get("items") or [])
+
 class TextToSpeechPanel(QWidget):
     command = Signal(str, dict)
     status = Signal(str)  # egui's status line: the main window's status bar
@@ -278,13 +285,20 @@ class TextToSpeechPanel(QWidget):
             self.voice = "kokoro-heart" if natural_ready else str(self.catalog.get("defaultVoice") or "")
         self._sync()
 
-    def follow_selection(self) -> None:
+    def follow_selection(self, sequence: dict[str, Any] | None = None) -> None:
         """Load the selected narration clip into the draft when the selection moves to another
-        one (egui's ``follow_selection``); a deselect keeps the text for a new narration."""
+        one (egui's ``follow_selection``); a deselect keeps the text for a new narration. With the
+        ``sequence``, the engine is asked only while a narration clip is selected (asking without
+        one is a failed command, which the Events panel would list on every refresh)."""
         if not self.running:
             return
         if not self._asked:
             self.load_catalog()
+        if sequence is not None and not selected_narration(sequence):
+            if self.loaded_from is not None:
+                self.loaded_from = None
+                self._sync()
+            return
 
         def got(r: Any, _b: bytes | None) -> None:
             if not isinstance(r, dict) or r.get("clip") is None:
