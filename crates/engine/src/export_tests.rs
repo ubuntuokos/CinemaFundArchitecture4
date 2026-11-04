@@ -10,6 +10,16 @@ use serde_json::{Value, json};
 use crate::Session;
 
 #[test]
+fn project_names_become_one_export_filename_component() {
+    for name in ["../../outside", "/absolute/path", r"C:\\outside", ".."] {
+        let safe = crate::export_tools::file_safe(name);
+        assert!(!safe.contains(['/', '\\']), "{name:?} became {safe:?}");
+        assert_ne!(safe, ".");
+        assert_ne!(safe, "..");
+    }
+}
+
+#[test]
 fn hostile_export_ranges_are_rejected_without_panicking() {
     let mut session = demo();
     for params in [
