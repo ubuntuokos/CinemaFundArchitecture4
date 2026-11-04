@@ -319,3 +319,6 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 圧縮
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Caption Export Settings	キャプション書き出し設定
+	Export Captions	キャプションを書き出し
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} は既に存在するため、何も書き出しませんでした。置き換えるには、保存ダイアログでそのファイルを選んでください。

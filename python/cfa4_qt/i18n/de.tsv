@@ -319,3 +319,6 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	{word}-Komprimierung
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Caption Export Settings	Untertitel-Exporteinstellungen
+	Export Captions	Untertitel exportieren
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} ist bereits vorhanden, daher wurde nichts exportiert. Um die Datei zu ersetzen, wähle sie im Speichern-Dialog aus.

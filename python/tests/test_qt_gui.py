@@ -521,6 +521,70 @@ def test_installing_a_graphics_template_asks_for_its_file(app, tmp_path: Path, m
     assert path_params(cmd, parent, None) == {"__cancel__": True}
 
 
+def test_caption_export_asks_for_the_file_format(app, tmp_path: Path, monkeypatch):
+    """upstream #3523: File ▸ Export ▸ Captions… opens Caption Export Settings (every format
+    `captions.export` writes); the save panel offers only that format; a name typed with another
+    caption extension is written in that format, any other name gets the chosen extension, and a
+    file that name would replace without the panel having asked is left alone. The format written
+    last is offered next time."""
+    from cfa4_qt import dialogs
+    from cfa4_qt.dialogs import CaptionExportDialog, caption_destination, path_params
+
+    for typed, saved, ext in [
+        ("subs", "subs.vtt", "vtt"),
+        ("subs.", "subs.vtt", "vtt"),
+        ("subs.vtt", "subs.vtt", "vtt"),
+        ("SUBS.VTT", "SUBS.VTT", "vtt"),
+        ("subs.srt", "subs.srt", "srt"),
+        ("Subs.SCC", "Subs.SCC", "scc"),
+        ("subs.final", "subs.final.vtt", "vtt"),
+        ("/home/a.b/subs", "/home/a.b/subs.vtt", "vtt"),
+        ("/home/a.b/Main Edit.ttml", "/home/a.b/Main Edit.ttml", "ttml"),
+    ]:
+        assert caption_destination(typed, "vtt") == (saved, ext), typed
+
+    dlg = CaptionExportDialog(None, "vtt")
+    combo = dlg.findChild(QtWidgets.QComboBox, "captionExport.format")
+    assert combo.count() == 7 and dlg.chosen() == "vtt"
+    assert dlg.findChild(QtWidgets.QPushButton, "captionExport.ok") is not None
+
+    class Window(QtWidgets.QMainWindow):
+        def __init__(self) -> None:
+            super().__init__()
+            self.settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+            self.sequence = {"name": "Main Edit"}
+
+    win = Window()
+    cmd = Command("captions.export", "Captions…", ["File", "Export"], "", '{"path":str,"track":id?,"format":str?}', True)
+    picked: list[str] = []
+    monkeypatch.setattr(CaptionExportDialog, "exec", lambda self: (picked.append(self.chosen()), self.format.setCurrentIndex(self.format.findData("vtt")), QtWidgets.QDialog.DialogCode.Accepted)[-1])
+    asked = []
+    answer = [str(tmp_path / "subs")]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **_k: (asked.append(a), (answer[0], a[3]))[-1])
+    # SRT first; the save panel offers WebVTT only, named after the sequence
+    assert path_params(cmd, win, None, {"track": 7}) == {"path": str(tmp_path / "subs.vtt"), "format": "vtt"}
+    assert picked == ["srt"] and asked[-1][2] == "Main_Edit.vtt" and asked[-1][3] == "WebVTT (*.vtt)"
+    # WebVTT is offered next time; a format given by the caller wins
+    path_params(cmd, win, None, {})
+    assert picked[-1] == "vtt"
+    path_params(cmd, win, None, {"format": "scc"})
+    assert picked[-1] == "scc"
+    # `keep` typed when keep.vtt exists: nothing is written, and the status line says why
+    (tmp_path / "keep.vtt").write_text("WEBVTT\n", encoding="utf-8")
+    answer[0] = str(tmp_path / "keep")
+    assert path_params(cmd, win, None, {}) == {"__cancel__": True}
+    assert "keep.vtt" in win.statusBar().currentMessage()
+    # choosing keep.vtt itself (the panel asked) replaces it; another caption extension is kept
+    answer[0] = str(tmp_path / "keep.vtt")
+    assert path_params(cmd, win, None, {}) == {"path": str(tmp_path / "keep.vtt"), "format": "vtt"}
+    answer[0] = str(tmp_path / "subs.srt")
+    assert path_params(cmd, win, None, {}) == {"path": str(tmp_path / "subs.srt"), "format": "srt"}
+    # Cancel in either dialog cancels
+    monkeypatch.setattr(CaptionExportDialog, "exec", lambda _self: QtWidgets.QDialog.DialogCode.Rejected)
+    assert path_params(cmd, win, None, {}) == {"__cancel__": True}
+    assert dialogs.caption_format("WebVTT") == "vtt" and dialogs.caption_format("bogus") is None
+
+
 def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
     """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
     ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""

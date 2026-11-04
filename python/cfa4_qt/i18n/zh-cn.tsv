@@ -319,3 +319,6 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 压缩
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Caption Export Settings	字幕导出设置
+	Export Captions	导出字幕
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} 已存在，因此未导出任何内容。要替换它，请在保存对话框中选择该文件。
