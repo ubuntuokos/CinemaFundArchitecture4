@@ -1215,6 +1215,8 @@
 	Inverted	Invertálva
 	Position & Rotation	Pozíció és forgatás
 	Position, Scale & Rotation	Pozíció, méretezés és forgatás
+	Point tracker	Pontkövető
+	Correlation tracker	Korrelációs követő
 	Show graphs	Grafikonok megjelenítése
 	Stop tracking	Követés leállítása
 	Track selected mask backward	Kijelölt maszk követése visszafelé

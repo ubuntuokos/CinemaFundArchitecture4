@@ -12,6 +12,7 @@
 pub mod audio;
 pub mod audio_fx;
 pub mod blend;
+pub mod cftrack;
 pub mod color_match;
 pub mod colorman;
 pub mod effects;
