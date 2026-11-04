@@ -2146,6 +2146,20 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
 
 
 # ----- export window -----
+def test_project_search_finds_every_typed_word():
+    """upstream #3327: the Project panel's search (the engine's and this fallback) finds a name
+    holding every word typed, in any order."""
+    from cfa4_qt.panels.project import fallback_rows, name_matches
+
+    name = "Comedy manager · medium · smiling · enjoys the show · img385 · A"
+    assert name_matches(name, "") and name_matches(name, "comedy manager smiling")
+    assert name_matches(name, "Smiling  comedy ") and name_matches(name, "comedy manager s")
+    assert not name_matches(name, "comedy manager laughing")
+    assert not name_matches("Comedy club", "comedy manager")
+    tree = {"children": [{"item": 1, "name": name}, {"item": 2, "name": "Comedy club"}]}
+    assert [r["item"] for r in fallback_rows(tree, needle="smiling comedy")] == [1]
+
+
 def test_export_helpers(tmp_path: Path, monkeypatch):
     from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name, with_extension
 
