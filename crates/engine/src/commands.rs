@@ -592,6 +592,44 @@ pub fn with_links(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
     out
 }
 
+/// `clips` plus every clip grouped with them (`clip.group`) and, when linked selection is on, their
+/// linked partners, repeated until nothing more joins: the partner of a grouped clip brings the
+/// group along. Groups always select together; Alt-click (`linked: false`) picks one member.
+pub fn with_groups_and_links(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
+    let mut out = with_links(s, &with_groups(s, clips));
+    loop {
+        // both steps only add, so an unchanged length means nothing joined
+        let next = with_links(s, &with_groups(s, &out));
+        if next.len() == out.len() {
+            return out;
+        }
+        out = next;
+    }
+}
+
+/// Keep each selected identity once, then add every clip that shares a group with one of them.
+fn with_groups(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
+    let mut out = Vec::new();
+    for c in clips {
+        if !out.contains(c) {
+            out.push(*c);
+        }
+    }
+    let Some(seq) = s.active_sequence() else { return out };
+    let groups: Vec<u64> = out.iter().filter_map(|c| seq.find_item(*c).and_then(|(_, i)| i.group)).collect();
+    if groups.is_empty() {
+        return out;
+    }
+    for t in seq.all_tracks() {
+        for i in &t.items {
+            if i.group.is_some_and(|g| groups.contains(&g)) && !out.contains(&i.id) {
+                out.push(i.id);
+            }
+        }
+    }
+    out
+}
+
 /// The delta a trim of `clips` (a clip and its linked partners) can apply together: `delta`
 /// clamped by each one's media and neighbours.
 fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, mode: TrimMode, delta: Tick, ctx: &edit::EditCtx) -> Result<Tick> {
@@ -2611,29 +2649,34 @@ fn build() -> Vec<CommandSpec> {
             }
             let clips: Vec<ClipId> =
                 p.get("clips").and_then(Value::as_array).map(|a| a.iter().filter_map(|v| v.as_u64().map(ClipId)).collect()).unwrap_or_default();
-            let clips = if bool_p(p, "linked").unwrap_or(true) { with_links(s, &clips) } else { clips };
+            // a toggle adds or removes the requested clips as a whole, decided once from their own
+            // selection state, so a partly selected group never ends up half flipped
+            let toggle_off = !clips.is_empty() && clips.iter().all(|c| s.state.selection.contains(c));
+            let clips = if bool_p(p, "linked").unwrap_or(true) { with_groups_and_links(s, &clips) } else { clips };
             // selecting clips leaves trim mode (Premiere: clip and edit point selections are exclusive)
             s.state.edit_points.clear();
             s.state.trim_shift = Default::default();
             // and a clip selection replaces a transition or gap one
             s.state.transition_selection.clear();
             s.state.gap_selection = None;
-            if bool_p(p, "toggle").unwrap_or(false) {
-                for c in clips {
-                    if let Some(i) = s.state.selection.iter().position(|x| *x == c) {
-                        s.state.selection.remove(i);
-                    } else {
-                        s.state.selection.push(c);
-                    }
-                }
-            } else if bool_p(p, "add").unwrap_or(false) {
+            if bool_p(p, "toggle").unwrap_or(false) && toggle_off {
+                s.state.selection.retain(|x| !clips.contains(x));
+            } else if bool_p(p, "toggle").unwrap_or(false) || bool_p(p, "add").unwrap_or(false) {
                 for c in clips {
                     if !s.state.selection.contains(&c) {
                         s.state.selection.push(c);
                     }
                 }
             } else {
-                s.state.selection = clips;
+                // a raw (unlinked) id list may repeat a clip; keep the first of each, in order
+                let mut seen = std::collections::HashSet::with_capacity(clips.len());
+                let mut unique: Vec<ClipId> = Vec::with_capacity(clips.len());
+                for c in clips {
+                    if seen.insert(c) {
+                        unique.push(c);
+                    }
+                }
+                s.state.selection = unique;
                 s.state.caption_selection.clear();
             }
             Ok(json!({"selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>()}))
@@ -3694,6 +3737,9 @@ fn copy_selection(s: &mut Session) {
     s.state.clipboard_markers = markers;
 }
 
+/// Paste the clipboard at the playhead (`insert` ripples later clips right instead of
+/// overwriting). Caption clipboards go to the caption track. Pasted clips get fresh ids, links
+/// and groups of their own, are selected, and the playhead moves to their end.
 fn paste(s: &mut Session, insert: bool) -> Result<Value> {
     let at = s.playhead();
     let clip = s.state.clipboard.clone();
@@ -3701,6 +3747,9 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
     let end = s.edit_sequence(if insert { "Paste Insert" } else { "Paste" }, |q, ctx, st| {
         let mut placements = Vec::new();
         let mut links = std::collections::HashMap::new();
+        // pasted clips get groups of their own, as their links: sharing the originals' group
+        // would select (and so drag or delete) the originals with them
+        let mut groups = std::collections::HashMap::new();
         for (kind, ti, item) in clip {
             let tracks = q.tracks(kind);
             let Some(t) = tracks.get(ti).or(tracks.last()) else { continue };
@@ -3709,6 +3758,9 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
             it.start += at;
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
+            }
+            if let Some(g) = it.group {
+                it.group = Some(*groups.entry(g).or_insert_with(|| ctx.alloc()));
             }
             placements.push((t.id, it));
         }
