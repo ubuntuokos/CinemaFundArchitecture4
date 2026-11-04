@@ -118,8 +118,9 @@ Every commit must pass all of these:
 | Tests | `cargo test --workspace` |
 | Layering | `cargo xtask layers` |
 | Assets | `cargo xtask assets` |
-| wasm | `cargo xtask wasm` (opt-in; checks every L0–L4 crate and `cfa4-ui-egui` for `wasm32-unknown-unknown`) |
-| All of the above | `cargo xtask ci` (runs clippy and tests with `--release`) |
+| All of the above except tests | `cargo xtask ci` (runs clippy with `--release`; run the tests separately) |
+
+`cargo xtask wasm` (checks every L0–L4 crate and `cfa4-ui-egui` for `wasm32-unknown-unknown`) is opt-in legacy, not a gate: WASM is not a CFA4 target.
 
 Run them with `CFA4_FONTS_DIR` set too when you change font code ([extra-fonts](#building-with-extra-fonts)).
 
