@@ -127,7 +127,10 @@ def test_real_engine_monitor_shows_frames_from_shared_memory(app, tmp_path: Path
         shown = image.constBits()
         assert bytes(shown) == out[0], "the engine's frame, read in place"
 
-        # mapping fails: the monitor asks again through the pipe and keeps showing frames
+        # mapping fails: the monitor asks again through the pipe and keeps showing frames. Nothing of
+        # the monitor's may still be in flight: a frame it asked for before (a resize re-render)
+        # failing to map would turn shared memory off before the seek asks through it
+        assert wait_until(app, lambda: not mon._frame_busy and mon._frame_wanted is None, 20_000)
         monkeypatch.setattr(FrameMaps, "_map", staticmethod(lambda _path: None))
         engine.frames._maps.clear()
         replies.clear()
