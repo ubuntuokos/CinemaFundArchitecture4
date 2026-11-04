@@ -184,7 +184,7 @@ jobs:
           # package in a single fast failure, not one by one across costly CI runs.
           oracle_dev_packages=(
             libdav1d-dev libsvtav1enc-dev libaom-dev
-            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev zlib1g-dev
+            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
             libheif-examples libheif-plugin-libde265 libheif-plugin-x265 libjxl-tools
             webp
           )
@@ -213,8 +213,8 @@ jobs:
       - name: Cache FFmpeg 9.0.2
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v6
-          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v6
+          path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
+          key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
       - name: Install verified FFmpeg 9.0.2
         run: bash scripts/ci/install-ffmpeg-9.0.2.sh
       - name: Assert Ubuntu 26.04 and FFmpeg 9.0.2 versions
@@ -312,6 +312,19 @@ jobs:
         run: python -m pytest -q python/tests/test_qt_gui.py
       - name: Qt 6 offscreen widget smoke
         run: python -m cfa4_devtools.qt_app --smoke
+      # qt-parity 1.9: the Qt GUI on a real X11 (Xvfb) and Wayland (weston headless) server. Last,
+      # because weston pulls in libpipewire without its client config, where Qt Multimedia's
+      # PipeWire backend crashes: the GUI tests above run without it. No Rust here: the tests' fake
+      # engine serves the window.
+      - name: Qt 6 GUI on X11 and Wayland
+        run: |
+          sudo apt-get install -y --no-install-recommends xvfb weston \
+            libxkbcommon-x11-0 libxcb-icccm4 libxcb-keysyms1 libxcb-image0 libxcb-render-util0 \
+            libxcb-shape0 libxcb-xinerama0 libxcb-randr0 libxcb-xkb1
+          QT_AUDIO_BACKEND=alsa python -m pytest -q -rs python/tests/test_qt_display_servers.py
+        env:
+          QT_QPA_PLATFORM: ""
+          CFA4_REQUIRE_DISPLAY_SERVERS: "1"
 
   # Required status check for main (owner decision 2026-10-31, docs/coordination.md §3.4):
   # green only if every blocking full-validation job really ran and succeeded on this head.

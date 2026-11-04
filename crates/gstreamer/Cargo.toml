@@ -10,7 +10,8 @@ rust-version.workspace = true
 workspace = true
 
 [features]
-# Off by default: building with it needs the GStreamer development packages
+# Off by default in the workspace; release packages turn it on (packaging/linux/package.sh,
+# ADR 0002 step 6) and depend on Ubuntu's GStreamer packages. Building with it needs the GStreamer development packages
 # (Ubuntu: libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev). Without it every entry point
 # reports `Error::Unavailable` and the Rust engine works exactly as before.
 default = []

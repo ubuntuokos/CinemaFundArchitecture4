@@ -52,4 +52,5 @@ cfa4-testkit = { workspace = true }
 cfa4-dng = { workspace = true, features = ["writer"] }
 cfa4-isobmff = { workspace = true }
 cfa4-iab = { workspace = true }
+cfa4-auro = { workspace = true, features = ["test-util"] }
 image = { version = "0.25", default-features = false, features = ["png", "gif"] }
