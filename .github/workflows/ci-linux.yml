@@ -312,6 +312,19 @@ jobs:
         run: python -m pytest -q python/tests/test_qt_gui.py
       - name: Qt 6 offscreen widget smoke
         run: python -m cfa4_devtools.qt_app --smoke
+      # qt-parity 1.9: the Qt GUI on a real X11 (Xvfb) and Wayland (weston headless) server. Last,
+      # because weston pulls in libpipewire without its client config, where Qt Multimedia's
+      # PipeWire backend crashes: the GUI tests above run without it. No Rust here: the tests' fake
+      # engine serves the window.
+      - name: Qt 6 GUI on X11 and Wayland
+        run: |
+          sudo apt-get install -y --no-install-recommends xvfb weston \
+            libxkbcommon-x11-0 libxcb-icccm4 libxcb-keysyms1 libxcb-image0 libxcb-render-util0 \
+            libxcb-shape0 libxcb-xinerama0 libxcb-randr0 libxcb-xkb1
+          QT_AUDIO_BACKEND=alsa python -m pytest -q -rs python/tests/test_qt_display_servers.py
+        env:
+          QT_QPA_PLATFORM: ""
+          CFA4_REQUIRE_DISPLAY_SERVERS: "1"
 
   # Required status check for main (owner decision 2026-10-31, docs/coordination.md §3.4):
   # green only if every blocking full-validation job really ran and succeeded on this head.
