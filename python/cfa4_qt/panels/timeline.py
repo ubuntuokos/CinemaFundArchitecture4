@@ -178,6 +178,11 @@ class Drag:
     volume: dict[str, Any] | None = None  # volumeLine / volumeKey: the grab (egui's LineDrag / KeyDrag)
 
 
+# Duplicate frame marker colors, one per master clip with repeated frames in the order they appear
+# in the sequence (the engine's DUPLICATE_FRAME_COLORS)
+DUPLICATE_FRAME_COLORS = ("#e84a4a", "#3d9be9", "#4cc25a", "#f2c22e", "#b05ce0", "#f08a2c", "#2cd4c8", "#ec5eb0", "#9acd32", "#f5f5f5")
+
+
 def as_int(v: Any, default: int = 0) -> int:
     return v if isinstance(v, int) and not isinstance(v, bool) else default
 
@@ -723,6 +728,7 @@ class TimelineCanvas(QWidget):
                     2 if clip.get("clip") in selected else 1,
                 )
                 self._paint_clip_media(p, row, clip, r, base)
+                self._paint_duplicate_frames(p, clip, r)
                 if row.kind == "audio" and row.track_id not in self.track_lanes:
                     self._paint_volume(p, row, clip, r)
                 p.setPen(pen)
@@ -897,6 +903,34 @@ class TimelineCanvas(QWidget):
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
                     T.c("in_out_shade"),
                 )
+
+    # ----- Show Duplicate Frame Markers (upstream #3212) -----
+    def duplicate_frames(self) -> dict[Any, tuple[int, list[tuple[int, int]]]]:
+        """clip -> (color index, its repeated-frame timeline ranges), from the engine's sequence."""
+        out: dict[Any, tuple[int, list[tuple[int, int]]]] = {}
+        for d in (self.sequence or {}).get("duplicateFrames") or []:
+            if not isinstance(d, dict):
+                continue
+            ranges = [(r["start"], r["end"]) for r in d.get("ranges") or []
+                      if isinstance(r, dict) and isinstance(r.get("start"), int) and isinstance(r.get("end"), int) and r["end"] > r["start"]]
+            if ranges:
+                out[d.get("clip")] = (as_int(d.get("color")), ranges)
+        return out
+
+    def _paint_duplicate_frames(self, p: QPainter, clip: dict[str, Any], r: QRectF) -> None:
+        """A stripe along the clip's bottom under each repeated frame, in its master clip's color
+        (as the clip is drawn now, also while it is dragged)."""
+        found = self.duplicate_frames().get(clip.get("clip"))
+        if found is None:
+            return
+        color = QColor(DUPLICATE_FRAME_COLORS[min(max(found[0], 0), len(DUPLICATE_FRAME_COLORS) - 1)])
+        shift = r.left() - self.x_of(as_int(clip.get("start")))
+        p.save()
+        p.setClipRect(r)
+        for a, b in found[1]:
+            x0, x1 = self.x_of(a) + shift, self.x_of(b) + shift
+            p.fillRect(QRectF(x0, r.bottom() - 3, max(1.0, x1 - x0), 3), color)
+        p.restore()
 
     # ----- markers (egui's timeline_hit.rs marker_rect / marker_range_rect) -----
     def marker_rect(self, marker: dict[str, Any]) -> QRectF:
@@ -1696,6 +1730,12 @@ class TimelineCanvas(QWidget):
         """egui's Timeline Display Settings (the toolbar's wrench)."""
         menu = QMenu(self)
         menu.setObjectName("timeline.settings")
+        # media frames used more than once get a colored stripe (upstream #3212)
+        a = menu.addAction(tr("Show Duplicate Frame Markers"))
+        a.setObjectName("timeline.settings.showDuplicateFrameMarkers")
+        a.setCheckable(True)
+        a.setChecked((self.sequence or {}).get("showDuplicateFrameMarkers") is True)
+        a.toggled.connect(lambda on: self.command.emit("sequence.showDuplicateFrameMarkers", {"on": bool(on)}))
         a = menu.addAction(tr("Show Video Thumbnails"))
         a.setObjectName("timeline.settings.showThumbnails")
         a.setCheckable(True)
