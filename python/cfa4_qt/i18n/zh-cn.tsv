@@ -21,7 +21,6 @@
 	AAC	AAC
 	Add pause	添加停顿
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	“添加停顿”会插入 [pause 1s]。修改数字可让停顿更长或更短，例如 [pause 500ms] 或 [pause 2s]。
-	Add to Queue	添加到队列
 	Add to timeline	添加到时间轴
 	Advertisement	广告
 	All Supported Files	所有支持的文件
@@ -29,14 +28,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	没有 `serve` 的引擎是从不含 Qt GUI 的分支构建的：请切换到 Qt GUI 分支并重新构建，或传入 --engine PATH。
 	Arrangement {n}	编排 {n}
 	Audio Files	音频文件
-	Audio bitrate	音频比特率
-	Audio codec	音频编解码器
 	Automation mode	自动化模式
 	B pictures	B 帧
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV 传输流（.m2ts，AAC 音频）
 	Basic voices (built in)	基本语音（内置）
 	Beyond IAB Profile 1: {notes}	超出 IAB 配置文件 1：{notes}
-	Bitrate mode	比特率模式
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 遇到错误
 	CFA4 project links	CFA4 项目链接
@@ -50,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	导出前检查：时间轴上标记了 {n} 个问题（红色标记）
 	Checked:	已检查：
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	请选择 IAB 轨道文件（IMF 或 DCP）、原始 IAB 流或 Dolby Atmos TrueHD：.thd 流，或带 Atmos 轨道的 MKV、MP4 或 M2TS 文件。
-	Choose an output file.	请选择输出文件。
+	Choose a file name and location.	请选择文件名和位置。
+	Choose folder	选择文件夹
 	Click and press keys to assign	单击后按下要分配的按键
 	Compression	压缩
 	Compression Level	压缩级别
@@ -92,7 +89,6 @@
 	Export Media	导出媒体
 	Export Media…	导出媒体…
 	Export Queue	导出队列
-	Export audio	导出音频
 	Export captions…	导出字幕…
 	Export failed: {path}	导出失败：{path}
 	Export finished: {path}	导出完成：{path}
@@ -109,7 +105,6 @@
 	Film Scan 3	胶片扫描 3
 	Flat (1.85:1)	遮幅（1.85:1）
 	Format:	格式：
-	Frame size	帧大小
 	Frame time: {timecode}	帧时间：{timecode}
 	From the preset	来自预设
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	来自 {source} 和 github.com/cmusphinx/cmudict（发音）。许可证：{license}。每个文件都会按固定的 SHA-256 校验。
@@ -130,7 +125,6 @@
 	Incoming clip (drag to trim the In point)	入场剪辑（拖动以修剪入点）
 	Input channel mapping	输入声道映射
 	Keep existing file	保留现有文件
-	Keyframe distance	关键帧间隔
 	Label Color Presets	标签颜色预设
 	Large	大
 	Linear Gradient	线性渐变
@@ -215,7 +209,6 @@
 	Stop Queue	停止队列
 	Synthesizing narration…	正在合成旁白…
 	Synthesizing…	正在合成…
-	Target bitrate	目标比特率
 	Teaser	先导预告
 	Template: {name}	模板：{name}
 	Test	测试

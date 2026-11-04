@@ -334,6 +334,11 @@ impl MqEncoder {
         (self.out.len() + usize::from(self.started), 27u32.saturating_sub(self.ct))
     }
 
+    /// Bytes written so far, the pending one included.
+    pub fn bytes(&self) -> usize {
+        self.out.len() + usize::from(self.started)
+    }
+
     /// FLUSH (C.2.9): the terminated codeword, without a final 0xFF.
     pub fn finish(mut self) -> Vec<u8> {
         // SETBITS

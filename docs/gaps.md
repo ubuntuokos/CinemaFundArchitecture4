@@ -318,6 +318,7 @@ distributions are not targets.
   resumes instead of playback going silent (at most 3 restarts in 10 s); a panicking mixer plays
   silence (#840).
 - **Estimate:** 20–40 h.
+- **Plan (Object Mask):** [OBJECT-MASK-PLAN-001](plans/OBJECT-MASK-PLAN-001-2026-11-03.md) (approved and saved 2026-11-03; execution awaits an owner decision).
 
 ## G18. Effects depth: approximations and missing behaviour
 

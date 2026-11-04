@@ -93,3 +93,52 @@ fn caption_font_picker_sets_the_track_font() {
     d.frames(3);
     assert_eq!(d.font(track), "Noto Serif");
 }
+
+/// Every text shape on screen, with the colour of its first run.
+fn painted_text(d: &Driver) -> Vec<(String, egui::Color32)> {
+    fn walk(s: &egui::Shape, out: &mut Vec<(String, egui::Color32)>) {
+        match s {
+            egui::Shape::Text(t) => {
+                if let Some(sec) = t.galley.job.sections.first() {
+                    out.push((t.galley.text().to_string(), sec.format.color));
+                }
+            }
+            egui::Shape::Vec(v) => v.iter().for_each(|s| walk(s, out)),
+            _ => {}
+        }
+    }
+    let mut out = Vec::new();
+    d.harness.output().shapes.iter().for_each(|c| walk(&c.shape, &mut out));
+    out
+}
+
+/// Relative luminance (WCAG) of an opaque colour.
+fn luminance(c: egui::Color32) -> f32 {
+    let f = |v: u8| {
+        let v = v as f32 / 255.0;
+        if v <= 0.03928 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
+    };
+    0.2126 * f(c.r()) + 0.7152 * f(c.g()) + 0.0722 * f(c.b())
+}
+
+// Regression test for #1072: the Captions tab's "Import captions file…" button label was always
+// white, so it vanished against the light grey button in light mode.
+#[test]
+fn import_captions_button_label_is_legible_in_both_themes() {
+    let mut d = Driver::demo();
+    d.ok("ui.set", json!({"workspace": "Captions and Graphics"}));
+    d.ok("ui.click", json!({"id": "text.tab.Captions"}));
+    for theme in ["dark", "light"] {
+        d.ok("ui.set", json!({"theme": theme}));
+        d.frames(3);
+        assert!(d.ids("text.captions.import").iter().any(|i| i == "text.captions.import"), "{theme}: the empty Captions tab offers the import button");
+        let field_bg = d.harness.state().tokens.field_bg;
+        let (_, color) = painted_text(&d)
+            .into_iter()
+            .find(|(text, _)| text.starts_with("Import captions file"))
+            .unwrap_or_else(|| panic!("{theme}: the button label is not drawn"));
+        let (hi, lo) = (luminance(color).max(luminance(field_bg)), luminance(color).min(luminance(field_bg)));
+        let contrast = (hi + 0.05) / (lo + 0.05);
+        assert!(contrast >= 4.5, "{theme}: label {color:?} on {field_bg:?} has contrast {contrast:.2}:1");
+    }
+}
