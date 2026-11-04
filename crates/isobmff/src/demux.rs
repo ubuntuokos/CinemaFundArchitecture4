@@ -163,10 +163,20 @@ impl Track {
     }
 }
 
-/// Text metadata from `udta` (QuickTime `©xxx` atoms and iTunes-style `meta/ilst`, incl. `keys`).
+/// Text metadata from `udta` (QuickTime `©xxx` atoms and iTunes-style `meta/ilst`, incl. `keys`)
+/// and the chapters of a Nero `chpl` box.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Metadata {
     pub entries: Vec<(String, String)>,
+    /// Chapters from `moov/udta/chpl`, in file order.
+    pub chapters: Vec<Chapter>,
+}
+
+/// A chapter mark: start in 100 ns units (the `chpl` time base) and a title.
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct Chapter {
+    pub start_100ns: u64,
+    pub title: String,
 }
 
 impl Metadata {
@@ -873,12 +883,35 @@ fn parse_udta(p: &[u8], md: &mut Metadata) {
     for b in boxes(p).map_while(|b| b.ok()) {
         if b.kind == b"meta" {
             parse_meta(b.payload, md);
+        } else if b.kind == b"chpl" {
+            parse_chpl(b.payload, md);
         } else if b.kind.0[0] == 0xA9 && b.payload.len() >= 4 {
             let n = u16::from_be_bytes([b.payload[0], b.payload[1]]) as usize;
             if let Some(s) = b.payload.get(4..4 + n) {
                 md.entries.push((b.kind.to_string_lossy(), String::from_utf8_lossy(s).into_owned()));
             }
         }
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn parse_udta_for_tests(p: &[u8], md: &mut Metadata) {
+    parse_udta(p, md);
+}
+
+/// Nero `chpl` (see the muxer): a truncated box keeps the chapters read before the cut.
+fn parse_chpl(p: &[u8], md: &mut Metadata) {
+    let mut c = Cur::new(p, "chpl");
+    let Ok((version, _)) = c.full_header() else { return };
+    if version >= 1 && c.skip(4).is_err() {
+        return;
+    }
+    let Ok(n) = c.u8() else { return };
+    for _ in 0..n {
+        let Ok(start) = c.u64() else { break };
+        let Ok(len) = c.u8() else { break };
+        let Ok(title) = c.bytes(usize::from(len)) else { break };
+        md.chapters.push(Chapter { start_100ns: start, title: String::from_utf8_lossy(title).into_owned() });
     }
 }
 
