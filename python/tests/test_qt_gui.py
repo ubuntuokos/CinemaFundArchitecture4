@@ -8802,6 +8802,24 @@ def test_text_panel(app, tmp_path: Path):
         tp.captions.search.setText("nothing like it")
         assert tp.captions.table.rowCount() == 0 and tp.captions.note.text() == "No matching captions."
         tp.captions.search.clear()
+        # upstream #3042: the list follows the playhead, bringing the caption it reaches into view
+        for i in range(40):
+            win.execute("captions.add", {"text": f"line {i}", "time": TICKS_PER_SECOND * (30 + 2 * i), "durationSeconds": 1})
+        assert wait_until(app, lambda: tp.captions.table.rowCount() == 41, 20_000), tp.captions.table.rowCount()
+        table = tp.captions.table
+        table.verticalScrollBar().setValue(0)
+        last = captions()[-1]
+        tp.set_playhead(int(last["start"]) + TICKS_PER_SECOND // 2)
+
+        def shown() -> bool:
+            row = next((r for r in range(table.rowCount()) if table.item(r, 4).text() == last["text"]), None)
+            return row is not None and table.viewport().rect().intersects(table.visualItemRect(table.item(row, 0)))
+
+        assert wait_until(app, lambda: tp.captions._followed == last["id"] and shown(), 10_000), tp.captions._followed
+        # once followed it is left alone: scrolling away is not undone while the playhead stays there
+        table.verticalScrollBar().setValue(0)
+        tp.captions._fill()
+        assert table.verticalScrollBar().value() == 0
 
         # Graphics: a text layer shows up and edits in place
         win.execute("graphics.newText", {"text": "Hello Qt"})
