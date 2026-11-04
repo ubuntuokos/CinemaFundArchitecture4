@@ -319,3 +319,6 @@
 	{v} Mbps	{v}Mbps
 	{word} compression	{word} 압축
 	{w}x{h} ({par})	{w}×{h}({par})
+	Delete Redoable Actions	다시 실행 가능한 작업 삭제
+	Clear History	작업 내역 지우기
+	Delete the dimmed actions after the current state? They cannot be redone.	현재 상태 이후의 흐리게 표시된 작업을 삭제할까요? 다시 실행할 수 없게 됩니다.

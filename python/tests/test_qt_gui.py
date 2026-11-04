@@ -4270,7 +4270,9 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         assert dock_commands.dock_at(win, pos) == "History"
         QtGui.QCursor.setPos(pos)
         menu = dock_commands.panel_menu(win, "History")
-        assert [a.objectName() for a in menu.actions()] == ["panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace"]
+        assert [a.objectName() for a in menu.actions() if not a.isSeparator()] == [
+            "panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace",
+            "panel.menu.History.deleteRedoable", "panel.menu.History.clear"]  # (upstream #3075)
         menu.actions()[1].trigger()
         assert hist.isFloating()
         menu.actions()[0].trigger()
@@ -4281,6 +4283,58 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_history_panel_menu_deletes_redoable_and_clears(app, tmp_path: Path, monkeypatch):
+    """upstream #3075: the History panel menu's Delete Redoable Actions (OK first; Cancel keeps
+    them) and Clear History; neither changes the project."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+
+    def rows() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def action(name: str):
+        menu = dock_commands.panel_menu(win, "History")
+        return next(a for a in menu.actions() if a.objectName() == f"panel.menu.History.{name}")
+
+    answers: list = []
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        for t in (1.0, 2.0, 3.0):
+            win.execute("markers.add", {"seconds": t})
+        assert wait_until(app, lambda: len(rows()) >= 4, 10_000), rows()
+        steps = len(rows())
+        win.execute("edit.undo", {})
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: action("deleteRedoable").isEnabled(), 10_000)
+        markers = len((win.sequence or {}).get("markers") or [])
+        # Cancel keeps the redo steps; OK deletes them, the project stays as it is
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        action("deleteRedoable").trigger()
+        wait_until(app, lambda: False, 300)
+        assert len(rows()) == steps and win.command_enabled("history.deleteRedoable")
+        answers.append(QtWidgets.QMessageBox.StandardButton.Ok)
+        action("deleteRedoable").trigger()
+        assert wait_until(app, lambda: len(rows()) == steps - 2 and not win.command_enabled("history.deleteRedoable"), 10_000), rows()
+        assert len((win.sequence or {}).get("markers") or []) == markers
+        # Clear History leaves only Open
+        action("clear").trigger()
+        assert wait_until(app, lambda: rows() == [rows()[0]] and not win.command_enabled("history.clear"), 10_000), rows()
+        assert len((win.sequence or {}).get("markers") or []) == markers
+        assert not answers
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
 
 
 def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path):

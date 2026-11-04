@@ -355,4 +355,13 @@ def panel_menu(win: MainWindow, title: str, parent: QWidget | None = None) -> QM
         a = menu.addAction(tr(label))
         a.setObjectName(f"panel.menu.{pid}.{name}")
         a.triggered.connect(lambda _c=False, s=slot: s())
+    if pid == "History":
+        # the History panel's own entries (upstream #3075); Delete Redoable Actions asks for OK
+        menu.addSeparator()
+        for name, label, cid in (("deleteRedoable", N_("Delete Redoable Actions"), "history.deleteRedoable"),
+                                 ("clear", N_("Clear History"), "history.clear")):
+            a = menu.addAction(tr(label))
+            a.setObjectName(f"panel.menu.History.{name}")
+            a.setEnabled(win.command_enabled(cid))
+            a.triggered.connect(lambda _c=False, c=cid: win.invoke(c))
     return menu

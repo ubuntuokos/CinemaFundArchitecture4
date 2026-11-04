@@ -319,3 +319,6 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 圧縮
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Delete Redoable Actions	やり直し可能な操作を削除
+	Clear History	ヒストリーを消去
+	Delete the dimmed actions after the current state? They cannot be redone.	現在の状態より後の淡色表示の操作を削除しますか？ やり直しできなくなります。

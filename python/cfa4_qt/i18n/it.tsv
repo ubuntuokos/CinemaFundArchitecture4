@@ -319,3 +319,6 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compressione {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Delete Redoable Actions	Elimina azioni ripetibili
+	Clear History	Cancella cronologia
+	Delete the dimmed actions after the current state? They cannot be redone.	Eliminare le azioni attenuate dopo lo stato corrente? Non potranno essere ripetute.
