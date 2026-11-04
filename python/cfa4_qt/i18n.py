@@ -16,7 +16,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-CATALOG_DIRS = (HERE / "i18n", ROOT / "crates" / "ui-egui" / "src" / "i18n")
+# the shared catalogs: egui's in a checkout; an installed package ships a copy of them next to
+# the Qt catalogs (packaging/linux/package.sh)
+SHARED_CATALOGS = ROOT / "crates" / "ui-egui" / "src" / "i18n"
+CATALOG_DIRS = (HERE / "i18n", SHARED_CATALOGS if SHARED_CATALOGS.is_dir() else HERE / "i18n" / "shared")
 
 # language code -> name shown in the View ▸ Language menu (in that language)
 LANGUAGES = {
