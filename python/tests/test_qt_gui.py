@@ -10030,3 +10030,23 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_long_menus_scroll_instead_of_splitting_into_columns(app):
+    """A menu taller than the screen (the timeline's clip menu on a short screen) scrolls in one
+    column, as upstream's clip menu does, instead of running off the screen or into columns."""
+    from cfa4_qt import theme
+
+    theme.apply(theme.current())
+    style = app.style()
+    theme.apply(theme.current())
+    assert app.style() is style, "re-applying the theme keeps the style (no re-polish)"
+    assert style.styleHint(QtWidgets.QStyle.StyleHint.SH_Menu_Scrollable) == 1
+    menu = QtWidgets.QMenu()
+    for i in range(300):
+        menu.addAction(f"Clip menu item {i}")
+    area = app.primaryScreen().availableGeometry()
+    menu.popup(area.topLeft())
+    app.processEvents()
+    assert menu.height() <= area.height() and menu.width() < 400, menu.geometry()
+    menu.close()
