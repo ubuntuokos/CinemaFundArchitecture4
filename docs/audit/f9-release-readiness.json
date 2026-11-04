@@ -108,6 +108,12 @@
       "status": "OPEN",
       "reason": "PR #17/#20 and stacked PR #23-#30 are still drafts; no merged, post-merge main release validation",
       "evidence": "https://github.com/ubuntuokos/CinemaFundArchitecture4/pull/23"
+    },
+    {
+      "id": "patent_review_recorded",
+      "status": "OPEN",
+      "reason": "ADR 0003 §13: the patent review results of every base-package format are not recorded yet (docs/patent-review.md: all rows pending)",
+      "evidence": "docs/patent-review.md"
     }
   ]
 }
