@@ -96,7 +96,10 @@
 	Cerulean	Égszínkék
 	Channel Volume	Csatornahangerő
 	Checked:	Megvizsgálva:
-	Choose an output file.	Válasszon kimeneti fájlt.
+	Choose a file name and location.	Adj meg fájlnevet és helyet.
+	Choose folder	Mappa kiválasztása
+	Media File	Médiafájl
+	Sequence name	Szekvencia neve
 	Clear	Törlés
 	Clear Finished	Befejezettek törlése
 	Clear In	Kezdőpont törlése
@@ -2254,6 +2257,8 @@
 	Trim Forward	Igazítás előre
 	Trim Forward Many	Igazítás sok képkockával előre
 	Exit Trim Mode	Kilépés a vágásmódból
+	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet hibát jelzett: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
+	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet nem válaszol: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
 	Settings not taken	A beállítás nem lett átvéve
 	Restore	Visszaállítás
 	Overwrite with Current View	Felülírás a jelenlegi nézettel
