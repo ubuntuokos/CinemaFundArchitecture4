@@ -5134,6 +5134,15 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         img = canvas.grab().toImage()
         c = img.pixelColor(int(r.left()) + 2, int(r.bottom()) - 2)
         assert abs(c.red() - 0x8C) + abs(c.green() - 0x6C) + abs(c.blue() - 0xB4) < 40, c.name()  # added: selected
+        # upstream #3039: the Razor tool cuts the caption where it is clicked; undo joins it again
+        canvas.tool = "razor"
+        QtTest.QTest.mouseClick(canvas, btn, pos=r.center().toPoint())
+        assert wait_until(app, lambda: len(captions()) == 2, 10_000), captions()
+        assert captions()[0]["start"] == cap["start"] and captions()[1]["end"] == cap["end"]
+        assert captions()[0]["end"] == captions()[1]["start"]
+        canvas.command.emit("edit.undo", {})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
+        canvas.tool = "selection"
         # a click elsewhere then on the block selects it alone
         QtTest.QTest.mouseClick(canvas, btn, pos=r.center().toPoint())
         assert wait_until(app, lambda: canvas.caption_selection == [cap["id"]], 10_000)
