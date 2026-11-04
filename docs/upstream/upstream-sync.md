@@ -92,7 +92,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3402 | #3364: warn about one-frame In/Out exports | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.15.0 | #3522 | Timeline: grouped clips select together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
-| 0.15.0 | #3587 | Effect Controls: an effect dropped on the panel is applied to the clip it shows | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.15.0 | #3587 | Effect Controls: an effect dropped on the panel is applied to the clip it shows | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #546 | PR nyitva |
 | 0.15.0 | #3608 | render: a monitor frame that is one opaque video picture goes straight to sRGB bytes | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.15.0 | #3327 | Project panel search finds names holding every typed word | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.15.0 | #3523 | Captions: File ▸ Export ▸ Captions… asks for the file format (#3365) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
