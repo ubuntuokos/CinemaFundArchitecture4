@@ -556,7 +556,8 @@ class ControlServer(QObject):
         button = BUTTONS.get(str(p.get("button") or "left"))
         if button is None:
             raise ControlError("button must be left, right or middle")
-        count = p.get("count", 1)
+        # null is the default, as egui reads it (the MCP bridge sends every optional field)
+        count = 1 if p.get("count") is None else p["count"]
         if count == 2:
             QTest.mouseDClick(w, button, mods, at)
         elif count == 1:
@@ -568,7 +569,7 @@ class ControlServer(QObject):
         w, start = self._at(p.get("from"))
         target, end = self._at(p.get("to"))
         end = w.mapFromGlobal(target.mapToGlobal(end))
-        steps = p.get("steps", 8)
+        steps = 8 if p.get("steps") is None else p["steps"]
         if not isinstance(steps, int) or isinstance(steps, bool) or not 1 <= steps <= MAX_DRAG_STEPS:
             raise ControlError(f"steps must be 1 to {MAX_DRAG_STEPS}")
         mods = modifiers_of(p.get("modifiers"))
@@ -1029,7 +1030,14 @@ class ControlServer(QObject):
 
     def screenshot(self, p: dict[str, Any]) -> dict[str, Any]:
         panel = p.get("panel")
-        target: QWidget = self._dock(panel) if panel is not None else self.window
+        if panel is None:
+            target: QWidget = self.window
+        elif panel == "Program" and "Program" not in self.window.docks:
+            # the Program monitor is the window's centre, not a dock; egui's panel name still finds
+            # it (the MCP bridge's render_preview asks for it)
+            target = self.window.monitor
+        else:
+            target = self._dock(panel)
         image = target.grab()
         path = p.get("path")
         if path is not None:

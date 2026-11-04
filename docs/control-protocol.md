@@ -173,6 +173,7 @@ or `--bridge 127.0.0.1:9876` to drive the running app. Tools: `command_list`, `c
 `command_batch`, `doc_inspect`, `render_preview`, `project_inspect`, `sequence_inspect`, `media_import`,
 `render_frame`, `ui_inspect`, `ui_elements`, `ui_click`, `ui_drag`, `ui_key`, `ui_type`, `ui_screenshot`,
 `ui_control`; resources `cfa4://document` and `cfa4://commands`. `.mcp.json` registers both.
+The bridge drives the Qt 6 GUI (`cfa4-qt --control <port>`) the same way.
 Annotations, argument checking, errors and export progress / cancellation:
 [agents.md § Conventions](agents.md#conventions).
 
