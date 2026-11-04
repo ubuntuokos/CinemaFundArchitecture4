@@ -10030,3 +10030,81 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_lost_audio_output_is_reopened_while_playing(app, tmp_path: Path, monkeypatch):
+    """When the output fails to open, or its stream dies mid-play, playing goes on silently and
+    the output is opened again on a timer where the clock got to (upstream #2555): a device that
+    recovers, or appears after Play, sounds without pause/play."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+
+    class FakeSink:
+        def __init__(self) -> None:
+            self.dead = False
+
+        def state(self):
+            return monitor_module.QAudio.State.StoppedState if self.dead else monitor_module.QAudio.State.ActiveState
+
+        def error(self):
+            return monitor_module.QAudio.Error.IOError if self.dead else monitor_module.QAudio.Error.NoError
+
+        def stop(self) -> None:
+            pass
+
+        def deleteLater(self) -> None:
+            pass
+
+        def bufferSize(self) -> int:
+            return 1 << 16
+
+        def bytesFree(self) -> int:
+            return 1 << 16
+
+    class FakeIo:
+        def write(self, data: bytes) -> int:
+            return len(data)
+
+    device = {"present": False}
+    opened: list[tuple[FakeSink, int]] = []
+
+    def open_sink(self, rate: int) -> bool:
+        if not device["present"]:
+            return False
+        self._sink, self._sink_io = FakeSink(), FakeIo()
+        opened.append((self._sink, int(self._audio_next)))
+        return True
+
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", True)
+    monkeypatch.setattr(monitor_module, "AUDIO_RETRY_SECONDS", 0.3)
+    monkeypatch.setattr(monitor_module.Monitor, "_open_sink", open_sink)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    mon = win.monitor
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and mon.has_content(), 20_000)
+        # no device at Play: silent, and the output is tried again
+        mon.play()
+        assert mon.playing and mon._sink is None and mon._audio_retry_at is not None
+        device["present"] = True  # the device appears mid-play
+        assert wait_until(app, lambda: len(opened) == 1, 5_000), "opened without pause/play"
+        assert mon._sink is opened[0][0] and mon._audio_retry_at is None
+        assert opened[0][1] > 0, "it starts where the clock got to, not at the play start"
+        # the stream dies: dropped at once, reopened on the timer where the clock got to
+        opened[0][0].dead = True
+        assert wait_until(app, lambda: mon._sink is None, 2_000)
+        assert wait_until(app, lambda: len(opened) == 2, 5_000)
+        assert mon._sink is opened[1][0] and opened[1][1] > opened[0][1]
+        assert mon.playing, "playing went on through the loss"
+        # Stop forgets the retry
+        opened[1][0].dead = True
+        assert wait_until(app, lambda: mon._sink is None, 2_000)
+        mon.stop()
+        assert mon._audio_retry_at is None
+    finally:
+        win.close()
+        engine.stop()

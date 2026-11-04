@@ -81,7 +81,7 @@ from .timeline_media import TimelineMedia
 from .transport import ACCENT, PROGRAM_BUTTONS, SOURCE_BUTTONS, TransportBar, TransportDef, icon_color, transport_icon
 
 try:  # QtMultimedia is optional: without it playback is silent
-    from PySide6.QtMultimedia import QAudioFormat, QAudioSink, QMediaDevices
+    from PySide6.QtMultimedia import QAudio, QAudioFormat, QAudioSink, QMediaDevices
 
     HAVE_AUDIO = True
 except ImportError:  # pragma: no cover - depends on the PySide6 build
@@ -99,6 +99,10 @@ def output_device(name: str) -> Any:
 
 AUDIO_CHUNK_SECONDS = 0.1
 AUDIO_LEAD_SECONDS = 0.35
+# How often (s) playback re-opens the output after it failed to open or its stream died, while
+# playing goes on silently on the wall clock: what pause/play does by hand, on a timer, so the
+# sound comes back when the device recovers (upstream #2555).
+AUDIO_RETRY_SECONDS = 2.0
 METER_KEEP_SECONDS = 3.0
 SOURCE_SAMPLE_RATE = 48_000
 MAX_SPEED = 8.0
@@ -654,6 +658,7 @@ class Monitor(QWidget):
         self._timer.setInterval(10)
         self._timer.timeout.connect(self._tick)
         self._sink: Any = None
+        self._audio_retry_at: float | None = None  # playback clock (s) of the next reopen, or None
         self._sink_io: Any = None
         self._frame_memory: memoryview | None = None  # the shared-memory frame shown
         self._audio_next = 0
@@ -1208,6 +1213,7 @@ class Monitor(QWidget):
     def _halt(self) -> None:
         self.playing = False
         self._audio_on = False
+        self._audio_retry_at = None
         self._timer.stop()
         self._stop_audio()
         if self._automation_pass:  # writes the pass's fader moves (also on a loop or a speed change)
@@ -1288,6 +1294,7 @@ class Monitor(QWidget):
             self.playhead_moved.emit(frame_t)
             self.request_frame(frame_t)
             self._meter_refresh(frame_t // ft, self._shows(frame_t))
+        self._revive_audio()
         self._feed_audio()
 
     # ----- audio -----
@@ -1316,21 +1323,59 @@ class Monitor(QWidget):
         self.meter_blocks.clear()
         self.strip_blocks.clear()
         self.audio_generation += 1
-        if HAVE_AUDIO:
-            self._open_sink(rate)
+        self._audio_retry_at = None
+        if HAVE_AUDIO and not self._open_sink(rate):
+            self._audio_retry_at = self._clock_seconds() + AUDIO_RETRY_SECONDS
         self._feed_audio()
 
-    def _open_sink(self, rate: int) -> None:
+    def _clock_seconds(self) -> float:
+        return self._clock.nsecsElapsed() / 1e9 if self._clock.isValid() else 0.0
+
+    def _sink_lost(self) -> bool:
+        """The stream died (the device went away or failed): the sink stopped with an error."""
+        sink = self._sink
+        if sink is None:
+            return False
+        try:
+            return sink.state() == QAudio.State.StoppedState and sink.error() != QAudio.Error.NoError
+        except RuntimeError:  # the C++ object is gone
+            return True
+
+    def _revive_audio(self) -> None:
+        """While playing with sound: a lost stream is dropped (playing goes on silently on the
+        wall clock), and the output is opened again every AUDIO_RETRY_SECONDS where the clock got
+        to, so a recovering device brings the sound back without pause/play."""
+        if not (self.playing and self._audio_on and HAVE_AUDIO):
+            return
+        now = self._clock_seconds()
+        if self._sink_lost():
+            self._stop_audio()
+            self._audio_retry_at = now + AUDIO_RETRY_SECONDS
+            return
+        if self._sink is not None or self._audio_retry_at is None or now < self._audio_retry_at:
+            return
+        self._audio_retry_at = now + AUDIO_RETRY_SECONDS
+        t = self._play_from + int(self._clock.nsecsElapsed() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
+        self._audio_next = t * self._mix_rate // TICKS_PER_SECOND
+        self._audio_pending = b""
+        if self._open_sink(self._audio_rate):
+            self._audio_retry_at = None
+
+    def _open_sink(self, rate: int) -> bool:
         fmt = QAudioFormat()
         fmt.setSampleRate(rate)
         fmt.setChannelCount(2)
         fmt.setSampleFormat(QAudioFormat.SampleFormat.Float)
         device = output_device(self.audio_output)
         if device.isNull() or not device.isFormatSupported(fmt):
-            return  # silent: the meters still play
+            return False  # silent: the meters still play, and the output is tried again
         self._sink = QAudioSink(device, fmt, self)
         self._sink.setBufferSize(int(rate * 2 * 4 * AUDIO_LEAD_SECONDS * 2))
         self._sink_io = self._sink.start()
+        if self._sink_io is None or self._sink_lost():
+            self._stop_audio()
+            return False
+        return True
 
     def set_audio_output(self, name: str) -> None:
         """Play through another output; playback that is running moves to it at once."""
