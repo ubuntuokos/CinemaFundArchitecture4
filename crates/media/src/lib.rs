@@ -187,6 +187,7 @@ pub const STILL_EXTENSIONS: &[&str] =
 pub const AUDIO_EXTENSIONS: &[&str] = &["wav", "wave", "bwf", "aif", "aiff", "mp3", "mp2", "m4a", "aac", "flac", "ogg", "opus"];
 pub const VIDEO_EXTENSIONS: &[&str] = &[
     "mp4", "m4v", "mov", "mkv", "webm", "avi", "mxf", "mts", "m2ts", "m2t", "ts", "mpg", "mpeg", "vob", "mod", "tod", "m2v", "m1v", "mpv", "3gp", "y4m", "apv",
+    "dv", "dif",
 ];
 
 pub use fallback::{Fallback, audio_extensions, importable_extensions, open_with_fallback, register_fallback, video_extensions};

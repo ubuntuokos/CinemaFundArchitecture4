@@ -851,6 +851,7 @@ dependencies = [
  "cfa4-color",
  "cfa4-dnx",
  "cfa4-dts",
+ "cfa4-dv",
  "cfa4-frame",
  "cfa4-h264",
  "cfa4-hevc",
