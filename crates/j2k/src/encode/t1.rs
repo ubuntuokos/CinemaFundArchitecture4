@@ -19,6 +19,8 @@ pub(crate) struct Encoded {
     pub data: Vec<u8>,
     pub passes: Vec<Pass>,
     pub planes: u32,
+    /// Coding stopped before the last bit-plane ([`encode`]'s `stop`).
+    pub truncated: bool,
 }
 
 struct State<'a> {
@@ -82,15 +84,20 @@ impl State<'_> {
         self.mq.encode(u8::from(neg) ^ xor, &mut ctx);
         self.cx[usize::from(c)] = ctx;
         let s = self.stride;
-        self.or(i, SIG | if neg { NEG } else { 0 });
-        self.or(i - s, SIG_S | if neg { NEG_S } else { 0 });
-        self.or(i + s, SIG_N | if neg { NEG_N } else { 0 });
-        self.or(i - 1, SIG_E | if neg { NEG_E } else { 0 });
-        self.or(i + 1, SIG_W | if neg { NEG_W } else { 0 });
-        self.or(i - s - 1, SIG_SE);
-        self.or(i - s + 1, SIG_SW);
-        self.or(i + s - 1, SIG_NE);
-        self.or(i + s + 1, SIG_NW);
+        let (n, w) = if neg { (NEG_N, NEG_W) } else { (0, 0) };
+        let (sn, en) = if neg { (NEG_S, NEG_E) } else { (0, 0) };
+        // the rows above and below and the sample's own row, three flags each (the border keeps
+        // them in range)
+        let mut row = |at: usize, bits: [u16; 3]| {
+            if let Some(r) = self.flags.get_mut(at.wrapping_sub(1)..at.wrapping_add(2)) {
+                for (f, b) in r.iter_mut().zip(bits) {
+                    *f |= b;
+                }
+            }
+        };
+        row(i.wrapping_sub(s), [SIG_SE, SIG_S | sn, SIG_SW]);
+        row(i, [SIG_E | en, SIG | if neg { NEG } else { 0 }, SIG_W | w]);
+        row(i + s, [SIG_NE, SIG_N | n, SIG_NW]);
         self.reconstruct(i, 3 << plane);
     }
 
@@ -201,7 +208,11 @@ impl State<'_> {
 /// Encodes a `w` × `h` code-block of subband orientation `orient` from its quantization indices
 /// `q` (magnitudes below 2^30) and the exact values they were quantized from (index units, for
 /// the distortion), in raster order.
-pub(crate) fn encode(q: &[i32], exact: &[f32], w: usize, h: usize, orient: u8) -> Encoded {
+///
+/// Coding stops after a bit-plane whose passes remove less distortion per byte than `stop`
+/// (index units squared per byte; 0 or less codes every bit-plane): rate control would not take
+/// them.
+pub(crate) fn encode(q: &[i32], exact: &[f32], w: usize, h: usize, orient: u8, stop: f64) -> Encoded {
     let max = q.iter().map(|v| v.unsigned_abs()).max().unwrap_or(0).min((1 << 30) - 1);
     let planes = 32 - max.leading_zeros();
     if planes == 0 || w == 0 || h == 0 {
@@ -237,6 +248,8 @@ pub(crate) fn encode(q: &[i32], exact: &[f32], w: usize, h: usize, orient: u8) -
     let mut points = Vec::with_capacity(3 * planes as usize);
     st.cup(planes - 1);
     st.end_pass(&mut passes, &mut points);
+    let mut truncated = false;
+    let mut mark = (st.mq.bytes(), st.dist);
     for plane in (0..planes - 1).rev() {
         st.spp(plane);
         st.end_pass(&mut passes, &mut points);
@@ -244,6 +257,15 @@ pub(crate) fn encode(q: &[i32], exact: &[f32], w: usize, h: usize, orient: u8) -
         st.end_pass(&mut passes, &mut points);
         st.cup(plane);
         st.end_pass(&mut passes, &mut points);
+        if stop > 0.0 && plane > 0 {
+            let (bytes, dist) = (st.mq.bytes(), st.dist);
+            let spent = bytes.saturating_sub(mark.0);
+            if spent > 0 && (dist - mark.1) / (spent as f64) < stop {
+                truncated = true;
+                break;
+            }
+            mark = (bytes, dist);
+        }
     }
     let data = st.mq.finish();
     // the lengths can only grow; a truncation never ends on 0xFF (the decoder pads with 1 bits
@@ -260,7 +282,7 @@ pub(crate) fn encode(q: &[i32], exact: &[f32], w: usize, h: usize, orient: u8) -
     if let Some(last) = passes.last_mut() {
         last.len = data.len();
     }
-    Encoded { data, passes, planes }
+    Encoded { data, passes, planes, truncated }
 }
 
 #[cfg(test)]
@@ -290,7 +312,7 @@ mod tests {
                     })
                     .collect();
                 let exact: Vec<f32> = q.iter().map(|&v| v as f32).collect();
-                let e = encode(&q, &exact, w, h, orient);
+                let e = encode(&q, &exact, w, h, orient, 0.0);
                 let mb = e.planes + 2;
                 let full = decode(&Block { w, h, orient, style: 0, mb, zero: 2, segments: &[(e.data.clone(), e.passes.len() as u32)] }).unwrap();
                 let want: Vec<i32> = q.iter().map(|&v| v * 2).collect();
@@ -303,6 +325,34 @@ mod tests {
                     assert!((d - p.dist).abs() < 1e-6 * d.abs().max(1.0), "{w}x{h} orient {orient} pass {k}: {d} vs {}", p.dist);
                 }
             }
+        }
+    }
+
+    /// Coding that stops early codes the same passes as far as it goes, and they decode.
+    #[test]
+    fn stopped_coding_is_a_prefix_of_full_coding() {
+        let mut seed = 0xBEEFu32;
+        let (w, h) = (32, 32);
+        for orient in 0..4u8 {
+            let q: Vec<i32> = (0..w * h).map(|_| (rnd(&mut seed) % 5000) as i32 - 2500).collect();
+            let exact: Vec<f32> = q.iter().map(|&v| v as f32).collect();
+            let full = encode(&q, &exact, w, h, orient, 0.0);
+            assert!(!full.truncated);
+            let mut stopped_any = false;
+            for stop in [0.5, 5.0, 50.0, 500.0] {
+                let e = encode(&q, &exact, w, h, orient, stop);
+                stopped_any |= e.truncated;
+                assert_eq!(e.planes, full.planes);
+                assert!(e.passes.len() <= full.passes.len() && e.passes.len() % 3 == 1);
+                for (k, (p, f)) in e.passes.iter().zip(&full.passes).enumerate() {
+                    assert_eq!(p.dist, f.dist, "pass {k}");
+                    let part =
+                        decode(&Block { w, h, orient, style: 0, mb: e.planes + 2, zero: 2, segments: &[(e.data[..p.len].to_vec(), k as u32 + 1)] }).unwrap();
+                    let d: f64 = q.iter().zip(&part).map(|(&v, &r)| f64::from(v).powi(2) - (f64::from(v.abs()) - f64::from(r.abs()) / 2.0).powi(2)).sum();
+                    assert!((d - p.dist).abs() < 1e-6 * d.abs().max(1.0), "stop {stop} pass {k}");
+                }
+            }
+            assert!(stopped_any);
         }
     }
 
