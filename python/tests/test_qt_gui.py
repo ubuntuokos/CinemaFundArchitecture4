@@ -8960,7 +8960,6 @@ def test_essential_sound(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_template_dialogs_as_egui(app, tmp_path: Path):
     """File ▸ Export ▸ Motion Graphics Template… and Replace Fonts open egui's dialogs (not the
     generic form): the template's name, category, description and editable properties; the fonts
@@ -9043,6 +9042,7 @@ def test_real_engine_template_dialogs_as_egui(app, tmp_path: Path):
         win.close()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_essential_graphics(app, tmp_path: Path):
     """egui's Essential Graphics panel: Browse lists and applies templates (a card dropped on a
     video track places it there); Edit shows the selected graphic's layers and properties, a hot
