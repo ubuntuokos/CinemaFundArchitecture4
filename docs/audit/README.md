@@ -31,6 +31,7 @@ PR- és beolvasztási szabályok, gazda: [`docs/coordination.md`](../coordinatio
 | [Spec Kit – SK-F0 állapotfelmérés](spec-kit/SK-F0-2026-10-31.md) | CFA4-DEV-SPEC-KIT-001 1.1: verzió (v1.2.5), érvényes szabályok, ütközések K1–K4, meglévő integrációk, költségbaseline (BLOCKED). SK-F1 nincs engedélyezve |
 | [Spec Kit – SK-F1 izolált próba](spec-kit/SK-F1-2026-11-01.md) | CFA4-DEV-SPEC-KIT-001 1.2: v1.2.5 eldobható worktree-ben; AC-SK-04, -12, -13, -14, -15 PASS (kontextus-többlet 0 token); SkillSpector: csak téves riasztás; új: a beépített workflow kapu nélkül futtatja az implementet. SK-F2 nincs engedélyezve |
 | [Spec Kit – SK-F2 hivatkozó constitution és preset](spec-kit/SK-F2-2026-11-01.md) | CFA4-DEV-SPEC-KIT-001 1.2: hivatkozó constitution és `cfa4-policy` preset (forrás: `docs/development/spec-kit/cfa4-policy/`); a #449 után megismételve: AC-SK-02, -03, -04, -13, -14, -15, -16 PASS (preset csak `init --preset`-tel). SK-F3 nincs engedélyezve |
+| [DCP-validációs terv](../plans/DCP-VALIDATION-2026-10-27.md), [DCP-00 képességaudit](DCP-00-CAPABILITY-AUDIT-2026-10-27.md), [DCP-01 forrás- és licencaudit](DCP-01-SOURCE-LICENSE-AUDIT-2026-10-27.md) | CFA4-DCP-VALIDATION-001: a terv (még nem jóváhagyott), a meglévő CFA4-modulok leltára, crate-javaslat (D1–D7) és a dcp_inspect licenc- és függőségi jegyzéke (L1–L7); tulajdonosi jóváhagyásra vár |
 
 ## Fázisok
 
