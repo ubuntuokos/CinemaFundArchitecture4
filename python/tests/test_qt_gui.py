@@ -10085,6 +10085,7 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_type_tool_selection_styles_characters_as_egui(app, tmp_path: Path):
     """egui's ``type_tool_selection_styles_characters``: with characters selected by the Type tool
     on the Program monitor (ui.set ``gfxEdit``, byte offsets as egui's), Essential Graphics'
