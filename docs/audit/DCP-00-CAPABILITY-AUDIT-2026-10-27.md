@@ -1,13 +1,32 @@
 # DCP-00 – CFA4 képességaudit a DCP-validációhoz
 
 **Dátum:** 2026-10-27  
-**Státusz:** audit kész, **tulajdonosi jóváhagyásra vár** (7. pont döntései)  
+**Státusz:** audit kész, **tulajdonosi jóváhagyásra vár** (7. pont döntései); frissítve 2026-11-05 (0. pont)  
 **Terv:** [CFA4-DCP-VALIDATION-001](../plans/DCP-VALIDATION-2026-10-27.md), DCP-00 munkacsomag  
 **Vizsgált állapot:** `main` @ `16debf92d85430d7bbf43687c35ab1b043b2a9ca` (2026-10-27 16:29 CET), és a 2026-10-27 17:00 UTC-kor nyitott PR-ok  
 **Párdokumentum:** [DCP-01 forrás- és licencaudit](DCP-01-SOURCE-LICENSE-AUDIT-2026-10-27.md)
 
 Csak olvasásos vizsgálat: kód nem változott. Minden állítás mögött a megnevezett fájl vagy PR áll;
 a mérés nélküli becsléseket külön jelzem.
+
+## 0. Frissítés, 2026-11-05 (`main` @ `bcfe3b5`)
+
+Az audit óta a `main`-be került, és ez a lenti táblák több sorát megváltoztatja:
+
+- **DCP-export van** (`crates/export/src/dcp_out.rs`, #115; IAB #343, #348; TrueHD Atmos → IAB
+  `dcp_atmos.rs`, #347): SMPTE OV, JPEG 2000 X'Y'Z' és 5.1 / 16 csatornás PCM MXF, IAB `AuxData`,
+  CPL (`CompositionMetadataAsset`, MCA), PKL, ASSETMAP, VOLINDEX, SHA-1 hash, aláírás és titkosítás
+  nélkül. Nyitott folytatás: #397 (RDD 52, MCA-címkék, ISDCF-név), #407 (7.1 / 9.1OH IAB-bed).
+  A 2. pont „Export” sora és a 3. pont F20 sora ezért elavult: a validáció első valódi célpontja a
+  CFA4 saját exportja (export utáni ellenőrzés).
+- **JPEG 2000 MXF-import a `main`-ben** (#103, `crates/codecs/src/j2k.rs`).
+- **SHA-1 van** a `cfa4-export`-ban (`dcp_out.rs`, saját `Sha1`, `pub(crate)`). A 6.5 pontban
+  javasolt `sha1` crate helyett ezt kell közös helyre tenni (a `cfa4-dcp`-be), amikor a validátor
+  hash-ellenőrzése (DCP-05) elkészül.
+- A DCP-import (#101) továbbra is nyitott.
+
+A D1–D7 javaslatok ettől nem változnak; a DCP-02 modellnek a fenti export kimenetét is be kell
+tudnia olvasni (körbejárási teszt).
 
 ## 1. Összefoglaló
 
