@@ -662,15 +662,15 @@ class TrackMixerPanel(QWidget):
         footer.addWidget(self.time_label)
         footer.addStretch(1)
         self.buttons: dict[str, QToolButton] = {}
-        for key, icon, tip in (
-            ("goIn", "goIn", N_("Go to In Point")),
-            ("goOut", "goOut", N_("Go to Out Point")),
-            ("toggle", "play", N_("Play-Stop Toggle (Space)")),
-            ("inToOut", "play", N_("Play In to Out")),
-            ("loop", "loop", N_("Loop")),
+        for key, command, icon, tip in (
+            ("goIn", "markers.goToIn", "goIn", N_("Go to In Point")),
+            ("goOut", "markers.goToOut", "goOut", N_("Go to Out Point")),
+            ("toggle", "playback.toggle", "play", N_("Play-Stop Toggle (Space)")),
+            ("inToOut", "playback.inToOut", "play", N_("Play In to Out")),
+            ("loop", "playback.loop", "loop", N_("Loop")),
         ):
             b = QToolButton(self)
-            b.setObjectName(f"mixer.transport.{key}")
+            b.setObjectName(f"mixer.transport.{command}")  # egui's ids: the button's command
             b.setIcon(transport_icon(icon))
             b.setIconSize(QSize(14, 14))
             b.setAutoRaise(True)
