@@ -144,6 +144,7 @@ class ProgramOverlay(QObject):
 
     pen_finished = Signal()
     eyedropper_done = Signal()  # the armed eyedropper picked (or was let go with Esc)
+    text_selection_changed = Signal()  # the Type tool's caret or selected characters moved
 
     def __init__(self, view: QWidget, engine: Any, send: Callable[[str, dict[str, Any]], None]) -> None:
         super().__init__(view)

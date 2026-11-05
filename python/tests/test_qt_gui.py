@@ -6279,8 +6279,9 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
             assert ui() == before, f"{params} changed something"
 
         first = ui()
-        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
+        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "gfxEdit", "export"}
         assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
+        assert first["gfxEdit"] is None
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
                            "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
@@ -10079,6 +10080,67 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         ctl.set({"mode": "Edit"})
         assert win.mode == "Edit" and home.isHidden() and ctl.ui_state()["mode"] == "Edit"
     finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_real_engine_type_tool_selection_styles_characters_as_egui(app, tmp_path: Path):
+    """egui's ``type_tool_selection_styles_characters``: with characters selected by the Type tool
+    on the Program monitor (ui.set ``gfxEdit``, byte offsets as egui's), Essential Graphics'
+    character properties style those characters (``graphics.setCharStyle``, one "Character
+    Style" undo step) instead of the whole layer, and their stopwatches step aside."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    eg = win.essential_graphics
+    server = ControlServer(win)
+    assert server.listen(0)
+
+    def run(command, params):
+        r = c.call("engine.execute", {"command": command, "params": params})
+        assert r["ok"] is True, (command, r)
+        return r["result"]
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+        assert c.call("ui.set", {"workspace": "Captions and Graphics"})["ok"]
+        clip = run("graphics.newText", {"text": "Héllo World"})["clip"]
+        run("graphics.selectLayer", {"clip": clip, "layers": [0]})
+        win.schedule_refresh()
+        assert wait_until(app, lambda: eg.editor.param("text") == "Héllo World" and eg.editor.layer == 0, 20_000)
+        assert wait_until(app, lambda: any(d.get("clip") == clip for d in ((win.monitor.overlay.data or {}).get("graphics") or {}).get("layers") or []), 20_000)
+        def stopwatch_shown():  # looked up each time: the panel rebuilds as the state comes back
+            sw = eg.editor.findChild(QtWidgets.QToolButton, "graphics.prop.size.stopwatch")
+            return sw is not None and not sw.isHidden()
+
+        assert wait_until(app, stopwatch_shown, 5_000)
+        # a Type-tool selection of "World": bytes 7..12 ("é" is two bytes), characters 6..11
+        r = c.call("ui.set", {"tool": "type", "gfxEdit": {"clip": clip, "layer": 0, "caret": 12, "anchor": 7}})
+        assert r["ok"] is True, r
+        assert r["result"]["ui"]["gfxEdit"] == {"clip": clip, "layer": 0, "caret": 12, "anchor": 7}
+        assert eg.editor.char_range() == (6, 11)
+        assert wait_until(app, lambda: not stopwatch_shown(), 5_000), "a selection's characters have no keyframes"
+        eg.editor.findChild(QtWidgets.QToolButton, "graphics.prop.faux_bold").click()
+        assert wait_until(app, lambda: run("graphics.list", {"clip": clip})["layers"][0].get("styles") == [{"start": 6, "end": 11, "fauxBold": True}], 10_000)
+        assert run("history.list", {})["undo"][-1] == "Character Style"
+        assert run("graphics.list", {"clip": clip})["layers"][0].get("fauxBold") in (None, False), "not the whole layer"
+        refused = c.call("ui.set", {"gfxEdit": {"clip": clip, "layer": 0}})
+        assert refused["ok"] is False and "gfxEdit" in refused["error"], refused
+        # null stops editing: the layer takes its properties again
+        r = c.call("ui.set", {"gfxEdit": None})
+        assert r["ok"] is True and r["result"]["ui"]["gfxEdit"] is None
+        assert eg.editor.char_range() is None
+        assert wait_until(app, stopwatch_shown, 5_000)
+    finally:
+        server.close()
         win._quit_confirmed = True
         win.close()
         engine.stop()
