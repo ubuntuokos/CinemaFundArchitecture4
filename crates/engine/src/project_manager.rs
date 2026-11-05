@@ -137,7 +137,10 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
     for id in ids {
         let Some(m) = proj.item(id).and_then(|i| i.as_media()).cloned() else { continue };
         let MediaRef::File { path } = &m.media else { continue };
-        let size = s.services.file_size(path).unwrap_or(0);
+        // Project files carry stored paths; use only the media pool's resolved, policy-approved
+        // pathname for filesystem I/O. Keep the stored path in the project itself.
+        let source_path = s.media.follow(path).map_err(|why| EngineError::Other(format!("{path} is not opened: {why}")))?;
+        let size = s.services.file_size(&source_path).unwrap_or(0);
         original_bytes += size;
         let file = Path::new(path);
         let stem = file.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| format!("media-{}", id.0));
@@ -158,20 +161,23 @@ pub fn run(s: &mut Session, p: &Value) -> Result<Value> {
         };
         taken.push(out.clone());
         let proxy = match (&m.proxy, include_proxies) {
-            (Some(MediaRef::File { path: pp }), true) if s.services.file_size(pp).is_ok() => {
-                let pf = Path::new(pp);
-                let ps = pf.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                let pe = pf.extension().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                let o = unique_path(&dest_dir.join("Proxies"), &ps, "", &pe, &taken).to_string_lossy().into_owned();
-                taken.push(o.clone());
-                let b = s.services.file_size(pp).unwrap_or(0);
-                original_bytes += b;
-                result_bytes += b;
-                Some((pp.clone(), o))
-            }
+            (Some(MediaRef::File { path: pp }), true) => match s.media.follow(pp) {
+                Ok(resolved_proxy) if s.services.file_size(&resolved_proxy).is_ok() => {
+                    let pf = Path::new(&resolved_proxy);
+                    let ps = pf.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    let pe = pf.extension().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                    let o = unique_path(&dest_dir.join("Proxies"), &ps, "", &pe, &taken).to_string_lossy().into_owned();
+                    taken.push(o.clone());
+                    let b = s.services.file_size(&resolved_proxy).unwrap_or(0);
+                    original_bytes += b;
+                    result_bytes += b;
+                    Some((resolved_proxy, o))
+                }
+                _ => None,
+            },
             _ => None,
         };
-        work.push(Work { item: id, src_path: path.clone(), out, range, proxy });
+        work.push(Work { item: id, src_path: source_path, out, range, proxy });
     }
     let previews = s.path.as_deref().map(crate::previews::dir_for_project).filter(|d| include_previews && d.is_dir());
     if let Some(d) = &previews {
@@ -286,7 +292,9 @@ fn execute(
                 proj.shift_media_time(w.item, r.start);
                 let b = std::fs::read(&w.out).map_err(|e| format!("{}: {e}", w.out))?;
                 let fname = Path::new(&w.out).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                let info = cfa4_media::open_bytes(&fname, b.into(), &openers).map_err(|e| format!("{}: {e}", w.out))?.info().clone();
+                // as the item interprets it: an Auro-3D carrier played as its own channels stays one (#323)
+                let opened = cfa4_media::open_bytes(&fname, b.into(), &openers).map_err(|e| format!("{}: {e}", w.out))?;
+                let info = crate::media_pool::interpreted(&m, opened).info().clone();
                 if let Some(mm) = proj.item_mut(w.item).and_then(|i| i.as_media_mut()) {
                     mm.info = info;
                     mm.proxy = None;

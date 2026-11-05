@@ -468,7 +468,7 @@ pub fn invoke(app: &mut Cfa4App, ctx: &egui::Context, id: &str, mut params: Valu
             return Ok(json!({"dialog": "audioGain"}));
         }
         // Colour dialogs from the menus; with params the engine command applies directly.
-        "clip.interpretFootage" if params.get("colorSpace").is_none() && params.get("pixelAspect").is_none() => {
+        "clip.interpretFootage" if ["colorSpace", "pixelAspect", "auroDecoding"].iter().all(|k| params.get(k).is_none()) => {
             cfa4_engine::find_command(id).map_or(Ok(()), |c| (c.enabled)(&app.session))?;
             crate::panels::color_dialogs::open_interpret(app, &params);
             return Ok(json!({"dialog": "interpretFootage"}));
@@ -902,7 +902,8 @@ pub fn menu_bar(app: &mut Cfa4App, ui: &mut egui::Ui) {
     let labels = app.session.prefs.labels.clone();
     let ctx = ui.ctx().clone();
     let mut clicked: Option<String> = None;
-    egui::MenuBar::new().config(egui::containers::menu::MenuConfig::new().style(crate::theme::menu_style)).ui(ui, |ui| {
+    // The bar's titles and their menus share one size and colour, as in a native menu bar.
+    egui::MenuBar::new().style(crate::theme::menu_style).config(egui::containers::menu::MenuConfig::new().style(crate::theme::menu_style)).ui(ui, |ui| {
         let mut titles = Vec::with_capacity(MENUS.len());
         for top in MENUS {
             let mine: Vec<&MenuItem> = items.iter().filter(|i| i.path.first().map(String::as_str) == Some(top)).collect();

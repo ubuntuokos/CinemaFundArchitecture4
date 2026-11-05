@@ -88,6 +88,10 @@ struct Shared {
     /// Recycled picture buffers, per sample storage type.
     pool8: Mutex<Vec<PicState<u8>>>,
     pool16: Mutex<Vec<PicState<u16>>>,
+    /// Tests: a pause before a job counts its picture (widens the window a count published after
+    /// the picture's rows would be missed in).
+    #[cfg(test)]
+    stats_delay: Mutex<std::time::Duration>,
 }
 
 /// H.264 decoder.
@@ -253,7 +257,9 @@ impl Decoder {
             }
         }
         // The access unit is complete: hand its picture to a decoding job.
-        self.submit_pending();
+        if let Err(e) = self.submit_pending() {
+            result = result.and(Err(e));
+        }
         if let Some(e) = self.take_error() {
             result = result.and(Err(e));
         }
@@ -273,7 +279,7 @@ impl Decoder {
 
     /// Output all remaining pictures (end of stream).
     pub fn flush(&mut self) -> Vec<Picture> {
-        self.submit_pending();
+        let _ = self.submit_pending();
         self.finish_unpaired_field();
         let mut outs = Vec::new();
         self.dpb.flush(&mut outs);
@@ -283,6 +289,14 @@ impl Decoder {
             f.wait_units(field);
         }
         pics
+    }
+
+    /// Tests: pause each decoding job before it counts its picture.
+    #[cfg(test)]
+    pub(crate) fn set_stats_delay(&self, delay: std::time::Duration) {
+        if let Ok(mut d) = self.shared.stats_delay.lock() {
+            *d = delay;
+        }
     }
 
     /// Statistics accumulated so far (macroblock counts include finished pictures only).
@@ -324,7 +338,7 @@ impl Decoder {
             nal_type::SLICE_DPA | nal_type::SLICE_DPB | nal_type::SLICE_DPC => {
                 return unsupported("data partitioning (Extended profile)");
             }
-            nal_type::END_SEQ | nal_type::END_STREAM => self.submit_pending(),
+            nal_type::END_SEQ | nal_type::END_STREAM => self.submit_pending()?,
             // SEI, AUD, filler, SPS extension, prefix NAL, subset SPS, auxiliary and extension slices: skipped.
             _ => {}
         }
@@ -370,7 +384,7 @@ impl Decoder {
             Some(p) => is_new_picture(&p.first, &sh, &sps) || sh.first_mb_in_slice == 0 || !Arc::ptr_eq(&p.sps, &sps),
         };
         if new_pic {
-            self.submit_pending();
+            self.submit_pending()?;
             if sh.first_mb_in_slice != 0 && self.active_sps.is_none() {
                 return invalid("stream does not start with the first slice of a picture");
             }
@@ -532,8 +546,8 @@ impl Decoder {
     }
 
     /// Start decoding the pending picture and do its reference marking / DPB insertion.
-    fn submit_pending(&mut self) {
-        let Some(p) = self.pending.take() else { return };
+    fn submit_pending(&mut self) -> Result<()> {
+        let Some(p) = self.pending.take() else { return Ok(()) };
         let PendingPic { frame, sps, first, poc, pts, key, slices, field, second } = p;
         let draft = self.draft && first.nal_ref_idc == 0;
         self.dispatch(frame.clone(), slices, draft, field);
@@ -547,11 +561,11 @@ impl Decoder {
         match field {
             None => {
                 let (fpoc, field_poc) = (frame.poc, frame.field_poc());
-                self.dpb.store_picture(&first, frame, fpoc, field_poc, max_frame_num, max_refs, meta, &mut outs);
+                self.dpb.store_picture(&first, frame, fpoc, field_poc, max_frame_num, max_refs, meta, &mut outs)?;
             }
             Some(p) => {
                 let fpoc = frame.field_poc()[p as usize & 1];
-                self.dpb.store_field(&first, frame.clone(), p, fpoc, second, max_frame_num, max_refs, meta, &mut outs);
+                self.dpb.store_field(&first, frame.clone(), p, fpoc, second, max_frame_num, max_refs, meta, &mut outs)?;
                 if !second {
                     let frame_num = if first.has_mmco5() { 0 } else { first.frame_num };
                     self.first_field = Some(FirstField { frame, parity: p, frame_num, is_ref: first.nal_ref_idc != 0, sps });
@@ -559,6 +573,7 @@ impl Decoder {
             }
         }
         self.emit(outs);
+        Ok(())
     }
 
     fn dispatch(&mut self, frame: FrameRef, slices: Vec<SliceJob>, draft: bool, field: Option<u8>) {
@@ -607,6 +622,43 @@ fn conceal_frame<S: crate::picture::Sample>(
     Frame::from_planes(id, 0, &p, bit_depth, interlaced)
 }
 
+fn record_error(shared: &Shared, err: Option<Error>) {
+    if let (Some(e), Ok(mut slot)) = (err, shared.error.lock()) {
+        slot.get_or_insert(e);
+    }
+}
+
+/// Add one decoded picture's macroblock kinds to the decoder's statistics, and its first error.
+fn record_picture<S: crate::deblock::Lanes>(shared: &Shared, pic: &PicState<S>, draft: bool, err: Option<Error>) {
+    record_error(shared, err);
+    #[cfg(test)]
+    if let Ok(d) = shared.stats_delay.lock().map(|d| *d)
+        && !d.is_zero()
+    {
+        std::thread::sleep(d);
+    }
+    if let Ok(mut s) = shared.stats.lock() {
+        s.pictures += 1;
+        s.draft_pictures += draft as u64;
+        for st in &pic.mbs {
+            match st.kind {
+                MbKind::I4x4 => s.mb_i4x4 += 1,
+                MbKind::I8x8 => s.mb_i8x8 += 1,
+                MbKind::I16x16 => s.mb_i16x16 += 1,
+                MbKind::IPcm => s.mb_pcm += 1,
+                MbKind::PSkip => s.mb_p_skip += 1,
+                MbKind::BSkip => s.mb_b_skip += 1,
+                MbKind::BDirect16x16 => s.mb_b_direct16x16 += 1,
+                MbKind::Inter => s.mb_inter += 1,
+                MbKind::None => {}
+            }
+            if st.transform_8x8 && !st.kind.is_intra() {
+                s.mb_inter_8x8_transform += 1;
+            }
+        }
+    }
+}
+
 /// Decode all slices of one picture and publish its rows.
 fn run_job(frame: FrameRef, slices: Vec<SliceJob>, shared: &Shared, draft: bool, field: Option<u8>) {
     if frame.bit_depth > 8 {
@@ -637,6 +689,9 @@ fn run_job_as<S: crate::deblock::Lanes>(
     if let Some(p) = field {
         pic.poc = frame.field_poc()[p as usize & 1];
     }
+    // The picture's counts and error are recorded before its rows are published: `flush`
+    // returns once they are, and `stats` / `take_error` must include this picture by then.
+    let mut recorded = false;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let mut first_err = None;
         for s in &slices {
@@ -644,41 +699,21 @@ fn run_job_as<S: crate::deblock::Lanes>(
                 first_err.get_or_insert(e);
             }
         }
+        record_picture(shared, &pic, draft, first_err);
+        recorded = true;
         pic.flush_rows(true);
-        first_err
     }));
-    let err = match result {
-        Ok(e) => e,
-        Err(_) => {
-            // Make sure readers never block on this frame.
-            let fallback = Planes::<S>::gray(frame.width, frame.height, frame.bit_depth, frame.chroma);
-            frame.publish_units(&fallback, field);
-            pic = PicState::new(frame.clone(), field, mbaff);
-            Some(Error::Invalid("internal error while decoding a picture".into()))
+    if result.is_err() {
+        // Make sure readers never block on this frame.
+        let fallback = Planes::<S>::gray(frame.width, frame.height, frame.bit_depth, frame.chroma);
+        pic = PicState::new(frame.clone(), field, mbaff);
+        let err = Some(Error::Invalid("internal error while decoding a picture".into()));
+        if recorded {
+            record_error(shared, err);
+        } else {
+            record_picture(shared, &pic, draft, err);
         }
-    };
-    if let Ok(mut s) = shared.stats.lock() {
-        s.pictures += 1;
-        s.draft_pictures += draft as u64;
-        for st in &pic.mbs {
-            match st.kind {
-                MbKind::I4x4 => s.mb_i4x4 += 1,
-                MbKind::I8x8 => s.mb_i8x8 += 1,
-                MbKind::I16x16 => s.mb_i16x16 += 1,
-                MbKind::IPcm => s.mb_pcm += 1,
-                MbKind::PSkip => s.mb_p_skip += 1,
-                MbKind::BSkip => s.mb_b_skip += 1,
-                MbKind::BDirect16x16 => s.mb_b_direct16x16 += 1,
-                MbKind::Inter => s.mb_inter += 1,
-                MbKind::None => {}
-            }
-            if st.transform_8x8 && !st.kind.is_intra() {
-                s.mb_inter_8x8_transform += 1;
-            }
-        }
-    }
-    if let (Some(e), Ok(mut slot)) = (err, shared.error.lock()) {
-        slot.get_or_insert(e);
+        frame.publish_units(&fallback, field);
     }
     if let Ok(mut p) = pool.lock()
         && p.len() < 4

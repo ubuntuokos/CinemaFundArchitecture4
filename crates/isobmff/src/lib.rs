@@ -22,7 +22,7 @@ pub use codec::{
     AacConfig, ApvConfig, AudioParams, Av1Config, AvcConfig, BitRate, CleanAperture, CodecConfig, ColorInfo, FieldInfo, FlacConfig, HevcConfig, HevcNalArray,
     MasteringDisplay, OpusConfig, PcmConfig, SampleEntry, TimecodeConfig, VideoParams, VpcConfig, parse_asc,
 };
-pub use demux::{Edit, Metadata, Mp4File, Sample, SampleGroup, Track, TrackKind, open};
+pub use demux::{Chapter, Edit, Metadata, Mp4File, Sample, SampleGroup, Track, TrackKind, open};
 pub use error::{Error, Result};
-pub use mux::{Brand, FragmentedWriter, Mp4Writer, TrackConfig, WriteSample, WriterOptions};
+pub use mux::{Brand, FragmentedWriter, MAX_CHAPTER_TITLE_BYTES, MAX_CHAPTERS, Mp4Writer, TrackConfig, WriteSample, WriterOptions};
 pub use source::ByteSource;

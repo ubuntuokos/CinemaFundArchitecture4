@@ -9,12 +9,13 @@ engine's answers; it never computes export settings itself.
 
 from __future__ import annotations
 
+import copy
 import os
 import re
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -42,8 +43,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..engine import EngineClient
-from ..i18n import N_, tr
-from .export_effects import METADATA_FORMATS, CaptionsSection, EffectsSection, MetadataSection
+from ..i18n import N_, decimal, fmt, tr
+from .export_effects import METADATA_FORMATS, SECTION_KEYS, CaptionsSection, EffectsSection, MetadataSection, Section
 from .export_preview import PreviewColumn
 from .export_rows import ExportRows
 from .preset_manager import PresetManager
@@ -76,7 +77,7 @@ DCP_KINDS = (
 DCP_IMMERSIVE = (
     ("off", N_("Off (5.1 only)")),
     ("bed", N_("IAB 7.1 DS bed from the 5.1 mix")),
-    ("file", N_("IAB from a file (IMF or DCP IAB MXF, .iab)")),
+    ("file", N_("IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)")),
 )
 # what channels 1-6 of an immersive DCP's main sound carry; ST 429-19:2023 7.1.2 wants none (#348)
 DCP_IAB_FALLBACK = (
@@ -173,17 +174,58 @@ def sidecar_output(target: str, kind: Any) -> Path | None:
     return Path(f"{target.rsplit('.', 1)[0] if '.' in target else target}.{ext}").expanduser()
 
 
-def with_extension(path: str, ext: str) -> str:
-    """``path`` with its extension replaced by ``ext`` (kept when ``ext`` is empty)."""
-    if not ext or not path:
-        return path
-    p = Path(path)
-    return str(p.with_suffix("." + ext.lstrip(".")))
-
-
 def safe_file_name(name: str) -> str:
     cleaned = "".join("_" if c in '/\\\0' else c for c in name).strip().strip(".")
     return cleaned or "export"
+
+
+class OutputPath(QObject):
+    """egui's Media File rows: the File Name (without its extension) and the Location folder.
+
+    The output path is the folder, the name and the extension the settings write (``ext()``; none
+    for a DCP's package folder), as egui's ``output_path``: an empty name is ``Export``. Reading it
+    as one path (``text()`` / ``setText()``) keeps the rest of the window to a single value."""
+
+    textChanged = Signal(str)
+
+    def __init__(self, parent: QWidget, ext: Any) -> None:
+        super().__init__(parent)
+        self.ext = ext  # () -> the extension the settings write ("" for none, None while unknown)
+        self.typed_ext = ""  # the extension a path came with, used while the format's is unknown
+        self.file_name = QLineEdit(parent)
+        self.file_name.setObjectName("export.fileName")
+        self.file_name.setPlaceholderText(tr("Sequence name"))
+        self.location = QLineEdit(parent)
+        self.location.setObjectName("export.location")
+        self.location.setPlaceholderText(tr("Folder"))
+        self.file_name.textChanged.connect(lambda _t: self.textChanged.emit(self.text()))
+        self.location.textChanged.connect(lambda _t: self.textChanged.emit(self.text()))
+
+    def text(self) -> str:
+        name, folder = self.file_name.text().strip(), self.location.text().strip()
+        if not name and not folder:
+            return ""
+        ext = self.ext()
+        ext = self.typed_ext if ext is None else ext
+        file = f"{name or 'Export'}.{ext}" if ext else (name or "Export")
+        return str(Path(folder) / file) if folder else file
+
+    def setText(self, path: str) -> None:
+        """Split a path into the folder and the name without its extension (the settings' own
+        extension replaces it, as in egui)."""
+        p = Path(path.strip()) if path.strip() else None
+        name = (p.stem if p.suffix else p.name) if p is not None else ""
+        self.typed_ext = p.suffix.lstrip(".") if p is not None else ""
+        folder = str(p.parent) if p is not None and str(p.parent) != "." else ""
+        if (name, folder) == (self.file_name.text(), self.location.text()):
+            return
+        self.blockSignals(True)
+        try:
+            self.file_name.setText(name)
+            self.location.setText(folder)
+        finally:
+            self.blockSignals(False)
+        self.textChanged.emit(self.text())
 
 
 def format_eta(seconds: Any) -> str:
@@ -192,6 +234,16 @@ def format_eta(seconds: Any) -> str:
     except (TypeError, ValueError, OverflowError):
         return ""
     return f"{s // 3600}:{s // 60 % 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60}:{s % 60:02d}"
+
+
+def deep_merge(dst: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
+    """``src`` merged into ``dst`` (objects field by field, anything else replaced)."""
+    for k, v in src.items():
+        if isinstance(v, dict) and isinstance(dst.get(k), dict):
+            deep_merge(dst[k], v)
+        else:
+            dst[k] = v
+    return dst
 
 
 class ExportDialog(QDialog):
@@ -205,8 +257,7 @@ class ExportDialog(QDialog):
         self.setWindowTitle(tr("Export Media"))
         self.setModal(False)
         self.engine = engine
-        # existing files the user already chose to replace (the native save dialog asks only about
-        # the file it returns, never about an image sequence's numbered frames)
+        # existing files the user already chose to replace when exporting to this output
         self._replace_confirmed: set[str] = set()
         self.sequence: dict[str, Any] | None = None
         self.project_path: str | None = None
@@ -219,6 +270,11 @@ class ExportDialog(QDialog):
         self._want_preset: str | None = None
         self._shown_preset: str | None = None
         self.preset_manager: PresetManager | None = None
+        # the settings the engine resolved last (egui's ``ExportUi::settings``), and the settings an
+        # agent set through the control channel (deep-merged, sent under the choices made here)
+        self.resolved_settings: dict[str, Any] = {}
+        self.agent_settings: dict[str, Any] = {}
+        self._agent_before: dict[str, Any] | None = None  # to undo a patch the engine refuses
 
         # ----- settings -----
         self.sequence_label = QLabel(self)
@@ -253,7 +309,7 @@ class ExportDialog(QDialog):
             self.dcp_immersive.addItem(tr(label), key)
         self.dcp_iab_source = QLineEdit(self)
         self.dcp_iab_source.setObjectName("export.dcpIabSource")
-        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF or .iab file"))
+        self.dcp_iab_source.setPlaceholderText(tr("IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)"))
         self.dcp_iab_browse = QPushButton(tr("Browse…"), self)
         self.dcp_iab_browse.setObjectName("export.dcpIabBrowse")
         self.dcp_iab_browse.clicked.connect(self._browse_iab)
@@ -270,13 +326,14 @@ class ExportDialog(QDialog):
         self._iab_probed = ""
         for w in (self.dcp_immersive, self.dcp_iab_source, self.dcp_iab_browse, self.dcp_iab_fallback):
             w.setEnabled(False)
-        self.path = QLineEdit(self)
-        self.path.setObjectName("export.path")
-        browse = QPushButton(tr("Browse…"), self)
-        browse.setObjectName("export.browse")
+        # egui's Media File rows: File Name, then Location with its folder picker
+        self.path = OutputPath(self, lambda: "" if self._dcp() else (self._extension() or None))
+        browse = QPushButton("…", self)
+        browse.setObjectName("export.location.browse")
+        browse.setToolTip(tr("Choose folder"))
         browse.clicked.connect(self._browse)
         path_row = QHBoxLayout()
-        path_row.addWidget(self.path, 1)
+        path_row.addWidget(self.path.location, 1)
         path_row.addWidget(browse)
 
         self.range = QComboBox(self)
@@ -362,7 +419,7 @@ class ExportDialog(QDialog):
         self.multiplexer.setObjectName("export.multiplexer")
         self.multiplexer.addItem("MP4", "mp4")
         self.multiplexer.addItem("QuickTime", "mov")
-        self.audio = QCheckBox(tr("Export audio"), self)
+        self.audio = QCheckBox(tr("Export Audio"), self)
         self.audio.setObjectName("export.audio")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
         self.audio_codec = QComboBox(self)
@@ -376,9 +433,11 @@ class ExportDialog(QDialog):
         self.audio_bitrate.setSuffix(" kbps")
         self.audio_bitrate.setSpecialValueText(tr("From the preset"))
 
-        out = QGroupBox(tr("Output"), self)
+        out = QGroupBox(tr("Media File"), self)
         f = QFormLayout(out)
         f.addRow(tr("Sequence"), self.sequence_label)
+        f.addRow(tr("File Name"), self.path.file_name)
+        f.addRow(tr("Location"), path_row)
         preset_row = QHBoxLayout()
         preset_row.addWidget(self.preset, 1)
         more = QPushButton(tr("More presets…"), self)
@@ -391,34 +450,38 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP resolution"), self.dcp_resolution)
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
-        f.addRow(tr("Output file"), path_row)
         f.addRow(tr("Range"), range_row)
-        video = QGroupBox(tr("Video"), self)
-        fv = QFormLayout(video)
-        fv.addRow(tr("Frame size"), size_row)
-        fv.addRow(tr("Bitrate mode"), self.bitrate_mode)
-        fv.addRow(tr("Target bitrate"), self.bitrate)
-        fv.addRow(tr("Keyframe distance"), self.gop)
+        video = Section("video", tr("Video"), self)
+        video.setObjectName("export.video")
+        fv = QFormLayout(video.body)
+        fv.addRow(tr("Frame Size"), size_row)
+        fv.addRow(tr("Bitrate Encoding"), self.bitrate_mode)
+        fv.addRow(tr("Target Bitrate"), self.bitrate)
+        fv.addRow(tr("Key Frame Distance"), self.gop)
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
         for key, label, _name, _choices in FORMAT_CHOICES:
             fv.addRow(tr(label), self.format_choices[key])
-        fv.addRow(tr("Multiplexer"), self.multiplexer)
+        mux = Section("multiplexer", tr("Multiplexer"), self)
+        mux.setObjectName("export.multiplexerSection")
+        QFormLayout(mux.body).addRow(tr("Multiplexer"), self.multiplexer)
         fv.addRow(tr("Alpha"), self.alpha)
         fv.addRow(tr("Quality"), self.quality)
         self.video_form = fv
         fv.addRow(self.hardware)
-        audio = QGroupBox(tr("Audio"), self)
-        fa = QFormLayout(audio)
+        audio = Section("audio", tr("Audio"), self)
+        audio.setObjectName("export.audio")
+        fa = QFormLayout(audio.body)
         fa.addRow(self.audio)
-        fa.addRow(tr("Audio codec"), self.audio_codec)
-        fa.addRow(tr("Audio bitrate"), self.audio_bitrate)
+        fa.addRow(tr("Audio Format"), self.audio_codec)
+        fa.addRow(tr("Audio Bitrate"), self.audio_bitrate)
         fa.addRow(tr("Immersive audio"), self.dcp_immersive)
         fa.addRow(tr("IAB source"), iab_row)
         fa.addRow("", self.dcp_iab_info)
         fa.addRow(tr("Main sound channels 1-6"), self.dcp_iab_fallback)
         self.rows = ExportRows(self, fv, fa)
+        self.mux_section = mux
 
         self.summary = QLabel(self)
         self.summary.setObjectName("export.summary")
@@ -429,7 +492,7 @@ class ExportDialog(QDialog):
         self.export_button.setObjectName("export.start")
         self.export_button.setDefault(True)
         self.export_button.clicked.connect(lambda: self._enqueue(start=True))
-        self.queue_button = QPushButton(tr("Add to Queue"), self)
+        self.queue_button = QPushButton(tr("Send to Queue"), self)
         self.queue_button.setObjectName("export.addToQueue")
         self.queue_button.clicked.connect(lambda: self._enqueue(start=False))
         close = QPushButton(tr("Close"), self)
@@ -473,6 +536,7 @@ class ExportDialog(QDialog):
         left = QVBoxLayout()
         left.addWidget(out)
         left.addWidget(video)
+        left.addWidget(mux)
         left.addWidget(audio)
         left.addStretch(1)
         top.addLayout(left, 1)
@@ -497,6 +561,11 @@ class ExportDialog(QDialog):
         layout.addLayout(buttons)
         layout.addWidget(queue_box, 1)
         self.resize(1080, 860)
+
+        # egui's collapsible settings sections (`ExportUi::open_sections`)
+        self.sections: dict[str, Section] = {
+            s.key: s for s in (video, mux, audio, self.captions, self.effects, self.metadata)
+        }
 
         self._resolve_timer = QTimer(self, singleShot=True, interval=150)
         self._resolve_timer.timeout.connect(self._resolve)
@@ -677,6 +746,7 @@ class ExportDialog(QDialog):
         self.dcp_iab_source.setText(str(preset.get("dcpIabSource") or ""))
         self.dcp_iab_fallback.setCurrentIndex(max(0, self.dcp_iab_fallback.findData(preset.get("dcpIabFallback") or "none")))
         self.touched.clear()
+        self.agent_settings = {}
         self._loading = False
         self._default_path()
         self._changed()
@@ -697,7 +767,7 @@ class ExportDialog(QDialog):
         self.metadata.setVisible(self.format.currentData() in METADATA_FORMATS)
         self.preview.set_video(video)
         self._sync_rows()
-        self.video_form.setRowVisible(self.multiplexer, self._muxed())
+        self.sections["multiplexer"].setVisible(self._muxed())
         self.effects.set_kinds(video, bool(fmt.get("audio", True)) or not video)
         dcp = self._dcp()
         for w in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind, self.dcp_immersive):
@@ -807,7 +877,7 @@ class ExportDialog(QDialog):
 
     def _browse_iab(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab);;" + tr("All files") + " (*)"
+            self, tr("IAB source"), self.dcp_iab_source.text(), tr("Immersive audio") + " (*.mxf *.iab *.thd *.mlp *.mkv *.mka *.mp4 *.m4a *.mov *.m2ts *.mts *.ts);;" + tr("All files") + " (*)"
         )
         if path:
             self.dcp_iab_source.setText(path)
@@ -818,7 +888,7 @@ class ExportDialog(QDialog):
         path = os.path.expanduser(self.dcp_iab_source.text().strip())
         if not path:
             self._iab_probed = ""
-            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP) or a raw IAB stream."))
+            self.dcp_iab_info.setText(tr("Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track."))
             return
         if path == self._iab_probed:
             return
@@ -834,6 +904,16 @@ class ExportDialog(QDialog):
         if path != self._iab_probed:
             return
         r = result if isinstance(result, dict) else {}
+        if r.get("container") == "truehd":
+            # a Dolby Atmos TrueHD stream: its objects become IAB objects at the DCP's frame rate (#347)
+            text = tr("Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects").format(
+                seconds=round(float(r.get("seconds") or 0.0), 1), rate=r.get("sampleRate", 0), beds=r.get("maxBedChannels", 0), objects=r.get("maxObjects", 0)
+            )
+            notes = [str(n) for n in r.get("profileNotes") or []]
+            if notes:
+                text += "\n" + tr("Beyond IAB Profile 1: {notes}").format(notes="; ".join(notes))
+            self.dcp_iab_info.setText(text)
+            return
         rate = r.get("frameRate") or [0, 1]
         fps = f"{rate[0]}" if len(rate) == 2 and rate[1] == 1 else f"{rate[0]}/{rate[1] if len(rate) == 2 else 1}"
         text = tr("{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects").format(
@@ -870,12 +950,7 @@ class ExportDialog(QDialog):
             has_audio = self.container.currentData() != "es"
             self.audio.setEnabled(has_audio)
             self.audio_codec.setEnabled(False)  # LPCM in program streams, AAC in transport streams
-        if self.path.text():
-            if self._dcp():
-                self.path.setText(str(Path(self.path.text()).with_suffix("")))
-            else:
-                self.path.setText(with_extension(self.path.text(), self._extension()))
-        self._changed()
+        self._changed()  # the output path takes the new extension
 
     def _range_changed(self) -> None:
         custom = self.range.currentData() == "custom"
@@ -884,33 +959,19 @@ class ExportDialog(QDialog):
         self._changed()
 
     def _default_path(self) -> None:
+        """egui's: the sequence's name in the default folder, while both rows are empty."""
         if self.path.text():
             return
-        fmt = self.formats.get(str(self.format.currentData() or ""), {})
         name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
-        base = default_output_dir(self.project_path) / name
-        if self._dcp():
-            self.path.setText(str(base))
-            return
-        self.path.setText(with_extension(str(base), self._extension() or str(fmt.get("extension") or "mp4")))
+        self.path.file_name.setText(name)
+        self.path.location.setText(str(default_output_dir(self.project_path)))
 
     def _browse(self) -> None:
-        if self._dcp():
-            # the package folder is made inside the chosen one
-            parent = QFileDialog.getExistingDirectory(self, tr("Output folder"), str(Path(self.path.text()).parent) if self.path.text() else "")
-            if parent:
-                name = safe_file_name(str((self.sequence or {}).get("name") or "export"))
-                self.path.setText(str(Path(parent) / name))
-            return
-        fmt = self.formats.get(str(self.format.currentData() or ""), {})
-        ext = self._extension()
-        pattern = f"{fmt.get('label') or ext} (*.{ext})" if ext else tr("All files") + " (*)"
-        path, _ = QFileDialog.getSaveFileName(self, tr("Output file"), self.path.text(), pattern)
-        if path:
-            # the native dialog has asked about replacing exactly the file it returned; a
-            # destination with another extension is asked about when exporting
-            self._replace_confirmed = {str(Path(path).expanduser())}
-            self.path.setText(with_extension(path, ext) if ext and not path.endswith("." + ext) else path)
+        """Location's "…": choose the folder (a DCP's package folder is made inside it)."""
+        start = self.path.location.text().strip()
+        folder = QFileDialog.getExistingDirectory(self, tr("Choose folder"), os.path.expanduser(start) if start else "")
+        if folder:
+            self.path.location.setText(folder)
 
     def _changed(self) -> None:
         if not self._loading:
@@ -948,12 +1009,12 @@ class ExportDialog(QDialog):
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
         if "captions" in self.touched and fmt.get("video", True):
             p.update(self.captions.params())
-        patch: dict[str, Any] = {}
+        patch: dict[str, Any] = copy.deepcopy(self.agent_settings)
         if "effects" in self.touched:
             patch["effects"] = self.effects.values()
         if "metadata" in self.touched and self.format.currentData() in METADATA_FORMATS:
             patch["metadata"] = self.metadata.values()
-        patch.update(self.rows.patch(self.touched, self._rows_shown()))
+        deep_merge(patch, self.rows.patch(self.touched, self._rows_shown()))
         if "scaling" in self.touched:
             patch["scaling"] = self.preview.scaling.currentData()
         if "multiplexer" in self.touched and self._muxed():
@@ -1008,7 +1069,9 @@ class ExportDialog(QDialog):
 
     def _on_resolved(self, result: Any, _b: bytes | None) -> None:
         r = result if isinstance(result, dict) else {}
+        self._agent_before = None
         if isinstance(r.get("settings"), dict):
+            self.resolved_settings = r["settings"]
             self._show_settings(r["settings"])
         path = (r.get("settings") or {}).get("path") if isinstance(r.get("settings"), dict) else None
         self.preview.show_resolved(r, str(path or self.path.text()), self.range.currentText(), "scaling" in self.touched)
@@ -1018,13 +1081,13 @@ class ExportDialog(QDialog):
         if out.get("width") and out.get("height"):
             parts.append(f"{out['width']}×{out['height']}")
         if out.get("fps"):
-            parts.append(f"{out['fps']} fps")
+            parts.append(fmt("{fps} fps", fps=decimal(str(out["fps"]))))
         if out.get("targetKbps"):
             parts.append(f"{out['targetKbps']} kbps")
         if out.get("sampleRate"):
-            parts.append(f"{out.get('channels', 2)} ch {out['sampleRate']} Hz")
-        if rng.get("seconds") is not None:
-            parts.append(f"{float(rng['seconds']):.2f} s")
+            parts.append(fmt("{n} ch {rate} Hz", n=out.get("channels", 2), rate=out["sampleRate"]))
+        if isinstance(rng.get("seconds"), (int, float)):
+            parts.append(fmt("{seconds} s", seconds=decimal(f"{float(rng['seconds']):.2f}")))
         if r.get("frames"):
             parts.append(f"{r['frames']} {tr('frames')}")
         self.summary.setText(" · ".join(parts))
@@ -1032,7 +1095,26 @@ class ExportDialog(QDialog):
         self.export_button.setEnabled(True)
         self.queue_button.setEnabled(True)
 
+    def open_sections(self) -> list[str]:
+        return [k for k in SECTION_KEYS if self.sections[k].is_open()]
+
+    def set_open_sections(self, keys: list[str]) -> None:
+        for k, section in self.sections.items():
+            section.set_open(k in keys)
+
+    def set_agent_settings(self, patch: dict[str, Any]) -> None:
+        """egui's ``ui.set {export: {settings}}``: ``patch`` deep-merged into the export settings
+        (under the choices made in the window); a patch the engine refuses is taken back."""
+        self._agent_before = copy.deepcopy(self.agent_settings)
+        deep_merge(self.agent_settings, copy.deepcopy(patch))
+        self._resolve_timer.stop()
+        self._resolve()
+
     def _summary_error(self, message: str) -> None:
+        if self._agent_before is not None:
+            self.agent_settings, self._agent_before = self._agent_before, None
+            self._resolve_timer.start()
+            message = f"{tr('Settings not taken')}: {message}"
         self.summary.setText(message)
         self.summary.setStyleSheet("color: #d04040")
         self.export_button.setEnabled(False)
@@ -1046,7 +1128,7 @@ class ExportDialog(QDialog):
     def _enqueue(self, start: bool) -> None:
         params = self.params()
         if not params.get("path"):
-            self._summary_error(tr("Choose an output file."))
+            self._summary_error(tr("Choose a file name and location."))
             return
         # the engine completes the path (an extension, a folder's sequence-named file): ask it
         # which file the export will write before checking whether that one exists

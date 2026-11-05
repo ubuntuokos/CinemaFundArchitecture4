@@ -972,9 +972,10 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert sidecar_output("/x/cut.mp4", "SRT") == Path("/x/cut.SRT")
     assert sidecar_output("/x/cut.mp4", "WebVTT") == Path("/x/cut.vtt")
     assert sidecar_output("/x/cut.mp4", "none") is None
-    # Browse returning cut.png confirms that file only, not the earlier frames
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
+    # Location's "…" picks the folder: nothing there is taken as confirmed, the frames are asked about
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getExistingDirectory", lambda *_a, **_k: str(seq_dir))
     dlg._browse()
+    assert dlg.path.location.text() == str(seq_dir)
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
@@ -984,13 +985,17 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert len(engine.sent) == 3 and not answers
     dlg._enqueue(True)  # the frames are confirmed now
     assert len(engine.sent) == 4
-    # Browse returning out.mov for an .mp4 format confirmed out.mov, not the existing out.mp4
+    # File Name and Location make the path with the format's own extension, as egui's output_path
     dlg.format.addItem("H.264", "h264")
     dlg.format.setCurrentIndex(dlg.format.count() - 1)
     dlg.formats["h264"] = {"extension": "mp4"}
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "out.mov"), ""))
-    dlg._browse()
+    dlg.path.file_name.setText("out")
+    dlg.path.location.setText(str(tmp_path))
     assert dlg.path.text() == str(out)
+    dlg.path.setText(str(tmp_path / "out.mov"))  # a typed extension gives way to the format's
+    assert (dlg.path.file_name.text(), dlg.path.location.text(), dlg.path.text()) == ("out", str(tmp_path), str(out))
+    dlg.path.file_name.setText("")
+    assert dlg.path.text() == str(tmp_path / "Export.mp4"), "an empty name is egui's Export"
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
@@ -2147,11 +2152,8 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
 
 # ----- export window -----
 def test_export_helpers(tmp_path: Path, monkeypatch):
-    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name, with_extension
+    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name
 
-    assert with_extension("/a/b.mp4", "mov") == "/a/b.mov"
-    assert with_extension("/a/b", "mp4") == "/a/b.mp4"
-    assert with_extension("/a/b.mp4", "") == "/a/b.mp4"
     assert safe_file_name("Main/Edit\\x") == "Main_Edit_x"
     assert safe_file_name(" .. ") == "export"
     assert format_eta(75) == "1:15" and format_eta(3725) == "1:02:05" and format_eta("x") == ""
@@ -2177,6 +2179,56 @@ def test_export_sends_the_audio_bitrate(app):
     dlg.audio_bitrate.setValue(96)
     assert dlg.params()["audioBitrateKbps"] == 96
     assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
+    """qt-parity 4.2: egui's Media File section, File Name (the sequence's name) and Location (the
+    default folder, its "…" choosing another), the output path taking the format's extension."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export import default_output_dir
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        name, location = dlg.path.file_name, dlg.path.location
+        box = name.parentWidget()
+        assert isinstance(box, QtWidgets.QGroupBox) and box.title() == "Media File"
+        form = box.layout()
+        assert form.labelForField(name).text() == "File Name"
+        labels = [form.itemAt(i, QtWidgets.QFormLayout.ItemRole.LabelRole).widget().text() for i in range(form.rowCount())
+                  if form.itemAt(i, QtWidgets.QFormLayout.ItemRole.LabelRole) is not None]
+        assert labels[1:3] == ["File Name", "Location"], labels
+        assert dlg.findChild(QtWidgets.QPushButton, "export.location.browse").text() == "…"
+        # egui's defaults: the sequence's name in the default export folder
+        assert name.text() == win.sequence["name"] and location.text() == str(default_output_dir(None))
+        assert name.placeholderText() == "Sequence name" and location.placeholderText() == "Folder"
+        name.setText("cut")
+        location.setText(str(tmp_path / "out"))
+        h264 = dlg.format.findData("h264")
+        dlg.format.setCurrentIndex(h264)
+        assert dlg.params()["path"] == str(tmp_path / "out" / "cut.mp4")
+        # another format: the same name and folder with that format's extension
+        wav = dlg.format.findData("wav")
+        assert wav >= 0
+        dlg.format.setCurrentIndex(wav)
+        assert dlg.params()["path"] == str(tmp_path / "out" / "cut.wav")
+        assert (name.text(), location.text()) == ("cut", str(tmp_path / "out"))
+        # an empty name is egui's "Export"
+        name.setText("")
+        assert dlg.params()["path"] == str(tmp_path / "out" / "Export.wav")
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -2449,6 +2501,13 @@ def test_real_engine_dcp_immersive_audio(app, tmp_path: Path):
         dlg.dcp_iab_source.setText(str(bad))
         dlg._probe_iab()
         assert wait_until(app, lambda: "IAB" in dlg.dcp_iab_info.text() and str(bad.name) in dlg.dcp_iab_info.text(), 30_000), dlg.dcp_iab_info.text()
+        # a Dolby Atmos TrueHD source (#347) is described by its length and objects, not frames
+        dlg._iab_probed = "atmos.thd"
+        dlg._on_iab_info("atmos.thd", {"container": "truehd", "seconds": 61.04, "sampleRate": 48000, "maxBedChannels": 1, "maxObjects": 15, "profileNotes": []})
+        info = dlg.dcp_iab_info.text()
+        assert "Dolby Atmos TrueHD" in info and "61.0" in info and "15" in info, info
+        assert "Dolby Atmos" in dlg.dcp_immersive.itemText(dlg.dcp_immersive.findData("file"))
+        assert ".mkv" in dlg.dcp_iab_source.placeholderText()
         # a saved preset brings its immersive audio back instead of resetting it to Off
         dlg.presets.append({"name": "IAB test", "format": "dcp", "dcpImmersive": "file", "dcpIabSource": str(src), "dcpIabFallback": "mix"})
         dlg.preset.addItem("IAB test", "IAB test")
@@ -2587,6 +2646,45 @@ def test_real_engine_effect_controls(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
 
+
+
+def test_effect_controls_in_a_floating_dock_keeps_the_selected_clip(app):
+    """Regression (flaky ``test_real_engine_effect_controls_lane_as_egui`` under load): a refresh
+    asked while one was in flight re-read the selection from ``window()``, which for a floating
+    dock is the dock, so the panel emptied until the next edit."""
+    from cfa4_qt.panels.effect_controls import EffectControlsPanel
+
+    class Engine:
+        running = True
+
+        def __init__(self):
+            self.pending = []
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            self.pending.append((command, dict(params or {}), on_reply))
+            return 0
+
+    win = QtWidgets.QMainWindow()
+    dock = QtWidgets.QDockWidget("Effect Controls", win)
+    ec = EffectControlsPanel()
+    dock.setWidget(ec)
+    win.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock)
+    dock.setFloating(True)
+    engine = Engine()
+    ec.attach(engine)
+    try:
+        assert ec.window() is dock and ec.main_window() is win
+        clip = {"clip": 5, "name": "A", "start": 0, "end": 1000, "playhead": 0, "frame": 100, "effects": []}
+        ec.refresh([5])
+        ec.refresh([5])  # the selection changed again while the first answer is on its way
+        command, _, reply = engine.pending.pop(0)
+        assert command == "effects.inspect"
+        reply(dict(clip), None)
+        assert [c for c, *_ in engine.pending] == ["effects.inspect"]  # asked again, for clip 5
+        engine.pending.pop(0)[2](dict(clip), None)
+        assert ec.clip_id == 5 and not engine.pending
+    finally:
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -3293,6 +3391,45 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
     finally:
         win._quit_confirmed = True
         win.close()
+
+
+def test_interpret_footage_turns_auro_decoding_off(app):
+    """Interpret Footage shows the Auro-3D switch for a carrier only (#323); OK sends it only
+    when it changed."""
+    from cfa4_qt.dialogs import InterpretFootageDialog
+
+    sent: list = []
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    assert box is not None and box.isHidden()
+    for answer in (None, {"carrier": False, "decoding": True}, "x"):
+        d._auro_info(answer)
+        assert box.isHidden()
+    d._auro_info({"carrier": True, "decoding": True})
+    assert not box.isHidden() and box.isChecked()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7]})
+    d = InterpretFootageDialog(None, None, [7], lambda cid, params: sent.append((cid, params)))
+    d._auro_info({"carrier": True, "decoding": True})
+    d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro").setChecked(False)
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": False, "items": [7]})
+    # carriers with mixed settings: partly checked and left alone, unless one value is picked
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    assert box.checkState() == QtCore.Qt.CheckState.PartiallyChecked
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "items": [7, 8]})
+    d = InterpretFootageDialog(None, None, [7, 8], lambda cid, params: sent.append((cid, params)))
+    box = d.findChild(QtWidgets.QCheckBox, "interpretFootage.auro")
+    d._auro_info({"carrier": True, "decoding": True})
+    d._auro_info({"carrier": True, "decoding": False})
+    box.click()
+    assert box.checkState() == QtCore.Qt.CheckState.Checked and not box.isTristate()
+    d.accept()
+    assert sent[-1] == ("clip.interpretFootage", {"colorSpace": "auto", "auroDecoding": True, "items": [7, 8]})
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -4349,7 +4486,9 @@ def test_default_layout_follows_the_window_size(app, fake_engine: Path, tmp_path
         win.resize(*size)
         win.show()
         try:
-            wait_until(app, lambda: False, 400)
+            # the layout settles over a few deferred resizes; a fixed pause raced them under load
+            wait_until(app, lambda w=win: 0.33 <= w.docks["Timeline"].height() / max(1, w.height()) <= 0.48, 5_000)
+            wait_until(app, lambda: False, 100)
             share = win.docks["Timeline"].height() / win.height()
             assert 0.33 <= share <= 0.48, (size, share)
             left = win.docks["Source"].width() / win.width()
@@ -6141,7 +6280,7 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
 
         first = ui()
         assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
-        assert first["export"] is None and first["keyframeSelection"] == []
+        assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
                            "timecode": {"rows": [{"source": "program", "mode": "current", "display": "Timecode"},
@@ -6157,7 +6296,10 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
         assert json.loads(settings.value("panels/scopes"))["waveform_type"] == "luma"
         refused({"panels": {"scopes": {"waveformType": "sideways"}}}, "not one the panel takes")
         refused({"panels": {"timecode": {"rows": [{"source": "moon"}]}}}, "not one the panel takes")
-        refused({"panels": {"events": {"level": "error"}}}, "no 'events'")
+        refused({"panels": {"events": {"level": "loud"}}}, "info, warning or error")
+        refused({"panels": {"events": {"seen": 3}}}, "no field 'seen'")
+        u = ok({"panels": {"events": {"level": "warning"}}})
+        assert u["panels"]["events"] == {"level": "warning", "selected": None} and win.events.filter.currentData() == "warning"
         refused({"panels": {"progress": {"showFinished": "yes"}}}, "true or false")
         refused({"panels": {"inspectorSource": "elsewhere"}}, "project or timeline")
         # Project panel: bins in tabs and windows, the active tab, the selected bin
@@ -6919,7 +7061,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         assert e["video_limiter"]["max_percent"] == 95.0 and e["image_overlay"]["path"] == str(tmp_path / "logo.png")
         assert e["timecode_overlay"]["enabled"] is False
         # Multiplexer (H.264 / H.265): QuickTime makes a .mov file
-        assert dlg.video_form.isRowVisible(dlg.multiplexer) and dlg.multiplexer.currentData() == "mp4"
+        assert not dlg.mux_section.isHidden() and dlg.multiplexer.currentData() == "mp4"
         pick(dlg.multiplexer, "mov")
         assert dlg.path.text().endswith(".mov"), dlg.path.text()
         assert resolved()["multiplexer"] == "mov"
@@ -6929,7 +7071,7 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         meta.textEdited.emit("My Film")
         assert resolved()["metadata"]["title"] == "My Film"
         pick(dlg.format, "prores")
-        assert not dlg.video_form.isRowVisible(dlg.multiplexer) and not dlg.metadata.isHidden()
+        assert dlg.mux_section.isHidden() and not dlg.metadata.isHidden()
         assert dlg.path.text().endswith(".mov") and "multiplexer" not in dlg.params().get("settings", {})
         # a sound-only format: no captions, only loudness
         pick(dlg.format, "wav")
@@ -6962,6 +7104,38 @@ def test_export_preview_scaling_geometry():
     assert round(filled.height()) == 400 and filled.width() > pic.width()
     assert picture_rect(pic, 1920, 1080, "stretchToFill") == pic
     assert picture_rect(pic, 0, 0, "scaleToFit") == pic, "no source size: the whole frame"
+
+
+def test_export_summary_box_in_hungarian(app):
+    """The Summary box shows the engine's English Summary translated, with decimal commas."""
+    from cfa4_qt.i18n import TR
+    from cfa4_qt.panels.export_preview import PreviewColumn
+
+    TR.set_language("hu")
+    try:
+        col = PreviewColumn()
+        answer = {
+            "output": {"width": 720, "height": 576},
+            "source": "Sequence, 720x576",
+            "range": {"seconds": 12.5},
+            "summary": {
+                "format": "MPEG-2 (Program Stream)",
+                "video": "720x576 (1.07), 25 fps, Upper First, MPEG-2 Main Profile 4:2:0, average 6.00 Mbps, keyframe every 12 frames, no B pictures",
+                "audio": "Uncompressed 16-bit PCM, 48000 Hz, Stereo",
+                "estimated_size": "1.2 GB",
+            },
+        }
+        col.show_resolved(answer, "/tmp/out.mpg", "Teljes szekvencia", False)
+        assert col.lines["format"].text() == "MPEG-2 (programfolyam)"
+        assert col.lines["video"].text() == (
+            "720×576 (1,07), 25 fps, Felső mező először, MPEG-2 Main profil, 4:2:0, átlag 6,00 Mbps, "
+            "kulcskocka 12 képkockánként, B-képek nélkül"
+        )
+        assert col.lines["audio"].text() == "tömörítetlen 16 bites PCM, 48000 Hz, Sztereó"
+        assert col.lines["range"].text() == "Teljes szekvencia (12,50 mp)"
+        assert col.estimate.text() == "Becsült fájlméret: 1,2 GB"
+    finally:
+        TR.set_language("en")
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -7048,6 +7222,23 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
         pick(dlg.format, "h264")
         assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
         assert shown(rows.profile) and shown(rows.level) and shown(rows.fps) and not shown(rows.bits)
+
+        def label(form: QtWidgets.QFormLayout, w) -> str | None:
+            lab = form.labelForField(w)
+            return lab.text() if isinstance(lab, QtWidgets.QLabel) else None
+
+        # the rows and buttons carry egui's names (and so its translations)
+        assert [label(dlg.video_form, w) for w in (dlg.bitrate_mode, dlg.bitrate, dlg.gop)] == [
+            "Bitrate Encoding", "Target Bitrate", "Key Frame Distance"]
+        assert [label(rows.audio_form, w) for w in (dlg.audio_codec, dlg.audio_bitrate)] == ["Audio Format", "Audio Bitrate"]
+        assert (dlg.audio.text(), dlg.queue_button.text()) == ("Export Audio", "Send to Queue")
+        form = dlg.video_form
+        field = QtWidgets.QFormLayout.ItemRole.FieldRole
+        size_row = next(form.itemAt(i, field).layout() for i in range(form.rowCount())
+                        if form.itemAt(i, field) is not None and form.itemAt(i, field).layout() is not None
+                        and form.itemAt(i, field).layout().indexOf(dlg.width_spin) >= 0)
+        size_label = label(form, size_row)
+        assert size_label == "Frame Size"
         s0 = resolved()
         assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
         assert "settings" not in dlg.params(), "nothing changed yet"
