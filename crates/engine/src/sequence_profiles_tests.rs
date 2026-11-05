@@ -219,3 +219,12 @@ fn apply_sets_the_sequence() {
     assert!(s.execute("sequenceProfiles.apply", json!({"description": "nobody"})).is_err());
     assert!(s.execute("sequenceProfiles.apply", json!({})).is_err());
 }
+
+/// The profile commands all need a parameter, so none is offered in Keyboard Shortcuts (whose
+/// labels the interface would have to translate).
+#[test]
+fn profile_commands_are_not_bindable() {
+    let s = Session::default();
+    let ids: Vec<String> = s.shortcuts.commands().iter().map(|c| c.id.clone()).filter(|id| id.starts_with("sequenceProfiles.")).collect();
+    assert!(ids.is_empty(), "{ids:?}");
+}

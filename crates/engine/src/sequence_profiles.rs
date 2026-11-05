@@ -445,7 +445,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec(
             "sequenceProfiles.save",
             "Save Sequence Profile",
-            r#"{"profile":{"description":str,"width":u32,"height":u32,"displayAspect":[u32,u32],"pixelAspect":[u32,u32],"fps":[u32,u32],"interlaced":bool?,"spherical":bool?},"original":str?}"#,
+            r#"{"profile":{"description":str,"width":u32,"height":u32,"displayAspect":[u32,u32],"pixelAspect":[u32,u32],"fps":[u32,u32],"interlaced":bool,"spherical":bool},"original":str?}"#,
             always,
             save,
             true,
