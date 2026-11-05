@@ -2906,6 +2906,16 @@ fn build() -> Vec<CommandSpec> {
             })?;
             Ok(json!({"delta": x.0, "pairs": n, "linked": linked}))
         }),
+        // What `timeline.roll` would apply, without editing (a frontend's Rolling Edit drag shows it,
+        // so the cut stops where the roll on release stops: upstream #3155).
+        query!("timeline.rollDelta", "Rolling Edit Limit", r#"{"left":id,"right":id,"delta":ticks}"#, |s, p| {
+            let (l, r) = (
+                clip_p(p, "left").ok_or_else(|| bad("timeline.rollDelta", "need `left`"))?,
+                clip_p(p, "right").ok_or_else(|| bad("timeline.rollDelta", "need `right`"))?,
+            );
+            let d = Tick(p.get("delta").and_then(Value::as_i64).ok_or_else(|| bad("timeline.rollDelta", "need `delta` (ticks)"))?);
+            Ok(json!({"delta": roll_delta(s, l, r, d)?.0}))
+        }),
         cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
             let d = p

@@ -10030,3 +10030,73 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_rolling_edit_drag_stops_at_the_rolls_limit(app, tmp_path: Path):
+    """egui's #3155: a Rolling Edit drag past what the roll can do (the media, a frame left in each
+    clip) shows the cut where the roll on release stops (`timeline.rollDelta`), not under the
+    pointer; on release the cut lands there."""
+    from cfa4_qt.main_window import MainWindow
+    from PySide6.QtCore import Qt
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    none = Qt.MouseButton.NoButton
+    left_b = Qt.MouseButton.LeftButton
+
+    def send(kind, at: QtCore.QPointF, button, buttons) -> None:
+        QtWidgets.QApplication.sendEvent(canvas, QtGui.QMouseEvent(kind, at, at, canvas.mapToGlobal(at), button, buttons, Qt.KeyboardModifier.NoModifier))
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        first = v1().track["items"][0]
+        mid = (first["start"] + first["end"]) // 2
+        win.execute("timeline.razor", {"time": mid, "clip": first["clip"]})
+        assert wait_until(app, lambda: len(v1().track["items"]) >= 2 and v1().track["items"][0]["end"] == mid, 10_000)
+        left, right = v1().track["items"][0], v1().track["items"][1]
+        canvas.tool = "rolling"
+        canvas.pps = max(1.0, (canvas.width() - 300) * 254_016_000_000 / max(1, right["end"]) / 3)
+        canvas.scroll_ticks = 0
+        canvas.update()
+        wait_until(app, lambda: False, 100)
+        # far past the right clip's end: the roll stops a frame before it
+        ask = right["end"] - mid + 50 * 254_016_000_000
+        expect: list = []
+        engine.execute("timeline.rollDelta", {"left": left["clip"], "right": right["clip"], "delta": ask}, on_reply=lambda r, _b: expect.append(r["delta"]))
+        assert wait_until(app, lambda: bool(expect), 10_000)
+        assert 0 < expect[0] < right["end"] - mid, expect
+        y = v1().top + v1().height / 2
+        a = QtCore.QPointF(canvas.x_of(mid) - 1, y)
+        b = QtCore.QPointF(canvas.width() - 5, y)
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left_b, left_b)
+        for i in range(1, 9):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 8), none, left_b)
+        d = canvas._drag
+        assert d is not None and d.kind == "roll"
+        assert d.delta > expect[0], "the pointer went past the limit"
+        assert wait_until(app, lambda: d.shown is not None and d.asked == d.delta, 10_000)
+        want: list = []
+        engine.execute("timeline.rollDelta", {"left": left["clip"], "right": right["clip"], "delta": d.delta}, on_reply=lambda r, _b: want.append(r["delta"]))
+        assert wait_until(app, lambda: bool(want), 10_000)
+        assert canvas.drag_preview_delta() == want[0] < d.delta, (canvas.drag_preview_delta(), want, d.delta)
+        # the preview line is drawn at the limited cut
+        img = canvas.grab().toImage()
+        x = int(canvas.x_of(mid + want[0]))
+        assert any(img.pixelColor(x + k, int(y)).name() == "#ffd54a" for k in (-1, 0, 1)), "the cut is drawn at the limit"
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left_b, none)
+        assert wait_until(app, lambda: v1().track["items"][0]["end"] == mid + want[0], 10_000), v1().track["items"][:2]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

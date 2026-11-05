@@ -65,6 +65,13 @@ fn roll_delta_stops_at_the_start_of_the_media() {
     let shown = crate::commands::roll_delta(&s, left, right, far).unwrap();
     assert_eq!(shown, -f(12), "clamped to the media before the right clip's In point");
     assert_eq!(crate::commands::roll_delta(&s, left, right, -f(5)).unwrap(), -f(5), "a roll within the media is not clamped");
+    // the same answer as a query a frontend can ask while dragging (`timeline.rollDelta`), and
+    // asking edits nothing
+    let steps = s.history.undo.len();
+    let q = s.execute("timeline.rollDelta", json!({"left": left.0, "right": right.0, "delta": far.0})).unwrap();
+    assert_eq!(q["delta"], json!(shown.0), "{q}");
+    assert_eq!(s.history.undo.len(), steps, "the query is not an edit");
+    assert!(s.execute("timeline.rollDelta", json!({"left": left.0, "right": right.0})).is_err(), "a delta is needed");
     let r = s.execute("timeline.roll", json!({"left": left.0, "right": right.0, "delta": far.0})).unwrap();
     assert_eq!(r["delta"], json!(shown.0), "the preview and the roll agree");
     assert_eq!(range(&s, right), (f(36), f(96)));
