@@ -14,7 +14,7 @@ AI-val automatizált fejlesztői eszköztárhoz tartozik).
 
 | Fájl | Tartalom | SHA-256 |
 |---|---|---|
-| [`CFA4-DEV-WORKTRUNK-001-1.1.md`](CFA4-DEV-WORKTRUNK-001-1.1.md) | 1.1 jóváhagyott terv: F0–F5, WT-AC-01–15, biztonsági szabályok, visszaállítás | `67999268…495eccf0` |
+| [`CFA4-DEV-WORKTRUNK-001-1.1.md`](CFA4-DEV-WORKTRUNK-001-1.1.md) | 1.1 jóváhagyott terv: F0–F5, WT-AC-01–15, biztonsági szabályok, visszaállítás | `5ec7fd16…b092d80f` |
 
 ## Forrás (provenance)
 
@@ -34,9 +34,13 @@ AI-val automatizált fejlesztői eszköztárhoz tartozik).
 - **D2b (2026-11-05):** a Worktrunk F1–F5 csak e terv fázisengedélyével **és** az AI-ORCHESTRATION
   TC-02-höz tartozó fázisának engedélyével indulhat.
 
-## Nyitott tulajdonosi döntések
+## Tulajdonosi döntések (2026-11-05)
 
-| Kód | Kérdés | Javaslat |
+| Kód | Kérdés | Döntés |
 |---|---|---|
-| D1 | Telepítési út: A) előre fordított bináris, B) 0.80.0 forrásból a CFA4 toolchainnel, C) külön 1.98-as toolchain | A |
-| D5 | Külön XFS/btrfs kötet a worktree-knek, ha az ext4-es költség nem elfogadható | F2 után |
+| D1 | Telepítési út | A – előre fordított bináris, rögzített verzióval és ellenőrzőösszeggel |
+| D2 | Önálló projekt vagy TC-02? | az AI-ORCHESTRATION TC-02 eszköze |
+| D2b | Kell-e az F1-hez a szülőterv fázisengedélye? | igen |
+| D3 | `wt merge`, `wt remove`, `wt step prune/squash/rebase` agentnek | tilos |
+| D4 | Claude Code plugin | csak az F5 után, ellenőrzéssel |
+| D5 | Külön XFS/btrfs kötet | az F2 mérése alapján; addig ext4, `copy-ignored` nélkül |

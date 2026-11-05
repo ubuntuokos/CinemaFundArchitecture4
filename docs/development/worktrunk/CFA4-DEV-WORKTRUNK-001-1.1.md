@@ -323,10 +323,10 @@ Minden fázis végén:
 | Új AC | – | WT-AC-13, -14, -15 |
 | F0 | általános lista | parancsokkal, a célgépen |
 
-## Nyitott tulajdonosi döntések
+## Tulajdonosi döntések
 
-- **D1:** telepítési út (A javasolt).
+- **D1:** ~~telepítési út~~ Eldöntve 2026-11-05: **A** – előre fordított bináris, rögzített verzióval és ellenőrzőösszeggel; a CFA4 toolchain nem változik.
 - **D2b:** ~~elég-e e terv fázisengedélye?~~ Eldöntve 2026-11-05: az F1-től a szülőterv (AI-ORCHESTRATION) megfelelő fázisának engedélye is kell.
 - **D3:** a 4.2 tiltások elfogadása (javasolt: igen).
 - **D4:** Claude Code plugin csak az F5 után, ellenőrzéssel (javasolt: igen).
-- **D5:** külön XFS/btrfs kötet a worktree-knek, ha az F2 költsége nem elfogadható.
+- **D5:** Eldöntve 2026-11-05: a külön XFS/btrfs kötetről az F2 mérési eredménye alapján születik döntés; addig ext4, `copy-ignored` nélkül.
