@@ -126,7 +126,7 @@ A Git worktree nem biztonsági sandbox. A közös fájlrendszer, a portok, a GPU
 
 Minden fázis végén jelentés készül, a következő fázis csak külön tulajdonosi engedéllyel indul. Az F0 a célgépen fut; a felhős klónban végzett vizsgálat csak előkészítés, nem F0-bizonyíték.
 
-**Engedélyezési feltétel:** a szülőterv (AI-ORCHESTRATION) F1–F9 fázisai jelenleg nincsenek engedélyezve. Az F0 (csak olvasás) ettől függetlenül futhat. Az F1-től a tulajdonos dönti el, hogy ennek a tervnek a fázisengedélye elég-e, vagy a TC-02-höz tartozó szülőfázis engedélye is kell (D2b).
+**Engedélyezési feltétel:** a szülőterv (AI-ORCHESTRATION) F1–F9 fázisai jelenleg nincsenek engedélyezve. Az F0 (csak olvasás) ettől függetlenül futhat. Az F1-től **a szülőterv megfelelő fázisának engedélye is kell** (tulajdonosi döntés, D2b, 2026-11-05): a Worktrunk F1–F5 csak akkor indulhat, ha ennek a tervnek a fázisengedélye és az AI-ORCHESTRATION TC-02-höz tartozó fázisának engedélye is megvan.
 
 ## F0 – CFA4 repository és célgép felmérése
 
@@ -326,7 +326,7 @@ Minden fázis végén:
 ## Nyitott tulajdonosi döntések
 
 - **D1:** telepítési út (A javasolt).
-- **D2b:** az F1-hez elég ennek a tervnek a fázisengedélye, vagy a szülőterv fázisengedélye is kell?
+- **D2b:** ~~elég-e e terv fázisengedélye?~~ Eldöntve 2026-11-05: az F1-től a szülőterv (AI-ORCHESTRATION) megfelelő fázisának engedélye is kell.
 - **D3:** a 4.2 tiltások elfogadása (javasolt: igen).
 - **D4:** Claude Code plugin csak az F5 után, ellenőrzéssel (javasolt: igen).
 - **D5:** külön XFS/btrfs kötet a worktree-knek, ha az F2 költsége nem elfogadható.
