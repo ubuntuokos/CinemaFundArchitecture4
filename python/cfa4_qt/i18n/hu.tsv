@@ -2326,3 +2326,20 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Export As Motion Graphics Template	Exportálás mozgógrafikai sablonként
+	Category:	Kategória:
+	Editable properties:	Szerkeszthető tulajdonságok:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	CFA4 grafikai sablonként (.fcgt) kerül a sablonmappába.
+	My Templates	Saját sablonok
+	{n} Font	{n} betűtípusa
+	{n} Size	{n} mérete
+	{n} Color	{n} színe
+	{n} Position	{n} pozíciója
+	Show {n}	{n} megjelenítése
+	Exported graphics template to {path}	A grafikai sablon exportálva ide: {path}
+	Replace Fonts in Projects	Betűtípusok cseréje a projektekben
+	Fonts used in the project:	A projektben használt betűtípusok:
+	{f} (missing)	{f} (hiányzik)
+	Replace:	Csere:
+	with:	erre:
+	Replaced {n} font uses	{n} betűtípus-használat lecserélve

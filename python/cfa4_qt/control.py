@@ -53,6 +53,7 @@ from .panels.export_effects import SECTION_KEYS
 from .panels.monitor_view import MonitorView
 from .panels.preset_manager import PresetManager
 from .panels.quick_export import quick_presets
+from .panels.template_dialogs import ExportTemplateDialog, ReplaceFontsDialog
 from .panels.timeline import HEADER_W, RULER_H
 from .panels.tools import TOOLS
 
@@ -678,6 +679,8 @@ class ControlServer(QObject):
                 raise ControlError(f"{key} takes {{param: value}}")
             for name, value in fields.items():
                 set_dialog_field(dialog, str(name), value)
+        if "gfxTemplates" in p:
+            self.set_gfx_templates(p["gfxTemplates"])
         if "panels" in p:
             self.set_panels(p["panels"])
         for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser)):
@@ -714,9 +717,54 @@ class ControlServer(QObject):
             "panels": self.panels_state(),
             "projectPanel": win.project_panel.ui_state(),
             "mediaBrowser": win.media_browser.ui_state(),
+            "gfxTemplates": self.gfx_templates_state(),
             "keyframeSelection": keys,
             "export": self.export_state(),
         }
+
+    def _template_dialog(self, cls: type) -> Any:
+        dialog = self.window.template_dialog
+        try:
+            return dialog if isinstance(dialog, cls) and dialog.isVisible() else None
+        except RuntimeError:  # closed and deleted
+            return None
+
+    def gfx_templates_state(self) -> dict[str, Any]:
+        """egui's ``GfxTemplatesState``: Essential Graphics ▸ Browse and the template / font
+        dialogs (null while closed)."""
+        export = self._template_dialog(ExportTemplateDialog)
+        replace = self._template_dialog(ReplaceFontsDialog)
+        return {**self.window.essential_graphics.ui_state(), "export": export.draft() if export else None,
+                "replace": replace.draft() if replace else None}
+
+    def set_gfx_templates(self, patch: Any) -> None:
+        """egui's ``ui.set {gfxTemplates}``: merged in; ``export`` / ``replace`` merge into the open
+        dialog's draft and null closes it (File ▸ Export ▸ Motion Graphics Template… and
+        Replace Fonts open them)."""
+        if not isinstance(patch, dict):
+            raise ControlError("gfxTemplates takes {tab, query, category, selected, export, replace}")
+        dialogs = {"export": self._template_dialog(ExportTemplateDialog), "replace": self._template_dialog(ReplaceFontsDialog)}
+        for key, dialog in dialogs.items():
+            v = patch.get(key)
+            if key in patch and v is not None:
+                if not isinstance(v, dict):
+                    raise ControlError(f"gfxTemplates.{key} takes {{field: value}} or null")
+                if dialog is None:
+                    raise ControlError(f"gfxTemplates.{key}: the dialog is not open")
+        panel = {k: v for k, v in patch.items() if k not in dialogs}
+        try:  # check every part before changing any
+            self.window.essential_graphics.check_ui_state(panel)
+            for key, dialog in dialogs.items():
+                if isinstance(patch.get(key), dict):
+                    dialog.check_draft(patch[key])
+        except (ValueError, TypeError) as e:
+            raise ControlError(f"gfxTemplates: {e}") from None
+        self.window.essential_graphics.set_ui_state(panel)
+        for key, dialog in dialogs.items():
+            if key in patch and patch[key] is None and dialog is not None:
+                dialog.reject()
+            elif isinstance(patch.get(key), dict):
+                dialog.set_draft(patch[key])
 
     def panels_state(self) -> dict[str, Any]:
         win = self.window
