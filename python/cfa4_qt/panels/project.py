@@ -115,6 +115,12 @@ SORT_ICONS = (
     N_("Audio Info"),
     N_("Date Created"),
 )
+def egui_name(key: str) -> str:
+    """egui's automation-id spelling of a view mode or font size (its enum's name: ``icon`` →
+    ``Icon``, ``extraLarge`` → ``ExtraLarge``)."""
+    return key[:1].upper() + key[1:]
+
+
 FONT_SIZES = (("small", N_("Small"), 10.5), ("medium", N_("Medium (default)"), 12.0), ("large", N_("Large"), 14.0), ("extraLarge", N_("Extra Large"), 16.0))
 TOGGLES = (
     ("previewArea", N_("Preview Area"), ""),
@@ -1049,7 +1055,7 @@ class BinView(QWidget):
         self.view_buttons: dict[str, QToolButton] = {}
         for key, text, tip in (("list", "☰", N_("List View")), ("icon", "▦", N_("Icon View")), ("freeform", "⧉", N_("Freeform View"))):
             b = QToolButton(self)
-            b.setObjectName(f"{prefix}.view.{key}")
+            b.setObjectName(f"{prefix}.view.{egui_name(key)}")  # egui's ViewMode spelling
             b.setText(text)
             b.setToolTip(tr(tip))
             b.setCheckable(True)
@@ -2562,7 +2568,7 @@ class ProjectPanel(QWidget):
         item("find", N_("Find…"), lambda: self.invoke.emit("edit.find"))
         m.addSeparator()
         for key, label in (("list", N_("List")), ("icon", N_("Icon")), ("freeform", N_("Freeform"))):
-            item(f"view.{key}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
+            item(f"view.{egui_name(key)}", label, lambda _c=False, k=key: view.set_mode(k), True, view.mode == key)
         m.addSeparator()
         for key, label, shortcut in TOGGLES:
             on = bool(self.view.get(key))
@@ -2573,7 +2579,7 @@ class ProjectPanel(QWidget):
         cur = (self.view.get("view") or {}).get("fontSize")
         for key, label, _pts in FONT_SIZES:
             a = fs.addAction(tr(label))
-            a.setObjectName(f"project.menu.fontSize.{key}")
+            a.setObjectName(f"project.menu.fontSize.{egui_name(key)}")
             a.setCheckable(True)
             a.setChecked(cur == key)
             a.triggered.connect(lambda _c=False, k=key: self.set_view({"fontSize": k}))

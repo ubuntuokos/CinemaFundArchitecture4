@@ -9794,6 +9794,11 @@ def test_project_panel(app, tmp_path: Path):
         menu = main.menu_button.menu()
         menu.aboutToShow.emit()
         thumbs = next(a for a in menu.actions() if a.objectName() == "project.menu.thumbnails")
+        # egui's automation ids for the view modes and font sizes (its enums' names)
+        ids = {x.objectName() for x in menu.actions()} | {x.objectName() for sub in menu.findChildren(QtWidgets.QMenu) for x in sub.actions()}
+        assert {"project.menu.view.List", "project.menu.view.Icon", "project.menu.view.Freeform"} <= ids, ids
+        assert {"project.menu.fontSize.Small", "project.menu.fontSize.ExtraLarge"} <= ids, ids
+        assert sorted(b.objectName() for b in main.view_buttons.values()) == ["project.view.Freeform", "project.view.Icon", "project.view.List"]
         thumbs.trigger()
         assert wait_until(app, lambda: pp.view.get("thumbnails") is True, 10_000)
         dlg = MetadataDisplayDialog(["Name", "Label", "Media Duration"], ["Name", "Media Duration"])
