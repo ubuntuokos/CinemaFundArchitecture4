@@ -106,14 +106,33 @@ fn hls_writes_segments_and_playlists() {
     assert_eq!(r.frames, 13 * 24);
     let files = hls_files(&path, 36);
     let segs: Vec<String> = (0..3).map(|n| files.segment(n)).collect();
+    let asegs: Vec<String> = (0..3).map(|n| files.audio_segment(n)).collect();
     let mut want = vec![files.media.clone(), files.init.clone()];
     want.extend(segs.clone());
+    want.extend([files.audio_media.clone(), files.audio_init.clone()]);
+    want.extend(asegs.clone());
     assert_eq!(r.extra_files, want);
-    assert!(!Path::new(&files.segment(3)).exists());
+    assert!(!Path::new(&files.segment(3)).exists() && !Path::new(&files.audio_segment(3)).exists());
 
+    // the sound is an audio group the variant refers to (RFC 8216 §4.3.4.1, §4.3.4.2)
     let master = std::fs::read_to_string(&path).unwrap();
     assert!(master.starts_with("#EXTM3U\n#EXT-X-VERSION:7\n"), "{master}");
-    assert!(master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000\nDemo_36p.m3u8\n"), "{master}");
+    assert!(
+        master.contains(
+            "\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"audio\",NAME=\"Audio\",DEFAULT=YES,AUTOSELECT=YES,CHANNELS=\"2\",URI=\"Demo_audio.m3u8\"\n#EXT-X-STREAM-INF:"
+        ),
+        "{master}"
+    );
+    assert!(
+        master.contains("CODECS=\"avc1.") && master.contains(",mp4a.40.2\",RESOLUTION=64x36,FRAME-RATE=24.000,AUDIO=\"audio\"\nDemo_36p.m3u8\n"),
+        "{master}"
+    );
+    let audio_media = std::fs::read_to_string(&files.audio_media).unwrap();
+    assert!(audio_media.contains("#EXT-X-MAP:URI=\"Demo_audio_init.mp4\"\n") && !audio_media.contains("EXT-X-MEDIA:"), "{audio_media}");
+    let adurations: Vec<f64> = audio_media.lines().filter_map(|l| l.strip_prefix("#EXTINF:")).map(|l| l.trim_end_matches(',').parse().unwrap()).collect();
+    assert_eq!(adurations.len(), 3, "{audio_media}");
+    assert!((adurations.iter().sum::<f64>() - 13.0).abs() < 0.1, "{audio_media}");
+    assert!(audio_media.contains("\nDemo_audio_00000.m4s\n") && audio_media.contains("\nDemo_audio_00002.m4s\n"));
     let media = std::fs::read_to_string(&files.media).unwrap();
     assert!(media.contains("#EXT-X-TARGETDURATION:6\n") && media.contains("#EXT-X-MAP:URI=\"Demo_36p_init.mp4\"\n"), "{media}");
     assert!(media.ends_with("#EXT-X-ENDLIST\n"), "{media}");
@@ -136,11 +155,21 @@ fn hls_writes_segments_and_playlists() {
     assert_eq!(firsts, [true, true, true], "every segment starts at a key frame");
     let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
     assert!(f.fragmented);
-    assert_eq!(f.tracks.len(), 2);
+    assert_eq!(f.tracks.len(), 1, "one track per file (CMAF)");
     assert_eq!(f.tracks[0].samples.len(), 13 * 24);
     assert_eq!(f.tracks[0].samples[0].pts, 0, "the first picture at 0");
+    // the sound's init and segments are their own fragmented MP4
+    let mut whole = std::fs::read(&files.audio_init).unwrap();
+    for seg in &asegs {
+        let b = std::fs::read(seg).unwrap();
+        assert_eq!(&b[4..8], b"moof", "{seg}");
+        whole.extend(b);
+    }
+    let f = cfa4_isobmff::open(whole.as_slice()).unwrap();
+    assert_eq!(f.tracks.len(), 1);
+    assert_eq!(f.tracks[0].kind, cfa4_isobmff::TrackKind::Audio);
     // the sound covers the picture: 13 s plus the AAC priming, in 1024-sample units
-    let audio_end: i64 = f.tracks[1].samples.iter().map(|s| i64::from(s.duration)).sum();
+    let audio_end: i64 = f.tracks[0].samples.iter().map(|s| i64::from(s.duration)).sum();
     assert!((13 * 48_000 + 1024..13 * 48_000 + 3 * 1024).contains(&audio_end), "{audio_end}");
 
     if let Some(j) = ffprobe_json(&["-show_streams", "-show_format"], &path) {
