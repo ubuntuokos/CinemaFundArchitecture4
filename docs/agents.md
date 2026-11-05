@@ -44,14 +44,11 @@ The release packages ship `cfa4-cli` alongside the desktop app, so no build is n
 
 | Install | CLI |
 |---|---|
-| Windows (MSI) | `C:\Program Files\CFA4\cfa4-cli.exe` by default (wherever you installed it otherwise), not on `PATH` |
-| Linux (deb, rpm) | `/usr/bin/cfa4-cli` |
-| macOS | the separate `cfa4-cli-<version>-macos-<arch>.zip` release asset (the `.app` holds only the desktop app) |
+| deb | `/usr/bin/cfa4-cli` |
+| tarball (`install.sh`) | `~/.local/bin/cfa4-cli` (or `<prefix>/bin` with `--prefix`) |
+| Flatpak | `flatpak run --command=cfa4-cli io.github.ubuntuokos.cfa4` |
 
 ```sh
-# Windows, default install folder
-claude mcp add cfa4 -- "C:\Program Files\CFA4\cfa4-cli.exe" mcp
-# Linux, or macOS with the CLI unzipped onto PATH
 claude mcp add cfa4 -- cfa4-cli mcp
 ```
 

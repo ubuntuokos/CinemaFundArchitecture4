@@ -946,7 +946,6 @@
 	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Haz clic en el monitor de programa para colocar puntos de máscara (arrastra para curvas); haz clic en el primer punto o pulsa Intro para cerrar
 	Delete Mask	Eliminar máscara
 	Inverted	Invertida
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	Arrastrar: mover · Alt+clic: suave/esquina · Cmd+clic: eliminar
 	Track selected mask backward	Seguir la máscara seleccionada hacia atrás
 	Track selected mask backward 1 frame	Seguir la máscara seleccionada 1 fotograma hacia atrás
 	Track selected mask forward 1 frame	Seguir la máscara seleccionada 1 fotograma hacia delante
@@ -1826,14 +1825,12 @@
 	Hard Limiter	Limitador duro
 	Hard Mix	Mezcla definida
 	Hardware decoding	Descodificación por hardware
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Descodificación por hardware: Automático usa el descodificador de video del sistema (VideoToolbox en macOS, Media Foundation en Windows, VA-API o NVDEC para H.264 y HEVC en Linux) para los flujos que admite, y el descodificador propio de CFA4 para todo lo demás o si falla el hardware. Los medios ya abiertos mantienen su descodificador hasta que se vuelven a abrir.
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Descodificación por hardware: Automático usa el descodificador de video del sistema (VA-API o NVDEC para H.264 y HEVC) para los flujos que admite, y el descodificador propio de CFA4 para todo lo demás o si falla el hardware. Los medios ya abiertos mantienen su descodificador hasta que se vuelven a abrir.
 	Head Size	Tamaño de la cabeza
 	Heart	Corazón
 	Height	Altura
 	Hexagon	Hexágono
 	Hide Back Face	Ocultar la cara posterior
-	Hide CFA4	Ocultar CFA4
-	Hide Others	Ocultar otras
 	High	Alta
 	High Cutoff	Corte de agudos
 	High Frequency Cut	Corte de altas frecuencias
@@ -2350,7 +2347,6 @@
 	Set focus on the Timeline when performing Insert/Overwrite edits	Enfocar la línea de tiempo al insertar o sobrescribir
 	Set to frame size	Ajustar al tamaño del fotograma
 	Setting	Ajuste
-	Settings	Ajustes
 	Shadow Angle	Ángulo de la sombra
 	Shadow Blue Balance	Balance de azul en sombras
 	Shadow Blur	Desenfoque de la sombra
@@ -2850,7 +2846,6 @@
 	Export: no file chosen (agents: shortcuts.export {path})	Exportar: no se eligió ningún archivo (agentes: shortcuts.export {path})
 	Imported “{name}”	Importado “{name}”
 	Import: no file chosen (agents: shortcuts.import {path})	Importar: no se eligió ningún archivo (agentes: shortcuts.import {path})
-	Keyboard: US (macOS)	Teclado: EE. UU. (macOS)
 	Keyboard: US	Teclado: EE. UU.
 	Save preset as:	Guardar ajuste preestablecido como:
 	Commands:	Comandos:
@@ -2963,7 +2958,6 @@
 	Graphics problem: switched to software compositing	Problema de gráficos: se ha cambiado a la composición por software
 	GPU acceleration is unavailable; preview renders on the CPU	La aceleración por GPU no está disponible; la vista previa se procesa en la CPU
 	Exporting	Exportando
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	Haz clic para seleccionar, o haz clic en un espacio vacío y arrastra para seleccionar con un marco. Usa Mayús, Opción y Cmd para otras opciones.
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	Haz clic para seleccionar todos los clips a la derecha en todas las pistas. Mayús+clic para una sola pista.
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	Haz clic para seleccionar todos los clips a la izquierda en todas las pistas. Mayús+clic para una sola pista.
 	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Arrastra un punto de edición para hacer un recorte de rizo; los clips posteriores se mueven para no dejar hueco.
@@ -2974,7 +2968,6 @@
 	Drag a clip to slip its source in/out without moving it.	Arrastra un clip para desplazar su entrada y salida de origen sin moverlo.
 	Drag a clip to slide it between its neighbours.	Arrastra un clip para deslizarlo entre sus vecinos.
 	Drag to scroll the timeline.	Arrastra para desplazar la línea de tiempo.
-	Click to zoom in; Opt-click to zoom out.	Haz clic para acercar; Opción+clic para alejar.
 	CFA4 hit an error	CFA4 ha encontrado un error
 	Details: {path}	Detalles: {path}
 	Opened {url}	Abierto {url}

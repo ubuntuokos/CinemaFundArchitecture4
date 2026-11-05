@@ -48,8 +48,8 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
 
 - The tools are found by `cfa4-testkit` (a dev-dependency-only crate, `crates/testkit`), in
   this order: `CFA4_FFMPEG` / `CFA4_FFPROBE` (explicit paths; a wrong path is an error),
-  then every directory on `PATH` (`ffmpeg` and `ffmpeg.exe`), then well-known install directories
-  (`/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, `C:\ffmpeg\bin`, …).
+  then every directory on `PATH`, then well-known install directories (`/usr/local/bin`,
+  `/usr/bin`, `/snap/bin`).
 - If a tool is missing the test prints `SKIPPED (<test>): ffmpeg not found …` and passes. Set
   **`CFA4_REQUIRE_ORACLES=1`** (CI) to make every such skip a failure. In new tests use
   `let ff = cfa4_testkit::require_ffmpeg!();` (also `require_ffprobe!`, `require_oracles!`).
@@ -71,21 +71,16 @@ results. This oracle is separate from the product's supplementary FFmpeg backend
   `aac`, `opus` and `h264enc` oracles generate small per-test signals on demand and are not part of
   the matrix.
 - Fixture sources are synthetic: `testsrc2`, `mandelbrot`, SMPTE bars, noise and fades, sine tones.
-  H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265. VideoToolbox fixtures are
-  generated only on macOS. The Media Foundation parity tests (`crates/platform/tests/media_foundation.rs`,
-  Windows only) make their 640x360, 1080p and 2160p H.264 / HEVC / Main 10 fixtures with ffmpeg and skip
-  without a Direct3D 11 video device or the HEVC / VP9 / AV1 codec extensions of the Microsoft Store. The VP9 and
+  H.264 and HEVC fixtures need ffmpeg built with libx264 and libx265. The VP9 and
   AV1 fixtures (libvpx-vp9, libaom-av1; 360p, 1080p, 2160p, hidden alt-ref frames, two GOPs) need an ffmpeg with those encoders.
 
-The NVENC tests (`crates/platform/tests/nvenc.rs` and `nvenc_export.rs` for H.264, `nvenc_rgba_input.rs` for
-the GPU's RGB → 4:2:0 conversion, `nvenc_hevc.rs`,
-`nvenc_hevc_export.rs`, `nvenc_hevc_probe.rs` and `nvenc_hevc_warm.rs` for H.265, `nvenc_hevc_main10.rs` and
-`nvenc_hevc_hdr_export.rs` for Main 10 HDR; Windows only) skip, printing `SKIPPED`, without an NVIDIA GPU
+The NVENC tests (`crates/platform/tests/nvenc.rs` and `nvenc_export.rs`; H.264, H.265 and Main 10
+HDR) skip, printing `SKIPPED`, without an NVIDIA GPU
 with NVENC (H.265: when the HEVC probe says there is no HEVC encoder; Main 10: when the Main 10 probe says
 there is no 10-bit encoder; on a machine that has one, a configuration NVENC refuses fails the test). The FFI layout tests in
-`crates/platform/src/nvenc/abi_tests.rs` were generated from a C program built with MSVC
-(`cl` after `vcvars64.bat`) against NVIDIA's MIT-licensed `nvEncodeAPI.h` (12.1); the header and the
-program are not in the repository. To regenerate them, put the header in a scratch directory and
+`crates/platform/src/nvenc/abi_tests.rs` were generated from a C program (upstream built it with MSVC; the
+fixed-width layouts are the same on x86_64 Linux, so build it with `cc` there) against NVIDIA's
+MIT-licensed `nvEncodeAPI.h` (12.1); the header and the program are not in the repository. To regenerate them, put the header in a scratch directory and
 write a program that prints, for every type, field, constant and GUID of `src/nvenc/ffi.rs` that the
 asserts name (H.264, HEVC and the HEVC picture parameters with their SEI payload array), `sizeof` / `alignof` / `offsetof`, the enum and macro values cast to
 64-bit integers and the GUIDs as 128-bit hex; for the bit-fields of the `flags` words, which
@@ -351,9 +346,5 @@ real-time second (≈160 ms CPU per frame at 170 Mbit/s); the demo project's pro
 ### Audio mixer throughput
 
 `perf_24_tracks_3_effects_realtime_factor` (24 tracks, 72 inserts and a compressed submix on one
-core) must run at least 4x realtime in release builds (1x in debug). On Unix it times the test
-thread's CPU time, so it runs with the rest of the suite. Hosts without a per-thread CPU clock
-(Windows) fall back to wall time, which depends on load, so there it is ignored by default; run it
-explicitly with
-`cargo test --release -p cfa4-render --lib perf_24_tracks_3_effects_realtime_factor -- --ignored --nocapture`
-and record the machine with the result.
+core) must run at least 4x realtime in release builds (1x in debug). It times the test thread's
+CPU time, so it runs with the rest of the suite.

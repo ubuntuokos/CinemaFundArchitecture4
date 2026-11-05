@@ -4,7 +4,7 @@ use cfa4_render::Blend;
 use cfa4_render::plan::execute_cpu;
 
 fn device() -> Option<(wgpu::Device, wgpu::Queue)> {
-    let instance = crate::adapter::native_instance();
+    let instance = wgpu::Instance::default();
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).ok()?;
     pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()
 }
@@ -542,8 +542,8 @@ fn hdr_input_gpu_matches_cpu() {
 
 /// Regression for #3418: several threads creating instances and devices, using them and dropping
 /// them at once deadlocked inside the NVIDIA driver (Vulkan loader critical section in
-/// `vkDestroyDevice` against other devices' `create_texture`/`submit`, plus WGL threads started by
-/// GL-enabled instances). Each thread makes its own instance and device, as concurrent windows and exports do.
+/// `vkDestroyDevice` against other devices' `create_texture`/`submit`).
+/// Each thread makes its own instance and device, as concurrent windows and exports do.
 #[test]
 fn many_threads_create_use_and_drop_devices_at_once() {
     use std::sync::mpsc;

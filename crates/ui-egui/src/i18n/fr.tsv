@@ -6,15 +6,15 @@
 # sous…"), messages address the user as "vous", and labels use French sentence case. Product,
 # format and technology names (CFA4, Lumetri, ProRes, LUFS, EDL, AAF…) keep their
 # spelling. French spacing: a space before ":", ";", "?" and "!". This catalog has the same entries
-# as `es.tsv` plus the native macOS Settings menu; strings added later show in English until they
+# as `es.tsv`; strings added later show in English until they
 # are translated. A native-speaker review is welcome.
 #
 # Terms: clip = clip, track = piste, sequence = séquence, timeline = timeline, bin = chutier,
 # playhead = tête de lecture, In/Out = point d'entrée / de sortie, marker = marqueur, keyframe =
 # image clé, frame hold = image figée, edit point = point de montage, panel = panneau, workspace =
 # espace de travail, render = rendu, preset = préréglage, captions = sous-titres, ripple = avec
-# décalage, overwrite = écraser, scopes = oscilloscopes, preferences (also the native macOS
-# Settings menu) = Préférences, settings = paramètres.
+# décalage, overwrite = écraser, scopes = oscilloscopes, preferences =
+# Préférences, settings = paramètres.
 
 	About CFA4	À propos de CFA4
 	Add Audio Submix Track	Ajouter une piste de sous-mixage audio
@@ -946,7 +946,6 @@
 	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Cliquez dans le moniteur programme pour placer les points du masque (faites glisser pour créer des courbes) ; cliquez sur le premier point ou appuyez sur Entrée pour fermer
 	Delete Mask	Supprimer le masque
 	Inverted	Inversé
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	Glisser : déplacer · Alt+clic : lisse/angle · Cmd+clic : supprimer
 	Track selected mask backward	Suivre le masque sélectionné en arrière
 	Track selected mask backward 1 frame	Suivre le masque sélectionné d'une image en arrière
 	Track selected mask forward 1 frame	Suivre le masque sélectionné d'une image en avant
@@ -1826,7 +1825,7 @@
 	Hard Limiter	Limiteur dur
 	Hard Mix	Mélange dur
 	Hardware decoding	Décodage matériel
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Décodage matériel : Auto utilise le décodeur vidéo du système (VideoToolbox sur macOS, Media Foundation sur Windows, VA-API ou NVDEC pour H.264 et HEVC sous Linux) pour les flux qu'il prend en charge, et le décodeur propre à CFA4 pour tout le reste ou en cas d'échec du matériel. Les médias déjà ouverts conservent leur décodeur jusqu'à leur réouverture.
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Décodage matériel : Auto utilise le décodeur vidéo du système (VA-API ou NVDEC pour H.264 et HEVC) pour les flux qu'il prend en charge, et le décodeur propre à CFA4 pour tout le reste ou en cas d'échec du matériel. Les médias déjà ouverts conservent leur décodeur jusqu'à leur réouverture.
 	Head Size	Taille de la tête
 	Heart	Cœur
 	Height	Hauteur
@@ -2847,7 +2846,6 @@
 	Export: no file chosen (agents: shortcuts.export {path})	Exporter : aucun fichier choisi (agents : shortcuts.export {path})
 	Imported “{name}”	« {name} » importé
 	Import: no file chosen (agents: shortcuts.import {path})	Importer : aucun fichier choisi (agents : shortcuts.import {path})
-	Keyboard: US (macOS)	Clavier : américain (macOS)
 	Keyboard: US	Clavier : américain
 	Save preset as:	Enregistrer le préréglage sous :
 	Commands:	Commandes :
@@ -2960,7 +2958,6 @@
 	Graphics problem: switched to software compositing	Problème graphique : passage à la composition logicielle
 	GPU acceleration is unavailable; preview renders on the CPU	L'accélération GPU n'est pas disponible ; l'aperçu est rendu par le CPU
 	Exporting	Exportation
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	Cliquez pour sélectionner, ou cliquez dans un espace vide et faites glisser pour sélectionner par un rectangle. Utilisez Maj, Option et Cmd pour d'autres options.
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	Cliquez pour sélectionner tous les clips à droite sur toutes les pistes. Maj+clic pour une seule piste.
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	Cliquez pour sélectionner tous les clips à gauche sur toutes les pistes. Maj+clic pour une seule piste.
 	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Faites glisser un point de montage pour un montage avec décalage ; les clips suivants se déplacent pour ne laisser aucun espace vide.
@@ -2971,7 +2968,6 @@
 	Drag a clip to slip its source in/out without moving it.	Faites glisser un clip pour décaler ses points d'entrée/sortie source sans le déplacer.
 	Drag a clip to slide it between its neighbours.	Faites glisser un clip pour le faire coulisser entre ses voisins.
 	Drag to scroll the timeline.	Faites glisser pour faire défiler la timeline.
-	Click to zoom in; Opt-click to zoom out.	Cliquez pour un zoom avant ; Option+clic pour un zoom arrière.
 	CFA4 hit an error	CFA4 a rencontré une erreur
 	Details: {path}	Détails : {path}
 	Opened {url}	{url} ouvert
@@ -3558,7 +3554,6 @@
 	Edit Project Notes	Modifier les notes du projet
 	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Notes pour ce projet : tâches, instructions, numéros d'image… Enregistrées avec le projet.
 	Use Effect Shutter Angle	Utiliser l'angle d'obturation de l'effet
-	Settings	Préférences
 
 	Appearance Settings…	Réglages d’apparence…
 

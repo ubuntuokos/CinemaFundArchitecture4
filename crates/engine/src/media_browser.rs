@@ -715,29 +715,6 @@ pub fn std_volumes() -> Vec<Volume> {
             .map(|rd| rd.flatten().filter(|e| e.path().is_dir()).map(|e| e.file_name().to_string_lossy().to_string()).collect())
             .unwrap_or_default()
     };
-    if cfg!(windows) {
-        for l in 'A'..='Z' {
-            let p = format!("{l}:\\");
-            if std::path::Path::new(&p).exists() {
-                v.push(Volume { name: format!("({l}:)"), path: p, kind: VolumeKind::Local });
-            }
-        }
-        return v;
-    }
-    if cfg!(target_os = "macos") {
-        let mut names = dir_names("/Volumes");
-        names.sort();
-        for n in names {
-            v.push(Volume { path: format!("/Volumes/{n}"), name: n, kind: VolumeKind::Local });
-        }
-        if v.is_empty() {
-            v.push(Volume { name: "/".into(), path: "/".into(), kind: VolumeKind::Local });
-        }
-        if std::path::Path::new("/Network").is_dir() {
-            v.push(Volume { name: "Network".into(), path: "/Network".into(), kind: VolumeKind::Network });
-        }
-        return v;
-    }
     v.push(Volume { name: "/".into(), path: "/".into(), kind: VolumeKind::Local });
     for base in ["/media", "/mnt", "/run/media"] {
         for n in dir_names(base) {
@@ -756,9 +733,7 @@ pub fn std_volumes() -> Vec<Volume> {
     v
 }
 
-/// The desktop user's home directory. Windows prefers `USERPROFILE`: shells like Git Bash set
-/// `HOME` to a Unix-style path (`/c/Users/…`) that native file APIs cannot open.
+/// The desktop user's home directory (`HOME`).
 pub fn std_home_dir() -> Option<String> {
-    let vars = if cfg!(windows) { ["USERPROFILE", "HOME"] } else { ["HOME", "USERPROFILE"] };
-    vars.iter().find_map(|v| std::env::var(v).ok().filter(|h| !h.is_empty()))
+    std::env::var("HOME").ok().filter(|h| !h.is_empty())
 }

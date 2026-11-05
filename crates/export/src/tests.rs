@@ -219,7 +219,7 @@ fn dnxhr_export_roundtrip() {
 /// `burn_captions` or above the caption.
 #[test]
 fn caption_burn_in_h264_ffmpeg_oracle() {
-    let Some(ffmpeg) = ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
+    let Some(ffmpeg) = ["/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"].into_iter().find(|p| std::path::Path::new(p).exists()) else {
         eprintln!("ffmpeg not found; skipping oracle test");
         return;
     };

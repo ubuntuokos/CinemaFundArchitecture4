@@ -186,7 +186,7 @@ see `docs/audit/F2-01-RUNTIME-DEPS-2026-10-25.md`.
 2. Port the actual NLE GUI from egui to Qt6 in incremental, tested modules.
 3. Establish Linux-only package identifiers, icon/brand assets and packaging pipeline.
 4. Run full real-hardware import/edit/export checks on Ubuntu target systems.
-5. Audit/remove unused macOS/Windows/FreeBSD source paths and dependencies safely after tests pass.
+5. ~~Audit/remove unused macOS/Windows source paths and dependencies safely after tests pass~~ (done 2026-10-27); FreeBSD/WASM leftovers remain.
 6. Add offline/vendored dependency support and version/lock policy for Python packages.
 
 See also `docs/audit/BASELINE-2026-10-20.md` on the separate audit branch / draft PR

@@ -77,16 +77,14 @@ and `audio`; the stream flags default to true for existing callers. Engine tests
 bounds, stream choices, linked placement, invalid parameters and undo/redo. UI tests exercise
 actual drags: `cargo test --release -p cfa4-ui-egui --test source_drag_ui`.
 
-Ctrl+Shift+X (Cmd+Shift+X on macOS) clears In/Out on the focused Source clip, including split
+Ctrl+Shift+X clears In/Out on the focused Source clip, including split
 points, and restores the implicit full span. It is undoable and leaves Program marks unchanged.
 The command `markers.clearInOut` accepts `target: "source"|"program"`; omitting it addresses Program.
-Source drag icons use the Windows hand cursor because its native Grab mapping is crossed arrows.
+Source drag icons use the Grab / Grabbing cursors.
 
 Source range braces use the playhead's theme color and the gray selection band is translucent,
-so the ruler ticks remain visible. This shared egui implementation applies to Windows, macOS
-and Linux. The clear shortcut uses the primary modifier: Ctrl on Windows/Linux, Cmd on macOS;
-I/O, Space and the three drag gestures are common to all three platforms. Runtime verification
-for this contribution was performed on Windows; macOS/Linux have not been run locally.
+so the ruler ticks remain visible. The clear shortcut uses Ctrl. Runtime verification of this
+contribution was done upstream; it still has to be repeated on Ubuntu 26.04.
 
 ## Adjust Source marks on the ruler
 
@@ -118,7 +116,7 @@ and leaves an independently opened Source clip's marks and playhead unchanged. P
 Range movement requires both Program marks. Empty sequences disable the handles.
 Changing the active sequence cancels an unfinished draft. Automation ids: `program.range.in`,
 `program.range.out` and `program.range.body`. Both monitors share the original brace artwork,
-playhead-blue color and translucent gray band. Runtime review remains Windows-only.
+playhead-blue color and translucent gray band. Runtime review on Ubuntu 26.04 is still owed.
 
 The playhead has drag priority above the range band and trim handles, including a full-span
 selection. Drag it to scrub; the unoccupied upper ruler can also scrub. Drag the gray band away

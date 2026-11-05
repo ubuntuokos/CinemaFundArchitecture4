@@ -8,7 +8,7 @@
 # (CFA4, Lumetri, ProRes, LUFS, EDL, AAF…) keep their spelling, and common loanwords
 # of the trade (render, preset, mixer, gain, ripple, roll, slip, slide, snap, scrub, offline) stay
 # as they are. Decimal fractions in descriptions use a comma (29,97 fps). This catalog has the same
-# entries as `es.tsv` plus the native macOS Settings menu; strings added later show in English until
+# entries as `es.tsv`; strings added later show in English until
 # they are translated. A native-speaker review is welcome.
 #
 # Terms: clip = klip, track = trek, sequence = sekuens, timeline = linimasa, bin = bin, playhead =
@@ -18,8 +18,8 @@
 # proksi, insert = sisipkan, overwrite = timpa, lift = angkat, extract = ekstrak, nest = sarangkan,
 # footage = rekaman, waveform = bentuk gelombang, scopes = skop, blur = buram, dissolve = larut,
 # wipe = sapuan, glow = pendar, noise = derau, error = galat, file = berkas, guide = garis bantu,
-# thumbnail = gambar mini, voice-over = sulih suara, default = bawaan, preferences (also the native
-# macOS Settings menu) = Preferensi, settings = pengaturan.
+# thumbnail = gambar mini, voice-over = sulih suara, default = bawaan, preferences =
+# Preferensi, settings = pengaturan.
 
 	About CFA4	Tentang CFA4
 	Add Audio Submix Track	Tambah Trek Submix Audio
@@ -951,7 +951,6 @@
 	Click in the Program monitor to place mask points (drag for curves); click the first point or press Enter to close	Klik di monitor Program untuk menempatkan titik masker (seret untuk kurva); klik titik pertama atau tekan Enter untuk menutup
 	Delete Mask	Hapus Masker
 	Inverted	Terbalik
-	Drag: move · Alt-click: smooth/corner · Cmd-click: delete	Seret: pindahkan · Alt-klik: halus/sudut · Cmd-klik: hapus
 	Track selected mask backward	Lacak masker terpilih mundur
 	Track selected mask backward 1 frame	Lacak masker terpilih mundur 1 bingkai
 	Track selected mask forward 1 frame	Lacak masker terpilih maju 1 bingkai
@@ -1831,7 +1830,7 @@
 	Hard Limiter	Limiter Keras
 	Hard Mix	Campuran Keras
 	Hardware decoding	Dekode perangkat keras
-	Hardware decoding: Auto uses the system's video decoder (VideoToolbox on macOS, Media Foundation on Windows, VA-API or NVDEC for H.264 and HEVC on Linux) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Dekode perangkat keras: Otomatis menggunakan dekoder video sistem (VideoToolbox di macOS, Media Foundation di Windows, VA-API atau NVDEC untuk H.264 dan HEVC di Linux) untuk stream yang didukungnya, dan dekoder CFA4 sendiri untuk yang lainnya atau jika perangkat keras gagal. Media yang sudah terbuka tetap memakai dekodernya sampai dibuka ulang.
+	Hardware decoding: Auto uses the system's video decoder (VA-API or NVDEC for H.264 and HEVC) for the streams it supports, and CFA4's own decoder for everything else or if the hardware fails. Media that is already open keeps its decoder until it is reopened.	Dekode perangkat keras: Otomatis menggunakan dekoder video sistem (VA-API atau NVDEC untuk H.264 dan HEVC) untuk stream yang didukungnya, dan dekoder CFA4 sendiri untuk yang lainnya atau jika perangkat keras gagal. Media yang sudah terbuka tetap memakai dekodernya sampai dibuka ulang.
 	Head Size	Ukuran Kepala
 	Heart	Hati
 	Height	Tinggi
@@ -2852,7 +2851,6 @@
 	Export: no file chosen (agents: shortcuts.export {path})	Ekspor: tidak ada berkas yang dipilih (agen: shortcuts.export {path})
 	Imported “{name}”	“{name}” diimpor
 	Import: no file chosen (agents: shortcuts.import {path})	Impor: tidak ada berkas yang dipilih (agen: shortcuts.import {path})
-	Keyboard: US (macOS)	Keyboard: US (macOS)
 	Keyboard: US	Keyboard: US
 	Save preset as:	Simpan preset sebagai:
 	Commands:	Perintah:
@@ -2965,7 +2963,6 @@
 	Graphics problem: switched to software compositing	Masalah grafis: beralih ke pengomposisian perangkat lunak
 	GPU acceleration is unavailable; preview renders on the CPU	Akselerasi GPU tidak tersedia; pratinjau dirender di CPU
 	Exporting	Mengekspor
-	Click to select, or click in empty space and drag to marquee select. Use Shift, Opt, and Cmd for other options.	Klik untuk memilih, atau klik di ruang kosong lalu seret untuk memilih dengan bingkai. Gunakan Shift, Opt, dan Cmd untuk opsi lain.
 	Click to select all clips to the right in all tracks. Shift-click for a single track.	Klik untuk memilih semua klip di sebelah kanan di semua trek. Shift-klik untuk satu trek.
 	Click to select all clips to the left in all tracks. Shift-click for a single track.	Klik untuk memilih semua klip di sebelah kiri di semua trek. Shift-klik untuk satu trek.
 	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Seret titik edit untuk pangkas ripple; klip berikutnya bergeser agar celah tetap tertutup.
@@ -2976,7 +2973,6 @@
 	Drag a clip to slip its source in/out without moving it.	Seret klip untuk menggeser masuk/keluar sumbernya tanpa memindahkannya.
 	Drag a clip to slide it between its neighbours.	Seret klip untuk menggesernya di antara klip tetangganya.
 	Drag to scroll the timeline.	Seret untuk menggulir linimasa.
-	Click to zoom in; Opt-click to zoom out.	Klik untuk memperbesar; Opt-klik untuk memperkecil.
 	CFA4 hit an error	CFA4 mengalami galat
 	Details: {path}	Detail: {path}
 	Opened {url}	Membuka {url}
@@ -3574,7 +3570,6 @@
 	Edit Project Notes	Edit Catatan Proyek
 	Notes for this project: to-dos, instructions, frame numbers… Saved with the project.	Catatan untuk proyek ini: daftar tugas, instruksi, nomor bingkai… Disimpan bersama proyek.
 	Use Effect Shutter Angle	Gunakan Sudut Rana Efek
-	Settings	Preferensi
 
 	Appearance Settings…	Pengaturan Tampilan…
 	Add to favorites	Tambahkan ke favorit
