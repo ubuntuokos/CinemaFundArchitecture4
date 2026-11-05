@@ -21,7 +21,6 @@
 	AAC	AAC
 	Add pause	Ajouter une pause
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	« Ajouter une pause » insère [pause 1s]. Changez le nombre pour une pause plus longue ou plus courte, par ex. [pause 500ms] ou [pause 2s].
-	Add to Queue	Ajouter à la file d’attente
 	Add to timeline	Ajouter à la timeline
 	Advertisement	Publicité
 	All Supported Files	Tous les fichiers pris en charge
@@ -29,14 +28,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Un moteur sans `serve` a été compilé depuis une branche sans l’interface Qt : passez à la branche de l’interface Qt et recompilez, ou indiquez --engine CHEMIN.
 	Arrangement {n}	Disposition {n}
 	Audio Files	Fichiers audio
-	Audio bitrate	Débit audio
-	Audio codec	Codec audio
 	Automation mode	Mode d’automatisation
 	B pictures	Images B
 	BDAV Transport Stream (.m2ts, AAC audio)	Flux de transport BDAV (.m2ts, audio AAC)
 	Basic voices (built in)	Voix de base (intégrées)
 	Beyond IAB Profile 1: {notes}	Au-delà du profil IAB 1 : {notes}
-	Bitrate mode	Mode de débit
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 a rencontré une erreur
 	CFA4 project links	Liens du projet CFA4
@@ -50,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Vérifier avant l’export : {n} problèmes signalés dans la timeline (marqueurs rouges)
 	Checked:	Vérifié :
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Choisissez un fichier de piste IAB (IMF ou DCP), un flux IAB brut ou du Dolby Atmos TrueHD : un flux .thd ou un fichier MKV, MP4 ou M2TS avec une piste Atmos.
-	Choose an output file.	Choisissez un fichier de sortie.
+	Choose a file name and location.	Choisissez un nom de fichier et un emplacement.
+	Choose folder	Choisir un dossier
 	Click and press keys to assign	Cliquez et appuyez sur des touches pour attribuer
 	Compression	Compression
 	Compression Level	Niveau de compression
@@ -92,7 +89,6 @@
 	Export Media	Exporter le média
 	Export Media…	Exporter le média…
 	Export Queue	File d’attente d’export
-	Export audio	Exporter l’audio
 	Export captions…	Exporter les sous-titres…
 	Export failed: {path}	Échec de l’export : {path}
 	Export finished: {path}	Export terminé : {path}
@@ -109,7 +105,6 @@
 	Film Scan 3	Scan film 3
 	Flat (1.85:1)	Flat (1,85:1)
 	Format:	Format :
-	Frame size	Taille de l’image
 	Frame time: {timecode}	Temps de l’image : {timecode}
 	From the preset	Selon le préréglage
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	Depuis {source} et github.com/cmusphinx/cmudict (prononciations). Licence : {license}. Chaque fichier est vérifié par un SHA-256 figé.
@@ -130,7 +125,6 @@
 	Incoming clip (drag to trim the In point)	Clip entrant (faites glisser pour ajuster le point d’entrée)
 	Input channel mapping	Affectation des canaux d’entrée
 	Keep existing file	Conserver le fichier existant
-	Keyframe distance	Intervalle d’images clés
 	Label Color Presets	Préréglages de couleurs d’étiquette
 	Large	Grand
 	Linear Gradient	Dégradé linéaire
@@ -215,7 +209,6 @@
 	Stop Queue	Arrêter la file d’attente
 	Synthesizing narration…	Synthèse de la narration…
 	Synthesizing…	Synthèse…
-	Target bitrate	Débit cible
 	Teaser	Teaser
 	Template: {name}	Modèle : {name}
 	Test	Test

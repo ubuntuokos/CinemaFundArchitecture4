@@ -2,7 +2,7 @@
 
 use crate::bytes::BoxBuf;
 use crate::codec::{CodecConfig, SampleEntry, TimecodeConfig};
-use crate::demux::Edit;
+use crate::demux::{Chapter, Edit};
 use crate::error::{Error, Result};
 use std::io::{Read, Seek, SeekFrom, Write};
 
@@ -21,14 +21,33 @@ pub struct WriterOptions {
     pub brand: Brand,
     /// Movie timescale (`mvhd`); default 1000.
     pub movie_timescale: u32,
-    /// Text metadata written to `moov/udta` (keys like `©nam`, `©ART`, `©cmt`, `©too`).
+    /// Text metadata written to `moov/udta` (keys like `©nam`, `©ART`, `©cmt`, `©too`). Values are
+    /// cut to 65 535 bytes at a character boundary.
     pub metadata: Vec<(String, String)>,
+    /// Chapters written as a Nero `chpl` box in `moov/udta`, sorted by start. At most
+    /// [`MAX_CHAPTERS`] are written (the later ones are dropped) and titles are cut to
+    /// [`MAX_CHAPTER_TITLE_BYTES`] at a character boundary.
+    pub chapters: Vec<Chapter>,
 }
 
 impl WriterOptions {
     pub fn new(brand: Brand) -> Self {
-        WriterOptions { brand, movie_timescale: 1000, metadata: Vec::new() }
+        WriterOptions { brand, movie_timescale: 1000, metadata: Vec::new(), chapters: Vec::new() }
     }
+}
+
+/// Most chapters a `chpl` box holds (its count is one byte).
+pub const MAX_CHAPTERS: usize = 255;
+/// Longest chapter title in a `chpl` box, in UTF-8 bytes (its length is one byte).
+pub const MAX_CHAPTER_TITLE_BYTES: usize = 255;
+
+/// The longest prefix of `s` that is at most `max` bytes and ends on a character boundary.
+fn cut_utf8(s: &str, max: usize) -> &str {
+    let mut end = s.len().min(max);
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    s.get(..end).unwrap_or_default()
 }
 
 /// Per-track configuration.
@@ -461,30 +480,54 @@ fn write_trak(b: &mut BoxBuf, t: &WTrack, movie_ts: u32, qt: bool, shift: u64, f
     Ok(())
 }
 
-fn write_udta(b: &mut BoxBuf, md: &[(String, String)]) {
-    let items: Vec<([u8; 4], &str)> = md
+fn write_udta(b: &mut BoxBuf, opts: &WriterOptions) {
+    let items: Vec<([u8; 4], &str)> = opts
+        .metadata
         .iter()
         .filter_map(|(k, v)| {
             let mut chars = k.chars();
             if chars.next()? != '©' {
                 return None;
             }
-            let rest: Vec<u8> = chars.map(|c| c as u32 as u8).collect();
-            (rest.len() == 3).then(|| ([0xA9, rest[0], rest[1], rest[2]], v.as_str()))
+            let rest: Vec<u8> = chars.map(|c| u8::try_from(u32::from(c)).ok()).collect::<Option<_>>()?;
+            let [a, b, c] = rest[..] else { return None };
+            Some(([0xA9, a, b, c], cut_utf8(v, usize::from(u16::MAX))))
         })
         .collect();
-    if items.is_empty() {
+    if items.is_empty() && opts.chapters.is_empty() {
         return;
     }
     let u = b.start(b"udta");
     for (k, v) in items {
         let m = b.start(&k);
-        b.u16(v.len() as u16);
+        b.u16(u16::try_from(v.len()).unwrap_or(u16::MAX));
         b.u16(0x55C4);
         b.bytes(v.as_bytes());
         b.end(m);
     }
+    write_chpl(b, &opts.chapters);
     b.end(u);
+}
+
+/// Nero `chpl`: version 1, flags 0, 4 reserved bytes, a one-byte count, then per chapter the start
+/// in 100 ns units (u64), a one-byte title length and the UTF-8 title.
+fn write_chpl(b: &mut BoxBuf, chapters: &[Chapter]) {
+    if chapters.is_empty() {
+        return;
+    }
+    let mut sorted: Vec<&Chapter> = chapters.iter().collect();
+    sorted.sort_by_key(|c| c.start_100ns);
+    sorted.truncate(MAX_CHAPTERS);
+    let m = b.start_full(b"chpl", 1, 0);
+    b.u32(0);
+    b.u8(u8::try_from(sorted.len()).unwrap_or(u8::MAX));
+    for c in sorted {
+        let title = cut_utf8(&c.title, MAX_CHAPTER_TITLE_BYTES);
+        b.u64(c.start_100ns);
+        b.u8(u8::try_from(title.len()).unwrap_or(u8::MAX));
+        b.bytes(title.as_bytes());
+    }
+    b.end(m);
 }
 
 fn validate_track(cfg: &TrackConfig) -> Result<Option<u32>> {
@@ -676,7 +719,7 @@ impl<W: Write + Seek> Mp4Writer<W> {
         for t in &self.tracks {
             write_trak(&mut b, t, ts, qt, shift, force_co64)?;
         }
-        write_udta(&mut b, &self.opts.metadata);
+        write_udta(&mut b, &self.opts);
         b.end(m);
         Ok(b.buf)
     }
@@ -785,7 +828,7 @@ impl<W: Write> FragmentedWriter<W> {
             b.end(x);
         }
         b.end(mv);
-        write_udta(&mut b, &self.opts.metadata);
+        write_udta(&mut b, &self.opts);
         b.end(m);
         self.w.write_all(&b.buf)?;
         self.init_written = true;
@@ -905,6 +948,68 @@ mod tests {
 
     fn avc_entry() -> SampleEntry {
         SampleEntry::avc(AvcConfig::new(vec![vec![0x67, 0x42, 0, 0x1E]], vec![vec![0x68, 0xCE]], 4), 64, 48)
+    }
+
+    fn udta_of(opts: &WriterOptions) -> Vec<u8> {
+        let mut b = BoxBuf::new();
+        write_udta(&mut b, opts);
+        b.buf
+    }
+
+    fn chapter(start_100ns: u64, title: &str) -> Chapter {
+        Chapter { start_100ns, title: title.into() }
+    }
+
+    #[test]
+    fn chpl_bytes() {
+        // The layout ffmpeg writes and ffprobe reads: version 1, 4 reserved bytes, u8 count,
+        // then u64 start (100 ns) + u8 length + UTF-8 title per chapter.
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.chapters = vec![chapter(15_000_000, "Two"), chapter(0, "Első")];
+        let udta = udta_of(&opts);
+        let mut want = vec![0, 0, 0, 0x2B];
+        want.extend_from_slice(b"chpl");
+        want.extend_from_slice(&[1, 0, 0, 0, 0, 0, 0, 0, 2]);
+        want.extend_from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 5]);
+        want.extend_from_slice("Első".as_bytes());
+        want.extend_from_slice(&[0, 0, 0, 0, 0, 0xE4, 0xE1, 0xC0, 3]);
+        want.extend_from_slice(b"Two");
+        assert_eq!(&udta[..8], &[0, 0, 0, 0x33, b'u', b'd', b't', b'a']);
+        assert_eq!(&udta[8..], &want[..]);
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta[8..], &mut md);
+        assert_eq!(md.chapters, vec![chapter(0, "Első"), chapter(15_000_000, "Two")]);
+    }
+
+    #[test]
+    fn chpl_limits_cut_without_panicking() {
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.chapters = (0..300u64).rev().map(|i| chapter(i * 10, &format!("C{i}"))).collect();
+        // 254 ASCII bytes then a 2-byte character: the cut must not split it.
+        opts.chapters[0].title = format!("{}é{}", "a".repeat(254), "b".repeat(44));
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta_of(&opts)[8..], &mut md);
+        assert_eq!(md.chapters.len(), MAX_CHAPTERS);
+        assert_eq!(md.chapters[0], chapter(0, "C0"));
+        assert_eq!(md.chapters[254], chapter(2540, "C254"));
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.chapters = vec![chapter(0, &format!("{}é{}", "a".repeat(254), "b".repeat(44)))];
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta_of(&opts)[8..], &mut md);
+        assert_eq!(md.chapters[0].title, "a".repeat(254));
+    }
+
+    /// Regression: the length of a value over 65 535 bytes was written `as u16`, so the length
+    /// field disagreed with the atom size and the value read back was a wrapped-around prefix.
+    #[test]
+    fn long_udta_value_is_cut_not_wrapped() {
+        let mut opts = WriterOptions::new(Brand::Mp4);
+        opts.metadata = vec![("©cmt".into(), "é".repeat(40_000)), ("©nam".into(), "ok".into()), ("©\u{100}ab".into(), "dropped".into())];
+        let mut md = crate::Metadata::default();
+        crate::demux::parse_udta_for_tests(&udta_of(&opts)[8..], &mut md);
+        assert_eq!(md.get("©cmt"), Some("é".repeat(32_767).as_str()));
+        assert_eq!(md.title(), Some("ok"));
+        assert_eq!(md.entries.len(), 2);
     }
 
     #[test]
