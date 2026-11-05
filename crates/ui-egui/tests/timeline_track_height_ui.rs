@@ -112,3 +112,83 @@ fn the_bottom_edge_of_the_last_audio_track_resizes_the_audio_tracks_from_either_
     d.drag(&id, 0.1, -15.0);
     assert!(d.heights().1 < a1 - 5.0);
 }
+
+/// Every shape drawn this frame, flattened.
+fn flat_shapes(d: &Driver) -> Vec<egui::Shape> {
+    fn walk(s: &egui::Shape, out: &mut Vec<egui::Shape>) {
+        match s {
+            egui::Shape::Vec(v) => v.iter().for_each(|s| walk(s, out)),
+            other => out.push(other.clone()),
+        }
+    }
+    let mut out = Vec::new();
+    d.harness.output().shapes.iter().for_each(|c| walk(&c.shape, &mut out));
+    out
+}
+
+fn rect_of(d: &mut Driver, id: &str) -> egui::Rect {
+    let v = d.ok("ui.elements", json!({"prefix": id}));
+    let e = v.as_array().unwrap().iter().find(|e| e["id"] == json!(id)).unwrap_or_else(|| panic!("no element {id}")).clone();
+    let r: Vec<f32> = e["rect"].as_array().unwrap().iter().map(|n| n.as_f64().unwrap() as f32).collect();
+    egui::Rect::from_min_size(egui::pos2(r[0], r[1]), egui::vec2(r[2], r[3]))
+}
+
+// Regression test for #703: the lines between the timeline's tracks were drawn in the timeline's own
+// background colour, so they were invisible, and nothing marked the top of the highest video track.
+#[test]
+fn timeline_draws_visible_lines_between_tracks_and_above_the_top_video_track() {
+    let mut d = Driver::demo();
+    let (top, _) = d.labels();
+    let separator = d.app().tokens.separator;
+    let ruler = rect_of(&mut d, "timeline.ruler");
+    let top_edge = rect_of(&mut d, &format!("timeline.track.{top}.resizeTop"));
+    let seq = d.app().session.active_sequence().unwrap();
+    let tracks = seq.video_tracks.len() + seq.audio_tracks.len();
+    // horizontal separator lines across the track area (the headers' own lines start left of the ruler)
+    let mut ys: Vec<f32> = flat_shapes(&d)
+        .into_iter()
+        .filter_map(|s| match s {
+            egui::Shape::LineSegment { points, stroke }
+                if stroke.color == separator
+                    && points[0].y == points[1].y
+                    && points[0].x >= ruler.min.x - 1.0
+                    && points[1].x - points[0].x > 200.0
+                    && points[0].y > ruler.max.y =>
+            {
+                Some(points[0].y)
+            }
+            _ => None,
+        })
+        .collect();
+    ys.sort_by(f32::total_cmp);
+    ys.dedup_by(|a, b| (*a - *b).abs() < 0.1);
+    assert!(ys.len() > tracks, "a line under each of the {tracks} tracks and one above the top video track, found {ys:?}");
+    let first = ys[0];
+    assert!((first - top_edge.center().y).abs() < 1.5, "the first line ({first}) is at the top edge of the highest video track ({})", top_edge.center().y);
+}
+
+// Regression test for #703: the playhead's head spanned the whole ruler and covered the markers and
+// the timecode labels; it must be a short head on the tick row at the bottom of the ruler.
+#[test]
+fn playhead_head_is_short_and_sits_on_the_ruler_tick_row() {
+    let mut d = Driver::demo();
+    let playhead = d.app().tokens.playhead;
+    let ruler = rect_of(&mut d, "timeline.ruler");
+    let heads: Vec<egui::Rect> = flat_shapes(&d)
+        .into_iter()
+        .filter_map(|s| match s {
+            egui::Shape::Path(p) if p.fill == playhead && p.points.len() == 5 => Some(egui::Rect::from_points(&p.points)),
+            _ => None,
+        })
+        .filter(|r| r.max.y <= ruler.max.y + 1.0 && r.min.y >= ruler.min.y)
+        .collect();
+    assert_eq!(heads.len(), 1, "one playhead head over the ruler: {heads:?}");
+    let head = heads[0];
+    assert!(head.height() <= 14.0, "the head is {} tall, ruler is {}", head.height(), ruler.height());
+    assert!(
+        head.min.y >= ruler.max.y - 14.0,
+        "the head starts at y={}, leaving the ruler's marker and label rows (above y={}) clear",
+        head.min.y,
+        ruler.max.y - 14.0
+    );
+}

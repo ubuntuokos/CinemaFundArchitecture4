@@ -21,7 +21,6 @@
 	AAC	AAC
 	Add pause	일시 정지 추가
 	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	일시 정지 추가는 [pause 1s]를 삽입합니다. 숫자를 바꾸면 더 길거나 짧게 멈춥니다. 예: [pause 500ms] 또는 [pause 2s].
-	Add to Queue	대기열에 추가
 	Add to timeline	타임라인에 추가
 	Advertisement	광고
 	All Supported Files	지원되는 모든 파일
@@ -29,14 +28,11 @@
 	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	`serve`가 없는 엔진은 Qt GUI가 없는 브랜치에서 빌드되었습니다. Qt GUI 브랜치로 전환하여 다시 빌드하거나 --engine PATH를 지정하십시오.
 	Arrangement {n}	배열 {n}
 	Audio Files	오디오 파일
-	Audio bitrate	오디오 비트 전송률
-	Audio codec	오디오 코덱
 	Automation mode	오토메이션 모드
 	B pictures	B 픽처
 	BDAV Transport Stream (.m2ts, AAC audio)	BDAV 전송 스트림 (.m2ts, AAC 오디오)
 	Basic voices (built in)	기본 음성 (내장)
 	Beyond IAB Profile 1: {notes}	IAB 프로필 1 범위 밖: {notes}
-	Bitrate mode	비트 전송률 모드
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4에서 오류가 발생했습니다
 	CFA4 project links	CFA4 프로젝트 링크
@@ -50,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	내보내기 전 검사: 타임라인에 문제 {n}개 표시됨 (빨간색 마커)
 	Checked:	검사됨:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB 트랙 파일(IMF 또는 DCP), 원시 IAB 스트림 또는 Dolby Atmos TrueHD(.thd 스트림, 또는 Atmos 트랙이 있는 MKV, MP4, M2TS 파일)를 선택하십시오.
-	Choose an output file.	출력 파일을 선택하십시오.
+	Choose a file name and location.	파일 이름과 위치를 선택하십시오.
+	Choose folder	폴더 선택
 	Click and press keys to assign	클릭한 후 할당할 키를 누르십시오
 	Compression	압축
 	Compression Level	압축 수준
@@ -92,7 +89,6 @@
 	Export Media	미디어 내보내기
 	Export Media…	미디어 내보내기…
 	Export Queue	내보내기 대기열
-	Export audio	오디오 내보내기
 	Export captions…	캡션 내보내기…
 	Export failed: {path}	내보내기 실패: {path}
 	Export finished: {path}	내보내기 완료: {path}
@@ -109,7 +105,6 @@
 	Film Scan 3	필름 스캔 3
 	Flat (1.85:1)	플랫 (1.85:1)
 	Format:	형식:
-	Frame size	프레임 크기
 	Frame time: {timecode}	프레임 시간: {timecode}
 	From the preset	사전 설정에서
 	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	출처: {source} 및 github.com/cmusphinx/cmudict (발음). 라이선스: {license}. 모든 파일은 고정된 SHA-256으로 검증됩니다.
@@ -130,7 +125,6 @@
 	Incoming clip (drag to trim the In point)	들어오는 클립 (드래그하여 시작 지점 트리밍)
 	Input channel mapping	입력 채널 매핑
 	Keep existing file	기존 파일 유지
-	Keyframe distance	키프레임 간격
 	Label Color Presets	레이블 색상 사전 설정
 	Large	크게
 	Linear Gradient	선형 그레이디언트
@@ -215,7 +209,6 @@
 	Stop Queue	대기열 중지
 	Synthesizing narration…	내레이션 합성 중…
 	Synthesizing…	합성 중…
-	Target bitrate	목표 비트 전송률
 	Teaser	티저
 	Template: {name}	템플릿: {name}
 	Test	테스트
