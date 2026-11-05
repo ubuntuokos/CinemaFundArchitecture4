@@ -9,8 +9,9 @@
 //! read; random access decodes `SeekPreRoll` (at least [`crate::audio::OPUS_PRE_ROLL`]) of preceding
 //! packets before the target. Packet starts are accumulated from TOC durations (see [`opus_starts`]).
 //!
-//! AAC, MPEG audio and AC-3 packets each decode to a fixed number of samples, which millisecond
-//! timestamps can't express: their packets run on from one another (see [`audio_starts`]).
+//! AAC, MPEG audio and AC-3 packets each decode to a fixed number of samples, and a PCM packet to
+//! its size in sample frames, which millisecond timestamps can't express: their packets run on
+//! from one another (see [`audio_starts`]).
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -70,7 +71,8 @@ pub struct MkvSource {
 /// tick: a 1024-sample AAC frame at 48 kHz lasts 21.33 ms. Packets that all decode to the same
 /// length (AAC, MPEG audio, AC-3, E-AC-3) therefore run on from one another, resynchronising to the
 /// timestamp only across gaps of more than half a packet (and more than two ticks); see
-/// [`crate::audio::contiguous_starts`]. Opus packets: [`opus_starts`]. Other codecs start at their
+/// [`crate::audio::contiguous_starts`]. PCM packets run on by their size in sample frames, across
+/// gaps of up to two ticks (#320). Opus packets: [`opus_starts`]. Other codecs start at their
 /// timestamps. Timestamps are taken with the exact `CodecDelay` off (see [`stamp_to_samples`]).
 fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec<i64> {
     use crate::audio::{FixedFrames, PacketTime, contiguous_starts, fixed_packet_samples};
@@ -98,6 +100,17 @@ fn audio_starts(file: &MkvFile, bytes: &crate::Src, ti: usize, rate: i64) -> Vec
         });
         let au = cfa4_truehd::cfa4::samples_per_au(out_rate).unwrap_or(0);
         return contiguous_starts(packets, (au / 2).max(stamp_tolerance(t, rate)));
+    }
+    if let Codec::Pcm { bits, .. } = &t.codec {
+        // PCM packets hold whole sample frames: 1600 at 48 kHz are 33.33 ms, stamped 33 ms apart
+        let channels = t.audio.as_ref().map_or(1, |a| a.channels.max(1));
+        let frame_bytes = channels.saturating_mul(u64::from(*bits / 8)).max(1);
+        let packets = t.samples.iter().enumerate().map(|(i, s)| PacketTime {
+            stamp: at(s.pts),
+            stamped: own_stamp(s),
+            samples: t.sample_size(i).and_then(|b| i64::try_from(b / frame_bytes).ok()),
+        });
+        return contiguous_starts(packets, stamp_tolerance(t, rate));
     }
     let Some(frame) = frame else {
         return t.samples.iter().map(|s| at(s.pts)).collect();
@@ -432,7 +445,12 @@ impl MkvSource {
                     rate = crate::audio::OPUS_RATE;
                     channels = h.channels as u32;
                 }
-                AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: a.bit_depth.map(|b| b as u32) }
+                // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
+                let bits = match &t.codec {
+                    Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
+                    _ => a.bit_depth,
+                };
+                AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32) }
             })
             .collect();
         let info = MediaInfo {
@@ -777,5 +795,56 @@ mod origin_tests {
         let sound = src.audio(0, 48_000 * 2 / 5, 48_000).unwrap();
         assert!(sound.channels[0][9_590].abs() < 0.001, "silent before the delay");
         assert!((sound.channels[0][9_610] - 0.5).abs() < 0.001, "sound 0.2 s after the first picture");
+    }
+}
+
+#[cfg(test)]
+mod ms_acm_tests {
+    use cfa4_matroska::{MkvWriter, MuxOptions, TrackKind, TrackSpec};
+    use cfa4_media::MediaSource;
+
+    /// A `WAVEFORMATEXTENSIBLE` for little-endian integer PCM.
+    fn wave_format_extensible(channels: u16, rate: u32, bits: u16) -> Vec<u8> {
+        let mut w = Vec::new();
+        w.extend_from_slice(&0xFFFEu16.to_le_bytes());
+        w.extend_from_slice(&channels.to_le_bytes());
+        w.extend_from_slice(&rate.to_le_bytes());
+        w.extend_from_slice(&(rate * u32::from(channels * bits / 8)).to_le_bytes());
+        w.extend_from_slice(&(channels * bits / 8).to_le_bytes());
+        w.extend_from_slice(&bits.to_le_bytes());
+        w.extend_from_slice(&22u16.to_le_bytes());
+        w.extend_from_slice(&bits.to_le_bytes());
+        w.extend_from_slice(&0x3Fu32.to_le_bytes());
+        // KSDATAFORMAT_SUBTYPE_PCM
+        w.extend_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71]);
+        w
+    }
+
+    /// #320: 24-bit 5.1 PCM in an `A_MS/ACM` track (no BitDepth element, millisecond stamps, as
+    /// the Auro-3D channel tests have it) plays every sample exactly.
+    #[test]
+    fn ms_acm_pcm_plays_bit_exact() {
+        let mut t = TrackSpec::new(TrackKind::Audio, "A_MS/ACM");
+        t.audio = Some((48_000.0, 6, None));
+        t.codec_private = wave_format_extensible(6, 48_000, 24);
+        let mut w = MkvWriter::new(std::io::Cursor::new(Vec::new()), vec![t], MuxOptions::default()).unwrap();
+        let value = |i: i32, c: i32| ((i * 7919 + c * 1_048_573) % 8_388_607) - 4_194_303;
+        let frames = 4800;
+        let pcm: Vec<u8> = (0..frames).flat_map(|i| (0..6).flat_map(move |c| value(i, c).to_le_bytes()[..3].to_vec())).collect();
+        // 1600-frame packets last 33.33 ms but are stamped to the millisecond (0, 33, 67 ms):
+        // each must still run on from the one before
+        for (k, packet) in pcm.chunks(1600 * 18).enumerate() {
+            let k = k as i64;
+            w.write_frame(0, k * 100_000_000 / 3, true, packet, None).unwrap();
+        }
+        let src = super::MkvSource::open("acm.mkv", w.finish().unwrap().into_inner().into()).unwrap();
+        let a = src.info().audio().cloned().unwrap();
+        assert_eq!((a.channels, a.sample_rate, a.bits_per_sample), (6, 48_000, Some(24)), "{}", a.codec);
+        let got = src.audio(0, frames as usize, 48_000).unwrap().channels;
+        for (c, ch) in got.iter().enumerate() {
+            for (i, &v) in ch.iter().enumerate() {
+                assert_eq!((v * 8_388_608.0).round() as i32, value(i as i32, c as i32), "channel {c} sample {i}");
+            }
+        }
     }
 }
