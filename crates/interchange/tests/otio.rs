@@ -466,3 +466,217 @@ fn oracle_fixtures() {
         std::fs::write(dir.join("manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-1.2: the reverse direction. `python -m cfa4_devtools.otio_samples <dir>` has the official
+// `opentimelineio` package write sample documents for every schema CFA4 reads, with a manifest of
+// what CFA4 must import, timed by OTIO's own rules. `oracle_samples` imports them when
+// `CFA4_OTIO_SAMPLES_DIR` is set (relative to the workspace root, like `CFA4_OTIO_ORACLE_DIR`);
+// without it the test does nothing.
+// ---------------------------------------------------------------------------------------------
+
+/// OTIO stores times as floating-point frame counts: 1 µs is far below one 48 kHz sample.
+const SAMPLE_TOLERANCE: i64 = TICKS_PER_SECOND / 1_000_000;
+
+fn ticks_close(got: Tick, want: &serde_json::Value) -> bool {
+    want.as_i64().is_some_and(|w| (got.0 - w).abs() <= SAMPLE_TOLERANCE)
+}
+
+fn sample_media(p: &Project, ti: &cfa4_project::TrackItem, want: &serde_json::Value, at: &str, problems: &mut Vec<String>) {
+    let Some(item) = p.item(ti.item) else {
+        problems.push(format!("{at}: points at no project item"));
+        return;
+    };
+    match want["ref"].as_str() {
+        Some("sequence") => {
+            if item.as_sequence().is_none() {
+                problems.push(format!("{at}: expected a nested sequence"));
+            }
+        }
+        Some(kind) => {
+            let Some(m) = item.as_media() else {
+                problems.push(format!("{at}: expected media, found another item"));
+                return;
+            };
+            if m.offline != want["offline"].as_bool().unwrap_or(false) {
+                problems.push(format!("{at}: offline {} != {}", m.offline, want["offline"]));
+            }
+            match (kind, &m.media) {
+                ("file", MediaRef::File { path }) => {
+                    if let Some(w) = want["path"].as_str()
+                        && path != w
+                    {
+                        problems.push(format!("{at}: path {path:?} != {w:?}"));
+                    }
+                }
+                ("generator", MediaRef::Generator(g)) => {
+                    let v = serde_json::to_value(g).unwrap_or_default();
+                    let name = v.as_str().map(str::to_string).or_else(|| v.as_object().and_then(|o| o.keys().next().cloned())).unwrap_or_default();
+                    if Some(name.as_str()) != want["generator"].as_str() {
+                        problems.push(format!("{at}: generator {name} != {}", want["generator"]));
+                    }
+                }
+                (k, other) => problems.push(format!("{at}: media {other:?}, expected {k}")),
+            }
+        }
+        None => problems.push(format!("{at}: manifest has no media kind")),
+    }
+}
+
+fn sample_track(p: &Project, t: &cfa4_project::Track, want: &serde_json::Value, at: &str, problems: &mut Vec<String>) {
+    if Some(t.name.as_str()) != want["name"].as_str() {
+        problems.push(format!("{at}: track name {:?} != {}", t.name, want["name"]));
+    }
+    let items = want["items"].as_array().cloned().unwrap_or_default();
+    if t.items.len() != items.len() {
+        problems.push(format!("{at}: {} items, expected {}", t.items.len(), items.len()));
+    }
+    for (ti, wi) in t.items.iter().zip(&items) {
+        let at = format!("{at} item {:?}", wi["name"].as_str().unwrap_or(""));
+        if Some(ti.name.as_str()) != wi["name"].as_str() {
+            problems.push(format!("{at}: name {:?}", ti.name));
+        }
+        if !ticks_close(ti.start, &wi["start_ticks"]) {
+            problems.push(format!("{at}: start {} != {}", ti.start.0, wi["start_ticks"]));
+        }
+        if !ticks_close(ti.duration, &wi["duration_ticks"]) {
+            problems.push(format!("{at}: duration {} != {}", ti.duration.0, wi["duration_ticks"]));
+        }
+        if Some(ti.enabled) != wi["enabled"].as_bool() {
+            problems.push(format!("{at}: enabled {}", ti.enabled));
+        }
+        if let Some(speed) = wi["speed"].as_f64()
+            && (ti.speed - speed).abs() > 1e-9
+        {
+            problems.push(format!("{at}: speed {} != {speed}", ti.speed));
+        }
+        if let Some(r) = wi["reverse"].as_bool()
+            && ti.reverse != r
+        {
+            problems.push(format!("{at}: reverse {}", ti.reverse));
+        }
+        if let Some(h) = wi["frame_hold"].as_bool()
+            && ti.frame_hold.is_some() != h
+        {
+            problems.push(format!("{at}: frame hold {:?}", ti.frame_hold));
+        }
+        let markers = wi["markers"].as_array().cloned().unwrap_or_default();
+        if ti.markers.len() != markers.len() {
+            problems.push(format!("{at}: {} markers, expected {}", ti.markers.len(), markers.len()));
+        }
+        for (m, wm) in ti.markers.iter().zip(&markers) {
+            if Some(m.name.as_str()) != wm["name"].as_str() || !ticks_close(m.start, &wm["start_ticks"]) {
+                problems.push(format!("{at}: marker {:?} at {} != {wm}", m.name, m.start.0));
+            }
+        }
+        sample_media(p, ti, &wi["media"], &at, problems);
+    }
+    let trans = want["transitions"].as_array().cloned().unwrap_or_default();
+    if t.transitions.len() != trans.len() {
+        problems.push(format!("{at}: {} transitions, expected {}", t.transitions.len(), trans.len()));
+    }
+    for (i, (tr, wt)) in t.transitions.iter().zip(&trans).enumerate() {
+        if !ticks_close(tr.start, &wt["start_ticks"]) || !ticks_close(tr.duration, &wt["duration_ticks"]) {
+            problems.push(format!("{at} transition {i}: {}+{} != {wt}", tr.start.0, tr.duration.0));
+        }
+    }
+}
+
+/// Differences between what CFA4 imported from one sample and what the manifest expects.
+fn check_sample(dir: &std::path::Path, entry: &serde_json::Value, base: Option<&str>) -> Vec<String> {
+    let mut problems = Vec::new();
+    let Some(file) = entry["file"].as_str().filter(|f| f.ends_with(".otio") && std::path::Path::new(f).file_name().and_then(|n| n.to_str()) == Some(*f)) else {
+        return vec![format!("invalid sample file name {}", entry["file"])];
+    };
+    let bytes = match std::fs::read(dir.join(file)) {
+        Ok(b) => b,
+        Err(e) => return vec![format!("cannot read: {e}")],
+    };
+    let (imp, rep) = match import(&bytes, Format::Otio, base) {
+        Ok(r) => r,
+        Err(e) => return vec![format!("import failed: {e}")],
+    };
+    // Every expected warning matches exactly one report warning; nothing else may warn.
+    let mut warnings: Vec<String> = rep.warnings().map(|w| w.message.clone()).collect();
+    for want in entry["warnings"].as_array().into_iter().flatten().filter_map(|w| w.as_str()) {
+        match warnings.iter().position(|w| w.contains(want)) {
+            Some(i) => {
+                warnings.remove(i);
+            }
+            None => problems.push(format!("missing warning containing {want:?}")),
+        }
+    }
+    problems.extend(warnings.into_iter().map(|w| format!("unexpected warning: {w}")));
+
+    let seqs = entry["sequences"].as_array().cloned().unwrap_or_default();
+    if imp.sequences.len() != seqs.len() {
+        problems.push(format!("{} sequences, expected {}", imp.sequences.len(), seqs.len()));
+    }
+    let p = &imp.project;
+    for (&sid, ws) in imp.sequences.iter().zip(&seqs) {
+        let at = format!("sequence {}", ws["name"]);
+        let (Some(item), Some(seq)) = (p.item(sid), p.sequence(sid)) else {
+            problems.push(format!("{at}: missing"));
+            continue;
+        };
+        if Some(item.name.as_str()) != ws["name"].as_str() {
+            problems.push(format!("{at}: name {:?}", item.name));
+        }
+        if let Some(rate) = ws["rate"].as_f64()
+            && (seq.settings.frame_rate.as_f64() - rate).abs() > 1e-6
+        {
+            problems.push(format!("{at}: frame rate {} != {rate}", seq.settings.frame_rate.as_f64()));
+        }
+        if Some(seq.start_timecode) != ws["start_timecode"].as_i64() {
+            problems.push(format!("{at}: start timecode {} != {}", seq.start_timecode, ws["start_timecode"]));
+        }
+        let markers = ws["markers"].as_array().cloned().unwrap_or_default();
+        if seq.markers.len() != markers.len() {
+            problems.push(format!("{at}: {} markers, expected {}", seq.markers.len(), markers.len()));
+        }
+        for (m, wm) in seq.markers.iter().zip(&markers) {
+            if Some(m.name.as_str()) != wm["name"].as_str() || !ticks_close(m.start, &wm["start_ticks"]) {
+                problems.push(format!("{at}: marker {:?} at {} != {wm}", m.name, m.start.0));
+            }
+        }
+        // OTIO lists tracks in stack order; CFA4 keeps video and audio apart, and adds an empty
+        // track of a kind the document lacks.
+        for kind in [TrackKind::Video, TrackKind::Audio] {
+            let label = if kind == TrackKind::Video { "Video" } else { "Audio" };
+            let wanted: Vec<&serde_json::Value> = ws["tracks"].as_array().into_iter().flatten().filter(|t| t["kind"].as_str() == Some(label)).collect();
+            let got = seq.tracks(kind);
+            if got.len() < wanted.len() {
+                problems.push(format!("{at}: {} {label} tracks, expected {}", got.len(), wanted.len()));
+            }
+            for (i, t) in got.iter().enumerate() {
+                match wanted.get(i) {
+                    Some(w) => sample_track(p, t, w, &format!("{at} {label} {i}"), &mut problems),
+                    None if t.items.is_empty() && t.transitions.is_empty() => {}
+                    None => problems.push(format!("{at}: unexpected {label} track {i} with content")),
+                }
+            }
+        }
+    }
+    problems
+}
+
+#[test]
+fn oracle_samples() {
+    let Some(dir) = std::env::var_os("CFA4_OTIO_SAMPLES_DIR").map(|d| {
+        let d = std::path::PathBuf::from(d);
+        if d.is_absolute() { d } else { std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(d) }
+    }) else {
+        return;
+    };
+    let text = std::fs::read_to_string(dir.join("manifest.json")).unwrap();
+    let manifest: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(manifest["version"], 1);
+    assert_eq!(manifest["kind"], "otio-samples");
+    assert_eq!(manifest["ticks_per_second"].as_i64(), Some(TICKS_PER_SECOND), "sample manifest uses another time base");
+    let base = manifest["base_dir"].as_str();
+    let samples = manifest["samples"].as_array().unwrap();
+    assert!(!samples.is_empty(), "no samples in the manifest");
+    let failures: Vec<String> =
+        samples.iter().flat_map(|s| check_sample(&dir, s, base).into_iter().map(move |p| format!("{}: {p}", s["file"].as_str().unwrap_or("?")))).collect();
+    assert!(failures.is_empty(), "{} OTIO sample problem(s) (oracle {}):\n{}", failures.len(), manifest["oracle_version"], failures.join("\n"));
+}

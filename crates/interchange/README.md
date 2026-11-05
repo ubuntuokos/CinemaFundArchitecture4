@@ -112,7 +112,8 @@ OMF carries no video at all.
   lossless round trips through the CFA4 metadata, collections, and a property test over random
   edits at five frame rates. `oracle_fixtures` exports these sequences plus a fixed one per frame
   rate (all transition alignments, speed, reverse, frame hold, a disabled clip, sub-frame audio)
-  for the external OpenTimelineIO oracle (OTIO-1.1, `docs/plans/OTIO-INTEGRATION-2026-10-24.md`).
+  for the external OpenTimelineIO oracle (OTIO-1.1, `docs/plans/OTIO-INTEGRATION-2026-10-24.md`);
+  `oracle_samples` imports the documents the oracle library writes (OTIO-1.2).
 
 ### OpenTimelineIO oracle
 
@@ -131,3 +132,24 @@ A relative `CFA4_OTIO_ORACLE_DIR` is taken from the workspace root (Cargo runs t
 For each file it reads the document with OTIO, re-serialises it, and compares tracks, clip names,
 marker counts and every clip's position and length, as OTIO's own `range_in_parent` computes
 them, with `manifest.json` (exact ticks, 1 µs tolerance for OTIO's floating-point times).
+
+The reverse direction (OTIO-1.2): the official library writes sample documents for every schema
+the importer reads, and `oracle_samples` imports them.
+
+```sh
+python -m cfa4_devtools.otio_samples target/fixtures/otio-samples
+CFA4_OTIO_SAMPLES_DIR=target/fixtures/otio-samples cargo test -p cfa4-interchange --test otio oracle_samples
+```
+
+The samples cover Timeline, Stack (top level and nested), SerializableCollection, a bare Track,
+Video and Audio tracks, Clip, Gap, Transition (at a cut, fade in, fade out), Marker (on the stack, a
+track and a clip), ExternalReference (`file://` URL, relative path, empty path),
+ImageSequenceReference, GeneratorReference (solid colour, SMPTE bars, black, unknown),
+MissingReference, several media references with an active key, LinearTimeWarp (speed, reverse,
+hold), FreezeFrame and an unknown Effect, at 23.976, 24, 25, 29.97, 30, 50, 59.94 and 60 fps. The
+test compares every sequence, track, clip (position and length as OTIO computes them, enabled,
+speed, reverse, hold, markers in media time, the media file or generator, offline), transition and
+marker with `manifest.json`. Each warning listed there must appear exactly once in the import
+report, and the report must give no other warning: today only an unknown generator, an unknown
+effect, a media reference without a path and a clip placed directly in a stack warn. How an image
+sequence is kept is OTIO-2.3; its path is not compared yet.
