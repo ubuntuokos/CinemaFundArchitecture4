@@ -835,10 +835,15 @@ pub(crate) fn native_entries() -> Vec<Entry> {
     let mut mpeg2 = row(c(Encode, Mpeg2Video), Native, Supported, "cfa4-mpeg2v encoder; crates/export/src/mpeg2_tests.rs, crates/mpeg2v/src/encode/tests.rs");
     mpeg2.limits = Some(EncoderLimits { profiles: vec!["main".into(), "422".into()], chroma: vec!["4:2:0".into(), "4:2:2".into()], bit_depths: vec![8] });
     v.push(mpeg2);
-    // packet copy and boundary re-encode: not implemented for any codec or container yet
+    // packet copy: H.264 into MP4 / MOV (WP-04, cfa4-export smart_cut); boundary re-encode: not yet
     for codec in Codec::ALL {
         for container in Container::ALL {
-            v.push(row(k(PacketCopy, codec, container), Native, Unsupported, "packet-copy export is not implemented yet (WP-04)"));
+            if codec == H264 && matches!(container, Mp4 | Mov) {
+                let evidence = "cfa4-export smart_cut (MP4 / MOV source); crates/export/src/smart_cut_tests.rs (payload check, ffmpeg framemd5)";
+                v.push(row(k(PacketCopy, codec, container), Native, Supported, evidence));
+            } else {
+                v.push(row(k(PacketCopy, codec, container), Native, Unsupported, "packet-copy export is implemented only for H.264 into MP4 / MOV"));
+            }
             if codec.is_video() {
                 v.push(row(k(BoundaryReencode, codec, container), Native, Unsupported, "boundary re-encode is not implemented yet (WP-06)"));
             }

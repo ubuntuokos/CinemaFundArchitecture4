@@ -62,21 +62,26 @@ fn baseline_decode_and_demux() {
 }
 
 #[test]
-fn no_smart_cut_is_allowed_before_it_is_implemented() {
-    // WP-03 gate: an unproven cut must never count as lossless
+fn smart_cut_is_allowed_only_where_it_is_implemented() {
+    // an unproven cut must never count as lossless: WP-04 copies H.264 into MP4 / MOV. Packet
+    // copy is keyed on the output container; the source side is the demux step (a framing change
+    // is the planner's to refuse, and the executor itself reads MP4 / MOV sources).
     let r = Registry::native();
+    let mp4 = |c: Container| matches!(c, Container::Mp4 | Container::Mov);
     for codec in Codec::VIDEO {
         for source in Container::ALL {
             for output in Container::ALL {
                 for policy in [STRICT, LAX] {
                     let d = r.smart_cut(codec, source, output, policy);
-                    assert!(!d.allowed, "{codec:?} {source:?} → {output:?}");
-                    assert!(!d.blockers().is_empty());
+                    let demux = r.decide(Key::in_container(Operation::Demux, codec, source), policy).allowed;
+                    let expected = codec == Codec::H264 && demux && mp4(output);
+                    assert_eq!(d.allowed, expected, "{codec:?} {source:?} → {output:?}");
+                    assert_eq!(d.blockers().is_empty(), expected);
                 }
             }
         }
     }
-    let d = r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT);
+    let d = r.smart_cut(Codec::Mpeg2Video, Container::MpegTs, Container::MpegTs, STRICT);
     let blocked: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
     assert_eq!(blocked, vec![Operation::PacketCopy]);
 }
@@ -87,6 +92,8 @@ fn smart_cut_needs_every_step() {
     let index = Key::codec(Operation::GopIndex, Codec::H264);
     let copy = Key::in_container(Operation::PacketCopy, Codec::H264, Container::Mp4);
     let ok = |key| Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() };
+    assert!(r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
+    r.insert(Entry { level: SupportLevel::Unsupported, ..ok(copy) }).unwrap();
     assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
     r.insert(ok(copy)).unwrap();
     assert!(r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
