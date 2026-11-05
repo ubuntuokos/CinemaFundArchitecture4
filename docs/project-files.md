@@ -450,3 +450,29 @@ frame-size ratio. Intrinsic effects (Motion, Opacity…) replace the clip's own 
 effects are added. Applying is one undo step; saving, renaming, deleting and importing change the
 library, not the project, and are not undoable. Files with another `format`, a newer `version` or
 unknown effect ids are refused.
+
+## Sequence profiles
+
+Sequence profiles (Sequence ▸ Sequence Profiles…) are named frame formats a sequence can be set
+to; they are not part of the project. Built-in profiles are defined in code
+(`cfa4_engine::sequence_profiles`) and cannot be changed or deleted. User profiles are one file
+each in `<data dir>/sequence-profiles/`:
+
+```json
+{"format": "cfa4.sequence-profile", "version": 1, "description": "My HDV",
+ "width": 1440, "height": 1080, "displayAspect": [16, 9], "pixelAspect": [4, 3],
+ "fps": [25, 1], "interlaced": false, "spherical": false}
+```
+
+The display aspect must equal `width × pixelAspect : height` in lowest terms (the editor derives
+either one from the other). Descriptions are unique across built-in and user profiles, ignoring
+case and repeated spaces; the file name is the description in lower-case ASCII letters and digits
+joined by `_` (`my_hdv.json`), numbered `_2`, `_3`, … when another profile has it. Saving an edited
+profile writes the new file atomically before the old one is removed, so a failed save changes
+nothing; editing a built-in profile saves a new user profile. Damaged files and files whose
+description is taken are left out of the list. Commands: `sequenceProfiles.list`,
+`sequenceProfiles.save {profile, original?}`, `sequenceProfiles.duplicate {description}`
+("… copy", "… copy 2"), `sequenceProfiles.delete {description}`, and
+`sequenceProfiles.apply {description, scaleMotion?}`, which sets the active sequence's frame size,
+pixel aspect and frame rate in one undo step and lists in `notApplied` what CFA4 sequences can't
+take yet (`interlaced`, `spherical`).
