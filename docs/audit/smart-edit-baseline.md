@@ -184,7 +184,7 @@ a `target/fixtures/` alá, médiafájl nem kerül commitba. **Hiányzik:** paylo
 
 ## 8. MLT-adatfolyam
 
-A Rust- és Python-kódban nincs MLT-integráció (csak dokumentációs említés: `docs/kdenlive-parity.md`,
+A Rust- és Python-kódban nincs MLT-integráció (csak dokumentációs említés: `docs/plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md`,
 ADR 0003, és az OTIO-csere a `crates/interchange`-ben). A terv §3 MLT-kikötése ezért ma nem érint
 kódot; az egységes edit-leírás forrása a CFA4 saját projektmodellje (`project`, `edit`).
 
