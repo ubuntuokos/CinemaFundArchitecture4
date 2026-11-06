@@ -10191,3 +10191,53 @@ def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path:
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_render_bar_as_egui(app, tmp_path: Path):
+    """egui's render bar along the Timeline ruler's bottom edge (``sequence.renderBar``'s
+    ``bar``): yellow / red where a segment needs rendering, green over rendered previews, each
+    span named ``timeline.renderBar.<i>`` with egui's tooltip; a render turns its frames green."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import RENDER_BAR, RULER_H
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.zoom_to_fit()
+        c = _ControlClient(app, server.port())
+        bar = c.call("engine.execute", {"command": "sequence.renderBar", "params": {}})["result"]["bar"]
+        assert wait_until(app, lambda: canvas.render_bar == [b for b in bar if b["state"] != "none"], 10_000), (canvas.render_bar, bar)
+        assert any(b["state"] in ("yellow", "red") for b in canvas.render_bar), bar  # the demo has effects
+
+        def parts() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.renderBar."})["result"]}
+
+        e = parts()
+        assert len(e) == len(canvas.render_bar_spans()) > 0, e
+        i, r, state = canvas.render_bar_spans()[0]
+        assert e[f"timeline.renderBar.{i}"]["label"] == RENDER_BAR[state][1]
+        img = canvas.grab().toImage()
+        dpr = img.devicePixelRatio()
+        at = QtCore.QPoint(int(r.center().x()), RULER_H - 1)
+        assert img.pixelColor(int(at.x() * dpr), int(at.y() * dpr)) == QtGui.QColor(RENDER_BAR[state][0])
+        assert canvas.render_bar_at(at) == state
+        # a render (In to Out) turns its frames green, the bar following the job
+        assert not any(b["state"] == "green" for b in canvas.render_bar)
+        assert c.call("engine.execute", {"command": "sequence.renderInToOut", "params": {}})["ok"]
+        assert wait_until(app, lambda: any(b["state"] == "green" for b in canvas.render_bar), 120_000), canvas.render_bar
+        assert "Rendered preview" in {v["label"] for v in parts().values()}
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

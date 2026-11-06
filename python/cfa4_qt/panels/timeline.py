@@ -94,6 +94,15 @@ SNAP_PX = 8
 TRANSITION_TOP = 17  # a transition covers its row under the clips' name strip (egui's)
 TRANSITION_EDGE_PX = 7  # how far into a transition from either end a press grabs that end
 
+# the render bar along the ruler's bottom (egui's): green = rendered preview, yellow = should play
+# in real time, red = needs rendering, nothing = plays natively
+RENDER_BAR_H = 2
+RENDER_BAR = {
+    "yellow": ("#f0f04f", N_("Unrendered: should play back in real time")),
+    "red": ("#e34850", N_("Unrendered: render to play back in real time")),
+    "green": ("#2d9d78", N_("Rendered preview")),
+}
+
 # label names (engine colour labels) -> display colour
 LABEL_COLORS = {
     "violet": "#8f6fd8",
@@ -448,6 +457,7 @@ class TimelineCanvas(QWidget):
         self.last_dialog: QDialog | None = None
         # the main window: runs the context menus' commands, knows which are enabled
         self.menu_host: timeline_menus.MenuHost | None = None
+        self.render_bar: list[dict[str, Any]] = []  # ``sequence.renderBar``'s ``bar`` spans
         self.last_menu: QMenu | None = None
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
@@ -462,6 +472,32 @@ class TimelineCanvas(QWidget):
         self._layout_rows()
         self.updateGeometry()
         self.update()
+
+    def set_render_bar(self, bar: Any) -> None:
+        spans = [b for b in bar if isinstance(b, dict) and b.get("state") in RENDER_BAR] if isinstance(bar, list) else []
+        if spans != self.render_bar:
+            self.render_bar = spans
+            self.update()
+
+    def render_bar_spans(self) -> list[tuple[int, QRectF, str]]:
+        """The render bar's coloured spans in view: (index in ``sequence.renderBar``'s bar, the
+        span on the ruler's bottom edge, its state)."""
+        ruler = QRectF(HEADER_W, 0, max(0.0, self.width() - HEADER_W), RULER_H)
+        out = []
+        for i, b in enumerate(self.render_bar):
+            x0, x1 = self.x_of(as_int(b.get("start"))), self.x_of(as_int(b.get("end")))
+            r = QRectF(x0, RULER_H - RENDER_BAR_H, x1 - x0, RENDER_BAR_H).intersected(ruler)
+            if r.width() > 0:
+                out.append((i, r, str(b.get("state"))))
+        return out
+
+    def render_bar_at(self, pos: QPoint) -> str | None:
+        """The state of the render bar span under ``pos`` (egui's hit area: 2 px above and below)."""
+        at = QPointF(pos)
+        for _i, r, state in self.render_bar_spans():
+            if r.adjusted(0, -2, 0, 2).contains(at):
+                return state
+        return None
 
     def _layout_rows(self) -> None:
         self.rows = []
@@ -897,6 +933,8 @@ class TimelineCanvas(QWidget):
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
                     T.c("in_out_shade"),
                 )
+        for _i, r, state in self.render_bar_spans():
+            p.fillRect(r, QColor(RENDER_BAR[state][0]))
 
     # ----- markers (egui's timeline_hit.rs marker_rect / marker_range_rect) -----
     def marker_rect(self, marker: dict[str, Any]) -> QRectF:
@@ -957,6 +995,8 @@ class TimelineCanvas(QWidget):
                 if band is not None:
                     out.append((f"timeline.markerRange.{m['id']}", band.intersected(ruler), str(m.get("name") or "")))
                 out.append((f"timeline.marker.{m['id']}", self.marker_rect(m).intersected(ruler), str(m.get("name") or "")))
+        for i, r, state in self.render_bar_spans():
+            out.append((f"timeline.renderBar.{i}", r.adjusted(0, -2, 0, 2).intersected(ruler), RENDER_BAR[state][1]))
         for i, row in enumerate(self.rows):
             for c in self.header_cells(row):
                 key = "sourcePatch" if c.key == "patch" else c.key
@@ -2037,6 +2077,9 @@ class TimelineCanvas(QWidget):
         if d is not None and d.kind == "caption":
             self._caption_drag(d, pos)
             return
+        if d is None and pos.y() < RULER_H and pos.x() >= HEADER_W:
+            state = self.render_bar_at(pos)
+            self.setToolTip(tr(RENDER_BAR[state][1]) if state is not None else "")
         if d is None and RULER_H <= pos.y() < self.tracks_top():
             head = self.caption_header_at(pos)
             tips = {"locked": tr("Toggle Caption Track Lock"), "enabled": tr("Toggle Caption Track Output")}

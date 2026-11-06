@@ -519,6 +519,8 @@ class MainWindow(QMainWindow):
 
         self._refresh_timer = QTimer(self, singleShot=True, interval=40)
         self._refresh_timer.timeout.connect(self.refresh)
+        self._render_bar_timer = QTimer(self, singleShot=True, interval=250)
+        self._render_bar_timer.timeout.connect(self.update_render_bar)
         self._enabled_timer = QTimer(self, singleShot=True, interval=250)
         self._enabled_timer.timeout.connect(self._refresh_enabled)
 
@@ -1847,6 +1849,7 @@ class MainWindow(QMainWindow):
         )
         self.engine.execute("history.list", {}, on_reply=lambda r, _b: self.history.set_history(r))
         self.events.refresh()
+        self.update_render_bar()
         self.engine.execute("source.inspect", {}, on_reply=self._on_source, on_error=lambda _m: self._on_source(None, None))
 
     def _on_state(self, result: Any, _b: bytes | None) -> None:
@@ -2601,6 +2604,22 @@ class MainWindow(QMainWindow):
             self._timecode_again = False
 
         self.engine.call("time.readout", params, on_reply=done, on_error=failed)
+
+    def update_render_bar(self) -> None:
+        """The Timeline's render bar (``sequence.renderBar``), again every 250 ms while a job runs,
+        so a render's previews turn green as they are written (egui repaints from the session)."""
+        if not self.engine.running:
+            return
+        canvas = self.timeline.canvas
+        self.engine.execute(
+            "sequence.renderBar", {}, on_reply=lambda r, _b: canvas.set_render_bar((r or {}).get("bar")), on_error=lambda _m: canvas.set_render_bar([])
+        )
+
+        def jobs(result: Any, _b: bytes | None) -> None:
+            if isinstance(result, list) and any(isinstance(j, dict) and j.get("finished") is not True for j in result):
+                self._render_bar_timer.start()
+
+        self.engine.execute("jobs.list", {}, on_reply=jobs)
 
     def update_jobs(self) -> None:
         if self.engine.running and (self.progress.isVisible() or self.progress.poll.isActive()):
