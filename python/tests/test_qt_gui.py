@@ -10134,3 +10134,48 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_control_channel_names_menu_bar_buttons_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's menu bar buttons through the control channel: ``menu.<Name>`` is the button in the
+    menu bar (listed once, also while its menu is open), and ``ui.click`` on it opens that menu."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        c = _ControlClient(app, server.port())
+
+        def menus():
+            return [e for e in c.call("ui.elements", {"prefix": "menu."})["result"]]
+
+        assert wait_until(app, lambda: {"menu.File", "menu.Edit", "menu.Window", "menu.Help"} <= {e["id"] for e in menus()}, 10_000), menus()
+        bar = win.menuBar()
+        top = bar.mapTo(win, QtCore.QPoint(0, 0))
+        els = {e["id"]: e for e in menus()}
+        x, y, w, h = els["menu.File"]["rect"]
+        assert y >= top.y() and y + h <= top.y() + bar.height() and w > 0, els["menu.File"]
+        assert els["menu.File"]["label"] == "File" and els["menu.File"]["rect"][0] < els["menu.Edit"]["rect"][0]
+        file_menu = next(a.menu() for a in bar.actions() if a.menu() and a.menu().objectName() == "menu.File")
+        assert c.call("ui.click", {"id": "menu.File"})["ok"]
+        assert wait_until(app, file_menu.isVisible, 3_000)
+        listed = [e for e in menus() if e["id"] == "menu.File"]
+        assert len(listed) == 1 and listed[0]["rect"] == [x, y, w, h], listed  # the button, not the popup
+        file_menu.close()
+        app.processEvents()
+        edit_menu = next(a.menu() for a in bar.actions() if a.menu() and a.menu().objectName() == "menu.Edit")
+        assert c.call("ui.click", {"id": "menu.Edit"})["ok"]
+        assert wait_until(app, edit_menu.isVisible, 3_000)
+        edit_menu.close()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
