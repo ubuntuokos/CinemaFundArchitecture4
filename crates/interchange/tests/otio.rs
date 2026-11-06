@@ -532,6 +532,16 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
         if !close_all(&markers, &tl["markers"]) {
             problems.push(format!("{at}: markers at {markers:?}, expected {}", tl["markers"]));
         }
+        if let Some(rate) = tl["rate"].as_f64()
+            && (seq.settings.frame_rate.as_f64() - rate).abs() > 1e-6
+        {
+            problems.push(format!("{at}: frame rate {}, expected {rate}", seq.settings.frame_rate.as_f64()));
+        }
+        if let Some(tc) = tl["start_timecode"].as_i64()
+            && seq.start_timecode != tc
+        {
+            problems.push(format!("{at}: start timecode {}, expected {tc}", seq.start_timecode));
+        }
         for (kind, label) in [(TrackKind::Video, "Video"), (TrackKind::Audio, "Audio")] {
             let want_tracks: Vec<&serde_json::Value> = tl["tracks"].as_array().into_iter().flatten().filter(|t| t["kind"] == label).collect();
             let tracks = seq.tracks(kind);
@@ -546,6 +556,13 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
                 }
                 if wt["transitions"].as_u64() != Some(t.transitions.len() as u64) {
                     problems.push(format!("{at}: {} transitions, expected {}", t.transitions.len(), wt["transitions"]));
+                }
+                if let Some(ranges) = wt["transition_ranges"].as_array() {
+                    let got: Vec<(i64, i64)> = t.transitions.iter().map(|x| (x.start.0, x.duration.0)).collect();
+                    let same = got.len() == ranges.len() && got.iter().zip(ranges).all(|(&(s, d), w)| close(s, &w[0]) && close(d, &w[1]));
+                    if !same {
+                        problems.push(format!("{at}: transitions at {got:?}, expected {}", wt["transition_ranges"]));
+                    }
                 }
                 let items = wt["items"].as_array().map(Vec::as_slice).unwrap_or_default();
                 if t.items.len() != items.len() {
@@ -563,6 +580,7 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
                     if !close_all(&markers, &wi["markers"]) {
                         problems.push(format!("{at}: markers at {markers:?}, expected {}", wi["markers"]));
                     }
+                    problems.extend(sample_item_problems(&imp.project, it, wi).into_iter().map(|p| format!("{at}: {p}")));
                 }
             }
         }
@@ -578,6 +596,74 @@ fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::
         if !report.warnings().any(|w| w.message.contains(e)) {
             problems.push(format!("missing warning: {e}"));
         }
+    }
+    problems
+}
+
+/// The checks of one clip or nested sequence beyond its place and markers: enabled, the time effects
+/// and what it points at. Each runs only when `samples.json` has the key.
+fn sample_item_problems(p: &Project, it: &cfa4_project::TrackItem, want: &serde_json::Value) -> Vec<String> {
+    let mut problems = Vec::new();
+    if let Some(enabled) = want["enabled"].as_bool()
+        && it.enabled != enabled
+    {
+        problems.push(format!("enabled {}, expected {enabled}", it.enabled));
+    }
+    if let Some(speed) = want["speed"].as_f64()
+        && (it.speed - speed).abs() > 1e-9
+    {
+        problems.push(format!("speed {}, expected {speed}", it.speed));
+    }
+    if let Some(reverse) = want["reverse"].as_bool()
+        && it.reverse != reverse
+    {
+        problems.push(format!("reverse {}, expected {reverse}", it.reverse));
+    }
+    if let Some(hold) = want["frame_hold"].as_bool()
+        && it.frame_hold.is_some() != hold
+    {
+        problems.push(format!("frame hold {:?}, expected {hold}", it.frame_hold));
+    }
+    let media = &want["media"];
+    let Some(kind) = media["ref"].as_str() else {
+        return problems;
+    };
+    let Some(item) = p.item(it.item) else {
+        problems.push("points at no project item".to_string());
+        return problems;
+    };
+    if kind == "sequence" {
+        if item.as_sequence().is_none() {
+            problems.push("expected a nested sequence".to_string());
+        }
+        return problems;
+    }
+    let Some(m) = item.as_media() else {
+        problems.push(format!("expected {kind} media, found another project item"));
+        return problems;
+    };
+    if let Some(offline) = media["offline"].as_bool()
+        && m.offline != offline
+    {
+        problems.push(format!("offline {}, expected {offline}", m.offline));
+    }
+    match (kind, &m.media) {
+        ("file", MediaRef::File { path }) => {
+            if let Some(want) = media["path"].as_str()
+                && path != want
+            {
+                problems.push(format!("path {path:?}, expected {want:?}"));
+            }
+        }
+        ("generator", MediaRef::Generator(g)) => {
+            // the generator's serde variant name, e.g. "BarsAndTone" or {"ColorMatte": {...}}
+            let v = serde_json::to_value(g).unwrap_or_default();
+            let name = v.as_str().map(str::to_string).or_else(|| v.as_object().and_then(|o| o.keys().next().cloned())).unwrap_or_default();
+            if Some(name.as_str()) != media["generator"].as_str() {
+                problems.push(format!("generator {name}, expected {}", media["generator"]));
+            }
+        }
+        (kind, other) => problems.push(format!("media {other:?}, expected {kind}")),
     }
     problems
 }
