@@ -2181,6 +2181,29 @@ def test_export_sends_the_audio_bitrate(app):
     assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
 
 
+def test_export_warns_about_a_one_frame_in_out(app):
+    """upstream #3402: the engine's `export.resolve` warning about a one-frame Sequence In/Out shows
+    under the Range row, and goes again when the answer has none or the settings are refused."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    warning = dlg.range_warning
+    assert warning.objectName() == "export.range.warning" and warning.isHidden()
+    dlg._on_resolved({"frames": 1, "range": {"seconds": 0.04}, "warnings": ["In/Out range is 1 frame; pass range: entire for the whole sequence"]}, None)
+    assert not warning.isHidden()
+    dlg._on_resolved({"frames": 250, "range": {"seconds": 10.0}, "warnings": []}, None)
+    assert warning.isHidden()
+    dlg._on_resolved({"frames": 1, "warnings": ["In/Out range is 1 frame; pass range: entire for the whole sequence"]}, None)
+    dlg._summary_error("bad settings")
+    assert warning.isHidden()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
     """qt-parity 4.2: egui's Media File section, File Name (the sequence's name) and Location (the
