@@ -85,6 +85,10 @@ OMF carries no video at all.
 
 ## Tests
 
+- `src/otio.rs` (unit tests): OTIO repeats a nested sequence for every use, so compound clips that each hold
+  several uses of the next are exponential (a 3 KB FCPXML nested 12 deep made the export run for minutes and grow to
+  gigabytes). After 25 000 clips written inside nested sequences the rest are gaps, with one warning; an ordinary
+  project is far below that and unchanged.
 - `tests/aaf_omf.rs`: AAF round trips at 25, 29.97 DF, 23.976 and 59.94 DF (clips, gaps,
   two-sided and one-sided transitions, links, markers, start timecodes, constant and keyframed
   gain, media markers and timecode); 512-byte sectors; breakout to mono; embedded trimmed audio
@@ -123,6 +127,16 @@ python -m cfa4_devtools.otio_oracle target/fixtures/otio-oracle    # exit 0 PASS
 
 A relative `CFA4_OTIO_ORACLE_DIR` is taken from the workspace root (Cargo runs the test from
 `crates/interchange`), so both commands above use the same directory.
+
+In CI (OTIO-1.3) the blocking `otio-oracle` job of the full validation (`workflow_dispatch` or the
+`cfa4-full-validation` PR label; the fast PR gate is unchanged) runs both commands and the
+fixture-backed oracle tests. It installs the oracle from its own hash-pinned lock,
+`requirements/otio-oracle.txt` (`scripts/dev/lock-python.sh` regenerates it with the main lock), so
+`opentimelineio` stays out of the development and Qt environment:
+
+```sh
+python -m pip install --require-hashes -r requirements/otio-oracle.txt
+```
 
 For each file it reads the document with OTIO, re-serialises it, and compares tracks, clip names,
 marker counts and every clip's position and length, as OTIO's own `range_in_parent` computes

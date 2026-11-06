@@ -82,7 +82,48 @@ The index comes from the bitstream, not from the container's keyframe flag:
 - Timestamps stay on the stream's rational timebase (`MediaTime`, exact conversion to `Tick`);
   missing PTS / DTS stay `None`; DTS going backwards and repeated PTS are reported.
 
-## Tests
+## Smart Cut planner (WP-03)
+
+```rust
+use cfa4_smart_edit::{copy_planner::*, plan::*};
+
+let req = SmartCutRequest {
+    stream_id: 1,
+    in_point, out_point,                 // Tick, on the stream's PTS timeline; out is exclusive
+    mode: CutMode::FrameAccurate,        // or CutMode::GopBoundary: copy only
+    guarantee: CopyGuarantee::BitExact,  // or Compatible; never switched silently
+    source_container: Container::Mp4,
+    output_container: Container::Mp4,
+    format: Some(stream_format),         // for the boundary encoder's limits
+};
+let cut = plan_smart_cut(&registry, &media_index, &req, Policy::default())?;
+cut.plan.segments;              // StrictCopy / CompatibleCopy / BoundaryReencode, in output order
+cut.plan.requires_confirmation(); // something is re-encoded: ask the user first
+cut.executable; cut.blockers;   // whether the registry allows every step now, and why not
+cut.safe_points;                // nearest lossless cut-in / cut-out around the request
+```
+
+The planner reads nothing but its arguments and writes nothing. Its output is the common
+`ExportExecutionPlan` of CFA4-SCE-001 v1.5 §8 (`plan.rs`), which the Smart Render planner
+(WP-05) will extend to timelines.
+
+- The output holds every picture shown during `[in_point, out_point)`.
+- A **copy span** starts at a clean access point (IDR, closed GOP) and ends where the packets
+  read so far in decode order output exactly a run of consecutive pictures. Every picture in it
+  must be independent or refer only within its GOP, and no codec configuration change may fall
+  inside. Leading pictures of a closed GOP are copied with it; an open GOP is no copy start.
+- **GOP-boundary mode** copies only. A request that is not at such points is refused
+  (`NotAtSafePoints`) with the nearest safe points before and after. The cut is never moved
+  silently.
+- **Frame-accurate mode** copies the longest copy span inside the range. The pictures before and
+  after it are re-encoded, decoded from the latest clean access point before them; a range with
+  no copy span is re-encoded as a whole. Pictures that cannot be decoded refuse the plan.
+- **Executability** comes from the registry (`smart_cut`, plus `smart_render` with the encoder
+  limits when something is re-encoded) and from the copy guarantee. A bit-exact copy cannot change
+  the packet framing (H.264 from MP4 into MPEG-TS), and a compatible copy needs a proven
+  conversion, which is not registered yet. Until packet copy (WP-04) and the boundary re-encode
+  (WP-06) exist, the built-in registry returns every plan with `executable: false`.
+
 
 `cargo test -p cfa4-smart-edit`: synthetic MPEG-2 GOP structures (open, closed, broken link, missing
 sequence header, configuration change, stream starting mid-GOP), H.264 from `cfa4-h264enc` and
@@ -92,3 +133,8 @@ MPEG-TS references (MPEG-2 open / closed GOP, x264 closed / open GOP) and checks
 type and the presentation order against ffprobe. Capability registry: built-in table validity, the WP-03 gate (no Smart Cut allowed
 before it is implemented, for every codec and container pair), composite decisions, encoder
 limits, probe order independence, backend order from the routing table, report round trip and hostile JSON.
+Smart Cut planner: whole-GOP copies, first / last picture, mid-GOP cuts in both modes with the
+safe points, head and tail boundaries, leading pictures, open GOPs, configuration changes,
+undecodable pictures, invalid ranges and timestamps, copy guarantees, encoder limits, JSON round
+trip, an encoded H.264 stream, and random indexes and requests (the segments always cover the
+range; copied packets output exactly their pictures).
