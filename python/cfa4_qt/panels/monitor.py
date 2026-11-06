@@ -401,6 +401,11 @@ class FrameView(QWidget):
             return
         super().keyPressEvent(e)
 
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        if self.overlay is not None and e.key() == Qt.Key.Key_Control:
+            self.overlay.modifiers_changed(e.modifiers())
+        super().keyReleaseEvent(e)
+
     def inputMethodEvent(self, e) -> None:
         """An input method's finished text (Chinese, Japanese, Korean) goes into the text being
         edited on the monitor."""
