@@ -10134,3 +10134,62 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_media_browser_rows_as_egui(app, tmp_path: Path):
+    """egui's Media Browser ids through the control channel: the places tree's
+    ``mediaBrowser.tree.<section>`` / ``.<section>.<name>`` / ``.dir.<path>``, the list's
+    ``mediaBrowser.header.<column>`` and ``mediaBrowser.entry.<name>`` (in the Thumbnail View too);
+    a click on a place opens it and a double click on a folder entry goes into it."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    media = tmp_path / "media"
+    (media / "Shots" / "Day 1").mkdir(parents=True)
+    (media / "clip.wav").write_bytes(b"")
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    mb = win.media_browser
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Media Browser"].raise_()
+        assert wait_until(app, lambda: mb.isVisible() and bool(mb.data.get("dir")), 20_000), mb.data
+        c = _ControlClient(app, server.port())
+
+        def ids() -> set[str]:
+            return {e["id"] for e in c.call("ui.elements", {"prefix": "mediaBrowser."})["result"]}
+
+        sections = {"mediaBrowser.tree.favorites", "mediaBrowser.tree.localDrives"}  # the rows in view
+        assert wait_until(app, lambda: sections <= ids(), 10_000), "|".join(sorted(ids()))
+        assert any(i.startswith("mediaBrowser.tree.localDrives.") for i in ids())
+        mb.send("mediaBrowser.navigate", {"path": str(media)})
+        assert wait_until(app, lambda: {"mediaBrowser.entry.Shots", "mediaBrowser.entry.clip.wav", "mediaBrowser.header.Name"} <= ids(), 20_000), sorted(ids())
+        # a double click on a folder goes into it
+        assert c.call("ui.click", {"id": "mediaBrowser.entry.Shots", "count": 2})["ok"]
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media / "Shots"), 10_000), mb.data.get("dir")
+        assert wait_until(app, lambda: "mediaBrowser.entry.Day 1" in ids(), 10_000), sorted(ids())
+        # a favourite place is a tree row; a click opens it
+        mb.send("mediaBrowser.navigate", {"path": str(media)})
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media), 10_000)
+        mb.send("mediaBrowser.favorite", {})
+        assert wait_until(app, lambda: "mediaBrowser.tree.favorites.media" in ids(), 10_000), sorted(ids())
+        mb.send("mediaBrowser.navigate", {"path": str(media / "Shots")})
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media / "Shots"), 10_000)
+        assert c.call("ui.click", {"id": "mediaBrowser.tree.favorites.media"})["ok"]
+        assert wait_until(app, lambda: mb.data.get("dir") == str(media), 10_000), mb.data.get("dir")
+        # the Thumbnail View names its entries the same way
+        mb.view_buttons["thumbnails"].click()
+        assert wait_until(app, lambda: mb.stack.currentWidget() is mb.grid and "mediaBrowser.entry.Shots" in ids(), 10_000), sorted(ids())
+        assert "mediaBrowser.header.Name" not in ids()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
