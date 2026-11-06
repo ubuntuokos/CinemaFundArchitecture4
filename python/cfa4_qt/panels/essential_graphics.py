@@ -1025,6 +1025,7 @@ class GraphicEditor(QWidget):
             ("all_caps", "TT", tr("All Caps"), ""),
             ("small_caps", "Tt", tr("Small Caps"), ""),
             ("underline", "U", tr("Underline"), "text-decoration: underline;"),
+            ("strikethrough", "S", tr("Strikethrough"), "text-decoration: line-through;"),
         ):
             b = QToolButton(self.body)
             b.setObjectName(f"graphics.prop.{pid}")
