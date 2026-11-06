@@ -4921,6 +4921,10 @@ def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
     each clip under the media frames another video clip also shows; off again, none."""
     from cfa4_qt.main_window import MainWindow
     from cfa4_qt.panels import timeline as tl
+def test_real_engine_transparency_grid_asks_for_the_frame_alpha(app, tmp_path: Path):
+    """upstream #3233: with the Transparency Grid on, the Program monitor asks for the frame with
+    its alpha and shows it over the checkerboard; off again, the opaque picture."""
+    from cfa4_qt.main_window import MainWindow
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
@@ -4965,6 +4969,31 @@ def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
         toggle().trigger()
         assert wait_until(app, lambda: canvas.duplicate_frames() == {}, 10_000)
     finally:
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    mon = win.monitor
+    asked: list[dict] = []
+    call = engine.call
+
+    def spy(cmd, params=None, *a, **k):
+        if cmd == "frame.render":
+            asked.append(dict(params or {}))
+        return call(cmd, params, *a, **k)
+
+    engine.call = spy
+    premul = QtGui.QImage.Format.Format_RGBA8888_Premultiplied
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and mon.view.image is not None, 60_000)
+        assert mon.view.image.format() != premul
+        mon.set_view(transparency_grid=True)
+        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.format() == premul, 20_000)
+        assert any(a.get("alpha") is True for a in asked)
+        mon.view.grab()  # draws over the checkerboard
+        mon.set_view(transparency_grid=False)
+        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.format() != premul, 20_000)
+    finally:
+        engine.call = call
         win._quit_confirmed = True
         win.close()
         engine.stop()
@@ -9895,6 +9924,31 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (2.0, [1.5, -3.0])
         else:
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
+
+
+def test_transparency_grid_paints_a_checkerboard_and_keeps_its_setting(app):
+    """upstream #3233: the Transparency Grid is a white and light gray checkerboard (8 px squares,
+    anchored to the picture) behind a frame that comes with its alpha; each monitor keeps it."""
+    from cfa4_qt.panels.monitor import GRID_DARK, GRID_LIGHT, frame_format, paint_transparency_grid
+    from cfa4_qt.panels.monitor_view import MonitorView
+
+    img = QtGui.QImage(40, 40, QtGui.QImage.Format.Format_RGB32)
+    img.fill(QtGui.QColor("black"))
+    p = QtGui.QPainter(img)
+    paint_transparency_grid(p, QtCore.QRectF(4, 4, 32, 32), QtCore.QRectF(0, 0, 40, 40))
+    p.end()
+    assert img.pixelColor(5, 5) == GRID_LIGHT and img.pixelColor(13, 5) == GRID_DARK and img.pixelColor(13, 13) == GRID_LIGHT
+    assert img.pixelColor(1, 1) == QtGui.QColor("black"), "only behind the picture"
+    # a huge zoom draws a bounded number of squares, without hanging
+    big = QtGui.QImage(10, 10, QtGui.QImage.Format.Format_RGB32)
+    p = QtGui.QPainter(big)
+    paint_transparency_grid(p, QtCore.QRectF(0, 0, 1e7, 1e7), QtCore.QRectF(0, 0, 1e6, 1e6))
+    p.end()
+    assert frame_format(True) == QtGui.QImage.Format.Format_RGBA8888_Premultiplied
+    assert frame_format(False) == QtGui.QImage.Format.Format_RGBA8888
+    v = MonitorView.from_dict({"transparency_grid": True})
+    assert v.transparency_grid and not MonitorView().transparency_grid
+    assert MonitorView.from_dict({"transparency_grid": "x"}).transparency_grid is True  # (as other switches)
 
 
 def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
