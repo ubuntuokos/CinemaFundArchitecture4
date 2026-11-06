@@ -2326,3 +2326,6 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Unrendered: should play back in real time	Rendereletlen: valós időben lejátszható
+	Unrendered: render to play back in real time	Rendereletlen: valós idejű lejátszáshoz renderelni kell
+	Rendered preview	Renderelt előnézet
