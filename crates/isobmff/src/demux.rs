@@ -163,10 +163,20 @@ impl Track {
     }
 }
 
-/// Text metadata from `udta` (QuickTime `©xxx` atoms and iTunes-style `meta/ilst`, incl. `keys`).
+/// Text metadata from `udta` (QuickTime `©xxx` atoms and iTunes-style `meta/ilst`, incl. `keys`)
+/// and the chapters of a Nero `chpl` box.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct Metadata {
     pub entries: Vec<(String, String)>,
+    /// Chapters from `moov/udta/chpl`, in file order.
+    pub chapters: Vec<Chapter>,
+}
+
+/// A chapter mark: start in 100 ns units (the `chpl` time base) and a title.
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct Chapter {
+    pub start_100ns: u64,
+    pub title: String,
 }
 
 impl Metadata {
@@ -351,7 +361,51 @@ pub fn open<S: ByteSource>(src: S) -> Result<Mp4File> {
             }
         }
     }
+    read_chapter_track(&mut file, &src);
     Ok(file)
+}
+
+/// Upper bound on the QuickTime chapter samples read (each is one chapter).
+const MAX_CHAPTER_SAMPLES: usize = 4096;
+
+/// A QuickTime chapter track: the `text` track another track points at with `tref/chap`. Its
+/// tracks become [`TrackKind::Other`] (they are not subtitles), and when the file has no `chpl`
+/// its samples become [`Metadata::chapters`]: the presentation time and the text of each one.
+fn read_chapter_track<S: ByteSource>(file: &mut Mp4File, src: &S) {
+    let ids: Vec<u32> = file.tracks.iter().flat_map(|t| &t.references).filter(|(k, _)| *k == b"chap").flat_map(|(_, ids)| ids.iter().copied()).collect();
+    let Some(ti) = ids.iter().find_map(|id| file.tracks.iter().position(|t| t.id == *id && t.kind == TrackKind::Subtitle)) else { return };
+    for t in &mut file.tracks {
+        if ids.contains(&t.id) && t.kind == TrackKind::Subtitle {
+            t.kind = TrackKind::Other;
+        }
+    }
+    if !file.metadata.chapters.is_empty() {
+        return;
+    }
+    let t = &file.tracks[ti];
+    for s in t.samples.iter().take(MAX_CHAPTER_SAMPLES) {
+        let Ok(data) = read_range(src, s.offset, u64::from(s.size).min(1 << 16)) else { break };
+        let Some(title) = chapter_text(&data) else { continue };
+        let pts = i128::from(s.pts) + i128::from(t.edit_offset);
+        let start = rescale(pts.max(0), t.timescale, 10_000_000).max(0);
+        file.metadata.chapters.push(Chapter { start_100ns: start as u64, title });
+    }
+}
+
+/// The text of a QuickTime text sample: a 16-bit length, then UTF-16 with a byte order mark or
+/// (by the `encd` atom ours carry, and in practice) UTF-8.
+fn chapter_text(data: &[u8]) -> Option<String> {
+    let n = usize::from(u16::from_be_bytes([*data.first()?, *data.get(1)?]));
+    let text = data.get(2..2 + n)?;
+    Some(match text {
+        [0xFE, 0xFF, rest @ ..] => {
+            char::decode_utf16(rest.chunks_exact(2).map(|c| u16::from_be_bytes([c[0], c[1]]))).map(|c| c.unwrap_or('\u{FFFD}')).collect()
+        }
+        [0xFF, 0xFE, rest @ ..] => {
+            char::decode_utf16(rest.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]]))).map(|c| c.unwrap_or('\u{FFFD}')).collect()
+        }
+        _ => String::from_utf8_lossy(text).into_owned(),
+    })
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -873,12 +927,35 @@ fn parse_udta(p: &[u8], md: &mut Metadata) {
     for b in boxes(p).map_while(|b| b.ok()) {
         if b.kind == b"meta" {
             parse_meta(b.payload, md);
+        } else if b.kind == b"chpl" {
+            parse_chpl(b.payload, md);
         } else if b.kind.0[0] == 0xA9 && b.payload.len() >= 4 {
             let n = u16::from_be_bytes([b.payload[0], b.payload[1]]) as usize;
             if let Some(s) = b.payload.get(4..4 + n) {
                 md.entries.push((b.kind.to_string_lossy(), String::from_utf8_lossy(s).into_owned()));
             }
         }
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn parse_udta_for_tests(p: &[u8], md: &mut Metadata) {
+    parse_udta(p, md);
+}
+
+/// Nero `chpl` (see the muxer): a truncated box keeps the chapters read before the cut.
+fn parse_chpl(p: &[u8], md: &mut Metadata) {
+    let mut c = Cur::new(p, "chpl");
+    let Ok((version, _)) = c.full_header() else { return };
+    if version >= 1 && c.skip(4).is_err() {
+        return;
+    }
+    let Ok(n) = c.u8() else { return };
+    for _ in 0..n {
+        let Ok(start) = c.u64() else { break };
+        let Ok(len) = c.u8() else { break };
+        let Ok(title) = c.bytes(usize::from(len)) else { break };
+        md.chapters.push(Chapter { start_100ns: start, title: String::from_utf8_lossy(title).into_owned() });
     }
 }
 

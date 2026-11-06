@@ -972,9 +972,10 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert sidecar_output("/x/cut.mp4", "SRT") == Path("/x/cut.SRT")
     assert sidecar_output("/x/cut.mp4", "WebVTT") == Path("/x/cut.vtt")
     assert sidecar_output("/x/cut.mp4", "none") is None
-    # Browse returning cut.png confirms that file only, not the earlier frames
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
+    # Location's "…" picks the folder: nothing there is taken as confirmed, the frames are asked about
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getExistingDirectory", lambda *_a, **_k: str(seq_dir))
     dlg._browse()
+    assert dlg.path.location.text() == str(seq_dir)
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
@@ -984,13 +985,17 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert len(engine.sent) == 3 and not answers
     dlg._enqueue(True)  # the frames are confirmed now
     assert len(engine.sent) == 4
-    # Browse returning out.mov for an .mp4 format confirmed out.mov, not the existing out.mp4
+    # File Name and Location make the path with the format's own extension, as egui's output_path
     dlg.format.addItem("H.264", "h264")
     dlg.format.setCurrentIndex(dlg.format.count() - 1)
     dlg.formats["h264"] = {"extension": "mp4"}
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "out.mov"), ""))
-    dlg._browse()
+    dlg.path.file_name.setText("out")
+    dlg.path.location.setText(str(tmp_path))
     assert dlg.path.text() == str(out)
+    dlg.path.setText(str(tmp_path / "out.mov"))  # a typed extension gives way to the format's
+    assert (dlg.path.file_name.text(), dlg.path.location.text(), dlg.path.text()) == ("out", str(tmp_path), str(out))
+    dlg.path.file_name.setText("")
+    assert dlg.path.text() == str(tmp_path / "Export.mp4"), "an empty name is egui's Export"
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
@@ -2147,11 +2152,8 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
 
 # ----- export window -----
 def test_export_helpers(tmp_path: Path, monkeypatch):
-    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name, with_extension
+    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name
 
-    assert with_extension("/a/b.mp4", "mov") == "/a/b.mov"
-    assert with_extension("/a/b", "mp4") == "/a/b.mp4"
-    assert with_extension("/a/b.mp4", "") == "/a/b.mp4"
     assert safe_file_name("Main/Edit\\x") == "Main_Edit_x"
     assert safe_file_name(" .. ") == "export"
     assert format_eta(75) == "1:15" and format_eta(3725) == "1:02:05" and format_eta("x") == ""
@@ -2177,6 +2179,79 @@ def test_export_sends_the_audio_bitrate(app):
     dlg.audio_bitrate.setValue(96)
     assert dlg.params()["audioBitrateKbps"] == 96
     assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
+
+
+def test_export_warns_about_a_one_frame_in_out(app):
+    """upstream #3402: the engine's `export.resolve` warning about a one-frame Sequence In/Out shows
+    under the Range row, and goes again when the answer has none or the settings are refused."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    warning = dlg.range_warning
+    assert warning.objectName() == "export.range.warning" and warning.isHidden()
+    dlg._on_resolved({"frames": 1, "range": {"seconds": 0.04}, "warnings": ["In/Out range is 1 frame; pass range: entire for the whole sequence"]}, None)
+    assert not warning.isHidden()
+    dlg._on_resolved({"frames": 250, "range": {"seconds": 10.0}, "warnings": []}, None)
+    assert warning.isHidden()
+    dlg._on_resolved({"frames": 1, "warnings": ["In/Out range is 1 frame; pass range: entire for the whole sequence"]}, None)
+    dlg._summary_error("bad settings")
+    assert warning.isHidden()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
+    """qt-parity 4.2: egui's Media File section, File Name (the sequence's name) and Location (the
+    default folder, its "…" choosing another), the output path taking the format's extension."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export import default_output_dir
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        name, location = dlg.path.file_name, dlg.path.location
+        box = name.parentWidget()
+        assert isinstance(box, QtWidgets.QGroupBox) and box.title() == "Media File"
+        form = box.layout()
+        assert form.labelForField(name).text() == "File Name"
+        labels = [form.itemAt(i, QtWidgets.QFormLayout.ItemRole.LabelRole).widget().text() for i in range(form.rowCount())
+                  if form.itemAt(i, QtWidgets.QFormLayout.ItemRole.LabelRole) is not None]
+        assert labels[1:3] == ["File Name", "Location"], labels
+        assert dlg.findChild(QtWidgets.QPushButton, "export.location.browse").text() == "…"
+        # egui's defaults: the sequence's name in the default export folder
+        assert name.text() == win.sequence["name"] and location.text() == str(default_output_dir(None))
+        assert name.placeholderText() == "Sequence name" and location.placeholderText() == "Folder"
+        name.setText("cut")
+        location.setText(str(tmp_path / "out"))
+        h264 = dlg.format.findData("h264")
+        dlg.format.setCurrentIndex(h264)
+        assert dlg.params()["path"] == str(tmp_path / "out" / "cut.mp4")
+        # another format: the same name and folder with that format's extension
+        wav = dlg.format.findData("wav")
+        assert wav >= 0
+        dlg.format.setCurrentIndex(wav)
+        assert dlg.params()["path"] == str(tmp_path / "out" / "cut.wav")
+        assert (name.text(), location.text()) == ("cut", str(tmp_path / "out"))
+        # an empty name is egui's "Export"
+        name.setText("")
+        assert dlg.params()["path"] == str(tmp_path / "out" / "Export.wav")
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
