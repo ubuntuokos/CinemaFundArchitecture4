@@ -10191,3 +10191,77 @@ def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path:
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_new_track_drops_as_egui(app, tmp_path: Path):
+    """egui's new tracks from a drag (#483, #1104, #1187): a clip dragged into the empty space
+    below the last audio track previews its place on the new track
+    (``timeline.newTrackPreview.<id>``) and lands on a new audio track; a project item dropped
+    above the top video track goes onto a new video track."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import ITEM_MIME
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    Qt = QtCore.Qt
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(700)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        n_audio, n_video = len(win.sequence["audio"]), len(win.sequence["video"])
+        top_video = next(r for r in canvas.rows if r.kind == "video")
+        last_audio = [r for r in canvas.rows if r.kind == "audio"][-1]
+        assert top_video.top > canvas.tracks_top(), "room for a new video track above the top one"
+        above = canvas.new_track_at(top_video.top - 5)
+        below = canvas.new_track_at(last_audio.top + last_audio.height + 5)
+        assert above is not None and above[0] == "video" and below is not None and below[0] == "audio"
+        assert canvas.new_track_at(top_video.top + 2) is None  # over a track
+        # an A1 clip dragged below the last audio track: the preview, then a new audio track
+        a1 = next(r for r in canvas.rows if r.short == "A1")
+        clip = next(c for c in a1.track["items"] if c.get("clip") is not None)
+        c = _ControlClient(app, server.port())
+        assert c.call("ui.click", {"id": f"timeline.clip.{clip['clip']}"})["ok"]
+        assert wait_until(app, lambda: (win.sequence or {}).get("selection") == [clip["clip"]], 10_000), win.sequence.get("selection")
+        a1 = next(r for r in canvas.rows if r.short == "A1")
+        r = canvas.clip_rect(a1, clip)
+        start = QtCore.QPoint(int(r.center().x()), int(r.top() + 6))  # the name strip, off the Volume line
+        target = QtCore.QPoint(start.x(), int(below[1].center().y()))
+        QtTest.QTest.mousePress(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, start)
+        QtTest.QTest.mouseMove(canvas, QtCore.QPoint(start.x(), start.y() + 10))
+        QtTest.QTest.mouseMove(canvas, target)
+        assert canvas._drag is not None and canvas._drag.new_track is not None and canvas._drag.new_track[0] == "audio"
+        ids = {e["id"] for e in c.call("ui.elements", {"prefix": "timeline.newTrackPreview."})["result"]}
+        assert ids == {f"timeline.newTrackPreview.{clip['clip']}"}, ids
+        QtTest.QTest.mouseRelease(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, target)
+        assert wait_until(app, lambda: len(win.sequence["audio"]) == n_audio + 1, 10_000), win.events.text.toPlainText()
+        assert any(it.get("clip") == clip["clip"] for it in win.sequence["audio"][-1].get("items") or []), win.sequence["audio"][-1]
+        # a project item dropped above the top video track: a new video track holds it
+        item = c.call("engine.execute", {"command": "file.newBarsAndTone", "params": {"seconds": 2}})["result"]["item"]
+        wait_until(app, lambda: False, 300)
+        top_video = next(r for r in canvas.rows if r.kind == "video")
+        above = canvas.new_track_at(top_video.top - 5)
+        assert above is not None
+        mime = QtCore.QMimeData()
+        mime.setData(ITEM_MIME, str(item).encode())
+        pos = QtCore.QPoint(canvas.width() // 2, int(above[1].center().y()))
+        move = QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        canvas.dragMoveEvent(move)
+        assert move.isAccepted() and canvas._drop_preview is not None and canvas._drop_preview[1].track_id == "new"
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert wait_until(app, lambda: len(win.sequence["video"]) == n_video + 1, 10_000), win.events.text.toPlainText()
+        assert any(it.get("item") == item for it in win.sequence["video"][-1].get("items") or []), win.sequence["video"][-1]
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
