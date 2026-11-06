@@ -417,6 +417,8 @@ impl Planner<'_> {
             source_in: MediaTime::new(source_in, self.timebase),
             source_out: MediaTime::new(source_out, self.timebase),
             output_in: MediaTime::new(source_in.checked_sub(origin)?, self.timebase),
+            source: None,
+            render_causes: Vec::new(),
         })
     }
 }
@@ -449,7 +451,7 @@ fn framing(codec: Codec, container: Container) -> Option<Framing> {
 /// A bit-exact copy keeps the payload bytes, so the framing must be the same in both containers;
 /// a compatible copy may change it, but only through a proven lossless conversion (SCE-001
 /// §2.2, §11), and none is registered yet (the native bitstream adapters come with phase P3).
-fn guarantee_blocker(codec: Codec, source: Container, output: Container, guarantee: CopyGuarantee) -> Option<String> {
+pub(crate) fn guarantee_blocker(codec: Codec, source: Container, output: Container, guarantee: CopyGuarantee) -> Option<String> {
     let (c, s, o) = (codec.label(), source.label(), output.label());
     match (framing(codec, source), framing(codec, output)) {
         (Some(a), Some(b)) if a == b => None,
