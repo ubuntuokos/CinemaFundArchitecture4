@@ -1,0 +1,26 @@
+# Hash-pinned Python dependencies for CFA4 on Linux AMD64 (pyproject extra: otio, the OpenTimelineIO test oracle only).
+# Regenerate with: bash scripts/dev/lock-python.sh   (add --upgrade to move versions)
+# Install: python -m pip install --require-hashes -r requirements/otio-oracle.txt
+opentimelineio==0.18.1 \
+    --hash=sha256:07aadc9262b98d0b5584bb3da530eabec753a2bde40fec257267064c19235f8f \
+    --hash=sha256:142235d2e9e57976be360f093a77e226698830d435a8ca63ddf0e73ee84c5e95 \
+    --hash=sha256:1798102411fdd7fdace2441925f910b6daa71ca67c29cd523702a5a19e4e1ded \
+    --hash=sha256:314f016f6821af70512d65393de6c0f96929bb5f0c3dbc74a282a8652dc6fd70 \
+    --hash=sha256:8740c18d2778d64d2128c3cb805cf381a71164ec8f7ff6b38477b60471ebe1a1 \
+    --hash=sha256:8ba406c33afc15de91273a06df8b45ecee2a15fa11005be9e2b307f8f53ead8f \
+    --hash=sha256:8f0924f818b496cf771612d489082bdb83f42b6bd97ed06589dd2e2c086742c9 \
+    --hash=sha256:98f209adaa58f308dacf345a2b61a4312fd5960c3ae1511c2a75f3f8e97aef95 \
+    --hash=sha256:991496f95f20e067184dea7e0312a80d5875835cdc5a6bd2c85f466344f9498b \
+    --hash=sha256:a4e5086e2accd4ca9853ab48bf531e0c148eff47889363a6da3a03f662fbf5e8 \
+    --hash=sha256:ae5677b6864bd48879f77d2b5fe141a7674664b9f43c87b3e0b6d3c49b5f62a9 \
+    --hash=sha256:af19134bf9cb2f3dd86b15004e0ca9a22c22d6e58a14465d4e5aeeb8329154ea \
+    --hash=sha256:b90df7b0fa9c67c9619114a1288861410b4d984e071fb63f524730199aa41f40 \
+    --hash=sha256:c21df4cbda8f0ffae28c43889585fc40fe3533c82e34b22a32b364491145712f \
+    --hash=sha256:caaca67b737e567a5ebeed3a6149324cd7aefa769a979936e6af7b9c51392cff \
+    --hash=sha256:d9405f734502faf2f00ea5ef56602927ddd42bdf5fe9f42d196f05964bbde427 \
+    --hash=sha256:e45fe3164c6e559e660b7e1cce6c87ef0b5d634743114823c6e1fb5f56f8601e \
+    --hash=sha256:e5b990fc2379abd77f850beadad3596aea15628c149711c240b2f403f9c2b6e5 \
+    --hash=sha256:f59a24d0be0b1efd70657214c5ef193ee37f5b88948ad603c31218fd910bdd36 \
+    --hash=sha256:f7398d8e4532f5a75f2030bcc662ac42b03145b1256e122e495f9a984028356b \
+    --hash=sha256:fd8df249657e21142a46ebec534b8a9b2dfd30ce8626fab78ff636626b4e9164
+    # via cfa4-devtools (pyproject.toml)
