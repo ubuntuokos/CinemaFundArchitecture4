@@ -46,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Vérifier avant l’export : {n} problèmes signalés dans la timeline (marqueurs rouges)
 	Checked:	Vérifié :
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Choisissez un fichier de piste IAB (IMF ou DCP), un flux IAB brut ou du Dolby Atmos TrueHD : un flux .thd ou un fichier MKV, MP4 ou M2TS avec une piste Atmos.
-	Choose an output file.	Choisissez un fichier de sortie.
+	Choose a file name and location.	Choisissez un nom de fichier et un emplacement.
+	Choose folder	Choisir un dossier
 	Click and press keys to assign	Cliquez et appuyez sur des touches pour attribuer
 	Compression	Compression
 	Compression Level	Niveau de compression
@@ -319,3 +320,4 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	compression {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	L’entrée/sortie de la séquence ne fait qu’une image. Choisissez Séquence entière pour exporter toute la séquence.
