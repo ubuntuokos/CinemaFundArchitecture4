@@ -214,6 +214,7 @@ class FrameView(QWidget):
     def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName(f"{name}.view")
+        self.view_name = name
         self.mv = mv or MonitorView()
         self.image: QImage | None = None  # as the engine rendered it
         self.shown: QImage | None = None  # in the display mode
@@ -257,6 +258,13 @@ class FrameView(QWidget):
             fw, fh = self.image.width(), self.image.height()
         dpr = max(0.1, self.devicePixelRatioF())
         return fw * self.par / dpr, fh / dpr
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<monitor>.picture``: the picture where it shows (the compare view's reference
+        picture is a widget, ``program.compare.reference``)."""
+        if self.view_name == "program.compare":
+            return []
+        return [(f"{self.view_name}.picture", self.picture_rect().intersected(self.guides.area()), "picture")]
 
     def picture_rect(self) -> QRectF:
         """Fitted, or magnified about the centre plus the (clamped) pan (egui's picture_rect), in

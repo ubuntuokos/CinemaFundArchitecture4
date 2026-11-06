@@ -10134,3 +10134,50 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_monitor_parts_as_egui(app, tmp_path: Path):
+    """egui's ids for a monitor's painted parts through the control channel: ``program.picture``,
+    ``program.scrubBar``, ``program.playhead`` (its handle), ``program.zoomBar`` (the thumb) and
+    ``program.zoomBar.track``, and ``reference.picture``; a click on the scrub bar seeks there and a
+    drag of the playhead handle moves it."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+
+        def els(prefix: str) -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": prefix})["result"]}
+
+        want = {"program.picture", "program.scrubBar", "program.playhead", "program.zoomBar", "program.zoomBar.track"}
+        assert wait_until(app, lambda: want <= set(els("program.")), 10_000), sorted(els("program."))
+        e = els("program.")
+        bx, by, _bw, bh = e["program.scrubBar"]["rect"]
+        _tx, ty, tw, _th = e["program.zoomBar.track"]["rect"]
+        assert ty > by and e["program.zoomBar"]["rect"][2] == tw  # unzoomed: the thumb fills the track
+        assert e["program.picture"]["rect"][1] < by and e["program.playhead"]["label"] == "Scrub playhead"
+        # a click on the scrub bar's middle seeks there; dragging the handle to the start moves it back
+        assert c.call("ui.click", {"id": "program.scrubBar"})["ok"]
+        end = win.monitor.scrub.end
+        assert wait_until(app, lambda: abs(win.monitor.playhead - end / 2) < end / 10, 10_000), (win.monitor.playhead, end)
+        assert c.call("ui.drag", {"from": {"id": "program.playhead"}, "to": {"x": bx - 20, "y": by + bh - 4}})["ok"]
+        assert wait_until(app, lambda: win.monitor.playhead < end / 10, 10_000), (win.monitor.playhead, end)
+        win.docks["Reference Monitor"].show()
+        win.docks["Reference Monitor"].raise_()
+        assert wait_until(app, lambda: "reference.picture" in els("reference."), 10_000), sorted(els("reference."))
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
