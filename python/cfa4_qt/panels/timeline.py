@@ -59,6 +59,7 @@ from .media_browser import FILES_MIME, dropped_files
 from .mixer import FADER_MAX_DB, FADER_MIN_DB, db_to_pos, pos_to_db
 from .monitor_view import SOURCE_MIME, source_payload
 from .timeline_media import TimelineMedia
+from .timeline_zoom import TimelineZoomBar
 from .transport import icon_color, transport_icon
 
 ITEM_MIME = "application/x-cfa4-item"
@@ -425,6 +426,7 @@ class TimelineCanvas(QWidget):
         self.voiceover_track: str | None = None  # the track a voice-over records on (A1…)
         self.rows: list[Row] = []
         self.media = TimelineMedia(self)
+        self.zoom_bar: QWidget | None = None  # the panel's zoom scroll bar, repainted with the view
         self.media.updated.connect(self.update)
         self.pps = 40.0  # pixels per second
         self.scroll_ticks = 0
@@ -673,6 +675,8 @@ class TimelineCanvas(QWidget):
 
     # ----- painting -----
     def paintEvent(self, _event: QPaintEvent) -> None:
+        if self.zoom_bar is not None:
+            self.zoom_bar.update()  # zoom and scroll change in many places: the bar follows each paint
         self.media.begin_paint()
         p = QPainter(self)
         pal = self.palette()
@@ -2415,8 +2419,8 @@ class TimelinePanel(QWidget):
             b.setText(text)
             b.clicked.connect(slot)
             bar.addWidget(b)
-        self.hscroll = QScrollBar(Qt.Orientation.Horizontal, self)
-        self.hscroll.valueChanged.connect(self._on_scroll)
+        self.zoom_bar = TimelineZoomBar(self.canvas, self)
+        self.canvas.zoom_bar = self.zoom_bar
         self.vscroll = QScrollBar(Qt.Orientation.Vertical, self)
         self.vscroll.setObjectName("timeline.vscroll")
         self.vscroll.valueChanged.connect(self.canvas.set_scroll_y)
@@ -2431,7 +2435,7 @@ class TimelinePanel(QWidget):
         layout.setSpacing(0)
         layout.addLayout(bar)
         layout.addLayout(middle, 1)
-        layout.addWidget(self.hscroll)
+        layout.addWidget(self.zoom_bar)
 
     def changeEvent(self, e: QEvent) -> None:
         super().changeEvent(e)
@@ -2556,12 +2560,4 @@ class TimelinePanel(QWidget):
         self.vscroll.setVisible(top > 0)
 
     def _sync_scroll(self) -> None:
-        seconds = max(10, int(self.canvas.duration / TICKS_PER_SECOND) + 10)
-        self.hscroll.blockSignals(True)
-        self.hscroll.setRange(0, seconds * 10)
-        self.hscroll.setValue(int(self.canvas.scroll_ticks / TICKS_PER_SECOND * 10))
-        self.hscroll.blockSignals(False)
-
-    def _on_scroll(self, v: int) -> None:
-        self.canvas.scroll_ticks = int(v / 10 * TICKS_PER_SECOND)
-        self.canvas.update()
+        self.zoom_bar.update()
