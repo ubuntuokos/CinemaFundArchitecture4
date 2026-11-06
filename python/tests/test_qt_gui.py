@@ -10134,3 +10134,64 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_mixer_strip_parts_as_egui(app, tmp_path: Path, monkeypatch):
+    """egui's ids for the mixers' painted controls through the control channel: a track strip's
+    ``mixer.<ref>.input`` / ``output`` / ``pan`` / ``mode`` / ``mute`` / ``solo`` / ``record`` /
+    ``fader`` / ``meter`` / ``name``, the Mix strip's mode, fader, meter and name, and the clip
+    strips' ``clipMixer.<ref>.pan`` / ``mode`` / ``mute`` / ``solo`` / ``keyframe`` / ``fader``;
+    ``ui.click`` / ``ui.drag`` on them act as a mouse would."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import monitor as monitor_module
+
+    monkeypatch.setattr(monitor_module, "HAVE_AUDIO", False)
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1700, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    mixer = win.mixer
+    try:
+        assert wait_until(app, lambda: bool(win.sequence) and len(win.registry.commands) > 100, 30_000)
+        win.docks["Audio Track Mixer"].show()
+        win.docks["Audio Track Mixer"].raise_()
+        assert wait_until(app, lambda: [s.ref for s in mixer.strips if s.isVisible()] == ["A1", "A2", "A3", "Mix"], 10_000)
+        c = _ControlClient(app, server.port())
+
+        def els(prefix: str) -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": prefix})["result"]}
+
+        def strip(ref: str) -> dict:
+            return next(s for s in mixer.strips_data if s.get("ref") == ref)
+
+        parts = ("input", "output", "pan", "mode", "mute", "solo", "record", "fader", "meter", "name")
+        a1 = els("mixer.A1.")
+        assert {f"mixer.A1.{k}" for k in parts} <= set(a1), sorted(a1)
+        assert a1["mixer.A1.mode"]["label"].startswith("Automation mode: ") and a1["mixer.A1.fader"]["label"].startswith("Volume ")
+        assert a1["mixer.A1.meter"]["label"].startswith("Meter ") and a1["mixer.A1.mute"]["label"] == "Mute Track"
+        mix = els("mixer.Mix.")
+        assert {f"mixer.Mix.{k}" for k in ("mode", "fader", "meter", "name")} <= set(mix) and "mixer.Mix.mute" not in mix, sorted(mix)
+        # the fader's part is its cap: a drag moves the level, a click on M mutes
+        x, y, w, h = a1["mixer.A1.fader"]["rect"]
+        assert c.call("ui.drag", {"from": {"id": "mixer.A1.fader"}, "to": {"x": x + w / 2, "y": y + h / 2 + 40}})["ok"]
+        assert wait_until(app, lambda: strip("A1")["volumeDb"] < -1.0, 10_000), strip("A1")["volumeDb"]
+        assert c.call("ui.click", {"id": "mixer.A1.mute"})["ok"]
+        assert wait_until(app, lambda: bool((strip("A1").get("at") or {}).get("mute", strip("A1").get("muted"))), 10_000), strip("A1")
+        # the Audio Clip Mixer's strips
+        win.docks["Audio Clip Mixer"].show()
+        win.docks["Audio Clip Mixer"].raise_()
+        assert wait_until(app, lambda: "clipMixer.A1.mute" in els("clipMixer.A1."), 10_000), sorted(els("clipMixer."))
+        clip = els("clipMixer.A1.")
+        assert {f"clipMixer.A1.{k}" for k in ("pan", "mode", "mute", "solo", "keyframe", "fader")} <= set(clip), sorted(clip)
+        assert clip["clipMixer.A1.keyframe"]["label"] == "Write Keyframes"
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
