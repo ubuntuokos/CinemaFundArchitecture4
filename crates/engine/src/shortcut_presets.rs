@@ -264,6 +264,7 @@ pub const PREMIERE: &[Entry] = &[
     ("source.open", "Shift+O", "Project"),
     ("edit.undo", "Left", "History"),
     ("edit.redo", "Right", "History"),
+    ("history.deleteRedoable", "Backspace", "History"),
 ];
 
 /// Premiere's panel-scoped default keys for the keyboard-only commands (M3.12). CFA4 Default

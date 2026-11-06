@@ -321,3 +321,6 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Delete Redoable Actions	Excluir ações refazíveis
+	Clear History	Limpar histórico
+	Delete the dimmed actions after the current state? They cannot be redone.	Excluir as ações esmaecidas após o estado atual? Elas não poderão ser refeitas.

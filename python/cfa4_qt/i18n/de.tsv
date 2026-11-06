@@ -320,3 +320,6 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	{word}-Komprimierung
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Delete Redoable Actions	Wiederholbare Aktionen löschen
+	Clear History	Protokoll löschen
+	Delete the dimmed actions after the current state? They cannot be redone.	Die abgeblendeten Aktionen nach dem aktuellen Zustand löschen? Sie können nicht wiederhergestellt werden.

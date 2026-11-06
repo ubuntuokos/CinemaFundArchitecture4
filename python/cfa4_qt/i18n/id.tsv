@@ -320,3 +320,6 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	kompresi {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Delete Redoable Actions	Hapus Tindakan yang Dapat Diulang
+	Clear History	Bersihkan Riwayat
+	Delete the dimmed actions after the current state? They cannot be redone.	Hapus tindakan redup setelah keadaan saat ini? Tindakan itu tidak dapat diulang lagi.

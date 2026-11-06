@@ -2326,3 +2326,6 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Delete Redoable Actions	Újra végrehajtható műveletek törlése
+	Clear History	Előzmények törlése
+	Delete the dimmed actions after the current state? They cannot be redone.	Törlöd a jelenlegi állapot utáni, halványan látszó műveleteket? Ezek nem hajthatók végre újra.
