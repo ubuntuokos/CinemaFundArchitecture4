@@ -2326,3 +2326,6 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Caption Export Settings	Feliratexport beállításai
+	Export Captions	Feliratok exportálása
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} már létezik, ezért semmi sem lett exportálva. A cseréjéhez válaszd ki a mentési ablakban.
