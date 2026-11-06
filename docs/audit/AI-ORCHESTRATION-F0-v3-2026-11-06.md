@@ -2,7 +2,7 @@
 
 **Dátum:** 2026-11-06. **Issue:** [#336](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/336).
 **Baseline:** `main` @ `75a8584`.
-**Állapot:** F0-bizonyíték tulajdonosi felülvizsgálatra. **Nem** elfogadott F0-kapu; F1–F9 és E0–E6 nincs engedélyezve.
+**Állapot:** F0-bizonyíték; a D-C1–D-C5 döntések 2026-11-06-án megszülettek (7a). **Nem** elfogadott F0-kapu; F1–F9 és E0–E6 nincs engedélyezve.
 
 Előzmény: [F0 v2](AI-ORCHESTRATION-F0-2026-10-30.md) (baseline `973a73e`). Ez a v3 a v2-t
 kiegészíti, nem írja felül. Kiváltó ok: a tulajdonos 2026-11-06-i közlése (a Worktrunk-terv D6
@@ -157,18 +157,24 @@ párhuzamos `cargo` build erőforrás-korlátba ütközhet; mérés nem történ
 | D-C4 | Az AC-01 / AC-04 / AC-06 felosztása R1/R2/R3 szerint (6. pont)? | igen |
 | D-C5 | Hol fussanak az R3-pontok (GPU, Wayland/Qt6 GUI, minimumgép)? | a referenciagépen, alkalmanként Remote Controllal; önkiszolgáló futó csak külön döntéssel |
 
-Ha a D-C1–D-C4 elfogadott, a terv FINAL 1.2 kiegészítésben rögzítheti őket (a FINAL 1.1 mintájára,
-additív módon). Ez a v3 ilyen kiegészítést nem tartalmaz.
+A döntéseket a FINAL 1.2 kiegészítés rögzíti (7a).
+
+## 7a. Tulajdonosi döntések (2026-11-06)
+
+A tulajdonos mind az öt javaslatot elfogadta: D-C1, D-C2, D-C3 és D-C4 a 7. pont szerint, a D-C5-öt
+pedig úgy, hogy az R3-pontok a referenciagépen futnak. A döntéseket a
+[FINAL 1.2 kiegészítés](../development/ai-orchestration/CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.2-felho.md)
+rögzíti.
 
 ## 8. Biztonság, költség, visszaállítás
 
 - Titok nem került a dokumentumba. Fizetős ügynökhívás és CI-futtatás nem történt.
-- Visszaállítás: a PR egy új fájlt ad hozzá és két tartalomjegyzéket egy-egy sorral bővít; revert-tel
+- Visszaállítás: a PR két új fájlt ad hozzá és két tartalomjegyzéket bővít; revert-tel
   nyomtalanul visszavonható.
 
 ## 9. Javasolt következő hatókör (jóváhagyásra, nem engedély)
 
-1. D-C1–D-C5 eldöntése.
-2. Ezután a FINAL 1.2 kiegészítés megírása, majd **F1** felhős értelmezéssel (Claude Code
+1. ~~D-C1–D-C5 eldöntése~~ – megtörtént (7a); a FINAL 1.2 elkészült.
+2. **F1** felhős értelmezéssel (Claude Code
    jogosultságai, hálózati házirend, titokkezelés, GitHub-jogosultságok – TC-14), és a GAP-C3
    szabály mint legolcsóbb azonnali javítás.
