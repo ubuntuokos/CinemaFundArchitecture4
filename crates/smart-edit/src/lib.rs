@@ -14,15 +14,23 @@
 //!   open and closed GOPs, reference dependencies, timestamps and configuration changes, built
 //!   from the bitstream by [`mpeg2_index`] and [`h264_index`]. [`timestamp`] holds the exact
 //!   rational media time it uses.
+//! - [`plan`]: the common [`plan::ExportExecutionPlan`] (CFA4-SCE-001 v1.5 §8): segments that are
+//!   copied, re-encoded at a cut boundary or rendered.
+//! - [`copy_planner`] (WP-03): the Smart Cut planner, the plan for cutting one source range out of
+//!   one stream, without writing a file.
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod capabilities;
+pub mod copy_planner;
 pub mod h264_index;
 pub mod media_index;
 pub mod mpeg2_index;
+pub mod plan;
 pub mod timestamp;
 
 #[cfg(test)]
 mod capabilities_tests;
+#[cfg(test)]
+mod copy_planner_tests;
 #[cfg(test)]
 mod index_tests;
