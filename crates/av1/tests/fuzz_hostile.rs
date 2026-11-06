@@ -20,7 +20,8 @@ impl Rng {
     }
 }
 
-/// (name, encoder args, pix_fmt)
+/// (name, encoder args, pix_fmt). The seeds are 64×64: SVT-AV1 (Ubuntu 24.04's 1.7 and the CI's
+/// FFmpeg) refuses sources lower than 64 lines, so upstream's 64×48 seed could not be encoded.
 const SEEDS: &[(&str, &str, &str)] = &[("av1_fz_default", "-c:v libsvtav1 -g 4", "yuv420p"), ("av1_fz_10bit", "-c:v libsvtav1 -g 6", "yuv420p10le")];
 
 fn ivf_frames(data: &[u8]) -> Vec<Vec<u8>> {
@@ -43,7 +44,7 @@ fn make(ff: &std::path::Path, name: &str, args: &str, pix: &str) -> Option<Vec<V
         let a: Vec<&str> = args.split_whitespace().collect();
         matches!(
             Command::new(ff)
-                .args(["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=64x48:rate=25", "-frames:v", "6", "-pix_fmt", pix])
+                .args(["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=25", "-frames:v", "6", "-pix_fmt", pix])
                 .args(a)
                 .args(["-f", "ivf"])
                 .arg(tmp)
