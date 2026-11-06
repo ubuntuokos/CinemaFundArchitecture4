@@ -1,9 +1,14 @@
 # CFA4-DEV-WORKTRUNK-001 – Worktrunk-alapú párhuzamos fejlesztés
 
-**Állapot:** 1.1 JÓVÁHAGYVA (a tulajdonos, `ubuntuokos`, 2026-11-05). **Végrehajtás:** F0 nincs
-elindítva; F1–F5 **nincs engedélyezve**, és az F1-től az AI-ORCHESTRATION megfelelő fázisának
-engedélye is kell (D2b). A jóváhagyás nem jelent telepítési, kódmódosítási,
-merge- vagy fázisindítási engedélyt.
+**Állapot:** LEZÁRVA – NOT_APPLICABLE (a tulajdonos döntése, 2026-11-06). Az 1.1-et a tulajdonos
+2026-11-05-én jóváhagyta. Az F0 a felhős környezetben futott le
+([`WT-F0-2026-11-06.md`](../../audit/worktrunk/WT-F0-2026-11-06.md)), az F1–F5 nem indul.
+
+**Indoklás:** a terv abból indult ki, hogy több agent dolgozik egy gépen, egy közös klónban. A CFA4
+fejlesztése viszont GitHubon, felhős Claude Code munkamenetekben folyik. Minden munkamenet saját,
+ideiglenes konténerben, saját klónnal és saját ággal dolgozik, és PR-on át integrál. Ez erősebb
+elkülönítés, mint egy worktree-é, a `wt` telepítése és beállítása pedig minden munkamenetben
+elveszne. Ha a fejlesztés később helyi gépre költözik, a terv új revízióval újranyitható.
 
 A terv a CFA4 **fejlesztésének** eszközéről szól, nem a termékről. A
 [CFA4-DEV-AI-ORCHESTRATION-001](../ai-orchestration/README.md) TC-02 „Workspace Coordinator”
@@ -14,7 +19,7 @@ AI-val automatizált fejlesztői eszköztárhoz tartozik).
 
 | Fájl | Tartalom | SHA-256 |
 |---|---|---|
-| [`CFA4-DEV-WORKTRUNK-001-1.1.md`](CFA4-DEV-WORKTRUNK-001-1.1.md) | 1.1 jóváhagyott terv: F0–F5, WT-AC-01–15, biztonsági szabályok, visszaállítás | `5ec7fd16…b092d80f` |
+| [`CFA4-DEV-WORKTRUNK-001-1.1.md`](CFA4-DEV-WORKTRUNK-001-1.1.md) | 1.1 jóváhagyott terv: F0–F5, WT-AC-01–15, biztonsági szabályok, visszaállítás | `ce9ad723…3c609ecd` |
 
 ## Forrás (provenance)
 
@@ -44,3 +49,4 @@ AI-val automatizált fejlesztői eszköztárhoz tartozik).
 | D3 | `wt merge`, `wt remove`, `wt step prune/squash/rebase` agentnek | tilos |
 | D4 | Claude Code plugin | csak az F5 után, ellenőrzéssel |
 | D5 | Külön XFS/btrfs kötet | az F2 mérése alapján; addig ext4, `copy-ignored` nélkül |
+| D6 (2026-11-06) | Kell-e a Worktrunk a felhős fejlesztéshez? | nem; a terv lezárva (NOT_APPLICABLE) |

@@ -3,7 +3,7 @@
 ## Worktrunk-alapú párhuzamos fejlesztési infrastruktúra
 
 **Dokumentumverzió:** 1.1 (az 1.0-s vázlat kidolgozása)
-**Státusz:** JÓVÁHAGYVA – a tulajdonos (`ubuntuokos`) 2026-11-05-én jóváhagyta. A jóváhagyás nem jelent telepítési, fázisindítási vagy merge-engedélyt; minden fázis külön engedéllyel indul.
+**Státusz:** LEZÁRVA – NOT_APPLICABLE (tulajdonosi döntés, 2026-11-06). Jóváhagyva 2026-11-05-én; az F0 után lezárva, mert a fejlesztés felhős munkamenetekben fut, ahol minden munkamenet saját konténerben, saját klónnal és ággal dolgozik (`docs/audit/worktrunk/WT-F0-2026-11-06.md`). F1–F5 nem indul.
 **Projekt:** CinemaFundArchitecture4 (CFA4)
 **Szülőterv:** CFA4-DEV-AI-ORCHESTRATION-001, TC-02 „Workspace Coordinator”
 **Végrehajtó:** Claude Code CLI

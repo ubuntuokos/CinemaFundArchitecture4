@@ -55,4 +55,4 @@ része, külön jóváhagyás után.
 
 | Terv | TC | Állapot |
 |---|---|---|
-| [CFA4-DEV-WORKTRUNK-001](../worktrunk/README.md) – Worktrunk-alapú párhuzamos worktree-kezelés | TC-02 Workspace Coordinator | 1.1 JÓVÁHAGYVA (2026-11-05); F0 nincs elindítva |
+| [CFA4-DEV-WORKTRUNK-001](../worktrunk/README.md) – Worktrunk-alapú párhuzamos worktree-kezelés | TC-02 Workspace Coordinator | LEZÁRVA – NOT_APPLICABLE (2026-11-06): a felhős munkamenetek saját konténerben, klónnal és ággal futnak |
