@@ -176,6 +176,7 @@ class Drag:
     begun: bool = False  # transition: its first change went (the rest merge into that undo step)
     track_kind: str = ""  # height: "video" | "audio"
     volume: dict[str, Any] | None = None  # volumeLine / volumeKey: the grab (egui's LineDrag / KeyDrag)
+    linked: bool = True  # trim / stretch: linked partners follow; False when Alt was held at the press (upstream #3301)
 
 
 def as_int(v: Any, default: int = 0) -> int:
@@ -1820,12 +1821,14 @@ class TimelineCanvas(QWidget):
                 self.command.emit("timeline.select", {"clips": [cid]})
                 return
             origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
+            alone = bool(e.modifiers() & Qt.KeyboardModifier.AltModifier)  # Alt: only this side of a link
             if self.tool == "rateStretch":
-                self._drag = Drag("stretch", clip, pos, origin, edge=edge)
+                self._drag = Drag("stretch", clip, pos, origin, edge=edge, linked=not alone)
             elif self.tool == "rolling" and row is not None and self.neighbour(row, clip, edge) is not None:
                 self._drag = Drag("roll", clip, pos, origin, edge=edge, partner=self.neighbour(row, clip, edge))
             else:  # ripple, or a roll at a cut with nothing on the other side: a trim
-                self._drag = Drag("trim", clip, pos, origin, edge=edge, mode="ripple" if self.tool == "ripple" else "regular")
+                self._drag = Drag("trim", clip, pos, origin, edge=edge, mode="ripple" if self.tool == "ripple" else "regular",
+                                  linked=not alone)
             return
         if self.tool == "razor":
             t = self.time_at(pos.x())
@@ -1845,7 +1848,8 @@ class TimelineCanvas(QWidget):
                 self.sequence["selection"] = [cid]  # local echo until the engine's reply
         if edge:
             origin = int(clip.get("start") if edge == "in" else clip.get("end") or 0)
-            self._drag = Drag("trim", clip, pos, origin, edge=edge)
+            # Alt: only this side of a link (upstream #3301)
+            self._drag = Drag("trim", clip, pos, origin, edge=edge, linked=not e.modifiers() & Qt.KeyboardModifier.AltModifier)
         else:
             self._drag = Drag("move", clip, pos, int(clip.get("start") or 0))
 
@@ -2127,7 +2131,7 @@ class TimelineCanvas(QWidget):
         if d.kind == "trim":
             mode = "ripple" if d.mode == "ripple" or e.modifiers() & Qt.KeyboardModifier.ControlModifier else "regular"
             self.command.emit(
-                "timeline.trim", {"clip": d.clip.get("clip"), "edge": d.edge, "mode": mode, "delta": d.delta}
+                "timeline.trim", {"clip": d.clip.get("clip"), "edge": d.edge, "mode": mode, "delta": d.delta, "linked": d.linked}
             )
             return
         if d.kind == "roll" and d.partner is not None:
@@ -2139,7 +2143,7 @@ class TimelineCanvas(QWidget):
             self.command.emit("clip.remix", {"clip": d.clip.get("clip"), "duration": length})
             return
         if d.kind == "stretch":
-            self.command.emit("timeline.rateStretch", {"clip": d.clip.get("clip"), "edge": d.edge, "delta": d.delta})
+            self.command.emit("timeline.rateStretch", {"clip": d.clip.get("clip"), "edge": d.edge, "delta": d.delta, "linked": d.linked})
             return
         if d.kind in ("slip", "slide"):
             self.command.emit(f"timeline.{d.kind}", {"clip": d.clip.get("clip"), "delta": d.delta})
