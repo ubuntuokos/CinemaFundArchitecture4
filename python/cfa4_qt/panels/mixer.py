@@ -785,11 +785,28 @@ class TrackMixerPanel(QWidget):
             st.update()
         self.strips_box.setMinimumHeight(int(max((st.needed_height() for st in self.strips if st.isVisible()), default=0)))
 
+    def set_panel_keys(self, keys: dict[str, str]) -> None:
+        """The keys of the menu's commands with the Audio Track Mixer focused (`mixer.showHideTracks`,
+        `mixer.meterInputOnly`, from the shortcut set), shown beside the entries as egui's."""
+        self.panel_keys = dict(keys)
+
+    def _key_text(self, cid: str) -> str:
+        key = (getattr(self, "panel_keys", None) or {}).get(cid, "")
+        return f"\t{key}" if key else ""
+
+    def open_show_hide(self) -> QMenu:
+        """Show/Hide Tracks… (`mixer.showHideTracks`): the track list opens under the menu button."""
+        self._fill_menu()
+        sub = self.show_hide_menu
+        sub.popup(self.menu_button.mapToGlobal(self.menu_button.rect().bottomLeft()))
+        return sub
+
     def _fill_menu(self) -> None:
         m = self.menu_button.menu()
         m.clear()
-        sub = m.addMenu(tr("Show/Hide Tracks"))
+        sub = m.addMenu(tr("Show/Hide Tracks") + self._key_text("mixer.showHideTracks"))
         sub.setObjectName("mixer.menu.showHide")
+        self.show_hide_menu = sub
         for s in self.strips_data:
             if s.get("kind") == "mix":
                 continue
@@ -803,7 +820,7 @@ class TrackMixerPanel(QWidget):
         a = sub.addAction(tr("Show All"))
         a.setObjectName("mixer.showHide.all")
         a.triggered.connect(self.show_all)
-        meter = m.addAction(tr("Meter Input(s) Only"))
+        meter = m.addAction(tr("Meter Input(s) Only") + self._key_text("mixer.meterInputOnly"))
         meter.setObjectName("mixer.menu.meterInputOnly")
         meter.setCheckable(True)
         meter.setChecked(self.meter_input_only)
