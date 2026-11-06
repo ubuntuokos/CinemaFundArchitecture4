@@ -24,7 +24,11 @@ fn synthetic_files() -> Vec<Vec<u8>> {
     for brand in [Brand::Mp4, Brand::Mov] {
         let mut opts = WriterOptions::new(brand);
         opts.metadata = vec![("©nam".into(), "fuzz".into())];
-        opts.chapters = vec![Chapter { start_100ns: 0, title: "Egy".into() }, Chapter { start_100ns: 5_000_000, title: "Kettő".into() }];
+        let chapters = vec![Chapter { start_100ns: 0, title: "Egy".into() }, Chapter { start_100ns: 5_000_000, title: "Kettő".into() }];
+        // MP4: chpl and a chapter track; MOV: only the chapter track
+        if brand == Brand::Mp4 {
+            opts.chapters = chapters.clone();
+        }
         let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
         let v = w.add_track(TrackConfig::new(SampleEntry::avc(AvcConfig::new(vec![vec![0x67, 0x64, 0, 0x1F]], vec![vec![0x68]], 4), 64, 64), 25)).unwrap();
         let mut cfg = TrackConfig::new(SampleEntry::aac(vec![0x11, 0x90], 2, 48000), 48000);
@@ -34,6 +38,7 @@ fn synthetic_files() -> Vec<Vec<u8>> {
         let pc = w.add_track(TrackConfig::new(SampleEntry::pcm(p), 8000)).unwrap();
         w.add_timecode_track(v, TimecodeConfig { flags: 1, timescale: 30000, frame_duration: 1001, frames_per_second: 30, ..Default::default() }, 1000)
             .unwrap();
+        w.add_chapter_track(v, &chapters).unwrap();
         for i in 0..20u8 {
             w.write_sample(v, WriteSample { data: &[i; 20], duration: 1, composition_offset: (i % 3) as i32, is_sync: i % 10 == 0 }).unwrap();
             w.write_sample(a, WriteSample { data: &[i; 7], duration: 1024, composition_offset: 0, is_sync: true }).unwrap();

@@ -1,7 +1,7 @@
 # Hét nyílt vágóprogram: mit vehet át belőlük a CFA4
 
 > **Állapot:** a tulajdonos 2026-10-27-én jóváhagyta (döntések: 6. pont; a források a [`VISION.md` 4. pontjában](../VISION.md#4-egyesítendő-programok-és-képességeik)) · **Készült:** 2026-10-27 ·
-> **CFA4:** `main` @ `16debf9` · **Kapcsolódik:** [`kdenlive-parity.md`](kdenlive-parity.md)
+> **CFA4:** `main` @ `16debf9` · **Kapcsolódik:** [`CFA4-KDENLIVE-PLAN-001`](plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md)
 > (K1–K35, PR #325), [`venturi-parity.md`](venturi-parity.md) (V1–V10, PR #326),
 > [`gaps.md`](gaps.md) (G-számok), [`licensing.md`](licensing.md), [ADR 0004](adr/ADR-0004-compute-routing.md)
 
