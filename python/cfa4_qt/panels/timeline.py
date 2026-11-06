@@ -1836,8 +1836,9 @@ class TimelineCanvas(QWidget):
         additive = bool(e.modifiers() & (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier))
         sel = self.selection
         if additive:
-            new = [c for c in sel if c != cid] if cid in sel else [*sel, cid]
-            self.command.emit("timeline.select", {"clips": new})
+            # the engine flips the clip with its group and links as a whole (upstream #3522): a
+            # locally computed list would keep the clip's group mates, which bring it straight back
+            self.command.emit("timeline.select", {"clips": [cid], "toggle": True})
             return
         if cid not in sel:
             self.command.emit("timeline.select", {"clips": [cid]})

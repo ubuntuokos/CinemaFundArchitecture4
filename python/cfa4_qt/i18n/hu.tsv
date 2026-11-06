@@ -2328,3 +2328,4 @@ export.summary	Low	alacsony
 	Error	Hiba
 	Panel menu	Panelmenü
 	Move panel	Panel áthelyezése
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
