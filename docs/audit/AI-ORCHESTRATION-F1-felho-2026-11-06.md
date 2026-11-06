@@ -80,6 +80,16 @@ nyilvános URL egy-egy GET kérése. Push-próba: csak `git push --dry-run`.
 A ruleset és a környezeti beállítás a tulajdonos fiókjában módosítható; ez a munkamenet nem
 változtat rajtuk.
 
+## 5a. Tulajdonosi döntések (2026-11-06) és végrehajtásuk
+
+A tulajdonos mindhárom javaslatot elfogadta (D-F1-1, D-F1-2, D-F1-3).
+
+| ID | Végrehajtás | Állapot |
+|---|---|---|
+| D-F1-2 | Új, személyes **„CFA4”** felhős környezet (a tulajdonos jóváhagyásával): korlátozott hálózat, csomagkezelők és MCP-szerverek engedélyezve, további hosztok: `github.com`, `api.github.com`, `codeload.github.com`, `objects.githubusercontent.com`, `static.rust-lang.org` (a `rust-toolchain.toml` toolchainje), `ffmpeg.org` (`scripts/ci/install-ffmpeg-9.0.2.sh`). A Default környezet változatlan, mert a tulajdonos többi tárolóját is kiszolgálja. | létrehozva; a CFA4-munkameneteknek ezt kell választaniuk. Működése egy új munkamenetben igazolandó (ez a munkamenet nem költöztethető át) – PENDING |
+| D-F1-3 | A nem kapcsolódó bővítmények kikapcsolása a tulajdonos claude.ai-fiókjában | a tulajdonosra vár |
+| D-F1-1 | Kötelező jóváhagyás a `main` rulesetjében | **akadály:** a munkamenetek PR-jai a tulajdonos fiókja nevén jönnek létre, a GitHub pedig nem engedi a saját PR jóváhagyását; a kötelező jóváhagyás így minden beolvasztást blokkolna. Kivétel (bypass) a tulajdonosnak a munkameneteknek is kivételt adna, mert azok ugyanazzal az azonossággal dolgoznak. Feltétele a munkamenetek külön azonossága (bot-fiók vagy GitHub App, merge-jog nélkül) – az I-01 javaslatával egyezik. Tulajdonosi döntésre vár. |
+
 ## 6. Biztonság, költség, visszaállítás
 
 - Titokérték nem került kiolvasásra és nem került a dokumentumba.
