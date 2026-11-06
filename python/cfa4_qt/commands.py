@@ -193,6 +193,8 @@ class CommandRegistry:
         self.actions: dict[str, QAction] = {}
         # one action per panel-scoped key, picking the command by the focused panel
         self._dispatchers: list[QAction] = []
+        # the frontend's own commands by id (the window fills it): scoped keys dispatch to them too
+        self.local_actions: dict[str, QAction] = {}
         # every Qt key string build_menus gave a command, panel-scoped ones included
         self.claimed_keys: set[str] = set()
 
@@ -233,8 +235,18 @@ class CommandRegistry:
         action.setEnabled(cmd.enabled)
         return action
 
-    def build_menus(self, bar: QMenuBar, parent: QWidget, extra: dict[str, list[QAction]] | None = None) -> set[str]:
-        """Fill ``bar`` from the commands' menu paths. Returns the ids given a shortcut."""
+    def build_menus(
+        self,
+        bar: QMenuBar,
+        parent: QWidget,
+        extra: dict[str, list[QAction]] | None = None,
+        local_scoped: dict[str, list[tuple[str, str]]] | None = None,
+        local_keys: dict[str, list[str]] | None = None,
+    ) -> set[str]:
+        """Fill ``bar`` from the commands' menu paths. Returns the ids given a shortcut.
+        ``local_scoped``: the panel-scoped keys (keys, panel) of the commands the frontend runs
+        itself, dispatched with the engine's through :attr:`local_actions`; ``local_keys``: their
+        application-wide keys, which such a key runs outside its panels."""
         bar.clear()
         menus: dict[tuple[str, ...], QMenu] = {}
 
@@ -273,6 +285,11 @@ class CommandRegistry:
                 q = qt_shortcut(k)
                 if q:
                     scoped.setdefault(q, {}).setdefault(panel, cid)
+        for cid, binds in (local_scoped or {}).items():
+            for k, panel in binds:
+                q = qt_shortcut(k)
+                if q:
+                    scoped.setdefault(q, {}).setdefault(panel, cid)
         # the command a scoped key runs when no binding matches the focused panel
         fallback: dict[str, str] = {}
         # shortcuts: every command, menu or not; the first command to claim a key keeps it
@@ -291,6 +308,9 @@ class CommandRegistry:
                 else:
                     seqs.append(QKeySequence(q))
             if not seqs:
+                # a key cleared (or moved to a panel) in Keyboard Shortcuts must stop running it
+                if cid in self.actions:
+                    self.actions[cid].setShortcuts([])
                 continue
             action = self.action(cid, parent)
             if action is None:
@@ -306,6 +326,12 @@ class CommandRegistry:
                 owner.removeAction(old)
             old.setParent(None)
         self._dispatchers = []
+        # a frontend command's application-wide key that is also a panel's key: run outside it
+        for cid, ks in (local_keys or {}).items():
+            for k in ks:
+                q = qt_shortcut(k)
+                if q in scoped and q not in fallback:
+                    fallback[q] = cid
         for q, panels in scoped.items():
             for cid in panels.values():
                 self.action(cid, parent)
@@ -327,17 +353,31 @@ class CommandRegistry:
     def _dispatch(self, panels: dict[str, str], fallback: str | None) -> None:
         """Run the command bound to a key in the focused panel, else the key's window-wide command."""
         cid = panels.get(focused_panel() or "", fallback)
-        action = self.actions.get(cid) if cid else None
+        action = (self.actions.get(cid) or self.local_actions.get(cid)) if cid else None
         if action is not None:
             action.trigger()  # does nothing while the command is disabled
 
 
+# Qt panel object names whose engine (shortcut context) name differs (engine `shortcuts::PANELS`)
+PANEL_NAMES = {
+    "EffectControls": "Effect Controls",
+    "MediaBrowser": "Media Browser",
+    "AudioTrackMixer": "Audio Track Mixer",
+    "AudioClipMixer": "Audio Clip Mixer",
+    "EssentialGraphics": "Essential Graphics",
+    "LumetriColor": "Lumetri Color",
+    "Inspector": "Properties",
+}
+
+
 def focused_panel() -> str | None:
-    """The engine name of the panel holding keyboard focus (``panel.Timeline`` -> ``Timeline``)."""
+    """The engine name of the panel holding keyboard focus (``panel.Timeline`` -> ``Timeline``,
+    ``panel.EffectControls`` -> ``Effect Controls``)."""
     w = QApplication.focusWidget()
     while w is not None:
         name = w.objectName()
-        if name.startswith("panel."):
-            return name.removeprefix("panel.")
+        if name.startswith("panel.") and not name.startswith("panel.menu."):
+            short = name.removeprefix("panel.")
+            return PANEL_NAMES.get(short, short)
         w = w.parentWidget()
     return None

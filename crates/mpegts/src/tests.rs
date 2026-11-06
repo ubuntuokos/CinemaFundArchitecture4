@@ -101,7 +101,7 @@ impl TsMux {
 
 /// An MPEG-2 coded frame: sequence header (on I), GOP, picture header, picture coding
 /// extension and a slice of filler; or a field pair.
-fn mpeg2_frame(coding_type: u8, tref: u16, fields: bool, filler: usize) -> Vec<u8> {
+pub(crate) fn mpeg2_frame(coding_type: u8, tref: u16, fields: bool, filler: usize) -> Vec<u8> {
     let mut v = Vec::new();
     if coding_type == 1 {
         v.extend([0, 0, 1, 0xB3, 0x14, 0x00, 0xF0, 0x13, 0xFF, 0xFF, 0xE0, 0x18]);
@@ -331,7 +331,7 @@ fn timestamps_unwrap_across_the_33_bit_wrap() {
     assert_eq!(u.unwrap(4200), (1 << 33) + 4200);
 }
 
-fn adts_frame(k: u8) -> Vec<u8> {
+pub(crate) fn adts_frame(k: u8) -> Vec<u8> {
     let mut v = vec![0xFF, 0xF1, 0x50, 0x80, 0x0C, 0x9F, 0xFC];
     v.extend([k; 93]);
     v

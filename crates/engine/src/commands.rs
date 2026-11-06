@@ -272,6 +272,26 @@ pub(crate) fn sequence_time_p(s: &Session, p: &Value, prefix: &str, cmd: &str) -
     Ok(Some(t))
 }
 
+/// A time stored under `key`: integer ticks, or an object in any of the formats [`time_p_at`]
+/// reads (`{"frame": n}`, `{"seconds": n}`, `{"timecode": "…"}`, `{"time": ticks}`), against
+/// `rate`. `Ok(None)` when the key is absent or null; a value in none of those forms is an error
+/// of `cmd`, never silently ignored.
+pub(crate) fn tick_or_time_p(p: &Value, key: &str, rate: FrameRate, drop_frame: bool, cmd: &str) -> Result<Option<Tick>> {
+    let wrong = || bad(cmd, format!("`{key}` must be ticks or a time object like {{\"seconds\": n}}, {{\"frame\": n}} or {{\"timecode\": \"…\"}}"));
+    match p.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(v) => {
+            if let Some(t) = v.as_i64() {
+                return Ok(Some(Tick(t)));
+            }
+            if !v.is_object() {
+                return Err(wrong());
+            }
+            time_p_at(v, "", rate, drop_frame, Tick::ZERO).map(Some).ok_or_else(wrong)
+        }
+    }
+}
+
 pub(crate) fn clip_p(p: &Value, k: &str) -> Option<ClipId> {
     u64_p(p, k).map(ClipId)
 }
@@ -344,10 +364,10 @@ pub(crate) fn item_p(p: &Value, k: &str) -> Option<ItemId> {
 /// as `copied`.
 fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "timeline.move";
-    let mut listed: Vec<(ClipId, TrackId, Tick)> = Vec::new();
-    let mut new_moves = Vec::new();
+    let mut listed: Vec<(ClipId, TrackId, Tick, bool)> = Vec::new();
     for m in p.get("moves").and_then(Value::as_array).into_iter().flatten() {
-        let track = if str_p(m, "track").is_some_and(|t| t.eq_ignore_ascii_case("new")) {
+        let new_track = str_p(m, "track").is_some_and(|t| t.eq_ignore_ascii_case("new"));
+        let track = if new_track {
             let clip = clip_p(m, "clip").ok_or_else(|| bad(CMD, "new track needs a clip"))?;
             let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
             let (source, _) = q.find_item(clip).ok_or(edit::EditError::NoItem(clip))?;
@@ -357,13 +377,12 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
             if m.get("time").and_then(Value::as_i64).is_none() {
                 return Err(bad(CMD, "new track needs a time"));
             }
-            new_moves.push((clip, source));
             Some(source)
         } else {
             track_p(s, m, "track", CMD)?
         };
         if let (Some(clip), Some(track), Some(time)) = (clip_p(m, "clip"), track, m.get("time").and_then(Value::as_i64)) {
-            listed.push((clip, track, Tick(time)));
+            listed.push((clip, track, Tick(time), new_track));
         }
     }
     if listed.is_empty() {
@@ -371,32 +390,32 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     }
     let follow = bool_p(p, "linked").unwrap_or(s.state.linked_selection);
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
-    // (clip, destination track, new start, where a partner starts now). `time` is any i64: the
-    // sums are done in i128, where a few i64 values cannot overflow, and checked on the way back.
-    let mut plan: Vec<(ClipId, TrackId, i128, Option<i128>)> = Vec::new();
-    for &(clip, track, time) in &listed {
-        plan.push((clip, track, i128::from(time.0), None));
+    // (clip, destination track, new start, where a partner starts now, new track requested).
+    // `time` is any i64: sums use i128 and are checked on the way back.
+    let mut plan: Vec<(ClipId, TrackId, i128, Option<i128>, bool)> = Vec::new();
+    for &(clip, track, time, new_track) in &listed {
+        plan.push((clip, track, i128::from(time.0), None, new_track));
         let Some((_, it)) = q.find_item(clip) else { continue }; // `edit::move_items` reports it
         let Some(link) = it.link.filter(|_| follow) else { continue };
         let offset = i128::from(time.0) - i128::from(it.start.0);
         for t in q.all_tracks().filter(|t| !t.locked) {
             for partner in t.items.iter().filter(|i| i.link == Some(link)) {
                 if !listed.iter().any(|m| m.0 == partner.id) && !plan.iter().any(|m| m.0 == partner.id) {
-                    plan.push((partner.id, t.id, i128::from(partner.start.0) + offset, Some(i128::from(partner.start.0))));
+                    plan.push((partner.id, t.id, i128::from(partner.start.0) + offset, Some(i128::from(partner.start.0)), false));
                 }
             }
         }
     }
     let late = plan.iter().map(|m| -m.2).max().unwrap_or(0).max(0);
-    let mut moves: Vec<(ClipId, TrackId, Tick)> = Vec::with_capacity(plan.len());
-    for (clip, track, start, was) in plan {
+    let mut moves: Vec<(ClipId, TrackId, Tick, bool)> = Vec::with_capacity(plan.len());
+    for (clip, track, start, was, new_track) in plan {
         // a partner that ends up where it is does not move (its listed clip only changed track):
         // re-placing it would drop the transitions at its edges
         if was == Some(start + late) {
             continue;
         }
         let start = i64::try_from(start + late).ok().map(Tick).filter(|t| *t <= Tick::MAX).ok_or_else(|| bad(CMD, "`time` is out of range"))?;
-        moves.push((clip, track, start));
+        moves.push((clip, track, start, new_track));
     }
     let ins = bool_p(p, "insert").unwrap_or(false);
     let copy = bool_p(p, "copy").unwrap_or(false);
@@ -409,7 +428,7 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
     // Allocate destinations in the same transaction as the move: an invalid edit leaves
     // neither empty tracks nor history entries. Each source track keeps its clips together.
     let prepare = |q: &mut cfa4_project::Sequence, ctx: &mut edit::EditCtx<'_>| -> Result<Vec<(ClipId, TrackId, Tick)>> {
-        let sources: Vec<_> = q.all_tracks().filter(|t| new_moves.iter().any(|m| m.1 == t.id)).map(|t| (t.id, t.kind, t.channels)).collect();
+        let sources: Vec<_> = q.all_tracks().filter(|t| moves.iter().any(|m| m.3 && m.1 == t.id)).map(|t| (t.id, t.kind, t.channels)).collect();
         for kind in [TrackKind::Video, TrackKind::Audio] {
             let added = sources.iter().filter(|s| s.1 == kind).count();
             if added > 0 && q.tracks(kind).len().saturating_add(added) > crate::sequence_tools::MAX_TRACKS {
@@ -428,8 +447,9 @@ fn move_clips(s: &mut Session, p: &Value) -> Result<Value> {
         }
         Ok(moves
             .iter()
-            .map(|&(clip, track, time)| {
-                let dest = new_moves.iter().find(|m| m.0 == clip).and_then(|m| destinations.iter().find(|d| d.0 == m.1)).map_or(track, |d| d.1);
+            .map(|&(clip, track, time, new_track)| {
+                // A copy can list the same source again with a different destination.
+                let dest = destinations.iter().find(|d| new_track && d.0 == track).map_or(track, |d| d.1);
                 (clip, dest, time)
             })
             .collect())
@@ -575,12 +595,17 @@ pub fn linked_roll_pairs(seq: &cfa4_project::Sequence, left: ClipId, right: Clip
     pairs
 }
 
-/// Expand a clip selection with linked partners (when linked selection is on).
+/// Keep each selected identity once, then expand linked partners when linked selection is on.
 pub fn with_links(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
-    let Some(seq) = s.active_sequence() else { return clips.to_vec() };
-    let mut out = clips.to_vec();
+    let mut out = Vec::new();
+    for c in clips {
+        if !out.contains(c) {
+            out.push(*c);
+        }
+    }
+    let Some(seq) = s.active_sequence() else { return out };
     if s.state.linked_selection {
-        let links: Vec<u64> = clips.iter().filter_map(|c| seq.find_item(*c).and_then(|(_, i)| i.link)).collect();
+        let links: Vec<u64> = out.iter().filter_map(|c| seq.find_item(*c).and_then(|(_, i)| i.link)).collect();
         for t in seq.all_tracks() {
             for i in &t.items {
                 if i.link.is_some_and(|l| links.contains(&l)) && !out.contains(&i.id) {
@@ -841,9 +866,22 @@ pub(crate) fn ensure_audio_tracks(p: &mut Project, seq_id: ItemId, first: usize,
 
 /// `timeline.place` for one item (`item`).
 fn place_one(s: &mut Session, p: &Value) -> Result<Value> {
-    if crate::sequence_tools::wants_new_track(p) {
-        return crate::sequence_tools::place_on_new_tracks(s, p);
-    }
+    let item = item_p(p, "item").ok_or_else(|| bad("timeline.place", "need `item`"))?;
+    let pi = s.project.item(item).ok_or_else(|| bad("timeline.place", "no such item"))?;
+    // Everything that can be refused from the parameters alone is checked before the first change:
+    // `track`/`audioTrack` `"new"` adds tracks, and a refused call must leave the project, its
+    // revision and its redo history as they were.
+    let seq_rate = s.sequence_rate();
+    let seq_df = s.active_sequence().map(|q| q.settings.drop_frame).unwrap_or(false);
+    // a subclip's own frame_rate() is the default; its frames are the parent media's (as source_mark_time)
+    let src_rate = crate::clip_ops::source_view(s, item).map(|v| v.rate).unwrap_or_else(|| pi.frame_rate());
+    let src_df = s.project.sequence(item).map(|q| q.settings.drop_frame).unwrap_or(false);
+    let not_negative = |t: Option<Tick>, key: &str| match t {
+        Some(t) if t < Tick::ZERO => Err(bad("timeline.place", format!("`{key}` must not be negative"))),
+        t => Ok(t),
+    };
+    let sin_param = not_negative(tick_or_time_p(p, "sourceIn", src_rate, src_df, "timeline.place")?, "sourceIn")?;
+    let dur_param = not_negative(tick_or_time_p(p, "duration", seq_rate, seq_df, "timeline.place")?, "duration")?;
     let stream_flag = |key: &str| match p.get(key) {
         None => Ok(true),
         Some(Value::Bool(v)) => Ok(*v),
@@ -853,10 +891,17 @@ fn place_one(s: &mut Session, p: &Value) -> Result<Value> {
     if !video && !audio {
         return Err(bad("timeline.place", "enable video, audio, or both"));
     }
-    let item = item_p(p, "item").ok_or_else(|| bad("timeline.place", "need `item`"))?;
     let at = sequence_time_p(s, p, "", "timeline.place")?.unwrap_or(s.playhead());
+    if crate::sequence_tools::wants_new_track(p) {
+        // a track that is named (not `"new"`) has to exist
+        for key in ["track", "audioTrack"] {
+            if !p.get(key).and_then(Value::as_str).is_some_and(|v| v.eq_ignore_ascii_case("new")) {
+                track_p(s, p, key, "timeline.place")?;
+            }
+        }
+        return crate::sequence_tools::place_on_new_tracks(s, p);
+    }
     let tg = s.targeting();
-    let pi = s.project.item(item).ok_or_else(|| bad("timeline.place", "no such item"))?;
     let (has_video, has_audio) = s.project.source_streams(item);
     let is_audio = |t: TrackId| s.active_sequence().is_some_and(|q| q.audio_tracks.iter().any(|x| x.id == t));
     // `track` is where the picture goes and `audioTrack` where the sound goes. A caller that
@@ -889,8 +934,11 @@ fn place_one(s: &mut Session, p: &Value) -> Result<Value> {
         ItemKind::Subclip { range, .. } => (Some(range.start), Some(range.end())),
         _ => (None, None),
     };
-    let sin = p.get("sourceIn").and_then(Value::as_i64).map(Tick).or(mi).unwrap_or_default();
-    let dur = p.get("duration").and_then(Value::as_i64).map(Tick).unwrap_or_else(|| mo.unwrap_or(full) - sin);
+    let sin = sin_param.or(mi).unwrap_or_default();
+    let dur = match dur_param {
+        Some(d) => d,
+        None => mo.unwrap_or(full) - sin,
+    };
     // The clip goes on the frame grid: its start and its end (`time + duration`) each snap to the
     // nearest frame, so a sub-frame `time` never pushes the end past the one asked for and the
     // sequence never ends between frames (#1101).
@@ -1522,18 +1570,27 @@ fn build() -> Vec<CommandSpec> {
             let all = bool_p(p, "all").unwrap_or(false);
             let id = str_p(p, "id").map(str::to_string);
             let Some(per) = s.persistence.as_mut() else { return Ok(json!({"discarded": 0})) };
-            let mut n = 0;
+            let mut n = 0usize;
             let mut keep = Vec::new();
+            let mut failure = None;
             for (i, c) in std::mem::take(&mut per.candidates).into_iter().enumerate() {
                 let hit = all || id.as_deref().map_or(i == 0, |want| want == c.id);
-                if hit {
-                    crate::autosave::discard_candidate(&c).map_err(|e| EngineError::Other(e.to_string()))?;
-                    n += 1;
+                if hit && failure.is_none() {
+                    match crate::autosave::discard_candidate(&c) {
+                        Ok(()) => n = n.saturating_add(1),
+                        Err(e) => {
+                            failure = Some(EngineError::Other(format!("could not discard recovery session {}: {e}", c.id)));
+                            keep.push(c);
+                        }
+                    }
                 } else {
                     keep.push(c);
                 }
             }
             per.candidates = keep;
+            if let Some(e) = failure {
+                return Err(e);
+            }
             if n == 0 {
                 return Err(bad("file.discardRecovery", "no such recovery session"));
             }
@@ -1623,7 +1680,7 @@ fn build() -> Vec<CommandSpec> {
             "Media…",
             ["File", "Export"],
             None,
-            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
+            r#"{"path":str,"preset":str?,"settings":ExportSettings?,"format":"h264|hevc|prores|dnxhr|apv|cineform|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|jpg|tga|dpx|exr|gif|wav|aiff|aac|flac"?,"audioCodec":"auto|aac|pcm|flac"?,"flacLevel":0..8=5,"width":u32?,"height":u32?,"fps":f64?,"bitrateKbps":u32?,"bitrateMode":"cbr|vbr1Pass|vbr2Pass|crf"?,"crf":0..51=23,"hardwareEncoding":"off|auto"?,"scale":f32=1,"audio":bool=true,"quality":0..100,"burnCaptions":bool=false,"alpha":bool=false,"exrCompression":"none|rle|zips|zip"?,"captionSidecar":"srt|vtt"?,"loudnessLufs":f64?,"proresProfile":"proxy|lt|standard|hq|4444|4444xq"?,"dnxProfile":"lb|sq|hq|hqx"?,"apvProfile":"422-10|422-12|444-10|444-12"?,"cineformProfile":"422|444|4444"?,"cineformQuality":"filmscan3|filmscan2|filmscan1|high|medium|low"?,"mxfVideoCodec":"dnxhr|proRes|h264"?,"mpeg2Container":"ps|ts|m2ts|es"?,"mpeg2Chroma":"420|422"?,"mpeg2Quantizer":1..31?,"mpeg2BFrames":0..7?,"dcpResolution":"2k|4k"?,"dcpAspect":"flat|scope|full"?,"dcpContentKind":"feature|trailer|teaser|short|advertisement|test|transitional|rating|policy|psa"?,"dcpImmersive":"off|bed|file"?,"dcpIabSource":str?,"dcpIabFallback":"5.1|mix|none"?,"sequence":id?,"range":"entire|inOut|workArea|custom"?,"startSeconds":f64?,"endSeconds":f64?,"wait":bool=false}"#,
             has_seq,
             crate::export_tools::export_media
         ),
@@ -1874,7 +1931,8 @@ fn build() -> Vec<CommandSpec> {
         // Each clip flips on its own, as in Premiere (#484): with one enabled and one disabled clip
         // selected, Enable swaps them rather than first making both the same.
         cmd!("clip.enable", "Enable", ["Clip"], Some("Shift+E"), r#"{"clips":[id]?}"#, has_selection, |s, p| {
-            let mut sel = with_links(s, &clips_p(s, p));
+            // An Alt selection is already exact (#3031); explicit targets keep the linked behavior.
+            let mut sel = if p.get("clips").is_some() || p.get("clip").is_some() { with_links(s, &clips_p(s, p)) } else { s.state.selection.clone() };
             // a clip named twice must still flip once
             sel.sort();
             sel.dedup();
@@ -1890,11 +1948,24 @@ fn build() -> Vec<CommandSpec> {
         }),
         cmd!("clip.link", "Link", ["Clip"], Some("Cmd+L"), r#"{"clips":[id]?}"#, has_selection, |s, p| {
             let sel = clips_p(s, p);
-            let linked = sel.iter().all(|c| s.active_sequence().and_then(|q| q.find_item(*c)).is_some_and(|(_, i)| i.link.is_some()));
+            // Unlink when any selected clip is linked, as the Timeline's context menu says (#1103):
+            // a title or a music clip among the selection must not turn Unlink into a re-link
+            let linked = sel.iter().any(|c| s.active_sequence().and_then(|q| q.find_item(*c)).is_some_and(|(_, i)| i.link.is_some()));
             s.edit_sequence(if linked { "Unlink" } else { "Link" }, |q, ctx, _| {
                 if linked {
+                    let mut links = Vec::new();
                     for c in &sel {
                         if let Some((_, i)) = q.find_item_mut(*c) {
+                            links.extend(i.link.take());
+                        }
+                    }
+                    // a partner left alone in its link (one half unlinked on its own) is unlinked
+                    // too: a one-member link would read as "linked" with nothing to follow
+                    for l in links {
+                        let members: Vec<ClipId> = q.all_tracks().flat_map(|t| t.items.iter()).filter(|i| i.link == Some(l)).map(|i| i.id).collect();
+                        if let [lonely] = members[..]
+                            && let Some((_, i)) = q.find_item_mut(lonely)
+                        {
                             i.link = None;
                         }
                     }
@@ -2161,12 +2232,14 @@ fn build() -> Vec<CommandSpec> {
             remove_transitions(s, &ids, "Clear Transition")
         }),
         cmd!("sequence.closeGap", "Close Gap", ["Sequence"], None, r#"{"track":"V1"|id?,"time":ticks?}"#, has_seq, |s, p| {
-            // Shortcuts and menus have no parameters. Resolve that form from the selected gap
-            // (#1135); explicit requests keep their existing track/time validation.
+            // Shortcuts and menus have no parameters. That form closes the selected gap (#1135),
+            // or with none selected every gap between In and Out, as Premiere's Sequence ▸ Close
+            // Gap does (#1986); explicit requests keep their existing track/time validation.
             if p.as_object().is_some_and(|p| p.is_empty()) {
-                let gap = s.state.gap_selection.ok_or_else(|| bad("sequence.closeGap", "select a gap or provide `track`"))?;
-                ripple_delete_gap(s, gap)?;
-                return Ok(Value::Null);
+                return match s.state.gap_selection {
+                    Some(gap) => ripple_delete_gap(s, gap).map(|_| Value::Null),
+                    None => close_sequence_gaps(s),
+                };
             }
             let tr = track_p(s, p, "track", "sequence.closeGap")?.ok_or_else(|| bad("sequence.closeGap", "need `track`"))?;
             let t = time_p(s, p, "").unwrap_or(s.playhead());
@@ -2618,7 +2691,7 @@ fn build() -> Vec<CommandSpec> {
             "Place Clip",
             [],
             None,
-            r#"{"item":id|"items":[id] (back to back, one undo step),"track":"V1"|id|"A1" (sound only)|"new" (a video track after the last)?,"audioTrack":"A1"|id|"new"?,"time":ticks|"frame":i64|"seconds":f64,"insert":bool,"sourceIn":ticks?,"duration":ticks?,"video":bool=true,"audio":bool=true}"#,
+            r#"{"item":id|"items":[id] (back to back, one undo step),"track":"V1"|id|"A1" (sound only)|"new" (a video track after the last)?,"audioTrack":"A1"|id|"new"?,"time":ticks|"frame":i64|"seconds":f64,"insert":bool,"sourceIn":ticks|{"frame"|"seconds"|"timecode"}?,"duration":ticks|{"frame"|"seconds"|"timecode"}?,"video":bool=true,"audio":bool=true}"#,
             has_seq,
             |s, p| match p.get("items") {
                 Some(items) => place_items(s, p, items),
@@ -3122,6 +3195,13 @@ fn build() -> Vec<CommandSpec> {
                     let (keyframes, v) = {
                         let prm = crate::masks::target_param(e, &pq, &pid).ok_or_else(|| bad("effects.setParam", format!("no param `{pid}`")))?;
                         let v = json_to_param(&prm.value, &val).ok_or_else(|| bad("effects.setParam", "value has the wrong type"))?;
+                        // the parameter's hard range, which `effects.list` publishes: a value outside it
+                        // (a factor where a percentage is meant, #2679) is refused, not saved
+                        if let (Some(cfa4_project::ParamKind::Float { min, max, .. }), ParamValue::Float(x)) = (def.map(|d| &d.kind), &v)
+                            && !(*min..=*max).contains(x)
+                        {
+                            return Err(bad("effects.setParam", format!("`{pid}` must be between {min} and {max}, got {x}")));
+                        }
                         let keyframes = if keyframe {
                             // the stopwatch and the value in one step
                             prm.put_keyframe(mt, v.clone());
@@ -3476,6 +3556,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::graphics::commands());
     v.extend(crate::graphic_templates::commands());
     v.extend(crate::credits::commands());
+    v.extend(crate::dialog_defaults::commands());
     v.extend(crate::shortcuts::commands());
     v.extend(crate::relink::commands());
     v.extend(crate::proxies::commands());
@@ -3490,6 +3571,10 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::panels::commands());
     v.extend(crate::scopes::commands());
     v.extend(crate::remix::commands());
+    v.extend(crate::beat_markers::commands());
+    v.extend(crate::social::commands());
+    v.extend(crate::delivery_check::commands());
+    v.extend(crate::variants::commands());
     v.extend(crate::voiceover::commands());
     v.extend(crate::narration::commands());
     v.extend(crate::keyboard::commands());
@@ -3666,12 +3751,19 @@ pub(crate) fn json_to_param(template: &ParamValue, v: &Value) -> Option<ParamVal
         }
         ParamValue::Color(_) => match v {
             Value::String(s) => ParamValue::Color(cfa4_color::parse_hex(s)?),
-            Value::Array(a) => ParamValue::Color([
-                a.first()?.as_f64()? as f32,
-                a.get(1)?.as_f64()? as f32,
-                a.get(2)?.as_f64()? as f32,
-                a.get(3).and_then(Value::as_f64).unwrap_or(1.0) as f32,
-            ]),
+            Value::Array(a) => {
+                let c = [
+                    a.first()?.as_f64()? as f32,
+                    a.get(1)?.as_f64()? as f32,
+                    a.get(2)?.as_f64()? as f32,
+                    a.get(3).and_then(Value::as_f64).unwrap_or(1.0) as f32,
+                ];
+                // a finite f64 such as 1e300 saturates to an infinite f32, which a saved project cannot reload
+                if !c.iter().all(|x| x.is_finite()) {
+                    return None;
+                }
+                ParamValue::Color(c)
+            }
             _ => return None,
         },
         ParamValue::Bool(_) => ParamValue::Bool(v.as_bool()?),
@@ -4379,6 +4471,28 @@ fn ripple_delete_gap(s: &mut Session, g: crate::GapSelection) -> Result<Value> {
     Ok(json!({"closed": g.range.duration.0}))
 }
 
+/// `sequence.closeGap` with no gap selected: every span where no track has anything, between In
+/// and Out (the whole sequence without them), closes in one undo step (#1986).
+fn close_sequence_gaps(s: &mut Session) -> Result<Value> {
+    let within = in_out_range(s)?;
+    let gaps = s.active_sequence().map(|q| crate::sequence_extras::sequence_gaps(q, Some(within))).unwrap_or_default();
+    let Some(first) = gaps.first().copied() else {
+        return Err(bad("sequence.closeGap", "no gaps to close"));
+    };
+    s.edit_sequence("Close Gap", |q, _, st| {
+        // a locked track would stay put while everything else moved past it
+        if q.all_tracks().any(|t| t.locked && t.items.iter().any(|i| i.start >= first.end())) {
+            return Err(edit::EditError::Locked.into());
+        }
+        for g in gaps.iter().rev() {
+            crate::sequence_extras::close_sequence_gap(q, *g, st.ripple_sequence_markers);
+        }
+        Ok(())
+    })?;
+    let closed = gaps.iter().fold(Tick::ZERO, |sum, g| sum + g.duration);
+    Ok(json!({"gaps": gaps.len(), "closed": closed.0}))
+}
+
 /// `sequence.closeGap`: ripple the gap on `track` at `t` closed (one undo step, "Ripple Delete").
 fn close_gap(s: &mut Session, tr: TrackId, t: Tick) -> Result<()> {
     s.edit_sequence("Ripple Delete", |q, _, st| {
@@ -4691,13 +4805,23 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         json!({
             "id": t.id.0, "name": t.name, "locked": t.locked, "syncLock": t.sync_lock, "enabled": t.enabled, "muted": t.muted, "solo": t.solo,
             "label": t.label.map(|l| l.name()),
-            "items": t.items.iter().map(|i| json!({
+            "items": t.items.iter().map(|i| (i, json!({
                 "clip": i.id.0, "item": i.item.0, "name": i.name, "start": i.start.0, "duration": i.duration.0,
-                "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse,
+                "startFrame": rate.frame_at(i.start), "durationFrames": rate.frame_at(i.duration), "sourceIn": i.source_in.0, "speed": i.speed, "reverse": i.reverse, "frameHold": i.frame_hold.map(|t| t.0),
                 "end": i.end().0, "endFrame": rate.frame_at(i.end()), "sourceOut": i.source_out().0, "gainDb": i.gain_db, "audioStream": i.audio_stream,
                 "enabled": i.enabled, "link": i.link, "label": i.label.name(),
+                // the clip menu's Multi-Camera submenu: nested sequences, their switch and cameras
+                "nested": s.project.sequence(i.item).is_some(),
+                "multicam": i.multicam.map(|m| json!({"enabled": m.enabled, "angle": m.angle})),
+                "cameras": i.multicam.filter(|m| m.enabled).and_then(|_| s.project.sequence(i.item)).map(|q| q.cameras().video_angles().map(|(a, c)| json!({"angle": a, "name": c.name})).collect::<Vec<_>>()),
                 "effects": i.effects.iter().map(|e| json!({"effect": e.effect, "enabled": e.enabled, "masks": e.masks.len(), "params": e.params.iter().map(|(k, p)| (k.clone(), json!({"value": format!("{:?}", p.value), "keyframes": p.keyframes.len()}))).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
-            })).collect::<Vec<_>>(),
+            }))).map(|(i, mut v)| {
+                // the Timeline's Volume line (apart: one `json!` this deep overflows the macro)
+                v["volume"] = volume_line(i);
+                // a Text to Speech narration (the Qt GUI asks `tts.inspect` only for those)
+                v["narration"] = json!(s.project.narrations.contains_key(&i.item));
+                v
+            }).collect::<Vec<_>>(),
             "transitions": t.transitions.iter().map(|x| json!({"id": x.id.0, "effect": x.effect.effect, "name": x.effect.def().map_or(x.effect.effect.as_str(), |d| d.name), "start": x.start.0, "duration": x.duration.0, "from": x.from.map(|c| c.0), "to": x.to.map(|c| c.0), "reverse": x.reverse, "align": cfa4_edit::transitions::bounds(t, x).map(|b| cfa4_edit::transitions::alignment(x, b.1, rate.frame_duration()).id()), "params": x.effect.params.iter().map(|(k, v)| (k.clone(), serde_json::to_value(&v.value).unwrap_or_default())).collect::<serde_json::Map<_, _>>()})).collect::<Vec<_>>(),
         })
     };
@@ -4715,10 +4839,18 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         "split": q.split,
         "markers": q.markers.iter().map(|m| json!({"id": m.id.0, "start": m.start.0, "duration": m.duration.0, "kind": format!("{:?}", m.kind), "name": m.name, "comment": m.comment, "color": m.color.name()})).collect::<Vec<_>>(),
         "video": q.video_tracks.iter().map(tr).collect::<Vec<_>>(),
-        "audio": q.audio_tracks.iter().map(tr).collect::<Vec<_>>(),
+        // an audio track's automation lanes too (the Timeline's track keyframes)
+        "audio": q.audio_tracks.iter().map(|t| {
+            let mut v = tr(t);
+            v["lanes"] = track_lanes(t);
+            v
+        }).collect::<Vec<_>>(),
         "selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>(),
         "transitionSelection": s.state.transition_selection.iter().map(|t| t.0).collect::<Vec<_>>(),
         "gapSelection": s.state.gap_selection.map(|g| json!({"track": g.track.0, "start": g.range.start.0, "end": g.range.end().0})),
+        // the selected edit points ({clip, out, kind}) and the through edits (the edit point menu)
+        "editPoints": if s.state.active_sequence == Some(id) { serde_json::to_value(&s.state.edit_points).unwrap_or_default() } else { json!([]) },
+        "throughEdits": cfa4_edit::through::through_edits(q).iter().map(|e| json!({"left": e.left.0, "right": e.right.0})).collect::<Vec<_>>(),
         // the active sequence's track targeting and source patching (the track header switches)
         "targeting": if s.state.active_sequence == Some(id) {
             let t = s.targeting();
@@ -4726,7 +4858,117 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         } else {
             Value::Null
         },
+        // the Mix (master) fader, shown on the Timeline's Mix row
+        "masterVolumeDb": q.master_volume_db,
+        // the Timeline's tabs: the open sequences in tab order (`sequence.open` / `close` / `moveTab`)
+        "openSequences": s.state.open_sequences.iter().filter_map(|i| s.project.sequence(*i).map(|_| json!({"id": i.0, "name": s.project.item(*i).map(|x| x.name.clone())}))).collect::<Vec<_>>(),
+        // the timeline toolbar's toggles and Display Settings (session-wide)
+        "toggles": {"snapping": s.state.snapping, "linkedSelection": s.state.linked_selection, "nest": !s.state.sequences_as_clips, "showThroughEdits": s.state.show_through_edits},
+        // the caption track rows above the video tracks and the selected captions
+        "captionTracks": caption_tracks(q),
+        "captionSelection": if s.state.active_sequence == Some(id) { s.state.caption_selection.iter().map(|c| c.0).collect::<Vec<_>>() } else { Vec::new() },
     })
+}
+
+/// The caption tracks the Timeline draws above the video tracks (egui's `timeline_captions`):
+/// header state and each caption's span and plain text.
+fn caption_tracks(q: &cfa4_project::Sequence) -> Value {
+    q.caption_tracks
+        .iter()
+        .enumerate()
+        .map(|(i, t)| {
+            json!({
+                "id": t.id.0,
+                "label": format!("C{}", i + 1),
+                "name": t.name,
+                "format": t.format.label(),
+                "enabled": t.enabled,
+                "locked": t.locked,
+                "captions": t.captions.iter().map(|c| json!({"id": c.id.0, "start": c.start.0, "end": c.end().0, "text": cfa4_project::plain_text(&c.text)})).collect::<Vec<_>>(),
+            })
+        })
+        .collect()
+}
+
+/// The automation lanes an audio track can show in the Timeline (egui's `lane_options`): each
+/// with its label parts, range, whether it holds between keyframes, whether it is on the fader
+/// scale, its static value and its keyframes `[time, value, hold]` in sequence time.
+fn track_lanes(t: &cfa4_project::Track) -> Value {
+    use cfa4_project::mixer::{LANE_MUTE, LANE_PAN, LANE_VOLUME, fx_lane, lane_info, send_lane};
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    let lane = |key: String, label: Value, (min, max, hold): (f64, f64, bool)| {
+        let keys: Vec<Value> = t
+            .lane_keyframes(&key)
+            .iter()
+            .map(|k| json!([k.time.0, num(k.value.as_f64().unwrap_or(0.0)), k.interp == cfa4_project::keyframe::Interpolation::Hold]))
+            .collect();
+        let fader = key == LANE_VOLUME || key.starts_with("send.");
+        json!({"key": key, "label": label, "min": num(min), "max": num(max), "hold": hold, "fader": fader, "static": num(t.lane_static(&key).unwrap_or(0.0)), "keys": keys})
+    };
+    let info = |key: &str| lane_info(key).map_or((0.0, 1.0, false), |i| (i.min, i.max, i.hold));
+    let mut out = vec![
+        lane(LANE_VOLUME.to_string(), json!({"text": "Volume"}), info(LANE_VOLUME)),
+        lane(LANE_PAN.to_string(), json!({"text": "Panner"}), info(LANE_PAN)),
+        lane(LANE_MUTE.to_string(), json!({"text": "Mute"}), info(LANE_MUTE)),
+    ];
+    for i in 0..t.mixer.sends.len() {
+        let k = send_lane(i);
+        let r = info(&k);
+        out.push(lane(k, json!({"send": i + 1}), r));
+    }
+    for (slot, e) in t.effects.iter().enumerate() {
+        let Some(def) = e.def() else { continue };
+        for p in def.params.iter().filter(|p| p.animatable) {
+            if let cfa4_project::ParamKind::Float { soft_min, soft_max, .. } = p.kind {
+                out.push(lane(fx_lane(slot, p.id), json!({"effect": def.name, "param": p.label}), (soft_min, soft_max, false)));
+            }
+        }
+    }
+    Value::Array(out)
+}
+
+/// An audio clip's Volume line for the Timeline: the level at the clip's head, whether it is
+/// keyframed, its keyframes (media and timeline time, dB) and, when keyframed, the level as
+/// `[fraction of the clip, dB]` points: sampled evenly across the clip and at every keyframe (and
+/// just before and after it, for a hold), so a short dip on a long clip is not lost between samples.
+/// `null` without a Volume effect.
+fn volume_line(it: &cfa4_project::TrackItem) -> Value {
+    const SAMPLES: usize = 128;
+    let Some(p) = it.effect("volume").and_then(|e| e.param("level")) else { return Value::Null };
+    let num = |x: f64| if x.is_finite() { json!(x) } else { Value::Null };
+    let keys: Vec<Value> = p
+        .keyframes
+        .iter()
+        .map(|k| json!({"mediaTime": k.time.0, "time": timeline_time_of(it, k.time).map(|t| t.0), "db": num(k.value.as_f64().unwrap_or(0.0))}))
+        .collect();
+    const MAX_KEYS: usize = 10_000;
+    let last = it.end().0.saturating_sub(1).max(it.start.0);
+    let dur = it.duration.0.max(0);
+    let curve: Vec<Value> = if p.is_animated() {
+        let mut offsets: Vec<i64> = (0..=SAMPLES).map(|i| (i as f64 / SAMPLES as f64 * dur as f64) as i64).collect();
+        for k in p.keyframes.iter().take(MAX_KEYS) {
+            let Some(t) = timeline_time_of(it, k.time) else { continue };
+            let off = t.0.saturating_sub(it.start.0);
+            if (0..=dur).contains(&off) {
+                // both sides of a hold's step (after the key on a reversed clip)
+                offsets.push(off);
+                offsets.push(off.saturating_sub(1).max(0));
+                offsets.push(off.saturating_add(1).min(dur));
+            }
+        }
+        offsets.sort_unstable();
+        offsets.dedup();
+        offsets
+            .into_iter()
+            .map(|off| {
+                let f = if dur > 0 { off as f64 / dur as f64 } else { 0.0 };
+                json!([f, num(p.f64_at(it.source_time_at(Tick(it.start.0.saturating_add(off).min(last)))))])
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    json!({"db": num(p.f64_at(it.source_time_at(it.start))), "animated": p.is_animated(), "keys": keys, "curve": curve})
 }
 
 /// Seconds → ticks helper for callers.

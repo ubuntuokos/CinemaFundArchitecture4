@@ -12,12 +12,15 @@
 
 pub mod aaf_omf;
 pub mod autosave;
+pub mod beat_markers;
 pub mod captions;
 pub mod clip_ops;
 pub mod color;
 pub mod commands;
 pub mod credits;
+pub mod delivery_check;
 pub mod demo;
+pub mod dialog_defaults;
 pub mod doc_path;
 pub mod essential_sound;
 pub mod export_tools;
@@ -55,10 +58,12 @@ pub mod sequence_tools;
 pub mod settings;
 pub mod shortcut_presets;
 pub mod shortcuts;
+pub mod social;
 pub mod source_monitor;
 pub mod sync;
 pub mod transcript;
 pub mod trim;
+pub mod variants;
 pub mod voiceover;
 
 use std::sync::Arc;
@@ -106,6 +111,14 @@ pub type Result<T> = std::result::Result<T, EngineError>;
 pub trait Services: Send + Sync {
     fn read_file(&self, path: &str) -> std::io::Result<Vec<u8>>;
     fn write_file(&self, path: &str, data: &[u8]) -> std::io::Result<()>;
+    /// Publish a complete new file only when the final path is unoccupied. Publication must
+    /// reject a concurrent collision; a prior existence check alone is insufficient.
+    /// Return `ErrorKind::AlreadyExists` for an occupied final path so the importer can retry
+    /// with a numbered name; return other errors without publishing a partial file.
+    /// Hosts without this operation fail closed.
+    fn write_file_new(&self, _path: &str, _data: &[u8]) -> std::io::Result<()> {
+        Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "exclusive file creation is unavailable on this host"))
+    }
     /// Size of a file in bytes (an error when it is missing). Hosts should override this: the
     /// default reads the whole file.
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
@@ -162,6 +175,23 @@ impl Services for FsServices {
     fn write_file(&self, path: &str, data: &[u8]) -> std::io::Result<()> {
         // Atomic + durable: temp file in the same directory, fsync, rename, fsync the directory.
         cfa4_format::atomic_write(std::path::Path::new(path), data)
+    }
+    fn write_file_new(&self, path: &str, data: &[u8]) -> std::io::Result<()> {
+        let path = std::path::Path::new(path);
+        let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or_else(|| std::path::Path::new("."));
+        std::fs::create_dir_all(dir).map_err(|error| {
+            if error.kind() == std::io::ErrorKind::AlreadyExists {
+                std::io::Error::new(std::io::ErrorKind::NotADirectory, format!("{} is not a directory: {error}", dir.display()))
+            } else {
+                error
+            }
+        })?;
+        match std::fs::symlink_metadata(path) {
+            Ok(_) => return Err(std::io::ErrorKind::AlreadyExists.into()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+        cfa4_format::atomic_write_new(path, data)
     }
     fn file_size(&self, path: &str) -> std::io::Result<u64> {
         let m = std::fs::metadata(path)?;
@@ -1221,9 +1251,13 @@ mod audio_effects_tests;
 #[cfg(test)]
 mod audio_placement_tests;
 #[cfg(test)]
+mod auro_tests;
+#[cfg(test)]
 mod autosave_tests;
 #[cfg(test)]
 mod avi_import_tests;
+#[cfg(test)]
+mod beat_markers_tests;
 #[cfg(test)]
 mod clip_ops_tests;
 #[cfg(test)]
@@ -1312,6 +1346,8 @@ mod sequence_tools_tests;
 mod settings_tests;
 #[cfg(test)]
 mod shortcuts_tests;
+#[cfg(test)]
+mod social_tests;
 #[cfg(test)]
 mod split_edit_ripple_trim_tests;
 #[cfg(test)]

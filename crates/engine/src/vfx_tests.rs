@@ -71,14 +71,15 @@ fn effects_list_reports_folders_and_badges() {
             e["kind"] == "Video"
                 && e["category"][0] == "Video Effects"
                 && e["folder"] != "Obsolete"
-                && e["folder"] != "Stereoscopic 3D"
+                && !e["folder"].as_str().is_some_and(|f| cfa4_project::effect::CFA4_FOLDERS.contains(&f))
                 && e["folder"] != Value::Null
                 && !e["id"].as_str().is_some_and(|id| cfa4_project::effect::CFA4_OWN.contains(&id))
         })
         .count();
     assert_eq!(n, 93, "Premiere 26's current Video Effects");
-    // CFA4's own folder sits beside them
+    // CFA4's own folders sit beside them
     assert_eq!(find("stereo_swap_eyes")["category"], json!(["Video Effects", "Stereoscopic 3D"]));
+    assert_eq!(find("film_grain")["category"], json!(["Video Effects", "Creative Looks"]));
     // and CFA4's own effects in Premiere's folders
     assert_eq!(find("slit_scan")["category"], json!(["Video Effects", "Time"]));
 }
@@ -140,4 +141,28 @@ fn ultra_key_setting_writes_aggressive_parameters() {
     assert_eq!(e.param("pedestal").unwrap().value.as_f64(), Some(50.0));
     assert_eq!(e.param("choke").unwrap().value.as_f64(), Some(10.0));
     assert_eq!(e.param("contrast").unwrap().value.as_f64(), Some(10.0));
+}
+
+/// #2679: a value outside a parameter's range (the `min`/`max` `effects.list` publishes) is
+/// refused with the range, not saved: gamma 1.1 meant as a factor turned the frame black.
+#[test]
+fn set_param_refuses_values_outside_the_range() {
+    let mut s = demo();
+    let clip = s.active_sequence().unwrap().video_tracks[0].items[0].id.0;
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "levels"})).unwrap();
+    s.execute("effects.apply", json!({"clips": [clip], "effect": "lumetri"})).unwrap();
+    let before = s.project.to_json();
+    let undo = s.history.undo.len();
+    for (effect, param, value) in
+        [("levels", "gamma", 1.1), ("lumetri", "saturation", 500.0), ("lumetri", "vibrance", -300.0), ("opacity", "opacity", 250.0), ("motion", "scale", -50.0)]
+    {
+        let e = s.execute("effects.setParam", json!({"clip": clip, "effect": effect, "param": param, "value": value})).unwrap_err().to_string();
+        assert!(e.contains("must be between"), "{effect}.{param} = {value}: {e}");
+    }
+    assert_eq!(s.project.to_json(), before, "nothing was saved");
+    assert_eq!(s.history.undo.len(), undo);
+    // the ends of the range and values inside it still go in
+    s.execute("effects.setParam", json!({"clip": clip, "effect": "levels", "param": "gamma", "value": 110})).unwrap();
+    s.execute("effects.setParam", json!({"clip": clip, "effect": "opacity", "param": "opacity", "value": 100})).unwrap();
+    s.execute("effects.setParam", json!({"clip": clip, "effect": "opacity", "param": "opacity", "value": 0})).unwrap();
 }

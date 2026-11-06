@@ -1,0 +1,323 @@
+# Brazilian Portuguese (pt-br) catalog for the strings only the CFA4 Qt GUI has; everything else
+# comes from the shared catalog crates/ui-egui/src/i18n/pt-br.tsv. Same format:
+# context <TAB> source <TAB> translation.
+#
+# Clean-room: every entry was written from the plain meaning of the English text using ordinary
+# Brazilian Portuguese video-editing vocabulary (faixa, indicador de reprodução, sequência, pasta,
+# marcador, transição). No proprietary localisation resource, string table or product UI was
+# consulted or copied; add entries the same way. Product, format and technology names (CFA4, AAC,
+# IAB, DCP…) keep their spelling.
+
+	#	#
+	'{name}' already exists. Replace it?	"{name}" já existe. Substituir?
+	(none)	(nenhum)
+	0 fastest, 8 smallest	0 mais rápido, 8 menor
+	2K	2K
+	4:2:0 (Main Profile)	4:2:0 (perfil Main)
+	4:2:2 (4:2:2 Profile)	4:2:2 (perfil 4:2:2)
+	4K	4K
+	5.1: the IAB rendered (not ST 429-19)	5.1: o IAB renderizado (não ST 429-19)
+	5.1: the timeline mix (not ST 429-19)	5.1: a mixagem da linha do tempo (não ST 429-19)
+	8 Bit	8 bits
+	AAC	AAC
+	Add pause	Adicionar pausa
+	Add pause inserts [pause 1s]. Change the number for a longer or shorter pause, e.g. [pause 500ms] or [pause 2s].	"Adicionar pausa" insere [pause 1s]. Mude o número para uma pausa mais longa ou mais curta, por exemplo [pause 500ms] ou [pause 2s].
+	Add to timeline	Adicionar à linha do tempo
+	Advertisement	Comercial
+	All Supported Files	Todos os arquivos compatíveis
+	All files	Todos os arquivos
+	An engine without `serve` was built from a branch without the Qt GUI: switch to the Qt GUI branch and build again, or pass --engine PATH.	Um mecanismo sem `serve` foi compilado a partir de um branch sem a interface Qt: mude para o branch com a interface Qt e compile de novo, ou informe --engine CAMINHO.
+	Arrangement {n}	Disposição {n}
+	Audio Files	Arquivos de áudio
+	Automation mode	Modo de automação
+	B pictures	Quadros B
+	BDAV Transport Stream (.m2ts, AAC audio)	Fluxo de transporte BDAV (.m2ts, áudio AAC)
+	Basic voices (built in)	Vozes básicas (integradas)
+	Beyond IAB Profile 1: {notes}	Além do perfil IAB 1: {notes}
+	CFA4	CFA4
+	CFA4 encountered an error	O CFA4 encontrou um erro
+	CFA4 project links	Links do projeto CFA4
+	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 fechou inesperadamente enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
+	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 foi fechado enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
+	Cancel Selected	Cancelar selecionados
+	Cannot check the output folder for files to replace: {error}	Não é possível verificar a pasta de saída em busca de arquivos a substituir: {error}
+	Cannot create the output folder: {error}	Não é possível criar a pasta de saída: {error}
+	Center at Cut	Centralizar no corte
+	Check Before Export: no problems found	Verificar antes de exportar: nenhum problema encontrado
+	Check Before Export: {n} problems marked on the timeline (red markers)	Verificar antes de exportar: {n} problemas marcados na linha do tempo (marcadores vermelhos)
+	Checked:	Verificado:
+	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Escolha um arquivo de faixa IAB (IMF ou DCP), um fluxo IAB bruto ou Dolby Atmos TrueHD: um fluxo .thd ou um arquivo MKV, MP4 ou M2TS com uma faixa Atmos.
+	Choose a file name and location.	Escolha um nome de arquivo e um local.
+	Choose folder	Escolher pasta
+	Click and press keys to assign	Clique e pressione teclas para atribuir
+	Compression	Compactação
+	Compression Level	Nível de compactação
+	Constant quality (CRF)	Qualidade constante (CRF)
+	Constant quantiser	Quantizador constante
+	Container	Contêiner
+	Content kind	Tipo de conteúdo
+	Custom Start	Início personalizado
+	DCP container	Contêiner DCP
+	DCP resolution	Resolução DCP
+	Decode Auro-3D height channels	Decodificar os canais de altura Auro-3D
+	Delete this preset	Excluir esta predefinição
+	Depth:	Profundidade:
+	Discard the active take	Descartar a tomada ativa
+	Dock Panel	Encaixar painel
+	Docking Action	Ação de encaixe
+	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; up to {beds} bed channels and {objects} objects, made into IAB objects	Dolby Atmos TrueHD, {seconds} s, {rate} Hz; até {beds} canais de base e {objects} objetos, convertidos em objetos IAB
+	Double-click a clip in the Project panel to open it here.	Clique duas vezes em um clipe no painel Projeto para abri-lo aqui.
+	Download	Baixar
+	Download natural voices ({mb} MB)…	Baixar vozes naturais ({mb} MB)…
+	Download of the natural voices failed: {e}	Falha ao baixar as vozes naturais: {e}
+	Download the natural voices? {mb} MB, once.	Baixar as vozes naturais? {mb} MB, uma única vez.
+	Downloading…	Baixando…
+	Drag Audio Only	Arrastar só o áudio
+	Drag In point	Arrastar o ponto de entrada
+	Drag Out point	Arrastar o ponto de saída
+	Drag Video Only	Arrastar só o vídeo
+	Drag Video and Audio	Arrastar vídeo e áudio
+	Drag to change the track height	Arraste para mudar a altura da faixa
+	Drag to reorder; tick the columns to show.	Arraste para reordenar; marque as colunas a exibir.
+	Drag to roll the edit	Arraste para rolar a edição
+	Edited in the Lumetri and mask tools (not yet in the Qt GUI)	Editado no Lumetri e nas ferramentas de máscara (ainda não na interface Qt)
+	Editing the selected narration	Editando a narração selecionada
+	Elementary Stream (.m2v, no audio)	Fluxo elementar (.m2v, sem áudio)
+	End at Cut	Terminar no corte
+	Engine restarted	Mecanismo reiniciado
+	Engine stopped	Mecanismo parado
+	Entire Sequence	Sequência inteira
+	Export Media	Exportar mídia
+	Export Media…	Exportar mídia…
+	Export Queue	Fila de exportação
+	Export captions…	Exportar legendas…
+	Export failed: {path}	Falha na exportação: {path}
+	Export finished: {path}	Exportação concluída: {path}
+	Export the labels to a preset file…	Exportar os rótulos para um arquivo de predefinições…
+	Exported frame to {path}	Quadro exportado para {path}
+	Extra Large	Muito grande
+	Extra high	Muito alta
+	Extra low	Muito baixa
+	FLAC	FLAC
+	Failed	Falhou
+	Feature	Longa-metragem
+	Film Scan 1	Digitalização de filme 1
+	Film Scan 2	Digitalização de filme 2
+	Film Scan 3	Digitalização de filme 3
+	Flat (1.85:1)	Flat (1,85:1)
+	Format:	Formato:
+	Frame time: {timecode}	Tempo do quadro: {timecode}
+	From the preset	Da predefinição
+	From {source} and github.com/cmusphinx/cmudict (pronunciations). Licence: {license}. Every file is checked against a pinned SHA-256.	De {source} e github.com/cmusphinx/cmudict (pronúncias). Licença: {license}. Cada arquivo é verificado com um SHA-256 fixado.
+	Full container (1.90:1)	Contêiner completo (1,90:1)
+	Go to Next Keyframe	Ir para o próximo quadro-chave
+	Go to Previous Keyframe	Ir para o quadro-chave anterior
+	Go to caption	Ir para a legenda
+	Go to graphic	Ir para o gráfico
+	Hear this voice	Ouvir esta voz
+	IAB 7.1 DS bed from the 5.1 mix	Base IAB 7.1 DS a partir da mixagem 5.1
+	IAB MXF, .iab, or Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)	IAB MXF, .iab ou Dolby Atmos TrueHD (.thd, .mkv, .mp4, .m2ts)
+	IAB from a file (IAB MXF, .iab, or Dolby Atmos TrueHD)	IAB de um arquivo (IAB MXF, .iab ou Dolby Atmos TrueHD)
+	IAB source	Origem IAB
+	Images	Imagens
+	Immersive audio	Áudio imersivo
+	Import a preset file…	Importar um arquivo de predefinições…
+	Import into project	Importar para o projeto
+	Incoming clip (drag to trim the In point)	Clipe de entrada (arraste para aparar o ponto de entrada)
+	Input channel mapping	Mapeamento dos canais de entrada
+	Keep existing file	Manter o arquivo existente
+	Label Color Presets	Predefinições de cores de rótulo
+	Large	Grande
+	Linear Gradient	Degradê linear
+	Main sound channels 1-6	Canais do som principal 1-6
+	Marker report (CSV)	Relatório de marcadores (CSV)
+	Match sequence	Igual à sequência
+	Media offline	Mídia offline
+	Medium (default)	Médio (padrão)
+	More transport controls	Mais controles de transporte
+	Motion Graphics Templates	Modelos de gráficos animados
+	Move marked range	Mover o intervalo marcado
+	Mute Track	Silenciar faixa
+	Narration added on {track}	Narração adicionada em {track}
+	Narration updated	Narração atualizada
+	Natural voices	Vozes naturais
+	Natural voices installed	Vozes naturais instaladas
+	Natural voices need a one-time download.	As vozes naturais exigem um download único.
+	New narration	Nova narração
+	No matching text.	Nenhum texto correspondente.
+	No sequence	Sem sequência
+	No sequence open. Double-click a sequence in the Project panel.	Nenhuma sequência aberta. Clique duas vezes em uma sequência no painel Projeto.
+	No text graphics in this sequence. Add text with the Type tool.	Não há gráficos de texto nesta sequência. Adicione texto com a ferramenta Texto.
+	None (I and P only)	Nenhum (só I e P)
+	None: FSK sync only (SMPTE ST 429-19)	Nenhum: só sincronismo FSK (SMPTE ST 429-19)
+	Not a usable IAB source: {error}	Origem IAB inutilizável: {error}
+	Not yet in the Qt GUI (see docs/qt-parity.md)	Ainda não está na interface Qt (veja docs/qt-parity.md)
+	Off (5.1 only)	Desligado (só 5.1)
+	Off (target bitrate)	Desligado (taxa de bits alvo)
+	Off: the file plays its own channels, as without an Auro-3D decoder.	Desligado: o arquivo reproduz os próprios canais, como sem um decodificador Auro-3D.
+	Open Project	Abrir projeto
+	Open a sequence to search its graphics	Abra uma sequência para pesquisar nos gráficos dela
+	Opus	Opus
+	Outgoing clip (drag to trim the Out point)	Clipe de saída (arraste para aparar o ponto de saída)
+	Output file	Arquivo de saída
+	Output folder	Pasta de saída
+	PCM (uncompressed)	PCM (sem compactação)
+	Pace	Ritmo
+	Path:	Caminho:
+	Program Stream (.mpg, LPCM audio)	Fluxo de programa (.mpg, áudio LPCM)
+	Projects and Interchange	Projetos e intercâmbio
+	Public service announcement	Anúncio de utilidade pública
+	Qt Multimedia is not available	Qt Multimedia não está disponível
+	Quick Export cancelled	Exportação rápida cancelada
+	Quit	Sair
+	Rating	Classificação indicativa
+	Reading the IAB source…	Lendo a origem IAB…
+	Rec. 2100 HLG	Rec. 2100 HLG
+	Rec. 2100 PQ	Rec. 2100 PQ
+	Replace	Substituir
+	Reset Panel Layout	Redefinir o layout dos painéis
+	Retry	Tentar de novo
+	Revert to the preset's colors and names	Voltar às cores e nomes da predefinição
+	Ripple Trim In	Aparar entrada com ondulação
+	Ripple Trim Out	Aparar saída com ondulação
+	Roll Edit	Edição de rolagem
+	Save as New Workspace	Salvar como novo espaço de trabalho
+	Saved guide template “{name}”	Modelo de guias "{name}" salvo
+	Scope (2.39:1)	Scope (2,39:1)
+	Scope settings	Configurações do instrumento de medição
+	Select Playback Resolution	Selecionar resolução de reprodução
+	Select Zoom Level	Selecionar nível de zoom
+	Select a clip in the Timeline.	Selecione um clipe na linha do tempo.
+	Sequence In/Out	Entrada/saída da sequência
+	Session log: {path}	Registro da sessão: {path}
+	Settings	Configurações
+	Short	Curta-metragem
+	Show clip durations	Mostrar a duração dos clipes
+	Show in File Manager	Mostrar no gerenciador de arquivos
+	Show the presets folder	Mostrar a pasta de predefinições
+	Small	Pequeno
+	Social Safe Zones	Zonas seguras para redes sociais
+	Solid	Sólido
+	Solo Track	Faixa em solo
+	Some frames are re-coded for the DCP (DLC, 24 bit).	Alguns quadros são recodificados para o DCP (DLC, 24 bits).
+	Some panel labels change language after a restart.	Alguns rótulos de painéis mudam de idioma após reiniciar.
+	Source clips	Clipes de origem
+	Source patch	Atribuição de origem
+	Spreadsheets	Planilhas
+	Start at Cut	Começar no corte
+	Starting engine…	Iniciando o mecanismo…
+	Still Images	Imagens estáticas
+	Stop Queue	Parar a fila
+	Synthesizing narration…	Sintetizando a narração…
+	Synthesizing…	Sintetizando…
+	Teaser	Teaser
+	Template: {name}	Modelo: {name}
+	Test	Teste
+	Text colour	Cor do texto
+	Text to Speech: another sequence is open now; the narration was not placed	Texto para fala: outra sequência está aberta agora; a narração não foi colocada
+	Text to Speech: {e}	Texto para fala: {e}
+	The 5.1 mix becomes a 7.1 DS bed (IAB Profile 1); channel 14 of the main sound carries the FSK sync signal.	A mixagem 5.1 vira uma base 7.1 DS (perfil IAB 1); o canal 14 do som principal leva o sinal de sincronismo FSK.
+	The CFA4 engine (cfa4-cli) was not found. Build it with: cargo build --release -p cfa4-cli	O mecanismo do CFA4 (cfa4-cli) não foi encontrado. Compile-o com: cargo build --release -p cfa4-cli
+	The CFA4 engine stopped unexpectedly and was restarted. Unsaved changes are kept in the recovery journal; it offers to recover them.	O mecanismo do CFA4 parou inesperadamente e foi reiniciado. As alterações não salvas ficam no diário de recuperação, que oferece recuperá-las.
+	The CFA4 engine stopped unexpectedly. Unsaved changes are kept in the recovery journal; restart CFA4 to recover them.	O mecanismo do CFA4 parou inesperadamente. As alterações não salvas ficam no diário de recuperação; reinicie o CFA4 para recuperá-las.
+	The audio input could not be started	Não foi possível iniciar a entrada de áudio
+	The audio input does not support a usable format	A entrada de áudio não aceita um formato utilizável
+	The engine stopped	O mecanismo parou
+	The template needs a name.	O modelo precisa de um nome.
+	The voice-over input buffer is full: the take ends here	O buffer de entrada da narração em off está cheio: a tomada termina aqui
+	There are no guides to save.	Não há guias para salvar.
+	There is no audio input device	Não há dispositivo de entrada de áudio
+	This file already exists: {path}	Este arquivo já existe: {path}
+	Toggle Animation	Ativar/desativar animação
+	Toggle Caption Track Lock	Bloquear/desbloquear a faixa de legendas
+	Toggle Caption Track Output	Ativar/desativar a saída da faixa de legendas
+	Toggle Sync Lock	Ativar/desativar o bloqueio de sincronia
+	Toggle Track Lock	Bloquear/desbloquear a faixa
+	Toggle Track Output	Ativar/desativar a saída da faixa
+	Toggle the effect on or off	Ativar ou desativar o efeito
+	Toggle track targeting	Ativar/desativar a faixa de destino
+	Toggle visibility	Mostrar/ocultar
+	Track	Faixa
+	Track output assignment	Atribuição de saída da faixa
+	Trailer	Trailer
+	Transitional	Transicional
+	Transport Stream (.ts, AAC audio)	Fluxo de transporte (.ts, áudio AAC)
+	Trim In	Aparar entrada
+	Trim Out	Aparar saída
+	Twirl open or shut	Expandir ou recolher
+	Type what you want the voice to say	Digite o que a voz deve dizer
+	Undock Panel	Desencaixar painel
+	Use hardware encoding when available	Usar codificação por hardware quando disponível
+	Video Files	Arquivos de vídeo
+	Vocal pitch	Tom da voz
+	Voice-over input: {error}	Entrada da narração em off: {error}
+	ZIP (1 scan line)	ZIP (1 linha)
+	ZIP (16 scan lines)	ZIP (16 linhas)
+	an audio track	uma faixa de áudio
+	an unknown time	um horário desconhecido
+	automatic	automático
+	no audio output (check Settings ▸ Audio Hardware)	sem saída de áudio (verifique Configurações ▸ Hardware de áudio)
+	no column for {names}	nenhuma coluna para {names}
+	no dialog	nenhuma caixa de diálogo
+	no multi-camera clip at the playhead	nenhum clipe multicâmera no indicador de reprodução
+	no sequence is open	nenhuma sequência está aberta
+	not available	indisponível
+	not available now	indisponível agora
+	optional	opcional
+	select a clip in the Project panel	selecione um clipe no painel Projeto
+	the job disappeared	a tarefa desapareceu
+	the selected clip is not remixed	o clipe selecionado não está remixado
+	{bits} Bit	{bits} bits
+	{frames} frames, {fps} fps, {rate} Hz; up to {beds} bed channels and {objects} objects	{frames} quadros, {fps} fps, {rate} Hz; até {beds} canais de base e {objects} objetos
+	{name} (Modified)	{name} (modificado)
+	{name} (download)	{name} (download)
+	{n} beat markers added ({bpm} BPM)	{n} marcadores de batida adicionados ({bpm} BPM)
+	{n} exports queued (the Export window shows the queue)	{n} exportações na fila (a janela Exportar mostra a fila)
+	{n} variant sequences made, {q} exports queued	{n} sequências variantes criadas, {q} exportações na fila
+	{w} × {h}	{w} × {h}
+	…	…
+# Export Summary lines (python/cfa4_qt/export_summary.py)
+	1 B picture between anchors	1 imagem B entre âncoras
+	10-bit RGB	RGB de 10 bits
+	12-bit X'Y'Z'	X'Y'Z' de 12 bits
+	16-bit half float	ponto flutuante de meia precisão de 16 bits
+	AV1 Main (10-bit for HDR)	AV1 Main (10 bits para HDR)
+	BDAV Transport Stream	fluxo de transporte BDAV
+	CBR {v} Mbps	CBR {v} Mbps
+	CRF (constant quality) {crf}	CRF (qualidade constante) {crf}
+	Elementary Stream	fluxo elementar
+	FLAC (lossless) {bits}-bit	FLAC (sem perdas) {bits} bits
+	HEVC Main / Main 10 for HDR	HEVC Main / Main 10 para HDR
+	Image sequence	sequência de imagens
+	MPEG-2 4:2:2 Profile	perfil MPEG-2 4:2:2
+	MPEG-2 Main Profile 4:2:0	perfil principal MPEG-2 4:2:0
+	Max {v} Mbps	máx. {v} Mbps
+	No audio	Sem áudio
+	No video	Sem vídeo
+	Program Stream	fluxo de programa
+	Target {v} Mbps	alvo {v} Mbps
+	Transport Stream	fluxo de transporte
+	Uncompressed {bits}-bit PCM	PCM sem compactação de {bits} bits
+	Uncompressed {bits}-bit float PCM	PCM de ponto flutuante sem compactação de {bits} bits
+	VBR Target {v} Mbps	VBR, alvo {v} Mbps
+	average {v} Mbps	média {v} Mbps
+	constant quantiser {q}	quantizador constante {q}
+	fragmented MP4 segments	segmentos MP4 fragmentados
+	keyframe every {n} frames	quadro-chave a cada {n} quadros
+	level {n}	nível {n}
+	linear	linear
+	no B pictures	sem imagens B
+	quality {q}	qualidade {q}
+	quantizer {q}	quantizador {q}
+	uncompressed	sem compactação
+	{aspect} {ratio}:1	{aspect} {ratio}:1
+	{fps} fps	{fps} fps
+	{n} B pictures between anchors	{n} imagens B entre âncoras
+	{n} ch {rate} Hz	{n} canais, {rate} Hz
+	{n} pass	{n} passagem(ns)
+	{profile} auto level	{profile}, nível automático
+	{sampling} {bits}-bit	{sampling} {bits} bits
+	{seconds} s	{seconds} s
+	{v} Mbps	{v} Mbps
+	{word} compression	compactação {word}
+	{w}x{h} ({par})	{w}×{h} ({par})

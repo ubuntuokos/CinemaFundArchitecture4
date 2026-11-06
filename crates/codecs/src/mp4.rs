@@ -83,6 +83,7 @@ fn audio_starts(file: &Mp4File, bytes: &crate::Src, ti: usize, rate: u32) -> Vec
         Some(CodecConfig::Mp3) => fixed_packet_samples(FixedFrames::MpegAudio, &first(), rate),
         Some(CodecConfig::Ac3 { .. }) => fixed_packet_samples(FixedFrames::Ac3, &first(), rate),
         Some(CodecConfig::Eac3 { .. }) => fixed_packet_samples(FixedFrames::Eac3, &first(), rate),
+        Some(CodecConfig::Dts { .. }) => fixed_packet_samples(FixedFrames::Dts, &first(), rate),
         _ => None,
     };
     let Some(frame) = frame else { return stamps };
@@ -287,6 +288,33 @@ impl Mp4Source {
                     info.has_alpha = h.alpha;
                 }
             }
+            if matches!(entry.codec, CodecConfig::Dv { .. }) {
+                // format, sampling, aspect and colour are in the first frame's header and VAUX packs
+                let s0 = &t.samples[0];
+                if let Some(d) =
+                    cfa4_media::reader::read_range(&*bytes.0, s0.offset, (s0.size as usize).min(6 * 80)).ok().and_then(|d| crate::video::dv_stream_info(&d))
+                {
+                    info.codec = d.codec;
+                    info.pixel_format = d.pixel_format;
+                    // DV pixels are never square (720 samples per line); a 'pasp' of 1:1 is a
+                    // writer's default (ffmpeg writes one), not a measurement
+                    if vp.pixel_aspect.is_none_or(|a| a == (1, 1)) {
+                        info.par = d.par;
+                    }
+                    if explicit_color.is_none() {
+                        info.color = d.color;
+                        color = d.color;
+                    }
+                }
+            }
+            if matches!(entry.codec, CodecConfig::Cineform) {
+                // format, depth and alpha are in the first sample's header
+                let s0 = &t.samples[0];
+                if let Some(h) = cfa4_media::reader::read_range(&*bytes.0, s0.offset, s0.size as usize).ok().and_then(|d| cfa4_cineform::probe(&d).ok()) {
+                    info.pixel_format = cineform_pixfmt_label(&h);
+                    info.has_alpha = h.format == cfa4_cineform::EncodedFormat::Rgba4444;
+                }
+            }
             if matches!(entry.codec, CodecConfig::ProRes { .. }) {
                 // a 4444 fourcc doesn't mean the frames carry alpha (alpha_channel_type does): read the first frame header
                 let s0 = &t.samples[0];
@@ -336,6 +364,7 @@ impl Mp4Source {
                         // (Opus plays at 48 kHz: the pre-roll is in its sample frames)
                         (off, crate::audio::OPUS_PRE_ROLL as i64)
                     }
+                    Some(CodecConfig::TrueHd { .. }) => (t.edit_offset, crate::audio::truehd_preroll(ainfo.sample_rate)),
                     _ => (t.edit_offset, 0),
                 };
                 let state = Mutex::new(AudioState { decoder: None, packets: HashMap::new(), order: Vec::new(), last_decoded: None });
@@ -378,14 +407,14 @@ impl Mp4Source {
                     st.decoder = Some(PacketDecoder::for_isobmff(c, ainfo.sample_rate)?);
                 }
                 // Non-sequential access: reset and prime with the preceding packets (codec pre-roll:
-                // one packet, or `OPUS_PRE_ROLL` worth for Opus).
+                // a packet, more for DTS, or `OPUS_PRE_ROLL` worth for Opus).
                 if st.last_decoded.is_none_or(|l| l + 1 != i) {
                     let d = st.decoder.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
                     d.reset();
                     let from = if a.preroll > 0 {
                         a.starts.partition_point(|&x| x <= pk_start.saturating_sub(a.preroll)).saturating_sub(1)
                     } else {
-                        i.saturating_sub(1)
+                        i.saturating_sub(d.pre_roll_packets())
                     };
                     for j in from..i {
                         if let Ok(prev) = self.read(ti, j) {
@@ -575,6 +604,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Hevc(_) => "HEVC".into(),
         CodecConfig::Vp9(c) => format!("VP9 (Profile {})", c.profile),
         CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"vp08" => "VP8".into(),
+        CodecConfig::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => "Auro-CX (unsupported)".into(),
         CodecConfig::Av1(c) => format!("AV1 ({} Profile)", ["Main", "High", "Professional"].get(c.seq_profile as usize).unwrap_or(&"Main")),
         CodecConfig::Apv(a) => match cfa4_apv::Profile::from_idc(a.profile_idc) {
             Some(p) => p.name().into(),
@@ -592,16 +622,33 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Aac(a) => {
             if a.object_type == 5 || a.object_type == 29 {
                 "HE-AAC".into()
+            } else if a.object_type == 42 {
+                "xHE-AAC".into()
             } else {
                 "AAC".into()
             }
         }
         CodecConfig::Pcm(p) => format!("PCM {}-bit{}", p.bits, if p.float { " float" } else { "" }),
         CodecConfig::Opus(_) => "Opus".into(),
+        CodecConfig::TrueHd { .. } => "Dolby TrueHD".into(),
         CodecConfig::Dnx { fourcc } if fourcc.0 == *b"AVdh" => "Avid DNxHR".into(),
         CodecConfig::Dnx { .. } => "Avid DNxHD".into(),
+        CodecConfig::Cineform => "GoPro CineForm".into(),
+        CodecConfig::Dv { .. } => "DV".into(),
         other => other.name().to_string(),
     }
+}
+
+/// "YUV 4:2:2 10-bit" / "RGBA 4:4:4:4 12-bit" from a CineForm sample header.
+pub(crate) fn cineform_pixfmt_label(h: &cfa4_cineform::Header) -> String {
+    let sub = match h.format {
+        cfa4_cineform::EncodedFormat::Yuv422 => "YUV 4:2:2",
+        cfa4_cineform::EncodedFormat::Rgb444 => "RGB 4:4:4",
+        cfa4_cineform::EncodedFormat::Rgba4444 => "RGBA 4:4:4:4",
+        cfa4_cineform::EncodedFormat::Yuva4444 => "YUVA 4:4:4:4",
+        cfa4_cineform::EncodedFormat::Bayer => "Bayer",
+    };
+    format!("{sub} {}-bit", h.precision)
 }
 
 /// "YUV 4:2:2 10-bit" from an H.264 / HEVC `chroma_format_idc` and bit depth.
@@ -1310,5 +1357,19 @@ mod he_aac_tests {
             let buf = src.audio(0, 4800, 48_000).unwrap();
             assert!(buf.channels.iter().flatten().all(|v| v.is_finite() && v.abs() <= 1.0), "media_time {media_time}");
         }
+    }
+}
+
+#[cfg(test)]
+mod auro_cx_tests {
+    use cfa4_isobmff::{CodecConfig, FourCc};
+
+    /// #322: an Auro-CX track says what it is and why it does not play, instead of "unknown".
+    #[test]
+    fn auro_cx_tracks_are_named_and_refused_clearly() {
+        let c = CodecConfig::Unknown { fourcc: FourCc(*b"a3ds"), raw: vec![0; 8] };
+        assert_eq!(super::codec_label(&c), "Auro-CX (unsupported)");
+        let Err(crate::CodecError::Unsupported(why)) = crate::audio::PacketDecoder::for_isobmff(&c, 48_000) else { panic!("Auro-CX must be refused") };
+        assert_eq!(why, crate::audio::AURO_CX_UNSUPPORTED);
     }
 }

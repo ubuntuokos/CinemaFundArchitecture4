@@ -7,6 +7,7 @@ use std::io::{Seek, SeekFrom, Write};
 use crate::ebml::{write_id, write_size, write_unknown_size};
 use crate::error::{Error, Result};
 use crate::ids::*;
+use crate::meta::Chapter;
 use crate::track::TrackKind;
 
 /// Lacing used for audio tracks.
@@ -67,6 +68,11 @@ pub struct MuxOptions {
     pub max_lace_frames: usize,
     pub title: Option<String>,
     pub writing_app: String,
+    /// Chapters, written at finish as one `EditionEntry` of `ChapterAtom`s (`ChapterTimeStart` in
+    /// ns, `ChapterDisplay/ChapString`), sorted by start. A UID of 0 gets a fresh one. WebM keeps
+    /// only the elements its subset allows (no hidden/enabled flags, no BCP 47 languages). Nested
+    /// chapters deeper than 64 levels are dropped.
+    pub chapters: Vec<Chapter>,
 }
 
 impl Default for MuxOptions {
@@ -79,6 +85,7 @@ impl Default for MuxOptions {
             max_lace_frames: 8,
             title: None,
             writing_app: "cfa4".into(),
+            chapters: Vec::new(),
         }
     }
 }
@@ -262,6 +269,16 @@ impl<W: Write + Seek> MkvWriter<W> {
     /// frames must be supplied in the desired file order. `duration_ns` forces a BlockGroup with a
     /// BlockDuration when it differs from the track's DefaultDuration.
     pub fn write_frame(&mut self, track: usize, pts_ns: i64, keyframe: bool, data: &[u8], duration_ns: Option<u64>) -> Result<()> {
+        self.write_block(track, pts_ns, keyframe, data, duration_ns, 0)
+    }
+
+    /// Add the last frame of an audio track whose final `discard_ns` of decoded sound is padding
+    /// (a BlockGroup with `DiscardPadding`, as WebM Opus trims its last frame).
+    pub fn write_frame_discarding(&mut self, track: usize, pts_ns: i64, data: &[u8], discard_ns: u64) -> Result<()> {
+        self.write_block(track, pts_ns, true, data, None, discard_ns)
+    }
+
+    fn write_block(&mut self, track: usize, pts_ns: i64, keyframe: bool, data: &[u8], duration_ns: Option<u64>, discard_ns: u64) -> Result<()> {
         let spec = self.tracks.get(track).ok_or(Error::NoSuchTrack(track))?;
         // the Matroska ProRes mapping stores frames without the 8-byte `size`+`icpf` header
         let data = if spec.codec_id == "V_PRORES" && data.get(4..8) == Some(b"icpf") { &data[8..] } else { data };
@@ -299,7 +316,7 @@ impl<W: Write + Seek> MkvWriter<W> {
                 self.cues.push((ts as u64, track as u64 + 1, pos));
             }
         }
-        if lacing && explicit_dur.is_none() {
+        if lacing && explicit_dur.is_none() && discard_ns == 0 {
             let same = self.pending.as_ref().is_some_and(|p| p.track == track && p.frames.len() < self.opts.max_lace_frames);
             if !same {
                 self.flush_pending();
@@ -314,12 +331,20 @@ impl<W: Write + Seek> MkvWriter<W> {
         let mut block = Vec::new();
         write_size(&mut block, track as u64 + 1, 1);
         block.extend_from_slice(&((ts - cts) as i16).to_be_bytes());
-        if let Some(d) = explicit_dur {
+        if explicit_dur.is_some() || discard_ns > 0 {
             block.push(0);
             block.extend_from_slice(data);
             let mut g = Vec::new();
             el(&mut g, BLOCK, &block);
-            el_uint(&mut g, BLOCK_DURATION, (d as i64 / scale) as u64);
+            if let Some(d) = explicit_dur {
+                el_uint(&mut g, BLOCK_DURATION, (d as i64 / scale) as u64);
+            }
+            if discard_ns > 0 {
+                // a signed integer: one more byte when the top bit of the shortest form is set
+                let v = discard_ns.min(i64::MAX as u64);
+                let n = ((64 - v.leading_zeros() as usize) / 8 + 1).min(8);
+                el(&mut g, DISCARD_PADDING, &v.to_be_bytes()[8 - n..]);
+            }
             if !keyframe {
                 el(&mut g, REFERENCE_BLOCK, &[0xFF]);
             }
@@ -413,12 +438,23 @@ impl<W: Write + Seek> MkvWriter<W> {
             el(&mut out, CUES, &cues);
             self.w.write_all(&out)?;
         }
+        let chapters_pos = self.w.stream_position()?;
+        let chapters = chapters_element(&self.opts.chapters, self.opts.doc_type == "webm");
+        let has_chapters = !chapters.is_empty();
+        if has_chapters {
+            let mut out = Vec::new();
+            el(&mut out, CHAPTERS, &chapters);
+            self.w.write_all(&out)?;
+        }
         let end = self.w.stream_position()?;
         // SeekHead
         let mut sh = Vec::new();
         let mut entries = vec![(INFO, self.info_pos), (TRACKS, self.tracks_pos)];
         if has_cues {
             entries.push((CUES, cues_pos));
+        }
+        if has_chapters {
+            entries.push((CHAPTERS, chapters_pos));
         }
         for (id, pos) in entries {
             let mut s = Vec::new();
@@ -450,6 +486,94 @@ impl<W: Write + Seek> MkvWriter<W> {
         self.w.flush()?;
         Ok(self.w)
     }
+}
+
+/// Deepest nesting of `ChapterAtom`s written (as deep as the demuxer reads).
+const MAX_CHAPTER_DEPTH: usize = 64;
+
+/// The body of a `Chapters` element (one `EditionEntry`), or nothing without chapters.
+fn chapters_element(chapters: &[Chapter], webm: bool) -> Vec<u8> {
+    if chapters.is_empty() {
+        return Vec::new();
+    }
+    let mut used = std::collections::HashSet::new();
+    collect_uids(chapters, 0, &mut used);
+    let mut next = 1u64;
+    let mut ed = Vec::new();
+    if !webm {
+        el_uint(&mut ed, EDITION_UID, 1);
+    }
+    let mut sorted: Vec<&Chapter> = chapters.iter().collect();
+    sorted.sort_by_key(|c| c.start_ns);
+    for c in sorted {
+        chapter_atom(&mut ed, c, webm, 0, &used, &mut next);
+    }
+    let mut out = Vec::new();
+    el(&mut out, EDITION_ENTRY, &ed);
+    out
+}
+
+fn collect_uids(chapters: &[Chapter], depth: usize, used: &mut std::collections::HashSet<u64>) {
+    if depth > MAX_CHAPTER_DEPTH {
+        return;
+    }
+    for c in chapters {
+        used.insert(c.uid);
+        collect_uids(&c.children, depth + 1, used);
+    }
+}
+
+fn chapter_atom(out: &mut Vec<u8>, c: &Chapter, webm: bool, depth: usize, used: &std::collections::HashSet<u64>, next: &mut u64) {
+    if depth > MAX_CHAPTER_DEPTH {
+        return;
+    }
+    let uid = if c.uid != 0 {
+        c.uid
+    } else {
+        while used.contains(next) {
+            *next = next.wrapping_add(1).max(1);
+        }
+        let u = *next;
+        *next = next.wrapping_add(1).max(1);
+        u
+    };
+    let mut a = Vec::new();
+    el_uint(&mut a, CHAPTER_UID, uid);
+    if let Some(s) = &c.string_uid {
+        el_str(&mut a, CHAPTER_STRING_UID, s);
+    }
+    el_uint(&mut a, CHAPTER_TIME_START, c.start_ns);
+    if let Some(e) = c.end_ns {
+        el_uint(&mut a, CHAPTER_TIME_END, e);
+    }
+    if !webm {
+        if c.hidden {
+            el_uint(&mut a, CHAPTER_FLAG_HIDDEN, 1);
+        }
+        if !c.enabled {
+            el_uint(&mut a, CHAPTER_FLAG_ENABLED, 0);
+        }
+    }
+    for d in &c.displays {
+        let mut x = Vec::new();
+        el_str(&mut x, CHAP_STRING, &d.string);
+        for l in &d.languages {
+            el_str(&mut x, CHAP_LANGUAGE, l);
+        }
+        if !webm {
+            for l in &d.languages_bcp47 {
+                el_str(&mut x, CHAP_LANGUAGE_BCP47, l);
+            }
+        }
+        for co in &d.countries {
+            el_str(&mut x, CHAP_COUNTRY, co);
+        }
+        el(&mut a, CHAPTER_DISPLAY, &x);
+    }
+    for ch in &c.children {
+        chapter_atom(&mut a, ch, webm, depth + 1, used, next);
+    }
+    el(out, CHAPTER_ATOM, &a);
 }
 
 #[cfg(test)]
@@ -521,6 +645,66 @@ mod tests {
     }
 
     #[test]
+    fn chapters_roundtrip_matroska_and_webm() {
+        let mut nested = Chapter::new(1_000_000_000, "Második");
+        nested.uid = 7;
+        nested.end_ns = Some(1_800_000_000);
+        nested.hidden = true;
+        nested.displays[0].languages_bcp47 = vec!["hu".into()];
+        nested.children.push(Chapter::new(1_200_000_000, "Al"));
+        let chapters = vec![nested, Chapter::new(0, "Első")];
+        for doc_type in ["matroska", "webm"] {
+            let mut v = TrackSpec::new(TrackKind::Video, "V_VP9");
+            v.video_size = Some((16, 16));
+            v.default_duration_ns = Some(40_000_000);
+            let opts = MuxOptions { doc_type: doc_type.into(), chapters: chapters.clone(), ..Default::default() };
+            let mut m = MkvWriter::new(Cursor::new(Vec::new()), vec![v], opts).unwrap();
+            for i in 0..50i64 {
+                m.write_frame(0, i * 40_000_000, i % 10 == 0, &[i as u8; 10], None).unwrap();
+            }
+            let out = m.finish().unwrap().into_inner();
+            let f = Demuxer::from_slice(&out).unwrap().file().clone();
+            assert_eq!(f.chapters.len(), 1, "{doc_type}: one edition");
+            let got = &f.chapters[0].chapters;
+            let webm = doc_type == "webm";
+            assert_eq!(got.iter().map(|c| (c.start_ns, c.title())).collect::<Vec<_>>(), [(0, Some("Első")), (1_000_000_000, Some("Második"))]);
+            // the given UID is kept, the others get fresh ones that don't clash
+            assert_eq!(got[1].uid, 7);
+            let uids = [got[0].uid, got[1].uid, got[1].children[0].uid];
+            assert!(uids.iter().all(|&u| u != 0), "every chapter has a UID");
+            assert!(uids[0] != 7 && !uids[..2].contains(&uids[2]), "fresh UIDs don't clash");
+            assert_eq!(got[1].end_ns, Some(1_800_000_000));
+            assert_eq!(got[1].hidden, !webm, "{doc_type}: WebM has no hidden flag");
+            assert_eq!(got[1].displays[0].languages, ["eng"]);
+            assert_eq!(got[1].displays[0].languages_bcp47.is_empty(), webm);
+            assert_eq!(got[1].children[0].title(), Some("Al"));
+        }
+        // no chapters: no Chapters element
+        let v = TrackSpec::new(TrackKind::Video, "V_VP9");
+        let mut m = MkvWriter::new(Cursor::new(Vec::new()), vec![v], MuxOptions::default()).unwrap();
+        m.write_frame(0, 0, true, &[0], None).unwrap();
+        let out = m.finish().unwrap().into_inner();
+        assert!(Demuxer::from_slice(&out).unwrap().file().chapters.is_empty());
+    }
+
+    #[test]
+    fn deeply_nested_chapters_are_cut_not_overflowed() {
+        let mut c = Chapter::new(0, "leaf");
+        for _ in 0..10_000 {
+            let mut p = Chapter::new(0, "x");
+            p.children.push(c);
+            c = p;
+        }
+        let body = chapters_element(std::slice::from_ref(&c), false);
+        assert!(!body.is_empty());
+        // dropping the deep chain iteratively keeps the test itself from overflowing
+        let mut stack = vec![c];
+        while let Some(mut n) = stack.pop() {
+            stack.append(&mut n.children);
+        }
+    }
+
+    #[test]
     fn roundtrip_unlaced() {
         roundtrip(LacingMode::None);
     }
@@ -535,5 +719,35 @@ mod tests {
     #[test]
     fn roundtrip_fixed() {
         roundtrip(LacingMode::FixedOrEbml);
+    }
+
+    #[test]
+    fn webm_opus_codec_delay_and_discard_padding() {
+        let mut v = TrackSpec::new(TrackKind::Video, "V_VP9");
+        v.video_size = Some((64, 36));
+        v.default_duration_ns = Some(40_000_000);
+        let mut a = TrackSpec::new(TrackKind::Audio, "A_OPUS");
+        a.audio = Some((48000.0, 2, None));
+        a.codec_delay_ns = 2_500_000;
+        a.seek_pre_roll_ns = 80_000_000;
+        let opts = MuxOptions { doc_type: "webm".into(), ..Default::default() };
+        let mut m = MkvWriter::new(Cursor::new(Vec::new()), vec![v, a], opts).unwrap();
+        m.write_frame(0, 0, true, &[1; 10], None).unwrap();
+        m.write_frame(1, -2_500_000, true, &[2; 20], None).unwrap();
+        m.write_frame(0, 40_000_000, false, &[3; 10], None).unwrap();
+        // 9 ms of padding: 0x0089_5440 has its top bit clear, 200 ms (0x0BEB_C200) too; 2^31 ns needs 5 bytes
+        m.write_frame_discarding(1, 17_500_000, &[4; 20], 9_000_000).unwrap();
+        m.write_frame_discarding(1, 37_500_000, &[5; 20], 1 << 31).unwrap();
+        let bytes = m.finish().unwrap().into_inner();
+        let mut d = Demuxer::from_slice(&bytes).unwrap();
+        assert!(d.file().is_webm());
+        assert!(d.file().warnings.is_empty(), "{:?}", d.file().warnings);
+        let got: Vec<_> = d.by_ref().map(|p| p.unwrap()).collect();
+        let audio: Vec<_> = got.iter().filter(|p| p.track == 1).collect();
+        assert_eq!(audio.len(), 3);
+        assert_eq!(audio[0].discard_padding_ns, None);
+        assert_eq!(audio[1].discard_padding_ns, Some(9_000_000));
+        assert_eq!(audio[2].discard_padding_ns, Some(1 << 31));
+        assert_eq!(audio[1].data, vec![4; 20]);
     }
 }

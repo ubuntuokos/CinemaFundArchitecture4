@@ -76,7 +76,7 @@ none of the exports brings one back. Each such clip is named in the export `Repo
 | Format | Written as | On import into CFA4 |
 |---|---|---|
 | FCP7 XML | a clip item without media (its layers as CFA4 filter ids) | not read back; the import report names the skipped clip item |
-| FCPXML | a clip without media | not read back |
+| FCPXML | a gap on V1; left out on other tracks (a gap exists only in the primary storyline) | not read back |
 | OTIO | a clip with a `MissingReference` (effects in the `cfa4` metadata) | offline media |
 | EDL | an ordinary event with the reel the reel mode gives | an ordinary clip |
 | AAF | a gap | nothing |
@@ -85,6 +85,10 @@ OMF carries no video at all.
 
 ## Tests
 
+- `src/otio.rs` (unit tests): OTIO repeats a nested sequence for every use, so compound clips that each hold
+  several uses of the next are exponential (a 3 KB FCPXML nested 12 deep made the export run for minutes and grow to
+  gigabytes). After 25 000 clips written inside nested sequences the rest are gaps, with one warning; an ordinary
+  project is far below that and unchanged.
 - `tests/aaf_omf.rs`: AAF round trips at 25, 29.97 DF, 23.976 and 59.94 DF (clips, gaps,
   two-sided and one-sided transitions, links, markers, start timecodes, constant and keyframed
   gain, media markers and timecode); 512-byte sectors; breakout to mono; embedded trimmed audio
@@ -104,3 +108,36 @@ OMF carries no video at all.
   nested compositions tagged top-level) reads back as the same edit.
 - `src/omf/tests.rs`: the Bento label and TOC, the required properties of every OMF class
   written, reference resolution, embedded WAVE data, sequence lengths in samples.
+- `tests/otio.rs`: a hand-written OTIO document (gaps, transitions, markers, legacy `Clip.1`),
+  lossless round trips through the CFA4 metadata, collections, and a property test over random
+  edits at five frame rates. `oracle_fixtures` exports these sequences plus a fixed one per frame
+  rate (all transition alignments, speed, reverse, frame hold, a disabled clip, sub-frame audio)
+  for the external OpenTimelineIO oracle (OTIO-1.1, `docs/plans/OTIO-INTEGRATION-2026-10-24.md`).
+
+### OpenTimelineIO oracle
+
+The official `opentimelineio` Python package (Apache-2.0) checks the files CFA4 writes. It is a
+development tool only, like ffmpeg: never linked, imported by the product or shipped.
+
+```sh
+pip install -e '.[otio]'
+CFA4_OTIO_ORACLE_DIR=target/fixtures/otio-oracle cargo test -p cfa4-interchange --test otio oracle_fixtures
+python -m cfa4_devtools.otio_oracle target/fixtures/otio-oracle    # exit 0 PASS, 1 FAIL, 2 cannot run
+```
+
+A relative `CFA4_OTIO_ORACLE_DIR` is taken from the workspace root (Cargo runs the test from
+`crates/interchange`), so both commands above use the same directory.
+
+In CI (OTIO-1.3) the blocking `otio-oracle` job of the full validation (`workflow_dispatch` or the
+`cfa4-full-validation` PR label; the fast PR gate is unchanged) runs both commands and the
+fixture-backed oracle tests. It installs the oracle from its own hash-pinned lock,
+`requirements/otio-oracle.txt` (`scripts/dev/lock-python.sh` regenerates it with the main lock), so
+`opentimelineio` stays out of the development and Qt environment:
+
+```sh
+python -m pip install --require-hashes -r requirements/otio-oracle.txt
+```
+
+For each file it reads the document with OTIO, re-serialises it, and compares tracks, clip names,
+marker counts and every clip's position and length, as OTIO's own `range_in_parent` computes
+them, with `manifest.json` (exact ticks, 1 µs tolerance for OTIO's floating-point times).

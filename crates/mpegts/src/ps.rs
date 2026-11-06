@@ -101,7 +101,14 @@ struct EsState {
 /// Length of the packet (pack header, system header, PES…) starting at `b` (which begins with a
 /// start code), `None` if it is not one.
 fn packet_len(b: &[u8]) -> Option<usize> {
-    if b.len() < 6 || b[0] != 0 || b[1] != 0 || b[2] != 1 {
+    if b.len() < 4 || b[0] != 0 || b[1] != 0 || b[2] != 1 {
+        return None;
+    }
+    // the program end code may be the last four bytes of the file
+    if b[3] == 0xB9 {
+        return Some(4);
+    }
+    if b.len() < 6 {
         return None;
     }
     match b[3] {
@@ -118,7 +125,6 @@ fn packet_len(b: &[u8]) -> Option<usize> {
                 None
             }
         }
-        0xB9 => Some(4),
         0xBB..=0xFF => Some(6 + u16::from_be_bytes([b[4], b[5]]) as usize),
         _ => None,
     }

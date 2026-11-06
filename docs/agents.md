@@ -23,6 +23,7 @@ and write wherever the user can.
 
 ```sh
 cargo build --release -p cfa4-cli -p cfa4
+export CFA4_CONTROL_TOKEN="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 ./target/release/cfa4 --control 9876 &      # only for the bridge server
 claude                                           # approve the project MCP servers when asked
 ```
@@ -64,7 +65,7 @@ claude mcp add cfa4 -- cfa4-cli mcp
 | `doc_inspect` | both | the project tree and the active sequence in one call (`project_inspect` + `sequence_inspect`) |
 | `render_preview` | both | same as `render_frame` |
 | `project_inspect` | both | bins and items with ids, types, durations; active sequence |
-| `sequence_inspect` | both | the active sequence: tracks, clips (`start` / `end` and `sourceIn` / `sourceOut` in ticks, frames, `speed`, `reverse`: the clip plays its `sourceIn` to `sourceOut` stretch backward, `gainDb`, `audioStream`: the source audio stream an audio clip plays), effects, transitions, markers (name and `comment`), playhead, selection |
+| `sequence_inspect` | both | the active sequence: tracks, clips (`start` / `end` and `sourceIn` / `sourceOut` in ticks, frames, `speed`, `reverse`: the clip plays its `sourceIn` to `sourceOut` stretch backward, `gainDb`, `audioStream`: the source audio stream an audio clip plays, `frameHold`: the held media time or null, `volume`: an audio clip's Volume level, keyframes (`mediaTime`, `time`, `db`) and sampled `curve`, `nested`, `multicam` `{enabled, angle}` and the `cameras` of an enabled multi-camera clip), effects, transitions, markers (name and `comment`), playhead, selection, the selected `editPoints`, the `throughEdits` and the timeline `toggles` (`snapping`, `linkedSelection`, `nest`, `showThroughEdits`) the `openSequences` (`{id, name}` in tab order) the Mix fader `masterVolumeDb` each audio track's automation `lanes` (`key`, `label`, `min` / `max`, `hold`, `keys` as `[time, value, hold]`), the `captionTracks` (`label`, `name`, `format`, `enabled`, `locked`, `captions` with `start` / `end` and plain `text`) and the `captionSelection` |
 | `media_import` | both | import files by absolute path (`paths`, an array; optional `bin`, `image_sequence`) |
 | `render_frame` | both | PNG of the program frame at `seconds` (headless renders; bridge screenshots the Program monitor). Read-only: the playhead and selection are left as they were |
 | `ui_inspect` | bridge | UI state: tool, workspace, panels, zoom, playback, fps |
@@ -134,29 +135,31 @@ progress and stop it:
 ## 2. Control channel
 
 `cfa4 --control 9876` (or `CFA4_CONTROL_PORT=9876`) listens on `127.0.0.1` only. Send one
-JSON request per line and get one JSON reply per line. Full method table:
+JSON request per line and get one JSON reply per line. Set a fresh `CFA4_CONTROL_TOKEN` for the
+desktop session as above; the CLI / MCP bridge must inherit the same variable. Raw requests must
+include it as `token` on every line (replace the placeholders below). Full setup and method table:
 [control-protocol.md](control-protocol.md).
 
 ```jsonc
-{"id":1,"method":"engine.commands"}
-{"id":2,"method":"engine.execute","params":{"command":"file.openDemoProject"}}
-{"id":3,"method":"engine.execute","params":{"command":"playhead.set","params":{"seconds":2}}}
-{"id":4,"method":"engine.execute","params":{"command":"sequence.addEdit"}}
-{"id":5,"method":"engine.execute","params":{"command":"effects.apply","params":{"effect":"Gaussian Blur"}}}
-{"id":6,"method":"ui.elements","params":{"prefix":"tools."}}
-{"id":7,"method":"ui.click","params":{"id":"tools.Razor"}}
-{"id":8,"method":"ui.key","params":{"key":"Cmd+Z"}}
-{"id":9,"method":"ui.screenshot","params":{"path":"/tmp/timeline.png","panel":"Timeline"}}
+{"id":1,"token":"<CFA4_CONTROL_TOKEN>","method":"engine.commands"}
+{"id":2,"token":"<CFA4_CONTROL_TOKEN>","method":"engine.execute","params":{"command":"file.openDemoProject"}}
+{"id":3,"token":"<CFA4_CONTROL_TOKEN>","method":"engine.execute","params":{"command":"playhead.set","params":{"seconds":2}}}
+{"id":4,"token":"<CFA4_CONTROL_TOKEN>","method":"engine.execute","params":{"command":"sequence.addEdit"}}
+{"id":5,"token":"<CFA4_CONTROL_TOKEN>","method":"engine.execute","params":{"command":"effects.apply","params":{"effect":"Gaussian Blur"}}}
+{"id":6,"token":"<CFA4_CONTROL_TOKEN>","method":"ui.elements","params":{"prefix":"tools."}}
+{"id":7,"token":"<CFA4_CONTROL_TOKEN>","method":"ui.click","params":{"id":"tools.Razor"}}
+{"id":8,"token":"<CFA4_CONTROL_TOKEN>","method":"ui.key","params":{"key":"Cmd+Z"}}
+{"id":9,"token":"<CFA4_CONTROL_TOKEN>","method":"ui.screenshot","params":{"path":"/tmp/timeline.png","panel":"Timeline"}}
 ```
 
 Replies look like `{"id":4,"ok":true,"result":{"cuts":2}}` or `{"id":7,"ok":false,"error":"…"}`.
 Minimal client:
 
 ```python
-import json, socket
+import json, os, socket
 s = socket.create_connection(("127.0.0.1", 9876)); f = s.makefile("rw")
 def call(method, **params):
-    f.write(json.dumps({"id": 1, "method": method, "params": params}) + "\n"); f.flush()
+    f.write(json.dumps({"id": 1, "token": os.environ["CFA4_CONTROL_TOKEN"], "method": method, "params": params}) + "\n"); f.flush()
     return json.loads(f.readline())
 print(call("engine.execute", command="sequence.inspect"))
 ```
@@ -276,17 +279,20 @@ everything you need to contribute is in the public docs above. Ask a maintainer 
 
 ## 5. Autonomous work loop
 
-1. **Orient.** Pick the next task: the next unchecked task in the maintainer status file, or an open
-   [gaps.md](gaps.md) entry. Prefer those gaps (stability, `.prproj`, camera media, measurement,
-   hardware, Windows/Linux) over adding more checklist items. Read the relevant
-   architecture section and crate README.
+1. **Orient.** Pick the next task **of your own project**: the owner-approved plan, ADR or issue
+   your session was started on (owner decision, 2026-10-31). Take its next open task in the order
+   the plan gives; where the plan leaves the order open, choose the most logical one (dependencies
+   first). A [gaps.md](gaps.md) entry or a maintainer status-file task counts only if it belongs to
+   your project. **Never take a task from another project.** Read the relevant architecture section
+   and crate README.
 2. **Plan tests first.** Write down the acceptance test before writing code.
 3. **Implement and test.**
 4. **Verify.** Run all gates (`cargo xtask ci`). For UI work, run the app with `--control`, drive it
    and look at the screenshots (§3).
 5. **Record.** Update the crate README (behaviour decisions, test results, limitations) and
    the progress docs when a milestone moves (ROADMAP.md, docs/roadmap.md, the relevant parity doc
-   and gaps.md, with their timestamps). Commit as `M<n>.<k>: …`, then move on to the next task.
+   and gaps.md, with their timestamps). Commit as `M<n>.<k>: …`, then move on to the next task of the same project. When your project
+   has no open task left, stop and report; do not start another project.
 
 For parallel agents, use one git worktree and one `CARGO_TARGET_DIR` per agent, and keep each crate
 with one owner ([contributing.md §5](contributing.md#5-parallel-work-several-agents-or-worktrees)).
@@ -306,6 +312,10 @@ Don't block on choices you can make yourself:
   - personal data;
   - destructive git operations;
   - anything AGENTS.md leaves unclear ("when in doubt, leave it out").
+- **Other projects.** Never take over a task from another project. If your work overlaps or
+  conflicts with another project (the same feature, shared files, contradicting plans), stop that
+  part and report it to the merge coordinator ([coordination.md](coordination.md) §2.8). The owner
+  and the coordinator decide together; **that decision is binding** and agents do not reopen it.
 
 ## 7. Definition of Done
 

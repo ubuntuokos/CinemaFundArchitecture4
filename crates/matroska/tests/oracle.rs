@@ -263,12 +263,13 @@ fn prores_pcm() {
 #[test]
 fn mjpeg_ac3() {
     let Some((_, f, _)) = run("mjpeg_ac3.mkv") else { return };
-    // regression for #133: the final AC-3 block carries BlockDuration 8 ms (trimmed by `-t 1`);
-    // the demuxer must honour it instead of the nominal 32 ms frame duration
+    // regression for #133: the final AC-3 block carries a BlockDuration trimmed by `-t 1` (8 ms
+    // from ffmpeg 6.1, 13 ms from 9.0 with its different priming); the demuxer must honour it
+    // instead of the nominal 32 ms frame duration, so the track ends at the 1 s cut
     let a = f.track_of_kind(TrackKind::Audio).unwrap();
     let last = f.tracks[a].samples.last().unwrap();
-    assert_eq!(last.duration, 8);
-    assert_eq!(last.pts + last.duration as i64, 995);
+    assert!(last.duration > 0 && last.duration < 32, "{last:?}");
+    assert!((990..=1005).contains(&(last.pts + last.duration as i64)), "{last:?}");
     assert_eq!(f.info.title.as_deref(), Some("CFA4 test"));
     assert!(f.info.muxing_app.starts_with("Lavf"));
     assert!(f.tags.iter().flat_map(|t| &t.simple).any(|s| s.name == "ENCODER"));
@@ -334,6 +335,62 @@ fn laced_remux() {
             }
             std::fs::remove_file(&outp).unwrap();
         }
+    }
+}
+
+/// Our chapters read by ffprobe, in Matroska and WebM.
+#[test]
+fn chapters_ffprobe() {
+    let Some((ffmpeg, ffprobe)) = tools() else { return };
+    let Some(path) = fixture(&ffmpeg, "vp9_opus.webm") else { return };
+    let bytes = std::fs::read(&path).unwrap();
+    let d = Demuxer::from_slice(&bytes).unwrap();
+    let file = d.file().clone();
+    let packets: Vec<Packet> = d.collect::<Result<_>>().unwrap();
+    let mut second = Chapter::new(500_000_000, "Kettő");
+    second.end_ns = Some(900_000_000);
+    let chapters = vec![Chapter::new(0, "Egy"), second];
+    for doc_type in ["webm", "matroska"] {
+        let specs: Vec<TrackSpec> = file
+            .tracks
+            .iter()
+            .map(|t| {
+                let mut s = TrackSpec::new(t.kind, t.codec_id.clone());
+                s.codec_private = t.codec_private.clone();
+                s.default_duration_ns = t.default_duration_ns;
+                s.video_size = t.video.as_ref().map(|v| (v.pixel_width, v.pixel_height));
+                s.audio = t.audio.as_ref().map(|a| (a.sampling_frequency, a.channels, a.bit_depth));
+                s.codec_delay_ns = t.codec_delay_ns;
+                s.seek_pre_roll_ns = t.seek_pre_roll_ns;
+                s
+            })
+            .collect();
+        let opts = MuxOptions { doc_type: doc_type.into(), chapters: chapters.clone(), ..Default::default() };
+        let mut w = MkvWriter::new(std::io::Cursor::new(Vec::new()), specs, opts).unwrap();
+        for p in &packets {
+            w.write_frame(p.track, p.pts_ns, p.keyframe, &p.data, None).unwrap();
+        }
+        let outp = fixture_dir().join(format!("chapters_out.{}", if doc_type == "webm" { "webm" } else { "mkv" }));
+        std::fs::write(&outp, w.finish().unwrap().into_inner()).unwrap();
+        let o = std::process::Command::new(&ffprobe).args(["-v", "error", "-of", "json", "-show_chapters"]).arg(&outp).output().unwrap();
+        assert!(o.status.success(), "{doc_type}: {}", String::from_utf8_lossy(&o.stderr));
+        let j: Value = serde_json::from_slice(&o.stdout).unwrap();
+        let got: Vec<(f64, f64, String)> = j["chapters"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| {
+                (
+                    c["start_time"].as_str().unwrap().parse().unwrap(),
+                    c["end_time"].as_str().unwrap().parse().unwrap(),
+                    c["tags"]["title"].as_str().unwrap().to_string(),
+                )
+            })
+            .collect();
+        assert_eq!(got.len(), 2, "{doc_type}: {got:?}");
+        assert_eq!((got[0].0, got[0].2.as_str()), (0.0, "Egy"), "{doc_type}");
+        assert_eq!((got[1].0, got[1].1, got[1].2.as_str()), (0.5, 0.9, "Kettő"), "{doc_type}");
+        std::fs::remove_file(&outp).unwrap();
     }
 }
 

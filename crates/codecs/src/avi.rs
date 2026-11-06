@@ -3,7 +3,9 @@
 //! Video: Motion JPEG (frames without their own Huffman tables get the standard ones), H.264 and
 //! HEVC (Annex B byte streams, our decoders), and uncompressed RGB / YUV ([`RawFormat`]). A frame
 //! slot with an empty chunk (a "drop frame") repeats the picture before it. MPEG-4 Part 2
-//! (DivX / Xvid) and DV have no decoder yet: their streams are listed and report the codec.
+//! (DivX / Xvid) has no decoder yet: its streams are listed and report the codec. DV in type-2 AVI
+//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`; type-1 (`iavs`, video and audio in one stream) is
+//! not read yet.
 //!
 //! Audio: PCM (integer and float) straight from the chunks; MPEG audio (MP3, MP2) and AC-3 frames,
 //! which AVI chunks need not follow, are found again across chunk boundaries
@@ -30,6 +32,9 @@ pub fn sniff(b: &[u8]) -> bool {
 #[derive(Clone, Debug, PartialEq)]
 enum VCodec {
     Jpeg,
+    Cineform,
+    /// DV / DVCPRO (type-2 AVI: one DIF frame per video chunk).
+    Dv,
     H264,
     Hevc,
     Raw(RawFormat),
@@ -52,11 +57,12 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
     match &f {
         b"MJPG" | b"AVRN" | b"LJPG" | b"JPGL" | b"DMB1" | b"JPEG" | b"MJPA" => (VCodec::Jpeg, "Motion JPEG".into()),
         b"H264" | b"X264" | b"AVC1" | b"DAVC" | b"VSSH" => (VCodec::H264, "H.264".into()),
+        b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
-        b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Unsupported("DV".into()), "DV".into()),
+        b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
             (VCodec::Unsupported(format!("\"{name}\"")), name)
@@ -305,7 +311,7 @@ impl AviSource {
                 rate
             };
             let bitrate = (secs > 0.0).then(|| (vs.chunks.iter().map(|c| u64::from(c.size)).sum::<u64>() as f64 * 8.0 / secs) as u64);
-            video = Some(VideoStreamInfo {
+            let mut info = VideoStreamInfo {
                 width: w,
                 height: h,
                 frame_rate: shown,
@@ -316,7 +322,19 @@ impl AviSource {
                 has_alpha: false,
                 bitrate,
                 hdr: None,
-            });
+            };
+            if codec == VCodec::Dv
+                && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
+                && let Some(d) =
+                    cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(6 * 80)).ok().and_then(|d| crate::video::dv_stream_info(&d))
+            {
+                // format, sampling, aspect and colour are in the frame's header and VAUX packs
+                info.codec = d.codec;
+                info.pixel_format = d.pixel_format;
+                info.par = d.par;
+                info.color = d.color;
+            }
+            video = Some(info);
             vcodec = codec;
         }
         // audio: packets and their start positions
@@ -492,6 +510,8 @@ impl VideoSamples for AviVideo<'_> {
         let (w, h) = (v.width.min(u32::from(u16::MAX)) as u16, v.height.min(u32::from(u16::MAX)) as u16);
         match &self.src.vcodec {
             VCodec::Jpeg => make_video_decoder(&SampleEntry::jpeg(w, h)),
+            VCodec::Cineform => Ok(Box::new(crate::video::CineformDecoder)),
+            VCodec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),

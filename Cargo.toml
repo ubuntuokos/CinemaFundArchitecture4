@@ -2,7 +2,15 @@
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
 default-members = ["crates/*", "apps/*", "xtask"]
-exclude = ["vendor/cfa4-libs/*", "vendor/ffmpeg-bindings/*"]
+# Cargo does not expand globs here: each vendored crate is named, so `--workspace` does not
+# build their tests (their dev-dependencies stay out of Cargo.lock; scripts/dev/test-vendored-ui.sh).
+exclude = [
+    "vendor/cfa4-libs/docpath",
+    "vendor/cfa4-libs/ui",
+    "vendor/ffmpeg-bindings/rsmedia",
+    "vendor/ffmpeg-bindings/rsmpeg",
+    "vendor/ffmpeg-bindings/rusty_ffmpeg",
+]
 
 [workspace.package]
 version = "0.10.0"
@@ -25,16 +33,24 @@ cfa4-mxf = { path = "crates/mxf" }
 cfa4-cfb = { path = "crates/cfb" }
 cfa4-mpegts = { path = "crates/mpegts" }
 cfa4-mpeg2v = { path = "crates/mpeg2v" }
+cfa4-dv = { path = "crates/dv" }
 cfa4-ac3 = { path = "crates/ac3" }
+cfa4-dts = { path = "crates/dts" }
+cfa4-auro = { path = "crates/auro" }
+cfa4-truehd = { path = "crates/truehd" }
 cfa4-mpa = { path = "crates/mpa" }
 cfa4-ogg = { path = "crates/ogg" }
 cfa4-h264 = { path = "crates/h264" }
 cfa4-hevc = { path = "crates/hevc" }
+cfa4-heif = { path = "crates/heif" }
+cfa4-jxl = { path = "crates/jxl" }
 cfa4-vp8 = { path = "crates/vp8" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
+cfa4-cineform = { path = "crates/cineform" }
 cfa4-j2k = { path = "crates/j2k" }
+cfa4-iab = { path = "crates/iab" }
 cfa4-apv = { path = "crates/apv" }
 cfa4-dng = { path = "crates/dng" }
 cfa4-av1 = { path = "crates/av1" }
@@ -59,6 +75,7 @@ cfa4-render = { path = "crates/render" }
 cfa4-gpu = { path = "crates/gpu" }
 cfa4-scopes = { path = "crates/scopes" }
 cfa4-export = { path = "crates/export" }
+cfa4-smart-edit = { path = "crates/smart-edit" }
 cfa4-format = { path = "crates/format" }
 cfa4-engine = { path = "crates/engine" }
 cfa4-ui-egui = { path = "crates/ui-egui" }
@@ -120,6 +137,9 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package.cfa4-dnx]
+opt-level = 3
+
+[profile.dev.package.cfa4-cineform]
 opt-level = 3
 
 [profile.dev.package.cfa4-j2k]

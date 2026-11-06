@@ -31,6 +31,7 @@ macro_rules! out {
 }
 
 mod args;
+mod codecs_cmd;
 mod probe;
 mod serve;
 mod serve_graphics;
@@ -39,6 +40,8 @@ mod serve_media_browser;
 mod serve_multicam;
 mod serve_project;
 mod serve_scopes;
+mod serve_shm;
+mod serve_shuttle;
 mod serve_text;
 mod serve_tts;
 mod settings_cmd;
@@ -79,7 +82,9 @@ USAGE
 SUBCOMMANDS
   exec <id> [key=value ...]     run one command; prints its result as JSON
   exec <id> '<json params>'     same, params as one JSON object
-  run <script.jsonl | ->        run commands, one {\"id\",\"params\"} per line (# comments ok)
+  run <script.jsonl | ->        run commands, one {\"id\",\"params\"} per line (# comments ok), in
+                                order: file.exportMedia waits for its file before the next line
+                                (and before exit) unless its params say \"wait\": false
   commands [filter] [--json]    list commands (id, label, shortcut, params)
   describe <id>                 one command as JSON (menu, shortcut, params, enabled now)
   inspect [project|sequence]    project tree or active sequence as JSON (default: both)
@@ -89,7 +94,7 @@ SUBCOMMANDS
          [--scale f] [--quality 0-100] [--no-audio] [--queue] [--allow-offline]
                                 export the active sequence and wait for it to finish: with an
                                 export preset (`export --list-presets`; built-in or the user's), or
-                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|png|tiff|bmp|gif|wav|aiff|aac, guessed
+                                a format (h264|hevc|prores|dnxhr|apv|mjpeg|mxf-op1a|mxf-opatom|mpeg2|dcp|png|tiff|bmp|gif|wav|aiff|aac, guessed
                                 from the extension); --range entire|inOut|workArea, or a custom
                                 range in seconds; --settings is ExportSettings JSON merged over the
                                 preset; --scale renders at a fraction of the frame size (0.5 =
@@ -110,6 +115,7 @@ SUBCOMMANDS
   settings set '<json>'         set preferences (a JSON object of key: value); validated and saved
   settings reset [category]     a category (or everything) back to its defaults
   hardware                      GPU / NPU inventory, backend chain per workload, vendor coverage
+  codecs                        what this machine decodes and encodes (software, hardware, GStreamer)
   media-backends                engine + FFmpeg / GStreamer backends, status, restricted codecs
   mcp                           MCP server on stdio (headless, or --bridge to the live app)
   serve [--autosave]            headless engine server for the CFA4 Qt 6 GUI: JSON lines on
@@ -188,9 +194,21 @@ impl Backend {
         Backend::Local(Box::new(s))
     }
 
-    async fn exec(&mut self, id: &str, params: Value) -> Result<Value, String> {
+    async fn exec(&mut self, id: &str, mut params: Value) -> Result<Value, String> {
         match self {
-            Backend::Local(s) => s.execute(id, params).map_err(|e| e.to_string()),
+            // this process exits after the command, so a background export would never be written:
+            // long commands wait unless the caller says otherwise (#2342)
+            Backend::Local(s) => {
+                if cfa4_automation::long_job::LONG_COMMANDS.contains(&id)
+                    && let Some(p) = params.as_object_mut()
+                {
+                    // anything but an explicit `false` (missing, null, a typo'd value) waits
+                    if p.get("wait").and_then(Value::as_bool) != Some(false) {
+                        p.insert("wait".into(), json!(true));
+                    }
+                }
+                s.execute(id, params).map_err(|e| e.to_string())
+            }
             // a blocking export runs as an app job polled by the client (#91, #92)
             Backend::Bridge(b) => b.execute(id, params).await.map_err(|e| e.to_string()),
         }
@@ -233,6 +251,7 @@ fn format_for(path: &str) -> Option<&'static str> {
         "bmp" => "bmp",
         "aif" | "aiff" => "aiff",
         "m4a" | "aac" => "aac",
+        "mpg" | "mpeg" | "m2p" | "ts" | "m2ts" | "mts" | "m2v" => "mpeg2",
         _ => return None,
     })
 }
@@ -562,6 +581,7 @@ async fn cli() {
             }
         }
         "hardware" => print(&a, &settings_cmd::hardware()),
+        "codecs" => print(&a, &codecs_cmd::codecs()),
         "media-backends" => {
             let dir = a.opt("--data-dir").map(std::path::PathBuf::from).or_else(cfa4_engine::autosave::default_data_dir);
             match settings_cmd::media_backends(dir) {
@@ -782,5 +802,7 @@ mod format_tests {
         assert_eq!(super::format_for("out/clip.MXF"), Some("mxf-op1a"));
         assert_eq!(super::format_for("a.mov"), Some("prores"));
         assert_eq!(super::format_for("noext"), None);
+        assert_eq!(super::format_for("disc.mpg"), Some("mpeg2"));
+        assert_eq!(super::format_for("broadcast.ts"), Some("mpeg2"));
     }
 }

@@ -20,6 +20,9 @@ enum Inner {
     Aac { dec: Box<cfa4_aac::Decoder>, asc: Vec<u8>, up: Option<Box<Upsample2x>> },
     /// AAC whose configuration arrives with the first frame (ADTS / LATM).
     AacPending,
+    /// xHE-AAC (USAC, audio object type 42), decoded at the stream's own level: DRC and loudness
+    /// normalization ([`cfa4_aac::drc`]) are a playback-side choice, not applied on import.
+    Usac { dec: Box<cfa4_aac::usac::UsacDecoder>, asc: Vec<u8> },
     /// MPEG audio at this rate whose layer arrives with the first frame (MP4 / QuickTime name the
     /// codec, not the layer; layers I / II go to our decoder, layer III to symphonia's).
     MpegPending(u32),
@@ -30,12 +33,21 @@ enum Inner {
     Symphonia(Box<dyn Decoder>),
     /// Our AC-3 and E-AC-3 decoder (ATSC A/52, Annex E).
     Ac3(Box<cfa4_ac3::Decoder>),
+    /// DTS: the core, DTS-HD High Resolution and Master Audio (`cfa4-dts`).
+    Dts(Box<cfa4_dts::cfa4::Decoder>),
     /// Our MPEG-1/2 audio Layer I and II decoder (ISO/IEC 11172-3, 13818-3).
     Mpa(Box<cfa4_mpa::Decoder>),
+    /// Dolby TrueHD and MLP (`cfa4-truehd`, ported from the Apache-2.0 `truehd` crate).
+    TrueHd(Box<cfa4_truehd::cfa4::Decoder>),
 }
 
 /// Opus always decodes at 48 kHz (RFC 7845 §5.1: the input rate in the header is informational).
 pub const OPUS_RATE: u32 = 48_000;
+
+/// DTS frames decoded before a random-access target. DTS-HD Master Audio may smooth its peak bit
+/// rate by delaying lossless frames (`xll_delay_nframes`) behind a sync point: from one packet
+/// back the decoder would still be buffering at the target and give silence there.
+pub const DTS_PRE_ROLL_PACKETS: usize = 16;
 
 /// Opus pre-roll decoded before a random-access target, in 48 kHz frames: 320 ms.
 ///
@@ -122,6 +134,9 @@ impl PacketDecoder {
             let up = upsamples_core(dec.sample_rate(), sample_rate).then(|| Box::new(Upsample2x::new(dec.channels())));
             return Ok(Self { inner: Inner::Aac { dec: Box::new(dec), asc: asc.to_vec(), up }, channels: 0 });
         }
+        if let Ok(dec) = cfa4_aac::usac::UsacDecoder::new(asc) {
+            return Ok(Self { inner: Inner::Usac { dec: Box::new(dec), asc: asc.to_vec() }, channels: 0 });
+        }
         Self::new(CODEC_TYPE_AAC, sample_rate, Some(asc.to_vec()))
     }
     /// Opus from an `OpusHead` (Matroska `CodecPrivate`, Ogg) or a `dOps` box payload. Output is
@@ -167,6 +182,23 @@ impl PacketDecoder {
     pub fn ac3() -> Result<Self> {
         Ok(Self { inner: Inner::Ac3(Box::new(cfa4_ac3::Decoder::new())), channels: 0 })
     }
+    /// DTS (core, DTS-HD High Resolution, DTS-HD Master Audio). Packets hold whole frames.
+    pub fn dts() -> Self {
+        Self { inner: Inner::Dts(Box::default()), channels: 0 }
+    }
+    /// Packets to decode before a random-access target when the codec has no pre-roll of its
+    /// own: one, or [`DTS_PRE_ROLL_PACKETS`] for DTS.
+    pub fn pre_roll_packets(&self) -> usize {
+        match self.inner {
+            Inner::Dts(_) => DTS_PRE_ROLL_PACKETS,
+            _ => 1,
+        }
+    }
+    /// Dolby TrueHD and MLP. After a reset nothing decodes until the next major sync: callers
+    /// pre-roll [`cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL`] access units (see [`truehd_preroll`]).
+    pub fn truehd() -> Self {
+        Self { inner: Inner::TrueHd(Box::default()), channels: 0 }
+    }
     /// Whether this decodes Opus (which needs [`OPUS_PRE_ROLL`] of pre-roll after a seek).
     pub fn is_opus(&self) -> bool {
         matches!(self.inner, Inner::Opus { .. })
@@ -177,10 +209,13 @@ impl PacketDecoder {
             C::Aac(a) => Self::aac(&a.asc, if rate > 0 { rate } else { a.sample_rate }),
             C::Mp3 => Ok(Self::lazy_mpeg_audio(rate)),
             C::Ac3 { .. } | C::Eac3 { .. } => Self::ac3(),
+            C::Dts { .. } => Ok(Self::dts()),
+            C::TrueHd { .. } => Ok(Self::truehd()),
             C::Alac { cookie } => Self::new(CODEC_TYPE_ALAC, rate, Some(cookie.clone())),
             // the decoder needs the STREAMINFO body: `dfLa` holds it after the 4-byte block header
             C::Flac(f) => Self::new(CODEC_TYPE_FLAC, rate, f.metadata_blocks.get(4..38).map(<[u8]>::to_vec)),
             C::Opus(o) => Self::opus(cfa4_opus::OpusHead::from_dops(&o.to_bytes()).map_err(|e| CodecError::Unsupported(format!("Opus: {e}")))?),
+            C::Unknown { fourcc, .. } if fourcc.0 == *b"a3ds" => Err(CodecError::Unsupported(AURO_CX_UNSUPPORTED.into())),
             other => Err(CodecError::Unsupported(format!("{} audio", other.name()))),
         }
     }
@@ -200,6 +235,12 @@ impl PacketDecoder {
                 self.channels = out.len();
                 return Ok(out);
             }
+            Inner::Usac { dec, .. } => {
+                let out = dec.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?;
+                let out = reorder(out, aac_to_wav_order(dec.config().channel_configuration_index));
+                self.channels = out.len();
+                return Ok(out);
+            }
             Inner::Opus { dec, order } => {
                 // A corrupt packet is concealed like a lost one (keeps timing and decoder state).
                 let out = match dec.decode(Some(data)) {
@@ -215,12 +256,13 @@ impl PacketDecoder {
             Inner::MpegPending(_) => return Err(CodecError::Decode("MPEG audio: no frame header".into())),
             Inner::Ac3(d) => {
                 // a packet may hold several syncframes (MP4 / Matroska); E-AC-3 dependent
-                // substreams and further programs decode to no channels and are skipped
+                // substreams join their program (7.1), further programs decode to no channels and
+                // are skipped
                 let mut out: Vec<Vec<f32>> = Vec::new();
                 let mut p = 0;
                 while p < data.len() {
-                    let f = d.decode(&data[p..]).map_err(|e| CodecError::Decode(e.to_string()))?;
-                    p += f.header.frame_bytes;
+                    let (f, used) = d.decode_program(&data[p..]).map_err(|e| CodecError::Decode(e.to_string()))?;
+                    p += used;
                     if f.channels.is_empty() {
                         continue;
                     }
@@ -232,6 +274,16 @@ impl PacketDecoder {
                         }
                     }
                 }
+                self.channels = out.len();
+                return Ok(out);
+            }
+            Inner::Dts(d) => {
+                let out = d.decode_packet(data).map_err(|e| CodecError::Decode(e.to_string()))?.channels;
+                self.channels = out.len();
+                return Ok(out);
+            }
+            Inner::TrueHd(d) => {
+                let out = d.decode(data).map_err(|e| CodecError::Decode(e.to_string()))?.channels;
                 self.channels = out.len();
                 return Ok(out);
             }
@@ -288,10 +340,17 @@ impl PacketDecoder {
                     up.reset();
                 }
             }
+            Inner::Usac { dec, asc } => {
+                if let Ok(d) = cfa4_aac::usac::UsacDecoder::new(asc) {
+                    **dec = d;
+                }
+            }
             Inner::Mpa(d) => d.reset(),
             Inner::Opus { dec, .. } => dec.reset(),
             Inner::Symphonia(d) => d.reset(),
             Inner::Ac3(d) => d.reset(),
+            Inner::Dts(d) => d.reset(),
+            Inner::TrueHd(d) => d.reset(),
             Inner::AacPending | Inner::MpegPending(_) => {}
         }
     }
@@ -312,7 +371,9 @@ pub fn mpeg_audio_layer(frame: &[u8]) -> Option<u8> {
 /// AAC-LC config at 24 kHz or less) SBR is only visible as fill-element data in the access units,
 /// so the first ones are decoded to look for it. `None` if `asc` is not one our decoder reads.
 pub fn aac_output_rate<'a>(asc: &[u8], first_units: impl IntoIterator<Item = &'a [u8]>) -> Option<u32> {
-    let mut dec = cfa4_aac::Decoder::new(asc).ok()?;
+    let Ok(mut dec) = cfa4_aac::Decoder::new(asc) else {
+        return cfa4_aac::usac::UsacDecoder::new(asc).ok().map(|d| d.sample_rate());
+    };
     let core = dec.sample_rate();
     if let Some(ext) = dec.config().extension_sample_rate {
         return Some(ext);
@@ -333,6 +394,12 @@ fn upsamples_core(core: u32, rate: u32) -> bool {
     core.checked_mul(2) == Some(rate)
 }
 
+/// Samples to decode before a random-access position in a TrueHD / MLP stream at `rate`, so the
+/// decoder has met a major sync by then.
+pub fn truehd_preroll(rate: u32) -> i64 {
+    cfa4_truehd::cfa4::samples_per_au(rate).unwrap_or(160) * cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL
+}
+
 /// A codec whose packets all decode to the same number of samples (see [`fixed_packet_samples`]).
 #[derive(Clone, Copy, Debug)]
 pub enum FixedFrames<'a> {
@@ -345,6 +412,8 @@ pub enum FixedFrames<'a> {
     /// E-AC-3 packets of whole syncframes (MP4, Matroska): an access unit may hold several
     /// syncframes and dependent substreams.
     Eac3,
+    /// DTS packets of whole frames (a core frame and its extension substream).
+    Dts,
 }
 
 /// Samples each packet decodes to at the stream's output `rate`, for codecs where that is the same
@@ -356,7 +425,11 @@ pub enum FixedFrames<'a> {
 pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Option<i64> {
     let mpegts = match codec {
         FixedFrames::Aac(asc) => {
-            let core = cfa4_aac::Decoder::new(asc).ok()?.sample_rate();
+            let Ok(dec) = cfa4_aac::Decoder::new(asc) else {
+                let usac = cfa4_aac::usac::UsacDecoder::new(asc).ok()?;
+                return (usac.sample_rate() == rate).then_some(usac.frame_length() as i64);
+            };
+            let core = dec.sample_rate();
             return Some(if upsamples_core(core, rate) { 2048 } else { 1024 });
         }
         FixedFrames::Eac3 => {
@@ -372,6 +445,13 @@ pub fn fixed_packet_samples(codec: FixedFrames, first: &[u8], rate: u32) -> Opti
                 p += h.frame_bytes;
             }
             return i64::try_from(samples).ok().filter(|&n| n > 0);
+        }
+        FixedFrames::Dts => {
+            // DTS-HD may decode at another rate than its core (96 kHz over a 48 kHz core): the
+            // decode of `first` says what a packet gives
+            let d = cfa4_dts::cfa4::Decoder::new().decode_packet(first).ok()?;
+            let n = d.channels.first().map_or(0, Vec::len);
+            return (d.sample_rate == rate).then_some(n as i64).filter(|&n| n > 0);
         }
         FixedFrames::MpegAudio => cfa4_mpegts::Codec::MpegAudio,
         FixedFrames::Ac3 => cfa4_mpegts::Codec::Ac3,
@@ -898,6 +978,11 @@ fn id3v2_len(bytes: &[u8]) -> usize {
     }
 }
 
+/// Why an Auro-CX track (MP4 sample entry `a3ds`, #322) does not play: Auro-CX is a codec of its
+/// own, not an Auro-Codec carrier in PCM (`cfa4-auro`), and has no public specification or
+/// open decoder.
+pub const AURO_CX_UNSUPPORTED: &str = "Auro-CX audio (a3ds): there is no public specification or open decoder, so CFA4 cannot decode it";
+
 /// Most samples (all channels together) a standalone ADTS file decodes into memory: 4 GiB of f32,
 /// about three hours of 48 kHz stereo. Longer files are refused rather than allocated.
 const MAX_ADTS_SAMPLES: usize = 1 << 30;
@@ -1353,5 +1438,18 @@ mod gapless_tests {
     fn mp3_encoder_delay_is_trimmed() {
         let src = AudioFileSource::decode("tagged.mp3", Arc::from(tagged_mp3())).unwrap();
         assert_eq!(src.samples[0].len(), AUDIO_FRAMES * 1152 - (576 + 529));
+    }
+}
+
+#[cfg(test)]
+mod pre_roll_tests {
+    use super::*;
+
+    /// DTS-HD smoothing delays lossless frames behind a sync point: one packet of pre-roll left a
+    /// seek inside the delay silent.
+    #[test]
+    fn dts_primes_more_than_one_packet() {
+        assert_eq!(PacketDecoder::dts().pre_roll_packets(), DTS_PRE_ROLL_PACKETS);
+        assert_eq!(PacketDecoder::lazy_aac().pre_roll_packets(), 1);
     }
 }
