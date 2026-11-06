@@ -123,7 +123,8 @@ fn run_ffmpeg(ff: &Path, args: &[&str], out: &Path) -> bool {
     }
 }
 
-/// Chapters of the `chapters.mp4` fixture (ffmpeg writes them as `chpl` and a QuickTime text track).
+/// Chapters of the `chapters.mp4` and `chapters.mov` fixtures (ffmpeg writes them as `chpl` and/or a
+/// QuickTime text track).
 pub const CHAPTERS_FFMETADATA: &str =
     ";FFMETADATA1\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=0\nEND=1500\ntitle=Első\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=1500\nEND=2000\ntitle=Two\n";
 
@@ -140,7 +141,7 @@ pub fn fixture(name: &str) -> Option<PathBuf> {
         let s = src.to_str()?.to_string();
         return run_ffmpeg(&ff, &["-ss", "0.5", "-i", &s, "-c", "copy"], &path).then_some(path);
     }
-    if name == "chapters.mp4" {
+    if name == "chapters.mp4" || name == "chapters.mov" {
         let meta = fixture_dir().join("chapters.ffmetadata");
         std::fs::write(&meta, CHAPTERS_FFMETADATA).ok()?;
         let m = meta.to_str()?.to_string();
@@ -156,6 +157,7 @@ pub fn all_fixture_names() -> Vec<&'static str> {
     let mut v: Vec<&str> = fixture_specs().iter().map(|(n, _)| *n).collect();
     v.push("editlist_cut.mp4");
     v.push("chapters.mp4");
+    v.push("chapters.mov");
     v
 }
 
