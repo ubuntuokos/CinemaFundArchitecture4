@@ -505,6 +505,9 @@ pub struct ExportSettings {
     pub caption_sidecar: Option<String>,
     pub effects: ExportEffects,
     pub metadata: ExportMetadata,
+    /// Write the sequence's Chapter markers inside the export range as chapters of MP4, MOV,
+    /// M4A and HLS output (`chpl`). On by default.
+    pub chapters: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
     pub h264_pass: H264Pass,
@@ -515,6 +518,10 @@ pub struct ExportSettings {
     /// writing `path` (hosts without a filesystem: the web app offers the file as a download).
     #[serde(skip)]
     pub sink: Option<OutputSink>,
+    /// An already-created primary output file. Internal callers use this to retain an exclusive
+    /// reservation made while choosing an output name, rather than reopening that path later.
+    #[serde(skip)]
+    pub output_file: Option<Arc<std::fs::File>>,
 }
 
 /// Receives in-memory export output: `(path, bytes)` per finished file.
@@ -541,6 +548,10 @@ enum Out {
 
 impl Out {
     fn create(settings: &ExportSettings) -> Result<Out> {
+        if let Some(file) = &settings.output_file {
+            let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
+            return Ok(Out::File(std::io::BufWriter::new(file)));
+        }
         Out::create_path(settings, &settings.path)
     }
 
@@ -548,6 +559,12 @@ impl Out {
     fn create_path(settings: &ExportSettings, path: &str) -> Result<Out> {
         if settings.sink.is_some() {
             return Ok(Out::Mem(std::io::Cursor::new(Vec::new())));
+        }
+        if path == settings.path
+            && let Some(file) = &settings.output_file
+        {
+            let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
+            return Ok(Out::File(std::io::BufWriter::new(file)));
         }
         let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
@@ -706,9 +723,11 @@ impl Default for ExportSettings {
             caption_sidecar: None,
             effects: ExportEffects::default(),
             metadata: ExportMetadata::default(),
+            chapters: true,
             h264_pass: H264Pass::Single,
             signal: ColorSignal::default(),
             sink: None,
+            output_file: None,
         }
     }
 }
@@ -2427,6 +2446,31 @@ fn av1_factory(format: Format, w: u32, h: u32, rate: FrameRate, s: &ExportSettin
 }
 
 /// The range to export (settings → In/Out → whole sequence).
+/// The chapters of an export of `range`: the sequence's [`MarkerKind::Chapter`] markers that start
+/// inside it, in time order, measured from its start in 100 ns units (the `chpl` time base). A
+/// marker without a name takes its comment, else "Chapter N". Empty when `settings.chapters` is
+/// off.
+///
+/// [`MarkerKind::Chapter`]: cfa4_project::MarkerKind::Chapter
+pub fn export_chapters(project: &Project, seq: ItemId, settings: &ExportSettings, range: TimeRange) -> Vec<cfa4_isobmff::Chapter> {
+    let Some(q) = project.sequence(seq).filter(|_| settings.chapters) else { return Vec::new() };
+    let end = range.start.0.saturating_add(range.duration.0);
+    let mut marks: Vec<&cfa4_project::Marker> =
+        q.markers.iter().filter(|m| m.kind == cfa4_project::MarkerKind::Chapter && m.start.0 >= range.start.0 && m.start.0 < end).collect();
+    marks.sort_by_key(|m| m.start.0);
+    marks
+        .into_iter()
+        .enumerate()
+        .map(|(i, m)| {
+            let offset = i128::from(m.start.0) - i128::from(range.start.0);
+            let start_100ns = offset * 10_000_000 / i128::from(cfa4_time::TICKS_PER_SECOND);
+            let title =
+                [m.name.trim(), m.comment.trim()].into_iter().find(|s| !s.is_empty()).map(str::to_string).unwrap_or_else(|| format!("Chapter {}", i + 1));
+            cfa4_isobmff::Chapter { start_100ns: u64::try_from(start_100ns).unwrap_or(0), title }
+        })
+        .collect()
+}
+
 pub fn export_range(project: &Project, seq: ItemId, settings: &ExportSettings) -> Result<TimeRange> {
     let q = project.sequence(seq).ok_or(ExportError::NoSequence)?;
     q.check_bounds().map_err(ExportError::Unsupported)?;
