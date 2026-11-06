@@ -88,10 +88,7 @@ fn premiere_table_has_no_dangling_ids_or_new_conflicts() {
         );
     }
     for (id, _, _) in presets::CFA4_PANEL.iter().chain(presets::PREMIERE_PANEL) {
-        assert!(
-            cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id) || presets::QT_ONLY.contains(&id),
-            "panel table: `{id}` is not a command"
-        );
+        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id) || presets::QT_ONLY.contains(id), "panel table: `{id}` is not a command");
     }
     let mut s = Session::default();
     s.shortcuts.register_external(cfa4_ui_egui::menus::external_commands());
