@@ -518,6 +518,7 @@ pub struct ExportSettings {
     pub sink: Option<OutputSink>,
     /// An already-created primary output file. Internal callers use this to retain an exclusive
     /// reservation made while choosing an output name, rather than reopening that path later.
+    /// MP4 video outputs require read and write access for fast-start finalization.
     #[serde(skip)]
     pub output_file: Option<Arc<std::fs::File>>,
 }
@@ -564,7 +565,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let f = std::fs::OpenOptions::new()
+            .read(settings.format.is_mp4_with(settings.multiplexer))
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
     }
 
@@ -606,6 +613,20 @@ impl Write for Out {
         match self {
             Out::File(w) => w.flush(),
             Out::Mem(w) => w.flush(),
+        }
+    }
+}
+
+impl std::io::Read for Out {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Out::File(w) => {
+                // Fast-start muxing reads media back to shift it in place. Commit buffered
+                // writes before reading through the same file handle and cursor.
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
+            Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
 }

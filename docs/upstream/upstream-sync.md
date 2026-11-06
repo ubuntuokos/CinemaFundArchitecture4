@@ -71,14 +71,14 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3594 | File safety: Make Offline with deleteFiles only removes the media file the item was linked to | A | átvesz | kézi port | U0-A4 | – | tervezett |
 | 0.15.0 | #3659 | Reject out-of-range SCC timecode fields | A | átvesz | kézi port | U0-A3 | – | tervezett |
 | 0.15.0 | #3347 | speech: a pause inside a word's span ends the word (#3346) | B | átvesz | kézi port | U0-B | – | tervezett |
-| 0.15.0 | #3405 | engine: Duplicate puts the copy in the bin of its source (#3368) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3405 | engine: Duplicate puts the copy in the bin of its source (#3368) | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.15.0 | #3409 | engine: effects.addKeyframe keeps an explicit time at the out point and says what it did (#3386) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3416 | Shorten atomic_write temp names so long project names still save | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3423 | Export: preserve optional binary transparency in animated GIFs (#3396) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3432 | Strip UTF-8 byte order mark when parsing .cube LUT files | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3440 | Fix trim_caption moving edges of captions shorter than one frame | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | – | tervezett |
-| 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.15.0 | #3471 | frame: move rotated chroma buffers instead of cloning (#3468) | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3474 | Media cache: a folder of its own inside a custom location (fixes #2772) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3565 | Fix graphics template width scaling across canvas sizes (#3415) | B | átvesz | tisztán | U0-B | – | tervezett |
@@ -128,7 +128,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2597 | Centre Transform's auto points in the clip's picture on apply and reset (#2588) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.14.0 | #2638 | Stop writing an empty ref for FCPXML titles and adjustment layers | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.14.0 | #2653 | Stop writing an empty ref for FCPXML titles and adjustment layers (#2638) | B | átvesz | kézi port | U0-B | – | tervezett |
-| 0.14.0 | #3190 | Stop reading on-the-hour times with a spurious "zero" | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.14.0 | #3190 | Stop reading on-the-hour times with a spurious "zero" | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.14.0 | #3216 | frame: 10-bit Y'CbCr normalisation through per-code tables | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.14.0 | #3229 | Fit typewriter transition grid and caret to the layer's content | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.14.0 | #3235 | Enable only the Alt-selected side of a linked clip | B | átvesz | tisztán | U0-B | – | tervezett |
@@ -250,7 +250,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3081 | security(codecs): validate VP9 empty tiles and AV1 film grain scaling points | A | átvesz | tisztán | U0-A1 | – | tervezett |
 | 0.13.0 | #3082 | security(audio): bound sequence sample rates and AAF/OMF export channel buffers | A | átvesz | tisztán | U0-A3 | – | tervezett |
 | 0.13.0 | #3083 | security(engine): require local trust for ingest destinations | A | átvesz | tisztán | U0-A4 | – | tervezett |
-| 0.13.0 | #2586 | Escape tab/newline/CR in XML attribute values | B | átvesz | tisztán | U0-B | – | tervezett |
+| 0.13.0 | #2586 | Escape tab/newline/CR in XML attribute values | B | átvesz | tisztán | U0-B | #610 | PR nyitva |
 | 0.13.0 | #2601 | Fix false overlaps for empty time ranges | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.13.0 | #2629 | Keep WebVTT cues whose identifier starts with NOTE | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.13.0 | #2662 | Use chrono instead of hand-rolled UTC conversion | B | átvesz | kézi port | U0-B | – | tervezett |
@@ -260,7 +260,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #2992 | HEVC2797: share immutable gray rows across unavailable references | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.13.0 | #2993 | REC2792: retain recovery candidates when discard fails | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.13.0 | #2995 | Only materialise kept frames when filling an H.264 frame_num gap | B | átvesz | kézi port | U0-B | – | tervezett |
-| 0.13.0 | #3004 | control: preserve MCP pointer input defaults (#2784) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.13.0 | #3004 | control: preserve MCP pointer input defaults (#2784) | B | átvesz | kézi port | U0-B | #610 | PR nyitva |
 | 0.13.0 | #3072 | Don't treat pieces with different settings as through edits | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.13.0 | #3088 | Keep WebVTT cues whose identifier is STYLE or REGION | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.13.0 | #3236 | Timeline: a transition stays within its clips after a regular trim | B | átvesz | tisztán | U0-B | – | tervezett |
@@ -310,7 +310,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.11.0 | #2723 | security: validate CLI paths/args in dev tools (SonarCloud S2083/S8707/S8705) | A | átvesz | kézi port | U0-A1 | – | tervezett |
 | 0.11.0 | #1955 | Order auto-saves by real time so rotation keeps the newest | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.11.0 | #2388 | #2342: CLI file.exportMedia waits for the export before the process exits | B | átvesz | tisztán | U0-B | – | tervezett |
-| 0.11.0 | #2724 | fix: use async file I/O in async MCP screenshot handler (SonarCloud rust:S7493) | B | átvesz | tisztán | U0-B | – | tervezett |
+| 0.11.0 | #2724 | fix: use async file I/O in async MCP screenshot handler (SonarCloud rust:S7493) | B | átvesz | tisztán | U0-B | #610 | PR nyitva |
 | 0.11.0 | #2555 | Re-open a failed audio output while playing instead of going silent for good | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.11.0 | #1943 | fix(macos): ask to save on Cmd-Q instead of quitting outright | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.11.0 | #2006 | fix(macos): ask to save on Cmd-Q instead of quitting outright (#1943) | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
