@@ -503,8 +503,9 @@ pub struct ExportSettings {
     pub caption_sidecar: Option<String>,
     pub effects: ExportEffects,
     pub metadata: ExportMetadata,
-    /// Write the sequence's Chapter markers inside the export range as chapters of MP4, MOV,
-    /// M4A and HLS output (`chpl`). On by default.
+    /// Write the sequence's Chapter markers inside the export range as chapters: `chpl` plus a
+    /// QuickTime chapter track in MP4, MOV and M4A, `chpl` in the HLS init segments, Matroska
+    /// chapters in WebM. On by default.
     pub chapters: bool,
     /// Two-pass state (set by the exporter).
     #[serde(skip)]
