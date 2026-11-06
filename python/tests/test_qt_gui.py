@@ -10191,3 +10191,56 @@ def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path:
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_split_marks_as_egui(app, tmp_path: Path):
+    """egui's split edit points on the Timeline ruler (Markers ▸ Mark Split): a bracket with a V
+    (video, above) or A (audio, below) tag, an In on its frame's left edge and an Out on its right
+    edge, named ``timeline.split.videoIn`` / ``videoOut`` / ``audioIn`` / ``audioOut``."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import SPLIT_COLOR
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.zoom_to_fit()
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.split."})["result"]}
+
+        assert els() == {}
+        fd = canvas.frame_ticks()
+        vin, aout = 48 * fd, 96 * fd
+        assert c.call("engine.execute", {"command": "markers.markSplitVideoIn", "params": {"time": vin}})["ok"]
+        assert c.call("engine.execute", {"command": "markers.markSplitAudioOut", "params": {"time": aout}})["ok"]
+        win.schedule_refresh()
+        assert wait_until(app, lambda: set(els()) == {"timeline.split.videoIn", "timeline.split.audioOut"}, 10_000), els()
+        e = els()
+        assert e["timeline.split.videoIn"]["label"] == "Split V In"
+        assert e["timeline.split.audioOut"]["label"] == "Split A Out"
+        marks = {pid: (x, top) for pid, x, top, _in, _tag in canvas.split_marks()}
+        assert abs(marks["timeline.split.videoIn"][0] - canvas.x_of(vin)) < 0.01
+        assert abs(marks["timeline.split.audioOut"][0] - canvas.x_of(aout + fd)) < 0.01
+        assert marks["timeline.split.videoIn"][1] < marks["timeline.split.audioOut"][1]  # video above
+        img = canvas.grab().toImage()
+        dpr = img.devicePixelRatio()
+        x, top = marks["timeline.split.videoIn"]
+        col = img.pixelColor(round(x * dpr), int((top + 4) * dpr))
+        want = QtGui.QColor(SPLIT_COLOR)
+        assert abs(col.red() - want.red()) < 40 and abs(col.green() - want.green()) < 40, col.name()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

@@ -94,6 +94,16 @@ SNAP_PX = 8
 TRANSITION_TOP = 17  # a transition covers its row under the clips' name strip (egui's)
 TRANSITION_EDGE_PX = 7  # how far into a transition from either end a press grabs that end
 
+# split edit points on the ruler (egui's): a short bracket with a V or A tag, video above, audio
+# below; (field of the sequence's ``split``, is an In, tag, automation id)
+SPLIT_MARKS = (
+    ("videoIn", True, "V", "timeline.split.videoIn"),
+    ("videoOut", False, "V", "timeline.split.videoOut"),
+    ("audioIn", True, "A", "timeline.split.audioIn"),
+    ("audioOut", False, "A", "timeline.split.audioOut"),
+)
+SPLIT_COLOR = "#d0d0d0"
+
 # label names (engine colour labels) -> display colour
 LABEL_COLORS = {
     "violet": "#8f6fd8",
@@ -897,6 +907,40 @@ class TimelineCanvas(QWidget):
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
                     T.c("in_out_shade"),
                 )
+        self._paint_split_marks(p)
+
+    def split_marks(self) -> list[tuple[str, float, float, bool, str]]:
+        """The sequence's split edit points in view: (automation id, x, top, is an In, tag). An In
+        sits on its frame's left edge, an Out on its frame's right edge (egui's)."""
+        split = (self.sequence or {}).get("split")
+        if not isinstance(split, dict):
+            return []
+        out = []
+        for key, is_in, tag, pid in SPLIT_MARKS:
+            t = split.get(key)
+            if not isinstance(t, int):
+                continue
+            x = self.x_of(t if is_in else t + self.frame_ticks())
+            if x < HEADER_W:
+                continue
+            top = 3.0 if tag == "V" else RULER_H - 10.0
+            out.append((pid, x, top, is_in, tag))
+        return out
+
+    def _paint_split_marks(self, p: QPainter) -> None:
+        col = QColor(SPLIT_COLOR)
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        font = QFont(self.font_small)
+        font.setPixelSize(9)
+        p.setFont(font)
+        for _pid, x, top, is_in, tag in self.split_marks():
+            dx = 4.0 if is_in else -4.0
+            p.setPen(QPen(col, 1.5))
+            p.drawLine(QPointF(x, top), QPointF(x, top + 7.0))
+            p.drawLine(QPointF(x, top), QPointF(x + dx, top))
+            p.drawText(QRectF(x + 2 * dx - 5, top - 1.5, 10, 10), Qt.AlignmentFlag.AlignCenter, tag)
+        p.restore()
 
     # ----- markers (egui's timeline_hit.rs marker_rect / marker_range_rect) -----
     def marker_rect(self, marker: dict[str, Any]) -> QRectF:
@@ -957,6 +1001,9 @@ class TimelineCanvas(QWidget):
                 if band is not None:
                     out.append((f"timeline.markerRange.{m['id']}", band.intersected(ruler), str(m.get("name") or "")))
                 out.append((f"timeline.marker.{m['id']}", self.marker_rect(m).intersected(ruler), str(m.get("name") or "")))
+        for pid, x, top, is_in, tag in self.split_marks():
+            side = "In" if is_in else "Out"
+            out.append((pid, QRectF(x - 6, top - 1, 12, 9).intersected(ruler), f"Split {tag} {side}"))
         for i, row in enumerate(self.rows):
             for c in self.header_cells(row):
                 key = "sourcePatch" if c.key == "patch" else c.key
