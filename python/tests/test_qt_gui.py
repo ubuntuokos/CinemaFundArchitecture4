@@ -4916,90 +4916,6 @@ def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
-def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
-    """upstream #3212: Show Duplicate Frame Markers (Timeline Display Settings) draws a stripe in
-    each clip under the media frames another video clip also shows; off again, none."""
-    from cfa4_qt.main_window import MainWindow
-    from cfa4_qt.panels import timeline as tl
-def test_real_engine_transparency_grid_asks_for_the_frame_alpha(app, tmp_path: Path):
-    """upstream #3233: with the Transparency Grid on, the Program monitor asks for the frame with
-    its alpha and shows it over the checkerboard; off again, the opaque picture."""
-    from cfa4_qt.main_window import MainWindow
-
-    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
-    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
-    win = MainWindow(engine, settings)
-    win.resize(1600, 1000)
-    win.show()
-    engine.start()
-    canvas = win.timeline.canvas
-
-    def v1():
-        return next(r for r in canvas.rows if r.short == "V1")
-
-    def toggle():
-        menu = canvas.display_menu()
-        return next(a for a in menu.actions() if a.objectName() == "timeline.settings.showDuplicateFrameMarkers")
-
-    try:
-        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
-        canvas.setMinimumHeight(480)
-        canvas.zoom_to_fit()
-        wait_until(app, lambda: False, 200)
-        # a frame shown twice: the first clip cut in two halves, both halves showing the same media
-        first = v1().track["items"][0]
-        win.execute("timeline.select", {"clips": [first["clip"]]})
-        win.execute("edit.copy", {})
-        win.execute("playhead.set", {"time": int(first["start"])})
-        win.execute("edit.pasteInsert", {})
-        assert wait_until(app, lambda: len(v1().track["items"]) >= 2 and v1().track["items"][1]["item"] == first["item"], 10_000)
-        assert not toggle().isChecked() and canvas.duplicate_frames() == {}
-        toggle().trigger()
-        assert wait_until(app, lambda: len(canvas.duplicate_frames()) >= 2, 10_000), (win.sequence or {}).get("duplicateFrames")
-        a, b = (c["clip"] for c in v1().track["items"][:2])
-        dup = canvas.duplicate_frames()
-        assert a in dup and b in dup and dup[a][0] == dup[b][0], dup
-        # drawn: the stripe along the bottom of the first clip, in its color
-        r = canvas.clip_rect(v1(), v1().track["items"][0])
-        img = canvas.grab().toImage()
-        c = img.pixelColor(int(r.center().x()), int(r.bottom() - 2.5))  # (inside the stripe, above the border)
-        want = QtGui.QColor(tl.DUPLICATE_FRAME_COLORS[dup[a][0]])
-        assert abs(c.red() - want.red()) + abs(c.green() - want.green()) + abs(c.blue() - want.blue()) < 30, (c.name(), want.name())
-        assert toggle().isChecked()
-        toggle().trigger()
-        assert wait_until(app, lambda: canvas.duplicate_frames() == {}, 10_000)
-    finally:
-    win.resize(1400, 900)
-    win.show()
-    engine.start()
-    mon = win.monitor
-    asked: list[dict] = []
-    call = engine.call
-
-    def spy(cmd, params=None, *a, **k):
-        if cmd == "frame.render":
-            asked.append(dict(params or {}))
-        return call(cmd, params, *a, **k)
-
-    engine.call = spy
-    premul = QtGui.QImage.Format.Format_RGBA8888_Premultiplied
-    try:
-        assert wait_until(app, lambda: win.sequence is not None and mon.view.image is not None, 60_000)
-        assert mon.view.image.format() != premul
-        mon.set_view(transparency_grid=True)
-        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.format() == premul, 20_000)
-        assert any(a.get("alpha") is True for a in asked)
-        mon.view.grab()  # draws over the checkerboard
-        mon.set_view(transparency_grid=False)
-        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.format() != premul, 20_000)
-    finally:
-        engine.call = call
-        win._quit_confirmed = True
-        win.close()
-        engine.stop()
-
-
-@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
     """egui's Volume line on audio clips: drawn on the fader scale, dragging it changes the level,
     Ctrl-click adds a keyframe, a keyframe drags in time and level, right-click deletes it."""
@@ -9926,31 +9842,6 @@ def test_a_saved_monitor_view_with_huge_or_odd_numbers_loads_the_default_view(ap
             assert (v.zoom, v.pan) == (None, [0.0, 0.0])
 
 
-def test_transparency_grid_paints_a_checkerboard_and_keeps_its_setting(app):
-    """upstream #3233: the Transparency Grid is a white and light gray checkerboard (8 px squares,
-    anchored to the picture) behind a frame that comes with its alpha; each monitor keeps it."""
-    from cfa4_qt.panels.monitor import GRID_DARK, GRID_LIGHT, frame_format, paint_transparency_grid
-    from cfa4_qt.panels.monitor_view import MonitorView
-
-    img = QtGui.QImage(40, 40, QtGui.QImage.Format.Format_RGB32)
-    img.fill(QtGui.QColor("black"))
-    p = QtGui.QPainter(img)
-    paint_transparency_grid(p, QtCore.QRectF(4, 4, 32, 32), QtCore.QRectF(0, 0, 40, 40))
-    p.end()
-    assert img.pixelColor(5, 5) == GRID_LIGHT and img.pixelColor(13, 5) == GRID_DARK and img.pixelColor(13, 13) == GRID_LIGHT
-    assert img.pixelColor(1, 1) == QtGui.QColor("black"), "only behind the picture"
-    # a huge zoom draws a bounded number of squares, without hanging
-    big = QtGui.QImage(10, 10, QtGui.QImage.Format.Format_RGB32)
-    p = QtGui.QPainter(big)
-    paint_transparency_grid(p, QtCore.QRectF(0, 0, 1e7, 1e7), QtCore.QRectF(0, 0, 1e6, 1e6))
-    p.end()
-    assert frame_format(True) == QtGui.QImage.Format.Format_RGBA8888_Premultiplied
-    assert frame_format(False) == QtGui.QImage.Format.Format_RGBA8888
-    v = MonitorView.from_dict({"transparency_grid": True})
-    assert v.transparency_grid and not MonitorView().transparency_grid
-    assert MonitorView.from_dict({"transparency_grid": "x"}).transparency_grid is True  # (as other switches)
-
-
 def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
     """Snap in Program Monitor: moving an object on the Program monitor snaps its edges or
     centre to the frame's edges / centre and the shown guides (Codex review on #214)."""
@@ -10213,12 +10104,6 @@ def test_real_engine_rolling_edit_drag_stops_at_the_rolls_limit(app, tmp_path: P
     pointer; on release the cut lands there."""
     from cfa4_qt.main_window import MainWindow
     from PySide6.QtCore import Qt
-def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_path: Path):
-    """The Audio Track Mixer menu's Show/Hide Tracks… and Meter Input(s) Only are the commands
-    `mixer.showHideTracks` and `mixer.meterInputOnly` (upstream #3227): Keyboard Shortcuts lists
-    them, the first opens the track list on the mixer, the second toggles (or sets `on`), and a
-    key given with the mixer focused shows beside its menu entry."""
-    from cfa4_qt.main_window import MainWindow
 
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
@@ -10278,6 +10163,143 @@ def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_
         assert wait_until(app, lambda: v1().track["items"][0]["end"] == mid + want[0], 10_000), v1().track["items"][:2]
     finally:
         win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
+    """upstream #3212: Show Duplicate Frame Markers (Timeline Display Settings) draws a stripe in
+    each clip under the media frames another video clip also shows; off again, none."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def toggle():
+        menu = canvas.display_menu()
+        return next(a for a in menu.actions() if a.objectName() == "timeline.settings.showDuplicateFrameMarkers")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # a frame shown twice: the first clip cut in two halves, both halves showing the same media
+        first = v1().track["items"][0]
+        win.execute("timeline.select", {"clips": [first["clip"]]})
+        win.execute("edit.copy", {})
+        win.execute("playhead.set", {"time": int(first["start"])})
+        win.execute("edit.pasteInsert", {})
+        assert wait_until(app, lambda: len(v1().track["items"]) >= 2 and v1().track["items"][1]["item"] == first["item"], 10_000)
+        assert not toggle().isChecked() and canvas.duplicate_frames() == {}
+        toggle().trigger()
+        assert wait_until(app, lambda: len(canvas.duplicate_frames()) >= 2, 10_000), (win.sequence or {}).get("duplicateFrames")
+        a, b = (c["clip"] for c in v1().track["items"][:2])
+        dup = canvas.duplicate_frames()
+        assert a in dup and b in dup and dup[a][0] == dup[b][0], dup
+        # drawn: the stripe along the bottom of the first clip, in its color
+        r = canvas.clip_rect(v1(), v1().track["items"][0])
+        img = canvas.grab().toImage()
+        c = img.pixelColor(int(r.center().x()), int(r.bottom() - 2.5))  # (inside the stripe, above the border)
+        want = QtGui.QColor(tl.DUPLICATE_FRAME_COLORS[dup[a][0]])
+        assert abs(c.red() - want.red()) + abs(c.green() - want.green()) + abs(c.blue() - want.blue()) < 30, (c.name(), want.name())
+        assert toggle().isChecked()
+        toggle().trigger()
+        assert wait_until(app, lambda: canvas.duplicate_frames() == {}, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_transparency_grid_asks_for_the_frame_alpha(app, tmp_path: Path):
+    """upstream #3233: with the Transparency Grid on, the Program monitor asks for the frame with
+    its alpha and shows it over the checkerboard; off again, the opaque picture."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    mon = win.monitor
+    asked: list[dict] = []
+    call = engine.call
+
+    def spy(cmd, params=None, *a, **k):
+        if cmd == "frame.render":
+            asked.append(dict(params or {}))
+        return call(cmd, params, *a, **k)
+
+    engine.call = spy
+    premul = QtGui.QImage.Format.Format_RGBA8888_Premultiplied
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and mon.view.image is not None, 60_000)
+        assert mon.view.image.format() != premul
+        mon.set_view(transparency_grid=True)
+        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.format() == premul, 20_000)
+        assert any(a.get("alpha") is True for a in asked)
+        mon.view.grab()  # draws over the checkerboard
+        mon.set_view(transparency_grid=False)
+        assert wait_until(app, lambda: mon.view.image is not None and mon.view.image.format() != premul, 20_000)
+    finally:
+        engine.call = call
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_transparency_grid_paints_a_checkerboard_and_keeps_its_setting(app):
+    """upstream #3233: the Transparency Grid is a white and light gray checkerboard (8 px squares,
+    anchored to the picture) behind a frame that comes with its alpha; each monitor keeps it."""
+    from cfa4_qt.panels.monitor import GRID_DARK, GRID_LIGHT, frame_format, paint_transparency_grid
+    from cfa4_qt.panels.monitor_view import MonitorView
+
+    img = QtGui.QImage(40, 40, QtGui.QImage.Format.Format_RGB32)
+    img.fill(QtGui.QColor("black"))
+    p = QtGui.QPainter(img)
+    paint_transparency_grid(p, QtCore.QRectF(4, 4, 32, 32), QtCore.QRectF(0, 0, 40, 40))
+    p.end()
+    assert img.pixelColor(5, 5) == GRID_LIGHT and img.pixelColor(13, 5) == GRID_DARK and img.pixelColor(13, 13) == GRID_LIGHT
+    assert img.pixelColor(1, 1) == QtGui.QColor("black"), "only behind the picture"
+    # a huge zoom draws a bounded number of squares, without hanging
+    big = QtGui.QImage(10, 10, QtGui.QImage.Format.Format_RGB32)
+    p = QtGui.QPainter(big)
+    paint_transparency_grid(p, QtCore.QRectF(0, 0, 1e7, 1e7), QtCore.QRectF(0, 0, 1e6, 1e6))
+    p.end()
+    assert frame_format(True) == QtGui.QImage.Format.Format_RGBA8888_Premultiplied
+    assert frame_format(False) == QtGui.QImage.Format.Format_RGBA8888
+    v = MonitorView.from_dict({"transparency_grid": True})
+    assert v.transparency_grid and not MonitorView().transparency_grid
+    assert MonitorView.from_dict({"transparency_grid": "x"}).transparency_grid is True  # (as other switches)
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_path: Path):
+    """The Audio Track Mixer menu's Show/Hide Tracks… and Meter Input(s) Only are the commands
+    `mixer.showHideTracks` and `mixer.meterInputOnly` (upstream #3227): Keyboard Shortcuts lists
+    them, the first opens the track list on the mixer, the second toggles (or sets `on`), and a
+    key given with the mixer focused shows beside its menu entry."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
     mixer = win.mixer
     try:
         assert wait_until(app, lambda: win.sequence is not None and win.local_keys is not None, 60_000)
