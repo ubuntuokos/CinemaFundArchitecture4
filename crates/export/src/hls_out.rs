@@ -79,6 +79,8 @@ pub(crate) struct HlsSetup<'a> {
     /// The B-frame delay in the video timescale: subtracted from composition offsets so that the
     /// first picture is presented at 0.
     pub video_delay: i64,
+    /// Chapters written to the init segment (`moov/udta/chpl`).
+    pub chapters: Vec<cfa4_isobmff::Chapter>,
     /// The audio sample entry, sample rate and encoder delay (priming) in samples.
     pub audio: Option<(SampleEntry, u32, u32)>,
 }
@@ -124,6 +126,7 @@ impl HlsMux {
         let files = hls_files(&s.settings.path, s.height);
         let mut opts = WriterOptions::new(Brand::Mp4);
         opts.metadata = s.settings.metadata.udta();
+        opts.chapters = s.chapters;
         let mut frag = FragmentedWriter::new(Vec::new(), opts);
         let mut codecs = video_codecs(&s.video);
         let vt = frag.add_track(TrackConfig::new(s.video, s.video_timescale)).map_err(mux_err)?;

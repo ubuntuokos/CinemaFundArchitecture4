@@ -528,7 +528,8 @@ fn encoded_codestreams_decode_in_openjpeg_and_ffmpeg() {
         let data = cfa4_j2k::encode(img, &opts).unwrap_or_else(|e| panic!("{name}: {e}"));
         let ours = cfa4_j2k::decode(&data).unwrap();
         if lossless {
-            assert_eq!(&ours, img, "{name}: our decode");
+            // `mct` records how the stream was coded; the samples are what must round-trip
+            assert_eq!((ours.width, ours.height, &ours.components), (img.width, img.height, &img.components), "{name}: our decode");
         }
         let (cs, out) = (dir.join(format!("{name}.j2c")), dir.join(format!("{name}.rawl")));
         std::fs::write(&cs, &data).unwrap();
