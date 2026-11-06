@@ -152,6 +152,25 @@ class HeaderCell:
 
 
 # track header switches: (key, label, tooltip) per kind, left to right after patch and target
+# a track's colour label (egui #1186): the strip at the header's left edge opens the colour menu,
+# the colour fills 5 px of it and tints the header and the lane (the switches start right after it)
+COLOR_STRIP_W = 8
+TRACK_HEADER_TINT = 0.18
+TRACK_LANE_TINT = 0.10
+
+
+def track_label_color(track: dict[str, Any]) -> QColor | None:
+    """The colour of a track's label (``label`` from ``sequence.inspect``), or None without one."""
+    name = str(track.get("label") or "").lower()
+    return QColor(LABEL_COLORS[name]) if name in LABEL_COLORS else None
+
+
+def tint(c: QColor, alpha: float) -> QColor:
+    t = QColor(c)
+    t.setAlphaF(alpha)
+    return t
+
+
 HEADER_SWITCHES = {
     "video": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("enabled", "", N_("Toggle Track Output"))),
     "audio": (("locked", "", N_("Toggle Track Lock")), ("syncLock", "⇄", N_("Toggle Sync Lock")), ("muted", "M", N_("Mute Track")), ("solo", "S", N_("Solo Track"))),
@@ -448,6 +467,7 @@ class TimelineCanvas(QWidget):
         self.last_dialog: QDialog | None = None
         # the main window: runs the context menus' commands, knows which are enabled
         self.menu_host: timeline_menus.MenuHost | None = None
+        self._hover_color: Any = None  # the track whose colour strip the pointer is over
         self.last_menu: QMenu | None = None
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
@@ -695,6 +715,9 @@ class TimelineCanvas(QWidget):
         for row in self.rows:
             band = QRect(HEADER_W, row.top, self.width() - HEADER_W, row.height)
             p.fillRect(band, T.c("tl_track_bg_alt") if row.kind == "video" else T.c("tl_track_bg"))
+            lc = track_label_color(row.track)
+            if lc is not None:
+                p.fillRect(band, tint(lc, TRACK_LANE_TINT))
             p.setPen(QPen(T.c("separator")))
             p.drawLine(HEADER_W, row.top + row.height - 1, self.width(), row.top + row.height - 1)
             if row.track.get("locked"):
@@ -995,11 +1018,13 @@ class TimelineCanvas(QWidget):
         t = (self.sequence or {}).get("targeting") or {}
         dest = t.get("videoDest") if row.kind == "video" else t.get("audioDest")
         y = row.top + (row.height - CELL) // 2
+        x0 = COLOR_STRIP_W
         cells = [
-            HeaderCell("patch", QRect(4, y, CELL + 4, CELL), row.short if dest == row.track_id else "", dest == row.track_id, tr("Source patch")),
-            HeaderCell("target", QRect(30, y, CELL + 4, CELL), row.short, row.track_id in (t.get("targeted") or []), tr("Toggle track targeting")),
+            HeaderCell("color", QRect(0, row.top, COLOR_STRIP_W, row.height), "", track_label_color(row.track) is not None, tr("Track Color")),
+            HeaderCell("patch", QRect(x0, y, CELL + 4, CELL), row.short if dest == row.track_id else "", dest == row.track_id, tr("Source patch")),
+            HeaderCell("target", QRect(x0 + 26, y, CELL + 4, CELL), row.short, row.track_id in (t.get("targeted") or []), tr("Toggle track targeting")),
         ]
-        x = 58
+        x = x0 + 54
         for key, text, tip in HEADER_SWITCHES[row.kind]:
             value = row.track.get(key)
             on = bool(value) if key != "enabled" else value is not False
@@ -1260,8 +1285,18 @@ class TimelineCanvas(QWidget):
         for row in self.rows:
             r = QRect(0, row.top, HEADER_W - 1, row.height)
             p.fillRect(r.adjusted(2, 1, -2, -1), pal.button())
+            lc = track_label_color(row.track)
+            if lc is not None:
+                p.fillRect(r, tint(lc, TRACK_HEADER_TINT))
             cells = self.header_cells(row)
             for c in cells:
+                if c.key == "color":
+                    strip = QRect(c.rect.left(), c.rect.top(), 5, c.rect.height())
+                    if lc is not None:
+                        p.fillRect(strip, lc)
+                    elif self._hover_color == row.track_id:
+                        p.fillRect(strip, T.c("hover"))
+                    continue
                 if c.key in ("patch", "target"):
                     if c.on:
                         p.fillRect(c.rect, accent)
@@ -1340,7 +1375,30 @@ class TimelineCanvas(QWidget):
             return None, None
         return row, next((c for c in self.header_cells(row) if c.rect.contains(pos)), None)
 
+    def track_color_menu(self, row: Row) -> QMenu:
+        """egui's Track Color menu: None, then the label colours (``timeline.track.<V1>.color.<Label>``)."""
+        prefix = f"timeline.track.{row.short}.color"
+        menu = QMenu(self)
+        menu.setObjectName(f"{prefix}.menu")
+        current = str(row.track.get("label") or "").lower()
+        a = menu.addAction(tr("None"))
+        a.setObjectName(f"{prefix}.None")
+        a.setCheckable(True)
+        a.setChecked(not current)
+        a.triggered.connect(lambda _c=False: self.command.emit("timeline.setTrack", {"track": row.track_id, "label": ""}))
+        for name, color in LABEL_COLORS.items():
+            title = name.capitalize()
+            a = menu.addAction(timeline_menus.swatch(color), tr(title))
+            a.setObjectName(f"{prefix}.{title}")
+            a.setCheckable(True)
+            a.setChecked(current == name)
+            a.triggered.connect(lambda _c=False, t=title: self.command.emit("timeline.setTrack", {"track": row.track_id, "label": t}))
+        return menu
+
     def _press_header(self, row: Row, cell: HeaderCell) -> None:
+        if cell.key == "color":
+            self._popup(self.track_color_menu(row), self.mapToGlobal(cell.rect.bottomLeft()))
+            return
         if cell.key == "keyframes":
             self._popup(self.lane_menu(row), self.mapToGlobal(cell.rect.bottomLeft()))
             return
@@ -2006,6 +2064,12 @@ class TimelineCanvas(QWidget):
             cut = int(clip.get("end") if edge == "out" else clip.get("start") or 0)
             host.edit_point_kind(abs(self.x_of(cut) - pos.x()), other is not None, select)
 
+    def leaveEvent(self, e: QEvent) -> None:
+        if self._hover_color is not None:
+            self._hover_color = None
+            self.update()
+        super().leaveEvent(e)
+
     def _popup(self, menu: QMenu, global_pos: QPoint) -> None:
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.last_menu = menu
@@ -2052,9 +2116,13 @@ class TimelineCanvas(QWidget):
                 self.setToolTip(tr("Drag to change the track height"))
                 self.setCursor(Qt.CursorShape.SizeVerCursor)
                 return
-            _row, cell = self.header_hit(pos)
+            row, cell = self.header_hit(pos)
             self.setToolTip(cell.tip if cell is not None else "")
             self.unsetCursor()
+            hover = row.track_id if row is not None and cell is not None and cell.key == "color" else None
+            if hover != self._hover_color:
+                self._hover_color = hover
+                self.update()
             return
         if d is not None and d.kind in ("volumeLine", "volumeKey"):
             self._volume_drag(d, pos)
