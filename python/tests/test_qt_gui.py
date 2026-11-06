@@ -10134,3 +10134,58 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_control_channel_names_effects_tree_rows_as_egui(app, tmp_path: Path):
+    """egui's Effects tree ids through the control channel: ``effects.folder.<key>`` (sub-folders
+    ``<top>/<folder>``) and ``effects.item.<id>`` for the rows in view; a click on a folder opens
+    and closes it as in egui, a double click on an effect applies it to the selected clip."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    fx = win.effects
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Effects"].raise_()
+        assert wait_until(app, lambda: fx.tree.topLevelItemCount() >= 6, 20_000)
+        c = _ControlClient(app, server.port())
+
+        def ids():
+            return {e["id"] for e in c.call("ui.elements", {"prefix": "effects."})["result"]}
+
+        assert wait_until(app, lambda: "effects.folder.Video Transitions" in ids(), 5_000), ids()
+        assert "effects.item.cross_dissolve" not in ids(), "a closed folder's rows are not in view"
+        assert c.call("ui.click", {"id": "effects.folder.Video Transitions"})["ok"]
+        assert wait_until(app, lambda: "effects.folder.Video Transitions/Dissolve" in ids(), 3_000), ids()
+        assert c.call("ui.click", {"id": "effects.folder.Video Transitions/Dissolve"})["ok"]
+        assert wait_until(app, lambda: "effects.item.cross_dissolve" in ids(), 3_000), ids()
+        # a click on an open folder closes it again
+        assert c.call("ui.click", {"id": "effects.folder.Video Transitions/Dissolve"})["ok"]
+        assert wait_until(app, lambda: "effects.item.cross_dissolve" not in ids(), 3_000)
+        # a double click on an effect applies it to the selected clip
+        assert c.call("ui.click", {"id": "effects.folder.Video Effects"})["ok"]
+        assert wait_until(app, lambda: any(i.startswith("effects.folder.Video Effects/") for i in ids()), 3_000)
+        sub = min(i for i in ids() if i.startswith("effects.folder.Video Effects/"))
+        assert c.call("ui.click", {"id": sub})["ok"]
+        assert wait_until(app, lambda: any(i.startswith("effects.item.") for i in ids()), 3_000)
+        item = min(i for i in ids() if i.startswith("effects.item."))
+        video = next(cl for t in win.sequence["video"] for cl in t.get("items") or [])
+        win.execute("timeline.select", {"clips": [video["clip"]]})
+        assert wait_until(app, lambda: video["clip"] in ((win.sequence or {}).get("selection") or []), 10_000)
+        steps = win.history.list.count()
+        assert c.call("ui.click", {"id": item, "count": 2})["ok"]
+        assert wait_until(app, lambda: win.history.list.count() > steps, 10_000), item
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
