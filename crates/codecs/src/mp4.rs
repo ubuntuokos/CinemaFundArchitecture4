@@ -288,6 +288,25 @@ impl Mp4Source {
                     info.has_alpha = h.alpha;
                 }
             }
+            if matches!(entry.codec, CodecConfig::Dv { .. }) {
+                // format, sampling, aspect and colour are in the first frame's header and VAUX packs
+                let s0 = &t.samples[0];
+                if let Some(d) =
+                    cfa4_media::reader::read_range(&*bytes.0, s0.offset, (s0.size as usize).min(6 * 80)).ok().and_then(|d| crate::video::dv_stream_info(&d))
+                {
+                    info.codec = d.codec;
+                    info.pixel_format = d.pixel_format;
+                    // DV pixels are never square (720 samples per line); a 'pasp' of 1:1 is a
+                    // writer's default (ffmpeg writes one), not a measurement
+                    if vp.pixel_aspect.is_none_or(|a| a == (1, 1)) {
+                        info.par = d.par;
+                    }
+                    if explicit_color.is_none() {
+                        info.color = d.color;
+                        color = d.color;
+                    }
+                }
+            }
             if matches!(entry.codec, CodecConfig::Cineform) {
                 // format, depth and alpha are in the first sample's header
                 let s0 = &t.samples[0];
@@ -615,6 +634,7 @@ fn codec_label(c: &CodecConfig) -> String {
         CodecConfig::Dnx { fourcc } if fourcc.0 == *b"AVdh" => "Avid DNxHR".into(),
         CodecConfig::Dnx { .. } => "Avid DNxHD".into(),
         CodecConfig::Cineform => "GoPro CineForm".into(),
+        CodecConfig::Dv { .. } => "DV".into(),
         other => other.name().to_string(),
     }
 }
