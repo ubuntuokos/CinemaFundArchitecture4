@@ -2151,6 +2151,20 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
 
 
 # ----- export window -----
+def test_project_search_finds_every_typed_word():
+    """upstream #3327: the Project panel's search (the engine's and this fallback) finds a name
+    holding every word typed, in any order."""
+    from cfa4_qt.panels.project import fallback_rows, name_matches
+
+    name = "Comedy manager · medium · smiling · enjoys the show · img385 · A"
+    assert name_matches(name, "") and name_matches(name, "comedy manager smiling")
+    assert name_matches(name, "Smiling  comedy ") and name_matches(name, "comedy manager s")
+    assert not name_matches(name, "comedy manager laughing")
+    assert not name_matches("Comedy club", "comedy manager")
+    tree = {"children": [{"item": 1, "name": name}, {"item": 2, "name": "Comedy club"}]}
+    assert [r["item"] for r in fallback_rows(tree, needle="smiling comedy")] == [1]
+
+
 def test_export_helpers(tmp_path: Path, monkeypatch):
     from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name
 
@@ -4932,6 +4946,61 @@ def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
         hot = QtGui.QColor(tl.theme.current().hot_text)
         row = [img.pixelColor(x, mix.center().y()) for x in range(tl.HEADER_W - 60, tl.HEADER_W - 10)]
         assert any(abs(c.red() - hot.red()) + abs(c.green() - hot.green()) + abs(c.blue() - hot.blue()) < 120 for c in row)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_grouped_clips_select_together(app, tmp_path: Path):
+    """upstream #3522: a click selects a clip with its whole group, and Shift-click takes the group
+    out of the selection and puts it back as a whole (never half of it)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+    shift = QtCore.Qt.KeyboardModifier.ShiftModifier
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def selection() -> set[int]:
+        return set((win.sequence or {}).get("selection") or [])
+
+    def centre(cid: int) -> QtCore.QPoint:
+        row = v1()
+        c = next(c for c in row.track["items"] if c["clip"] == cid)
+        return canvas.clip_rect(row, c).center().toPoint()
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        first, second = (c["clip"] for c in v1().track["items"][:2])
+        win.execute("timeline.select", {"clips": [first, second], "linked": False})
+        assert wait_until(app, lambda: {first, second} <= selection(), 10_000)
+        steps = win.history.list.count()
+        win.execute("clip.group", {})
+        assert wait_until(app, lambda: win.history.list.count() > steps, 10_000)
+        win.execute("timeline.select", {"clips": []})
+        assert wait_until(app, lambda: not selection(), 10_000)
+        # a click on one member selects the whole group (and, linked selection being on, its links)
+        QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, centre(first))
+        assert wait_until(app, lambda: {first, second} <= selection(), 10_000), selection()
+        group = selection()
+        # Shift-click takes the group out as a whole, and a second one puts it back
+        QtTest.QTest.mouseClick(canvas, btn, shift, centre(second))
+        assert wait_until(app, lambda: not selection(), 10_000), selection()
+        QtTest.QTest.mouseClick(canvas, btn, shift, centre(second))
+        assert wait_until(app, lambda: selection() == group, 10_000), (selection(), group)
     finally:
         win._quit_confirmed = True
         win.close()
