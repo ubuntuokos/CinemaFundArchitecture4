@@ -4939,6 +4939,61 @@ def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_grouped_clips_select_together(app, tmp_path: Path):
+    """upstream #3522: a click selects a clip with its whole group, and Shift-click takes the group
+    out of the selection and puts it back as a whole (never half of it)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+    shift = QtCore.Qt.KeyboardModifier.ShiftModifier
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def selection() -> set[int]:
+        return set((win.sequence or {}).get("selection") or [])
+
+    def centre(cid: int) -> QtCore.QPoint:
+        row = v1()
+        c = next(c for c in row.track["items"] if c["clip"] == cid)
+        return canvas.clip_rect(row, c).center().toPoint()
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        first, second = (c["clip"] for c in v1().track["items"][:2])
+        win.execute("timeline.select", {"clips": [first, second], "linked": False})
+        assert wait_until(app, lambda: {first, second} <= selection(), 10_000)
+        steps = win.history.list.count()
+        win.execute("clip.group", {})
+        assert wait_until(app, lambda: win.history.list.count() > steps, 10_000)
+        win.execute("timeline.select", {"clips": []})
+        assert wait_until(app, lambda: not selection(), 10_000)
+        # a click on one member selects the whole group (and, linked selection being on, its links)
+        QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, centre(first))
+        assert wait_until(app, lambda: {first, second} <= selection(), 10_000), selection()
+        group = selection()
+        # Shift-click takes the group out as a whole, and a second one puts it back
+        QtTest.QTest.mouseClick(canvas, btn, shift, centre(second))
+        assert wait_until(app, lambda: not selection(), 10_000), selection()
+        QtTest.QTest.mouseClick(canvas, btn, shift, centre(second))
+        assert wait_until(app, lambda: selection() == group, 10_000), (selection(), group)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
     """egui's Volume line on audio clips: drawn on the fader scale, dragging it changes the level,
     Ctrl-click adds a keyframe, a keyframe drags in time and level, right-click deletes it."""
