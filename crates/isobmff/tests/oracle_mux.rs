@@ -267,3 +267,100 @@ fn fragmented_writer_ffmpeg() {
         }
     }
 }
+
+/// Our `chpl` as ffprobe reads it: same starts and titles.
+#[test]
+fn chapters_ffprobe() {
+    let (Some(src), Some(_)) = (fixture("h264_bframes.mp4"), ffprobe()) else { return };
+    let data = std::fs::read(&src).unwrap();
+    let f = open(data.as_slice()).unwrap();
+    let v = f.track_of_kind(TrackKind::Video).unwrap();
+    let chapters = vec![
+        Chapter { start_100ns: 0, title: "Bevezető".into() },
+        Chapter { start_100ns: 7_000_000, title: "Közép".into() },
+        Chapter { start_100ns: 15_000_000, title: "Vége".into() },
+    ];
+    let mut opts = WriterOptions::new(Brand::Mp4);
+    opts.chapters = chapters.clone();
+    let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
+    w.add_track(track_config(&f, &f.tracks[v], true)).unwrap();
+    for (i, s) in f.tracks[v].samples.iter().enumerate() {
+        let d = f.read_sample(data.as_slice(), v, i).unwrap();
+        w.write_sample(0, WriteSample { data: &d, duration: s.duration, composition_offset: (s.pts - s.dts) as i32, is_sync: s.is_sync }).unwrap();
+    }
+    let out = out_dir().join("our_chapters.mp4");
+    std::fs::write(&out, w.finish_faststart().unwrap().into_inner()).unwrap();
+    decode_clean(&out);
+    let probed = probe_json(&out, &["-show_chapters"]).unwrap();
+    let probed = probed["chapters"].as_array().unwrap();
+    assert_eq!(probed.len(), chapters.len());
+    for (p, c) in probed.iter().zip(&chapters) {
+        let start: f64 = p["start_time"].as_str().unwrap().parse().unwrap();
+        assert!((start - c.start_100ns as f64 / 1e7).abs() < 1e-6, "{p}");
+        assert_eq!(p["tags"]["title"].as_str(), Some(c.title.as_str()));
+    }
+}
+
+/// Our QuickTime chapter track read by ffprobe, alone (MOV) and next to `chpl` (MP4, no
+/// duplicates).
+#[test]
+fn chapter_track_ffprobe() {
+    let (Some(src), Some(_)) = (fixture("h264_bframes.mp4"), ffprobe()) else { return };
+    let data = std::fs::read(&src).unwrap();
+    let f = open(data.as_slice()).unwrap();
+    let v = f.track_of_kind(TrackKind::Video).unwrap();
+    let chapters = vec![Chapter { start_100ns: 5_000_000, title: "Bevezető".into() }, Chapter { start_100ns: 15_000_000, title: "Vége".into() }];
+    for (brand, chpl) in [(Brand::Mov, false), (Brand::Mp4, true)] {
+        let mut opts = WriterOptions::new(brand);
+        if chpl {
+            opts.chapters = chapters.clone();
+        }
+        let mut w = Mp4Writer::new(Cursor::new(Vec::new()), opts).unwrap();
+        w.add_track(track_config(&f, &f.tracks[v], true)).unwrap();
+        w.add_chapter_track(0, &chapters).unwrap();
+        for (i, s) in f.tracks[v].samples.iter().enumerate() {
+            let d = f.read_sample(data.as_slice(), v, i).unwrap();
+            w.write_sample(0, WriteSample { data: &d, duration: s.duration, composition_offset: (s.pts - s.dts) as i32, is_sync: s.is_sync }).unwrap();
+        }
+        let out = out_dir().join(if chpl { "our_chapter_track.mp4" } else { "our_chapter_track.mov" });
+        std::fs::write(&out, w.finish_faststart().unwrap().into_inner()).unwrap();
+        decode_clean(&out);
+        let probed = probe_json(&out, &["-show_chapters"]).unwrap();
+        let probed = probed["chapters"].as_array().unwrap();
+        assert_eq!(probed.len(), chapters.len(), "{brand:?}: {probed:?}");
+        for (p, c) in probed.iter().zip(&chapters) {
+            let start: f64 = p["start_time"].as_str().unwrap().parse().unwrap();
+            assert!((start - c.start_100ns as f64 / 1e7).abs() < 1e-3, "{brand:?}: {p}");
+            assert_eq!(p["tags"]["title"].as_str(), Some(c.title.as_str()), "{brand:?}");
+        }
+        // ffprobe sees one video stream; the chapter track is not a playable stream
+        let streams = probe_json(&out, &["-show_streams"]).unwrap();
+        let video = streams["streams"].as_array().unwrap().iter().filter(|s| s["codec_type"] == "video").count();
+        assert_eq!(video, 1);
+    }
+}
+
+/// ffmpeg's QuickTime chapter track read by our demuxer, with its `chpl` renamed away so only the
+/// track is left.
+#[test]
+fn chapter_track_from_ffmpeg() {
+    for name in ["chapters.mov", "chapters.mp4"] {
+        let Some(src) = fixture(name) else { return };
+        let mut data = std::fs::read(&src).unwrap();
+        let at = data.windows(4).position(|w| w == b"chpl").expect("ffmpeg writes chpl too");
+        data[at..at + 4].copy_from_slice(b"skip");
+        let f = open(data.as_slice()).unwrap();
+        let want = vec![Chapter { start_100ns: 0, title: "Első".into() }, Chapter { start_100ns: 15_000_000, title: "Two".into() }];
+        assert_eq!(f.metadata.chapters, want, "{name}");
+        assert!(f.tracks.iter().all(|t| t.kind != TrackKind::Subtitle), "{name}: the chapter track is not a subtitle track");
+    }
+}
+
+/// ffmpeg's `chpl` read by our demuxer.
+#[test]
+fn chapters_from_ffmpeg() {
+    let Some(src) = fixture("chapters.mp4") else { return };
+    let f = open(std::fs::read(&src).unwrap().as_slice()).unwrap();
+    let want = vec![Chapter { start_100ns: 0, title: "Első".into() }, Chapter { start_100ns: 15_000_000, title: "Two".into() }];
+    assert_eq!(f.metadata.chapters, want);
+}
