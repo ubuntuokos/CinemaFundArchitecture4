@@ -570,7 +570,10 @@ class ControlServer(QObject):
                 part = next(((pw, r) for pw, i, r, _label in self._parts() if i == pid), None)
                 if part is None:
                     raise
-                return part[0], part[1].center()
+                # the child under the part's centre takes the input (a window's part over a tab bar)
+                pw, at = part[0], part[1].center()
+                child = pw.childAt(at)
+                return (child, child.mapFrom(pw, at)) if child is not None else (pw, at)
             return w, w.rect().center()
         x, y = _number(p, "x", -1e5, 1e5), _number(p, "y", -1e5, 1e5)
         win = self.window
