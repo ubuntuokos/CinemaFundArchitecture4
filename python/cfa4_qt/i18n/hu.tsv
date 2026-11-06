@@ -2356,3 +2356,4 @@ export.summary	Low	alacsony
 	Binary assets removed	Eltávolított bináris fájlok
 	First commit	Első commit
 	Last commit	Utolsó commit
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
