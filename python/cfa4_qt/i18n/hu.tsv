@@ -2326,3 +2326,7 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Work Area Bar	Munkaterület-sáv
+	Start: {tc}	Kezdet: {tc}
+	End: {tc}	Vég: {tc}
+	Duration: {tc}	Időtartam: {tc}

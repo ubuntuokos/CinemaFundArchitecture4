@@ -320,3 +320,7 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 压缩
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Work Area Bar	工作区栏
+	Start: {tc}	开始：{tc}
+	End: {tc}	结束：{tc}
+	Duration: {tc}	持续时间：{tc}

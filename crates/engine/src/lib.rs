@@ -1366,6 +1366,8 @@ mod trim_tests;
 mod vfx_tests;
 #[cfg(test)]
 mod voiceover_tests;
+#[cfg(test)]
+mod work_area_tests;
 
 #[cfg(test)]
 mod source_placement_tests;

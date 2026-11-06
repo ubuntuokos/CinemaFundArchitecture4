@@ -2343,6 +2343,55 @@ fn build() -> Vec<CommandSpec> {
             crate::previews::delete(s, true)
         }),
         query!("sequence.renderBar", "Render Bar", "{}", |s, _| crate::previews::bar_json(s)),
+        // ================= Work area bar =================
+        cmd!("sequence.workAreaBar", "Work Area Bar", [], None, r#"{"show":bool?}"#, has_seq, |s, p| {
+            let shown = s.active_sequence().ok_or(EngineError::NoSequence)?.work_area.is_some();
+            let show = bool_p(p, "show").unwrap_or(!shown);
+            if show == shown {
+                return Ok(json!({"show": show}));
+            }
+            let fd = s.sequence_rate().frame_duration();
+            s.edit_sequence("Work Area Bar", |q, _, _| {
+                // shown again, the bar spans the whole sequence
+                q.work_area = show.then(|| TimeRange::from_bounds(Tick::ZERO, q.duration().max(fd)));
+                Ok(())
+            })?;
+            Ok(json!({"show": show}))
+        }),
+        cmd!(
+            "sequence.setWorkAreaIn",
+            "Set Work Area Bar In Point",
+            [],
+            None,
+            r#"{"time":ticks?,"frame":i64?,"seconds":f64?,"timecode":str?}"#,
+            has_seq,
+            |s, p| set_work_area_point(s, p, true)
+        ),
+        cmd!(
+            "sequence.setWorkAreaOut",
+            "Set Work Area Bar Out Point",
+            [],
+            None,
+            r#"{"time":ticks?,"frame":i64?,"seconds":f64?,"timecode":str?}"#,
+            has_seq,
+            |s, p| set_work_area_point(s, p, false)
+        ),
+        cmd!("sequence.setWorkArea", "Set Work Area", [], None, r#"{"start":ticks,"end":ticks}"#, has_seq, |s, p| {
+            const CMD: &str = "sequence.setWorkArea";
+            let tick = |key: &str| p.get(key).and_then(Value::as_i64).map(Tick).ok_or_else(|| bad(CMD, format!("need `{key}` (ticks)")));
+            let (start, end) = (tick("start")?, tick("end")?);
+            if start < Tick::ZERO {
+                return Err(bad(CMD, "`start` must not be negative"));
+            }
+            if end <= start {
+                return Err(bad(CMD, "`end` must be after `start`"));
+            }
+            s.edit_sequence("Set Work Area", |q, _, _| {
+                q.work_area = Some(TimeRange::from_bounds(start, end));
+                Ok(())
+            })?;
+            Ok(json!({"start": start.0, "end": end.0}))
+        }),
         cmd!("sequence.matchFrame", "Match Frame", ["Sequence"], Some("F"), "{}", has_seq, |s, _| {
             let t = s.playhead();
             let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
@@ -3722,6 +3771,32 @@ fn mark(s: &mut Session, p: &Value, is_in: bool) -> Result<Value> {
     Ok(Value::Null)
 }
 
+/// Set Work Area Bar In / Out Point: the work area starts (`is_in`) or ends at `time`, else at the
+/// playhead. An In point at or after the end moves the end to the end of the sequence, or to one
+/// frame after the In point when the In point is at or past the end of the sequence; an Out point
+/// at or before the start moves the start to 0. With no work area yet, the other end is the end
+/// or the start of the sequence.
+fn set_work_area_point(s: &mut Session, p: &Value, is_in: bool) -> Result<Value> {
+    let cmd = if is_in { "sequence.setWorkAreaIn" } else { "sequence.setWorkAreaOut" };
+    let t = sequence_time_p(s, p, "", cmd)?.unwrap_or(s.playhead());
+    let fd = s.sequence_rate().frame_duration();
+    let seq = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let (start, end) = seq.work_area.map(|w| (w.start, w.end())).unwrap_or((Tick::ZERO, seq.duration()));
+    let (start, end) = if is_in {
+        (t, if end > t { end } else { seq.duration().max(t + fd) })
+    } else {
+        if t <= Tick::ZERO {
+            return Err(bad(cmd, "the Out point must be after the start of the sequence"));
+        }
+        (if start < t { start } else { Tick::ZERO }, t)
+    };
+    s.edit_sequence(if is_in { "Set Work Area Bar In Point" } else { "Set Work Area Bar Out Point" }, |q, _, _| {
+        q.work_area = Some(TimeRange::from_bounds(start, end));
+        Ok(())
+    })?;
+    Ok(json!({"start": start.0, "end": end.0}))
+}
+
 pub(crate) fn json_to_param(template: &ParamValue, v: &Value) -> Option<ParamValue> {
     Some(match template {
         ParamValue::Float(_) => ParamValue::Float(v.as_f64()?),
@@ -4816,6 +4891,8 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         "playhead": s.state.playheads.get(&id).map(|t| t.0),
         "in": q.mark_in.map(|t| t.0),
         "out": q.mark_out.map(|t| t.0),
+        // the work area bar, when shown (Qt GUI; upstream #3087)
+        "workArea": q.work_area.map(|w| json!({"start": w.start.0, "end": w.end().0})),
         "split": q.split,
         "markers": q.markers.iter().map(|m| json!({"id": m.id.0, "start": m.start.0, "duration": m.duration.0, "kind": format!("{:?}", m.kind), "name": m.name, "comment": m.comment, "color": m.color.name()})).collect::<Vec<_>>(),
         "video": q.video_tracks.iter().map(tr).collect::<Vec<_>>(),
