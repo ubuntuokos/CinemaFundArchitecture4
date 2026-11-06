@@ -1,7 +1,7 @@
 # CFA4-DEV-AI-ORCHESTRATION-001 – AI-fejlesztési infrastruktúra
 
 **Állapot:** FINAL 1.1 – APPROVED (2026-10-29); FINAL 1.2 felhős kiegészítés (döntések: 2026-11-06). **Végrehajtás:** F0 és F1 (felhős) bizonyítéka felülvizsgálatra vár
-([#336](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/336)); F1–F9 és E0–E6
+([#336](https://github.com/ubuntuokos/CinemaFundArchitecture4/issues/336)); F2–F9 és E0–E6
 **nincs engedélyezve**. A terv jóváhagyása nem jelent telepítési, kódmódosítási, merge- vagy
 release-engedélyt.
 
