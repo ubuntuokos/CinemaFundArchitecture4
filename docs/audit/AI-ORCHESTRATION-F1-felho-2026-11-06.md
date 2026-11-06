@@ -90,6 +90,18 @@ A tulajdonos mindhárom javaslatot elfogadta (D-F1-1, D-F1-2, D-F1-3).
 | D-F1-3 | A nem kapcsolódó bővítmények kikapcsolása a tulajdonos claude.ai-fiókjában | a tulajdonosra vár |
 | D-F1-1 | Kötelező jóváhagyás a `main` rulesetjében | **akadály:** a munkamenetek PR-jai a tulajdonos fiókja nevén jönnek létre, a GitHub pedig nem engedi a saját PR jóváhagyását; a kötelező jóváhagyás így minden beolvasztást blokkolna. Kivétel (bypass) a tulajdonosnak a munkameneteknek is kivételt adna, mert azok ugyanazzal az azonossággal dolgoznak. Feltétele a munkamenetek külön azonossága (bot-fiók vagy GitHub App, merge-jog nélkül) – az I-01 javaslatával egyezik. Tulajdonosi döntésre vár. |
 
+**D-F1-1 döntés (2026-11-06):** a tulajdonos a külön bot-fiókot választotta. Lépések:
+
+| # | Lépés | Ki |
+|---|---|---|
+| 1 | GitHub bot-fiók létrehozása saját e-mail-címmel és kétlépcsős azonosítással | tulajdonos |
+| 2 | A bot-fiók meghívása a tárolóba **Write** szerepkörrel (nem Maintain, nem Admin) | tulajdonos |
+| 3 | A claude.ai GitHub-kapcsolatának átállítása a bot-fiókra (`claude.ai/connect-github`). Ez a tulajdonos **minden** felhős munkamenetére érvényes, ezért a bot-fiókot a többi használt tárolóhoz is hozzá kell adni | tulajdonos |
+| 4 | Ruleset a `main`-en: 1 kötelező jóváhagyás, elavult jóváhagyások elvetése új pushnál, a legutóbbi push jóváhagyása, üres bypass-lista | tulajdonos, a 3. lépés után |
+| 5 | Negatív teszt (F1-G5, F3): a bot nem tud jóváhagyás nélkül beolvasztani, nem tud a `main`-re pusholni | munkamenet, külön engedéllyel |
+
+A 4. lépés a 3. előtt minden beolvasztást blokkolna (saját PR nem hagyható jóvá).
+
 ## 6. Biztonság, költség, visszaállítás
 
 - Titokérték nem került kiolvasásra és nem került a dokumentumba.
