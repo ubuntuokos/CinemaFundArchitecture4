@@ -518,6 +518,10 @@ pub(crate) fn lay_out_tracks_like(new: &mut cfa4_project::Sequence, from: &cfa4_
     }
 }
 
+/// Make Subsequence: copy the selected clips (with linked partners), or everything between In
+/// and Out on the targeted tracks, into a new sequence named `name` or `<seq>_Sub_NN`. Copies
+/// get fresh ids, links and groups and start from zero; the new sequence opens in the Source
+/// Monitor.
 fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
     let seq_id = s.state.active_sequence.ok_or(EngineError::NoSequence)?;
     let q = s.active_sequence().ok_or(EngineError::NoSequence)?.clone();
@@ -560,6 +564,7 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
         let nid = pr.new_sequence(&name, q.settings.clone(), q.video_tracks.len(), q.audio_tracks.len(), None);
         let mut ids = std::collections::HashMap::new();
         let mut links = std::collections::HashMap::new();
+        let mut groups = std::collections::HashMap::new();
         let mut placed: Vec<(TrackKind, usize, TrackItem)> = Vec::new();
         for (kind, ti, mut it) in items.clone() {
             let new_id = ClipId(pr.alloc_id());
@@ -568,6 +573,9 @@ fn make_subsequence(s: &mut Session, p: &Value) -> Result<Value> {
             it.start -= offset;
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| pr.alloc_id()));
+            }
+            if let Some(g) = it.group {
+                it.group = Some(*groups.entry(g).or_insert_with(|| pr.alloc_id()));
             }
             placed.push((kind, ti, it));
         }
@@ -676,6 +684,7 @@ pub(crate) fn place_sequence_clips(
         // copies with ids, links and transitions of their own, moved to `at`
         let mut ids = std::collections::HashMap::new();
         let mut links = std::collections::HashMap::new();
+        let mut groups = std::collections::HashMap::new();
         let mut placed: Vec<(TrackKind, usize, TrackItem)> = Vec::new();
         for (kind, lane, mut it) in items.clone() {
             let id = ClipId(p.alloc_id());
@@ -684,6 +693,9 @@ pub(crate) fn place_sequence_clips(
             it.start = at + (it.start - range.start);
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| p.alloc_id()));
+            }
+            if let Some(g) = it.group {
+                it.group = Some(*groups.entry(g).or_insert_with(|| p.alloc_id()));
             }
             placed.push((kind, lane, it));
         }

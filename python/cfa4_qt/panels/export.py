@@ -352,6 +352,13 @@ class ExportDialog(QDialog):
         range_row.addWidget(self.start)
         range_row.addWidget(QLabel("–", self))
         range_row.addWidget(self.end)
+        # A one-frame Sequence In/Out is valid but easily left behind by accident: the engine's
+        # `export.resolve` reports it in `warnings`, shown here until the range changes.
+        self.range_warning = QLabel(tr("Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence."), self)
+        self.range_warning.setObjectName("export.range.warning")
+        self.range_warning.setWordWrap(True)
+        self.range_warning.setStyleSheet("color: #d04040")
+        self.range_warning.setVisible(False)
 
         self.width_spin = QSpinBox(self)
         self.height_spin = QSpinBox(self)
@@ -451,6 +458,7 @@ class ExportDialog(QDialog):
         f.addRow(tr("DCP container"), self.dcp_aspect)
         f.addRow(tr("Content kind"), self.dcp_kind)
         f.addRow(tr("Range"), range_row)
+        f.addRow("", self.range_warning)
         video = Section("video", tr("Video"), self)
         video.setObjectName("export.video")
         fv = QFormLayout(video.body)
@@ -1092,6 +1100,7 @@ class ExportDialog(QDialog):
             parts.append(f"{r['frames']} {tr('frames')}")
         self.summary.setText(" · ".join(parts))
         self.summary.setStyleSheet("")
+        self.range_warning.setVisible(bool(r.get("warnings")))
         self.export_button.setEnabled(True)
         self.queue_button.setEnabled(True)
 
@@ -1117,6 +1126,7 @@ class ExportDialog(QDialog):
             message = f"{tr('Settings not taken')}: {message}"
         self.summary.setText(message)
         self.summary.setStyleSheet("color: #d04040")
+        self.range_warning.setVisible(False)
         self.export_button.setEnabled(False)
         self.queue_button.setEnabled(False)
 
