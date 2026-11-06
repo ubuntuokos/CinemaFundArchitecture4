@@ -2327,3 +2327,4 @@ export.summary	Low	alacsony
 	Warning	Figyelmeztetés
 	Error	Hiba
 	Track Color	Sáv színe
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
