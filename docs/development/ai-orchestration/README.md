@@ -18,6 +18,7 @@ nélkül is működnie kell (FINAL 1.0, 8.16).
 | [`CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.1-record.txt`](CFA4-DEV-AI-ORCHESTRATION-001-FINAL-1.1-record.txt) | A jóváhagyási beszélgetés szövege: FINAL 1.0 jóváhagyási feljegyzés (1–90. sor), FINAL 1.1 AIQT-kiegészítés: TC-11–TC-15, AC-08–AC-14, negatív tesztek (96–839. sor), FINAL 1.1 végleges jóváhagyás (841–982. sor) | `e34aecb6…f9978308` |
 | [`../../reference/aiqt/1.0.6/`](../../reference/aiqt/1.0.6/README.md) | AIQT 1.0.6 teljes szabvány, bájtra változatlanul | `fa4076e7…a3131516` |
 | [`../../audit/AI-ORCHESTRATION-F0-2026-10-30.md`](../../audit/AI-ORCHESTRATION-F0-2026-10-30.md) | F0-audit: baseline, VERIFIED/PENDING/BLOCKED mátrix, gap-elemzés | – |
+| [`../../audit/AI-ORCHESTRATION-F0-v3-2026-11-06.md`](../../audit/AI-ORCHESTRATION-F0-v3-2026-11-06.md) | F0-audit v3: a terv helyi célgép-feltevései a felhős fejlesztési környezetben, felhős TC-02, tulajdonosi döntési pontok | – |
 
 A végrehajtási megbízás szövege a #336 issue törzse.
 
