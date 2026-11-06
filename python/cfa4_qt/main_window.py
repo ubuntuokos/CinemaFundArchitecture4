@@ -83,7 +83,7 @@ from .panels.settings import PreferencesDialog
 from .panels.shortcuts import ShortcutsDialog
 from .panels.side import HistoryPanel, LibrariesPanel
 from .panels.text import TextPanel
-from .panels.timeline import TimelinePanel
+from .panels.timeline import TimelinePanel, project_has_sequence
 from .panels.tools import ToolsPanel, tool_commands
 from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
@@ -459,6 +459,7 @@ class MainWindow(QMainWindow):
         self.media_browser.attach_settings(self.settings)
         self.media_browser.invoke.connect(self.invoke)
         self.timeline.canvas.files_dropped.connect(self.place_files)
+        self.timeline.canvas.files_dropped_empty.connect(self.sequence_from_files)
         self.timeline.canvas.menu_host = self
         # voice-over recording: the audio track headers' microphones and the mixer's record button
         self.voiceover = VoiceOverRecorder(engine, self.monitor, self)
@@ -1866,6 +1867,10 @@ class MainWindow(QMainWindow):
             self.clear_media_caches()
             self._project_generation += 1
         self.project_panel.set_project(self.project)
+        has = project_has_sequence(self.project)
+        if has != self.timeline.canvas.project_has_sequence:
+            self.timeline.canvas.project_has_sequence = has
+            self.timeline.canvas.update()
         self._update_title()
 
     def _on_sequence(self, result: Any, _b: bytes | None) -> None:
@@ -2446,6 +2451,19 @@ class MainWindow(QMainWindow):
             self._clip_mixer_busy = False
 
         self.engine.call("clipMixer.inspect", {"time": self.monitor.playhead}, on_reply=done, on_error=failed)
+
+    def sequence_from_files(self, paths: list[str]) -> None:
+        """Files dropped on an empty Timeline (egui's): import them, then a sequence from the first
+        new item with the rest following it back to back."""
+
+        def imported(result: Any, _b: bytes | None) -> None:
+            items = [i for i in (result or {}).get("items") or [] if isinstance(i, int)]
+            if items:
+                self.execute("file.newSequence", {"fromItems": items})
+            self.schedule_refresh()
+
+        self.engine.execute("mediaBrowser.import", {"paths": paths}, on_reply=imported,
+                            on_error=lambda m: self._command_failed("mediaBrowser.import", m))
 
     def place_files(self, paths: list[str], time: int, track: Any) -> None:
         """Files dropped on the Timeline: import them (``mediaBrowser.import``), then place each

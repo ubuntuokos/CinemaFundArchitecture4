@@ -10191,3 +10191,71 @@ def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path:
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_empty_timeline_as_egui(app, tmp_path: Path):
+    """egui's empty Timeline: "Drop media here to create sequence.", the Open Demo Project
+    button (``timeline.openDemo``, ``file.openDemoProject``), the hint to double-click a sequence
+    only when the project has one, and project items dropped on it make a sequence from them
+    (``file.newSequence {fromItems}``)."""
+    from cfa4_qt import theme
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import ITEM_MIME, project_has_sequence
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    Qt = QtCore.Qt
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        assert win.sequence is None and not canvas.project_has_sequence
+        c = _ControlClient(app, server.port())
+        e = {x["id"]: x for x in c.call("ui.elements", {"prefix": "timeline."})["result"]}
+        assert "timeline.openDemo" in e and not any(i.startswith(("timeline.track.", "timeline.clip.")) for i in e), sorted(e)
+        assert e["timeline.openDemo"]["label"] == "Open Demo Project"
+        sent: list = []
+        canvas.command.disconnect()  # only record: the demo would replace this project
+        canvas.command.connect(lambda cid, params: sent.append((cid, params)))
+        assert c.call("ui.click", {"id": "timeline.openDemo"})["ok"]
+        assert wait_until(app, lambda: sent == [("file.openDemoProject", {})], 5_000), sent
+        canvas.command.disconnect()
+        canvas.command.connect(win.execute)
+        # the button is drawn in the accent colour, the text in white
+        img = canvas.grab().toImage()
+        dpr = img.devicePixelRatio()
+        b = canvas.demo_button_rect()
+        accent = QtGui.QColor(theme.current().accent)
+        edge = img.pixelColor(int((b.left() + 6) * dpr), int(b.center().y() * dpr))
+        assert abs(edge.red() - accent.red()) < 25 and abs(edge.blue() - accent.blue()) < 25, edge.name()
+        # a project item dropped on it makes a sequence from it
+        item = c.call("engine.execute", {"command": "file.newBarsAndTone", "params": {"seconds": 4}})["result"]["item"]
+        win.schedule_refresh()
+        mime = QtCore.QMimeData()
+        mime.setData(ITEM_MIME, str(item).encode())
+        pos = QtCore.QPoint(canvas.width() // 2, canvas.height() // 2)
+        move = QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        canvas.dragMoveEvent(move)
+        assert move.isAccepted()
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert wait_until(app, lambda: win.sequence is not None, 20_000), win.events.text.toPlainText()
+        assert any(cl.get("item") == item for t in win.sequence["video"] for cl in t.get("items") or []), win.sequence["video"]
+        assert wait_until(app, lambda: canvas.project_has_sequence, 10_000)
+        assert project_has_sequence(win.project)
+        # closed again: the hint names how to open it
+        assert c.call("engine.execute", {"command": "sequence.close", "params": {}})["ok"]
+        win.schedule_refresh()
+        assert wait_until(app, lambda: win.sequence is None, 10_000)
+        assert canvas.project_has_sequence
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
