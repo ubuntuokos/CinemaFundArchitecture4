@@ -11,6 +11,9 @@
 //! [`ExportSettings`] carries every Export-mode setting (frame size, rate, bitrate encoding, audio
 //! format, multiplexer, captions, effects, metadata) as serde data; [`presets`] defines the
 //! built-in presets.
+//!
+//! [`smart_cut`] runs the lossless Smart Cut plans of `cfa4-smart-edit`: H.264 samples copied
+//! unchanged from an MP4 / MOV source into a new MP4 / MOV file, and verified by reading it back.
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 use std::io::Write;
@@ -33,6 +36,7 @@ mod pipeline;
 pub mod presets;
 mod raster;
 pub mod settings;
+pub mod smart_cut;
 pub mod still;
 mod webm_out;
 pub use audio_out::LoudnessReport;
@@ -2764,6 +2768,8 @@ mod dcp_tests;
 mod mpeg2_tests;
 #[cfg(test)]
 mod mxf_tests;
+#[cfg(test)]
+mod smart_cut_tests;
 
 #[cfg(test)]
 mod determinism_tests;
