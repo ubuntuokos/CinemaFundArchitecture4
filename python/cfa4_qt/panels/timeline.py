@@ -974,6 +974,63 @@ class TimelineCanvas(QWidget):
             format_timecode(self.playhead, self.frame_ticks()),
         )
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids for the Timeline's painted parts, for what is in view: ``timeline.timecode``,
+        ``timeline.ruler``, ``timeline.tracks``, ``timeline.marker.<id>`` / ``markerRange.<id>``, each
+        track header's ``timeline.track.<V1|A1…>.<switch>`` and ``.resize`` / ``.resizeTop`` edges,
+        ``timeline.clip.<id>`` (with ``.volume``, a point on an audio clip's Volume line) and
+        ``timeline.transition.<id>`` with its ``.in`` / ``.out`` ends."""
+        if not self.sequence:
+            return []
+        top = self.tracks_top()
+        w = float(self.width())
+        bottom = float(max(top, self.height() - MASTER_H))
+        content = QRectF(HEADER_W, top, max(0.0, w - HEADER_W), bottom - top)
+        column = QRectF(0, top, HEADER_W, bottom - top)
+        ruler = QRectF(HEADER_W, 0, max(0.0, w - HEADER_W), RULER_H)
+        out: list[tuple[str, QRectF, str]] = [
+            ("timeline.timecode", QRectF(0, 0, HEADER_W, RULER_H), format_timecode(self.playhead, self.frame_ticks())),
+            ("timeline.ruler", ruler, "time ruler"),
+            ("timeline.tracks", content, "tracks"),
+        ]
+        for m in self.sequence.get("markers") or []:
+            if isinstance(m, dict) and m.get("id") is not None:
+                band = self.marker_band(m)
+                if band is not None:
+                    out.append((f"timeline.markerRange.{m['id']}", band.intersected(ruler), str(m.get("name") or "")))
+                out.append((f"timeline.marker.{m['id']}", self.marker_rect(m).intersected(ruler), str(m.get("name") or "")))
+        for i, row in enumerate(self.rows):
+            for c in self.header_cells(row):
+                key = "sourcePatch" if c.key == "patch" else c.key
+                out.append((f"timeline.track.{row.short}.{key}", QRectF(c.rect).intersected(column), c.tip))
+            edge = QRectF(0, row.top + row.height - 3, HEADER_W, 5).intersected(column)
+            out.append((f"timeline.track.{row.short}.resize", edge, "Drag to change the track height"))
+            if i == 0 and row.kind == "video":
+                out.append((f"timeline.track.{row.short}.resizeTop", QRectF(0, row.top - 2, HEADER_W, 5).intersected(column), "Drag to change the track height"))
+            volume_ok = self._volume_row_ok(row)
+            for clip in row.track.get("items") or []:
+                if not isinstance(clip, dict) or clip.get("clip") is None:
+                    continue
+                r = self.clip_rect(row, clip)
+                vis = r.intersected(content)
+                out.append((f"timeline.clip.{clip['clip']}", vis, str(clip.get("name") or "")))
+                if volume_ok and isinstance(clip.get("volume"), dict) and volume_band(r).height() >= 6 and vis.width() > 0:
+                    # a point on the line, away from the trim zones at the edges (egui's)
+                    zone = min(EDGE_PX, r.width() / 3)
+                    x0, x1 = max(vis.left(), r.left() + zone), min(vis.right(), r.right() - zone)
+                    if x1 > x0:
+                        xm = (x0 + x1) / 2
+                        out.append((f"timeline.clip.{clip['clip']}.volume", QRectF(xm - 6, self.volume_line_y(clip, r, xm) - 4, 12, 8), "Volume"))
+            for x in row.track.get("transitions") or []:
+                if not isinstance(x, dict) or x.get("id") is None:
+                    continue
+                r = self.transition_rect(row, x)
+                zone = min(TRANSITION_EDGE_PX, r.width() / 3)
+                out.append((f"timeline.transition.{x['id']}", r.intersected(content), str(x.get("effect") or x.get("name") or "")))
+                out.append((f"timeline.transition.{x['id']}.in", QRectF(r.left(), r.top(), zone, r.height()).intersected(content), "start"))
+                out.append((f"timeline.transition.{x['id']}.out", QRectF(r.right() - zone, r.top(), zone, r.height()).intersected(content), "end"))
+        return [(pid, r, label) for pid, r, label in out if r.width() > 0 and r.height() > 0]
+
     def header_cells(self, row: Row) -> list[HeaderCell]:
         """The switches of one track header, left to right: source patch, targeting, then lock,
         sync lock and output (video) or mute and solo (audio)."""
