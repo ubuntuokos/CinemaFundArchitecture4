@@ -2411,5 +2411,6 @@ export.summary	Low	alacsony
 	Replace:	Csere:
 	with:	erre:
 	Replaced {n} font uses	{n} betűtípus-használat lecserélve
+	Track Color	Sáv színe
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
