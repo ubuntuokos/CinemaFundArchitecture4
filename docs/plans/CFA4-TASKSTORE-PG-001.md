@@ -2,7 +2,7 @@
 
 > **Állapot:** ELFOGADVA (István, 2026-11-07); KÓD MÉG NINCS · **Utolsó átnézés:** 2026-11-07 ·
 > **Változás:** major (első változat; a tartós jobtár redb helyett PostgreSQL; a Media Intelligence és a pgvector a tervben, István, 2026-11-07) · **Beépítve:**
-> [CFA4-AI_modules ADR 0006](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0006-ai-processing-layer.md) F1, F2, F4 és F5 kapu · **Kapcsolódik:** CFA4
+> [CFA4-AI_modules ADR 0008 (korábban 0006)](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/adr/ADR-0008-ai-processing-layer.md) F1, F2, F4 és F5 kapu · **Kapcsolódik:** CFA4
 > [`ADR 0006`](../adr/ADR-0006-backlothub-postgresql.md) (BacklotHub: PostgreSQL, 2026-11-02),
 > [`CFA4-EVENT-FABRIC-001`](CFA4-EVENT-FABRIC-001-1.0.md) és [illesztési melléklete](CFA4-EVENT-FABRIC-001-1.0-CFA4-ILLESZTES.md),
 > CFA4-ADAPTIVE-CAPABILITY-001 (adaptív erőforrás-kezelés, tulajdonosi specifikáció, 2026-11-07)
@@ -203,7 +203,7 @@ keverhet.
 
 ## 12. Hatás más tervekre
 
-- **AI ADR 0006:** a tartós jobtár redb helyett PostgreSQL, a gyorsítótár-index SQLite helyett
+- **AI ADR 0008** (korábban 0006): a tartós jobtár redb helyett PostgreSQL, a gyorsítótár-index SQLite helyett
   PostgreSQL; az F1 és az F2 kapu a PG-1…PG-3, az F4 és az F5 kapu a PG-4 fázist tartalmazza
   ([CFA4-AI_modules #31](https://github.com/ubuntuokos/CFA4-AI_modules/pull/31) átvezetve).
 - **CFA4 Event Fabric illesztés:** az E1 (erőforrás-hatóság) és az E3 (Execution Fabric) erre a
@@ -213,7 +213,5 @@ keverhet.
   (ez a fájl). Azonos tartalmú példánya a CFA4-AI_modules repóban van
   ([`docs/ai/postgresql-adatreteg.md`](https://github.com/ubuntuokos/CFA4-AI_modules/blob/main/docs/ai/postgresql-adatreteg.md)); eltérés esetén ez a
   példány az irányadó.
-- **ADR-számozás:** az AI-repó ADR 0006-ja és a CFA4 fő repójának ADR 0006-ja (BacklotHub) azonos
-  számot visel, és az AI-ADR „0004 FFI-kivétel, 0005 `cfa4-route`” hivatkozása sem egyezik a fő repó
-  mai állapotával (0004 a `cfa4-route`, 0005 a médiahátterek, 0007 a Media Services). Az
-  átszámozás külön változtatás.
+- **ADR-számozás:** az AI-réteg ADR-je 2026-11-07-én 0006-ról 0008-ra változott (CFA4-AI_modules #32), mert
+  itt a 0006 a BacklotHub PostgreSQL-döntése, a 0007 a Media Services.
