@@ -3260,7 +3260,15 @@ def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path)
         ime.setCommitString("日本")
         QtWidgets.QApplication.sendEvent(view, ime)  # an input method's finished text
         assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本" for d in texts()), 10_000)
+        # upstream #2445: an edit that ends while the input method composes types the marked text
+        # (Korean commits a syllable only when the next one starts); its late commit is dropped
+        composing = QtGui.QInputMethodEvent("한", [])
+        QtWidgets.QApplication.sendEvent(view, composing)
+        assert gt.preedit == "한"
         QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None and gt.preedit == ""
+        assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本한" for d in texts()), 10_000)
+        assert not gt.take_commit("한") and gt.take_commit("한"), "the late commit of that text once, then typing again"
         # the Selection tool: a double-click edits a text layer with all of it selected
         win.tools.select("selection")
         first = next(d for d in texts() if d["text"]["text"] == "O\nK")
