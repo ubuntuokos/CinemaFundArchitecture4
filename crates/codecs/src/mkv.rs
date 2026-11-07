@@ -169,6 +169,25 @@ fn codec_delay_ticks(t: &cfa4_matroska::Track) -> i64 {
     i64::try_from((t.codec_delay_ns as i128 + scale_ns / 2) / scale_ns).unwrap_or(i64::MAX)
 }
 
+/// The stream description of an audio track, `None` when its advertised sample rate or channel
+/// count is out of range (see [`cfa4_media::bounded_audio_dimensions`]).
+fn audio_info(t: &cfa4_matroska::Track) -> Option<AudioStreamInfo> {
+    let a = t.audio.clone().unwrap_or_default();
+    let mut rate = a.output_sampling_frequency.unwrap_or(a.sampling_frequency).round().max(1.0) as u32;
+    let mut channels = (a.channels as u32).max(1);
+    if let Some(h) = opus_head(&t.codec) {
+        rate = crate::audio::OPUS_RATE;
+        channels = h.channels as u32;
+    }
+    let (rate, channels) = cfa4_media::bounded_audio_dimensions(rate, channels).ok()?;
+    // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
+    let bits = match &t.codec {
+        Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
+        _ => a.bit_depth,
+    };
+    Some(AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32) })
+}
+
 /// The track timestamp that media time zero stands for (#715): the earliest start among the
 /// playable tracks. Block timestamps count from the start of the Segment, and a remux that keeps
 /// its source's timestamps (`ffmpeg -copyts`, a cut from a recording) starts its first picture
@@ -370,7 +389,9 @@ impl MkvSource {
             .tracks
             .iter()
             .enumerate()
-            .filter(|(_, t)| t.kind == TrackKind::Audio && !t.samples.is_empty())
+            // A track whose advertised dimensions are refused is no stream at all, so `atracks[k]` and
+            // `info.audio_streams[k]` stay the same track.
+            .filter(|(_, t)| t.kind == TrackKind::Audio && !t.samples.is_empty() && audio_info(t).is_some())
             .map(|(i, _)| i)
             .take(cfa4_media::MAX_AUDIO_STREAMS)
             .collect();
@@ -438,25 +459,7 @@ impl MkvSource {
                 hdr: v.colour.as_ref().and_then(hdr_metadata),
             }
         });
-        let audio_streams: Vec<AudioStreamInfo> = atracks
-            .iter()
-            .filter_map(|&i| file.tracks.get(i))
-            .map(|t| {
-                let a = t.audio.clone().unwrap_or_default();
-                let mut rate = a.output_sampling_frequency.unwrap_or(a.sampling_frequency).round().max(1.0) as u32;
-                let mut channels = (a.channels as u32).max(1);
-                if let Some(h) = opus_head(&t.codec) {
-                    rate = crate::audio::OPUS_RATE;
-                    channels = h.channels as u32;
-                }
-                // an `A_MS/ACM` track may leave BitDepth out: its WAVEFORMATEX has the sample size
-                let bits = match &t.codec {
-                    Codec::Pcm { bits, .. } => a.bit_depth.or(Some(u64::from(*bits))),
-                    _ => a.bit_depth,
-                };
-                AudioStreamInfo { sample_rate: rate, channels, codec: codec_label(&t.codec), bits_per_sample: bits.map(|b| b as u32) }
-            })
-            .collect();
+        let audio_streams: Vec<AudioStreamInfo> = atracks.iter().filter_map(|&i| file.tracks.get(i)).filter_map(audio_info).collect();
         let info = MediaInfo {
             name: name.to_string(),
             kind: if video.is_some() { MediaKind::Movie } else { MediaKind::AudioOnly },
@@ -673,15 +676,19 @@ impl MediaSource for MkvSource {
         let ainfo = self.info.audio_streams.get(stream).ok_or(MediaError::NoStream("audio"))?;
         let src_rate = ainfo.sample_rate;
         let ch = ainfo.channels.max(1) as usize;
+        let source_frames = cfa4_media::resample_source_frames(frames, src_rate, sample_rate)?;
+        let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
+        cfa4_media::validate_audio_buffer_shape(ch, need)?;
+        cfa4_media::validate_audio_buffer_shape(ch, frames)?;
         let ratio = src_rate as f64 / sample_rate as f64;
         let s0 = (start as f64 * ratio).floor() as i64;
-        let need = (frames as f64 * ratio).ceil() as i64 + 2;
-        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
+        let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
         let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
         let mut i = a.starts.partition_point(|&x| x <= s0).saturating_sub(1);
         while i < n_packets {
             let Some(&pk_start) = a.starts.get(i) else { break };
-            if pk_start >= s0 + need {
+            if pk_start >= s0.saturating_add(need_i64) {
                 break;
             }
             let pk = self.audio_packet(a, ainfo, &mut st, i)?;
