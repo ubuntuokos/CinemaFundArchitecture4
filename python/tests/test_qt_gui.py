@@ -6417,7 +6417,8 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
             assert ui() == before, f"{params} changed something"
 
         first = ui()
-        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
+        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "gfxTemplates", "keyframeSelection", "export"}
+        assert first["gfxTemplates"]["export"] is None and first["gfxTemplates"]["replace"] is None
         assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
@@ -9112,6 +9113,89 @@ def test_essential_sound(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_template_dialogs_as_egui(app, tmp_path: Path):
+    """File ▸ Export ▸ Motion Graphics Template… and Replace Fonts open egui's dialogs (not the
+    generic form): the template's name, category, description and editable properties; the fonts
+    the project uses and the family to replace. Their drafts are ui.gfxTemplates' export /
+    replace, set through the control channel; an engine error stays in the dialog."""
+    from cfa4_qt.commands import Command
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.template_dialogs import ExportTemplateDialog, ReplaceFontsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data"), "--autosave"])  # the templates folder
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    eg = win.essential_graphics
+    server = ControlServer(win)
+    assert server.listen(0)
+
+    def dialog(cls):
+        import shiboken6
+
+        d = win.template_dialog
+        return d if isinstance(d, cls) and shiboken6.isValid(d) and d.isVisible() else None
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+        win.execute("graphics.newText", {"text": "Hello Qt"})
+        assert wait_until(app, lambda: eg.editor.param("text") == "Hello Qt", 20_000)
+        # Export As Motion Graphics Template
+        win.run_command(Command("file.exportGraphicsTemplate", "Motion Graphics Template…", ["File", "Export"], "", "{}", True))
+        assert wait_until(app, lambda: dialog(ExportTemplateDialog) is not None, 10_000)
+        d = dialog(ExportTemplateDialog)
+        assert d.windowTitle() == "Export As Motion Graphics Template"
+        draft = c.call("ui.inspect")["result"]["ui"]["gfxTemplates"]["export"]
+        assert draft["clip"] == eg.editor.clip and draft["category"] == "My Templates" and draft["error"] == ""
+        params = [x["param"] for x in draft["controls"]]
+        assert params[:6] == ["text", "font", "size", "fill_color", "position", "enabled"], params
+        assert [x["on"] for x in draft["controls"]][:3] == [True, False, False]
+        for n in range(len(draft["controls"])):
+            assert d.findChild(QtWidgets.QCheckBox, f"exportTemplate.control.{n}") is not None
+        assert all(d.findChild(QtWidgets.QWidget, f"exportTemplate.{k}") is not None for k in ("name", "category", "description", "ok", "cancel"))
+        r = c.call("ui.set", {"gfxTemplates": {"export": {"name": "Agent Title", "description": "from an agent"}}})
+        assert r["ok"], r
+        assert d.name.text() == "Agent Title" and d.description.text() == "from an agent"
+        for bad, text in (({"export": {"colour": 1}}, "no field 'colour'"), ({"replace": {"from": "X"}}, "not open"), ({"tab": "sideways"}, "tab is")):
+            r = c.call("ui.set", {"gfxTemplates": bad})
+            assert r["ok"] is False and text in r["error"], r
+        assert d.name.text() == "Agent Title"
+        d.ok.click()
+        assert wait_until(app, lambda: dialog(ExportTemplateDialog) is None, 20_000), d.error.text()
+        assert wait_until(app, lambda: "Exported graphics template to" in win.statusBar().currentMessage(), 5_000)
+        # an engine error stays in the dialog: no graphic selected
+        win.execute("timeline.select", {"clips": []})
+        assert wait_until(app, lambda: not (win.sequence or {}).get("selection"), 10_000)
+        win.run_command(Command("file.exportGraphicsTemplate", "Motion Graphics Template…", ["File", "Export"], "", "{}", True))
+        assert wait_until(app, lambda: win.statusBar().currentMessage() == "select a graphic clip", 10_000)
+        # Replace Fonts in Projects
+        win.run_command(Command("file.replaceFonts", "Replace Fonts…", ["Graphics and Titles"], "", "{}", True))
+        assert wait_until(app, lambda: dialog(ReplaceFontsDialog) is not None, 10_000)
+        d = dialog(ReplaceFontsDialog)
+        assert d.windowTitle() == "Replace Fonts in Projects" and d.used.topLevelItemCount() >= 1
+        rep = c.call("ui.inspect")["result"]["ui"]["gfxTemplates"]["replace"]
+        assert rep["from"] and rep["to"] == "Inter" and rep["error"] == ""
+        assert c.call("ui.set", {"gfxTemplates": {"replace": {"to": "JetBrains Mono"}}})["ok"]
+        assert d.to_combo.currentData() == "JetBrains Mono"
+        d.ok.click()
+        assert wait_until(app, lambda: dialog(ReplaceFontsDialog) is None, 20_000)
+        assert wait_until(app, lambda: win.statusBar().currentMessage().startswith("Replaced "), 5_000)
+        # null closes an open dialog
+        win.run_command(Command("file.replaceFonts", "Replace Fonts…", ["Graphics and Titles"], "", "{}", True))
+        assert wait_until(app, lambda: dialog(ReplaceFontsDialog) is not None, 10_000)
+        assert c.call("ui.set", {"gfxTemplates": {"replace": None}})["ok"]
+        assert wait_until(app, lambda: dialog(ReplaceFontsDialog) is None, 5_000)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
