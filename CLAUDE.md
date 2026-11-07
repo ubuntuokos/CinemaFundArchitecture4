@@ -21,7 +21,7 @@ override them (pure-Rust-only frontends, upstream release processes, macOS/Windo
 - **Fonts, in practice:** `CFA4_FONTS_DIR=/path/to/extra-fonts cargo run -p cfa4` (used for Japanese in the UI
   and titles). Tests on its glyphs skip when it is empty, so run the gates with and without `CFA4_FONTS_DIR` when
   you touch fonts.
-- **Pure Rust** in the product. OS media APIs only via Rust bindings in `crates/platform` (`AGENTS.md` §0.3,
+- **Rust first** in the product. A non-Rust component (C, C++…) is allowed unless it slows CFA4 down, and may be ported to Rust step by step in later releases (owner decision 2026-11-07, `AGENTS.md` CFA4 section). OS media APIs only via Rust bindings in `crates/platform` (`AGENTS.md` §0.3,
   `docs/adr/0001-platform-ffi.md`), optional, behind traits, with our decoders as the fallback. The exceptions
   (FFmpeg, GStreamer via the `cfa4-route` router) are in the `AGENTS.md` CFA4 section. GStreamer build/test:
   `cargo test -p cfa4-gstreamer --features gstreamer` (needs `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`).
