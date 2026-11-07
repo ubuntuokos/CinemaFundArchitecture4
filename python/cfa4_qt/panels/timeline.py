@@ -2962,6 +2962,17 @@ class TimelinePanel(QWidget):
         self._tab_ids: list[int] = []
         self.last_tab_menu: QMenu | None = None
         bar.addWidget(self.tabs, 1)
+        # egui's » (dock.rs ``timeline.tabs.more``): shown while the tabs don't all fit; it lists
+        # every open sequence (``timeline.tabs.list.<id>``, the shown one ticked), a pick shows it
+        self.tabs_more = QToolButton(self)
+        self.tabs_more.setObjectName("timeline.tabs.more")
+        self.tabs_more.setText("»")
+        self.tabs_more.setToolTip(tr("more tabs"))
+        self.tabs_more.setAutoRaise(True)
+        self.tabs_more.clicked.connect(self._show_tabs_list)
+        self.tabs_more.hide()
+        self.last_tabs_list: QMenu | None = None
+        bar.addWidget(self.tabs_more)
         # egui's toolbar: Nest, Snap, Linked Selection (on: pressed), Captions, Add Marker, the
         # Timeline Display Settings menu
         self.toggles: dict[str, QToolButton] = {}
@@ -3051,6 +3062,30 @@ class TimelinePanel(QWidget):
         self.tabs.blockSignals(False)
         self.tabs.setVisible(bool(ids))
         self.title.setVisible(not ids)
+        self._sync_tabs_more()
+
+    def tabs_fit(self) -> bool:
+        return sum(self.tabs.tabSizeHint(i).width() for i in range(self.tabs.count())) <= self.tabs.width()
+
+    def _sync_tabs_more(self) -> None:
+        self.tabs_more.setVisible(self.tabs.isVisibleTo(self) and self.tabs.count() > 1 and not self.tabs_fit())
+
+    def _show_tabs_list(self) -> None:
+        menu = QMenu(self)
+        menu.setObjectName("timeline.tabs.list")
+        menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        active = (self.canvas.sequence or {}).get("id")
+        for i in range(self.tabs.count()):
+            sid = self.tab_id(i)
+            if sid is None:
+                continue
+            a = menu.addAction(self.tabs.tabText(i))
+            a.setObjectName(f"timeline.tabs.list.{sid}")
+            a.setCheckable(True)
+            a.setChecked(sid == active)
+            a.triggered.connect(lambda _c=False, s_=sid: s_ != (self.canvas.sequence or {}).get("id") and self.canvas.command.emit("sequence.open", {"item": s_}))
+        self.last_tabs_list = menu
+        menu.popup(self.tabs_more.mapToGlobal(self.tabs_more.rect().bottomLeft()))
 
     def _tab_picked(self, i: int) -> None:
         sid = self.tab_id(i)
@@ -3091,6 +3126,8 @@ class TimelinePanel(QWidget):
         menu.popup(self.tabs.mapToGlobal(pos))
 
     def eventFilter(self, obj: QObject, e: QEvent) -> bool:
+        if obj is self.tabs and e.type() == QEvent.Type.Resize:
+            self._sync_tabs_more()
         if (
             obj is self.tabs
             and e.type() == QEvent.Type.MouseButtonRelease

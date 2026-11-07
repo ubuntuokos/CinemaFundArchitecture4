@@ -12563,3 +12563,48 @@ def test_real_engine_control_channel_names_timeline_sequence_tabs_as_egui(app, t
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_tabs_more_list_as_egui(app, tmp_path: Path):
+    """egui's » on the Timeline tab strip (dock.rs ``timeline.tabs.more``): shown only while the
+    sequence tabs don't all fit; it lists every open sequence (``timeline.tabs.list.<id>``, the
+    shown one ticked) and a pick shows that sequence."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel = win.timeline
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: panel.tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        wait_until(app, lambda: False, 100)
+        assert panel.tabs_fit() and not panel.tabs_more.isVisible()
+        # many long-named sequences: the tabs overflow and » shows
+        for k in range(6):
+            win.execute("file.newSequence", {"name": f"A rather long sequence name {k}"})
+        assert wait_until(app, lambda: panel.tabs.count() == 8, 20_000)
+        assert wait_until(app, lambda: panel.tabs_more.isVisible(), 5_000), [panel.tabs.width(), panel.tabs.sizeHint()]
+        assert panel.tabs_more.objectName() == "timeline.tabs.more"
+        panel.tabs_more.click()
+        assert wait_until(app, lambda: panel.last_tabs_list is not None and panel.last_tabs_list.isVisible(), 5_000)
+        acts = {a.objectName(): a for a in panel.last_tabs_list.actions()}
+        assert len(acts) == 8 and f"timeline.tabs.list.{first}" in acts
+        active = win.sequence["id"]
+        assert acts[f"timeline.tabs.list.{active}"].isChecked()
+        assert sum(a.isChecked() for a in acts.values()) == 1
+        assert acts[f"timeline.tabs.list.{second}"].text() == "Second"
+        acts[f"timeline.tabs.list.{first}"].trigger()
+        panel.last_tabs_list.close()
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
