@@ -361,7 +361,51 @@ pub fn open<S: ByteSource>(src: S) -> Result<Mp4File> {
             }
         }
     }
+    read_chapter_track(&mut file, &src);
     Ok(file)
+}
+
+/// Upper bound on the QuickTime chapter samples read (each is one chapter).
+const MAX_CHAPTER_SAMPLES: usize = 4096;
+
+/// A QuickTime chapter track: the `text` track another track points at with `tref/chap`. Its
+/// tracks become [`TrackKind::Other`] (they are not subtitles), and when the file has no `chpl`
+/// its samples become [`Metadata::chapters`]: the presentation time and the text of each one.
+fn read_chapter_track<S: ByteSource>(file: &mut Mp4File, src: &S) {
+    let ids: Vec<u32> = file.tracks.iter().flat_map(|t| &t.references).filter(|(k, _)| *k == b"chap").flat_map(|(_, ids)| ids.iter().copied()).collect();
+    let Some(ti) = ids.iter().find_map(|id| file.tracks.iter().position(|t| t.id == *id && t.kind == TrackKind::Subtitle)) else { return };
+    for t in &mut file.tracks {
+        if ids.contains(&t.id) && t.kind == TrackKind::Subtitle {
+            t.kind = TrackKind::Other;
+        }
+    }
+    if !file.metadata.chapters.is_empty() {
+        return;
+    }
+    let t = &file.tracks[ti];
+    for s in t.samples.iter().take(MAX_CHAPTER_SAMPLES) {
+        let Ok(data) = read_range(src, s.offset, u64::from(s.size).min(1 << 16)) else { break };
+        let Some(title) = chapter_text(&data) else { continue };
+        let pts = i128::from(s.pts) + i128::from(t.edit_offset);
+        let start = rescale(pts.max(0), t.timescale, 10_000_000).max(0);
+        file.metadata.chapters.push(Chapter { start_100ns: start as u64, title });
+    }
+}
+
+/// The text of a QuickTime text sample: a 16-bit length, then UTF-16 with a byte order mark or
+/// (by the `encd` atom ours carry, and in practice) UTF-8.
+fn chapter_text(data: &[u8]) -> Option<String> {
+    let n = usize::from(u16::from_be_bytes([*data.first()?, *data.get(1)?]));
+    let text = data.get(2..2 + n)?;
+    Some(match text {
+        [0xFE, 0xFF, rest @ ..] => {
+            char::decode_utf16(rest.chunks_exact(2).map(|c| u16::from_be_bytes([c[0], c[1]]))).map(|c| c.unwrap_or('\u{FFFD}')).collect()
+        }
+        [0xFF, 0xFE, rest @ ..] => {
+            char::decode_utf16(rest.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]]))).map(|c| c.unwrap_or('\u{FFFD}')).collect()
+        }
+        _ => String::from_utf8_lossy(text).into_owned(),
+    })
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -888,7 +932,7 @@ fn parse_udta(p: &[u8], md: &mut Metadata) {
         } else if b.kind.0[0] == 0xA9 && b.payload.len() >= 4 {
             let n = u16::from_be_bytes([b.payload[0], b.payload[1]]) as usize;
             if let Some(s) = b.payload.get(4..4 + n) {
-                md.entries.push((b.kind.to_string_lossy(), String::from_utf8_lossy(s).into_owned()));
+                push_metadata(md, &b.kind.to_string_lossy(), s);
             }
         }
     }
@@ -935,16 +979,38 @@ fn parse_meta(p: &[u8], md: &mut Metadata) {
     let Some(ilst) = find(body, b"ilst") else { return };
     for item in boxes(ilst).map_while(|b| b.ok()) {
         let idx = item.kind.as_u32() as usize;
-        let key = if !keys.is_empty() && idx >= 1 && idx <= keys.len() { keys[idx - 1].clone() } else { item.kind.to_string_lossy() };
+        let key = if !keys.is_empty() && idx >= 1 && idx <= keys.len() {
+            std::borrow::Cow::Borrowed(keys[idx - 1].as_str())
+        } else {
+            std::borrow::Cow::Owned(item.kind.to_string_lossy())
+        };
         if let Some(d) = find(item.payload, b"data")
             && d.len() >= 8
         {
             let ty = u32::from_be_bytes([d[0], d[1], d[2], d[3]]) & 0xFF_FFFF;
             if ty == 1 || ty == 0 {
-                md.entries.push((key, String::from_utf8_lossy(&d[8..]).into_owned()));
+                push_metadata(md, &key, &d[8..]);
             }
         }
     }
+}
+
+/// Metadata is untrusted presentation data. Bound its cumulative expanded representation before
+/// cloning repeated numeric keys or converting values into owned strings.
+const MAX_METADATA_BYTES: usize = 1 << 20;
+const MAX_METADATA_ENTRIES: usize = 4_096;
+
+fn push_metadata(md: &mut Metadata, key: &str, value: &[u8]) {
+    if md.entries.len() >= MAX_METADATA_ENTRIES {
+        return;
+    }
+    let used = md.entries.iter().map(|(k, v)| k.len().saturating_add(v.len())).sum::<usize>();
+    // Invalid UTF-8 can expand to one three-byte replacement character per input byte.
+    let worst = key.len().saturating_add(value.len().saturating_mul(3));
+    if used.saturating_add(worst) > MAX_METADATA_BYTES {
+        return;
+    }
+    md.entries.push((key.to_owned(), String::from_utf8_lossy(value).into_owned()));
 }
 
 #[cfg(test)]
@@ -967,6 +1033,17 @@ mod tests {
         assert_eq!(c.take(3), 10 + 5 + 5);
         assert_eq!(c.next_value(), 5);
         assert_eq!(c.next_value(), 0);
+    }
+
+    #[test]
+    fn metadata_expansion_is_bounded_before_strings_are_retained() {
+        let mut md = Metadata::default();
+        push_metadata(&mut md, "k", &vec![b'x'; MAX_METADATA_BYTES]);
+        assert!(md.entries.is_empty());
+        for _ in 0..MAX_METADATA_ENTRIES + 10 {
+            push_metadata(&mut md, "key", b"value");
+        }
+        assert_eq!(md.entries.len(), MAX_METADATA_ENTRIES);
     }
 
     #[test]
