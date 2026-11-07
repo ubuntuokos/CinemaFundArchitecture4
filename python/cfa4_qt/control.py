@@ -547,14 +547,18 @@ class ControlServer(QObject):
     def elements(self, prefix: str) -> list[dict[str, Any]]:
         origin = self.window.mapToGlobal(QPoint(0, 0))
         out: list[dict[str, Any]] = []
+        parts = self._parts()
+        part_ids = {pid for _w, pid, _r, _label in parts}
         for top in self._windows():
             for w in [top, *top.findChildren(QWidget)]:
                 name = w.objectName()
                 if not name or not name.startswith(prefix) or name.startswith("qt_") or not w.isVisible() or w.visibleRegion().isEmpty():
                     continue
+                if name in part_ids:  # the part's id names it (menu.File: the button, not the popup)
+                    continue
                 at = w.mapToGlobal(QPoint(0, 0)) - origin
                 out.append({"id": name, "label": label_of(w), "rect": [at.x(), at.y(), w.width(), w.height()], "enabled": w.isEnabled()})
-        for w, pid, r, label in self._parts():
+        for w, pid, r, label in parts:
             if pid.startswith(prefix):
                 at = w.mapToGlobal(r.topLeft()) - origin
                 out.append({"id": pid, "label": label, "rect": [at.x(), at.y(), r.width(), r.height()], "enabled": w.isEnabled()})
@@ -600,17 +604,14 @@ class ControlServer(QObject):
             raise ControlError("a point is {id} or {x, y}")
         if "id" in p:
             pid = p.get("id")
-            try:
-                w = self._widget(pid)
-            except ControlError:
-                # a painted part (egui's region ids): its widget and the part's centre
-                part = next(((pw, r) for pw, i, r, _label in self._parts() if i == pid), None)
-                if part is None:
-                    raise
-                # the child under the part's centre takes the input (a window's part over a tab bar)
+            # a painted part (egui's region ids) first: the menu bar's menu.File is the button, not
+            # its open popup; the child under the part's centre takes the input
+            part = next(((pw, r) for pw, i, r, _label in self._parts() if i == pid), None) if isinstance(pid, str) else None
+            if part is not None:
                 pw, at = part[0], part[1].center()
                 child = pw.childAt(at)
                 return (child, child.mapFrom(pw, at)) if child is not None else (pw, at)
+            w = self._widget(pid)
             return w, w.rect().center()
         x, y = _number(p, "x", -1e5, 1e5), _number(p, "y", -1e5, 1e5)
         win = self.window
