@@ -12,7 +12,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QPoint, QSettings, Qt, QTimer, QUrl
+from PySide6.QtCore import QByteArray, QElapsedTimer, QEvent, QPoint, QRect, QSettings, Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QActionGroup, QCloseEvent, QCursor, QDesktopServices, QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractSpinBox,
@@ -938,6 +938,20 @@ class MainWindow(QMainWindow):
             if a not in added:
                 self.addAction(a)
         return [a for a, _c, _k in pairs]
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ids for the window's painted parts, in window coordinates: the menu bar's
+        ``menu.<Name>`` buttons (a click opens the menu, as in egui)."""
+        bar = self.menuBar()
+        if not bar.isVisible():
+            return []
+        at = bar.mapTo(self, QPoint(0, 0))
+        out: list[tuple[str, QRect, str]] = []
+        for a in bar.actions():
+            r = bar.actionGeometry(a)
+            if a.menu() is not None and a.isVisible() and not r.isEmpty():
+                out.append((a.menu().objectName(), r.translated(at), a.text().replace("&", "")))
+        return out
 
     def _build_menus(self) -> None:
         self.registry.build_menus(

@@ -31,7 +31,7 @@ from collections.abc import Callable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QObject, QPoint, QPointF, Qt
+from PySide6.QtCore import QBuffer, QByteArray, QEvent, QIODevice, QObject, QPoint, QPointF, QRect, Qt
 from PySide6.QtGui import QKeyEvent, QKeySequence, QWheelEvent
 from PySide6.QtNetwork import QHostAddress, QTcpServer, QTcpSocket
 from PySide6.QtTest import QTest
@@ -512,13 +512,36 @@ class ControlServer(QObject):
     def elements(self, prefix: str) -> list[dict[str, Any]]:
         origin = self.window.mapToGlobal(QPoint(0, 0))
         out: list[dict[str, Any]] = []
+        parts = self._parts()
+        part_ids = {pid for _w, pid, _r, _label in parts}
         for top in self._windows():
             for w in [top, *top.findChildren(QWidget)]:
                 name = w.objectName()
                 if not name or not name.startswith(prefix) or name.startswith("qt_") or not w.isVisible() or w.visibleRegion().isEmpty():
                     continue
+                if name in part_ids:  # the part's id names it (menu.File: the button, not the popup)
+                    continue
                 at = w.mapToGlobal(QPoint(0, 0)) - origin
                 out.append({"id": name, "label": label_of(w), "rect": [at.x(), at.y(), w.width(), w.height()], "enabled": w.isEnabled()})
+        for w, pid, r, label in parts:
+            if pid.startswith(prefix):
+                at = w.mapToGlobal(r.topLeft()) - origin
+                out.append({"id": pid, "label": label, "rect": [at.x(), at.y(), r.width(), r.height()], "enabled": w.isEnabled()})
+        return out
+
+    def _parts(self) -> list[tuple[QWidget, str, QRect, str]]:
+        """The painted parts of visible widgets that have ``automation_parts()`` (egui registers
+        such regions with their own ids: the Audio Meters' readout, bars and scale, …)."""
+        out: list[tuple[QWidget, str, QRect, str]] = []
+        for top in self._windows():
+            for w in [top, *top.findChildren(QWidget)]:
+                parts = getattr(w, "automation_parts", None)
+                if not callable(parts) or not w.isVisible() or w.visibleRegion().isEmpty():
+                    continue
+                for pid, rect, label in parts():
+                    r = rect.toAlignedRect() if hasattr(rect, "toAlignedRect") else QRect(rect)
+                    if r.isValid():
+                        out.append((w, str(pid), r, str(label)))
         return out
 
     def _widget(self, wid: Any) -> QWidget:
@@ -543,7 +566,15 @@ class ControlServer(QObject):
         if not isinstance(p, dict):
             raise ControlError("a point is {id} or {x, y}")
         if "id" in p:
-            w = self._widget(p.get("id"))
+            pid = p.get("id")
+            # a painted part (egui's region ids) first: the menu bar's menu.File is the button, not
+            # its open popup; the child under the part's centre takes the input
+            part = next(((pw, r) for pw, i, r, _label in self._parts() if i == pid), None) if isinstance(pid, str) else None
+            if part is not None:
+                pw, at = part[0], part[1].center()
+                child = pw.childAt(at)
+                return (child, child.mapFrom(pw, at)) if child is not None else (pw, at)
+            w = self._widget(pid)
             return w, w.rect().center()
         x, y = _number(p, "x", -1e5, 1e5), _number(p, "y", -1e5, 1e5)
         win = self.window
