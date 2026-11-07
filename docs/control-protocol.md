@@ -86,6 +86,9 @@ unknown IDs, non-widget regions and hidden tool aliases. The reply acknowledges 
 focus. This is separate from `ui.focused`, which identifies the active panel. Tools, dock tabs,
 tab menus and divider handles expose widget IDs through `ui.elements`. Tab/Shift-Tab move widget
 focus; Space/Enter activate focused buttons and tabs, with visible focus outlines.
+Painted regions carry ids of their own (the Audio Meters' `audioMeters.loudness`,
+`audioMeters.channel.<name>` and `audioMeters.scale`, with what they show as the label); in the Qt GUI
+a widget lists them through `automation_parts()`, and `ui.click` / `ui.move` / `ui.drag` find them by id.
 
 For unattended validation, start with `--control <port> --control-input-only`. This opt-in mode
 accepts widget input through control requests and excludes native keyboard, pointer, file-drop
