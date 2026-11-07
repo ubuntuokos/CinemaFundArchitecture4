@@ -11,3 +11,6 @@ workspace = true
 
 [dependencies]
 thiserror = { workspace = true }
+
+[dev-dependencies]
+cfa4-testkit = { workspace = true }

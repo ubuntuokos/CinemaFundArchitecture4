@@ -425,7 +425,10 @@ impl MxfSource {
             } else {
                 (1, 1)
             };
+            // DV: format, sampling, aspect and colour are in the first frame's header and VAUX packs
+            let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
             let codec = match t.codec {
+                Codec::Dv if dv.is_some() => dv.as_ref().map(|d| d.codec.clone()).unwrap_or_default(),
                 Codec::Vc3 => file
                     .read_sample(&bytes, vi, 0)
                     .ok()
@@ -488,6 +491,16 @@ impl MxfSource {
             } else if p.full_range() {
                 color.range = cfa4_color::Range::Full;
                 explicit_color = Some(color);
+            }
+            let mut par = par;
+            if let Some(d) = &dv {
+                pixel_format = d.pixel_format.clone();
+                if !p.aspect_ratio.is_valid() {
+                    par = d.par;
+                }
+                if explicit_color.is_none() {
+                    color = d.color;
+                }
             }
             let secs = vcount as f64 / rate.as_f64().max(1e-9);
             let bytes_total: u64 = t.samples.iter().map(|s| s.size as u64).sum();
@@ -596,10 +609,11 @@ impl VideoSamples for MxfVideo<'_> {
         self.src.vpts[i]
     }
     fn sync_before(&self, i: usize) -> usize {
-        let key = self.src.file.tracks[self.track].sync_before(i);
         // a leading picture of an open GOP (stored after its random-access picture, shown
         // before it) is predicted from the previous GOP too
-        if key > 0 && i < self.src.vpts.len() && self.src.vpts[i] < self.src.vpts[key] { self.sync_before(key - 1) } else { key }
+        let track = &self.src.file.tracks[self.track];
+        let pts = &self.src.vpts;
+        crate::gop::open_gop_sync(i, |i| track.sync_before(i), |i, key| matches!((pts.get(i), pts.get(key)), (Some(a), Some(b)) if a < b))
     }
     fn sample_at(&self, t: i64) -> Option<usize> {
         usize::try_from(t).ok().and_then(|t| self.src.vorder.get(t).copied())
@@ -620,6 +634,7 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
+            Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             other => Err(CodecError::Unsupported(format!("{} video in MXF", other.name()))),
         }
     }
