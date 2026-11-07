@@ -1324,6 +1324,25 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         d.findChild(QtWidgets.QPushButton, "settings.ok").click()
         assert wait_until(app, lambda: closed(d), 10_000)
         assert pref("timeline.autoScroll") == "pageScroll"
+        # egui's ui.set {settings}: the open dialog's page and draft values (OK applies them)
+        from cfa4_qt.control import ControlServer
+
+        server = ControlServer(win)
+        assert server.listen(0)
+        c = _ControlClient(app, server.port())
+        assert c.call("ui.set", {"settings": {"page": "timeline"}})["ok"] is False, "not open"
+        d = opened("general")
+        r = c.call("ui.set", {"settings": {"page": "timeline", "values": {"timeline.autoScroll": "noScroll"}}})
+        assert r["ok"], r
+        assert d.page == "timeline" and d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll").currentData() == "noScroll"
+        for bad, text in (({"page": "moon"}, "unknown settings category"), ({"values": {"timeline.nothing": 1}}, "unknown preference")):
+            r = c.call("ui.set", {"settings": bad})
+            assert r["ok"] is False and text in r["error"], r
+        assert d.page == "timeline"
+        d.findChild(QtWidgets.QPushButton, "settings.ok").click()
+        assert wait_until(app, lambda: closed(d), 10_000)
+        assert pref("timeline.autoScroll") == "noScroll"
+        server.close()
         # Auto Save: groups, a note, and indented fields enabled by their switch
         d = opened("autoSave")
         page = d.findChild(QtWidgets.QWidget, "settings.page.autoSave")
