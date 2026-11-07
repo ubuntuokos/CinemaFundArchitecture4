@@ -42,6 +42,11 @@ it checked and why. `--smoke [--screenshot out.png]`
 starts, waits for the engine, and quits (CI). `--no-autosave` turns off the auto-save and
 crash-recovery journal, `--data-dir` moves it.
 
+**Agents.** `cfa4-qt --control 9876` serves egui's control channel ([control-protocol.md](control-protocol.md)),
+and `cfa4-cli mcp --bridge 127.0.0.1:9876` (the `cfa4` server in `.mcp.json`) drives the Qt window over
+MCP as it drives egui's: commands, the document, the `ui_*` tools, `ui_screenshot`, `render_preview`
+(the Program monitor) and long exports (`test_real_engine_mcp_bridge_drives_the_qt_window`).
+
 ## Architecture
 
 ```text
