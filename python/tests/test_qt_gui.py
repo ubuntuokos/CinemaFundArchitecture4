@@ -4654,6 +4654,16 @@ def test_tools_panel_and_every_timeline_tool(app, tmp_path: Path):
         for key, tool in (("B", "ripple"), ("N", "rolling"), ("R", "rateStretch"), ("Y", "slip"), ("U", "slide"), ("A", "trackSelectForward"), ("H", "hand"), ("Z", "zoom"), ("C", "razor"), ("V", "selection")):
             QtTest.QTest.keyClick(win, QtGui.QKeySequence(key)[0].key())
             assert wait_until(app, lambda t=tool: canvas.tool == t and win.tools.current == t, 2_000), (key, canvas.tool)
+        # egui's automation ids: each group's button is tools.<Tool> of the tool it shows (the last
+        # picked of its group), its
+        # flyout rows tools.select.<Tool>
+        names = lambda: [b.objectName() for b in win.tools.buttons]
+        assert names() == ["tools.Selection", "tools.TrackSelectForward", "tools.RateStretch", "tools.Razor", "tools.Slide", "tools.Pen", "tools.Zoom", "tools.Type"]
+        assert sorted(a.objectName() for a in win.tools.actions.values()) == sorted(f"tools.select.{t[:1].upper()}{t[1:]}" for t in TOOLS)
+        QtTest.QTest.keyClick(win, Qt.Key.Key_A, Qt.KeyboardModifier.ShiftModifier)
+        assert wait_until(app, lambda: "tools.TrackSelectBackward" in names(), 2_000), names()
+        QtTest.QTest.keyClick(win, Qt.Key.Key_V)
+        assert wait_until(app, lambda: win.tools.current == "selection", 2_000)
 
         # the later V1 clips: nothing sync-locked sits after them (the engine refuses an edit
         # that would break sync, and the GUI shows that refusal in Events)
@@ -6557,9 +6567,8 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
     app.quit closes it."""
     from cfa4_qt.control import ControlServer
     from cfa4_qt.main_window import MainWindow
-    from cfa4_qt.panels.tools import GROUPS
 
-    razor_id = f"tools.group.{next(i for i, g in enumerate(GROUPS) if g[0].id == 'razor')}"
+    razor_id = "tools.Razor"  # egui's id for the Razor tool's button
     settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
     engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
     win = MainWindow(engine, settings)
