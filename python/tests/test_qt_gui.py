@@ -10657,6 +10657,67 @@ def test_marketing_commands_ask_for_their_spreadsheet_and_report_results(app, tm
     assert result_status("file.save", {}) is None
 
 
+def test_status_bar_job_text_as_egui():
+    from cfa4_qt.status_bar import job_text, running_job, tool_hint
+
+    assert running_job([{"id": 1, "finished": True}, {"id": 2, "finished": False}, {"id": 3, "finished": True}])["id"] == 2
+    assert running_job([{"id": 1, "finished": True}]) is None and running_job(None) is None
+    assert job_text({"label": "Export", "progress": 0.425, "etaSeconds": 12}) == "Exporting… 42% · 0:12 left"
+    assert job_text({"label": "Rendering 3 preview segments", "progress": 1.5}) == "Rendering 3 preview segments… 100%"
+    assert tool_hint("razor") == "Click to split a clip. Shift-click to split all tracks."
+    assert tool_hint("pen") == ""
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_status_bar_as_egui(app, tmp_path: Path):
+    """egui's status bar: the tool's hint on the left (a status message over it for a while), the
+    running job on the right (``status.job``: what it does, its percentage and time left, the
+    progress bar ``status.job.progress``, ``status.job.cancel`` cancels it), hidden when nothing
+    runs; a preview render that finishes starts playback from the In point (Timeline ▸ Play after
+    rendering previews)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1400, 900)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        hint = win.findChild(QtWidgets.QLabel, "status.hint")
+        assert hint.text().startswith("Click to select, or click in empty space")
+        win.tools.select("razor")
+        assert hint.text() == "Click to split a clip. Shift-click to split all tracks."
+        win.tools.select("selection")
+        job = win.findChild(QtWidgets.QWidget, "status.job")
+        assert job.isHidden()
+        # a long export: the job shows, Cancel stops it and the row goes
+        out = tmp_path / "long.mp4"
+        win.execute("file.exportMedia", {"path": str(out), "format": "h264", "width": 1920, "height": 1080, "audio": False, "range": "entire"})
+        assert wait_until(app, lambda: job.isVisible(), 20_000)
+        assert job.findChild(QtWidgets.QLabel, "status.job.text").text().startswith("Exporting… ")
+        bar = job.findChild(QtWidgets.QProgressBar, "status.job.progress")
+        assert bar.isVisible() and bar.maximum() == 1000
+        job.findChild(QtWidgets.QToolButton, "status.job.cancel").click()
+        assert wait_until(app, lambda: job.isHidden(), 30_000)
+        assert not win.job_watch.isActive()
+        # a preview render: playback starts from the In point once it is done
+        assert not win.monitor.playing
+        win.execute("markers.markIn", {"seconds": 1.0})
+        win.execute("markers.markOut", {"seconds": 1.3})
+        assert wait_until(app, lambda: isinstance((win.sequence or {}).get("out"), int), 10_000)
+        mark_in = win.sequence["in"]
+        win.execute("sequence.renderInToOut", {})
+        assert wait_until(app, lambda: win.monitor.playing, 60_000), "play after rendering previews"
+        assert mark_in <= win.monitor.playhead < mark_in + 254_016_000_000
+        win.monitor.stop()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
     """egui's Import mode: the header's Home and Import / Edit / Export, the cards run their

@@ -2347,5 +2347,18 @@ export.summary	Low	alacsony
 	Error	Hiba
 	Panel menu	Panelmenü
 	Move panel	Panel áthelyezése
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Kattintással kijelölés, üres helyen húzással keretes kijelölés. További lehetőségek: Shift, Alt és Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Kattintással az összes sáv tőle jobbra eső klipjei kijelölődnek. Shift-kattintás: csak egy sáv.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Kattintással az összes sáv tőle balra eső klipjei kijelölődnek. Shift-kattintás: csak egy sáv.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Vágáspont húzása hullámvágással; a későbbi klipek követik, így nem marad rés.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Vágáspont görgetése: az egyik klip vége és a következő eleje együtt mozog.
+	Drag an edge to change the clip's speed so it fills the new duration.	A szél húzása úgy változtatja a klip sebességét, hogy kitöltse az új hosszt.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Zeneklip szélének húzásával a zene az új hosszra keveredik, zeneileg illő ütéseknél.
+	Click to split a clip. Shift-click to split all tracks.	Kattintással a klip kettévágódik. Shift-kattintás: minden sáv.
+	Drag a clip to slip its source in/out without moving it.	Klip húzásával a forrás kezdő- és végpontja eltolódik, a klip helyben marad.
+	Drag a clip to slide it between its neighbours.	Klip húzásával a klip a szomszédai között csúszik.
+	Drag to scroll the timeline.	Húzással az idővonal görgethető.
+	Click to zoom in; Alt-click to zoom out.	Kattintás: nagyítás; Alt-kattintás: kicsinyítés.
+	Exporting	Exportálás
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.

@@ -87,6 +87,7 @@ from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel, tool_commands
 from .panels.tts import TextToSpeechPanel
 from .panels.voiceover import VoiceOverRecorder, VoiceOverSettingsDialog
+from .status_bar import JobStatus, tool_hint
 from .timecode import TICKS_PER_SECOND
 from .window_menu import Workspaces, bind_free, build_window_menu, window_commands
 
@@ -432,7 +433,21 @@ class MainWindow(QMainWindow):
 
         self.status_engine = QLabel(tr("Starting engine…"))
         self.status_engine.setObjectName("status.engine")
+        # egui's status bar: the tool's hint on the left, the running job and the engine on the right
+        self.status_hint = QLabel(self)
+        self.status_hint.setObjectName("status.hint")
+        self.status_hint.setContentsMargins(8, 0, 0, 0)
+        self.statusBar().addWidget(self.status_hint, 1)
+        self.job_status = JobStatus(self)
+        self.job_status.cancel.connect(lambda jid: self.execute("jobs.cancel", {"job": jid}))
+        self.statusBar().addPermanentWidget(self.job_status)
         self.statusBar().addPermanentWidget(self.status_engine)
+        self._show_tool_hint("selection")
+        self.tools.tool_selected.connect(self._show_tool_hint)
+        self.job_watch = QTimer(self, interval=250)  # while a job runs, as egui repaints
+        self.job_watch.timeout.connect(self.watch_jobs)
+        self._watched_render: tuple[int, int] | None = None  # (job, where playback starts after it)
+        self._new_jobs: set[int] = set()
 
         for panel in (
             self.monitor,
@@ -524,6 +539,7 @@ class MainWindow(QMainWindow):
 
         engine.started.connect(self._on_started)
         engine.event.connect(self._on_event)
+        engine.job.connect(self._job_started)
         engine.failure.connect(lambda m: self.events.log(m, error=True))
         engine.stopped.connect(self._on_engine_stopped)
 
@@ -2678,6 +2694,63 @@ class MainWindow(QMainWindow):
             self._timecode_again = False
 
         self.engine.call("time.readout", params, on_reply=done, on_error=failed)
+
+    def _show_tool_hint(self, tool: str) -> None:
+        self.status_hint.setText(tool_hint(tool))
+
+    def _job_started(self, job: int) -> None:
+        self._new_jobs.add(job)
+        self.watch_jobs()
+
+    def watch_jobs(self) -> None:
+        """egui's ``watch_jobs``: the running job in the status bar (polled while one runs), and
+        playback from the In point once a preview render finishes, if Timeline ▸ Play after
+        rendering previews is on."""
+        if not self.engine.running:
+            self.job_watch.stop()
+            return
+
+        def got(jobs: Any, _b: bytes | None) -> None:
+            job = self.job_status.set_jobs(jobs)
+            if self.progress.isVisible():
+                self.progress.set_jobs(jobs)
+            self._after_render(jobs)
+            if job is None:
+                self.job_watch.stop()
+            elif not self.job_watch.isActive():
+                self.job_watch.start()
+
+        def got_all(jobs: Any, b: bytes | None) -> None:
+            # a preview render started here (seen even when it finished before this poll)
+            for j in jobs if isinstance(jobs, list) else []:
+                if isinstance(j, dict) and j.get("id") in self._new_jobs:
+                    label = str(j.get("label") or "")
+                    if self._watched_render is None and label.startswith("Rendering ") and "audio" not in label:
+                        mark_in = (self.sequence or {}).get("in")
+                        self._watched_render = (int(j["id"]), mark_in if isinstance(mark_in, int) else 0)
+            self._new_jobs.clear()
+            got(jobs, b)
+
+        self.engine.execute("jobs.list", {}, on_reply=got_all, on_error=lambda _m: self.job_watch.stop())
+
+    def _after_render(self, jobs: Any) -> None:
+        if self._watched_render is None or not isinstance(jobs, list):
+            return
+        jid, start = self._watched_render
+        job = next((j for j in jobs if isinstance(j, dict) and j.get("id") == jid), None)
+        if job is None or job.get("finished") is not True:
+            return
+        self._watched_render = None
+        result = job.get("result")
+        if isinstance(result, dict) and result.get("error"):
+            return
+
+        def play(on: Any, _b: bytes | None = None) -> None:
+            if on is not False and not self.monitor.playing:
+                self._seek_program(start)
+                self.monitor.play()
+
+        self.engine.execute("prefs.get", {"key": "timeline.playAfterRendering"}, on_reply=play, on_error=lambda _m: None)
 
     def update_jobs(self) -> None:
         if self.engine.running and (self.progress.isVisible() or self.progress.poll.isActive()):
