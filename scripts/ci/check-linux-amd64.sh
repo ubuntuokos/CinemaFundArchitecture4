@@ -44,10 +44,10 @@ import tomllib
 root = Path.cwd()
 workflow = (root / ".github/workflows/ci-linux.yml").read_text()
 assert "  platform-scope:" in workflow
-assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 9
+assert workflow.count("github.event.label.name == 'cfa4-full-validation'") == 10
 assert "types: [opened, synchronize, reopened, labeled]" in workflow
-assert workflow.count("    needs: platform-scope") == 9
-assert workflow.count("    runs-on: ubuntu-26.04") == 11
+assert workflow.count("    needs: platform-scope") == 10
+assert workflow.count("    runs-on: ubuntu-26.04") == 12
 # Required merge gate (owner decision 2026-10-31): fails unless every blocking full job succeeded.
 assert "  full-validation-gate:" in workflow and "    name: full-validation-gate" in workflow
 assert "if: always() && github.event_name != 'push'" in workflow

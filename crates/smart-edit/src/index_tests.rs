@@ -194,7 +194,7 @@ fn stream_starting_mid_gop() {
 // ---------------------------------------------------------------------------------------------
 // H.264 from CFA4's own encoder
 
-fn encode_h264(frames: usize, keyint: u32, bframes: u8) -> Vec<cfa4_h264enc::Packet> {
+pub(crate) fn encode_h264(frames: usize, keyint: u32, bframes: u8) -> Vec<cfa4_h264enc::Packet> {
     use cfa4_h264enc::{Encoder, EncoderConfig, PacketFormat, RateControl, YuvFrame};
     let (w, h) = (64usize, 48usize);
     let mut cfg = EncoderConfig::new(w as u32, h as u32, 25, 1);

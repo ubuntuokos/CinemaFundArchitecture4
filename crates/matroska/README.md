@@ -87,18 +87,23 @@ while let Some(p) = d.next_packet()? {        // file order, all tracks
 keyframe, data, duration_ns)` → `finish()`. Writes the EBML header, Segment, SeekHead, Info (with
 Duration), Tracks, Clusters of SimpleBlocks (new cluster at a video keyframe after
 `cluster_duration_ns`), BlockGroups for explicit durations, optional audio lacing (Xiph, EBML,
-fixed-size), and Cues (video keyframes, or the first frame of each track per cluster). No
-CRC-32, Chapters, Tags, Attachments, or content encodings.
+fixed-size), Cues (video keyframes, or the first frame of each track per cluster), and
+`MuxOptions::chapters` as one EditionEntry of ChapterAtoms after the Cues (listed in the SeekHead):
+UID (a fresh one for 0), start, optional end, ChapterDisplay strings with languages, nested atoms
+up to 64 levels; WebM drops the hidden/enabled flags and BCP 47 languages its subset lacks.
+`Chapter::new(start_ns, title)` builds a plain one. No CRC-32, Tags, Attachments, or content
+encodings.
 
 ## Tests
 
 - Unit: EBML VINTs (known/unknown sizes, IDs, signed lace deltas), typed values, CRC-32, all lacing
   modes, codec mapping, a hand-built file (unknown-size Segment/Clusters, header stripping,
   BlockGroups, Colour + mastering metadata, Chapters, Tags, Attachments, CRC-32 pass/fail, Cue-less
-  seek), and mux → demux round trips for every lacing mode.
+  seek), mux → demux round trips for every lacing mode, and chapters (Matroska and WebM, nesting,
+  UID assignment, a 10 000-deep chain cut without overflowing).
 - Oracle (`tests/oracle.rs`, skipped without ffmpeg/ffprobe; fixtures in `target/fixtures/matroska`):
   H.264+AAC, VP9+Opus WebM, FLAC, Vorbis, SRT+ASS subtitles, WebVTT WebM, Cues at front, a
-  streamed (pipe) file without Cues, HEVC with HDR colour, ProRes+PCM, MJPEG+AC-3, AV1. Every packet
+  streamed (pipe) file without Cues, HEVC with HDR colour, ProRes+PCM, MJPEG+AC-3, AV1, and our chapters (`ffprobe -show_chapters`, Matroska and WebM). Every packet
   is compared with `ffprobe -show_packets` (stream, size, keyframe flag, pts, duration), plus codec
   names, time bases, dimensions, audio params and duration; the sample index must equal the packet
   stream. Seeks (indexed, Cues-only, and index-on-demand) must land on the latest keyframe ≤ target.

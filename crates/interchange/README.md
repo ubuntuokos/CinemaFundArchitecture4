@@ -128,6 +128,31 @@ python -m cfa4_devtools.otio_oracle target/fixtures/otio-oracle    # exit 0 PASS
 A relative `CFA4_OTIO_ORACLE_DIR` is taken from the workspace root (Cargo runs the test from
 `crates/interchange`), so both commands above use the same directory.
 
+In CI (OTIO-1.3) the blocking `otio-oracle` job of the full validation (`workflow_dispatch` or the
+`cfa4-full-validation` PR label; the fast PR gate is unchanged) runs both commands and the
+fixture-backed oracle tests. It installs the oracle from its own hash-pinned lock,
+`requirements/otio-oracle.txt` (`scripts/dev/lock-python.sh` regenerates it with the main lock), so
+`opentimelineio` stays out of the development and Qt environment:
+
+```sh
+python -m pip install --require-hashes -r requirements/otio-oracle.txt
+```
+
 For each file it reads the document with OTIO, re-serialises it, and compares tracks, clip names,
 marker counts and every clip's position and length, as OTIO's own `range_in_parent` computes
 them, with `manifest.json` (exact ticks, 1 µs tolerance for OTIO's floating-point times).
+
+The other direction (OTIO-1.2): the library writes samples for every schema the reader handles
+(`Timeline.1`, `Stack.1`, `Track.1`, `Clip.1`/`Clip.2`, `Gap.1`, `Transition.1`,
+`Marker.1`/`Marker.2`, the external, missing and generator references, `LinearTimeWarp.1`,
+`FreezeFrame.1`, `Effect.1`, `SerializableCollection.1`), and `oracle_samples` imports them:
+
+```sh
+python -m cfa4_devtools.otio_samples target/fixtures/otio-samples
+CFA4_OTIO_SAMPLES_DIR=target/fixtures/otio-samples cargo test -p cfa4-interchange --test otio oracle_samples
+```
+
+`samples.json` holds what OTIO sees in each file: tracks (video first, as CFA4 orders them),
+every clip's and nested stack's position and length, transition counts, marker positions, and
+the import warnings that are expected (an unknown generator, an effect CFA4 does not know, a file
+reference without a path). Any other warning, or a missing expected one, fails the test.

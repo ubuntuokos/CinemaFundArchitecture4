@@ -96,7 +96,10 @@
 	Cerulean	Égszínkék
 	Channel Volume	Csatornahangerő
 	Checked:	Megvizsgálva:
-	Choose an output file.	Válasszon kimeneti fájlt.
+	Choose a file name and location.	Adj meg fájlnevet és helyet.
+	Choose folder	Mappa kiválasztása
+	Media File	Médiafájl
+	Sequence name	Szekvencia neve
 	Clear	Törlés
 	Clear Finished	Befejezettek törlése
 	Clear In	Kezdőpont törlése
@@ -2324,3 +2327,4 @@ export.summary	Low	alacsony
 	Warning	Figyelmeztetés
 	Error	Hiba
 	Show/Hide Tracks…	Sávok megjelenítése/elrejtése…
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
