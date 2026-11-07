@@ -275,14 +275,17 @@ fn render_frame_at(s: &Session, p: &Value) -> Result<(Value, Vec<u8>), String> {
     let (w, h) = (seq.settings.width, seq.settings.height);
     let scale = frame_scale(w, h, p)?;
     let t = time_param(s, p)?;
-    let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
-    let bytes = frame_bytes(&img, p);
+    // the Alpha display mode needs the linear picture's alpha; otherwise an opaque video frame goes
+    // straight to sRGB bytes (upstream #3608)
+    let (fw, fh, bytes, offline) = if p.get("alpha").and_then(Value::as_bool).unwrap_or(false) {
+        let (img, offline) = s.try_render_program_with_offline_at(scale, t).map_err(|e| e.to_string())?;
+        (img.w, img.h, frame_bytes(&img, p), offline)
+    } else {
+        s.try_render_program_rgba8_with_offline_at(scale, t).map_err(|e| e.to_string())?
+    };
     let offline: Vec<Value> = offline.iter().filter_map(|o| serde_json::to_value(o).ok()).collect();
     let par = cfa4_project::par_ratio(seq.settings.par);
-    Ok((
-        json!({"w": img.w, "h": img.h, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "offline": offline, "target": "program"}),
-        bytes,
-    ))
+    Ok((json!({"w": fw, "h": fh, "fullW": w, "fullH": h, "pixelAspect": par, "format": "rgba8", "time": t.0, "offline": offline, "target": "program"}), bytes))
 }
 
 fn audio_frames(p: &Value) -> Result<usize, String> {
