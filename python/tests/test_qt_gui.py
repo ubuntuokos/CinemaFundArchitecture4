@@ -12444,3 +12444,61 @@ def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_
     finally:
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_project_empty_area_as_egui(app, tmp_path: Path):
+    """egui's ``project.empty`` (project_views.rs empty_space): the List and Icon views' empty
+    space under the rows is an element; a click there deselects and a double-click imports."""
+    import re
+
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    invoked: list[str] = []
+    snap: dict = {}
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.docks["Project"].raise_()
+        win.project_panel.invoke.disconnect()  # no real Import dialog: only record the command
+        win.project_panel.invoke.connect(lambda cid, *_a: invoked.append(cid))
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "project."})["result"]}
+
+        for mode in ("list", "icon"):
+            win.execute("project.view.set", {"view": mode})
+            snap.clear()
+
+            def ready() -> bool:
+                snap.clear()
+                snap.update(els())
+                return "project.empty" in snap and any(re.fullmatch(r"project\.(bin|item)\.\d+", i) for i in snap)
+
+            assert wait_until(app, ready, 20_000), (mode, sorted(snap))
+            e = dict(snap)
+            y = e["project.empty"]["rect"][1]
+            rows = [v["rect"] for k, v in e.items() if re.fullmatch(r"project\.(bin|item)\.\d+", k)]
+            assert all(ry + rh <= y + 1 for _rx, ry, _rw, rh in rows), (mode, e["project.empty"], rows)
+            item = min(i for i in e if re.fullmatch(r"project\.(bin|item)\.\d+", i))
+            assert c.call("ui.click", {"id": item})["ok"]
+            assert wait_until(app, lambda: bool(win.project_panel.main.selected_items()) or win.project_panel.main.selected_bin is not None, 10_000)
+            assert c.call("ui.click", {"id": "project.empty"})["ok"]
+            assert wait_until(app, lambda: not win.project_panel.main.selected_items(), 10_000), (mode, win.project_panel.main.selected_items())
+            invoked.clear()
+            assert c.call("ui.click", {"id": "project.empty", "count": 2})["ok"]
+            assert wait_until(app, lambda: "file.import" in invoked, 5_000), (mode, invoked)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
