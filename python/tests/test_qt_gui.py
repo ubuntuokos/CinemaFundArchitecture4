@@ -10255,3 +10255,63 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_edit_copy_paste_with_captions_selected(app, tmp_path: Path):
+    """Upstream #3041: with only captions selected, Edit ▸ Copy / Cut / Paste work on the captions
+    (the Qt6 Edit menu runs the engine's edit.copy/cut/paste): the copy lands at the playhead on
+    its caption track, the playhead moves past it, Cut takes it away, and Undo takes a caption
+    paste back as one step."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    tps = 254_016_000_000
+
+    def spans():
+        tracks = canvas.caption_tracks()
+        caps = tracks[0]["captions"] if tracks else []
+        return sorted((round(c["start"] / tps, 2), round(c["end"] / tps, 2), c.get("text")) for c in caps)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+
+        def playhead() -> int:
+            return int((win.sequence or {}).get("playhead", 0))
+
+        def menu(cid: str) -> None:  # the Edit menu's action, as a click on it runs it
+            action = win.registry.actions[cid]
+            assert wait_until(app, lambda: action.isEnabled(), 5_000), f"{cid} is enabled with a caption selected"
+            action.trigger()
+
+        win.execute("playhead.set", {"seconds": 1.0})
+        win.execute("captions.add", {"text": "hi", "durationSeconds": 1.0})
+        assert wait_until(app, lambda: len(spans()) == 1 and bool(canvas.caption_selection), 10_000), spans()
+        (a0, a1, _), = spans()
+        assert not canvas.selection, "only the caption is selected"
+        menu("edit.copy")
+        win.execute("playhead.set", {"seconds": 10.0})
+        assert wait_until(app, lambda: abs(playhead() / tps - 10.0) < 0.05, 5_000)
+        at = round(playhead() / tps, 2)
+        menu("edit.paste")
+        assert wait_until(app, lambda: len(spans()) == 2, 10_000), spans()
+        assert spans()[1] == (at, round(at + a1 - a0, 2), "hi"), ("the copy lands at the playhead", spans(), at)
+        assert wait_until(app, lambda: abs(playhead() / tps - (at + a1 - a0)) < 0.05, 5_000), "the playhead moves past it"
+        # the pasted caption is selected: Cut takes it away
+        menu("edit.cut")
+        assert wait_until(app, lambda: spans() == [(a0, a1, "hi")], 10_000), spans()
+        # Undo takes the cut back, then the paste, each as one step
+        menu("edit.undo")
+        assert wait_until(app, lambda: len(spans()) == 2, 10_000), spans()
+        menu("edit.undo")
+        assert wait_until(app, lambda: spans() == [(a0, a1, "hi")], 10_000), spans()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
