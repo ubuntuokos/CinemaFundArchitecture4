@@ -258,6 +258,7 @@ engine behaviour without a window.
 | HEVC decode, 1080p / 2160p | `cargo test --release -p cfa4-hevc --test perf -- --ignored --nocapture` |
 | ProRes decode/encode | `cargo test --release -p cfa4-prores --test perf -- --ignored --nocapture` |
 | Encoder speed / PSNR / bitrate | `cargo run --release -p cfa4-h264enc --example h264enc_synth -- …` |
+| Export to H.264 + AAC on the CPU (1080p clip through `file.exportMedia`, wall time per run, `--keep out.mp4` to compare files) | `cargo run --release -p cfa4-engine --example bench_export -- --runs 7` |
 | Decode a real file through the media stack | `cargo run --release -p cfa4-cli -- bench-decode file.mp4 --frames 120` |
 | Coding-tool coverage of the fixtures | `cargo test --release -p cfa4-h264 --test conformance coverage_report -- --ignored --nocapture` (same for `hevc`) |
 | **Whole-app suite**: decode fps per codec, playback, scrubbing, timeline UI, export, project save/open, peak RSS | `cargo xtask bench` ([performance.md](performance.md)) |

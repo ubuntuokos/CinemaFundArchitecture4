@@ -1,6 +1,6 @@
 # Settings and Hardware menu (Qt 6)
 
-> **Last updated:** 2026-10-26 · **Change:** minor (phase 2: Decoding & Encoding page, `cfa4-cli codecs`)
+> **Last updated:** 2026-11-06 · **Change:** minor (Media & Playback ▸ Media Backends page, Edit ▸ Preferences ▸ Media Backends…, Help ▸ Restricted Codecs…, next to the phase 2 Decoding & Encoding page)
 
 The Settings window of the Qt 6 shell (`python/cfa4_devtools/qt_settings.py`, Edit ▸ Settings…,
 Ctrl+,). It merges the CFA3 Control Center layout, the FA3 SystemSettingsPage draft and the
@@ -26,6 +26,10 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
     ([codec-parity.md](codec-parity.md)), the hardware decoder `cfa4_platform::register` found
     (NVDEC or VA-API, for H.264 and HEVC), the export format that encodes each codec (own
     software encoder, or a registered hardware one where CFA4 has none) and the GStreamer backend's state.
+  - `cfa4-cli media-backends` prints the media backends in the order they are tried (the CFA4
+    engine, then FFmpeg and GStreamer, [ADR 0005](adr/ADR-0005-media-backends.md)), each with
+    whether it is compiled in, available and switched on, its version, licence and problem, and
+    the patent-restricted codecs of the Ubuntu model ([licensing.md](licensing.md) §7).
 - OK saves only the changed keys; Reset Page… resets one category after a confirmation and keeps
   unsaved edits of the other pages. Settings the engine stores but does not act on yet are shown
   greyed out with "no effect yet".
@@ -37,13 +41,21 @@ providers, open questions): <https://claude.ai/artifact/7tCP6EREnCdZ43owCSJPBC>.
 | General | General, Auto Save, Plugins |
 | Appearance | Appearance, Labels |
 | Editing | Color, Graphics, Timeline, Trim |
-| Media & Playback | Audio, Media, **Decoding & Encoding** (Qt only), Media Cache, Playback |
+| Media & Playback | Audio, Media, **Decoding & Encoding** (Qt only), **Media Backends** (switches + live status and restricted codecs), Media Cache, Playback |
 | Hardware & Devices | **Accelerators (GPU / NPU)** (read-only, Qt only), Audio Hardware, Memory |
 | Local AI | Media Analysis & Transcription |
 
 Removed from the schema in phase 1 (keys still load from old files): `media.hardwareDecoding`
 (an unwired duplicate of `playback.hardwareDecoding`) and `media.proresHardwareEncoding`
 (a removed macOS-only option).
+
+## Menu access
+
+| Menu item | Opens |
+|---|---|
+| Edit ▸ Settings… (Ctrl+,) | the Settings window at its first page |
+| Edit ▸ Media Backends… | the Settings window at Media & Playback ▸ Media Backends |
+| Help ▸ Restricted Codecs… | the same page: which patent-restricted codecs are installed and the command that adds them (copied, never run) |
 
 ## Decoding & Encoding (phase 2)
 
@@ -73,7 +85,10 @@ project; no token value is ever written to settings files, logs or projects.
 `settings.cancel`, `settings.reset`, `settings.accelerators.devices`,
 `settings.accelerators.plans`, `settings.accelerators.refresh`, `settings.codecs.table`,
 `settings.codecs.hardwareDecoder`, `settings.codecs.gstreamer`, `settings.codecs.refresh`,
-`menu.edit.settings`.
+`settings.mediaBackends.status`, `settings.mediaBackends.list`, `settings.mediaBackends.refresh`,
+`settings.mediaBackends.restricted`, `settings.mediaBackends.restricted.list`,
+`settings.mediaBackends.restricted.install`, `settings.mediaBackends.restricted.copy`,
+`menu.edit.settings`, `menu.edit.mediaBackends`, `menu.help.restrictedCodecs`.
 
 ## Tests
 
