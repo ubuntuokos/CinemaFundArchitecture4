@@ -4921,6 +4921,17 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         // the selected edit points ({clip, out, kind}) and the through edits (the edit point menu)
         "editPoints": if s.state.active_sequence == Some(id) { serde_json::to_value(&s.state.edit_points).unwrap_or_default() } else { json!([]) },
         "throughEdits": cfa4_edit::through::through_edits(q).iter().map(|e| json!({"left": e.left.0, "right": e.right.0})).collect::<Vec<_>>(),
+        // Show Duplicate Frame Markers (the Qt GUI draws them; upstream #3212): the switch, and while
+        // it is on the clips with media frames another video clip also shows
+        "showDuplicateFrameMarkers": s.state.show_duplicate_frame_markers,
+        "duplicateFrames": if s.state.show_duplicate_frame_markers {
+            crate::sequence_tools::duplicate_frames(&s.project, q)
+                .iter()
+                .map(|d| json!({"clip": d.clip.0, "color": d.color, "ranges": d.ranges.iter().map(|r| json!({"start": r.start.0, "end": r.end().0})).collect::<Vec<_>>()}))
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        },
         // the active sequence's track targeting and source patching (the track header switches)
         "targeting": if s.state.active_sequence == Some(id) {
             let t = s.targeting();
