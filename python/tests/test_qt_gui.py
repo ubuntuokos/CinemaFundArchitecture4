@@ -6549,6 +6549,57 @@ def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, t
         engine.stop()
 
 
+def test_control_channel_names_dialog_buttons_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's ids for a dialog's standard buttons (``mediaBrowser.columns.ok`` / ``.cancel``,
+    ``savePreset.cancel``): an unnamed OK / Cancel of a named dialog is listed and clicked as
+    ``<dialog>.ok`` / ``.cancel``; a button the dialog named keeps its name."""
+    from cfa4_qt.control import ControlServer, name_standard_buttons
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.effect_controls import SavePresetDialog
+    from cfa4_qt.panels.media_browser import EditColumnsDialog
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        c = _ControlClient(app, server.port())
+        columns = EditColumnsDialog(["Name"], ["Name", "Date"], win)
+        columns.show()
+        app.processEvents()
+        ids = {e["id"] for e in c.call("ui.elements", {"prefix": "mediaBrowser.columns."})["result"]}
+        assert {"mediaBrowser.columns.ok", "mediaBrowser.columns.cancel", "mediaBrowser.columns.Date"} <= ids, ids
+        assert c.call("ui.click", {"id": "mediaBrowser.columns.cancel"})["ok"]
+        assert wait_until(app, lambda: not columns.isVisible(), 5_000)
+        assert columns.result() == QtWidgets.QDialog.DialogCode.Rejected
+        save = SavePresetDialog(win, "Blur")
+        save.show()
+        app.processEvents()
+        ids = {e["id"] for e in c.call("ui.elements", {"prefix": "savePreset."})["result"]}
+        assert {"savePreset.ok", "savePreset.cancel"} <= ids, ids
+        assert save.ok.objectName() == "savePreset.ok", "the dialog's own name stays"
+        assert c.call("ui.click", {"id": "savePreset.cancel"})["ok"]
+        assert wait_until(app, lambda: not save.isVisible(), 5_000)
+        # an unnamed dialog's buttons stay unnamed: there is no prefix to give them
+        bare = QtWidgets.QDialog(win)
+        box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok, bare)
+        name_standard_buttons(bare)
+        assert box.buttons()[0].objectName() == ""
+        bare.setObjectName("someDialog")
+        name_standard_buttons(bare)
+        assert box.buttons()[0].objectName() == "someDialog.ok"
+        for d in (columns, save, bare):
+            d.deleteLater()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path: Path):
     """egui's control channel on the Qt window: engine.execute and ui.menu.invoke run commands,
