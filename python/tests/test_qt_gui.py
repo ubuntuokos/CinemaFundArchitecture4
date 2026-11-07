@@ -10216,3 +10216,65 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_dock_gutters_resize_the_panels_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's ``dock.gutter.<path>``: a divider over every split of the panel layout, the path
+    egui's (empty for the outermost split, then a / b); a drag or an arrow key (8 px) moves the
+    split, and the arrows are the divider's while it has focus, not the editor's shortcuts."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.dock_gutters import _union
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    engine.start()
+    win.resize(1400, 900)
+    win.show()
+    server = ControlServer(win)
+    try:
+        ids = lambda: {e["id"] for e in server.elements("dock.gutter.")}
+        # Edit: the panels above the Timeline row (Source group and Project group | Program | Properties group),
+        # then Tools | Timeline group | Audio Meters
+        want = {"dock.gutter.", "dock.gutter.a", "dock.gutter.aa", "dock.gutter.ab", "dock.gutter.b", "dock.gutter.bb"}
+        assert wait_until(app, lambda: ids() == want, 10_000), ids()
+        assert all(e["label"] == "gutter" for e in server.elements("dock.gutter."))
+
+        def split(path):
+            return next(s for s in win.dock_gutters.splits() if s.path == path)
+
+        def first(path):
+            s = split(path)
+            u = _union(s.a)
+            return u.height() if s.vertical else u.width()
+
+        assert split("").vertical and not split("a").vertical and split("aa").vertical
+        for path, dx, dy in (("a", 30, 0), ("ab", -30, 0), ("", 0, 24)):
+            before = first(path)
+            g = win.dock_gutters.gutters[path]
+            at = g.mapTo(win, g.rect().center())
+            server.drag({"from": {"id": f"dock.gutter.{path}"}, "to": {"x": at.x() + dx, "y": at.y() + dy}, "steps": 6})
+            moved = lambda path=path, to=before + dx + dy: abs(first(path) - to) <= 2
+            assert wait_until(app, moved, 5_000), (path, before, first(path))
+        # arrows along the split: 8 px a press, claimed before the window's shortcuts
+        g = win.dock_gutters.gutters["a"]
+        before = first("a")
+        override = QtGui.QKeyEvent(QtCore.QEvent.Type.ShortcutOverride, QtCore.Qt.Key.Key_Right, QtCore.Qt.KeyboardModifier.NoModifier)
+        QtWidgets.QApplication.sendEvent(g, override)
+        assert override.isAccepted()
+        QtTest.QTest.keyClick(g, QtCore.Qt.Key.Key_Right)
+        assert wait_until(app, lambda: abs(first("a") - (before + 8)) <= 1, 5_000), (before, first("a"))
+        QtTest.QTest.keyClick(g, QtCore.Qt.Key.Key_Left)
+        assert wait_until(app, lambda: abs(first("a") - before) <= 1, 5_000), (before, first("a"))
+        across = QtGui.QKeyEvent(QtCore.QEvent.Type.ShortcutOverride, QtCore.Qt.Key.Key_Up, QtCore.Qt.KeyboardModifier.NoModifier)
+        across.ignore()
+        QtWidgets.QApplication.sendEvent(g, across)
+        assert not across.isAccepted()  # Up does not move a side-by-side split
+        # a panel closed: the splits are read again from what is left
+        win.docks["Audio Meters"].close()
+        assert wait_until(app, lambda: "dock.gutter.bb" not in ids(), 5_000), ids()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
