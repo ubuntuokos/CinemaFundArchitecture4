@@ -97,6 +97,17 @@ class ExportRows(QObject):
         self.video_form, self.audio_form = video, audio
         self.rows: dict[str, Row] = {}
         self.fps = _combo(parent, "export.video.fps", RATES)
+        # egui's Frame Rate row: Match Source, else the rate (29.97 when turned off)
+        self.match_rate = QCheckBox(tr("Match Source"), parent)
+        self.match_rate.setObjectName("export.video.matchRate")
+        self.fps_row = QWidget(parent)
+        fps_lay = QHBoxLayout(self.fps_row)
+        fps_lay.setContentsMargins(0, 0, 0, 0)
+        fps_lay.addWidget(self.match_rate)
+        fps_lay.addWidget(self.fps)
+        fps_lay.addStretch(1)
+        self.match_rate.toggled.connect(self._match_rate_toggled)
+        self.fps.currentIndexChanged.connect(lambda _i: self._sync_rate_shown())
         self.field_order = _combo(parent, "export.video.fieldOrder", FIELD_ORDERS)
         # CFA4's encoders write progressive frames (egui greys the others out)
         for i in range(1, self.field_order.count()):
@@ -192,7 +203,8 @@ class ExportRows(QObject):
         self.rows["bits"] = Row("bits", self.bits, ("audio",), lambda: self.bits.currentData(),
                                 lambda a: _show_combo(self.bits, f"{a.get('bits')}{'f' if a.get('float') is True else ''}") if isinstance(a, dict) else None)
 
-        video.addRow(tr("Frame Rate"), self.fps)
+        video.addRow(tr("Frame Rate"), self.fps_row)
+        self._sync_rate_shown()
         video.addRow(tr("Field Order"), self.field_order)
         video.addRow(tr("Aspect"), self.aspect)
         video.addRow(tr("Profile"), self.profile)
@@ -237,6 +249,7 @@ class ExportRows(QObject):
             self.crf.blockSignals(True)
             self.crf.setValue(23)  # the engine's DEFAULT_CRF where the preset has none
             self.crf.blockSignals(False)
+        self._sync_rate_shown()
 
     def show_resolved(self, resolved: dict[str, Any]) -> None:
         """What ``export.resolve`` says beyond the settings: the H.265 / AV1 profile text (HDR or
@@ -298,9 +311,21 @@ class ExportRows(QObject):
             "bits": has_audio and pcm_or_flac, "flacLevel": has_audio and flac,
         }
 
+    def _match_rate_toggled(self, on: bool) -> None:
+        _show_combo(self.fps, None if on else {"num": 30000, "den": 1001})
+        self._sync_rate_shown()
+
+    def _sync_rate_shown(self) -> None:
+        """The rate shows only while it does not match the source."""
+        match = self.fps.currentData() is None
+        self.match_rate.blockSignals(True)
+        self.match_rate.setChecked(match)
+        self.match_rate.blockSignals(False)
+        self.fps.setVisible(not match)
+
     def sync(self, shown: dict[str, bool]) -> None:
         for key, row in self.rows.items():
             form = self.audio_form if row.path[0] == "audio" else self.video_form
-            form.setRowVisible(row.widget, shown.get(key, True))
+            form.setRowVisible(self.fps_row if row.widget is self.fps else row.widget, shown.get(key, True))
         for key, w in (("profileInfo", self.profile_info), ("encoder", self.encoder_info)):
             self.video_form.setRowVisible(w, shown.get(key, False))

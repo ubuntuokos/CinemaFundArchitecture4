@@ -368,10 +368,17 @@ class ExportDialog(QDialog):
             spin.setObjectName(f"export.video.{name}")
             spin.setRange(0, 16384)
             spin.setSpecialValueText(tr("Match sequence"))
+        # egui's Frame Size row: Match Source, else the width × height (the sequence's when turned off)
+        self.match_size = QCheckBox(tr("Match Source"), self)
+        self.match_size.setObjectName("export.video.matchSize")
+        self.match_size.setChecked(True)
+        self.size_times = QLabel("×", self)
         size_row = QHBoxLayout()
+        size_row.addWidget(self.match_size)
         size_row.addWidget(self.width_spin)
-        size_row.addWidget(QLabel("×", self))
+        size_row.addWidget(self.size_times)
         size_row.addWidget(self.height_spin)
+        size_row.addStretch(1)
         self.bitrate_mode = QComboBox(self)
         self.bitrate_mode.setObjectName("export.video.bitrateMode")
         for key, label in BITRATE_MODES:
@@ -627,6 +634,9 @@ class ExportDialog(QDialog):
             w.valueChanged.connect(self._changed)
         for key, w in (("size", self.width_spin), ("size", self.height_spin), ("bitrate", self.bitrate), ("audioBitrate", self.audio_bitrate), ("gop", self.gop), ("bFrames", self.b_frames), ("quantizer", self.quantizer)):
             w.valueChanged.connect(lambda _v, k=key: self._touch(k))
+        self.match_size.toggled.connect(self._match_size_toggled)
+        for w in (self.width_spin, self.height_spin):
+            w.valueChanged.connect(lambda _v: self._sync_size_shown())
         for c in (self.dcp_resolution, self.dcp_aspect, self.dcp_kind):
             c.currentIndexChanged.connect(self._changed)
         self.dcp_immersive.currentIndexChanged.connect(self._immersive_changed)
@@ -651,6 +661,7 @@ class ExportDialog(QDialog):
         self.multiplexer.currentIndexChanged.connect(lambda _i: (self._touch("multiplexer"), self._container_changed()))
         self.path.textChanged.connect(self._changed)
         self._range_changed()
+        self._sync_size_shown()
 
     # ----- opening -----
     def open_for(self, sequence: dict[str, Any] | None, project_path: str | None) -> None:
@@ -834,9 +845,10 @@ class ExportDialog(QDialog):
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
-            for w in (self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate_box, self.audio_codec, self.audio_bitrate):
+            for w in (self.match_size, self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate_box, self.audio_codec, self.audio_bitrate):
                 w.setEnabled(False)
         else:
+            self.match_size.setEnabled(True)
             self.width_spin.setEnabled(True)
             self.height_spin.setEnabled(True)
         self._container_changed()
@@ -914,6 +926,29 @@ class ExportDialog(QDialog):
             for key in ("crf", "maxBitrate", "sampleRate", "channels", "bits", "flacLevel"):
                 shown[key] = False
         return shown
+
+    def _match_size_toggled(self, on: bool) -> None:
+        """egui's Match Source for the frame size: off starts from the sequence's size."""
+        if on:
+            w = h = 0
+        else:
+            st = (self.sequence or {}).get("settings")
+            st = st if isinstance(st, dict) else {}
+            w, h = st.get("width"), st.get("height")
+            w = w if isinstance(w, int) and not isinstance(w, bool) and w > 0 else 1920
+            h = h if isinstance(h, int) and not isinstance(h, bool) and h > 0 else 1080
+        self.width_spin.setValue(w)
+        self.height_spin.setValue(h)
+        self._sync_size_shown()
+
+    def _sync_size_shown(self) -> None:
+        """The size fields show only while the frame size does not match the source."""
+        match = not (self.width_spin.value() and self.height_spin.value())
+        self.match_size.blockSignals(True)
+        self.match_size.setChecked(match)
+        self.match_size.blockSignals(False)
+        for w in (self.width_spin, self.size_times, self.height_spin):
+            w.setVisible(not match)
 
     def _sync_rows(self) -> None:
         self.rows.sync(self._rows_shown())
