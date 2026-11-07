@@ -114,7 +114,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2888 | security(av1): reject non-increasing grain points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4b | #701 | PR nyitva |
 | 0.14.0 | #3307 | captions: bound MCC export work to scheduled data (#2811) | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
-| 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | – | tervezett |
+| 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | #706 | PR nyitva |
 | 0.14.0 | #1103 | fix(engine): Unlink a selection that also holds unlinked clips | B | átvesz (azonos a #2011-vel) | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #1845 | fix(engine): clip.audioChannels no longer resets channels on a channels-less call | B | átvesz (azonos a #2483-vel) | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #1869 | PNG Sequence writes RGB files when Include Alpha Channel is off | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
