@@ -109,6 +109,10 @@ SINK_FAILURES: tuple[Any, ...] = (
 )
 # A device that consumes no samples for this long hands the clock back to the wall clock (egui's).
 AUDIO_STALL_S = 1.0
+# How often (s) playback opens the output again after it failed to open, failed or stalled, while
+# playing goes on silently on the wall clock: what pause/play does by hand, on a timer, so the
+# sound (and the device clock) come back when the device recovers (egui's AUDIO_RETRY_S, #2555).
+AUDIO_RETRY_S = 2.0
 # Shuttling forward at these speeds is heard (pitch-corrected by Preferences ▸ Audio ▸ Maintain
 # pitch while shuttling); faster, slower and backwards it is silent (egui's shuttle_mix_rate).
 SHUTTLE_SOUND = (0.5, 4.0)
@@ -719,6 +723,10 @@ class Monitor(QWidget):
         self._audio_given = False  # the device has been given sound since play()
         # opens the output device for a sample rate (None: none); tests put a fake device here
         self.make_sink: Callable[[int], Any] = self._open_sink
+        # when the output is opened again after it was lost (s on _retry_clock; None: not retrying)
+        self._audio_retry_at: float | None = None
+        self._retry_clock = QElapsedTimer()
+        self._retry_clock.start()
         self._frame_memory: memoryview | None = None  # the shared-memory frame shown
         self._audio_next = 0
         self._audio_busy = False
@@ -1277,6 +1285,7 @@ class Monitor(QWidget):
     def _halt(self) -> None:
         self.playing = False
         self._audio_on = False
+        self._audio_retry_at = None
         self._timer.stop()
         self._stop_audio()
         if self._automation_pass:  # writes the pass's fader moves (also on a loop or a speed change)
@@ -1312,6 +1321,7 @@ class Monitor(QWidget):
         if not self.playing or not self.has_content():
             return
         self._check_audio_clock()
+        self._retry_audio()
         t = self._play_from + int(self._elapsed_ns() * TICKS_PER_SECOND * self.speed) // 1_000_000_000
         start, end = self.range()
         ft = self.frame()
@@ -1393,7 +1403,26 @@ class Monitor(QWidget):
         self.audio_clock = self._sink is not None
         self._audio_seen = (0, 0)
         self._audio_given = False
+        # an output that could not be opened is tried again (a device that appears after Play)
+        self._audio_retry_at = None if self.audio_clock else self._retry_time()
         self._feed_audio()
+
+    def _retry_time(self) -> float | None:
+        """When to open the output again: AUDIO_RETRY_S from now, or never where there is no
+        audio output at all (no QtMultimedia, and no output put in place of it)."""
+        if not HAVE_AUDIO and self.make_sink == self._open_sink:
+            return None
+        return self._retry_clock.elapsed() / 1000.0 + AUDIO_RETRY_S
+
+    def _retry_audio(self) -> None:
+        """egui's advance_playback: the output failed (or never opened) mid-play; open it again
+        where the picture got to, as pause/play does by hand, so a recovering device sounds again
+        and is the clock again. Another failure waits AUDIO_RETRY_S more."""
+        at = self._audio_retry_at
+        if self.audio_clock or at is None or not self._audio_on or self._retry_clock.elapsed() / 1000.0 < at:
+            return
+        self._stop_audio()
+        self._start_audio()
 
     def _elapsed_ns(self) -> int:
         """Playback time since play() (before the speed): the samples the device has played while
@@ -1429,6 +1458,7 @@ class Monitor(QWidget):
         self._play_from = int(t)
         self._clock.restart()
         self._stop_audio()
+        self._audio_retry_at = self._retry_time()
 
     def av_offset(self) -> int | None:
         """How far the picture shown is behind the sound heard, in ticks (None: not playing with
