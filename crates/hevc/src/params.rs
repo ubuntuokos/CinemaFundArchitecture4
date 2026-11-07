@@ -6,6 +6,16 @@ use crate::spec_tables::{DEFAULT_SCALING_INTER, DEFAULT_SCALING_INTRA};
 use crate::tables::scan_diag;
 use cfa4_bitstream::BitReader;
 
+/// HEVC picture state includes several per-pixel and per-block work buffers. This permits 8K
+/// pictures while rejecting dimensions that could exhaust memory during decode.
+pub const MAX_LUMA_SAMPLES: u64 = 1 << 26;
+
+fn check_picture_size(width: u32, height: u32) -> Result<()> {
+    ensure!(width > 0 && height > 0 && width <= 16888 && height <= 16888, "picture size {width}x{height} out of range");
+    ensure!(u64::from(width) * u64::from(height) <= MAX_LUMA_SAMPLES, "picture size {width}x{height} exceeds the decoded-frame budget");
+    Ok(())
+}
+
 /// General profile / tier / level information.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ProfileTierLevel {
@@ -490,7 +500,7 @@ impl Sps {
         let separate_colour_plane = if chroma_format_idc == 3 { r.read_flag()? } else { false };
         let width = r.read_ue()?;
         let height = r.read_ue()?;
-        ensure!(width > 0 && height > 0 && width <= 16888 && height <= 16888, "picture size {width}x{height} out of range");
+        check_picture_size(width, height)?;
         let mut conf_win = (0, 0, 0, 0);
         if r.read_flag()? {
             conf_win = (r.read_ue()?, r.read_ue()?, r.read_ue()?, r.read_ue()?);
@@ -1000,5 +1010,12 @@ mod tests {
         s.check_supported().unwrap();
         let s = Sps::parse(&sps(1, 2, 0)).unwrap();
         assert_eq!((s.bit_depth_luma, s.bit_depth_chroma), (10, 8));
+    }
+
+    #[test]
+    fn picture_size_has_an_aggregate_pixel_budget() {
+        check_picture_size(8192, 8192).unwrap();
+        let err = check_picture_size(8192, 8193).unwrap_err();
+        assert!(err.to_string().contains("decoded-frame budget"));
     }
 }

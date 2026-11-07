@@ -138,6 +138,37 @@ def ticks_per_frame_from_fps(fps: Any) -> int:
     return max(1, round(TICKS_PER_SECOND / value))
 
 
+GRID_CELL = 8.0  # the Transparency Grid's squares (px) and its two grays (upstream #3233)
+GRID_LIGHT, GRID_DARK = QColor(0xFF, 0xFF, 0xFF), QColor(0xCC, 0xCC, 0xCC)
+MAX_GRID_SQUARES = 4096
+
+
+def frame_format(with_alpha: bool) -> QImage.Format:
+    """A frame's pixels: RGB over black, and with the Transparency Grid the frame's alpha (the
+    color is then the premultiplied picture)."""
+    return QImage.Format.Format_RGBA8888_Premultiplied if with_alpha else QImage.Format.Format_RGBA8888
+
+
+def paint_transparency_grid(p: QPainter, pic: QRectF, visible: QRectF) -> None:
+    """A white and light gray checkerboard behind the picture ``pic``, where it overlaps
+    ``visible`` (squares anchored to the picture's corner; a huge zoom draws a bounded number)."""
+    area = pic.intersected(visible)
+    if area.isEmpty():
+        return
+    p.fillRect(area, GRID_LIGHT)
+    c0 = max(0, int((area.left() - pic.left()) // GRID_CELL))
+    r0 = max(0, int((area.top() - pic.top()) // GRID_CELL))
+    c1 = int((area.right() - pic.left()) // GRID_CELL) + 1
+    r1 = int((area.bottom() - pic.top()) // GRID_CELL) + 1
+    if (c1 - c0) * (r1 - r0) > MAX_GRID_SQUARES:
+        return
+    for row in range(r0, r1):
+        for col in range(c0 + (row + c0 + 1) % 2, c1, 2):  # dark where row + col is odd
+            cell = QRectF(pic.left() + col * GRID_CELL, pic.top() + row * GRID_CELL, GRID_CELL, GRID_CELL).intersected(area)
+            if not cell.isEmpty():
+                p.fillRect(cell, GRID_DARK)
+
+
 def channel_image(image: QImage, display: str) -> QImage:
     """One channel of a frame as greyscale (the Alpha, Red, Green and Blue display modes)."""
     if display not in CHANNELS or image.isNull():
@@ -218,6 +249,7 @@ class FrameView(QWidget):
     def __init__(self, name: str = "program", mv: MonitorView | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName(f"{name}.view")
+        self.view_name = name
         self.mv = mv or MonitorView()
         self.image: QImage | None = None  # as the engine rendered it
         self.shown: QImage | None = None  # in the display mode
@@ -261,6 +293,13 @@ class FrameView(QWidget):
             fw, fh = self.image.width(), self.image.height()
         dpr = max(0.1, self.devicePixelRatioF())
         return fw * self.par / dpr, fh / dpr
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<monitor>.picture``: the picture where it shows (the compare view's reference
+        picture is a widget, ``program.compare.reference``)."""
+        if self.view_name == "program.compare":
+            return []
+        return [(f"{self.view_name}.picture", self.picture_rect().intersected(self.guides.area()), "picture")]
 
     def picture_rect(self) -> QRectF:
         """Fitted, or magnified about the centre plus the (clamped) pan (egui's picture_rect), in
@@ -405,12 +444,20 @@ class FrameView(QWidget):
             return
         super().keyPressEvent(e)
 
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        if self.overlay is not None and e.key() == Qt.Key.Key_Control:
+            self.overlay.modifiers_changed(e.modifiers())
+        super().keyReleaseEvent(e)
+
     def inputMethodEvent(self, e) -> None:
         """An input method's finished text (Chinese, Japanese, Korean) goes into the text being
         edited on the monitor."""
         if self.overlay is not None and self.overlay.graphics.edit is not None:
-            if e.commitString():
-                self.overlay.graphics.type_text(e.commitString())
+            g = self.overlay.graphics
+            if e.commitString() and g.take_commit(e.commitString()):
+                g.type_text(e.commitString())
+            # the marked text still being composed: typed if the edit ends first (upstream #2445)
+            g.preedit = e.preeditString()
             e.accept()
             return
         super().inputMethodEvent(e)
@@ -430,7 +477,10 @@ class FrameView(QWidget):
         img = self.shown
         if img is not None and not img.isNull():
             pic = self.picture_rect()
-            p.fillRect(pic, QColor("#000000"))
+            if self.mv.transparency_grid and self.mv.display == "composite" and img.hasAlphaChannel():
+                paint_transparency_grid(p, pic, QRectF(self.rect()))
+            else:
+                p.fillRect(pic, QColor("#000000"))
             p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             p.drawImage(pic, img)
             if self.mv.safe_margins:
@@ -926,6 +976,7 @@ class Monitor(QWidget):
             toggle("snapInProgramMonitor", N_("Snap in Program Monitor"), "snap")
         m.addSeparator()
         toggle("safeMargins", N_("Safe Margins"), "safe_margins")
+        toggle("transparencyGrid", N_("Transparency Grid"), "transparency_grid")
         toggle("showTransport", N_("Show Transport Controls"), "show_transport")
         toggle("loop", N_("Loop") if self.target == "program" else N_("Loop marked range"), "looping")
 
@@ -1059,7 +1110,7 @@ class Monitor(QWidget):
         width, height = self.view.wanted_size()
         scale = self.mv.scale(self.playing)
         draft = self.draft_frames(scale)
-        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key(), draft)
+        key = (t, self.revision, width, height, scale, self.mv.display, self.content_key(), draft, self.grid_on())
         self._frame_wanted = None
         if key == self._shown:
             return
@@ -1067,7 +1118,7 @@ class Monitor(QWidget):
         params: dict[str, Any] = {"time": t, "maxWidth": width, "maxHeight": height, "scale": scale}
         if self.target != "program":
             params["target"] = self.target
-        if self.mv.display == "alpha":
+        if self.mv.display == "alpha" or self.grid_on():
             params["alpha"] = True  # the frame's own alpha, not the opaque monitor picture
         if draft:
             params["draft"] = True
@@ -1094,6 +1145,10 @@ class Monitor(QWidget):
 
         self.engine.execute("prefs.get", {"key": "playback.draftDecode"}, on_reply=lambda r, _b: got(r), on_error=lambda _m: None)
 
+    def grid_on(self) -> bool:
+        """Transparency Grid on the composite picture: the frame comes with its alpha."""
+        return bool(self.mv.transparency_grid) and self.mv.display == "composite"
+
     def _on_frame(self, key: tuple[Any, ...], result: Any, data: bytes | None) -> None:
         self._frame_busy = False
         image: QImage | None = None
@@ -1112,11 +1167,11 @@ class Monitor(QWidget):
             # straight from the engine's ring slot (not overwritten while shown: the monitor asks
             # for one frame at a time and the ring has more slots); the image keeps the mapping
             self._frame_memory = shared
-            image = QImage(shared, w, h, w * 4, QImage.Format.Format_RGBA8888)
+            image = QImage(shared, w, h, w * 4, frame_format(key[-1]))
         elif isinstance(result, dict) and data:
             w, h = int(result.get("w") or 0), int(result.get("h") or 0)
             if w > 0 and h > 0 and len(data) == w * h * 4:
-                image = QImage(data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
+                image = QImage(data, w, h, w * 4, frame_format(key[-1])).copy()
         if image is not None and isinstance(result, dict):
             offline = result.get("offline") or []
             full = (int(result.get("fullW") or 0), int(result.get("fullH") or 0))
