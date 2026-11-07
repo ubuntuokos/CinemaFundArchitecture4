@@ -3260,7 +3260,15 @@ def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path)
         ime.setCommitString("日本")
         QtWidgets.QApplication.sendEvent(view, ime)  # an input method's finished text
         assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本" for d in texts()), 10_000)
+        # upstream #2445: an edit that ends while the input method composes types the marked text
+        # (Korean commits a syllable only when the next one starts); its late commit is dropped
+        composing = QtGui.QInputMethodEvent("한", [])
+        QtWidgets.QApplication.sendEvent(view, composing)
+        assert gt.preedit == "한"
         QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None and gt.preedit == ""
+        assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本한" for d in texts()), 10_000)
+        assert not gt.take_commit("한") and gt.take_commit("한"), "the late commit of that text once, then typing again"
         # the Selection tool: a double-click edits a text layer with all of it selected
         win.tools.select("selection")
         first = next(d for d in texts() if d["text"]["text"] == "O\nK")
@@ -3396,6 +3404,31 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         vert = ov.hit("mask.vertex.1")
         drag(vert, vert + QtCore.QPointF(0, 12))
         assert wait_until(app, lambda: mask()["vertices"][1]["p"][1] > v1[1] + 1, 10_000)
+        # upstream #3209: Shift-click adds a vertex to the selection; dragging one moves them all
+        shift = QtCore.Qt.KeyboardModifier.ShiftModifier
+        n = len(mask()["vertices"])
+        assert ov.vertex_selection(n) == [1]
+        v2 = ov.hit("mask.vertex.2")
+        send(QtCore.QEvent.Type.MouseButtonPress, v2, left, left, shift)
+        send(QtCore.QEvent.Type.MouseButtonRelease, v2, left, none, shift)
+        assert ov.vertex_selection(n) == [1, 2]
+        before = [list(mask()["vertices"][i]["p"]) for i in (1, 2, 3)]
+        drag(v2, v2 + QtCore.QPointF(0, 10))
+        assert wait_until(app, lambda: all(mask()["vertices"][i]["p"][1] > before[k][1] + 1 for k, i in enumerate((1, 2))), 10_000)
+        assert mask()["vertices"][3]["p"] == before[2], "an unselected vertex stays"
+        # a Shift-click on a selected vertex takes it out
+        v2 = ov.hit("mask.vertex.2")
+        send(QtCore.QEvent.Type.MouseButtonPress, v2, left, left, shift)
+        send(QtCore.QEvent.Type.MouseButtonRelease, v2, left, none, shift)
+        assert ov.vertex_selection(n) == [1]
+        # a marquee from outside the shape around it selects every vertex
+        pts = [v["p"] for v in ov.mask_geometry()["vertices"]]
+        # (from well beside the feather / expansion handles)
+        lo = QtCore.QPointF(min(p.x() for p in pts) - 60, min(p.y() for p in pts) - 60)
+        hi = QtCore.QPointF(max(p.x() for p in pts) + 15, max(p.y() for p in pts) + 15)
+        drag(lo, hi)
+        assert ov.vertex_selection(n) == list(range(n))
+        assert ov.mask_geometry() is not None, "a marquee keeps the mask"
         feather = mask()["feather"]
         h = ov.hit("mask.feather")
         normal = ov.mask_geometry()["handles"]["feather"]["pos"] - ov.mask_geometry()["handles"]["feather"]["base"]
@@ -5299,6 +5332,19 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         QtTest.QTest.mouseRelease(canvas, btn, pos=edge + QtCore.QPoint(-40, 0))
         assert wait_until(app, lambda: captions()[0]["end"] < moved["end"], 10_000)
         assert captions()[0]["start"] == moved["start"]
+        # upstream #3040: Alt held as the drag ends copies the caption there; the original stays
+        trimmed = captions()[0]
+        r = canvas.caption_block_rect(0, trimmed)
+        start = r.center().toPoint()
+        alt = QtCore.Qt.KeyboardModifier.AltModifier
+        QtTest.QTest.mousePress(canvas, btn, alt, start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(300, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, alt, start + QtCore.QPoint(300, 0))
+        assert wait_until(app, lambda: len(captions()) == 2, 10_000), captions()
+        assert captions()[0]["start"] == trimmed["start"] and captions()[0]["end"] == trimmed["end"]
+        assert captions()[1]["text"] == trimmed["text"] and captions()[1]["start"] > trimmed["end"]
+        canvas.command.emit("edit.undo", {})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
         # the header's lock and eye
         cells = canvas.caption_cells(0)
         QtTest.QTest.mouseClick(canvas, btn, pos=cells["locked"].center())
@@ -6501,58 +6547,6 @@ def test_control_channel_refuses_what_is_not_a_request(app, fake_engine: Path, t
         win._quit_confirmed = True
         win.close()
         engine.stop()
-
-
-def test_control_channel_lists_painted_parts_as_egui(app, fake_engine: Path, tmp_path: Path):
-    """egui registers painted regions with their own ids; the Qt panels that paint them list them
-    too (``automation_parts``): the Audio Meters' loudness readout, each channel's bar and the dB
-    scale, with what they show, in ``ui.elements``, and ``ui.click`` / ``ui.move`` find them."""
-    from cfa4_qt.control import ControlServer
-    from cfa4_qt.main_window import MainWindow
-    from cfa4_qt.panels.meters import AudioMetersPanel
-
-    meters = AudioMetersPanel()
-    meters.resize(140, 420)
-    meters.loudness = [-23.0, -22.5, -23.1, -1.5]
-    meters.levels = [-12.0, -18.0]
-    parts = {pid: (r, label) for pid, r, label in meters.automation_parts()}
-    assert set(parts) == {"audioMeters.loudness", "audioMeters.channel.L", "audioMeters.channel.R", "audioMeters.scale"}, set(parts)
-    assert parts["audioMeters.loudness"][1] == "M -23.0 S -22.5 I -23.1 LUFS TP -1.5 dBTP"
-    assert parts["audioMeters.channel.L"][1] == "L -12.0 dB" and parts["audioMeters.scale"][1].startswith("0 -")
-    assert parts["audioMeters.channel.L"][0].right() < parts["audioMeters.channel.R"][0].left()
-    meters.resize(30, 80)  # too small for the readout and the scale: only the bars
-    assert {pid for pid, _r, _l in meters.automation_parts()} == {"audioMeters.channel.L", "audioMeters.channel.R"}
-    meters.deleteLater()
-
-    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
-    engine = EngineClient(fake_engine)
-    win = MainWindow(engine, settings)
-    win.resize(1600, 1000)
-    win.show()
-    engine.start()
-    server = ControlServer(win)
-    assert server.listen(0)
-    try:
-        app.processEvents()
-        assert _visible_on_screen(win.meters)
-        c = _ControlClient(app, server.port())
-        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "audioMeters."})["result"]}
-        assert "audioMeters.channel.L" in els and "audioMeters.channel.R" in els, els
-        x, y, w, h = els["audioMeters.channel.L"]["rect"]
-        origin = win.meters.mapTo(win, QtCore.QPoint(0, 0))
-        assert x >= origin.x() and y >= origin.y() and w > 0 and h > 0
-        assert c.call("ui.move", {"id": "audioMeters.channel.L"})["ok"]
-        assert c.call("ui.click", {"id": "audioMeters.channel.R"})["ok"]
-        assert c.call("ui.click", {"id": "audioMeters.nothing"})["ok"] is False
-    finally:
-        server.close()
-        win._quit_confirmed = True
-        win.close()
-        engine.stop()
-
-
-def _visible_on_screen(w) -> bool:
-    return w.isVisible() and not w.visibleRegion().isEmpty()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -8998,6 +8992,24 @@ def test_text_panel(app, tmp_path: Path):
         tp.captions.search.setText("nothing like it")
         assert tp.captions.table.rowCount() == 0 and tp.captions.note.text() == "No matching captions."
         tp.captions.search.clear()
+        # upstream #3042: the list follows the playhead, bringing the caption it reaches into view
+        for i in range(40):
+            win.execute("captions.add", {"text": f"line {i}", "time": TICKS_PER_SECOND * (30 + 2 * i), "durationSeconds": 1})
+        assert wait_until(app, lambda: tp.captions.table.rowCount() == 41, 20_000), tp.captions.table.rowCount()
+        table = tp.captions.table
+        table.verticalScrollBar().setValue(0)
+        last = captions()[-1]
+        tp.set_playhead(int(last["start"]) + TICKS_PER_SECOND // 2)
+
+        def shown() -> bool:
+            row = next((r for r in range(table.rowCount()) if table.item(r, 4).text() == last["text"]), None)
+            return row is not None and table.viewport().rect().intersects(table.visualItemRect(table.item(row, 0)))
+
+        assert wait_until(app, lambda: tp.captions._followed == last["id"] and shown(), 10_000), tp.captions._followed
+        # once followed it is left alone: scrolling away is not undone while the playhead stays there
+        table.verticalScrollBar().setValue(0)
+        tp.captions._fill()
+        assert table.verticalScrollBar().value() == 0
 
         # Graphics: a text layer shows up and edits in place
         win.execute("graphics.newText", {"text": "Hello Qt"})
@@ -10013,6 +10025,23 @@ def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
     view.mv.snap = True
     view.mv.guides = [{"vertical": True, "position": 300.0}]
     assert move(195, 40)[0] == 250.0
+    # upstream #3584: Ctrl held moves freely; pressing or releasing it with the pointer still
+    # snaps again (or lets go) at once
+    view.mv.guides = []
+    sent.clear()
+    d = {"pl": pl, "grab": "move", "start": P(50, 50), "begin": True, "turned": 0.0, "angle": 0.0}
+    overlay.drag = {**d, "kind": "transform"}
+    overlay._transform_move(overlay.drag, P(51, 50), free=True)
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [54.0, 53.0] and overlay.snap_lines == []
+    ctrl = QtCore.Qt.KeyboardModifier.ControlModifier
+    overlay.modifiers_changed(QtCore.Qt.KeyboardModifier.NoModifier)  # Ctrl released: snaps
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [50.0, 50.0] and len(overlay.snap_lines) == 2
+    n = len(sent)
+    overlay.modifiers_changed(QtCore.Qt.KeyboardModifier.NoModifier)  # no change: nothing sent
+    assert len(sent) == n
+    overlay.modifiers_changed(ctrl)  # Ctrl pressed again: free
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [54.0, 53.0] and overlay.snap_lines == []
+    overlay.drag = None
     view.deleteLater()
 
 
@@ -10226,6 +10255,183 @@ def test_real_engine_import_mode_as_egui(app, tmp_path: Path, monkeypatch):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_rolling_edit_drag_stops_at_the_rolls_limit(app, tmp_path: Path):
+    """egui's #3155: a Rolling Edit drag past what the roll can do (the media, a frame left in each
+    clip) shows the cut where the roll on release stops (`timeline.rollDelta`), not under the
+    pointer; on release the cut lands there."""
+    from cfa4_qt.main_window import MainWindow
+    from PySide6.QtCore import Qt
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    none = Qt.MouseButton.NoButton
+    left_b = Qt.MouseButton.LeftButton
+
+    def send(kind, at: QtCore.QPointF, button, buttons) -> None:
+        QtWidgets.QApplication.sendEvent(canvas, QtGui.QMouseEvent(kind, at, at, canvas.mapToGlobal(at), button, buttons, Qt.KeyboardModifier.NoModifier))
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        wait_until(app, lambda: False, 200)
+        first = v1().track["items"][0]
+        mid = (first["start"] + first["end"]) // 2
+        win.execute("timeline.razor", {"time": mid, "clip": first["clip"]})
+        assert wait_until(app, lambda: len(v1().track["items"]) >= 2 and v1().track["items"][0]["end"] == mid, 10_000)
+        left, right = v1().track["items"][0], v1().track["items"][1]
+        canvas.tool = "rolling"
+        canvas.pps = max(1.0, (canvas.width() - 300) * 254_016_000_000 / max(1, right["end"]) / 3)
+        canvas.scroll_ticks = 0
+        canvas.update()
+        wait_until(app, lambda: False, 100)
+        # far past the right clip's end: the roll stops a frame before it
+        ask = right["end"] - mid + 50 * 254_016_000_000
+        expect: list = []
+        engine.execute("timeline.rollDelta", {"left": left["clip"], "right": right["clip"], "delta": ask}, on_reply=lambda r, _b: expect.append(r["delta"]))
+        assert wait_until(app, lambda: bool(expect), 10_000)
+        assert 0 < expect[0] < right["end"] - mid, expect
+        y = v1().top + v1().height / 2
+        a = QtCore.QPointF(canvas.x_of(mid) - 1, y)
+        b = QtCore.QPointF(canvas.width() - 5, y)
+        send(QtCore.QEvent.Type.MouseButtonPress, a, left_b, left_b)
+        for i in range(1, 9):
+            send(QtCore.QEvent.Type.MouseMove, a + (b - a) * (i / 8), none, left_b)
+        d = canvas._drag
+        assert d is not None and d.kind == "roll"
+        assert d.delta > expect[0], "the pointer went past the limit"
+        assert wait_until(app, lambda: d.shown is not None and d.asked == d.delta, 10_000)
+        want: list = []
+        engine.execute("timeline.rollDelta", {"left": left["clip"], "right": right["clip"], "delta": d.delta}, on_reply=lambda r, _b: want.append(r["delta"]))
+        assert wait_until(app, lambda: bool(want), 10_000)
+        assert canvas.drag_preview_delta() == want[0] < d.delta, (canvas.drag_preview_delta(), want, d.delta)
+        # the preview line is drawn at the limited cut
+        img = canvas.grab().toImage()
+        x = int(canvas.x_of(mid + want[0]))
+        assert any(img.pixelColor(x + k, int(y)).name() == "#ffd54a" for k in (-1, 0, 1)), "the cut is drawn at the limit"
+        send(QtCore.QEvent.Type.MouseButtonRelease, b, left_b, none)
+        assert wait_until(app, lambda: v1().track["items"][0]["end"] == mid + want[0], 10_000), v1().track["items"][:2]
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
+    """upstream #3212: Show Duplicate Frame Markers (Timeline Display Settings) draws a stripe in
+    each clip under the media frames another video clip also shows; off again, none."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def toggle():
+        menu = canvas.display_menu()
+        return next(a for a in menu.actions() if a.objectName() == "timeline.settings.showDuplicateFrameMarkers")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # a frame shown twice: the first clip cut in two halves, both halves showing the same media
+        first = v1().track["items"][0]
+        win.execute("timeline.select", {"clips": [first["clip"]]})
+        win.execute("edit.copy", {})
+        win.execute("playhead.set", {"time": int(first["start"])})
+        win.execute("edit.pasteInsert", {})
+        assert wait_until(app, lambda: len(v1().track["items"]) >= 2 and v1().track["items"][1]["item"] == first["item"], 10_000)
+        assert not toggle().isChecked() and canvas.duplicate_frames() == {}
+        toggle().trigger()
+        assert wait_until(app, lambda: len(canvas.duplicate_frames()) >= 2, 10_000), (win.sequence or {}).get("duplicateFrames")
+        a, b = (c["clip"] for c in v1().track["items"][:2])
+        dup = canvas.duplicate_frames()
+        assert a in dup and b in dup and dup[a][0] == dup[b][0], dup
+        # drawn: the stripe along the bottom of the first clip, in its color
+        r = canvas.clip_rect(v1(), v1().track["items"][0])
+        img = canvas.grab().toImage()
+        c = img.pixelColor(int(r.center().x()), int(r.bottom() - 2.5))  # (inside the stripe, above the border)
+        want = QtGui.QColor(tl.DUPLICATE_FRAME_COLORS[dup[a][0]])
+        assert abs(c.red() - want.red()) + abs(c.green() - want.green()) + abs(c.blue() - want.blue()) < 30, (c.name(), want.name())
+        assert toggle().isChecked()
+        toggle().trigger()
+        assert wait_until(app, lambda: canvas.duplicate_frames() == {}, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def test_control_channel_lists_painted_parts_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui registers painted regions with their own ids; the Qt panels that paint them list them
+    too (``automation_parts``): the Audio Meters' loudness readout, each channel's bar and the dB
+    scale, with what they show, in ``ui.elements``, and ``ui.click`` / ``ui.move`` find them."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.meters import AudioMetersPanel
+
+    meters = AudioMetersPanel()
+    meters.resize(140, 420)
+    meters.loudness = [-23.0, -22.5, -23.1, -1.5]
+    meters.levels = [-12.0, -18.0]
+    parts = {pid: (r, label) for pid, r, label in meters.automation_parts()}
+    assert set(parts) == {"audioMeters.loudness", "audioMeters.channel.L", "audioMeters.channel.R", "audioMeters.scale"}, set(parts)
+    assert parts["audioMeters.loudness"][1] == "M -23.0 S -22.5 I -23.1 LUFS TP -1.5 dBTP"
+    assert parts["audioMeters.channel.L"][1] == "L -12.0 dB" and parts["audioMeters.scale"][1].startswith("0 -")
+    assert parts["audioMeters.channel.L"][0].right() < parts["audioMeters.channel.R"][0].left()
+    meters.resize(30, 80)  # too small for the readout and the scale: only the bars
+    assert {pid for pid, _r, _l in meters.automation_parts()} == {"audioMeters.channel.L", "audioMeters.channel.R"}
+    meters.deleteLater()
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        app.processEvents()
+        assert _visible_on_screen(win.meters)
+        c = _ControlClient(app, server.port())
+        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "audioMeters."})["result"]}
+        assert "audioMeters.channel.L" in els and "audioMeters.channel.R" in els, els
+        x, y, w, h = els["audioMeters.channel.L"]["rect"]
+        origin = win.meters.mapTo(win, QtCore.QPoint(0, 0))
+        assert x >= origin.x() and y >= origin.y() and w > 0 and h > 0
+        assert c.call("ui.move", {"id": "audioMeters.channel.L"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.channel.R"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.nothing"})["ok"] is False
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def _visible_on_screen(w) -> bool:
+    return w.isVisible() and not w.visibleRegion().isEmpty()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
