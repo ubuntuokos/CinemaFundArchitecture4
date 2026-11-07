@@ -3,7 +3,7 @@
 **Verzió:** 1.2 (a források 2026-11-07-i újraellenőrzése és az AV2-00 mérések alapján; a v1.1 a 2026-10-29-i review javított változata volt)
 **Dátum:** 2026-11-07 (v1.2); 2026-10-29 (v1.1)
 **Projekt:** CinemaFundArchitecture4 (CFA4)
-**Állapot:** a tulajdonos (`ubuntuokos`) jóváhagyta, 2026-10-29; a fejlesztés indítása külön döntéshez kötött
+**Állapot:** a tulajdonos (`ubuntuokos`) jóváhagyta: v1.1 2026-10-29, v1.2 2026-11-07; a fejlesztés indítása külön döntéshez kötött
 **Végrehajtás:** jóváhagyás után, külön fejlesztésindítási döntéssel (lásd XII.)
 **Kapcsolódik:** [ADR 0001](../adr/0001-platform-ffi.md) (FFI), [ADR 0004](../adr/ADR-0004-compute-routing.md) (`cfa4-route`),
 [ADR 0005](../adr/ADR-0005-media-backends.md) (kiegészítő médiahátterek), [`docs/licensing.md`](../licensing.md),
@@ -11,7 +11,7 @@
 
 A v1.1-hez képesti változásokat a XIV.1, a v1.0-hoz képestieket a XIV.2 fejezet sorolja fel. A tényállás 2026-11-07-i; a forrásokat a XV. fejezet adja meg.
 
-A v1.2 csak a tényállást és a belőle következő pontosításokat frissíti; a XII. fejezet stratégiai döntéseit nem változtatja. A tulajdonos a v1.1-et hagyta jóvá (2026-10-29); a v1.2 a PR-jának beolvasztásával kerül a `main`-re. A fejlesztés indítása továbbra is külön döntéshez kötött.
+A v1.2 csak a tényállást és a belőle következő pontosításokat frissíti; a XII. fejezet stratégiai döntéseit nem változtatja. A tulajdonos a v1.1-et 2026-10-29-én, a v1.2-t 2026-11-07-én hagyta jóvá. A fejlesztés indítása továbbra is külön döntéshez kötött.
 
 ---
 
