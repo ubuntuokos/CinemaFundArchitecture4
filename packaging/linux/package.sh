@@ -80,6 +80,9 @@ cp -R "$ROOT/python/cfa4_qt" "$QT_PY/"
 find "$QT_PY" -name __pycache__ -type d -prune -exec rm -rf {} +
 mkdir -p "$QT_PY/cfa4_qt/i18n/shared"
 cp "$ROOT"/crates/ui-egui/src/i18n/*.tsv "$ROOT"/crates/ui-egui/src/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/shared/"
+# the About window's credits, as egui bakes them in (crates/ui-egui/build.rs)
+mkdir -p "$QT_PY/cfa4_qt/credits"
+cp "$ROOT/contributors/contributors.json" "$ROOT/contributors/people.toml" "$QT_PY/cfa4_qt/credits/"
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"
 mkdir -p "$STAGE/usr/share/metainfo"
@@ -186,5 +189,7 @@ fi
 # -P: the staged package, never a checkout's python/ that the caller's directory would put first
 PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIRS[1].name == "shared"' \
   || { echo "error: the staged Qt GUI does not find its shared catalogs" >&2; exit 1; }
+PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.credits as c; assert c.CREDITS_DIR.name == "credits" and c.load().contributors' \
+  || { echo "error: the staged Qt GUI does not find its credits" >&2; exit 1; }
 echo "==> done"
 ls -lh "$DIST"

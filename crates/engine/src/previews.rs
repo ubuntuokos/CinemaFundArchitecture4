@@ -909,5 +909,7 @@ pub fn bar_json(s: &Session) -> Result<Value> {
             "budgetMs": (rate.frame_duration().seconds() * 1000.0 * cfa4_render::preview::REALTIME_BUDGET * 10.0).round() / 10.0,
             "hash": g.hash,
         })).collect::<Vec<_>>(),
+        // what the Timeline draws: green over rendered frames, each segment's colour elsewhere
+        "bar": s.previews.bar(&s.project, seq),
     }))
 }

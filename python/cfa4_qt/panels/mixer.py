@@ -76,6 +76,12 @@ def pos_to_db(p: float) -> float:
     return FADER_MAX_DB
 
 
+def fader_cap(track: QRectF, db: float) -> QRectF:
+    """The fader cap's rectangle on ``track`` at ``db`` (where the strips paint it)."""
+    cy = track.bottom() - db_to_pos(db) * track.height()
+    return QRectF(track.center().x() - 9, cy - 13, 18, 26)
+
+
 def db_text(db: float) -> str:
     return "-∞" if db <= FADER_MIN_DB else f"{db:.1f}"
 
@@ -228,6 +234,36 @@ class Strip(QWidget):
         r["value"] = QRectF(4, h - 20 - 18, 56, 18)
         r["name"] = QRectF(0, h - 20, w, 20)
         return r
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids for the strip's painted controls (``mixer.<ref>.mute``, ``.fader``, ``.meter``, …),
+        with what they show; the volume / pan readouts are widgets with their own ids."""
+        r = self.layout_regions()
+        ap = f"mixer.{self.ref}"
+        out: list[tuple[str, QRectF, str]] = []
+        if "input" in r:
+            out.append((f"{ap}.input", r["input"], "Input channel mapping"))
+            out.append((f"{ap}.output", r["output"], "Track output assignment"))
+        if "pan" in r:
+            out.append((f"{ap}.pan", r["pan"], "Pan"))
+        if "pan51" in r:
+            pp = self.pan51()
+            out.append((f"{ap}.pan51", r["pan51"], f"5.1 panner x {pp['x']:.0f} y {pp['y']:.0f}"))
+        out.append((f"{ap}.mode", r["mode"], f"Automation mode: {self.data.get('mode') or 'Read'}"))
+        if "mute" in r:
+            out.append((f"{ap}.mute", r["mute"], "Mute Track"))
+            out.append((f"{ap}.solo", r["solo"], "Solo Track"))
+            if self.data.get("kind") == "submix":
+                out.append((f"{ap}.soloSafe", r["third"], "Solo Safe"))
+            else:
+                out.append((f"{ap}.record", r["third"], "Enable Track for Recording"))
+        if r["area"].height() > 40:
+            out.append((f"{ap}.fader", fader_cap(r["track"], self.volume()), f"Volume {db_text(self.volume())}"))
+            n = max(1, len(self.levels) or self.channels())
+            levels = " / ".join(f"{self.levels[c] if c < len(self.levels) else -90.0:.1f}" for c in range(n))
+            out.append((f"{ap}.meter", r["meter"], f"Meter {levels} dB"))
+        out.append((f"{ap}.name", r["name"], tr("Mix") if self.is_master else str(self.data.get("name") or "")))
+        return [(pid, rect, label) for pid, rect, label in out if not rect.isEmpty()]
 
     def needed_height(self) -> float:
         return 4 + (10 * SLOT_H + 10 if self.panel.fx_open else 0) + 112 + 26 + 24 + 6 + 170 + 42
@@ -662,15 +698,15 @@ class TrackMixerPanel(QWidget):
         footer.addWidget(self.time_label)
         footer.addStretch(1)
         self.buttons: dict[str, QToolButton] = {}
-        for key, icon, tip in (
-            ("goIn", "goIn", N_("Go to In Point")),
-            ("goOut", "goOut", N_("Go to Out Point")),
-            ("toggle", "play", N_("Play-Stop Toggle (Space)")),
-            ("inToOut", "play", N_("Play In to Out")),
-            ("loop", "loop", N_("Loop")),
+        for key, command, icon, tip in (
+            ("goIn", "markers.goToIn", "goIn", N_("Go to In Point")),
+            ("goOut", "markers.goToOut", "goOut", N_("Go to Out Point")),
+            ("toggle", "playback.toggle", "play", N_("Play-Stop Toggle (Space)")),
+            ("inToOut", "playback.inToOut", "play", N_("Play In to Out")),
+            ("loop", "playback.loop", "loop", N_("Loop")),
         ):
             b = QToolButton(self)
-            b.setObjectName(f"mixer.transport.{key}")
+            b.setObjectName(f"mixer.transport.{command}")  # egui's ids: the button's command
             b.setIcon(transport_icon(icon))
             b.setIconSize(QSize(14, 14))
             b.setAutoRaise(True)
@@ -911,6 +947,22 @@ class ClipStrip(QWidget):
         r["value"] = QRectF(4, h - 42, 50, 16)
         r["name"] = QRectF(0, h - 20, w, 20)
         return r
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids for the clip strip's painted controls (``clipMixer.<ref>.mute``, ``.fader``, …);
+        pan and fader act on the clip under the playhead."""
+        r = self.layout_regions()
+        ap = f"clipMixer.{self.ref}"
+        out = [
+            (f"{ap}.pan", r["pan"], "Clip pan"),
+            (f"{ap}.mode", r["mode"], f"Clip automation mode: {self.data.get('mode') or 'Read'}"),
+            (f"{ap}.mute", r["mute"], "Mute Track"),
+            (f"{ap}.solo", r["solo"], "Solo Track"),
+            (f"{ap}.keyframe", r["keyframe"], "Write Keyframes"),
+        ]
+        if r["area"].height() > 40:
+            out.append((f"{ap}.fader", fader_cap(r["track"], self.volume()), f"Clip volume {db_text(self.volume())}"))
+        return [(pid, rect, label) for pid, rect, label in out if not rect.isEmpty()]
 
     def fader_y(self, db: float) -> float:
         t = self.regions["track"]

@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 でエラーが発生しました
 	CFA4 project links	CFA4 プロジェクトのリンク
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	「{name}」に未保存の変更がある状態で CFA4 が予期せず終了しました。{time} の未保存の変更を復元しますか？
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	「{name}」に未保存の変更がある状態で CFA4 が閉じられました。{time} の未保存の変更を復元しますか？
 	Cancel Selected	選択項目をキャンセル
 	Cannot check the output folder for files to replace: {error}	置き換えるファイルがあるか出力フォルダーを確認できません：{error}
 	Cannot create the output folder: {error}	出力フォルダーを作成できません：{error}
@@ -320,6 +318,8 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 圧縮
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Panel menu	パネルメニュー
+	Move panel	パネルを移動
 	Transparency Grid	透明グリッド
 	Show Duplicate Frame Markers	重複フレームマーカーを表示
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。

@@ -92,6 +92,16 @@ def get(values: Any, key: str) -> Any:
     return v
 
 
+def has(values: Any, key: str) -> bool:
+    """``key`` (dotted) names a value in ``values``, as egui's JSON pointer finds it."""
+    v = values
+    for part in key.split("."):
+        if not isinstance(v, dict) or part not in v:
+            return False
+        v = v[part]
+    return True
+
+
 def put(values: Any, key: str, x: Any) -> None:
     """Set an existing key (unknown keys are left alone, as egui's ``put``)."""
     parts = key.split(".")
@@ -420,6 +430,29 @@ class PreferencesDialog(QDialog):
         if b is not None:
             b.setChecked(True)
         self._build_page()
+
+    def patch(self, p: Any) -> None:
+        """egui's ``settings::patch`` (``ui.set {settings}``): ``page`` picks a category,
+        ``values`` sets draft values by their dotted keys (OK applies them, as typed). An unknown
+        category or preference raises ValueError and changes nothing."""
+        if not isinstance(p, dict):
+            raise TypeError("settings takes {page, values}")
+        page = p.get("page")
+        if page is not None and not any(c.get("id") == page for c in self.categories):
+            raise ValueError(f"unknown settings category {page!r}")
+        values = p.get("values")
+        if values is not None:
+            if not isinstance(values, dict):
+                raise TypeError("settings.values takes {key: value}")
+            unknown = next((k for k in values if not has(self.values, str(k))), None)
+            if unknown is not None:
+                raise ValueError(f"unknown preference {unknown!r}")
+        if page is not None:
+            self.select_page(page)
+        if values:
+            for k, v in values.items():
+                put(self.values, str(k), copy.deepcopy(v))
+            self._build_page()
 
     def category(self) -> dict[str, Any]:
         return next((c for c in self.categories if c.get("id") == self.page), {})
