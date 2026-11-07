@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
     QAbstractButton,
     QApplication,
     QComboBox,
+    QDialogButtonBox,
     QDockWidget,
     QDoubleSpinBox,
     QLabel,
@@ -507,6 +508,8 @@ class ControlServer(QObject):
             return False
 
         tops = [w for w in QApplication.topLevelWidgets() if w is not win and w.isVisible() and owned(w)]
+        for top in tops:
+            name_standard_buttons(top)
         return [win, *tops]
 
     def elements(self, prefix: str) -> list[dict[str, Any]]:
@@ -1061,4 +1064,25 @@ class ControlServer(QObject):
         return {"png": base64.b64encode(bytes(data.data())).decode(), "width": image.width(), "height": image.height()}
 
 
-__all__ = ["MAX_CONNECTIONS", "MAX_LINE", "ControlError", "ControlServer", "modifiers_of"]
+def name_standard_buttons(dialog: QWidget) -> None:
+    """egui's ids for a dialog's standard buttons: an unnamed OK / Cancel / Close / … of a named
+    dialog's button box becomes ``<dialog>.ok`` / ``.cancel`` / ``.close`` (egui's
+    ``mediaBrowser.columns.ok``, ``savePreset.cancel``), so an agent clicks it by id. A name the
+    dialog gave its button stays."""
+    prefix = dialog.objectName()
+    if not prefix:
+        return
+    for box in dialog.findChildren(QDialogButtonBox):
+        if box.window() is not dialog:
+            continue
+        for button in box.buttons():
+            if button.objectName():
+                continue
+            role = box.standardButton(button)
+            if role == QDialogButtonBox.StandardButton.NoButton:
+                continue
+            key = role.name  # Ok, Cancel, RestoreDefaults, …
+            button.setObjectName(f"{prefix}.{key[0].lower()}{key[1:]}")
+
+
+__all__ = ["MAX_CONNECTIONS", "MAX_LINE", "ControlError", "ControlServer", "modifiers_of", "name_standard_buttons"]
