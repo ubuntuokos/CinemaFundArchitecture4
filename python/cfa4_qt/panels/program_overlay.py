@@ -678,7 +678,7 @@ class ProgramOverlay(QObject):
         shift = bool(e.modifiers() & Qt.KeyboardModifier.ShiftModifier)
         kind = d["kind"]
         if kind == "transform":
-            self._transform_move(d, at)
+            self._transform_move(d, at, free=bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier))
         elif kind in ("vertex", "body"):
             raw = at - d["press"]
             want = constrain_45(QPointF(), raw) if shift else raw
@@ -797,7 +797,20 @@ class ProgramOverlay(QObject):
                                           Qt.Key.Key_Delete)
         return k == Qt.Key.Key_Escape and (self.drag is not None or self.mask_geometry() is not None)
 
+    def modifiers_changed(self, mods: Any) -> None:
+        """Ctrl pressed or released with the pointer still during a Motion Move drag: the box
+        snaps again or moves freely at once (upstream #3584)."""
+        d = self.drag
+        if d is None or d.get("kind") != "transform" or d.get("grab") != "move" or d.get("cur") is None:
+            return
+        free = bool(mods & Qt.KeyboardModifier.ControlModifier)
+        if free != d.get("free", False):
+            self._transform_move(d, d["cur"], free=free)
+            self.view.update()
+
     def key(self, e: QKeyEvent) -> bool:
+        if e.key() == Qt.Key.Key_Control:
+            self.modifiers_changed(e.modifiers())
         if self.pen is None and self.graphics.key(e):
             return True
         if self.eyedropper is not None and e.key() == Qt.Key.Key_Escape:
@@ -868,7 +881,10 @@ class ProgramOverlay(QObject):
             return (along(uy), along(uy)) if uniform else (1.0, along(uy))
         return (along(ux), along(ux)) if uniform else (along(ux), 1.0)
 
-    def _transform_move(self, d: dict[str, Any], cur: QPointF) -> None:
+    def _transform_move(self, d: dict[str, Any], cur: QPointF, free: bool = False) -> None:
+        """The values a Motion drag sets with the pointer at ``cur``. ``free`` (Ctrl held): a
+        Move drag ignores Snap in Program Monitor (upstream #3584)."""
+        d["cur"], d["free"] = cur, free
         pl = d["pl"]
         t = pl["t"]
         off = cur - pl["anchorAt"]
@@ -889,7 +905,10 @@ class ProgramOverlay(QObject):
         height = "scale_height" if t.get("effectId") == "transform" else "scale"
         grab = d["grab"]
         if grab == "move":
-            moved, self.snap_lines = self._snap(pl, moved)
+            if free:
+                self.snap_lines = []
+            else:
+                moved, self.snap_lines = self._snap(pl, moved)
             changes = [("position", pt(pl["position"] + unscale(pl["outer"], moved)))]
         elif grab == "anchor":
             changes = [("anchor", pt(pl["anchor"] + unscale(pl["toScreen"], moved))),
