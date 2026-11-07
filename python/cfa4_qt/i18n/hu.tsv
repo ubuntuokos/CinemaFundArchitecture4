@@ -2327,4 +2327,5 @@ export.summary	Low	alacsony
 	Warning	Figyelmeztetés
 	Error	Hiba
 	Show/Hide Tracks…	Sávok megjelenítése/elrejtése…
+	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
