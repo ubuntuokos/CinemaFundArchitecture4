@@ -177,7 +177,8 @@ fn gpu_blend_modes_match_cpu() {
     };
     let mut c = GpuCompositor::new(&dev, &q);
     let (w, h) = (320usize, 180usize);
-    let pixels = cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::Dunes), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24);
+    let pixels =
+        cfa4_media::generators::render(&cfa4_media::Generator::Demo(cfa4_media::DemoScene::Dunes), 320, 180, 1.0, 24, cfa4_time::FrameRate::FPS_24).unwrap();
     let demo = Arc::new(VideoFrame::rgba8(320, 180, pixels));
     let base = ramp_layer(200, 180, 3);
     let top = ramp_layer(160, 120, 0);
