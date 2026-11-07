@@ -40,7 +40,8 @@ pub(crate) fn is_directional_mode(mode: usize) -> bool {
 }
 
 /// Predict the w x h block at (x, y) of `pl` (writes into the plane).
-pub(crate) fn predict_intra(pl: &mut Plane, p: &IntraParams) {
+/// `pred` is scratch of at least 64 * 64 samples (every mode writes all w * h it reads back).
+pub(crate) fn predict_intra(pl: &mut Plane, p: &IntraParams, pred: &mut [u16]) {
     let w = 1usize << p.log2w;
     let h = 1usize << p.log2h;
     let bd = p.bit_depth;
@@ -86,15 +87,14 @@ pub(crate) fn predict_intra(pl: &mut Plane, p: &IntraParams) {
     above[EDGE - 1] = corner;
     left[EDGE - 1] = corner;
 
-    let mut pred = [0u16; 64 * 64];
     if p.plane == 0 && p.use_filter_intra {
-        recursive_intra(&above, &left, w, h, p.filter_intra_mode, bd, &mut pred);
+        recursive_intra(&above, &left, w, h, p.filter_intra_mode, bd, pred);
     } else if is_directional_mode(p.mode) {
-        directional(&mut above, &mut left, p, w, h, &mut pred);
+        directional(&mut above, &mut left, p, w, h, pred);
     } else if p.mode == SMOOTH_PRED || p.mode == SMOOTH_V_PRED || p.mode == SMOOTH_H_PRED {
-        smooth(&above, &left, p.mode, p.log2w, p.log2h, w, h, &mut pred);
+        smooth(&above, &left, p.mode, p.log2w, p.log2h, w, h, pred);
     } else if p.mode == DC_PRED {
-        dc(&above, &left, p.have_left, p.have_above, p.log2w, p.log2h, w, h, bd, &mut pred);
+        dc(&above, &left, p.have_left, p.have_above, p.log2w, p.log2h, w, h, bd, pred);
     } else {
         // PAETH_PRED
         let tl = above[EDGE - 1];

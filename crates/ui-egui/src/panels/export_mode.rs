@@ -401,6 +401,23 @@ fn draft_text(ui: &mut egui::Ui, reg: &mut Reg, id: &str, stored: &str, hint: &s
     (r.changed() && !v.trim().is_empty()).then_some(v)
 }
 
+/// Longest folder tail the link lays out or shows on hover.
+const MAX_LOCATION_DISPLAY_BYTES: usize = 4096;
+
+/// Keep the tail of a UTF-8 folder name without copying or splitting a codepoint. Project item
+/// names can enter the generated export path, so UI display work must not scale with an arbitrary
+/// imported name.
+fn location_tail(s: &str) -> (&str, bool) {
+    if s.len() <= MAX_LOCATION_DISPLAY_BYTES {
+        return (s, false);
+    }
+    let mut start = s.len() - MAX_LOCATION_DISPLAY_BYTES;
+    while !s.is_char_boundary(start) {
+        start += 1;
+    }
+    (&s[start..], true)
+}
+
 /// The output folder as a link (folder icon, accent colour, underlined); the caller opens the save
 /// dialog on a click. A path too long for the row loses its start, so the folder's name stays.
 fn location_link(ui: &mut egui::Ui, t: &Tokens, folder: &str) -> egui::Response {
@@ -408,18 +425,34 @@ fn location_link(ui: &mut egui::Ui, t: &Tokens, folder: &str) -> egui::Response 
     let col = if resp.hovered() { t.accent_hover } else { t.accent };
     crate::icons::paint(ui.painter(), Rect::from_center_size(pos2(r.min.x + 8.0, r.center().y), vec2(14.0, 14.0)), crate::icons::Icon::Folder, col);
     let room = (r.width() - 22.0).max(0.0);
+    let (folder, truncated) = location_tail(folder);
     let mut galley = ui.painter().layout_no_wrap(folder.to_string(), Tokens::ui(12.5), col);
-    for (i, _) in folder.char_indices().skip(1) {
-        if galley.size().x <= room {
-            break;
-        }
-        galley = ui.painter().layout_no_wrap(format!("…{}", folder.get(i..).unwrap_or("")), Tokens::ui(12.5), col);
+    if galley.size().x > room {
+        let starts: Vec<usize> = folder.char_indices().map(|(i, _)| i).collect();
+        let suffix = if starts.len() > 1 {
+            let mut lo = 1usize;
+            let mut hi = starts.len() - 1;
+            while lo < hi {
+                let mid = (lo + hi) / 2;
+                let candidate = format!("…{}", &folder[starts[mid]..]);
+                if ui.painter().layout_no_wrap(candidate, Tokens::ui(12.5), col).size().x <= room {
+                    hi = mid;
+                } else {
+                    lo = mid + 1;
+                }
+            }
+            format!("…{}", &folder[starts[lo]..])
+        } else {
+            "…".into()
+        };
+        galley = ui.painter().layout_no_wrap(suffix, Tokens::ui(12.5), col);
     }
     let at = pos2(r.min.x + 20.0, r.center().y - galley.size().y / 2.0);
     let underline = at.y + galley.size().y;
     ui.painter().hline(at.x..=at.x + galley.size().x, underline, egui::Stroke::new(1.0, col));
     ui.painter().galley(at, galley, col);
-    resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(folder)
+    let hover = if truncated { format!("…{folder}") } else { folder.to_string() };
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(hover)
 }
 
 const RATES: [(&str, FrameRate); 11] = [
@@ -544,7 +577,7 @@ fn settings_column(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect) {
         if (s.has_audio()
             || !s.has_video()
             || s.format.is_mp4_video()
-            || matches!(s.format, Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg)
+            || matches!(s.format, Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg)
             || s.format.is_mxf())
             && !s.is_image_sequence()
             && s.format != Format::Gif
@@ -591,7 +624,7 @@ fn settings_column(app: &mut Cfa4App, ui: &mut egui::Ui, rect: Rect) {
         if section(ui, &mut reg, &mut ex.open_sections, "effects", tl!("Effects"), &t) {
             pick_overlay = effects_section(ui, &mut reg, s, &t);
         }
-        if matches!(s.format, Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Mjpeg)
+        if matches!(s.format, Format::H264 | Format::Hevc | Format::Av1 | Format::ProRes | Format::DnxHr | Format::Apv | Format::Cineform | Format::Mjpeg)
             && section(ui, &mut reg, &mut ex.open_sections, "metadata", tl!("Metadata"), &t)
         {
             let m = &mut s.metadata;
@@ -691,21 +724,19 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
     }
     match s.video_format() {
         f @ (Format::H264 | Format::Hevc | Format::Av1) => {
-            // H.265 and AV1: hardware encoders only (one profile, level chosen by the encoder)
+            // H.265 and AV1: one profile, level chosen by the encoder
             let hevc = f != Format::H264;
             if hevc {
                 if f == Format::Av1 {
-                    row(ui, t, tl!("Profile"), |ui| ui.label(tl!("Main (8-bit)")));
-                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Hardware (AV1 has no software encoder)")));
-                } else {
-                    // the hardware encoder writes Main (8-bit 4:2:0), or Main 10 for HDR sequences where it can; level chosen by the encoder
-                    let label = match (cfa4_engine::export::hdr_available(Format::Hevc), seq_hdr && !s.sdr) {
-                        (true, true) => tl!("Main 10 (10-bit, HDR)"),
-                        (true, false) => tl!("Main (8-bit; Main 10 for HDR sequences)"),
-                        (false, _) => tl!("Main (8-bit)"),
-                    };
+                    // Main: 8-bit 4:2:0, or 10-bit for HDR sequences
+                    let label = if seq_hdr && !s.sdr { tl!("Main (10-bit, HDR)") } else { tl!("Main (8-bit; 10-bit for HDR sequences)") };
                     row(ui, t, tl!("Profile"), |ui| ui.label(label));
-                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Hardware (H.265 has no software encoder)")));
+                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Software, or hardware where available")));
+                } else {
+                    // Main (8-bit 4:2:0), or Main 10 for HDR sequences; level chosen by the encoder
+                    let label = if seq_hdr && !s.sdr { tl!("Main 10 (10-bit, HDR)") } else { tl!("Main (8-bit; Main 10 for HDR sequences)") };
+                    row(ui, t, tl!("Profile"), |ui| ui.label(label));
+                    row(ui, t, tl!("Encoder"), |ui| ui.label(tl!("Software, or hardware where available")));
                 }
             } else {
                 row(ui, t, tl!("Profile"), |ui| {
@@ -726,10 +757,10 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 });
             }
             row(ui, t, tl!("Bitrate Encoding"), |ui| {
-                // a hardware encoder has one pass and no constant-quality mode: H.265 offers neither
+                // one pass for H.265 and AV1; both software encoders have a constant-quality mode
                 let o = [BitrateMode::Cbr, BitrateMode::Vbr1Pass, BitrateMode::Vbr2Pass, BitrateMode::Crf];
-                let labels: Vec<(String, bool)> =
-                    o.iter().map(|m| (m.label().to_string(), !(hevc && matches!(m, BitrateMode::Vbr2Pass | BitrateMode::Crf)))).collect();
+                let off = |m: &BitrateMode| hevc && *m == BitrateMode::Vbr2Pass;
+                let labels: Vec<(String, bool)> = o.iter().map(|m| (m.label().to_string(), !off(m))).collect();
                 if let Some(i) = combo(ui, reg, "export.video.bitrateMode", s.bitrate_mode.label(), &labels, 140.0) {
                     s.bitrate_mode = o[i];
                 }
@@ -818,6 +849,24 @@ fn video_section(ui: &mut egui::Ui, reg: &mut Reg, s: &mut ExportSettings, t: &T
                 let cur = keys.iter().position(|k| *k == s.apv_profile).unwrap_or(0);
                 if let Some(i) = combo(ui, reg, "export.video.apvProfile", labels[cur], &opts(&labels), 220.0) {
                     s.apv_profile = keys[i].into();
+                }
+            });
+        }
+        Format::Cineform => {
+            row(ui, t, tl!("Encoding"), |ui| {
+                let keys = ["422", "444", "4444"];
+                let labels = ["YUV 4:2:2 10-bit", "RGB 4:4:4 12-bit", "RGBA 4:4:4:4 12-bit"];
+                let cur = keys.iter().position(|k| *k == s.cineform_profile).unwrap_or(0);
+                if let Some(i) = combo(ui, reg, "export.video.cineformProfile", labels[cur], &opts(&labels), 220.0) {
+                    s.cineform_profile = keys[i].into();
+                }
+            });
+            row(ui, t, tl!("Quality"), |ui| {
+                let keys = ["filmscan3", "filmscan2", "filmscan1", "high", "medium", "low"];
+                let labels = ["Film Scan 3", "Film Scan 2", "Film Scan 1", "High", "Medium", "Low"];
+                let cur = keys.iter().position(|k| *k == s.cineform_quality).unwrap_or(2);
+                if let Some(i) = combo(ui, reg, "export.video.cineformQuality", labels[cur], &opts(&labels), 220.0) {
+                    s.cineform_quality = keys[i].into();
                 }
             });
         }
@@ -1381,7 +1430,9 @@ fn quick_file(app: &Cfa4App, path: &str, seq_name: &str, ext: &str) -> Option<St
         return None;
     }
     let file = match name {
-        None => format!("{seq_name}.{ext}"),
+        // Sequence names come from the project, not from this Quick Export interaction. Keep
+        // metadata in one filename component before joining it to the selected/default folder.
+        None => format!("{}.{}", cfa4_engine::export_tools::file_safe(seq_name), ext),
         Some(n) if cur.eq_ignore_ascii_case(ext) => n.to_string(),
         Some(n) if !cur.is_empty() && app.session.export_presets.all().iter().any(|x| x.settings.extension().eq_ignore_ascii_case(cur)) => {
             std::path::Path::new(n).with_extension(ext).to_string_lossy().to_string()
@@ -1503,4 +1554,19 @@ fn list_row(ui: &mut egui::Ui, t: &Tokens, selected: bool, text: &str, width: f3
     ui.painter().rect_filled(r, 3.0, bg);
     ui.painter().text(pos2(r.min.x + 6.0, r.center().y), Align2::LEFT_CENTER, text, Tokens::ui(12.5), if selected { Color32::WHITE } else { t.text });
     resp
+}
+
+#[cfg(test)]
+mod location_tests {
+    use super::*;
+
+    #[test]
+    fn location_tail_is_bounded_and_keeps_utf8_intact() {
+        let input = format!("/{}終", "é".repeat(MAX_LOCATION_DISPLAY_BYTES));
+        let (tail, truncated) = location_tail(&input);
+        assert!(truncated);
+        assert!(tail.len() <= MAX_LOCATION_DISPLAY_BYTES);
+        assert!(tail.ends_with('終'));
+        assert!(std::str::from_utf8(tail.as_bytes()).is_ok());
+    }
 }

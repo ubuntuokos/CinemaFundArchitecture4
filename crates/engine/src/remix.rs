@@ -38,12 +38,12 @@ fn cache() -> &'static Mutex<Vec<(Key, Arc<Analysis>)>> {
 }
 
 /// The audio clip a menu command works on: the first selected clip on an audio track.
-fn selected_audio(s: &Session) -> Option<ClipId> {
+pub(crate) fn selected_audio(s: &Session) -> Option<ClipId> {
     let seq = s.active_sequence()?;
     s.state.selection.iter().copied().find(|c| seq.find_item(*c).and_then(|(t, _)| seq.track(t)).is_some_and(|t| t.kind == TrackKind::Audio))
 }
 
-fn check_clip(s: &Session, c: ClipId) -> std::result::Result<(), String> {
+pub(crate) fn check_clip(s: &Session, c: ClipId) -> std::result::Result<(), String> {
     let seq = s.active_sequence().ok_or("no sequence is open")?;
     let (t, it) = seq.find_item(c).ok_or("no such clip")?;
     if seq.track(t).is_none_or(|t| t.kind != TrackKind::Audio) {
@@ -98,17 +98,21 @@ fn duration_p(s: &Session, p: &Value) -> Option<Tick> {
 }
 
 /// Analysis of `[source_in, source_in + dur)` of the clip's media at the sequence rate (cached).
-fn analysis(s: &Session, item: ItemId, source_in: Tick, dur: Tick) -> Result<Arc<Analysis>> {
+pub(crate) fn analysis(s: &Session, item: ItemId, source_in: Tick, dur: Tick) -> Result<Arc<Analysis>> {
     let sr = s.active_sequence().map(|q| q.settings.sample_rate).unwrap_or(48_000).max(1);
     let m0 = source_in.to_units_floor(sr as i64);
     let len = (source_in + dur).to_units_floor(sr as i64) - m0;
+    let max = i64::try_from(u64::from(sr).saturating_mul(dsp::MAX_ANALYSIS_SECONDS)).unwrap_or(i64::MAX);
+    if !(0..=max).contains(&len) {
+        return Err(EngineError::Other(format!("cannot remix: audio is longer than {} minutes", dsp::MAX_ANALYSIS_SECONDS / 60)));
+    }
     let key = (item.0, m0, len, sr);
     if let Some((_, a)) = cache().lock().unwrap_or_else(|e| e.into_inner()).iter().find(|(k, _)| *k == key) {
         return Ok(a.clone());
     }
     let provider = s.media.provider(s.project.clone(), s.services.clone());
     let src = cfa4_render::SourceProvider::source(&provider, item).ok_or_else(|| EngineError::Other("the clip's media is offline".into()))?;
-    let buf = src.audio(m0, len.max(0) as usize, sr).map_err(|e| EngineError::Other(format!("reading the clip's audio: {e}")))?;
+    let buf = src.audio(m0, len as usize, sr).map_err(|e| EngineError::Other(format!("reading the clip's audio: {e}")))?;
     let refs: Vec<&[f32]> = buf.channels.iter().map(Vec::as_slice).collect();
     let a = Arc::new(dsp::analyze(&refs, sr).map_err(|e| EngineError::Other(format!("cannot remix: {e}")))?);
     let mut c = cache().lock().unwrap_or_else(|e| e.into_inner());
@@ -117,6 +121,26 @@ fn analysis(s: &Session, item: ItemId, source_in: Tick, dur: Tick) -> Result<Arc
         c.remove(0);
     }
     Ok(a)
+}
+
+/// Longest music [`beat_grid`] analyses (seconds).
+pub(crate) const MAX_BEAT_SECONDS: i64 = 30 * 60;
+
+/// The beat grid of `dur` of audio stream `stream` of `item` from `source_in` (beat markers: no
+/// remix minimum).
+pub(crate) fn beat_grid(s: &Session, item: ItemId, stream: usize, source_in: Tick, dur: Tick) -> Result<dsp::Beats> {
+    let sr = s.active_sequence().map(|q| q.settings.sample_rate).unwrap_or(48_000).max(1);
+    let m0 = source_in.to_units_floor(sr as i64);
+    let len = (source_in + dur).to_units_floor(sr as i64) - m0;
+    // the whole range is read at once (plus a mono copy): cap it
+    if len > MAX_BEAT_SECONDS.saturating_mul(sr as i64) {
+        return Err(EngineError::Other(format!("cannot find beats in more than {} minutes of music at once; trim the clip", MAX_BEAT_SECONDS / 60)));
+    }
+    let provider = s.media.provider(s.project.clone(), s.services.clone());
+    let src = cfa4_render::SourceProvider::source(&provider, item).ok_or_else(|| EngineError::Other("the clip's media is offline".into()))?;
+    let buf = src.audio_stream(stream, m0, len.max(0) as usize, sr).map_err(|e| EngineError::Other(format!("reading the clip's audio: {e}")))?;
+    let refs: Vec<&[f32]> = buf.channels.iter().map(Vec::as_slice).collect();
+    dsp::detect_beats(&refs, sr).map_err(|e| EngineError::Other(format!("cannot find beats: {e}")))
 }
 
 /// The remix of `c` to `target` with the given sliders: (new duration, state).

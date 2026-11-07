@@ -44,8 +44,8 @@ to a 12 GB footprint, 10.8 GB of it live heap in three piles.
    `MediaPool::open_file` fell back to `read_file` and every clip's bytes stayed in memory for as
    long as its source was open. `FsServices::reader` now returns a
    `cfa4_media::reader::FileReader`: the file stays open and containers read their index and
-   then single samples with positional reads, as the web host already did through `BlobReader`
-   ([web.md](web.md)). Formats decoded in one go (stills, WAV, MPEG elementary streams) are still
+   then single samples with positional reads, as the former web host did
+   through `BlobReader`. Formats decoded in one go (stills, WAV, MPEG elementary streams) are still
    read whole through the reader.
 2. **A decoder per clip, for good (3.5 GB), MEM2.** Every source kept its decoder once it had
    decoded a frame, with its reference pictures and the pictures its frame threads have in flight:

@@ -3,7 +3,9 @@
 //! Video: Motion JPEG (frames without their own Huffman tables get the standard ones), H.264 and
 //! HEVC (Annex B byte streams, our decoders), and uncompressed RGB / YUV ([`RawFormat`]). A frame
 //! slot with an empty chunk (a "drop frame") repeats the picture before it. MPEG-4 Part 2
-//! (DivX / Xvid) and DV have no decoder yet: their streams are listed and report the codec.
+//! (DivX / Xvid) has no decoder yet: its streams are listed and report the codec. DV in type-2 AVI
+//! (`dvsd`, `dv25`, …) decodes with `cfa4-dv`; type-1 (`iavs`, video and audio in one stream) is
+//! not read yet.
 //!
 //! Audio: PCM (integer and float) straight from the chunks; MPEG audio (MP3, MP2) and AC-3 frames,
 //! which AVI chunks need not follow, are found again across chunk boundaries
@@ -30,6 +32,9 @@ pub fn sniff(b: &[u8]) -> bool {
 #[derive(Clone, Debug, PartialEq)]
 enum VCodec {
     Jpeg,
+    Cineform,
+    /// DV / DVCPRO (type-2 AVI: one DIF frame per video chunk).
+    Dv,
     H264,
     Hevc,
     Raw(RawFormat),
@@ -52,11 +57,12 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
     match &f {
         b"MJPG" | b"AVRN" | b"LJPG" | b"JPGL" | b"DMB1" | b"JPEG" | b"MJPA" => (VCodec::Jpeg, "Motion JPEG".into()),
         b"H264" | b"X264" | b"AVC1" | b"DAVC" | b"VSSH" => (VCodec::H264, "H.264".into()),
+        b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
             (VCodec::Unsupported("MPEG-4 Part 2 (DivX / Xvid)".into()), "MPEG-4 Part 2 (DivX / Xvid)".into())
         }
-        b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Unsupported("DV".into()), "DV".into()),
+        b"DVSD" | b"DV25" | b"DV50" | b"DVHD" | b"DVSL" | b"CDVC" | b"DVCP" | b"DVPP" => (VCodec::Dv, "DV".into()),
         _ => {
             let name = fourcc_text(b.compression);
             (VCodec::Unsupported(format!("\"{name}\"")), name)
@@ -154,14 +160,22 @@ fn random_access(data: &[u8], hevc: bool) -> bool {
 
 /// The packets of a framed audio stream: every frame header found in the stream of chunks, and
 /// the samples each frame decodes to. Bytes that start no frame are skipped (resynchronisation).
+const MAX_FRAMED_AUDIO_SCAN_BYTES: u64 = 256 << 20;
+
 fn split_frames(file: &AviFile, bytes: &crate::Src, s: usize, ts: &cfa4_mpegts::Codec) -> (Vec<Piece>, Vec<usize>, Vec<u32>, Option<cfa4_mpegts::FrameInfo>) {
     let Some(st) = file.streams.get(s) else { return Default::default() };
+    // AVI indexes can reference the same physical chunk repeatedly. Keep header scanning bounded
+    // by both the source itself and a practical absolute limit before issuing those repeated reads.
+    let budget = bytes.0.len().saturating_mul(4).min(MAX_FRAMED_AUDIO_SCAN_BYTES);
     // chunk start positions in the concatenated stream
     let mut at = Vec::with_capacity(st.chunks.len());
     let mut total = 0usize;
     for c in &st.chunks {
         at.push(total);
         total = total.saturating_add(c.size as usize);
+        if total as u64 > budget {
+            return Default::default();
+        }
     }
     let locate = |pos: usize| -> Option<(usize, usize)> {
         let k = at.partition_point(|&a| a <= pos).checked_sub(1)?;
@@ -305,7 +319,7 @@ impl AviSource {
                 rate
             };
             let bitrate = (secs > 0.0).then(|| (vs.chunks.iter().map(|c| u64::from(c.size)).sum::<u64>() as f64 * 8.0 / secs) as u64);
-            video = Some(VideoStreamInfo {
+            let mut info = VideoStreamInfo {
                 width: w,
                 height: h,
                 frame_rate: shown,
@@ -316,7 +330,19 @@ impl AviSource {
                 has_alpha: false,
                 bitrate,
                 hdr: None,
-            });
+            };
+            if codec == VCodec::Dv
+                && let Some(c) = vframes.first().and_then(|f| vs.chunks.get(f.chunk))
+                && let Some(d) =
+                    cfa4_media::reader::read_range(&*bytes.0, c.offset, (c.size as usize).min(6 * 80)).ok().and_then(|d| crate::video::dv_stream_info(&d))
+            {
+                // format, sampling, aspect and colour are in the frame's header and VAUX packs
+                info.codec = d.codec;
+                info.pixel_format = d.pixel_format;
+                info.par = d.par;
+                info.color = d.color;
+            }
+            video = Some(info);
             vcodec = codec;
         }
         // audio: packets and their start positions
@@ -324,10 +350,12 @@ impl AviSource {
         let mut audio_streams = Vec::new();
         for &s in &astreams {
             let Some(st) = file.streams.get(s) else { continue };
-            let w = st.audio.clone().unwrap_or_default();
+            let mut w = st.audio.clone().unwrap_or_default();
+            let Ok((sample_rate, channels)) = cfa4_media::bounded_audio_dimensions(w.sample_rate, u32::from(w.channels)) else { continue };
+            w.sample_rate = sample_rate;
+            w.channels = u16::try_from(channels).unwrap_or(u16::MAX);
             let (codec, label) = audio_codec(&w);
-            let mut sample_rate = w.sample_rate.max(1);
-            let mut channels = u32::from(w.channels.max(1));
+            let (mut sample_rate, mut channels) = (sample_rate, channels);
             let (pieces, first, starts) = match &codec {
                 ACodec::Pcm(cfg) => {
                     let block = usize::from(w.block_align.max(1)).max((usize::from(cfg.bits).div_ceil(8)) * channels as usize);
@@ -492,6 +520,8 @@ impl VideoSamples for AviVideo<'_> {
         let (w, h) = (v.width.min(u32::from(u16::MAX)) as u16, v.height.min(u32::from(u16::MAX)) as u16);
         match &self.src.vcodec {
             VCodec::Jpeg => make_video_decoder(&SampleEntry::jpeg(w, h)),
+            VCodec::Cineform => Ok(Box::new(crate::video::CineformDecoder)),
+            VCodec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             VCodec::H264 => Ok(Box::new(crate::video::H264Decoder::annexb())),
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
@@ -524,14 +554,18 @@ impl MediaSource for AviSource {
             return Err(MediaError::Unsupported(format!("{name} audio")));
         }
         let ch = ainfo.channels.max(1) as usize;
-        let ratio = f64::from(ainfo.sample_rate) / f64::from(sample_rate.max(1));
+        let source_frames = cfa4_media::resample_source_frames(frames, ainfo.sample_rate, sample_rate)?;
+        let need = source_frames.checked_add(2).ok_or_else(|| MediaError::Decode("audio source window overflows".into()))?;
+        cfa4_media::validate_audio_buffer_shape(ch, need)?;
+        cfa4_media::validate_audio_buffer_shape(ch, frames)?;
+        let ratio = f64::from(ainfo.sample_rate) / f64::from(sample_rate);
         let s0 = (start as f64 * ratio).floor() as i64;
-        let need = (frames as f64 * ratio).ceil() as i64 + 2;
-        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need.max(0) as usize]; ch];
+        let need_i64 = i64::try_from(need).unwrap_or(i64::MAX);
+        let mut src: Vec<Vec<f32>> = vec![vec![0.0; need]; ch];
         let mut st = a.state.lock().unwrap_or_else(|e| e.into_inner());
         let mut i = a.starts.partition_point(|&x| x <= s0).saturating_sub(1);
         while let Some(&pk_start) = a.starts.get(i) {
-            if pk_start >= s0 + need {
+            if pk_start >= s0.saturating_add(need_i64) {
                 break;
             }
             let pk = self.audio_packet(a, &mut st, ainfo, i)?;

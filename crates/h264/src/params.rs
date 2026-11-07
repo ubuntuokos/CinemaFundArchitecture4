@@ -4,6 +4,10 @@ use crate::error::{Result, ensure, unsupported};
 use crate::tables::*;
 use cfa4_bitstream::BitReader;
 
+/// Maximum supported reconstructed luma area. 8K UHD fits comfortably while
+/// hostile SPS dimensions cannot allocate full pictures and decoder work state.
+const MAX_LUMA_SAMPLES: u64 = 1 << 25;
+
 /// Scaling matrices after applying fall-back rules, stored in raster order (weightScale).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ScalingMatrices {
@@ -516,17 +520,22 @@ impl Sps {
     }
 
     pub fn check_supported(&self) -> Result<()> {
-        if !self.frame_mbs_only {
-            return unsupported("interlaced (field / MBAFF) coding");
+        if u64::from(self.width()).saturating_mul(u64::from(self.height())) > MAX_LUMA_SAMPLES {
+            return unsupported("picture dimensions exceed the decoder memory limit");
         }
-        if self.chroma_array_type() != 1 {
-            return unsupported(format!("chroma_format_idc {} (only 4:2:0 is implemented)", self.chroma_format_idc));
+        if self.chroma_format_idc == 0 {
+            // the decoding paths exist (chroma is skipped) but no 4:0:0 test stream is available yet (#279)
+            return unsupported("chroma_format_idc 0 (monochrome)");
         }
-        if self.bit_depth_luma != 8 || self.bit_depth_chroma != 8 {
-            return unsupported(format!("bit depth luma {} chroma {} (only 8-bit is implemented)", self.bit_depth_luma, self.bit_depth_chroma));
+        if self.separate_colour_plane {
+            // #280
+            return unsupported("separate_colour_plane_flag (4:4:4 coded as three monochrome pictures)");
         }
-        if self.qpprime_y_zero_transform_bypass {
-            return unsupported("qpprime_y_zero_transform_bypass (lossless)");
+        if self.bit_depth_luma != self.bit_depth_chroma {
+            return unsupported(format!("bit depth luma {} chroma {} (they must match)", self.bit_depth_luma, self.bit_depth_chroma));
+        }
+        if !(8..=14).contains(&self.bit_depth_luma) {
+            return unsupported(format!("bit depth {}", self.bit_depth_luma));
         }
         Ok(())
     }

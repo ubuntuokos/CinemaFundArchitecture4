@@ -8,7 +8,7 @@
 //!   same name. Names compare case- and punctuation-insensitively.
 //! - **Settings.** Every export command takes `preset` (a name), `settings` (an
 //!   [`ExportSettings`] JSON object in camelCase, merged over the preset) and a few flat
-//!   overrides (`format`, `width`/`height`, `fps`, `bitrateKbps`, …), plus `path`, `sequence` and
+//!   overrides (`format`, `width`/`height`, `fps`, `bitrateKbps`, `audioBitrateKbps`, …), plus `path`, `sequence` and
 //!   `range` (`entire` | `inOut` | `workArea` | `custom` with `start…` / `end…` times).
 //! - **Queue** (session state, not saved with the project). `export.queue.add` snapshots the
 //!   project and resolves the settings; `export.queue.start` encodes the ready items one after
@@ -291,14 +291,68 @@ pub fn settings_from_params(s: &Session, p: &Value, cmd: &str) -> Result<(Option
     if let Some(v) = str_p(p, "apvProfile") {
         settings.apv_profile = v.to_string();
     }
+    if let Some(v) = str_p(p, "cineformProfile") {
+        settings.cineform_profile = v.to_string();
+    }
+    if let Some(v) = str_p(p, "cineformQuality") {
+        settings.cineform_quality = v.to_string();
+    }
     if let Some(v) = str_p(p, "audioCodec") {
-        settings.audio.codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "audioCodec: auto | aac | pcm | flac"))?;
+        settings.audio.codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "audioCodec: auto | aac | pcm | flac | opus"))?;
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "audioBitrateKbps", cmd)? {
+        settings.audio.bitrate_kbps = v;
     }
     if let Some(v) = u64_p(p, "flacLevel") {
         settings.audio.flac_level = v.min(8) as u8;
     }
     if let Some(v) = str_p(p, "mxfVideoCodec") {
         settings.mxf_video_codec = serde_json::from_value(json!(v)).map_err(|_| bad(cmd, "mxfVideoCodec: dnxhr | proRes | h264"))?;
+    }
+    if let Some(v) = str_p(p, "mpeg2Container") {
+        let c = cfa4_export::Mpeg2Container::from_name(v).ok_or_else(|| bad(cmd, "mpeg2Container: ps | ts | m2ts | es"))?;
+        settings.mpeg2_container = c.id().to_string();
+    }
+    if let Some(v) = str_p(p, "mpeg2Chroma") {
+        settings.mpeg2_422 = match v {
+            "420" | "4:2:0" => false,
+            "422" | "4:2:2" => true,
+            _ => return Err(bad(cmd, "mpeg2Chroma: 420 | 422")),
+        };
+    }
+    if let Some(v) = str_p(p, "dcpResolution") {
+        let r = cfa4_export::DcpResolution::from_name(v).ok_or_else(|| bad(cmd, "dcpResolution: 2k | 4k"))?;
+        settings.dcp_resolution = r.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpAspect") {
+        let a = cfa4_export::DcpAspect::from_name(v).ok_or_else(|| bad(cmd, "dcpAspect: flat | scope | full"))?;
+        settings.dcp_aspect = a.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpContentKind") {
+        let probe = ExportSettings { dcp_content_kind: v.to_string(), ..Default::default() };
+        let kind = cfa4_export::dcp_content_kind(&probe).ok_or_else(|| bad(cmd, format!("dcpContentKind: {}", cfa4_export::DCP_CONTENT_KINDS.join(" | "))))?;
+        settings.dcp_content_kind = kind.to_string();
+    }
+    if let Some(v) = str_p(p, "dcpImmersive") {
+        let m = cfa4_export::DcpImmersive::from_name(v).ok_or_else(|| bad(cmd, "dcpImmersive: off | bed | file"))?;
+        settings.dcp_immersive = m.id().to_string();
+    }
+    if let Some(v) = str_p(p, "dcpIabSource") {
+        settings.dcp_iab_source = v.to_string();
+    }
+    if let Some(v) = str_p(p, "dcpIabFallback") {
+        let f = cfa4_export::IabFallback::from_name(v).ok_or_else(|| bad(cmd, "dcpIabFallback: 5.1 | mix | none"))?;
+        settings.dcp_iab_fallback = f.id().to_string();
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2Quantizer", cmd)? {
+        settings.mpeg2_quantizer = match v {
+            0 => None,
+            1..=31 => Some(v as u8),
+            _ => return Err(bad(cmd, "mpeg2Quantizer: 1 to 31 (0: the bitrate)")),
+        };
+    }
+    if let Some(v) = crate::commands::checked_u32_p(p, "mpeg2BFrames", cmd)? {
+        settings.mpeg2_b_frames = Some(u8::try_from(v).ok().filter(|b| *b <= 7).ok_or_else(|| bad(cmd, "mpeg2BFrames: 0 to 7"))?);
     }
     if let Some(v) = bool_p(p, "sdr") {
         settings.sdr = v;
@@ -341,17 +395,34 @@ pub fn sequence_param(s: &Session, p: &Value, cmd: &str) -> Result<ItemId> {
 
 /// Export ▸ Range: `entire` | `inOut` | `workArea` | `custom` (`start…` / `end…` times).
 /// None = the default (In/Out when set, else the whole sequence); bare `start…` / `end…` times
-/// without a `range` mean `custom`.
-pub fn range_param(s: &Session, project: &Project, seq: ItemId, v: Option<&Value>, p: &Value, cmd: &str) -> Result<Option<TimeRange>> {
+/// without a `range` mean `custom`. Returns the range and any advisories.
+pub fn range_param(s: &Session, project: &Project, seq: ItemId, v: Option<&Value>, p: &Value, cmd: &str) -> Result<(Option<TimeRange>, Vec<&'static str>)> {
+    range_with_warnings(s, project, seq, v, p, cmd)
+}
+
+/// A marked range of one sequence frame is valid, but easily left behind by accident.
+/// Explicit custom/work-area/entire ranges must not inherit this warning.
+pub fn single_frame_in_out(q: &cfa4_project::Sequence, range: TimeRange) -> bool {
+    let rate = q.settings.frame_rate;
+    (q.mark_in.is_some() || q.mark_out.is_some()) && range.duration > Tick::ZERO && rate.frame_at(range.start) == rate.frame_at(range.end() - Tick(1))
+}
+
+const SINGLE_FRAME_WARNING: &str = "In/Out range is 1 frame; pass range: entire for the whole sequence";
+
+fn range_with_warnings(s: &Session, project: &Project, seq: ItemId, v: Option<&Value>, p: &Value, cmd: &str) -> Result<(Option<TimeRange>, Vec<&'static str>)> {
     let q = project.sequence(seq).ok_or(EngineError::NoSequence)?;
     q.check_bounds().map_err(|e| bad(cmd, e))?;
     let fd = q.settings.frame_rate.frame_duration();
     let whole = TimeRange::from_bounds(Tick::ZERO, q.duration().max(fd));
     let mode = match v {
         None | Some(Value::Null) if time_p(s, p, "start").is_some() || time_p(s, p, "end").is_some() => "custom".to_string(),
-        None | Some(Value::Null) => return Ok(None),
+        None | Some(Value::Null) => {
+            let range = cfa4_export::export_range(project, seq, &ExportSettings::default()).map_err(|e| bad(cmd, e.to_string()))?;
+            let warnings = if single_frame_in_out(q, range) { vec![SINGLE_FRAME_WARNING] } else { Vec::new() };
+            return Ok((None, warnings));
+        }
         Some(Value::String(m)) => m.to_ascii_lowercase().replace(['-', '_', ' ', '/'], ""),
-        Some(o @ Value::Object(_)) => return range_param(s, project, seq, o.get("mode").or(Some(&json!("custom"))), o, cmd),
+        Some(o @ Value::Object(_)) => return range_with_warnings(s, project, seq, o.get("mode").or(Some(&json!("custom"))), o, cmd),
         Some(other) => return Err(bad(cmd, format!("range: unexpected {other}"))),
     };
     let range = match mode.as_str() {
@@ -370,7 +441,8 @@ pub fn range_param(s: &Session, project: &Project, seq: ItemId, v: Option<&Value
         other => return Err(bad(cmd, format!("range `{other}`: entire | inOut | workArea | custom"))),
     };
     cfa4_export::validate_range(range).map_err(|e| bad(cmd, e.to_string()))?;
-    Ok(Some(range))
+    let warnings = if matches!(mode.as_str(), "inout" | "sequenceinout") && single_frame_in_out(q, range) { vec![SINGLE_FRAME_WARNING] } else { Vec::new() };
+    Ok((Some(range), warnings))
 }
 
 /// Where exports go when no path is given: next to the saved project, else ~/Movies, else the
@@ -390,25 +462,35 @@ pub fn default_export_dir(s: &Session) -> PathBuf {
     crate::temp_dir()
 }
 
-fn file_safe(n: &str) -> String {
+/// Convert project-derived display text into exactly one safe output filename component.
+pub fn file_safe(n: &str) -> String {
     let s: String = n.chars().map(|c| if c.is_alphanumeric() || " -_().".contains(c) { c } else { '_' }).collect();
     let s = s.trim().to_string();
-    if s.is_empty() { "Export".into() } else { s }
+    if s.is_empty() || matches!(s.as_str(), "." | "..") { "Export".into() } else { s }
 }
 
 /// `path` with the settings' extension (added when missing; image sequences keep theirs).
 fn with_extension(path: &str, settings: &ExportSettings) -> String {
+    // a DCP is a folder
+    if settings.format == Format::Dcp {
+        return path.to_string();
+    }
     let ext = settings.extension();
     match Path::new(path).extension().and_then(|e| e.to_str()) {
         Some(e)
             if e.eq_ignore_ascii_case(ext)
                 || (settings.format == Format::TiffSequence && e.eq_ignore_ascii_case("tiff"))
                 || (settings.format == Format::JpegSequence && e.eq_ignore_ascii_case("jpeg"))
-                || (settings.format == Format::Aac && e.eq_ignore_ascii_case("aac")) =>
+                || (settings.format == Format::Aac && e.eq_ignore_ascii_case("aac"))
+                || (settings.format == Format::Opus && e.eq_ignore_ascii_case("ogg")) =>
         {
             path.to_string()
         }
         Some(_) if settings.is_image_sequence() || matches!(settings.format, Format::Aiff) => format!("{}.{ext}", path.rsplit_once('.').map_or(path, |x| x.0)),
+        // another MPEG-2 container's extension: the chosen container's replaces it
+        Some(e) if settings.format == Format::Mpeg2 && cfa4_export::Mpeg2Container::from_name(e).is_some() => {
+            format!("{}.{ext}", path.rsplit_once('.').map_or(path, |x| x.0))
+        }
         _ => format!("{path}.{ext}"),
     }
 }
@@ -439,6 +521,7 @@ fn output_path(s: &Session, p: &Value, seq: ItemId, settings: &ExportSettings, s
     };
     let path = with_extension(&base, settings);
     match suffix {
+        Some(n) if n > 0 && settings.format == Format::Dcp => format!("{path}_{}", n + 1),
         Some(n) if n > 0 => match path.rsplit_once('.') {
             Some((a, e)) => format!("{a}_{}.{e}", n + 1),
             None => format!("{path}_{}", n + 1),
@@ -544,12 +627,13 @@ pub fn export_media(s: &mut Session, p: &Value) -> Result<Value> {
         return Err(bad(cmd, "need `path`"));
     }
     let project = s.project.clone();
-    settings.range = range_param(s, &project, seq, p.get("range"), p, cmd)?;
+    let (range, warnings) = range_with_warnings(s, &project, seq, p.get("range"), p, cmd)?;
+    settings.range = range;
     settings.path = output_path(s, p, seq, &settings, None);
     let wait = bool_p(p, "wait").unwrap_or(false);
     let path = settings.path.clone();
     let id = spawn_export(s, project, seq, settings, format!("Export {}", file_name(&path)), wait)?;
-    let mut out = json!({"job": id, "path": path});
+    let mut out = json!({"job": id, "path": path, "warnings": warnings});
     if let Some(pr) = preset {
         out["preset"] = json!(pr.name);
     }
@@ -747,6 +831,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
     let mut ids = Vec::new();
     let mut n = 0usize;
     let mut items = Vec::new();
+    let mut warnings = Vec::new();
     for &seq in &seqs {
         for r in &ranges {
             let mut st = settings.clone();
@@ -754,7 +839,9 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
                 Some(v) if v.is_object() => *v,
                 _ => p,
             };
-            st.range = range_param(s, &project, seq, *r, times, cmd)?;
+            let (range, range_warnings) = range_param(s, &project, seq, *r, times, cmd)?;
+            st.range = range;
+            warnings.extend(range_warnings);
             // several ranges of one sequence get numbered names; several sequences their own names
             let suffix = if many && (ranges.len() > 1 || str_p(p, "path").is_some_and(|x| !is_folder(&expand_home(x)))) { Some(n) } else { None };
             st.path = output_path(s, p, seq, &st, suffix);
@@ -783,7 +870,7 @@ fn queue_add(s: &mut Session, p: &Value) -> Result<Value> {
         s.export_queue.running = true;
         pump_queue(s, bool_p(p, "wait").unwrap_or(false));
     }
-    Ok(json!({"added": ids, "items": queue_list_json(s)}))
+    Ok(json!({"added": ids, "items": queue_list_json(s), "warnings": warnings}))
 }
 
 fn queue_list_json(s: &Session) -> Value {
@@ -914,14 +1001,15 @@ fn quick(s: &mut Session, p: &Value) -> Result<Value> {
     let seq = sequence_param(s, &q, cmd)?;
     let (preset, mut settings) = settings_from_params(s, &q, cmd)?;
     let project = s.project.clone();
-    settings.range = range_param(s, &project, seq, q.get("range"), &q, cmd)?;
+    let (range, warnings) = range_with_warnings(s, &project, seq, q.get("range"), &q, cmd)?;
+    settings.range = range;
     settings.path = output_path(s, &q, seq, &settings, None);
     let wait = bool_p(p, "wait").unwrap_or(false);
     let path = settings.path.clone();
     let id = spawn_export(s, project, seq, settings, format!("Quick Export {}", file_name(&path)), wait)?;
     let used = preset.map(|x| x.name).unwrap_or(name);
     s.export_queue.quick_preset = Some(used.clone());
-    Ok(json!({"job": id, "path": path, "preset": used}))
+    Ok(json!({"job": id, "path": path, "preset": used, "warnings": warnings}))
 }
 
 fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
@@ -929,7 +1017,8 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
     let seq = sequence_param(s, p, cmd)?;
     let (preset, mut settings) = settings_from_params(s, p, cmd)?;
     let project = s.project.clone();
-    settings.range = range_param(s, &project, seq, p.get("range"), p, cmd)?;
+    let (range, warnings) = range_with_warnings(s, &project, seq, p.get("range"), p, cmd)?;
+    settings.range = range;
     settings.path = output_path(s, p, seq, &settings, None);
     let q = project.sequence(seq).ok_or(EngineError::NoSequence)?;
     let range = cfa4_export::export_range(&project, seq, &settings).map_err(|e| EngineError::Other(e.to_string()))?;
@@ -942,6 +1031,7 @@ fn resolve(s: &mut Session, p: &Value) -> Result<Value> {
         "settings": settings,
         "range": {"start": range.start.0, "duration": range.duration.0, "seconds": range.duration.seconds()},
         "frames": f1 - f0,
+        "warnings": warnings,
         "output": {"width": r.width, "height": r.height, "fps": r.rate.label(), "sampleRate": r.sample_rate, "channels": r.channels,
                    "targetKbps": r.target_kbps, "maxKbps": r.max_kbps, "keyframeDistance": r.keyint},
         "summary": summary,
@@ -960,6 +1050,12 @@ fn preset_json(s: &Session, pr: &ExportPreset, full: bool) -> Value {
         "formatLabel": pr.settings.format.label(),
         "extension": pr.settings.extension(),
         "frameSize": pr.settings.frame_size,
+        "mpeg2Container": pr.settings.mpeg2_container,
+        "dcpResolution": pr.settings.dcp_resolution,
+        "dcpAspect": pr.settings.dcp_aspect,
+        "dcpImmersive": pr.settings.dcp_immersive,
+        "dcpIabSource": pr.settings.dcp_iab_source,
+        "dcpIabFallback": pr.settings.dcp_iab_fallback,
     });
     if full {
         v["settings"] = serde_json::to_value(&pr.settings).unwrap_or_default();
@@ -997,7 +1093,7 @@ fn presets_list(s: &mut Session, p: &Value) -> Result<Value> {
         .filter(|x| fmt.is_none_or(|f| x.settings.format == f))
         .map(|x| preset_json(s, x, false))
         .collect();
-    Ok(json!({"presets": v, "default": DEFAULT_PRESET}))
+    Ok(json!({"presets": v, "default": DEFAULT_PRESET, "quickPreset": s.export_queue.quick_preset}))
 }
 
 fn presets_get(s: &mut Session, p: &Value) -> Result<Value> {
@@ -1126,6 +1222,14 @@ fn formats(_: &mut Session, _: &Value) -> Result<Value> {
     ))
 }
 
+/// What an IAB source holds, for the DCP export's immersive audio (#343).
+fn iab_info(_: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "export.iabInfo";
+    let path = str_p(p, "path").ok_or_else(|| bad(cmd, "need `path`"))?;
+    let info = cfa4_export::probe_iab_source(path).map_err(|e| bad(cmd, e.to_string()))?;
+    Ok(serde_json::to_value(info).unwrap_or_default())
+}
+
 type Run = fn(&mut Session, &Value) -> Result<Value>;
 
 fn spec(
@@ -1141,7 +1245,14 @@ fn spec(
 
 pub(crate) fn commands() -> Vec<CommandSpec> {
     vec![
-        spec("export.presets.list", "List Export Presets", r#"{"query":str?,"category":str?,"format":str?,"favorites":bool?}"#, always, presets_list, false),
+        spec(
+            "export.presets.list",
+            "List Export Presets",
+            r#"{"query":str?,"category":str?,"format":str?,"favorites":bool?} → {presets, default, quickPreset (the last Quick Export's, or null)}"#,
+            always,
+            presets_list,
+            false,
+        ),
         spec("export.presets.get", "Get Export Preset", r#"{"name":str}"#, always, presets_get, false),
         spec(
             "export.presets.save",
@@ -1156,6 +1267,7 @@ pub(crate) fn commands() -> Vec<CommandSpec> {
         spec("export.presets.import", "Import Export Presets", r#"{"path":str}"#, always, presets_import, true),
         spec("export.presets.export", "Export Export Presets", r#"{"path":str,"names":[str]?}"#, always, presets_export, false),
         spec("export.formats", "List Export Formats", "{}", always, formats, false),
+        spec("export.iabInfo", "Inspect IAB Source", r#"{"path":str}"#, always, iab_info, false),
         spec("export.resolve", "Resolve Export Settings", "{…settings params, \"path\":str?}", has_seq, resolve, false),
         spec(
             "export.queue.add",

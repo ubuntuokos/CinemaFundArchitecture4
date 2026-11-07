@@ -10,7 +10,7 @@
 //! resample), otherwise the clip is rendered on the CPU as before.
 
 use cfa4_color::{hsl_to_rgb, linear_to_srgb, luma709, rgb_to_hsl};
-use cfa4_geom::Affine;
+use cfa4_geom::{Affine, Vec2};
 use cfa4_project::EffectInstance;
 use rayon::prelude::*;
 
@@ -135,6 +135,34 @@ pub enum FxOp {
         sbs: bool,
         right: bool,
     },
+    /// Stereo Parallax: the left view moves `shift` pixels right and the right view as far left
+    /// (negative: the other way), each inside its own view ([`stereo_parallax_sample`]); uncovered
+    /// pixels become transparent or, with `repeat`, repeat the view's edge.
+    StereoParallax {
+        sbs: bool,
+        shift: f32,
+        repeat: bool,
+    },
+    /// Six-Point Pin: the frame mapped between two curved edges ([`six_point_source`]). `edges` is
+    /// the top edge's start, control and end point, then the bottom edge's, as x, y in working
+    /// pixels; `inv` is the inverse of the corners' homography (row-major), the Newton start.
+    SixPointPin {
+        edges: [f32; 12],
+        inv: [f32; 9],
+        identity: bool,
+    },
+    /// Film Grain: smooth value noise ([`grain_noise`]) on display-encoded colour, weighted by a
+    /// shadows / midtones / highlights response. `inv_cell` is 1 / the grain cell in working
+    /// pixels; `seed` already folds in the frame when the grain is animated.
+    FilmGrain {
+        amount: f32,
+        inv_cell: f32,
+        shadows: f32,
+        midtones: f32,
+        highlights: f32,
+        color: f32,
+        seed: u32,
+    },
     Mirror {
         cx: f32,
         cy: f32,
@@ -239,6 +267,9 @@ pub const GPU_EFFECTS: &[&str] = &[
     "vertical_flip",
     "stereo_swap_eyes",
     "stereo_to_2d",
+    "stereo_parallax",
+    "six_point_pin",
+    "film_grain",
     "mirror",
     "offset",
     "asc_cdl",
@@ -249,6 +280,49 @@ pub const GPU_EFFECTS: &[&str] = &[
     "video_limiter",
     "lumetri",
 ];
+
+/// PCG3D (Jarzynski & Olano, "Hash Functions for GPU Rendering", JCGT 2020): three rounds of
+/// 32-bit multiply-xorshift mixing; the first lane is the hash. `fx.wgsl` (`pcg3d`) mirrors it
+/// bit for bit (u32 arithmetic wraps on both sides).
+pub fn pcg3d(x: u32, y: u32, z: u32) -> u32 {
+    let mut v = [x, y, z].map(|c| c.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
+    let mix = |v: &mut [u32; 3]| {
+        v[0] = v[0].wrapping_add(v[1].wrapping_mul(v[2]));
+        v[1] = v[1].wrapping_add(v[2].wrapping_mul(v[0]));
+        v[2] = v[2].wrapping_add(v[0].wrapping_mul(v[1]));
+    };
+    mix(&mut v);
+    for c in &mut v {
+        *c ^= *c >> 16;
+    }
+    mix(&mut v);
+    v[0]
+}
+
+/// A lattice value in [−0.5, 0.5) for cell (`ix`, `iy`) of noise layer `layer` (24 bits, exact
+/// in f32).
+fn lattice(ix: i32, iy: i32, seed: u32, layer: u32) -> f32 {
+    let h = pcg3d(ix as u32, iy as u32, seed ^ layer.wrapping_mul(0x9E37_79B9));
+    (h >> 8) as f32 / 16_777_216.0 - 0.5
+}
+
+/// Smooth value noise in [−0.5, 0.5] at pixel (`x`, `y`): lattice values on a grid of
+/// 1 / `inv_cell` pixels, blended with a smoothstep. `fx.wgsl` (`grain_noise`) mirrors this.
+pub fn grain_noise(x: usize, y: usize, inv_cell: f32, seed: u32, layer: u32) -> f32 {
+    let fx = (x as f32 + 0.5) * inv_cell;
+    let fy = (y as f32 + 0.5) * inv_cell;
+    let (x0, y0) = (fx.floor(), fy.floor());
+    let (tx, ty) = (fx - x0, fy - y0);
+    let (sx, sy) = (tx * tx * (3.0 - 2.0 * tx), ty * ty * (3.0 - 2.0 * ty));
+    let (ix, iy) = (x0 as i32, y0 as i32);
+    let a = lattice(ix, iy, seed, layer);
+    let b = lattice(ix.wrapping_add(1), iy, seed, layer);
+    let c = lattice(ix, iy.wrapping_add(1), seed, layer);
+    let d = lattice(ix.wrapping_add(1), iy.wrapping_add(1), seed, layer);
+    let top = a + (b - a) * sx;
+    let bot = c + (d - c) * sx;
+    top + (bot - top) * sy
+}
 
 /// The source pixel of output pixel (`x`, `y`) when the two views of a `w`×`h` stereo frame swap
 /// places. Each view is `w / 2` columns (side by side) or `h / 2` rows (over/under); with an odd
@@ -288,6 +362,100 @@ pub fn stereo_view_sample(src: &Image, x: usize, y: usize, sbs: bool, right: boo
         o[k] = a[k] + (b[k] - a[k]) * t;
     }
     o
+}
+
+/// Output pixel (`x`, `y`) of Stereo Parallax on `src`: inside the left view the content moves
+/// `shift` pixels right, inside the right view `shift` pixels left, linearly interpolated and never
+/// crossing into the other view. Pixels outside both views (an odd last column / row) keep their
+/// value. Uncovered pixels fade to transparent, or repeat the view's edge with `repeat`.
+/// `fx.wgsl` (`OP_STEREO_PARALLAX`) mirrors this.
+pub fn stereo_parallax_sample(src: &Image, x: usize, y: usize, sbs: bool, shift: f32, repeat: bool) -> [f32; 4] {
+    let (w, h) = (src.w, src.h);
+    let (vw, x0, left) = if sbs {
+        let vw = w / 2;
+        if x < vw {
+            (vw, 0, true)
+        } else if x < 2 * vw {
+            (vw, vw, false)
+        } else {
+            return src.get(x, y);
+        }
+    } else {
+        let half = h / 2;
+        if y < half {
+            (w, 0, true)
+        } else if y < 2 * half {
+            (w, 0, false)
+        } else {
+            return src.get(x, y);
+        }
+    };
+    let off = if left { shift } else { -shift };
+    let mut fx = (x - x0) as f32 - off;
+    if repeat {
+        fx = fx.clamp(0.0, (vw - 1) as f32);
+    }
+    let lo = fx.floor();
+    let t = fx - lo;
+    let tap = |i: f32| {
+        if i >= 0.0 && i < vw as f32 { src.get(x0 + i as usize, y) } else { [0.0; 4] }
+    };
+    let (a, b) = (tap(lo), tap(lo + 1.0));
+    let mut o = [0.0; 4];
+    for k in 0..4 {
+        o[k] = a[k] + (b[k] - a[k]) * t;
+    }
+    o
+}
+
+/// Newton steps of [`six_point_source`]: the corners' homography starts close enough that the
+/// error squares each step, so eight reach f32 precision for any sensible screen shape.
+pub const SIX_POINT_STEPS: usize = 8;
+
+/// The source position (`u`, `v` in 0..1 of the frame) that Six-Point Pin draws at output point
+/// (`qx`, `qy`), or `None` outside the warped frame. The frame's top edge runs along the quadratic
+/// Bézier `edges[0..6]` (start, control, end), its bottom edge along `edges[6..12]`, and each
+/// column `u` is the straight line between the two edges at `u`. Newton's method solves
+/// `P(u, v) = q` from the corners' inverse homography `inv`. `fx.wgsl` (`OP_SIX_POINT_PIN`)
+/// mirrors this in the same f32 order.
+pub fn six_point_source(edges: &[f32; 12], inv: &[f32; 9], qx: f32, qy: f32) -> Option<(f32, f32)> {
+    let e = |i: usize| edges.get(i).copied().unwrap_or(0.0);
+    // the point and the derivative of the Bézier edge starting at index `o`
+    let curve = |o: usize, t: f32| {
+        let (s, c, d) = (1.0 - t, 2.0 * t * (1.0 - t), t * t);
+        let p = (e(o) * s * s + e(o + 2) * c + e(o + 4) * d, e(o + 1) * s * s + e(o + 3) * c + e(o + 5) * d);
+        let dp = (2.0 * s * (e(o + 2) - e(o)) + 2.0 * t * (e(o + 4) - e(o + 2)), 2.0 * s * (e(o + 3) - e(o + 1)) + 2.0 * t * (e(o + 5) - e(o + 3)));
+        (p, dp)
+    };
+    let m = |i: usize| inv.get(i).copied().unwrap_or(0.0);
+    let den = m(6) * qx + m(7) * qy + m(8);
+    let (mut u, mut v) = (0.5f32, 0.5f32);
+    if den.abs() > 1e-12 {
+        let (su, sv) = ((m(0) * qx + m(1) * qy + m(2)) / den, (m(3) * qx + m(4) * qy + m(5)) / den);
+        if su.is_finite() && sv.is_finite() {
+            (u, v) = (su.clamp(-1.0, 2.0), sv.clamp(-1.0, 2.0));
+        }
+    }
+    let residual = |u: f32, v: f32| {
+        let ((t, dt), (b, db)) = (curve(0, u), curve(6, u));
+        let r = (t.0 + v * (b.0 - t.0) - qx, t.1 + v * (b.1 - t.1) - qy);
+        // columns of the Jacobian: d/du and d/dv
+        let ju = (dt.0 + v * (db.0 - dt.0), dt.1 + v * (db.1 - dt.1));
+        let jv = (b.0 - t.0, b.1 - t.1);
+        (r, ju, jv)
+    };
+    for _ in 0..SIX_POINT_STEPS {
+        let (r, ju, jv) = residual(u, v);
+        let det = ju.0 * jv.1 - jv.0 * ju.1;
+        if !det.is_finite() || det.abs() <= 1e-12 {
+            break;
+        }
+        u = (u - (r.0 * jv.1 - jv.0 * r.1) / det).clamp(-1.0, 2.0);
+        v = (v - (ju.0 * r.1 - r.0 * ju.1) / det).clamp(-1.0, 2.0);
+    }
+    let (r, _, _) = residual(u, v);
+    let inside = (-1e-3..=1.0 + 1e-3).contains(&u) && (-1e-3..=1.0 + 1e-3).contains(&v);
+    (inside && r.0 * r.0 + r.1 * r.1 <= 0.01).then_some((u, v))
 }
 
 /// `Image::transformed` without the mip path: the destination rectangle it writes and the inverse.
@@ -470,6 +638,55 @@ impl FxOp {
             "vertical_flip" => FxOp::VFlip,
             "stereo_swap_eyes" => FxOp::SwapEyes { sbs: choice(e, "frame_layout") == 1 },
             "stereo_to_2d" => FxOp::StereoTo2d { sbs: choice(e, "frame_layout") == 1, right: choice(e, "eye") == 1 },
+            "stereo_parallax" => {
+                let sbs = choice(e, "frame_layout") == 1;
+                // percent of the view width, split between the two eyes
+                let pct = f(e, "shift", cx);
+                let pct = if pct.is_finite() { pct.clamp(-10.0, 10.0) } else { 0.0 };
+                let vw = if sbs { w / 2 } else { w };
+                FxOp::StereoParallax { sbs, shift: pct / 100.0 * vw as f32 / 2.0, repeat: b(e, "repeat_edge") }
+            }
+            "six_point_pin" => {
+                use crate::vfx::distort::{h_inverse, square_to_quad};
+                let img = Image { w, h, px: Vec::new() };
+                let names = ["upper_left", "upper_center", "upper_right", "lower_left", "lower_center", "lower_right"];
+                let p = names.map(|n| crate::vfx::pv(e, n, cx, &img));
+                let (fw, fh) = (w as f64, h as f64);
+                let rest = [(0.0, 0.0), (fw / 2.0, 0.0), (fw, 0.0), (0.0, fh), (fw / 2.0, fh), (fw, fh)];
+                let identity = p.iter().zip(rest).all(|(a, (x, y))| (a.x - x).abs() < 1e-6 && (a.y - y).abs() < 1e-6);
+                // the quadratic Bézier through start, middle (at t = 1/2) and end
+                let ctrl = |a: Vec2, m: Vec2, b: Vec2| Vec2::new(2.0 * m.x - (a.x + b.x) / 2.0, 2.0 * m.y - (a.y + b.y) / 2.0);
+                let [ul, uc, ur, ll, lc, lr] = p;
+                let pts = [ul, ctrl(ul, uc, ur), ur, ll, ctrl(ll, lc, lr), lr];
+                let mut edges = [0f32; 12];
+                for (d, v) in edges.chunks_exact_mut(2).zip(pts) {
+                    d.copy_from_slice(&[v.x as f32, v.y as f32]);
+                }
+                let inv = h_inverse(&square_to_quad([ul, ur, lr, ll])).map_or([0.0; 9], |m| m.map(|v| v as f32));
+                FxOp::SixPointPin { edges, inv, identity }
+            }
+            "film_grain" => {
+                let pct = |k: &str| (f(e, k, cx) / 100.0).clamp(0.0, 2.0);
+                // a grain cell under a quarter pixel only aliases; 0 / NaN sizes land here too
+                let cell = (f(e, "size", cx).clamp(0.5, 10.0) * cx.px_scale).max(0.25);
+                // (`as` saturates: NaN → 0)
+                let user = f(e, "seed", cx).round().clamp(0.0, 1e6) as u32;
+                let frame = if b(e, "animated") {
+                    let t = crate::effects::noise_frame_seed(cx);
+                    (t ^ (t >> 32)) as u32
+                } else {
+                    0
+                };
+                FxOp::FilmGrain {
+                    amount: pct("intensity").min(1.0),
+                    inv_cell: 1.0 / cell,
+                    shadows: pct("shadows"),
+                    midtones: pct("midtones"),
+                    highlights: pct("highlights"),
+                    color: pct("color").min(1.0),
+                    seed: pcg3d(user, frame, 0x6772_6169),
+                }
+            }
             "mirror" => {
                 let img = Image { w, h, px: Vec::new() };
                 let c = point(e, "center", cx, &img);
@@ -649,6 +866,9 @@ impl FxOp {
             FxOp::ProcAmp { br, co, hue, sat } => fin(&[*br, *co, *hue, *sat]),
             FxOp::Tint { black, white, amount } => fin(black) && fin(white) && amount.is_finite(),
             FxOp::BlackWhite | FxOp::HFlip | FxOp::VFlip | FxOp::SwapEyes { .. } | FxOp::StereoTo2d { .. } => true,
+            FxOp::StereoParallax { shift, .. } => shift.is_finite(),
+            // f32 pixel positions keep sub-pixel precision far beyond any frame size
+            FxOp::SixPointPin { edges, inv, .. } => edges.iter().all(|v| v.is_finite() && v.abs() < 1e6) && fin(inv),
             FxOp::ColorBalance { sh, md, hi, .. } => fin(sh) && fin(md) && fin(hi),
             FxOp::LeaveColor { amount, key_hue, tol, soft } => fin(&[*amount, *key_hue, *tol, *soft]),
             FxOp::ChangeToColor { from_hue, to_hue, tol, soft } => fin(&[*from_hue, *to_hue, *tol, *soft]),
@@ -674,6 +894,9 @@ impl FxOp {
             FxOp::ColorReplace { sim, target, replace, replace_hsl, .. } => sim.is_finite() && fin(target) && fin(replace) && fin(replace_hsl),
             FxOp::AlphaAdjust { opacity, .. } => opacity.is_finite(),
             FxOp::Vignette { amount, midpoint, roundness, feather, target } => fin(&[*amount, *midpoint, *roundness, *feather]) && fin(target),
+            FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, .. } => {
+                fin(&[*amount, *inv_cell, *shadows, *midtones, *highlights, *color])
+            }
             FxOp::VideoLimiter { max, comp, axis, warning_color, .. } => *axis <= 3 && max.is_finite() && comp.is_finite() && fin(warning_color),
             FxOp::Lumetri { gains, exposure, contrast, hl, sh, wh, bl, sat, faded, vib, st, ht, va, vmid, vround, vfeather, aspect, gpu_capable, .. } => {
                 *gpu_capable
@@ -889,6 +1112,36 @@ impl FxOp {
                     }
                 });
             }
+            FxOp::StereoParallax { sbs, shift, repeat } => {
+                let (sbs, shift, repeat) = (*sbs, *shift, *repeat);
+                let src = img.clone();
+                let w = img.w;
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
+                            d.copy_from_slice(&stereo_parallax_sample(&src, x, y, sbs, shift, repeat));
+                        }
+                    }
+                });
+            }
+            FxOp::SixPointPin { edges, inv, identity } => {
+                if *identity {
+                    return;
+                }
+                let src = img.clone();
+                let (w, fw, fh) = (img.w, img.w as f32, img.h as f32);
+                img.px.par_chunks_mut(w * 4).enumerate().for_each(|(y, row)| {
+                    for x in 0..w {
+                        let px = match six_point_source(edges, inv, x as f32 + 0.5, y as f32 + 0.5) {
+                            Some((u, v)) => src.sample_bilinear(u * fw, v * fh),
+                            None => [0.0; 4],
+                        };
+                        if let Some(d) = row.get_mut(x * 4..x * 4 + 4) {
+                            d.copy_from_slice(&px);
+                        }
+                    }
+                });
+            }
             FxOp::Mirror { cx, cy, nx, ny } => {
                 let (c, n) = ((*cx as f64, *cy as f64), (*nx as f64, *ny as f64));
                 let src = img.clone();
@@ -965,6 +1218,26 @@ impl FxOp {
                     } else {
                         p.copy_from_slice(&[c[0] * a, c[1] * a, c[2] * a, a]);
                     }
+                });
+            }
+            FxOp::FilmGrain { amount, inv_cell, shadows, midtones, highlights, color, seed } => {
+                let (amt, inv, sh, md, hi, col, seed) = (*amount, *inv_cell, *shadows, *midtones, *highlights, *color, *seed);
+                if !amt.is_finite() || amt <= 0.0 || ![inv, sh, md, hi, col].iter().all(|v| v.is_finite()) {
+                    return;
+                }
+                img.map_rgb(|c, x, y| {
+                    let e = enc(c);
+                    let l = (0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2]).clamp(0.0, 1.0);
+                    let m = 1.0 - l;
+                    let k = amt * (sh * m * m + md * 2.0 * l * m + hi * l * l);
+                    let n0 = grain_noise(x, y, inv, seed, 0);
+                    let mut n = [n0; 3];
+                    if col > 0.0 {
+                        for (i, v) in n.iter_mut().enumerate() {
+                            *v = n0 + (grain_noise(x, y, inv, seed, i as u32 + 1) - n0) * col;
+                        }
+                    }
+                    dec([e[0] + n[0] * k, e[1] + n[1] * k, e[2] + n[2] * k])
                 });
             }
             FxOp::Vignette { amount, midpoint, roundness, feather, target } => {
@@ -1359,5 +1632,122 @@ mod tests {
             FxOp::eval(&stereo_to_2d(layout, 1), &eval_ctx(), w, h).unwrap().apply(&mut img);
             assert_eq!(img.px, src.px, "{w}x{h} layout {layout}");
         }
+    }
+
+    fn six_point(pts: &[(&str, f64, f64)]) -> EffectInstance {
+        let mut e = find_effect("six_point_pin").unwrap().instance();
+        for (k, x, y) in pts {
+            e.params.get_mut(*k).unwrap().value = ParamValue::Vec2(Vec2::new(*x, *y));
+        }
+        e
+    }
+
+    #[test]
+    fn six_point_pin_defaults_leave_the_frame_alone() {
+        let op = FxOp::eval(&six_point(&[]), &eval_ctx(), 9, 7).unwrap();
+        assert!(matches!(op, FxOp::SixPointPin { identity: true, .. }), "{op:?}");
+        let mut img = numbered(9, 7);
+        op.apply(&mut img);
+        assert_eq!(img, numbered(9, 7));
+    }
+
+    #[test]
+    fn six_point_pin_inverts_the_curved_map() {
+        let e = six_point(&[("upper_center", 50.0, 12.0), ("lower_center", 45.0, 70.0), ("lower_right", 96.0, 78.0)]);
+        let Some(FxOp::SixPointPin { edges, inv, identity: false }) = FxOp::eval(&e, &eval_ctx(), 100, 80) else { panic!() };
+        // the forward map: the top Bézier passes through its middle point at u = 1/2
+        let bez = |o: usize, t: f32| {
+            let (s, c, d) = ((1.0 - t) * (1.0 - t), 2.0 * t * (1.0 - t), t * t);
+            (edges[o] * s + edges[o + 2] * c + edges[o + 4] * d, edges[o + 1] * s + edges[o + 3] * c + edges[o + 5] * d)
+        };
+        assert_eq!(bez(0, 0.5), (50.0, 12.0));
+        assert_eq!(bez(6, 0.5), (45.0, 70.0));
+        for (u, v) in [(0.1f32, 0.2f32), (0.5, 0.5), (0.9, 0.95), (0.02, 0.98), (0.7, 0.01)] {
+            let (t, b) = (bez(0, u), bez(6, u));
+            let q = (t.0 + v * (b.0 - t.0), t.1 + v * (b.1 - t.1));
+            let (su, sv) = six_point_source(&edges, &inv, q.0, q.1).unwrap_or_else(|| panic!("{u} {v}"));
+            assert!((su - u).abs() < 1e-5 && (sv - v).abs() < 1e-5, "{u} {v}: {su} {sv}");
+        }
+        // above the bent top edge there is no picture
+        assert_eq!(six_point_source(&edges, &inv, 50.0, 6.0), None);
+        let mut img = Image::filled(100, 80, [0.5, 0.25, 0.125, 1.0]);
+        FxOp::eval(&e, &eval_ctx(), 100, 80).unwrap().apply(&mut img);
+        assert_eq!(img.get(50, 5), [0.0; 4]);
+        assert_eq!(img.get(50, 40), [0.5, 0.25, 0.125, 1.0]);
+        assert_eq!(img.get(50, 75), [0.0; 4], "below the bent bottom edge");
+    }
+
+    #[test]
+    fn six_point_pin_survives_hostile_points() {
+        for pts in [
+            vec![("upper_center", f64::INFINITY, 0.0)],
+            vec![("lower_left", 1e300, -1e300), ("upper_right", f64::NEG_INFINITY, 3.0)],
+            // every point on top of each other: no area, nothing drawn
+            ["upper_left", "upper_center", "upper_right", "lower_left", "lower_center", "lower_right"].map(|k| (k, 4.0, 4.0)).to_vec(),
+            // edges crossing over (a folded frame)
+            vec![("upper_left", 9.0, 7.0), ("lower_right", 0.0, 0.0), ("upper_center", 4.0, 30.0)],
+        ] {
+            let op = FxOp::eval(&six_point(&pts), &eval_ctx(), 9, 7).unwrap();
+            let mut img = numbered(9, 7);
+            op.apply(&mut img);
+            assert!(img.px.iter().all(|v| v.is_finite()), "{pts:?}");
+        }
+    }
+
+    fn parallax(layout: u32, shift: f64, repeat: bool) -> EffectInstance {
+        let mut e = find_effect("stereo_parallax").unwrap().instance();
+        e.params.get_mut("frame_layout").unwrap().value = ParamValue::Choice(layout);
+        e.params.get_mut("shift").unwrap().value = ParamValue::Float(shift);
+        e.params.get_mut("repeat_edge").unwrap().value = ParamValue::Bool(repeat);
+        e
+    }
+
+    #[test]
+    fn stereo_parallax_moves_the_views_apart() {
+        // side by side, 2 × 10 columns: 10 % of a 10-pixel view = 1 px, half of it per eye
+        let mut row = Image::new(20, 1);
+        for x in 0..20 {
+            row.px[x * 4..x * 4 + 4].copy_from_slice(&[x as f32, 0.0, 0.0, 1.0]);
+        }
+        let run = |shift, repeat| {
+            let mut img = row.clone();
+            FxOp::eval(&parallax(1, shift, repeat), &eval_ctx(), 20, 1).unwrap().apply(&mut img);
+            img
+        };
+        let img = run(10.0, false);
+        // left view content 0.5 px right: column 3 shows 2.5, column 0 half faded from the edge
+        assert_eq!(img.get(3, 0), [2.5, 0.0, 0.0, 1.0]);
+        assert_eq!(img.get(0, 0), [0.0, 0.0, 0.0, 0.5]);
+        // right view content 0.5 px left, never reaching into the left view
+        assert_eq!(img.get(13, 0), [13.5, 0.0, 0.0, 1.0]);
+        assert_eq!(img.get(19, 0), [9.5, 0.0, 0.0, 0.5]);
+        let img = run(10.0, true);
+        assert_eq!(img.get(0, 0), [0.0, 0.0, 0.0, 1.0], "repeat edge");
+        assert_eq!(img.get(19, 0), [19.0, 0.0, 0.0, 1.0], "repeat edge");
+        let img = run(0.0, false);
+        assert_eq!(img.px, row.px, "no shift is the identity");
+    }
+
+    #[test]
+    fn stereo_parallax_over_under_and_odd_edges() {
+        let src = numbered(9, 7);
+        for (layout, shift) in [(0, 4.0), (1, -7.5), (0, 1e9), (1, f64::NAN)] {
+            let op = FxOp::eval(&parallax(layout, shift, false), &eval_ctx(), 9, 7).unwrap();
+            assert!(op.gpu_ok(), "{layout} {shift}");
+            let mut img = src.clone();
+            op.apply(&mut img);
+            assert!(img.px.iter().all(|v| v.is_finite()));
+            if layout == 0 {
+                assert_eq!(img.get(4, 6), src.get(4, 6), "the odd last row belongs to neither view");
+            } else {
+                assert_eq!(img.get(8, 3), src.get(8, 3), "the odd last column belongs to neither view");
+            }
+        }
+        // over/under: both views shift horizontally in opposite directions
+        let mut img = numbered(8, 4);
+        FxOp::StereoParallax { sbs: false, shift: 1.0, repeat: true }.apply(&mut img);
+        let src = numbered(8, 4);
+        assert_eq!(img.get(3, 0), src.get(2, 0));
+        assert_eq!(img.get(3, 3), src.get(4, 3));
     }
 }

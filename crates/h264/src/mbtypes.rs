@@ -198,6 +198,13 @@ pub const CBP_ME: [(u8, u8); 48] = [
     (25, 23), (32, 27), (33, 29), (34, 30), (36, 22), (40, 25), (38, 38), (41, 41),
 ];
 
+/// Table 9-4 (b): codeNum -> coded_block_pattern for (Intra_4x4/Intra_8x8, Inter), ChromaArrayType 0 or 3.
+#[rustfmt::skip]
+pub const CBP_ME_NO_CHROMA: [(u8, u8); 16] = [
+    (15, 0), (0, 1), (7, 2), (11, 4), (13, 8), (14, 3), (3, 5), (5, 10),
+    (10, 12), (12, 15), (1, 7), (2, 11), (4, 13), (8, 14), (6, 6), (9, 9),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,6 +214,13 @@ mod tests {
         let mut a = [false; 48];
         let mut b = [false; 48];
         for &(i, p) in &CBP_ME {
+            a[i as usize] = true;
+            b[p as usize] = true;
+        }
+        assert!(a.iter().all(|&x| x) && b.iter().all(|&x| x));
+        let mut a = [false; 16];
+        let mut b = [false; 16];
+        for &(i, p) in &CBP_ME_NO_CHROMA {
             a[i as usize] = true;
             b[p as usize] = true;
         }

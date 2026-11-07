@@ -27,6 +27,7 @@ kerning and ligatures, bidi, line breaking, all drawn as vectors in linear light
 | Group | Properties (parameter ids) |
 |---|---|
 | Text | `text` (Source Text), `font`, `font_style`, `size` (px), `align` (Left/Center/Right/Justify), `tracking` (1/1000 em), `kerning`, `ligatures`, `leading` (px added to the natural line height), `baseline_shift`, `faux_bold`, `faux_italic`, `caps` (Normal/All Caps/Small Caps), `underline`, `box_width` (0 = point text, else paragraph text wrapped at that width), `box_height` (paragraph text: lines that do not fit are not shown; 0 = as tall as the text) |
+| Text Animator | `anim` (None/Counter/Typewriter/Word by Word), `anim_duration` (s, default 1), `anim_delay` (s): changes the text shown over the first seconds of the clip without changing the Source Text; Graphics and Titles ▸ Text Animator (`graphics.textAnimator.*`). See [marketing-tools.md](marketing-tools.md) |
 | Shape | `shape` (Rectangle/Ellipse/Polygon/Path), `size` [w, h], `sides`, `corner_radius` (one radius for all four corners, at most half the shorter side; on the Program monitor, drag one of the four small circles just inside a selected rectangle's corners), `points` (path vertices relative to the layer origin) |
 | Appearance | `fill`, `fill_color`; `stroke`, `stroke_color`, `stroke_width`, `stroke_type` (Outer/Center/Inner) and the same for `stroke2`; `background`, `background_color`, `background_opacity`, `background_size` (padding), `background_radius`; `shadow`, `shadow_color`, `shadow_opacity`, `shadow_angle` (135° = down-right), `shadow_distance`, `shadow_size`, `shadow_blur` |
 | Transform | `position` (graphic canvas px), `anchor` (layer px), `scale`, `scale_width`, `uniform_scale`, `rotation`, `opacity` |
@@ -204,7 +205,11 @@ documented, versioned JSON (`cfa4_project::gtemplate`):
 | `resources.fonts` | optional embedded font files (base64) with their licence; registered on install |
 
 Placing a template on a sequence of another size scales and centres its layers (pin distances
-scale too).
+scale too). Scale and Scale Width, including their keyframes, use the same fit factor. Layers
+with Uniform Scale off therefore keep their authored proportions: a 3840×2160 template placed
+on a 1920×1080 sequence scales both axes by 0.5. Keyframe times and interpolation stay unchanged.
+Imported layers that omit either scale parameter use its definition default before fitting;
+explicit values and keyframes are retained and scaled.
 
 **CFA4 never reads or imports Adobe `.mogrt` files** (or any other application's template
 packages): Install refuses `.mogrt` paths without opening them, and the reader rejects ZIP

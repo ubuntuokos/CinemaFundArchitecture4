@@ -63,6 +63,12 @@ pub fn auto_point(effect: &str, param: &str) -> Option<(f64, f64)> {
         ("corner_pin", "upper_right") => (1.0, 0.0),
         ("corner_pin", "lower_left") => (0.0, 1.0),
         ("corner_pin", "lower_right") => (1.0, 1.0),
+        ("six_point_pin", "upper_left") => (0.0, 0.0),
+        ("six_point_pin", "upper_center") => (0.5, 0.0),
+        ("six_point_pin", "upper_right") => (1.0, 0.0),
+        ("six_point_pin", "lower_left") => (0.0, 1.0),
+        ("six_point_pin", "lower_center") => (0.5, 1.0),
+        ("six_point_pin", "lower_right") => (1.0, 1.0),
         ("gradient", "start") => (0.5, 0.0),
         ("gradient", "end") => (0.5, 1.0),
         ("lightning", "start") => (0.1, 0.1),
@@ -318,6 +324,21 @@ pub(super) fn defs() -> Vec<EffectDef> {
                 pt("upper_left", "Upper Left", f64::NAN, f64::NAN),
                 pt("upper_right", "Upper Right", f64::NAN, f64::NAN),
                 pt("lower_left", "Lower Left", f64::NAN, f64::NAN),
+                pt("lower_right", "Lower Right", f64::NAN, f64::NAN),
+            ],
+        ),
+        // CFA4's own (not in Premiere): Corner Pin with the top and bottom edges bent through a
+        // middle point, for curved cinema screens.
+        video(
+            "six_point_pin",
+            "Six-Point Pin",
+            DISTORT,
+            vec![
+                pt("upper_left", "Upper Left", f64::NAN, f64::NAN),
+                pt("upper_center", "Upper Center", f64::NAN, f64::NAN),
+                pt("upper_right", "Upper Right", f64::NAN, f64::NAN),
+                pt("lower_left", "Lower Left", f64::NAN, f64::NAN),
+                pt("lower_center", "Lower Center", f64::NAN, f64::NAN),
                 pt("lower_right", "Lower Right", f64::NAN, f64::NAN),
             ],
         ),
@@ -1278,7 +1299,7 @@ mod tests {
         // nothing else sits in the current folders
         for d in effect_defs().iter().filter(|d| d.kind == EffectKind::Video && d.category.first() == Some(&"Video Effects")) {
             let f = d.category[1];
-            if f == "Obsolete" || d.category == crate::effect::STEREO_3D || crate::effect::CFA4_OWN.contains(&d.id) {
+            if f == "Obsolete" || crate::effect::CFA4_FOLDERS.contains(&f) || crate::effect::CFA4_OWN.contains(&d.id) {
                 continue;
             }
             let listed = CATALOGUE.iter().any(|(cf, names)| *cf == f && names.contains(&d.name));

@@ -1,0 +1,63 @@
+name: CFA4 CodeQL (security code scanning)
+
+# GitHub code scanning with CodeQL (free for public repositories).
+# - Rust, Python and the GitHub Actions workflows themselves are analysed.
+# - build-mode: none for every language: no native build dependencies, no FFmpeg/Qt,
+#   so the job stays fast and independent of the full-validation jobs.
+# - Runs ONLY on GitHub-hosted runners, never on the self-hosted release runner
+#   (cfa4-ubuntu-26-04): PR code must not execute on the owner's machine.
+# - Informational at first: NOT a required status check and NOT part of
+#   full-validation-gate. Results appear in the Security tab and as PR annotations.
+#   Making it blocking is a separate owner decision.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly full scan, Monday 05:17 UTC (outside the 23:00-06:00 Budapest quiet window
+    # for the merge coordinator: results are ready before the morning issue check).
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [rust, python, actions]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - vendor/**
+              - target/**
+              - docs/**
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: "/language:${{ matrix.language }}"

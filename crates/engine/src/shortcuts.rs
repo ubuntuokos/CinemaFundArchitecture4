@@ -826,6 +826,11 @@ impl Shortcuts {
         self.redo.clear();
     }
 
+    /// The editor dialog is open (Cancel would restore its starting point).
+    pub fn is_editing(&self) -> bool {
+        self.session_start.is_some()
+    }
+
     /// OK: keep the edits.
     pub fn end_editing(&mut self) {
         self.session_start = None;
@@ -1089,6 +1094,17 @@ fn write_file(path: &Path, f: &PresetFile) -> std::result::Result<(), String> {
 
 // ------------------------------------------------------------------ commands
 
+/// Most frontend commands `shortcuts.registerExternal` takes.
+const MAX_EXTERNAL: usize = 4096;
+
+/// `mods`: modifier names joined by `+` (`Cmd+Shift`); empty or missing = none.
+fn mods_p(p: &Value) -> std::result::Result<Mods, String> {
+    match str_p(p, "mods").map(str::trim).filter(|m| !m.is_empty()) {
+        None => Ok(Mods::default()),
+        Some(m) => Chord::parse(&format!("{m}+A")).map(|c| c.mods).map_err(|e| format!("`mods`: {e}")),
+    }
+}
+
 fn platform_p(p: &Value) -> Platform {
     str_p(p, "platform").and_then(Platform::from_name).unwrap_or_else(Platform::current)
 }
@@ -1099,7 +1115,7 @@ fn err(cmd: &str) -> impl Fn(String) -> EngineError + '_ {
 
 fn presets_json(s: &Session) -> Value {
     let sc = &s.shortcuts;
-    json!({"active": sc.preset, "modified": sc.modified, "builtin": BUILTIN_PRESETS, "custom": sc.user_presets(), "canUndo": sc.can_undo(), "canRedo": sc.can_redo()})
+    json!({"active": sc.preset, "modified": sc.modified, "builtin": BUILTIN_PRESETS, "custom": sc.user_presets(), "canUndo": sc.can_undo(), "canRedo": sc.can_redo(), "revision": sc.revision, "editing": sc.is_editing(), "panels": PANELS})
 }
 
 fn list(s: &Session, p: &Value) -> Value {
@@ -1215,6 +1231,53 @@ pub fn commands() -> Vec<CommandSpec> {
             let name = s.shortcuts.import(Path::new(path), bool_p(p, "activate").unwrap_or(true)).map_err(err("shortcuts.import"))?;
             Ok(json!({"name": name, "presets": presets_json(s)}))
         }),
+        // The editor dialog of a frontend in another process (the Qt GUI): Cancel restores the
+        // set the dialog opened with, OK keeps the edits.
+        sc!("shortcuts.beginEditing", "Begin Editing Keyboard Shortcuts", "{}", false, |s, _| {
+            s.shortcuts.begin_editing();
+            Ok(presets_json(s))
+        }),
+        sc!("shortcuts.endEditing", "Keep Keyboard Shortcut Edits", "{}", false, |s, _| {
+            s.shortcuts.end_editing();
+            Ok(presets_json(s))
+        }),
+        sc!("shortcuts.cancelEditing", "Cancel Keyboard Shortcut Edits", "{}", false, |s, _| {
+            s.shortcuts.cancel_editing();
+            Ok(presets_json(s))
+        }),
+        sc!("shortcuts.keyboard", "Keyboard Map", r#"{"mods":"Cmd+Shift"?,"panel":str?}"#, false, |s, p| {
+            let mods = mods_p(p).map_err(err("shortcuts.keyboard"))?;
+            let panel = check_panel(str_p(p, "panel")).map_err(err("shortcuts.keyboard"))?;
+            let keys: serde_json::Map<String, Value> =
+                s.shortcuts.keyboard(mods, panel).into_iter().map(|(k, (app, pn))| (k.to_string(), json!({"application": app, "panel": pn}))).collect();
+            Ok(json!({"mods": mods.prefix().trim_end_matches('+'), "panel": panel, "keys": keys}))
+        }),
+        sc!(
+            "shortcuts.registerExternal",
+            "Register Frontend Commands",
+            r#"{"commands":[{"id":str,"label":str,"menu":[str]?,"shortcut":str?}]}"#,
+            false,
+            |s, p| {
+                let list = p.get("commands").and_then(Value::as_array).ok_or_else(|| bad("shortcuts.registerExternal", "need `commands`"))?;
+                if list.len() > MAX_EXTERNAL {
+                    return Err(bad("shortcuts.registerExternal", format!("at most {MAX_EXTERNAL} commands")));
+                }
+                let mut cmds = Vec::with_capacity(list.len());
+                for c in list {
+                    let id = str_p(c, "id").filter(|i| !i.is_empty()).ok_or_else(|| bad("shortcuts.registerExternal", "every command needs an `id`"))?;
+                    let label = str_p(c, "label").unwrap_or(id);
+                    let menu: Vec<&str> = c.get("menu").and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).collect();
+                    let shortcut = str_p(c, "shortcut").filter(|k| !k.is_empty());
+                    if let Some(k) = shortcut {
+                        Chord::parse(k).map_err(|e| bad("shortcuts.registerExternal", format!("{id}: {e}")))?;
+                    }
+                    cmds.push(CommandInfo::new(id, label, &menu, shortcut));
+                }
+                let n = cmds.len();
+                s.shortcuts.register_external(cmds);
+                Ok(json!({"registered": n, "revision": s.shortcuts.revision}))
+            }
+        ),
         sc!("shortcuts.audit", "Shortcut Audit", "{}", false, |s, _| {
             let a = s.shortcuts.audit();
             Ok(json!({"count": a.len(), "assigned": a}))

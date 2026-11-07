@@ -70,6 +70,8 @@ enum ACodec {
     Adts,
     Latm,
     Ac3,
+    Dts,
+    TrueHd,
     LpcmBluray,
     LpcmDvd(cfa4_mpegts::LpcmFormat),
 }
@@ -122,7 +124,7 @@ fn vkind(c: &Codec) -> Option<VKind> {
 }
 
 fn audio_supported(c: &Codec) -> bool {
-    matches!(c, Codec::MpegAudio | Codec::AacAdts | Codec::AacLatm | Codec::LpcmBluray | Codec::LpcmDvd | Codec::Ac3 | Codec::Eac3)
+    matches!(c, Codec::MpegAudio | Codec::AacAdts | Codec::AacLatm | Codec::LpcmBluray | Codec::LpcmDvd | Codec::Ac3 | Codec::Eac3 | Codec::Dts | Codec::TrueHd)
 }
 
 /// The coded rate unless the timestamps say otherwise (3:2 pulldown, field-rate coding). Never
@@ -369,15 +371,7 @@ impl MpegSource {
         let raw: Vec<Option<i64>> = v.order.iter().map(|&i| units[v.units[i]].pts).collect();
         let rate = self.info.frame_rate();
         let dur = |k: i64| (k as i128 * 90_000 * rate.den as i128 / rate.num.max(1) as i128) as i64;
-        let known: Vec<usize> = (0..raw.len()).filter(|&i| raw[i].is_some()).collect();
-        (0..raw.len())
-            .map(|i| {
-                raw[i].or_else(|| {
-                    let j = known.iter().rev().find(|&&j| j < i).or_else(|| known.iter().find(|&&j| j > i))?;
-                    Some(raw[*j]? + dur(i as i64 - *j as i64))
-                })
-            })
-            .collect()
+        interpolate_pts(&raw, dur)
     }
 
     fn read_unit(&self, v: &VideoTrack, i: usize) -> crate::Result<Vec<u8>> {
@@ -532,8 +526,20 @@ impl MpegSource {
                     Codec::AacAdts => ACodec::Adts,
                     _ => ACodec::Ac3,
                 };
-                (c, fi.sample_rate, fi.channels as usize, Some(fi.samples), None)
+                // E-AC-3: the access unit carries the dependent substreams too (7.1 and other
+                // layouts beyond 5.1), which the decoder adds to the program
+                let channels = match cfa4_ac3::program_locations(&first) {
+                    Ok(locs) if matches!(c, ACodec::Ac3) && !locs.is_empty() => locs.len(),
+                    _ => fi.channels as usize,
+                };
+                (c, fi.sample_rate, channels, Some(fi.samples), None)
             }
+            Codec::TrueHd => match truehd_format(file, &self.bytes, ai) {
+                Some((rate, channels, per_au)) => (ACodec::TrueHd, rate, channels, Some(per_au), None),
+                None => {
+                    return self.audio_unsupported(&codec_name, "Dolby TrueHD: no decodable major sync".into());
+                }
+            },
             Codec::AacLatm => match crate::audio::latm_config(&first) {
                 Some(cfg) => {
                     latm = Some(cfg.clone());
@@ -542,6 +548,18 @@ impl MpegSource {
                 None => {
                     return self.audio_unsupported(&codec_name, "AAC (LATM): unsupported StreamMuxConfig (only AAC-LC is decoded)".into());
                 }
+            },
+            // a unit holds a core frame and, for DTS-HD, its extension substream; the decode of the
+            // first says the output rate, layout and length (96 kHz Master Audio over a 48 kHz core)
+            // a Master Audio stream may open by buffering for peak bit rate smoothing (no output
+            // for a few units), so the probe decodes on until a unit gives audio
+            Codec::Dts => match dts_probe(&first, |k| file.read_unit(&self.bytes, ai, k).ok(), st.units.len()) {
+                Ok(d) => {
+                    let n = d.channels.first().map_or(0, Vec::len) as u32;
+                    (ACodec::Dts, d.sample_rate, d.channels.len(), Some(n), None)
+                }
+                Err(Some(e)) => return self.audio_unsupported(&codec_name, format!("{codec_name}: {e}")),
+                Err(None) => return self.audio_unsupported(&codec_name, "DTS: no decodable frame".into()),
             },
             Codec::LpcmBluray => match crate::audio::bluray_lpcm_header(&first) {
                 Some(h) => (ACodec::LpcmBluray, h.sample_rate, h.channels, None, Some(h.bits)),
@@ -636,7 +654,7 @@ impl MpegSource {
     }
 
     /// Decoded samples of audio unit `i` (cached; non-sequential access primes the decoder with
-    /// the previous unit).
+    /// the previous unit, or more for DTS).
     fn audio_unit(&self, a: &AudioTrack, st: &mut AudioState, i: usize) -> crate::Result<Arc<Vec<Vec<f32>>>> {
         if let Some(p) = st.cache.get(&i) {
             return Ok(p.clone());
@@ -649,10 +667,12 @@ impl MpegSource {
         let dec = st.dec.as_mut().ok_or_else(|| CodecError::Decode("no audio decoder".into()))?;
         if st.last.is_none_or(|l| l + 1 != i) {
             dec.reset();
-            if i > 0
-                && let Ok(prev) = read(i - 1)
-            {
-                let _ = dec.decode(&prev);
+            // TrueHD decodes nothing until a major sync: the access units back to one
+            let preroll = if matches!(a.codec, ACodec::TrueHd) { cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL as usize } else { dec.pre_roll_packets() };
+            for k in i.saturating_sub(preroll)..i {
+                if let Ok(prev) = read(k) {
+                    let _ = dec.decode(&prev);
+                }
             }
         }
         let data = match a.codec {
@@ -690,12 +710,41 @@ impl MpegSource {
     }
 }
 
+/// Fill missing timestamps from their closest preceding timestamp, or the next one when there is
+/// no predecessor.  The known positions are sorted, so binary search avoids rescanning them for
+/// every missing frame.
+fn interpolate_pts(raw: &[Option<i64>], dur: impl Fn(i64) -> i64) -> Vec<Option<i64>> {
+    let known: Vec<usize> = (0..raw.len()).filter(|&i| raw[i].is_some()).collect();
+    raw.iter()
+        .enumerate()
+        .map(|(i, &pts)| {
+            pts.or_else(|| {
+                let next = known.partition_point(|&j| j < i);
+                let j = next.checked_sub(1).or_else(|| known.get(next).map(|_| next))?;
+                Some(raw[known[j]]? + dur(i as i64 - known[j] as i64))
+            })
+        })
+        .collect()
+}
+
 fn chroma_name(c: cfa4_frame::Chroma) -> &'static str {
     match c {
         cfa4_frame::Chroma::C420 => "4:2:0",
         cfa4_frame::Chroma::C422 => "4:2:2",
         cfa4_frame::Chroma::C444 => "4:4:4",
     }
+}
+
+/// Sample rate, channels and samples per access unit of a TrueHD stream, from the first major
+/// sync among its first access units.
+fn truehd_format(file: &File, bytes: &crate::Src, ai: usize) -> Option<(u32, usize, u32)> {
+    let mut data = Vec::new();
+    for k in 0..(cfa4_truehd::cfa4::MAJOR_SYNC_INTERVAL as usize).min(file.streams.get(ai)?.units.len()) {
+        data.extend_from_slice(&file.read_unit(bytes, ai, k).ok()?);
+    }
+    let (rate, labels) = cfa4_truehd::cfa4::stream_labels(&data).ok()?;
+    let per_au = cfa4_truehd::cfa4::samples_per_au(rate)?;
+    Some((rate, labels.len(), u32::try_from(per_au).ok()?))
 }
 
 fn codec_is_ac3_unsupported(c: ACodec) -> bool {
@@ -715,12 +764,21 @@ impl AudioDecoder {
             ACodec::Mpa(layer) => AudioDecoder::Packet { dec: PacketDecoder::mpeg_audio(layer, rate)?, codec, latm: None },
             ACodec::Adts | ACodec::Latm => AudioDecoder::Packet { dec: PacketDecoder::lazy_aac(), codec, latm },
             ACodec::Ac3 => AudioDecoder::Packet { dec: PacketDecoder::ac3()?, codec, latm: None },
+            ACodec::Dts => AudioDecoder::Packet { dec: PacketDecoder::dts(), codec, latm: None },
+            ACodec::TrueHd => AudioDecoder::Packet { dec: PacketDecoder::truehd(), codec, latm: None },
             ACodec::LpcmBluray | ACodec::LpcmDvd(_) => AudioDecoder::Pcm { codec, channels },
         })
     }
     fn reset(&mut self) {
         if let AudioDecoder::Packet { dec, .. } = self {
             dec.reset();
+        }
+    }
+    /// Units decoded before a random-access target (see [`crate::audio::PacketDecoder::pre_roll_packets`]).
+    fn pre_roll_packets(&self) -> usize {
+        match self {
+            AudioDecoder::Packet { dec, .. } => dec.pre_roll_packets(),
+            AudioDecoder::Pcm { .. } => 1,
         }
     }
     fn decode(&mut self, data: &[u8]) -> crate::Result<Vec<Vec<f32>>> {
@@ -760,10 +818,15 @@ impl VideoSamples for MpegVideo<'_> {
     }
     fn sync_before(&self, i: usize) -> usize {
         let i = i.min(self.v.keys.len().saturating_sub(1));
-        let key = (0..=i).rev().find(|&k| self.v.keys[k]).unwrap_or(0);
+        let keys = &self.v.keys;
+        let pts = &self.v.pts;
         // a leading picture of an open GOP (shown before its random-access picture) needs the
         // previous GOP's pictures as references
-        if key > 0 && self.v.pts[i] < self.v.pts[key] { self.sync_before(key - 1) } else { key }
+        crate::gop::open_gop_sync(
+            i,
+            |i| (0..=i).rev().find(|&k| keys.get(k) == Some(&true)).unwrap_or(0),
+            |i, key| matches!((pts.get(i), pts.get(key)), (Some(a), Some(b)) if a < b),
+        )
     }
     fn sample_at(&self, t: i64) -> Option<usize> {
         usize::try_from(t).ok().and_then(|t| self.v.order.get(t).copied())
@@ -875,10 +938,61 @@ pub fn reader_opener(name: &str, head: &[u8], reader: &cfa4_media::SharedReader)
     Some(MpegSource::open_reader(name, reader.clone()).map(|s| Arc::new(s) as SharedSource).map_err(Into::into))
 }
 
+/// Units a DTS probe decodes at most before it gives up on finding audio.
+const DTS_PROBE_UNITS: usize = 64;
+
+/// The first audio of a DTS stream: `first` and then the units `unit(k)` gives (up to `units` of
+/// them, at most [`DTS_PROBE_UNITS`]) through one decoder, until one decodes to audio.
+/// `Err(Some(_))`: the last decode error when none does.
+fn dts_probe(first: &[u8], unit: impl Fn(usize) -> Option<Vec<u8>>, units: usize) -> Result<cfa4_dts::cfa4::Decoded, Option<cfa4_dts::cfa4::Error>> {
+    let mut dec = cfa4_dts::cfa4::Decoder::new();
+    let mut err = None;
+    for k in 0..units.clamp(1, DTS_PROBE_UNITS) {
+        let next;
+        let data = if k == 0 {
+            first
+        } else {
+            let Some(b) = unit(k) else { break };
+            next = b;
+            &next
+        };
+        match dec.decode_packet(data) {
+            Ok(d) if !d.channels.is_empty() => return Ok(d),
+            Ok(_) => {}
+            Err(e) => err = Some(e),
+        }
+    }
+    Err(err)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use cfa4_media::MediaSource;
+
+    /// The probe decoded only the first unit, so a Master Audio stream opening with peak bit rate
+    /// smoothing (no audio for its first units) lost the whole track. Units without audio are
+    /// stood in for here by ones without a frame.
+    #[test]
+    fn the_dts_probe_decodes_on_past_units_without_audio() {
+        let ff = cfa4_testkit::require_ffmpeg!();
+        let out = cfa4_testkit::fixtures_dir("codecs").join("probe_stereo.dts");
+        let ok = std::process::Command::new(&ff)
+            .args(["-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=500:sample_rate=48000", "-t", "0.2", "-ac", "2"])
+            .args(["-c:a", "dca", "-strict", "-2", "-f", "dts"])
+            .arg(&out)
+            .status()
+            .is_ok_and(|s| s.success());
+        assert!(ok);
+        let data = std::fs::read(&out).unwrap();
+        let len = cfa4_dts::parse_header(&data).unwrap().frame_size;
+        let frame = data[..len].to_vec();
+        let units = [vec![0u8; 64], vec![0u8; 64], frame];
+        let d = dts_probe(&units[0], |k| units.get(k).cloned(), units.len()).unwrap();
+        assert_eq!((d.sample_rate, d.channels.len()), (48_000, 2));
+        // nothing decodable: no audio, and the probe stops at the units there are
+        assert!(dts_probe(&units[0], |k| units.get(k).filter(|_| k < 2).cloned(), 1000).is_err());
+    }
 
     /// A mutated transport stream whose PTS span gave ~0 fps panicked on open with "attempt to
     /// divide by zero" (`FrameRate::tick_of`).
@@ -1014,5 +1128,17 @@ mod tests {
         let (pts, order) = presentation(&keys);
         assert_eq!(order, vec![0, 4, 5, 3]);
         assert_eq!(pts, vec![0, -2, -3, 3, 1, 2]);
+    }
+
+    #[test]
+    fn timestamp_interpolation_handles_long_missing_runs_without_rescanning() {
+        let mut raw = vec![None; 10_000];
+        raw[4_000] = Some(40_000);
+        raw[9_999] = Some(99_990);
+        let pts = interpolate_pts(&raw, |frames| frames * 10);
+        assert_eq!(pts[0], Some(0));
+        assert_eq!(pts[3_999], Some(39_990));
+        assert_eq!(pts[4_001], Some(40_010));
+        assert_eq!(pts[9_998], Some(99_980));
     }
 }
