@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 遇到错误
 	CFA4 project links	CFA4 项目链接
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 意外退出，当时“{name}”有未保存的更改。是否恢复 {time} 的未保存更改？
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 关闭时“{name}”有未保存的更改。是否恢复 {time} 的未保存更改？
 	Cancel Selected	取消所选项
 	Cannot check the output folder for files to replace: {error}	无法检查输出文件夹中要替换的文件：{error}
 	Cannot create the output folder: {error}	无法创建输出文件夹：{error}

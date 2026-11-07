@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 mengalami galat
 	CFA4 project links	Tautan proyek CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 berhenti tiba-tiba saat '{name}' memiliki perubahan yang belum disimpan. Pulihkan perubahan yang belum disimpan dari {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 ditutup saat '{name}' memiliki perubahan yang belum disimpan. Pulihkan perubahan yang belum disimpan dari {time}?
 	Cancel Selected	Batalkan yang dipilih
 	Cannot check the output folder for files to replace: {error}	Tidak dapat memeriksa folder keluaran untuk berkas yang akan diganti: {error}
 	Cannot create the output folder: {error}	Tidak dapat membuat folder keluaran: {error}
