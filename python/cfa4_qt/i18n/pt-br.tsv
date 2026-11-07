@@ -47,7 +47,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Verificar antes de exportar: {n} problemas marcados na linha do tempo (marcadores vermelhos)
 	Checked:	Verificado:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Escolha um arquivo de faixa IAB (IMF ou DCP), um fluxo IAB bruto ou Dolby Atmos TrueHD: um fluxo .thd ou um arquivo MKV, MP4 ou M2TS com uma faixa Atmos.
-	Choose an output file.	Escolha um arquivo de saída.
+	Choose a file name and location.	Escolha um nome de arquivo e um local.
+	Choose folder	Escolher pasta
 	Click and press keys to assign	Clique e pressione teclas para atribuir
 	Compression	Compactação
 	Compression Level	Nível de compactação
@@ -321,3 +322,4 @@
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
 	Transparency Grid	Grade de transparência
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A entrada/saída da sequência tem só 1 quadro. Escolha Sequência inteira para exportar a sequência toda.
