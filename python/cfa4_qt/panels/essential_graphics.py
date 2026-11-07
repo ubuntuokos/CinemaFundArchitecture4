@@ -1312,6 +1312,50 @@ class EssentialGraphicsPanel(QWidget):
     def send(self, command: str, params: dict[str, Any]) -> None:
         self.command.emit(command, params)
 
+    # ----- egui's GfxTemplatesState: tab, query, category, selected (ui.gfxTemplates) -----
+    def ui_state(self) -> dict[str, Any]:
+        b = self.browser
+        return {"tab": self._tab_chosen, "query": b.search.text(), "category": str(b.category.currentData() or ""),
+                "selected": (b.selected() or {}).get("id")}
+
+    def set_ui_state(self, patch: dict[str, Any]) -> None:
+        """Merge ``patch``; a bad value raises ValueError or TypeError and changes nothing."""
+        self.check_ui_state(patch)
+        self._apply_ui_state(patch)
+
+    def check_ui_state(self, patch: dict[str, Any]) -> None:
+        b = self.browser
+        for k, v in patch.items():
+            if k not in ("tab", "query", "category", "selected"):
+                raise ValueError(f"no field {k!r} (known: tab, query, category, selected, export, replace)")
+            if k == "tab" and v not in ("", "browse", "edit"):
+                raise ValueError('tab is "browse", "edit" or "" (Edit when a graphic is selected)')
+            if k in ("query", "category") and not isinstance(v, str):
+                raise TypeError(f"{k} takes a string")
+            if k == "category" and v and b.category.findData(v) < 0:
+                raise ValueError(f"no category {v!r} in the library")
+            if k == "selected" and v is not None and not any(e.get("id") == v for e in b.entries):
+                raise ValueError(f"no template {v!r} in the library")
+
+    def _apply_ui_state(self, patch: dict[str, Any]) -> None:
+        b = self.browser
+        if "tab" in patch:
+            self.set_tab(patch["tab"])
+        if "category" in patch:
+            b.category.setCurrentIndex(max(0, b.category.findData(patch["category"])))
+        if "query" in patch:
+            b.search.setText(patch["query"])
+        if "category" in patch or "query" in patch:
+            b._fill()
+        if "selected" in patch:
+            b.list.clearSelection()
+            for i in range(b.list.count()):
+                item = b.list.item(i)
+                if patch["selected"] is not None and item.data(Qt.ItemDataRole.UserRole) == patch["selected"]:
+                    item.setSelected(True)
+                    b.list.scrollToItem(item)
+            b._selected()
+
     def tab(self) -> str:
         if self._tab_chosen:
             return self._tab_chosen

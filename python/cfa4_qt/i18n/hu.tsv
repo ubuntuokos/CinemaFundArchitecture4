@@ -2394,5 +2394,22 @@ export.summary	Low	alacsony
 	{n} sessions have unsaved changes:	{n} munkamenetben vannak nem mentett változások:
 	Are you sure you want to discard your changes to '{file}'?	Biztosan elveti a(z) „{file}” változásait?
 	the project has not been saved yet	a projekt még nincs mentve
+	Export As Motion Graphics Template	Exportálás mozgógrafikai sablonként
+	Category:	Kategória:
+	Editable properties:	Szerkeszthető tulajdonságok:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	CFA4 grafikai sablonként (.fcgt) kerül a sablonmappába.
+	My Templates	Saját sablonok
+	{n} Font	{n} betűtípusa
+	{n} Size	{n} mérete
+	{n} Color	{n} színe
+	{n} Position	{n} pozíciója
+	Show {n}	{n} megjelenítése
+	Exported graphics template to {path}	A grafikai sablon exportálva ide: {path}
+	Replace Fonts in Projects	Betűtípusok cseréje a projektekben
+	Fonts used in the project:	A projektben használt betűtípusok:
+	{f} (missing)	{f} (hiányzik)
+	Replace:	Csere:
+	with:	erre:
+	Replaced {n} font uses	{n} betűtípus-használat lecserélve
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.

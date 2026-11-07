@@ -83,6 +83,7 @@ from .panels.settings import MENU as SETTINGS_MENU
 from .panels.settings import PreferencesDialog
 from .panels.shortcuts import ShortcutsDialog
 from .panels.side import HistoryPanel, LibrariesPanel
+from .panels.template_dialogs import ExportTemplateDialog, ReplaceFontsDialog
 from .panels.text import TextPanel
 from .panels.timeline import TimelinePanel
 from .panels.tools import ToolsPanel, tool_commands
@@ -346,6 +347,7 @@ class MainWindow(QMainWindow):
         self.tts = TextToSpeechPanel(engine, self)
         self._project_generation = 0  # counts project opens: two untitled projects share a name
         self.last_dialog: QDialog | None = None  # the last frontend dialog opened (tests, agents)
+        self.template_dialog: QDialog | None = None  # Export As Motion Graphics Template / Replace Fonts
         self.tts.context = lambda: (self._project_generation, (self.sequence or {}).get("id"))
         self._graphics_busy = False
         self._essential_busy = False
@@ -2201,6 +2203,52 @@ class MainWindow(QMainWindow):
             on_error=lambda m: self._command_failed(cid, m),
         )
 
+    def open_template_dialog(self, cid: str) -> bool:
+        """File ▸ Export ▸ Motion Graphics Template… and Replace Fonts from the menus open egui's
+        dialogs (agents passing params run the command directly). True when it did."""
+        if cid in ("file.exportGraphicsTemplate", "graphics.template.export"):
+
+            def inspected(r: Any, _b: bytes | None) -> None:
+                if not isinstance(r, dict) or r.get("clip") is None:
+                    self.statusBar().showMessage("select a graphic clip", 6000)
+                    return
+                self._show_template_dialog(ExportTemplateDialog(r, self._template_run, self))
+
+            self.engine.call("graphics.inspect", {}, on_reply=inspected, on_error=lambda m: self.statusBar().showMessage(m, 6000))
+            return True
+        if cid == "file.replaceFonts":
+            got: dict[str, Any] = {}
+
+            def both() -> None:
+                if "used" in got and "fonts" in got:
+                    families = sorted({str(f.get("family")) for f in got["fonts"] if isinstance(f, dict) and f.get("family")}, key=str.lower)
+                    used = [u for u in got["used"] if isinstance(u, dict)]
+                    self._show_template_dialog(ReplaceFontsDialog(used, families, self._template_run, self))
+
+            def keep(key: str) -> Callable[[Any, bytes | None], None]:
+                return lambda r, _b: (got.__setitem__(key, r if isinstance(r, list) else []), both())
+
+            failed = lambda m: self.statusBar().showMessage(m, 6000)
+            self.engine.execute("graphics.fonts.used", {}, on_reply=keep("used"), on_error=failed)
+            self.engine.execute("fonts.list", {}, on_reply=keep("fonts"), on_error=failed)
+            return True
+        return False
+
+    def _template_run(self, command: str, params: dict[str, Any], done: Callable[[Any, Any], None], failed: Callable[[str], None]) -> None:
+        def ok(r: Any, b: Any) -> None:
+            done(r, b)
+            self.schedule_refresh()
+
+        self.engine.execute(command, params, on_reply=ok, on_error=failed)
+
+    def _show_template_dialog(self, dialog: QDialog) -> None:
+        dialog.finished_with.connect(lambda text: self.statusBar().showMessage(text, 6000))  # type: ignore[attr-defined]
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.template_dialog = dialog
+        self.last_dialog = dialog
+        dialog.finished.connect(lambda _r, d=dialog: self.template_dialog is d and setattr(self, "template_dialog", None))
+        dialog.open()
+
     def interpret_footage(self, cid: str, params: dict[str, Any]) -> bool:
         """Interpret Footage without settings opens its dialog (egui's), for the items given or
         the Project panel's selection. True when it did."""
@@ -2291,6 +2339,8 @@ class MainWindow(QMainWindow):
             # its sequence id belongs to this project: item ids restart in the next one, so a stale
             # dialog could export a different sequence than it names. Reopening re-reads it.
             self.export_dialog.hide()
+        if not given and self.open_template_dialog(cmd.id):
+            return
         if self.interpret_footage(cmd.id, {}):
             return
         if cmd.id in SYNC_DIALOGS:
