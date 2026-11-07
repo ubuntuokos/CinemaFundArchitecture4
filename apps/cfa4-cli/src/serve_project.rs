@@ -100,7 +100,15 @@ fn bin_row(b: &Bin, depth: usize, open: bool) -> Value {
 }
 
 fn matches(s: &Session, it: &ProjectItem, filter: &str) -> bool {
-    pp::listed(&s.project, it) && (filter.is_empty() || it.name.to_lowercase().contains(filter))
+    pp::listed(&s.project, it) && name_matches(&it.name, filter)
+}
+
+/// The search finds a name holding every word typed, in any order (upstream #3327): "comedy
+/// manager smiling" finds "Comedy manager · medium · smiling", where the typed text as one run of
+/// letters would not. `filter` is already lowercase.
+fn name_matches(name: &str, filter: &str) -> bool {
+    let name = name.to_lowercase();
+    filter.split_whitespace().all(|word| name.contains(word))
 }
 
 /// The List view's rows: sub-bins first (twirled open when in `expanded`, all while searching),
@@ -273,6 +281,19 @@ pub fn panel(s: &Session, p: &Value) -> Result<Value, String> {
 
 #[cfg(test)]
 mod tests {
+
+    /// upstream #3327: every typed word must appear in the name, in any order.
+    #[test]
+    fn every_typed_word_must_appear_in_any_order() {
+        let name = "Comedy manager · medium · smiling · enjoys the show · img385 · A";
+        assert!(super::name_matches(name, ""));
+        assert!(super::name_matches(name, "comedy manager"));
+        assert!(super::name_matches(name, "comedy manager s"));
+        assert!(super::name_matches(name, "comedy manager smiling"));
+        assert!(super::name_matches(name, "smiling  comedy "));
+        assert!(!super::name_matches(name, "comedy manager laughing"));
+        assert!(!super::name_matches("Comedy club", "comedy manager"));
+    }
     use super::*;
 
     #[test]

@@ -320,3 +320,5 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compresión {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Show Duplicate Frame Markers	Mostrar marcadores de fotogramas duplicados
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	La entrada/salida de la secuencia es de solo 1 fotograma. Elige Secuencia completa para exportar toda la secuencia.
