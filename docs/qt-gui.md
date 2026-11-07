@@ -166,3 +166,7 @@ are not sent until touched, so a preset's own choices are never silently replace
 is always sent when set (the fields show the preset's size; 0 × 0 is the preset's or the
 sequence's). `test_real_engine_export_through_the_dialog_and_reimport` exports through the
 window, checks the file with ffprobe (H.264 + AAC, the asked size) and imports it back.
+Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's values; an
+adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
+`bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
+(`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).
