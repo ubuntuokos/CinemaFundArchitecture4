@@ -166,3 +166,7 @@ are not sent until touched, so a preset's own choices are never silently replace
 is always sent when set (the fields show the preset's size; 0 × 0 is the preset's or the
 sequence's). `test_real_engine_export_through_the_dialog_and_reimport` exports through the
 window, checks the file with ffprobe (H.264 + AAC, the asked size) and imports it back.
+As in egui, the queue is headed "Queue (n)" with a hint while it is empty, Captions says when the
+sequence has no caption track (the window follows a track added while it is open), and with no
+sequence open a placeholder ("Open a sequence to export") stands in place of the settings while the
+queue stays (`test_real_engine_export_empty_states_as_egui`).

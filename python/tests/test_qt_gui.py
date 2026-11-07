@@ -7295,6 +7295,58 @@ def test_real_engine_export_captions_and_effects_as_egui(app, tmp_path: Path):
         engine.stop()
 
 
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_empty_states_as_egui(app, tmp_path: Path):
+    """egui's Export texts for what is not there yet: "Queue (n)" over the queue with its hint while
+    it is empty, the Captions hint while the sequence has no caption track (gone once one is added),
+    and "Open a sequence to export" in place of the settings while no sequence is open."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        assert not win.sequence.get("captionTracks"), "the demo sequence has no caption track"
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        i = dlg.format.findData("h264")
+        assert i >= 0
+        dlg.format.setCurrentIndex(i)
+        assert wait_until(app, lambda: dlg.queue_box.title() == "Queue (0)", 10_000)
+        hint = dlg.findChild(QtWidgets.QLabel, "export.queue.empty")
+        assert hint is dlg.queue_empty and hint.text() == "Send exports here with Send to Queue, then start the queue."
+        assert not hint.isHidden()
+        # captions: the hint while there is no caption track
+        cap = dlg.captions
+        assert dlg.findChild(QtWidgets.QLabel, "export.captions.noTrack").text() == "The sequence has no caption track."
+        assert cap.form.isRowVisible(cap.no_track)
+        win.execute("captions.newTrack", {})
+        assert wait_until(app, lambda: bool((win.sequence or {}).get("captionTracks")), 10_000)
+        assert wait_until(app, lambda: not cap.form.isRowVisible(cap.no_track), 10_000)
+        # a queued export: the heading counts it and the hint goes
+        dlg.path.setText(str(tmp_path / "queued.mp4"))
+        dlg.queue_button.click()
+        assert wait_until(app, lambda: dlg.queue_box.title() == "Queue (1)", 20_000)
+        assert hint.isHidden() and dlg.table.rowCount() == 1
+        # no sequence: egui's placeholder in place of the settings, the queue stays
+        dlg.open_for(None, None)
+        placeholder = dlg.findChild(QtWidgets.QLabel, "export.noSequence")
+        assert placeholder.text() == "Open a sequence to export" and not placeholder.isHidden()
+        assert dlg.settings_scroll.isHidden() and dlg.summary.isHidden() and not dlg.queue_box.isHidden()
+        assert not dlg.export_button.isEnabled() and not dlg.queue_button.isEnabled()
+        dlg.open_for(win.sequence, None)
+        assert placeholder.isHidden() and not dlg.settings_scroll.isHidden() and not dlg.summary.isHidden()
+        assert not cap.form.isRowVisible(cap.no_track), "the sequence has its caption track"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
 def test_export_preview_scaling_geometry():
     """egui's export preview: the output frame fits the pane; Scale To Fit letterboxes, Scale To
     Fill crops, Stretch To Fill fills the output frame."""

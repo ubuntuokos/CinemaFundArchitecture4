@@ -543,8 +543,15 @@ class ExportDialog(QDialog):
                 setattr(self, f"queue_{name}", b)
         self.table.itemSelectionChanged.connect(self._update_move_buttons)
         queue_buttons.addStretch(1)
-        queue_box = QGroupBox(tr("Export Queue"), self)
+        # egui's "Queue (n)" heading, and its hint while the queue is empty
+        self.queue_box = queue_box = QGroupBox(tr("Queue ({n})").format(n=0), self)
+        queue_box.setObjectName("export.queueBox")
+        self.queue_empty = QLabel(tr("Send exports here with Send to Queue, then start the queue."), self)
+        self.queue_empty.setObjectName("export.queue.empty")
+        self.queue_empty.setWordWrap(True)
+        self.queue_empty.setEnabled(False)
         qv = QVBoxLayout(queue_box)
+        qv.addWidget(self.queue_empty)
         qv.addWidget(self.table)
         qv.addLayout(queue_buttons)
 
@@ -571,8 +578,16 @@ class ExportDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidget(settings_page)
+        self.settings_scroll = scroll
+        # egui's placeholder in place of the settings while no sequence is open; the queue stays
+        self.no_sequence = QLabel(tr("Open a sequence to export"), self)
+        self.no_sequence.setObjectName("export.noSequence")
+        self.no_sequence.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.no_sequence.setEnabled(False)
+        self.no_sequence.hide()
         layout = QVBoxLayout(self)
         layout.addWidget(scroll, 3)
+        layout.addWidget(self.no_sequence, 3)
         layout.addWidget(self.summary)
         layout.addLayout(buttons)
         layout.addWidget(queue_box, 1)
@@ -628,6 +643,7 @@ class ExportDialog(QDialog):
         self.sequence_label.setText(name)
         self.export_button.setEnabled(sequence is not None)
         self.queue_button.setEnabled(sequence is not None)
+        self.sequence_updated(sequence)
         if sequence is not None:
             duration = int(sequence.get("duration") or 0) / 254_016_000_000
             self.end.setValue(duration)
@@ -641,6 +657,16 @@ class ExportDialog(QDialog):
         self.refresh_queue()
         self._poll.start()
         self.refresh_preview()
+
+    def sequence_updated(self, sequence: dict[str, Any] | None) -> None:
+        """What the window shows of the open sequence: egui's placeholder while there is none, and
+        the Captions hint while it has no caption track."""
+        none = sequence is None
+        self.settings_scroll.setVisible(not none)
+        self.summary.setVisible(not none)
+        self.no_sequence.setVisible(none)
+        tracks = (sequence or {}).get("captionTracks")
+        self.captions.set_has_track(isinstance(tracks, list) and bool(tracks))
 
     def refresh_preview(self) -> None:
         """The preview's frame: the sequence at the playhead (egui's export preview)."""
@@ -1243,6 +1269,8 @@ class ExportDialog(QDialog):
         data = result if isinstance(result, dict) else {}
         items = [i for i in data.get("items") or [] if isinstance(i, dict)]
         self._queue_items = items
+        self.queue_box.setTitle(tr("Queue ({n})").format(n=len(items)))
+        self.queue_empty.setVisible(not items)
         self.table.setRowCount(len(items))
         for row, it in enumerate(items):
             status = str(it.get("status") or "").lower()
