@@ -93,8 +93,8 @@ pub enum Format {
     /// WebM (Matroska), VP9 Profile 0 (8-bit 4:2:0) video by CFA4's own encoder + Opus audio.
     #[serde(rename = "webm", alias = "WebM")]
     WebM,
-    /// HTTP Live Streaming (RFC 8216): H.264 + AAC in CMAF fragmented-MP4 segments with a media
-    /// playlist and a multivariant playlist (the output path), see [`hls_files`].
+    /// HTTP Live Streaming (RFC 8216): H.264 and AAC in separate CMAF fragmented-MP4 segments, each
+    /// with a media playlist, and a multivariant playlist (the output path), see [`hls_files`].
     #[serde(rename = "hls", alias = "Hls")]
     Hls,
     /// QuickTime, Apple ProRes 422 (HQ unless the settings pick another flavour) + PCM.
