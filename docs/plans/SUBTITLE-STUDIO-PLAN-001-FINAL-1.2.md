@@ -117,9 +117,11 @@ rögzített, visszakeresett kivonatokra támaszkodnak, és nem pótolhatók kita
    Captions, az egui- és a Qt6-felületen). Az örökölt kód (a `cfa4-project` feliratmodellje, a
    `cfa4-captions` olvasói és írói, a `captions.*` parancsok) az 1–4. pont szerint kiindulási
    alap lehet, de csak annyiban, amennyiben az új modellbe illeszkedik; a cél nem az örökölt
-   felület továbbfejlesztése. Az örökölt felület akkor szűnik meg, amikor az új feliratozó
-   mindent tud, amit az örökölt (AC-26); addig hibajavítást kaphat, új funkciót nem. A régi
-   projektek feliratsávjai az új feliratozóban nyílnak meg (AC-23).
+   felület továbbfejlesztése. Az örökölt feliratozó **addig marad és használható**, amíg a
+   Qt6-felület el nem készül (D2), és amíg a teljes átállást igazoló tesztek el nem készülnek
+   (AC-26). Addig az upstream-szinkronból érkező változtatásai is bekerülhetnek (tulajdonosi
+   döntés, 2026-11-07). Az örökölt felület csak ezután szűnik meg. A régi projektek
+   feliratsávjai az új feliratozóban nyílnak meg (AC-23).
 
 ## 4. Termékszerkezet
 
@@ -252,9 +254,9 @@ funkcionális referencia lehet, kódja nem.
 | D4 | Függjön-e a kiadás egy nyelv (a magyar) hangjától? | **Nem:** a CFA4 többnyelvű, a magyar hang megléte nem mérvadó (7. fejezet, 12. fejezet) | Az 1.2 a narrációt a közös csomag feltételének tekintette |
 | D5 | Mi lesz a meglévő, upstreamtől örökölt feliratozóval? | **Ez a feliratozó váltja le; a CFA4-nek ez lesz a feliratozója** (3.3, 5. pont; AC-26) | Tulajdonosi döntés, 2026-11-07 |
 
-Az upstream-szinkronból érkező, az örökölt feliratfelületet érintő változtatások (2026-11-07-én
-nyitott PR-ként például a #548, #560 és #699) a leváltandó felülethez tartoznak. Hogy átmenetként
-bekerüljenek-e, azt a tulajdonos és a beolvasztási gazda dönti el; e terv nem zárja ki őket.
+Az örökölt feliratfelületet érintő upstream-szinkron PR-ok (2026-11-07-én nyitva: #548, #560,
+#699) a tulajdonos 2026-11-07-i döntése szerint **bekerülhetnek**: az örökölt feliratozó a
+leváltásig marad, és az új feliratozó fejlesztése még nem indult el (D2).
 
 ## 10. Fejlesztési sorrend és kapuk
 
