@@ -307,6 +307,7 @@ const FIXTURE_GENERATORS: &[(&str, &str)] = &[
     ("truehd", "oracle"),
     ("mpa", "oracle"),
     ("codecs", "ogg_oracle"),
+    ("codecs", "dv_oracle"),
 ];
 
 fn fixtures(only: &[String]) -> Result<(), String> {
