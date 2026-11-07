@@ -8372,8 +8372,17 @@ def test_markers_info_metadata_and_project_notes(app, tmp_path: Path):
         scene.setText("12A")
         scene.editingFinished.emit()
         assert wait_until(app, lambda: any(f["name"] == "Scene" and f["value"] == "12A" for f in win.metadata.fields), 10_000)
-        assert wait_until(app, lambda: "Ocean_Sunset.mp4" in win.info.text.text() and "1920 x 1080" in win.info.text.text(), 10_000)
-        assert "Video 1:" in win.info.text.text() and "Playhead:" in win.info.text.text()
+        assert wait_until(app, lambda: "Ocean_Sunset.mp4" in win.info.plain_text() and "1920 x 1080" in win.info.plain_text(), 10_000)
+        assert "Video 1:" in win.info.plain_text() and "Playhead:" in win.info.plain_text()
+        # egui's ids: the item's and the sequence's header, each labelled with its name
+        from cfa4_qt.control import ControlServer
+
+        win.docks["Info"].show()
+        win.docks["Info"].raise_()
+        seq_name = win.info.lines[[k for k, _v in win.info.lines].index("—") + 1][0]
+        assert seq_name
+        heads = lambda: {e["id"]: e["label"] for e in ControlServer(win).elements("info.") if e["id"] in ("info.item", "info.sequence")}
+        assert wait_until(app, lambda: heads() == {"info.item": "Ocean_Sunset.mp4", "info.sequence": seq_name}, 10_000), heads()
         # Project Notes: from Window ▸ Project Notes; typing is saved in the project
         win.docks["Project Notes"].show()
         win.docks["Project Notes"].raise_()
