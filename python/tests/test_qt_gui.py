@@ -3260,7 +3260,15 @@ def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path)
         ime.setCommitString("日本")
         QtWidgets.QApplication.sendEvent(view, ime)  # an input method's finished text
         assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本" for d in texts()), 10_000)
+        # upstream #2445: an edit that ends while the input method composes types the marked text
+        # (Korean commits a syllable only when the next one starts); its late commit is dropped
+        composing = QtGui.QInputMethodEvent("한", [])
+        QtWidgets.QApplication.sendEvent(view, composing)
+        assert gt.preedit == "한"
         QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None and gt.preedit == ""
+        assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本한" for d in texts()), 10_000)
+        assert not gt.take_commit("한") and gt.take_commit("한"), "the late commit of that text once, then typing again"
         # the Selection tool: a double-click edits a text layer with all of it selected
         win.tools.select("selection")
         first = next(d for d in texts() if d["text"]["text"] == "O\nK")
@@ -8984,6 +8992,24 @@ def test_text_panel(app, tmp_path: Path):
         tp.captions.search.setText("nothing like it")
         assert tp.captions.table.rowCount() == 0 and tp.captions.note.text() == "No matching captions."
         tp.captions.search.clear()
+        # upstream #3042: the list follows the playhead, bringing the caption it reaches into view
+        for i in range(40):
+            win.execute("captions.add", {"text": f"line {i}", "time": TICKS_PER_SECOND * (30 + 2 * i), "durationSeconds": 1})
+        assert wait_until(app, lambda: tp.captions.table.rowCount() == 41, 20_000), tp.captions.table.rowCount()
+        table = tp.captions.table
+        table.verticalScrollBar().setValue(0)
+        last = captions()[-1]
+        tp.set_playhead(int(last["start"]) + TICKS_PER_SECOND // 2)
+
+        def shown() -> bool:
+            row = next((r for r in range(table.rowCount()) if table.item(r, 4).text() == last["text"]), None)
+            return row is not None and table.viewport().rect().intersects(table.visualItemRect(table.item(row, 0)))
+
+        assert wait_until(app, lambda: tp.captions._followed == last["id"] and shown(), 10_000), tp.captions._followed
+        # once followed it is left alone: scrolling away is not undone while the playhead stays there
+        table.verticalScrollBar().setValue(0)
+        tp.captions._fill()
+        assert table.verticalScrollBar().value() == 0
 
         # Graphics: a text layer shows up and edits in place
         win.execute("graphics.newText", {"text": "Hello Qt"})
