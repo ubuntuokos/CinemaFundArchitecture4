@@ -1976,6 +1976,10 @@ class MainWindow(QMainWindow):
             self.mixer.open_show_hide()
             return True
         if cid == "mixer.meterInputOnly":
+            # upstream #3349: parameters that are neither an object nor null are an error
+            if params is not None and not isinstance(params, dict):
+                self._command_failed(cid, "command parameters must be an object")
+                return True
             on = (params or {}).get("on")
             if on is not None and not isinstance(on, bool):
                 self._command_failed(cid, "`on` must be true or false")
