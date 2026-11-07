@@ -22,6 +22,15 @@ attribution and original copyright/licence requirements remain in force.
   then re-add the label for a repeat). Verify all jobs before merge.
 - Keep the existing Rust media engine. Python is permitted for development tooling and a
   separate Qt 6/PySide6 frontend; do not duplicate codecs in Python or break the Rust workspace.
+- **Port or keep the original language** (owner decision, 2026-11-03): reusable code is ported to
+  Rust by default. When a port would take disproportionately long, the code may stay in its original
+  language (C++, Python, …) **if it does not slow CFA4 down**. In practice it then runs outside the
+  editor process, as a supervised worker or external program behind a Rust interface (for AI: the
+  ADR 0006 worker protocol), so a crash is an error and never a CFA4 crash; "does not slow down" is
+  measured on the reference machine (playback and render frame times unchanged while it runs). The
+  licence rules below still apply (headers kept, reused-code register row), and the in-process
+  rules (pure Rust, no `unsafe`, layering) are unchanged. Record the port-vs-keep reason in the plan
+  or ADR that brings the code in.
 - **Licence: GPL-3.0-or-later** (`LICENSE`; policy in [docs/licensing.md](docs/licensing.md)).
   This overrides every inherited "MIT OR Apache-2.0 only" / "no GPL/LGPL" rule below.
   - Code MAY be reused from GPL-3.0-compatible projects (GPL-2.0-or-later, GPL-3.0, LGPL,
