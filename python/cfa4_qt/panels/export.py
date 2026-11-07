@@ -1088,6 +1088,7 @@ class ExportDialog(QDialog):
         self._agent_before = None
         if isinstance(r.get("settings"), dict):
             self.resolved_settings = r["settings"]
+            self.rows.show_resolved(r)
             self._show_settings(r["settings"])
         path = (r.get("settings") or {}).get("path") if isinstance(r.get("settings"), dict) else None
         self.preview.show_resolved(r, str(path or self.path.text()), self.range.currentText(), "scaling" in self.touched)
