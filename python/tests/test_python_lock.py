@@ -12,6 +12,7 @@ from packaging.version import Version
 
 ROOT = Path(__file__).resolve().parents[2]
 LOCK = ROOT / "requirements" / "linux-amd64.txt"
+OTIO_LOCK = ROOT / "requirements" / "otio-oracle.txt"
 PIN_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==(\S+)\s*\\?$")
 
 
@@ -45,6 +46,23 @@ def test_every_pin_has_a_hash() -> None:
     pins = parse_lock(LOCK.read_text(encoding="utf-8"))
     assert pins
     assert [name for name, (_, hashes) in pins.items() if hashes == 0] == []
+
+
+def test_otio_oracle_lock_pins_the_otio_extra_with_hashes() -> None:
+    # OTIO-1.3: the CI `otio-oracle` job installs the test oracle from its own hash-pinned lock.
+    extras = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["optional-dependencies"]
+    pins = parse_lock(OTIO_LOCK.read_text(encoding="utf-8"))
+    for spec in extras["otio"]:
+        requirement = Requirement(spec)
+        name = canonicalize_name(requirement.name)
+        assert name in pins, f"{name} missing from {OTIO_LOCK.name}; run scripts/dev/lock-python.sh"
+        assert requirement.specifier.contains(Version(pins[name][0])), f"{name} pin outside {requirement.specifier}"
+    assert [name for name, (_, hashes) in pins.items() if hashes == 0] == []
+
+
+def test_otio_stays_out_of_the_main_lock() -> None:
+    # The oracle is a development tool only (owner decision 3 in the OTIO plan): not in the dev/Qt environment.
+    assert "opentimelineio" not in parse_lock(LOCK.read_text(encoding="utf-8"))
 
 
 def test_webengine_stays_in_the_lock() -> None:
