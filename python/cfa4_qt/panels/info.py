@@ -100,6 +100,14 @@ class MarkerList(QWidget):
     def row_rect(self, i: int) -> QRect:
         return QRect(0, i * self.ROW, self.width(), self.ROW)
 
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        """egui's ``markers.row.<id>`` for each marker's row (a click goes to it)."""
+        return [
+            (f"markers.row.{m['id']}", self.row_rect(i), str(m.get("name") or ""))
+            for i, m in enumerate(self.markers)
+            if isinstance(m, dict) and m.get("id") is not None
+        ]
+
     def label_text(self, m: dict[str, Any]) -> str:
         tc = format_timecode(int(m.get("start") or 0), self.frame)
         if int(m.get("duration") or 0) > 0:

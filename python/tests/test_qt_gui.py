@@ -11267,3 +11267,56 @@ def test_real_engine_control_channel_names_monitor_parts_as_egui(app, tmp_path: 
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_list_rows_and_scopes_as_egui(app, tmp_path: Path):
+    """egui's ids for painted rows and cells through the control channel: the Markers panel's
+    ``markers.row.<id>`` (a click goes to the marker), the Timecode panel's ``timecode.row.<i>``
+    (with its value), the Essential Graphics templates' ``gfxTemplates.item.<id>`` and the Lumetri
+    Scopes' ``scopes.view.<kind>``."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+
+        def els(prefix: str) -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": prefix})["result"]}
+
+        def show(dock: str) -> None:
+            win.docks[dock].show()
+            win.docks[dock].raise_()
+
+        # Markers: a row per marker; a click on one goes to it
+        win.execute("playhead.set", {"time": 0})
+        assert wait_until(app, lambda: win.monitor.playhead == 0, 10_000)
+        win.execute("markers.add", {"time": 254_016_000_000 * 2, "name": "Beat"})
+        show("Markers")
+        assert wait_until(app, lambda: any(e["label"] == "Beat" for e in els("markers.row.").values()), 10_000), els("markers.row.")
+        row = next(i for i, e in els("markers.row.").items() if e["label"] == "Beat")
+        assert c.call("ui.click", {"id": row})["ok"]
+        assert wait_until(app, lambda: win.monitor.playhead == 254_016_000_000 * 2, 10_000), win.monitor.playhead
+        # Timecode: the first row reads the playhead (2 s, a frame under it at a fractional rate)
+        show("Timecode")
+        assert wait_until(app, lambda: els("timecode.row.").get("timecode.row.0", {}).get("label", "")[:8] in ("00:00:01", "00:00:02"), 10_000), els("timecode.row.")
+        # Lumetri Scopes: a cell per scope shown
+        show("Lumetri Scopes")
+        assert wait_until(app, lambda: "scopes.view.parade" in els("scopes.view."), 10_000), els("scopes.view.")
+        # Essential Graphics: the built-in templates' cards
+        show("Essential Graphics")
+        assert wait_until(app, lambda: "gfxTemplates.item.builtin:title-centered" in els("gfxTemplates.item."), 10_000), sorted(els("gfxTemplates.item."))
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
