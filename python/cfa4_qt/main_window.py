@@ -789,8 +789,9 @@ class MainWindow(QMainWindow):
         self._titles_pending = True
 
     def automation_parts(self) -> list[Any]:
-        """egui's panel tab ids (``panel.tab.*`` / ``panel.drag.*``) for the control channel."""
-        return dock_commands.tab_parts(self)
+        """egui's ids for the window's painted parts: the panel tabs (``panel.tab.*`` /
+        ``panel.drag.*``) and the menu bar's ``menu.<Name>`` buttons."""
+        return [*dock_commands.tab_parts(self), *self._menu_parts()]
 
     def update_dock_titles(self) -> None:
         """egui shows a panel's name once, on its tab: a panel in a tab group has no title bar of
@@ -958,9 +959,9 @@ class MainWindow(QMainWindow):
                 self.addAction(a)
         return [a for a, _c, _k in pairs]
 
-    def automation_parts(self) -> list[tuple[str, QRect, str]]:
-        """egui's ids for the window's painted parts, in window coordinates: the menu bar's
-        ``menu.<Name>`` buttons (a click opens the menu, as in egui)."""
+    def _menu_parts(self) -> list[tuple[str, QRect, str]]:
+        """The menu bar's ``menu.<Name>`` buttons, in window coordinates (a click opens the menu,
+        as in egui)."""
         bar = self.menuBar()
         if not bar.isVisible():
             return []
