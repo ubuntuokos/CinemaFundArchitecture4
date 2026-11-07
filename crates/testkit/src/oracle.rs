@@ -202,10 +202,8 @@ mod tests {
     }
     use std::ffi::OsString;
 
-    fn tmpdir(tag: &str) -> PathBuf {
-        let d = std::env::temp_dir().join(format!("cfa4-testkit-{tag}-{}", std::process::id()));
-        std::fs::create_dir_all(&d).unwrap();
-        d
+    fn tmpdir(_tag: &str) -> PathBuf {
+        tempfile::tempdir().unwrap().keep()
     }
 
     #[test]

@@ -139,7 +139,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3252 | text, ui: font coverage tests probe faces without keeping every font file loaded | F | kihagy: csak teszt, át nem vett betűkészlet-változásokra épül | kézi port | – | – | lezárva |
 | 0.14.0 | #3286 | Keep draft-decoder counter assertions in one test | F | kihagy: az upstream közös tesztbináris-gondja, a CFA4-ben minden tesztfájl külön folyamat | kézi port | – | – | lezárva |
 | 0.14.0 | #3321 | fix(av1): drop the duplicate strictly_increasing and its test | B | átvesz (a #2888 és #3081 duplikátumát szünteti meg) | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | – | tervezett |
+| 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | #702 | PR nyitva |
 | 0.14.0 | #1841 | #1545: effects.apply answers with the applied instances (clip, index, effect) | C | átvesz | tisztán | U0-C | – | tervezett |
 | 0.14.0 | #1870 | #1216: a cap on the CPU threads an export uses (maxThreads) | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.14.0 | #2415 | #2340: uncompressed QuickTime video (raw 24-bit RGB, 2vuy, v210) decodes | C | átvesz | kézi port | U0-C | – | tervezett |
@@ -243,10 +243,10 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #2955 | fix(captions): bound TTML XML nesting | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #2956 | fix(interchange): confine embedded audio output names | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #2957 | fix(media): validate HDR scanlines before frame allocation | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.13.0 | #2983 | fix: harden saves, CLI file I/O and AV1 tooling (SonarCloud security/reliability) | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.13.0 | #2983 | fix: harden saves, CLI file I/O and AV1 tooling (SonarCloud security/reliability) | A | átvesz | kézi port | U0-A4b | #700 | PR nyitva |
 | 0.13.0 | #2989 | CTL2807: release idle control connections after bounded socket waits | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3007 | tools: quit the super-linear regex scans in the spec table extractors (SonarCloud S8786) | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.13.0 | #3078 | security: harden developer tools, scripts, and testkit against hostile input | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.13.0 | #3078 | security: harden developer tools, scripts, and testkit against hostile input | A | átvesz | kézi port | U0-A4b | #700 | PR nyitva |
 | 0.13.0 | #3079 | security(interchange): harden FCPXML cycle detection, XML DTD entities, and imported formats | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3081 | security(codecs): validate VP9 empty tiles and AV1 film grain scaling points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.13.0 | #3082 | security(audio): bound sequence sample rates and AAF/OMF export channel buffers | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
