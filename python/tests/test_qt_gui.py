@@ -10380,3 +10380,165 @@ def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_control_channel_lists_painted_parts_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui registers painted regions with their own ids; the Qt panels that paint them list them
+    too (``automation_parts``): the Audio Meters' loudness readout, each channel's bar and the dB
+    scale, with what they show, in ``ui.elements``, and ``ui.click`` / ``ui.move`` find them."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.meters import AudioMetersPanel
+
+    meters = AudioMetersPanel()
+    meters.resize(140, 420)
+    meters.loudness = [-23.0, -22.5, -23.1, -1.5]
+    meters.levels = [-12.0, -18.0]
+    parts = {pid: (r, label) for pid, r, label in meters.automation_parts()}
+    assert set(parts) == {"audioMeters.loudness", "audioMeters.channel.L", "audioMeters.channel.R", "audioMeters.scale"}, set(parts)
+    assert parts["audioMeters.loudness"][1] == "M -23.0 S -22.5 I -23.1 LUFS TP -1.5 dBTP"
+    assert parts["audioMeters.channel.L"][1] == "L -12.0 dB" and parts["audioMeters.scale"][1].startswith("0 -")
+    assert parts["audioMeters.channel.L"][0].right() < parts["audioMeters.channel.R"][0].left()
+    meters.resize(30, 80)  # too small for the readout and the scale: only the bars
+    assert {pid for pid, _r, _l in meters.automation_parts()} == {"audioMeters.channel.L", "audioMeters.channel.R"}
+    meters.deleteLater()
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        app.processEvents()
+        assert _visible_on_screen(win.meters)
+        c = _ControlClient(app, server.port())
+        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "audioMeters."})["result"]}
+        assert "audioMeters.channel.L" in els and "audioMeters.channel.R" in els, els
+        x, y, w, h = els["audioMeters.channel.L"]["rect"]
+        origin = win.meters.mapTo(win, QtCore.QPoint(0, 0))
+        assert x >= origin.x() and y >= origin.y() and w > 0 and h > 0
+        assert c.call("ui.move", {"id": "audioMeters.channel.L"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.channel.R"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.nothing"})["ok"] is False
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def _visible_on_screen(w) -> bool:
+    return w.isVisible() and not w.visibleRegion().isEmpty()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path: Path):
+    """egui's ids for the Timeline's painted parts through the control channel: the timecode,
+    ruler and tracks, each track header's switches (``timeline.track.A1.muted``, …) and height
+    edges, ``timeline.clip.<id>`` and ``timeline.transition.<id>``; a click on a switch toggles
+    it, a click on a clip selects it and a drag of a header edge changes the track height."""
+    import re
+
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline."})["result"]}
+
+        fixed = {"timeline.timecode", "timeline.ruler", "timeline.tracks"}
+        switches = {f"timeline.track.V1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "enabled", "resize")}
+        switches.add(f"timeline.track.V{len(win.sequence['video'])}.resizeTop")  # the top video track's outer edge
+        switches |= {f"timeline.track.A1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "muted", "solo", "voiceover", "keyframes", "resize")}
+        assert wait_until(app, lambda: fixed | switches <= set(els()), 10_000), sorted((fixed | switches) - set(els()))
+        e = els()
+        assert e["timeline.track.A1.muted"]["label"] == "Mute Track"
+        clips = [i for i in e if re.fullmatch(r"timeline\.clip\.\d+", i)]
+        video = next(cl for t in win.sequence["video"] for cl in t.get("items") or [])
+        assert f"timeline.clip.{video['clip']}" in clips, clips
+        # a click on a clip selects it
+        assert c.call("ui.click", {"id": f"timeline.clip.{video['clip']}"})["ok"]
+        assert wait_until(app, lambda: video["clip"] in ((win.sequence or {}).get("selection") or []), 10_000)
+        # a click on A1's M mutes it
+        assert c.call("ui.click", {"id": "timeline.track.A1.muted"})["ok"]
+        assert wait_until(app, lambda: (win.sequence or {})["audio"][0].get("muted") is True, 10_000), win.sequence["audio"][0]
+        # the bottom edge of A1's header drags its height
+        h = canvas.audio_h
+        x, y, w, hh = e["timeline.track.A1.resize"]["rect"]
+        assert c.call("ui.drag", {"from": {"id": "timeline.track.A1.resize"}, "to": {"x": x + w / 2, "y": y + hh / 2 + 30}})["ok"]
+        assert wait_until(app, lambda: canvas.audio_h > h, 5_000), (canvas.audio_h, h)
+        if any(t.get("transitions") for t in win.sequence["video"] + win.sequence["audio"]):
+            assert any(re.fullmatch(r"timeline\.transition\.\d+(\.in|\.out)?", i) for i in els())
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_split_marks_as_egui(app, tmp_path: Path):
+    """egui's split edit points on the Timeline ruler (Markers ▸ Mark Split): a bracket with a V
+    (video, above) or A (audio, below) tag, an In on its frame's left edge and an Out on its right
+    edge, named ``timeline.split.videoIn`` / ``videoOut`` / ``audioIn`` / ``audioOut``."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import SPLIT_COLOR
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.zoom_to_fit()
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.split."})["result"]}
+
+        assert els() == {}
+        fd = canvas.frame_ticks()
+        vin, aout = 48 * fd, 96 * fd
+        assert c.call("engine.execute", {"command": "markers.markSplitVideoIn", "params": {"time": vin}})["ok"]
+        assert c.call("engine.execute", {"command": "markers.markSplitAudioOut", "params": {"time": aout}})["ok"]
+        win.schedule_refresh()
+        assert wait_until(app, lambda: set(els()) == {"timeline.split.videoIn", "timeline.split.audioOut"}, 10_000), els()
+        e = els()
+        assert e["timeline.split.videoIn"]["label"] == "Split V In"
+        assert e["timeline.split.audioOut"]["label"] == "Split A Out"
+        marks = {pid: (x, top) for pid, x, top, _in, _tag in canvas.split_marks()}
+        assert abs(marks["timeline.split.videoIn"][0] - canvas.x_of(vin)) < 0.01
+        assert abs(marks["timeline.split.audioOut"][0] - canvas.x_of(aout + fd)) < 0.01
+        assert marks["timeline.split.videoIn"][1] < marks["timeline.split.audioOut"][1]  # video above
+        img = canvas.grab().toImage()
+        dpr = img.devicePixelRatio()
+        x, top = marks["timeline.split.videoIn"]
+        col = img.pixelColor(round(x * dpr), int((top + 4) * dpr))
+        want = QtGui.QColor(SPLIT_COLOR)
+        assert abs(col.red() - want.red()) < 40 and abs(col.green() - want.green()) < 40, col.name()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

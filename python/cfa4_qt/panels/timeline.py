@@ -94,6 +94,16 @@ SNAP_PX = 8
 TRANSITION_TOP = 17  # a transition covers its row under the clips' name strip (egui's)
 TRANSITION_EDGE_PX = 7  # how far into a transition from either end a press grabs that end
 
+# split edit points on the ruler (egui's): a short bracket with a V or A tag, video above, audio
+# below; (field of the sequence's ``split``, is an In, tag, automation id)
+SPLIT_MARKS = (
+    ("videoIn", True, "V", "timeline.split.videoIn"),
+    ("videoOut", False, "V", "timeline.split.videoOut"),
+    ("audioIn", True, "A", "timeline.split.audioIn"),
+    ("audioOut", False, "A", "timeline.split.audioOut"),
+)
+SPLIT_COLOR = "#d0d0d0"
+
 # label names (engine colour labels) -> display colour
 LABEL_COLORS = {
     "violet": "#8f6fd8",
@@ -907,6 +917,40 @@ class TimelineCanvas(QWidget):
                     QRectF(max(x0, HEADER_W), RULER_H - 4, max(0.0, x1 - max(x0, HEADER_W)), 4),
                     T.c("in_out_shade"),
                 )
+        self._paint_split_marks(p)
+
+    def split_marks(self) -> list[tuple[str, float, float, bool, str]]:
+        """The sequence's split edit points in view: (automation id, x, top, is an In, tag). An In
+        sits on its frame's left edge, an Out on its frame's right edge (egui's)."""
+        split = (self.sequence or {}).get("split")
+        if not isinstance(split, dict):
+            return []
+        out = []
+        for key, is_in, tag, pid in SPLIT_MARKS:
+            t = split.get(key)
+            if not isinstance(t, int):
+                continue
+            x = self.x_of(t if is_in else t + self.frame_ticks())
+            if x < HEADER_W:
+                continue
+            top = 3.0 if tag == "V" else RULER_H - 10.0
+            out.append((pid, x, top, is_in, tag))
+        return out
+
+    def _paint_split_marks(self, p: QPainter) -> None:
+        col = QColor(SPLIT_COLOR)
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        font = QFont(self.font_small)
+        font.setPixelSize(9)
+        p.setFont(font)
+        for _pid, x, top, is_in, tag in self.split_marks():
+            dx = 4.0 if is_in else -4.0
+            p.setPen(QPen(col, 1.5))
+            p.drawLine(QPointF(x, top), QPointF(x, top + 7.0))
+            p.drawLine(QPointF(x, top), QPointF(x + dx, top))
+            p.drawText(QRectF(x + 2 * dx - 5, top - 1.5, 10, 10), Qt.AlignmentFlag.AlignCenter, tag)
+        p.restore()
 
     # ----- Show Duplicate Frame Markers (upstream #3212) -----
     def duplicate_frames(self) -> dict[Any, tuple[int, list[tuple[int, int]]]]:
@@ -969,6 +1013,66 @@ class TimelineCanvas(QWidget):
             Qt.AlignmentFlag.AlignVCenter,
             format_timecode(self.playhead, self.frame_ticks()),
         )
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids for the Timeline's painted parts, for what is in view: ``timeline.timecode``,
+        ``timeline.ruler``, ``timeline.tracks``, ``timeline.marker.<id>`` / ``markerRange.<id>``, each
+        track header's ``timeline.track.<V1|A1…>.<switch>`` and ``.resize`` / ``.resizeTop`` edges,
+        ``timeline.clip.<id>`` (with ``.volume``, a point on an audio clip's Volume line) and
+        ``timeline.transition.<id>`` with its ``.in`` / ``.out`` ends."""
+        if not self.sequence:
+            return []
+        top = self.tracks_top()
+        w = float(self.width())
+        bottom = float(max(top, self.height() - MASTER_H))
+        content = QRectF(HEADER_W, top, max(0.0, w - HEADER_W), bottom - top)
+        column = QRectF(0, top, HEADER_W, bottom - top)
+        ruler = QRectF(HEADER_W, 0, max(0.0, w - HEADER_W), RULER_H)
+        out: list[tuple[str, QRectF, str]] = [
+            ("timeline.timecode", QRectF(0, 0, HEADER_W, RULER_H), format_timecode(self.playhead, self.frame_ticks())),
+            ("timeline.ruler", ruler, "time ruler"),
+            ("timeline.tracks", content, "tracks"),
+        ]
+        for m in self.sequence.get("markers") or []:
+            if isinstance(m, dict) and m.get("id") is not None:
+                band = self.marker_band(m)
+                if band is not None:
+                    out.append((f"timeline.markerRange.{m['id']}", band.intersected(ruler), str(m.get("name") or "")))
+                out.append((f"timeline.marker.{m['id']}", self.marker_rect(m).intersected(ruler), str(m.get("name") or "")))
+        for pid, x, top, is_in, tag in self.split_marks():
+            side = "In" if is_in else "Out"
+            out.append((pid, QRectF(x - 6, top - 1, 12, 9).intersected(ruler), f"Split {tag} {side}"))
+        for i, row in enumerate(self.rows):
+            for c in self.header_cells(row):
+                key = "sourcePatch" if c.key == "patch" else c.key
+                out.append((f"timeline.track.{row.short}.{key}", QRectF(c.rect).intersected(column), c.tip))
+            edge = QRectF(0, row.top + row.height - 3, HEADER_W, 5).intersected(column)
+            out.append((f"timeline.track.{row.short}.resize", edge, "Drag to change the track height"))
+            if i == 0 and row.kind == "video":
+                out.append((f"timeline.track.{row.short}.resizeTop", QRectF(0, row.top - 2, HEADER_W, 5).intersected(column), "Drag to change the track height"))
+            volume_ok = self._volume_row_ok(row)
+            for clip in row.track.get("items") or []:
+                if not isinstance(clip, dict) or clip.get("clip") is None:
+                    continue
+                r = self.clip_rect(row, clip)
+                vis = r.intersected(content)
+                out.append((f"timeline.clip.{clip['clip']}", vis, str(clip.get("name") or "")))
+                if volume_ok and isinstance(clip.get("volume"), dict) and volume_band(r).height() >= 6 and vis.width() > 0:
+                    # a point on the line, away from the trim zones at the edges (egui's)
+                    zone = min(EDGE_PX, r.width() / 3)
+                    x0, x1 = max(vis.left(), r.left() + zone), min(vis.right(), r.right() - zone)
+                    if x1 > x0:
+                        xm = (x0 + x1) / 2
+                        out.append((f"timeline.clip.{clip['clip']}.volume", QRectF(xm - 6, self.volume_line_y(clip, r, xm) - 4, 12, 8), "Volume"))
+            for x in row.track.get("transitions") or []:
+                if not isinstance(x, dict) or x.get("id") is None:
+                    continue
+                r = self.transition_rect(row, x)
+                zone = min(TRANSITION_EDGE_PX, r.width() / 3)
+                out.append((f"timeline.transition.{x['id']}", r.intersected(content), str(x.get("effect") or x.get("name") or "")))
+                out.append((f"timeline.transition.{x['id']}.in", QRectF(r.left(), r.top(), zone, r.height()).intersected(content), "start"))
+                out.append((f"timeline.transition.{x['id']}.out", QRectF(r.right() - zone, r.top(), zone, r.height()).intersected(content), "end"))
+        return [(pid, r, label) for pid, r, label in out if r.width() > 0 and r.height() > 0]
 
     def header_cells(self, row: Row) -> list[HeaderCell]:
         """The switches of one track header, left to right: source patch, targeting, then lock,
