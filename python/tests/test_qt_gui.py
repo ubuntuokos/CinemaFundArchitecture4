@@ -12400,6 +12400,55 @@ def test_transparency_grid_paints_a_checkerboard_and_keeps_its_setting(app):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_path: Path):
+    """The Audio Track Mixer menu's Show/Hide Tracks… and Meter Input(s) Only are the commands
+    `mixer.showHideTracks` and `mixer.meterInputOnly` (upstream #3227): Keyboard Shortcuts lists
+    them, the first opens the track list on the mixer, the second toggles (or sets `on`), and a
+    key given with the mixer focused shows beside its menu entry."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    mixer = win.mixer
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and win.local_keys is not None, 60_000)
+        ids = {c[0] for c in win.local_commands()}
+        assert {"mixer.showHideTracks", "mixer.meterInputOnly"} <= ids
+        assert {"mixer.showHideTracks", "mixer.meterInputOnly"} <= set(win.registry.local_actions)
+        # Meter Input(s) Only: toggles, or takes `on`
+        assert not mixer.meter_input_only
+        win.ui_command("mixer.meterInputOnly")
+        assert mixer.meter_input_only
+        win.ui_command("mixer.meterInputOnly")
+        assert not mixer.meter_input_only
+        win.ui_command("mixer.meterInputOnly", {"on": True})
+        assert mixer.meter_input_only
+        win.ui_command("mixer.meterInputOnly", {"on": "yes"})  # refused: unchanged
+        assert mixer.meter_input_only
+        # Show/Hide Tracks…: the mixer shows and its track list opens
+        win.docks["Audio Track Mixer"].hide()
+        win.ui_command("mixer.showHideTracks")
+        assert win.docks["Audio Track Mixer"].isVisible()
+        assert wait_until(app, lambda: mixer.show_hide_menu.isVisible(), 5_000)
+        assert any(a.objectName().startswith("mixer.showHide.") for a in mixer.show_hide_menu.actions())
+        mixer.show_hide_menu.close()
+        # the Premiere preset's keys with the mixer focused show beside the entries
+        mixer.set_panel_keys({"mixer.showHideTracks": "Ctrl+Alt+T", "mixer.meterInputOnly": "Ctrl+Shift+I"})
+        mixer._fill_menu()
+        menu = mixer.menu_button.menu()
+        meter = menu.findChild(QtGui.QAction, "mixer.menu.meterInputOnly")
+        assert meter.text().endswith("\tCtrl+Shift+I") and meter.isChecked()
+        assert mixer.show_hide_menu.title().endswith("\tCtrl+Alt+T")
+    finally:
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_video_audio_divider_as_egui(app, tmp_path: Path):
     """egui's divider between the video and the audio tracks (timeline.rs split_y / DIVIDER_H):
     a drag moves it within 10–90 %, each area scrolls on its own (V1 sits at the bottom of the
