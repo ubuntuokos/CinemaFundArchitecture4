@@ -800,6 +800,11 @@ class ControlServer(QObject):
                 raise ControlError(f"{key}: {e}") from None
         if "keyframeSelection" in p:
             win.effect_controls.set_keyframe_selection(keyframe_refs(p["keyframeSelection"]))
+        if "gfxEdit" in p:  # after `tool`: the Type tool's text editing state (egui's byte offsets) or null
+            try:
+                win.monitor.overlay.graphics.set_edit_state(p["gfxEdit"])
+            except TypeError as e:
+                raise ControlError(str(e)) from None
         if "export" in p:
             self.set_export(p["export"])
         tl = p.get("timeline")
@@ -839,6 +844,7 @@ class ControlServer(QObject):
             "tts": win.tts.ui_state(),
             "gfxTemplates": self.gfx_templates_state(),
             "keyframeSelection": keys,
+            "gfxEdit": win.monitor.overlay.graphics.edit_state(),
             "export": self.export_state(),
         }
 

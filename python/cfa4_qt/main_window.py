@@ -499,6 +499,9 @@ class MainWindow(QMainWindow):
         self.text_panel.seek.connect(self._seek_program)
         self.text_panel.run.connect(self.run_preset)
         self.essential_graphics.run.connect(self.run_preset)
+        # a Type-tool selection on the Program monitor: Essential Graphics styles those characters
+        self.essential_graphics.text_selection = self.monitor.overlay.graphics.selection_range
+        self.monitor.overlay.text_selection_changed.connect(self.essential_graphics.editor.selection_changed)
         self.tts.status.connect(lambda text: self.statusBar().showMessage(text, 6000))
         self.tts.changed.connect(self.schedule_refresh)
         self.tts.bring_forward.connect(lambda: (self.docks["Text to Speech"].show(), self.docks["Text to Speech"].raise_()))
