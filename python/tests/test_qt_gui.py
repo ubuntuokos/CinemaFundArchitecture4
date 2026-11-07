@@ -7864,7 +7864,15 @@ def test_real_engine_timeline_edit_point_menu_as_egui(app, tmp_path: Path):
         assert list(acts) == [f"timeline.editPointMenu.{n}" for n in ("rippleIn", "rippleOut", "roll", "trimIn", "trimOut", "applyDefaultTransitions", "joinThroughEdits")]
         assert acts["timeline.editPointMenu.roll"].isChecked() and not acts["timeline.editPointMenu.trimOut"].isChecked()
         assert all(a.isEnabled() for a in acts.values())
-        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": left["clip"], "out": True, "kind": "roll"}], 10_000)
+        # upstream #3224: with Linked Selection on, the picture cut and its linked sound are selected
+        # (the same edge and kind)
+        def eps_are(clip: int, out: bool, kind: str) -> bool:
+            eps = (win.sequence or {}).get("editPoints") or []
+            audio = {c["clip"] for t in (win.sequence or {}).get("audio") or [] for c in t.get("items") or []}
+            return (len(eps) == 2 and eps[0] == {"clip": clip, "out": out, "kind": kind}
+                    and eps[1]["clip"] in audio and (eps[1]["out"], eps[1]["kind"]) == (out, kind))
+
+        assert wait_until(app, lambda: eps_are(left["clip"], True, "roll"), 10_000), (win.sequence or {}).get("editPoints")
         # the roll's yellow brackets on both sides of the cut
         img = canvas.grab().toImage()
         cut = canvas.x_of(left["end"])
@@ -7875,7 +7883,7 @@ def test_real_engine_timeline_edit_point_menu_as_egui(app, tmp_path: Path):
         # another trim type selects that side of the cut
         acts["timeline.editPointMenu.trimIn"].trigger()
         menu.close()
-        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": right["clip"], "out": False, "kind": "trim"}], 10_000)
+        assert wait_until(app, lambda: eps_are(right["clip"], False, "trim"), 10_000), (win.sequence or {}).get("editPoints")
         # the menu again (the cut's edit point stays selected), then Join Through Edits
         QtTest.QTest.mouseClick(canvas, QtCore.Qt.MouseButton.RightButton, pos=QtCore.QPoint(x, int(v1().top + v1().height / 2)))
         assert wait_until(app, lambda: canvas.last_menu is not None and canvas.last_menu is not menu and canvas.last_menu.isVisible(), 10_000)
