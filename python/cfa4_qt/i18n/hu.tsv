@@ -423,7 +423,6 @@
 	Save as Template…	Mentés sablonként…
 	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
 	Save changes to '{name}' before continuing?	Menti a(z) „{name}” változásait a folytatás előtt?
-	Discard the unsaved changes to '{name}' and revert to the saved version?	Elveti a(z) „{name}” mentetlen változásait, és visszaáll a mentett változatra?
 	Scale	Méretezés
 	Scale Width	Szélesség méretezése
 	Scale to Frame Size	Méretezés a képkockához
@@ -2326,5 +2325,7 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Are you sure you want to discard your changes to '{file}'?	Biztosan elveti a(z) „{file}” változásait?
+	the project has not been saved yet	a projekt még nincs mentve
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
