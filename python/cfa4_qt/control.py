@@ -634,6 +634,9 @@ class ControlServer(QObject):
         # null is the default, as egui reads it (the MCP bridge sends every optional field)
         count = 1 if p.get("count") is None else p["count"]
         if count == 2:
+            # a real double click: press and release, then the double-click press and release
+            # (item views emit doubleClicked only for the row the first press landed on)
+            QTest.mouseClick(w, button, mods, at)
             QTest.mouseDClick(w, button, mods, at)
         elif count == 1:
             QTest.mouseClick(w, button, mods, at)
