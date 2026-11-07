@@ -12412,6 +12412,13 @@ def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_
         assert mixer.meter_input_only
         win.ui_command("mixer.meterInputOnly", {"on": "yes"})  # refused: unchanged
         assert mixer.meter_input_only
+        # parameters that are not an object are refused and leave the option as it was (#3349)
+        for params in (True, 1, "on", [True]):
+            win.ui_command("mixer.meterInputOnly", params)  # type: ignore[arg-type]
+            assert mixer.meter_input_only, params
+        win.ui_command("mixer.meterInputOnly", None)  # null toggles
+        assert not mixer.meter_input_only
+        win.ui_command("mixer.meterInputOnly", {"on": True})
         # Show/Hide Tracks…: the mixer shows and its track list opens
         win.docks["Audio Track Mixer"].hide()
         win.ui_command("mixer.showHideTracks")
