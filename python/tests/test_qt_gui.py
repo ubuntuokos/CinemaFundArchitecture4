@@ -4507,14 +4507,14 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         win.run_preset("window.dockAction", {"action": {"Activate": {"panel": "History"}}})
         assert not hist.isHidden()
         assert errors == []
-        # without `panel`: the dock holding the focus (Properties' widgets are panel.Inspector)
+        # without `panel`: the dock holding the focus (Properties' widget is egui's panel.Properties)
         props = win.docks["Properties"]
         props.show()
         props.raise_()
         win.activateWindow()
         assert wait_until(app, lambda: props.widget().isVisible() and not props.visibleRegion().isEmpty(), 3_000)
         inner = props.widget()
-        assert inner.objectName() == "panel.Inspector"
+        assert inner.objectName() == "panel.Properties"
         inner.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         inner.setFocus()
         assert wait_until(app, lambda: QtWidgets.QApplication.focusWidget() is inner, 3_000), QtWidgets.QApplication.focusWidget()
@@ -12444,3 +12444,22 @@ def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_
     finally:
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_every_dock_widget_is_eguis_panel_id(app, tmp_path: Path):
+    """egui's dock_ui.rs registers each panel's content as ``panel.<PanelKind id>``; each Qt dock's
+    widget carries the same name (Properties was ``panel.Inspector``)."""
+    from cfa4_qt.dock_commands import panel_id
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    try:
+        wrong = {t: d.widget().objectName() for t, d in win.docks.items() if d.widget() is not None and d.widget().objectName() != f"panel.{panel_id(t)}"}
+        assert not wrong, wrong
+        assert win.docks["Properties"].widget().objectName() == "panel.Properties"
+    finally:
+        win._quit_confirmed = True
+        win.close()
