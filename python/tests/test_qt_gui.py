@@ -552,6 +552,54 @@ def test_recovery_prompt_reads_the_engines_camel_case_keys():
     assert "unknown time" in recovery_text({"savedUnix": 10**30})
 
 
+def test_recovery_prompt_lists_every_session_as_egui(app):
+    """egui's recovery prompt with several sessions: a radio button each (``recovery.item.<n>``)
+    chooses which the lines describe; Discard drops that one and the prompt stays for the rest,
+    closing when none is left; Recover recovers the chosen one."""
+    from cfa4_qt.panels.recovery import RecoveryDialog, recovery_lines
+
+    a = {"id": "a", "projectName": "Interjú", "savedAt": "2026-11-04 10:00", "cleanExit": False, "projectPath": "/x/a.fcproj"}
+    b = {"id": "b", "projectName": "", "savedAt": "2026-11-04 11:00", "cleanExit": True}
+    assert recovery_lines(a) == (
+        "CFA4 quit unexpectedly while “Interjú” had unsaved changes.",
+        "Recover unsaved changes from 2026-11-04 10:00?",
+        "/x/a.fcproj",
+    )
+    assert recovery_lines(b)[0] == "CFA4 was closed while “Untitled” had unsaved changes."
+    assert recovery_lines(b)[2] == "The project had not been saved yet."
+    sent: list[tuple[str, dict]] = []
+    left = [a, b]
+
+    def run(command, params, then):
+        sent.append((command, params))
+        if command == "file.discardRecovery":
+            left[:] = [c for c in left if c["id"] != params["id"]]
+        then(list(left) if command == "file.recoveryList" else {})
+
+    dlg = RecoveryDialog([a, b], run)
+    dlg.open()
+    try:
+        assert dlg.count.text() == "2 sessions have unsaved changes:"
+        items = [dlg.findChild(QtWidgets.QRadioButton, f"recovery.item.{i}") for i in range(2)]
+        assert items[0].isChecked() and items[1].text() == "Untitled — 2026-11-04 11:00"
+        assert "Interjú" in dlg.why.text()
+        items[1].click()
+        assert dlg.where.text() == "The project had not been saved yet."
+        dlg.findChild(QtWidgets.QPushButton, "recovery.discard").click()
+        assert sent[:2] == [("file.discardRecovery", {"id": "b"}), ("file.recoveryList", {})]
+        assert dlg.isVisible() and dlg.count.isHidden() and "Interjú" in dlg.why.text()
+        dlg.findChild(QtWidgets.QPushButton, "recovery.discard").click()
+        assert not dlg.isVisible() and left == []
+        dlg2 = RecoveryDialog([a, b], run)
+        dlg2.open()
+        dlg2.findChild(QtWidgets.QRadioButton, "recovery.item.1").click()
+        dlg2.findChild(QtWidgets.QPushButton, "recovery.recover").click()
+        assert sent[-1] == ("file.recover", {"id": "b"}) and not dlg2.isVisible()
+        dlg2.deleteLater()
+    finally:
+        dlg.deleteLater()
+
+
 def _focus_panel(app, win: QtWidgets.QMainWindow, name: str | None) -> None:
     target = win.findChild(QtWidgets.QLineEdit, f"focus.{name}") if name else win.findChild(QtWidgets.QLineEdit, "focus.none")
     target.setFocus()
@@ -1976,9 +2024,9 @@ def test_real_engine_that_dies_is_restarted_and_offers_its_unsaved_changes(app, 
         assert wait_until(app, lambda: any(data.rglob("snapshot.fcproj")), 20_000)
         offers: list[dict] = []
 
-        def offer(cand: dict) -> None:
-            offers.append(cand)
-            win.execute("file.recover", {"id": cand.get("id")})
+        def offer(cands: list) -> None:
+            offers.append(cands[0])
+            win.execute("file.recover", {"id": cands[0].get("id")})
 
         win._offer_recovery = offer
         first = engine._process.pid
@@ -6239,16 +6287,22 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers: list[str] = []
     asked: list[str] = []
 
-    def answer(box):
+    def unsaved(box):
         if box.objectName() == "dialog.unsaved":
             return QtWidgets.QMessageBox.StandardButton.Discard
-        asked.append(box.text())
-        want = answers.pop(0)
-        button = next(b for b in box.buttons() if b.text() == want)
-        button.click()
-        return 0
+        raise AssertionError(f"modal dialog opened: {box.objectName()!r}")
 
-    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", answer)
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", unsaved)
+    ids = {"Recover": "recovery.recover", "Not Now": "recovery.later", "Discard": "recovery.discard"}
+
+    def answer(win) -> bool:
+        """egui's prompt, opened without blocking: read it and press the next answer."""
+        dlg = getattr(win, "recovery_dialog", None)
+        if dlg is None or not dlg.isVisible() or not answers:
+            return False
+        asked.append(f"{dlg.why.text()} {dlg.question.text()}")
+        dlg.findChild(QtWidgets.QPushButton, ids[answers.pop(0)]).click()
+        return True
 
     def started(data: Path, demo: bool = False) -> tuple[MainWindow, EngineClient]:
         settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
@@ -6300,7 +6354,7 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers.append("Not Now")
     win, engine = started(keep)
     try:
-        assert wait_until(app, lambda: len(asked) == 1, 30_000)
+        assert wait_until(app, lambda: answer(win), 30_000) and len(asked) == 1
         assert "quit unexpectedly" in asked[0] and "Recover unsaved changes" in asked[0], asked[0]
         app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 200)
         assert notes(engine) != "lost work"
@@ -6309,7 +6363,7 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers.append("Recover")
     win, engine = started(keep)
     try:
-        assert wait_until(app, lambda: len(asked) == 2, 30_000)
+        assert wait_until(app, lambda: answer(win), 30_000) and len(asked) == 2
         # (the window shows what the engine recovered; asked once it settles, as recovering a
         # project can keep a loaded engine busy for a while)
         assert wait_until(app, lambda: win.notes.edit.toPlainText() == "lost work", 60_000), win.notes.edit.toPlainText()
@@ -6322,15 +6376,16 @@ def test_real_engine_recovery_prompt_after_a_crash_as_egui(app, tmp_path: Path, 
     answers.append("Discard")
     win, engine = started(drop)
     try:
-        assert wait_until(app, lambda: len(asked) == 3, 30_000)
+        assert wait_until(app, lambda: answer(win), 30_000) and len(asked) == 3
         assert wait_until(app, lambda: not any(drop.rglob("snapshot.fcproj")), 20_000)
+        assert wait_until(app, lambda: not win.recovery_dialog.isVisible(), 10_000), "the last session discarded: the prompt goes"
     finally:
         stopped(win, engine)
     win, engine = started(drop)
     try:
         app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 500)
         wait_until(app, lambda: False, 1000)
-        assert len(asked) == 3, "a discarded journal is not offered again"
+        assert getattr(win, "recovery_dialog", None) is None, "a discarded journal is not offered again"
     finally:
         stopped(win, engine)
 

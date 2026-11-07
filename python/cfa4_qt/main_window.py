@@ -72,6 +72,7 @@ from .panels.project import ProjectPanel
 from .panels.properties import PropertiesPanel
 from .panels.quick_export import QuickExport
 from .panels.readouts import ProgressPanel, TimecodePanel
+from .panels.recovery import RecoveryDialog, recovery_lines
 from .panels.reference import ReferenceMonitor
 from .panels.remix import RemixPropertiesDialog
 from .panels.scopes import ScopesPanel
@@ -218,23 +219,10 @@ STATE_TIMEOUT_MS = 3000
 
 
 def recovery_text(cand: dict[str, Any]) -> str:
-    """The recovery prompt for one of the engine's recovery candidates (camelCase on the wire:
-    ``JournalMeta`` in ``crates/engine/src/autosave.rs``)."""
-    import datetime
-
-    try:
-        when = (
-            datetime.datetime.fromtimestamp(int(cand.get("savedUnix")), tz=datetime.UTC)
-            .astimezone()
-            .strftime("%Y-%m-%d %H:%M:%S")
-        )
-    except (TypeError, ValueError, OverflowError, OSError):
-        when = tr("an unknown time")
-    name = str(cand.get("projectName") or tr("Untitled"))
-    text = tr("CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?")
-    if cand.get("cleanExit"):
-        text = tr("CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?")
-    return text.replace("{name}", name).replace("{time}", when)
+    """The recovery prompt's text for one of the engine's recovery candidates (camelCase on the
+    wire: ``JournalMeta`` in ``crates/engine/src/autosave.rs``)."""
+    why, question, _where = recovery_lines(cand)
+    return f"{why} {question}"
 
 
 # what the monitors run at the sequence playhead: placement edits from their buttons, and the
@@ -1055,8 +1043,8 @@ class MainWindow(QMainWindow):
         self.load_audio_output()
         self.refresh()
         recovery = hello.get("recovery")
-        if isinstance(recovery, list) and recovery and isinstance(recovery[0], dict):
-            QTimer.singleShot(0, lambda c=recovery[0]: self._offer_recovery(c))
+        if isinstance(recovery, list) and any(isinstance(c, dict) for c in recovery):
+            QTimer.singleShot(0, lambda c=list(recovery): self._offer_recovery(c))
 
     # ----- appearance -----
     def load_appearance(self) -> None:
@@ -1660,24 +1648,24 @@ class MainWindow(QMainWindow):
             on_error=lambda m: self.events.log(m, error=True),
         )
 
-    def _offer_recovery(self, cand: dict[str, Any]) -> None:
-        """Unsaved changes of a session that died: Recover / Not Now / Discard (as egui)."""
-        text = recovery_text(cand)
-        box = QMessageBox(
-            QMessageBox.Icon.Question,
-            tr("Recover Unsaved Changes"),
-            text,
-            parent=self,
-        )
-        recover = box.addButton(tr("Recover"), QMessageBox.ButtonRole.AcceptRole)
-        box.addButton(tr("Not Now"), QMessageBox.ButtonRole.RejectRole)
-        discard = box.addButton(tr("Discard"), QMessageBox.ButtonRole.DestructiveRole)
-        box.exec()
-        cid = cand.get("id")
-        if box.clickedButton() is recover:
-            self.execute("file.recover", {"id": cid})
-        elif box.clickedButton() is discard:
-            self.execute("file.discardRecovery", {"id": cid})
+    def _offer_recovery(self, candidates: list[dict[str, Any]]) -> None:
+        """Unsaved changes of sessions that died: egui's prompt with each of them, Recover /
+        Not Now / Discard; opened without blocking."""
+
+        def run(command: str, params: dict[str, Any], then: Callable[[Any], None]) -> None:
+            self.engine.execute(
+                command,
+                params,
+                on_reply=lambda r, _b: (self.schedule_refresh(), then(r)),
+                on_error=lambda m: (self.events.log(m, error=True), self.statusBar().showMessage(m, 6000)),
+            )
+
+        old = getattr(self, "recovery_dialog", None)
+        if old is not None:
+            old.close()
+        dlg = self.recovery_dialog = RecoveryDialog(candidates, run, self)
+        if dlg.candidates:
+            dlg.open()
 
     def _on_effects_list(self, result: Any, _b: bytes | None) -> None:
         self.effects.set_effects(result)

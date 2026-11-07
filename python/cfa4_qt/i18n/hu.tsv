@@ -81,8 +81,6 @@
 	Bypass	Megkerülés
 	CBR	CBR
 	CFA4	CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
 	Cancel Selected	Kijelöltek megszakítása
 	Cancelled	Megszakítva
 	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
@@ -2326,5 +2324,10 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	CFA4 was closed while “{name}” had unsaved changes.	A CFA4 bezárult, miközben a(z) „{name}” nem mentett változásokat tartalmazott.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott.
+	Recover unsaved changes from {when}?	Visszaállítja a(z) {when} időpontban rögzített nem mentett változásokat?
+	The project had not been saved yet.	A projektet még nem mentették.
+	{n} sessions have unsaved changes:	{n} munkamenetben vannak nem mentett változások:
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
