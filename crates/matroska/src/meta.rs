@@ -101,6 +101,13 @@ pub struct Chapter {
 }
 
 impl Chapter {
+    /// A top-level chapter starting at `start_ns` with one display string (language `eng`, the
+    /// Matroska default) and no UID yet (the muxer assigns one).
+    pub fn new(start_ns: u64, title: impl Into<String>) -> Self {
+        let displays = vec![ChapterDisplay { string: title.into(), languages: vec!["eng".into()], ..Default::default() }];
+        Chapter { uid: 0, string_uid: None, start_ns, end_ns: None, hidden: false, enabled: true, displays, children: Vec::new() }
+    }
+
     /// First display string, if any.
     pub fn title(&self) -> Option<&str> {
         self.displays.first().map(|d| d.string.as_str())

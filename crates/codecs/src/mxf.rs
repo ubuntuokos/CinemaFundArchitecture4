@@ -425,7 +425,10 @@ impl MxfSource {
             } else {
                 (1, 1)
             };
+            // DV: format, sampling, aspect and colour are in the first frame's header and VAUX packs
+            let dv = (t.codec == Codec::Dv).then(|| file.read_sample(&bytes, vi, 0).ok()).flatten().and_then(|s| crate::video::dv_stream_info(&s));
             let codec = match t.codec {
+                Codec::Dv if dv.is_some() => dv.as_ref().map(|d| d.codec.clone()).unwrap_or_default(),
                 Codec::Vc3 => file
                     .read_sample(&bytes, vi, 0)
                     .ok()
@@ -488,6 +491,16 @@ impl MxfSource {
             } else if p.full_range() {
                 color.range = cfa4_color::Range::Full;
                 explicit_color = Some(color);
+            }
+            let mut par = par;
+            if let Some(d) = &dv {
+                pixel_format = d.pixel_format.clone();
+                if !p.aspect_ratio.is_valid() {
+                    par = d.par;
+                }
+                if explicit_color.is_none() {
+                    color = d.color;
+                }
             }
             let secs = vcount as f64 / rate.as_f64().max(1e-9);
             let bytes_total: u64 = t.samples.iter().map(|s| s.size as u64).sum();
@@ -621,6 +634,7 @@ impl VideoSamples for MxfVideo<'_> {
             Codec::Vc3 => make_video_decoder(&SampleEntry::dnx(FourCc(*b"AVdh"), w, h)),
             Codec::ProRes { profile } => make_video_decoder(&SampleEntry::prores(prores_fourcc(profile), w, h)),
             Codec::Jpeg2000 => Ok(Box::new(crate::j2k::J2kDecoder::new(self.src.j2k_hints))),
+            Codec::Dv => Ok(Box::new(crate::video::DvDecoder::default())),
             other => Err(CodecError::Unsupported(format!("{} video in MXF", other.name()))),
         }
     }
