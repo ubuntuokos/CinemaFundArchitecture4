@@ -2283,13 +2283,9 @@ class MainWindow(QMainWindow):
         if cmd.id in REPLACES_PROJECT and not unsaved_ok:
             self.confirm_unsaved(lambda: self.run_command(cmd, unsaved_ok=True, given=given))
             return
-        if cmd.id == "file.revert" and not unsaved_ok:
-            # saving first would overwrite the version being reverted to: Revert or Cancel only
-            self.confirm_unsaved(
-                lambda: self.run_command(cmd, unsaved_ok=True),
-                question="Discard the unsaved changes to '{name}' and revert to the saved version?",
-                can_save=False,
-            )
+        if cmd.id == "file.revert" and not unsaved_ok and not given:
+            # from menus and shortcuts it asks first, as egui's (agents pass params to act directly)
+            self.confirm_revert(lambda: self.run_command(cmd, unsaved_ok=True))
             return
         if (cmd.id in REPLACES_PROJECT or cmd.id in ("file.closeProject", "file.revert")) and self.export_dialog is not None:
             # its sequence id belongs to this project: item ids restart in the next one, so a stale
@@ -2820,6 +2816,46 @@ class MainWindow(QMainWindow):
         dlg.show()
         dlg.raise_()
         dlg.activateWindow()
+
+    def confirm_revert(self, proceed: Callable[[], None]) -> None:
+        """egui's Revert prompt (``file_dialogs.rs`` ``show_revert``): with unsaved changes, "Are you
+        sure you want to discard your changes to '<file>'?" Yes (``revert.yes``) / No (``revert.no``);
+        without them it reverts straight away, and a project never saved can't be reverted. Saving
+        first would overwrite the version being reverted to, so there is no Save."""
+        asked = [False]
+
+        def decide(result: Any, _b: bytes | None) -> None:
+            if asked[0]:
+                return
+            asked[0] = True
+            self._on_state(result, _b)
+            if not self.state.get("dirty"):
+                proceed()
+                return
+            path = (self.project or {}).get("path")
+            if not isinstance(path, str) or not path:
+                self.statusBar().showMessage(tr("the project has not been saved yet"), 6000)
+                return
+            box = QMessageBox(QMessageBox.Icon.Question, tr("Revert"), fmt("Are you sure you want to discard your changes to '{file}'?", file=Path(path).name), parent=self)
+            box.setObjectName("revert")
+            no = box.addButton(tr("No"), QMessageBox.ButtonRole.RejectRole)
+            no.setObjectName("revert.no")
+            yes = box.addButton(tr("Yes"), QMessageBox.ButtonRole.AcceptRole)
+            yes.setObjectName("revert.yes")
+            box.setDefaultButton(yes)
+            box.setEscapeButton(no)
+            box.exec()
+            if box.clickedButton() is yes:
+                proceed()
+
+        def unanswered(_message: str = "") -> None:
+            decide(dict(self.state), None)
+
+        if self.graphics_text_pending(lambda: self.confirm_revert(proceed)):
+            return
+        self.flush_editors()
+        self.engine.call("session.state", on_reply=decide, on_error=unanswered)
+        QTimer.singleShot(STATE_TIMEOUT_MS, unanswered)
 
     def confirm_unsaved(
         self,

@@ -459,25 +459,46 @@ def test_replacing_the_project_asks_about_unsaved_changes(app, fake_engine: Path
         assert "file.save" not in sent
         assert Dialog.hidden
         win.export_dialog = None
-        # Revert never offers Save (it would overwrite the version reverted to): Cancel keeps the edits
+        # Revert asks as egui's (Yes / No, no Save: saving would overwrite the version reverted to);
+        # No keeps the edits
         revert = Command("file.revert", "Revert", ["File"], "", "{}", True)
-        buttons: list[QtWidgets.QMessageBox.StandardButtons] = []
-        monkeypatch.setattr(
-            QtWidgets.QMessageBox, "exec", lambda box: (buttons.append(box.standardButtons()), answer(box))[1]
-        )
+        boxes: list[QtWidgets.QMessageBox] = []
+
+        def press(box, name):
+            boxes.append(box)
+            asked.append(box.text())
+            box.findChild(QtWidgets.QPushButton, name).click()
+            return 0
+
+        presses: list[str] = []
+        monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda box: press(box, presses.pop(0)))
         sent.clear()
         asked.clear()
         engine.execute("test.makeDirty", {})
-        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        win.project = {**(win.project or {}), "path": str(tmp_path / "cut.cfa4")}
+        presses.append("revert.no")
         win.run_command(revert)
         assert wait_until(app, lambda: bool(asked))
         app.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 50)
-        assert "file.revert" not in sent and "revert" in asked[0]
-        assert not buttons[0] & QtWidgets.QMessageBox.StandardButton.Save
-        answers.append(QtWidgets.QMessageBox.StandardButton.Discard)
+        box = boxes[0]
+        assert box.objectName() == "revert" and box.windowTitle() == "Revert"
+        assert asked[0] == "Are you sure you want to discard your changes to 'cut.cfa4'?"
+        assert "file.revert" not in sent
+        assert [b.objectName() for b in box.buttons()] and not box.button(QtWidgets.QMessageBox.StandardButton.Save)
+        assert box.defaultButton().objectName() == "revert.yes"
+        presses.append("revert.yes")
+        win.project = {**(win.project or {}), "path": str(tmp_path / "cut.cfa4")}
         win.run_command(revert)
         assert wait_until(app, lambda: "file.revert" in sent)
         assert "file.save" not in sent
+        # a project never saved can't be reverted (egui's error), and nothing is asked
+        sent.clear()
+        asked.clear()
+        engine.execute("test.makeDirty", {})
+        win.project = {**(win.project or {}), "path": None}
+        win.run_command(revert)
+        assert wait_until(app, lambda: win.statusBar().currentMessage() == "the project has not been saved yet")
+        assert not asked and "file.revert" not in sent
     finally:
         win._quit_confirmed = True
         win.close()
