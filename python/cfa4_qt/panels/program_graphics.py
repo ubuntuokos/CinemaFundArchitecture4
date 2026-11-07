@@ -382,6 +382,10 @@ def handle_drag(v: Layer, n: int, start: QPointF, cur: QPointF, keep_ratio: bool
 class GraphicsTools:
     """The graphics tools of one Program monitor overlay (``ProgramOverlay.graphics``)."""
 
+    # (class defaults too: an instance made without __init__ still ends an edit without crashing)
+    preedit = ""
+    _committed = ""
+
     def __init__(self, overlay: ProgramOverlay) -> None:
         self.overlay = overlay
         self.tool = "selection"
@@ -391,6 +395,10 @@ class GraphicsTools:
         # the text being typed into: clip, layer, its text, caret and anchor (character offsets);
         # "seen": the layer has been in the picture (a new one is on its way until then)
         self.edit: dict[str, Any] | None = None
+        # the input method's marked text still being composed (Korean commits a syllable only when
+        # the next one starts), and the one an ended edit committed itself (upstream #2445)
+        self.preedit = ""
+        self._committed = ""
         self.creating = 0  # new text layers the engine has not answered yet
         self.after_created: list[Callable[[], None]] = []
 
@@ -460,6 +468,7 @@ class GraphicsTools:
         if tool != "pen":
             self.pen_points = []
         if tool not in ("selection", *TEXT_TOOLS):
+            self.commit_preedit()
             self.edit = None
         self.drag = None
         self.overlay.view.update()
@@ -491,6 +500,8 @@ class GraphicsTools:
         return v
 
     def start_edit(self, v: Layer, at: QPointF | None, select_all: bool = False) -> None:
+        # the marked text still being composed goes into the layer it was typed into
+        self.commit_preedit()
         text = str((v.text or {}).get("text") or "")[:MAX_TEXT]
         caret = len(text)
         q = v.to_local(at) if at is not None else None
@@ -511,6 +522,7 @@ class GraphicsTools:
 
     def end_edit(self) -> None:
         if self.edit is not None:
+            self.commit_preedit()
             self.edit = None
             self.overlay.view.setAttribute(Qt.WidgetAttribute.WA_InputMethodEnabled, False)
             self.overlay.view.update()
@@ -597,6 +609,22 @@ class GraphicsTools:
         merge = e.get("sent") is True
         e["sent"] = True
         self.overlay.send("graphics.setText", {"clip": e["clip"], "layer": e["layer"], "text": e["text"], "merge": merge})
+
+    def commit_preedit(self) -> None:
+        """An edit that ends while the input method is composing types the marked text at the
+        caret (over the selection), so the last syllable is not lost (upstream #2445); the input
+        method's late commit of that text is then dropped (``take_commit``)."""
+        marked, self.preedit = self.preedit, ""
+        if self.edit is None or not marked:
+            return
+        self.type_text(marked)
+        self._committed = marked
+
+    def take_commit(self, s: str) -> bool:
+        """Whether the input method's commit ``s`` should be typed: not when it is the marked text
+        an ended edit already typed."""
+        dropped, self._committed = self._committed, ""
+        return not (dropped and s == dropped)
 
     def type_text(self, s: str) -> None:
         """Text from an input method (or an agent) typed at the caret."""
