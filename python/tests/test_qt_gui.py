@@ -2192,7 +2192,47 @@ def test_export_sends_the_audio_bitrate(app):
     assert "audioBitrateKbps" not in dlg.params()
     dlg.audio_bitrate.setValue(96)
     assert dlg.params()["audioBitrateKbps"] == 96
-    assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
+    assert dlg.audio_bitrate.objectName() == "export.audio.bitrate"
+
+
+# egui's Export ids the Qt window has no widget for yet, and why
+EXPORT_IDS_NOT_IN_QT = {
+    "export.destination.mediaFile": "no Destinations column: Media File is the only destination",
+    "export.video.matchSize": "0 x 0 (\"Match sequence\") in the size fields stands for Match Source",
+    "export.video.matchRate": "\"Match sequence\" in the frame-rate field stands for Match Source",
+    "export.video.keyframeOn": "0 (\"From the preset\") in the key frame field stands for off",
+    "export.video.fixedBitrate": "the Bitrate Encoding choice stands for it",
+    "export.video.target": "the target bitrate field is in kbps, egui's in Mbps (export.bitrateKbps)",
+}
+
+
+def test_export_widgets_carry_eguis_automation_ids(app):
+    """Every widget id egui's Export mode registers (crates/ui-egui/src/panels/export_mode.rs) names
+    the same control in the Qt Export window, once, so an agent drives both frontends by the same
+    ids; the few Qt has no widget for are listed with the reason."""
+    import re
+
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    src = (Path(__file__).resolve().parents[2] / "crates/ui-egui/src/panels/export_mode.rs").read_text()
+    pattern = r'(?:reg\.add\(|(?:check|combo|combo_why|draft_text|drag|placement_combo|text)\(ui, (?:&mut )?reg,\s*)"(export\.[A-Za-z0-9_.]+)"'
+    egui = set(re.findall(pattern, src))
+    assert len(egui) > 60 and "export.video.bitrateMode" in egui, "the egui source still registers its ids this way"
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    names = [w.objectName() for w in dlg.findChildren(QtWidgets.QWidget) if w.objectName().startswith("export.")]
+    missing = sorted(i for i in egui - set(names) if i not in EXPORT_IDS_NOT_IN_QT)
+    assert not missing, missing
+    assert not set(EXPORT_IDS_NOT_IN_QT) - egui, "an exception egui no longer has"
+    twice = sorted({n for n in names if names.count(n) > 1})
+    assert not twice, twice
+    assert dlg.audio.objectName() == "export.audio.include" and dlg.export_button.objectName() == "export.button"
+    dlg.deleteLater()
 
 
 def test_export_warns_about_a_one_frame_in_out(app):

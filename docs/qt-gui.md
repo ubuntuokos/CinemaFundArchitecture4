@@ -175,3 +175,6 @@ As in egui, the queue is headed "Queue (n)" with a hint while it is empty, Capti
 sequence has no caption track (the window follows a track added while it is open), and with no
 sequence open a placeholder ("Open a sequence to export") stands in place of the settings while the
 queue stays (`test_real_engine_export_empty_states_as_egui`).
+The window's controls carry egui's automation ids (`export.video.*`, `export.audio.*`,
+`export.range.start`, `export.button`, `export.sendToQueue`, …), checked against
+`crates/ui-egui/src/panels/export_mode.rs` by `test_export_widgets_carry_eguis_automation_ids`.

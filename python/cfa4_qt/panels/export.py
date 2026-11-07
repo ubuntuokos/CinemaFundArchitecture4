@@ -345,7 +345,7 @@ class ExportDialog(QDialog):
         self.start = QDoubleSpinBox(self)
         self.end = QDoubleSpinBox(self)
         for spin, name in ((self.start, "start"), (self.end, "end")):
-            spin.setObjectName(f"export.{name}Seconds")
+            spin.setObjectName(f"export.range.{name}")
             spin.setDecimals(3)
             spin.setRange(0.0, 1e7)
             spin.setSuffix(" s")
@@ -365,7 +365,7 @@ class ExportDialog(QDialog):
         self.width_spin = QSpinBox(self)
         self.height_spin = QSpinBox(self)
         for spin, name in ((self.width_spin, "width"), (self.height_spin, "height")):
-            spin.setObjectName(f"export.{name}")
+            spin.setObjectName(f"export.video.{name}")
             spin.setRange(0, 16384)
             spin.setSpecialValueText(tr("Match sequence"))
         size_row = QHBoxLayout()
@@ -373,7 +373,7 @@ class ExportDialog(QDialog):
         size_row.addWidget(QLabel("×", self))
         size_row.addWidget(self.height_spin)
         self.bitrate_mode = QComboBox(self)
-        self.bitrate_mode.setObjectName("export.bitrateMode")
+        self.bitrate_mode.setObjectName("export.video.bitrateMode")
         for key, label in BITRATE_MODES:
             self.bitrate_mode.addItem(tr(label), key)
         self.bitrate = QSpinBox(self)
@@ -383,7 +383,7 @@ class ExportDialog(QDialog):
         self.bitrate.setSpecialValueText(tr("From the preset"))
         # MPEG-2 only: GOP length, B pictures, constant quantiser, 4:2:2 Profile
         self.gop = QSpinBox(self)
-        self.gop.setObjectName("export.keyframeDistance")
+        self.gop.setObjectName("export.video.keyframe")
         self.gop.setRange(0, 1000)
         self.gop.setSpecialValueText(tr("From the preset"))
         self.gop.setSuffix(" " + tr("frames"))
@@ -417,7 +417,7 @@ class ExportDialog(QDialog):
         self.quality.setObjectName("export.video.quality")
         self.quality.setRange(1, 100)
         self.hardware = QCheckBox(tr("Use hardware encoding when available"), self)
-        self.hardware.setObjectName("export.hardwareEncoding")
+        self.hardware.setObjectName("export.video.hardwareEncoding")
         self.captions = CaptionsSection(self)
         self.effects = EffectsSection(self)
         self.metadata = MetadataSection(self)
@@ -429,15 +429,15 @@ class ExportDialog(QDialog):
         self.multiplexer.addItem("MP4", "mp4")
         self.multiplexer.addItem("QuickTime", "mov")
         self.audio = QCheckBox(tr("Export Audio"), self)
-        self.audio.setObjectName("export.audio")
+        self.audio.setObjectName("export.audio.include")
         self.audio.setChecked(True)  # sound is part of an export unless the user leaves it out
         self.audio_codec = QComboBox(self)
-        self.audio_codec.setObjectName("export.audioCodec")
+        self.audio_codec.setObjectName("export.audio.codec")
         for key, label in AUDIO_CODECS:
             self.audio_codec.addItem(tr(label), key)
         # AAC and Opus: the engine clamps Opus to 6..510 kbps
         self.audio_bitrate = QSpinBox(self)
-        self.audio_bitrate.setObjectName("export.audioBitrateKbps")
+        self.audio_bitrate.setObjectName("export.audio.bitrate")
         self.audio_bitrate.setRange(0, 1_000)
         self.audio_bitrate.setSuffix(" kbps")
         self.audio_bitrate.setSpecialValueText(tr("From the preset"))
@@ -499,11 +499,11 @@ class ExportDialog(QDialog):
         self.summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self.export_button = QPushButton(tr("Export"), self)
-        self.export_button.setObjectName("export.start")
+        self.export_button.setObjectName("export.button")
         self.export_button.setDefault(True)
         self.export_button.clicked.connect(lambda: self._enqueue(start=True))
         self.queue_button = QPushButton(tr("Send to Queue"), self)
-        self.queue_button.setObjectName("export.addToQueue")
+        self.queue_button.setObjectName("export.sendToQueue")
         self.queue_button.clicked.connect(lambda: self._enqueue(start=False))
         close = QPushButton(tr("Close"), self)
         close.clicked.connect(self.hide)
@@ -525,8 +525,8 @@ class ExportDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         queue_buttons = QHBoxLayout()
         for name, text, slot in (
-            ("startQueue", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
-            ("stopQueue", N_("Stop Queue"), lambda: self._queue_command("export.queue.stop", {})),
+            ("start", N_("Start Queue"), lambda: self._queue_command("export.queue.start", {})),
+            ("stop", N_("Stop Queue"), lambda: self._queue_command("export.queue.stop", {})),
             ("cancel", N_("Cancel Selected"), lambda: self._selected_command("export.queue.cancel")),
             ("retry", N_("Retry"), lambda: self._selected_command("export.queue.retry", {"start": True})),
             ("remove", N_("Remove"), lambda: self._selected_command("export.queue.remove")),
