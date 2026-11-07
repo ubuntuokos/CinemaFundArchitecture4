@@ -6671,6 +6671,15 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         assert c.call("ui.panel.close", {"panel": "Events"})["ok"] and win.docks["Events"].isHidden()
         assert c.call("ui.panel.show", {"panel": "Events"})["ok"] and not win.docks["Events"].isHidden()
         assert c.call("ui.panel.show", {"panel": "Nowhere"})["ok"] is False
+        # egui's panel names (PanelKind::from_name): the id or the title, any case, spaces, _ or -
+        for name in ("EffectControls", "effect_controls", "Effect Controls", "effect-controls"):
+            assert c.call("ui.panel.close", {"panel": name})["ok"] and win.docks["Effect Controls"].isHidden()
+            assert c.call("ui.panel.show", {"panel": name})["ok"] and not win.docks["Effect Controls"].isHidden()
+        for name in ("LumetriScopes", "TextToSpeech", "ReferenceMonitor", "ProjectNotes", "AudioTrackMixer", "MediaBrowser"):
+            assert c.call("ui.panel.show", {"panel": name})["ok"], name
+        # the Program monitor is Qt's centre: shown, never closed
+        assert c.call("ui.panel.show", {"panel": "Program"})["ok"]
+        assert c.call("ui.panel.close", {"panel": "Program"})["ok"] is False
         assert c.call("ui.playback", {"action": "play", "monitor": "program"})["ok"]
         assert wait_until(app, lambda: c.call("ui.inspect")["result"]["playback"]["program"]["playing"], 10_000)
         assert c.call("ui.playback", {"action": "stop", "monitor": "program"})["ok"]
@@ -6680,6 +6689,8 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         shot = tmp_path / "window.png"
         r = c.call("ui.screenshot", {"path": str(shot)})["result"]
         assert shot.is_file() and r["width"] == win.width()
+        assert c.call("ui.screenshot", {"panel": "LumetriScopes"})["ok"]
+        assert c.call("ui.screenshot", {"panel": "Program"})["ok"]
         r = c.call("ui.screenshot", {"panel": "Timeline"})["result"]
         assert base64.b64decode(r["png"]).startswith(b"\x89PNG")
         assert c.call("perf.stats")["ok"]
