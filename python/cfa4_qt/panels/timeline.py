@@ -151,6 +151,17 @@ def ruler_step(frame: int, pps: float, min_px: float) -> int:
     return 3600 * sec * frame
 
 
+def project_has_sequence(project: Any, depth: int = 0) -> bool:
+    """Whether ``project.inspect``'s tree holds a sequence anywhere (bins included)."""
+    if isinstance(project, dict):
+        if str(project.get("type") or "").lower() == "sequence" and "item" in project:
+            return True
+        return depth < 64 and any(project_has_sequence(v, depth + 1) for v in project.values() if isinstance(v, (dict, list)))
+    if isinstance(project, list):
+        return depth < 64 and any(project_has_sequence(v, depth + 1) for v in project)
+    return False
+
+
 @dataclass
 class Row:
     track_id: Any
@@ -458,6 +469,7 @@ class TimelineCanvas(QWidget):
     command = Signal(str, dict)  # engine command id, params
     seek = Signal(object)  # ticks, while scrubbing (local preview); object, not a 32-bit int
     files_dropped = Signal(list, object, object)  # paths (Media Browser, file manager), time, track id
+    files_dropped_empty = Signal(list)  # paths dropped on an empty Timeline: import, then a sequence from them
     voiceover = Signal(object)  # an audio track header's microphone: record on that track (id) / stop
     voiceover_settings = Signal()  # …its menu: Voice-Over Record Settings…
     caption_opened = Signal()  # a caption block double-clicked: the Text panel's Captions tab
@@ -499,6 +511,8 @@ class TimelineCanvas(QWidget):
         self.menu_host: timeline_menus.MenuHost | None = None
         self._hover_color: Any = None  # the track whose colour strip the pointer is over
         self.render_bar: list[dict[str, Any]] = []  # ``sequence.renderBar``'s ``bar`` spans
+        self.project_has_sequence = False  # the empty Timeline's hint (egui's): set from project.inspect
+        self._demo_hover = False
         self.last_menu: QMenu | None = None
         self.font_small = QFont(self.font())
         self.font_small.setPointSizeF(max(7.0, self.font().pointSizeF() * 0.85))
@@ -754,16 +768,10 @@ class TimelineCanvas(QWidget):
             self.zoom_bar.update()  # zoom and scroll change in many places: the bar follows each paint
         self.media.begin_paint()
         p = QPainter(self)
-        pal = self.palette()
         T = theme.current()
         p.fillRect(self.rect(), T.c("tl_bg"))
         if not self.sequence:
-            p.setPen(pal.text().color())
-            p.drawText(
-                self.rect(),
-                Qt.AlignmentFlag.AlignCenter,
-                tr("No sequence open. Double-click a sequence in the Project panel."),
-            )
+            self._paint_empty(p)
             return
         p.save()
         top = self.tracks_top()
@@ -1017,6 +1025,40 @@ class TimelineCanvas(QWidget):
             p.drawText(QRectF(x + 2 * dx - 5, top - 1.5, 10, 10), Qt.AlignmentFlag.AlignCenter, tag)
         p.restore()
 
+    # ----- the empty Timeline (egui's timeline.rs empty_state) -----
+    def demo_button_rect(self) -> QRectF:
+        c = QRectF(self.rect()).center()
+        return QRectF(c.x() - 85, c.y() + 20 - 13, 170, 26)
+
+    def _paint_empty(self, p: QPainter) -> None:
+        """egui's: "Drop media here to create sequence.", the Open Demo Project button, and, when
+        the project has a sequence, how to open it here."""
+        T = theme.current()
+        c = QRectF(self.rect()).center()
+        font = QFont(self.font())
+        font.setPixelSize(13)
+        p.setFont(font)
+        p.setPen(T.c("text_dim"))
+        p.drawText(QRectF(0, c.y() - 12 - 12, self.width(), 24), Qt.AlignmentFlag.AlignCenter, tr("Drop media here to create sequence."))
+        if self.project_has_sequence:
+            font.setPixelSize(12)
+            p.setFont(font)
+            p.drawText(
+                QRectF(0, c.y() + 50 - 12, self.width(), 24), Qt.AlignmentFlag.AlignCenter, tr("Double-click a sequence in the Project panel to open it here.")
+            )
+        b = self.demo_button_rect()
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(T.c("accent_hover" if self._demo_hover else "accent"))
+        p.drawRoundedRect(b, 13, 13)
+        font.setPixelSize(12)
+        font.setWeight(QFont.Weight.DemiBold)
+        p.setFont(font)
+        p.setPen(QColor("#ffffff"))
+        p.drawText(b, Qt.AlignmentFlag.AlignCenter, tr("Open Demo Project"))
+        p.restore()
+
     # ----- Show Duplicate Frame Markers (upstream #3212) -----
     def duplicate_frames(self) -> dict[Any, tuple[int, list[tuple[int, int]]]]:
         """clip -> (color index, its repeated-frame timeline ranges), from the engine's sequence."""
@@ -1086,7 +1128,7 @@ class TimelineCanvas(QWidget):
         ``timeline.clip.<id>`` (with ``.volume``, a point on an audio clip's Volume line) and
         ``timeline.transition.<id>`` with its ``.in`` / ``.out`` ends."""
         if not self.sequence:
-            return []
+            return [("timeline.openDemo", self.demo_button_rect(), "Open Demo Project")]
         top = self.tracks_top()
         w = float(self.width())
         bottom = float(max(top, self.height() - MASTER_H))
@@ -1996,6 +2038,10 @@ class TimelineCanvas(QWidget):
         return menu
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
+        if not self.sequence:
+            if e.button() == Qt.MouseButton.LeftButton and self.demo_button_rect().contains(e.position()):
+                self.command.emit("file.openDemoProject", {})
+            return
         if self.sequence and e.button() == Qt.MouseButton.RightButton:
             row, cell = self.header_hit(e.position().toPoint())
             if row is not None and cell is not None and cell.key == "voiceover":
@@ -2234,6 +2280,13 @@ class TimelineCanvas(QWidget):
         self._drag = Drag("transition", None, pos, 0, edge=edge, mode="toggle" if shift else "pick", transition=dict(x))
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        if not self.sequence:
+            hover = self.demo_button_rect().contains(e.position())
+            if hover != self._demo_hover:
+                self._demo_hover = hover
+                self.setCursor(Qt.CursorShape.PointingHandCursor if hover else Qt.CursorShape.ArrowCursor)
+                self.update()
+            return
         pos = e.position().toPoint()
         d = self._drag
         if d is not None and d.kind == "caption":
@@ -2531,6 +2584,8 @@ class TimelineCanvas(QWidget):
         ours = m.hasFormat(ITEM_MIME) or m.hasFormat(SOURCE_MIME) or m.hasFormat(FILES_MIME) or m.hasFormat(TEMPLATE_MIME) or m.hasFormat(EFFECT_MIME)
         if (ours or m.hasUrls()) and self.sequence:
             e.acceptProposedAction()
+        elif not self.sequence and (m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasUrls()):
+            e.acceptProposedAction()  # egui's: dropped media makes a sequence
 
     def effect_target(self, pos: QPoint, effect: str) -> tuple[Row, dict[str, Any], str] | None:
         """The clip an effect dropped at ``pos`` goes on; a transition's edge is the nearer one."""
@@ -2544,6 +2599,11 @@ class TimelineCanvas(QWidget):
         return row, clip, "in" if pos.x() - r.left() < r.right() - pos.x() else "out"
 
     def dragMoveEvent(self, e) -> None:
+        if not self.sequence:
+            m = e.mimeData()
+            if m.hasFormat(ITEM_MIME) or m.hasFormat(FILES_MIME) or m.hasUrls():
+                e.acceptProposedAction()
+            return
         pos = e.position().toPoint()
         effect = dropped_effect(e.mimeData())
         if effect is not None:
@@ -2594,7 +2654,28 @@ class TimelineCanvas(QWidget):
         self._effect_target = None
         self.update()
 
+    def _drop_on_empty(self, e) -> None:
+        """egui's: project items dropped on an empty Timeline make a sequence from the first, the
+        rest following it back to back (``file.newSequence {fromItems}``); files are imported first."""
+        m = e.mimeData()
+        if m.hasFormat(ITEM_MIME):
+            try:
+                items = [int(x) for x in bytes(m.data(ITEM_MIME)).decode().split(",") if x]
+            except ValueError:
+                return
+            if items:
+                self.command.emit("file.newSequence", {"fromItems": items})
+                e.acceptProposedAction()
+            return
+        paths = dropped_files(m)
+        if paths:
+            self.files_dropped_empty.emit(paths)
+            e.acceptProposedAction()
+
     def dropEvent(self, e) -> None:
+        if not self.sequence:
+            self._drop_on_empty(e)
+            return
         preview, self._drop_preview = self._drop_preview, None
         target, self._effect_target = self._effect_target, None
         self.update()

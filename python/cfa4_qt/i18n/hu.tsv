@@ -328,7 +328,9 @@
 	Next in Track	Következő a sávon
 	No	Nem
 	No sequence	Nincs szekvencia
-	No sequence open. Double-click a sequence in the Project panel.	Nincs megnyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
+	Drop media here to create sequence.	Szekvencia létrehozásához húzzon ide médiát.
+	Open Demo Project	Demóprojekt megnyitása
+	Double-click a sequence in the Project panel to open it here.	A megnyitáshoz kattintson duplán egy szekvenciára a Projekt panelen.
 	Noise & Grain	Zaj és szemcse
 	Noise Reduction	Zajcsökkentés
 	Normal	Normál
