@@ -10902,3 +10902,61 @@ def test_control_channel_lists_painted_parts_as_egui(app, fake_engine: Path, tmp
 
 def _visible_on_screen(w) -> bool:
     return w.isVisible() and not w.visibleRegion().isEmpty()
+
+
+def test_control_channel_names_panel_tabs_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's tab strip ids through the control channel: ``panel.tab.<Panel>`` on each panel's tab
+    (a tabbed panel's tab, a lone panel's title bar) and ``panel.drag.<Panel>`` on the same place;
+    a click on a background tab brings that panel forward. Each tab carries egui's "≡" button,
+    ``panel.menu.<Panel>``, opening the panel menu (Close Panel, Undock Panel, Restore Workspace)."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    assert dock_commands.panel_id("Text to Speech") == "TextToSpeech" and dock_commands.panel_id("Effect Controls") == "EffectControls"
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        app.processEvents()
+        c = _ControlClient(app, server.port())
+
+        def elements():
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "panel."})["result"]}
+
+        assert wait_until(app, lambda: any(k.startswith("panel.tab.") for k in elements()), 5_000)
+        els = elements()
+        tabs = {k.removeprefix("panel.tab.") for k in els if k.startswith("panel.tab.")}
+        assert {k.removeprefix("panel.drag.") for k in els if k.startswith("panel.drag.")} == tabs
+        shown = {dock_commands.panel_id(t) for t, d in win.docks.items() if d.isVisible() and not d.isFloating()}
+        assert tabs == shown, (tabs ^ shown)
+        assert els["panel.tab.Project"]["rect"] == els["panel.drag.Project"]["rect"]
+        # a background tab: a click on it brings its panel forward
+        hidden = next((t for t, d in win.docks.items() if d.isVisible() and d.visibleRegion().isEmpty() and win.tabifiedDockWidgets(d)), None)
+        assert hidden is not None, "the default workspace has tabbed panels"
+        assert c.call("ui.click", {"id": f"panel.tab.{dock_commands.panel_id(hidden)}"})["ok"]
+        assert wait_until(app, lambda: not win.docks[hidden].visibleRegion().isEmpty(), 3_000), hidden
+        # the "≡" on the active tab of a group (egui's: the others have none) opens the panel menu
+        pid = dock_commands.panel_id(hidden)
+        assert wait_until(app, lambda: f"panel.menu.{pid}" in elements(), 3_000), "the tab brought forward has it"
+        menus = {k for k in elements() if k.startswith("panel.menu.") and k.count(".") == 2}
+        assert menus <= {f"panel.menu.{t}" for t in tabs}, menus
+        mates = {dock_commands.panel_id(t) for t, d in win.docks.items() if d in win.tabifiedDockWidgets(win.docks[hidden])}
+        assert not {f"panel.menu.{m}" for m in mates} & menus, "only the active tab has a menu button"
+        button = next(b for b in win.findChildren(QtWidgets.QToolButton, f"panel.menu.{pid}"))
+        button.click()
+        assert wait_until(app, lambda: getattr(win, "last_panel_menu", None) is not None and win.last_panel_menu.isVisible(), 3_000)
+        menu = win.last_panel_menu
+        assert menu.objectName() == f"panel.menu.{pid}.popup"
+        assert [a.objectName() for a in menu.actions()] == [f"panel.menu.{pid}.close", f"panel.menu.{pid}.undock", f"panel.menu.{pid}.restoreWorkspace"]
+        menu.close()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

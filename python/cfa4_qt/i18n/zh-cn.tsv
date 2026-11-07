@@ -320,5 +320,7 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 压缩
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Panel menu	面板菜单
+	Move panel	移动面板
 	Show Duplicate Frame Markers	显示重复帧标记
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	序列入点/出点只有 1 帧。要导出整个序列，请选择“整个序列”。
