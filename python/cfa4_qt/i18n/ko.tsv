@@ -318,4 +318,5 @@
 	{v} Mbps	{v}Mbps
 	{word} compression	{word} 압축
 	{w}x{h} ({par})	{w}×{h}({par})
+	Show Duplicate Frame Markers	중복 프레임 마커 표시
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	시퀀스 시작/종료 범위가 1프레임뿐입니다. 시퀀스 전체를 내보내려면 전체 시퀀스를 선택하세요.

@@ -318,4 +318,5 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 圧縮
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Show Duplicate Frame Markers	重複フレームマーカーを表示
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。
