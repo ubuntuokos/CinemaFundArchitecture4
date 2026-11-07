@@ -955,6 +955,101 @@ pub fn dnx_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
     matches!(e.codec, CodecConfig::Dnx { .. }).then(|| Ok(Box::new(DnxDecoder) as Box<dyn VideoDecoder>))
 }
 
+/// Our DV decoder (`cfa4-dv`: DV25 / DVCAM, DVCPRO 25; every frame is intra, video segments
+/// decode in parallel).
+pub struct DvDecoder {
+    dec: cfa4_dv::Decoder,
+}
+
+impl Default for DvDecoder {
+    fn default() -> Self {
+        Self { dec: cfa4_dv::Decoder::new() }
+    }
+}
+
+/// Colour of DV: BT.601 matrix, video range; SMPTE 170M primaries at 525 lines, BT.470 BG at 625.
+pub fn dv_color(system: cfa4_dv::System) -> cfa4_color::ColorInfo {
+    let primaries = match system {
+        cfa4_dv::System::Lines525 => cfa4_color::Primaries::Bt601_525,
+        cfa4_dv::System::Lines625 => cfa4_color::Primaries::Bt601_625,
+    };
+    cfa4_color::ColorInfo { matrix: cfa4_color::Matrix::Bt601, primaries, ..cfa4_color::ColorInfo::REC709 }
+}
+
+/// What a container's stream info shows for DV, read from its first frame: the format name, the
+/// pixel format the decoder returns (4:1:1 enters as 4:2:2), the sample aspect and the colour.
+pub struct DvStreamInfo {
+    pub profile: cfa4_dv::Profile,
+    pub codec: String,
+    pub pixel_format: String,
+    pub par: (u32, u32),
+    pub color: cfa4_color::ColorInfo,
+}
+
+pub fn dv_stream_info(first_frame: &[u8]) -> Option<DvStreamInfo> {
+    let profile = cfa4_dv::probe(first_frame)?;
+    let codec = match profile.format {
+        cfa4_dv::Format::Dv25 => "DV",
+        cfa4_dv::Format::Dvcpro25 => "DVCPRO 25",
+        cfa4_dv::Format::Dvcpro50 => "DVCPRO 50",
+        cfa4_dv::Format::DvcproHd => "DVCPRO HD",
+    };
+    let codec = if profile.is_supported() { codec.to_string() } else { format!("{codec} (unsupported)") };
+    let pixel_format = match profile.chroma {
+        cfa4_dv::ChromaFormat::Yuv420 => "YUV 4:2:0 8-bit",
+        cfa4_dv::ChromaFormat::Yuv411 | cfa4_dv::ChromaFormat::Yuv422 => "YUV 4:2:2 8-bit",
+    }
+    .to_string();
+    Some(DvStreamInfo { par: profile.sample_aspect(), color: dv_color(profile.system), codec, pixel_format, profile })
+}
+
+/// Convert a decoded DV picture to a [`VideoFrame`]. CFA4 has no 4:1:1 frame type (owner
+/// decision, 2026-11-01): 4:1:1 pictures are upsampled to 4:2:2.
+pub fn dv_to_video_frame(p: cfa4_dv::Picture) -> VideoFrame {
+    use std::sync::Arc;
+    let par = p.profile.sample_aspect();
+    let color = dv_color(p.profile.system);
+    let (chroma, cb, cr) = match p.chroma_422() {
+        Some((cb, cr)) => (cfa4_frame::Chroma::C422, cb, cr),
+        None => {
+            let c = match p.profile.chroma {
+                cfa4_dv::ChromaFormat::Yuv420 => cfa4_frame::Chroma::C420,
+                _ => cfa4_frame::Chroma::C422,
+            };
+            (c, p.cb, p.cr)
+        }
+    };
+    let data = cfa4_frame::PixelData::Yuv8 { planes: [Arc::new(p.y), Arc::new(cb), Arc::new(cr)], chroma, alpha: None };
+    VideoFrame { width: p.width, height: p.height, data, color, par, pts: cfa4_time::Tick::ZERO }
+}
+
+impl VideoDecoder for DvDecoder {
+    fn decode(&mut self, sample: &[u8], pts: i64) -> Result<Vec<DecodedFrame>> {
+        let p = self.dec.decode(sample).map_err(|e| match e {
+            cfa4_dv::Error::Unsupported(_) => CodecError::Unsupported(e.to_string()),
+            _ => CodecError::Decode(e.to_string()),
+        })?;
+        Ok(vec![DecodedFrame { pts, frame: dv_to_video_frame(p), draft: false }])
+    }
+    fn flush(&mut self) -> Vec<DecodedFrame> {
+        Vec::new()
+    }
+    fn reset(&mut self) {}
+    fn name(&self) -> &str {
+        "CFA4 DV"
+    }
+    fn intra_only(&self) -> bool {
+        true
+    }
+    fn is_random_access(&self, _sample: &[u8]) -> Option<bool> {
+        Some(true)
+    }
+}
+
+pub fn dv_factory(e: &SampleEntry) -> Option<Result<Box<dyn VideoDecoder>>> {
+    matches!(e.codec, CodecConfig::Dv { .. }).then(|| Ok(Box::new(DvDecoder::default()) as Box<dyn VideoDecoder>))
+}
+
 /// Our GoPro CineForm (CFHD) decoder (intra samples; channels reconstruct in parallel).
 pub struct CineformDecoder;
 

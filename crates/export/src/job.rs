@@ -79,7 +79,7 @@ use crate::settings::{AudioCodec, BitrateMode};
 use crate::webm_out::{WebmMux, WebmSetup};
 use crate::{
     AudioEncoder, ColorSignal, EncodedPacket, EncoderFrame, ExportError, ExportSettings, Format, H264Pass, Out, Progress, Report, Result, Stage, VideoEncoder,
-    audio_factories, export_range, frame_span, note_stage, timed, video_factories,
+    audio_factories, export_chapters, export_range, frame_span, note_stage, timed, video_factories,
 };
 
 /// Output frames per interleaved group: the video packets of these frames, then the audio up to
@@ -191,6 +191,8 @@ pub struct Exporter {
     dcp: Option<DcpMux>,
     seq: ItemId,
     project: Arc<Project>,
+    /// Chapters of MP4, MOV and HLS output ([`export_chapters`]).
+    chapters: Vec<cfa4_isobmff::Chapter>,
     vt: usize,
     at: Option<usize>,
     t0: web_time::Instant,
@@ -315,6 +317,7 @@ impl Exporter {
             dcp: None,
             seq,
             project: project.clone(),
+            chapters: export_chapters(&project, seq, &settings, range),
             vt: 0,
             at: None,
             t0: web_time::Instant::now(),
@@ -498,6 +501,7 @@ impl Exporter {
                 video: self.venc.sample_entry(),
                 video_timescale: self.venc.timescale(),
                 video_delay: self.venc.media_start().unwrap_or(0),
+                chapters: self.chapters.clone(),
                 audio: match (&self.audio, &self.aenc) {
                     (Some(a), Some(enc)) => Some((enc.sample_entry(), a.sr, enc.priming())),
                     _ => None,
@@ -546,6 +550,7 @@ impl Exporter {
         let file = Out::create(&self.settings)?;
         let mut opts = WriterOptions::new(self.brand);
         opts.metadata = self.settings.metadata.udta();
+        opts.chapters = self.chapters.clone();
         let mut mux = Mp4Writer::new(file, opts).map_err(|e| ExportError::Io(e.to_string()))?;
         let mut vcfg = TrackConfig::new(self.venc.sample_entry(), self.venc.timescale());
         vcfg.media_start = self.venc.media_start();
