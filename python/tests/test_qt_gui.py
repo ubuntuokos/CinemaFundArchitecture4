@@ -6558,7 +6558,17 @@ def test_control_channel_sets_panel_state_as_egui(app, fake_engine: Path, tmp_pa
             assert ui() == before, f"{params} changed something"
 
         first = ui()
-        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "keyframeSelection", "export"}
+        assert set(first) == {"mode", "panels", "projectPanel", "mediaBrowser", "tts", "keyframeSelection", "export"}
+        # the Text to Speech draft, egui's TtsDraft: merged in, read back, a bad value refused
+        assert set(first["tts"]) == {"text", "language", "voice", "pitch", "pace", "advancedOpen", "loadedFrom", "pending", "confirmDownload", "downloadJob"}
+        t = ok({"tts": {"text": "Hello from an agent", "pitch": "high", "pace": 1.25, "advancedOpen": False}})["tts"]
+        assert t["text"] == "Hello from an agent" and t["pitch"] == "high" and t["pace"] == 1.25 and t["advancedOpen"] is False
+        assert t["language"] == first["tts"]["language"], "merged, not replaced"
+        assert win.tts.text.toPlainText() == "Hello from an agent" and win.tts.pace_slider.value() == 25
+        refused({"tts": {"pitch": "squeaky"}}, "pitch is one of")
+        refused({"tts": {"pace": 3}}, "pace is 0.5 to 2")
+        refused({"tts": {"loadedFrom": [1, 2]}}, "read only")
+        refused({"tts": {"mood": "calm"}}, "no field 'mood'")
         assert first["export"] == {"quickOpen": False, "quickPath": "", "quickPreset": ""} and first["keyframeSelection"] == []
         # panels: merged per panel, saved as the panels save them
         u = ok({"panels": {"scopes": {"shown": ["waveform", "vectorscopeYuv"], "waveformType": "luma"},
