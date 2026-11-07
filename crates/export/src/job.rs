@@ -575,6 +575,10 @@ impl Exporter {
                 Some(mux.add_track(TrackConfig::new(SampleEntry::pcm(pcm), a.sr)).map_err(|e| ExportError::Io(e.to_string()))?)
             }
         };
+        // QuickTime and iOS read only a chapter track, not `chpl`
+        if !self.chapters.is_empty() {
+            mux.add_chapter_track(self.vt, &self.chapters).map_err(|e| ExportError::Io(e.to_string()))?;
+        }
         self.mux = Some(mux);
         Ok(())
     }
