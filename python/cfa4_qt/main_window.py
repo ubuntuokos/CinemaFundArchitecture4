@@ -907,6 +907,9 @@ class MainWindow(QMainWindow):
             *((cid, label, ["View"], "") for cid, label in GUIDE_COMMANDS.items()),
             ("view.compare.setReference", N_("Set Comparison Reference"), [], ""),
             *((cid, label, [], key) for cid, (label, key) in TRACK_HEIGHT_COMMANDS.items()),
+            # the Audio Track Mixer menu's entries (egui's mixer.rs; keys in the Premiere preset)
+            ("mixer.showHideTracks", N_("Show/Hide Tracks…"), [], ""),
+            ("mixer.meterInputOnly", N_("Meter Input(s) Only"), [], ""),
         ]
         out += [(f"app.settings.{page}", label, ["Edit", "Preferences"], "Cmd+," if page == "general" else "") for page, label in SETTINGS_MENU]
         return out + tool_commands() + window_commands()
@@ -1720,6 +1723,13 @@ class MainWindow(QMainWindow):
                 panel_keys[row["id"]] = scoped
         self.local_keys = keys
         self.local_panel_keys = panel_keys
+        mixer_keys = {}
+        for cid in ("mixer.showHideTracks", "mixer.meterInputOnly"):
+            k = next((k for k, panel in panel_keys.get(cid, []) if panel == "Audio Track Mixer"), None) or next(iter(keys.get(cid, [])), None)
+            q = qt_shortcut(k) if k else ""
+            if q:
+                mixer_keys[cid] = QKeySequence(q).toString(QKeySequence.SequenceFormat.NativeText)
+        self.mixer.set_panel_keys(mixer_keys)
         if self.registry.commands:
             self._build_menus()
 
@@ -1958,6 +1968,23 @@ class MainWindow(QMainWindow):
             return True
         if cid in TRACK_HEIGHT_COMMANDS:
             self.timeline.canvas.height_command(cid)
+            return True
+        if cid == "mixer.showHideTracks":
+            dock = self.docks["Audio Track Mixer"]
+            dock.show()
+            dock.raise_()
+            self.mixer.open_show_hide()
+            return True
+        if cid == "mixer.meterInputOnly":
+            # upstream #3349: parameters that are neither an object nor null are an error
+            if params is not None and not isinstance(params, dict):
+                self._command_failed(cid, "command parameters must be an object")
+                return True
+            on = (params or {}).get("on")
+            if on is not None and not isinstance(on, bool):
+                self._command_failed(cid, "`on` must be true or false")
+                return True
+            self.mixer.set_meter_input_only(not self.mixer.meter_input_only if on is None else on)
             return True
         if cid in GUIDE_COMMANDS:
             try:

@@ -114,7 +114,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2888 | security(av1): reject non-increasing grain points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4b | #701 | PR nyitva |
 | 0.14.0 | #3307 | captions: bound MCC export work to scheduled data (#2811) | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
-| 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | – | tervezett |
+| 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | #706 | PR nyitva |
 | 0.14.0 | #1103 | fix(engine): Unlink a selection that also holds unlinked clips | B | átvesz (azonos a #2011-vel) | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #1845 | fix(engine): clip.audioChannels no longer resets channels on a channels-less call | B | átvesz (azonos a #2483-vel) | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #1869 | PNG Sequence writes RGB files when Include Alpha Channel is off | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
@@ -274,7 +274,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3155 | Timeline: a Rolling Edit drag stops at the roll's limits | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #564 | PR nyitva (motor; a Qt-előnézet korlátozása külön) |
 | 0.13.0 | #3212 | Timeline: Show Duplicate Frame Markers marks media frames used more than once | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #565 | PR nyitva |
-| 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #601 | PR nyitva |
 | 0.13.0 | #3233 | Monitors: Transparency Grid shows the picture's transparent areas | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #2862 | Scroll the timeline clip menu when it is taller than the screen (#2852) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #2940 | Project panel: a clip dropped on New Item makes a sequence from it (fixes #2855) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
