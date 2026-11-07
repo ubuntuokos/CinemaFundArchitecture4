@@ -371,7 +371,7 @@ impl<F: Clone> Dpb<F> {
         field: Option<u8>,
         cur: Option<usize>,
         cur_long: &mut Option<u32>,
-    ) -> bool {
+    ) -> Result<bool> {
         let mut had5 = false;
         let curr_pic_num = match field {
             None => cur_frame_num as i32,
@@ -418,6 +418,7 @@ impl<F: Clone> Dpb<F> {
                     }
                 }
                 3 => {
+                    ensure!(self.max_long_term_frame_idx.is_some_and(|max| m.long_term_frame_idx <= max), "MMCO long-term index exceeds the configured limit");
                     let pn = curr_pic_num - (m.difference_of_pic_nums_minus1 as i32 + 1);
                     let target = short_target(&self.entries, pn);
                     let keep = target.map(|t| t.0);
@@ -453,13 +454,14 @@ impl<F: Clone> Dpb<F> {
                     had5 = true;
                 }
                 6 => {
+                    ensure!(self.max_long_term_frame_idx.is_some_and(|max| m.long_term_frame_idx <= max), "MMCO long-term index exceeds the configured limit");
                     self.release_long_term_idx(m.long_term_frame_idx, cur);
                     *cur_long = Some(m.long_term_frame_idx);
                 }
                 _ => {}
             }
         }
-        had5
+        Ok(had5)
     }
 
     /// LongTermFrameIdx `idx` is being assigned: long-term fields holding it in entries other
@@ -480,17 +482,24 @@ impl<F: Clone> Dpb<F> {
     /// whether MMCO 5 was executed. `cur` is the entry of the current frame's first field when
     /// decoding a second field.
     #[allow(clippy::too_many_arguments)]
-    fn mark_current(&mut self, sh: &SliceHeader, max_frame_num: u32, max_num_ref_frames: usize, field: Option<u8>, cur: Option<usize>) -> (RefMark, u32, bool) {
+    fn mark_current(
+        &mut self,
+        sh: &SliceHeader,
+        max_frame_num: u32,
+        max_num_ref_frames: usize,
+        field: Option<u8>,
+        cur: Option<usize>,
+    ) -> Result<(RefMark, u32, bool)> {
         if sh.nal_ref_idc == 0 {
-            return (RefMark::Unused, 0, false);
+            return Ok((RefMark::Unused, 0, false));
         }
         if sh.idr {
             return if sh.long_term_reference {
                 self.max_long_term_frame_idx = Some(0);
-                (RefMark::Long, 0, false)
+                Ok((RefMark::Long, 0, false))
             } else {
                 self.max_long_term_frame_idx = None;
-                (RefMark::Short, 0, false)
+                Ok((RefMark::Short, 0, false))
             };
         }
         let mut cur_long = None;
@@ -499,18 +508,18 @@ impl<F: Clone> Dpb<F> {
         // short-term reference joins it without sliding window (8.2.5.3)
         let joins_short = cur.zip(field).is_some_and(|(i, p)| self.entries.get(i).is_some_and(|e| e.field_mark[1 - p as usize] == RefMark::Short));
         if sh.adaptive_ref_pic_marking {
-            had5 = self.apply_mmcos(&sh.mmcos, sh.frame_num, max_frame_num, field, cur, &mut cur_long);
+            had5 = self.apply_mmcos(&sh.mmcos, sh.frame_num, max_frame_num, field, cur, &mut cur_long)?;
         } else if !joins_short {
             self.sliding_window(sh.frame_num, max_frame_num, max_num_ref_frames, cur);
         }
         if let Some(i) = cur_long {
-            return (RefMark::Long, i, had5);
+            return Ok((RefMark::Long, i, had5));
         }
         // make room if MMCOs left the DPB over-full (non-conforming streams)
         if cur.is_none() && self.num_refs() >= max_num_ref_frames.max(1) && sh.adaptive_ref_pic_marking {
             self.sliding_window(sh.frame_num, max_frame_num, max_num_ref_frames, cur);
         }
-        (RefMark::Short, 0, had5)
+        Ok((RefMark::Short, 0, had5))
     }
 
     /// Reference marking for the just-decoded frame and insertion into the DPB with output
@@ -527,8 +536,11 @@ impl<F: Clone> Dpb<F> {
         max_num_ref_frames: usize,
         meta: Arc<OutputMeta>,
         out: &mut Vec<Output<F>>,
-    ) {
-        let (mark, long_idx, had5) = self.mark_current(sh, max_frame_num, max_num_ref_frames, None, None);
+    ) -> Result<()> {
+        let (mark, long_idx, had5) = self.mark_current(sh, max_frame_num, max_num_ref_frames, None, None)?;
+        if mark == RefMark::Long {
+            ensure!(self.num_refs() < max_num_ref_frames.max(1), "long-term reference exceeds max_num_ref_frames");
+        }
         self.prune();
         if had5 {
             // All earlier pictures are output before the current one (C.4.4).
@@ -546,7 +558,7 @@ impl<F: Clone> Dpb<F> {
                 let min_poc = self.entries.iter().filter(|e| e.needed_for_output).map(|e| e.poc).min();
                 if min_poc.is_none_or(|m| poc < m) {
                     out.push(Output { frame, poc, meta });
-                    return;
+                    return Ok(());
                 }
                 if !self.bump(out) {
                     break;
@@ -573,6 +585,7 @@ impl<F: Clone> Dpb<F> {
             meta,
         });
         self.reorder_output(out);
+        Ok(())
     }
 
     /// Reference marking for a just-decoded field `parity` (POC `poc`) and its storage: the first
@@ -590,13 +603,13 @@ impl<F: Clone> Dpb<F> {
         max_num_ref_frames: usize,
         meta: Arc<OutputMeta>,
         out: &mut Vec<Output<F>>,
-    ) {
+    ) -> Result<()> {
         let p = parity as usize & 1;
         let cur = if second { self.entries.iter().position(|e| e.incomplete) } else { None };
         if !second {
             self.complete_field(out);
         }
-        let (mark, long_idx, had5) = self.mark_current(sh, max_frame_num, max_num_ref_frames, Some(parity), cur);
+        let (mark, long_idx, had5) = self.mark_current(sh, max_frame_num, max_num_ref_frames, Some(parity), cur)?;
         self.prune();
         if had5 {
             self.flush(out);
@@ -611,7 +624,7 @@ impl<F: Clone> Dpb<F> {
             e.fields |= 1 << p;
             e.poc = e.field_poc[0].min(e.field_poc[1]);
             self.finish_entry(i, out);
-            return;
+            return Ok(());
         }
         // first field: make room like for a frame, but a non-reference field whose POC precedes
         // every waiting picture must not push those out before it
@@ -639,6 +652,7 @@ impl<F: Clone> Dpb<F> {
             non_existing: false,
             meta,
         });
+        Ok(())
     }
 
     /// The pending first field gets no second field: it is output on its own.

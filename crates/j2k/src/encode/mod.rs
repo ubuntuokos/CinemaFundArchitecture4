@@ -25,8 +25,12 @@ use t2::Contribution;
 
 /// The forward lifting of a coefficient type ([`dwt`]).
 pub(crate) trait Coeff: Copy + Default + Send + Sync {
-    /// One-dimensional analysis of `n` rows of `w` samples, along the rows' index.
-    fn analysis_rows(data: &mut [Self], w: usize, n: usize);
+    /// Lifting steps, alternately updating the odd (high-pass) and the even (low-pass) samples.
+    const STEPS: usize;
+    /// Lifting step `step` on the samples `v` from their neighbours `a` (before) and `b` (after).
+    fn lift(step: usize, v: &mut [Self], a: &[Self], b: &[Self]);
+    /// The final scaling of the low-pass and high-pass samples (9/7 only).
+    fn scale(_lo: &mut [Self], _hi: &mut [Self]) {}
 }
 
 /// Packet progression order (A.6.1, B.12).
@@ -167,6 +171,11 @@ struct Coded {
 
 /// Encodes `image` as a JPEG 2000 codestream (`.j2c`).
 pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
+    encode_with(image, opts, true)
+}
+
+/// [`encode`]; `early` lets code-blocks stop below the predicted rate-control threshold.
+fn encode_with(image: &Image, opts: &EncodeOptions, early: bool) -> Result<Vec<u8>> {
     validate(image, opts)?;
     let ncomp = image.components.len();
     let levels = opts.levels;
@@ -260,55 +269,261 @@ pub fn encode(image: &Image, opts: &EncodeOptions) -> Result<Vec<u8>> {
         }
     }
     let weights = component_weights(ncomp, mct, opts.reversible);
-    let coded = map(&jobs, |j| {
+    // squared-error weight of a block's index units in the image
+    let weight = |j: &Job| {
+        let norm = norms.get(band_index(j.r, j.bi)).copied().unwrap_or(1.0);
+        let step = if opts.reversible { 1.0 } else { f64::from(j.step) };
+        (norm * step).powi(2) * weights.get(j.c).copied().unwrap_or(1.0)
+    };
+    // `stop`: the slope (weighted distortion per byte) below which a block's bit-planes are left
+    // uncoded
+    let code = |j: &Job, stop: f64| -> Result<Coded> {
         let cf = coeffs.get(j.c).ok_or(Error::Invalid("component"))?;
         let mb = comps.get(j.c).and_then(|tc| tc.res.get(j.r)).and_then(|res| res.bands.get(j.bi)).map_or(0, |b| b.mb);
-        let enc = code_block(cf, j)?;
-        let band = band_index(j.r, j.bi);
-        let norm = norms.get(band).copied().unwrap_or(1.0);
-        let step = if opts.reversible { 1.0 } else { f64::from(j.step) };
-        let w = (norm * step).powi(2) * weights.get(j.c).copied().unwrap_or(1.0);
+        let w = weight(j);
+        let enc = code_block(cf, j, if stop.is_finite() && stop > 0.0 { stop / w.max(1e-30) } else { 0.0 })?;
         Ok(Coded { c: j.c, zero: mb.saturating_sub(enc.planes), hull: hull(&enc.passes, w), enc })
-    })?;
-    // rate control
-    let all: Vec<u32> = coded.iter().map(|b| b.enc.passes.len() as u32).collect();
-    let measure = |sel: &[u32]| assemble(&main, opts, &comps, &order, &coded, sel, false).map(|(_, total, sizes)| (total, sizes));
+    };
+    let mut coded = if !early || (opts.max_bytes.is_none() && opts.max_component_bytes.is_none()) {
+        map(&jobs, |j| code(j, 0.0))?
+    } else {
+        // every SAMPLE-th block coded in full predicts the rate control's slope thresholds; the
+        // others stop well below them (most of the tier-1 work of a lossy frame is in bit-planes
+        // the byte limit cuts off)
+        let sample: Vec<usize> = (0..jobs.len()).step_by(SAMPLE).collect();
+        let full = map(&sample, |&k| code(jobs.get(k).ok_or(Error::Invalid("code-block"))?, 0.0))?;
+        let stops = predicted_thresholds(&jobs, &sample, &full, opts, ncomp);
+        let mut full = full.into_iter();
+        let rest = map(&jobs.iter().enumerate().collect::<Vec<_>>(), |&(k, j)| {
+            if k % SAMPLE == 0 { Ok(None) } else { code(j, stops.get(j.c).copied().unwrap_or(0.0) * STOP_MARGIN).map(Some) }
+        })?;
+        rest.into_iter().map(|b| b.or_else(|| full.next()).ok_or(Error::Invalid("code-block"))).collect::<Result<Vec<_>>>()?
+    };
+    // rate control; blocks whose coding stopped early and that it takes in full are coded
+    // completely and the search runs again
+    let measure = |coded: &[Coded], sel: &[u32]| assemble(&main, opts, &comps, &order, coded, sel, false).map(|(_, total, sizes)| (total, sizes));
     let fits =
         |total: usize, sizes: &[usize]| opts.max_bytes.is_none_or(|m| total <= m) && opts.max_component_bytes.is_none_or(|m| sizes.iter().all(|&s| s <= m));
-    let (total, sizes) = measure(&all)?;
-    let sel = if fits(total, &sizes) {
-        all
-    } else {
-        // per component: the smallest slope threshold within its own limit
-        let mut floor = vec![f64::NEG_INFINITY; ncomp];
-        if let Some(limit) = opts.max_component_bytes {
-            for (c, f) in floor.iter_mut().enumerate() {
-                if sizes.get(c).is_none_or(|&s| s <= limit) {
-                    continue;
-                }
-                let slopes = slopes(coded.iter().filter(|b| b.c == c));
-                let k = search(slopes.len(), |k| {
-                    let mut th = vec![f64::INFINITY; ncomp];
-                    th[c] = threshold(&slopes, k);
-                    let (_, s) = measure(&select(&coded, &th))?;
-                    Ok(s.get(c).is_some_and(|&s| s <= limit))
-                })?;
-                *f = threshold(&slopes, k);
+    let mut sel;
+    loop {
+        sel = rate_control(&coded, ncomp, opts, &measure, &fits)?;
+        let short: Vec<usize> =
+            coded.iter().zip(&sel).enumerate().filter(|(_, (b, n))| b.enc.truncated && b.hull.last().is_some_and(|h| h.0 <= **n)).map(|(k, _)| k).collect();
+        if short.is_empty() {
+            break;
+        }
+        let again = map(&short, |&k| code(jobs.get(k).ok_or(Error::Invalid("code-block"))?, 0.0))?;
+        for (k, b) in short.into_iter().zip(again) {
+            if let Some(slot) = coded.get_mut(k) {
+                *slot = b;
             }
         }
-        let slopes = slopes(coded.iter());
-        let at = |k: Option<usize>| -> Vec<f64> { floor.iter().map(|&f| f.max(threshold(&slopes, k))).collect() };
-        let k = search(slopes.len(), |k| {
-            let (total, sizes) = measure(&select(&coded, &at(k)))?;
-            Ok(fits(total, &sizes))
-        })?;
-        select(&coded, &at(k))
-    };
+    }
     let (out, total, sizes) = assemble(&main, opts, &comps, &order, &coded, &sel, true)?;
     if out.len() != total || !fits(total, &sizes) {
         return Err(Error::Invalid("byte limit below the size of the headers"));
     }
     Ok(out)
+}
+
+/// Every how many code-blocks one is coded in full to predict the slope thresholds.
+const SAMPLE: usize = 32;
+/// The other blocks stop coding below this fraction of the predicted threshold: lower bit-planes
+/// rarely gain more per byte than higher ones, and blocks that rate control takes in full are
+/// coded again anyway.
+const STOP_MARGIN: f64 = 0.25;
+
+/// The passes rate control keeps of each block: all when they fit, else the smallest slope
+/// threshold within the limits (per component first, then for the whole codestream).
+fn rate_control(
+    coded: &[Coded],
+    ncomp: usize,
+    opts: &EncodeOptions,
+    measure: &impl Fn(&[Coded], &[u32]) -> Result<(usize, Vec<usize>)>,
+    fits: &impl Fn(usize, &[usize]) -> bool,
+) -> Result<Vec<u32>> {
+    let all: Vec<u32> = coded.iter().map(|b| b.enc.passes.len() as u32).collect();
+    let (total, sizes) = measure(coded, &all)?;
+    if fits(total, &sizes) {
+        return Ok(all);
+    }
+    // Each search starts where the code-block bytes plus the header bytes of the last measured
+    // selection would put it (no packets assembled), then confirms against real measurements.
+    let mut headers = header_bytes(coded, &all, total, &sizes, ncomp);
+    let global = |floor: &[f64], headers: &mut (usize, Vec<usize>)| -> Result<(Vec<f64>, Option<usize>)> {
+        let slopes = slopes(coded.iter());
+        let at = |k: Option<usize>| -> Vec<f64> { floor.iter().map(|&f| f.max(threshold(&slopes, k))).collect() };
+        let mut guess = None;
+        for _ in 0..2 {
+            guess = search(slopes.len(), |k| {
+                let body = bodies(coded, &select(coded, &at(k)), ncomp);
+                let sizes: Vec<usize> = body.iter().zip(&headers.1).map(|(b, h)| b + h).collect();
+                Ok(fits(body.iter().sum::<usize>() + headers.0, &sizes))
+            })?;
+            let sel = select(coded, &at(guess));
+            let (total, sizes) = measure(coded, &sel)?;
+            *headers = header_bytes(coded, &sel, total, &sizes, ncomp);
+        }
+        let k = refine(slopes.len(), guess, |k| {
+            let (total, sizes) = measure(coded, &select(coded, &at(k)))?;
+            Ok(fits(total, &sizes))
+        })?;
+        // the first selection that does not fit: whether only the total limit stops it
+        let next = k.map_or(0, |k| k + 1);
+        let total_only = if next < slopes.len() {
+            let (_, sizes) = measure(coded, &select(coded, &at(Some(next))))?;
+            opts.max_component_bytes.is_none_or(|m| sizes.iter().all(|&s| s <= m))
+        } else {
+            true
+        };
+        Ok((at(k), total_only.then_some(0)))
+    };
+    // Without per-component floors first: when the next larger selection fails on the total
+    // alone, the floors (each component's smallest threshold within its own limit) would not
+    // change the result.
+    let (th, settled) = global(&vec![f64::NEG_INFINITY; ncomp], &mut headers)?;
+    if settled.is_some() {
+        return Ok(select(coded, &th));
+    }
+    // per component: the smallest slope threshold within its own limit
+    let mut floor = vec![f64::NEG_INFINITY; ncomp];
+    if let Some(limit) = opts.max_component_bytes {
+        for (c, f) in floor.iter_mut().enumerate() {
+            if sizes.get(c).is_none_or(|&s| s <= limit) {
+                continue;
+            }
+            let slopes = slopes(coded.iter().filter(|b| b.c == c));
+            let only = |k: Option<usize>| -> Vec<f64> {
+                let mut th = vec![f64::INFINITY; ncomp];
+                if let Some(t) = th.get_mut(c) {
+                    *t = threshold(&slopes, k);
+                }
+                th
+            };
+            let head = headers.1.get(c).copied().unwrap_or(0);
+            let guess = search(slopes.len(), |k| Ok(bodies(coded, &select(coded, &only(k)), ncomp).get(c).map_or(0, |&b| b + head) <= limit))?;
+            let k = refine(slopes.len(), guess, |k| {
+                let (_, s) = measure(coded, &select(coded, &only(k)))?;
+                Ok(s.get(c).is_some_and(|&s| s <= limit))
+            })?;
+            *f = threshold(&slopes, k);
+        }
+    }
+    let (th, _) = global(&floor, &mut headers)?;
+    Ok(select(coded, &th))
+}
+
+/// Code-block bytes of each component at selection `sel`.
+fn bodies(coded: &[Coded], sel: &[u32], ncomp: usize) -> Vec<usize> {
+    let mut out = vec![0; ncomp];
+    for (b, &n) in coded.iter().zip(sel) {
+        let len = (n as usize).checked_sub(1).and_then(|k| b.enc.passes.get(k)).map_or(0, |p| p.len);
+        if let Some(o) = out.get_mut(b.c) {
+            *o += len;
+        }
+    }
+    out
+}
+
+/// The bytes besides the code-blocks' of a measured selection: (whole codestream, per component).
+fn header_bytes(coded: &[Coded], sel: &[u32], total: usize, sizes: &[usize], ncomp: usize) -> (usize, Vec<usize>) {
+    let body = bodies(coded, sel, ncomp);
+    let per = sizes.iter().zip(&body).map(|(s, b)| s.saturating_sub(*b)).collect();
+    (total.saturating_sub(body.iter().sum()), per)
+}
+
+/// What [`search`] finds for a monotone `ok`, starting from the estimate `guess`: galloping away
+/// from it, then bisecting, so a good guess costs a few calls of `ok` instead of a full search.
+fn refine(n: usize, guess: Option<usize>, mut ok: impl FnMut(Option<usize>) -> Result<bool>) -> Result<Option<usize>> {
+    // positions 0..=n: 0 is `None` (assumed to hold), i is `Some(i - 1)`
+    let key = |i: usize| i.checked_sub(1);
+    let start = guess.map_or(0, |k| (k + 1).min(n));
+    let (mut lo, mut hi);
+    if start == 0 || ok(key(start))? {
+        lo = start;
+        hi = n + 1;
+        let mut step = 1;
+        while lo + step <= n {
+            if ok(key(lo + step))? {
+                lo += step;
+                step *= 2;
+            } else {
+                hi = lo + step;
+                break;
+            }
+        }
+    } else {
+        hi = start;
+        lo = 0;
+        let mut step = 1;
+        while hi > step {
+            if ok(key(hi - step))? {
+                lo = hi - step;
+                break;
+            }
+            hi -= step;
+            step *= 2;
+        }
+    }
+    while hi - lo > 1 {
+        let mid = lo + (hi - lo) / 2;
+        if ok(key(mid))? {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    Ok(key(lo))
+}
+
+/// The slope thresholds rate control would choose per component, predicted from the fully coded
+/// blocks `full` (the jobs at `sample`) against the byte limits scaled by their share of the
+/// samples. Packet headers are left out, which errs low. 0 where nothing is predicted.
+fn predicted_thresholds(jobs: &[Job], sample: &[usize], full: &[Coded], opts: &EncodeOptions, ncomp: usize) -> Vec<f64> {
+    let area = |j: &Job| j.rect.w() as f64 * j.rect.h() as f64;
+    let mut all_area = vec![0.0; ncomp];
+    for j in jobs {
+        if let Some(a) = all_area.get_mut(j.c) {
+            *a += area(j);
+        }
+    }
+    let mut sample_area = vec![0.0; ncomp];
+    for j in sample.iter().filter_map(|&k| jobs.get(k)) {
+        if let Some(a) = sample_area.get_mut(j.c) {
+            *a += area(j);
+        }
+    }
+    let share = |c: usize| sample_area.get(c).copied().unwrap_or(0.0) / all_area.get(c).copied().unwrap_or(0.0).max(1.0);
+    // bytes of component `c`'s sampled blocks at threshold `t`
+    let bytes =
+        |c: usize, t: f64| -> f64 { full.iter().filter(|b| b.c == c).map(|b| b.hull.iter().take_while(|h| h.2 >= t).last().map_or(0, |h| h.1) as f64).sum() };
+    let mut floor = vec![f64::NEG_INFINITY; ncomp];
+    if let Some(limit) = opts.max_component_bytes {
+        for (c, f) in floor.iter_mut().enumerate() {
+            let budget = limit as f64 * share(c);
+            let slopes = slopes(full.iter().filter(|b| b.c == c));
+            if bytes(c, f64::NEG_INFINITY) <= budget {
+                continue;
+            }
+            if let Ok(k) = search(slopes.len(), |k| Ok(bytes(c, threshold(&slopes, k)) <= budget)) {
+                *f = threshold(&slopes, k);
+            }
+        }
+    }
+    let mut th = floor.clone();
+    if let Some(limit) = opts.max_bytes {
+        let total_area: f64 = all_area.iter().sum();
+        let budget = limit as f64 * sample_area.iter().sum::<f64>() / total_area.max(1.0);
+        let slopes = slopes(full.iter());
+        let at = |t: f64| -> f64 { (0..ncomp).map(|c| bytes(c, floor.get(c).copied().unwrap_or(0.0).max(t))).sum() };
+        if at(f64::NEG_INFINITY) > budget
+            && let Ok(k) = search(slopes.len(), |k| Ok(at(threshold(&slopes, k)) <= budget))
+        {
+            let t = threshold(&slopes, k);
+            th = floor.iter().map(|&f| f.max(t)).collect();
+        }
+    }
+    th.into_iter().map(|t| if t.is_finite() && t > 0.0 { t } else { 0.0 }).collect()
 }
 
 /// Checks the image and the options before any work.
@@ -491,8 +706,8 @@ fn component_weights(n: usize, mct: bool, reversible: bool) -> Vec<f64> {
     w
 }
 
-/// Quantizes and codes one code-block.
-fn code_block(cf: &Coeffs, j: &Job) -> Result<t1::Encoded> {
+/// Quantizes and codes one code-block, down to the bit-plane `stop` allows ([`t1::encode`]).
+fn code_block(cf: &Coeffs, j: &Job, stop: f64) -> Result<t1::Encoded> {
     let (w, h) = (j.rect.w(), j.rect.h());
     let mut q = Vec::with_capacity(w * h);
     let mut exact = Vec::with_capacity(w * h);
@@ -525,7 +740,7 @@ fn code_block(cf: &Coeffs, j: &Job) -> Result<t1::Encoded> {
             }
         }
     }
-    Ok(t1::encode(&q, &exact, w, h, j.orient))
+    Ok(t1::encode(&q, &exact, w, h, j.orient, stop))
 }
 
 /// The convex hull of a block's truncation points (0, 0), (len_k, w·dist_k): (passes, bytes,
