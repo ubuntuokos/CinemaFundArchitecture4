@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 from . import __version__, crash, dock_commands, theme
 from .commands import Command, CommandRegistry, qt_shortcut
 from .dialogs import ErrorDialog, InterpretFootageDialog, ParamDialog, path_params
+from .dock_gutters import DockGutters
 from .engine import EngineClient, EngineError
 from .i18n import LANGUAGES, N_, TR, fmt, tr
 from .i18n import system_language as i18n_system_language
@@ -420,6 +421,7 @@ class MainWindow(QMainWindow):
         self._default_state = self._default_layout_state()
         self._builtin_states: dict[str, QByteArray] = {}
         self.workspaces = Workspaces(self, self.settings, self._default_state, LAYOUT_VERSION, self.builtin_layout)
+        self.dock_gutters = DockGutters(self)  # egui's dock.gutter.<path> over each split
 
         self.status_engine = QLabel(tr("Starting engine…"))
         self.status_engine.setObjectName("status.engine")
