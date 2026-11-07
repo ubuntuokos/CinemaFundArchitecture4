@@ -78,7 +78,15 @@ fn random_bytes_and_tiny_frames_do_not_panic() {
     key[3..6].copy_from_slice(&[0x9d, 0x01, 0x2a]);
     key[6..8].copy_from_slice(&1920u16.to_le_bytes());
     key[8..10].copy_from_slice(&1080u16.to_le_bytes());
-    let _ = dec.decode(&key, 0);
+    assert!(dec.decode(&key, 0).is_err(), "empty first partition must not reconstruct a frame");
+
+    // A header can declare nearly 16K square dimensions with just ten bytes. It must be rejected
+    // before the macroblock map and reference planes are allocated.
+    key[0] = 0x30; // one-byte first partition
+    key[10] = 0;
+    key[6..8].copy_from_slice(&16_383u16.to_le_bytes());
+    key[8..10].copy_from_slice(&16_383u16.to_le_bytes());
+    assert!(dec.decode(&key, 0).is_err(), "oversized key frame must be rejected");
 }
 
 #[test]

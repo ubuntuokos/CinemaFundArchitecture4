@@ -3,7 +3,7 @@
 > **Állapot:** a tulajdonos 2026-10-27-én jóváhagyta (V1–V10, a 5. pont javaslataival) · **Készült:** 2026-10-27 ·
 > **Forrás:** [VenturiVideo/Venturi](https://github.com/VenturiVideo/Venturi) `main` @ `cdc1c0f`
 > (2026-10-26, v0.8.1, alfa) · **CFA4:** `main` @ `16debf9` · **Kapcsolódik:**
-> [`kdenlive-parity.md`](kdenlive-parity.md) (K1–K35), [`gaps.md`](gaps.md) (G-számok),
+> [`CFA4-KDENLIVE-PLAN-001`](plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md) (K1–K62), [`gaps.md`](gaps.md) (G-számok),
 > [ADR 0004](adr/ADR-0004-compute-routing.md), [ADR 0005](adr/ADR-0005-media-backends.md)
 
 Ez a dokumentum a Kdenlive-terv mintájára veti össze a Venturi képességeit és működési elveit a
@@ -240,7 +240,7 @@ kódrészhez sor a [`licensing.md` §5](licensing.md) nyilvántartásban.
 
 - Venturi: `README.md`, `ARCHITECTURE.md`, `TODO.md`, `plans/*.md`, `docs/MCP.md`,
   `crates/vv-vad`, `crates/vv-media/src/encode.rs` (`check_colors`) @ `cdc1c0f`.
-- CFA4: [`kdenlive-parity.md`](kdenlive-parity.md), [`gaps.md`](gaps.md) G11,
+- CFA4: [`CFA4-KDENLIVE-PLAN-001`](plans/CFA4-KDENLIVE-PLAN-001-FINAL-1.0.md), [`gaps.md`](gaps.md) G11,
   [`control-protocol.md`](control-protocol.md), `crates/route`, `crates/speech`, `crates/automation`.
 
 ## Változásnapló

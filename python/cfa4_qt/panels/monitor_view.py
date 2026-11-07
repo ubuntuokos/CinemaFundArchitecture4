@@ -130,6 +130,7 @@ class MonitorView:
     pan: list[float] = field(default_factory=lambda: [0.0, 0.0])  # from the centre, in pixels
     display: str = "composite"
     safe_margins: bool = False
+    transparency_grid: bool = False  # a checkerboard behind the picture shows its transparency (upstream #3233)
     social_zone: str = ""  # View ▸ Social Safe Zones: a SOCIAL_ZONES id, "" = off
     show_transport: bool = True
     hidden: list[str] = field(default_factory=lambda: list(DEFAULT_HIDDEN))
@@ -272,6 +273,7 @@ def build_view_menu(menu: QMenu, monitor: Callable[[], Any]) -> list[QAction]:
     # rulers and guides (egui's View menu); Snap in Program Monitor is the Program monitor's
     toggles: list[tuple[QAction, Callable[[MonitorView], bool]]] = []
     for cid, label, attr in (
+        ("view.transparencyGrid", N_("Transparency Grid"), "transparency_grid"),
         ("view.showRulers", N_("Show Rulers"), "show_rulers"),
         ("view.showGuides", N_("Show Guides"), "show_guides"),
         ("view.lockGuides", N_("Lock Guides"), "lock_guides"),
@@ -312,7 +314,7 @@ def build_view_menu(menu: QMenu, monitor: Callable[[], Any]) -> list[QAction]:
         for a, get in toggles:
             a.setChecked(get(v))
         has = bool(v.guides)
-        toggles[2][0].setEnabled(has)
+        toggles[3][0].setEnabled(has)
         clear.setEnabled(has)
         save.setEnabled(has)
         snap.setChecked(m.program_mv().snap)
