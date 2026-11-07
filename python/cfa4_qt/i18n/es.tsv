@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 ha encontrado un error
 	CFA4 project links	Enlaces del proyecto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 se cerró inesperadamente mientras «{name}» tenía cambios sin guardar. ¿Recuperar los cambios sin guardar de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 se cerró mientras «{name}» tenía cambios sin guardar. ¿Recuperar los cambios sin guardar de {time}?
 	Cancel Selected	Cancelar selección
 	Cannot check the output folder for files to replace: {error}	No se puede comprobar si la carpeta de salida tiene archivos que reemplazar: {error}
 	Cannot create the output folder: {error}	No se puede crear la carpeta de salida: {error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Comprobar antes de exportar: {n} problemas marcados en la línea de tiempo (marcadores rojos)
 	Checked:	Comprobado:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Elija un archivo de pista IAB (IMF o DCP), un flujo IAB sin procesar o Dolby Atmos TrueHD: un flujo .thd o un archivo MKV, MP4 o M2TS con una pista Atmos.
-	Choose an output file.	Elija un archivo de salida.
+	Choose a file name and location.	Elija un nombre de archivo y una ubicación.
+	Choose folder	Elegir carpeta
 	Click and press keys to assign	Haga clic y pulse teclas para asignar
 	Compression	Compresión
 	Compression Level	Nivel de compresión
@@ -319,3 +318,8 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compresión {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Panel menu	Menú del panel
+	Move panel	Mover panel
+	Transparency Grid	Cuadrícula de transparencia
+	Show Duplicate Frame Markers	Mostrar marcadores de fotogramas duplicados
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	La entrada/salida de la secuencia es de solo 1 fotograma. Elige Secuencia completa para exportar toda la secuencia.

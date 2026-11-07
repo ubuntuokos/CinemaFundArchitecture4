@@ -142,6 +142,171 @@ fn through_edits_show_and_join() {
     assert_eq!(s.execute("sequence.throughEdits", json!({})).unwrap().as_array().unwrap().len(), n - 2);
 }
 
+/// The demo project with a new empty sequence active, and its first two movie items.
+fn demo_with_empty_sequence() -> (Session, u64, u64) {
+    let mut s = demo();
+    let mut movies: Vec<u64> = s
+        .project
+        .items
+        .values()
+        .filter(|i| i.as_media().is_some_and(|m| m.info.kind == cfa4_media::MediaKind::Movie && m.info.video.is_some()))
+        .map(|i| i.id.0)
+        .collect();
+    movies.sort();
+    s.execute("file.newSequence", json!({"name": "Duplicates"})).unwrap();
+    (s, movies[0], movies[1])
+}
+
+/// The video clip on video track `track` (0 = V1) that starts at `frame`.
+fn video_clip_at(s: &Session, track: usize, frame: i64) -> u64 {
+    let start = f(s, frame);
+    s.active_sequence().unwrap().video_tracks[track].items.iter().find(|c| c.start == start).unwrap().id.0
+}
+
+fn clip_duration(s: &Session, clip: u64) -> Tick {
+    s.active_sequence().unwrap().find_item(ClipId(clip)).unwrap().1.duration
+}
+
+/// `sequence.duplicateFrames` as (clip, color, [(start frame, end frame)]).
+fn duplicates(s: &mut Session) -> Vec<(u64, u64, Vec<(i64, i64)>)> {
+    let frame = f(s, 1).0;
+    let r = s.execute("sequence.duplicateFrames", json!({})).unwrap();
+    r.as_array()
+        .unwrap()
+        .iter()
+        .map(|d| {
+            let ranges = d["ranges"].as_array().unwrap().iter().map(|r| (r["start"].as_i64().unwrap() / frame, r["end"].as_i64().unwrap() / frame)).collect();
+            (d["clip"].as_u64().unwrap(), d["color"].as_u64().unwrap(), ranges)
+        })
+        .collect()
+}
+
+#[test]
+fn duplicate_frame_markers_cover_the_repeated_frames() {
+    let (mut s, forest, other) = demo_with_empty_sequence();
+    assert_eq!(s.execute("sequence.showDuplicateFrameMarkers", json!({})).unwrap()["showDuplicateFrameMarkers"], json!(true));
+    assert_eq!(s.execute("sequence.showDuplicateFrameMarkers", json!({"on": false})).unwrap()["showDuplicateFrameMarkers"], json!(false));
+    // media frames 0–48 at 0, media frames 24–72 at 100: frames 24–48 are shown twice
+    place(&mut s, forest, "V1", 0, 0, 48);
+    place(&mut s, forest, "V1", 100, 24, 48);
+    // another master clip, used once
+    place(&mut s, other, "V2", 0, 0, 48);
+    // a generator used twice has no markers
+    let matte = s.execute("file.newColorMatte", json!({"width": 64, "height": 64, "color": "#ff0000"})).unwrap()["item"].as_u64().unwrap();
+    s.execute("timeline.place", json!({"item": matte, "track": "V2", "frame": 200, "duration": f(&s, 24).0})).unwrap();
+    s.execute("timeline.place", json!({"item": matte, "track": "V2", "frame": 300, "duration": f(&s, 24).0})).unwrap();
+    let (a, b) = (video_clip_at(&s, 0, 0), video_clip_at(&s, 0, 100));
+    assert_eq!(duplicates(&mut s), [(a, 0, vec![(24, 48)]), (b, 0, vec![(100, 124)])]);
+    // the second master clip used again (frames 40–60 twice) takes the next color
+    place(&mut s, other, "V2", 400, 40, 20);
+    place(&mut s, other, "V3", 400, 40, 20);
+    let (c, d, e) = (video_clip_at(&s, 1, 0), video_clip_at(&s, 1, 400), video_clip_at(&s, 2, 400));
+    assert_eq!(
+        duplicates(&mut s),
+        [(a, 0, vec![(24, 48)]), (c, 1, vec![(40, 48)]), (b, 0, vec![(100, 124)]), (d, 1, vec![(400, 420)]), (e, 1, vec![(400, 420)])]
+    );
+    // clips that only touch in the media share no frame
+    s.execute("edit.undo", json!({})).unwrap();
+    s.execute("edit.undo", json!({})).unwrap();
+    place(&mut s, forest, "V3", 500, 72, 24);
+    assert_eq!(duplicates(&mut s), [(a, 0, vec![(24, 48)]), (b, 0, vec![(100, 124)])]);
+}
+
+/// Only master clips with duplicate frames take a color: a master clip used once ahead of a
+/// duplicated one leaves the first color to the duplicated one.
+#[test]
+fn duplicate_frame_markers_color_only_master_clips_with_duplicates() {
+    let (mut s, forest, other) = demo_with_empty_sequence();
+    place(&mut s, other, "V1", 0, 0, 48);
+    place(&mut s, forest, "V1", 100, 0, 24);
+    place(&mut s, forest, "V1", 200, 0, 24);
+    let (a, b) = (video_clip_at(&s, 0, 100), video_clip_at(&s, 0, 200));
+    assert_eq!(duplicates(&mut s), [(a, 0, vec![(100, 124)]), (b, 0, vec![(200, 224)])]);
+}
+
+#[test]
+fn duplicate_frame_markers_follow_speed_reverse_and_holds() {
+    let (mut s, forest, _) = demo_with_empty_sequence();
+    place(&mut s, forest, "V1", 0, 0, 48);
+    // at 200 % from media frame 24, timeline frames 100–112 show media frames 24, 26 … 46
+    place(&mut s, forest, "V2", 100, 24, 24);
+    let (a, b) = (video_clip_at(&s, 0, 0), video_clip_at(&s, 1, 100));
+    let set = |s: &mut Session, clip: u64, change: fn(&mut cfa4_project::TrackItem)| {
+        s.edit_sequence("test", |q, _, _| {
+            change(q.find_item_mut(ClipId(clip)).unwrap().1);
+            Ok(())
+        })
+        .unwrap();
+    };
+    set(&mut s, b, |it| it.speed = 2.0);
+    let every_other: Vec<(i64, i64)> = (24..48).step_by(2).map(|f| (f, f + 1)).collect();
+    assert_eq!(duplicates(&mut s), [(a, 0, every_other), (b, 0, vec![(100, 112)])]);
+    // reversed, 100 %: timeline frames 0–48 show media frames 47 down to 0, so 0–24 shows 24–48
+    set(&mut s, b, |it| it.speed = 1.0);
+    set(&mut s, a, |it| it.reverse = true);
+    assert_eq!(duplicates(&mut s), [(a, 0, vec![(0, 24)]), (b, 0, vec![(100, 124)])]);
+    // a frame hold and Time Remapping keyframes take a clip out of the comparison
+    set(&mut s, a, |it| it.frame_hold = Some(it.source_in));
+    assert!(duplicates(&mut s).is_empty());
+    set(&mut s, a, |it| it.frame_hold = None);
+    assert_eq!(duplicates(&mut s).len(), 2);
+    // a clip longer than the comparison limit is skipped instead of walked frame by frame
+    let dur = clip_duration(&s, a);
+    set(&mut s, a, |it| it.duration = Tick(i64::MAX / 4));
+    assert!(duplicates(&mut s).is_empty());
+    s.edit_sequence("test", |q, _, _| {
+        q.find_item_mut(ClipId(a)).unwrap().1.duration = dur;
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(duplicates(&mut s).len(), 2);
+    set(&mut s, b, |it| {
+        let p = it
+            .effect_mut("time_remap")
+            .unwrap()
+            .params
+            .entry("speed".into())
+            .or_insert_with(|| cfa4_project::Param::new(cfa4_project::ParamValue::Float(100.0)));
+        p.keyframes.push(cfa4_project::Keyframe::new(Tick::ZERO, cfa4_project::ParamValue::Float(100.0)));
+        p.keyframes.push(cfa4_project::Keyframe::new(Tick(1), cfa4_project::ParamValue::Float(50.0)));
+    });
+    assert!(duplicates(&mut s).is_empty());
+    // parameters of the wrong type are ignored: `on` that is not a boolean toggles
+    s.state.show_duplicate_frame_markers = false;
+    for p in [json!({"on": "yes"}), json!({"on": [1]}), json!(null), json!(7)] {
+        let on = s.state.show_duplicate_frame_markers;
+        assert_eq!(s.execute("sequence.showDuplicateFrameMarkers", p).unwrap()["showDuplicateFrameMarkers"], json!(!on));
+    }
+    assert!(s.execute("sequence.duplicateFrames", json!({"clips": "x", "ranges": -1})).is_ok());
+    // without a sequence there is nothing to list
+    s.state.active_sequence = None;
+    assert!(s.execute("sequence.duplicateFrames", json!({})).is_err());
+}
+
+/// A clip at 200 % skips every other media frame: clips are compared by the frames they show,
+/// not by the media between their In and Out.
+#[test]
+fn duplicate_frame_markers_compare_the_frames_a_fast_clip_shows() {
+    let (mut s, forest, _) = demo_with_empty_sequence();
+    assert_eq!(s.active_sequence().unwrap().settings.frame_rate, s.project.item(ItemId(forest)).unwrap().as_media().unwrap().frame_rate());
+    // media frames 0, 2, 4 … 46 and 1, 3, 5 … 47: no frame in common
+    place(&mut s, forest, "V1", 0, 0, 24);
+    place(&mut s, forest, "V2", 0, 1, 24);
+    let (even, odd) = (video_clip_at(&s, 0, 0), video_clip_at(&s, 1, 0));
+    for c in [even, odd] {
+        s.edit_sequence("test", |q, _, _| {
+            q.find_item_mut(ClipId(c)).unwrap().1.speed = 2.0;
+            Ok(())
+        })
+        .unwrap();
+    }
+    assert!(duplicates(&mut s).is_empty());
+    // media frames 0 and 1 at 100 %: the even clip shows frame 0 at timeline frame 0
+    place(&mut s, forest, "V3", 100, 0, 2);
+    let slow = video_clip_at(&s, 2, 100);
+    assert_eq!(duplicates(&mut s), [(even, 0, vec![(0, 1)]), (odd, 0, vec![(0, 1)]), (slow, 0, vec![(100, 102)])]);
+}
+
 /// `cut: [left, right]` (the timeline's edit point menu, #219) joins exactly that cut and its
 /// linked partner, even when one of its pieces is also part of another through edit.
 #[test]

@@ -82,10 +82,13 @@ fn new_ids() -> Vec<String> {
 fn premiere_table_has_no_dangling_ids_or_new_conflicts() {
     let ui: Vec<String> = cfa4_ui_egui::menus::external_commands().into_iter().map(|c| c.id).collect();
     for (id, keys, panel) in presets::premiere() {
-        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id), "Premiere table: `{id}` ({keys} {panel}) is not a command");
+        assert!(
+            cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id) || presets::QT_ONLY.contains(&id),
+            "Premiere table: `{id}` ({keys} {panel}) is not a command"
+        );
     }
     for (id, _, _) in presets::CFA4_PANEL.iter().chain(presets::PREMIERE_PANEL) {
-        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id), "panel table: `{id}` is not a command");
+        assert!(cfa4_engine::find_command(id).is_some() || ui.iter().any(|u| u == id) || presets::QT_ONLY.contains(id), "panel table: `{id}` is not a command");
     }
     let mut s = Session::default();
     s.shortcuts.register_external(cfa4_ui_egui::menus::external_commands());

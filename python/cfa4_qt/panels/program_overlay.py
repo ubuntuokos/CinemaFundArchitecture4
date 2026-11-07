@@ -144,6 +144,7 @@ class ProgramOverlay(QObject):
 
     pen_finished = Signal()
     eyedropper_done = Signal()  # the armed eyedropper picked (or was let go with Esc)
+    text_selection_changed = Signal()  # the Type tool's caret or selected characters moved
 
     def __init__(self, view: QWidget, engine: Any, send: Callable[[str, dict[str, Any]], None]) -> None:
         super().__init__(view)
@@ -157,7 +158,11 @@ class ProgramOverlay(QObject):
         # Snap in Program Monitor: the lines a moved object snapped to (vertical?, screen coordinate)
         self.snap_lines: list[tuple[bool, float]] = []
         self.gesture = 0
-        self.selected_vertex: int | None = None
+        # the selected mask vertices (a marquee or Shift-click selects several, which move together;
+        # upstream #3209), with the vertex count they were picked at: once a vertex is added or
+        # deleted the indices name other vertices, and the selection goes
+        self.selected_vertices: list[int] = []
+        self._selected_count = -1
         self.round_radius: float | None = None
         # an armed eyedropper (Effect Controls): the colour parameter the next click on the picture fills
         self.eyedropper: dict[str, Any] | None = None
@@ -417,10 +422,18 @@ class ProgramOverlay(QObject):
                 p.drawLine(v["p"], v[which])
                 p.setBrush(QColor("white"))
                 p.drawEllipse(v[which], 3.5, 3.5)
+        chosen = self.vertex_selection(len(g["vertices"]))
         for i, v in enumerate(g["vertices"]):
             p.setPen(QPen(col, 1))
-            p.setBrush(col if self.selected_vertex == i else QColor("white"))
+            p.setBrush(col if i in chosen else QColor("white"))
             p.drawRect(QRectF(v["p"].x() - 3.5, v["p"].y() - 3.5, 7, 7))
+        d = self.drag
+        if d is not None and d.get("kind") == "marquee" and d.get("cur") is not None:
+            p.setPen(QPen(col, 1, Qt.PenStyle.DashLine))
+            fill = QColor(col)
+            fill.setAlphaF(0.12)
+            p.setBrush(fill)
+            p.drawRect(QRectF(d["press"], d["cur"]).normalized())
         if self.drag is not None and self.drag.get("label"):
             p.setPen(theme.current().c("hot_text"))
             p.drawText(self.drag.get("label_at", QPointF()) + QPointF(10, -10), self.drag["label"])
@@ -583,6 +596,7 @@ class ProgramOverlay(QObject):
         mods = e.modifiers()
         alt = bool(mods & Qt.KeyboardModifier.AltModifier)
         ctrl = bool(mods & Qt.KeyboardModifier.ControlModifier)
+        shift = bool(mods & Qt.KeyboardModifier.ShiftModifier)
         g = self.mask_geometry()
         if g is not None:
             m = g["m"]
@@ -602,9 +616,15 @@ class ProgramOverlay(QObject):
                     elif ctrl:
                         self.send("masks.removeVertex", {**target, "vertex": i})
                     else:
-                        self.selected_vertex = i
+                        # a press on a selected vertex drags the whole selection; another vertex is
+                        # selected first (added to the selection with Shift)
+                        chosen = self.vertex_selection(len(g["vertices"]))
+                        was = i in chosen
+                        if not was:
+                            chosen = [*chosen, i] if shift else [i]
+                            self.select_vertices(chosen, len(g["vertices"]))
                         self.drag = {"kind": "vertex", "vertex": i, "press": at, "applied": QPointF(), "target": target,
-                                     "toScreen": g["toScreen"]}
+                                     "toScreen": g["toScreen"], "toggle_off": was and shift, "count": len(g["vertices"])}
                     self.view.update()
                     return True
             for which, h in g["handles"].items():
@@ -622,7 +642,10 @@ class ProgramOverlay(QObject):
             if inside(g["contour"], at):
                 self.drag = {"kind": "body", "press": at, "applied": QPointF(), "target": target, "toScreen": g["toScreen"]}
                 return True
-            self.drag = {"kind": "deselectMask", "press": at}
+            # outside the shape: a marquee selects the vertices it encloses (Shift adds); a click
+            # lets go of the mask
+            self.drag = {"kind": "marquee", "press": at, "cur": None, "shift": shift, "target": target,
+                         "vertices": [QPointF(v["p"]) for v in g["vertices"]]}
             return True
         pl = self.placement()
         if pl is not None:
@@ -656,7 +679,7 @@ class ProgramOverlay(QObject):
         shift = bool(e.modifiers() & Qt.KeyboardModifier.ShiftModifier)
         kind = d["kind"]
         if kind == "transform":
-            self._transform_move(d, at)
+            self._transform_move(d, at, free=bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier))
         elif kind in ("vertex", "body"):
             raw = at - d["press"]
             want = constrain_45(QPointF(), raw) if shift else raw
@@ -666,9 +689,13 @@ class ProgramOverlay(QObject):
                 delta = unscale(d["toScreen"], step)
                 params = {**d["target"], "delta": [delta.x(), delta.y()], "merge": f"{kind}-{self.gesture}"}
                 if kind == "vertex":
-                    self.send("masks.moveVertex", {**params, "vertex": d["vertex"]})
+                    chosen = self.vertex_selection(d["count"])
+                    which = {"vertices": chosen} if len(chosen) > 1 and d["vertex"] in chosen else {"vertex": d["vertex"]}
+                    self.send("masks.moveVertex", {**params, **which})
                 else:
                     self.send("masks.translate", params)
+        elif kind == "marquee":
+            d["cur"] = at
         elif kind == "tangent":
             step = at - d["last"]
             d["last"] = at
@@ -694,6 +721,16 @@ class ProgramOverlay(QObject):
         self.view.update()
         return True
 
+    def vertex_selection(self, count: int) -> list[int]:
+        """The selected vertices of a path of ``count`` vertices (none once the count changed)."""
+        if count != self._selected_count:
+            return []
+        return [i for i in self.selected_vertices if 0 <= i < count]
+
+    def select_vertices(self, vertices: list[int], count: int) -> None:
+        self.selected_vertices, self._selected_count = list(vertices), count
+        self.view.update()
+
     def release(self, e: QMouseEvent) -> bool:
         if self.pen is not None:
             self.drag = None
@@ -710,8 +747,18 @@ class ProgramOverlay(QObject):
             radius = round(d.get("radius", 0.0) * 10) / 10
             if radius > 0:
                 self.send("masks.roundCorners", {**d["target"], "radius": radius})
-        elif d["kind"] == "deselectMask" and not moved:
-            self.send("masks.select", {"none": True})
+        elif d["kind"] == "marquee":
+            if moved:
+                box = QRectF(d["press"], e.position()).normalized()
+                inside_box = [i for i, v in enumerate(d["vertices"]) if box.contains(v)]
+                chosen = self.vertex_selection(len(d["vertices"])) if d["shift"] else []
+                self.select_vertices([*chosen, *(i for i in inside_box if i not in chosen)], len(d["vertices"]))
+            else:
+                self.select_vertices([], -1)
+                self.send("masks.select", {"none": True})
+        elif d["kind"] == "vertex" and d.get("toggle_off") and not moved:
+            # a Shift-click on a selected vertex takes it out of the selection
+            self.select_vertices([i for i in self.vertex_selection(d["count"]) if i != d["vertex"]], d["count"])
         elif d["kind"] == "deselectEffect" and not moved:
             self.send("effects.select", {"none": True})
         self.view.update()
@@ -751,7 +798,20 @@ class ProgramOverlay(QObject):
                                           Qt.Key.Key_Delete)
         return k == Qt.Key.Key_Escape and (self.drag is not None or self.mask_geometry() is not None)
 
+    def modifiers_changed(self, mods: Any) -> None:
+        """Ctrl pressed or released with the pointer still during a Motion Move drag: the box
+        snaps again or moves freely at once (upstream #3584)."""
+        d = self.drag
+        if d is None or d.get("kind") != "transform" or d.get("grab") != "move" or d.get("cur") is None:
+            return
+        free = bool(mods & Qt.KeyboardModifier.ControlModifier)
+        if free != d.get("free", False):
+            self._transform_move(d, d["cur"], free=free)
+            self.view.update()
+
     def key(self, e: QKeyEvent) -> bool:
+        if e.key() == Qt.Key.Key_Control:
+            self.modifiers_changed(e.modifiers())
         if self.pen is None and self.graphics.key(e):
             return True
         if self.eyedropper is not None and e.key() == Qt.Key.Key_Escape:
@@ -822,7 +882,10 @@ class ProgramOverlay(QObject):
             return (along(uy), along(uy)) if uniform else (1.0, along(uy))
         return (along(ux), along(ux)) if uniform else (along(ux), 1.0)
 
-    def _transform_move(self, d: dict[str, Any], cur: QPointF) -> None:
+    def _transform_move(self, d: dict[str, Any], cur: QPointF, free: bool = False) -> None:
+        """The values a Motion drag sets with the pointer at ``cur``. ``free`` (Ctrl held): a
+        Move drag ignores Snap in Program Monitor (upstream #3584)."""
+        d["cur"], d["free"] = cur, free
         pl = d["pl"]
         t = pl["t"]
         off = cur - pl["anchorAt"]
@@ -843,7 +906,10 @@ class ProgramOverlay(QObject):
         height = "scale_height" if t.get("effectId") == "transform" else "scale"
         grab = d["grab"]
         if grab == "move":
-            moved, self.snap_lines = self._snap(pl, moved)
+            if free:
+                self.snap_lines = []
+            else:
+                moved, self.snap_lines = self._snap(pl, moved)
             changes = [("position", pt(pl["position"] + unscale(pl["outer"], moved)))]
         elif grab == "anchor":
             changes = [("anchor", pt(pl["anchor"] + unscale(pl["toScreen"], moved))),
