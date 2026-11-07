@@ -180,6 +180,7 @@ Current classification:
 |---|---|
 | x264, x265 (software H.264 / HEVC encoders, through the FFmpeg backend) | `cfa4-restricted-extras` |
 | CFA4's own codecs (H.264, HEVC, AAC, AC-3 and the other decoders, the H.264 encoder) | base package (owner decision, 2026-10-25) |
+| H.266/VVC: VVdeC decoder, VVenC and uvg266 encoders, FFmpeg `libvvenc` (all VVC components, decoding included; [CFA4-VVC-PLAN-001](plans/CFA4-VVC-PLAN-001-2026-11-07.md)) | `cfa4-restricted-extras` (owner decision, 2026-11-07) |
 
 A new patent-encumbered component goes to `cfa4-restricted-extras` unless the owner decides
 otherwise; record each decision in the table above.
