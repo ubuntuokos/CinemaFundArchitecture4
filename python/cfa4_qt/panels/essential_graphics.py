@@ -277,6 +277,19 @@ class TemplateList(QListWidget):
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragOnly)
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``gfxTemplates.item.<template id>`` for the cards in view."""
+        vp = self.viewport()
+        out = []
+        for i in range(self.count()):
+            it = self.item(i)
+            if it is None or it.isHidden() or not it.data(Qt.ItemDataRole.UserRole):
+                continue
+            r = self.visualItemRect(it).translated(vp.pos()).intersected(vp.geometry())
+            if not r.isEmpty():
+                out.append((f"gfxTemplates.item.{it.data(Qt.ItemDataRole.UserRole)}", QRectF(r), it.text()))
+        return out
+
     def startDrag(self, _actions: Any) -> None:
         item = self.currentItem()
         if item is None:
