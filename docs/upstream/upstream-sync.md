@@ -139,7 +139,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3252 | text, ui: font coverage tests probe faces without keeping every font file loaded | F | kihagy: csak teszt, át nem vett betűkészlet-változásokra épül | kézi port | – | – | lezárva |
 | 0.14.0 | #3286 | Keep draft-decoder counter assertions in one test | F | kihagy: az upstream közös tesztbináris-gondja, a CFA4-ben minden tesztfájl külön folyamat | kézi port | – | – | lezárva |
 | 0.14.0 | #3321 | fix(av1): drop the duplicate strictly_increasing and its test | B | átvesz (a #2888 és #3081 duplikátumát szünteti meg) | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | – | tervezett |
+| 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | #702 | PR nyitva |
 | 0.14.0 | #1841 | #1545: effects.apply answers with the applied instances (clip, index, effect) | C | átvesz | tisztán | U0-C | – | tervezett |
 | 0.14.0 | #1870 | #1216: a cap on the CPU threads an export uses (maxThreads) | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.14.0 | #2415 | #2340: uncompressed QuickTime video (raw 24-bit RGB, 2vuy, v210) decodes | C | átvesz | kézi port | U0-C | – | tervezett |
