@@ -12285,8 +12285,13 @@ def test_real_engine_timeline_new_track_drops_as_egui(app, tmp_path: Path):
         ids = {e["id"] for e in c.call("ui.elements", {"prefix": "timeline.newTrackPreview."})["result"]}
         assert ids == {f"timeline.newTrackPreview.{clip['clip']}"}, ids
         QtTest.QTest.mouseRelease(canvas, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, target)
-        assert wait_until(app, lambda: len(win.sequence["audio"]) == n_audio + 1, 10_000), win.events.text.toPlainText()
-        assert any(it.get("clip") == clip["clip"] for it in win.sequence["audio"][-1].get("items") or []), win.sequence["audio"][-1]
+        # the new track and the clip on it can arrive in two sequence updates: wait for both
+        assert wait_until(
+            app,
+            lambda: len(win.sequence["audio"]) == n_audio + 1
+            and any(it.get("clip") == clip["clip"] for it in win.sequence["audio"][-1].get("items") or []),
+            10_000,
+        ), (win.sequence["audio"][-1], win.events.text.toPlainText())
         # a project item dropped above the top video track: a new video track holds it
         item = c.call("engine.execute", {"command": "file.newBarsAndTone", "params": {"seconds": 2}})["result"]["item"]
         wait_until(app, lambda: False, 300)
@@ -12300,8 +12305,12 @@ def test_real_engine_timeline_new_track_drops_as_egui(app, tmp_path: Path):
         canvas.dragMoveEvent(move)
         assert move.isAccepted() and canvas._drop_preview is not None and canvas._drop_preview[1].track_id == "new"
         canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
-        assert wait_until(app, lambda: len(win.sequence["video"]) == n_video + 1, 10_000), win.events.text.toPlainText()
-        assert any(it.get("item") == item for it in win.sequence["video"][-1].get("items") or []), win.sequence["video"][-1]
+        assert wait_until(
+            app,
+            lambda: len(win.sequence["video"]) == n_video + 1
+            and any(it.get("item") == item for it in win.sequence["video"][-1].get("items") or []),
+            10_000,
+        ), (win.sequence["video"][-1], win.events.text.toPlainText())
     finally:
         server.close()
         win._quit_confirmed = True
