@@ -690,6 +690,41 @@ pub fn trim_delta(s: &Session, clip: ClipId, edge: Edge, mode: TrimMode, delta: 
     clamp_trim_linked(q, &with_links(s, &[clip]), edge, mode, delta, &ctx)
 }
 
+/// The delta a roll of every cut in `pairs` can apply together: `delta` clamped by each pair's
+/// media and the frame left in each clip, each tried on a copy of `q`. 0 when a pair would roll
+/// by another amount (a clip whose Out point is past the end of its media rolls the other way).
+fn clamp_roll_linked(q: &cfa4_project::Sequence, pairs: &[(ClipId, ClipId)], delta: Tick, ctx: &mut edit::EditCtx) -> Result<Tick> {
+    let mut d = delta;
+    for &(pl, pr) in pairs {
+        let mut probe = q.clone();
+        let x = edit::roll(&mut probe, pl, pr, d, ctx)?;
+        if x.abs() < d.abs() {
+            d = x;
+        }
+    }
+    if d != Tick::ZERO {
+        for &(pl, pr) in pairs {
+            let mut probe = q.clone();
+            if edit::roll(&mut probe, pl, pr, d, ctx)? != d {
+                return Ok(Tick::ZERO);
+            }
+        }
+    }
+    Ok(d)
+}
+
+/// The delta `timeline.roll` would apply for `delta`, without editing anything: the Timeline's
+/// Rolling Edit drag shows this, so the cut stops where the roll on release stops instead of
+/// following the pointer past the media.
+pub fn roll_delta(s: &Session, left: ClipId, right: ClipId, delta: Tick) -> Result<Tick> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let durations = |id: ItemId| crate::media_duration(&s.project, &s.media, id);
+    let starts = |id: ItemId| crate::media_start(&s.project, id);
+    let mut next = s.project.next_id;
+    let mut ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: q.settings.frame_rate.frame_duration() };
+    clamp_roll_linked(q, &linked_roll_pairs(q, left, right, s.state.linked_selection), delta, &mut ctx)
+}
+
 /// Sequence settings matching a media clip (New Sequence From Clip, New Sequence from an item):
 /// its frame size, rate and pixel aspect ratio (Interpret Footage's, else the file's), so a
 /// 1440 x 1080 clip with 4:3 pixels makes a 1440 x 1080 sequence that displays 16:9.
@@ -2909,14 +2944,7 @@ fn build() -> Vec<CommandSpec> {
             let (x, n, linked) = s.edit_sequence("Rolling Edit", |q, ctx, _| {
                 let pairs = linked_roll_pairs(q, l, r, follow);
                 let linked = pairs.len() > 1;
-                let mut d = d;
-                for &(pl, pr) in &pairs {
-                    let mut probe = q.clone();
-                    let x = edit::roll(&mut probe, pl, pr, d, ctx)?;
-                    if x.abs() < d.abs() {
-                        d = x;
-                    }
-                }
+                let d = clamp_roll_linked(q, &pairs, d, ctx)?;
                 if d != Tick::ZERO {
                     for &(pl, pr) in &pairs {
                         edit::roll(q, pl, pr, d, ctx)?;
@@ -2925,6 +2953,16 @@ fn build() -> Vec<CommandSpec> {
                 Ok((d, pairs.len(), linked))
             })?;
             Ok(json!({"delta": x.0, "pairs": n, "linked": linked}))
+        }),
+        // What `timeline.roll` would apply, without editing (a frontend's Rolling Edit drag shows it,
+        // so the cut stops where the roll on release stops: upstream #3155).
+        query!("timeline.rollDelta", "Rolling Edit Limit", r#"{"left":id,"right":id,"delta":ticks}"#, |s, p| {
+            let (l, r) = (
+                clip_p(p, "left").ok_or_else(|| bad("timeline.rollDelta", "need `left`"))?,
+                clip_p(p, "right").ok_or_else(|| bad("timeline.rollDelta", "need `right`"))?,
+            );
+            let d = Tick(p.get("delta").and_then(Value::as_i64).ok_or_else(|| bad("timeline.rollDelta", "need `delta` (ticks)"))?);
+            Ok(json!({"delta": roll_delta(s, l, r, d)?.0}))
         }),
         cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
