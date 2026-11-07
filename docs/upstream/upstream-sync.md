@@ -75,11 +75,11 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3405 | engine: Duplicate puts the copy in the bin of its source (#3368) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3409 | engine: effects.addKeyframe keeps an explicit time at the out point and says what it did (#3386) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.15.0 | #3416 | Shorten atomic_write temp names so long project names still save | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
-| 0.15.0 | #3423 | Export: preserve optional binary transparency in animated GIFs (#3396) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3423 | Export: preserve optional binary transparency in animated GIFs (#3396) | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3432 | Strip UTF-8 byte order mark when parsing .cube LUT files | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3440 | Fix trim_caption moving edges of captions shorter than one frame | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | #701 | PR nyitva |
-| 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3471 | frame: move rotated chroma buffers instead of cloning (#3468) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3474 | Media cache: a folder of its own inside a custom location (fixes #2772) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.15.0 | #3565 | Fix graphics template width scaling across canvas sizes (#3415) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
@@ -87,7 +87,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3591 | Synchronize: Clip > Synchronize (Audio) works on long stereo clips | B | átvesz | kézi port | U0-B2b (a #3080 után) | #701 | PR nyitva |
 | 0.15.0 | #3607 | render: convert the CPU monitor frame to sRGB bytes in vectorised batches | B | átvesz | kézi port | U0-C, U0-D (a #3608-cal) | #705 | PR nyitva |
 | 0.15.0 | #3627 | fix(engine): accept time objects for timeline.place sourceIn and duration | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
-| 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3535 | control: say why the control server is not serving (#3436) | C | átvesz | kézi port | U0-C | #593 | PR nyitva |
 | 0.15.0 | #3631 | Add timeline.delete alias and document headless clip removal | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.15.0 | #3402 | #3364: warn about one-frame In/Out exports | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #538 | PR nyitva |
