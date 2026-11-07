@@ -10380,3 +10380,134 @@ def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_control_channel_lists_painted_parts_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui registers painted regions with their own ids; the Qt panels that paint them list them
+    too (``automation_parts``): the Audio Meters' loudness readout, each channel's bar and the dB
+    scale, with what they show, in ``ui.elements``, and ``ui.click`` / ``ui.move`` find them."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.meters import AudioMetersPanel
+
+    meters = AudioMetersPanel()
+    meters.resize(140, 420)
+    meters.loudness = [-23.0, -22.5, -23.1, -1.5]
+    meters.levels = [-12.0, -18.0]
+    parts = {pid: (r, label) for pid, r, label in meters.automation_parts()}
+    assert set(parts) == {"audioMeters.loudness", "audioMeters.channel.L", "audioMeters.channel.R", "audioMeters.scale"}, set(parts)
+    assert parts["audioMeters.loudness"][1] == "M -23.0 S -22.5 I -23.1 LUFS TP -1.5 dBTP"
+    assert parts["audioMeters.channel.L"][1] == "L -12.0 dB" and parts["audioMeters.scale"][1].startswith("0 -")
+    assert parts["audioMeters.channel.L"][0].right() < parts["audioMeters.channel.R"][0].left()
+    meters.resize(30, 80)  # too small for the readout and the scale: only the bars
+    assert {pid for pid, _r, _l in meters.automation_parts()} == {"audioMeters.channel.L", "audioMeters.channel.R"}
+    meters.deleteLater()
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        app.processEvents()
+        assert _visible_on_screen(win.meters)
+        c = _ControlClient(app, server.port())
+        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "audioMeters."})["result"]}
+        assert "audioMeters.channel.L" in els and "audioMeters.channel.R" in els, els
+        x, y, w, h = els["audioMeters.channel.L"]["rect"]
+        origin = win.meters.mapTo(win, QtCore.QPoint(0, 0))
+        assert x >= origin.x() and y >= origin.y() and w > 0 and h > 0
+        assert c.call("ui.move", {"id": "audioMeters.channel.L"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.channel.R"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.nothing"})["ok"] is False
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def _visible_on_screen(w) -> bool:
+    return w.isVisible() and not w.visibleRegion().isEmpty()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_zoom_scroll_bar_as_egui(app, tmp_path: Path):
+    """egui's zoom scroll bar under the Timeline (``timeline.zoomBar`` thumb on
+    ``timeline.zoomBar.track``): the thumb is the share of the sequence and ten minutes after it in
+    view; its middle drags the view, a handle zooms with the other end staying put, a press beside
+    it brings the thumb there, Escape during a drag puts the view back."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline_zoom import MIN_THUMB_W, timeline_extent
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    bar = win.timeline.zoom_bar
+    tps = 254_016_000_000
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.zoomBar"})["result"]}
+
+        assert wait_until(app, lambda: {"timeline.zoomBar", "timeline.zoomBar.track"} <= set(els()), 10_000), els()
+        canvas.pps = 40.0
+        canvas.scroll_ticks = 0
+        canvas.update()
+        app.processEvents()
+        track, thumb = bar.bar_rect(), bar.thumb_rect()
+        vis = track.width() / canvas.pps
+        total = max(timeline_extent(canvas.duration / tps), vis)
+        assert thumb.left() == track.left()
+        assert abs(thumb.width() - max(MIN_THUMB_W, vis / total * track.width())) < 0.5, (thumb, vis, total)
+        # the middle drags the view, the thumb staying under the pointer
+        x, y, w, h = els()["timeline.zoomBar"]["rect"]
+        assert c.call("ui.drag", {"from": {"id": "timeline.zoomBar"}, "to": {"x": x + w / 2 + 120, "y": y + h / 2}})["ok"]
+        assert wait_until(app, lambda: canvas.scroll_ticks > 0, 5_000)
+        assert abs(bar.thumb_rect().left() - (track.left() + 120)) < 3, bar.thumb_rect()
+        assert canvas.pps == 40.0
+        # the right handle zooms in, the left end of the view staying put
+        scroll = canvas.scroll_ticks
+        t = bar.thumb_rect()
+        QtTest.QTest.mousePress(bar, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(int(t.right() - 3), int(t.center().y())))
+        QtTest.QTest.mouseMove(bar, QtCore.QPoint(int(t.right() - 13), int(t.center().y())))
+        QtTest.QTest.mouseRelease(bar, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(int(t.right() - 13), int(t.center().y())))
+        assert canvas.pps > 40.0 and canvas.scroll_ticks == scroll, (canvas.pps, canvas.scroll_ticks, scroll)
+        # the left handle zooms out, the right end staying put
+        pps = canvas.pps
+        end = canvas.scroll_ticks / tps + track.width() / pps
+        t = bar.thumb_rect()
+        QtTest.QTest.mousePress(bar, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(int(t.left() + 3), int(t.center().y())))
+        QtTest.QTest.mouseMove(bar, QtCore.QPoint(int(t.left() - 7), int(t.center().y())))
+        QtTest.QTest.mouseRelease(bar, QtCore.Qt.MouseButton.LeftButton, pos=QtCore.QPoint(int(t.left() - 7), int(t.center().y())))
+        assert canvas.pps < pps
+        assert abs(canvas.scroll_ticks / tps + track.width() / canvas.pps - end) < 0.01
+        # a press beside the thumb brings its middle there; Escape during the drag puts it back
+        before = (canvas.scroll_ticks, canvas.pps)
+        spot = QtCore.QPoint(int(track.right() - 40), int(track.center().y()))
+        QtTest.QTest.mousePress(bar, QtCore.Qt.MouseButton.LeftButton, pos=spot)
+        assert abs(bar.thumb_rect().center().x() - spot.x()) < 2, bar.thumb_rect()
+        QtTest.QTest.keyClick(bar, QtCore.Qt.Key.Key_Escape)
+        QtTest.QTest.mouseRelease(bar, QtCore.Qt.MouseButton.LeftButton, pos=spot)
+        assert (canvas.scroll_ticks, canvas.pps) == before
+        # the canvas's own zoom moves the thumb (the bar follows the view)
+        canvas.zoom_to_fit()
+        app.processEvents()
+        assert bar.thumb_rect().left() == track.left()
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
