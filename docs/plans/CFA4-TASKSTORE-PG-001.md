@@ -117,8 +117,9 @@ keverhet.
   projektből, a felhasználó törölheti a hozzá tartozó indexet; a törlés minden szakaszra, átiratra,
   címkére és vektorra kiterjed.
 - **Arcok és személyek:** arcbeágyazás biometrikus adat. Csak kifejezett, projektenkénti
-  bekapcsolással indexelhető, alapból ki van kapcsolva, és egy lépésben törölhető; a részletes
-  hozzájárulási szabály az arccserére (38. típus) vonatkozó nyitott kérdéssel együtt dől el.
+  bekapcsolással indexelhető, alapból ki van kapcsolva, és egy lépésben törölhető. Az arccserére
+  (38. típus) a hozzájárulási nyilatkozat és a nem kikapcsolható jelölés vonatkozik (AI ADR 0008,
+  lezárt kérdések, 2026-11-07).
 - **Beágyazó modellek** ugyanúgy a felhasználó letöltésével és egyszeri licencelfogadással
   kerülnek a gépre, mint minden más modell; a CFA4 nem terjeszt modellt.
 
@@ -167,8 +168,8 @@ keverhet.
 ## 9. Rust-oldal
 
 - Új, felületfüggetlen crate: `cfa4-store`. Ez adja a kapcsolatkészletet, a migrációkat és a
-  típusos lekérdezéseket. A feladatsor és a `cfa4-ai-jobs` ezen át éri el az adatbázist, más crate
-  közvetlenül nem.
+  típusos lekérdezéseket. A feladatsor (`cfa4-tasks`, nem AI-s közös crate; tulajdonosi döntés,
+  2026-11-07) és a `cfa4-ai-jobs` ezen át éri el az adatbázist, más crate közvetlenül nem.
 - Meghajtó: tiszta Rust (`tokio-postgres` vagy `sqlx`), MIT/Apache-licenccel, `cargo deny`
   ellenőrzéssel; a végleges választás a BacklotHub G2 kapujával közös, hogy egy meghajtó legyen.
 - A `cfa4-store` L2-es crate, felület nélkül; a rétegtáblába (`cargo xtask layers`) a létrehozásakor
