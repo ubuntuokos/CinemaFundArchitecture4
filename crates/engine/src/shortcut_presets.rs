@@ -350,10 +350,17 @@ pub const PREMIERE_PANEL: &[Entry] = &[
     ("captions.merge", "Alt+M", "Text"),
     ("captions.split", "Alt+S", "Text"),
     ("playback.loop", "Cmd+L", "Audio Track Mixer"),
+    ("mixer.showHideTracks", "Cmd+Alt+T", "Audio Track Mixer"),
+    ("mixer.meterInputOnly", "Ctrl+Shift+I", "Audio Track Mixer"),
     ("playback.toggle", "Space", "Metadata"),
     ("playback.loop", "Cmd+L", "Metadata"),
     ("mediaBrowser.openInSource", "Shift+O", "Media Browser"),
 ];
+
+/// Ids in the tables that only the Qt6 GUI runs (its own commands, `python/cfa4_qt/main_window.py`
+/// `local_commands`): the egui UI, frozen in CFA4, has no command for them, so its keyboard test
+/// accepts them by this list instead of reporting them as dangling.
+pub const QT_ONLY: &[&str] = &["mixer.showHideTracks", "mixer.meterInputOnly"];
 
 /// The whole "Premiere Pro Compatible" table: [`PREMIERE`] plus [`PREMIERE_PANEL`].
 pub fn premiere() -> Vec<Entry> {

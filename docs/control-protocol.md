@@ -51,7 +51,7 @@ see `docs/qt-parity.md` 1.11 for the methods it has so far):
 | `engine.execute` / `ui.menu.invoke` | `{command, params}` | any engine or UI command id |
 | `engine.commands` / `ui.menu.list` | – | command registry / menu tree |
 | `ui.inspect` | – | UI state (tool, workspace, dock, timeline view, playback, fps…) |
-| `ui.elements` | `{prefix?}` | every on-screen interactive element: id, label, rect |
+| `ui.elements` | `{prefix?}` | every on-screen interactive element: id, label, rect. A dialog's standard buttons are `<dialog>.ok`, `.cancel`, `.close`, … (in the Qt GUI too, where an unnamed OK / Cancel of a named dialog takes that id) |
 | `ui.set` | `{tool, workspace, mode, theme, focused, playbackRes, timeline:{pps,scroll,fit}, program:{…}, source:{…}, clipDialog:{param: value}, menuDialog:{param: value}, panels:{scopes, timecode, reference, events, progress}, export:{…}, keyframeSelection:[…]}` | `keyframeSelection` replaces the Effect Controls keyframe selection (`[{clip, effect, param, mask?, time}]`, `time` in media ticks; read back as `ui.inspect` → `ui.keyframe_selection`; a click on a lane keyframe selects just that one); `program` / `source` merge fields into the monitor view state (`res`, `paused_res`, `high_quality`, `display`, `zoom`, `pan`, `show_rulers`, `show_guides`, `lock_guides`, `snap`, `guides`, `compare_ref`, …; see [monitors.md](monitors.md)); `clipDialog` sets fields of the open Edit / Clip / File dialog (Paste Attributes, Make Subclip, Frame Hold Options, …); `menuDialog` those of the M3.11 dialogs (Find, Create Search Bin, Project Settings, Scene Edit Detection, Simplify Sequence, Automate to Sequence…; see `panels::menu_dialogs`); `panels` merges into the panel settings (`ui.inspect` → `ui.panels`; see `panels::panel_state`): Lumetri Scopes `{shown: ["vectorscopeYuv"|"vectorscopeHls"|"histogram"|"parade"|"waveform"], waveformType, paradeType, colorSpace, brightness, scale, clamp, targets}`, Timecode `{rows: [{source, mode, display}], showName}`, Reference Monitor `{ganged, time, display: "composite"|"scopes", scopes}`, Events `{level, selected}`, Progress `{showFinished}` `export` deep-merges into Export mode state (`preset` — applied first —, `settings` (ExportSettings JSON), `fileName`, `location`, `range`, `customStart`, `customEnd`, `openSections`, `manager` (Preset Manager: `query`, `favoritesOnly`, `selected`, `saveName`), `quickOpen`, `quickPath`, `quickPreset`); `program` / `source` merge fields into the monitor view state (`res`, `paused_res`, `high_quality`, `display`, `zoom`, `pan`, `show_rulers`, `show_guides`, `lock_guides`, `snap`, `guides`, `compare_ref`, …; see [monitors.md](monitors.md)); `clipDialog` sets fields of the open Edit / Clip / File dialog (Paste Attributes, Make Subclip, Frame Hold Options, …); `menuDialog` those of the M3.11 dialogs (Find, Create Search Bin, Project Settings, Scene Edit Detection, Simplify Sequence, Automate to Sequence…; see `panels::menu_dialogs`); `projectPanel` merges into the Project panel's view state (`bin` shown in place, `tabs` (bins in a tab or window: `{bin, floating, view, iconSize, nav}`), `activeTab`, `selectedBin`, `rename: {item|bin, text}`, `dialog` (`{"metadataDisplay": {columns, filter}}`, `{"savePresetAs": {name}}`, `{"managePresets": {selected, name}}`, `{"freeformOptions": {options}}`, `{"saveArrangement": {name, bin}}`)); `mediaBrowser` into the Media Browser's (`expanded`, `pathEdit`, `editColumns`, `treeWidth`). View settings, columns and presets are engine commands (`project.view.set`, `project.columns.set`, `project.viewPreset.*`, `mediaBrowser.settings`) |
 | `ui.panel.show` / `ui.panel.close` | `{panel}` | |
 | `ui.click` / `ui.move` | `{id}` or `{x,y}`, `button`, `count`, `modifiers` | synthetic pointer input |
@@ -86,6 +86,9 @@ unknown IDs, non-widget regions and hidden tool aliases. The reply acknowledges 
 focus. This is separate from `ui.focused`, which identifies the active panel. Tools, dock tabs,
 tab menus and divider handles expose widget IDs through `ui.elements`. Tab/Shift-Tab move widget
 focus; Space/Enter activate focused buttons and tabs, with visible focus outlines.
+Painted regions carry ids of their own (the Audio Meters' `audioMeters.loudness`,
+`audioMeters.channel.<name>` and `audioMeters.scale`, with what they show as the label); in the Qt GUI
+a widget lists them through `automation_parts()`, and `ui.click` / `ui.move` / `ui.drag` find them by id.
 
 For unattended validation, start with `--control <port> --control-input-only`. This opt-in mode
 accepts widget input through control requests and excludes native keyboard, pointer, file-drop
@@ -199,6 +202,7 @@ or `--bridge 127.0.0.1:9876` to drive the running app. Tools: `command_list`, `c
 `command_batch`, `doc_inspect`, `render_preview`, `project_inspect`, `sequence_inspect`, `media_import`,
 `render_frame`, `ui_inspect`, `ui_elements`, `ui_click`, `ui_drag`, `ui_key`, `ui_type`, `ui_screenshot`,
 `ui_control`; resources `cfa4://document` and `cfa4://commands`. `.mcp.json` registers both.
+The bridge drives the Qt 6 GUI (`cfa4-qt --control <port>`) the same way.
 Annotations, argument checking, errors and export progress / cancellation:
 [agents.md § Conventions](agents.md#conventions).
 
