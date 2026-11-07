@@ -320,5 +320,6 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	compression {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Transparency Grid	Grille de transparence
 	Show Duplicate Frame Markers	Afficher les repères d’images en double
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	L’entrée/sortie de la séquence ne fait qu’une image. Choisissez Séquence entière pour exporter toute la séquence.
