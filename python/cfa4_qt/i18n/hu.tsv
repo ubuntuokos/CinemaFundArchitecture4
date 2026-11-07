@@ -2326,5 +2326,35 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	About	Névjegy
+	Contributors	Közreműködők
+	Models	Modellek
+	Show	Megjelenítés
+	Sort	Rendezés
+	Reverse the order	Fordított sorrend
+	Grab bag	Névfelhő
+	Table	Táblázat
+	No contributor data was built into this copy.	Ebben a példányban nincsenek közreműködői adatok.
+	No model credits were built into this copy.	Ebben a példányban nincsenek modell-adatok.
+	Company	Cég
+	Model	Modell
+	Version	Verzió
+	Commits	Commitok
+	% of all commits	Az összes commit %-a
+	Lines +/−	Sorok +/−
+	Version {version}	Verzió: {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Betűtípusok: Inter, Noto Serif és JetBrains Mono (SIL OFL 1.1).
+	Username	Felhasználónév
+	Display name	Megjelenített név
+	Real name	Valódi név
+	Name (A–Z)	Név (A–Z)
+	Merged PRs	Beolvasztott PR-ok
+	Lines added	Hozzáadott sorok
+	Lines deleted	Törölt sorok
+	Line delta	Sorkülönbség
+	Binary assets added	Hozzáadott bináris fájlok
+	Binary assets removed	Eltávolított bináris fájlok
+	First commit	Első commit
+	Last commit	Utolsó commit
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
