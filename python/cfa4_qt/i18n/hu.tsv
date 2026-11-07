@@ -220,6 +220,8 @@
 	From Source Monitor, Match Frame	A forrásmonitorról, egyező kockával
 	From file…	Fájlból…
 	From the preset	Az előbeállításból
+	Adaptive ({bpp} bits per pixel)	Adaptív ({bpp} bit képpontonként)
+	Set a fixed bitrate	Rögzített bitráta beállítása
 	Gain	Erősítés
 	General…	Általános…
 	Generate	Előállítás

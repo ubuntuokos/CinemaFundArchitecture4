@@ -376,14 +376,30 @@ class ExportDialog(QDialog):
         self.bitrate_mode.setObjectName("export.video.bitrateMode")
         for key, label in BITRATE_MODES:
             self.bitrate_mode.addItem(tr(label), key)
-        self.bitrate = QSpinBox(self)
-        self.bitrate.setObjectName("export.bitrateKbps")
-        self.bitrate.setRange(0, 1_000_000)
-        self.bitrate.setSuffix(" kbps")
-        self.bitrate.setSpecialValueText(tr("From the preset"))
+        # Target Bitrate as egui's: Mbps, the preset's value; an adaptive preset (Match Source) shows
+        # its bits per pixel with Set, which turns it into a fixed bitrate
+        self.bitrate = QDoubleSpinBox(self)
+        self.bitrate.setObjectName("export.video.target")
+        self.bitrate.setRange(0.1, 800.0)
+        self.bitrate.setDecimals(1)
+        self.bitrate.setSingleStep(0.1)
+        self.bitrate.setSuffix(" Mbps")
+        self.adaptive = QLabel(self)
+        self.adaptive.setObjectName("export.video.adaptive")
+        self.fixed_bitrate = QPushButton(tr("Set"), self)
+        self.fixed_bitrate.setObjectName("export.video.fixedBitrate")
+        self.fixed_bitrate.setToolTip(tr("Set a fixed bitrate"))
+        self.fixed_bitrate.clicked.connect(self._set_fixed_bitrate)
+        self.bitrate_box = QWidget(self)
+        br = QHBoxLayout(self.bitrate_box)
+        br.setContentsMargins(0, 0, 0, 0)
+        br.addWidget(self.bitrate, 1)
+        br.addWidget(self.adaptive, 1)
+        br.addWidget(self.fixed_bitrate)
+        self._target_kbps = 0  # the resolved target (an adaptive preset's computed bitrate)
         # MPEG-2 only: GOP length, B pictures, constant quantiser, 4:2:2 Profile
         self.gop = QSpinBox(self)
-        self.gop.setObjectName("export.video.keyframe")
+        self.gop.setObjectName("export.mpeg2Gop")
         self.gop.setRange(0, 1000)
         self.gop.setSpecialValueText(tr("From the preset"))
         self.gop.setSuffix(" " + tr("frames"))
@@ -466,8 +482,9 @@ class ExportDialog(QDialog):
         fv = QFormLayout(video.body)
         fv.addRow(tr("Frame Size"), size_row)
         fv.addRow(tr("Bitrate Encoding"), self.bitrate_mode)
-        fv.addRow(tr("Target Bitrate"), self.bitrate)
-        fv.addRow(tr("Key Frame Distance"), self.gop)
+        fv.addRow(tr("Target Bitrate"), self.bitrate_box)
+        fv.addRow(tr("Key Frame Distance"), self.gop)  # MPEG-2's GOP length; H.26x: the rows' own
+        fv.setRowVisible(self.gop, False)  # until MPEG-2 is chosen
         fv.addRow(tr("B pictures"), self.b_frames)
         fv.addRow(tr("Constant quantiser"), self.quantizer)
         fv.addRow(tr("Chroma"), self.chroma)
@@ -773,7 +790,6 @@ class ExportDialog(QDialog):
         else:
             self.width_spin.setValue(0)
             self.height_spin.setValue(0)
-        self.bitrate.setValue(0)
         self.audio_bitrate.setValue(0)
         self.gop.setValue(0)
         self.b_frames.setValue(2)
@@ -799,10 +815,11 @@ class ExportDialog(QDialog):
         self.audio_codec.setEnabled(bool(fmt.get("audio", True)))
         self.audio_bitrate.setEnabled(bool(fmt.get("audio", True)))
         self.bitrate_mode.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
-        self.bitrate.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
+        self.bitrate_box.setEnabled(bool(fmt.get("video", True)) and not fmt.get("imageSequence"))
         mpeg2 = self.format.currentData() == "mpeg2"
         for w in (self.container, self.gop, self.b_frames, self.quantizer, self.chroma):
             w.setEnabled(mpeg2)
+        self.video_form.setRowVisible(self.gop, mpeg2)  # H.264 / H.265 / AV1 have egui's own row
         self._sync_format_rows()
         video = bool(fmt.get("video", True))
         self.captions.setVisible(video)
@@ -817,7 +834,7 @@ class ExportDialog(QDialog):
         self._immersive_changed()
         if dcp:
             # fixed by the DCI specifications: container size, J2K data rate, 5.1 24-bit PCM
-            for w in (self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate, self.audio_codec, self.audio_bitrate):
+            for w in (self.width_spin, self.height_spin, self.bitrate_mode, self.bitrate_box, self.audio_codec, self.audio_bitrate):
                 w.setEnabled(False)
         else:
             self.width_spin.setEnabled(True)
@@ -856,6 +873,7 @@ class ExportDialog(QDialog):
             self.alpha.setChecked(settings["alpha"])
             self.alpha.blockSignals(False)
         self.rows.show_settings(settings, self.touched)
+        self._show_bitrate(settings)
         if "bitrateMode" not in self.touched and isinstance(settings.get("bitrateMode"), str):
             # the preset's mode (CRF shows its Quality row)
             i = self.bitrate_mode.findData(settings["bitrateMode"])
@@ -899,6 +917,8 @@ class ExportDialog(QDialog):
 
     def _sync_rows(self) -> None:
         self.rows.sync(self._rows_shown())
+        # egui: Quality (CRF) takes the Target Bitrate's place
+        self.video_form.setRowVisible(self.bitrate_box, self.bitrate_mode.currentData() != "crf")
 
     def _muxed(self) -> bool:
         return self.format.currentData() in ("h264", "hevc")
@@ -1044,8 +1064,8 @@ class ExportDialog(QDialog):
         if self.bitrate_mode.isEnabled():
             if "bitrateMode" in self.touched:
                 p["bitrateMode"] = self.bitrate_mode.currentData()
-            if self.bitrate.value():
-                p["bitrateKbps"] = self.bitrate.value()
+            if "bitrate" in self.touched:
+                p["bitrateKbps"] = round(self.bitrate.value() * 1000)
         if "hardware" in self.touched:
             p["hardwareEncoding"] = "auto" if self.hardware.isChecked() else "off"
         fmt = self.formats.get(str(self.format.currentData() or ""), {})
@@ -1109,9 +1129,35 @@ class ExportDialog(QDialog):
             return
         self.engine.execute("export.resolve", self.params(), on_reply=self._on_resolved, on_error=self._summary_error)
 
+    def _show_bitrate(self, settings: dict[str, Any]) -> None:
+        """The preset's target in Mbps, or its adaptive bitrate (bits per pixel) with Set."""
+        bpp = settings.get("adaptiveBitrate")
+        adaptive = "bitrate" not in self.touched and isinstance(bpp, (int, float)) and not isinstance(bpp, bool)
+        self.bitrate.setVisible(not adaptive)
+        self.adaptive.setVisible(adaptive)
+        self.fixed_bitrate.setVisible(adaptive)
+        if adaptive:
+            self.adaptive.setText(tr("Adaptive ({bpp} bits per pixel)").format(bpp=decimal(f"{float(bpp):g}")))
+        kbps = settings.get("bitrateKbps")
+        if "bitrate" not in self.touched and isinstance(kbps, int) and not isinstance(kbps, bool) and kbps > 0:
+            self.bitrate.blockSignals(True)
+            self.bitrate.setValue(kbps / 1000)
+            self.bitrate.blockSignals(False)
+
+    def _set_fixed_bitrate(self) -> None:
+        """egui's Set: the adaptive preset's bitrate for this sequence becomes a fixed target."""
+        if self._target_kbps > 0:
+            self.bitrate.blockSignals(True)
+            self.bitrate.setValue(self._target_kbps / 1000)
+            self.bitrate.blockSignals(False)
+        self._touch("bitrate")
+        self._show_bitrate(self.resolved_settings)
+
     def _on_resolved(self, result: Any, _b: bytes | None) -> None:
         r = result if isinstance(result, dict) else {}
         self._agent_before = None
+        target = (r.get("output") or {}).get("targetKbps")
+        self._target_kbps = target if isinstance(target, int) and not isinstance(target, bool) else 0
         if isinstance(r.get("settings"), dict):
             self.resolved_settings = r["settings"]
             self.rows.show_resolved(r)

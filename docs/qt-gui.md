@@ -178,3 +178,7 @@ queue stays (`test_real_engine_export_empty_states_as_egui`).
 The window's controls carry egui's automation ids (`export.video.*`, `export.audio.*`,
 `export.range.start`, `export.button`, `export.sendToQueue`, …), checked against
 `crates/ui-egui/src/panels/export_mode.rs` by `test_export_widgets_carry_eguis_automation_ids`.
+Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's values; an
+adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
+`bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
+(`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).

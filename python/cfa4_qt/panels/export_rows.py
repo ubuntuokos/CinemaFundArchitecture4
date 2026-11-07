@@ -1,8 +1,9 @@
 """More of the Export window's Video and Audio rows (egui's ``export_mode`` video and audio
 sections): Frame Rate, Field Order, Aspect, the H.264 Profile and Level (H.265 and AV1: the
-profile and the encoder, as text), Quality (CRF), Maximum Bitrate, GPU Rendering, Render at
-Maximum Depth, Use Maximum Render Quality; Sample Rate, Channels, Sample Size (the sizes the
-codec and container cannot store greyed out, saying why) and the FLAC Compression Level.
+profile and the encoder, as text), Quality (CRF), Maximum Bitrate (Mbps), Key Frame Distance (off,
+or every so many frames), GPU Rendering, Render at Maximum Depth, Use Maximum Render Quality;
+Sample Rate, Channels, Sample Size (the sizes the codec and container cannot store greyed out,
+saying why) and the FLAC Compression Level.
 
 Each row shows the resolved setting (``export.resolve``'s camelCase ``settings``; ``audio`` keeps
 its snake_case keys) until the user changes it, and only a changed row goes into the
@@ -16,7 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from PySide6.QtCore import QObject, Qt, Signal
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QSpinBox, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QHBoxLayout, QLabel, QSpinBox, QWidget
 
 from ..i18n import N_, tr
 
@@ -49,6 +50,7 @@ ONE_PROFILE = {
 SIZE_WHY_FLAC = N_("FLAC stores whole-number samples only")
 SIZE_WHY_MXF = N_("MXF export writes integer PCM only")
 SIZE_WHY = N_("Not supported by CFA4's encoders yet")
+KEYFRAME_DEFAULT = 48  # egui's distance when Key Frame Distance is turned on
 AUDIO_ONLY_PCM = {"wav", "aiff"}
 
 
@@ -107,11 +109,37 @@ class ExportRows(QObject):
         self.crf = QSpinBox(parent)
         self.crf.setObjectName("export.video.crf")
         self.crf.setRange(0, 51)
-        self.max_bitrate = QSpinBox(parent)
+        # in Mbps as egui's; 0 = the engine's 1.5 x target
+        self.max_bitrate = QDoubleSpinBox(parent)
         self.max_bitrate.setObjectName("export.video.max")
-        self.max_bitrate.setRange(0, 1_000_000)
-        self.max_bitrate.setSuffix(" kbps")
+        self.max_bitrate.setRange(0.0, 1000.0)
+        self.max_bitrate.setDecimals(1)
+        self.max_bitrate.setSingleStep(0.1)
+        self.max_bitrate.setSuffix(" Mbps")
         self.max_bitrate.setSpecialValueText(tr("From the preset"))
+        # Key Frame Distance as egui's: off (the encoder's two seconds) or every so many frames
+        self.keyframe_box = QWidget(parent)
+        self.keyframe_on = QCheckBox(self.keyframe_box)
+        self.keyframe_on.setObjectName("export.video.keyframeOn")
+        self.keyframe = QSpinBox(self.keyframe_box)
+        self.keyframe.setObjectName("export.video.keyframe")
+        self.keyframe.setRange(1, 600)
+        self.keyframe.setValue(KEYFRAME_DEFAULT)
+        self.keyframe.setSuffix(" " + tr("frames"))
+        kf = QHBoxLayout(self.keyframe_box)
+        kf.setContentsMargins(0, 0, 0, 0)
+        kf.addWidget(self.keyframe_on)
+        kf.addWidget(self.keyframe, 1)
+
+        def show_keyframe(v: Any) -> None:
+            on = isinstance(v, int) and not isinstance(v, bool) and v > 0
+            self.keyframe_on.blockSignals(True)
+            self.keyframe_on.setChecked(on)
+            self.keyframe_on.blockSignals(False)
+            self.keyframe.blockSignals(True)
+            self.keyframe.setValue(v if on else KEYFRAME_DEFAULT)
+            self.keyframe.blockSignals(False)
+            self.keyframe.setVisible(on)
         self.gpu = QCheckBox(tr("Composite on the GPU when available"), parent)
         self.gpu.setObjectName("export.gpuRendering")
         self.max_depth = QCheckBox(tr("Render at Maximum Depth"), parent)
@@ -149,8 +177,10 @@ class ExportRows(QObject):
             combo_row("h264Profile", self.profile, ("h264Profile",)),
             combo_row("h264Level", self.level, ("h264Level",)),
             spin_row("crf", self.crf, ("crf",)),
-            Row("maxBitrate", self.max_bitrate, ("maxBitrateKbps",), lambda: self.max_bitrate.value() or None,
-                lambda v: self.max_bitrate.setValue(int(v) if isinstance(v, int) else 0)),
+            Row("maxBitrate", self.max_bitrate, ("maxBitrateKbps",), lambda: round(self.max_bitrate.value() * 1000) or None,
+                lambda v: self.max_bitrate.setValue(v / 1000 if isinstance(v, int) and not isinstance(v, bool) else 0.0)),
+            Row("keyframe", self.keyframe_box, ("keyframeDistance",),
+                lambda: self.keyframe.value() if self.keyframe_on.isChecked() else None, show_keyframe),
             check_row("gpu", self.gpu, ("gpuRendering",), "auto", "off"),
             check_row("maxDepth", self.max_depth, ("renderAtMaxDepth",)),
             check_row("maxQuality", self.max_quality, ("maxRenderQuality",)),
@@ -171,6 +201,7 @@ class ExportRows(QObject):
         video.addRow(tr("Encoder"), self.encoder_info)
         video.addRow(tr("Quality (CRF)"), self.crf)
         video.addRow(tr("Maximum Bitrate"), self.max_bitrate)
+        video.addRow(tr("Key Frame Distance"), self.keyframe_box)
         video.addRow(tr("GPU Rendering"), self.gpu)
         video.addRow(self.max_depth)
         video.addRow(self.max_quality)
@@ -183,10 +214,17 @@ class ExportRows(QObject):
             w = row.widget
             if isinstance(w, QComboBox):
                 w.currentIndexChanged.connect(lambda _i, k=key: self.changed.emit(k))
-            elif isinstance(w, QSpinBox):
+            elif isinstance(w, (QSpinBox, QDoubleSpinBox)):
                 w.valueChanged.connect(lambda _v, k=key: self.changed.emit(k))
             elif isinstance(w, QCheckBox):
                 w.toggled.connect(lambda _on, k=key: self.changed.emit(k))
+
+        self.keyframe.valueChanged.connect(lambda _v: self.changed.emit("keyframe"))
+        self.keyframe_on.toggled.connect(self._keyframe_toggled)
+
+    def _keyframe_toggled(self, on: bool) -> None:
+        self.keyframe.setVisible(on)
+        self.changed.emit("keyframe")
 
     def show_settings(self, settings: dict[str, Any], touched: set[str]) -> None:
         for key, row in self.rows.items():
@@ -254,6 +292,7 @@ class ExportRows(QObject):
             "profileInfo": has_video and enc in ONE_PROFILE, "encoder": has_video and enc in ONE_PROFILE,
             "crf": mp4_video and bitrate_mode == "crf",
             "maxBitrate": mp4_video and bitrate_mode not in ("cbr", "crf"),
+            "keyframe": mp4_video,
             "gpu": has_video, "maxDepth": has_video, "maxQuality": has_video,
             "sampleRate": has_audio, "channels": has_audio,
             "bits": has_audio and pcm_or_flac, "flacLevel": has_audio and flac,

@@ -2200,9 +2200,6 @@ EXPORT_IDS_NOT_IN_QT = {
     "export.destination.mediaFile": "no Destinations column: Media File is the only destination",
     "export.video.matchSize": "0 x 0 (\"Match sequence\") in the size fields stands for Match Source",
     "export.video.matchRate": "\"Match sequence\" in the frame-rate field stands for Match Source",
-    "export.video.keyframeOn": "0 (\"From the preset\") in the key frame field stands for off",
-    "export.video.fixedBitrate": "the Bitrate Encoding choice stands for it",
-    "export.video.target": "the target bitrate field is in kbps, egui's in Mbps (export.bitrateKbps)",
 }
 
 
@@ -6998,7 +6995,7 @@ def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
         # Cancel keeps the changes made in the Export window (regression: the reload reapplied the preset)
         dlg.width_spin.setValue(640)
         dlg.height_spin.setValue(360)
-        dlg.bitrate.setValue(4321)
+        dlg.bitrate.setValue(4.3)  # Mbps, as egui's
         dlg.effects.switches["loudness"].setChecked(True)
         dlg.findChild(QtWidgets.QPushButton, "export.preset.more").click()
         m = dlg.preset_manager
@@ -7009,7 +7006,7 @@ def test_real_engine_export_preset_manager_as_egui(app, tmp_path: Path):
         assert wait_until(app, lambda: reloaded, 10_000)
         app.processEvents()
         p = dlg.params()
-        assert (p.get("width"), p.get("height"), p.get("bitrateKbps")) == (640, 360, 4321), p
+        assert (p.get("width"), p.get("height"), p.get("bitrateKbps")) == (640, 360, 4300), p
         assert p["settings"]["effects"]["loudness"]["enabled"] is True and "effects" in dlg.touched
         dlg.preset.setCurrentIndex((dlg.preset.currentIndex() + 1) % dlg.preset.count())
         dlg.preset.setCurrentIndex((dlg.preset.currentIndex() - 1) % dlg.preset.count())
@@ -7479,6 +7476,74 @@ def test_real_engine_export_preview_column_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_target_bitrate_and_key_frames_as_egui(app, tmp_path: Path):
+    """egui's Target Bitrate and Key Frame Distance: the target in Mbps with the preset's value; an
+    adaptive preset (Match Source) shows its bits per pixel and Set turns that into a fixed
+    target; Key Frame Distance is off (the encoder's two seconds) or on with a distance in frames,
+    for H.264 / H.265 / AV1, while MPEG-2 keeps its GOP length row."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        rows, form = dlg.rows, dlg.video_form
+
+        def resolved() -> dict:
+            got: list = []
+            engine.execute("export.resolve", dlg.params(), on_reply=lambda r, _b: got.append(r), on_error=lambda m: got.append({"error": m}))
+            assert wait_until(app, lambda: got, 10_000)
+            assert "error" not in got[0], got[0]
+            return got[0]
+
+        # the adaptive default preset: its bits per pixel, and Set
+        i = dlg.preset.findData("Match Source – Adaptive High Bitrate")
+        assert i >= 0
+        dlg.preset.setCurrentIndex(i)
+        bpp = resolved()["settings"]["adaptiveBitrate"]
+        assert isinstance(bpp, (int, float))
+        assert wait_until(app, lambda: not dlg.adaptive.isHidden() and dlg._target_kbps > 0, 10_000)
+        assert dlg.adaptive.text().startswith("Adaptive (") and "bits per pixel" in dlg.adaptive.text()
+        assert dlg.bitrate.isHidden() and not dlg.fixed_bitrate.isHidden()
+        assert dlg.findChild(QtWidgets.QPushButton, "export.video.fixedBitrate") is dlg.fixed_bitrate
+        assert "bitrateKbps" not in dlg.params(), "the adaptive bitrate stays the preset's"
+        target = dlg._target_kbps
+        dlg.fixed_bitrate.click()
+        assert not dlg.bitrate.isHidden() and dlg.adaptive.isHidden() and dlg.bitrate.suffix() == " Mbps"
+        assert dlg.params()["bitrateKbps"] == round(round(target / 100) * 100), (target, dlg.params())
+        r = resolved()
+        assert r["settings"]["adaptiveBitrate"] is None and r["settings"]["bitrateKbps"] == dlg.params()["bitrateKbps"]
+        dlg.bitrate.setValue(12.5)
+        assert resolved()["settings"]["bitrateKbps"] == 12_500
+        # Key Frame Distance: off, then every so many frames
+        assert form.isRowVisible(rows.keyframe_box) and not form.isRowVisible(dlg.gop)
+        assert not rows.keyframe_on.isChecked() and rows.keyframe.isHidden()
+        rows.keyframe_on.setChecked(True)
+        assert not rows.keyframe.isHidden() and rows.keyframe.value() == 48
+        assert resolved()["settings"]["keyframeDistance"] == 48
+        rows.keyframe.setValue(120)
+        assert resolved()["settings"]["keyframeDistance"] == 120
+        rows.keyframe_on.setChecked(False)
+        assert rows.keyframe.isHidden() and resolved()["settings"]["keyframeDistance"] is None
+        # CRF replaces the target; MPEG-2 has its GOP length row instead
+        dlg.bitrate_mode.setCurrentIndex(dlg.bitrate_mode.findData("crf"))
+        assert not form.isRowVisible(dlg.bitrate_box)
+        dlg.format.setCurrentIndex(dlg.format.findData("mpeg2"))
+        assert form.isRowVisible(dlg.gop) and not form.isRowVisible(rows.keyframe_box)
+        assert dlg.gop.objectName() == "export.mpeg2Gop"
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
     """egui's Export Video and Audio rows: Frame Rate, Field Order (progressive only), Aspect,
     H.264 Profile / Level, Quality (CRF) or Maximum Bitrate by the bitrate mode, GPU Rendering,
@@ -7524,7 +7589,7 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
             return lab.text() if isinstance(lab, QtWidgets.QLabel) else None
 
         # the rows and buttons carry egui's names (and so its translations)
-        assert [label(dlg.video_form, w) for w in (dlg.bitrate_mode, dlg.bitrate, dlg.gop)] == [
+        assert [label(dlg.video_form, w) for w in (dlg.bitrate_mode, dlg.bitrate_box, rows.keyframe_box)] == [
             "Bitrate Encoding", "Target Bitrate", "Key Frame Distance"]
         assert [label(rows.audio_form, w) for w in (dlg.audio_codec, dlg.audio_bitrate)] == ["Audio Format", "Audio Bitrate"]
         assert (dlg.audio.text(), dlg.queue_button.text()) == ("Export Audio", "Send to Queue")
@@ -7550,7 +7615,7 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
         assert rows.field_order.currentText() == "Progressive" and rows.field_order.currentData() == "progressive"
         pick(dlg.bitrate_mode, "vbr2Pass")
         assert shown(rows.max_bitrate) and not shown(rows.crf)
-        rows.max_bitrate.setValue(20_000)
+        rows.max_bitrate.setValue(20.0)  # Mbps, as egui's
         s = resolved()
         assert s["frameRate"] == {"num": 25, "den": 1} and s["pixelAspect"] == [4, 3]
         assert (s["h264Profile"], s["h264Level"], s["maxBitrateKbps"]) == ("main", 41, 20_000)
