@@ -302,6 +302,32 @@ def test_timecode():
 
 
 # ----- window against the fake engine -----
+def test_transport_buttons_named_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """The monitors' and the Audio Track Mixer's transport buttons carry egui's automation ids
+    (``<monitor>.transport.<command>``, ``mixer.transport.<command>``: monitor.rs / mixer.rs)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    try:
+        egui = {
+            "program": "markers.add markers.markIn markers.markOut markers.goToIn playhead.stepBack playback.toggle "
+            "playhead.stepForward markers.goToOut sequence.lift sequence.extract exportFrame media.toggleProxies playback.loop",
+            "source": "markers.add src.markIn src.markOut src.goIn src.stepBack source.playback.toggle src.stepFwd src.goOut "
+            "source.insert source.overwrite exportFrame media.toggleProxies",
+            "mixer": "markers.goToIn markers.goToOut playback.toggle playback.inToOut playback.loop voiceover.recordToggle",
+        }
+        panels = {"program": win.monitor, "source": win.source_monitor, "mixer": win.mixer}
+        for prefix, commands in egui.items():
+            for command in commands.split():
+                name = f"{prefix}.transport.{command}"
+                assert panels[prefix].findChild(QtWidgets.QToolButton, name) is not None, name
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_main_window_with_fake_engine(app, fake_engine: Path, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
 
