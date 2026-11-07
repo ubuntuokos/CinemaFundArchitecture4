@@ -137,7 +137,14 @@ def test_real_engine_trim_monitor_and_dynamic_trimming_as_egui(app, tmp_path: Pa
         done_exec("trim.selectEditPoint", {"clip": left["clip"], "edge": "out", "kind": "trim"})
         assert wait_until(app, lambda: info("kind") == "trim" and trim.outgoing.color == ROLL_YELLOW, 10_000)
         _drag(trim.incoming, 30)
-        assert wait_until(app, lambda: (win.sequence or {}).get("editPoints") == [{"clip": right["clip"], "out": False, "kind": "trim"}], 10_000)
+        # upstream #3224: with Linked Selection on, the linked sound's edge comes along (same edge, kind)
+        def eps_are(clip: int, out: bool, kind: str) -> bool:
+            eps = (win.sequence or {}).get("editPoints") or []
+            audio = {c["clip"] for t in (win.sequence or {}).get("audio") or [] for c in t.get("items") or []}
+            return (len(eps) == 2 and eps[0] == {"clip": clip, "out": out, "kind": kind}
+                    and eps[1]["clip"] in audio and (eps[1]["out"], eps[1]["kind"]) == (out, kind))
+
+        assert wait_until(app, lambda: eps_are(right["clip"], False, "trim"), 10_000), (win.sequence or {}).get("editPoints")
         assert wait_until(app, lambda: trim.in_shift.text() == "+5" and v1()[1]["start"] == right["start"] + 5 * frame, 10_000)
         assert trim.incoming.hot and not trim.outgoing.hot
         # a gap before it now: the outgoing side shows (gap)
