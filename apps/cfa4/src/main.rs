@@ -8,6 +8,7 @@
 //! (the demo project), Open Most Recent, or an empty project.
 //!
 //! `--control <port>` (or `CFA4_CONTROL_PORT`) starts a localhost JSON-lines control server;
+//! `CFA4_CONTROL_TOKEN` is required (see `docs/control-protocol.md`).
 //! see `cfa4_ui_egui::control` for the methods. A port that is not a number is an error from
 //! either source.
 //!
@@ -121,6 +122,7 @@ fn main() -> eframe::Result {
     // Hardware decoding switches them off. Unsupported streams and failures use our decoders.
     log::info!("startup stage: registering hardware decoders");
     register_hardware_decoders();
+    register_ffmpeg();
     register_gstreamer();
     log::info!("startup stage: hardware decoders registered");
     // Which graphics backends and adapter the window starts with: `--graphics`, else the saved
@@ -399,7 +401,20 @@ fn register_gpu_frame_renderer() {
 }
 /// Make GStreamer the fallback media backend (ADR 0002) when this build has the `gstreamer`
 /// feature and the system has GStreamer; otherwise the built-in openers work alone, as before.
+/// Make FFmpeg the first fallback media backend (ADR 0005), before GStreamer, when this build has
+/// the `ffmpeg` feature and a GPL-3 FFmpeg 9.0.2 or later is linked; otherwise the built-in openers
+/// (and GStreamer) work as before. Its report is registered either way, for Settings ▸ Media
+/// Backends.
+fn register_ffmpeg() {
+    cfa4_ffmpeg::register_status();
+    match cfa4_ffmpeg::register() {
+        Ok(status) => log::info!("FFmpeg {} ({}) is a fallback media backend", status.version, status.license),
+        Err(e) => log::info!("FFmpeg fallback not used: {e}"),
+    }
+}
+
 fn register_gstreamer() {
+    cfa4_gstreamer::register_status();
     match cfa4_gstreamer::register() {
         Ok(status) => log::info!("GStreamer {} is the fallback media backend", status.version),
         Err(e) => log::info!("GStreamer fallback not used: {e}"),

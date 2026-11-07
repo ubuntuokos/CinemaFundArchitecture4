@@ -15,7 +15,7 @@
 use std::path::Path;
 use std::sync::RwLock;
 
-use crate::{AUDIO_EXTENSIONS, MediaError, Result, STILL_EXTENSIONS, SharedSource, VIDEO_EXTENSIONS};
+use crate::{AUDIO_EXTENSIONS, FrameRequest, MediaError, Result, STILL_EXTENSIONS, SharedSource, VIDEO_EXTENSIONS};
 
 /// A fallback media backend.
 #[derive(Clone, Copy, Debug)]
@@ -95,7 +95,25 @@ pub fn open_with_fallback(path: &Path, native: Result<SharedSource>) -> Result<S
     }
     match native {
         Ok(src) => {
-            if src.info().has_video() || !video_extensions().contains(&extension(path).as_str()) {
+            if src.info().has_video() {
+                // The built-in openers can read a container whose video codec they have no decoder
+                // for (MPEG-4 Part 2 in AVI): the first frame tells, and then a fallback that
+                // decodes it takes the file. A damaged file (a decode error) stays with them.
+                if let Err(MediaError::Unsupported(why)) = src.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)) {
+                    for f in &fallbacks {
+                        match (f.open)(path) {
+                            Ok(alt) if alt.info().has_video() => {
+                                log::info!("{}: opened by {} (the built-in decoders: {why})", path.display(), f.name);
+                                return Ok(alt);
+                            }
+                            Ok(_) => {}
+                            Err(e) => log::debug!("{}: {} fallback declined: {e}", path.display(), f.name),
+                        }
+                    }
+                }
+                return Ok(src);
+            }
+            if !video_extensions().contains(&extension(path).as_str()) {
                 return Ok(src);
             }
             for f in &fallbacks {
@@ -233,6 +251,38 @@ mod tests {
         let opened = open_with_fallback(&p, Ok(src(false))).unwrap();
         assert!(!opened.info().has_video());
         assert!(opened.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_err());
+    }
+
+    /// Built-in openers that read the container but have no decoder for its video codec.
+    struct NoVideoDecoder(MediaInfo);
+
+    impl crate::MediaSource for NoVideoDecoder {
+        fn info(&self) -> &MediaInfo {
+            &self.0
+        }
+        fn video_frame(&self, _req: FrameRequest) -> Result<Arc<crate::VideoFrame>> {
+            Err(MediaError::Unsupported("no decoder for MPEG-4 Part 2 (DivX / Xvid) video".into()))
+        }
+        fn audio(&self, _start: i64, _frames: usize, _sample_rate: u32) -> Result<crate::AudioBuffer> {
+            Err(MediaError::NoStream("audio"))
+        }
+    }
+
+    #[test]
+    fn a_video_codec_without_a_built_in_decoder_goes_to_the_fallback() {
+        register();
+        let p = file("ok.avi");
+        let native: SharedSource = Arc::new(NoVideoDecoder(info(true)));
+        let opened = open_with_fallback(&p, Ok(native)).unwrap();
+        // the fallback's source (OfflineSource) draws frames; the native one could not
+        assert!(opened.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_ok());
+        // when no fallback decodes it either, the built-in source and its message stay
+        let q = file("nope.avi");
+        let kept = open_with_fallback(&q, Ok(Arc::new(NoVideoDecoder(info(true))) as SharedSource)).unwrap();
+        assert!(matches!(kept.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)), Err(MediaError::Unsupported(_))));
+        // a decodable built-in source is never replaced
+        let fine = open_with_fallback(&p, Ok(src(true))).unwrap();
+        assert!(fine.video_frame(FrameRequest::full(cfa4_time::Tick::ZERO)).is_ok());
     }
 
     #[test]
