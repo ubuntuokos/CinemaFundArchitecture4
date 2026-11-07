@@ -2372,6 +2372,7 @@ export.summary	Low	alacsony
 	{n} h ago	{n} órája
 	Warning	Figyelmeztetés
 	Error	Hiba
+	Show/Hide Tracks…	Sávok megjelenítése/elrejtése…
 	Panel menu	Panelmenü
 	Move panel	Panel áthelyezése
 	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Kattintással kijelölés, üres helyen húzással keretes kijelölés. További lehetőségek: Shift, Alt és Ctrl.
