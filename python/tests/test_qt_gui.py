@@ -10380,3 +10380,180 @@ def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_control_channel_lists_painted_parts_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui registers painted regions with their own ids; the Qt panels that paint them list them
+    too (``automation_parts``): the Audio Meters' loudness readout, each channel's bar and the dB
+    scale, with what they show, in ``ui.elements``, and ``ui.click`` / ``ui.move`` find them."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.meters import AudioMetersPanel
+
+    meters = AudioMetersPanel()
+    meters.resize(140, 420)
+    meters.loudness = [-23.0, -22.5, -23.1, -1.5]
+    meters.levels = [-12.0, -18.0]
+    parts = {pid: (r, label) for pid, r, label in meters.automation_parts()}
+    assert set(parts) == {"audioMeters.loudness", "audioMeters.channel.L", "audioMeters.channel.R", "audioMeters.scale"}, set(parts)
+    assert parts["audioMeters.loudness"][1] == "M -23.0 S -22.5 I -23.1 LUFS TP -1.5 dBTP"
+    assert parts["audioMeters.channel.L"][1] == "L -12.0 dB" and parts["audioMeters.scale"][1].startswith("0 -")
+    assert parts["audioMeters.channel.L"][0].right() < parts["audioMeters.channel.R"][0].left()
+    meters.resize(30, 80)  # too small for the readout and the scale: only the bars
+    assert {pid for pid, _r, _l in meters.automation_parts()} == {"audioMeters.channel.L", "audioMeters.channel.R"}
+    meters.deleteLater()
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        app.processEvents()
+        assert _visible_on_screen(win.meters)
+        c = _ControlClient(app, server.port())
+        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "audioMeters."})["result"]}
+        assert "audioMeters.channel.L" in els and "audioMeters.channel.R" in els, els
+        x, y, w, h = els["audioMeters.channel.L"]["rect"]
+        origin = win.meters.mapTo(win, QtCore.QPoint(0, 0))
+        assert x >= origin.x() and y >= origin.y() and w > 0 and h > 0
+        assert c.call("ui.move", {"id": "audioMeters.channel.L"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.channel.R"})["ok"]
+        assert c.call("ui.click", {"id": "audioMeters.nothing"})["ok"] is False
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+def _visible_on_screen(w) -> bool:
+    return w.isVisible() and not w.visibleRegion().isEmpty()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path: Path):
+    """egui's ids for the Timeline's painted parts through the control channel: the timecode,
+    ruler and tracks, each track header's switches (``timeline.track.A1.muted``, …) and height
+    edges, ``timeline.clip.<id>`` and ``timeline.transition.<id>``; a click on a switch toggles
+    it, a click on a clip selects it and a drag of a header edge changes the track height."""
+    import re
+
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline."})["result"]}
+
+        fixed = {"timeline.timecode", "timeline.ruler", "timeline.tracks"}
+        switches = {f"timeline.track.V1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "enabled", "resize")}
+        switches.add(f"timeline.track.V{len(win.sequence['video'])}.resizeTop")  # the top video track's outer edge
+        switches |= {f"timeline.track.A1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "muted", "solo", "voiceover", "keyframes", "resize")}
+        assert wait_until(app, lambda: fixed | switches <= set(els()), 10_000), sorted((fixed | switches) - set(els()))
+        e = els()
+        assert e["timeline.track.A1.muted"]["label"] == "Mute Track"
+        clips = [i for i in e if re.fullmatch(r"timeline\.clip\.\d+", i)]
+        video = next(cl for t in win.sequence["video"] for cl in t.get("items") or [])
+        assert f"timeline.clip.{video['clip']}" in clips, clips
+        # a click on a clip selects it
+        assert c.call("ui.click", {"id": f"timeline.clip.{video['clip']}"})["ok"]
+        assert wait_until(app, lambda: video["clip"] in ((win.sequence or {}).get("selection") or []), 10_000)
+        # a click on A1's M mutes it
+        assert c.call("ui.click", {"id": "timeline.track.A1.muted"})["ok"]
+        assert wait_until(app, lambda: (win.sequence or {})["audio"][0].get("muted") is True, 10_000), win.sequence["audio"][0]
+        # the bottom edge of A1's header drags its height
+        h = canvas.audio_h
+        x, y, w, hh = e["timeline.track.A1.resize"]["rect"]
+        assert c.call("ui.drag", {"from": {"id": "timeline.track.A1.resize"}, "to": {"x": x + w / 2, "y": y + hh / 2 + 30}})["ok"]
+        assert wait_until(app, lambda: canvas.audio_h > h, 5_000), (canvas.audio_h, h)
+        if any(t.get("transitions") for t in win.sequence["video"] + win.sequence["audio"]):
+            assert any(re.fullmatch(r"timeline\.transition\.\d+(\.in|\.out)?", i) for i in els())
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_empty_timeline_as_egui(app, tmp_path: Path):
+    """egui's empty Timeline: "Drop media here to create sequence.", the Open Demo Project
+    button (``timeline.openDemo``, ``file.openDemoProject``), the hint to double-click a sequence
+    only when the project has one, and project items dropped on it make a sequence from them
+    (``file.newSequence {fromItems}``)."""
+    from cfa4_qt import theme
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.timeline import ITEM_MIME, project_has_sequence
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    Qt = QtCore.Qt
+    try:
+        assert wait_until(app, lambda: win.project is not None and len(win.registry.commands) > 100, 60_000)
+        assert win.sequence is None and not canvas.project_has_sequence
+        c = _ControlClient(app, server.port())
+        e = {x["id"]: x for x in c.call("ui.elements", {"prefix": "timeline."})["result"]}
+        assert "timeline.openDemo" in e and not any(i.startswith(("timeline.track.", "timeline.clip.")) for i in e), sorted(e)
+        assert e["timeline.openDemo"]["label"] == "Open Demo Project"
+        sent: list = []
+        canvas.command.disconnect()  # only record: the demo would replace this project
+        canvas.command.connect(lambda cid, params: sent.append((cid, params)))
+        assert c.call("ui.click", {"id": "timeline.openDemo"})["ok"]
+        assert wait_until(app, lambda: sent == [("file.openDemoProject", {})], 5_000), sent
+        canvas.command.disconnect()
+        canvas.command.connect(win.execute)
+        # the button is drawn in the accent colour, the text in white
+        img = canvas.grab().toImage()
+        dpr = img.devicePixelRatio()
+        b = canvas.demo_button_rect()
+        accent = QtGui.QColor(theme.current().accent)
+        edge = img.pixelColor(int((b.left() + 6) * dpr), int(b.center().y() * dpr))
+        assert abs(edge.red() - accent.red()) < 25 and abs(edge.blue() - accent.blue()) < 25, edge.name()
+        # a project item dropped on it makes a sequence from it
+        item = c.call("engine.execute", {"command": "file.newBarsAndTone", "params": {"seconds": 4}})["result"]["item"]
+        win.schedule_refresh()
+        mime = QtCore.QMimeData()
+        mime.setData(ITEM_MIME, str(item).encode())
+        pos = QtCore.QPoint(canvas.width() // 2, canvas.height() // 2)
+        move = QtGui.QDragMoveEvent(pos, Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        canvas.dragMoveEvent(move)
+        assert move.isAccepted()
+        canvas.dropEvent(QtGui.QDropEvent(QtCore.QPointF(pos), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier))
+        assert wait_until(app, lambda: win.sequence is not None, 20_000), win.events.text.toPlainText()
+        assert any(cl.get("item") == item for t in win.sequence["video"] for cl in t.get("items") or []), win.sequence["video"]
+        assert wait_until(app, lambda: canvas.project_has_sequence, 10_000)
+        assert project_has_sequence(win.project)
+        # closed again: the hint names how to open it
+        assert c.call("engine.execute", {"command": "sequence.close", "params": {}})["ok"]
+        win.schedule_refresh()
+        assert wait_until(app, lambda: win.sequence is None, 10_000)
+        assert canvas.project_has_sequence
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
