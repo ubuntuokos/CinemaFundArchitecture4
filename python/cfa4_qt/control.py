@@ -51,11 +51,24 @@ from PySide6.QtWidgets import (
 
 from .panels.clip_dialogs import ClipDialog
 from .panels.export_effects import SECTION_KEYS
-from .panels.monitor_view import MonitorView
+from .panels.monitor_view import RESOLUTIONS, MonitorView
 from .panels.preset_manager import PresetManager
 from .panels.quick_export import quick_presets
-from .panels.timeline import HEADER_W, RULER_H
+from .panels.timeline import HEADER_W, RULER_H, THUMBNAIL_MODES
 from .panels.tools import TOOLS
+
+# egui's ThemeKind::from_name → the appearance.colorTheme preference it sets
+THEME_NAMES = {"dark": "darkest", "darkest": "darkest", "medium": "dark", "grey": "dark", "gray": "dark", "light": "light"}
+
+
+def tool_by_name(name: Any) -> str | None:
+    """egui's ``Tool::from_name``: the tool's id or label, any case, without spaces, ``_``, ``-``
+    or the word "tool" (``razor``, ``Razor Tool``, ``track_select_forward``)."""
+    if not isinstance(name, str):
+        return None
+    fold = lambda s: s.lower().replace(" ", "").replace("_", "").replace("-", "").replace("tool", "")
+    key = fold(name)
+    return next((t.id for t in TOOLS.values() if fold(t.id) == key or fold(t.label) == key), None)
 
 if TYPE_CHECKING:
     from .main_window import MainWindow
@@ -693,9 +706,30 @@ class ControlServer(QObject):
         win = self.window
         tool = p.get("tool")
         if tool is not None:
-            if not isinstance(tool, str) or tool not in TOOLS or not TOOLS[tool].available:
+            found = tool_by_name(tool)
+            if found is None or not TOOLS[found].available:
                 raise ControlError(f"unknown tool {tool!r}")
-            win.tools.select(tool)
+            win.tools.select(found)
+        theme_name = p.get("theme")
+        if theme_name is not None:
+            pref = THEME_NAMES.get(theme_name.lower()) if isinstance(theme_name, str) else None
+            if pref is None:
+                raise ControlError("unknown theme (dark, medium, light)")
+            win.set_theme(pref)
+        res = p.get("playbackRes")
+        if res is not None:
+            # egui's: the Program monitor's Playback Resolution by its name or label; anything else keeps it
+            found_res = next((k for k, label, _s in RESOLUTIONS if isinstance(res, str) and res.lower() in (k, label.lower())), None)
+            if found_res is not None:
+                win.monitor.set_view(res=found_res)
+        search = p.get("effectsSearch")
+        if search is not None:
+            if not isinstance(search, str):
+                raise ControlError("effectsSearch takes the search text")
+            win.effects.search.setText(search)
+        safe = p.get("safeMargins")
+        if isinstance(safe, bool):
+            win.monitor.set_view(safe_margins=safe)
         mode = p.get("mode")
         if mode is not None:
             if not isinstance(mode, str):
@@ -754,6 +788,19 @@ class ControlServer(QObject):
                 canvas.scroll_ticks = int(_number(tl, "scroll", 0, 2**62))
             if tl.get("fit") is True:
                 canvas.zoom_to_fit()
+            heights = {k: _number(tl, f"{k}TrackHeight", 1, 10_000) for k in ("video", "audio") if f"{k}TrackHeight" in tl}
+            if heights:
+                canvas.set_track_heights(heights.get("video"), heights.get("audio"))
+            thumbs = tl.get("thumbnails")
+            if isinstance(thumbs, str):
+                # Show Video Thumbnails: off or a mode (head, headAndTail, continuous), egui's
+                mode = next((m for m, _l in THUMBNAIL_MODES if m.lower() == thumbs.lower()), None)
+                if thumbs.lower() == "off":
+                    canvas._set_display(show_thumbnails=False)
+                elif mode is None:
+                    raise ControlError(f"unknown thumbnail mode {thumbs!r} (off, head, headAndTail, continuous)")
+                else:
+                    canvas._set_display(show_thumbnails=True, thumbnail_mode=mode)
             canvas.update()
 
     # ----- panel state (the serde parts of egui's ``UiState``) -----

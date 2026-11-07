@@ -6775,7 +6775,32 @@ def test_real_engine_control_channel_drives_the_qt_window_as_egui(app, tmp_path:
         s = c.call("ui.set", {"tool": "razor", "timeline": {"pps": 80, "scroll": 0}})["result"]
         assert s["tool"] == "razor" and s["timeline"]["pps"] == 80 and win.timeline.canvas.tool == "razor"
         assert c.call("ui.set", {"tool": "nonsense"})["ok"] is False
-        c.call("ui.set", {"tool": "selection"})
+        # egui's other ui.set keys: tool names as Tool::from_name, theme, playbackRes, effectsSearch,
+        # safeMargins, the timeline's track heights and thumbnails
+        for name, tool in (("Razor", "razor"), ("Track Select Forward Tool", "trackSelectForward"), ("rate_stretch", "rateStretch")):
+            assert c.call("ui.set", {"tool": name})["ok"] and win.tools.current == tool, name
+        themes: list[str] = []
+        monkeypatch_theme = win.set_theme
+        win.set_theme = themes.append  # type: ignore[method-assign]
+        try:
+            for name, pref in (("dark", "darkest"), ("Medium", "dark"), ("light", "light")):
+                assert c.call("ui.set", {"theme": name})["ok"] and themes[-1] == pref, name
+            assert c.call("ui.set", {"theme": "purple"})["ok"] is False
+        finally:
+            win.set_theme = monkeypatch_theme  # type: ignore[method-assign]
+        assert c.call("ui.set", {"playbackRes": "1/4"})["ok"] and win.monitor.mv.res == "quarter"
+        assert c.call("ui.set", {"playbackRes": "Full"})["ok"] and win.monitor.mv.res == "full"
+        assert c.call("ui.set", {"effectsSearch": "blur"})["ok"] and win.effects.search.text() == "blur"
+        c.call("ui.set", {"effectsSearch": ""})
+        assert c.call("ui.set", {"safeMargins": True})["ok"] and win.monitor.mv.safe_margins
+        c.call("ui.set", {"safeMargins": False})
+        canvas = win.timeline.canvas
+        assert c.call("ui.set", {"timeline": {"videoTrackHeight": 70, "audioTrackHeight": 50}})["ok"]
+        assert (canvas.video_h, canvas.audio_h) == (70, 50)
+        assert c.call("ui.set", {"timeline": {"thumbnails": "off"}})["ok"] and not canvas.show_thumbnails
+        assert c.call("ui.set", {"timeline": {"thumbnails": "continuous"}})["ok"] and canvas.show_thumbnails and canvas.thumbnail_mode == "continuous"
+        assert c.call("ui.set", {"timeline": {"thumbnails": "sideways"}})["ok"] is False
+        c.call("ui.set", {"tool": "selection", "timeline": {"thumbnails": "head"}})
         # elements: the Tools panel's buttons with their rects
         els = c.call("ui.elements", {"prefix": "tools."})["result"]
         razor = next(e for e in els if e["id"] == razor_id)
