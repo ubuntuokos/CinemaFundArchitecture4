@@ -1671,6 +1671,7 @@ name = "cfa4-testkit"
 version = "0.10.0"
 dependencies = [
  "png",
+ "tempfile",
 ]
 
 [[package]]
