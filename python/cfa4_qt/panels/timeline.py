@@ -2918,6 +2918,20 @@ TOOLBAR = (
 TOOLBAR_TOGGLES = {"nest": "nest", "snap": "snapping", "linked": "linkedSelection"}  # key → inspect toggle
 
 
+class SequenceTabs(QTabBar):
+    """The Timeline's sequence tabs. Each tab is egui's ``timeline.tab.<id>`` part (dock.rs: a
+    click shows that sequence), next to the shown tab's ``timeline.tab.<id>.close`` button."""
+
+    def automation_parts(self) -> list[tuple[str, QRect, str]]:
+        out = []
+        for i in range(self.count()):
+            sid = self.tabData(i)
+            r = self.tabRect(i)
+            if isinstance(sid, int) and not isinstance(sid, bool) and r.intersects(self.rect()):
+                out.append((f"timeline.tab.{sid}", r.intersected(self.rect()), self.tabText(i)))
+        return out
+
+
 class TimelinePanel(QWidget):
     """Toolbar (tools, zoom) + canvas + horizontal scroll bar."""
 
@@ -2931,7 +2945,7 @@ class TimelinePanel(QWidget):
         bar.addWidget(self.title)
         # egui's Timeline tabs: one per open sequence (× on the shown one, drag to reorder,
         # middle-click closes, right-click: Close Panel / Close Other Timeline Panels)
-        self.tabs = QTabBar(self)
+        self.tabs = SequenceTabs(self)
         self.tabs.setObjectName("timeline.tabs")
         self.tabs.setTabsClosable(True)
         self.tabs.setMovable(True)

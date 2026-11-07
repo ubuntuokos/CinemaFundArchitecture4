@@ -12518,3 +12518,40 @@ def test_real_engine_timeline_video_audio_divider_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_timeline_sequence_tabs_as_egui(app, tmp_path: Path):
+    """egui's ``timeline.tab.<id>`` (dock.rs): each open sequence's tab is an element with the
+    sequence's name, and ``ui.click`` on it shows that sequence."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: win.timeline.tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.tab"})["result"]}
+
+        assert wait_until(app, lambda: {f"timeline.tab.{first}", f"timeline.tab.{second}", f"timeline.tab.{second}.close"} <= set(els()), 10_000), sorted(els())
+        assert els()[f"timeline.tab.{second}"]["label"] == "Second"
+        assert c.call("ui.click", {"id": f"timeline.tab.{first}"})["ok"]
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
