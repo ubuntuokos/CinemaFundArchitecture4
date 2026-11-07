@@ -312,7 +312,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.11.0 | #1955 | Order auto-saves by real time so rotation keeps the newest | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.11.0 | #2388 | #2342: CLI file.exportMedia waits for the export before the process exits | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.11.0 | #2724 | fix: use async file I/O in async MCP screenshot handler (SonarCloud rust:S7493) | B | átvesz | tisztán | U0-B | – | tervezett |
-| 0.11.0 | #2555 | Re-open a failed audio output while playing instead of going silent for good | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.11.0 | #2555 | Re-open a failed audio output while playing instead of going silent for good | D | átvesz (Qt6) | kézi port | U0-D | #602 | PR nyitva |
 | 0.11.0 | #1943 | fix(macos): ask to save on Cmd-Q instead of quitting outright | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.11.0 | #2006 | fix(macos): ask to save on Cmd-Q instead of quitting outright (#1943) | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.11.0 | #2157 | ci: switch to shared nix workflow from [upstream] | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
