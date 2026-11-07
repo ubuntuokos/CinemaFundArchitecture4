@@ -1,7 +1,8 @@
 """More of the Export window's Video and Audio rows (egui's ``export_mode`` video and audio
-sections): Frame Rate, Field Order, Aspect, the H.264 Profile and Level, Quality (CRF), Maximum
-Bitrate, GPU Rendering, Render at Maximum Depth, Use Maximum Render Quality; Sample Rate,
-Channels, Sample Size and the FLAC Compression Level.
+sections): Frame Rate, Field Order, Aspect, the H.264 Profile and Level (H.265 and AV1: the
+profile and the encoder, as text), Quality (CRF), Maximum Bitrate, GPU Rendering, Render at
+Maximum Depth, Use Maximum Render Quality; Sample Rate, Channels, Sample Size (the sizes the
+codec and container cannot store greyed out, saying why) and the FLAC Compression Level.
 
 Each row shows the resolved setting (``export.resolve``'s camelCase ``settings``; ``audio`` keeps
 its snake_case keys) until the user changes it, and only a changed row goes into the
@@ -14,8 +15,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QSpinBox, QWidget
+from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFormLayout, QLabel, QSpinBox, QWidget
 
 from ..i18n import N_, tr
 
@@ -40,6 +41,14 @@ CHANNELS = ((N_("Mono"), 1), (N_("Stereo"), 2), ("5.1", 6))
 # Sample Size: (label, (bits, float))
 SAMPLE_SIZES: tuple[tuple[str, Any], ...] = ((N_("16 bit"), "16"), (N_("24 bit"), "24"), (N_("32 bit"), "32"), (N_("32 bit float"), "32f"))
 MP4_VIDEO = {"h264", "hevc", "av1"}
+# H.265 and AV1 have one profile each, the level chosen by the encoder: (SDR text, HDR text)
+ONE_PROFILE = {
+    "hevc": (N_("Main (8-bit; Main 10 for HDR sequences)"), N_("Main 10 (10-bit, HDR)")),
+    "av1": (N_("Main (8-bit; 10-bit for HDR sequences)"), N_("Main (10-bit, HDR)")),
+}
+SIZE_WHY_FLAC = N_("FLAC stores whole-number samples only")
+SIZE_WHY_MXF = N_("MXF export writes integer PCM only")
+SIZE_WHY = N_("Not supported by CFA4's encoders yet")
 AUDIO_ONLY_PCM = {"wav", "aiff"}
 
 
@@ -116,6 +125,13 @@ class ExportRows(QObject):
         self.flac_level.setObjectName("export.audio.flacLevel")
         self.flac_level.setRange(0, 8)
         self.flac_level.setToolTip(tr("0 fastest, 8 smallest"))
+        # H.265 / AV1: egui's Profile and Encoder rows are text
+        self.profile_info = QLabel(parent)
+        self.profile_info.setObjectName("export.video.profileInfo")
+        self.encoder_info = QLabel(tr("Software, or hardware where available"), parent)
+        self.encoder_info.setObjectName("export.video.encoder")
+        self.video_format = ""  # the encoder that writes the video (export.resolve's videoFormat)
+        self.hdr = False
 
         def combo_row(key: str, c: QComboBox, path: tuple[str, ...]) -> Row:
             return Row(key, c, path, lambda: c.currentData(), lambda v: _show_combo(c, v))
@@ -151,6 +167,8 @@ class ExportRows(QObject):
         video.addRow(tr("Aspect"), self.aspect)
         video.addRow(tr("Profile"), self.profile)
         video.addRow(tr("Level"), self.level)
+        video.addRow(tr("Profile"), self.profile_info)
+        video.addRow(tr("Encoder"), self.encoder_info)
         video.addRow(tr("Quality (CRF)"), self.crf)
         video.addRow(tr("Maximum Bitrate"), self.max_bitrate)
         video.addRow(tr("GPU Rendering"), self.gpu)
@@ -182,6 +200,33 @@ class ExportRows(QObject):
             self.crf.setValue(23)  # the engine's DEFAULT_CRF where the preset has none
             self.crf.blockSignals(False)
 
+    def show_resolved(self, resolved: dict[str, Any]) -> None:
+        """What ``export.resolve`` says beyond the settings: the H.265 / AV1 profile text (HDR or
+        not) and which sample sizes the codec and container can store, with egui's reasons."""
+        self.video_format = str(resolved.get("videoFormat") or "")
+        self.hdr = resolved.get("hdr") is True
+        texts = ONE_PROFILE.get(self.video_format)
+        if texts is not None:
+            self.profile_info.setText(tr(texts[1] if self.hdr else texts[0]))
+        sizes = resolved.get("sampleSizes")
+        if not isinstance(sizes, list):
+            return
+        settings = resolved.get("settings") if isinstance(resolved.get("settings"), dict) else {}
+        fmt = str(settings.get("format") or "")
+        why = SIZE_WHY_FLAC if resolved.get("audioCodec") == "flac" else SIZE_WHY_MXF if fmt.startswith("mxf") else SIZE_WHY
+        model = self.bits.model()
+        for size in sizes:
+            if not isinstance(size, dict):
+                continue
+            key = f"{size.get('bits')}{'f' if size.get('float') is True else ''}"
+            i = self.bits.findData(key)
+            item = model.item(i) if i >= 0 else None  # type: ignore[attr-defined]
+            if item is None:
+                continue
+            ok = size.get("supported") is not False
+            item.setEnabled(ok)
+            item.setData(None if ok else tr(why), Qt.ItemDataRole.ToolTipRole)
+
     def patch(self, touched: set[str], shown: dict[str, bool]) -> dict[str, Any]:
         """The changed rows as a ``settings`` patch (rows the format does not show are left out)."""
         out: dict[str, Any] = {}
@@ -206,6 +251,7 @@ class ExportRows(QObject):
         return {
             "fps": has_video, "fieldOrder": has_video, "aspect": has_video,
             "h264Profile": enc == "h264", "h264Level": enc == "h264",
+            "profileInfo": has_video and enc in ONE_PROFILE, "encoder": has_video and enc in ONE_PROFILE,
             "crf": mp4_video and bitrate_mode == "crf",
             "maxBitrate": mp4_video and bitrate_mode not in ("cbr", "crf"),
             "gpu": has_video, "maxDepth": has_video, "maxQuality": has_video,
@@ -217,3 +263,5 @@ class ExportRows(QObject):
         for key, row in self.rows.items():
             form = self.audio_form if row.path[0] == "audio" else self.video_form
             form.setRowVisible(row.widget, shown.get(key, True))
+        for key, w in (("profileInfo", self.profile_info), ("encoder", self.encoder_info)):
+            self.video_form.setRowVisible(w, shown.get(key, False))
