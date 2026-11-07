@@ -678,6 +678,19 @@ class ControlServer(QObject):
                 raise ControlError(f"{key} takes {{param: value}}")
             for name, value in fields.items():
                 set_dialog_field(dialog, str(name), value)
+        if "settings" in p:
+            # the open Preferences dialog: page and draft values, egui's
+            dialog = getattr(win, "settings_dialog", None)
+            try:
+                shown = dialog is not None and dialog.isVisible() and dialog.ready
+            except RuntimeError:  # closed and deleted
+                shown = False
+            if not shown:
+                raise ControlError("the Settings dialog is not open")
+            try:
+                dialog.patch(p["settings"])
+            except (ValueError, TypeError) as e:
+                raise ControlError(str(e)) from None
         if "panels" in p:
             self.set_panels(p["panels"])
         for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser)):
