@@ -7355,7 +7355,7 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
 
         def shown(w) -> bool:
             form = rows.audio_form if w in (rows.sample_rate, rows.channels, rows.bits, rows.flac_level) else rows.video_form
-            return bool(form.isRowVisible(w))
+            return bool(form.isRowVisible(rows.fps_row if w is rows.fps else w))
 
         pick(dlg.format, "h264")
         assert wait_until(app, lambda: dlg.summary.text() and not dlg.touched, 10_000)
@@ -7380,6 +7380,22 @@ def test_real_engine_export_video_and_audio_rows_as_egui(app, tmp_path: Path):
         s0 = resolved()
         assert rows.profile.currentData() == s0["h264Profile"] and rows.fps.currentData() == s0["frameRate"]
         assert "settings" not in dlg.params(), "nothing changed yet"
+        # egui's Match Source boxes: off shows the sequence's size / 29.97, on hides the fields
+        assert dlg.match_size.objectName() == "export.video.matchSize" and rows.match_rate.objectName() == "export.video.matchRate"
+        assert dlg.match_size.isChecked() == (dlg.width_spin.value() == 0) and dlg.width_spin.isHidden() == dlg.match_size.isChecked()
+        dlg.match_size.setChecked(False)
+        st = win.sequence["settings"]
+        assert (dlg.width_spin.value(), dlg.height_spin.value()) == (st["width"], st["height"]) and not dlg.width_spin.isHidden()
+        assert (dlg.params()["width"], dlg.params()["height"]) == (st["width"], st["height"])
+        dlg.match_size.setChecked(True)
+        assert dlg.width_spin.isHidden() and dlg.height_spin.isHidden() and "width" not in dlg.params()
+        rows.match_rate.setChecked(True)
+        assert rows.fps.currentData() is None and rows.fps.isHidden()
+        rows.match_rate.setChecked(False)
+        assert rows.fps.currentData() == {"num": 30000, "den": 1001} and not rows.fps.isHidden()
+        assert resolved()["frameRate"] == {"num": 30000, "den": 1001}
+        pick(rows.fps, None)
+        assert rows.match_rate.isChecked() and rows.fps.isHidden(), "the box follows the field"
         # video rows
         pick(rows.fps, {"num": 25, "den": 1})
         pick(rows.aspect, [4, 3])
