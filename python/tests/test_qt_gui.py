@@ -10325,3 +10325,58 @@ def test_real_engine_rolling_edit_drag_stops_at_the_rolls_limit(app, tmp_path: P
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_duplicate_frame_markers(app, tmp_path: Path):
+    """upstream #3212: Show Duplicate Frame Markers (Timeline Display Settings) draws a stripe in
+    each clip under the media frames another video clip also shows; off again, none."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def toggle():
+        menu = canvas.display_menu()
+        return next(a for a in menu.actions() if a.objectName() == "timeline.settings.showDuplicateFrameMarkers")
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # a frame shown twice: the first clip cut in two halves, both halves showing the same media
+        first = v1().track["items"][0]
+        win.execute("timeline.select", {"clips": [first["clip"]]})
+        win.execute("edit.copy", {})
+        win.execute("playhead.set", {"time": int(first["start"])})
+        win.execute("edit.pasteInsert", {})
+        assert wait_until(app, lambda: len(v1().track["items"]) >= 2 and v1().track["items"][1]["item"] == first["item"], 10_000)
+        assert not toggle().isChecked() and canvas.duplicate_frames() == {}
+        toggle().trigger()
+        assert wait_until(app, lambda: len(canvas.duplicate_frames()) >= 2, 10_000), (win.sequence or {}).get("duplicateFrames")
+        a, b = (c["clip"] for c in v1().track["items"][:2])
+        dup = canvas.duplicate_frames()
+        assert a in dup and b in dup and dup[a][0] == dup[b][0], dup
+        # drawn: the stripe along the bottom of the first clip, in its color
+        r = canvas.clip_rect(v1(), v1().track["items"][0])
+        img = canvas.grab().toImage()
+        c = img.pixelColor(int(r.center().x()), int(r.bottom() - 2.5))  # (inside the stripe, above the border)
+        want = QtGui.QColor(tl.DUPLICATE_FRAME_COLORS[dup[a][0]])
+        assert abs(c.red() - want.red()) + abs(c.green() - want.green()) + abs(c.blue() - want.blue()) < 30, (c.name(), want.name())
+        assert toggle().isChecked()
+        toggle().trigger()
+        assert wait_until(app, lambda: canvas.duplicate_frames() == {}, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
