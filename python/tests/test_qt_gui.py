@@ -12444,3 +12444,31 @@ def test_real_engine_mixer_show_hide_and_meter_input_only_are_commands(app, tmp_
     finally:
         win.close()
         engine.stop()
+
+
+def test_tools_panel_names_hidden_group_tools_as_egui(app):
+    """egui's tools.rs: the tools a group button hides are ``tools.<Tool>`` click aliases on
+    that button's rect, so every tool has its ``tools.<Tool>`` id whichever one a group shows."""
+    from cfa4_qt.panels.tools import GROUPS, TOOLS, ToolsPanel, egui_tool
+
+    panel = ToolsPanel()
+    panel.show()
+    try:
+        wait_until(app, lambda: False, 50)
+        parts = {pid: (rect, label) for pid, rect, label in panel.automation_parts()}
+        shown = {b.objectName() for b in panel.buttons}
+        assert shown | set(parts) == {f"tools.{egui_tool(t)}" for t in TOOLS}
+        assert not shown & set(parts), "a shown tool is the button itself, not an alias"
+        for gi, group in enumerate(GROUPS):
+            for t in group[1:]:
+                rect, label = parts[f"tools.{egui_tool(t.id)}"]
+                assert rect == panel.buttons[gi].geometry() and label == t.label
+        # picking a hidden tool makes it the button, and the shown one becomes an alias
+        roll_group = next(gi for gi, g in enumerate(GROUPS) if any(t.id == "rolling" for t in g))
+        head = GROUPS[roll_group][0].id
+        panel.select("rolling")
+        parts = {pid for pid, _r, _l in panel.automation_parts()}
+        assert panel.buttons[roll_group].objectName() == "tools.Rolling"
+        assert "tools.Rolling" not in parts and f"tools.{egui_tool(head)}" in parts
+    finally:
+        panel.deleteLater()
