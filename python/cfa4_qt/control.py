@@ -680,7 +680,7 @@ class ControlServer(QObject):
                 set_dialog_field(dialog, str(name), value)
         if "panels" in p:
             self.set_panels(p["panels"])
-        for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser)):
+        for key, panel in (("projectPanel", win.project_panel), ("mediaBrowser", win.media_browser), ("tts", win.tts)):
             if key not in p:
                 continue
             if not isinstance(p[key], dict):
@@ -714,6 +714,7 @@ class ControlServer(QObject):
             "panels": self.panels_state(),
             "projectPanel": win.project_panel.ui_state(),
             "mediaBrowser": win.media_browser.ui_state(),
+            "tts": win.tts.ui_state(),
             "keyframeSelection": keys,
             "export": self.export_state(),
         }
