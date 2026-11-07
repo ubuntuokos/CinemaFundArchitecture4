@@ -11508,3 +11508,139 @@ def test_real_engine_timeline_zoom_scroll_bar_as_egui(app, tmp_path: Path):
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+import re
+
+
+def _credits_people():
+    from cfa4_qt.credits import Contributor
+
+    def c(login, display, real, added, deleted, first):
+        return Contributor(login, display, real, 0, 1, added, deleted, 0, 0, first, first)
+
+    return [
+        c("zed", None, None, 5, 50, "2026-01-02T00:00:00Z"),
+        c("Bob", "Ann", None, 10, 0, "2026-01-01T00:00:00Z"),
+        c("alice", None, None, 7, 1, ""),
+        c("carol", None, "Dana", 1, 0, "2026-01-03T00:00:00Z"),
+    ]
+
+
+def test_credits_sort_and_names_as_egui():
+    """crates/ui-egui/src/credits.rs's tests, on the Qt GUI's credits."""
+    from cfa4_qt.credits import Contributor, day, group, signed, sorted_contributors
+
+    p = Contributor("bob", "Bobby", None)
+    assert (p.name("username"), p.name("displayName"), p.name("realName")) == ("@bob", "Bobby", "@bob")
+    people = _credits_people()
+
+    def logins(key, mode="username", ascending=True):
+        return [c.login for c in sorted_contributors(people, mode, key, ascending)]
+
+    assert logins("name") == ["alice", "Bob", "carol", "zed"]
+    assert logins("name", "displayName") == ["alice", "Bob", "carol", "zed"]
+    assert logins("name", "realName", False) == ["zed", "carol", "Bob", "alice"]
+    assert logins("linesDelta", ascending=False) == ["Bob", "alice", "carol", "zed"]
+    assert logins("firstCommit") == ["Bob", "zed", "carol", "alice"]  # undated last
+    assert (group(1234567), group(12), signed(-1000), day("2026-10-07T18:45:23Z"), day("")) == ("1,234,567", "12", "−1,000", "2026-10-07", "—")
+
+
+def test_credits_read_the_consented_names_as_egui_build():
+    """build.rs's rules: names only for a contributor with a people entry, the GitHub name only
+    when they asked to sync it; the repository's files load."""
+    from cfa4_qt.credits import CREDITS_DIR, load, parse
+
+    data = {
+        "commits": 9,
+        "contributors": [
+            {"login": "a", "people_entry": True, "github_name": "GitHub A", "commits": 3},
+            {"login": "b", "people_entry": True, "github_name": "GitHub B"},
+            {"login": "c", "people_entry": False},
+            {"login": ""},
+        ],
+        "models": [{"company": "X", "model": "Y", "version": "1", "commits": 2}],
+    }
+    people = {"people": {"a": {"real_name": "Ann A", "display_name": " "}, "b": {"sync_github_name": True}, "c": {"real_name": "Not consented"}}}
+    got = parse(data, people)
+    assert got.total_commits == 9 and [c.login for c in got.contributors] == ["a", "b", "c"]
+    a, b, c = got.contributors
+    assert (a.display_name, a.real_name, a.commits) == (None, "Ann A", 3)
+    assert (b.display_name, b.real_name) == ("GitHub B", None)
+    assert (c.display_name, c.real_name) == (None, None)
+    assert got.models[0].model == "Y"
+    assert parse(None, None).contributors == ()
+    real = load(CREDITS_DIR)
+    assert len(real.contributors) > 10 and real.total_commits > 0 and real.models
+
+
+def test_about_window_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """Help ▸ About CFA4 as egui's: the About, Contributors and Models tabs with egui's ids; the
+    Contributors names, sort, reverse, grab bag and table (headers sort, a second click reverses)."""
+    from cfa4_qt.credits import Credits, Model
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.about import AboutDialog
+    from cfa4_qt.panels.home import GITHUB
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    try:
+        win.about_action.trigger()
+        dlg = win.about_dialog
+        assert dlg.isVisible() and dlg.objectName() == "about"
+        tabs = {t: dlg.findChild(QtWidgets.QToolButton, f"about.tab.{t}") for t in ("about", "contributors", "models")}
+        assert all(tabs.values()) and tabs["about"].isChecked() and dlg.stack.currentIndex() == 0
+        opened: list[str] = []
+        dlg.open_url = opened.append
+        dlg.findChild(QtWidgets.QPushButton, "about.github").click()
+        assert opened == [GITHUB] and dlg.findChild(QtWidgets.QPushButton, "about.reportIssue") is not None
+        win.about_action.trigger()
+        assert win.about_dialog is dlg  # one window
+        dlg.deleteLater()
+
+        people = tuple(_credits_people())
+        dlg = AboutDialog("engine", "1.0", data=Credits(4, people, (Model("Co", "M", "1", 2, 10, 1),)))
+        dlg.show()
+        tabs = {t: dlg.findChild(QtWidgets.QToolButton, f"about.tab.{t}") for t in ("about", "contributors", "models")}
+        tabs["contributors"].click()
+        assert dlg.stack.currentIndex() == 1
+        count = dlg.findChild(QtWidgets.QLabel, "about.credits.count")
+        assert count.text() == "4 contributors · 4 commits"
+
+        def names() -> list[str]:
+            body = dlg.scroll.widget()
+            return [re.sub("<[^>]+>", "", w.text()) for w in body.findChildren(QtWidgets.QLabel) if w.text().startswith("<a ")]
+
+        # first commit, oldest first (egui's default); a PR-only contributor last
+        assert names() == ["@Bob", "@zed", "@carol", "@alice"]
+        dlg.findChild(QtWidgets.QToolButton, "about.credits.reverse").click()
+        assert names() == ["@alice", "@carol", "@zed", "@Bob"]
+        dlg.findChild(QtWidgets.QToolButton, "about.credits.names.displayName").click()
+        sort = dlg.findChild(QtWidgets.QComboBox, "about.credits.sort")
+        sort.setCurrentIndex(sort.findData("name"))
+        sort.activated.emit(sort.currentIndex())
+        assert dlg.ascending and names() == ["@alice", "Ann", "@carol", "@zed"]
+        # the table: headers sort, the same header again reverses
+        dlg.findChild(QtWidgets.QToolButton, "about.credits.table").click()
+        assert dlg.table
+        header = dlg.findChild(QtWidgets.QToolButton, "about.credits.header.5")
+        assert header.text() == "ΔLOC" and dlg.findChild(QtWidgets.QToolButton, "about.credits.header.0").text() == "Name ▲"
+        header.click()
+        assert dlg.key == "linesDelta" and not dlg.ascending
+        assert names() == ["Ann", "@alice", "@carol", "@zed"]
+        dlg.findChild(QtWidgets.QToolButton, "about.credits.header.5").click()
+        assert dlg.ascending and names()[0] == "@zed"
+        dlg.findChild(QtWidgets.QToolButton, "about.credits.grabBag").click()
+        assert not dlg.table
+        # Models
+        tabs["models"].click()
+        models = dlg.findChild(QtWidgets.QWidget, "about.models")
+        texts = [w.text() for w in models.findChildren(QtWidgets.QLabel)]
+        assert "50%" in texts and "+10 / −1" in texts
+        dlg.deleteLater()
+        empty = AboutDialog("", "1.0", data=Credits(0, (), ()))
+        assert any(w.text() == "No model credits were built into this copy." for w in empty.findChildren(QtWidgets.QLabel))
+        empty.deleteLater()
+    finally:
+        win._quit_confirmed = True
+        win.close()
