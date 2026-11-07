@@ -160,6 +160,13 @@ def label_color(row: dict[str, Any]) -> QColor:
     return QColor(LABEL_COLORS.get(str(row.get("label") or "").lower(), "#8f6fd8"))
 
 
+def name_matches(name: str, needle: str) -> bool:
+    """The search finds a name holding every word typed, in any order (upstream #3327), as the
+    engine's ``project.panel`` does."""
+    name = name.lower()
+    return all(word in name for word in needle.lower().split())
+
+
 def fallback_rows(node: Any, depth: int = 0, expanded: set[int] | None = None, needle: str = "") -> list[dict[str, Any]]:
     """The List view's rows from ``project.inspect``'s bin tree (an engine without
     ``project.panel``): every bin open, as the panel showed before."""
@@ -168,7 +175,7 @@ def fallback_rows(node: Any, depth: int = 0, expanded: set[int] | None = None, n
         if not isinstance(child, dict):
             continue
         if "item" in child:
-            if needle and needle not in str(child.get("name") or "").lower():
+            if not name_matches(str(child.get("name") or ""), needle):
                 continue
             out.append(
                 {
