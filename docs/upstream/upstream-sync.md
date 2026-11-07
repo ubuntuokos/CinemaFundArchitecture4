@@ -78,13 +78,13 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3423 | Export: preserve optional binary transparency in animated GIFs (#3396) | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3432 | Strip UTF-8 byte order mark when parsing .cube LUT files | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3440 | Fix trim_caption moving edges of captions shorter than one frame | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
-| 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | #701 | PR nyitva |
 | 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3471 | frame: move rotated chroma buffers instead of cloning (#3468) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3474 | Media cache: a folder of its own inside a custom location (fixes #2772) | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.15.0 | #3565 | Fix graphics template width scaling across canvas sizes (#3415) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3590 | Audio Track Mixer: a fader moved during playback in Read mode keeps its level | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
-| 0.15.0 | #3591 | Synchronize: Clip > Synchronize (Audio) works on long stereo clips | B | átvesz | kézi port | U0-B2b (a #3080 után) | – | tervezett |
+| 0.15.0 | #3591 | Synchronize: Clip > Synchronize (Audio) works on long stereo clips | B | átvesz | kézi port | U0-B2b (a #3080 után) | #701 | PR nyitva |
 | 0.15.0 | #3607 | render: convert the CPU monitor frame to sRGB bytes in vectorised batches | B | átvesz | kézi port | U0-C, U0-D (a #3608-cal) | – | tervezett |
 | 0.15.0 | #3627 | fix(engine): accept time objects for timeline.place sourceIn and duration | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B2b | – | tervezett |
@@ -112,7 +112,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2287 | fix(interchange): OTIO export stops writing nested-sequence copies past a limit | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.14.0 | #2394 | Fix TTML/DFXP export overflow for cue times near i64::MAX | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.14.0 | #2888 | security(av1): reject non-increasing grain points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4b | #701 | PR nyitva |
 | 0.14.0 | #3307 | captions: bound MCC export work to scheduled data (#2811) | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | – | tervezett |
 | 0.14.0 | #1103 | fix(engine): Unlink a selection that also holds unlinked clips | B | átvesz (azonos a #2011-vel) | tisztán | U0-B1 | #458 | PR nyitva |
@@ -243,10 +243,10 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #2955 | fix(captions): bound TTML XML nesting | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #2956 | fix(interchange): confine embedded audio output names | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #2957 | fix(media): validate HDR scanlines before frame allocation | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.13.0 | #2983 | fix: harden saves, CLI file I/O and AV1 tooling (SonarCloud security/reliability) | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.13.0 | #2983 | fix: harden saves, CLI file I/O and AV1 tooling (SonarCloud security/reliability) | A | átvesz | kézi port | U0-A4b | #700 | PR nyitva |
 | 0.13.0 | #2989 | CTL2807: release idle control connections after bounded socket waits | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3007 | tools: quit the super-linear regex scans in the spec table extractors (SonarCloud S8786) | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.13.0 | #3078 | security: harden developer tools, scripts, and testkit against hostile input | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.13.0 | #3078 | security: harden developer tools, scripts, and testkit against hostile input | A | átvesz | kézi port | U0-A4b | #700 | PR nyitva |
 | 0.13.0 | #3079 | security(interchange): harden FCPXML cycle detection, XML DTD entities, and imported formats | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3081 | security(codecs): validate VP9 empty tiles and AV1 film grain scaling points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.13.0 | #3082 | security(audio): bound sequence sample rates and AAF/OMF export channel buffers | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
