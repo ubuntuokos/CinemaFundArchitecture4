@@ -34,7 +34,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QStackedWidget,
-    QTabBar,
     QTableWidget,
     QTableWidgetItem,
     QTextBrowser,
@@ -45,6 +44,7 @@ from PySide6.QtWidgets import (
 
 from .. import theme
 from ..i18n import N_, fmt, tr
+from .tab_ids import IdTabBar
 
 TABS = (("Transcript", N_("Transcript")), ("Captions", N_("Captions")), ("Graphics", N_("Graphics")))
 ID_ROLE = Qt.ItemDataRole.UserRole
@@ -717,7 +717,7 @@ class TextPanel(QWidget):
         self._busy = False
         self._again = False
         self._fonts_asked = False
-        self.tabs = QTabBar(self)
+        self.tabs = IdTabBar([f"text.tab.{key}" for key, _label in TABS], self)
         self.tabs.setObjectName("text.tabs")
         self.tabs.setDrawBase(False)
         self.tabs.setExpanding(False)

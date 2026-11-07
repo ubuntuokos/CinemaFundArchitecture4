@@ -198,7 +198,7 @@ class TransportBar(QWidget):
         self.checked: dict[str, Callable[[], bool]] = {}
         for d in defs:
             b = QToolButton(self)
-            b.setObjectName(f"{prefix}.transport.{d.key}")
+            b.setObjectName(f"{prefix}.transport.{d.command}")  # egui's ids: the button's command
             b.setToolTip(tr(d.label))
             b.setAccessibleName(tr(d.label))
             b.setIcon(transport_icon(d.icon, icon_color(self)))

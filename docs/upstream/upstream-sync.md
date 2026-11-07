@@ -85,7 +85,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3565 | Fix graphics template width scaling across canvas sizes (#3415) | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3590 | Audio Track Mixer: a fader moved during playback in Read mode keeps its level | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
 | 0.15.0 | #3591 | Synchronize: Clip > Synchronize (Audio) works on long stereo clips | B | átvesz | kézi port | U0-B2b (a #3080 után) | #701 | PR nyitva |
-| 0.15.0 | #3607 | render: convert the CPU monitor frame to sRGB bytes in vectorised batches | B | átvesz | kézi port | U0-C, U0-D (a #3608-cal) | – | tervezett |
+| 0.15.0 | #3607 | render: convert the CPU monitor frame to sRGB bytes in vectorised batches | B | átvesz | kézi port | U0-C, U0-D (a #3608-cal) | #705 | PR nyitva |
 | 0.15.0 | #3627 | fix(engine): accept time objects for timeline.place sourceIn and duration | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B2b | – | tervezett |
 | 0.15.0 | #3535 | control: say why the control server is not serving (#3436) | C | átvesz | kézi port | U0-C | – | tervezett |
@@ -94,7 +94,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.15.0 | #3522 | Timeline: grouped clips select together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #545 | PR nyitva |
 | 0.15.0 | #3587 | Effect Controls: an effect dropped on the panel is applied to the clip it shows | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
-| 0.15.0 | #3608 | render: a monitor frame that is one opaque video picture goes straight to sRGB bytes | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | később: a #456 (#2878, `bounded_decimation`) beolvasztása után; a #3607 vele jön |
+| 0.15.0 | #3608 | render: a monitor frame that is one opaque video picture goes straight to sRGB bytes | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #705 | PR nyitva |
 | 0.15.0 | #3327 | Project panel search finds names holding every typed word | D | átvesz (Qt6) | kézi port | U0-D | #547 | PR nyitva |
 | 0.15.0 | #3523 | Captions: File ▸ Export ▸ Captions… asks for the file format (#3365) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.15.0 | #3584 | Program Monitor: Snap in Program Monitor applies to video clip Motion drags | D | átvesz (Qt6) | kézi port | U0-D | #549 | PR nyitva |
@@ -114,7 +114,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2888 | security(av1): reject non-increasing grain points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4b | #701 | PR nyitva |
 | 0.14.0 | #3307 | captions: bound MCC export work to scheduled data (#2811) | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
-| 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | – | tervezett |
+| 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-C, U0-D (a #3227-tel) | #706 | PR nyitva |
 | 0.14.0 | #1103 | fix(engine): Unlink a selection that also holds unlinked clips | B | átvesz (azonos a #2011-vel) | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #1845 | fix(engine): clip.audioChannels no longer resets channels on a channels-less call | B | átvesz (azonos a #2483-vel) | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.14.0 | #1869 | PNG Sequence writes RGB files when Include Alpha Channel is off | B | átvesz | kézi port | U0-B2a | #460 | PR nyitva |
@@ -139,14 +139,14 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3252 | text, ui: font coverage tests probe faces without keeping every font file loaded | F | kihagy: csak teszt, át nem vett betűkészlet-változásokra épül | kézi port | – | – | lezárva |
 | 0.14.0 | #3286 | Keep draft-decoder counter assertions in one test | F | kihagy: az upstream közös tesztbináris-gondja, a CFA4-ben minden tesztfájl külön folyamat | kézi port | – | – | lezárva |
 | 0.14.0 | #3321 | fix(av1): drop the duplicate strictly_increasing and its test | B | átvesz (a #2888 és #3081 duplikátumát szünteti meg) | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | – | tervezett |
+| 0.14.0 | #3456 | Speed up H.264 export by a fifth with byte-identical output | B | átvesz | kézi port | U0-B2b | #702 | PR nyitva |
 | 0.14.0 | #1841 | #1545: effects.apply answers with the applied instances (clip, index, effect) | C | átvesz | tisztán | U0-C | – | tervezett |
 | 0.14.0 | #1870 | #1216: a cap on the CPU threads an export uses (maxThreads) | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.14.0 | #2415 | #2340: uncompressed QuickTime video (raw 24-bit RGB, 2vuy, v210) decodes | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.14.0 | #3281 | Report parameter and accepted value from effects.setParam | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.14.0 | #3209 | Program: drag a marquee or Shift-click to select several mask vertices, and move them together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #552 | PR nyitva |
 | 0.14.0 | #3211 | Lift and Extract put the removed range on the clipboard | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
-| 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #554 | PR nyitva |
 | 0.14.0 | #3301 | Alt-drag of a clip edge trims only that side of a link | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.14.0 | #2445 | ime: an edit that ends while composing commits the marked text | D | átvesz (Qt6) | kézi port | U0-D | #557 | PR nyitva |
 | 0.14.0 | #3226 | i18n(fr): translate the 42 strings French still lacked | E | átvesz | kézi port | U0-E | – | tervezett |
@@ -274,8 +274,8 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3155 | Timeline: a Rolling Edit drag stops at the roll's limits | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #564 | PR nyitva (motor; a Qt-előnézet korlátozása külön) |
 | 0.13.0 | #3212 | Timeline: Show Duplicate Frame Markers marks media frames used more than once | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #565 | PR nyitva |
-| 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
-| 0.13.0 | #3233 | Monitors: Transparency Grid shows the picture's transparent areas | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.13.0 | #3227 | Audio Track Mixer: Show/Hide Tracks and Meter Input(s) Only are commands with Premiere's keys | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #601 | PR nyitva |
+| 0.13.0 | #3233 | Monitors: Transparency Grid shows the picture's transparent areas | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #566 | PR nyitva |
 | 0.13.0 | #2862 | Scroll the timeline clip menu when it is taller than the screen (#2852) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #2940 | Project panel: a clip dropped on New Item makes a sequence from it (fixes #2855) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3011 | meters: drop to silence right after Stop | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
@@ -312,7 +312,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.11.0 | #1955 | Order auto-saves by real time so rotation keeps the newest | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.11.0 | #2388 | #2342: CLI file.exportMedia waits for the export before the process exits | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.11.0 | #2724 | fix: use async file I/O in async MCP screenshot handler (SonarCloud rust:S7493) | B | átvesz | tisztán | U0-B | – | tervezett |
-| 0.11.0 | #2555 | Re-open a failed audio output while playing instead of going silent for good | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.11.0 | #2555 | Re-open a failed audio output while playing instead of going silent for good | D | átvesz (Qt6) | kézi port | U0-D | #602 | PR nyitva |
 | 0.11.0 | #1943 | fix(macos): ask to save on Cmd-Q instead of quitting outright | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.11.0 | #2006 | fix(macos): ask to save on Cmd-Q instead of quitting outright (#1943) | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
 | 0.11.0 | #2157 | ci: switch to shared nix workflow from [upstream] | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
