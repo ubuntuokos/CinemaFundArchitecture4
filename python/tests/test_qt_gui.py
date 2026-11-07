@@ -11060,3 +11060,43 @@ def test_control_channel_names_menu_bar_buttons_as_egui(app, fake_engine: Path, 
         win._quit_confirmed = True
         win.close()
         engine.stop()
+
+
+def test_control_channel_names_panel_inner_tabs_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's ids for the tabs inside the Text, Essential Graphics and Essential Sound panels
+    (``text.tab.<Name>``, ``essentialGraphics.tab.browse`` / ``edit``, ``essentialSound.tab.Browse`` /
+    ``Edit``): ``ui.elements`` lists them with their titles and ``ui.click`` switches the tab."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(fake_engine)
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        c = _ControlClient(app, server.port())
+        cases = [
+            ("Text", "text.tab.", ["Transcript", "Captions", "Graphics"]),
+            ("Essential Graphics", "essentialGraphics.tab.", ["browse", "edit"]),
+            ("Essential Sound", "essentialSound.tab.", ["Browse", "Edit"]),
+        ]
+        for dock, prefix, keys in cases:
+            win.docks[dock].show()
+            win.docks[dock].raise_()
+            tabs = win.docks[dock].widget().findChild(QtWidgets.QTabBar)
+            assert wait_until(app, lambda t=tabs: t.isVisible(), 3_000), dock
+            els = {e["id"]: e for e in c.call("ui.elements", {"prefix": prefix})["result"]}
+            assert set(els) == {prefix + k for k in keys}, (dock, set(els))
+            assert [els[prefix + k]["label"] for k in keys] == [tabs.tabText(i) for i in range(len(keys))]
+            for i, key in reversed(list(enumerate(keys))):
+                assert c.call("ui.click", {"id": prefix + key})["ok"]
+                assert wait_until(app, lambda t=tabs, i=i: t.currentIndex() == i, 3_000), (dock, key, tabs.currentIndex())
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()

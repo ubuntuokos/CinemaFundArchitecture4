@@ -39,7 +39,6 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSlider,
     QStackedWidget,
-    QTabBar,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -48,6 +47,7 @@ from PySide6.QtWidgets import (
 from .. import theme
 from ..hot_number import HotSpin
 from ..i18n import N_, fmt, tr
+from .tab_ids import IdTabBar
 
 TEMPLATE_MIME = "application/x-cfa4-template"
 LABEL_W = 130  # egui's label column
@@ -1264,7 +1264,7 @@ class EssentialGraphicsPanel(QWidget):
         self.settings: QSettings | None = None
         self.dialog: QDialog | None = None
         self._tab_chosen = ""  # "browse" / "edit" once picked; "" follows the selection (egui's)
-        self.tabs = QTabBar(self)
+        self.tabs = IdTabBar(["essentialGraphics.tab.browse", "essentialGraphics.tab.edit"], self)
         self.tabs.setObjectName("essentialGraphics.tabs")
         self.tabs.setDrawBase(False)
         self.tabs.setExpanding(False)
