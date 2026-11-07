@@ -617,6 +617,44 @@ pub fn with_links(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
     out
 }
 
+/// `clips` plus every clip grouped with them (`clip.group`) and, when linked selection is on, their
+/// linked partners, repeated until nothing more joins: the partner of a grouped clip brings the
+/// group along. Groups always select together; Alt-click (`linked: false`) picks one member.
+pub fn with_groups_and_links(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
+    let mut out = with_links(s, &with_groups(s, clips));
+    loop {
+        // both steps only add, so an unchanged length means nothing joined
+        let next = with_links(s, &with_groups(s, &out));
+        if next.len() == out.len() {
+            return out;
+        }
+        out = next;
+    }
+}
+
+/// Keep each selected identity once, then add every clip that shares a group with one of them.
+fn with_groups(s: &Session, clips: &[ClipId]) -> Vec<ClipId> {
+    let mut out = Vec::new();
+    for c in clips {
+        if !out.contains(c) {
+            out.push(*c);
+        }
+    }
+    let Some(seq) = s.active_sequence() else { return out };
+    let groups: Vec<u64> = out.iter().filter_map(|c| seq.find_item(*c).and_then(|(_, i)| i.group)).collect();
+    if groups.is_empty() {
+        return out;
+    }
+    for t in seq.all_tracks() {
+        for i in &t.items {
+            if i.group.is_some_and(|g| groups.contains(&g)) && !out.contains(&i.id) {
+                out.push(i.id);
+            }
+        }
+    }
+    out
+}
+
 /// The delta a trim of `clips` (a clip and its linked partners) can apply together: `delta`
 /// clamped by each one's media and neighbours.
 fn clamp_trim_linked(q: &cfa4_project::Sequence, clips: &[ClipId], edge: Edge, mode: TrimMode, delta: Tick, ctx: &edit::EditCtx) -> Result<Tick> {
@@ -650,6 +688,41 @@ pub fn trim_delta(s: &Session, clip: ClipId, edge: Edge, mode: TrimMode, delta: 
     let mut next = s.project.next_id;
     let ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: q.settings.frame_rate.frame_duration() };
     clamp_trim_linked(q, &with_links(s, &[clip]), edge, mode, delta, &ctx)
+}
+
+/// The delta a roll of every cut in `pairs` can apply together: `delta` clamped by each pair's
+/// media and the frame left in each clip, each tried on a copy of `q`. 0 when a pair would roll
+/// by another amount (a clip whose Out point is past the end of its media rolls the other way).
+fn clamp_roll_linked(q: &cfa4_project::Sequence, pairs: &[(ClipId, ClipId)], delta: Tick, ctx: &mut edit::EditCtx) -> Result<Tick> {
+    let mut d = delta;
+    for &(pl, pr) in pairs {
+        let mut probe = q.clone();
+        let x = edit::roll(&mut probe, pl, pr, d, ctx)?;
+        if x.abs() < d.abs() {
+            d = x;
+        }
+    }
+    if d != Tick::ZERO {
+        for &(pl, pr) in pairs {
+            let mut probe = q.clone();
+            if edit::roll(&mut probe, pl, pr, d, ctx)? != d {
+                return Ok(Tick::ZERO);
+            }
+        }
+    }
+    Ok(d)
+}
+
+/// The delta `timeline.roll` would apply for `delta`, without editing anything: the Timeline's
+/// Rolling Edit drag shows this, so the cut stops where the roll on release stops instead of
+/// following the pointer past the media.
+pub fn roll_delta(s: &Session, left: ClipId, right: ClipId, delta: Tick) -> Result<Tick> {
+    let q = s.active_sequence().ok_or(EngineError::NoSequence)?;
+    let durations = |id: ItemId| crate::media_duration(&s.project, &s.media, id);
+    let starts = |id: ItemId| crate::media_start(&s.project, id);
+    let mut next = s.project.next_id;
+    let mut ctx = edit::EditCtx { next_id: &mut next, media_duration: &durations, media_start: &starts, min_duration: q.settings.frame_rate.frame_duration() };
+    clamp_roll_linked(q, &linked_roll_pairs(q, left, right, s.state.linked_selection), delta, &mut ctx)
 }
 
 /// Sequence settings matching a media clip (New Sequence From Clip, New Sequence from an item):
@@ -2684,29 +2757,34 @@ fn build() -> Vec<CommandSpec> {
             }
             let clips: Vec<ClipId> =
                 p.get("clips").and_then(Value::as_array).map(|a| a.iter().filter_map(|v| v.as_u64().map(ClipId)).collect()).unwrap_or_default();
-            let clips = if bool_p(p, "linked").unwrap_or(true) { with_links(s, &clips) } else { clips };
+            // a toggle adds or removes the requested clips as a whole, decided once from their own
+            // selection state, so a partly selected group never ends up half flipped
+            let toggle_off = !clips.is_empty() && clips.iter().all(|c| s.state.selection.contains(c));
+            let clips = if bool_p(p, "linked").unwrap_or(true) { with_groups_and_links(s, &clips) } else { clips };
             // selecting clips leaves trim mode (Premiere: clip and edit point selections are exclusive)
             s.state.edit_points.clear();
             s.state.trim_shift = Default::default();
             // and a clip selection replaces a transition or gap one
             s.state.transition_selection.clear();
             s.state.gap_selection = None;
-            if bool_p(p, "toggle").unwrap_or(false) {
-                for c in clips {
-                    if let Some(i) = s.state.selection.iter().position(|x| *x == c) {
-                        s.state.selection.remove(i);
-                    } else {
-                        s.state.selection.push(c);
-                    }
-                }
-            } else if bool_p(p, "add").unwrap_or(false) {
+            if bool_p(p, "toggle").unwrap_or(false) && toggle_off {
+                s.state.selection.retain(|x| !clips.contains(x));
+            } else if bool_p(p, "toggle").unwrap_or(false) || bool_p(p, "add").unwrap_or(false) {
                 for c in clips {
                     if !s.state.selection.contains(&c) {
                         s.state.selection.push(c);
                     }
                 }
             } else {
-                s.state.selection = clips;
+                // a raw (unlinked) id list may repeat a clip; keep the first of each, in order
+                let mut seen = std::collections::HashSet::with_capacity(clips.len());
+                let mut unique: Vec<ClipId> = Vec::with_capacity(clips.len());
+                for c in clips {
+                    if seen.insert(c) {
+                        unique.push(c);
+                    }
+                }
+                s.state.selection = unique;
                 s.state.caption_selection.clear();
             }
             Ok(json!({"selection": s.state.selection.iter().map(|c| c.0).collect::<Vec<_>>()}))
@@ -2866,14 +2944,7 @@ fn build() -> Vec<CommandSpec> {
             let (x, n, linked) = s.edit_sequence("Rolling Edit", |q, ctx, _| {
                 let pairs = linked_roll_pairs(q, l, r, follow);
                 let linked = pairs.len() > 1;
-                let mut d = d;
-                for &(pl, pr) in &pairs {
-                    let mut probe = q.clone();
-                    let x = edit::roll(&mut probe, pl, pr, d, ctx)?;
-                    if x.abs() < d.abs() {
-                        d = x;
-                    }
-                }
+                let d = clamp_roll_linked(q, &pairs, d, ctx)?;
                 if d != Tick::ZERO {
                     for &(pl, pr) in &pairs {
                         edit::roll(q, pl, pr, d, ctx)?;
@@ -2882,6 +2953,16 @@ fn build() -> Vec<CommandSpec> {
                 Ok((d, pairs.len(), linked))
             })?;
             Ok(json!({"delta": x.0, "pairs": n, "linked": linked}))
+        }),
+        // What `timeline.roll` would apply, without editing (a frontend's Rolling Edit drag shows it,
+        // so the cut stops where the roll on release stops: upstream #3155).
+        query!("timeline.rollDelta", "Rolling Edit Limit", r#"{"left":id,"right":id,"delta":ticks}"#, |s, p| {
+            let (l, r) = (
+                clip_p(p, "left").ok_or_else(|| bad("timeline.rollDelta", "need `left`"))?,
+                clip_p(p, "right").ok_or_else(|| bad("timeline.rollDelta", "need `right`"))?,
+            );
+            let d = Tick(p.get("delta").and_then(Value::as_i64).ok_or_else(|| bad("timeline.rollDelta", "need `delta` (ticks)"))?);
+            Ok(json!({"delta": roll_delta(s, l, r, d)?.0}))
         }),
         cmd!("timeline.slip", "Slip", [], None, r#"{"clip":id,"delta":ticks|"deltaFrames":i64}"#, has_seq, |s, p| {
             let c = clip_p(p, "clip").ok_or_else(|| bad("timeline.slip", "need `clip`"))?;
@@ -3781,6 +3862,9 @@ fn copy_selection(s: &mut Session) {
     s.state.clipboard_markers = markers;
 }
 
+/// Paste the clipboard at the playhead (`insert` ripples later clips right instead of
+/// overwriting). Caption clipboards go to the caption track. Pasted clips get fresh ids, links
+/// and groups of their own, are selected, and the playhead moves to their end.
 fn paste(s: &mut Session, insert: bool) -> Result<Value> {
     let at = s.playhead();
     let clip = s.state.clipboard.clone();
@@ -3788,6 +3872,9 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
     let end = s.edit_sequence(if insert { "Paste Insert" } else { "Paste" }, |q, ctx, st| {
         let mut placements = Vec::new();
         let mut links = std::collections::HashMap::new();
+        // pasted clips get groups of their own, as their links: sharing the originals' group
+        // would select (and so drag or delete) the originals with them
+        let mut groups = std::collections::HashMap::new();
         for (kind, ti, item) in clip {
             let tracks = q.tracks(kind);
             let Some(t) = tracks.get(ti).or(tracks.last()) else { continue };
@@ -3796,6 +3883,9 @@ fn paste(s: &mut Session, insert: bool) -> Result<Value> {
             it.start += at;
             if let Some(l) = it.link {
                 it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
+            }
+            if let Some(g) = it.group {
+                it.group = Some(*groups.entry(g).or_insert_with(|| ctx.alloc()));
             }
             placements.push((t.id, it));
         }
@@ -4831,6 +4921,17 @@ pub fn inspect_sequence(s: &Session, id: ItemId, q: &cfa4_project::Sequence) -> 
         // the selected edit points ({clip, out, kind}) and the through edits (the edit point menu)
         "editPoints": if s.state.active_sequence == Some(id) { serde_json::to_value(&s.state.edit_points).unwrap_or_default() } else { json!([]) },
         "throughEdits": cfa4_edit::through::through_edits(q).iter().map(|e| json!({"left": e.left.0, "right": e.right.0})).collect::<Vec<_>>(),
+        // Show Duplicate Frame Markers (the Qt GUI draws them; upstream #3212): the switch, and while
+        // it is on the clips with media frames another video clip also shows
+        "showDuplicateFrameMarkers": s.state.show_duplicate_frame_markers,
+        "duplicateFrames": if s.state.show_duplicate_frame_markers {
+            crate::sequence_tools::duplicate_frames(&s.project, q)
+                .iter()
+                .map(|d| json!({"clip": d.clip.0, "color": d.color, "ranges": d.ranges.iter().map(|r| json!({"start": r.start.0, "end": r.end().0})).collect::<Vec<_>>()}))
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        },
         // the active sequence's track targeting and source patching (the track header switches)
         "targeting": if s.state.active_sequence == Some(id) {
             let t = s.targeting();
