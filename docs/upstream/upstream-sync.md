@@ -77,13 +77,13 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3423 | Export: preserve optional binary transparency in animated GIFs (#3396) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3432 | Strip UTF-8 byte order mark when parsing .cube LUT files | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3440 | Fix trim_caption moving edges of captions shorter than one frame | B | átvesz | tisztán | U0-B | – | tervezett |
-| 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3452 | fix(codecs): frame lookup inside a frame with one timestamp unit per frame | B | átvesz | kézi port | U0-B | #701 | PR nyitva |
 | 0.15.0 | #3470 | Export: write fast-start MP4 files for upload compatibility (#3459) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3471 | frame: move rotated chroma buffers instead of cloning (#3468) | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3474 | Media cache: a folder of its own inside a custom location (fixes #2772) | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3565 | Fix graphics template width scaling across canvas sizes (#3415) | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3590 | Audio Track Mixer: a fader moved during playback in Read mode keeps its level | B | átvesz | kézi port | U0-B | – | tervezett |
-| 0.15.0 | #3591 | Synchronize: Clip > Synchronize (Audio) works on long stereo clips | B | átvesz | kézi port | U0-B | – | tervezett |
+| 0.15.0 | #3591 | Synchronize: Clip > Synchronize (Audio) works on long stereo clips | B | átvesz | kézi port | U0-B | #701 | PR nyitva |
 | 0.15.0 | #3607 | render: convert the CPU monitor frame to sRGB bytes in vectorised batches | B | átvesz | kézi port | U0-B | – | tervezett |
 | 0.15.0 | #3627 | fix(engine): accept time objects for timeline.place sourceIn and duration | B | átvesz | tisztán | U0-B | – | tervezett |
 | 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B | – | tervezett |
@@ -111,7 +111,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #2287 | fix(interchange): OTIO export stops writing nested-sequence copies past a limit | A | átvesz | kézi port | U0-A3 | – | tervezett |
 | 0.14.0 | #2394 | Fix TTML/DFXP export overflow for cue times near i64::MAX | A | átvesz | tisztán | U0-A3 | – | tervezett |
 | 0.14.0 | #2888 | security(av1): reject non-increasing grain points | A | átvesz | tisztán | U0-A1 | – | tervezett |
-| 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4 | – | tervezett |
+| 0.14.0 | #3080 | security(media): bound generator frames, imported audio dimensions, and render images | A | átvesz | kézi port | U0-A4 | #701 | PR nyitva |
 | 0.14.0 | #3307 | captions: bound MCC export work to scheduled data (#2811) | A | átvesz | kézi port | U0-A3 | – | tervezett |
 | 0.14.0 | #3349 | Audio Track Mixer: mixer.meterInputOnly refuses parameters that are not an object | A | átvesz | kézi port | U0-A4 | – | tervezett |
 | 0.14.0 | #1103 | fix(engine): Unlink a selection that also holds unlinked clips | B | átvesz | tisztán | U0-B | – | tervezett |
