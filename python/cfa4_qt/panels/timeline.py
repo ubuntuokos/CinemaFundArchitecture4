@@ -226,6 +226,7 @@ class Drag:
     begun: bool = False  # transition: its first change went (the rest merge into that undo step)
     track_kind: str = ""  # height: "video" | "audio"
     volume: dict[str, Any] | None = None  # volumeLine / volumeKey: the grab (egui's LineDrag / KeyDrag)
+    new_track: tuple[str, QRectF] | None = None  # move: dropped past the outer track, onto a new one (kind, band)
     # roll: the delta the engine says the roll would apply (`timeline.rollDelta`), shown instead of
     # the pointer's once it answers, and the delta that answer was for
     shown: int | None = None
@@ -558,8 +559,13 @@ class TimelineCanvas(QWidget):
         self.rows = []
         if not self.sequence:
             return
-        y = self.tracks_top() - self.scroll_y
+        # egui (#1522): room above the top video track, where a drop adds a video track: an empty
+        # track's height while the panel has the space (the tracks never scroll for it)
         videos = list(self.sequence.get("video") or [])
+        audios_n = len(self.sequence.get("audio") or [])
+        rows_h = len(videos) * self.video_h + 4 + audios_n * self.audio_h + 8
+        room = self.height() - self.tracks_top() - MASTER_H - rows_h
+        y = self.tracks_top() - self.scroll_y + max(0, min(self.video_h, room))
         for i in reversed(range(len(videos))):  # highest video track on top
             t = videos[i]
             self.rows.append(Row(t.get("id"), str(t.get("name") or ""), "video", y, self.video_h, t, f"V{i + 1}"))
@@ -636,7 +642,9 @@ class TimelineCanvas(QWidget):
 
     def resizeEvent(self, e) -> None:
         super().resizeEvent(e)
-        # a taller panel may show everything: keep the offset within range
+        # a taller panel may show everything: keep the offset within range (and the room for a
+        # new video track above the top one follows the height)
+        self._layout_rows()
         self.set_scroll_y(self.scroll_y)
         self.scrolled_y.emit()
 
@@ -657,6 +665,29 @@ class TimelineCanvas(QWidget):
 
     def time_at(self, x: float) -> int:
         return max(0, int(self.scroll_ticks + (x - HEADER_W) * TICKS_PER_SECOND / self.pps))
+
+    def new_track_at(self, y: float) -> tuple[str, QRectF] | None:
+        """egui's ``new_track_at`` (#483): a drop at ``y`` in the empty space above the top video
+        track adds a video track, below the last audio track an audio track; never over a track,
+        the caption rows or the Mix row. The kind and the band the new track would take."""
+        if not self.rows or self.row_at(int(y)) is not None:
+            return None
+        top, mix = self.tracks_top(), self.height() - MASTER_H
+        videos = [r for r in self.rows if r.kind == "video"]
+        audios = [r for r in self.rows if r.kind == "audio"]
+        w = max(0.0, self.width() - HEADER_W)
+        v_top = videos[0].top if videos else (audios[0].top if audios else top)
+        if top <= y < v_top:
+            return "video", QRectF(HEADER_W, max(top, v_top - self.video_h), w, v_top - max(top, v_top - self.video_h))
+        bottom = audios[-1].top + audios[-1].height if audios else v_top
+        if bottom <= y < mix:
+            return "audio", QRectF(HEADER_W, bottom, w, min(mix, bottom + self.audio_h) - bottom)
+        return None
+
+    def new_row(self, kind: str, band: QRectF) -> Row:
+        """A stand-in row for a new track (``"new"``) of ``kind`` in ``band``."""
+        n = sum(1 for r in self.rows if r.kind == kind) + 1
+        return Row("new", "", kind, int(band.top()), int(band.height()), {}, f"{'V' if kind == 'video' else 'A'}{n}")
 
     def row_at(self, y: int) -> Row | None:
         if y < self.tracks_top() or y >= self.height() - MASTER_H:  # under the ruler, captions or the Mix row: hidden
@@ -848,7 +879,25 @@ class TimelineCanvas(QWidget):
         if self._drop_preview:
             t, row = self._drop_preview
             x = self.x_of(t)
+            if row.track_id == "new":  # egui: the band of the track the drop adds
+                p.fillRect(QRectF(HEADER_W, row.top, self.width() - HEADER_W, row.height), QColor(255, 255, 255, 18))
             p.fillRect(QRectF(x, row.top, 3, row.height), QColor("#ffd54a"))
+        previews = self.new_track_previews()
+        if previews:
+            accent = QColor(theme.current().accent)
+            fill = QColor(accent)
+            fill.setAlphaF(0.4)
+            p.save()
+            p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            p.setFont(self.font_small)
+            for _cid, body, name in previews:
+                p.setPen(QPen(accent, 1.5))
+                p.setBrush(fill)
+                p.drawRoundedRect(body.adjusted(0.75, 0.75, -0.75, -0.75), 3, 3)
+                if body.height() >= 20:
+                    p.setPen(T.c("text"))
+                    p.drawText(body.adjusted(4, 2, -2, 0), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, name)
+            p.restore()
         if self._drag and self._drag.kind in ("trim", "roll", "stretch", "remix") and self._drag.clip is not None:
             x = self.x_of(self._drag.origin_time + self.drag_preview_delta())
             p.setPen(QPen(QColor("#ffd54a"), 2))
@@ -1151,6 +1200,8 @@ class TimelineCanvas(QWidget):
         for pid, x, top, is_in, tag in self.split_marks():
             side = "In" if is_in else "Out"
             out.append((pid, QRectF(x - 6, top - 1, 12, 9).intersected(ruler), f"Split {tag} {side}"))
+        for cid, body, name in self.new_track_previews():
+            out.append((f"timeline.newTrackPreview.{cid}", body.intersected(content), name))
         for i, row in enumerate(self.rows):
             for c in self.header_cells(row):
                 key = "sourcePatch" if c.key == "patch" else c.key
@@ -2393,6 +2444,13 @@ class TimelineCanvas(QWidget):
             d.row_delta = 0
             if start_row and now_row and start_row.kind == now_row.kind:
                 d.row_delta = self.rows.index(now_row) - self.rows.index(start_row)
+            # egui (#1104, #1187): past the outer track of its kind, the clips go onto a new one
+            # (not when one of them sits on a locked track)
+            d.new_track = None
+            if start_row is not None and now_row is None:
+                nt = self.new_track_at(pos.y())
+                if nt is not None and nt[0] == start_row.kind and not any(r.track.get("locked") for r in self._moved_rows(d)):
+                    d.new_track = nt
         d.delta = target - d.origin_time
         if d.kind == "roll":
             self._ask_roll_limit(d)
@@ -2472,7 +2530,7 @@ class TimelineCanvas(QWidget):
                 elif self.transition_selection != [tid] or self.selection:
                     self.command.emit("timeline.select", {"transitions": [tid]})
             return
-        if d.clip is None or (d.delta == 0 and d.row_delta == 0):
+        if d.clip is None or (d.delta == 0 and d.row_delta == 0 and d.new_track is None):
             self.update()
             return
         if d.kind == "hand":
@@ -2507,9 +2565,8 @@ class TimelineCanvas(QWidget):
             row, clip = found
             idx = self.rows.index(row) + d.row_delta
             target_row = self.rows[idx] if 0 <= idx < len(self.rows) and self.rows[idx].kind == row.kind else row
-            moves.append(
-                {"clip": cid, "track": target_row.track_id, "time": max(0, int(clip.get("start") or 0) + d.delta)}
-            )
+            track = "new" if d.new_track is not None else target_row.track_id
+            moves.append({"clip": cid, "track": track, "time": max(0, int(clip.get("start") or 0) + d.delta)})
         insert = bool(e.modifiers() & Qt.KeyboardModifier.ControlModifier)
         copy = bool(e.modifiers() & Qt.KeyboardModifier.AltModifier)
         params: dict[str, Any] = {"moves": moves, "linked": False}
@@ -2518,6 +2575,31 @@ class TimelineCanvas(QWidget):
         if copy:
             params["copy"] = True
         self.command.emit("timeline.move", params)
+
+    def _moved_rows(self, d: Drag) -> list[Row]:
+        """The rows the clips a move drags sit on (the selection, or the grabbed clip)."""
+        ids = set(self.selection or [(d.clip or {}).get("clip")])
+        return [r for r in self.rows if any(c.get("clip") in ids for c in r.track.get("items") or [])]
+
+    def new_track_previews(self) -> list[tuple[Any, QRectF, str]]:
+        """While a move drags clips onto a new track: (clip id, where it lands in the new track's
+        band, its name), for those of the band's kind (egui's ``timeline.newTrackPreview.<id>``)."""
+        d = self._drag
+        if d is None or d.kind != "move" or d.new_track is None:
+            return []
+        kind, band = d.new_track
+        ids = set(self.selection or [(d.clip or {}).get("clip")])
+        out = []
+        for r in self.rows:
+            if r.kind != kind:
+                continue
+            for c in r.track.get("items") or []:
+                if c.get("clip") in ids:
+                    start = max(0, as_int(c.get("start")) + d.delta)
+                    x0, x1 = self.x_of(start), self.x_of(start + as_int(c.get("end")) - as_int(c.get("start")))
+                    body = QRectF(x0, band.top() + 1, x1 - x0, band.height() - 2).intersected(band)
+                    out.append((c.get("clip"), body, str(c.get("name") or "")))
+        return out
 
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
         pos = e.position().toPoint()
@@ -2617,6 +2699,12 @@ class TimelineCanvas(QWidget):
             return
         row = self.row_at(pos.y())
         source = source_payload(e.mimeData().data(SOURCE_MIME)) if e.mimeData().hasFormat(SOURCE_MIME) else None
+        if row is None and pos.x() >= HEADER_W and not e.mimeData().hasFormat(TEMPLATE_MIME):
+            # egui (#483): the empty space above the top video track or below the last audio
+            # track adds a track of that kind
+            nt = self.new_track_at(pos.y())
+            if nt is not None and (source is None or source["video" if nt[0] == "video" else "audio"]):
+                row = self.new_row(*nt)
         # a Source span lands only on tracks of a stream it carries (egui's)
         wrong_stream = source is not None and row is not None and not source["video" if row.kind == "video" else "audio"]
         if row is None or pos.x() < HEADER_W or wrong_stream or (e.mimeData().hasFormat(TEMPLATE_MIME) and row.kind != "video"):
@@ -2634,8 +2722,11 @@ class TimelineCanvas(QWidget):
         videos = [v.get("id") for v in seq.get("video") or [] if isinstance(v, dict)]
         audios = [a.get("id") for a in seq.get("audio") or [] if isinstance(a, dict)]
         mine, other = (videos, audios) if row.kind == "video" else (audios, videos)
-        index = mine.index(row.track_id) if row.track_id in mine else 0
-        partner = other[index] if index < len(other) else (other[0] if other else None)
+        if row.track_id == "new":  # egui: the other stream on the track of that number, or a new one too
+            partner = other[len(mine)] if len(mine) < len(other) else "new"
+        else:
+            index = mine.index(row.track_id) if row.track_id in mine else 0
+            partner = other[index] if index < len(other) else (other[0] if other else None)
         vt, at = (row.track_id, partner) if row.kind == "video" else (partner, row.track_id)
         return {
             "item": source["item"],
@@ -2721,7 +2812,18 @@ class TimelineCanvas(QWidget):
                 self.files_dropped.emit(paths, t, row.track_id)
                 e.acceptProposedAction()
             return
-        if items:  # one after another, as one undo step (each at ``t`` would overwrite the last)
+        if items and row.track_id == "new":
+            # egui: a new track of that kind, the other stream on the track of the same number
+            # (or on a new one as well)
+            seq = self.sequence or {}
+            videos = [v.get("id") for v in seq.get("video") or [] if isinstance(v, dict)]
+            audios = [a.get("id") for a in seq.get("audio") or [] if isinstance(a, dict)]
+            if row.kind == "video":
+                vt, at = "new", audios[len(videos)] if len(videos) < len(audios) else "new"
+            else:
+                vt, at = videos[len(audios)] if len(audios) < len(videos) else "new", "new"
+            self.command.emit("timeline.place", {"items": items, "time": t, "track": vt, "audioTrack": at})
+        elif items:  # one after another, as one undo step (each at ``t`` would overwrite the last)
             self.command.emit("timeline.place", {"items": items, "time": t, "track": row.track_id})
         e.acceptProposedAction()
 
