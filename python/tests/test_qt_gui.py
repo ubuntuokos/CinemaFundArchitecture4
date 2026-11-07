@@ -1368,7 +1368,7 @@ def test_real_engine_preferences_dialog_and_favourite_themes_as_egui(app, tmp_pa
         assert win.menuBar().findChild(QtGui.QAction, "app.settings.general").shortcut().toString() == "Ctrl+,"
         d = opened("timeline")
         assert d.objectName() == "settings" and d.findChild(QtWidgets.QPushButton, "settings.category.timeline").isChecked()
-        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 16
+        assert len([b for b in d.findChildren(QtWidgets.QPushButton) if b.objectName().startswith("settings.category.")]) == 17  # with Media Backends (ADR 0005)
         scroll = d.findChild(QtWidgets.QComboBox, "settings.timeline.autoScroll")
         scroll.setCurrentIndex(scroll.findData("smoothScroll"))
         d.findChild(QtWidgets.QPushButton, "settings.cancel").click()
@@ -11122,6 +11122,10 @@ def test_control_channel_names_effects_tree_rows_as_egui(app, tmp_path: Path):
         assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
         win.docks["Effects"].raise_()
         assert wait_until(app, lambda: fx.tree.topLevelItemCount() >= 6, 20_000)
+        # tall enough that an open folder's rows are in view (the default workspace's Effects
+        # panel shares its column with others)
+        win.resizeDocks([win.docks["Effects"]], [600], QtCore.Qt.Orientation.Vertical)
+        assert wait_until(app, lambda: fx.tree.viewport().height() >= 200, 3_000), fx.tree.viewport().height()
         c = _ControlClient(app, server.port())
 
         def ids():
