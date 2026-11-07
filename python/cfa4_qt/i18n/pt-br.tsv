@@ -321,3 +321,5 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A entrada/saída da sequência tem só 1 quadro. Escolha Sequência inteira para exportar a sequência toda.

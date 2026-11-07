@@ -821,7 +821,8 @@ impl Imp<'_, '_> {
     fn markers(&mut self, v: &Value) -> Vec<Marker> {
         let mut out = Vec::new();
         for m in v.get("markers").and_then(Value::as_array).into_iter().flatten() {
-            let (mut start, mut duration) = m.get("marked_range").and_then(read_tr).unwrap_or((Tick::ZERO, Tick::ZERO));
+            // `Marker.1` keeps the range under `range`; `Marker.2` renamed it to `marked_range`.
+            let (mut start, mut duration) = m.get("marked_range").or_else(|| m.get("range")).and_then(read_tr).unwrap_or((Tick::ZERO, Tick::ZERO));
             let meta = fc(m);
             if let Some(s) = meta.and_then(|x| x.get("start_ticks")).and_then(Value::as_i64)
                 && (Tick(s) - start).abs() < Tick(TICKS_PER_SECOND / 1000)

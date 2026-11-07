@@ -187,6 +187,15 @@ class Drag:
     begun: bool = False  # transition: its first change went (the rest merge into that undo step)
     track_kind: str = ""  # height: "video" | "audio"
     volume: dict[str, Any] | None = None  # volumeLine / volumeKey: the grab (egui's LineDrag / KeyDrag)
+    # roll: the delta the engine says the roll would apply (`timeline.rollDelta`), shown instead of
+    # the pointer's once it answers, and the delta that answer was for
+    shown: int | None = None
+    asked: int | None = None
+
+
+# Duplicate frame marker colors, one per master clip with repeated frames in the order they appear
+# in the sequence (the engine's DUPLICATE_FRAME_COLORS)
+DUPLICATE_FRAME_COLORS = ("#e84a4a", "#3d9be9", "#4cc25a", "#f2c22e", "#b05ce0", "#f08a2c", "#2cd4c8", "#ec5eb0", "#9acd32", "#f5f5f5")
 
 
 def as_int(v: Any, default: int = 0) -> int:
@@ -731,6 +740,7 @@ class TimelineCanvas(QWidget):
                     2 if clip.get("clip") in selected else 1,
                 )
                 self._paint_clip_media(p, row, clip, r, base)
+                self._paint_duplicate_frames(p, clip, r)
                 if row.kind == "audio" and row.track_id not in self.track_lanes:
                     self._paint_volume(p, row, clip, r)
                 p.setPen(pen)
@@ -767,7 +777,7 @@ class TimelineCanvas(QWidget):
             x = self.x_of(t)
             p.fillRect(QRectF(x, row.top, 3, row.height), QColor("#ffd54a"))
         if self._drag and self._drag.kind in ("trim", "roll", "stretch", "remix") and self._drag.clip is not None:
-            x = self.x_of(self._drag.origin_time + self._drag.delta)
+            x = self.x_of(self._drag.origin_time + self.drag_preview_delta())
             p.setPen(QPen(QColor("#ffd54a"), 2))
             p.drawLine(int(x), RULER_H, int(x), self.height())
         self._paint_headers(p)
@@ -938,6 +948,34 @@ class TimelineCanvas(QWidget):
         p.setFont(font)
         p.setPen(QColor("#ffffff"))
         p.drawText(b, Qt.AlignmentFlag.AlignCenter, tr("Open Demo Project"))
+        p.restore()
+
+    # ----- Show Duplicate Frame Markers (upstream #3212) -----
+    def duplicate_frames(self) -> dict[Any, tuple[int, list[tuple[int, int]]]]:
+        """clip -> (color index, its repeated-frame timeline ranges), from the engine's sequence."""
+        out: dict[Any, tuple[int, list[tuple[int, int]]]] = {}
+        for d in (self.sequence or {}).get("duplicateFrames") or []:
+            if not isinstance(d, dict):
+                continue
+            ranges = [(r["start"], r["end"]) for r in d.get("ranges") or []
+                      if isinstance(r, dict) and isinstance(r.get("start"), int) and isinstance(r.get("end"), int) and r["end"] > r["start"]]
+            if ranges:
+                out[d.get("clip")] = (as_int(d.get("color")), ranges)
+        return out
+
+    def _paint_duplicate_frames(self, p: QPainter, clip: dict[str, Any], r: QRectF) -> None:
+        """A stripe along the clip's bottom under each repeated frame, in its master clip's color
+        (as the clip is drawn now, also while it is dragged)."""
+        found = self.duplicate_frames().get(clip.get("clip"))
+        if found is None:
+            return
+        color = QColor(DUPLICATE_FRAME_COLORS[min(max(found[0], 0), len(DUPLICATE_FRAME_COLORS) - 1)])
+        shift = r.left() - self.x_of(as_int(clip.get("start")))
+        p.save()
+        p.setClipRect(r)
+        for a, b in found[1]:
+            x0, x1 = self.x_of(a) + shift, self.x_of(b) + shift
+            p.fillRect(QRectF(x0, r.bottom() - 3, max(1.0, x1 - x0), 3), color)
         p.restore()
 
     # ----- markers (egui's timeline_hit.rs marker_rect / marker_range_rect) -----
@@ -1279,15 +1317,17 @@ class TimelineCanvas(QWidget):
         d.delta = round(raw / ft) * ft  # whole frames (egui's snap_nearest)
         self.update()
 
-    def _caption_release(self, d: Drag) -> None:
-        """The drag's one ``captions.*`` command: move (the selection, when the caption is in it)
-        or trim; a click without a drag selects only that caption."""
+    def _caption_release(self, d: Drag, copy: bool = False) -> None:
+        """The drag's one ``captions.*`` command: move (the selection, when the caption is in it;
+        ``copy``, Alt held: duplicate them there instead) or trim; a click without a drag selects
+        only that caption."""
         cid = (d.clip or {}).get("id")
         info = d.volume or {}
         if d.delta != 0 and not info.get("locked"):
             if d.edge == "move":
                 sel = self.caption_selection
-                self.command.emit("captions.move", {"captions": sel if cid in sel else [cid], "delta": d.delta})
+                # Alt held as the drag ends copies them (Premiere's Option-drag; upstream #3040)
+                self.command.emit("captions.duplicate" if copy else "captions.move", {"captions": sel if cid in sel else [cid], "delta": d.delta})
             else:
                 self.command.emit("captions.trim", {"caption": cid, "edge": d.edge, "delta": d.delta})
         elif not info.get("add") and self.caption_selection != [cid]:
@@ -1795,6 +1835,12 @@ class TimelineCanvas(QWidget):
         """egui's Timeline Display Settings (the toolbar's wrench)."""
         menu = QMenu(self)
         menu.setObjectName("timeline.settings")
+        # media frames used more than once get a colored stripe (upstream #3212)
+        a = menu.addAction(tr("Show Duplicate Frame Markers"))
+        a.setObjectName("timeline.settings.showDuplicateFrameMarkers")
+        a.setCheckable(True)
+        a.setChecked((self.sequence or {}).get("showDuplicateFrameMarkers") is True)
+        a.toggled.connect(lambda on: self.command.emit("sequence.showDuplicateFrameMarkers", {"on": bool(on)}))
         a = menu.addAction(tr("Show Video Thumbnails"))
         a.setObjectName("timeline.settings.showThumbnails")
         a.setCheckable(True)
@@ -1939,8 +1985,9 @@ class TimelineCanvas(QWidget):
         additive = bool(e.modifiers() & (Qt.KeyboardModifier.ShiftModifier | Qt.KeyboardModifier.ControlModifier))
         sel = self.selection
         if additive:
-            new = [c for c in sel if c != cid] if cid in sel else [*sel, cid]
-            self.command.emit("timeline.select", {"clips": new})
+            # the engine flips the clip with its group and links as a whole (upstream #3522): a
+            # locally computed list would keep the clip's group mates, which bring it straight back
+            self.command.emit("timeline.select", {"clips": [cid], "toggle": True})
             return
         if cid not in sel:
             self.command.emit("timeline.select", {"clips": [cid]})
@@ -2185,7 +2232,42 @@ class TimelineCanvas(QWidget):
             if start_row and now_row and start_row.kind == now_row.kind:
                 d.row_delta = self.rows.index(now_row) - self.rows.index(start_row)
         d.delta = target - d.origin_time
+        if d.kind == "roll":
+            self._ask_roll_limit(d)
         self.update()
+
+    def _ask_roll_limit(self, d: Drag) -> None:
+        """egui's #3155: a Rolling Edit drag stops where the roll on release stops (the media and
+        the frame left in each clip, linked pairs too), so the engine is asked what the roll would
+        apply; its answer is shown when it is for the latest delta of this drag."""
+        engine = getattr(self.media, "engine", None)
+        if engine is None or d.partner is None or d.clip is None or d.asked == d.delta:
+            return
+        left, right = (d.clip, d.partner) if d.edge == "out" else (d.partner, d.clip)
+        d.asked = asked = d.delta
+
+        def answer(result: Any, _b: bytes | None = None) -> None:
+            if self._drag is d and d.asked == asked and isinstance(result, dict):
+                shown = result.get("delta")
+                if isinstance(shown, int) and not isinstance(shown, bool):
+                    d.shown = shown
+                    self.update()
+
+        engine.execute(
+            "timeline.rollDelta",
+            {"left": left.get("clip"), "right": right.get("clip"), "delta": int(asked)},
+            on_reply=answer,
+            on_error=lambda _m: None,
+        )
+
+    def drag_preview_delta(self) -> int:
+        """The delta the drag shows: a roll's as the engine limits it, else the pointer's."""
+        d = self._drag
+        if d is None:
+            return 0
+        if d.kind == "roll" and d.shown is not None and d.asked == d.delta:
+            return d.shown
+        return d.delta
 
     def _drag_transition(self, d: Drag, pos: QPoint) -> None:
         """An end changes its duration from that end, the middle slides it over the cut: the
@@ -2207,7 +2289,7 @@ class TimelineCanvas(QWidget):
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         d, self._drag = self._drag, None
         if d is not None and d.kind == "caption":
-            self._caption_release(d)
+            self._caption_release(d, copy=bool(e.modifiers() & Qt.KeyboardModifier.AltModifier))
             return
         if d is not None and d.kind == "laneKey" and d.volume is not None and d.volume.get("at") is not None:
             t, v = self._lane_value_at(d)
