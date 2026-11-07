@@ -243,10 +243,10 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #2955 | fix(captions): bound TTML XML nesting | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #2956 | fix(interchange): confine embedded audio output names | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #2957 | fix(media): validate HDR scanlines before frame allocation | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.13.0 | #2983 | fix: harden saves, CLI file I/O and AV1 tooling (SonarCloud security/reliability) | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.13.0 | #2983 | fix: harden saves, CLI file I/O and AV1 tooling (SonarCloud security/reliability) | A | átvesz | kézi port | U0-A4b | #700 | PR nyitva |
 | 0.13.0 | #2989 | CTL2807: release idle control connections after bounded socket waits | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3007 | tools: quit the super-linear regex scans in the spec table extractors (SonarCloud S8786) | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
-| 0.13.0 | #3078 | security: harden developer tools, scripts, and testkit against hostile input | A | átvesz | kézi port | U0-A4b | – | tervezett |
+| 0.13.0 | #3078 | security: harden developer tools, scripts, and testkit against hostile input | A | átvesz | kézi port | U0-A4b | #700 | PR nyitva |
 | 0.13.0 | #3079 | security(interchange): harden FCPXML cycle detection, XML DTD entities, and imported formats | A | átvesz | kézi port | U0-A3 | #452 | PR nyitva |
 | 0.13.0 | #3081 | security(codecs): validate VP9 empty tiles and AV1 film grain scaling points | A | átvesz | tisztán | U0-A1 | #446 | PR nyitva |
 | 0.13.0 | #3082 | security(audio): bound sequence sample rates and AAF/OMF export channel buffers | A | átvesz | tisztán | U0-A3 | #452 | PR nyitva |
