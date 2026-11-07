@@ -46,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Periksa sebelum ekspor: {n} masalah ditandai di linimasa (penanda merah)
 	Checked:	Diperiksa:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Pilih berkas trek IAB (IMF atau DCP), aliran IAB mentah, atau Dolby Atmos TrueHD: aliran .thd atau berkas MKV, MP4, atau M2TS dengan trek Atmos.
-	Choose an output file.	Pilih berkas keluaran.
+	Choose a file name and location.	Pilih nama berkas dan lokasi.
+	Choose folder	Pilih folder
 	Click and press keys to assign	Klik lalu tekan tombol untuk menetapkan
 	Compression	Kompresi
 	Compression Level	Tingkat kompresi
@@ -320,3 +321,4 @@
 	{word} compression	kompresi {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.

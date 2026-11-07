@@ -69,6 +69,17 @@ rm -rf "$WORK"
 install -Dm755 "$BIN/cfa4" "$STAGE/usr/bin/cfa4"
 install -Dm755 "$BIN/cfa4-cli" "$STAGE/usr/bin/cfa4-cli"
 strip "$STAGE/usr/bin/cfa4" "$STAGE/usr/bin/cfa4-cli" 2>/dev/null || true
+# The Qt 6 GUI (ADR F8 phase 7): its Python package and the cfa4-qt launcher. PySide6 is a package
+# dependency from Ubuntu's archive (python3-pyside6.*, LGPL-3.0), never bundled. The shared egui
+# catalogs (with their attribution sidecars) go with it, so an installed GUI translates as a
+# checkout does.
+install -Dm755 "$HERE/cfa4-qt" "$STAGE/usr/bin/cfa4-qt"
+QT_PY="$STAGE/usr/lib/cfa4/python"
+mkdir -p "$QT_PY"
+cp -R "$ROOT/python/cfa4_qt" "$QT_PY/"
+find "$QT_PY" -name __pycache__ -type d -prune -exec rm -rf {} +
+mkdir -p "$QT_PY/cfa4_qt/i18n/shared"
+cp "$ROOT"/crates/ui-egui/src/i18n/*.tsv "$ROOT"/crates/ui-egui/src/i18n/*.tsv.attribution "$QT_PY/cfa4_qt/i18n/shared/"
 install -Dm644 "$HERE/$APP_ID.desktop" "$STAGE/usr/share/applications/$APP_ID.desktop"
 install -Dm644 "$HERE/$APP_ID.mime.xml" "$STAGE/usr/share/mime/packages/$APP_ID.xml"
 mkdir -p "$STAGE/usr/share/metainfo"
@@ -113,6 +124,10 @@ fi
 if has appimage; then
   APPDIR="$WORK/CFA4.AppDir"
   cp -R "$STAGE" "$APPDIR"
+  # The AppImage stays the egui app: it cannot depend on the host's python3-pyside6 packages and
+  # does not bundle PySide6, so the Qt GUI (cfa4-qt and its Python package) ships only in .deb/tar.
+  rm -rf "$APPDIR/usr/bin/cfa4-qt" "$APPDIR/usr/lib/cfa4/python"
+  rmdir "$APPDIR/usr/lib/cfa4" "$APPDIR/usr/lib" 2>/dev/null || true
   # Keep usr/share/doc: licences, NOTICE and attributions must ship inside the AppImage too.
   ln -s usr/bin/cfa4 "$APPDIR/AppRun"
   cp "$HERE/$APP_ID.desktop" "$APPDIR/$APP_ID.desktop"
@@ -168,5 +183,8 @@ if has appimage; then
 fi
 
 "$STAGE/usr/bin/cfa4-cli" --version
+# -P: the staged package, never a checkout's python/ that the caller's directory would put first
+PYTHONPATH="$QT_PY" python3 -P -c 'import cfa4_qt.i18n as i; assert i.CATALOG_DIRS[1].name == "shared"' \
+  || { echo "error: the staged Qt GUI does not find its shared catalogs" >&2; exit 1; }
 echo "==> done"
 ls -lh "$DIST"

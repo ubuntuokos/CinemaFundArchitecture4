@@ -46,7 +46,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	내보내기 전 검사: 타임라인에 문제 {n}개 표시됨 (빨간색 마커)
 	Checked:	검사됨:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB 트랙 파일(IMF 또는 DCP), 원시 IAB 스트림 또는 Dolby Atmos TrueHD(.thd 스트림, 또는 Atmos 트랙이 있는 MKV, MP4, M2TS 파일)를 선택하십시오.
-	Choose an output file.	출력 파일을 선택하십시오.
+	Choose a file name and location.	파일 이름과 위치를 선택하십시오.
+	Choose folder	폴더 선택
 	Click and press keys to assign	클릭한 후 할당할 키를 누르십시오
 	Compression	압축
 	Compression Level	압축 수준
@@ -320,3 +321,4 @@
 	{word} compression	{word} 압축
 	{w}x{h} ({par})	{w}×{h}({par})
 	Show Duplicate Frame Markers	중복 프레임 마커 표시
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	시퀀스 시작/종료 범위가 1프레임뿐입니다. 시퀀스 전체를 내보내려면 전체 시퀀스를 선택하세요.
