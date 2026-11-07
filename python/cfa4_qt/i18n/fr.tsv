@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 a rencontré une erreur
 	CFA4 project links	Liens du projet CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 s’est fermé de manière inattendue alors que « {name} » avait des modifications non enregistrées. Récupérer les modifications non enregistrées de {time} ?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 a été fermé alors que « {name} » avait des modifications non enregistrées. Récupérer les modifications non enregistrées de {time} ?
 	Cancel Selected	Annuler la sélection
 	Cannot check the output folder for files to replace: {error}	Impossible de vérifier les fichiers à remplacer dans le dossier de sortie : {error}
 	Cannot create the output folder: {error}	Impossible de créer le dossier de sortie : {error}
@@ -320,5 +318,8 @@
 	{v} Mbps	{v} Mbit/s
 	{word} compression	compression {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Panel menu	Menu du panneau
+	Move panel	Déplacer le panneau
+	Transparency Grid	Grille de transparence
 	Show Duplicate Frame Markers	Afficher les repères d’images en double
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	L’entrée/sortie de la séquence ne fait qu’une image. Choisissez Séquence entière pour exporter toute la séquence.

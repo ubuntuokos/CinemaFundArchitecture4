@@ -23,6 +23,8 @@
 	Add Range Marker	Tartományjelölő hozzáadása
 	Add Range Marker to In and Out	Tartományjelölő a kezdő- és végpont közé
 	Add Tracks…	Sávok hozzáadása…
+	Full screen	Teljes képernyő
+	Master volume: use the Audio Track Mixer	Fő hangerő: az Audio Track Mixerben állítható
 	Send to Queue	Küldés a sorba
 	Add/Remove Keyframe	Kulcskocka hozzáadása/eltávolítása
 	Adjust	Beállítás
@@ -81,8 +83,6 @@
 	Bypass	Megkerülés
 	CBR	CBR
 	CFA4	CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	A CFA4 úgy zárult be, hogy a(z) „{name}” nem mentett változásokat tartalmazott. Visszaállítja a(z) {time} időpontban rögzített változásokat?
 	Cancel Selected	Kijelöltek megszakítása
 	Cancelled	Megszakítva
 	Cannot create the output folder: {error}	A kimeneti mappa nem hozható létre: {error}
@@ -186,6 +186,10 @@
 	Export Media	Média exportálása
 	Export Media…	Média exportálása…
 	Export Queue	Exportálási sor
+	Queue ({n})	Sor ({n})
+	Send exports here with Send to Queue, then start the queue.	A Küldés a sorba gombbal ide küldheti az exportokat, majd indítsa el a sort.
+	Open a sequence to export	Nyisson meg egy szekvenciát az exportáláshoz
+	The sequence has no caption track.	A szekvenciának nincs feliratsávja.
 	Export Audio	Hang exportálása
 	Export failed: {path}	Az exportálás nem sikerült: {path}
 	Export finished: {path}	Az exportálás elkészült: {path}
@@ -216,6 +220,8 @@
 	From Source Monitor, Match Frame	A forrásmonitorról, egyező kockával
 	From file…	Fájlból…
 	From the preset	Az előbeállításból
+	Adaptive ({bpp} bits per pixel)	Adaptív ({bpp} bit képpontonként)
+	Set a fixed bitrate	Rögzített bitráta beállítása
 	Gain	Erősítés
 	General…	Általános…
 	Generate	Előállítás
@@ -322,7 +328,9 @@
 	Next in Track	Következő a sávon
 	No	Nem
 	No sequence	Nincs szekvencia
-	No sequence open. Double-click a sequence in the Project panel.	Nincs megnyitott szekvencia. Kattintson duplán egy szekvenciára a Projekt panelen.
+	Drop media here to create sequence.	Szekvencia létrehozásához húzzon ide médiát.
+	Open Demo Project	Demóprojekt megnyitása
+	Double-click a sequence in the Project panel to open it here.	A megnyitáshoz kattintson duplán egy szekvenciára a Projekt panelen.
 	Noise & Grain	Zaj és szemcse
 	Noise Reduction	Zajcsökkentés
 	Normal	Normál
@@ -423,7 +431,6 @@
 	Save as Template…	Mentés sablonként…
 	Save changes to '{name}' before closing?	Menti a(z) „{name}” változásait bezárás előtt?
 	Save changes to '{name}' before continuing?	Menti a(z) „{name}” változásait a folytatás előtt?
-	Discard the unsaved changes to '{name}' and revert to the saved version?	Elveti a(z) „{name}” mentetlen változásait, és visszaáll a mentett változatra?
 	Scale	Méretezés
 	Scale Width	Szélesség méretezése
 	Scale to Frame Size	Méretezés a képkockához
@@ -1659,6 +1666,34 @@
 	Target Duration:	Célhossz:
 	Variations:	Változatok:
 	the selected clip is not remixed	a kijelölt klip nincs remixelve
+# Settings ▸ Media Backends and Help ▸ Restricted Codecs (ADR 0005, docs/licensing.md §7)
+	After installing, restart CFA4.	Telepítés után indítsa újra a CFA4-et.
+	Available, switched off	Elérhető, kikapcsolva
+	CFA4 engine	CFA4-motor
+	CFA4's own engine opens every file it can. The supplementary backends below take over, in this order, only for files the engine cannot open yet. Switching a backend off affects files opened afterwards.	A CFA4 saját motorja minden fájlt megnyit, amelyet tud. Az alábbi kiegészítő hátterek ebben a sorrendben, csak azoknál a fájloknál lépnek be, amelyeket a motor még nem tud megnyitni. Egy háttér kikapcsolása az ezután megnyitott fájlokra vonatkozik.
+	Capabilities	Képességek
+	Copy command	Parancs másolása
+	H.264 software encoding (x264)	H.264 szoftveres kódolás (x264)
+	HEVC software encoding (x265)	HEVC szoftveres kódolás (x265)
+	In use	Használatban
+	Licence	Licenc
+	Media Backends	Médiahátterek
+	Media Backends…	Médiahátterek…
+	Not available	Nem érhető el
+	Not part of this build	Ez a változat nem tartalmazza
+	Own Rust decoders and encoders: always used first, and the fallback when a supplementary backend fails	Saját Rust-dekóderek és -kódolók: mindig ezek az elsők, és ezek a tartalék, ha egy kiegészítő háttér hibázik
+	Restricted Codecs…	Korlátozott kodekek…
+	Restricted codecs	Korlátozott kodekek
+	Some codecs are free software but implement patented formats. Like Ubuntu, CFA4 does not install them by default: the base package works without them, and you decide whether to install them. Their use may be restricted in some countries; check that it is permitted where you are.	Egyes kodekek szabad szoftverek, de szabadalommal védett formátumot valósítanak meg. Az Ubuntuhoz hasonlóan a CFA4 alapból nem telepíti őket: az alapcsomag nélkülük is működik, és Ön dönti el, telepíti-e őket. Használatuk egyes országokban korlátozott lehet; ellenőrizze, hogy ahol Ön van, megengedett-e.
+	Supplementary decoder for formats the own engine does not read yet (10-bit and 4:2:2 camera media, AVI, DV, WMV, MPEG-4 Part 2…)	Kiegészítő dekóder azokhoz a formátumokhoz, amelyeket a saját motor még nem olvas (10 bites és 4:2:2-es kameraanyag, AVI, DV, WMV, MPEG-4 Part 2…)
+	Supplementary decoder from the system's GStreamer (Ogg Theora, FLV, WMV and other formats); LGPL, from Ubuntu's repositories	Kiegészítő dekóder a rendszer GStreamerjéből (Ogg Theora, FLV, WMV és más formátumok); LGPL, az Ubuntu tárolóiból
+	The engine did not answer: {message}	A motor nem válaszolt: {message}
+	To install them: {command}	Telepítésük: {command}
+	Use this backend	Ennek a háttérnek a használata
+	Version	Verzió
+	installed	telepítve
+	not installed	nincs telepítve
+	on	be
 	 (removed from {list})	 (eltávolítva innen: {list})
 	 and 	 és 
 	Add another shortcut	Újabb billentyűparancs hozzáadása
@@ -2253,9 +2288,20 @@
 	Trim Forward	Igazítás előre
 	Trim Forward Many	Igazítás sok képkockával előre
 	Exit Trim Mode	Kilépés a vágásmódból
+	Up	Fel
+	Down	Le
 	Audio output failed: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet hibát jelzett: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
 	Audio output is not responding: playing without sound (check Settings ▸ Audio Hardware)	A hangkimenet nem válaszol: lejátszás hang nélkül (ellenőrizd: Beállítások ▸ Hanghardver)
 	Settings not taken	A beállítás nem lett átvéve
+	Encoder	Kódoló
+	Software, or hardware where available	Szoftveres, vagy ahol elérhető, hardveres
+	Main (8-bit; Main 10 for HDR sequences)	Main (8 bites; HDR-szekvenciáknál Main 10)
+	Main 10 (10-bit, HDR)	Main 10 (10 bites, HDR)
+	Main (8-bit; 10-bit for HDR sequences)	Main (8 bites; HDR-szekvenciáknál 10 bites)
+	Main (10-bit, HDR)	Main (10 bites, HDR)
+	FLAC stores whole-number samples only	A FLAC csak egész számú mintákat tárol
+	MXF export writes integer PCM only	Az MXF-exportálás csak egész számú PCM-et ír
+	Not supported by CFA4's encoders yet	A CFA4 kódolói még nem támogatják
 	Restore	Visszaállítás
 	Overwrite with Current View	Felülírás a jelenlegi nézettel
 	Saves the view, columns, sort, thumbnail and font size.	Menti a nézetet, az oszlopokat, a rendezést, a bélyegképet és a betűméretet.
@@ -2327,5 +2373,78 @@ export.summary	Low	alacsony
 	Warning	Figyelmeztetés
 	Error	Hiba
 	Show/Hide Tracks…	Sávok megjelenítése/elrejtése…
+	Panel menu	Panelmenü
+	Move panel	Panel áthelyezése
+	Click to select, or click in empty space and drag to marquee select. Use Shift, Alt, and Ctrl for other options.	Kattintással kijelölés, üres helyen húzással keretes kijelölés. További lehetőségek: Shift, Alt és Ctrl.
+	Click to select all clips to the right in all tracks. Shift-click for a single track.	Kattintással az összes sáv tőle jobbra eső klipjei kijelölődnek. Shift-kattintás: csak egy sáv.
+	Click to select all clips to the left in all tracks. Shift-click for a single track.	Kattintással az összes sáv tőle balra eső klipjei kijelölődnek. Shift-kattintás: csak egy sáv.
+	Drag an edit point to ripple trim; later clips move to keep the gap closed.	Vágáspont húzása hullámvágással; a későbbi klipek követik, így nem marad rés.
+	Drag an edit point to roll it: the out of one clip and the in of the next move together.	Vágáspont görgetése: az egyik klip vége és a következő eleje együtt mozog.
+	Drag an edge to change the clip's speed so it fills the new duration.	A szél húzása úgy változtatja a klip sebességét, hogy kitöltse az új hosszt.
+	Drag the edge of a music clip to remix it to the new duration at musically matching beats.	Zeneklip szélének húzásával a zene az új hosszra keveredik, zeneileg illő ütéseknél.
+	Click to split a clip. Shift-click to split all tracks.	Kattintással a klip kettévágódik. Shift-kattintás: minden sáv.
+	Drag a clip to slip its source in/out without moving it.	Klip húzásával a forrás kezdő- és végpontja eltolódik, a klip helyben marad.
+	Drag a clip to slide it between its neighbours.	Klip húzásával a klip a szomszédai között csúszik.
+	Drag to scroll the timeline.	Húzással az idővonal görgethető.
+	Click to zoom in; Alt-click to zoom out.	Kattintás: nagyítás; Alt-kattintás: kicsinyítés.
+	Exporting	Exportálás
+	About	Névjegy
+	Contributors	Közreműködők
+	Models	Modellek
+	Show	Megjelenítés
+	Sort	Rendezés
+	Reverse the order	Fordított sorrend
+	Grab bag	Névfelhő
+	Table	Táblázat
+	No contributor data was built into this copy.	Ebben a példányban nincsenek közreműködői adatok.
+	No model credits were built into this copy.	Ebben a példányban nincsenek modell-adatok.
+	Company	Cég
+	Model	Modell
+	Commits	Commitok
+	% of all commits	Az összes commit %-a
+	Lines +/−	Sorok +/−
+	Version {version}	Verzió: {version}
+	GPL-3.0-or-later. Fonts: Inter, Noto Serif and JetBrains Mono (SIL OFL 1.1).	GPL-3.0-or-later. Betűtípusok: Inter, Noto Serif és JetBrains Mono (SIL OFL 1.1).
+	Username	Felhasználónév
+	Display name	Megjelenített név
+	Real name	Valódi név
+	Name (A–Z)	Név (A–Z)
+	Merged PRs	Beolvasztott PR-ok
+	Lines added	Hozzáadott sorok
+	Lines deleted	Törölt sorok
+	Line delta	Sorkülönbség
+	Binary assets added	Hozzáadott bináris fájlok
+	Binary assets removed	Eltávolított bináris fájlok
+	First commit	Első commit
+	Last commit	Utolsó commit
+	CFA4 was closed while “{name}” had unsaved changes.	A CFA4 bezárult, miközben a(z) „{name}” nem mentett változásokat tartalmazott.
+	CFA4 quit unexpectedly while “{name}” had unsaved changes.	A CFA4 váratlanul kilépett, miközben a(z) „{name}” nem mentett változásokat tartalmazott.
+	Recover unsaved changes from {when}?	Visszaállítja a(z) {when} időpontban rögzített nem mentett változásokat?
+	The project had not been saved yet.	A projektet még nem mentették.
+	{n} sessions have unsaved changes:	{n} munkamenetben vannak nem mentett változások:
+	Are you sure you want to discard your changes to '{file}'?	Biztosan elveti a(z) „{file}” változásait?
+	the project has not been saved yet	a projekt még nincs mentve
+	Export As Motion Graphics Template	Exportálás mozgógrafikai sablonként
+	Category:	Kategória:
+	Editable properties:	Szerkeszthető tulajdonságok:
+	Saved as a CFA4 graphics template (.fcgt) in your templates folder.	CFA4 grafikai sablonként (.fcgt) kerül a sablonmappába.
+	My Templates	Saját sablonok
+	{n} Font	{n} betűtípusa
+	{n} Size	{n} mérete
+	{n} Color	{n} színe
+	{n} Position	{n} pozíciója
+	Show {n}	{n} megjelenítése
+	Exported graphics template to {path}	A grafikai sablon exportálva ide: {path}
+	Replace Fonts in Projects	Betűtípusok cseréje a projektekben
+	Fonts used in the project:	A projektben használt betűtípusok:
+	{f} (missing)	{f} (hiányzik)
+	Replace:	Csere:
+	with:	erre:
+	Replaced {n} font uses	{n} betűtípus-használat lecserélve
+	Track Color	Sáv színe
+	Unrendered: should play back in real time	Rendereletlen: valós időben lejátszható
+	Unrendered: render to play back in real time	Rendereletlen: valós idejű lejátszáshoz renderelni kell
+	Rendered preview	Renderelt előnézet
+	Transparency Grid	Átlátszósági rács
 	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
