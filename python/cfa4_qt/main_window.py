@@ -774,6 +774,10 @@ class MainWindow(QMainWindow):
             return
         self._titles_pending = True
 
+    def automation_parts(self) -> list[Any]:
+        """egui's panel tab ids (``panel.tab.*`` / ``panel.drag.*``) for the control channel."""
+        return dock_commands.tab_parts(self)
+
     def update_dock_titles(self) -> None:
         """egui shows a panel's name once, on its tab: a panel in a tab group has no title bar of
         its own (its tab names it and drags it), the narrow Tools and Audio Meters panels a slim
@@ -797,6 +801,7 @@ class MainWindow(QMainWindow):
                 bar.setFixedHeight(6 if mode == "grip" else 0)
                 bar.setToolTip(tr(name))
                 dock.setTitleBarWidget(bar)
+        dock_commands.add_menu_buttons(self)
 
     # ----- actions owned by the Qt GUI (view, playback, help) -----
     def _build_local_actions(self) -> None:

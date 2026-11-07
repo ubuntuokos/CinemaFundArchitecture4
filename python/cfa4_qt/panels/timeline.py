@@ -2575,7 +2575,7 @@ class TimelinePanel(QWidget):
         if i >= 0 and i != self.tabs.currentIndex():
             self.tabs.setCurrentIndex(i)
         menu = QMenu(self)
-        menu.setObjectName("panel.menu.Timeline")
+        menu.setObjectName("panel.menu.Timeline.popup")
         menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         a = menu.addAction(tr("Close Panel"))
         a.setObjectName("panel.menu.Timeline.close")
