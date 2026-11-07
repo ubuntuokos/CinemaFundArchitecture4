@@ -720,6 +720,7 @@ class MainWindow(QMainWindow):
         self._retire_tab_bars(before)
         QTimer.singleShot(0, self, lambda: self._retire_tab_bars(before))
         self._titles_later()
+        self._update_workspace_name()
 
     def _retire_tab_bars(self, old: set[QTabBar]) -> None:
         """restoreState() on a window that is on screen makes new tab bars and leaves the old
@@ -1034,6 +1035,7 @@ class MainWindow(QMainWindow):
     def rebuild_window_menu(self) -> None:
         """A workspace was added: rebuild the menus (the engine's part comes from the registry)."""
         self._build_menus()
+        self._update_workspace_name()
 
     def set_language(self, code: str) -> None:
         TR.set_language(code)
@@ -1079,26 +1081,35 @@ class MainWindow(QMainWindow):
         themes."""
         button = getattr(self, "appearance_button", None)
         if button is None:
-            # the header's right end: Quick Export, then Appearance Mode (as egui's header)
+            # the header's right end as egui's: the workspace name, Workspaces, Appearance Mode,
+            # Quick Export, Progress, Search, Volume, Full screen
             corner = QWidget(self.menuBar())
             corner.setObjectName("header")
             row = QHBoxLayout(corner)
             row.setContentsMargins(0, 0, 4, 0)
             row.setSpacing(2)
-            quick = QToolButton(corner)
-            quick.setObjectName("header.quickExport")
-            quick.setAutoRaise(True)
-            quick.setText("⇪")
-            quick.setToolTip(tr("Quick Export"))
-            quick.clicked.connect(self.toggle_quick_export)
-            row.addWidget(quick)
-            button = QToolButton(corner)
-            button.setObjectName("header.appearance")
-            button.setAutoRaise(True)
-            button.clicked.connect(self.next_appearance_mode)
+
+            def tool(name: str, text: str, tip: str, slot: Callable[[], None] | None = None) -> QToolButton:
+                b = QToolButton(corner)
+                b.setObjectName(name)
+                b.setAutoRaise(True)
+                b.setText(text)
+                b.setToolTip(tip)
+                if slot is not None:
+                    b.clicked.connect(lambda _c=False: slot())
+                row.addWidget(b)
+                return b
+
+            self.workspace_name_button = tool("header.workspaceName", "", tr("Workspaces"), self.workspaces_popup)
+            self.workspaces_button = tool("header.workspaces", "▦", tr("Workspaces"), self.workspaces_popup)
+            button = tool("header.appearance", "", tr("Appearance Mode"), self.next_appearance_mode)
             button.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             button.customContextMenuRequested.connect(lambda pos: self.appearance_menu().exec(button.mapToGlobal(pos)))
-            row.addWidget(button)
+            quick = tool("header.quickExport", "⇪", tr("Quick Export"), self.toggle_quick_export)
+            tool("header.notifications", "⚑", tr("Progress"), lambda: self.set_mode("Export"))
+            tool("header.search", "⌕", tr("Search"), self.header_search)
+            tool("header.volume", "♪", tr("Volume"), lambda: self.statusBar().showMessage(tr("Master volume: use the Audio Track Mixer"), 6000))
+            tool("header.fullscreen", "⛶", tr("Full screen"), self.toggle_full_screen)
             self.appearance_button = button
             self.quick_export_button = quick
             self.header_corner = corner
@@ -1106,6 +1117,7 @@ class MainWindow(QMainWindow):
             self.menuBar().setCornerWidget(self.header_corner, Qt.Corner.TopRightCorner)
         self.header_corner.show()
         self._update_appearance_button()
+        self._update_workspace_name()
 
     def _build_mode_tabs(self) -> None:
         """egui's header left end: Home, then the Import / Edit / Export mode tabs, at the menu
@@ -1205,6 +1217,48 @@ class MainWindow(QMainWindow):
             return
         b = self.quick_export_button
         popup.open_at(b.mapToGlobal(b.rect().bottomRight()) + QPoint(0, 4), self.sequence)
+
+    def _update_workspace_name(self) -> None:
+        """The header's workspace name in capitals, as egui's (translated)."""
+        button = getattr(self, "workspace_name_button", None)
+        if button is not None:
+            button.setText(tr(self.workspaces.current).upper())
+
+    def workspaces_popup(self) -> QMenu:
+        """The header's Workspaces button and name: egui's popup with the workspaces (the current
+        one checked; a click switches) and Reset to Saved Layout."""
+        menu = QMenu(self)
+        menu.setObjectName("header.workspaces.menu")
+        current = self.workspaces.current
+        for name in self.workspaces.all_names():
+            a = menu.addAction(tr(name))
+            a.setObjectName(f"header.workspaces.{name.replace(' ', '')}")
+            a.setCheckable(True)
+            a.setChecked(name == current)
+            a.triggered.connect(lambda _c=False, n=name: self.workspaces.switch(n, self.restore_layout))
+        menu.addSeparator()
+        reset = menu.addAction(tr("Reset to Saved Layout"))
+        reset.setObjectName("header.workspaces.reset")
+        reset.triggered.connect(self.reset_panel_layout)
+        self.last_menu = menu
+        b = self.workspace_name_button
+        menu.popup(b.mapToGlobal(b.rect().bottomLeft()) + QPoint(0, 4))
+        return menu
+
+    def header_search(self) -> None:
+        """The header's Search: the Effects panel, shown with its search field focused (egui's
+        ``show_panel(Effects)``)."""
+        dock = self.docks["Effects"]
+        dock.show()
+        dock.raise_()
+        self.effects.search.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def toggle_full_screen(self) -> None:
+        """The header's Full screen: the window full screen, or back."""
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
 
     def _update_appearance_button(self) -> None:
         button = getattr(self, "appearance_button", None)

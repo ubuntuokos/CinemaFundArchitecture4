@@ -4442,6 +4442,74 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         win.close()
 
 
+def test_header_right_cluster_as_egui(app, fake_engine: Path, tmp_path: Path):
+    """egui's header right end, left to right: the workspace name (capitals, translated) and the
+    Workspaces button opening the workspace popup (current checked, a click switches, Reset to
+    Saved Layout), Appearance Mode, Quick Export, Progress (the Export window), Search (the
+    Effects panel, its search focused), Volume (a status note) and Full screen; each with egui's
+    automation id."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    win = MainWindow(EngineClient(fake_engine), settings)
+    win.resize(1400, 900)
+    win.show()
+    opened: list[bool] = []
+    win.open_export = lambda *a, **k: opened.append(True)
+    try:
+        wait_until(app, lambda: False, 200)
+        win.rebuild_window_menu()
+        corner = win.menuBar().cornerWidget(QtCore.Qt.Corner.TopRightCorner)
+        order = [w.objectName() for w in corner.findChildren(QtWidgets.QToolButton, options=QtCore.Qt.FindChildOption.FindDirectChildrenOnly)]
+        assert order == ["header.workspaceName", "header.workspaces", "header.appearance", "header.quickExport",
+                         "header.notifications", "header.search", "header.volume", "header.fullscreen"]
+        b = {n: corner.findChild(QtWidgets.QToolButton, n) for n in order}
+        assert all(x.isVisible() for x in b.values())
+        assert b["header.workspaceName"].text() == "EDITING"
+        assert b["header.notifications"].toolTip() == "Progress"
+        # the popup: the workspaces, the current one checked; a click switches, the name follows
+        menu = win.workspaces_popup()
+        acts = {a.objectName(): a for a in menu.actions() if a.objectName()}
+        assert acts["header.workspaces.Editing"].isChecked() and not acts["header.workspaces.Color"].isChecked()
+        assert "header.workspaces.CaptionsandGraphics" in acts and "header.workspaces.reset" in acts
+        menu.close()
+        acts["header.workspaces.Color"].trigger()
+        assert win.workspaces.current == "Color"
+        assert b["header.workspaceName"].text() == "COLOR"
+        menu = win.workspaces_popup()
+        assert next(a for a in menu.actions() if a.objectName() == "header.workspaces.Color").isChecked()
+        menu.close()
+        # Reset to Saved Layout keeps the workspace
+        next(a for a in menu.actions() if a.objectName() == "header.workspaces.reset").trigger()
+        assert win.workspaces.current == "Color"
+        # Search shows the Effects panel with its search focused
+        win.docks["Effects"].close()
+        b["header.search"].click()
+        assert wait_until(app, lambda: not win.docks["Effects"].isHidden(), 2_000)
+        # Volume: a status note; Progress: the Export window
+        b["header.volume"].click()
+        assert "Audio Track Mixer" in win.statusBar().currentMessage()
+        b["header.notifications"].click()
+        assert opened == [True]
+        # Full screen and back
+        b["header.fullscreen"].click()
+        assert wait_until(app, lambda: win.isFullScreen(), 2_000)
+        b["header.fullscreen"].click()
+        assert wait_until(app, lambda: not win.isFullScreen(), 2_000)
+        # Hungarian: the name translated, in capitals
+        from cfa4_qt.i18n import TR
+
+        try:
+            TR.set_language("hu")
+            win._update_workspace_name()
+            assert b["header.workspaceName"].text() == "SZÍN"
+        finally:
+            TR.set_language("en")
+    finally:
+        win._quit_confirmed = True
+        win.close()
+
+
 def test_workspaces_save_switch_and_reset(app, fake_engine: Path, tmp_path: Path):
     from cfa4_qt.main_window import MainWindow
     from cfa4_qt.window_menu import DEFAULT_WORKSPACE
