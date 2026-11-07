@@ -80,6 +80,21 @@ MODIFIERS = {
 EDGE_NAMES = {"in": "In", "out": "Out"}  # egui's Edge names
 
 
+
+def _panel_key(name: Any) -> str | None:
+    """egui's panel-name folding: lower case without spaces, ``_`` and ``-``."""
+    if not isinstance(name, str):
+        return None
+    return name.lower().replace(" ", "").replace("_", "").replace("-", "")
+
+
+def panel_dock(docks: dict[str, QDockWidget], name: Any) -> QDockWidget | None:
+    """The dock for an egui panel name: ``EffectControls``, ``Effect Controls``, ``effect_controls``…"""
+    key = _panel_key(name)
+    if key is None:
+        return None
+    return docks.get(name) or next((d for title, d in docks.items() if _panel_key(title) == key), None)
+
 class ControlError(Exception):
     pass
 
@@ -393,12 +408,16 @@ class ControlServer(QObject):
             self.set(p)
             reply(True, self.inspect())
         elif method in ("ui.panel.show", "ui.panel.close"):
-            dock = self._dock(p.get("panel"))
-            if method == "ui.panel.show":
+            if _panel_key(p.get("panel")) == "program":
+                # the Program monitor is the window's centre in Qt: always shown, never closed
+                if method == "ui.panel.close":
+                    raise ControlError("the Program monitor is the window's centre and stays open")
+            elif method == "ui.panel.show":
+                dock = self._dock(p.get("panel"))
                 dock.show()
                 dock.raise_()
             else:
-                dock.close()
+                self._dock(p.get("panel")).close()
             reply(True, {})
         elif method == "ui.timeline.hit":
             reply(True, self.timeline_hit(p))
@@ -553,7 +572,9 @@ class ControlServer(QObject):
         raise ControlError(f"no visible element {wid}")
 
     def _dock(self, name: Any) -> QDockWidget:
-        dock = self.window.docks.get(name) if isinstance(name, str) else None
+        """The panel named as egui's ``PanelKind::from_name`` takes it: its id (``EffectControls``)
+        or its title (``Effect Controls``), ignoring case, spaces, ``_`` and ``-``."""
+        dock = panel_dock(self.window.docks, name)
         if dock is None:
             raise ControlError(f"unknown panel {name!r}")
         return dock
@@ -1068,14 +1089,7 @@ class ControlServer(QObject):
 
     def screenshot(self, p: dict[str, Any]) -> dict[str, Any]:
         panel = p.get("panel")
-        if panel is None:
-            target: QWidget = self.window
-        elif panel == "Program" and "Program" not in self.window.docks:
-            # the Program monitor is the window's centre, not a dock; egui's panel name still finds
-            # it (the MCP bridge's render_preview asks for it)
-            target = self.window.monitor
-        else:
-            target = self._dock(panel)
+        target: QWidget = self.window if panel is None else self.window.monitor if _panel_key(panel) == "program" else self._dock(panel)
         image = target.grab()
         path = p.get("path")
         if path is not None:
