@@ -37,6 +37,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cfb", 0),
     ("mpegts", 0),
     ("mpeg2v", 0),
+    ("dv", 0),
     ("ac3", 0),
     ("dts", 0),
     ("auro", 0),
@@ -300,11 +301,13 @@ const FIXTURE_GENERATORS: &[(&str, &str)] = &[
     ("codecs", "mxf_oracle"),
     ("codecs", "mpeg_oracle"),
     ("mpeg2v", "oracle"),
+    ("dv", "oracle"),
     ("ac3", "oracle"),
     ("dts", "oracle"),
     ("truehd", "oracle"),
     ("mpa", "oracle"),
     ("codecs", "ogg_oracle"),
+    ("codecs", "dv_oracle"),
 ];
 
 fn fixtures(only: &[String]) -> Result<(), String> {

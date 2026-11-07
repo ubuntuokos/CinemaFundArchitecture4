@@ -972,9 +972,10 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert sidecar_output("/x/cut.mp4", "SRT") == Path("/x/cut.SRT")
     assert sidecar_output("/x/cut.mp4", "WebVTT") == Path("/x/cut.vtt")
     assert sidecar_output("/x/cut.mp4", "none") is None
-    # Browse returning cut.png confirms that file only, not the earlier frames
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(seq_dir / "cut.png"), ""))
+    # Location's "…" picks the folder: nothing there is taken as confirmed, the frames are asked about
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getExistingDirectory", lambda *_a, **_k: str(seq_dir))
     dlg._browse()
+    assert dlg.path.location.text() == str(seq_dir)
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(seq_dir / "cut.png")})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
@@ -984,13 +985,17 @@ def test_export_asks_before_replacing_and_reports_folder_errors(app, tmp_path: P
     assert len(engine.sent) == 3 and not answers
     dlg._enqueue(True)  # the frames are confirmed now
     assert len(engine.sent) == 4
-    # Browse returning out.mov for an .mp4 format confirmed out.mov, not the existing out.mp4
+    # File Name and Location make the path with the format's own extension, as egui's output_path
     dlg.format.addItem("H.264", "h264")
     dlg.format.setCurrentIndex(dlg.format.count() - 1)
     dlg.formats["h264"] = {"extension": "mp4"}
-    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *_a, **_k: (str(tmp_path / "out.mov"), ""))
-    dlg._browse()
+    dlg.path.file_name.setText("out")
+    dlg.path.location.setText(str(tmp_path))
     assert dlg.path.text() == str(out)
+    dlg.path.setText(str(tmp_path / "out.mov"))  # a typed extension gives way to the format's
+    assert (dlg.path.file_name.text(), dlg.path.location.text(), dlg.path.text()) == ("out", str(tmp_path), str(out))
+    dlg.path.file_name.setText("")
+    assert dlg.path.text() == str(tmp_path / "Export.mp4"), "an empty name is egui's Export"
     monkeypatch.setattr(dlg, "params", lambda: {"path": str(out)})
     answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
     dlg._enqueue(True)
@@ -2146,12 +2151,23 @@ def test_layout_has_no_orphaned_tab_bars(app, fake_engine: Path, tmp_path: Path)
 
 
 # ----- export window -----
-def test_export_helpers(tmp_path: Path, monkeypatch):
-    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name, with_extension
+def test_project_search_finds_every_typed_word():
+    """upstream #3327: the Project panel's search (the engine's and this fallback) finds a name
+    holding every word typed, in any order."""
+    from cfa4_qt.panels.project import fallback_rows, name_matches
 
-    assert with_extension("/a/b.mp4", "mov") == "/a/b.mov"
-    assert with_extension("/a/b", "mp4") == "/a/b.mp4"
-    assert with_extension("/a/b.mp4", "") == "/a/b.mp4"
+    name = "Comedy manager · medium · smiling · enjoys the show · img385 · A"
+    assert name_matches(name, "") and name_matches(name, "comedy manager smiling")
+    assert name_matches(name, "Smiling  comedy ") and name_matches(name, "comedy manager s")
+    assert not name_matches(name, "comedy manager laughing")
+    assert not name_matches("Comedy club", "comedy manager")
+    tree = {"children": [{"item": 1, "name": name}, {"item": 2, "name": "Comedy club"}]}
+    assert [r["item"] for r in fallback_rows(tree, needle="smiling comedy")] == [1]
+
+
+def test_export_helpers(tmp_path: Path, monkeypatch):
+    from cfa4_qt.panels.export import default_output_dir, format_eta, safe_file_name
+
     assert safe_file_name("Main/Edit\\x") == "Main_Edit_x"
     assert safe_file_name(" .. ") == "export"
     assert format_eta(75) == "1:15" and format_eta(3725) == "1:02:05" and format_eta("x") == ""
@@ -2177,6 +2193,79 @@ def test_export_sends_the_audio_bitrate(app):
     dlg.audio_bitrate.setValue(96)
     assert dlg.params()["audioBitrateKbps"] == 96
     assert dlg.audio_bitrate.objectName() == "export.audioBitrateKbps"
+
+
+def test_export_warns_about_a_one_frame_in_out(app):
+    """upstream #3402: the engine's `export.resolve` warning about a one-frame Sequence In/Out shows
+    under the Range row, and goes again when the answer has none or the settings are refused."""
+    from cfa4_qt.panels.export import ExportDialog
+
+    class Engine:
+        running = False
+
+        def execute(self, command, params=None, on_reply=None, on_error=None):
+            return 0
+
+    dlg = ExportDialog(Engine())  # type: ignore[arg-type]
+    warning = dlg.range_warning
+    assert warning.objectName() == "export.range.warning" and warning.isHidden()
+    dlg._on_resolved({"frames": 1, "range": {"seconds": 0.04}, "warnings": ["In/Out range is 1 frame; pass range: entire for the whole sequence"]}, None)
+    assert not warning.isHidden()
+    dlg._on_resolved({"frames": 250, "range": {"seconds": 10.0}, "warnings": []}, None)
+    assert warning.isHidden()
+    dlg._on_resolved({"frames": 1, "warnings": ["In/Out range is 1 frame; pass range: entire for the whole sequence"]}, None)
+    dlg._summary_error("bad settings")
+    assert warning.isHidden()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_export_media_file_rows_as_egui(app, tmp_path: Path):
+    """qt-parity 4.2: egui's Media File section, File Name (the sequence's name) and Location (the
+    default folder, its "…" choosing another), the output path taking the format's extension."""
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels.export import default_output_dir
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        win.run_command(win.registry.commands["file.exportMedia"])
+        dlg = win.export_dialog
+        assert dlg is not None and wait_until(app, lambda: dlg.preset.count() > 0 and dlg.format.count() > 0, 30_000)
+        name, location = dlg.path.file_name, dlg.path.location
+        box = name.parentWidget()
+        assert isinstance(box, QtWidgets.QGroupBox) and box.title() == "Media File"
+        form = box.layout()
+        assert form.labelForField(name).text() == "File Name"
+        labels = [form.itemAt(i, QtWidgets.QFormLayout.ItemRole.LabelRole).widget().text() for i in range(form.rowCount())
+                  if form.itemAt(i, QtWidgets.QFormLayout.ItemRole.LabelRole) is not None]
+        assert labels[1:3] == ["File Name", "Location"], labels
+        assert dlg.findChild(QtWidgets.QPushButton, "export.location.browse").text() == "…"
+        # egui's defaults: the sequence's name in the default export folder
+        assert name.text() == win.sequence["name"] and location.text() == str(default_output_dir(None))
+        assert name.placeholderText() == "Sequence name" and location.placeholderText() == "Folder"
+        name.setText("cut")
+        location.setText(str(tmp_path / "out"))
+        h264 = dlg.format.findData("h264")
+        dlg.format.setCurrentIndex(h264)
+        assert dlg.params()["path"] == str(tmp_path / "out" / "cut.mp4")
+        # another format: the same name and folder with that format's extension
+        wav = dlg.format.findData("wav")
+        assert wav >= 0
+        dlg.format.setCurrentIndex(wav)
+        assert dlg.params()["path"] == str(tmp_path / "out" / "cut.wav")
+        assert (name.text(), location.text()) == ("cut", str(tmp_path / "out"))
+        # an empty name is egui's "Export"
+        name.setText("")
+        assert dlg.params()["path"] == str(tmp_path / "out" / "Export.wav")
+    finally:
+        if win.export_dialog is not None:
+            win.export_dialog.hide()
+        win._quit_confirmed = True
+        win.close()
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
@@ -3171,7 +3260,15 @@ def test_real_engine_program_monitor_graphics_tools_as_egui(app, tmp_path: Path)
         ime.setCommitString("日本")
         QtWidgets.QApplication.sendEvent(view, ime)  # an input method's finished text
         assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本" for d in texts()), 10_000)
+        # upstream #2445: an edit that ends while the input method composes types the marked text
+        # (Korean commits a syllable only when the next one starts); its late commit is dropped
+        composing = QtGui.QInputMethodEvent("한", [])
+        QtWidgets.QApplication.sendEvent(view, composing)
+        assert gt.preedit == "한"
         QtTest.QTest.keyClick(view, QtCore.Qt.Key.Key_Escape)
+        assert gt.edit is None and gt.preedit == ""
+        assert wait_until(app, lambda: any(d["text"]["vertical"] and d["text"]["text"] == "AB日本한" for d in texts()), 10_000)
+        assert not gt.take_commit("한") and gt.take_commit("한"), "the late commit of that text once, then typing again"
         # the Selection tool: a double-click edits a text layer with all of it selected
         win.tools.select("selection")
         first = next(d for d in texts() if d["text"]["text"] == "O\nK")
@@ -3307,6 +3404,31 @@ def test_real_engine_program_monitor_transform_box_masks_and_pen(app, tmp_path: 
         vert = ov.hit("mask.vertex.1")
         drag(vert, vert + QtCore.QPointF(0, 12))
         assert wait_until(app, lambda: mask()["vertices"][1]["p"][1] > v1[1] + 1, 10_000)
+        # upstream #3209: Shift-click adds a vertex to the selection; dragging one moves them all
+        shift = QtCore.Qt.KeyboardModifier.ShiftModifier
+        n = len(mask()["vertices"])
+        assert ov.vertex_selection(n) == [1]
+        v2 = ov.hit("mask.vertex.2")
+        send(QtCore.QEvent.Type.MouseButtonPress, v2, left, left, shift)
+        send(QtCore.QEvent.Type.MouseButtonRelease, v2, left, none, shift)
+        assert ov.vertex_selection(n) == [1, 2]
+        before = [list(mask()["vertices"][i]["p"]) for i in (1, 2, 3)]
+        drag(v2, v2 + QtCore.QPointF(0, 10))
+        assert wait_until(app, lambda: all(mask()["vertices"][i]["p"][1] > before[k][1] + 1 for k, i in enumerate((1, 2))), 10_000)
+        assert mask()["vertices"][3]["p"] == before[2], "an unselected vertex stays"
+        # a Shift-click on a selected vertex takes it out
+        v2 = ov.hit("mask.vertex.2")
+        send(QtCore.QEvent.Type.MouseButtonPress, v2, left, left, shift)
+        send(QtCore.QEvent.Type.MouseButtonRelease, v2, left, none, shift)
+        assert ov.vertex_selection(n) == [1]
+        # a marquee from outside the shape around it selects every vertex
+        pts = [v["p"] for v in ov.mask_geometry()["vertices"]]
+        # (from well beside the feather / expansion handles)
+        lo = QtCore.QPointF(min(p.x() for p in pts) - 60, min(p.y() for p in pts) - 60)
+        hi = QtCore.QPointF(max(p.x() for p in pts) + 15, max(p.y() for p in pts) + 15)
+        drag(lo, hi)
+        assert ov.vertex_selection(n) == list(range(n))
+        assert ov.mask_geometry() is not None, "a marquee keeps the mask"
         feather = mask()["feather"]
         h = ov.hit("mask.feather")
         normal = ov.mask_geometry()["handles"]["feather"]["pos"] - ov.mask_geometry()["handles"]["feather"]["base"]
@@ -4864,6 +4986,61 @@ def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
 
 
 @pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_grouped_clips_select_together(app, tmp_path: Path):
+    """upstream #3522: a click selects a clip with its whole group, and Shift-click takes the group
+    out of the selection and puts it back as a whole (never half of it)."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+    shift = QtCore.Qt.KeyboardModifier.ShiftModifier
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def selection() -> set[int]:
+        return set((win.sequence or {}).get("selection") or [])
+
+    def centre(cid: int) -> QtCore.QPoint:
+        row = v1()
+        c = next(c for c in row.track["items"] if c["clip"] == cid)
+        return canvas.clip_rect(row, c).center().toPoint()
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        first, second = (c["clip"] for c in v1().track["items"][:2])
+        win.execute("timeline.select", {"clips": [first, second], "linked": False})
+        assert wait_until(app, lambda: {first, second} <= selection(), 10_000)
+        steps = win.history.list.count()
+        win.execute("clip.group", {})
+        assert wait_until(app, lambda: win.history.list.count() > steps, 10_000)
+        win.execute("timeline.select", {"clips": []})
+        assert wait_until(app, lambda: not selection(), 10_000)
+        # a click on one member selects the whole group (and, linked selection being on, its links)
+        QtTest.QTest.mouseClick(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, centre(first))
+        assert wait_until(app, lambda: {first, second} <= selection(), 10_000), selection()
+        group = selection()
+        # Shift-click takes the group out as a whole, and a second one puts it back
+        QtTest.QTest.mouseClick(canvas, btn, shift, centre(second))
+        assert wait_until(app, lambda: not selection(), 10_000), selection()
+        QtTest.QTest.mouseClick(canvas, btn, shift, centre(second))
+        assert wait_until(app, lambda: selection() == group, 10_000), (selection(), group)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
 def test_real_engine_timeline_volume_line_as_egui(app, tmp_path: Path):
     """egui's Volume line on audio clips: drawn on the fader scale, dragging it changes the level,
     Ctrl-click adds a keyframe, a keyframe drags in time and level, right-click deletes it."""
@@ -5155,6 +5332,19 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         QtTest.QTest.mouseRelease(canvas, btn, pos=edge + QtCore.QPoint(-40, 0))
         assert wait_until(app, lambda: captions()[0]["end"] < moved["end"], 10_000)
         assert captions()[0]["start"] == moved["start"]
+        # upstream #3040: Alt held as the drag ends copies the caption there; the original stays
+        trimmed = captions()[0]
+        r = canvas.caption_block_rect(0, trimmed)
+        start = r.center().toPoint()
+        alt = QtCore.Qt.KeyboardModifier.AltModifier
+        QtTest.QTest.mousePress(canvas, btn, alt, start)
+        QtTest.QTest.mouseMove(canvas, start + QtCore.QPoint(300, 0))
+        QtTest.QTest.mouseRelease(canvas, btn, alt, start + QtCore.QPoint(300, 0))
+        assert wait_until(app, lambda: len(captions()) == 2, 10_000), captions()
+        assert captions()[0]["start"] == trimmed["start"] and captions()[0]["end"] == trimmed["end"]
+        assert captions()[1]["text"] == trimmed["text"] and captions()[1]["start"] > trimmed["end"]
+        canvas.command.emit("edit.undo", {})
+        assert wait_until(app, lambda: len(captions()) == 1, 10_000)
         # the header's lock and eye
         cells = canvas.caption_cells(0)
         QtTest.QTest.mouseClick(canvas, btn, pos=cells["locked"].center())
@@ -8802,6 +8992,24 @@ def test_text_panel(app, tmp_path: Path):
         tp.captions.search.setText("nothing like it")
         assert tp.captions.table.rowCount() == 0 and tp.captions.note.text() == "No matching captions."
         tp.captions.search.clear()
+        # upstream #3042: the list follows the playhead, bringing the caption it reaches into view
+        for i in range(40):
+            win.execute("captions.add", {"text": f"line {i}", "time": TICKS_PER_SECOND * (30 + 2 * i), "durationSeconds": 1})
+        assert wait_until(app, lambda: tp.captions.table.rowCount() == 41, 20_000), tp.captions.table.rowCount()
+        table = tp.captions.table
+        table.verticalScrollBar().setValue(0)
+        last = captions()[-1]
+        tp.set_playhead(int(last["start"]) + TICKS_PER_SECOND // 2)
+
+        def shown() -> bool:
+            row = next((r for r in range(table.rowCount()) if table.item(r, 4).text() == last["text"]), None)
+            return row is not None and table.viewport().rect().intersects(table.visualItemRect(table.item(row, 0)))
+
+        assert wait_until(app, lambda: tp.captions._followed == last["id"] and shown(), 10_000), tp.captions._followed
+        # once followed it is left alone: scrolling away is not undone while the playhead stays there
+        table.verticalScrollBar().setValue(0)
+        tp.captions._fill()
+        assert table.verticalScrollBar().value() == 0
 
         # Graphics: a text layer shows up and edits in place
         win.execute("graphics.newText", {"text": "Hello Qt"})
@@ -9817,6 +10025,23 @@ def test_program_overlay_move_snaps_to_the_frame_and_guides_as_egui(app):
     view.mv.snap = True
     view.mv.guides = [{"vertical": True, "position": 300.0}]
     assert move(195, 40)[0] == 250.0
+    # upstream #3584: Ctrl held moves freely; pressing or releasing it with the pointer still
+    # snaps again (or lets go) at once
+    view.mv.guides = []
+    sent.clear()
+    d = {"pl": pl, "grab": "move", "start": P(50, 50), "begin": True, "turned": 0.0, "angle": 0.0}
+    overlay.drag = {**d, "kind": "transform"}
+    overlay._transform_move(overlay.drag, P(51, 50), free=True)
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [54.0, 53.0] and overlay.snap_lines == []
+    ctrl = QtCore.Qt.KeyboardModifier.ControlModifier
+    overlay.modifiers_changed(QtCore.Qt.KeyboardModifier.NoModifier)  # Ctrl released: snaps
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [50.0, 50.0] and len(overlay.snap_lines) == 2
+    n = len(sent)
+    overlay.modifiers_changed(QtCore.Qt.KeyboardModifier.NoModifier)  # no change: nothing sent
+    assert len(sent) == n
+    overlay.modifiers_changed(ctrl)  # Ctrl pressed again: free
+    assert [p["value"] for c, p in sent if p["param"] == "position"][-1] == [54.0, 53.0] and overlay.snap_lines == []
+    overlay.drag = None
     view.deleteLater()
 
 
