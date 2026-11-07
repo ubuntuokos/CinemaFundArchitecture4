@@ -2339,4 +2339,5 @@ export.summary	Low	alacsony
 	Drag to scroll the timeline.	Húzással az idővonal görgethető.
 	Click to zoom in; Alt-click to zoom out.	Kattintás: nagyítás; Alt-kattintás: kicsinyítés.
 	Exporting	Exportálás
+	Show Duplicate Frame Markers	Ismétlődő képkockák jelölése
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.

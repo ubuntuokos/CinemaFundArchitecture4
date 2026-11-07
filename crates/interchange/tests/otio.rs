@@ -466,3 +466,145 @@ fn oracle_fixtures() {
         std::fs::write(dir.join("manifest.json"), serde_json::to_string_pretty(&manifest).unwrap()).unwrap();
     }
 }
+
+/// `Marker.1` (before OTIO 0.15) stores the marked range under `range`; found by the OTIO-1.2 samples.
+#[test]
+fn legacy_marker1_reads_its_range() {
+    let rt = |v: i64| format!(r#"{{"OTIO_SCHEMA": "RationalTime.1", "rate": 25, "value": {v}}}"#);
+    let tr = |s: i64, d: i64| format!(r#"{{"OTIO_SCHEMA": "TimeRange.1", "start_time": {}, "duration": {}}}"#, rt(s), rt(d));
+    let marker = |n: &str, s: i64, d: i64| format!(r#"{{"OTIO_SCHEMA": "Marker.1", "name": "{n}", "color": "RED", "range": {}}}"#, tr(s, d));
+    let doc = format!(
+        r#"{{"OTIO_SCHEMA": "Timeline.1", "name": "Old", "tracks": {{"OTIO_SCHEMA": "Stack.1", "markers": [{}], "children": [
+            {{"OTIO_SCHEMA": "Track.1", "kind": "Video", "children": [
+                {{"OTIO_SCHEMA": "Clip.1", "name": "c", "source_range": {}, "markers": [{}],
+                  "media_reference": {{"OTIO_SCHEMA": "ExternalReference.1", "target_url": "/m/c.mov", "available_range": {}}}}}]}}]}}}}"#,
+        marker("seq", 7, 2),
+        tr(10, 50),
+        marker("clip", 20, 0),
+        tr(0, 100)
+    );
+    let (imp, rep) = import(doc.as_bytes(), Format::Otio, None).unwrap();
+    assert!(!rep.has_warnings(), "{rep}");
+    let s = imp.project.sequence(only_seq(&imp)).unwrap();
+    let r = FrameRate::FPS_25;
+    assert_eq!(s.markers.iter().map(|m| (m.start, m.duration)).collect::<Vec<_>>(), [(f(r, 7), f(r, 2))]);
+    let clip = &s.tracks(TrackKind::Video)[0].items[0];
+    assert_eq!(clip.markers.iter().map(|m| m.start).collect::<Vec<_>>(), [f(r, 20)]);
+}
+
+// ---------------------------------------------------------------------------------------------
+// OTIO-1.2: samples written by the official OpenTimelineIO library
+// (`python -m cfa4_devtools.otio_samples`, docs/plans/OTIO-INTEGRATION-2026-10-24.md).
+//
+// The Python side writes one file per situation the reader handles, covering every schema it
+// reads, and `samples.json` with what OTIO itself sees in them: per timeline every track (video
+// first, as CFA4 orders them), every clip's and nested stack's name, position and length in ticks,
+// transition counts and marker positions, plus the warnings the import is expected to give.
+// `oracle_samples` imports each file and checks it against that. It runs only when
+// `CFA4_OTIO_SAMPLES_DIR` is set (relative paths are taken from the workspace root).
+// ---------------------------------------------------------------------------------------------
+
+/// Differences between what the import of one sample gave and what `samples.json` expects.
+fn sample_problems(imp: &cfa4_interchange::Imported, report: &cfa4_interchange::Report, want: &serde_json::Value) -> Vec<String> {
+    // OTIO stores floating-point frame counts: 1 µs is far below one audio sample at 48 kHz.
+    let tolerance = TICKS_PER_SECOND / 1_000_000;
+    let close = |got: i64, want: &serde_json::Value| want.as_i64().is_some_and(|w| (got - w).abs() <= tolerance);
+    let close_all = |got: &[i64], want: &serde_json::Value| {
+        let want = want.as_array().map(Vec::as_slice).unwrap_or_default();
+        got.len() == want.len() && got.iter().zip(want).all(|(g, w)| close(*g, w))
+    };
+    let mut problems = Vec::new();
+    let timelines = want["timelines"].as_array().map(Vec::as_slice).unwrap_or_default();
+    if imp.sequences.len() != timelines.len() {
+        problems.push(format!("{} sequences, expected {}", imp.sequences.len(), timelines.len()));
+    }
+    for (&sid, tl) in imp.sequences.iter().zip(timelines) {
+        let name = imp.project.item(sid).map(|i| i.name.clone()).unwrap_or_default();
+        let at = format!("sequence {name:?}");
+        if Some(name.as_str()) != tl["name"].as_str() {
+            problems.push(format!("{at}: expected name {}", tl["name"]));
+        }
+        let Some(seq) = imp.project.sequence(sid) else {
+            problems.push(format!("{at}: not a sequence"));
+            continue;
+        };
+        let markers: Vec<i64> = seq.markers.iter().map(|m| m.start.0).collect();
+        if !close_all(&markers, &tl["markers"]) {
+            problems.push(format!("{at}: markers at {markers:?}, expected {}", tl["markers"]));
+        }
+        for (kind, label) in [(TrackKind::Video, "Video"), (TrackKind::Audio, "Audio")] {
+            let want_tracks: Vec<&serde_json::Value> = tl["tracks"].as_array().into_iter().flatten().filter(|t| t["kind"] == label).collect();
+            let tracks = seq.tracks(kind);
+            // CFA4 adds an empty track when a kind has none
+            if tracks.len() < want_tracks.len() || tracks.iter().skip(want_tracks.len()).any(|t| !t.items.is_empty()) {
+                problems.push(format!("{at}: {} {label} tracks, expected {}", tracks.len(), want_tracks.len()));
+            }
+            for (t, wt) in tracks.iter().zip(&want_tracks) {
+                let at = format!("{at} {label} track {:?}", t.name);
+                if Some(t.name.as_str()) != wt["name"].as_str() {
+                    problems.push(format!("{at}: expected name {}", wt["name"]));
+                }
+                if wt["transitions"].as_u64() != Some(t.transitions.len() as u64) {
+                    problems.push(format!("{at}: {} transitions, expected {}", t.transitions.len(), wt["transitions"]));
+                }
+                let items = wt["items"].as_array().map(Vec::as_slice).unwrap_or_default();
+                if t.items.len() != items.len() {
+                    problems.push(format!("{at}: {} items, expected {}", t.items.len(), items.len()));
+                }
+                for (it, wi) in t.items.iter().zip(items) {
+                    let at = format!("{at} item {:?}", it.name);
+                    if Some(it.name.as_str()) != wi["name"].as_str() {
+                        problems.push(format!("{at}: expected name {}", wi["name"]));
+                    }
+                    if !close(it.start.0, &wi["start_ticks"]) || !close(it.duration.0, &wi["duration_ticks"]) {
+                        problems.push(format!("{at}: at {} for {}, expected {} for {}", it.start.0, it.duration.0, wi["start_ticks"], wi["duration_ticks"]));
+                    }
+                    let markers: Vec<i64> = it.markers.iter().map(|m| m.start.0).collect();
+                    if !close_all(&markers, &wi["markers"]) {
+                        problems.push(format!("{at}: markers at {markers:?}, expected {}", wi["markers"]));
+                    }
+                }
+            }
+        }
+    }
+    // only the expected warnings, each of them at least once
+    let expected: Vec<&str> = want["warnings"].as_array().into_iter().flatten().filter_map(serde_json::Value::as_str).collect();
+    for w in report.warnings() {
+        if !expected.iter().any(|e| w.message.contains(e)) {
+            problems.push(format!("unexpected warning: {}", w.message));
+        }
+    }
+    for e in &expected {
+        if !report.warnings().any(|w| w.message.contains(e)) {
+            problems.push(format!("missing warning: {e}"));
+        }
+    }
+    problems
+}
+
+#[test]
+fn oracle_samples() {
+    let Some(dir) = std::env::var_os("CFA4_OTIO_SAMPLES_DIR").map(|d| {
+        let d = std::path::PathBuf::from(d);
+        if d.is_absolute() { d } else { std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(d) }
+    }) else {
+        return;
+    };
+    let manifest: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(dir.join("samples.json")).unwrap()).unwrap();
+    assert_eq!(manifest["version"], 1);
+    assert_eq!(manifest["ticks_per_second"].as_i64(), Some(TICKS_PER_SECOND));
+    let samples = manifest["samples"].as_array().unwrap();
+    assert!(!samples.is_empty());
+    let mut failures = Vec::new();
+    for want in samples {
+        let file = want["file"].as_str().unwrap();
+        assert_eq!(std::path::Path::new(file).file_name().and_then(|f| f.to_str()), Some(file), "plain file names only");
+        let bytes = std::fs::read(dir.join(file)).unwrap();
+        assert_eq!(detect(&bytes, None), Some(Format::Otio), "{file}");
+        match import(&bytes, Format::Otio, Some("/media")) {
+            Ok((imp, report)) => failures.extend(sample_problems(&imp, &report, want).into_iter().map(|p| format!("{file}: {p}"))),
+            Err(e) => failures.push(format!("{file}: import failed: {e}")),
+        }
+    }
+    assert!(failures.is_empty(), "{} sample problem(s):\n{}", failures.len(), failures.join("\n"));
+}
