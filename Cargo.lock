@@ -888,6 +888,7 @@ dependencies = [
  "cfa4-iab",
  "cfa4-isobmff",
  "cfa4-j2k",
+ "cfa4-lcevc",
  "cfa4-matroska",
  "cfa4-media",
  "cfa4-mpa",
@@ -1255,6 +1256,10 @@ dependencies = [
  "rayon",
  "thiserror 2.0.21",
 ]
+
+[[package]]
+name = "cfa4-lcevc"
+version = "0.10.0"
 
 [[package]]
 name = "cfa4-matroska"

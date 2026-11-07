@@ -432,7 +432,18 @@ impl MpegSource {
                 height = frame.height;
                 par = frame.par;
                 color = frame.color;
-                codec = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
+                let mut label: String = if v.kind == VKind::H264 { "H.264".into() } else { "HEVC".into() };
+                // LCEVC: its own elementary stream (stream_type 0x36), or T.35 SEI in the base's first pictures
+                let base = if v.kind == VKind::H264 { cfa4_lcevc::BaseCodec::H264 } else { cfa4_lcevc::BaseCodec::Hevc };
+                if self.file.as_ref().is_some_and(|f| f.streams.iter().any(|s| s.stream_type == cfa4_lcevc::TS_STREAM_TYPE)) {
+                    crate::lcevc::mark(&self.info.name, &mut label, "stream_type 0x36 stream");
+                } else if (0..v.units.len().min(crate::lcevc::SCAN_SAMPLES))
+                    .filter_map(|i| self.read_unit(v, i).ok())
+                    .any(|d| cfa4_lcevc::sample_has_lcevc(&d, base, cfa4_lcevc::Framing::AnnexB))
+                {
+                    crate::lcevc::mark(&self.info.name, &mut label, "T.35 SEI");
+                }
+                codec = label;
                 rate = None;
                 pixel_format = match &frame.data {
                     cfa4_frame::PixelData::Yuv8 { chroma, .. } => format!("YUV {} 8-bit", chroma_name(*chroma)),

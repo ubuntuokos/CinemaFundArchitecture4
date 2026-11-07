@@ -30,6 +30,7 @@ pub mod gop;
 pub mod hw;
 mod hw_frame;
 pub mod j2k;
+pub mod lcevc;
 pub mod mkv;
 pub mod mp4;
 pub mod mpeg;
