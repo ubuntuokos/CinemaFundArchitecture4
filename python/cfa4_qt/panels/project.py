@@ -330,11 +330,63 @@ class _Drops:
         return False
 
 
+def project_row_parts(view: QAbstractItemView, prefix: str, rows: list[tuple[Any, Any, Any, int]]) -> list[tuple[str, QRectF, str]]:
+    """egui's ids for a Project view's rows in view: ``<prefix>.bin.<id>`` (with ``.toggle``, its
+    expand arrow, in the List view) and ``<prefix>.item.<id>``. ``rows``: (model item, bin id, item
+    id, depth) of each row."""
+    vp = view.viewport()
+    shown = vp.geometry()
+    out: list[tuple[str, QRectF, str]] = []
+    for it, bin_id, item_id, depth in rows:
+        r = view.visualItemRect(it).translated(vp.pos())
+        vis = r.intersected(shown)
+        if vis.isEmpty():
+            continue
+        name = it.text(0) if isinstance(it, QTreeWidgetItem) else it.text()
+        if bin_id is not None:
+            out.append((f"{prefix}.bin.{bin_id}", QRectF(vis), name))
+            if isinstance(view, QTreeWidget):
+                ind = view.indentation()
+                arrow = QRect(r.left() - ind, r.top(), ind, r.height()).intersected(shown)
+                if not arrow.isEmpty():
+                    out.append((f"{prefix}.bin.{bin_id}.toggle", QRectF(arrow), "Expand"))
+        elif item_id is not None:
+            out.append((f"{prefix}.item.{item_id}", QRectF(vis), name))
+    return out
+
+
 class ProjectTree(QTreeWidget, _Drops):
     """The List view."""
 
     files_dropped = Signal(list)  # paths dragged from the Media Browser or a file manager
     moved = Signal(list, object)  # (item and bin ids, target bin or None for the shown bin)
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """The rows in view (``project_row_parts``) and the column headers,
+        ``<prefix>.list.header.<column>`` (egui's names; the header shows them translated)."""
+        prefix = getattr(self, "part_prefix", "project")
+        rows: list[tuple[Any, Any, Any, int]] = []
+
+        def walk(it: QTreeWidgetItem, depth: int) -> None:
+            rows.append((it, it.data(0, BIN_ROLE), it.data(0, ITEM_ROLE), depth))
+            if it.isExpanded():
+                for i in range(it.childCount()):
+                    child = it.child(i)
+                    if child is not None:
+                        walk(child, depth + 1)
+
+        for i in range(self.topLevelItemCount()):
+            top = self.topLevelItem(i)
+            if top is not None:
+                walk(top, 0)
+        out = project_row_parts(self, prefix, rows)
+        head = self.header()
+        if not self.isHeaderHidden():
+            for i, key in enumerate(list(getattr(self, "column_keys", []))[: self.columnCount()]):
+                r = QRect(head.x() + head.sectionViewportPosition(i), head.y(), head.sectionSize(i), head.height()).intersected(head.geometry())
+                if not r.isEmpty():
+                    out.append((f"{prefix}.list.header.{key}", QRectF(r), key))
+        return out
 
     def mimeData(self, items: list[QTreeWidgetItem]) -> QMimeData:
         return drag_mime(
@@ -370,6 +422,15 @@ class IconList(QListWidget, _Drops):
     files_dropped = Signal(list)
     moved = Signal(list, object)
     hovered = Signal(object, object)  # item id (or None) and the media time (ticks: 64-bit) under the pointer
+
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<prefix>.bin.<id>`` / ``<prefix>.item.<id>`` for the cards in view."""
+        rows = []
+        for i in range(self.count()):
+            it = self.item(i)
+            if it is not None and not it.isHidden():
+                rows.append((it, it.data(BIN_ROLE), it.data(ITEM_ROLE), 0))
+        return project_row_parts(self, getattr(self, "part_prefix", "project"), rows)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -978,6 +1039,7 @@ class BinView(QWidget):
 
         self.tree = ProjectTree(self)
         self.tree.setObjectName(f"{prefix}.list" if prefix != "project" else "project.tree")
+        self.tree.part_prefix = prefix  # egui's ids for its rows
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tree.setDragEnabled(True)
         self.tree.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
@@ -1006,6 +1068,7 @@ class BinView(QWidget):
         self.tree.itemCollapsed.connect(lambda it: self._twirl(it, False))
 
         self.icons = IconList(self)
+        self.icons.part_prefix = prefix
         self.icons.setObjectName(f"{prefix}.icons")
         self.icons.setViewMode(QListWidget.ViewMode.IconMode)
         self.icons.setResizeMode(QListWidget.ResizeMode.Adjust)
@@ -1292,6 +1355,7 @@ class BinView(QWidget):
             self._shown = shape
             tree.setColumnCount(len(names))
             tree.setHeaderLabels([tr(n) for n in names])
+            tree.column_keys = names
             header = tree.header()
             header.blockSignals(True)
             for i, c in enumerate(columns):
