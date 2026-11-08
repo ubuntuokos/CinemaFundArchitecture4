@@ -431,7 +431,6 @@ fn deletion_commands_fall_back_to_the_selection_only_when_no_target_is_named() {
     s.execute("timeline.delete", json!({"ripple": true})).unwrap();
     assert!(clip(&s, b.id).is_none(), "timeline.delete ripple falls back to the selection");
 }
-}
 
 /// #1103: Unlink with a selection that also holds an unlinked clip (a title, a music clip) unlinks
 /// the linked ones, as the Timeline's context menu offers, instead of re-linking them.
