@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 a rencontré une erreur
 	CFA4 project links	Liens du projet CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 s’est fermé de manière inattendue alors que « {name} » avait des modifications non enregistrées. Récupérer les modifications non enregistrées de {time} ?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 a été fermé alors que « {name} » avait des modifications non enregistrées. Récupérer les modifications non enregistrées de {time} ?
 	Cancel Selected	Annuler la sélection
 	Cannot check the output folder for files to replace: {error}	Impossible de vérifier les fichiers à remplacer dans le dossier de sortie : {error}
 	Cannot create the output folder: {error}	Impossible de créer le dossier de sortie : {error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Vérifier avant l’export : {n} problèmes signalés dans la timeline (marqueurs rouges)
 	Checked:	Vérifié :
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Choisissez un fichier de piste IAB (IMF ou DCP), un flux IAB brut ou du Dolby Atmos TrueHD : un flux .thd ou un fichier MKV, MP4 ou M2TS avec une piste Atmos.
-	Choose an output file.	Choisissez un fichier de sortie.
+	Choose a file name and location.	Choisissez un nom de fichier et un emplacement.
+	Choose folder	Choisir un dossier
 	Click and press keys to assign	Cliquez et appuyez sur des touches pour attribuer
 	Compression	Compression
 	Compression Level	Niveau de compression
@@ -320,3 +319,17 @@
 	{word} compression	compression {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
 	Strikethrough	Barré
+	Delete Redoable Actions	Supprimer les actions rétablissables
+	Clear History	Effacer l’historique
+	Delete the dimmed actions after the current state? They cannot be redone.	Supprimer les actions estompées après l’état actuel ? Elles ne pourront pas être rétablies.
+	Work Area Bar	Barre de zone de travail
+	Start: {tc}	Début : {tc}
+	End: {tc}	Fin : {tc}
+	Duration: {tc}	Durée : {tc}
+	Panel menu	Menu du panneau
+	Move panel	Déplacer le panneau
+	Transparency Grid	Grille de transparence
+	Show Duplicate Frame Markers	Afficher les repères d’images en double
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	L’entrée/sortie de la séquence ne fait qu’une image. Choisissez Séquence entière pour exporter toute la séquence.
+	Set Work Area Bar In Point	Définir le point d'entrée de la barre de zone de travail
+	Set Work Area Bar Out Point	Définir le point de sortie de la barre de zone de travail

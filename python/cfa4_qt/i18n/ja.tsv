@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 でエラーが発生しました
 	CFA4 project links	CFA4 プロジェクトのリンク
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	「{name}」に未保存の変更がある状態で CFA4 が予期せず終了しました。{time} の未保存の変更を復元しますか？
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	「{name}」に未保存の変更がある状態で CFA4 が閉じられました。{time} の未保存の変更を復元しますか？
 	Cancel Selected	選択項目をキャンセル
 	Cannot check the output folder for files to replace: {error}	置き換えるファイルがあるか出力フォルダーを確認できません：{error}
 	Cannot create the output folder: {error}	出力フォルダーを作成できません：{error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	書き出し前チェック：{n} 件の問題をタイムラインにマークしました（赤いマーカー）
 	Checked:	確認済み：
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB トラックファイル（IMF または DCP）、生の IAB ストリーム、または Dolby Atmos TrueHD（.thd ストリーム、または Atmos トラックを含む MKV・MP4・M2TS ファイル）を選んでください。
-	Choose an output file.	出力ファイルを選んでください。
+	Choose a file name and location.	ファイル名と場所を選んでください。
+	Choose folder	フォルダーを選択
 	Click and press keys to assign	クリックしてから割り当てるキーを押してください
 	Compression	圧縮
 	Compression Level	圧縮レベル
@@ -320,3 +319,17 @@
 	{word} compression	{word} 圧縮
 	{w}x{h} ({par})	{w}×{h}（{par}）
 	Strikethrough	取り消し線
+	Delete Redoable Actions	やり直し可能な操作を削除
+	Clear History	ヒストリーを消去
+	Delete the dimmed actions after the current state? They cannot be redone.	現在の状態より後の淡色表示の操作を削除しますか？ やり直しできなくなります。
+	Work Area Bar	ワークエリアバー
+	Start: {tc}	開始: {tc}
+	End: {tc}	終了: {tc}
+	Duration: {tc}	デュレーション: {tc}
+	Panel menu	パネルメニュー
+	Move panel	パネルを移動
+	Transparency Grid	透明グリッド
+	Show Duplicate Frame Markers	重複フレームマーカーを表示
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。
+	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
+	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定
