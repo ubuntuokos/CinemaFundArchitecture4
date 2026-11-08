@@ -1468,6 +1468,16 @@ class TimelineCanvas(QWidget):
             return True
         _i, t, c, g = hit
         cid = c.get("id")
+        if self.tool == "razor":
+            # the Razor tool cuts the caption where it is clicked (Shift: every caption on an
+            # unlocked caption track at that time), as it cuts clips (upstream #3039)
+            if t.get("locked") is not True:
+                at = self.snap(self.time_at(pos.x()), set())
+                if mods & Qt.KeyboardModifier.ShiftModifier:
+                    self.command.emit("captions.split", {"time": at})
+                elif as_int(c.get("start")) < at < as_int(c.get("end")):
+                    self.command.emit("captions.split", {"caption": cid, "time": at})
+            return True
         add = bool(mods & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier))
         if add:
             self.command.emit("captions.select", {"captions": [cid], "add": True})
