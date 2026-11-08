@@ -327,3 +327,5 @@
 	Transparency Grid	透明グリッド
 	Show Duplicate Frame Markers	重複フレームマーカーを表示
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。
+	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
+	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定
