@@ -179,44 +179,23 @@ jobs:
     name: Rust workspace tests with FFmpeg oracles (Ubuntu)
     runs-on: ubuntu-26.04
     timeout-minutes: 120
+    # Job level, because rust-cache hashes CARGO_* variables into its key: keep these identical
+    # to ci-cache-warm.yml. Keep release opt-level and all tests, but disable costly link-time
+    # optimization for test harnesses; the CLI smoke still checks the unmodified release profile.
+    env:
+      CARGO_PROFILE_RELEASE_LTO: "false"
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+      CARGO_BUILD_JOBS: "2"
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Native Linux dependencies and test oracles
-        run: |
-          sudo apt-get update
-          # Inspect ALL apt candidates before installation: report every unavailable
-          # package in a single fast failure, not one by one across costly CI runs.
-          oracle_dev_packages=(
-            libdav1d-dev libsvtav1enc-dev libaom-dev
-            libx264-dev libx265-dev libvpx-dev libmp3lame-dev libopus-dev libwebp-dev libopenjp2-7-dev zlib1g-dev
-            libheif-examples libheif-plugin-libde265 libheif-plugin-x265 libjxl-tools
-            webp
-          )
-          missing_packages=()
-          for pkg in "${oracle_dev_packages[@]}"; do
-            candidate="$(apt-cache policy "$pkg" 2>/dev/null | awk '/Candidate:/ {print $2; exit}' || true)"
-            if [[ -z "$candidate" || "$candidate" == "(none)" ]]; then
-              missing_packages+=("$pkg")
-            else
-              echo "FFmpeg oracle package $pkg: $candidate"
-            fi
-          done
-          if (( ${#missing_packages[@]} > 0 )); then
-            printf '::error::Missing Ubuntu 26.04 FFmpeg package: %s\n' "${missing_packages[@]}" >&2
-            exit 1
-          fi
-          sudo apt-get install -y --no-install-recommends \
-            build-essential pkg-config clang cmake ninja-build \
-            libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev \
-            libx11-dev libx11-xcb-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libvulkan-dev libegl1-mesa-dev libgl1-mesa-dev nasm curl xz-utils libjxl-tools \
-            "${oracle_dev_packages[@]}"
-          # JPEG 2000 / HTJ2K oracles (the tests skip without them)
-          sudo apt-get install -y --no-install-recommends libopenjp2-tools grokj2k-tools \
-            || echo "::warning::libopenjp2-tools / grokj2k-tools unavailable: OpenJPEG and HTJ2K oracle tests skip"
-      - name: Cache FFmpeg 9.0.2
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        run: bash scripts/ci/install-ffmpeg-oracle-deps.sh
+      # Caches are written only on main by ci-cache-warm.yml: a cache saved in a merge-queue
+      # or pull-request run is not visible to the next run, only one saved on main is. So
+      # these steps only restore, and a miss falls back to building (as before).
+      - name: Restore FFmpeg 9.0.2 (saved on main by ci-cache-warm.yml)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/cfa4/ffmpeg-9.0.2-linux-x86_64-v7
           key: cfa4-ffmpeg-9.0.2-ubuntu-26.04-linux-x86_64-v7
@@ -242,14 +221,19 @@ jobs:
             echo "::error::The installed FFmpeg has no libdav1d AV1 decoder."
             exit 1
           fi
+      - name: Rust toolchain from rust-toolchain.toml (part of the rust-cache key)
+        run: |
+          rustup show
+          rustc --version
+          cargo --version
+      - name: Restore Rust release dependencies (saved on main by ci-cache-warm.yml)
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          shared-key: cfa4-release-oracle
+          save-if: "false"
       - name: Run optimized Rust workspace release tests with FFmpeg oracles
         env:
           CFA4_REQUIRE_ORACLES: "1"
-          # Keep release opt-level and all tests, but disable costly link-time optimization
-          # for test harnesses; the CLI smoke still checks the unmodified release profile.
-          CARGO_PROFILE_RELEASE_LTO: "false"
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
-          CARGO_BUILD_JOBS: "2"
         run: cargo test --workspace --exclude cfa4-ui --release --locked --timings
 
   python-qt6-linux:
