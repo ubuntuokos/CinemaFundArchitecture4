@@ -37,8 +37,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	O CFA4 encontrou um erro
 	CFA4 project links	Links do projeto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 fechou inesperadamente enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	O CFA4 foi fechado enquanto "{name}" tinha alterações não salvas. Recuperar as alterações não salvas de {time}?
 	Cancel Selected	Cancelar selecionados
 	Cannot check the output folder for files to replace: {error}	Não é possível verificar a pasta de saída em busca de arquivos a substituir: {error}
 	Cannot create the output folder: {error}	Não é possível criar a pasta de saída: {error}
@@ -47,7 +45,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Verificar antes de exportar: {n} problemas marcados na linha do tempo (marcadores vermelhos)
 	Checked:	Verificado:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Escolha um arquivo de faixa IAB (IMF ou DCP), um fluxo IAB bruto ou Dolby Atmos TrueHD: um fluxo .thd ou um arquivo MKV, MP4 ou M2TS com uma faixa Atmos.
-	Choose an output file.	Escolha um arquivo de saída.
+	Choose a file name and location.	Escolha um nome de arquivo e um local.
+	Choose folder	Escolher pasta
 	Click and press keys to assign	Clique e pressione teclas para atribuir
 	Compression	Compactação
 	Compression Level	Nível de compactação
@@ -320,3 +319,8 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compactação {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Panel menu	Menu do painel
+	Move panel	Mover painel
+	Transparency Grid	Grade de transparência
+	Show Duplicate Frame Markers	Mostrar marcadores de quadros duplicados
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A entrada/saída da sequência tem só 1 quadro. Escolha Sequência inteira para exportar a sequência toda.

@@ -42,6 +42,11 @@ it checked and why. `--smoke [--screenshot out.png]`
 starts, waits for the engine, and quits (CI). `--no-autosave` turns off the auto-save and
 crash-recovery journal, `--data-dir` moves it.
 
+**Agents.** `cfa4-qt --control 9876` serves egui's control channel ([control-protocol.md](control-protocol.md)),
+and `cfa4-cli mcp --bridge 127.0.0.1:9876` (the `cfa4` server in `.mcp.json`) drives the Qt window over
+MCP as it drives egui's: commands, the document, the `ui_*` tools, `ui_screenshot`, `render_preview`
+(the Program monitor) and long exports (`test_real_engine_mcp_bridge_drives_the_qt_window`).
+
 ## Architecture
 
 ```text
@@ -157,7 +162,7 @@ start with a saved layout and reset; it passes on all four versions, so `PySide6
 
 File ▸ Export ▸ Media… (and `export.queue.add`, Ctrl+M) opens a non-modal Export window. It
 lists the engine's presets (`export.presets.list`) and formats (`export.formats`), shows what
-the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames) and sends
+the current choice resolves to (`export.resolve`: size, rate, bitrate, sound, frames; whether the video is HDR, the encoder that writes it, the audio codec used and the sample sizes it can store) and sends
 the export to the engine's queue (`export.queue.add`), which the engine server encodes between
 requests; the queue table polls `export.queue.list` for status, progress and remaining time,
 with start/stop, cancel, retry, remove and clear. **Only the settings the user changed override
@@ -166,3 +171,14 @@ are not sent until touched, so a preset's own choices are never silently replace
 is always sent when set (the fields show the preset's size; 0 × 0 is the preset's or the
 sequence's). `test_real_engine_export_through_the_dialog_and_reimport` exports through the
 window, checks the file with ffprobe (H.264 + AAC, the asked size) and imports it back.
+As in egui, the queue is headed "Queue (n)" with a hint while it is empty, Captions says when the
+sequence has no caption track (the window follows a track added while it is open), and with no
+sequence open a placeholder ("Open a sequence to export") stands in place of the settings while the
+queue stays (`test_real_engine_export_empty_states_as_egui`).
+The window's controls carry egui's automation ids (`export.video.*`, `export.audio.*`,
+`export.range.start`, `export.button`, `export.sendToQueue`, …), checked against
+`crates/ui-egui/src/panels/export_mode.rs` by `test_export_widgets_carry_eguis_automation_ids`.
+Target Bitrate and Maximum Bitrate are in Mbps as in egui and show the preset's values; an
+adaptive (Match Source) preset shows "Adaptive (n bits per pixel)" with Set, which sends a fixed
+`bitrateKbps`. Key Frame Distance (H.264 / H.265 / AV1) is off or a distance in frames
+(`settings.keyframeDistance`); MPEG-2 keeps its own GOP length field (`export.mpeg2Gop`).

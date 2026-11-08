@@ -13,7 +13,8 @@
   Double-clicking a text layer with the Selection tool edits it with all its text selected.
   Typing edits the text (``graphics.setText``, one undo step per typing session); arrows,
   Home / End, Shift selection, Ctrl+A / C / X / V, Return (a new line) and Esc (stop) work as in
-  a text field.
+  a text field. Selected characters take Essential Graphics' character properties
+  (``graphics.setCharStyle``).
 
 The geometry comes from the engine (``program.overlay`` ``graphics``: layer pixels → frame, the
 graphic canvas → frame, each layer's box); every edit is one ``graphics.*`` command.
@@ -382,6 +383,10 @@ def handle_drag(v: Layer, n: int, start: QPointF, cur: QPointF, keep_ratio: bool
 class GraphicsTools:
     """The graphics tools of one Program monitor overlay (``ProgramOverlay.graphics``)."""
 
+    # (class defaults too: an instance made without __init__ still ends an edit without crashing)
+    preedit = ""
+    _committed = ""
+
     def __init__(self, overlay: ProgramOverlay) -> None:
         self.overlay = overlay
         self.tool = "selection"
@@ -391,6 +396,10 @@ class GraphicsTools:
         # the text being typed into: clip, layer, its text, caret and anchor (character offsets);
         # "seen": the layer has been in the picture (a new one is on its way until then)
         self.edit: dict[str, Any] | None = None
+        # the input method's marked text still being composed (Korean commits a syllable only when
+        # the next one starts), and the one an ended edit committed itself (upstream #2445)
+        self.preedit = ""
+        self._committed = ""
         self.creating = 0  # new text layers the engine has not answered yet
         self.after_created: list[Callable[[], None]] = []
 
@@ -460,11 +469,66 @@ class GraphicsTools:
         if tool != "pen":
             self.pen_points = []
         if tool not in ("selection", *TEXT_TOOLS):
+            self.commit_preedit()
             self.edit = None
         self.drag = None
         self.overlay.view.update()
 
     # ----- text editing -----
+    def selection_range(self, clip: Any, layer: Any) -> tuple[int, int] | None:
+        """The characters selected with the Type tool in that layer (start, end), or None: character
+        properties in Essential Graphics apply to them (egui's ``gfx_edit`` range)."""
+        e = self.edit
+        if e is None or e.get("clip") is None or e.get("clip") != clip or e.get("layer") != layer:
+            return None
+        a, b = sorted((int(e.get("caret") or 0), int(e.get("anchor") or 0)))
+        return (a, b) if a != b else None
+
+    def _note_selection(self) -> None:
+        """Tell Essential Graphics when the selected characters changed (its stopwatches and where
+        character properties go follow them)."""
+        e = self.edit
+        now = None if e is None else (e.get("clip"), e.get("layer"), e.get("caret"), e.get("anchor"))
+        if now != getattr(self, "_noted", None):
+            self._noted = now
+            self.overlay.text_selection_changed.emit()
+
+    def edit_state(self) -> dict[str, Any] | None:
+        """egui's ``gfxEdit``: the layer being typed into, caret and anchor as byte offsets into its text."""
+        e = self.edit
+        if e is None or e.get("clip") is None:
+            return None
+        text = str(e.get("text") or "")
+
+        def b(i: Any) -> int:
+            return len(text[: int(i or 0)].encode())
+
+        return {"clip": e["clip"], "layer": e["layer"], "caret": b(e.get("caret")), "anchor": b(e.get("anchor"))}
+
+    def set_edit_state(self, v: Any) -> None:
+        """egui's ``ui.set {gfxEdit}``: {clip, layer, caret, anchor} (byte offsets into the text) puts
+        the caret and selection in that text layer; null stops editing."""
+        if v is None:
+            self.end_edit()
+            self._note_selection()
+            return
+        keys = ("clip", "layer", "caret", "anchor")
+        if not isinstance(v, dict) or set(v) - set(keys) or any(k not in v for k in keys):
+            raise TypeError("gfxEdit takes {clip, layer, caret, anchor} or null")
+        if any(not isinstance(v[k], int) or isinstance(v[k], bool) or v[k] < 0 for k in keys):
+            raise TypeError("gfxEdit: clip, layer, caret and anchor are whole numbers")
+        view = next((x for x in self.layers() if x.clip == v["clip"] and x.layer == v["layer"] and x.text is not None), None)
+        text = str((view.text or {}).get("text") or "")[:MAX_TEXT] if view is not None else ""
+        raw = text.encode()
+
+        def ch(n: int) -> int:
+            return len(raw[:n].decode(errors="ignore")) if view is not None else n
+
+        self.edit = {"clip": v["clip"], "layer": v["layer"], "text": text, "caret": ch(v["caret"]), "anchor": ch(v["anchor"]),
+                     "seen": view is not None, "mine": []}
+        self._focus()
+        self._note_selection()
+
     def edit_view(self) -> Layer | None:
         e = self.edit
         if e is None:
@@ -491,6 +555,8 @@ class GraphicsTools:
         return v
 
     def start_edit(self, v: Layer, at: QPointF | None, select_all: bool = False) -> None:
+        # the marked text still being composed goes into the layer it was typed into
+        self.commit_preedit()
         text = str((v.text or {}).get("text") or "")[:MAX_TEXT]
         caret = len(text)
         q = v.to_local(at) if at is not None else None
@@ -511,6 +577,7 @@ class GraphicsTools:
 
     def end_edit(self) -> None:
         if self.edit is not None:
+            self.commit_preedit()
             self.edit = None
             self.overlay.view.setAttribute(Qt.WidgetAttribute.WA_InputMethodEnabled, False)
             self.overlay.view.update()
@@ -597,6 +664,22 @@ class GraphicsTools:
         merge = e.get("sent") is True
         e["sent"] = True
         self.overlay.send("graphics.setText", {"clip": e["clip"], "layer": e["layer"], "text": e["text"], "merge": merge})
+
+    def commit_preedit(self) -> None:
+        """An edit that ends while the input method is composing types the marked text at the
+        caret (over the selection), so the last syllable is not lost (upstream #2445); the input
+        method's late commit of that text is then dropped (``take_commit``)."""
+        marked, self.preedit = self.preedit, ""
+        if self.edit is None or not marked:
+            return
+        self.type_text(marked)
+        self._committed = marked
+
+    def take_commit(self, s: str) -> bool:
+        """Whether the input method's commit ``s`` should be typed: not when it is the marked text
+        an ended edit already typed."""
+        dropped, self._committed = self._committed, ""
+        return not (dropped and s == dropped)
 
     def type_text(self, s: str) -> None:
         """Text from an input method (or an agent) typed at the caret."""
@@ -723,6 +806,7 @@ class GraphicsTools:
 
     # ----- painting -----
     def paint(self, p: QPainter) -> None:
+        self._note_selection()
         if not self.active():
             return
         accent = theme.current().c("accent")

@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4에서 오류가 발생했습니다
 	CFA4 project links	CFA4 프로젝트 링크
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	'{name}'에 저장되지 않은 변경 사항이 있는 상태에서 CFA4가 예기치 않게 종료되었습니다. {time}의 저장되지 않은 변경 사항을 복구하시겠습니까?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	'{name}'에 저장되지 않은 변경 사항이 있는 상태에서 CFA4가 닫혔습니다. {time}의 저장되지 않은 변경 사항을 복구하시겠습니까?
 	Cancel Selected	선택 항목 취소
 	Cannot check the output folder for files to replace: {error}	출력 폴더에서 바꿀 파일을 확인할 수 없습니다: {error}
 	Cannot create the output folder: {error}	출력 폴더를 만들 수 없습니다: {error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	내보내기 전 검사: 타임라인에 문제 {n}개 표시됨 (빨간색 마커)
 	Checked:	검사됨:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	IAB 트랙 파일(IMF 또는 DCP), 원시 IAB 스트림 또는 Dolby Atmos TrueHD(.thd 스트림, 또는 Atmos 트랙이 있는 MKV, MP4, M2TS 파일)를 선택하십시오.
-	Choose an output file.	출력 파일을 선택하십시오.
+	Choose a file name and location.	파일 이름과 위치를 선택하십시오.
+	Choose folder	폴더 선택
 	Click and press keys to assign	클릭한 후 할당할 키를 누르십시오
 	Compression	압축
 	Compression Level	압축 수준
@@ -319,3 +318,8 @@
 	{v} Mbps	{v}Mbps
 	{word} compression	{word} 압축
 	{w}x{h} ({par})	{w}×{h}({par})
+	Panel menu	패널 메뉴
+	Move panel	패널 이동
+	Transparency Grid	투명 격자
+	Show Duplicate Frame Markers	중복 프레임 마커 표시
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	시퀀스 시작/종료 범위가 1프레임뿐입니다. 시퀀스 전체를 내보내려면 전체 시퀀스를 선택하세요.
