@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 ha riscontrato un errore
 	CFA4 project links	Collegamenti del progetto CFA4
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 si è chiuso inaspettatamente mentre «{name}» aveva modifiche non salvate. Recuperare le modifiche non salvate delle {time}?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 è stato chiuso mentre «{name}» aveva modifiche non salvate. Recuperare le modifiche non salvate delle {time}?
 	Cancel Selected	Annulla selezionati
 	Cannot check the output folder for files to replace: {error}	Impossibile controllare la cartella di output per i file da sostituire: {error}
 	Cannot create the output folder: {error}	Impossibile creare la cartella di output: {error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Controllo prima dell'esportazione: {n} problemi segnati nella timeline (marcatori rossi)
 	Checked:	Controllato:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Scegli un file di traccia IAB (IMF o DCP), un flusso IAB grezzo o Dolby Atmos TrueHD: un flusso .thd o un file MKV, MP4 o M2TS con una traccia Atmos.
-	Choose an output file.	Scegli un file di output.
+	Choose a file name and location.	Scegli un nome file e una posizione.
+	Choose folder	Scegli cartella
 	Click and press keys to assign	Fai clic e premi i tasti da assegnare
 	Compression	Compressione
 	Compression Level	Livello di compressione
@@ -319,3 +318,20 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	compressione {word}
 	{w}x{h} ({par})	{w}×{h} ({par})
+	Caption Export Settings	Impostazioni di esportazione sottotitoli
+	Export Captions	Esporta sottotitoli
+	{name} already exists, so nothing was exported. To replace it, choose it in the save dialog.	{name} esiste già, quindi non è stato esportato nulla. Per sostituirlo, sceglilo nella finestra di salvataggio.
+	Delete Redoable Actions	Elimina azioni ripetibili
+	Clear History	Cancella cronologia
+	Delete the dimmed actions after the current state? They cannot be redone.	Eliminare le azioni attenuate dopo lo stato corrente? Non potranno essere ripetute.
+	Work Area Bar	Barra dell’area di lavoro
+	Start: {tc}	Inizio: {tc}
+	End: {tc}	Fine: {tc}
+	Duration: {tc}	Durata: {tc}
+	Panel menu	Menu del pannello
+	Move panel	Sposta pannello
+	Transparency Grid	Griglia di trasparenza
+	Show Duplicate Frame Markers	Mostra indicatori dei fotogrammi duplicati
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	L’attacco/stacco della sequenza è di un solo fotogramma. Scegli Intera sequenza per esportare tutta la sequenza.
+	Set Work Area Bar In Point	Imposta punto di attacco della barra dell’area di lavoro
+	Set Work Area Bar Out Point	Imposta punto di stacco della barra dell’area di lavoro
