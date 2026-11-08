@@ -483,3 +483,15 @@
 	The text moves {speed} px per frame; a whole number does not shimmer	Il testo si sposta di {speed} px per fotogramma; un numero intero non sfarfalla
 	Video: {file}	Video: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” non risalta dallo sfondo (contrasto {ratio}:1; ne servono almeno 4,5:1)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Un aspetto pronto: stili, sfondi, transizioni e tempi. Un file di stile, se indicato, ha la precedenza.
+	Apply Credits Template…	Applica modello di titoli di coda…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Scegli prima un modello.
+	Name of the template:	Nome del modello:
+	New Spreadsheet from Template…	Nuovo foglio di calcolo da modello…
+	Template	Modello
+	Template saved: {name}	Modello salvato: {name}
+	Template:	Modello:
+	built in	integrato
+	mine	mio
+	this project	questo progetto

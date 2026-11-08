@@ -483,3 +483,15 @@
 	The text moves {speed} px per frame; a whole number does not shimmer	Teks bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
 	Video: {file}	Video: {file}
 	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” tidak menonjol dari latar (kontras {ratio}:1; minimal 4,5:1 diperlukan)
+	A ready look: styles, backgrounds, transitions and timing. A styling file, if given, wins.	Tampilan siap pakai: gaya, latar, transisi, dan waktu. File gaya, jika ada, diutamakan.
+	Apply Credits Template…	Terapkan Templat Kredit…
+	CSV (*.csv)	CSV (*.csv)
+	Choose a template first.	Pilih templat terlebih dahulu.
+	Name of the template:	Nama templat:
+	New Spreadsheet from Template…	Spreadsheet Baru dari Templat…
+	Template	Templat
+	Template saved: {name}	Templat disimpan: {name}
+	Template:	Templat:
+	built in	bawaan
+	mine	milik saya
+	this project	proyek ini
