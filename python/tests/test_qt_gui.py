@@ -568,6 +568,70 @@ def test_installing_a_graphics_template_asks_for_its_file(app, tmp_path: Path, m
     assert path_params(cmd, parent, None) == {"__cancel__": True}
 
 
+def test_caption_export_asks_for_the_file_format(app, tmp_path: Path, monkeypatch):
+    """upstream #3523: File ▸ Export ▸ Captions… opens Caption Export Settings (every format
+    `captions.export` writes); the save panel offers only that format; a name typed with another
+    caption extension is written in that format, any other name gets the chosen extension, and a
+    file that name would replace without the panel having asked is left alone. The format written
+    last is offered next time."""
+    from cfa4_qt import dialogs
+    from cfa4_qt.dialogs import CaptionExportDialog, caption_destination, path_params
+
+    for typed, saved, ext in [
+        ("subs", "subs.vtt", "vtt"),
+        ("subs.", "subs.vtt", "vtt"),
+        ("subs.vtt", "subs.vtt", "vtt"),
+        ("SUBS.VTT", "SUBS.VTT", "vtt"),
+        ("subs.srt", "subs.srt", "srt"),
+        ("Subs.SCC", "Subs.SCC", "scc"),
+        ("subs.final", "subs.final.vtt", "vtt"),
+        ("/home/a.b/subs", "/home/a.b/subs.vtt", "vtt"),
+        ("/home/a.b/Main Edit.ttml", "/home/a.b/Main Edit.ttml", "ttml"),
+    ]:
+        assert caption_destination(typed, "vtt") == (saved, ext), typed
+
+    dlg = CaptionExportDialog(None, "vtt")
+    combo = dlg.findChild(QtWidgets.QComboBox, "captionExport.format")
+    assert combo.count() == 7 and dlg.chosen() == "vtt"
+    assert dlg.findChild(QtWidgets.QPushButton, "captionExport.ok") is not None
+
+    class Window(QtWidgets.QMainWindow):
+        def __init__(self) -> None:
+            super().__init__()
+            self.settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+            self.sequence = {"name": "Main Edit"}
+
+    win = Window()
+    cmd = Command("captions.export", "Captions…", ["File", "Export"], "", '{"path":str,"track":id?,"format":str?}', True)
+    picked: list[str] = []
+    monkeypatch.setattr(CaptionExportDialog, "exec", lambda self: (picked.append(self.chosen()), self.format.setCurrentIndex(self.format.findData("vtt")), QtWidgets.QDialog.DialogCode.Accepted)[-1])
+    asked = []
+    answer = [str(tmp_path / "subs")]
+    monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName", lambda *a, **_k: (asked.append(a), (answer[0], a[3]))[-1])
+    # SRT first; the save panel offers WebVTT only, named after the sequence
+    assert path_params(cmd, win, None, {"track": 7}) == {"path": str(tmp_path / "subs.vtt"), "format": "vtt"}
+    assert picked == ["srt"] and asked[-1][2] == "Main_Edit.vtt" and asked[-1][3] == "WebVTT (*.vtt)"
+    # WebVTT is offered next time; a format given by the caller wins
+    path_params(cmd, win, None, {})
+    assert picked[-1] == "vtt"
+    path_params(cmd, win, None, {"format": "scc"})
+    assert picked[-1] == "scc"
+    # `keep` typed when keep.vtt exists: nothing is written, and the status line says why
+    (tmp_path / "keep.vtt").write_text("WEBVTT\n", encoding="utf-8")
+    answer[0] = str(tmp_path / "keep")
+    assert path_params(cmd, win, None, {}) == {"__cancel__": True}
+    assert "keep.vtt" in win.statusBar().currentMessage()
+    # choosing keep.vtt itself (the panel asked) replaces it; another caption extension is kept
+    answer[0] = str(tmp_path / "keep.vtt")
+    assert path_params(cmd, win, None, {}) == {"path": str(tmp_path / "keep.vtt"), "format": "vtt"}
+    answer[0] = str(tmp_path / "subs.srt")
+    assert path_params(cmd, win, None, {}) == {"path": str(tmp_path / "subs.srt"), "format": "srt"}
+    # Cancel in either dialog cancels
+    monkeypatch.setattr(CaptionExportDialog, "exec", lambda _self: QtWidgets.QDialog.DialogCode.Rejected)
+    assert path_params(cmd, win, None, {}) == {"__cancel__": True}
+    assert dialogs.caption_format("WebVTT") == "vtt" and dialogs.caption_format("bogus") is None
+
+
 def test_save_as_asks_before_the_added_suffix_replaces_a_project(app, tmp_path: Path, monkeypatch):
     """Regression: Save As returning ``cut`` (All files filter) wrote over an existing
     ``cut.fcproj`` without asking: the dialog only checked the name without the suffix."""
@@ -4589,7 +4653,9 @@ def test_panel_docking_commands_and_panel_menu_as_egui(app, fake_engine: Path, t
         assert dock_commands.dock_at(win, pos) == "History"
         QtGui.QCursor.setPos(pos)
         menu = dock_commands.panel_menu(win, "History")
-        assert [a.objectName() for a in menu.actions()] == ["panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace"]
+        assert [a.objectName() for a in menu.actions() if not a.isSeparator()] == [
+            "panel.menu.History.close", "panel.menu.History.undock", "panel.menu.History.restoreWorkspace",
+            "panel.menu.History.deleteRedoable", "panel.menu.History.clear"]  # (upstream #3075)
         menu.actions()[1].trigger()
         assert hist.isFloating()
         menu.actions()[0].trigger()
@@ -12779,6 +12845,127 @@ def test_real_engine_alt_drag_trims_one_side_of_a_link(app, tmp_path: Path):
         drag_out_edge(video["clip"], -40, none)
         assert wait_until(app, lambda: item(video["clip"])["end"] < v_end and item(sound["clip"])["end"] < a_end, 10_000), (
             item(video["clip"]), item(sound["clip"]))
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_work_area_bar(app, tmp_path: Path):
+    """upstream #3087: the Timeline's work area bar: shown from the Display Settings menu (it then
+    spans the sequence), an end dragged moves that end, the middle moves the bar, a double-click
+    spans what the ruler shows, and the menu hides it again."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    btn = QtCore.Qt.MouseButton.LeftButton
+
+    def area():
+        return (win.sequence or {}).get("workArea")
+
+    def drag(a: QtCore.QPoint, b: QtCore.QPoint) -> None:
+        QtTest.QTest.mousePress(canvas, btn, pos=a)
+        for i in range(1, 5):
+            QtTest.QTest.mouseMove(canvas, a + (b - a) * (i / 4))
+        QtTest.QTest.mouseRelease(canvas, btn, pos=b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(480)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        assert area() is None and canvas.work_area() is None
+        menu = canvas.display_menu()
+        toggle = next(a for a in menu.actions() if a.objectName() == "timeline.settings.workAreaBar")
+        assert not toggle.isChecked()
+        toggle.trigger()
+        assert wait_until(app, lambda: area() is not None, 10_000)
+        full = dict(area())
+        assert full["start"] == 0 and full["end"] > 0
+        r = canvas.work_area_rect(full["start"], full["end"])
+        mid_y = int(r.center().y())
+        # the In end dragged right moves only the start
+        a = QtCore.QPoint(int(r.left()) + 1, mid_y)
+        assert canvas.work_area_at(a) == "in"
+        drag(a, a + QtCore.QPoint(120, 0))
+        assert wait_until(app, lambda: area()["start"] > 0 and area()["end"] == full["end"], 10_000), area()
+        moved = dict(area())
+        # the middle moves the whole bar left (not before 0)
+        r = canvas.work_area_rect(moved["start"], moved["end"])
+        m = QtCore.QPoint(int(r.center().x()), mid_y)
+        assert canvas.work_area_at(m) == ""
+        drag(m, m - QtCore.QPoint(60, 0))
+        assert wait_until(app, lambda: area()["start"] < moved["start"], 10_000), area()
+        assert area()["end"] - area()["start"] == moved["end"] - moved["start"]
+        # a double-click spans what the ruler shows
+        r = canvas.work_area_rect(area()["start"], area()["end"])
+        QtTest.QTest.mouseDClick(canvas, btn, pos=QtCore.QPoint(int(r.center().x()), mid_y))
+        assert wait_until(app, lambda: area()["start"] == 0, 10_000), area()
+        # hidden again from the menu
+        menu = canvas.display_menu()
+        toggle = next(a for a in menu.actions() if a.objectName() == "timeline.settings.workAreaBar")
+        assert toggle.isChecked()
+        toggle.trigger()
+        assert wait_until(app, lambda: area() is None, 10_000)
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_history_panel_menu_deletes_redoable_and_clears(app, tmp_path: Path, monkeypatch):
+    """upstream #3075: the History panel menu's Delete Redoable Actions (OK first; Cancel keeps
+    them) and Clear History; neither changes the project."""
+    from cfa4_qt import dock_commands
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.show()
+    engine.start()
+
+    def rows() -> list[str]:
+        return [win.history.list.item(i).text() for i in range(win.history.list.count())]
+
+    def action(name: str):
+        menu = dock_commands.panel_menu(win, "History")
+        return next(a for a in menu.actions() if a.objectName() == f"panel.menu.History.{name}")
+
+    answers: list = []
+    monkeypatch.setattr(QtWidgets.QMessageBox, "exec", lambda _box: answers.pop(0))
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        for t in (1.0, 2.0, 3.0):
+            win.execute("markers.add", {"seconds": t})
+        assert wait_until(app, lambda: len(rows()) >= 4, 10_000), rows()
+        steps = len(rows())
+        win.execute("edit.undo", {})
+        win.execute("edit.undo", {})
+        assert wait_until(app, lambda: action("deleteRedoable").isEnabled(), 10_000)
+        markers = len((win.sequence or {}).get("markers") or [])
+        # Cancel keeps the redo steps; OK deletes them, the project stays as it is
+        answers.append(QtWidgets.QMessageBox.StandardButton.Cancel)
+        action("deleteRedoable").trigger()
+        wait_until(app, lambda: False, 300)
+        assert len(rows()) == steps and win.command_enabled("history.deleteRedoable")
+        answers.append(QtWidgets.QMessageBox.StandardButton.Ok)
+        action("deleteRedoable").trigger()
+        assert wait_until(app, lambda: len(rows()) == steps - 2 and not win.command_enabled("history.deleteRedoable"), 10_000), rows()
+        assert len((win.sequence or {}).get("markers") or []) == markers
+        # Clear History leaves only Open
+        action("clear").trigger()
+        assert wait_until(app, lambda: rows() == [rows()[0]] and not win.command_enabled("history.clear"), 10_000), rows()
+        assert len((win.sequence or {}).get("markers") or []) == markers
+        assert not answers
     finally:
         win._quit_confirmed = True
         win.close()
