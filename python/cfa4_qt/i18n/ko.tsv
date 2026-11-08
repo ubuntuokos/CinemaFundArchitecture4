@@ -437,3 +437,18 @@
 	The spreadsheet {file} has not changed since the credits were placed.	스프레드시트 {file}은(는) 크레딧을 배치한 이후 변경되지 않았습니다.
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	크레딧을 배치한 이후 {file}에 변경이 {n}건 있습니다. 원하지 않는 항목은 체크를 해제하세요.
 	{n} layers were edited by hand on the pages.	페이지에서 레이어 {n}개를 수동으로 편집했습니다.
+	A line crosses the frame in {seconds} s; at least 6 s reads well	한 줄이 화면을 가로지르는 데 {seconds}초가 걸립니다. 읽기 편하려면 6초 이상이 좋습니다
+	Checks and warnings	검사 및 경고
+	Checks: {errors} errors, {warnings} warnings	검사: 오류 {errors}개, 경고 {warnings}개
+	Page {page}: {message}	{page}페이지: {message}
+	The card holds for only {seconds} s after its fades	페이드 이후 카드가 {seconds}초만 유지됩니다
+	The font “{font}” has no “{chars}”; another font draws them	글꼴 “{font}”에 “{chars}” 문자가 없습니다. 다른 글꼴로 표시됩니다
+	The font “{font}” is not installed; another font is used	글꼴 “{font}”이(가) 설치되어 있지 않습니다. 다른 글꼴이 사용됩니다
+	This page starts {seconds} s before the previous one ends	이 페이지는 이전 페이지가 끝나기 {seconds}초 전에 시작됩니다
+	{more} more of the same	같은 항목 {more}개 더
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}”이(가) 픽셀의 {percent} %로 표시됩니다. 흐릿하게 보입니다
+	“{name}” appears twice in the same block	“{name}”이(가) 같은 블록에 두 번 나타납니다
+	“{name}” is written as “{other}” in row {otherRow}	“{name}”이(가) {otherRow}행에는 “{other}”(으)로 적혀 있습니다
+	“{text}” is outside the title-safe area	“{text}”이(가) 타이틀 세이프 영역을 벗어났습니다
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”이(가) 검은색 위에서 너무 어둡습니다(대비 {ratio}:1, 최소 4.5:1 필요)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}”의 높이는 {px} px입니다. 24 px 이상이면 읽기 좋습니다

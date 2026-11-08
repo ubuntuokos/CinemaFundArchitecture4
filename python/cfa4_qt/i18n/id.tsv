@@ -437,3 +437,18 @@
 	The spreadsheet {file} has not changed since the credits were placed.	Spreadsheet {file} tidak berubah sejak kredit ditempatkan.
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} perubahan di {file} sejak kredit ditempatkan. Hapus centang pada yang tidak diinginkan.
 	{n} layers were edited by hand on the pages.	{n} layer diedit manual pada halaman.
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Satu baris melintasi bingkai dalam {seconds} s; minimal 6 s nyaman dibaca
+	Checks and warnings	Pemeriksaan dan peringatan
+	Checks: {errors} errors, {warnings} warnings	Pemeriksaan: {errors} kesalahan, {warnings} peringatan
+	Page {page}: {message}	Halaman {page}: {message}
+	The card holds for only {seconds} s after its fades	Kartu hanya bertahan {seconds} s setelah fade-nya
+	The font “{font}” has no “{chars}”; another font draws them	Font “{font}” tidak memiliki “{chars}”; font lain yang menggambarnya
+	The font “{font}” is not installed; another font is used	Font “{font}” belum terpasang; font lain digunakan
+	This page starts {seconds} s before the previous one ends	Halaman ini mulai {seconds} s sebelum halaman sebelumnya berakhir
+	{more} more of the same	{more} lagi yang serupa
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” ditampilkan pada {percent} % pikselnya; akan tampak buram
+	“{name}” appears twice in the same block	“{name}” muncul dua kali dalam blok yang sama
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” ditulis “{other}” di baris {otherRow}
+	“{text}” is outside the title-safe area	“{text}” berada di luar area aman judul
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” terlalu gelap di atas hitam (kontras {ratio}:1; minimal 4,5:1 diperlukan)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” setinggi {px} px; 24 px atau lebih nyaman dibaca

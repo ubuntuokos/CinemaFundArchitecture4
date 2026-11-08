@@ -438,3 +438,18 @@
 	The spreadsheet {file} has not changed since the credits were placed.	A planilha {file} não mudou desde que os créditos foram colocados.
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} alterações em {file} desde que os créditos foram colocados. Desmarque o que você não quer.
 	{n} layers were edited by hand on the pages.	{n} camadas foram editadas manualmente nas páginas.
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Uma linha atravessa o quadro em {seconds} s; a partir de 6 s a leitura fica boa
+	Checks and warnings	Verificações e avisos
+	Checks: {errors} errors, {warnings} warnings	Verificações: {errors} erros, {warnings} avisos
+	Page {page}: {message}	Página {page}: {message}
+	The card holds for only {seconds} s after its fades	A cartela fica parada por apenas {seconds} s após os fades
+	The font “{font}” has no “{chars}”; another font draws them	A fonte “{font}” não tem “{chars}”; outra fonte os desenha
+	The font “{font}” is not installed; another font is used	A fonte “{font}” não está instalada; outra fonte é usada
+	This page starts {seconds} s before the previous one ends	Esta página começa {seconds} s antes do fim da anterior
+	{more} more of the same	mais {more} iguais
+	“{file}” is shown at {percent} % of its pixels; it will look soft	“{file}” é exibido a {percent} % dos seus pixels; ficará borrado
+	“{name}” appears twice in the same block	“{name}” aparece duas vezes no mesmo bloco
+	“{name}” is written as “{other}” in row {otherRow}	“{name}” está escrito como “{other}” na linha {otherRow}
+	“{text}” is outside the title-safe area	“{text}” está fora da área segura de título
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” está escuro demais sobre preto (contraste {ratio}:1; é preciso pelo menos 4,5:1)
+	“{text}” is {px} px high; 24 px or more reads well	“{text}” tem {px} px de altura; a partir de 24 px fica legível

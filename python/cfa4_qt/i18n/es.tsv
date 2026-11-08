@@ -437,3 +437,18 @@
 	The spreadsheet {file} has not changed since the credits were placed.	La hoja de cálculo {file} no ha cambiado desde que se colocaron los créditos.
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} cambios en {file} desde que se colocaron los créditos. Desmarque lo que no desee.
 	{n} layers were edited by hand on the pages.	{n} capas se editaron a mano en las páginas.
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Una línea cruza el encuadre en {seconds} s; con al menos 6 s se lee bien
+	Checks and warnings	Comprobaciones y advertencias
+	Checks: {errors} errors, {warnings} warnings	Comprobación: {errors} errores, {warnings} advertencias
+	Page {page}: {message}	Página {page}: {message}
+	The card holds for only {seconds} s after its fades	La tarjeta se mantiene solo {seconds} s después de sus fundidos
+	The font “{font}” has no “{chars}”; another font draws them	La fuente «{font}» no tiene «{chars}»; otra fuente los dibuja
+	The font “{font}” is not installed; another font is used	La fuente «{font}» no está instalada; se usa otra fuente
+	This page starts {seconds} s before the previous one ends	Esta página empieza {seconds} s antes de que termine la anterior
+	{more} more of the same	{more} más del mismo tipo
+	“{file}” is shown at {percent} % of its pixels; it will look soft	«{file}» se muestra al {percent} % de sus píxeles; se verá borroso
+	“{name}” appears twice in the same block	«{name}» aparece dos veces en el mismo bloque
+	“{name}” is written as “{other}” in row {otherRow}	«{name}» está escrito como «{other}» en la fila {otherRow}
+	“{text}” is outside the title-safe area	«{text}» está fuera de la zona segura de títulos
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	«{text}» es demasiado oscuro sobre negro (contraste {ratio}:1; se necesita al menos 4.5:1)
+	“{text}” is {px} px high; 24 px or more reads well	«{text}» mide {px} px de alto; con 24 px o más se lee bien

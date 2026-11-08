@@ -437,3 +437,18 @@
 	The spreadsheet {file} has not changed since the credits were placed.	Le tableur {file} n'a pas changé depuis le placement du générique.
 	{n} changes in {file} since the credits were placed. Untick what you do not want.	{n} modifications dans {file} depuis le placement du générique. Décochez ce que vous ne souhaitez pas.
 	{n} layers were edited by hand on the pages.	{n} calques ont été modifiés à la main sur les pages.
+	A line crosses the frame in {seconds} s; at least 6 s reads well	Une ligne traverse l'image en {seconds} s ; au moins 6 s se lisent bien
+	Checks and warnings	Vérifications et avertissements
+	Checks: {errors} errors, {warnings} warnings	Vérification : {errors} erreurs, {warnings} avertissements
+	Page {page}: {message}	Page {page} : {message}
+	The card holds for only {seconds} s after its fades	La carte ne reste que {seconds} s après ses fondus
+	The font “{font}” has no “{chars}”; another font draws them	La police « {font} » n'a pas « {chars} » ; une autre police les affiche
+	The font “{font}” is not installed; another font is used	La police « {font} » n'est pas installée ; une autre police est utilisée
+	This page starts {seconds} s before the previous one ends	Cette page commence {seconds} s avant la fin de la précédente
+	{more} more of the same	{more} autres identiques
+	“{file}” is shown at {percent} % of its pixels; it will look soft	« {file} » est affiché à {percent} % de ses pixels ; il paraîtra flou
+	“{name}” appears twice in the same block	« {name} » apparaît deux fois dans le même bloc
+	“{name}” is written as “{other}” in row {otherRow}	« {name} » est écrit « {other} » à la ligne {otherRow}
+	“{text}” is outside the title-safe area	« {text} » est en dehors de la zone de sécurité des titres
+	“{text}” is too dark on black (contrast {ratio}:1; at least 4.5:1 is needed)	« {text} » est trop sombre sur noir (contraste {ratio}:1 ; au moins 4.5:1 requis)
+	“{text}” is {px} px high; 24 px or more reads well	« {text} » fait {px} px de haut ; à partir de 24 px, la lecture est confortable
