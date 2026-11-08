@@ -4060,7 +4060,8 @@ def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_pa
         dialog.findChild(QtWidgets.QPushButton, "transitionDuration.ok").click()
         assert wait_until(app, lambda: transition()[1]["duration"] == 8 * view.duration.frame, 10_000)
 
-        # a click on empty space lets go of it
+        # a click on empty space lets go of it (the top video track, scrolled into view)
+        canvas.set_v_scroll(canvas.max_v_scroll)
         QtTest.QTest.mouseClick(canvas, left, nomod, QtCore.QPoint(canvas.width() - 5, canvas.rows[0].top + 5))
         assert wait_until(app, lambda: not win.sequence.get("transitionSelection"), 10_000)
         assert wait_until(app, lambda: not view.isVisible() and ec.title.isVisible(), 10_000)
@@ -4323,38 +4324,50 @@ def test_every_track_is_reachable_in_a_short_timeline(app, tmp_path: Path):
         assert wait_until(app, lambda: win.sequence is not None, 60_000)
         panel = win.timeline
         canvas = panel.canvas
-        canvas.setFixedHeight(200)  # short, like the default dock
+        canvas.setFixedHeight(300)  # short, like the default dock
         wait_until(app, lambda: False, 200)
         names = [r.name for r in canvas.rows]
         assert names[-3:] == ["Audio 1", "Audio 2", "Audio 3"], names
+        aa = canvas.audio_area()
         last = canvas.rows[-1]
-        assert last.top + last.height > canvas.height(), "the demo must not fit, or this test proves nothing"
-        assert panel.vscroll.isVisible() and panel.vscroll.maximum() == canvas.max_scroll_y() > 0
-        panel.vscroll.setValue(panel.vscroll.maximum())
+        assert last.top + last.height > aa.bottom() + 1, "the demo must not fit, or this test proves nothing"
+        bar = panel.vscroll_audio
+        assert bar.isVisible() and bar.maximum() == canvas.max_a_scroll > 0
+        bar.setValue(bar.maximum())
         wait_until(app, lambda: False, 100)
         last = canvas.rows[-1]
-        assert last.top + last.height <= canvas.height(), (last.top, canvas.height())
-        # the music clip on Audio 2 can now be hit, and nothing is hit under the ruler
+        assert last.top + last.height <= aa.bottom() + 1, (last.top, aa.bottom())
+        # the music clip on Audio 2 can now be hit, and nothing is hit under the ruler or the divider
         a2 = next(r for r in canvas.rows if r.name == "Audio 2")
         clip = a2.track["items"][0]
         rect = canvas.clip_rect(a2, clip)
         row, hit_clip, _edge = canvas.hit(rect.center().toPoint())
         assert row is a2 and hit_clip is clip
         assert canvas.row_at(5) is None
-        # Shift+wheel and the wheel over the track headers scroll vertically too
-        panel.vscroll.setValue(0)
-        ev = QtGui.QWheelEvent(
-            QtCore.QPointF(20, 100), QtCore.QPointF(20, 100), QtCore.QPoint(0, 0), QtCore.QPoint(0, -240),
-            QtCore.Qt.MouseButton.NoButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.Qt.ScrollPhase.NoScrollPhase, False,
-        )
-        canvas.wheelEvent(ev)
-        assert canvas.scroll_y > 0 and panel.vscroll.value() == canvas.scroll_y
-        # a tall panel shows everything and hides the bar
+        assert canvas.row_at(canvas.divider_rect().center().y()) is None
+        # Shift+wheel and the wheel over the track headers scroll the area under the pointer
+        bar.setValue(0)
+        y = aa.top() + 10
+
+        def wheel(y: int, dy: int) -> None:
+            canvas.wheelEvent(QtGui.QWheelEvent(
+                QtCore.QPointF(20, y), QtCore.QPointF(20, y), QtCore.QPoint(0, 0), QtCore.QPoint(0, dy),
+                QtCore.Qt.MouseButton.NoButton, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.Qt.ScrollPhase.NoScrollPhase, False,
+            ))
+
+        v_before = canvas.v_scroll
+        wheel(y, -240)
+        assert canvas.a_scroll > 0 and bar.value() == canvas.a_scroll and canvas.v_scroll == v_before
+        if canvas.max_v_scroll:  # the video tracks scroll on their own, above the divider
+            wheel(canvas.video_area().top() + 5, 240)
+            assert canvas.v_scroll > v_before
+            assert panel.vscroll_video.value() == canvas.max_v_scroll - canvas.v_scroll
+        # a tall panel shows everything and hides the bars
         canvas.setMinimumHeight(0)
         canvas.setMaximumHeight(16_777_215)
-        canvas.setFixedHeight(900)
+        canvas.setFixedHeight(1200)
         wait_until(app, lambda: False, 200)
-        assert canvas.scroll_y == 0 and not panel.vscroll.isVisible()
+        assert canvas.a_scroll == 0 and not bar.isVisible()
     finally:
         win._quit_confirmed = True
         win.close()
@@ -5242,7 +5255,7 @@ def test_real_engine_timeline_mix_row_as_egui(app, tmp_path: Path):
         assert mix.bottom() == canvas.height() - 1 and mix.height() == tl.MASTER_H
         assert canvas.row_at(mix.center().y()) is None
         # the tracks fit above the Mix row: the scroll range leaves it out
-        canvas.set_scroll_y(canvas.max_scroll_y())
+        canvas.set_a_scroll(canvas.max_a_scroll)
         last = canvas.rows[-1]
         assert last.top + last.height <= mix.top() + 8
         # the fader in dB, hot text, right-aligned in the header column
@@ -5577,9 +5590,9 @@ def test_real_engine_timeline_caption_track_as_egui(app, tmp_path: Path):
         assert wait_until(app, lambda: len(captions()) == 1, 10_000)
         canvas.zoom_to_fit()
         wait_until(app, lambda: False, 200)
-        # the caption row pushes the tracks down
+        # the caption row pushes the tracks down: the video area starts under it (egui's tracks_area)
         assert canvas.tracks_top() == tl.RULER_H + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
-        assert canvas.rows[0].top == top_video + tl.CAPTION_ROW_H + tl.CAPTION_DIVIDER_H
+        assert canvas.video_area().top() == canvas.tracks_top() and top_video >= tl.RULER_H
         assert canvas.row_at(tl.RULER_H + 5) is None
         cap = captions()[0]
         r = canvas.caption_block_rect(0, cap)
@@ -12020,9 +12033,13 @@ def test_real_engine_control_channel_names_timeline_parts_as_egui(app, tmp_path:
 
         fixed = {"timeline.timecode", "timeline.ruler", "timeline.tracks"}
         switches = {f"timeline.track.V1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "enabled", "resize")}
-        switches.add(f"timeline.track.V{len(win.sequence['video'])}.resizeTop")  # the top video track's outer edge
         switches |= {f"timeline.track.A1.{k}" for k in ("sourcePatch", "target", "locked", "syncLock", "muted", "solo", "voiceover", "keyframes", "resize")}
         assert wait_until(app, lambda: fixed | switches <= set(els()), 10_000), sorted((fixed | switches) - set(els()))
+        # the video area scrolled to its top shows the top track's outer edge
+        canvas.set_v_scroll(canvas.max_v_scroll)
+        top_edge = f"timeline.track.V{len(win.sequence['video'])}.resizeTop"
+        assert wait_until(app, lambda: top_edge in els(), 10_000), sorted(els())
+        canvas.set_v_scroll(0)
         e = els()
         assert e["timeline.track.A1.muted"]["label"] == "Mute Track"
         clips = [i for i in e if re.fullmatch(r"timeline\.clip\.\d+", i)]
@@ -12548,6 +12565,153 @@ def test_real_engine_edit_copy_paste_with_captions_selected(app, tmp_path: Path)
         assert wait_until(app, lambda: len(spans()) == 2, 10_000), spans()
         menu("edit.undo")
         assert wait_until(app, lambda: spans() == [(a0, a1, "hi")], 10_000), spans()
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_video_audio_divider_as_egui(app, tmp_path: Path):
+    """egui's divider between the video and the audio tracks (timeline.rs split_y / DIVIDER_H):
+    a drag moves it within 10–90 %, each area scrolls on its own (V1 sits at the bottom of the
+    video area, A1 at the top of the audio area), and the control channel names and sets it."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+    from cfa4_qt.panels import timeline as tl
+    from PySide6.QtTest import QTest
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    canvas = win.timeline.canvas
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setFixedHeight(400)
+        wait_until(app, lambda: False, 200)
+        va, aa, div = canvas.video_area(), canvas.audio_area(), canvas.divider_rect()
+        assert va.bottom() + 1 == div.top() and div.bottom() + 1 == aa.top() and div.height() == tl.DIVIDER_H
+        assert aa.bottom() + 1 == canvas.mix_rect().top()
+        v1 = next(r for r in canvas.rows if r.short == "V1")
+        a1 = next(r for r in canvas.rows if r.short == "A1")
+        assert v1.top + v1.height == va.bottom() + 1 and a1.top == aa.top()
+        assert canvas.row_at(div.center().y()) is None
+        # a drag on the divider moves it; it stops at 10 % and 90 %
+        btn = QtCore.Qt.MouseButton.LeftButton
+        x = tl.HEADER_W + 200
+        QTest.mousePress(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(x, div.center().y()))
+        QTest.mouseMove(canvas, QtCore.QPoint(x, div.center().y() + 60))
+        QTest.mouseRelease(canvas, btn, QtCore.Qt.KeyboardModifier.NoModifier, QtCore.QPoint(x, div.center().y() + 60))
+        assert canvas.split > 0.5 and abs(canvas.divider_rect().top() - (div.top() + 60)) <= 2, canvas.split
+        canvas.set_split(2.0)
+        assert canvas.split == tl.SPLIT_MAX
+        canvas.set_split(0.0)
+        assert canvas.split == tl.SPLIT_MIN
+        canvas.set_split(0.5)
+        # the control channel names the divider and reads and sets the split and the offsets
+        c = _ControlClient(app, server.port())
+        els = {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline."})["result"]}
+        assert "timeline.divider" in els, sorted(els)
+        state = c.call("ui.inspect")["result"]["timeline"]
+        assert state["split"] == 0.5 and state["vScroll"] == canvas.v_scroll and state["aScroll"] == canvas.a_scroll
+        assert c.call("ui.set", {"timeline": {"split": 0.3}})["ok"] and canvas.split == 0.3
+        assert c.call("ui.set", {"timeline": {"aScroll": 10_000, "vScroll": 10_000}})["ok"]
+        assert canvas.a_scroll == canvas.max_a_scroll and canvas.v_scroll == canvas.max_v_scroll
+        # the top video track is shown with the room for a new one above it, where a drop adds a track
+        va = canvas.video_area()
+        top = canvas.rows[0]
+        assert top.kind == "video" and top.top == va.top() + canvas.video_h
+        hit = canvas.new_track_at(va.top() + 5)
+        assert hit is not None and hit[0] == "video"
+        assert canvas.new_track_at(canvas.divider_rect().center().y()) is None
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_control_channel_names_timeline_sequence_tabs_as_egui(app, tmp_path: Path):
+    """egui's ``timeline.tab.<id>`` (dock.rs): each open sequence's tab is an element with the
+    sequence's name, and ``ui.click`` on it shows that sequence."""
+    from cfa4_qt.control import ControlServer
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    server = ControlServer(win)
+    assert server.listen(0)
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: win.timeline.tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        c = _ControlClient(app, server.port())
+
+        def els() -> dict:
+            return {e["id"]: e for e in c.call("ui.elements", {"prefix": "timeline.tab"})["result"]}
+
+        assert wait_until(app, lambda: {f"timeline.tab.{first}", f"timeline.tab.{second}", f"timeline.tab.{second}.close"} <= set(els()), 10_000), sorted(els())
+        assert els()[f"timeline.tab.{second}"]["label"] == "Second"
+        assert c.call("ui.click", {"id": f"timeline.tab.{first}"})["ok"]
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
+    finally:
+        server.close()
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_timeline_tabs_more_list_as_egui(app, tmp_path: Path):
+    """egui's » on the Timeline tab strip (dock.rs ``timeline.tabs.more``): shown only while the
+    sequence tabs don't all fit; it lists every open sequence (``timeline.tabs.list.<id>``, the
+    shown one ticked) and a pick shows that sequence."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    panel = win.timeline
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        first = win.sequence["id"]
+        win.execute("file.newSequence", {"name": "Second"})
+        assert wait_until(app, lambda: panel.tabs.count() == 2 and win.sequence["id"] != first, 10_000)
+        second = win.sequence["id"]
+        wait_until(app, lambda: False, 100)
+        assert panel.tabs_fit() and not panel.tabs_more.isVisible()
+        # many long-named sequences: the tabs overflow and » shows
+        for k in range(6):
+            win.execute("file.newSequence", {"name": f"A rather long sequence name {k}"})
+        assert wait_until(app, lambda: panel.tabs.count() == 8, 20_000)
+        assert wait_until(app, lambda: panel.tabs_more.isVisible(), 5_000), [panel.tabs.width(), panel.tabs.sizeHint()]
+        assert panel.tabs_more.objectName() == "timeline.tabs.more"
+        panel.tabs_more.click()
+        assert wait_until(app, lambda: panel.last_tabs_list is not None and panel.last_tabs_list.isVisible(), 5_000)
+        acts = {a.objectName(): a for a in panel.last_tabs_list.actions()}
+        assert len(acts) == 8 and f"timeline.tabs.list.{first}" in acts
+        active = win.sequence["id"]
+        assert acts[f"timeline.tabs.list.{active}"].isChecked()
+        assert sum(a.isChecked() for a in acts.values()) == 1
+        assert acts[f"timeline.tabs.list.{second}"].text() == "Second"
+        acts[f"timeline.tabs.list.{first}"].trigger()
+        panel.last_tabs_list.close()
+        assert wait_until(app, lambda: win.sequence["id"] == first, 10_000)
     finally:
         win._quit_confirmed = True
         win.close()
