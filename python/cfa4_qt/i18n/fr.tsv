@@ -391,3 +391,28 @@
 	transitions	transitions
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} images copiées, {reencoded} réencodées aux coupes, {rendered} rendues
 	{frames} frames are re-encoded or rendered. Continue?	{frames} images seront réencodées ou rendues. Continuer ?
+
+# Credits (python/cfa4_qt/panels/credits*.py)
+	(one table)	(un seul tableau)
+	A .ods, .xlsx or CSV credits sheet	Une feuille de générique .ods, .xlsx ou CSV
+	Built-in styles	Styles intégrés
+	Card	Carte
+	Choose a credits spreadsheet.	Choisissez un tableur de générique.
+	Credits Spreadsheet	Tableur de générique
+	Credits from a Spreadsheet	Générique depuis un tableur
+	Credits styling (*.json)	Style de générique (*.json)
+	Moment in the page	Instant dans la page
+	No preview	Aucun aperçu
+	Page	Page
+	Pictures	Images
+	Place at Playhead	Placer sur la tête de lecture
+	Placed {n} pages on the timeline.	{n} pages placées sur la timeline.
+	Placing…	Placement…
+	Reading…	Lecture…
+	Row {row}: {message}	Ligne {row} : {message}
+	Sheet	Feuille
+	Spreadsheet	Tableur
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tableurs (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Style
+	The spreadsheet's folder	Le dossier du tableur
+	Total: {time}	Total : {time}

@@ -391,3 +391,28 @@
 	transitions	Übergänge
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} Bilder kopiert, {reencoded} an Schnitten neu kodiert, {rendered} gerendert
 	{frames} frames are re-encoded or rendered. Continue?	{frames} Bilder werden neu kodiert oder gerendert. Fortfahren?
+
+# Credits (python/cfa4_qt/panels/credits*.py)
+	(one table)	(eine Tabelle)
+	A .ods, .xlsx or CSV credits sheet	Eine .ods-, .xlsx- oder CSV-Abspanntabelle
+	Built-in styles	Integrierte Stile
+	Card	Karte
+	Choose a credits spreadsheet.	Wählen Sie eine Abspanntabelle aus.
+	Credits Spreadsheet	Abspanntabelle
+	Credits from a Spreadsheet	Abspann aus einer Tabelle
+	Credits styling (*.json)	Abspannstil (*.json)
+	Moment in the page	Zeitpunkt innerhalb der Seite
+	No preview	Keine Vorschau
+	Page	Seite
+	Pictures	Bilder
+	Place at Playhead	An Abspielposition platzieren
+	Placed {n} pages on the timeline.	{n} Seiten auf der Zeitleiste platziert.
+	Placing…	Platzieren…
+	Reading…	Lesen…
+	Row {row}: {message}	Zeile {row}: {message}
+	Sheet	Blatt
+	Spreadsheet	Tabelle
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Tabellen (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Stil
+	The spreadsheet's folder	Ordner der Tabelle
+	Total: {time}	Gesamt: {time}

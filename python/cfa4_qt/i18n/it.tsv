@@ -391,3 +391,28 @@
 	transitions	transizioni
 	{copied} frames copied, {reencoded} re-encoded at cuts, {rendered} rendered	{copied} fotogrammi copiati, {reencoded} ricodificati ai tagli, {rendered} renderizzati
 	{frames} frames are re-encoded or rendered. Continue?	{frames} fotogrammi vengono ricodificati o renderizzati. Continuare?
+
+# Credits (python/cfa4_qt/panels/credits*.py)
+	(one table)	(una tabella)
+	A .ods, .xlsx or CSV credits sheet	Un foglio di titoli di coda .ods, .xlsx o CSV
+	Built-in styles	Stili integrati
+	Card	Cartello
+	Choose a credits spreadsheet.	Scegli un foglio di calcolo dei titoli di coda.
+	Credits Spreadsheet	Foglio di calcolo dei titoli di coda
+	Credits from a Spreadsheet	Titoli di coda da un foglio di calcolo
+	Credits styling (*.json)	Stile dei titoli di coda (*.json)
+	Moment in the page	Momento nella pagina
+	No preview	Nessuna anteprima
+	Page	Pagina
+	Pictures	Immagini
+	Place at Playhead	Posiziona sull'indicatore di riproduzione
+	Placed {n} pages on the timeline.	Posizionate {n} pagine sulla sequenza.
+	Placing…	Posizionamento…
+	Reading…	Lettura…
+	Row {row}: {message}	Riga {row}: {message}
+	Sheet	Foglio
+	Spreadsheet	Foglio di calcolo
+	Spreadsheets (*.ods *.xlsx *.csv *.tsv *.txt)	Fogli di calcolo (*.ods *.xlsx *.csv *.tsv *.txt)
+	Styling	Stile
+	The spreadsheet's folder	La cartella del foglio di calcolo
+	Total: {time}	Totale: {time}
