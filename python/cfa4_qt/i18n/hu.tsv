@@ -2462,3 +2462,4 @@ export.summary	Low	alacsony
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	A szekvencia kezdő-/végpontja csak 1 képkocka. A teljes szekvencia exportálásához válaszd a Teljes szekvencia lehetőséget.
 	Set Work Area Bar In Point	A munkaterület-sáv kezdőpontjának beállítása
 	Set Work Area Bar Out Point	A munkaterület-sáv végpontjának beállítása
+	Delete Clips	Klipek törlése
