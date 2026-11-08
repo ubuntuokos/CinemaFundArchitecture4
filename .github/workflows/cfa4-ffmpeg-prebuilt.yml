@@ -1,0 +1,128 @@
+name: CFA4 prebuilt FFmpeg 9.0.2 (GitHub prerelease)
+
+# Owner decision (2026-11-08): build CFA4's FFmpeg 9.0.2 once and keep it as a pinned,
+# SHA-256-verified download in a GitHub prerelease, so cloud sessions and CI jobs fetch it
+# (scripts/dev/fetch-ffmpeg-9.0.2.sh) instead of compiling it for an hour or more each time.
+#
+# What is built: the base release build of scripts/dev/build-ffmpeg-9.0.2.sh (GPL-3 or later,
+# shared libraries, never --enable-nonfree, no patent-restricted x264/x265; ADR 0005 step 4),
+# installed in /opt/cfa4/ffmpeg-9.0.2 with its licences and BUILDINFO (source URL, SHA-256 and
+# configure flags), for two hosts:
+#   - Ubuntu 26.04 (the CFA4 target; CI and packaging);
+#   - Ubuntu 24.04 (the cloud development containers).
+#
+# Publication: one asset per host plus its .sha256, uploaded to the prerelease named in
+# RELEASE_TAG. Existing assets are never replaced: a changed build gets a new RELEASE_TAG, and the
+# fetch script pins the new hashes. This is a build of unmodified upstream FFmpeg, not a CFA4
+# release; the CFA4 packages stay on RELEASE HOLD.
+
+on:
+  workflow_dispatch:
+  # Changes to this workflow are proven by running it (same-repository branches only).
+  pull_request:
+    paths:
+      - '.github/workflows/cfa4-ffmpeg-prebuilt.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfa4-ffmpeg-prebuilt
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ffmpeg-9.0.2-cfa4-1
+
+jobs:
+  build:
+    name: FFmpeg 9.0.2 release build (${{ matrix.os }})
+    if: ${{ github.repository == 'ubuntuokos/CinemaFundArchitecture4' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-26.04
+            host: ubuntu26.04
+          - os: ubuntu-24.04
+            host: ubuntu24.04
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    env:
+      ASSET: cfa4-ffmpeg-9.0.2-${{ matrix.host }}-x86_64.tar.xz
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout CFA4 repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Skip when this host's asset is already published
+        id: existing
+        run: |
+          if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fxq "$ASSET"; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$ASSET is already in $RELEASE_TAG; nothing to do (assets are never replaced)."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install build dependencies from the Ubuntu archive
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config nasm curl xz-utils zlib1g-dev \
+            libva-dev libdrm-dev libffmpeg-nvenc-dev libvpl-dev \
+            libdav1d-dev libvpx-dev libopus-dev libwebp-dev libmp3lame-dev libvulkan-dev
+      - name: Build FFmpeg 9.0.2 into /opt/cfa4/ffmpeg-9.0.2
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          sudo mkdir -p /opt/cfa4
+          sudo chown "$(id -u):$(id -g)" /opt/cfa4
+          bash scripts/dev/build-ffmpeg-9.0.2.sh
+      - name: Package, record the runtime libraries and checksum
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          prefix=/opt/cfa4/ffmpeg-9.0.2
+          test -s "$prefix/share/doc/ffmpeg/BUILDINFO"
+          {
+            echo "Built on: ${{ matrix.os }} ($(. /etc/os-release && echo "$PRETTY_NAME"))"
+            echo "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "CFA4 commit: ${TARGET_SHA}"
+            echo
+            echo "Ubuntu packages providing the libraries these binaries load:"
+            for lib in "$prefix"/lib/lib*.so.* "$prefix"/bin/ffmpeg "$prefix"/bin/ffprobe; do
+              { ldd "$lib" || true; } | awk '$3 ~ /^\// {print $3}'
+            done | sort -u | while read -r path; do
+              case "$path" in "$prefix"/*) continue ;; esac
+              { dpkg-query -S -- "$path" 2>/dev/null || true; } | cut -d: -f1 | head -n1
+            done | sort -u | sed 's/^/  /'
+          } > "$prefix/share/doc/ffmpeg/HOST"
+          cat "$prefix/share/doc/ffmpeg/HOST"
+          mkdir -p "$RUNNER_TEMP/out"
+          tar -C /opt/cfa4 --owner=0 --group=0 --numeric-owner --sort=name -cJf "$RUNNER_TEMP/out/$ASSET" ffmpeg-9.0.2
+          (cd "$RUNNER_TEMP/out" && sha256sum "$ASSET" > "$ASSET.sha256" && cat "$ASSET.sha256")
+      - name: Publish to the prerelease (never replaces an existing asset)
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            notes="$RUNNER_TEMP/notes.md"
+            cat > "$notes" <<'EOF'
+          Prebuilt **FFmpeg 9.0.2** for CFA4 development and CI. This is **not a CFA4 release**; the CFA4 packages remain on release hold.
+
+          - Built by `.github/workflows/cfa4-ffmpeg-prebuilt.yml` with `scripts/dev/build-ffmpeg-9.0.2.sh` (ADR 0005 step 4).
+          - Licence: GPL version 3 or later (`--enable-gpl --enable-version3`, never `--enable-nonfree`). No patent-restricted encoders (no x264/x265).
+          - Corresponding source: the unmodified upstream release https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz (SHA-256 `8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e`). The configure flags, the licences and the Ubuntu packages the binaries load are in `ffmpeg-9.0.2/share/doc/ffmpeg/` inside each archive.
+          - Extract into `/opt/cfa4` (the libraries carry an `/opt/cfa4/ffmpeg-9.0.2/lib` RUNPATH), or let `scripts/dev/fetch-ffmpeg-9.0.2.sh` download, verify and extract it.
+          EOF
+            gh release create "$RELEASE_TAG" --prerelease --target "$TARGET_SHA" \
+              --title "FFmpeg 9.0.2 for CFA4 development (build 1)" --notes-file "$notes" \
+              || gh release view "$RELEASE_TAG" >/dev/null
+          fi
+          for file in "$ASSET" "$ASSET.sha256"; do
+            if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$file"; then
+              echo "::error::$file already exists in $RELEASE_TAG; refusing to replace it."
+              exit 1
+            fi
+          done
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/out/$ASSET" "$RUNNER_TEMP/out/$ASSET.sha256"
+          echo "Published $ASSET to $RELEASE_TAG"
