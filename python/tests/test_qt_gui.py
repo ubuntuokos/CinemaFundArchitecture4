@@ -4113,6 +4113,26 @@ def test_real_engine_transitions_in_the_timeline_and_effect_controls(app, tmp_pa
         QtTest.QTest.mouseClick(lane, left, nomod, QtCore.QPoint(int(ruler.left() + 5), int(ruler.center().y())))
         assert wait_until(app, lambda: win.sequence["playhead"] < transition()[1]["start"], 10_000)
 
+        # its cut line, dragged: the cut and the transition move together (one roll, one undo
+        # step), the clips' In and Out points change and the sequence keeps its length (#3115)
+        def clip(cid: int) -> dict:
+            return next(c for r in canvas.rows for c in r.track.get("items") or [] if c.get("clip") == cid)
+
+        a_id, b_id = view.data["a"]["clip"], view.data["b"]["clip"]
+        a0, b0, x0, steps = dict(clip(a_id)), dict(clip(b_id)), dict(transition()[1]), history()
+        lane.repaint()
+        cut = lane.cut_rect()
+        assert cut is not None
+        drag(lane, cut.center(), cut.center() + QtCore.QPointF(30, 0))
+        assert wait_until(app, lambda: clip(b_id)["start"] != b0["start"], 10_000)
+        a1, b1, x1 = clip(a_id), clip(b_id), transition()[1]
+        moved = b1["start"] - b0["start"]
+        assert moved > 0 and moved % view.duration.frame == 0, moved
+        assert a1["start"] + a1["duration"] == b1["start"], "clip A ends at the new cut"
+        assert a1["start"] == a0["start"] and b1["start"] + b1["duration"] == b0["start"] + b0["duration"], "the sequence keeps its length"
+        assert (x1["start"], x1["duration"]) == (x0["start"] + moved, x0["duration"]), "the transition moved with the cut"
+        assert wait_until(app, lambda: history() == steps + 1, 10_000)
+
         # a double-click: Set Transition Duration
         row, x = transition()
         mid = canvas.transition_rect(row, x).center().toPoint()
