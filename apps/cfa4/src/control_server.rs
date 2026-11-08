@@ -11,7 +11,7 @@
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::Duration;
 
@@ -27,31 +27,76 @@ pub const MAX_CONNECTIONS: usize = 16;
 /// A peer that stops sending or reading must eventually give back its connection slot.
 const CONNECTION_TIMEOUT: Duration = Duration::from_secs(120);
 
-pub fn start(port: u16, ctx: egui::Context) -> Receiver<ControlRequest> {
+/// Why the control server is not serving although `--control` was given (#3436).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DisabledWhy {
+    /// `CFA4_CONTROL_TOKEN` is missing or is not 64 hex characters.
+    Token,
+    /// The port could not be bound.
+    Bind { port: u16, error: String },
+}
+
+/// `--control-input-only` was given but the control server is not serving: the session would be
+/// unreachable, so startup fails with this error and `main` exits directly — no dialog an
+/// unattended launch could not dismiss (#3436).
+#[derive(Debug)]
+pub struct ControlServerRequired(pub String);
+
+impl std::fmt::Display for ControlServerRequired {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "--control-input-only requires a running control server: {}", self.0)
+    }
+}
+
+impl std::error::Error for ControlServerRequired {}
+
+impl DisabledWhy {
+    /// The reason as one line, for `cfa4.log` and the `--control-input-only` startup error.
+    pub fn reason(&self) -> String {
+        match self {
+            Self::Token => "CFA4_CONTROL_TOKEN must contain 64 random hex characters (see docs/control-protocol.md)".into(),
+            Self::Bind { port, error } => format!("could not bind 127.0.0.1:{port}: {error}"),
+        }
+    }
+}
+
+/// Start the server for `--control`. Returns the request queue, a flag the app sets once it can
+/// answer requests (until then they are rejected with a retryable error), and — when the server
+/// is *not* running — why (#3436), for the log and the `--control-input-only` startup error.
+pub fn start(port: u16, ctx: egui::Context) -> (Receiver<ControlRequest>, Arc<AtomicBool>, Option<DisabledWhy>) {
     start_with_token(port, ctx, std::env::var("CFA4_CONTROL_TOKEN").ok())
 }
 
-fn start_with_token(port: u16, ctx: egui::Context, token: Option<String>) -> Receiver<ControlRequest> {
+fn start_with_token(port: u16, ctx: egui::Context, token: Option<String>) -> (Receiver<ControlRequest>, Arc<AtomicBool>, Option<DisabledWhy>) {
     let (tx, rx) = channel::<ControlRequest>();
     // An inherited environment variable shares the credential with the owner's bridge process
     // without exposing it in command-line arguments, logs, or a shared discovery file.
     let Some(token) = token.filter(|t| t.len() == 64 && t.bytes().all(|b| b.is_ascii_hexdigit())) else {
-        eprintln!("cfa4: control server disabled: CFA4_CONTROL_TOKEN must contain 64 random hex characters (see docs/control-protocol.md)");
-        return rx;
+        // The reason goes to the log (a desktop launch has no stderr to read; #3436) and back to
+        // the app (an input-only session cannot start without the server).
+        log::warn!("control server disabled: {}", DisabledWhy::Token.reason());
+        return (rx, Arc::new(AtomicBool::new(true)), Some(DisabledWhy::Token));
     };
-    let listener = match TcpListener::bind(("127.0.0.1", port)) {
-        Ok(l) => l,
-        Err(e) => {
-            eprintln!("cfa4: control server failed to bind 127.0.0.1:{port}: {e}");
-            return rx;
+    match TcpListener::bind(("127.0.0.1", port)) {
+        Ok(listener) => {
+            log::info!("control server listening on 127.0.0.1:{port}");
+            // Requests that arrive before the app can answer them are rejected with a retryable
+            // error instead of queued: a queued request outlives its 60 s reply wait, and a
+            // client retry would then apply the same mutation twice (#3436).
+            let ready = Arc::new(AtomicBool::new(false));
+            let loop_ready = Arc::clone(&ready);
+            std::thread::spawn(move || accept_loop(listener, tx, ctx, token, loop_ready));
+            (rx, ready, None)
         }
-    };
-    eprintln!("cfa4: control server listening on 127.0.0.1:{port}");
-    std::thread::spawn(move || accept_loop(listener, tx, ctx, token));
-    rx
+        Err(error) => {
+            let why = DisabledWhy::Bind { port, error: error.to_string() };
+            log::warn!("control server disabled: {}", why.reason());
+            (rx, Arc::new(AtomicBool::new(true)), Some(why))
+        }
+    }
 }
 
-fn accept_loop(listener: TcpListener, tx: Sender<ControlRequest>, ctx: egui::Context, token: String) {
+fn accept_loop(listener: TcpListener, tx: Sender<ControlRequest>, ctx: egui::Context, token: String, ready: Arc<AtomicBool>) {
     let open = Arc::new(AtomicUsize::new(0));
     for mut stream in listener.incoming().flatten() {
         if open.fetch_add(1, Ordering::SeqCst) >= MAX_CONNECTIONS {
@@ -62,15 +107,16 @@ fn accept_loop(listener: TcpListener, tx: Sender<ControlRequest>, ctx: egui::Con
         let tx = tx.clone();
         let ctx = ctx.clone();
         let token = token.clone();
+        let ready = Arc::clone(&ready);
         // The slot is given back when the guard drops: after `serve` returns, if it panics, or if
         // the thread can't be started (the closure, and with it the guard, is dropped).
         let slot = Slot(Arc::clone(&open));
         let spawned = std::thread::Builder::new().name("control-conn".into()).spawn(move || {
             let _slot = slot;
-            serve(stream, &tx, &ctx, &token);
+            serve(stream, &tx, &ctx, &token, ready);
         });
         if let Err(e) = spawned {
-            eprintln!("cfa4: control server could not start a connection thread: {e}");
+            log::warn!("control server could not start a connection thread: {e}");
         }
     }
 }
@@ -84,17 +130,29 @@ impl Drop for Slot {
     }
 }
 
-fn serve(stream: TcpStream, tx: &Sender<ControlRequest>, ctx: &egui::Context, token: &str) {
-    if let Err(e) = serve_with_timeout(stream, tx, ctx, token, CONNECTION_TIMEOUT) {
-        eprintln!("cfa4: could not configure control connection: {e}");
+fn serve(stream: TcpStream, tx: &Sender<ControlRequest>, ctx: &egui::Context, token: &str, ready: Arc<AtomicBool>) {
+    if let Err(e) = serve_with_timeout(stream, tx, ctx, token, CONNECTION_TIMEOUT, ready) {
+        log::warn!("could not configure control connection: {e}");
     }
 }
 
-fn serve_with_timeout(stream: TcpStream, tx: &Sender<ControlRequest>, ctx: &egui::Context, token: &str, timeout: Duration) -> std::io::Result<()> {
+fn serve_with_timeout(
+    stream: TcpStream,
+    tx: &Sender<ControlRequest>,
+    ctx: &egui::Context,
+    token: &str,
+    timeout: Duration,
+    ready: Arc<AtomicBool>,
+) -> std::io::Result<()> {
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
     let read = stream.try_clone()?;
     serve_lines(read, stream, token, |method, params| {
+        // Until the app can drain the queue, a request would outlive its 60 s reply wait and
+        // still run after startup: reject it instead, so a client retry is the only copy (#3436).
+        if !ready.load(Ordering::Relaxed) {
+            return Some(json!({"ok": false, "error": "CFA4 is still starting; send the request again"}));
+        }
         let trace = std::env::var_os("CFA4_CONTROL_TRACE").is_some();
         if trace {
             eprintln!("cfa4: control trace: received {method}");
@@ -335,7 +393,7 @@ mod tests {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let addr = listener.local_addr().unwrap();
         let (tx, _rx) = channel::<ControlRequest>();
-        std::thread::spawn(move || accept_loop(listener, tx, egui::Context::default(), TOKEN.into()));
+        std::thread::spawn(move || accept_loop(listener, tx, egui::Context::default(), TOKEN.into(), Arc::new(AtomicBool::new(true))));
         // Idle connections are accepted in order and held open.
         let held: Vec<TcpStream> = (0..16).map(|_| TcpStream::connect(addr).unwrap()).collect();
         let mut extra = TcpStream::connect(addr).unwrap();
@@ -358,7 +416,7 @@ mod tests {
             let (stream, _) = listener.accept().unwrap();
             {
                 let _slot = Slot(counted);
-                serve_with_timeout(stream, &tx, &egui::Context::default(), TOKEN, Duration::from_millis(100)).unwrap();
+                serve_with_timeout(stream, &tx, &egui::Context::default(), TOKEN, Duration::from_millis(100), Arc::new(AtomicBool::new(true))).unwrap();
             }
             done.send(()).unwrap();
         });
@@ -408,7 +466,7 @@ mod tests {
         let (tx, rx) = channel::<ControlRequest>();
         let server = std::thread::spawn(move || {
             let (stream, _) = listener.accept().unwrap();
-            serve_with_timeout(stream, &tx, &egui::Context::default(), TOKEN, Duration::from_millis(100)).unwrap();
+            serve_with_timeout(stream, &tx, &egui::Context::default(), TOKEN, Duration::from_millis(100), Arc::new(AtomicBool::new(true))).unwrap();
         });
         let mut client = TcpStream::connect(addr).unwrap();
         client.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
@@ -438,7 +496,7 @@ mod tests {
         let (tx, rx) = channel::<ControlRequest>();
         let server = std::thread::spawn(move || {
             let (stream, _) = listener.accept().unwrap();
-            serve_with_timeout(stream, &tx, &egui::Context::default(), TOKEN, Duration::from_secs(5)).unwrap();
+            serve_with_timeout(stream, &tx, &egui::Context::default(), TOKEN, Duration::from_secs(5), Arc::new(AtomicBool::new(true))).unwrap();
         });
         let mut client = TcpStream::connect(addr).unwrap();
         client.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
@@ -461,10 +519,71 @@ mod tests {
             let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
             let port = listener.local_addr().unwrap().port();
             drop(listener);
-            let rx = start_with_token(port, egui::Context::default(), token);
+            let (rx, _ready, why) = start_with_token(port, egui::Context::default(), token);
             assert!(matches!(rx.try_recv(), Err(std::sync::mpsc::TryRecvError::Disconnected)));
+            // The reason is returned (#3436) as well as logged.
+            let Some(w) = &why else { panic!("a bad token must report why") };
+            assert!(matches!(w, DisabledWhy::Token));
+            assert!(w.reason().contains("CFA4_CONTROL_TOKEN"), "{}", w.reason());
             let _still_available = TcpListener::bind(("127.0.0.1", port)).unwrap();
         }
+    }
+
+    #[test]
+    fn a_refused_bind_is_reported_and_leaves_the_listener_closed() {
+        // The port is held: the server cannot start, and the reason comes back for the log.
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (rx, _ready, why) = start_with_token(port, egui::Context::default(), Some(TOKEN.into()));
+        assert!(matches!(rx.try_recv(), Err(std::sync::mpsc::TryRecvError::Disconnected)));
+        let Some(w) = &why else { panic!("a refused bind must report why") };
+        assert!(matches!(w, DisabledWhy::Bind { .. }));
+        let reason = w.reason();
+        assert!(reason.contains("could not bind") && reason.contains(&port.to_string()), "{reason}");
+    }
+
+    #[test]
+    fn a_started_server_returns_no_notice() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        drop(listener);
+        let (_rx, _ready, why) = start_with_token(port, egui::Context::default(), Some(TOKEN.into()));
+        assert!(why.is_none());
+    }
+
+    #[test]
+    fn requests_before_ready_are_rejected_not_queued() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        drop(listener);
+        let (rx, ready, why) = start_with_token(port, egui::Context::default(), Some(TOKEN.into()));
+        assert!(why.is_none());
+        let mut c = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        c.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        // The app is still starting: the request is answered without reaching the UI queue, so a
+        // client retry cannot apply the same mutation twice (#3436).
+        writeln!(c, "{}", json!({"id": 1, "token": TOKEN, "method": "ui.inspect"})).unwrap();
+        let mut line = String::new();
+        BufReader::new(&mut c).read_line(&mut line).unwrap();
+        assert!(line.contains("still starting"), "{line}");
+        assert!(matches!(rx.try_recv(), Err(std::sync::mpsc::TryRecvError::Empty)), "{line}");
+        // Once the app is ready the same connection is served normally.
+        ready.store(true, Ordering::Relaxed);
+        writeln!(c, "{}", json!({"id": 2, "token": TOKEN, "method": "ui.inspect"})).unwrap();
+        let request = rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(request.method, "ui.inspect");
+        request.reply.send(json!({"ok": true})).unwrap();
+        let mut line = String::new();
+        BufReader::new(&mut c).read_line(&mut line).unwrap();
+        assert!(line.contains("\"id\":2"), "{line}");
+    }
+
+    #[test]
+    fn disable_reasons_name_their_cause() {
+        assert!(DisabledWhy::Token.reason().contains("CFA4_CONTROL_TOKEN"));
+        let bind = DisabledWhy::Bind { port: 9876, error: "address in use".into() };
+        let reason = bind.reason();
+        assert!(reason.contains("9876") && reason.contains("address in use"), "{reason}");
     }
 
     #[test]
@@ -505,7 +624,7 @@ mod tests {
         let (tx, rx) = channel::<ControlRequest>();
         let server = std::thread::spawn(move || {
             let (s, _) = listener.accept().unwrap();
-            serve(s, &tx, &egui::Context::default(), TOKEN);
+            serve(s, &tx, &egui::Context::default(), TOKEN, Arc::new(AtomicBool::new(true)));
         });
         let mut c = TcpStream::connect(addr).unwrap();
         c.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
@@ -525,7 +644,7 @@ mod tests {
         let (tx, rx) = channel::<ControlRequest>();
         let server = std::thread::spawn(move || {
             let (s, _) = listener.accept().unwrap();
-            serve(s, &tx, &egui::Context::default(), TOKEN);
+            serve(s, &tx, &egui::Context::default(), TOKEN, Arc::new(AtomicBool::new(true)));
         });
         let params = json!({"command": "file.saveAs", "params": {"path": "/owner/project.fcproj"}});
         let mut c = TcpStream::connect(addr).unwrap();
