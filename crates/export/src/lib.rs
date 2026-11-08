@@ -460,7 +460,8 @@ pub struct ExportSettings {
     pub sdr: bool,
     /// Keep the alpha channel in PNG, TIFF, Targa and OpenEXR sequences and ProRes 4444 / 4444 XQ
     /// QuickTime movies (straight alpha, Premiere's "Include Alpha Channel"; OpenEXR stores it
-    /// premultiplied, as the format defines). Off, every frame is flattened over black (#160).
+    /// premultiplied, as the format defines). GIF keeps binary transparency: RGBA8 alpha below
+    /// 128 becomes transparent, otherwise opaque. Off, every frame is flattened over black (#160).
     /// Other formats ignore it.
     #[serde(default)]
     pub alpha: bool,
@@ -527,6 +528,7 @@ pub struct ExportSettings {
     pub sink: Option<OutputSink>,
     /// An already-created primary output file. Internal callers use this to retain an exclusive
     /// reservation made while choosing an output name, rather than reopening that path later.
+    /// MP4 video outputs require read and write access for fast-start finalization.
     #[serde(skip)]
     pub output_file: Option<Arc<std::fs::File>>,
 }
@@ -573,7 +575,13 @@ impl Out {
             let file = file.try_clone().map_err(|e| ExportError::Io(e.to_string()))?;
             return Ok(Out::File(std::io::BufWriter::new(file)));
         }
-        let f = std::fs::File::create(path).map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
+        let f = std::fs::OpenOptions::new()
+            .read(settings.format.is_mp4_with(settings.multiplexer))
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(|e| ExportError::Io(format!("{path}: {e}")))?;
         Ok(Out::File(std::io::BufWriter::new(f)))
     }
 
@@ -615,6 +623,20 @@ impl Write for Out {
         match self {
             Out::File(w) => w.flush(),
             Out::Mem(w) => w.flush(),
+        }
+    }
+}
+
+impl std::io::Read for Out {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Out::File(w) => {
+                // Fast-start muxing reads media back to shift it in place. Commit buffered
+                // writes before reading through the same file handle and cursor.
+                w.flush()?;
+                std::io::Read::read(w.get_mut(), buf)
+            }
+            Out::Mem(w) => std::io::Read::read(w, buf),
         }
     }
 }
@@ -2824,7 +2846,18 @@ fn export_here(project: &Arc<Project>, seq: ItemId, settings: &ExportSettings, s
                 let end = (f + batch).min(f1);
                 if let Some(enc) = gif.as_mut() {
                     let frames: Vec<Vec<u8>> = (f..end).into_par_iter().map(|fi| pipe.frame(fi, sources).0).collect();
-                    for (fi, rgba) in (f..end).zip(frames) {
+                    for (fi, mut rgba) in (f..end).zip(frames) {
+                        // GIF89a has one transparent palette index, not partial alpha. Decide
+                        // coverage before quantization and keep the straight colour of visible pixels.
+                        if settings.keeps_alpha() {
+                            for px in rgba.as_chunks_mut::<4>().0 {
+                                if px[3] < 128 {
+                                    *px = [0; 4];
+                                } else {
+                                    px[3] = 255;
+                                }
+                            }
+                        }
                         let img = image::RgbaImage::from_raw(w, h, rgba).ok_or_else(|| ExportError::Encode("frame".into()))?;
                         let delay = image::Delay::from_numer_denom_ms(u32::from(gif_delay_cs(pipe.rate, fi - f0)) * 10, 1);
                         enc.encode_frame(image::Frame::from_parts(img, 0, 0, delay)).map_err(|e| ExportError::Encode(e.to_string()))?;
