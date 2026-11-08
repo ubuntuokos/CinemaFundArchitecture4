@@ -68,7 +68,7 @@ def panel_id(title: str) -> str:
 def focused_dock(win: MainWindow) -> str | None:
     """The dock title holding keyboard focus (``Program`` for the central monitor): the dock that
     contains the focused widget, as panels can sit inside another dock (Properties shows an
-    Essential Graphics editor) or be named otherwise than their dock (``panel.Inspector``)."""
+    Essential Graphics editor) or sit deeper than the dock's own widget."""
     w = QApplication.focusWidget()
     while w is not None:
         if isinstance(w, QDockWidget):
