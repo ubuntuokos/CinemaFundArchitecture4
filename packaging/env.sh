@@ -67,6 +67,29 @@ copy_docs() {
   # The CFA4 logo and icons ship with their own (non-GPL) terms.
   if [ -f "$ROOT/assets/cfa4/LICENSE-logo.txt" ]; then cp "$ROOT/assets/cfa4/LICENSE-logo.txt" "$dest/LICENSE-logo.txt"; fi
   copy_font_licences "$dest"
+  # Every third-party Rust crate in cfa4 and cfa4-cli with the licence files it ships (#220).
+  # check-package-docs.sh sets CFA4_SKIP_THIRD_PARTY_LICENSES=1 for its build-free source check.
+  if [ "${CFA4_SKIP_THIRD_PARTY_LICENSES:-0}" != 1 ]; then
+    write_third_party_licences "$dest/THIRD-PARTY-LICENSES.txt"
+  fi
+}
+
+# Write THIRD-PARTY-LICENSES.txt from `cargo metadata` for the packaged features
+# (python/cfa4_devtools/third_party_licenses.py). Offline: the crate sources come from the build.
+write_third_party_licences() {
+  local out="$1" meta features="${CFA4_PACKAGE_FEATURES:-cfa4/gstreamer,cfa4-cli/gstreamer,cfa4/ffmpeg,cfa4-cli/ffmpeg}"
+  meta="$(mktemp)"
+  if ! (cd "$ROOT" && cargo metadata --format-version 1 --locked --offline \
+      --filter-platform x86_64-unknown-linux-gnu --features "$features") >"$meta"; then
+    rm -f "$meta"
+    echo "error: cargo metadata failed; build first so the crate sources are on disk" >&2
+    return 1
+  fi
+  if ! PYTHONPATH="$ROOT/python" python3 -m cfa4_devtools.third_party_licenses "$meta" -o "$out"; then
+    rm -f "$meta"
+    return 1
+  fi
+  rm -f "$meta"
 }
 
 # Copy each extra-fonts licence ($CFA4_FONTS_DIR/fonts/<family>/OFL.txt) to <dest>/OFL-<family>.txt.
