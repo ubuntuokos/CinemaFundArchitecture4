@@ -58,6 +58,16 @@ attribution and original copyright/licence requirements remain in force.
   copied GStreamer code, no `ugly`/`libav` plugin sets in the plan. The Rust engine stays primary and
   is always the fallback; GStreamer and FFmpeg (ADR 0005) are the exceptions to the inherited "pure
   Rust in the product" rule.
+- **Non-Rust components** (owner decision, 2026-11-07; [ADR 0001](docs/adr/0001-platform-ffi.md)
+  addendum of the same date). A component written in another language (C, C++ or other: codec
+  libraries, tools, runtimes) conflicts with CFA4's rules **only if it slows CFA4 down**
+  (playback, seek, UI responsiveness, export, start-up), as measured on the reference machine
+  ([`docs/development/reference-machine.md`](docs/development/reference-machine.md)). Step-by-step
+  implementation is allowed: large components may stay in their own language for now and are
+  rewritten in Rust over later releases. The other rules still apply to them unchanged: never crash
+  (§0), the licence rules above, the media-backend routing (`cfa4-route`), vendor neutrality, and the
+  `cfa4-restricted-extras` model for patent-encumbered components
+  ([docs/licensing.md](docs/licensing.md) §7).
 - **GPU/accelerator vendor neutrality:** features must not depend on one GPU vendor. NVIDIA paths
   (NVDEC/NVENC, CUDA) are allowed only next to an AMD/Intel path (VA-API, Vulkan, NPU where
   available) or the CPU fallback.
@@ -90,7 +100,10 @@ panic path, and fix a crash before building on top of it.
    fallback that is truly correct (never one that silently corrupts a project). An unfinished feature
    returns an "unsupported" error. The only exception is a call that is provably infallible from local
    code alone (a literal that always parses): a single-item `#[allow(clippy::expect_used)]` with the reason.
-3. **No `unsafe`** (`unsafe_code = "forbid"` for the workspace). The single exception is
+3. **No `unsafe`** (`unsafe_code = "forbid"` for the workspace). The exceptions are
+   the bindings of non-Rust components allowed by the owner decision of 2026-11-07 (CFA4 section
+   above; [ADR 0001](docs/adr/0001-platform-ffi.md) addendum), which follow the same containment
+   rules as `crates/platform`, and
    `crates/platform`, which needs `unsafe` to call the operating system's media APIs (hardware
    video decoding through VideoToolbox, Media Foundation / Direct3D 11, VA-API and NVDEC; hardware encoding) and does nothing else. It
    uses `unsafe_code = "deny"` with `#[allow(unsafe_code)]` only on its FFI modules, a
