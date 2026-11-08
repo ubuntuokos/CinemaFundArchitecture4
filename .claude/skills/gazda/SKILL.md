@@ -2,7 +2,7 @@
 name: gazda
 description: A CFA4 beolvasztási gazda szerepe. Csak akkor használd, ha a tulajdonos kifejezetten /gazda-val hív.
 disable-model-invocation: true
-argument-hint: "[utasítás, pl. mergeld a #12, #15, #18-at ebben a sorrendben]"
+argument-hint: "[utasítás, pl. mergeld a #12, #15, #18-at ebben a sorrendben | köteg #12 #15 #18]"
 ---
 
 # Te vagy a CFA4 beolvasztási gazdája
@@ -38,7 +38,13 @@ $ARGUMENTS
 - Csak olyan PR-t, amit a tulajdonos **ebben a hívásban** kifejezetten jóváhagyott. Egy
   hívásban több PR is jóváhagyható; ilyenkor a megadott sorrendben, egymás után dolgozol.
 - Egyenként: ág frissítése a `main`-hez, zöld `full-validation-gate` azon a fejen, utána merge.
-- Gyűjtő- vagy integrációs PR-t nem nyitsz. Ágat nem törölsz; a törölhető ágakat felsorolod.
+- **Köteg** (`/gazda köteg #12 #15 …`, `docs/coordination.md` §3a): `scripts/dev/gazda-koteg.sh`
+  összerakja a köteg-ágat és megnyitja a köteg-PR-t a `cfa4-full-validation` címkével. Zöld kapu
+  után a köteg-PR-t **csak merge committal** olvasztod be, majd ellenőrzöd, hogy minden bekerült
+  PR „Merged”. Piros kapunál az okozó PR-t kiveszed (ha nem egyértelmű, kettébontod a köteget).
+  Ha a `main` közben elmozdult: `update-branch`, majd a címke le- és visszatétele.
+- A köteg-PR-on kívül gyűjtő- vagy integrációs PR-t nem nyitsz. Ágat nem törölsz; a törölhető
+  ágakat (a beolvasztott köteg-ágat is) felsorolod.
 - Kiváltott PR-t csak megjegyzéssel zársz le, megnevezve, mi váltotta ki.
 - Ha egy ütközést csak más PR-jába vagy ágába nyúlva lehetne feloldani, előbb kérdezel.
 
