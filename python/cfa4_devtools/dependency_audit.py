@@ -19,6 +19,16 @@ APPROVED_GIT: dict[str, str] = {}
 VENDORED = {
     "cfa4-docpath": "vendor/cfa4-libs/docpath",
     "cfa4-ui": "vendor/cfa4-libs/ui",
+    # the FFmpeg bindings of cfa4-ffmpeg (ADR 0005), scripts/dev/vendor_ffmpeg_bindings.py
+    "rusty_ffmpeg": "vendor/ffmpeg-bindings/rusty_ffmpeg",
+    "rsmpeg": "vendor/ffmpeg-bindings/rsmpeg",
+    "rsmedia": "vendor/ffmpeg-bindings/rsmedia",
+}
+# The upstream repository each vendored snapshot must name; UPSTREAM unless listed here.
+VENDORED_UPSTREAM = {
+    "rusty_ffmpeg": "https://github.com/phial3/rusty_ffmpeg",
+    "rsmpeg": "https://github.com/phial3/rsmpeg",
+    "rsmedia": "https://github.com/dromara/rsmedia",
 }
 
 
@@ -100,7 +110,7 @@ def verify_vendored_files(root: Path) -> list[str]:
         except (OSError, json.JSONDecodeError) as exc:
             errors.append(f"{package}: missing or invalid SOURCE_MANIFEST.json: {exc}")
             continue
-        if ledger.get("source_repository") != UPSTREAM:
+        if ledger.get("source_repository") != VENDORED_UPSTREAM.get(package, UPSTREAM):
             errors.append(f"{package}: upstream source URL does not match")
         sha = ledger.get("source_commit", "")
         if not isinstance(sha, str) or len(sha) != 40 or not all(c in "0123456789abcdef" for c in sha):
@@ -141,7 +151,8 @@ def audit_repository(root: Path) -> list[str]:
     lock = tomllib.loads((root / "Cargo.lock").read_text(encoding="utf-8"))
     errors = validate_snapshot(manifest, lock)
     errors.extend(verify_vendored_files(root))
-    for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml", "vendor/cfa4-libs/*/Cargo.toml"):
+    for pattern in ("apps/*/Cargo.toml", "crates/*/Cargo.toml", "xtask/Cargo.toml", "vendor/cfa4-libs/*/Cargo.toml",
+                    "vendor/ffmpeg-bindings/*/Cargo.toml"):
         for path in sorted(root.glob(pattern)):
             data = tomllib.loads(path.read_text(encoding="utf-8"))
             for location, _ in git_locations(data):
@@ -156,7 +167,7 @@ def main() -> int:
         for error in errors:
             print(f"F1-02 dependency audit: {error}", file=sys.stderr)
         return 1
-    print("F1-02 dependency audit passed: both vendored source trees validated; no Cargo Git sources remain.")
+    print(f"F1-02 dependency audit passed: {len(VENDORED)} vendored source trees validated; no Cargo Git sources remain.")
     print("This does not certify registry licenses, Qt/PySide6 or redistribution rights.")
     return 0
 

@@ -38,6 +38,7 @@ cargo run --release -p cfa4-cli -- mcp --demo    # headless MCP server on stdio
 | Variable | Effect |
 |---|---|
 | `CFA4_CONTROL_PORT` | Same as `--control <port>` |
+| `CFA4_CONTROL_TOKEN` | Required for `--control`: 64 random hex characters, inherited by authorized clients; [setup](control-protocol.md) |
 | `CFA4_CPU_COMPOSITE=1` | Disables the GPU compositor |
 | `CFA4_DEV_DESKTOP_ENTRY=1` | Linux, opt-in: a run from a source tree installs a user-level desktop entry (and the icons from `assets/app-icon`) so the taskbar shows the CFA4 icon. Nothing is written without it; packaged runs never write one |
 | `CFA4_DATA_DIR` | Same as `--data-dir <dir>`: auto-save, crash recovery, settings and logs |
