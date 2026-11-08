@@ -142,6 +142,14 @@ class TimecodePanel(QWidget):
             y += rh + 8
         return out
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``timecode.row.<i>``: each row's value, with what it reads."""
+        out = []
+        for i, (r, size) in enumerate(self.row_rects()):
+            v = self.values[i] if i < len(self.values) else {"value": "--:--:--:--"}
+            out.append((f"timecode.row.{i}", QRectF(r.left(), r.top(), r.width(), size * 1.25), str(v.get("value"))))
+        return out
+
     def caption(self, v: dict[str, Any]) -> str:
         src, mode, name = tr(str(v.get("source") or "")), tr(str(v.get("mode") or "")), v.get("name")
         if name is None:

@@ -78,7 +78,7 @@ fn no_smart_cut_is_allowed_before_it_is_implemented() {
     }
     let d = r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT);
     let blocked: Vec<Operation> = d.steps.iter().filter(|s| !s.allowed).map(|s| s.key.operation).collect();
-    assert_eq!(blocked, vec![Operation::GopIndex, Operation::PacketCopy]);
+    assert_eq!(blocked, vec![Operation::PacketCopy]);
 }
 
 #[test]
@@ -87,10 +87,12 @@ fn smart_cut_needs_every_step() {
     let index = Key::codec(Operation::GopIndex, Codec::H264);
     let copy = Key::in_container(Operation::PacketCopy, Codec::H264, Container::Mp4);
     let ok = |key| Entry { key, backend: Backend::Native, level: SupportLevel::Supported, evidence: "test".into(), limits: None, routes: Vec::new() };
-    r.insert(ok(index)).unwrap();
     assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
     r.insert(ok(copy)).unwrap();
     assert!(r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
+    // every step counts: without the GOP index there is no Smart Cut
+    r.insert(Entry { level: SupportLevel::Unsupported, ..ok(index) }).unwrap();
+    assert!(!r.smart_cut(Codec::H264, Container::Mp4, Container::Mp4, STRICT).allowed);
     // MPEG-2 from a program stream cannot be written into MP4: no MPEG-2 sample entry
     let mut m = Registry::native();
     m.insert(ok(Key::codec(Operation::GopIndex, Codec::Mpeg2Video))).unwrap();
@@ -272,10 +274,10 @@ fn backend_preference_comes_from_the_routing_table() {
         }
     }
     let names = |d: &Decision| d.reasons.iter().map(|s| s.split(':').next().unwrap_or("").to_string()).collect::<Vec<_>>();
-    // shipped codec_encode order: nvenc, vaapi, ffmpeg, gstreamer-va, software
+    // shipped codec_encode order: nvenc, vaapi, software, ffmpeg, gstreamer-va (own engine first, ADR 0005)
     let d = r.decide(encode, STRICT);
     assert_eq!(d.backend, Some(Backend::Platform), "a hardware encoder the table puts first wins over our software one");
-    assert_eq!(names(&d), vec!["Platform", "Ffmpeg", "Gstreamer", "Native"]);
+    assert_eq!(names(&d), vec!["Platform", "Native", "Ffmpeg", "Gstreamer"]);
     // no routing family for demuxing: our own code first
     assert_eq!(r.decide(demux, STRICT).backend, Some(Backend::Native));
 

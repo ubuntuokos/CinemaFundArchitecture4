@@ -64,6 +64,7 @@ from ..timecode import TICKS_PER_SECOND, format_timecode
 from .effects import dropped_effect
 from .fx_editor import HAS_EDITOR
 
+TEXT_LAYER = "graphic_text"  # cfa4_project::graphic::TEXT_LAYER
 # a pause longer than this starts a new undo step for the next change of the same value
 GESTURE_GAP_MS = 800
 SEND_DELAY_MS = 120
@@ -316,7 +317,7 @@ class ParamRow(LinedRow):
     keyframes are drawn in the panel's lane, on this row's line."""
 
     def __init__(self, panel: EffectControlsPanel, parent: QWidget, clip: int, effect: int, info: dict[str, Any],
-                 name: str, mask: int | None = None) -> None:
+                 name: str, mask: int | None = None, effect_id: str = "") -> None:
         super().__init__(parent)
         self.panel = panel
         self.clip = clip
@@ -362,7 +363,16 @@ class ParamRow(LinedRow):
         unit = str(info.get("unit") or "")
         self.editor: QWidget
         self.spins: list[HotSpin] = []
-        if self.kind in ("float", "angle"):
+        # a text layer's Font and Font Style pick from the installed families and their styles, as
+        # Essential Graphics' drop-downs do (upstream #3588)
+        self.font_picker = effect_id == TEXT_LAYER and self.kind == "text" and self.id in ("font", "font_style")
+        if self.font_picker:
+            picker = QComboBox(self)
+            picker.setMaxVisibleItems(20)
+            picker.activated.connect(lambda _i: picker.currentText() != str(self.info.get("value") or "")
+                                     and self.panel.set_param(self, picker.currentText(), immediate=True))
+            self.editor = picker
+        elif self.kind in ("float", "angle"):
             spin = self._spin(self, info, unit) if self.kind == "float" else self._spin(
                 self, {"speed": 0.5, "decimals": 1, "min": -36000, "max": 36000}, "°")
             self.spins = [spin]
@@ -526,6 +536,33 @@ class ParamRow(LinedRow):
             self.prev_key.setEnabled(any(t < ph for t in times))
             self.next_key.setEnabled(any(t > ph for t in times))
 
+    def fill_fonts(self, current: str) -> None:
+        """The Font (installed families) or Font Style (the shown family's styles, then Bold,
+        Italic and Bold Italic, which faux styles cover) choices, ``current`` selected. A value not
+        installed stays shown, first."""
+        w = self.editor
+        if not isinstance(w, QComboBox) or w.view().isVisible():
+            return
+        if self.id == "font":
+            options = self.panel.font_families()
+        else:
+            family = ""
+            for e in self.snapshot.get("effects") or []:
+                if isinstance(e, dict) and as_int(e.get("index")) == self.effect:
+                    family = next((str(p.get("value") or "") for p in e.get("params") or [] if isinstance(p, dict) and p.get("id") == "font"), "")
+            options = []
+            for st in [*self.panel.font_styles(family), "Bold", "Italic", "Bold Italic"]:
+                if st not in options:
+                    options.append(st)
+        if current and current not in options:
+            options = [current, *options]
+        w.blockSignals(True)
+        if [w.itemText(i) for i in range(w.count())] != options:
+            w.clear()
+            w.addItems(options)
+        w.setCurrentText(current)
+        w.blockSignals(False)
+
     def _set_editor(self, value: Any) -> None:
         w = self.editor
         w.blockSignals(True)
@@ -543,6 +580,8 @@ class ParamRow(LinedRow):
                     s.setToolTip(tr("automatic") if v is None else "")
             elif isinstance(w, QCheckBox):
                 w.setChecked(bool(value))
+            elif self.font_picker and isinstance(w, QComboBox):
+                self.fill_fonts(str(value or ""))
             elif isinstance(w, QComboBox):
                 w.setCurrentIndex(max(0, int(finite(value))))
             elif isinstance(w, QPushButton):
@@ -1570,6 +1609,8 @@ class EffectControlsPanel(QWidget):
         self.clip: dict[str, Any] | None = None
         self.clip_id: int | None = None
         self.clips: list[dict[str, Any]] = []
+        self.fonts: list[dict[str, Any]] = []  # `fonts.list`, asked once a text layer shows its Font
+        self._fonts_asked = False
         self._shape: tuple[Any, ...] | None = None
         # the shown clip's rows by (effect index, param id); the linked audio's in `linked_rows`
         self.rows: dict[tuple[int, str], ParamRow] = {}
@@ -1785,6 +1826,32 @@ class EffectControlsPanel(QWidget):
             on_error=lambda m: self._apply_dropped(effect, rest, m),
         )
 
+    # ----- the installed fonts, for a text layer's Font / Font Style (upstream #3588) -----
+    def font_families(self) -> list[str]:
+        self._load_fonts()
+        return sorted({str(f.get("family")) for f in self.fonts if f.get("family") and not str(f.get("family")).startswith(".")},
+                      key=str.casefold)
+
+    def font_styles(self, family: str) -> list[str]:
+        self._load_fonts()
+        for f in self.fonts:
+            if str(f.get("family") or "").lower() == family.lower():
+                return [str(s) for s in f.get("styles") or []]
+        return []
+
+    def _load_fonts(self) -> None:
+        if self._fonts_asked or self.engine is None or not getattr(self.engine, "running", False):
+            return
+        self._fonts_asked = True
+
+        def got(r: Any, _b: Any) -> None:
+            self.fonts = [f for f in r or [] if isinstance(f, dict)]
+            for row in [*self.rows.values(), *self.linked_rows.values()]:
+                if row.font_picker:
+                    row.fill_fonts(str(row.info.get("value") or ""))
+
+        self.engine.execute("fonts.list", {}, on_reply=got, on_error=lambda _m: setattr(self, "_fonts_asked", False))
+
     def refresh(self, selection: list[Any] | None, transitions: list[Any] | None = None) -> None:
         """Ask the engine about the selected clip (a video one first, as egui) and the audio
         linked to it; with no clip selected, about the selected transition (or clear the panel)."""
@@ -1950,7 +2017,8 @@ class EffectControlsPanel(QWidget):
                 params: list[ParamRow] = []
                 for info in e.get("params") or []:
                     if isinstance(info, dict):
-                        row = ParamRow(self, self.column, cid, index, info, f"{prefix}.{index}.{info.get('id')}")
+                        row = ParamRow(self, self.column, cid, index, info, f"{prefix}.{index}.{info.get('id')}",
+                                       effect_id=str(e.get("effect") or ""))
                         rows[(index, str(info.get("id")))] = row
                         params.append(row)
                         self._add(row)
