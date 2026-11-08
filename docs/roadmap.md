@@ -85,7 +85,7 @@ finish but does not expand. The UI for all of them is built in the Qt 6 GUI only
 
 | Order | Plan | Phases | Gate |
 |---|---|---|---|
-| 1 | [CFA4-SCE-001 v1.5](plans/CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md): Strict / Compatible Stream Copy, native MPEG-TS/M2TS muxer, GOP Smart Cut, Smart Render | P0–P7 (§22), mapped to WP-00–WP-10 of the R1 plan | qt-parity.md all ✅ |
+| 1 | [CFA4-SCE-001 v1.5](plans/CFA4-SCE-001-STREAM-COPY-EXPORT-2026-10-27.md): Strict / Compatible Stream Copy, native MPEG-TS/M2TS muxer, GOP Smart Cut, Smart Render | P0–P7 (§22), mapped to WP-00–WP-10 of the R1 plan. P0 (audit) done early with the owner's approval (2026-11-08, [audit](audit/SCE-001-P0-AUDIT-2026-11-08.md)) | P1–P7: qt-parity.md all ✅ |
 | 2 | [CFA4-FFMPEG-BACKEND-R1](plans/CFA4-FFMPEG-BACKEND-R1-2026-10-27.md): optional `cfa4-ffmpeg` backend (ADR 0005) | FF-00–FF-09 (§14); FF-00/FF-01 first; the binding is chosen by FF-01 | qt-parity.md all ✅; never blocks or replaces the native Smart Edit path |
 
 Detailed phase plans: [GOP Smart Cut](plans/GOP-SMART-CUT-2026-10-27.md),
@@ -103,6 +103,7 @@ the web app shell ([G20](gaps.md#g20-the-web-app-shell)).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-08 | minor | CFA4-SCE-001 P0 (audit) done before the Qt 6 gate with the owner's approval; P1–P7 still wait for the gate |
 | 2026-10-27 | minor | Scheduled CFA4-SCE-001 v1.5 and CFA4-FFMPEG-BACKEND-R1 to start after the Qt 6 GUI is complete (qt-parity.md all ✅) |
 | 2026-10-10 | minor | Alpha gate table added: six core workflows, all pass on macOS; stage stays alpha |
 | 2026-10-10 | major | Created: milestone table moved from ROADMAP.md (M5 and M9 remaining work updated), HW and L10N rows, beta milestones B1–B7, Current focus from the re-measure |
