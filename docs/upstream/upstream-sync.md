@@ -88,7 +88,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3607 | render: convert the CPU monitor frame to sRGB bytes in vectorised batches | B | átvesz | kézi port | U0-C, U0-D (a #3608-cal) | #705 | PR nyitva |
 | 0.15.0 | #3627 | fix(engine): accept time objects for timeline.place sourceIn and duration | B | átvesz | tisztán | U0-B1 | #458 | PR nyitva |
 | 0.15.0 | #3637 | Free decoder frame caches and plane pools when an export ends | B | átvesz | kézi port | U0-B2b | – | tervezett |
-| 0.15.0 | #3535 | control: say why the control server is not serving (#3436) | C | átvesz | kézi port | U0-C | – | tervezett |
+| 0.15.0 | #3535 | control: say why the control server is not serving (#3436) | C | átvesz | kézi port | U0-C | #593 | PR nyitva |
 | 0.15.0 | #3631 | Add timeline.delete alias and document headless clip removal | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.15.0 | #3402 | #3364: warn about one-frame In/Out exports | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #538 | PR nyitva |
 | 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
@@ -146,7 +146,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3281 | Report parameter and accepted value from effects.setParam | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.14.0 | #3209 | Program: drag a marquee or Shift-click to select several mask vertices, and move them together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #552 | PR nyitva |
 | 0.14.0 | #3211 | Lift and Extract put the removed range on the clipboard | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #553 | PR nyitva |
-| 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #554 | PR nyitva |
 | 0.14.0 | #3301 | Alt-drag of a clip edge trims only that side of a link | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.14.0 | #2445 | ime: an edit that ends while composing commits the marked text | D | átvesz (Qt6) | kézi port | U0-D | #557 | PR nyitva |
 | 0.14.0 | #3226 | i18n(fr): translate the 42 strings French still lacked | E | átvesz | kézi port | U0-E | – | tervezett |
@@ -281,7 +281,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3011 | meters: drop to silence right after Stop | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3039 | Timeline: the Razor tool cuts captions | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3042 | Text panel: the Captions list follows the playhead | D | átvesz (Qt6) | kézi port | U0-D | #561 | PR nyitva |
-| 0.13.0 | #3062 | Say why H.265 and AV1 are unavailable without a hardware encoder | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.13.0 | #3062 | Say why H.265 and AV1 are unavailable without a hardware encoder | D | kihagy: a CFA4-nek beépített H.265- és AV1-kódolója van (`Format::has_builtin_encoder`), a formátum sosem elérhetetlen | kézi port | – | – | lezárva |
 | 0.13.0 | #3243 | Follow-ups to #3240: alpha upload table, duplicate markers off the UI thread, cut drag over the clips | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
 | 0.13.0 | #3012 | i18n: missing translations never fail; xtask ci prints the missing list | E | átvesz | kézi port | U0-E | – | tervezett |
 | 0.13.0 | #2435 | Build: use craft-media for bitstream, isobmff and matroska | F | kihagy: külső könyvtárra átállás (D6: a javításait figyeljük) | kézi port | – | – | lezárva |
