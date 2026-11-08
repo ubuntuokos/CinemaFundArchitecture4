@@ -315,10 +315,13 @@ fn missing_or_repeated_timestamps_are_refused() {
 }
 
 #[test]
-fn nothing_is_executable_before_the_executor_exists() {
-    // the built-in registry: packet copy and boundary re-encode are not implemented (WP-04, WP-06)
+fn the_built_in_registry_runs_only_what_is_implemented() {
+    // packet copy: H.264 into MP4 / MOV only (WP-04); boundary re-encode: not yet (WP-06)
     let ix = index(stream(closed_gops(3)));
     let p = plan_smart_cut(&Registry::native(), &ix, &request(7, 14, CutMode::GopBoundary), STRICT).unwrap();
+    assert!(p.executable, "{:?}", p.blockers);
+    let ts = SmartCutRequest { source_container: Container::MpegTs, output_container: Container::MpegTs, ..request(7, 14, CutMode::GopBoundary) };
+    let p = plan_smart_cut(&Registry::native(), &ix, &ts, STRICT).unwrap();
     assert!(!p.executable);
     assert!(p.blockers.iter().any(|b| b.contains("packet-copy")), "{:?}", p.blockers);
     let p = plan_smart_cut(&Registry::native(), &ix, &request(9, 21, CutMode::FrameAccurate), STRICT).unwrap();
