@@ -53,3 +53,9 @@ A FINAL 1.1 9. pontja szerinti alkalmazási profil (AIQT-pont ↔ TC-komponens �
 átvett és kihagyott pontok indoklással). **Tervezett helye:**
 `docs/development/ai-orchestration/CFA4-AIQT-PROFILE-001.md`. Még nem készült el; az F2 fázis
 része, külön jóváhagyás után.
+
+## Altervek
+
+| Terv | TC | Állapot |
+|---|---|---|
+| [CFA4-DEV-WORKTRUNK-001](../worktrunk/README.md) – Worktrunk-alapú párhuzamos worktree-kezelés | TC-02 Workspace Coordinator | LEZÁRVA – NOT_APPLICABLE (2026-11-06): a felhős munkamenetek saját konténerben, klónnal és ággal futnak |

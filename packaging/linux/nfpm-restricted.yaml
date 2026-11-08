@@ -1,0 +1,39 @@
+# cfa4-restricted-extras: the patent-restricted codecs of CFA4, separate from the base package
+# (Ubuntu model, docs/licensing.md §7; ADR 0005 step 4). It installs the same FFmpeg 9.0.2 as the
+# base package, built with x264 and x265 (scripts/dev/build-ffmpeg-9.0.2.sh --restricted), into
+# /opt/cfa4/ffmpeg-9.0.2-restricted. The CFA4 binaries search that directory first (RUNPATH,
+# apps/*/build.rs), so installing the package switches every FFmpeg library at once and removing
+# it falls back to the base build. Built only on request:
+#
+#   packaging/linux/package.sh --formats "deb restricted"
+#
+# package.sh substitutes ${RESTRICTED}, @CFA4_DEB_VERSION@ and the @FFMPEG_DEPENDS@ line (the
+# Ubuntu packages the libraries load, libx264/libx265 among them).
+name: cfa4-restricted-extras
+arch: amd64
+platform: linux
+version: ${VERSION}
+version_schema: semver
+release: 1
+section: video
+priority: optional
+maintainer: ${CFA4_MAINTAINER}
+vendor: CFA4 contributors
+homepage: https://github.com/ubuntuokos/CinemaFundArchitecture4
+license: GPL-3.0-or-later
+description: |-
+  Patent-restricted codecs for CFA4 (x264, x265)
+  The FFmpeg 9.0.2 build of CFA4 with the x264 (H.264) and x265 (HEVC) software encoders, in
+  /opt/cfa4/ffmpeg-9.0.2-restricted. CFA4 uses it instead of its base FFmpeg build while this
+  package is installed.
+  These formats may be restricted by software patents in some countries; checking whether their
+  use is permitted where you are is up to you.
+overrides:
+  deb:
+    depends:
+      - cfa4 (= @CFA4_DEB_VERSION@)
+      # @FFMPEG_DEPENDS@
+contents:
+  - src: ${RESTRICTED}/opt/cfa4/ffmpeg-9.0.2-restricted/
+    dst: /opt/cfa4/ffmpeg-9.0.2-restricted/
+    type: tree
