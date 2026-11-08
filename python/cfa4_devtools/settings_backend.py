@@ -19,6 +19,11 @@ MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_TIMEOUT = 30
 # The Qt-only page of the Hardware & Devices group: the accelerator inventory (`cfa4-cli hardware`).
 ACCELERATORS_PAGE = "accelerators"
+# The Media & Playback ▸ Media Backends page (ADR 0005): the engine's switches, plus the live
+# status of the backends and the restricted codecs of the Ubuntu model (`cfa4-cli media-backends`).
+MEDIA_BACKENDS_PAGE = "mediaBackends"
+# How to add the patent-restricted codecs (docs/licensing.md §7). Shown, copied, never run.
+RESTRICTED_INSTALL = "sudo apt install {package}"
 # The Qt-only page of Media & Playback: the codec table (`cfa4-cli codecs`) and the decoding
 # settings, which move here from the Playback page.
 DECODING_PAGE = "decoding"
@@ -92,6 +97,10 @@ def run_save(cli: Path, changes: dict[str, Any], data_dir: Path | None = None) -
 
 def run_hardware(cli: Path) -> Hardware:
     return Hardware.parse(run_cli(cli, ["hardware"]))
+
+
+def run_media_backends(cli: Path, data_dir: Path | None = None) -> MediaBackends:
+    return MediaBackends.parse(run_cli(cli, ["media-backends"], data_dir=data_dir))
 
 
 def run_codecs(cli: Path) -> Codecs:
@@ -298,6 +307,96 @@ class Hardware:
             plans.append(Plan(p["workload"], chain, skipped))
         notes = tuple(n for n in inv.get("notes") or [] if isinstance(n, str))
         return Hardware(devices, tuple(plans), notes)
+
+
+@dataclass(frozen=True)
+class Restricted:
+    name: str
+    purpose: str
+    available: bool
+
+
+@dataclass(frozen=True)
+class MediaBackend:
+    """One backend of `cfa4-cli media-backends` (ADR 0005): the engine, FFmpeg or GStreamer."""
+
+    id: str
+    name: str
+    role: str
+    compiled_in: bool
+    available: bool
+    enabled: bool
+    can_disable: bool
+    version: str = ""
+    license: str = ""
+    problem: str = ""
+    restricted_package: str = ""
+    restricted: tuple[Restricted, ...] = ()
+    # the router's place after the engine (ADR 0005 step 2); None: not tried, or not routed yet
+    tried: int | None = None
+    routed: bool = False
+
+    @property
+    def order(self) -> str:
+        """The place in the order files are tried in: the engine 1, then the routed backends."""
+        if self.id == "builtin":
+            return "1"
+        return str(self.tried + 1) if self.tried is not None else "—"
+
+    @property
+    def status(self) -> str:
+        if not self.compiled_in:
+            return "Not part of this build"
+        if self.available and self.enabled and self.routed and self.tried is None and self.id != "builtin":
+            return "Left out by the routing table"
+        if self.available and self.enabled:
+            return "In use"
+        if self.available:
+            return "Available, switched off"
+        return "Not available"
+
+
+def _tried(value: Any) -> int | None:
+    """A 1-based place from the CLI, or None (hostile values: not a place)."""
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 64:
+        return None
+    return value
+
+
+@dataclass(frozen=True)
+class MediaBackends:
+    backends: tuple[MediaBackend, ...]
+
+    @staticmethod
+    def parse(raw: Any) -> MediaBackends:
+        if not isinstance(raw, dict) or not isinstance(raw.get("backends"), list):
+            raise SettingsBackendError("media-backends must return an object with a backends list")
+        out = []
+        routed = isinstance(raw.get("route"), dict)
+        for b in raw["backends"]:
+            if not isinstance(b, dict) or not isinstance(b.get("id"), str):
+                continue
+            restricted = tuple(
+                Restricted(_str(r.get("name")), _str(r.get("purpose")), r.get("available") is True)
+                for r in b.get("restricted") or [] if isinstance(r, dict) and isinstance(r.get("name"), str)
+            )
+            out.append(MediaBackend(
+                b["id"], _str(b.get("name"), b["id"]), _str(b.get("role")), b.get("compiledIn") is True,
+                b.get("available") is True, b.get("enabled") is True, b.get("canDisable") is True,
+                _str(b.get("version")), _str(b.get("license")), _str(b.get("problem")),
+                _str(b.get("restrictedPackage")), restricted,
+                _tried(b.get("tried")), routed,
+            ))
+        return MediaBackends(tuple(out))
+
+    @property
+    def restricted(self) -> tuple[tuple[MediaBackend, Restricted], ...]:
+        return tuple((b, r) for b in self.backends for r in b.restricted)
+
+    def install_command(self) -> str | None:
+        """The command that adds the missing restricted codecs, or None when none is missing."""
+        packages = sorted({b.restricted_package for b, r in self.restricted if not r.available and b.restricted_package})
+        return RESTRICTED_INSTALL.format(package=" ".join(packages)) if packages else None
 
 
 @dataclass(frozen=True)

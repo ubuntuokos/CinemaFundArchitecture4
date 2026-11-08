@@ -172,6 +172,11 @@ class ScopesView(QWidget):
         self.time, self.revision = time, revision
         self.request()
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ``<prefix>.view.<kind>`` for each scope shown (``scopes.view.parade``, …)."""
+        prefix = self.objectName().removesuffix(".view")
+        return [(f"{prefix}.view.{k}", r, kind_title(k, self.st)) for k, r in self.cells()]
+
     def cells(self) -> list[tuple[str, QRectF]]:
         return list(zip(self.st.shown, layout(QRectF(self.rect()), len(self.st.shown)), strict=False))
 
