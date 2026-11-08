@@ -836,3 +836,64 @@ fn move_to_new_track_adds_it_in_one_undo_step() {
     assert_eq!(*s.active_sequence().unwrap(), before);
     assert_eq!(s.history.undo.len(), undo);
 }
+
+/// Lift and Extract put what they take off the timeline on the clipboard, cut at the In and Out
+/// points, from the targeted tracks only, with the sequence markers in the range when Copy Paste
+/// Includes Sequence Markers is on (#3019).
+#[test]
+fn lift_and_extract_put_the_range_on_the_clipboard() {
+    for cmd in ["sequence.lift", "sequence.extract"] {
+        let (mut s, item) = fresh();
+        place(&mut s, item, "V1", 0, 0, 48);
+        place(&mut s, item, "V2", 0, 0, 48);
+        for t in ["V2", "A2"] {
+            s.execute("timeline.setTargeting", json!({"track": t, "targeted": false})).unwrap();
+        }
+        s.execute("markers.copyPasteIncludesSequenceMarkers", json!({"on": true})).unwrap();
+        s.execute("markers.add", json!({"frame": 15, "name": "inside"})).unwrap();
+        s.execute("markers.add", json!({"frame": 30, "name": "after"})).unwrap();
+        s.execute("markers.markIn", json!({"frame": 12})).unwrap();
+        s.execute("markers.markOut", json!({"frame": 23})).unwrap();
+        assert_eq!(s.execute(cmd, json!({})).unwrap()["copied"], json!(2), "{cmd}: the V1 and A1 pieces");
+        s.execute("playhead.set", json!({"frame": 100})).unwrap();
+        s.execute("edit.paste", json!({})).unwrap_or_else(|e| panic!("{cmd} then edit.paste: {e:?}"));
+        let q = s.active_sequence().unwrap();
+        let at = f(&s, 100);
+        let pasted: Vec<_> = [&q.video_tracks[0], &q.audio_tracks[0]]
+            .iter()
+            .map(|t| t.items.iter().find(|i| i.start == at).unwrap_or_else(|| panic!("{cmd}: nothing pasted on {}", t.name)))
+            .collect();
+        for p in &pasted {
+            assert_eq!((p.duration, p.source_in), (f(&s, 12), f(&s, 12)), "{cmd}: the pasted piece is frames 12-23 of the media");
+        }
+        assert!(pasted[0].link.is_some() && pasted[0].link == pasted[1].link, "{cmd}: the pasted video and audio stay linked");
+        for t in [&q.video_tracks[1], &q.audio_tracks[1]] {
+            assert!(t.items.iter().all(|i| i.start != at), "{cmd}: nothing from the untargeted {} is pasted", t.name);
+        }
+        let pasted_markers: Vec<_> = q.markers.iter().filter(|m| m.start >= at).map(|m| (m.start, m.name.as_str())).collect();
+        assert_eq!(pasted_markers, vec![(f(&s, 103), "inside")], "{cmd}: only the marker inside the range comes along");
+    }
+}
+
+/// Over a range with no clips on the targeted tracks, Lift and Extract copy nothing and Paste still
+/// brings back what was copied before (#3019).
+#[test]
+fn lift_and_extract_over_no_clips_keep_the_clipboard() {
+    for cmd in ["sequence.lift", "sequence.extract"] {
+        let (mut s, item) = fresh();
+        let clips = place(&mut s, item, "V1", 0, 0, 48);
+        s.execute("timeline.select", json!({"clips": clips})).unwrap();
+        s.execute("edit.copy", json!({})).unwrap();
+        for t in ["V1", "A1"] {
+            s.execute("timeline.setTargeting", json!({"track": t, "targeted": false})).unwrap();
+        }
+        s.execute("markers.markIn", json!({"frame": 12})).unwrap();
+        s.execute("markers.markOut", json!({"frame": 23})).unwrap();
+        assert_eq!(s.execute(cmd, json!({})).unwrap()["copied"], json!(0), "{cmd}");
+        s.execute("playhead.set", json!({"frame": 100})).unwrap();
+        s.execute("edit.paste", json!({})).unwrap_or_else(|e| panic!("{cmd} then edit.paste: {e:?}"));
+        let q = s.active_sequence().unwrap();
+        let pasted = q.video_tracks[0].items.iter().find(|i| i.start == f(&s, 100)).map(|i| i.duration);
+        assert_eq!(pasted, Some(f(&s, 48)), "{cmd}: the earlier copy is pasted");
+    }
+}

@@ -35,6 +35,7 @@ mod marker_export;
 pub mod masks;
 pub mod media_browser;
 pub mod media_pool;
+pub mod media_route;
 pub mod media_watch;
 pub mod mixer;
 pub mod multicam;
@@ -394,6 +395,11 @@ pub struct EditorState {
     /// Sequence markers copied with the clipboard clips (start relative to the copied range).
     #[serde(skip)]
     pub clipboard_markers: Vec<cfa4_project::Marker>,
+    /// Captions copied from the Timeline, with their caption track's index (starts relative to the
+    /// copied range). Copying clips empties it and copying captions empties `clipboard`, so Paste
+    /// places whichever was copied last.
+    #[serde(skip)]
+    pub caption_clipboard: Vec<(usize, cfa4_project::Caption)>,
     /// The last Edit ▸ Find… (Find Next continues it).
     #[serde(default)]
     pub find: Option<project_tools::FindState>,
@@ -1185,6 +1191,22 @@ impl Session {
         let provider = self.media.provider(self.project.clone(), self.services.clone()).recording();
         let img = self.render_program_with(scale, t, &provider)?;
         Ok((img, provider.offline_used()))
+    }
+
+    /// [`Self::try_render_program_with_offline_at`] as opaque sRGB RGBA8 bytes (`w`, `h`, pixels):
+    /// a frame that is one opaque video picture goes straight to bytes
+    /// ([`cfa4_render::render_sequence_rgba8`]), without the linear float picture in between.
+    pub fn try_render_program_rgba8_with_offline_at(&self, scale: f32, t: Tick) -> Result<(usize, usize, Vec<u8>, Vec<media_pool::OfflineMedia>)> {
+        let provider = self.media.provider(self.project.clone(), self.services.clone()).recording();
+        let seq = self.renderable_sequence(scale)?;
+        let t = self.sequence_rate().snap(t.max(Tick::ZERO));
+        let opts = cfa4_render::RenderOptions { scale, captions: true, ..Default::default() };
+        let (w, h, mut px) = cfa4_render::render_sequence_rgba8(&self.project, seq, t, opts, &provider);
+        // opaque, as `Image::over_black_rgba8`: the fallback keeps the picture's alpha in the fourth byte
+        for a in px.iter_mut().skip(3).step_by(4) {
+            *a = 255;
+        }
+        Ok((w, h, px, provider.offline_used()))
     }
 
     fn render_program_with(&self, scale: f32, t: Tick, provider: &dyn cfa4_render::SourceProvider) -> Result<cfa4_render::Image> {
