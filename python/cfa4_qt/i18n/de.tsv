@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	In CFA4 ist ein Fehler aufgetreten
 	CFA4 project links	CFA4-Projektlinks
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 wurde unerwartet beendet, während „{name}“ ungespeicherte Änderungen hatte. Ungespeicherte Änderungen von {time} wiederherstellen?
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 wurde geschlossen, während „{name}“ ungespeicherte Änderungen hatte. Ungespeicherte Änderungen von {time} wiederherstellen?
 	Cancel Selected	Auswahl abbrechen
 	Cannot check the output folder for files to replace: {error}	Der Ausgabeordner kann nicht auf zu ersetzende Dateien geprüft werden: {error}
 	Cannot create the output folder: {error}	Der Ausgabeordner kann nicht erstellt werden: {error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	Vor dem Export prüfen: {n} Probleme in der Zeitleiste markiert (rote Marken)
 	Checked:	Geprüft:
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	Wählen Sie eine IAB-Spurdatei (IMF oder DCP), einen rohen IAB-Strom oder Dolby Atmos TrueHD: einen .thd-Strom oder eine MKV-, MP4- oder M2TS-Datei mit Atmos-Spur.
-	Choose an output file.	Wählen Sie eine Ausgabedatei.
+	Choose a file name and location.	Wählen Sie einen Dateinamen und einen Speicherort.
+	Choose folder	Ordner wählen
 	Click and press keys to assign	Klicken und Tasten drücken, um zuzuweisen
 	Compression	Komprimierung
 	Compression Level	Komprimierungsstufe
@@ -322,3 +321,8 @@
 	Delete Redoable Actions	Wiederholbare Aktionen löschen
 	Clear History	Protokoll löschen
 	Delete the dimmed actions after the current state? They cannot be redone.	Die abgeblendeten Aktionen nach dem aktuellen Zustand löschen? Sie können nicht wiederhergestellt werden.
+	Panel menu	Panelmenü
+	Move panel	Bedienfeld verschieben
+	Transparency Grid	Transparenzraster
+	Show Duplicate Frame Markers	Markierungen für doppelte Frames anzeigen
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Sequenz In/Out umfasst nur 1 Frame. Wähle „Gesamte Sequenz“, um die ganze Sequenz zu exportieren.
