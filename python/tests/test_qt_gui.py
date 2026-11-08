@@ -12719,3 +12719,67 @@ def test_real_engine_clip_dropped_on_new_item_makes_a_matching_sequence(app, tmp
     finally:
         win.close()
         engine.stop()
+
+
+@pytest.mark.skipif(REAL is None, reason="Rust engine not built (cargo build -p cfa4-cli)")
+def test_real_engine_alt_drag_trims_one_side_of_a_link(app, tmp_path: Path):
+    """upstream #3301: dragging a clip's edge trims its linked partner too; with Alt held as the
+    drag starts, only that side of the link is trimmed."""
+    from cfa4_qt.main_window import MainWindow
+
+    settings = QtCore.QSettings(str(tmp_path / "s.ini"), QtCore.QSettings.Format.IniFormat)
+    engine = EngineClient(REAL, ["--demo", "--data-dir", str(tmp_path / "data")])
+    win = MainWindow(engine, settings)
+    win.resize(1600, 1000)
+    win.show()
+    engine.start()
+    canvas = win.timeline.canvas
+    left = QtCore.Qt.MouseButton.LeftButton
+    alt, none = QtCore.Qt.KeyboardModifier.AltModifier, QtCore.Qt.KeyboardModifier.NoModifier
+
+    def v1():
+        return next(r for r in canvas.rows if r.short == "V1")
+
+    def item(cid: int) -> dict:
+        for kind in ("video", "audio"):
+            for t in (win.sequence or {}).get(kind) or []:
+                for c in t.get("items") or []:
+                    if c.get("clip") == cid:
+                        return c
+        raise AssertionError(cid)
+
+    def drag_out_edge(cid: int, dx: int, mods) -> None:
+        row = v1()
+        r = canvas.clip_rect(row, item(cid))
+        a = QtCore.QPoint(int(r.right()) - 1, int(r.center().y()))
+        b = a + QtCore.QPoint(dx, 0)
+        QtTest.QTest.mousePress(canvas, left, mods, a)
+        for i in range(1, 5):
+            QtTest.QTest.mouseMove(canvas, a + (b - a) * (i / 4))
+        QtTest.QTest.mouseRelease(canvas, left, mods, b)
+
+    try:
+        assert wait_until(app, lambda: win.sequence is not None and len(win.registry.commands) > 100, 60_000)
+        canvas.setMinimumHeight(560)
+        canvas.zoom_to_fit()
+        wait_until(app, lambda: False, 200)
+        # (an Out edge with no transition on it: a press there grabs the edge, not the transition)
+        ends = {t.get("from") for t in v1().track.get("transitions") or []}
+        video = next(c for c in v1().track["items"] if c["clip"] not in ends and c.get("link") is not None)
+        link = video.get("link")
+        assert link is not None, video
+        sound = next(c for t in win.sequence["audio"] for c in t.get("items") or [] if c.get("link") == link)
+        v_end, a_end = video["end"], sound["end"]
+        # Alt: only the picture's Out edge moves
+        drag_out_edge(video["clip"], -40, alt)
+        assert wait_until(app, lambda: item(video["clip"])["end"] < v_end, 10_000), item(video["clip"])
+        assert item(sound["clip"])["end"] == a_end, "the linked sound stays"
+        # without Alt the linked sound follows
+        v_end = item(video["clip"])["end"]
+        drag_out_edge(video["clip"], -40, none)
+        assert wait_until(app, lambda: item(video["clip"])["end"] < v_end and item(sound["clip"])["end"] < a_end, 10_000), (
+            item(video["clip"]), item(sound["clip"]))
+    finally:
+        win._quit_confirmed = True
+        win.close()
+        engine.stop()
