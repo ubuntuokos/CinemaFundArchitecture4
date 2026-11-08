@@ -1,7 +1,7 @@
 # CFA4 – GitHub Spec Kit integrációs és fejlesztési terv
 
 **Azonosító:** CFA4-DEV-SPEC-KIT-001 · **Verzió:** TERV 1.2 · **Dátum:** 2026-11-01
-**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok külön engedélyhez kötöttek. 2026-11-06: az SK-F2 elfogadva, a D11 elfogadva, az SK-F3 engedélyezve.
+**Állapot:** a tulajdonos (ubuntuokos) 2026-11-01-én jóváhagyta, a D1′ és a D5–D10 döntéssel együtt (D9, D10: az SK-F1 tanulságai, 12:56); az 1.1-et ez váltja fel. Az SK-F1 indítását a tulajdonos 2026-11-01-én engedélyezte; a #450 beolvasztása után indul. A további fázisok külön engedélyhez kötöttek. 2026-11-06: az SK-F2 elfogadva, a D11 elfogadva, az SK-F3 engedélyezve. 2026-11-08: az SK-F3 elfogadva, az SK-F4 engedélyezve.
 **Kiinduló állapot:** `main` @ `64d8f86` (2026-11-01 04:19 UTC, #438 beolvasztása).
 
 ## Változások 1.1 → 1.2
@@ -149,6 +149,8 @@ Forrásbeli korlát: a `preset add` és az `integration use` a skilleket az alap
 
 Feloldás parancsonként, tulajdonosi döntéssel és negatív teszttel.
 
+**Kikényszerítés (SK-F4).** A három tiltott parancsot a `cfa4-policy` preset blokkoló csonkra cseréli (`CFA4-BLOCKED`): meghívva egyetlen mondattal leáll, és semmit nem módosít. A tiltott állapotokat (kiterjesztés, eseménykezelő, modell által hívható skill, hiányzó overlay, generált constitution, módosított `.claude/` fájl, elmozdult HEAD) a `docs/development/spec-kit/cfa4-policy/check-cfa4-policy.sh` mutatja ki. Ez az SK-F6-ban a pilotág CI-jébe kerül.
+
 ### SK-08 – együttélés
 
 A `.claude/skills/` alatt már ott van a `gazda` és a `cfa4-skill-review`. A `speckit-` előtag miatt névütközés nem várható, de a telepítés utáni diffnek ezt igazolnia kell. A Spec Kit-skilleket telepítés előtt a `cfa4-skill-review` (SkillSpector) nézi át.
@@ -171,15 +173,15 @@ A `specs/` könyvtárak neve a CFA4-feladatazonosító, nem a Spec Kit sorszáma
 
 ## 6. Fázisok
 
-Az SK-F0, az SK-F1 és az SK-F2 elkészült (az SK-F2-t a tulajdonos 2026-11-06-án elfogadta); az SK-F3 a D11 szerint a #336-tól függetlenül indult (2026-11-06). Hátralévő külső feltétel: a költségbaseline (SK-F5). Minden fázis külön engedéllyel indul (D1′).
+Az SK-F0–SK-F3 elkészült és elfogadott (SK-F3: 2026-11-08); az SK-F4 2026-11-08-án engedélyezve és elkészült. Hátralévő külső feltétel: a költségbaseline (SK-F5).
 
 | Fázis | Tartalom | Elfogadási tesztek | Külső előfeltétel |
 | --- | --- | --- | --- |
 | SK-F0 · Állapotfelmérés | **kész, elfogadva** (#370, D5) | – | – |
 | SK-F1 · Izolált próba, v1.2.5 | **kész** (#451): AC-SK-04, -12, -13, -14, -15 PASS; kontextus-többlet 0 token | AC-SK-04, -12, -13, -14, -15 | – |
 | SK-F2 · Hivatkozó constitution, preset | **kész, elfogadva 2026-11-06** (#457) | AC-SK-02, -03, -16 | – |
-| SK-F3 · Munkafolyamat-integráció | SK-03: D9-overlay, pontosított wrap | AC-SK-05, -06 | engedélyezve 2026-11-06; a #336-tól független (D11) |
-| SK-F4 · Biztonsági kapuk | SK-04–SK-08 | AC-SK-07 | – |
+| SK-F3 · Munkafolyamat-integráció | **kész, elfogadva 2026-11-08** (#691): D9-overlay, pontosított wrap | AC-SK-05, -06 | – |
+| SK-F4 · Biztonsági kapuk | **kész**: SK-07 blokkoló csonkok, `check-cfa4-policy.sh`, 9 negatív teszt; SK-04 bizonyítékmátrix | AC-SK-07 | engedélyezve 2026-11-08 |
 | SK-F5 · Pilot a pilotágon | egy új funkció tervezése (D8) | AC-SK-08, -09 | **költségbaseline** (BASELINE-COST-001, TC-10/AC-07) |
 | SK-F6 · CI- és kiadási validáció | azonos PR-fejen | AC-SK-01, -10, -11, -12 | – |
 | SK-F7 · Spec Kit a `main`-re (D7) | kiválasztott munkafolyamatok aktiválása | – | külön tulajdonosi élesítési jóváhagyás |
@@ -291,7 +293,7 @@ Jóváhagyási csomag:
 
 A Spec Kit akkor éri meg a CFA4-nek, ha egyetlen szabályt sem dupláz, egyetlen más munkamenetet sem terhel, és mérhetően nem drágítja a munkát. A sorrend:
 
-SK-F1 izolált próba – kész (#451) → SK-F2 hivatkozó constitution és preset – kész (#457) → SK-F3 munkafolyamat → SK-F4 biztonsági kapuk → költségbaseline → SK-F5 pilot → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
+SK-F1 izolált próba – kész (#451) → SK-F2 hivatkozó constitution és preset – kész (#457) → SK-F3 munkafolyamat – kész (#691) → SK-F4 biztonsági kapuk – kész → költségbaseline → SK-F5 pilot → SK-F6 teljes validáció → SK-F7 külön élesítési döntés.
 
 Ha az AC-SK-15 nem teljesül, a Spec Kit csak a pilotban marad használható, a `main`-re nem kerül.
 
