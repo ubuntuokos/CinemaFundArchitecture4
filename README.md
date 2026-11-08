@@ -49,8 +49,10 @@ code from other projects.
 ## Support CFA4
 
 CFA4 has no commercial part. If you want to support its development, you can do so with a
-voluntary donation; it unlocks nothing, because nothing is locked. The donation link will be
-published here.
+voluntary donation; it unlocks nothing, because nothing is locked.
+
+- GitHub Sponsors: <https://github.com/sponsors/ubuntuokos> (the **Sponsor** button on GitHub)
+- Ko-fi, Liberapay and PayPal: links coming soon.
 
 ## Upstream provenance
 
