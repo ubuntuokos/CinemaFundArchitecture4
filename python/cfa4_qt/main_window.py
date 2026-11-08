@@ -2057,8 +2057,28 @@ class MainWindow(QMainWindow):
         self.events.log(text, error=True, source=command)
         self.statusBar().showMessage(text, 6000)
 
+    def confirm_delete_redoable(self) -> bool:
+        """Delete Redoable Actions' question (Cancel by default); automation id
+        ``history.deleteRedoable``."""
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            tr("Delete Redoable Actions"),
+            tr("Delete the dimmed actions after the current state? They cannot be redone."),
+            QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
+            self,
+        )
+        box.setObjectName("history.deleteRedoable")
+        box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        return box.exec() == QMessageBox.StandardButton.Ok
+
     def ui_command(self, cid: str, params: dict[str, Any] | None = None) -> bool:
         """egui's UI commands (voice-over, multi-camera, docking, …): True when ``cid`` was one."""
+        if cid == "history.deleteRedoable" and not params:
+            # the History panel menu or its key asks for OK first, as in Premiere (upstream #3075);
+            # with parameters (an agent) the command runs as it is
+            if self.confirm_delete_redoable():
+                self.execute(cid, {})
+            return True
         if cid in dock_commands.COMMANDS:
             try:
                 dock_commands.run(self, cid, dict(params or {}))
@@ -2247,7 +2267,7 @@ class MainWindow(QMainWindow):
             return
         project_path = (self.project or {}).get("path")
         # a panel that already knows the file (an export dialog, a script) is not asked again
-        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None) or {}
+        asked = {} if params.get("path") else path_params(cmd, self, project_path if isinstance(project_path, str) else None, params) or {}
         if asked.get("__cancel__"):
             return
         self.engine.execute(

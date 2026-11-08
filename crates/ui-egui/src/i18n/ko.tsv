@@ -3655,3 +3655,6 @@
 	Work Area Bar	작업 영역 막대
 	Set Work Area Bar In Point	작업 영역 막대 시작 지점 설정
 	Set Work Area Bar Out Point	작업 영역 막대 끝 지점 설정
+	Delete Redoable Actions	다시 실행 가능한 작업 삭제
+	Clear History	작업 내역 지우기
+	Strikethrough	취소선

@@ -91,12 +91,12 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.15.0 | #3535 | control: say why the control server is not serving (#3436) | C | átvesz | kézi port | U0-C | #593 | PR nyitva |
 | 0.15.0 | #3631 | Add timeline.delete alias and document headless clip removal | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.15.0 | #3402 | #3364: warn about one-frame In/Out exports | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #538 | PR nyitva |
-| 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.15.0 | #3433 | feat(text): strikethrough for graphic text | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #541 | PR nyitva |
 | 0.15.0 | #3522 | Timeline: grouped clips select together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #545 | PR nyitva |
 | 0.15.0 | #3587 | Effect Controls: an effect dropped on the panel is applied to the clip it shows | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #546 | PR nyitva |
 | 0.15.0 | #3608 | render: a monitor frame that is one opaque video picture goes straight to sRGB bytes | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #705 | PR nyitva |
 | 0.15.0 | #3327 | Project panel search finds names holding every typed word | D | átvesz (Qt6) | kézi port | U0-D | #547 | PR nyitva |
-| 0.15.0 | #3523 | Captions: File ▸ Export ▸ Captions… asks for the file format (#3365) | D | átvesz (Qt6) | kézi port | U0-D | – | tervezett |
+| 0.15.0 | #3523 | Captions: File ▸ Export ▸ Captions… asks for the file format (#3365) | D | átvesz (Qt6) | kézi port | U0-D | #548 | PR nyitva |
 | 0.15.0 | #3584 | Program Monitor: Snap in Program Monitor applies to video clip Motion drags | D | átvesz (Qt6) | kézi port | U0-D | #549 | PR nyitva |
 | 0.15.0 | #3588 | Effect Controls: Font and Font Style of a text layer are picked from drop-downs | D | átvesz (Qt6) | kézi port | U0-D | #550 | PR nyitva |
 | 0.15.0 | #3373 | Declare the UI languages to AppKit so the open and save panels are translated | F | kihagy: nem Linux x86_64 cél vagy más csomagolás | kézi port | – | – | lezárva |
@@ -269,7 +269,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.13.0 | #3038 | media: import animated WebP as a clip | C | átvesz | kézi port | U0-C | – | tervezett |
 | 0.13.0 | #3040 | Timeline: Option-drag duplicates captions | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #559 | PR nyitva |
 | 0.13.0 | #3041 | Edit: Copy, Cut and Paste work on captions selected in the Timeline | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #699 | PR nyitva |
-| 0.13.0 | #3075 | History: the panel menu deletes redoable actions and clears the history | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.13.0 | #3075 | History: the panel menu deletes redoable actions and clears the history | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #562 | PR nyitva |
 | 0.13.0 | #3087 | Timeline: the work area bar, with Set Work Area Bar In and Out Point | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #563 | PR nyitva |
 | 0.13.0 | #3115 | effect controls: drag a transition's cut to move it with the transition | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
 | 0.13.0 | #3155 | Timeline: a Rolling Edit drag stops at the roll's limits | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #564 | PR nyitva (motor; a Qt-előnézet korlátozása külön) |

@@ -3644,3 +3644,6 @@
 	Work Area Bar	工作区栏
 	Set Work Area Bar In Point	设置工作区栏入点
 	Set Work Area Bar Out Point	设置工作区栏出点
+	Delete Redoable Actions	删除可重做的操作
+	Clear History	清除历史记录
+	Strikethrough	删除线
