@@ -33,7 +33,7 @@ jobs:
           assert 'Experimental Linux Qt 6 shell' in p
           assert 'NOT the complete video editor' in p
           assert 'Qt6 Widgets + PySide6' in adr
-          assert 'FULL_QT6_NLE_NOT_IMPLEMENTED' in adr
+          assert 'QT6_GUI_IN_PROGRESS' in adr
           assert '127.0.0.1:' in bridge
           assert 'READ_ONLY_OPERATIONS' in bridge
           print('PASS: Qt6 is future frontend, egui remains current editor, Rust retained')

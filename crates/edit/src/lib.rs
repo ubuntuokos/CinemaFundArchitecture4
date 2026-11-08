@@ -537,6 +537,12 @@ pub fn close_gap(seq: &mut Sequence, track: TrackId, t: Tick) -> Result<()> {
 /// Move items by (track, time) offsets with overwrite (default drag) or insert (Cmd-drag) semantics.
 /// `moves`: (item, destination track, new start).
 pub fn move_items(seq: &mut Sequence, moves: &[(ClipId, TrackId, Tick)], insert_mode: bool, ctx: &mut EditCtx) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    for (clip, _, _) in moves {
+        if !seen.insert(*clip) {
+            return Err(EditError::Other(format!("clip {} is listed more than once in this move", clip.0)));
+        }
+    }
     let mut work = seq.clone();
     let mut placed = Vec::new();
     for (c, dest, start) in moves {
@@ -592,12 +598,17 @@ pub fn copy_items(seq: &mut Sequence, moves: &[(ClipId, TrackId, Tick)], insert_
     let carried = carried_transitions(&work, &placed);
     let mut ids = HashMap::new();
     let mut links = HashMap::new();
+    let mut groups = HashMap::new();
     for (_, it) in &mut placed {
         let id = ClipId(ctx.alloc());
         ids.insert(it.id, id);
         it.id = id;
         if let Some(l) = it.link {
             it.link = Some(*links.entry(l).or_insert_with(|| ctx.alloc()));
+        }
+        // copies of grouped clips form a group of their own, never one with the originals
+        if let Some(g) = it.group {
+            it.group = Some(*groups.entry(g).or_insert_with(|| ctx.alloc()));
         }
     }
     // a copy whose linked partner is not copied is not linked

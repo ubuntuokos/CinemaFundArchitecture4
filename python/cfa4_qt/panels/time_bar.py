@@ -204,6 +204,19 @@ class ScrubBar(QWidget):
         per_px = rng / travel if travel > 0.5 else 0.0
         return QRectF(left, bar.top(), w, bar.height()), travel, per_px
 
+    def automation_parts(self) -> list[tuple[str, QRectF, str]]:
+        """egui's ids: ``<monitor>.scrubBar`` (the mini timeline), ``<monitor>.playhead`` (its
+        handle, where it shows), ``<monitor>.zoomBar`` (the zoom bar's thumb) and
+        ``<monitor>.zoomBar.track``."""
+        bar = self.bar_rect()
+        out = [(f"{self.name}.scrubBar", bar, "scrub bar")]
+        if self.shows(self.playhead):
+            x = self._x(self.playhead)
+            out.append((f"{self.name}.playhead", QRectF(x - 7, bar.bottom() - 12, 14, 12), "Scrub playhead"))
+        out.append((f"{self.name}.zoomBar", self.thumb()[0], "zoom scroll bar"))
+        out.append((f"{self.name}.zoomBar.track", self.zoom_rect(), "zoom scroll bar track"))
+        return out
+
     def min_span(self) -> float:
         length = self.end - self.start
         return min(self.frame * MIN_ZOOM_FRAMES / length, 1.0) if length > 0 else 1.0
