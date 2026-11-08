@@ -123,6 +123,52 @@ pub trait VideoSamples: Sync {
     fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>>;
 }
 
+/// The track time (units of `num / den` s) to look up the frame shown at `t` by, for a track whose
+/// nominal rate is `rate`. `snap`: move the request back to the start of its frame first, see
+/// [`snap_coarse_units`].
+///
+/// Rounded to the nearest unit (#73): muxers round frame times to the timescale (Matroska usually
+/// to 1 ms), so a stamp can sit up to half a unit after the true time, and flooring missed every
+/// frame stamped late.
+pub(crate) fn lookup_time(t: cfa4_time::Tick, num: i64, den: i64, rate: cfa4_time::FrameRate, snap: bool) -> i64 {
+    (if snap { rate.snap(t) } else { t }).to_rational_round(num, den)
+}
+
+/// Whether to look frames up by first moving the request back to the start of its frame (nominal
+/// rate `rate`), for a track whose samples are stamped `stamps` (units of `num / den` s).
+///
+/// #73's tolerance of half a unit is only harmless while a unit is short against a frame. With a
+/// unit of half a frame or more (an MP4 whose timescale is its frame rate, one unit per frame),
+/// half a unit is a quarter of a frame or more, and from its middle on every frame was looked up
+/// as the next one. Such a track can't place frames between its units anyway, so the request
+/// first moves back to the start of its frame, which then rounds onto that frame's own stamp.
+///
+/// Only when every stamp is where that lookup lands for its nearest nominal frame: a coarse unit
+/// is no constant rate. A variable-rate track with samples 2, 1, 2 units long at two units a frame
+/// has a stamp between two nominal frames, and snapping would move a request at it onto the
+/// frame before. Such a track keeps #73's lookup by the nearest unit.
+pub(crate) fn snap_coarse_units(stamps: impl IntoIterator<Item = i64>, num: i64, den: i64, rate: cfa4_time::FrameRate) -> bool {
+    let unit = cfa4_time::Tick::from_rational(1, num, den);
+    if unit.0.saturating_mul(2) < rate.frame_duration().0 {
+        return false;
+    }
+    stamps.into_iter().all(|p| lookup_time(rate.snap_nearest(cfa4_time::Tick::from_rational(p, num, den)), num, den, rate, true) == p)
+}
+
+/// A container's sync sample for `i` when leading pictures need the GOP before: `sync` is the
+/// index's own sync sample, `leads(i, key)` says `i` is shown before `key`. One step per GOP, so a
+/// loop: a crafted index can chain tens of thousands of GOPs (#2803). A `sync` past `i` stops the
+/// walk instead of looping on it.
+pub(crate) fn open_gop_sync(mut i: usize, sync: impl Fn(usize) -> usize, leads: impl Fn(usize, usize) -> bool) -> usize {
+    loop {
+        let key = sync(i);
+        if key == 0 || key > i || !leads(i, key) {
+            return key;
+        }
+        i = key - 1;
+    }
+}
+
 /// The sync sample to start decoding at for sample `i`: its sync sample, or an earlier one when
 /// `i` is a leading picture of an open GOP (stored after its random-access picture, shown before
 /// it, like the RASL pictures after every HEVC CRA of iPhone video). Those are predicted from the
@@ -458,11 +504,13 @@ pub struct GopCache {
     budget: usize,
 }
 
-/// The cache always has room for this many frames, whatever their size: a frame-threaded decoder
-/// runs up to ~2x its thread count ahead of the frame it returns, and playback prefetches ahead
-/// of the playhead, so a byte budget alone would evict 4K frames before they are shown and force
-/// a re-decode from the keyframe.
+/// The cache reserves room for this many small frames: a frame-threaded decoder runs up to ~2x
+/// its thread count ahead of the frame it returns, and playback prefetches ahead of the playhead.
 const MIN_FRAMES: usize = 64;
+/// A source cache never retains more decoded pixels than this, regardless of frame dimensions.
+/// In particular, untrusted VP9 `show_existing_frame` samples must not turn the small-frame
+/// reserve above into an unbounded number of full-resolution copies.
+const FRAME_CACHE_CEILING: usize = 384 << 20;
 
 /// A running decoder up to this many samples before the wanted sample's sync sample keeps going
 /// rather than restarting at the sync sample.
@@ -545,7 +593,7 @@ impl GopCache {
             pool: pool.clone(),
         });
         pool.register(&shared);
-        Self { shared, explicit_color, rotation: 0, crop: None, budget: 384 << 20 }
+        Self { shared, explicit_color, rotation: 0, crop: None, budget: FRAME_CACHE_CEILING }
     }
 
     /// Turn every decoded frame clockwise by `quarter_turns` × 90° (the container's display
@@ -580,6 +628,12 @@ impl GopCache {
         self.store_finished(st, pts, self.finish(f), draft);
     }
 
+    /// The small-frame reserve may use the configured cache budget, but may never enlarge it.
+    fn cache_budget(&self, frame_bytes: usize) -> usize {
+        let reserve = MIN_FRAMES.saturating_mul(frame_bytes).min(FRAME_CACHE_CEILING);
+        self.budget.min(FRAME_CACHE_CEILING).max(reserve)
+    }
+
     /// Cache a frame [`Self::finish`] has been applied to.
     fn store_finished(&self, st: &mut State, pts: i64, f: VideoFrame, draft: bool) {
         st.last_used = Instant::now();
@@ -589,7 +643,7 @@ impl GopCache {
         } else {
             st.drafts.remove(&pts);
         }
-        let budget = self.budget.max(MIN_FRAMES * f.byte_size());
+        let budget = self.cache_budget(f.byte_size());
         let before = st.bytes;
         st.bytes += f.byte_size();
         if let Some(old) = st.frames.insert(pts, Arc::new(f)) {
@@ -892,6 +946,19 @@ impl GopCache {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn open_gop_sync_walks_a_long_chain_of_leading_pictures_without_recursing() {
+        // Every GOP of 3 starts at a key whose leading picture is shown before it (#2803).
+        let gops = 200_000usize;
+        let sync = |i: usize| i - i % 3;
+        let leads = |i: usize, key: usize| i == key + 2;
+        assert_eq!(super::open_gop_sync(gops * 3 - 1, sync, leads), 0);
+        // A picture that is not a leading one keeps its own key.
+        assert_eq!(super::open_gop_sync(7, sync, |_, _| false), 6);
+        // An index whose sync sample lies past `i` ends the walk instead of looping.
+        assert_eq!(super::open_gop_sync(5, |_| 9, |_, _| true), 9);
+    }
+
     use super::*;
     use crate::video::DecodedFrame;
     use std::collections::VecDeque;
@@ -1073,6 +1140,8 @@ mod tests {
         use rayon::prelude::*;
         let s = Arc::new(ParSamples(samples(240, 30, 4, false)));
         let (tx, rx) = std::sync::mpsc::channel();
+        let done = Arc::new(AtomicUsize::new(0));
+        let counted = done.clone();
         std::thread::spawn(move || {
             for round in 0..40usize {
                 // export-like: many frame workers, frames of several GOPs of a fresh source at once
@@ -1080,11 +1149,25 @@ mod tests {
                 (0..96usize).into_par_iter().with_max_len(1).for_each(|k| {
                     let i = (k * 37 + round * 53) % 240;
                     assert_eq!(index_of(&c.frame(&*s, i as i64 * 1000).expect("frame")), i);
+                    counted.fetch_add(1, Ordering::Relaxed);
                 });
             }
             let _ = tx.send(());
         });
-        assert!(rx.recv_timeout(Duration::from_secs(120)).is_ok(), "frame requests deadlocked");
+        // A deadlock stops every request of a round for good. On a loaded machine the 3,840
+        // requests can take minutes, so the limit applies to the time between two answered ones.
+        let mut answered = 0;
+        loop {
+            match rx.recv_timeout(Duration::from_secs(120)) {
+                Ok(()) => break,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                    let now = done.load(Ordering::Relaxed);
+                    assert!(now > answered, "frame requests deadlocked after {now} frames");
+                    answered = now;
+                }
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => panic!("a frame request failed"),
+            }
+        }
     }
 
     #[test]
@@ -1446,6 +1529,17 @@ mod tests {
         fn make_decoder(&self) -> crate::Result<Box<dyn VideoDecoder>> {
             Ok(Box::new(Big(self.0)))
         }
+    }
+
+    #[test]
+    fn large_frames_cannot_enlarge_the_gop_cache_ceiling() {
+        let mut c = GopCache::new(None);
+        c.budget = usize::MAX;
+        assert_eq!(c.cache_budget(1), FRAME_CACHE_CEILING);
+        assert_eq!(c.cache_budget(FRAME_CACHE_CEILING), FRAME_CACHE_CEILING);
+        c.budget = 0;
+        assert_eq!(c.cache_budget(4), MIN_FRAMES * 4, "small frames retain the playback reserve");
+        assert_eq!(c.cache_budget(FRAME_CACHE_CEILING), FRAME_CACHE_CEILING, "large frames are capped instead of reserving 64 copies");
     }
 
     #[test]

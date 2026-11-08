@@ -157,6 +157,13 @@ fn builtin_templates_apply_and_thumbnail() {
 }
 
 #[test]
+fn template_thumbnail_dimensions_fit_a_bounded_rectangle() {
+    assert_eq!(super::thumbnail_dimensions([1920, 1080], 160), (160, 90));
+    assert_eq!(super::thumbnail_dimensions([1, 16_384], 1920), (1, 1920));
+    assert_eq!(super::thumbnail_dimensions([16_384, 1], 1920), (1920, 1));
+}
+
+#[test]
 fn responsive_time_protects_intro_and_outro_when_trimmed() {
     let mut s = demo("gt-time");
     let c = clip_of(&s.execute("graphics.newText", json!({"text": "Fade", "seconds": 5})).unwrap());
@@ -313,6 +320,29 @@ fn character_styles_follow_edits() {
     assert_eq!(s.execute("graphics.list", json!({"clip": c.0})).unwrap()["layers"][0]["styles"], json!([]));
     assert!(s.execute("graphics.setCharStyle", json!({"clip": c.0, "start": 3, "end": 3, "style": {"bold": true}})).is_err());
     assert!(s.execute("graphics.setCharStyle", json!({"clip": c.0, "style": {"sparkle": true}})).is_err());
+}
+
+#[test]
+fn strikethrough_per_character_and_per_layer() {
+    let mut s = demo("gt-strike");
+    let c = clip_of(&s.execute("graphics.newText", json!({"text": "old new"})).unwrap());
+    s.execute("graphics.setCharStyle", json!({"clip": c.0, "start": 0, "end": 3, "style": {"strikethrough": true}})).unwrap();
+    let st = s.execute("graphics.list", json!({"clip": c.0})).unwrap()["layers"][0]["styles"].clone();
+    assert_eq!(st, json!([{"start": 0, "end": 3, "strikethrough": true}]));
+    let layout = |s: &Session| {
+        let it = item(s, c);
+        let sp = &item_layer_specs(&it, it.source_in, canvas(s))[0].1;
+        let LayerContent::Text(t) = &sp.content else { panic!() };
+        cfa4_render::graphic_clip::text_layout(t)
+    };
+    let l = layout(&s);
+    assert_eq!(l.underline_runs, vec![1], "one stroke, over the styled word");
+    assert!(l.underlines[0][2] <= l.caret(3).0 + 0.01);
+    s.execute("graphics.setCharStyle", json!({"clip": c.0, "clear": true})).unwrap();
+    s.execute("graphics.set", json!({"clip": c.0, "props": {"strikethrough": true}})).unwrap();
+    let l = layout(&s);
+    assert_eq!(l.underlines.len(), 1);
+    assert!((l.underlines[0][2] - l.underlines[0][0] - l.lines[0].width).abs() < 0.01, "the whole line");
 }
 
 #[test]
