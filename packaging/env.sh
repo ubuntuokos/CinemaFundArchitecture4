@@ -69,7 +69,10 @@ copy_docs() {
   copy_font_licences "$dest"
   # Every third-party Rust crate in cfa4 and cfa4-cli with the licence files it ships (#220).
   # check-package-docs.sh sets CFA4_SKIP_THIRD_PARTY_LICENSES=1 for its build-free source check.
-  if [ "${CFA4_SKIP_THIRD_PARTY_LICENSES:-0}" != 1 ]; then
+  # CFA4_THIRD_PARTY_LICENSES_FILE ships an already written file instead (tests with stand-in binaries).
+  if [ -n "${CFA4_THIRD_PARTY_LICENSES_FILE:-}" ]; then
+    cp "$CFA4_THIRD_PARTY_LICENSES_FILE" "$dest/THIRD-PARTY-LICENSES.txt"
+  elif [ "${CFA4_SKIP_THIRD_PARTY_LICENSES:-0}" != 1 ]; then
     write_third_party_licences "$dest/THIRD-PARTY-LICENSES.txt"
   fi
 }
