@@ -39,7 +39,8 @@ cargo build --release -p cfa4 -p cfa4-cli --features cfa4/ffmpeg,cfa4-cli/ffmpeg
 readelf -d target/release/cfa4-cli | grep RUNPATH
 ```
 
-**Elvárt:** `RUNPATH … [/opt/cfa4/ffmpeg-9.0.2-restricted/lib:/opt/cfa4/ffmpeg-9.0.2/lib]`.
+**Elvárt:** `RUNPATH … [/opt/cfa4/ffmpeg-9.0.2-restricted/lib:/opt/cfa4/ffmpeg-9.0.2/lib:$ORIGIN/../lib/cfa4/ffmpeg-9.0.2/lib]`
+(a harmadik a hordozható csomagok – tarball, AppImage, Flatpak – saját másolata).
 
 ## 4. A hátterek állapota
 
