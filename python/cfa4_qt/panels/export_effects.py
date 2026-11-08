@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QToolButton,
@@ -140,6 +141,12 @@ class CaptionsSection(Section):
         super().__init__("captions", tr("Captions"), parent)
         self.setObjectName("export.captions")
         f = QFormLayout(self.body)
+        # egui's hint above the options while the sequence has no caption track
+        self.no_track = QLabel(tr("The sequence has no caption track."), self.body)
+        self.no_track.setObjectName("export.captions.noTrack")
+        self.no_track.setWordWrap(True)
+        self.no_track.setEnabled(False)
+        f.addRow(self.no_track)
         self.mode = _combo(self, "export.captions.mode", CAPTION_MODES)
         self.format = _combo(self, "export.captions.format", CAPTION_FORMATS)
         f.addRow(tr("Export Options"), self.mode)
@@ -151,6 +158,9 @@ class CaptionsSection(Section):
 
     def _sync(self) -> None:
         self.form.setRowVisible(self.format, self.mode.currentData() == "sidecar")
+
+    def set_has_track(self, has: bool) -> None:
+        self.form.setRowVisible(self.no_track, not has)
 
     def show_settings(self, settings: dict[str, Any]) -> None:
         mode, fmt = caption_mode(settings)

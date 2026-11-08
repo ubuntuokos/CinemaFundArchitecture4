@@ -36,8 +36,6 @@
 	CFA4	CFA4
 	CFA4 encountered an error	CFA4 遇到错误
 	CFA4 project links	CFA4 项目链接
-	CFA4 quit unexpectedly while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 意外退出，当时“{name}”有未保存的更改。是否恢复 {time} 的未保存更改？
-	CFA4 was closed while '{name}' had unsaved changes. Recover unsaved changes from {time}?	CFA4 关闭时“{name}”有未保存的更改。是否恢复 {time} 的未保存更改？
 	Cancel Selected	取消所选项
 	Cannot check the output folder for files to replace: {error}	无法检查输出文件夹中要替换的文件：{error}
 	Cannot create the output folder: {error}	无法创建输出文件夹：{error}
@@ -46,7 +44,8 @@
 	Check Before Export: {n} problems marked on the timeline (red markers)	导出前检查：时间轴上标记了 {n} 个问题（红色标记）
 	Checked:	已检查：
 	Choose an IAB track file (IMF or DCP), a raw IAB stream, or Dolby Atmos TrueHD: a .thd stream or an MKV, MP4 or M2TS file with an Atmos track.	请选择 IAB 轨道文件（IMF 或 DCP）、原始 IAB 流或 Dolby Atmos TrueHD：.thd 流，或带 Atmos 轨道的 MKV、MP4 或 M2TS 文件。
-	Choose an output file.	请选择输出文件。
+	Choose a file name and location.	请选择文件名和位置。
+	Choose folder	选择文件夹
 	Click and press keys to assign	单击后按下要分配的按键
 	Compression	压缩
 	Compression Level	压缩级别
@@ -319,3 +318,8 @@
 	{v} Mbps	{v} Mbps
 	{word} compression	{word} 压缩
 	{w}x{h} ({par})	{w}×{h}（{par}）
+	Panel menu	面板菜单
+	Move panel	移动面板
+	Transparency Grid	透明网格
+	Show Duplicate Frame Markers	显示重复帧标记
+	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	序列入点/出点只有 1 帧。要导出整个序列，请选择“整个序列”。
