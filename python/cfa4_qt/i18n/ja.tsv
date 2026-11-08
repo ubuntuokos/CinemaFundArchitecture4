@@ -321,8 +321,14 @@
 	Delete Redoable Actions	やり直し可能な操作を削除
 	Clear History	ヒストリーを消去
 	Delete the dimmed actions after the current state? They cannot be redone.	現在の状態より後の淡色表示の操作を削除しますか？ やり直しできなくなります。
+	Work Area Bar	ワークエリアバー
+	Start: {tc}	開始: {tc}
+	End: {tc}	終了: {tc}
+	Duration: {tc}	デュレーション: {tc}
 	Panel menu	パネルメニュー
 	Move panel	パネルを移動
 	Transparency Grid	透明グリッド
 	Show Duplicate Frame Markers	重複フレームマーカーを表示
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	シーケンスのイン／アウトは 1 フレームだけです。シーケンス全体を書き出すには「シーケンス全体」を選んでください。
+	Set Work Area Bar In Point	ワークエリアバーのインポイントを設定
+	Set Work Area Bar Out Point	ワークエリアバーのアウトポイントを設定

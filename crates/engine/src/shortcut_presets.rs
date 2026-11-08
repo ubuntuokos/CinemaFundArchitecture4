@@ -290,6 +290,8 @@ pub const PREMIERE_PANEL: &[Entry] = &[
     ("timeline.decreaseAudioHeight", "Alt+-", "Timeline"),
     ("timeline.nextScreen", "PageDown", "Timeline"),
     ("timeline.prevScreen", "PageUp", "Timeline"),
+    ("sequence.setWorkAreaIn", "Alt+[", "Timeline"),
+    ("sequence.setWorkAreaOut", "Alt+]", "Timeline"),
     ("graphics.nudgeLeft", "Cmd+Left", "Program"),
     ("graphics.nudgeRight", "Cmd+Right", "Program"),
     ("graphics.nudgeUp", "Cmd+Up", "Program"),

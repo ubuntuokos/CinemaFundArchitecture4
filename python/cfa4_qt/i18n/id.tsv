@@ -321,8 +321,14 @@
 	Delete Redoable Actions	Hapus Tindakan yang Dapat Diulang
 	Clear History	Bersihkan Riwayat
 	Delete the dimmed actions after the current state? They cannot be redone.	Hapus tindakan redup setelah keadaan saat ini? Tindakan itu tidak dapat diulang lagi.
+	Work Area Bar	Bilah Area Kerja
+	Start: {tc}	Awal: {tc}
+	End: {tc}	Akhir: {tc}
+	Duration: {tc}	Durasi: {tc}
 	Panel menu	Menu panel
 	Move panel	Pindahkan panel
 	Transparency Grid	Kisi Transparansi
 	Show Duplicate Frame Markers	Tampilkan Penanda Frame Duplikat
 	Sequence In/Out is only 1 frame. Choose Entire Sequence to export the whole sequence.	Masuk/keluar sekuens hanya 1 frame. Pilih Seluruh sekuens untuk mengekspor seluruh sekuens.
+	Set Work Area Bar In Point	Atur Titik Masuk Bilah Area Kerja
+	Set Work Area Bar Out Point	Atur Titik Keluar Bilah Area Kerja
