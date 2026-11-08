@@ -323,6 +323,29 @@ fn character_styles_follow_edits() {
 }
 
 #[test]
+fn strikethrough_per_character_and_per_layer() {
+    let mut s = demo("gt-strike");
+    let c = clip_of(&s.execute("graphics.newText", json!({"text": "old new"})).unwrap());
+    s.execute("graphics.setCharStyle", json!({"clip": c.0, "start": 0, "end": 3, "style": {"strikethrough": true}})).unwrap();
+    let st = s.execute("graphics.list", json!({"clip": c.0})).unwrap()["layers"][0]["styles"].clone();
+    assert_eq!(st, json!([{"start": 0, "end": 3, "strikethrough": true}]));
+    let layout = |s: &Session| {
+        let it = item(s, c);
+        let sp = &item_layer_specs(&it, it.source_in, canvas(s))[0].1;
+        let LayerContent::Text(t) = &sp.content else { panic!() };
+        cfa4_render::graphic_clip::text_layout(t)
+    };
+    let l = layout(&s);
+    assert_eq!(l.underline_runs, vec![1], "one stroke, over the styled word");
+    assert!(l.underlines[0][2] <= l.caret(3).0 + 0.01);
+    s.execute("graphics.setCharStyle", json!({"clip": c.0, "clear": true})).unwrap();
+    s.execute("graphics.set", json!({"clip": c.0, "props": {"strikethrough": true}})).unwrap();
+    let l = layout(&s);
+    assert_eq!(l.underlines.len(), 1);
+    assert!((l.underlines[0][2] - l.underlines[0][0] - l.lines[0].width).abs() < 0.01, "the whole line");
+}
+
+#[test]
 fn upgrade_caption_to_graphic() {
     let mut s = demo("gt-caption");
     s.execute("captions.add", json!({"text": "Hello <i>there</i>", "seconds": 600, "durationSeconds": 2})).unwrap();
