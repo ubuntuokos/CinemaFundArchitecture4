@@ -472,3 +472,14 @@
 	tempo {bpm} BPM	tempo {bpm} BPM
 	the credits without fitting: {time}	kredit tanpa penyesuaian: {time}
 	the sound ends at {time}	suara berakhir pada {time}
+	A picture or video is behind the text: check the contrast by eye	Ada gambar atau video di belakang teks: periksa kontras dengan mata
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Area aman aksi (93 %), area aman judul (90 %), bagian tengah, dan garis pemandu halaman
+	Baseline grid	Kisi garis dasar
+	Crawl	Gulir
+	Into the next	Ke berikutnya
+	Lines one gap unit apart, moving with the page	Baris berjarak satu satuan celah, bergerak bersama halaman
+	Picture: {file}	Gambar: {file}
+	Safe areas and spines	Area aman dan garis pemandu
+	The text moves {speed} px per frame; a whole number does not shimmer	Teks bergerak {speed} px per bingkai; bilangan bulat tidak berkedip
+	Video: {file}	Video: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” tidak menonjol dari latar (kontras {ratio}:1; minimal 4,5:1 diperlukan)

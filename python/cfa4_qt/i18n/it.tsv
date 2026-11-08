@@ -472,3 +472,14 @@
 	tempo {bpm} BPM	tempo {bpm} BPM
 	the credits without fitting: {time}	i titoli di coda senza adattamento: {time}
 	the sound ends at {time}	il suono termina a {time}
+	A picture or video is behind the text: check the contrast by eye	Dietro il testo c'è un'immagine o un video: controlla il contrasto a occhio
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	Area sicura azione (93 %), area sicura titoli (90 %), il centro e le linee guida della pagina
+	Baseline grid	Griglia della linea di base
+	Crawl	Scorrimento
+	Into the next	Nel successivo
+	Lines one gap unit apart, moving with the page	Righe distanziate di un'unità di spazio, che si muovono con la pagina
+	Picture: {file}	Immagine: {file}
+	Safe areas and spines	Aree sicure e linee guida
+	The text moves {speed} px per frame; a whole number does not shimmer	Il testo si sposta di {speed} px per fotogramma; un numero intero non sfarfalla
+	Video: {file}	Video: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}” non risalta dallo sfondo (contrasto {ratio}:1; ne servono almeno 4,5:1)

@@ -472,3 +472,14 @@
 	tempo {bpm} BPM	速度 {bpm} BPM
 	the credits without fitting: {time}	未适配的演职员表:{time}
 	the sound ends at {time}	声音在 {time} 结束
+	A picture or video is behind the text: check the contrast by eye	文字后面有图片或视频:请目测对比度
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	动作安全区(93 %)、标题安全区(90 %)、中心线和页面的脊线
+	Baseline grid	基线网格
+	Crawl	滚动字幕
+	Into the next	过渡到下一个
+	Lines one gap unit apart, moving with the page	间隔为一个间距单位的线条,随页面移动
+	Picture: {file}	图片:{file}
+	Safe areas and spines	安全区与脊线
+	The text moves {speed} px per frame; a whole number does not shimmer	文字每帧移动 {speed} px;整数值不会闪烁
+	Video: {file}	视频:{file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”与背景区分不明显(对比度 {ratio}:1;至少需要 4.5:1)

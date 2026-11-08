@@ -2613,12 +2613,10 @@ export.summary	Low	alacsony
 	Fit to This Length	Igazítás erre a hosszra
 	No music to measure ({problem}); type the length.	Nincs mérhető zene ({problem}); add meg a hosszt.
 	Crawl	Futószöveg
-	Gradient	Színátmenet
 	Picture: {file}	Kép: {file}
 	Video: {file}	Videó: {file}
 	Push	Eltolás
 	Dip to Black	Áttűnés feketén át
-	Background	Háttér
 	Into the next	Átmenet a következőbe
 	Safe areas and spines	Biztonsági területek és gerincek
 	Action safe (93 %), title safe (90 %), the centre and the page's spines	Akcióbiztos (93 %), címbiztos (90 %) terület, a középvonalak és az oldal gerincei

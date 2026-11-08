@@ -472,3 +472,14 @@
 	tempo {bpm} BPM	テンポ {bpm} BPM
 	the credits without fitting: {time}	調整なしのクレジット: {time}
 	the sound ends at {time}	音は{time}に終わります
+	A picture or video is behind the text: check the contrast by eye	テキストの背後に画像または動画があります。コントラストを目で確認してください
+	Action safe (93 %), title safe (90 %), the centre and the page's spines	アクションセーフ(93 %)、タイトルセーフ(90 %)、中央、およびページのスパイン
+	Baseline grid	ベースライングリッド
+	Crawl	クロール
+	Into the next	次へのつなぎ
+	Lines one gap unit apart, moving with the page	1ギャップ単位間隔の線。ページと一緒に動きます
+	Picture: {file}	画像: {file}
+	Safe areas and spines	セーフエリアとスパイン
+	The text moves {speed} px per frame; a whole number does not shimmer	テキストは1フレームあたり{speed} px移動します。整数値だとちらつきません
+	Video: {file}	動画: {file}
+	“{text}” does not stand out from the background (contrast {ratio}:1; at least 4.5:1 is needed)	“{text}”が背景から目立ちません(コントラスト{ratio}:1。4.5:1以上が必要です)
