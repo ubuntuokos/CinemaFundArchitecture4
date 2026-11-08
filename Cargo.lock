@@ -1099,6 +1099,7 @@ dependencies = [
  "cfa4-testkit",
  "cfa4-time",
  "cfa4-truehd",
+ "cfa4-utvideo",
  "cfa4-vp8",
  "cfa4-vp9",
  "image",
@@ -1795,6 +1796,14 @@ dependencies = [
  "toml",
  "unicode-bidi",
  "web-time",
+]
+
+[[package]]
+name = "cfa4-utvideo"
+version = "0.10.0"
+dependencies = [
+ "cfa4-avi",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

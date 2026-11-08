@@ -38,6 +38,7 @@ cfa4-j2k = { workspace = true }
 cfa4-cineform = { workspace = true }
 cfa4-av1 = { workspace = true }
 cfa4-apv = { workspace = true }
+cfa4-utvideo = { workspace = true }
 cfa4-huffyuv = { workspace = true }
 cfa4-ffv1 = { workspace = true }
 cfa4-aac = { workspace = true }

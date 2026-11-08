@@ -41,6 +41,8 @@ enum VCodec {
     Ffv1(Vec<u8>),
     /// Huffyuv with its (reduced) `BITMAPINFOHEADER`.
     Huffyuv(Vec<u8>),
+    /// Ut Video: the FourCC and the extradata.
+    UtVideo([u8; 4], Vec<u8>),
     Raw(RawFormat),
     /// No decoder: the codec's name.
     Unsupported(String),
@@ -63,6 +65,7 @@ fn video_codec(b: &BitmapInfo) -> (VCodec, String) {
         b"H264" | b"X264" | b"AVC1" | b"DAVC" | b"VSSH" => (VCodec::H264, "H.264".into()),
         b"CFHD" => (VCodec::Cineform, "GoPro CineForm".into()),
         b"HEVC" | b"H265" | b"HEV1" | b"HVC1" | b"X265" => (VCodec::Hevc, "HEVC".into()),
+        _ if crate::utvideo::is_utvideo(&b.compression) => (VCodec::UtVideo(b.compression, b.extra.clone()), "Ut Video".into()),
         b"HFYU" => (VCodec::Huffyuv(crate::huffyuv::bitmap_info_header(b.bit_count, &b.extra)), "Huffyuv".into()),
         b"FFV1" => (VCodec::Ffv1(b.extra.clone()), "FFV1".into()),
         b"DIVX" | b"DX50" | b"XVID" | b"FMP4" | b"MP4V" | b"M4S2" | b"3IV2" | b"DIV3" | b"MP43" | b"MP42" => {
@@ -532,6 +535,7 @@ impl VideoSamples for AviVideo<'_> {
             VCodec::Hevc => Ok(Box::new(crate::video::HevcDecoder::annexb())),
             VCodec::Ffv1(record) => make_video_decoder(&crate::ffv1::sample_entry(record, w, h)),
             VCodec::Huffyuv(bih) => make_video_decoder(&crate::huffyuv::sample_entry(bih, w, h)),
+            VCodec::UtVideo(fourcc, extra) => make_video_decoder(&crate::utvideo::sample_entry(*fourcc, extra, w, h)),
             VCodec::Raw(f) => Ok(Box::new(RawVideoDecoder::new(*f, v.width, v.height, self.src.bottom_up)?)),
             VCodec::Unsupported(name) => Err(CodecError::Unsupported(format!("no decoder for {name} video"))),
         }
