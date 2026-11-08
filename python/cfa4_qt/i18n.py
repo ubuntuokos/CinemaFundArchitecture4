@@ -11,11 +11,15 @@ from __future__ import annotations
 
 import locale
 import os
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-CATALOG_DIRS = (HERE / "i18n", ROOT / "crates" / "ui-egui" / "src" / "i18n")
+# the shared catalogs: egui's in a checkout; an installed package ships a copy of them next to
+# the Qt catalogs (packaging/linux/package.sh)
+SHARED_CATALOGS = ROOT / "crates" / "ui-egui" / "src" / "i18n"
+CATALOG_DIRS = (HERE / "i18n", SHARED_CATALOGS if SHARED_CATALOGS.is_dir() else HERE / "i18n" / "shared")
 
 # language code -> name shown in the View ▸ Language menu (in that language)
 LANGUAGES = {
@@ -113,6 +117,18 @@ class Translator:
             out = out.replace("{" + key + "}", str(value))
         return out
 
+    def decimal(self, value: str) -> str:
+        """``value`` (a plain decimal such as ``4.00``) with the language's decimal separator:
+        ``4,00`` in Hungarian. Anything that is not a plain decimal comes back unchanged."""
+        if self.language in DECIMAL_COMMA and _DECIMAL.fullmatch(value):
+            return value.replace(".", ",")
+        return value
+
+
+# languages that write 4,00 instead of 4.00
+DECIMAL_COMMA = frozenset({"hu", "de", "es", "fr", "it", "pt-br", "id", "ru", "uk"})
+_DECIMAL = re.compile(r"-?\d+\.\d+")
+
 
 def system_language() -> str:
     """The best catalog for the user's locale (``CFA4_LANG`` overrides)."""
@@ -153,3 +169,7 @@ def tr(text: str) -> str:
 
 def fmt(template: str, **args: object) -> str:
     return TR.fmt(template, **args)
+
+
+def decimal(value: str) -> str:
+    return TR.decimal(value)

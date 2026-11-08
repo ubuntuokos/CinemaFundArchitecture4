@@ -37,6 +37,7 @@ const LAYERS: &[(&str, u8)] = &[
     ("cfb", 0),
     ("mpegts", 0),
     ("mpeg2v", 0),
+    ("dv", 0),
     ("ac3", 0),
     ("dts", 0),
     ("auro", 0),
@@ -86,10 +87,12 @@ const LAYERS: &[(&str, u8)] = &[
     ("scopes", 3),
     ("playback", 3),
     ("export", 3),
+    ("smart-edit", 3),
     ("format", 3),
     ("engine", 4),
     ("platform", 5),
     ("gstreamer", 5),
+    ("ffmpeg", 5),
     ("ui-egui", 5),
     ("automation", 5),
     ("cfa4", 6),
@@ -139,8 +142,9 @@ fn workspace_crates(md: &Value) -> Vec<(String, Vec<String>)> {
         .as_array()
         .into_iter()
         .flatten()
-        // External vendor crates have their own provenance checks; they are not CFA4 architecture layers.
-        .filter(|p| p["name"] != "xtask" && p["name"] != "cfa4-docpath" && p["name"] != "cfa4-ui")
+        // External vendor crates (vendor/cfa4-libs, vendor/ffmpeg-bindings) have their own provenance
+        // checks; they are not CFA4 architecture layers.
+        .filter(|p| !matches!(p["name"].as_str(), Some("xtask" | "cfa4-docpath" | "cfa4-ui" | "rsmedia" | "rsmpeg" | "rusty_ffmpeg")))
         .map(|p| {
             let deps = p["dependencies"]
                 .as_array()
@@ -299,11 +303,13 @@ const FIXTURE_GENERATORS: &[(&str, &str)] = &[
     ("codecs", "mxf_oracle"),
     ("codecs", "mpeg_oracle"),
     ("mpeg2v", "oracle"),
+    ("dv", "oracle"),
     ("ac3", "oracle"),
     ("dts", "oracle"),
     ("truehd", "oracle"),
     ("mpa", "oracle"),
     ("codecs", "ogg_oracle"),
+    ("codecs", "dv_oracle"),
 ];
 
 fn fixtures(only: &[String]) -> Result<(), String> {

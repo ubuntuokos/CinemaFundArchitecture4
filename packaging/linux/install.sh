@@ -46,11 +46,22 @@ for binary in cfa4 cfa4-cli; do
   [ -f "$source_dir/bin/$binary" ] || fail "missing bin/$binary; extract the complete tarball first"
 done
 [ -f "$source_dir/share/applications/$app_id.desktop" ] || fail 'missing desktop entry; extract the complete tarball first'
+# the Qt GUI's launcher comes with its Python package: checked before anything is written
+if [ -f "$source_dir/bin/cfa4-qt" ] && [ ! -f "$source_dir/lib/cfa4/python/cfa4_qt/__main__.py" ]; then
+  fail 'missing lib/cfa4/python/cfa4_qt; extract the complete tarball first'
+fi
 
 mkdir -p -- "$prefix/bin" "$prefix/share"
 install -m755 -- "$source_dir/bin/cfa4" "$prefix/bin/cfa4"
 install -m755 -- "$source_dir/bin/cfa4-cli" "$prefix/bin/cfa4-cli"
 cp -R -- "$source_dir/share/." "$prefix/share/"
+# The Qt 6 GUI: its launcher finds the Python package in ../lib/cfa4/python.
+if [ -f "$source_dir/bin/cfa4-qt" ]; then
+  install -m755 -- "$source_dir/bin/cfa4-qt" "$prefix/bin/cfa4-qt"
+  rm -rf -- "$prefix/lib/cfa4/python/cfa4_qt"
+  mkdir -p -- "$prefix/lib/cfa4/python"
+  cp -R -- "$source_dir/lib/cfa4/python/cfa4_qt" "$prefix/lib/cfa4/python/"
+fi
 
 # Use an absolute path so launching from the application menu does not depend on PATH.
 # Escape the Exec argument, then the desktop entry's string value (two separate layers).
