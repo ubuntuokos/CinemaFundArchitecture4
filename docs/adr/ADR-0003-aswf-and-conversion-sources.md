@@ -104,9 +104,9 @@ nélkülözhetetlen, a CFA4 **saját kóddal valósítja meg**.
   `docs/gaps.md`-be kerül (G11 plugin-hosting, G12 MI, G18 effektmélység), bővítményenként a
   pótolandó képességgel, a nyílt alapként használható projektekkel és a mérési móddal
   (VISION.md 2. pont: bizonyíték, nem állítás).
-- A fizetős CFA4-többletfunkciók **GPL-3.0-or-later licencűek** (a tulajdonos döntése,
-  2026-10-24 délután, a korábbi „külön folyamatként futó zárt modul” lehetőség helyett): eladhatók,
-  de a vevő a forrással együtt továbbadhatja őket. Részletek: `docs/licensing.md` §4.
+- ~~A fizetős CFA4-többletfunkciók GPL-3.0-or-later licencűek (2026-10-24).~~ **Felváltva
+  (tulajdonosi döntés, 2026-11-08):** a CFA4-nek nincs fizetős része, minden funkciója ingyenes és
+  GPL-3.0-or-later; a fejlesztés önkéntes adománnyal támogatható. Részletek: `docs/licensing.md` §4.
 
 ## 5. Döntés: hardveres kódolás gyártónként
 
