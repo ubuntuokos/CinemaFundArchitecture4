@@ -1785,6 +1785,7 @@ fn gif_palette_quantization_preserves_isolated_transparency_and_dark_pixels() {
             }
         }
     }
+}
 
 /// `matte_secs` with markers on the sequence.
 fn with_markers(p: Arc<Project>, seq: ItemId, marks: &[(i64, &str, &str, cfa4_project::MarkerKind)]) -> Arc<Project> {
