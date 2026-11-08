@@ -45,6 +45,7 @@ cfa4-hevc = { path = "crates/hevc" }
 cfa4-heif = { path = "crates/heif" }
 cfa4-jxl = { path = "crates/jxl" }
 cfa4-vp8 = { path = "crates/vp8" }
+cfa4-ffv1 = { path = "crates/ffv1" }
 cfa4-vp9 = { path = "crates/vp9" }
 cfa4-prores = { path = "crates/prores" }
 cfa4-dnx = { path = "crates/dnx" }
@@ -118,6 +119,9 @@ todo = "warn"
 too_many_arguments = "allow"
 needless_range_loop = "allow"
 type_complexity = "allow"
+
+[profile.dev.package.cfa4-ffv1]
+opt-level = 3
 
 [profile.dev.package."*"]
 opt-level = 2
