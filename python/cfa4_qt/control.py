@@ -640,8 +640,11 @@ class ControlServer(QObject):
         button = BUTTONS.get(str(p.get("button") or "left"))
         if button is None:
             raise ControlError("button must be left, right or middle")
-        # null is the default, as egui reads it (the MCP bridge sends every optional field)
-        count = 1 if p.get("count") is None else p["count"]
+        # the MCP bridge sends null for an omitted count: the default, as an absent field (#2784)
+        count = p.get("count")
+        count = 1 if count is None else count
+        if isinstance(count, bool):
+            raise ControlError("count must be 1 or 2")
         if count == 2:
             # a real double click: press and release, then the double-click press and release
             # (item views emit doubleClicked only for the row the first press landed on)
@@ -656,7 +659,8 @@ class ControlServer(QObject):
         w, start = self._at(p.get("from"))
         target, end = self._at(p.get("to"))
         end = w.mapFromGlobal(target.mapToGlobal(end))
-        steps = 8 if p.get("steps") is None else p["steps"]
+        steps = p.get("steps")
+        steps = 8 if steps is None else steps  # null (the MCP bridge's omitted steps) is the default
         if not isinstance(steps, int) or isinstance(steps, bool) or not 1 <= steps <= MAX_DRAG_STEPS:
             raise ControlError(f"steps must be 1 to {MAX_DRAG_STEPS}")
         mods = modifiers_of(p.get("modifiers"))
