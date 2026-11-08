@@ -147,7 +147,7 @@ Sorrend: kiadás (legújabb elöl), azon belül kategória, majd PR-szám. A „
 | 0.14.0 | #3209 | Program: drag a marquee or Shift-click to select several mask vertices, and move them together | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #552 | PR nyitva |
 | 0.14.0 | #3211 | Lift and Extract put the removed range on the clipboard | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #553 | PR nyitva |
 | 0.14.0 | #3224 | engine: keep linked edit points together in Trim Mode (#3085) | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #554 | PR nyitva |
-| 0.14.0 | #3301 | Alt-drag of a clip edge trims only that side of a link | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | – | tervezett |
+| 0.14.0 | #3301 | Alt-drag of a clip edge trims only that side of a link | C+D | átvesz (motor + Qt6) | kézi port | U0-C, U0-D | #555 | PR nyitva |
 | 0.14.0 | #2445 | ime: an edit that ends while composing commits the marked text | D | átvesz (Qt6) | kézi port | U0-D | #557 | PR nyitva |
 | 0.14.0 | #3226 | i18n(fr): translate the 42 strings French still lacked | E | átvesz | kézi port | U0-E | – | tervezett |
 | 0.14.0 | #634 | Linux: default to XWayland for file drag-and-drop on Wayland desktops | F | kihagy: winit/egui-specifikus | kézi port | – | – | lezárva |
